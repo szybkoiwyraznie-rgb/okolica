@@ -151,6 +151,16 @@ jako czysta funkcja `pozycja.sekwencjaSymulowana()` (M1).
 trasy do UI trybu testowego i sprawdzenie kryterium „bez przewijania" na
 telefonie (360 px).
 
+**Stan kodu (2026-09-05):** wszystko z listy wyżej jest zaimplementowane —
+ekran prywatności z dwustopniowym kasowaniem kluczy `okolica:*` (commit
+`8abb11c`), symulacja dojścia w UI trybu testowego karmiąca ten sam lej fixów
+co GPS (`5c0264f`), dokumentacja (commit H4). Brama: **249 testów**, 0 fail.
+**Kamień w weryfikacji właściciela** (`docs/WORKFLOW.md` §4.2): kryterium
+„pełna konfiguracja bez przewijania na 360 px" da się ocenić tylko na żywo;
+jeśli przewijanie okaże się nieuniknione, właściciel decyduje — akceptujemy je
+jako świadome odstępstwo (adnotacja tutaj) albo składamy rzadkie pola
+w `<details>`. ✅ pojawi się dopiero po tym potwierdzeniu.
+
 ## M4 — Stacje z sieci drogowej (największe ryzyko)
 
 Overpass: budowa zapytania, graf, Dijkstra, kandydaci, filtry dostępności,

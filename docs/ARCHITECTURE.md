@@ -75,7 +75,12 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 2. `pozycja.js` czyta pierwszy fix GPS (albo współrzędne z trybu testowego).
    Pierwszy fix centruje widok mapy (`app.js: centrujNaPozycji`) w zoomie
    dobranym do promienia gry (`geo.dopasujZoomDoPromienia`), a kolejne tylko
-   przesuwają marker — potem mapę prowadzi palec gracza.
+   przesuwają marker — potem mapę prowadzi palec gracza. W trybie testowym
+   fixy zamiast z GPS płyną z `sekwencjaSymulowana(trasaProsta(...))`
+   odtwarzanej przez `setInterval` (przycisk „Symuluj dojście"); oba strumienie
+   wchodzą w stan **jednym lejem** `app.js: przyjmijFix()`, więc badge, mapa
+   i próg dojścia zachowują się identycznie z sygnałem i bez niego, a pauza
+   w tle (`visibilitychange`) zatrzymuje jedno i drugie.
 3. `sieci.js` buduje zapytanie Overpass dla `R × 1.15`, pobiera dane (cache
    `okolica:sieci:<geohash6>-<R>`, ADR 0010), buduje graf i liczy Dijkstrę.
 4. `stacje.wybierzStacje(graf, kandydaci, konfig, ziarno)` → N stacji +
@@ -192,6 +197,15 @@ Stan **nie zawiera treści pytań**: z paczki bierze tylko `{ stacja, pytanieId 
 a z odpowiedzi poprawność i punkty (ADR 0007 pkt 6). Dlatego może leżeć w
 `localStorage` i w eksporcie, a pytanie odsłania się dopiero z ukrytej paczki
 w chwili dojścia.
+
+Stan sesji (pamięć, `app/app.js`): `STAN.ekran` zapamiętuje, na który ekran
+wraca pomocniczy ekran „dane i prywatność" (otwierany z setupu i ze stopki,
+nie należy do paska pięciu kroków); `STAN.historiaFixow` to ograniczona
+historia wspólna GPS-u i symulacji; `STAN.symulacja` trzyma odtwarzaną trasę
+(`{fixy, indeks, cel, timer}`). Kasowanie danych jest **dwustopniowe**
+(pierwszy klik uzbraja, drugi wykonuje) i usuwa wyłącznie klucze `okolica:*` —
+aplikacja nie wywołuje `confirm()`/`alert()` (ADR 0015 pkt 6), komunikaty idą
+do pól z `role="status"`/`role="alert"`.
 
 Każdy zapis ma pole `schemat`; nieznana wersja = migracja albo jawny komunikat
 (`wczytajStan()`, kod `G12` ze wskazówką migracji), nigdy ciche odrzucenie.

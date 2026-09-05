@@ -70,11 +70,16 @@ P06, żadnego „Null Island"), symulacja trasy jako czysta funkcja
       testowym, `setInterval` z `krokSymulacji()` i stop; test: sekwencja fixów
       aktualizuje badge, mapę i w końcu zgłasza dojście do celu, a stop
       zatrzymuje strumień.
-- [ ] **H4 — dokumentacja i zamknięcie:** `ARCHITECTURE` (ekran prywatności,
+- [x] **H4 — dokumentacja i zamknięcie:** `ARCHITECTURE` (ekran prywatności,
       driver symulacji), `ROADMAP` M3 (status + adnotacja o kryterium
       „bez przewijania" dla właściciela), `WORKFLOW` (punkt checklisty 360 px),
       `PROJECT_HISTORY`, handoff, `LESSONS` jeśli coś zaskoczy, bump
       `?v=m3-1`, brama.
+
+**Status (2026-09-05):** H1–H4 agenta zrobione (commity `8abb11c` H2, `5c0264f`
+H3, commit H4 — dokumentacja); brama 249 testów; cache-busting `?v=m3-1`
+podniesiony już przy H3. Kamień **czeka na właściciela**: weryfikacja wg
+`docs/WORKFLOW.md` §4.2, w tym decyzja o kryterium „bez przewijania" (pkt 1).
 
 ## Ryzyka i pytania
 
@@ -82,7 +87,8 @@ P06, żadnego „Null Island"), symulacja trasy jako czysta funkcja
   że kryterium „bez przewijania" jest nieosiągalne bez zwinięcia sekcji
   (details/summary). Decyzja na H4 po oglądzie właściciela: albo akceptujemy
   przewijanie jako świadome odstępstwo (wpis w `ROADMAP`), albo składamy
-  rzadziej używane pola do `<details>`.
+  rzadziej używane pola do `<details>`. → **przekazane właścicielowi**
+  (`WORKFLOW` §4.2 pkt 1).
 - **Symulacja a pauza w tle:** `visibilitychange` zamyka watchera GPS, ale
   symulacja nie jest watcherem — musi się zatrzymać razem z pauzą, inaczej
   fixy „lecą" w tle (bateria, uczciwość pomiaru). Sprawdź w teście.

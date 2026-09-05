@@ -95,6 +95,33 @@ jest widoczne jako karta obok rozmowy.
    i ewentualna lekcja w `docs/LESSONS.md`; dopiero wtedy kamień M2 jest
    ukończony (`ROADMAP`: „zmiana sprawdzona na żywo").
 
+### 4.2 Weryfikacja M3 na telefonie (robi właściciel)
+
+Kryterium M3 „pełna konfiguracja na telefonie bez przewijania" i zachowanie
+symulacji na żywo sprawdza właściciel (agent nie ma przeglądarki, LESSONS L3):
+
+1. **360 px:** otwórz aplikację na telefonie w pionie (albo w DevTools:
+   360 × 640). Ekran setupu: oceń, czy cała konfiguracja mieści się **bez
+   przewijania**; jeśli nie — ile trzeba przewinąć i które karty są poniżej
+   fałdy. Wynik → decyzja: akceptujemy przewijanie (adnotacja w `ROADMAP`)
+   albo składamy rzadkie pola w `<details>` (nowe zadanie agenta).
+2. **Prywatność:** przycisk „Dane i prywatność" w setupie i w stopce otwiera
+   ekran; „Wróć" prowadzi na ekran, z którego przyszliśmy (setup → setup,
+   pozycja → pozycja). Przycisk kasowania: pierwszy klik **uzbraja** i mówi,
+   co się stanie, drugi kasuje; komunikat w polu pod przyciskiem liczy
+   usunięte klucze. Sprawdź w DevTools → Application → Local Storage, że
+   zniknęły tylko `okolica:*`.
+3. **Symulacja:** `?tryb=test` → ustaw współrzędne → „▶ Symuluj dojście
+   (250 m)": badge i marker mapy jadą, pasek stanu odlicza fixy i metry, na
+   końcu „cel osiągnięty — debounce dojścia spełniony". Drugi klik zatrzymuje
+   strumień; **zejście karty w tło też** (po powrocie nic nie „dogania").
+4. **GPS na żywo (przy oknie/na zewnątrz):** pozycja aktualizuje się, badge
+   dokładności żyje, odmowa zgody pokazuje `P02` z podpowiedzią, zejście w tło
+   pauzuje śledzenie i po powrocie wznawia z komunikatem.
+5. Wynik (co działa, co nie, decyzja z pkt 1) → wpis w
+   `docs/PROJECT_HISTORY.md` i ewentualna lekcja; dopiero wtedy `ROADMAP`
+   dostaje ✅ przy M3.
+
 ## 5. Publikacja na GitHub Pages (jednorazowo, właściciel)
 
 Settings → Pages → **Source: Deploy from a branch** → Branch: `main`,

@@ -244,3 +244,13 @@ odmawiało (`Bad credentials`), więc commity od `cfa9fdb` wzwyż czekały lokal
 po odświeżeniu tokena przez właściciela wszystko jest wypchnięte na
 `arena/01a07282-okolica` (21 commitów razem z M0), a opis i tytuł PR #2
 zaktualizowane.
+
+**M3 w toku (2026-09-05, ta sama sesja):** ekran „dane i prywatność"
+z dwustopniowym kasowaniem kluczy `okolica:*` (commit `8abb11c`) i symulacja
+dojścia w UI trybu testowego — `sekwencjaSymulowana` odtwarzana `setInterval`,
+wspólny z GPS-em lej `przyjmijFix()`, pauza w tle zatrzymuje strumień
+(`5c0264f`), plus dokumentacja H4 (ten wpis, `WORKFLOW` §4.2, `ROADMAP`,
+`ARCHITECTURE`, `README`, LESSONS L16–L17). Brama: **249 testów**, 0 fail
++ szablon zgodny; cache-busting `?v=m3-1`. Kamień **niezamknięty**: czeka na
+weryfikację właściciela — kryterium „pełna konfiguracja bez przewijania na
+360 px" i zachowanie symulacji/GPS na żywo (`docs/WORKFLOW.md` §4.2).

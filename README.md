@@ -37,6 +37,17 @@ dostawcy. Kamień zamknięty 2026-09-05: właściciel potwierdził w live previe
 że podkład jest widoczny i czytelny, a atrybucja i przyciski są na miejscu
 (`docs/WORKFLOW.md` §4.1).
 
+**M3 — konfiguracja i prywatność: kod i testy gotowe.** Ekran „dane
+i prywatność" (cztery karty z ADR 0013: co jest pobierane i od kogo, dokąd
+trafia pozycja, co zostaje na telefonie, jak to skasować; paczka opisana jako
+**ukryta, nie zaszyfrowana**) otwiera się z setupu i ze stopki, a kasowanie
+danych jest dwustopniowe i rusza tylko klucze `okolica:*`. W trybie testowym
+przycisk „▶ Symuluj dojście (250 m)" odtwarza trasę dziewięciu fixów — GPS
+i symulacja karmią ten sam `przyjmijFix()`, więc badge dokładności, mapa i próg
+dojścia z debounce'em działają identycznie bez sygnału, a pauza w tle zatrzymuje
+oba strumienie. Kamień czeka na weryfikację właściciela: kryterium „pełna
+konfiguracja bez przewijania na 360 px" (`docs/WORKFLOW.md` §4.2).
+
 **Ekranu gry jeszcze nie ma**: rozgrywka jest policzona i przetestowana, ale
 nieklikalna. Stacje z sieci dróg i placów (M4), pętla pytań z podglądem
 organizatora (M5), trwałość stanu i interfejs gry (M6) — patrz

@@ -231,3 +231,31 @@ asercja porządku wielkości względem stałej świata (`r < SZEROKOSC_SWIATA`).
 mnożenia na dzielenie. Pomocniczo: nazywaj funkcje tak, żeby jednostka była
 w nazwie (`promienWSwiecie`, `promienWpikselach`), a przelicznik zapisuj
 jednym zdaniem w komentarzu (commit `59b5573`).
+
+## L16 (2026-09-05, Tajemnicza Okolica) — test nie przejdzie drzwiami, które czytają nieparsowany DOM
+
+**Objaw:** test prywatności klikał „dalej → pozycja" i nic się nie działo —
+przejście z setupu czyta imiona przez `document.querySelectorAll('#lista-imion
+input')`, a atrapa DOM zwraca z `querySelectorAll` pustą listę, więc walidacja
+K08 (dokładnie N imion) słusznie odrzucała przejście.
+**Przyczyna:** atrapa (`test/helpers/dom.js`) celowo nie parsuje HTML — elementy
+są obiektami po id. Każda ścieżka, która czyta **kolekcję z wnętrza** elementu,
+w teście widzi pustkę, choć w przeglądarce działa.
+**Reguła:** dwie drzwi do wyboru: (1) test wchodzi na ekran inną drogą, która
+nie czyta nieparsowanego DOM (przycisk trybu testowego, przejście bezpośrednie),
+albo (2) produkcyjny strażnik przejścia czyta **zweryfikowany stan**
+(`STAN.konfig`) zamiast DOM, gdy to możliwe — jak przy poprawce K12 (commit
+`e65f26b`). Nie rozszerzaj atrapy o parser HTML tylko dla jednego testu — to
+druga przeglądarka w testach, której i tak nie utrzymasz.
+
+## L17 (2026-09-05, Tajemnicza Okolica) — kontrakt na zakazany wywołanie grepuje kod, nie prozę
+
+**Objaw:** kontrakt „warstwa aplikacji nie wywołuje `confirm()`/`alert()`"
+oblął, chociaż wywołań nie było — regex trafił w docblock, który **tłumaczył,
+dlaczego** aplikacja tych funkcji nie używa („przypadkowe OK w `confirm()`
+klika się bez czytania").
+**Przyczyna:** test grepował surowy plik, a zakaz dotyczy wywołań, nie słów.
+**Reguła:** kontrakt na zakazane API wycina przed dopasowaniem komentarze
+(`/* ... */` i `// ...`) — sprawdza kod, nie prozę. Alternatywa „nie pisz nazw
+zakazanych funkcji w komentarzach" jest gorsza: komentarz wyjaśniający „czemu
+nie" ma wartość i będzie powracał (commit `8abb11c`).
