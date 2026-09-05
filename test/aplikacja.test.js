@@ -418,3 +418,55 @@ test('mapa: gest palcem na panelu zmienia widok (drag działa z aplikacji)', asy
   wyslij(svg, 'pointerup', { pointerId: 1 });
   assert.notEqual(svg.getAttribute('aria-label'), etykietaPrzed, 'przeciągnięcie palcem ma zmienić środek widoku');
 });
+
+/* ------------------------------------------------- dane i prywatność (M3) */
+
+test('prywatność: ekran otwiera się z setupu i ze stopki, a „wróć" prowadzi na właściwy ekran', async () => {
+  const domMapy = await aplikacjaZMapa();
+  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, true, 'ekran prywatności jest domyślnie schowany');
+
+  domMapy.kliknij('przycisk-prywatnosc');
+  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'ekran gry ustępuje miejsca prywatności');
+
+  domMapy.kliknij('przycisk-wrocz-prywatnosc');
+  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, true);
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, false, 'wróciliśmy na setup');
+
+  // ze stopki, w trakcie gry: powrót ma prowadzić na ekran, z którego przyszliśmy
+  // (na pozycję wchodzimy trybem testowym — przejście z setupu czyta imiona
+  // z prawdziwego DOM, którego atrapa nie parsuje)
+  domMapy.kliknij('przycisk-test');
+  assert.equal(domMapy.pobierz('ekran-pozycja').hidden, false);
+  domMapy.kliknij('przycisk-prywatnosc-stopka');
+  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
+  assert.equal(domMapy.pobierz('ekran-pozycja').hidden, true);
+  domMapy.kliknij('przycisk-wrocz-prywatnosc');
+  assert.equal(domMapy.pobierz('ekran-pozycja').hidden, false, 'powrót na ekran pozycji, nie na setup');
+});
+
+test('prywatność: czyszczenie jest dwustopniowe i rusza tylko klucze obolica:*', async () => {
+  const pamiecPriv = new Map();
+  pamiecPriv.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { liczbaGraczy: 2 } }));
+  pamiecPriv.set('okolica:motyw', 'ciemny');
+  pamiecPriv.set('inna-apka:stan', 'nie ruszać');
+  const domMapy = zainstalujDom({ pamiec: pamiecPriv });
+  await import(`../app/app.js?priv=${Math.random().toString(36).slice(2)}`);
+
+  domMapy.kliknij('przycisk-prywatnosc');
+  domMapy.kliknij('przycisk-czysc-dane');
+  assert.match(domMapy.pobierz('czysc-dane-status').textContent, /Kliknij ponownie/, 'pierwszy klik tylko uzbraja');
+  assert.ok(pamiecPriv.has('okolica:konfig'), 'po uzbrojeniu nic nie zostało usunięte');
+  assert.ok(pamiecPriv.has('okolica:motyw'));
+
+  domMapy.kliknij('przycisk-czysc-dane');
+  assert.equal(pamiecPriv.has('okolica:konfig'), false, 'konfig usunięty');
+  assert.equal(pamiecPriv.has('okolica:motyw'), false, 'motyw usunięty');
+  assert.equal(pamiecPriv.get('inna-apka:stan'), 'nie ruszać', 'obce klucze zostają nietknięte');
+  assert.match(domMapy.pobierz('czysc-dane-status').textContent, /Usunięto zapisane dane \(2\)/);
+
+  // trzeci klik zaczyna od nowa: znów tylko uzbraja
+  domMapy.kliknij('przycisk-czysc-dane');
+  assert.match(domMapy.pobierz('czysc-dane-status').textContent, /Kliknij ponownie/);
+  assert.equal(pamiecPriv.size, 1);
+});

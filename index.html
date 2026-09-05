@@ -121,6 +121,8 @@
 
       <label class="pole sprawdz"><input id="setup-geokodacja" type="checkbox"> <span>Pobierz nazwę miejsca (dzielnica, miasto) — wysyła przybliżoną pozycję do Overpass</span></label>
 
+      <button id="przycisk-prywatnosc" class="przycisk" type="button">🔐 Dane i prywatność</button>
+
       <p id="bledy-setup" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-dalej-pozycja" class="przycisk przycisk-glowny" type="button">📍 Dalej: moja pozycja</button>
@@ -245,12 +247,81 @@
       </div>
     </section>
 
+    <!-- Ekran pomocniczy (poza krokami gry): dane i prywatność — ADR 0013 pkt 7 -->
+    <section id="ekran-prywatnosc" class="ekran" hidden aria-labelledby="tytul-prywatnosc">
+      <h2 id="tytul-prywatnosc">Dane i prywatność</h2>
+      <p class="podpowiedz">Krótko i po ludzku: co ta aplikacja pobiera, dokąd trafia
+      Twoja pozycja, co zostaje na telefonie i jak to skasować.</p>
+
+      <div class="karta">
+        <h3>Co jest pobierane i od kogo</h3>
+        <ul class="lista-privatnosc">
+          <li><strong>Kafelki mapy</strong> — od dostawcy podkładu (domyślnie
+            OpenStreetMap, opcjonalnie OpenTopoMap albo Esri World Imagery;
+            podkład można całkiem wyłączyć). Do dostawcy trafia tylko obszar
+            widoczny na ekranie i powiększenie.</li>
+          <li><strong>Sieć drogowa i nazwa miejsca</strong> — z Overpass API
+            (od kamienia M4): zaokrąglony środek i promień Twojej okolicy, bez
+            identyfikatora użytkownika. Pobieranie nazwy miejsca można wyłączyć
+            w ustawieniach.</li>
+          <li><strong>Nic więcej.</strong> Bez analityki, ciasteczek, konta
+            i zewnętrznych skryptów.</li>
+        </ul>
+      </div>
+
+      <div class="karta">
+        <h3>Dokąd trafia Twoja pozycja</h3>
+        <ul class="lista-privatnosc">
+          <li>Fixy GPS służą wyłącznie do prowadzenia gry i <strong>nie
+            opuszczają telefonu</strong> poza żądaniami mapy opisanymi wyżej.</li>
+          <li>Geolokalizacja wymaga Twojej zgody i połączenia HTTPS. Bez zgody
+            zostają współrzędne ręczne i tryb testowy.</li>
+        </ul>
+      </div>
+
+      <div class="karta">
+        <h3>Co zostaje na telefonie</h3>
+        <ul class="lista-privatnosc">
+          <li>Ustawienia gry i motyw: <code>okolica:konfig</code>,
+            <code>okolica:motyw</code>.</li>
+          <li>W kolejnych kamieniach: cache sieci drogowej, ukryta paczka pytań
+            i historia gier — wszystko pod kluczami <code>okolica:*</code>.</li>
+          <li>Pliki, które sam zapiszesz (prompt, paczka, wynik) — lądują w
+            Twoich „Pobranych", nie u nas.</li>
+        </ul>
+      </div>
+
+      <div class="karta">
+        <h3>Paczka pytań</h3>
+        <p class="podpowiedz">Paczka jest <strong>ukryta</strong> — nieczytelna
+        przy kopiowaniu — ale <strong>nie zaszyfrowana</strong> (ADR 0007).
+        Nie wklejaj do pytań danych osobowych: każdy, kto ma
+        dostęp do pliku paczki, może ją odczytać.</p>
+      </div>
+
+      <div class="karta">
+        <h3>Jak to skasować</h3>
+        <p class="podpowiedz">W przeglądarce: ustawienia strony → dane witryny
+        → usuń. Albo przyciskiem poniżej — usuwa klucze <code>okolica:*</code>
+        z tej przeglądarki. Stan właśnie rozgrywanej gry zostaje w pamięci do
+        odświeżenia strony.</p>
+        <button id="przycisk-czysc-dane" class="przycisk" type="button">🗑 Wyczyść zapisane dane gry</button>
+        <p id="czysc-dane-status" class="podpowiedz" role="status"></p>
+      </div>
+
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wrocz-prywatnosc" class="przycisk przycisk-glowny" type="button">← wróć</button>
+      </div>
+    </section>
+
   </main>
 
   <footer class="dol">
-    <span id="status">M0 — fundament: setup, pozycja, prompt, walidacja paczki</span>
+    <span id="status">M2 — mapa i model rozgrywki: setup, pozycja, stacje, prompt, paczka</span>
     <span class="separator">·</span>
     <span>protokół <span id="stopka-protokol">PYT/1.0</span></span>
+    <span class="separator">·</span>
+    <button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">dane i prywatność</button>
   </footer>
 </body>
 </html>

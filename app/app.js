@@ -52,6 +52,10 @@ const STAN = {
   watcher: null,
   /** Mapy z `mapa.js` (M2): `null`, gdy panelu nie ma w `index.html`. */
   mapy: { pozycja: null, stacje: null },
+  /** Który ekran gry jest pokazany (do powrotu z ekranu prywatności). */
+  ekran: 'setup',
+  /** Dwustopniowe kasowanie danych: pierwszy klik uzbraja, drugi kasuje. */
+  czyszczenieUzbrojone: false,
   /** Czy widok był już centrowany na pierwszym fixie — potem rządzi palec. */
   wycentrowane: false,
 };
@@ -65,6 +69,7 @@ function $(id) {
 const EKRANY = ['setup', 'pozycja', 'stacje', 'prompt', 'paczka'];
 
 function pokazEkran(nazwa) {
+  STAN.ekran = nazwa;
   for (const e of EKRANY) {
     $(`ekran-${e}`).hidden = e !== nazwa;
     const krok = document.querySelector(`#kroki li[data-krok="${e}"]`);
@@ -75,6 +80,49 @@ function pokazEkran(nazwa) {
   }
   odswiezMapeEkranu(nazwa);
   window.scrollTo({ top: 0 });
+}
+
+/**
+ * Ekran „dane i prywatność" (ADR 0013 pkt 7) nie jest krokiem gry: chowa
+ * wszystkie ekrany z paska kroków i pokazuje siebie, a powrót prowadzi na
+ * ekran zapamiętany w `STAN.ekran`.
+ */
+function pokazPrywatnosc() {
+  for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
+  $('ekran-prywatnosc').hidden = false;
+  window.scrollTo({ top: 0 });
+}
+
+function wrocZPrywatnosci() {
+  $('ekran-prywatnosc').hidden = true;
+  pokazEkran(EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup');
+}
+
+/**
+ * Kasuje klucze `okolica:*` z przeglądarki — dwustopniowo, bo na telefonie
+ * przypadkowe „OK" w `confirm()` klika się bez czytania. Komunikat idzie do
+ * pola z `role="status"`, nie do `alert()` (ADR 0015 pkt 6).
+ */
+function czyscDaneWitryny() {
+  const pole = $('czysc-dane-status');
+  if (!STAN.czyszczenieUzbrojone) {
+    STAN.czyszczenieUzbrojone = true;
+    pole.textContent = 'Kliknij ponownie, żeby usunąć ustawienia gry i motyw z tej przeglądarki.';
+    return;
+  }
+  const usuniete = [];
+  for (let i = localStorage.length - 1; i >= 0; i -= 1) {
+    const klucz = localStorage.key(i);
+    if (klucz && klucz.startsWith('okolica:')) {
+      localStorage.removeItem(klucz);
+      usuniete.push(klucz);
+    }
+  }
+  STAN.czyszczenieUzbrojone = false;
+  pole.textContent = usuniete.length
+    ? `Usunięto zapisane dane (${usuniete.length}): ${usuniete.join(
+)}.`
+    : 'Nie znaleziono zapisanych danych tej gry.';
 }
 
 function status(tekst) {
@@ -608,6 +656,10 @@ function start() {
   }
 
   $('przycisk-motyw').addEventListener('click', przelaczMotyw);
+  $('przycisk-prywatnosc').addEventListener('click', pokazPrywatnosc);
+  $('przycisk-prywatnosc-stopka').addEventListener('click', pokazPrywatnosc);
+  $('przycisk-wrocz-prywatnosc').addEventListener('click', wrocZPrywatnosci);
+  $('przycisk-czysc-dane').addEventListener('click', czyscDaneWitryny);
   $('przycisk-test').addEventListener('click', () => {
     STAN.trybTestowy = !STAN.trybTestowy;
     $('przycisk-test').setAttribute('aria-pressed', String(STAN.trybTestowy));

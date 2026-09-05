@@ -364,3 +364,18 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   opacity: 0.9;
 }
 .mapa-atrybucja:empty { display: none; }
+
+/* --- ekran „dane i prywatność" (M3, ADR 0013 pkt 7) --- */
+.lista-privatnosc { margin: 0; padding-left: 18px; }
+.lista-privatnosc li { margin: 6px 0; font-size: 15px; }
+.karta h3 { margin: 0 0 6px; font-size: 16px; }
+.przycisk-stopka {
+  padding: 2px 4px;
+  background: none;
+  border: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+.przycisk-stopka:focus-visible { outline: 2px solid var(--akcent); }

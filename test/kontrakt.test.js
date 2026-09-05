@@ -356,3 +356,23 @@ test('kontrakt: szablony URL kafelków są dokładnie te z docs/ASSETS.md §1', 
   }
   assert.match(SZABLONY_KAFELKOW['esri-satelita'], /\{z\}\/\{y\}\/\{x\}$/, 'Esri ma odwrotną kolejność y/x (ASSETS §1)');
 });
+
+test('kontrakt: ekran „dane i prywatność" ma cztery karty z ADR 0013 pkt 7 i przycisk kasowania', () => {
+  for (const id of ['ekran-prywatnosc', 'przycisk-prywatnosc', 'przycisk-prywatnosc-stopka', 'przycisk-wrocz-prywatnosc', 'przycisk-czysc-dane', 'czysc-dane-status']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `brak #${id} w index.html`);
+  }
+  const sekcja = INDEX.slice(INDEX.indexOf('id="ekran-prywatnosc"'), INDEX.indexOf('</section>', INDEX.indexOf('id="ekran-prywatnosc"')));
+  for (const temat of ['Co jest pobierane', 'Dokąd trafia Twoja pozycja', 'Co zostaje na telefonie', 'Jak to skasować']) {
+    assert.ok(sekcja.includes(temat), `ekran prywatności nie mówi: ${temat} (ADR 0013 pkt 7)`);
+  }
+  assert.match(sekcja, /nie\s+zaszyfrowana/, 'paczka opisana uczciwie: ukryta, nie zaszyfrowana (ADR 0007)');
+  assert.ok(!/jest zaszyfrowana/.test(sekcja), 'ekran nie może obiecywać szyfrowania');
+});
+
+test('kontrakt: warstwa aplikacji nie pyta przez confirm()/alert() (ADR 0015 pkt 6)', () => {
+  // komentarze mogą NAZYWAĆ te funkcje (tłumaczą, czemu ich nie ma) — reguła
+  // dotyczy wywołań, więc komentarze wycinamy przed sprawdzeniem
+  const kod = APP.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/.*$/gm, '');
+  assert.ok(!/\bconfirm\s*\(/.test(kod), 'kasowanie danych jest dwustopniowe w UI, nie przez confirm()');
+  assert.ok(!/\balert\s*\(/.test(kod), 'komunikaty idą do paska stanu i pól z role=alert/status');
+});

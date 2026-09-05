@@ -158,6 +158,9 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     getItem: (k) => (pamiec.has(k) ? pamiec.get(k) : null),
     setItem: (k, v) => pamiec.set(k, String(v)),
     removeItem: (k) => pamiec.delete(k),
+    // pełne API przeglądarki, żeby kod mógł iterować klucze po prefiksie
+    key: (i) => [...pamiec.keys()][i] ?? null,
+    get length() { return pamiec.size; },
   };
   Object.defineProperty(globalThis, 'location', {
     configurable: true,
