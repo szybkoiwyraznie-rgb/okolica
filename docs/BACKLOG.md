@@ -102,3 +102,13 @@ MapLibre GL jest projektem na wiele tygodni. Wymaga: zastąpienia ADR 0001
 decyzji właściciela o rozmiarze payloadu na telefonie. Zysk: ładniejszy podkład
 jasny (styl „positron/liberty") i brak ryzyka polityki OSM Tiles. Rozważyć
 dopiero, gdy podkład rastrowy okaże się w terenie nieczytelny (M10).
+
+## B16 — Prawdziwe szyfrowanie paczki kluczem z `kod gry`
+
+Wraca, jeśli pojawi się potrzeba ochrony przed zdeterminowanym graczem albo przed
+wyciekiem paczki z przyszłego repozytorium (ADR 0010, M9). Wymaga: nowego ADR
+zastępującego ADR 0007, wariantu `kodowanie: "aes-gcm"` w kontenerze
+`TO-paczka/2` (hak migracyjny już jest), `WebCrypto` (PBKDF2-SHA256 + AES-GCM,
+secure context), migratora dla paczek `b64x1` i decyzji właściciela o utracie
+paczki przy zapomnianym kodzie. Nie ruszać, dopóki obfuskacja wystarcza — koszt
+to zarządzanie kluczami i realne ryzyko utraty treści.

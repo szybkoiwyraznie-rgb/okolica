@@ -52,7 +52,7 @@ nie ma w OSM (historia, legendy, kultura).
    `paczka.model` (etykieta organizatora). Aplikacja musi działać identycznie
    dla odpowiedzi z Meta AI, ChatGPT, Gemini, Claude czy modelu lokalnego.
 8. **Ręczna edycja paczki jest dozwolona**: organizator może poprawić pytanie
-   w podglądzie „tylko dla organizatora" przed zaszyfrowaniem — każda taka
+   w podglądzie „tylko dla organizatora" przed ukryciem — każda taka
    zmiana zapisuje `paczka.modyfikacje[]` (kto/co/kiedy), żeby widać było, co
    nie pochodzi od modelu.
 
@@ -72,5 +72,5 @@ nie ma w OSM (historia, legendy, kultura).
 
 ## Powiązania
 
-0001 (bez zależności/backendu), 0007 (szyfrowanie paczki), 0008 (kwerenda
+0001 (bez zależności/backendu), 0007 (ukrywanie paczki), 0008 (kwerenda
 i źródła), 0010 (trwałość paczki), 0011 (mobile-first).

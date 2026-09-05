@@ -121,9 +121,12 @@ Ponadto:
 - **Schemat paczki jest wersjonowany** (`protokol: "PYT/1.0"`). Zmiana schematu
   = nowy ADR + podbicie wersji + migrator dla paczek zapisanych w
   `localStorage` (użytkownik nie może stracić gry w trakcie).
-- **Paczka pytań po walidacji jest szyfrowana** (ADR 0007) i tylko w tej
-  postaci trafia do `localStorage`. Plaintekst nie jest zapisywany nigdzie,
-  a pole tekstowe wklejania jest czyszczone natychmiast po przetworzeniu.
+- **Paczka pytań po walidacji jest ukrywana** (obfuskacja bez klucza, kontener
+  `TO-paczka/2`, ADR 0007) i tylko w tej postaci trafia do `localStorage`.
+  Plaintekst nie jest zapisywany nigdzie, a pole tekstowe wklejania jest
+  czyszczone natychmiast po przetworzeniu. **Piszemy „ukryte", nie
+  „zaszyfrowane"** — to bariera przed przypadkowym wglądem, nie zabezpieczenie,
+  i ani dokumentacja, ani UI nie mogą obiecywać więcej (ADR 0007 pkt 5).
 - **Język aplikacji i treści: polski.** Nazwy własne, cytaty i terminy źródłowe
   mogą pozostać oryginalne. Inne języki pytań — przez parametr `jezyk`
   w konfiguracji (ADR 0011), nie przez zmianę języka interfejsu.
@@ -199,7 +202,7 @@ statusem *Zastąpiona*.
   właściciela albo do braku niezbędnych danych wejściowych.
 - Najpierw test odtwarzający błąd/zachowanie, potem implementacja, gdy ma to
   sens. Testy logiki (geodezja, projekcja, wybór stacji, walidacja paczki,
-  kryptografia) nie wymagają DOM ani sieci — `node --test`.
+  ukrywanie paczki) nie wymagają DOM ani sieci — `node --test`.
 - **Wszystko, co losowe, jest deterministyczne pod ziarnem.** Ziarno rozgrywki
   (wybór stacji, kolejność odpowiedzi) pochodzi z konfiguracji i jest zapisane
   w paczce, żeby grę dało się odtworzyć i przetestować (ADR 0005).

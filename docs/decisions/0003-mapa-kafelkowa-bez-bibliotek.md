@@ -1,6 +1,7 @@
 # 0003 — Mapa: własny renderer SVG + rastrowe kafelki Web Mercator (bez bibliotek mapowych)
 
-- Status: Proponowana (do potwierdzenia: zestaw dostawców kafelków — patrz `docs/ASSETS.md`)
+- Status: Zaakceptowana (2026-09-05 — właściciel potwierdził **OSM Standard** jako
+  podkład domyślny; pozostali dostawcy i ich polityki: `docs/ASSETS.md`)
 - Data: 2026-09-05 (rewizja tego samego dnia po kwerendzie polityk dostawców)
 
 ## Kontekst

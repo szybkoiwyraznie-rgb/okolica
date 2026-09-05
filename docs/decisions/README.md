@@ -19,13 +19,13 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | --- | --- | --- |
 | [0001](0001-vanilla-static-app-no-build.md) | Statyczna aplikacja vanilla HTML+JS (ESM) bez kroku budowania i bez zależności | Zaakceptowana |
 | [0002](0002-hosting-github-pages-sciezki-wzgledne.md) | Hosting: GitHub Pages z gałęzi `main` (katalog główny), wszystkie ścieżki względne | Proponowana |
-| [0003](0003-mapa-kafelkowa-bez-bibliotek.md) | Mapa: własny renderer SVG + rastrowe kafelki Web Mercator (bez bibliotek mapowych) | Proponowana |
+| [0003](0003-mapa-kafelkowa-bez-bibliotek.md) | Mapa: własny renderer SVG + rastrowe kafelki Web Mercator (bez bibliotek mapowych) | Zaakceptowana |
 | [0004](0004-geolokalizacja-i-kryterium-dojscia.md) | Geolokalizacja `watchPosition` i kryterium dojścia do stacji | Zaakceptowana |
 | [0005](0005-stacje-z-sieci-drogowej-overpass.md) | Stacje z sieci drogowej (Overpass API): kandydaci, filtry dostępności, wybór sprawiedliwy pod ziarnem | Proponowana |
 | [0006](0006-pytania-przez-prompt-i-wklejenie.md) | Treść pytań: prompt generowany przez aplikację → model AI → wklejenie odpowiedzi (bez backendu i bez kluczy API) | Zaakceptowana |
-| [0007](0007-szyfrowanie-paczki-aes-gcm-kod-gry.md) | Paczka pytań szyfrowana AES-GCM (Web Crypto), klucz z `kod gry` przez PBKDF2 | Proponowana |
+| [0007](0007-ukrywanie-paczki-obfuskacja-bez-klucza.md) | Ukrywanie paczki pytań: odwracalna obfuskacja bez klucza (nie szyfrowanie) | Zaakceptowana |
 | [0008](0008-kwerenda-i-zrodla-w-kazdym-pytaniu.md) | Obowiązkowa kwerenda internetowa i źródło URL przy każdym pytaniu | Zaakceptowana |
-| [0009](0009-jeden-telefon-hot-seat.md) | Model rozgrywki wieloosobowej: jeden telefon (hot-seat), bez synchronizacji urządzeń | Proponowana |
+| [0009](0009-jeden-telefon-hot-seat.md) | Model rozgrywki wieloosobowej: jeden telefon (hot-seat), bez synchronizacji urządzeń | Zaakceptowana |
 | [0010](0010-trwalosc-localstorage-i-eksport-paczki.md) | Trwałość: `localStorage` dla rozgrywki, paczka pytań jako eksportowalny plik, docelowo repozytorium paczek | Proponowana |
 | [0011](0011-mobile-first-dotyk.md) | Mobile-first: interfejs dotykowy jako podstawowy, dostępność i czytelność w słońcu | Zaakceptowana |
 | [0012](0012-model-sesji-pr-audyt-inkrementalne-commity.md) | Model sesji: PR na starcie, audyt poprzedniego PR, inkrementalne commity, bez force push | Zaakceptowana |

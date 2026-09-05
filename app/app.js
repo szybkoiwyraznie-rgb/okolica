@@ -12,8 +12,14 @@
 import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m0-1';
 import { formatujWspolrzedne, geohash, czyWspolrzedneOk } from './geo.js?v=m0-1';
 import {
-  WERSJA_PROTOKOLU, parsujOdpowiedzModela, podsumowaniePaczki, poprawkaDlaModelu, walidujPaczke, zbudujPrompt,
+  parsujOdpowiedzModela,
+  podsumowaniePaczki,
+  poprawkaDlaModelu,
+  walidujPaczke,
+  zbudujPrompt,
+  WERSJA_PROTOKOLU,
 } from './protokol.js?v=m0-1';
+import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m0-1';
 import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m0-1';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
@@ -198,7 +204,7 @@ function renderujSetup() {
   $('przycisk-kod').addEventListener('click', () => {
     STAN.konfig.kodGry = proponujKodGry(rngZZiarna(`kod:${Date.now()}`));
     $('setup-kod').value = STAN.konfig.kodGry;
-    status('Zaproponowano kod gry — zapisz go, odzyskanie nie jest możliwe (ADR 0007).');
+    status('Zaproponowano kod gry — identyfikator rozgrywki do eksportu i udostępniania paczki (ADR 0007: pytania ukrywa obfuskacja, nie ten kod).');
   });
 }
 
@@ -312,7 +318,7 @@ function budujPromptEkran() {
   $('przycisk-dalej-paczka').disabled = !wynik.prompt;
 }
 
-async function kopiujTekst(tekst, przycisk, etykieta) {
+async function kopiujTekst(tekst, przycisk, etykieta, idPolaZapasowego = 'pole-prompt') {
   const przywroc = () => { przycisk.textContent = etykieta; };
   try {
     if (navigator.clipboard?.writeText) {
@@ -325,7 +331,7 @@ async function kopiujTekst(tekst, przycisk, etykieta) {
     void e;
     // Schowek bywa niedostępny (iframe preview, starsze przeglądarki) — zaznacz
     // tekst i każ skopiować ręcznie. Zero komunikatu „nie działa" bez wyjścia.
-    const pole = $('pole-prompt');
+    const pole = $(idPolaZapasowego);
     pole.focus();
     pole.setSelectionRange(0, pole.value.length);
     przycisk.textContent = '⚠ zaznaczone — skopiuj ręcznie';
@@ -364,7 +370,13 @@ function oczekiwane() {
 
 function sprawdzOdpowiedz() {
   const tekst = $('pole-odpowiedz').value;
-  const { paczka, blad } = parsujOdpowiedzModela(tekst);
+  // Najpierw próba odczytania ukrytej paczki (kontener TO-paczka/2 albo sam
+  // blob), potem jawna odpowiedź modelu. `odpakujPaczke` nie rzuca wyjątków —
+  // wklejony tekst bywa śmieciem i UI ma to pokazać komunikatem (ADR 0007).
+  const zKontenera = odpakujPaczke(tekst);
+  const { paczka, blad } = zKontenera.paczka
+    ? { paczka: zKontenera.paczka, blad: null }
+    : parsujOdpowiedzModela(tekst);
   const wynik = $('wynik-walidacji');
   const listaUsterek = $('wynik-usterki');
   const podsumowanie = $('wynik-podsumowanie');
@@ -379,7 +391,8 @@ function sprawdzOdpowiedz() {
     STAN.paczka = null;
     renderujUsterki([blad]);
     $('przycisk-poprawka').hidden = false;
-    status('Odpowiedź odrzucona na etapie parsowania JSON.');
+    $('przycisk-ukryj').hidden = true;
+    status('Odpowiedź odrzucona na etapie odczytu (parsowanie JSON albo kontener).');
     return;
   }
 
@@ -391,6 +404,7 @@ function sprawdzOdpowiedz() {
     $('wynik-naglowek').textContent = `Paczka odrzucona — usterek: ${usterki.length}`;
     renderujUsterki(usterki);
     $('przycisk-poprawka').hidden = false;
+    $('przycisk-ukryj').hidden = true;
     status('Paczka odrzucona przez walidator (protokół PYT §6).');
     return;
   }
@@ -399,6 +413,7 @@ function sprawdzOdpowiedz() {
   STAN.paczka = paczka;
   $('wynik-naglowek').textContent = 'Paczka przyjęta';
   $('przycisk-poprawka').hidden = true;
+  $('przycisk-ukryj').hidden = false;
   const s = podsumowaniePaczki(paczka);
   const wpisz = (dt, dd) => { podsumowanie.insertAdjacentHTML('beforeend', `<dt>${dt}</dt><dd>${dd}</dd>`); };
   wpisz('pytania', `${s.liczbaPytan} (stacje: ${s.stacje.join(', ')})`);
@@ -406,7 +421,9 @@ function sprawdzOdpowiedz() {
   wpisz('źródła', `${s.liczbaZrodel} adresów — pokazane graczom po odpowiedzi`);
   wpisz('punkty', `${s.punktyRazem} do zdobycia`);
   if (s.uwagi) wpisz('uwagi modelu', s.uwagi);
-  wpisz('następny krok', 'szyfrowanie paczki i rozgrywka — kamienie M1/M5/M6');
+  if (zKontenera.zrodlo === 'kontener') wpisz('postać', 'paczka ukryta (kontener TO-paczka/2)');
+  else if (zKontenera.zrodlo === 'json') wpisz('postać', 'jawny JSON od modelu — przed ukryciem');
+  wpisz('następny krok', 'rozgrywka — kamień M6 (pytania zostaną ukryte w pamięci urządzenia)');
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
@@ -577,6 +594,17 @@ function start() {
     const tekst = poprawkaDlaModelu(STAN.usterkiPaczki, { liczbaPytan: liczbaPytan(STAN.konfig) });
     kopiujTekst(tekst, e.currentTarget, '⧉ Kopiuj poprawkę do modelu');
     $('pole-odpowiedz').value = tekst;
+  });
+
+  // Ukrycie przyjętej paczki (ADR 0007): kontener do schowka i do pola, żeby dało
+  // się go przenieść na inne urządzenie albo zapisać w pliku. Komunikat mówi
+  // wprost, że to obfuskacja — bez złudzenia bezpieczeństwa (pkt 5).
+  $('przycisk-ukryj').addEventListener('click', (e) => {
+    if (!STAN.paczka) return;
+    const tekst = JSON.stringify(zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU));
+    $('pole-odpowiedz').value = tekst;
+    kopiujTekst(tekst, e.currentTarget, `⧉ Ukryj paczkę (${SCHEMAT_KONTENERA})`, 'pole-odpowiedz');
+    status(`Paczka ukryta w kontenerze ${SCHEMAT_KONTENERA} — to obfuskacja bez klucza, nie szyfrowanie (ADR 0007).`);
   });
 
   pokazEkran('setup');

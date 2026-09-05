@@ -92,10 +92,10 @@ pushuj od razu; przed długimi operacjami upewnij się, że praca jest wypchnię
   `Ä…` zamiast `ą`) oraz wplatać obce glify. Nowe pliki twórz `write_file`;
   istniejące pliki z polskim tekstem edytuj przez `python3` + `pathlib`
   z `encoding='utf-8'`. Po każdej edycji `git diff` pod kątem mojibake.
-- Testy logiki uruchamisz bez przeglądarki: `node --test`. Node 22 ma
-  `globalThis.crypto` (Web Crypto), więc AES-GCM/PBKDF2 z `app/krypto.js`
-  testuje się w Node tym samym kodem co w przeglądarce (bez API Node — patrz
-  LESSONS L6).
+- Testy logiki uruchomisz bez przeglądarki: `node --test`. Node 22 ma te same
+  API co przeglądarka (`TextEncoder`/`TextDecoder`, `atob`/`btoa`,
+  `globalThis.crypto`), więc moduły czyste — w tym `app/kodowanie.js` (ADR 0007)
+  — testują się w Node **tym samym kodem**, bez API Node (LESSONS L6).
 - Do uruchomienia aplikacji użyj serwera statycznego na `0.0.0.0`
   (`npm run serwer` = `python3 -m http.server 8000 --bind 0.0.0.0`).
 

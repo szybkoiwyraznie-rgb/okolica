@@ -339,5 +339,5 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
 
 test('stałe protokołu: wersja i schemat kontenera', () => {
   assert.equal(WERSJA_PROTOKOLU, 'PYT/1.0');
-  assert.equal(SCHEMAT_KONTENERA, 'TO-paczka/1');
+  assert.equal(SCHEMAT_KONTENERA, 'TO-paczka/2', 'kontener po decyzji z ADR 0007 (obfuskacja bez klucza)');
 });

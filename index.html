@@ -111,12 +111,12 @@
       </div>
 
       <div class="pole">
-        <label for="setup-kod"><span>Kod gry (ukrywa pytania przed graczami)</span></label>
+        <label for="setup-kod"><span>Kod gry (identyfikator rozgrywki)</span></label>
         <div class="wiersz">
           <input id="setup-kod" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="np. K7M2QP">
           <button id="przycisk-kod" class="przycisk" type="button" title="Zaproponuj losowy kod">🎲 zaproponuj</button>
         </div>
-        <p class="podpowiedz">Zostaw puste, jeśli gracie bez ukrywania pytań. Kodu nie da się odzyskać — patrz ADR 0007.</p>
+        <p class="podpowiedz">Krótki identyfikator rozgrywki — trafia do eksportu paczki i do przyszłego repozytorium paczek (ADR 0010). Nie chroni pytań: przed podglądem ukrywa je obfuskacja bez klucza (ADR 0007).</p>
       </div>
 
       <label class="pole sprawdz"><input id="setup-geokodacja" type="checkbox"> <span>Pobierz nazwę miejsca (dzielnica, miasto) — wysyła przybliżoną pozycję do Overpass</span></label>
@@ -196,7 +196,7 @@
     <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
     <section id="ekran-paczka" class="ekran" hidden aria-labelledby="tytul-paczka">
       <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
-      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny. Po sprawdzeniu paczka zostanie zaszyfrowana (M5, ADR 0007).</p>
+      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny. Po sprawdzeniu aplikacja ukryje paczkę: tekst stanie się nieczytelny przy kopiowaniu, ale <strong>nie jest zaszyfrowany</strong> (obfuskacja bez klucza, ADR 0007). Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
       <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="10" placeholder="Wklej tutaj odpowiedź modelu (blok JSON)" aria-label="Odpowiedź modelu AI"></textarea>
       <div class="wiersz">
         <button id="przycisk-wklej" class="przycisk" type="button">📋 Wklej ze schowka</button>
@@ -211,6 +211,7 @@
         <ul id="wynik-usterki" class="usterki"></ul>
         <dl id="wynik-podsumowanie" class="podsumowanie"></dl>
         <button id="przycisk-poprawka" class="przycisk" type="button" hidden>⧉ Kopiuj poprawkę do modelu</button>
+        <button id="przycisk-ukryj" class="przycisk" type="button" hidden>⧉ Ukryj paczkę (TO-paczka/2)</button>
       </div>
     </section>
 

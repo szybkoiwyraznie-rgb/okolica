@@ -32,17 +32,23 @@
 
 `app/geo.js` (haversine, bearing, Mercator, pierścienie, dopasowanie zoomu),
 `app/pozycja.js` (kryterium dojścia, filtr dokładności), `app/rozgrywka.js`
-(kolejki graczy, odcinki, czasy, punktacja), `app/krypto.js` (PBKDF2 + AES-GCM,
-kontener `TO-paczka/1`), `app/protokol.js` (`zbudujPrompt`, `walidujPaczke`).
-Kryterium: wszystko przetestowane w Node bez DOM i bez sieci; round-trip
-szyfrowania na Node i w przeglądarce.
+(kolejki graczy, odcinki, czasy, punktacja), `app/kodowanie.js` (obfuskacja bez
+klucza, kontener `TO-paczka/2`), `app/protokol.js` (`zbudujPrompt`,
+`walidujPaczke`).
+Kryterium: wszystko przetestowane w Node bez DOM i bez sieci; round-trip ukrycia
+paczki na Node i w przeglądarce.
 
 **Zrobione przed czasem w M0/E5:** `app/geo.js` (z progami dojścia i regułą
 dwóch kolejnych trafień — czyli także rdzeń `pozycja.js`), `app/protokol.js`
 (`zbudujPrompt`, `walidujPaczke`, parser, poprawka dla modelu), `app/konfig.js`
-i `app/stacje.js`. **Zostało na M1:** `app/krypto.js` (najważniejsze — bez
-niego pytania są jawne), `app/rozgrywka.js`, wydzielenie `app/pozycja.js`
-z logiki siedzącej dziś w `app/app.js`.
+i `app/stacje.js`. **Zrobione dodatkowo 2026-09-05 po decyzji właściciela (ADR 0007):**
+`app/kodowanie.js` — ukrywanie paczki przez obfuskację bez klucza (kontener
+`TO-paczka/2`, suma FNV-1a) zamiast planowanego szyfrowania kluczem z `kod gry`
+(wariant odrzucony przez właściciela, wraca jako `BACKLOG` B16). Moduł jest mały,
+synchroniczny i przetestowany (`test/kodowanie.test.js`), więc nie było powodu
+odkładać go do M1. **Zostało na M1:** `app/rozgrywka.js` (kolejki graczy,
+odcinki, czasy, punktacja) i wydzielenie `app/pozycja.js` z logiki siedzącej dziś
+w `app/app.js`.
 
 ## M2 — Mapa
 
@@ -75,7 +81,7 @@ w budynku ani na terenie prywatnym; odchylenie standardowe dystansów ≤ 15%
 
 Ekran promptu (kopiowanie, import/eksport pliku, instrukcja obrazkowa),
 walidacja z kodami E01–E20 i przyciskiem „skopiuj poprawkę do modelu",
-szyfrowanie paczki, podgląd „tylko dla organizatora" z ręczną edycją i zapisem
+ukrywanie paczki (kontener `TO-paczka/2` — gotowe w M0), podgląd „tylko dla organizatora" z ręczną edycją i zapisem
 `modyfikacje[]`, odwrotna geokodacja nazwy miejsca (wyłączalna).
 Kryterium: pełna pętla przechodzi z prawdziwym modelem (test właściciela),
 a odrzucona paczka daje czytelną listę usterek.
@@ -83,7 +89,7 @@ a odrzucona paczka daje czytelną listę usterek.
 ## M6 — Rozgrywka
 
 Pętla stacji: ekran „kto idzie" → start odcinka → mapa z dystansem → dojście
-(albo tryb ręczny z karą) → pytanie z odszyfrowaniem w chwili dojścia →
+(albo tryb ręczny z karą) → pytanie odsłonięte w chwili dojścia →
 odpowiedź → wyjaśnienie + źródła → następna stacja. Pauza/wznowienie, koniec
 gry, przerwanie i zapis stanu.
 Kryterium: gra przechodzalna od setupu do wyniku na telefonie, z utratą

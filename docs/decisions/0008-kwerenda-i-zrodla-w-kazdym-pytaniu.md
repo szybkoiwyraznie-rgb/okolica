@@ -61,5 +61,5 @@ wpisów" (ich ADR 0008) — przenosimy mechanizm.
 
 ## Powiązania
 
-0006 (pętla treści), 0007 (walidacja przed szyfrowaniem), 0010 (repozytorium
+0006 (pętla treści), 0007 (walidacja przed ukryciem), 0010 (repozytorium
 paczek i ich przegląd), `docs/PROTOKOL.md` §2–§3.

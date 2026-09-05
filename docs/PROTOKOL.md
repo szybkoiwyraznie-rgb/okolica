@@ -8,7 +8,7 @@
 - Status: **obowiązujący** (wersja wyprowadzana z tego nagłówka; test
   kontraktowy porównuje go ze stopką aplikacji i z `README.md`)
 - Data: 2026-09-05
-- Powiązania: ADR 0006 (pętla treści), ADR 0007 (szyfrowanie paczki),
+- Powiązania: ADR 0006 (pętla treści), ADR 0007 (ukrywanie paczki),
   ADR 0008 (kwerenda i źródła), `app/protokol.js` (kod), `test/protokol.test.js`
 
 ## 1. Pętla treści w pięciu krokach
@@ -21,9 +21,10 @@ konfiguracja + pozycja gracza + stacje
    odpowiedź modelu = blok JSON ze schematem §3
         ↓ (3) organizator wkleja odpowiedź do aplikacji
    walidacja §6 → lista usterek albo przyjęcie
-        ↓ (4) szyfrowanie AES-GCM (ADR 0007) → localStorage / eksport pliku
+        ↓ (4) ukrycie paczki: obfuskacja bez klucza, kontener TO-paczka/2
+            (ADR 0007) → localStorage / eksport pliku
    paczka PYT
-        ↓ (5) rozgrywka: pytanie odszyfrowywane przy dojściu do stacji
+        ↓ (5) rozgrywka: pytanie odsłaniane przy dojściu do stacji
 ```
 
 Krok (2) jest poza systemem: model jest **zewnętrznym silnikiem treści**
@@ -164,19 +165,34 @@ repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
 | `zrodla[].sprawdzono` | tekst | `RRRR-MM-DD`, nie w przyszłości |
 | `punkty` | liczba | `10`, `15` albo `20` |
 
-### 3.3 Kontener zaszyfrowany (ADR 0007 pkt 3)
+### 3.3 Kontener ukrytej paczki (ADR 0007 pkt 2)
 
 ```json
 {
-  "schemat": "TO-paczka/1",
+  "schemat": "TO-paczka/2",
   "protokol": "PYT/1.0",
-  "sol": "base64 (16 B)",
-  "iv": "base64 (12 B)",
-  "iteracje": 150000,
-  "skrot": "base64 (SHA-256 plaintextu)",
-  "dane": "base64 (AES-GCM ciphertext)"
+  "kodowanie": "b64x1",
+  "skrot": "FNV-1a 32 z bajtów plaintextu (8 znaków hex)",
+  "dane": "base64url (UTF-8 JSON ⊕ strumień maski)"
 }
 ```
+
+| Pole | Zasady |
+| --- | --- |
+| `schemat` | dokładnie `"TO-paczka/2"`; inna wartość = odmowa odczytu z komunikatem |
+| `protokol` | wersja protokołu paczki, którą ukryto (`PYT/1.0`) |
+| `kodowanie` | `"b64x1"` — hak migracyjny: przyszłe warianty (np. `aes-gcm`) dochodzą tu, nie w nowym polu |
+| `skrot` | suma kontrolna FNV-1a 32 — wykrywa **urwanie przy kopiowaniu**, nie podmianę; to nie jest funkcja kryptograficzna |
+| `dane` | base64url bez dopełnienia `=` |
+
+**To nie jest szyfrowanie.** Przekształcenie jest odwracalne bez klucza przez
+każdego, kto przeczyta `app/kodowanie.js`; chroni przed przypadkowym wglądem
+(zerknięcie na ekran, przewinięcie wklejonego tekstu, paczka znaleziona
+w schowku albo w pliku), nie przed zdeterminowanym graczem. Dlatego w paczce nie
+wolno trzymać danych osobowych ani niczego, co nie może zostać upublicznione
+(ADR 0013). Aplikacja przyjmuje też **jawny JSON** paczki (§3.1) — odpowiedź
+modelu jest jawna, ukrywa ją dopiero aplikacja po walidacji.
+
 
 ## 4. Kategorie wiekowe i wymagania trudności
 
@@ -281,6 +297,11 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
   Paczka użytkownika w `localStorage` nie może przestać działać (ADR 0010 pkt 6).
 - Zmiana kosmetyczna szablonu promptu (bez zmiany schematu) = podbicie łatki
   (`PYT/1.0.1`) w `SZABLON_WERSJA` i wpis w `docs/PROJECT_HISTORY.md`.
+- **Kontener ≠ paczka.** Zmiana kontenera (`TO-paczka/1` → `TO-paczka/2`,
+  2026-09-05, ADR 0007) nie podbija wersji PYT, bo schemat paczki (§3.1/§3.2)
+  się nie zmienił, a aplikacja nie była opublikowana — nie istnieje paczka
+  użytkownika do zmigrowania. Po pierwszej publikacji Pages (M8) każda zmiana
+  kontenera wymaga migratora (`app/migracje.js`) i wpisu tutaj.
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 

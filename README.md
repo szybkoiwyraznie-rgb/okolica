@@ -7,8 +7,10 @@ stacji, mierząc czas i zadając pytania o **tę konkretną okolicę**.
 
 Pytania nie są wbudowane w aplikację: generuje je model AI (Meta AI, ChatGPT,
 dowolny inny) na podstawie promptu, który aplikacja sama układa, a odpowiedź
-wkleja się z powrotem. Aplikacja waliduje schemat i **zaszyfrowuje** paczkę,
-żeby gracze nie podejrzeli pytań przed dojściem do stacji.
+wkleja się z powrotem. Aplikacja waliduje schemat i **ukrywa** paczkę (obfuskacja
+bez klucza, kontener `TO-paczka/2` — nieczytelna przy kopiowaniu, ale **nie
+zaszyfrowana**; ADR 0007), żeby gracze nie podejrzeli pytań przed dojściem do
+stacji.
 
 - **Zero zależności i zero builda** — vanilla HTML + JS (ESM) + CSS (ADR 0001).
 - **Mobile-first** — gra się na telefonie, w Chrome, palcem (ADR 0011).

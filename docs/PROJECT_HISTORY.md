@@ -61,6 +61,31 @@ brak. Z archiwum wzorca wczytano: `AGENTS.md` (286 linii), `docs/setup/ENVIRONME
 - Zmiany reguł trwałych w tej sesji: `LESSONS` L7–L9, `PROTOKOL` §3.2 i §6
   (E10 — zarezerwowane TLD; E14 — heurystyka w czterech krokach z nazwami list
   z kodu), ADR 0003 pkt 5 (zoom przeglądowy vs zoom uliczny trybu).
+- **Decyzje właściciela (2026-09-05, po przeglądzie M0)** — rozstrzygnięte trzy
+  ADR-y proponowane i jedna sprawa porządkowa:
+  - **ADR 0003 zaakceptowany**: podkład domyślny = OSM Standard (OpenTopoMap
+    i Esri World Imagery zostają warstwami opcjonalnymi).
+  - **ADR 0009 zaakceptowany**: „na razie hot-seat" — jedno urządzenie, bez
+    synchronizacji; gra na wielu urządzeniach zostaje w `BACKLOG` B1.
+  - **ADR 0007 przepisany PRZED akceptacją** (dozwolone dla statusu
+    *Proponowana*, `LESSONS` L8) i zaakceptowany: właściciel wybrał „proste
+    kodowanie bez klucza — nieczytelne na pierwszy rzut oka przy kopiowaniu,
+    a nie zabezpieczone przed odszyfrowaniem". Zamiast PBKDF2 + AES-GCM jest
+    `app/kodowanie.js` (XOR ze strumieniem z stałego ziarna → base64url,
+    kontener `TO-paczka/2`, suma kontrolna FNV-1a), a `kod gry` zostaje
+    identyfikatorem rozgrywki, nie kluczem. Plik ADR zmienił też nazwę
+    (`0007-ukrywanie-paczki-obfuskacja-bez-klucza.md`). Prawdziwe szyfrowanie:
+    `BACKLOG` B16. W dokumentacji i w UI obowiązuje słowo „ukryte", nie
+    „zaszyfrowane" (ADR 0007 pkt 5).
+  - **`AME-main.zip` usunięty** z korzenia (`git rm`) — wzorce organizacyjne są
+    przeniesione, plik zostaje w historii git.
+  - Zmiana kontenera `TO-paczka/1` → `/2` **nie podbiła** wersji protokołu
+    (schemat paczki bez zmian, aplikacja nieopublikowana) — reguła zapisana
+    w `PROTOKOL` §7.
+  - Poprawki terminologiczne w **zaakceptowanych** ADR 0001 i 0006 (odsyłacz
+    „krypto" → „ukrywanie paczki"): korekta odsyłaczy, nie zmiana decyzji —
+    decyzji w zaakceptowanym ADR nie ruszamy, zastępuje ją nowy ADR
+    (`LESSONS` L8).
 
 **Fakty operacyjne do pamiętania:**
 

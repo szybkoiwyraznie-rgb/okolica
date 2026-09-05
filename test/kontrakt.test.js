@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import { SZABLON_PROMPTU, WERSJA_PROTOKOLU } from '../app/protokol.js';
 import { PODKLADY, TEMATY, WIEK } from '../app/konfig.js';
+import { KODOWANIE, SCHEMAT_KONTENERA } from '../app/kodowanie.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const czytaj = (sciezka) => readFileSync(join(ROOT, sciezka), 'utf8');
@@ -227,4 +228,48 @@ test('kontrakt: LESSONS ma ciągłą numerację i wymagany format', () => {
 test('kontrakt: AGENTS.md nie obiecuje lektury pliku, którego nie ma w §0', () => {
   assert.ok(AGENTS.includes('docs/PROTOKOL.md') && AGENTS.includes('docs/setup/ENVIRONMENT.md'));
   assert.ok(AGENTS.includes('40 tys. tokenów'), 'budżet lektury startowej musi być jawny');
+});
+
+/* ------------------------------- decyzje: ADR ↔ rejestr ↔ kod */
+
+test('kontrakt: status w rejestrze ADR jest zgodny ze statusem w pliku ADR', () => {
+  const rejestr = czytaj('docs/decisions/README.md');
+  const wiersze = [...rejestr.matchAll(/^\| \[(\d{4})\]\(([^)]+)\) \| ([^|]+) \| ([^|]+) \|$/gm)];
+  assert.ok(wiersze.length >= 13, `rejestr ma ${wiersze.length} wierszy`);
+  for (const [, numer, plik, tytul, statusRejestru] of wiersze) {
+    const tresc = czytaj(`docs/decisions/${plik}`);
+    const m = tresc.match(/^- Status: (\w+)/m);
+    assert.ok(m, `${plik}: brak linii „- Status:"`);
+    assert.equal(m[1], statusRejestru.trim(), `ADR ${numer}: status w pliku („${m[1]}") ≠ status w rejestrze („${statusRejestru.trim()}")`);
+    assert.ok(tresc.split('\n')[0].startsWith(`# ${numer} —`), `${plik}: tytuł nie zaczyna się od numeru ADR`);
+  }
+});
+
+test('kontrakt: kontener paczki jest opisany w PROTOKOL §3.3 tak jak w app/kodowanie.js', () => {
+  assert.ok(PROTOKOL.includes(`"${SCHEMAT_KONTENERA}"`), 'w protokole nie ma schematu kontenera z kodu');
+  assert.ok(PROTOKOL.includes(`"${KODOWANIE}"`), 'w protokole nie ma nazwy kodowania z kodu');
+  const sekcja = PROTOKOL.slice(PROTOKOL.indexOf('### 3.3'), PROTOKOL.indexOf('## 4.'));
+  for (const pole of ['schemat', 'protokol', 'kodowanie', 'skrot', 'dane']) {
+    assert.ok(sekcja.includes(pole), `§3.3 nie opisuje pola „${pole}"`);
+  }
+  assert.ok(sekcja.includes('To nie jest szyfrowanie'), '§3.3 musi mówić wprost, że to nie szyfrowanie (ADR 0007 pkt 5)');
+  for (const poleZSzyfrowania of ['"sol"', '"iv"', '"iteracje"']) {
+    assert.ok(!sekcja.includes(poleZSzyfrowania), `§3.3 wciąż opisuje pole ${poleZSzyfrowania} z odrzuconego wariantu AES-GCM`);
+  }
+});
+
+test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
+  assert.ok(!existsSync(join(ROOT, 'app/krypto.js')), 'moduł krypto.js nie istnieje po decyzji z ADR 0007');
+  for (const plik of ['docs/ARCHITECTURE.md', 'docs/ROADMAP.md', 'docs/setup/ENVIRONMENT.md', 'AGENTS.md', 'README.md']) {
+    const tresc = czytaj(plik);
+    assert.ok(!/app\/krypto\.js|krypto\.zaszyfruj|krypto\.odszyfruj/.test(tresc), `${plik}: odniesienie do nieistniejącego modułu krypto.js`);
+    assert.ok(!/PBKDF2|AES-GCM/.test(tresc), `${plik}: obiecuje szyfrowanie, którego w kodzie nie ma (BACKLOG B16)`);
+  }
+  assert.ok(README.includes('nie\nzaszyfrowana') || README.includes('nie zaszyfrowana'), 'README musi mówić wprost, że paczka nie jest zaszyfrowana');
+  assert.ok(INDEX.includes('nie jest zaszyfrowany'), 'ekran wklejania musi mówić wprost, że tekst nie jest zaszyfrowany');
+  assert.ok(INDEX.includes('identyfikator rozgrywki'), 'kod gry musi być opisany jako identyfikator, nie klucz (ADR 0007 pkt 4)');
+});
+
+test('kontrakt: AME-main.zip nie wrócił do korzenia (decyzja właściciela 2026-09-05)', () => {
+  assert.ok(!existsSync(join(ROOT, 'AME-main.zip')), 'wzorce organizacyjne są przeniesione — archiwum AME zostaje w historii git');
 });

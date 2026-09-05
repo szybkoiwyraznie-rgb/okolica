@@ -44,9 +44,11 @@ pliki, GitHub.
      proponuje paczkę dla okolicy przed generowaniem nowej,
    - dostęp z aplikacji przez `fetch` do `raw.githubusercontent.com`/Pages —
      CORS działa dla obu, bez klucza,
-   - paczka publiczna jest **odszyfrowywana kluczem publicznym repozytorium**
-     (np. `kod = nazwa paczki`), bo jej treść i tak ma być jawna — szyfrowanie
-     służy wtedy tylko spójności formatu.
+   - paczka publiczna jest **jawna z założenia**: kontener `TO-paczka/2`
+     (ADR 0007) to obfuskacja bez klucza, więc opublikowanie paczki =
+     opublikowanie jej treści. Dlatego do paczek współdzielonych nie wolno
+     wkładać danych osobowych ani niczego, co nie może być publiczne (ADR 0013),
+     a warunkiem publikacji jest przegląd źródeł (ADR 0008 pkt 6).
 5. **Wynik gry jest eksportowalny** (podsumowanie jako tekst/obraz do
    udostępnienia) i nie wymaga konta ani serwera.
 6. **Migracje są obowiązkowe przy zmianie schematu**: każdy klucz ma pole
@@ -72,4 +74,4 @@ pliki, GitHub.
 ## Powiązania
 
 0001 (bez backendu), 0005 (cache sieci), 0006 (pętla treści), 0007 (kontener
-i szyfrowanie), 0008 (przegląd źródeł), 0013 (prywatność geohashu).
+i ukrywanie paczki), 0008 (przegląd źródeł), 0013 (prywatność geohashu).

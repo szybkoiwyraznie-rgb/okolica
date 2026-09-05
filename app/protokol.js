@@ -21,7 +21,9 @@ export const WERSJA_PROTOKOLU = 'PYT/1.0';
 export const SZABLON_WERSJA = 'PYT/1.0.0';
 
 /** Schemat kontenera zaszyfrowanego (ADR 0007 pkt 3). */
-export const SCHEMAT_KONTENERA = 'TO-paczka/1';
+// Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
+// protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
+export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js';
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.

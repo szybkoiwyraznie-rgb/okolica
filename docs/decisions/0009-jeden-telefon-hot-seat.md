@@ -1,6 +1,7 @@
 # 0009 — Model rozgrywki wieloosobowej: jeden telefon (hot-seat), bez synchronizacji urządzeń
 
-- Status: Proponowana (do potwierdzenia: czy docelowo ma być gra na wielu telefonach)
+- Status: Zaakceptowana (2026-09-05 — właściciel: „na razie hot-seat"; gra na wielu
+  urządzeniach zostaje odłożona w `docs/BACKLOG.md` B1 i wymaga nowego ADR)
 - Data: 2026-09-05
 
 ## Kontekst

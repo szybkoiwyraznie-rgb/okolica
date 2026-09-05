@@ -21,7 +21,7 @@ większy payload na łączu mobilnym i konieczność aktualizacji zabezpieczeń.
 3. **Zero kroku budowania aplikacji.** Testy i narzędzia walidacyjne chodzą na
    `node --test` (Node ≥ 20) i czystych skryptach `.mjs` w `tools/`.
 4. Logika dzieli się na **czyste funkcje** (geodezja, projekcja, wybór stacji,
-   walidacja paczki, krypto, punktacja) — testowalne w Node bez DOM i bez sieci
+   walidacja paczki, ukrywanie paczki, punktacja) — testowalne w Node bez DOM i bez sieci
    — oraz **warstwę DOM** (`app/ui.js`, `app/mapa.js`), która jest cienka.
 5. Moduły w `app/` używają wyłącznie API przeglądarki i standardu
    (`globalThis.crypto`, `fetch`, `localStorage`, `navigator.geolocation`,

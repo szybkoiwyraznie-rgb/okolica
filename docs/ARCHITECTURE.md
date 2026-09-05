@@ -25,8 +25,9 @@ app/
                               wyrównujący, ziarno i RNG deterministyczny (czyste)
   protokol.js               — SZABLON_PROMPTU, zbudujPrompt(), walidujPaczke(),
                               TOKENY_MIEJSCA, kody usterek E01–E20 (czyste)
-  krypto.js                 — Web Crypto: PBKDF2 → AES-GCM, kontener TO-paczka/1,
-                              skrót SHA-256 (czyste, async)
+  kodowanie.js              — ukrywanie paczki: XOR ze strumieniem z stałego ziarna
+                              + base64url, kontener TO-paczka/2, suma FNV-1a
+                              (czyste, synchroniczne, bez WebCrypto — ADR 0007)
   rozgrywka.js              — stan gry: kolejki graczy, odcinki i czasy, odpowiedzi,
                               punktacja, dziennik (czyste, zegar wstrzykiwany)
   trwalosc.js               — localStorage: klucze, budżet rozmiaru, migracje,
@@ -54,7 +55,7 @@ docs/                       — protokół, ADR, plany, handoffy (patrz AGENTS.m
 Wszystko, co da się policzyć, jest **czystą funkcją** w module bez DOM i bez
 `node:*` (LESSONS L6): geodezja, projekcja, siatka kafelków, budowa zapytania
 Overpass, graf i Dijkstra, wybór stacji, budowa promptu, walidacja paczki,
-krypto, punktacja, migracje stanu. Warstwa DOM (`mapa.js`, `ui.js`) jest cienka:
+ukrywanie paczki, punktacja, migracje stanu. Warstwa DOM (`mapa.js`, `ui.js`) jest cienka:
 pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 (`performance.now` / `mulberry32(ziarno)`), nie czytane z globali w środku logiki.
 
@@ -73,7 +74,8 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 6. Organizator ↔ model AI (poza systemem).
 7. Wklejona odpowiedź → `protokol.walidujPaczke()` → usterki (z przyciskiem
    „skopiuj poprawkę") albo przyjęcie.
-8. `krypto.zaszyfrujPaczke(json, kodGry)` → kontener → `trwalosc.zapiszPaczke()`.
+8. `kodowanie.zapakujPaczke(paczka, WERSJA_PROTOKOLU)` → kontener `TO-paczka/2`
+   → `trwalosc.zapiszPaczke()`.
 
 ### B. Rozgrywka
 
@@ -83,8 +85,8 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
    z `performance.now()`).
 3. `pozycja.js` strumieniuje fixy → `czyDotarl()` (próg `max(25 m, 1.2×accuracy)`,
    dwa kolejne fixy) → `rozgrywka.zakonczOdcinek()`.
-4. `krypto.odszyfrujPytanie(paczka, kodGry, stacja)` — **w chwili dojścia**,
-   nie na starcie (ADR 0007 pkt 4).
+4. `kodowanie.odpakujPaczke(kontener)` → pytanie dla stacji **odsłaniane w chwili
+   dojścia**, nie na starcie (ADR 0007 pkt 6).
 5. Odpowiedź → punkty → `rozgrywka.nastepnyGracz()` → ekran „kto idzie dalej".
 6. Koniec → podsumowanie (czasy, punkty, sprawiedliwość trasy, źródła pytań)
    → eksport wyniku (ADR 0010 pkt 5).
@@ -105,8 +107,9 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 - **Wybór stacji**: greedy po `|d_sieci − r|` z separacją kątową ≥ `0.7×360/N`
   i sieciową ≥ `0.5×r`, potem pass zamian parami minimalizujący odchylenie
   standardowe `d_sieci` (ADR 0005 pkt 5). Deterministyczny pod ziarnem.
-- **Krypto**: PBKDF2-SHA256 (150 000 iteracji, sól 16 B) → AES-GCM 256
-  (IV 12 B) → base64 → kontener `TO-paczka/1` + `skrot` (ADR 0007).
+- **Ukrywanie paczki**: obfuskacja bez klucza — UTF-8 JSON ⊕ strumień bajtów
+  z stałego ziarna → base64url → kontener `TO-paczka/2` + suma kontrolna FNV-1a
+  (ADR 0007). To bariera przed przypadkowym wglądem, **nie szyfrowanie**.
 
 ## Stan i trwałość
 
