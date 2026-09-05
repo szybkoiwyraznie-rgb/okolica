@@ -33,9 +33,9 @@ SVG z podkładem rastrowym bez klucza API (OSM Standard, OpenTopoMap, Esri World
 Imagery albo podkład wyłączony), gestami palca (drag + pinch), przyciskami
 ＋ − ◎, markerem pozycji z kołem dokładności, przerywanym okręgiem promienia gry,
 numerowanymi pinezkami stacji, paskiem skali i zawsze widoczną atrybucją
-dostawcy. Do zamknięcia kamienia brakuje potwierdzenia na żywo, że podkład jest
-widoczny na telefonie (`docs/WORKFLOW.md` §4.1) — agent nie ma przeglądarki ani
-sieci do kafelków.
+dostawcy. Kamień zamknięty 2026-09-05: właściciel potwierdził w live preview,
+że podkład jest widoczny i czytelny, a atrybucja i przyciski są na miejscu
+(`docs/WORKFLOW.md` §4.1).
 
 **Ekranu gry jeszcze nie ma**: rozgrywka jest policzona i przetestowana, ale
 nieklikalna. Stacje z sieci dróg i placów (M4), pętla pytań z podglądem

@@ -230,11 +230,17 @@ z podkładem rastrowym bez klucza API i warstwami własnymi, sterowana palcem.
 dokumentacja), `03f2a56` (M2/G1 — plan), `59b5573` (M2/G2–G4 — moduł i testy),
 `e65f26b` (M2/G5 — wpięcie w UI), plus commit G6 (dokumentacja).
 
-**Czego kamień M2 jeszcze nie ma:** potwierdzenia na żywo, że podkład jest
-widoczny na telefonie i że drag oraz pinch działają palcem — procedura w
-`docs/WORKFLOW.md` §4.1, wykonuje właściciel (agent nie ma przeglądarki ani
-sieci do kafelków, LESSONS L3). Dopiero wtedy `ROADMAP` dostaje ✅.
+**Zamknięcie kamienia (tego samego dnia):** właściciel obejrzał mapę w live
+preview Areny (zrzut: Centrum Warszawy na ekranie „pozycja") i potwierdził
+kryterium wizualne — podkład OSM ładuje się i jest czytelny, pasek skali
+„100 m", atrybucja na miejscu, przyciski ＋ − ◎ w narożniku; przy odmowie zgody
+na geolokalizację ekran pokazał kod `P02` z podpowiedzią (ADR 0004 pkt 7).
+`ROADMAP` dostała ✅, a gesty drag/pinch zostają do obserwacji przy pierwszym
+teście terenowym (M4/M6). Commity tej sesji są wypchnięte, opis i tytuł PR #2
+zaktualizowane przez GraphQL (`updatePullRequest`).
 
-**Stan operacyjny:** w trakcie sesji uwierzytelnienie GitHub tymczasowo
-odmawiało (`Bad credentials`), więc część commitów czekała na `git push` —
-patrz `docs/setup/HANDOFF_2026-09-05-m2.md` §5.
+**Stan operacyjny:** w środku sesji uwierzytelnienie GitHub tymczasowo
+odmawiało (`Bad credentials`), więc commity od `cfa9fdb` wzwyż czekały lokalnie;
+po odświeżeniu tokena przez właściciela wszystko jest wypchnięte na
+`arena/01a07282-okolica` (21 commitów razem z M0), a opis i tytuł PR #2
+zaktualizowane.

@@ -86,7 +86,7 @@ prawdziwej paczce z fixture'a). Do M6 zostaje ekran gry (UI) i zapis stanu do
 zamknięciu przeglądarki; para `wczytajStan()` ↔ `JSON.stringify(stan)` jest już
 przetestowana).
 
-## M2 — Mapa — 🟡 KOD I TESTY GOTOWE, kryterium wizualne czeka na właściciela
+## M2 — Mapa — ✅ ZREALIZOWANE (2026-09-05, potwierdzenie wizualne właściciela)
 
 Renderer SVG (Web Mercator, pan/zoom/pinch/przyciski), warstwa kafelków
 (OSM Standard / OpenTopoMap / Esri World Imagery — bez kluczy API,
@@ -122,10 +122,16 @@ w live preview, atrybucja zawsze obecna.
       w live preview), `ASSETS` §1 (zapis poddomen `{s}` w kodzie),
       LESSONS **L13**–**L15**, `PROJECT_HISTORY`, handoff.
 
-**Czego brakuje do ✅:** potwierdzenia właściciela, że podkład jest widoczny
-w live preview na 360 px i że drag oraz pinch działają palcem
-(`docs/WORKFLOW.md` §4.1). Agent nie ma przeglądarki ani sieci do kafelków
-(LESSONS L3), więc tego kryterium nie może sprawdzić sam.
+**Potwierdzenie wizualne właściciela (2026-09-05, `WORKFLOW` §4.1):** w live
+preview Areny podkład OSM Standard ładuje się i jest czytelny, pasek skali
+pokazuje „100 m", atrybucja `© OpenStreetMap contributors (ODbL)` jest na
+miejscu, przyciski ＋ − ◎ siedzą w narożniku i nie zasłaniają mapy; przy
+odmowie zgody na geolokalizację ekran pokazuje kod `P02` z podpowiedzią, jak
+zezwolić albo przejść na tryb ręczny — dokładnie tak, jak chce ADR 0004 pkt 7.
+Zrzut właściciela (Centrum Warszawy, ekran „pozycja") jest dowodem zamknięcia
+kryterium; gesty drag/pinch do obejrzenia przy pierwszej grze w terenie (M4/M6).
+Agent nie ma przeglądarki ani sieci do kafelków (LESSONS L3), więc sam tego
+kryterium sprawdzić nie mógł.
 
 ## M3 — Ekran konfiguracji i geolokalizacja na żywo
 
