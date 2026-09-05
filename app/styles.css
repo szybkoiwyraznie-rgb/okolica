@@ -1,0 +1,280 @@
+/* styles.css — Tajemnicza Okolica
+ *
+ * Mobile-first (ADR 0011): projekt od 360 × 640 px w górę, cele dotykowe
+ * ≥ 44 px, motyw jasny domyślny w grze (czytelność w słońcu), ciemny przez
+ * html[data-motyw="ciemny"]. Zero webfontów i zero zasobów z CDN.
+ * Kolory w tokenach: zmiana palety nie dotyka reguł poniżej.
+ */
+
+:root {
+  --tlo: #f6f2e9;
+  --tlo-karta: #fffdf8;
+  --tlo-pole: #ffffff;
+  --tekst: #1d2321;
+  --tekst-slaby: #5c6663;
+  --linia: #d9d2c3;
+  --akcent: #2f6f4f;
+  --akcent-tekst: #ffffff;
+  --akcent-slaby: #e2eee6;
+  --ostrzezenie: #b4531f;
+  --blad: #a52a2a;
+  --blad-tlo: #fbeaea;
+  --ok: #2f6f4f;
+  --ok-tlo: #e6f2ea;
+  --promien: 14px;
+  --cel: 44px;
+  --odstep: 14px;
+}
+
+html[data-motyw='ciemny'] {
+  --tlo: #14181a;
+  --tlo-karta: #1c2225;
+  --tlo-pole: #232a2d;
+  --tekst: #eef2f0;
+  --tekst-slaby: #a8b3af;
+  --linia: #384246;
+  --akcent: #7fd6a4;
+  --akcent-tekst: #10241a;
+  --akcent-slaby: #22362c;
+  --ostrzezenie: #f0a868;
+  --blad: #ff9d9d;
+  --blad-tlo: #33201f;
+  --ok: #86dcab;
+  --ok-tlo: #1d2f25;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--tlo);
+  color: var(--tekst);
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* --- nagłówek --- */
+.gora {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: calc(10px + env(safe-area-inset-top, 0)) var(--odstep) 10px;
+  border-bottom: 1px solid var(--linia);
+  background: var(--tlo-karta);
+  position: sticky;
+  top: 0;
+  z-index: 5;
+}
+
+.tytul h1 { margin: 0; font-size: 20px; letter-spacing: 0.2px; }
+.tytul p { margin: 0; color: var(--tekst-slaby); font-size: 13px; }
+.akcje { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* --- pasek kroków --- */
+.kroki ol {
+  display: flex;
+  gap: 6px;
+  margin: 0;
+  padding: 8px var(--odstep);
+  list-style: none;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: var(--tlo-karta);
+  border-bottom: 1px solid var(--linia);
+}
+.kroki li {
+  flex: 0 0 auto;
+  font-size: 12px;
+  padding: 6px 10px;
+  border: 1px solid var(--linia);
+  border-radius: 999px;
+  color: var(--tekst-slaby);
+  white-space: nowrap;
+}
+.kroki li.aktywny { background: var(--akcent); border-color: var(--akcent); color: var(--akcent-tekst); font-weight: 600; }
+.kroki li.zrobione { background: var(--akcent-slaby); border-color: var(--akcent); color: var(--tekst); }
+
+/* --- układ --- */
+.tresc { flex: 1 1 auto; padding: var(--odstep); padding-bottom: 24px; }
+.ekran { max-width: 720px; margin: 0 auto; }
+.ekran h2 { margin: 4px 0 12px; font-size: 22px; }
+
+.siatka { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 380px) { .siatka { grid-template-columns: 1fr; } }
+@media (min-width: 900px) { .siatka { grid-template-columns: repeat(4, 1fr); } }
+
+.wiersz { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
+.przyciski-dolu { margin-top: 18px; justify-content: space-between; }
+
+/* --- pola formularza --- */
+.pole { display: block; margin: 0 0 14px; border: 0; padding: 0; }
+.pole > span, .pole legend {
+  display: block;
+  font-size: 14px;
+  color: var(--tekst-slaby);
+  margin-bottom: 6px;
+  padding: 0;
+}
+fieldset.pole { border-top: 1px solid var(--linia); padding-top: 12px; }
+
+input[type='number'], input[type='text'], select, textarea {
+  width: 100%;
+  min-height: var(--cel);
+  padding: 10px 12px;
+  font-size: 17px;
+  font-family: inherit;
+  color: var(--tekst);
+  background: var(--tlo-pole);
+  border: 1px solid var(--linia);
+  border-radius: 10px;
+  -webkit-appearance: none;
+  appearance: none;
+}
+select { background-image: linear-gradient(45deg, transparent 50%, var(--tekst-slaby) 50%), linear-gradient(135deg, var(--tekst-slaby) 50%, transparent 50%); background-position: calc(100% - 18px) 55%, calc(100% - 13px) 55%; background-size: 5px 5px, 5px 5px; background-repeat: no-repeat; padding-right: 34px; }
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible {
+  outline: 3px solid var(--akcent);
+  outline-offset: 1px;
+}
+
+.pole-tekstowe { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 14px; line-height: 1.4; resize: vertical; }
+
+.sprawdz { display: flex; gap: 10px; align-items: flex-start; }
+.sprawdz input { width: 24px; height: 24px; min-height: 24px; margin-top: 2px; flex: 0 0 auto; }
+.sprawdz span { font-size: 15px; color: var(--tekst); }
+
+/* --- przyciski --- */
+.przycisk {
+  min-height: var(--cel);
+  min-width: var(--cel);
+  padding: 12px 16px;
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--tekst);
+  background: var(--tlo-karta);
+  border: 1px solid var(--linia);
+  border-radius: 12px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.przycisk:active { transform: translateY(1px); }
+.przycisk[disabled] { opacity: 0.45; cursor: not-allowed; }
+.przycisk-glowny { background: var(--akcent); border-color: var(--akcent); color: var(--akcent-tekst); flex: 1 1 auto; }
+.przycisk-maly { min-height: 38px; padding: 8px 12px; font-size: 14px; font-weight: 500; }
+.przycisk[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
+.przycisk-plik { position: relative; overflow: hidden; display: inline-flex; align-items: center; }
+.przycisk-plik input[type='file'] { position: absolute; inset: 0; opacity: 0; font-size: 200px; cursor: pointer; }
+
+/* --- segmenty (tryb, wiek) i chipy (tematy) --- */
+.segment { display: flex; flex-wrap: wrap; gap: 8px; }
+.segment label {
+  flex: 1 1 30%;
+  min-height: var(--cel);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid var(--linia);
+  border-radius: 12px;
+  background: var(--tlo-pole);
+  cursor: pointer;
+  font-size: 15px;
+}
+.segment label span { font-size: 12px; color: var(--tekst-slaby); }
+.segment input { position: absolute; opacity: 0; pointer-events: none; }
+.segment label:has(input:checked) { border-color: var(--akcent); background: var(--akcent-slaby); font-weight: 600; }
+.segment label:has(input:focus-visible) { outline: 3px solid var(--akcent); outline-offset: 1px; }
+
+.chipy { display: flex; flex-wrap: wrap; gap: 8px; }
+.chipy label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 8px 12px;
+  border: 1px solid var(--linia);
+  border-radius: 999px;
+  background: var(--tlo-pole);
+  font-size: 15px;
+  cursor: pointer;
+}
+.chipy input { width: 20px; height: 20px; }
+.chipy label:has(input:checked) { border-color: var(--akcent); background: var(--akcent-slaby); font-weight: 600; }
+
+/* --- karty, listy, komunikaty --- */
+.karta {
+  background: var(--tlo-karta);
+  border: 1px solid var(--linia);
+  border-radius: var(--promien);
+  padding: 14px;
+  margin: 12px 0;
+}
+.karta .duzy { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
+.kod { margin: 6px 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; color: var(--tekst-slaby); word-break: break-all; }
+.badge { display: inline-block; margin: 6px 0; padding: 5px 10px; border-radius: 999px; background: var(--akcent-slaby); font-size: 13px; }
+.podpowiedz { margin: 6px 0; color: var(--tekst-slaby); font-size: 14px; }
+.instrukcja { padding-left: 20px; margin: 8px 0 12px; }
+.instrukcja li { margin: 4px 0; font-size: 16px; }
+
+.lista-imion { display: grid; gap: 8px; }
+.lista-imion input { min-height: 40px; }
+
+.lista-stacji { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 8px; }
+.lista-stacji li {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  background: var(--tlo-karta);
+  border: 1px solid var(--linia);
+  border-left: 5px solid var(--akcent);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.lista-stacji .numer { font-size: 28px; font-weight: 700; color: var(--akcent); min-width: 34px; }
+.lista-stacji .opis { font-size: 15px; }
+.lista-stacji .dystans { margin-left: auto; font-size: 14px; color: var(--tekst-slaby); white-space: nowrap; }
+
+.bledy { margin: 10px 0; padding: 12px; border-radius: 10px; background: var(--blad-tlo); color: var(--blad); font-size: 15px; }
+.usterki { margin: 8px 0; padding-left: 20px; }
+.usterki li { margin: 6px 0; font-size: 15px; }
+.usterki li code { background: var(--blad-tlo); color: var(--blad); padding: 1px 5px; border-radius: 5px; }
+
+#wynik-walidacji[data-stan='ok'] { border-color: var(--ok); background: var(--ok-tlo); }
+#wynik-walidacji[data-stan='blad'] { border-color: var(--blad); background: var(--blad-tlo); }
+
+.podsumowanie { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 10px 0; font-size: 15px; }
+.podsumowanie dt { color: var(--tekst-slaby); }
+.podsumowanie dd { margin: 0; }
+
+.baner {
+  padding: 12px var(--odstep);
+  background: var(--ostrzezenie);
+  color: #fff;
+  font-size: 15px;
+}
+
+/* --- stopka --- */
+.dol {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px var(--odstep);
+  border-top: 1px solid var(--linia);
+  background: var(--tlo-karta);
+  color: var(--tekst-slaby);
+  font-size: 12px;
+}
+.dol .separator { opacity: 0.5; }
+.dol code { font-size: 12px; }

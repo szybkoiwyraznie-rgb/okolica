@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tajemnicza Okolica — terenowa gra quizowa</title>
+  <meta name="description" content="Tajemnicza Okolica: gra terenowa na mapie. Aplikacja znajduje stacje w Twojej okolicy, prowadzi do nich graczy i zadaje pytania o to miejsce.">
+  <meta name="theme-color" content="#f6f2e9">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%232f6f4f'/%3E%3Cpath d='M22 10 L13 14 L10 23 L19 19 Z' fill='%23f6f2e9'/%3E%3Ccircle cx='16' cy='16' r='1.8' fill='%232f6f4f'/%3E%3C/svg%3E">
+  <script>
+    // Strażnik motywu: ustawia html[data-motyw] PRZED pierwszym malowaniem,
+    // żeby przeładowanie nie mignęło złym tłem (wzorzec z AME, ADR 0011).
+    try {
+      const zapisany = localStorage.getItem('okolica:motyw');
+      const systemowy = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'ciemny' : 'jasny';
+      document.documentElement.dataset.motyw = zapisany || systemowy;
+    } catch (e) { /* brak dostępu do pamięci — zostaje motyw z CSS */ }
+  </script>
+  <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
+       w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
+  <link rel="stylesheet" href="app/styles.css?v=m0-1">
+  <script type="module" src="app/app.js?v=m0-1"></script>
+</head>
+<body>
+  <div id="baner" class="baner" hidden></div>
+
+  <header class="gora">
+    <div class="tytul">
+      <h1>Tajemnicza Okolica</h1>
+      <p id="podtytul">gra terenowa w miejscu, w którym stoisz</p>
+    </div>
+    <div class="akcje">
+      <button id="przycisk-motyw" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny">☾ motyw</button>
+      <button id="przycisk-test" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Tryb testowy: ręczne współrzędne zamiast GPS">⚙ tryb testowy</button>
+    </div>
+  </header>
+
+  <nav id="kroki" class="kroki" aria-label="Kroki przygotowania gry">
+    <ol>
+      <li data-krok="setup" class="aktywny">1 · ustawienia</li>
+      <li data-krok="pozycja">2 · pozycja</li>
+      <li data-krok="stacje">3 · stacje</li>
+      <li data-krok="prompt">4 · pytania</li>
+      <li data-krok="paczka">5 · paczka</li>
+    </ol>
+  </nav>
+
+  <main class="tresc">
+
+    <!-- KROK 1: konfiguracja rozgrywki -->
+    <section id="ekran-setup" class="ekran" aria-labelledby="tytul-setup">
+      <h2 id="tytul-setup">Ustawienia gry</h2>
+
+      <fieldset class="pole">
+        <legend>Sposób poruszania się</legend>
+        <div id="lista-trybow" class="segment"></div>
+        <p id="opis-trybu" class="podpowiedz"></p>
+      </fieldset>
+
+      <div class="siatka">
+        <label class="pole">
+          <span>Promień gry (m)</span>
+          <input id="setup-promien" type="number" min="200" max="50000" step="100" inputmode="numeric">
+        </label>
+        <label class="pole">
+          <span>Liczba stacji</span>
+          <input id="setup-stacje" type="number" min="3" max="12" step="1" inputmode="numeric">
+        </label>
+        <label class="pole">
+          <span>Pytań na stację</span>
+          <input id="setup-pytania" type="number" min="1" max="3" step="1" inputmode="numeric">
+        </label>
+        <label class="pole">
+          <span>Liczba graczy</span>
+          <input id="setup-gracze" type="number" min="1" max="8" step="1" inputmode="numeric">
+        </label>
+      </div>
+
+      <fieldset class="pole" id="pole-imiona">
+        <legend>Gracze</legend>
+        <div id="lista-imion" class="lista-imion"></div>
+      </fieldset>
+
+      <fieldset class="pole">
+        <legend>Kategoria wiekowa (trudność pytań)</legend>
+        <div id="lista-wieku" class="segment"></div>
+      </fieldset>
+
+      <fieldset class="pole">
+        <legend>Tematy pytań</legend>
+        <div id="lista-tematow" class="chipy"></div>
+      </fieldset>
+
+      <div class="siatka">
+        <label class="pole">
+          <span>Kto odpowiada</span>
+          <select id="setup-wspolpraca"></select>
+        </label>
+        <label class="pole">
+          <span>Język pytań</span>
+          <select id="setup-jezyk"></select>
+        </label>
+        <label class="pole">
+          <span>Podkład mapy</span>
+          <select id="setup-podklad"></select>
+        </label>
+        <label class="pole">
+          <span>Kara za „jestem na miejscu" (s)</span>
+          <input id="setup-kara" type="number" min="0" max="600" step="15" inputmode="numeric">
+        </label>
+      </div>
+
+      <div class="pole">
+        <label for="setup-kod"><span>Kod gry (ukrywa pytania przed graczami)</span></label>
+        <div class="wiersz">
+          <input id="setup-kod" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="np. K7M2QP">
+          <button id="przycisk-kod" class="przycisk" type="button" title="Zaproponuj losowy kod">🎲 zaproponuj</button>
+        </div>
+        <p class="podpowiedz">Zostaw puste, jeśli gracie bez ukrywania pytań. Kodu nie da się odzyskać — patrz ADR 0007.</p>
+      </div>
+
+      <label class="pole sprawdz"><input id="setup-geokodacja" type="checkbox"> <span>Pobierz nazwę miejsca (dzielnica, miasto) — wysyła przybliżoną pozycję do Overpass</span></label>
+
+      <p id="bledy-setup" class="bledy" role="alert" hidden></p>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-dalej-pozycja" class="przycisk przycisk-glowny" type="button">📍 Dalej: moja pozycja</button>
+      </div>
+    </section>
+
+    <!-- KROK 2: pozycja -->
+    <section id="ekran-pozycja" class="ekran" hidden aria-labelledby="tytul-pozycja">
+      <h2 id="tytul-pozycja">Gdzie jesteś?</h2>
+      <p class="podpowiedz">Geolokalizacja działa tylko przez HTTPS (GitHub Pages) albo localhost i wymaga zgody.</p>
+      <div id="karta-pozycji" class="karta">
+        <p id="pozycja-status" class="duzy">Czekam na pozycję…</p>
+        <p id="pozycja-dokladnosc" class="badge">dokładność: —</p>
+        <p id="pozycja-wspolrzedne" class="kod"></p>
+        <p id="pozycja-miejsce" class="podpowiedz"></p>
+      </div>
+      <div class="wiersz">
+        <button id="przycisk-gps" class="przycisk przycisk-glowny" type="button">🛰 Włącz GPS</button>
+        <button id="przycisk-recznie" class="przycisk" type="button">✎ Wpisz ręcznie</button>
+      </div>
+      <div id="reczne-wspolrzedne" class="karta" hidden>
+        <div class="siatka">
+          <label class="pole"><span>Szerokość (lat)</span><input id="setup-lat" type="number" step="0.00001" inputmode="decimal" placeholder="52.23178"></label>
+          <label class="pole"><span>Długość (lon)</span><input id="setup-lon" type="number" step="0.00001" inputmode="decimal" placeholder="21.01234"></label>
+        </div>
+        <button id="przycisk-ustaw-reczne" class="przycisk" type="button">Ustaw tę pozycję</button>
+      </div>
+      <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wstecz-setup" class="przycisk" type="button">← ustawienia</button>
+        <button id="przycisk-dalej-stacje" class="przycisk przycisk-glowny" type="button" disabled>Dalej: stacje →</button>
+      </div>
+    </section>
+
+    <!-- KROK 3: stacje -->
+    <section id="ekran-stacje" class="ekran" hidden aria-labelledby="tytul-stacje">
+      <h2 id="tytul-stacje">Stacje w Twojej okolicy</h2>
+      <p id="stacje-tryb" class="podpowiedz"></p>
+      <ol id="lista-stacji" class="lista-stacji"></ol>
+      <p id="stacje-sprawiedliwosc" class="badge"></p>
+      <div class="wiersz">
+        <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
+        <button id="przycisk-pierścien" class="przycisk" type="button" hidden>◎ Tryb uproszczony</button>
+      </div>
+      <p class="podpowiedz">Mapa i stacje z sieci dróg (Overpass) pojawią się w kamieniach M2 i M4 — patrz <code>docs/ROADMAP.md</code>.</p>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wstecz-pozycja" class="przycisk" type="button">← pozycja</button>
+        <button id="przycisk-dalej-prompt" class="przycisk przycisk-glowny" type="button">Dalej: pytania →</button>
+      </div>
+    </section>
+
+    <!-- KROK 4: prompt -->
+    <section id="ekran-prompt" class="ekran" hidden aria-labelledby="tytul-prompt">
+      <h2 id="tytul-prompt">Prompt dla modelu AI</h2>
+      <ol class="instrukcja">
+        <li>Skopiuj tekst poniżej.</li>
+        <li>Wklej go do modelu z włączonym wyszukiwaniem w internecie (Meta AI, ChatGPT, Gemini…).</li>
+        <li>Skopiuj odpowiedź modelu (blok JSON) i wróć tutaj do kroku 5.</li>
+      </ol>
+      <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
+      <p id="prompt-licznik" class="badge"></p>
+      <div class="wiersz">
+        <button id="przycisk-kopiuj-prompt" class="przycisk przycisk-glowny" type="button">⧉ Kopiuj prompt</button>
+        <button id="przycisk-pobierz-prompt" class="przycisk" type="button">⬇ Zapisz jako plik</button>
+      </div>
+      <p id="bledy-prompt" class="bledy" role="alert" hidden></p>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wstecz-stacje" class="przycisk" type="button">← stacje</button>
+        <button id="przycisk-dalej-paczka" class="przycisk przycisk-glowny" type="button">Dalej: wklej odpowiedź →</button>
+      </div>
+    </section>
+
+    <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
+    <section id="ekran-paczka" class="ekran" hidden aria-labelledby="tytul-paczka">
+      <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
+      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny. Po sprawdzeniu paczka zostanie zaszyfrowana (M5, ADR 0007).</p>
+      <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="10" placeholder="Wklej tutaj odpowiedź modelu (blok JSON)" aria-label="Odpowiedź modelu AI"></textarea>
+      <div class="wiersz">
+        <button id="przycisk-wklej" class="przycisk" type="button">📋 Wklej ze schowka</button>
+        <label class="przycisk przycisk-plik">⬆ Z pliku<input id="plik-odpowiedz" type="file" accept=".json,.txt,application/json,text/plain"></label>
+      </div>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wstecz-prompt" class="przycisk" type="button">← prompt</button>
+        <button id="przycisk-sprawdz" class="przycisk przycisk-glowny" type="button">✓ Sprawdź i przyjmij</button>
+      </div>
+      <div id="wynik-walidacji" class="karta" hidden>
+        <p id="wynik-naglowek" class="duzy"></p>
+        <ul id="wynik-usterki" class="usterki"></ul>
+        <dl id="wynik-podsumowanie" class="podsumowanie"></dl>
+        <button id="przycisk-poprawka" class="przycisk" type="button" hidden>⧉ Kopiuj poprawkę do modelu</button>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="dol">
+    <span id="status">M0 — fundament: setup, pozycja, prompt, walidacja paczki</span>
+    <span class="separator">·</span>
+    <span>protokół <span id="stopka-protokol">PYT/1.0</span></span>
+  </footer>
+</body>
+</html>
