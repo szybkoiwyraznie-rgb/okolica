@@ -127,7 +127,7 @@ test('fixture centrum: gęsta siatka z wszystkim, co wykluczamy', () => {
 
 test('fixture przedmieście: rzadka sieć, ślepe zaułki, prywatny dojazd', () => {
   const dane = czytajFixture('przedmiescie');
-  assert.equal(wayeZTagiem(dane, 'highway', 'residential').length, 8, 'główna + siedem zaułków');
+  assert.equal(wayeZTagiem(dane, 'highway', 'residential').length, 9, 'główna + osiem zaułków');
   assert.ok(wayeZTagiem(dane, 'highway', 'track').length >= 1, 'droga polna');
   const prywatne = wayeZTagiem(dane, 'access', 'private');
   assert.ok(prywatne.length >= 1, 'długi prywatny dojazd (kusi odległością, musi odpaść)');
@@ -645,4 +645,159 @@ test('kandydaci: POI bez sieci w zasięgu i brama prywatna — przypadki brzegow
   assert.equal(zBrama.liczniki.wykluczonychBariera >= 1, true, 'węzeł przy bramie wykluczony');
   assert.ok(!zBrama.kandydaci.some((k) => dystansM(k, start) < 1), 'przy samej bramie nikt nie stoi');
   assert.ok(zBrama.kandydaci.length > 2, 'reszta drogi zostaje');
+});
+
+/* ============================ I6: wybór stacji (pierścień, separacje, pass) */
+
+import { PIERSCIEN_WYBORU, miaraSprawiedliwosci, wybierzStacje } from '../app/stacje.js';
+
+const SCENARIUSZE = [
+  { nazwa: 'centrum', srodek: { lat: 52.2297, lon: 21.0122 }, R: 600, N: 5 },
+  { nazwa: 'przedmiescie', srodek: { lat: 52.1893, lon: 21.1635 }, R: 1000, N: 4 },
+  { nazwa: 'las', srodek: { lat: 52.3124, lon: 21.0437 }, R: 1500, N: 4 },
+];
+
+function pelnyWybor(scenariusz, ziarno = 'ziarno-testowe') {
+  const dane = parsujOdpowiedz(czytajFixture(scenariusz.nazwa));
+  const graf = budujGraf(dane, { tryb: 'piesza' });
+  const { kandydaci } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+  const wynik = wybierzStacje({
+    graf,
+    kandydaci,
+    srodek: scenariusz.srodek,
+    konfig: { liczbaStacji: scenariusz.N, promienM: scenariusz.R },
+    ziarno,
+  });
+  return { dane, graf, kandydaci, wynik };
+}
+
+for (const scenariusz of SCENARIUSZE) {
+  test(`wybór ${scenariusz.nazwa}: N stacji z sieci, sprawiedliwość ≤ 15% (kryterium ROADMAP M4)`, () => {
+    const { dane, wynik } = pelnyWybor(scenariusz);
+    const { stacje, macierz, sprawiedliwosc, usterki } = wynik;
+    assert.deepEqual(usterki, [], 'komplet stacji bez usterek');
+    assert.equal(stacje.length, scenariusz.N);
+    assert.ok(sprawiedliwosc.udzialOdchylenia <= 0.15,
+      `udział odchylenia ${(sprawiedliwosc.udzialOdchylenia * 100).toFixed(1)}% > 15% (d: ${stacje.map((s) => s.dystansSieciowyM)})`);
+
+    for (const s of stacje) {
+      assert.equal(s.zrodlo, 'siec');
+      assert.ok(Number.isFinite(s.dystansSieciowyM) && s.dystansSieciowyM > 0);
+      assert.ok(Number.isFinite(s.odlegloscM) && Number.isFinite(s.bearing));
+      assert.equal(s.id >= 1, true);
+      // KRYTERIUM: żadna stacja w budynku ani na terenie prywatnym/kolejowym
+      for (const budynek of dane.budynki) assert.equal(punktWPolygonie(s, budynek), false, `stacja ${s.id} w budynku`);
+      for (const strefa of dane.wykluczeniaObszarowe) assert.equal(punktWPolygonie(s, strefa), false, `stacja ${s.id} na terenie kolejowym`);
+      for (const droga of dane.drogi) {
+        if (droga.tags.access === 'private' || droga.tags.access === 'no') {
+          for (let i = 1; i < droga.punkty.length; i++) {
+            assert.ok(odlegloscM(s, droga.punkty[i]) > 15, `stacja ${s.id} w głębi prywatnej drogi`);
+          }
+        }
+      }
+      // ścieżka sugerowana: od startu do stacji
+      assert.ok(s.sciezkaPunkty.length >= 2, 'ścieżka ma co najmniej dwa punkty');
+      assert.ok(odlegloscM(s.sciezkaPunkty.at(-1), s) < 2, 'ścieżka kończy się w stacji');
+      assert.ok(odlegloscM(s.sciezkaPunkty[0], scenariusz.srodek) < 160, 'ścieżka zaczyna się przy pozycji startowej');
+    }
+
+    // separacje: kątowa ≥ 0.7×360/N i sieciowa ≥ 0.5r, para ≥ 0.3r (ADR 0005 pkt 5)
+    const r = scenariusz.R * PIERSCIEN_WYBORU.udzial;
+    const katMin = PIERSCIEN_WYBORU.separacjaKatowaUdzial * (360 / scenariusz.N);
+    for (let i = 0; i < stacje.length; i++) {
+      for (let j = i + 1; j < stacje.length; j++) {
+        let dk = Math.abs(stacje[i].kat - stacje[j].kat) % 360;
+        if (dk > 180) dk = 360 - dk;
+        assert.ok(dk >= katMin - 0.5, `separacja kątowa ${dk.toFixed(1)}° < ${katMin.toFixed(1)}° (${stacje[i].id}↔${stacje[j].id})`);
+        const dsiec = macierz[i][j];
+        assert.ok(dsiec === null || dsiec >= PIERSCIEN_WYBORU.separacjaSieciowaUdzial * r - 1,
+          `separacja sieciowa ${dsiec} < ${(PIERSCIEN_WYBORU.separacjaSieciowaUdzial * r).toFixed(0)} m`);
+        assert.ok(dsiec === null || dsiec >= PIERSCIEN_WYBORU.karaParaUdzial * r - 1,
+          `para ${stacje[i].id}↔${stacje[j].id} bliżej niż ${(PIERSCIEN_WYBORU.karaParaUdzial * r).toFixed(0)} m po passie`);
+      }
+    }
+
+    // macierz: symetryczna, zero na przekątnej, sieciowo ≥ prosta linia
+    for (let i = 0; i < macierz.length; i++) {
+      assert.equal(macierz[i][i], 0);
+      for (let j = 0; j < macierz.length; j++) {
+        assert.equal(macierz[i][j], macierz[j][i], 'macierz symetryczna');
+        if (macierz[i][j] !== null) {
+          assert.ok(macierz[i][j] >= odlegloscM(stacje[i], stacje[j]) - 2, 'sieciowy nie krótszy niż w linii prostej');
+        }
+      }
+    }
+  });
+}
+
+test('wybór: determinizm pod ziarnem — to samo ziarno ten sam układ, inne ziarno inny', () => {
+  const a = pelnyWybor(SCENARIUSZE[0], 'ziarno-A');
+  const a2 = pelnyWybor(SCENARIUSZE[0], 'ziarno-A');
+  const b = pelnyWybor(SCENARIUSZE[0], 'ziarno-B-inne');
+  assert.deepEqual(a.wynik.stacje, a2.wynik.stacje, 'identyczne ziarno → identyczny układ');
+  assert.deepEqual(a.wynik.macierz, a2.wynik.macierz);
+  const kluczeA = a.wynik.stacje.map((s) => `${s.lat},${s.lon}`).join('|');
+  const kluczeB = b.wynik.stacje.map((s) => `${s.lat},${s.lon}`).join('|');
+  assert.notEqual(kluczeA, kluczeB, 'inne ziarno → inny układ (szum ziarna ±2% r)');
+});
+
+test('wybór: za uboga sieć → mniej stacji z usterką S12, nie rzut', () => {
+  const dane = parsujOdpowiedz(czytajFixture('las'));
+  const graf = budujGraf(dane, { tryb: 'piesza' });
+  const { kandydaci } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+  const wynik = wybierzStacje({
+    graf, kandydaci,
+    srodek: { lat: 52.3124, lon: 21.0437 },
+    konfig: { liczbaStacji: 8, promienM: 400 }, // ciasny pierścień, dużo stacji
+    ziarno: 's12',
+  });
+  assert.ok(wynik.stacje.length >= 1 && wynik.stacje.length < 8, `częściowy wynik: ${wynik.stacje.length}`);
+  assert.equal(wynik.usterki[0].kod, 'S12');
+});
+
+test('wybór: start daleko od sieci → S13; garbage → TypeError/S09/S12', () => {
+  const dane = parsujOdpowiedz(czytajFixture('centrum'));
+  const graf = budujGraf(dane, { tryb: 'piesza' });
+  const { kandydaci } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+  const konfig = { liczbaStacji: 5, promienM: 600 };
+  assert.throws(
+    () => wybierzStacje({ graf, kandydaci, srodek: { lat: 52.9, lon: 21.9 }, konfig, ziarno: 1 }),
+    (e) => e.kod === 'S13',
+  );
+  assert.throws(() => wybierzStacje({ graf: { wezly: [] }, kandydaci, srodek: { lat: 52.23, lon: 21.01 }, konfig, ziarno: 1 }), (e) => e.kod === 'S09');
+  assert.throws(() => wybierzStacje({ graf, kandydaci: [], srodek: { lat: 52.23, lon: 21.01 }, konfig, ziarno: 1 }), (e) => e.kod === 'S12');
+  assert.throws(() => wybierzStacje({ graf, kandydaci, srodek: { lat: 52.23, lon: 21.01 }, konfig: { liczbaStacji: 0, promienM: 600 }, ziarno: 1 }), TypeError);
+  assert.throws(() => wybierzStacje({ graf, kandydaci, srodek: { lat: 52.23, lon: 21.01 }, konfig: { liczbaStacji: 5, promienM: -1 }, ziarno: 1 }), TypeError);
+  assert.throws(() => wybierzStacje({ graf, kandydaci, srodek: null, konfig, ziarno: 1 }), TypeError);
+});
+
+test('wybór samochodem: stacje to wyłącznie POI (parkingi i obiekty z dojazdem)', () => {
+  const dane = parsujOdpowiedz(czytajFixture('centrum'));
+  const graf = budujGraf(dane, { tryb: 'samochodowa' });
+  const { kandydaci } = kandydaciNaStacje(dane, graf, { tryb: 'samochodowa' });
+  const wynik = wybierzStacje({
+    graf, kandydaci,
+    srodek: { lat: 52.2297, lon: 21.0122 },
+    konfig: { liczbaStacji: 3, promienM: 600 },
+    ziarno: 'auto-1',
+  });
+  assert.ok(wynik.stacje.length >= 2);
+  for (const s of wynik.stacje) {
+    assert.equal(s.typKandydata, 'poi', 'samochód staje przy obiekcie, nie na jezdni');
+    for (const budynek of dane.budynki) assert.equal(punktWPolygonie(s, budynek), false);
+  }
+});
+
+test('miaraSprawiedliwosci: parametr pola — domyślne odlegloscM, sieciowe na żądanie', () => {
+  const stacje = [
+    { odlegloscM: 100, dystansSieciowyM: 400 },
+    { odlegloscM: 200, dystansSieciowyM: 400 },
+    { odlegloscM: 300, dystansSieciowyM: 800 },
+  ];
+  const prosta = miaraSprawiedliwosci(stacje);
+  assert.equal(prosta.sredniaM, 200, 'domyślnie linia prosta (dotychczasowe testy bez zmian)');
+  const sieciowa = miaraSprawiedliwosci(stacje, { pole: 'dystansSieciowyM' });
+  assert.equal(sieciowa.sredniaM, 533, 'średnia z dystansów sieciowych');
+  assert.equal(sieciowa.odchylenieM, 189, 'odchylenie liczone z pola sieciowego, nie z prostej');
+  assert.notEqual(sieciowa.udzialOdchylenia, prosta.udzialOdchylenia, 'inna miara dla innego pola');
 });

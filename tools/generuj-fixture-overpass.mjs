@@ -251,15 +251,18 @@ function generujPrzedmiescie() {
   }
   dodajWay(fixture, id.way(), glowna, { highway: 'residential', name: 'Ulica Główna', lit: 'yes', maxspeed: '30' });
 
-  // ślepe zaułki: cztery na wschód, trzy na zachód (kształt L)
-  const zaułkiWschod = [-450, -150, 150, 450];
+  // zaułki: pięć na wschód (w tym długa prostopadła — kąt ~90°), trzy na
+  // zachód (w tym długa na dy=0 — kąt ~270°). Bez nich przedmieście jest
+  // geometrycznie LINIOWE (kąty 0/180) i separacja kątowa ADR 0005 pkt 5
+  // nie miałaby z czego wybierać — tak wygląda prawdziwe skrzyżowanie osi.
+  const zaułkiWschod = [-450, -150, 0, 150, 450];
   const zaułkiZachod = [-300, 0, 300];
   const indeksGlowej = (dy) => Math.round(dy / 100) + 7;
   zaułkiWschod.forEach((dy, n) => {
     const start = glowna[indeksGlowej(dy)];
-    const dlugosc = 200 + Math.round(losuj() * 50);
+    const dlugosc = dy === 0 ? 600 : 200 + Math.round(losuj() * 50);
     const z = lamana([start, odsun(start, dlugosc * 0.7, 15), odsun(start, dlugosc, 40 - n * 20)], losuj, 2);
-    dodajWay(fixture, id.way(), z, { highway: 'residential', name: `Ulica Ślepa ${n + 1}` });
+    dodajWay(fixture, id.way(), z, { highway: 'residential', name: dy === 0 ? 'Ulica Wschodnia' : `Ulica Ślepa ${n + 1}` });
     // domy przy zaułku: dwa-trzy małe budynki po północnej stronie
     for (let h = 0; h < 2 + (n % 2); h++) {
       const przy = odsun(start, 40 + h * 70, 18);
@@ -268,10 +271,12 @@ function generujPrzedmiescie() {
   });
   zaułkiZachod.forEach((dy, n) => {
     const start = glowna[indeksGlowej(dy)];
-    const z = lamana([start, odsun(start, -140, -10), odsun(start, -190, 10)], losuj, 2);
-    dodajWay(fixture, id.way(), z, { highway: 'residential', name: `Ulica Zachodnia ${n + 1}` });
+    const z = dy === 0
+      ? lamana([start, odsun(start, -300, 10), odsun(start, -600, -10)], losuj, 2)
+      : lamana([start, odsun(start, -140, -10), odsun(start, -190, 10)], losuj, 2);
+    dodajWay(fixture, id.way(), z, { highway: 'residential', name: dy === 0 ? 'Ulica Zachodnia' : `Ulica Zachodnia ${n + 1}` });
     dodajWay(fixture, id.way(), prostokat(odsun(start, -60, 16), 10, 8), { building: 'house' });
-    if (n === 1) dodajWay(fixture, id.way(), prostokat(odsun(start, -130, -30), 12, 9), { building: 'garage' });
+    if (n === 1) dodajWay(fixture, id.way(), prostokat(odsun(start, -320, -34), 12, 9), { building: 'garage' });
   });
 
   // droga polna (track) na północny wschód
@@ -332,34 +337,39 @@ function generujLas() {
   }
   dodajWay(fixture, id.way(), główna, { highway: 'track', name: 'Droga Leśna Główna', surface: 'ground', tracktype: 'grade2' });
 
-  // przecznica N–S
+  // przecznica N–S — skrzyżowanie z główną przez WSPÓŁDZIELONY wierzchołek
+  // (główna[12] = x≈200); prawdziwy OSM tak właśnie łączy way'e na węzłach,
+  // a graf budujGraf spina po identycznych współrzędnych
+  const skrzyzowanie = główna[12];
   const przecznica = [];
   for (let k = -8; k <= 6; k++) {
-    przecznica.push(okraglij(odsun(odsun(SRODEK, 200, 0), (losuj() - 0.5) * 10, k * 100)));
+    przecznica.push(k === 0 ? skrzyzowanie : okraglij(odsun(skrzyzowanie, (losuj() - 0.5) * 10, k * 100)));
   }
   dodajWay(fixture, id.way(), przecznica, { highway: 'track', name: 'Przecinka Północna', tracktype: 'grade3' });
 
-  // ścieżka przyrodnicza: pętla wokół punktu (-400, +200), 8 odcinków
-  const osPętli = odsun(SRODEK, -400, 200);
+  // ścieżka przyrodnicza: pętla wokół osi 240 m na północ od główna[6]
+  // (x≈-400), domknięta DOKŁADNIE w główna[6] — pętla ma połączenie z siecią
+  const osPętli = odsun(główna[6], 0, 240);
   const petla = [];
   for (let k = 0; k <= 8; k++) {
-    const kat = (k / 8) * 2 * Math.PI;
+    if (k === 0 || k === 8) { petla.push(główna[6]); continue; } // wspólny wierzchołek
+    const kat = -Math.PI / 2 + (k / 8) * 2 * Math.PI;
     petla.push(okraglij(odsun(osPętli, Math.cos(kat) * 300 + (losuj() - 0.5) * 20, Math.sin(kat) * 240 + (losuj() - 0.5) * 20)));
   }
   dodajWay(fixture, id.way(), petla, { highway: 'path', name: 'Ścieżka Przyrodnicza', sac_scale: 'hiking' });
 
-  // łącznik ścieżki z przecinką (footway)
+  // łącznik od głównej (współdzielony wierzchołek główna[10] = x≈0) na NE
   dodajWay(fixture, id.way(), lamana([
-    odsun(SRODEK, 0, 0),
-    odsun(SRODEK, 100, 150),
-    odsun(SRODEK, 200, 300),
+    główna[10],
+    odsun(główna[10], 100, 150),
+    odsun(główna[10], 200, 300),
   ], losuj, 5), { highway: 'footway', name: 'Łącznik Mokradłowy' });
 
-  // drugi łącznik: od zachodniego krańca głównej do pętli
+  // drugi łącznik: od zachodniego krańca głównej (główna[0]) ku pętli
   dodajWay(fixture, id.way(), lamana([
-    odsun(SRODEK, -1000, 0),
-    odsun(SRODEK, -850, 90),
-    odsun(SRODEK, -700, 190),
+    główna[0],
+    odsun(główna[0], 150, 90),
+    odsun(główna[0], 300, 190),
   ], losuj, 6), { highway: 'path' });
 
   // POI leśne — zero budynków, tylko natura i infrastruktura lekka

@@ -36,7 +36,7 @@
       (ray-casting z prefiltrem bbox), `access=private|no`, `foot=no`
       (pieszy/rower), `tunnel=yes`, autostrada/expresówka, `landuse=railway`,
       prywatne `service=parking_aisle`.
-- [ ] **I6 — `app/stacje.js`:** `wybierzStacje({ graf, kandydaci, srodek,
+- [x] **I6 — `app/stacje.js`:** `wybierzStacje({ graf, kandydaci, srodek,
       konfig, ziarno })` — pierścień docelowy `0.7 R ±20%`, greedy po
       `|d_sieci − r|`, separacja kątowa ≥ `0.7 × 360°/N`, separacja sieciowa
       sąsiednich ≥ `0.5 r`, pass wyrównujący (zamiany parami: minimalizacja
