@@ -21,7 +21,7 @@
       `overpass-przedmiescie.json`, `overpass-las.json`; kontrakt formatu
       (Overpass `[out:json]` po `out geom`: way'e z `geometry[]`, POI/bariery
       jako node z `lat`/`lon`, obszary administracyjne jako `area`).
-- [ ] **I3 — `app/sieci.js` cz. 1:** `INSTANCJE_OVERPASS` + polityka
+- [x] **I3 — `app/sieci.js` cz. 1:** `INSTANCJE_OVERPASS` + polityka
       przełączania (429/504/timeout/błąd sieci → następna instancja, odstęp
       30 s — jako czyste dane/funkcje), `budujZapytanieOverpass()` (jedno
       zapytanie `around:R×1.15`, klasy dróg z `TRYBY`, budynki, POI,

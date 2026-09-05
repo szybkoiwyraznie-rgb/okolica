@@ -149,3 +149,173 @@ test('fixture las: drogi leśne i ścieżki, ZERO budynków', () => {
   assert.ok(nodyZTagiem(dane, 'historic', 'wayside_shrine').length >= 1, 'kapliczka');
   assert.ok(wayeZTagiem(dane, 'landuse', 'forest').length >= 1, 'kontekst: obszar lasu');
 });
+
+/* ================================================== I3: polityka, zapytanie, parser */
+
+import {
+  INSTANCJE_OVERPASS,
+  KODY_SIECI,
+  POLITYKA,
+  budujZapytanieOverpass,
+  czyPrzelaczycInstancje,
+  nazwaMiejsca,
+  parsujOdpowiedz,
+  pozycjaDoZapytania,
+  usterka,
+} from '../app/sieci.js';
+import { TRYBY } from '../app/konfig.js';
+import { ziarnoRozgrywki } from '../app/konfig.js';
+
+test('instancje: łańcuch dokładnie jak ASSETS §2, w kolejności głównej', () => {
+  assert.deepEqual(INSTANCJE_OVERPASS.map((i) => i.url), [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.private.coffee/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+  ]);
+  for (const i of INSTANCJE_OVERPASS) assert.match(i.url, /^https:\/\//);
+});
+
+test('polityka: stałe zgodne z ADR 0005 i ADR 0010 pkt 1', () => {
+  assert.equal(POLITYKA.timeoutMs, 20_000);
+  assert.equal(POLITYKA.odstepMs, 30_000);
+  assert.equal(POLITYKA.mnoznikPromienia, 1.15);
+  assert.equal(POLITYKA.maxRozmiarCacheBajtow, 2 * 1024 * 1024);
+  assert.equal(POLITYKA.ttlCacheDni, 30);
+});
+
+test('polityka: przełączamy przy 406/429/5xx/timeout/błędzie sieci, nie przy 400', () => {
+  assert.equal(czyPrzelaczycInstancje({ status: 429 }), true);
+  assert.equal(czyPrzelaczycInstancje({ status: 504 }), true);
+  assert.equal(czyPrzelaczycInstancje({ status: 500 }), true);
+  assert.equal(czyPrzelaczycInstancje({ status: 406 }), true);
+  assert.equal(czyPrzelaczycInstancje({ timeout: true }), true);
+  assert.equal(czyPrzelaczycInstancje({ bladSieci: true }), true);
+  assert.equal(czyPrzelaczycInstancje({ status: 200 }), false, 'sukces — nie przełączamy');
+  assert.equal(czyPrzelaczycInstancje({ status: 400 }), false, 'błąd zapytania: następna instancja odpowie tak samo');
+  assert.equal(czyPrzelaczycInstancje({}), false);
+});
+
+test('zapytanie: promień R×1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out geom, is_in', () => {
+  const q = budujZapytanieOverpass({ srodek: { lat: 52.22973, lon: 21.01224 }, promienM: 1000, tryb: 'piesza' });
+  assert.match(q, /^\[out:json\]\[timeout:25\];/);
+  assert.match(q, /around:1150,/, 'promień zapytania = 1000 × 1.15');
+  assert.ok(q.includes('52.22975'), 'lat zaokrąglony do siatki (jak ziarno rozgrywki)');
+  assert.ok(!q.includes('52.22973'), 'dokładna pozycja NIE opuszcza urządzenia w tej postaci');
+  // ta sama siatka co ziarnoRozgrywki — spójność kluczy cache i ziarna
+  const z = ziarnoRozgrywki({ lat: 52.22973, lon: 21.01224, promienM: 1000, liczbaStacji: 5, data: '2026-09-05' });
+  assert.ok(z.includes(pozycjaDoZapytania({ lat: 52.22973, lon: 21.01224 }).lat.toFixed(5)));
+  assert.match(q, /is_in\(52\.22975,21\.01225\)->\.obszary;/);
+  assert.match(q, /area\(\.obszary\)\["boundary"="administrative"\];/);
+  assert.match(q, /way\["building"\]/);
+  assert.match(q, /way\["landuse"="railway"\]/);
+  assert.match(q, /node\["barrier"\]/);
+  assert.match(q, /node\["place"="square"\]/);
+  assert.match(q, /^out geom;$/m);
+});
+
+test('zapytanie: klasy dróg z TRYBY — piesza bez secondary, samochód bez motorway i bez schodów', () => {
+  const klasyZZapytania = (q) => q.match(/"highway"~"\^\(([^)]+)\)\$"/)[1].split('|');
+  const qPiesza = budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 1000, tryb: 'piesza' });
+  assert.deepEqual(klasyZZapytania(qPiesza), TRYBY.piesza.klasyDrog, 'regex klas = klasyDrog trybu, w kolejności');
+  assert.ok(!qPiesza.includes('secondary'), 'piesza nie pobiera dróg klasy secondary');
+  assert.ok(!qPiesza.includes('motorway'));
+
+  const qAuto = budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 10000, tryb: 'samochodowa' });
+  for (const klasa of TRYBY.samochodowa.wykluczoneKlasy) assert.ok(!qAuto.includes(klasa), `samochód nie pobiera ${klasa}`);
+  assert.ok(qAuto.includes('primary') && qAuto.includes('secondary'));
+  assert.match(qAuto, /around:11500,/);
+
+  const qRower = budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 3000, tryb: 'rower' });
+  assert.ok(!qRower.includes('steps'), 'rower nie jeździ po schodach');
+  assert.ok(qRower.includes('cycleway'));
+});
+
+test('zapytanie: deterministyczne i waliduje wejście kodami S05/S06/S07', () => {
+  const args = { srodek: { lat: 52.23, lon: 21.01 }, promienM: 1000, tryb: 'piesza' };
+  assert.equal(budujZapytanieOverpass(args), budujZapytanieOverpass(args));
+  assert.throws(() => budujZapytanieOverpass({ ...args, srodek: null }), (e) => e.kod === 'S05');
+  assert.throws(() => budujZapytanieOverpass({ ...args, srodek: { lat: 999, lon: 0 } }), (e) => e.kod === 'S05');
+  assert.throws(() => budujZapytanieOverpass({ ...args, promienM: 0 }), (e) => e.kod === 'S06');
+  assert.throws(() => budujZapytanieOverpass({ ...args, promienM: NaN }), (e) => e.kod === 'S06');
+  assert.throws(() => budujZapytanieOverpass({ ...args, tryb: 'lotnia' }), (e) => e.kod === 'S07');
+});
+
+test('usterka: Error z kodem, komunikatem z tabeli i powodem', () => {
+  const e = usterka('S03', '429 z FOSSGIS');
+  assert.ok(e instanceof Error);
+  assert.equal(e.kod, 'S03');
+  assert.equal(e.komunikat, KODY_SIECI.S03);
+  assert.match(e.message, /^S03: /);
+  assert.match(e.message, /429 z FOSSGIS/);
+  assert.equal(usterka('S99').komunikat, 'Nieznana usterka warstwy sieci.', 'nieznany kod nie wykłada się');
+});
+
+test("parser: trzy fixture'y dają drogi, budynki, POI, bariery i obszary", () => {
+  for (const nazwa of NAZWY) {
+    const p = parsujOdpowiedz(czytajFixture(nazwa));
+    assert.ok(p.drogi.length > 0, `${nazwa}: drogi`);
+    assert.ok(p.obszary.length === 3, `${nazwa}: obszary`);
+    const poziomy = p.obszary.map((o) => o.adminLevel);
+    assert.deepEqual(poziomy, [...poziomy].sort((a, b) => a - b), 'posortowane od grubego do drobnego');
+    for (const d of p.drogi) {
+      assert.ok(d.punkty.length >= 2);
+      assert.ok(d.tags.highway, 'droga bez highway nie powinna trafić do dróg');
+    }
+    for (const b of p.budynki) {
+      assert.deepEqual(b.punkty[0], b.punkty.at(-1), 'poligon zamknięty');
+      assert.ok(b.bbox.minLat <= b.bbox.maxLat && b.bbox.minLon <= b.bbox.maxLon);
+    }
+  }
+  const c = parsujOdpowiedz(czytajFixture('centrum'));
+  assert.ok(c.budynki.length >= 50);
+  assert.ok(c.poi.length >= 8);
+  assert.ok(c.bariery.length >= 1);
+  assert.ok(c.wykluczeniaObszarowe.length >= 1, 'teren kolejowy');
+  assert.equal(nazwaMiejsca(c), 'Śródmieście');
+  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('przedmiescie'))), 'Wawer');
+  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('las'))), 'Bielany');
+  assert.equal(nazwaMiejsca({ obszary: [] }), null);
+  const l = parsujOdpowiedz(czytajFixture('las'));
+  assert.equal(l.budynki.length, 0, 'las bez budynków');
+});
+
+test('parser: POI-budynek (muzeum) jest wykluczeniem I kandydatem przy wejściu', () => {
+  const c = parsujOdpowiedz(czytajFixture('centrum'));
+  const muzeumPoi = c.poi.find((p) => p.tags.tourism === 'museum');
+  const muzeumBudynek = c.budynki.find((b) => b.tags.tourism === 'museum');
+  assert.ok(muzeumPoi && muzeumBudynek, 'muzeum w obu listach');
+  assert.equal(muzeumPoi.rodzaj, 'way-budynek');
+  const { punkt, bbox: ramka } = muzeumPoi;
+  assert.ok(punkt.lat >= ramka.minLat && punkt.lat <= ramka.maxLat, 'środek masy w bbox');
+  assert.ok(punkt.lon >= ramka.minLon && punkt.lon <= ramka.maxLon);
+});
+
+test('parser: toleruje braki — way bez geometrii (S08), elementy bez sensu (odrzucone)', () => {
+  const surowe = czytajFixture('centrum');
+  const zmutowane = structuredClone(surowe);
+  const droga = zmutowane.elements.find((el) => el.type === 'way' && el.tags?.highway);
+  delete droga.geometry;
+  droga.nodes = [1, 2, 3]; // tylko refs-y — realny Overpass po `out body` bez `out geom`
+  zmutowane.elements.push({ type: 'node', id: 999001, lat: 52.23, lon: 21.01 }); // bez tags
+  zmutowane.elements.push({ type: 'area', id: 999002, tags: { boundary: 'administrative' } }); // bez name
+  zmutowane.elements.push('śmieć');
+  const p = parsujOdpowiedz(zmutowane);
+  const oryg = parsujOdpowiedz(surowe);
+  assert.equal(p.drogi.length, oryg.drogi.length - 1, 'way bez geometrii nie zasila dróg');
+  assert.equal(p.usterki.length, 1);
+  assert.equal(p.usterki[0].kod, 'S08');
+  assert.equal(p.usterki[0].id, droga.id);
+  assert.ok(p.odrzucone >= 3, 'śmieci policzone, nie wyjątek');
+});
+
+test('parser: garbage → S01, brak sieci → S02', () => {
+  assert.throws(() => parsujOdpowiedz(null), (e) => e.kod === 'S01');
+  assert.throws(() => parsujOdpowiedz({}), (e) => e.kod === 'S01');
+  assert.throws(() => parsujOdpowiedz({ elements: 'nie-tablica' }), (e) => e.kod === 'S01');
+  assert.throws(() => parsujOdpowiedz({ elements: [] }), (e) => e.kod === 'S02');
+  assert.throws(
+    () => parsujOdpowiedz({ elements: [{ type: 'node', id: 1, lat: 52, lon: 21, tags: { amenity: 'cafe' } }] }),
+    (e) => e.kod === 'S02',
+    'samo POI bez dróg to nie sieć',
+  );
+});
