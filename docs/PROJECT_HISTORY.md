@@ -43,7 +43,24 @@ brak. Z archiwum wzorca wczytano: `AGENTS.md` (286 linii), `docs/setup/ENVIRONME
   jako podkład domyślny (zgodnie z briefem), OpenTopoMap i Esri jako warstwy
   opcjonalne; Overpass (3 instancje z przełączaniem) jako źródło sieci drogowej
   **i** nazwy miejsca — Nominatim domyślnie wyłączony (ASSETS §3, LESSONS).
-- Szkielet aplikacji (E5) i testy (E6) — patrz wpisy commitów i handoff.
+- Szkielet aplikacji (E5, commit `89a0586`): `tools/synchronizuj-szablon.mjs`
+  (szablon promptu: dokument → kod, `--check` w bramie), `app/geo.js`,
+  `app/konfig.js`, `app/protokol.js`, `app/stacje.js`, `app/app.js`,
+  `index.html`, `app/styles.css` — pięć ekranów M0 (setup → pozycja → stacje →
+  prompt → paczka), mobile-first z celami ≥44 px, tryb testowy `?tryb=test`
+  z ręcznymi współrzędnymi (ADR 0004 pkt 6), banery dla `file://` i braku
+  secure context, `localStorage` (`okolica:konfig`, `okolica:motyw`).
+- Testy (E6, commity `8011f0f` i następny): 82 testy w pięciu plikach, na
+  wartościach referencyjnych (geohash z Wikipedii, odległość Warszawa–Kraków,
+  `metryNaPiksel(0,0)` = 156543,03) i kontrprzykładach (mutanty paczki dla
+  każdego kodu E01–E20, fałszywe kotwice „ludzkości"/„wojna").
+  `test/kontrakt.test.js` pilnuje zgodności dokument ↔ kod: szablon promptu,
+  tabele §4/§5, wersja protokołu w czterech miejscach, cache-busting, brak API
+  Node i ścieżek od korzenia, identyfikatory DOM, rejestr ADR, numeracja LESSONS,
+  zero zależności.
+- Zmiany reguł trwałych w tej sesji: `LESSONS` L7–L9, `PROTOKOL` §3.2 i §6
+  (E10 — zarezerwowane TLD; E14 — heurystyka w czterech krokach z nazwami list
+  z kodu), ADR 0003 pkt 5 (zoom przeglądowy vs zoom uliczny trybu).
 
 **Fakty operacyjne do pamiętania:**
 
@@ -52,6 +69,11 @@ brak. Z archiwum wzorca wczytano: `AGENTS.md` (286 linii), `docs/setup/ENVIRONME
   bez poprawiania (zakaz force push); lekcja L7.
 - Agent nie zapisuje `.github/workflows/` (403 `workflows`, LESSONS L4) —
   receptura CI leży w `docs/setup/ci-workflow.yml`.
+- Pod koniec sesji token GitHub stracił ważność (`Bad credentials`): commity
+  `89a0586`, `8011f0f` i następny są lokalne na gałęzi
+  `arena/01a07282-okolica`, opis PR #2 nie został zaktualizowany. Do zrobienia
+  po przywróceniu połączenia: `git push origin arena/01a07282-okolica`
+  i aktualizacja opisu PR (handoff §5).
 - `AME-main.zip` pozostaje nietknięty w korzeniu; jego los (przeniesienie do
   `docs/archive/` albo usunięcie po przeniesieniu wzorców) jest pytaniem do
   właściciela, nie decyzją sesji.

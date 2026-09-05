@@ -96,3 +96,27 @@ z „wektorowe".
 czy wymaga klucza, czy serwuje rastry czy wektory, i co mówi jego polityka
 o użyciu w aplikacjach. ADR-y ze statusem *Proponowana* poprawia się przed
 akceptacją — po akceptacji tylko nowy ADR zastępujący.
+
+## L9 (2026-09-05, Tajemnicza Okolica) — heurystyka tekstowa na podłańcuchach łapie słowa, których nie szukała
+
+**Objaw:** walidacja paczki (kod `E14`, „pytanie niezakotwiczone w okolicy")
+przepuszczała pytanie „W którym roku wybuchła druga wojna światowa?" dla miejsca
+„Grabowice, Stare Miasto, woj. mazowieckie". Testy jednostkowe heurystyki
+przechodziły, bo miały tylko przykłady dodatnie.
+**Przyczyna:** dopasowanie `tekst.includes(rdzenTokena(token))` szuka
+podłańcucha w całym tekście. Rdzeń „woj" (z „woj. mazowieckie") trafiał
+w „wojna", rdzeń „kości" (z „kościół") w „ludzkości", a wyraz zaczynający
+zdanie wielką literą („Druga") uchodził za nazwę własną. Trzy drobne
+niedokładności zniosły regułę całkowicie — i żadna nie była widoczna bez
+kontrprzykładu.
+**Reguła:** heurystyki językowe pisz na **granicy wyrazu**, nie na
+podłańcuchu: rdzeń (pierwsze 5 znaków po normalizacji) musi pasować do
+**początku wyrazu** (`slowa.some((s) => s.startsWith(rdzen))`), tokeny krótsze
+niż 4 znaki odpadają, a wyrazy pospolite wchodzące w skład nazw
+administracyjnych („stare", „miasto", „województwo", „polska") mają własną
+listę (`WYRAZY_POSPOLITE_MIEJSCA`). Nazwa własna to wyraz wielką literą, który
+nie zaczyna zdania i nie stoi za kropką innego zdania — z wyjątkiem skrótów
+(`SKROTY_Z_KROPKA`: „św.", „ul.", „ks."). Każdą taką regułę testuj
+**kontrprzykładem z prawdziwego tekstu** („ludzkości", „wojna"), a opis
+heurystyki zapisuj w protokole razem z nazwami list z kodu — wtedy
+`test/kontrakt.test.js` pilnuje, żeby dokument i kod się nie rozeszły.

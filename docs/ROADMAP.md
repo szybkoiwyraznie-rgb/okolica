@@ -5,7 +5,7 @@
 > planem w `docs/BACKLOG.md`. Brak zlecenia właściciela = najwyższy otwarty
 > kamień milowy (AGENTS.md §2).
 
-## M0 — Fundament (sesja 2026-09-05) — 🔄 W TRAKCIE
+## M0 — Fundament (sesja 2026-09-05) — ✅ ZREALIZOWANE
 
 - [x] E1 — konfiguracja repo i zasady: `package.json`, `.gitignore`,
       `README.md`, `AGENTS.md`, `docs/setup/ENVIRONMENT.md`, `docs/LESSONS.md`.
@@ -15,12 +15,18 @@
 - [x] E4 — dokumentacja projektu: `ARCHITECTURE`, `ROADMAP`, `BACKLOG`,
       `WORKFLOW`, `ASSETS`, `PROJECT_HISTORY`, `plans/PLAN_2026-09-05-fundament.md`,
       `setup/ci-workflow.yml`.
-- [ ] E5 — szkielet aplikacji: `index.html`, `app/geo.js`, `app/konfig.js`,
-      `app/app.js`, `app/styles.css` — ekran konfiguracji + odczyt pozycji.
-      Kryterium: live preview pokazuje setup na 360 px, `npm test` zielone.
-- [ ] E6 — testy: `test/geo.test.js`, `test/konfig.test.js`,
-      `test/protokol.test.js`, `test/kontrakt.test.js`.
-- [ ] E7 — handoff sesji (`docs/setup/HANDOFF_2026-09-05.md`).
+- [x] E5 — szkielet aplikacji: `index.html`, `app/styles.css`, `app/geo.js`,
+      `app/konfig.js`, `app/protokol.js`, `app/stacje.js`, `app/app.js`
+      + `tools/synchronizuj-szablon.mjs` — pięć ekranów (setup → pozycja →
+      stacje → prompt → paczka), tryb testowy `?tryb=test` (commit `89a0586`).
+      Kryterium spełnione: live preview pokazuje setup na 360 px, brama zielona.
+- [x] E6 — testy: `test/geo.test.js`, `test/konfig.test.js`,
+      `test/protokol.test.js`, `test/stacje.test.js`, `test/kontrakt.test.js`
+      + `test/fixtures/paczka-ok.json` (commity `8011f0f` i następny).
+      82 testy, wartości referencyjne i kontrprzykłady, nie „co wyszło".
+- [x] E7 — handoff sesji (`docs/setup/HANDOFF_2026-09-05.md`) + aktualizacja
+      `ROADMAP`, `plans/PLAN_2026-09-05-fundament.md`, `PROJECT_HISTORY`,
+      `LESSONS` (L7–L9), `PROTOKOL` (§3.2, §6), ADR 0003 (pkt 5).
 
 ## M1 — Geodezja i model rozgrywki (czyste funkcje)
 
@@ -31,10 +37,18 @@ kontener `TO-paczka/1`), `app/protokol.js` (`zbudujPrompt`, `walidujPaczke`).
 Kryterium: wszystko przetestowane w Node bez DOM i bez sieci; round-trip
 szyfrowania na Node i w przeglądarce.
 
+**Zrobione przed czasem w M0/E5:** `app/geo.js` (z progami dojścia i regułą
+dwóch kolejnych trafień — czyli także rdzeń `pozycja.js`), `app/protokol.js`
+(`zbudujPrompt`, `walidujPaczke`, parser, poprawka dla modelu), `app/konfig.js`
+i `app/stacje.js`. **Zostało na M1:** `app/krypto.js` (najważniejsze — bez
+niego pytania są jawne), `app/rozgrywka.js`, wydzielenie `app/pozycja.js`
+z logiki siedzącej dziś w `app/app.js`.
+
 ## M2 — Mapa
 
 Renderer SVG (Web Mercator, pan/zoom/pinch/przyciski), warstwa kafelków
-(CARTO/OSM/OpenTopoMap/Esri, przełącznik + atrybucja), marker pozycji z kołem
+(OSM Standard / OpenTopoMap / Esri World Imagery — bez kluczy API,
+`ASSETS` §1; CARTO odrzucone kwerendą 2026-09-05), marker pozycji z kołem
 dokładności, okrąg promienia gry, numerowane pinezki stacji.
 Kryterium: mapa działa na 360 px, palec (drag + pinch), podkład widoczny
 w live preview, atrybucja zawsze obecna.

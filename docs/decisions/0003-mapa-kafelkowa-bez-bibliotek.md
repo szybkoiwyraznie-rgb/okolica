@@ -54,9 +54,16 @@ rastrowe bez klucza.
    (marker + koło dokładności z `fix.accuracy`), promień gry (okrąg), stacje
    (numerowane pinezki z kolorem stanu: oczekuje / aktywna / zaliczona), linia
    odcinków, etykiety stacji.
-5. **Zoom docelowy dla trybów**: pieszy z≈17, rower z≈15, samochód z≈13 —
-   start gry centruje widok na pozycji gracza i dobiera zoom z promienia
-   (`dopasujZoomDoPromienia()` — czysta funkcja, testowana).
+5. **Dwa zoomy, dwie role** (rozróżnienie dopisane 2026-09-05, gdy szkielet
+   M0 zderzył te pojęcia w testach):
+   - **zoom przeglądowy** — start gry centruje widok na pozycji gracza i mieści
+     cały obszar gry w kadrze: `dopasujZoomDoPromienia(promienM, szerokośćPx,
+     lat)` (czysta funkcja, testowana). Dla szerokości 360 px daje z≈14 przy
+     1 km, z≈12 przy 3 km, z≈10 przy 10 km — widać pierścień stacji, nie
+     numery domów;
+   - **zoom uliczny trybu** — `TRYBY[].zoom` (pieszy 17, rower 15, samochód 13):
+     detal potrzebny przy podejściu do stacji i przy podglądzie „gdzie jestem".
+     Używa go widok stacji, nie widok startowy.
 6. Kafelki pobiera **przeglądarka użytkownika**, nie serwer i nie sandbox
    (LESSONS L3): brak dostępu do kafelków w testach jest oczekiwany.
 7. **Odporność na zniknięcie dostawcy**: tabela dostawców jest konfiguracją

@@ -1,0 +1,230 @@
+/**
+ * Testy kontraktowe — pilnują, żeby dokumentacja i kod nie rozeszły się.
+ *
+ * To najtańsze ubezpieczenie projektu wielosesyjnego: agent, który zmieni
+ * kanon tematów w kodzie i zapomni o protokole (albo odwrotnie), dostaje
+ * czerwoną bramę zamiast cichej rozbieżności. Wzorzec z AME (ich lekcja:
+ * „wersja standardu rozjeżdża się między nośnikami").
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { SZABLON_PROMPTU, WERSJA_PROTOKOLU } from '../app/protokol.js';
+import { PODKLADY, TEMATY, WIEK } from '../app/konfig.js';
+
+const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
+const czytaj = (sciezka) => readFileSync(join(ROOT, sciezka), 'utf8');
+
+const PROTOKOL = czytaj('docs/PROTOKOL.md');
+const INDEX = czytaj('index.html');
+const APP = czytaj('app/app.js');
+const README = czytaj('README.md');
+const ASSETS = czytaj('docs/ASSETS.md');
+const AGENTS = czytaj('AGENTS.md');
+const PACKAGE = JSON.parse(czytaj('package.json'));
+
+/** Wiersze tabeli markdowna w sekcji zaczynającej się od `naglowek`. */
+function tabelaSekcji(dokument, naglowek) {
+  const start = dokument.indexOf(naglowek);
+  assert.ok(start >= 0, `w dokumencie nie ma sekcji „${naglowek}"`);
+  const dalej = dokument.slice(start + naglowek.length);
+  const nastepna = dalej.search(/\n## /);
+  const sekcja = nastepna < 0 ? dalej : dalej.slice(0, nastepna);
+  return sekcja
+    .split('\n')
+    .filter((l) => l.trim().startsWith('|'))
+    .map((l) => l.split('|').slice(1, -1).map((c) => c.trim()))
+    .filter((komorki) => komorki.length > 1 && !/^[-: ]+$/.test(komorki[0]))
+    .slice(1); // bez wiersza nagłówkowego
+}
+
+function bezOgrodzenia(tekst) {
+  return tekst.replace(/^`|`$/g, '').trim();
+}
+
+/* ------------------------------------------------- szablon promptu: doc ↔ kod */
+
+test('kontrakt: szablon promptu w docs/PROTOKOL.md jest identyczny z SZABLON_PROMPTU', () => {
+  const start = PROTOKOL.indexOf('<!-- szablon-promptu:start -->');
+  const koniec = PROTOKOL.indexOf('<!-- szablon-promptu:koniec -->');
+  assert.ok(start >= 0 && koniec > start, 'brak znaczników szablonu w protokole');
+  const linie = PROTOKOL.slice(start, koniec).split('\n');
+  const otwarcie = linie.findIndex((l) => l.trim().startsWith('```'));
+  const zamkniecie = linie.map((l) => l.trim()).lastIndexOf('```');
+  assert.ok(otwarcie >= 0 && zamkniecie > otwarcie, 'szablon w protokole nie jest w ogrodzeniu');
+  const zDokumentu = linie.slice(otwarcie + 1, zamkniecie).join('\n').trim();
+  assert.equal(SZABLON_PROMPTU, zDokumentu, 'uruchom `npm run build` (tools/synchronizuj-szablon.mjs) i wcommituj kod razem z dokumentem');
+});
+
+/* ------------------------------------------------- kanony treści: doc ↔ kod */
+
+test('kontrakt: kategorie wiekowe w protokole §4 = WIEK w app/konfig.js', () => {
+  const wiersze = tabelaSekcji(PROTOKOL, '## 4. Kategorie wiekowe i wymagania trudności');
+  assert.equal(wiersze.length, Object.keys(WIEK).length, `w dokumencie ${wiersze.length} kategorii, w kodzie ${Object.keys(WIEK).length}`);
+  for (const [klucz, etykieta, opis, punkty] of wiersze) {
+    const k = bezOgrodzenia(klucz);
+    assert.ok(WIEK[k], `kategoria „${k}" jest w protokole, a nie ma jej w kodzie`);
+    assert.equal(WIEK[k].etykieta, etykieta, `etykieta kategorii ${k}`);
+    assert.equal(WIEK[k].opisTrudnosci, opis, `opis trudności kategorii ${k} trafia dosłownie do promptu`);
+    assert.equal(WIEK[k].punkty, Number(punkty), `punkty kategorii ${k}`);
+  }
+});
+
+test('kontrakt: kanon tematów w protokole §5 = TEMATY w app/konfig.js', () => {
+  const wiersze = tabelaSekcji(PROTOKOL, '## 5. Kanon tematów');
+  assert.equal(wiersze.length, Object.keys(TEMATY).length);
+  for (const [klucz, etykieta, opis] of wiersze) {
+    const k = bezOgrodzenia(klucz);
+    assert.ok(TEMATY[k], `temat „${k}" jest w protokole, a nie ma go w kodzie`);
+    assert.equal(TEMATY[k].etykieta, etykieta, `etykieta tematu ${k}`);
+    assert.equal(TEMATY[k].opis, opis, `opis tematu ${k} trafia dosłownie do promptu`);
+  }
+});
+
+test('kontrakt: każdy temat z kodu ma wiersz w protokole (i odwrotnie)', () => {
+  const zDokumentu = new Set(tabelaSekcji(PROTOKOL, '## 5. Kanon tematów').map((w) => bezOgrodzenia(w[0])));
+  assert.deepEqual([...zDokumentu].sort(), Object.keys(TEMATY).sort());
+});
+
+/* ------------------------------------------------------------- wersjonowanie */
+
+test('kontrakt: wersja protokołu jest jedna w dokumencie, w kodzie, w stopce i w README', () => {
+  const tytul = PROTOKOL.split('\n')[0];
+  const m = tytul.match(/PYT v(\d+)\.(\d+)/);
+  assert.ok(m, `tytuł protokołu nie deklaruje wersji („${tytul}")`);
+  const wersja = `PYT/${m[1]}.${m[2]}`;
+  assert.equal(WERSJA_PROTOKOLU, wersja, 'WERSJA_PROTOKOLU w app/protokol.js');
+  const stopka = INDEX.match(/<span id="stopka-protokol">([^<]+)<\/span>/);
+  assert.ok(stopka, 'w index.html brakuje <span id="stopka-protokol">');
+  assert.equal(stopka[1], wersja, 'stopka aplikacji pokazuje inną wersję protokołu');
+  assert.ok(README.includes(`protokół PYT v${m[1]}.${m[2]}`), 'README nie podaje obowiązującej wersji protokołu');
+});
+
+/* ------------------------------------------------------------ cache-busting */
+
+test('kontrakt: wersja cache-bustingu jest identyczna w index.html i w importach', () => {
+  const wersje = [...INDEX.matchAll(/\?v=([A-Za-z0-9.\-]+)/g)].map((m) => m[1]);
+  assert.ok(wersje.length >= 2, 'index.html powinien wersjonować CSS i moduł JS');
+  assert.equal(new Set(wersje).size, 1, `rozjechane wersje w index.html: ${wersje.join(', ')}`);
+  const wersja = wersje[0];
+  const importy = [...APP.matchAll(/from '\.\/([a-z]+)\.js\?v=([A-Za-z0-9.\-]+)'/g)].map((m) => ({ modul: m[1], wersja: m[2] }));
+  assert.ok(importy.length >= 3, 'app.js powinien importować moduły z wersją cache-bustingu');
+  for (const i of importy) assert.equal(i.wersja, wersja, `import ./​${i.modul}.js ma inną wersję niż index.html`);
+});
+
+/* ------------------------------------------------- granice ADR 0001 i 0002 */
+
+test('kontrakt: zero zależności w package.json (ADR 0001)', () => {
+  assert.equal(PACKAGE.dependencies, undefined, 'package.json nie może mieć dependencies');
+  assert.equal(PACKAGE.devDependencies, undefined, 'package.json nie może mieć devDependencies');
+  assert.equal(PACKAGE.type, 'module');
+  assert.equal(PACKAGE.scripts.test, 'node --test');
+});
+
+test('kontrakt: w app/ nie ma API Node ani require (LESSONS L6)', () => {
+  for (const plik of readdirSync(join(ROOT, 'app')).filter((f) => f.endsWith('.js'))) {
+    const kod = czytaj(`app/${plik}`);
+    assert.ok(!/from ['"]node:/.test(kod), `app/${plik}: import z node: — kod przeglądarkowy`);
+    assert.ok(!/\brequire\s*\(/.test(kod), `app/${plik}: require() — kod przeglądarkowy`);
+    assert.ok(!/\bprocess\./.test(kod), `app/${plik}: process.* — API Node`);
+  }
+});
+
+test('kontrakt: index.html nie używa ścieżek od korzenia (ADR 0002 pkt 3)', () => {
+  assert.ok(!/(?:href|src)="\//.test(INDEX), 'ścieżka zaczynająca się od "/" złamie się pod /okolica/ na GitHub Pages');
+  assert.ok(INDEX.includes('href="app/styles.css?v='), 'CSS powinien być podpięty ścieżką względną');
+  assert.ok(INDEX.includes('src="app/app.js?v='), 'moduł JS powinien być podpięty ścieżką względną');
+});
+
+test('kontrakt: w drzewie nie ma katalogu .github/workflows zadanego przez agenta (LESSONS L4)', () => {
+  assert.ok(!existsSync(join(ROOT, '.github/workflows')), 'lustro receptury CI ma leżeć w docs/setup/ci-workflow.yml — token agenta nie zapisze workflow');
+  assert.ok(existsSync(join(ROOT, 'docs/setup/ci-workflow.yml')));
+});
+
+/* --------------------------------------------------------- UI: DOM ↔ index */
+
+test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html', () => {
+  const zadane = new Set([...APP.matchAll(/getElementById\('([^']+)'\)/g)].map((m) => m[1]));
+  const dolaczone = [...APP.matchAll(/\$\('([^']+)'\)/g)].map((m) => m[1]);
+  for (const id of dolaczone) zadane.add(id);
+  // ekrany budowane z listy EKRANY: `ekran-${e}` — sprawdzamy wszystkie warianty
+  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka']) zadane.add(`ekran-${ekran}`);
+  assert.ok(zadane.size > 25, `znaleziono tylko ${zadane.size} identyfikatorów — test pewnie nie widzi kodu`);
+  for (const id of zadane) {
+    assert.ok(INDEX.includes(`id="${id}"`), `app.js woła #${id}, którego nie ma w index.html`);
+  }
+});
+
+test('kontrakt: kroki w pasku nawigacji pokrywają się z ekranami', () => {
+  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka']) {
+    assert.ok(INDEX.includes(`data-krok="${ekran}"`), `brak kroku ${ekran} w pasku nawigacji`);
+  }
+});
+
+/* ------------------------------------------------- dostawcy: kod ↔ ASSETS */
+
+test('kontrakt: podkłady mapy z kodu mają wpis w docs/ASSETS.md', () => {
+  for (const klucz of Object.keys(PODKLADY)) {
+    if (klucz === 'brak') continue;
+    assert.ok(ASSETS.includes(`\`${klucz}\``), `podkład „${klucz}" nie ma wpisu w ASSETS §1 (polityka i atrybucja)`);
+  }
+});
+
+test('kontrakt: CARTO nie wróciło do kodu (wymaga klucza API — ASSETS §1.1)', () => {
+  for (const plik of readdirSync(join(ROOT, 'app')).filter((f) => f.endsWith('.js') || f.endsWith('.css'))) {
+    const kod = czytaj(`app/${plik}`);
+    assert.ok(!/cartocdn|carto/i.test(kod), `app/${plik}: CARTO wymaga klucza API — niedozwolone (ADR 0001, ASSETS §1.1)`);
+  }
+});
+
+test('kontrakt: Overpass ma instancje opisane w ASSETS §2, a Nominatim jest wyłączony domyślnie', () => {
+  assert.ok(ASSETS.includes('overpass-api.de/api/interpreter'));
+  assert.ok(ASSETS.includes('overpass.private.coffee'));
+  assert.ok(ASSETS.includes('nominatim.openstreetmap.org') && ASSETS.includes('Nominatim Usage Policy'));
+  const konfig = czytaj('app/konfig.js');
+  assert.ok(!/nominatim/i.test(konfig), 'geokodacja Nominatim nie jest włączona w kanonie konfiguracji (ADR 0013 pkt 3)');
+});
+
+/* --------------------------------------------- rejestr ADR i lektura §0 */
+
+test('kontrakt: każdy ADR z rejestru istnieje na dysku i każdy plik ADR jest w rejestrze', () => {
+  const rejestr = czytaj('docs/decisions/README.md');
+  const linki = [...rejestr.matchAll(/\((\d{4}-[a-z0-9-]+\.md)\)/g)].map((m) => m[1]);
+  assert.ok(linki.length >= 13, `rejestr wymienia ${linki.length} ADR-ów`);
+  for (const plik of linki) {
+    assert.ok(existsSync(join(ROOT, 'docs/decisions', plik)), `rejestr linkuje ${plik}, którego nie ma`);
+  }
+  const naDysku = readdirSync(join(ROOT, 'docs/decisions')).filter((f) => /^\d{4}-.*\.md$/.test(f));
+  for (const plik of naDysku) {
+    assert.ok(linki.includes(plik), `ADR ${plik} istnieje, ale nie ma go w rejestrze`);
+  }
+});
+
+test('kontrakt: pliki lektury startowej z AGENTS.md §0 istnieją', () => {
+  for (const sciezka of ['docs/PROTOKOL.md', 'docs/decisions/README.md', 'docs/LESSONS.md', 'docs/setup/ENVIRONMENT.md', 'docs/ROADMAP.md', 'docs/ARCHITECTURE.md', 'docs/WORKFLOW.md', 'docs/ASSETS.md', 'docs/BACKLOG.md', 'docs/PROJECT_HISTORY.md']) {
+    assert.ok(existsSync(join(ROOT, sciezka)), `AGENTS.md każe czytać ${sciezka}, a pliku nie ma`);
+  }
+  const handoffy = readdirSync(join(ROOT, 'docs/setup')).filter((f) => /^HANDOFF_\d{4}-\d{2}-\d{2}/.test(f));
+  assert.ok(handoffy.length >= 1, 'brak handoffu w docs/setup/');
+});
+
+test('kontrakt: LESSONS ma ciągłą numerację i wymagany format', () => {
+  const lessons = czytaj('docs/LESSONS.md');
+  const numery = [...lessons.matchAll(/^## L(\d+) /gm)].map((m) => Number(m[1]));
+  assert.ok(numery.length >= 6, `rejestr ma ${numery.length} lekcji`);
+  numery.forEach((n, i) => assert.equal(n, i + 1, `numeracja lekcji się rwie na ${n}`));
+  for (const n of numery) {
+    const sekcja = lessons.split(`## L${n} `)[1].split('\n## L')[0];
+    assert.ok(sekcja.includes('**Objaw:**'), `L${n} bez objawu`);
+    assert.ok(sekcja.includes('**Przyczyna:**'), `L${n} bez przyczyny`);
+    assert.ok(sekcja.includes('**Reguła:**'), `L${n} bez reguły`);
+  }
+});
+
+test('kontrakt: AGENTS.md nie obiecuje lektury pliku, którego nie ma w §0', () => {
+  assert.ok(AGENTS.includes('docs/PROTOKOL.md') && AGENTS.includes('docs/setup/ENVIRONMENT.md'));
+  assert.ok(AGENTS.includes('40 tys. tokenów'), 'budżet lektury startowej musi być jawny');
+});

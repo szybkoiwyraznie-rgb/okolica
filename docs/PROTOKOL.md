@@ -159,7 +159,7 @@ repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
 | `poprawna` | liczba całkowita | `0..3` |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
-| `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz `example.com`, `przyklad.org`, `localhost` |
+| `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
 | `zrodla[].tytul` | tekst | niepusty |
 | `zrodla[].sprawdzono` | tekst | `RRRR-MM-DD`, nie w przyszłości |
 | `punkty` | liczba | `10`, `15` albo `20` |
@@ -229,7 +229,7 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
 | `E09` | pytanie bez `zrodla` albo lista pusta |
-| `E10` | `zrodla[].url` nie jest adresem `http(s)` albo jest adresem zabronionym (`example.com`, `przyklad.org`, `localhost`, `test`) |
+| `E10` | `zrodla[].url` nie jest adresem `http(s)` albo jest adresem zabronionym: domena przykładowa (`example.com`, `przyklad.org`, `twojastrona.pl`) albo zarezerwowane TLD (`.invalid`, `.test`, `.localhost`, `.example`, `.local`) |
 | `E11` | data (`utworzono`, `sprawdzono`) w przyszłości albo w złym formacie |
 | `E12` | `temat` spoza kanonu §5 |
 | `E13` | duplikat pytania (znormalizowana `tresc` występuje więcej niż raz) |
@@ -241,14 +241,34 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E19` | `id` pytania nieunikalne albo niezgodne ze wzorem |
 | `E20` | `wyjasnienie` krótsze niż 60 znaków albo dosłownie powtarza `tresc` |
 
-**Heurystyka zakotwiczenia (E14)**: pytanie przechodzi, jeśli `tresc` albo
-`wyjasnienie` zawiera (po normalizacji) którykolwiek z tokenów: nazwa miejsca
-z `okolica.miejsce` i jego części (dzielnica, miasto), nazwa ulicy/obiektu
-z opisu stacji, albo słowo z listy lokalnej (`ulica`, `plac`, `park`, `kościół`,
-`most`, `dzielnica`, `osiedle`, `rynek`, `cmentarz`, `fabryka`, `szkoła`) — plus
-wymagany co najmniej jeden **rzeczownik własny** z tych tokenów. Lista tokenów
-jest w `app/protokol.js` (`TOKENY_MIEJSCA`) i testowana; jej rozszerzanie to
-zmiana kodu, nie decyzja sesji „na oko".
+**Heurystyka zakotwiczenia (E14)** — cztery kroki, wszystkie w
+`app/protokol.js`, wszystkie testowane:
+
+1. **Tokeny własne**: nazwy z `okolica.miejsce` (rozbite po przecinkach i
+   spacjach) oraz z `opis`-ów stacji. Odrzucane są: wyrazy krótsze niż 4 znaki,
+   liczby, słowa z listy ogólnej (`TOKENY_MIEJSCA`) i wyrazy pospolite nazw
+   administracyjnych (`WYRAZY_POSPOLITE_MIEJSCA`: „stare", „miasto", „gmina",
+   „polska"…). Nazwy regionów („mazowieckie") zostają — pytanie o Mazowsze jest
+   uczciwie zakotwiczone.
+2. **Rdzeń tokena** = pierwsze 5 znaków po normalizacji (małe litery, bez
+   interpunkcji), więc obejmuje polską odmianę: „Warszawa" → „warsz" trafia w
+   „warszawskim". Rdzeń musi pasować do **początku wyrazu** w pytaniu — inaczej
+   „kościół" → „kości" łapałoby „ludzkości", a „woj." → „woj" łapałoby „wojna".
+   Trafienie w którykolwiek token własny kończy sprawdzenie wynikiem
+   „zakotwiczone".
+3. Jeśli trafienia nie ma, pytanie może przejść warunkowo: musi zawierać słowo z
+   listy lokalnej (`TOKENY_MIEJSCA`: „ulica", „rynek", „kościół", „most",
+   „kamienica"…) **oraz** nazwę własną.
+4. **Nazwa własna** = wyraz pisany wielką literą, który nie zaczyna zdania (po
+   polsku każde zdanie zaczyna się wielką literą), nie jest słowem pospolitym
+   (`SLOWA_POSPOLITE`) i nie idzie za kropką innego zdania — z wyjątkiem
+   skrótów z listy `SKROTY_Z_KROPKA`, bo „kościół św. Anny" to jedna nazwa, nie
+   dwa zdania.
+
+Heurystyka jest celowo nadmiernie wyłapująca: fałszywe odrzucenie (E14) naprawia
+się jednym zdaniem o miejscu w treści pytania, a przepuszczenie pytania
+ogólnego („kto napisał Pana Tadeusza?") psuje sens gry terenowej. Listy słów są
+dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
 
 ## 7. Wersjonowanie i migracje
 

@@ -26,7 +26,7 @@ szkielet aplikacji i bramę jakości w testach.
       dostawców), `PROJECT_HISTORY`, `setup/ci-workflow.yml`.
       Kryterium: `ASSETS` zawiera datę sprawdzenia polityk i dostawców
       odrzuconych z uzasadnieniem.
-- [ ] E5 — narzędzie i szkielet aplikacji:
+- [x] E5 — narzędzie i szkielet aplikacji:
       `tools/synchronizuj-szablon.mjs` (szablon promptu: dokument ↔ kod,
       `--check`), `app/konfig.js` (TRYBY, WIEK, TEMATY, DOMYSLNE,
       `walidujSetup`), `app/geo.js` (haversine, bearing, Mercator, pierścień,
@@ -36,12 +36,12 @@ szkielet aplikacji i bramę jakości w testach.
       wklejenie i walidacja paczki).
       Kryterium: na 360 px da się przejść setup → prompt → wklejenie →
       walidacja; live preview Areny pokazuje aplikację.
-- [ ] E6 — testy: `test/geo.test.js`, `test/konfig.test.js`,
+- [x] E6 — testy: `test/geo.test.js`, `test/konfig.test.js`,
       `test/protokol.test.js`, `test/kontrakt.test.js` (szablon dokument↔kod,
       cache-busting, brak `node:` w `app/`, brak ścieżek absolutnych,
       wersja protokołu w trzech miejscach).
       Kryterium: `npm test` i `npm run check` zielone.
-- [ ] E7 — handoff: `docs/setup/HANDOFF_2026-09-05.md` + aktualizacja opisu
+- [x] E7 — handoff: `docs/setup/HANDOFF_2026-09-05.md` + aktualizacja opisu
       PR #2 + blok przekazania w czacie.
 
 ## Ryzyka / pułapki
@@ -65,4 +65,27 @@ zasady i szkielet, nie gotową grę.
 
 ## Podsumowanie wykonania
 
-(uzupełnić na końcu sesji: zakres, commity, liczba testów, rzeczy otwarte)
+**Zakres:** M0 w całości (E1–E7). Zasady pracy, 13 ADR-ów, protokół PYT v1.0,
+dokumentacja projektu z kwerendą polityk dostawców, szkielet aplikacji z pięcioma
+ekranami i narzędziem synchronizacji szablonu, 82 testy z bramą jakości.
+
+**Commity:** `3e61917` (E1+E2), `a6dcb32` (E3+E4), `89a0586` (E5), `8011f0f`
+(E6), ostatni (E6 kontrakt + E7). PR #2 otwarty od pierwszego commitu
+(AGENTS §2.1). Commity po `a6dcb32` zostały **lokalnie** — pod koniec sesji
+token GitHub zwrócił `Bad credentials` (patrz handoff §5).
+
+**Testy:** 82 (`node --test`), w tym kontraktowe pilnujące zgodności dokument ↔
+kod: szablon promptu, tabele wiekowe i tematyczne, wersja protokołu w czterech
+miejscach, cache-busting, brak `node:` i `require(` w `app/`, brak ścieżek od
+korzenia w `index.html`, identyfikatory DOM, rejestr ADR, ciągłość numeracji
+`LESSONS`, zero zależności w `package.json`.
+
+**Odchylenia od planu (na plus):** `app/protokol.js` i `app/stacje.js` powstały
+w M0, choć plan je przypisywał M1/M4 — bez nich ekran promptu i ekran stacji nie
+miałyby czego pokazać. `tools/synchronizuj-szablon.mjs` wylądowało w jednym
+commicie z `app/`, bo `package.json` (wypchnięty wcześniej) już się do niego
+odwoływał — osobny commit zostawiłby świeży klon z czerwoną bramą.
+
+**Rzeczy otwarte:** 7 ADR-ów ze statusem *Proponowana* do decyzji właściciela,
+los `AME-main.zip`, publikacja GitHub Pages + CI (M8), push i opis PR po
+przywróceniu autoryzacji GitHub. Szczegóły: `docs/setup/HANDOFF_2026-09-05.md`.
