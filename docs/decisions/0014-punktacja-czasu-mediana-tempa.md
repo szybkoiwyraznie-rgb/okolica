@@ -27,8 +27,12 @@ próbce na stację, (c) nie karze gracza za to, że trafił mu się dłuższy od
 1. **Miarą jest tempo odcinka**: `tempo = czasS / odlegloscM` [s/m], gdzie
    `czasS` to czas od jawnej akcji startu do spełnienia kryterium dojścia
    (ADR 0004 pkt 3) **powiększony o karę za ręczne zgłoszenie** (`karaRecznaS`,
-   ADR 0004 pkt 5), a `odlegloscM` to dystans start → stacja liczony przez
-   `odlegloscM()` (haversine; od M4 — dystans sieciowy z ADR 0005).
+   ADR 0004 pkt 5), a `odlegloscM` to **dystans odcinka**: od punktu startu gry
+   do stacji 1, a dla każdej kolejnej stacji — od poprzedniej stacji. Liczy go
+   `dystansOdcinkaM()` przez `odlegloscM()` (haversine; od M4 — dystans sieciowy
+   z ADR 0005, sygnatura bez zmian). Gracz idzie więc trasą łańcuchową, nie
+   gwiaździstą: porównywanie tempa odcinka „start → stacja 4" z odcinkiem
+   „stacja 3 → stacja 4" byłoby bez sensu.
 2. **Zbiór próbek do mediany** (w kolejności, pierwsza spełniona wygrywa):
    1. odcinki **tej samej stacji** — jeśli są co najmniej 2 (przyszłe warianty
       gry: wielu graczy do jednej stacji, powtórki, tryb drużynowy),

@@ -13,13 +13,13 @@ w środku handlerów zdarzeń — czyli tam, gdzie nie da się jej przetestować
 
 ## Etapy
 
-- [ ] F1 — doprecyzowanie punktacji czasu: ADR 0014 (*Proponowana*) + wpis
+- [x] F1 — doprecyzowanie punktacji czasu: ADR 0014 (*Proponowana*) + wpis
       w rejestrze + plan. ADR 0009 pkt 5 mówi o „medianie odcinków tej samej
       stacji dla wszystkich graczy", co w modelu hot-seat (jeden gracz idzie do
       jednej stacji) nie ma próbek — potrzebna reguła zastępcza zanim powstanie
       kod punktacji.
       Kryterium: reguła jest jawna, ma wzór, zaciski i przypadek „za mało próbek".
-- [ ] F2 — `app/rozgrywka.js`: stan gry (schemat `rozgrywka/1`), kolejka graczy
+- [x] F2 — `app/rozgrywka.js`: stan gry (schemat `rozgrywka/1`), kolejka graczy
       (`stacja mod N`, ADR 0009 pkt 2), odcinki (start na jawnej akcji,
       `performance.now` wstrzykiwany jako `czasMs`, ADR 0004 pkt 3), kara za
       ręczne zgłoszenie (ADR 0004 pkt 5), tryby odpowiadania `wspolpraca`
