@@ -30,6 +30,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0011](0011-mobile-first-dotyk.md) | Mobile-first: interfejs dotykowy jako podstawowy, dostępność i czytelność w słońcu | Zaakceptowana |
 | [0012](0012-model-sesji-pr-audyt-inkrementalne-commity.md) | Model sesji: PR na starcie, audyt poprzedniego PR, inkrementalne commity, bez force push | Zaakceptowana |
 | [0013](0013-prywatnosc-wspolrzedne-na-urzadzeniu.md) | Prywatność: współrzędne gracza nie opuszczają urządzenia poza zapytania mapowe, zero analityki | Proponowana |
+| [0014](0014-punktacja-czasu-mediana-tempa.md) | Punktacja czasu: premia względem mediany tempa odcinków (doprecyzowanie ADR 0009 pkt 5) | Proponowana |
 
 ## Szablon ADR
 

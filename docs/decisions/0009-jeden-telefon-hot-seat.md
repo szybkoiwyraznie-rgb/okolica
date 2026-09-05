@@ -33,7 +33,9 @@ wspólnej trasie.
 5. **Punktacja** (dopracowanie w M7, ramy tutaj): punkty za poprawną odpowiedź
    (waga tematu/trudności) + premia/potrącenie za czas względem **mediany
    odcinków tej samej stacji dla wszystkich graczy** — a nie względem stałego
-   limitu, bo długość odcinka zależy od układu trasy. Ręczne zgłoszenie dojścia
+   limitu, bo długość odcinka zależy od układu trasy. W modelu hot-seat do
+   jednej stacji idzie jeden gracz, więc regułę próbek doprecyzowuje **ADR 0014**
+   (mediana tempa `[s/m]` z łańcuchem zbiorów próbek). Ręczne zgłoszenie dojścia
    (ADR 0004 pkt 5) dolicza karę konfigurowalną.
 6. **Gra na wielu urządzeniach jest odłożona** (`docs/BACKLOG.md` B1) i wymaga:
    nowego ADR, decyzji o usłudze synchronizującej albo o trybie
