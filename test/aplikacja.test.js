@@ -17,7 +17,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { WERSJA_PROTOKOLU } from '../app/protokol.js';
-import { DOMYSLNE, TEMATY, TRYBY } from '../app/konfig.js';
+import { DOMYSLNE, PODKLADY, TEMATY, TRYBY } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
 import { atrapaGeolokalizacji, zainstalujDom } from './helpers/dom.js';
 
@@ -230,4 +230,191 @@ test('bootstrap: uszkodzona konfiguracja w localStorage nie kładzie startu', as
   assert.ok(domSmieci.pobierz('status').textContent.length > 20);
   assert.equal(domSmieci.pobierz('setup-gracze').value, String(DOMYSLNE.liczbaGraczy), 'śmieciowy stan nie wchodzi do formularza');
   assert.ok(pamiec.size >= 0, 'pamięć pierwszej sesji zostaje nietknięta');
+});
+
+/* ------------------------------------------------------------------ mapa (M2) */
+
+/**
+ * Każdy test mapy pracuje na ŚWIEŻEJ atrapie i świeżym imporcie `app.js`
+ * (LESSONS: ponowny import dokłada kolejne nasłuchy `visibilitychange`, więc
+ * egzemplarze nie mogą dzielić atrap). Import z unikalnym query = nowy moduł.
+ */
+async function aplikacjaZMapa({ search = '' } = {}) {
+  const domMapy = zainstalujDom({ search });
+  await import(`../app/app.js?mapa=${Math.random().toString(36).slice(2)}`);
+  return domMapy;
+}
+
+/** Odpala nasłuch elementu tak, jak robi to przeglądarka. */
+function wyslij(el, typ, zdarzenie = {}) {
+  const lista = el.zdarzenia[typ] ?? [];
+  for (const fn of lista) fn({ type: typ, preventDefault() {}, ...zdarzenie });
+  return lista.length;
+}
+
+test('mapa: bootstrap rysuje kafelki OSM i podpisuje dostawcę', async () => {
+  const domMapy = await aplikacjaZMapa();
+  const kafelki = domMapy.pobierz('mapa-pozycja-kafelki');
+  assert.ok(kafelki.children.length > 0, 'panel mapy został pusty po starcie');
+  assert.ok(
+    kafelki.children.every((k) => String(k.getAttribute('href')).startsWith('https://tile.openstreetmap.org/')),
+    'kafelki mają pochodzić z podkładu domyślnego (OSM Standard)',
+  );
+  assert.equal(domMapy.pobierz('mapa-pozycja-atrybucja').textContent, PODKLADY.osm.atrybucja);
+  assert.ok(domMapy.pobierz('mapa-pozycja-svg').getAttribute('aria-label').length > 10);
+  assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 0, 'bez pozycji nie ma markera');
+});
+
+test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok na graczu', async () => {
+  const domMapy = await aplikacjaZMapa();
+  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 501 });
+  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
+  domMapy.kliknij('przycisk-gps');
+  gpsMapy.wyslijFix(52.235, 21.015, 15);
+
+  assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'brak markera pozycji');
+  assert.deepEqual(
+    domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
+    ['okrag-dokladnosc', 'okrag-promien'],
+    'koło dokładności i okrąg promienia gry',
+  );
+  assert.match(
+    domMapy.pobierz('mapa-pozycja-svg').getAttribute('aria-label'),
+    /52\.23500, 21\.01500/,
+    'widok ma być wycentrowany na pierwszym fixie',
+  );
+  assert.equal(domMapy.pobierz('mapa-stacje-marker').children.length, 1, 'druga mapa dostaje tę samą pozycję');
+});
+
+test('mapa: przejście do stacji rysuje numerowane pinezki i okrąg promienia', async () => {
+  const domMapy = await aplikacjaZMapa();
+  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 502 });
+  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
+  domMapy.kliknij('przycisk-gps');
+  gpsMapy.wyslijFix(52.235, 21.015, 15);
+  domMapy.kliknij('przycisk-dalej-stacje');
+
+  assert.equal(domMapy.pobierz('ekran-stacje').hidden, false);
+  const pinezki = domMapy.pobierz('mapa-stacje-pinezki');
+  assert.equal(pinezki.children.length, DOMYSLNE.liczbaStacji, 'tyle pinezek, ile stacji z listy');
+  assert.equal(pinezki.children.length, domMapy.pobierz('lista-stacji').children.length);
+  assert.deepEqual(pinezki.children.map((g) => g.children[1].textContent), ['1', '2', '3', '4', '5']);
+  const idPinezek = pinezki.children.map((g) => String(g.getAttribute('data-stacja')));
+  assert.equal(new Set(idPinezek).size, DOMYSLNE.liczbaStacji, 'pinezki mają różne identyfikatory stacji');
+  assert.deepEqual(
+    domMapy.pobierz('mapa-stacje-okregi').children.map((c) => c.getAttribute('class')),
+    ['okrag-dokladnosc', 'okrag-promien'],
+  );
+});
+
+test('mapa: zmiana podkładu w setupie podmienia kafelki i atrybucję obu map', async () => {
+  const domMapy = await aplikacjaZMapa();
+  const select = domMapy.pobierz('setup-podklad');
+
+  select.value = 'esri-satelita';
+  assert.ok(wyslij(select, 'change', { target: select }) > 0, 'select podkładu nie ma nasłuchu change');
+  assert.ok(
+    String(domMapy.pobierz('mapa-pozycja-kafelki').children[0].getAttribute('href')).includes('server.arcgisonline.com'),
+    'kafelki Esri (uwaga na kolejność y/x w URL)',
+  );
+  assert.equal(domMapy.pobierz('mapa-stacje-atrybucja').textContent, PODKLADY['esri-satelita'].atrybucja);
+
+  select.value = 'brak';
+  wyslij(select, 'change', { target: select });
+  assert.equal(domMapy.pobierz('mapa-pozycja-kafelki').children.length, 0, 'podkład wyłączony = zero żądań');
+  assert.equal(domMapy.pobierz('mapa-stacje-kafelki').children.length, 0);
+  assert.equal(domMapy.pobierz('mapa-pozycja-atrybucja').textContent, '', 'nie ma dostawcy — nie ma podpisu');
+
+  select.value = 'osm';
+  wyslij(select, 'change', { target: select });
+  assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0, 'powrót do OSM po podkładzie „brak"');
+});
+
+test('mapa: ręczna pozycja w trybie testowym nie udaje koła dokładności', async () => {
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
+  domMapy.pobierz('setup-lat').value = '52.23178';
+  domMapy.pobierz('setup-lon').value = '21.01234';
+  domMapy.kliknij('przycisk-ustaw-reczne');
+
+  assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'marker jest — pozycja ustawiona ręcznie');
+  assert.deepEqual(
+    domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
+    ['okrag-promien'],
+    'bez `accuracy` nie rysujemy koła dokładności (uczciwość wobec danych)',
+  );
+  assert.match(domMapy.pobierz('mapa-pozycja-svg').getAttribute('aria-label'), /52\.23178/);
+});
+
+test('mapa: schowany panel nie rysuje, a powrót na ekran przywraca warstwy', async () => {
+  const domMapy = await aplikacjaZMapa();
+  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 503 });
+  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
+  domMapy.kliknij('przycisk-gps');
+  gpsMapy.wyslijFix(52.235, 21.015, 15);
+  domMapy.kliknij('przycisk-dalej-stacje');
+  assert.ok(domMapy.pobierz('mapa-stacje-pinezki').children.length > 0);
+
+  domMapy.ustawProstokat('mapa-stacje', { width: 0, height: 0 });
+  domMapy.kliknij('przycisk-wstecz-pozycja');
+  domMapy.kliknij('przycisk-dalej-stacje');
+  assert.equal(domMapy.pobierz('mapa-stacje-pinezki').children.length, 0, 'panel o zerowym rozmiarze nie ma czego rysować');
+  assert.equal(domMapy.pobierz('mapa-stacje-kafelki').children.length, 0);
+
+  domMapy.ustawProstokat('mapa-stacje', { width: 360, height: 320 });
+  domMapy.kliknij('przycisk-wstecz-pozycja');
+  domMapy.kliknij('przycisk-dalej-stacje');
+  assert.ok(domMapy.pobierz('mapa-stacje-pinezki').children.length > 0, 'po pokazaniu ekranu pinezki wracają');
+  assert.ok(domMapy.pobierz('mapa-stacje-kafelki').children.length > 0, 'kafelki też wracają (sygnatura nie zostaje z pustego widoku)');
+});
+
+test('mapa: obrót telefonu (resize) przelicza widok na nowy rozmiar panelu', async () => {
+  const domMapy = await aplikacjaZMapa();
+  domMapy.ustawProstokat('mapa-pozycja', { width: 640, height: 300 });
+  assert.ok(domMapy.wyslijZdarzenieOkna('resize') >= 1, 'brak nasłuchu resize — obrót telefonu zostawiłby stary widok');
+  assert.equal(domMapy.pobierz('mapa-pozycja-svg').getAttribute('viewBox'), '0 0 640 300');
+  assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
+});
+
+test('mapa: wyczyszczony promień nie wysypuje przejścia — jest jawna odmowa z kodem K12', async () => {
+  const domMapy = await aplikacjaZMapa();
+  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 504 });
+  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
+  // gracz czyści pole promienia → `Number('') = 0`, czyli wartość skończona,
+  // która przechodzi przez hartowanie liczb w setupie
+  wyslij(domMapy.pobierz('setup-promien'), 'input', { target: { value: '' } });
+  domMapy.kliknij('przycisk-gps');
+  gpsMapy.wyslijFix(52.235, 21.015, 15);
+
+  // `stacjeProste` odmawia przy niedodatnim promieniu — przejście ma odmówić,
+  // a nie urwać się wyjątkiem w nasłuchu (LESSONS L10)
+  domMapy.kliknij('przycisk-dalej-stacje');
+  assert.equal(domMapy.pobierz('ekran-stacje').hidden, true, 'przejście jest odmówione, nie urwane');
+  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /\[K12\]/, 'kod z konfig.js, komunikat dla człowieka');
+  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /Promień gry/);
+  assert.match(domMapy.pobierz('status').textContent, /Wróć do ustawień gry/);
+
+  // mapa pozycji działa dalej i nie ma okręgu promienia, którego nie ma
+  assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1);
+  assert.deepEqual(
+    domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
+    ['okrag-dokladnosc'],
+  );
+  assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
+
+  // po poprawieniu promienia przejście działa
+  wyslij(domMapy.pobierz('setup-promien'), 'input', { target: { value: '1200' } });
+  domMapy.kliknij('przycisk-dalej-stacje');
+  assert.equal(domMapy.pobierz('ekran-stacje').hidden, false);
+  assert.equal(domMapy.pobierz('mapa-stacje-pinezki').children.length, DOMYSLNE.liczbaStacji);
+  assert.ok(domMapy.pobierz('mapa-stacje-kafelki').children.length > 0);
+});
+
+test('mapa: gest palcem na panelu zmienia widok (drag działa z aplikacji)', async () => {
+  const domMapy = await aplikacjaZMapa();
+  const svg = domMapy.pobierz('mapa-pozycja-svg');
+  const etykietaPrzed = svg.getAttribute('aria-label');
+  assert.ok(wyslij(svg, 'pointerdown', { pointerId: 1, clientX: 180, clientY: 160 }) > 0, 'svg nie ma nasłuchu pointerdown');
+  wyslij(svg, 'pointermove', { pointerId: 1, clientX: 60, clientY: 160 });
+  wyslij(svg, 'pointerup', { pointerId: 1 });
+  assert.notEqual(svg.getAttribute('aria-label'), etykietaPrzed, 'przeciągnięcie palcem ma zmienić środek widoku');
 });

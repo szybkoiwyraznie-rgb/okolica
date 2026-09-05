@@ -26,6 +26,8 @@ const README = czytaj('README.md');
 const ASSETS = czytaj('docs/ASSETS.md');
 const AGENTS = czytaj('AGENTS.md');
 const PACKAGE = JSON.parse(czytaj('package.json'));
+const MAPA = czytaj('app/mapa.js');
+const STYLE = czytaj('app/styles.css');
 
 /** Wiersze tabeli markdowna w sekcji zaczynającej się od `naglowek`. */
 function tabelaSekcji(dokument, naglowek) {
@@ -291,4 +293,66 @@ test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
 
 test('kontrakt: AME-main.zip nie wrócił do korzenia (decyzja właściciela 2026-09-05)', () => {
   assert.ok(!existsSync(join(ROOT, 'AME-main.zip')), 'wzorce organizacyjne są przeniesione — archiwum AME zostaje w historii git');
+});
+
+/* ------------------------------------------------------------------ mapa (M2) */
+
+const PANELE_MAPY = ['pozycja', 'stacje'];
+const CZESCI_MAPY = ['', '-svg', '-kafelki', '-okregi', '-pinezki', '-marker', '-przybliz', '-oddal', '-centruj', '-skala', '-atrybucja'];
+
+test('kontrakt: szkielet obu paneli mapy jest w index.html kompletny', () => {
+  for (const panel of PANELE_MAPY) {
+    for (const czesc of CZESCI_MAPY) {
+      const id = `mapa-${panel}${czesc}`;
+      assert.ok(INDEX.includes(`id="${id}"`), `w index.html brakuje #${id} — mapa by się nie wpięła`);
+    }
+  }
+});
+
+test('kontrakt: panel mapy jest dostępny — svg ma rolę i etykietę, przyciski mają typ i aria-label', () => {
+  for (const panel of PANELE_MAPY) {
+    const znacznikSvg = INDEX.match(new RegExp(`<svg id="mapa-${panel}-svg"[^>]*>`))?.[0];
+    assert.ok(znacznikSvg, `brak <svg id="mapa-${panel}-svg">`);
+    assert.match(znacznikSvg, /role="img"/);
+    assert.match(znacznikSvg, /aria-label="/);
+    for (const akcja of ['przybliz', 'oddal', 'centruj']) {
+      const przycisk = INDEX.match(new RegExp(`<button id="mapa-${panel}-${akcja}"[^>]*>`))?.[0];
+      assert.ok(przycisk, `brak przycisku #mapa-${panel}-${akcja}`);
+      assert.match(przycisk, /type="button"/);
+      assert.match(przycisk, /aria-label="/);
+    }
+  }
+});
+
+test('kontrakt: atrybucja dostawcy nie jest domyślnie chowana w CSS (ADR 0003 pkt 3)', () => {
+  assert.ok(STYLE.includes('.mapa-atrybucja'), 'brak stylów atrybucji');
+  // chować wolno tylko pustą (podkład wyłączony) — nigdy samej atrybucji
+  assert.ok(!/\.mapa-atrybucja\s*\{[^}]*display:\s*none/.test(STYLE), 'atrybucja nie może być domyślnie display:none');
+  assert.ok(STYLE.includes('.mapa-atrybucja:empty'), 'pusta atrybucja (podkład „brak") może zniknąć');
+  assert.ok(/\.mapa\s*\{[^}]*touch-action:\s*none/.test(STYLE), 'gest mapy wymaga touch-action: none na panelu');
+});
+
+test('kontrakt: mapa.js nie woła sieci, geolokalizacji ani alertów — rysuje to, co dostał', () => {
+  assert.ok(!/\bfetch\s*\(/.test(MAPA), 'mapa.js nie może sam pobierać danych (kafelki ładuje <image>)');
+  assert.ok(!/navigator\.geolocation|watchPosition/.test(MAPA), 'pozycja wchodzi do mapy przez app.js, nie z API');
+  assert.ok(!/\balert\s*\(|\bconfirm\s*\(|\bprompt\s*\(/.test(MAPA), 'komunikaty idą do warstwy aplikacji (ADR 0015 pkt 6)');
+  assert.ok(!/\brequire\s*\(|node:/.test(MAPA), 'zero zależności i zero API Node (ADR 0001, LESSONS L6)');
+});
+
+test('kontrakt: szablony URL kafelków są dokładnie te z docs/ASSETS.md §1', async () => {
+  const { SZABLONY_KAFELKOW } = await import('../app/mapa.js');
+  for (const [klucz, szablon] of Object.entries(SZABLONY_KAFELKOW)) {
+    if (szablon === null) {
+      assert.equal(klucz, 'brak', 'tylko podkład „brak" nie ma URL-a');
+      continue;
+    }
+    // ASSETS zapisuje rotację poddomen jako `{a,b,c}`, kod jako `{s}` z listą
+    // `PODDOMENY = ['a','b','c']` — porównujemy po ujednoliceniu zapisu
+    const wDokumentacji = szablon.replace('{s}', '{a,b,c}');
+    assert.ok(
+      ASSETS.includes(wDokumentacji),
+      `szablon ${klucz} (${wDokumentacji}) nie ma wiersza w ASSETS §1`,
+    );
+  }
+  assert.match(SZABLONY_KAFELKOW['esri-satelita'], /\{z\}\/\{y\}\/\{x\}$/, 'Esri ma odwrotną kolejność y/x (ASSETS §1)');
 });

@@ -1,9 +1,11 @@
 /**
  * app.js — bootstrap: ekrany, stan sesji, spinanie modułów.
  *
- * Zakres M0: setup → pozycja → stacje (tryb uproszczony) → prompt → wklejenie
- * i walidacja paczki. Mapa (M2), Overpass (M4), szyfrowanie paczki (M1/M5)
- * i rozgrywka (M6) dochodzą w kolejnych kamieniach — patrz `docs/ROADMAP.md`.
+ * Zakres: setup → pozycja → stacje (tryb uproszczony) → prompt → wklejenie
+ * i walidacja paczki (M0), model rozgrywki i warstwa pozycji jako czyste
+ * funkcje (M1) oraz mapa SVG z kafelkami, gestami i warstwami własnymi (M2).
+ * Overpass (M4), ekran gry (M6) i publikacja (M8) dochodzą w kolejnych
+ * kamieniach — patrz `docs/ROADMAP.md`.
  *
  * Warstwa DOM jest celowo cienka (ARCHITECTURE §podział): logika mieszka
  * w `konfig.js`, `geo.js`, `protokol.js`, `stacje.js`, `pozycja.js` i jest
@@ -13,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m1-1';
-import { formatujWspolrzedne, geohash } from './geo.js?v=m1-1';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m2-1';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash } from './geo.js?v=m2-1';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -22,10 +24,11 @@ import {
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
-} from './protokol.js?v=m1-1';
-import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m1-1';
-import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m1-1';
-import { ZRODLA_FIXA, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, watchPozycja } from './pozycja.js?v=m1-1';
+} from './protokol.js?v=m2-1';
+import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m2-1';
+import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m2-1';
+import { ZRODLA_FIXA, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, watchPozycja } from './pozycja.js?v=m2-1';
+import { utworzMape } from './mapa.js?v=m2-1';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -47,6 +50,10 @@ const STAN = {
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
+  /** Mapy z `mapa.js` (M2): `null`, gdy panelu nie ma w `index.html`. */
+  mapy: { pozycja: null, stacje: null },
+  /** Czy widok był już centrowany na pierwszym fixie — potem rządzi palec. */
+  wycentrowane: false,
 };
 
 function $(id) {
@@ -66,6 +73,7 @@ function pokazEkran(nazwa) {
       krok.classList.toggle('zrobione', EKRANY.indexOf(e) < EKRANY.indexOf(nazwa));
     }
   }
+  odswiezMapeEkranu(nazwa);
   window.scrollTo({ top: 0 });
 }
 
@@ -165,7 +173,7 @@ function renderujSelecty() {
   wypelnij('setup-podklad', PODKLADY, STAN.konfig.podklad);
   $('setup-wspolpraca').addEventListener('change', (e) => { STAN.konfig.wspolpraca = e.target.value; });
   $('setup-jezyk').addEventListener('change', (e) => { STAN.konfig.jezyk = e.target.value; });
-  $('setup-podklad').addEventListener('change', (e) => { STAN.konfig.podklad = e.target.value; });
+  $('setup-podklad').addEventListener('change', (e) => { zmienPodklad(e.target.value); });
 }
 
 function renderujImiona() {
@@ -238,6 +246,7 @@ function pokazPozycje() {
     $('pozycja-dokladnosc').textContent = 'dokładność: —';
     $('pozycja-wspolrzedne').textContent = '';
     $('przycisk-dalej-stacje').disabled = true;
+    odswiezWarstwy();
     return;
   }
   $('pozycja-status').textContent = STAN.ostatniFix?.zrodlo === ZRODLA_FIXA.reczne ? 'Pozycja ustawiona ręcznie' : 'Pozycja ustalona';
@@ -248,6 +257,13 @@ function pokazPozycje() {
   // Jawność niedokładności (ADR 0004 pkt 4): komunikat i próg liczy `ocenFix`,
   // tu tylko pokazujemy, co powiedział.
   if (STAN.ocenaFixa?.kod) status(STAN.ocenaFixa.komunikat);
+
+  odswiezWarstwy();
+  // pierwszy fix ustawia widok; potem mapę prowadzi palec gracza (ADR 0011)
+  if (!STAN.wycentrowane) {
+    STAN.wycentrowane = true;
+    centrujNaPozycji();
+  }
 }
 
 /** Zamyka watcher, jeśli działa (ADR 0004 pkt 1: jeden watcher na rozgrywkę). */
@@ -287,6 +303,73 @@ function wlaczGps() {
   if (!STAN.watcher.czyAktywny()) $('pozycja-status').textContent = 'Brak pozycji';
 }
 
+/* ------------------------------------------------------------------ mapa */
+
+/**
+ * Zakłada mapy na ekranach „pozycja" i „stacje" (M2). Cała geometria, adresy
+ * kafelków i gesty są w `mapa.js`; tu tylko wiązanie stanu aplikacji
+ * z warstwami. Brak panelu w `index.html` nie wysypuje aplikacji —
+ * `utworzMape` zwraca wtedy `null`.
+ */
+function utworzMapy() {
+  const podklad = PODKLADY[STAN.konfig.podklad] ? STAN.konfig.podklad : DOMYSLNE.podklad;
+  STAN.mapy.pozycja = utworzMape({ id: 'mapa-pozycja', podklad, zoom: 16 });
+  STAN.mapy.stacje = utworzMape({ id: 'mapa-stacje', podklad, zoom: 16 });
+}
+
+function kazdaMapa(fn) {
+  for (const mapa of Object.values(STAN.mapy)) if (mapa) fn(mapa);
+}
+
+/** Zoom, przy którym promień gry zajmuje ~40% szerokości panelu (`geo.js`). */
+function zoomDlaPromienia(mapa, lat) {
+  const szerokosc = Math.max(mapa.rozmiar().szerokosc, 240);
+  const promienM = STAN.konfig.promienM;
+  // Puste albo ręcznie zepsute pole promienia nie może wysypać widoku:
+  // wracamy do zoomu z kanonu trybu (LESSONS L10 — widełki nie chronią przed NaN,
+  // a `dopasujZoomDoPromienia` odmawia przy niedodatnim promieniu).
+  if (!(promienM > 0) || !Number.isFinite(lat)) return TRYBY[STAN.konfig.tryb]?.zoom ?? 16;
+  return dopasujZoomDoPromienia(promienM, szerokosc, lat);
+}
+
+/**
+ * Przenosi stan aplikacji na warstwy map: marker pozycji z kołem dokładności,
+ * okrąg promienia gry i numerowane pinezki stacji. Wołane po każdym fixie,
+ * po przeliczeniu stacji i po zmianie ustawień, które widać na mapie.
+ */
+function odswiezWarstwy() {
+  const p = STAN.pozycja;
+  const fix = p ? { lat: p.lat, lon: p.lon, accuracy: STAN.dokladnoscM ?? undefined } : null;
+  kazdaMapa((mapa) => mapa.pokazPozycje(fix));
+  if (STAN.mapy.pozycja) STAN.mapy.pozycja.zaznaczStacje([], { promienM: STAN.konfig.promienM });
+  if (STAN.mapy.stacje) {
+    STAN.mapy.stacje.zaznaczStacje(STAN.stacje, { promienM: STAN.konfig.promienM, aktywna: null });
+  }
+}
+
+/** Wyśrodkowuje mapy na pozycji gracza w zoomie dobranym do promienia gry. */
+function centrujNaPozycji() {
+  const p = STAN.pozycja;
+  if (!p) return;
+  kazdaMapa((mapa) => mapa.ustawSrodek({ lat: p.lat, lon: p.lon, zoom: zoomDlaPromienia(mapa, p.lat) }));
+}
+
+/** Podkład wybiera się w setupie; zmiana dotyczy wszystkich map (ADR 0003). */
+function zmienPodklad(klucz) {
+  if (!PODKLADY[klucz]) return;
+  STAN.konfig.podklad = klucz;
+  kazdaMapa((mapa) => mapa.ustawPodklad(klucz));
+}
+
+/**
+ * Panel schowany (`hidden`) ma rozmiar 0, więc nie ma czego rysować —
+ * po pokazaniu ekranu widok trzeba przeliczyć od nowa.
+ */
+function odswiezMapeEkranu(nazwa) {
+  const mapa = STAN.mapy[nazwa];
+  if (mapa) mapa.odswiez();
+}
+
 /* ---------------------------------------------------------------- stacje */
 
 function ziarno() {
@@ -303,6 +386,9 @@ function przeliczStacje() {
     offsetObrotu: STAN.obrot,
   });
   renderujStacje();
+
+  odswiezWarstwy();
+  centrujNaPozycji();
 }
 
 function renderujStacje() {
@@ -513,6 +599,7 @@ function start() {
   renderujSelecty();
   renderujImiona();
   renderujSetup();
+  utworzMapy();
 
   if (location.search.includes('tryb=test')) {
     STAN.trybTestowy = true;
@@ -544,6 +631,12 @@ function start() {
   });
 
   $('przycisk-gps').addEventListener('click', wlaczGps);
+
+  // Obrót telefonu albo zmiana rozmiaru okna: panele map mają inne wymiary,
+  // więc widok trzeba przeliczyć (rozmiar bierzemy z `getBoundingClientRect`).
+  window.addEventListener('resize', () => {
+    kazdaMapa((mapa) => mapa.odswiez());
+  });
 
   // Pauza śledzenia, gdy karta schodzi w tło — oszczędność baterii i jawny
   // komunikat po powrocie (ADR 0004 pkt 1).
@@ -592,6 +685,19 @@ function start() {
 
   $('przycisk-wstecz-setup').addEventListener('click', () => pokazEkran('setup'));
   $('przycisk-dalej-stacje').addEventListener('click', () => {
+    // Na ekran pozycji da się wejść także przyciskiem trybu testowego, który
+    // nie waliduje setupu, a `stacjeProste` odmawia przy niedodatnim promieniu
+    // albo liczbie stacji. Zamiast wyjątku w nasłuchu — jawna odmowa z kodami
+    // z `konfig.js` (LESSONS L10: walidacja nie może zakładać, że ktoś
+    // wcześniej posprzątał).
+    // Walidujemy stan, nie DOM: na tym ekranie pola setupu są schowane, a
+    // imiona i tak trafiają do `STAN.konfig.imiona` z nasłuchów `input`.
+    const usterki = walidujSetup(STAN.konfig);
+    if (usterki.length) {
+      pokazBledy('bledy-pozycja', usterki);
+      status(`Stacje nie zostały rozstawione: konfiguracja ma usterek: ${usterki.length}. Wróć do ustawień gry i popraw je.`);
+      return;
+    }
     pokazEkran('stacje');
     przeliczStacje();
   });

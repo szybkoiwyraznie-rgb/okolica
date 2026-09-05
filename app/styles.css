@@ -278,3 +278,89 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 }
 .dol .separator { opacity: 0.5; }
 .dol code { font-size: 12px; }
+
+/* --- mapa (M2): panel, warstwy SVG, gesty, atrybucja --- */
+.mapa {
+  position: relative;
+  height: 45vh;
+  min-height: 240px;
+  max-height: 460px;
+  margin: 10px 0;
+  overflow: hidden;
+  border: 1px solid var(--linia);
+  border-radius: var(--promien);
+  background: var(--tlo-pole);
+  /* gest mapy nie może przewijać strony ani uruchamiać zoomu przeglądarki;
+     reszta aplikacji zostaje przybliżalna (dostępność, ADR 0011) */
+  touch-action: none;
+  overscroll-behavior: contain;
+}
+.mapa-svg { display: block; width: 100%; height: 100%; }
+.mapa-svg:focus-visible { outline: 3px solid var(--akcent); outline-offset: -3px; }
+.kafelek { display: block; }
+html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
+
+/* warstwy własne nie kradną gestu — pan i pinch łapie cały panel */
+.warstwa-okregi, .warstwa-pinezki, .warstwa-marker { pointer-events: none; }
+
+.okrag-dokladnosc { fill: var(--akcent); fill-opacity: 0.14; stroke: var(--akcent); stroke-width: 1.5; }
+.okrag-promien { fill: var(--akcent); fill-opacity: 0.05; stroke: var(--akcent); stroke-width: 2; stroke-dasharray: 8 5; }
+
+.pinezka circle { fill: var(--akcent); stroke: #fff; stroke-width: 2; }
+.pinezka text { fill: #fff; font-size: 13px; font-weight: 700; }
+.pinezka-aktywna circle { fill: var(--ostrzezenie); }
+.marker circle { fill: #1d6fe0; stroke: #fff; stroke-width: 3; }
+
+.mapa-przyciski { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 6px; }
+.mapa-przycisk {
+  display: grid;
+  place-items: center;
+  width: var(--cel);
+  height: var(--cel);
+  padding: 0;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--tekst);
+  background: var(--tlo-karta);
+  border: 1px solid var(--linia);
+  border-radius: 12px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
+  cursor: pointer;
+}
+.mapa-przycisk:active { background: var(--akcent-slaby); }
+.mapa-przycisk:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
+
+.mapa-skala {
+  position: absolute;
+  bottom: 24px;
+  left: 8px;
+  margin: 0;
+  padding: 1px 6px;
+  font-size: 12px;
+  color: var(--tekst);
+  background: var(--tlo-karta);
+  border: 1px solid var(--linia);
+  border-radius: 6px;
+  opacity: 0.92;
+}
+.mapa-skala:empty { display: none; }
+
+/* atrybucja dostawcy jest obowiązkowa, gdy podkład jest włączony (ADR 0003 pkt 3,
+   ASSETS §1) — dlatego pasek nie znika, a przy podkładzie „brak" nie ma czego
+   podpisywać i pasek chowa się razem z pustą treścią */
+.mapa-atrybucja {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  margin: 0;
+  padding: 2px 6px;
+  font-size: 10px;
+  line-height: 1.3;
+  text-align: right;
+  color: var(--tekst-slaby);
+  background: var(--tlo-karta);
+  border-top: 1px solid var(--linia);
+  opacity: 0.9;
+}
+.mapa-atrybucja:empty { display: none; }

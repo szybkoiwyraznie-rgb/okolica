@@ -343,7 +343,7 @@ export function planMapy({
           numer: i + 1,
           x: ekran.x,
           y: ekran.y,
-          dystansM: stacja.dystansM ?? null,
+          dystansM: stacja.dystansM ?? stacja.odlegloscM ?? null,
           aktywna: aktywnaStacja !== null && stacja.id === aktywnaStacja,
         };
       });
@@ -426,11 +426,14 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
     sygnaturaKafelkow: '',
   };
 
-  if (srodek) {
-    stan.widok = widokNaSrodek({ ...srodek, zoom, rozmiar: stan.rozmiar });
-  } else {
-    stan.widok = widokNaSrodek({ lat: 52.23, lon: 21.01, zoom, rozmiar: stan.rozmiar });
-  }
+  // start bez środka: Warszawa (jak w `domyslnaKonfiguracja`), a zoom nigdy
+  // ponad to, co podkład naprawdę ma — inaczej prosilibyśmy o nieistniejące kafelki
+  const start = srodek ?? { lat: 52.23, lon: 21.01 };
+  stan.widok = widokNaSrodek({
+    ...start,
+    zoom: Math.min(zoom, maxZoomPodkladu(podklad)),
+    rozmiar: stan.rozmiar,
+  });
 
   /* --- rysowanie --- */
 
@@ -683,10 +686,11 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
     rozmiar: () => ({ ...stan.rozmiar }),
     /** Ustawia środek i (opcjonalnie) zoom, potem przerysowuje. */
     ustawSrodek({ lat, lon, zoom: z = null }) {
+      const zoomDocelowy = Math.min(z ?? zoomWidoku(stan.widok), maxZoomPodkladu(stan.podklad));
       stan.widok = widokNaSrodek({
         lat,
         lon,
-        zoom: z ?? zoomWidoku(stan.widok),
+        zoom: zoomDocelowy,
         rozmiar: rozmiarPanelu(kontener),
       });
       return rysuj();

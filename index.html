@@ -18,8 +18,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m1-1">
-  <script type="module" src="app/app.js?v=m1-1"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m2-1">
+  <script type="module" src="app/app.js?v=m2-1"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -137,6 +137,21 @@
         <p id="pozycja-wspolrzedne" class="kod"></p>
         <p id="pozycja-miejsce" class="podpowiedz"></p>
       </div>
+      <div id="mapa-pozycja" class="mapa">
+        <svg id="mapa-pozycja-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
+          <g id="mapa-pozycja-kafelki" class="warstwa-kafelki"></g>
+          <g id="mapa-pozycja-okregi" class="warstwa-okregi"></g>
+          <g id="mapa-pozycja-pinezki" class="warstwa-pinezki"></g>
+          <g id="mapa-pozycja-marker" class="warstwa-marker"></g>
+        </svg>
+        <div class="mapa-przyciski">
+          <button id="mapa-pozycja-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+          <button id="mapa-pozycja-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">－</button>
+          <button id="mapa-pozycja-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+        </div>
+        <p id="mapa-pozycja-skala" class="mapa-skala"></p>
+        <p id="mapa-pozycja-atrybucja" class="mapa-atrybucja"></p>
+      </div>
       <div class="wiersz">
         <button id="przycisk-gps" class="przycisk przycisk-glowny" type="button">🛰 Włącz GPS</button>
         <button id="przycisk-recznie" class="przycisk" type="button">✎ Wpisz ręcznie</button>
@@ -159,13 +174,28 @@
     <section id="ekran-stacje" class="ekran" hidden aria-labelledby="tytul-stacje">
       <h2 id="tytul-stacje">Stacje w Twojej okolicy</h2>
       <p id="stacje-tryb" class="podpowiedz"></p>
+      <div id="mapa-stacje" class="mapa">
+        <svg id="mapa-stacje-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
+          <g id="mapa-stacje-kafelki" class="warstwa-kafelki"></g>
+          <g id="mapa-stacje-okregi" class="warstwa-okregi"></g>
+          <g id="mapa-stacje-pinezki" class="warstwa-pinezki"></g>
+          <g id="mapa-stacje-marker" class="warstwa-marker"></g>
+        </svg>
+        <div class="mapa-przyciski">
+          <button id="mapa-stacje-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+          <button id="mapa-stacje-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">－</button>
+          <button id="mapa-stacje-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+        </div>
+        <p id="mapa-stacje-skala" class="mapa-skala"></p>
+        <p id="mapa-stacje-atrybucja" class="mapa-atrybucja"></p>
+      </div>
       <ol id="lista-stacji" class="lista-stacji"></ol>
       <p id="stacje-sprawiedliwosc" class="badge"></p>
       <div class="wiersz">
         <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
         <button id="przycisk-pierścien" class="przycisk" type="button" hidden>◎ Tryb uproszczony</button>
       </div>
-      <p class="podpowiedz">Mapa i stacje z sieci dróg (Overpass) pojawią się w kamieniach M2 i M4 — patrz <code>docs/ROADMAP.md</code>.</p>
+      <p class="podpowiedz">Stacje są rozstawione w pierścieniu (ADR 0005 pkt 4). Punkty na sieci dróg, placów i szlaków — „nigdy w budynku ani na terenie prywatnym" — dojdą w kamieniu M4; patrz <code>docs/ROADMAP.md</code>.</p>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wstecz-pozycja" class="przycisk" type="button">← pozycja</button>
         <button id="przycisk-dalej-prompt" class="przycisk przycisk-glowny" type="button">Dalej: pytania →</button>
