@@ -35,10 +35,15 @@ export function ukryteWHtml(html) {
 }
 
 /** Pojedynczy element-atrapa. `zdarzenia` i `children` pozwalają asertować UI. */
-export function stubElementu(id, ukryte = new Set()) {
+export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) {
   let wartosc = '';
   return {
     id,
+    tagName: String(id).toUpperCase(),
+    /** Rozmiar elementu na ekranie — mapa mierzy nim swój panel. */
+    getBoundingClientRect() {
+      return prostokat ?? { width: 360, height: 320, top: 0, left: 0, right: 360, bottom: 320 };
+    },
     // jak w prawdziwym <input>: zapis liczby i tak czytany jest jako tekst —
     // atrapa, która tego nie robi, przepuściłaby porównania `value === 1000`
     get value() { return wartosc; },
@@ -60,14 +65,27 @@ export function stubElementu(id, ukryte = new Set()) {
       contains(c) { return this.dodane.has(c); },
     },
     appendChild(dziecko) { this.children.push(dziecko); return dziecko; },
+    removeChild(dziecko) {
+      const i = this.children.indexOf(dziecko);
+      if (i >= 0) this.children.splice(i, 1);
+      return dziecko;
+    },
+    /** Jak w przeglądarce (Chrome 86+): podmiana całej listy dzieci. */
+    replaceChildren(...nowe) { this.children = [...nowe]; return undefined; },
     setAttribute(k, v) { this.dataset[`attr-${k}`] = v; },
     getAttribute(k) { return this.dataset[`attr-${k}`] ?? null; },
     removeAttribute(k) { delete this.dataset[`attr-${k}`]; },
     addEventListener(typ, fn) { (this.zdarzenia[typ] ??= []).push(fn); },
-    removeEventListener() {},
+    removeEventListener(typ, fn) {
+      const lista = this.zdarzenia[typ];
+      if (!lista) return;
+      const i = lista.indexOf(fn);
+      if (i >= 0) lista.splice(i, 1);
+    },
     querySelector() { return null; },
     querySelectorAll() { return []; },
     focus() {}, select() {}, setSelectionRange() {}, click() {}, scrollIntoView() {},
+    setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture() { return false; },
     remove() {}, insertAdjacentHTML() {}, closest() { return null; }, matches() { return false; },
   };
 }
@@ -97,8 +115,10 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
   const ukryte = ukryteWHtml(html);
   const elementy = new Map();
 
+  const prostokaty = new Map();
+
   const pobierz = (id) => {
-    if (!elementy.has(id)) elementy.set(id, stubElementu(id, ukryte));
+    if (!elementy.has(id)) elementy.set(id, stubElementu(id, ukryte, { prostokat: prostokaty.get(id) ?? null }));
     return elementy.get(id);
   };
 
@@ -113,6 +133,11 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     querySelector() { return null; },
     querySelectorAll() { return []; },
     createElement(typ) { return stubElementu(typ, ukryte); },
+    createElementNS(przestrzen, typ) {
+      const el = stubElementu(typ, ukryte);
+      el.przestrzenNazw = przestrzen;
+      return el;
+    },
     addEventListener(typ, fn) { (zdarzeniaDokumentu[typ] ??= []).push(fn); },
   };
 
@@ -177,6 +202,13 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     ustawHidden(czyUkryty) {
       documentStub.hidden = Boolean(czyUkryty);
       documentStub.visibilityState = czyUkryty ? 'hidden' : 'visible';
+    },
+    /** Rozmiar elementu zwracany przez `getBoundingClientRect()` (panel mapy). */
+    ustawProstokat(id, { width = 360, height = 320 } = {}) {
+      prostokaty.set(id, { width, height, top: 0, left: 0, right: width, bottom: height });
+      const el = elementy.get(id);
+      if (el) el.getBoundingClientRect = () => ({ width, height, top: 0, left: 0, right: width, bottom: height });
+      return prostokaty.get(id);
     },
     /** Podmiana `navigator.geolocation` bez reinstalacji całej atrapy. */
     ustawGeolokalizacje(atrapa) {
