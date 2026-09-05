@@ -6,11 +6,15 @@
  * i rozgrywka (M6) dochodzą w kolejnych kamieniach — patrz `docs/ROADMAP.md`.
  *
  * Warstwa DOM jest celowo cienka (ARCHITECTURE §podział): logika mieszka
- * w `konfig.js`, `geo.js`, `protokol.js`, `stacje.js` i jest testowana w Node.
+ * w `konfig.js`, `geo.js`, `protokol.js`, `stacje.js`, `pozycja.js` i jest
+ * testowana w Node. Geolokalizacja idzie wyłącznie przez osłonę
+ * `watchPozycja()` z `pozycja.js` — jeden watcher na rozgrywkę, reguły
+ * dokładności i komunikaty błędów tam, gdzie da się je przetestować
+ * (ADR 0004 pkt 1, 4, 7).
  */
 
 import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m0-2';
-import { formatujWspolrzedne, geohash, czyWspolrzedneOk } from './geo.js?v=m0-2';
+import { formatujWspolrzedne, geohash } from './geo.js?v=m0-2';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -21,6 +25,7 @@ import {
 } from './protokol.js?v=m0-2';
 import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m0-2';
 import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m0-2';
+import { ZRODLA_FIXA, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, watchPozycja } from './pozycja.js?v=m0-2';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -29,6 +34,9 @@ const STAN = {
   konfig: domyslnaKonfiguracja(),
   pozycja: null,
   dokladnoscM: null,
+  ostatniFix: null,
+  ocenaFixa: null,
+  pauzaWTle: false,
   miejsce: '',
   stacje: [],
   obrot: 0,
@@ -37,6 +45,7 @@ const STAN = {
   paczka: null,
   usterkiPaczki: [],
   trybTestowy: false,
+  /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
 };
 
@@ -231,43 +240,51 @@ function pokazPozycje() {
     $('przycisk-dalej-stacje').disabled = true;
     return;
   }
-  $('pozycja-status').textContent = 'Pozycja ustalona';
-  $('pozycja-dokladnosc').textContent = STAN.dokladnoscM ? `dokładność: ±${Math.round(STAN.dokladnoscM)} m` : 'dokładność: nieznana (tryb testowy)';
+  $('pozycja-status').textContent = STAN.ostatniFix?.zrodlo === ZRODLA_FIXA.reczne ? 'Pozycja ustawiona ręcznie' : 'Pozycja ustalona';
+  $('pozycja-dokladnosc').textContent = STAN.dokladnoscM ? `dokładność: ±${Math.round(STAN.dokladnoscM)} m` : 'dokładność: nieznana (wpisana ręcznie)';
   $('pozycja-wspolrzedne').textContent = `${formatujWspolrzedne(p.lat, p.lon)} · geohash ${geohash(p.lat, p.lon, 6)}`;
   $('pozycja-miejsce').textContent = STAN.miejsce ? `miejsce: ${STAN.miejsce}` : 'nazwa miejsca: brak odczytu (Overpass dołączy ją w M4)';
   $('przycisk-dalej-stacje').disabled = false;
-  if (STAN.dokladnoscM && STAN.dokladnoscM > 100) {
-    status('Dokładność GPS powyżej 100 m — przejdź w miejsce z lepszym widokiem nieba albo użyj współrzędnych ręcznych.');
+  // Jawność niedokładności (ADR 0004 pkt 4): komunikat i próg liczy `ocenFix`,
+  // tu tylko pokazujemy, co powiedział.
+  if (STAN.ocenaFixa?.kod) status(STAN.ocenaFixa.komunikat);
+}
+
+/** Zamyka watcher, jeśli działa (ADR 0004 pkt 1: jeden watcher na rozgrywkę). */
+function zatrzymajGps() {
+  if (STAN.watcher) {
+    STAN.watcher.zamknij();
+    STAN.watcher = null;
   }
 }
 
+/**
+ * Włącza śledzenie położenia przez osłonę z `pozycja.js`. Cała logika
+ * (opcje watchera, filtr dokładności, komunikaty błędów, brak API) jest tam —
+ * tu tylko przypisanie stanu i odświeżenie ekranu.
+ */
 function wlaczGps() {
-  if (!('geolocation' in navigator)) {
-    pokazBledy('bledy-pozycja', [{ kod: 'G01', pole: 'geolocation', komunikat: 'Ta przeglądarka nie udostępnia geolokalizacji. Użyj trybu testowego (⚙) albo innej przeglądarki.' }]);
-    return;
-  }
-  if (STAN.watcher != null) navigator.geolocation.clearWatch(STAN.watcher);
+  zatrzymajGps();
   $('pozycja-status').textContent = 'Szukam satelitów…';
   status('GPS włączony — pierwszy fix potrafi trwać kilkanaście sekund.');
-  STAN.watcher = navigator.geolocation.watchPosition(
-    (fix) => {
-      STAN.pozycja = { lat: fix.coords.latitude, lon: fix.coords.longitude };
-      STAN.dokladnoscM = fix.coords.accuracy;
+  STAN.watcher = watchPozycja({
+    geolocation: navigator.geolocation,
+    zegar: () => performance.now(),
+    onFix: (fix, ocena) => {
+      STAN.ostatniFix = fix;
+      STAN.ocenaFixa = ocena;
+      STAN.pozycja = { lat: fix.lat, lon: fix.lon };
+      STAN.dokladnoscM = fix.accuracy;
+      pokazBledy('bledy-pozycja', ocena.kod ? [{ kod: ocena.kod, pole: 'geolocation', komunikat: ocena.komunikat }] : []);
       pokazPozycje();
-      pokazBledy('bledy-pozycja', []);
     },
-    (blad) => {
-      const komunikaty = {
-        1: 'Brak zgody na geolokalizację — włącz ją w ustawieniach strony albo użyj współrzędnych ręcznych.',
-        2: 'Pozycja niedostępna (brak sygnału GPS). Wyjdź na otwartą przestrzeń albo wpisz współrzędne ręcznie.',
-        3: 'Przekroczony czas oczekiwania na pozycję. Spróbuj ponownie.',
-      };
-      pokazBledy('bledy-pozycja', [{ kod: `G0${blad.code || 9}`, pole: 'geolocation', komunikat: komunikaty[blad.code] ?? blad.message }]);
+    onBlad: (blad) => {
+      pokazBledy('bledy-pozycja', [{ kod: blad.kod, pole: 'geolocation', komunikat: blad.komunikat }]);
       $('pozycja-status').textContent = 'Brak pozycji';
-      status('GPS niedostępny — dostępny tryb ręczny (ADR 0004 pkt 5).');
+      status('Położenie niedostępne — dojście można zgłaszać ręcznie (ADR 0004 pkt 5) albo grać w trybie testowym (pkt 6).');
     },
-    { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 },
-  );
+  });
+  if (!STAN.watcher.czyAktywny()) $('pozycja-status').textContent = 'Brak pozycji';
 }
 
 /* ---------------------------------------------------------------- stacje */
@@ -527,19 +544,47 @@ function start() {
   });
 
   $('przycisk-gps').addEventListener('click', wlaczGps);
+
+  // Pauza śledzenia, gdy karta schodzi w tło — oszczędność baterii i jawny
+  // komunikat po powrocie (ADR 0004 pkt 1).
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      if (STAN.watcher?.czyAktywny()) {
+        zatrzymajGps();
+        STAN.pauzaWTle = true;
+        status(komunikatPauzy().komunikat);
+      }
+      return;
+    }
+    if (!STAN.pauzaWTle) return;
+    STAN.pauzaWTle = false;
+    if (STAN.trybTestowy) return;
+    wlaczGps();
+    status(komunikatWznowienia().komunikat);
+  });
   $('przycisk-recznie').addEventListener('click', () => {
     $('reczne-wspolrzedne').hidden = false;
     $('setup-lat').focus();
   });
   $('przycisk-ustaw-reczne').addEventListener('click', () => {
-    const lat = Number($('setup-lat').value);
-    const lon = Number($('setup-lon').value);
-    if (!czyWspolrzedneOk(lat, lon)) {
-      pokazBledy('bledy-pozycja', [{ kod: 'G10', pole: 'wspolrzedne', komunikat: 'Wpisz szerokość od -90 do 90 i długość od -180 do 180 (stopnie dziesiętne).' }]);
+    const surowyLat = String($('setup-lat').value ?? '').trim();
+    const surowyLon = String($('setup-lon').value ?? '').trim();
+    if (!surowyLat || !surowyLon) {
+      // Puste pole dałoby Number('') === 0, czyli „Null Island" — pozycję
+      // wyglądającą na poprawną. Lepiej odmówić niż ustawić grę w zatoce.
+      pokazBledy('bledy-pozycja', [{ kod: 'P06', pole: 'wspolrzedne', komunikat: 'Wpisz obie współrzędne: szerokość i długość (stopnie dziesiętne, np. 52.23178 i 21.01234).' }]);
       return;
     }
-    STAN.pozycja = { lat, lon };
-    STAN.dokladnoscM = null;
+    const fix = fixZPozycji({ lat: Number(surowyLat), lon: Number(surowyLon), accuracy: null }, performance.now(), ZRODLA_FIXA.reczne);
+    const ocena = ocenFix(fix);
+    if (!ocena.akceptowany) {
+      pokazBledy('bledy-pozycja', [{ kod: ocena.kod, pole: 'wspolrzedne', komunikat: 'Wpisz szerokość od -90 do 90 i długość od -180 do 180 (stopnie dziesiętne).' }]);
+      return;
+    }
+    STAN.ostatniFix = fix;
+    STAN.ocenaFixa = ocena;
+    STAN.pozycja = { lat: fix.lat, lon: fix.lon };
+    STAN.dokladnoscM = fix.accuracy;
     pokazBledy('bledy-pozycja', []);
     pokazPozycje();
     status('Pozycja ustawiona ręcznie (tryb testowy).');

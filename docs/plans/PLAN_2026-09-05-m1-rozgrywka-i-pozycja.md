@@ -35,7 +35,7 @@ w środku handlerów zdarzeń — czyli tam, gdzie nie da się jej przetestować
       `fixSymulowany(t)`, cienka osłona `watchPosition`.
       Kryterium: `test/pozycja.test.js` — sekwencja fixów z odbiciem sygnału nie
       zapala stacji, symulacja jest deterministyczna i kończy się dojściem.
-- [ ] F4 — wspólna atrapa DOM w `test/helpers/dom.js` (ARCHITECTURE „Testowanie"
+- [x] F4 — wspólna atrapa DOM w `test/helpers/dom.js` (ARCHITECTURE „Testowanie"
       już ją zapowiada) i przełączenie `test/aplikacja.test.js` na nią; refactor
       `app/app.js` tak, żeby geolokalizacja szła przez `pozycja.js` (M1:
       „wydzielenie `app/pozycja.js` z logiki siedzącej dziś w `app/app.js`").

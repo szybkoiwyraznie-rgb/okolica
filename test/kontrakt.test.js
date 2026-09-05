@@ -134,6 +134,19 @@ test('kontrakt: w app/ nie ma API Node ani require (LESSONS L6)', () => {
   }
 });
 
+test('kontrakt: geolokalizacja w app.js idzie przez pozycja.js (ADR 0004 pkt 1)', () => {
+  // Jeden watcher na rozgrywkę, reguły i komunikaty w module testowalnym bez DOM.
+  assert.ok(/from '\.\/pozycja\.js\?v=/.test(APP), 'app.js musi importować moduł pozycji');
+  assert.match(APP, /watchPozycja\(/, 'watcher zakłada osłona z pozycja.js');
+  assert.ok(!/watchPosition/.test(APP), 'app.js nie woła watchPosition samodzielnie');
+  assert.ok(!/clearWatch/.test(APP), 'app.js nie woła clearWatch samodzielnie — zamykanie jest w osłonie');
+  assert.ok(!/enableHighAccuracy/.test(APP), 'opcje watchera mieszkają w pozycja.js, nie w UI');
+
+  const POZYCJA = czytaj('app/pozycja.js');
+  assert.match(POZYCJA, /enableHighAccuracy: true, maximumAge: 2000, timeout: 20000/, 'opcje dokładnie jak w ADR 0004 pkt 1');
+  assert.match(POZYCJA, /navigator/, 'osłona przyjmuje `geolocation` jako parametr — dzięki temu jest testowalna');
+});
+
 test('kontrakt: index.html nie używa ścieżek od korzenia (ADR 0002 pkt 3)', () => {
   assert.ok(!/(?:href|src)="\//.test(INDEX), 'ścieżka zaczynająca się od "/" złamie się pod /okolica/ na GitHub Pages');
   assert.ok(INDEX.includes('href="app/styles.css?v='), 'CSS powinien być podpięty ścieżką względną');
@@ -157,6 +170,12 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
   for (const id of zadane) {
     assert.ok(INDEX.includes(`id="${id}"`), `app.js woła #${id}, którego nie ma w index.html`);
   }
+});
+
+test('kontrakt: przycisk trybu testowego ma w HTML stan początkowy aria-pressed="false"', () => {
+  // Atrapa DOM nie parsuje atrybutów, więc `test/aplikacja.test.js` sprawdza tylko
+  // przełączenie; stan startowy pilnuje ten kontrakt.
+  assert.match(INDEX, /id="przycisk-test"[^>]*aria-pressed="false"/);
 });
 
 test('kontrakt: kroki w pasku nawigacji pokrywają się z ekranami', () => {
