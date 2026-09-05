@@ -28,27 +28,63 @@
       `ROADMAP`, `plans/PLAN_2026-09-05-fundament.md`, `PROJECT_HISTORY`,
       `LESSONS` (L7–L9), `PROTOKOL` (§3.2, §6), ADR 0003 (pkt 5).
 
-## M1 — Geodezja i model rozgrywki (czyste funkcje)
+## M1 — Geodezja i model rozgrywki (czyste funkcje) — ✅ ZREALIZOWANE (sesja 2026-09-05)
 
-`app/geo.js` (haversine, bearing, Mercator, pierścienie, dopasowanie zoomu),
-`app/pozycja.js` (kryterium dojścia, filtr dokładności), `app/rozgrywka.js`
-(kolejki graczy, odcinki, czasy, punktacja), `app/kodowanie.js` (obfuskacja bez
-klucza, kontener `TO-paczka/2`), `app/protokol.js` (`zbudujPrompt`,
-`walidujPaczke`).
+Zakres z planu: `app/geo.js` (haversine, bearing, Mercator, pierścienie,
+dopasowanie zoomu), `app/pozycja.js` (kryterium dojścia, filtr dokładności),
+`app/rozgrywka.js` (kolejki graczy, odcinki, czasy, punktacja),
+`app/kodowanie.js` (obfuskacja bez klucza, kontener `TO-paczka/2`),
+`app/protokol.js` (`zbudujPrompt`, `walidujPaczke`).
 Kryterium: wszystko przetestowane w Node bez DOM i bez sieci; round-trip ukrycia
 paczki na Node i w przeglądarce.
 
-**Zrobione przed czasem w M0/E5:** `app/geo.js` (z progami dojścia i regułą
-dwóch kolejnych trafień — czyli także rdzeń `pozycja.js`), `app/protokol.js`
-(`zbudujPrompt`, `walidujPaczke`, parser, poprawka dla modelu), `app/konfig.js`
-i `app/stacje.js`. **Zrobione dodatkowo 2026-09-05 po decyzji właściciela (ADR 0007):**
-`app/kodowanie.js` — ukrywanie paczki przez obfuskację bez klucza (kontener
-`TO-paczka/2`, suma FNV-1a) zamiast planowanego szyfrowania kluczem z `kod gry`
-(wariant odrzucony przez właściciela, wraca jako `BACKLOG` B16). Moduł jest mały,
-synchroniczny i przetestowany (`test/kodowanie.test.js`), więc nie było powodu
-odkładać go do M1. **Zostało na M1:** `app/rozgrywka.js` (kolejki graczy,
-odcinki, czasy, punktacja) i wydzielenie `app/pozycja.js` z logiki siedzącej dziś
-w `app/app.js`.
+**Zrobione przed czasem w M0:** `app/geo.js` (z progami dojścia i regułą dwóch
+kolejnych trafień, czyli rdzeń kryterium z `pozycja.js`), `app/protokol.js`
+(`zbudujPrompt`, `walidujPaczke`, parser, poprawka dla modelu), `app/konfig.js`,
+`app/stacje.js` oraz `app/kodowanie.js` — ukrywanie paczki przez obfuskację bez
+klucza (kontener `TO-paczka/2`, suma FNV-1a) zamiast planowanego szyfrowania
+kluczem z `kod gry` (wariant odrzucony przez właściciela, wraca jako `BACKLOG`
+B16); round-trip ukrycia paczki jest testowany w `test/kodowanie.test.js`.
+
+**Ta sesja** (plan: `docs/plans/PLAN_2026-09-05-m1-rozgrywka-i-pozycja.md`):
+
+- [x] F1 — ADR 0014 (*Proponowana*): punktacja czasu jako premia/potrącenie
+      względem **mediany tempa** odcinków (doprecyzowanie ADR 0009 pkt 5, który
+      w modelu hot-seat nie miał próbek) + wpis w rejestrze + plan zadania
+      (commit `56e0dc6`).
+- [x] F2 — `app/rozgrywka.js`: stan `rozgrywka/1`, kolejka cykliczna
+      (`gracz = stacja mod N`), odcinki (start na jawnej akcji, kara za ręczne
+      zgłoszenie, limit czasu), punktacja z ADR 0014, tryby współpracy
+      `solo`/`zespol`/`wszyscy`, dziennik zdarzeń, `podsumowanie()`,
+      `wczytajStan()` z odmową przy obcym schemacie; kody `G01`–`G13`;
+      `test/rozgrywka.test.js` (commit `8eec03c`).
+- [x] F3 — `app/pozycja.js`: filtr dokładności (`ocenFix`), kryterium dojścia
+      (`stanDojscia` na `geo.czyDotarl`), komunikaty `P01`–`P09`, symulacja
+      trasy dla trybu testowego (`trasaProsta`, `punktNaTrasie`,
+      `fixSymulowany`, `sekwencjaSymulowana`), osłona `watchPozycja()`;
+      `test/fixtures/trasa-odbicie.json`, `test/pozycja.test.js`
+      (commity `3537e59`, `0046216`).
+- [x] F4 — `test/helpers/dom.js` (wspólna atrapa DOM: `zainstalujDom`,
+      `atrapaGeolokalizacji`) + przełączenie `test/aplikacja.test.js` na nią
+      i refactor `app/app.js`: geolokalizacja wyłącznie przez `pozycja.js`,
+      pauza śledzenia w tle i wznowienie (ADR 0004 pkt 1), współrzędne ręczne
+      przez `ocenFix` z odmową przy pustym polu (commit `09faf5c`);
+      przy okazji hartowanie `domyslnaKonfiguracja` — NaN z `localStorage`
+      nie wchodzi już do UI (commit `78a1bd0`, LESSONS L10).
+- [x] F5 — dokumentacja po wykonaniu: ADR 0015 (*Proponowana*: niekompletna
+      paczka, pominięcie tylko w drodze, spójne liczniki, przedrostki kodów),
+      `ARCHITECTURE` (moduły, przepływ rozgrywki, algorytmy, stan i testowanie),
+      `LESSONS` L10–L12, `PROJECT_HISTORY`, `HANDOFF_2026-09-05-m1.md`,
+      cache-busting `?v=m1-1` (ten commit).
+
+Kryterium spełnione: `npm run brama` = **177 testów**, 0 fail — w tym pełna gra
+3 graczy × 5 stacji od startu do podsumowania na wstrzykniętym zegarze,
+sekwencja fixów z odbiciem sygnału (stacja się nie zapala) i symulacja trasy
+kończąca się dojściem. Stan gry nie zawiera treści pytań (kontrakt na
+prawdziwej paczce z fixture'a). Do M6 zostaje ekran gry (UI) i zapis stanu do
+`localStorage` (`app/trwalosc.js` — kryterium M6 mówi o wznowieniu po
+zamknięciu przeglądarki; para `wczytajStan()` ↔ `JSON.stringify(stan)` jest już
+przetestowana).
 
 ## M2 — Mapa
 
@@ -67,6 +103,15 @@ wiek, język, kod gry, kara za tryb ręczny, współpraca), walidacja, zapis
 (`?tryb=test`, ręczne współrzędne i symulacja trasy), ekran „dane i prywatność".
 Kryterium: pełna konfiguracja na telefonie bez przewijania; pozycja aktualizuje
 się na żywo; tryb testowy pozwala rozegrać grę bez GPS.
+
+**Zrobione przed czasem w M0/M1:** ekran setupu z walidacją (K01–K20) i zapisem
+`okolica:konfig` (schemat `konfig/1`), `watchPosition` z badge'em dokładności,
+tryb testowy `?tryb=test` z ręcznymi współrzędnymi (M0) oraz pauza śledzenia
+w tle z wznowieniem, odmowa przy pustych współrzędnych i **symulacja trasy**
+jako czysta funkcja `pozycja.sekwencjaSymulowana()` (M1).
+**Zostało na M3:** ekran „dane i prywatność" (ADR 0013), podpięcie symulacji
+trasy do UI trybu testowego i sprawdzenie kryterium „bez przewijania" na
+telefonie (360 px).
 
 ## M4 — Stacje z sieci drogowej (największe ryzyko)
 

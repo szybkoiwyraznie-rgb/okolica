@@ -105,3 +105,74 @@ brak. Z archiwum wzorca wczytano: `AGENTS.md` (286 linii), `docs/setup/ENVIRONME
 
 **Do decyzji właściciela:** ADR-y proponowane 0002, 0003, 0005, 0007, 0009,
 0010, 0013 (lista w opisie PR #2).
+
+## 2026-09-05 — sesja M1 (model rozgrywki i pozycja), ta sama gałąź, PR #2
+
+**Zlecenie właściciela:** „Kontynuuj w tej sesji zgodnie z roadmapą" — brak
+nowej decyzji, więc sesja wzięła najwyższy nieukończony kamień (`docs/ROADMAP.md`
+M1) i szła etapami F1–F5 z własnego planu
+(`docs/plans/PLAN_2026-09-05-m1-rozgrywka-i-pozycja.md`).
+
+**Co zrobiono:**
+
+- **ADR 0014 (*Proponowana*) — punktacja czasu.** ADR 0009 pkt 5 kazał liczyć
+  premię „względem mediany odcinków tej samej stacji dla wszystkich graczy",
+  co w modelu hot-seat (jeden gracz idzie do jednej stacji) ma zawsze jedną
+  próbkę, czyli premię stale zerową. Reguła zastępcza zachowuje intencję
+  (porównywać tempo, nie surowy czas): `tempo = czasS / dystansOdcinkaM`
+  z karą za ręczne zgłoszenie w czasie, łańcuch zbiorów próbek (ta sama stacja
+  ≥ 2 → wszystkie zakończone odcinki ≥ 2 → premia 0),
+  `premia = round(punktyPodstawowe × 0,5 × ogranicz((mediana − tempo)/mediana, ±0,5))`
+  → maks. ±25% punktów za odpowiedź; limit odcinka zeruje premię, ale nie
+  przerywa gry. Dystans odcinka jest **łańcuchowy** (start gry → stacja 1,
+  potem stacja poprzednia → następna).
+- **`app/rozgrywka.js` + `test/rozgrywka.test.js`** (36 testów): stan
+  `rozgrywka/1` — kolejka cykliczna `gracz = stacja mod N`, odcinki (start na
+  jawnej akcji, `czasMs` wstrzykiwany, kara `karaRecznaS`, `poLimitie`),
+  odpowiedzi z pełnym śladem punktacji, tryby współpracy `solo`/`zespol`/
+  `wszyscy`, wiele pytań na stację, pomijanie stacji, `podsumowanie()`,
+  `podglad()`, `wczytajStan()` z odmową `G12` i wskazówką migracji, kody
+  `G01`–`G13` jako pełne zdania. Stan jest niezmiennikowy (`structuredClone`)
+  i **nie zawiera treści pytań** — kontrakt testowany na prawdziwej paczce
+  z `test/fixtures/paczka-ok.json`.
+- **`app/pozycja.js` + `test/pozycja.test.js`** (21 testów) i fixture
+  `test/fixtures/trasa-odbicie.json`: filtr dokładności (`ocenFix`: `ok` /
+  `niedokladny` / `bez-dokladnosci` / `niepoprawny`), historia fixów
+  (`dodajFix`, maks. 40, bez mutacji), kryterium dojścia (`stanDojscia` na
+  `geo.czyDotarl` + zdanie „ile zostało i dlaczego nie zapala"), komunikaty
+  błędów GPS `P01`–`P09` z wyjściem awaryjnym, symulacja trasy dla trybu
+  testowego (deterministyczna, zero `Math.random()`, z postojem, bez którego
+  debounce by się nie spełnił), cienka osłona `watchPozycja()`.
+- **`test/helpers/dom.js`** — wspólna atrapa DOM wyciągnięta z
+  `test/aplikacja.test.js` (`zainstalujDom`, `atrapaGeolokalizacji`,
+  `stubElementu`, `ukryteWHtml`); każde wywołanie zakłada świeże globale, więc
+  test chcący `?tryb=test` importuje `app.js` od nowa bez kolizji nasłuchów.
+- **Refactor `app/app.js`:** geolokalizacja wyłącznie przez `pozycja.js`
+  (brak `watchPosition`/`clearWatch`/opcji watchera w warstwie DOM — pilnuje
+  nowy kontrakt), pauza śledzenia przy `visibilitychange` i wznowienie z
+  komunikatami P07/P09, współrzędne ręczne przez `ocenFix` z odmową przy
+  pustym polu (`Number('') === 0` dawało pozycję „Null Island").
+- **Hartowanie `domyslnaKonfiguracja`:** `liczbaGraczy: "dużo"` w
+  `localStorage` wchodziło do formularza jako `NaN` (`Math.max(1, NaN)` = NaN),
+  a pusta lista imion blokowałaby `nowaRozgrywka()`. Wartość nienumeryczna =
+  brak danych → default z briefu (LESSONS L10).
+- **Dwie usterki modelowe znalezione przy testach** (naprawione w M1, opisane
+  w ADR 0015, LESSONS L11): stacja bez pytania w paczce zostawiała grę w fazie
+  `pytanie` z pustym ekranem i bez akcji wyjścia (dziś: `brakPytan` w stanie,
+  ostrzeżenie `BRAK-PYTAN` w dzienniku, dojście zamyka stację bez punktów) oraz
+  `pominStacje()` po dojściu kasowała pomiar dojścia i wyrzucała tempo z próbek
+  mediany (dziś: odmowa `G13` z komunikatem „odpowiedz, choćby błędnie").
+- **Dokumentacja:** ADR 0015 (*Proponowana*) + rejestr, `ARCHITECTURE`
+  (opisy modułów, przepływ rozgrywki z prawdziwymi nazwami funkcji — wcześniej
+  obiecywał `rozgrywka.nastepnyGracz()`, której nie ma; algorytmy dojścia,
+  punktacji i symulacji; schemat stanu; testowanie), `LESSONS` L10–L12,
+  `HANDOFF_2026-09-05-m1.md`, cache-busting `?v=m0-2` → `?v=m1-1`.
+
+**Brama na koniec sesji:** `npm run brama` = **177 testów**, 0 fail (było 105)
++ `synchronizuj-szablon --check` zielone. Commity: `56e0dc6` (F1), `8eec03c`
+(F2), `3537e59` i `0046216` (F3), `78a1bd0` (hartowanie), `09faf5c` (F4),
+plus commit F5 (dokumentacja). Wszystko na `arena/01a07282-okolica`, PR #2.
+
+**Do decyzji właściciela (dochodzą z tej sesji):** ADR 0014 (punktacja czasu —
+mediana tempa) i ADR 0015 (niekompletna paczka, pominięcie tylko w drodze,
+przedrostki kodów). Pozostałe proponowane: 0002, 0005, 0010, 0013.

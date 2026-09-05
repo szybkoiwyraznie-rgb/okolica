@@ -120,3 +120,61 @@ nie zaczyna zdania i nie stoi za kropką innego zdania — z wyjątkiem skrótó
 **kontrprzykładem z prawdziwego tekstu** („ludzkości", „wojna"), a opis
 heurystyki zapisuj w protokole razem z nazwami list z kodu — wtedy
 `test/kontrakt.test.js` pilnuje, żeby dokument i kod się nie rozeszły.
+
+## L10 (2026-09-05, Tajemnicza Okolica) — widełki nie chronią przed NaN: `Math.max(1, NaN)` daje NaN
+
+**Objaw:** konfiguracja w `localStorage` z `liczbaGraczy: "dużo"` wchodziła do
+formularza jako „NaN": pole `setup-gracze` pokazywało `NaN`, lista imion była
+pusta (`Array.from({ length: NaN })`), a `walidujSetup` słusznie odmawiał
+(K07, K08). Wychwycił to **test bootstrapu na atrapie DOM**, nie testy
+jednostkowe `oczyscKonfiguracje`.
+**Przyczyna:** `domyslnaKonfiguracja(n)` liczyła
+`Math.min(Math.max(1, n), 8)` — każda arytmetyka z NaN daje NaN, więc
+„widełki" przepuszczały NaN dalej zamiast go ciąć. `oczyscKonfiguracje`
+pomija pole, którego `Number()` nie jest skończone, więc NaN z wartości
+domyślnej zostawał w stanie. Testy hartowania miały kontrprzykłady liczbowe
+(`-3`, `99`, `NaN` wprost), ale nie **tekstowej** liczby graczy — a właśnie
+tekst przychodzi z `localStorage` po ręcznej edycji albo ze starego schematu.
+**Reguła:** clamp dopiero po `Number.isFinite`, a wartość nienumeryczna
+(`null`, `undefined`, `''`, tekst, obiekt) to **brak danych** → default z
+kanonu, nie 0, nie 1, nie NaN. W testach hartowania każda klasa śmieci ma
+własny kontrprzykład, a asercja dotyczy nie tylko „nie rzucił wyjątkiem", ale
+**tego, co zostało wyrenderowane** — NaN w UI widać dopiero na warstwie DOM
+(commit `78a1bd0`).
+
+## L11 (2026-09-05, Tajemnicza Okolica) — faza bez akcji wyjścia: testuj przejścia na danych niekompletnych
+
+**Objaw:** przy paczce pokrywającej 3 z 5 stacji gra po dojściu do stacji 4
+zostawała w fazie `pytanie` z pustym ekranem: nie było pytania do odsłonienia,
+a jedyną akcją „dalej" było `pominStacje()`, które zamieniało odcinek
+`zakonczony` na `pominiety` — kasowało pomiar czasu i wyrzucało tempo z próbek
+mediany (ADR 0014 pkt 2).
+**Przyczyna:** reguły faz były testowane na danych kompletnych (paczka = jedno
+pytanie na stację). Przejście „dojście → zamknięcie stacji" istniało wyłącznie
+w `zapiszOdpowiedz`, więc stacja bez pytania nie miała żadnej akcji domykającej,
+a test tego nie pytał, bo taki przypadek nie występował w fixture'ach.
+**Reguła:** model stanów testuj **przejściami na danych brzegowych**:
+niekompletne pokrycie, pusta lista, ostatni element, ponowienie tej samej
+akcji. Dla każdej fazy zapisz w teście, która akcja z niej wyprowadza — brak
+takiej akcji to usterka modelu, nie UI. I druga część: akcja „pomiń" nie może
+kasować pomiaru, który się wydarzył (odmowa `G13`), bo wtedy wynik przestaje
+być odtwarzalny z dziennika (ADR 0010 pkt 6, ADR 0015 pkt 2–3; commity
+`8eec03c`, `09faf5c`).
+
+## L12 (2026-09-05, Tajemnicza Okolica) — łańcuch szukany przepisany z pamięci różni się jedną literą
+
+**Objaw:** skrypt `python3` z listą par (fragment stary → nowy) przerwał się na
+`AssertionError` przy trzeciej parze, a wydrukowane wcześniej „ok" nie
+oznaczało zapisu (plik jest zapisywany na końcu). Gdzie indziej para „pasowała"
+wzrokowo, ale `t.count(stary) == 0`: w szukanym fragmencie było
+`stan.stacji.length` zamiast `stan.stacje.length`.
+**Przyczyna:** fragment do zamiany był przepisany z pamięci albo z innego
+miejsca, nie skopiowany z pliku. Przy polskiej odmianie (`stacje`/`stacji`,
+`pytanie`/`pytania`, `uruchomisz`/`uruchamsz`) jedna litera różnicy jest
+niewidoczna przy czytaniu, a dla `str.replace`/`count` jest decydująca.
+**Reguła:** fragment kopiuj z pliku (`sed -n 'X,Yp'`, `grep -n`) i wklejaj, nie
+przepisuj; przed zamianą asertuj `t.count(stary) == 1`; „ok" drukuj **po**
+zapisie albo zapisuj po każdej parze, żeby komunikat znaczył „zapisane". Gdy
+porównanie zawodzi, diagnozuj znak po znaku
+(`for k, (a, b) in enumerate(zip(szukany, segment)): if a != b: print(k, ord(a), ord(b))`),
+zamiast podejrzewać kodowanie pliku — „niewidoczny znak" to zwykle literówka.

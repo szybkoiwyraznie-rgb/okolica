@@ -17,8 +17,10 @@ app/
                               DOMYSLNE, ograniczenia (czyste dane + walidacja setupu)
   geo.js                    — geodezja i projekcja: haversine, bearing, Web Mercator,
                               siatka kafelków, pierścienie, dopasowanie zoomu (czyste)
-  pozycja.js                — geolokalizacja: watchPosition, filtr dokładności,
-                              kryterium dojścia, tryb ręczny i testowy (ADR 0004)
+  pozycja.js                — geolokalizacja: osłona watchPozycja(), filtr
+                              dokładności (ocenFix), kryterium dojścia
+                              (stanDojscia), komunikaty P01–P09, symulacja trasy
+                              dla trybu testowego (ADR 0004, 0015)
   sieci.js                  — Overpass: budowa zapytania, graf sieci, Dijkstra,
                               kandydaci na stacje, filtry dostępności (czyste + fetch)
   stacje.js                 — wybór stacji: pierścienie, separacja kątowa, pass
@@ -28,8 +30,9 @@ app/
   kodowanie.js              — ukrywanie paczki: XOR ze strumieniem z stałego ziarna
                               + base64url, kontener TO-paczka/2, suma FNV-1a
                               (czyste, synchroniczne, bez WebCrypto — ADR 0007)
-  rozgrywka.js              — stan gry: kolejki graczy, odcinki i czasy, odpowiedzi,
-                              punktacja, dziennik (czyste, zegar wstrzykiwany)
+  rozgrywka.js              — stan gry `rozgrywka/1`: kolejki graczy, odcinki
+                              i czasy, odpowiedzi, punktacja (ADR 0014), dziennik,
+                              podsumowanie, kody G01–G13 (czyste, zegar wstrzykiwany)
   trwalosc.js               — localStorage: klucze, budżet rozmiaru, migracje,
                               eksport/import pliku paczki (ATR 0010)
   mapa.js                   — render SVG: kafelki, warstwy własne, pan/zoom/pinch,
@@ -81,13 +84,21 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 
 1. Ekran gry: mapa z podkładem (ADR 0003), stacje, pozycja gracza, badge
    „czyja kolejka" i „ile metrów" (ADR 0009/0011).
-2. Akcja użytkownika startuje odcinek → `rozgrywka.startOdcinka()` (czas
-   z `performance.now()`).
-3. `pozycja.js` strumieniuje fixy → `czyDotarl()` (próg `max(25 m, 1.2×accuracy)`,
-   dwa kolejne fixy) → `rozgrywka.zakonczOdcinek()`.
+2. Akcja użytkownika startuje odcinek → `rozgrywka.startOdcinka({ stacjaId,
+   czasMs })`; `czasMs` podaje warstwa DOM z `performance.now()`, bo logika nie
+   czyta zegara (ADR 0004 pkt 3).
+3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (filtr dokładności,
+   kody P05/P06) → `dodajFix()` (historia, maks. 40 pomiarów) → `stanDojscia()`
+   (próg `max(25 m, 1,2 × accuracy)` ograniczony do 100 m + dwa kolejne
+   trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`: czas,
+   kara za ręczne zgłoszenie, dokładność, `poLimitie`.
 4. `kodowanie.odpakujPaczke(kontener)` → pytanie dla stacji **odsłaniane w chwili
    dojścia**, nie na starcie (ADR 0007 pkt 6).
-5. Odpowiedź → punkty → `rozgrywka.nastepnyGracz()` → ekran „kto idzie dalej".
+5. Odpowiedź → `rozgrywka.zapiszOdpowiedz({ stacjaId, graczId, pytanie,
+   wybrana })` → punkty i premia/potrącenie za tempo (ADR 0014) → następna
+   kolejka: `graczNaStacji()` / `ktoOdpowiada()` / `podglad()` → ekran „kto idzie
+   dalej". Stacja bez pytania w paczce zamyka się samym dojściem, a pominąć da
+   się tylko odcinek w drodze (ADR 0015).
 6. Koniec → podsumowanie (czasy, punkty, sprawiedliwość trasy, źródła pytań)
    → eksport wyniku (ADR 0010 pkt 5).
 
@@ -110,28 +121,78 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 - **Ukrywanie paczki**: obfuskacja bez klucza — UTF-8 JSON ⊕ strumień bajtów
   z stałego ziarna → base64url → kontener `TO-paczka/2` + suma kontrolna FNV-1a
   (ADR 0007). To bariera przed przypadkowym wglądem, **nie szyfrowanie**.
+- **Kryterium dojścia**: `progDojsciaM(accuracy) = ogranicz(1,2 × accuracy,
+  25 m, 100 m)` (brak dokładności → 100 m, czyli najostrzej) plus dwa kolejne
+  fixy w progu — debounce przeciw odbiciom sygnału (`geo.czyDotarl`, opakowane
+  przez `pozycja.stanDojscia` zdaniem dla gracza: ile metrów zostało i dlaczego
+  stacja się nie zapala). Fix niedokładny dostaje ostrzeżenie, ale nie jest
+  odrzucany (ADR 0004 pkt 2 i 4).
+- **Punktacja czasu** (ADR 0014): `tempo = czasS / dystansOdcinkaM` [s/m], gdzie
+  `czasS` zawiera karę za ręczne zgłoszenie, a dystans jest **łańcuchowy**
+  (start gry → stacja 1, potem stacja poprzednia → następna). Mediana próbek
+  (najpierw ta sama stacja ≥ 2, inaczej wszystkie zakończone odcinki ≥ 2,
+  inaczej premia 0), `premia = round(punktyPodstawowe × 0,5 × ogranicz((mediana
+  − tempo)/mediana, ±0,5))` → maks. ±25% punktów za odpowiedź. Przekroczony
+  limit odcinka zeruje premię i oznacza `poLimitie`, ale nie przerywa gry.
+- **Symulacja trasy** (tryb testowy, ADR 0004 pkt 6): interpolacja po łamanej
+  punktów (`punktNaTrasie`) + deterministyczny rozrzut i zmienna dokładność
+  z `szum(t)` liczonego z czasu — zero `Math.random()`, więc ta sama trasa daje
+  te same fixy w teście i w przeglądarce. `sekwencjaSymulowana` dokłada postój
+  przy stacji, bez którego debounce nigdy by się nie spełnił.
 
 ## Stan i trwałość
 
 Jedyny trwały nośnik to `localStorage` (klucze `okolica:*`, ADR 0010 pkt 1)
-plus plik `.paczka.json` eksportowany przez użytkownika. Stan rozgrywki jest
-**zdarzeniowy**: dziennik `{ stacja, gracz, start, koniec, trybDojscia,
-accuracy }` pozwala przeliczyć wynik i odtworzyć przebieg (debugging terenowy).
-Każdy zapis ma pole `schemat`; nieznana wersja = migracja albo jawny komunikat,
-nigdy ciche odrzucenie.
+plus plik `.paczka.json` eksportowany przez użytkownika.
+
+Stan rozgrywki (`schemat: 'rozgrywka/1'`, `app/rozgrywka.js`) jest
+**zdarzeniowy i niezmiennikowy**: każda funkcja zwraca nowy obiekt
+(`structuredClone`), a argument zostaje nietknięty, bo UI trzyma referencje.
+Dziennik `{ czasMs, typ, … }` (`start`, `start-odcinka`, `dojscie`, `odpowiedz`,
+`pominiecie`, `ostrzezenie`, `koniec`) pozwala przeliczyć wynik i odtworzyć
+przebieg — debugging terenowy bez zgadywania. Odcinki niosą pomiar (`czasS`,
+`karaS`, `trybDojscia`, `accuracyM`, `odlegloscKoncowaM`, `tempo`, `poLimitie`),
+a odpowiedzi pełny ślad punktacji (`punktyPodstawowe`, `premiaCzasu`,
+`punktyRazem`, `tempo`, `medianaTempa`, `probek`, `zrodloProbek`) — wynik da się
+wyjaśnić graczowi liczba po liczbie (ADR 0011, ADR 0014 pkt 8).
+
+Stan **nie zawiera treści pytań**: z paczki bierze tylko `{ stacja, pytanieId }`,
+a z odpowiedzi poprawność i punkty (ADR 0007 pkt 6). Dlatego może leżeć w
+`localStorage` i w eksporcie, a pytanie odsłania się dopiero z ukrytej paczki
+w chwili dojścia.
+
+Każdy zapis ma pole `schemat`; nieznana wersja = migracja albo jawny komunikat
+(`wczytajStan()`, kod `G12` ze wskazówką migracji), nigdy ciche odrzucenie.
+Zapis do `localStorage`, budżet rozmiaru i eksport pliku dochodzą w
+`app/trwalosc.js`: zapis paczki i `modyfikacje[]` w M5, trwałość stanu gry
+(wznowienie po zamknięciu przeglądarki) w M6, historia gier w M7.
 
 ## Testowanie
 
 - `npm test` (`node --test`) — czyste funkcje na fixture'ach:
-  `test/fixtures/overpass-*.json` (centrum miasta / przedmieście / las),
-  `trasa-*.json` (sekwencje fixów GPS), `paczka-*.json` (OK i 20 klas usterek).
+  `test/fixtures/paczka-ok.json` (poprawna paczka PYT z zastrzeżeniem, że dane są
+  zmyślone), `test/fixtures/trasa-odbicie.json` (sekwencja fixów GPS z odbiciem
+  sygnału, z oczekiwanym dystansem przy każdym fixie); od M4 dochodzą
+  `overpass-*.json` (centrum miasta / przedmieście / las) i pełny zestaw 20 klas
+  usterek paczki.
+- Reguły gry testowane są **przejściem, nie pojedynczym wywołaniem**: pełna gra
+  3 graczy × 5 stacji od startu do podsumowania na wstrzykniętym zegarze
+  (`test/rozgrywka.test.js`), przejścia faz przy paczce bez pełnego pokrycia,
+  odmowy z kodami `G01`–`G13`, determinizm i brak mutacji stanu wejściowego.
 - Testy kontraktowe: szablon promptu w `docs/PROTOKOL.md` ↔ `SZABLON_PROMPTU`;
   kanon tematów w protokole ↔ `TEMATY`; wersja protokołu ↔ stopka ↔ README;
   wersja cache-bustingu w `index.html` ↔ importy; brak `node:`/`require(` w `app/`;
-  brak ścieżek absolutnych (`href="/`, `src="/`) w `index.html` (ADR 0002 pkt 3).
-- Warstwa DOM: testy na atrapie (lekki stub w `test/helpers/dom.js`), a
-  weryfikacja wizualna — headless Chromium z viewportem 360 × 640
-  (ENVIRONMENT §4.1) albo live preview.
+  brak ścieżek od korzenia w `index.html` (ADR 0002 pkt 3); rejestr ADR ↔ pliki
+  na dysku i status w pliku ↔ status w rejestrze; geolokalizacja w `app.js`
+  wyłącznie przez `pozycja.js` (brak `watchPosition`, `clearWatch` i opcji
+  watchera w warstwie DOM — ADR 0004 pkt 1).
+- Warstwa DOM: testy na atrapie `test/helpers/dom.js` — `zainstalujDom()` zakłada
+  świeże globale i zwraca uchwyty (`kliknij`, `wyslijZdarzenieDokumentu`,
+  `ustawHidden`, `ustawGeolokalizacje`), a `atrapaGeolokalizacji()` udaje
+  `watchPosition`/`clearWatch`. Test chcący inny stan startowy (np. `?tryb=test`)
+  zakłada własną atrapę i importuje `app.js` od nowa — egzemplarze nie dzielą
+  wtedy nasłuchów zdarzeń. Weryfikacja wizualna: headless Chromium z viewportem
+  360 × 640 (ENVIRONMENT §4.1) albo live preview.
 - Sieć w testach jest **zabroniona** (LESSONS L3): Overpass i kafelki tylko
   na fixture'ach i w przeglądarce.
 

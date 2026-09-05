@@ -19,9 +19,18 @@ stacji.
 
 ## Status
 
-**M0 — Fundament: w budowie.** Struktura repozytorium, zasady pracy agentów,
-rejestr ADR, protokół pytań PYT v1.0, szkielet aplikacji i testy.
-Mapa, stacje i rozgrywka: `docs/ROADMAP.md`.
+**M1 — geodezja i model rozgrywki: zrobione.** Działa szkielet aplikacji
+(pięć ekranów: setup → pozycja → stacje → prompt → paczka) z walidacją
+konfiguracji, promptem PYT v1.0, walidacją paczki i jej ukrywaniem
+(`TO-paczka/2`). Jako czyste funkcje z testami istnieją też **model rozgrywki**
+(`app/rozgrywka.js`: kolejka graczy, odcinki i czasy, kara za ręczne
+zgłoszenie, punktacja względem mediany tempa, dziennik i podsumowanie) oraz
+**warstwa pozycji** (`app/pozycja.js`: filtr dokładności, kryterium dojścia
+z debounce'em, komunikaty błędów GPS, symulacja trasy dla trybu testowego).
+
+**Ekranu gry jeszcze nie ma**: rozgrywka jest policzona i przetestowana, ale
+nieklikalna. Mapa (M2), stacje z sieci dróg i placów (M4), trwały zapis stanu
+(M5) i interfejs gry (M6) — patrz `docs/ROADMAP.md`.
 
 ## Uruchomienie lokalne
 

@@ -13,8 +13,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m0-2';
-import { formatujWspolrzedne, geohash } from './geo.js?v=m0-2';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m1-1';
+import { formatujWspolrzedne, geohash } from './geo.js?v=m1-1';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -22,10 +22,10 @@ import {
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
-} from './protokol.js?v=m0-2';
-import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m0-2';
-import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m0-2';
-import { ZRODLA_FIXA, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, watchPozycja } from './pozycja.js?v=m0-2';
+} from './protokol.js?v=m1-1';
+import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m1-1';
+import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m1-1';
+import { ZRODLA_FIXA, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, watchPozycja } from './pozycja.js?v=m1-1';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';

@@ -31,6 +31,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0012](0012-model-sesji-pr-audyt-inkrementalne-commity.md) | Model sesji: PR na starcie, audyt poprzedniego PR, inkrementalne commity, bez force push | Zaakceptowana |
 | [0013](0013-prywatnosc-wspolrzedne-na-urzadzeniu.md) | Prywatność: współrzędne gracza nie opuszczają urządzenia poza zapytania mapowe, zero analityki | Proponowana |
 | [0014](0014-punktacja-czasu-mediana-tempa.md) | Punktacja czasu: premia względem mediany tempa odcinków (doprecyzowanie ADR 0009 pkt 5) | Proponowana |
+| [0015](0015-niekompletna-paczka-i-pominiecie-stacji.md) | Niekompletna paczka i pominięcie stacji: ostrzeżenie zamiast blokady, pominięcie tylko w drodze, spójne liczniki i przedrostki kodów | Proponowana |
 
 ## Szablon ADR
 
