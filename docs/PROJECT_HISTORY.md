@@ -94,11 +94,11 @@ brak. Z archiwum wzorca wczytano: `AGENTS.md` (286 linii), `docs/setup/ENVIRONME
   bez poprawiania (zakaz force push); lekcja L7.
 - Agent nie zapisuje `.github/workflows/` (403 `workflows`, LESSONS L4) —
   receptura CI leży w `docs/setup/ci-workflow.yml`.
-- Pod koniec sesji token GitHub stracił ważność (`Bad credentials`): commity
-  `89a0586`, `8011f0f` i następny są lokalne na gałęzi
-  `arena/01a07282-okolica`, opis PR #2 nie został zaktualizowany. Do zrobienia
-  po przywróceniu połączenia: `git push origin arena/01a07282-okolica`
-  i aktualizacja opisu PR (handoff §5).
+- W trakcie sesji token GitHub na kilkanaście minut stracił ważność
+  (`Bad credentials`) — praca szła dalej lokalnie, a po powrocie autoryzacji
+  wszystko wyszło jednym pushem (`a6dcb32..1a4d378`) razem z aktualizacją opisu
+  PR #2. Wniosek operacyjny: błąd autoryzacji blokuje push i PR, nie blokuje
+  commitowania.
 - `AME-main.zip` pozostaje nietknięty w korzeniu; jego los (przeniesienie do
   `docs/archive/` albo usunięcie po przeniesieniu wzorców) jest pytaniem do
   właściciela, nie decyzją sesji.
