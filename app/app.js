@@ -9,8 +9,8 @@
  * w `konfig.js`, `geo.js`, `protokol.js`, `stacje.js` i jest testowana w Node.
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m0-1';
-import { formatujWspolrzedne, geohash, czyWspolrzedneOk } from './geo.js?v=m0-1';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m0-2';
+import { formatujWspolrzedne, geohash, czyWspolrzedneOk } from './geo.js?v=m0-2';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -18,9 +18,9 @@ import {
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
-} from './protokol.js?v=m0-1';
-import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m0-1';
-import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m0-1';
+} from './protokol.js?v=m0-2';
+import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m0-2';
+import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m0-2';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
