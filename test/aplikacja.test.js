@@ -470,3 +470,67 @@ test('prywatność: czyszczenie jest dwustopniowe i rusza tylko klucze obolica:*
   assert.match(domMapy.pobierz('czysc-dane-status').textContent, /Kliknij ponownie/);
   assert.equal(pamiecPriv.size, 1);
 });
+
+/* ------------------------------------------- symulacja dojścia (M3, tryb testowy) */
+
+const czekaj = (ms) => new Promise((rozwiaz) => setTimeout(rozwiaz, ms));
+
+test('symulacja: przycisk istnieje tylko w trybie testowym', async () => {
+  const domMapy = await aplikacjaZMapa();
+  assert.equal(domMapy.pobierz('przycisk-symulacja').hidden, true, 'bez trybu testowego nie ma symulacji');
+  domMapy.kliknij('przycisk-test');
+  assert.equal(domMapy.pobierz('przycisk-symulacja').hidden, false);
+  domMapy.kliknij('przycisk-test');
+  assert.equal(domMapy.pobierz('przycisk-symulacja').hidden, true, 'wyłączenie trybu testowego chowa symulację');
+});
+
+test('symulacja: odtworzenie trasy prowadzi pozycję do celu i spełnia debounce dojścia', async () => {
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
+  domMapy.pobierz('setup-lat').value = '52.23178';
+  domMapy.pobierz('setup-lon').value = '21.01234';
+  domMapy.kliknij('przycisk-ustaw-reczne');
+  const start = domMapy.pobierz('pozycja-wspolrzedne').textContent;
+  assert.match(start, /52\.23178/);
+
+  domMapy.kliknij('przycisk-symulacja');
+  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'true', 'odtwarzanie wystartowało');
+  assert.match(domMapy.pobierz('status').textContent, /Symulacja trasy: 9 fixów/);
+
+  await czekaj(9 * 120 + 500); // dziewięć fixów po 120 ms + zapas na timery Node
+  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false', 'sekwencja sama się kończy');
+  assert.match(domMapy.pobierz('status').textContent, /cel osiągnięty — debounce dojścia spełniony/);
+  assert.notEqual(domMapy.pobierz('pozycja-wspolrzedne').textContent, start, 'pozycja przeszła trasę, nie stoi w miejscu');
+  assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'marker pojechał z pozycją');
+});
+
+test('symulacja: stop zatrzymuje strumień fixów', async () => {
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
+  domMapy.pobierz('setup-lat').value = '52.23178';
+  domMapy.pobierz('setup-lon').value = '21.01234';
+  domMapy.kliknij('przycisk-ustaw-reczne');
+
+  domMapy.kliknij('przycisk-symulacja');
+  await czekaj(300);
+  domMapy.kliknij('przycisk-symulacja');
+  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false');
+  assert.match(domMapy.pobierz('status').textContent, /Symulacja zatrzymana/);
+  const poStop = domMapy.pobierz('pozycja-wspolrzedne').textContent;
+  await czekaj(500);
+  assert.equal(domMapy.pobierz('pozycja-wspolrzedne').textContent, poStop, 'po stopie fixy nie płyną dalej');
+});
+
+test('symulacja: zejście karty w tło zatrzymuje odtwarzanie (uczciwość pomiaru)', async () => {
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
+  domMapy.pobierz('setup-lat').value = '52.23178';
+  domMapy.pobierz('setup-lon').value = '21.01234';
+  domMapy.kliknij('przycisk-ustaw-reczne');
+
+  domMapy.kliknij('przycisk-symulacja');
+  await czekaj(250);
+  domMapy.ustawHidden(true);
+  domMapy.wyslijZdarzenieDokumentu('visibilitychange');
+  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false', 'tło zatrzymuje symulację');
+  const poPauzie = domMapy.pobierz('pozycja-wspolrzedne').textContent;
+  await czekaj(400);
+  assert.equal(domMapy.pobierz('pozycja-wspolrzedne').textContent, poPauzie, 'w tle fixy nie płyną');
+});

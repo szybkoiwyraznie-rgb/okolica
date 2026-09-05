@@ -65,7 +65,7 @@ P06, żadnego „Null Island"), symulacja trasy jako czysta funkcja
       w `app.js`, dwustopniowe czyszczenie kluczy `okolica:*`; testy
       w `test/aplikacja.test.js` (otwieranie/powrót, uzbrojenie vs kasowanie)
       i kontrakt na obecność czterech kart oraz zaprzeczenia szyfrowania.
-- [ ] **H3 — symulacja trasy w UI:** refactor `onFix` watchera do wspólnego
+- [x] **H3 — symulacja trasy w UI:** refactor `onFix` watchera do wspólnego
       `przyjmijFix()`, przycisk „Symuluj dojście" widoczny tylko w trybie
       testowym, `setInterval` z `krokSymulacji()` i stop; test: sekwencja fixów
       aktualizuje badge, mapę i w końcu zgłasza dojście do celu, a stop

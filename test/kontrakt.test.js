@@ -178,6 +178,11 @@ test('kontrakt: przycisk trybu testowego ma w HTML stan początkowy aria-pressed
   // Atrapa DOM nie parsuje atrybutów, więc `test/aplikacja.test.js` sprawdza tylko
   // przełączenie; stan startowy pilnuje ten kontrakt.
   assert.match(INDEX, /id="przycisk-test"[^>]*aria-pressed="false"/);
+
+  const symulacja = INDEX.match(/<button id="przycisk-symulacja"[^>]*>/)?.[0];
+  assert.ok(symulacja, 'brak przycisku symulacji dojścia (M3)');
+  assert.match(symulacja, /aria-pressed="false"/, 'symulacja startuje wyłączona');
+  assert.match(symulacja, /\bhidden\b/, 'symulacja tylko w trybie testowym');
 });
 
 test('kontrakt: kroki w pasku nawigacji pokrywają się z ekranami', () => {

@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m2-1';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash } from './geo.js?v=m2-1';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m3-1';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, przesunPunkt } from './geo.js?v=m3-1';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -24,11 +24,11 @@ import {
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
-} from './protokol.js?v=m2-1';
-import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m2-1';
-import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m2-1';
-import { ZRODLA_FIXA, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, watchPozycja } from './pozycja.js?v=m2-1';
-import { utworzMape } from './mapa.js?v=m2-1';
+} from './protokol.js?v=m3-1';
+import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m3-1';
+import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m3-1';
+import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m3-1';
+import { utworzMape } from './mapa.js?v=m3-1';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -54,6 +54,10 @@ const STAN = {
   mapy: { pozycja: null, stacje: null },
   /** Który ekran gry jest pokazany (do powrotu z ekranu prywatności). */
   ekran: 'setup',
+  /** Odtwarzana symulacja trasy (tryb testowy): `{fixy, indeks, cel, timer}`. */
+  symulacja: null,
+  /** Historia fixów (limit z `pozycja.js`) — wspólna dla GPS i symulacji. */
+  historiaFixow: [],
   /** Dwustopniowe kasowanie danych: pierwszy klik uzbraja, drugi kasuje. */
   czyszczenieUzbrojone: false,
   /** Czy widok był już centrowany na pierwszym fixie — potem rządzi palec. */
@@ -334,14 +338,7 @@ function wlaczGps() {
   STAN.watcher = watchPozycja({
     geolocation: navigator.geolocation,
     zegar: () => performance.now(),
-    onFix: (fix, ocena) => {
-      STAN.ostatniFix = fix;
-      STAN.ocenaFixa = ocena;
-      STAN.pozycja = { lat: fix.lat, lon: fix.lon };
-      STAN.dokladnoscM = fix.accuracy;
-      pokazBledy('bledy-pozycja', ocena.kod ? [{ kod: ocena.kod, pole: 'geolocation', komunikat: ocena.komunikat }] : []);
-      pokazPozycje();
-    },
+    onFix: (fix) => przyjmijFix(fix),
     onBlad: (blad) => {
       pokazBledy('bledy-pozycja', [{ kod: blad.kod, pole: 'geolocation', komunikat: blad.komunikat }]);
       $('pozycja-status').textContent = 'Brak pozycji';
@@ -416,6 +413,81 @@ function zmienPodklad(klucz) {
 function odswiezMapeEkranu(nazwa) {
   const mapa = STAN.mapy[nazwa];
   if (mapa) mapa.odswiez();
+}
+
+/**
+ * Jedyny lej fixów do stanu: watcher GPS i symulacja trasy karmią aplikację
+ * tym samym kodem, więc badge dokładności, mapa i próg dojścia zachowują się
+ * identycznie z GPS-em i bez niego (kryterium M3: gra bez GPS).
+ */
+function przyjmijFix(fix) {
+  const ocena = ocenFix(fix);
+  STAN.ostatniFix = fix;
+  STAN.ocenaFixa = ocena;
+  STAN.pozycja = { lat: fix.lat, lon: fix.lon };
+  STAN.dokladnoscM = fix.accuracy;
+  STAN.historiaFixow = dodajFix(STAN.historiaFixow, fix);
+  pokazBledy('bledy-pozycja', ocena.kod ? [{ kod: ocena.kod, pole: 'geolocation', komunikat: ocena.komunikat }] : []);
+  pokazPozycje();
+}
+
+/* --------------------------------------------------- symulacja dojścia */
+
+/** Odtwarzanie: jeden fix co tyle ms (tylko tryb testowy, ADR 0004 pkt 6). */
+const SYMULACJA_KROK_MS = 120;
+/** Próba dojścia: 250 m na azymucie 45°, 12 s „marszu", fix co 2 s + postój. */
+const SYMULACJA = { dystansM: 250, bearing: 45, czasMs: 12000, coMs: 2000, accuracyM: 12 };
+
+/** Jeden fix symulacji: stan, mapa i zdanie o dystansie do celu. */
+function krokSymulacji() {
+  const s = STAN.symulacja;
+  if (!s) return;
+  const fix = s.fixy[s.indeks];
+  if (!fix) {
+    zatrzymajSymulacje();
+    status('Symulacja zakończona.');
+    return;
+  }
+  s.indeks += 1;
+  przyjmijFix(fix);
+  const stan = stanDojscia(STAN.historiaFixow, s.cel);
+  status(stan.dotarl
+    ? `Symulacja: cel osiągnięty — debounce dojścia spełniony (fix ${s.indeks}/${s.fixy.length}).`
+    : `Symulacja: fix ${s.indeks}/${s.fixy.length}, do celu ${stan.dystansM} m (próg ${stan.progM} m, trafienia ${stan.trafienia}/${stan.wymagane}).`);
+  if (s.indeks >= s.fixy.length) zatrzymajSymulacje();
+}
+
+function zatrzymajSymulacje() {
+  if (!STAN.symulacja) return;
+  clearInterval(STAN.symulacja.timer);
+  STAN.symulacja = null;
+  $('przycisk-symulacja').setAttribute('aria-pressed', 'false');
+}
+
+/** Start/stop odtwarzania trasy z bieżącej pozycji do punktu 250 m dalej. */
+function przelaczSymulacje() {
+  if (STAN.symulacja) {
+    zatrzymajSymulacje();
+    status('Symulacja zatrzymana — pozycja zostaje tam, gdzie doszła.');
+    return;
+  }
+  if (!STAN.pozycja) {
+    status('Symulacja potrzebuje punktu startu: wpisz współrzędne albo włącz GPS.');
+    return;
+  }
+  const start = { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon };
+  const cel = przesunPunkt(start, SYMULACJA.bearing, SYMULACJA.dystansM);
+  const trasa = trasaProsta({
+    start,
+    cel,
+    czasMs: SYMULACJA.czasMs,
+    accuracyM: SYMULACJA.accuracyM,
+    przystanki: 2,
+  });
+  const fixy = sekwencjaSymulowana(trasa, { coMs: SYMULACJA.coMs, postoj: GRANICE.wymaganeTrafnienia });
+  STAN.symulacja = { fixy, indeks: 0, cel, timer: setInterval(krokSymulacji, SYMULACJA_KROK_MS) };
+  $('przycisk-symulacja').setAttribute('aria-pressed', 'true');
+  status(`Symulacja trasy: ${fixy.length} fixów do punktu ${formatujWspolrzedne(cel.lat, cel.lon)} (${SYMULACJA.dystansM} m, azymut ${SYMULACJA.bearing}°).`);
 }
 
 /* ---------------------------------------------------------------- stacje */
@@ -653,6 +725,7 @@ function start() {
     STAN.trybTestowy = true;
     $('przycisk-test').setAttribute('aria-pressed', 'true');
     $('reczne-wspolrzedne').hidden = false;
+    $('przycisk-symulacja').hidden = false;
   }
 
   $('przycisk-motyw').addEventListener('click', przelaczMotyw);
@@ -660,10 +733,12 @@ function start() {
   $('przycisk-prywatnosc-stopka').addEventListener('click', pokazPrywatnosc);
   $('przycisk-wrocz-prywatnosc').addEventListener('click', wrocZPrywatnosci);
   $('przycisk-czysc-dane').addEventListener('click', czyscDaneWitryny);
+  $('przycisk-symulacja').addEventListener('click', przelaczSymulacje);
   $('przycisk-test').addEventListener('click', () => {
     STAN.trybTestowy = !STAN.trybTestowy;
     $('przycisk-test').setAttribute('aria-pressed', String(STAN.trybTestowy));
     $('reczne-wspolrzedne').hidden = !STAN.trybTestowy;
+    $('przycisk-symulacja').hidden = !STAN.trybTestowy;
     pokazEkran('pozycja');
     pokazPozycje();
     status(STAN.trybTestowy ? 'Tryb testowy: współrzędne ręczne zamiast GPS (ADR 0004 pkt 6).' : 'Tryb testowy wyłączony.');
@@ -694,6 +769,7 @@ function start() {
   // komunikat po powrocie (ADR 0004 pkt 1).
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+    zatrzymajSymulacje();
       if (STAN.watcher?.czyAktywny()) {
         zatrzymajGps();
         STAN.pauzaWTle = true;
