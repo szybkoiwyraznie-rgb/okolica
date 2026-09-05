@@ -243,6 +243,57 @@ export function proponujKodGry(losuj = Math.random, dlugosc = 6) {
  * `{ kod, pole, komunikat }`; pusta = konfiguracja poprawna.
  * Kody K** są wewnętrzne (nie mylić z E** protokołu PYT).
  */
+/**
+ * Sanitizacja konfiguracji z zewnątrz: `localStorage`, import, stary schemat.
+ * Pole spoza kanonu wraca do wartości domyślnej zamiast wysypywać UI (radio bez
+ * pasującego `value` to `null.checked` — LESSONS L9 pokazuje, jak drobiazg
+ * kładzie cały ekran). Liczby muszą być skończone i w zakresie z OGRANICZENIA.
+ * Czysta funkcja — testowalna w Node (`test/konfig.test.js`).
+ */
+export function oczyscKonfiguracje(surowa) {
+  const zrodlo = surowa && typeof surowa === 'object' ? surowa : {};
+  const domyslne = domyslnaKonfiguracja(zrodlo.liczbaGraczy);
+  const konfig = { ...domyslne };
+
+  // pola wybierane z kanonu: klucz musi istnieć, inaczej default
+  const kanony = { tryb: TRYBY, wiek: WIEK, podklad: PODKLADY, wspolpraca: WSPOLPRACA, jezyk: JEZYKI };
+  for (const [pole, kanon] of Object.entries(kanony)) {
+    if (Object.hasOwn(kanon, zrodlo[pole])) konfig[pole] = zrodlo[pole];
+  }
+
+  // liczby: skończone i w widełkach (poza widełkami zostawiamy walidujSetup —
+  // tu chodzi tylko o wartości, które rozsadziłyby renderowanie)
+  const liczby = {
+    liczbaGraczy: OGRANICZENIA.liczbaGraczy,
+    liczbaStacji: OGRANICZENIA.liczbaStacji,
+    pytaniaNaStacje: OGRANICZENIA.pytaniaNaStacje,
+    promienM: OGRANICZENIA.promienM,
+    karaRecznaS: OGRANICZENIA.karaRecznaS,
+    limitCzasuOdcinkaS: { min: 0, max: 86400 },
+  };
+  for (const [pole, zakres] of Object.entries(liczby)) {
+    const v = Number(zrodlo[pole]);
+    if (!Number.isFinite(v)) continue;
+    konfig[pole] = Math.min(Math.max(Math.round(v), zakres.min), zakres.max);
+  }
+  if (TRYBY[konfig.tryb] && konfig.promienM === domyslne.promienM && zrodlo.promienM === undefined) {
+    konfig.promienM = TRYBY[konfig.tryb].promienM;
+  }
+
+  // listy i teksty
+  konfig.tematy = Array.isArray(zrodlo.tematy) ? zrodlo.tematy.filter((t) => Object.hasOwn(TEMATY, t)) : [];
+  if (konfig.tematy.length === 0) konfig.tematy = [...domyslne.tematy];
+  konfig.imiona = Array.isArray(zrodlo.imiona)
+    ? zrodlo.imiona.slice(0, konfig.liczbaGraczy).map((imie, i) => (typeof imie === 'string' && imie.trim() ? imie.trim().slice(0, OGRANICZENIA.dlugoscImienia.max) : `Gracz ${i + 1}`))
+    : [...domyslne.imiona];
+  while (konfig.imiona.length < konfig.liczbaGraczy) konfig.imiona.push(`Gracz ${konfig.imiona.length + 1}`);
+  konfig.geokodacja = zrodlo.geokodacja === true;
+  if (typeof zrodlo.kodGry === 'string') {
+    konfig.kodGry = zrodlo.kodGry.trim().slice(0, OGRANICZENIA.dlugoscKoduGry.max);
+  }
+  return konfig;
+}
+
 export function walidujSetup(konfig) {
   const u = [];
   const dodaj = (kod, pole, komunikat) => u.push({ kod, pole, komunikat });

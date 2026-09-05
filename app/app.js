@@ -9,10 +9,7 @@
  * w `konfig.js`, `geo.js`, `protokol.js`, `stacje.js` i jest testowana w Node.
  */
 
-import {
-  DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA,
-  domyslnaKonfiguracja, liczbaPytan, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki,
-} from './konfig.js?v=m0-1';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m0-1';
 import { formatujWspolrzedne, geohash, czyWspolrzedneOk } from './geo.js?v=m0-1';
 import {
   WERSJA_PROTOKOLU, parsujOdpowiedzModela, podsumowaniePaczki, poprawkaDlaModelu, walidujPaczke, zbudujPrompt,
@@ -82,9 +79,14 @@ function renderujTryby() {
     etykieta.innerHTML = `<input type="radio" name="tryb" value="${klucz}"><strong>${tryb.ikona} ${tryb.etykieta}</strong><span>${tryb.promienM / 1000} km</span>`;
     lista.appendChild(etykieta);
   }
-  lista.querySelector(`input[value="${STAN.konfig.tryb}"]`).checked = true;
+  const zaznaczonyTryb = lista.querySelector(`input[value="${STAN.konfig.tryb}"]`) ?? lista.querySelector('input');
+  if (zaznaczonyTryb) {
+    zaznaczonyTryb.checked = true;
+    STAN.konfig.tryb = zaznaczonyTryb.value;
+  }
   lista.addEventListener('change', () => {
-    const wybrany = lista.querySelector('input:checked').value;
+    const wybrany = lista.querySelector('input:checked')?.value;
+    if (!wybrany || !TRYBY[wybrany]) return;
     STAN.konfig.tryb = wybrany;
     STAN.konfig.promienM = TRYBY[wybrany].promienM;
     $('setup-promien').value = STAN.konfig.promienM;
@@ -108,7 +110,10 @@ function renderujSegment(nazwaPola, dane, wybranyKlucz, onChange) {
   }
   const zaznaczony = lista.querySelector(`input[value="${wybranyKlucz}"]`);
   if (zaznaczony) zaznaczony.checked = true;
-  lista.addEventListener('change', () => onChange(lista.querySelector('input:checked').value));
+  lista.addEventListener('change', () => {
+    const wybrany = lista.querySelector('input:checked')?.value;
+    if (wybrany) onChange(wybrany);
+  });
 }
 
 function renderujTematy() {
@@ -442,7 +447,8 @@ function wczytajKonfiguracje() {
     if (!surowe) return;
     const { schemat, konfig } = JSON.parse(surowe);
     if (schemat !== 'konfig/1' || !konfig) return; // migracje: ADR 0010 pkt 6
-    STAN.konfig = { ...domyslnaKonfiguracja(), ...konfig };
+    // sanitizacja: stary schemat albo ręczna edycja nie może wysypać UI
+    STAN.konfig = oczyscKonfiguracje(konfig);
     STAN.konfig.imiona = dostosujImiona(STAN.konfig.liczbaGraczy);
   } catch (e) {
     void e;

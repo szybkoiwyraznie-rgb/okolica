@@ -5,10 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA,
-  domyslnaKonfiguracja, liczbaPytan, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki,
-} from '../app/konfig.js';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
 test('TRYBY: trzy tryby z briefu właściciela i promienie 1/3/10 km', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
@@ -163,4 +160,37 @@ test('kanony są zamknięte: współpraca, języki i ograniczenia mają sens', (
   assert.equal(OGRANICZENIA.liczbaGraczy.max, 8);
   assert.equal(OGRANICZENIA.liczbaStacji.min, 3);
   assert.equal(OGRANICZENIA.promienM.max, 50000);
+});
+
+test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', () => {
+  const d = domyslnaKonfiguracja(2);
+  assert.deepEqual(oczyscKonfiguracje(null), d);
+  assert.deepEqual(oczyscKonfiguracje({}), d);
+  assert.deepEqual(oczyscKonfiguracje('śmieci'), d);
+
+  // klucz spoza kanonu wraca do wartości domyślnej, nie do `undefined`
+  const zle = oczyscKonfiguracje({ tryb: 'konny', wiek: 'nestor', podklad: 'carto', jezyk: 'klingon', wspolpraca: 'telepatia' });
+  assert.equal(zle.tryb, d.tryb);
+  assert.equal(zle.wiek, d.wiek);
+  assert.equal(zle.podklad, d.podklad);
+  assert.equal(zle.jezyk, d.jezyk);
+  assert.equal(zle.wspolpraca, d.wspolpraca);
+
+  // liczby: zacisk do widełek, NaN odrzucony, tekst liczbowy z inputa przyjęty
+  assert.equal(oczyscKonfiguracje({ liczbaStacji: 99 }).liczbaStacji, OGRANICZENIA.liczbaStacji.max);
+  assert.equal(oczyscKonfiguracje({ liczbaGraczy: -3 }).liczbaGraczy, 1);
+  assert.equal(oczyscKonfiguracje({ promienM: Number.NaN }).promienM, d.promienM);
+  assert.equal(oczyscKonfiguracje({ karaRecznaS: '120' }).karaRecznaS, 120);
+
+  // listy: tylko kanon; pusty wynik → domyślne tematy
+  assert.deepEqual(oczyscKonfiguracje({ tematy: ['historia', 'kosmos'] }).tematy, ['historia']);
+  assert.deepEqual(oczyscKonfiguracje({ tematy: ['kosmos'] }).tematy, d.tematy);
+  assert.deepEqual(oczyscKonfiguracje({ liczbaGraczy: 3, imiona: ['Ada', '   '] }).imiona, ['Ada', 'Gracz 2', 'Gracz 3']);
+
+  // geokodacja domyślnie wyłączona i tylko jako `true` (ADR 0013 pkt 3)
+  assert.equal(oczyscKonfiguracje({ geokodacja: 'tak' }).geokodacja, false);
+  assert.equal(oczyscKonfiguracje({ geokodacja: true }).geokodacja, true);
+
+  // kod gry przycięty do limitu
+  assert.equal(oczyscKonfiguracje({ kodGry: '  ABCDEFGHIJK  ' }).kodGry.length, OGRANICZENIA.dlugoscKoduGry.max);
 });
