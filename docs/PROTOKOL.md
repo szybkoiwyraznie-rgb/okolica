@@ -1,0 +1,293 @@
+# PROTOKÓŁ PYT v1.0 — protokół pytań terenowych
+
+> **To jest zasada treściowa, nie sugestia** (AGENTS.md §3). Obowiązuje każdy
+> prompt, każdą wklejoną odpowiedź modelu i każdą paczkę pytań zapisaną przez
+> aplikację. Zmiana protokołu = nowy ADR + podbicie wersji + migrator paczek
+> (ADR 0010 pkt 6).
+
+- Status: **obowiązujący** (wersja wyprowadzana z tego nagłówka; test
+  kontraktowy porównuje go ze stopką aplikacji i z `README.md`)
+- Data: 2026-09-05
+- Powiązania: ADR 0006 (pętla treści), ADR 0007 (szyfrowanie paczki),
+  ADR 0008 (kwerenda i źródła), `app/protokol.js` (kod), `test/protokol.test.js`
+
+## 1. Pętla treści w pięciu krokach
+
+```
+konfiguracja + pozycja gracza + stacje
+        ↓ (1) aplikacja buduje prompt z szablonu §2
+   tekst promptu → schowek / pole tekstowe
+        ↓ (2) organizator wkleja go do modelu AI (Meta AI, ChatGPT, …)
+   odpowiedź modelu = blok JSON ze schematem §3
+        ↓ (3) organizator wkleja odpowiedź do aplikacji
+   walidacja §6 → lista usterek albo przyjęcie
+        ↓ (4) szyfrowanie AES-GCM (ADR 0007) → localStorage / eksport pliku
+   paczka PYT
+        ↓ (5) rozgrywka: pytanie odszyfrowywane przy dojściu do stacji
+```
+
+Krok (2) jest poza systemem: model jest **zewnętrznym silnikiem treści**
+(ADR 0006 pkt 7). Aplikacja nigdy nie woła API modelu i nie przechowuje kluczy.
+
+## 2. Szablon promptu (dosłowny)
+
+Szablon jest **jednym źródłem prawdy**: tekst poniżej i stała
+`SZABLON_PROMPTU` w `app/protokol.js` muszą być identyczne znak w znak
+(pilnuje `test/protokol.test.js`). Placeholdery `{NAZWA}` podstawia
+`zbudujPrompt()`; nic innego nie wolno w szablonie zmieniać ręcznie.
+
+<!-- szablon-promptu:start -->
+```tekst
+Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania o tę okolicę.
+
+ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
+1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.
+2. Każde pytanie ma pole "zrodla" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.
+3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
+4. Wszystkie pytania dotyczą OKOLICY podanej niżej (miejsca, dzielnicy, miasta, regionu, państwa) albo konkretnych stacji z listy. Zakazane są pytania z wiedzy ogólnej o świecie, niezwiązane z tą okolicą.
+5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
+6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
+7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
+
+OKOLICA GRY:
+- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
+- miejsce: {MIEJSCE}
+- promień gry: {PROMIEN_M} m
+- sposób poruszania się: {TRYB}
+
+STACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):
+{LISTA_STACJI}
+
+GRACZE I TRUDNOŚĆ:
+- liczba graczy: {LICZBA_GRACZY}
+- kategoria wiekowa: {WIEK}
+- wymagania trudności: {OPIS_TRUDNOSCI}
+- tematy pytań (wyłącznie z tej listy): {TEMATY}
+- liczba pytań łącznie: {LICZBA_PYTAN}
+- język pytań: {JEZYK}
+- data przygotowania: {DATA}
+
+SCHEMAT ODPOWIEDZI (PYT/1.0) — dokładnie te pola:
+{
+  "protokol": "PYT/1.0",
+  "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
+  "wiek": "{WIEK}",
+  "tematy": [{TEMATY_JSON}],
+  "jezyk": "{JEZYK}",
+  "utworzono": "{DATA}",
+  "pytania": [
+    {
+      "id": "s1p1",
+      "stacja": 1,
+      "temat": "historia",
+      "tresc": "Treść pytania zakończona znakiem zapytania?",
+      "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
+      "poprawna": 0,
+      "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
+      "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }],
+      "punkty": 10
+    }
+  ],
+  "uwagi": ""
+}
+
+WYMAGANIA DODATKOWE:
+- "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
+- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
+- "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
+- "poprawna": indeks poprawnej odpowiedzi, liczba całkowita od 0 do 3.
+- "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
+- "punkty": 10 za pytanie łatwe, 15 za średnie, 20 za trudne — zgodnie z kategorią wiekową.
+- "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
+- "uwagi": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.
+```
+<!-- szablon-promptu:koniec -->
+
+### 2.1 Placeholdery
+
+| Placeholder | Wartość | Źródło |
+| --- | --- | --- |
+| `{LAT}`, `{LON}` | środek gry, 5 miejsc po przecinku (~1 m) | geolokalizacja albo tryb testowy (ADR 0004) |
+| `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt wyłączony albo niedostępny — `brak odczytu (tylko współrzędne)` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
+| `{PROMIEN_M}` | promień gry w metrach | setup, z domyślnej wartości trybu (ADR 0003/§4.2) |
+| `{TRYB}` | `piesza` / `rower` / `samochodowa` — etykieta polska | setup |
+| `{LISTA_STACJI}` | po jednej linii: `- stacja N: LAT, LON — <opis miejsca albo „punkt przy ulicy X"> (ODLEGLOSC m od środka)` | wybór stacji (ADR 0005) |
+| `{LICZBA_GRACZY}` | 1–8 | setup |
+| `{WIEK}` | klucz kategorii: `7`, `10`, `12`, `15`, `dorosli` | setup |
+| `{OPIS_TRUDNOSCI}` | tekst z §4 dla danej kategorii | protokół §4 |
+| `{TEMATY}` | lista tematów z opisami, np. `historia (dzieje miejsca, daty, wydarzenia, postaci)` | protokół §5 |
+| `{TEMATY_JSON}` | te same klucze jako elementy listy JSON, np. `"historia", "przyroda"` | protokół §5 |
+| `{LICZBA_PYTAN}` | liczba pytań = `LICZBA_STACJI × pytaniaNaStacje` | setup |
+| `{JEZYK}` | `polski` (domyślnie) albo inny z setupu | setup |
+| `{DATA}` | `RRRR-MM-DD GG:MM` czasu lokalnego urządzenia | aplikacja |
+| `{DATA_KROTKA}` | `RRRR-MM-DD` | aplikacja |
+| `{LICZBA_STACJI}` | liczba stacji | setup |
+
+Daty w promptcie pochodzą z zegara urządzenia i **nie są zapisywane w danych
+repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
+
+## 3. Schemat paczki PYT/1.0
+
+### 3.1 Poziom paczki
+
+| Pole | Typ | Wymagane | Zasady |
+| --- | --- | --- | --- |
+| `protokol` | tekst | tak | dokładnie `"PYT/1.0"` |
+| `okolica.lat` | liczba | tak | `-90 ≤ lat ≤ 90` |
+| `okolica.lon` | liczba | tak | `-180 ≤ lon ≤ 180` |
+| `okolica.promienM` | liczba | tak | `100–50000`, zgodna z konfiguracją gry |
+| `okolica.miejsce` | tekst | tak | niepuste; nazwa miejsca z geokodacji albo jawny brak |
+| `wiek` | tekst | tak | klucz z §4 |
+| `tematy` | lista tekstów | tak | niepusta, podzbiór kanonu §5, bez powtórzeń |
+| `jezyk` | tekst | tak | `polski` albo inny z setupu |
+| `utworzono` | tekst | tak | `RRRR-MM-DD GG:MM`, nie w przyszłości |
+| `pytania` | lista | tak | niepusta; liczba = oczekiwana z setupu |
+| `uwagi` | tekst | tak (może być pusty) | czego model nie potwierdził |
+| `model` | tekst | nie | dobrowolna etykieta organizatora (ADR 0006 pkt 7) |
+| `modyfikacje` | lista | nie | ręczne poprawki organizatora: `{data, opis}` |
+| `ziarno` | tekst | nie | ziarno rozgrywki (ADR 0005 pkt 6) — dopisuje aplikacja |
+
+### 3.2 Poziom pytania
+
+| Pole | Typ | Zasady |
+| --- | --- | --- |
+| `id` | tekst | `^s[0-9]+p[0-9]+$`, unikalne w paczce |
+| `stacja` | liczba całkowita | `1..LICZBA_STACJI`; każda stacja ≥ 1 pytanie; rozkład równy ±1 |
+| `temat` | tekst | klucz z kanonu §5 |
+| `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
+| `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
+| `poprawna` | liczba całkowita | `0..3` |
+| `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
+| `zrodla` | lista | ≥ 1 wpis |
+| `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz `example.com`, `przyklad.org`, `localhost` |
+| `zrodla[].tytul` | tekst | niepusty |
+| `zrodla[].sprawdzono` | tekst | `RRRR-MM-DD`, nie w przyszłości |
+| `punkty` | liczba | `10`, `15` albo `20` |
+
+### 3.3 Kontener zaszyfrowany (ADR 0007 pkt 3)
+
+```json
+{
+  "schemat": "TO-paczka/1",
+  "protokol": "PYT/1.0",
+  "sol": "base64 (16 B)",
+  "iv": "base64 (12 B)",
+  "iteracje": 150000,
+  "skrot": "base64 (SHA-256 plaintextu)",
+  "dane": "base64 (AES-GCM ciphertext)"
+}
+```
+
+## 4. Kategorie wiekowe i wymagania trudności
+
+Klucz kategorii jest wartością pola `wiek`; tekst z kolumny „opis trudności"
+trafia do promptu jako `{OPIS_TRUDNOSCI}`. **Obniżenie trudności nie zwalnia
+z wymogu źródła** (ADR 0008 pkt 7).
+
+| Klucz | Etykieta | Opis trudności (do promptu) | Punkty |
+| --- | --- | --- | --- |
+| `7` | 7 lat | Zdania krótkie, do 15 słów. Słownictwo codzienne, bez terminów specjalistycznych. Jedno pytanie = jeden fakt. Odpowiedzi rzeczowe i nazwy, bez dat i liczb wielocyfrowych. Preferowane pytania o rzeczy, które dziecko może zobaczyć albo zna z spaceru. | 10 |
+| `10` | 10 lat | Zdania do 20 słów. Pojęcia proste, jedno pojęcie specjalistyczne na pytanie dopuszczalne, jeśli wyjaśnienie je tłumaczy. Jedna data albo jedna liczba w pytaniu dopuszczalna. | 10 |
+| `12` | 12 lat | Pełne zdania, terminy z objaśnieniem w wyjaśnieniu. Daty, liczby i porównania dopuszczalne. Pytanie może wymagać dwóch kroków rozumowania. | 15 |
+| `15` | 15 lat | Jak dla dorosłych, ale bez żargonu akademickiego i bez pytań wymagających wiedzy specjalistycznej z poziomu studiów. | 15 |
+| `dorosli` | dorośli | Bez ograniczeń długości i słownictwa. Dopuszczalne pytania porównawcze, przyczynowo-skutkowe i o szczegóły (daty dzienne, nazwiska, liczby). | 20 |
+
+## 5. Kanon tematów
+
+Klucze: małe litery, myślniki, bez spacji. Nowy temat = dopisanie do tej
+tabeli, do `TEMATY` w `app/konfig.js` i do opisu w promptcie — w tym samym
+commicie (AGENTS.md §3).
+
+| Klucz | Etykieta | Opis do promptu |
+| --- | --- | --- |
+| `historia` | Historia | dzieje miejsca, daty, wydarzenia, dawne nazwy, ślady historii w terenie |
+| `przyroda` | Przyroda | drzewa, rośliny, zwierzęta, wody, parki, formy terenu, ochrona przyrody |
+| `architektura` | Architektura | budynki, style, autorzy projektów, detale, układ ulic i zabudowy |
+| `kultura-i-sztuka` | Kultura i sztuka | instytucje kultury, pomniki sztuki, murale, festiwale, twórcy związani z miejscem |
+| `legendy-i-folklor` | Legendy i folklor | podania miejskie, legendy, zwyczaje, przesądy, opowieści o miejscu |
+| `ludzie-i-postacie` | Ludzie i postacie | mieszkańcy, patroni ulic, postaci historyczne związane z okolicą |
+| `nauka-i-technika` | Nauka i technika | wynalazki, zakłady, infrastruktura, badania, obiekty inżynieryjne |
+| `sport-i-rekreacja` | Sport i rekreacja | kluby, obiekty sportowe, trasy, wydarzenia sportowe, miejsca wypoczynku |
+| `jedzenie-i-handel` | Jedzenie i handel | targi, lokale, rzemiosło, dawni i obecni kupcy, produkty lokalne |
+| `geografia-i-woda` | Geografia i woda | rzeki, jeziora, wzgórza, granice administracyjne, nazwy geograficzne, mosty |
+
+## 6. Reguły walidacji i kody usterek
+
+Walidator `walidujPaczke(paczka, oczekiwane)` zwraca listę usterek
+`{ kod, pole, komunikat }`; pusta lista = przyjęcie. Komunikat jest po polsku
+i mówi, **co zrobić** (ADR 0011 pkt 8). Kody są stałe — używa ich test, UI
+i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
+
+| Kod | Usterka |
+| --- | --- |
+| `E01` | brak pola `protokol` albo inna wersja niż `PYT/1.0` |
+| `E02` | JSON nieparsowalny (w tym wiele bloków, tekst poza blokiem) |
+| `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
+| `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
+| `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
+| `E06` | `poprawna` poza zakresem indeksów `odpowiedzi` |
+| `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
+| `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
+| `E09` | pytanie bez `zrodla` albo lista pusta |
+| `E10` | `zrodla[].url` nie jest adresem `http(s)` albo jest adresem zabronionym (`example.com`, `przyklad.org`, `localhost`, `test`) |
+| `E11` | data (`utworzono`, `sprawdzono`) w przyszłości albo w złym formacie |
+| `E12` | `temat` spoza kanonu §5 |
+| `E13` | duplikat pytania (znormalizowana `tresc` występuje więcej niż raz) |
+| `E14` | brak zakotwiczenia miejscowego: ani `tresc`, ani `wyjasnienie` nie odnosi się do miejsca z `okolica.miejsce` ani do nazwy/opisu stacji |
+| `E15` | pole wymagane puste albo nie tekstem/liczbą zgodnie z §3 |
+| `E16` | `okolica` w paczce niespójna z konfiguracją gry (promień, środek odległy o > 500 m) |
+| `E17` | współrzędne poza zakresem (`lat`, `lon`) |
+| `E18` | `punkty` spoza skali `{10, 15, 20}` albo niezgodne z kategorią wiekową |
+| `E19` | `id` pytania nieunikalne albo niezgodne ze wzorem |
+| `E20` | `wyjasnienie` krótsze niż 60 znaków albo dosłownie powtarza `tresc` |
+
+**Heurystyka zakotwiczenia (E14)**: pytanie przechodzi, jeśli `tresc` albo
+`wyjasnienie` zawiera (po normalizacji) którykolwiek z tokenów: nazwa miejsca
+z `okolica.miejsce` i jego części (dzielnica, miasto), nazwa ulicy/obiektu
+z opisu stacji, albo słowo z listy lokalnej (`ulica`, `plac`, `park`, `kościół`,
+`most`, `dzielnica`, `osiedle`, `rynek`, `cmentarz`, `fabryka`, `szkoła`) — plus
+wymagany co najmniej jeden **rzeczownik własny** z tych tokenów. Lista tokenów
+jest w `app/protokol.js` (`TOKENY_MIEJSCA`) i testowana; jej rozszerzanie to
+zmiana kodu, nie decyzja sesji „na oko".
+
+## 7. Wersjonowanie i migracje
+
+- Wersja protokołu jest **wyprowadzana** ze statusu tego pliku (pierwsza linia
+  nagłówka „Status") i porównywana przez test kontraktowy ze stopką aplikacji
+  (`index.html` → `#stopka-protokol`) oraz z `README.md`. Nie wpisuje się jej
+  ręcznie w trzech miejscach.
+- Zmiana schematu paczki = podbicie wersji (`PYT/1.1`, `PYT/2.0`) + nowy ADR +
+  migrator w `app/migracje.js` + test migracji na fixture'ach starej wersji.
+  Paczka użytkownika w `localStorage` nie może przestać działać (ADR 0010 pkt 6).
+- Zmiana kosmetyczna szablonu promptu (bez zmiany schematu) = podbicie łatki
+  (`PYT/1.0.1`) w `SZABLON_WERSJA` i wpis w `docs/PROJECT_HISTORY.md`.
+
+## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
+
+```json
+{
+  "protokol": "PYT/1.0",
+  "okolica": { "lat": 52.23178, "lon": 21.01234, "promienM": 1000, "miejsce": "Warszawa, Śródmieście, woj. mazowieckie, Polska" },
+  "wiek": "dorosli",
+  "tematy": ["historia"],
+  "jezyk": "polski",
+  "utworzono": "2026-09-05 18:30",
+  "pytania": [
+    {
+      "id": "s1p1",
+      "stacja": 1,
+      "temat": "historia",
+      "tresc": "Przy jakiej ulicy stoi kamienica, w której w 1918 roku mieściła się pierwsza siedziba Polskiej Agencji Telegraficznej?",
+      "odpowiedzi": ["Bracka", "Mazowiecka", "Zgoda", "Jasna"],
+      "poprawna": 2,
+      "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda; agencję powołano w październiku 1918 roku, jeszcze przed formalnym odzyskaniem niepodległości.",
+      "zrodla": [{ "url": "https://pl.wikipedia.org/wiki/Polska_Agencja_Telegraficzna", "tytul": "Polska Agencja Telegraficzna — Wikipedia", "sprawdzono": "2026-09-05" }],
+      "punkty": 20
+    }
+  ],
+  "uwagi": ""
+}
+```
+
+Przykład jest ilustracją formatu: fakt i adres źródła przed użyciem w paczce
+referencyjnej w repo musi zweryfikować agent (`fetch_page`, ADR 0008 pkt 6).

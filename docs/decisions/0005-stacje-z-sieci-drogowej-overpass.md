@@ -13,16 +13,23 @@ nie ma backendu (ADR 0001/0006), więc dane pobiera przeglądarka użytkownika.
 
 ## Decyzja
 
-1. **Źródło danych: Overpass API** (publiczne instancje, CORS, bez klucza;
-   lista i polityki w `docs/ASSETS.md`). Jedno zapytanie wokół pozycji startowej
-   w promieniu `R × 1.15` zwraca:
+1. **Źródło danych: Overpass API** — instancja główna
+   `overpass-api.de/api/interpreter`, z przełączeniem na
+   `overpass.private.coffee`, a potem na `maps.mail.ru` przy `429`/`504`/timeout
+   (pauza 30 s między próbami; sekwencyjnie, nigdy równolegle). Limity i
+   polityka: `docs/ASSETS.md` §2 — w szczególności **jedno zapytanie na grę**
+   i cache z TTL. Jedno zapytanie wokół pozycji startowej w promieniu
+   `R × 1.15` zwraca:
    - drogi i szlaki: `way["highway"]` (klasy zależne od trybu — pkt 3),
    - miejsca publiczne: `node|way["amenity"]`, `["tourism"]`, `["historic"]`,
      `["leisure"~"park|playground|garden"]`, `["place"="square"]`,
      `["natural"~"peak|waterfall|tree"]`,
    - budynki: `way["building"]` — jako **poligony wykluczeń**,
    - ograniczenia: `["access"~"private|no"]`, `["foot"="no"]`, bramy i barierki
-     `node["barrier"]`.
+     `node["barrier"]`,
+   - obszary administracyjne (`is_in(lat,lon)` → `area["boundary"="administrative"]`)
+     — nazwa miejsca do promptu (`{MIEJSCE}`), żeby nie wołać Nominatim
+     (`docs/ASSETS.md` §3).
 2. **Model danych**: z odpowiedzi Overpass budujemy w pamięci **graf sieci**
    (węzły po `id`, krawędzie z `way` z atrybutami klasy i dostępności) oraz
    listę kandydatów. Budowa grafu i wyszukiwanie w nim to czyste funkcje

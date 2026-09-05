@@ -67,3 +67,32 @@ przechodzą, a w przeglądarce warstwa jest martwa (biały ekran albo cichy
 Test kontraktowy `test/kontrakt.test.js` grep`uje `app/**.js` pod kątem
 `node:` i `require(`. Szyfrowanie dlatego jedzie na Web Crypto, nie na
 `node:crypto` (ADR 0007).
+
+## L7 (2026-09-05, Tajemnicza Okolica) — `git add -A` commituje więcej, niż opisuje komunikat
+
+**Objaw:** commit „M0/E1: konfiguracja repo i zasady pracy agentów" (`3e61917`)
+zawiera też cały rejestr ADR (etap E2) — komunikat nie opisuje zakresu zmiany,
+a audyt następnej sesji musi to odkręcać z `git show --stat`.
+**Przyczyna:** `git add -A` chwyta wszystko, co leży w drzewie, niezależnie od
+tego, jaki etap sesji opisuje komunikat pisany chwilę wcześniej.
+**Reguła:** przed każdym commitem `git status --short` i porównanie listy
+plików z zakresem w komunikacie; albo `git add <ścieżki>` jawnie per etap.
+Jeśli rozjazd już się wypchnął — **nie poprawiaj historii** (zakaz force push,
+ADR 0012): opisz fakt w handoffie i w opisie PR.
+
+## L8 (2026-09-05, Tajemnicza Okolica) — polityki darmowych dostawców map zmieniają się pod projektem
+
+**Objaw:** CARTO basemaps (Voyager/Positron), przez lata standard „darmowe
+kafelki bez klucza", w 2026 wymaga klucza API, bez klucza dokleja znak wodny
+„API key required", a rastery są rozważane do wygaszenia. Darmowe serwisy bez
+klucza (OpenFreeMap, VersaTiles, Maptoolkit) okazały się **wektorowe**, czyli
+wymagają MapLibre — zależności zakazanej przez ADR 0001.
+**Przyczyna:** wybór dostawcy zapisany „z pamięci" albo z przyzwyczajenia, bez
+kwerendy stanu na dziś; dodatkowo mylenie „darmowe" z „bez klucza" i „rastrowe"
+z „wektorowe".
+**Reguła:** dostawcę kafelków/danych wybiera się **po kwerendzie w dniu decyzji**
+(`web_search` + `fetch_page`), a wynik z datą sprawdzenia trafia do
+`docs/ASSETS.md` (§5 checklista). Przy zmianie dostawcy sprawdź trzy rzeczy:
+czy wymaga klucza, czy serwuje rastry czy wektory, i co mówi jego polityka
+o użyciu w aplikacjach. ADR-y ze statusem *Proponowana* poprawia się przed
+akceptacją — po akceptacji tylko nowy ADR zastępujący.

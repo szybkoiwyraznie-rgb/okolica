@@ -6,8 +6,10 @@
   "type": "module",
   "scripts": {
     "test": "node --test",
-    "serwer": "python3 -m http.server 8000 --bind 0.0.0.0",
-    "brama": "node --test && node tools/sprawdz-kontrakt.mjs"
+    "build": "node tools/synchronizuj-szablon.mjs",
+    "check": "node tools/synchronizuj-szablon.mjs --check",
+    "brama": "node --test && node tools/synchronizuj-szablon.mjs --check",
+    "serwer": "python3 -m http.server 8000 --bind 0.0.0.0"
   },
   "engines": {
     "node": ">=20"

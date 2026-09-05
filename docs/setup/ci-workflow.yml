@@ -1,0 +1,49 @@
+# LUSTRO receptury CI — do wklejenia przez właściciela jako .github/workflows/ci.yml
+#
+# Agent NIE MOŻE zapisać tego pliku w drzewie: token GitHub App używany w Arenie
+# dostaje 403 `workflows` przy pushu i przy `gh api` (LESSONS L4, ADR 0012).
+# To nie jest bloker sesji ani zadanie dla właściciela w środku pracy — brama
+# jakości to `npm test` uruchamiane w każdej sesji. Plik leży tu jako receptura
+# i jako punkt odniesienia dla audytu („czy brama na GitHubie robi to samo,
+# co bramka lokalna").
+#
+# Wklejenie: repo → Add file → Create new file → .github/workflows/ci.yml →
+# treść poniżej (bez trzech linii tego nagłówka).
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Zero zależności runtime i deweloperskich (ADR 0001) — brak `npm ci`.
+      - name: Testy (geodezja, konfiguracja, protokół PYT, kontrakty)
+        run: npm test
+
+      - name: Szablon promptu zgodny między dokumentem a kodem (PROTOKOL §2)
+        run: npm run check
+
+      - name: Brak zależności i brak sekretów w drzewie
+        run: |
+          test ! -d node_modules
+          ! grep -rnE "(api[_-]?key|secret|token)\s*[:=]\s*['\"][A-Za-z0-9]{16,}" app/ tools/ index.html
+          echo "OK: brak kluczy API i zależności w repozytorium"

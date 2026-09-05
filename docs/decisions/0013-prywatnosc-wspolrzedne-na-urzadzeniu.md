@@ -19,17 +19,20 @@ być używana przez osoby poniżej 16 lat.
    Brak `localStorage` jako identyfikatora użytkownika (klucze są techniczne,
    ADR 0010 pkt 1).
 2. **Lista dostawców jest zamknięta i jawna** (`docs/ASSETS.md`): kafelki
-   (CARTO/OSM/OpenTopoMap/Esri — wg ADR 0003), Overpass API (sieć drogowa,
-   ADR 0005), Nominatim albo Overpass `isIn` (odwrotna geokodacja nazwy
-   miejsca do promptu). Nowy dostawca = wpis w `docs/ASSETS.md` + nowy ADR.
+   rastrowe (OSM Standard domyślnie, OpenTopoMap i Esri World Imagery jako
+   warstwy opcjonalne — ADR 0003) oraz Overpass API (sieć drogowa **i** nazwa
+   miejsca z obszarów administracyjnych — ADR 0005). **Nominatim jest domyślnie
+   wyłączony** i dopuszczony wyłącznie jako warstwa zapasowa, na warunkach jego
+   polityki (`docs/ASSETS.md` §3). Nowy dostawca = wpis w `docs/ASSETS.md`
+   + nowy ADR.
 3. **Minimalizacja pozycji w zapytaniach**:
    - kafelki: żądanie ujawnia tylko obszar ekranu i zoom (nie da się mniej);
    - Overpass: środek i promień, **bez identyfikatora użytkownika**, pozycja
      zaokrąglona do ~5 m (5. miejsca po przecinku) i powiększony promień
      (`R × 1.15`), żeby nie dało się z bbox-a odtworzyć dokładnego startu;
-   - odwrotna geokodacja: tylko do uzyskania nazwy miejsca („Warszawa,
-     Śródmieście") — **wyłączalna** w setupie (wtedy prompt ma same
-     współrzędne, ADR 0006 pkt 3).
+   - nazwa miejsca: z **tego samego** zapytania Overpass (obszary
+     administracyjne), bez dodatkowego dostawcy — i **wyłączalna** w setupie
+     (wtedy prompt ma same współrzędne, ADR 0006 pkt 3).
 4. **Dane gracza zostają na urządzeniu**: fixy GPS, dziennik rozgrywki,
    odpowiedzi i wyniki trafiają wyłącznie do `localStorage` (ADR 0010) i do
    eksportowanego pliku, który użytkownik sam wybiera. Aplikacja nie ma

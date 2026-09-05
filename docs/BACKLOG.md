@@ -1,0 +1,104 @@
+# BACKLOG — bank pomysłów i rozpoznania
+
+> **Rozpoznanie do wykorzystania, nie kolejka zadań** (AGENTS.md §4). Zadania
+> przydziela właściciel w czacie albo kamień milowy z `docs/ROADMAP.md`; wpis
+> w backlogu nie upoważnia do wzięcia się za temat. Format: `## Bn — tytuł`,
+> potem: pomysł → dlaczego → czego wymaga → ryzyka.
+
+## B1 — Gra na wielu telefonach (multi-device)
+
+Wspólna rozgrywka dla graczy rozproszonych po okolicy, każdy na swoim
+urządzeniu, z widokiem pozycji innych. Wymaga: rezygnacji z „zero backendu"
+albo trybu „wymiana stanów przez paczki/kod rozgrywki" (np. przez QR i plik),
+nowego ADR zastępującego ADR 0009 oraz analizy prywatności (współrzędne innych
+osób!). Ryzyko: to jest inny produkt — najpierw doprowadzić hot-seat do końca.
+
+## B2 — Repozytorium paczek pytań (kontekst M9)
+
+Indeks geohash-5 → lista paczek z metadanymi; aplikacja proponuje gotową
+paczkę dla okolicy zanim zawoła model. Wymaga decyzji o prywatności geohashu
+(ADR 0013 pkt 6), licencji treści, moderacji i przeglądu źródeł.
+
+## B3 — Tryb „bez AI": pytania z danych OSM i Wikipedii
+
+Generowanie pytań lokalnie z faktów strukturalnych (nazwa ulicy i jej patron,
+data powstania obiektu z `start_date`, rzeka, pomnik + opis z Wikipedii).
+Zalety: brak kroku z modelem, offline. Ryzyka: pytania płytkie, licencje
+(Wikipedia CC BY-SA wymaga atrybucji), jakościowo inny produkt — raczej tryb
+dodatkowy niż zamiennik.
+
+## B4 — Trasy i nawigacja piesza (wskazówki skrętów)
+
+Dziś pokazujemy stację i dystans w linii prostej/sieciowo. Pełna nawigacja
+oznacza routing po grafie (mamy go z ADR 0005) i instrukcje „za 100 m w lewo".
+Ryzyko: odpowiedzialność za prowadzenie użytkownika w ruchu ulicznym; wymaga
+decyzji właściciela i pewnie ostrzeżeń prawnych w UI.
+
+## B5 — Punkty specjalne i mechanika gry (odznaki, serie, bonusy)
+
+Bonusy za serię poprawnych, odznaki za tematy, „stacja-niespodzianka", tryb
+kooperacyjny z pytaniem wymagającym dwóch graczy, handicap dla młodszych.
+Wymaga: model punktacji z ADR 0009 pkt 5 musi być stabilny (M7).
+
+## B6 — Oszczędzanie baterii: budzenie przy zbliżaniu
+
+Zamiast ciągłego `watchPosition` z `enableHighAccuracy` — rzadkie fixy z
+grubą dokładnością i „budzenie" dokładnego śledzenia w promieniu ~200 m od
+stacji (albo geofencing natywny, jeśli przeglądarka go udostępni). Mierzyć
+wpływ na próg dojścia (ADR 0004) — ryzyko: przeoczone dojście.
+
+## B7 — Warstwa „nie wchodź tu" i bezpieczeństwo
+
+Ostrzeżenia przy stacjach blisko jezdni, torów, wody; tryb nocny z
+ograniczeniem gry po zmroku dla kategorii wiekowej 7–12; komunikat „nie
+korzystaj z aplikacji w czasie prowadzenia roweru/samochodu".
+
+## B8 — Wersja językowa interfejsu (EN/DE/UA)
+
+Interfejs po polsku (ADR 0011 pkt 8); treść pytań już jest wielojęzyczna przez
+parametr `jezyk`. Pełny i18n UI wymaga słowników i nowego ADR — rozważyć, gdy
+pojawi się potrzeba udostępnienia gry turystom.
+
+## B9 — PWA: Service Worker i pełny offline
+
+Cache kafelków ostatniej okolicy + paczki + assetów, żeby gra działała bez
+zasięgu. Wymaga ADR (strategia cache, aktualizacje wersji, `?v=`), a ryzyko to
+„stara wersja aplikacji w cache" — klasyczna pułapka PWA.
+
+## B10 — Eksport trasy do GPX / KML i integracja z zegarkami
+
+Zapis stacji i przebiegu jako GPX (dla Garmin/Strava). Małe, użyteczne,
+bez zależności (XML piszemy sami).
+
+## B11 — Ranking i historia okolic (lokalna)
+
+„Zaliczone okolice" na mapie świata (geohash-5 jako kropki), statystyki
+tematyczne, liczba gier. Wszystko lokalnie (ADR 0013) — bez konta i bez
+serwera.
+
+## B12 — Tryb „edukacyjny" dla szkół i grup
+
+Rozgrywka dla 20+ uczestników z podziałem na drużyny, pytania o tej samej
+trudności dla wszystkich, wydruk/zestawienie wyników dla prowadzącego. Wymaga
+przemyślenia ADR 0009 (jeden telefon) — pewnie jako osobny tryb „prowadzący".
+
+## B13 — Audyt dostępności WCAG 2.2 AA
+
+Pełny przegląd: kontrast w słońcu, fokus, `aria-live`, obsługa czytników
+ekranu, alternatywy dla gestów. Zrobić po M7, gdy UI jest kompletny.
+
+## B14 — Narzędzie `tools/budzet-lektury.mjs`
+
+Liczy tokeny lektury startowej (`AGENTS.md` §0, próg 40 tys.) i pilnuje, żeby
+dokumentacja nie rozrosła się ponad budżet. Wzorzec istnieje w AME
+(`tools/budzet-lektury.mjs`).
+
+## B15 — Podkład wektorowy (OpenFreeMap) za cenę jednej zależności
+
+OpenFreeMap daje darmowe, bezlimitowe kafelki **wektorowe** bez klucza,
+rejestracji i ciasteczek — ale render wektorów (MVT/pbf, style, etykiety) bez
+MapLibre GL jest projektem na wiele tygodni. Wymaga: zastąpienia ADR 0001
+(zależność + krok budowania albo vendoring MapLibre ~800 KB), nowego ADR,
+decyzji właściciela o rozmiarze payloadu na telefonie. Zysk: ładniejszy podkład
+jasny (styl „positron/liberty") i brak ryzyka polityki OSM Tiles. Rozważyć
+dopiero, gdy podkład rastrowy okaże się w terenie nieczytelny (M10).
