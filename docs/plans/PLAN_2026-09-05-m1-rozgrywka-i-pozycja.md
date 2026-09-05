@@ -29,7 +29,7 @@ w środku handlerów zdarzeń — czyli tam, gdzie nie da się jej przetestować
       identyfikatory i wyniki (ADR 0007 pkt 6).
       Kryterium: `test/rozgrywka.test.js` przechodzi pełną grę od startu do
       podsumowania na wstrzykniętym zegarze, wynik deterministyczny.
-- [ ] F3 — `app/pozycja.js`: filtr dokładności, stan dojścia (dwa kolejne fixy,
+- [x] F3 — `app/pozycja.js`: filtr dokładności, stan dojścia (dwa kolejne fixy,
       próg `max(25 m, 1,2 × accuracy)` — ADR 0004 pkt 2), komunikaty błędów GPS
       (pkt 7), symulacja trasy dla trybu testowego (pkt 6) jako czysta funkcja
       `fixSymulowany(t)`, cienka osłona `watchPosition`.
