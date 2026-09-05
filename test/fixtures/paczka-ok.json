@@ -1,0 +1,67 @@
+{
+  "protokol": "PYT/1.0",
+  "okolica": {
+    "lat": 52.23178,
+    "lon": 21.01234,
+    "promienM": 1000,
+    "miejsce": "Grabowice, Stare Miasto, woj. mazowieckie, Polska"
+  },
+  "wiek": "dorosli",
+  "tematy": ["historia", "architektura"],
+  "jezyk": "polski",
+  "utworzono": "2026-09-05 18:30",
+  "pytania": [
+    {
+      "id": "s1p1",
+      "stacja": 1,
+      "temat": "historia",
+      "tresc": "W którym roku grabowicki rynek otrzymał prawa miejskie nadane przez księcia Siemowita?",
+      "odpowiedzi": ["1342", "1410", "1527", "1655"],
+      "poprawna": 0,
+      "wyjasnienie": "Prawa miejskie Grabowice otrzymały w 1342 roku z nadania księcia Siemowita II, co potwierdza zachowany przywilej lokacyjny przechowywany w archiwum parafialnym przy rynku.",
+      "zrodla": [
+        {
+          "url": "https://pl.wikipedia.org/wiki/Grabowice_(wojew%C3%B3dztwo_mazowieckie)",
+          "tytul": "Grabowice (województwo mazowieckie) — Wikipedia",
+          "sprawdzono": "2026-09-05"
+        }
+      ],
+      "punkty": 20
+    },
+    {
+      "id": "s2p1",
+      "stacja": 2,
+      "temat": "architektura",
+      "tresc": "Jaki styl reprezentuje kamienica przy ulicy Krzywej 4 w grabowickim Starym Mieście?",
+      "odpowiedzi": ["neogotyk", "barok", "modernizm", "renesans"],
+      "poprawna": 2,
+      "wyjasnienie": "Kamienica przy ulicy Krzywej 4 to przykład modernizmu z lat 30. XX wieku: płaski dach, poziome pasy okien i brak historyzujących detali charakterystycznych dla starszej zabudowy rynku.",
+      "zrodla": [
+        {
+          "url": "https://pl.wikipedia.org/wiki/Modernizm_(architektura)",
+          "tytul": "Modernizm (architektura) — Wikipedia",
+          "sprawdzono": "2026-09-05"
+        }
+      ],
+      "punkty": 20
+    },
+    {
+      "id": "s3p1",
+      "stacja": 3,
+      "temat": "historia",
+      "tresc": "Jak nazywała się fabryka, która do 1939 roku działała nad grabowickim stawem miejskim?",
+      "odpowiedzi": ["Garbarnia Braci Holtz", "Huta Szkła Warta", "Młyn Parowy Nowak", "Cegielnia Stara"],
+      "poprawna": 0,
+      "wyjasnienie": "Nad stawem w Grabowicach działała Garbarnia Braci Holtz, założona w 1887 roku; jej zabudowania rozebrano po wojnie, a teren włączono do parku miejskiego przy ulicy Stawowej.",
+      "zrodla": [
+        {
+          "url": "https://pl.wikipedia.org/wiki/Garbarnia",
+          "tytul": "Garbarnia — Wikipedia",
+          "sprawdzono": "2026-09-05"
+        }
+      ],
+      "punkty": 20
+    }
+  ],
+  "uwagi": "FIXTURE TESTOWY: miejsce, fakty, daty i adresy źródeł są zmyślone na potrzeby testów walidatora (test/protokol.test.js). Nie jest to prawdziwa paczka i nie wolno jej używać w grze ani publikować."
+}
