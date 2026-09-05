@@ -1,0 +1,826 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62 — FIXTURE SYNTETYCZNY wygenerowany przez tools/generuj-fixture-overpass.mjs (scenariusz: przedmieście); dane wymyślone, nie pochodzą z OpenStreetMap",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-05T00:00:00Z",
+    "copyright": "Fixture syntetyczny — brak danych OSM. Format zgodny z odpowiedzią Overpass API (out geom)."
+  },
+  "elements": [
+    {
+      "type": "way",
+      "id": 5001,
+      "geometry": [
+        {
+          "lat": 52.183012,
+          "lon": 21.163479
+        },
+        {
+          "lat": 52.18391,
+          "lon": 21.163486
+        },
+        {
+          "lat": 52.184808,
+          "lon": 21.16346
+        },
+        {
+          "lat": 52.185707,
+          "lon": 21.163511
+        },
+        {
+          "lat": 52.186605,
+          "lon": 21.163528
+        },
+        {
+          "lat": 52.187503,
+          "lon": 21.163509
+        },
+        {
+          "lat": 52.188402,
+          "lon": 21.163532
+        },
+        {
+          "lat": 52.1893,
+          "lon": 21.163486
+        },
+        {
+          "lat": 52.190198,
+          "lon": 21.16351
+        },
+        {
+          "lat": 52.191097,
+          "lon": 21.163538
+        },
+        {
+          "lat": 52.191995,
+          "lon": 21.163516
+        },
+        {
+          "lat": 52.192893,
+          "lon": 21.163506
+        },
+        {
+          "lat": 52.193792,
+          "lon": 21.163458
+        },
+        {
+          "lat": 52.19469,
+          "lon": 21.163516
+        },
+        {
+          "lat": 52.195588,
+          "lon": 21.163462
+        }
+      ],
+      "tags": {
+        "highway": "residential",
+        "name": "Ulica Główna",
+        "lit": "yes",
+        "maxspeed": "30"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5002,
+      "geometry": [
+        {
+          "lat": 52.185707,
+          "lon": 21.163511
+        },
+        {
+          "lat": 52.185836,
+          "lon": 21.165625
+        },
+        {
+          "lat": 52.186066,
+          "lon": 21.166529
+        }
+      ],
+      "tags": {
+        "highway": "residential",
+        "name": "Ulica Ślepa 1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5003,
+      "geometry": [
+        {
+          "lat": 52.185869,
+          "lon": 21.164097
+        },
+        {
+          "lat": 52.185869,
+          "lon": 21.164258
+        },
+        {
+          "lat": 52.18595,
+          "lon": 21.164258
+        },
+        {
+          "lat": 52.18595,
+          "lon": 21.164097
+        },
+        {
+          "lat": 52.185869,
+          "lon": 21.164097
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5004,
+      "geometry": [
+        {
+          "lat": 52.185869,
+          "lon": 21.165123
+        },
+        {
+          "lat": 52.185869,
+          "lon": 21.165284
+        },
+        {
+          "lat": 52.18595,
+          "lon": 21.165284
+        },
+        {
+          "lat": 52.18595,
+          "lon": 21.165123
+        },
+        {
+          "lat": 52.185869,
+          "lon": 21.165123
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5005,
+      "geometry": [
+        {
+          "lat": 52.188402,
+          "lon": 21.163532
+        },
+        {
+          "lat": 52.188548,
+          "lon": 21.165874
+        },
+        {
+          "lat": 52.188582,
+          "lon": 21.166844
+        }
+      ],
+      "tags": {
+        "highway": "residential",
+        "name": "Ulica Ślepa 2"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5006,
+      "geometry": [
+        {
+          "lat": 52.188564,
+          "lon": 21.164118
+        },
+        {
+          "lat": 52.188564,
+          "lon": 21.164279
+        },
+        {
+          "lat": 52.188645,
+          "lon": 21.164279
+        },
+        {
+          "lat": 52.188645,
+          "lon": 21.164118
+        },
+        {
+          "lat": 52.188564,
+          "lon": 21.164118
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5007,
+      "geometry": [
+        {
+          "lat": 52.188564,
+          "lon": 21.165144
+        },
+        {
+          "lat": 52.188564,
+          "lon": 21.165305
+        },
+        {
+          "lat": 52.188645,
+          "lon": 21.165305
+        },
+        {
+          "lat": 52.188645,
+          "lon": 21.165144
+        },
+        {
+          "lat": 52.188564,
+          "lon": 21.165144
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5008,
+      "geometry": [
+        {
+          "lat": 52.188564,
+          "lon": 21.166169
+        },
+        {
+          "lat": 52.188564,
+          "lon": 21.166331
+        },
+        {
+          "lat": 52.188645,
+          "lon": 21.166331
+        },
+        {
+          "lat": 52.188645,
+          "lon": 21.166169
+        },
+        {
+          "lat": 52.188564,
+          "lon": 21.166169
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5009,
+      "geometry": [
+        {
+          "lat": 52.191097,
+          "lon": 21.163538
+        },
+        {
+          "lat": 52.191223,
+          "lon": 21.165976
+        },
+        {
+          "lat": 52.191097,
+          "lon": 21.166996
+        }
+      ],
+      "tags": {
+        "highway": "residential",
+        "name": "Ulica Ślepa 3"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5010,
+      "geometry": [
+        {
+          "lat": 52.191259,
+          "lon": 21.164124
+        },
+        {
+          "lat": 52.191259,
+          "lon": 21.164285
+        },
+        {
+          "lat": 52.19134,
+          "lon": 21.164285
+        },
+        {
+          "lat": 52.19134,
+          "lon": 21.164124
+        },
+        {
+          "lat": 52.191259,
+          "lon": 21.164124
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5011,
+      "geometry": [
+        {
+          "lat": 52.191259,
+          "lon": 21.16515
+        },
+        {
+          "lat": 52.191259,
+          "lon": 21.165311
+        },
+        {
+          "lat": 52.19134,
+          "lon": 21.165311
+        },
+        {
+          "lat": 52.19134,
+          "lon": 21.16515
+        },
+        {
+          "lat": 52.191259,
+          "lon": 21.16515
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5012,
+      "geometry": [
+        {
+          "lat": 52.193792,
+          "lon": 21.163458
+        },
+        {
+          "lat": 52.193942,
+          "lon": 21.165934
+        },
+        {
+          "lat": 52.193612,
+          "lon": 21.16699
+        }
+      ],
+      "tags": {
+        "highway": "residential",
+        "name": "Ulica Ślepa 4"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5013,
+      "geometry": [
+        {
+          "lat": 52.193954,
+          "lon": 21.164044
+        },
+        {
+          "lat": 52.193954,
+          "lon": 21.164205
+        },
+        {
+          "lat": 52.194035,
+          "lon": 21.164205
+        },
+        {
+          "lat": 52.194035,
+          "lon": 21.164044
+        },
+        {
+          "lat": 52.193954,
+          "lon": 21.164044
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5014,
+      "geometry": [
+        {
+          "lat": 52.193954,
+          "lon": 21.16507
+        },
+        {
+          "lat": 52.193954,
+          "lon": 21.165231
+        },
+        {
+          "lat": 52.194035,
+          "lon": 21.165231
+        },
+        {
+          "lat": 52.194035,
+          "lon": 21.16507
+        },
+        {
+          "lat": 52.193954,
+          "lon": 21.16507
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5015,
+      "geometry": [
+        {
+          "lat": 52.193954,
+          "lon": 21.166096
+        },
+        {
+          "lat": 52.193954,
+          "lon": 21.166257
+        },
+        {
+          "lat": 52.194035,
+          "lon": 21.166257
+        },
+        {
+          "lat": 52.194035,
+          "lon": 21.166096
+        },
+        {
+          "lat": 52.193954,
+          "lon": 21.166096
+        }
+      ],
+      "tags": {
+        "building": "house",
+        "building:levels": "1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5016,
+      "geometry": [
+        {
+          "lat": 52.186605,
+          "lon": 21.163528
+        },
+        {
+          "lat": 52.186498,
+          "lon": 21.16147
+        },
+        {
+          "lat": 52.186695,
+          "lon": 21.160744
+        }
+      ],
+      "tags": {
+        "highway": "residential",
+        "name": "Ulica Zachodnia 1"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5017,
+      "geometry": [
+        {
+          "lat": 52.186749,
+          "lon": 21.162649
+        },
+        {
+          "lat": 52.186749,
+          "lon": 21.162795
+        },
+        {
+          "lat": 52.186821,
+          "lon": 21.162795
+        },
+        {
+          "lat": 52.186821,
+          "lon": 21.162649
+        },
+        {
+          "lat": 52.186749,
+          "lon": 21.162649
+        }
+      ],
+      "tags": {
+        "building": "house"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5018,
+      "geometry": [
+        {
+          "lat": 52.1893,
+          "lon": 21.163486
+        },
+        {
+          "lat": 52.189218,
+          "lon": 21.161424
+        },
+        {
+          "lat": 52.18939,
+          "lon": 21.160702
+        }
+      ],
+      "tags": {
+        "highway": "residential",
+        "name": "Ulica Zachodnia 2"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5019,
+      "geometry": [
+        {
+          "lat": 52.189444,
+          "lon": 21.162607
+        },
+        {
+          "lat": 52.189444,
+          "lon": 21.162753
+        },
+        {
+          "lat": 52.189516,
+          "lon": 21.162753
+        },
+        {
+          "lat": 52.189516,
+          "lon": 21.162607
+        },
+        {
+          "lat": 52.189444,
+          "lon": 21.162607
+        }
+      ],
+      "tags": {
+        "building": "house"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5020,
+      "geometry": [
+        {
+          "lat": 52.189031,
+          "lon": 21.161581
+        },
+        {
+          "lat": 52.189031,
+          "lon": 21.161757
+        },
+        {
+          "lat": 52.189111,
+          "lon": 21.161757
+        },
+        {
+          "lat": 52.189111,
+          "lon": 21.161581
+        },
+        {
+          "lat": 52.189031,
+          "lon": 21.161581
+        }
+      ],
+      "tags": {
+        "building": "garage"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5021,
+      "geometry": [
+        {
+          "lat": 52.191995,
+          "lon": 21.163516
+        },
+        {
+          "lat": 52.191889,
+          "lon": 21.16149
+        },
+        {
+          "lat": 52.192085,
+          "lon": 21.160732
+        }
+      ],
+      "tags": {
+        "highway": "residential",
+        "name": "Ulica Zachodnia 3"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5022,
+      "geometry": [
+        {
+          "lat": 52.192139,
+          "lon": 21.162637
+        },
+        {
+          "lat": 52.192139,
+          "lon": 21.162783
+        },
+        {
+          "lat": 52.192211,
+          "lon": 21.162783
+        },
+        {
+          "lat": 52.192211,
+          "lon": 21.162637
+        },
+        {
+          "lat": 52.192139,
+          "lon": 21.162637
+        }
+      ],
+      "tags": {
+        "building": "house"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5023,
+      "geometry": [
+        {
+          "lat": 52.193792,
+          "lon": 21.163458
+        },
+        {
+          "lat": 52.194923,
+          "lon": 21.16606
+        },
+        {
+          "lat": 52.19606,
+          "lon": 21.168162
+        },
+        {
+          "lat": 52.197565,
+          "lon": 21.167854
+        }
+      ],
+      "tags": {
+        "highway": "track",
+        "name": "Droga Polna",
+        "surface": "unpaved",
+        "tracktype": "grade3"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5024,
+      "geometry": [
+        {
+          "lat": 52.18391,
+          "lon": 21.163486
+        },
+        {
+          "lat": 52.184093,
+          "lon": 21.161309
+        },
+        {
+          "lat": 52.18391,
+          "lon": 21.159091
+        }
+      ],
+      "tags": {
+        "highway": "service",
+        "access": "private",
+        "service": "driveway",
+        "name": "Dojazd do Posesji"
+      }
+    },
+    {
+      "type": "node",
+      "id": 500001,
+      "lat": 52.188222,
+      "lon": 21.163898,
+      "tags": {
+        "shop": "convenience",
+        "name": "Sklep u Kowalskich",
+        "opening_hours": "Mo-Sa 06:00-20:00"
+      }
+    },
+    {
+      "type": "node",
+      "id": 500002,
+      "lat": 52.188088,
+      "lon": 21.164045,
+      "tags": {
+        "amenity": "parking",
+        "parking": "surface"
+      }
+    },
+    {
+      "type": "node",
+      "id": 500003,
+      "lat": 52.191995,
+      "lon": 21.163604,
+      "tags": {
+        "highway": "bus_stop",
+        "name": "Przystanek Główna-Szkoła",
+        "public_transport": "platform"
+      }
+    },
+    {
+      "type": "node",
+      "id": 500004,
+      "lat": 52.191232,
+      "lon": 21.163245,
+      "tags": {
+        "amenity": "school",
+        "name": "Szkoła Podstawowa nr 42"
+      }
+    },
+    {
+      "type": "way",
+      "id": 5025,
+      "geometry": [
+        {
+          "lat": 52.191456,
+          "lon": 21.162512
+        },
+        {
+          "lat": 52.191456,
+          "lon": 21.163172
+        },
+        {
+          "lat": 52.191726,
+          "lon": 21.163172
+        },
+        {
+          "lat": 52.191726,
+          "lon": 21.162512
+        },
+        {
+          "lat": 52.191456,
+          "lon": 21.162512
+        }
+      ],
+      "tags": {
+        "building": "school",
+        "amenity": "school",
+        "name": "Szkoła Podstawowa nr 42"
+      }
+    },
+    {
+      "type": "node",
+      "id": 500005,
+      "lat": 52.193927,
+      "lon": 21.163898,
+      "tags": {
+        "barrier": "bollard"
+      }
+    },
+    {
+      "type": "node",
+      "id": 500006,
+      "lat": 52.185599,
+      "lon": 21.163658,
+      "tags": {
+        "natural": "tree",
+        "leaf_type": "broadleaved"
+      }
+    },
+    {
+      "type": "area",
+      "id": 3600050000,
+      "tags": {
+        "boundary": "administrative",
+        "admin_level": "4",
+        "name": "województwo mazowieckie",
+        "wikidata": "Q1000"
+      }
+    },
+    {
+      "type": "area",
+      "id": 3600050001,
+      "tags": {
+        "boundary": "administrative",
+        "admin_level": "8",
+        "name": "Warszawa",
+        "wikidata": "Q1001"
+      }
+    },
+    {
+      "type": "area",
+      "id": 3600050002,
+      "tags": {
+        "boundary": "administrative",
+        "admin_level": "9",
+        "name": "Wawer",
+        "wikidata": "Q1002"
+      }
+    }
+  ]
+}

@@ -15,7 +15,7 @@
 ## Kroki (litera I)
 
 - [x] **I1 — plan** (ten plik).
-- [ ] **I2 — fixture'y Overpass:** generator `tools/generuj-fixture-overpass.mjs`
+- [x] **I2 — fixture'y Overpass:** generator `tools/generuj-fixture-overpass.mjs`
       (deterministyczny, mulberry32 z jawnym ziarnem) + trzy fixture'y pod
       kontrolą wersji: `test/fixtures/overpass-centrum.json`,
       `overpass-przedmiescie.json`, `overpass-las.json`; kontrakt formatu

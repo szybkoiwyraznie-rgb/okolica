@@ -1,0 +1,412 @@
+{
+  "version": 0.6,
+  "generator": "Overpass API 0.7.62 — FIXTURE SYNTETYCZNY wygenerowany przez tools/generuj-fixture-overpass.mjs (scenariusz: las); dane wymyślone, nie pochodzą z OpenStreetMap",
+  "osm3s": {
+    "timestamp_osm_base": "2026-09-05T00:00:00Z",
+    "copyright": "Fixture syntetyczny — brak danych OSM. Format zgodny z odpowiedzią Overpass API (out geom)."
+  },
+  "elements": [
+    {
+      "type": "way",
+      "id": 9001,
+      "geometry": [
+        {
+          "lat": 52.312346,
+          "lon": 21.029006
+        },
+        {
+          "lat": 52.312455,
+          "lon": 21.030476
+        },
+        {
+          "lat": 52.31234,
+          "lon": 21.031945
+        },
+        {
+          "lat": 52.312433,
+          "lon": 21.033414
+        },
+        {
+          "lat": 52.312373,
+          "lon": 21.034884
+        },
+        {
+          "lat": 52.312399,
+          "lon": 21.036353
+        },
+        {
+          "lat": 52.312373,
+          "lon": 21.037822
+        },
+        {
+          "lat": 52.312414,
+          "lon": 21.039292
+        },
+        {
+          "lat": 52.312363,
+          "lon": 21.040761
+        },
+        {
+          "lat": 52.31241,
+          "lon": 21.042231
+        },
+        {
+          "lat": 52.312411,
+          "lon": 21.0437
+        },
+        {
+          "lat": 52.31239,
+          "lon": 21.045169
+        },
+        {
+          "lat": 52.312431,
+          "lon": 21.046639
+        },
+        {
+          "lat": 52.312378,
+          "lon": 21.048108
+        },
+        {
+          "lat": 52.312409,
+          "lon": 21.049578
+        },
+        {
+          "lat": 52.312347,
+          "lon": 21.051047
+        },
+        {
+          "lat": 52.312444,
+          "lon": 21.052516
+        },
+        {
+          "lat": 52.312446,
+          "lon": 21.053986
+        },
+        {
+          "lat": 52.312431,
+          "lon": 21.055455
+        },
+        {
+          "lat": 52.31243,
+          "lon": 21.056924
+        },
+        {
+          "lat": 52.312448,
+          "lon": 21.058394
+        }
+      ],
+      "tags": {
+        "highway": "track",
+        "name": "Droga Leśna Główna",
+        "surface": "ground",
+        "tracktype": "grade2"
+      }
+    },
+    {
+      "type": "way",
+      "id": 9002,
+      "geometry": [
+        {
+          "lat": 52.305214,
+          "lon": 21.04666
+        },
+        {
+          "lat": 52.306112,
+          "lon": 21.046578
+        },
+        {
+          "lat": 52.30701,
+          "lon": 21.04669
+        },
+        {
+          "lat": 52.307908,
+          "lon": 21.046609
+        },
+        {
+          "lat": 52.308807,
+          "lon": 21.046696
+        },
+        {
+          "lat": 52.309705,
+          "lon": 21.046686
+        },
+        {
+          "lat": 52.310603,
+          "lon": 21.046644
+        },
+        {
+          "lat": 52.311502,
+          "lon": 21.04667
+        },
+        {
+          "lat": 52.3124,
+          "lon": 21.046641
+        },
+        {
+          "lat": 52.313298,
+          "lon": 21.046688
+        },
+        {
+          "lat": 52.314197,
+          "lon": 21.046596
+        },
+        {
+          "lat": 52.315095,
+          "lon": 21.046656
+        },
+        {
+          "lat": 52.315993,
+          "lon": 21.046702
+        },
+        {
+          "lat": 52.316892,
+          "lon": 21.046565
+        },
+        {
+          "lat": 52.31779,
+          "lon": 21.046648
+        }
+      ],
+      "tags": {
+        "highway": "track",
+        "name": "Przecinka Północna",
+        "tracktype": "grade3"
+      }
+    },
+    {
+      "type": "way",
+      "id": 9003,
+      "geometry": [
+        {
+          "lat": 52.314166,
+          "lon": 21.042144
+        },
+        {
+          "lat": 52.31575,
+          "lon": 21.040881
+        },
+        {
+          "lat": 52.316322,
+          "lon": 21.037679
+        },
+        {
+          "lat": 52.31566,
+          "lon": 21.034567
+        },
+        {
+          "lat": 52.314204,
+          "lon": 21.033347
+        },
+        {
+          "lat": 52.312627,
+          "lon": 21.034675
+        },
+        {
+          "lat": 52.312094,
+          "lon": 21.037677
+        },
+        {
+          "lat": 52.312647,
+          "lon": 21.04082
+        },
+        {
+          "lat": 52.31411,
+          "lon": 21.042272
+        }
+      ],
+      "tags": {
+        "highway": "path",
+        "name": "Ścieżka Przyrodnicza",
+        "sac_scale": "hiking"
+      }
+    },
+    {
+      "type": "way",
+      "id": 9004,
+      "geometry": [
+        {
+          "lat": 52.3124,
+          "lon": 21.0437
+        },
+        {
+          "lat": 52.313777,
+          "lon": 21.045196
+        },
+        {
+          "lat": 52.315095,
+          "lon": 21.046639
+        }
+      ],
+      "tags": {
+        "highway": "footway",
+        "name": "Łącznik Mokradłowy"
+      }
+    },
+    {
+      "type": "way",
+      "id": 9005,
+      "geometry": [
+        {
+          "lat": 52.3124,
+          "lon": 21.029006
+        },
+        {
+          "lat": 52.313234,
+          "lon": 21.031275
+        },
+        {
+          "lat": 52.314107,
+          "lon": 21.033414
+        }
+      ],
+      "tags": {
+        "highway": "path"
+      }
+    },
+    {
+      "type": "node",
+      "id": 900001,
+      "lat": 52.316173,
+      "lon": 21.036353,
+      "tags": {
+        "natural": "peak",
+        "name": "Wydma Zachodnia",
+        "ele": "126"
+      }
+    },
+    {
+      "type": "node",
+      "id": 900002,
+      "lat": 52.310424,
+      "lon": 21.048108,
+      "tags": {
+        "natural": "tree",
+        "name": "Dąb Bartek",
+        "leaf_type": "broadleaved"
+      }
+    },
+    {
+      "type": "node",
+      "id": 900003,
+      "lat": 52.311861,
+      "lon": 21.041937,
+      "tags": {
+        "natural": "tree",
+        "leaf_type": "needleleaved"
+      }
+    },
+    {
+      "type": "node",
+      "id": 900004,
+      "lat": 52.312625,
+      "lon": 21.044582,
+      "tags": {
+        "amenity": "parking",
+        "name": "Parking Leśny",
+        "parking": "surface",
+        "fee": "no"
+      }
+    },
+    {
+      "type": "node",
+      "id": 900005,
+      "lat": 52.312939,
+      "lon": 21.040173,
+      "tags": {
+        "leisure": "picnic_site",
+        "name": "Polana Piknikowa"
+      }
+    },
+    {
+      "type": "node",
+      "id": 900006,
+      "lat": 52.31249,
+      "lon": 21.05281,
+      "tags": {
+        "barrier": "gate",
+        "access": "yes"
+      }
+    },
+    {
+      "type": "node",
+      "id": 900007,
+      "lat": 52.314197,
+      "lon": 21.037822,
+      "tags": {
+        "tourism": "viewpoint",
+        "name": "Punkt Widokowy na Wydmę"
+      }
+    },
+    {
+      "type": "node",
+      "id": 900008,
+      "lat": 52.305214,
+      "lon": 21.046639,
+      "tags": {
+        "historic": "wayside_shrine",
+        "name": "Kapliczka Leśna"
+      }
+    },
+    {
+      "type": "way",
+      "id": 9006,
+      "geometry": [
+        {
+          "lat": 52.304315,
+          "lon": 21.027537
+        },
+        {
+          "lat": 52.304315,
+          "lon": 21.061326
+        },
+        {
+          "lat": 52.321383,
+          "lon": 21.061326
+        },
+        {
+          "lat": 52.321383,
+          "lon": 21.027537
+        },
+        {
+          "lat": 52.304315,
+          "lon": 21.027537
+        }
+      ],
+      "tags": {
+        "landuse": "forest",
+        "name": "Las Okoliczny",
+        "leaf_type": "mixed"
+      }
+    },
+    {
+      "type": "area",
+      "id": 3600090000,
+      "tags": {
+        "boundary": "administrative",
+        "admin_level": "4",
+        "name": "województwo mazowieckie",
+        "wikidata": "Q1000"
+      }
+    },
+    {
+      "type": "area",
+      "id": 3600090001,
+      "tags": {
+        "boundary": "administrative",
+        "admin_level": "8",
+        "name": "Warszawa",
+        "wikidata": "Q1001"
+      }
+    },
+    {
+      "type": "area",
+      "id": 3600090002,
+      "tags": {
+        "boundary": "administrative",
+        "admin_level": "9",
+        "name": "Bielany",
+        "wikidata": "Q1002"
+      }
+    }
+  ]
+}
