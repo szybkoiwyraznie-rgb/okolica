@@ -82,6 +82,21 @@ test('domyslnaKonfiguracja: 2 graczy, 5 stacji, dorośli, pieszo, zgodnie z brie
   assert.ok(domyslnaKonfiguracja(99).liczbaGraczy <= OGRANICZENIA.liczbaGraczy.max);
 });
 
+test('domyslnaKonfiguracja: śmieciowa liczba graczy nie przepuszcza NaN (znalezione w M1)', () => {
+  // `Math.max(1, NaN)` = NaN: liczba graczy wchodziła do formularza jako „NaN",
+  // lista imion była pusta, a `nowaRozgrywka` nie miałaby ani jednego gracza.
+  for (const smiec of ['dużo', NaN, 'abc', {}, null, undefined, '']) {
+    const k = domyslnaKonfiguracja(smiec);
+    assert.ok(Number.isInteger(k.liczbaGraczy), `liczbaGraczy dla ${JSON.stringify(smiec)} = ${k.liczbaGraczy}`);
+    assert.ok(k.liczbaGraczy >= OGRANICZENIA.liczbaGraczy.min && k.liczbaGraczy <= OGRANICZENIA.liczbaGraczy.max);
+    assert.equal(k.imiona.length, k.liczbaGraczy, `imiona dla ${JSON.stringify(smiec)}`);
+    assert.deepEqual(walidujSetup(k), [], `konfiguracja po oczyszczeniu ${JSON.stringify(smiec)} musi być grywalna`);
+  }
+  assert.equal(domyslnaKonfiguracja(null).liczbaGraczy, DOMYSLNE.liczbaGraczy, 'null to nie „zero graczy", tylko brak danych');
+  assert.equal(domyslnaKonfiguracja(2.6).liczbaGraczy, 3, 'ułamek jest zaokrąglany, nie ucinany');
+  assert.equal(domyslnaKonfiguracja('3').liczbaGraczy, 3, 'liczba jako tekst z localStorage działa');
+});
+
 test('liczbaPytan: stacje × pytania na stację (protokół §3.1)', () => {
   assert.equal(liczbaPytan({ liczbaStacji: 5, pytaniaNaStacje: 1 }), 5);
   assert.equal(liczbaPytan({ liczbaStacji: 5, pytaniaNaStacje: 2 }), 10);
@@ -186,6 +201,13 @@ test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', (
   assert.deepEqual(oczyscKonfiguracje({ tematy: ['historia', 'kosmos'] }).tematy, ['historia']);
   assert.deepEqual(oczyscKonfiguracje({ tematy: ['kosmos'] }).tematy, d.tematy);
   assert.deepEqual(oczyscKonfiguracje({ liczbaGraczy: 3, imiona: ['Ada', '   '] }).imiona, ['Ada', 'Gracz 2', 'Gracz 3']);
+  // tekst zamiast liczby: `Number("dużo")` = NaN, więc pole ma wrócić do domyślnej
+  const smieciowaLiczba = oczyscKonfiguracje({ liczbaGraczy: 'dużo', liczbaStacji: 'pięć', pytaniaNaStacje: null });
+  assert.equal(smieciowaLiczba.liczbaGraczy, DOMYSLNE.liczbaGraczy);
+  assert.equal(smieciowaLiczba.liczbaStacji, DOMYSLNE.liczbaStacji);
+  assert.equal(smieciowaLiczba.pytaniaNaStacje, DOMYSLNE.pytaniaNaStacje);
+  assert.equal(smieciowaLiczba.imiona.length, smieciowaLiczba.liczbaGraczy);
+  assert.deepEqual(walidujSetup(smieciowaLiczba), []);
 
   // geokodacja domyślnie wyłączona i tylko jako `true` (ADR 0013 pkt 3)
   assert.equal(oczyscKonfiguracje({ geokodacja: 'tak' }).geokodacja, false);

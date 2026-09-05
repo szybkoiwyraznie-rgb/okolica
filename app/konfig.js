@@ -184,7 +184,14 @@ export const DOMYSLNE = {
 
 /** Konfiguracja startowa dla `liczbaGraczy` graczy (imiona domyślne). */
 export function domyslnaKonfiguracja(liczbaGraczy = DOMYSLNE.liczbaGraczy) {
-  const n = Math.min(Math.max(1, liczbaGraczy), OGRANICZENIA.liczbaGraczy.max);
+  // Argument bywa śmieciem (ręczna edycja `localStorage`, stary schemat,
+  // `liczbaGraczy: "dużo"`): `Math.max(1, NaN)` daje NaN, a NaN w liczbie
+  // graczy wchodzi do formularza, do listy imion i do stanu rozgrywki.
+  // Wartość nienumeryczna = wartość z briefu, nie przepuszczony NaN.
+  const surowe = liczbaGraczy == null || liczbaGraczy === '' ? NaN : Number(liczbaGraczy);
+  const n = Number.isFinite(surowe)
+    ? Math.min(Math.max(1, Math.round(surowe)), OGRANICZENIA.liczbaGraczy.max)
+    : DOMYSLNE.liczbaGraczy;
   return {
     ...DOMYSLNE,
     liczbaGraczy: n,
