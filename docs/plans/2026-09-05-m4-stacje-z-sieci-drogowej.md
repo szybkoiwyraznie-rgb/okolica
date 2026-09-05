@@ -31,7 +31,7 @@
       + punkty interpolowane co ≤ 50 m wzdłuż dostępnych way'ów; waga krawędzi
       = metry; budżet węzłów z krokiem awaryjnym), `dijkstra()` (kopiec
       binarny, czysty JS), `snapujPunkt()` (najbliższy dopuszczalny węzeł).
-- [ ] **I5 — `app/sieci.js` cz. 3:** `kandydaciNaStacje()` zależnie od trybu
+- [x] **I5 — `app/sieci.js` cz. 3:** `kandydaciNaStacje()` zależnie od trybu
       (ADR 0005 pkt 3) + filtry wykluczeń: wnętrze poligonu budynku
       (ray-casting z prefiltrem bbox), `access=private|no`, `foot=no`
       (pieszy/rower), `tunnel=yes`, autostrada/expresówka, `landuse=railway`,

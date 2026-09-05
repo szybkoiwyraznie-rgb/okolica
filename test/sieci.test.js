@@ -497,3 +497,152 @@ test('snap: najbliższy węzeł w zasięgu, null poza zasięgiem i na pusty graf
   assert.equal(snapujPunkt({ wezly: [], sasiedztwo: [] }, SRODEK_TEST), null);
   assert.equal(snapujPunkt(g, { lat: NaN, lon: 1 }), null);
 });
+
+/* ====================================== I5: kandydaci i filtry dostępności */
+
+import { kandydaciNaStacje, punktWPolygonie } from '../app/sieci.js';
+
+function dystansM(a, b) {
+  return odlegloscM(a, b);
+}
+
+test('polygon: ray casting z prefiltrem bbox (wklęsły L też działa)', () => {
+  const kwadrat = {
+    punkty: [
+      { lat: 52.0, lon: 21.0 }, { lat: 52.0, lon: 21.001 },
+      { lat: 52.001, lon: 21.001 }, { lat: 52.001, lon: 21.0 }, { lat: 52.0, lon: 21.0 },
+    ],
+  };
+  assert.equal(punktWPolygonie({ lat: 52.0005, lon: 21.0005 }, kwadrat), true);
+  assert.equal(punktWPolygonie({ lat: 52.002, lon: 21.0005 }, kwadrat), false, 'na północ od bbox');
+  assert.equal(punktWPolygonie({ lat: 51.9995, lon: 21.0005 }, kwadrat), false);
+  // L: kwadrat 2×2 minus ćwiartka prawy-górny
+  const literaL = {
+    punkty: [
+      { lat: 0, lon: 0 }, { lat: 0, lon: 2 }, { lat: 0, lon: 2 }, { lat: 1, lon: 2 },
+      { lat: 1, lon: 1 }, { lat: 2, lon: 1 }, { lat: 2, lon: 0 }, { lat: 0, lon: 0 },
+    ].map((p) => ({ lat: 52 + p.lat * 0.001, lon: 21 + p.lon * 0.001 })),
+  };
+  assert.equal(punktWPolygonie({ lat: 52.0005, lon: 21.0005 }, literaL), true, 'dolna belka L');
+  assert.equal(punktWPolygonie({ lat: 52.0015, lon: 21.0015 }, literaL), false, 'wycięta ćwiartka — w bbox, poza poligonem');
+  assert.equal(punktWPolygonie({ lat: 52.0015, lon: 21.0005 }, literaL), true, 'pionowa belka L');
+});
+
+test('kandydaci centrum (piesza): dużo, żadnego w budynku ani na terenie kolejowym', () => {
+  const dane = parsujOdpowiedz(czytajFixture('centrum'));
+  const graf = budujGraf(dane, { tryb: 'piesza' });
+  const { kandydaci, liczniki } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+  assert.ok(kandydaci.length > 150, `kandydatów ${kandydaci.length} — siatka + interpolacja + POI`);
+  for (const k of kandydaci) {
+    for (const budynek of dane.budynki) {
+      assert.equal(punktWPolygonie(k, budynek), false, `kandydat ${k.nazwa ?? k.wezel} siedzi w budynku`);
+    }
+    for (const strefa of dane.wykluczeniaObszarowe) {
+      assert.equal(punktWPolygonie(k, strefa), false, 'kandydat na terenie kolejowym');
+    }
+  }
+  // muzeum: kandydat „przy wejściu" — węzeł sieci PRZED bryłą, nie w środku
+  const muzeum = kandydaci.find((k) => k.poi?.tags?.tourism === 'museum');
+  assert.ok(muzeum, 'muzeum jest kandydatem');
+  assert.equal(muzeum.typ, 'poi');
+  assert.equal(muzeum.nazwa, 'Muzeum Okolicy');
+  const brylaMuzeum = dane.budynki.find((b) => b.tags.tourism === 'museum');
+  assert.equal(punktWPolygonie(muzeum, brylaMuzeum), false, 'stacja przy muzeum nie stoi w muzeum');
+  assert.ok(dystansM(muzeum, brylaMuzeum.punkty[0]) < 60, 'i jest blisko wejścia (≤ 60 m od narożnika)');
+  // prywatna alejka nie istnieje w grafie — w jej głębi nie ma kandydatów
+  // (wlot z publicznej ulicy zostaje: to normalny węzeł sieci)
+  const prywatna = dane.drogi.find((d) => d.tags.access === 'private');
+  const glebiaAlejki = prywatna.punkty[1];
+  assert.ok(!kandydaci.some((k) => dystansM(k, glebiaAlejki) < 25), 'ślepy prywatny dojazd bez kandydatów');
+  assert.ok(kandydaci.some((k) => dystansM(k, prywatna.punkty[0]) < 5), 'wlot z publicznej ścieżki zostaje kandydatem');
+  assert.equal(liczniki.poiBezSieci, 0, 'w centrum każde POI ma sieć w zasięgu 80 m');
+});
+
+test('kandydaci centrum: deterministyczni i kompletowi (typy, nazwy)', () => {
+  const dane = parsujOdpowiedz(czytajFixture('centrum'));
+  const graf = budujGraf(dane, { tryb: 'piesza' });
+  const a = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+  const b = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+  assert.deepEqual(a, b);
+  assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.nazwa === 'Kawa za Rogiem'), 'kawiarnia kandydatem');
+  assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.poi?.tags.place === 'square'), 'plac kandydatem');
+  assert.ok(a.kandydaci.some((k) => k.typ === 'siec'), 'zwykłe węzły sieci też');
+});
+
+test('kandydaci przedmieście: domy wykluczone, prywatny dojazd nie kusi', () => {
+  const dane = parsujOdpowiedz(czytajFixture('przedmiescie'));
+  const graf = budujGraf(dane, { tryb: 'piesza' });
+  const { kandydaci } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+  assert.ok(kandydaci.length > 50);
+  for (const k of kandydaci) {
+    for (const dom of dane.budynki) {
+      assert.equal(punktWPolygonie(k, dom), false, `kandydat w domu ${dom.tags.name ?? dom.id}`);
+    }
+  }
+  // prywatny dojazd: kandydaci wolno tylko przy samym wlocie z ulicy Głównej
+  const prywatna = dane.drogi.find((d) => d.tags.access === 'private');
+  const wlot = prywatna.punkty[0];
+  for (const k of kandydaci) {
+    for (let i = 1; i < prywatna.punkty.length; i++) {
+      assert.ok(dystansM(k, prywatna.punkty[i]) > 15, 'żaden kandydat nie stoi w głębi prywatnego dojazdu');
+    }
+  }
+  assert.ok(kandydaci.some((k) => dystansM(k, wlot) < 5), 'wlot z publicznej ulicy zostaje kandydatem');
+  assert.ok(kandydaci.some((k) => k.nazwa === 'Sklep u Kowalskich'), 'sklep kandydatem');
+});
+
+test('kandydaci las (piesza): parking i polana przy sieci, odległe POI przepadają z licznikiem', () => {
+  const dane = parsujOdpowiedz(czytajFixture('las'));
+  const graf = budujGraf(dane, { tryb: 'piesza' });
+  const { kandydaci, liczniki } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+  assert.ok(kandydaci.some((k) => k.nazwa === 'Parking Leśny'), 'parking leśny');
+  assert.ok(kandydaci.some((k) => k.nazwa === 'Polana Piknikowa'), 'polana piknikowa');
+  assert.equal(dane.budynki.length, 0, 'w lesie zero budynków — filtry brył nie mają roboty');
+  assert.ok(liczniki.poiBezSieci >= 2, `punkt widokowy i szczyt są daleko od ścieżek (poiBezSieci=${liczniki.poiBezSieci})`);
+});
+
+test('kandydaci samochód: TYLKO POI (parking/obiekt z dojazdem), nigdy punkt na jezdni', () => {
+  const dane = parsujOdpowiedz(czytajFixture('centrum'));
+  const graf = budujGraf(dane, { tryb: 'samochodowa' });
+  const { kandydaci } = kandydaciNaStacje(dane, graf, { tryb: 'samochodowa' });
+  assert.ok(kandydaci.length >= 4, `POI z dojazdem: ${kandydaci.length}`);
+  for (const k of kandydaci) {
+    assert.equal(k.typ, 'poi', 'samochód nie staje byle gdzie przy ulicy');
+    for (const budynek of dane.budynki) assert.equal(punktWPolygonie(k, budynek), false);
+  }
+  assert.ok(kandydaci.some((k) => k.poi?.tags.amenity === 'parking'), 'parking jest kandydatem');
+});
+
+test('kandydaci: strażnicy — S07 nieznany tryb, S09 pusty graf, S11 rozjazd trybów', () => {
+  const dane = parsujOdpowiedz(czytajFixture('centrum'));
+  const graf = budujGraf(dane, { tryb: 'piesza' });
+  assert.throws(() => kandydaciNaStacje(dane, graf, { tryb: 'lotnia' }), (e) => e.kod === 'S07');
+  assert.throws(() => kandydaciNaStacje(dane, { wezly: [], sasiedztwo: [] }, { tryb: 'piesza' }), (e) => e.kod === 'S09');
+  assert.throws(() => kandydaciNaStacje(dane, graf, { tryb: 'rower' }), (e) => e.kod === 'S11');
+});
+
+test('kandydaci: POI bez sieci w zasięgu i brama prywatna — przypadki brzegowe z ręki', () => {
+  const start = { lat: 52.23, lon: 21.01 };
+  const droga = { id: 1, punkty: [przesunPunkt(start, 270, 150), start, przesunPunkt(start, 90, 150)], tags: { highway: 'residential' } };
+  const dalekiePoi = { id: 11, punkt: przesunPunkt(start, 0, 500), tags: { amenity: 'cafe', name: 'Kawa za Lasem' }, rodzaj: 'node' };
+  const bliskiePoi = { id: 12, punkt: przesunPunkt(start, 90, 150), tags: { amenity: 'cafe', name: 'Kawa na Końcu' }, rodzaj: 'node' };
+  const graf = budujGraf({ drogi: [droga] }, { tryb: 'piesza' });
+  const wynik = kandydaciNaStacje(
+    { drogi: [droga], budynki: [], wykluczeniaObszarowe: [], poi: [dalekiePoi, bliskiePoi], bariery: [], obszary: [] },
+    graf,
+    { tryb: 'piesza' },
+  );
+  assert.equal(wynik.liczniki.poiBezSieci, 1, 'kawiarnia 500 m od drogi odpada');
+  assert.ok(wynik.kandydaci.some((k) => k.nazwa === 'Kawa na Końcu'), 'bliskie POI zostaje');
+
+  // brama z access=private blokuje węzeł, przy którym stoi
+  const brama = { id: 21, punkt: start, tags: { barrier: 'gate', access: 'private' } };
+  const zBrama = kandydaciNaStacje(
+    { drogi: [droga], budynki: [], wykluczeniaObszarowe: [], poi: [], bariery: [brama], obszary: [] },
+    graf,
+    { tryb: 'piesza' },
+  );
+  assert.equal(zBrama.liczniki.wykluczonychBariera >= 1, true, 'węzeł przy bramie wykluczony');
+  assert.ok(!zBrama.kandydaci.some((k) => dystansM(k, start) < 1), 'przy samej bramie nikt nie stoi');
+  assert.ok(zBrama.kandydaci.length > 2, 'reszta drogi zostaje');
+});

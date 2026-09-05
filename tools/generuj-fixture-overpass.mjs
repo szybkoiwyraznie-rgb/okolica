@@ -173,8 +173,10 @@ function generujCentrum() {
   // droga rowerowa wzdłuż wschodniej krawędzi
   dodajWay(fixture, id.way(), [siatka[1][8], siatka[4][8], siatka[7][8]], { highway: 'cycleway', name: 'Droga Rowerowa Wschodnia' });
 
-  // PRYWATNA alejka — kandydaci nie mają prawa na nią trafić
-  dodajWay(fixture, id.way(), [siatka[2][5], siatka[2][6]], {
+  // PRYWATNA alejka — ślepy dojazd na wschód od skrajnej drogi rowerowej,
+  // daleko od węzłów siatki (nie dubluje publicznej ulicy!); kandydaci nie
+  // mają prawa na nią trafić, choć wlot z publicznej ścieżki zostaje
+  dodajWay(fixture, id.way(), [siatka[4][8], okraglij(odsun(siatka[4][8], 60, 10))], {
     highway: 'service', access: 'private', name: 'Dojazd Prywatny',
   });
 

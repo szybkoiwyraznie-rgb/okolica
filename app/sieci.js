@@ -58,6 +58,7 @@ export const KODY_SIECI = {
   S08: 'Część dróg przyszła bez geometrii (tylko numery węzłów) — zostały pominięte.',
   S09: 'W tej okolicy nie ma ANI JEDNEJ drogi dostępnej dla wybranego trybu — ustaw stacje ręcznie albo zmień tryb/okolicę.',
   S10: 'Dijkstra dostała węzeł startowy spoza grafu.',
+  S11: 'Graf zbudowano dla innego trybu niż wybór kandydatów — pieszy nie oceni sieci samochodowej.',
 };
 
 /** Błąd warstwy sieci: `Error` z polami `kod` i `komunikat` (jak w pozycja.js). */
@@ -497,4 +498,123 @@ export function snapujPunkt(graf, punkt, { maxM = 150 } = {}) {
     }
   }
   return najlepszaD <= maxM ? najlepszy : null;
+}
+
+/* ------------------------------------------------- kandydaci na stacje */
+
+/**
+ * Czy punkt leży wewnątrz poligonu (ray casting). `bbox` (z parsera) działa
+ * jak prefiltr — na gęstym centrum większość sprawdzeń kończy się zanim
+ * promień policzy przecięcia.
+ */
+export function punktWPolygonie(punkt, poligon) {
+  const punkty = poligon?.punkty;
+  if (!Array.isArray(punkty) || punkty.length < 3) return false;
+  const b = poligon.bbox;
+  if (b && (punkt.lat < b.minLat || punkt.lat > b.maxLat || punkt.lon < b.minLon || punkt.lon > b.maxLon)) return false;
+  let wewnatrz = false;
+  for (let i = 0, j = punkty.length - 1; i < punkty.length; j = i++) {
+    const pi = punkty[i];
+    const pj = punkty[j];
+    if (pi.lat !== pj.lat
+      && pi.lat > punkt.lat !== pj.lat > punkt.lat
+      && punkt.lon < ((pj.lon - pi.lon) * (punkt.lat - pi.lat)) / (pj.lat - pi.lat) + pi.lon) {
+      wewnatrz = !wewnatrz;
+    }
+  }
+  return wewnatrz;
+}
+
+function wStrefieWykluczen(punkt, wykluczenia) {
+  for (const strefa of wykluczenia) {
+    if (punktWPolygonie(punkt, strefa)) return true;
+  }
+  return false;
+}
+
+/**
+ * Kandydaci na stacje (ADR 0005 pkt 3):
+ * - **węzły dostępnej sieci** (po interpolacji co ≤ 50 m — „punkty wzdłuż
+ *   dróg") dla pieszego i roweru;
+ * - **POI**: node'y wprost, a POI-way'e i POI-budynki (muzeum, szkoła) przez
+ *   przyciągnięcie do najbliższego węzła sieci w zasięgu `maxSnapM` — stacja
+ *   „przy wejściu", nigdy w środku bryły;
+ * - tryb samochodowy (`TRYBY.wymagaParkingu`): TYLKO POI (parking albo obiekt
+ *   z dojazdem) — punkt na jezdni nie jest stacją;
+ * - wykluczenia: wnętrze budynku, teren kolejowy, bariera `access=private|no`.
+ *
+ * Deterministyczne: kolejność = kolejność węzłów grafu, potem POI z parsera.
+ * Ten sam węzeł zajęty przez POI dostaje typ `poi` (POI wygrywa z gołym
+ * fragmentem chodnika — ciekawsza stacja).
+ */
+export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}) {
+  const konfigTrybu = TRYBY[tryb];
+  if (!konfigTrybu) throw usterka('S07', String(tryb));
+  if (!graf?.wezly?.length) throw usterka('S09', tryb);
+  if (graf.tryb !== tryb) throw usterka('S11', `${graf.tryb} ≠ ${tryb}`);
+
+  const wykluczenia = [...(sparsowane?.budynki ?? []), ...(sparsowane?.wykluczeniaObszarowe ?? [])];
+  // bariera z access=private/no blokuje węzeł, przy którym stoi (np. brama
+  // na prywatne osiedle) — pozostałe bramy (access=yes, furtki) nie blokują
+  const barieryBlokujace = (sparsowane?.bariery ?? []).filter((bariera) => {
+    const access = bariera.tags?.access;
+    return access === 'private' || access === 'no';
+  });
+
+  const kandydaci = [];
+  const zajete = new Map(); // indeks węzła → pozycja na liście kandydatów
+  const liczniki = { wykluczonychBryla: 0, wykluczonychBariera: 0, poiBezSieci: 0, zdublowanych: 0 };
+
+  function sprobuj(indeksWezla, typ, zrodlo = null) {
+    const wezel = graf.wezly[indeksWezla];
+    const punkt = { lat: wezel.lat, lon: wezel.lon };
+    if (wStrefieWykluczen(punkt, wykluczenia)) {
+      liczniki.wykluczonychBryla++;
+      return false;
+    }
+    for (const bariera of barieryBlokujace) {
+      if (snapujPunkt({ wezly: [wezel] }, bariera.punkt, { maxM: 5 }) !== null) {
+        liczniki.wykluczonychBariera++;
+        return false;
+      }
+    }
+    if (zajete.has(indeksWezla)) {
+      const stary = kandydaci[zajete.get(indeksWezla)];
+      if (typ === 'poi' && stary.typ === 'siec') {
+        kandydaci[zajete.get(indeksWezla)] = {
+          ...stary,
+          typ: 'poi',
+          poi: zrodlo,
+          nazwa: zrodlo?.tags?.name ?? null,
+        };
+      } else {
+        liczniki.zdublowanych++;
+      }
+      return true;
+    }
+    zajete.set(indeksWezla, kandydaci.length);
+    kandydaci.push({
+      wezel: indeksWezla,
+      lat: wezel.lat,
+      lon: wezel.lon,
+      typ,
+      poi: zrodlo,
+      nazwa: zrodlo?.tags?.name ?? null,
+    });
+    return true;
+  }
+
+  if (!konfigTrybu.wymagaParkingu) {
+    for (let i = 0; i < graf.wezly.length; i++) sprobuj(i, 'siec');
+  }
+  for (const p of sparsowane?.poi ?? []) {
+    const idx = snapujPunkt(graf, p.punkt, { maxM: maxSnapM });
+    if (idx === null) {
+      liczniki.poiBezSieci++;
+      continue;
+    }
+    sprobuj(idx, 'poi', p);
+  }
+
+  return { kandydaci, liczniki };
 }
