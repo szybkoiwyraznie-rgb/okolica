@@ -319,3 +319,181 @@ test('parser: garbage → S01, brak sieci → S02', () => {
     'samo POI bez dróg to nie sieć',
   );
 });
+
+/* ============================================ I4: graf, Dijkstra, snapowanie */
+
+import {
+  BUDZET_GRAFU,
+  budujGraf,
+  czyDrogaDostepna,
+  dijkstra,
+  sciezkaDo,
+  snapujPunkt,
+} from '../app/sieci.js';
+import { odlegloscM, przesunPunkt } from '../app/geo.js';
+
+/** Minimalna sieć z ręki: punkty co `ileM` metrów wzdłuż azymutu ze startu. */
+function droga(start, azymut, punktyCoM, ile, tags) {
+  const pkt = [start];
+  for (let i = 1; i < ile; i++) pkt.push(przesunPunkt(start, azymut, punktyCoM * i));
+  return { id: ile * 1000 + Math.round(azymut), punkty: pkt, tags };
+}
+
+const SRODEK_TEST = { lat: 52.23, lon: 21.01 };
+
+test('dostępność: klasy trybu + wykluczenia wspólne (ADR 0005 pkt 3)', () => {
+  const d = (tags) => ({ tags });
+  assert.equal(czyDrogaDostepna(d({ highway: 'residential' }), 'piesza'), true);
+  assert.equal(czyDrogaDostepna(d({ highway: 'primary' }), 'piesza'), false, 'primary nie dla pieszego');
+  assert.equal(czyDrogaDostepna(d({ highway: 'steps' }), 'piesza'), true);
+  assert.equal(czyDrogaDostepna(d({ highway: 'steps' }), 'rower'), false, 'schody nie dla roweru');
+  assert.equal(czyDrogaDostepna(d({ highway: 'primary' }), 'samochodowa'), true);
+  assert.equal(czyDrogaDostepna(d({ highway: 'motorway' }), 'samochodowa'), false, 'autostrada nigdy');
+  assert.equal(czyDrogaDostepna(d({ highway: 'residential', access: 'private' }), 'piesza'), false);
+  assert.equal(czyDrogaDostepna(d({ highway: 'residential', access: 'no' }), 'samochodowa'), false);
+  assert.equal(czyDrogaDostepna(d({ highway: 'residential', tunnel: 'yes' }), 'piesza'), false);
+  assert.equal(czyDrogaDostepna(d({ highway: 'primary', foot: 'no' }), 'piesza'), false);
+  assert.equal(czyDrogaDostepna(d({ highway: 'primary', foot: 'no' }), 'samochodowa'), true, 'samochód nie patrzy na foot');
+  assert.equal(czyDrogaDostepna(d({}), 'piesza'), false, 'bez highway — nie droga');
+  assert.throws(() => czyDrogaDostepna(d({ highway: 'path' }), 'lotnia'), (e) => e.kod === 'S07');
+});
+
+test('graf: interpolacja co ≤50 m, krawędzie symetryczne, wagi w metrach', () => {
+  const siec = { drogi: [droga(SRODEK_TEST, 90, 120, 3, { highway: 'residential' })] };
+  const g = budujGraf(siec, { tryb: 'piesza' });
+  // dwa segmenty po 120 m → każdy dzielony na ceil(120/50)=3 części
+  assert.equal(g.wezly.length, 1 + 3 + 3, 'start + 3 węzły na segment (2 wewnętrzne + koniec) × 2 segmenty... dokładnie: 7');
+  assert.equal(g.krokM, 50);
+  for (let i = 0; i < g.sasiedztwo.length; i++) {
+    for (const k of g.sasiedztwo[i]) {
+      assert.ok(g.sasiedztwo[k.do].some((odwrotna) => odwrotna.do === i), 'krawędź dwukierunkowa');
+      assert.ok(Math.abs(k.metry - 40) < 1, `podział 120 m na 3 części daje ~40 m (jest ${k.metry})`);
+    }
+  }
+  const suma = g.sasiedztwo.reduce((a, s) => a + s.length, 0) / 2;
+  assert.equal(g.liczniki.krawedzi, suma);
+});
+
+test('graf: droga prywatna i tunel nie wchodzą do sieci, licznik to pokazuje', () => {
+  const siec = {
+    drogi: [
+      droga(SRODEK_TEST, 0, 60, 4, { highway: 'residential' }),
+      droga(przesunPunkt(SRODEK_TEST, 90, 100), 0, 60, 4, { highway: 'residential', access: 'private' }),
+      droga(przesunPunkt(SRODEK_TEST, 90, 200), 0, 60, 4, { highway: 'residential', tunnel: 'yes' }),
+    ],
+  };
+  const g = budujGraf(siec, { tryb: 'piesza' });
+  assert.equal(g.liczniki.drogDostepnych, 1);
+  assert.equal(g.liczniki.drogNiedostepnych, 2);
+  // węzły tylko z jednej drogi: 4 punkty → segmenty 60 m → po 2 części = 7 węzłów
+  assert.equal(g.wezly.length, 7);
+});
+
+test('graf: zero dostępnych dróg → S09 (las dla samochodu, offline dla pieszego)', () => {
+  const las = parsujOdpowiedz(czytajFixture('las'));
+  assert.throws(() => budujGraf(las, { tryb: 'samochodowa' }), (e) => e.kod === 'S09', 'w lesie są tylko track/path — samochód nie wjedzie');
+  assert.throws(() => budujGraf({ drogi: [] }, { tryb: 'piesza' }), (e) => e.kod === 'S09');
+  const pieszo = budujGraf(las, { tryb: 'piesza' });
+  assert.ok(pieszo.wezly.length > 100, 'las pieszo ma gęstą sieć interpolowaną');
+});
+
+test('graf: budżet węzłów — gigantyczna droga dostaje większy krok interpolacji', () => {
+  const gigant = { drogi: [droga(SRODEK_TEST, 90, 5000, 201, { highway: 'track' })] }; // 1000 km!
+  const g = budujGraf(gigant, { tryb: 'piesza' });
+  assert.ok(g.wezly.length <= BUDZET_GRAFU.maxWezlow + 400, `węzłów ${g.wezly.length} — budżet przekroczony`);
+  assert.ok(g.krokM > BUDZET_GRAFU.krokM, 'krok urósł powyżej 50 m');
+  assert.ok(g.krokM <= BUDZET_GRAFU.maxKrokM, 'krok nie przekracza maksimum');
+});
+
+test('graf: deterministyczny — dwa budowania identyczne', () => {
+  const dane = parsujOdpowiedz(czytajFixture('centrum'));
+  const a = budujGraf(dane, { tryb: 'piesza' });
+  const b = budujGraf(dane, { tryb: 'piesza' });
+  assert.deepEqual(a.wezly, b.wezly);
+  assert.deepEqual(a.sasiedztwo, b.sasiedztwo);
+  assert.deepEqual(a.liczniki, b.liczniki);
+});
+
+test("graf centrum: interpolacja działa, a klasy dróg zależą od trybu", () => {
+  const dane = parsujOdpowiedz(czytajFixture('centrum'));
+  const g = budujGraf(dane, { tryb: 'piesza' });
+  // siatka 9×9 co 75 m: wierzchołki + interpolowane (segment 75 m → 2 części)
+  assert.ok(g.wezly.length >= 81 + 100, `węzłów ${g.wezly.length} — interpolacja działa`);
+  // środek siatki: deptak (pion) jest dla pieszego, ale ulica pozioma to
+  // `tertiary` — ADR 0005 pkt 3 NIE puszcza pieszego wzdłuż tertiary,
+  // więc skrzyżowanie ma dla niego stopień 2 (tylko deptak)
+  const srodek = snapujPunkt(g, { lat: 52.2297, lon: 21.0122 }, { maxM: 30 });
+  assert.ok(srodek !== null);
+  assert.equal(g.sasiedztwo[srodek].length, 2, 'pieszy: deptak tak, tertiary nie');
+  // rower jeździ po tertiary — to samo skrzyżowanie spina cztery ulice
+  const gRower = budujGraf(dane, { tryb: 'rower' });
+  const srodekR = snapujPunkt(gRower, { lat: 52.2297, lon: 21.0122 }, { maxM: 30 });
+  assert.equal(gRower.sasiedztwo[srodekR].length, 4, 'rower: pełne skrzyżowanie');
+  // różnica klas nie jest „większa/mniejsza", tylko INNA: pieszy ma schody
+  // i chodniki, rower ma tertiary i nie wjeżdża na steps
+  const klasyPiesza = new Set(g.wezly.length ? dane.drogi.filter((d) => czyDrogaDostepna(d, 'piesza')).map((d) => d.tags.highway) : []);
+  const klasyRower = new Set(dane.drogi.filter((d) => czyDrogaDostepna(d, 'rower')).map((d) => d.tags.highway));
+  assert.ok(klasyPiesza.has('steps') && !klasyRower.has('steps'), 'schody tylko dla pieszego');
+  assert.ok(!klasyPiesza.has('tertiary') && klasyRower.has('tertiary'), 'tertiary tylko dla roweru (i samochodu)');
+});
+
+test('dijkstra: dystanse sieciowe, ścieżka i nieosiągalne wyspy', () => {
+  // litera T: pion 0→300 m, poziom od szczytu w lewo/prawo po 200 m
+  const pion = droga(SRODEK_TEST, 0, 100, 4, { highway: 'residential' });
+  const szczyt = pion.punkty[3];
+  const poziomL = droga(szczyt, 270, 100, 3, { highway: 'residential' });
+  const poziomP = droga(szczyt, 90, 100, 3, { highway: 'residential' });
+  const wyspa = droga(przesunPunkt(SRODEK_TEST, 45, 900), 90, 100, 3, { highway: 'residential' });
+  const g = budujGraf({ drogi: [pion, poziomL, poziomP, wyspa] }, { tryb: 'piesza' });
+
+  const start = snapujPunkt(g, SRODEK_TEST, { maxM: 5 });
+  assert.equal(start, 0, 'pierwszy węzeł to start drogi');
+  const wynik = dijkstra(g, start);
+
+  const koniecL = snapujPunkt(g, poziomL.punkty[2], { maxM: 5 });
+  const koniecP = snapujPunkt(g, poziomP.punkty[2], { maxM: 5 });
+  const koniecWyspy = snapujPunkt(g, wyspa.punkty[2], { maxM: 5 });
+  assert.ok(Math.abs(wynik.dystanse[koniecL] - 500) < 2, `300 m pionu + 200 m poziomu ≈ 500 (jest ${wynik.dystanse[koniecL]})`);
+  assert.ok(Math.abs(wynik.dystanse[koniecP] - 500) < 2);
+  assert.equal(wynik.dystanse[koniecWyspy], Infinity, 'wyspa bez połączenia jest nieosiągalna');
+  assert.equal(sciezkaDo(wynik, koniecWyspy), null);
+
+  const sciezka = sciezkaDo(wynik, koniecL);
+  assert.ok(Array.isArray(sciezka));
+  assert.equal(sciezka[0], start);
+  assert.equal(sciezka.at(-1), koniecL);
+  // suma wag wzdłuż ścieżki == dystans
+  let suma = 0;
+  for (let i = 1; i < sciezka.length; i++) {
+    suma += g.sasiedztwo[sciezka[i - 1]].find((k) => k.do === sciezka[i]).metry;
+  }
+  assert.ok(Math.abs(suma - wynik.dystanse[koniecL]) < 0.001, 'ścieżka sumuje się do dystansu');
+  assert.throws(() => dijkstra(g, 99999), (e) => e.kod === 'S10');
+});
+
+test('dijkstra: dystans sieciowy ≥ prosta linia i rośnie, gdy rzeka bez mostu', () => {
+  // dwie równoległe drogi 300 m apart, połączone TYLKO na zachodnim końcu
+  const poludnie = droga(SRODEK_TEST, 90, 100, 7, { highway: 'residential' });
+  const startPoludnie = przesunPunkt(SRODEK_TEST, 180, 300);
+  const polnoc = droga(startPoludnie, 90, 100, 7, { highway: 'residential' });
+  const lacznik = droga(SRODEK_TEST, 180, 300, 2, { highway: 'footway' });
+  const g = budujGraf({ drogi: [poludnie, polnoc, lacznik] }, { tryb: 'piesza' });
+  const wynik = dijkstra(g, snapujPunkt(g, SRODEK_TEST, { maxM: 5 }));
+  const celProsty = snapujPunkt(g, polnoc.punkty[6], { maxM: 5 });
+  const wProstej = odlegloscM(SRODEK_TEST, polnoc.punkty[6]);
+  assert.ok(wynik.dystanse[celProsty] >= wProstej - 1, 'sieciowy nigdy krótszy niż w linii prostej');
+  assert.ok(Math.abs(wynik.dystanse[celProsty] - 900) < 5, '300 m na południe + 600 m na wschód = 900 m sieciowo');
+  assert.ok(wynik.dystanse[celProsty] > wProstej + 150, `okrążenie wyraźnie dłuższe niż prosta (${Math.round(wynik.dystanse[celProsty])} vs ${Math.round(wProstej)})`);
+});
+
+test('snap: najbliższy węzeł w zasięgu, null poza zasięgiem i na pusty graf', () => {
+  const g = budujGraf({ drogi: [droga(SRODEK_TEST, 90, 100, 4, { highway: 'residential' })] }, { tryb: 'piesza' });
+  assert.equal(snapujPunkt(g, SRODEK_TEST), 0);
+  const obok = przesunPunkt(przesunPunkt(SRODEK_TEST, 90, 150), 0, 20); // 20 m od drogi
+  const idx = snapujPunkt(g, obok, { maxM: 50 });
+  assert.ok(idx !== null);
+  assert.ok(odlegloscM(g.wezly[idx], obok) <= 25, 'snap do węzła interpolowanego ≤ pół segmentu + 20 m');
+  assert.equal(snapujPunkt(g, przesunPunkt(SRODEK_TEST, 0, 400), { maxM: 100 }), null, 'za daleko');
+  assert.equal(snapujPunkt({ wezly: [], sasiedztwo: [] }, SRODEK_TEST), null);
+  assert.equal(snapujPunkt(g, { lat: NaN, lon: 1 }), null);
+});

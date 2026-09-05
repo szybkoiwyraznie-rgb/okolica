@@ -27,7 +27,7 @@
       zapytanie `around:R×1.15`, klasy dróg z `TRYBY`, budynki, POI,
       ograniczenia, bariery, obszary `is_in` do `{MIEJSCE}`),
       `parsujOdpowiedz()` (normalizacja + kody usterek, tolerancja braków).
-- [ ] **I4 — `app/sieci.js` cz. 2:** `budujGraf()` (węzły = wierzchołki OSM
+- [x] **I4 — `app/sieci.js` cz. 2:** `budujGraf()` (węzły = wierzchołki OSM
       + punkty interpolowane co ≤ 50 m wzdłuż dostępnych way'ów; waga krawędzi
       = metry; budżet węzłów z krokiem awaryjnym), `dijkstra()` (kopiec
       binarny, czysty JS), `snapujPunkt()` (najbliższy dopuszczalny węzeł).

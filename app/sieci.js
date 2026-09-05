@@ -19,7 +19,7 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk } from './geo.js';
+import { czyWspolrzedneOk, odlegloscM } from './geo.js';
 import { TRYBY } from './konfig.js';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
@@ -56,6 +56,8 @@ export const KODY_SIECI = {
   S06: 'Promień zapytania musi być dodatnią liczbą metrów.',
   S07: 'Nieznany tryb poruszania — zapytanie budujemy tylko dla piesza/rower/samochód.',
   S08: 'Część dróg przyszła bez geometrii (tylko numery węzłów) — zostały pominięte.',
+  S09: 'W tej okolicy nie ma ANI JEDNEJ drogi dostępnej dla wybranego trybu — ustaw stacje ręcznie albo zmień tryb/okolicę.',
+  S10: 'Dijkstra dostała węzeł startowy spoza grafu.',
 };
 
 /** Błąd warstwy sieci: `Error` z polami `kod` i `komunikat` (jak w pozycja.js). */
@@ -267,4 +269,232 @@ export function parsujOdpowiedz(odpowiedz) {
  */
 export function nazwaMiejsca(sparsowane) {
   return sparsowane?.obszary?.at(-1)?.name ?? null;
+}
+
+/* ------------------------------------------------- graf sieci i Dijkstra */
+
+/**
+ * Budżet grafu (wydajność na telefonie): kandydaci „co ~50 m" (ADR 0005
+ * pkt 3) to węzły grafu powstałe z podziału długich segmentów. Gdy sieć jest
+ * ogromna (tryb samochodowy, R = 10 km), krok interpolacji rośnie, żeby liczba
+ * węzłów została w budżecie — kosztem gęstości kandydatów, nie poprawności.
+ */
+export const BUDZET_GRAFU = {
+  krokM: 50,
+  minKrokM: 50,
+  maxKrokM: 400,
+  maxWezlow: 20_000,
+};
+
+/**
+ * Czy droga nadaje się do grafu w danym trybie (ADR 0005 pkt 3): klasa
+ * z `TRYBY[tryb].klasyDrog` i brak wykluczeń wspólnych — `access=private|no`,
+ * `tunnel=yes`, `foot=no` (pieszy/rower). Autostrady i ekspresówki nie wchodzą
+ * już przez listę klas (nie ma ich w `klasyDrog` żadnego trybu).
+ */
+export function czyDrogaDostepna(droga, tryb) {
+  const konfigTrybu = TRYBY[tryb];
+  if (!konfigTrybu) throw usterka('S07', String(tryb));
+  const tags = droga?.tags ?? {};
+  if (!tags.highway || !konfigTrybu.klasyDrog.includes(tags.highway)) return false;
+  if (konfigTrybu.wykluczoneKlasy?.includes(tags.highway)) return false;
+  if (tags.access === 'private' || tags.access === 'no') return false;
+  if (tags.tunnel === 'yes') return false;
+  if ((tryb === 'piesza' || tryb === 'rower') && tags.foot === 'no') return false;
+  return true;
+}
+
+/**
+ * Graf sieci z parsera: węzły = wierzchołki OSM + punkty interpolowane co
+ * ≤ `krokM` wzdłuż DOSTĘPNYCH dróg; krawędzie dwukierunkowe z wagą w metrach.
+ * Wierzchołki współdzielone przez way'e poznajemy po współrzędnych
+ * (zaokrąglenie do 6 miejsc — `out geom` powtarza te same liczby).
+ * Deterministyczny: kolejność wejścia → kolejność węzłów i krawędzi.
+ */
+export function budujGraf(sparsowane, { tryb = 'piesza' } = {}) {
+  if (!TRYBY[tryb]) throw usterka('S07', String(tryb));
+  const wszystkie = (sparsowane?.drogi ?? []).filter((d) => Array.isArray(d.punkty) && d.punkty.length >= 2);
+  const dostepne = [];
+  let niedostepne = 0;
+  for (const d of wszystkie) {
+    if (czyDrogaDostepna(d, tryb)) dostepne.push(d);
+    else niedostepne++;
+  }
+
+  // krok interpolacji z budżetem: liczba węzłów ≈ sumaDługości/krok + segmenty
+  let sumaM = 0;
+  let segmentow = 0;
+  for (const d of dostepne) {
+    for (let i = 1; i < d.punkty.length; i++) {
+      sumaM += odlegloscM(d.punkty[i - 1], d.punkty[i]);
+      segmentow++;
+    }
+  }
+  if (segmentow === 0) throw usterka('S09', tryb);
+  let krok = BUDZET_GRAFU.krokM;
+  const { maxWezlow } = BUDZET_GRAFU;
+  if (maxWezlow > segmentow && sumaM / krok + segmentow > maxWezlow) {
+    krok = Math.ceil(sumaM / (maxWezlow - segmentow));
+  }
+  krok = Math.min(Math.max(krok, BUDZET_GRAFU.minKrokM), BUDZET_GRAFU.maxKrokM);
+
+  const wezly = [];
+  const sasiedztwo = [];
+  const indeksKlucza = new Map();
+  function wezel(p) {
+    const klucz = `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
+    let i = indeksKlucza.get(klucz);
+    if (i === undefined) {
+      i = wezly.length;
+      indeksKlucza.set(klucz, i);
+      wezly.push({ id: i, lat: p.lat, lon: p.lon, klucz });
+      sasiedztwo.push([]);
+    }
+    return i;
+  }
+  function krawedz(a, b, metry) {
+    sasiedztwo[a].push({ do: b, metry });
+    sasiedztwo[b].push({ do: a, metry });
+  }
+
+  for (const d of dostepne) {
+    for (let s = 1; s < d.punkty.length; s++) {
+      const a = d.punkty[s - 1];
+      const b = d.punkty[s];
+      const dlugosc = odlegloscM(a, b);
+      if (!(dlugosc > 0)) continue; // zdegenerowany segment — nic nie wnosi
+      const czesci = Math.max(1, Math.ceil(dlugosc / krok));
+      let poprz = wezel(a);
+      for (let c = 1; c < czesci; c++) {
+        const t = c / czesci;
+        const idx = wezel({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t });
+        krawedz(poprz, idx, dlugosc / czesci);
+        poprz = idx;
+      }
+      const ostatni = wezel(b);
+      krawedz(poprz, ostatni, dlugosc / czesci);
+    }
+  }
+
+  return {
+    tryb,
+    krokM: krok,
+    wezly,
+    sasiedztwo,
+    indeksKlucza,
+    liczniki: {
+      drogDostepnych: dostepne.length,
+      drogNiedostepnych: niedostepne,
+      wezlow: wezly.length,
+      krawedzi: sasiedztwo.reduce((suma, s) => suma + s.length, 0) / 2,
+    },
+  };
+}
+
+/* --- kopiec binarny (minimalny) — deterministyczny tie-break po indeksie */
+
+function kopiecMniejszy(a, b) {
+  return a.d < b.d || (a.d === b.d && a.i < b.i);
+}
+
+function kopiecPush(kopiec, element) {
+  kopiec.push(element);
+  let c = kopiec.length - 1;
+  while (c > 0) {
+    const rodzic = (c - 1) >> 1;
+    if (!kopiecMniejszy(kopiec[c], kopiec[rodzic])) break;
+    [kopiec[c], kopiec[rodzic]] = [kopiec[rodzic], kopiec[c]];
+    c = rodzic;
+  }
+}
+
+function kopiecPop(kopiec) {
+  const szczyt = kopiec[0];
+  const ostatni = kopiec.pop();
+  if (kopiec.length > 0) {
+    kopiec[0] = ostatni;
+    let rodzic = 0;
+    for (;;) {
+      const l = 2 * rodzic + 1;
+      const p = l + 1;
+      let mniejszy = l;
+      if (l >= kopiec.length) break;
+      if (p < kopiec.length && kopiecMniejszy(kopiec[p], kopiec[l])) mniejszy = p;
+      if (!kopiecMniejszy(kopiec[mniejszy], kopiec[rodzic])) break;
+      [kopiec[mniejszy], kopiec[rodzic]] = [kopiec[rodzic], kopiec[mniejszy]];
+      rodzic = mniejszy;
+    }
+  }
+  return szczyt;
+}
+
+/**
+ * Dijkstra z jednego węzła (ADR 0005 pkt 4 — odległości SIECIOWE). Zwraca
+ * `dystanse` (metry, `Infinity` = nieosiągalne) i `poprzednicy` (do
+ * `sciezkaDo`). Kopiec binarny: dla R = 10 km graf ma dziesiątki tysięcy
+ * węzłów i skan liniowy O(V²) nie zmieściłby się w budżecie telefonu.
+ */
+export function dijkstra(graf, start) {
+  const n = graf?.wezly?.length ?? 0;
+  if (!Number.isInteger(start) || start < 0 || start >= n) throw usterka('S10', String(start));
+  const dystanse = new Array(n).fill(Infinity);
+  const poprzednicy = new Int32Array(n).fill(-1);
+  const odwiedzone = new Uint8Array(n);
+  dystanse[start] = 0;
+  const kopiec = [{ d: 0, i: start }];
+  while (kopiec.length > 0) {
+    const { d, i } = kopiecPop(kopiec);
+    if (odwiedzone[i]) continue;
+    odwiedzone[i] = 1;
+    for (const krawedz of graf.sasiedztwo[i]) {
+      const j = krawedz.do;
+      if (odwiedzone[j]) continue;
+      const przez = d + krawedz.metry;
+      if (przez < dystanse[j]) {
+        dystanse[j] = przez;
+        poprzednicy[j] = i;
+        kopiecPush(kopiec, { d: przez, i: j });
+      }
+    }
+  }
+  return { start, dystanse, poprzednicy };
+}
+
+/** Ścieżka (lista indeksów węzłów od startu do celu) albo `null`, gdy cel nieosiągalny. */
+export function sciezkaDo(wynik, cel) {
+  if (!Number.isInteger(cel) || cel < 0 || cel >= wynik.dystanse.length) return null;
+  if (!Number.isFinite(wynik.dystanse[cel])) return null;
+  const sciezka = [cel];
+  let biezacy = cel;
+  while (wynik.poprzednicy[biezacy] !== -1) {
+    biezacy = wynik.poprzednicy[biezacy];
+    sciezka.push(biezacy);
+    if (sciezka.length > wynik.dystanse.length) return null; // pętla — paranoja
+  }
+  sciezka.reverse();
+  return sciezka;
+}
+
+/**
+ * Najbliższy węzeł grafu dla punktu (start gry, POI „przy wejściu").
+ * Metryka płaska z poprawką cos(lat) — przy zasięgu ≤ kilkuset metrów różnica
+ * względem haversine jest poniżej metra, a skan jest szybki. `null`, gdy nic
+ * w zasięgu `maxM` albo wejście bez sensu.
+ */
+export function snapujPunkt(graf, punkt, { maxM = 150 } = {}) {
+  const wezly = graf?.wezly ?? [];
+  if (wezly.length === 0 || !czyWspolrzedneOk(punkt?.lat, punkt?.lon)) return null;
+  const cosLat = Math.cos((punkt.lat * Math.PI) / 180) || 1;
+  let najlepszy = null;
+  let najlepszaD = Infinity;
+  for (let i = 0; i < wezly.length; i++) {
+    const dx = (wezly[i].lon - punkt.lon) * cosLat * 111320;
+    const dy = (wezly[i].lat - punkt.lat) * 111320;
+    const d = Math.hypot(dx, dy);
+    if (d < najlepszaD) {
+      najlepszaD = d;
+      najlepszy = i;
+    }
+  }
+  return najlepszaD <= maxM ? najlepszy : null;
 }
