@@ -67,6 +67,34 @@ sprawdzić tylko na zewnątrz. Procedura dla właściciela:
 4. Wynik → `docs/LESSONS.md` jako nowa lekcja (objaw → przyczyna → reguła) oraz
    korekta progów w `app/pozycja.js` (ADR 0004) i w ADR, jeśli zmienia to zasadę.
 
+### 4.1 Weryfikacja mapy w live preview (M2 — robi właściciel)
+
+Kafelków i przeglądarki w sandboxie agenta nie ma (ENVIRONMENT §4.1, LESSONS
+L3), więc kryterium „podkład widoczny" sprawdza właściciel. Agent uruchamia
+serwer (`npm run serwer`, port 8000/8080, `--bind 0.0.0.0`), a preview Areny
+jest widoczne jako karta obok rozmowy.
+
+1. Otwórz preview i dodaj `?tryb=test` — tryb testowy odsłania ręczne
+   współrzędne, więc nie potrzebujesz GPS.
+2. Ustaw współrzędne swojej okolicy (np. `52.2297`, `21.0122`) → „Ustaw tę
+   pozycję". Sprawdź: **kafelki się ładują**, niebieski marker stoi w środku,
+   jasne koło dokładności ma rozsądny rozmiar, przerywany okrąg to promień gry.
+3. Palec (albo mysz): przeciągnij mapę — treść jedzie z palcem, bez białych
+   dziur na krawędzi; uszczypnij — zoom rośnie wokół środka palców; kółko myszy
+   też działa. Przyciski ＋ − ◎ w prawym górnym rogu mają ≥ 44 px.
+4. Pasek skali na dole po lewej pokazuje „50 m"/„200 m" i zmienia się z zoomem.
+5. Atrybucja dostawcy jest **zawsze widoczna** na dole panelu. W setupie
+   zmień „Podkład mapy" na OpenTopoMap i na Esri World Imagery — kafelki i
+   podpis mają się zmienić; przy „Wyłączony (offline)" kafelków nie ma, ale
+   marker, okrąg i pinezki zostają.
+6. Wejdź na ekran stacji: pięć numerowanych pinezek w pierścieniu, a „Inny
+   układ" przestawia je i przerysowuje mapę.
+7. Obróć telefon (albo zmień rozmiar okna) — mapa ma się przeliczyć, nie zostać
+   ucięta.
+8. Wynik (co działa, co nie, zrzut albo opis) → wpis w `docs/PROJECT_HISTORY.md`
+   i ewentualna lekcja w `docs/LESSONS.md`; dopiero wtedy kamień M2 jest
+   ukończony (`ROADMAP`: „zmiana sprawdzona na żywo").
+
 ## 5. Publikacja na GitHub Pages (jednorazowo, właściciel)
 
 Settings → Pages → **Source: Deploy from a branch** → Branch: `main`,

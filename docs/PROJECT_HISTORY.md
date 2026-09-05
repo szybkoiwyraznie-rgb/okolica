@@ -171,8 +171,70 @@ M1) i szła etapami F1–F5 z własnego planu
 **Brama na koniec sesji:** `npm run brama` = **177 testów**, 0 fail (było 105)
 + `synchronizuj-szablon --check` zielone. Commity: `56e0dc6` (F1), `8eec03c`
 (F2), `3537e59` i `0046216` (F3), `78a1bd0` (hartowanie), `09faf5c` (F4),
-plus commit F5 (dokumentacja). Wszystko na `arena/01a07282-okolica`, PR #2.
+`cfa9fdb` (F5 — dokumentacja). Wszystko na `arena/01a07282-okolica`, PR #2.
 
 **Do decyzji właściciela (dochodzą z tej sesji):** ADR 0014 (punktacja czasu —
 mediana tempa) i ADR 0015 (niekompletna paczka, pominięcie tylko w drodze,
 przedrostki kodów). Pozostałe proponowane: 0002, 0005, 0010, 0013.
+
+## 2026-09-05 — sesja M2 (mapa), ta sama gałąź, PR #2
+
+**Zakres z planu `docs/plans/2026-09-05-m2-mapa.md` (G1–G6):** mapa SVG
+z podkładem rastrowym bez klucza API i warstwami własnymi, sterowana palcem.
+
+**Co powstało:**
+
+- `app/mapa.js` — dwie warstwy w jednym module: **czysta** (zoom ↔ skala,
+  środek ↔ przesunięcie, `punktNaEkranie`, `zmienSkale` z kotwicą i widełkami
+  `maxZoom` podkładu, `urlKafelka`, `planKafelkow`, metry ↔ piksele ↔ jednostki
+  świata, `skalaBar`, `planMapy`) i **DOM** (`utworzMape()`: SVG, gesty,
+  przyciski, atrybucja, `aria-label`, `zniszcz()`).
+- Dwa panele w `index.html` (ekran pozycji i ekran stacji) ze szkieletem
+  statycznym: `<svg role="img">`, cztery warstwy `<g>`, trzy przyciski z
+  `aria-label`, pola paska skali i atrybucji. Style w `app/styles.css`
+  (45 vh, `touch-action: none` tylko na panelu, cele 44 px, atrybucja jako pasek
+  chowany wyłącznie gdy pusta, przyciemnienie kafelków w motywie ciemnym).
+- Wpięcie w `app/app.js`: `utworzMapy()`, `odswiezWarstwy()`,
+  `centrujNaPozycji()` (tylko pierwszy fix), `zmienPodklad()`, odświeżenie
+  panelu w `pokazEkran()` i przy `resize`, hartowany `zoomDlaPromienia()`.
+- Testy: `test/mapa.test.js` (50), +9 testów wpięcia w `test/aplikacja.test.js`,
+  +5 kontraktowych w `test/kontrakt.test.js`; atrapa DOM rozszerzona o
+  `createElementNS`, `replaceChildren`, `removeChild`, `getBoundingClientRect`
+  z `ustawProstokat()` i naprawdę działający `removeEventListener`.
+
+**Co wyszło przy okazji (usterki, nie plan):**
+
+- **Trzy usterki w nowym module**, wszystkie złapane przez testy przed
+  wpięciem: odwrotne przeliczenie metrów na jednostki świata (koło dokładności
+  12 m miało promień większy niż cały świat — LESSONS L15), pusta sygnatura
+  siatki kafelków kolidująca z wartością po resecie (podkład „brak" i schowany
+  panel zostawiały stare kafelki — LESSONS L13) oraz przyciski ± rejestrowane
+  dwa razy (klik zmieniało zoom o 2, a `zniszcz()` zdejmowało jeden nasłuch —
+  LESSONS L14).
+- **Jedna usterka istniejąca od M0**: na ekran pozycji da się wejść przyciskiem
+  trybu testowego, który nie waliduje setupu, więc przy wyczyszczonym polu
+  promienia przejście „Dalej: stacje" kończyło się **niezłapanym**
+  `TypeError: stacjeProste: promienM > 0` — ekran się pokazywał, a lista stacji
+  i mapa zostawały puste. Teraz przejście waliduje `STAN.konfig` i odmawia
+  jawnie: kody z `konfig.js` (np. `[K12]`) trafiają do `bledy-pozycja`, a pasek
+  stanu odsyła do ustawień gry.
+- **Korekta przypisania kamieni w dokumentacji** (z początku tej sesji, commit
+  `cfa9fdb`): poprzedni handoff przypisywał `app/trwalosc.js` do M5, a w
+  `ROADMAP` M5 to pętla pytań — trwałość stanu gry należy do M6 (kryterium:
+  wznowienie po zamknięciu przeglądarki). Poprawione w `ARCHITECTURE`, w planie
+  M1, w `ROADMAP` (M3 dostał adnotację, co z niego jest już zrobione) i w nowym
+  handoffie.
+
+**Brama na koniec sesji:** `npm run brama` = **241 testów**, 0 fail (było 177)
++ `synchronizuj-szablon --check` zielone. Commity: `cfa9fdb` (M1/F5 —
+dokumentacja), `03f2a56` (M2/G1 — plan), `59b5573` (M2/G2–G4 — moduł i testy),
+`e65f26b` (M2/G5 — wpięcie w UI), plus commit G6 (dokumentacja).
+
+**Czego kamień M2 jeszcze nie ma:** potwierdzenia na żywo, że podkład jest
+widoczny na telefonie i że drag oraz pinch działają palcem — procedura w
+`docs/WORKFLOW.md` §4.1, wykonuje właściciel (agent nie ma przeglądarki ani
+sieci do kafelków, LESSONS L3). Dopiero wtedy `ROADMAP` dostaje ✅.
+
+**Stan operacyjny:** w trakcie sesji uwierzytelnienie GitHub tymczasowo
+odmawiało (`Bad credentials`), więc część commitów czekała na `git push` —
+patrz `docs/setup/HANDOFF_2026-09-05-m2.md` §5.

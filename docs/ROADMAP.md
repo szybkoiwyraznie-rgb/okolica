@@ -86,7 +86,7 @@ prawdziwej paczce z fixture'a). Do M6 zostaje ekran gry (UI) i zapis stanu do
 zamknięciu przeglądarki; para `wczytajStan()` ↔ `JSON.stringify(stan)` jest już
 przetestowana).
 
-## M2 — Mapa
+## M2 — Mapa — 🟡 KOD I TESTY GOTOWE, kryterium wizualne czeka na właściciela
 
 Renderer SVG (Web Mercator, pan/zoom/pinch/przyciski), warstwa kafelków
 (OSM Standard / OpenTopoMap / Esri World Imagery — bez kluczy API,
@@ -94,6 +94,38 @@ Renderer SVG (Web Mercator, pan/zoom/pinch/przyciski), warstwa kafelków
 dokładności, okrąg promienia gry, numerowane pinezki stacji.
 Kryterium: mapa działa na 360 px, palec (drag + pinch), podkład widoczny
 w live preview, atrybucja zawsze obecna.
+
+**Ta sesja** (plan: `docs/plans/2026-09-05-m2-mapa.md`):
+
+- [x] G1 — plan kamienia: zakres, dziewięć ustaleń wstępnych, etapy, ryzyka,
+      kryteria (commit `03f2a56`).
+- [x] G2–G4 — `app/mapa.js`: matematyka widoku (zoom ↔ skala, środek ↔
+      przesunięcie, kotwica zoomu, widełki `maxZoom` podkładu), adresy kafelków
+      (`{z}/{x}/{y}`, Esri `{z}/{y}/{x}`, deterministyczna poddomena),
+      `planKafelkow` (margines 1 kafelka, limit `MAX_KAFELEK = 48` z polityki
+      OSM Tile Usage), metry ↔ piksele ↔ jednostki świata, pasek skali,
+      `planMapy`; warstwa DOM `utworzMape()` (SVG z `transform` na warstwach
+      metrycznych, gesty Pointer Events: drag, pinch, kółko; przyciski ±/◎;
+      atrybucja i `aria-label`); `test/mapa.test.js` — 50 testów
+      (commit `59b5573`).
+- [x] G5 — wpięcie w UI: dwa panele (`ekran-pozycja`, `ekran-stacje`) ze
+      szkieletem w `index.html`, style mobilne (`touch-action: none`, cele
+      44 px, atrybucja jako pasek), podkład z setupu przechodzi na mapy,
+      pierwszy fix centruje widok w zoomie z `dopasujZoomDoPromienia`,
+      `pokazEkran`/`resize` odświeżają panel (schowany ma rozmiar 0 — LESSONS
+      L13); przy okazji naprawione przejście „Dalej: stacje", które przy
+      wyczyszczonym promieniu kończyło się nie złapanym `TypeError`
+      z `stacjeProste`, a teraz odmawia jawnie z kodem `[K12]`;
+      +9 testów wpięcia i +5 kontraktowych (commit `e65f26b`).
+- [x] G6 — dokumentacja: `ARCHITECTURE` (moduł, przepływ, algorytmy widoku
+      i gestów, testowanie), `WORKFLOW` §4.1 (procedura weryfikacji mapy
+      w live preview), `ASSETS` §1 (zapis poddomen `{s}` w kodzie),
+      LESSONS **L13**–**L15**, `PROJECT_HISTORY`, handoff.
+
+**Czego brakuje do ✅:** potwierdzenia właściciela, że podkład jest widoczny
+w live preview na 360 px i że drag oraz pinch działają palcem
+(`docs/WORKFLOW.md` §4.1). Agent nie ma przeglądarki ani sieci do kafelków
+(LESSONS L3), więc tego kryterium nie może sprawdzić sam.
 
 ## M3 — Ekran konfiguracji i geolokalizacja na żywo
 

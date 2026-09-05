@@ -35,8 +35,10 @@ app/
                               podsumowanie, kody G01–G13 (czyste, zegar wstrzykiwany)
   trwalosc.js               — localStorage: klucze, budżet rozmiaru, migracje,
                               eksport/import pliku paczki (ATR 0010)
-  mapa.js                   — render SVG: kafelki, warstwy własne, pan/zoom/pinch,
-                              pinezki stacji, marker pozycji (DOM)
+  mapa.js                   — mapa: matematyka widoku (zoom ↔ skala, środek ↔
+                              przesunięcie), adresy kafelków, plan rysowania
+                              i pasek skali (czyste) + warstwa SVG z gestami
+                              pan/pinch, przyciskami ±/◎ i atrybucją (DOM)
   ui.js                     — ekrany i komponenty: setup, prompt, walidacja, gra,
                               wynik; komunikaty, aria-live (DOM)
   styles.css                — tokeny palety, motyw jasny/ciemny, cele dotykowe ≥44 px
@@ -58,7 +60,10 @@ docs/                       — protokół, ADR, plany, handoffy (patrz AGENTS.m
 Wszystko, co da się policzyć, jest **czystą funkcją** w module bez DOM i bez
 `node:*` (LESSONS L6): geodezja, projekcja, siatka kafelków, budowa zapytania
 Overpass, graf i Dijkstra, wybór stacji, budowa promptu, walidacja paczki,
-ukrywanie paczki, punktacja, migracje stanu. Warstwa DOM (`mapa.js`, `ui.js`) jest cienka:
+ukrywanie paczki, punktacja, migracje stanu, a od M2 także **matematyka widoku
+mapy i plan rysowania** (`mapa.js`: zoom ↔ skala, adresy kafelków, pinezki,
+okręgi, pasek skali). Warstwa DOM jest cienka: w `mapa.js` to `utworzMape()`
+(SVG, gesty, przyciski), a reszta ekranów siedzi w `app.js` (docelowo `ui.js`) —
 pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 (`performance.now` / `mulberry32(ziarno)`), nie czytane z globali w środku logiki.
 
@@ -68,11 +73,16 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 
 1. `ui.js` zbiera konfigurację → `konfig.walidujSetup()` (limity, spójność).
 2. `pozycja.js` czyta pierwszy fix GPS (albo współrzędne z trybu testowego).
+   Pierwszy fix centruje widok mapy (`app.js: centrujNaPozycji`) w zoomie
+   dobranym do promienia gry (`geo.dopasujZoomDoPromienia`), a kolejne tylko
+   przesuwają marker — potem mapę prowadzi palec gracza.
 3. `sieci.js` buduje zapytanie Overpass dla `R × 1.15`, pobiera dane (cache
    `okolica:sieci:<geohash6>-<R>`, ADR 0010), buduje graf i liczy Dijkstrę.
 4. `stacje.wybierzStacje(graf, kandydaci, konfig, ziarno)` → N stacji +
    macierz odległości sieciowych + miara sprawiedliwości (odchylenie
    standardowe).
+   Lista stacji trafia na mapę jako numerowane pinezki
+   (`mapa.zaznaczStacje`), a promień gry jako przerywany okrąg.
 5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka.
 6. Organizator ↔ model AI (poza systemem).
 7. Wklejona odpowiedź → `protokol.walidujPaczke()` → usterki (z przyciskiem
@@ -108,9 +118,31 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
   kulistego jest poniżej progu dojścia; bez Vincenty'ego (koszt, brak zysku).
 - **Projekcja**: Web Mercator, `projektuj(lat, lon)` → jednostki świata
   `[0..SZER]`, jak w AME (`app/geo.js`); odwrotność `odwroc(x, y)`.
-- **Siatka kafelków**: `z = clamp(round(log2(skala × SZER / 256)), 0, maxZoom)`,
-  widoczny prostokąt świata → zakres `tx/ty` → sygnatura jako cache
-  (wzorzec 1:1 z AME `rysujPodkladOnline()`).
+- **Siatka kafelków**: `z = clamp(round(log2(skala × SZER / 256)), 0, maxZoom)`
+  (`geo.siatkaKafelkow`), widoczny prostokąt świata → zakres `tx/ty`, a potem
+  `mapa.planKafelkow` dokłada margines jednego kafelka (drag nie odsłania
+  pustki) i tnie do `MAX_KAFELEK = 48` z flagą `przyciete` — „lekkie użycie"
+  z polityki OSM Tile Usage (`ASSETS` §1). Adresy: `urlKafelka` podstawia
+  `{z}/{x}/{y}` po nazwach (Esri ma odwrotnie: `{z}/{y}/{x}`), poddomeny
+  OpenTopoMap rotują deterministycznie z `(x + y) % 3` (losowa rotacja psułaby
+  cache przeglądarki), a podkład `brak` nie daje żadnego żądania.
+- **Widok i jednostki**: `ekranPx = jednostkaSwiata × skala + przesunięcie`,
+  `zoom = log2(skala × 3600 / 256)`. Warstwy metryczne (kafelki, okręgi) mają
+  jeden `transform="translate(x y) scale(skala)"` i dzieci w jednostkach
+  świata, więc pan/zoom zmienia **jeden atrybut**, a lista kafelków jest
+  przebudowywana tylko przy zmianie sygnatury siatki. Pinezki i marker są
+  w pikselach, bo mają stały rozmiar na ekranie; obrys okręgów ma
+  `vector-effect="non-scaling-stroke"`. Metry na jednostkę świata to
+  `metryNaPiksel(lat, zoom) × skala` (dzielenie dałoby okręgi większe niż świat).
+- **Gesty**: Pointer Events z `Map` aktywnych wskaźników — jeden palec = pan
+  (przesunięcie o deltę), dwa = pinch (`zmienSkale` z kotwicą w środku palców),
+  kółko myszy = zoom z `preventDefault` (`{passive: false}`). Zoom jest
+  ograniczany do `maxZoom` podkładu, więc aplikacja nie prosi o nieistniejące
+  kafelki. `touch-action: none` tylko na panelu — reszta strony zostaje
+  przybliżalna (dostępność, ADR 0011).
+- **Pasek skali**: największy „ładny" krok z `KROKI_SKALI_M` (5 m–500 km),
+  który mieści się w 80 px; krótszy niż 14 px nie jest rysowany (przy widoku
+  całej Ziemi nic by nie mówił).
 - **Dostępność**: klasy `highway` per tryb + wykluczenia (`access=private`,
   `foot=no`, poligony `building`, `landuse=railway`) → `czyDostepny(way, tryb)`.
 - **Dijkstra** po grafie węzłów OSM z wagą = długość geometryczna krawędzi;
@@ -179,20 +211,35 @@ Zapis do `localStorage`, budżet rozmiaru i eksport pliku dochodzą w
   3 graczy × 5 stacji od startu do podsumowania na wstrzykniętym zegarze
   (`test/rozgrywka.test.js`), przejścia faz przy paczce bez pełnego pokrycia,
   odmowy z kodami `G01`–`G13`, determinizm i brak mutacji stanu wejściowego.
+- Mapa (M2) jest testowana **dwuwarstwowo**: `test/mapa.test.js` sprawdza część
+  czystą (round-trip środek ↔ widok, kotwica i widełki zoomu, adresy kafelków
+  wszystkich podkładów wraz z kolejnością `{z}/{y}/{x}` Esri i deterministyczną
+  poddomeną, limit i margines siatki, spójność metrów między jednostkami świata
+  a pikselami, pasek skali, plan dla schowanego panelu) oraz warstwę DOM na
+  atrapie (drag, pinch, kółko, przyciski ±/◎, zmiana podkładu, przywrócenie
+  warstw po pokazaniu panelu, `zniszcz()` zdejmujące nasłuchy). Wygląd —
+  kafelki naprawdę widoczne na ekranie — potwierdza właściciel w live preview,
+  bo w sandboxie nie ma ani przeglądarki, ani sieci do kafelków (LESSONS L3).
 - Testy kontraktowe: szablon promptu w `docs/PROTOKOL.md` ↔ `SZABLON_PROMPTU`;
   kanon tematów w protokole ↔ `TEMATY`; wersja protokołu ↔ stopka ↔ README;
   wersja cache-bustingu w `index.html` ↔ importy; brak `node:`/`require(` w `app/`;
   brak ścieżek od korzenia w `index.html` (ADR 0002 pkt 3); rejestr ADR ↔ pliki
   na dysku i status w pliku ↔ status w rejestrze; geolokalizacja w `app.js`
   wyłącznie przez `pozycja.js` (brak `watchPosition`, `clearWatch` i opcji
-  watchera w warstwie DOM — ADR 0004 pkt 1).
+  watchera w warstwie DOM — ADR 0004 pkt 1); od M2 także: kompletność obu szkieletów paneli mapy w `index.html` (svg z `role="img"` i `aria-label`, przyciski z `type="button"`), zakaz domyślnego `display: none` dla atrybucji i obowiązkowe `touch-action: none` na panelu, brak `fetch`/geolokalizacji/`alert`/`node:` w `mapa.js`, a szablony URL kafelków identyczne z `docs/ASSETS.md` §1 (po ujednoliceniu zapisu poddomen `{s}` ↔ `{a,b,c}`).
 - Warstwa DOM: testy na atrapie `test/helpers/dom.js` — `zainstalujDom()` zakłada
   świeże globale i zwraca uchwyty (`kliknij`, `wyslijZdarzenieDokumentu`,
-  `ustawHidden`, `ustawGeolokalizacje`), a `atrapaGeolokalizacji()` udaje
-  `watchPosition`/`clearWatch`. Test chcący inny stan startowy (np. `?tryb=test`)
-  zakłada własną atrapę i importuje `app.js` od nowa — egzemplarze nie dzielą
-  wtedy nasłuchów zdarzeń. Weryfikacja wizualna: headless Chromium z viewportem
-  360 × 640 (ENVIRONMENT §4.1) albo live preview.
+  `wyslijZdarzenieOkna`, `ustawHidden`, `ustawGeolokalizacje`, `ustawProstokat`),
+  a `atrapaGeolokalizacji()` udaje `watchPosition`/`clearWatch`. Atrapa jest celowo
+  głupia (`querySelector` → `null`, `innerHTML` niczego nie parsuje), ale od M2
+  umie to, czego potrzebuje SVG: `createElementNS`, `replaceChildren`,
+  `removeChild`, `getBoundingClientRect` z ustawialnym rozmiarem (test
+  schowanego panelu) i no-op `setPointerCapture`; `removeEventListener` naprawdę
+  zdejmuje nasłuch, więc test `zniszcz()` sprawdza zachowanie, a nie atrapę.
+  Test chcący inny stan startowy (np. `?tryb=test`) zakłada własną atrapę
+  i importuje `app.js` od nowa — egzemplarze nie dzielą wtedy nasłuchów zdarzeń.
+  Weryfikacja wizualna: live preview u właściciela; headless Chromium
+  360 × 640 (ENVIRONMENT §4.1) dopiero, gdy będzie w środowisku dostępny.
 - Sieć w testach jest **zabroniona** (LESSONS L3): Overpass i kafelki tylko
   na fixture'ach i w przeglądarce.
 

@@ -30,6 +30,16 @@
 | `esri-satelita` | Esri World Imagery — `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}` | nie | 19 | `Powered by Esri · © Esri, Maxar, Earthstar Geographics` | Używany tak samo jak w projekcie AME (wzorzec właściciela). Uwaga na kolejność `y`/`x` w URL (odwrotnie niż w schemacie XYZ). Warstwa pomocnicza: rozpoznawanie obiektu w terenie, nie nawigacja. |
 | `osm-fr` *(opcja)* | OSM France — `https://{a,b,c}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` | nie | 20 | `© OpenStreetMap contributors · © OSM France` | Kandydat na podkład zapasowy (inny rendering, wyższe zoomy). Wprowadzamy dopiero po sprawdzeniu polityki OSM France — **nie jest jeszcze zatwierdzony**. |
 
+### 1.0 Jak kod zapisuje szablony (kontrakt z `app/mapa.js`)
+
+`SZABLONY_KAFELKOW` w `app/mapa.js` ma dokładnie te URL-e co tabela wyżej, z jedną
+różnicą zapisu: rotację poddomen kod wyraża jako `{s}` z listą
+`PODDOMENY = ['a', 'b', 'c']`, a wybór poddomeny jest **deterministyczny**
+(`(x + y) % 3`) — losowy psułby cache przeglądarki i testy. Test kontraktowy
+(`test/kontrakt.test.js`) porównuje szablony po ujednoliceniu zapisu
+(`{s}` → `{a,b,c}`), więc zmiana URL-a u dostawcy wymaga zmiany w obu miejscach.
+Podkład `brak` ma szablon `null`: zero żądań, zero atrybucji dostawcy.
+
 ### 1.1 Dostawcy sprawdzeni i ODRZUCENI
 
 - **CARTO basemaps (Voyager/Positron/Dark Matter)** — odrzucone 2026-09-05:

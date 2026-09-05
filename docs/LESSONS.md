@@ -178,3 +178,56 @@ zapisie albo zapisuj po każdej parze, żeby komunikat znaczył „zapisane". Gd
 porównanie zawodzi, diagnozuj znak po znaku
 (`for k, (a, b) in enumerate(zip(szukany, segment)): if a != b: print(k, ord(a), ord(b))`),
 zamiast podejrzewać kodowanie pliku — „niewidoczny znak" to zwykle literówka.
+
+## L13 (2026-09-05, Tajemnicza Okolica) — schowany panel ma rozmiar zerowy, a mapa wraca pusta
+
+**Objaw:** mapa rysowała się poprawnie na starcie, ale po przejściu na inny
+ekran i powrocie warstwa kafelków była pusta: zero `<image>`, choć widok i zoom
+się zgadzały.
+**Przyczyna:** `getBoundingClientRect()` dla elementu w sekcji z `hidden`
+(`display: none`) zwraca zera. Plan rysowania liczony dla rozmiaru 0 × 0 daje
+pustą listę kafelków, a optymalizacja „nie przebudowuj, jeśli sygnatura siatki
+się nie zmieniła" porównywała pustą sygnaturę z pustą — więc po pokazaniu ekranu
+moduł uznawał listę za aktualną i nic nie wstawiał.
+**Reguła:** komponent mierzony z DOM musi mieć **jawną ścieżkę dla rozmiaru 0**:
+zwrócić `pusty: true`, nie rysować nic i **skasować pamięć poprzedniego stanu**
+(sygnaturę, cache, ostatnią listę), a warstwa aplikacji ma odświeżyć komponent
+w chwili pokazania ekranu (`pokazEkran` → `odswiez()`) i przy `resize` (obrót
+telefonu). Test: ustaw rozmiar na 0, przerysuj, przywróć rozmiar, przerysuj —
+i asertuj, że warstwy wróciły (`ustawProstokat` w `test/helpers/dom.js`;
+commit `e65f26b`).
+
+## L14 (2026-09-05, Tajemnicza Okolica) — nasłuch zarejestrowany dwa razy działa dwa razy, a zdejmuje się raz
+
+**Objaw:** kliknięcie „＋" zmieniało zoom o dwa stopnie zamiast o jeden, a po
+`zniszcz()` jeden z nasłuchów zostawał i gest nadal zmieniał widok.
+**Przyczyna:** przyciski były podpinane w pętli własnej
+(`przycisk.addEventListener(...)`) **i** w pętli ogólnej, która rejestrowała
+wszystko z listy `nasluchy` — ten sam handler trafiał na element dwa razy.
+Zdejmowanie szło po liście, ale `removeEventListener` usuwa jedno wystąpienie,
+więc drugie przeżywało.
+**Reguła:** rejestrację nasłuchów ma **jedno** miejsce: albo zbierasz pary
+`(element, typ, handler)` do listy i rejestrujesz je w jednej pętli, albo
+podpinasz od razu — nigdy obu. Symetrycznie: `zniszcz()`/`zamknij()` przechodzi
+dokładnie tę samą listę. Test na atrapie, która naprawdę usuwa nasłuch
+(`removeEventListener` w `helpers/dom.js`), łapie to bez przeglądarki: asertuj
+liczbę nasłuchów po utworzeniu **i** po zniszczeniu, a potem wyślij zdarzenie
+i sprawdź, że stan się nie zmienił (commit `e65f26b`).
+
+## L15 (2026-09-05, Tajemnicza Okolica) — przy dwóch modelach jednostek test musi przeliczać z powrotem
+
+**Objaw:** koło dokładności dla fixu ±12 m miało promień 152 897 jednostek —
+czyli więcej niż cały świat (3600 jednostek). Nic nie rzucało wyjątku, liczby
+były skończone, a testy przechodziły, dopóki sprawdzały tylko „r > 0".
+**Przyczyna:** trzy modele jednostek naraz (metry ↔ piksele ↔ jednostki świata)
+i jedno odwrócone dzielenie: `metryNaJednostkeSwiata` dzieliła przez skalę
+zamiast mnożyć, bo „jednostka świata = skala pikseli", więc metrów na jednostkę
+jest **więcej**, nie mniej.
+**Reguła:** gdy moduł żongluje jednostkami, test ma robić **rundę w obie
+strony** i porównywać z niezależnym źródłem: `r_swiat × skala === r_piksele`
+oraz `r_piksele === metry / metryNaPiksel(lat, zoom)` (z `geo.js`), a do tego
+asercja porządku wielkości względem stałej świata (`r < SZEROKOSC_SWIATA`).
+„Jest dodatnie i skończone" to za słaby kontrakt — przepuści każdą zamianę
+mnożenia na dzielenie. Pomocniczo: nazywaj funkcje tak, żeby jednostka była
+w nazwie (`promienWSwiecie`, `promienWpikselach`), a przelicznik zapisuj
+jednym zdaniem w komentarzu (commit `59b5573`).

@@ -28,9 +28,19 @@ zgłoszenie, punktacja względem mediany tempa, dziennik i podsumowanie) oraz
 **warstwa pozycji** (`app/pozycja.js`: filtr dokładności, kryterium dojścia
 z debounce'em, komunikaty błędów GPS, symulacja trasy dla trybu testowego).
 
+**M2 — mapa: kod i testy gotowe.** Na ekranach „pozycja" i „stacje" jest mapa
+SVG z podkładem rastrowym bez klucza API (OSM Standard, OpenTopoMap, Esri World
+Imagery albo podkład wyłączony), gestami palca (drag + pinch), przyciskami
+＋ − ◎, markerem pozycji z kołem dokładności, przerywanym okręgiem promienia gry,
+numerowanymi pinezkami stacji, paskiem skali i zawsze widoczną atrybucją
+dostawcy. Do zamknięcia kamienia brakuje potwierdzenia na żywo, że podkład jest
+widoczny na telefonie (`docs/WORKFLOW.md` §4.1) — agent nie ma przeglądarki ani
+sieci do kafelków.
+
 **Ekranu gry jeszcze nie ma**: rozgrywka jest policzona i przetestowana, ale
-nieklikalna. Mapa (M2), stacje z sieci dróg i placów (M4), trwały zapis stanu
-(M5) i interfejs gry (M6) — patrz `docs/ROADMAP.md`.
+nieklikalna. Stacje z sieci dróg i placów (M4), pętla pytań z podglądem
+organizatora (M5), trwałość stanu i interfejs gry (M6) — patrz
+`docs/ROADMAP.md`.
 
 ## Uruchomienie lokalne
 
