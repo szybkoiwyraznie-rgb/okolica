@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   BLEDY_API, GRANICE, KODY_POZYCJI, OPCJE_WATCH, STANY_FIXA, ZRODLA_FIXA,
-  bladGeolokalizacji, dodajFix, fixSymulowany, fixZPozycji, komunikatPauzy,
+  bladGeolokalizacji, dodajFix, fixSymulowany, fixZPozycji, komunikatPauzy, komunikatWznowienia,
   ocenFix, punktNaTrasie, sekwencjaSymulowana, sprawdzTrase, stanDojscia,
   trasaProsta, watchPozycja,
 } from '../app/pozycja.js';
@@ -225,7 +225,7 @@ test('bladGeolokalizacji: kody przeglądarki na komunikaty z wyjściem awaryjnym
 
 test('KODY_POZYCJI: pełne zdania gotowe do UI, osobny przedrostek od kodów rozgrywki', () => {
   const kody = Object.entries(KODY_POZYCJI);
-  assert.equal(kody.length, 8);
+  assert.equal(kody.length, 9);
   for (const [kod, tekst] of kody) {
     assert.match(kod, /^P\d{2}$/, `kod ${kod}`);
     assert.ok(tekst.length >= 40, `${kod}: za krótki — „${tekst}"`);
@@ -235,6 +235,9 @@ test('KODY_POZYCJI: pełne zdania gotowe do UI, osobny przedrostek od kodów roz
   const pauza = komunikatPauzy();
   assert.equal(pauza.kod, 'P07');
   assert.match(pauza.komunikat, /tle|bater/i, 'pauza w tle ma być wyjaśniona (ADR 0004 pkt 1)');
+  const wznowienie = komunikatWznowienia();
+  assert.equal(wznowienie.kod, 'P09');
+  assert.match(wznowienie.komunikat, /Wznowiono śledzenie/, 'ADR 0004 pkt 1 wymaga komunikatu „wznowiono śledzenie"');
 });
 
 /* --------------------------------------------------------------- tryb testowy */

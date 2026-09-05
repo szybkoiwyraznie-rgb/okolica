@@ -59,6 +59,7 @@ export const KODY_POZYCJI = {
   P06: 'Otrzymano współrzędne spoza zakresu — ten pomiar został odrzucony. Jeśli powtarza się, zagraj w trybie ręcznym.',
   P07: 'Śledzenie położenia jest wstrzymane, bo aplikacja działa w tle — oszczędzamy baterię. Wróć na kartę, żeby je wznowić (ADR 0004 pkt 1).',
   P08: 'Nieznany błąd położenia: {message}. Zgłoś dojście ręcznie albo włącz tryb testowy (⚙), żeby dokończyć grę.',
+  P09: 'Wznowiono śledzenie położenia — pierwszy pomiar po powrocie potrafi trwać kilka sekund.',
 };
 
 /** `GeolocationPositionError.code` → nasz kod komunikatu. */
@@ -381,4 +382,9 @@ export function watchPozycja({ geolocation, onFix, onBlad = null, opcje = OPCJE_
 /** Komunikat pauzy w tle (ADR 0004 pkt 1: oszczędność baterii). */
 export function komunikatPauzy() {
   return { kod: 'P07', komunikat: komunikat('P07'), trybAwaryjny: null };
+}
+
+/** Komunikat wznowienia śledzenia po powrocie na kartę (ADR 0004 pkt 1). */
+export function komunikatWznowienia() {
+  return { kod: 'P09', komunikat: komunikat('P09'), trybAwaryjny: null };
 }
