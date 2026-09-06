@@ -1262,8 +1262,10 @@ function grajZZestawemLokalnym(skrot) {
 }
 
 function grajZZestawemZRepo(plik, urlIndeksu) {
-  const baza = typeof URL !== 'undefined' ? new URL(urlIndeksu, document.baseURI ?? '/') : null;
-  const url = baza ? new URL(plik, baza).href : plik;
+  // Plik paczki siedzi obok indeksu: sklejanie względne działa i w przeglądarce,
+  // i na gołym Node (bez document.baseURI); absolutny http przechodzi jak stoi.
+  const baza = urlIndeksu.slice(0, urlIndeksu.lastIndexOf('/') + 1);
+  const url = /^[a-z][a-z0-9+.-]*:\/\//i.test(plik) ? plik : baza + plik;
   status(`Pobieram paczkę z repozytorium: ${plik}…`);
   fetch(url)
     .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))

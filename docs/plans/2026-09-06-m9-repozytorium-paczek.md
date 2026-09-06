@@ -74,7 +74,7 @@ woła modelu**.
       tematy: historia/kultura) ze źródłami sprawdzonymi `web_search`;
       wpis w indeksie; to demonstracja ścieżki publikacji (właściciel
       przegląda przed merge).
-- [ ] **R6 — fetch repozytorium w aplikacji** (względny default, override
+- [x] **R6 — fetch repozytorium w aplikacji** (względny default, override
       kluczem, timeout i cicha degradacja do „brak propozycji" z logiem) +
       testy przepięć fetch + kontrakty (TO-zestaw/1, brak root-absolute,
       licencja/przegląd źródeł w meta).

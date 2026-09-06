@@ -130,3 +130,78 @@ test('zestawy UI: brak pozycji albo wyczyszczony promień chowają kartę', asyn
   dom.kliknij('przycisk-ustaw-reczne');
   assert.equal(dom.pobierz('zestawy-karta').hidden, false, 'poprawna konfiguracja odsłania kartę');
 });
+
+/* ---------------- M9/R6: repozytorium publiczne przez fetch (atrapa) ---------------- */
+
+const indeksZPropozycja = () => ({
+  schemat: 'TO-indeks/1',
+  wpisy: [{
+    skrot: 'feedbeef', plik: 'podkowa.zestaw.json', miejsce: 'Podkowa Leśna',
+    geohash5: GEOHASH5, promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
+    licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel', data: '2026-09-06 19:30',
+  }],
+});
+
+const plikZRepo = () => {
+  const meta = {
+    miejsce: 'Podkowa Leśna', geohash5: GEOHASH5, promienM: 1000,
+    tematy: ['historia'], wiek: 'dorosli', jezyk: 'polski', data: '2026-09-06 19:30',
+    autor: 'kurator', licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel',
+  };
+  return {
+    schemat: 'TO-zestaw/1',
+    protokol: 'PYT/1.0',
+    meta,
+    stacje: [{ lat: 52.1235, lon: 20.7455, opis: 'plac' }, { lat: 52.1245, lon: 20.7475, opis: 'park' }],
+    kontener: zapakujPaczke(paczkaMinimalna(), 'PYT/1.0'),
+  };
+};
+
+function atrapaFetch(odpowiedzi) {
+  const wywolania = [];
+  const pierwotny = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    wywolania.push(String(url));
+    const klucz = String(url).includes('indeks.json') ? 'indeks' : 'plik';
+    const tekst = odpowiedzi[klucz];
+    if (tekst == null) return { ok: false, status: 404, text: async () => '' };
+    return { ok: true, status: 200, text: async () => tekst };
+  };
+  return { wywolania, przywroc: () => { globalThis.fetch = pierwotny; } };
+}
+
+test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra bez modelu', async () => {
+  const atrap = atrapaFetch({ indeks: JSON.stringify(indeksZPropozycja()), plik: JSON.stringify(plikZRepo()) });
+  try {
+    const dom = await aplikacjaZZestawami({});
+    await dojdzDoPozycji(dom);
+    await new Promise((r) => setTimeout(r, 30));
+    const lista = dom.pobierz('zestawy-lista');
+    assert.equal(lista.children.length, 1, 'propozycja z repozytorium widoczna na karcie');
+    assert.match(lista.children[0].children[0].textContent, /repozytorium: Podkowa Leśna/);
+    assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium ma paczki/);
+    kliknijPierwszyPrzyciskZestawu(dom);
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra z paczki repozytorium wystartowała');
+    assert.match(dom.pobierz('status').textContent, /bez modelu i bez Overpassa/);
+    assert.match(dom.pobierz('status').textContent, /repozytorium/);
+    assert.ok(atrap.wywolania.some((u) => u.includes('data/paczki/indeks.json')), 'domyślny indeks ścieżką względną');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('zestawy UI: własny URL repozytorium wygrywa z domyślnym (switchability, ADR 0017 pkt 6)', async () => {
+  const atrap = atrapaFetch({ indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [] }) });
+  try {
+    const pamiec = new Map([['okolica:repo-zestawow:url', 'https://przyklad.org/paczki/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    await dojdzDoPozycji(dom);
+    await new Promise((r) => setTimeout(r, 30));
+    assert.ok(atrap.wywolania.some((u) => u.startsWith('https://przyklad.org/paczki/indeks.json')), 'fetch poszedł do własnego źródła');
+    assert.equal(dom.pobierz('pole-url-repo').value, 'https://przyklad.org/paczki/indeks.json', 'pole pokazuje aktywne źródło');
+    assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium nie ma paczek/);
+  } finally {
+    atrap.przywroc();
+  }
+});
