@@ -52,7 +52,7 @@ ASSETS §3).
       ekranie). Testy na atrapie: pełny przepływ edycji, `modyfikacje[]`
       w ukrytym kontenerze (odpakowanie i sprawdzenie), blokada po zepsuciu
       paczki edycją, zwinięcie po ukryciu.
-- [ ] **J4 — eksport pliku paczki:** „⬇ Zapisz paczkę (plik)" przy „Ukryj
+- [x] **J4 — eksport pliku paczki:** „⬇ Zapisz paczkę (plik)" przy „Ukryj
       paczkę" → Blob z `JSON.stringify(zapakujPaczke(...))`, nazwa
       `okolica-<kod gry>.paczka.json` (kod gry z `STAN.konfig.kodGry`,
       oczyszczony do `[a-z0-9-]`); import tą samą drogą już działa

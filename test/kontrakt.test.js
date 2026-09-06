@@ -196,6 +196,11 @@ test('kontrakt: przycisk trybu testowego ma w HTML stan początkowy aria-pressed
 
   assert.match(INDEX, /id="bledy-stacje"[^>]*role="alert"/, 'błędy sieci drogowej w polu role=alert (nie alert())');
 
+  const eksportPaczki = INDEX.match(/<button id="przycisk-eksport-paczki"[^>]*>/)?.[0];
+  assert.ok(eksportPaczki, 'brak eksportu paczki do pliku (ADR 0010 pkt 3)');
+  assert.match(eksportPaczki, /type="button"/);
+  assert.match(eksportPaczki, /\bhidden\b/, 'eksport dopiero z przyjętą paczką');
+
   const podglad = INDEX.match(/<div id="podglad-organizatora"[^>]*>/)?.[0];
   assert.ok(podglad, 'brak podglądu organizatora (ADR 0006 pkt 8)');
   assert.match(podglad, /\bhidden\b/, 'podgląd domyślnie schowany — otwiera się dopiero z przyjętą paczką');

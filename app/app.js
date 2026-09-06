@@ -905,6 +905,7 @@ function sprawdzOdpowiedz() {
     renderujUsterki([blad]);
     $('przycisk-poprawka').hidden = false;
     $('przycisk-ukryj').hidden = true;
+    $('przycisk-eksport-paczki').hidden = true;
     $('podglad-organizatora').hidden = true;
     status('Odpowiedź odrzucona na etapie odczytu (parsowanie JSON albo kontener).');
     return;
@@ -919,6 +920,7 @@ function sprawdzOdpowiedz() {
     renderujUsterki(usterki);
     $('przycisk-poprawka').hidden = false;
     $('przycisk-ukryj').hidden = true;
+    $('przycisk-eksport-paczki').hidden = true;
     $('podglad-organizatora').hidden = true;
     status('Paczka odrzucona przez walidator (protokół PYT §6).');
     return;
@@ -929,6 +931,7 @@ function sprawdzOdpowiedz() {
   $('wynik-naglowek').textContent = 'Paczka przyjęta';
   $('przycisk-poprawka').hidden = true;
   $('przycisk-ukryj').hidden = false;
+  $('przycisk-eksport-paczki').hidden = false;
   const postac = zKontenera.zrodlo === 'kontener'
     ? 'paczka ukryta (kontener TO-paczka/2)'
     : zKontenera.zrodlo === 'json'
@@ -978,6 +981,13 @@ function renderujPodsumowaniePaczki(paczka, postac = null) {
   }
   $('wynik-podsumowanie').replaceChildren(...wezly);
 }
+
+/** Nazwa pliku paczki: kod gry oczyszczony do `[a-z0-9-]` (ADR 0010 pkt 3). */
+function nazwaPlikuPaczki(kodGry) {
+  const oczyszczony = String(kodGry ?? '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24);
+  return `okolica-${oczyszczony || 'gra'}.paczka.json`;
+}
+
 
 /** Zwinięcie podglądu: plaintext pytań znika z DOM (ADR 0007 pkt 4). */
 function zwijPodgladOrganizatora() {
@@ -1135,6 +1145,7 @@ function zapiszPoprawke(p, pola) {
     ? `Paczka po poprawce wymaga naprawy — usterek: ${usterki.length}`
     : 'Paczka przyjęta (po ręcznej poprawce)';
   $('przycisk-ukryj').hidden = usterki.length > 0;
+  $('przycisk-eksport-paczki').hidden = usterki.length > 0;
   $('przycisk-poprawka').hidden = usterki.length === 0;
   renderujPodsumowaniePaczki(STAN.paczka, null);
   renderujPodgladOrganizatora();
@@ -1397,6 +1408,15 @@ function start() {
     kopiujTekst(tekst, e.currentTarget, `⧉ Ukryj paczkę (${SCHEMAT_KONTENERA})`, 'pole-odpowiedz');
     zwijPodgladOrganizatora(); // plaintext pytań znika z ekranu po ukryciu
     status(`Paczka ukryta w kontenerze ${SCHEMAT_KONTENERA} — to obfuskacja bez klucza, nie szyfrowanie (ADR 0007).`);
+  });
+  $('przycisk-eksport-paczki').addEventListener('click', () => {
+    if (!STAN.paczka) return;
+    // plik niesie WYŁĄCZNIE ukryty kontener — plaintext nigdy nie opuszcza
+    // ekranu (ADR 0007 pkt 4); import: ekran paczki → „⬆ Z pliku"
+    const tekst = `${JSON.stringify(zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU), null, 2)}\n`;
+    const nazwa = nazwaPlikuPaczki(STAN.konfig.kodGry);
+    pobierzPlik(nazwa, tekst, 'application/json'); // helper z M0 (prompt → plik)
+    status(`Paczka zapisana do pliku ${nazwa} (w środku kontener ${SCHEMAT_KONTENERA}, nie plaintext). Wgrasz ją z powrotem przez „⬆ Z pliku".`);
   });
 
   pokazEkran('setup');

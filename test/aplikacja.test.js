@@ -841,3 +841,29 @@ test('podgląd organizatora: zmiana poprawnej odpowiedzi i dodanie źródła tra
   assert.equal(p0.zrodla[p0.zrodla.length - 1].url, 'https://archiwum-miejskie.pl/dokument/123');
   assert.match(zPowrotem.paczka.modyfikacje[0].opis, /poprawną odpowiedź, źródła/);
 });
+
+test('paczka: eksport do pliku niesie ukryty kontener — round-trip przez import', async () => {
+  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
+  assert.equal(dom.pobierz('przycisk-eksport-paczki').hidden, false, 'eksport dostępny z przyjętą paczką');
+  // przechwyć zawartość Blob (atrapa domyślnie gubi części — tylko size)
+  const BlobOryginal = globalThis.Blob;
+  const czesci = [];
+  globalThis.Blob = class { constructor(c) { czesci.push(...(c ?? [])); this.size = (c ?? []).join('').length; } };
+  try {
+    dom.kliknij('przycisk-eksport-paczki');
+  } finally {
+    globalThis.Blob = BlobOryginal;
+  }
+  assert.equal(czesci.length, 1, 'jeden plik na klik');
+  const kontener = JSON.parse(czesci[0]);
+  assert.equal(kontener.schemat, 'TO-paczka/2', 'plik niesie kontener, nie plaintext');
+  assert.ok(!czesci[0].includes(paczka.pytania[0].tresc), 'treść pytania NIE występuje w pliku jawnie');
+  const { odpakujPaczke } = await import('../app/kodowanie.js');
+  const zPowrotem = odpakujPaczke(czesci[0]);
+  assert.deepEqual(
+    zPowrotem.paczka.pytania.map((q) => q.tresc),
+    paczka.pytania.map((q) => q.tresc),
+    'import pliku odtwarza paczkę (ścieżka „⬆ Z pliku" czyta ten sam format)',
+  );
+  assert.match(dom.pobierz('status').textContent, /okolica-[a-z0-9-]+\.paczka\.json/, 'nazwa pliku z oczyszczonym kodem gry i rozszerzeniem z .gitignore');
+});
