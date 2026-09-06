@@ -37,20 +37,23 @@ Szczegóły przepływu ustalone przez właściciela:
       status. Cel dotykowy ≥44 px (ADR 0011); kontrakt pilnuje domyślnego
       zaznaczenia; atrapa DOM rozumie atrybut `checked`. Klucz
       `okolica:zgoda-drive` nie powstał — przy zgodzie na ekranie jest zbędny.
-- [ ] **D4 — indeks z Drive w karcie propozycji**: wpis indeksu może nieść
-      `id` pliku Drive (pobranie przez `?akcja=paczka&id=…`) albo względną
-      ścieżkę (własny hosting właściciela); przycisk „🔌 Sprawdź połączenie"
-      w źródłach = instrument spike’u CORS na żywym wdrożeniu.
-- [ ] **D5 — testy**: GOTOWE (z D2/D3): wysyłka po przyjęciu (atrapa fetch:
-      metoda, text/plain, ciało TO-zestaw/1 ze stacjami sesji), bramka zgody
-      (odhaczona = zero POST-ów), brak adresu (zero POST-ów), kontrakt
-      checkboxa; brama 420/420 + CI. ZOSTAŁO: indeks z `id` i przycisk
-      połączenia — po D4.
-- [ ] **D6 — dokumentacja**: ASSETS (Apps Script/Drive jako dostawca: polityka,
-      brak klucza, URL jako zdolność), ADR 0016 (uzupełnienie o wynik spike’u
+- [x] **D4 — indeks z Drive w karcie propozycji**: `walidujIndeksSurowy`
+      przyjmuje wpisy z `id` (most Drive) obok `plik` (własny hosting);
+      `urlPaczkiZRepo()` (czysta funkcja w `zestawy.js`) buduje
+      `?akcja=paczka&id=…` z bazy BEZ query; przycisk „🔌 Sprawdź połączenie"
+      w źródłach = instrument spike'u CORS na żywym wdrożeniu (jawne OK
+      z liczbą zaakceptowanych zestawów albo jawna porażka).
+- [x] **D5 — testy**: wysyłka po przyjęciu (atrapa fetch: metoda, text/plain,
+      ciało TO-zestaw/1 ze stacjami sesji), bramka zgody (odhaczona = zero
+      POST-ów), brak adresu (zero POST-ów), kontrakt checkboxa; indeks z `id`
+      (walidacja + URL paczki + gra z pobranego zestawu), przycisk połączenia
+      (OK / porażka), kontrakt przycisku; brama 428/428 + CI.
+- [x] **D6 — dokumentacja**: ASSETS (Apps Script/Drive jako dostawca: polityka,
+      brak klucza, URL jako zdolność), ADR 0016 (uzupełnienie o wynik spike'u
       po wdrożeniu właściciela), README/ARCHITECTURE/ROADMAP/PROJECT_HISTORY,
-      opis PR #2.
-
+      opis PR #2. USTALENIE WŁAŚCICIELA (ADR 0018): wdrożenie mostu ODROCZONE
+      do końca kodowania, a finalna instrukcja wdrożenia zostanie podana
+      W CZACIE (kroki + okna txt do wklejenia), nie jako plik w repo.
 ## Ryzyka
 
 - **CORS/redirect web app**: fetch z przeglądarki do `script.google.com`

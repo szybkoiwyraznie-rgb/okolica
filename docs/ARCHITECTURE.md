@@ -44,7 +44,8 @@ app/
                               `okolica:gra:*`, walidacja T01–T10, budżet 2 MB;
                               historia gier `okolica:historia` (`historia/1`,
                               kody H01–H04, limit 50) (czyste; ADR 0010)
-  zestawy.js                — M9: repozytorium paczek (TO-zestaw/1, LRU, dopasowanie)
+  zestawy.js                — M9/M9b: repozytorium paczek (TO-zestaw/1, LRU,
+                              dopasowanie, indeks Drive z `id` → urlPaczkiZRepo)
   wynik.js                  — wynik: sprawiedliwość trasy, eksport tekstowy,
                               plan komend obrazu (PNG 1080 px) i nazwy plików
                               (czyste; bez DOM, bez treści pytań, bez
@@ -61,12 +62,11 @@ app/
                               wynik; komunikaty, aria-live (DOM)
   styles.css                — tokeny palety, motyw jasny/ciemny, cele dotykowe ≥44 px
 data/
-  przyklady/paczka-*.json   — paczki referencyjne (zweryfikowane źródła, ADR 0008)
-  paczki/                   — M9: publiczne paczki TO-zestaw/1 + indeks.json
-    *.zestaw.json           —   meta (licencja, przegląd źródeł) + stacje + kontener
-    indeks.json             —   generowany: same meta (npm run indeks-paczek)
-    README.md               —   ścieżka publikacji (przegląd właściciela = brama)
+  przyklady/zestaw-*.json   — zestawy referencyjne TO-zestaw/1 (zweryfikowane
+                              źródła, ADR 0008; NIE publikowane automatycznie)
   kanon-tematow.json        — (opcjonalnie) kanon tematów, gdy wyjdzie poza kod
+  UWAGA (decyzja właściciela 2026-09-06): repozytorium plikowe `data/paczki/`
+  USUNIĘTE — współdzielone paczki żyją na Drive (most: docs/setup/, ADR 0016/0018)
 assets/
   ikony/ikona.svg           — ikona-kompas: ten sam motyw co favicon w index.html
   ikony/ikona-192/512/180.png, ikona-maskable-512.png
@@ -77,10 +77,9 @@ tools/
   synchronizuj-szablon.mjs  — przepisanie szablonu promptu do app/ (jedno źródło)
   generuj-fixture-overpass.mjs — fixture offline z realnej odpowiedzi Overpass (M6)
   generuj-ikony.mjs         — ikony SVG+PNG bez zależności; npm run ikony (M8)
-  generuj-indeks-paczek.mjs — M9: indeks repozytorium + brama publikacji
-  (później) generuj-indeks-paczek.mjs — indeks repozytorium paczek (ADR 0010)
 test/                       — node --test; fixture'y w test/fixtures/
-docs/                       — protokół, ADR, plany, handoffy (patrz AGENTS.md §0)
+docs/                       — protokół, ADR, plany, handoffy (patrz AGENTS.md §0);
+                              setup/: most Drive Apps Script (kod + instrukcja, M9b)
 ```
 
 ## Podział: czyste funkcje vs warstwa DOM

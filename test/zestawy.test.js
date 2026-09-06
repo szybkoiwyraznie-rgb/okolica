@@ -10,7 +10,7 @@ import {
   BUDZET_ZESTAWOW_BAJTY, KLUCZ_REJESTRU, KLUCZ_URL_REPO,
   MAKS_ZESTAWOW, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY, SCHEMAT_ZESTAWU,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu,
-  nowyRejestr, rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy,
+  nowyRejestr, rozmiarBajty, urlPaczkiZRepo, walidujIndeksSurowy, walidujRejestrSurowy,
   walidujZestawLokalnySurowy, walidujZestawPublicznySurowy,
 } from '../app/zestawy.js';
 
@@ -142,4 +142,46 @@ test('zestawy: klucze i rozmiary są przewidywalne', () => {
   assert.equal(rozmiarBajty({ a: 'ą' }), JSON.stringify({ a: 'ą' }).length + 1, '„ą" to dwa bajty UTF-8');
   assert.throws(() => dolozWpisRejestru(nowyRejestr(), { skrot: 'x' }, { bajty: 1 }), TypeError);
   assert.throws(() => dolozWpisRejestru(nowyRejestr(), wpis('a', 'x'), { bajty: -1 }), TypeError);
+});
+
+/* -------- M9b/D4: indeks Drive (wpisy z `id`) i adres paczki -------- */
+
+test('walidujIndeksSurowy: wpis z `id` (most Drive) przechodzi jak wpis z `plik`', () => {
+  const metaWpisu = {
+    skrot: 'aabbccdd', miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', promienM: 1000,
+    tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1,
+    licencja: 'CC BY-SA 4.0', data: '2026-09-06 12:00',
+  };
+  const { indeks, usterki } = walidujIndeksSurowy(JSON.stringify({
+    schemat: SCHEMAT_INDEKSU,
+    wpisy: [{ ...metaWpisu, id: 'drive-001' }, { ...metaWpisu, plik: 'stary.zestaw.json' }],
+  }));
+  assert.equal(indeks.length, 2, 'id i plik są równoprawnymi wskazaniem paczki');
+  assert.deepEqual(usterki, []);
+});
+
+test('walidujIndeksSurowy: wpis bez `plik` i bez `id` odpada z Z10', () => {
+  const { indeks, usterki } = walidujIndeksSurowy(JSON.stringify({
+    schemat: SCHEMAT_INDEKSU,
+    wpisy: [{ skrot: 'aabbccdd', miejsce: 'X', geohash5: 'u3qb8', promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1, licencja: 'CC BY-SA 4.0', data: '2026-09-06 12:00' }],
+  }));
+  assert.deepEqual(indeks, [], 'wpis bez wskazania paczki jest bezużyteczny');
+  assert.equal(usterki[0].kod, 'Z10');
+});
+
+test('urlPaczkiZRepo: `id` → baza bez query + akcja=paczka (kontrakt mostu Drive)', () => {
+  assert.equal(
+    urlPaczkiZRepo('https://script.google.com/macros/s/ABC/exec', { id: 'drive-001' }),
+    'https://script.google.com/macros/s/ABC/exec?akcja=paczka&id=drive-001',
+  );
+  assert.equal(
+    urlPaczkiZRepo('https://most/exec?akcja=indeks', { id: 'x y/1' }),
+    'https://most/exec?akcja=paczka&id=x%20y%2F1',
+    'stary query nie zostaje, a id jest zakodowane',
+  );
+});
+
+test('urlPaczkiZRepo: `plik` względny skleja się z katalogiem, absolutny przechodzi', () => {
+  assert.equal(urlPaczkiZRepo('https://repo.example/paczki/indeks.json', { plik: 'a.zestaw.json' }), 'https://repo.example/paczki/a.zestaw.json');
+  assert.equal(urlPaczkiZRepo('https://repo.example/paczki/indeks.json', { plik: 'https://cdn.example/b.json' }), 'https://cdn.example/b.json');
 });

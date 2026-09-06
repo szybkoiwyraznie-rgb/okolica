@@ -227,10 +227,32 @@ export function walidujIndeksSurowy(tekst) {
     || !Array.isArray(surowy.wpisy)) {
     return { indeks: [], usterki: [usterka('Z09')] };
   }
+  // Wpis wskazuje paczkę ALBO względną ścieżką `plik` (własny hosting),
+  // ALBO `id` pliku Drive (most Apps Script: `?akcja=paczka&id=…`, M9b/D4).
   const wpisy = surowy.wpisy.filter((w) => czyMetaDopasowaniaOk(w)
     && typeof w.licencja === 'string' && w.licencja.length > 0
-    && typeof w.plik === 'string' && w.plik.length > 0);
+    && ((typeof w.plik === 'string' && w.plik.length > 0)
+      || (typeof w.id === 'string' && w.id.length > 0)));
   return { indeks: wpisy, usterki: wpisy.length === surowy.wpisy.length ? [] : [usterka('Z10')] };
+}
+
+/**
+ * Adres paczki z wpisu indeksu (M9b/D4).
+ * - wpis z `id` (most Drive): baza = URL repozytorium BEZ query/hash
+ *   + `?akcja=paczka&id=…` (kontrakt doGet Apps Script);
+ * - wpis z `plik`: URL absolutny przechodzi jak stoi, względny skleja się
+ *   z katalogiem adresu indeksu (goły Node nie ma document.baseURI).
+ * Czysta funkcja — testowalna bez DOM i bez sieci.
+ */
+export function urlPaczkiZRepo(urlRepo, wpis) {
+  if (wpis?.id) {
+    const baza = String(urlRepo).split(/[?#]/)[0];
+    return `${baza}?akcja=paczka&id=${encodeURIComponent(wpis.id)}`;
+  }
+  const plik = String(wpis?.plik ?? '');
+  if (/^[a-z][a-z0-9+.-]*:\/\//i.test(plik)) return plik;
+  const baza = String(urlRepo).slice(0, String(urlRepo).lastIndexOf('/') + 1);
+  return baza + plik;
 }
 
 /** Dopasowanie wpisu indeksu publicznego — te same reguły co lokalnie. */

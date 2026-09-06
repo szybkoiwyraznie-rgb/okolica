@@ -136,18 +136,20 @@ bo Pages serwuje z drzewa, a generator odtwarza je bajt w bajt.
 ## Repozytorium paczek pytań
 
 Gra potrafi obyć się **bez wołania modelu**: każda rozpoczęta gra zostawia
-na telefonie kopię swojej paczki (stacje + ukryte pytania), a kuratorowane
-paczki publiczne leżą w `data/paczki/` z indeksem `indeks.json`
-(`npm run indeks-paczek`). Na ekranie „Gdzie jesteś?" karta „📦 Paczki dla
-tej okolicy" proponuje dopasowane paczki według kryteriów właściciela
-(ta sama okolica, ta sama liczba stacji i pytań, ten sam poziom, tematy nie
-szersze niż w setupie, promień paczki nie większy niż w setupie) — wybór
-startuje grę bez promptu, bez wklejania,
-bez Overpassa i bez modelu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
-daje plik do publikacji: indeks umieści go dopiero po ręcznym przeglądzie
-źródeł właściciela (pole `meta.przegladZrodel`, brama w narzędziu —
-`data/paczki/README.md`, ADR 0017). Własne repozytorium paczek właściciela
-wskazuje się jednym kluczem w UI (aplikacja tylko czyta).
+na telefonie kopię swojej paczki (stacje + ukryte pytania), a współdzielone
+repozytorium żyje na wydzielonym koncie **Google Drive** z mostem Apps Script
+(ADR 0016/0018 — w repozytorium kodu NIE ma plików paczek). Na ekranie
+„Gdzie jesteś?" karta „📦 Paczki dla tej okolicy" proponuje dopasowane
+paczki według kryteriów właściciela (ta sama okolica, ta sama liczba stacji
+i pytań, ten sam poziom, tematy nie szersze niż w setupie, promień paczki nie
+większy niż w setupie) — wybór startuje grę bez promptu, bez wklejania, bez
+Overpassa i bez modelu. Przyjęcie paczki z AI (ekran wklejania) automatycznie
+wysyła ją na Drive do przeglądu właściciela — zgoda jest checkboxem na tym
+samym ekranie, domyślnie zaznaczonym, można odhaczyć (opt-out). Właściciel
+akceptuje kandydatów linkiem z e-maila; adres mostu wpisuje się w UI
+(„Źródło repozytorium"), a przycisk „🔌 Sprawdź połączenie" robi jawną próbę
+CORS na żywym wdrożeniu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
+daje plik do ręcznego wniesienia, gdy most jest niedostępny.
 
 ## Repozytorium
 

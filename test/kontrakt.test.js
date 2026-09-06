@@ -580,3 +580,8 @@ test('kontrakt M9b: zgoda na wysyłkę Drive jest na ekranie wklejania i domyśl
   assert.match(INDEX, /<input id="zgoda-drive" type="checkbox" checked>/, 'checkbox zgody Drive: obecny i domyślnie zaznaczony');
   assert.ok(INDEX.indexOf('id="zgoda-drive"') < INDEX.indexOf('id="przycisk-sprawdz"'), 'zgoda widoczna PRZED przyciskiem przyjęcia');
 });
+
+test('kontrakt M9b: „🔌 Sprawdź połączenie" żyje w źródłach repozytorium (instrument CORS z ADR 0016)', () => {
+  assert.match(INDEX, /<button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie<\/button>/, 'przycisk próby mostu obecny');
+  assert.ok(INDEX.indexOf('id="przycisk-test-polaczenia"') > INDEX.indexOf('id="przycisk-zapisz-url-repo"'), 'próba połączenia obok zapisu źródła');
+});

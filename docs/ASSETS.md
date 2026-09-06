@@ -172,3 +172,27 @@ kod ↔ ten plik oraz reweryfikacja polityk „na dziś".
 
 **Wniosek:** zero rozjazdów kod ↔ dokumentacja, zero zmian wymagających
 akcji; nowy dostawca przechodzi pełną checklistę §5.
+
+## 7. Repozytorium paczek — Google Drive + Apps Script (infrastruktura właściciela, M9b)
+
+- **Dostawca**: wydzielone konto Google właściciela; most = web app Apps
+  Script (`docs/setup/apps-script-repo-paczek.gs`, wdrożenie:
+  `docs/setup/most-drive-instrukcja.md` — wersja robocza; finalna instrukcja
+  dla właściciela w czacie, ADR 0018).
+- **Co płynie**: DO Drive — kandydaci na zestawy (TO-zestaw/1: meta + stacje
+  + ukryty kontener pytań) wysyłani automatycznie przy przyjęciu paczki, za
+  domyślnie zaznaczoną zgodą (checkbox na ekranie wklejania). Z Drive — tylko
+  indeks zaakceptowanych (`?akcja=indeks`) i paczki (`?akcja=paczka&id=…`).
+- **Klucze i polityka**: BRAK kluczy API w kodzie; adres web app jest zdolnością
+  (capability) wpisywaną w UI; POST-y `text/plain` (bez preflightu CORS);
+  aplikacja tylko czyta — nigdy nie usuwa i nie edytuje na Drive.
+- **Prywatność (ADR 0013)**: współrzędne w wysyłanym zestawie to stacje gry
+  (przestrzeń publiczna) + geohash5 okolicy, bez śledzenia gracza; moderacja
+  właściciela (e-mail z linkiem przeglądu) jest bramą przed udostępnieniem.
+- **Licencje**: treści zestawów CC BY-SA 4.0 (ADR 0017); pola `licencja`
+  i `przegladZrodel` wymagane w każdym kandydacie.
+- **Awaria/rotacja**: `REVIEW_SECRET` w script properties do rotacji; odrzucanie
+  ręczne przez przeniesienie pliku w katalogu Drive; brak mostu nie blokuje gry
+  (kopia lokalna + zwykła ścieżka prompt→model).
+- **Docelowo (ADR 0018)**: to samo konto obsłuży parowanie gier na wielu
+  urządzeniach (M11) i profil/statystyki gracza (M12) — ta sekcja będzie rosła.

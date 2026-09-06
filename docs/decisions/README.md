@@ -34,6 +34,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0015](0015-niekompletna-paczka-i-pominiecie-stacji.md) | Niekompletna paczka i pominięcie stacji: ostrzeżenie zamiast blokady, pominięcie tylko w drodze, spójne liczniki i przedrostki kodów | Proponowana |
 | [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device) | Zaakceptowana |
 | [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1`, geohash5 w indeksie, CC BY-SA 4.0, moderacja właściciela | Proponowana |
+| [0018](0018-drive-backend-wielozadaniowy.md) | Drive jako backend wielozadaniowy (paczki, parowanie gier, statystyki); wdrożenie odroczone, instrukcja w czacie | Zaakceptowana |
 
 ## Szablon ADR
 

@@ -90,3 +90,15 @@ nieść stacje jawnie, inaczej drugie urządzenie nie odtworzy gry.
 
 0001 (bez backendu), 0007 (kontener i ukrywanie), 0008 (przegląd źródeł),
 0010 (trwałość, LRU, eksport), 0013 (prywatność geohashu, switchability).
+
+## Aneks (2026-09-06): realizacja po decyzji właściciela (M9b)
+
+Punkty opisujące plikowe repozytorium `data/paczki/` (indeks, narzędzie
+`generuj-indeks-paczek.mjs`, publikacja pushem) STRACIŁY aktualność decyzją
+właściciela: katalog i narzędzie usunięte z repozytorium kodu. Współdzielone
+zestawy żyją na Drive z mostem Apps Script (ADR 0016, ADR 0018): indeks
+`?akcja=indeks` (wpisy z `id`), paczka `?akcja=paczka&id=…`, wysyłka
+automatyczna przy przyjęciu (zgoda = domyślnie zaznaczony checkbox na ekranie
+wklejania), akceptacja właściciela linkiem z e-maila. Niezmienne: schemat
+`TO-zestaw/1`, kryteria dopasowania, CC BY-SA 4.0, moderacja właściciela
+i zasada „aplikacja z repozytorium tylko czyta".

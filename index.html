@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m7-1">
-  <script type="module" src="app/app.js?v=m7-1"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m9b-1">
+  <script type="module" src="app/app.js?v=m9b-1"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -197,6 +197,7 @@
           <summary>Źródło repozytorium (zaawansowane)</summary>
           <label class="pole"><span>Adres indeksu paczek</span><input id="pole-url-repo" type="text" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></label>
           <button id="przycisk-zapisz-url-repo" class="przycisk" type="button">Zapisz źródło i odśwież</button>
+          <button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie</button>
           <p class="podpowiedz">Tu wklejasz adres web app Apps Script mostu Drive (instrukcja: docs/setup). Bez adresu karta pokazuje tylko paczki z tego telefonu. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela (ADR 0017 pkt 6).</p>
         </details>
       </div>

@@ -133,3 +133,9 @@ prywatności (nowy odbiorca danych = zgoda, wzorzec Nominatim z M5/J5).
 Warunek wejścia: akceptacja ADR 0016 przez właściciela + spike techniczny
 CORS/Apps Script; nie wcześniej niż po M8 (publikacja daje prawdziwy adres
 — potrzebny do wdrożenia web appu).
+
+**Aktualizacja 2026-09-06**: kierunek zaakceptowany (ADR 0016) i ROZSZERZONY
+przez właściciela (ADR 0018): to samo konto Drive obsłuży też parowanie gier
+wieloosobowych na wielu urządzeniach (M11) oraz profil/statystyki/score
+gracza (M12). Repo paczek wdrażane w M9b; wdrożenie mostu przez właściciela
+odroczone do końca kodowania, instrukcja finalna — w czacie.

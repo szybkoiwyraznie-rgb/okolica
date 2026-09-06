@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m7-1';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m7-1';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m9b-1';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m9b-1';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -25,19 +25,20 @@ import {
   zastosujEdycjePaczki,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
-} from './protokol.js?v=m7-1';
-import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m7-1';
-import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m7-1';
-import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m7-1';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m7-1';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m7-1';
+} from './protokol.js?v=m9b-1';
+import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m9b-1';
+import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m9b-1';
+import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m9b-1';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m9b-1';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m9b-1';
 import {
   KLUCZ_REJESTRU, KLUCZ_URL_REPO, SCHEMAT_LOKALNY,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
-} from './zestawy.js?v=m7-1';
-import { ROLE_PALETY, czasTekst, dystansTekst, etykietaOdcinka, medalTekst, planObrazuWyniku, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m7-1';
+  urlPaczkiZRepo,
+} from './zestawy.js?v=m9b-1';
+import { ROLE_PALETY, czasTekst, dystansTekst, etykietaOdcinka, medalTekst, planObrazuWyniku, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m9b-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -56,8 +57,8 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m7-1';
-import { utworzMape } from './mapa.js?v=m7-1';
+} from './sieci.js?v=m9b-1';
+import { utworzMape } from './mapa.js?v=m9b-1';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1223,7 +1224,7 @@ function odswiezPropozycjeZestawow() {
         lista.append(wierszZestawu(
           `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
           '🌍 repozytorium:',
-          () => grajZZestawemZRepo(meta.plik, url),
+          () => grajZZestawemZRepo(meta, url),
         ));
       }
       $('zestawy-status').textContent = dopasowane.length
@@ -1234,6 +1235,38 @@ function odswiezPropozycjeZestawow() {
       $('zestawy-status').textContent = lokalne.length
         ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
         : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
+    })
+    .finally(() => clearTimeout(timer));
+}
+
+/**
+ * M9b/D4: „🔌 Sprawdź połączenie" — jawna próba mostu Drive na żywym
+ * wdrożeniu (instrument ryzyka CORS/redirect z ADR 0016): GET indeksu,
+ * walidacja i komunikat po ludzku. Nie zapisuje adresu (od tego jest
+ * „Zapisz źródło"); awaria nigdy nie blokuje gry (LESSONS L6: status jawny).
+ */
+function sprawdzPolaczenieZRepo() {
+  const url = ($('pole-url-repo')?.value ?? '').trim();
+  if (!url) {
+    status('Brak adresu do sprawdzenia — wklej adres web app mostu Drive w polu „Adres indeksu paczek".');
+    return;
+  }
+  status('Sprawdzam połączenie z mostem Drive…');
+  const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = setTimeout(() => kontroler?.abort(), 8000);
+  fetch(url, kontroler ? { signal: kontroler.signal } : undefined)
+    .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
+    .then((tekst) => {
+      const { indeks, usterki } = walidujIndeksSurowy(tekst);
+      if (!indeks.length && usterki.length) {
+        status(`Most odpowiada, ale indeks jest nieczytelny (${usterki[0]?.komunikat ?? 'nieznany błąd'}) — upewnij się, że adres wskazuje web app mostu paczek.`);
+        return;
+      }
+      status(`Połączenie OK: most odpowiada, zaakceptowanych zestawów w indeksie: ${indeks.length}. Przeglądarka przepuściła odpowiedź — próba CORS z ADR 0016 zaliczona.`);
+      odswiezPropozycjeZestawow();
+    })
+    .catch(() => {
+      status('Połączenie NIE działa: brak odpowiedzi mostu (CORS, przekierowanie web app, sieć albo zły adres). Gra toczy się zwykłą ścieżką — to dokładnie przypadek z ryzyk ADR 0016; zapisz ten wynik.');
     })
     .finally(() => clearTimeout(timer));
 }
@@ -1269,12 +1302,11 @@ function grajZZestawemLokalnym(skrot) {
   przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: 'z tego telefonu' });
 }
 
-function grajZZestawemZRepo(plik, urlIndeksu) {
-  // Plik paczki siedzi obok indeksu: sklejanie względne działa i w przeglądarce,
-  // i na gołym Node (bez document.baseURI); absolutny http przechodzi jak stoi.
-  const baza = urlIndeksu.slice(0, urlIndeksu.lastIndexOf('/') + 1);
-  const url = /^[a-z][a-z0-9+.-]*:\/\//i.test(plik) ? plik : baza + plik;
-  status(`Pobieram paczkę z repozytorium: ${plik}…`);
+function grajZZestawemZRepo(wpis, urlIndeksu) {
+  // M9b/D4: adres liczy czysta funkcja urlPaczkiZRepo — wpis z `id` (most
+  // Drive) jedzie przez `?akcja=paczka&id=…`, wpis z `plik` jak dotąd.
+  const url = urlPaczkiZRepo(urlIndeksu, wpis);
+  status(`Pobieram paczkę z repozytorium: ${wpis.miejsce}…`);
   fetch(url)
     .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
     .then((tekst) => {
@@ -2662,6 +2694,7 @@ function start() {
       : 'Usunięto źródło repozytorium — propozycje współdzielone wyłączone, zostają paczki z tego telefonu.');
     odswiezPropozycjeZestawow();
   });
+  $('przycisk-test-polaczenia').addEventListener('click', () => sprawdzPolaczenieZRepo());
   $('przycisk-eksport-paczki').addEventListener('click', () => {
     if (!STAN.paczka) return;
     // plik niesie WYŁĄCZNIE ukryty kontener — plaintext nigdy nie opuszcza

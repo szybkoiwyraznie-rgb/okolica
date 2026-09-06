@@ -299,7 +299,7 @@ Zakres zrealizowany 2026-09-06 (brama 400/400, audyt dostawców w `ASSETS.md` §
 samą publikację włącza jednorazowo właściciel (`WORKFLOW.md` §5) — to ostatni
 krok kryterium, poza zasięgiem agenta (403 na ustawieniach repo).
 
-## M9 — Repozytorium paczek pytań
+## M9 — Repozytorium paczek pytań — ✅ ZREALIZOWANE (2026-09-06, z rewizją M9b)
 
 Eksport/import paczek per okolica, indeks geohash-5, prywatne repo paczek
 właściciela, publikacja wybranych paczek po przeglądzie źródeł (ADR 0008 pkt 6,
@@ -311,8 +311,17 @@ każdej grze, karta propozycji na ekranie pozycji, publiczne `data/paczki/`
 z indeksem i bramą publikacji, pierwsza paczka kuratorowana (Podkowa Leśna,
 źródła zweryfikowane) jako KANDYDAT do przeglądu właściciela. Kryterium
 pokryte testami przepływu (`test/zestawy-ui.test.js`): start z paczki = zero
-modela, zero Overpassa. Do pełni M9 brakuje jednego pola `przegladZrodel`
-wpisanego przez właściciela (publikacja paczki) — `data/paczki/README.md`.
+modela, zero Overpassa. **Rewizja właściciela (2026-09-06, M9b):** plikowe repozytorium `data/paczki/`
+USUNIĘTE z repozytorium kodu — współdzielone paczki żyją na wydzielonym koncie
+Google Drive z mostem Apps Script (ADR 0016 → Zaakceptowana, ADR 0017,
+ADR 0018). Zrealizowane w M9b (plan `plans/2026-09-06-m9b-most-drive.md`):
+kod mostu + instrukcja (D1), automatyczna wysyłka zestawu przy przyjęciu
+z checkboxem zgody na ekranie wklejania — domyślnie zaznaczonym (D2/D3),
+indeks Drive z `id` + przycisk „🔌 Sprawdź połączenie" (D4), testy (D5,
+brama 428/428), dokumentacja (D6). Wdrożenie mostu przez właściciela ODROCZONE
+do końca kodowania; instrukcja finalna — w czacie (ADR 0018). Kryterium M9
+(„druga gra w tej samej okolicy nie woła modelu") działa już dziś kopią
+lokalną, a po wdrożeniu mostu — także paczkami z Drive.
 
 ## M10 — Dopracowanie terenowe
 
@@ -320,6 +329,21 @@ Service Worker (offline: kafelki ostatniej okolicy + paczka), strategia
 oszczędzania baterii („budzenie przy zbliżaniu"), tryb nocny, dźwięk/wibracja
 przy dojściu, dostępność (WCAG AA audyt), testy w terenie i poprawki progów
 (ADR 0004) — wyniki w `docs/LESSONS.md`.
+
+## M11 — Gra wieloosobowa na wielu urządzeniach przez Drive (kierunek właściciela, 2026-09-06)
+
+Parowanie graczy i gier przez wspólny stan na Drive (most Apps Script, ADR
+0018): lobby albo kod gry, synchronizacja tur i wyników między urządzeniami,
+koniec z hot-seat jako jedynym trybem (rewizja ADR 0009). Warunki wejścia:
+wdrożony most właściciela (M9b) + plan kamienia z właścicielem + schematy
+stanu gry (roboczo `RO-stan/1`) i zgody prywatności (ADR 0013).
+
+## M12 — Profil, statystyki i wyniki gracza na Drive (kierunek właściciela, 2026-09-06)
+
+Dane użytkownika (pseudonim, historia gier, punkty) zaciągane i zapisywane
+przez Drive (ADR 0018). Prywatność: każda nowa kategoria danych opuszczających
+urządzenie = jawna zgoda w UI i status. Zależy od M11 (wspólny model
+tożsamości gracza).
 
 ## Zasady prowadzenia roadmapy
 

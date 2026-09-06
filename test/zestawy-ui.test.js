@@ -324,3 +324,78 @@ test('wysyłka Drive: brak adresu mostu = zero wysyłki i jawny status', async (
     atrap.przywroc();
   }
 });
+
+/* -------- M9b/D4: most Drive jako repozytorium (indeks z `id`, próba połączenia) -------- */
+
+function atrapaFetchDrive({ indeks, plik }) {
+  const wywolania = [];
+  const pierwotny = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    wywolania.push(String(url));
+    const tekst = String(url).includes('akcja=paczka') ? plik : indeks;
+    if (tekst == null) return { ok: false, status: 404, text: async () => '' };
+    return { ok: true, status: 200, text: async () => tekst };
+  };
+  return { wywolania, przywroc: () => { globalThis.fetch = pierwotny; } };
+}
+
+function wpisDrive() {
+  // ten sam wpis co w R6, ale ze wskazaniem Drive: `id` zamiast `plik`
+  const { plik: _plik, ...meta } = indeksZPropozycja().wpisy[0];
+  return { ...meta, id: 'drive-id-001' };
+}
+
+const INDEKS_DRIVE = () => JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [wpisDrive()] });
+
+test('Drive: wpis z `id` na karcie, a kliknięcie pobiera paczkę przez ?akcja=paczka&id=…', async () => {
+  const atrap = atrapaFetchDrive({ indeks: INDEKS_DRIVE(), plik: JSON.stringify(plikZRepo()) });
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    await dojdzDoPozycji(dom);
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'propozycja z Drive widoczna');
+    kliknijPierwszyPrzyciskZestawu(dom);
+    await new Promise((r) => setTimeout(r, 30));
+    assert.ok(
+      atrap.wywolania.includes('https://most.przyklad/exec?akcja=paczka&id=drive-id-001'),
+      `adres pobrania paczki: ${atrap.wywolania.join(' ; ')}`,
+    );
+    assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra z paczki Drive wystartowała');
+    assert.match(dom.pobierz('status').textContent, /repozytorium/);
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('🔌 Sprawdź połączenie: most odpowiada → jawne OK z liczbą zaakceptowanych zestawów', async () => {
+  const atrap = atrapaFetchDrive({ indeks: INDEKS_DRIVE() });
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    await dojdzDoPozycji(dom);
+    await new Promise((r) => setTimeout(r, 30));
+    dom.kliknij('przycisk-test-polaczenia');
+    await new Promise((r) => setTimeout(r, 30));
+    assert.match(dom.pobierz('status').textContent, /Połączenie OK/);
+    assert.match(dom.pobierz('status').textContent, /zaakceptowanych zestawów w indeksie: 1/);
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('🔌 Sprawdź połączenie: most milczy → jawna porażka (CORS/sieć), gra toczy się dalej', async () => {
+  const atrap = atrapaFetchDrive({ indeks: null });
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    await dojdzDoPozycji(dom);
+    await new Promise((r) => setTimeout(r, 30));
+    dom.kliknij('przycisk-test-polaczenia');
+    await new Promise((r) => setTimeout(r, 30));
+    assert.match(dom.pobierz('status').textContent, /Połączenie NIE działa/);
+    assert.equal(dom.pobierz('ekran-gry').hidden, false, 'aplikacja żyje dalej');
+  } finally {
+    atrap.przywroc();
+  }
+});
