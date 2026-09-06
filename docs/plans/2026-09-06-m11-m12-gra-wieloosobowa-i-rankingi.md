@@ -61,19 +61,19 @@ stacjaId?, dane?, tUrzadzenia }`; most nadaje `kolejnosc` i `tSerwera`.
       stanów (czyja tura; wyścig: wszyscy równolegle), przeliczanie wyników ze
       zdarzeń per tryb (punktacja ADR 0014 per gracz), kolejka zdarzeń offline,
       wznowienie gry ze stanu (resume). Testy bez DOM i bez sieci.
-- [ ] **P3 — warstwa synchronizacji `app/sync.js`**: poller z interwałami
+- [x] **P3 — warstwa synchronizacji `app/sync.js`**: poller z interwałami
       (lobby 10 s; wyścig 12 s; tury: bieżący gracz 10 s, czekający 30 s),
       POST zdarzeń natychmiast + kolejka offline z flushem po powrocie sieci,
       pauza w tle karty (wzorzec ADR 0004 pkt 1), jawne statusy każdej awarii
       (LESSONS L6).
-- [ ] **P4 — UI**: setup: wybór „Hot-seat (1 telefon) | Gra na wielu
+- [x] **P4 — UI**: setup: wybór „Hot-seat (1 telefon) | Gra na wielu
       urządzeniach"; zakładanie gry (pseudonim, tryb, ZGODA wymagana — bez niej
       brak wysyłki i jawna odmowa; źródło zestawu: paczka sesji / lokalna /
       Drive); ekran lobby (gracze, start u organizatora); dołączanie (wpisanie
       kodu ALBO lista gier okolicy z odległością); ekran gry: tury — „Idzie:
       Gracz X (jego telefon)", wyścig — żywa tabela wyników wszystkich; pasek
       synchronizacji (ostatni stan, następne odświeżenie).
-- [ ] **P5 — testy**: czyste (P2/P3) + UI z atrapą mostu: dwa „urządzenia"
+- [x] **P5 — testy**: czyste (P2/P3) + UI z atrapą mostu: dwa „urządzenia"
       (dwie instalacje DOM + dwa importy app) grają wyścig i tury end-to-end
       (załóż → dołącz kodem i przez lobby → start → dojścia → odpowiedzi →
       koniec → wyniki po obu stronach); kolejka offline i flush; resume po

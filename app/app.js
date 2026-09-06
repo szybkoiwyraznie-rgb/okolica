@@ -2883,6 +2883,21 @@ async function zaladujZrodloMulti() {
 
 /* --- zakładanie, dołączanie, lobby --- */
 
+/**
+ * M11/P5: w trybie testowym (`?odstep=0`) synchronizacja dostaje RĘCZNY
+ * harmonogram — zero pollingu w tle, test sam pompuje kroki przez
+ * `window.__MULTI_TIMERY__`. W przeglądarce: zwykły `setTimeout`.
+ */
+function harmonogramMulti() {
+  if (STAN.odstepOverpassMs !== 0) return undefined;
+  const timery = [];
+  if (typeof window !== 'undefined') window.__MULTI_TIMERY__ = timery;
+  return {
+    ustaw: (fn) => { timery.push(fn); return timery.length - 1; },
+    czysc: (id) => { timery[id] = null; },
+  };
+}
+
 function wejdzDoGryMulti(gra, graczId, rola) {
   zatrzymajSyncMulti();
   STAN.multi = {
@@ -2900,6 +2915,7 @@ function wejdzDoGryMulti(gra, graczId, rola) {
     idGry: gra.idGry ?? null,
     onStan: onStanGryMulti,
     onBlad: (komunikat) => { status(`Gra wieloosobowa: ${komunikat}`); renderujPasekSync(); },
+    timeout: harmonogramMulti(),
   });
   zapiszSesjeMulti();
   renderujWznowienieMulti();
@@ -3051,6 +3067,7 @@ async function przywrocGreMulti() {
       urlMostu: sesja.urlMostu, graczId: sesja.graczId, kod: gra.kod, idGry: gra.idGry ?? null,
       onStan: onStanGryMulti,
       onBlad: (komunikat) => { status(`Gra wieloosobowa: ${komunikat}`); renderujPasekSync(); },
+      timeout: harmonogramMulti(),
     });
     if (gra.stan === 'lobby') otworzPanelMulti('lobby');
     onStanGryMulti(gra); // 'trwa' → lokalna rozgrywka od niezamkniętych stacji

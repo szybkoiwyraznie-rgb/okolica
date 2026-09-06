@@ -177,7 +177,8 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
   const dolaczone = [...APP.matchAll(/\$\('([^']+)'\)/g)].map((m) => m[1]);
   for (const id of dolaczone) zadane.add(id);
   // ekrany budowane z listy EKRANY: `ekran-${e}` — sprawdzamy wszystkie warianty
-  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka']) zadane.add(`ekran-${ekran}`);
+  for (const ekran of ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka']) zadane.add(`ekran-${ekran}`);
+  for (const panel of ['zaloz', 'dolacz', 'lobby']) zadane.add(`multi-panel-${panel}`); // M11: panele budowane z listy
   assert.ok(zadane.size > 25, `znaleziono tylko ${zadane.size} identyfikatorów — test pewnie nie widzi kodu`);
   for (const id of zadane) {
     assert.ok(INDEX.includes(`id="${id}"`), `app.js woła #${id}, którego nie ma w index.html`);
@@ -622,4 +623,25 @@ test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językie
   assert.ok(GS.includes("'23456789ABCDEFGHJKLMNPQRSTUVWXYZ'"), 'alfabet kodu gry identyczny w moście i w module');
   assert.match(GS, /POLA_ZAKAZANE_W_ZDARZENIU/, 'most kasuje współrzędne ze zdarzeń (ADR 0019 pkt 3)');
   assert.ok(GS.includes('okolica-gry-otwarte') && GS.includes('okolica-gry-zakonczone'), 'katalogi gier w setup()');
+});
+
+test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', () => {
+  // ekrany i panele (ADR 0019, plan M11/P4)
+  for (const id of ['ekran-multi', 'karta-multi', 'multi-panel-zaloz', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi', 'setup-rodzaj', 'multi-pseudonim', 'multi-zgoda', 'multi-url-mostu']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
+  }
+  // zgoda domyślnie zaznaczona (jak przy wysyłce paczek) i WYMAGANA przed wysyłką
+  assert.match(INDEX, /id="multi-zgoda"[^>]*\bchecked\b/, 'zgoda multi domyślnie zaznaczona w HTML');
+  assert.match(APP, /Bez zgody na wysyłanie danych/, 'bez zgody jawna odmowa wysyłki (plan P4)');
+  assert.ok(APP.includes("'okolica:pseudonim'"), 'pseudonim utrwalany pod ustalonym kluczem (M12)');
+  // akcje mostu wołane z aplikacji istnieją w .gs (jedna lista prawdy);
+  // gra-zdarzenie wysyła warstwa synchronizacji (app/sync.js), nie app.js wprost
+  const SYNC = czytaj('app/sync.js');
+  for (const akcja of ['gra-zaloz', 'gra-dolacz', 'gra-start']) {
+    assert.ok(APP.includes(akcja), `app.js woła akcję ${akcja}`);
+  }
+  assert.ok(SYNC.includes('gra-zdarzenie'), 'sync.js wysyła zdarzenia akcją gra-zdarzenie');
+  // tury: lokalna bramka „nie Twoja tura" + serwer odmawia (R08 po obu stronach)
+  assert.match(APP, /Teraz idzie:/, 'komunikat czyjej tury w UI');
+  assert.match(APP, /przycisk-pomin-stacje'\)\.hidden = true/, 'w multi nie ma pomijania stacji (serwer zna tylko dojście/odpowiedź/rezygnację)');
 });
