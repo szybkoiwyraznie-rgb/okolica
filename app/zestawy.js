@@ -16,6 +16,7 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
+import { geohash } from './geo.js';
 import { SCHEMAT_KONTENERA } from './kodowanie.js';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
@@ -163,7 +164,10 @@ export function dopasujZestawy(rejestr, { geohash5, promienM, tematy, wiek } = {
   wymaganie(Array.isArray(tematy) && tematy.length > 0, 'dopasujZestawy: tematy muszą być niepustą listą');
   wymaganie(typeof wiek === 'string' && wiek.length > 0, 'dopasujZestawy: wiek musi być nazwą');
   const szukany = zbiorTematow(tematy);
-  return (rejestr?.wpisy ?? [])
+  // tolerujemy obie konwencje: surowa lista wpisów (walidacje surowe) i obiekt
+  // rejestru `{ schemat, wpisy }` (zapis) — jedno wejście, zero niespodzianek
+  const lista = Array.isArray(rejestr) ? rejestr : (rejestr?.wpisy ?? []);
+  return lista
     .filter((w) => w.geohash5 === geohash5 && w.promienM === promienM
       && w.wiek === wiek && zbiorTematow(w.tematy) === szukany)
     .sort((a, b) => String(b.data).localeCompare(String(a.data)));
@@ -224,4 +228,49 @@ export function walidujIndeksSurowy(tekst) {
 /** Dopasowanie wpisu indeksu publicznego — te same reguły co lokalnie. */
 export function dopasujMetaIndeksu(indeks, kryteria) {
   return dopasujZestawy({ wpisy: indeks }, kryteria);
+}
+
+/**
+ * Meta dopasowania z bieżącej konfiguracji i pozycji (geohash5 z `geo.js`).
+ * Czysta funkcja: warstwa DOM podaje wyłącznie fakty (ADR 0017 pkt 3).
+ */
+export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data } = {}) {
+  wymaganie(Number.isFinite(lat) && Number.isFinite(lon), 'zbierzMetaZestawu: pozycja musi być liczbami');
+  wymaganie(Number.isFinite(promienM) && promienM > 0, 'zbierzMetaZestawu: promienM musi być liczbą > 0');
+  wymaganie(Array.isArray(tematy) && tematy.length > 0, 'zbierzMetaZestawu: tematy muszą być niepustą listą');
+  wymaganie(typeof wiek === 'string' && wiek.length > 0, 'zbierzMetaZestawu: wiek musi być nazwą');
+  return {
+    miejsce: typeof miejsce === 'string' && miejsce ? miejsce : 'nazwa nieustalona',
+    geohash5: geohash(lat, lon, 5),
+    promienM,
+    tematy: [...tematy],
+    wiek,
+    jezyk: typeof jezyk === 'string' && jezyk ? jezyk : 'polski',
+    data: typeof data === 'string' && data ? data : new Date().toISOString().slice(0, 16).replace('T', ' '),
+  };
+}
+
+/**
+ * Plik publiczny TO-zestaw/1: meta + jawne stacje + kontener (ADR 0017 pkt 1).
+ * `przegladZrodel` wychodzi jako „oczekuje przeglądu" — publikacja (commit do
+ * `data/paczki/`) wymaga ręcznej edycji tego pola przez właściciela (pkt 5).
+ */
+export function zbudujPlikZestawu({ stacje, kontener, meta, autor = 'organizator' } = {}) {
+  wymaganie(Array.isArray(stacje) && stacje.length > 0 && stacje.every(czyStacjaOk),
+    'zbudujPlikZestawu: stacje muszą być niepustą listą punktów {lat, lon}');
+  wymaganie(czyKontenerOk(kontener), `zbudujPlikZestawu: kontener musi być ${SCHEMAT_KONTENERA}`);
+  wymaganie(czyMetaDopasowaniaOk(meta) && typeof meta.miejsce === 'string',
+    'zbudujPlikZestawu: meta musi być kompletna (zbierzMetaZestawu)');
+  return {
+    schemat: SCHEMAT_ZESTAWU,
+    protokol: 'PYT/1.0',
+    meta: {
+      ...meta,
+      autor: String(autor),
+      licencja: 'CC BY-SA 4.0',
+      przegladZrodel: 'oczekuje przeglądu właściciela (ADR 0008 pkt 6)',
+    },
+    stacje: stacje.map((s) => ({ lat: s.lat, lon: s.lon, opis: typeof s.opis === 'string' ? s.opis : '' })),
+    kontener,
+  };
 }

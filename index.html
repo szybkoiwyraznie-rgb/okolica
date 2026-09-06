@@ -189,6 +189,17 @@
         <p id="reczne-podpowiedz" class="podpowiedz">Wklej współrzędne z Google Maps w pierwsze pole — np. <b>52°07'22.9"N 20°44'46.1"E</b> albo <b>52.123028, 20.746139</b> — a drugie zostaw puste. Uwaga: stopnie-minuty-sekundy to nie dziesiętne (52°07'22.9" = 52.12303, nie 52.07229). W trybie testowym pozycję ustawisz też krótkim stuknięciem w mapę.</p>
         <button id="przycisk-ustaw-reczne" class="przycisk" type="button">Ustaw tę pozycję</button>
       </div>
+      <div id="zestawy-karta" class="karta" hidden>
+        <p class="duzy">📦 Paczki dla tej okolicy</p>
+        <p id="zestawy-status" class="podpowiedz">Sprawdzam, czy ta okolica ma już gotowe pytania…</p>
+        <ul id="zestawy-lista" class="lista-zestawow"></ul>
+        <details id="zestawy-zaawansowane" class="podpowiedz">
+          <summary>Źródło repozytorium (zaawansowane)</summary>
+          <label class="pole"><span>Adres indeksu paczek</span><input id="pole-url-repo" type="text" autocomplete="off" placeholder="data/paczki/indeks.json"></label>
+          <button id="przycisk-zapisz-url-repo" class="przycisk" type="button">Zapisz źródło i odśwież</button>
+          <p class="podpowiedz">Domyślnie indeks leży obok aplikacji (GitHub Pages). Właściciel może wskazać własne repozytorium (Pages albo raw) — aplikacja nigdy nie wysyła tam niczego, tylko czyta (ADR 0017 pkt 6).</p>
+        </details>
+      </div>
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wstecz-setup" class="przycisk" type="button">← ustawienia</button>
@@ -307,6 +318,7 @@
         <button id="przycisk-poprawka" class="przycisk" type="button" hidden>⧉ Kopiuj poprawkę do modelu</button>
         <button id="przycisk-ukryj" class="przycisk" type="button" hidden>⧉ Ukryj paczkę (TO-paczka/2)</button>
         <button id="przycisk-eksport-paczki" class="przycisk" type="button" hidden>⬇ Zapisz paczkę (plik)</button>
+        <button id="przycisk-eksport-zestawu" class="przycisk" type="button" hidden>⬇ Paczka do repozytorium (TO-zestaw/1)</button>
         <button id="przycisk-start-gry" class="przycisk przycisk-glowny" type="button" hidden>▶ Zacznij grę</button>
         <div id="podglad-organizatora" class="podglad" hidden>
           <p class="ostrzezenie"><strong>👁 Tylko dla organizatora</strong> — gracze nie powinni widzieć tych treści (ADR 0006 pkt 8). Każda ręczna poprawka zapisuje się w paczce jako „modyfikacje", a po ukryciu podgląd znika z ekranu.</p>

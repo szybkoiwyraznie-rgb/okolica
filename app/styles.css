@@ -574,3 +574,34 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   font-variant-numeric: tabular-nums;
 }
 .lista-historii li:last-child { border-bottom: none; }
+
+/* M9/R3: karta propozycji paczek — wiersze dotykowe jak reszta list (ADR 0011). */
+.lista-zestawow {
+  list-style: none;
+  margin: 8px 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.lista-zestawow li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border: 1px solid var(--ramka, #ccc);
+  border-radius: 10px;
+  background: var(--tlo-karty, #fff);
+}
+
+.lista-zestawow .opis-zestawu {
+  flex: 1 1 60%;
+  min-width: 0;
+}
+
+.lista-zestawow .przycisk {
+  min-height: 44px;
+  flex: 0 0 auto;
+}

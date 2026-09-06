@@ -86,6 +86,7 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
     /** Jak w przeglądarce (Chrome 86+): podmiana całej listy dzieci. */
     replaceChildren(...nowe) { this.children = [...nowe]; return undefined; },
     append(...wezel) { this.children.push(...wezel); return undefined; }, // jak Element.append (bez zwracania)
+    get firstChild() { return this.children[0] ?? null; }, // jak Node.firstChild (M9/R3: czyszczenie listy)
     setAttribute(k, v) { this.dataset[`attr-${k}`] = v; },
     getAttribute(k) { return this.dataset[`attr-${k}`] ?? null; },
     removeAttribute(k) { delete this.dataset[`attr-${k}`]; },

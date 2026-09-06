@@ -31,6 +31,12 @@ import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, 
 import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m7-1';
 import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m7-1';
 import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m7-1';
+import {
+  DOMYSLNY_URL_INDEKSU, KLUCZ_REJESTRU, KLUCZ_URL_REPO, SCHEMAT_LOKALNY,
+  dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
+  rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
+  walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
+} from './zestawy.js?v=m7-1';
 import { ROLE_PALETY, czasTekst, dystansTekst, etykietaOdcinka, medalTekst, planObrazuWyniku, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m7-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
@@ -382,6 +388,7 @@ function pokazPozycje() {
     STAN.wycentrowane = true;
     centrujNaPozycji();
   }
+  odswiezPropozycjeZestawow();
 }
 
 /** Zamyka watcher, jeśli działa (ADR 0004 pkt 1: jeden watcher na rozgrywkę). */
@@ -1094,6 +1101,183 @@ function renderujGre({ panele = true } = {}) {
   }
 }
 
+/* ---------------- M9/R3: repozytorium paczek (ADR 0017) ---------------- */
+
+/** Rejestr zestawów z `localStorage` (tolerancyjnie: śmieć = pusta lista). */
+function czytajRejestrZestawow() {
+  if (typeof localStorage === 'undefined') return nowyRejestr();
+  const { rejestr } = walidujRejestrSurowy(localStorage.getItem(KLUCZ_REJESTRU) ?? '');
+  return rejestr;
+}
+
+/** Meta dopasowania z bieżącej konfiguracji i pozycji (wspólna dla zapisu i eksportu). */
+function metaBiezacejOkolicy() {
+  return zbierzMetaZestawu({
+    lat: STAN.pozycja.lat,
+    lon: STAN.pozycja.lon,
+    promienM: STAN.konfig.promienM,
+    tematy: STAN.konfig.tematy,
+    wiek: STAN.konfig.wiek,
+    jezyk: STAN.konfig.jezyk,
+    miejsce: STAN.miejsce ?? '',
+  });
+}
+
+/**
+ * Kopia lokalna po starcie gry (kryterium M9: druga gra bez modelu): stacje
+ * i kontener jadą do `localStorage`, rejestr przycina LRU, usunięte klucze
+ * znikają JAWNIE (LESSONS L6). Quota nie może zabić gry — tylko komunikat.
+ */
+function zapiszZestawLokalnyPoStarcie() {
+  if (typeof localStorage === 'undefined' || !STAN.pozycja || !STAN.kontenerPaczki) return;
+  try {
+    const meta = metaBiezacejOkolicy();
+    const wpisPelny = {
+      schemat: SCHEMAT_LOKALNY, stacje: STAN.stacje, kontener: STAN.kontenerPaczki,
+      ...meta, kodGry: STAN.konfig.kodGry,
+    };
+    const { rejestr: nowy, usuniete } = dolozWpisRejestru(
+      { wpisy: czytajRejestrZestawow() },
+      { skrot: STAN.kontenerPaczki.skrot, ...meta, kodGry: STAN.konfig.kodGry },
+      { bajty: rozmiarBajty(wpisPelny) },
+    );
+    localStorage.setItem(kluczZestawu(STAN.kontenerPaczki.skrot), JSON.stringify(wpisPelny));
+    for (const skrot of usuniete) localStorage.removeItem(kluczZestawu(skrot));
+    localStorage.setItem(KLUCZ_REJESTRU, JSON.stringify(nowy));
+    if (usuniete.length) {
+      status(`Pamięć paczek telefonu pełna — najstarsze (${usuniete.length}) usunięte. Eksport plikiem zabezpiecza rozgrywkę.`);
+    }
+  } catch (blad) {
+    status(`Paczka nie zmieściła się w pamięci telefonu (${blad?.name ?? 'błąd'}) — druga gra będzie potrzebować modelu albo pliku.`);
+  }
+}
+
+function wierszZestawu(opis, etykietaZrodla, akcji) {
+  const li = document.createElement('li');
+  const opisEl = document.createElement('span');
+  opisEl.className = 'opis-zestawu';
+  opisEl.textContent = `${etykietaZrodla} ${opis}`;
+  const przycisk = document.createElement('button');
+  przycisk.type = 'button';
+  przycisk.className = 'przycisk';
+  przycisk.textContent = '▶ Graj z tą paczką';
+  przycisk.addEventListener('click', akcji);
+  li.append(opisEl, przycisk);
+  return li;
+}
+
+/**
+ * Karta propozycji na ekranie pozycja: najpierw kopie z tego telefonu, potem
+ * (asynchronicznie, z timeoutem) dopasowania z repozytorium. Każda awaria
+ * repo = „brak propozycji", nigdy blokada gry (ADR 0017 pkt 6).
+ */
+function odswiezPropozycjeZestawow() {
+  const karta = $('zestawy-karta');
+  if (!karta) return;
+  // Niekompletna konfiguracja (np. wyczyszczony promień, K12) = brak karty:
+  // kryteria dopasowania byłyby śmieciem, a odmowa przejścia ma zostać jawna.
+  if (!STAN.pozycja || !STAN.konfig?.tematy?.length || !(STAN.konfig.promienM > 0)) {
+    karta.hidden = true;
+    return;
+  }
+  karta.hidden = false;
+  const kryteria = {
+    geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5),
+    promienM: STAN.konfig.promienM,
+    tematy: STAN.konfig.tematy,
+    wiek: STAN.konfig.wiek,
+  };
+  const lista = $('zestawy-lista');
+  lista.replaceChildren(); // standardowe czyszczenie (atrapa DOM też je umie)
+  const lokalne = dopasujZestawy(czytajRejestrZestawow(), kryteria);
+  for (const wpis of lokalne) {
+    lista.append(wierszZestawu(
+      `${wpis.miejsce} · ${wpis.data} · ${wpis.tematy.join(', ')} · ${wpis.wiek}`,
+      '📱 z tego telefonu:',
+      () => grajZZestawemLokalnym(wpis.skrot),
+    ));
+  }
+  const poleUrl = $('pole-url-repo');
+  if (poleUrl && !poleUrl.value && typeof localStorage !== 'undefined') {
+    poleUrl.value = localStorage.getItem(KLUCZ_URL_REPO) ?? DOMYSLNY_URL_INDEKSU;
+  }
+  const url = (typeof localStorage !== 'undefined' && localStorage.getItem(KLUCZ_URL_REPO)) || DOMYSLNY_URL_INDEKSU;
+  $('zestawy-status').textContent = lokalne.length
+    ? 'Masz gotowe paczki z tego telefonu; sprawdzam też repozytorium…'
+    : 'Sprawdzam repozytorium paczek dla tej okolicy…';
+  const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = setTimeout(() => kontroler?.abort(), 6000);
+  fetch(url, kontroler ? { signal: kontroler.signal } : undefined)
+    .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
+    .then((tekst) => dopasujMetaIndeksu(walidujIndeksSurowy(tekst).indeks, kryteria))
+    .then((dopasowane) => {
+      for (const meta of dopasowane) {
+        lista.append(wierszZestawu(
+          `${meta.miejsce} · ${meta.data} · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
+          '🌍 repozytorium:',
+          () => grajZZestawemZRepo(meta.plik, url),
+        ));
+      }
+      $('zestawy-status').textContent = dopasowane.length
+        ? 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.'
+        : 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.';
+    })
+    .catch(() => {
+      $('zestawy-status').textContent = lokalne.length
+        ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
+        : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
+    })
+    .finally(() => clearTimeout(timer));
+}
+
+/** Wspólny start z gotową paczką: stacje i kontener z zestawu, pytania z pamięci. */
+function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
+  const { paczka, blad } = odpakujPaczke(kontener);
+  if (blad || !paczka) {
+    status(`Paczka (${zrodlo}) jest uszkodzona: ${blad?.komunikat ?? 'nie da się jej odczytać'} — wracamy do zwykłej ścieżki.`);
+    return false;
+  }
+  STAN.stacje = stacje.map((s, i) => ({ id: s.id ?? i + 1, lat: s.lat, lon: s.lon, opis: s.opis ?? '' }));
+  STAN.paczka = paczka;
+  STAN.usterkiPaczki = [];
+  startGry();
+  if (STAN.rozgrywka) {
+    status(`Gra z gotowej paczki (${zrodlo}): ${STAN.rozgrywka.stacje.length} stacji, bez modelu i bez Overpassa (ADR 0017 pkt 7).`);
+  }
+  return true;
+}
+
+function grajZZestawemLokalnym(skrot) {
+  if (typeof localStorage === 'undefined') return;
+  const { zestaw, usterki } = walidujZestawLokalnySurowy(localStorage.getItem(kluczZestawu(skrot)) ?? '');
+  if (!zestaw) {
+    status(`Paczka z tego telefonu jest nieczytelna (${usterki[0]?.komunikat ?? 'błąd'}) — usuwam wpis z rejestru.`);
+    const { rejestr } = walidujRejestrSurowy(localStorage.getItem(KLUCZ_REJESTRU) ?? '');
+    localStorage.setItem(KLUCZ_REJESTRU, JSON.stringify({ schemat: nowyRejestr().schemat, wpisy: rejestr.filter((w) => w.skrot !== skrot) }));
+    localStorage.removeItem(kluczZestawu(skrot));
+    odswiezPropozycjeZestawow();
+    return;
+  }
+  przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: 'z tego telefonu' });
+}
+
+function grajZZestawemZRepo(plik, urlIndeksu) {
+  const baza = typeof URL !== 'undefined' ? new URL(urlIndeksu, document.baseURI ?? '/') : null;
+  const url = baza ? new URL(plik, baza).href : plik;
+  status(`Pobieram paczkę z repozytorium: ${plik}…`);
+  fetch(url)
+    .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
+    .then((tekst) => {
+      const { zestaw, usterki } = walidujZestawPublicznySurowy(tekst);
+      if (!zestaw) {
+        status(`Paczka z repozytorium jest niekompletna (${usterki[0]?.komunikat ?? 'błąd'}) — gramy zwykłą ścieżką.`);
+        return;
+      }
+      przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
+    })
+    .catch(() => status('Nie udało się pobrać paczki z repozytorium — sprawdź połączenie albo graj zwykłą ścieżką.'));
+}
+
 /**
  * „▶ Zacznij grę": paczka jedzie do kontenera `TO-paczka/2`, plaintext znika
  * z pamięci (ADR 0007 pkt 4) — pytania wrócą przez `odpakujPaczke` DOPIERO
@@ -1109,6 +1293,7 @@ function startGry() {
   STAN.graPauzaStartMs = 0;
   STAN.pauzaSkumulowanaMs = 0;
   STAN.kontenerPaczki = zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU);
+  zapiszZestawLokalnyPoStarcie();
   STAN.rozgrywka = nowaRozgrywka({
     konfig: STAN.konfig,
     stacje: STAN.stacje,
@@ -1904,6 +2089,7 @@ function sprawdzOdpowiedz() {
     $('przycisk-poprawka').hidden = false;
     $('przycisk-ukryj').hidden = true;
     $('przycisk-eksport-paczki').hidden = true;
+    $('przycisk-eksport-zestawu').hidden = true;
     $('przycisk-start-gry').hidden = true;
     $('podglad-organizatora').hidden = true;
     status('Odpowiedź odrzucona na etapie odczytu (parsowanie JSON albo kontener).');
@@ -1920,6 +2106,7 @@ function sprawdzOdpowiedz() {
     $('przycisk-poprawka').hidden = false;
     $('przycisk-ukryj').hidden = true;
     $('przycisk-eksport-paczki').hidden = true;
+    $('przycisk-eksport-zestawu').hidden = true;
     $('przycisk-start-gry').hidden = true;
     $('podglad-organizatora').hidden = true;
     status('Paczka odrzucona przez walidator (protokół PYT §6).');
@@ -1932,6 +2119,7 @@ function sprawdzOdpowiedz() {
   $('przycisk-poprawka').hidden = true;
   $('przycisk-ukryj').hidden = false;
   $('przycisk-eksport-paczki').hidden = false;
+  $('przycisk-eksport-zestawu').hidden = false;
   $('przycisk-start-gry').hidden = false;
   const postac = zKontenera.zrodlo === 'kontener'
     ? 'paczka ukryta (kontener TO-paczka/2)'
@@ -2400,6 +2588,23 @@ function start() {
     kopiujTekst(tekst, e.currentTarget, `⧉ Ukryj paczkę (${SCHEMAT_KONTENERA})`, 'pole-odpowiedz');
     zwijPodgladOrganizatora(); // plaintext pytań znika z ekranu po ukryciu
     status(`Paczka ukryta w kontenerze ${SCHEMAT_KONTENERA} — to obfuskacja bez klucza, nie szyfrowanie (ADR 0007).`);
+  });
+  $('przycisk-eksport-zestawu').addEventListener('click', () => {
+    if (!STAN.kontenerPaczki || !STAN.stacje.length || !STAN.pozycja) return;
+    const meta = metaBiezacejOkolicy();
+    const plik = zbudujPlikZestawu({ stacje: STAN.stacje, kontener: STAN.kontenerPaczki, meta });
+    pobierzPlik(`okolica-${meta.geohash5}.zestaw.json`, JSON.stringify(plik, null, 2), 'application/json');
+    status('Zapisano plik TO-zestaw/1 — to surowa paczka: przed publikacją wymaga przeglądu źródeł i edycji pola „przegladZrodel” (ADR 0008 pkt 6, ADR 0017 pkt 5).');
+  });
+  $('przycisk-zapisz-url-repo').addEventListener('click', () => {
+    if (typeof localStorage === 'undefined') return;
+    const wartosc = $('pole-url-repo').value.trim();
+    if (wartosc && wartosc !== DOMYSLNY_URL_INDEKSU) localStorage.setItem(KLUCZ_URL_REPO, wartosc);
+    else localStorage.removeItem(KLUCZ_URL_REPO);
+    status(wartosc && wartosc !== DOMYSLNY_URL_INDEKSU
+      ? 'Zapisano własne źródło repozytorium paczek — aplikacja tylko czyta, nigdy nie wysyła (ADR 0017 pkt 6).'
+      : 'Przywrócono domyślne źródło repozytorium (indeks obok aplikacji).');
+    odswiezPropozycjeZestawow();
   });
   $('przycisk-eksport-paczki').addEventListener('click', () => {
     if (!STAN.paczka) return;

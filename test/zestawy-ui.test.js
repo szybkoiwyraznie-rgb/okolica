@@ -1,0 +1,132 @@
+/**
+ * Testy przepływu M9/R3: karta propozycji paczek na ekranie pozycja i start
+ * gry z gotową paczką (kryterium M9: druga gra bez modelu). Świeża atrapa DOM
+ * i świeży import `app.js` na test (LESSONS: egzemplarze nie dzielą atrap).
+ */
+import test from 'node:test';
+import assert from 'node:assert/strict';
+
+import { zainstalujDom } from './helpers/dom.js';
+import { zapakujPaczke } from '../app/kodowanie.js';
+import { KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY, kluczZestawu } from '../app/zestawy.js';
+
+const POZYCJA = { lat: 52.12303, lon: 20.74614 }; // Podkowa Leśna (geohash5 u33dc)
+const GEOHASH5 = 'u3qb8'; // policzone z geo.js dla (52.12303, 20.74614)
+
+const paczkaMinimalna = () => ({
+  protokol: 'PYT/1.0',
+  okolica: { lat: POZYCJA.lat, lon: POZYCJA.lon, promienM: 1000, miejsce: 'Podkowa Leśna' },
+  wiek: 'dorosli',
+  tematy: ['historia'],
+  jezyk: 'polski',
+  utworzono: '2026-09-06 10:00',
+  pytania: [{
+    id: 's1p1', stacja: 1, temat: 'historia', tresc: 'Co powstało pierwsze?',
+    odpowiedzi: ['kościół', 'szkoła', 'park', 'stacja'], poprawna: 0,
+    wyjasnienie: 'Kościół poprzedza pozostałe obiekty.',
+    zrodla: [{ url: 'https://przyklad.org/haslo', tytul: 'Hasło', sprawdzono: '2026-09-06' }],
+    punkty: 10,
+  }],
+  uwagi: '',
+});
+
+// domyślny kanon setupu (DOMYSLNE.tematy) — dopasowanie porównuje ZBIÓR tematów
+const TEMATY_DOMYSLNE = ['historia', 'przyroda', 'architektura'];
+
+const metaWpisu = () => ({
+  miejsce: 'Podkowa Leśna', geohash5: GEOHASH5, promienM: 1000,
+  tematy: TEMATY_DOMYSLNE, wiek: 'dorosli',
+});
+
+function wpisPelny(kontener) {
+  return {
+    schemat: SCHEMAT_LOKALNY,
+    stacje: [{ id: 1, lat: 52.1235, lon: 20.7455 }, { id: 2, lat: 52.1245, lon: 20.7475 }],
+    kontener,
+    ...metaWpisu(),
+    data: '2026-09-06 09:00',
+    kodGry: 'pierwsza',
+  };
+}
+
+function pamiecZZestawem(kontener) {
+  const pelny = wpisPelny(kontener);
+  return new Map([
+    [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot: kontener.skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'pierwsza' }] })],
+    [kluczZestawu(kontener.skrot), JSON.stringify(pelny)],
+  ]);
+}
+
+async function aplikacjaZZestawami({ pamiec = new Map(), search = '?tryb=test&odstep=0' } = {}) {
+  const dom = zainstalujDom({ search, pamiec });
+  await import(`../app/app.js?zestawy=${Math.random().toString(36).slice(2)}`);
+  return dom;
+}
+
+function kliknijPierwszyPrzyciskZestawu(dom) {
+  const lista = dom.pobierz('zestawy-lista');
+  assert.ok(lista.children.length > 0, 'lista propozycji jest pusta');
+  const przycisk = lista.children[0].children.find((el) => el.className === 'przycisk');
+  const nasluchy = przycisk.zdarzenia.click ?? [];
+  assert.equal(nasluchy.length, 1, 'wiersz propozycji ma dokładnie jeden nasłuch click');
+  nasluchy[0]({ type: 'click', preventDefault() {} });
+  return przycisk;
+}
+
+async function dojdzDoPozycji(dom) {
+  dom.kliknij('przycisk-dalej-pozycja');
+  dom.pobierz('setup-lat').value = String(POZYCJA.lat);
+  dom.pobierz('setup-lon').value = String(POZYCJA.lon);
+  dom.kliknij('przycisk-ustaw-reczne');
+}
+
+test('zestawy UI: karta propozycji pokazuje paczkę z tego telefonu po ustawieniu pozycji', async () => {
+  const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
+  const dom = await aplikacjaZZestawami({ pamiec: pamiecZZestawem(kontener) });
+  assert.equal(dom.pobierz('zestawy-karta').hidden, true, 'przed pozycją karta nie straszy');
+  await dojdzDoPozycji(dom);
+  assert.equal(dom.pobierz('zestawy-karta').hidden, false, 'po pozycji karta jest widoczna');
+  const lista = dom.pobierz('zestawy-lista');
+  assert.equal(lista.children.length, 1, 'jedno dopasowanie: geohash5+promień+tematy+wiek');
+  assert.match(lista.children[0].children[0].textContent, /z tego telefonu: Podkowa Leśna/);
+  // fetch indeksu w Node upada (URL względny) — degradacja, nie blokada (ADR 0017 pkt 6)
+  await new Promise((r) => setTimeout(r, 20));
+  assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium niedostępne|Repozytorium nie ma/);
+});
+
+test('zestawy UI: druga gra w tej samej okolicy startuje bez modelu i bez Overpassa', async () => {
+  const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
+  const pamiec = pamiecZZestawem(kontener);
+  const dom = await aplikacjaZZestawami({ pamiec });
+  await dojdzDoPozycji(dom);
+  kliknijPierwszyPrzyciskZestawu(dom);
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra wystartowała z gotowej paczki');
+  assert.match(dom.pobierz('status').textContent, /bez modelu i bez Overpassa/);
+  assert.match(dom.pobierz('status').textContent, /2 stacji/);
+  const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
+  assert.equal(rejestr.wpisy.length, 1, 'start gry odświeżył wpis (ta sama paczka, nie duplikat)');
+});
+
+test('zestawy UI: nieczytelny wpis jest usuwany jawnie, nie cicho (LESSONS L6)', async () => {
+  const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
+  const pamiec = pamiecZZestawem(kontener);
+  pamiec.set(kluczZestawu(kontener.skrot), '{urwany json');
+  const dom = await aplikacjaZZestawami({ pamiec });
+  await dojdzDoPozycji(dom);
+  assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'wpis w rejestrze jeszcze widoczny');
+  kliknijPierwszyPrzyciskZestawu(dom);
+  assert.match(dom.pobierz('status').textContent, /nieczytelna/);
+  const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
+  assert.deepEqual(rejestr.wpisy, [], 'rejestr po sprzątaniu jest pusty');
+  assert.equal(pamiec.has(kluczZestawu(kontener.skrot)), false, 'klucz wpisu usunięty z pamięci');
+});
+
+test('zestawy UI: brak pozycji albo wyczyszczony promień chowają kartę', async () => {
+  const dom = await aplikacjaZZestawami({});
+  assert.equal(dom.pobierz('zestawy-karta').hidden, true, 'bez pozycji nie ma propozycji');
+  dom.kliknij('przycisk-dalej-pozycja');
+  dom.pobierz('setup-lat').value = String(POZYCJA.lat);
+  dom.pobierz('setup-lon').value = String(POZYCJA.lon);
+  dom.kliknij('przycisk-ustaw-reczne');
+  assert.equal(dom.pobierz('zestawy-karta').hidden, false, 'poprawna konfiguracja odsłania kartę');
+});

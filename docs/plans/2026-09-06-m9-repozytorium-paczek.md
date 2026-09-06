@@ -61,7 +61,7 @@ woła modelu**.
 - [x] **R2 — `app/zestawy.js`**: zapis/odczyt lokalny (TO-zestaw-lokalny/1),
       rejestr z LRU i budżetem, dopasowanie po geohash5+promien+tematy/wiek,
       walidacja surowa; testy `test/zestawy.test.js`.
-- [ ] **R3 — UI propozycji**: karta „Paczki dla tej okolicy" na ekranie
+- [x] **R3 — UI propozycji**: karta „Paczki dla tej okolicy" na ekranie
       pozycja (lokalne + repozytorium: status fetcha, lista dopasowań,
       „▶ graj z tą paczką", „nowe pytania (model)"); ścieżka gry z zestawem
       pomija ekrany stacje/prompt/paczka; eksport „⬇ paczka do repozytorium
