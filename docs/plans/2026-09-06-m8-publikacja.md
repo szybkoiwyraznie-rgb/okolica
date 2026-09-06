@@ -95,7 +95,7 @@
 ## Kroki
 
 - [ ] **PB1 — plan (ten plik):** commit + push.
-- [ ] **PB2 — ikony i manifest:** `tools/generuj-ikony.mjs` (+ script
+- [x] **PB2 — ikony i manifest:** `tools/generuj-ikony.mjs` (+ script
       `npm run ikony`), wygenerowane `assets/ikony/*` + `ikona.svg`,
       `assets/manifest.json`, `.nojekyll`, linki w `index.html`,
       `test/ikony.test.js` + kontrakty z decyzji 6; brama zielona;

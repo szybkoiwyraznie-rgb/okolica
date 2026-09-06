@@ -539,3 +539,37 @@ test('kontrakt: ręczne współrzędne przyjmują wklejenie z Google Maps (zadan
   assert.match(INDEX, /id="reczne-podpowiedz" class="podpowiedz"/);
   assert.match(INDEX, /52°07'22\.9"N 20°44'46\.1"E/, 'podpowiedź niesie prawdziwy przykład pary DMS');
 });
+
+test('kontrakt M8: manifest, ikony i ścieżki względne pod Pages (ADR 0002)', () => {
+  assert.ok(existsSync(join(ROOT, '.nojekyll')), '.nojekyll musi istnieć — Pages bez przetwarzania Jekyll');
+  const manifest = JSON.parse(czytaj('assets/manifest.json'));
+  assert.equal(manifest.start_url, './', 'start_url WZGLĘDNY — Pages serwuje z podkatalogu /okolica/');
+  assert.equal(manifest.scope, './', 'scope względny z tego samego powodu');
+  assert.equal(manifest.display, 'standalone');
+  assert.equal(manifest.lang, 'pl');
+  assert.equal(manifest.theme_color, '#f6f2e9', 'theme_color = token --tlo motywu jasnego');
+  assert.equal(manifest.background_color, '#f6f2e9');
+  assert.ok(manifest.icons.length >= 4, 'zestaw: svg any + png any + maskable');
+  for (const ikona of manifest.icons) {
+    assert.ok(ikona.src.startsWith('./'), `ścieżka ikony względna: ${ikona.src}`);
+    assert.ok(existsSync(join(ROOT, 'assets', ikona.src.slice(2))), `plik ikony istnieje: ${ikona.src}`);
+    if (ikona.type === 'image/png') {
+      const bajty = readFileSync(join(ROOT, 'assets', ikona.src.slice(2)));
+      assert.deepEqual(
+        [...bajty.subarray(0, 8)],
+        [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a],
+        `sygnatura PNG: ${ikona.src}`,
+      );
+      const szer = bajty.readUInt32BE(16);
+      const wys = bajty.readUInt32BE(20);
+      assert.equal(ikona.sizes, `${szer}x${wys}`, `deklarowane sizes == IHDR (bajty, nie nazwa): ${ikona.src}`);
+    }
+  }
+  assert.ok(manifest.icons.some((i) => i.purpose === 'maskable'), 'ikona maskable obecna (Android adaptive)');
+  assert.ok(manifest.icons.some((i) => i.sizes === '180x180'), 'ikona 180 dla apple-touch-icon (iOS)');
+  assert.match(INDEX, /<link rel="manifest" href="assets\/manifest.json">/, 'manifest podpięty ścieżką względną');
+  assert.match(INDEX, /<link rel="apple-touch-icon" href="assets\/ikony\/ikona-180.png">/, 'apple-touch-icon podpięty');
+  // Pages serwuje z PODKATALOGU — ścieżka root-absolute („/app/...") uciekłaby
+  // do domeny głównej i dała 404; względne i data: są dozwolone
+  assert.ok(!/(?:href|src)="\/[^/"]/.test(INDEX), 'zero ścieżek root-absolute w index.html');
+});
