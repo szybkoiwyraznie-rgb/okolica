@@ -46,7 +46,7 @@ prowadzącego (B12), publikacja Pages i manifest (M8), offline/service worker
 ## Etapy
 
 - [ ] **P1 — plan (ten plik):** zakres, decyzje, ryzyka; commit + push.
-- [ ] **P2 — historia w `trwalosc.js` (czyste):** `KLUCZ_HISTORII
+- [x] **P2 — historia w `trwalosc.js` (czyste):** `KLUCZ_HISTORII
       = 'okolica:historia'`, `skrotGry({ rozgrywka, konfig, stacje,
       podsumowanie, miejsce, terazMs })` → wpis `historia-gra/1`,
       `dodajWpisHistorii(historia, wpis)` (niezmiennikowo, limit 50 =
