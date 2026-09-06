@@ -21,6 +21,36 @@ import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, prze
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
 
+/**
+ * M10/T3: dwa profile watchera — „budzenie przy zbliżaniu" (bateria).
+ * W trasie (daleko od stacji) GPS może pracować oszczędnie: bez wysokiej
+ * dokładności i z rzadszym odświeżaniem (`maximumAge` 20 s); przy stacji
+ * wraca profil dokładny, bo kryterium dojścia (ADR 0004 pkt 2) liczy się
+ * z metrów. Profile wstrzykuje się do `watchPozycja({ opcje })`.
+ */
+export const PROFILE_GPS = Object.freeze({
+  dokladny: Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }),
+  oszczedny: Object.freeze({ enableHighAccuracy: false, maximumAge: 20000, timeout: 45000 }),
+});
+
+/** Progi histerezy [m]: oszczędny POWYŻEJ 250, powrót do dokładnego PONIŻEJ 150. */
+export const PROG_BATERII_M = Object.freeze({ oszczednyPowyzej: 250, dokladnyPonizej: 150 });
+
+/**
+ * Czysta decyzja profilu GPS na podstawie dystansu do bieżącej stacji.
+ * Histereza zapobiega oscylacji na granicy progów; brak dystansu (null/NaN —
+ * np. fix jeszcze nie policzony) NIE zmienia profilu.
+ *
+ * @param {{poprzedni?: string, dystansM?: number|null}} args
+ * @returns {'dokladny'|'oszczedny'}
+ */
+export function profilBaterii({ poprzedni = 'dokladny', dystansM = null } = {}) {
+  const baza = poprzedni === 'oszczedny' ? 'oszczedny' : 'dokladny';
+  if (!Number.isFinite(dystansM)) return baza;
+  if (baza === 'oszczedny') return dystansM < PROG_BATERII_M.dokladnyPonizej ? 'dokladny' : 'oszczedny';
+  return dystansM > PROG_BATERII_M.oszczednyPowyzej ? 'oszczedny' : 'dokladny';
+}
+
 /** Granice reguł pozycji. Zmiana = zmiana kodu i testu, nie decyzja sesji. */
 export const GRANICE = Object.freeze({
   /** Powyżej tej dokładności ostrzegamy (ADR 0004 pkt 4) — próg dojścia i tak jest nią ograniczony. */

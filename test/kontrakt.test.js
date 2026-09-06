@@ -28,6 +28,7 @@ const AGENTS = czytaj('AGENTS.md');
 const PACKAGE = JSON.parse(czytaj('package.json'));
 const MAPA = czytaj('app/mapa.js');
 const STYLE = czytaj('app/styles.css');
+const SW = czytaj('sw.js');
 
 /** Wiersze tabeli markdowna w sekcji zaczynającej się od `naglowek`. */
 function tabelaSekcji(dokument, naglowek) {
@@ -584,4 +585,20 @@ test('kontrakt M9b: zgoda na wysyłkę Drive jest na ekranie wklejania i domyśl
 test('kontrakt M9b: „🔌 Sprawdź połączenie" żyje w źródłach repozytorium (instrument CORS z ADR 0016)', () => {
   assert.match(INDEX, /<button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie<\/button>/, 'przycisk próby mostu obecny');
   assert.ok(INDEX.indexOf('id="przycisk-test-polaczenia"') > INDEX.indexOf('id="przycisk-zapisz-url-repo"'), 'próba połączenia obok zapisu źródła');
+});
+
+test('kontrakt M10: sw.js bez API Node, a WERSJA_SW == wersja cache-bust aplikacji', () => {
+  assert.ok(!/from 'node:|require\(/.test(SW), 'sw.js: zero zależności od Node');
+  const wersjaApp = /\?v=([\w.-]+)/.exec(APP)[1];
+  assert.ok(
+    SW.includes(`const WERSJA_SW = '${wersjaApp}';`),
+    `WERSJA_SW musi być równa ?v= aplikacji (${wersjaApp}) — inaczej cache skorupy rozjedzie się z kodem`,
+  );
+  assert.match(APP, /navigator\.serviceWorker\.register\('\.\/sw\.js'\)/, 'rejestracja SW w app.js');
+  assert.match(SW, /addEventListener\('fetch'/, 'SW obsługuje zdarzenie fetch');
+});
+
+test('kontrakt M10: przełącznik sygnałów w nagłówku, domyślnie włączony', () => {
+  assert.match(INDEX, /<button id="przycisk-sygnaly"[^>]*aria-pressed="true"/, 'przycisk 🔔 obecny i domyślnie „wciśnięty"');
+  assert.match(APP, /odegrajSygnal\('dotarcie'\)/, 'dojście do stacji gra sygnał');
 });

@@ -15,7 +15,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  BLEDY_API, GRANICE, KODY_POZYCJI, OPCJE_WATCH, STANY_FIXA, ZRODLA_FIXA,
+  BLEDY_API, GRANICE, KODY_POZYCJI, OPCJE_WATCH, PROFILE_GPS, PROG_BATERII_M, STANY_FIXA, ZRODLA_FIXA, profilBaterii,
   bladGeolokalizacji, dodajFix, fixSymulowany, fixZPozycji, komunikatPauzy, komunikatWznowienia,
   ocenFix, punktNaTrasie, sekwencjaSymulowana, sprawdzTrase, stanDojscia,
   trasaProsta, watchPozycja,
@@ -413,4 +413,30 @@ test('integracja: dojście z fixture’a kończy odcinek w rozgrywce', async () 
   assert.equal(po.odcinki[0].czasS, 25);
   assert.equal(po.odcinki[0].accuracyM, 10);
   assert.ok(po.odcinki[0].odlegloscKoncowaM <= 25, `odległość końcowa ${po.odcinki[0].odlegloscKoncowaM} m mieści się w progu`);
+});
+
+/* ------------------------------------------------- bateria (M10/T3) */
+
+test('bateria: profile GPS — oszczędny bez wysokiej dokładności i z rzadszym odświeżaniem', () => {
+  assert.equal(PROFILE_GPS.oszczedny.enableHighAccuracy, false, 'w trasie GPS bez high-accuracy');
+  assert.ok(PROFILE_GPS.oszczedny.maximumAge > PROFILE_GPS.dokladny.maximumAge, 'rzadsze odświeżanie w trasie');
+  assert.deepEqual(PROFILE_GPS.dokladny, OPCJE_WATCH, 'profil dokładny = dotychczasowe opcje (ADR 0004)');
+  assert.ok(Object.isFrozen(PROFILE_GPS) && Object.isFrozen(PROFILE_GPS.oszczedny));
+});
+
+test('bateria: histereza profilu — oszczędny >250 m, powrót do dokładnego <150 m', () => {
+  assert.equal(profilBaterii({ poprzedni: 'dokladny', dystansM: 300 }), 'oszczedny', 'daleko = oszczędzanie');
+  assert.equal(profilBaterii({ poprzedni: 'oszczedny', dystansM: 200 }), 'oszczedny', 'histereza: 200 m nie wraca jeszcze do dokładnego');
+  assert.equal(profilBaterii({ poprzedni: 'oszczedny', dystansM: 149 }), 'dokladny', 'przy stacji pełna dokładność');
+  assert.equal(profilBaterii({ poprzedni: 'dokladny', dystansM: 250 }), 'dokladny', 'próg „powyżej" jest ostry');
+  assert.equal(profilBaterii({ poprzedni: 'dokladny', dystansM: 100 }), 'dokladny');
+});
+
+test('bateria: brak dystansu (null/NaN) NIE zmienia profilu; domyślny profil dokładny', () => {
+  assert.equal(profilBaterii({ poprzedni: 'oszczedny', dystansM: null }), 'oszczedny');
+  assert.equal(profilBaterii({ poprzedni: 'dokladny', dystansM: NaN }), 'dokladny');
+  assert.equal(profilBaterii({ poprzedni: 'dokladny' }), 'dokladny');
+  assert.equal(profilBaterii({}), 'dokladny', 'start: profil dokładny');
+  assert.equal(PROG_BATERII_M.oszczednyPowyzej, 250);
+  assert.equal(PROG_BATERII_M.dokladnyPonizej, 150);
 });

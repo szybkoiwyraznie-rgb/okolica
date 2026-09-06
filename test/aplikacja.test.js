@@ -76,7 +76,7 @@ test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', 
 });
 
 test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
-  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-sprawdz', 'przycisk-poprawka', 'przycisk-ukryj', 'przycisk-motyw', 'przycisk-kod', 'przycisk-przelicz', 'przycisk-gps', 'przycisk-ustaw-reczne']) {
+  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-sprawdz', 'przycisk-poprawka', 'przycisk-ukryj', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-kod', 'przycisk-przelicz', 'przycisk-gps', 'przycisk-ustaw-reczne']) {
     assert.ok(pobierz(id).zdarzenia.click?.length >= 1, `#${id} nie ma nasłuchu click — przycisk byłby martwy`);
   }
 });
@@ -1780,4 +1780,25 @@ test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie
   wyslij(svg, 'pointermove', { pointerId: 32, clientX: 60, clientY: 0 });
   wyslij(svg, 'pointerup', { pointerId: 32, clientX: 60, clientY: 0 });
   assert.equal(domT.pobierz('pozycja-wspolrzedne').textContent, przedPanem, 'pan nie przestawia pozycji gracza');
+});
+
+/* ------------------------------------------------- sygnały (M10/T4) */
+
+test('sygnały: „🔔 sygnały" startuje włączone, a klik przełącza i zapisuje wybór', async () => {
+  // ŚWIEŻA instalacja: wcześniejsze testy M6 podmieniały globalne atrapy,
+  // więc plikowy `pobierz` wskazuje stary rejestr (LESSONS: hazard
+  // ponownego importu/instalacji). Ten test jest ostatni w pliku — jego
+  // własna instalacja nikomu już nie miesza.
+  const domSygnaly = zainstalujDom();
+  await import(`../app/app.js?sygnaly=${Math.random().toString(36).slice(2)}`);
+  const prz = domSygnaly.pobierz('przycisk-sygnaly');
+  assert.equal(prz.getAttribute('aria-pressed'), 'true', 'domyślnie włączone (aria-pressed)');
+  domSygnaly.kliknij('przycisk-sygnaly');
+  assert.equal(prz.getAttribute('aria-pressed'), 'false');
+  assert.equal(globalThis.localStorage.getItem('okolica:sygnaly'), '0', 'wyłączenie zapisane');
+  assert.match(domSygnaly.pobierz('status').textContent, /Sygnały wyłączone/, 'jawny status wyłączenia (LESSONS L6)');
+  domSygnaly.kliknij('przycisk-sygnaly');
+  assert.equal(prz.getAttribute('aria-pressed'), 'true');
+  assert.equal(globalThis.localStorage.getItem('okolica:sygnaly'), '1', 'włączenie zapisane');
+  assert.match(domSygnaly.pobierz('status').textContent, /Sygnały włączone/);
 });

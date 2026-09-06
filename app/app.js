@@ -28,7 +28,7 @@ import {
 } from './protokol.js?v=m9b-1';
 import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m9b-1';
 import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m9b-1';
-import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m9b-1';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m9b-1';
 import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m9b-1';
 import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m9b-1';
 import {
@@ -38,6 +38,7 @@ import {
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
 } from './zestawy.js?v=m9b-1';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m9b-1';
 import { ROLE_PALETY, czasTekst, dystansTekst, etykietaOdcinka, medalTekst, planObrazuWyniku, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m9b-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
@@ -70,6 +71,8 @@ const STAN = {
   ostatniFix: null,
   ocenaFixa: null,
   pauzaWTle: false,
+  /** M10/T3: bieżący profil watchera GPS ('dokladny' | 'oszczedny') — histereza w `profilBaterii`. */
+  profilGps: 'dokladny',
   miejsce: '',
   stacje: [],
   obrot: 0,
@@ -412,6 +415,7 @@ function wlaczGps() {
   STAN.watcher = watchPozycja({
     geolocation: navigator.geolocation,
     zegar: () => performance.now(),
+    opcje: PROFILE_GPS[STAN.profilGps] ?? PROFILE_GPS.dokladny, // M10/T3: bateria
     onFix: (fix) => przyjmijFix(fix),
     onBlad: (blad) => {
       pokazBledy('bledy-pozycja', [{ kod: blad.kod, pole: 'geolocation', komunikat: blad.komunikat }]);
@@ -1046,6 +1050,7 @@ function aktualizujGreNaFix(fix) {
   const d = stanDojscia(STAN.historiaFixow, pod.stacja);
   $('gra-dystans-odcinka').textContent = d.dystansM == null ? '— m' : `${Math.round(d.dystansM)} m do stacji ${pod.stacja.id}`;
   $('gra-prog-dojscia').textContent = `próg dojścia: ${Math.round(d.progM)} m · trafienia: ${d.trafienia}/${d.wymagane}`;
+  dostosujProfilGps(d.dystansM); // M10/T3: „budzenie przy zbliżaniu"
   if (d.kod) {
     $('gra-komunikat').textContent = d.komunikat;
     return;
@@ -1367,6 +1372,7 @@ function startOdcinkaGry() {
   if (wynik.usterki.length === 0) {
     STAN.historiaFixow = []; // nowy odcinek liczy dojście od zera (plan M6, ryzyko 4)
     status('Odcinek rozpoczęty — idźcie. Stacja zapala się po dwóch kolejnych fixach w progu (ADR 0004 pkt 2).');
+    odegrajSygnal('startOdcinka'); // M10/T4
     if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   } else {
     status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
@@ -1386,6 +1392,7 @@ function zakonczOdcinekGry(trybDojscia, fix) {
     return;
   }
   STAN.historiaFixow = []; // stary bufor trafień nie zamyka następnego odcinka
+  odegrajSygnal('dotarcie'); // M10/T4: wibracja + dwa tony w górę
   status(trybDojscia === TRYBY_DOJSCIA.reczne
     ? 'Dojście zgłoszone ręcznie — kara czasowa doliczona do odcinka (ADR 0004 pkt 5).'
     : 'Stacja osiągnięta — próg dojścia zadziałał z GPS. Brawo!');
@@ -1510,6 +1517,7 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
     return;
   }
   const dobrze = wybrana === pytanie.poprawna;
+  odegrajSygnal(dobrze ? 'poprawna' : 'bledna'); // M10/T4: melodia w górę / w dół
   [...$('gra-odpowiedzi').children].forEach((b, i) => {
     b.disabled = true; // jedna odpowiedź na pytanie — bez poprawek po fakcie
     if (i === pytanie.poprawna) b.classList.add('poprawna');
@@ -2437,6 +2445,96 @@ function zapiszPoprawke(p, pola) {
     : `Poprawka zapisana w modyfikacje[] (łącznie ${STAN.paczka.modyfikacje.length}); paczka przeszła re-walidację protokołu.`);
 }
 
+/* ------------------------- sygnały (M10/T4), Service Worker (M10/T2), bateria (M10/T3) */
+
+let kontekstAudio = null;
+
+/** Czy sygnały są włączone? Domyślnie TAK; `okolica:sygnaly`='0' wyłącza. */
+function sygnalyWlaczone() {
+  return czySygnalyWlaczone(typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_SYGNALOW) : null);
+}
+
+/**
+ * Nuty z oscylatora Web Audio — zero plików dźwiękowych, zero zależności
+ * (ADR 0001). Kontekst tworzony leniwie: pierwszy sygnał zawsze następuje po
+ * geście użytkownika, więc polityka autoplay przeglądarek jest spełniona.
+ * Każda awaria jest cicha: dźwięk to ozdoba, nie rozgrywka (LESSONS L6).
+ */
+function odegrajDzwieki(nuty) {
+  try {
+    const Ctx = globalThis.AudioContext ?? globalThis.webkitAudioContext;
+    if (typeof Ctx !== 'function') return;
+    kontekstAudio ??= new Ctx();
+    if (kontekstAudio.state === 'suspended') kontekstAudio.resume?.();
+    let t = kontekstAudio.currentTime;
+    for (const nuta of nuty) {
+      const osc = kontekstAudio.createOscillator();
+      const gain = kontekstAudio.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = nuta.czHz;
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.25, t + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + nuta.ms / 1000);
+      osc.connect(gain);
+      gain.connect(kontekstAudio.destination);
+      osc.start(t);
+      osc.stop(t + nuta.ms / 1000 + 0.03);
+      t += nuta.ms / 1000 + 0.05;
+    }
+  } catch { /* brak AudioContext albo zablokowany — gramy dalej bez dźwięku */ }
+}
+
+/** Wykonuje plan sygnału (wibracja + dźwięk); czysta decyzja w `sygnaly.js`. */
+function odegrajSygnal(zdarzenie) {
+  const plan = planSygnalu(zdarzenie, { wlaczone: sygnalyWlaczone() });
+  if (!plan) return;
+  try {
+    if (plan.wibracjaMs && typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') navigator.vibrate(plan.wibracjaMs);
+  } catch { /* brak wibracji (desktop, iOS) jest normalny */ }
+  if (plan.dzwiek?.length) odegrajDzwieki(plan.dzwiek);
+}
+
+/** „🔔 sygnały": przełącznik + zapis + potwierdzenie (klik = gest, może grać). */
+function przelaczSygnaly() {
+  const wlaczone = !sygnalyWlaczone();
+  if (typeof localStorage !== 'undefined') localStorage.setItem(KLUCZ_SYGNALOW, wlaczone ? '1' : '0');
+  $('przycisk-sygnaly').setAttribute('aria-pressed', String(wlaczone));
+  status(wlaczone
+    ? 'Sygnały włączone: wibracja i dźwięk przy dojściu do stacji, starcie odcinka i ocenie odpowiedzi.'
+    : 'Sygnały wyłączone — gra toczy się bez dźwięku i wibracji.');
+  if (wlaczone) odegrajSygnal('poprawna');
+}
+
+/**
+ * M10/T2: rejestracja Service Workera — offline skorupa + kafelki ostatniej
+ * okolicy (`sw.js`). Tylko po http(s) (na file: SW nie działa) i tylko gdy
+ * przeglądarka go ma; awaria rejestracji jest cicha (offline to dodatek).
+ */
+function zarejestrujServiceWorker() {
+  try {
+    if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return;
+    if (typeof location === 'undefined' || !/^https?:$/.test(location.protocol)) return;
+    navigator.serviceWorker.register('./sw.js');
+  } catch { /* brak SW = zwykła gra online */ }
+}
+
+/**
+ * M10/T3: „budzenie przy zbliżaniu" — w trasie GPS oszczędny, przy stacji
+ * dokładny. Decyduje czysta `profilBaterii` (histereza 250/150 m); zmiana
+ * profilu = restart watchera z nowymi opcjami i JAWNY status (LESSONS L6).
+ * Bez aktywnego watchera (tryb testowy, symulacja, pauza) nie robi nic.
+ */
+function dostosujProfilGps(dystansM) {
+  if (!STAN.watcher || STAN.trybTestowy) return;
+  const nowy = profilBaterii({ poprzedni: STAN.profilGps, dystansM });
+  if (nowy === STAN.profilGps) return;
+  STAN.profilGps = nowy;
+  wlaczGps();
+  status(nowy === 'oszczedny'
+    ? 'GPS w trybie oszczędnym — do stacji daleko, bateria odpoczywa; pełna dokładność wróci przy stacji.'
+    : 'GPS w trybie dokładnym — jesteś blisko stacji, łapiemy dojście z metrów.');
+}
+
 /* ------------------------------------------------------- motyw i zapis */
 
 function przelaczMotyw() {
@@ -2508,6 +2606,9 @@ function start() {
   }
 
   $('przycisk-motyw').addEventListener('click', przelaczMotyw);
+  $('przycisk-sygnaly').addEventListener('click', przelaczSygnaly);
+  $('przycisk-sygnaly').setAttribute('aria-pressed', String(sygnalyWlaczone()));
+  zarejestrujServiceWorker();
   $('przycisk-prywatnosc').addEventListener('click', pokazPrywatnosc);
   $('przycisk-prywatnosc-stopka').addEventListener('click', pokazPrywatnosc);
   $('przycisk-wrocz-prywatnosc').addEventListener('click', wrocZPrywatnosci);
