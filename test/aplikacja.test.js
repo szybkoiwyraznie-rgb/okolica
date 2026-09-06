@@ -975,3 +975,76 @@ test('warstwa zapasowa: HTTP 429 → komunikat, bez wyjątku i bez ponawiania w 
   await czekaj(100);
   assert.equal(wywolania.filter((a) => a.includes('nominatim')).length, 1, 'jedna próba na sesję — zero ponawiania');
 });
+
+/* ============ M6/R4: ekran gry — fazy przygotowanie/odcinek, pauza */
+
+/** Przyjęta paczka + pozycja + stacje z pierścienia (synchronicznie, bez fetch). */
+async function graGotowaDoStartu() {
+  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
+  return { dom, paczka };
+}
+
+function zaczynijGre(dom) {
+  dom.kliknij('przycisk-start-gry');
+}
+
+test('M6: start gry — przycisk z przyjętą paczką, ekran gry i faza A (przygotowanie)', async () => {
+  const { dom } = await graGotowaDoStartu();
+  assert.equal(dom.pobierz('przycisk-start-gry').hidden, false, 'start gry dostępny z przyjętą paczką');
+  zaczynijGre(dom);
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'ekran gry widoczny');
+  assert.equal(dom.pobierz('ekran-paczka').hidden, true, 'ekran paczki schowany');
+  assert.equal(dom.pobierz('podglad-organizatora').hidden, true, 'podgląd organizatora zwinięty — gra, nie przygotowanie');
+  assert.equal(dom.pobierz('przycisk-start-gry').hidden, true, 'nie da się zacząć drugiej gry tym samym przyciskiem');
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'panel A widoczny w fazie przygotowanie');
+  for (const panel of ['gra-panel-odcinek', 'gra-panel-pytanie', 'gra-panel-koniec']) {
+    assert.equal(dom.pobierz(panel).hidden, true, `${panel} ukryty poza swoją fazą`);
+  }
+  assert.match(dom.pobierz('gra-postep').textContent, /stacja 1 z 3/, 'postęp z bieżącej stacji');
+  assert.match(dom.pobierz('gra-kolejka').textContent, /Kolej: Gracz 1/, 'badge kolejki z imieniem (domyślne imiona z konfigu)');
+  assert.match(dom.pobierz('przycisk-start-odcinka').textContent, /Idę do stacji 1/, 'główny przycisk fazy mówi, dokąd idzie');
+  assert.match(dom.pobierz('gra-cel-stacji').textContent, /m drogą od poprzedniego punktu/, 'cel z dystansem drogowym z modelu');
+  assert.match(dom.pobierz('gra-dystans').textContent, /\d+ m/, 'badge dystansu w linii prostej z bieżącej pozycji');
+});
+
+test('M6: odcinek — start, ręczne dojście z karą i odmowa drugiego startu (G03)', async () => {
+  const { dom } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'panel B w fazie odcinek');
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true);
+  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, false, 'pominięcie dostępne TYLKO w drodze (ADR 0015 pkt 2)');
+  assert.equal(dom.pobierz('przycisk-symulacja-gra').hidden, false, 'w trybie testowym symulacja dojścia do stacji');
+
+  // drugi start tego samego odcinka → jawna odmowa z kodem G03, nie wyjątek
+  dom.kliknij('przycisk-start-odcinka');
+  assert.match(dom.pobierz('bledy-gra').textContent, /G03/, 'kod rozgrywki widoczny w alercie');
+
+  // ręczne zgłoszenie dojścia: kara i przejście do fazy pytania
+  dom.kliknij('przycisk-reczne-dojscie');
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'faza pytania — panel C (wypełnienie treścią w R5)');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, true);
+  assert.match(dom.pobierz('status').textContent, /ręcznie/, 'status mówi wprost o ręcznym zgłoszeniu');
+  assert.equal(dom.pobierz('bledy-gra').hidden, true, 'poprawna tranzycja czyści poprzedni błąd');
+});
+
+test('M6: pauza — przyciski stają, wznowienie jawne (ADR 0004 pkt 1)', async () => {
+  const { dom } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  const pauza = dom.pobierz('przycisk-pauza');
+
+  dom.kliknij('przycisk-pauza');
+  assert.equal(pauza.getAttribute('aria-pressed'), 'true', 'aria-pressed po pauzie');
+  assert.match(pauza.textContent, /Wznów/, 'przycisk zmienia rolę');
+  assert.equal(dom.pobierz('przycisk-reczne-dojscie').disabled, true, 'w pauzie nie ma akcji fazowych');
+  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true);
+  assert.equal(dom.pobierz('gra-pauza-komunikat').hidden, false, 'komunikat pauzy widoczny');
+
+  dom.kliknij('przycisk-pauza');
+  assert.equal(pauza.getAttribute('aria-pressed'), 'false');
+  assert.match(pauza.textContent, /Pauza/);
+  assert.equal(dom.pobierz('przycisk-reczne-dojscie').disabled, false, 'wznowienie odblokowuje akcje');
+});

@@ -55,7 +55,7 @@ Proponowana, B17: nie wcześniej niż po M8), gra na kilku urządzeniach
       `utworzMape`), przyciski: start odcinka, ręczne zgłoszenie (z ostrzeżeniem
       o karze), pauza/wznów, pomiń, następna stacja, zakończ grę; `EKRANY`
       + pasek kroków; kontrakt na cele dotykowe i strukturę.
-- [ ] **R4 — wiring faz przygotowanie/odcinek w `app.js`:** „▶ Zacznij grę"
+- [x] **R4 — wiring faz przygotowanie/odcinek w `app.js`:** „▶ Zacznij grę"
       (zapakuj → `nowaRozgrywka` z `czasMs` z `performance.now()` warstwy DOM,
       ADR 0004 pkt 3), render badge'y z `podglad()` (pole `pytanie` NIE jest
       renderowane przed fazą `pytanie`!), start odcinka, dystans na żywo

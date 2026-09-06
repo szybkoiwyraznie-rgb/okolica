@@ -434,13 +434,14 @@ test('kontrakt: instrukcja promptu to cztery kroki jako inline SVG (ADR 0001 pkt
   assert.equal((html.match(/xlink:href="http|href="http[^"]*\.(png|jpg|svg)/g) ?? []).length, 0, 'SVG nie ciągnie nic z sieci');
 });
 
-test('kontrakt: cache-busting m5-1 spójny w index.html i importach app.js', () => {
+test('kontrakt: cache-busting spójny — jedna wersja w index.html i we wszystkich importach app.js', () => {
   const html = czytaj('index.html');
   const app = czytaj('app/app.js');
-  assert.equal((html.match(/\?v=m5-1/g) ?? []).length, 2, 'styles.css i app.js z nową wersją');
-  assert.equal(html.includes('?v=m4-1'), false, 'bez sierot po starej wersji');
-  assert.equal((app.match(/\?v=m5-1/g) ?? []).length, 8, 'wszystkie importy modułów z tą samą wersją');
-  assert.equal(app.includes('?v=m4-1'), false);
+  const wersjeHtml = [...html.matchAll(/\?v=([\w-]+)/g)].map((m) => m[1]);
+  const wersjeApp = [...app.matchAll(/\?v=([\w-]+)/g)].map((m) => m[1]);
+  assert.equal(wersjeHtml.length, 2, 'styles.css i app.js wersjonowane w HTML');
+  assert.ok(wersjeApp.length >= 8, 'każdy import modułu w app.js wersjonowany');
+  assert.equal(new Set([...wersjeHtml, ...wersjeApp]).size, 1, 'dokładnie jedna wersja w całej aplikacji — brak sierot po starych ?v=');
 });
 
 /* ============================ M6/R3: szkielet ekranu gry */

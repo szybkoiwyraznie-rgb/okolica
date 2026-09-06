@@ -16,7 +16,7 @@
  */
 
 import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m5-1';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, przesunPunkt } from './geo.js?v=m5-1';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m5-1';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -29,6 +29,7 @@ import {
 import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m5-1';
 import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m5-1';
 import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m5-1';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, nowaRozgrywka, podglad, startOdcinka, zakonczOdcinek } from './rozgrywka.js?v=m5-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -67,11 +68,19 @@ const STAN = {
   prompt: null,
   paczka: null,
   usterkiPaczki: [],
+  /** M6: stan gry `rozgrywka/1` — null do „▶ Zacznij grę". */
+  rozgrywka: null,
+  /** M6: ukryty kontener paczki na czas gry (TO-paczka/2) — nigdy plaintext (ADR 0007 pkt 4). */
+  kontenerPaczki: null,
+  /** M6: pauza gry — zegar stoi, fixy nie płyną, przyciski faz zablokowane (ADR 0004 pkt 1). */
+  graPauza: false,
+  graPauzaStartMs: 0,
+  pauzaSkumulowanaMs: 0,
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
   /** Mapy z `mapa.js` (M2): `null`, gdy panelu nie ma w `index.html`. */
-  mapy: { pozycja: null, stacje: null },
+  mapy: { pozycja: null, stacje: null, gra: null },
   /** Który ekran gry jest pokazany (do powrotu z ekranu prywatności). */
   ekran: 'setup',
   /** Odtwarzana symulacja trasy (tryb testowy): `{fixy, indeks, cel, timer}`. */
@@ -474,6 +483,7 @@ function przyjmijFix(fix) {
   STAN.historiaFixow = dodajFix(STAN.historiaFixow, fix);
   pokazBledy('bledy-pozycja', ocena.kod ? [{ kod: ocena.kod, pole: 'geolocation', komunikat: ocena.komunikat }] : []);
   pokazPozycje();
+  aktualizujGreNaFix(fix); // M6: ten sam lej co GPS i symulacja — gra widzi fixy identycznie
 }
 
 /* --------------------------------------------------- symulacja dojścia */
@@ -927,6 +937,190 @@ function renderujStacje() {
   }
 }
 
+/* --------------------------------------------------------- M6: ekran gry */
+
+/**
+ * Zegar gry: `performance.now()` pomniejszony o skumulowane pauzy. Logika
+ * rozgrywki nie czyta zegara (ADR 0004 pkt 3) — wszystkie `czasMs` pochodzą
+ * z tej warstwy, więc pauza naprawdę zatrzymuje czas odcinków.
+ */
+function zegarGry() {
+  const teraz = performance.now();
+  const wTrakciePauzy = STAN.graPauza && STAN.graPauzaStartMs > 0 ? teraz - STAN.graPauzaStartMs : 0;
+  return teraz - (STAN.pauzaSkumulowanaMs + wTrakciePauzy);
+}
+
+/**
+ * Fix w trakcie gry (M6): dystans na żywo do bieżącej stacji i rozstrzygnięcie
+ * dojścia przez `stanDojscia` (próg + dwa kolejne trafienia, ADR 0004 pkt 2).
+ * Działa identycznie z GPS-em i z symulacją, bo oba strumienie wchodzą jednym
+ * lejem `przyjmijFix`.
+ */
+function aktualizujGreNaFix(fix) {
+  const r = STAN.rozgrywka;
+  if (!r || r.faza === FAZY.koniec || STAN.ekran !== 'gra' || STAN.graPauza) return;
+  const pod = podglad(r);
+  if (!pod.stacja || !STAN.pozycja) return;
+  const dystans = Math.round(odlegloscM(STAN.pozycja, pod.stacja));
+  $('gra-dystans').textContent = `${dystans} m`;
+  if (r.faza !== FAZY.odcinek) return;
+  const d = stanDojscia(STAN.historiaFixow, pod.stacja);
+  $('gra-dystans-odcinka').textContent = d.dystansM == null ? '— m' : `${Math.round(d.dystansM)} m do stacji ${pod.stacja.id}`;
+  $('gra-prog-dojscia').textContent = `próg dojścia: ${Math.round(d.progM)} m · trafienia: ${d.trafienia}/${d.wymagane}`;
+  if (d.kod) {
+    $('gra-komunikat').textContent = d.komunikat;
+    return;
+  }
+  if (d.dotarl) zakonczOdcinekGry(TRYBY_DOJSCIA.gps, fix);
+}
+
+/** Render faz ekranu gry: panele, badge'y, dostępność przycisków, mapa. */
+function renderujGre() {
+  const r = STAN.rozgrywka;
+  if (!r) return;
+  const pod = podglad(r);
+  const indeks = r.stacje.findIndex((s) => s.id === r.biezacaStacja);
+
+  $('gra-kolejka').textContent = pod.gracz ? `Kolej: ${pod.gracz.imie}` : 'Kolej: —';
+  $('gra-postep').textContent = r.faza === FAZY.koniec
+    ? `zaliczone: ${pod.zaliczoneStacje} · pominięte: ${pod.pominietaStacje} · z ${r.stacje.length}`
+    : `stacja ${indeks + 1} z ${r.stacje.length}`;
+  if (STAN.pozycja && pod.stacja) {
+    $('gra-dystans').textContent = `${Math.round(odlegloscM(STAN.pozycja, pod.stacja))} m`;
+  } else {
+    $('gra-dystans').textContent = '— m';
+  }
+
+  $('gra-panel-oczekuje').hidden = r.faza !== FAZY.przygotowanie;
+  $('gra-panel-odcinek').hidden = r.faza !== FAZY.odcinek;
+  $('gra-panel-pytanie').hidden = r.faza !== FAZY.pytanie;
+  $('gra-panel-koniec').hidden = r.faza !== FAZY.koniec;
+
+  if (r.faza === FAZY.przygotowanie && pod.stacja) {
+    $('gra-kto-idzie').textContent = pod.gracz ? `Idzie: ${pod.gracz.imie} → stacja ${indeks + 1}` : `Stacja ${indeks + 1}`;
+    $('gra-cel-stacji').textContent = `${pod.stacja.opis || 'Cel bez opisu'} · ${formatujWspolrzedne(pod.stacja.lat, pod.stacja.lon)} · ${Math.round(pod.dystansM)} m drogą od poprzedniego punktu`;
+    $('przycisk-start-odcinka').textContent = `▶ Idę do stacji ${indeks + 1}`;
+  }
+
+  $('przycisk-start-odcinka').disabled = STAN.graPauza;
+  $('przycisk-reczne-dojscie').disabled = STAN.graPauza;
+  $('przycisk-symulacja-gra').hidden = !(STAN.trybTestowy && r.faza === FAZY.odcinek);
+  $('przycisk-pomin-stacje').disabled = r.faza !== FAZY.odcinek || STAN.graPauza; // ADR 0015 pkt 2: tylko w drodze
+
+  if (STAN.mapy.gra) {
+    STAN.mapy.gra.zaznaczStacje(STAN.stacje, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
+  }
+}
+
+/**
+ * „▶ Zacznij grę": paczka jedzie do kontenera `TO-paczka/2`, plaintext znika
+ * z pamięci (ADR 0007 pkt 4) — pytania wrócą przez `odpakujPaczke` DOPIERO
+ * w chwili dojścia do stacji (pkt 6, wiring w R5).
+ */
+function startGry() {
+  if (!STAN.paczka || STAN.usterkiPaczki.length > 0) return;
+  if (!STAN.stacje.length || !STAN.pozycja) {
+    status('Nie da się zacząć gry: potrzebna pozycja i policzone stacje (kroki 2–3).');
+    return;
+  }
+  STAN.graPauza = false;
+  STAN.graPauzaStartMs = 0;
+  STAN.pauzaSkumulowanaMs = 0;
+  STAN.kontenerPaczki = zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU);
+  STAN.rozgrywka = nowaRozgrywka({
+    konfig: STAN.konfig,
+    stacje: STAN.stacje,
+    paczka: STAN.paczka,
+    srodek: STAN.pozycja,
+    czasMs: zegarGry(),
+    ziarno: ziarno(),
+  });
+  STAN.paczka = null;
+  $('przycisk-start-gry').hidden = true;
+  zwijPodgladOrganizatora();
+  STAN.historiaFixow = [];
+  pokazEkran('gra');
+  if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+  status(`Gra rozpoczęta: ${STAN.rozgrywka.gracze.length} gracz(y), ${STAN.rozgrywka.stacje.length} stacji. Pytania odsłaniają się dopiero na stacjach.`);
+  renderujGre();
+}
+
+function startOdcinkaGry() {
+  if (!STAN.rozgrywka) return;
+  const wynik = startOdcinka(STAN.rozgrywka, { czasMs: zegarGry() });
+  STAN.rozgrywka = wynik.stan;
+  pokazBledy('bledy-gra', wynik.usterki);
+  if (wynik.usterki.length === 0) {
+    STAN.historiaFixow = []; // nowy odcinek liczy dojście od zera (plan M6, ryzyko 4)
+    status('Odcinek rozpoczęty — idźcie. Stacja zapala się po dwóch kolejnych fixach w progu (ADR 0004 pkt 2).');
+    if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+  } else {
+    status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
+  }
+  renderujGre();
+}
+
+function zakonczOdcinekGry(trybDojscia, fix) {
+  if (!STAN.rozgrywka) return;
+  const wynik = zakonczOdcinek(STAN.rozgrywka, { czasMs: zegarGry(), trybDojscia, fix: fix ?? STAN.ostatniFix });
+  STAN.rozgrywka = wynik.stan;
+  pokazBledy('bledy-gra', wynik.usterki);
+  if (wynik.usterki.length > 0) {
+    status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
+    renderujGre();
+    return;
+  }
+  STAN.historiaFixow = []; // stary bufor trafień nie zamyka następnego odcinka
+  status(trybDojscia === TRYBY_DOJSCIA.reczne
+    ? 'Dojście zgłoszone ręcznie — kara czasowa doliczona do odcinka (ADR 0004 pkt 5).'
+    : 'Stacja osiągnięta — próg dojścia zadziałał z GPS. Brawo!');
+  renderujGre();
+}
+
+/** Pauza gry: zegar stoi, watcher/symulacja zatrzymane, wznowienie jawne. */
+function przelaczPauzeGry() {
+  const r = STAN.rozgrywka;
+  if (!r || r.faza === FAZY.koniec) return;
+  STAN.graPauza = !STAN.graPauza;
+  const przycisk = $('przycisk-pauza');
+  if (STAN.graPauza) {
+    STAN.graPauzaStartMs = performance.now();
+    zatrzymajSymulacje();
+    zatrzymajGps(); // oszczędność baterii — pauza zatrzymuje strumień fixów (ADR 0004 pkt 1)
+    $('gra-pauza-komunikat').textContent = `${komunikatPauzy().komunikat} Zegar gry zatrzymany — wznowcie, gdy wszyscy gotowi.`;
+    przycisk.textContent = '▶ Wznów';
+  } else {
+    STAN.pauzaSkumulowanaMs += performance.now() - STAN.graPauzaStartMs;
+    STAN.graPauzaStartMs = 0;
+    STAN.historiaFixow = []; // fixy sprzed pauzy nie rozstrzygają dojścia po wznowieniu
+    $('gra-pauza-komunikat').textContent = komunikatWznowienia().komunikat;
+    przycisk.textContent = '⏸ Pauza';
+    if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+  }
+  przycisk.setAttribute('aria-pressed', String(STAN.graPauza));
+  $('gra-pauza-komunikat').hidden = false;
+  renderujGre();
+}
+
+/** Symulacja dojścia DO BIEŻĄCEJ STACJI (tryb testowy — kryterium „gra bez GPS"). */
+function przelaczSymulacjeDoStacji() {
+  if (STAN.symulacja) {
+    zatrzymajSymulacje();
+    status('Symulacja dojścia zatrzymana.');
+    return;
+  }
+  const r = STAN.rozgrywka;
+  if (!r || !STAN.pozycja) return;
+  const pod = podglad(r);
+  if (!pod.stacja) return;
+  const start = { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon };
+  const cel = { lat: pod.stacja.lat, lon: pod.stacja.lon };
+  const trasa = trasaProsta({ start, cel, czasMs: SYMULACJA.czasMs, accuracyM: SYMULACJA.accuracyM, przystanki: 2 });
+  const fixy = sekwencjaSymulowana(trasa, { coMs: SYMULACJA.coMs, postoj: GRANICE.wymaganeTrafnienia });
+  STAN.symulacja = { fixy, indeks: 0, cel, timer: setInterval(krokSymulacji, SYMULACJA_KROK_MS) };
+  status(`Symulacja dojścia do stacji ${pod.stacja.id}: ${fixy.length} fixów (ostatnie dwa dokładnie w celu).`);
+}
+
 /* ---------------------------------------------------------------- prompt */
 
 function budujPromptEkran() {
@@ -1020,6 +1214,7 @@ function sprawdzOdpowiedz() {
     $('przycisk-poprawka').hidden = false;
     $('przycisk-ukryj').hidden = true;
     $('przycisk-eksport-paczki').hidden = true;
+    $('przycisk-start-gry').hidden = true;
     $('podglad-organizatora').hidden = true;
     status('Odpowiedź odrzucona na etapie odczytu (parsowanie JSON albo kontener).');
     return;
@@ -1035,6 +1230,7 @@ function sprawdzOdpowiedz() {
     $('przycisk-poprawka').hidden = false;
     $('przycisk-ukryj').hidden = true;
     $('przycisk-eksport-paczki').hidden = true;
+    $('przycisk-start-gry').hidden = true;
     $('podglad-organizatora').hidden = true;
     status('Paczka odrzucona przez walidator (protokół PYT §6).');
     return;
@@ -1046,6 +1242,7 @@ function sprawdzOdpowiedz() {
   $('przycisk-poprawka').hidden = true;
   $('przycisk-ukryj').hidden = false;
   $('przycisk-eksport-paczki').hidden = false;
+  $('przycisk-start-gry').hidden = false;
   const postac = zKontenera.zrodlo === 'kontener'
     ? 'paczka ukryta (kontener TO-paczka/2)'
     : zKontenera.zrodlo === 'json'
@@ -1260,6 +1457,7 @@ function zapiszPoprawke(p, pola) {
     : 'Paczka przyjęta (po ręcznej poprawce)';
   $('przycisk-ukryj').hidden = usterki.length > 0;
   $('przycisk-eksport-paczki').hidden = usterki.length > 0;
+  $('przycisk-start-gry').hidden = usterki.length > 0;
   $('przycisk-poprawka').hidden = usterki.length === 0;
   renderujPodsumowaniePaczki(STAN.paczka, null);
   renderujPodgladOrganizatora();
@@ -1380,6 +1578,11 @@ function start() {
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
     zatrzymajSymulacje();
+      // M6: gra w tle = pełna pauza (zegar stoi, wznowienie jawne przyciskiem)
+      if (STAN.rozgrywka && STAN.rozgrywka.faza !== FAZY.koniec && STAN.ekran === 'gra' && !STAN.graPauza) {
+        przelaczPauzeGry();
+        return;
+      }
       if (STAN.watcher?.czyAktywny()) {
         zatrzymajGps();
         STAN.pauzaWTle = true;
@@ -1532,6 +1735,11 @@ function start() {
     pobierzPlik(nazwa, tekst, 'application/json'); // helper z M0 (prompt → plik)
     status(`Paczka zapisana do pliku ${nazwa} (w środku kontener ${SCHEMAT_KONTENERA}, nie plaintext). Wgrasz ją z powrotem przez „⬆ Z pliku".`);
   });
+  $('przycisk-start-gry').addEventListener('click', () => startGry());
+  $('przycisk-start-odcinka').addEventListener('click', () => startOdcinkaGry());
+  $('przycisk-reczne-dojscie').addEventListener('click', () => zakonczOdcinekGry(TRYBY_DOJSCIA.reczne, null));
+  $('przycisk-pauza').addEventListener('click', () => przelaczPauzeGry());
+  $('przycisk-symulacja-gra').addEventListener('click', () => przelaczSymulacjeDoStacji());
 
   pokazEkran('setup');
   status(`M0 — fundament. Ustawienia domyślne: ${TRYBY[STAN.konfig.tryb].etykieta}, ${STAN.konfig.liczbaStacji} stacji, ${DOMYSLNE.pytaniaNaStacje} pytanie na stację, wiek ${WIEK[STAN.konfig.wiek].etykieta}.`);
