@@ -284,7 +284,11 @@ export function zbudujZdarzenie({ kod, idGry, graczId, typ, stacjaId = null, dan
 
 /* ------------------------------ maszynka gry (lustra logiki mostu) */
 
-/** Tury: gracz przypisany do pierwszej niezamkniętej stacji (kolejka jak hot-seat). */
+/**
+ * Tury: stacja i (1-based) należy do gracza gracze[(i-1) % N] — kolejka jest
+ * USTALONA przy starcie i nie przesuwa się; rezygnacja gracza POMIJA jego
+ * stacje. Lustro `biezacyGraczTury` z mostu Apps Script (kontrakt pilnuje).
+ */
 export function biezacyGraczTury(gra) {
   if (!gra || gra.tryb !== TRYBY_GRY.tury) return null;
   const zamkniete = new Set();
@@ -293,12 +297,15 @@ export function biezacyGraczTury(gra) {
     if (z.typ === 'odpowiedz' && z.stacjaId != null) zamkniete.add(Number(z.stacjaId));
     if (z.typ === 'rezygnacja') rezygnacje.add(z.graczId);
   }
-  const aktywni = (gra.gracze ?? []).filter((g) => !rezygnacje.has(g.id));
-  if (!aktywni.length) return null;
+  const N = (gra.gracze ?? []).length;
+  if (!N) return null;
   for (let i = 1; i <= gra.konfiguracja.liczbaStacji; i += 1) {
-    if (!zamkniete.has(i)) return aktywni[(i - 1) % aktywni.length].id;
+    if (zamkniete.has(i)) continue;
+    const wlasciciel = gra.gracze[(i - 1) % N];
+    if (rezygnacje.has(wlasciciel.id)) continue; // stacje rezygnującego pominięte
+    return wlasciciel.id;
   }
-  return null; // wszystkie stacje zamknięte
+  return null; // wszystkie stacje zamknięte albo pominięte
 }
 
 /** Czy gra domknęła się zdarzeniami (oba tryby; rezygnacje zaliczone). */
@@ -307,10 +314,14 @@ export function czyKompletna(gra) {
   const N = gra.konfiguracja?.liczbaStacji ?? 0;
   const rezygnacje = new Set((gra.zdarzenia ?? []).filter((z) => z.typ === 'rezygnacja').map((z) => z.graczId));
   if (gra.tryb === TRYBY_GRY.tury) {
-    const aktywni = (gra.gracze ?? []).filter((g) => !rezygnacje.has(g.id));
-    if (!aktywni.length) return true;
     const zamkniete = new Set((gra.zdarzenia ?? []).filter((z) => z.typ === 'odpowiedz' && z.stacjaId != null).map((z) => Number(z.stacjaId)));
-    return zamkniete.size >= N;
+    const liczbaGraczy = (gra.gracze ?? []).length;
+    if (!liczbaGraczy) return true;
+    for (let i = 1; i <= N; i += 1) {
+      const wlasciciel = gra.gracze[(i - 1) % liczbaGraczy];
+      if (!zamkniete.has(i) && !rezygnacje.has(wlasciciel.id)) return false; // stacja czeka na właściciela
+    }
+    return true;
   }
   return (gra.gracze ?? []).every((g) => {
     if (rezygnacje.has(g.id)) return true;

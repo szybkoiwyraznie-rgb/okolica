@@ -193,8 +193,20 @@ test('tury: kolejka stacja mod N jak hot-seat, rezygnacja zawęża aktywnych', (
   assert.equal(biezacyGraczTury(graTury([odp('g-1', 1)])), 'g-2', 'stacja 2 → gracz 2');
   assert.equal(biezacyGraczTury(graTury([odp('g-1', 1), odp('g-2', 2)])), 'g-1', 'stacja 3 → znowu gracz 1');
   assert.equal(biezacyGraczTury(graTury([odp('g-1', 1), odp('g-2', 2), odp('g-1', 3)])), null, 'wszystko zamknięte → brak tury');
-  assert.equal(biezacyGraczTury(graTury([{ kolejnosc: 1, graczId: 'g-2', typ: 'rezygnacja', dane: {}, tSerwera: 't' }])), 'g-1', 'po rezygnacji gra sam g-1');
+  assert.equal(biezacyGraczTury(graTury([{ kolejnosc: 1, graczId: 'g-2', typ: 'rezygnacja', dane: {}, tSerwera: 't' }])), 'g-1', 'stacja 1 i tak należy do g-1');
+  assert.equal(
+    biezacyGraczTury(graTury([odp('g-1', 1), { kolejnosc: 2, graczId: 'g-2', typ: 'rezygnacja', dane: {}, tSerwera: 't' }])),
+    'g-1',
+    'rezygnacja NIE przesuwa kolejki: stacja 2 (g-2) pominięta, następna to 3 (znowu g-1)',
+  );
   assert.equal(biezacyGraczTury(graWazna()), null, 'wyścig nie ma pojęcia tury');
+});
+
+test('tury: czyKompletna z rezygnacją — stacje rezygnującego są pomijane, nie blokują', () => {
+  const rezygn = { kolejnosc: 2, graczId: 'g-2', typ: 'rezygnacja', dane: {}, tSerwera: 't' };
+  assert.equal(czyKompletna(graTury([odp('g-1', 1), rezygn])), false, 'stacja 3 wciąż czeka na g-1');
+  assert.equal(czyKompletna(graTury([odp('g-1', 1), rezygn, odp('g-1', 3)])), true, 'stacja 2 pominięta — gra domknięta');
+  assert.equal(czyKompletna(graTury([rezygn, { kolejnosc: 3, graczId: 'g-1', typ: 'rezygnacja', dane: {}, tSerwera: 't' }])), true, 'wszyscy zrezygnowali = koniec');
 });
 
 test('czyKompletna: tury = N odpowiedzi; wyścig = każdy gracz N albo rezygnacja', () => {

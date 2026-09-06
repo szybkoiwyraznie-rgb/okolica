@@ -502,7 +502,11 @@ function startGryMulti(dane) {
   });
 }
 
-/** Tury: stacja i (1-based) należy do aktywnego gracza z kolejki (ADR 0009 hot-seat → multi). */
+/**
+ * Tury: stacja i (1-based) należy do gracza gracze[(i-1) % N] — kolejka jest
+ * USTALONA przy starcie i nie przesuwa się; rezygnacja gracza POMIJA jego
+ * stacje (moduł app/wieloosobowa.js ma identyczną logikę — pilnuje kontrakt).
+ */
 function biezacyGraczTury(gra) {
   const zamkniete = {};
   const rezygnacje = {};
@@ -510,12 +514,15 @@ function biezacyGraczTury(gra) {
     if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true;
     if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true;
   });
-  const aktywni = gra.gracze.filter((g) => !rezygnacje[g.id]);
-  if (!aktywni.length) return null;
+  const N = gra.gracze.length;
+  if (!N) return null;
   for (let i = 1; i <= gra.konfiguracja.liczbaStacji; i += 1) {
-    if (!zamkniete[i]) return aktywni[(i - 1) % aktywni.length].id;
+    if (zamkniete[i]) continue;
+    const wlasciciel = gra.gracze[(i - 1) % N];
+    if (rezygnacje[wlasciciel.id]) continue; // stacje rezygnującego są pomijane
+    return wlasciciel.id;
   }
-  return null; // wszystkie stacje zamknięte
+  return null; // wszystkie stacje zamknięte albo pominięte
 }
 
 function czyKompletna(gra) {
@@ -523,11 +530,15 @@ function czyKompletna(gra) {
   const rezygnacje = {};
   gra.zdarzenia.forEach((z) => { if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true; });
   if (gra.tryb === 'tury') {
-    const aktywni = gra.gracze.filter((g) => !rezygnacje[g.id]);
-    if (!aktywni.length) return true;
     const zamkniete = {};
     gra.zdarzenia.forEach((z) => { if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true; });
-    return Object.keys(zamkniete).length >= N;
+    const liczbaGraczy = gra.gracze.length;
+    if (!liczbaGraczy) return true;
+    for (let i = 1; i <= N; i += 1) {
+      const wlasciciel = gra.gracze[(i - 1) % liczbaGraczy];
+      if (!zamkniete[i] && !rezygnacje[wlasciciel.id]) return false; // stacja czeka na właściciela
+    }
+    return true;
   }
   return gra.gracze.every((g) => {
     if (rezygnacje[g.id]) return true;
