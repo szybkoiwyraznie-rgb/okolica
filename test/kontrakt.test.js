@@ -404,3 +404,13 @@ test('kontrakt: warstwa aplikacji nie pyta przez confirm()/alert() (ADR 0015 pkt
   assert.ok(!/\bconfirm\s*\(/.test(kod), 'kasowanie danych jest dwustopniowe w UI, nie przez confirm()');
   assert.ok(!/\balert\s*\(/.test(kod), 'komunikaty idą do paska stanu i pól z role=alert/status');
 });
+
+test('kontrakt: ekran prywatności ujawnia warstwę zapasową Nominatim z przełącznikiem (ASSETS §3)', () => {
+  const html = czytaj('index.html');
+  assert.match(html, /id="geokodacja-zapasowa" type="checkbox"/, 'przełącznik zgody na Nominatim');
+  const karta = html.split('Co jest pobierane i od kogo')[1].slice(0, 3000);
+  assert.match(karta, /Nominatim/, 'dostawca nazwany jawnie');
+  assert.match(karta, /domyślnie <strong>wyłączone<\/strong>/, 'domyślnie wyłączone — jak w ADR 0013 pkt 2');
+  assert.match(karta, /okolica:geokodacja-endpoint/, 'przełączalność endpointu bez aktualizacji (wymóg OSMF)');
+  assert.match(karta, /ODbL/, 'atrybucja licencji');
+});

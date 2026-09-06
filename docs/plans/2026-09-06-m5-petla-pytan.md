@@ -60,7 +60,7 @@ ASSETS §3).
       WYŁĄCZNIE kontener — nigdy plaintext (ADR 0007 pkt 4). Sprawdzić, że
       `.gitignore` pokrywa `*.paczka.json` (ADR 0010 pkt 3). Testy: nazwa
       pliku, zawartość = kontener, round-trip eksport→import.
-- [ ] **J5 — odwrotna geokodacja (opt-in, domyślnie wyłączona):**
+- [x] **J5 — odwrotna geokodacja (opt-in, domyślnie wyłączona):**
       `geokodujOdwrotnie({ lat, lon })` — Nominatim `reverse` zgodnie
       z ASSETS §3: `format=jsonv2`, `accept-language=pl`, `zoom=14`,
       pojedyncze żądanie na grę, tylko gdy `STAN.miejsce` puste (degradacja

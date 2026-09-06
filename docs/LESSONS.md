@@ -292,3 +292,36 @@ Miejsca z `innerHTML = ''` migrujemy przy okazji dotykania (pozostałe:
 renderujSetup, gracze, prompt, podsumowanie — patrz BACKLOG B16). Gdy test
 czyta `children` po re-renderze, a wynik wygląda na „stary", najpierw sprawdź,
 czy lista na pewno została wyczyszczona sposobem, który atrapa rozumie.
+
+## L20 (2026-09-06, Tajemnicza Okolica) — nowy helper bez grep-a: `pobierzPlik` zadeklarowany drugi raz
+
+**Objaw:** `node --check app/app.js` — `Identifier 'pobierzPlik' has already
+been declared`. Splice M5/J4 dodał funkcję pobierania pliku (Blob + `<a
+download>`), chociaż identyczna istniała od M0 (pobieranie promptu).
+
+**Przyczyna:** helper dodany „z pamięci", bez sprawdzenia, czy plik już go
+ma. Pierwsza deklaracja była 140 linii wyżej, poza oknem edycji.
+
+**Reguła:** przed dodaniem JAKIEJKOLWIEK nowej funkcji pomocniczej:
+`grep -n "function <nazwa>"` po całym module. Jest — użyj istniejącej (i jej
+sygnatury: M0-owe `pobierzPlik(nazwa, tresc, typ)` wymagało trzeciego
+argumentu). Dotyczy też importów i stałych. Ten sam odruch co przy kotwicach
+spliców (L12), tylko na etapie projektowania, nie wklejania.
+
+## L21 (2026-09-06, Tajemnicza Okolica) — test z padającym fetchem bez `odstep=0` czekał 90 sekund na instancje Overpass
+
+**Objaw:** trzy testy warstwy zapasowej (Nominatim) czerwone: „0 żądań"
+zamiast jednego, nazwa miejsca pusta; cała brama szła 66 s zamiast 8 s.
+
+**Przyczyna:** atrapa `window.fetch` odpowiadała 503 na Overpass, więc
+`pobierzSiec` wchodził w łańcuch przełączania instancji z pauzą
+`STAN.odstepOverpassMs` (30 s × 3). Warstwa zapasowa jest wołana DOPIERO po
+jego zakończeniu — asercje po `czekaj(150)` widziały stan sprzed pobrania.
+
+**Reguła:** testy integracyjne, w których pobranie sieci MA odnieść porażkę,
+instalują dom z `search: '?tryb=test&odstep=0'` (parametr z M4 zeruje pauzy
+między instancjami). Bez tego test nie jest „szybki i czerwony", tylko
+„wolny i czerwony" — a 90-sekundowe pauzy wyglądają jak zwis, nie jak dane.
+Dodatkowo: `assert.equal(params.get('lon'), '21.01235')` padł, bo
+`(21.012345).toFixed(5) === '21.01234'` (reprezentacja binarna) — oczekiwania
+na zaokrągleniach LICZYMY (`node -e`), nie zgadujemy (wariant L6).

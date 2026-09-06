@@ -579,6 +579,9 @@ test('stacje: bez window.fetch degradacja do pierścienia jest synchroniczna i j
 
 test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async () => {
   const pamiecCache = new Map();
+  // geokodacja=true — nazwa miejsca ma się WYŚWIETLIĆ; przy domyślnym false
+  // UI i prompt mają same współrzędne (ADR 0013 pkt 3, test bramy niżej)
+  pamiecCache.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { geokodacja: true } }));
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
   const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
@@ -866,4 +869,109 @@ test('paczka: eksport do pliku niesie ukryty kontener — round-trip przez impor
     'import pliku odtwarza paczkę (ścieżka „⬆ Z pliku" czyta ten sam format)',
   );
   assert.match(dom.pobierz('status').textContent, /okolica-[a-z0-9-]+\.paczka\.json/, 'nazwa pliku z oczyszczonym kodem gry i rozszerzeniem z .gitignore');
+});
+
+/* ================== M5/J5: brama geokodacji + warstwa zapasowa (Nominatim) */
+
+/** Overpass zawsze 503 (ścieżka pierścienia); na Nominatim — podana odpowiedź. */
+function fetchZNominatim(odpowiedzNominatim, wywolania) {
+  return async (adres) => {
+    wywolania.push(String(adres));
+    if (String(adres).includes('nominatim.openstreetmap.org')) return odpowiedzNominatim;
+    return { ok: false, status: 503, json: async () => ({}) };
+  };
+}
+
+async function aplikacjaZKonfigiem(pamiecCache, konfig = {}) {
+  pamiecCache.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig }));
+  // odstep=0: cykl instancji Overpass bez 30-sekundowych pauz (jak w testach M4)
+  const domAtrapa = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec: pamiecCache });
+  await import(`../app/app.js?geokod=${Math.random().toString(36).slice(2)}`);
+  return domAtrapa;
+}
+
+test('geokodacja WYŁĄCZONA w setupie: miejsce nie trafia do UI ani do promptu (ADR 0013 pkt 3)', async () => {
+  const pamiecCache = new Map(); // konfig domyślny → geokodacja: false (K20)
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
+    JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /wyłączona w ustawieniach/,
+    'UI mówi wprost, że nazwa jest wyłączona — nie udaje „brak danych"');
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /miejsce: brak odczytu \(tylko współrzędne\)/,
+    'prompt ma same współrzędne (ADR 0006 pkt 3)');
+});
+
+test('warstwa zapasowa: domyślnie ZERO żądań do Nominatim (ADR 0013 pkt 2)', async () => {
+  const pamiecCache = new Map();
+  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, { geokodacja: true });
+  const wywolania = [];
+  domAtrapa.window.fetch = fetchZNominatim({ ok: true, json: async () => ({ address: { city: 'Warszawa' } }) }, wywolania);
+  ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(150);
+  assert.ok(wywolania.length > 0, 'Overpass był próbowany (padł — ścieżka pierścienia)');
+  assert.equal(wywolania.filter((a) => a.includes('nominatim')).length, 0,
+    'bez wyraźnej zgody Nominatim nie jest wołany');
+});
+
+test('warstwa zapasowa: zgoda → JEDNO żądanie, nazwa z atrybucją ODbL i cache', async () => {
+  const pamiecCache = new Map();
+  pamiecCache.set('okolica:geokodacja-zapasowa', '1');
+  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, { geokodacja: true });
+  const wywolania = [];
+  domAtrapa.window.fetch = fetchZNominatim(
+    { ok: true, json: async () => ({ address: { suburb: 'Śródmieście', city: 'Warszawa' } }) },
+    wywolania,
+  );
+  ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(200);
+
+  const nominatim = wywolania.filter((a) => a.includes('nominatim.openstreetmap.org'));
+  assert.equal(nominatim.length, 1, 'dokładnie jedno żądanie (polityka OSMF: brak zapytań systematycznych)');
+  const params = new URL(nominatim[0]).searchParams;
+  assert.equal(params.get('format'), 'jsonv2');
+  assert.equal(params.get('lat'), '52.23000', 'pozycja zaokrąglona (ADR 0013 pkt 3)');
+  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście, Warszawa/);
+  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /ODbL/, 'atrybucja wymagana polityką OSMF');
+  const wpis = JSON.parse(pamiecCache.get('okolica:miejsce:u3qcnh') ?? 'null');
+  assert.equal(wpis?.schemat, 'miejsce/1', 'wynik w cache pod kluczem geohash6 (obowiązkowy cache, ASSETS §3)');
+  assert.equal(wpis?.miejsce, 'Śródmieście, Warszawa');
+});
+
+test('warstwa zapasowa: druga gra bierze nazwę z cache — zero nowych żądań', async () => {
+  const pamiecCache = new Map();
+  pamiecCache.set('okolica:geokodacja-zapasowa', '1');
+  pamiecCache.set('okolica:miejsce:u3qcnh', JSON.stringify({ schemat: 'miejsce/1', zapisanoMs: Date.now(), miejsce: 'Śródmieście, Warszawa' }));
+  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, { geokodacja: true });
+  const wywolania = [];
+  domAtrapa.window.fetch = fetchZNominatim({ ok: true, json: async () => ({}) }, wywolania);
+  ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(150);
+  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście, Warszawa/, 'nazwa z cache');
+  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /ODbL/, 'atrybucja zostaje przy danych z cache');
+  assert.equal(wywolania.filter((a) => a.includes('nominatim')).length, 0, 'cache = brak żądania');
+});
+
+test('warstwa zapasowa: HTTP 429 → komunikat, bez wyjątku i bez ponawiania w sesji', async () => {
+  const pamiecCache = new Map();
+  pamiecCache.set('okolica:geokodacja-zapasowa', '1');
+  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, { geokodacja: true });
+  const wywolania = [];
+  domAtrapa.window.fetch = fetchZNominatim({ ok: false, status: 429, json: async () => ({}) }, wywolania);
+  ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(150);
+  assert.match(domAtrapa.pobierz('status').textContent, /HTTP 429/, 'komunikat z kodem odpowiedzi');
+  assert.match(domAtrapa.pobierz('status').textContent, /same współrzędne/, 'uczciwie: prompt będzie bez nazwy');
+  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /nazwa miejsca: brak/, 'miejsce zostaje puste');
+  assert.equal(domAtrapa.pobierz('stacje-tryb').textContent.includes('pierścień'), true, 'gra toczy się dalej na pierścieniu');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(100);
+  assert.equal(wywolania.filter((a) => a.includes('nominatim')).length, 1, 'jedna próba na sesję — zero ponawiania');
 });

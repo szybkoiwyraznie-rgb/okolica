@@ -871,3 +871,47 @@ test('cache: LRU — ponad 2 MB najstarsze wpisy wypadają', () => {
     ['okolica:sieci:ccc-1000', 'okolica:sieci:bbb-1000']);
   assert.deepEqual(przycijCacheSieci([]), []);
 });
+
+/* ================================= M5/J5: geokodacja zapasowa (Nominatim) */
+
+import {
+  DOMYSLNY_ENDPOINT_GEOKODACJI,
+  budujUrlGeokodacji,
+  miejsceZOdpowiedziNominatim,
+} from '../app/sieci.js';
+
+test('geokodacja: URL niesie politykę ASSETS §3 (format, zoom, język, zaokrąglenie)', () => {
+  const url = budujUrlGeokodacji({ lat: 52.229678, lon: 21.012345 });
+  assert.ok(url.startsWith(`${DOMYSLNY_ENDPOINT_GEOKODACJI}?`));
+  const params = new URL(url).searchParams;
+  assert.equal(params.get('format'), 'jsonv2');
+  assert.equal(params.get('lat'), '52.22968', 'współrzędna zaokrąglona do 5 miejsc (ADR 0013 pkt 3)');
+  assert.equal(params.get('lon'), '21.01234'); // toFixed(5) z reprezentacji binarnej — policzone, nie zgadnięte
+  assert.equal(params.get('zoom'), '14');
+  assert.equal(params.get('accept-language'), 'pl');
+  assert.equal(params.get('addressdetails'), '1');
+  assert.ok(!url.includes('52.229678'), 'pełna precyzja pozycji nie opuszcza urządzenia');
+
+  const wlasny = budujUrlGeokodacji({ lat: 52.23, lon: 21.01, endpoint: 'https://geokodownik.przykladowy/reverse' });
+  assert.ok(wlasny.startsWith('https://geokodownik.przykladowy/reverse?'), 'endpoint przełączalny bez aktualizacji (polityka OSMF)');
+  assert.throws(() => budujUrlGeokodacji({ lat: 999, lon: 0 }), (e) => e.kod === 'S05');
+  assert.throws(() => budujUrlGeokodacji({ lat: 52, lon: 21, endpoint: 'http://bez-szyfrowania/' }), TypeError);
+  assert.throws(() => budujUrlGeokodacji({ lat: 52, lon: 21, endpoint: 42 }), TypeError);
+});
+
+test('geokodacja: nazwa miejsca z jsonv2 — dzielnica i miasto, śmieci → null', () => {
+  assert.equal(
+    miejsceZOdpowiedziNominatim({ address: { suburb: 'Śródmieście', city: 'Warszawa', state: 'Mazowieckie', country: 'Polska' } }),
+    'Śródmieście, Warszawa',
+  );
+  assert.equal(
+    miejsceZOdpowiedziNominatim({ address: { city_district: 'Praga-Północ', town: 'Warszawa' } }),
+    'Praga-Północ, Warszawa',
+  );
+  assert.equal(miejsceZOdpowiedziNominatim({ address: { village: 'Zalesie Górne' } }), 'Zalesie Górne', 'samo miasto/gmina też jest nazwą miejsca');
+  assert.equal(miejsceZOdpowiedziNominatim({ address: { country: 'Polska' } }), null, 'sam kraj to za mało na „miejsce"');
+  assert.equal(miejsceZOdpowiedziNominatim({ address: {} }), null);
+  assert.equal(miejsceZOdpowiedziNominatim({}), null);
+  assert.equal(miejsceZOdpowiedziNominatim(null), null);
+  assert.equal(miejsceZOdpowiedziNominatim('nie-obiekt'), null);
+});

@@ -30,15 +30,18 @@ import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?
 import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m4-1';
 import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m4-1';
 import {
+  DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
   KODY_SIECI,
   POLITYKA,
   SCHEMAT_SIECI,
   budujGraf,
+  budujUrlGeokodacji,
   budujZapytanieOverpass,
   czyPrzelaczycInstancje,
   kandydaciNaStacje,
   kluczCacheSieci,
+  miejsceZOdpowiedziNominatim,
   nazwaMiejsca,
   parsujOdpowiedz,
   przycijCacheSieci,
@@ -83,6 +86,10 @@ const STAN = {
   wymusPierscien: false,
   /** Tryb ręczny (ADR 0005 pkt 8b): organizator przeciąga pinezki stacji. */
   trybReczny: false,
+  /** Skąd nazwa miejsca: 'overpass' | 'nominatim' (atrybucja ODbL) | null. */
+  zrodloMiejsca: null,
+  /** Jedna próba warstwy zapasowej na sesję (ASSETS §3: brak zapytań systematycznych). */
+  miejsceProbowane: false,
   /** Odstęp między instancjami Overpass; `?odstep=0` skraca go w testach. */
   odstepOverpassMs: POLITYKA.odstepMs,
   /** Dwustopniowe kasowanie danych: pierwszy klik uzbraja, drugi kasuje. */
@@ -121,6 +128,7 @@ function pokazEkran(nazwa) {
 function pokazPrywatnosc() {
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-prywatnosc').hidden = false;
+  $('geokodacja-zapasowa').checked = localStorage.getItem('okolica:geokodacja-zapasowa') === '1';
   window.scrollTo({ top: 0 });
 }
 
@@ -296,7 +304,16 @@ function renderujSetup() {
   czytajLiczbe('setup-kara', 'karaRecznaS');
 
   $('setup-kod').addEventListener('input', (e) => { STAN.konfig.kodGry = e.target.value.trim(); });
-  $('setup-geokodacja').addEventListener('change', (e) => { STAN.konfig.geokodacja = e.target.checked; });
+  $('setup-geokodacja').addEventListener('change', (e) => {
+    STAN.konfig.geokodacja = e.target.checked;
+    renderujMiejsce(); // przełączenie widać od razu (ADR 0013 pkt 3)
+  });
+  $('geokodacja-zapasowa').addEventListener('change', (e) => {
+    localStorage.setItem('okolica:geokodacja-zapasowa', e.target.checked ? '1' : '0');
+    status(e.target.checked
+      ? 'Warstwa zapasowa nazwy miejsca (Nominatim) włączona — jedno żądanie, tylko gdy Overpass nie da nazwy. © OpenStreetMap (ODbL).'
+      : 'Warstwa zapasowa nazwy miejsca (Nominatim) wyłączona — tak jest domyślnie.');
+  });
   $('przycisk-kod').addEventListener('click', () => {
     STAN.konfig.kodGry = proponujKodGry(rngZZiarna(`kod:${Date.now()}`));
     $('setup-kod').value = STAN.konfig.kodGry;
@@ -331,7 +348,7 @@ function pokazPozycje() {
   $('pozycja-status').textContent = STAN.ostatniFix?.zrodlo === ZRODLA_FIXA.reczne ? 'Pozycja ustawiona ręcznie' : 'Pozycja ustalona';
   $('pozycja-dokladnosc').textContent = STAN.dokladnoscM ? `dokładność: ±${Math.round(STAN.dokladnoscM)} m` : 'dokładność: nieznana (wpisana ręcznie)';
   $('pozycja-wspolrzedne').textContent = `${formatujWspolrzedne(p.lat, p.lon)} · geohash ${geohash(p.lat, p.lon, 6)}`;
-  $('pozycja-miejsce').textContent = STAN.miejsce ? `miejsce: ${STAN.miejsce}` : 'nazwa miejsca: brak — pobierana z siecią dróg na ekranie stacji';
+  renderujMiejsce();
   $('przycisk-dalej-stacje').disabled = false;
   // Jawność niedokładności (ADR 0004 pkt 4): komunikat i próg liczy `ocenFix`,
   // tu tylko pokazujemy, co powiedział.
@@ -565,7 +582,100 @@ function ustawSiec(dane, { zCache, klucz }) {
   const miejsce = nazwaMiejsca(dane);
   if (miejsce) {
     STAN.miejsce = miejsce;
-    $('pozycja-miejsce').textContent = `miejsce: ${miejsce}`;
+    STAN.zrodloMiejsca = 'overpass';
+    renderujMiejsce();
+  }
+}
+
+/**
+ * Wyświetlenie nazwy miejsca z bramą `konfig.geokodacja` (ADR 0013 pkt 3:
+ * wyłączona w setupie = prompt i UI mają same współrzędne) oraz atrybucją
+ * ODbL, gdy miejsce pochodzi z warstwy zapasowej Nominatim (ASSETS §3).
+ */
+function renderujMiejsce() {
+  const pole = $('pozycja-miejsce');
+  if (!STAN.konfig.geokodacja) {
+    pole.textContent = 'nazwa miejsca: wyłączona w ustawieniach — prompt ma same współrzędne (ADR 0013 pkt 3)';
+    return;
+  }
+  if (!STAN.miejsce) {
+    pole.textContent = 'nazwa miejsca: brak — pobierana z siecią dróg na ekranie stacji';
+    return;
+  }
+  const atrybucja = STAN.zrodloMiejsca === 'nominatim' ? ' · © OpenStreetMap contributors (ODbL)' : '';
+  pole.textContent = `miejsce: ${STAN.miejsce}${atrybucja}`;
+}
+
+/** Klucz cache nazwy miejsca (polityka Nominatim: „obowiązkowy cache", ASSETS §3). */
+function kluczMiejscaCache() {
+  return `okolica:miejsce:${geohash(STAN.pozycja.lat, STAN.pozycja.lon, 6)}`;
+}
+
+function ustawMiejsce(miejsce, zrodlo) {
+  STAN.miejsce = miejsce;
+  STAN.zrodloMiejsca = zrodlo;
+  renderujMiejsce();
+}
+
+/**
+ * Zapasowa nazwa miejsca (ADR 0013 pkt 2, ASSETS §3): Nominatim, domyślnie
+ * WYŁĄCZONY; jedno żądanie na sesję i tylko gdy Overpass nie dał miejsca,
+ * a pobieranie nazwy jest włączone w setupie. Bez ponawiania przy błędzie —
+ * polityka zakazuje zapytań systematycznych. Endpoint przełączalny kluczem
+ * `okolica:geokodacja-endpoint` (wymóg OSMF „bez aktualizacji oprogramowania").
+ */
+async function uzupelnijMiejsceZapasowe() {
+  if (!STAN.pozycja || STAN.miejsce || !STAN.konfig.geokodacja) return;
+  if (STAN.miejsceProbowane) return;
+  STAN.miejsceProbowane = true;
+  if (localStorage.getItem('okolica:geokodacja-zapasowa') !== '1') return;
+
+  const dzien = 86_400_000;
+  const klucz = kluczMiejscaCache();
+  try {
+    const wpis = JSON.parse(localStorage.getItem(klucz) ?? 'null');
+    const swiezy = wpis?.schemat === 'miejsce/1' && typeof wpis.miejsce === 'string' && wpis.miejsce
+      && Number.isFinite(wpis.zapisanoMs) && Date.now() - wpis.zapisanoMs <= 30 * dzien;
+    if (swiezy) {
+      ustawMiejsce(wpis.miejsce, 'nominatim'); // z cache — atrybucja ODbL zostaje
+      return;
+    }
+  } catch {
+    /* zepsuty wpis = brak wpisu */
+  }
+
+  const f = typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
+  if (!f) return; // offline/atrapy: warstwa zapasowa po prostu milczy
+  const endpoint = localStorage.getItem('okolica:geokodacja-endpoint') || DOMYSLNY_ENDPOINT_GEOKODACJI;
+  let url;
+  try {
+    url = budujUrlGeokodacji({ lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, endpoint });
+  } catch {
+    return;
+  }
+  try {
+    const kontroler = typeof AbortController === 'function' ? new AbortController() : null;
+    const timer = kontroler ? setTimeout(() => kontroler.abort(), POLITYKA.timeoutMs) : null;
+    const odpowiedz = await f(url, { signal: kontroler ? kontroler.signal : undefined });
+    if (timer) clearTimeout(timer);
+    if (!odpowiedz.ok) {
+      status(`Zapasowa nazwa miejsca niedostępna (Nominatim: HTTP ${odpowiedz.status}) — prompt będzie miał same współrzędne.`);
+      return;
+    }
+    const miejsce = miejsceZOdpowiedziNominatim(await odpowiedz.json());
+    if (!miejsce) {
+      status('Nominatim nie zwrócił dzielnicy ani miasta — prompt będzie miał same współrzędne.');
+      return;
+    }
+    ustawMiejsce(miejsce, 'nominatim');
+    try {
+      localStorage.setItem(klucz, JSON.stringify({ schemat: 'miejsce/1', zapisanoMs: Date.now(), miejsce }));
+    } catch {
+      /* brak miejsca na cache — nazwa i tak jest w sesji */
+    }
+    status(`Nazwa miejsca z warstwy zapasowej: ${miejsce} · © OpenStreetMap contributors (ODbL).`);
+  } catch {
+    status('Zapasowa geokodacja nie odpowiedziała — bez ponawiania (polityka OSMF, ASSETS §3). Prompt będzie miał same współrzędne.');
   }
 }
 
@@ -718,6 +828,7 @@ async function przeliczStacjeZPobraniem(klucz) {
       status('Sieć drogowa niedostępna — stacje w trybie uproszczonym (pierścień): osiągalność niezweryfikowana. Sprawdź połączenie albo ustaw stacje ręcznie.');
     }
     przeliczZTegoCoJest();
+    uzupelnijMiejsceZapasowe();
   } finally {
     trwaPobieranieSieci = false;
     $('przycisk-przelicz').disabled = false;
@@ -745,6 +856,7 @@ function przeliczStacje() {
     }
   }
   przeliczZTegoCoJest();
+  uzupelnijMiejsceZapasowe();
 }
 
 /**
@@ -793,7 +905,7 @@ function renderujStacje() {
   if (sieciowe) {
     const w = STAN.wynikSieci;
     $('stacje-sprawiedliwosc').textContent = `sieciowo: średnio ${w.sprawiedliwosc.sredniaM} m od startu · odchylenie ${w.sprawiedliwosc.odchylenieM} m (${Math.round(w.sprawiedliwosc.udzialOdchylenia * 100)}%) · pierścień ${w.pierscien.r} m (pasmo ${w.pierscien.pasmo[0]}–${w.pierscien.pasmo[1]} m) · najmniejszy odstęp ${najmniejszyOdstepM(STAN.stacje)} m`;
-    const miejsce = STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
+    const miejsce = STAN.konfig.geokodacja && STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
     const cache = STAN.siec.zCache ? ' (z pamięci telefonu — Overpass nie został wywołany)' : '';
     $('stacje-tryb').textContent = `${ZRODLA_STACJI.siec}${cache}${miejsce}.`;
     $('przycisk-pierścien').hidden = false;
@@ -819,7 +931,8 @@ function renderujStacje() {
 function budujPromptEkran() {
   const wynik = zbudujPrompt({
     konfig: STAN.konfig,
-    okolica: { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, miejsce: STAN.miejsce },
+    // konfig.geokodacja=false → prompt ma same współrzędne (ADR 0013 pkt 3)
+    okolica: { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, miejsce: STAN.konfig.geokodacja ? STAN.miejsce : '' },
     stacje: STAN.stacje,
   });
   pokazBledy('bledy-prompt', wynik.usterki);
