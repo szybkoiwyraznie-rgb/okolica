@@ -139,8 +139,10 @@ Gra potrafi obyć się **bez wołania modelu**: każda rozpoczęta gra zostawia
 na telefonie kopię swojej paczki (stacje + ukryte pytania), a kuratorowane
 paczki publiczne leżą w `data/paczki/` z indeksem `indeks.json`
 (`npm run indeks-paczek`). Na ekranie „Gdzie jesteś?" karta „📦 Paczki dla
-tej okolicy" proponuje dopasowane paczki (geohash5 + promień + wiek + tematy
-zawarte w konfiguracji) — wybór startuje grę bez promptu, bez wklejania,
+tej okolicy" proponuje dopasowane paczki według kryteriów właściciela
+(ta sama okolica, ta sama liczba stacji i pytań, ten sam poziom, tematy nie
+szersze niż w setupie, promień paczki nie większy niż w setupie) — wybór
+startuje grę bez promptu, bez wklejania,
 bez Overpassa i bez modelu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
 daje plik do publikacji: indeks umieści go dopiero po ręcznym przeglądzie
 źródeł właściciela (pole `meta.przegladZrodel`, brama w narzędziu —

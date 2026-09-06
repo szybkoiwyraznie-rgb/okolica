@@ -541,3 +541,19 @@ tap/pan na żywym telefonie; zielone CI na PR #2.
 - **R7** dokumentacja: README (sekcja repozytorium), ARCHITECTURE (drzewo),
   ROADMAP (domknięcie), ten wpis, opis PR #2.
 - Stan bramy po M9: **421/421** + szablon zgodny; CI zielone na gałęzi.
+
+## 2026-09-06 — decyzja właściciela: współdzielone repozytorium paczek na Google Drive
+
+Właściciel (po M9): mechanizm współdzielenia zestawów pytań NIE był z nim
+ustalony — M9 zbudował wersję plikową w repo jako propozycję (ADR 0017
+Proponowana). Ustalenie wiążące: współdzielone repozytorium żyje na
+wydzielonym koncie **Google Drive** z mostem Apps Script (ADR 0016 →
+Zaakceptowana jako kierunek): zestaw po grze trafia na Drive do katalogu
+„do przeglądu”, właściciel ocenia i akceptuje, zaakceptowany jest dostępny
+dla kompatybilnych gier. Kompatybilność wg właściciela: lokalizacja, liczba
+pytań, liczba stacji, poziom (wiek), tematy nie szersze niż w setupie —
+wbite w `app/zestawy.js` tego samego dnia (plus promień paczki ≤ promienia
+z setupu). Kopia lokalna na telefonie (druga gra bez modelu) zostaje — to
+nie współdzielenie, tylko oszczędność własnych gier. Wdrożenie mostu Drive:
+spike CORS, wpis w ASSETS, ekran zgody prywatności — kolejny krok po
+akceptacji szczegółów przepływu przez właściciela.
