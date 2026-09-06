@@ -117,3 +117,19 @@ to zarządzanie kluczami i realne ryzyko utraty treści.
   `renderujStacje` już migrowane (M4/I8); pozostałe miejsca w `app/app.js`
   (setup, gracze, prompt, podsumowanie, usterki) przepisać przy okazji
   dotykania ich w M5, żeby testy na atrapie nigdy nie czytały starych dzieci.
+
+## B17 — Trwały backend: Google Drive + Apps Script (konto wydzielone)
+
+Pomysł właściciela (2026-09-06): skoro projekt jest dla właściciela i kilku
+znajomych (zero skalowania), trwała pamięć, dane gier i użytkowników oraz
+repozytorium użytych zestawów pytań mogą leżeć na Dysku **specjalnie
+utworzonego konta Google**, a mostem do statycznego HTML byłby zestaw web
+appów Apps Script (zapis/odczyt plików JSON przez `window.fetch`). Pełny
+opis, ograniczenia (CORS/`text/plain`, limity, vendor risk) i alternatywy:
+**ADR 0016 (Proponowana)**. Dotyka: M9 (repo paczek — naturalny moment
+wdrożenia), ADR 0009 (ewentualna gra na kilku urządzeniach przez wspólny
+plik stanu + polling — osobna rewizja ADR), ADR 0010 (trwałość), ekran
+prywatności (nowy odbiorca danych = zgoda, wzorzec Nominatim z M5/J5).
+Warunek wejścia: akceptacja ADR 0016 przez właściciela + spike techniczny
+CORS/Apps Script; nie wcześniej niż po M8 (publikacja daje prawdziwy adres
+— potrzebny do wdrożenia web appu).
