@@ -69,7 +69,7 @@ woła modelu**.
 - [x] **R4 — `tools/generuj-indeks-paczek.mjs`** + `data/paczki/`: walidacja
       schematu i skrótu kontenera, indeks z meta; `npm run indeks-paczek`;
       kontrakt indeks↔pliki.
-- [ ] **R5 — pierwsza paczka kuratorowana**: Podkowa Leśna, 3 stacje w
+- [x] **R5 — pierwsza paczka kuratorowana**: Podkowa Leśna, 3 stacje w
       przestrzeni publicznej (weryfikacja źródłami), 6 pytań (wiek: dorośli,
       tematy: historia/kultura) ze źródłami sprawdzonymi `web_search`;
       wpis w indeksie; to demonstracja ścieżki publikacji (właściciel

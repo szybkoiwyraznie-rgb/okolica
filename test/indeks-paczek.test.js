@@ -53,9 +53,10 @@ test('indeks paczek: znacznik „oczekuje przeglądu" dyskwalifikuje plik', () =
   const tekst = plikPubliczny();
   const surowy = JSON.parse(tekst);
   surowy.meta.przegladZrodel = `${ZNAK_OCZEKUJE_PRZEGLADU} właściciela`;
-  const { indeks, bledy } = zbudujIndeks([{ nazwa: 'surowa.zestaw.json', tekst: JSON.stringify(surowy) }]);
+  const { indeks, bledy, pominiete } = zbudujIndeks([{ nazwa: 'surowa.zestaw.json', tekst: JSON.stringify(surowy) }]);
   assert.deepEqual(indeks.wpisy, [], 'bez przeglądu nie ma publikacji');
-  assert.match(bledy[0].komunikat, /przeglądu źródeł/);
+  assert.deepEqual(bledy, [], 'oczekiwanie to nie błąd — to stan stagingowy');
+  assert.match(pominiete[0].powod, /przeglądu źródeł/);
 });
 
 test('indeks paczek: inna licencja i dziurawe pokrycie stacji nie przechodzą', () => {

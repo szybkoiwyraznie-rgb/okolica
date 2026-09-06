@@ -96,12 +96,14 @@ test('zestawy: dopasowanie okolicy jest ścisłe (geohash5, promień, wiek, tema
       wpis('inny-geohash', '2026-09-06', { geohash5: 'u33db' }),
       wpis('inny-promien', '2026-09-06', { promienM: 3000 }),
       wpis('inny-wiek', '2026-09-06', { wiek: 'wiek-12' }),
-      wpis('inne-tematy', '2026-09-06', { tematy: ['przyroda'] }),
+      wpis('inne-tematy', '2026-09-06', { tematy: ['kultura'] }),
       wpis('tematy-kolejnosc', '2026-09-05', { tematy: ['historia'] }),
+      wpis('podzbior', '2026-09-04', { tematy: ['historia', 'przyroda'] }),
+      wpis('nadzbior', '2026-09-03', { tematy: ['historia', 'przyroda', 'architektura'] }),
     ],
   };
-  const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, tematy: ['historia'], wiek: 'dorosli' });
-  assert.deepEqual(trafione.map((w) => w.skrot), ['pasuje', 'tematy-kolejnosc'], 'najnowsze pierwsze');
+  const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, tematy: ['historia', 'przyroda'], wiek: 'dorosli' });
+  assert.deepEqual(trafione.map((w) => w.skrot), ['pasuje', 'tematy-kolejnosc', 'podzbior'], 'najnowsze pierwsze; TEMATY PACZKI ⊆ TEMATY KONFIGURACJI');
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33', promienM: 1, tematy: ['x'], wiek: 'd' }), TypeError);
 });
 

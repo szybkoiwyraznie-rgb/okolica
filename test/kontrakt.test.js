@@ -580,11 +580,14 @@ test('kontrakt M9: indeks paczek ↔ katalog data/paczki (ADR 0017 pkt 2/5)', ()
   assert.ok(existsSync(join(katalog, 'indeks.json')), 'indeks.json istnieje (generuje npm run indeks-paczek)');
   const indeks = JSON.parse(czytaj('data/paczki/indeks.json'));
   assert.equal(indeks.schemat, 'TO-indeks/1', 'schemat indeksu');
-  assert.deepEqual(
-    [...indeks.wpisy.map((w) => w.plik)].sort(),
-    [...pliki].sort(),
-    'indeks i katalog mają DOKŁADNIE ten sam zestaw plików (sync pilnowany jak CI)',
-  );
+  const wIndeksie = new Set(indeks.wpisy.map((w) => w.plik));
+  for (const plik of pliki) {
+    assert.ok(wIndeksie.has(plik) || JSON.parse(czytaj(`data/paczki/${plik}`)).meta.przegladZrodel.includes('oczekuje przeglądu'),
+      `plik poza indeksem musi jawnie oczekiwać przeglądu właściciela: ${plik}`);
+  }
+  for (const wpis of indeks.wpisy) {
+    assert.ok(pliki.includes(wpis.plik), `wpis indeksu bez pliku w katalogu: ${wpis.plik}`);
+  }
   for (const wpis of indeks.wpisy) {
     assert.equal(wpis.licencja, 'CC BY-SA 4.0', `licencja publiczna: ${wpis.plik}`);
     assert.ok(!wpis.przegladZrodel.includes('oczekuje przeglądu'), `przegląd źródeł odbyty: ${wpis.plik}`);

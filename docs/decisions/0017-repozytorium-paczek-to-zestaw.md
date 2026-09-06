@@ -62,7 +62,9 @@ nieść stacje jawnie, inaczej drugie urządzenie nie odtworzy gry.
    konfiguracji + geohash5 + data + kod gry) i rejestr `okolica:zestawy`
    z LRU (budżet 1,5 MB, maks. 8 wpisów — wzorzec cache sieci, ADR 0010 pkt 1).
    Druga gra w okolicy odtwarza stacje i pytania **z pamięci**: zero Overpassa,
-   zero modelu, zero sieci.
+   zero modelu, zero sieci. Dopasowanie propozycji: ten sam geohash5, promień
+   i wiek oraz **tematy paczki zawierają się** w tematach konfiguracji (paczka
+   węższa niż apetyt gracza nadal jest uczciwa — odwrotnie nie).
 8. **Prywatne repozytorium właściciela** pozostaje poza aplikacją: pliki
    TO-zestaw/1 + własny hosting wskazany kluczem URL. Aplikacja nie zna
    pojęcia „prywatne repo" i nigdzie się nie autoryzuje.

@@ -151,7 +151,7 @@ export function dolozWpisRejestru(rejestr, wpis, { bajty, teraz } = {}) {
   return { rejestr: { schemat: SCHEMAT_INDEKSU, wpisy }, usuniete };
 }
 
-const zbiorTematow = (tematy) => [...tematy].sort().join(',');
+const zbiorTematow = (tematy) => new Set(tematy);
 
 /**
  * Dopasowanie okolicy: ten sam geohash5, ten sam promień, ten sam wiek i ten
@@ -169,7 +169,7 @@ export function dopasujZestawy(rejestr, { geohash5, promienM, tematy, wiek } = {
   const lista = Array.isArray(rejestr) ? rejestr : (rejestr?.wpisy ?? []);
   return lista
     .filter((w) => w.geohash5 === geohash5 && w.promienM === promienM
-      && w.wiek === wiek && zbiorTematow(w.tematy) === szukany)
+      && w.wiek === wiek && w.tematy.every((temat) => szukany.has(temat)))
     .sort((a, b) => String(b.data).localeCompare(String(a.data)));
 }
 

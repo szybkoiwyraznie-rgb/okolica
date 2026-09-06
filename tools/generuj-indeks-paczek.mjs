@@ -43,8 +43,11 @@ export function sprawdzPaczkePubliczna(nazwa, tekst) {
   if (meta.licencja !== LICENCJA_PUBLICZNA) {
     bledy.push(`licencja musi brzmieć „${LICENCJA_PUBLICZNA}” (ADR 0017 pkt 4), jest: „${meta.licencja}”`);
   }
+  let oczekuje = false;
   if (meta.przegladZrodel.includes(ZNAK_OCZEKUJE_PRZEGLADU)) {
-    bledy.push('meta.przegladZrodel wciąż ma znacznik „oczekuje przeglądu” — paczka nie przeszła przeglądu źródeł właściciela (ADR 0008 pkt 6, ADR 0017 pkt 5)');
+    // kandydat do publikacji: plik leży w katalogu, ale indeks go nie niesie,
+    // dopóki właściciel nie wpisze swojego przeglądu (ADR 0017 pkt 5)
+    oczekuje = true;
   }
   let liczbaPytan = 0;
   const { paczka, blad } = odpakujPaczke(kontener);
@@ -64,7 +67,7 @@ export function sprawdzPaczkePubliczna(nazwa, tekst) {
       if (!obsadzone.has(i)) bledy.push(`stacja ${i} nie ma żadnego pytania (złamanie PYT/1.0)`);
     }
   }
-  if (bledy.length) return { wpis: null, bledy };
+  if (bledy.length) return { wpis: null, bledy, oczekuje: false };
   return {
     wpis: {
       skrot: kontener.skrot,
@@ -74,6 +77,7 @@ export function sprawdzPaczkePubliczna(nazwa, tekst) {
       pytan: liczbaPytan,
     },
     bledy: [],
+    oczekuje,
   };
 }
 
@@ -84,20 +88,25 @@ export function sprawdzPaczkePubliczna(nazwa, tekst) {
 export function zbudujIndeks(pliki) {
   const wpisy = [];
   const bledy = [];
+  const pominiete = [];
   for (const { nazwa, tekst } of pliki) {
-    const { wpis, bledy: b } = sprawdzPaczkePubliczna(nazwa, tekst);
-    if (wpis) wpisy.push(wpis);
+    const { wpis, bledy: b, oczekuje } = sprawdzPaczkePubliczna(nazwa, tekst);
+    if (wpis && !oczekuje) wpisy.push(wpis);
+    if (wpis && oczekuje) {
+      pominiete.push({ plik: nazwa, powod: 'oczekuje przeglądu źródeł właściciela (ADR 0008 pkt 6) — poza indeksem do czasu edycji meta.przegladZrodel' });
+    }
     for (const komunikat of b) bledy.push({ plik: nazwa, komunikat });
   }
   wpisy.sort((a, b) => `${a.miejsce}|${a.data}|${a.plik}`.localeCompare(`${b.miejsce}|${b.data}|${b.plik}`));
-  return { indeks: { schemat: SCHEMAT_INDEKSU, wpisy }, bledy };
+  return { indeks: { schemat: SCHEMAT_INDEKSU, wpisy }, bledy, pominiete };
 }
 
 export function zapiszIndeks(katalog = KATALOG) {
   if (!existsSync(katalog)) mkdirSync(katalog, { recursive: true });
   const nazwy = readdirSync(katalog).filter((n) => n.endsWith('.zestaw.json')).sort();
   const pliki = nazwy.map((nazwa) => ({ nazwa, tekst: readFileSync(join(katalog, nazwa), 'utf8') }));
-  const { indeks, bledy } = zbudujIndeks(pliki);
+  const { indeks, bledy, pominiete } = zbudujIndeks(pliki);
+  for (const { plik, powod } of pominiete) console.log(`POMINIĘTO ${plik}: ${powod}`);
   if (bledy.length) {
     for (const { plik, komunikat } of bledy) console.error(`BŁĄD ${plik}: ${komunikat}`);
     throw new Error(`indeks paczek: ${bledy.length} błędów publikacji — indeks NIE zapisany`);
@@ -111,7 +120,7 @@ const czyUruchomiony = process.argv[1] && fileURLToPath(import.meta.url) === pro
 if (czyUruchomiony) {
   try {
     const { sciezka, wpisow } = zapiszIndeks();
-    console.log(`OK: ${sciezka} (${wpisow} wpisów)`);
+    console.log(`OK: ${sciezka} (${wpisow} wpisów w indeksie)`);
   } catch (blad) {
     console.error(blad.message);
     process.exit(1);
