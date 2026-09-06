@@ -88,7 +88,7 @@ prowadzącego (B12), publikacja Pages i manifest (M8), offline/service worker
       dwustopniowo; istniejące „kasowanie danych" czyści `okolica:*`, więc
       historię też (bez zmian); zepsuta historia = jawny komunikat z kodem H
       i oferta kasowania (nigdy ciche odrzucenie — ADR 0010 pkt 6).
-- [ ] **P7 — integracja:** pełna gra (ścieżka z R7: symulacja dojścia ×3
+- [x] **P7 — integracja:** pełna gra (ścieżka z R7: symulacja dojścia ×3
       stacje) → panel D z PEŁNYM podsumowaniem (asercje na pola, medal,
       sekcję stacji) → eksport tekstowy (treść zawiera ranking, nie zawiera
       pytań ani współrzędnych) → wpis w `okolica:historia` (skrót, bez

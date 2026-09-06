@@ -1618,3 +1618,88 @@ test('M7: zepsuta historia — jawne kody H i oferta kasowania na setupie (nigdy
   assert.equal(pamiec.has('okolica:historia'), false, 'kasowanie działa też na zepsutym zapisie');
   assert.equal(dom.pobierz('karta-historia').hidden, true);
 });
+
+/* ========== M7/P7: integracja — pełna gra z dojściem GPS → podsumowanie, eksport, historia */
+
+test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i historia (end-to-end)', async () => {
+  const { dom, paczka, pamiec } = await graGotowaDoStartu();
+  const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
+  zaczynijGre(dom);
+
+  // pętla jak w R7: symulacja dojścia ×3 stacje, poprawne odpowiedzi (fixture: 20 pkt/pytanie)
+  for (const numerStacji of [1, 2, 3]) {
+    const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-symulacja-gra');
+    await czekaj(9 * 120 + 600);
+    assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, `stacja ${numerStacji}: pytanie po dojściu GPS`);
+    kliknijOdpowiedz(dom, pytanie.poprawna);
+    dom.kliknij('przycisk-nastepna-stacja');
+  }
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'naturalny koniec po ostatniej stacji');
+
+  // 1. PEŁNE podsumowanie z prawdziwą punktacją (nie zera z pominięć):
+  //    Gracz 1 ma 2 poprawne (stacje 1 i 3), Gracz 2 jedną; premia ±25% zacisku
+  //    → OCZEKIWANIA POLICZONE: G1 ≥ 2×20−25% = 30 pkt, G2 ≤ 20+25% = 25 pkt
+  const kartaZw = dom.pobierz('gra-wynik-zwyciezca');
+  assert.match(kartaZw.children[0].textContent, /^🏆 Gracz 1$/, 'dwie poprawne wygrywają z jedną przy porównywalnych tempach');
+  // punkty CZYTAMY Z ELEMENTU, nie regexem po złączonym textContent (L23:
+  // 'Gracz 1' + '42 pkt' złączone dałoby '142 pkt')
+  const punktyZw = Number(kartaZw.children[1].textContent.replace(' pkt', ''));
+  // widełki POLICZONE z modelu: 2 × (20 pkt bazowych ± premia 0,5×0,5×20) = [20, 60]
+  assert.ok(punktyZw >= 20 && punktyZw <= 60, `punkty zwycięzcy w widełkach policzonych: ${punktyZw}`);
+  const wiersze = dom.pobierz('gra-wyniki-tbody').children;
+  assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
+  assert.equal(wiersze[0].children[2].textContent, '2/2', 'Gracz 1: dwie poprawne, zero błędnych');
+  assert.equal(wiersze[1].children[2].textContent, '1/1', 'Gracz 2: jedna poprawna');
+  const karty = dom.pobierz('gra-wynik-gracze').children;
+  assert.match(karty[0].textContent, /podstawowe \d+ \+ premie -?\d+/, 'rozbicie punktów z prawdziwej gry');
+  assert.match(karty[0].textContent, /zaliczona|odcinki: 2/);
+  assert.match(karty[0].textContent, /tempo \d+:\d\d min\/km/, 'tempo policzone z dojść GPS (nie kreska)');
+  const statystyki = dom.pobierz('gra-wynik-statystyki').textContent;
+  assert.match(statystyki, /zaliczone:3 z 3/);
+  assert.match(statystyki, /pominięte:0/);
+  assert.match(dom.pobierz('gra-wynik-medal').textContent, /🏅 Uczciwa trasa/, 'pierścień jest uczciwy z definicji');
+  const stacjeWiersze = dom.pobierz('gra-wynik-stacje-tbody').children;
+  assert.equal(stacjeWiersze.length, 3);
+  for (const w of stacjeWiersze) {
+    assert.match(w.textContent, /zaliczona \(GPS\)/, 'tryb dojścia zmierzony, nie zgadywany');
+    assert.equal(/—/.test(w.children[3].textContent), false, 'każda stacja ma zmierzony czas');
+  }
+
+  // 2. eksport tekstowy z prawdziwej gry: ranking, stacje z GPS — i STRAŻNIK prywatności
+  const tekst = dom.pobierz('pole-wynik-tekst').value;
+  assert.match(tekst, /🏆 Gracz 1 — \d+ pkt/);
+  assert.match(tekst, /stacja 1 · Gracz 1 — zaliczona \(GPS\)/);
+  assert.match(tekst, /zaliczone 3 z 3 stacji/);
+  for (const pytanie of paczka.pytania) {
+    assert.equal(tekst.includes(pytanie.tresc), false, `treść pytania ${pytanie.id} wyciekła do eksportu`);
+    for (const odpowiedz of pytanie.odpowiedzi) {
+      if (odpowiedz.length > 4) assert.equal(tekst.includes(odpowiedz), false, `odpowiedź wyciekła do eksportu`);
+    }
+  }
+  assert.equal(tekst.includes('52.2297'), false, 'współrzędne nie wyciekają do eksportu');
+
+  // 3. obraz wyniku z prawdziwej gry: zwycięzca z punktami na canvas
+  dom.kliknij('przycisk-pobierz-obraz');
+  await czekaj(80);
+  const canvas = dom.utworzone.filter((el) => String(el.tagName).toLowerCase() === 'canvas').at(-1);
+  const tekstyObrazu = canvas.komendy.filter((k) => k.op === 'fillText').map((k) => k.tekst);
+  assert.ok(tekstyObrazu.some((x) => x === '🏆 Gracz 1'), 'zwycięzca na obrazie');
+  assert.ok(tekstyObrazu.some((x) => x === `${punktyZw} pkt`), 'punkty zwycięzcy spójne z panelem');
+
+  // 4. historia: jeden pełny wpis bez treści (skrót, ADR 0010 pkt 1)
+  const { historia, usterki } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
+  assert.deepEqual(usterki, []);
+  assert.equal(historia.wpisy.length, 1);
+  const w = historia.wpisy[0];
+  assert.equal(w.przerwana, false);
+  assert.equal(w.zwyciezca, 'Gracz 1');
+  assert.equal(w.zaliczoneStacje, 3);
+  assert.ok(w.punktyRazem >= 30 && w.punktyRazem <= 90, `suma punktów w widełkach policzonych (3 × 20 ± premia): ${w.punktyRazem}`);
+  const jsonHistorii = JSON.stringify(historia);
+  for (const pytanie of paczka.pytania) {
+    assert.equal(jsonHistorii.includes(pytanie.tresc), false, 'treść pytania wyciekła do historii');
+  }
+  assert.equal(jsonHistorii.includes('52.2297'), false, 'współrzędne wyciekły do historii');
+});
