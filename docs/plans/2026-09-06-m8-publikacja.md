@@ -104,7 +104,7 @@
       handoffie/kommicie — sukces albo 403 = czynność właściciela),
       poprawa §5 (literówka adresu, nota CI live + kontrakt lustra);
       commit + push.
-- [ ] **PB4 — audyt ASSETS:** checklista §5 na kod (kafelki, Overpass,
+- [x] **PB4 — audyt ASSETS:** checklista §5 na kod (kafelki, Overpass,
       Nominatim, atrybucje), zapis wyniku z datą; commit + push.
 - [ ] **PB5 — dokumenty:** ADR 0002 Zaakceptowana (adnotacja), ROADMAP
       „kod M8 gotowy" + zostało-kryterium-właściciela, ARCHITECTURE

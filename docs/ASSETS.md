@@ -133,3 +133,42 @@ Zasady użycia w kodzie:
 4. Atrybucja w UI (pod mapą, zawsze widoczna) + w `README.md`.
 5. Test kontraktowy: tabela dostawców w kodzie ↔ ten plik (nazwy i atrybucje).
 6. Sprawdzenie degradacji: co się stanie, gdy dostawca zniknie albo zwróci 429.
+
+## 6. Audyt dostawców (M8, 2026-09-06)
+
+Przeprowadzony check-listą z §5 przed publikacją na Pages. Zakres: zgodność
+kod ↔ ten plik oraz reweryfikacja polityk „na dziś".
+
+**Zgodność kod ↔ dokumentacja:**
+
+- `SZABLONY_KAFELKOW` (`app/mapa.js`) == tabela §1 — egzekwuje kontrakt
+  (`test/kontrakt.test.js`, test „szablony URL kafelków…", porównanie po
+  ujednoliceniu `{s}` → `{a,b,c}`).
+- Klucze `PODKLADY` (`app/konfig.js`) mają wpisy w §1 — egzekwuje kontrakt;
+  osobny kontrakt pilnuje, że CARTO nie wróci do kodu (§1.1).
+- `INSTANCJE_OVERPASS` (`app/sieci.js`) == tabela §2 co do URL-i (FOSSGIS →
+  private.coffee → VK Maps); sprawdzenie ręczne (tabela w markdown nie jest
+  parsowana w testach — świadomie, §2 niesie też opisy polityk).
+- Nominatim: opt-in + komunikat w UI (`app/app.js`, „Warstwa zapasowa…")
+  == §3 i ADR 0013; endpoint konfigurowalny, cache sesyjny, jedno żądanie.
+- Atrybucje ZAWSZE widoczne pod mapą: `#mapa-pozycja-atrybucja` i
+  `#mapa-stacje-atrybucja` (`index.html`) + test bootstrapa.
+
+**Reweryfikacja polityk (2026-09-06, `web_search`):**
+
+- OSM Tile Usage Policy: bez zmian istotnych dla nas — ważny UA *albo*
+  Referer, widoczna atrybucja, cache lokalny ≥7 dni/Expires, zakaz ciężkiego
+  użycia. Nasz profil (kilkanaście kafelków na ekran, cache przeglądarki)
+  mieści się w polityce; brak akcji.
+- Overpass: instancja główna (FOSSGIS) bez zmian; **uwaga**: pojedynczy raport
+  użytkownika (Reddit, 2026-03) opisuje 403/time-outy na instancjach
+  zapasowych (VK Maps, private.coffee), podczas gdy blog GIS (2026-04)
+  wymienia private.coffee wśród działających mirrorów — świadectwa
+  sprzeczne, prawdopodobnie zależne od profilu ruchu. Nasza odpowiedź jest
+  już w kodzie: łańcuch fallbacków + jawna degradacja (komunikat zamiast
+  cichego błędu) + fixture i tryb testowy offline; brak akcji, obserwować.
+- Nominatim i Esri: noty z 2026-09-05 aktualne (odpowiednio: opt-in za
+  zgodą polityki; wzorzec AME bez zmian).
+
+**Wniosek:** zero rozjazdów kod ↔ dokumentacja, zero zmian wymagających
+akcji; nowy dostawca przechodzi pełną checklistę §5.
