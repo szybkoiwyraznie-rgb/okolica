@@ -146,6 +146,10 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     scrollTo() {},
     addEventListener(typ, fn) { (zdarzeniaOkna[typ] ??= []).push(fn); },
     matchMedia() { return { matches: false, addEventListener() {}, addListener() {} }; },
+    // przeglądarka wystawia timery także na `window` — kod, który woła
+    // `window.setTimeout`, w atrapie bez nich padał PO teście (async)
+    setTimeout: (...args) => setTimeout(...args),
+    clearTimeout: (...args) => clearTimeout(...args),
   };
 
   const navigatorStub = { clipboard: undefined, geolocation, userAgent: 'node-test', language: 'pl-PL' };
@@ -198,7 +202,7 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     /** Klik w element (wszystkie nasłuchy `click`). */
     kliknij(id) {
       const el = pobierz(id);
-      for (const fn of el.zdarzenia.click ?? []) fn({ type: 'click', target: el });
+      for (const fn of el.zdarzenia.click ?? []) fn({ type: 'click', target: el, currentTarget: el });
       return (el.zdarzenia.click ?? []).length;
     },
     /** Karta w tle / na wierzchu (ADR 0004 pkt 1: pauza śledzenia). */

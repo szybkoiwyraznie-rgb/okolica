@@ -195,6 +195,11 @@ test('kontrakt: przycisk trybu testowego ma w HTML stan początkowy aria-pressed
   assert.match(reczne, /\bhidden\b/, 'widoczny dopiero na ekranie stacji bez sieci');
 
   assert.match(INDEX, /id="bledy-stacje"[^>]*role="alert"/, 'błędy sieci drogowej w polu role=alert (nie alert())');
+
+  const podglad = INDEX.match(/<div id="podglad-organizatora"[^>]*>/)?.[0];
+  assert.ok(podglad, 'brak podglądu organizatora (ADR 0006 pkt 8)');
+  assert.match(podglad, /\bhidden\b/, 'podgląd domyślnie schowany — otwiera się dopiero z przyjętą paczką');
+  assert.match(INDEX, /Tylko dla organizatora/, 'podgląd ma jawne ostrzeżenie, że to treści nie dla graczy');
   assert.match(INDEX, /id="bledy-stacje"[^>]*\bhidden\b/, 'pole błędów stacji domyślnie schowane');
 });
 

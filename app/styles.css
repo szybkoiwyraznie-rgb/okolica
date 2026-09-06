@@ -384,3 +384,17 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   cursor: pointer;
 }
 .przycisk-stopka:focus-visible { outline: 2px solid var(--akcent); }
+
+
+/* podgląd „tylko dla organizatora" (M5, ADR 0006 pkt 8) */
+.podglad { margin-top: 12px; border-top: 2px solid var(--ostrzezenie); padding-top: 8px; }
+.podglad .ostrzezenie { font-size: 13px; background: rgba(255, 176, 32, 0.14); padding: 8px 10px; border-radius: 8px; }
+.pytanie-karta { border: 1px solid var(--linia); border-radius: 10px; padding: 10px; margin: 10px 0; }
+.pytanie-karta h3 { font-size: 13px; color: var(--tekst-slaby); margin: 0 0 6px; }
+.wiersz-odpowiedzi { display: flex; gap: 8px; align-items: center; margin: 4px 0; }
+.wiersz-odpowiedzi input[type="radio"] { width: 24px; height: 24px; flex: 0 0 auto; }
+.wiersz-odpowiedzi input[type="text"] { flex: 1 1 auto; }
+.edycja-zrodel { margin-top: 8px; }
+.wiersz-zrodla { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 6px 0; padding: 6px; border-left: 3px solid var(--linia); }
+.pole-data { max-width: 120px; }
+.przycisk-maly { padding: 6px 10px; font-size: 13px; }

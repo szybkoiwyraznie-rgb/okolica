@@ -42,7 +42,7 @@ ASSETS §3).
       zduplikowane odpowiedzi → usterki E jak przy walidacji paczki);
       `terazMs` wstrzykiwane (zegar nie z globali). Testy czyste: kształt
       `modyfikacje[]`, odmowy, brak mutacji wejścia, determinizm `data`.
-- [ ] **J3 — podgląd „tylko dla organizatora" + edycja w UI:** sekcja pytań
+- [x] **J3 — podgląd „tylko dla organizatora" + edycja w UI:** sekcja pytań
       per stacja na ekranie „paczka" (widoczna po przyjęciu; banner
       „TYLKO DLA ORGANIZATORA — gracze nie powinni tego widzieć", ADR 0006
       pkt 8); edycja treści/odpowiedzi/poprawnej/źródeł → „Zapisz poprawkę"

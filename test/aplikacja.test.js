@@ -712,3 +712,132 @@ test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia
   assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('ręcznie'), 'nowy układ nie udaje ręcznego');
   assert.ok(!domAtrapa.pobierz('lista-stacji').children[0].innerHTML.includes('ręcznie'));
 });
+
+/* --------------------------------------- M5/J3: podgląd i edycja organizatora */
+
+function czytajFixturePaczka() {
+  return JSON.parse(readFileSync(join(KATALOG_APP, 'test', 'fixtures', 'paczka-ok.json'), 'utf8'));
+}
+
+/**
+ * Świeża aplikacja z przyjętą paczką z fixture'a. Konfig z pamięci musi
+ * zgadzać się z fixturem (3 stacje × 1 pytanie, tematy historia+architektura,
+ * promień 1000 m) — inaczej walidator słusznie zgłosi E03/E16/E05.
+ */
+async function aplikacjaZPrzyjetaPaczka() {
+  const pamiecKonfig = new Map();
+  pamiecKonfig.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1',
+    konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+  }));
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
+  await import(`../app/app.js?podglad=${Math.random().toString(36).slice(2)}`);
+  const paczka = czytajFixturePaczka();
+  domAtrapa.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
+  domAtrapa.kliknij('przycisk-sprawdz');
+  return { dom: domAtrapa, paczka };
+}
+
+function kliknijW(el) {
+  for (const fn of el.zdarzenia.click ?? []) fn({ type: 'click', target: el, currentTarget: el });
+  return (el.zdarzenia.click ?? []).length;
+}
+
+test('podgląd organizatora: przyjęta paczka pokazuje pytania, a odrzucona nie', async () => {
+  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
+  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta/);
+  assert.equal(dom.pobierz('podglad-organizatora').hidden, false, 'podgląd otwiera się z przyjęciem');
+  const karty = dom.pobierz('podglad-pytania').children;
+  assert.equal(karty.length, paczka.pytania.length, 'karta na każde pytanie');
+  assert.match(karty[0].children[0].textContent, new RegExp(`^${paczka.pytania[0].id} · stacja`), 'nagłówek karty z id i stacją');
+  assert.equal(karty[0].children[1].value, paczka.pytania[0].tresc, 'treść w polu edycji');
+
+  // odrzucona paczka nie pokazuje podglądu
+  const pamiecKonfig2 = new Map();
+  pamiecKonfig2.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1',
+    konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+  }));
+  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig2 });
+  await import(`../app/app.js?podglad2=${Math.random().toString(36).slice(2)}`);
+  const zepsuta = czytajFixturePaczka();
+  zepsuta.protokol = 'PYT/9.9';
+  dom2.pobierz('pole-odpowiedz').value = JSON.stringify(zepsuta);
+  dom2.kliknij('przycisk-sprawdz');
+  assert.match(dom2.pobierz('wynik-naglowek').textContent, /odrzucona|Nie da się/);
+  assert.equal(dom2.pobierz('podglad-organizatora').hidden, true, 'przy odmowie podgląd zostaje zamknięty');
+});
+
+test('podgląd organizatora: edycja przechodzi re-walidację, psucie blokuje ukrycie, modyfikacje[] podróżują z kontenerem', async () => {
+  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
+  const miejsce = paczka.okolica.miejsce;
+
+  // 1) edycja psująca protokół (za krótka treść) — zapisana, ale blokuje ukrycie
+  let karta = dom.pobierz('podglad-pytania').children[0];
+  karta.children[1].value = 'za krótka treść';
+  const zapisz1 = karta.children[karta.children.length - 1];
+  assert.match(zapisz1.textContent, /Zapisz poprawkę/);
+  assert.ok(kliknijW(zapisz1) > 0, 'przycisk zapisu ma nasłuch');
+  assert.match(dom.pobierz('wynik-naglowek').textContent, /wymaga naprawy/, 're-walidacja całej paczki po edycji');
+  assert.equal(dom.pobierz('przycisk-ukryj').hidden, true, 'zepsuta paczka się nie ukryje');
+  assert.equal(dom.pobierz('przycisk-poprawka').hidden, false, 'poprawka do modelu znów dostępna');
+  assert.ok(dom.pobierz('wynik-usterki').children.length > 0, 'usterki widoczne na liście');
+  assert.match(dom.pobierz('status').textContent, /modyfikacje/, 'status mówi o zapisie poprawki');
+
+  // 2) edycja dobra — paczka wraca do czystej
+  karta = dom.pobierz('podglad-pytania').children[0];
+  const dobraTresc = `${miejsce} — pytanie poprawione ręcznie przez organizatora gry terenowej?`;
+  karta.children[1].value = dobraTresc;
+  const zapisz2 = karta.children[karta.children.length - 1];
+  kliknijW(zapisz2);
+  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(po ręcznej poprawce\)/);
+  assert.equal(dom.pobierz('przycisk-ukryj').hidden, false);
+  assert.equal(dom.pobierz('wynik-usterki').children.length, 0, 'lista usterek wyczyszczona (replaceChildren)');
+
+  // 3) ukrycie zwija podgląd (plaintext znika z DOM), a kontener niesie modyfikacje[]
+  dom.kliknij('przycisk-ukryj');
+  assert.equal(dom.pobierz('podglad-organizatora').hidden, true, 'po ukryciu podgląd zwinięty');
+  assert.equal(dom.pobierz('podglad-pytania').children.length, 0, 'plaintext pytań usunięty z DOM');
+  const kontenerTekst = dom.pobierz('pole-odpowiedz').value;
+  assert.ok(kontenerTekst.startsWith('{'), 'kontener w polu zapasowym (JSON)');
+  const { odpakujPaczke } = await import('../app/kodowanie.js');
+  const zPowrotem = odpakujPaczke(kontenerTekst);
+  assert.equal(zPowrotem.paczka.pytania[0].tresc, dobraTresc, 'ostatnia (dobra) edycja w ukrytej paczce');
+  assert.equal(zPowrotem.paczka.modyfikacje.length, 2, 'obie poprawki zapisane (ta psująca też — ślad audytu)');
+  assert.match(zPowrotem.paczka.modyfikacje[0].opis, /^pytanie s1p1: poprawiono treść pytania$/);
+  assert.match(zPowrotem.paczka.modyfikacje[1].data, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
+});
+
+test('podgląd organizatora: zmiana poprawnej odpowiedzi i dodanie źródła trafiają do paczki', async () => {
+  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
+  const karta = dom.pobierz('podglad-pytania').children[0];
+  // kolejność w karcie: h3, tresc, odpowiedzi(div), wyjasnienie, zrodla(div), zapisz
+  const blokOdpowiedzi = karta.children[2];
+  const wierszeOdp = blokOdpowiedzi.children; // 4 × (radio + input)
+  assert.equal(wierszeOdp.length, 4);
+  // atrapa nie wiąże radio w grupę (przeglądarka sama zdejmie `checked`
+  // z pozostałych) — test odwzorowuje stan PO kliknięciu trzeciej opcji
+  wierszeOdp.forEach((wiersz, i) => { wiersz.children[0].checked = i === 2; });
+  const blokZrodel = karta.children[4];
+  const listaZrodel = blokZrodel.children[0];
+  const dodajZrodlo = blokZrodel.children[1];
+  assert.match(dodajZrodlo.textContent, /Dodaj źródło/);
+  const ilePrzed = listaZrodel.children.length;
+  kliknijW(dodajZrodlo);
+  assert.equal(listaZrodel.children.length, ilePrzed + 1, 'nowy wiersz źródła doszedł do listy');
+  const nowyWiersz = listaZrodel.children[listaZrodel.children.length - 1];
+  nowyWiersz.children[0].value = 'https://archiwum-miejskie.pl/dokument/123';
+  nowyWiersz.children[1].value = 'Archiwum miejskie — dokument 123';
+  nowyWiersz.children[2].value = '2026-09-06';
+
+  kliknijW(karta.children[karta.children.length - 1]);
+  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(po ręcznej poprawce\)/, `usterki: ${dom.pobierz('wynik-usterki').children.map((li) => li.innerHTML).join('; ')}`);
+  dom.kliknij('przycisk-ukryj');
+  const { odpakujPaczke } = await import('../app/kodowanie.js');
+  const zPowrotem = odpakujPaczke(dom.pobierz('pole-odpowiedz').value);
+  const p0 = zPowrotem.paczka.pytania[0];
+  assert.equal(p0.poprawna, 2, 'poprawna odpowiedź przełączona radiem');
+  assert.equal(p0.zrodla.length, paczka.pytania[0].zrodla.length + 1, 'nowe źródło doklejone');
+  assert.equal(p0.zrodla[p0.zrodla.length - 1].url, 'https://archiwum-miejskie.pl/dokument/123');
+  assert.match(zPowrotem.paczka.modyfikacje[0].opis, /poprawną odpowiedź, źródła/);
+});

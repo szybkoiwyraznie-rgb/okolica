@@ -22,6 +22,7 @@ import {
   podsumowaniePaczki,
   poprawkaDlaModelu,
   walidujPaczke,
+  zastosujEdycjePaczki,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
 } from './protokol.js?v=m4-1';
@@ -904,6 +905,7 @@ function sprawdzOdpowiedz() {
     renderujUsterki([blad]);
     $('przycisk-poprawka').hidden = false;
     $('przycisk-ukryj').hidden = true;
+    $('podglad-organizatora').hidden = true;
     status('Odpowiedź odrzucona na etapie odczytu (parsowanie JSON albo kontener).');
     return;
   }
@@ -917,6 +919,7 @@ function sprawdzOdpowiedz() {
     renderujUsterki(usterki);
     $('przycisk-poprawka').hidden = false;
     $('przycisk-ukryj').hidden = true;
+    $('podglad-organizatora').hidden = true;
     status('Paczka odrzucona przez walidator (protokół PYT §6).');
     return;
   }
@@ -926,16 +929,14 @@ function sprawdzOdpowiedz() {
   $('wynik-naglowek').textContent = 'Paczka przyjęta';
   $('przycisk-poprawka').hidden = true;
   $('przycisk-ukryj').hidden = false;
-  const s = podsumowaniePaczki(paczka);
-  const wpisz = (dt, dd) => { podsumowanie.insertAdjacentHTML('beforeend', `<dt>${dt}</dt><dd>${dd}</dd>`); };
-  wpisz('pytania', `${s.liczbaPytan} (stacje: ${s.stacje.join(', ')})`);
-  wpisz('tematy', s.tematy.join(', '));
-  wpisz('źródła', `${s.liczbaZrodel} adresów — pokazane graczom po odpowiedzi`);
-  wpisz('punkty', `${s.punktyRazem} do zdobycia`);
-  if (s.uwagi) wpisz('uwagi modelu', s.uwagi);
-  if (zKontenera.zrodlo === 'kontener') wpisz('postać', 'paczka ukryta (kontener TO-paczka/2)');
-  else if (zKontenera.zrodlo === 'json') wpisz('postać', 'jawny JSON od modelu — przed ukryciem');
-  wpisz('następny krok', 'rozgrywka — kamień M6 (pytania zostaną ukryte w pamięci urządzenia)');
+  const postac = zKontenera.zrodlo === 'kontener'
+    ? 'paczka ukryta (kontener TO-paczka/2)'
+    : zKontenera.zrodlo === 'json'
+      ? 'jawny JSON od modelu — przed ukryciem'
+      : null;
+  renderujPodsumowaniePaczki(paczka, postac);
+  $('podglad-organizatora').hidden = false;
+  renderujPodgladOrganizatora();
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
@@ -943,13 +944,203 @@ function sprawdzOdpowiedz() {
 }
 
 function renderujUsterki(usterki) {
-  const lista = $('wynik-usterki');
-  lista.innerHTML = '';
-  for (const u of usterki) {
+  // replaceChildren, nie innerHTML='' (LESSONS L19): atrapa i przeglądarka
+  // zachowują się wtedy identycznie, a stare wiersze nie zalegają w DOM
+  $('wynik-usterki').replaceChildren(...usterki.map((u) => {
     const li = document.createElement('li');
     li.innerHTML = `<code>${u.kod}</code> ${u.pole ? `<strong>${u.pole}</strong> — ` : ''}${u.komunikat}`;
-    lista.appendChild(li);
+    return li;
+  }));
+}
+
+/** Podsumowanie przyjętej paczki jako `dt/dd` (też replaceChildren — L19). */
+function renderujPodsumowaniePaczki(paczka, postac = null) {
+  const s = podsumowaniePaczki(paczka);
+  const wiersze = [
+    ['pytania', `${s.liczbaPytan} (stacje: ${s.stacje.join(', ')})`],
+    ['tematy', s.tematy.join(', ')],
+    ['źródła', `${s.liczbaZrodel} adresów — pokazane graczom po odpowiedzi`],
+    ['punkty', `${s.punktyRazem} do zdobycia`],
+  ];
+  if (s.uwagi) wiersze.push(['uwagi modelu', s.uwagi]);
+  if (Array.isArray(paczka.modyfikacje) && paczka.modyfikacje.length) {
+    wiersze.push(['ręczne poprawki', `${paczka.modyfikacje.length} — zapisane w paczce (ADR 0006 pkt 8)`]);
   }
+  if (postac) wiersze.push(['postać', postac]);
+  wiersze.push(['następny krok', 'rozgrywka — kamień M6 (pytania zostaną ukryte w pamięci urządzenia)']);
+  const wezly = [];
+  for (const [dt, dd] of wiersze) {
+    const dtEl = document.createElement('dt');
+    dtEl.textContent = dt;
+    const ddEl = document.createElement('dd');
+    ddEl.textContent = dd;
+    wezly.push(dtEl, ddEl);
+  }
+  $('wynik-podsumowanie').replaceChildren(...wezly);
+}
+
+/** Zwinięcie podglądu: plaintext pytań znika z DOM (ADR 0007 pkt 4). */
+function zwijPodgladOrganizatora() {
+  $('podglad-organizatora').hidden = true;
+  $('podglad-pytania').replaceChildren();
+}
+
+/* ------------------------------------- podgląd i edycja organizatora (M5) */
+
+/**
+ * Podgląd „tylko dla organizatora" (ADR 0006 pkt 8): pytania z przyjętej
+ * paczki z formularzem edycji. Zapis poprawki przechodzi przez czystą
+ * `zastosujEdycjePaczki` (atomowość + `modyfikacje[]`), a wynik jest
+ * RE-walidowany całym `walidujPaczke` — edycja nie omija protokołu.
+ */
+function renderujPodgladOrganizatora() {
+  const kontener = $('podglad-pytania');
+  if (!STAN.paczka || !Array.isArray(STAN.paczka.pytania)) {
+    kontener.replaceChildren();
+    return;
+  }
+  kontener.replaceChildren(...STAN.paczka.pytania.map((pytanie) => kartaPytania(pytanie)));
+}
+
+function kartaPytania(p) {
+  const karta = document.createElement('article');
+  karta.className = 'pytanie-karta';
+
+  const naglowek = document.createElement('h3');
+  naglowek.textContent = `${p.id} · stacja ${p.stacja} · ${p.temat} · ${p.punkty} pkt`;
+  karta.appendChild(naglowek);
+
+  const tresc = document.createElement('textarea');
+  tresc.className = 'pole-tekstowe';
+  tresc.rows = 3;
+  tresc.value = p.tresc;
+  tresc.setAttribute('aria-label', `Treść pytania ${p.id}`);
+  karta.appendChild(tresc);
+
+  const odpowiedzi = document.createElement('div');
+  odpowiedzi.className = 'edycja-odpowiedzi';
+  const inputyOdpowiedzi = [];
+  const radioPoprawne = [];
+  (Array.isArray(p.odpowiedzi) ? p.odpowiedzi : []).forEach((odp, i) => {
+    const wiersz = document.createElement('div');
+    wiersz.className = 'wiersz-odpowiedzi';
+    const radio = document.createElement('input');
+    radio.type = 'radio';
+    radio.name = `poprawna-${p.id}`;
+    radio.checked = i === p.poprawna;
+    radio.setAttribute('aria-label', `Oznacz odpowiedź ${i + 1} jako poprawną`);
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'pole-tekstowe';
+    input.maxLength = 80;
+    input.value = odp;
+    input.setAttribute('aria-label', `Odpowiedź ${i + 1} pytania ${p.id}`);
+    wiersz.appendChild(radio);
+    wiersz.appendChild(input);
+    odpowiedzi.appendChild(wiersz);
+    inputyOdpowiedzi.push(input);
+    radioPoprawne.push(radio);
+  });
+  karta.appendChild(odpowiedzi);
+
+  const wyjasnienie = document.createElement('textarea');
+  wyjasnienie.className = 'pole-tekstowe';
+  wyjasnienie.rows = 3;
+  wyjasnienie.value = p.wyjasnienie ?? '';
+  wyjasnienie.setAttribute('aria-label', `Wyjaśnienie pytania ${p.id}`);
+  karta.appendChild(wyjasnienie);
+
+  const zrodla = document.createElement('div');
+  zrodla.className = 'edycja-zrodel';
+  // wiersze w osobnym kontenerze: przy samym `appendChild` nowy wiersz
+  // wylądowałby ZA przyciskiem „Dodaj źródło" (insertBefore nie istnieje
+  // w atrapie), więc przycisk jest rodzeństwem listy, nie jej elementem
+  const listaZrodel = document.createElement('div');
+  zrodla.appendChild(listaZrodel);
+  const wierszeZrodel = [];
+  function dodajWierszZrodla(z) {
+    const wiersz = document.createElement('div');
+    wiersz.className = 'wiersz-zrodla';
+    const url = document.createElement('input');
+    url.type = 'text';
+    url.className = 'pole-tekstowe';
+    url.value = z?.url ?? '';
+    url.setAttribute('aria-label', 'Adres URL źródła');
+    const tytul = document.createElement('input');
+    tytul.type = 'text';
+    tytul.className = 'pole-tekstowe';
+    tytul.value = z?.tytul ?? '';
+    tytul.setAttribute('aria-label', 'Tytuł źródła');
+    const sprawdzono = document.createElement('input');
+    sprawdzono.type = 'text';
+    sprawdzono.className = 'pole-tekstowe pole-data';
+    sprawdzono.value = z?.sprawdzono ?? '';
+    sprawdzono.placeholder = 'RRRR-MM-DD';
+    sprawdzono.setAttribute('aria-label', 'Data sprawdzenia źródła');
+    wiersz.appendChild(url);
+    wiersz.appendChild(tytul);
+    wiersz.appendChild(sprawdzono);
+    listaZrodel.appendChild(wiersz);
+    wierszeZrodel.push({ wiersz, url, tytul, sprawdzono });
+  }
+  for (const z of Array.isArray(p.zrodla) ? p.zrodla : []) dodajWierszZrodla(z);
+  const dodajZrodlo = document.createElement('button');
+  dodajZrodlo.type = 'button';
+  dodajZrodlo.className = 'przycisk przycisk-maly';
+  dodajZrodlo.textContent = '＋ Dodaj źródło';
+  dodajZrodlo.addEventListener('click', () => dodajWierszZrodla(null));
+  zrodla.appendChild(dodajZrodlo);
+  karta.appendChild(zrodla);
+
+  const zapisz = document.createElement('button');
+  zapisz.type = 'button';
+  zapisz.className = 'przycisk';
+  zapisz.textContent = '💾 Zapisz poprawkę';
+  zapisz.addEventListener('click', () => zapiszPoprawke(p, { tresc, inputyOdpowiedzi, radioPoprawne, wyjasnienie, wierszeZrodel }));
+  karta.appendChild(zapisz);
+  return karta;
+}
+
+function zapiszPoprawke(p, pola) {
+  const zmiany = {};
+  if (pola.tresc.value !== p.tresc) zmiany.tresc = pola.tresc.value;
+  const noweOdpowiedzi = pola.inputyOdpowiedzi.map((input) => input.value);
+  if (noweOdpowiedzi.join('|') !== (p.odpowiedzi ?? []).join('|')) zmiany.odpowiedzi = noweOdpowiedzi;
+  const indexPoprawnej = pola.radioPoprawne.findIndex((radio) => radio.checked);
+  if (indexPoprawnej >= 0 && indexPoprawnej !== p.poprawna) zmiany.poprawna = indexPoprawnej;
+  if (pola.wyjasnienie.value !== (p.wyjasnienie ?? '')) zmiany.wyjasnienie = pola.wyjasnienie.value;
+  const noweZrodla = pola.wierszeZrodel
+    .map(({ url, tytul, sprawdzono }) => ({ url: url.value.trim(), tytul: tytul.value.trim(), sprawdzono: sprawdzono.value.trim() }))
+    .filter((z) => z.url || z.tytul || z.sprawdzono);
+  if (JSON.stringify(noweZrodla) !== JSON.stringify(p.zrodla ?? [])) zmiany.zrodla = noweZrodla;
+
+  if (Object.keys(zmiany).length === 0) {
+    status('Brak zmian do zapisania — pytanie zostaje, jak było.');
+    return;
+  }
+  const wynik = zastosujEdycjePaczki(STAN.paczka, [{ pytanieId: p.id, zmiany }], { terazMs: Date.now() });
+  if (!wynik.paczka) {
+    $('wynik-walidacji').dataset.stan = 'blad';
+    renderujUsterki(wynik.usterki);
+    status('Poprawka odrzucona — paczka zostaje bez zmian.');
+    return;
+  }
+  STAN.paczka = wynik.paczka;
+  // edycja NIE omija protokołu: cała paczka przechodzi walidację jeszcze raz
+  const usterki = walidujPaczke(STAN.paczka, oczekiwane());
+  STAN.usterkiPaczki = usterki;
+  renderujUsterki(usterki);
+  $('wynik-walidacji').dataset.stan = usterki.length ? 'blad' : 'ok';
+  $('wynik-naglowek').textContent = usterki.length
+    ? `Paczka po poprawce wymaga naprawy — usterek: ${usterki.length}`
+    : 'Paczka przyjęta (po ręcznej poprawce)';
+  $('przycisk-ukryj').hidden = usterki.length > 0;
+  $('przycisk-poprawka').hidden = usterki.length === 0;
+  renderujPodsumowaniePaczki(STAN.paczka, null);
+  renderujPodgladOrganizatora();
+  status(usterki.length
+    ? 'Poprawka zapisana w modyfikacje[], ale paczka ma teraz usterki — napraw je albo cofnij zmianę przed ukryciem.'
+    : `Poprawka zapisana w modyfikacje[] (łącznie ${STAN.paczka.modyfikacje.length}); paczka przeszła re-walidację protokołu.`);
 }
 
 /* ------------------------------------------------------- motyw i zapis */
@@ -1204,6 +1395,7 @@ function start() {
     const tekst = JSON.stringify(zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU));
     $('pole-odpowiedz').value = tekst;
     kopiujTekst(tekst, e.currentTarget, `⧉ Ukryj paczkę (${SCHEMAT_KONTENERA})`, 'pole-odpowiedz');
+    zwijPodgladOrganizatora(); // plaintext pytań znika z ekranu po ukryciu
     status(`Paczka ukryta w kontenerze ${SCHEMAT_KONTENERA} — to obfuskacja bez klucza, nie szyfrowanie (ADR 0007).`);
   });
 
