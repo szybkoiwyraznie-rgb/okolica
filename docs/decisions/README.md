@@ -33,6 +33,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0014](0014-punktacja-czasu-mediana-tempa.md) | Punktacja czasu: premia względem mediany tempa odcinków (doprecyzowanie ADR 0009 pkt 5) | Proponowana |
 | [0015](0015-niekompletna-paczka-i-pominiecie-stacji.md) | Niekompletna paczka i pominięcie stacji: ostrzeżenie zamiast blokady, pominięcie tylko w drodze, spójne liczniki i przedrostki kodów | Proponowana |
 | [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device) | Proponowana |
+| [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1`, geohash5 w indeksie, CC BY-SA 4.0, moderacja właściciela | Proponowana |
 
 ## Szablon ADR
 
