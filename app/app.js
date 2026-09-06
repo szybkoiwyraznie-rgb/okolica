@@ -502,10 +502,23 @@ const SYMULACJA_KROK_MS = 120;
 /** Próba dojścia: 250 m na azymucie 45°, 12 s „marszu", fix co 2 s + postój. */
 const SYMULACJA = { dystansM: 250, bearing: 45, czasMs: 12000, coMs: 2000, accuracyM: 12 };
 
+/** Symulacja ustępuje grze: poza odcinkiem (dojście, pauza, ręczny koniec) nie
+ *  odtwarzamy dalej i NIE nadpisujemy statusu gry (M6/R7 — fix „po tranzycji"
+ *  czyścił historię i zamazywał „Stacja osiągnięta"). Poza grą (setup) warunek
+ *  jest przezroczysty: `STAN.rozgrywka` wtedy nie istnieje. */
+function symulacjaPrzestalaBycPotrzebna() {
+  const r = STAN.rozgrywka;
+  return Boolean(r) && (r.faza !== FAZY.odcinek || STAN.graPauza || STAN.graZakonczonaRecznie);
+}
+
 /** Jeden fix symulacji: stan, mapa i zdanie o dystansie do celu. */
 function krokSymulacji() {
   const s = STAN.symulacja;
   if (!s) return;
+  if (symulacjaPrzestalaBycPotrzebna()) {
+    zatrzymajSymulacje();
+    return;
+  }
   const fix = s.fixy[s.indeks];
   if (!fix) {
     zatrzymajSymulacje();
@@ -514,6 +527,10 @@ function krokSymulacji() {
   }
   s.indeks += 1;
   przyjmijFix(fix);
+  if (symulacjaPrzestalaBycPotrzebna()) {
+    zatrzymajSymulacje(); // ten fix domknął dojście — status gry zostaje
+    return;
+  }
   const stan = stanDojscia(STAN.historiaFixow, s.cel);
   status(stan.dotarl
     ? `Symulacja: cel osiągnięty — debounce dojścia spełniony (fix ${s.indeks}/${s.fixy.length}).`

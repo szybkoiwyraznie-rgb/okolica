@@ -79,7 +79,7 @@ Proponowana, B17: nie wcześniej niż po M8), gra na kilku urządzeniach
       (punkty graczy, czasy, zaliczone/pominięte) + adnotacja „pełne
       podsumowanie w M7"; czyszczenie danych (ekran prywatności) kasuje
       zapis gry — istniejąca iteracja `okolica:*` już to robi (test).
-- [ ] **R7 — testy integracyjne pętli:** pełna gra na atrapie z `?tryb=test`
+- [x] **R7 — testy integracyjne pętli:** pełna gra na atrapie z `?tryb=test`
       (symulacja dojścia `sekwencjaSymulowana` → pytanie → odpowiedź →
       następna → koniec → wynik); wznowienie po „zamknięciu przeglądarki"
       (nowy import app.js, ta sama pamięć); utrata zasięgu w trakcie (gra

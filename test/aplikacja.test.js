@@ -1242,3 +1242,104 @@ test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zos
   assert.ok(pamiec.has('okolica:gra:gra'), 'zapis NIE skasowany — można wrócić do gry');
   assert.match(zakoncz.textContent, /Zakończ grę/, 'przycisk wraca do zwykłej etykiety');
 });
+
+/* ========== M6/R7: integracja — pełna gra z symulacją, zasięg, ADR 0015 */
+
+/** Klik w konkretny przycisk odpowiedzi (elementy tworzone dynamicznie). */
+function kliknijOdpowiedz(dom, indeks) {
+  const b = dom.pobierz('gra-odpowiedzi').children[indeks];
+  for (const fn of b.zdarzenia.click ?? []) fn({ type: 'click', target: b, currentTarget: b });
+}
+
+test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, wynik (ścieżka GPS)', async () => {
+  const { dom, paczka, pamiec } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  for (const numerStacji of [1, 2, 3]) {
+    const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
+    assert.match(dom.pobierz('przycisk-start-odcinka').textContent, new RegExp(`Idę do stacji ${numerStacji}`));
+    dom.kliknij('przycisk-start-odcinka');
+    assert.equal(dom.pobierz('przycisk-symulacja-gra').hidden, false, 'symulacja dostępna w odcinku');
+    dom.kliknij('przycisk-symulacja-gra');
+    await czekaj(9 * 120 + 600); // dziewięć fixów po 120 ms + zapas (wzorzec z M3)
+    // dojście rozstrzyga stanDojscia z prawdziwego strumienia fixów — bez klikania „ręcznie"
+    assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, `stacja ${numerStacji}: pytanie po dojściu GPS`);
+    assert.match(dom.pobierz('status').textContent, /Stacja osiągnięta — próg dojścia zadziałał z GPS/, 'komunikat dojścia z GPS, nie ręcznego');
+    assert.equal(dom.pobierz('gra-pytanie-tresc').textContent, pytanie.tresc, `stacja ${numerStacji}: treść z kontenera`);
+    kliknijOdpowiedz(dom, pytanie.poprawna);
+    assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze!/, `stacja ${numerStacji}: poprawna odpowiedź punktuje`);
+    const dalej = dom.pobierz('przycisk-nastepna-stacja');
+    if (numerStacji < 3) {
+      assert.match(dalej.textContent, /Następna stacja/);
+    } else {
+      assert.match(dalej.textContent, /Zobacz wynik/, 'po ostatniej stacji model kończy grę');
+    }
+    dom.kliknij('przycisk-nastepna-stacja');
+  }
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'panel wyniku po pełnej pętli');
+  const wiersze = dom.pobierz('gra-wyniki-tbody').children;
+  assert.equal(wiersze.length, 2, 'wynik per gracz');
+  assert.match(wiersze[0].children[0].textContent, /🏆/, 'zwycięzca rankingu oznaczony');
+  assert.equal(wiersze[0].children[1].textContent !== '0', true, 'punkty policzone (3 poprawne odpowiedzi × rotacja graczy)');
+  // zapis niesie naturalny koniec
+  const snapshot = JSON.parse(pamiec.get('okolica:gra:gra'));
+  assert.equal(snapshot.rozgrywka.faza, 'koniec');
+  assert.equal(snapshot.rozgrywka.odcinki.every((o) => o.stan === 'zakonczony' && o.trybDojscia === 'gps'), true, 'wszystkie odcinki zamknięte dojściem GPS');
+});
+
+test('M6/R7: utrata zasięgu w trakcie gry — zero żądań sieciowych, gra żyje z pamięci', async () => {
+  const { dom } = await graGotowaDoStartu();
+  const wywolania = [];
+  dom.window.fetch = async (adres) => { wywolania.push(String(adres)); return { ok: false, status: 503 }; };
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  dom.kliknij('przycisk-reczne-dojscie');
+  kliknijOdpowiedz(dom, 0);
+  dom.kliknij('przycisk-nastepna-stacja');
+  dom.kliknij('przycisk-start-odcinka');
+  await czekaj(100);
+  assert.equal(wywolania.length, 0, 'ani Overpass, ani Nominatim, ani nic innego — stacje i pytania są na telefonie');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'gra toczy się dalej bez sieci');
+});
+
+test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra wznowiona z zapisu', async () => {
+  // Snapshot budujemy CZYSTYMI modułami: 4 stacje, paczka z pytaniami do 1–3
+  // (przez UI taka paczka nie przejdzie — E05; ADR 0015 żyje w modelu i w zapisie)
+  const { SCHEMAT_STANU, kluczStanu, KLUCZ_AKTYWNEJ, serializujStan, zbierajStan } = await import('../app/trwalosc.js');
+  const { nowaRozgrywka } = await import('../app/rozgrywka.js');
+  const { zapakujPaczke } = await import('../app/kodowanie.js');
+  const { WERSJA_PROTOKOLU } = await import('../app/protokol.js');
+  const { stacjeProste } = await import('../app/stacje.js');
+  const { domyslnaKonfiguracja } = await import('../app/konfig.js');
+  const paczka = czytajFixturePaczka();
+  const konfig = { ...domyslnaKonfiguracja(2), kodGry: 'adr-0015', promienM: 1000, liczbaStacji: 4 };
+  const stacje = stacjeProste({ srodek: { lat: 52.2297, lon: 21.0122 }, liczbaStacji: 4, promienM: 1000, ziarno: 'z' });
+  const rozgrywka = nowaRozgrywka({ konfig, stacje, paczka, srodek: { lat: 52.2297, lon: 21.0122 }, czasMs: 0, ziarno: 'z' });
+  assert.deepEqual(rozgrywka.brakPytan, [4], 'model widzi stację bez pytania (M1)');
+  const snapshot = zbierajStan({
+    konfig, stacje, kontenerPaczki: zapakujPaczke(paczka, WERSJA_PROTOKOLU), rozgrywka,
+    pozycja: { lat: 52.2297, lon: 21.0122, dokladnoscM: 10, zrodlo: 'reczne' },
+    terazMs: Date.now(), zegarMs: 1000,
+  });
+  const pamiec = new Map();
+  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig }));
+  pamiec.set(kluczStanu('adr-0015'), serializujStan(snapshot));
+  pamiec.set(KLUCZ_AKTYWNEJ, 'adr-0015');
+
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?adr15=${Math.random().toString(36).slice(2)}`);
+  assert.match(dom.pobierz('wznowienie-opis').textContent, /stacja 1 z 4/);
+  dom.kliknij('przycisk-wznow-gre');
+
+  // stacje 1–3: normalna pętla z pytaniami (pominięcie wystarczy — testujemy 4.)
+  for (const i of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-pomin-stacje'); // pominięcie w drodze — bez pytań, szybko
+  }
+  assert.match(dom.pobierz('gra-postep').textContent, /stacja 4 z 4/, 'gramy o stację bez pytania');
+  dom.kliknij('przycisk-start-odcinka');
+  dom.kliknij('przycisk-reczne-dojscie');
+  // ADR 0015: dojście zamyka stację BEZ fazy pytania — gra kończy się od razu
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, true, 'stacja bez pytania nie otwiera panelu pytania');
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'ostatnia stacja zamknięta dojściem = koniec gry');
+  assert.equal(dom.pobierz('bledy-gra').hidden, true, 'żaden wyjątek, żaden błąd — jawne zachowanie z ADR 0015');
+});
