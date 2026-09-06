@@ -522,3 +522,12 @@ test('kontrakt: karta historii gier na setupie (M7/P6)', () => {
   assert.match(html, /id="historia-usterki" class="bledy" role="alert" hidden/, 'usterki historii mają role="alert" (jak inne ekrany)');
   assert.match(html, /id="przycisk-kasuj-historie"[^>]*type="button"/, 'kasowanie historii to type=button');
 });
+
+test('kontrakt: ręczne współrzędne przyjmują wklejenie z Google Maps (zadanie właściciela D3)', () => {
+  assert.match(INDEX, /id="setup-lat" type="text"/, 'pole lat musi być tekstowe — type="number" nie wpuści °\'"NSEW z wklejenia');
+  assert.match(INDEX, /id="setup-lon" type="text"/, 'pole lon musi być tekstowe');
+  assert.match(INDEX, /id="setup-lat"[^>]*inputmode="decimal"/, 'klawiatura numeryczna na telefonie zostaje');
+  assert.ok(INDEX.includes('id="reczne-podpowiedz"'), 'brak podpowiedzi z przykładem Google Maps');
+  assert.match(INDEX, /id="reczne-podpowiedz" class="podpowiedz"/);
+  assert.match(INDEX, /52°07'22\.9"N 20°44'46\.1"E/, 'podpowiedź niesie prawdziwy przykład pary DMS');
+});

@@ -147,7 +147,25 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     visibilityState: 'visible',
     getElementById: pobierz,
     querySelector() { return null; },
-    querySelectorAll() { return []; },
+    querySelectorAll(selektor) {
+      // Minimalna wierność: wzorzec '#id tag' — aplikacja czyta nim listę
+      // imion ('#lista-imion input' w `czytajSetupZDomu`), a bez tego KAŻDA
+      // nawigacja z setupu padała na K08 w atrapie. Pełnego silnika
+      // selektorów do atrapy nie budujemy — inne wzorce dają [] jak dotąd.
+      const m = /^#([\w-]+)\s+([a-zA-Z][\w-]*)$/.exec(String(selektor ?? '').trim());
+      if (!m) return [];
+      const rodzic = pobierz(m[1]);
+      if (!rodzic) return [];
+      const wynik = [];
+      const zbierz = (el) => {
+        for (const dziecko of el.children ?? []) {
+          if (String(dziecko.tagName ?? '').toLowerCase() === m[2].toLowerCase()) wynik.push(dziecko);
+          zbierz(dziecko);
+        }
+      };
+      zbierz(rodzic);
+      return wynik;
+    },
     createElement(typ) {
       const el = stubElementu(typ, ukryte);
       utworzone.push(el);

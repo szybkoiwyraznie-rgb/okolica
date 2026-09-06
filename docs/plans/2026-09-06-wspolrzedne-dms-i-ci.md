@@ -86,11 +86,11 @@ formatu Google Maps jest fizycznie niemożliwe. Pole musi być tekstowe.
 ## Kroki
 
 - [ ] **D1 — plan (ten plik):** commit + push.
-- [ ] **D2 — parser (czysty):** `geo.parsujWspolrzedne` + testy jednostkowe
+- [x] **D2 — parser (czysty):** `geo.parsujWspolrzedne` + testy jednostkowe
       (przykład właściciela z Podkowy Leśnej, pary DMS i dziesiętne, polski
       przecinek, zamiana E/W-first, konflikty i śmieci; oczekiwania LICZONE
       w teście — L24, żadnego `52.12303` z głowy).
-- [ ] **D3 — UI:** pola tekstowe + podpowiedź, przycisk przez parser, jawny
+- [x] **D3 — UI:** pola tekstowe + podpowiedź, przycisk przez parser, jawny
       status z dziesiętnymi; `onStukniecie` w `mapa.js` + wiring w `app.js`;
       testy integracyjne (wklejona para DMS ustawia pozycję; tap w mapę
       pozycji w `?tryb=test` ustawia pozycję i wypełnia pola; błąd

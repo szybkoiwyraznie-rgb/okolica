@@ -16,7 +16,7 @@
  */
 
 import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m7-1';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m7-1';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m7-1';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -427,10 +427,51 @@ function utworzMapy() {
   STAN.mapy.pozycja = utworzMape({ id: 'mapa-pozycja', podklad, zoom: 16 });
   STAN.mapy.stacje = utworzMape({ id: 'mapa-stacje', podklad, zoom: 16 });
   STAN.mapy.gra = utworzMape({ id: 'mapa-gra', podklad, zoom: 16 });
+  // Zadanie właściciela D3: w trybie testowym krótkie stuknięcie mapy pozycji
+  // ustawia pozycję — najszybsza droga „pinezki tam, gdzie się chce", bez
+  // przepisywania współrzędnych. Bramka trybu i ekranu: stuknięcie w mapę
+  // gry ani stacji NIE przestawia gracza.
+  if (STAN.mapy.pozycja) {
+    STAN.mapy.pozycja.ustawNasluchStukniecia((geo) => {
+      if (!STAN.trybTestowy || STAN.ekran !== 'pozycja') return;
+      $('setup-lat').value = String(geo.lat);
+      $('setup-lon').value = String(geo.lon);
+      ustawPozycjeRecznie(geo.lat, geo.lon, { zMapy: true });
+    });
+  }
 }
 
 function kazdaMapa(fn) {
   for (const mapa of Object.values(STAN.mapy)) if (mapa) fn(mapa);
+}
+
+/**
+ * Ręczna pozycja z pól tekstowych ALBO ze stuknięcia mapy (zadanie D3).
+ * Współrzędne parsuje `geo.parsujWspolrzedne`: dziesiętne (kropka albo polski
+ * przecinek), DMS z Google Maps (`52°07'22.9"N`) i pełna para w jednym polu.
+ * Odmowa jest jawna ([P06] pod polami) — nigdy cichego „Null Island"
+ * (`Number('') === 0`), a zakres sprawdza dalej `ocenFix` (jedno źródło).
+ */
+function ustawPozycjeRecznie(surowyLat, surowyLon, { zMapy = false } = {}) {
+  const wynik = parsujWspolrzedne(surowyLat, surowyLon);
+  if (!wynik.ok) {
+    pokazBledy('bledy-pozycja', [{ kod: 'P06', pole: 'wspolrzedne', komunikat: wynik.komunikat }]);
+    return false;
+  }
+  const fix = fixZPozycji({ lat: wynik.lat, lon: wynik.lon, accuracy: null }, performance.now(), ZRODLA_FIXA.reczne);
+  const ocena = ocenFix(fix);
+  if (!ocena.akceptowany) {
+    pokazBledy('bledy-pozycja', [{ kod: ocena.kod, pole: 'wspolrzedne', komunikat: 'Wpisz szerokość od -90 do 90 i długość od -180 do 180 (stopnie dziesiętne albo format Google Maps, np. 52°07\'22.9"N).' }]);
+    return false;
+  }
+  STAN.ostatniFix = fix;
+  STAN.ocenaFixa = ocena;
+  STAN.pozycja = { lat: fix.lat, lon: fix.lon };
+  STAN.dokladnoscM = fix.accuracy;
+  pokazBledy('bledy-pozycja', []);
+  pokazPozycje();
+  status(zMapy ? 'Pozycja testowa ustawiona z mapy.' : 'Pozycja ustawiona ręcznie (tryb testowy).');
+  return true;
 }
 
 /** Zoom, przy którym promień gry zajmuje ~40% szerokości panelu (`geo.js`). */
@@ -2255,27 +2296,7 @@ function start() {
     $('setup-lat').focus();
   });
   $('przycisk-ustaw-reczne').addEventListener('click', () => {
-    const surowyLat = String($('setup-lat').value ?? '').trim();
-    const surowyLon = String($('setup-lon').value ?? '').trim();
-    if (!surowyLat || !surowyLon) {
-      // Puste pole dałoby Number('') === 0, czyli „Null Island" — pozycję
-      // wyglądającą na poprawną. Lepiej odmówić niż ustawić grę w zatoce.
-      pokazBledy('bledy-pozycja', [{ kod: 'P06', pole: 'wspolrzedne', komunikat: 'Wpisz obie współrzędne: szerokość i długość (stopnie dziesiętne, np. 52.23178 i 21.01234).' }]);
-      return;
-    }
-    const fix = fixZPozycji({ lat: Number(surowyLat), lon: Number(surowyLon), accuracy: null }, performance.now(), ZRODLA_FIXA.reczne);
-    const ocena = ocenFix(fix);
-    if (!ocena.akceptowany) {
-      pokazBledy('bledy-pozycja', [{ kod: ocena.kod, pole: 'wspolrzedne', komunikat: 'Wpisz szerokość od -90 do 90 i długość od -180 do 180 (stopnie dziesiętne).' }]);
-      return;
-    }
-    STAN.ostatniFix = fix;
-    STAN.ocenaFixa = ocena;
-    STAN.pozycja = { lat: fix.lat, lon: fix.lon };
-    STAN.dokladnoscM = fix.accuracy;
-    pokazBledy('bledy-pozycja', []);
-    pokazPozycje();
-    status('Pozycja ustawiona ręcznie (tryb testowy).');
+    ustawPozycjeRecznie($('setup-lat').value, $('setup-lon').value);
   });
 
   $('przycisk-wstecz-setup').addEventListener('click', () => pokazEkran('setup'));

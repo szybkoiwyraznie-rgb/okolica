@@ -181,9 +181,10 @@
       </div>
       <div id="reczne-wspolrzedne" class="karta" hidden>
         <div class="siatka">
-          <label class="pole"><span>Szerokość (lat)</span><input id="setup-lat" type="number" step="0.00001" inputmode="decimal" placeholder="52.23178"></label>
-          <label class="pole"><span>Długość (lon)</span><input id="setup-lon" type="number" step="0.00001" inputmode="decimal" placeholder="21.01234"></label>
+          <label class="pole"><span>Szerokość (lat)</span><input id="setup-lat" type="text" inputmode="decimal" autocomplete="off" placeholder="52.23178 lub 52°07'22.9&quot;N"></label>
+          <label class="pole"><span>Długość (lon)</span><input id="setup-lon" type="text" inputmode="decimal" autocomplete="off" placeholder="21.01234 lub 21°00'44.3&quot;E"></label>
         </div>
+        <p id="reczne-podpowiedz" class="podpowiedz">Wklej współrzędne z Google Maps w pierwsze pole — np. <b>52°07'22.9"N 20°44'46.1"E</b> albo <b>52.123028, 20.746139</b> — a drugie zostaw puste. Uwaga: stopnie-minuty-sekundy to nie dziesiętne (52°07'22.9" = 52.12303, nie 52.07229). W trybie testowym pozycję ustawisz też krótkim stuknięciem w mapę.</p>
         <button id="przycisk-ustaw-reczne" class="przycisk" type="button">Ustaw tę pozycję</button>
       </div>
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>

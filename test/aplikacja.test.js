@@ -29,6 +29,8 @@ import {
 } from '../app/sieci.js';
 import { DOMYSLNE, PODKLADY, TEMATY, TRYBY } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
+import { widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
+import { dopasujZoomDoPromienia } from '../app/geo.js';
 import { atrapaGeolokalizacji, zainstalujDom } from './helpers/dom.js';
 
 /* ------------------------------------------------------------------ bootstrap */
@@ -107,6 +109,36 @@ test('ręczne współrzędne: zakresy są pilnowane, a poprawna pozycja przechod
   assert.match(pobierz('pozycja-wspolrzedne').textContent, /geohash/);
   assert.equal(pobierz('pozycja-dokladnosc').textContent, 'dokładność: nieznana (wpisana ręcznie)');
   assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
+});
+
+/* ------------------- współrzędne z Google Maps i tap w mapę (zadanie D3) */
+
+test('D3: para DMS z Google Maps wklejona w pierwsze pole ustawia pozycję', () => {
+  // przykład właściciela: Podkowa Leśna, ul. Bukowa 22; oczekiwania LICZONE
+  // z definicji DMS (L24), nie przepisane z wyjścia
+  const oczLat = 52 + 7 / 60 + 22.9 / 3600;
+  const oczLon = 20 + 44 / 60 + 46.1 / 3600;
+  pobierz('setup-lat').value = '52°07\'22.9"N 20°44\'46.1"E';
+  pobierz('setup-lon').value = '';
+  dom.kliknij('przycisk-ustaw-reczne');
+  assert.equal(pobierz('bledy-pozycja').hidden, true, pobierz('bledy-pozycja').textContent);
+  const re = new RegExp(`${oczLat.toFixed(5).replace(/\./g, '\\.')}, ${oczLon.toFixed(5).replace(/\./g, '\\.')}`);
+  assert.match(pobierz('pozycja-wspolrzedne').textContent, re, 'na ekranie widać DZIESIĘTNE, które aplikacja zrozumiała');
+  assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustawiona ręcznie');
+  assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
+});
+
+test('D3: błąd zapisu DMS jest jawny — [P06] pod polami, pozycja bez zmian', () => {
+  const przed = pobierz('pozycja-wspolrzedne').textContent;
+  assert.ok(przed.length > 0, 'pozycja z poprzedniego testu — jest co chronić');
+  pobierz('setup-lat').value = '52°75\'00"N';
+  pobierz('setup-lon').value = '';
+  dom.kliknij('przycisk-ustaw-reczne');
+  assert.equal(pobierz('bledy-pozycja').hidden, false, 'odmowa musi być widoczna');
+  assert.match(pobierz('bledy-pozycja').textContent, /\[P06\]/);
+  assert.match(pobierz('bledy-pozycja').textContent, /mniejsze niż 60/);
+  assert.equal(pobierz('pozycja-wspolrzedne').textContent, przed, 'odmowa nie przestawia pozycji');
+  pobierz('bledy-pozycja').hidden = true; // sprzątamy po teście
 });
 
 /* ------------------------------------------------------------------ GPS */
@@ -1702,4 +1734,50 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
     assert.equal(jsonHistorii.includes(pytanie.tresc), false, 'treść pytania wyciekła do historii');
   }
   assert.equal(jsonHistorii.includes('52.2297'), false, 'współrzędne wyciekły do historii');
+});
+
+/* ---------- tap w mapę pozycji (zadanie D3) — na końcu, bo tworzy ŚWIEŻĄ
+   instancję aplikacji i zastępuje globalne atrapy (porządek jak testy map M2) */
+
+test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie — nie', async () => {
+  // tap jest bramkowany trybem testowym — główna atrapa biegnie bez
+  // `?tryb=test`, więc test pracuje na ŚWIEŻEJ instancji (wzorzec z M2)
+  const domT = await aplikacjaZMapa({ search: '?tryb=test&odstep=0' });
+  domT.kliknij('przycisk-dalej-pozycja'); // bramka tap-a: ekran 'pozycja'
+  domT.pobierz('setup-lat').value = '52.2297';
+  domT.pobierz('setup-lon').value = '21.0122';
+  domT.kliknij('przycisk-ustaw-reczne');
+
+  // Po ręcznym ustawieniu `pokazPozycje` woła `centrujNaPozycji`: mapa jest
+  // wyśrodkowana NA POZYCJI w zoomie dobranym do promienia gry (1000 m przy
+  // szerokości panelu z atrapy → zoom z `dopasujZoomDoPromienia`). Oczekiwany
+  // punkt tap-a LICZĘ czystymi funkcjami z dokładnie tym widokiem (L24) —
+  // zgaduje się co do cyfry z tym, co robi aplikacja.
+  const rect = domT.pobierz('mapa-pozycja').getBoundingClientRect();
+  const zoom = dopasujZoomDoPromienia(1000, rect.width, 52.2297);
+  const widok = widokNaSrodek({ lat: 52.2297, lon: 21.0122, zoom, rozmiar: { szerokosc: rect.width, wysokosc: rect.height } });
+  const geo = wspolrzedneZEkranu(40 - rect.left, 0 - rect.top, widok);
+  const oczLat = Math.round(geo.lat * 1e6) / 1e6;
+  const oczLon = Math.round(geo.lon * 1e6) / 1e6;
+
+  const svg = domT.pobierz('mapa-pozycja-svg');
+  assert.ok(wyslij(svg, 'pointerdown', { pointerId: 31, clientX: 40, clientY: 0 }) > 0, 'svg mapy pozycji ma nasłuch pointerdown');
+  wyslij(svg, 'pointerup', { pointerId: 31, clientX: 40, clientY: 0 });
+
+  assert.match(domT.pobierz('status').textContent, /Pozycja testowa ustawiona z mapy/, 'status mówi, że pozycja jest z mapy');
+  assert.equal(Number(domT.pobierz('setup-lat').value), oczLat, 'pole lat wypełnione współrzędnymi stuknięcia');
+  assert.equal(Number(domT.pobierz('setup-lon').value), oczLon, 'pole lon wypełnione współrzędnymi stuknięcia');
+  assert.match(
+    domT.pobierz('pozycja-wspolrzedne').textContent,
+    new RegExp(oczLat.toFixed(5).replace(/\./g, '\\.')),
+    'ekran pokazuje przestawioną pozycję',
+  );
+  assert.ok(domT.pobierz('mapa-pozycja-marker').children.length > 0, 'marker stoi w nowym miejscu');
+
+  // przeciągnięcie (ruch 60 px > próg 10 px) to PAN — pozycja zostaje
+  const przedPanem = domT.pobierz('pozycja-wspolrzedne').textContent;
+  wyslij(svg, 'pointerdown', { pointerId: 32, clientX: 0, clientY: 0 });
+  wyslij(svg, 'pointermove', { pointerId: 32, clientX: 60, clientY: 0 });
+  wyslij(svg, 'pointerup', { pointerId: 32, clientX: 60, clientY: 0 });
+  assert.equal(domT.pobierz('pozycja-wspolrzedne').textContent, przedPanem, 'pan nie przestawia pozycji gracza');
 });

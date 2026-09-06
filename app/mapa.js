@@ -405,6 +405,14 @@ export function planMapy({
  *
  * @returns {object|null} API mapy
  */
+/**
+ * Próg stuknięcia (zadanie właściciela D3): ruch palca poniżej tej wartości
+ * w pikselach to tap, powyżej — pan. 10 px jest z zapasem na „drżenie" palca,
+ * a dość ciasne, żeby krótkie przesunięcie mapy nie przestawiało pozycji;
+ * do dostrojenia po teście terenowym (rękawiczka, folia).
+ */
+const PROG_STUKNIECIA_PX = 10;
+
 export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = null, doc = document } = {}) {
   const kontener = doc.getElementById(id);
   const svg = doc.getElementById(`${id}-svg`);
@@ -439,6 +447,7 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
     /** Tryb ręczny (ADR 0005 pkt 8b): pinezki-stacje można przeciągać. */
     trybReczny: false,
     onStacjaPrzesunieta: null,
+    onStukniecie: null,
   };
 
   /** Pinezka trzymana palcem: `{ index, pointerId, lat, lon }` albo null. */
@@ -607,6 +616,8 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
 
   const aktywne = new Map();
   let ostatniaOdleglosc = null;
+  /** Ślad gestu na potrzeby tap-a: `{ ruch, palce, x, y }` (D3). */
+  let gest = null;
 
   function srodekDwochPalcow() {
     const [a, b] = [...aktywne.values()];
@@ -624,7 +635,13 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
         /* palec poza elementem — nic nie szkodzi, pan i tak działa */
       }
     }
-    if (aktywne.size === 2) ostatniaOdleglosc = odlegloscPalcow();
+    if (aktywne.size === 1) {
+      gest = { ruch: 0, palce: 1, x: zdarzenie.clientX, y: zdarzenie.clientY };
+    }
+    if (aktywne.size === 2) {
+      ostatniaOdleglosc = odlegloscPalcow();
+      if (gest) gest.palce = 2; // pinch dyskwalifikuje tap
+    }
   }
 
   function odlegloscPalcow() {
@@ -656,6 +673,7 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
     punkt.y = zdarzenie.clientY;
 
     if (aktywne.size === 1) {
+      if (gest) gest.ruch += Math.abs(zdarzenie.clientX - poprzedni.x) + Math.abs(zdarzenie.clientY - poprzedni.y);
       stan.widok = przesunWidok(stan.widok, zdarzenie.clientX - poprzedni.x, zdarzenie.clientY - poprzedni.y);
       rysuj();
       return;
@@ -696,6 +714,22 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
       } catch {
         /* wskaźnik już zwolniony */
       }
+    }
+    // Tap (zadanie D3): jeden palec, ruch poniżej progu, bez pinch-a w trakcie
+    // i wyłącznie na prawdziwy `pointerup` (pointercancel = gest przerwany,
+    // np. przez przewijanie — pozycji nie przestawiamy).
+    if (aktywne.size === 0) {
+      if (gest && gest.palce === 1 && gest.ruch < PROG_STUKNIECIA_PX
+        && zdarzenie.type === 'pointerup' && typeof stan.onStukniecie === 'function') {
+        const rect = rozmiarPanelu(kontener);
+        const geo = wspolrzedneZEkranu(gest.x - (rect.lewa ?? 0), gest.y - (rect.gorna ?? 0), stan.widok);
+        // siatka ~0.1 m jak przy przeciąganiu pinezek — bez drżenia liczb
+        stan.onStukniecie({
+          lat: Math.round(geo.lat * 1e6) / 1e6,
+          lon: Math.round(geo.lon * 1e6) / 1e6,
+        });
+      }
+      gest = null;
     }
   }
 
@@ -803,6 +837,14 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
       stan.onStacjaPrzesunieta = typeof onZmiana === 'function' ? onZmiana : null;
       if (!stan.trybReczny) przeciegana = null;
       return rysuj();
+    },
+    /**
+     * Nasłuch krótkiego stuknięcia (zadanie właściciela D3): `fn({lat, lon})`
+     * wołane po czystym tap-ie (jeden palec, ruch < 10 px, bez pinch-a).
+     * Bramkowanie sensu (tryb testowy, ekran) zostaje po stronie aplikacji.
+     */
+    ustawNasluchStukniecia(fn) {
+      stan.onStukniecie = typeof fn === 'function' ? fn : null;
     },
     przybliz: () => naPrzycisk('przybliz'),
     oddal: () => naPrzycisk('oddal'),
