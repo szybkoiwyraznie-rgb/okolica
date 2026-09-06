@@ -8,7 +8,8 @@ import assert from 'node:assert/strict';
 
 import {
   bearingStopnie, czyDotarl, czyWspolrzedneOk, dopasujZoomDoPromienia, formatujWspolrzedne,
-  geohash, metryNaPiksel, odlegloscM, odwroc, ogranicz, przesunPunkt, projektuj,
+  geohash, KOMUNIKATY_WSPOLRZEDNYCH, metryNaPiksel, odlegloscM, odwroc, ogranicz,
+  parsujWspolrzedne, przesunPunkt, projektuj,
   progDojsciaM, punktyNaOkregu, siatkaKafelkow, wspolrzedneDoKafelka,
 } from '../app/geo.js';
 
@@ -157,4 +158,151 @@ test('formatujWspolrzedne i ogranicz: format do promptu i zaciski', () => {
   assert.equal(ogranicz(5, 1, 3), 3);
   assert.equal(ogranicz(-5, 1, 3), 1);
   assert.equal(ogranicz(2, 1, 3), 2);
+});
+
+/* ---------------- parsowanie współrzędnych z pól (zadanie właściciela D2) */
+
+test('parsujWspolrzedne: para DMS z Google Maps w jednym polu (przykład właściciela)', () => {
+  // Podkowa Leśna, ul. Bukowa 22 — oczekiwania LICZONE z definicji DMS (L24),
+  // żadnych "52.12303" z głowy
+  const oczLat = 52 + 7 / 60 + 22.9 / 3600;
+  const oczLon = 20 + 44 / 60 + 46.1 / 3600;
+  const w = parsujWspolrzedne('52°07\'22.9"N 20°44\'46.1"E', '');
+  assert.equal(w.ok, true, w.komunikat ?? '');
+  assert.ok(Math.abs(w.lat - oczLat) < 1e-9, `lat: ${w.lat} vs ${oczLat}`);
+  assert.ok(Math.abs(w.lon - oczLon) < 1e-9, `lon: ${w.lon} vs ${oczLon}`);
+  assert.equal(w.zPary, true);
+  assert.equal(w.format, 'para-dms');
+  // pułapka z diagnozy: złączenie cyfr DMS to INNY punkt — parser nie może
+  // "poprawiać" 52.07229 w 52.12303; dziesiętne wchodzą jak są wpisane
+  const pułapka = parsujWspolrzedne('52.07229', '20.44461');
+  assert.equal(pułapka.ok, true);
+  assert.equal(pułapka.lat, 52.07229, 'dziesiętne są czytane dosłownie');
+});
+
+test('parsujWspolrzedne: warianty pary DMS — kolejność E-first, separatory, unicode', () => {
+  const oczLat = 52 + 7 / 60 + 22.9 / 3600;
+  const oczLon = 20 + 44 / 60 + 46.1 / 3600;
+  const warianty = [
+    '20°44\'46.1"E 52°07\'22.9"N',        // kolejność odwrotna (E pierwsze)
+    '52°07\'22.9"N, 20°44\'46.1"E',       // przecinek + spacja
+    '52°7′22.9″N 20°44′46.1″E',             // primy unicode, bez zer wiodących
+    '52 7 22.9 N 20 44 46.1 E',             // gołe liczby ze spacjami
+    '52°07\'22,9"N 20°44\'46,1"E',        // polski przecinek w sekundach
+  ];
+  for (const tekst of warianty) {
+    const w = parsujWspolrzedne(tekst, '');
+    assert.equal(w.ok, true, `odrzucony wariant: ${tekst} — ${w.komunikat ?? ''}`);
+    assert.ok(Math.abs(w.lat - oczLat) < 1e-9, `lat dla "${tekst}": ${w.lat}`);
+    assert.ok(Math.abs(w.lon - oczLon) < 1e-9, `lon dla "${tekst}": ${w.lon}`);
+    assert.equal(w.format, 'para-dms');
+  }
+});
+
+test('parsujWspolrzedne: pary dziesiętne i polski przecinek', () => {
+  const p1 = parsujWspolrzedne('52.123028, 20.746139', '');
+  assert.equal(p1.ok, true);
+  assert.equal(p1.lat, 52.123028);
+  assert.equal(p1.lon, 20.746139);
+  assert.equal(p1.format, 'para-dziesietna');
+
+  const p2 = parsujWspolrzedne('52.2297 21.0122', '');
+  assert.equal(p2.ok, true, 'para po spacji');
+
+  const p3 = parsujWspolrzedne('52,2297 21,0122', '');
+  assert.equal(p3.ok, true, 'polski przecinek dziesiętny + spacja jako separator');
+  assert.equal(p3.lat, 52.2297);
+  assert.equal(p3.lon, 21.0122);
+
+  // SAM przecinek bez spacji NIE jest separatorem pary: '52,123' to jedna
+  // liczba po polsku; dwuznaczne '52.123,20.746' jest jawnie odrzucone
+  const jedna = parsujWspolrzedne('52,123', '');
+  assert.equal(jedna.ok, false);
+  assert.equal(jedna.powod, 'brak-lon', '52,123 = 52.123 (lat), brak lon — nie para (52;123)');
+  const dwuznaczna = parsujWspolrzedne('52.123,20.746', '');
+  assert.equal(dwuznaczna.ok, false);
+  assert.equal(dwuznaczna.powod, 'format');
+});
+
+test('parsujWspolrzedne: składniki w osobnych polach (dziesiętne i DMS)', () => {
+  const dz = parsujWspolrzedne('52.23178', '21.01234');
+  assert.equal(dz.ok, true);
+  assert.equal(dz.lat, 52.23178);
+  assert.equal(dz.lon, 21.01234);
+  assert.equal(dz.zPary, false);
+  assert.equal(dz.format, 'dziesietne');
+
+  const przecinek = parsujWspolrzedne('52,23178', '21,01234');
+  assert.equal(przecinek.ok, true, 'polski przecinek w osobnych polach');
+  assert.equal(przecinek.lat, 52.23178);
+
+  const dms = parsujWspolrzedne('52°07\'22.9"N', '20°44\'46.1"E');
+  assert.equal(dms.ok, true);
+  assert.ok(Math.abs(dms.lat - (52 + 7 / 60 + 22.9 / 3600)) < 1e-9);
+  assert.equal(dms.format, 'dms');
+
+  const poludnie = parsujWspolrzedne('33°51\'35.9"S', '151°12\'40.0"E');
+  assert.equal(poludnie.ok, true);
+  assert.ok(poludnie.lat < 0, 'S daje ujemną szerokość');
+  assert.ok(Math.abs(poludnie.lat + (33 + 51 / 60 + 35.9 / 3600)) < 1e-9);
+
+  const zachod = parsujWspolrzedne('40.7128', '74°0\'21.1"W');
+  assert.equal(zachod.ok, true);
+  assert.ok(zachod.lon < 0, 'W daje ujemną długość');
+  assert.ok(Math.abs(zachod.lon + (74 + 0 / 60 + 21.1 / 3600)) < 1e-9);
+
+  const ujemne = parsujWspolrzedne('-52.123', '-20.746');
+  assert.equal(ujemne.ok, true, 'minus dziesiętny bez liter');
+  assert.equal(ujemne.lat, -52.123);
+});
+
+test('parsujWspolrzedne: odmowy są jawne i z komunikatem (nigdy cicho)', () => {
+  const puste = parsujWspolrzedne('', '');
+  assert.equal(puste.ok, false);
+  assert.equal(puste.powod, 'puste');
+  assert.equal(puste.komunikat, KOMUNIKATY_WSPOLRZEDNYCH.puste);
+  assert.match(puste.komunikat, /^Wpisz obie współrzędne/, 'istniejący test UI łapie ten początek');
+
+  const brakLon = parsujWspolrzedne('52.23178', '');
+  assert.equal(brakLon.ok, false);
+  assert.equal(brakLon.powod, 'brak-lon');
+
+  const brakLat = parsujWspolrzedne('', '21.01234');
+  assert.equal(brakLat.ok, false);
+  assert.equal(brakLat.powod, 'brak-lat');
+
+  const minuty = parsujWspolrzedne('52°75\'00"N', '');
+  assert.equal(minuty.ok, false);
+  assert.equal(minuty.powod, 'minuty', '75 minut to błąd zapisu, nie ciche 53°15\'');
+
+  const sekundy = parsujWspolrzedne('52°07\'75"N 20°44\'46"E', '');
+  assert.equal(sekundy.ok, false);
+  assert.equal(sekundy.powod, 'minuty');
+
+  const smieci = parsujWspolrzedne('Podkowa Leśna', '');
+  assert.equal(smieci.ok, false);
+  assert.equal(smieci.powod, 'format');
+
+  const konflikt = parsujWspolrzedne('52°07\'22.9"N 20°44\'46.1"E', '21.0122');
+  assert.equal(konflikt.ok, false);
+  assert.equal(konflikt.powod, 'konflikt', 'para w pierwszym polu + wypełnione drugie = jawny konflikt');
+
+  const osi = parsujWspolrzedne('20°44\'46.1"E', '');
+  assert.equal(osi.ok, false);
+  assert.equal(osi.powod, 'os', 'litera E w polu szerokości — pomyłkę pokazujemy, nie zgadujemy');
+
+  const dwieOsi = parsujWspolrzedne('52°07\'22.9"N 51°00\'00"N', '');
+  assert.equal(dwieOsi.ok, false);
+  assert.equal(dwieOsi.powod, 'os', 'para z dwóch szerokości nie ma osi długości');
+
+  const trzyLiczby = parsujWspolrzedne('52.1 20.7 14.3', '');
+  assert.equal(trzyLiczby.ok, false, 'trzy liczby to nie para');
+});
+
+test('parsujWspolrzedne: round-trip z formatujWspolrzedne', () => {
+  const sformatowane = formatujWspolrzedne(52.2297, 21.0122);
+  const zPowrotem = parsujWspolrzedne(sformatowane, '');
+  assert.equal(zPowrotem.ok, true);
+  assert.equal(zPowrotem.lat, 52.2297);
+  assert.equal(zPowrotem.lon, 21.0122);
 });

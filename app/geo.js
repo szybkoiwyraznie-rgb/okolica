@@ -204,6 +204,123 @@ export function formatujWspolrzedne(lat, lon, miejsca = 5) {
   return `${lat.toFixed(miejsca)}, ${lon.toFixed(miejsca)}`;
 }
 
+/* --- parsowanie współrzędnych z pól tekstowych (zadanie właściciela D2) --- */
+
+/** Komunikaty parsera — trafiają wprost pod pola współrzędnych (rola=alert). */
+export const KOMUNIKATY_WSPOLRZEDNYCH = {
+  puste: 'Wpisz obie współrzędne: szerokość i długość (stopnie dziesiętne, np. 52.23178 i 21.01234) albo wklej parę z Google Maps: 52°07\'22.9"N 20°44\'46.1"E.',
+  'brak-lat': 'Brak szerokości geograficznej — wpisz ją w pierwszym polu (albo wklej obie współrzędne w jedno pole).',
+  'brak-lon': 'Brak długości geograficznej — wpisz ją w drugim polu albo wklej obie współrzędne w pierwsze, np. 52°07\'22.9"N 20°44\'46.1"E (Google Maps) lub 52.123028, 20.746139.',
+  format: 'Nie rozpoznano formatu współrzędnych. Przykłady: 52.23178 (dziesiętnie), 52°07\'22.9"N (stopnie-minuty-sekundy), para w jednym polu: 52°07\'22.9"N 20°44\'46.1"E albo 52.123028, 20.746139.',
+  minuty: 'Minuty i sekundy muszą być mniejsze niż 60 — poprawny zapis to np. 52°07\'22.9"N (52°75\'... nie istnieje).',
+  os: 'Szerokość geograficzną poznaję po literze N lub S, długość po E albo W — i potrzebuję dokładnie jednej z każdej osi.',
+  konflikt: 'Pierwsze pole zawiera już parę współrzędnych — drugie pole zostaw puste.',
+};
+
+/**
+ * Składnik współrzędnej: liczba dziesiętna (`52.123`, `52,123`) albo zapis
+ * stopnie-minuty-sekundy z opcjonalną literą (`52°07'22.9"N`, `52°7′22.9″N`,
+ * `52 7 22.9 N`). Stopnie z ułamkiem TYLKO bez minut (inaczej zapis jest
+ * niejednoznaczny); minuty i sekundy < 60 (jawna odmowa, nie ciche
+ * „przeliczenie"). `S`/`W` dają znak ujemny.
+ *
+ * @param {string} tekst pojedyncze pole (już znormalizowane białe znaki)
+ * @param {string} dozwoloneLitery np. `'NS'` dla szerokości — litera spoza
+ *   zestawu to jawny błąd osi (użytkownik pomylił pola), nie zgadywanie
+ * @returns {{ ok: true, wartosc: number, litera: string } | { ok: false, powod: string }}
+ */
+function sprobujSkladnik(tekst, dozwoloneLitery) {
+  const zNorm = tekst.replace(/,/g, '.');
+  const re = /^(-?)(\d{1,3})(?:\.(\d+))?\s*°?\s*(?:(\d{1,2})(?:\.(\d+))?\s*['′’]?\s*(?:(\d{1,2})(?:\.(\d+))?\s*["″”]?\s*)?)?([NSWE])?$/i;
+  const m = re.exec(zNorm);
+  if (!m) return { ok: false, powod: 'format' };
+  const [, minus, degS, degFracS, minS, minFracS, secS, secFracS, literaSurowa] = m;
+  const litera = (literaSurowa ?? '').toUpperCase();
+  if (litera && !dozwoloneLitery.includes(litera)) return { ok: false, powod: 'os' };
+  if (degFracS !== undefined && minS !== undefined) return { ok: false, powod: 'format' };
+  const min = minS === undefined ? 0 : Number(minS + (minFracS ? `.${minFracS}` : ''));
+  const sec = secS === undefined ? 0 : Number(secS + (secFracS ? `.${secFracS}` : ''));
+  if (!(min < 60)) return { ok: false, powod: 'minuty' };
+  if (!(sec < 60)) return { ok: false, powod: 'minuty' };
+  let wartosc = Number(degS + (degFracS ? `.${degFracS}` : '')) + min / 60 + sec / 3600;
+  if (minus === '-' || litera === 'S' || litera === 'W') wartosc = -wartosc;
+  return { ok: true, wartosc, litera };
+}
+
+/**
+ * Para współrzędnych w JEDNYM polu (wklejenie z Google Maps): DMS z literami
+ * osi w dowolnej kolejności (`52°07'22.9"N 20°44'46.1"E`, też E-przed-N)
+ * albo dziesiętna (`52.123028, 20.746139` / `52.123 20.746`).
+ *
+ * Separator dziesiętny: przecinek ZE spacją, spacja albo średnik — sam
+ * przecinek NIE jest separatorem, bo `52,123` to po polsku jedna liczba
+ * (52.123), a nie para (52; 123). Wieloznaczny `52.123,20.746` (przecinek
+ * bez spacji) jest jawnie odrzucony niżej w `sprobujSkladnik`.
+ */
+function sprobujPare(tekst) {
+  const niePara = { ok: false, powod: 'to-nie-para' };
+  const skl = String.raw`-?\d{1,3}(?:[.,]\d+)?\s*°?\s*(?:\d{1,2}(?:[.,]\d+)?\s*['′’]?\s*(?:\d{1,2}(?:[.,]\d+)?\s*["″”]?\s*)?)?[NSWE]`;
+  const mDms = new RegExp(`^(${skl})[\\s,;]+(${skl})$`, 'i').exec(tekst);
+  if (mDms) {
+    const pierwszy = sprobujSkladnik(mDms[1], 'NSWE');
+    const drugi = sprobujSkladnik(mDms[2], 'NSWE');
+    if (!pierwszy.ok) return { ok: false, powod: pierwszy.powod };
+    if (!drugi.ok) return { ok: false, powod: drugi.powod };
+    const jestLat = (s) => s.litera === 'N' || s.litera === 'S';
+    if (jestLat(pierwszy) === jestLat(drugi)) return { ok: false, powod: 'os' };
+    const lat = jestLat(pierwszy) ? pierwszy.wartosc : drugi.wartosc;
+    const lon = jestLat(pierwszy) ? drugi.wartosc : pierwszy.wartosc;
+    return { ok: true, lat, lon, format: 'para-dms' };
+  }
+  const mDz = /^(-?\d+(?:[.,]\d+)?)(?:,\s+|\s+|;)\s*(-?\d+(?:[.,]\d+)?)$/.exec(tekst);
+  if (mDz) {
+    return {
+      ok: true,
+      lat: Number(mDz[1].replace(',', '.')),
+      lon: Number(mDz[2].replace(',', '.')),
+      format: 'para-dziesietna',
+    };
+  }
+  return niePara;
+}
+
+/**
+ * Parser współrzędnych z pól tekstowych ekranu pozycji (zadanie właściciela
+ * z 2026-09-06): dziesiętne (kropka albo polski przecinek), DMS z Google Maps
+ * i pełna para w jednym polu. Czysta funkcja, bez wyjątków — odmowa wraca
+ * jako `{ ok: false, powod, komunikat }` i UI pokazuje ją JAWNIE pod polami
+ * (nigdy cicho, ADR 0010 pkt 6). Zakres dziesiętny (-90..90 / -180..180)
+ * sprawdza dalej `ocenFix` — parser pilnuje tylko formatu i minut/sekund.
+ *
+ * Round-trip z `formatujWspolrzedne`: wynik sformatowany tą funkcją daje się
+ * sparsować z powrotem (test).
+ *
+ * @param {string} surowyLat zawartość pierwszego pola (lat albo para)
+ * @param {string} [surowyLon] zawartość drugiego pola (lon; puste przy parze)
+ * @returns {{ ok: true, lat: number, lon: number, zPary: boolean, format: string }
+ *          | { ok: false, powod: string, komunikat: string }}
+ */
+export function parsujWspolrzedne(surowyLat, surowyLon = '') {
+  const tekstLat = String(surowyLat ?? '').replace(/\s+/g, ' ').trim();
+  const tekstLon = String(surowyLon ?? '').replace(/\s+/g, ' ').trim();
+  const odmowa = (powod) => ({ ok: false, powod, komunikat: KOMUNIKATY_WSPOLRZEDNYCH[powod] ?? KOMUNIKATY_WSPOLRZEDNYCH.format });
+  if (!tekstLat && !tekstLon) return odmowa('puste');
+  if (!tekstLat) return odmowa('brak-lat');
+  const para = sprobujPare(tekstLat);
+  if (para.ok) {
+    if (tekstLon) return odmowa('konflikt');
+    return { ok: true, lat: para.lat, lon: para.lon, zPary: true, format: para.format };
+  }
+  if (para.powod !== 'to-nie-para') return odmowa(para.powod);
+  const lat = sprobujSkladnik(tekstLat, 'NS');
+  if (!lat.ok) return odmowa(lat.powod);
+  if (!tekstLon) return odmowa('brak-lon');
+  const lon = sprobujSkladnik(tekstLon, 'EW');
+  if (!lon.ok) return odmowa(lon.powod);
+  const dms = Boolean(lat.litera || lon.litera) || /\d\s*°/.test(tekstLat) || /\d\s*°/.test(tekstLon);
+  return { ok: true, lat: lat.wartosc, lon: lon.wartosc, zPary: false, format: dms ? 'dms' : 'dziesietne' };
+}
+
 /**
  * Próg dojścia do stacji w metrach z dokładności fixu (ADR 0004 pkt 2):
  * `max(25 m, 1.2 × accuracy)`, ograniczony do 100 m.
