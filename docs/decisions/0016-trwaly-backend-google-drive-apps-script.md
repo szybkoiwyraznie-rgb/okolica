@@ -114,3 +114,12 @@ ten sam **poziom** (wiek), **zakres tematyczny nie szerszy** niż wybrany
 w setupie oraz promień paczki ≤ promienia z setupu (stacje bliżej = uczciwie,
 dalej = nie). Kryteria obowiązują każde źródło propozycji: pamięć telefonu,
 Drive i indeks offline w repo.
+
+## Aneks (2026-09-06): zgoda na wysyłkę — korekta właściciela
+
+Zgoda żyje na ekranie wklejania odpowiedzi AI jako checkbox
+`<input id="zgoda-drive" type="checkbox" checked>` — DOMYŚLNIE ZAZNACZONY
+(opt-out): właściciel (jedyny użytkownik) chce wysyłki bez dodatkowego kroku,
+ale z możliwością odhaczenia, gdy zestaw ma zostać tylko na telefonie.
+Wcześniejszy pomysł jednorazowej zgody opt-in w karcie prywatności — odrzucony.
+Bez zgody albo bez adresu mostu: zero wysyłek i jawny status (LESSONS L6).

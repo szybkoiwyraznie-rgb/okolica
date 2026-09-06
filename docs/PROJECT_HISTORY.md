@@ -557,3 +557,5 @@ z setupu). Kopia lokalna na telefonie (druga gra bez modelu) zostaje — to
 nie współdzielenie, tylko oszczędność własnych gier. Wdrożenie mostu Drive:
 spike CORS, wpis w ASSETS, ekran zgody prywatności — kolejny krok po
 akceptacji szczegółów przepływu przez właściciela.
+
+- 2026-09-06 (M9b/D2+D3) — decyzja właściciela o zgodzie na wysyłkę: checkbox na ekranie wklejania odpowiedzi AI, domyślnie ZAZNACZONY („zgadzam się"), użytkownik może odhaczyć (opt-out). Uzasadnienie: „zakładając, że tylko ja będę z tego korzystał, to w sumie nie ma żadnego znaczenia" — bez dodatkowego klikania, ale widoczne. Wdrożone razem z automatyczną wysyłką TO-zestaw/1 (POST text/plain, bez preflightu CORS) i jawnymi statusami każdej gałęzi (LESSONS L6); brama 420/420.
