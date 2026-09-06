@@ -66,7 +66,7 @@ woła modelu**.
       „▶ graj z tą paczką", „nowe pytania (model)"); ścieżka gry z zestawem
       pomija ekrany stacje/prompt/paczka; eksport „⬇ paczka do repozytorium
       (TO-zestaw/1)" obok istniejącego eksportu; pole URL repo (zaawansowane).
-- [ ] **R4 — `tools/generuj-indeks-paczek.mjs`** + `data/paczki/`: walidacja
+- [x] **R4 — `tools/generuj-indeks-paczek.mjs`** + `data/paczki/`: walidacja
       schematu i skrótu kontenera, indeks z meta; `npm run indeks-paczek`;
       kontrakt indeks↔pliki.
 - [ ] **R5 — pierwsza paczka kuratorowana**: Podkowa Leśna, 3 stacje w
