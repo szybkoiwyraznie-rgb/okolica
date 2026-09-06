@@ -67,6 +67,7 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
     disabled: false,
     hidden: ukryte.has(id),
     style: {},
+    checked: false, // jak HTMLInputElement.checked; zainstalujDom nadpisze z atrybutu
     dataset: {},
     children: [],
     zdarzenia: {},
@@ -138,6 +139,12 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     if (!elementy.has(id)) elementy.set(id, stubElementu(id, ukryte, { prostokat: prostokaty.get(id) ?? null }));
     return elementy.get(id);
   };
+
+  // M9b/D3: atrybut `checked` z HTML staje się stanem początkowym atrapy —
+  // domyślna zgoda (checkbox wysyłki na Drive) musi być widoczna w testach.
+  for (const m of html.matchAll(/<input[^>]*\bid="([^"]+)"[^>]*\bchecked\b/g)) {
+    pobierz(m[1]).checked = true;
+  }
 
   const zdarzeniaDokumentu = {};
   const documentStub = {

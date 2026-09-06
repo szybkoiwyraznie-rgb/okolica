@@ -605,3 +605,23 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   min-height: 44px;
   flex: 0 0 auto;
 }
+
+/* M9b/D3: wiersz zgody na wysyłkę Drive — cel dotykowy ≥44 px (ADR 0011). */
+.zgoda-wiersz {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  min-height: 44px;
+  margin: 10px 0;
+  padding: 10px;
+  border: 1px solid var(--ramka, #ccc);
+  border-radius: 10px;
+  background: var(--tlo-karty, #fff);
+}
+
+.zgoda-wiersz input {
+  width: 24px;
+  height: 24px;
+  margin: 2px 0 0;
+  flex: 0 0 auto;
+}

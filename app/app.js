@@ -2143,6 +2143,52 @@ function sprawdzOdpowiedz() {
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
   status('Paczka pytań zwalidowana i przyjęta do pamięci sesji.');
+  wyslijZestawNaDrive();
+}
+
+/**
+ * M9b/D2+D3: automatyczna wysyłka zestawu na Drive w chwili przyjęcia
+ * (decyzja właściciela 2026-09-06): zgoda to checkbox na TYM ekranie,
+ * domyślnie zaznaczony; odhaczenie = zestaw zostaje na telefonie.
+ * Brak zgody, brak adresu mostu albo brak pozycji = zero wysyłki i JAWNY
+ * status (LESSONS L6). POST text/plain omija preflight CORS (plan M9b).
+ */
+function wyslijZestawNaDrive() {
+  const zgoda = $('zgoda-drive') ? $('zgoda-drive').checked : false;
+  if (!zgoda) {
+    status('Paczka przyjęta. Nie wysłano na Drive: zgoda odhaczona na tym ekranie.');
+    return;
+  }
+  const url = typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_URL_REPO) : null;
+  if (!url) {
+    status('Paczka przyjęta. Nie wysłano na Drive: brak adresu repozytorium („Źródło repozytorium” na karcie „📦 Paczki…”).');
+    return;
+  }
+  if (!STAN.pozycja || !STAN.stacje.length || !STAN.paczka) {
+    status('Paczka przyjęta. Wysyłka na Drive pominięta: brak pozycji albo stacji w tej sesji.');
+    return;
+  }
+  const plik = zbudujPlikZestawu({
+    stacje: STAN.stacje,
+    kontener: zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU),
+    meta: metaBiezacejOkolicy(),
+  });
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(plik),
+  })
+    .then((odp) => odp.json().catch(() => ({})))
+    .then((wynik) => {
+      if (wynik?.ok && wynik.status === 'przyjeta-do-przegladu') {
+        status('Paczka przyjęta i WYSŁANA na Drive: czeka na Twój przegląd — e-mail z linkiem przyjdzie za chwilę.');
+      } else if (wynik?.ok) {
+        status(`Paczka przyjęta; taki zestaw już jest na Drive (${wynik.status}) — duplikat nie powstał.`);
+      } else {
+        status(`Paczka przyjęta, ale Drive odrzucił wysyłkę: ${wynik?.blad ?? 'nieznany błąd mostu'} — gra toczy się dalej.`);
+      }
+    })
+    .catch(() => status('Paczka przyjęta, ale wysyłka na Drive nie udała się (sieć albo most) — gra toczy się dalej; możesz też zapisać plik i wnieść go ręcznie.'));
 }
 
 function renderujUsterki(usterki) {

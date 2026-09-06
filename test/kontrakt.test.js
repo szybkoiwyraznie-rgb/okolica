@@ -573,3 +573,10 @@ test('kontrakt M8: manifest, ikony i ścieżki względne pod Pages (ADR 0002)', 
   // do domeny głównej i dała 404; względne i data: są dozwolone
   assert.ok(!/(?:href|src)="\/[^/"]/.test(INDEX), 'zero ścieżek root-absolute w index.html');
 });
+
+test('kontrakt M9b: zgoda na wysyłkę Drive jest na ekranie wklejania i domyślnie zaznaczona', () => {
+  // Decyzja właściciela (2026-09-06): checkbox zgody żyje na ekranie
+  // „Wklej odpowiedź modelu" i startuje ZAZNACZONY — odhaczenie to opt-out.
+  assert.match(INDEX, /<input id="zgoda-drive" type="checkbox" checked>/, 'checkbox zgody Drive: obecny i domyślnie zaznaczony');
+  assert.ok(INDEX.indexOf('id="zgoda-drive"') < INDEX.indexOf('id="przycisk-sprawdz"'), 'zgoda widoczna PRZED przyciskiem przyjęcia');
+});

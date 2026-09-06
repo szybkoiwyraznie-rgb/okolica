@@ -220,3 +220,107 @@ test('zestawy UI: własny URL repozytorium wygrywa z domyślnym (switchability, 
     atrap.przywroc();
   }
 });
+
+/* -------- M9b/D2+D3: wysyłka na Drive po przyjęciu paczki (decyzja właściciela) -------- */
+
+import { readFileSync as czytajPlik } from 'node:fs';
+
+const KONFIG_WYSYLKA = JSON.stringify({
+  schemat: 'konfig/1',
+  konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+});
+
+function atrapaPost() {
+  const posty = [];
+  const pierwotny = globalThis.fetch;
+  globalThis.fetch = async (url, opcje = {}) => {
+    if (opcje.method === 'POST') {
+      posty.push({ url: String(url), opcje });
+      return { ok: true, status: 200, json: async () => ({ ok: true, status: 'przyjeta-do-przegladu' }), text: async () => '' };
+    }
+    return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
+  };
+  return { posty, przywroc: () => { globalThis.fetch = pierwotny; } };
+}
+
+// środek fixture paczka-ok.json — walidator pilnuje zgodności okolicy z pozycją
+const POZYCJA_FIXTURE = { lat: 52.23178, lon: 21.01234 };
+
+async function dojdzDoWklejenia(dom, pozycja = POZYCJA) {
+  dom.kliknij('przycisk-dalej-pozycja');
+  dom.pobierz('setup-lat').value = String(pozycja.lat);
+  dom.pobierz('setup-lon').value = String(pozycja.lon);
+  dom.kliknij('przycisk-ustaw-reczne');
+  dom.kliknij('przycisk-dalej-stacje');
+  dom.kliknij('przycisk-dalej-prompt');
+  dom.kliknij('przycisk-dalej-paczka');
+  assert.equal(dom.pobierz('ekran-paczka').hidden, false, 'ekran wklejania widoczny');
+}
+
+test('zgoda Drive: checkbox na ekranie wklejania startuje zaznaczony (decyzja właściciela)', async () => {
+  const dom = await aplikacjaZZestawami({});
+  assert.equal(dom.pobierz('zgoda-drive').checked, true, 'domyślnie „zgadzam się” — opt-out, nie opt-in');
+});
+
+test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain', async () => {
+  const atrap = atrapaPost();
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
+    const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
+    dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
+    dom.kliknij('przycisk-sprawdz');
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(atrap.posty.length, 1, 'dokładnie jedna wysyłka po przyjęciu');
+    const { url, opcje } = atrap.posty[0];
+    assert.equal(url, 'https://most.przyklad/exec');
+    assert.equal(opcje.method, 'POST');
+    assert.equal(opcje.headers['Content-Type'], 'text/plain;charset=utf-8', 'bez preflightu CORS');
+    const cialo = JSON.parse(opcje.body);
+    assert.equal(cialo.schemat, 'TO-zestaw/1');
+    assert.equal(cialo.stacje.length, 3, 'stacje z bieżącej sesji');
+    assert.equal(cialo.meta.liczbaStacji, 3);
+    assert.equal(cialo.meta.pytaniaNaStacje, 1);
+    assert.match(cialo.meta.przegladZrodel, /oczekuje przeglądu/, 'kandydat wychodzi ze znacznikiem');
+    assert.equal(cialo.kontener.schemat, 'TO-paczka/2');
+    assert.match(dom.pobierz('status').textContent, /WYSŁANA na Drive/);
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('wysyłka Drive: odhaczona zgoda = zero wysyłki i jawny status', async () => {
+  const atrap = atrapaPost();
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
+    dom.pobierz('zgoda-drive').checked = false;
+    const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
+    dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
+    dom.kliknij('przycisk-sprawdz');
+    await new Promise((r) => setTimeout(r, 30));
+    assert.deepEqual(atrap.posty, [], 'bez zgody nic nie wychodzi z telefonu');
+    assert.match(dom.pobierz('status').textContent, /zgoda odhaczona/);
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('wysyłka Drive: brak adresu mostu = zero wysyłki i jawny status', async () => {
+  const atrap = atrapaPost();
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA]]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
+    const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
+    dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
+    dom.kliknij('przycisk-sprawdz');
+    await new Promise((r) => setTimeout(r, 30));
+    assert.deepEqual(atrap.posty, [], 'bez adresu mostu nic nie wychodzi');
+    assert.match(dom.pobierz('status').textContent, /brak adresu repozytorium/);
+  } finally {
+    atrap.przywroc();
+  }
+});
