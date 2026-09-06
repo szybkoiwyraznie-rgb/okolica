@@ -100,7 +100,7 @@
       `assets/manifest.json`, `.nojekyll`, linki w `index.html`,
       `test/ikony.test.js` + kontrakty z decyzji 6; brama zielona;
       commit + push.
-- [ ] **PB3 — Pages i WORKFLOW §5:** próba `gh api` (wynik jawny w
+- [x] **PB3 — Pages i WORKFLOW §5:** próba `gh api` (wynik jawny w
       handoffie/kommicie — sukces albo 403 = czynność właściciela),
       poprawa §5 (literówka adresu, nota CI live + kontrakt lustra);
       commit + push.

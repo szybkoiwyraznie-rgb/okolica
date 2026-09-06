@@ -131,11 +131,24 @@ symulacji na żywo sprawdza właściciel (agent nie ma przeglądarki, LESSONS L3
 ## 5. Publikacja na GitHub Pages (jednorazowo, właściciel)
 
 Settings → Pages → **Source: Deploy from a branch** → Branch: `main`,
-katalog `/ (root)` → Save. Adres: `https://szywkoiwyraznie-rgb.github.io/okolica/`.
-Agent nie ma uprawnień do ustawień repo i nie prosi o to w środku sesji —
-stan publikacji opisuje w handoffie jako fakt. CI: receptura w
-`docs/setup/ci-workflow.yml` do wklejenia w `.github/workflows/ci.yml`
-(LESSONS L4: agent nie zapisze tego pliku).
+katalog `/ (root)` → Save. Adres: `https://szybkoiwyraznie-rgb.github.io/okolica/`.
+
+Uwagi techniczne (M8, 2026-09-06):
+
+- Repozytorium MA `.nojekyll` — Pages serwuje pliki jak leżą, bez Jekylla
+  (aplikacja statyczna nie potrzebuje przetwarzania).
+- Wszystkie ścieżki są WZGLĘDNE (ADR 0002), więc podkatalog `/okolica/`
+  działa bez żadnej konfiguracji bazy; kontrakt pilnuje zakazu ścieżek
+  root-absolute w `index.html`.
+- Agent NIE włączy Pages za Ciebie: `gh api …/pages -X POST` daje 403
+  („Resource not accessible by integration") — token nie ma uprawnień
+  admin do ustawień repo; sprawdzone 2026-09-06, wynik zapisany
+  w `PROJECT_HISTORY`. Ta sekcja jest jedyną drogą.
+- Włącz PO scaleniu PR #2 (albo wcześniej — do merge strona pokaże tylko
+  `README`; po każdym pushu do `main` Pages przebudowuje się sam, ~1–2 min).
+- CI na PR-ach już działa: `.github/workflows/ci.yml` (live od 2026-09-06,
+  przyspieszone z M8; lustro receptury w `docs/setup/ci-workflow.yml`,
+  kontrakt pilnuje syncu — LESSONS L4, aneks).
 
 ## 6. Dodawanie rzeczy powtarzalnych
 
