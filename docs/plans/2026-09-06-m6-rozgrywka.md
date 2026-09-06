@@ -64,7 +64,7 @@ Proponowana, B17: nie wcześniej niż po M8), gra na kilku urządzeniach
       ręczne → `zakonczOdcinek({trybDojscia:'reczne'})` + jawny komunikat kary,
       pauza/wznowienie (`komunikatPauzy/wznowienia`), mapa: pinezki stacji
       + marker gracza + bieżąca stacja wyróżniona.
-- [ ] **R5 — pętla pytania:** po `zakonczOdcinek` → `odpakujPaczke(kontener)`
+- [x] **R5 — pętla pytania:** po `zakonczOdcinek` → `odpakujPaczke(kontener)`
       (dopiero teraz; wcześniej w pamięci tylko kontener) → pytania stacji
       (`pytaniaStacji`, obsługa >1 pytania i wielu odpowiadających —
       `ktoOdpowiada`, G06/G07) → karta pytania → `zapiszOdpowiedz` →

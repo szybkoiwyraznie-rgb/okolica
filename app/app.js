@@ -29,7 +29,7 @@ import {
 import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m5-1';
 import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m5-1';
 import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m5-1';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, nowaRozgrywka, podglad, startOdcinka, zakonczOdcinek } from './rozgrywka.js?v=m5-1';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, podglad, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m5-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -76,6 +76,8 @@ const STAN = {
   graPauza: false,
   graPauzaStartMs: 0,
   pauzaSkumulowanaMs: 0,
+  /** M6/R5: kiedy odsłonięto bieżące pytanie (czas odpowiedzi dla modelu). */
+  pytaniePokazaneMs: 0,
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
@@ -974,8 +976,13 @@ function aktualizujGreNaFix(fix) {
   if (d.dotarl) zakonczOdcinekGry(TRYBY_DOJSCIA.gps, fix);
 }
 
-/** Render faz ekranu gry: panele, badge'y, dostępność przycisków, mapa. */
-function renderujGre() {
+/**
+ * Render faz ekranu gry: badge'y zawsze; panele tylko przy `panele: true`.
+ * Po odpowiedzi model bywa już w następnej fazie, ale gracz musi NAJPIERW
+ * przeczytać ocenę, wyjaśnienie i źródła — przełączanie paneli czeka wtedy
+ * na „Następna stacja" (plan M6/R5).
+ */
+function renderujGre({ panele = true } = {}) {
   const r = STAN.rozgrywka;
   if (!r) return;
   const pod = podglad(r);
@@ -991,21 +998,25 @@ function renderujGre() {
     $('gra-dystans').textContent = '— m';
   }
 
+  if (panele) {
   $('gra-panel-oczekuje').hidden = r.faza !== FAZY.przygotowanie;
   $('gra-panel-odcinek').hidden = r.faza !== FAZY.odcinek;
   $('gra-panel-pytanie').hidden = r.faza !== FAZY.pytanie;
   $('gra-panel-koniec').hidden = r.faza !== FAZY.koniec;
+  }
 
-  if (r.faza === FAZY.przygotowanie && pod.stacja) {
+  if (panele && r.faza === FAZY.przygotowanie && pod.stacja) {
     $('gra-kto-idzie').textContent = pod.gracz ? `Idzie: ${pod.gracz.imie} → stacja ${indeks + 1}` : `Stacja ${indeks + 1}`;
     $('gra-cel-stacji').textContent = `${pod.stacja.opis || 'Cel bez opisu'} · ${formatujWspolrzedne(pod.stacja.lat, pod.stacja.lon)} · ${Math.round(pod.dystansM)} m drogą od poprzedniego punktu`;
     $('przycisk-start-odcinka').textContent = `▶ Idę do stacji ${indeks + 1}`;
   }
 
-  $('przycisk-start-odcinka').disabled = STAN.graPauza;
-  $('przycisk-reczne-dojscie').disabled = STAN.graPauza;
-  $('przycisk-symulacja-gra').hidden = !(STAN.trybTestowy && r.faza === FAZY.odcinek);
-  $('przycisk-pomin-stacje').disabled = r.faza !== FAZY.odcinek || STAN.graPauza; // ADR 0015 pkt 2: tylko w drodze
+  if (panele) {
+    $('przycisk-start-odcinka').disabled = STAN.graPauza;
+    $('przycisk-reczne-dojscie').disabled = STAN.graPauza;
+    $('przycisk-symulacja-gra').hidden = !(STAN.trybTestowy && r.faza === FAZY.odcinek);
+    $('przycisk-pomin-stacje').disabled = r.faza !== FAZY.odcinek || STAN.graPauza; // ADR 0015 pkt 2: tylko w drodze
+  }
 
   if (STAN.mapy.gra) {
     STAN.mapy.gra.zaznaczStacje(STAN.stacje, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
@@ -1041,7 +1052,11 @@ function startGry() {
   STAN.historiaFixow = [];
   pokazEkran('gra');
   if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
-  status(`Gra rozpoczęta: ${STAN.rozgrywka.gracze.length} gracz(y), ${STAN.rozgrywka.stacje.length} stacji. Pytania odsłaniają się dopiero na stacjach.`);
+  const brakPytan = STAN.rozgrywka.brakPytan ?? [];
+  status(`Gra rozpoczęta: ${STAN.rozgrywka.gracze.length} gracz(y), ${STAN.rozgrywka.stacje.length} stacji. Pytania odsłaniają się dopiero na stacjach.`
+    + (brakPytan.length
+      ? ` Uwaga: paczka nie ma pytań do stacji ${brakPytan.join(', ')} — zamkną się samym dojściem, bez punktów (ADR 0015).`
+      : ''));
   renderujGre();
 }
 
@@ -1075,6 +1090,7 @@ function zakonczOdcinekGry(trybDojscia, fix) {
     ? 'Dojście zgłoszone ręcznie — kara czasowa doliczona do odcinka (ADR 0004 pkt 5).'
     : 'Stacja osiągnięta — próg dojścia zadziałał z GPS. Brawo!');
   renderujGre();
+  if (STAN.rozgrywka.faza === FAZY.pytanie) renderujPytanie(); // ADR 0007 pkt 6: pytanie DOPIERO teraz
 }
 
 /** Pauza gry: zegar stoi, watcher/symulacja zatrzymane, wznowienie jawne. */
@@ -1119,6 +1135,119 @@ function przelaczSymulacjeDoStacji() {
   const fixy = sekwencjaSymulowana(trasa, { coMs: SYMULACJA.coMs, postoj: GRANICE.wymaganeTrafnienia });
   STAN.symulacja = { fixy, indeks: 0, cel, timer: setInterval(krokSymulacji, SYMULACJA_KROK_MS) };
   status(`Symulacja dojścia do stacji ${pod.stacja.id}: ${fixy.length} fixów (ostatnie dwa dokładnie w celu).`);
+}
+
+/**
+ * Faza `pytanie` (M6/R5): paczka jest odsłaniana z kontenera DOPIERO tutaj
+ * (ADR 0007 pkt 6). Model rozgrywki pilnuje, kto odpowiada i które pytania
+ * zostały (`ktoOdpowiada`, referencje `{stacja, pytanieId}`); treść bierzemy
+ * z odsłoniętej paczki po id.
+ */
+function renderujPytanie() {
+  const r = STAN.rozgrywka;
+  if (!r || r.faza !== FAZY.pytanie) return;
+  const { paczka, blad } = odpakujPaczke(STAN.kontenerPaczki);
+  if (!paczka) {
+    $('gra-pytanie-tresc').textContent = '';
+    $('gra-komunikat').textContent = `Nie da się odsłonić pytania: ${blad ?? 'uszkodzony kontener'}. Zakończ grę albo wgraj paczkę ponownie z pliku.`;
+    return;
+  }
+  const idPytan = pytaniaStacji(r, r.biezacaStacja);
+  const odpowiadaja = ktoOdpowiada(r, r.biezacaStacja);
+  // pierwsza nieobsłużona para (pytanie, gracz) — wiele pytań na stację i wielu
+  // odpowiadających (współpraca/zespoły) przechodzi przez ten sam ekran
+  let para = null;
+  for (const pid of idPytan) {
+    for (const gid of odpowiadaja) {
+      const juz = r.odpowiedzi.some((o) => o.stacja === r.biezacaStacja && o.pytanieId === pid && o.gracz === gid);
+      if (!juz) { para = { pytanieId: pid, graczId: gid }; break; }
+    }
+    if (para) break;
+  }
+  if (!para) { renderujGre(); return; } // stacja domknięta — model przeszedł dalej
+  const pytanie = paczka.pytania.find((q) => q.id === para.pytanieId);
+  const gracz = r.gracze.find((g) => g.id === para.graczId);
+  if (!pytanie) {
+    $('gra-komunikat').textContent = `Kontener nie zawiera pytania ${para.pytanieId} — paczka rozjechała się z rozgrywką. Zakończ grę albo wgraj paczkę ponownie.`;
+    return;
+  }
+  $('gra-komunikat').textContent = '';
+  $('gra-pytanie-naglowek').textContent = `Stacja ${r.biezacaStacja} zdobyta · pytanie ${idPytan.indexOf(para.pytanieId) + 1} z ${idPytan.length} · odpowiada ${gracz?.imie ?? '?'}`;
+  $('gra-pytanie-tresc').textContent = pytanie.tresc;
+  const lista = $('gra-odpowiedzi');
+  lista.replaceChildren();
+  pytanie.odpowiedzi.forEach((odp, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'przycisk przycisk-odpowiedz';
+    b.textContent = `${'ABCD'[i]}. ${odp}`;
+    b.addEventListener('click', () => odpowiedzNaPytanie(pytanie, i, para));
+    lista.appendChild(b);
+  });
+  $('gra-wynik-odpowiedzi').hidden = true;
+  $('przycisk-nastepna-stacja').hidden = true;
+  STAN.pytaniePokazaneMs = performance.now();
+}
+
+/** Zapis odpowiedzi + ocena, wyjaśnienie i źródła (ADR 0008: źródła także w grze). */
+function odpowiedzNaPytanie(pytanie, wybrana, para) {
+  const r = STAN.rozgrywka;
+  if (!r || r.faza !== FAZY.pytanie) return;
+  const wynik = zapiszOdpowiedz(r, {
+    stacjaId: r.biezacaStacja,
+    graczId: para.graczId,
+    pytanie,
+    wybrana,
+    czasOdpowiedziMs: Math.max(0, performance.now() - STAN.pytaniePokazaneMs),
+    czasMs: zegarGry(),
+  });
+  STAN.rozgrywka = wynik.stan;
+  pokazBledy('bledy-gra', wynik.usterki);
+  if (wynik.usterki.length > 0) {
+    status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
+    return;
+  }
+  const dobrze = wybrana === pytanie.poprawna;
+  [...$('gra-odpowiedzi').children].forEach((b, i) => {
+    b.disabled = true; // jedna odpowiedź na pytanie — bez poprawek po fakcie
+    if (i === pytanie.poprawna) b.classList.add('poprawna');
+    else if (i === wybrana) b.classList.add('zla');
+  });
+  const wpis = wynik.stan.odpowiedzi.at(-1);
+  $('gra-odpowiedz-ocena').textContent = dobrze
+    ? `✓ Dobrze! +${wpis.punktyRazem} pkt${wpis.premiaCzasu ? ` (w tym premia za tempo ${wpis.premiaCzasu > 0 ? '+' : ''}${wpis.premiaCzasu} pkt)` : ''}`
+    : `✗ Źle (0 pkt). Poprawna odpowiedź: ${'ABCD'[pytanie.poprawna]}. ${pytanie.odpowiedzi[pytanie.poprawna]}`;
+  $('gra-wyjasnienie').textContent = pytanie.wyjasnienie ?? '';
+  const zrodla = $('gra-zrodla');
+  zrodla.replaceChildren();
+  for (const z of pytanie.zrodla ?? []) {
+    const li = document.createElement('li');
+    const a = document.createElement('a');
+    a.href = z.url;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    a.textContent = `${z.tytul ?? z.url}${z.sprawdzono ? ` (sprawdzono ${z.sprawdzono})` : ''}`;
+    li.appendChild(a);
+    zrodla.appendChild(li);
+  }
+  $('gra-wynik-odpowiedzi').hidden = false;
+  $('przycisk-nastepna-stacja').hidden = false;
+  const faza = wynik.stan.faza;
+  $('przycisk-nastepna-stacja').textContent = faza === FAZY.koniec
+    ? '🏁 Zobacz wynik →'
+    : faza === FAZY.pytanie
+      ? 'Następne pytanie →'
+      : 'Następna stacja →';
+  status(dobrze ? 'Poprawna odpowiedź zapisana.' : 'Odpowiedź zapisana — wyjaśnienie i źródła poniżej.');
+  renderujGre({ panele: false }); // badge'e tak; panele dopiero po „Następna stacja"
+}
+
+/** „Następna stacja/pytanie": domyka pokaz wyjaśnienia i przełącza fazę. */
+function nastepnaStacja() {
+  const r = STAN.rozgrywka;
+  if (!r) return;
+  renderujGre();
+  if (r.faza === FAZY.pytanie) renderujPytanie();
 }
 
 /* ---------------------------------------------------------------- prompt */
@@ -1740,6 +1869,7 @@ function start() {
   $('przycisk-reczne-dojscie').addEventListener('click', () => zakonczOdcinekGry(TRYBY_DOJSCIA.reczne, null));
   $('przycisk-pauza').addEventListener('click', () => przelaczPauzeGry());
   $('przycisk-symulacja-gra').addEventListener('click', () => przelaczSymulacjeDoStacji());
+  $('przycisk-nastepna-stacja').addEventListener('click', () => nastepnaStacja());
 
   pokazEkran('setup');
   status(`M0 — fundament. Ustawienia domyślne: ${TRYBY[STAN.konfig.tryb].etykieta}, ${STAN.konfig.liczbaStacji} stacji, ${DOMYSLNE.pytaniaNaStacje} pytanie na stację, wiek ${WIEK[STAN.konfig.wiek].etykieta}.`);

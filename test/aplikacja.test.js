@@ -1048,3 +1048,85 @@ test('M6: pauza — przyciski stają, wznowienie jawne (ADR 0004 pkt 1)', async 
   assert.match(pauza.textContent, /Pauza/);
   assert.equal(dom.pobierz('przycisk-reczne-dojscie').disabled, false, 'wznowienie odblokowuje akcje');
 });
+
+/* ================= M6/R5: pętla pytania — odsłonięcie, odpowiedź, źródła */
+
+/** Pełna ścieżka do fazy pytania: start gry → odcinek → ręczne dojście. */
+async function graWFaziePytania() {
+  const { dom, paczka } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  dom.kliknij('przycisk-reczne-dojscie');
+  return { dom, paczka };
+}
+
+test('M6: pytanie odsłania się DOPIERO na stacji i ma cztery odpowiedzi (ADR 0007 pkt 6)', async () => {
+  const { dom, paczka } = await graWFaziePytania();
+  const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'panel C w fazie pytania');
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /Stacja 1 zdobyta · pytanie 1 z 1 · odpowiada Gracz 1/);
+  assert.equal(dom.pobierz('gra-pytanie-tresc').textContent, pierwsze.tresc, 'treść z odsłoniętego kontenera');
+  const przyciski = dom.pobierz('gra-odpowiedzi').children;
+  assert.equal(przyciski.length, 4, 'cztery odpowiedzi');
+  przyciski.forEach((b, i) => {
+    assert.equal(b.textContent, `${'ABCD'[i]}. ${pierwsze.odpowiedzi[i]}`);
+    assert.equal(b.disabled, false, 'przed odpowiedzią wszystkie aktywne');
+  });
+  assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, true, 'ocena i wyjaśnienie dopiero po odpowiedzi');
+  assert.equal(dom.pobierz('przycisk-nastepna-stacja').hidden, true);
+  // przed dojściem treści pytania nie było NICZYM w UI — strażnik: ekran paczki schowany, podgląd zwinięty
+  assert.equal(dom.pobierz('podglad-organizatora').hidden, true);
+});
+
+test('M6: poprawna odpowiedź — ocena, punkty z premią, wyjaśnienie i źródła z linkami', async () => {
+  const { dom, paczka } = await graWFaziePytania();
+  const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
+  const przyciski = dom.pobierz('gra-odpowiedzi').children;
+  const dobry = przyciski[pierwsze.poprawna];
+  for (const fn of dobry.zdarzenia.click ?? []) fn({ type: 'click', target: dobry, currentTarget: dobry });
+
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze! \+\d+ pkt/, 'ocena z punktami (podstawowe + ewentualna premia)');
+  assert.ok(dobry.classList.contains('poprawna'), 'poprawna odpowiedź podświetlona');
+  przyciski.forEach((b) => assert.equal(b.disabled, true, 'po odpowiedzi przyciski zablokowane — bez poprawek'));
+  assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie z paczki');
+  const zrodla = dom.pobierz('gra-zrodla').children;
+  assert.equal(zrodla.length, pierwsze.zrodla.length, 'wszystkie źródła pytania (ADR 0008)');
+  const a = zrodla[0].children[0];
+  assert.equal(a.href, pierwsze.zrodla[0].url);
+  assert.equal(a.target, '_blank');
+  assert.equal(a.rel, 'noopener noreferrer');
+  assert.match(a.textContent, /sprawdzono/, 'data sprawdzenia źródła widoczna');
+  assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, false);
+  assert.equal(dom.pobierz('przycisk-nastepna-stacja').hidden, false);
+  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Następna stacja/, 'jedno pytanie, jeden gracz — stacja zamknięta');
+  // panele TRZYMAJĄ wyjaśnienie: model jest już w fazie przygotowanie, ale C widoczny
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'wyjaśnienie nie znika zanim gracz kliknie dalej');
+  assert.match(dom.pobierz('gra-postep').textContent, /stacja 2 z 3/, 'badge postępu już po zamknięciu stacji');
+});
+
+test('M6: „Następna stacja" przełącza fazę i rotuje gracza (hot-seat, ADR 0009)', async () => {
+  const { dom } = await graWFaziePytania();
+  const przyciski = dom.pobierz('gra-odpowiedzi').children;
+  for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] });
+  dom.kliknij('przycisk-nastepna-stacja');
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, true, 'panel C zamknięty');
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'faza przygotowanie — panel A');
+  assert.match(dom.pobierz('gra-kto-idzie').textContent, /Idzie: Gracz 2 → stacja 2/, 'rotacja kolejki (2 graczy z domyślnej konfiguracji)');
+  assert.match(dom.pobierz('przycisk-start-odcinka').textContent, /Idę do stacji 2/);
+});
+
+test('M6: błędna odpowiedź — zero punktów, podświetlona poprawna, gra idzie dalej', async () => {
+  const { dom, paczka } = await graWFaziePytania();
+  const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
+  const zlyIndex = (pierwsze.poprawna + 1) % 4;
+  const przyciski = dom.pobierz('gra-odpowiedzi').children;
+  const zly = przyciski[zlyIndex];
+  for (const fn of zly.zdarzenia.click ?? []) fn({ type: 'click', target: zly, currentTarget: zly });
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✗ Źle \(0 pkt\)/);
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, new RegExp(`Poprawna odpowiedź: ${'ABCD'[pierwsze.poprawna]}\\.`), 'poprawna odpowiedź ujawniona po błędzie');
+  assert.ok(zly.classList.contains('zla'), 'błędna podświetlona na czerwono');
+  assert.ok(przyciski[pierwsze.poprawna].classList.contains('poprawna'), 'poprawna na zielono');
+  assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie także po błędzie — tu jest najwięcej nauki');
+  dom.kliknij('przycisk-nastepna-stacja');
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'gra idzie dalej mimo błędu');
+});
