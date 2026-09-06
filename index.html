@@ -18,8 +18,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m3-1">
-  <script type="module" src="app/app.js?v=m3-1"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m4-1">
+  <script type="module" src="app/app.js?v=m4-1"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -177,6 +177,7 @@
     <section id="ekran-stacje" class="ekran" hidden aria-labelledby="tytul-stacje">
       <h2 id="tytul-stacje">Stacje w Twojej okolicy</h2>
       <p id="stacje-tryb" class="podpowiedz"></p>
+      <p id="bledy-stacje" class="bledy" role="alert" hidden></p>
       <div id="mapa-stacje" class="mapa">
         <svg id="mapa-stacje-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
           <g id="mapa-stacje-kafelki" class="warstwa-kafelki"></g>
@@ -196,7 +197,8 @@
       <p id="stacje-sprawiedliwosc" class="badge"></p>
       <div class="wiersz">
         <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
-        <button id="przycisk-pierścien" class="przycisk" type="button" hidden>◎ Tryb uproszczony</button>
+        <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
+        <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
       </div>
       <p class="podpowiedz">Stacje są rozstawione w pierścieniu (ADR 0005 pkt 4). Punkty na sieci dróg, placów i szlaków — „nigdy w budynku ani na terenie prywatnym" — dojdą w kamieniu M4; patrz <code>docs/ROADMAP.md</code>.</p>
       <div class="wiersz przyciski-dolu">

@@ -170,6 +170,21 @@ Kryterium: na trzech fixture'ach (centrum / przedmieście / las) żadna stacja
 w budynku ani na terenie prywatnym; odchylenie standardowe dystansów ≤ 15%
 średniej; sprawdzone **w terenie** na co najmniej jednej okolicy.
 
+**Kod M4 gotowy (2026-09-05):** pipeline Overpass w `sieci.js` (zapytanie
+`R × 1,15`, parser `out geom`, graf z interpolacją co ~50 m, Dijkstra z
+kopcem, snapowanie, kandydaci z filtrami dostępności i barier, wybór
+pierścień 0,7R ± 20% + separacja kątowa/sieciowa + pass wyrównujący) oraz
+warstwa UI: cache `okolica:sieci:<geohash6>-<R>` (TTL 30 dni, LRU 2 MB),
+łańcuch trzech instancji z odstępem 30 s (ASSETS §2), jawna degradacja do
+pierścienia i ręczne pinezki (ADR 0005 pkt 8). Fixture'y (wspólne wierzchołki
+na skrzyżowaniach, jak w OSM): **centrum** R=600/N=5 — udział odchylenia 3,3%;
+**przedmieście** R=1000/N=4 — 3,9%; **las** R=1500/N=4 — 0,2% (kryterium
+≤ 15%); 100% kandydatów osiągalnych, żadnej stacji w budynku ani na terenie
+prywatnym. Brama: 313 testów, 0 fail.
+**Zostało na M4:** kryterium terenowe — co najmniej jedna prawdziwa okolica
+na telefonie, test właściciela (`WORKFLOW` §4.2); przy okazji pierwsze
+patrzenie na gesty drag/pinch z M2.
+
 ## M5 — Pętla pytań (prompt → model → walidacja → paczka)
 
 Ekran promptu (kopiowanie, import/eksport pliku, instrukcja obrazkowa),

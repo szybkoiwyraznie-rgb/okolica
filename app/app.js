@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m3-1';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, przesunPunkt } from './geo.js?v=m3-1';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m4-1';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, przesunPunkt } from './geo.js?v=m4-1';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -24,11 +24,27 @@ import {
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
-} from './protokol.js?v=m3-1';
-import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m3-1';
-import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste } from './stacje.js?v=m3-1';
-import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m3-1';
-import { utworzMape } from './mapa.js?v=m3-1';
+} from './protokol.js?v=m4-1';
+import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m4-1';
+import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m4-1';
+import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m4-1';
+import {
+  INSTANCJE_OVERPASS,
+  KODY_SIECI,
+  POLITYKA,
+  SCHEMAT_SIECI,
+  budujGraf,
+  budujZapytanieOverpass,
+  czyPrzelaczycInstancje,
+  kandydaciNaStacje,
+  kluczCacheSieci,
+  nazwaMiejsca,
+  parsujOdpowiedz,
+  przycijCacheSieci,
+  upraszczajDaneDoCache,
+  wczytajDaneZCache,
+} from './sieci.js?v=m4-1';
+import { utworzMape } from './mapa.js?v=m4-1';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -58,6 +74,16 @@ const STAN = {
   symulacja: null,
   /** Historia fixów (limit z `pozycja.js`) — wspólna dla GPS i symulacji. */
   historiaFixow: [],
+  /** Stan sieci drogowej (M4): 'brak' → 'gotowa' po pobraniu albo cache. */
+  siec: { stan: 'brak', dane: null, klucz: null, trybGrafu: null, graf: null, kandydaci: null, zCache: false },
+  /** Wynik `wybierzStacje` (macierz, sprawiedliwość sieciowa) albo null przy pierścieniu. */
+  wynikSieci: null,
+  /** Wymuszony tryb uproszczony (przycisk „Tryb uproszczony", ADR 0005 pkt 8). */
+  wymusPierscien: false,
+  /** Tryb ręczny (ADR 0005 pkt 8b): organizator przeciąga pinezki stacji. */
+  trybReczny: false,
+  /** Odstęp między instancjami Overpass; `?odstep=0` skraca go w testach. */
+  odstepOverpassMs: POLITYKA.odstepMs,
   /** Dwustopniowe kasowanie danych: pierwszy klik uzbraja, drugi kasuje. */
   czyszczenieUzbrojone: false,
   /** Czy widok był już centrowany na pierwszym fixie — potem rządzi palec. */
@@ -304,7 +330,7 @@ function pokazPozycje() {
   $('pozycja-status').textContent = STAN.ostatniFix?.zrodlo === ZRODLA_FIXA.reczne ? 'Pozycja ustawiona ręcznie' : 'Pozycja ustalona';
   $('pozycja-dokladnosc').textContent = STAN.dokladnoscM ? `dokładność: ±${Math.round(STAN.dokladnoscM)} m` : 'dokładność: nieznana (wpisana ręcznie)';
   $('pozycja-wspolrzedne').textContent = `${formatujWspolrzedne(p.lat, p.lon)} · geohash ${geohash(p.lat, p.lon, 6)}`;
-  $('pozycja-miejsce').textContent = STAN.miejsce ? `miejsce: ${STAN.miejsce}` : 'nazwa miejsca: brak odczytu (Overpass dołączy ją w M4)';
+  $('pozycja-miejsce').textContent = STAN.miejsce ? `miejsce: ${STAN.miejsce}` : 'nazwa miejsca: brak — pobierana z siecią dróg na ekranie stacji';
   $('przycisk-dalej-stacje').disabled = false;
   // Jawność niedokładności (ADR 0004 pkt 4): komunikat i próg liczy `ocenFix`,
   // tu tylko pokazujemy, co powiedział.
@@ -497,7 +523,175 @@ function ziarno() {
   return `${ziarnoRozgrywki({ lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, liczbaStacji: STAN.konfig.liczbaStacji, data })}|${STAN.ziarnoOffset}`;
 }
 
-function przeliczStacje() {
+/* --- sieć drogowa (M4): cache, pobieranie z łańcuchem instancji, wybór --- */
+
+/** Klucz cache sieci dla bieżącej pozycji i promienia (ADR 0010 pkt 1). */
+function kluczSieci() {
+  return kluczCacheSieci({ lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM });
+}
+
+function odczytajCacheSieci(klucz, terazMs) {
+  try {
+    const surowy = localStorage.getItem(klucz);
+    if (!surowy) return null;
+    return wczytajDaneZCache(JSON.parse(surowy), { terazMs });
+  } catch {
+    return null; // zepsuty wpis = brak wpisu; naprawi go następne pobranie
+  }
+}
+
+function zapiszCacheSieci(klucz, dane, terazMs) {
+  try {
+    localStorage.setItem(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: terazMs, dane }));
+    // LRU: ponad 2 MB cache sieci → najstarsze wpisy wypadają (ADR 0010 pkt 1)
+    const wpisy = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || !k.startsWith('okolica:sieci:')) continue;
+      const surowy = localStorage.getItem(k) ?? '';
+      let zapisanoMs = 0;
+      try { zapisanoMs = JSON.parse(surowy)?.zapisanoMs ?? 0; } catch { /* liczy się rozmiar */ }
+      wpisy.push({ klucz: k, rozmiarBajtow: surowy.length, zapisanoMs });
+    }
+    for (const k of przycijCacheSieci(wpisy)) localStorage.removeItem(k);
+  } catch {
+    status(KODY_SIECI.S04); // brak miejsca — gramy dalej, następna gra pobierze sieć
+  }
+}
+
+function ustawSiec(dane, { zCache, klucz }) {
+  STAN.siec = { stan: 'gotowa', dane, klucz, trybGrafu: null, graf: null, kandydaci: null, zCache };
+  const miejsce = nazwaMiejsca(dane);
+  if (miejsce) {
+    STAN.miejsce = miejsce;
+    $('pozycja-miejsce').textContent = `miejsce: ${miejsce}`;
+  }
+}
+
+/** Graf i kandydaci dla bieżącego trybu — przebudowa tylko przy zmianie trybu. */
+function grafDlaTrybu(tryb) {
+  const siec = STAN.siec;
+  if (siec.stan !== 'gotowa') return false;
+  if (siec.trybGrafu === tryb && siec.graf) return true;
+  try {
+    siec.graf = budujGraf(siec.dane, { tryb });
+    siec.kandydaci = kandydaciNaStacje(siec.dane, siec.graf, { tryb }).kandydaci;
+    siec.trybGrafu = tryb;
+    return true;
+  } catch (blad) {
+    pokazBledy('bledy-stacje', [{
+      kod: blad?.kod ?? 'S09',
+      pole: 'siec',
+      komunikat: blad?.komunikat ?? KODY_SIECI[blad?.kod] ?? 'Sieć drogowa nie nadaje się dla tego trybu.',
+    }]);
+    return false;
+  }
+}
+
+/**
+ * Pobranie sieci z łańcucha instancji (ASSETS §2): sekwencyjnie, z pauzą
+ * `odstepMs` po 406/429/5xx, timeoutem 20 s przez `AbortController` i
+ * budżetem 8 MB na cache. `fetch` jest czytany w chwili wywołania, więc test
+ * może podstawić atrapę po imporcie aplikacji.
+ */
+async function pobierzSiec(terazMs) {
+  // Celowo `window.fetch`, nie gołe `fetch`: Node ≥ 18 MA globalny fetch i
+  // testy na atrapie DOM próbowałyby wołać prawdziwy Overpass. Atrapa nie
+  // wystawia `window.fetch`, test podstawia atrapę jawnie (LESSONS L18).
+  const f = typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
+  if (!f) return false; // środowisko bez fetch (atrapy/offline) — degradacja
+  const zapytanie = budujZapytanieOverpass({
+    srodek: STAN.pozycja,
+    promienM: STAN.konfig.promienM,
+    tryb: STAN.konfig.tryb,
+  });
+  const pauza = (ms) => new Promise((rozwiaz) => setTimeout(rozwiaz, ms));
+  for (let i = 0; i < INSTANCJE_OVERPASS.length; i++) {
+    const instancja = INSTANCJE_OVERPASS[i];
+    const ostatnia = i === INSTANCJE_OVERPASS.length - 1;
+    status(`Pobieram sieć dróg: ${instancja.nazwa}… (jedno zapytanie na grę)`);
+    try {
+      const kontroler = typeof AbortController === 'function' ? new AbortController() : null;
+      const timer = kontroler ? setTimeout(() => kontroler.abort(), POLITYKA.timeoutMs) : null;
+      const odpowiedz = await f(instancja.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(zapytanie)}`,
+        signal: kontroler ? kontroler.signal : undefined,
+      });
+      if (timer) clearTimeout(timer);
+      if (!odpowiedz.ok) {
+        if (!ostatnia && czyPrzelaczycInstancje({ status: odpowiedz.status })) {
+          status(`${instancja.nazwa}: HTTP ${odpowiedz.status} — limit publiczny, czekam ${Math.round(STAN.odstepOverpassMs / 1000)} s i próbuję kolejną instancję.`);
+          await pauza(STAN.odstepOverpassMs);
+          continue;
+        }
+        throw Object.assign(new Error(`HTTP ${odpowiedz.status}`), { status: odpowiedz.status });
+      }
+      const tekst = await odpowiedz.text();
+      const sparsowane = parsujOdpowiedz(JSON.parse(tekst));
+      const dane = upraszczajDaneDoCache(sparsowane);
+      if (tekst.length <= 8_000_000) {
+        zapiszCacheSieci(kluczSieci(), dane, terazMs);
+      } else {
+        status(KODY_SIECI.S04);
+      }
+      ustawSiec(dane, { zCache: false, klucz: kluczSieci() });
+      return true;
+    } catch (blad) {
+      const przelacz = !ostatnia && czyPrzelaczycInstancje({
+        status: blad?.status ?? null,
+        timeout: blad?.name === 'AbortError',
+        bladSieci: blad?.name === 'TypeError' || blad?.name === 'NetworkError',
+      });
+      if (przelacz) {
+        status(`${instancja.nazwa} nie odpowiada — czekam ${Math.round(STAN.odstepOverpassMs / 1000)} s i próbuję kolejną instancję.`);
+        await pauza(STAN.odstepOverpassMs);
+        continue;
+      }
+      pokazBledy('bledy-stacje', [{
+        kod: blad?.kod ?? 'S03',
+        pole: 'siec',
+        komunikat: blad?.komunikat ?? `Pobranie sieci dróg nie udało się (${blad?.message ?? instancja.nazwa}).`,
+      }]);
+      return false;
+    }
+  }
+  pokazBledy('bledy-stacje', [{ kod: 'S03', pole: 'siec', komunikat: KODY_SIECI.S03 }]);
+  return false;
+}
+
+/** Wspólny koniec każdej ścieżki: wybór stacji z tego, co jest, i render. */
+function przeliczZTegoCoJest() {
+  const uzyjSieci = !STAN.wymusPierscien && STAN.siec.stan === 'gotowa' && grafDlaTrybu(STAN.konfig.tryb);
+  if (uzyjSieci) {
+    try {
+      const wynik = wybierzStacje({
+        graf: STAN.siec.graf,
+        kandydaci: STAN.siec.kandydaci,
+        srodek: STAN.pozycja,
+        konfig: STAN.konfig,
+        ziarno: ziarno(),
+      });
+      STAN.stacje = wynik.stacje;
+      STAN.wynikSieci = wynik;
+      pokazBledy('bledy-stacje', []);
+      renderujStacje();
+      odswiezWarstwy();
+      centrujNaPozycji();
+      status(wynik.usterki.length
+        ? `Sieć jest za uboga na ${STAN.konfig.liczbaStacji} stacji — wybrano ${wynik.stacje.length} (kod S12). Zmień okolicę albo promień, jeśli chcesz komplet.`
+        : `Stacje z sieci drogowej: ${wynik.stacje.length} punktów osiągalnych, odchylenie dystansów ${Math.round(wynik.sprawiedliwosc.udzialOdchylenia * 100)}%.`);
+      return;
+    } catch (blad) {
+      pokazBledy('bledy-stacje', [{
+        kod: blad?.kod ?? 'S12',
+        pole: 'siec',
+        komunikat: blad?.komunikat ?? 'Nie udało się wybrać stacji z sieci drogowej.',
+      }]);
+    }
+  }
+  // degradacja (ADR 0005 pkt 8): pierścień z jawnym ostrzeżeniem
   STAN.stacje = stacjeProste({
     srodek: STAN.pozycja,
     liczbaStacji: STAN.konfig.liczbaStacji,
@@ -505,23 +699,118 @@ function przeliczStacje() {
     ziarno: ziarno(),
     offsetObrotu: STAN.obrot,
   });
+  STAN.wynikSieci = null;
   renderujStacje();
-
   odswiezWarstwy();
   centrujNaPozycji();
 }
 
+let trwaPobieranieSieci = false;
+
+async function przeliczStacjeZPobraniem(klucz) {
+  if (trwaPobieranieSieci) return;
+  trwaPobieranieSieci = true;
+  $('przycisk-przelicz').disabled = true;
+  try {
+    const ok = await pobierzSiec(Date.now());
+    if (!ok && STAN.siec.stan !== 'gotowa') {
+      status('Sieć drogowa niedostępna — stacje w trybie uproszczonym (pierścień): osiągalność niezweryfikowana. Sprawdź połączenie albo ustaw stacje ręcznie.');
+    }
+    przeliczZTegoCoJest();
+  } finally {
+    trwaPobieranieSieci = false;
+    $('przycisk-przelicz').disabled = false;
+  }
+}
+
+/**
+ * Wejście na ekran stacji i „Inny układ": najpierw cache (druga gra w tej
+ * samej okolicy nie woła Overpass wcale), potem — tylko gdy jest `fetch`
+ * i sieć jest potrzebna — pobranie asynchroniczne. Bez `fetch` (atrapy,
+ * offline) wszystko zostaje SYNCHRONICZNE, więc testy i tryb testowy nie
+ * czekają na sieć, która nie istnieje.
+ */
+function przeliczStacje() {
+  pokazBledy('bledy-stacje', []); // błędy POPRZEDNIEJ próby gasną; nowa próba pokaże własne
+  wylaczTrybReczny(); // nowy układ zastępuje ręcznie przesunięte pinezki
+  const klucz = kluczSieci();
+  if (STAN.siec.stan !== 'gotowa' || STAN.siec.klucz !== klucz) {
+    const zCache = odczytajCacheSieci(klucz, Date.now());
+    if (zCache) {
+      ustawSiec(zCache, { zCache: true, klucz });
+    } else if (typeof window !== 'undefined' && typeof window.fetch === 'function' && !STAN.wymusPierscien) {
+      przeliczStacjeZPobraniem(klucz);
+      return;
+    }
+  }
+  przeliczZTegoCoJest();
+}
+
+/**
+ * Tryb ręczny (ADR 0005 pkt 8b): przeciąganie pinezek na mapie stacji.
+ * Dystans liczemy TYLKO w linii prostej i mówimy o tym wprost (pkt 8c).
+ */
+function przestawStacjeRecznie(index, punkt) {
+  const stara = STAN.stacje[index];
+  if (!stara) return;
+  const przeniesiona = { ...stara, lat: punkt.lat, lon: punkt.lon, zrodlo: 'reczne' };
+  // pola sieciowe tracą sens po przesunięciu poza wyznaczoną ścieżkę
+  delete przeniesiona.sciezkaPunkty;
+  delete przeniesiona.dystansSieciowyM;
+  delete przeniesiona.wezel;
+  delete przeniesiona.typKandydata;
+  STAN.stacje = uzupelnijOdleglosci(
+    STAN.stacje.map((s, i) => (i === index ? przeniesiona : s)),
+    STAN.pozycja,
+  );
+  STAN.wynikSieci = null; // układ nie jest już wynikiem wyboru z sieci
+  renderujStacje();
+  odswiezWarstwy();
+}
+
+function wylaczTrybReczny() {
+  if (!STAN.trybReczny) return;
+  STAN.trybReczny = false;
+  $('przycisk-reczne').setAttribute('aria-pressed', 'false');
+  if (STAN.mapy.stacje) STAN.mapy.stacje.ustawTrybReczny(false);
+}
+
 function renderujStacje() {
   const lista = $('lista-stacji');
-  lista.innerHTML = '';
-  STAN.stacje.forEach((s) => {
+  const sieciowe = Boolean(STAN.wynikSieci) && !STAN.wymusPierscien;
+  // replaceChildren, nie innerHTML='': jedna operacja, bez migotania (i atrapa
+  // DOM w testach odwzorowuje replaceChildren, a innerHTML jest tam inertne)
+  lista.replaceChildren(...STAN.stacje.map((s) => {
     const li = document.createElement('li');
-    li.innerHTML = `<span class="numer">${s.id}</span><span class="opis">${s.opis || 'punkt w terenie (bez nazwy — nazwy doda Overpass w M4)'}<br><span class="kod">${formatujWspolrzedne(s.lat, s.lon)} · ${s.bearing}°</span></span><span class="dystans">${s.odlegloscM} m</span>`;
-    lista.appendChild(li);
-  });
-  const m = miaraSprawiedliwosci(STAN.stacje);
-  $('stacje-sprawiedliwosc').textContent = `średnio ${m.sredniaM} m od startu · odchylenie ${m.odchylenieM} m (${Math.round(m.udzialOdchylenia * 100)}%) · najmniejszy odstęp między stacjami ${najmniejszyOdstepM(STAN.stacje)} m`;
-  $('stacje-tryb').textContent = `${ZRODLA_STACJI.pierscien}. Docelowo: punkty na sieci dróg, placów i szlaków (ADR 0005, kamień M4).`;
+    const dystans = sieciowe ? `${s.dystansSieciowyM} m drogi` : `${s.odlegloscM} m`;
+    const opis = s.zrodlo === 'reczne'
+      ? 'ustawiona ręcznie (linia prosta — osiągalność niezweryfikowana)'
+      : s.opis || (sieciowe ? 'punkt przy sieci dróg' : 'punkt w terenie (osiągalność niezweryfikowana)');
+    li.innerHTML = `<span class="numer">${s.id}</span><span class="opis">${opis}<br><span class="kod">${formatujWspolrzedne(s.lat, s.lon)} · ${s.bearing}°</span></span><span class="dystans">${dystans}</span>`;
+    return li;
+  }));
+  if (sieciowe) {
+    const w = STAN.wynikSieci;
+    $('stacje-sprawiedliwosc').textContent = `sieciowo: średnio ${w.sprawiedliwosc.sredniaM} m od startu · odchylenie ${w.sprawiedliwosc.odchylenieM} m (${Math.round(w.sprawiedliwosc.udzialOdchylenia * 100)}%) · pierścień ${w.pierscien.r} m (pasmo ${w.pierscien.pasmo[0]}–${w.pierscien.pasmo[1]} m) · najmniejszy odstęp ${najmniejszyOdstepM(STAN.stacje)} m`;
+    const miejsce = STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
+    const cache = STAN.siec.zCache ? ' (z pamięci telefonu — Overpass nie został wywołany)' : '';
+    $('stacje-tryb').textContent = `${ZRODLA_STACJI.siec}${cache}${miejsce}.`;
+    $('przycisk-pierścien').hidden = false;
+    $('przycisk-reczne').hidden = true;
+  } else {
+    const m = miaraSprawiedliwosci(STAN.stacje);
+    $('stacje-sprawiedliwosc').textContent = `średnio ${m.sredniaM} m od startu · odchylenie ${m.odchylenieM} m (${Math.round(m.udzialOdchylenia * 100)}%) · najmniejszy odstęp między stacjami ${najmniejszyOdstepM(STAN.stacje)} m`;
+    $('stacje-tryb').textContent = STAN.wymusPierscien
+      ? `${ZRODLA_STACJI.pierscien} — wymuszony przyciskiem. ${STAN.siec.stan === 'gotowa' ? 'Sieć drogowa jest pobrana: wyłącz tryb uproszczony tym samym przyciskiem.' : 'Sieć drogowa niedostępna (offline albo limit Overpass).'}`
+      : `${ZRODLA_STACJI.pierscien}. Stacje z sieci dróg, placów i szlaków (ADR 0005) pojawią się po pobraniu danych Overpass — wymaga połączenia z internetem.`;
+    if (STAN.trybReczny) {
+      $('stacje-tryb').textContent += ' Tryb ręczny WŁĄCZONY: przeciągnij pinezki na mapie. Dystans pokazujemy tylko w linii prostej — osiągalność niezweryfikowana.';
+    } else if (STAN.stacje.some((s) => s.zrodlo === 'reczne')) {
+      $('stacje-tryb').textContent += ` Część stacji ${ZRODLA_STACJI.reczne} — dystans w linii prostej.`;
+    }
+    $('przycisk-pierścien').hidden = STAN.siec.stan !== 'gotowa';
+    $('przycisk-reczne').hidden = false;
+  }
 }
 
 /* ---------------------------------------------------------------- prompt */
@@ -727,6 +1016,11 @@ function start() {
     $('reczne-wspolrzedne').hidden = false;
     $('przycisk-symulacja').hidden = false;
   }
+  if (location.search.includes('odstep=0')) {
+    // skrót dla testów/przeglądarki: przełączanie instancji Overpass bez
+    // 30-sekundowych pauz (polityka ASSETS §2 jest domyślnie nietknięta)
+    STAN.odstepOverpassMs = 0;
+  }
 
   $('przycisk-motyw').addEventListener('click', przelaczMotyw);
   $('przycisk-prywatnosc').addEventListener('click', pokazPrywatnosc);
@@ -836,6 +1130,33 @@ function start() {
     STAN.obrot = (STAN.obrot + 360 / (STAN.konfig.liczbaStacji * 2)) % 360;
     przeliczStacje();
     status('Przeliczono układ stacji (inne ziarno).');
+  });
+  $('przycisk-pierścien').addEventListener('click', () => {
+    STAN.wymusPierscien = !STAN.wymusPierscien;
+    $('przycisk-pierścien').setAttribute('aria-pressed', String(STAN.wymusPierscien));
+    przeliczStacje();
+    status(STAN.wymusPierscien
+      ? 'Tryb uproszczony (pierścień) wymuszony — osiągalność stacji niezweryfikowana (ADR 0005 pkt 8).'
+      : 'Wracam do stacji z sieci drogowej.');
+  });
+  $('przycisk-reczne').addEventListener('click', () => {
+    if (STAN.trybReczny) {
+      wylaczTrybReczny();
+      renderujStacje();
+      status('Tryb ręczny wyłączony — pinezki zostają tam, gdzie je postawiłeś.');
+      return;
+    }
+    if (STAN.stacje.length === 0) {
+      status('Najpierw rozstaw stacje (pierścień albo sieć drogowa), potem poprawiaj je ręcznie.');
+      return;
+    }
+    STAN.trybReczny = true;
+    $('przycisk-reczne').setAttribute('aria-pressed', 'true');
+    if (STAN.mapy.stacje) {
+      STAN.mapy.stacje.ustawTrybReczny(true, przestawStacjeRecznie);
+    }
+    renderujStacje();
+    status('Tryb ręczny: przeciągnij pinezki na mapie. Dystans liczymy w linii prostej — osiągalności NIE weryfikujemy (ADR 0005 pkt 8).');
   });
   $('przycisk-dalej-prompt').addEventListener('click', () => {
     pokazEkran('prompt');

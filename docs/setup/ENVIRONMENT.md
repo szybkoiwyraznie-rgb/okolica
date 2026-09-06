@@ -41,6 +41,15 @@ git reset --hard FETCH_HEAD                     # odtwórz historię sesji lokal
 git push -u origin <gałąź-sesji>                # pierwszy push po odzyskaniu z -u
 ```
 
+**Gdy zginęły commity NIEwypchnięte** (obiekty znikają z `.git`, ale drzewo
+robocze ma stan końcowy — przypadek z 2026-09-06: M4/I7–I9 czekały lokalnie na
+odświeżenie tokena): ZANIM wykonasz `reset --hard`, skopiuj całe repo
+`cp -a <repo> /tmp/kopia-drzewa`, potem zresetuj do `FETCH_HEAD` i skopiuj
+zawartość kopii z powrotem (pomiń `.git`). `git status` względem zdalnego HEAD
+powinien pokazać dokładnie różnicę utraconych kroków — uruchom bramę i odtwórz
+commity (uczciwie opisując odtworzenie w komunikacie). `git push --force`
+pozostaje zakazane: zdalna gałąź jest źródłem prawdy.
+
 Jeśli po resecie zdarzyło Ci się zacommitować na `main`, przenieś commit:
 `git branch backup-<opis> <sha>` → `git reset --hard FETCH_HEAD` →
 `git cherry-pick <sha>`.

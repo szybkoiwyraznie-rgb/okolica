@@ -730,3 +730,65 @@ test('plan kafelków zgadza się z tym, co wylądowało w DOM (jedno źródło p
   }
   mapa.zniszcz();
 });
+
+/* ------------------------------------------------- M4/I8: tryb ręczny (drag) */
+
+import { wspolrzedneZEkranu } from '../app/mapa.js';
+
+test('wspolrzedneZEkranu jest odwrotnością punktNaEkranie (round-trip)', () => {
+  const widok = widokNaSrodek({ lat: 52.2297, lon: 21.0122, zoom: 17, rozmiar: { szerokosc: 360, wysokosc: 320 } });
+  for (const [lat, lon] of [[52.2297, 21.0122], [52.235, 21.0], [52.22, 21.03], [51.1, 17.03]]) {
+    const ekran = punktNaEkranie(lat, lon, widok);
+    const geo = wspolrzedneZEkranu(ekran.x, ekran.y, widok);
+    assert.ok(Math.abs(geo.lat - lat) < 1e-9 && Math.abs(geo.lon - lon) < 1e-9, `round-trip dla ${lat},${lon}`);
+  }
+  assert.throws(() => wspolrzedneZEkranu(NaN, 10, widok), TypeError);
+  assert.throws(() => wspolrzedneZEkranu(10, 10, { x: 0 }), (e) => e instanceof TypeError);
+});
+
+test('tryb ręczny: przeciągnięcie pinezki przesuwa stację, woła callback i NIE przesuwa widoku', () => {
+  const dom = zainstalujDom();
+  const mapa = utworzMape({ id: ID, srodek: WARSZAWA, zoom: 17, doc: dom.document });
+  const stacje = [
+    { id: 1, lat: 52.2320, lon: 21.0122, odlegloscM: 256, bearing: 0 },
+    { id: 2, lat: 52.2280, lon: 21.0100, odlegloscM: 240, bearing: 200 },
+  ];
+  mapa.zaznaczStacje(stacje, { promienM: 600 });
+  const pinezki = dom.pobierz(`${ID}-pinezki`);
+  assert.equal(pinezki.children.length, 2);
+  assert.equal(pinezki.children[0].zdarzenia.pointerdown, undefined, 'poza trybem ręcznym pinezki nie mają nasłuchu');
+
+  const zmiany = [];
+  mapa.ustawTrybReczny(true, (index, punkt) => zmiany.push([index, punkt]));
+  assert.match(pinezki.children[0].getAttribute('class'), /pinezka-reczna/, 'pinezka w trybie ręcznym ma klasę drag');
+  assert.ok(pinezki.children[0].zdarzenia.pointerdown.length > 0, 'nasłuch przeciągania założony');
+
+  const widokPrzed = mapa.widok();
+  const cel = { lat: 52.2335, lon: 21.0150 };
+  const ekranCelu = punktNaEkranie(cel.lat, cel.lon, widokPrzed);
+  // palec na pinezkę 2 (index 1)
+  assert.ok(wyslij(pinezki.children[1], 'pointerdown', { pointerId: 7, clientX: 0, clientY: 0, stopPropagation() {} }) > 0);
+  // gest przejmuje SVG (pointer capture) — pan nie startuje
+  wyslij(dom.pobierz(`${ID}-svg`), 'pointerdown', { pointerId: 7, clientX: 10, clientY: 10 });
+  wyslij(dom.pobierz(`${ID}-svg`), 'pointermove', { pointerId: 7, clientX: ekranCelu.x, clientY: ekranCelu.y });
+  assert.deepEqual(mapa.widok(), widokPrzed, 'widok ani drgnie podczas przeciągania pinezki');
+  const planWTtrakcie = mapa.plan();
+  const pinezkaWTtrakcie = planWTtrakcie.pinezki[1];
+  assert.ok(Math.abs(pinezkaWTtrakcie.x - ekranCelu.x) < 0.01, 'pinezka jedzie z palcem');
+
+  wyslij(dom.pobierz(`${ID}-svg`), 'pointerup', { pointerId: 7 });
+  assert.equal(zmiany.length, 1, 'callback raz, po puszczeniu palca');
+  assert.equal(zmiany[0][0], 1, 'index stacji w tablicy');
+  const geo = zmiany[0][1];
+  assert.ok(Math.abs(geo.lat - cel.lat) < 1e-5 && Math.abs(geo.lon - cel.lon) < 1e-5, `callback z celem: ${geo.lat},${geo.lon}`);
+  assert.equal(mapa.plan().pinezki[0].id, 1, 'sąsiednia pinezka nietknięta');
+
+  // puszczenie bez ruchu nie woła callbacku (palec drgnął przy kliknięciu)
+  wyslij(pinezki.children[0], 'pointerdown', { pointerId: 8, clientX: 0, clientY: 0, stopPropagation() {} });
+  wyslij(dom.pobierz(`${ID}-svg`), 'pointerup', { pointerId: 8 });
+  assert.equal(zmiany.length, 1, 'klik bez przeciągnięcia nic nie zmienia');
+
+  mapa.ustawTrybReczny(false);
+  assert.equal(pinezki.children[0].zdarzenia.pointerdown, undefined, 'po wyłączeniu nowe pinezki bez nasłuchu drag');
+  mapa.zniszcz();
+});

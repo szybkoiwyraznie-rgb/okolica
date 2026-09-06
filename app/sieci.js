@@ -19,7 +19,7 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, odlegloscM } from './geo.js';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js';
 import { TRYBY } from './konfig.js';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
@@ -619,4 +619,73 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
   }
 
   return { kandydaci, liczniki };
+}
+
+/* --------------------------------------- cache sieci (ADR 0010 pkt 1) */
+
+export const SCHEMAT_SIECI = 'sieci/1';
+
+/** Klucz cache: geohash-6 + promień gry — ta sama okolica i R = ten sam wpis. */
+export function kluczCacheSieci({ lat, lon, promienM }) {
+  if (!czyWspolrzedneOk(lat, lon)) throw usterka('S05');
+  if (!Number.isFinite(promienM) || promienM <= 0) throw usterka('S06');
+  return `okolica:sieci:${geohash(lat, lon, 6)}-${Math.round(promienM)}`;
+}
+
+function okraglijPunkty(punkty) {
+  return punkty.map((p) => ({ lat: Number(p.lat.toFixed(6)), lon: Number(p.lon.toFixed(6)) }));
+}
+
+/**
+ * Wpis cache to SPARSOWANE dane (nie surowa odpowiedź Overpass): mniej bajtów
+ * w `localStorage` i zero powtórnej normalizacji. Współrzędne zaokrąglone do
+ * 6 miejsc (~0,11 m) — poniżej precyzji, która cokolwiek zmienia w grze.
+ */
+export function upraszczajDaneDoCache(sparsowane) {
+  return {
+    schemat: SCHEMAT_SIECI,
+    drogi: sparsowane.drogi.map((d) => ({ id: d.id, punkty: okraglijPunkty(d.punkty), tags: d.tags })),
+    budynki: sparsowane.budynki.map((b) => ({ id: b.id, punkty: okraglijPunkty(b.punkty), tags: b.tags })),
+    wykluczeniaObszarowe: sparsowane.wykluczeniaObszarowe.map((w) => ({ id: w.id, punkty: okraglijPunkty(w.punkty), tags: w.tags })),
+    poi: sparsowane.poi.map((p) => ({ id: p.id, punkt: { lat: Number(p.punkt.lat.toFixed(6)), lon: Number(p.punkt.lon.toFixed(6)) }, tags: p.tags })),
+    bariery: sparsowane.bariery.map((b) => ({ id: b.id, punkt: { lat: Number(b.punkt.lat.toFixed(6)), lon: Number(b.punkt.lon.toFixed(6)) }, tags: b.tags })),
+    obszary: sparsowane.obszary.map((o) => ({ name: o.name, adminLevel: o.adminLevel })),
+  };
+}
+
+/**
+ * Dane z wpisu cache albo `null`: nieznany schemat (migracja/jawny komunikat
+ * w UI, nigdy ciche użycie), brak `zapisanoMs`, wpis starszy niż TTL 30 dni
+ * albo z przyszłości (przesunięty zegar — tolerancja 1 dnia).
+ */
+export function wczytajDaneZCache(wpis, { terazMs }) {
+  if (!wpis || typeof wpis !== 'object') return null;
+  if (wpis.schemat !== SCHEMAT_SIECI) return null;
+  if (!Number.isFinite(wpis.zapisanoMs) || !Number.isFinite(terazMs)) return null;
+  const wiekDni = (terazMs - wpis.zapisanoMs) / 86_400_000;
+  if (wiekDni > POLITYKA.ttlCacheDni || wiekDni < -1) return null;
+  if (!wpis.dane || !Array.isArray(wpis.dane.drogi) || wpis.dane.drogi.length === 0) return null;
+  return wpis.dane;
+}
+
+/**
+ * LRU dla cache sieci (ADR 0010 pkt 1: próg 2 MB): zwraca klucze do usunięcia,
+ * najstarsze pierwsze, aż suma rozmiarów zmieści się w limicie. `wpisy`:
+ * `[{ klucz, rozmiarBajtow, zapisanoMs }]`. Czyste — `localStorage` dotyka
+ * dopiero warstwa aplikacji.
+ */
+export function przycijCacheSieci(wpisy, { limitBajtow = POLITYKA.maxRozmiarCacheBajtow } = {}) {
+  const lista = (Array.isArray(wpisy) ? wpisy : [])
+    .filter((w) => w && typeof w.klucz === 'string' && Number.isFinite(w.rozmiarBajtow))
+    .map((w) => ({ ...w, zapisanoMs: Number.isFinite(w.zapisanoMs) ? w.zapisanoMs : 0 }));
+  let suma = lista.reduce((a, w) => a + w.rozmiarBajtow, 0);
+  if (suma <= limitBajtow) return [];
+  const odNajstarszego = [...lista].sort((a, b) => a.zapisanoMs - b.zapisanoMs);
+  const doUsuniecia = [];
+  for (const w of odNajstarszego) {
+    if (suma <= limitBajtow) break;
+    doUsuniecia.push(w.klucz);
+    suma -= w.rozmiarBajtow;
+  }
+  return doUsuniecia;
 }

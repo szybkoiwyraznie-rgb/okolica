@@ -21,8 +21,12 @@ app/
                               dokładności (ocenFix), kryterium dojścia
                               (stanDojscia), komunikaty P01–P09, symulacja trasy
                               dla trybu testowego (ADR 0004, 0015)
-  sieci.js                  — Overpass: budowa zapytania, graf sieci, Dijkstra,
-                              kandydaci na stacje, filtry dostępności (czyste + fetch)
+  sieci.js                  — Overpass (czyste): budowa zapytania (R × 1,15),
+                              parsowanie odpowiedzi, graf sieci, Dijkstra,
+                              snapowanie, kandydaci na stacje, filtry
+                              dostępności, pomocniki cache sieci (klucz
+                              geohash-6, TTL 30 dni, LRU 2 MB); samo
+                              pobieranie siedzi w app.js (window.fetch)
   stacje.js                 — wybór stacji: pierścienie, separacja kątowa, pass
                               wyrównujący, ziarno i RNG deterministyczny (czyste)
   protokol.js               — SZABLON_PROMPTU, zbudujPrompt(), walidujPaczke(),
@@ -36,9 +40,11 @@ app/
   trwalosc.js               — localStorage: klucze, budżet rozmiaru, migracje,
                               eksport/import pliku paczki (ATR 0010)
   mapa.js                   — mapa: matematyka widoku (zoom ↔ skala, środek ↔
-                              przesunięcie), adresy kafelków, plan rysowania
-                              i pasek skali (czyste) + warstwa SVG z gestami
-                              pan/pinch, przyciskami ±/◎ i atrybucją (DOM)
+                              przesunięcie, piksele ↔ współrzędne), adresy
+                              kafelków, plan rysowania i pasek skali (czyste)
+                              + warstwa SVG z gestami pan/pinch, przyciskami
+                              ±/◎, atrybucją i trybem ręcznym — przeciąganie
+                              pinezek stacji (DOM, ADR 0005 pkt 8b)
   ui.js                     — ekrany i komponenty: setup, prompt, walidacja, gra,
                               wynik; komunikaty, aria-live (DOM)
   styles.css                — tokeny palety, motyw jasny/ciemny, cele dotykowe ≥44 px
@@ -81,11 +87,22 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
    wchodzą w stan **jednym lejem** `app.js: przyjmijFix()`, więc badge, mapa
    i próg dojścia zachowują się identycznie z sygnałem i bez niego, a pauza
    w tle (`visibilitychange`) zatrzymuje jedno i drugie.
-3. `sieci.js` buduje zapytanie Overpass dla `R × 1.15`, pobiera dane (cache
-   `okolica:sieci:<geohash6>-<R>`, ADR 0010), buduje graf i liczy Dijkstrę.
-4. `stacje.wybierzStacje(graf, kandydaci, konfig, ziarno)` → N stacji +
-   macierz odległości sieciowych + miara sprawiedliwości (odchylenie
-   standardowe).
+3. `sieci.budujZapytanieOverpass({ srodek, promienM, tryb })` składa jedno
+   zapytanie dla `R × 1.15`; pobiera je `app.js` przez `window.fetch`
+   (łańcuch instancji z `ASSETS` §2: 30 s odstępu po 429/5xx, timeout 20 s
+   przez `AbortController`, budżet 8 MB odpowiedzi). Najpierw jednak cache
+   `okolica:sieci:<geohash6>-<R>` (ADR 0010 pkt 1): trafiony wpis = zero
+   zapytań do Overpass. Dalej `sieci.parsujOdpowiedz` → `budujGraf`
+   (Dijkstra z pozycji startowej) → `kandydaciNaStacje` (filtry dostępności,
+   bariery, wykluczenia). Bez `window.fetch` (offline, atrapy) wszystko
+   zostaje synchroniczne i gra degraduje — patrz pkt 4.
+4. `stacje.wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno })` →
+   N stacji ze ścieżkami, dystansem sieciowym i miarą sprawiedliwości
+   (odchylenie standardowe); sieć za uboga → wynik częściowy z kodem `S12`.
+   Degradacja (ADR 0005 pkt 8, nigdy cicha): brak sieci → `stacjeProste`
+   (pierścień, dystans w linii prostej) + ostrzeżenie w UI; start za daleko
+   od sieci → `S13`; tryb ręczny (pkt 8b) → organizator przeciąga pinezki
+   (`mapa.ustawTrybReczny`), dystans tylko w linii prostej.
    Lista stacji trafia na mapę jako numerowane pinezki
    (`mapa.zaznaczStacje`), a promień gry jako przerywany okrąg.
 5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka.
@@ -144,7 +161,11 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
   kółko myszy = zoom z `preventDefault` (`{passive: false}`). Zoom jest
   ograniczany do `maxZoom` podkładu, więc aplikacja nie prosi o nieistniejące
   kafelki. `touch-action: none` tylko na panelu — reszta strony zostaje
-  przybliżalna (dostępność, ADR 0011).
+  przybliżalna (dostępność, ADR 0011). W trybie ręcznym palec na pinezce
+  (niewidoczny cel dotykowy 48 px) przejmuje gest: widok nie panuje, pinezka
+  jedzie z palcem (`wspolrzedneZEkranu`, siatka 1e-6 ≈ 0,1 m), a callback
+  `onZmiana(index, {lat, lon})` wołany jest raz, po puszczeniu — klik bez
+  ruchu nic nie zmienia (ADR 0005 pkt 8b).
 - **Pasek skali**: największy „ładny" krok z `KROKI_SKALI_M` (5 m–500 km),
   który mieści się w 80 px; krótszy niż 14 px nie jest rysowany (przy widoku
   całej Ziemi nic by nie mówił).
@@ -202,10 +223,19 @@ Stan sesji (pamięć, `app/app.js`): `STAN.ekran` zapamiętuje, na który ekran
 wraca pomocniczy ekran „dane i prywatność" (otwierany z setupu i ze stopki,
 nie należy do paska pięciu kroków); `STAN.historiaFixow` to ograniczona
 historia wspólna GPS-u i symulacji; `STAN.symulacja` trzyma odtwarzaną trasę
-(`{fixy, indeks, cel, timer}`). Kasowanie danych jest **dwustopniowe**
+(`{fixy, indeks, cel, timer}`); `STAN.siec` trzyma stan sieci drogowej
+(`brak`/`gotowa` + graf i kandydaci przebudowywani tylko przy zmianie trybu),
+`STAN.wynikSieci` wynik wyboru sieciowego, a `STAN.wymusPierscien` i
+`STAN.trybReczny` znaczniki degradacji (ADR 0005 pkt 8). Kasowanie danych jest **dwustopniowe**
 (pierwszy klik uzbraja, drugi wykonuje) i usuwa wyłącznie klucze `okolica:*` —
 aplikacja nie wywołuje `confirm()`/`alert()` (ADR 0015 pkt 6), komunikaty idą
 do pól z `role="status"`/`role="alert"`.
+
+Cache sieci drogowej (M4) to klucze `okolica:sieci:<geohash6>-<R>` z wpisem
+`{ schemat: 'sieci/1', zapisanoMs, dane }`: TTL 30 dni, wpisy „z przyszłości"
+(>1 dnia) odrzucane jak podejrzany zegar, puste drogi = wpis bezużyteczny,
+a przy sumie ponad 2 MB najstarsze wpisy wypadają (LRU, `przycijCacheSieci`).
+Odpowiedź >8 MB jest użyta do gry, ale nie zapisana (kod `S04` w UI).
 
 Każdy zapis ma pole `schemat`; nieznana wersja = migracja albo jawny komunikat
 (`wczytajStan()`, kod `G12` ze wskazówką migracji), nigdy ciche odrzucenie.
@@ -240,7 +270,7 @@ Zapis do `localStorage`, budżet rozmiaru i eksport pliku dochodzą w
   brak ścieżek od korzenia w `index.html` (ADR 0002 pkt 3); rejestr ADR ↔ pliki
   na dysku i status w pliku ↔ status w rejestrze; geolokalizacja w `app.js`
   wyłącznie przez `pozycja.js` (brak `watchPosition`, `clearWatch` i opcji
-  watchera w warstwie DOM — ADR 0004 pkt 1); od M2 także: kompletność obu szkieletów paneli mapy w `index.html` (svg z `role="img"` i `aria-label`, przyciski z `type="button"`), zakaz domyślnego `display: none` dla atrybucji i obowiązkowe `touch-action: none` na panelu, brak `fetch`/geolokalizacji/`alert`/`node:` w `mapa.js`, a szablony URL kafelków identyczne z `docs/ASSETS.md` §1 (po ujednoliceniu zapisu poddomen `{s}` ↔ `{a,b,c}`).
+  watchera w warstwie DOM — ADR 0004 pkt 1); od M2 także: kompletność obu szkieletów paneli mapy w `index.html` (svg z `role="img"` i `aria-label`, przyciski z `type="button"`), zakaz domyślnego `display: none` dla atrybucji i obowiązkowe `touch-action: none` na panelu, brak `fetch`/geolokalizacji/`alert`/`node:` w `mapa.js`, a szablony URL kafelków identyczne z `docs/ASSETS.md` §1 (po ujednoliceniu zapisu poddomen `{s}` ↔ `{a,b,c}`); od M4 także: przyciski degradacji (`przycisk-pierścien`, `przycisk-reczne`) z `aria-pressed="false"` i `hidden`, pole błędów sieci `#bledy-stacje` z `role="alert"` i zakaz `alert()` przy błędach Overpass.
 - Warstwa DOM: testy na atrapie `test/helpers/dom.js` — `zainstalujDom()` zakłada
   świeże globale i zwraca uchwyty (`kliknij`, `wyslijZdarzenieDokumentu`,
   `wyslijZdarzenieOkna`, `ustawHidden`, `ustawGeolokalizacje`, `ustawProstokat`),
@@ -255,7 +285,13 @@ Zapis do `localStorage`, budżet rozmiaru i eksport pliku dochodzą w
   Weryfikacja wizualna: live preview u właściciela; headless Chromium
   360 × 640 (ENVIRONMENT §4.1) dopiero, gdy będzie w środowisku dostępny.
 - Sieć w testach jest **zabroniona** (LESSONS L3): Overpass i kafelki tylko
-  na fixture'ach i w przeglądarce.
+  na fixture'ach i w przeglądarce. Aplikacja czyta fetch wyłącznie przez
+  `window.fetch` (Node ≥ 18 ma globalny — LESSONS L18), więc atrapa bez
+  `window.fetch` daje synchroniczną degradację, a testy sieciowe podstawiają
+  własną atrapę (`domAtrapa.window.fetch = …`) i ćwiczą cały łańcuch instancji
+  z `?odstep=0` (pauzy 30 s skrócone do zera, polityka domyślna nietknięta).
+  Listy w UI przebudowujemy przez `replaceChildren`, bo `innerHTML = ''` jest
+  w atrapie inertne (LESSONS L19).
 
 ## Czego NIE ma w architekturze (świadomie)
 

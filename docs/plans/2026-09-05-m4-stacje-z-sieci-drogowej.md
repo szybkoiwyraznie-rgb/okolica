@@ -47,16 +47,16 @@
       zmian). **Kryteria na trzech fixture'ach:** żadna stacja w budynku ani
       na terenie prywatnym; `udzialOdchylenia` dystansów sieciowych ≤ 0.15;
       determinizm pod ziarnem.
-- [ ] **I7 — `app/app.js`:** pobieranie z łańcuchem instancji (sekwencyjnie,
+- [x] **I7 — `app/app.js`:** pobieranie z łańcuchem instancji (sekwencyjnie,
       timeout 20 s, komunikaty z kodami), cache `okolica:sieci:<geohash6>-<R>`
       (TTL 30 dni, LRU ≤ 2 MB, współrzędne zaokrąglone do 6 miejsc),
       wpięcie w ekran „stacje": najpierw próba sieci, degradacja do
       `stacjeProste` z **jawnym ostrzeżeniem** (ADR 0005 pkt 8), `{MIEJSCE}`
       z obszaru administracyjnego; testy na atrapie `fetch`.
-- [ ] **I8 — ręczne ustawianie stacji** (degradacja pkt 8b): przeciąganie
+- [x] **I8 — ręczne ustawianie stacji** (degradacja pkt 8b): przeciąganie
       pinezek na mapie, `zrodlo: 'reczne'`, dystans tylko w linii prostej
       + ostrzeżenie w UI; start/stop trybu ręcznego, testy na atrapie.
-- [ ] **I9 — dokumentacja i zamknięcie części kodowej:** `ARCHITECTURE`
+- [x] **I9 — dokumentacja i zamknięcie części kodowej:** `ARCHITECTURE`
       (sieci.js zgodnie ze stanem faktycznym), `ROADMAP` M4 (kod gotowy,
       teren — właściciel), `PROJECT_HISTORY`, `LESSONS` jeśli coś zaskoczy,
       handoff, aktualizacja PR #2.

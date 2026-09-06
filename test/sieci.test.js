@@ -801,3 +801,73 @@ test('miaraSprawiedliwosci: parametr pola — domyślne odlegloscM, sieciowe na 
   assert.equal(sieciowa.odchylenieM, 189, 'odchylenie liczone z pola sieciowego, nie z prostej');
   assert.notEqual(sieciowa.udzialOdchylenia, prosta.udzialOdchylenia, 'inna miara dla innego pola');
 });
+
+/* ================================= I7: cache sieci — czyste pomocniki */
+
+import {
+  SCHEMAT_SIECI,
+  kluczCacheSieci,
+  przycijCacheSieci,
+  upraszczajDaneDoCache,
+  wczytajDaneZCache,
+} from '../app/sieci.js';
+
+test('cache: klucz to geohash-6 + promień (ADR 0010 pkt 1)', () => {
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  assert.match(klucz, /^okolica:sieci:[0-9bcdefghjkmnpqrstuvwxyz]{6}-1000$/, 'geohash-6 (base32 bez a,i,l,o)');
+  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000.4 }), klucz, 'promień zaokrąglony');
+  assert.throws(() => kluczCacheSieci({ lat: 999, lon: 1, promienM: 100 }), (e) => e.kod === 'S05');
+  assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 0 }), (e) => e.kod === 'S06');
+});
+
+test('cache: runda w obie strony — uproszczone dane dają IDENTYCZNY wybór stacji', () => {
+  const dzien = 86_400_000;
+  const teraz = Date.UTC(2026, 8, 5);
+  const oryginal = parsujOdpowiedz(czytajFixture('centrum'));
+  const uproszczone = upraszczajDaneDoCache(oryginal);
+  const wpis = { schemat: SCHEMAT_SIECI, zapisanoMs: teraz - 5 * dzien, dane: uproszczone };
+  const zCache = wczytajDaneZCache(wpis, { terazMs: teraz });
+  assert.ok(zCache, 'świeży wpis (5 dni) przechodzi TTL 30 dni');
+
+  const srodek = { lat: 52.2297, lon: 21.0122 };
+  const konfig = { liczbaStacji: 5, promienM: 600 };
+  const wybor = (dane) => {
+    const graf = budujGraf(dane, { tryb: 'piesza' });
+    const { kandydaci } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+    return wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno: 'cache-runda' });
+  };
+  assert.deepEqual(wybor(zCache).stacje, wybor(oryginal).stacje, 'cache nie zmienia wyniku wyboru');
+});
+
+test('cache: TTL 30 dni, przyszłość, schemat i puste drogi — wszystko jawne', () => {
+  const dzien = 86_400_000;
+  const teraz = Date.UTC(2026, 8, 5);
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixture('las')));
+  const wpis = (zapisanoMs, nadpisz = {}) => ({ schemat: SCHEMAT_SIECI, zapisanoMs, dane, ...nadpisz });
+  assert.ok(wczytajDaneZCache(wpis(teraz - 29 * dzien), { terazMs: teraz }), '29 dni — świeży');
+  assert.equal(wczytajDaneZCache(wpis(teraz - 31 * dzien), { terazMs: teraz }), null, '31 dni — po TTL');
+  assert.equal(wczytajDaneZCache(wpis(teraz + 5 * dzien), { terazMs: teraz }), null, "wpis z przyszłości (przesunięty zegar) — podejrzany");
+  assert.ok(wczytajDaneZCache(wpis(teraz + 0.5 * dzien), { terazMs: teraz }), 'przesunięty zegar do 1 dnia tolerowany');
+  assert.equal(wczytajDaneZCache(wpis(teraz, { schemat: 'sieci/0' }), { terazMs: teraz }), null, 'nieznany schemat = null (UI pokaże komunikat, nie ciche odrzucenie)');
+  assert.equal(wczytajDaneZCache(wpis(teraz, { dane: { ...dane, drogi: [] } }), { terazMs: teraz }), null, 'wpis bez dróg jest bezużyteczny');
+  assert.equal(wczytajDaneZCache(null, { terazMs: teraz }), null);
+  assert.equal(wczytajDaneZCache(wpis(NaN), { terazMs: teraz }), null);
+});
+
+test('cache: LRU — ponad 2 MB najstarsze wpisy wypadają', () => {
+  const mb = 1024 * 1024;
+  const wpisy = [
+    { klucz: 'okolica:sieci:aaa-1000', rozmiarBajtow: 0.8 * mb, zapisanoMs: 100 },
+    { klucz: 'okolica:sieci:bbb-1000', rozmiarBajtow: 0.7 * mb, zapisanoMs: 300 },
+    { klucz: 'okolica:sieci:ccc-1000', rozmiarBajtow: 0.4 * mb, zapisanoMs: 200 },
+  ];
+  assert.deepEqual(przycijCacheSieci(wpisy), [], '1.9 MB mieści się w limicie 2 MB');
+  wpisy.push({ klucz: 'okolica:sieci:ddd-1000', rozmiarBajtow: 0.9 * mb, zapisanoMs: 400 });
+  // 2.8 MB > 2 MB: wypada najstarszy (aaa, zapisanoMs=100) → zostaje 2.0 MB
+  assert.deepEqual(przycijCacheSieci(wpisy), ['okolica:sieci:aaa-1000']);
+  wpisy.push({ klucz: 'okolica:sieci:eee-1000', rozmiarBajtow: 0.9 * mb, zapisanoMs: 500 });
+  // 2.9 MB: aaa już nie ma — wypadają ccc (200), potem bbb (300), aż zostanie 1.8 MB
+  assert.deepEqual(przycijCacheSieci(wpisy.filter((w) => w.klucz !== 'okolica:sieci:aaa-1000')),
+    ['okolica:sieci:ccc-1000', 'okolica:sieci:bbb-1000']);
+  assert.deepEqual(przycijCacheSieci([]), []);
+});

@@ -15,8 +15,18 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { WERSJA_PROTOKOLU } from '../app/protokol.js';
+import {
+  INSTANCJE_OVERPASS,
+  SCHEMAT_SIECI,
+  kluczCacheSieci,
+  parsujOdpowiedz,
+  upraszczajDaneDoCache,
+} from '../app/sieci.js';
 import { DOMYSLNE, PODKLADY, TEMATY, TRYBY } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
 import { atrapaGeolokalizacji, zainstalujDom } from './helpers/dom.js';
@@ -533,4 +543,172 @@ test('symulacja: zejście karty w tło zatrzymuje odtwarzanie (uczciwość pomia
   const poPauzie = domMapy.pobierz('pozycja-wspolrzedne').textContent;
   await czekaj(400);
   assert.equal(domMapy.pobierz('pozycja-wspolrzedne').textContent, poPauzie, 'w tle fixy nie płyną');
+});
+
+/* ------------------------------------------------- M4/I7: stacje z sieci w UI */
+
+const KATALOG_APP = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+function czytajFixtureOverpass(nazwa) {
+  return JSON.parse(readFileSync(join(KATALOG_APP, 'test', 'fixtures', `overpass-${nazwa}.json`), 'utf8'));
+}
+
+async function aplikacjaZSiecia({ search = '?tryb=test', pamiec = new Map() } = {}) {
+  const domAtrapa = zainstalujDom({ search, pamiec });
+  await import(`../app/app.js?siec=${Math.random().toString(36).slice(2)}`);
+  return domAtrapa;
+}
+
+function ustawPozycjeTestowa(domAtrapa, lat = '52.2297', lon = '21.0122') {
+  domAtrapa.pobierz('setup-lat').value = lat;
+  domAtrapa.pobierz('setup-lon').value = lon;
+  domAtrapa.kliknij('przycisk-ustaw-reczne');
+}
+
+test('stacje: bez window.fetch degradacja do pierścienia jest synchroniczna i jawna', async () => {
+  const domAtrapa = await aplikacjaZSiecia();
+  ustawPozycjeTestowa(domAtrapa);
+  assert.equal(domAtrapa.window.fetch, undefined, 'atrapa NIE wystawia window.fetch (Node ma globalny — aplikacja czyta window)');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  // BEZ await — bez fetch cała ścieżka jest synchroniczna (testy nie czekają na sieć)
+  assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3, 'pierścień rozstawiony od razu');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /Overpass/, 'komunikat mówi, skąd będą prawdziwe stacje');
+  assert.equal(domAtrapa.pobierz('przycisk-pierścien').hidden, true, 'bez pobranej sieci nie ma czego wymuszać');
+});
+
+test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async () => {
+  const pamiecCache = new Map();
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  // też synchronicznie: cache zastępuje sieć
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa \(Overpass\) — punkty osiągalne/);
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /z pamięci telefonu/, 'druga gra w tej okolicy nie woła Overpass');
+  assert.match(domAtrapa.pobierz('stacje-sprawiedliwosc').textContent, /sieciowo/);
+  assert.match(domAtrapa.pobierz('stacje-sprawiedliwosc').textContent, /pierścień 700 m/);
+  assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3);
+  assert.equal(domAtrapa.pobierz('przycisk-pierścien').hidden, false, 'przy sieci można wymusić tryb uproszczony');
+  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście/, '{MIEJSCE} z obszaru administracyjnego (bez Nominatim)');
+});
+
+test('stacje: udane pobranie z pierwszej instancji zapisuje cache i rysuje sieć', async () => {
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const wywolania = [];
+  domAtrapa.window.fetch = async (url, opcje) => {
+    wywolania.push({ url, opcje });
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(250);
+  assert.equal(wywolania.length, 1, 'jedno zapytanie na grę (ASSETS §2 pkt 1)');
+  assert.equal(wywolania[0].url, INSTANCJE_OVERPASS[0].url, 'zaczynamy od FOSSGIS');
+  assert.equal(wywolania[0].opcje.method, 'POST');
+  const zapytanie = decodeURIComponent(wywolania[0].opcje.body.replace(/^data=/, ''));
+  assert.match(zapytanie, /^\[out:json\]\[timeout:25\];/);
+  assert.match(zapytanie, /around:1150,52\.2297,21\.0122/, 'R×1.15 i pozycja na siatce ~6 m');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/);
+  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('z pamięci'), 'świeżo pobrane');
+  assert.match(domAtrapa.pobierz('status').textContent, /Stacje z sieci drogowej|za uboga/);
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  const wpis = JSON.parse(domAtrapa.pamiec.get(klucz));
+  assert.equal(wpis.schemat, SCHEMAT_SIECI);
+  assert.ok(Number.isFinite(wpis.zapisanoMs));
+  assert.ok(wpis.dane.drogi.length > 10, 'cache przechowuje sparsowane drogi');
+});
+
+test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2', async () => {
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const odwiedzone = [];
+  domAtrapa.window.fetch = async (url) => {
+    odwiedzone.push(url);
+    if (odwiedzone.length < 3) return { ok: false, status: 429 };
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(300);
+  assert.deepEqual(odwiedzone, INSTANCJE_OVERPASS.map((i) => i.url), 'FOSSGIS → private.coffee → VK Maps');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'trzecia instancja dowiozła');
+});
+
+test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pierścienia', async () => {
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  let ileProb = 0;
+  domAtrapa.window.fetch = async () => { ileProb++; return { ok: false, status: 504 }; };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(300);
+  assert.equal(ileProb, 3, 'próbuje wszystkich instancji');
+  assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, false);
+  assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /\[S03\]/);
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
+  assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3, 'degradacja rozstawia pierścień (ADR 0005 pkt 8)');
+});
+
+test('stacje: przycisk „Tryb uproszczony" wymusza pierścień i wraca do sieci', async () => {
+  const pamiecCache = new Map();
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/);
+
+  domAtrapa.kliknij('przycisk-pierścien');
+  assert.equal(domAtrapa.pobierz('przycisk-pierścien').dataset['attr-aria-pressed'], 'true');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /wymuszony/);
+  assert.ok(!domAtrapa.pobierz('stacje-sprawiedliwosc').textContent.includes('sieciowo'), 'pierścień mierzy się w linii prostej');
+  assert.match(domAtrapa.pobierz('status').textContent, /osiągalność stacji niezweryfikowana/);
+
+  domAtrapa.kliknij('przycisk-pierścien');
+  assert.equal(domAtrapa.pobierz('przycisk-pierścien').dataset['attr-aria-pressed'], 'false');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'wyłączenie wymuszenia wraca do sieci');
+  assert.match(domAtrapa.pobierz('stacje-sprawiedliwosc').textContent, /sieciowo/);
+});
+
+test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia prosta', async () => {
+  const domAtrapa = await aplikacjaZSiecia(); // bez window.fetch → pierścień
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  assert.equal(domAtrapa.pobierz('przycisk-reczne').hidden, false, 'przy degradacji organizator może poprawić stacje ręcznie');
+  // stan początkowy aria-pressed="false" pilnuje kontrakt HTML (atrapa nie parsuje atrybutów)
+
+  const wyslijNa = (el, typ, zdarzenie) => {
+    for (const fn of el.zdarzenia[typ] ?? []) fn({ type: typ, preventDefault() {}, ...zdarzenie });
+  };
+
+  domAtrapa.kliknij('przycisk-reczne');
+  assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'true');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /Tryb ręczny WŁĄCZONY/);
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /linii prostej/);
+  assert.match(domAtrapa.pobierz('status').textContent, /Tryb ręczny/);
+
+  // przeciągnij pierwszą pinezkę na mapie stacji (gest: pinezka → SVG capture)
+  const pinezki = domAtrapa.pobierz('mapa-stacje-pinezki');
+  const svg = domAtrapa.pobierz('mapa-stacje-svg');
+  assert.ok(pinezki.children.length >= 3, 'pierścień rozstawiony na mapie');
+  const dystansPrzed = domAtrapa.pobierz('lista-stacji').children[0].innerHTML;
+  wyslijNa(pinezki.children[0], 'pointerdown', { pointerId: 11, clientX: 0, clientY: 0, stopPropagation() {} });
+  wyslijNa(svg, 'pointermove', { pointerId: 11, clientX: 100, clientY: 100 });
+  wyslijNa(svg, 'pointerup', { pointerId: 11 });
+  const dystansPo = domAtrapa.pobierz('lista-stacji').children[0].innerHTML;
+  assert.notEqual(dystansPo, dystansPrzed, 'lista odświeżona po przeciągnięciu');
+  assert.match(dystansPo, /ustawiona ręcznie \(linia prosta — osiągalność niezweryfikowana\)/);
+
+  domAtrapa.kliknij('przycisk-reczne'); // stop
+  assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'false');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /ustawione ręcznie przez organizatora/, 'po wyłączeniu UI nadal mówi, że stacja jest ręczna');
+
+  // „Inny układ" gasi tryb ręczny i przywraca czysty pierścień
+  domAtrapa.kliknij('przycisk-przelicz');
+  assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'false');
+  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('ręcznie'), 'nowy układ nie udaje ręcznego');
+  assert.ok(!domAtrapa.pobierz('lista-stacji').children[0].innerHTML.includes('ręcznie'));
 });

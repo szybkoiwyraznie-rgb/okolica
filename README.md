@@ -48,10 +48,24 @@ dojścia z debounce'em działają identycznie bez sygnału, a pauza w tle zatrzy
 oba strumienie. Kamień czeka na weryfikację właściciela: kryterium „pełna
 konfiguracja bez przewijania na 360 px" (`docs/WORKFLOW.md` §4.2).
 
+**M4 — stacje z sieci drogowej: kod i testy gotowe.** Ekran „stacje" liczy
+punkty z prawdziwej sieci dróg, placów i szlaków (Overpass, ADR 0005): jedno
+zapytanie na grę dla promienia `R × 1,15`, graf z Dijkstrą, kandydaci co ~50 m
+z filtrami dostępności (bez budynków, terenów prywatnych i barier), wybór
+w pierścieniu `0,7R ± 20%` z separacją kątową i sieciową oraz pasem
+wyrównującym dystanse. Lista pokazuje **dystans drogą**, nie w linii prostej,
+a miara sprawiedliwości (udział odchylenia) widnieje pod listą. Sieć jest
+zapisywana na telefonie (`okolica:sieci:<geohash6>-<R>`, 30 dni) — druga gra
+w tej samej okolicy nie woła Overpass wcale. Gdy sieci nie ma (offline, limit
+instancji), degradacja jest jawna: przycisk „◎ Tryb uproszczony" (pierścień)
+i „✋ Ustaw stacje ręcznie" (przeciąganie pinezek, dystans tylko w linii
+prostej) — aplikacja nigdy nie udaje, że punkty są osiągalne. Kamień czeka na
+kryterium terenowe: jedną prawdziwą okolicę na telefonie (`docs/WORKFLOW.md`
+§4.2).
+
 **Ekranu gry jeszcze nie ma**: rozgrywka jest policzona i przetestowana, ale
-nieklikalna. Stacje z sieci dróg i placów (M4), pętla pytań z podglądem
-organizatora (M5), trwałość stanu i interfejs gry (M6) — patrz
-`docs/ROADMAP.md`.
+nieklikalna. Pętla pytań z podglądem organizatora (M5), trwałość stanu
+i interfejs gry (M6) — patrz `docs/ROADMAP.md`.
 
 ## Uruchomienie lokalne
 

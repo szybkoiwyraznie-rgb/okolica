@@ -259,3 +259,36 @@ klika się bez czytania").
 (`/* ... */` i `// ...`) — sprawdza kod, nie prozę. Alternatywa „nie pisz nazw
 zakazanych funkcji w komentarzach" jest gorsza: komentarz wyjaśniający „czemu
 nie" ma wartość i będzie powracał (commit `8abb11c`).
+## L18 (2026-09-05, Tajemnicza Okolica) — Node ≥ 18 ma globalny `fetch`: aplikacja w testach dzwoniła w świat
+
+**Objaw:** brama urosła z 5 s do 82 s, trzy testy mapy czerwone — asynchroniczna
+ścieżka pobierania sieci nie zdążyła przed synchroniczną asercją, a w logach
+były próby wyjścia na `overpass-api.de`.
+
+**Przyczyna:** kod aplikacji sprawdzał `typeof fetch === 'function'`. W Node 22
+to PRAWDA (globalny fetch od Node 18), więc test „bez internetu" naprawdę
+próbował pobrać Overpass; atrapa DOM (`test/helpers/dom.js`) celowo nie
+wystawia `window.fetch`, ale gołe `fetch` resolvingowało się na globalne.
+
+**Reguła:** kod przeglądarkowy czyta API sieciowe wyłącznie przez `window.*`
+(`window.fetch`), nigdy gołą nazwę globalną. Testy integracyjne podstawiają
+atrapę PO imporcie modułu (`domAtrapa.window.fetch = …`), a kod czyta ją w
+chwili wywołania, nie przy starcie (commit M4/I7).
+
+## L19 (2026-09-05, Tajemnicza Okolica) — atrapa DOM: `innerHTML = ''` nie kasuje dzieci
+
+**Objaw:** test trybu ręcznego czytał `lista-stacji.children[0]` po re-renderze
+i widział STARĄ stację, choć callback przeciągnięcia na pewno się wykonał
+(pin jechał z palcem — `transform` to potwierdzał).
+
+**Przyczyna:** `renderujStacje` czyściło listę przez `lista.innerHTML = ''`.
+W przeglądarce to kasuje dzieci; w atrapie (`test/helpers/dom.js`) `innerHTML`
+jest zwykłym polem — `appendChild` dokładał nowe `li` ZA starymi, a test czytał
+`children[0]` = element z poprzedniego renderu.
+
+**Reguła:** listy przebudowujemy przez `replaceChildren(...elementy)` — jedna
+operacja, bez migotania w przeglądarce, wiernie odwzorowana w atrapie.
+Miejsca z `innerHTML = ''` migrujemy przy okazji dotykania (pozostałe:
+renderujSetup, gracze, prompt, podsumowanie — patrz BACKLOG B16). Gdy test
+czyta `children` po re-renderze, a wynik wygląda na „stary", najpierw sprawdź,
+czy lista na pewno została wyczyszczona sposobem, który atrapa rozumie.

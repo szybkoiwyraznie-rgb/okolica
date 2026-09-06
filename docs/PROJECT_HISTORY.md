@@ -254,3 +254,40 @@ wspólny z GPS-em lej `przyjmijFix()`, pauza w tle zatrzymuje strumień
 + szablon zgodny; cache-busting `?v=m3-1`. Kamień **niezamknięty**: czeka na
 weryfikację właściciela — kryterium „pełna konfiguracja bez przewijania na
 360 px" i zachowanie symulacji/GPS na żywo (`docs/WORKFLOW.md` §4.2).
+
+**M4 — stacje z sieci drogowej (2026-09-05, ta sama sesja):** kod kamienia
+zrealizowany w ośmiu krokach planu `docs/plans/2026-09-05-m4-stacje-z-sieci-drogowej.md`.
+I1 — `sieci.js`: instancje Overpass (ASSETS §2), polityka (timeout 20 s,
+odstęp 30 s), budowa zapytania `R × 1,15` z siatką współrzędnych ~6 m i
+kodami S01–S13 (`1eddbae`). I2 — generator fixture'ów Overpass
+(`tools/generuj-fixture-overpass.mjs`: centrum / przedmieście / las) (`0e2182d`).
+I3 — parser odpowiedzi `out geom` (`c5f12a5`). I4 — `klasyDrog` per tryb,
+w tym `tertiary` poza pieszą (`87bf665`). I5 — `punktWPolygonie`, bariery,
+wykluczenia i kandydaci na stacje co ~50 m (`758a845`). I6 — `wybierzStacje`:
+pierścień 0,7R ± 20%, greedy po `|d_sieci − r|`, separacja kątowa ≥ 0,7 × 360°/N
+i sieciowa ≥ 0,5 r, pass zamian, kody S12/S13; fixture'y przebudowane na
+wspólne wierzchołki (LESSONS: geometryczne przecięcia bez wspólnych węzłów =
+rozspójnione komponenty) (`7cf3967`). I7 — UI: cache `okolica:sieci:*`
+(TTL 30 dni, LRU 2 MB, budżet 8 MB odpowiedzi), pobieranie przez
+`window.fetch` z łańcuchem instancji i `AbortController`, synchroniczna
+degradacja bez sieci, przycisk „Tryb uproszczony" (`8d72fc0`). I8 — tryb
+ręczny: `wspolrzedneZEkranu`, przeciąganie pinezek z celem dotykowym 48 px,
+`zrodlo: 'reczne'`, dystans tylko w linii prostej (LESSONS L18–L19,
+`8c7808e`). I9 — ten wpis, `ARCHITECTURE`, `ROADMAP` (bez ✅ — kryterium
+terenowe należy do właściciela).
+
+Wyniki na fixture'ach (kryterium ≤ 15% udziału odchylenia): centrum 3,3%,
+przedmieście 3,9%, las 0,2%; wybór 4–5 stacji w 10–15 ms na atrapie. Brama:
+**313 testów**, 0 fail + szablon promptu zgodny; cache-busting `?v=m4-1`.
+
+**Stan operacyjny:** w trakcie I7 uwierzytelnienie GitHub wygasło
+(`GH_TOKEN is no longer valid`), a podczas oczekiwania na odświeżenie tokena
+sandbox ponownie zrootował `.git` na początek gałęzi — obiekty commitów
+`8d72fc0` (I7), `8c7808e` (I8) i `f090c2b` (I9) zginęły lokalnie. Drzewo
+robocze zachowało stan końcowy, więc odzyskanie poszło procedurą
+`ENVIRONMENT` §2 (kopia drzewa → `reset --hard FETCH_HEAD` = `7cf3967` →
+kopia z powrotem → brama 313/313), a I7–I9 wypchnięto jako jeden commit
+odtworzeniowy z uczciwym opisem incydentu; przypadek „commity niewypchnięte"
+trafił do `ENVIRONMENT` §2. Kamień M4 **niezamknięty**: kod gotowy,
+kryterium terenowe czeka na właściciela (`WORKFLOW` §4.2) razem z zaległym
+M3 (konfiguracja bez przewijania na 360 px).

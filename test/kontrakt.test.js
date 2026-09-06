@@ -183,6 +183,19 @@ test('kontrakt: przycisk trybu testowego ma w HTML stan początkowy aria-pressed
   assert.ok(symulacja, 'brak przycisku symulacji dojścia (M3)');
   assert.match(symulacja, /aria-pressed="false"/, 'symulacja startuje wyłączona');
   assert.match(symulacja, /\bhidden\b/, 'symulacja tylko w trybie testowym');
+
+  const pierscien = INDEX.match(/<button id="przycisk-pierścien"[^>]*>/)?.[0];
+  assert.ok(pierscien, 'brak przycisku wymuszania trybu uproszczonego (M4)');
+  assert.match(pierscien, /aria-pressed="false"/, 'tryb uproszczony startuje niewymuszony');
+  assert.match(pierscien, /\bhidden\b/, 'widoczny dopiero gdy sieć jest pobrana');
+
+  const reczne = INDEX.match(/<button id="przycisk-reczne"[^>]*>/)?.[0];
+  assert.ok(reczne, 'brak przycisku trybu ręcznego (ADR 0005 pkt 8b)');
+  assert.match(reczne, /aria-pressed="false"/, 'tryb ręczny startuje wyłączony');
+  assert.match(reczne, /\bhidden\b/, 'widoczny dopiero na ekranie stacji bez sieci');
+
+  assert.match(INDEX, /id="bledy-stacje"[^>]*role="alert"/, 'błędy sieci drogowej w polu role=alert (nie alert())');
+  assert.match(INDEX, /id="bledy-stacje"[^>]*\bhidden\b/, 'pole błędów stacji domyślnie schowane');
 });
 
 test('kontrakt: kroki w pasku nawigacji pokrywają się z ekranami', () => {

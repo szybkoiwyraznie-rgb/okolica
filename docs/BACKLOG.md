@@ -112,3 +112,8 @@ zastępującego ADR 0007, wariantu `kodowanie: "aes-gcm"` w kontenerze
 secure context), migratora dla paczek `b64x1` i decyzji właściciela o utracie
 paczki przy zapomnianym kodzie. Nie ruszać, dopóki obfuskacja wystarcza — koszt
 to zarządzanie kluczami i realne ryzyko utraty treści.
+
+- **B16 — migracja list z `innerHTML=''` na `replaceChildren`** (LESSONS L19):
+  `renderujStacje` już migrowane (M4/I8); pozostałe miejsca w `app/app.js`
+  (setup, gracze, prompt, podsumowanie, usterki) przepisać przy okazji
+  dotykania ich w M5, żeby testy na atrapie nigdy nie czytały starych dzieci.

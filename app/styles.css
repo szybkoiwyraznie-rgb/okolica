@@ -309,6 +309,11 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 .pinezka circle { fill: var(--akcent); stroke: #fff; stroke-width: 2; }
 .pinezka text { fill: #fff; font-size: 13px; font-weight: 700; }
 .pinezka-aktywna circle { fill: var(--ostrzezenie); }
+/* tryb ręczny (ADR 0005 pkt 8b): pinezka do przeciągania + niewidoczny cel dotykowy 48 px */
+.pinezka-reczna { cursor: grab; touch-action: none; }
+.pinezka-reczna:active { cursor: grabbing; }
+.pinezka-dotyk { fill: transparent; stroke: none; }
+.pinezka-reczna circle:not(.pinezka-dotyk) { stroke: var(--ostrzezenie); stroke-width: 3; stroke-dasharray: 4 3; }
 .marker circle { fill: #1d6fe0; stroke: #fff; stroke-width: 3; }
 
 .mapa-przyciski { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 6px; }
