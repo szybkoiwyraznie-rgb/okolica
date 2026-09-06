@@ -31,6 +31,7 @@ import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, 
 import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m6-1';
 import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m6-1';
 import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m6-1';
+import { czasTekst, dystansTekst, etykietaOdcinka, medalTekst, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m6-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -85,6 +86,8 @@ const STAN = {
   czyszczenieZapisuUzbrojone: false,
   graZakonczonaUzbrojone: false,
   graZakonczonaRecznie: false,
+  /** M7: tekst wyniku do udostępnienia (wynikTekstowy) — żyje od pokazWyniki. */
+  wynikTekst: null,
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
@@ -1443,34 +1446,10 @@ function zakonczGreRecznie() {
 
 /* ------------------------------------------------- pełne podsumowanie (M7) */
 
-/** Sekundy → czytelny czas: „45 s", „12 min 5 s", „1 godz 2 min". */
-function czasTekst(sekundy) {
-  const s = Math.max(0, Math.round(Number.isFinite(sekundy) ? sekundy : 0));
-  if (s < 60) return `${s} s`;
-  const min = Math.floor(s / 60);
-  if (min < 60) return `${min} min ${s % 60} s`.replace(/ 0 s$/, '');
-  return `${Math.floor(min / 60)} godz ${min % 60} min`;
-}
-
-/** Metry → „850 m" albo „1,6 km" (polski przecinek, bez locale — deterministycznie). */
-function dystansTekst(metry) {
-  const m = Number.isFinite(metry) ? metry : 0;
-  return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`;
-}
-
-/** Tempo (s/m z `podsumowanie()`) → „5:01 min/km"; zero = brak pomiaru → „—". */
-function tempoTekst(srednieTempoSM) {
-  if (!(srednieTempoSM > 0)) return '—';
-  const sekNaKm = Math.round(srednieTempoSM * 1000);
-  return `${Math.floor(sekNaKm / 60)}:${String(sekNaKm % 60).padStart(2, '0')} min/km`;
-}
-
-/** Etykieta odcinka w tabeli stacji: stan + tryb dojścia (uczciwie, co zmierzone). */
-function etykietaOdcinka(s) {
-  if (s.stan === STANY_ODCINKA.zakonczony) return s.trybDojscia === TRYBY_DOJSCIA.reczne ? 'zaliczona (ręcznie)' : 'zaliczona (GPS)';
-  if (s.stan === STANY_ODCINKA.pominiety) return 'pominięta';
-  if (s.stan === STANY_ODCINKA.wTrakcie) return 'w drodze';
-  return 'nierozegrana';
+/** Data wyniku do tekstu: UTC z ISO — deterministyczna, bez locale. */
+function dataWynikuTekst(teraz = new Date()) {
+  const iso = teraz.toISOString();
+  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
 }
 
 /**
@@ -1508,12 +1487,8 @@ function pokazWyniki() {
   }
 
   // 2. medal sprawiedliwości trasy (widok, nie punkty — plan M7, decyzja 2)
-  const sieciowe = STAN.stacje.some((s) => Number.isFinite(s.dystansSieciowyM));
-  const m = miaraSprawiedliwosci(STAN.stacje, { pole: sieciowe ? 'dystansSieciowyM' : 'odlegloscM' });
-  const procent = Math.round(m.udzialOdchylenia * 100);
-  $('gra-wynik-medal').textContent = m.udzialOdchylenia <= 0.15
-    ? `🏅 Uczciwa trasa — odchylenie dystansów ${procent}% (próg 15%)${sieciowe ? ', mierzone siecią dróg' : ', w linii prostej'} · średnio ${m.sredniaM} m od startu.`
-    : `Trasa bez medalu — odchylenie dystansów ${procent}% przekracza próg 15% (średnio ${m.sredniaM} m od startu).`;
+  const sprawiedliwosc = sprawiedliwoscTrasy(STAN.stacje);
+  $('gra-wynik-medal').textContent = medalTekst(sprawiedliwosc);
 
   // 3. ranking — tabela jak w M6 (miejsce, gracz, punkty, poprawne)
   const tbody = $('gra-wyniki-tbody');
@@ -1587,6 +1562,21 @@ function pokazWyniki() {
     }
     tStacje.appendChild(wiersz);
   }
+
+  // 7. tekst wyniku i eksport (M7/P4): tekst żyje w polu readonly i w STAN;
+  //    przyciski widoczne tylko gdy ich ścieżka istnieje (plan M7, decyzja 8)
+  const tekst = wynikTekstowy({
+    podsumowanie: wynik,
+    konfig: STAN.konfig,
+    miejsce: STAN.konfig.geokodacja && STAN.miejsce ? STAN.miejsce : null,
+    data: dataWynikuTekst(),
+    sprawiedliwosc,
+    przerwana: STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec,
+  });
+  STAN.wynikTekst = tekst;
+  $('pole-wynik-tekst').value = tekst;
+  $('przycisk-udostepnij-wynik').hidden = !(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
+  $('przycisk-kopiuj-wynik').hidden = !(typeof navigator !== 'undefined' && Boolean(navigator.clipboard?.writeText));
 }
 
 /* ---------------------------------------------------------------- prompt */
@@ -1765,6 +1755,11 @@ function renderujPodsumowaniePaczki(paczka, postac = null) {
 function nazwaPlikuPaczki(kodGry) {
   const oczyszczony = String(kodGry ?? '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24);
   return `okolica-${oczyszczony || 'gra'}.paczka.json`;
+}
+
+/** Nazwa pliku z tekstem wyniku (M7) — ten sam oczyszczony kod gry co paczka. */
+function nazwaPlikuWyniku(kodGry) {
+  return `okolica-${oczyscKodGry(kodGry)}.wynik.txt`;
 }
 
 
@@ -2213,6 +2208,29 @@ function start() {
   $('przycisk-zakoncz-gre').addEventListener('click', () => zakonczGreRecznie());
   $('przycisk-wznow-gre').addEventListener('click', () => wznowGre());
   $('przycisk-kasuj-zapis').addEventListener('click', () => kasujZapisGry());
+
+  // M7/P4: eksport tekstu wyniku — share (telefon) → schowek → plik (zawsze).
+  // Aplikacja nie udaje, że udostępniła: AbortError (rezygnacja) jest cichy,
+  // inny błąd dostaje jawny status ze wskazaniem pola i pliku (decyzja 8).
+  $('przycisk-udostepnij-wynik').addEventListener('click', async () => {
+    if (!STAN.wynikTekst || typeof navigator.share !== 'function') return;
+    try {
+      await navigator.share({ title: 'Tajemnicza okolica — wynik gry', text: STAN.wynikTekst });
+    } catch (e) {
+      if (e?.name !== 'AbortError') {
+        status(`Nie udało się udostępnić wyniku: ${e?.message ?? e}. Tekst jest w polu „Tekst wyniku" i w pliku .txt.`);
+      }
+    }
+  });
+  $('przycisk-kopiuj-wynik').addEventListener('click', () => {
+    if (!STAN.wynikTekst) return;
+    void kopiujTekst(STAN.wynikTekst, $('przycisk-kopiuj-wynik'), '📋 Kopiuj wynik', 'pole-wynik-tekst');
+  });
+  $('przycisk-pobierz-wynik').addEventListener('click', () => {
+    if (!STAN.wynikTekst) return;
+    pobierzPlik(nazwaPlikuWyniku(STAN.rozgrywka?.kodGry ?? STAN.konfig?.kodGry), STAN.wynikTekst, 'text/plain;charset=utf-8');
+    status('Wynik zapisany jako plik .txt.');
+  });
 
   sprawdzZapisGry(); // M6/R6: baner wznowienia, jeśli telefon pamięta grę
   pokazEkran('setup');

@@ -63,7 +63,7 @@ prowadzącego (B12), publikacja Pages i manifest (M8), offline/service worker
       `udzialOdchylenia ≤ 0,15` = „🏅 Uczciwa trasa"); CSS: na ≤ 360 px
       tabela graczy zamienia się w karty, liczby duże i kontrastowe (słońce);
       kontrakt na nowe identyfikatory w teście.
-- [ ] **P4 — eksport tekstowy:** `wynikTekstowy(podsumowanie, { konfig,
+- [x] **P4 — eksport tekstowy:** `wynikTekstowy(podsumowanie, { konfig,
       stacje, miejsce, data })` (czysta; tekst liniowy bez markdown — czytelny
       w SMS/komunikatorze; BEZ treści pytań i BEZ współrzędnych — prywatność
       ADR 0013: nazwa miejsca jeśli jest, inaczej pominięta), przyciski

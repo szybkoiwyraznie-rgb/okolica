@@ -1395,3 +1395,75 @@ test('M7: pełne podsumowanie — zwycięzca, medal trasy, statystyki, karty gra
   assert.equal(dom.pobierz('gra-wyniki-tbody').children.length, 2);
   assert.match(dom.pobierz('gra-wyniki-tbody').children[0].children[0].textContent, /Gracz 1 🏆/);
 });
+
+/* ========== M7/P4: eksport tekstu wyniku (share / schowek / plik) */
+
+test('M7: eksport tekstu — pole readonly, clipboard, share i plik (ścieżki istnieją → przyciski widoczne)', async () => {
+  const { dom } = await graGotowaDoStartu();
+  const skopiowane = [];
+  const udostepnione = [];
+  Object.assign(navigator, {
+    clipboard: { writeText: async (tekst) => { skopiowane.push(tekst); } },
+    share: async (dane) => { udostepnione.push(dane); },
+  });
+  zaczynijGre(dom);
+  for (const i of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-pomin-stacje');
+  }
+  const tekst = dom.pobierz('pole-wynik-tekst').value;
+  assert.match(tekst, /^TAJEMNICZA OKOLICA — WYNIK GRY/, 'tekst wyniku żyje w polu readonly');
+  assert.match(tekst, /🏆 Gracz 1 — 0 pkt/);
+  assert.match(tekst, /stacja 3 · Gracz 1 — pominięta · 0 pkt/);
+  assert.match(tekst, /tryb: piesza/, 'konfig gry w nagłówku');
+  assert.equal(/[#*_]/.test(tekst), false, 'zero markdowna w udostępnianym tekście');
+
+  // przyciski widoczne, bo ich ścieżki istnieją (decyzja 8)
+  assert.equal(dom.pobierz('przycisk-udostepnij-wynik').hidden, false);
+  assert.equal(dom.pobierz('przycisk-kopiuj-wynik').hidden, false);
+  assert.equal(dom.pobierz('przycisk-pobierz-wynik').hidden, false);
+
+  // kopiuj → clipboard dostaje DOKŁADNIE tekst pola, przycisk potwierdza
+  dom.kliknij('przycisk-kopiuj-wynik');
+  await czekaj(50);
+  assert.deepEqual(skopiowane, [tekst]);
+  assert.equal(dom.pobierz('przycisk-kopiuj-wynik').textContent, '✓ skopiowano');
+
+  // udostępnij → navigator.share dostaje tekst wyniku
+  dom.kliknij('przycisk-udostepnij-wynik');
+  await czekaj(50);
+  assert.equal(udostepnione.length, 1);
+  assert.equal(udostepnione[0].text, tekst);
+  assert.match(udostepnione[0].title, /Tajemnicza okolica/);
+
+  // plik → bez wyjątku, jawny status (Blob/URL/click istnieją w atrapie od M5)
+  dom.kliknij('przycisk-pobierz-wynik');
+  await czekaj(50);
+  assert.match(dom.pobierz('status').textContent, /zapisany jako plik .txt/);
+});
+
+test('M7: brak clipboarda i share — przyciski uczciwie ukryte, plik i pole zostają', async () => {
+  const { dom } = await graGotowaDoStartu();
+  // atrapa bez clipboarda i bez navigator.share (desktop / stary telefon)
+  zaczynijGre(dom);
+  for (const i of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-pomin-stacje');
+  }
+  assert.equal(dom.pobierz('przycisk-udostepnij-wynik').hidden, true, 'bez navigator.share przycisk nie kłamie');
+  assert.equal(dom.pobierz('przycisk-kopiuj-wynik').hidden, true, 'bez navigator.clipboard przycisk nie kłamie');
+  assert.equal(dom.pobierz('przycisk-pobierz-wynik').hidden, false, 'plik jest ścieżką dla każdego');
+  assert.match(dom.pobierz('pole-wynik-tekst').value, /WYNIK GRY/, 'tekst zawsze można zaznaczyć ręcznie');
+});
+
+test('M7: ręczne zakończenie — tekst wyniku mówi wprost, że gra przerwana (wynik wczesny)', async () => {
+  const { dom } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  dom.kliknij('przycisk-reczne-dojscie');
+  kliknijOdpowiedz(dom, 0);
+  dom.kliknij('przycisk-zakoncz-gre'); // uzbrojenie
+  dom.kliknij('przycisk-zakoncz-gre'); // wykonanie → wczesny wynik
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false);
+  assert.match(dom.pobierz('pole-wynik-tekst').value, /\(gra przerwana ręcznie — wynik wczesny\)/, 'uczciwa adnotacja w udostępnianym tekście');
+});
