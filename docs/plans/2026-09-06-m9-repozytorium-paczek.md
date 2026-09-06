@@ -58,7 +58,7 @@ woła modelu**.
 
 - [x] **R1 — plan + ADR 0017** (repozytorium paczek: schemat TO-zestaw/1,
       geohash5, licencja, moderacja, konfigurowalny URL).
-- [ ] **R2 — `app/zestawy.js`**: zapis/odczyt lokalny (TO-zestaw-lokalny/1),
+- [x] **R2 — `app/zestawy.js`**: zapis/odczyt lokalny (TO-zestaw-lokalny/1),
       rejestr z LRU i budżetem, dopasowanie po geohash5+promien+tematy/wiek,
       walidacja surowa; testy `test/zestawy.test.js`.
 - [ ] **R3 — UI propozycji**: karta „Paczki dla tej okolicy" na ekranie

@@ -1,0 +1,227 @@
+/**
+ * M9/R2 — repozytorium paczek pytań: czyste funkcje nad zestawami (ADR 0017).
+ *
+ * Zakres modułu: schematy i walidacje surowe (lokalny wpis, rejestr, plik
+ * publiczny TO-zestaw/1, indeks), dopasowanie okolicy (geohash5 + promień +
+ * tematy + wiek) oraz LRU rejestru z budżetem (wzorzec cache sieci, ADR 0010
+ * pkt 1). NIC tu nie dotyka `localStorage` ani `fetch` — nośnik i sieć
+ * wstrzykuje warstwa DOM (`app/app.js`, M9/R3 i R6), dzięki czemu całość
+ * testuje się bez przeglądarki (LESSONS: czysta funkcja + atrapa).
+ *
+ * Schematy:
+ * - `TO-zestaw-lokalny/1` — wpis w `localStorage`: stacje + kontener
+ *   TO-paczka/2 + metadane dopasowania (geohash5, promienM, tematy, wiek);
+ * - `TO-zestaw/1` — plik publiczny: meta (w tym licencja i przegląd źródeł)
+ *   + jawne stacje + kontener TO-paczka/2 (ADR 0017 pkt 1);
+ * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
+ */
+
+import { SCHEMAT_KONTENERA } from './kodowanie.js';
+
+export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
+export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
+export const SCHEMAT_INDEKSU = 'TO-indeks/1';
+
+export const KLUCZ_REJESTRU = 'okolica:zestawy';
+export const KLUCZ_URL_REPO = 'okolica:repo-zestawow:url';
+export const DOMYSLNY_URL_INDEKSU = 'data/paczki/indeks.json';
+
+/** Budżet rejestru zestawów: 1,5 MB (ADR 0017 pkt 7) — osobno od 2 MB gry. */
+export const BUDZET_ZESTAWOW_BAJTY = 1_500_000;
+/** Maksymalna liczba wpisów rejestru (LRU, ADR 0017 pkt 7). */
+export const MAKS_ZESTAWOW = 8;
+
+export const KODY_ZESTAWOW = {
+  Z01: 'To nie jest poprawny JSON zestawu.',
+  Z02: `Zapis ma inny schemat niż „${SCHEMAT_LOKALNY}” — pochodzi z innej wersji aplikacji.`,
+  Z03: 'Zestaw lokalny nie ma listy stacji ({id, lat, lon}) — nie da się odtworzyć trasy.',
+  Z04: `Ukryta paczka zestawu jest uszkodzona (oczekiwano kontenera ${SCHEMAT_KONTENERA}).`,
+  Z05: 'Metadane dopasowania zestawu są niekompletne (geohash5, promienM, tematy, wiek).',
+  Z06: 'Rejestr zestawów ma inny schemat niż oczekiwany — zaczynamy pustą listę.',
+  Z07: `Plik publiczny ma inny schemat niż „${SCHEMAT_ZESTAWU}”.`,
+  Z08: 'Plik publiczny nie ma jawnych stacji ani meta z licencją i przeglądem źródeł (ADR 0017 pkt 1/4).',
+  Z09: 'Indeks repozytorium ma inny schemat niż oczekiwany — brak propozycji paczek.',
+  Z10: 'Wpis indeksu jest niekompletny (meta bez geohash5/licencji) — pominięty.',
+};
+
+function usterka(kod) {
+  return { kod, komunikat: KODY_ZESTAWOW[kod] ?? kod };
+}
+
+function wymaganie(warunek, komunikat) {
+  if (!warunek) throw new TypeError(komunikat);
+}
+
+/** Klucz `localStorage` pełnego wpisu zestawu lokalnego. */
+export function kluczZestawu(skrot) {
+  const czysty = String(skrot ?? '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 16);
+  return `okolica:zestaw:${czysty || 'brak'}`;
+}
+
+function czyStacjaOk(s) {
+  return !!s && typeof s === 'object'
+    && Number.isFinite(s.lat) && Math.abs(s.lat) <= 90
+    && Number.isFinite(s.lon) && Math.abs(s.lon) <= 180;
+}
+
+function czyKontenerOk(k) {
+  return !!k && typeof k === 'object' && k.schemat === SCHEMAT_KONTENERA
+    && typeof k.dane === 'string' && k.dane.length > 0
+    && typeof k.skrot === 'string' && k.skrot.length > 0;
+}
+
+function czyMetaDopasowaniaOk(m) {
+  return !!m && typeof m === 'object'
+    && typeof m.geohash5 === 'string' && m.geohash5.length === 5
+    && Number.isFinite(m.promienM) && m.promienM > 0
+    && Array.isArray(m.tematy) && m.tematy.length > 0 && m.tematy.every((t) => typeof t === 'string')
+    && typeof m.wiek === 'string' && m.wiek.length > 0;
+}
+
+/** Rozmiar wpisu w bajtach (UTF-8 JSON) — pod budżet LRU. */
+export function rozmiarBajty(obiekt) {
+  return new TextEncoder().encode(JSON.stringify(obiekt)).length;
+}
+
+/**
+ * Walidacja surowego tekstu wpisu lokalnego: `{ zestaw, usterki }`.
+ * Nigdy nie rzuca — śmieć z `localStorage` to fakt życia, nie wyjątek.
+ */
+export function walidujZestawLokalnySurowy(tekst) {
+  let surowy;
+  try {
+    surowy = JSON.parse(tekst);
+  } catch {
+    return { zestaw: null, usterki: [usterka('Z01')] };
+  }
+  const usterki = [];
+  if (!surowy || typeof surowy !== 'object' || surowy.schemat !== SCHEMAT_LOKALNY) {
+    return { zestaw: null, usterki: [usterka('Z02')] };
+  }
+  if (!Array.isArray(surowy.stacje) || surowy.stacje.length === 0 || !surowy.stacje.every(czyStacjaOk)) {
+    usterki.push(usterka('Z03'));
+  }
+  if (!czyKontenerOk(surowy.kontener)) usterki.push(usterka('Z04'));
+  if (!czyMetaDopasowaniaOk(surowy)) usterki.push(usterka('Z05'));
+  return { zestaw: usterki.length ? null : surowy, usterki };
+}
+
+/** Walidacja surowego tekstu rejestru: `{ rejestr, usterki }` (pusty przy błędzie). */
+export function walidujRejestrSurowy(tekst) {
+  let surowy;
+  try {
+    surowy = JSON.parse(tekst);
+  } catch {
+    return { rejestr: [], usterki: [usterka('Z01')] };
+  }
+  if (!surowy || typeof surowy !== 'object' || surowy.schemat !== SCHEMAT_INDEKSU
+    || !Array.isArray(surowy.wpisy)) {
+    return { rejestr: [], usterki: [usterka('Z06')] };
+  }
+  const wpisy = surowy.wpisy.filter((w) => czyMetaDopasowaniaOk(w) && typeof w.skrot === 'string');
+  return { rejestr: wpisy, usterki: wpisy.length === surowy.wpisy.length ? [] : [usterka('Z10')] };
+}
+
+/** Pusty rejestr — punkt startu zapisu. */
+export function nowyRejestr() {
+  return { schemat: SCHEMAT_INDEKSU, wpisy: [] };
+}
+
+/**
+ * Dokłada wpis do rejestru i przycina LRU: najstarsze (`data`) wpisy wypadają
+ * ponad `MAKS_ZESTAWOW` albo budżet bajtowy. Zwraca `{ rejestr, usuniete }` —
+ * listę skrotów, których KLUCZE warstwa DOM ma usunąć z `localStorage`
+ * (nigdy cicho: usunięcie jest widoczne w wyniku, LESSONS L6).
+ */
+export function dolozWpisRejestru(rejestr, wpis, { bajty, teraz } = {}) {
+  wymaganie(czyMetaDopasowaniaOk(wpis) && typeof wpis.skrot === 'string',
+    'dolozWpisRejestru: wpis musi nieść geohash5, promienM, tematy, wiek i skrot');
+  wymaganie(Number.isFinite(bajty) && bajty >= 0, 'dolozWpisRejestru: bajty muszą być liczbą ≥ 0');
+  const wpisy = (rejestr?.wpisy ?? []).filter((w) => w.skrot !== wpis.skrot);
+  wpisy.push({ ...wpis, bajty, data: wpis.data ?? (typeof teraz === 'string' ? teraz : new Date().toISOString()) });
+  const suma = () => wpisy.reduce((acc, w) => acc + (Number.isFinite(w.bajty) ? w.bajty : 0), 0);
+  const usuniete = [];
+  wpisy.sort((a, b) => String(a.data).localeCompare(String(b.data)));
+  while (wpisy.length > MAKS_ZESTAWOW || suma() > BUDZET_ZESTAWOW_BAJTY) {
+    const najstarszy = wpisy.shift();
+    usuniete.push(najstarszy.skrot);
+    if (wpisy.length === 0) break; // pojedynczy wpis większy niż budżet: nie zapisujemy nic
+  }
+  return { rejestr: { schemat: SCHEMAT_INDEKSU, wpisy }, usuniete };
+}
+
+const zbiorTematow = (tematy) => [...tematy].sort().join(',');
+
+/**
+ * Dopasowanie okolicy: ten sam geohash5, ten sam promień, ten sam wiek i ten
+ * sam zestaw tematów (reguły z ADR 0017 pkt 7 — ściśle i przewidywalnie; UI
+ * pokazuje metadane, więc organizator widzi, dlaczego propozycja pasuje).
+ */
+export function dopasujZestawy(rejestr, { geohash5, promienM, tematy, wiek } = {}) {
+  wymaganie(typeof geohash5 === 'string' && geohash5.length === 5, 'dopasujZestawy: geohash5 musi mieć 5 znaków');
+  wymaganie(Number.isFinite(promienM) && promienM > 0, 'dopasujZestawy: promienM musi być liczbą > 0');
+  wymaganie(Array.isArray(tematy) && tematy.length > 0, 'dopasujZestawy: tematy muszą być niepustą listą');
+  wymaganie(typeof wiek === 'string' && wiek.length > 0, 'dopasujZestawy: wiek musi być nazwą');
+  const szukany = zbiorTematow(tematy);
+  return (rejestr?.wpisy ?? [])
+    .filter((w) => w.geohash5 === geohash5 && w.promienM === promienM
+      && w.wiek === wiek && zbiorTematow(w.tematy) === szukany)
+    .sort((a, b) => String(b.data).localeCompare(String(a.data)));
+}
+
+/**
+ * Walidacja surowego tekstu pliku publicznego TO-zestaw/1: `{ zestaw, usterki }`.
+ * Meta musi nieść licencję i przegląd źródeł (ADR 0017 pkt 4) — bez nich plik
+ * nie jest paczką publiczną, tylko śmieciem do odrzucenia z komunikatem.
+ */
+export function walidujZestawPublicznySurowy(tekst) {
+  let surowy;
+  try {
+    surowy = JSON.parse(tekst);
+  } catch {
+    return { zestaw: null, usterki: [usterka('Z01')] };
+  }
+  const usterki = [];
+  if (!surowy || typeof surowy !== 'object' || surowy.schemat !== SCHEMAT_ZESTAWU) {
+    return { zestaw: null, usterki: [usterka('Z07')] };
+  }
+  const meta = surowy.meta;
+  const metaOk = czyMetaDopasowaniaOk(meta)
+    && typeof meta.miejsce === 'string' && meta.miejsce.length > 0
+    && typeof meta.licencja === 'string' && meta.licencja.length > 0
+    && typeof meta.przegladZrodel === 'string' && meta.przegladZrodel.length > 0
+    && typeof meta.data === 'string' && meta.data.length > 0;
+  if (!metaOk) usterki.push(usterka('Z08'));
+  if (!Array.isArray(surowy.stacje) || surowy.stacje.length === 0 || !surowy.stacje.every(czyStacjaOk)) {
+    usterki.push(usterka('Z08'));
+  }
+  if (!czyKontenerOk(surowy.kontener)) usterki.push(usterka('Z04'));
+  return { zestaw: usterki.length ? null : surowy, usterki };
+}
+
+/**
+ * Walidacja surowego tekstu indeksu publicznego: `{ indeks, usterki }`.
+ * Indeks niesie wyłącznie meta (ADR 0017 pkt 2); wpisy niekompletne wypadają
+ * z listy i są policzone jako usterka Z10 (status dla organizatora).
+ */
+export function walidujIndeksSurowy(tekst) {
+  let surowy;
+  try {
+    surowy = JSON.parse(tekst);
+  } catch {
+    return { indeks: [], usterki: [usterka('Z01')] };
+  }
+  if (!surowy || typeof surowy !== 'object' || surowy.schemat !== SCHEMAT_INDEKSU
+    || !Array.isArray(surowy.wpisy)) {
+    return { indeks: [], usterki: [usterka('Z09')] };
+  }
+  const wpisy = surowy.wpisy.filter((w) => czyMetaDopasowaniaOk(w)
+    && typeof w.licencja === 'string' && w.licencja.length > 0
+    && typeof w.plik === 'string' && w.plik.length > 0);
+  return { indeks: wpisy, usterki: wpisy.length === surowy.wpisy.length ? [] : [usterka('Z10')] };
+}
+
+/** Dopasowanie wpisu indeksu publicznego — te same reguły co lokalnie. */
+export function dopasujMetaIndeksu(indeks, kryteria) {
+  return dopasujZestawy({ wpisy: indeks }, kryteria);
+}
