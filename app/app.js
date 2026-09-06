@@ -104,7 +104,7 @@ function $(id) {
   return e;
 }
 
-const EKRANY = ['setup', 'pozycja', 'stacje', 'prompt', 'paczka'];
+const EKRANY = ['setup', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra'];
 
 function pokazEkran(nazwa) {
   STAN.ekran = nazwa;
@@ -404,6 +404,7 @@ function utworzMapy() {
   const podklad = PODKLADY[STAN.konfig.podklad] ? STAN.konfig.podklad : DOMYSLNE.podklad;
   STAN.mapy.pozycja = utworzMape({ id: 'mapa-pozycja', podklad, zoom: 16 });
   STAN.mapy.stacje = utworzMape({ id: 'mapa-stacje', podklad, zoom: 16 });
+  STAN.mapy.gra = utworzMape({ id: 'mapa-gra', podklad, zoom: 16 });
 }
 
 function kazdaMapa(fn) {

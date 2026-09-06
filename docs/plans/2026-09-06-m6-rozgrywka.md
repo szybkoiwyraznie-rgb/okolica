@@ -49,7 +49,7 @@ Proponowana, B17: nie wcześniej niż po M8), gra na kilku urządzeniach
       Rozpoznanie: czy `stan.odpowiedzi` niesie treść pytania (jeśli tak —
       strip przy serializacji, bo `rozgrywka/1` sam w sobie paczki nie zna:
       `pytania` = referencje `{stacja, pytanieId}`). Testy czyste.
-- [ ] **R3 — szkielet `ekran-gra` (HTML+CSS):** cztery panele faz, badge
+- [x] **R3 — szkielet `ekran-gra` (HTML+CSS):** cztery panele faz, badge
       kolejki i dystansu (duże, czytelne w słońcu — ADR 0011), karta pytania
       z 4 odpowiedziami i sekcją wyjaśnienie/źródła, mapa gry (kontener pod
       `utworzMape`), przyciski: start odcinka, ręczne zgłoszenie (z ostrzeżeniem

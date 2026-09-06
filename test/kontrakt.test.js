@@ -442,3 +442,63 @@ test('kontrakt: cache-busting m5-1 spójny w index.html i importach app.js', () 
   assert.equal((app.match(/\?v=m5-1/g) ?? []).length, 8, 'wszystkie importy modułów z tą samą wersją');
   assert.equal(app.includes('?v=m4-1'), false);
 });
+
+/* ============================ M6/R3: szkielet ekranu gry */
+
+test('kontrakt: ekran gry — jeden ekran, cztery panele faz w kolejności DOM (plan M6, decyzja 1)', () => {
+  const html = czytaj('index.html');
+  const ekran = html.split('<section id="ekran-gra"')[1].split('</section>')[0];
+  const panele = ['gra-panel-oczekuje', 'gra-panel-odcinek', 'gra-panel-pytanie', 'gra-panel-koniec'];
+  let poprzedni = -1;
+  for (const panel of panele) {
+    const i = ekran.indexOf(`id="${panel}"`);
+    assert.ok(i > poprzedni, `panel ${panel} obecny i w kolejności faz`);
+    poprzedni = i;
+  }
+  // stan początkowy: tylko panel A widoczny, B/C/D hidden (faza przygotowanie)
+  assert.ok(!/id="gra-panel-oczekuje"[^>]*hidden/.test(ekran), 'panel A widoczny na starcie');
+  for (const panel of panele.slice(1)) {
+    assert.match(ekran.split(`id="${panel}"`)[1].slice(0, 80), /hidden/, `panel ${panel} domyślnie ukryty`);
+  }
+});
+
+test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4/R5/R6', () => {
+  const html = czytaj('index.html');
+  const wymagane = [
+    'gra-kolejka', 'gra-dystans', 'gra-postep',
+    'mapa-gra', 'mapa-gra-svg', 'mapa-gra-kafelki', 'mapa-gra-okregi', 'mapa-gra-pinezki', 'mapa-gra-marker',
+    'bledy-gra', 'gra-komunikat',
+    'gra-kto-idzie', 'gra-cel-stacji', 'przycisk-start-odcinka',
+    'gra-dystans-odcinka', 'gra-prog-dojscia', 'przycisk-reczne-dojscie', 'przycisk-pauza', 'gra-pauza-komunikat',
+    'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
+    'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
+    'gra-wyniki', 'gra-wyniki-tbody',
+    'przycisk-pomin-stacje', 'przycisk-zakoncz-gre', 'przycisk-start-gry',
+  ];
+  for (const id of wymagane) assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
+  assert.match(html, /id="bledy-gra" class="bledy" role="alert"/, 'błędy faz mają role="alert" (jak inne ekrany)');
+  assert.match(html, /id="gra-komunikat" class="podpowiedz" role="status"/, 'komunikat fazy ma role="status"');
+  assert.match(html, /id="przycisk-pomin-stacje"[^>]*disabled/, 'pominięcie domyślnie wyłączone (tylko w drodze, ADR 0015)');
+  assert.match(html, /id="przycisk-start-gry"[^>]*hidden/, 'start gry domyślnie ukryty — pojawi się z przyjętą paczką (R4)');
+});
+
+test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=button', () => {
+  const html = czytaj('index.html');
+  const kroki = html.split('<nav id="kroki"')[1].split('</nav>')[0];
+  assert.equal((kroki.match(/<li data-krok=/g) ?? []).length, 6, 'setup, pozycja, stacje, prompt, paczka, gra');
+  assert.match(kroki, /data-krok="gra">6 · gra</, 'szósty krok na końcu');
+  const ekran = html.split('<section id="ekran-gra"')[1].split('</section>')[0];
+  const przyciski = ekran.match(/<button[^>]*>/g) ?? [];
+  assert.ok(przyciski.length >= 8, `przycisków na ekranie gry: ${przyciski.length}`);
+  for (const p of przyciski) assert.match(p, /type="button"/, `przycisk bez type=button: ${p.slice(0, 60)}`);
+});
+
+test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (ADR 0011)', () => {
+  const css = czytaj('app/styles.css');
+  assert.match(css, /\.przycisk-odpowiedz \{[^}]*min-height: var\(--cel\)/s, 'odpowiedzi ≥ 44 px (--cel)');
+  assert.match(css, /\.przycisk-odpowiedz \{[^}]*text-align: left/s, 'długie odpowiedzi wyrównane do lewej');
+  assert.match(css, /\.przycisk-fazy \{[^}]*min-height: 56px/s, 'główny przycisk fazy większy niż zwykły cel');
+  assert.match(css, /\.duzy-dystans \{[^}]*font-size: 34px/s, 'dystans to największa liczba na ekranie');
+  assert.match(css, /\.duzy-dystans \{[^}]*tabular-nums/s, 'cyfry o stałej szerokości — dystans nie skacze');
+  assert.match(css, /\.badge-dystans \{[^}]*background: var\(--akcent\)/s, 'badge dystansu na akcencie (kontrast)');
+});

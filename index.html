@@ -42,6 +42,7 @@
       <li data-krok="stacje">3 · stacje</li>
       <li data-krok="prompt">4 · pytania</li>
       <li data-krok="paczka">5 · paczka</li>
+      <li data-krok="gra">6 · gra</li>
     </ol>
   </nav>
 
@@ -284,6 +285,7 @@
         <button id="przycisk-poprawka" class="przycisk" type="button" hidden>⧉ Kopiuj poprawkę do modelu</button>
         <button id="przycisk-ukryj" class="przycisk" type="button" hidden>⧉ Ukryj paczkę (TO-paczka/2)</button>
         <button id="przycisk-eksport-paczki" class="przycisk" type="button" hidden>⬇ Zapisz paczkę (plik)</button>
+        <button id="przycisk-start-gry" class="przycisk przycisk-glowny" type="button" hidden>▶ Zacznij grę</button>
         <div id="podglad-organizatora" class="podglad" hidden>
           <p class="ostrzezenie"><strong>👁 Tylko dla organizatora</strong> — gracze nie powinni widzieć tych treści (ADR 0006 pkt 8). Każda ręczna poprawka zapisuje się w paczce jako „modyfikacje", a po ukryciu podgląd znika z ekranu.</p>
           <div id="podglad-pytania"></div>
@@ -292,6 +294,86 @@
     </section>
 
     <!-- Ekran pomocniczy (poza krokami gry): dane i prywatność — ADR 0013 pkt 7 -->
+    <!-- KROK 6: GRA (M6/R3) — jeden ekran, cztery panele faz:
+         oczekiwanie → odcinek → pytanie → koniec. Kolejność DOM = kolejność
+         faz; jeden GŁÓWNY przycisk na fazę (ADR 0011); cele dotykowe ≥ 44 px. -->
+    <section id="ekran-gra" class="ekran" hidden aria-labelledby="tytul-gra">
+      <h2 id="tytul-gra">Gra</h2>
+
+      <div class="gra-badges">
+        <p id="gra-kolejka" class="badge badge-duzy">Kolej: —</p>
+        <p id="gra-dystans" class="badge badge-duzy badge-dystans" aria-live="polite">— m</p>
+        <p id="gra-postep" class="podpowiedz">stacja — z —</p>
+      </div>
+
+      <div id="mapa-gra" class="mapa">
+        <svg id="mapa-gra-svg" class="mapa-svg" role="img" aria-label="Mapa gry" tabindex="0">
+          <g id="mapa-gra-kafelki" class="warstwa-kafelki"></g>
+          <g id="mapa-gra-okregi" class="warstwa-okregi"></g>
+          <g id="mapa-gra-pinezki" class="warstwa-pinezki"></g>
+          <g id="mapa-gra-marker" class="warstwa-marker"></g>
+        </svg>
+        <div class="mapa-przyciski">
+          <button id="mapa-gra-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+          <button id="mapa-gra-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+          <button id="mapa-gra-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+        </div>
+        <p id="mapa-gra-skala" class="mapa-skala"></p>
+        <p id="mapa-gra-atrybucja" class="mapa-atrybucja"></p>
+      </div>
+
+      <p id="bledy-gra" class="bledy" role="alert" hidden></p>
+      <p id="gra-komunikat" class="podpowiedz" role="status"></p>
+
+      <!-- FAZA A: przygotowanie / oczekiwanie — kto idzie i start odcinka -->
+      <div id="gra-panel-oczekuje" class="karta gra-panel">
+        <p id="gra-kto-idzie" class="duzy">Kto idzie: —</p>
+        <p id="gra-cel-stacji" class="podpowiedz"></p>
+        <button id="przycisk-start-odcinka" class="przycisk przycisk-glowny przycisk-fazy" type="button">▶ Idę do stacji —</button>
+      </div>
+
+      <!-- FAZA B: odcinek w drodze — dystans na żywo, ręczne zgłoszenie, pauza -->
+      <div id="gra-panel-odcinek" class="karta gra-panel" hidden>
+        <p id="gra-dystans-odcinka" class="duzy duzy-dystans">— m</p>
+        <p id="gra-prog-dojscia" class="badge">próg dojścia: —</p>
+        <div class="wiersz">
+          <button id="przycisk-reczne-dojscie" class="przycisk" type="button">✋ Jestem na miejscu (ręczne — kara)</button>
+          <button id="przycisk-pauza" class="przycisk" type="button" aria-pressed="false">⏸ Pauza</button>
+        </div>
+        <p id="gra-pauza-komunikat" class="podpowiedz" hidden></p>
+      </div>
+
+      <!-- FAZA C: pytanie — odsłaniane DOPIERO w chwili dojścia (ADR 0007 pkt 6) -->
+      <div id="gra-panel-pytanie" class="karta gra-panel" hidden>
+        <p id="gra-pytanie-naglowek" class="badge">Stacja zdobyta · pytanie — z —</p>
+        <p id="gra-pytanie-tresc" class="duzy"></p>
+        <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
+        <div id="gra-wynik-odpowiedzi" class="gra-wynik-odpowiedzi" hidden>
+          <p id="gra-odpowiedz-ocena" class="duzy"></p>
+          <p id="gra-wyjasnienie" class="podpowiedz"></p>
+          <ul id="gra-zrodla" class="lista-zrodel"></ul>
+        </div>
+        <button id="przycisk-nastepna-stacja" class="przycisk przycisk-glowny przycisk-fazy" type="button" hidden>Następna stacja →</button>
+      </div>
+
+      <!-- FAZA D: koniec — minimalny wynik z podsumowanie() (pełne w M7) -->
+      <div id="gra-panel-koniec" class="karta gra-panel" hidden>
+        <p class="duzy">🏁 Koniec gry!</p>
+        <table id="gra-wyniki" class="tabela-wynikow">
+          <thead>
+            <tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th></tr>
+          </thead>
+          <tbody id="gra-wyniki-tbody"></tbody>
+        </table>
+        <p class="podpowiedz">Pełne podsumowanie (czasy, medale, eksport) — kamień M7.</p>
+      </div>
+
+      <div class="wiersz">
+        <button id="przycisk-pomin-stacje" class="przycisk" type="button" disabled>⏭ Pomiń odcinek (tylko w drodze)</button>
+        <button id="przycisk-zakoncz-gre" class="przycisk przycisk-maly" type="button">■ Zakończ grę</button>
+      </div>
+    </section>
+
     <section id="ekran-prywatnosc" class="ekran" hidden aria-labelledby="tytul-prywatnosc">
       <h2 id="tytul-prywatnosc">Dane i prywatność</h2>
       <p class="podpowiedz">Krótko i po ludzku: co ta aplikacja pobiera, dokąd trafia

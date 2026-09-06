@@ -433,3 +433,87 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 .wiersz-zrodla { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 6px 0; padding: 6px; border-left: 3px solid var(--linia); }
 .pole-data { max-width: 120px; }
 .przycisk-maly { padding: 6px 10px; font-size: 13px; }
+
+/* =============== M6/R3: ekran gry — jeden ekran, cztery panele faz */
+
+/* Badge'y fazy: duże i kontrastowe — czytelne w słońcu (ADR 0011). */
+.gra-badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.badge-duzy {
+  font-size: 19px;
+  font-weight: 700;
+  padding: 10px 14px;
+  min-height: var(--cel);
+  display: inline-flex;
+  align-items: center;
+}
+.badge-dystans {
+  background: var(--akcent);
+  color: var(--akcent-tekst);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dystans w fazie odcinka: największa liczba na ekranie. */
+.duzy-dystans {
+  font-size: 34px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  margin: 6px 0;
+}
+
+/* Jeden GŁÓWNY przycisk na fazę — duży cel dotykowy na całą szerokość. */
+.przycisk-fazy {
+  width: 100%;
+  min-height: 56px;
+  font-size: 18px;
+}
+
+/* Odpowiedzi: stos (nie siatka) — długie teksty na 360 px, cel ≥ 44 px,
+   tekst wyrównany do lewej i zawijany. */
+.gra-odpowiedzi {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0;
+}
+.przycisk-odpowiedz {
+  min-height: var(--cel);
+  padding: 12px 14px;
+  font-size: 17px;
+  text-align: left;
+  white-space: normal;
+  line-height: 1.3;
+}
+.przycisk-odpowiedz.poprawna {
+  background: var(--ok-tlo);
+  border-color: var(--ok);
+  font-weight: 700;
+}
+.przycisk-odpowiedz.zla {
+  background: var(--blad-tlo);
+  border-color: var(--blad);
+}
+
+/* Wynik odpowiedzi: ocena + wyjaśnienie + źródła (ADR 0008 — źródła widoczne
+   także w grze, nie tylko w podglądzie organizatora). */
+.gra-wynik-odpowiedzi {
+  border-top: 1px solid var(--linia);
+  margin-top: 10px;
+  padding-top: 10px;
+}
+.lista-zrodel { padding-left: 20px; margin: 6px 0; font-size: 14px; }
+.lista-zrodel a { color: var(--akcent); }
+
+/* Tabela wyniku (faza koniec): liczby kolumnami, tabular-nums. */
+.tabela-wynikow { width: 100%; border-collapse: collapse; margin: 10px 0; }
+.tabela-wynikow th, .tabela-wynikow td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--linia);
+  text-align: left;
+  font-variant-numeric: tabular-nums;
+}
+.tabela-wynikow th { font-size: 14px; color: var(--tekst-slaby); }
