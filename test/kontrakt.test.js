@@ -512,3 +512,13 @@ test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (AD
   assert.match(css, /\.duzy-dystans \{[^}]*tabular-nums/s, 'cyfry o stałej szerokości — dystans nie skacze');
   assert.match(css, /\.badge-dystans \{[^}]*background: var\(--akcent\)/s, 'badge dystansu na akcencie (kontrast)');
 });
+
+test('kontrakt: karta historii gier na setupie (M7/P6)', () => {
+  const html = czytaj('index.html');
+  for (const id of ['karta-historia', 'historia-detale', 'historia-naglowek', 'historia-usterki', 'historia-lista', 'przycisk-kasuj-historie']) {
+    assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
+  }
+  assert.match(html, /id="karta-historia" class="karta" hidden/, 'karta historii domyślnie ukryta — staje tylko z zapisem');
+  assert.match(html, /id="historia-usterki" class="bledy" role="alert" hidden/, 'usterki historii mają role="alert" (jak inne ekrany)');
+  assert.match(html, /id="przycisk-kasuj-historie"[^>]*type="button"/, 'kasowanie historii to type=button');
+});

@@ -30,7 +30,7 @@ import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?
 import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m6-1';
 import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m6-1';
 import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m6-1';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m6-1';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m6-1';
 import { ROLE_PALETY, czasTekst, dystansTekst, etykietaOdcinka, medalTekst, planObrazuWyniku, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m6-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
@@ -84,6 +84,7 @@ const STAN = {
   wznowienieKandydat: null,
   /** M6/R6: dwustopniowość — kasowanie zapisu i ręczne zakończenie gry. */
   czyszczenieZapisuUzbrojone: false,
+  historiaKasowanieUzbrojone: false,
   graZakonczonaUzbrojone: false,
   graZakonczonaRecznie: false,
   /** M7: tekst wyniku do udostępnienia (wynikTekstowy) — żyje od pokazWyniki. */
@@ -1312,11 +1313,103 @@ function zapiszGre() {
     // wskaźnik = klucz oczyszczony (pusty kodGry → 'gra'); goły '' byłby falsy
     // i baner wznowienia nigdy by się nie pokazał dla gry bez kodu
     localStorage.setItem(KLUCZ_AKTYWNEJ, oczyscKodGry(r.kodGry));
+    // M7/P6: gra zakończona (naturalnie albo ręcznie) ląduje w historii —
+    // dodajWpisHistorii jest idempotentna po klucz, więc powtórki zastępują,
+    // nie dublują (dokończenie przerwanej gry po wznowieniu = wpis pełny)
+    if (r.faza === FAZY.koniec || STAN.graZakonczonaRecznie) {
+      zapiszGreDoHistorii(STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec);
+    }
   } catch (blad) {
     status(blad?.kod === 'T07'
       ? 'Zapis gry przekroczył budżet 2 MB (T07) — gramy dalej bez wznowienia po zamknięciu. Zakończ grę, żeby zobaczyć wynik.'
       : `Zapis gry nie udał się: ${blad?.message ?? blad}. Gramy dalej — ale bez wznowienia po zamknięciu przeglądarki.`);
   }
+}
+
+/** Skrót zakończonej gry do `okolica:historia` (M7/P6, ADR 0010 pkt 1).
+ *  Błąd zapisu historii NIGDY nie dotyka wyniku ani zapisu gry — jawny status. */
+function zapiszGreDoHistorii(przerwana = false) {
+  const r = STAN.rozgrywka;
+  if (!r) return;
+  try {
+    const wpis = skrotGry({
+      rozgrywka: r,
+      konfig: { ...STAN.konfig, kodGry: String(STAN.konfig.kodGry ?? '') },
+      stacje: STAN.stacje,
+      podsumowanie: podsumowanie(r),
+      miejsce: STAN.konfig.geokodacja && STAN.miejsce ? STAN.miejsce : null,
+      terazMs: Date.now(),
+      przerwana,
+    });
+    const surowy = localStorage.getItem(KLUCZ_HISTORII);
+    let { historia, usterki } = walidujHistorieSurowa(surowy);
+    if (!historia) {
+      if (surowy != null) {
+        status(`Historia gier była uszkodzona (${usterki.map((u) => u.kod).join(', ')}) — zaczynam nową listę. Stare wpisy były nieczytelne; resztkę usuniesz „Kasuj historię" na ekranie ustawień.`);
+      }
+      historia = nowaHistoria();
+    }
+    localStorage.setItem(KLUCZ_HISTORII, JSON.stringify(dodajWpisHistorii(historia, wpis)));
+    renderujHistorieGier();
+  } catch (blad) {
+    status(`Nie udało się dopisać gry do historii: ${blad?.message ?? blad}. Wynik gry i zapis nie są tym dotknięte.`);
+  }
+}
+
+/** Lista poprzednich gier na setupie: skróty, najnowsza najpierw; zepsuty
+ *  zapis = jawne kody H i oferta kasowania (ADR 0010 pkt 6 — nigdy cicho). */
+function renderujHistorieGier() {
+  const karta = $('karta-historia');
+  const usterkiPole = $('historia-usterki');
+  const lista = $('historia-lista');
+  const przycisk = $('przycisk-kasuj-historie');
+  STAN.historiaKasowanieUzbrojone = false;
+  przycisk.textContent = '🗑 Kasuj historię';
+  const surowy = localStorage.getItem(KLUCZ_HISTORII);
+  if (surowy == null) {
+    karta.hidden = true;
+    return;
+  }
+  karta.hidden = false;
+  const { historia, usterki } = walidujHistorieSurowa(surowy);
+  if (!historia) {
+    $('historia-naglowek').textContent = 'Poprzednie gry';
+    usterkiPole.hidden = false;
+    usterkiPole.textContent = `Historia gier jest uszkodzona (${usterki.map((u) => u.kod).join(', ')}) — wpisy są nieczytelne. Skasuj ją przyciskiem poniżej; nowa gra zacznie czystą listę.`;
+    lista.replaceChildren();
+    return;
+  }
+  usterkiPole.hidden = true;
+  usterkiPole.textContent = '';
+  const wpisy = [...historia.wpisy].reverse(); // najnowsza najpierw
+  $('historia-naglowek').textContent = `Poprzednie gry (${wpisy.length})`;
+  lista.replaceChildren(...wpisy.map((w) => {
+    const li = document.createElement('li');
+    const kiedy = w.data.slice(0, 16).replace('T', ' ');
+    const czesci = [
+      kiedy,
+      w.miejsce,
+      TRYBY[w.tryb]?.etykieta ?? w.tryb,
+      w.zwyciezca ? `🏆 ${w.zwyciezca} — ${w.punktyRazem} pkt` : 'brak zwycięzcy',
+      czasTekst(w.czasGryS),
+    ];
+    li.textContent = czesci.filter(Boolean).join(' · ') + (w.przerwana ? ' · (przerwana)' : '');
+    return li;
+  }));
+}
+
+/** Kasowanie historii — dwustopniowo, bez confirm() (ADR 0015 pkt 6). */
+function kasujHistorieGry() {
+  if (!STAN.historiaKasowanieUzbrojone) {
+    STAN.historiaKasowanieUzbrojone = true;
+    $('przycisk-kasuj-historie').textContent = '⚠ Kliknij ponownie, aby skasować historię';
+    status('Drugi klik trwale usunie listę poprzednich gier z telefonu.');
+    return;
+  }
+  localStorage.removeItem(KLUCZ_HISTORII);
+  STAN.historiaKasowanieUzbrojone = false;
+  renderujHistorieGier(); // bez klucza karta się chowa
+  status('Historia gier skasowana.');
 }
 
 /** Start aplikacji: szukamy zapisu gry i pokazujemy baner na setupie (decyzja 6). */
@@ -1441,6 +1534,7 @@ function zakonczGreRecznie() {
   zatrzymajSymulacje();
   pokazWyniki();
   renderujGre();
+  zapiszGre(); // M7/P6: ręczne zakończenie JEST tranzycją — zapis + wpis historii „przerwana"
   status('Gra zakończona wcześniej — wynik poniżej. Zapis został, więc można ją wznowić.');
 }
 
@@ -2305,6 +2399,7 @@ function start() {
   $('przycisk-zakoncz-gre').addEventListener('click', () => zakonczGreRecznie());
   $('przycisk-wznow-gre').addEventListener('click', () => wznowGre());
   $('przycisk-kasuj-zapis').addEventListener('click', () => kasujZapisGry());
+  $('przycisk-kasuj-historie').addEventListener('click', () => kasujHistorieGry());
 
   // M7/P4: eksport tekstu wyniku — share (telefon) → schowek → plik (zawsze).
   // Aplikacja nie udaje, że udostępniła: AbortError (rezygnacja) jest cichy,
@@ -2332,6 +2427,7 @@ function start() {
   $('przycisk-udostepnij-obraz').addEventListener('click', () => { void eksportujWynikObraz(true); });
 
   sprawdzZapisGry(); // M6/R6: baner wznowienia, jeśli telefon pamięta grę
+  renderujHistorieGier(); // M7/P6: lista poprzednich gier na setupie
   pokazEkran('setup');
   status(`M0 — fundament. Ustawienia domyślne: ${TRYBY[STAN.konfig.tryb].etykieta}, ${STAN.konfig.liczbaStacji} stacji, ${DOMYSLNE.pytaniaNaStacje} pytanie na stację, wiek ${WIEK[STAN.konfig.wiek].etykieta}.`);
 }

@@ -564,3 +564,13 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   padding: 10px 0;
   font-size: 15px;
 }
+
+/* M7/P6: historia poprzednich gier na ekranie ustawień — zwarte skróty. */
+.lista-historii { list-style: none; padding: 0; margin: 8px 0; }
+.lista-historii li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--linia);
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.lista-historii li:last-child { border-bottom: none; }

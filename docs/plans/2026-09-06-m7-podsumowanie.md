@@ -79,7 +79,7 @@ prowadzącego (B12), publikacja Pages i manifest (M8), offline/service worker
       1080 px (2× gęstość), kolory z bieżącego motywu; test: wykonawca
       przekazuje WSZYSTKIE komendy planu (atrapa kontekstu 2d zlicza
       wywołania), plan zawiera ranking i nagłówek.
-- [ ] **P6 — historia w UI:** zapis skrótu przy przejściu w fazę `koniec`
+- [x] **P6 — historia w UI:** zapis skrótu przy przejściu w fazę `koniec`
       (naturalnym — po ostatniej stacji) oraz przy ręcznym zakończeniu gry
       (wpis z `przerwana: true`); wznowienie przerwanej gry i naturalny koniec
       ZASTĘPUJE wpis (idempotencja po `klucz`); lista na setupie jako

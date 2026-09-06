@@ -1513,3 +1513,108 @@ test('M7: eksport obrazu wyniku — plan przechodzi przez canvas do PNG (plik i 
   assert.equal(udostepnione[0].files[0].name, 'okolica-gra.wynik.png', 'konfig bez kodGry → klucz „gra" (jak w zapisie M6)');
   assert.equal(udostepnione[0].files[0].type, 'image/png');
 });
+
+/* ========== M7/P6: historia gier w UI — zapis, lista, kasowanie, usterki */
+
+test('M7: koniec gry dopisuje skrót do historii — naturalny koniec = wpis pełny', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
+  assert.equal(pamiec.has('okolica:historia'), false, 'przed końcem historii nie ma');
+  zaczynijGre(dom);
+  for (const i of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-pomin-stacje');
+  }
+  const { historia, usterki } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
+  assert.deepEqual(usterki, []);
+  assert.equal(historia.wpisy.length, 1, 'dokładnie jeden wpis po jednej grze');
+  const w = historia.wpisy[0];
+  assert.equal(w.klucz, 'gra', 'konfig bez kodGry → klucz „gra" (spójnie z KLUCZ_AKTYWNEJ z M6)');
+  assert.equal(w.przerwana, false, 'naturalny koniec = wpis pełny');
+  assert.equal(w.liczbaStacji, 3);
+  assert.equal(w.zwyciezca, 'Gracz 1', 'zwycięzca z rankingu (0 pkt — sort stabilny)');
+  assert.equal(w.zaliczoneStacje, 0);
+  assert.equal(w.pominietaStacje, 3);
+  assert.match(w.data, /^20\d\d-/, 'data ISO z Date.now() warstwy DOM');
+});
+
+test('M7: ręczne zakończenie = wpis „przerwana", wznowienie i dokończenie ZASTĘPUJE go (bez dubla)', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  dom.kliknij('przycisk-zakoncz-gre'); // uzbrojenie
+  dom.kliknij('przycisk-zakoncz-gre'); // ręczny koniec → wczesny wynik
+  let { historia } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
+  assert.equal(historia.wpisy.length, 1, 'ręczne zakończenie też jest grą, która się odbyła');
+  assert.equal(historia.wpisy[0].przerwana, true, 'uczciwy znacznik przerwania');
+
+  // nowa instancja aplikacji na tej samej pamięci (jak zamknięcie i otwarcie telefonu)
+  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?hist=${Math.random().toString(36).slice(2)}`);
+  assert.match(dom2.pobierz('wznowienie-opis').textContent, /niedokończoną grę/, 'ręczne zakończenie NIE kasuje zapisu (M6)');
+  dom2.kliknij('przycisk-wznow-gre');
+  dom2.kliknij('przycisk-pomin-stacje'); // stacja 1 — odcinek w toku po wznowieniu
+  for (let i = 0; i < 2; i++) {
+    dom2.kliknij('przycisk-start-odcinka');
+    dom2.kliknij('przycisk-pomin-stacje');
+  }
+  ({ historia } = walidujHistorieSurowa(pamiec.get('okolica:historia')));
+  assert.equal(historia.wpisy.length, 1, 'idempotencja po klucz — dokończenie nie dubluje wpisu');
+  assert.equal(historia.wpisy[0].przerwana, false, 'dokończona gra zastępuje przerwaną pełnym wpisem');
+});
+
+test('M7: lista poprzednich gier na setupie — najnowsza najpierw, dwustopniowe kasowanie', async () => {
+  const { nowaHistoria, dodajWpisHistorii, skrotGry } = await import('../app/trwalosc.js');
+  const { nowaRozgrywka, podsumowanie } = await import('../app/rozgrywka.js');
+  const { domyslnaKonfiguracja } = await import('../app/konfig.js');
+  const { stacjeProste } = await import('../app/stacje.js');
+  const srodek = { lat: 52.2297, lon: 21.0122 };
+  const paczka = czytajFixturePaczka();
+  const konfig = { ...domyslnaKonfiguracja(2), kodGry: 'stara-gra', promienM: 1000, liczbaStacji: 3 };
+  const stacje = stacjeProste({ srodek, liczbaStacji: 3, promienM: 1000, ziarno: 'z' });
+  const rozgrywka = nowaRozgrywka({ konfig, stacje, paczka, srodek, czasMs: 0, ziarno: 'z' });
+  const wspolne = { rozgrywka, stacje, podsumowanie: podsumowanie(rozgrywka) };
+  const w1 = skrotGry({ ...wspolne, konfig, miejsce: 'Mokotów', terazMs: Date.parse('2026-09-01T10:00:00Z'), przerwana: true });
+  const w2 = skrotGry({ ...wspolne, konfig: { ...konfig, kodGry: 'nowa-gra' }, miejsce: 'Ochota', terazMs: Date.parse('2026-09-05T18:30:00Z') });
+  const pamiec = new Map();
+  pamiec.set('okolica:historia', JSON.stringify(dodajWpisHistorii(dodajWpisHistorii(nowaHistoria(), w1), w2)));
+
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?histl=${Math.random().toString(36).slice(2)}`);
+  assert.equal(dom.pobierz('karta-historia').hidden, false, 'karta staje, gdy telefon pamięta gry');
+  assert.equal(dom.pobierz('historia-naglowek').textContent, 'Poprzednie gry (2)');
+  assert.equal(dom.pobierz('historia-usterki').hidden, true);
+  const pozycje = dom.pobierz('historia-lista').children;
+  assert.equal(pozycje.length, 2);
+  assert.match(pozycje[0].textContent, /2026-09-05 18:30 · Ochota/, 'najnowsza najpierw, data i miejsce ze skrótu');
+  assert.match(pozycje[0].textContent, /🏆 Gracz 1 — 0 pkt · 0 s/, 'zwycięzca, punkty i czas gry');
+  assert.equal(pozycje[0].textContent.includes('(przerwana)'), false);
+  assert.match(pozycje[1].textContent, /Mokotów/, 'starsza druga');
+  assert.match(pozycje[1].textContent, /\(przerwana\)/, 'znacznik przerwanej widoczny');
+
+  // kasowanie DWUSTOPOWIOWE bez confirm() (ADR 0015 pkt 6)
+  dom.kliknij('przycisk-kasuj-historie');
+  assert.match(dom.pobierz('przycisk-kasuj-historie').textContent, /Kliknij ponownie/, 'pierwszy klik uzbraja');
+  assert.equal(pamiec.has('okolica:historia'), true, 'pierwszy klik NICZEGO nie kasuje');
+  dom.kliknij('przycisk-kasuj-historie');
+  assert.equal(pamiec.has('okolica:historia'), false, 'drugi klik kasuje klucz');
+  assert.equal(dom.pobierz('karta-historia').hidden, true, 'bez klucza karta się chowa');
+  assert.match(dom.pobierz('status').textContent, /Historia gier skasowana/);
+});
+
+test('M7: zepsuta historia — jawne kody H i oferta kasowania na setupie (nigdy cicho)', async () => {
+  const pamiec = new Map();
+  pamiec.set('okolica:historia', '{"schemat":"historia/1"'); // urwany JSON
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?histz=${Math.random().toString(36).slice(2)}`);
+  assert.equal(dom.pobierz('karta-historia').hidden, false, 'karta widoczna także z usterką');
+  assert.equal(dom.pobierz('historia-usterki').hidden, false);
+  assert.match(dom.pobierz('historia-usterki').textContent, /H01/, 'kod usterki jest jawny');
+  assert.match(dom.pobierz('historia-usterki').textContent, /Skasuj/, 'usterka ma wyjście — kasowanie');
+  assert.equal(dom.pobierz('historia-lista').children.length, 0, 'zepsute wpisy nie udają listy');
+  dom.kliknij('przycisk-kasuj-historie');
+  dom.kliknij('przycisk-kasuj-historie');
+  assert.equal(pamiec.has('okolica:historia'), false, 'kasowanie działa też na zepsutym zapisie');
+  assert.equal(dom.pobierz('karta-historia').hidden, true);
+});
