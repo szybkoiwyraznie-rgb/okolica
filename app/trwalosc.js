@@ -31,7 +31,7 @@ export const KODY_TRWALOSCI = {
   T05: `Ukryta paczka w zapisie jest uszkodzona (oczekiwano kontenera ${SCHEMAT_KONTENERA}).`,
   T06: 'Konfiguracja gry w zapisie jest uszkodzona.',
   T07: 'Zapis gry przekracza budżet 2 MB — zakończ grę i zacznij nową.',
-  T08: 'Zapis nie ma poprawnego czasu zapisania (terazMs).',
+  T08: 'Zapis nie ma poprawnych czasów (zapisanoMs ścienne albo zegarMs sesji).',
   T09: 'Lista stacji w zapisie jest uszkodzona.',
   T10: 'Pozycja w zapisie jest uszkodzona (oczekiwano null albo {lat, lon}).',
 };
@@ -97,9 +97,13 @@ function czyPozycjaOk(p) {
  * (plaintext paczki nie ma prawa wejść do zapisu — ADR 0007 pkt 4);
  * `rozgrywka` — stanem `rozgrywka/1` z `nowaRozgrywka` i tranzycji;
  * `pozycja` — OSTATNIM fixem (historia fixów zostaje w pamięci pozycji,
- * do wznowienia wystarczy punkt startowy odcinka) albo null.
+ * do wznowienia wystarczy punkt startowy odcinka) albo null;
+ * `zegarMs` — wskazaniem zegara gry (`performance.now()` minus pauzy) w chwili
+ * zapisu: po restarcie przeglądarki zegar sesji startuje od zera, więc czasy
+ * rozgrywki są przy wznowieniu rebazowane o różnicę — czas zamknięcia karty
+ * nie wlicza się w odcinek (uczciwy pomiar, ADR 0004 pkt 3).
  */
-export function zbierajStan({ konfig, stacje, kontenerPaczki, rozgrywka, pozycja = null, ekran = 'gra', terazMs } = {}) {
+export function zbierajStan({ konfig, stacje, kontenerPaczki, rozgrywka, pozycja = null, ekran = 'gra', terazMs, zegarMs } = {}) {
   wymaganie(czyKonfigOk(konfig), 'zbierajStan: konfig z tryb i kodGry jest wymagany');
   wymaganie(Array.isArray(stacje) && stacje.length > 0 && stacje.every(czyStacjaOk),
     'zbierajStan: stacje muszą być niepustą listą punktów {id, lat, lon}');
@@ -108,11 +112,13 @@ export function zbierajStan({ konfig, stacje, kontenerPaczki, rozgrywka, pozycja
   wymaganie(czyPozycjaOk(pozycja), 'zbierajStan: pozycja to null albo {lat, lon}');
   wymaganie(typeof ekran === 'string' && ekran.length > 0, 'zbierajStan: ekran musi być nazwą');
   wymaganie(Number.isFinite(terazMs), 'zbierajStan: terazMs musi być liczbą (czas podaje warstwa DOM)');
+  wymaganie(Number.isFinite(zegarMs), 'zbierajStan: zegarMs musi być liczbą (kotwica rebazy po wznowieniu)');
 
   return {
     schemat: SCHEMAT_STANU,
     wersjaProtokolu: WERSJA_PROTOKOLU,
     zapisanoMs: terazMs,
+    zegarMs,
     konfig,
     stacje,
     kontenerPaczki,
@@ -162,7 +168,7 @@ export function walidujStanSurowy(tekst) {
 
   const usterki = [];
   if (surowy.wersjaProtokolu !== WERSJA_PROTOKOLU) usterki.push(usterka('T03'));
-  if (!Number.isFinite(surowy.zapisanoMs)) usterki.push(usterka('T08'));
+  if (!Number.isFinite(surowy.zapisanoMs) || !Number.isFinite(surowy.zegarMs)) usterki.push(usterka('T08'));
   if (!czyKonfigOk(surowy.konfig)) usterki.push(usterka('T06'));
   if (!Array.isArray(surowy.stacje) || surowy.stacje.length === 0 || !surowy.stacje.every(czyStacjaOk)) {
     usterki.push(usterka('T09'));

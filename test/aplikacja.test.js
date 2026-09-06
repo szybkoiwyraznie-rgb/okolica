@@ -978,12 +978,22 @@ test('warstwa zapasowa: HTTP 429 → komunikat, bez wyjątku i bez ponawiania w 
 
 /* ============ M6/R4: ekran gry — fazy przygotowanie/odcinek, pauza */
 
-/** Przyjęta paczka + pozycja + stacje z pierścienia (synchronicznie, bez fetch). */
+/** Przyjęta paczka + pozycja + stacje z pierścienia (synchronicznie, bez fetch).
+ *  Zwraca też `pamiec` — testy trwałości (R6) czytają klucze zapisu gry. */
 async function graGotowaDoStartu() {
-  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
+  const pamiec = new Map();
+  pamiec.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1',
+    konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+  }));
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?gra=${Math.random().toString(36).slice(2)}`);
+  const paczka = czytajFixturePaczka();
+  dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
+  dom.kliknij('przycisk-sprawdz');
   ustawPozycjeTestowa(dom, '52.2297', '21.0122');
   dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
-  return { dom, paczka };
+  return { dom, paczka, pamiec };
 }
 
 function zaczynijGre(dom) {
@@ -1129,4 +1139,106 @@ test('M6: błędna odpowiedź — zero punktów, podświetlona poprawna, gra idz
   assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie także po błędzie — tu jest najwięcej nauki');
   dom.kliknij('przycisk-nastepna-stacja');
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'gra idzie dalej mimo błędu');
+});
+
+/* ============ M6/R6: trwałość — zapis po tranzycjach, wznowienie, koniec */
+
+test('M6: zapis gry ląduje w pamięci po każdym ruchu i nie niesie plaintextu', async () => {
+  const { dom, paczka, pamiec } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  assert.equal(pamiec.get('okolica:gra-aktywna'), 'gra', 'wskaźnik aktywnej gry (kod oczyszczony; pusty kodGry → „gra")');
+  const kluczZapisu = 'okolica:gra:gra';
+  assert.ok(pamiec.has(kluczZapisu), 'zapis pod kluczem okolica:gra:<kod> — czyszczenie danych go obejmuje');
+  let snapshot = JSON.parse(pamiec.get(kluczZapisu));
+  assert.equal(snapshot.schemat, 'stan-gry/1');
+  assert.equal(snapshot.rozgrywka.faza, 'przygotowanie');
+  assert.ok(Number.isFinite(snapshot.zegarMs), 'kotwica zegara sesji zapisana (rebase przy wznowieniu)');
+  assert.equal(snapshot.kontenerPaczki.schemat, 'TO-paczka/2');
+  assert.equal(pamiec.get(kluczZapisu).includes(paczka.pytania[0].tresc), false, 'STRAŻNIK: treść pytania nie istnieje w zapisie');
+
+  dom.kliknij('przycisk-start-odcinka');
+  snapshot = JSON.parse(pamiec.get(kluczZapisu));
+  assert.equal(snapshot.rozgrywka.faza, 'odcinek', 'zapis po starcie odcinka');
+  assert.equal(snapshot.rozgrywka.odcinki[0].stan, 'w-trakcie');
+
+  dom.kliknij('przycisk-reczne-dojscie');
+  snapshot = JSON.parse(pamiec.get(kluczZapisu));
+  assert.equal(snapshot.rozgrywka.faza, 'pytanie', 'zapis po dojściu');
+});
+
+test('M6: wznowienie po „zamknięciu przeglądarki" — nowa instancja, ta sama pamięć, rebaza zegara', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  assert.equal(JSON.parse(pamiec.get('okolica:gra:gra')).rozgrywka.faza, 'odcinek');
+
+  // „zamknięcie przeglądarki": zupełnie nowa instancja aplikacji na tej samej pamięci
+  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?wznow=${Math.random().toString(36).slice(2)}`);
+  assert.equal(dom2.pobierz('karta-wznowienie').hidden, false, 'baner wznowienia na setupie');
+  assert.match(dom2.pobierz('wznowienie-opis').textContent, /niedokończoną grę/, 'opis mówi po ludzku, co znaleziono');
+  assert.match(dom2.pobierz('wznowienie-opis').textContent, /faza: odcinek/);
+
+  dom2.kliknij('przycisk-wznow-gre');
+  assert.equal(dom2.pobierz('ekran-gra').hidden, false, 'wznowienie wraca na ekran gry');
+  assert.equal(dom2.pobierz('gra-panel-odcinek').hidden, false, 'faza odcinka odtworzona');
+  assert.equal(dom2.pobierz('karta-wznowienie').hidden, true, 'baner znika po wznowieniu');
+
+  // rebaza zegara działa: zakończenie odcinka NIE daje G09 (czas końca < startu)
+  dom2.kliknij('przycisk-reczne-dojscie');
+  assert.equal(dom2.pobierz('bledy-gra').hidden, true, `brak błędu, a jest: ${dom2.pobierz('bledy-gra').textContent}`);
+  assert.equal(dom2.pobierz('gra-panel-pytanie').hidden, false, 'gra toczy się dalej po wznowieniu');
+});
+
+test('M6: zepsuty zapis — jawne kody T i dwustopniowe kasowanie (bez confirm)', async () => {
+  const pamiec = new Map();
+  pamiec.set('okolica:gra-aktywna', 'zepsuta');
+  pamiec.set('okolica:gra:zepsuta', 'to nie jest json');
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?zepsuty=${Math.random().toString(36).slice(2)}`);
+  assert.equal(dom.pobierz('karta-wznowienie').hidden, false, 'baner się pokazuje');
+  assert.equal(dom.pobierz('przycisk-wznow-gre').hidden, true, 'zepsutego zapisu nie da się wznowić');
+  assert.match(dom.pobierz('wznowienie-opis').textContent, /zepsuty zapis/, 'komunikat wprost');
+  assert.match(dom.pobierz('wznowienie-opis').textContent, /T01/, 'kod usterki widoczny');
+
+  dom.kliknij('przycisk-kasuj-zapis');
+  assert.ok(pamiec.has('okolica:gra:zepsuta'), 'pierwszy klik tylko uzbraja');
+  assert.match(dom.pobierz('przycisk-kasuj-zapis').textContent, /Kliknij ponownie/);
+  dom.kliknij('przycisk-kasuj-zapis');
+  assert.equal(pamiec.has('okolica:gra:zepsuta'), false, 'drugi klik kasuje zapis gry');
+  assert.equal(pamiec.has('okolica:gra-aktywna'), false);
+  assert.equal(dom.pobierz('karta-wznowienie').hidden, true, 'baner znika');
+});
+
+test('M6: pominięcie odcinka w drodze — jawny skutek i gra idzie dalej (ADR 0015)', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true, 'w fazie A pominąć się nie da (G11)');
+  dom.kliknij('przycisk-start-odcinka');
+  dom.kliknij('przycisk-pomin-stacje');
+  assert.match(dom.pobierz('status').textContent, /pominięty/, 'status mówi o pominięciu');
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'następna stacja czeka w fazie A');
+  assert.match(dom.pobierz('gra-postep').textContent, /stacja 2 z 3/);
+  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true, 'po tranzycji znowu zablokowane');
+  assert.equal(JSON.parse(pamiec.get('okolica:gra:gra')).rozgrywka.odcinki[0].stan, 'pominiety', 'zapis niesie pominięcie');
+});
+
+test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zostaje', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  const zakoncz = dom.pobierz('przycisk-zakoncz-gre');
+
+  dom.kliknij('przycisk-zakoncz-gre');
+  assert.match(zakoncz.textContent, /Kliknij ponownie/, 'pierwszy klik uzbraja (bez confirm — ADR 0015 pkt 6)');
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, true, 'pierwszy klik jeszcze NIE pokazuje wyniku');
+
+  dom.kliknij('przycisk-zakoncz-gre');
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'panel wyniku widoczny');
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true);
+  const wiersze = dom.pobierz('gra-wyniki-tbody').children;
+  assert.equal(wiersze.length, 2, 'wynik per gracz (2 graczy z konfiguracji)');
+  assert.equal(wiersze[0].children.length, 3, 'gracz | punkty | poprawne');
+  assert.match(dom.pobierz('status').textContent, /można ją wznowić/, 'uczciwie: zapis zostaje');
+  assert.ok(pamiec.has('okolica:gra:gra'), 'zapis NIE skasowany — można wrócić do gry');
+  assert.match(zakoncz.textContent, /Zakończ grę/, 'przycisk wraca do zwykłej etykiety');
 });

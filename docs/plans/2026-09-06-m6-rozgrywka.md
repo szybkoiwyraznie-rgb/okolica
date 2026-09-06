@@ -71,7 +71,7 @@ Proponowana, B17: nie wcześniej niż po M8), gra na kilku urządzeniach
       wyjaśnienie + źródła (linki `rel=noopener`) → zamknięcie stacji →
       „Następna stacja" albo `czyKoniec`; stacja bez pytania: warning ADR 0015
       + zamknięcie dojściem; `pominStacje` tylko w drodze (G11/G13 do UI).
-- [ ] **R6 — trwałość w UI:** zapis po każdej tranzycji (`zbierajStan` →
+- [x] **R6 — trwałość w UI:** zapis po każdej tranzycji (`zbierajStan` →
       `localStorage`), `okolica:gra-aktywna`; baner wznowienia na setup:
       Wznów (odczyt → walidacja T → powrót do właściwej fazy + re-watch
       pozycji) / Nowa gra (dwustopniowo kasuje zapis — bez `confirm()`,

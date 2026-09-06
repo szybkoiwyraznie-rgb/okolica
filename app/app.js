@@ -29,7 +29,8 @@ import {
 import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m5-1';
 import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m5-1';
 import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m5-1';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, podglad, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m5-1';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m5-1';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m5-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -78,6 +79,12 @@ const STAN = {
   pauzaSkumulowanaMs: 0,
   /** M6/R5: kiedy odsłonięto bieżące pytanie (czas odpowiedzi dla modelu). */
   pytaniePokazaneMs: 0,
+  /** M6/R6: snapshot `stan-gry/1` znaleziony przy starcie (kandydat do wznowienia). */
+  wznowienieKandydat: null,
+  /** M6/R6: dwustopniowość — kasowanie zapisu i ręczne zakończenie gry. */
+  czyszczenieZapisuUzbrojone: false,
+  graZakonczonaUzbrojone: false,
+  graZakonczonaRecznie: false,
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
@@ -999,10 +1006,12 @@ function renderujGre({ panele = true } = {}) {
   }
 
   if (panele) {
-  $('gra-panel-oczekuje').hidden = r.faza !== FAZY.przygotowanie;
-  $('gra-panel-odcinek').hidden = r.faza !== FAZY.odcinek;
-  $('gra-panel-pytanie').hidden = r.faza !== FAZY.pytanie;
-  $('gra-panel-koniec').hidden = r.faza !== FAZY.koniec;
+    const koniec = r.faza === FAZY.koniec || STAN.graZakonczonaRecznie;
+    $('gra-panel-oczekuje').hidden = koniec || r.faza !== FAZY.przygotowanie;
+    $('gra-panel-odcinek').hidden = koniec || r.faza !== FAZY.odcinek;
+    $('gra-panel-pytanie').hidden = koniec || r.faza !== FAZY.pytanie;
+    $('gra-panel-koniec').hidden = !koniec;
+    if (koniec) pokazWyniki();
   }
 
   if (panele && r.faza === FAZY.przygotowanie && pod.stacja) {
@@ -1058,6 +1067,7 @@ function startGry() {
       ? ` Uwaga: paczka nie ma pytań do stacji ${brakPytan.join(', ')} — zamkną się samym dojściem, bez punktów (ADR 0015).`
       : ''));
   renderujGre();
+  zapiszGre();
 }
 
 function startOdcinkaGry() {
@@ -1073,6 +1083,7 @@ function startOdcinkaGry() {
     status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
   }
   renderujGre();
+  zapiszGre();
 }
 
 function zakonczOdcinekGry(trybDojscia, fix) {
@@ -1091,6 +1102,7 @@ function zakonczOdcinekGry(trybDojscia, fix) {
     : 'Stacja osiągnięta — próg dojścia zadziałał z GPS. Brawo!');
   renderujGre();
   if (STAN.rozgrywka.faza === FAZY.pytanie) renderujPytanie(); // ADR 0007 pkt 6: pytanie DOPIERO teraz
+  zapiszGre();
 }
 
 /** Pauza gry: zegar stoi, watcher/symulacja zatrzymane, wznowienie jawne. */
@@ -1116,6 +1128,7 @@ function przelaczPauzeGry() {
   przycisk.setAttribute('aria-pressed', String(STAN.graPauza));
   $('gra-pauza-komunikat').hidden = false;
   renderujGre();
+  zapiszGre(); // świeża kotwica zegara — wznowienie nie zgubi pauz
 }
 
 /** Symulacja dojścia DO BIEŻĄCEJ STACJI (tryb testowy — kryterium „gra bez GPS"). */
@@ -1240,6 +1253,7 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
       : 'Następna stacja →';
   status(dobrze ? 'Poprawna odpowiedź zapisana.' : 'Odpowiedź zapisana — wyjaśnienie i źródła poniżej.');
   renderujGre({ panele: false }); // badge'e tak; panele dopiero po „Następna stacja"
+  zapiszGre();
 }
 
 /** „Następna stacja/pytanie": domyka pokaz wyjaśnienia i przełącza fazę. */
@@ -1248,6 +1262,186 @@ function nastepnaStacja() {
   if (!r) return;
   renderujGre();
   if (r.faza === FAZY.pytanie) renderujPytanie();
+}
+
+/* ----------------------------------------- M6/R6: trwałość i wznowienie gry */
+
+/**
+ * Zapis po KAŻDEJ tranzycji (plan M6, decyzja 5): `beforeunload` jest na
+ * telefonach zawodny, więc snapshot ląduje w `localStorage` synchronicznie po
+ * każdym ruchu. W środku kontener `TO-paczka/2` — nigdy plaintext (ADR 0007).
+ */
+function zapiszGre() {
+  const r = STAN.rozgrywka;
+  if (!r || !STAN.kontenerPaczki) return;
+  try {
+    const snapshot = zbierajStan({
+      // kodGry bywa undefined do pierwszego „generuj kod" — klucz i tak musi być stringiem
+      konfig: { ...STAN.konfig, kodGry: String(STAN.konfig.kodGry ?? '') },
+      stacje: STAN.stacje,
+      kontenerPaczki: STAN.kontenerPaczki,
+      rozgrywka: r,
+      pozycja: STAN.pozycja
+        ? { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, dokladnoscM: STAN.dokladnoscM, zrodlo: STAN.ostatniFix?.zrodlo ?? null }
+        : null,
+      ekran: 'gra',
+      terazMs: Date.now(),
+      zegarMs: zegarGry(),
+    });
+    localStorage.setItem(kluczStanu(r.kodGry), serializujStan(snapshot));
+    // wskaźnik = klucz oczyszczony (pusty kodGry → 'gra'); goły '' byłby falsy
+    // i baner wznowienia nigdy by się nie pokazał dla gry bez kodu
+    localStorage.setItem(KLUCZ_AKTYWNEJ, oczyscKodGry(r.kodGry));
+  } catch (blad) {
+    status(blad?.kod === 'T07'
+      ? 'Zapis gry przekroczył budżet 2 MB (T07) — gramy dalej bez wznowienia po zamknięciu. Zakończ grę, żeby zobaczyć wynik.'
+      : `Zapis gry nie udał się: ${blad?.message ?? blad}. Gramy dalej — ale bez wznowienia po zamknięciu przeglądarki.`);
+  }
+}
+
+/** Start aplikacji: szukamy zapisu gry i pokazujemy baner na setupie (decyzja 6). */
+function sprawdzZapisGry() {
+  STAN.wznowienieKandydat = null;
+  STAN.czyszczenieZapisuUzbrojone = false;
+  const karta = $('karta-wznowienie');
+  $('przycisk-kasuj-zapis').textContent = '🗑 Nowa gra (kasuje zapis)';
+  const aktywna = localStorage.getItem(KLUCZ_AKTYWNEJ);
+  if (!aktywna) {
+    karta.hidden = true;
+    return;
+  }
+  const { stan, usterki } = walidujStanSurowy(localStorage.getItem(kluczStanu(aktywna)) ?? '');
+  if (!stan) {
+    karta.hidden = false;
+    $('przycisk-wznow-gre').hidden = true;
+    $('wznowienie-opis').textContent = `Znaleziono zepsuty zapis gry „${aktywna}" (${usterki.map((u) => u.kod).join(', ')}). Nie da się go wznowić — usuń go, żeby zacząć nową grę.`;
+    return;
+  }
+  STAN.wznowienieKandydat = stan;
+  karta.hidden = false;
+  $('przycisk-wznow-gre').hidden = false;
+  const r = stan.rozgrywka;
+  const indeks = r.stacje.findIndex((s) => s.id === r.biezacaStacja) + 1;
+  $('wznowienie-opis').textContent = `Znaleziono niedokończoną grę „${r.kodGry || aktywna}" — faza: ${r.faza}, stacja ${indeks} z ${r.stacje.length}, zapisano ${new Date(stan.zapisanoMs).toLocaleString('pl-PL')}.`;
+}
+
+/**
+ * Wznowienie: rebaza zegara sesji (plan M6, ryzyko 3/4) — `performance.now()`
+ * po restarcie przeglądarki startuje od zera, więc wszystkie znaczniki czasu
+ * rozgrywki przesuwamy o różnicę między teraz a kotwicą `zegarMs` z zapisu.
+ * Czas zamknięcia karty NIE wlicza się w odcinek (uczciwy pomiar).
+ */
+function wznowGre() {
+  const snapshot = STAN.wznowienieKandydat;
+  if (!snapshot) return;
+  const przesuniecie = performance.now() - snapshot.zegarMs;
+  const r = snapshot.rozgrywka;
+  r.startMs += przesuniecie;
+  for (const o of r.odcinki) {
+    if (o.startMs != null) o.startMs += przesuniecie;
+    if (o.koniecMs != null) o.koniecMs += przesuniecie;
+  }
+  for (const zdarzenie of r.dziennik) zdarzenie.czasMs += przesuniecie;
+  STAN.konfig = snapshot.konfig;
+  STAN.stacje = snapshot.stacje;
+  STAN.kontenerPaczki = snapshot.kontenerPaczki;
+  STAN.rozgrywka = r;
+  STAN.paczka = null; // w grze nadal tylko kontener (ADR 0007 pkt 4)
+  STAN.usterkiPaczki = [];
+  if (snapshot.pozycja) {
+    STAN.pozycja = { lat: snapshot.pozycja.lat, lon: snapshot.pozycja.lon };
+    STAN.dokladnoscM = snapshot.pozycja.dokladnoscM ?? null;
+  }
+  STAN.graPauza = false;
+  STAN.graPauzaStartMs = 0;
+  STAN.pauzaSkumulowanaMs = 0;
+  STAN.graZakonczonaRecznie = false;
+  STAN.historiaFixow = []; // dojście liczymy od nowa — fixy sprzed zamknięcia nie rozstrzygają
+  STAN.wycentrowane = false; // pierwszy fix po wznowieniu centruje mapę gry
+  STAN.wznowienieKandydat = null;
+  $('karta-wznowienie').hidden = true;
+  $('przycisk-pauza').textContent = '⏸ Pauza';
+  $('przycisk-pauza').setAttribute('aria-pressed', 'false');
+  renderujSetup(); // konfiguracja z zapisu wraca do pól setupu
+  pokazEkran('gra');
+  if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+  status(`Gra „${r.kodGry || 'bez kodu'}" wznowiona — faza: ${r.faza}. Czas zamknięcia przeglądarki nie wlicza się w odcinek.`);
+  renderujGre();
+  if (r.faza === FAZY.pytanie) renderujPytanie();
+  zapiszGre(); // świeża kotwica zegara
+}
+
+/** Kasowanie zapisu — dwustopniowe, bez confirm() (ADR 0015 pkt 6). */
+function kasujZapisGry() {
+  if (!STAN.czyszczenieZapisuUzbrojone) {
+    STAN.czyszczenieZapisuUzbrojone = true;
+    $('przycisk-kasuj-zapis').textContent = '⚠ Kliknij ponownie, aby skasować zapis';
+    status('Drugi klik trwale usunie zapisaną grę z telefonu.');
+    return;
+  }
+  const aktywna = localStorage.getItem(KLUCZ_AKTYWNEJ);
+  if (aktywna) localStorage.removeItem(kluczStanu(aktywna));
+  localStorage.removeItem(KLUCZ_AKTYWNEJ);
+  STAN.czyszczenieZapisuUzbrojone = false;
+  STAN.wznowienieKandydat = null;
+  $('karta-wznowienie').hidden = true;
+  status('Zapis gry skasowany. Możesz ustawić nową.');
+}
+
+/** Pominięcie odcinka w drodze (ADR 0015 pkt 2) — kody G11/G13 trafiają do UI. */
+function pominStacjeGry() {
+  if (!STAN.rozgrywka) return;
+  const wynik = pominStacje(STAN.rozgrywka, { czasMs: zegarGry(), powod: 'pominięcie z ekranu gry' });
+  STAN.rozgrywka = wynik.stan;
+  pokazBledy('bledy-gra', wynik.usterki);
+  status(wynik.usterki.length > 0
+    ? wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' ')
+    : 'Odcinek pominięty — stacja nie liczy się do punktów ani do mediany tempa (ADR 0015).');
+  renderujGre();
+  zapiszGre();
+}
+
+/**
+ * „■ Zakończ grę" — dwustopniowo; pokazuje wynik WCZEŚNIEJ niż model kończy
+ * grę, ale NIE niszczy stanu: zapis zostaje i grę można wznowić (pełne
+ * podsumowanie z eksportem to M7).
+ */
+function zakonczGreRecznie() {
+  const r = STAN.rozgrywka;
+  if (!r) return;
+  if (!STAN.graZakonczonaUzbrojone) {
+    STAN.graZakonczonaUzbrojone = true;
+    $('przycisk-zakoncz-gre').textContent = '⚠ Kliknij ponownie, aby zakończyć';
+    status('Drugi klik pokaże wynik i zakończy grę. Zapis zostaje — można wznowić od tego miejsca.');
+    return;
+  }
+  STAN.graZakonczonaUzbrojone = false;
+  STAN.graZakonczonaRecznie = true;
+  $('przycisk-zakoncz-gre').textContent = '■ Zakończ grę';
+  zatrzymajSymulacje();
+  pokazWyniki();
+  renderujGre();
+  status('Gra zakończona wcześniej — wynik poniżej. Zapis został, więc można ją wznowić.');
+}
+
+/** Minimalny wynik z `podsumowanie()` — kolejność rankingu; pełne podsumowanie w M7. */
+function pokazWyniki() {
+  const r = STAN.rozgrywka;
+  if (!r) return;
+  const wynik = podsumowanie(r);
+  const tbody = $('gra-wyniki-tbody');
+  tbody.replaceChildren();
+  for (const id of wynik.ranking) {
+    const g = wynik.gracze.find((gracz) => gracz.id === id);
+    if (!g) continue;
+    const wiersz = document.createElement('tr');
+    for (const komorka of [`${g.imie}${id === wynik.zwyciezca ? ' 🏆' : ''}`, String(g.punkty), `${g.poprawne}/${g.poprawne + g.bledne}`]) {
+      const td = document.createElement('td');
+      td.textContent = komorka;
+      wiersz.appendChild(td);
+    }
+    tbody.appendChild(wiersz);
+  }
 }
 
 /* ---------------------------------------------------------------- prompt */
@@ -1870,7 +2064,12 @@ function start() {
   $('przycisk-pauza').addEventListener('click', () => przelaczPauzeGry());
   $('przycisk-symulacja-gra').addEventListener('click', () => przelaczSymulacjeDoStacji());
   $('przycisk-nastepna-stacja').addEventListener('click', () => nastepnaStacja());
+  $('przycisk-pomin-stacje').addEventListener('click', () => pominStacjeGry());
+  $('przycisk-zakoncz-gre').addEventListener('click', () => zakonczGreRecznie());
+  $('przycisk-wznow-gre').addEventListener('click', () => wznowGre());
+  $('przycisk-kasuj-zapis').addEventListener('click', () => kasujZapisGry());
 
+  sprawdzZapisGry(); // M6/R6: baner wznowienia, jeśli telefon pamięta grę
   pokazEkran('setup');
   status(`M0 — fundament. Ustawienia domyślne: ${TRYBY[STAN.konfig.tryb].etykieta}, ${STAN.konfig.liczbaStacji} stacji, ${DOMYSLNE.pytaniaNaStacje} pytanie na stację, wiek ${WIEK[STAN.konfig.wiek].etykieta}.`);
 }

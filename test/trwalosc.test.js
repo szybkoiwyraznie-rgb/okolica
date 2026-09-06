@@ -39,7 +39,7 @@ function snapshotReferencyjny(terazMs = 1_757_000_000_000) {
 
 test('trwałość: snapshot stan-gry/1 jest kompletny i niesie referencje, nie treści', () => {
   const czesci = snapshotReferencyjny();
-  const snapshot = zbierajStan({ ...czesci, pozycja: { lat: SRODEK.lat, lon: SRODEK.lon, dokladnoscM: 12, zrodlo: 'gps' }, terazMs: 1_757_000_000_000 });
+  const snapshot = zbierajStan({ ...czesci, pozycja: { lat: SRODEK.lat, lon: SRODEK.lon, dokladnoscM: 12, zrodlo: 'gps' }, terazMs: 1_757_000_000_000, zegarMs: 12_345 });
   assert.equal(snapshot.schemat, SCHEMAT_STANU);
   assert.equal(snapshot.wersjaProtokolu, WERSJA_PROTOKOLU);
   assert.equal(snapshot.zapisanoMs, 1_757_000_000_000);
@@ -51,7 +51,7 @@ test('trwałość: snapshot stan-gry/1 jest kompletny i niesie referencje, nie t
 });
 
 test('trwałość: STRAŻNIK — w zapisie nie ma ani słowa z plaintextu paczki (ADR 0007 pkt 4)', () => {
-  const snapshot = zbierajStan({ ...snapshotReferencyjny(), terazMs: 1_757_000_000_000 });
+  const snapshot = zbierajStan({ ...snapshotReferencyjny(), terazMs: 1_757_000_000_000, zegarMs: 12_345 });
   const tekst = serializujStan(snapshot);
   for (const pytanie of PACZKA.pytania) {
     assert.equal(tekst.includes(pytanie.tresc), false, `treść pytania ${pytanie.id} wyciekła do zapisu`);
@@ -64,7 +64,7 @@ test('trwałość: STRAŻNIK — w zapisie nie ma ani słowa z plaintextu paczki
 });
 
 test('trwałość: round-trip serializacja → walidacja odtwarza snapshot 1:1', () => {
-  const snapshot = zbierajStan({ ...snapshotReferencyjny(), terazMs: 1_757_000_000_000 });
+  const snapshot = zbierajStan({ ...snapshotReferencyjny(), terazMs: 1_757_000_000_000, zegarMs: 12_345 });
   const { stan, usterki } = walidujStanSurowy(serializujStan(snapshot));
   assert.deepEqual(usterki, []);
   assert.deepEqual(stan, snapshot);
@@ -72,18 +72,19 @@ test('trwałość: round-trip serializacja → walidacja odtwarza snapshot 1:1',
 
 test('trwałość: zbierajStan odmawia jawnie (TypeError) na brakach i śmieciach', () => {
   const czesci = snapshotReferencyjny();
-  const teraz = { terazMs: 1 };
-  assert.throws(() => zbierajStan({ ...czesci, ...teraz, konfig: null }), TypeError);
-  assert.throws(() => zbierajStan({ ...czesci, ...teraz, stacje: [] }), TypeError);
-  assert.throws(() => zbierajStan({ ...czesci, ...teraz, kontenerPaczki: PACZKA }), TypeError, 'PLAINTEXT paczki musi być odrzucony — przyjmujemy tylko kontener');
-  assert.throws(() => zbierajStan({ ...czesci, ...teraz, rozgrywka: { schemat: 'rozgrywka/1' } }), TypeError);
+  const terazZ = { terazMs: 1, zegarMs: 1 };
+  assert.throws(() => zbierajStan({ ...czesci, terazMs: 1 }), TypeError, 'brak zegarMs = odmowa (kotwica rebazy jest obowiązkowa)');
+  assert.throws(() => zbierajStan({ ...czesci, ...terazZ, konfig: null }), TypeError);
+  assert.throws(() => zbierajStan({ ...czesci, ...terazZ, stacje: [] }), TypeError);
+  assert.throws(() => zbierajStan({ ...czesci, ...terazZ, kontenerPaczki: PACZKA }), TypeError, 'PLAINTEXT paczki musi być odrzucony — przyjmujemy tylko kontener');
+  assert.throws(() => zbierajStan({ ...czesci, ...terazZ, rozgrywka: { schemat: 'rozgrywka/1' } }), TypeError);
   assert.throws(() => zbierajStan({ ...czesci, terazMs: NaN }), TypeError);
-  assert.throws(() => zbierajStan({ ...czesci, ...teraz, pozycja: { lat: 'x', lon: 1 } }), TypeError);
+  assert.throws(() => zbierajStan({ ...czesci, ...terazZ, pozycja: { lat: 'x', lon: 1 } }), TypeError);
   assert.throws(() => zbierajStan(), TypeError);
 });
 
 test('trwałość: walidujStanSurowy — każdy rodzaj uszkodzenia ma własny kod T', () => {
-  const snapshot = zbierajStan({ ...snapshotReferencyjny(), terazMs: 1_757_000_000_000 });
+  const snapshot = zbierajStan({ ...snapshotReferencyjny(), terazMs: 1_757_000_000_000, zegarMs: 12_345 });
   const baza = JSON.parse(serializujStan(snapshot));
 
   const przypadki = [
@@ -93,6 +94,7 @@ test('trwałość: walidujStanSurowy — każdy rodzaj uszkodzenia ma własny ko
     ['obcy schemat', { ...baza, schemat: 'stan-gry/99' }, ['T02']],
     ['stara wersja protokołu', { ...baza, wersjaProtokolu: 'PYT/0.9' }, ['T03']],
     ['zepsuty czas zapisu', { ...baza, zapisanoMs: 'wczoraj' }, ['T08']],
+    ['zepsuty zegar sesji', { ...baza, zegarMs: null }, ['T08']],
     ['zepsuty konfig', { ...baza, konfig: { tryb: 42 } }, ['T06']],
     ['zepsute stacje', { ...baza, stacje: [{ id: 1 }] }, ['T09']],
     ['zepsuty kontener', { ...baza, kontenerPaczki: { schemat: SCHEMAT_KONTENERA, dane: '' } }, ['T05']],
@@ -115,7 +117,7 @@ test('trwałość: walidujStanSurowy — każdy rodzaj uszkodzenia ma własny ko
 });
 
 test('trwałość: budżet 2 MB — walidacja i serializacja odmawiają z kodem T07', () => {
-  const snapshot = zbierajStan({ ...snapshotReferencyjny(), terazMs: 1 });
+  const snapshot = zbierajStan({ ...snapshotReferencyjny(), terazMs: 1, zegarMs: 1 });
   const rozdety = { ...snapshot, dziennikRozgrywki: 'x'.repeat(BUDZET_STANU_BAJTY) };
   assert.throws(() => serializujStan(rozdety), (e) => e.kod === 'T07');
   const { stan, usterki } = walidujStanSurowy(JSON.stringify(rozdety));

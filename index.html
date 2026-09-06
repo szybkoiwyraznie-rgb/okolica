@@ -52,6 +52,15 @@
     <section id="ekran-setup" class="ekran" aria-labelledby="tytul-setup">
       <h2 id="tytul-setup">Ustawienia gry</h2>
 
+      <!-- M6/R6: wznowienie przerwanej gry — jawne, kasowanie dwustopniowe -->
+      <div id="karta-wznowienie" class="karta karta-wznowienie" hidden>
+        <p id="wznowienie-opis" class="duzy"></p>
+        <div class="wiersz">
+          <button id="przycisk-wznow-gre" class="przycisk przycisk-glowny" type="button">▶ Wznów grę</button>
+          <button id="przycisk-kasuj-zapis" class="przycisk" type="button">🗑 Nowa gra (kasuje zapis)</button>
+        </div>
+      </div>
+
       <fieldset class="pole">
         <legend>Sposób poruszania się</legend>
         <div id="lista-trybow" class="segment"></div>

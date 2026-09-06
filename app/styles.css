@@ -517,3 +517,9 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   font-variant-numeric: tabular-nums;
 }
 .tabela-wynikow th { font-size: 14px; color: var(--tekst-slaby); }
+
+/* M6/R6: baner wznowienia gry na ekranie ustawień — wyróżniony, bo to decyzja. */
+.karta-wznowienie {
+  border-color: var(--ostrzezenie);
+  border-width: 2px;
+}
