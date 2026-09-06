@@ -133,6 +133,20 @@ push do `main` przebudowuje stronę automatycznie. Ikony i `manifest.json`
 („dodaj do ekranu głównego") generuje `npm run ikony` — binaria leżą w repo,
 bo Pages serwuje z drzewa, a generator odtwarza je bajt w bajt.
 
+## Repozytorium paczek pytań
+
+Gra potrafi obyć się **bez wołania modelu**: każda rozpoczęta gra zostawia
+na telefonie kopię swojej paczki (stacje + ukryte pytania), a kuratorowane
+paczki publiczne leżą w `data/paczki/` z indeksem `indeks.json`
+(`npm run indeks-paczek`). Na ekranie „Gdzie jesteś?" karta „📦 Paczki dla
+tej okolicy" proponuje dopasowane paczki (geohash5 + promień + wiek + tematy
+zawarte w konfiguracji) — wybór startuje grę bez promptu, bez wklejania,
+bez Overpassa i bez modelu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
+daje plik do publikacji: indeks umieści go dopiero po ręcznym przeglądzie
+źródeł właściciela (pole `meta.przegladZrodel`, brama w narzędziu —
+`data/paczki/README.md`, ADR 0017). Własne repozytorium paczek właściciela
+wskazuje się jednym kluczem w UI (aplikacja tylko czyta).
+
 ## Repozytorium
 
 | Ścieżka | Zawartość |

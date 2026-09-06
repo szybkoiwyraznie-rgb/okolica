@@ -78,7 +78,7 @@ woła modelu**.
       kluczem, timeout i cicha degradacja do „brak propozycji" z logiem) +
       testy przepięć fetch + kontrakty (TO-zestaw/1, brak root-absolute,
       licencja/przegląd źródeł w meta).
-- [ ] **R7 — domknięcie**: README (sekcja repozytorium), ARCHITECTURE
+- [x] **R7 — domknięcie**: README (sekcja repozytorium), ARCHITECTURE
       (moduł + data/paczki), ROADMAP M9, PROJECT_HISTORY, rejestr ADR,
       opis PR #2; brama i CI zielone.
 

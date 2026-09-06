@@ -306,6 +306,13 @@ właściciela, publikacja wybranych paczek po przeglądzie źródeł (ADR 0008 p
 ADR 0010 pkt 4) — **wymaga nowego ADR przed wdrożeniem** (prywatność geohashu,
 licencja treści, moderacja).
 Kryterium: druga gra w tej samej okolicy nie woła modelu.
+Zakres zrealizowany 2026-09-06 (ADR 0017, brama 421/421): kopia lokalna po
+każdej grze, karta propozycji na ekranie pozycji, publiczne `data/paczki/`
+z indeksem i bramą publikacji, pierwsza paczka kuratorowana (Podkowa Leśna,
+źródła zweryfikowane) jako KANDYDAT do przeglądu właściciela. Kryterium
+pokryte testami przepływu (`test/zestawy-ui.test.js`): start z paczki = zero
+modela, zero Overpassa. Do pełni M9 brakuje jednego pola `przegladZrodel`
+wpisanego przez właściciela (publikacja paczki) — `data/paczki/README.md`.
 
 ## M10 — Dopracowanie terenowe
 

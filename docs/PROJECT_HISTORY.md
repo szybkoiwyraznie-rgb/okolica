@@ -510,3 +510,34 @@ tap/pan na żywym telefonie; zielone CI na PR #2.
   ten wpis. **PB6** opis PR #2 rozszerzony o M8.
 - Do kryterium M8 brakuje wyłącznie włączenia Pages przez właściciela
   (Settings → Pages, `WORKFLOW.md` §5) i sprawdzenia telefonu na żywo.
+
+## 2026-09-06 — M9: repozytorium paczek pytań (plan R1–R7)
+
+- **R1** ADR 0017 (Proponowana, wdrożona): schemat publiczny `TO-zestaw/1`
+  (meta z licencją CC BY-SA 4.0 i przeglądem źródeł + jawne stacje + kontener
+  TO-paczka/2), indeks z samych meta, geohash5 jako granularność, moderacja
+  wyłącznie właściciela, konfigurowalny URL repozytorium, kopia lokalna z LRU.
+- **R2** `app/zestawy.js`: czyste walidacje surowe (Z01–Z10), dopasowanie
+  (geohash5, promień, wiek, tematy paczki ⊆ tematy konfiguracji), LRU
+  1,5 MB / 8 wpisów z jawną listą usuniętych; 9 testów.
+- **R3** karta „📦 Paczki dla tej okolicy" na ekranie pozycji: propozycje
+  lokalne od razu, repozytorium asynchronicznie (timeout 6 s, awaria = brak
+  propozycji, nigdy blokada); start gry z paczki pomija stacje/prompt/wklej;
+  kopia lokalna zapisywana po KAŻDYM starcie; eksport TO-zestaw/1; 4 testy
+  przepływu, w tym kryterium „druga gra bez modelu i Overpassa".
+- **R4** `tools/generuj-indeks-paczek.mjs`: brama publikacji w kodzie
+  (schema, licencja, dekodowalność, pokrycie stacji pytaniami, przegląd
+  źródeł); kontrakt indeks↔katalog; `data/paczki/README.md` ze ścieżką
+  publikacji.
+- **R5** pierwsza paczka kuratorowana `podkowa-lesna.zestaw.json`: 3 stacje
+  w przestrzeni publicznej (współrzędne z Wikipedii), 6 pytań, 9 źródeł
+  sprawdzonych 2026-09-06; jako KANDYDAT (znacznik „oczekuje przeglądu" —
+  narzędzie pomija ją z ostrzeżeniem, indeks pozostaje pusty do decyzji
+  właściciela). Pułapka geohash5 odnotowana: Podkowa leży na granicy dwóch
+  komórek (u3q8x / u3qb8) — paczka proponuje się graczom z komórki u3q8x.
+- **R6** testy fetch-repozytorium: propozycja z indeksu, start gry z pliku,
+  override URL (switchability); sklejanie URL pliku względem katalogu
+  indeksu (stub DOM nie ma document.baseURI).
+- **R7** dokumentacja: README (sekcja repozytorium), ARCHITECTURE (drzewo),
+  ROADMAP (domknięcie), ten wpis, opis PR #2.
+- Stan bramy po M9: **421/421** + szablon zgodny; CI zielone na gałęzi.
