@@ -518,6 +518,16 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 }
 .tabela-wynikow th { font-size: 14px; color: var(--tekst-slaby); }
 
+/* M11/P4: kod gry w lobby — duży, czytelny z drugiego telefonu (ADR 0019) */
+.kod-duzy {
+  margin: 6px 0 10px;
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 6px;
+  font-variant-numeric: tabular-nums;
+  color: var(--tekst);
+}
+
 /* M6/R6: baner wznowienia gry na ekranie ustawień — wyróżniony, bo to decyzja. */
 .karta-wznowienie {
   border-color: var(--ostrzezenie);

@@ -15,7 +15,7 @@
  *   bez przeglądarki i bez sieci.
  */
 
-import { biezacyGraczTury } from './wieloosobowa.js?v=m10-1';
+import { biezacyGraczTury } from './wieloosobowa.js?v=m11-1';
 
 export const INTERWALY_MS = Object.freeze({
   lobby: 10_000,

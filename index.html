@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m10-1">
-  <script type="module" src="app/app.js?v=m10-1"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m11-1">
+  <script type="module" src="app/app.js?v=m11-1"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -54,6 +54,42 @@
     <!-- KROK 1: konfiguracja rozgrywki -->
     <section id="ekran-setup" class="ekran" aria-labelledby="tytul-setup">
       <h2 id="tytul-setup">Ustawienia gry</h2>
+
+      <!-- M11/P4: hot-seat albo gra na wielu urządzeniach (ADR 0019) -->
+      <label class="pole">
+        <span>Rodzaj gry</span>
+        <select id="setup-rodzaj">
+          <option value="hotseat">Hot-seat — jeden telefon podawany dalej</option>
+          <option value="multi">Gra na wielu urządzeniach — każdy ma swój telefon</option>
+        </select>
+      </label>
+
+      <div id="karta-multi" class="karta" hidden>
+        <div id="multi-wznowienie" class="karta karta-wznowienie" hidden>
+          <p id="multi-wznowienie-opis" class="duzy"></p>
+          <div class="wiersz">
+            <button id="przycisk-multi-wroc" class="przycisk przycisk-glowny" type="button">↩ Wróć do gry</button>
+            <button id="przycisk-multi-porzuc" class="przycisk" type="button">🗑 Porzuć zapamiętaną grę</button>
+          </div>
+        </div>
+        <label class="pole">
+          <span>Pseudonim (widzą go inni gracze)</span>
+          <input id="multi-pseudonim" type="text" maxlength="24" autocomplete="nickname" spellcheck="false" placeholder="np. Marta">
+        </label>
+        <label class="pole sprawdz"><input id="multi-zgoda" type="checkbox" checked> <span>Zgadzam się na wysyłanie pseudonimu i wyników gry na wspólne konto Google Drive. Współrzędne nigdy nie opuszczają telefonu (ADR 0019).</span></label>
+        <div class="wiersz">
+          <button id="przycisk-multi-zaloz" class="przycisk przycisk-glowny" type="button">🌐 Załóż grę</button>
+          <button id="przycisk-multi-dolacz" class="przycisk" type="button">🔗 Dołącz do gry</button>
+        </div>
+        <details id="multi-most-detale">
+          <summary>Adres mostu (Apps Script) — zaawansowane</summary>
+          <div class="wiersz">
+            <input id="multi-url-mostu" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
+            <button id="przycisk-multi-zapisz-url" class="przycisk" type="button">Zapisz</button>
+          </div>
+          <p class="podpowiedz">Ten sam web app, co repozytorium paczek — obsługuje też gry (ADR 0016, 0019).</p>
+        </details>
+      </div>
 
       <!-- M6/R6: wznowienie przerwanej gry — jawne, kasowanie dwustopniowe -->
       <div id="karta-wznowienie" class="karta karta-wznowienie" hidden>
@@ -150,6 +186,67 @@
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-dalej-pozycja" class="przycisk przycisk-glowny" type="button">📍 Dalej: moja pozycja</button>
       </div>
+    </section>
+
+    <!-- M11/P4: ekran gry wieloosobowej (załóż / dołącz / lobby) -->
+    <section id="ekran-multi" class="ekran" hidden aria-labelledby="tytul-multi">
+      <h2 id="tytul-multi">Gra na wielu urządzeniach</h2>
+      <p class="podpowiedz">Każdy gracz ma swój telefon. Na serwer jadą wyłącznie pseudonimy, zdarzenia gry i wyniki — współrzędne zostają na urządzeniach (ADR 0019 pkt 3).</p>
+      <p id="bledy-multi" class="bledy" role="alert" hidden></p>
+
+      <div id="multi-panel-zaloz" class="karta" hidden>
+        <h3>Załóż grę</h3>
+        <fieldset class="pole">
+          <legend>Tryb gry</legend>
+          <div id="multi-tryby" class="segment"></div>
+          <p id="multi-tryb-opis" class="podpowiedz"></p>
+        </fieldset>
+        <label class="pole">
+          <span>Źródło pytań i stacji</span>
+          <select id="multi-zrodlo"></select>
+        </label>
+        <p id="multi-zaloz-info" class="podpowiedz" role="status"></p>
+        <div class="wiersz">
+          <button id="przycisk-zaloz-gre" class="przycisk przycisk-glowny" type="button">🚀 Zakładam (wyślij na Drive)</button>
+          <button id="przycisk-multi-wstecz-zaloz" class="przycisk" type="button">← Ustawienia</button>
+        </div>
+      </div>
+
+      <div id="multi-panel-dolacz" class="karta" hidden>
+        <h3>Dołącz do gry</h3>
+        <div class="wiersz">
+          <input id="multi-kod" type="text" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="kod gry, np. K2H7QM" aria-label="Kod gry">
+          <button id="przycisk-dolacz-kod" class="przycisk przycisk-glowny" type="button">Dołącz z kodem</button>
+        </div>
+        <p class="podpowiedz">Kod dostajesz od organizatora. Albo wybierz grę z listy poniżej — bez kodu.</p>
+        <ul id="multi-lobby-lista" class="lista-historii"></ul>
+        <p id="multi-lobby-status" class="podpowiedz" role="status"></p>
+        <div class="wiersz">
+          <button id="przycisk-odswiez-lobby" class="przycisk" type="button">🔄 Odśwież listę</button>
+          <button id="przycisk-multi-wstecz-dolacz" class="przycisk" type="button">← Ustawienia</button>
+        </div>
+      </div>
+
+      <div id="multi-panel-lobby" class="karta" hidden>
+        <h3>Lobby</h3>
+        <p class="podpowiedz">Kod gry — przekaż go innym graczom:</p>
+        <p id="lobby-kod" class="kod-duzy" aria-live="polite"></p>
+        <p id="lobby-tryb" class="podpowiedz"></p>
+        <ul id="lobby-gracze" class="lista-historii"></ul>
+        <p id="lobby-status" class="podpowiedz" role="status"></p>
+        <div id="lobby-widownia" hidden>
+          <table class="tabela-wynikow">
+            <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Czas dojść</th></tr></thead>
+            <tbody id="lobby-widownia-wiersze"></tbody>
+          </table>
+        </div>
+        <div class="wiersz">
+          <button id="przycisk-lobby-start" class="przycisk przycisk-glowny" type="button" hidden>▶ Start gry (organizator)</button>
+          <button id="przycisk-lobby-opusc" class="przycisk" type="button">Opuść lobby</button>
+        </div>
+      </div>
+
+      <p id="multi-sync-pasek" class="podpowiedz" role="status"></p>
     </section>
 
     <!-- KROK 2: pozycja -->
@@ -361,6 +458,17 @@
 
       <p id="bledy-gra" class="bledy" role="alert" hidden></p>
       <p id="gra-komunikat" class="podpowiedz" role="status"></p>
+
+      <!-- M11/P4: panel gry wieloosobowej — tury, żywe wyniki, pasek synchronizacji -->
+      <div id="gra-panel-multi" class="karta gra-panel" hidden>
+        <p id="gra-multi-tura" class="duzy" role="status"></p>
+        <table id="gra-multi-tabela" class="tabela-wynikow">
+          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Czas dojść</th></tr></thead>
+          <tbody id="gra-multi-wiersze"></tbody>
+        </table>
+        <p id="gra-multi-sync" class="podpowiedz" role="status"></p>
+        <button id="przycisk-multi-rezygnuj" class="przycisk" type="button">🏳 Rezygnuję z gry</button>
+      </div>
 
       <!-- FAZA A: przygotowanie / oczekiwanie — kto idzie i start odcinka -->
       <div id="gra-panel-oczekuje" class="karta gra-panel">
