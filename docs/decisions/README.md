@@ -35,6 +35,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device) | Zaakceptowana |
 | [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1`, geohash5 w indeksie, CC BY-SA 4.0, moderacja właściciela | Proponowana |
 | [0018](0018-drive-backend-wielozadaniowy.md) | Drive jako backend wielozadaniowy (paczki, parowanie gier, statystyki); wdrożenie odroczone, instrukcja w czacie | Zaakceptowana |
+| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa na wielu urządzeniach: lobby + kod gry, wyścig i tury, zdarzenia bez współrzędnych, rankingi (ogólne/wiek/tematy/lokalizacja) | Zaakceptowana |
 
 ## Szablon ADR
 

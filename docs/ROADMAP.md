@@ -340,20 +340,23 @@ audytem. KRYTERIUM TERENOWE: test właściciela wg §4.3 (offline, bateria,
 sygnały w hałasie, progi dojścia) — wynik do LESSONS, korekta progów w razie
 potrzeby.
 
-## M11 — Gra wieloosobowa na wielu urządzeniach przez Drive (kierunek właściciela, 2026-09-06)
+## M11 — Gra wieloosobowa na wielu urządzeniach przez Drive (decyzje właściciela: ADR 0019)
 
-Parowanie graczy i gier przez wspólny stan na Drive (most Apps Script, ADR
-0018): lobby albo kod gry, synchronizacja tur i wyników między urządzeniami,
-koniec z hot-seat jako jedynym trybem (rewizja ADR 0009). Warunki wejścia:
-wdrożony most właściciela (M9b) + plan kamienia z właścicielem + schematy
-stanu gry (roboczo `RO-stan/1`) i zgody prywatności (ADR 0013).
+Parowanie DWIEMA drogami: lobby z grami w najbliższej okolicy (geohash5) ORAZ
+6-znakowy kod gry do przekazania. Oba tryby rozgrywki: wyścig równoległy i
+tury asynchroniczne (hot-seat zostaje jako tryb offline — aneks ADR 0009).
+Synchronizacja ZDARZENIAMI bez współrzędnych (ADR 0013/0019); stan gry
+`RO-gra/1` na Drive; most waliduje spójność (kolejność tur, stacje, czasy),
+bez antycheatu (gra dla znajomych). Plan:
+`plans/2026-09-06-m11-m12-gra-wieloosobowa-i-rankingi.md`.
 
-## M12 — Profil, statystyki i wyniki gracza na Drive (kierunek właściciela, 2026-09-06)
+## M12 — Profil, statystyki i rankingi gracza na Drive (decyzje właściciela: ADR 0019)
 
-Dane użytkownika (pseudonim, historia gier, punkty) zaciągane i zapisywane
-przez Drive (ADR 0018). Prywatność: każda nowa kategoria danych opuszczających
-urządzenie = jawna zgoda w UI i status. Zależy od M11 (wspólny model
-tożsamości gracza).
+Pseudonim (lokalnie `okolica:pseudonim`) + wyniki gier + pełna historia na
+Drive + rankingi liczone przez most z gier zakończonych: ogólny oraz kategorie
+WIEK, TEMATY i LOKALIZACJA (np. „najlepsi w Podkowie Leśnej" — geohash5/miejsce
+z meta gry). Prywatność: jawna zgoda przy zakładaniu/dołączaniu do gry
+(wymagana dla trybu wieloosobowego). Zależy od M11 (wspólny stan i zdarzenia).
 
 ## Zasady prowadzenia roadmapy
 

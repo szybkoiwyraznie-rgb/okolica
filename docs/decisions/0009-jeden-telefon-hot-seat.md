@@ -61,3 +61,12 @@ wspólnej trasie.
 
 0004 (czasy i dojścia), 0005 (uczciwość trasy), 0010 (eksport stanu),
 0011 (UI „czyja kolejka"), 0013 (prywatność).
+
+## Aneks (2026-09-06): multi-device obok hot-seat (ADR 0019, M11)
+
+Hot-seat na jednym telefonie ZOSTAJE jako tryb domyślny i jedyny działający
+offline. Decyzją właściciela (ADR 0019) dochodzi gra na wielu urządzeniach
+przez most Drive: parowanie lobby+kod, tryby wyścig i tury, synchronizacja
+zdarzeniami BEZ współrzędnych. Punktacja czasu (pkt 5 niniejszego ADR)
+działa w obu trybach per gracz; mediana tempa (ADR 0014) liczna jest z
+odcinków własnego gracza.
