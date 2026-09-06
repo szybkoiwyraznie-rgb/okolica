@@ -478,6 +478,7 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'gra-wynik-szczegoly', 'gra-wynik-gracze',
     'gra-wynik-stacje', 'gra-wynik-stacje-tbody',
     'wynik-eksport', 'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',
+    'przycisk-pobierz-obraz', 'przycisk-udostepnij-obraz',
     'gra-wynik-tekst-detale', 'pole-wynik-tekst',
     'przycisk-pomin-stacje', 'przycisk-zakoncz-gre', 'przycisk-start-gry',
   ];
@@ -488,6 +489,7 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
   assert.match(html, /id="przycisk-start-gry"[^>]*hidden/, 'start gry domyślnie ukryty — pojawi się z przyjętą paczką (R4)');
   assert.match(html, /id="przycisk-udostepnij-wynik"[^>]*hidden/, 'share tylko z navigator.share (M7, decyzja 8)');
   assert.match(html, /id="przycisk-kopiuj-wynik"[^>]*hidden/, 'kopiowanie tylko z navigator.clipboard (M7, decyzja 8)');
+  assert.match(html, /id="przycisk-udostepnij-obraz"[^>]*hidden/, 'udostępnianie obrazu tylko z navigator.canShare+File (M7/P5)');
 });
 
 test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=button', () => {

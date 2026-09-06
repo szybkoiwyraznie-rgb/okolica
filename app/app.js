@@ -31,7 +31,7 @@ import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, 
 import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m6-1';
 import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m6-1';
 import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m6-1';
-import { czasTekst, dystansTekst, etykietaOdcinka, medalTekst, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m6-1';
+import { ROLE_PALETY, czasTekst, dystansTekst, etykietaOdcinka, medalTekst, planObrazuWyniku, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m6-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -1577,6 +1577,103 @@ function pokazWyniki() {
   $('pole-wynik-tekst').value = tekst;
   $('przycisk-udostepnij-wynik').hidden = !(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
   $('przycisk-kopiuj-wynik').hidden = !(typeof navigator !== 'undefined' && Boolean(navigator.clipboard?.writeText));
+  $('przycisk-udostepnij-obraz').hidden = !(typeof navigator !== 'undefined' && typeof navigator.canShare === 'function' && typeof File === 'function');
+}
+
+/** Nazwa pliku z obrazem wyniku (M7/P5) — ten sam oczyszczony kod gry. */
+function nazwaPlikuObrazuWyniku(kodGry) {
+  return `okolica-${oczyscKodGry(kodGry)}.wynik.png`;
+}
+
+/** Paleta awaryjna — wartości 1:1 z `:root` w styles.css (motyw jasny).
+ *  Obraz musi mieć kolory nawet gdy `getComputedStyle` zawiedzie. */
+const PALETA_AWARYJNA = Object.freeze({
+  tlo: '#f6f2e9', karta: '#fffdf8', tekst: '#1d2321', tekstSlaby: '#5c6663',
+  akcent: '#2f6f4f', linia: '#d9d2c3', ostrzezenie: '#b4531f',
+});
+
+/** Konkretne kolory z ról planu: zmienne CSS bieżącego motywu (plan M7, ryzyko
+ *  „toBlob i motywy") — ciemny motyw nie rozjeżdża się z czystym planem. */
+function paletaZCss() {
+  const paleta = { ...PALETA_AWARYJNA };
+  try {
+    const style = typeof window !== 'undefined' && window.getComputedStyle
+      ? window.getComputedStyle(document.documentElement)
+      : null;
+    if (style) {
+      for (const [rola, zmienna] of Object.entries(ROLE_PALETY)) {
+        const wartosc = String(style.getPropertyValue(zmienna) ?? '').trim();
+        if (wartosc) paleta[rola] = wartosc;
+      }
+    }
+  } catch (e) {
+    void e; // awaryjna paleta to nie wstyd — gorszy byłby brak obrazu
+  }
+  return paleta;
+}
+
+/** Cienki wykonawca planu (wzorzec mapy z M2): tylko przekazuje komendy do
+ *  kontekstu 2d — zero matematyki i zero decyzji w warstwie DOM. */
+function rysujWynikNaCanvas(plan, canvas, paleta) {
+  canvas.width = plan.szerokosc;
+  canvas.height = plan.wysokosc;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('brak kontekstu 2d canvas w tej przeglądarce');
+  const kolor = (rola) => paleta[rola] ?? paleta.tekst;
+  for (const k of plan.komendy) {
+    if (k.typ === 'prostokat') {
+      ctx.fillStyle = kolor(k.kolorRola);
+      ctx.fillRect(k.x, k.y, k.w, k.h);
+    } else if (k.typ === 'tekst') {
+      ctx.fillStyle = kolor(k.kolorRola);
+      ctx.font = `${k.waga ?? 400} ${k.rozmiar}px system-ui, -apple-system, Segoe UI, sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.fillText(k.tekst, k.x, k.y);
+    } else if (k.typ === 'linia') {
+      ctx.strokeStyle = kolor(k.kolorRola);
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(k.x1, k.y1);
+      ctx.lineTo(k.x2, k.y2);
+      ctx.stroke();
+    }
+  }
+  return canvas;
+}
+
+/** Eksport obrazu wyniku (ADR 0010 pkt 5): plan → canvas → PNG → share albo
+ *  plik. `udostepnij=true` próbuje `navigator.share({files})` i uczciwie degra
+ *  do pobrania, gdy przeglądarka nie umie dzielić się plikami. */
+async function eksportujWynikObraz(udostepnij = false) {
+  const r = STAN.rozgrywka;
+  if (!r) return;
+  try {
+    const plan = planObrazuWyniku({
+      podsumowanie: podsumowanie(r),
+      konfig: STAN.konfig,
+      miejsce: STAN.konfig.geokodacja && STAN.miejsce ? STAN.miejsce : null,
+      data: dataWynikuTekst(),
+      sprawiedliwosc: sprawiedliwoscTrasy(STAN.stacje),
+      przerwana: STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec,
+    });
+    const nazwa = nazwaPlikuObrazuWyniku(r.kodGry ?? STAN.konfig?.kodGry);
+    const canvas = document.createElement('canvas');
+    rysujWynikNaCanvas(plan, canvas, paletaZCss());
+    const blob = await new Promise((rozwiaz) => canvas.toBlob(rozwiaz, 'image/png'));
+    if (!blob) throw new Error('toBlob nie zwrócił obrazu');
+    const plik = typeof File === 'function' ? new File([blob], nazwa, { type: 'image/png' }) : null;
+    if (udostepnij && plik && typeof navigator.canShare === 'function' && navigator.canShare({ files: [plik] })) {
+      await navigator.share({ title: 'Tajemnicza okolica — wynik gry', files: [plik] });
+      return; // udostępnione systemowo — plik nie jest potrzebny
+    }
+    pobierzPlik(nazwa, blob, 'image/png');
+    status(udostepnij
+      ? 'Udostępnianie obrazu niedostępne w tej przeglądarce — obraz wyniku zapisany jako plik .png.'
+      : 'Obraz wyniku zapisany jako plik .png.');
+  } catch (e) {
+    if (e?.name === 'AbortError') return; // rezygnacja z udostępniania jest cicha
+    status(`Nie udało się zapisać obrazu wyniku: ${e?.message ?? e}. Eksport tekstowy (.txt) działa bez canvas.`);
+  }
 }
 
 /* ---------------------------------------------------------------- prompt */
@@ -2231,6 +2328,8 @@ function start() {
     pobierzPlik(nazwaPlikuWyniku(STAN.rozgrywka?.kodGry ?? STAN.konfig?.kodGry), STAN.wynikTekst, 'text/plain;charset=utf-8');
     status('Wynik zapisany jako plik .txt.');
   });
+  $('przycisk-pobierz-obraz').addEventListener('click', () => { void eksportujWynikObraz(false); });
+  $('przycisk-udostepnij-obraz').addEventListener('click', () => { void eksportujWynikObraz(true); });
 
   sprawdzZapisGry(); // M6/R6: baner wznowienia, jeśli telefon pamięta grę
   pokazEkran('setup');

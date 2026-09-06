@@ -70,7 +70,7 @@ prowadzącego (B12), publikacja Pages i manifest (M8), offline/service worker
       w panelu D: „⤴ Udostępnij wynik" (`navigator.share` gdy dostępny),
       „📋 Kopiuj wynik" (clipboard + jawny status), „⬇ Wynik .txt"
       (`pobierzPlik`); testy czyste + integracyjne (stub clipboard/share).
-- [ ] **P5 — eksport obrazkowy:** `planObrazuWyniku(podsumowanie, { motyw,
+- [x] **P5 — eksport obrazkowy:** `planObrazuWyniku(podsumowanie, { motyw,
       skala })` (czysta; zwraca listę komend `{ typ: 'tlo'|'tekst'|'linia'|
       'prostokat', … }` — wzorzec planu rysowania mapy), wykonawca
       `rysujWynikNaCanvas(plan, canvas)` w `app.js` (cienki: tylko przekazuje

@@ -10,10 +10,12 @@ import { join } from 'node:path';
 
 import {
   PROG_MEDALU,
+  ROLE_PALETY,
   czasTekst,
   dystansTekst,
   etykietaOdcinka,
   medalTekst,
+  planObrazuWyniku,
   sprawiedliwoscTrasy,
   tempoTekst,
   wynikTekstowy,
@@ -190,4 +192,62 @@ test('wynik: STRAŻNIK prywatności — tekst z prawdziwej gry bez pytań i bez 
     assert.equal(tekst.includes(s.lat.toFixed(4)), false, `współrzędne stacji ${s.id} wyciekły`);
   }
   assert.match(tekst, /stacja 1 /, 'stacje są NUMERAMI — jak na mapie gry');
+});
+
+test('wynik: planObrazuWyniku — deterministyczny plan z ROLAMI kolorów (zero konkretów)', () => {
+  const wejscie = {
+    podsumowanie: PODSUMOWANIE, konfig: KONFIG, miejsce: 'Warszawa Śródmieście',
+    data: '2026-09-06 14:32 UTC',
+    sprawiedliwosc: { sredniaM: 823, odchylenieM: 5, udzialOdchylenia: 0.006, sieciowe: false, medal: true },
+  };
+  const plan = planObrazuWyniku(wejscie);
+  assert.deepEqual(planObrazuWyniku(wejscie), plan, 'plan jest deterministyczny (testy bez pikseli)');
+  assert.equal(plan.szerokosc, 1080, 'domyślnie 2× gęstość');
+  assert.ok(plan.wysokosc > 500 && plan.wysokosc < 4000, `wysokosc z treści: ${plan.wysokosc}`);
+
+  assert.equal(plan.komendy[0].typ, 'prostokat');
+  assert.equal(plan.komendy[0].kolorRola, 'tlo');
+  assert.deepEqual([plan.komendy[0].w, plan.komendy[0].h], [plan.szerokosc, plan.wysokosc], 'tło na cały obraz');
+  assert.equal(plan.komendy[1].kolorRola, 'karta', 'karta wyniku na drugim planie');
+
+  const teksty = plan.komendy.filter((k) => k.typ === 'tekst').map((k) => k.tekst);
+  assert.ok(teksty.includes('TAJEMNICZA OKOLICA'), 'marka na obrazie');
+  assert.ok(teksty.includes('WYNIK GRY'));
+  assert.ok(teksty.some((x) => x === '🏆 Anna'), 'zwycięzca');
+  assert.ok(teksty.some((x) => x === '120 pkt'), 'duże punkty zwycięzcy');
+  assert.ok(teksty.includes('1. Anna — 120 pkt · poprawne 2/2 · czas odcinków 4 min 32 s'), 'linie rankingu WSPÓLNE z formatem tekstowym');
+  assert.ok(teksty.some((x) => x.startsWith('czas 21 min 12 s · zaliczone 2 z 3')), 'statystyki gry');
+  assert.ok(teksty.some((x) => x.startsWith('🏅 Uczciwa trasa')), 'medal na obrazie');
+  assert.ok(plan.komendy.some((k) => k.typ === 'linia'), 'separatory sekcji');
+  assert.equal(teksty.some((x) => x.includes('stacja 1')), false, 'stacje zostają w tekście — obraz to esencja (plan M7/P5)');
+
+  // kolory: WYŁĄCZNIE role z ROLE_PALETY — konkrety bierze wykonawca z CSS motywu
+  const json = JSON.stringify(plan);
+  assert.equal(json.includes('#'), false, 'zero konkretnych kolorów w planie');
+  const role = new Set(Object.keys(ROLE_PALETY));
+  for (const k of plan.komendy) assert.ok(role.has(k.kolorRola), `komenda z rolą spoza palety: ${k.kolorRola}`);
+  assert.equal(ROLE_PALETY.karta, '--tlo-karta', 'role wskazują zmienne CSS');
+
+  // prywatność: obraz nie niesie współrzędnych ani pytań
+  assert.equal(json.includes('52.2297'), false);
+  for (const pytanie of PACZKA.pytania) assert.equal(json.includes(pytanie.tresc), false);
+});
+
+test('wynik: planObrazuWyniku — warianty (przerwana, brak zwycięzcy, szerokość) i odmowy', () => {
+  const baza = { podsumowanie: PODSUMOWANIE, konfig: KONFIG };
+  const przerwany = planObrazuWyniku({ ...baza, przerwana: true });
+  assert.ok(przerwany.komendy.some((k) => k.typ === 'tekst' && k.tekst.includes('przerwana ręcznie')));
+  assert.ok(przerwany.komendy.some((k) => k.kolorRola === 'ostrzezenie'), 'adnotacja przerwana w kolorze ostrzeżenia');
+
+  const bezZwyciezcy = planObrazuWyniku({ ...baza, podsumowanie: { ...PODSUMOWANIE, zwyciezca: null } });
+  assert.ok(bezZwyciezcy.komendy.some((k) => k.typ === 'tekst' && k.tekst.includes('brak zwycięzcy')));
+
+  const maly = planObrazuWyniku({ ...baza, szerokosc: 540 });
+  assert.equal(maly.szerokosc, 540);
+  const tytulDuzy = planObrazuWyniku(baza).komendy.find((k) => k.tekst === 'WYNIK GRY');
+  const tytulMaly = maly.komendy.find((k) => k.tekst === 'WYNIK GRY');
+  assert.ok(tytulMaly.rozmiar < tytulDuzy.rozmiar, 'czcionki skalują się z szerokością');
+
+  assert.throws(() => planObrazuWyniku({ ...baza, szerokosc: 100 }), TypeError, 'szerokosc < 320');
+  assert.throws(() => planObrazuWyniku({ konfig: KONFIG }), TypeError, 'brak podsumowania');
 });

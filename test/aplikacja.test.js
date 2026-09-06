@@ -1453,6 +1453,8 @@ test('M7: brak clipboarda i share — przyciski uczciwie ukryte, plik i pole zos
   assert.equal(dom.pobierz('przycisk-udostepnij-wynik').hidden, true, 'bez navigator.share przycisk nie kłamie');
   assert.equal(dom.pobierz('przycisk-kopiuj-wynik').hidden, true, 'bez navigator.clipboard przycisk nie kłamie');
   assert.equal(dom.pobierz('przycisk-pobierz-wynik').hidden, false, 'plik jest ścieżką dla każdego');
+  assert.equal(dom.pobierz('przycisk-udostepnij-obraz').hidden, true, 'bez navigator.canShare brak udostępniania obrazu (P5)');
+  assert.equal(dom.pobierz('przycisk-pobierz-obraz').hidden, false, 'canvas jest wszędzie — obraz .png zawsze');
   assert.match(dom.pobierz('pole-wynik-tekst').value, /WYNIK GRY/, 'tekst zawsze można zaznaczyć ręcznie');
 });
 
@@ -1466,4 +1468,48 @@ test('M7: ręczne zakończenie — tekst wyniku mówi wprost, że gra przerwana 
   dom.kliknij('przycisk-zakoncz-gre'); // wykonanie → wczesny wynik
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false);
   assert.match(dom.pobierz('pole-wynik-tekst').value, /\(gra przerwana ręcznie — wynik wczesny\)/, 'uczciwa adnotacja w udostępnianym tekście');
+});
+
+test('M7: eksport obrazu wyniku — plan przechodzi przez canvas do PNG (plik i share z File)', async () => {
+  const { dom } = await graGotowaDoStartu();
+  const udostepnione = [];
+  Object.assign(dom.navigator, {
+    canShare: (dane) => Boolean(dane?.files?.length),
+    share: async (dane) => { udostepnione.push(dane); },
+  });
+  zaczynijGre(dom);
+  for (const i of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-pomin-stacje');
+  }
+  assert.equal(dom.pobierz('przycisk-pobierz-obraz').hidden, false);
+  assert.equal(dom.pobierz('przycisk-udostepnij-obraz').hidden, false, 'canShare + File → przycisk widoczny');
+
+  // pobranie: jeden canvas, plan przerysowany co do komendy, PNG do pliku
+  const przed = dom.utworzone.length;
+  dom.kliknij('przycisk-pobierz-obraz');
+  await czekaj(80);
+  const canvasy = dom.utworzone.slice(przed).filter((el) => String(el.tagName).toLowerCase() === 'canvas');
+  assert.equal(canvasy.length, 1, 'dokładnie jeden canvas na eksport');
+  const canvas = canvasy[0];
+  assert.equal(canvas.width, 1080, 'szerokość z planu');
+  assert.ok(canvas.height > 500, 'wysokość z treści planu');
+  const teksty = canvas.komendy.filter((k) => k.op === 'fillText').map((k) => k.tekst);
+  assert.ok(teksty.includes('TAJEMNICZA OKOLICA'), 'wykonawca przekazuje teksty planu');
+  assert.ok(teksty.some((x) => x.includes('🏆 Gracz 1')), 'zwycięzca na obrazie');
+  assert.ok(teksty.some((x) => x.startsWith('1. Gracz 1 — 0 pkt')), 'ranking wspólnym formatem');
+  assert.ok(canvas.komendy.some((k) => k.op === 'fillRect'), 'tło i karta przerysowane');
+  assert.ok(canvas.komendy.some((k) => k.op === 'stroke'), 'separatory przerysowane');
+  const kolory = canvas.komendy.filter((k) => k.fillStyle).map((k) => k.fillStyle);
+  assert.ok(kolory.includes('#f6f2e9'), 'paleta z getComputedStyle motywu (atrapa :root) — nie gołe role');
+  assert.equal(teksty.some((x) => x.includes('52.2297')), false, 'zero współrzędnych na obrazie');
+  assert.match(dom.pobierz('status').textContent, /Obraz wyniku zapisany jako plik .png/);
+
+  // udostępnienie: canShare({files}) → navigator.share dostaje File o nazwie z oczyscKodGry
+  dom.kliknij('przycisk-udostepnij-obraz');
+  await czekaj(80);
+  assert.equal(udostepnione.length, 1);
+  assert.equal(udostepnione[0].files.length, 1);
+  assert.equal(udostepnione[0].files[0].name, 'okolica-gra.wynik.png', 'konfig bez kodGry → klucz „gra" (jak w zapisie M6)');
+  assert.equal(udostepnione[0].files[0].type, 'image/png');
 });

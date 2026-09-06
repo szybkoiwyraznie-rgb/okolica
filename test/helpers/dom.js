@@ -130,6 +130,8 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
   const elementy = new Map();
 
   const prostokaty = new Map();
+  /** Wszystkie elementy utworzone przez aplikację (`document.createElement`) — testy canvasa M7/P5. */
+  const utworzone = [];
 
   const pobierz = (id) => {
     if (!elementy.has(id)) elementy.set(id, stubElementu(id, ukryte, { prostokat: prostokaty.get(id) ?? null }));
@@ -146,7 +148,36 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     getElementById: pobierz,
     querySelector() { return null; },
     querySelectorAll() { return []; },
-    createElement(typ) { return stubElementu(typ, ukryte); },
+    createElement(typ) {
+      const el = stubElementu(typ, ukryte);
+      utworzone.push(el);
+      if (String(typ).toLowerCase() === 'canvas') {
+        // atrapa canvas 2d: REJESTRUJE komendy (test wykonawcy planu), toBlob
+        // oddaje Blob-asynchronicznie jak prawdziwy (M7/P5)
+        el.width = 0;
+        el.height = 0;
+        el.komendy = [];
+        el.getContext = (rodzaj) => {
+          if (rodzaj !== '2d') return null;
+          if (!el._kontekst) {
+            const komendy = el.komendy;
+            el._kontekst = {
+              fillStyle: '', strokeStyle: '', lineWidth: 1, font: '', textAlign: 'left', textBaseline: 'alphabetic',
+              fillRect(x, y, w, h) { komendy.push({ op: 'fillRect', x, y, w, h, fillStyle: this.fillStyle }); },
+              fillText(tresc, x, y) { komendy.push({ op: 'fillText', tekst: String(tresc), x, y, fillStyle: this.fillStyle, font: this.font, textAlign: this.textAlign }); },
+              beginPath() {},
+              moveTo(x, y) { komendy.push({ op: 'moveTo', x, y }); },
+              lineTo(x, y) { komendy.push({ op: 'lineTo', x, y }); },
+              stroke() { komendy.push({ op: 'stroke', strokeStyle: this.strokeStyle, lineWidth: this.lineWidth }); },
+              measureText(tresc) { return { width: String(tresc).length * 8 }; },
+            };
+          }
+          return el._kontekst;
+        };
+        el.toBlob = (zwrotnik, typMime) => { setTimeout(() => zwrotnik(new Blob(['atrapa-png'], { type: typMime || 'image/png' })), 0); };
+      }
+      return el;
+    },
     createElementNS(przestrzen, typ) {
       const el = stubElementu(typ, ukryte);
       el.przestrzenNazw = przestrzen;
@@ -158,6 +189,16 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
   const zdarzeniaOkna = {};
   const windowStub = {
     scrollTo() {},
+    // paleta jasna 1:1 z :root w styles.css — wykonawca planu obrazu (M7/P5)
+    // bierze konkretne kolory z ról przez getComputedStyle
+    getComputedStyle() {
+      const zmienne = {
+        '--tlo': '#f6f2e9', '--tlo-karta': '#fffdf8', '--tekst': '#1d2321',
+        '--tekst-slaby': '#5c6663', '--akcent': '#2f6f4f', '--linia': '#d9d2c3',
+        '--ostrzezenie': '#b4531f',
+      };
+      return { getPropertyValue: (nazwa) => zmienne[String(nazwa)] ?? '' };
+    },
     addEventListener(typ, fn) { (zdarzeniaOkna[typ] ??= []).push(fn); },
     matchMedia() { return { matches: false, addEventListener() {}, addListener() {} }; },
     // przeglądarka wystawia timery także na `window` — kod, który woła
@@ -198,6 +239,7 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     elementy,
     pobierz,
     pamiec,
+    utworzone,
     document: documentStub,
     window: windowStub,
     navigator: navigatorStub,
