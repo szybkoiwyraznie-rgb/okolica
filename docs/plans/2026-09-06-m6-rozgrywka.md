@@ -39,7 +39,7 @@ Proponowana, B17: nie wcześniej niż po M8), gra na kilku urządzeniach
 ## Etapy
 
 - [ ] **R1 — plan (ten plik):** zakres, decyzje, ryzyka; commit + push.
-- [ ] **R2 — `app/trwalosc.js` (czyste):** `SCHEMAT_STANU='stan-gry/1'`,
+- [x] **R2 — `app/trwalosc.js` (czyste):** `SCHEMAT_STANU='stan-gry/1'`,
       `zbierajStan({konfig, stacje, kontenerPaczki, rozgrywka, pozycja, fazaEkranu, czasMs})`
       → snapshot; `walidujStanSurowy(tekst)` → `{stan, usterki}` (kody T:
       schemat, wersja protokołu, kształty konfig/stacje/rozgrywka, budżet
