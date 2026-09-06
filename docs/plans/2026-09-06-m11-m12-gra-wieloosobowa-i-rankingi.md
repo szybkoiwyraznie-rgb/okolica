@@ -43,7 +43,7 @@ stacjaId?, dane?, tUrzadzenia }`; most nadaje `kolejnosc` i `tSerwera`.
 
 - [x] **P0 — decyzje + plan**: ADR 0019, aneks ADR 0009, ROADMAP M11/M12,
       PROJECT_HISTORY, ten plik.
-- [ ] **P1 — most: rozbudowa Apps Script** (`docs/setup/apps-script-repo-paczek.gs`):
+- [x] **P1 — most: rozbudowa Apps Script** (`docs/setup/apps-script-repo-paczek.gs`):
       katalogi `okolica-gry-{otwarte,zakonczone}` w `setup()`; akcje:
       `gra-zaloz` (POST: pseudonim, tryb, zestaw z telefonu → RO-gra/1 lobby,
       kod 6 znaków bez 0/O/1/I generowany z puli wolnych, wygasanie 24 h),
@@ -55,7 +55,7 @@ stacjaId?, dane?, tUrzadzenia }`; most nadaje `kolejnosc` i `tSerwera`.
       `gra-zakoncz` (POST: agregacja wyników, przeniesienie do zakończonych),
       `ranking` (GET: ogólny + kategorie wiek/tematy/lokalizacja z gier
       zakończonych — agregacja po `konfiguracja` i `wyniki`).
-- [ ] **P2 — moduł czysty `app/wieloosobowa.js`**: walidacje surowe RO-gra/1
+- [x] **P2 — moduł czysty `app/wieloosobowa.js`**: walidacje surowe RO-gra/1
       i RO-zdarzenie/1 (kody R01–R1x, odmowa przy obcym schemacie), filtr
       lobby po geohash5 + sąsiednich komórkach (wzorzec ADR 0017), maszynka
       stanów (czyja tura; wyścig: wszyscy równolegle), przeliczanie wyników ze

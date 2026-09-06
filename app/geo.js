@@ -163,7 +163,7 @@ export function siatkaKafelkow({ widok, rozmiar, maxZoom = 19 }) {
   };
 }
 
-const ALFABET_GEOHASH = '0123456789bcdefghjkmnpqrstuvwxyz';
+export const ALFABET_GEOHASH = '0123456789bcdefghjkmnpqrstuvwxyz';
 
 /**
  * Geohash o zadanej precyzji (1–12). Precyzja 6 ≈ 1,2 × 0,61 km — klucz cache

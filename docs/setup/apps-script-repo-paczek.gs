@@ -16,12 +16,20 @@
  *
  * Zero kluczy API w aplikacji (ADR 0001): web app.deployowana jako
  * „każdy może być anonimowy”, URL jest jedyną zdolnością.
+ *
+ * M11 (ADR 0019): TEN SAM most obsługuje gry wieloosobowe na wielu
+ * urządzeniach — doPost: gra-zaloz / gra-dolacz / gra-start / gra-zdarzenie /
+ * gra-zakoncz; doGet: gry (lobby) / gra-stan / ranking. Stan gry (RO-gra/1)
+ * żyje w katalogach okolica-gry-{otwarte,zakonczone}; zdarzenia NIE zawierają
+ * współrzędnych graczy (ADR 0013/0019 pkt 3 — pola lat/lon są kasowane).
  */
 
 const FOLDERY = {
   przeglad: 'okolica-paczki-do-przegladu',
   zaakceptowane: 'okolica-paczki-zaakceptowane',
   odrzucone: 'okolica-paczki-odrzucone',
+  gryOtwarte: 'okolica-gry-otwarte',
+  gryZakonczone: 'okolica-gry-zakonczone',
 };
 const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 const SCHEMAT_KONTENERA = 'TO-paczka/2';
@@ -40,7 +48,7 @@ function folder(nazwa) {
   return DriveApp.createFolder(nazwa);
 }
 
-/** Jednorazowo: zakłada trzy katalogi. Uruchom z edytora po wdrożeniu. */
+/** Jednorazowo: zakłada katalogi (paczki + gry). Uruchom z edytora po wdrożeniu. */
 function setup() {
   Object.values(FOLDERY).forEach(folder);
   return 'katalogi gotowe: ' + Object.values(FOLDERY).join(', ');
@@ -148,6 +156,9 @@ function doGet(e) {
   try {
     if (akcja === 'indeks') return json(budujIndeks());
     if (akcja === 'paczka') return json(paczkaPrzezId(e.parameter.id));
+    if (akcja === 'gry') return json(listaGier());
+    if (akcja === 'gra-stan') return json(stanGry(e.parameter.kod, e.parameter.id));
+    if (akcja === 'ranking') return json(rankingi());
     if (akcja === 'przeglad') return stronaPrzegladu(e.parameter);
     return json({ blad: 'nieznana akcja' });
   } catch (err) {
@@ -157,8 +168,18 @@ function doGet(e) {
 
 function doPost(e) {
   try {
-    const plik = JSON.parse(e.postData.contents);
-    return json(przyjmijKandydata(plik));
+    const cialo = JSON.parse(e.postData.contents);
+    // M9b: wysyłka zestawu — ciało jest PLIKIEM TO-zestaw/1 (bez pola akcja).
+    if (cialo.schemat === SCHEMAT_ZESTAWU) return json(przyjmijKandydata(cialo));
+    // M11 (ADR 0019): polecenia i zdarzenia gier wieloosobowych.
+    switch (cialo.akcja) {
+      case 'gra-zaloz': return json(zalozGre(cialo));
+      case 'gra-dolacz': return json(dolaczDoGry(cialo));
+      case 'gra-start': return json(startGryMulti(cialo));
+      case 'gra-zdarzenie': return json(przyjmijZdarzenie(cialo));
+      case 'gra-zakoncz': return json(zakonczGre(cialo));
+      default: return json({ ok: false, blad: 'nieznana akcja albo schemat ciała' });
+    }
   } catch (err) {
     return json({ ok: false, blad: String((err && err.message) || err) });
   }
@@ -285,4 +306,357 @@ function przenies(id, nazwaFolderu) {
   const rodzice = plik.getParents();
   while (rodzice.hasNext()) rodzice.next().removeFile(plik);
   cel.addFile(plik);
+}
+
+/* --------------------------------------- gry wieloosobowe (M11, ADR 0019) */
+
+const SCHEMAT_GRY = 'RO-gra/1';
+const SCHEMAT_ZDARZENIA = 'RO-zdarzenie/1';
+const ALFABET_KODU = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // bez 0/O/1/I (kod czyta się przez telefon)
+const DLUGOSC_KODU = 6;
+const MAKS_GRACZY = 8;
+const WYGASANIE_LOBBY_MS = 24 * 60 * 60 * 1000; // otwarta gra gaśnie po 24 h (plan M11, ryzyko „porzucone lobby")
+const TYPY_ZDARZEN = ['start', 'dojscie', 'odpowiedz', 'rezygnacja', 'koniec'];
+const POLA_ZAKAZANE_W_ZDARZENIU = ['lat', 'lon', 'szerokosc', 'dlugosc', 'latitude', 'longitude']; // ADR 0013/0019 pkt 3
+
+/** Zapis pod LockService — stany wyścigu dwóch urządzeń (plan M11, ryzyko 2). */
+function zBlokada(fn) {
+  const blokada = LockService.getScriptLock();
+  try {
+    blokada.waitLock(20000);
+    return fn();
+  } catch (err) {
+    return { ok: false, blad: 'most jest zajęty — spróbuj ponownie za chwilę (' + ((err && err.message) || err) + ')' };
+  } finally {
+    try { blokada.releaseLock(); } catch (e2) { /* nie było blokady */ }
+  }
+}
+
+function nazwaPlikuGry(kod) { return 'gra-' + kod + '.json'; }
+
+/** Kod gry: 6 znaków z alfabetu bez mylących znaków, unikalny w obu katalogach. */
+function wolnyKod() {
+  for (let proba = 0; proba < 40; proba += 1) {
+    let kod = '';
+    for (let i = 0; i < DLUGOSC_KODU; i += 1) kod += ALFABET_KODU.charAt(Math.floor(Math.random() * ALFABET_KODU.length));
+    const zajety = folder(FOLDERY.gryOtwarte).getFilesByName(nazwaPlikuGry(kod)).hasNext()
+      || folder(FOLDERY.gryZakonczone).getFilesByName(nazwaPlikuGry(kod)).hasNext();
+    if (!zajety) return kod;
+  }
+  return null;
+}
+
+function znajdzGre(kod, idGry) {
+  try {
+    if (idGry) {
+      const plik = DriveApp.getFileById(idGry);
+      return { plik, gra: JSON.parse(plik.getBlob().getDataAsString('UTF-8')) };
+    }
+    if (kod) {
+      const k = String(kod).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      let it = folder(FOLDERY.gryOtwarte).getFilesByName(nazwaPlikuGry(k));
+      if (!it.hasNext()) it = folder(FOLDERY.gryZakonczone).getFilesByName(nazwaPlikuGry(k));
+      if (!it.hasNext()) return null;
+      const plik = it.next();
+      return { plik, gra: JSON.parse(plik.getBlob().getDataAsString('UTF-8')) };
+    }
+  } catch (err) {
+    return null;
+  }
+  return null;
+}
+
+function zapiszGre(plik, gra) { plik.setContent(JSON.stringify(gra, null, 2)); }
+
+function bledyGryKandydata(dane) {
+  const bledy = [];
+  if (!dane || (dane.tryb !== 'wyscig' && dane.tryb !== 'tury')) bledy.push('tryb musi być „wyscig” albo „tury”');
+  const org = dane && dane.organizator;
+  const pseudonim = org && typeof org.pseudonim === 'string' ? org.pseudonim.trim() : '';
+  if (!pseudonim) bledy.push('pseudonim organizatora jest wymagany');
+  else if (pseudonim.length > 24) bledy.push('pseudonim maks. 24 znaki');
+  const k = dane && dane.konfiguracja;
+  if (!k || !(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0) || typeof k.wiek !== 'string'
+    || !Array.isArray(k.tematy) || !k.tematy.length || typeof k.miejsce !== 'string'
+    || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
+    bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5)');
+  }
+  const z = dane && dane.zestaw;
+  if (!z || !Array.isArray(z.stacje) || !z.stacje.length || !z.kontener
+    || z.kontener.schemat !== SCHEMAT_KONTENERA || !z.meta) {
+    bledy.push('zestaw gry wymaga stacji, kontenera ' + SCHEMAT_KONTENERA + ' i metadanych');
+  } else if (k && z.stacje.length !== k.liczbaStacji) {
+    bledy.push('liczba stacji zestawu nie zgadza się z konfiguracją');
+  }
+  return bledy;
+}
+
+/** POST gra-zaloz: lobby z kodem (organizator + jego zestaw z telefonu). */
+function zalozGre(dane) {
+  return zBlokada(() => {
+    const bledy = bledyGryKandydata(dane);
+    if (bledy.length) return { ok: false, blad: bledy.join('; ') };
+    const kod = wolnyKod();
+    if (!kod) return { ok: false, blad: 'brak wolnych kodów gier — spróbuj później' };
+    const teraz = new Date().toISOString();
+    const gra = {
+      schemat: SCHEMAT_GRY,
+      kod,
+      idGry: null,
+      tryb: dane.tryb,
+      stan: 'lobby',
+      utworzono: teraz,
+      organizatorId: 'g-1',
+      gracze: [{ id: 'g-1', pseudonim: String(dane.organizator.pseudonim).trim().slice(0, 24), dolaczyl: teraz }],
+      konfiguracja: dane.konfiguracja,
+      zestaw: { stacje: dane.zestaw.stacje, kontener: dane.zestaw.kontener, meta: dane.zestaw.meta },
+      zdarzenia: [],
+      wyniki: {},
+    };
+    const plik = folder(FOLDERY.gryOtwarte).createFile(nazwaPlikuGry(kod), JSON.stringify(gra, null, 2), 'application/json');
+    gra.idGry = plik.getId();
+    zapiszGre(plik, gra); // idGry ląduje w stanie (lobby odsyła je graczom)
+    return { ok: true, gra };
+  });
+}
+
+/** Lobby: otwarte gry BEZ kodów i BEZ zestawów — dołączenie kliknięciem przez idGry. */
+function archiwizujPrzeterminowane() {
+  const pliki = folder(FOLDERY.gryOtwarte).getFiles();
+  const terazMs = Date.now();
+  while (pliki.hasNext()) {
+    const plik = pliki.next();
+    try {
+      const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+      if (gra.schemat !== SCHEMAT_GRY) continue;
+      const wiekMs = terazMs - new Date(gra.utworzono).getTime();
+      if (wiekMs > WYGASANIE_LOBBY_MS && gra.stan !== 'zakonczona') {
+        gra.stan = 'archiwum';
+        zapiszGre(plik, gra);
+        przenies(plik.getId(), FOLDERY.gryZakonczone);
+      }
+    } catch (err) { /* uszkodzony plik zostaje — nie archiwizujemy na siłę */ }
+  }
+}
+
+function listaGier() {
+  archiwizujPrzeterminowane();
+  const wpisy = [];
+  const pliki = folder(FOLDERY.gryOtwarte).getFiles();
+  while (pliki.hasNext()) {
+    const plik = pliki.next();
+    try {
+      const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+      if (gra.schemat !== SCHEMAT_GRY || gra.stan === 'zakonczona' || gra.stan === 'archiwum') continue;
+      if (gra.gracze.length >= MAKS_GRACZY) continue; // pełna — nie wisi w lobby
+      wpisy.push({
+        idGry: plik.getId(),
+        tryb: gra.tryb,
+        stan: gra.stan,
+        miejsce: gra.konfiguracja.miejsce,
+        geohash5: gra.konfiguracja.geohash5,
+        wiek: gra.konfiguracja.wiek,
+        tematy: gra.konfiguracja.tematy,
+        liczbaGraczy: gra.gracze.length,
+        utworzono: gra.utworzono,
+        organizator: gra.gracze[0] && gra.gracze[0].pseudonim,
+      });
+    } catch (err) { /* uszkodzony plik nie psuje lobby */ }
+  }
+  return { schemat: 'RO-lobby/1', wpisy };
+}
+
+/** POST gra-dolacz: kod ALBO idGry (z lobby) + pseudonim; tylko w lobby. */
+function dolaczDoGry(dane) {
+  return zBlokada(() => {
+    const pseudonim = String((dane && dane.pseudonim) || '').trim().slice(0, 24);
+    if (!pseudonim) return { ok: false, blad: 'pseudonim jest wymagany' };
+    const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma gry o takim kodzie/identyfikatorze' };
+    const gra = znaleziona.gra;
+    if (gra.stan !== 'lobby') return { ok: false, blad: 'ta gra już wystartowała albo się zakończyła — dołączyć można tylko w lobby' };
+    if (gra.gracze.length >= MAKS_GRACZY) return { ok: false, blad: 'gra jest pełna (maks. ' + MAKS_GRACZY + ' graczy)' };
+    if (gra.gracze.some((g) => g.pseudonim === pseudonim)) return { ok: false, blad: 'ten pseudonim już gra w tej grze — wybierz inny' };
+    const gracz = { id: 'g-' + (gra.gracze.length + 1), pseudonim, dolaczyl: new Date().toISOString() };
+    gra.gracze.push(gracz);
+    zapiszGre(znaleziona.plik, gra);
+    return { ok: true, graczId: gracz.id, gra };
+  });
+}
+
+/** POST gra-start: organizator rusza grę (lobby → trwa). */
+function startGryMulti(dane) {
+  return zBlokada(() => {
+    const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma takiej gry' };
+    const gra = znaleziona.gra;
+    if (gra.stan !== 'lobby') return { ok: false, blad: 'gra nie jest już w lobby (stan: ' + gra.stan + ')' };
+    if (String(dane && dane.organizatorId) !== gra.organizatorId) return { ok: false, blad: 'tylko organizator może wystartować grę' };
+    gra.stan = 'trwa';
+    gra.zdarzenia.push({
+      kolejnosc: gra.zdarzenia.length + 1, graczId: gra.organizatorId, typ: 'start',
+      stacjaId: null, dane: {}, tSerwera: new Date().toISOString(),
+    });
+    zapiszGre(znaleziona.plik, gra);
+    return { ok: true, gra };
+  });
+}
+
+/** Tury: stacja i (1-based) należy do aktywnego gracza z kolejki (ADR 0009 hot-seat → multi). */
+function biezacyGraczTury(gra) {
+  const zamkniete = {};
+  const rezygnacje = {};
+  gra.zdarzenia.forEach((z) => {
+    if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true;
+    if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true;
+  });
+  const aktywni = gra.gracze.filter((g) => !rezygnacje[g.id]);
+  if (!aktywni.length) return null;
+  for (let i = 1; i <= gra.konfiguracja.liczbaStacji; i += 1) {
+    if (!zamkniete[i]) return aktywni[(i - 1) % aktywni.length].id;
+  }
+  return null; // wszystkie stacje zamknięte
+}
+
+function czyKompletna(gra) {
+  const N = gra.konfiguracja.liczbaStacji;
+  const rezygnacje = {};
+  gra.zdarzenia.forEach((z) => { if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true; });
+  if (gra.tryb === 'tury') {
+    const aktywni = gra.gracze.filter((g) => !rezygnacje[g.id]);
+    if (!aktywni.length) return true;
+    const zamkniete = {};
+    gra.zdarzenia.forEach((z) => { if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true; });
+    return Object.keys(zamkniete).length >= N;
+  }
+  return gra.gracze.every((g) => {
+    if (rezygnacje[g.id]) return true;
+    const stacje = {};
+    gra.zdarzenia.forEach((z) => { if (z.graczId === g.id && z.typ === 'odpowiedz' && z.stacjaId) stacje[z.stacjaId] = true; });
+    return Object.keys(stacje).length >= N;
+  });
+}
+
+function przeliczWyniki(gra) {
+  const wyniki = {};
+  gra.gracze.forEach((g) => {
+    wyniki[g.id] = { pseudonim: g.pseudonim, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, stacjeZamkniete: 0, zrezygnowal: false };
+  });
+  gra.zdarzenia.forEach((z) => {
+    const w = wyniki[z.graczId];
+    if (!w) return;
+    if (z.typ === 'dojscie') w.czasOdcinkowMs += Number(z.dane && z.dane.czasOdcinkaMs) || 0;
+    if (z.typ === 'odpowiedz') {
+      w.stacjeZamkniete += 1;
+      w.punkty += Number(z.dane && z.dane.punktyRazem) || 0;
+      if (z.dane && z.dane.poprawna) w.poprawne += 1; else w.bledne += 1;
+    }
+    if (z.typ === 'rezygnacja') w.zrezygnowal = true;
+  });
+  return wyniki;
+}
+
+/** POST gra-zdarzenie: walidacja spójności + append (kolejnosc, tSerwera) + auto-koniec. */
+function przyjmijZdarzenie(dane) {
+  return zBlokada(() => {
+    const z = dane && dane.zdarzenie;
+    if (!z || z.schemat !== SCHEMAT_ZDARZENIA) return { ok: false, blad: 'oczekiwałem zdarzenia ' + SCHEMAT_ZDARZENIA };
+    if (TYPY_ZDARZEN.indexOf(z.typ) < 0) return { ok: false, blad: 'nieznany typ zdarzenia: ' + z.typ };
+    const znaleziona = znajdzGre(z.kod, z.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma takiej gry' };
+    const gra = znaleziona.gra;
+    if (gra.stan !== 'trwa') return { ok: false, blad: 'gra się nie toczy (stan: ' + gra.stan + ')' };
+    const gracz = gra.gracze.filter((g) => g.id === z.graczId)[0];
+    if (!gracz) return { ok: false, blad: 'nie ma takiego gracza w tej grze' };
+    const zrezygnowal = gra.zdarzenia.some((e) => e.graczId === z.graczId && e.typ === 'rezygnacja');
+    if (zrezygnowal && (z.typ === 'dojscie' || z.typ === 'odpowiedz')) {
+      return { ok: false, blad: 'ten gracz zrezygnował — zdarzenia dojścia/odpowiedzi są odrzucane' };
+    }
+    if (z.typ === 'dojscie' || z.typ === 'odpowiedz') {
+      const n = Number(z.stacjaId);
+      if (!(n >= 1 && n <= gra.konfiguracja.liczbaStacji)) return { ok: false, blad: 'stacjaId poza zakresem gry (1–' + gra.konfiguracja.liczbaStacji + ')' };
+      if (gra.tryb === 'tury') {
+        const czyj = biezacyGraczTury(gra);
+        if (czyj !== z.graczId) return { ok: false, blad: 'teraz jest tura gracza ' + czyj + ' — poczekaj na swoją kolej' };
+      }
+      if (z.typ === 'odpowiedz') {
+        const byloDojscie = gra.zdarzenia.some((e) => e.typ === 'dojscie' && e.graczId === z.graczId && Number(e.stacjaId) === n);
+        if (!byloDojscie) return { ok: false, blad: 'odpowiedź bez dojścia do tej stacji — niewłaściwa kolejność zdarzeń' };
+        const bylaOdpowiedz = gra.zdarzenia.some((e) => e.typ === 'odpowiedz' && e.graczId === z.graczId && Number(e.stacjaId) === n);
+        if (bylaOdpowiedz) return { ok: false, blad: 'ta stacja jest już przez Ciebie odpowiedziana' };
+      }
+    }
+    const zdarzenieDane = (z.dane && typeof z.dane === 'object') ? z.dane : {};
+    POLA_ZAKAZANE_W_ZDARZENIU.forEach((pole) => { delete zdarzenieDane[pole]; }); // współrzędne NIGDY (ADR 0019 pkt 3)
+    const zdarzenie = {
+      kolejnosc: gra.zdarzenia.length + 1,
+      graczId: z.graczId,
+      typ: z.typ,
+      stacjaId: z.stacjaId != null ? Number(z.stacjaId) : null,
+      dane: zdarzenieDane,
+      tSerwera: new Date().toISOString(),
+    };
+    gra.zdarzenia.push(zdarzenie);
+    if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+      gra.wyniki = przeliczWyniki(gra);
+      gra.stan = 'zakonczona';
+    }
+    zapiszGre(znaleziona.plik, gra);
+    if (gra.stan === 'zakonczona') przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
+    return { ok: true, kolejnosc: zdarzenie.kolejnosc, stan: gra.stan, wyniki: gra.wyniki };
+  });
+}
+
+/** POST gra-zakoncz: organizator kończy przedwcześnie (np. wszyscy rezygnują). */
+function zakonczGre(dane) {
+  return zBlokada(() => {
+    const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma takiej gry' };
+    const gra = znaleziona.gra;
+    if (gra.stan === 'zakonczona' || gra.stan === 'archiwum') return { ok: true, gra };
+    if (String(dane && dane.graczId) !== gra.organizatorId) return { ok: false, blad: 'tylko organizator może zakończyć grę przed czasem' };
+    gra.stan = 'zakonczona';
+    gra.wyniki = przeliczWyniki(gra);
+    zapiszGre(znaleziona.plik, gra);
+    przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
+    return { ok: true, gra };
+  });
+}
+
+/** GET ranking: surowe wiersze z gier zakończonych — agregacje liczy aplikacja (testowalne, czyste). */
+function rankingi() {
+  const wiersze = [];
+  const pliki = folder(FOLDERY.gryZakonczone).getFiles();
+  while (pliki.hasNext()) {
+    const plik = pliki.next();
+    try {
+      const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+      if (gra.schemat !== SCHEMAT_GRY || gra.stan !== 'zakonczona' || !gra.wyniki) continue;
+      Object.keys(gra.wyniki).forEach((id) => {
+        const w = gra.wyniki[id];
+        if (w.zrezygnowal && !(w.stacjeZamkniete > 0)) return; // rezygnacja bez wyniku nie idzie do rankingu
+        wiersze.push({
+          pseudonim: w.pseudonim,
+          punkty: w.punkty,
+          poprawne: w.poprawne,
+          bledne: w.bledne,
+          czasOdcinkowMs: w.czasOdcinkowMs,
+          stacjeZamkniete: w.stacjeZamkniete,
+          data: gra.utworzono,
+          tryb: gra.tryb,
+          miejsce: gra.konfiguracja.miejsce,
+          geohash5: gra.konfiguracja.geohash5,
+          wiek: gra.konfiguracja.wiek,
+          tematy: gra.konfiguracja.tematy,
+        });
+      });
+    } catch (err) { /* uszkodzony plik nie psuje rankingu */ }
+  }
+  return { schemat: 'RO-ranking/1', wiersze };
+}
+
+function stanGry(kod, idGry) {
+  const znaleziona = znajdzGre(kod, idGry);
+  if (!znaleziona) return { ok: false, blad: 'nie ma takiej gry' };
+  return { ok: true, gra: znaleziona.gra };
 }

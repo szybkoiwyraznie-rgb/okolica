@@ -29,6 +29,7 @@ const PACKAGE = JSON.parse(czytaj('package.json'));
 const MAPA = czytaj('app/mapa.js');
 const STYLE = czytaj('app/styles.css');
 const SW = czytaj('sw.js');
+const GS = czytaj('docs/setup/apps-script-repo-paczek.gs');
 
 /** Wiersze tabeli markdowna w sekcji zaczynającej się od `naglowek`. */
 function tabelaSekcji(dokument, naglowek) {
@@ -606,4 +607,19 @@ test('kontrakt M10: przełącznik sygnałów w nagłówku, domyślnie włączony
 test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
   assert.match(PACKAGE.scripts.brama, /audyt-kontrastu\.mjs/, 'npm run brama musi gonić audyt kontrastu');
   assert.equal(PACKAGE.scripts.audyt, 'node tools/audyt-kontrastu.mjs', 'osobny skrót npm run audyt');
+});
+
+test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językiem', () => {
+  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz']) {
+    assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
+  }
+  for (const a of ['gry', 'gra-stan', 'ranking']) {
+    assert.ok(GS.includes(`akcja === '${a}'`), `doGet mostu obsługuje ${a}`);
+  }
+  for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-ranking/1']) {
+    assert.ok(GS.includes(s), `most zna schemat ${s}`);
+  }
+  assert.ok(GS.includes("'23456789ABCDEFGHJKLMNPQRSTUVWXYZ'"), 'alfabet kodu gry identyczny w moście i w module');
+  assert.match(GS, /POLA_ZAKAZANE_W_ZDARZENIU/, 'most kasuje współrzędne ze zdarzeń (ADR 0019 pkt 3)');
+  assert.ok(GS.includes('okolica-gry-otwarte') && GS.includes('okolica-gry-zakonczone'), 'katalogi gier w setup()');
 });
