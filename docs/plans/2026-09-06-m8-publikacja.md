@@ -111,7 +111,7 @@
       (drzewo: `assets/`, `tools/generuj-ikony.mjs`), README (akapit
       Pages), PROJECT_HISTORY (sekcja M8), odhaczenie planu; brama;
       commit + push.
-- [ ] **PB6 — PR #2:** body M0–M8 (sekcja M8, wiersze commitów, tabela
+- [x] **PB6 — PR #2:** body M0–M8 (sekcja M8, wiersze commitów, tabela
       stanów: M8 🟡 kod gotowy/kryterium po merge+Pages, brama w intro);
       push.
 
