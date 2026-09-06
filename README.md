@@ -112,7 +112,9 @@ Safari iOS (`docs/WORKFLOW.md` §4.2).
 ## Uruchomienie lokalne
 
 ```bash
-npm test                       # brama jakości (node --test, zero zależności)
+npm test                       # same testy (node --test, zero zależności)
+npm run brama                  # brama: testy + check szablonu + audyt WCAG (M10)
+npm run audyt                  # sam audyt kontrastu WCAG AA (motyw jasny i ciemny)
 npm run serwer                 # python3 -m http.server 8000 --bind 0.0.0.0
 # otwórz http://localhost:8000
 ```
@@ -132,6 +134,24 @@ mieszka pod `https://szybkoiwyraznie-rgb.github.io/okolica/`; każde kolejne
 push do `main` przebudowuje stronę automatycznie. Ikony i `manifest.json`
 („dodaj do ekranu głównego") generuje `npm run ikony` — binaria leżą w repo,
 bo Pages serwuje z drzewa, a generator odtwarza je bajt w bajt.
+
+## Offline, bateria i sygnały (M10)
+
+- **Offline**: Service Worker (`sw.js`) trzyma na telefonie skorupę aplikacji
+  i kafelki ostatniej okolicy (limit 600, ewikcja najstarszych) — po pierwszej
+  sesji online gra z lokalnej paczki działa w trybie samolotowym: bez sieci,
+  bez Overpassa, bez modelu. POST-y i API (most Drive, Overpass) nigdy nie są
+  cache'owane (świeżość i prywatność).
+- **Bateria**: „budzenie przy zbliżaniu" — w trasie (powyżej 250 m od stacji)
+  GPS pracuje oszczędnie (bez wysokiej dokładności, odświeżanie co ~20 s),
+  przy stacji (poniżej 150 m) wraca pełna dokładność; histereza zapobiega
+  oscylacji, każda zmiana ma jawny status.
+- **Sygnały**: dojście do stacji, start odcinka i ocena odpowiedzi grają
+  krótkie melodie (oscylator Web Audio — zero plików dźwiękowych) i wibracje;
+  przełącznik „🔔 sygnały" w nagłówku, domyślnie włączone, wybór zapamiętany.
+- **Dostępność**: kontrasty obu motywów (jasny/ciemny) pilnuje brama
+  `npm run audyt` (WCAG AA: 4.5:1 dla tekstu); checklista terenowa:
+  `docs/WORKFLOW.md` §4.3.
 
 ## Repozytorium paczek pytań
 

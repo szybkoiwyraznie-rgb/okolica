@@ -400,3 +400,24 @@ textContent przodka; regex tylko zakotwiczony separatorem, który istnieje
 wewnątrz JEDNEGO elementu. Wariant L23 (oczekiwania z kodu, nie z pamięci)
 i przypomnienie, że wierny zrąb tnie w obie strony: odsłania prawdziwe
 zachowanie przeglądarki — także to, które nie wybacza niechlujnego odczytu.
+
+## L25 (2026-09-06, Tajemnicza Okolica) — plikowa atrapa DOM starzeje się, gdy późniejszy test reinstaluje otoczenie
+
+**Objaw:** nowy test UI („🔔 sygnały" w `test/aplikacja.test.js`) klikał
+przycisk plikowym `dom.kliknij(...)`, handler się wykonał (nasłuch istniał),
+ale `aria-pressed` przeczytany z plikowego `pobierz(...)` ani drgnął — i tak
+tylko w kontekście całego pliku; izolowany minimalny scenariusz przechodził.
+
+**Przyczyna:** plik instaluje `zainstalujDom()` RAZ na górze, a późniejsze
+testy (harnessy M6) instalują ŚWIEŻE atrapy — `globalThis.document` i
+`globalThis.localStorage` wskazują wtedy nowy rejestr elementów, podczas gdy
+plikowy `pobierz`/`dom` zostaje przy starym. Klik rozszedł się po starym
+rejestrze (nasłuch app-a z pierwszego importu), ale `$` wewnątrz aplikacji to
+`document.getElementById` = NOWY stub — efekty (setAttribute, zapisy, statusy)
+wylądowały w nowym rejestrze, a asercje czytały stary.
+
+**Reguła:** test UI dodawany PO teście, który reinstaluje DOM, musi używać
+WŁASNEJ świeżej instalacji (`zainstalujDom()` + `import app.js?<losowe>`) albo
+stać w pliku PRZED pierwszą reinstalacją. Plikowy harness jest wiarygodny
+tylko do pierwszej podmiany globali; przy asercji „klik nie zadziałał"
+pierwsze podejrzenie = rozjazd rejestrów, nie logika aplikacji.

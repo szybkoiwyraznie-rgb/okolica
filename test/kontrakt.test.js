@@ -602,3 +602,8 @@ test('kontrakt M10: przełącznik sygnałów w nagłówku, domyślnie włączony
   assert.match(INDEX, /<button id="przycisk-sygnaly"[^>]*aria-pressed="true"/, 'przycisk 🔔 obecny i domyślnie „wciśnięty"');
   assert.match(APP, /odegrajSygnal\('dotarcie'\)/, 'dojście do stacji gra sygnał');
 });
+
+test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
+  assert.match(PACKAGE.scripts.brama, /audyt-kontrastu\.mjs/, 'npm run brama musi gonić audyt kontrastu');
+  assert.equal(PACKAGE.scripts.audyt, 'node tools/audyt-kontrastu.mjs', 'osobny skrót npm run audyt');
+});

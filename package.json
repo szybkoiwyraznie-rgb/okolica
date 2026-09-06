@@ -8,10 +8,11 @@
     "test": "node --test",
     "build": "node tools/synchronizuj-szablon.mjs",
     "check": "node tools/synchronizuj-szablon.mjs --check",
-    "brama": "node --test && node tools/synchronizuj-szablon.mjs --check",
+    "brama": "node --test && node tools/synchronizuj-szablon.mjs --check && node tools/audyt-kontrastu.mjs",
     "fixture": "node tools/generuj-fixture-overpass.mjs",
     "ikony": "node tools/generuj-ikony.mjs",
-    "serwer": "python3 -m http.server 8000 --bind 0.0.0.0"
+    "serwer": "python3 -m http.server 8000 --bind 0.0.0.0",
+    "audyt": "node tools/audyt-kontrastu.mjs"
   },
   "engines": {
     "node": ">=20"

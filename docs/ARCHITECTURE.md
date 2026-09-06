@@ -11,6 +11,10 @@ pętlę protokołu PYT (ADR 0006, `docs/PROTOKOL.md`).
 ```
 index.html                  — powłoka UI: ekrany (setup → prompt → paczka → gra → wynik),
                               stopka z wersją protokołu, baner file://
+sw.js                       — Service Worker (M10): offline skorupa + kafelki
+                              ostatniej okolicy (cache-first, limit i ewikcja;
+                              classic script, rejestracja z app.js, WERSJA_SW
+                              == ?v= aplikacji — pilnuje kontrakt)
 .nojekyll                     — Pages bez przetwarzania Jekyll (M8)
 app/
   app.js                    — bootstrap: router ekranów, stan sesji, spinanie modułów
@@ -23,7 +27,10 @@ app/
   pozycja.js                — geolokalizacja: osłona watchPozycja(), filtr
                               dokładności (ocenFix), kryterium dojścia
                               (stanDojscia), komunikaty P01–P09, symulacja trasy
-                              dla trybu testowego (ADR 0004, 0015)
+                              dla trybu testowego (ADR 0004, 0015); M10: profile
+                              baterii PROFILE_GPS + histereza profilBaterii
+                              („budzenie przy zbliżaniu": oszczędny >250 m,
+                              dokładny <150 m)
   sieci.js                  — Overpass (czyste): budowa zapytania (R × 1,15),
                               parsowanie odpowiedzi, graf sieci, Dijkstra,
                               snapowanie, kandydaci na stacje, filtry
@@ -61,6 +68,10 @@ app/
   ui.js                     — ekrany i komponenty: setup, prompt, walidacja, gra,
                               wynik; komunikaty, aria-live (DOM)
   styles.css                — tokeny palety, motyw jasny/ciemny, cele dotykowe ≥44 px
+                              (kontrasty WCAG AA pilnowane bramą: tools/audyt-kontrastu.mjs)
+  sygnaly.js                — M10: plany sygnałów zdarzeń (wibracja + nuty Web
+                              Audio) i przełącznik `okolica:sygnaly` (czyste;
+                              odtwarzanie w app.js, brak API = cichy no-op)
 data/
   przyklady/zestaw-*.json   — zestawy referencyjne TO-zestaw/1 (zweryfikowane
                               źródła, ADR 0008; NIE publikowane automatycznie)
@@ -77,6 +88,8 @@ tools/
   synchronizuj-szablon.mjs  — przepisanie szablonu promptu do app/ (jedno źródło)
   generuj-fixture-overpass.mjs — fixture offline z realnej odpowiedzi Overpass (M6)
   generuj-ikony.mjs         — ikony SVG+PNG bez zależności; npm run ikony (M8)
+  audyt-kontrastu.mjs       — M10: brama WCAG AA — kontrasty tokenów palety
+                              (jasny + ciemny) dla par rola→tło; npm run audyt
 test/                       — node --test; fixture'y w test/fixtures/
 docs/                       — protokół, ADR, plany, handoffy (patrz AGENTS.md §0);
                               setup/: most Drive Apps Script (kod + instrukcja, M9b)

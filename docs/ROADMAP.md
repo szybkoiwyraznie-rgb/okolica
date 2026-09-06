@@ -329,6 +329,16 @@ Service Worker (offline: kafelki ostatniej okolicy + paczka), strategia
 oszczędzania baterii („budzenie przy zbliżaniu"), tryb nocny, dźwięk/wibracja
 przy dojściu, dostępność (WCAG AA audyt), testy w terenie i poprawki progów
 (ADR 0004) — wyniki w `docs/LESSONS.md`.
+Zakres zrealizowany 2026-09-06 (plan `plans/2026-09-06-m10-dopracowanie-terenowe.md`,
+brama 450/450): `sw.js` (skorupa + kafelki cache-first z ewikcją, testy
+harnessem), profile baterii `PROFILE_GPS` z histerezą 250/150 m
+(`profilBaterii`), sygnały dojścia/odcinka/odpowiedzi (`app/sygnaly.js` +
+Web Audio + vibrate, przełącznik „🔔"), audyt kontrastu WCAG AA jako brama
+(`tools/audyt-kontrastu.mjs`, 0 naruszeń w obu motywach), checklista terenowa
+`WORKFLOW.md` §4.3. Tryb nocny ISTNIAŁ od M7 (`przycisk-motyw`) — zweryfikowany
+audytem. KRYTERIUM TERENOWE: test właściciela wg §4.3 (offline, bateria,
+sygnały w hałasie, progi dojścia) — wynik do LESSONS, korekta progów w razie
+potrzeby.
 
 ## M11 — Gra wieloosobowa na wielu urządzeniach przez Drive (kierunek właściciela, 2026-09-06)
 

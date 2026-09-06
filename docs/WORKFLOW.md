@@ -52,7 +52,7 @@ Koniec sesji:
 7. **Eksportuj paczkę** (`.paczka.json`) — zabezpieczenie na wypadek czyszczenia
    danych przeglądarki (ADR 0010 pkt 3).
 
-## 4. Test terenowy (obowiązkowy dla M3, M4, M6, M7)
+## 4. Test terenowy (obowiązkowy dla M3, M4, M6, M7, M10)
 
 Agent nie ma GPS ani terenu (ENVIRONMENT §4.1, §5) — część kryteriów da się
 sprawdzić tylko na zewnątrz. Procedura dla właściciela:
@@ -127,6 +127,35 @@ symulacji na żywo sprawdza właściciel (agent nie ma przeglądarki, LESSONS L3
 5. Wynik (co działa, co nie, decyzja z pkt 1) → wpis w
    `docs/PROJECT_HISTORY.md` i ewentualna lekcja; dopiero wtedy `ROADMAP`
    dostaje ✅ przy M3.
+
+### 4.3 Weryfikacja M10 na telefonie (robi właściciel)
+
+Przygotowanie: aplikacja na Pages (HTTPS — bez tego ani Service Worker, ani
+geolokalizacja) i PIERWSZA sesja online w okolicy planowanej gry — wtedy SW
+zapisuje skorupę i kafelki „na później".
+
+1. **Offline**: po pierwszej sesji włącz tryb samolotowy i otwórz aplikację
+   ponownie — skorupa musi się otworzyć, mapa pokazać kafelki ostatniej
+   okolicy, a gra z paczki „📱 z tego telefonu" działać bez sieci (zero
+   Overpassa, zero modelu). Zanotuj, ile ulic „wystaje" poza zapamiętane
+   kafelki przy zboczeniu z trasy.
+2. **Bateria**: na odcinku >300 m wypatruj statusu „GPS w trybie oszczędnym…",
+   przy stacji (<150 m) „GPS w trybie dokładnym…". Zapisz: czy przejścia nie
+   oscylują na granicy (histereza 250/150 m w `app/pozycja.js`), ile % baterii
+   zjadła godzina gry, czy dojście łapie się tak samo pewnie jak przed M10.
+3. **Sygnały**: w hałasie ulicy — czy „dotarcie" (dwa tony w górę + wibracja)
+   jest zauważalne bez patrzenia w ekran; w kieszeni — sama wibracja;
+   przełącznik „🔔 sygnały" pamięta wybór po odświeżeniu i zamknięciu karty.
+4. **Motywy i słońce**: w pełnym słońcu motyw jasny, po zmroku ciemny —
+   czytelność statusu, pytań i pinów; kontrasty tokenów pilnuje brama
+   (`npm run audyt`), więc tu tylko subiektywne „czy widać".
+5. **Dostępność**: powiększenie 200% bez utraty treści i bez poziomego
+   przewijania, kolejność fokusu w ekranie gry (pytanie → odpowiedzi →
+   dalej), cele dotykowe ≥44 px w rękawiczce.
+6. **Progi dojścia (ADR 0004)**: dokładność GPS przy starcie i przy stacjach,
+   czas od wejścia w próg do zapalenia stacji, liczba fałszywych dojść.
+7. Wynik → `docs/LESSONS.md` (objaw → przyczyna → reguła) i ewentualna
+   korekta `PROG_BATERII_M` / planów sygnałów / progów dojścia.
 
 ## 5. Publikacja na GitHub Pages (jednorazowo, właściciel)
 
