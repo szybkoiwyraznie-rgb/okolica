@@ -27,7 +27,7 @@ const paczka = (nad = {}) => ({
 });
 const stacje = () => [{ lat: 52.1235, lon: 20.7455, opis: 'plac' }, { lat: 52.1245, lon: 20.7475, opis: 'park' }];
 const plikPubliczny = (zmianyMeta = {}) => {
-  const meta = zbierzMetaZestawu({ lat: POZ.lat, lon: POZ.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', miejsce: 'Podkowa Leśna', data: '2026-09-06 10:00' });
+  const meta = zbierzMetaZestawu({ lat: POZ.lat, lon: POZ.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', miejsce: 'Podkowa Leśna', data: '2026-09-06 10:00', liczbaStacji: 2, pytaniaNaStacje: 1 });
   const plik = zbudujPlikZestawu({ stacje: stacje(), kontener: zapakujPaczke(paczka(), 'PYT/1.0'), meta });
   plik.meta.przegladZrodel = '2026-09-06 właściciel'; // jak po ręcznym przeglądzie
   Object.assign(plik.meta, zmianyMeta);
@@ -63,7 +63,7 @@ test('indeks paczek: inna licencja i dziurawe pokrycie stacji nie przechodzą', 
   const { bledy: bLic } = zbudujIndeks([{ nazwa: 'l.zestaw.json', tekst: plikPubliczny({ licencja: 'CC0' }) }]);
   assert.match(bLic[0].komunikat, /CC BY-SA 4.0/);
   const bezPytania = paczka(); bezPytania.pytania = bezPytania.pytania.slice(0, 1); // stacja 2 sieroca
-  const meta = zbierzMetaZestawu({ lat: POZ.lat, lon: POZ.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', miejsce: 'Podkowa Leśna' });
+  const meta = zbierzMetaZestawu({ lat: POZ.lat, lon: POZ.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', miejsce: 'Podkowa Leśna', liczbaStacji: 2, pytaniaNaStacje: 1 });
   const plik = zbudujPlikZestawu({ stacje: stacje(), kontener: zapakujPaczke(bezPytania, 'PYT/1.0'), meta });
   plik.meta.przegladZrodel = '2026-09-06 właściciel';
   const { bledy } = zbudujIndeks([{ nazwa: 'dziura.zestaw.json', tekst: JSON.stringify(plik) }]);

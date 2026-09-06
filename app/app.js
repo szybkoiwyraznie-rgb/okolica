@@ -1120,6 +1120,8 @@ function metaBiezacejOkolicy() {
     wiek: STAN.konfig.wiek,
     jezyk: STAN.konfig.jezyk,
     miejsce: STAN.miejsce ?? '',
+    liczbaStacji: STAN.konfig.liczbaStacji,
+    pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
   });
 }
 
@@ -1184,6 +1186,8 @@ function odswiezPropozycjeZestawow() {
   const kryteria = {
     geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5),
     promienM: STAN.konfig.promienM,
+    liczbaStacji: STAN.konfig.liczbaStacji,
+    pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
     tematy: STAN.konfig.tematy,
     wiek: STAN.konfig.wiek,
   };
@@ -1192,7 +1196,7 @@ function odswiezPropozycjeZestawow() {
   const lokalne = dopasujZestawy(czytajRejestrZestawow(), kryteria);
   for (const wpis of lokalne) {
     lista.append(wierszZestawu(
-      `${wpis.miejsce} · ${wpis.data} · ${wpis.tematy.join(', ')} · ${wpis.wiek}`,
+      `${wpis.miejsce} · ${wpis.data} · ${wpis.liczbaStacji} stacji × ${wpis.pytaniaNaStacje} pytań · ${wpis.tematy.join(', ')} · ${wpis.wiek}`,
       '📱 z tego telefonu:',
       () => grajZZestawemLokalnym(wpis.skrot),
     ));
@@ -1213,7 +1217,7 @@ function odswiezPropozycjeZestawow() {
     .then((dopasowane) => {
       for (const meta of dopasowane) {
         lista.append(wierszZestawu(
-          `${meta.miejsce} · ${meta.data} · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
+          `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
           '🌍 repozytorium:',
           () => grajZZestawemZRepo(meta.plik, url),
         ));

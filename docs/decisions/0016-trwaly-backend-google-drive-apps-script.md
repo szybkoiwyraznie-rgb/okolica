@@ -1,6 +1,6 @@
 # 0016 — Trwały backend: Google Drive + Apps Script na wydzielonym koncie
 
-- Status: Proponowana (pomysł właściciela z 2026-09-06; kierunek dla M9
+- Status: Zaakceptowana jako kierunek (2026-09-06: właściciel potwierdził, że repozytorium paczek wymaga Google Drive; wdrożenie po spike’u CORS, wpisie w ASSETS i ekranie zgody; pierwotnie: pomysł właściciela z 2026-09-06; kierunek dla M9
   „repozytorium paczek" i ewentualnej rewizji ADR 0009 — gra na kilku
   urządzeniach. Nie budować na tej decyzji trwałych rozwiązań przed
   akceptacją właściciela.)
@@ -97,3 +97,20 @@ urządzeniach bez własnej infrastruktury.
 - **Tylko localStorage + pliki (status quo)** — wystarcza jednemu
   organizatorowi, ale nie daje współdzielenia paczek ani gry na kilku
   urządzeniach.
+
+## Decyzja właściciela (2026-09-06, dopisane po M9)
+
+Współdzielone repozytorium zestawów pytań („paczek") żyje na **wydzielonym
+koncie Google Drive**, z mostem Apps Script, w przepływie:
+
+1. gra wygenerowana z modelem kończy się zestawem pytań ze źródłami;
+2. zestaw **trafia na Drive** (katalog „do przeglądu");
+3. właściciel **ocenia** zestaw (źródła, miejsca stacji, brak danych osobowych);
+4. po **zaakceptowaniu** zestaw staje się dostępny dla kompatybilnych gier.
+
+Kompatybilność (kryteria właściciela, wdrożone w `app/zestawy.js` 2026-09-06):
+ta sama **lokalizacja** (geohash5), ta sama **liczba pytań** i **liczba stacji**,
+ten sam **poziom** (wiek), **zakres tematyczny nie szerszy** niż wybrany
+w setupie oraz promień paczki ≤ promienia z setupu (stacje bliżej = uczciwie,
+dalej = nie). Kryteria obowiązują każde źródło propozycji: pamięć telefonu,
+Drive i indeks offline w repo.

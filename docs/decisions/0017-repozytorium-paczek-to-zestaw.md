@@ -52,19 +52,24 @@ nieść stacje jawnie, inaczej drugie urządzenie nie odtworzy gry.
    `data/paczki/` w tym repozytorium (albo push do własnego repo właściciela).
    Aplikacja **nigdy nie uploaduje** (ADR 0001); eksport „paczka do
    repozytorium (TO-zestaw/1)" daje plik, który właściciel przegląda offline.
-6. **Dostęp z aplikacji**: domyślnie ścieżka względna
-   `data/paczki/indeks.json` (Pages, ten sam origin — zero CORS i zero
+6. **Dostęp z aplikacji**: docelowo głównym źródłem współdzielonym jest
+   **Drive + Apps Script** (ADR 0016, decyzja właściciela 2026-09-06: upload
+   zestawu po grze, przegląd i akceptacja właściciela, indeks zaakceptowanych
+   dla graczy). Do czasu wdrożenia mostu działa indeks offline: ścieżka
+   względna `data/paczki/indeks.json` (Pages, ten sam origin — zero CORS i zero
    kluczy); override kluczem `okolica:repo-zestawow:url` (własne Pages/raw
-   właściciela, switchability jak endpoint Nominatim, ADR 0013). 404/timeout
-   = „brak propozycji" z logiem, nigdy blokada gry.
+   właściciela albo URL web app Apps Script, switchability jak endpoint
+   Nominatim, ADR 0013). 404/timeout = „brak propozycji" z logiem, nigdy
+   blokada gry.
 7. **Kopia lokalna (kryterium M9)**: przy przyjęciu paczki aplikacja zapisuje
    `okolica:zestaw:<skrot>` (`TO-zestaw-lokalny/1`: stacje + kontener + skrót
    konfiguracji + geohash5 + data + kod gry) i rejestr `okolica:zestawy`
    z LRU (budżet 1,5 MB, maks. 8 wpisów — wzorzec cache sieci, ADR 0010 pkt 1).
    Druga gra w okolicy odtwarza stacje i pytania **z pamięci**: zero Overpassa,
    zero modelu, zero sieci. Dopasowanie propozycji: ten sam geohash5, promień
-   i wiek oraz **tematy paczki zawierają się** w tematach konfiguracji (paczka
-   węższa niż apetyt gracza nadal jest uczciwa — odwrotnie nie).
+   i wiek, ta sama **liczba stacji i pytań na stację**, **tematy paczki
+   zawierają się** w tematach konfiguracji (nie szersze — kryteria właściciela
+   z 2026-09-06) oraz promień paczki ≤ promienia z setupu.
 8. **Prywatne repozytorium właściciela** pozostaje poza aplikacją: pliki
    TO-zestaw/1 + własny hosting wskazany kluczem URL. Aplikacja nie zna
    pojęcia „prywatne repo" i nigdzie się nie autoryzuje.

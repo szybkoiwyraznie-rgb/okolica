@@ -35,13 +35,23 @@ const TEMATY_DOMYSLNE = ['historia', 'przyroda', 'architektura'];
 
 const metaWpisu = () => ({
   miejsce: 'Podkowa Leśna', geohash5: GEOHASH5, promienM: 1000,
-  tematy: TEMATY_DOMYSLNE, wiek: 'dorosli',
+  tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1,
+});
+
+/** Setup z 2 stacjami i 1 pytaniem — tyle niesie wpis testowy (kryteria właściciela). */
+const KONFIG_TEST = JSON.stringify({
+  schemat: 'konfig/1',
+  konfig: {
+    tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1,
+    tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', jezyk: 'polski', wspolpraca: 'zespol',
+    karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
+  },
 });
 
 function wpisPelny(kontener) {
   return {
     schemat: SCHEMAT_LOKALNY,
-    stacje: [{ id: 1, lat: 52.1235, lon: 20.7455 }, { id: 2, lat: 52.1245, lon: 20.7475 }],
+    stacje: [{ id: 1, lat: 52.1235, lon: 20.7455 }, { id: 2, lat: 52.1245, lon: 20.7475 }, { id: 3, lat: 52.1255, lon: 20.7495 }],
     kontener,
     ...metaWpisu(),
     data: '2026-09-06 09:00',
@@ -52,6 +62,7 @@ function wpisPelny(kontener) {
 function pamiecZZestawem(kontener) {
   const pelny = wpisPelny(kontener);
   return new Map([
+    ['okolica:konfig', KONFIG_TEST],
     [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot: kontener.skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'pierwsza' }] })],
     [kluczZestawu(kontener.skrot), JSON.stringify(pelny)],
   ]);
@@ -102,7 +113,7 @@ test('zestawy UI: druga gra w tej samej okolicy startuje bez modelu i bez Overpa
   kliknijPierwszyPrzyciskZestawu(dom);
   assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra wystartowała z gotowej paczki');
   assert.match(dom.pobierz('status').textContent, /bez modelu i bez Overpassa/);
-  assert.match(dom.pobierz('status').textContent, /2 stacji/);
+  assert.match(dom.pobierz('status').textContent, /3 stacji/);
   const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
   assert.equal(rejestr.wpisy.length, 1, 'start gry odświeżył wpis (ta sama paczka, nie duplikat)');
 });
@@ -138,6 +149,7 @@ const indeksZPropozycja = () => ({
   wpisy: [{
     skrot: 'feedbeef', plik: 'podkowa.zestaw.json', miejsce: 'Podkowa Leśna',
     geohash5: GEOHASH5, promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
+    liczbaStacji: 3, pytaniaNaStacje: 1,
     licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel', data: '2026-09-06 19:30',
   }],
 });
@@ -146,13 +158,14 @@ const plikZRepo = () => {
   const meta = {
     miejsce: 'Podkowa Leśna', geohash5: GEOHASH5, promienM: 1000,
     tematy: ['historia'], wiek: 'dorosli', jezyk: 'polski', data: '2026-09-06 19:30',
+    liczbaStacji: 3, pytaniaNaStacje: 1,
     autor: 'kurator', licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel',
   };
   return {
     schemat: 'TO-zestaw/1',
     protokol: 'PYT/1.0',
     meta,
-    stacje: [{ lat: 52.1235, lon: 20.7455, opis: 'plac' }, { lat: 52.1245, lon: 20.7475, opis: 'park' }],
+    stacje: [{ lat: 52.1235, lon: 20.7455, opis: 'plac' }, { lat: 52.1245, lon: 20.7475, opis: 'park' }, { lat: 52.1255, lon: 20.7495, opis: 'skwer' }],
     kontener: zapakujPaczke(paczkaMinimalna(), 'PYT/1.0'),
   };
 };
@@ -173,11 +186,12 @@ function atrapaFetch(odpowiedzi) {
 test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra bez modelu', async () => {
   const atrap = atrapaFetch({ indeks: JSON.stringify(indeksZPropozycja()), plik: JSON.stringify(plikZRepo()) });
   try {
-    const dom = await aplikacjaZZestawami({});
+    const dom = await aplikacjaZZestawami({ pamiec: new Map([['okolica:konfig', KONFIG_TEST]]) });
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));
     const lista = dom.pobierz('zestawy-lista');
     assert.equal(lista.children.length, 1, 'propozycja z repozytorium widoczna na karcie');
+    assert.match(lista.children[0].children[0].textContent, /3 stacji × 1 pytań/);
     assert.match(lista.children[0].children[0].textContent, /repozytorium: Podkowa Leśna/);
     assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium ma paczki/);
     kliknijPierwszyPrzyciskZestawu(dom);
@@ -194,7 +208,7 @@ test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra be
 test('zestawy UI: własny URL repozytorium wygrywa z domyślnym (switchability, ADR 0017 pkt 6)', async () => {
   const atrap = atrapaFetch({ indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [] }) });
   try {
-    const pamiec = new Map([['okolica:repo-zestawow:url', 'https://przyklad.org/paczki/indeks.json']]);
+    const pamiec = new Map([['okolica:repo-zestawow:url', 'https://przyklad.org/paczki/indeks.json'], ['okolica:konfig', KONFIG_TEST]]);
     const dom = await aplikacjaZZestawami({ pamiec });
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));

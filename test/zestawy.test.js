@@ -15,7 +15,7 @@ import {
 } from '../app/zestawy.js';
 
 const kontener = () => ({ schemat: 'TO-paczka/2', protokol: 'PYT/1.0', kodowanie: 'b64x1', skrot: 'ab12cd34', dane: 'e30' });
-const meta = (nad = {}) => ({ geohash5: 'u33dc', promienM: 1000, tematy: ['historia'], wiek: 'dorosli', ...nad });
+const meta = (nad = {}) => ({ geohash5: 'u33dc', promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, ...nad });
 const wpis = (skrot, data, nad = {}) => ({ skrot, data, ...meta(nad) });
 const lokalny = (nad = {}) => ({
   schemat: SCHEMAT_LOKALNY,
@@ -43,6 +43,7 @@ test('zestawy: walidacja wpisu lokalnego odrzuca śmieć z kodami, nie wyjątkam
   assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ stacje: [{ id: 1, lat: 999, lon: 0 }] }))).usterki[0].kod, 'Z03');
   assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ kontener: { schemat: 'TO-paczka/1' } }))).usterki[0].kod, 'Z04');
   assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ geohash5: 'u33' }))).usterki[0].kod, 'Z05');
+  assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ liczbaStacji: 2.5 }))).usterki[0].kod, 'Z05');
 });
 
 test('zestawy: rejestr czyta się tolerancyjnie, niekompletne wpisy wypadają', () => {
@@ -100,11 +101,16 @@ test('zestawy: dopasowanie okolicy jest ścisłe (geohash5, promień, wiek, tema
       wpis('tematy-kolejnosc', '2026-09-05', { tematy: ['historia'] }),
       wpis('podzbior', '2026-09-04', { tematy: ['historia', 'przyroda'] }),
       wpis('nadzbior', '2026-09-03', { tematy: ['historia', 'przyroda', 'architektura'] }),
+      wpis('wiecej-stacji', '2026-09-02', { liczbaStacji: 6 }),
+      wpis('wiecej-pytan', '2026-09-02', { pytaniaNaStacje: 2 }),
+      wpis('wiekszy-promien', '2026-09-02', { promienM: 3000 }),
+      wpis('mniejszy-promien', '2026-09-01', { promienM: 500 }),
     ],
   };
-  const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, tematy: ['historia', 'przyroda'], wiek: 'dorosli' });
-  assert.deepEqual(trafione.map((w) => w.skrot), ['pasuje', 'tematy-kolejnosc', 'podzbior'], 'najnowsze pierwsze; TEMATY PACZKI ⊆ TEMATY KONFIGURACJI');
-  assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33', promienM: 1, tematy: ['x'], wiek: 'd' }), TypeError);
+  const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], wiek: 'dorosli' });
+  assert.deepEqual(trafione.map((w) => w.skrot), ['pasuje', 'tematy-kolejnosc', 'podzbior', 'mniejszy-promien'], 'kryteria właściciela: stacje, pytania, poziom, tematy⊆, promień paczki ≤');
+  assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33', promienM: 1, liczbaStacji: 1, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
+  assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1, liczbaStacji: 0, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
 });
 
 test('zestawy: plik publiczny wymaga licencji i przeglądu źródeł (ADR 0017 pkt 4)', () => {
@@ -124,7 +130,7 @@ test('zestawy: indeks publiczny niesie tylko meta i toleruje braki', () => {
   assert.deepEqual(odczytany.map((w) => w.skrot), ['p1']);
   assert.equal(usterki[0].kod, 'Z10');
   assert.equal(walidujIndeksSurowy('null').usterki[0].kod, 'Z09');
-  const trafione = dopasujMetaIndeksu(odczytany, { geohash5: 'u33dc', promienM: 1000, tematy: ['historia'], wiek: 'dorosli' });
+  const trafione = dopasujMetaIndeksu(odczytany, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], wiek: 'dorosli' });
   assert.equal(trafione.length, 1, 'dopasowanie indeksu tymi samymi regułami co lokalne');
 });
 

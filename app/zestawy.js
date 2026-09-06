@@ -76,7 +76,9 @@ function czyMetaDopasowaniaOk(m) {
     && typeof m.geohash5 === 'string' && m.geohash5.length === 5
     && Number.isFinite(m.promienM) && m.promienM > 0
     && Array.isArray(m.tematy) && m.tematy.length > 0 && m.tematy.every((t) => typeof t === 'string')
-    && typeof m.wiek === 'string' && m.wiek.length > 0;
+    && typeof m.wiek === 'string' && m.wiek.length > 0
+    && Number.isInteger(m.liczbaStacji) && m.liczbaStacji > 0
+    && Number.isInteger(m.pytaniaNaStacje) && m.pytaniaNaStacje > 0;
 }
 
 /** Rozmiar wpisu w bajtach (UTF-8 JSON) — pod budżet LRU. */
@@ -158,17 +160,24 @@ const zbiorTematow = (tematy) => new Set(tematy);
  * sam zestaw tematów (reguły z ADR 0017 pkt 7 — ściśle i przewidywalnie; UI
  * pokazuje metadane, więc organizator widzi, dlaczego propozycja pasuje).
  */
-export function dopasujZestawy(rejestr, { geohash5, promienM, tematy, wiek } = {}) {
+export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pytaniaNaStacje, tematy, wiek } = {}) {
   wymaganie(typeof geohash5 === 'string' && geohash5.length === 5, 'dopasujZestawy: geohash5 musi mieć 5 znaków');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'dopasujZestawy: promienM musi być liczbą > 0');
+  wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'dopasujZestawy: liczbaStacji musi być dodatnią liczbą całkowitą');
+  wymaganie(Number.isInteger(pytaniaNaStacje) && pytaniaNaStacje > 0, 'dopasujZestawy: pytaniaNaStacje musi być dodatnią liczbą całkowitą');
   wymaganie(Array.isArray(tematy) && tematy.length > 0, 'dopasujZestawy: tematy muszą być niepustą listą');
   wymaganie(typeof wiek === 'string' && wiek.length > 0, 'dopasujZestawy: wiek musi być nazwą');
   const szukany = zbiorTematow(tematy);
   // tolerujemy obie konwencje: surowa lista wpisów (walidacje surowe) i obiekt
   // rejestru `{ schemat, wpisy }` (zapis) — jedno wejście, zero niespodzianek
   const lista = Array.isArray(rejestr) ? rejestr : (rejestr?.wpisy ?? []);
+  // Kryteria właściciela (2026-09-06): ta sama okolica (geohash5), ta sama
+  // liczba stacji i pytań na stację, ten sam poziom (wiek), tematy paczki
+  // NIE SZERSZE niż w setupie oraz promień paczki ≤ promienia z setupu
+  // (stacje bliżej niż oczekiwano są uczciwe, dalej — nie).
   return lista
-    .filter((w) => w.geohash5 === geohash5 && w.promienM === promienM
+    .filter((w) => w.geohash5 === geohash5 && w.promienM <= promienM
+      && w.liczbaStacji === liczbaStacji && w.pytaniaNaStacje === pytaniaNaStacje
       && w.wiek === wiek && w.tematy.every((temat) => szukany.has(temat)))
     .sort((a, b) => String(b.data).localeCompare(String(a.data)));
 }
@@ -234,9 +243,11 @@ export function dopasujMetaIndeksu(indeks, kryteria) {
  * Meta dopasowania z bieżącej konfiguracji i pozycji (geohash5 z `geo.js`).
  * Czysta funkcja: warstwa DOM podaje wyłącznie fakty (ADR 0017 pkt 3).
  */
-export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data } = {}) {
+export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje } = {}) {
   wymaganie(Number.isFinite(lat) && Number.isFinite(lon), 'zbierzMetaZestawu: pozycja musi być liczbami');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'zbierzMetaZestawu: promienM musi być liczbą > 0');
+  wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'zbierzMetaZestawu: liczbaStacji musi być dodatnią liczbą całkowitą');
+  wymaganie(Number.isInteger(pytaniaNaStacje) && pytaniaNaStacje > 0, 'zbierzMetaZestawu: pytaniaNaStacje musi być dodatnią liczbą całkowitą');
   wymaganie(Array.isArray(tematy) && tematy.length > 0, 'zbierzMetaZestawu: tematy muszą być niepustą listą');
   wymaganie(typeof wiek === 'string' && wiek.length > 0, 'zbierzMetaZestawu: wiek musi być nazwą');
   return {
@@ -247,6 +258,8 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
     wiek,
     jezyk: typeof jezyk === 'string' && jezyk ? jezyk : 'polski',
     data: typeof data === 'string' && data ? data : new Date().toISOString().slice(0, 16).replace('T', ' '),
+    liczbaStacji,
+    pytaniaNaStacje,
   };
 }
 
