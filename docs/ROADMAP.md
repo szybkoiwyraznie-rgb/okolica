@@ -257,6 +257,36 @@ sprawiedliwość trasy, eksport wyniku (tekst/obraz), historia gier
 Kryterium: podsumowanie czytelne w słońcu na 360 px; eksport działa na Chrome
 Android i Safari iOS.
 
+**Kod M7 gotowy (2026-09-06):** pełne podsumowanie w `gra-panel-koniec`:
+karta zwycięzcy (🏆, punkty, rozbicie „podstawowe + premie"), ranking
+(punkty, poprawne/błędne, czas odcinków), karty graczy (odcinki, dystans,
+tempo, ręczne dojścia, po limicie), tabela stacji (kto, stan, tryb dojścia
+GPS/ręczne, zmierzony czas albo kreska przy pominięciu), statystyki gry
+i medal sprawiedliwości trasy — `wynik.sprawiedliwoscTrasy()` (pole
+`dystansSieciowyM` gdy którakolwiek stacja ma sieciowe, inaczej proste;
+udział odchylenia ≤ 0,15 = „🏅 Uczciwa trasa") — widokowy, NIE wpływa na
+punkty (ADR 0014). Na ≤ 360 px tabele składają się w karty. Eksporty:
+`app/wynik.js` (czysty, bez DOM) — tekst `wynikTekstowy()` (wiersze stacji
+bez `#`, żeby `#1` nie stawało się nagłówkiem w komunikatorach), obraz
+`planObrazuWyniku()` → PNG 1080 px (plan komend odwołuje się WYŁĄCZNIE do
+ról palety `ROLE_PALETY`; kolory rozwiązane z tokenów CSS w chwili eksportu,
+paleta awaryjna przy braku), przyciski Web Share → schowek → plik .txt/.png
+(plik zawsze, share chowany, gdy niedostępny). Prywatność: ani treści pytań,
+ani współrzędnych w eksportach i w historii (testy-strażnicy). Historia
+`okolica:historia` (`historia/1`, wpis `historia-gra/1`, limit 50): jeden
+skrót na klucz gry — zastąpienie idempotentne; ręczne zakończenie zapisuje
+wpis `przerwana:true`, naturalne dokończenie go zastępuje; karta „Poprzednie
+gry" na setupie (najnowsza pierwsza), dwustopniowe kasowanie, zepsuty zapis
+jawny kodami `H01`–`H04`. Integracja end-to-end: pełna gra z dojściem GPS
+(symulacja ×3 stacje) → podsumowanie z prawdziwą punktacją, eksporty i wpis
+historii. Brama: **383 testy**, 0 fail + szablon promptu zgodny;
+cache-busting `?v=m7-1`.
+**Zostało na M7:** kryteria terenowe właściciela (`WORKFLOW` §4) —
+podsumowanie czytelne w słońcu na 360 px; eksport (share/schowek/plik/obraz)
+na Chrome Android i Safari iOS; razem z zaległymi kryteriami M3 (360 px),
+M4 (prawdziwa okolica), M5 (pętla z prawdziwym modelem) i M6 (pełna gra
+na telefonie).
+
 ## M8 — Publikacja i brama jakości
 
 `.nojekyll`, `assets/manifest.json` + ikony, instrukcja włączenia Pages

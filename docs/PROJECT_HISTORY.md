@@ -394,3 +394,56 @@ zamknięciem przeglądarki (wznowienie z rebazą zegara) — czeka razem
 z zaległymi kryteriami M3 (360 px), M4 (prawdziwa okolica) i M5 (pętla
 z prawdziwym modelem). Do M7 zostaje pełne podsumowanie (czasy,
 sprawiedliwość trasy, eksport wyniku) i historia gier (`okolica:historia`).
+
+## 2026-09-06 — M7: podsumowanie, punkty i udostępnianie (kod gotowy, P1–P8)
+
+Kamień w ośmiu krokach, wszystkie na zielonej bramie i wypchnięte od razu:
+
+- **P1** (`ce852f3`) — plan kamienia: `docs/plans/2026-09-06-m7-podsumowanie.md`
+  z decyzjami (podsumowanie rośnie w `gra-panel-koniec`; medal
+  sprawiedliwości widokowy 🏅, bez wpływu na punkty; eksporty = czyste moduły
+  + cienka warstwa wykonawcza DOM; prywatność: ani treści pytań, ani
+  współrzędnych w eksportach i historii; historia `okolica:historia` limit 50,
+  zastąpienie idempotentne po kluczu gry; kody `H` jawne; share chowany gdy
+  niedostępny, plik zawsze).
+- **P2** (`4eaaec1`) — API historii w `app/trwalosc.js` (czyste):
+  `KLUCZ_HISTORII`, schemat `historia/1`, wpis `historia-gra/1`, `skrotGry()`,
+  `dodajWpisHistorii()` (niezmiennikowo, limit 50, zastąpienie po `klucz`),
+  `walidujHistorieSurowa()` (atomowa, kody `H01`–`H04`) + testy jednostkowe.
+- **P3** (`8e707b8`) — pełne podsumowanie w panelu D: karta zwycięzcy
+  (🏆, punkty, rozbicie podstawowe + premie), ranking, szczegóły graczy
+  (odcinki, czas, tempo, ręczne dojścia), tabela stacji (tryb dojścia, czas
+  albo kreska), statystyki gry, medal `wynik.sprawiedliwoscTrasy()` (próg
+  udziału odchylenia 0,15; pole sieciowe gdy dostępne); na ≤ 360 px tabele
+  składają się w karty (czytelność w słońcu); kontrakt identyfikatorów.
+- **P4** (`7e8254f`) — `app/wynik.js` (czyste): `wynikTekstowy()` (wiersze
+  stacji bez `#` — `#1` na początku linii staje się nagłówkiem w
+  komunikatorach), `dataWynikuTekst()`, nazwy plików
+  `okolica-<kod>.wynik.txt/.png`; przyciski „⤴ Udostępnij" / „📋 Kopiuj" /
+  „⬇ Wynik .txt" (Web Share → schowek → plik) + strażnik prywatności
+  w testach.
+- **P5** (`0a9e9eb`) — eksport obrazkowy: `planObrazuWyniku()` (PNG 1080 px;
+  komendy odwołują się wyłącznie do ról palety `ROLE_PALETY`), cienki
+  wykonawca `rysujWynikNaCanvas()`, kolory rozwiązane z tokenów CSS
+  (`getComputedStyle`) w chwili eksportu z paletą awaryjną; zrąb DOM testów
+  z rozszerzonym stub-em canvas (rekorder komend) i `getComputedStyle`.
+- **P6** (`ae824e0`) — historia w UI: hook w `zapiszGre()` — wpis po każdej
+  tranzycji prowadzącej do fazy `koniec` albo po ręcznym zakończeniu
+  (`zakonczGreRecznie` dostało brakujące `zapiszGre()`; bez niego wpis
+  „przerwana" nigdy by nie powstał), karta „Poprzednie gry" na setupie
+  (najnowsza pierwsza, znacznik `(przerwana)`, jawne kody `H` przy zepsutym
+  zapisie, dwustopniowe kasowanie bez `confirm()`).
+- **P7** (`455e532`) — integracja end-to-end: pełna gra z dojściem GPS
+  (symulacja ×3 stacje, poprawne odpowiedzi) → podsumowanie z prawdziwą
+  punktacją (widełki POLICZONE z modelu: 2 × 20 pkt ± premia), eksporty
+  tekstowy i obrazkowy spójne z panelem, pełny wpis historii — ze
+  strażnikami prywatności (pytania odsłonięte w grze nie wyciekają do
+  eksportów ani historii). Złapany błąd odczytu: regex po złączonym
+  textContent karty łapał „142 pkt" z „Gracz 1" + „42 pkt" (LESSONS L24).
+- **P8** (ten commit) — dokumenty (README, ROADMAP „kod M7 gotowy",
+  ARCHITECTURE: drzewo + przepływ 6 + §Stan i trwałość, LESSONS L24),
+  cache-busting `?v=m6-1` → `?v=m7-1`, aktualizacja PR #2. Brama:
+  **383 testy**, 0 fail + szablon promptu zgodny.
+
+Zostało na M7 (właściciel, teren): podsumowanie czytelne w słońcu na 360 px;
+eksport (share/schowek/plik/obraz) na Chrome Android i Safari iOS.

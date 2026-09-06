@@ -45,7 +45,7 @@ prowadzącego (B12), publikacja Pages i manifest (M8), offline/service worker
 
 ## Etapy
 
-- [ ] **P1 — plan (ten plik):** zakres, decyzje, ryzyka; commit + push.
+- [x] **P1 — plan (ten plik):** zakres, decyzje, ryzyka; commit + push.
 - [x] **P2 — historia w `trwalosc.js` (czyste):** `KLUCZ_HISTORII
       = 'okolica:historia'`, `skrotGry({ rozgrywka, konfig, stacje,
       podsumowanie, miejsce, terazMs })` → wpis `historia-gra/1`,
@@ -94,7 +94,7 @@ prowadzącego (B12), publikacja Pages i manifest (M8), offline/service worker
       pytań ani współrzędnych) → wpis w `okolica:historia` (skrót, bez
       treści); ręczne zakończenie → wpis `przerwana`, wznowienie → dokończenie
       → wpis zastąpiony pełnym; brama zielona.
-- [ ] **P8 — dokumenty i zamknięcie:** README, ROADMAP („kod M7 gotowy"),
+- [x] **P8 — dokumenty i zamknięcie:** README, ROADMAP („kod M7 gotowy"),
       ARCHITECTURE (przepływ C. Podsumowanie/eksport, §Stan i trwałość:
       `okolica:historia`), PROJECT_HISTORY, LESSONS jeśli coś zaskoczy,
       cache-busting `?v=m7-1`, aktualizacja PR #2. Kryterium właściciela

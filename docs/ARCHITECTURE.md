@@ -38,8 +38,13 @@ app/
                               i czasy, odpowiedzi, punktacja (ADR 0014), dziennik,
                               podsumowanie, kody G01–G13 (czyste, zegar wstrzykiwany)
   trwalosc.js               — trwałość stanu gry: snapshot `stan-gry/1`, klucze
-                              `okolica:gra:*`, walidacja T01–T10, budżet 2 MB
-                              (czyste; ADR 0010)
+                              `okolica:gra:*`, walidacja T01–T10, budżet 2 MB;
+                              historia gier `okolica:historia` (`historia/1`,
+                              kody H01–H04, limit 50) (czyste; ADR 0010)
+  wynik.js                  — wynik: sprawiedliwość trasy, eksport tekstowy,
+                              plan komend obrazu (PNG 1080 px) i nazwy plików
+                              (czyste; bez DOM, bez treści pytań, bez
+                              współrzędnych)
   mapa.js                   — mapa: matematyka widoku (zoom ↔ skala, środek ↔
                               przesunięcie, piksele ↔ współrzędne), adresy
                               kafelków, plan rysowania i pasek skali (czyste)
@@ -169,10 +174,16 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
    się samym dojściem, a pominąć da się tylko odcinek w drodze (ADR 0015);
    ręczne zakończenie gry pokazuje wczesny wynik, ale NIE kasuje zapisu —
    grę można wznowić.
-6. Koniec → tabela wyniku z `podsumowanie()` (ranking, punkty, poprawne,
-   zwycięzca z 🏆) — w M6 minimalna; pełne podsumowanie (czasy,
-   sprawiedliwość trasy, źródła pytań) i eksport wyniku (ADR 0010 pkt 5)
-   to M7.
+6. Koniec → pełne podsumowanie w `gra-panel-koniec` z `podsumowanie()`:
+   zwycięzca z rozbiciem punktacji, ranking, karty graczy (odcinki, tempo),
+   tabela stacji (tryb dojścia GPS/ręczne/pominięta, zmierzony czas),
+   statystyki + medal sprawiedliwości trasy (`wynik.sprawiedliwoscTrasy()`,
+   widokowy — ADR 0014). Eksporty z `app/wynik.js`: tekst `wynikTekstowy()`,
+   obraz `planObrazuWyniku()` → wykonawca canvas → PNG 1080 px (kolory
+   z tokenów CSS w chwili eksportu); udostępnianie Web Share → schowek →
+   plik. Skrót gry ląduje w historii `okolica:historia` (jeden wpis na klucz
+   gry; ręczne zakończenie znaczy `przerwana`, naturalny koniec zastępuje
+   wpis — ADR 0010 pkt 1).
 
 ## Kluczowe algorytmy
 
@@ -293,8 +304,20 @@ odmawia przyjęcia `STAN.paczka` w jakiejkolwiek postaci. Zapis leci po każdej
 tranzycji synchronicznie (`beforeunload` jest na telefonach zawodny), a błędy
 zapisu nie zatrzymują gry — idą do statusu. Wznowienie rebazuje oś czasu
 (`zegarMs`), kasuje bufor trafień i centrowanie mapy; kasowanie zapisu i
-ręczne zakończenie gry są dwustopniowe (ADR 0015 pkt 6). Historia gier
-(`okolica:historia`) dochodzi w M7.
+ręczne zakończenie gry są dwustopniowe (ADR 0015 pkt 6).
+
+Historia gier (M7) żyje obok zapisów w `app/trwalosc.js`: klucz
+`okolica:historia`, schemat `historia/1`, wpis `historia-gra/1` — skrót BEZ
+treści pytań i BEZ współrzędnych (data, miejsce z konfiga — bramowane
+geokodacją jak w promptach, tryb, zwycięzca, punkty, poprawne, czasy,
+znacznik `przerwana`). Limit 50 wpisów (najstarsze wypadają),
+a zastąpienie po kluczu gry jest idempotentne: dokończenie przerwanej gry
+NADPISUJE wpis, nie dokłada drugiego. Wpis powstaje w hooku `zapiszGre()` —
+po każdej tranzycji, która zostawia grę w fazie `koniec` albo z
+`graZakonczonaRecznie` (obejmuje więc też wznowienie gry już zakończonej).
+Wczytanie waliduje `walidujHistorieSurowa()` (kody `H01`–`H04`), a zepsuty
+zapis odzywa się w UI jawnie tymi kodami i oferuje dwustopniowe kasowanie —
+nigdy cicho (ADR 0010 pkt 6).
 
 ## Testowanie
 

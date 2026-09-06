@@ -371,3 +371,23 @@ tam jest). Asercja, której obie strony wyrażają tę samą wartość, jest zak
 albo porównuję stan PRZED z oczekiwanym literalem (`true`/`false`), albo nie
 piszę asercji wcale. Tautologia jest gorsza niż brak testu — dodaje pewność,
 której nie ma.
+
+## L24 (2026-09-06, Tajemnicza Okolica) — regex liczbowy po złączonym textContent przeczytał „142 pkt" z „Gracz 1" + „42 pkt"
+
+**Objaw:** test integracyjny P7 czerwony przy pierwszym przebiegu:
+`punkty zwycięzcy w widełkach policzonych: 142` — przy maksimum z modelu 60
+(2 odpowiedzi × 20 pkt bazowych ± premia czasowa 0,5 × 0,5 × 20).
+
+**Przyczyna:** asercja czytała
+`Number(karta.textContent.match(/(\d+) pkt/)[1])` po textContent CAŁEJ karty
+zwycięzcy. Zrąb DOM wiernie skleja tekst potomków BEZ separatorów (zachowanie
+przeglądarki): imię `Gracz 1` zrosło się z `42 pkt` elementu-potomka w
+`Gracz 142 pkt`, a regex chętnie złapał `142`. Liczba była prawdziwa — tyle
+że z granicy elementów.
+
+**Reguła:** asercje liczbowe na tekście czytam z KONKRETNEGO elementu, który
+trzyma liczbę (`children[i].textContent`), nigdy regexem po złączonym
+textContent przodka; regex tylko zakotwiczony separatorem, który istnieje
+wewnątrz JEDNEGO elementu. Wariant L23 (oczekiwania z kodu, nie z pamięci)
+i przypomnienie, że wierny zrąb tnie w obie strony: odsłania prawdziwe
+zachowanie przeglądarki — także to, które nie wybacza niechlujnego odczytu.

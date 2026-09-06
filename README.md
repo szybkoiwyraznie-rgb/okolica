@@ -92,6 +92,23 @@ rozegrać symulacją trasy — gra bez GPS. Kamień czeka na kryterium terenowe
 właściciela: pełna gra na telefonie, z utratą zasięgu w trakcie i z
 zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).
 
+**M7 — podsumowanie, punkty i udostępnianie: kod i testy gotowe.** Po końcu
+gry (naturalnym albo ręcznym) panel wyniku pokazuje pełne podsumowanie:
+zwycięzca z 🏆 i rozbiciem punktacji, ranking, szczegóły graczy (odcinki,
+tempo), tabela stacji (tryb dojścia: GPS / ręczne / pominięta), statystyki
+i medal sprawiedliwości trasy (🏅 widokowe — nie wpływa na punkty, ADR 0014).
+Wynik da się udostępnić bez serwera: tekst w formacie przyjaznym komunikatorom
+(wiersze stacji bez `#`, żeby `#1` nie stało się nagłówkiem), obraz PNG
+1080 px rysowany z czystego planu komend (paleta z tokenów CSS), Web Share →
+schowek → plik .txt/.png. W żadnym eksporcie ani w historii nie ma treści
+pytań ani współrzędnych — pilnują tego testy-strażnicy. Na setupie dochodzi
+karta „Poprzednie gry": do 50 skrótów (`okolica:historia`), najnowsza
+pierwsza, ze znacznikiem gier przerwanych ręcznie; dokończenie przerwanej gry
+ZASTĘPUJE wpis zamiast dodawać drugi, kasowanie jest dwustopniowe, a zepsuty
+zapis odzywa się jawnie kodami `H`. Kamień czeka na kryteria terenowe
+właściciela: czytelność w słońcu na 360 px i eksport na Chrome Android oraz
+Safari iOS (`docs/WORKFLOW.md` §4.2).
+
 ## Uruchomienie lokalne
 
 ```bash
