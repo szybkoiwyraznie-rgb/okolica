@@ -16,6 +16,7 @@ import {
   SCHEMAT_KONTENERA, SZABLON_PROMPTU, TOKENY_MIEJSCA, WERSJA_PROTOKOLU,
   czyZakotwiczone, normalizujTekst, parsujOdpowiedzModela, podsumowaniePaczki,
   poprawkaDlaModelu, rdzenTokena, tokenyWlasne, walidujPaczke, zbudujPrompt,
+  zastosujEdycjePaczki, EDYTOWALNE_POLA,
 } from '../app/protokol.js';
 import { domyslnaKonfiguracja, liczbaPytan } from '../app/konfig.js';
 import { przesunPunkt } from '../app/geo.js';
@@ -340,4 +341,115 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
 test('stałe protokołu: wersja i schemat kontenera', () => {
   assert.equal(WERSJA_PROTOKOLU, 'PYT/1.0');
   assert.equal(SCHEMAT_KONTENERA, 'TO-paczka/2', 'kontener po decyzji z ADR 0007 (obfuskacja bez klucza)');
+});
+
+/* ------------------------------------- M5/J2: ręczna edycja paczki (ADR 0006 pkt 8) */
+
+const TERAZ_MS = Date.UTC(2026, 8, 6, 10, 30);
+
+function swiezaPaczka() {
+  return JSON.parse(readFileSync(join(KATALOG, 'test', 'fixtures', 'paczka-ok.json'), 'utf8'));
+}
+
+test('edycja: poprawna treść i odpowiedź tworzą nową paczkę z modyfikacje[]', () => {
+  const przed = swiezaPaczka();
+  const id = przed.pytania[0].id;
+  const nowaTresc = `${przed.okolica.miejsce} — pytanie poprawione ręcznie przez organizatora?`;
+  const wynik = zastosujEdycjePaczki(przed, [
+    { pytanieId: id, zmiany: { tresc: `  ${nowaTresc}  `, poprawna: 2 } },
+  ], { terazMs: TERAZ_MS });
+
+  assert.deepEqual(wynik.usterki, []);
+  assert.equal(wynik.paczka.pytania[0].tresc, nowaTresc, 'treść zmieniona i przycięta');
+  assert.equal(wynik.paczka.pytania[0].poprawna, 2);
+  assert.equal(wynik.paczka.pytania.length, przed.pytania.length);
+  assert.equal(wynik.modyfikacje.length, 1);
+  assert.match(wynik.paczka.modyfikacje[0].data, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/, 'data w formacie utworzono (PROTOKOL §3.1)');
+  assert.equal(wynik.paczka.modyfikacje[0].opis, `pytanie ${id}: poprawiono treść pytania, poprawną odpowiedź`);
+
+  // wejście nietknięte (niezmiennikowość jak w rozgrywka.js)
+  assert.deepEqual(przed, swiezaPaczka(), 'oryginalna paczka bez mutacji');
+  assert.notEqual(wynik.paczka, przed);
+
+  // po edycji paczka wciąż przechodzi walidator protokołu
+  const usterki = walidujPaczke(wynik.paczka, {});
+  assert.deepEqual(usterki.map((u) => u.kod), [], `re-walidacja czysta, jest: ${JSON.stringify(usterki)}`);
+});
+
+test('edycja: modyfikacje[] dokleja się do istniejącej listy, a data jest deterministyczna', () => {
+  const paczka = swiezaPaczka();
+  paczka.modyfikacje = [{ data: '2026-09-01 09:00', opis: 'pytanie s1p1: poprawiono treść pytania' }];
+  const id = paczka.pytania[0].id;
+  const a = zastosujEdycjePaczki(paczka, [{ pytanieId: id, zmiany: { tresc: `${paczka.okolica.miejsce} — druga poprawka organizatora?` } }], { terazMs: TERAZ_MS });
+  const b = zastosujEdycjePaczki(paczka, [{ pytanieId: id, zmiany: { tresc: `${paczka.okolica.miejsce} — druga poprawka organizatora?` } }], { terazMs: TERAZ_MS });
+  assert.equal(a.paczka.modyfikacje.length, 2, 'stary wpis zostaje, nowy dochodzi');
+  assert.equal(a.paczka.modyfikacje[0].opis, 'pytanie s1p1: poprawiono treść pytania');
+  assert.deepEqual(a.paczka.modyfikacje[1], b.paczka.modyfikacje[1], 'ten sam zegar = ten sam wpis');
+});
+
+test('edycja: każda odmowa ma kod z kanonu E i atomowość — jedna zła edycja kasuje wszystkie', () => {
+  const paczka = swiezaPaczka();
+  const id = paczka.pytania[0].id;
+  const dobre = { pytanieId: id, zmiany: { tresc: `${paczka.okolica.miejsce} — poprawna treść zastępcza?` } };
+
+  const przypadki = [
+    [[{ pytanieId: 's9p9', zmiany: { tresc: 'x?' } }], 'E19', /nie ma pytania/],
+    [[{ pytanieId: id, zmiany: { temat: 'przyroda' } }], 'E15', /nie wolno edytować/],
+    [[{ pytanieId: id, zmiany: { punkty: 20 } }], 'E15', /nie wolno edytować/],
+    [[{ pytanieId: id, zmiany: { tresc: '   ' } }], 'E15', /nie może być pusta/],
+    [[{ pytanieId: id, zmiany: { poprawna: 4 } }], 'E06', /poza zakresem/],
+    [[{ pytanieId: id, zmiany: { poprawna: 1.5 } }], 'E06', /poza zakresem/],
+    [[{ pytanieId: id, zmiany: { odpowiedzi: ['a', 'b', 'c'] } }], 'E07', /dokładnie 4/],
+    [[{ pytanieId: id, zmiany: { odpowiedzi: ['a', '', 'c', 'd'] } }], 'E07', /dokładnie 4/],
+    [[{ pytanieId: id, zmiany: { zrodla: [] } }], 'E09', /niepusta lista/],
+    [[{ pytanieId: id, zmiany: { zrodla: [{ url: 'https://x.pl' }] } }], 'E09', /niepusta lista/],
+    [[{ pytanieId: id, zmiany: { wyjasnienie: '' } }], 'E20', /nie może być puste/],
+  ];
+  for (const [edycje, kod, wzor] of przypadki) {
+    const wynik = zastosujEdycjePaczki(paczka, edycje, { terazMs: TERAZ_MS });
+    assert.equal(wynik.paczka, null, `odmowa dla ${kod}: paczka null`);
+    assert.equal(wynik.usterki.length, 1);
+    assert.equal(wynik.usterki[0].kod, kod);
+    assert.match(wynik.usterki[0].komunikat, wzor);
+  }
+
+  // atomowość: dobra + zła edycja razem → NIC nie zostaje zastosowane
+  const mieszany = zastosujEdycjePaczki(paczka, [dobre, { pytanieId: id, zmiany: { poprawna: 9 } }], { terazMs: TERAZ_MS });
+  assert.equal(mieszany.paczka, null);
+  assert.equal(mieszany.usterki.length, 1);
+  assert.deepEqual(paczka, swiezaPaczka(), 'paczka wejściowa nietknięta także przy odmowie');
+});
+
+test('edycja: błędy strukturalne argumentów to TypeError, nie cichy null', () => {
+  const paczka = swiezaPaczka();
+  const id = paczka.pytania[0].id;
+  assert.throws(() => zastosujEdycjePaczki(null, []), TypeError);
+  assert.throws(() => zastosujEdycjePaczki(paczka, 'nie-lista'), TypeError);
+  assert.throws(() => zastosujEdycjePaczki(paczka, [{ pytanieId: 12, zmiany: {} }]), TypeError);
+  assert.throws(() => zastosujEdycjePaczki(paczka, [{ pytanieId: id, zmiany: [] }]), TypeError);
+  assert.throws(() => zastosujEdycjePaczki(paczka, [null]), TypeError);
+  assert.deepEqual(EDYTOWALNE_POLA, ['tresc', 'odpowiedzi', 'poprawna', 'wyjasnienie', 'zrodla']);
+});
+
+test('edycja: pełne odpowiedzi i źródła przechodzą, a paczka z edycją ukrywa się i wraca z modyfikacje[]', async () => {
+  const { zapakujPaczke, odpakujPaczke } = await import('../app/kodowanie.js');
+  const paczka = swiezaPaczka();
+  const id = paczka.pytania[0].id;
+  const wynik = zastosujEdycjePaczki(paczka, [{
+    pytanieId: id,
+    zmiany: {
+      tresc: `${paczka.okolica.miejsce} — pytanie z kompletem nowych odpowiedzi?`,
+      odpowiedzi: ['nowa pierwsza', 'nowa druga', 'nowa trzecia', 'nowa czwarta'],
+      poprawna: 3,
+      wyjasnienie: 'Organizator poprawił odpowiedzi po kwerendzie własnej: nowa czwarta jest potwierdzona źródłem z tablicy przy stacji.',
+      zrodla: [{ url: 'https://muzeum-okolice.example.invalid/…' , tytul: 'Tablica przy stacji', sprawdzono: '2026-09-06' }],
+    },
+  }], { terazMs: TERAZ_MS });
+  // uwaga: example.invalid jest domeną zarezerwowaną — walidator paczki ją odrzuci (E10),
+  // ale zastosujEdycjePaczki sprawdza tylko kształt; to walidujPaczke jest kanonem treści
+  assert.equal(wynik.paczka.pytania[0].zrodla[0].tytul, 'Tablica przy stacji');
+  const kontener = zapakujPaczke(wynik.paczka, WERSJA_PROTOKOLU);
+  const zPowrotem = odpakujPaczke(JSON.stringify(kontener));
+  assert.equal(zPowrotem.paczka.pytania[0].tresc, wynik.paczka.pytania[0].tresc, 'edycja przeżywa rundę przez kontener');
+  assert.deepEqual(zPowrotem.paczka.modyfikacje, wynik.paczka.modyfikacje, 'modyfikacje[] podróżuje z paczką (PROTOKOL §3.1)');
 });

@@ -30,10 +30,12 @@ ASSETS §3).
 
 ## Kroki
 
-- [ ] **J1 — plan kamienia** (ten plik) + commit.
-- [ ] **J2 — edycja paczki jako czysta funkcja:** `protokol.js`
+- [x] **J1 — plan kamienia** (ten plik) + commit.
+- [x] **J2 — edycja paczki jako czysta funkcja:** `protokol.js`
       `zastosujEdycjePaczki(paczka, edycje, { terazMs })` — `edycje` to lista
-      `{ stacja, pytanie, zmiany: { tresc?, odpowiedzi?, poprawna?, zrodla? } }`;
+      `{ pytanieId, zmiany: { tresc?, odpowiedzi?, poprawna?, wyjasnienie?,
+      zrodla? } }` (pytanie identyfikuje kanoniczne `id` z PROTOKOL §3.2, nie
+      para stacja+numer);
       funkcja zwraca NOWĄ paczkę (niezmiennikowość jak w `rozgrywka.js`)
       z dopisanym `modyfikacje[] = { data, opis }` per zmiana (PROTOKOL §3.1);
       walidacja samej edycji (pusta treść, indeks poprawnej poza zakresem,
