@@ -25,7 +25,6 @@ export const SCHEMAT_INDEKSU = 'TO-indeks/1';
 
 export const KLUCZ_REJESTRU = 'okolica:zestawy';
 export const KLUCZ_URL_REPO = 'okolica:repo-zestawow:url';
-export const DOMYSLNY_URL_INDEKSU = 'data/paczki/indeks.json';
 
 /** Budżet rejestru zestawów: 1,5 MB (ADR 0017 pkt 7) — osobno od 2 MB gry. */
 export const BUDZET_ZESTAWOW_BAJTY = 1_500_000;

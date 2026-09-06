@@ -2,7 +2,7 @@
   "schemat": "TO-zestaw/1",
   "protokol": "PYT/1.0",
   "meta": {
-    "miejsce": "Podkowa Leśna",
+    "miejsce": "Podkowa Le\u015bna",
     "geohash5": "u3q8x",
     "promienM": 1000,
     "tematy": [
@@ -15,25 +15,25 @@
     "data": "2026-09-06 19:30",
     "liczbaStacji": 3,
     "pytaniaNaStacje": 2,
-    "autor": "agent Arena (kuracja źródeł)",
+    "autor": "agent Arena (kuracja \u017ar\u00f3de\u0142)",
     "licencja": "CC BY-SA 4.0",
-    "przegladZrodel": "oczekuje przeglądu właściciela; fakty i źródła zweryfikował agent 2026-09-06 (web)"
+    "przegladZrodel": "plik przyk\u0142adowy \u2014 nie jest publikowany; \u017ar\u00f3d\u0142a zweryfikowa\u0142 agent 2026-09-06, \u015bcie\u017cka publikacji przeniesiona na Drive (decyzja w\u0142a\u015bciciela)"
   },
   "stacje": [
     {
       "lat": 52.122222,
       "lon": 20.725278,
-      "opis": "plac przed stacją WKD Podkowa Leśna Główna (przestrzeń publiczna)"
+      "opis": "plac przed stacj\u0105 WKD Podkowa Le\u015bna G\u0142\u00f3wna (przestrze\u0144 publiczna)"
     },
     {
       "lat": 52.121111,
       "lon": 20.726944,
-      "opis": "skwer przed kościołem św. Krzysztofa, ul. Jana Pawła II (przestrzeń publiczna)"
+      "opis": "skwer przed ko\u015bcio\u0142em \u015bw. Krzysztofa, ul. Jana Paw\u0142a II (przestrze\u0144 publiczna)"
     },
     {
       "lat": 52.123611,
       "lon": 20.7375,
-      "opis": "rejon przejazdu przy przystanku WKD Podkowa Leśna Wschodnia, ul. Królicza/Wschodnia (przestrzeń publiczna)"
+      "opis": "rejon przejazdu przy przystanku WKD Podkowa Le\u015bna Wschodnia, ul. Kr\u00f3licza/Wschodnia (przestrze\u0144 publiczna)"
     }
   ],
   "kontener": {

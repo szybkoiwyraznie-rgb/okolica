@@ -573,25 +573,3 @@ test('kontrakt M8: manifest, ikony i ścieżki względne pod Pages (ADR 0002)', 
   // do domeny głównej i dała 404; względne i data: są dozwolone
   assert.ok(!/(?:href|src)="\/[^/"]/.test(INDEX), 'zero ścieżek root-absolute w index.html');
 });
-
-test('kontrakt M9: indeks paczek ↔ katalog data/paczki (ADR 0017 pkt 2/5)', () => {
-  const katalog = join(ROOT, 'data', 'paczki');
-  const pliki = existsSync(katalog) ? readdirSync(katalog).filter((n) => n.endsWith('.zestaw.json')) : [];
-  assert.ok(existsSync(join(katalog, 'indeks.json')), 'indeks.json istnieje (generuje npm run indeks-paczek)');
-  const indeks = JSON.parse(czytaj('data/paczki/indeks.json'));
-  assert.equal(indeks.schemat, 'TO-indeks/1', 'schemat indeksu');
-  const wIndeksie = new Set(indeks.wpisy.map((w) => w.plik));
-  for (const plik of pliki) {
-    assert.ok(wIndeksie.has(plik) || JSON.parse(czytaj(`data/paczki/${plik}`)).meta.przegladZrodel.includes('oczekuje przeglądu'),
-      `plik poza indeksem musi jawnie oczekiwać przeglądu właściciela: ${plik}`);
-  }
-  for (const wpis of indeks.wpisy) {
-    assert.ok(pliki.includes(wpis.plik), `wpis indeksu bez pliku w katalogu: ${wpis.plik}`);
-  }
-  for (const wpis of indeks.wpisy) {
-    assert.equal(wpis.licencja, 'CC BY-SA 4.0', `licencja publiczna: ${wpis.plik}`);
-    assert.ok(!wpis.przegladZrodel.includes('oczekuje przeglądu'), `przegląd źródeł odbyty: ${wpis.plik}`);
-    assert.match(wpis.geohash5, /^[0-9a-z]{5}$/, `geohash5 bez dokładniejszych współrzędnych: ${wpis.plik}`);
-    assert.ok(Number.isInteger(wpis.stacji) && wpis.stacji > 0, `licznik stacji: ${wpis.plik}`);
-  }
-});

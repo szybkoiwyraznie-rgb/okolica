@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BUDZET_ZESTAWOW_BAJTY, KLUCZ_REJESTRU, KLUCZ_URL_REPO, DOMYSLNY_URL_INDEKSU,
+  BUDZET_ZESTAWOW_BAJTY, KLUCZ_REJESTRU, KLUCZ_URL_REPO,
   MAKS_ZESTAWOW, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY, SCHEMAT_ZESTAWU,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu,
   nowyRejestr, rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy,
@@ -139,7 +139,6 @@ test('zestawy: klucze i rozmiary są przewidywalne', () => {
   assert.equal(kluczZestawu(null), 'okolica:zestaw:brak');
   assert.equal(KLUCZ_REJESTRU, 'okolica:zestawy');
   assert.equal(KLUCZ_URL_REPO, 'okolica:repo-zestawow:url');
-  assert.equal(DOMYSLNY_URL_INDEKSU, 'data/paczki/indeks.json', 'domyślny indeks ścieżką względną (Pages)');
   assert.equal(rozmiarBajty({ a: 'ą' }), JSON.stringify({ a: 'ą' }).length + 1, '„ą" to dwa bajty UTF-8');
   assert.throws(() => dolozWpisRejestru(nowyRejestr(), { skrot: 'x' }, { bajty: 1 }), TypeError);
   assert.throws(() => dolozWpisRejestru(nowyRejestr(), wpis('a', 'x'), { bajty: -1 }), TypeError);

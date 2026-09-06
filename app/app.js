@@ -32,7 +32,7 @@ import { GRANICE, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, oc
 import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m7-1';
 import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m7-1';
 import {
-  DOMYSLNY_URL_INDEKSU, KLUCZ_REJESTRU, KLUCZ_URL_REPO, SCHEMAT_LOKALNY,
+  KLUCZ_REJESTRU, KLUCZ_URL_REPO, SCHEMAT_LOKALNY,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
@@ -1202,10 +1202,14 @@ function odswiezPropozycjeZestawow() {
     ));
   }
   const poleUrl = $('pole-url-repo');
-  if (poleUrl && !poleUrl.value && typeof localStorage !== 'undefined') {
-    poleUrl.value = localStorage.getItem(KLUCZ_URL_REPO) ?? DOMYSLNY_URL_INDEKSU;
+  const url = typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_URL_REPO) : null;
+  if (poleUrl && !poleUrl.value) poleUrl.value = url ?? '';
+  if (!url) {
+    $('zestawy-status').textContent = lokalne.length
+      ? 'Masz gotowe paczki z tego telefonu. Wspólne repozytorium (Drive) nie jest podłączone — adres wpiszesz w „Źródło repozytorium”.'
+      : 'Wspólne repozytorium (Drive) nie jest podłączone — adres wpiszesz w „Źródło repozytorium” (zaawansowane).';
+    return;
   }
-  const url = (typeof localStorage !== 'undefined' && localStorage.getItem(KLUCZ_URL_REPO)) || DOMYSLNY_URL_INDEKSU;
   $('zestawy-status').textContent = lokalne.length
     ? 'Masz gotowe paczki z tego telefonu; sprawdzam też repozytorium…'
     : 'Sprawdzam repozytorium paczek dla tej okolicy…';
@@ -2605,11 +2609,11 @@ function start() {
   $('przycisk-zapisz-url-repo').addEventListener('click', () => {
     if (typeof localStorage === 'undefined') return;
     const wartosc = $('pole-url-repo').value.trim();
-    if (wartosc && wartosc !== DOMYSLNY_URL_INDEKSU) localStorage.setItem(KLUCZ_URL_REPO, wartosc);
+    if (wartosc) localStorage.setItem(KLUCZ_URL_REPO, wartosc);
     else localStorage.removeItem(KLUCZ_URL_REPO);
-    status(wartosc && wartosc !== DOMYSLNY_URL_INDEKSU
-      ? 'Zapisano własne źródło repozytorium paczek — aplikacja tylko czyta, nigdy nie wysyła (ADR 0017 pkt 6).'
-      : 'Przywrócono domyślne źródło repozytorium (indeks obok aplikacji).');
+    status(wartosc
+      ? 'Zapisano źródło repozytorium paczek (Drive Apps Script) — aplikacja tylko czyta indeks i paczki (ADR 0017 pkt 6).'
+      : 'Usunięto źródło repozytorium — propozycje współdzielone wyłączone, zostają paczki z tego telefonu.');
     odswiezPropozycjeZestawow();
   });
   $('przycisk-eksport-paczki').addEventListener('click', () => {

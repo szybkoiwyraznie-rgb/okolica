@@ -100,9 +100,9 @@ test('zestawy UI: karta propozycji pokazuje paczkę z tego telefonu po ustawieni
   const lista = dom.pobierz('zestawy-lista');
   assert.equal(lista.children.length, 1, 'jedno dopasowanie: geohash5+promień+tematy+wiek');
   assert.match(lista.children[0].children[0].textContent, /z tego telefonu: Podkowa Leśna/);
-  // fetch indeksu w Node upada (URL względny) — degradacja, nie blokada (ADR 0017 pkt 6)
+  // bez skonfigurowanego źródła Drive karta mówi wprost, że repozytorium nie podłączone
   await new Promise((r) => setTimeout(r, 20));
-  assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium niedostępne|Repozytorium nie ma/);
+  assert.match(dom.pobierz('zestawy-status').textContent, /nie jest podłączone/);
 });
 
 test('zestawy UI: druga gra w tej samej okolicy startuje bez modelu i bez Overpassa', async () => {
@@ -186,7 +186,8 @@ function atrapaFetch(odpowiedzi) {
 test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra bez modelu', async () => {
   const atrap = atrapaFetch({ indeks: JSON.stringify(indeksZPropozycja()), plik: JSON.stringify(plikZRepo()) });
   try {
-    const dom = await aplikacjaZZestawami({ pamiec: new Map([['okolica:konfig', KONFIG_TEST]]) });
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));
     const lista = dom.pobierz('zestawy-lista');
@@ -199,7 +200,7 @@ test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra be
     assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra z paczki repozytorium wystartowała');
     assert.match(dom.pobierz('status').textContent, /bez modelu i bez Overpassa/);
     assert.match(dom.pobierz('status').textContent, /repozytorium/);
-    assert.ok(atrap.wywolania.some((u) => u.includes('data/paczki/indeks.json')), 'domyślny indeks ścieżką względną');
+    assert.ok(atrap.wywolania.some((u) => u.includes('https://repo.przyklad/indeks.json')), 'fetch poszedł do skonfigurowanego źródła');
   } finally {
     atrap.przywroc();
   }

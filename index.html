@@ -195,9 +195,9 @@
         <ul id="zestawy-lista" class="lista-zestawow"></ul>
         <details id="zestawy-zaawansowane" class="podpowiedz">
           <summary>Źródło repozytorium (zaawansowane)</summary>
-          <label class="pole"><span>Adres indeksu paczek</span><input id="pole-url-repo" type="text" autocomplete="off" placeholder="data/paczki/indeks.json"></label>
+          <label class="pole"><span>Adres indeksu paczek</span><input id="pole-url-repo" type="text" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></label>
           <button id="przycisk-zapisz-url-repo" class="przycisk" type="button">Zapisz źródło i odśwież</button>
-          <p class="podpowiedz">Domyślnie indeks leży obok aplikacji (GitHub Pages). Właściciel może wskazać własne repozytorium (Pages albo raw) — aplikacja nigdy nie wysyła tam niczego, tylko czyta (ADR 0017 pkt 6).</p>
+          <p class="podpowiedz">Tu wklejasz adres web app Apps Script mostu Drive (instrukcja: docs/setup). Bez adresu karta pokazuje tylko paczki z tego telefonu. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela (ADR 0017 pkt 6).</p>
         </details>
       </div>
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
