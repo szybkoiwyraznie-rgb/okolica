@@ -1,6 +1,8 @@
 # 0002 — Hosting: GitHub Pages z gałęzi `main` (katalog główny), wszystkie ścieżki względne
 
-- Status: Proponowana (do potwierdzenia przez właściciela: układ katalogów i los `AME-main.zip`)
+- Status: Zaakceptowana (2026-09-06, M8: oba pytania otwarte rozstrzygnięte —
+  układ katalogów zbudowany i utrwalony w M0–M7; `AME-main.zip` usunięty
+  decyzją właściciela 2026-09-05; publikacja wg `docs/WORKFLOW.md` §5)
 - Data: 2026-09-05
 
 ## Kontekst

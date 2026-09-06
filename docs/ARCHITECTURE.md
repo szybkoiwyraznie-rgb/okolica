@@ -11,6 +11,7 @@ pętlę protokołu PYT (ADR 0006, `docs/PROTOKOL.md`).
 ```
 index.html                  — powłoka UI: ekrany (setup → prompt → paczka → gra → wynik),
                               stopka z wersją protokołu, baner file://
+.nojekyll                     — Pages bez przetwarzania Jekyll (M8)
 app/
   app.js                    — bootstrap: router ekranów, stan sesji, spinanie modułów
   konfig.js                 — kanon konfiguracji: TRYBY, PROMIENIE, WIEK, TEMATY,
@@ -62,10 +63,15 @@ data/
   przyklady/paczka-*.json   — paczki referencyjne (zweryfikowane źródła, ADR 0008)
   kanon-tematow.json        — (opcjonalnie) kanon tematów, gdy wyjdzie poza kod
 assets/
-  ikony/*.svg               — ikony inline (zero CDN, ADR 0011 pkt 6)
-  manifest.json             — PWA-lite: „dodaj do ekranu głównego"
+  ikony/ikona.svg           — ikona-kompas: ten sam motyw co favicon w index.html
+  ikony/ikona-192/512/180.png, ikona-maskable-512.png
+                            — rastry z tools/generuj-ikony.mjs (deterministyczne, M8)
+  manifest.json             — PWA-lite: „dodaj do ekranu głównego" (ścieżki „./", M8)
 tools/
   sprawdz-kontrakt.mjs      — brama dodatkowa: kontrakt dokument↔kod, brak node: w app/
+  synchronizuj-szablon.mjs  — przepisanie szablonu promptu do app/ (jedno źródło)
+  generuj-fixture-overpass.mjs — fixture offline z realnej odpowiedzi Overpass (M6)
+  generuj-ikony.mjs         — ikony SVG+PNG bez zależności; npm run ikony (M8)
   (później) generuj-indeks-paczek.mjs — indeks repozytorium paczek (ADR 0010)
 test/                       — node --test; fixture'y w test/fixtures/
 docs/                       — protokół, ADR, plany, handoffy (patrz AGENTS.md §0)

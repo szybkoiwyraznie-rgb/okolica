@@ -487,3 +487,26 @@ ROADMAP (zlecenie właściciela), plan `docs/plans/2026-09-06-wspolrzedne-dms-i-
 Do potwierdzenia przez właściciela (kryteria z planu): wklejenie
 `52°07'22.9"N 20°44'46.1"E` → Podkowa Leśna przy ul. Bukowej; rozróżnienie
 tap/pan na żywym telefonie; zielone CI na PR #2.
+
+## 2026-09-06 — M8: publikacja i brama jakości (plan PB1–PB6)
+
+- **PB1** plan `docs/plans/2026-09-06-m8-publikacja.md` (commit 7d6b2a4).
+- **PB2** ikony i manifest: `tools/generuj-ikony.mjs` (czysty Node: własny
+  enkoder PNG z CRC32, supersampling ×4; motyw kompasu z favicona; dwa
+  przebiegi = te same bajty) → `assets/ikony/` (svg, 192, 512, maskable-512,
+  apple 180) + `assets/manifest.json` (ścieżki „./", standalone, lang pl) +
+  `.nojekyll` + linki w `index.html`; testy generatora (6) i kontrakt M8
+  (IHDR vs deklarowane sizes, zakaz ścieżek root-absolute). Brama 400/400.
+- **PB3** próba włączenia Pages przez agenta: `gh api …/pages -X POST` → 403
+  „Resource not accessible by integration" (token bez uprawnień admin);
+  GET → 404. Publikacja zostaje jednorazową czynnością właściciela;
+  `WORKFLOW.md` §5 przepisany (literówka adresu, .nojekyll, stan CI).
+- **PB4** audyt dostawców check-listą `ASSETS.md` §5 → nowy §6: kod ↔ tabela
+  bez rozjazdów (szablony i PODKLADY pilnuje kontrakt, Overpass i Nominatim
+  ręcznie), polityki zweryfikowane 2026-09-06 (OSM tiles bez zmian; Overpass —
+  sprzeczne świadectwa o zapasowych instancjach, nasz fallback to pokrywa).
+- **PB5** ADR 0002 → Zaakceptowana (oba pytania otwarte rozstrzygnięte),
+  drzewo w ARCHITECTURE, akapit Pages w README, domknięcie M8 w ROADMAP,
+  ten wpis. **PB6** opis PR #2 rozszerzony o M8.
+- Do kryterium M8 brakuje wyłącznie włączenia Pages przez właściciela
+  (Settings → Pages, `WORKFLOW.md` §5) i sprawdzenia telefonu na żywo.

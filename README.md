@@ -125,7 +125,13 @@ blokują `fetch()` i moduły ES dla plików lokalnych. Geolokalizacja wymaga
 
 Publikacja z gałęzi `main`, katalog główny (ADR 0002). Wszystkie ścieżki
 w aplikacji są **względne**, więc działa i pod `https://<user>.github.io/okolica/`,
-i z dowolnego podkatalogu.
+i z dowolnego podkatalogu. Włączenie Pages to **jednorazowy krok właściciela**
+(Settings → Pages; instrukcja i uwagi techniczne: `docs/WORKFLOW.md` §5 — agent
+nie ma uprawnień admin do ustawień repo). Po scaleniu do `main` aplikacja
+mieszka pod `https://szybkoiwyraznie-rgb.github.io/okolica/`; każde kolejne
+push do `main` przebudowuje stronę automatycznie. Ikony i `manifest.json`
+(„dodaj do ekranu głównego") generuje `npm run ikony` — binaria leżą w repo,
+bo Pages serwuje z drzewa, a generator odtwarza je bajt w bajt.
 
 ## Repozytorium
 

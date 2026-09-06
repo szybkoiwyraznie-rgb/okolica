@@ -295,6 +295,9 @@ polityk dostawców (`docs/ASSETS.md`). CI **już działa** — przyspieszone z M
 na prośbę właściciela (2026-09-06): `.github/workflows/ci.yml` z receptury,
 lustro w `docs/setup/ci-workflow.yml` pilnowane kontraktem (LESSONS L4, aneks).
 Kryterium: aplikacja działa pod `https://<user>.github.io/okolica/` na telefonie.
+Zakres zrealizowany 2026-09-06 (brama 400/400, audyt dostawców w `ASSETS.md` §6);
+samą publikację włącza jednorazowo właściciel (`WORKFLOW.md` §5) — to ostatni
+krok kryterium, poza zasięgiem agenta (403 na ustawieniach repo).
 
 ## M9 — Repozytorium paczek pytań
 
