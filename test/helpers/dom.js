@@ -37,6 +37,7 @@ export function ukryteWHtml(html) {
 /** Pojedynczy element-atrapa. `zdarzenia` i `children` pozwalają asertować UI. */
 export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) {
   let wartosc = '';
+  let wlasnyTekst = '';
   return {
     id,
     tagName: String(id).toUpperCase(),
@@ -48,7 +49,19 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
     // atrapa, która tego nie robi, przepuściłaby porównania `value === 1000`
     get value() { return wartosc; },
     set value(v) { wartosc = v === null || v === undefined ? '' : String(v); },
-    textContent: '',
+    // jak w prawdziwym DOM: odczyt AGREGUJE tekst potomków, a zapis ZASTĘPUJE
+    // potomków jednym tekstem (atrapa bez tego przepuściłaby puste kontenery
+    // z dziećmi — M7/P3 czyta tekst całej karty wyniku)
+    get textContent() {
+      const zDzieci = this.children
+        .map((d) => (d && typeof d.textContent === 'string' ? d.textContent : ''))
+        .join('');
+      return wlasnyTekst + zDzieci;
+    },
+    set textContent(v) {
+      wlasnyTekst = v === null || v === undefined ? '' : String(v);
+      this.children = [];
+    },
     innerHTML: '',
     checked: false,
     disabled: false,
@@ -72,6 +85,7 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
     },
     /** Jak w przeglądarce (Chrome 86+): podmiana całej listy dzieci. */
     replaceChildren(...nowe) { this.children = [...nowe]; return undefined; },
+    append(...wezel) { this.children.push(...wezel); return undefined; }, // jak Element.append (bez zwracania)
     setAttribute(k, v) { this.dataset[`attr-${k}`] = v; },
     getAttribute(k) { return this.dataset[`attr-${k}`] ?? null; },
     removeAttribute(k) { delete this.dataset[`attr-${k}`]; },

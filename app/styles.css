@@ -523,3 +523,44 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   border-color: var(--ostrzezenie);
   border-width: 2px;
 }
+
+/* M7: pełne podsumowanie — karta zwycięzcy, medal, statystyki, szczegóły.
+   Kryterium M7: czytelne w słońcu na 360 px — duże liczby, tabular-nums,
+   kontrast z istniejących zmiennych motywu. */
+.karta-zwyciezcy {
+  border: 2px solid var(--akcent);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin: 10px 0;
+  text-align: center;
+}
+.karta-zwyciezcy .zwyciezca-imie { margin: 0; font-size: 18px; font-weight: 600; }
+.karta-zwyciezcy .zwyciezca-punkty {
+  margin: 4px 0;
+  font-size: 34px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.karta-zwyciezcy .zwyciezca-detale { margin: 0; font-size: 14px; color: var(--tekst-slaby); }
+.medal-trasy { font-size: 15px; color: var(--tekst-slaby); margin: 8px 0; }
+.statystyki-gry {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 10px 0;
+  font-size: 14px;
+}
+.statystyki-gry dt { color: var(--tekst-slaby); }
+.statystyki-gry dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gracze-szczegoly { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
+.gracz-karta { border: 1px solid var(--linia); border-radius: 8px; padding: 8px 10px; }
+.gracz-karta p { margin: 2px 0; }
+.gracz-karta .naglowek { font-weight: 600; font-size: 15px; }
+.gracz-karta .rozbicie, .gracz-karta .odcinki { color: var(--tekst-slaby); font-size: 13px; }
+.tabela-stacje th, .tabela-stacje td { padding: 6px 4px; font-size: 13px; }
+#gra-panel-koniec details summary {
+  cursor: pointer;
+  font-weight: 600;
+  padding: 10px 0;
+  font-size: 15px;
+}

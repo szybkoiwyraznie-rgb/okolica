@@ -1343,3 +1343,55 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'ostatnia stacja zamknięta dojściem = koniec gry');
   assert.equal(dom.pobierz('bledy-gra').hidden, true, 'żaden wyjątek, żaden błąd — jawne zachowanie z ADR 0015');
 });
+
+/* ========== M7/P3: pełne podsumowanie (panel D) */
+
+test('M7: pełne podsumowanie — zwycięzca, medal trasy, statystyki, karty graczy i stacje', async () => {
+  const { dom } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  for (const i of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-pomin-stacje'); // pominięcie ×3 = naturalny koniec gry
+  }
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'koniec po pominięciu wszystkich stacji');
+
+  // 1. karta zwycięzcy: nikt nie punktował — ranking otwiera pierwszy gracz (sort stabilny)
+  const zwyciezca = dom.pobierz('gra-wynik-zwyciezca').textContent;
+  assert.match(zwyciezca, /🏆 Gracz 1/, 'zwycięzca z rankingu podsumowanie()');
+  assert.match(zwyciezca, /0 pkt/, 'duże punkty w karcie');
+  assert.match(zwyciezca, /poprawne 0\/0/, 'poprawne/razem w karcie');
+
+  // 2. medal sprawiedliwości: pierścień ma odchylenie ≈ 0% ≤ 15% → 🏅
+  assert.match(dom.pobierz('gra-wynik-medal').textContent, /🏅 Uczciwa trasa/, 'medal z miaraSprawiedliwosci (pole proste — brak dystansów sieciowych)');
+  assert.match(dom.pobierz('gra-wynik-medal').textContent, /próg 15%/, 'jawny próg w komunikacie');
+
+  // 3. statystyki gry: liczby z podsumowanie(), dziennik nie kłamie
+  const statystyki = dom.pobierz('gra-wynik-statystyki').textContent;
+  assert.match(statystyki, /czas gry:/);
+  assert.match(statystyki, /zaliczone:0 z 3/, 'dt+dd bez spacji w agregacji — odstęp daje siatka CSS');
+  assert.match(statystyki, /pominięte:3/);
+  assert.match(statystyki, /stacje bez pytań:brak/, 'paczka pokrywa wszystkie stacje');
+  assert.match(statystyki, /zdarzenia w dzienniku:\d+/);
+
+  // 4. karty graczy: dwie, z pełnymi polami (rozbicie punktów, tempo, ręczne, limit)
+  const karty = dom.pobierz('gra-wynik-gracze').children;
+  assert.equal(karty.length, 2, 'karta per gracz, w kolejności rankingu');
+  assert.match(karty[0].textContent, /Gracz 1 🏆 · 0 pkt/);
+  assert.match(karty[0].textContent, /podstawowe 0 \+ premie 0 · poprawne 0, błędne 0/);
+  assert.match(karty[0].textContent, /odcinki: 2 · czas/, 'Gracz 1 miał odcinki 1 i 3 (rotacja)');
+  assert.match(karty[0].textContent, /ręczne dojścia: 0 · po limicie: 0/);
+  assert.match(karty[0].textContent, /tempo —/, 'pominięte odcinki bez pomiaru tempa → kreska, nie zero');
+  assert.match(karty[1].textContent, /odcinki: 1/, 'Gracz 2 miał odcinek 2');
+
+  // 5. tabela stacji: 3 wiersze, każda pominięta, bez gracza „—" (rotacja przypisana)
+  const wiersze = dom.pobierz('gra-wynik-stacje-tbody').children;
+  assert.equal(wiersze.length, 3);
+  for (const w of wiersze) {
+    assert.match(w.textContent, /pominięta/, 'stan z odcinka');
+    assert.match(w.textContent, /Gracz [12]/, 'gracz odcinka przy stacji');
+  }
+
+  // ranking M6 zostaje (te R6/R7 go czytają) — spójny z kartą zwycięzcy
+  assert.equal(dom.pobierz('gra-wyniki-tbody').children.length, 2);
+  assert.match(dom.pobierz('gra-wyniki-tbody').children[0].children[0].textContent, /Gracz 1 🏆/);
+});

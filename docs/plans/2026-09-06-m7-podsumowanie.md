@@ -53,7 +53,7 @@ prowadzącego (B12), publikacja Pages i manifest (M8), offline/service worker
       najstarsze wypadają, idempotencja po `klucz` gry: wpis istniejący jest
       ZASTĄPIONY), `walidujHistorieSurowa` (atomowa, kody `H01`–`H…`),
       testy jednostkowe.
-- [ ] **P3 — pełne podsumowanie (panel D):** karta zwycięzcy (imię, punkty,
+- [x] **P3 — pełne podsumowanie (panel D):** karta zwycięzcy (imię, punkty,
       🏆), tabela graczy (punkty razem + rozbicie podstawowe/premie,
       poprawne/błędne, odcinki, czas, dystans, tempo, ręczne dojścia,
       po limicie), sekcja per stacja (kto, stan — zaliczona/pominięta, czas,

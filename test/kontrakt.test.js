@@ -463,7 +463,7 @@ test('kontrakt: ekran gry — jeden ekran, cztery panele faz w kolejności DOM (
   }
 });
 
-test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4/R5/R6', () => {
+test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 i M7', () => {
   const html = czytaj('index.html');
   const wymagane = [
     'gra-kolejka', 'gra-dystans', 'gra-postep',
@@ -474,6 +474,9 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4/R5/R6
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
     'gra-wyniki', 'gra-wyniki-tbody',
+    'gra-wynik-zwyciezca', 'gra-wynik-medal', 'gra-wynik-statystyki',
+    'gra-wynik-szczegoly', 'gra-wynik-gracze',
+    'gra-wynik-stacje', 'gra-wynik-stacje-tbody',
     'przycisk-pomin-stacje', 'przycisk-zakoncz-gre', 'przycisk-start-gry',
   ];
   for (const id of wymagane) assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);

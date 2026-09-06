@@ -1441,11 +1441,81 @@ function zakonczGreRecznie() {
   status('Gra zakończona wcześniej — wynik poniżej. Zapis został, więc można ją wznowić.');
 }
 
-/** Minimalny wynik z `podsumowanie()` — kolejność rankingu; pełne podsumowanie w M7. */
+/* ------------------------------------------------- pełne podsumowanie (M7) */
+
+/** Sekundy → czytelny czas: „45 s", „12 min 5 s", „1 godz 2 min". */
+function czasTekst(sekundy) {
+  const s = Math.max(0, Math.round(Number.isFinite(sekundy) ? sekundy : 0));
+  if (s < 60) return `${s} s`;
+  const min = Math.floor(s / 60);
+  if (min < 60) return `${min} min ${s % 60} s`.replace(/ 0 s$/, '');
+  return `${Math.floor(min / 60)} godz ${min % 60} min`;
+}
+
+/** Metry → „850 m" albo „1,6 km" (polski przecinek, bez locale — deterministycznie). */
+function dystansTekst(metry) {
+  const m = Number.isFinite(metry) ? metry : 0;
+  return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1).replace('.', ',')} km`;
+}
+
+/** Tempo (s/m z `podsumowanie()`) → „5:01 min/km"; zero = brak pomiaru → „—". */
+function tempoTekst(srednieTempoSM) {
+  if (!(srednieTempoSM > 0)) return '—';
+  const sekNaKm = Math.round(srednieTempoSM * 1000);
+  return `${Math.floor(sekNaKm / 60)}:${String(sekNaKm % 60).padStart(2, '0')} min/km`;
+}
+
+/** Etykieta odcinka w tabeli stacji: stan + tryb dojścia (uczciwie, co zmierzone). */
+function etykietaOdcinka(s) {
+  if (s.stan === STANY_ODCINKA.zakonczony) return s.trybDojscia === TRYBY_DOJSCIA.reczne ? 'zaliczona (ręcznie)' : 'zaliczona (GPS)';
+  if (s.stan === STANY_ODCINKA.pominiety) return 'pominięta';
+  if (s.stan === STANY_ODCINKA.wTrakcie) return 'w drodze';
+  return 'nierozegrana';
+}
+
+/**
+ * Pełne podsumowanie (M7) z `podsumowanie()` i `miaraSprawiedliwosci()` —
+ * warstwa DOM nie liczy własnej matematyki (plan M7, kryteria kodu). Medal
+ * 🏅 „Uczciwa trasa" przy udziale odchylenia ≤ 0,15 (kryterium jakości M4,
+ * ADR 0005 pkt 5): z pól sieciowych, gdy stacje je mają (także po wznowieniu
+ * gry z zapisu — snapshot niesie stacje z `dystansSieciowyM`).
+ */
 function pokazWyniki() {
   const r = STAN.rozgrywka;
   if (!r) return;
   const wynik = podsumowanie(r);
+  const imiona = new Map(r.gracze.map((g) => [g.id, g.imie]));
+
+  // 1. karta zwycięzcy — duże liczby, czytelne w słońcu
+  const zwyciezca = wynik.gracze.find((g) => g.id === wynik.zwyciezca) ?? null;
+  const kartaZw = $('gra-wynik-zwyciezca');
+  kartaZw.replaceChildren();
+  if (zwyciezca) {
+    const imie = document.createElement('p');
+    imie.className = 'zwyciezca-imie';
+    imie.textContent = `🏆 ${zwyciezca.imie}`;
+    const punkty = document.createElement('p');
+    punkty.className = 'zwyciezca-punkty';
+    punkty.textContent = `${zwyciezca.punkty} pkt`;
+    const detale = document.createElement('p');
+    detale.className = 'zwyciezca-detale';
+    detale.textContent = `poprawne ${zwyciezca.poprawne}/${zwyciezca.poprawne + zwyciezca.bledne} · czas odcinków ${czasTekst(zwyciezca.czasOdcinkowS)}`;
+    kartaZw.append(imie, punkty, detale);
+  } else {
+    const p = document.createElement('p');
+    p.textContent = 'Brak zwycięzcy — żadna odpowiedź nie została zapisana.';
+    kartaZw.appendChild(p);
+  }
+
+  // 2. medal sprawiedliwości trasy (widok, nie punkty — plan M7, decyzja 2)
+  const sieciowe = STAN.stacje.some((s) => Number.isFinite(s.dystansSieciowyM));
+  const m = miaraSprawiedliwosci(STAN.stacje, { pole: sieciowe ? 'dystansSieciowyM' : 'odlegloscM' });
+  const procent = Math.round(m.udzialOdchylenia * 100);
+  $('gra-wynik-medal').textContent = m.udzialOdchylenia <= 0.15
+    ? `🏅 Uczciwa trasa — odchylenie dystansów ${procent}% (próg 15%)${sieciowe ? ', mierzone siecią dróg' : ', w linii prostej'} · średnio ${m.sredniaM} m od startu.`
+    : `Trasa bez medalu — odchylenie dystansów ${procent}% przekracza próg 15% (średnio ${m.sredniaM} m od startu).`;
+
+  // 3. ranking — tabela jak w M6 (miejsce, gracz, punkty, poprawne)
   const tbody = $('gra-wyniki-tbody');
   tbody.replaceChildren();
   for (const id of wynik.ranking) {
@@ -1458,6 +1528,64 @@ function pokazWyniki() {
       wiersz.appendChild(td);
     }
     tbody.appendChild(wiersz);
+  }
+
+  // 4. statystyki gry (dt/dd — na 360 px dwie kolumny, liczby tabular-nums)
+  const dl = $('gra-wynik-statystyki');
+  dl.replaceChildren();
+  const pary = [
+    ['czas gry', czasTekst(wynik.czasGryS)],
+    ['zaliczone', `${wynik.zaliczoneStacje} z ${r.stacje.length}`],
+    ['pominięte', String(wynik.pominietaStacje)],
+    ['stacje bez pytań', wynik.stacjeBezPytan.length ? wynik.stacjeBezPytan.map((s) => `#${s}`).join(', ') : 'brak'],
+    ['zdarzenia w dzienniku', String(wynik.zdarzen)],
+  ];
+  for (const [etykieta, wartosc] of pary) {
+    const dt = document.createElement('dt');
+    dt.textContent = `${etykieta}:`;
+    const dd = document.createElement('dd');
+    dd.textContent = wartosc;
+    dl.append(dt, dd);
+  }
+
+  // 5. szczegóły graczy — karty z pełnymi polami podsumowanie()
+  const karty = $('gra-wynik-gracze');
+  karty.replaceChildren();
+  for (const id of wynik.ranking) {
+    const g = wynik.gracze.find((gracz) => gracz.id === id);
+    if (!g) continue;
+    const karta = document.createElement('div');
+    karta.className = 'gracz-karta';
+    const naglowek = document.createElement('p');
+    naglowek.className = 'naglowek';
+    naglowek.textContent = `${g.imie}${id === wynik.zwyciezca ? ' 🏆' : ''} · ${g.punkty} pkt`;
+    const rozbicie = document.createElement('p');
+    rozbicie.className = 'rozbicie';
+    rozbicie.textContent = `podstawowe ${g.punktyOdpowiedzi} + premie ${g.premieCzasu} · poprawne ${g.poprawne}, błędne ${g.bledne}`;
+    const odcinki = document.createElement('p');
+    odcinki.className = 'odcinki';
+    odcinki.textContent = `odcinki: ${g.odcinki} · czas ${czasTekst(g.czasOdcinkowS)} · dystans ${dystansTekst(g.dystansM)} · tempo ${tempoTekst(g.srednieTempoSM)} · ręczne dojścia: ${g.reczneDojscia} · po limicie: ${g.poLimitie}`;
+    karta.append(naglowek, rozbicie, odcinki);
+    karty.appendChild(karta);
+  }
+
+  // 6. stacje — zwarta tabela: kto, stan z trybem dojścia, czas, punkty
+  const tStacje = $('gra-wynik-stacje-tbody');
+  tStacje.replaceChildren();
+  for (const s of wynik.stacje) {
+    const wiersz = document.createElement('tr');
+    for (const komorka of [
+      String(s.id),
+      s.gracz != null ? (imiona.get(s.gracz) ?? `#${s.gracz}`) : '—',
+      etykietaOdcinka(s),
+      s.czasS != null ? czasTekst(s.czasS) : '—',
+      String(s.punkty),
+    ]) {
+      const td = document.createElement('td');
+      td.textContent = komorka;
+      wiersz.appendChild(td);
+    }
+    tStacje.appendChild(wiersz);
   }
 }
 

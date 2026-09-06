@@ -366,16 +366,31 @@
         <button id="przycisk-nastepna-stacja" class="przycisk przycisk-glowny przycisk-fazy" type="button" hidden>Następna stacja →</button>
       </div>
 
-      <!-- FAZA D: koniec — minimalny wynik z podsumowanie() (pełne w M7) -->
+      <!-- FAZA D: koniec — pełne podsumowanie (M7): zwycięzca, medal trasy, ranking, statystyki, szczegóły -->
       <div id="gra-panel-koniec" class="karta gra-panel" hidden>
         <p class="duzy">🏁 Koniec gry!</p>
+        <div id="gra-wynik-zwyciezca" class="karta-zwyciezcy"></div>
+        <p id="gra-wynik-medal" class="medal-trasy" role="status"></p>
         <table id="gra-wyniki" class="tabela-wynikow">
           <thead>
             <tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th></tr>
           </thead>
           <tbody id="gra-wyniki-tbody"></tbody>
         </table>
-        <p class="podpowiedz">Pełne podsumowanie (czasy, medale, eksport) — kamień M7.</p>
+        <dl id="gra-wynik-statystyki" class="statystyki-gry"></dl>
+        <details id="gra-wynik-szczegoly">
+          <summary>Szczegóły graczy</summary>
+          <div id="gra-wynik-gracze" class="gracze-szczegoly"></div>
+        </details>
+        <details id="gra-wynik-stacje-detale">
+          <summary>Stacje</summary>
+          <table id="gra-wynik-stacje" class="tabela-wynikow tabela-stacje">
+            <thead>
+              <tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Stan</th><th scope="col">Czas</th><th scope="col">Punkty</th></tr>
+            </thead>
+            <tbody id="gra-wynik-stacje-tbody"></tbody>
+          </table>
+        </details>
       </div>
 
       <div class="wiersz">
