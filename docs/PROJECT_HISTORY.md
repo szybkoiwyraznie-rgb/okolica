@@ -291,3 +291,50 @@ odtworzeniowy z uczciwym opisem incydentu; przypadek „commity niewypchnięte"
 trafił do `ENVIRONMENT` §2. Kamień M4 **niezamknięty**: kod gotowy,
 kryterium terenowe czeka na właściciela (`WORKFLOW` §4.2) razem z zaległym
 M3 (konfiguracja bez przewijania na 360 px).
+
+## 2026-09-06 — M5: pętla pytań (kod gotowy, J1–J6)
+
+Kamień M5 w sześciu krokach, wszystkie na zielonej bramie i wypchnięte od
+razu (procedura po incydentach re-root `.git` z M4):
+
+- **J1** (`f23184f`) — plan kamienia: `docs/plans/2026-09-06-m5-petla-pytan.md`
+  z decyzjami projektowymi (kształt `modyfikacje[]` = PROTOKOL §3.1, edycja
+  z pełną re-walidacją, eksport = ukryty kontener, geokodacja domyślnie
+  WYŁĄCZONA, instrukcja = inline SVG).
+- **J2** (`06b3949`) — `protokol.zastosujEdycjePaczki(paczka, edycje)`:
+  atomowa edycja pól z `EDYTOWALNE_POLA` (treść, odpowiedzi, poprawna,
+  wyjaśnienie, źródła, punkty), ślad w `modyfikacje[]` `{ data, opis }`,
+  wynik i tak przechodzi pełne `walidujPaczke`. 313→318 testów.
+- **J3** (`76a7c32`) — podgląd „tylko dla organizatora" (ADR 0006 pkt 8):
+  karty pytań po przyjęciu paczki, banner, zwijanie przy ukrywaniu i przy
+  obu ścieżkach odrzucenia; zapis poprawki diffuje pola, wymienia
+  `STAN.paczka` i re-waliduje całość — usterki blokują „Ukryj paczkę".
+  Przy okazji spłacony fragment B16 (`renderujUsterki` na
+  `replaceChildren`, LESSONS L19). 318→321.
+- **J4** (`0935d95`) — eksport ukrytej paczki do pliku
+  `okolica-<kodGry>.paczka.json` (kontener `TO-paczka/2`, nigdy plaintext;
+  nazwa oczyszczona do `[a-z0-9-]`, ≤ 24 znaki), import bez zmian ścieżką
+  „⬆ Z pliku". Przycisk widoczny dokładnie wtedy, gdy „Ukryj paczkę".
+  Duplikat helpera `pobierzPlik` złapany przez `node --check` → LESSONS L20.
+  321→322.
+- **J5** (`5665d70`) — zapasowa nazwa miejsca (Nominatim `reverse`,
+  ASSETS §3): opt-in na ekranie prywatności, domyślnie WYŁĄCZONA (ADR 0013
+  pkt 2), jedno żądanie na sesję i tylko gdy Overpass nie dał nazwy,
+  obowiązkowy cache `okolica:miejsce:<geohash6>` (30 dni), atrybucja ODbL,
+  endpoint przełączalny bez aktualizacji aplikacji. Przy okazji wyszedł
+  prawdziwy bug: checkbox „pobieranie nazwy miejsca" w setupie był
+  dekoracyjny — `konfig.geokodacja` nigdzie nie bramowało UI ani promptu
+  (ADR 0013 pkt 3). Naprawione z testami. 324→330 (LESSONS L21: `odstep=0`
+  w testach z padającym fetchem).
+- **J6** (ten commit) — instrukcja obrazkowa ekranu promptu: cztery kroki
+  jako inline SVG (kopiuj → model z wyszukiwaniem → kopiuj odpowiedź →
+  wklej z powrotem), siatka 2×2 czytelna na 360 px, cele ≥ 44 px; dokumenty
+  (README, ROADMAP, ARCHITECTURE A.4–A.8, ten wpis) i cache-busting
+  `?v=m5-1`. Brama: **332 testy**, 0 fail + szablon promptu zgodny.
+
+**Kamień M5 niezamknięty**: kryterium właściciela — pełna pętla
+z prawdziwym modelem AI (`WORKFLOW` §4.2) — czeka razem z zaległymi
+kryteriami M3 (konfiguracja bez przewijania na 360 px) i M4 (prawdziwa
+okolica na telefonie). Właściciel wraca do testów polowych; do tego czasu
+agent koduje kamienie wg `ROADMAP` (następny: M6 — trwałość stanu
+i interfejs gry).

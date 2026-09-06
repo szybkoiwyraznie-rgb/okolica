@@ -72,7 +72,7 @@ ASSETS §3).
       promptu. Testy: domyślnie ZERO żądań, po włączeniu — URL i parametry
       dokładnie jak ASSETS §3, błąd/brak sieci = cicho puste miejsce
       (komunikat, nie wyjątek); kontrakt parametrów polityki.
-- [ ] **J6 — instrukcja obrazkowa + dokumentacja:** cztery kroki na ekranie
+- [x] **J6 — instrukcja obrazkowa + dokumentacja:** cztery kroki na ekranie
       promptu jako inline SVG (zero CDN/plików zewnętrznych — ADR 0001,
       0011 pkt 6): 1) kopiuj prompt → 2) wklej do modelu AI (z zaznaczeniem
       „model musi szukać w internecie" — ADR 0008) → 3) kopiuj odpowiedź →

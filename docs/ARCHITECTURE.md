@@ -105,12 +105,31 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
    (`mapa.ustawTrybReczny`), dystans tylko w linii prostej.
    Lista stacji trafia na mapę jako numerowane pinezki
    (`mapa.zaznaczStacje`), a promień gry jako przerywany okrąg.
-5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka.
-6. Organizator ↔ model AI (poza systemem).
+   Nazwa miejsca: podstawowa z obszarów administracyjnych TEGO SAMEGO
+   zapytania Overpass (`sieci.nazwaMiejsca`); zapasowa —
+   `uzupelnijMiejsceZapasowe` (Nominatim `reverse`, opt-in kluczem
+   `okolica:geokodacja-zapasowa`, domyślnie wyłączona, ADR 0013 pkt 2):
+   jedno żądanie na sesję, tylko gdy Overpass nie dał nazwy, najpierw cache
+   `okolica:miejsce:<geohash6>` (30 dni), wynik z atrybucją ODbL, endpoint
+   przełączalny kluczem `okolica:geokodacja-endpoint`. Całe nazewnictwo
+   miejsca (UI i prompt) jest bramowane `konfig.geokodacja` — przy
+   wyłączonym prompt niesie same współrzędne (ADR 0013 pkt 3).
+5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka;
+   ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
+   SVG w `index.html` (zero plików zewnętrznych, ADR 0001 pkt 1/ADR 0011).
+6. Organizator ↔ model AI (poza systemem); odpowiedź wraca wklejeniem albo
+   plikiem (`plik-odpowiedz`).
 7. Wklejona odpowiedź → `protokol.walidujPaczke()` → usterki (z przyciskiem
-   „skopiuj poprawkę") albo przyjęcie.
+   „skopiuj poprawkę") albo przyjęcie. Przyjęta paczka otwiera podgląd
+   „tylko dla organizatora" (`renderujPodgladOrganizatora`): ręczna edycja
+   pytań diffuje pola z `protokol.EDYTOWALNE_POLA`, zapisuje przez
+   `zastosujEdycjePaczki` (atomowo, ślad w `modyfikacje[]`) i PO KAŻDEJ
+   poprawce re-waliduje całość — usterki blokują ukrycie paczki.
 8. `kodowanie.zapakujPaczke(paczka, WERSJA_PROTOKOLU)` → kontener `TO-paczka/2`
-   → `trwalosc.zapiszPaczke()`.
+   → `trwalosc.zapiszPaczke()`. Dodatkowo eksport do pliku
+   `okolica-<kodGry>.paczka.json` (przycisk „⬇ Zapisz paczkę") — plik niesie
+   ten sam kontener, nigdy plaintext (ADR 0010 pkt 3), i jest czytany z
+   powrotem ścieżką „⬆ Z pliku" (gotowość na repozytorium paczek, M9).
 
 ### B. Rozgrywka
 

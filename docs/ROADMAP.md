@@ -194,6 +194,24 @@ ukrywanie paczki (kontener `TO-paczka/2` — gotowe w M0), podgląd „tylko dla
 Kryterium: pełna pętla przechodzi z prawdziwym modelem (test właściciela),
 a odrzucona paczka daje czytelną listę usterek.
 
+**Kod M5 gotowy (2026-09-06):** `protokol.zastosujEdycjePaczki(paczka, edycje)`
+— atomowa edycja pól z `EDYTOWALNE_POLA` z zapisem `modyfikacje[]`
+(kształt PROTOKOL §3.1); podgląd „tylko dla organizatora" z kartami pytań
+(treść, cztery odpowiedzi, wyjaśnienie, źródła) i pełną re-walidacją po
+każdym zapisie — usterki blokują ukrycie paczki; eksport ukrytej paczki do
+pliku `okolica-<kod>.paczka.json` (kontener `TO-paczka/2`, nigdy plaintext,
+ADR 0010 pkt 3) z importem istniejącą ścieżką „⬆ Z pliku"; instrukcja
+obrazkowa promptu jako cztery inline SVG (ADR 0001 pkt 1); zapasowa nazwa
+miejsca z Nominatim — opt-in na ekranie prywatności, domyślnie WYŁĄCZONA,
+jedno żądanie na sesję, obowiązkowy cache `okolica:miejsce:<geohash6>`
+(30 dni), atrybucja ODbL, endpoint przełączalny bez aktualizacji aplikacji
+(ASSETS §3, ADR 0013 pkt 2). Przy okazji naprawiony bug bramy
+`konfig.geokodacja` (checkbox w setupie był dekoracyjny — ADR 0013 pkt 3).
+Brama: 332 testy, 0 fail; cache-busting `?v=m5-1`.
+**Zostało na M5:** kryterium właściciela — pełna pętla z prawdziwym modelem
+AI (prompt → odpowiedź → walidacja → ukrycie → eksport/import), razem
+z zaległymi M3 (360 px) i M4 (prawdziwa okolica).
+
 ## M6 — Rozgrywka
 
 Pętla stacji: ekran „kto idzie" → start odcinka → mapa z dystansem → dojście

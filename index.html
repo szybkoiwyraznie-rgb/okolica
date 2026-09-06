@@ -18,8 +18,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m4-1">
-  <script type="module" src="app/app.js?v=m4-1"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m5-1">
+  <script type="module" src="app/app.js?v=m5-1"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -210,10 +210,46 @@
     <!-- KROK 4: prompt -->
     <section id="ekran-prompt" class="ekran" hidden aria-labelledby="tytul-prompt">
       <h2 id="tytul-prompt">Prompt dla modelu AI</h2>
-      <ol class="instrukcja">
-        <li>Skopiuj tekst poniżej.</li>
-        <li>Wklej go do modelu z włączonym wyszukiwaniem w internecie (Meta AI, ChatGPT, Gemini…).</li>
-        <li>Skopiuj odpowiedź modelu (blok JSON) i wróć tutaj do kroku 5.</li>
+      <!-- Instrukcja obrazkowa (M5/J6): cztery kroki jako inline SVG — zero
+           plików zewnętrznych i zero CDN (ADR 0001 pkt 1, ADR 0011 pkt 6).
+           Kolejność DOM = kolejność kroków; karty ≥ 44 px (cel dotykowy). -->
+      <ol class="instrukcja instrukcja-obrazkowa" id="instrukcja-promptu">
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8" y="8" width="22" height="28" rx="3"></rect>
+            <path d="M16 40h20a4 4 0 0 0 4-4V16"></path>
+          </svg>
+          <span>1. <strong>Kopiuj prompt</strong> przyciskiem poniżej.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 10h26a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4H18l-8 7v-7H8a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2z"></path>
+            <circle cx="32" cy="32" r="7"></circle>
+            <path d="M37 37l5 5"></path>
+          </svg>
+          <span>2. Wklej do modelu AI <strong>z włączonym wyszukiwaniem
+            w internecie</strong> (Meta AI, ChatGPT, Gemini…) — prompt wymaga
+            źródeł do każdego faktu.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 10c-6 0-4 12-9 14 5 2 3 14 9 14"></path>
+            <path d="M31 10c6 0 4 12 9 14-5 2-3 14-9 14"></path>
+            <circle cx="24" cy="24" r="2" fill="currentColor" stroke="none"></circle>
+          </svg>
+          <span>3. <strong>Kopiuj odpowiedź</strong> modelu — cały blok
+            kodu JSON.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="14" y="8" width="24" height="32" rx="3"></rect>
+            <path d="M20 8a4 4 0 0 1 8 0"></path>
+            <path d="M10 28H4m6 0-4-4m4 4-4 4"></path>
+            <path d="M20 24h12M20 30h8"></path>
+          </svg>
+          <span>4. Wróć tutaj i <strong>wklej z powrotem</strong> w kroku 5 —
+            aplikacja sprawdzi paczkę i ukryje ją przed graczami.</span>
+        </li>
       </ol>
       <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
       <p id="prompt-licznik" class="badge"></p>

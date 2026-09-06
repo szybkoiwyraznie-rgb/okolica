@@ -414,3 +414,31 @@ test('kontrakt: ekran prywatności ujawnia warstwę zapasową Nominatim z przeł
   assert.match(karta, /okolica:geokodacja-endpoint/, 'przełączalność endpointu bez aktualizacji (wymóg OSMF)');
   assert.match(karta, /ODbL/, 'atrybucja licencji');
 });
+
+test('kontrakt: instrukcja promptu to cztery kroki jako inline SVG (ADR 0001 pkt 1, ADR 0011 pkt 6)', () => {
+  const html = czytaj('index.html');
+  const ekran = html.split('id="ekran-prompt"')[1].split('</section>')[0];
+  const instrukcja = ekran.split('id="instrukcja-promptu"')[1].split('</ol>')[0];
+  assert.equal((instrukcja.match(/<svg /g) ?? []).length, 4, 'cztery ikony, po jednej na krok');
+  assert.equal((instrukcja.match(/<li>/g) ?? []).length, 4, 'kolejność DOM = kolejność kroków');
+  // kolejność treści: kopiuj → model z internetem → odpowiedź → z powrotem
+  const kroki = ['Kopiuj prompt', 'wyszukiwaniem', 'Kopiuj odpowiedź', 'wklej z powrotem'];
+  let poprzedni = -1;
+  for (const krok of kroki) {
+    const i = instrukcja.indexOf(krok);
+    assert.ok(i > poprzedni, `krok „${krok}" obecny i w kolejności`);
+    poprzedni = i;
+  }
+  assert.match(instrukcja, /włączonym wyszukiwaniem\s*\n?\s*w internecie/, 'krok 2 podkreśla wymóg szukania w sieci (ADR 0008)');
+  assert.equal((html.match(/<img /g) ?? []).length, 0, 'zero <img> — grafika wyłącznie inline (zero plików zewnętrznych)');
+  assert.equal((html.match(/xlink:href="http|href="http[^"]*\.(png|jpg|svg)/g) ?? []).length, 0, 'SVG nie ciągnie nic z sieci');
+});
+
+test('kontrakt: cache-busting m5-1 spójny w index.html i importach app.js', () => {
+  const html = czytaj('index.html');
+  const app = czytaj('app/app.js');
+  assert.equal((html.match(/\?v=m5-1/g) ?? []).length, 2, 'styles.css i app.js z nową wersją');
+  assert.equal(html.includes('?v=m4-1'), false, 'bez sierot po starej wersji');
+  assert.equal((app.match(/\?v=m5-1/g) ?? []).length, 8, 'wszystkie importy modułów z tą samą wersją');
+  assert.equal(app.includes('?v=m4-1'), false);
+});
