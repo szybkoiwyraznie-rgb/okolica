@@ -325,3 +325,49 @@ między instancjami). Bez tego test nie jest „szybki i czerwony", tylko
 Dodatkowo: `assert.equal(params.get('lon'), '21.01235')` padł, bo
 `(21.012345).toFixed(5) === '21.01234'` (reprezentacja binarna) — oczekiwania
 na zaokrągleniach LICZYMY (`node -e`), nie zgadujemy (wariant L6).
+
+## L22 (2026-09-06, Tajemnicza Okolica) — symulacja dojścia przeżyła tranzycję fazy i nadpisała status gry
+
+**Objaw:** test integracyjny pełnej gry (M6/R7) czerwony na komunikacie dojścia:
+zamiast „Stacja osiągnięta — próg dojścia zadziałał z GPS" w statusie stało
+„Symulacja: fix 9/9, do celu 3 m (próg 25 m, trafienia 1/2)" — a panel pytania
+się nie otwierał. Czysta mechanika (`trasaProsta` → `sekwencjaSymulowana` →
+`czyDotarl`) odpalona osobno dochodziła do celu bez problemu.
+
+**Przyczyna:** `krokSymulacji` po `przyjmijFix(fix)` leciał dalej bez względu
+na to, co fix zrobił z grą. Fix domykający dojście wyzwalał tranzycję
+(`zakonczOdcinekGry` → faza `pytanie`, status „Stacja osiągnięta",
+`historiaFixow` wyczyszczona), po czym symulacja liczyła `stanDojscia`
+z PUSTEJ historii (stąd „do celu null m, próg 0 m") i nadpisywała status gry;
+interval dostarczał jeszcze ostatni fix już w fazie pytania. Jednostkowo
+wszystko zielone — model, geo i pozycja są czyste; rozsypało się wyłącznie
+spięcie czasowe w warstwie DOM.
+
+**Reguła:** każdy generator zdarzeń na `setInterval` (symulacja, odświeżanie,
+polling) musi na każdym kroku — PRZED i PO dostarczeniu zdarzenia — sprawdzać,
+czy powód jego istnienia nadal istnieje (faza, pauza, ręczny koniec), i gasnąć
+BEZ nadpisywania komunikatów stanu, który obsługuje. A kamień milowy bez testu
+integracyjnego „pełna pętla od startu do wyniku" to kamień z nieprzetestowanym
+spięciem czasowym: wyścig tranzycja-vs-timer widać tylko gdy całość leci
+naprawdę, jeden fix po drugim.
+
+## L23 (2026-09-06, Tajemnicza Okolica) — oczekiwania asercji pisane z pamięci: tautologia i sparafrazowany komunikat
+
+**Objaw:** dwa czerwone/nic-nie-łapiące przypadki w testach M6 pisanych tego
+samego dnia co kod: (1) asercja „manualnego końca gry" w postaci
+`assert.equal(x.hidden, false === false ? x.hidden : null)` — tautologia,
+która nie mogła spaść nigdy i udawała sprawdzenie pierwszego kliku;
+(2) `assert.match(status, /można wznowić/)` czerwony, bo aplikacja mówi
+„można **ją** wznowić".
+
+**Przyczyna:** teksty oczekiwane powstawały z pamięci o kodzie zamiast z kodu,
+a „asekuracja" w (1) sklejała porównanie wartości z nią samą. Pamięć własnego
+kodu dryfuje już w trakcie tej samej sesji (wariant L12: kotwice z grep-a,
+nie z głowy).
+
+**Reguła:** przed zapisaniem asercji na komunikat — `grep` DOKŁADNEGO stringa
+w źródle i kopiowanie go do wzorca (albo testowanie fragmentu, który naprawdę
+tam jest). Asercja, której obie strony wyrażają tę samą wartość, jest zakazana:
+albo porównuję stan PRZED z oczekiwanym literalem (`true`/`false`), albo nie
+piszę asercji wcale. Tautologia jest gorsza niż brak testu — dodaje pewność,
+której nie ma.

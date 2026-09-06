@@ -221,6 +221,34 @@ gry, przerwanie i zapis stanu.
 Kryterium: gra przechodzalna od setupu do wyniku na telefonie, z utratą
 zasięgu w trakcie (cache) i z zamknięciem przeglądarki (wznowienie).
 
+**Kod M6 gotowy (2026-09-06):** ekran gry to jeden `ekran-gra` z czterema
+panelami faz (kolejka → odcinek z mapą/dystansem/progiem dojścia → pytanie →
+wynik), wspólny lej fixów GPS i symulacji (`przyjmijFix`), dojście przez
+`stanDojscia` (próg + dwa kolejne trafienia, ADR 0004 pkt 2) albo ręczne
+z karą, pauza (także automatyczna po schowaniu karty — `visibilitychange`),
+pominięcie stacji w drodze i ręczne zakończenie z wczesnym wynikiem
+(dwustopniowe, bez `confirm()`, ADR 0015 pkt 6). Pytanie odsłania się
+z kontenera `TO-paczka/2` DOPIERO w tranzycji do fazy pytanie — `STAN.paczka`
+jest kasowany przy starcie gry (ADR 0007 pkt 4/6); po odpowiedzi na ekranie
+zostają ocena, wyjaśnienie i klikalne źródła. `app/trwalosc.js` (snapshot
+`stan-gry/1`, walidacja atomowa `T01`–`T10`, budżet 2 MB, strażnik anty-
+plaintext): zapis po KAŻDEJ tranzycji synchronicznie do `localStorage`
+(`beforeunload` jest na telefonach zawodny), baner wznowienia na setupie
+(`okolica:gra-aktywna` + `okolica:gra:<kod>`), wznowienie z rebazą osi czasu
+(`zegarMs`: czas zamknięcia karty nie wlicza się w odcinek, ADR 0004 pkt 3),
+dwustopniowe kasowanie zapisu. Testy integracyjne: pełna gra 3 stacje
+z dojściem symulacją (ścieżka GPS, zero klików „ręcznie"), zero żądań
+sieciowych w trakcie gry (utrata zasięgu), stacja bez pytania zamyka się
+samym dojściem (ADR 0015, z zapisu), wznowienie w nowej instancji aplikacji
+na tej samej pamięci. Przy okazji złapany prawdziwy wyścig: symulacja dojścia
+nie gasła po tranzycji fazy i nadpisywała status gry (LESSONS L22).
+Brama: **358 testów**, 0 fail + szablon promptu zgodny; cache-busting
+`?v=m6-1`.
+**Zostało na M6:** kryterium terenowe właściciela (`WORKFLOW` §4.2) — pełna
+gra NA TELEFONIE od setupu do wyniku, z utratą zasięgu w trakcie i z
+zamknięciem przeglądarki (wznowienie); razem z zaległymi kryteriami M3
+(360 px), M4 (prawdziwa okolica) i M5 (pętla z prawdziwym modelem).
+
 ## M7 — Podsumowanie, punkty i udostępnianie
 
 Wyniki per gracz (punkty, czasy, poprawne odpowiedzi), medal/punkty za

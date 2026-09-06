@@ -77,8 +77,20 @@ wyraźnej zgodzie na ekranie prywatności (domyślnie wyłączona, jedno żądan
 na grę, cache 30 dni, atrybucja ODbL — ADR 0013). Kamień czeka na kryterium
 właściciela: pełna pętla z prawdziwym modelem (`docs/WORKFLOW.md` §4.2).
 
-**Ekranu gry jeszcze nie ma**: rozgrywka jest policzona i przetestowana, ale
-nieklikalna. Trwałość stanu i interfejs gry (M6) — patrz `docs/ROADMAP.md`.
+**M6 — rozgrywka: kod i testy gotowe.** Gra jest klikalna od setupu do
+wyniku: jeden ekran gry z czterema panelami faz („kto idzie" → odcinek z mapą
+i dystansem → pytanie odsłaniane DOPIERO w chwili dojścia → wynik), dojście
+z GPS (próg `max(25 m, 1,2 × accuracy)` + dwa kolejne trafienia) albo ręczne
+z karą, pauza (również automatyczna po schowaniu karty), pominięcie stacji
+w drodze i ręczne zakończenie z wczesnym wynikiem. Pytania żyją w ukrytym
+kontenerze (`TO-paczka/2`) — w stanie gry i w zapisie nigdy nie ma ich treści.
+Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji (`stan-gry/1`), więc
+zamknięcie przeglądarki nie kończy gry: na setupie czeka baner „wznowienie",
+a zegar odcinka jest rebazowany tak, że czas zamknięcia karty nie wlicza się
+do wyniku (ADR 0004 pkt 3). W trybie testowym (`?tryb=test`) dojście można
+rozegrać symulacją trasy — gra bez GPS. Kamień czeka na kryterium terenowe
+właściciela: pełna gra na telefonie, z utratą zasięgu w trakcie i z
+zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).
 
 ## Uruchomienie lokalne
 

@@ -37,8 +37,9 @@ app/
   rozgrywka.js              — stan gry `rozgrywka/1`: kolejki graczy, odcinki
                               i czasy, odpowiedzi, punktacja (ADR 0014), dziennik,
                               podsumowanie, kody G01–G13 (czyste, zegar wstrzykiwany)
-  trwalosc.js               — localStorage: klucze, budżet rozmiaru, migracje,
-                              eksport/import pliku paczki (ATR 0010)
+  trwalosc.js               — trwałość stanu gry: snapshot `stan-gry/1`, klucze
+                              `okolica:gra:*`, walidacja T01–T10, budżet 2 MB
+                              (czyste; ADR 0010)
   mapa.js                   — mapa: matematyka widoku (zoom ↔ skala, środek ↔
                               przesunięcie, piksele ↔ współrzędne), adresy
                               kafelków, plan rysowania i pasek skali (czyste)
@@ -133,25 +134,45 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 
 ### B. Rozgrywka
 
-1. Ekran gry: mapa z podkładem (ADR 0003), stacje, pozycja gracza, badge
-   „czyja kolejka" i „ile metrów" (ADR 0009/0011).
+1. Jeden `ekran-gra` z czterema panelami faz (`gra-panel-oczekuje` /
+   `-odcinek` / `-pytanie` / `-koniec`) — zero żonglowania ekranami
+   w terenie (ADR 0011: jeden główny przycisk na fazę); mapa z podkładem
+   (ADR 0003), stacje, pozycja gracza, badge „czyja kolejka" i „ile metrów"
+   (ADR 0009/0011). Na setupie baner `#karta-wznowienie`: znaleziony zapis
+   gry → wznowienie albo dwustopniowe kasowanie.
 2. Akcja użytkownika startuje odcinek → `rozgrywka.startOdcinka({ stacjaId,
    czasMs })`; `czasMs` podaje warstwa DOM z `performance.now()`, bo logika nie
-   czyta zegara (ADR 0004 pkt 3).
+   czyta zegara (ADR 0004 pkt 3). Po KAŻDEJ tranzycji (start gry, start/koniec
+   odcinka, odpowiedź, pauza, pominięcie) leci `trwalosc.zbierajStan()` →
+   `serializujStan()` → `localStorage`; snapshot niesie `zegarMs` (kotwicę
+   zegara sesji) — przy wznowieniu wszystkie znaczniki czasu są rebazowane
+   o `performance.now() − zegarMs`, więc czas zamknięcia karty nie wlicza się
+   w odcinek.
 3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (filtr dokładności,
    kody P05/P06) → `dodajFix()` (historia, maks. 40 pomiarów) → `stanDojscia()`
    (próg `max(25 m, 1,2 × accuracy)` ograniczony do 100 m + dwa kolejne
    trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`: czas,
-   kara za ręczne zgłoszenie, dokładność, `poLimitie`.
+   kara za ręczne zgłoszenie, dokładność, `poLimitie`. GPS i symulacja dojścia
+   (tryb testowy) karmią aplikację tym samym lejem `przyjmijFix()`; symulacja
+   ustępuje grze — gdy faza przestaje być `odcinek` (dojście, pauza, ręczny
+   koniec), odtwarzanie staje i nie nadpisuje statusu gry.
 4. `kodowanie.odpakujPaczke(kontener)` → pytanie dla stacji **odsłaniane w chwili
-   dojścia**, nie na starcie (ADR 0007 pkt 6).
+   dojścia**, nie na starcie (ADR 0007 pkt 6): `STAN.paczka` jest kasowany przy
+   starcie gry, a warstwa DOM woła `odpakujPaczke` wyłącznie w tranzycji do fazy
+   `pytanie` i w `renderujPytanie()`.
 5. Odpowiedź → `rozgrywka.zapiszOdpowiedz({ stacjaId, graczId, pytanie,
-   wybrana })` → punkty i premia/potrącenie za tempo (ADR 0014) → następna
-   kolejka: `graczNaStacji()` / `ktoOdpowiada()` / `podglad()` → ekran „kto idzie
-   dalej". Stacja bez pytania w paczce zamyka się samym dojściem, a pominąć da
-   się tylko odcinek w drodze (ADR 0015).
-6. Koniec → podsumowanie (czasy, punkty, sprawiedliwość trasy, źródła pytań)
-   → eksport wyniku (ADR 0010 pkt 5).
+   wybrana })` → punkty i premia/potrącenie za tempo (ADR 0014) → ocena
+   (`✓ Dobrze!` / `✗ Źle`), wyjaśnienie i klikalne źródła (`rel="noopener"`)
+   zostają na ekranie do „Następna stacja"; przyciski odpowiedzi blokują się po
+   pierwszym wyborze. Następna kolejka: `graczNaStacji()` / `ktoOdpowiada()` /
+   `podglad()` → ekran „kto idzie dalej". Stacja bez pytania w paczce zamyka
+   się samym dojściem, a pominąć da się tylko odcinek w drodze (ADR 0015);
+   ręczne zakończenie gry pokazuje wczesny wynik, ale NIE kasuje zapisu —
+   grę można wznowić.
+6. Koniec → tabela wyniku z `podsumowanie()` (ranking, punkty, poprawne,
+   zwycięzca z 🏆) — w M6 minimalna; pełne podsumowanie (czasy,
+   sprawiedliwość trasy, źródła pytań) i eksport wyniku (ADR 0010 pkt 5)
+   to M7.
 
 ## Kluczowe algorytmy
 
@@ -258,9 +279,22 @@ Odpowiedź >8 MB jest użyta do gry, ale nie zapisana (kod `S04` w UI).
 
 Każdy zapis ma pole `schemat`; nieznana wersja = migracja albo jawny komunikat
 (`wczytajStan()`, kod `G12` ze wskazówką migracji), nigdy ciche odrzucenie.
-Zapis do `localStorage`, budżet rozmiaru i eksport pliku dochodzą w
-`app/trwalosc.js`: zapis paczki i `modyfikacje[]` w M5, trwałość stanu gry
-(wznowienie po zamknięciu przeglądarki) w M6, historia gier w M7.
+
+Trwałość stanu gry (M6) żyje w `app/trwalosc.js`: snapshot `stan-gry/1`
+(`zbierajStan()` → `serializujStan()`, budżet 2 MB — kod `T07`, walidacja
+wczytania `walidujStanSurowy()` atomowa z kodami `T01`–`T10`, m.in. `T08` na
+zepsute znaczniki czasu `zapisanoMs`/`zegarMs`). Klucze:
+`okolica:gra:<kod>` (`kluczStanu()`, `oczyscKodGry()` — pusty kod gry staje się
+`'gra'`, bo surowy `''` jest falsy i baner wznowienia nigdy by nie wstał) oraz
+`okolica:gra-aktywna` (`KLUCZ_AKTYWNEJ`) ze znormalizowanym kluczem bieżącej
+gry. Snapshot niesie konfig, stacje, `kontenerPaczki` (`TO-paczka/2`) i stan
+`rozgrywka/1` — NIGDY jawnych pytań (test-strażnik w R2 i R7); `zbierajStan`
+odmawia przyjęcia `STAN.paczka` w jakiejkolwiek postaci. Zapis leci po każdej
+tranzycji synchronicznie (`beforeunload` jest na telefonach zawodny), a błędy
+zapisu nie zatrzymują gry — idą do statusu. Wznowienie rebazuje oś czasu
+(`zegarMs`), kasuje bufor trafień i centrowanie mapy; kasowanie zapisu i
+ręczne zakończenie gry są dwustopniowe (ADR 0015 pkt 6). Historia gier
+(`okolica:historia`) dochodzi w M7.
 
 ## Testowanie
 

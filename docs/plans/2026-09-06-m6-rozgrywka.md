@@ -38,7 +38,7 @@ Proponowana, B17: nie wcześniej niż po M8), gra na kilku urządzeniach
 
 ## Etapy
 
-- [ ] **R1 — plan (ten plik):** zakres, decyzje, ryzyka; commit + push.
+- [x] **R1 — plan (ten plik):** zakres, decyzje, ryzyka; commit + push.
 - [x] **R2 — `app/trwalosc.js` (czyste):** `SCHEMAT_STANU='stan-gry/1'`,
       `zbierajStan({konfig, stacje, kontenerPaczki, rozgrywka, pozycja, fazaEkranu, czasMs})`
       → snapshot; `walidujStanSurowy(tekst)` → `{stan, usterki}` (kody T:
@@ -86,7 +86,7 @@ Proponowana, B17: nie wcześniej niż po M8), gra na kilku urządzeniach
       nie woła sieci — stacje i paczka z cache/pamięci); ręczne zgłoszenie
       z karą; pauza/wznowienie; ADR 0015 (stacja bez pytania); strażnik
       plaintextu w zapisanym snaphocie (przez `pamiec` atrapy).
-- [ ] **R8 — dokumenty i zamknięcie:** README, ROADMAP („kod M6 gotowy"),
+- [x] **R8 — dokumenty i zamknięcie:** README, ROADMAP („kod M6 gotowy"),
       ARCHITECTURE (B.1–B.6 z realnym UI, A.8 `trwalosc` istnieje),
       PROJECT_HISTORY, LESSONS jeśli coś zaskoczy, cache-busting `?v=m6-1`,
       aktualizacja PR #2. Kryterium właściciela (§4.2): gra przechodzalna

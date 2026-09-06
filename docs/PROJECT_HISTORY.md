@@ -338,3 +338,59 @@ kryteriami M3 (konfiguracja bez przewijania na 360 px) i M4 (prawdziwa
 okolica na telefonie). Właściciel wraca do testów polowych; do tego czasu
 agent koduje kamienie wg `ROADMAP` (następny: M6 — trwałość stanu
 i interfejs gry).
+
+## 2026-09-06 — M6: rozgrywka (kod gotowy, R1–R8)
+
+Kamień M6 w ośmiu krokach, wszystkie na zielonej bramie i wypchnięte od razu
+(procedura po incydentach re-root `.git` z M4):
+
+- **R1** (`fe7548d`) — plan kamienia: `docs/plans/2026-09-06-m6-rozgrywka.md`
+  z decyzjami (jeden ekran i cztery panele faz; snapshot bez plaintextu;
+  odsłonięcie pytania dopiero w tranzycji; czas z `performance.now()`;
+  zapis po każdej tranzycji; dwustopniowe akcje destrukcyjne; minimalny wynik
+  w M6, pełne podsumowanie w M7) i rozpiską R2–R8.
+- **R2** (`c023f1b`) — `app/trwalosc.js` (czyste): schemat `stan-gry/1`,
+  `zbierajStan`/`serializujStan`/`walidujStanSurowy` (atomowa, kody
+  `T01`–`T10`), budżet 2 MB (`T07`), klucze `okolica:gra:<kod>`
+  + `okolica:gra-aktywna`, strażnik anty-plaintext (odmowa przyjęcia jawnej
+  paczki), `test/trwalosc.test.js`.
+- **R3** (`ce01958`) — szkielet `ekran-gra` w HTML+CSS: cztery panele faz,
+  badge kolejki/dystansu/postępu, mapa gry z atrybucją, pola pytań i tabeli
+  wyniku, przyciski faz (w tym dwustopniowe pominięcie i zakończenie),
+  krok „6 · gra" w pasku postępu; kontrakt na identyfikatory w teście.
+- **R4** (`ea703b7`) — wiring faz `przygotowanie`/`odcinek`: start gry kasuje
+  `STAN.paczka` (ADR 0007 pkt 4), zegar gry z odejmowaniem pauz, wspólny lej
+  fixów GPS i symulacji (`przyjmijFix` → `aktualizujGreNaFix`), dojście przez
+  `stanDojscia` albo ręczne z karą, pauza (także `visibilitychange` = pełna
+  pauza, watcher GPS staje), mapa gry ze stacjami i markerem.
+- **R5** (`5e75f4e`) — pętla pytania: `odpakujPaczke` wyłącznie w fazie
+  `pytanie` (ADR 0007 pkt 6), ocena/punkty/premia z `zapiszOdpowiedz`,
+  zablokowane przyciski po pierwszym wyborze, wyjaśnienie i źródła
+  (`rel="noopener"`) trzymają panel do „Następna stacja", rotacja hot-seat
+  (`ktoOdpowiada`), ostrzeżenie o stacji bez pytań.
+- **R6** (`f94a77f`) — trwałość w UI: `zegarMs` w snaphocie (kotwica rebazy),
+  `zapiszGre()` po każdej tranzycji, baner `#karta-wznowienie` na setupie
+  (faza, stacja n/N, data; zepsuty zapis → kody `T` i ukryte „Wznów"),
+  `wznowGre()` z rebazą osi czasu (czas zamknięcia karty poza odcinkiem,
+  ADR 0004 pkt 3), dwustopniowe kasowanie zapisu, pominięcie stacji (G11/G13),
+  ręczne zakończenie z wczesnym wynikiem (zapis zostaje), `pokazWyniki()`
+  z `podsumowanie()` (ranking, 🏆).
+- **R7** (`0d706c3`) — integracja: pełna gra 3 stacje z dojściem SYMULACJĄ
+  (ścieżka GPS — bez klikania „ręcznie", pytanie z kontenera na każdej stacji,
+  wynik z rankingiem, zapis: wszystkie odcinki `zakonczony`/`gps`); zero żądań
+  sieciowych w trakcie gry (utrata zasięgu); stacja bez pytania zamyka się
+  samym dojściem (ADR 0015 — snapshot zbudowany czystymi modułami, wznowiony
+  przez UI, bo walidator paczki taki stan odrzuca kodem E05). Złapany
+  prawdziwy wyścig: `krokSymulacji` nie gasł po tranzycji fazy, liczył
+  `stanDojscia` z wyczyszczonej historii i nadpisywał status gry (LESSONS L22).
+- **R8** (ten commit) — dokumenty: README (status M6), ROADMAP („kod M6
+  gotowy"), ARCHITECTURE (B.1–B.6 z realnym UI, `trwalosc.js` w drzewie
+  modułów i w §Stan i trwałość), LESSONS L22–L23, ten wpis
+  i cache-busting `?v=m6-1`. Brama: **358 testów**, 0 fail + szablon zgodny.
+
+**Kamień M6 niezamknięty**: kryterium terenowe właściciela (`WORKFLOW` §4.2) —
+pełna gra NA TELEFONIE od setupu do wyniku, z utratą zasięgu w trakcie i z
+zamknięciem przeglądarki (wznowienie z rebazą zegara) — czeka razem
+z zaległymi kryteriami M3 (360 px), M4 (prawdziwa okolica) i M5 (pętla
+z prawdziwym modelem). Do M7 zostaje pełne podsumowanie (czasy,
+sprawiedliwość trasy, eksport wyniku) i historia gier (`okolica:historia`).
