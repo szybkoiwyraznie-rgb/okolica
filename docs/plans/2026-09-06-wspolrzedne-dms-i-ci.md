@@ -97,7 +97,7 @@ formatu Google Maps jest fizycznie niemożliwe. Pole musi być tekstowe.
       parsowania → `[P06]` w alercie, pozycja bez zmian; pan z ruchem > próg
       NIE ustawia pozycji) + kontrakt (podpowiedź, pola `type="text"`);
       brama zielona.
-- [ ] **D4 — CI + dokumenty:** `.github/workflows/ci.yml`, próba pusha
+- [x] **D4 — CI + dokumenty:** `.github/workflows/ci.yml`, próba pusha
       (403 → fallback właścicielski i adnotacja), dokumenty z pkt 6, brama,
       commit + push, aktualizacja PR #2.
 

@@ -76,12 +76,18 @@ jest widoczne jako karta obok rozmowy.
 
 1. Otwórz preview i dodaj `?tryb=test` — tryb testowy odsłania ręczne
    współrzędne, więc nie potrzebujesz GPS.
-2. Ustaw współrzędne swojej okolicy (np. `52.2297`, `21.0122`) → „Ustaw tę
-   pozycję". Sprawdź: **kafelki się ładują**, niebieski marker stoi w środku,
+2. Ustaw współrzędne swojej okolicy — wpisz dziesiętne (np. `52.2297`,
+   `21.0122`), **wklej z Google Maps** (np. `52°07'22.9"N 20°44'46.1"E` albo
+   `52.123028, 20.746139` — w pierwsze pole, drugie zostaw puste; stopnie-
+   -minuty-sekundy to nie dziesiętne: 52°07'22.9" = 52.12303) albo w trybie
+   testowym **stuknij mapę** → „Ustaw tę pozycję". Sprawdź: **kafelki się
+   ładują**, niebieski marker stoi w środku,
    jasne koło dokładności ma rozsądny rozmiar, przerywany okrąg to promień gry.
 3. Palec (albo mysz): przeciągnij mapę — treść jedzie z palcem, bez białych
    dziur na krawędzi; uszczypnij — zoom rośnie wokół środka palców; kółko myszy
-   też działa. Przyciski ＋ − ◎ w prawym górnym rogu mają ≥ 44 px.
+   też działa. W trybie testowym krótkie **stuknięcie** mapy pozycji ustawia
+   pozycję (status „z mapy", pola się wypełniają), a przeciągnięcie i pinch —
+   NIE. Przyciski ＋ − ◎ w prawym górnym rogu mają ≥ 44 px.
 4. Pasek skali na dole po lewej pokazuje „50 m"/„200 m" i zmienia się z zoomem.
 5. Atrybucja dostawcy jest **zawsze widoczna** na dole panelu. W setupie
    zmień „Podkład mapy" na OpenTopoMap i na Esri World Imagery — kafelki i

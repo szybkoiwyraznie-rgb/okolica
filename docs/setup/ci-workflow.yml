@@ -1,14 +1,12 @@
-# LUSTRO receptury CI — do wklejenia przez właściciela jako .github/workflows/ci.yml
+# Receptura CI — LUSTRO live pliku `.github/workflows/ci.yml`.
 #
-# Agent NIE MOŻE zapisać tego pliku w drzewie: token GitHub App używany w Arenie
-# dostaje 403 `workflows` przy pushu i przy `gh api` (LESSONS L4, ADR 0012).
-# To nie jest bloker sesji ani zadanie dla właściciela w środku pracy — brama
-# jakości to `npm test` uruchamiane w każdej sesji. Plik leży tu jako receptura
-# i jako punkt odniesienia dla audytu („czy brama na GitHubie robi to samo,
-# co bramka lokalna").
-#
-# Wklejenie: repo → Add file → Create new file → .github/workflows/ci.yml →
-# treść poniżej (bez trzech linii tego nagłówka).
+# Historia: pierwotnie plik był TYLKO lustrem, bo token Areny dostawał 403
+# `workflows` przy pushu (LESSONS L4). 2026-09-06, po odświeżeniu tokena,
+# agent wypchnął live workflow i CI odpaliło się na PR — 403 był przywiązany
+# do instancji tokena, nie trwały. Lustro zostaje jako punkt odniesienia
+# audytu („czy brama na GitHubie robi to samo, co bramka lokalna"), a test
+# kontraktowy pilnuje, że live plik jest IDENTYCZNY z recepturą poniżej
+# (edytuj jedno — edytuj oba).
 
 name: CI
 

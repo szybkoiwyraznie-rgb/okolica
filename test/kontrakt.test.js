@@ -155,9 +155,17 @@ test('kontrakt: index.html nie używa ścieżek od korzenia (ADR 0002 pkt 3)', (
   assert.ok(INDEX.includes('src="app/app.js?v='), 'moduł JS powinien być podpięty ścieżką względną');
 });
 
-test('kontrakt: w drzewie nie ma katalogu .github/workflows zadanego przez agenta (LESSONS L4)', () => {
-  assert.ok(!existsSync(join(ROOT, '.github/workflows')), 'lustro receptury CI ma leżeć w docs/setup/ci-workflow.yml — token agenta nie zapisze workflow');
-  assert.ok(existsSync(join(ROOT, 'docs/setup/ci-workflow.yml')));
+test('kontrakt: live CI jest identyczny z lustrem receptury (LESSONS L4, aktualizacja 2026-09-06)', () => {
+  // L4 mówiło „agent nie zapisze workflow" (403) — po odświeżeniu tokena push
+  // przeszedł, więc kontrakt pilnuje teraz SYNC: live == receptura z lustra.
+  assert.ok(existsSync(join(ROOT, '.github/workflows/ci.yml')), 'brak live workflow — CI musi biegać na PR-ach i pushach do main');
+  const live = czytaj('.github/workflows/ci.yml');
+  const lustro = czytaj('docs/setup/ci-workflow.yml');
+  const receptura = lustro.slice(lustro.indexOf('name: CI'));
+  assert.ok(receptura.startsWith('name: CI'), 'lustro w docs/setup straciło recepturę');
+  assert.equal(live, receptura, 'live workflow rozjechał się z lustrem — edytuj oba naraz');
+  assert.match(live, /run: npm test/, 'brama testowa jest w CI');
+  assert.match(live, /run: npm run check/, 'sprawdzenie szablonu jest w CI');
 });
 
 /* --------------------------------------------------------- UI: DOM ↔ index */

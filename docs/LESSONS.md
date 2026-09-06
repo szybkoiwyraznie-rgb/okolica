@@ -47,6 +47,15 @@ i pilnuj testem kontraktowym, że nie rozjeżdża się z tym, co właściciel wk
 Brak zielonego CI opisuj jako **znany fakt**, nie jako zadanie dla właściciela
 i nie jako bloker sesji.
 
+**Aneks (2026-09-06):** po odświeżeniu tokena push `.github/workflows/ci.yml`
+PRZESZEDŁ i CI odpaliło się na PR — 403 był przywiązany do *instancji* tokena,
+nie do trwałych uprawnień aplikacji. Reguła skorygowana: **najpierw spróbuj
+pusha, dopiero przy 403** fallback na lustro i wklejenie przez właściciela.
+Lustro zostaje: kontrakt porównuje je z live plikiem co do bajta (edytuj jedno
+— edytuj oba). Pierwszy live run i tak był czerwony — stary kontrakt
+assertował NIEISTNIENIE `.github/workflows` i wykładał się na własnym
+sukcesie; przy odwracaniu założeń przeglądaj testy, które je betonują.
+
 ## L5 (2026-09-05, dziedziczone z AME) — `npm test | grep` w łańcuchu maskuje czerwony test
 
 **Objaw:** `npm test | grep -c fail && echo OK` drukuje `OK` przy czerwonych

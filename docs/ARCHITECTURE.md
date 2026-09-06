@@ -16,7 +16,9 @@ app/
   konfig.js                 — kanon konfiguracji: TRYBY, PROMIENIE, WIEK, TEMATY,
                               DOMYSLNE, ograniczenia (czyste dane + walidacja setupu)
   geo.js                    — geodezja i projekcja: haversine, bearing, Web Mercator,
-                              siatka kafelków, pierścienie, dopasowanie zoomu (czyste)
+                              siatka kafelków, pierścienie, dopasowanie zoomu,
+                              parsowanie współrzędnych z pól (dziesiętne, polski
+                              przecinek, DMS z Google Maps) (czyste)
   pozycja.js                — geolokalizacja: osłona watchPozycja(), filtr
                               dokładności (ocenFix), kryterium dojścia
                               (stanDojscia), komunikaty P01–P09, symulacja trasy
@@ -48,9 +50,11 @@ app/
   mapa.js                   — mapa: matematyka widoku (zoom ↔ skala, środek ↔
                               przesunięcie, piksele ↔ współrzędne), adresy
                               kafelków, plan rysowania i pasek skali (czyste)
-                              + warstwa SVG z gestami pan/pinch, przyciskami
-                              ±/◎, atrybucją i trybem ręcznym — przeciąganie
-                              pinezek stacji (DOM, ADR 0005 pkt 8b)
+                              + warstwa SVG z gestami pan/pinch, tap-em
+                              (pozycja testowa: jeden palec, <10 px, tylko
+                              pointerup), przyciskami ±/◎, atrybucją i trybem
+                              ręcznym — przeciąganie pinezek stacji (DOM,
+                              ADR 0005 pkt 8b)
   ui.js                     — ekrany i komponenty: setup, prompt, walidacja, gra,
                               wynik; komunikaty, aria-live (DOM)
   styles.css                — tokeny palety, motyw jasny/ciemny, cele dotykowe ≥44 px

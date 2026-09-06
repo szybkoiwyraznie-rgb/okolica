@@ -290,9 +290,10 @@ na telefonie).
 ## M8 — Publikacja i brama jakości
 
 `.nojekyll`, `assets/manifest.json` + ikony, instrukcja włączenia Pages
-(`docs/WORKFLOW.md` §5), lustro CI w `docs/setup/ci-workflow.yml`, testy
-kontraktowe wersji i ścieżek względnych, audyt polityk dostawców
-(`docs/ASSETS.md`).
+(`docs/WORKFLOW.md` §5), testy kontraktowe wersji i ścieżek względnych, audyt
+polityk dostawców (`docs/ASSETS.md`). CI **już działa** — przyspieszone z M8
+na prośbę właściciela (2026-09-06): `.github/workflows/ci.yml` z receptury,
+lustro w `docs/setup/ci-workflow.yml` pilnowane kontraktem (LESSONS L4, aneks).
 Kryterium: aplikacja działa pod `https://<user>.github.io/okolica/` na telefonie.
 
 ## M9 — Repozytorium paczek pytań

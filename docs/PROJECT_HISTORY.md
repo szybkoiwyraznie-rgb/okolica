@@ -447,3 +447,43 @@ Kamień w ośmiu krokach, wszystkie na zielonej bramie i wypchnięte od razu:
 
 Zostało na M7 (właściciel, teren): podsumowanie czytelne w słońcu na 360 px;
 eksport (share/schowek/plik/obraz) na Chrome Android i Safari iOS.
+
+## 2026-09-06 — Zadania właściciela po M7: współrzędne z Google Maps, tap na mapie, CI
+
+Dwie uwagi właściciela po zamknięciu M7, zrealizowane poza kolejnością
+ROADMAP (zlecenie właściciela), plan `docs/plans/2026-09-06-wspolrzedne-dms-i-ci.md`:
+
+- **Diagnoza (ważna):** model dziesiętny aplikacji jest WŁAŚCIWY —
+  `52°07'22.9"N` to `52 + 7/60 + 22.9/3600 = 52.12303`, a nie `52.07229`
+  (złączenie cyfr DMS to częsty błąd odczytu; dla wejścia 52.07229 aplikacja
+  zachowała się poprawnie, lokalizując ~20 km od Podkowy Leśnej). Dodatkowo
+  pola `type="number"` fizycznie nie wpuszczały wklejenia `°'"NSEW`.
+  Naprawa = wejście, nie model.
+- **D1** (`592e16d`) — plan z diagnozą, decyzjami i kryteriami akceptacji.
+- **D2** (`e5b1c11`) — `geo.parsujWspolrzedne` (czyste): dziesiętne z kropką
+  i polskim przecinkiem, DMS (° ' " ′ ″, N/S/E/W, pary w jednym polu,
+  kolejność E-first), odmowy jawne z komunikatami (minuty ≥ 60, konflikt pary,
+  oś, śmieci); 6 testów z oczekiwaniami LICZONYMI z definicji DMS (L24).
+  Brama po D2: **389** (w komunikacie commita omyłkowo „404" — liczba z głowy
+  przed odpaleniem bramy; historia nie jest amendowana, zakaz force push
+  ADR 0012 — korekta niniejszym).
+- **D3** (`6aec925`) — pola tekstowe + podpowiedź z przykładem Google Maps,
+  przycisk przez parser, **stuknięcie mapy pozycji** w trybie testowym
+  (`mapa.js`: jeden palec, ruch < 10 px, bez pinch-a, tylko `pointerup`;
+  bramka: tryb testowy + ekran pozycji; `ustawNasluchStukniecia`); zrąb DOM:
+  `querySelectorAll('#id tag')` — bez tego `czytajSetupZDomu` czytało pustą
+  listę imion i każda nawigacja z setupu padała w testach na K08. Brama
+  **393/393**; oczekiwania tap-a liczone z widoku po `centrujNaPozycji`
+  (zoom z `dopasujZoomDoPromienia`) — co do cyfry jak w aplikacji.
+- **D4** (`d7b5aed` + ten commit) — **CI na GitHubie**: live
+  `.github/workflows/ci.yml` z receptury w `docs/setup/` — push przeszedł BEZ
+  403 (aneks L4: blokada była przywiązana do instancji tokena). Pierwszy run
+  czerwony: stary kontrakt assertował NIEISTNIENIE `.github/workflows` —
+  odwrócony na „live == lustro co do bajta". Dokumenty: WORKFLOW §4.1
+  (wklejanie z Google Maps i tap w procedurze właściciela), L4 aneks,
+  ARCHITECTURE (drzewo: parser w geo.js, tap w mapa.js), ROADMAP M8
+  (adnotacja o przyspieszeniu CI).
+
+Do potwierdzenia przez właściciela (kryteria z planu): wklejenie
+`52°07'22.9"N 20°44'46.1"E` → Podkowa Leśna przy ul. Bukowej; rozróżnienie
+tap/pan na żywym telefonie; zielone CI na PR #2.
