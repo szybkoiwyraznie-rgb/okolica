@@ -294,3 +294,13 @@ kraju) — megabajty, których parser i tak nie czyta.
 **Reguła:** samodzielne zdanie TYLKO z natychmiastowym `out` (wydrukuj, zanim
 następne zdanie nadpisze `_`) i drukuj minimum: obszary `out tags`, reszta
 w jednej unii `out geom`. Regresja: test kształtu w `test/sieci.test.js`.
+
+## L31 — usunięcie funkcji z UI zostawia jej opis w dokumentach
+
+**Objaw:** README, ASSETS §7 i aneks ADR 0016 opisywały checkbox zgody Drive,
+eksport zestawu i przełącznik geokodacji — mechanizmy usunięte z `index.html`
+decyzją 2026-09-07; wyłapał to dopiero audyt następnej sesji.
+**Przyczyna:** kontrakt pinuje BRAK elementu w `index.html`, ale prozy
+README/ASSETS/ADR nie czyta żaden test.
+**Reguła:** „funkcja znika z ekranu" = w tym samym commicie grep po README,
+ASSETS, ARCHITECTURE, WORKFLOW i ADR-ach (aneks, nie edycja decyzji — L8).

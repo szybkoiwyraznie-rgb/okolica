@@ -138,3 +138,13 @@ w interfejsie jako przycisk „🔌 Sprawdź połączenie" i jawny stan mostu
 (`#most-stan-repo`, `#multi-most-stan`). Reguła „bez zgody albo bez adresu
 mostu: zero wysyłek i jawny status" obowiązuje bez zmian — „brak adresu"
 oznacza teraz pustą stałą w tej wersji aplikacji.
+
+## Aneks (2026-09-07): koniec checkboxa zgody — wysyłka domyślna i cicha
+
+Aneks z 2026-09-06 (opt-out przez `#zgoda-drive`) przestaje obowiązywać.
+Decyzja właściciela: przyjęcie poprawnej paczki od razu zaczyna grę, a ekran
+traci checkbox — wysyłka zestawu na Drive jest domyślna i bez pytania, bo
+aplikacja jest prywatna (właściciel plus kilku znajomych, BACKLOG B17), a jej
+odbiorcą jest wydzielone konto właściciela. Brak pola pinuje
+`test/kontrakt.test.js`. Reguła „bez adresu mostu: zero wysyłek i jawny status"
+obowiązuje bez zmian.

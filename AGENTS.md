@@ -36,7 +36,7 @@ siebie: znasz `wc -l` pliku i wiesz, że dotarłeś do ostatniej linii.
    i rzeczy otwarte. Nie jest źródłem zasad.
 
 Budżet lektury startowej: pozycje 1–6 mają się mieścić w **40 tys. tokenów**
-(`node tools/budzet-lektury.mjs`, gdy już powstanie). Gdy próg zostanie
+(`node tools/budzet-lektury.mjs`). Gdy próg zostanie
 przekroczony, skrócenie/rozdzielenie dokumentów staje się obowiązkowym zadaniem
 sesji, a nie opcją.
 

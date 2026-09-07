@@ -14,71 +14,37 @@
 | M0 — Fundament | ✅ 2026-09-05 | ADR 0001–0013, PROTOKOL PYT v1.0, szkielet 5 ekranów |
 | M1 — Geodezja i model rozgrywki | ✅ 2026-09-05 | geo/pozycja/rozgrywka/kodowanie + testy |
 | M2 — Mapa | ✅ 2026-09-05 | renderer SVG + 3 podkłady |
-| M3 — Konfiguracja i geolokalizacja | 🟡 kod gotowy, czeka kryterium | ekran prywatności + symulacja w UI; CZYTAJ: §M3 (360 px) |
-| M4 — Stacje z sieci drogowej | 🟡 kod gotowy, czeka kryterium | pipeline Overpass + UI, 3/3 fixture'y ≤ 15%; CZYTAJ: §M4 (teren) |
-| M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | auto-start gry po przyjęciu, cicha wysyłka Drive, Nominatim opt-in; CZYTAJ: §M5 (model) |
-| M6 — Rozgrywka | 🟡 kod gotowy, czeka kryterium | ekran gry, trwalosc.js, wznowienie; CZYTAJ: §M6 (telefon) |
-| M7 — Podsumowanie i udostępnianie | 🟡 kod gotowy, czeka kryterium | ranking, eksporty, historia; CZYTAJ: §M7 (słońce/eksporty) |
+| M3 — Konfiguracja i geolokalizacja | 🟡 kod gotowy, czeka kryterium | ekran prywatności + symulacja w UI; kryterium: §Kryteria |
+| M4 — Stacje z sieci drogowej | 🟡 kod gotowy, czeka kryterium | pipeline Overpass + UI, 3/3 fixture'y ≤ 15%; kryterium: §Kryteria |
+| M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | auto-start gry po przyjęciu, cicha wysyłka Drive, Nominatim opt-in; kryterium: §Kryteria |
+| M6 — Rozgrywka | 🟡 kod gotowy, czeka kryterium | ekran gry, trwalosc.js, wznowienie; kryterium: §Kryteria |
+| M7 — Podsumowanie i udostępnianie | 🟡 kod gotowy, czeka kryterium | ranking, eksporty, historia; kryterium: §Kryteria |
 | M8 — Publikacja i brama jakości | 🟡 kod gotowy, czeka właściciela | manifest, ikony, CI, ASSETS §6; publikację włącza właściciel (WORKFLOW §5) |
 | M9 — Repozytorium paczek | ✅ 2026-09-06 (M9b) | kopia lokalna + most Drive (adres w kodzie) |
-| M10 — Dopracowanie terenowe | 🟡 kod gotowy, czeka kryterium | sw.js, PROFILE_GPS, sygnały, WCAG AA 0 naruszeń; CZYTAJ: §M10 (§4.3) |
-| M11 — Gra wieloosobowa (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | most `.gs` + UI; CZYTAJ: §M11 |
-| M12 — Rankingi (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | pseudonim + ekran 🏆, agregacje na telefonie; CZYTAJ: §M12 |
+| M10 — Dopracowanie terenowe | 🟡 kod gotowy, czeka kryterium | sw.js, PROFILE_GPS, sygnały, WCAG AA 0 naruszeń; kryterium: §Kryteria |
+| M11 — Gra wieloosobowa (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | most `.gs` + UI; kryterium: §Kryteria |
+| M12 — Rankingi (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | pseudonim + ekran 🏆, agregacje na telefonie; kryterium: §Kryteria |
 
 ## Kamienie zamknięte (M0, M1, M2, M9)
 
-Szczegóły wykonania (etapy, commity, liczby testów): `docs/PROJECT_HISTORY.md`
-§ „sesja M0/M1/M2" i § „M9" oraz plany w `docs/plans/`. Rewizja M9b (most
-Drive zamiast `data/paczki/`): PROJECT_HISTORY § „decyzja właściciela:
-współdzielone repozytorium paczek na Google Drive" + ADR 0016/0017/0018.
+Szczegóły wykonania: `docs/PROJECT_HISTORY.md` (sesje M0/M1/M2 i M9) oraz
+`docs/plans/`; rewizja M9b (most Drive zamiast `data/paczki/`) — ADR 0016–0018.
 
-## M3 — Ekran konfiguracji i geolokalizacja na żywo
+## Kryteria otwartych kamieni (kod gotowy — czeka właściciel)
 
-Kod gotowy: setup (K01–K21), `watchPosition`, `?tryb=test`, prywatność,
-symulacja. **Czeka kryterium** (WORKFLOW §4.2): konfiguracja bez przewijania
-na 360 px (albo odstępstwo, albo rzadkie pola w `<details>`).
+Zakres kodu każdego kamienia jest w tabeli wyżej i w `PROJECT_HISTORY`;
+tutaj tylko to, co zostało do sprawdzenia:
 
-## M4 — Stacje z sieci drogowej (największe ryzyko)
-
-Kod gotowy: pipeline Overpass, cache, degradacja do pierścienia, pinezki.
-**Czeka kryterium terenowe** (§4.2): jedna prawdziwa okolica na telefonie (+gesty M2).
-
-## M5 — Pętla pytań (prompt → model → walidacja → paczka)
-
-Kod gotowy: auto-start gry po przyjęciu, cicha wysyłka Drive, import ukrytej paczki, Nominatim opt-in (podgląd/edycja/eksport usunięte decyzją 2026-09-07).
-**Czeka kryterium**: pełna pętla z prawdziwym modelem AI.
-
-## M6 — Rozgrywka
-
-Kod gotowy: ekran gry, lej fixów, dojście GPS/ręczne, pauza, pominięcie,
-wznowienie. **Czeka kryterium terenowe** (§4.2): pełna gra na telefonie
-(z utratą zasięgu i zamknięciem przeglądarki).
-
-## M7 — Podsumowanie, punkty i udostępnianie
-
-Kod gotowy: karta zwycięzcy, ranking, eksporty (Share → schowek → plik),
-historia. **Czekają kryteria** (§4): czytelność w słońcu 360 px; eksporty
-Chrome Android i Safari iOS.
-
-## M8 — Publikacja i brama jakości
-
-Kod gotowy: `.nojekyll`, manifest + ikony, CI, ASSETS §6. **Czeka krok
-właściciela**: włączenie publikacji (jednorazowo; poza zasięgiem agenta).
-
-## M10 — Dopracowanie terenowe
-
-Kod gotowy: `sw.js`, PROFILE_GPS, sygnały, WCAG AA (0 naruszeń).
-**Czeka kryterium terenowe** (§4.3) — wynik do LESSONS.
-
-## M11 — Gra wieloosobowa na wielu urządzeniach przez Drive (decyzje właściciela: ADR 0019)
-
-Kod zamknięty (P1–P7): sekcja gier w moście, sync, pełne UI.
-**Czeka**: scalenie `main` (Pages) + test dwóch telefonów (§4.4).
-
-## M12 — Profil, statystyki i rankingi gracza na Drive (decyzje właściciela: ADR 0019)
-
-Kod zamknięty (P6): ekran 🏆 (ogólny + filtry + Moje gry; liczy telefon).
-**Czeka**: scalenie `main` + test terenowy (§4.4 pkt 7).
+- **M3** (§4.2): konfiguracja bez przewijania na 360 px — albo odstępstwo,
+  albo rzadkie pola w `<details>`.
+- **M4** (§4.2): jedna prawdziwa okolica na telefonie (+ gesty mapy z M2).
+- **M5**: pełna pętla z prawdziwym modelem AI.
+- **M6** (§4.2): pełna gra na telefonie, z utratą zasięgu i zamknięciem
+  przeglądarki.
+- **M7**: czytelność w słońcu na 360 px; eksporty na Chrome Android i Safari iOS.
+- **M8**: włączenie publikacji — jednorazowy krok właściciela (WORKFLOW §5).
+- **M10** (§4.3): checklista terenowa; wynik do LESSONS.
+- **M11/M12** (§4.4): test dwóch telefonów (9 punktów, w tym „stan mostu").
 
 ## Zasady prowadzenia roadmapy
 
