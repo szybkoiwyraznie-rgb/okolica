@@ -283,8 +283,8 @@ test('bootstrap: uszkodzona konfiguracja w localStorage nie kładzie startu', as
  * (LESSONS: ponowny import dokłada kolejne nasłuchy `visibilitychange`, więc
  * egzemplarze nie mogą dzielić atrap). Import z unikalnym query = nowy moduł.
  */
-async function aplikacjaZMapa({ search = '' } = {}) {
-  const domMapy = zainstalujDom({ search });
+async function aplikacjaZMapa({ search = '', pamiec = new Map() } = {}) {
+  const domMapy = zainstalujDom({ search, pamiec });
   await import(`../app/app.js?mapa=${Math.random().toString(36).slice(2)}`);
   return domMapy;
 }
@@ -859,7 +859,8 @@ test('Q2 end-to-end: wklejona paczka odwrócona (rev1) od razu zaczyna grę', as
     schemat: 'konfig/1',
     // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
     // fixture paczki jest ułożony pod ten promień
-    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+    // 3 graczy przy 3 stacjach × 1 pytaniu: pytania dzielą się bez reszty (K22, ADR 0027)
+    konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?rev1=${Math.random().toString(36).slice(2)}`);
@@ -881,7 +882,8 @@ test('rev2 end-to-end: wklejona paczka z kodami od razu zaczyna grę', async () 
     schemat: 'konfig/1',
     // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
     // fixture paczki jest ułożony pod ten promień
-    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+    // 3 graczy przy 3 stacjach × 1 pytaniu: pytania dzielą się bez reszty (K22, ADR 0027)
+    konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?rev2=${Math.random().toString(36).slice(2)}`);
@@ -1040,7 +1042,8 @@ async function graGotowaDoStartu() {
     schemat: 'konfig/1',
     // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
     // fixture paczki jest ułożony pod ten promień
-    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+    // 3 graczy przy 3 stacjach × 1 pytaniu: pytania dzielą się bez reszty (K22, ADR 0027)
+    konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?gra=${Math.random().toString(36).slice(2)}`);
@@ -1292,7 +1295,7 @@ test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zos
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'panel wyniku widoczny');
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true);
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
-  assert.equal(wiersze.length, 2, 'wynik per gracz (2 graczy z konfiguracji)');
+  assert.equal(wiersze.length, 3, 'wynik per gracz (3 graczy z konfiguracji — 3 stacje × 1 pytanie dzieli się bez reszty, ADR 0027)');
   assert.equal(wiersze[0].children.length, 3, 'gracz | punkty | poprawne');
   assert.match(dom.pobierz('status').textContent, /można ją wznowić/, 'uczciwie: zapis zostaje');
   assert.ok(pamiec.has('okolica:gra:' + pamiec.get('okolica:gra-aktywna')), 'zapis NIE skasowany — można wrócić do gry');
@@ -1333,7 +1336,7 @@ test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, w
   }
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'panel wyniku po pełnej pętli');
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
-  assert.equal(wiersze.length, 2, 'wynik per gracz');
+  assert.equal(wiersze.length, 3, 'wynik per gracz (3 graczy, ADR 0027)');
   assert.match(wiersze[0].children[0].textContent, /🏆/, 'zwycięzca rankingu oznaczony');
   assert.equal(wiersze[0].children[1].textContent !== '0', true, 'punkty policzone (3 poprawne odpowiedzi × rotacja graczy)');
   // zapis niesie naturalny koniec
@@ -1427,10 +1430,10 @@ test('M7: pełne podsumowanie — zwycięzca, statystyki, karty graczy i stacje'
 
   // 3. karty graczy: dwie, z punktami, poprawnością, dystansem i ręcznymi dojściami
   const karty = dom.pobierz('gra-wynik-gracze').children;
-  assert.equal(karty.length, 2, 'karta per gracz, w kolejności rankingu');
+  assert.equal(karty.length, 3, 'karta per gracz, w kolejności rankingu (3 graczy, ADR 0027)');
   assert.match(karty[0].textContent, /Gracz 1 🏆 · 0 pkt/);
   assert.match(karty[0].textContent, /0 pkt · poprawne 0, błędne 0/);
-  assert.match(karty[0].textContent, /odcinki: 2 · dystans/, 'Gracz 1 miał odcinki 1 i 3 (rotacja)');
+  assert.match(karty[0].textContent, /odcinki: 1 · dystans/, 'Gracz 1 miał odcinek 1 (3 graczy × 3 stacje, ADR 0027)');
   assert.match(karty[0].textContent, /ręczne dojścia: 0/);
   assert.match(karty[1].textContent, /odcinki: 1/, 'Gracz 2 miał odcinek 2');
 
@@ -1439,11 +1442,11 @@ test('M7: pełne podsumowanie — zwycięzca, statystyki, karty graczy i stacje'
   assert.equal(wiersze.length, 3);
   for (const w of wiersze) {
     assert.match(w.textContent, /pominięta/, 'stan z odcinka');
-    assert.match(w.textContent, /Gracz [12]/, 'gracz odcinka przy stacji');
+    assert.match(w.textContent, /Gracz [123]/, 'gracz odcinka przy stacji (3 graczy, ADR 0027)');
   }
 
   // ranking M6 zostaje (te R6/R7 go czytają) — spójny z kartą zwycięzcy
-  assert.equal(dom.pobierz('gra-wyniki-tbody').children.length, 2);
+  assert.equal(dom.pobierz('gra-wyniki-tbody').children.length, 3);
   assert.match(dom.pobierz('gra-wyniki-tbody').children[0].children[0].textContent, /Gracz 1 🏆/);
 });
 
@@ -1465,7 +1468,7 @@ test('M7: eksport tekstu — pole readonly, clipboard, share i plik (ścieżki i
   const tekst = dom.pobierz('pole-wynik-tekst').value;
   assert.match(tekst, /^TAJEMNICZA OKOLICA — WYNIK GRY/, 'tekst wyniku żyje w polu readonly');
   assert.match(tekst, /🏆 Gracz 1 — 0 pkt/);
-  assert.match(tekst, /stacja 3 · Gracz 1 — pominięta · 0 pkt/);
+  assert.match(tekst, /stacja 3 · Gracz 3 — pominięta · 0 pkt/, 'przy 3 graczach stację 3 ma Gracz 3 (rotacja, ADR 0027)');
   assert.match(tekst, /tryb: piesza/, 'konfig gry w nagłówku');
   assert.equal(/[#*_]/.test(tekst), false, 'zero markdowna w udostępnianym tekście');
 
@@ -1690,21 +1693,22 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'naturalny koniec po ostatniej stacji');
 
   // 1. PEŁNE podsumowanie z prawdziwą punktacją (nie zera z pominięć):
-  //    Gracz 1 ma 2 poprawne (stacje 1 i 3), Gracz 2 jedną; punkty = 1 za poprawną (rev2),
-  //    bez premii (Partia 2) → G1 = 40 pkt, G2 = 20 pkt
+  //    3 stacje × 1 pytanie dla 3 graczy (ADR 0027) — każdy odpowiada raz, więc
+  //    wszyscy mają po 1 pkt, a o kolejności decyduje remisowe kryterium z ADR 0023
+  //    (kolejność zgłoszeń), czyli Gracz 1.
   const kartaZw = dom.pobierz('gra-wynik-zwyciezca');
-  assert.match(kartaZw.children[0].textContent, /^🏆 Gracz 1$/, 'dwie poprawne wygrywają z jedną');
+  assert.match(kartaZw.children[0].textContent, /^🏆 Gracz 1$/, 'przy remisie punktów wygrywa kolejność zgłoszeń (ADR 0023)');
   // punkty CZYTAMY Z ELEMENTU, nie regexem po złączonym textContent (L23:
   // 'Gracz 1' + '42 pkt' złączone dałoby '142 pkt')
   const punktyZw = Number(kartaZw.children[1].textContent.replace(' pkt', ''));
-  assert.equal(punktyZw, 2, 'zwycięzca: 2 × 1 pkt (rev2), zero premii');
+  assert.equal(punktyZw, 1, 'zwycięzca: 1 × 1 pkt (rev2), zero premii');
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
   assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
-  assert.equal(wiersze[0].children[2].textContent, '2/2', 'Gracz 1: dwie poprawne, zero błędnych');
+  assert.equal(wiersze[0].children[2].textContent, '1/1', 'Gracz 1: jedna poprawna, zero błędnych');
   assert.equal(wiersze[1].children[2].textContent, '1/1', 'Gracz 2: jedna poprawna');
   const karty = dom.pobierz('gra-wynik-gracze').children;
-  assert.match(karty[0].textContent, /2 pkt · poprawne 2, błędne 0/, 'punkty i poprawność z prawdziwej gry');
-  assert.match(karty[0].textContent, /odcinki: 2 · dystans/);
+  assert.match(karty[0].textContent, /1 pkt · poprawne 1, błędne 0/, 'punkty i poprawność z prawdziwej gry');
+  assert.match(karty[0].textContent, /odcinki: 1 · dystans/);
   assert.match(karty[0].textContent, /ręczne dojścia: 0/);
   const statystyki = dom.pobierz('gra-wynik-statystyki').textContent;
   assert.match(statystyki, /zaliczone:3 z 3/);
@@ -1759,8 +1763,14 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
 test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie — nie', async () => {
   // tap jest bramkowany trybem testowym — główna atrapa biegnie bez
   // `?tryb=test`, więc test pracuje na ŚWIEŻEJ instancji (wzorzec z M2)
-  const domT = await aplikacjaZMapa({ search: '?tryb=test&odstep=0' });
+  // Tożsamość zweryfikowana na tym telefonie — brama (ADR 0026) przechodzi bez
+  // wołania mostu, więc test mapy nie zależy od sieci.
+  const pamiecMapy = new Map([['okolica:profil', JSON.stringify({
+    schemat: 'profil-lokalny/1', pseudonim: 'Mapowy', zweryfikowany: true, kiedy: '2026-09-07T10:00:00.000Z',
+  })]]);
+  const domT = await aplikacjaZMapa({ search: '?tryb=test&odstep=0', pamiec: pamiecMapy });
   domT.kliknij('przycisk-dalej-pozycja'); // bramka tap-a: ekran 'pozycja'
+  await czekaj(10); // przejście jest asynchroniczne: czeka na bramę tożsamości
   domT.pobierz('setup-lat').value = '52.2297';
   domT.pobierz('setup-lon').value = '21.0122';
   domT.kliknij('przycisk-ustaw-reczne');

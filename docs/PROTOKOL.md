@@ -419,6 +419,8 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
   `profil-<id>.json` w katalogu `okolica-profile`; PIN jawnym tekstem
   (ADR 0021). Akcje mostu: `profil-ustaw` (utwórz albo potwierdź),
   `profil-sprawdz` (tylko potwierdź); odmowy kodami R19/R20 w polu `blad`.
+  Aplikacja woła wyłącznie `profil-ustaw` — jest bramą tożsamości ekranu 1
+  (ADR 0026): zakłada profil albo potwierdza PIN jednym żądaniem.
 
 ### 9.4 Kody usterek R01–R20 (`KODY_WIELOOSOBOWE` w `app/wieloosobowa.js`)
 

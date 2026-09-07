@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-9">
-  <script type="module" src="app/app.js?v=m12-9"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-11">
+  <script type="module" src="app/app.js?v=m12-11"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -137,20 +137,26 @@
       <fieldset class="pole" id="pole-imiona">
         <legend>Gracze</legend>
         <div id="lista-imion" class="lista-imion"></div>
-        <button id="przycisk-profil" type="button" class="przycisk">👤 To ja — pobierz imię z Drive</button>
-        <div id="form-profil" hidden>
-          <label>
-            <span>Pseudonim z rankingu</span>
+      </fieldset>
+
+      <!-- Tożsamość jest BRAMĄ ekranu 1 (ADR 0026): imię idzie do historii gier
+           i rankingów na wspólnym Drive, więc przejście dalej wymaga imienia,
+           które most potwierdzi. Jedno wołanie `profil-ustaw` robi wszystko:
+           wolne imię zakłada profil, zajęte wymaga Twojego PIN-u (R20 = odmowa). -->
+      <fieldset class="pole" id="pole-tozsamosc">
+        <legend>👤 Kim jesteś?</legend>
+        <div class="siatka">
+          <label class="pole">
+            <span>Imię (pseudonim)</span>
             <input id="profil-pseudonim" type="text" maxlength="20" autocomplete="off">
           </label>
-          <label>
+          <label class="pole">
             <span>PIN (4–8 cyfr)</span>
             <input id="profil-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off">
           </label>
-          <ul id="bledy-profil"></ul>
-          <button id="przycisk-profil-sprawdz" type="button" class="przycisk">✓ Sprawdź i wpisz</button>
-          <button id="przycisk-profil-zapisz" type="button" class="przycisk" hidden>＋ Zapisz jako nowy</button>
         </div>
+        <p id="profil-stan" class="podpowiedz">Nowe imię = nowy profil: od tej gry Twoje punkty i historia trafiają na wspólny Drive. Imię zajęte? Wpisz swój PIN.</p>
+        <ul id="bledy-profil"></ul>
       </fieldset>
 
       <fieldset class="pole">

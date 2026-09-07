@@ -679,18 +679,30 @@ test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językie
 });
 
 test('kontrakt Partia 1 (3): PIN-profil — UI, kody R19/R20, dokumentacja §9', () => {
-  for (const id of ['przycisk-profil', 'form-profil', 'profil-pseudonim', 'profil-pin', 'bledy-profil', 'przycisk-profil-sprawdz', 'przycisk-profil-zapisz']) {
+  // bez osobnego przycisku sprawdzania: brama siedzi w „Dalej" (mniej klikania,
+  // a setup ma się mieścić na 360 px — WORKFLOW §4.2)
+  for (const id of ['pole-tozsamosc', 'profil-pseudonim', 'profil-pin', 'profil-stan', 'bledy-profil']) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
   for (const k of ['R19', 'R20']) {
     assert.ok(KODY_WIELOOSOBOWE[k], `KODY_WIELOOSOBOWE zna ${k}`);
     assert.ok(PROTOKOL.includes(`| ${k} |`), `PROTOKOL §9.4 dokumentuje ${k}`);
   }
-  assert.match(
-    APP,
-    /akcja: rejestruj \? 'profil-ustaw' : 'profil-sprawdz'/,
-    'app.js woła obie akcje profilowe mostu',
+  // ADR 0026: jedno wołanie `profil-ustaw` zakłada profil ALBO potwierdza PIN
+  assert.ok(APP.includes("akcja: 'profil-ustaw'"), 'app.js woła profil-ustaw (jedna akcja na bramę)');
+  assert.ok(!APP.includes("'profil-sprawdz'"), 'profil-sprawdz nie jest już potrzebne w UI');
+});
+
+test('kontrakt ADR 0026: przejście z ekranu 1 przechodzi przez bramę tożsamości', () => {
+  const start = APP.indexOf("$('przycisk-dalej-pozycja').addEventListener");
+  assert.ok(start > 0, 'nasłuch „Dalej" z ekranu 1 istnieje');
+  const handler = APP.slice(start, APP.indexOf("$('przycisk-gps')", start));
+  assert.ok(handler.includes('await bramkaTozsamosci()'), '„Dalej" czeka na bramę tożsamości');
+  assert.ok(
+    handler.indexOf('bramkaTozsamosci') < handler.indexOf("pokazEkran('pozycja')"),
+    'brama jest PRZED przejściem na ekran pozycji (inaczej imię nie jest wymagane)',
   );
+  assert.ok(handler.includes('return;'), 'odmowa bramy zatrzymuje przejście');
 });
 
 test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', () => {

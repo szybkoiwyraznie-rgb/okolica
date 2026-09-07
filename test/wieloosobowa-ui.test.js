@@ -625,42 +625,75 @@ test('uszkodzony stan z mostu: kod R w statusie, polling nie pada, po naprawie g
   assert.equal(el(A, 'ekran-gra').hidden, false, 'gra toczy się dalej po poprawnym stanie');
 });
 
-test('profil PIN: sprawdź wpisuje imię; nieznany proponuje zapis; zły PIN to R20', async () => {
+test('brama tożsamości (ADR 0026): nowe imię zakłada profil, zajęte wymaga PIN-u, zły PIN blokuje ekran 1', async () => {
   const imie = (u) => el(u, 'lista-imion').children[0].value;
-
-  // znany profil: sprawdzenie wpisuje imię i chowa formularz
   const most = atrapaMostu();
   most.profile.set('ala', { pseudonim: 'Ala', pin: '1234' });
+
+  // 1) imię zajęte + POPRAWNY PIN → przechodzi, imię w polu gracza
   const A = await noweUrzadzenie({ most });
-  assert.equal(el(A, 'form-profil').hidden, true, 'formularz profilu domyślnie schowany');
-  await klik(A, 'przycisk-profil');
-  assert.equal(el(A, 'form-profil').hidden, false, 'przycisk odsłania formularz');
   ustaw(A, 'profil-pseudonim', 'Ala');
   ustaw(A, 'profil-pin', '1234');
-  await klik(A, 'przycisk-profil-sprawdz');
-  assert.equal(el(A, 'form-profil').hidden, true, 'po sukcesie formularz znika');
+  await klik(A, 'przycisk-dalej-pozycja');
+  await oddech();
+  assert.equal(el(A, 'ekran-pozycja').hidden, false, 'poprawny PIN otwiera ekran 2');
   assert.equal(imie(A), 'Ala', 'imię z profilu w polu gracza');
   assert.match(tekst(A, 'status'), /To Ty/, 'potwierdzenie tożsamości');
+  assert.equal(el(A, 'profil-pin').value, '', 'PIN nie zostaje w polu');
 
-  // nieznany profil: R19 + przycisk zapisu tworzy profil i wpisuje imię
+  // 2) imię WOLNE → jedno wołanie zakłada profil na moście
   const B = await noweUrzadzenie({ most });
-  await klik(B, 'przycisk-profil');
   ustaw(B, 'profil-pseudonim', 'Ewa');
   ustaw(B, 'profil-pin', '9999');
-  await klik(B, 'przycisk-profil-sprawdz');
-  assert.equal(el(B, 'przycisk-profil-zapisz').hidden, false, 'nieznany pseudonim proponuje zapis');
-  assert.match(tekst(B, 'bledy-profil'), /pseudonimu/, 'komunikat R19 po ludzku');
-  await klik(B, 'przycisk-profil-zapisz');
-  assert.equal(imie(B), 'Ewa', 'nowy profil wpisany');
-  assert.match(tekst(B, 'status'), /Zapisano nowy pseudonim/, 'potwierdzenie zapisu');
-  assert.equal(most.profile.get('ewa').pin, '9999', 'PIN zapisany na moście');
+  await klik(B, 'przycisk-dalej-pozycja');
+  await oddech();
+  assert.equal(most.profile.get('ewa')?.pin, '9999', 'profil Ewy powstał na moście');
+  assert.equal(imie(B), 'Ewa', 'nowe imię wpisane');
+  assert.match(tekst(B, 'status'), /Założono profil/, 'jawne potwierdzenie założenia profilu');
 
-  // zły PIN do znanego profilu: R20, imię nietknięte
+  // 3) imię zajęte + ZŁY PIN → odmowa R20, zostajesz na ekranie 1
   const C = await noweUrzadzenie({ most });
-  await klik(C, 'przycisk-profil');
   ustaw(C, 'profil-pseudonim', 'Ala');
   ustaw(C, 'profil-pin', '0000');
-  await klik(C, 'przycisk-profil-sprawdz');
+  await klik(C, 'przycisk-dalej-pozycja');
+  await oddech();
+  assert.equal(el(C, 'ekran-pozycja').hidden, true, 'zły PIN NIE puszcza dalej');
   assert.match(tekst(C, 'bledy-profil'), /PIN/, 'komunikat R20 po ludzku');
-  assert.equal(imie(C), 'Gracz 1', 'imię nietknięte po odmowie (został domyślny Gracz 1)');
+  assert.equal(imie(C), 'Gracz 1', 'imię nietknięte po odmowie');
+
+  // 4) brak imienia albo PIN-u → brama odmawia, zanim cokolwiek poleci w sieć
+  const D = await noweUrzadzenie({ most });
+  await klik(D, 'przycisk-dalej-pozycja');
+  await oddech();
+  assert.equal(el(D, 'ekran-pozycja').hidden, true, 'bez imienia nie ma przejścia');
+  assert.match(tekst(D, 'bledy-profil'), /Wpisz imię/);
+  ustaw(D, 'profil-pseudonim', 'Jan');
+  await klik(D, 'przycisk-dalej-pozycja');
+  await oddech();
+  assert.match(tekst(D, 'bledy-profil'), /4–8 cyfr/, 'PIN jest wymagany');
+
+  // 5) most nie odpowiada → gra NIE staje (ADR 0016 pkt 5), degradacja jawna
+  const padniety = atrapaMostu();
+  padniety.fetchImpl = async () => { throw new Error('offline'); };
+  const E = await noweUrzadzenie({ most: padniety });
+  ustaw(E, 'profil-pseudonim', 'Ola');
+  ustaw(E, 'profil-pin', '4321');
+  await klik(E, 'przycisk-dalej-pozycja');
+  await oddech();
+  assert.equal(el(E, 'ekran-pozycja').hidden, false, 'awaria mostu nie blokuje gry');
+  assert.match(tekst(E, 'profil-stan'), /lokalnie/, 'degradacja jest jawna');
+
+  // 6) imię zweryfikowane NA TYM TELEFONIE → przechodzi bez mostu i bez PIN-u w sieci
+  const F = await noweUrzadzenie({
+    most: padniety,
+    pamiec: new Map([
+      ['okolica:multi:url-mostu', URL_MOSTU],
+      ['okolica:profil', JSON.stringify({ schemat: 'profil-lokalny/1', pseudonim: 'Ala', zweryfikowany: true, kiedy: '2026-09-07T10:00:00.000Z' })],
+    ]),
+  });
+  assert.equal(el(F, 'profil-pseudonim').value, 'Ala', 'imię z tego telefonu wraca do pola');
+  await klik(F, 'przycisk-dalej-pozycja');
+  await oddech();
+  assert.equal(el(F, 'ekran-pozycja').hidden, false, 'znane z telefonu imię przechodzi bez mostu');
+  assert.equal(imie(F), 'Ala');
 });

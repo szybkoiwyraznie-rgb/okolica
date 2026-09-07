@@ -70,6 +70,19 @@ export function czyPinPoprawny(pin) {
   return /^\d{4,8}$/.test(String(pin ?? '').trim());
 }
 
+/**
+ * Profil zweryfikowany na tym telefonie (`okolica:profil`, ADR 0026): tylko
+ * pseudonim i znacznik weryfikacji — PIN NIGDY nie jest zapisywany lokalnie
+ * (ADR 0013: na telefonie zostaje minimum). `null` dla śmieci.
+ */
+export function walidujProfilLokalny(surowy) {
+  if (!surowy || typeof surowy !== 'object') return null;
+  if (surowy.schemat !== 'profil-lokalny/1') return null;
+  const pseudonim = normalizujPseudonim(surowy.pseudonim);
+  if (!pseudonim) return null;
+  return { schemat: surowy.schemat, pseudonim, zweryfikowany: surowy.zweryfikowany === true, kiedy: surowy.kiedy ?? null };
+}
+
 /** Jawna odmowa mostu przy profilu: kod R19/R20 → zdanie dla gracza. */
 export function komunikatBleduProfilu(blad) {
   const kod = String(blad ?? '').trim();
@@ -104,7 +117,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-9';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-11';
 
 export { ramkaGeohash, sasiednieGeohash };
 

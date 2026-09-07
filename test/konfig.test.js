@@ -125,7 +125,7 @@ test('walidujSetup: przyjmuje poprawną i odrzuca każdą klasę błędu', () =>
   assert.ok(kody({ ...baza, imiona: ['', 'Ala'] }).includes('K08'));
   assert.ok(kody({ ...baza, liczbaStacji: 2 }).includes('K10'));
   assert.ok(kody({ ...baza, liczbaStacji: 13 }).includes('K10'));
-  assert.ok(kody({ ...baza, pytaniaNaStacje: 4 }).includes('K11'));
+  assert.ok(kody({ ...baza, pytaniaNaStacje: 9 }).includes('K11'), 'widełki pytań sięgają MAKS_GRACZY (ADR 0027)');
   assert.ok(kody({ ...baza, promienM: 50 }).includes('K12'));
   assert.ok(kody({ ...baza, promienM: 99999 }).includes('K12'));
   assert.ok(kody({ ...baza, tematy: [] }).includes('K14'));
@@ -279,4 +279,36 @@ test('oczyscKonfiguracje: promień zawsze wynika z czasu, trybu i liczby pytań 
   assert.equal(stary.promienM, 500, 'stary promień nie jest już źródłem prawdy');
   assert.equal(oczyscKonfiguracje({ czasGryMin: 99999 }).czasGryMin, OGRANICZENIA.czasGryMin.max, 'zacisk do widełek');
   assert.equal(oczyscKonfiguracje({ czasGryMin: 'nie-liczba' }).czasGryMin, DOMYSLNE.czasGryMin, 'śmieci z inputa = domyślne');
+});
+
+/* ---- ADR 0027: pytania po równo na gracza (hot-seat) ---- */
+
+test('pytania dzielą się równo między graczy: K22 dla reszty, cisza dla pełnego podziału', () => {
+  const kody = (k) => walidujSetup(k).map((u) => u.kod);
+  const baza = domyslnaKonfiguracja(2); // 5 stacji × 2 pytania = 10 → 10 % 2 = 0
+  assert.equal(baza.pytaniaNaStacje, 2, 'domyślnie każdy gracz odpowiada raz przy każdej stacji');
+  assert.ok(!kody(baza).includes('K22'), 'domyślny setup 2 graczy jest poprawny');
+
+  assert.ok(kody({ ...baza, liczbaStacji: 3, pytaniaNaStacje: 1 }).includes('K22'), '3 × 1 = 3 pytania dla 2 graczy — nie dzieli się');
+  assert.ok(kody({ ...baza, liczbaStacji: 5, pytaniaNaStacje: 1 }).includes('K22'), '5 pytań dla 2 graczy — nie dzieli się');
+  assert.ok(!kody({ ...baza, liczbaStacji: 4, pytaniaNaStacje: 1 }).includes('K22'), '4 × 1 = 4 dla 2 graczy — po 2 pytania');
+  assert.ok(!kody({ ...baza, liczbaStacji: 3, pytaniaNaStacje: 2 }).includes('K22'), '3 × 2 = 6 dla 2 graczy — po 3 pytania');
+  assert.ok(!kody(domyslnaKonfiguracja(1)).includes('K22'), 'jeden gracz bierze wszystko');
+  assert.ok(!kody(domyslnaKonfiguracja(8)).includes('K22'), '8 graczy: 8 pytań na stację (widełki do MAKS_GRACZY)');
+});
+
+test('hot-seat: pytań jest co najmniej tyle co stacji, a widełki pytań sięgają MAKS_GRACZY', () => {
+  assert.equal(OGRANICZENIA.pytaniaNaStacje.min, 1, 'minimum 1 pytanie na stację = razem tyle co stacji');
+  assert.equal(OGRANICZENIA.pytaniaNaStacje.max, OGRANICZENIA.liczbaGraczy.max, 'każdy gracz może odpowiadać przy każdej stacji');
+  for (const graczy of [1, 2, 3, 5, 8]) {
+    const k = domyslnaKonfiguracja(graczy);
+    assert.equal(k.pytaniaNaStacje, graczy, `${graczy} graczy → ${graczy} pytań na stację`);
+    assert.equal(liczbaPytan(k) % graczy, 0, 'podział bez reszty');
+    assert.ok(liczbaPytan(k) >= k.liczbaStacji, 'pytań nie mniej niż stacji');
+  }
+});
+
+test('oczyscKonfiguracje: pytania na stację zaciskają się do widełek, ale nie psują podziału domyślnego', () => {
+  assert.equal(oczyscKonfiguracje({ pytaniaNaStacje: 99 }).pytaniaNaStacje, OGRANICZENIA.pytaniaNaStacje.max);
+  assert.equal(oczyscKonfiguracje({ liczbaGraczy: 4 }).pytaniaNaStacje, 4, 'zmiana liczby graczy ciągnie domyślne pytania');
 });

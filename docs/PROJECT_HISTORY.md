@@ -913,3 +913,49 @@ CZYTAĆ — w tym przypadku pokazał ` M app/*.js` i został przeoczony.
 **Brama na koniec sesji:** 518/518 (521 − 5 testów usuniętej ścieżki edycji
 + 2 nowe kontrakty) + sync szablonu OK + WCAG AA 0 naruszeń. Podgląd na żywo
 sprawdzony: stopka serwuje `PYT/1.0.5`, moduły i `sw.js` zwracają 200.
+
+## 2026-09-07 (partia 3) — siedem punktów właściciela: Pages, budżet, prompt, tolerancja okolicy, czas gry, tożsamość, hot-seat
+
+Właściciel zgłosił siedem rzeczy naraz. Sześć wdrożonych, siódma (gra sieciowa
+bez tur) zaprojektowana w ADR 0027 część B.
+
+- **Punkt 7 — GitHub Pages**: przy `Source: GitHub Actions` GitHub czeka na
+  workflow wołający `actions/deploy-pages`, a takiego nie było. Doszedł
+  `.github/workflows/pages.yml` (brama → `upload-pages-artifact@v3` z `path: ./`
+  → `deploy-pages@v4`, uprawnienia `pages`/`id-token`) + lustro
+  `docs/setup/pages-workflow.yml` pinowane kontraktem (bajt w bajt od
+  `name: Pages`). Pułapka: kontrakt wymaga `run: npm test` w jednej linii, więc
+  bramę rozbiliśmy na dwa kroki zamiast bloku `run: |`.
+- **Punkt 5 — budżet lektury 40 → 100 tys. tokenów**: `LIMIT_TOKENOW`,
+  `AGENTS.md` §0, testy i BACKLOG (B14, B18 rozstrzygnięty decyzją właściciela:
+  „40k to za mało na taki duży projekt"). Kondensacja przestaje być obowiązkowa
+  przy każdym dopisku; zasada „reguła trafia tam, gdzie jej miejsce" zostaje.
+- **Punkt 2 — prompt**: „Gracze idą od stacji do stacji … i przy każdej stacji
+  dostają pytania **z wybranych dziedzin**" (PROTOKOL §2 → `SZABLON_PROMPTU`,
+  łatka `PYT/1.0.6`).
+- **Punkt 3 — paczki „nie dla tej okolicy"**: przyczyną był filtr
+  `w.geohash5 === geohash5`, a geohash to siatka: punkty ~1 m od siebie po dwóch
+  stronach granicy mają różne geohash5 (u3q8q vs u3q8w). Teraz dopasowanie liczy
+  **odległość od komórki geohash paczki z tolerancją 200 m**
+  (`odlegloscDoKomorkiM` w `geo.js`, ADR 0024), nowe paczki niosą `geohash6`
+  (≈0,75 × 0,61 km) jako dokładniejszą kotwicę, a komunikat braku mówi, ile
+  paczek jest w indeksie i które kryterium nie zagrało. Prywatność bez zmian:
+  dokładne stacje i tak są publiczne przez `?akcja=paczka&id=`.
+- **Punkt 4 — czas gry zamiast promienia**: pole promienia zniknęło, jest
+  planowany czas gry (60 min domyślnie), a promień liczy `przeliczenieCzasu`
+  (90 s na pytanie, 40% reszty na drogę, trasa ≈ 1,4·√N·R) — kalibracja
+  właściciela 60 min / pieszo / 5 pytań → **500 m** (ADR 0025). Konsekwencja:
+  domyślny promień gry 1000 → 500 m, a `TRYBY[x].promienM` usunięte.
+- **Punkt 1 — tożsamość bramą ekranu 1**: imię + PIN obok siebie, jedno wołanie
+  `profil-ustaw` (wolne imię zakłada profil, zajęte wymaga PIN-u, zły PIN = R20
+  i zostajesz na ekranie 1). Zweryfikowane na tym telefonie imię przechodzi bez
+  sieci, a awaria mostu nie blokuje gry — tylko mówi, że historia nie zostanie
+  zapisana (ADR 0026). Przełącznik i przycisk „Sprawdź" zniknęły: mniej klikania.
+- **Punkt 6A — hot-seat**: pytania muszą dzielić się równo między graczy (K22),
+  domyślnie `pytaniaNaStacje = liczbaGraczy`, widełki pytań 1–8 (ADR 0027).
+  Układ „2 graczy × 3 stacje × 1 pytanie" jest teraz niepoprawny — fixture'y
+  przeszły na 3 graczy.
+
+**Brama na koniec partii:** 538/538 + sync szablonu OK + WCAG AA 0 naruszeń.
+Podgląd serwuje `?v=m12-11`. Ostatnie dwa commity czekały na push (token GitHub
+w środowisku wygasł) — patrz `docs/setup/HANDOFF_2026-09-07-partia3.md`.

@@ -168,3 +168,18 @@ go nie ma. Prywatność bez zmian (ADR 0024 pkt 5: dokładne stacje i tak są
 publiczne przez `?akcja=paczka&id=`), klient już woli `geohash6`. Koszt:
 ~25 linii kodera geohash w Apps Script (bez testów w tym repozytorium — skrypt
 działa poza nim) i jednorazowe wklejenie nowej wersji skryptu przez właściciela.
+
+## B20 — Gra sieciowa bez tur: wolna kolejność stacji i premia za kolejność (ADR 0027 część B)
+
+Projekt jest w ADR 0027 (część B): każdy gracz na swoim telefonie zalicza
+stacje w dowolnej kolejności, pytanie bierze z paczki wg swojego indeksu
+(`pytaniaNaStacje = liczbaGraczy`), 1 pkt za poprawną, premia `G−1 … 0` za
+kolejność ukończenia, podsumowanie gdy wszyscy skończą albo gospodarz zakończy.
+Do zrobienia: `rozgrywka.js` (koniec bramkowania turą, postęp gracza, premia),
+`wieloosobowa.js` (walidacja zdarzeń bez kolejki, premia w `przeliczWyniki`),
+`app.js` (lista stacji do wyboru, postęp graczy, przycisk gospodarza),
+PROTOKOL §9, testy. Most Drive bez zmian.
+
+Przed wdrożeniem: sprawdzić budżet promptu i limit wklejenia dla
+`stacje × gracze` pytań (8 graczy × 5 stacji = 40 pytań) — dziś domyślny setup
+generuje ich 5.

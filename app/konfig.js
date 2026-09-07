@@ -168,7 +168,9 @@ export const PODKLADY = {
 export const OGRANICZENIA = {
   liczbaGraczy: { min: 1, max: 8 },
   liczbaStacji: { min: 3, max: 12 },
-  pytaniaNaStacje: { min: 1, max: 3 },
+  // max = maks. liczba graczy: w hot-seacie każdy gracz może odpowiadać przy
+  // każdej stacji (ADR 0027), a pytania mają się dzielić równo między graczy.
+  pytaniaNaStacje: { min: 1, max: 8 },
   promienM: { min: 200, max: 50000 },
   czasGryMin: { min: 10, max: 480 },
   dlugoscKoduGry: { min: 4, max: 40 },
@@ -255,15 +257,20 @@ export function domyslnaKonfiguracja(liczbaGraczy = DOMYSLNE.liczbaGraczy) {
   const n = Number.isFinite(surowe)
     ? Math.min(Math.max(1, Math.round(surowe)), OGRANICZENIA.liczbaGraczy.max)
     : DOMYSLNE.liczbaGraczy;
+  // Hot-seat (ADR 0027): domyślnie każdy gracz odpowiada raz przy każdej
+  // stacji, więc pytań na stację jest tyle, ilu jest graczy — wtedy łączna
+  // liczba pytań (stacje × gracze) dzieli się między nich bez reszty.
+  const pytania = Math.min(n, OGRANICZENIA.pytaniaNaStacje.max);
   return {
     ...DOMYSLNE,
     liczbaGraczy: n,
+    pytaniaNaStacje: pytania,
     czasGryMin: DOMYSLNE.czasGryMin,
     promienM: promienZCzasuGry({
       czasGryMin: DOMYSLNE.czasGryMin,
       tryb: DOMYSLNE.tryb,
       liczbaStacji: DOMYSLNE.liczbaStacji,
-      pytaniaNaStacje: DOMYSLNE.pytaniaNaStacje,
+      pytaniaNaStacje: pytania,
     }),
     imiona: Array.from({ length: n }, (_, i) => `Gracz ${i + 1}`),
   };
@@ -363,6 +370,13 @@ export function oczyscKonfiguracje(surowa) {
     if (!Number.isFinite(v)) continue;
     konfig[pole] = Math.min(Math.max(Math.round(v), zakres.min), zakres.max);
   }
+  // Liczba graczy bez podanych pytań na stację: domyślnie każdy gracz
+  // odpowiada raz przy każdej stacji (ADR 0027). Jawne `pytaniaNaStacje`
+  // w źródle ma pierwszeństwo — nawet gdy nie dzieli się równo (to zgłosi K22).
+  if (zrodlo.pytaniaNaStacje === undefined) {
+    konfig.pytaniaNaStacje = Math.min(konfig.liczbaGraczy, OGRANICZENIA.pytaniaNaStacje.max);
+  }
+
   // Promień jest WYNIKIEM, nie wejściem (ADR 0025): liczy się z czasu, trybu
   // i liczby pytań — także dla starych zapisów, które niosły własny `promienM`
   // (migracja: brak `czasGryMin` = domyślne 60 min).
@@ -425,6 +439,15 @@ export function walidujSetup(konfig) {
   const { min: minP, max: maxP } = OGRANICZENIA.pytaniaNaStacje;
   if (!Number.isInteger(konfig.pytaniaNaStacje) || konfig.pytaniaNaStacje < minP || konfig.pytaniaNaStacje > maxP) {
     dodaj('K11', 'pytaniaNaStacje', `Liczba pytań na stację musi być liczbą od ${minP} do ${maxP}.`);
+  }
+
+  // Hot-seat: pytania po równo na gracza (ADR 0027). Minimum „tyle pytań co
+  // stacji" wynika z K11 (pytaniaNaStacje ≥ 1); tu chodzi o równy podział.
+  if (Number.isInteger(konfig.liczbaGraczy) && konfig.liczbaGraczy > 1
+    && Number.isInteger(konfig.liczbaStacji) && Number.isInteger(konfig.pytaniaNaStacje)
+    && (konfig.liczbaStacji * konfig.pytaniaNaStacje) % konfig.liczbaGraczy !== 0) {
+    dodaj('K22', 'pytaniaNaStacje',
+      `Pytania muszą dzielić się równo między graczy: ${konfig.liczbaStacji} stacji × ${konfig.pytaniaNaStacje} pytania = ${konfig.liczbaStacji * konfig.pytaniaNaStacje} pytań dla ${konfig.liczbaGraczy} graczy. Zmień liczbę graczy, stacji albo pytań na stację.`);
   }
 
   const { min: minC, max: maxC } = OGRANICZENIA.czasGryMin;

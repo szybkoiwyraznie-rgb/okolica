@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-9';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-9';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-11';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-11';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -29,21 +29,21 @@ import {
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
-} from './protokol.js?v=m12-9';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-9';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-9';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-9';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-9';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-9';
+} from './protokol.js?v=m12-11';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-11';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-11';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-11';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-11';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-11';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-9';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-9';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-9';
+} from './zestawy.js?v=m12-11';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-11';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-11';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -63,11 +63,11 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-9';
-import { utworzMape } from './mapa.js?v=m12-9';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-9';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-9';
-import { adresMostu, stanMostu } from './most.js?v=m12-9';
+} from './sieci.js?v=m12-11';
+import { utworzMape } from './mapa.js?v=m12-11';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujProfilLokalny, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-11';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-11';
+import { adresMostu, stanMostu } from './most.js?v=m12-11';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -368,34 +368,102 @@ function wpiszImieZProfilu(pseudonim) {
   if (pola[cel]) pola[cel].value = pseudonim;
 }
 
-async function obsluzProfil(rejestruj) {
+/** Klucz i schemat zweryfikowanej tożsamości na tym telefonie (ADR 0026). */
+const KLUCZ_PROFILU = 'okolica:profil';
+
+function czytajProfilLokalny() {
+  try {
+    return walidujProfilLokalny(JSON.parse(localStorage.getItem(KLUCZ_PROFILU) ?? 'null'));
+  } catch {
+    return null; // śmieci w localStorage nie kładą setupu (LESSONS L10)
+  }
+}
+
+function zapiszProfilLokalny(pseudonim, { zweryfikowany = true } = {}) {
+  localStorage.setItem(KLUCZ_PROFILU, JSON.stringify({
+    schemat: 'profil-lokalny/1', pseudonim, zweryfikowany, kiedy: new Date().toISOString(),
+  }));
+}
+
+/** Wypełnia pole imienia z profilu zapisanego na tym telefonie (mniej klikania). */
+function przywrocProfil() {
+  const profil = czytajProfilLokalny();
+  if (!profil) return;
+  $('profil-pseudonim').value = profil.pseudonim;
+  $('profil-stan').textContent = profil.zweryfikowany
+    ? `Ten telefon zna już imię „${profil.pseudonim}" — przejdziesz bez PIN-u. Zmień imię, żeby zagrać jako ktoś inny.`
+    : `Imię „${profil.pseudonim}" zostało na tym telefonie bez potwierdzenia z Drive — przy przejściu sprawdzę je jeszcze raz.`;
+}
+
+/**
+ * BRAMA tożsamości ekranu 1 (ADR 0026): bez imienia potwierdzonego przez most
+ * nie ma przejścia na ekran pozycji. Jedno wołanie `profil-ustaw` robi całą
+ * robotę — wolne imię zakłada profil (historia i rankingi od tej gry), zajęte
+ * wymaga Twojego PIN-u, a zły PIN to odmowa R20 i zostajesz na ekranie 1.
+ *
+ * Dwie jawne ulgi, obie z komunikatem (LESSONS L6):
+ * - imię zweryfikowane wcześniej NA TYM TELEFONIE przechodzi bez sieci
+ *   (minimalna liczba kliknięć — właściciel: „UX-friendly");
+ * - most niedostępny NIE blokuje gry (ADR 0016/0020) — grasz lokalnie,
+ *   historia nie zostanie zapisana, i komunikat mówi to wprost.
+ */
+async function bramkaTozsamosci() {
   const pseudo = normalizujPseudonim($('profil-pseudonim').value);
   const pin = ($('profil-pin').value ?? '').trim();
-  if (!pseudo) { pokazBledy('bledy-profil', [{ komunikat: 'Wpisz pseudonim.' }]); return; }
-  if (!czyPinPoprawny(pin)) { pokazBledy('bledy-profil', [{ komunikat: 'PIN to 4–8 cyfr.' }]); return; }
-  const url = adresMostu();
-  if (!url) { pokazBledy('bledy-profil', [{ komunikat: 'Brak adresu mostu — profil niedostępny.' }]); return; }
-  status(rejestruj ? 'Zapisuję nowy pseudonim…' : 'Sprawdzam profil…');
-  try {
-    const wynik = await polecenieMostu(url, {
-      akcja: rejestruj ? 'profil-ustaw' : 'profil-sprawdz', pseudonim: pseudo, pin,
-    });
+  const odmowa = (komunikat, pole = 'profil-pin') => {
+    pokazBledy('bledy-profil', [{ komunikat }]);
+    $('profil-stan').textContent = komunikat;
+    $(pole).focus?.();
+    return false;
+  };
+  if (!pseudo) return odmowa('Wpisz imię — trafia do historii gier i rankingów.', 'profil-pseudonim');
+
+  // Ten telefon już potwierdził TO imię na moście — przechodzi bez PIN-u
+  // (mniej klikania; zmiana imienia w polu wyłącza obejście).
+  const zapisany = czytajProfilLokalny();
+  if (zapisany?.zweryfikowany && zapisany.pseudonim === pseudo) {
     pokazBledy('bledy-profil', []);
-    wpiszImieZProfilu(wynik.pseudonim || pseudo);
-    $('przycisk-profil-zapisz').hidden = true;
-    $('form-profil').hidden = true;
+    wpiszImieZProfilu(pseudo);
+    return true;
+  }
+
+  if (!czyPinPoprawny(pin)) return odmowa('PIN to 4–8 cyfr. Nowe imię dostaje nowy PIN, zajęte wymaga Twojego.', 'profil-pin');
+
+  const url = adresMostu();
+  if (!url) {
+    pokazBledy('bledy-profil', []);
+    zapiszProfilLokalny(pseudo, { zweryfikowany: false });
+    wpiszImieZProfilu(pseudo);
+    $('profil-stan').textContent = 'Ta wersja aplikacji nie ma adresu mostu — grasz lokalnie, historia i rankingi nie zostaną zapisane.';
+    return true;
+  }
+
+  status('Sprawdzam imię na wspólnym Drive…');
+  try {
+    const wynik = await polecenieMostu(url, { akcja: 'profil-ustaw', pseudonim: pseudo, pin });
+    const imie = wynik.pseudonim || pseudo;
+    pokazBledy('bledy-profil', []);
+    zapiszProfilLokalny(imie);
+    wpiszImieZProfilu(imie);
+    $('profil-pin').value = ''; // PIN nie zostaje w polu
+    $('profil-stan').textContent = wynik.nowy
+      ? `Nowe imię „${imie}" — profil założony, od tej gry Twoje punkty i historia są na Drive.`
+      : `Imię „${imie}" potwierdzone PIN-em — witaj z powrotem.`;
     status(wynik.nowy
-      ? `Zapisano nowy pseudonim „${wynik.pseudonim || pseudo}" — od teraz jest Twój (PIN-em go potwierdzasz).`
-      : `To Ty — wpisano „${wynik.pseudonim || pseudo}".`);
+      ? `Założono profil „${imie}" — historia i rankingi od teraz na wspólnym Drive.`
+      : `To Ty — „${imie}" potwierdzone PIN-em.`);
+    return true;
   } catch (e) {
     if (e?.odmowaMostu) {
-      const kod = String(e.message ?? '').trim();
-      if (kod === 'R19' && !rejestruj) $('przycisk-profil-zapisz').hidden = false;
-      pokazBledy('bledy-profil', [{ komunikat: komunikatBleduProfilu(kod) }]);
-      status(komunikatBleduProfilu(kod));
-    } else {
-      pokazBledy('bledy-profil', [{ komunikat: `Most nie odpowiada (${e?.message ?? e}). Spróbuj przy lepszym sygnale.` }]);
+      return odmowa(komunikatBleduProfilu(String(e.message ?? '').trim()));
     }
+    // Most nie odpowiada: awaria sieci nie może blokować gry (ADR 0016 pkt 5).
+    pokazBledy('bledy-profil', []);
+    zapiszProfilLokalny(pseudo, { zweryfikowany: false });
+    wpiszImieZProfilu(pseudo);
+    $('profil-stan').textContent = 'Drive nie odpowiada — gramy lokalnie. Historia i rankingi z tej gry nie zostaną zapisane; sprawdź połączenie i spróbuj przy następnej grze.';
+    status('Nie udało się sprawdzić imienia na Drive — grasz lokalnie.');
+    return true;
   }
 }
 
@@ -448,6 +516,12 @@ function renderujSetup() {
     STAN.konfig[pole] = Number.isFinite(v) ? v : null;
     if (pole === 'liczbaGraczy') {
       STAN.konfig = { ...STAN.konfig, imiona: dostosujImiona(Number.isFinite(v) ? v : 1) };
+      // Hot-seat (ADR 0027): domyślnie każdy gracz odpowiada raz przy każdej
+      // stacji, więc pytania na stację idą za liczbą graczy — inaczej setup
+      // skończyłby z K22 (pytania nie dzielą się równo).
+      const graczy = Number.isFinite(v) ? Math.max(1, Math.round(v)) : DOMYSLNE.liczbaGraczy;
+      STAN.konfig.pytaniaNaStacje = Math.min(graczy, OGRANICZENIA.pytaniaNaStacje.max);
+      $('setup-pytania').value = STAN.konfig.pytaniaNaStacje;
       renderujImiona();
     }
     przeliczPromienZCzasu(); // czas, stacje i pytania wchodzą do wzoru (ADR 0025)
@@ -1969,6 +2043,7 @@ function wznowGre() {
   $('przycisk-pauza').textContent = '⏸ Pauza';
   $('przycisk-pauza').setAttribute('aria-pressed', 'false');
   renderujSetup(); // konfiguracja z zapisu wraca do pól setupu
+  przywrocProfil(); // i imię z profilu tego telefonu (ADR 0026)
   pokazEkran('gra');
   if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   status(`Gra „${r.kodGry || 'bez kodu'}" wznowiona — faza: ${r.faza}. Czas zamknięcia przeglądarki nie wlicza się w odcinek.`);
@@ -3441,6 +3516,7 @@ function start() {
   renderujSelecty();
   renderujImiona();
   renderujSetup();
+  przywrocProfil(); // imię z tego telefonu wraca do pola (ADR 0026)
   utworzMapy();
 
   if (location.search.includes('tryb=test')) {
@@ -3479,19 +3555,26 @@ function start() {
     status(STAN.trybTestowy ? 'Tryb testowy: współrzędne ręczne zamiast GPS (ADR 0004 pkt 6).' : 'Tryb testowy wyłączony.');
   });
 
-  $('przycisk-profil').addEventListener('click', () => {
-    const form = $('form-profil');
-    form.hidden = !form.hidden;
-    if (!form.hidden) { pokazBledy('bledy-profil', []); $('przycisk-profil-zapisz').hidden = true; }
-  });
-  $('przycisk-profil-sprawdz').addEventListener('click', () => { void obsluzProfil(false); });
-  $('przycisk-profil-zapisz').addEventListener('click', () => { void obsluzProfil(true); });
 
-  $('przycisk-dalej-pozycja').addEventListener('click', () => {
+  $('przycisk-dalej-pozycja').addEventListener('click', async () => {
     const usterki = walidujSetup(czytajSetupZDomu());
     pokazBledy('bledy-setup', usterki);
     if (usterki.length) {
       status(`Konfiguracja ma usterek: ${usterki.length}.`);
+      return;
+    }
+    // Tożsamość przed zapisem konfiguracji: imię z profilu jest częścią setupu
+    // (wpisuje się w `imiona`), więc najpierw brama, potem zapis (ADR 0026).
+    const przyciskDalej = $('przycisk-dalej-pozycja');
+    przyciskDalej.disabled = true; // jedno kliknięcie = jedno wołanie mostu
+    let przeszedl;
+    try {
+      przeszedl = await bramkaTozsamosci();
+    } finally {
+      przyciskDalej.disabled = false;
+    }
+    if (!przeszedl) {
+      status('Bez potwierdzonego imienia nie idziemy dalej — wpisz imię i PIN.');
       return;
     }
     zapiszKonfiguracje();
