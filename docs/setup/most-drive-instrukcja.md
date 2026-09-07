@@ -93,7 +93,7 @@ Pola wpisywania adresu zostały z interfejsu usunięte decyzją właściciela.
 Pełna checklista terenowa: `docs/WORKFLOW.md` §4.4 (8 punktów, dwa telefony).
 Skrót:
 
-1. Telefon A: Ustawienia → rodzaj „wieloosobowa" → pseudonim, zgoda →
+1. Telefon A: Ustawienia → rodzaj „wieloosobowa" → pseudonim →
    „🌐 Załóż grę" → tryb, źródło paczki → „🚀 Zakładam" → zapisz kod z lobby.
 2. Telefon B: sam pseudonim (adres mostu jest w kodzie aplikacji — ADR 0020) →
    „🔗 Dołącz" → wpisz kod (albo wybierz grę z listy „w okolicy") → oba

@@ -360,6 +360,11 @@ Schematy mostu Drive (`docs/setup/apps-script-repo-paczek.gs`; ADR 0016, 0018,
 0019). Jedno źródło prawdy walidacji po stronie aplikacji: `app/wieloosobowa.js`
 — most ma lustro dla Apps Script, a zgodność obu pilnuje `test/kontrakt.test.js`.
 
+Wysyłka do gry wieloosobowej jest **domyślna**: aplikacja nie pyta o zgodę przy
+zakładaniu ani dołączaniu do gry (checkbox `#multi-zgoda` usunięty 2026-09-07,
+dopisek ADR 0019) — co i dokąd trafia, opisuje sekcja „Dane i prywatność"
+w aplikacji. Schematy `RO-*` nigdy nie miały pola `zgoda`.
+
 ### 9.1 `RO-gra/1` — stan gry (plik JSON w katalogu gier)
 
 | Pole | Typ / zakres | Uwagi |

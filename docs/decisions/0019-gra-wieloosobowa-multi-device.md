@@ -96,3 +96,25 @@ pytania z kontenera (dopasowane po id stacji) rozjechałyby się na telefonach,
 które już pobrały stan. Reguła jest zlustrowana identycznie w moście (`.gs`)
 i `app/wieloosobowa.js`; zgodność pilnuje `test/kontrakt.test.js`. Pozostałe
 punkty decyzji bez zmian.
+
+
+## Dopisek (2026-09-07): bez pytania o zgodę przy każdej grze
+
+Punkt 3 wymagał checkboxu przy zakładaniu i dołączaniu do gry
+(`#multi-zgoda`, `okolica:multi:zgoda`). Właściciel — ta sama decyzja co
+w aneksie ADR 0026 dla hot-seat: „Domyślnie zapisujemy na Drive i nie musimy
+o to co chwilę pytać w prywatnej aplikacji — info jest w sekcji prywatność" —
+wycofał ten warunek i dla gry wieloosobowej: „Tą adnotację i ptaszka z gry
+wieloosobowej też usuń i opisz to na stronie prywatności (tam w ogóle daj
+wszystkie te informacje)".
+
+- Checkbox i dopisek zniknęły z ekranu multi (został komentarz w HTML).
+- Sekcja „Dane i prywatność" dostała punkt „Gra na wielu telefonach": co
+  widać u innych (pseudonim w lobby, Twoje dojścia i odpowiedzi), co trafia na
+  wspólny Drive (kod gry, pseudonimy, przebieg), i że współrzędne zostają na
+  telefonie (pkt 3 powyżej — bez zmian, nadal twarde „NIGDY").
+- Bramka wejścia do multi to teraz pseudonim i adres mostu (i tak nie da się
+  grać bez pseudonimu); gotowość sprawdzają `test/kontrakt.test.js` (M11) i
+  `test/wieloosobowa-ui.test.js`.
+- Schematy `RO-*` nigdy nie miały pola `zgoda` — most go nie czytał, więc
+  protokół się nie zmienia.

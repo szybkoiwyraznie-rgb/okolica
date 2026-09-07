@@ -109,12 +109,10 @@ Zmiany:
 
 - **`promienM` wypadł z kryteriów dopasowania.** Promień jest wynikiem czasu
   gry i środka transportu (ADR 0025), nie cechą pytań, a trasę i tak wyznaczają
-  stacje paczki — ich odległości gracz widzi na mapie. Kryteria zostają:
-  okolica (±`TOLERANCJA_OKOLICY_M`), wiek, liczba stacji, pytania na stację,
-  tematy nie szersze niż w setupie.
+  stacje paczki — ich odległości gracz widzi na mapie.
 - **`powodyNiedopasowania(wpis, kryteria)`** w `app/zestawy.js` jest JEDYNYM
   miejscem, które rozstrzyga dopasowanie: `dopasujZestawy` filtruje po nim,
-  a UI cytuje zwrócone powody („liczba stacji: paczka 5, setup 3"). Komunikat
+  a UI cytuje zwrócone powody („wiek: paczka „wiek-12", setup „dorosli""). Komunikat
   nie wymienia już setupu ani promienia.
 - **Paczki z innych okolic nie są liczone ani wspominane**: karta mówi albo
   „nie ma paczek dla tej okolicy", albo „repozytorium jest puste" — to dwie
@@ -123,3 +121,23 @@ Zmiany:
 Konsekwencja: paczka o promieniu większym niż setup może zostać zaproponowana
 (stacje będą dalej, niż planowałeś). To uczciwe — gracz widzi odległości przed
 startem, a czas gry i tak przelicza się na promień (ADR 0025).
+
+### Uzupełnienie (2026-09-07, ten sam dzień): suma pytań zamiast układu
+
+Właściciel doprecyzował kryteria: „istotna jest ilość pytań w sumie, a nie
+ilość pytań na stację — jak gra ma mieć w sumie 20 pytań to musi być paczka
+która ma 20 pytań, niezależnie od tego czy jest 5 stacji po 4 pytania czy
+2 stacje po 10". Zestaw to lista pytań przypisanych do stacji — układ 5×4 i
+2×10 daje te same 20 pytań, a prompt i tak prosi model o rozkład równy „albo
+różniący się o jedno" (PROTOKOL §3).
+
+- **Liczba stacji i pytania na stację NIE są kryteriami.** Kryterium jest
+  `sumaPytanWpisu(w) = liczbaStacji × pytaniaNaStacje` paczki **co najmniej**
+  tyle, ile chce setup — paczka z większą liczbą pytań też pasuje (nadmiar nie
+  przeszkadza); brak danych w indeksie daje jawny powód „brak danych o liczbie
+  pytań w paczce".
+- **Środek transportu NIE jest kryterium** — właściciel wycofał wcześniejsze
+  „dodaj", bo transport też nie wpływa na treść pytań (a paczka go nie
+  zapisuje, patrz `HANDOFF_2026-09-07-partia6.md` §2).
+- Kryteria ostatecznie: **okolica (±200 m) · wiek · suma pytań (≥ setup) ·
+  tematy nie szersze niż setup (+ temat własny).**

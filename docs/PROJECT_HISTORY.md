@@ -1072,7 +1072,38 @@ domyślny, info należy do sekcji prywatność.
   Kontrakt pinuje brak `#hotseat-zgoda`, obecność karty prywatności i brak
   kryterium promienia.
 
-**Brama na koniec partii:** `npm run brama` = **571 testów, 0 fail** + sync
-szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-15` (+ `WERSJA_SW`).
+### Dopisek (ten sam dzień, 2026-09-07): odpowiedź właściciela i naprawa WE06
+
+- **Kryteria paczki ostatecznie:** okolica (±200 m) · wiek · **suma pytań
+  co najmniej jak w setupie** · tematy nie szersze. Właściciel: „istotna jest
+  ilość pytań w sumie, a nie ilość pytań na stację — jak gra ma mieć w sumie
+  20 pytań to musi być paczka która ma 20 pytań, niezależnie od tego czy jest
+  5 stacji po 4 pytania czy 2 stacje po 10"; „Liczba stacji jest nieistotna
+  o ile suma pytań się zgadza"; paczka z większą liczbą pytań też pasuje.
+  **Liczba stacji, pytania na stację i środek transportu wypadły z kryteriów**
+  (transport — właściciel wycofał wcześniejsze „dodaj"). Nowa funkcja
+  `sumaPytanWpisu()`, poprawione `powodyNiedopasowania()` (powód: „za mało
+  pytań: paczka ma 4 (2 stacji × 2), a setup chce 5"), aneks ADR 0024.
+- **(5) Zgoda usunięta także z gry wieloosobowej** — `#multi-zgoda` i
+  `okolica:multi:zgoda` zniknęły (dopisek do ADR 0019); sekcja prywatności
+  dostała punkt „Gra na wielu telefonach" (pseudonim w lobby, dojścia i
+  odpowiedzi, kod gry; współrzędne zostają na telefonie) i punkt o paczkach
+  pytań. Bramką wejścia do multi jest pseudonim — i tak nie da się grać bez
+  niego. Schematy `RO-*` nigdy nie miały pola `zgoda`, więc most bez zmian.
+- **(6) Naprawiony zgłoszony błąd** (setup 5 stacji, sieć dała 4, ekran pytań:
+  `[WE06] liczbaStacji: Liczba stacji (4) nie zgadza się z konfiguracją (5)`):
+  `wybierzStacje()` słusznie oddaje mniej stacji, gdy sieć nie pozwala
+  zachować odstępów (S12), ale `przeliczZTegoCoJest()` zostawiał
+  `liczbaStacji` przy zamówieniu i `budujPrompt()` trafiał w niezmiennik.
+  Teraz **to, co wybrano, jest grą**: setup i pole `#setup-stacje` dostają
+  faktyczną liczbę, promień liczy się z niej od nowa (ADR 0025), a ekran
+  stacji mówi dlaczego jest ich mniej i jak zwiększyć promień, żeby dostać 5.
+  Test: „sieć za uboga na zamówioną liczbę — setup idzie za wyborem, a prompt
+  się buduje (S12)" w `test/aplikacja.test.js` (bez naprawy pada).
+- Testy: **572, 0 fail**; kontrakt pinuje `sumaPytanWpisu`, brak
+  `id="multi-zgoda"` i punkt „Gra na wielu telefonach" w prywatności.
+
+**Brama na koniec partii:** `npm run brama` = **572 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-16` (+ `WERSJA_SW`).
 Skrypt mostu bez zmian względem partii 5 — **nadal wymaga wklejenia**
 (963 linie, md5 `01e1d9bdfa071d2634dc33d87607420f`).
