@@ -5,12 +5,10 @@
 
 ## Kontekst
 
-Gra jest terenowa: telefon się rozładowuje, przeglądarka bywa zamknięta, zasięg
-znika w środku rozgrywki. Stan musi przetrwać. Jednocześnie właściciel chce
-docelowo **zbierać pytania dla obszarów**, żeby dało się je wykorzystać ponownie
-bez wołania modelu — najpierw prywatnie (dla twórcy), potem ewentualnie
-publicznie. Zero backendu (ADR 0001) wyznacza środki: pamięć przeglądarki,
-pliki, GitHub.
+Gra terenowa: telefon się rozładowuje, zasięg znika — stan musi przetrwać.
+Właściciel chce docelowo **zbierać pytania dla obszarów** do ponownego użycia
+bez wołania modelu (najpierw prywatnie, potem ewentualnie publicznie). Zero
+backendu (ADR 0001) wyznacza środki: pamięć przeglądarki, pliki, GitHub.
 
 ## Decyzja
 

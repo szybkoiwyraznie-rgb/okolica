@@ -45,10 +45,11 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.
 2. Każde pytanie ma pole "zrodla" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.
 3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
-4. Wszystkie pytania dotyczą OKOLICY podanej niżej (miejsca, dzielnicy, miasta, regionu, państwa) albo konkretnych stacji z listy. Zakazane są pytania z wiedzy ogólnej o świecie, niezwiązane z tą okolicą.
+4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego potwierdzonego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
+8. Pola "tresc", "odpowiedzi", "wyjasnienie", "uwagi" oraz "tytul" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład "Kot" jako "toK"), a w polu "protokol" wpisz "PYT/1.0-rev2". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).
 
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
@@ -68,9 +69,9 @@ GRACZE I TRUDNOŚĆ:
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
-SCHEMAT ODPOWIEDZI (PYT/1.0) — dokładnie te pola:
+SCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:
 {
-  "protokol": "PYT/1.0",
+  "protokol": "PYT/1.0-rev2",
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "wiek": "{WIEK}",
   "tematy": [{TEMATY_JSON}],
@@ -83,10 +84,9 @@ SCHEMAT ODPOWIEDZI (PYT/1.0) — dokładnie te pola:
       "temat": "historia",
       "tresc": "Treść pytania zakończona znakiem zapytania?",
       "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
-      "poprawna": 0,
+      "poprawna": 20,
       "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
-      "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }],
-      "punkty": 10
+      "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }]
     }
   ],
   "uwagi": ""
@@ -96,9 +96,8 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": indeks poprawnej odpowiedzi, liczba całkowita od 0 do 3.
+- "poprawna": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola "id" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
-- "punkty": 10 za pytanie łatwe, 15 za średnie, 20 za trudne — zgodnie z kategorią wiekową.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "uwagi": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.
 ```
@@ -109,7 +108,7 @@ WYMAGANIA DODATKOWE:
 | Placeholder | Wartość | Źródło |
 | --- | --- | --- |
 | `{LAT}`, `{LON}` | środek gry, 5 miejsc po przecinku (~1 m) | geolokalizacja albo tryb testowy (ADR 0004) |
-| `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt wyłączony albo niedostępny — `brak odczytu (tylko współrzędne)` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
+| `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt niedostępny — `brak odczytu (tylko współrzędne)` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
 | `{PROMIEN_M}` | promień gry w metrach | setup, z domyślnej wartości trybu (ADR 0003/§4.2) |
 | `{TRYB}` | `piesza` / `rower` / `samochodowa` — etykieta polska | setup |
 | `{LISTA_STACJI}` | po jednej linii: `- stacja N: LAT, LON — <opis miejsca albo „punkt przy ulicy X"> (ODLEGLOSC m od środka)` | wybór stacji (ADR 0005) |
@@ -133,7 +132,7 @@ repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
 
 | Pole | Typ | Wymagane | Zasady |
 | --- | --- | --- | --- |
-| `protokol` | tekst | tak | dokładnie `"PYT/1.0"` |
+| `protokol` | tekst | tak | `"PYT/1.0"` albo `"PYT/1.0-rev1"` (wariant odwrócony, §3.4) |
 | `okolica.lat` | liczba | tak | `-90 ≤ lat ≤ 90` |
 | `okolica.lon` | liczba | tak | `-180 ≤ lon ≤ 180` |
 | `okolica.promienM` | liczba | tak | `100–50000`, zgodna z konfiguracją gry |
@@ -157,13 +156,12 @@ repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
-| `poprawna` | liczba całkowita | `0..3` |
+| `poprawna` | liczba całkowita | jawna i rev1: `0..3`; rev2: indeks + stacja + numer pytania + 17 (kod pozycyjny) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
 | `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
 | `zrodla[].tytul` | tekst | niepusty |
 | `zrodla[].sprawdzono` | tekst | `RRRR-MM-DD`, nie w przyszłości |
-| `punkty` | liczba | `10`, `15` albo `20` |
 
 ### 3.3 Kontener ukrytej paczki (ADR 0007 pkt 2)
 
@@ -193,6 +191,17 @@ wolno trzymać danych osobowych ani niczego, co nie może zostać upublicznione
 (ADR 0013). Aplikacja przyjmuje też **jawny JSON** paczki (§3.1) — odpowiedź
 modelu jest jawna, ukrywa ją dopiero aplikacja po walidacji.
 
+### 3.4 Paczka odwrócona (`PYT/1.0-rev1`)
+
+Wariant zapisu, nie nowa wersja schematu: model odwraca znakami pola tekstowe
+(`tresc`, `odpowiedzi`, `wyjasnienie`, `uwagi`, `zrodla[].tytul`) i wpisuje
+`"protokol": "PYT/1.0-rev1"`. Walidator odkodowuje paczkę PRZED walidacją, więc
+reguły §3.2 i §6 działają na odczytanej treści. Cel jak w §3.3: ochrona przed
+przypadkowym wglądem (ekran organizatora, schowek), nie szyfrowanie. Walidator
+przyjmuje oba warianty.
+
+**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to kod pozycyjny (indeks + stacja + numer pytania + 17, np. s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22 — inny dla każdego pytania, a +17 sprawia, że goły indeks nigdy nie przejdzie za kod), a pola `punkty` nie ma (każde pytanie daje 1 pkt). Szablon z §2 generuje rev2.
+
 
 ## 4. Kategorie wiekowe i wymagania trudności
 
@@ -200,13 +209,13 @@ Klucz kategorii jest wartością pola `wiek`; tekst z kolumny „opis trudności
 trafia do promptu jako `{OPIS_TRUDNOSCI}`. **Obniżenie trudności nie zwalnia
 z wymogu źródła** (ADR 0008 pkt 7).
 
-| Klucz | Etykieta | Opis trudności (do promptu) | Punkty |
-| --- | --- | --- | --- |
-| `7` | 7 lat | Zdania krótkie, do 15 słów. Słownictwo codzienne, bez terminów specjalistycznych. Jedno pytanie = jeden fakt. Odpowiedzi rzeczowe i nazwy, bez dat i liczb wielocyfrowych. Preferowane pytania o rzeczy, które dziecko może zobaczyć albo zna z spaceru. | 10 |
-| `10` | 10 lat | Zdania do 20 słów. Pojęcia proste, jedno pojęcie specjalistyczne na pytanie dopuszczalne, jeśli wyjaśnienie je tłumaczy. Jedna data albo jedna liczba w pytaniu dopuszczalna. | 10 |
-| `12` | 12 lat | Pełne zdania, terminy z objaśnieniem w wyjaśnieniu. Daty, liczby i porównania dopuszczalne. Pytanie może wymagać dwóch kroków rozumowania. | 15 |
-| `15` | 15 lat | Jak dla dorosłych, ale bez żargonu akademickiego i bez pytań wymagających wiedzy specjalistycznej z poziomu studiów. | 15 |
-| `dorosli` | dorośli | Bez ograniczeń długości i słownictwa. Dopuszczalne pytania porównawcze, przyczynowo-skutkowe i o szczegóły (daty dzienne, nazwiska, liczby). | 20 |
+| Klucz | Etykieta | Opis trudności (do promptu) |
+| --- | --- | --- |
+| `7` | 7 lat | Zdania krótkie, do 15 słów. Słownictwo codzienne, bez terminów specjalistycznych. Jedno pytanie = jeden fakt. Odpowiedzi rzeczowe i nazwy, bez dat i liczb wielocyfrowych. Preferowane pytania o rzeczy, które dziecko może zobaczyć albo zna z spaceru. |
+| `10` | 10 lat | Zdania do 20 słów. Pojęcia proste, jedno pojęcie specjalistyczne na pytanie dopuszczalne, jeśli wyjaśnienie je tłumaczy. Jedna data albo jedna liczba w pytaniu dopuszczalna. |
+| `12` | 12 lat | Pełne zdania, terminy z objaśnieniem w wyjaśnieniu. Daty, liczby i porównania dopuszczalne. Pytanie może wymagać dwóch kroków rozumowania. |
+| `15` | 15 lat | Jak dla dorosłych, ale bez żargonu akademickiego i bez pytań wymagających wiedzy specjalistycznej z poziomu studiów. |
+| `dorosli` | dorośli | Bez ograniczeń długości i słownictwa. Dopuszczalne pytania porównawcze, przyczynowo-skutkowe i o szczegóły (daty dzienne, nazwiska, liczby). |
 
 ## 5. Kanon tematów
 
@@ -219,13 +228,18 @@ commicie (AGENTS.md §3).
 | `historia` | Historia | dzieje miejsca, daty, wydarzenia, dawne nazwy, ślady historii w terenie |
 | `przyroda` | Przyroda | drzewa, rośliny, zwierzęta, wody, parki, formy terenu, ochrona przyrody |
 | `architektura` | Architektura | budynki, style, autorzy projektów, detale, układ ulic i zabudowy |
-| `kultura-i-sztuka` | Kultura i sztuka | instytucje kultury, pomniki sztuki, murale, festiwale, twórcy związani z miejscem |
-| `legendy-i-folklor` | Legendy i folklor | podania miejskie, legendy, zwyczaje, przesądy, opowieści o miejscu |
-| `ludzie-i-postacie` | Ludzie i postacie | mieszkańcy, patroni ulic, postaci historyczne związane z okolicą |
-| `nauka-i-technika` | Nauka i technika | wynalazki, zakłady, infrastruktura, badania, obiekty inżynieryjne |
-| `sport-i-rekreacja` | Sport i rekreacja | kluby, obiekty sportowe, trasy, wydarzenia sportowe, miejsca wypoczynku |
-| `jedzenie-i-handel` | Jedzenie i handel | targi, lokale, rzemiosło, dawni i obecni kupcy, produkty lokalne |
-| `geografia-i-woda` | Geografia i woda | rzeki, jeziora, wzgórza, granice administracyjne, nazwy geograficzne, mosty |
+| `kultura` | Kultura | instytucje kultury, pomniki sztuki, murale, festiwale, twórcy związani z miejscem |
+| `legendy` | Legendy | podania miejskie, legendy, zwyczaje, przesądy, opowieści o miejscu |
+| `ludzie` | Ludzie | mieszkańcy, patroni ulic, postaci historyczne związane z okolicą |
+| `nauka` | Nauka | wynalazki, zakłady, infrastruktura, badania, obiekty inżynieryjne |
+| `sport` | Sport | kluby, obiekty sportowe, trasy, wydarzenia sportowe, miejsca wypoczynku |
+| `jedzenie` | Jedzenie | targi, lokale, rzemiosło, dawni i obecni kupcy, produkty lokalne |
+| `geografia` | Geografia | rzeki, jeziora, wzgórza, granice administracyjne, nazwy geograficzne, mosty |
+| `wlasny` | Dopisz sam | dziedzina wpisana przez organizatora w setupie |
+
+Stare klucze dwuczłonowe (`kultura-i-sztuka` itd., sprzed 2026-09-07) są
+przyjmowane jako aliasy i normalizowane do nowych (`ALIASY_TEMATOW`
+w `app/konfig.js`) — paczki zapisane przed zmianą działają dalej.
 
 ## 6. Reguły walidacji i kody usterek
 
@@ -241,7 +255,7 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
 | `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
 | `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
-| `E06` | `poprawna` poza zakresem indeksów `odpowiedzi` |
+| `E06` | `poprawna` poza zakresem albo (rev2) nieznane słowo |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
 | `E09` | pytanie bez `zrodla` albo lista pusta |
@@ -251,9 +265,9 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E13` | duplikat pytania (znormalizowana `tresc` występuje więcej niż raz) |
 | `E14` | brak zakotwiczenia miejscowego: ani `tresc`, ani `wyjasnienie` nie odnosi się do miejsca z `okolica.miejsce` ani do nazwy/opisu stacji |
 | `E15` | pole wymagane puste albo nie tekstem/liczbą zgodnie z §3 |
-| `E16` | `okolica` w paczce niespójna z konfiguracją gry (promień, środek odległy o > 500 m) |
+| `E16` | paczka niespójna z konfiguracją gry: `okolica` (promień, środek > 500 m) albo `wiek`, `tematy`, `jezyk` |
 | `E17` | współrzędne poza zakresem (`lat`, `lon`) |
-| `E18` | `punkty` spoza skali `{10, 15, 20}` albo niezgodne z kategorią wiekową |
+| `E18` | wycofany (rev2: 1 pkt za pytanie, pole `punkty` ignorowane) |
 | `E19` | `id` pytania nieunikalne albo niezgodne ze wzorem |
 | `E20` | `wyjasnienie` krótsze niż 60 znaków albo dosłownie powtarza `tresc` |
 
@@ -302,13 +316,21 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
   się nie zmienił, a aplikacja nie była opublikowana — nie istnieje paczka
   użytkownika do zmigrowania. Po pierwszej publikacji Pages (M8) każda zmiana
   kontenera wymaga migratora (`app/migracje.js`) i wpisu tutaj.
+- **Wariant odwrócony `PYT/1.0-rev1` (Partia 2)** — zapis pól tekstowych
+  od końca (§3.4). Nie podbija wersji schematu (kształt pól ten sam, jak
+  kontener ≠ paczka); walidator akceptuje oba markery, szablon generuje
+  odwrócony.
+- **Wariant `PYT/1.0-rev2`** — `poprawna` kodem pozycyjnym, koniec pola
+  `punkty` (§3.4). Jak rev1: zapis, nie nowa wersja; walidator przyjmuje
+  `PYT/1.0`, `-rev1` i `-rev2`, szablon generuje rev2. Dawne paczki działają
+  bez migratora (M8 nieopublikowany, a reguły i tak łagodnieją).
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 
 ```json
 {
   "protokol": "PYT/1.0",
-  "okolica": { "lat": 52.23178, "lon": 21.01234, "promienM": 1000, "miejsce": "Warszawa, Śródmieście, woj. mazowieckie, Polska" },
+  "okolica": { "lat": 52.23178, "lon": 21.01234, "promienM": 1000, "miejsce": "Śródmieście, Warszawa" },
   "wiek": "dorosli",
   "tematy": ["historia"],
   "jezyk": "polski",
@@ -318,12 +340,11 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
       "id": "s1p1",
       "stacja": 1,
       "temat": "historia",
-      "tresc": "Przy jakiej ulicy stoi kamienica, w której w 1918 roku mieściła się pierwsza siedziba Polskiej Agencji Telegraficznej?",
+      "tresc": "Przy jakiej ulicy stała pierwsza siedziba Polskiej Agencji Telegraficznej (1918)?",
       "odpowiedzi": ["Bracka", "Mazowiecka", "Zgoda", "Jasna"],
       "poprawna": 2,
-      "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda; agencję powołano w październiku 1918 roku, jeszcze przed formalnym odzyskaniem niepodległości.",
-      "zrodla": [{ "url": "https://pl.wikipedia.org/wiki/Polska_Agencja_Telegraficzna", "tytul": "Polska Agencja Telegraficzna — Wikipedia", "sprawdzono": "2026-09-05" }],
-      "punkty": 20
+      "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda (X 1918).",
+      "zrodla": [{ "url": "https://pl.wikipedia.org/wiki/Polska_Agencja_Telegraficzna", "tytul": "Polska Agencja Telegraficzna — Wikipedia", "sprawdzono": "2026-09-05" }]
     }
   ],
   "uwagi": ""
@@ -354,7 +375,7 @@ Schematy mostu Drive (`docs/setup/apps-script-repo-paczek.gs`; ADR 0016, 0018,
 | `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza) |
 | `zestaw` | `{stacje, kontener TO-paczka/2, meta TO-zestaw/1}` | mapa gry + ukryte pytania (ADR 0007) |
 | `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
-| `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal}}` | liczone przez most przy zamknięciu gry |
+| `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, stacjeZamkniete, zrezygnowal}}` | liczone przez most przy zamknięciu gry |
 
 Reguły gry: dołączenie tylko w `lobby`; start tylko przez organizatora.
 **Tury**: stacja `i` (1-based) należy NA STAŁE do gracza `gracze[(i-1) % N]`
@@ -369,9 +390,11 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
 `{ schemat: "RO-zdarzenie/1", kod | idGry, graczId, typ, stacjaId, dane, tUrzadzenia }`
 
 - `typ`: `start` | `dojscie` | `odpowiedz` | `rezygnacja` | `koniec`.
-- `dane` — BIAŁA lista pól (`POLA_DANYCH_ZDARZENIA`): `czasOdcinkaMs`,
-  `czasOdpowiedziMs`, `trybDojscia`, `poprawna`, `punktyBaza`, `premiaCzasu`,
-  `punktyRazem`, `powod`. Cokolwiek innego nie wychodzi z telefonu, a most
+- `tUrzadzenia`: znacznik czasu urządzenia w ms (liczba, opcjonalny —
+  most go ignoruje; czas gry stempluje serwer polem `tSerwera`).
+- `dane` — BIAŁA lista pól (`POLA_DANYCH_ZDARZENIA`): `trybDojscia`,
+  `poprawna`, `punktyRazem`, `powod` (pola czasowe usunięte w Partii 2,
+  ADR 0023). Cokolwiek innego nie wychodzi z telefonu, a most
   dodatkowo kasuje pola `lat/lon/szerokosc/dlugosc/latitude/longitude`
   (ADR 0013/0019 pkt 3 — współrzędne gracza NIGDY).
 - Most waliduje SPÓJNOŚĆ (nie zaufanie): gra musi trwać, gracz istnieć,
@@ -392,8 +415,12 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
   tematy }] }` — surowe wiersze z gier zakończonych (rezygnacja bez wyniku nie
   wchodzi); agregacje (ogólny/wiek/tematy/lokalizacja) liczy telefon:
   `agregujRanking`, `kategorieRankingu` (ADR 0019 pkt 7).
+- `RO-profil/1`: `{ schemat, pseudonim, pin, utworzono }` — plik
+  `profil-<id>.json` w katalogu `okolica-profile`; PIN jawnym tekstem
+  (ADR 0021). Akcje mostu: `profil-ustaw` (utwórz albo potwierdź),
+  `profil-sprawdz` (tylko potwierdź); odmowy kodami R19/R20 w polu `blad`.
 
-### 9.4 Kody usterek R01–R18 (`KODY_WIELOOSOBOWE` w `app/wieloosobowa.js`)
+### 9.4 Kody usterek R01–R20 (`KODY_WIELOOSOBOWE` w `app/wieloosobowa.js`)
 
 | Kod | Znaczenie |
 |---|---|
@@ -415,3 +442,5 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
 | R16 | Część wpisów lobby uszkodzona — odfiltrowane. |
 | R17 | Ranking nieczytelny albo zły schemat (`RO-ranking/1`). |
 | R18 | Część wierszy rankingu uszkodzona — odfiltrowane. |
+| R19 | Nieznany pseudonim (brak pliku profilu). |
+| R20 | PIN niepoprawny albo nie pasuje do pseudonimu. |

@@ -18,11 +18,9 @@ byłby zestaw skryptów **Google Apps Script** wdrożonych jako web appy:
 przyjmują JSON przez `doPost`/`doGet`, czytają i zapisują pliki na Dysku,
 a aplikacja HTML woła je zwykłym `window.fetch`.
 
-Dziś trwałość to wyłącznie `localStorage` jednego telefonu (ADR 0010) —
-stan gry nie przeżywa zmiany urządzenia, a paczki krążą jako pliki
-`.paczka.json` (M5/J4). Model wieloosobowy to hot-seat na jednym telefonie
-(ADR 0009) — wspólny stan na Dysku byłby najtańszą drogą do gry na kilku
-urządzeniach bez własnej infrastruktury.
+Stan wyjściowy: trwałość to wyłącznie `localStorage` jednego telefonu (ADR 0010),
+a model wieloosobowy to hot-seat (ADR 0009) — wspólny stan na Dysku to najtańsza
+droga do gry na kilku urządzeniach bez własnej infrastruktury.
 
 ## Decyzja (proponowana)
 

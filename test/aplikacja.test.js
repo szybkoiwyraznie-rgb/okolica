@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { WERSJA_PROTOKOLU } from '../app/protokol.js';
+import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -70,13 +70,12 @@ test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
 
 test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', () => {
   assert.ok(pobierz('status').textContent.length > 20, 'pasek stanu milczy po starcie');
-  assert.equal(pobierz('przycisk-ukryj').hidden, true, 'nie ma przyjętej paczki — nie ma czego ukrywać');
   assert.equal(pobierz('wynik-walidacji').hidden, true, 'karta wyniku jest w HTML ukryta i bootstrap jej nie odsłania');
   assert.equal(pobierz('wynik-naglowek').textContent, '', 'żaden wynik nie został wyrenderowany przed wklejeniem paczki');
 });
 
 test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
-  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-sprawdz', 'przycisk-poprawka', 'przycisk-ukryj', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-kod', 'przycisk-przelicz', 'przycisk-gps', 'przycisk-ustaw-reczne']) {
+  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-sprawdz', 'przycisk-poprawka', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-gps', 'przycisk-ustaw-reczne']) {
     assert.ok(pobierz(id).zdarzenia.click?.length >= 1, `#${id} nie ma nasłuchu click — przycisk byłby martwy`);
   }
 });
@@ -263,7 +262,7 @@ test('bootstrap: uszkodzona konfiguracja w localStorage nie kładzie startu', as
   const pamiecSmieci = new Map();
   pamiecSmieci.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { tryb: 'konny', wiek: 'nestor', podklad: 'carto', tematy: ['kosmos'], liczbaGraczy: 'dużo', imiona: null, geokodacja: 'tak' },
+    konfig: { tryb: 'konny', wiek: 'nestor', podklad: 'carto', tematy: ['kosmos'], liczbaGraczy: 'dużo', imiona: null },
   }));
   const domSmieci = zainstalujDom({ pamiec: pamiecSmieci });
   // ponowne wczytanie modułu z odświeżonym query — nowy egzemplarz, ten sam kod
@@ -611,11 +610,9 @@ test('stacje: bez window.fetch degradacja do pierścienia jest synchroniczna i j
 
 test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async () => {
   const pamiecCache = new Map();
-  // geokodacja=true — nazwa miejsca ma się WYŚWIETLIĆ; przy domyślnym false
-  // UI i prompt mają same współrzędne (ADR 0013 pkt 3, test bramy niżej)
-  pamiecCache.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { geokodacja: true } }));
+  // nazwa miejsca ZAWSZE się wyświetla (Partia 2: koniec opcji geokodacji)
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
 
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
@@ -650,11 +647,97 @@ test('stacje: udane pobranie z pierwszej instancji zapisuje cache i rysuje sieć
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/);
   assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('z pamięci'), 'świeżo pobrane');
   assert.match(domAtrapa.pobierz('status').textContent, /Stacje z sieci drogowej|za uboga/);
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
   const wpis = JSON.parse(domAtrapa.pamiec.get(klucz));
   assert.equal(wpis.schemat, SCHEMAT_SIECI);
   assert.ok(Number.isFinite(wpis.zapisanoMs));
   assert.ok(wpis.dane.drogi.length > 10, 'cache przechowuje sparsowane drogi');
+});
+
+test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk ponowienia', async () => {
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  let puść = null;
+  const bramka = new Promise((rozwiaz) => { puść = rozwiaz; });
+  const wywolania = [];
+  domAtrapa.window.fetch = async (url, opcje) => {
+    wywolania.push(url);
+    await bramka; // pobieranie „wisi" — nakładka musi być widoczna
+    return { ok: false, status: 400, text: async () => '' };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(50);
+  assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, false, 'nakładka Pobieram dane w trakcie fetch');
+  puść();
+  await czekaj(250);
+  assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, true, 'nakładka znika po odpowiedzi');
+  assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /HTTP 400/, 'błąd zapytania jawny (kod S03)');
+  assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false, 'po porażce widać ponowienie');
+  domAtrapa.window.fetch = async (url) => { wywolania.push(url); return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) }; };
+  domAtrapa.kliknij('przycisk-siec-ponow');
+  await czekaj(250);
+  assert.equal(wywolania.length, 2, 'ponowienie woła sieć jeszcze raz');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'udane ponowienie daje stacje sieciowe');
+  assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, true, 'przy sieci ponowienie znika');
+});
+
+test('stacje: sieć z cache pokazuje ponowienie, klik dowozi świeże dane z Overpass', async () => {
+  const pamiecCache = new Map();
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+    JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: pamiecCache });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const wywolania = [];
+  domAtrapa.window.fetch = async (url) => {
+    wywolania.push(url);
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(150);
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /z pamięci telefonu/, 'najpierw cache');
+  assert.equal(wywolania.length, 0, 'wejście na ekran nie woła sieci przy świeżym cache');
+  assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false, 'przy cache widać „Pobierz sieć ponownie"');
+  domAtrapa.kliknij('przycisk-siec-ponow');
+  await czekaj(250);
+  assert.equal(wywolania.length, 1, 'ponowienie omija cache i woła Overpass');
+  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('z pamięci'), 'po ponowieniu dane świeże');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /Śródmieście, Warszawa/, 'stacje sieciowe z miejsca');
+  assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, true, 'przy świeżych danych ponowienie znika');
+});
+
+test('Overpass: timeout martwej instancji przełącza OD RAZU, bez 30 s pauzy', async () => {
+  // Pełny odstęp (bez odstep=0): stary kod czekałby tu 30 s na martwą instancję.
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test' });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const wywolania = [];
+  domAtrapa.window.fetch = async (url) => {
+    wywolania.push(url);
+    if (wywolania.length === 1) throw Object.assign(new Error('timeout'), { name: 'AbortError' });
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  const start = Date.now();
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(500);
+  const trwalo = Date.now() - start;
+  assert.equal(wywolania.length, 2, 'martwa FOSSGIS → od razu private.coffee');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'druga instancja dowiozła');
+  assert.ok(trwalo < 10_000, `przełączenie po timeoutcie bez pauzy (trwało ${trwalo} ms, pauza 30 s odpadła)`);
+  assert.equal(domAtrapa.pamiec.get('okolica:overpass-sprawny'), INSTANCJE_OVERPASS[1].url, 'sprawna instancja zapamiętana');
+});
+
+test('Overpass: zapamiętana sprawna instancja jest próbowana pierwsza', async () => {
+  const pamiec = new Map([['okolica:overpass-sprawny', INSTANCJE_OVERPASS[2].url]]);
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const wywolania = [];
+  domAtrapa.window.fetch = async (url) => {
+    wywolania.push(url);
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(250);
+  assert.deepEqual(wywolania, [INSTANCJE_OVERPASS[2].url], 'VK Maps pierwsza — zero doomed-zapytań do FOSSGIS');
 });
 
 test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2', async () => {
@@ -689,7 +772,7 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
 test('stacje: przycisk „Tryb uproszczony" wymusza pierścień i wraca do sieci', async () => {
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -754,153 +837,43 @@ function czytajFixturePaczka() {
   return JSON.parse(readFileSync(join(KATALOG_APP, 'test', 'fixtures', 'paczka-ok.json'), 'utf8'));
 }
 
-/**
- * Świeża aplikacja z przyjętą paczką z fixture'a. Konfig z pamięci musi
- * zgadzać się z fixturem (3 stacje × 1 pytanie, tematy historia+architektura,
- * promień 1000 m) — inaczej walidator słusznie zgłosi E03/E16/E05.
- */
-async function aplikacjaZPrzyjetaPaczka() {
+test('Q2 end-to-end: wklejona paczka odwrócona (rev1) od razu zaczyna grę', async () => {
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
   }));
-  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
-  await import(`../app/app.js?podglad=${Math.random().toString(36).slice(2)}`);
-  const paczka = czytajFixturePaczka();
-  domAtrapa.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
-  domAtrapa.kliknij('przycisk-sprawdz');
-  return { dom: domAtrapa, paczka };
-}
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
+  await import(`../app/app.js?rev1=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
+  const jawna = czytajFixturePaczka();
+  const rev1 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV1 };
+  dom.pobierz('pole-odpowiedz').value = JSON.stringify(rev1);
+  dom.kliknij('przycisk-sprawdz');
+  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev1/, 'nagłówek mówi, co się stało');
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę (decyzja 2026-09-07)');
+  assert.equal(dom.pobierz('ekran-paczka').hidden, true);
+  assert.equal(dom.pobierz('pole-odpowiedz').value, '', 'plaintext nie zostaje w polu wklejenia');
+});
 
-function kliknijW(el) {
-  for (const fn of el.zdarzenia.click ?? []) fn({ type: 'click', target: el, currentTarget: el });
-  return (el.zdarzenia.click ?? []).length;
-}
-
-test('podgląd organizatora: przyjęta paczka pokazuje pytania, a odrzucona nie', async () => {
-  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta/);
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, false, 'podgląd otwiera się z przyjęciem');
-  const karty = dom.pobierz('podglad-pytania').children;
-  assert.equal(karty.length, paczka.pytania.length, 'karta na każde pytanie');
-  assert.match(karty[0].children[0].textContent, new RegExp(`^${paczka.pytania[0].id} · stacja`), 'nagłówek karty z id i stacją');
-  assert.equal(karty[0].children[1].value, paczka.pytania[0].tresc, 'treść w polu edycji');
-
-  // odrzucona paczka nie pokazuje podglądu
-  const pamiecKonfig2 = new Map();
-  pamiecKonfig2.set('okolica:konfig', JSON.stringify({
+test('rev2 end-to-end: wklejona paczka z kodami od razu zaczyna grę', async () => {
+  const pamiecKonfig = new Map();
+  pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
   }));
-  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig2 });
-  await import(`../app/app.js?podglad2=${Math.random().toString(36).slice(2)}`);
-  const zepsuta = czytajFixturePaczka();
-  zepsuta.protokol = 'PYT/9.9';
-  dom2.pobierz('pole-odpowiedz').value = JSON.stringify(zepsuta);
-  dom2.kliknij('przycisk-sprawdz');
-  assert.match(dom2.pobierz('wynik-naglowek').textContent, /odrzucona|Nie da się/);
-  assert.equal(dom2.pobierz('podglad-organizatora').hidden, true, 'przy odmowie podgląd zostaje zamknięty');
-});
-
-test('podgląd organizatora: edycja przechodzi re-walidację, psucie blokuje ukrycie, modyfikacje[] podróżują z kontenerem', async () => {
-  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
-  const miejsce = paczka.okolica.miejsce;
-
-  // 1) edycja psująca protokół (za krótka treść) — zapisana, ale blokuje ukrycie
-  let karta = dom.pobierz('podglad-pytania').children[0];
-  karta.children[1].value = 'za krótka treść';
-  const zapisz1 = karta.children[karta.children.length - 1];
-  assert.match(zapisz1.textContent, /Zapisz poprawkę/);
-  assert.ok(kliknijW(zapisz1) > 0, 'przycisk zapisu ma nasłuch');
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /wymaga naprawy/, 're-walidacja całej paczki po edycji');
-  assert.equal(dom.pobierz('przycisk-ukryj').hidden, true, 'zepsuta paczka się nie ukryje');
-  assert.equal(dom.pobierz('przycisk-poprawka').hidden, false, 'poprawka do modelu znów dostępna');
-  assert.ok(dom.pobierz('wynik-usterki').children.length > 0, 'usterki widoczne na liście');
-  assert.match(dom.pobierz('status').textContent, /modyfikacje/, 'status mówi o zapisie poprawki');
-
-  // 2) edycja dobra — paczka wraca do czystej
-  karta = dom.pobierz('podglad-pytania').children[0];
-  const dobraTresc = `${miejsce} — pytanie poprawione ręcznie przez organizatora gry terenowej?`;
-  karta.children[1].value = dobraTresc;
-  const zapisz2 = karta.children[karta.children.length - 1];
-  kliknijW(zapisz2);
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(po ręcznej poprawce\)/);
-  assert.equal(dom.pobierz('przycisk-ukryj').hidden, false);
-  assert.equal(dom.pobierz('wynik-usterki').children.length, 0, 'lista usterek wyczyszczona (replaceChildren)');
-
-  // 3) ukrycie zwija podgląd (plaintext znika z DOM), a kontener niesie modyfikacje[]
-  dom.kliknij('przycisk-ukryj');
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, true, 'po ukryciu podgląd zwinięty');
-  assert.equal(dom.pobierz('podglad-pytania').children.length, 0, 'plaintext pytań usunięty z DOM');
-  const kontenerTekst = dom.pobierz('pole-odpowiedz').value;
-  assert.ok(kontenerTekst.startsWith('{'), 'kontener w polu zapasowym (JSON)');
-  const { odpakujPaczke } = await import('../app/kodowanie.js');
-  const zPowrotem = odpakujPaczke(kontenerTekst);
-  assert.equal(zPowrotem.paczka.pytania[0].tresc, dobraTresc, 'ostatnia (dobra) edycja w ukrytej paczce');
-  assert.equal(zPowrotem.paczka.modyfikacje.length, 2, 'obie poprawki zapisane (ta psująca też — ślad audytu)');
-  assert.match(zPowrotem.paczka.modyfikacje[0].opis, /^pytanie s1p1: poprawiono treść pytania$/);
-  assert.match(zPowrotem.paczka.modyfikacje[1].data, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
-});
-
-test('podgląd organizatora: zmiana poprawnej odpowiedzi i dodanie źródła trafiają do paczki', async () => {
-  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
-  const karta = dom.pobierz('podglad-pytania').children[0];
-  // kolejność w karcie: h3, tresc, odpowiedzi(div), wyjasnienie, zrodla(div), zapisz
-  const blokOdpowiedzi = karta.children[2];
-  const wierszeOdp = blokOdpowiedzi.children; // 4 × (radio + input)
-  assert.equal(wierszeOdp.length, 4);
-  // atrapa nie wiąże radio w grupę (przeglądarka sama zdejmie `checked`
-  // z pozostałych) — test odwzorowuje stan PO kliknięciu trzeciej opcji
-  wierszeOdp.forEach((wiersz, i) => { wiersz.children[0].checked = i === 2; });
-  const blokZrodel = karta.children[4];
-  const listaZrodel = blokZrodel.children[0];
-  const dodajZrodlo = blokZrodel.children[1];
-  assert.match(dodajZrodlo.textContent, /Dodaj źródło/);
-  const ilePrzed = listaZrodel.children.length;
-  kliknijW(dodajZrodlo);
-  assert.equal(listaZrodel.children.length, ilePrzed + 1, 'nowy wiersz źródła doszedł do listy');
-  const nowyWiersz = listaZrodel.children[listaZrodel.children.length - 1];
-  nowyWiersz.children[0].value = 'https://archiwum-miejskie.pl/dokument/123';
-  nowyWiersz.children[1].value = 'Archiwum miejskie — dokument 123';
-  nowyWiersz.children[2].value = '2026-09-06';
-
-  kliknijW(karta.children[karta.children.length - 1]);
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(po ręcznej poprawce\)/, `usterki: ${dom.pobierz('wynik-usterki').children.map((li) => li.innerHTML).join('; ')}`);
-  dom.kliknij('przycisk-ukryj');
-  const { odpakujPaczke } = await import('../app/kodowanie.js');
-  const zPowrotem = odpakujPaczke(dom.pobierz('pole-odpowiedz').value);
-  const p0 = zPowrotem.paczka.pytania[0];
-  assert.equal(p0.poprawna, 2, 'poprawna odpowiedź przełączona radiem');
-  assert.equal(p0.zrodla.length, paczka.pytania[0].zrodla.length + 1, 'nowe źródło doklejone');
-  assert.equal(p0.zrodla[p0.zrodla.length - 1].url, 'https://archiwum-miejskie.pl/dokument/123');
-  assert.match(zPowrotem.paczka.modyfikacje[0].opis, /poprawną odpowiedź, źródła/);
-});
-
-test('paczka: eksport do pliku niesie ukryty kontener — round-trip przez import', async () => {
-  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
-  assert.equal(dom.pobierz('przycisk-eksport-paczki').hidden, false, 'eksport dostępny z przyjętą paczką');
-  // przechwyć zawartość Blob (atrapa domyślnie gubi części — tylko size)
-  const BlobOryginal = globalThis.Blob;
-  const czesci = [];
-  globalThis.Blob = class { constructor(c) { czesci.push(...(c ?? [])); this.size = (c ?? []).join('').length; } };
-  try {
-    dom.kliknij('przycisk-eksport-paczki');
-  } finally {
-    globalThis.Blob = BlobOryginal;
-  }
-  assert.equal(czesci.length, 1, 'jeden plik na klik');
-  const kontener = JSON.parse(czesci[0]);
-  assert.equal(kontener.schemat, 'TO-paczka/2', 'plik niesie kontener, nie plaintext');
-  assert.ok(!czesci[0].includes(paczka.pytania[0].tresc), 'treść pytania NIE występuje w pliku jawnie');
-  const { odpakujPaczke } = await import('../app/kodowanie.js');
-  const zPowrotem = odpakujPaczke(czesci[0]);
-  assert.deepEqual(
-    zPowrotem.paczka.pytania.map((q) => q.tresc),
-    paczka.pytania.map((q) => q.tresc),
-    'import pliku odtwarza paczkę (ścieżka „⬆ Z pliku" czyta ten sam format)',
-  );
-  assert.match(dom.pobierz('status').textContent, /okolica-[a-z0-9-]+\.paczka\.json/, 'nazwa pliku z oczyszczonym kodem gry i rozszerzeniem z .gitignore');
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
+  await import(`../app/app.js?rev2=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
+  const jawna = czytajFixturePaczka();
+  const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
+  rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.punkty; });
+  dom.pobierz('pole-odpowiedz').value = JSON.stringify(rev2);
+  dom.kliknij('przycisk-sprawdz');
+  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev2/, 'nagłówek mówi, co się stało');
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę (decyzja 2026-09-07)');
 });
 
 /* ================== M5/J5: brama geokodacji + warstwa zapasowa (Nominatim) */
@@ -922,24 +895,53 @@ async function aplikacjaZKonfigiem(pamiecCache, konfig = {}) {
   return domAtrapa;
 }
 
-test('geokodacja WYŁĄCZONA w setupie: miejsce nie trafia do UI ani do promptu (ADR 0013 pkt 3)', async () => {
-  const pamiecCache = new Map(); // konfig domyślny → geokodacja: false (K20)
+test('nazwa miejsca ZAWSZE trafia do UI i do promptu (Partia 2: koniec opcji geokodacji)', async () => {
+  const pamiecCache = new Map(); // konfig domyślny, bez żadnych przełączników
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
-  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /wyłączona w ustawieniach/,
-    'UI mówi wprost, że nazwa jest wyłączona — nie udaje „brak danych"');
+  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście/,
+    'nazwa z Overpass bez ptaszkowania (ADR 0013 pkt 3 po Partii 2)');
   domAtrapa.kliknij('przycisk-dalej-prompt');
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /miejsce: brak odczytu \(tylko współrzędne\)/,
-    'prompt ma same współrzędne (ADR 0006 pkt 3)');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /Śródmieście/,
+    'model dostaje miejscowość w prompcie (ADR 0006 pkt 3)');
+});
+
+test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe podglądu)', async () => {
+  const pamiecCache = new Map();
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+    JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
+  // schowek asynchroniczny zablokowany jak w iframe podglądu
+  Object.assign(navigator, { clipboard: { writeText: async () => { throw new Error('NotAllowedError'); } } });
+  const polecenia = [];
+  document.execCommand = (polecenie) => { polecenia.push(polecenie); return true; };
+  try {
+    ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+    domAtrapa.kliknij('przycisk-dalej-stacje');
+    domAtrapa.kliknij('przycisk-dalej-prompt');
+    const prompt = domAtrapa.pobierz('pole-prompt').value;
+    assert.ok(prompt.length > 100, 'prompt zbudowany');
+    const przed = domAtrapa.utworzone.length;
+    domAtrapa.kliknij('przycisk-kopiuj-prompt');
+    await czekaj(50);
+    assert.deepEqual(polecenia, ['copy'], 'awaryjnie: execCommand(copy) na tymczasowym polu');
+    const tymczasowe = domAtrapa.utworzone.slice(przed).filter((el) => String(el.tagName).toLowerCase() === 'textarea');
+    assert.equal(tymczasowe.length, 1, 'jedno tymczasowe pole');
+    assert.equal(tymczasowe[0].value, prompt, 'do schowka trafia CAŁY prompt — klik kopiuje, nie zaznacza');
+    assert.equal(domAtrapa.pobierz('przycisk-kopiuj-prompt').textContent, '✓ skopiowano');
+  } finally {
+    delete document.execCommand;
+  }
 });
 
 test('warstwa zapasowa: domyślnie ZERO żądań do Nominatim (ADR 0013 pkt 2)', async () => {
   const pamiecCache = new Map();
-  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, { geokodacja: true });
+  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, {});
   const wywolania = [];
   domAtrapa.window.fetch = fetchZNominatim({ ok: true, json: async () => ({ address: { city: 'Warszawa' } }) }, wywolania);
   ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
@@ -953,7 +955,7 @@ test('warstwa zapasowa: domyślnie ZERO żądań do Nominatim (ADR 0013 pkt 2)',
 test('warstwa zapasowa: zgoda → JEDNO żądanie, nazwa z atrybucją ODbL i cache', async () => {
   const pamiecCache = new Map();
   pamiecCache.set('okolica:geokodacja-zapasowa', '1');
-  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, { geokodacja: true });
+  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, {});
   const wywolania = [];
   domAtrapa.window.fetch = fetchZNominatim(
     { ok: true, json: async () => ({ address: { suburb: 'Śródmieście', city: 'Warszawa' } }) },
@@ -979,7 +981,7 @@ test('warstwa zapasowa: druga gra bierze nazwę z cache — zero nowych żądań
   const pamiecCache = new Map();
   pamiecCache.set('okolica:geokodacja-zapasowa', '1');
   pamiecCache.set('okolica:miejsce:u3qcnh', JSON.stringify({ schemat: 'miejsce/1', zapisanoMs: Date.now(), miejsce: 'Śródmieście, Warszawa' }));
-  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, { geokodacja: true });
+  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, {});
   const wywolania = [];
   domAtrapa.window.fetch = fetchZNominatim({ ok: true, json: async () => ({}) }, wywolania);
   ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
@@ -993,7 +995,7 @@ test('warstwa zapasowa: druga gra bierze nazwę z cache — zero nowych żądań
 test('warstwa zapasowa: HTTP 429 → komunikat, bez wyjątku i bez ponawiania w sesji', async () => {
   const pamiecCache = new Map();
   pamiecCache.set('okolica:geokodacja-zapasowa', '1');
-  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, { geokodacja: true });
+  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, {});
   const wywolania = [];
   domAtrapa.window.fetch = fetchZNominatim({ ok: false, status: 429, json: async () => ({}) }, wywolania);
   ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
@@ -1016,30 +1018,27 @@ async function graGotowaDoStartu() {
   const pamiec = new Map();
   pamiec.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?gra=${Math.random().toString(36).slice(2)}`);
-  const paczka = czytajFixturePaczka();
-  dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
-  dom.kliknij('przycisk-sprawdz');
   ustawPozycjeTestowa(dom, '52.2297', '21.0122');
   dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
+  const paczka = czytajFixturePaczka();
+  dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
+  dom.kliknij('przycisk-sprawdz'); // poprawna paczka SAMA zaczyna grę (decyzja 2026-09-07)
   return { dom, paczka, pamiec };
 }
 
 function zaczynijGre(dom) {
-  dom.kliknij('przycisk-start-gry');
+  // Gra startuje sama w chwili Sprawdź — helper tylko to potwierdza.
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra wystartowała sama po przyjęciu paczki');
 }
 
-test('M6: start gry — przycisk z przyjętą paczką, ekran gry i faza A (przygotowanie)', async () => {
+test('M6: start gry — przyjęta paczka sama otwiera ekran gry i fazę A (przygotowanie)', async () => {
   const { dom } = await graGotowaDoStartu();
-  assert.equal(dom.pobierz('przycisk-start-gry').hidden, false, 'start gry dostępny z przyjętą paczką');
   zaczynijGre(dom);
-  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'ekran gry widoczny');
   assert.equal(dom.pobierz('ekran-paczka').hidden, true, 'ekran paczki schowany');
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, true, 'podgląd organizatora zwinięty — gra, nie przygotowanie');
-  assert.equal(dom.pobierz('przycisk-start-gry').hidden, true, 'nie da się zacząć drugiej gry tym samym przyciskiem');
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'panel A widoczny w fazie przygotowanie');
   for (const panel of ['gra-panel-odcinek', 'gra-panel-pytanie', 'gra-panel-koniec']) {
     assert.equal(dom.pobierz(panel).hidden, true, `${panel} ukryty poza swoją fazą`);
@@ -1047,7 +1046,7 @@ test('M6: start gry — przycisk z przyjętą paczką, ekran gry i faza A (przyg
   assert.match(dom.pobierz('gra-postep').textContent, /stacja 1 z 3/, 'postęp z bieżącej stacji');
   assert.match(dom.pobierz('gra-kolejka').textContent, /Kolej: Gracz 1/, 'badge kolejki z imieniem (domyślne imiona z konfigu)');
   assert.match(dom.pobierz('przycisk-start-odcinka').textContent, /Idę do stacji 1/, 'główny przycisk fazy mówi, dokąd idzie');
-  assert.match(dom.pobierz('gra-cel-stacji').textContent, /m drogą od poprzedniego punktu/, 'cel z dystansem drogowym z modelu');
+  assert.match(dom.pobierz('gra-cel-stacji').textContent, /m w linii prostej od poprzedniego punktu/, 'pierścień (brak sieci): etykieta mówi wprost, że to prosta kreska (ADR 0014 pkt 1)');
   assert.match(dom.pobierz('gra-dystans').textContent, /\d+ m/, 'badge dystansu w linii prostej z bieżącej pozycji');
 });
 
@@ -1116,18 +1115,19 @@ test('M6: pytanie odsłania się DOPIERO na stacji i ma cztery odpowiedzi (ADR 0
   });
   assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, true, 'ocena i wyjaśnienie dopiero po odpowiedzi');
   assert.equal(dom.pobierz('przycisk-nastepna-stacja').hidden, true);
-  // przed dojściem treści pytania nie było NICZYM w UI — strażnik: ekran paczki schowany, podgląd zwinięty
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, true);
+  // przed dojściem treści pytania nie było NICZYM w UI — strażnik: ekran paczki schowany, pole wklejenia puste
+  assert.equal(dom.pobierz('ekran-paczka').hidden, true);
+  assert.equal(dom.pobierz('pole-odpowiedz').value, '');
 });
 
-test('M6: poprawna odpowiedź — ocena, punkty z premią, wyjaśnienie i źródła z linkami', async () => {
+test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z linkami', async () => {
   const { dom, paczka } = await graWFaziePytania();
   const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   const dobry = przyciski[pierwsze.poprawna];
   for (const fn of dobry.zdarzenia.click ?? []) fn({ type: 'click', target: dobry, currentTarget: dobry });
 
-  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze! \+\d+ pkt/, 'ocena z punktami (podstawowe + ewentualna premia)');
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze! \+1 pkt/, 'ocena: 1 pkt za poprawną (rev2)');
   assert.ok(dobry.classList.contains('poprawna'), 'poprawna odpowiedź podświetlona');
   przyciski.forEach((b) => assert.equal(b.disabled, true, 'po odpowiedzi przyciski zablokowane — bez poprawek'));
   assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie z paczki');
@@ -1178,8 +1178,8 @@ test('M6: błędna odpowiedź — zero punktów, podświetlona poprawna, gra idz
 test('M6: zapis gry ląduje w pamięci po każdym ruchu i nie niesie plaintextu', async () => {
   const { dom, paczka, pamiec } = await graGotowaDoStartu();
   zaczynijGre(dom);
-  assert.equal(pamiec.get('okolica:gra-aktywna'), 'gra', 'wskaźnik aktywnej gry (kod oczyszczony; pusty kodGry → „gra")');
-  const kluczZapisu = 'okolica:gra:gra';
+  assert.match(pamiec.get('okolica:gra-aktywna'), /^[a-z0-9-]{1,40}$/, 'wskaźnik aktywnej gry = auto-slug (Partia 2: koniec ręcznego kodu)');
+  const kluczZapisu = 'okolica:gra:' + pamiec.get('okolica:gra-aktywna');
   assert.ok(pamiec.has(kluczZapisu), 'zapis pod kluczem okolica:gra:<kod> — czyszczenie danych go obejmuje');
   let snapshot = JSON.parse(pamiec.get(kluczZapisu));
   assert.equal(snapshot.schemat, 'stan-gry/1');
@@ -1201,8 +1201,9 @@ test('M6: zapis gry ląduje w pamięci po każdym ruchu i nie niesie plaintextu'
 test('M6: wznowienie po „zamknięciu przeglądarki" — nowa instancja, ta sama pamięć, rebaza zegara', async () => {
   const { dom, pamiec } = await graGotowaDoStartu();
   zaczynijGre(dom);
+  const kluczZapisu = 'okolica:gra:' + pamiec.get('okolica:gra-aktywna');
   dom.kliknij('przycisk-start-odcinka');
-  assert.equal(JSON.parse(pamiec.get('okolica:gra:gra')).rozgrywka.faza, 'odcinek');
+  assert.equal(JSON.parse(pamiec.get(kluczZapisu)).rozgrywka.faza, 'odcinek');
 
   // „zamknięcie przeglądarki": zupełnie nowa instancja aplikacji na tej samej pamięci
   const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
@@ -1212,6 +1213,7 @@ test('M6: wznowienie po „zamknięciu przeglądarki" — nowa instancja, ta sam
   assert.match(dom2.pobierz('wznowienie-opis').textContent, /faza: odcinek/);
 
   dom2.kliknij('przycisk-wznow-gre');
+  assert.equal(dom2.pobierz('setup-promien').zdarzenia.input.length, 1, 'L14: wznowienie nie dokleja drugiego nasłuchu pól setupu');
   assert.equal(dom2.pobierz('ekran-gra').hidden, false, 'wznowienie wraca na ekran gry');
   assert.equal(dom2.pobierz('gra-panel-odcinek').hidden, false, 'faza odcinka odtworzona');
   assert.equal(dom2.pobierz('karta-wznowienie').hidden, true, 'baner znika po wznowieniu');
@@ -1252,7 +1254,7 @@ test('M6: pominięcie odcinka w drodze — jawny skutek i gra idzie dalej (ADR 0
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'następna stacja czeka w fazie A');
   assert.match(dom.pobierz('gra-postep').textContent, /stacja 2 z 3/);
   assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true, 'po tranzycji znowu zablokowane');
-  assert.equal(JSON.parse(pamiec.get('okolica:gra:gra')).rozgrywka.odcinki[0].stan, 'pominiety', 'zapis niesie pominięcie');
+  assert.equal(JSON.parse(pamiec.get('okolica:gra:' + pamiec.get('okolica:gra-aktywna'))).rozgrywka.odcinki[0].stan, 'pominiety', 'zapis niesie pominięcie');
 });
 
 test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zostaje', async () => {
@@ -1271,7 +1273,7 @@ test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zos
   assert.equal(wiersze.length, 2, 'wynik per gracz (2 graczy z konfiguracji)');
   assert.equal(wiersze[0].children.length, 3, 'gracz | punkty | poprawne');
   assert.match(dom.pobierz('status').textContent, /można ją wznowić/, 'uczciwie: zapis zostaje');
-  assert.ok(pamiec.has('okolica:gra:gra'), 'zapis NIE skasowany — można wrócić do gry');
+  assert.ok(pamiec.has('okolica:gra:' + pamiec.get('okolica:gra-aktywna')), 'zapis NIE skasowany — można wrócić do gry');
   assert.match(zakoncz.textContent, /Zakończ grę/, 'przycisk wraca do zwykłej etykiety');
 });
 
@@ -1313,7 +1315,7 @@ test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, w
   assert.match(wiersze[0].children[0].textContent, /🏆/, 'zwycięzca rankingu oznaczony');
   assert.equal(wiersze[0].children[1].textContent !== '0', true, 'punkty policzone (3 poprawne odpowiedzi × rotacja graczy)');
   // zapis niesie naturalny koniec
-  const snapshot = JSON.parse(pamiec.get('okolica:gra:gra'));
+  const snapshot = JSON.parse(pamiec.get('okolica:gra:' + pamiec.get('okolica:gra-aktywna')));
   assert.equal(snapshot.rozgrywka.faza, 'koniec');
   assert.equal(snapshot.rozgrywka.odcinki.every((o) => o.stan === 'zakonczony' && o.trybDojscia === 'gps'), true, 'wszystkie odcinki zamknięte dojściem GPS');
 });
@@ -1378,7 +1380,7 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
 
 /* ========== M7/P3: pełne podsumowanie (panel D) */
 
-test('M7: pełne podsumowanie — zwycięzca, medal trasy, statystyki, karty graczy i stacje', async () => {
+test('M7: pełne podsumowanie — zwycięzca, statystyki, karty graczy i stacje', async () => {
   const { dom } = await graGotowaDoStartu();
   zaczynijGre(dom);
   for (const i of [1, 2, 3]) {
@@ -1393,29 +1395,24 @@ test('M7: pełne podsumowanie — zwycięzca, medal trasy, statystyki, karty gra
   assert.match(zwyciezca, /0 pkt/, 'duże punkty w karcie');
   assert.match(zwyciezca, /poprawne 0\/0/, 'poprawne/razem w karcie');
 
-  // 2. medal sprawiedliwości: pierścień ma odchylenie ≈ 0% ≤ 15% → 🏅
-  assert.match(dom.pobierz('gra-wynik-medal').textContent, /🏅 Uczciwa trasa/, 'medal z miaraSprawiedliwosci (pole proste — brak dystansów sieciowych)');
-  assert.match(dom.pobierz('gra-wynik-medal').textContent, /próg 15%/, 'jawny próg w komunikacie');
-
-  // 3. statystyki gry: liczby z podsumowanie(), dziennik nie kłamie
+  // 2. statystyki gry: liczby z podsumowanie(), dziennik nie kłamie
   const statystyki = dom.pobierz('gra-wynik-statystyki').textContent;
-  assert.match(statystyki, /czas gry:/);
+  assert.equal(statystyki.includes('czas gry'), false, 'zero presji czasowej (Partia 2)');
   assert.match(statystyki, /zaliczone:0 z 3/, 'dt+dd bez spacji w agregacji — odstęp daje siatka CSS');
   assert.match(statystyki, /pominięte:3/);
   assert.match(statystyki, /stacje bez pytań:brak/, 'paczka pokrywa wszystkie stacje');
   assert.match(statystyki, /zdarzenia w dzienniku:\d+/);
 
-  // 4. karty graczy: dwie, z pełnymi polami (rozbicie punktów, tempo, ręczne, limit)
+  // 3. karty graczy: dwie, z punktami, poprawnością, dystansem i ręcznymi dojściami
   const karty = dom.pobierz('gra-wynik-gracze').children;
   assert.equal(karty.length, 2, 'karta per gracz, w kolejności rankingu');
   assert.match(karty[0].textContent, /Gracz 1 🏆 · 0 pkt/);
-  assert.match(karty[0].textContent, /podstawowe 0 \+ premie 0 · poprawne 0, błędne 0/);
-  assert.match(karty[0].textContent, /odcinki: 2 · czas/, 'Gracz 1 miał odcinki 1 i 3 (rotacja)');
-  assert.match(karty[0].textContent, /ręczne dojścia: 0 · po limicie: 0/);
-  assert.match(karty[0].textContent, /tempo —/, 'pominięte odcinki bez pomiaru tempa → kreska, nie zero');
+  assert.match(karty[0].textContent, /0 pkt · poprawne 0, błędne 0/);
+  assert.match(karty[0].textContent, /odcinki: 2 · dystans/, 'Gracz 1 miał odcinki 1 i 3 (rotacja)');
+  assert.match(karty[0].textContent, /ręczne dojścia: 0/);
   assert.match(karty[1].textContent, /odcinki: 1/, 'Gracz 2 miał odcinek 2');
 
-  // 5. tabela stacji: 3 wiersze, każda pominięta, bez gracza „—" (rotacja przypisana)
+  // 4. tabela stacji: 3 wiersze, każda pominięta, bez gracza „—" (rotacja przypisana)
   const wiersze = dom.pobierz('gra-wynik-stacje-tbody').children;
   assert.equal(wiersze.length, 3);
   for (const w of wiersze) {
@@ -1542,7 +1539,7 @@ test('M7: eksport obrazu wyniku — plan przechodzi przez canvas do PNG (plik i 
   await czekaj(80);
   assert.equal(udostepnione.length, 1);
   assert.equal(udostepnione[0].files.length, 1);
-  assert.equal(udostepnione[0].files[0].name, 'okolica-gra.wynik.png', 'konfig bez kodGry → klucz „gra" (jak w zapisie M6)');
+  assert.match(udostepnione[0].files[0].name, /^okolica-[a-z0-9-]+\.wynik\.png$/, 'nazwa pliku niesie auto-slug gry (jak w zapisie M6)');
   assert.equal(udostepnione[0].files[0].type, 'image/png');
 });
 
@@ -1561,7 +1558,7 @@ test('M7: koniec gry dopisuje skrót do historii — naturalny koniec = wpis pe�
   assert.deepEqual(usterki, []);
   assert.equal(historia.wpisy.length, 1, 'dokładnie jeden wpis po jednej grze');
   const w = historia.wpisy[0];
-  assert.equal(w.klucz, 'gra', 'konfig bez kodGry → klucz „gra" (spójnie z KLUCZ_AKTYWNEJ z M6)');
+  assert.match(w.klucz, /^[a-z0-9-]{1,40}$/, 'auto-slug gry ląduje w historii (spójnie z KLUCZ_AKTYWNEJ z M6)');
   assert.equal(w.przerwana, false, 'naturalny koniec = wpis pełny');
   assert.equal(w.liczbaStacji, 3);
   assert.equal(w.zwyciezca, 'Gracz 1', 'zwycięzca z rankingu (0 pkt — sort stabilny)');
@@ -1620,7 +1617,7 @@ test('M7: lista poprzednich gier na setupie — najnowsza najpierw, dwustopniowe
   const pozycje = dom.pobierz('historia-lista').children;
   assert.equal(pozycje.length, 2);
   assert.match(pozycje[0].textContent, /2026-09-05 18:30 · Ochota/, 'najnowsza najpierw, data i miejsce ze skrótu');
-  assert.match(pozycje[0].textContent, /🏆 Gracz 1 — 0 pkt · 0 s/, 'zwycięzca, punkty i czas gry');
+  assert.match(pozycje[0].textContent, /🏆 Gracz 1 — 0 pkt$/, 'zwycięzca i punkty, bez czasu (Partia 2)');
   assert.equal(pozycje[0].textContent.includes('(przerwana)'), false);
   assert.match(pozycje[1].textContent, /Mokotów/, 'starsza druga');
   assert.match(pozycje[1].textContent, /\(przerwana\)/, 'znacznik przerwanej widoczny');
@@ -1671,32 +1668,30 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'naturalny koniec po ostatniej stacji');
 
   // 1. PEŁNE podsumowanie z prawdziwą punktacją (nie zera z pominięć):
-  //    Gracz 1 ma 2 poprawne (stacje 1 i 3), Gracz 2 jedną; premia ±25% zacisku
-  //    → OCZEKIWANIA POLICZONE: G1 ≥ 2×20−25% = 30 pkt, G2 ≤ 20+25% = 25 pkt
+  //    Gracz 1 ma 2 poprawne (stacje 1 i 3), Gracz 2 jedną; punkty = 1 za poprawną (rev2),
+  //    bez premii (Partia 2) → G1 = 40 pkt, G2 = 20 pkt
   const kartaZw = dom.pobierz('gra-wynik-zwyciezca');
-  assert.match(kartaZw.children[0].textContent, /^🏆 Gracz 1$/, 'dwie poprawne wygrywają z jedną przy porównywalnych tempach');
+  assert.match(kartaZw.children[0].textContent, /^🏆 Gracz 1$/, 'dwie poprawne wygrywają z jedną');
   // punkty CZYTAMY Z ELEMENTU, nie regexem po złączonym textContent (L23:
   // 'Gracz 1' + '42 pkt' złączone dałoby '142 pkt')
   const punktyZw = Number(kartaZw.children[1].textContent.replace(' pkt', ''));
-  // widełki POLICZONE z modelu: 2 × (20 pkt bazowych ± premia 0,5×0,5×20) = [20, 60]
-  assert.ok(punktyZw >= 20 && punktyZw <= 60, `punkty zwycięzcy w widełkach policzonych: ${punktyZw}`);
+  assert.equal(punktyZw, 2, 'zwycięzca: 2 × 1 pkt (rev2), zero premii');
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
   assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
   assert.equal(wiersze[0].children[2].textContent, '2/2', 'Gracz 1: dwie poprawne, zero błędnych');
   assert.equal(wiersze[1].children[2].textContent, '1/1', 'Gracz 2: jedna poprawna');
   const karty = dom.pobierz('gra-wynik-gracze').children;
-  assert.match(karty[0].textContent, /podstawowe \d+ \+ premie -?\d+/, 'rozbicie punktów z prawdziwej gry');
-  assert.match(karty[0].textContent, /zaliczona|odcinki: 2/);
-  assert.match(karty[0].textContent, /tempo \d+:\d\d min\/km/, 'tempo policzone z dojść GPS (nie kreska)');
+  assert.match(karty[0].textContent, /2 pkt · poprawne 2, błędne 0/, 'punkty i poprawność z prawdziwej gry');
+  assert.match(karty[0].textContent, /odcinki: 2 · dystans/);
+  assert.match(karty[0].textContent, /ręczne dojścia: 0/);
   const statystyki = dom.pobierz('gra-wynik-statystyki').textContent;
   assert.match(statystyki, /zaliczone:3 z 3/);
   assert.match(statystyki, /pominięte:0/);
-  assert.match(dom.pobierz('gra-wynik-medal').textContent, /🏅 Uczciwa trasa/, 'pierścień jest uczciwy z definicji');
   const stacjeWiersze = dom.pobierz('gra-wynik-stacje-tbody').children;
   assert.equal(stacjeWiersze.length, 3);
   for (const w of stacjeWiersze) {
     assert.match(w.textContent, /zaliczona \(GPS\)/, 'tryb dojścia zmierzony, nie zgadywany');
-    assert.equal(/—/.test(w.children[3].textContent), false, 'każda stacja ma zmierzony czas');
+    assert.equal(w.children.length, 4, 'kolumny: # | gracz | stan | punkty (czasu nie ma)');
   }
 
   // 2. eksport tekstowy z prawdziwej gry: ranking, stacje z GPS — i STRAŻNIK prywatności
@@ -1728,7 +1723,7 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
   assert.equal(w.przerwana, false);
   assert.equal(w.zwyciezca, 'Gracz 1');
   assert.equal(w.zaliczoneStacje, 3);
-  assert.ok(w.punktyRazem >= 30 && w.punktyRazem <= 90, `suma punktów w widełkach policzonych (3 × 20 ± premia): ${w.punktyRazem}`);
+  assert.equal(w.punktyRazem, 3, 'suma punktów: 3 × 1 (rev2), zero premii');
   const jsonHistorii = JSON.stringify(historia);
   for (const pytanie of paczka.pytania) {
     assert.equal(jsonHistorii.includes(pytanie.tresc), false, 'treść pytania wyciekła do historii');

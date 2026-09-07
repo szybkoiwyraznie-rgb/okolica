@@ -16,8 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash } from './geo.js';
-import { SCHEMAT_KONTENERA } from './kodowanie.js';
+import { geohash } from './geo.js?v=m12-5';
+import { kanonicznyTemat } from './konfig.js?v=m12-5';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-5';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-5';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -159,14 +161,14 @@ const zbiorTematow = (tematy) => new Set(tematy);
  * sam zestaw tematów (reguły z ADR 0017 pkt 7 — ściśle i przewidywalnie; UI
  * pokazuje metadane, więc organizator widzi, dlaczego propozycja pasuje).
  */
-export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pytaniaNaStacje, tematy, wiek } = {}) {
+export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pytaniaNaStacje, tematy, wiek, tematWlasny = '' } = {}) {
   wymaganie(typeof geohash5 === 'string' && geohash5.length === 5, 'dopasujZestawy: geohash5 musi mieć 5 znaków');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'dopasujZestawy: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'dopasujZestawy: liczbaStacji musi być dodatnią liczbą całkowitą');
   wymaganie(Number.isInteger(pytaniaNaStacje) && pytaniaNaStacje > 0, 'dopasujZestawy: pytaniaNaStacje musi być dodatnią liczbą całkowitą');
   wymaganie(Array.isArray(tematy) && tematy.length > 0, 'dopasujZestawy: tematy muszą być niepustą listą');
   wymaganie(typeof wiek === 'string' && wiek.length > 0, 'dopasujZestawy: wiek musi być nazwą');
-  const szukany = zbiorTematow(tematy);
+  const szukany = zbiorTematow(tematy.map(kanonicznyTemat));
   // tolerujemy obie konwencje: surowa lista wpisów (walidacje surowe) i obiekt
   // rejestru `{ schemat, wpisy }` (zapis) — jedno wejście, zero niespodzianek
   const lista = Array.isArray(rejestr) ? rejestr : (rejestr?.wpisy ?? []);
@@ -174,10 +176,16 @@ export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pyta
   // liczba stacji i pytań na stację, ten sam poziom (wiek), tematy paczki
   // NIE SZERSZE niż w setupie oraz promień paczki ≤ promienia z setupu
   // (stacje bliżej niż oczekiwano są uczciwe, dalej — nie).
+  const mojWlasny = String(tematWlasny ?? '').trim().toLowerCase();
+  const tenSamWlasny = (w) => {
+    if (!w.tematy.map(kanonicznyTemat).includes('wlasny')) return true;
+    return mojWlasny !== '' && String(w.tematWlasny ?? '').trim().toLowerCase() === mojWlasny;
+  };
   return lista
     .filter((w) => w.geohash5 === geohash5 && w.promienM <= promienM
       && w.liczbaStacji === liczbaStacji && w.pytaniaNaStacje === pytaniaNaStacje
-      && w.wiek === wiek && w.tematy.every((temat) => szukany.has(temat)))
+      && w.wiek === wiek && w.tematy.map(kanonicznyTemat).every((temat) => szukany.has(temat))
+      && tenSamWlasny(w))
     .sort((a, b) => String(b.data).localeCompare(String(a.data)));
 }
 
@@ -264,7 +272,7 @@ export function dopasujMetaIndeksu(indeks, kryteria) {
  * Meta dopasowania z bieżącej konfiguracji i pozycji (geohash5 z `geo.js`).
  * Czysta funkcja: warstwa DOM podaje wyłącznie fakty (ADR 0017 pkt 3).
  */
-export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje } = {}) {
+export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '' } = {}) {
   wymaganie(Number.isFinite(lat) && Number.isFinite(lon), 'zbierzMetaZestawu: pozycja musi być liczbami');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'zbierzMetaZestawu: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'zbierzMetaZestawu: liczbaStacji musi być dodatnią liczbą całkowitą');
@@ -281,13 +289,14 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
     data: typeof data === 'string' && data ? data : new Date().toISOString().slice(0, 16).replace('T', ' '),
     liczbaStacji,
     pytaniaNaStacje,
+    tematWlasny: typeof tematWlasny === 'string' ? tematWlasny.trim().slice(0, 40) : '',
   };
 }
 
 /**
  * Plik publiczny TO-zestaw/1: meta + jawne stacje + kontener (ADR 0017 pkt 1).
- * `przegladZrodel` wychodzi jako „oczekuje przeglądu" — publikacja (commit do
- * `data/paczki/`) wymaga ręcznej edycji tego pola przez właściciela (pkt 5).
+ * `przegladZrodel` wychodzi jako „oczekuje przeglądu" — publikacja (akceptacja
+ * przez właściciela na moście Drive, ADR 0018) wymaga przeglądu źródeł (pkt 5).
  */
 export function zbudujPlikZestawu({ stacje, kontener, meta, autor = 'organizator' } = {}) {
   wymaganie(Array.isArray(stacje) && stacje.length > 0 && stacje.every(czyStacjaOk),
@@ -297,7 +306,7 @@ export function zbudujPlikZestawu({ stacje, kontener, meta, autor = 'organizator
     'zbudujPlikZestawu: meta musi być kompletna (zbierzMetaZestawu)');
   return {
     schemat: SCHEMAT_ZESTAWU,
-    protokol: 'PYT/1.0',
+    protokol: WERSJA_PROTOKOLU,
     meta: {
       ...meta,
       autor: String(autor),

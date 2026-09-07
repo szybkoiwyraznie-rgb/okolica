@@ -12,10 +12,10 @@
  *   danych z ekranu prywatności (M3) kasuje zapis gry automatycznie;
  * - zepsuty zapis = jawna odmowa z kodem T, nigdy cichy start od zera.
  */
-import { WERSJA_PROTOKOLU } from './protokol.js';
-import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js';
-import { SCHEMAT_KONTENERA } from './kodowanie.js';
-import { geohash } from './geo.js';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-5';
+import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-5';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-5';
+import { geohash } from './geo.js?v=m12-5';
 
 export const SCHEMAT_STANU = 'stan-gry/1';
 
@@ -36,6 +36,7 @@ export const KODY_TRWALOSCI = {
   T08: 'Zapis nie ma poprawnych czasów (zapisanoMs ścienne albo zegarMs sesji).',
   T09: 'Lista stacji w zapisie jest uszkodzona.',
   T10: 'Pozycja w zapisie jest uszkodzona (oczekiwano null albo {lat, lon}).',
+  T11: 'Zapis nie zawiera nazwy ekranu (oczekiwano niepustego tekstu).',
   H01: 'To nie jest poprawny JSON historii gier.',
   H02: 'Historia ma inny schemat niż „historia/1" — pochodzi z innej wersji aplikacji.',
   H03: 'Lista wpisów historii jest uszkodzona (oczekiwano tablicy maks. 50 wpisów).',
@@ -182,7 +183,7 @@ export function walidujStanSurowy(tekst) {
   if (!czyKontenerOk(surowy.kontenerPaczki)) usterki.push(usterka('T05'));
   if (!czyRozgrywkaOk(surowy.rozgrywka)) usterki.push(usterka('T04'));
   if (!czyPozycjaOk(surowy.pozycja)) usterki.push(usterka('T10'));
-  if (typeof surowy.ekran !== 'string' || surowy.ekran.length === 0) usterki.push(usterka('T01'));
+  if (typeof surowy.ekran !== 'string' || surowy.ekran.length === 0) usterki.push(usterka('T11'));
 
   return { stan: usterki.length === 0 ? surowy : null, usterki };
 }
@@ -212,7 +213,6 @@ function czyPodsumowanieOk(p) {
   return !!p && typeof p === 'object'
     && Array.isArray(p.ranking)
     && Number.isFinite(p.punktyRazem)
-    && Number.isFinite(p.czasGryS)
     && Number.isFinite(p.zaliczoneStacje)
     && Number.isFinite(p.pominietaStacje);
 }
@@ -229,7 +229,7 @@ function czyWpisHistoriiOk(w) {
     && Array.isArray(w.tematy)
     && Number.isFinite(w.liczbaGraczy) && Number.isFinite(w.liczbaStacji)
     && (w.zwyciezca === null || typeof w.zwyciezca === 'string')
-    && Number.isFinite(w.punktyRazem) && Number.isFinite(w.czasGryS)
+    && Number.isFinite(w.punktyRazem)
     && Number.isFinite(w.zaliczoneStacje) && Number.isFinite(w.pominietaStacje)
     && typeof w.przerwana === 'boolean';
 }
@@ -266,7 +266,6 @@ export function skrotGry({ rozgrywka, konfig, stacje, podsumowanie, miejsce = nu
     liczbaStacji: stacje.length,
     zwyciezca,
     punktyRazem: podsumowanie.punktyRazem,
-    czasGryS: podsumowanie.czasGryS,
     zaliczoneStacje: podsumowanie.zaliczoneStacje,
     pominietaStacje: podsumowanie.pominietaStacje,
     przerwana: Boolean(przerwana),

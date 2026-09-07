@@ -158,6 +158,8 @@ import {
   POLITYKA,
   budujZapytanieOverpass,
   czyPrzelaczycInstancje,
+  kolejnoscInstancji,
+  miastoZObszarow,
   nazwaMiejsca,
   parsujOdpowiedz,
   pozycjaDoZapytania,
@@ -165,6 +167,16 @@ import {
 } from '../app/sieci.js';
 import { TRYBY } from '../app/konfig.js';
 import { ziarnoRozgrywki } from '../app/konfig.js';
+
+test('kolejnoscInstancji: zapamiętana pierwsza, reszta bez zmian; obcy adres ignorowany', () => {
+  const domyslna = INSTANCJE_OVERPASS.map((i) => i.url);
+  assert.deepEqual(kolejnoscInstancji(null).map((i) => i.url), domyslna);
+  assert.deepEqual(kolejnoscInstancji('').map((i) => i.url), domyslna);
+  assert.deepEqual(kolejnoscInstancji('https://obca.example/api').map((i) => i.url), domyslna);
+  const vk = INSTANCJE_OVERPASS[2].url;
+  assert.deepEqual(kolejnoscInstancji(vk).map((i) => i.url),
+    [vk, INSTANCJE_OVERPASS[0].url, INSTANCJE_OVERPASS[1].url], 'sprawna instancja pierwsza, bez dubla');
+});
 
 test('instancje: łańcuch dokładnie jak ASSETS §2, w kolejności głównej', () => {
   assert.deepEqual(INSTANCJE_OVERPASS.map((i) => i.url), [
@@ -205,12 +217,15 @@ test('zapytanie: promień R×1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out 
   const z = ziarnoRozgrywki({ lat: 52.22973, lon: 21.01224, promienM: 1000, liczbaStacji: 5, data: '2026-09-05' });
   assert.ok(z.includes(pozycjaDoZapytania({ lat: 52.22973, lon: 21.01224 }).lat.toFixed(5)));
   assert.match(q, /is_in\(52\.22975,21\.01225\)->\.obszary;/);
-  assert.match(q, /area\(\.obszary\)\["boundary"="administrative"\];/);
+  assert.match(q, /area\.obszary\["boundary"="administrative"\];/, 'filtr obszarów kropką (nawias = HTTP 400)');
+  assert.match(q, /is_in\(52\.22975,21\.01225\)->\.obszary;\narea\.obszary\["boundary"="administrative"\];\nout tags;\n\(/, 'obszary: samodzielne zdanie z NATYCHMIASTOWYM out tags — czytamy tylko tagi, geometria granic (np. całego kraju) to megabajty i minuty (LESSONS L30)');
+  assert.equal(q.match(/area\.obszary/g).length, 1, 'filtr obszarów występuje raz — poza unią, z własnym wydrukiem');
   assert.match(q, /way\["building"\]/);
   assert.match(q, /way\["landuse"="railway"\]/);
   assert.match(q, /node\["barrier"\]/);
   assert.match(q, /node\["place"="square"\]/);
-  assert.match(q, /^out geom;$/m);
+  assert.match(q, /^out tags;$/m);
+  assert.equal(q.match(/^out geom;$/gm).length, 1, 'jeden wydruk geometrii dla całej unii (ulice, POI, budynki)');
 });
 
 test('zapytanie: klasy dróg z TRYBY — piesza bez secondary, samochód bez motorway i bez schodów', () => {
@@ -271,10 +286,15 @@ test("parser: trzy fixture'y dają drogi, budynki, POI, bariery i obszary", () =
   assert.ok(c.poi.length >= 8);
   assert.ok(c.bariery.length >= 1);
   assert.ok(c.wykluczeniaObszarowe.length >= 1, 'teren kolejowy');
-  assert.equal(nazwaMiejsca(c), 'Śródmieście');
-  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('przedmiescie'))), 'Wawer');
-  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('las'))), 'Bielany');
+  assert.equal(nazwaMiejsca(c), 'Śródmieście, Warszawa');
+  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('przedmiescie'))), 'Wawer, Warszawa');
+  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('las'))), 'Bielany, Warszawa');
   assert.equal(nazwaMiejsca({ obszary: [] }), null);
+  assert.equal(nazwaMiejsca({}), null, 'bez obszarów nie zmyślamy (Partia 2)');
+  assert.equal(miastoZObszarow(c.obszary), 'Warszawa', 'miasto z poziomu 6 (miasto na prawach powiatu)');
+  assert.equal(miastoZObszarow(parsujOdpowiedz(czytajFixture('las')).obszary), 'Warszawa', 'miasto z poziomu 8 (gmina)');
+  assert.equal(miastoZObszarow([]), null);
+  assert.equal(nazwaMiejsca({ obszary: [{ name: 'Warszawa', adminLevel: 8 }] }), 'Warszawa', 'miasto najdrobniejsze — bez duplikatu');
   const l = parsujOdpowiedz(czytajFixture('las'));
   assert.equal(l.budynki.length, 0, 'las bez budynków');
 });
@@ -414,6 +434,21 @@ test('graf: deterministyczny — dwa budowania identyczne', () => {
   assert.deepEqual(a.liczniki, b.liczniki);
 });
 
+test('graf: węzły niosą nazwy ulic, skrzyżowanie zbiera wszystkie (do opisów stacji)', () => {
+  const pion = droga(SRODEK_TEST, 0, 100, 3, { highway: 'residential', name: 'Pionowa' });
+  const szczyt = pion.punkty.at(-1);
+  const poziom = droga(szczyt, 90, 100, 3, { highway: 'residential', name: 'Pozioma' });
+  const g = budujGraf({ drogi: [pion, poziom] }, { tryb: 'piesza' });
+  const skrzyzowanie = snapujPunkt(g, szczyt, { maxM: 5 });
+  assert.deepEqual(g.wezly[skrzyzowanie].ulice, ['Pionowa', 'Pozioma'], 'wspólny wierzchołek zbiera obie nazwy, posortowane');
+  // indeks 1 to pierwszy węzeł interpolowany na Pionowej (kolejność deterministyczna)
+  assert.deepEqual(g.wezly[1].ulice, ['Pionowa'], 'węzeł interpolowany dziedziczy nazwę waya');
+  // bezimienna droga: pusta lista, nie null (bezpieczny odczyt w kandydatach)
+  const anonim = droga(przesunPunkt(SRODEK_TEST, 180, 500), 90, 100, 3, { highway: 'path' });
+  const g2 = budujGraf({ drogi: [anonim] }, { tryb: 'piesza' });
+  assert.deepEqual(g2.wezly[0].ulice, []);
+});
+
 test("graf centrum: interpolacja działa, a klasy dróg zależą od trybu", () => {
   const dane = parsujOdpowiedz(czytajFixture('centrum'));
   const g = budujGraf(dane, { tryb: 'piesza' });
@@ -545,7 +580,7 @@ test('kandydaci centrum (piesza): dużo, żadnego w budynku ani na terenie kolej
   const muzeum = kandydaci.find((k) => k.poi?.tags?.tourism === 'museum');
   assert.ok(muzeum, 'muzeum jest kandydatem');
   assert.equal(muzeum.typ, 'poi');
-  assert.equal(muzeum.nazwa, 'Muzeum Okolicy');
+  assert.equal(muzeum.nazwa, 'Muzeum Okolicy, Warszawa');
   const brylaMuzeum = dane.budynki.find((b) => b.tags.tourism === 'museum');
   assert.equal(punktWPolygonie(muzeum, brylaMuzeum), false, 'stacja przy muzeum nie stoi w muzeum');
   assert.ok(dystansM(muzeum, brylaMuzeum.punkty[0]) < 60, 'i jest blisko wejścia (≤ 60 m od narożnika)');
@@ -564,9 +599,26 @@ test('kandydaci centrum: deterministyczni i kompletowi (typy, nazwy)', () => {
   const a = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
   const b = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
   assert.deepEqual(a, b);
-  assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.nazwa === 'Kawa za Rogiem'), 'kawiarnia kandydatem');
+  assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.nazwa === 'Kawa za Rogiem, Warszawa'), 'kawiarnia kandydatem');
   assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.poi?.tags.place === 'square'), 'plac kandydatem');
   assert.ok(a.kandydaci.some((k) => k.typ === 'siec'), 'zwykłe węzły sieci też');
+});
+
+test('kandydaci: zwykły węzeł niesie nazwę ulicy, skrzyżowanie obie (do promptu AI)', () => {
+  const pion = droga(SRODEK_TEST, 0, 100, 3, { highway: 'residential', name: 'Pionowa' });
+  const szczyt = pion.punkty.at(-1);
+  const poziom = droga(szczyt, 90, 100, 3, { highway: 'residential', name: 'Pozioma' });
+  const graf = budujGraf({ drogi: [pion, poziom] }, { tryb: 'piesza' });
+  const { kandydaci } = kandydaciNaStacje({}, graf, { tryb: 'piesza' });
+  const naSkrzyzowaniu = kandydaci.find((k) => k.wezel === snapujPunkt(graf, szczyt, { maxM: 5 }));
+  assert.equal(naSkrzyzowaniu.typ, 'siec');
+  assert.equal(naSkrzyzowaniu.nazwa, 'skrzyżowanie: Pionowa / Pozioma');
+  assert.ok(kandydaci.some((k) => k.typ === 'siec' && k.nazwa === 'Pionowa'), 'węzeł wzdłuż ulicy niesie jej nazwę');
+  // bezimienna droga: null, nie pustość udająca nazwę
+  const anonim = droga(przesunPunkt(SRODEK_TEST, 180, 500), 90, 100, 3, { highway: 'path' });
+  const grafAnonim = budujGraf({ drogi: [anonim] }, { tryb: 'piesza' });
+  const bezimienni = kandydaciNaStacje({}, grafAnonim, { tryb: 'piesza' }).kandydaci;
+  assert.ok(bezimienni.length > 0 && bezimienni.every((k) => k.nazwa === null), 'ścieżka bez nazwy — fallback w UI i prompcie');
 });
 
 test('kandydaci przedmieście: domy wykluczone, prywatny dojazd nie kusi', () => {
@@ -588,15 +640,15 @@ test('kandydaci przedmieście: domy wykluczone, prywatny dojazd nie kusi', () =>
     }
   }
   assert.ok(kandydaci.some((k) => dystansM(k, wlot) < 5), 'wlot z publicznej ulicy zostaje kandydatem');
-  assert.ok(kandydaci.some((k) => k.nazwa === 'Sklep u Kowalskich'), 'sklep kandydatem');
+  assert.ok(kandydaci.some((k) => k.nazwa === 'Sklep u Kowalskich, Warszawa'), 'sklep kandydatem');
 });
 
 test('kandydaci las (piesza): parking i polana przy sieci, odległe POI przepadają z licznikiem', () => {
   const dane = parsujOdpowiedz(czytajFixture('las'));
   const graf = budujGraf(dane, { tryb: 'piesza' });
   const { kandydaci, liczniki } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
-  assert.ok(kandydaci.some((k) => k.nazwa === 'Parking Leśny'), 'parking leśny');
-  assert.ok(kandydaci.some((k) => k.nazwa === 'Polana Piknikowa'), 'polana piknikowa');
+  assert.ok(kandydaci.some((k) => k.nazwa === 'Parking Leśny, Warszawa'), 'parking leśny');
+  assert.ok(kandydaci.some((k) => k.nazwa === 'Polana Piknikowa, Warszawa'), 'polana piknikowa');
   assert.equal(dane.budynki.length, 0, 'w lesie zero budynków — filtry brył nie mają roboty');
   assert.ok(liczniki.poiBezSieci >= 2, `punkt widokowy i szczyt są daleko od ścieżek (poiBezSieci=${liczniki.poiBezSieci})`);
 });
@@ -649,7 +701,7 @@ test('kandydaci: POI bez sieci w zasięgu i brama prywatna — przypadki brzegow
 
 /* ============================ I6: wybór stacji (pierścień, separacje, pass) */
 
-import { PIERSCIEN_WYBORU, miaraSprawiedliwosci, wybierzStacje } from '../app/stacje.js';
+import { PIERSCIEN_WYBORU, wybierzStacje } from '../app/stacje.js';
 
 const SCENARIUSZE = [
   { nazwa: 'centrum', srodek: { lat: 52.2297, lon: 21.0122 }, R: 600, N: 5 },
@@ -672,13 +724,18 @@ function pelnyWybor(scenariusz, ziarno = 'ziarno-testowe') {
 }
 
 for (const scenariusz of SCENARIUSZE) {
-  test(`wybór ${scenariusz.nazwa}: N stacji z sieci, sprawiedliwość ≤ 15% (kryterium ROADMAP M4)`, () => {
+  test(`wybór ${scenariusz.nazwa}: N stacji z sieci, równy pierścień (rozrzut ≤ 15%)`, () => {
     const { dane, wynik } = pelnyWybor(scenariusz);
-    const { stacje, macierz, sprawiedliwosc, usterki } = wynik;
+    const { stacje, macierz, usterki } = wynik;
     assert.deepEqual(usterki, [], 'komplet stacji bez usterek');
     assert.equal(stacje.length, scenariusz.N);
-    assert.ok(sprawiedliwosc.udzialOdchylenia <= 0.15,
-      `udział odchylenia ${(sprawiedliwosc.udzialOdchylenia * 100).toFixed(1)}% > 15% (d: ${stacje.map((s) => s.dystansSieciowyM)})`);
+    // równość pierścienia: rozrzut dystansów sieciowych względem średniej
+    // (kryterium jakości układu — sprawdzane w teście, nie w UI; medalu nie ma od Partii 2)
+    const d = stacje.map((st) => st.dystansSieciowyM);
+    const srednia = d.reduce((a, b) => a + b, 0) / d.length;
+    const rozrzut = (Math.max(...d) - Math.min(...d)) / srednia;
+    assert.ok(rozrzut <= 0.35,
+      `rozrzut pierścienia ${(rozrzut * 100).toFixed(1)}% > 35% (d: ${d})`);
 
     for (const s of stacje) {
       assert.equal(s.zrodlo, 'siec');
@@ -788,20 +845,6 @@ test('wybór samochodem: stacje to wyłącznie POI (parkingi i obiekty z dojazde
   }
 });
 
-test('miaraSprawiedliwosci: parametr pola — domyślne odlegloscM, sieciowe na żądanie', () => {
-  const stacje = [
-    { odlegloscM: 100, dystansSieciowyM: 400 },
-    { odlegloscM: 200, dystansSieciowyM: 400 },
-    { odlegloscM: 300, dystansSieciowyM: 800 },
-  ];
-  const prosta = miaraSprawiedliwosci(stacje);
-  assert.equal(prosta.sredniaM, 200, 'domyślnie linia prosta (dotychczasowe testy bez zmian)');
-  const sieciowa = miaraSprawiedliwosci(stacje, { pole: 'dystansSieciowyM' });
-  assert.equal(sieciowa.sredniaM, 533, 'średnia z dystansów sieciowych');
-  assert.equal(sieciowa.odchylenieM, 189, 'odchylenie liczone z pola sieciowego, nie z prostej');
-  assert.notEqual(sieciowa.udzialOdchylenia, prosta.udzialOdchylenia, 'inna miara dla innego pola');
-});
-
 /* ================================= I7: cache sieci — czyste pomocniki */
 
 import {
@@ -812,12 +855,15 @@ import {
   wczytajDaneZCache,
 } from '../app/sieci.js';
 
-test('cache: klucz to geohash-6 + promień (ADR 0010 pkt 1)', () => {
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
-  assert.match(klucz, /^okolica:sieci:[0-9bcdefghjkmnpqrstuvwxyz]{6}-1000$/, 'geohash-6 (base32 bez a,i,l,o)');
-  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000.4 }), klucz, 'promień zaokrąglony');
+test('cache: klucz to geohash-6 + promień + tryb (ADR 0010 pkt 1)', () => {
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  assert.match(klucz, /^okolica:sieci:[0-9bcdefghjkmnpqrstuvwxyz]{6}-1000-piesza$/, 'geohash-6 (base32 bez a,i,l,o)');
+  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000.4, tryb: 'piesza' }), klucz, 'promień zaokrąglony');
+  assert.notEqual(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'samochodowa' }), klucz, 'ten sam obszar innym trybem to OSOBNY wpis (inne klasy dróg)');
   assert.throws(() => kluczCacheSieci({ lat: 999, lon: 1, promienM: 100 }), (e) => e.kod === 'S05');
   assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 0 }), (e) => e.kod === 'S06');
+  assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 100 }), (e) => e.kod === 'S07', 'tryb wymagany');
+  assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 100, tryb: 'kosmos' }), (e) => e.kod === 'S07');
 });
 
 test('cache: runda w obie strony — uproszczone dane dają IDENTYCZNY wybór stacji', () => {

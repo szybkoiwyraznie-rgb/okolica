@@ -5,20 +5,11 @@
 
 ## Kontekst
 
-Właściciel zakomunikował (2026-09-06, po M9b/D3): nie wkleił jeszcze nic do
-Apps Script na wydzielonym koncie Google Drive, bo konto ma służyć do
-RÓŻNYCH rzeczy — nie tylko do repozytorium paczek pytań (ADR 0016, M9b),
-ale też do:
-
-1. gry wieloosobowej **bez hot-seat**, na kilku urządzeniach — parowanie
-   graczy i gier przez Drive;
-2. danych o użytkownikach, ich statystyk i wyników (score) — zapis i odczyt
-   przez Drive.
-
-Dodatkowo właściciel zastrzegł sposób przekazania instrukcji wdrożenia:
-dopiero gdy CAŁOŚĆ kodu korzystającego z mostu będzie gotowa, instrukcja ma
-zostać wyświetlona **w czacie** (treść + okna txt do przeklejenia), a nie jako
-plik w repozytorium do szukania.
+Właściciel (2026-09-06, po M9b/D3): wydzielone konto Drive ma służyć do
+RÓŻNYCH rzeczy — repozytorium paczek (ADR 0016, M9b), gra wieloosobowa bez
+hot-seat (parowanie przez Drive) oraz dane użytkowników (statystyki, wyniki).
+Instrukcja wdrożenia ma przyjść dopiero gdy CAŁOŚĆ kodu będzie gotowa —
+**w czacie** (treść + bloki do przeklejenia), nie jako plik do szukania.
 
 ## Decyzja
 

@@ -5,7 +5,10 @@
  * Zasady:
  * - polling stanu gry z interwałem zależnym od fazy (czysta `interwalPollingu`):
  *   lobby 10 s, wyścig 12 s, tury — bieżący gracz 10 s, czekający 30 s,
- *   gra zakończona: zero (polling staje);
+ *   gra zakończona: zero (sygnał dla warstwy UI, żeby zatrzymać polling —
+ *   `zaplanuj` celowo NIGDY nie zwraca 0, tylko awaryjne tempo lobby, bo
+ *   jest też wołany bez świeżego stanu; zatrzymanie robi warstwa DOM po
+ *   wykryciu stanu zakonczona/archiwum w odebranym stanie);
  * - zdarzenia wychodzą POST-em `text/plain` natychmiast (bez preflightu CORS,
  *   wzorzec M9b); awaria SIECI dokłada zdarzenie do KOLEJKI offline, która
  *   wychodzi przy najbliższym udanym kroku (flush na `online` wystawia
@@ -15,7 +18,7 @@
  *   bez przeglądarki i bez sieci.
  */
 
-import { biezacyGraczTury } from './wieloosobowa.js?v=m12-1';
+import { biezacyGraczTury } from './wieloosobowa.js?v=m12-5';
 
 export const INTERWALY_MS = Object.freeze({
   lobby: 10_000,

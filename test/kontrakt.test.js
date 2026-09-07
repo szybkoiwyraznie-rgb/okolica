@@ -15,6 +15,8 @@ import { fileURLToPath } from 'node:url';
 import { SZABLON_PROMPTU, WERSJA_PROTOKOLU } from '../app/protokol.js';
 import { PODKLADY, TEMATY, WIEK } from '../app/konfig.js';
 import { KODOWANIE, SCHEMAT_KONTENERA } from '../app/kodowanie.js';
+import { KODY_POZYCJI } from '../app/pozycja.js';
+import { KODY_WIELOOSOBOWE } from '../app/wieloosobowa.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const czytaj = (sciezka) => readFileSync(join(ROOT, sciezka), 'utf8');
@@ -69,12 +71,13 @@ test('kontrakt: szablon promptu w docs/PROTOKOL.md jest identyczny z SZABLON_PRO
 test('kontrakt: kategorie wiekowe w protokole §4 = WIEK w app/konfig.js', () => {
   const wiersze = tabelaSekcji(PROTOKOL, '## 4. Kategorie wiekowe i wymagania trudności');
   assert.equal(wiersze.length, Object.keys(WIEK).length, `w dokumencie ${wiersze.length} kategorii, w kodzie ${Object.keys(WIEK).length}`);
-  for (const [klucz, etykieta, opis, punkty] of wiersze) {
+  for (const wiersz of wiersze) {
+    assert.equal(wiersz.length, 3, 'tabela §4 ma 3 kolumny (koniec kolumny Punkty w rev2)');
+    const [klucz, etykieta, opis] = wiersz;
     const k = bezOgrodzenia(klucz);
     assert.ok(WIEK[k], `kategoria „${k}" jest w protokole, a nie ma jej w kodzie`);
     assert.equal(WIEK[k].etykieta, etykieta, `etykieta kategorii ${k}`);
     assert.equal(WIEK[k].opisTrudnosci, opis, `opis trudności kategorii ${k} trafia dosłownie do promptu`);
-    assert.equal(WIEK[k].punkty, Number(punkty), `punkty kategorii ${k}`);
   }
 });
 
@@ -207,15 +210,12 @@ test('kontrakt: przycisk trybu testowego ma w HTML stan początkowy aria-pressed
 
   assert.match(INDEX, /id="bledy-stacje"[^>]*role="alert"/, 'błędy sieci drogowej w polu role=alert (nie alert())');
 
-  const eksportPaczki = INDEX.match(/<button id="przycisk-eksport-paczki"[^>]*>/)?.[0];
-  assert.ok(eksportPaczki, 'brak eksportu paczki do pliku (ADR 0010 pkt 3)');
-  assert.match(eksportPaczki, /type="button"/);
-  assert.match(eksportPaczki, /\bhidden\b/, 'eksport dopiero z przyjętą paczką');
-
-  const podglad = INDEX.match(/<div id="podglad-organizatora"[^>]*>/)?.[0];
-  assert.ok(podglad, 'brak podglądu organizatora (ADR 0006 pkt 8)');
-  assert.match(podglad, /\bhidden\b/, 'podgląd domyślnie schowany — otwiera się dopiero z przyjętą paczką');
-  assert.match(INDEX, /Tylko dla organizatora/, 'podgląd ma jawne ostrzeżenie, że to treści nie dla graczy');
+  // Decyzja właściciela 2026-09-07: poprawna paczka od razu zaczyna grę —
+  // podgląd, ściąganie i edycja zniknęły z ekranu (zadania właściciela na Drive).
+  for (const id of ['przycisk-ukryj', 'przycisk-eksport-paczki', 'przycisk-eksport-zestawu', 'przycisk-start-gry', 'podglad-organizatora', 'podglad-pytania', 'wynik-podsumowanie', 'zgoda-drive']) {
+    assert.ok(!INDEX.includes(`id="${id}"`), `ekran paczki nie ma #${id} — usunięty decyzją 2026-09-07`);
+  }
+  assert.ok(!INDEX.includes('Tylko dla organizatora'), 'ostrzeżenie podglądu zniknęło razem z podglądem');
   assert.match(INDEX, /id="bledy-stacje"[^>]*\bhidden\b/, 'pole błędów stacji domyślnie schowane');
 });
 
@@ -371,6 +371,18 @@ test('kontrakt: atrybucja dostawcy nie jest domyślnie chowana w CSS (ADR 0003 p
   assert.ok(/\.mapa\s*\{[^}]*touch-action:\s*none/.test(STYLE), 'gest mapy wymaga touch-action: none na panelu');
 });
 
+test('kontrakt: żadne app/*.js nie woła gołego fetch( — tylko window.fetch (D19, LESSONS L18)', () => {
+  const GOLY_FETCH = /(?<![\w$.])fetch\s*\(/;
+  const pliki = readdirSync(join(ROOT, 'app')).filter((n) => n.endsWith('.js'));
+  assert.ok(pliki.length > 5, 'strażnik bez plików to atrapa');
+  for (const nazwa of pliki) {
+    const kod = czytaj(`app/${nazwa}`)
+      .replace(/\/\*[\s\S]*?\*\//g, '') // komentarze blokowe
+      .replace(/(^|[^:])\/\/.*$/gm, '$1'); // komentarze liniowe (nie :// w URL-ach)
+    assert.ok(!GOLY_FETCH.test(kod), `${nazwa}: gołe fetch( — użyj fetchPrzegladarki()/window.fetch (L18)`);
+  }
+});
+
 test('kontrakt: mapa.js nie woła sieci, geolokalizacji ani alertów — rysuje to, co dostał', () => {
   assert.ok(!/\bfetch\s*\(/.test(MAPA), 'mapa.js nie może sam pobierać danych (kafelki ładuje <image>)');
   assert.ok(!/navigator\.geolocation|watchPosition/.test(MAPA), 'pozycja wchodzi do mapy przez app.js, nie z API');
@@ -485,19 +497,19 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
     'gra-wyniki', 'gra-wyniki-tbody',
-    'gra-wynik-zwyciezca', 'gra-wynik-medal', 'gra-wynik-statystyki',
+    'gra-wynik-zwyciezca', 'gra-wynik-statystyki',
     'gra-wynik-szczegoly', 'gra-wynik-gracze',
     'gra-wynik-stacje', 'gra-wynik-stacje-tbody',
     'wynik-eksport', 'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',
     'przycisk-pobierz-obraz', 'przycisk-udostepnij-obraz',
     'gra-wynik-tekst-detale', 'pole-wynik-tekst',
-    'przycisk-pomin-stacje', 'przycisk-zakoncz-gre', 'przycisk-start-gry',
+    'przycisk-pomin-stacje', 'przycisk-zakoncz-gre',
   ];
   for (const id of wymagane) assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
   assert.match(html, /id="bledy-gra" class="bledy" role="alert"/, 'błędy faz mają role="alert" (jak inne ekrany)');
   assert.match(html, /id="gra-komunikat" class="podpowiedz" role="status"/, 'komunikat fazy ma role="status"');
   assert.match(html, /id="przycisk-pomin-stacje"[^>]*disabled/, 'pominięcie domyślnie wyłączone (tylko w drodze, ADR 0015)');
-  assert.match(html, /id="przycisk-start-gry"[^>]*hidden/, 'start gry domyślnie ukryty — pojawi się z przyjętą paczką (R4)');
+  assert.ok(!html.includes('id="przycisk-start-gry"'), 'ręcznego startu nie ma — gra rusza sama po Sprawdź (decyzja 2026-09-07)');
   assert.match(html, /id="przycisk-udostepnij-wynik"[^>]*hidden/, 'share tylko z navigator.share (M7, decyzja 8)');
   assert.match(html, /id="przycisk-kopiuj-wynik"[^>]*hidden/, 'kopiowanie tylko z navigator.clipboard (M7, decyzja 8)');
   assert.match(html, /id="przycisk-udostepnij-obraz"[^>]*hidden/, 'udostępnianie obrazu tylko z navigator.canShare+File (M7/P5)');
@@ -577,11 +589,12 @@ test('kontrakt M8: manifest, ikony i ścieżki względne pod Pages (ADR 0002)', 
   assert.ok(!/(?:href|src)="\/[^/"]/.test(INDEX), 'zero ścieżek root-absolute w index.html');
 });
 
-test('kontrakt M9b: zgoda na wysyłkę Drive jest na ekranie wklejania i domyślnie zaznaczona', () => {
-  // Decyzja właściciela (2026-09-06): checkbox zgody żyje na ekranie
-  // „Wklej odpowiedź modelu" i startuje ZAZNACZONY — odhaczenie to opt-out.
-  assert.match(INDEX, /<input id="zgoda-drive" type="checkbox" checked>/, 'checkbox zgody Drive: obecny i domyślnie zaznaczony');
-  assert.ok(INDEX.indexOf('id="zgoda-drive"') < INDEX.indexOf('id="przycisk-sprawdz"'), 'zgoda widoczna PRZED przyciskiem przyjęcia');
+test('kontrakt M9b: wysyłka Drive jest domyślna — ekran wklejania nie pyta o zgodę', () => {
+  // Decyzja właściciela (2026-09-07): prywatna aplikacja — zestaw leci na
+  // Drive zawsze, bez checkboxa i bez przypominajki (checkbox z 2026-09-06
+  // usunięty z ekranu i z kodu).
+  assert.ok(!INDEX.includes('id="zgoda-drive"'), 'checkbox zgody Drive usunięty z ekranu wklejania');
+  assert.match(INDEX, /od razu zaczyna grę/, 'ekran mówi wprost: poprawna paczka = natychmiastowy start');
 });
 
 test('kontrakt M9b: „🔌 Sprawdź połączenie" żyje w karcie repozytorium (instrument CORS z ADR 0016)', () => {
@@ -601,6 +614,10 @@ test('kontrakt ADR 0020: adres mostu jest wpisany w kod, a UI nie ma pola do wpi
   for (const id of ['most-stan-repo', 'multi-most-stan']) {
     assert.ok(INDEX.includes(`id="${id}"`), `stan mostu jest jawny w #${id} (LESSONS L6)`);
   }
+  // Partia 3, pkt 1: akapity o pochodzeniu adresu i web appie żyją tylko w trybie testowym
+  assert.match(INDEX, /<p class="podpowiedz tylko-test">Adres mostu jest wpisany/, 'akapit mostu w karcie multi: tylko test');
+  assert.match(INDEX, /<p class="podpowiedz tylko-test">Adres wspólnego repozytorium jest wpisany/, 'akapit repozytorium: tylko test');
+  assert.match(STYLE, /body:not\(\.tryb-testowy\) \.tylko-test\s*\{\s*display: none;/, 'CSS gasi .tylko-test poza trybem testowym');
   // komunikaty nie mogą odsyłać do pola, którego już nie ma
   assert.ok(!/wklej adres|wpisz adres|wpisz go w ustawieniach/i.test(APP), 'żaden komunikat nie każe wpisywać adresu mostu');
   assert.ok(!APP.includes('KLUCZ_URL_REPO'), 'app.js nie sięga po klucz adresu wprost — wszystko przez adresMostu()');
@@ -628,18 +645,34 @@ test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
 });
 
 test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językiem', () => {
-  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz']) {
+  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'profil-ustaw', 'profil-sprawdz']) {
     assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
   }
   for (const a of ['gry', 'gra-stan', 'ranking']) {
     assert.ok(GS.includes(`akcja === '${a}'`), `doGet mostu obsługuje ${a}`);
   }
-  for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-ranking/1']) {
+  for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-ranking/1', 'RO-profil/1']) {
     assert.ok(GS.includes(s), `most zna schemat ${s}`);
   }
   assert.ok(GS.includes("'23456789ABCDEFGHJKLMNPQRSTUVWXYZ'"), 'alfabet kodu gry identyczny w moście i w module');
   assert.match(GS, /POLA_ZAKAZANE_W_ZDARZENIU/, 'most kasuje współrzędne ze zdarzeń (ADR 0019 pkt 3)');
   assert.ok(GS.includes('okolica-gry-otwarte') && GS.includes('okolica-gry-zakonczone'), 'katalogi gier w setup()');
+  assert.ok(GS.includes('okolica-profile'), 'katalog profili PIN (ADR 0021)');
+});
+
+test('kontrakt Partia 1 (3): PIN-profil — UI, kody R19/R20, dokumentacja §9', () => {
+  for (const id of ['przycisk-profil', 'form-profil', 'profil-pseudonim', 'profil-pin', 'bledy-profil', 'przycisk-profil-sprawdz', 'przycisk-profil-zapisz']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
+  }
+  for (const k of ['R19', 'R20']) {
+    assert.ok(KODY_WIELOOSOBOWE[k], `KODY_WIELOOSOBOWE zna ${k}`);
+    assert.ok(PROTOKOL.includes(`| ${k} |`), `PROTOKOL §9.4 dokumentuje ${k}`);
+  }
+  assert.match(
+    APP,
+    /akcja: rejestruj \? 'profil-ustaw' : 'profil-sprawdz'/,
+    'app.js woła obie akcje profilowe mostu',
+  );
 });
 
 test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', () => {
@@ -670,4 +703,32 @@ test('kontrakt M12: rankingi liczy telefon, serwer oddaje surowe wiersze', () =>
   assert.match(APP, /agregujRanking\(wiersze, filtr\)/, 'agregacje po stronie telefonu (ADR 0019 pkt 7)');
   assert.match(APP, /kategorieRankingu\(wiersze\)/, 'zakładki kategorii z dostępnych wierszy');
   assert.ok(GS.includes("akcja === 'ranking'"), 'most obsługuje akcję ranking');
+});
+
+test('ADR 0015 pkt 6: kody usterek wejścia promptu (WE**) nie kolidują z kodami pozycji (P**)', () => {
+  const PROTOKOL_JS = czytaj('app/protokol.js');
+  const start = PROTOKOL_JS.indexOf('export function zbudujPrompt(');
+  assert.ok(start >= 0, 'zbudujPrompt istnieje w app/protokol.js');
+  const cialo = PROTOKOL_JS.slice(start, PROTOKOL_JS.indexOf('export function parsujOdpowiedzModela', start));
+  const kodyPromptu = [...cialo.matchAll(/dodaj\('([A-Z]+\d+)'/g)].map((m) => m[1]);
+  assert.ok(kodyPromptu.length >= 7, `zbudujPrompt zgłasza co najmniej 7 kodów (jest ${kodyPromptu.length})`);
+  for (const kod of kodyPromptu) {
+    assert.match(kod, /^WE\d+$/, `${kod}: domena wejścia promptu ma własny prefiks WE (nie P jak pozycja)`);
+    assert.ok(!(kod in KODY_POZYCJI), `${kod} nie istnieje w KODY_POZYCJI`);
+  }
+});
+
+test('kontrakt: cache-busting w CAŁYM grafie — każdy import w app/*.js ma ?v= jak index.html', () => {
+  const wersja = [...INDEX.matchAll(/\?v=([\w-]+)/g)].map((m) => m[1])[0];
+  assert.ok(wersja, 'index.html wersjonuje zasoby przez ?v=');
+  const pliki = readdirSync(join(ROOT, 'app')).filter((f) => f.endsWith('.js'));
+  assert.ok(pliki.length >= 10, 'katalog app/ ma moduły do sprawdzenia');
+  for (const plik of pliki) {
+    const tresc = czytaj(`app/${plik}`);
+    const gole = [...tresc.matchAll(/from '\.\/[a-z]+\.js'/g)].map((m) => m[0]);
+    assert.deepEqual(gole, [], `${plik}: gołe importy bez ?v= tworzą drugą instancję modułu w przeglądarce (split cache)`);
+    for (const m of tresc.matchAll(/from '\.\/[a-z]+\.js\?v=([\w-]+)'/g)) {
+      assert.equal(m[1], wersja, `${plik}: znacznik ${m[1]} różny od index.html (${wersja})`);
+    }
+  }
 });

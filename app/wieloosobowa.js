@@ -2,7 +2,7 @@
  * `wieloosobowa.js` — M11/P2: gra wieloosobowa na wielu urządzeniach (ADR 0019).
  *
  * Moduł CZYSTY: schematy `RO-gra/1`, `RO-zdarzenie/1`, `RO-lobby/1`,
- * `RO-ranking/1`, walidacje surowe (kody R01–R18), kody gier, sąsiedztwo
+ * `RO-ranking/1`, `RO-profil/1`, walidacje surowe (kody R01–R20), kody gier, sąsiedztwo
  * geohash5 (lobby „w najbliższej okolicy"), maszynka tur, przeliczanie wyników
  * i agregacje rankingów. Zero DOM, zero sieci, zero `node:` — warstwa DOM
  * (`app.js`) i synchronizacja (`sync.js`, P3) podają wyłącznie fakty.
@@ -12,12 +12,13 @@
  * pól, a most kasuje zakazane pola dodatkowo po swojej stronie.
  */
 
-import { ALFABET_GEOHASH, geohash, ogranicz } from './geo.js?v=m12-1';
+import { ALFABET_GEOHASH, geohash, ogranicz } from './geo.js?v=m12-5';
 
 export const SCHEMAT_GRY = 'RO-gra/1';
 export const SCHEMAT_ZDARZENIA = 'RO-zdarzenie/1';
 export const SCHEMAT_LOBBY = 'RO-lobby/1';
 export const SCHEMAT_RANKINGU = 'RO-ranking/1';
+export const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (ADR 0021)
 
 /** Alfabet kodu gry: bez 0/O/1/I — kod dyktuje się przez telefon (ADR 0019 pkt 1). */
 export const ALFABET_KODU = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -28,10 +29,9 @@ export const TRYBY_GRY = Object.freeze({ wyscig: 'wyscig', tury: 'tury' });
 export const STANY_GRY = Object.freeze(['lobby', 'trwa', 'zakonczona', 'archiwum']);
 export const TYPY_ZDARZEN = Object.freeze(['start', 'dojscie', 'odpowiedz', 'rezygnacja', 'koniec']);
 
-/** Biała lista pól `dane` zdarzenia — cokolwiek innego NIE jedzie na Drive. */
+/** Biała lista pól `dane` zdarzenia — zero presji czasowej (Partia 2): czasów nie ma, cokolwiek innego NIE jedzie na Drive. */
 export const POLA_DANYCH_ZDARZENIA = Object.freeze([
-  'czasOdcinkaMs', 'czasOdpowiedziMs', 'trybDojscia', 'poprawna',
-  'punktyBaza', 'premiaCzasu', 'punktyRazem', 'powod',
+  'trybDojscia', 'poprawna', 'punktyRazem', 'powod',
 ]);
 
 export const KODY_WIELOOSOBOWE = {
@@ -53,10 +53,28 @@ export const KODY_WIELOOSOBOWE = {
   R16: 'Część wpisów lobby jest uszkodzona — zostały odfiltrowane.',
   R17: `Ranking nie jest poprawnym JSON-em albo ma inny schemat niż „${SCHEMAT_RANKINGU}".`,
   R18: 'Część wierszy rankingu jest uszkodzona — zostały odfiltrowane.',
+  R19: 'Nie mamy takiego pseudonimu — sprawdź pisownię albo zapisz go przyciskiem „Zapisz nowy".',
+  R20: 'PIN jest niepoprawny albo nie pasuje do tego pseudonimu (4–8 cyfr).',
 };
 
 function usterka(kod) {
   return { kod, komunikat: KODY_WIELOOSOBOWE[kod] ?? kod };
+}
+
+/** Pseudonim do pliku profilu: przycięty, pojedyncze spacje, maks. 20 znaków. */
+export function normalizujPseudonim(wartosc) {
+  return String(wartosc ?? '').trim().replace(/\s+/g, ' ').slice(0, 20);
+}
+
+/** PIN-prosty (ADR 0021): 4–8 cyfr, bez spacji. */
+export function czyPinPoprawny(pin) {
+  return /^\d{4,8}$/.test(String(pin ?? '').trim());
+}
+
+/** Jawna odmowa mostu przy profilu: kod R19/R20 → zdanie dla gracza. */
+export function komunikatBleduProfilu(blad) {
+  const kod = String(blad ?? '').trim();
+  return KODY_WIELOOSOBOWE[kod] ?? `Most odmówił: ${kod || 'nieznany błąd'}.`;
 }
 
 /* ------------------------------------------------------------- kody gier */
@@ -278,7 +296,9 @@ export function zbudujZdarzenie({ kod, idGry, graczId, typ, stacjaId = null, dan
   if (kod) zdarzenie.kod = kod;
   if (idGry) zdarzenie.idGry = idGry;
   if (stacjaId != null) zdarzenie.stacjaId = Number(stacjaId);
-  if (tUrzadzenia != null) zdarzenie.tUrzadzenia = Number(tUrzadzenia);
+  // tUrzadzenia: TYLKO skończona liczba ms (np. Date.now()) — ISO-tekst dałby
+  // Number()=NaN, a JSON.stringify(NaN) to null, czyli śmieć w protokole.
+  if (tUrzadzenia != null && Number.isFinite(Number(tUrzadzenia))) zdarzenie.tUrzadzenia = Number(tUrzadzenia);
   return zdarzenie;
 }
 
@@ -299,7 +319,12 @@ export function biezacyGraczTury(gra) {
   }
   const N = (gra.gracze ?? []).length;
   if (!N) return null;
-  for (let i = 1; i <= gra.konfiguracja.liczbaStacji; i += 1) {
+  // Uszkodzony stan z mostu (brak konfiguracji) to null, nie TypeError —
+  // pętla pollingu nie może paść na cudzych danych (lustro .gs zakłada
+  // poprawny stan, bo most go sam zapisał; telefon nie ma tej gwarancji).
+  const liczbaStacji = gra.konfiguracja?.liczbaStacji ?? 0;
+  if (!(liczbaStacji >= 1)) return null;
+  for (let i = 1; i <= liczbaStacji; i += 1) {
     if (zamkniete.has(i)) continue;
     const wlasciciel = gra.gracze[(i - 1) % N];
     if (rezygnacje.has(wlasciciel.id)) continue; // stacje rezygnującego pominięte
@@ -332,10 +357,9 @@ export function czyKompletna(gra) {
 
 /** Postęp jednego gracza (żywa tabela w wyścigu, resume w turach). */
 export function postepGracza(gra, graczId) {
-  const postep = { stacjeZamkniete: 0, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, zrezygnowal: false };
+  const postep = { stacjeZamkniete: 0, punkty: 0, poprawne: 0, bledne: 0, zrezygnowal: false };
   for (const z of gra?.zdarzenia ?? []) {
     if (z.graczId !== graczId) continue;
-    if (z.typ === 'dojscie') postep.czasOdcinkowMs += Number(z.dane?.czasOdcinkaMs) || 0;
     if (z.typ === 'odpowiedz') {
       postep.stacjeZamkniete += 1;
       postep.punkty += Number(z.dane?.punktyRazem) || 0;

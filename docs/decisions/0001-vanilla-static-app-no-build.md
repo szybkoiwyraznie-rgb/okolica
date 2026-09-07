@@ -5,12 +5,11 @@
 
 ## Kontekst
 
-Gra ma działać na telefonie, w przeglądarce, z GitHub Pages, bez konta i bez
-instalacji. Właściciel wymaga vanilla HTML+JS bez dodatkowych zależności
-(brief z 2026-09-05) — tak samo jak w projekcie AME, gdzie ten paradygmat
-przeżył kilkanaście kamieni milowych. Każdy framework, bundler albo biblioteka
-mapowa to: krok budowania, `node_modules`, lockfile, ryzyko zerwania API,
-większy payload na łączu mobilnym i konieczność aktualizacji zabezpieczeń.
+Gra działa na telefonie, w przeglądarce, z GitHub Pages, bez konta i bez
+instalacji — vanilla HTML+JS bez zależności (brief z 2026-09-05; ten paradygmat
+sprawdził się w AME). Framework/bundler/biblioteka mapowa to: krok budowania,
+`node_modules`, lockfile, ryzyko zerwania API, większy payload i łatanie
+zabezpieczeń.
 
 ## Decyzja
 

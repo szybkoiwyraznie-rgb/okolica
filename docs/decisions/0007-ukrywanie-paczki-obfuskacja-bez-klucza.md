@@ -7,18 +7,12 @@
 
 ## Kontekst
 
-Brief właściciela: odpowiedzi modelu mają być ukryte, „żeby nie można było
-podejrzeć pytań i odpowiedzi" przed dojściem do stacji. Pierwsza wersja tego
-ADR proponowała **szyfrowanie** AES-GCM-256 z kluczem wyprowadzonym z `kod gry`
-(PBKDF2-SHA256, 150 000 iteracji, sól i IV na paczkę).
-
-Właściciel rozstrzygnął inaczej: *„proste kodowanie bez klucza — to ma być
-nieczytelne na pierwszy rzut oka przy kopiowaniu, a nie zabezpieczone przed
-odszyfrowaniem"*. To zmienia cel: nie budujemy bariery kryptograficznej, tylko
-barierę **przypadkowego wglądu**. Realny przeciwnik to gracz zerkający na ekran
-organizatora, przewijający wklejony tekst albo znajdujący paczkę w schowku,
-w wiadomości albo w pliku — nie przeciwnik z devtools i nie przeciwnik
-motywowany, który i tak zobaczy pytania w pamięci działającej aplikacji.
+Brief właściciela: odpowiedzi ukryte „żeby nie można było podejrzeć pytań
+i odpowiedzi" przed dojściem do stacji. Pierwsza wersja ADR proponowała
+szyfrowanie (AES-GCM, klucz z `kod gry` przez PBKDF2); właściciel rozstrzygnął:
+*„proste kodowanie bez klucza — nieczytelne na pierwszy rzut oka, nie
+zabezpieczone przed odszyfrowaniem"*. Cel to bariera **przypadkowego wglądu**
+(zerknięcie na ekran, schowek, plik) — nie bariera kryptograficzna.
 
 ## Decyzja
 

@@ -9,8 +9,8 @@
  * Moduł czysty: bez DOM, bez sieci, bez `Math.random()` (losowość z ziarna).
  */
 
-import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js';
-import { rngZZiarna } from './konfig.js';
+import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js?v=m12-5';
+import { rngZZiarna } from './konfig.js?v=m12-5';
 
 /** Źródło układu stacji — pokazywane w UI i zapisywane w paczce rozgrywki. */
 export const ZRODLA_STACJI = {
@@ -59,26 +59,6 @@ export function uzupelnijOdleglosci(stacje, srodek) {
   }));
 }
 
-/**
- * Miara sprawiedliwości układu (ADR 0005 pkt 5): średnia i odchylenie
- * standardowe odległości stacji od środka — domyślnie w linii prostej, dla
- * stacji z sieci z `pole: 'dystansSieciowyM'` (bo sprawiedliwość liczy się
- * na dystansie sieciowym). `udzialOdchylenia` ≤ 0.15 to kryterium jakości
- * z ROADMAP M4.
- */
-export function miaraSprawiedliwosci(stacje, { pole = 'odlegloscM' } = {}) {
-  const d = stacje.map((s) => s[pole]).filter((v) => Number.isFinite(v));
-  if (d.length === 0) return { sredniaM: 0, odchylenieM: 0, udzialOdchylenia: 0 };
-  const sredniaM = d.reduce((a, b) => a + b, 0) / d.length;
-  const wariancja = d.reduce((a, b) => a + (b - sredniaM) ** 2, 0) / d.length;
-  const odchylenieM = Math.sqrt(wariancja);
-  return {
-    sredniaM: Math.round(sredniaM),
-    odchylenieM: Math.round(odchylenieM),
-    udzialOdchylenia: sredniaM ? odchylenieM / sredniaM : 0,
-  };
-}
-
 /** Minimalna odległość między dwiema stacjami (metry) — do passu wyrównującego. */
 export function najmniejszyOdstepM(stacje) {
   let min = Infinity;
@@ -93,7 +73,7 @@ export function najmniejszyOdstepM(stacje) {
 
 /* =========================== M4: stacje z sieci drogowej (ADR 0005 pkt 5) */
 
-import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js';
+import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js?v=m12-5';
 
 /** Stałe pierścienia i separacji z ADR 0005 pkt 5 — wszystkie konfigurowalne. */
 export const PIERSCIEN_WYBORU = {
@@ -154,6 +134,21 @@ function kosztUkladu(dystanse, macierz, karaParaM) {
  * `S12` — decyzję (ostrzeżenie, pierścień awaryjny) podejmuje UI. Start zbyt
  * daleko od sieci to `S13` (rzucane — bez startu nie ma gry).
  */
+/**
+ * Dystanse odcinków gry z wyniku wyboru sieciowego (ADR 0014 pkt 1: od M4
+ * dystans odcinka to dystans sieciowy, nie prosta kreska): odcinek 0 to
+ * droga start→stacja1, odcinek i>0 to macierz[i-1][i] (stacja→stacja).
+ * Zwraca tablicę długości N z liczbami albo nullami (null = para
+ * nieosiągalna albo brak wyniku — rozgrywka liczy wtedy linię prostą).
+ */
+export function dystanseOdcinkowM(wynik) {
+  const stacje = wynik?.stacje;
+  const macierz = wynik?.macierz;
+  if (!Array.isArray(stacje) || stacje.length === 0 || !Array.isArray(macierz)) return null;
+  const liczba = (v) => (Number.isFinite(v) && v >= 0 ? Math.round(v) : null);
+  return stacje.map((s, i) => (i === 0 ? liczba(s?.dystansSieciowyM) : liczba(macierz[i - 1]?.[i])));
+}
+
 export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, stale = PIERSCIEN_WYBORU }) {
   if (!graf?.wezly?.length) throw usterka('S09', 'graf pusty');
   if (!Array.isArray(kandydaci) || kandydaci.length === 0) throw usterka('S12', 'brak kandydatów');
@@ -274,7 +269,6 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
   return {
     stacje: zOdleglosciami,
     macierz,
-    sprawiedliwosc: miaraSprawiedliwosci(zOdleglosciami, { pole: 'dystansSieciowyM' }),
     pierscien: { r: Math.round(r), pasmo: [Math.round(pasmo[0]), Math.round(pasmo[1])], start },
     liczniki: { kandydatow: kandydaci.length, ocenionych: ocenieni.length, dijkstr: pamiecDijkstra.size },
     usterki,

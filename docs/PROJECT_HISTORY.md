@@ -638,3 +638,181 @@ jawny; wystarczą `REVIEW_SECRET`, kod gry, `organizatorId`, bramka tur);
 właściciela i podanie adresu `/exec` w czacie → wpis do `DOMYSLNY_URL_MOSTU`
 jednym commitem; (2) scalenie PR #2 do `main` (Pages serwuje `main`) — dopiero
 wtedy testy terenowe na telefonach; (3) test dwóch telefonów (WORKFLOW §4.4).
+
+## 2026-09-07 — sesja S1–S7 (kontynuacja), gałąź `arena/01a07b16-okolica`, PR #3
+
+**Zlecenie:** brak zlecenia właściciela; po audycie PR #2 tryb najwyższy
+nieukończony kamień → B14 (budżet lektury) + zaległości dokumentacyjne.
+Plan: `docs/plans/2026-09-07-kontynuacja-audyt-i-budzet-lektury.md`.
+
+**Audyt PR #2 (S2):** M0–M12 scalone w `d04a18a`; usterki po-audytowe naprawione
+w S2/S3: gołe `fetch(` → `fetchPrzegladarki()` (L18, 13 miejsc), strażnik
+nasłuchów setupu (L14), `dystanseOdcinkowM` (ADR 0014/1), `kluczCacheSieci`
+z trybem, dystans sieciowy vs prosta w UI, komunikat K18 (ADR 0007/4),
+`tUrzadzenia` w PROTOKOL §9.2. Brama 511/511.
+
+**S4/S5 (B14 ✅):** `tools/budzet-lektury.mjs` + test + `npm run budzet`;
+kondensacja lektury **49946 → 39667 tok** (limit 40k): ROADMAP do tabel,
+LESSONS do trójczłonu bez dat, AGENTS/ENVIRONMENT/redakcja, konteksty ADR-ów
+do esencji (decyzje nietknięte), rejestr ADR → odsyłacz do AGENTS §5.
+PROTOKOL i treść decyzji: nietknięte (kontrakt).
+
+**S6 (porządki):** D19 kontrakt zakazu gołego `fetch(` (54/54); D12 E16
+dokumentuje wiek/tematy/jezyk; D18 koniec fałszywych `AME-main.zip` (README,
+ENVIRONMENT §3, AGENTS §0/§4, ADR 0002). D8 z planu bez definicji w repo —
+nieodtworzone, do wykreślenia albo doprecyzowania. BACKLOG B18: strukturalny
+problem wzrostu lektury (rezerwa ~330 tok ≈ 1–2 sesje).
+
+**Stan na koniec sesji:** brama **511/511**, kontrakt 54/54, budżet 39667/40000.
+Czekamy na: (1) adres `/exec` mostu w czacie → `DOMYSLNY_URL_MOSTU` + cache-bust;
+(2) scalenie PR #2 i #3 do `main`; (3) testy terenowe (WORKFLOW §4.4).
+
+## 2026-09-07 — Partia 1 (Ekran 1) + most `/exec`, gałąź `arena/01a07b16-okolica`
+
+Most Drive wdrożony (`DOMYSLNY_URL_MOSTU`, `?v=m12-2`, ROADMAP M9/M11/M12).
+Setup: tagline „gra terenowa gdzie tylko chcesz", 1 gracz domyślnie, kanon
+1-członowy `wlasny` (11 kluczy + 7 aliasów), kara poza setupem (stałe 60 s,
+aneks 0004), dopiski `(ADR…)` tylko w Trybie Testowym. Szablon promptu
+**PYT/1.0.1**: zasada 4 = drabina lokalności (stacja → ulica → dzielnica →
+miejscowość → powiat → województwo → kraj → kontynent → świat; świat tylko
+z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
+`profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
+Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).
+
+## 2026-09-07 — Overpass fail-fast + Ekran 5: gra od razu (?v=m12-5), gałąź `arena/01a07b16-okolica`
+
+1. **~100 s Overpass = martwe instancje + pauzy 30 s.** Łańcuch czekał pełny
+   odstęp także po timeoutcie/braku odpowiedzi, a pauza 30 s należy się
+   tylko limitom (tego wymaga polityka FOSSGIS przy 429/406). Od teraz:
+   timeout/błąd sieci = przełączenie OD RAZU, bez pauzy; adres instancji,
+   która dowiozła, ląduje w `okolica:overpass-sprawny` i następna gra
+   próbuje ją pierwszą. Cache Drive dla sieci ODRZUCONY: localStorage
+   kryje powtórki na tym telefonie, a po fail-faście pierwsze pobranie
+   to sekundy; most Drive to osobny deployment (`.gs`), więc zysk nie
+   wart ceny. Nazwa miejsca już dziś leci gratis w tym samym zapytaniu
+   (ASSETS §2 pkt 5) — osobne źródło niepotrzebne.
+2. **Ekran 5: poprawna paczka od razu zaczyna grę** (decyzja właściciela).
+   Z ekranu i kodu zniknęły: podgląd organizatora + edycja (`kartaPytania`,
+   `zapiszPoprawke`), „Ukryj paczkę", oba eksporty, ręczny „Zacznij grę"
+   i checkbox zgody Drive — wysyłka jest domyślna i cicha (prywatna
+   aplikacja). Ścieżka usterek bez zmian: lista kodów + poprawka do
+   modelu. Import „⬆ Z pliku" działa jak dawniej.
+
+Brama: 520/520, sync szablonu OK, kontrast AA OK, budżet 39964/40000.
+
+## 2026-09-07 — Kod +17, ponowienie przy cache, ?v=m12-4, gałąź `arena/01a07b16-okolica`
+
+1. **Przesunięcie kodu 10 → 17** (decyzja właściciela): przykład w szablonie
+   to 2 + 2 + 1 + 17 = 22. Własność zachowana: goły indeks 0–3 nigdy nie
+   przejdzie za kod.
+2. **„Pobierz sieć ponownie" widoczne przy danych z cache.** Przycisk istniał,
+   ale `renderujStacje` chował go zawsze, gdy sieć była gotowa — więc przy
+   danych z pamięci telefonu nie dało się wymusić świeżego pobrania. Teraz:
+   cache → przycisk widoczny (klik omija cache i woła Overpass), świeże dane
+   → przycisk znika jak dawniej.
+
+Brama: 523/523, sync szablonu OK, kontrast AA OK, budżet 39964/40000.
+
+## 2026-09-07 — rev2: kod pozycyjny poprawnej + bump ?v= (koniec cienia SW), gałąź `arena/01a07b16-okolica`
+
+1. **Niewidoczne zmiany — winny Service Worker.** `sw.js` (w katalogu głównym,
+   nie w `app/`) serwuje skorupę cache-first, a `?v=`/WERSJA_SW stały na
+   `m12-2` od kilku paczek — przeglądarka nie miała po co pytać serwera.
+   (Wcześniejsza diagnoza „sw.js nie istnieje" była błędna — sprawdzono tylko
+   `app/`.) Bump `m12-2 → m12-3` w `index.html`, `app/*.js` i `WERSJA_SW`:
+   nowy SW instaluje się przy odświeżeniu, stare cache'e kasuje `activate`.
+   Nauka na przyszłość: KAŻDA paczka ruszająca kod kończy się bumpem `?v=`
+   (LESSONS L29) — inaczej podgląd kłamie.
+2. **`poprawna` kodem pozycyjnym zamiast słowem.** Słowa dało się czytać wspak,
+   więc rev2 to rachunek: indeks + stacja + numer pytania + 10 (np. s2p1
+   z poprawną trzecią: 2 + 2 + 1 + 10 = 15). Inny dla każdego pytania,
+   nieczytelny na pierwszy rzut oka, model dodaje cztery małe liczby.
+   +10 rozłącza zakresy: goły indeks 0–3 nigdy nie przejdzie za kod (E06
+   zamiast cichego złego klucza). Klucz ze środka gry odrzucony: dryf
+   współrzędnych (E16 dopuszcza 500 m) mógłby uniemożliwić dekodowanie.
+   Słowa rev2 nie zdążyły wyjść do użytkownika (cień SW) — nie ma czego migrować.
+
+Brama: 522/522, sync szablonu OK, kontrast AA OK, budżet 39964/40000.
+
+## 2026-09-07 — Protokół rev2 (1 pkt, poprawna słownie) + miasto w opisach, gałąź `arena/01a07b16-okolica`
+
+1. **Koniec trudności i E18.** Każde pytanie daje 1 pkt; pole `punkty` zniknęło
+   ze schematu, walidator je ignoruje (E18 wycofany), punktacja w rozgrywce to
+   `poprawna ? 1 : 0`. Wiek dalej steruje tylko językiem pytań
+   (`opisTrudnosci` bez zmian). Zdarzenia multi niosą punkty liczone po stronie
+   klienta, więc most (Apps Script) nie wymaga zmian — sumuje to, co dostaje.
+2. **`poprawna` zakodowana.** W rev2 model podaje numer odpowiedzi słownie
+   i od końca (`1→nedej, 2→awd, 3→yzrt, 4→yretzc`) — nie da się ściągnąć
+   zerknięciem na wklejony JSON. W aplikacji paczka robocza ma indeks 0–3 jak
+   dawniej; walidator toleruje liczbę w rev2 (bez odrzucania), obce słowo to
+   E06 z podpowiedzią. Szablon generuje rev2, jawna/rev1/rev2 przyjmowane —
+   dawne paczki działają bez migratora (M8 nieopublikowany).
+3. **Miasto w miejscu i stacjach.** `{MIEJSCE}` to „dzielnica, miasto"
+   (np. „Śródmieście, Warszawa" — format jak warstwa Nominatim), stacje niosą
+   „ulica, miasto" i „skrzyżowanie: A / B, miasto". Miasto = najdrobniejszy
+   obszar z poziomem 7–8, inaczej 6 (miasto na prawach powiatu).
+
+Brama: 522/522, sync szablonu OK, kontrast AA OK, budżet 39981/40000.
+
+## 2026-09-07 — Kopiuj prompt: jeden klik kopiuje (execCommand), gałąź `arena/01a07b16-okolica`
+
+Przyczyna: `navigator.clipboard.writeText` rzuca w iframe podglądu (uprawnienia),
+więc każdy klik lądował w awaryjnym zaznaczaniu — a przy zwiniętym `<details>`
+nawet ono szło w próżnię. `kopiujTekst` ma teraz trzy szczeble: schowek
+asynchroniczny → `execCommand('copy')` na tymczasowym polu (niezależny od
+`<details>`) → ostatnia deska: rozwiń `<details>` i zaznacz do ręcznego Ctrl+C.
+„✓ skopiowano" znaczy, że tekst TRAFIŁ do schowka. Regresja: test kliknięcia
+przy zablokowanym schowku w `test/aplikacja.test.js`.
+
+Brama: 518/518, sync szablonu OK, kontrast AA OK, budżet 39829/40000.
+
+## 2026-09-07 — Overpass: dieta odpowiedzi + nazwy ulic w stacjach, gałąź `arena/01a07b16-okolica`
+
+1. **3–5 minut czekania — przyczyna i dieta.** `out geom` drukował obszarom
+   pełną geometrię granic (m.in. całego kraju) — megabajty, których parser
+   i tak nie czyta (bierze tylko tagi). Obszary idą teraz osobnym zdaniem
+   z natychmiastowym `out tags`, reszta bez zmian w jednej unii `out geom`
+   (ciągle jedno zapytanie na grę). LESSONS L30 doprecyzowana (samodzielne
+   zdanie legalne tylko z natychmiastowym `out`), polityka instancji
+   i timeoutów bez zmian (przypięte testami do ASSETS §2).
+2. **Stacje z nazwami ulic.** Graf niesie przy węźle posortowane `ulice`
+   (nazwy way'ów ze schodzących się dróg), kandydaci sieciowi dostają nazwę
+   ulicy albo „skrzyżowanie: A / B" — opis płynie do listy na ekranie stacji
+   i do `{LISTA_STACJI}` w prompcie AI (a przy okazji do heurystyki E14).
+   Bezimienne drogi zostają przy uczciwym fallbacku.
+
+Brama: 517/517, sync szablonu OK, kontrast AA OK, budżet 39829/40000.
+
+## 2026-09-07 — Partia 3 (poprawki właściciela), gałąź `arena/01a07b16-okolica`
+
+1. **Ekran 1, dopiski deweloperskie tylko w teście.** `stanMostu()` dostał
+   opcję `{ testowy }`: poza testem pokazuje sam stan („Most Drive:
+   podłączony."), a pochodzenie adresu (ADR 0020) mówi tylko w `?tryb=test`.
+   Akapity o wpisanym adresie i web appie (karta multi + karta repozytorium)
+   dostały klasę `tylko-test`, gaszoną w CSS poza trybem testowym.
+2. **Ekran 3, S02 w mieście z drogami — naprawione.** Pierwotna przyczyna:
+   `area.obszary[...];` stało jako ODRĘBNE zdanie po unii i nadpisywało set
+   domyślny, więc `out geom` zwracało same obszary bez dróg. `is_in` idzie
+   teraz PRZED unią, a filtr obszarów jest jej CZŁONKIEM. Regresji pilnują
+   dwa asercje kształtu w `test/sieci.test.js` + LESSONS L30 (reguła + test).
+
+Brama: 515/515, sync szablonu OK, kontrast AA OK, budżet 39847/40000.
+
+## 2026-09-07 — Partia 2 (poprawki właściciela), gałąź `arena/01a07b16-okolica`
+
+**T3** (Overpass 400): `area(.obszary)` → `area._` w `is_in` (składnia Overpass
+QL: input set kropką); test regresji na 400. **T2**: `{MIEJSCE}` uciekane do
+JSON w szablonie (cudzysłów w nazwie nie rwie promptu). **T1+T4**: nakładka
+ładowania sieci + jawny retry po 400 z kodem S03 (test 80/80). **Q1**: pole
+promptu w `<details>` (setup krótszy). **(7)**: kod gry autogenerowany
+(`imiona-miejsce-DDMM-HHMM`, max 40) — koniec pola w setupie; K18 tylko
+legacy. **S3**: koniec `wspolpraca` — odpowiada gracz z kolejki (ADR 0022,
+G07 „nie Twoja kolej"). **S2**: geokodacja zawsze (koniec `K20` i checkboxa;
+Nominatim-zapas za zgodą bez zmian). **S1**: zero presji czasowej (ADR 0023,
+ADR 0014 wycofana do nagrobka): koniec premii, kary, limitu, tempa, medalu
+i pól czasowych multi (§9.2); ranking sortem stabilnym. **Q2**: wariant
+odwrócony `PYT/1.0-rev1` — reguła 8 szablonu (odwracanie + samokontrola),
+dekoder w walidatorze, PROTOKOL §3.4/§7 (szablon **PYT/1.0.2**).
+Poprawki ADR: 0004 pkt 5 + aneks, 0009 pkt 2–5 + aneks, 0013 pkt 3,
+0015 pkt 2/4/6; rejestr + PROJECT_HISTORY. Budżet: nagrobek 0014 finansuje
+0022/0023.

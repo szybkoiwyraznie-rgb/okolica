@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js';
-import { TRYBY } from './konfig.js';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-5';
+import { TRYBY } from './konfig.js?v=m12-5';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -30,6 +30,18 @@ export const INSTANCJE_OVERPASS = [
   { nazwa: 'private.coffee', url: 'https://overpass.private.coffee/api/interpreter' },
   { nazwa: 'VK Maps', url: 'https://maps.mail.ru/osm/tools/overpass/api/interpreter' },
 ];
+
+/**
+ * Kolejność prób łańcucha: zapamiętana sprawna instancja pierwsza, reszta
+ * bez zmian (ASSETS §2). Nieznany/pusty adres = kolejność domyślna.
+ * Pamiętanie DOBREJ instancji to mniej doomed-zapytań, nie więcej ruchu.
+ */
+export function kolejnoscInstancji(zapamietanyUrl = null) {
+  if (typeof zapamietanyUrl !== 'string' || !zapamietanyUrl) return [...INSTANCJE_OVERPASS];
+  const znana = INSTANCJE_OVERPASS.find((i) => i.url === zapamietanyUrl);
+  if (!znana) return [...INSTANCJE_OVERPASS];
+  return [znana, ...INSTANCJE_OVERPASS.filter((i) => i.url !== zapamietanyUrl)];
+}
 
 export const POLITYKA = {
   /** Timeout `fetch` po naszej stronie (ADR 0005, konsekwencje). */
@@ -112,8 +124,16 @@ export function budujZapytanieOverpass({ srodek, promienM, tryb = 'piesza' }) {
   const klasy = `^(${trybKonfig.klasyDrog.join('|')})$`;
   const around = `around:${promien},${lat},${lon}`;
 
+  // Dwa wydruki, jedno zapytanie: obszary OSOBNO z `out tags` (czytamy
+  // tylko tagi — geometria granic, np. całego kraju, to megabajty i minuty),
+  // a cała reszta w JEDNEJ unii z `out geom`. Samodzielne zdanie jest
+  // legalne TYLKO z natychmiastowym `out`: bez niego nadpisałoby set
+  // domyślny `_` i zgubiło unię (LESSONS L30).
   return [
     `[out:json][timeout:${POLITYKA.timeoutZapytaniaS}];`,
+    `is_in(${lat},${lon})->.obszary;`,
+    'area.obszary["boundary"="administrative"];', // kropka, nie nawias (nawias = HTTP 400)
+    'out tags;',
     '(',
     `  way["highway"~"${klasy}"](${around});`,
     `  node["amenity"](${around});`,
@@ -131,8 +151,6 @@ export function budujZapytanieOverpass({ srodek, promienM, tryb = 'piesza' }) {
     `  way["landuse"="railway"](${around});`,
     `  node["barrier"](${around});`,
     ');',
-    `is_in(${lat},${lon})->.obszary;`,
-    'area(.obszary)["boundary"="administrative"];',
     'out geom;',
     '',
   ].join('\n');
@@ -267,11 +285,29 @@ export function parsujOdpowiedz(odpowiedz) {
 }
 
 /**
+ * Miasto z obszarów administracyjnych (do dopisków „ulica, miasto"):
+ * najdrobniejszy obszar z poziomem 7–8 (gmina/miasto), a gdy go nie ma —
+ * z poziomem 6 (miasto na prawach powiatu, jak Warszawa). Obszary idą od
+ * grubego do drobnego (parser je sortuje), więc szukamy od końca.
+ */
+export function miastoZObszarow(obszary) {
+  if (!Array.isArray(obszary)) return null;
+  const znajdz = (poziomy) => [...obszary].reverse().find((o) => poziomy.includes(o.adminLevel))?.name ?? null;
+  return znajdz([7, 8]) ?? znajdz([6]);
+}
+
+/**
  * Nazwa miejsca do promptu (`{MIEJSCE}`, ADR 0005 pkt 1): najdrobniejszy
- * obszar administracyjny z nazwą — zwykle dzielnica/gmina. Bez Nominatim.
+ * obszar z nazwą plus miasto („Śródmieście, Warszawa" — sama dzielnica
+ * powtarza się w stu miastach). Format jak w warstwie zapasowej Nominatim.
+ * Bez Nominatim.
  */
 export function nazwaMiejsca(sparsowane) {
-  return sparsowane?.obszary?.at(-1)?.name ?? null;
+  const obszary = sparsowane?.obszary;
+  const drobny = obszary?.at(-1)?.name ?? null;
+  if (!drobny) return null;
+  const miasto = miastoZObszarow(obszary);
+  return miasto && miasto !== drobny ? `${drobny}, ${miasto}` : drobny;
 }
 
 /* ------------------------------------------------- graf sieci i Dijkstra */
@@ -312,6 +348,8 @@ export function czyDrogaDostepna(droga, tryb) {
  * ≤ `krokM` wzdłuż DOSTĘPNYCH dróg; krawędzie dwukierunkowe z wagą w metrach.
  * Wierzchołki współdzielone przez way'e poznajemy po współrzędnych
  * (zaokrąglenie do 6 miejsc — `out geom` powtarza te same liczby).
+ * Każdy węzeł niesie posortowane `ulice` (nazwy way'ów, które się w nim
+ * spotykają — do opisów stacji w UI i w prompcie AI).
  * Deterministyczny: kolejność wejścia → kolejność węzłów i krawędzi.
  */
 export function budujGraf(sparsowane, { tryb = 'piesza' } = {}) {
@@ -344,7 +382,8 @@ export function budujGraf(sparsowane, { tryb = 'piesza' } = {}) {
   const wezly = [];
   const sasiedztwo = [];
   const indeksKlucza = new Map();
-  function wezel(p) {
+  const nazwyWezlow = []; // równolegle do `wezly`: zbiór nazw ulic (skrzyżowania zbierają)
+  function wezel(p, nazwaUlicy = null) {
     const klucz = `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
     let i = indeksKlucza.get(klucz);
     if (i === undefined) {
@@ -352,7 +391,9 @@ export function budujGraf(sparsowane, { tryb = 'piesza' } = {}) {
       indeksKlucza.set(klucz, i);
       wezly.push({ id: i, lat: p.lat, lon: p.lon, klucz });
       sasiedztwo.push([]);
+      nazwyWezlow.push(new Set());
     }
+    if (nazwaUlicy) nazwyWezlow[i].add(nazwaUlicy);
     return i;
   }
   function krawedz(a, b, metry) {
@@ -361,22 +402,27 @@ export function budujGraf(sparsowane, { tryb = 'piesza' } = {}) {
   }
 
   for (const d of dostepne) {
+    const nazwaUlicy = typeof d.tags?.name === 'string' ? d.tags.name.trim() || null : null;
     for (let s = 1; s < d.punkty.length; s++) {
       const a = d.punkty[s - 1];
       const b = d.punkty[s];
       const dlugosc = odlegloscM(a, b);
       if (!(dlugosc > 0)) continue; // zdegenerowany segment — nic nie wnosi
       const czesci = Math.max(1, Math.ceil(dlugosc / krok));
-      let poprz = wezel(a);
+      let poprz = wezel(a, nazwaUlicy);
       for (let c = 1; c < czesci; c++) {
         const t = c / czesci;
-        const idx = wezel({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t });
+        const idx = wezel({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t }, nazwaUlicy);
         krawedz(poprz, idx, dlugosc / czesci);
         poprz = idx;
       }
-      const ostatni = wezel(b);
+      const ostatni = wezel(b, nazwaUlicy);
       krawedz(poprz, ostatni, dlugosc / czesci);
     }
+  }
+  for (let i = 0; i < wezly.length; i++) {
+    // zwykły sort (nie localeCompare — ten zależy od ICU telefonu)
+    wezly[i].ulice = [...nazwyWezlow[i]].sort();
   }
 
   return {
@@ -535,6 +581,24 @@ function wStrefieWykluczen(punkt, wykluczenia) {
 }
 
 /**
+ * Nazwa kandydata sieciowego do opisów (UI + prompt AI): ulica, na której
+ * stoi węzeł, albo „skrzyżowanie: A / B", gdy spotyka się ich kilka.
+ * Węzeł przy bezimiennej drodze daje null — opis zastępuje fallback.
+ */
+function nazwaUlicyWezla(wezel) {
+  const ulice = wezel?.ulice ?? [];
+  if (ulice.length === 0) return null;
+  if (ulice.length === 1) return ulice[0];
+  return `skrzyżowanie: ${ulice.join(' / ')}`;
+}
+
+/** Dopisek miasta do nazwy stacji („Krucza, Warszawa") — null i duplikat bez zmian. */
+function dopiszMiasto(nazwa, miasto) {
+  if (!nazwa || !miasto || nazwa === miasto || nazwa.endsWith(`, ${miasto}`)) return nazwa;
+  return `${nazwa}, ${miasto}`;
+}
+
+/**
  * Kandydaci na stacje (ADR 0005 pkt 3):
  * - **węzły dostępnej sieci** (po interpolacji co ≤ 50 m — „punkty wzdłuż
  *   dróg") dla pieszego i roweru;
@@ -566,6 +630,7 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
   const kandydaci = [];
   const zajete = new Map(); // indeks węzła → pozycja na liście kandydatów
   const liczniki = { wykluczonychBryla: 0, wykluczonychBariera: 0, poiBezSieci: 0, zdublowanych: 0 };
+  const miasto = miastoZObszarow(sparsowane?.obszary);
 
   function sprobuj(indeksWezla, typ, zrodlo = null) {
     const wezel = graf.wezly[indeksWezla];
@@ -587,7 +652,7 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
           ...stary,
           typ: 'poi',
           poi: zrodlo,
-          nazwa: zrodlo?.tags?.name ?? null,
+          nazwa: dopiszMiasto(zrodlo?.tags?.name ?? null, miasto),
         };
       } else {
         liczniki.zdublowanych++;
@@ -601,7 +666,9 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
       lon: wezel.lon,
       typ,
       poi: zrodlo,
-      nazwa: zrodlo?.tags?.name ?? null,
+      nazwa: typ === 'poi'
+        ? dopiszMiasto(zrodlo?.tags?.name ?? null, miasto)
+        : dopiszMiasto(nazwaUlicyWezla(wezel), miasto),
     });
     return true;
   }
@@ -625,11 +692,17 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
 
 export const SCHEMAT_SIECI = 'sieci/1';
 
-/** Klucz cache: geohash-6 + promień gry — ta sama okolica i R = ten sam wpis. */
-export function kluczCacheSieci({ lat, lon, promienM }) {
+/**
+ * Klucz cache: geohash-6 + promień gry + TRYB — graf zależy od trybu
+ * (klasy dróg piesza/rower/samochód), więc wpis pieszy nie może obsłużyć
+ * gry samochodowej (osobny wpis na tryb; stare klucze bez trybu wygasają
+ * naturalnie przez TTL — nikt ich już nie odczytuje).
+ */
+export function kluczCacheSieci({ lat, lon, promienM, tryb }) {
   if (!czyWspolrzedneOk(lat, lon)) throw usterka('S05');
   if (!Number.isFinite(promienM) || promienM <= 0) throw usterka('S06');
-  return `okolica:sieci:${geohash(lat, lon, 6)}-${Math.round(promienM)}`;
+  if (!TRYBY[tryb]) throw usterka('S07', String(tryb));
+  return `okolica:sieci:${geohash(lat, lon, 6)}-${Math.round(promienM)}-${tryb}`;
 }
 
 function okraglijPunkty(punkty) {

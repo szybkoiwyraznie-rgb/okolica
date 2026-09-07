@@ -78,8 +78,12 @@ Zasady użycia w kodzie:
    mapy". Promień `R × 1.15`, pozycja zaokrąglona do ~5 m (ADR 0013 pkt 3).
 2. **Cache `okolica:sieci:<geohash6>-<R>`** z TTL 30 dni (ADR 0010) — druga
    gra w tej samej okolicy nie woła sieci wcale.
-3. **Sekwencyjnie, nigdy równolegle**; przy `429`/`504` — odstęp 30 s i
-   przełączenie na instancję zapasową, z komunikatem dla użytkownika.
+3. **Sekwencyjnie, nigdy równolegle**; przy `429`/`406`/`5xx` — odstęp
+   30 s i przełączenie na instancję zapasową, z komunikatem dla
+   użytkownika. Timeout/brak odpowiedzi to MARTWA instancja: przełączenie
+   jest OD RAZU, bez pauzy — nie ma kogo szanować pauzą (2026-09-07).
+   Adres instancji, która dowiozła, ląduje w `okolica:overpass-sprawny`
+   i następna gra próbuje ją pierwszą (mniej doomed-zapytań).
 4. Budżet rozmiaru odpowiedzi: dla `R = 10 km` (tryb samochodowy) dzielimy
    bbox na ćwiartki i pobieramy sekwencyjnie (ADR 0005, konsekwencje).
 5. Nazwa miejsca do promptu (`{MIEJSCE}`) pochodzi z **tego samego zapytania**
@@ -91,7 +95,8 @@ Zasady użycia w kodzie:
 - **Rozwiązanie przyjęte**: nazwę miejsca (dzielnica, miasto, region, państwo)
   wyciągamy z obszarów administracyjnych zwróconych przez Overpass
   (`is_in(lat,lon)` + `area["boundary"="administrative"]`). Jeden dostawca,
-  jedno zapytanie, zero dodatkowej polityki.
+  jedno zapytanie, zero dodatkowej polityki. Stacje dopisują miasto do nazwy
+  („ulica, miasto") — ulice o tej samej nazwie powtarzają się między miastami.
 - **Nominatim publiczny** (`https://nominatim.openstreetmap.org/reverse`) jest
   dopuszczony **wyłącznie jako opcjonalna warstwa zapasowa**, po spełnieniu
   [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/):

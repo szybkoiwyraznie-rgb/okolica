@@ -224,6 +224,15 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .karta .duzy { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
 .kod { margin: 6px 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; color: var(--tekst-slaby); word-break: break-all; }
 .badge { display: inline-block; margin: 6px 0; padding: 5px 10px; border-radius: 999px; background: var(--akcent-slaby); font-size: 13px; }
+/* Dopiski robocze (odniesienia do ADR): widoczne tylko w trybie testowym. */
+body:not(.tryb-testowy) .dopisek-roboczy {
+  display: none;
+}
+/* Całe akapity deweloperskie (adres mostu, web app): tylko w trybie testowym. */
+body:not(.tryb-testowy) .tylko-test {
+  display: none;
+}
+
 .podpowiedz { margin: 6px 0; color: var(--tekst-slaby); font-size: 14px; }
 .instrukcja { padding-left: 20px; margin: 8px 0 12px; }
 .instrukcja li { margin: 4px 0; font-size: 16px; }
@@ -282,6 +291,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .lista-stacji .dystans { margin-left: auto; font-size: 14px; color: var(--tekst-slaby); white-space: nowrap; }
 
 .bledy { margin: 10px 0; padding: 12px; border-radius: 10px; background: var(--blad-tlo); color: var(--blad); font-size: 15px; }
+.nakladka-ladowanie { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 16px; font-weight: 700; background: color-mix(in srgb, var(--tlo-karta) 80%, transparent); }
+.nakladka-ladowanie[hidden] { display: none; }
 .usterki { margin: 8px 0; padding-left: 20px; }
 .usterki li { margin: 6px 0; font-size: 15px; }
 .usterki li code { background: var(--blad-tlo); color: var(--blad); padding: 1px 5px; border-radius: 5px; }
@@ -552,7 +563,6 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   font-variant-numeric: tabular-nums;
 }
 .karta-zwyciezcy .zwyciezca-detale { margin: 0; font-size: 14px; color: var(--tekst-slaby); }
-.medal-trasy { font-size: 15px; color: var(--tekst-slaby); margin: 8px 0; }
 .statystyki-gry {
   display: grid;
   grid-template-columns: max-content 1fr;

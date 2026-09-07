@@ -11,25 +11,31 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, liczbaPytan } from './konfig.js';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-5';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-5';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.0';
 
-/** Wersja łatki szablonu promptu (kosmetyka szablonu bez zmiany schematu). */
-export const SZABLON_WERSJA = 'PYT/1.0.0';
+/** Wariant odwrócony: pola tekstowe od końca, marker `-rev1` (PROTOKOL §3.4). */
+export const WERSJA_PROTOKOLU_REV1 = 'PYT/1.0-rev1';
 
-/** Schemat kontenera zaszyfrowanego (ADR 0007 pkt 3). */
+/** Wariant rev2: jak rev1, a `poprawna` to odwrócone słowo i brak `punkty` (§3.4). */
+export const WERSJA_PROTOKOLU_REV2 = 'PYT/1.0-rev2';
+
+/** Wersja łatki szablonu promptu (kosmetyka szablonu bez zmiany schematu). */
+export const SZABLON_WERSJA = 'PYT/1.0.5'; // rev2: kod pozycyjny z +17, koniec pola punkty
+
+/** Schemat kontenera z obfuskowanymi pytaniami (ADR 0007 pkt 3 i 5: maskowanie, nie szyfrowanie). */
 // Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
 // protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
-export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js';
+export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-5';
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.
  * NIE EDYTUJ RĘCZNIE — zmień dokument i uruchom `npm run build`.
  */
-export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania o tę okolicę.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Wszystkie pytania dotyczą OKOLICY podanej niżej (miejsca, dzielnicy, miasta, regionu, państwa) albo konkretnych stacji z listy. Zakazane są pytania z wiedzy ogólnej o świecie, niezwiązane z tą okolicą.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 0,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }],\n      \"punkty\": 10\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": indeks poprawnej odpowiedzi, liczba całkowita od 0 do 3.\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"punkty\": 10 za pytanie łatwe, 15 za średnie, 20 za trudne — zgodnie z kategorią wiekową.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
+export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania o tę okolicę.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego potwierdzonego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. Pola \"tresc\", \"odpowiedzi\", \"wyjasnienie\", \"uwagi\" oraz \"tytul\" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład \"Kot\" jako \"toK\"), a w polu \"protokol\" wpisz \"PYT/1.0-rev2\". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev2\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 20,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola \"id\" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
 /* SZABLON-KONIEC */
 
 /**
@@ -160,24 +166,25 @@ export function opisListyStacji(stacje, srodek) {
 
 /**
  * Buduje prompt z szablonu §2 protokołu. Zwraca `{ prompt, usterki }` —
- * usterki (K** setupu) pojawiają się, gdy brakuje danych wejściowych; prompt
- * jest wtedy `null`, żeby nie wysłać modelowi dziurawego zadania.
+ * usterki (kody WE**, prefiks własny domeny wejścia promptu — ADR 0015 pkt 6)
+ * pojawiają się, gdy brakuje danych wejściowych; prompt jest wtedy `null`,
+ * żeby nie wysłać modelowi dziurawego zadania.
  */
 export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
   const usterki = [];
   const dodaj = (kod, pole, komunikat) => usterki.push({ kod, pole, komunikat });
 
-  if (!konfig) dodaj('P01', 'konfig', 'Brak konfiguracji — najpierw ekran ustawień.');
+  if (!konfig) dodaj('WE01', 'konfig', 'Brak konfiguracji — najpierw ekran ustawień.');
   if (!okolica || !czyWspolrzedneOk(okolica?.lat, okolica?.lon)) {
-    dodaj('P02', 'okolica', 'Brak poprawnej pozycji (współrzędnych) — bez niej prompt nie ma okolicy.');
+    dodaj('WE02', 'okolica', 'Brak poprawnej pozycji (współrzędnych) — bez niej prompt nie ma okolicy.');
   }
   if (!Array.isArray(stacje) || stacje.length === 0) {
-    dodaj('P03', 'stacje', 'Brak stacji — ustaw je (albo użyj trybu uproszczonego), zanim poprosisz model o pytania.');
+    dodaj('WE03', 'stacje', 'Brak stacji — ustaw je (albo użyj trybu uproszczonego), zanim poprosisz model o pytania.');
   }
-  if (konfig && !TRYBY[konfig.tryb]) dodaj('P04', 'tryb', `Nieznany tryb „${konfig.tryb}".`);
-  if (konfig && !WIEK[konfig.wiek]) dodaj('P05', 'wiek', `Nieznana kategoria wiekowa „${konfig.wiek}".`);
+  if (konfig && !TRYBY[konfig.tryb]) dodaj('WE04', 'tryb', `Nieznany tryb „${konfig.tryb}".`);
+  if (konfig && !WIEK[konfig.wiek]) dodaj('WE05', 'wiek', `Nieznana kategoria wiekowa „${konfig.wiek}".`);
   if (konfig && stacje && stacje.length !== konfig.liczbaStacji) {
-    dodaj('P06', 'liczbaStacji', `Liczba stacji (${stacje.length}) nie zgadza się z konfiguracją (${konfig.liczbaStacji}).`);
+    dodaj('WE06', 'liczbaStacji', `Liczba stacji (${stacje.length}) nie zgadza się z konfiguracją (${konfig.liczbaStacji}).`);
   }
   if (usterki.length) return { prompt: null, usterki };
 
@@ -193,7 +200,7 @@ export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
     LICZBA_STACJI: String(stacje.length),
     WIEK: konfig.wiek,
     OPIS_TRUDNOSCI: WIEK[konfig.wiek].opisTrudnosci,
-    TEMATY: tematyLista.map((t) => `${t} (${TEMATY[t].opis})`).join(', '),
+    TEMATY: tematyLista.map((t) => (t === 'wlasny' && konfig.tematWlasny ? `wlasny (${konfig.tematWlasny.trim().slice(0, 40)})` : `${t} (${TEMATY[t].opis})`)).join(', '),
     TEMATY_JSON: tematyLista.map((t) => JSON.stringify(t)).join(', '),
     LICZBA_PYTAN: String(liczbaPytan(konfig)),
     JEZYK: konfig.jezyk,
@@ -207,7 +214,7 @@ export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
   }
   const resztki = [...prompt.matchAll(/\{[A-Z_]+\}/g)].map((m) => m[0]);
   if (resztki.length) {
-    dodaj('P07', 'szablon', `W szablonie zostały niepodstawione placeholdery: ${[...new Set(resztki)].join(', ')}. Uruchom \`npm run build\`.`);
+    dodaj('WE07', 'szablon', `W szablonie zostały niepodstawione placeholdery: ${[...new Set(resztki)].join(', ')}. Uruchom \`npm run build\`.`);
     return { prompt: null, usterki };
   }
   return { prompt, usterki };
@@ -313,10 +320,121 @@ function czyLiczbaCalkowita(v) {
 }
 
 /**
+ * Mapuje tematy paczki na klucze kanoniczne (aliasy historyczne → nowe klucze).
+ * Wołane raz, przy przyjęciu paczki — w dół (kontener, zestaw, dopasowanie)
+ * płynie już jeden słownik.
+ */
+export function normalizujTematyPaczki(paczka) {
+  if (Array.isArray(paczka.tematy)) paczka.tematy = [...new Set(paczka.tematy.map(kanonicznyTemat))];
+  if (Array.isArray(paczka.pytania)) {
+    for (const p of paczka.pytania) {
+      if (typeof p.temat === 'string') p.temat = kanonicznyTemat(p.temat);
+    }
+  }
+  return paczka;
+}
+
+/**
  * Walidacja paczki pytań wg protokołu §3 i §6. Zwraca listę usterek
  * `{ kod, pole, komunikat }`; pusta lista = paczka do przyjęcia.
  * `oczekiwane`: `{ liczbaStacji, liczbaPytan, wiek, tematy, promienM, lat, lon, jezyk, teraz, stacje }`.
  */
+/**
+ * Odwrócenie tekstu znakami (po punktach kodowych, nie po jednostkach UTF-16 —
+ * emoji i ogonki przeżywają). Symetryczne: dwukrotne odwrócenie wraca do
+ * oryginału. Służy wariantowi `PYT/1.0-rev1` (PROTOKOL §3.4).
+ */
+export function odwrocTekst(tekst) {
+  return [...String(tekst ?? '')].reverse().join('');
+}
+
+/** Czy paczka jest w wariancie odwróconym (marker `-rev1` albo `-rev2`). */
+export function czyPaczkaOdwrocona(paczka) {
+  return !!paczka && typeof paczka === 'object'
+    && (paczka.protokol === WERSJA_PROTOKOLU_REV1 || paczka.protokol === WERSJA_PROTOKOLU_REV2);
+}
+
+/**
+ * Kod pozycyjny rev2 (PROTOKOL §3.4): `poprawna` to NIE indeks, tylko
+ * indeks + stacja + numer pytania z `id` + 17 (s2p1 z poprawną trzecią:
+ * 2+2+1+17=22). Inny dla każdego pytania, nieczytelny na pierwszy rzut
+ * oka — a +17 rozłącza zakresy, więc goły indeks 0–3 NIGDY nie przejdzie
+ * za kod (E06 zamiast cichego złego klucza). Model dodaje cztery małe
+ * liczby, więc się nie myli. Bariera przypadkowego wglądu (ADR 0007).
+ */
+export const PRZESUNIECIE_KODU_REV2 = 17;
+
+/** Numer pytania z id (s2p1 → 1); null gdy id obce. */
+export function numerPytaniaZId(id) {
+  const m = /^s\d+p(\d+)$/.exec(typeof id === 'string' ? id.trim() : '');
+  return m ? Number(m[1]) : null;
+}
+
+/** Indeks 0–3 z kodu rev2; null gdy kod, id albo stacja obce. */
+export function odkodujPoprawnaRev2(kod, { id, stacja } = {}) {
+  const nr = numerPytaniaZId(id);
+  if (!czyLiczbaCalkowita(kod) || !czyLiczbaCalkowita(stacja) || nr === null) return null;
+  const indeks = kod - stacja - nr - PRZESUNIECIE_KODU_REV2;
+  return indeks >= 0 && indeks <= 3 ? indeks : null;
+}
+
+/** Indeks 0–3 → kod rev2 (testy, podpowiedzi); null gdy dane obce. */
+export function zakodujPoprawnaRev2(indeks, { id, stacja } = {}) {
+  const nr = numerPytaniaZId(id);
+  if (!czyLiczbaCalkowita(indeks) || indeks < 0 || indeks > 3 || !czyLiczbaCalkowita(stacja) || nr === null) return null;
+  return indeks + stacja + nr + PRZESUNIECIE_KODU_REV2;
+}
+
+/**
+ * Odwrócenie pól tekstowych paczki: `tresc`, `odpowiedzi[]`, `wyjasnienie`,
+ * `uwagi`, `zrodla[].tytul` (PROTOKOL §3.4). Zwraca NOWY obiekt; pola
+ * strukturalne (`id`, `stacja`, `poprawna`, `url`, `sprawdzono`,
+ * `protokol`…) nietknięte — w tym `poprawna` (kod z rev2 dekoduje osobny
+ * krok, nie odwrócenie). Symetryczna: `odwroc(odwroc(p))` = `p`.
+ */
+export function odwrocPolaPaczki(paczka) {
+  const kopia = structuredClone(paczka);
+  if (typeof kopia.uwagi === 'string') kopia.uwagi = odwrocTekst(kopia.uwagi);
+  for (const pyt of Array.isArray(kopia.pytania) ? kopia.pytania : []) {
+    if (!pyt || typeof pyt !== 'object') continue;
+    if (typeof pyt.tresc === 'string') pyt.tresc = odwrocTekst(pyt.tresc);
+    if (Array.isArray(pyt.odpowiedzi)) {
+      pyt.odpowiedzi = pyt.odpowiedzi.map((o) => (typeof o === 'string' ? odwrocTekst(o) : o));
+    }
+    if (typeof pyt.wyjasnienie === 'string') pyt.wyjasnienie = odwrocTekst(pyt.wyjasnienie);
+    for (const z of Array.isArray(pyt.zrodla) ? pyt.zrodla : []) {
+      if (z && typeof z === 'object' && typeof z.tytul === 'string') z.tytul = odwrocTekst(z.tytul);
+    }
+  }
+  return kopia;
+}
+
+/**
+ * Odkodowanie paczki odwróconej do postaci roboczej: pola z powrotem czytelne,
+ * marker znormalizowany do `PYT/1.0`. Nieodwrócona przechodzi bez zmian.
+ */
+export function odkodujPaczkeRev1(paczka) {
+  if (!paczka || typeof paczka !== 'object' || paczka.protokol !== WERSJA_PROTOKOLU_REV1) return paczka;
+  return { ...odwrocPolaPaczki(paczka), protokol: WERSJA_PROTOKOLU };
+}
+
+/**
+ * Odkodowanie paczki rev2 do postaci roboczej: pola z powrotem czytelne,
+ * kody `poprawna` → indeksy 0–3, marker znormalizowany do `PYT/1.0`.
+ * Nieodczytywalny kod staje się znacznikiem `~kod:…` — zgłasza go E06
+ * w walidacji (nie wyjątek), z oryginalną wartością w komunikacie.
+ */
+export function odkodujPaczkeRev2(paczka) {
+  if (!paczka || typeof paczka !== 'object' || paczka.protokol !== WERSJA_PROTOKOLU_REV2) return paczka;
+  const robocza = odwrocPolaPaczki(paczka);
+  for (const pyt of Array.isArray(robocza.pytania) ? robocza.pytania : []) {
+    if (!pyt || typeof pyt !== 'object') continue;
+    const indeks = odkodujPoprawnaRev2(pyt.poprawna, pyt);
+    pyt.poprawna = indeks === null ? `~kod:${String(pyt.poprawna)}` : indeks;
+  }
+  return { ...robocza, protokol: WERSJA_PROTOKOLU };
+}
+
 export function walidujPaczke(paczka, oczekiwane = {}) {
   const u = [];
   const dodaj = (kod, pole, komunikat) => u.push({ kod, pole, komunikat });
@@ -328,8 +446,14 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   }
 
   // --- nagłówek paczki ---
-  if (!('protokol' in paczka)) dodaj('E01', 'protokol', `Brak pola "protokol". Oczekiwano "${WERSJA_PROTOKOLU}".`);
-  else if (paczka.protokol !== WERSJA_PROTOKOLU) dodaj('E01', 'protokol', `Wersja "${paczka.protokol}" nie jest obsługiwana — oczekiwano "${WERSJA_PROTOKOLU}".`);
+  if (!('protokol' in paczka)) dodaj('E01', 'protokol', `Brak pola "protokol". Oczekiwano "${WERSJA_PROTOKOLU}", "${WERSJA_PROTOKOLU_REV1}" albo "${WERSJA_PROTOKOLU_REV2}".`);
+  else if (paczka.protokol !== WERSJA_PROTOKOLU && paczka.protokol !== WERSJA_PROTOKOLU_REV1 && paczka.protokol !== WERSJA_PROTOKOLU_REV2) {
+    dodaj('E01', 'protokol', `Wersja "${paczka.protokol}" nie jest obsługiwana — oczekiwano "${WERSJA_PROTOKOLU}", "${WERSJA_PROTOKOLU_REV1}" albo "${WERSJA_PROTOKOLU_REV2}".`);
+  }
+  // Wariant odwrócony walidujemy po odkodowaniu: reguły tekstowe (§3.2, §6)
+  // działają na odczytanej treści (PROTOKOL §3.4).
+  const wariant = paczka.protokol;
+  paczka = wariant === WERSJA_PROTOKOLU_REV2 ? odkodujPaczkeRev2(paczka) : odkodujPaczkeRev1(paczka);
 
   const okolica = paczka.okolica;
   if (!okolica || typeof okolica !== 'object') {
@@ -361,12 +485,14 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   if (!Array.isArray(paczka.tematy) || paczka.tematy.length === 0) dodaj('E15', 'tematy', 'Brak listy tematów albo lista jest pusta.');
   else {
     paczka.tematy.forEach((t, i) => {
-      if (!TEMATY[t]) dodaj('E12', `tematy[${i}]`, `Temat "${t}" nie należy do kanonu (PROTOKOL §5).`);
+      if (!TEMATY[kanonicznyTemat(t)]) dodaj('E12', `tematy[${i}]`, `Temat "${t}" nie należy do kanonu (PROTOKOL §5).`);
     });
     if (new Set(paczka.tematy).size !== paczka.tematy.length) dodaj('E15', 'tematy', 'Tematy powtarzają się na liście.');
     if (Array.isArray(oczekiwane.tematy) && oczekiwane.tematy.length) {
-      const brak = oczekiwane.tematy.filter((t) => !paczka.tematy.includes(t));
-      const nadmiar = paczka.tematy.filter((t) => !oczekiwane.tematy.includes(t));
+      const spodz = oczekiwane.tematy.map(kanonicznyTemat);
+      const sa = paczka.tematy.map(kanonicznyTemat);
+      const brak = oczekiwane.tematy.filter((t) => !sa.includes(kanonicznyTemat(t)));
+      const nadmiar = paczka.tematy.filter((t) => !spodz.includes(kanonicznyTemat(t)));
       if (brak.length || nadmiar.length) {
         dodaj('E16', 'tematy', `Tematy paczki nie pokrywają się z konfiguracją (brak: ${brak.join(', ') || '—'}; nadmiar: ${nadmiar.join(', ') || '—'}).`);
       }
@@ -398,7 +524,6 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   const widoczneTresci = new Map();
   const widoczneId = new Set();
   const pytaniaNaStacje = new Map();
-  const punktyDozwolone = new Set([10, 15, 20]);
 
   paczka.pytania.forEach((p, i) => {
     const pole = `pytania[${i}]`;
@@ -417,7 +542,7 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
       pytaniaNaStacje.set(p.stacja, (pytaniaNaStacje.get(p.stacja) ?? 0) + 1);
     }
 
-    if (!TEMATY[p.temat]) dodaj('E12', `${pole}.temat`, `Temat "${p.temat}" nie należy do kanonu (PROTOKOL §5).`);
+    if (!TEMATY[kanonicznyTemat(p.temat)]) dodaj('E12', `${pole}.temat`, `Temat "${p.temat}" nie należy do kanonu (PROTOKOL §5).`);
 
     if (typeof p.tresc !== 'string' || p.tresc.trim().length < 20 || p.tresc.trim().length > 400) {
       dodaj('E15', `${pole}.tresc`, 'Treść pytania musi mieć od 20 do 400 znaków.');
@@ -438,7 +563,9 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
       if (new Set(normalizowane.filter((n) => n)).size !== normalizowane.filter((n) => n).length) {
         dodaj('E08', `${pole}.odpowiedzi`, 'Odpowiedzi powtarzają się (po normalizacji wielkości liter i interpunkcji).');
       }
-      if (!czyLiczbaCalkowita(p.poprawna) || p.poprawna < 0 || p.poprawna > p.odpowiedzi.length - 1) {
+      if (typeof p.poprawna === 'string' && p.poprawna.startsWith('~kod:')) {
+        dodaj('E06', `${pole}.poprawna`, `Nieprawidłowy kod poprawnej (${p.poprawna.slice(5)}): ma być indeks + stacja + numer pytania + 17, np. s2p1 z poprawną trzecią to 2 + 2 + 1 + 17 = 22.`);
+      } else if (!czyLiczbaCalkowita(p.poprawna) || p.poprawna < 0 || p.poprawna > p.odpowiedzi.length - 1) {
         dodaj('E06', `${pole}.poprawna`, `Indeks poprawnej odpowiedzi (${p.poprawna}) jest poza zakresem 0..${p.odpowiedzi.length - 1}.`);
       }
     }
@@ -469,10 +596,6 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
       });
     }
 
-    if (!punktyDozwolone.has(p.punkty)) dodaj('E18', `${pole}.punkty`, `Punkty muszą wynosić 10, 15 albo 20 (jest ${p.punkty}).`);
-    else if (WIEK[paczka.wiek] && p.punkty !== WIEK[paczka.wiek].punkty) {
-      dodaj('E18', `${pole}.punkty`, `Dla kategorii wiekowej "${paczka.wiek}" protokół przewiduje ${WIEK[paczka.wiek].punkty} punktów, nie ${p.punkty}.`);
-    }
 
     if (typeof p.tresc === 'string') {
       const klucz = normalizujTekst(p.tresc);
@@ -643,7 +766,7 @@ export function podsumowaniePaczki(paczka) {
     stacje: [...new Set(pytania.map((p) => p.stacja))].sort((a, b) => a - b),
     tematy: [...tematy].sort(),
     liczbaZrodel: zrodla,
-    punktyRazem: pytania.reduce((n, p) => n + (Number.isFinite(p.punkty) ? p.punkty : 0), 0),
+    punktyRazem: pytania.length, // rev2: każde pytanie daje 1 pkt — „razem" to liczba pytań
     uwagi: typeof paczka?.uwagi === 'string' ? paczka.uwagi.trim() : '',
   };
 }

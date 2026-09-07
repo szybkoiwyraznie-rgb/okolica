@@ -14,8 +14,8 @@ domeny**, nie pod jej korzeniem. AME publikuje się z gałęzi `main` z katalogu
 głównego i to działa. Alternatywy: publikacja z `/docs` (Jekyll „docs folder"),
 osobna gałąź `gh-pages` z artefaktem, albo inny host (Netlify/Cloudflare Pages).
 
-W korzeniu repo leży `AME-main.zip` (~6,5 MB) — materiał referencyjny
-właściciela, który po publikacji Pages byłby publicznie pobieralny.
+Referencyjne archiwum AME właściciela (~6,5 MB) NIE leży w repo — usunięte
+decyzją z 2026-09-05 (status powyżej); nigdy nie trafiło na Pages.
 
 ## Decyzja
 
@@ -30,11 +30,8 @@ właściciela, który po publikacji Pages byłby publicznie pobieralny.
    (bez przetwarzania Jekyll i bez pomijania katalogów zaczynających się od `_`).
 5. Deep-linki stanów gry przez fragment i query (`#setup`, `#gra`,
    `?kod=…`) — bez routera, bez historii przeglądarki jako źródła prawdy.
-6. **Los `AME-main.zip`: do decyzji właściciela.** Propozycja sesji: przenieść
-   do `docs/archive/AME-wzorzec.zip` (wtedy jest częścią dokumentacji i da się
-   go pobrać z Pages) albo usunąć z repo po przeniesieniu wzorców do
-   `docs/LESSONS.md` i ADR-ów. Agent nie usuwa ani nie przenosi pliku
-   właściciela bez jego zgody.
+6. **Los archiwum AME: ROZSTRZYGNIĘTY** — usunięte z repo decyzją właściciela
+   2026-09-05 po przeniesieniu wzorców do LESSONS i ADR-ów (status powyżej).
 7. Przenośność: aplikacja nie wie, gdzie jest hostowana — jedyny ślad hosta to
    względne ścieżki, więc zmiana dostawcy (Netlify, własna domena) nie wymaga
    zmian w kodzie.
@@ -47,8 +44,7 @@ właściciela, który po publikacji Pages byłby publicznie pobieralny.
 - Cała dokumentacja projektu jest publiczna (jak w AME). Nic tajnego nie trafia
   do `docs/` — w szczególności **żadnych paczek pytań z rozgrywek ani
   współrzędnych graczy** (ADR 0013, `.gitignore`).
-- Plik binarny > 2 MB w korzeniu jest odstępstwem od reguły z `AGENTS.md` §4 —
-  rozstrzygnięcie w pkt 6.
+- (Odstępstwo binarne > 2 MB z pkt 6 wygasło razem z usunięciem archiwum.)
 - Brak nagłówków cache dla `index.html` na Pages → cache-busting `?v=` jest
   obowiązkowy (AGENTS §7).
 

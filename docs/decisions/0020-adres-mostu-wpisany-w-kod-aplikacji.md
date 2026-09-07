@@ -5,27 +5,15 @@
 
 ## Kontekst
 
-Po domknięciu M11/M12 (ADR 0019) właściciel dostał w czacie instrukcję
-wdrożenia mostu Drive (ADR 0018 pkt 3), w której ostatnim krokiem było
-wklejenie adresu web app **w aplikacji** — w dwóch miejscach: „Źródło
-repozytorium (zaawansowane)" na karcie paczek i „Adres mostu (Apps Script)"
-w karcie gry wieloosobowej. Właściciel zakwestionował ten krok:
-
-> „Przecież te zmiany muszą zostać naniesione w repozytorium, a nie na Pages?
-> Co z tego, że ja to wpiszę w aplikację skoro źródło w repozytorium nie będzie
-> tych danych? Każdy następny build nie będzie ich miał. Wydaje mi się, że te
-> dane muszą być wpisane w repozytorium, żeby były trwałe i dostępne za każdym
-> razem gdy utworzę nową wersję aplikacji webowej."
-
-Stan faktyczny (wyjaśniony właścicielowi): adres trzymany w `localStorage`
-jest przypięty do **adresu strony**, nie do wersji kodu — nowa wersja
-aplikacji go nie kasuje. Obawa „build to wykasuje" była więc nieuzasadniona.
-**Ale zastrzeżenie wskazało prawdziwy problem**: adres musiało znać KAŻDE
-urządzenie, a w grze wieloosobowej (ADR 0019) każdy telefon uczestnika sam
-synchronizuje się z mostem. Znajomy zaproszony do gry musiałby raz ręcznie
-wkleić adres, a po wyczyszczeniu danych przeglądarki — wkleić go ponownie.
-To bariera wejścia sprzeczna z celem „gra dla właściciela i kilku znajomych"
-(ADR 0019, BACKLOG B17).
+Po M11/M12 właściciel dostał instrukcję wdrożenia mostu (ADR 0018 pkt 3)
+z ostatnim krokiem: wklejenie adresu web app **w aplikacji** (dwa miejsca).
+Zakwestionował to: dane mają być w repozytorium — trwałe i dostępne w każdej
+wersji aplikacji. Obawa „build wykasuje localStorage" była nieuzasadniona
+(adres przypięty do origin, nie do wersji — LESSONS L28), **ale wskazała
+prawdziwy problem**: adres musiało znać KAŻDE urządzenie, a w grze
+wieloosobowej każdy telefon synchronizuje się sam — znajomy musiałby wklejać
+adres ręcznie (i ponownie po czyszczeniu danych). Bariera sprzeczna z celem
+„gra dla właściciela i kilku znajomych" (ADR 0019, BACKLOG B17).
 
 Siły:
 

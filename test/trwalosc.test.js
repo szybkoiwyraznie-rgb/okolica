@@ -111,6 +111,7 @@ test('trwałość: walidujStanSurowy — każdy rodzaj uszkodzenia ma własny ko
     ['zepsuty kontener', { ...baza, kontenerPaczki: { schemat: SCHEMAT_KONTENERA, dane: '' } }, ['T05']],
     ['zepsuta rozgrywka', { ...baza, rozgrywka: { ...baza.rozgrywka, faza: 'kosmos' } }, ['T04']],
     ['zepsuta pozycja', { ...baza, pozycja: { lat: 'tu', lon: 'tam' } }, ['T10']],
+    ['pusty ekran', { ...baza, ekran: '' }, ['T11']],
     ['kilka usterek naraz', { ...baza, zapisanoMs: null, pozycja: 'śmieci' }, ['T08', 'T10']],
   ];
   for (const [opis, surowe, kody] of przypadki) {
@@ -172,7 +173,8 @@ test('historia: skrotGry — pełny skrót (historia-gra/1) BEZ treści pytań i
   assert.equal(skrot.liczbaStacji, 3);
   assert.equal(skrot.zwyciezca, rozgrywka.gracze[0].imie, 'gra bez odpowiedzi: ranking otwiera pierwszy gracz (sort stabilny)');
   assert.equal(skrot.przerwana, false);
-  assert.equal(Number.isFinite(skrot.punktyRazem) && Number.isFinite(skrot.czasGryS), true, 'liczby z podsumowania()');
+  assert.equal(Number.isFinite(skrot.punktyRazem), true, 'liczby z podsumowania()');
+  assert.equal(skrot.czasGryS, undefined, 'historia bez czasu gry (Partia 2)');
 
   // PRYWATNOŚĆ (ADR 0010 pkt 1, ADR 0013): skrót, nie treść — ani pytań, ani współrzędnych
   const tekst = JSON.stringify(skrot);

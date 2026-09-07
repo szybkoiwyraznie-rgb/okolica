@@ -1,6 +1,6 @@
 /**
  * Testy `app/wieloosobowa.js` (M11/P2) — czyste schematy gry wieloosobowej:
- * kody, sąsiedztwo geohash5 (lobby), walidacje surowe R01–R18, maszynka tur,
+ * kody, sąsiedztwo geohash5 (lobby), walidacje surowe R01–R20, maszynka tur,
  * wyniki, biała lista danych zdarzenia (PRYWATNOŚĆ: zero współrzędnych) i
  * agregacje rankingów (M12). Wartości referencyjne, nie „co wyszło".
  */
@@ -10,9 +10,10 @@ import assert from 'node:assert/strict';
 import { geohash } from '../app/geo.js';
 import {
   ALFABET_KODU, DLUGOSC_KODU, KODY_WIELOOSOBOWE, MAKS_GRACZY, SCHEMAT_GRY,
-  SCHEMAT_LOBBY, SCHEMAT_RANKINGU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
-  agregujRanking, biezacyGraczTury, czyKompletna, filtrujLobby, generujKod,
-  kategorieRankingu, kodPoprawny, normalizujKod, postepGracza, przeliczWyniki,
+  SCHEMAT_LOBBY, SCHEMAT_PROFILU, SCHEMAT_RANKINGU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
+  agregujRanking, biezacyGraczTury, czyKompletna, czyPinPoprawny, filtrujLobby, generujKod,
+  kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim,
+  postepGracza, przeliczWyniki,
   ramkaGeohash, sasiednieGeohash, walidujGreSurowa, walidujLobbySurowe,
   walidujRankingSurowy, walidujZdarzenieSurowe, zbudujZdarzenie,
 } from '../app/wieloosobowa.js';
@@ -141,7 +142,7 @@ test('walidujGreSurowa: każda kolumna stanu daje własny kod R01–R09', () => 
 });
 
 test('walidujZdarzenieSurowe: typy, gracz, wskazanie gry, stacja (R10–R14)', () => {
-  const ok = walidujZdarzenieSurowe(JSON.stringify(zbudujZdarzenie({ kod: 'K2H7QM', graczId: 'g-2', typ: 'dojscie', stacjaId: 2, dane: { czasOdcinkaMs: 60000 } })));
+  const ok = walidujZdarzenieSurowe(JSON.stringify(zbudujZdarzenie({ kod: 'K2H7QM', graczId: 'g-2', typ: 'dojscie', stacjaId: 2, dane: { trybDojscia: 'gps' } })));
   assert.deepEqual(ok.usterki, []);
   assert.equal(ok.zdarzenie.typ, 'dojscie');
   const rezygnacja = walidujZdarzenieSurowe(JSON.stringify(zbudujZdarzenie({ idGry: 'x', graczId: 'g-2', typ: 'rezygnacja', dane: { powod: 'deszcz' } })));
@@ -165,12 +166,27 @@ test('walidujZdarzenieSurowe: typy, gracz, wskazanie gry, stacja (R10–R14)', (
 test('PRYWATNOŚĆ: zbudujZdarzenie przepuszcza wyłącznie białą listę pól', () => {
   const z = zbudujZdarzenie({
     kod: 'K2H7QM', graczId: 'g-1', typ: 'dojscie', stacjaId: 1,
-    dane: { czasOdcinkaMs: 1000, lat: 52.123, lon: 20.746, szerokosc: 1, smieci: 'x', nested: { lat: 2 } },
+    dane: { trybDojscia: 'gps', lat: 52.123, lon: 20.746, szerokosc: 1, smieci: 'x', nested: { lat: 2 } },
   });
-  assert.deepEqual(Object.keys(z.dane), ['czasOdcinkaMs'], 'współrzędne i śmieci zostają na telefonie (ADR 0019 pkt 3)');
+  assert.deepEqual(Object.keys(z.dane), ['trybDojscia'], 'współrzędne i śmieci zostają na telefonie (ADR 0019 pkt 3)');
   assert.ok(!JSON.stringify(z).includes('52.123'), 'całe zdarzenie bez współrzędnych');
   assert.throws(() => zbudujZdarzenie({ kod: 'X', graczId: 'g-1', typ: ' teleport ' }), TypeError, 'nieznany typ odrzucony');
   assert.throws(() => zbudujZdarzenie({ graczId: 'g-1', typ: 'start' }), TypeError, 'bez kodu/idGry odrzucone');
+});
+
+test('zbudujZdarzenie: tUrzadzenia to skończone ms albo brak pola (nigdy NaN/null)', () => {
+  const z = zbudujZdarzenie({ kod: 'K2H7QM', graczId: 'g-1', typ: 'start', tUrzadzenia: 1_757_000_000_000 });
+  assert.equal(z.tUrzadzenia, 1_757_000_000_000);
+  const iso = zbudujZdarzenie({ kod: 'K2H7QM', graczId: 'g-1', typ: 'start', tUrzadzenia: new Date(1_757_000_000_000).toISOString() });
+  assert.ok(!('tUrzadzenia' in iso), 'ISO-tekst pomijany (Number()=NaN serializował się do null)');
+  const bez = zbudujZdarzenie({ kod: 'K2H7QM', graczId: 'g-1', typ: 'start' });
+  assert.ok(!('tUrzadzenia' in bez), 'pole opcjonalne');
+});
+
+test('biezacyGraczTury: uszkodzony stan to null, nie TypeError (telefon nie ufa mostowi)', () => {
+  assert.equal(biezacyGraczTury(null), null);
+  assert.equal(biezacyGraczTury({ ...graTury(), konfiguracja: null }), null);
+  assert.equal(biezacyGraczTury({ ...graTury(), konfiguracja: {} }), null);
 });
 
 /* ------------------------------------------- maszynka tur i wyniki */
@@ -186,7 +202,7 @@ function graTury(zdarzenia = []) {
   });
 }
 const odp = (graczId, stacjaId, nad = {}) => ({ kolejnosc: 1, graczId, typ: 'odpowiedz', stacjaId, dane: { poprawna: true, punktyRazem: 12, ...nad }, tSerwera: 't' });
-const doj = (graczId, stacjaId, nad = {}) => ({ kolejnosc: 1, graczId, typ: 'dojscie', stacjaId, dane: { czasOdcinkaMs: 60000, ...nad }, tSerwera: 't' });
+const doj = (graczId, stacjaId, nad = {}) => ({ kolejnosc: 1, graczId, typ: 'dojscie', stacjaId, dane: { trybDojscia: 'gps', ...nad }, tSerwera: 't' });
 
 test('tury: kolejka stacja mod N jak hot-seat, rezygnacja zawęża aktywnych', () => {
   assert.equal(biezacyGraczTury(graTury()), 'g-1', 'stacja 1 → gracz 1');
@@ -224,9 +240,9 @@ test('czyKompletna: tury = N odpowiedzi; wyścig = każdy gracz N albo rezygnacj
 
 test('wyniki: punkty, poprawne/błędne i czasy odcinków ze zdarzeń', () => {
   const gra = graWazna({ stan: 'trwa' });
-  gra.zdarzenia = [doj('g-1', 1), odp('g-1', 1), doj('g-1', 2, { czasOdcinkaMs: 90000 }), odp('g-1', 2, { poprawna: false, punktyRazem: 0 })];
+  gra.zdarzenia = [doj('g-1', 1), odp('g-1', 1), doj('g-1', 2), odp('g-1', 2, { poprawna: false, punktyRazem: 0 })];
   const p = postepGracza(gra, 'g-1');
-  assert.deepEqual({ ...p }, { stacjeZamkniete: 2, punkty: 12, poprawne: 1, bledne: 1, czasOdcinkowMs: 150000, zrezygnowal: false });
+  assert.deepEqual({ ...p }, { stacjeZamkniete: 2, punkty: 12, poprawne: 1, bledne: 1, zrezygnowal: false });
   const wyniki = przeliczWyniki(gra);
   assert.equal(wyniki['g-1'].pseudonim, 'Szybki', 'wyniki niosą pseudonim (rankingi M12)');
   assert.equal(wyniki['g-1'].punkty, 12);
@@ -278,4 +294,25 @@ test('walidujRankingSurowy: R17 dla śmieci, R18 filtruje wiersze', () => {
   assert.equal(zepsuty.wiersze.length, 1);
   assert.deepEqual(zepsuty.usterki.map((u) => u.kod), ['R18']);
   assert.deepEqual(walidujRankingSurowy('nie-json').usterki.map((u) => u.kod), ['R17']);
+});
+
+test('profil PIN (ADR 0021): normalizacja pseudonimu i reguła PIN-u', () => {
+  assert.equal(SCHEMAT_PROFILU, 'RO-profil/1');
+  assert.equal(normalizujPseudonim('  Ala   Kowalska  '), 'Ala Kowalska');
+  assert.equal(normalizujPseudonim(null), '');
+  assert.equal(normalizujPseudonim('x'.repeat(30)).length, 20);
+  assert.ok(czyPinPoprawny('1234'));
+  assert.ok(czyPinPoprawny('12345678'));
+  assert.ok(!czyPinPoprawny('123'), 'za krótki');
+  assert.ok(!czyPinPoprawny('123456789'), 'za długi');
+  assert.ok(!czyPinPoprawny('12a4'), 'tylko cyfry');
+  assert.ok(!czyPinPoprawny(''), 'pusty odrzucony');
+});
+
+test('profil PIN: kody R19/R20 z komunikatami dla gracza', () => {
+  assert.ok(KODY_WIELOOSOBOWE.R19.includes('pseudonimu'));
+  assert.ok(KODY_WIELOOSOBOWE.R20.includes('PIN'));
+  assert.equal(komunikatBleduProfilu('R19'), KODY_WIELOOSOBOWE.R19);
+  assert.equal(komunikatBleduProfilu('R20'), KODY_WIELOOSOBOWE.R20);
+  assert.ok(komunikatBleduProfilu('R99').startsWith('Most odmówił:'));
 });

@@ -13,8 +13,10 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  SCHEMAT_KONTENERA, SZABLON_PROMPTU, TOKENY_MIEJSCA, WERSJA_PROTOKOLU,
-  czyZakotwiczone, normalizujTekst, parsujOdpowiedzModela, podsumowaniePaczki,
+  SCHEMAT_KONTENERA, SZABLON_PROMPTU, TOKENY_MIEJSCA, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2,
+  czyPaczkaOdwrocona, czyZakotwiczone, normalizujTekst, normalizujTematyPaczki, numerPytaniaZId, odkodujPaczkeRev1, odkodujPaczkeRev2,
+  odkodujPoprawnaRev2, zakodujPoprawnaRev2,
+  odwrocPolaPaczki, odwrocTekst, parsujOdpowiedzModela, podsumowaniePaczki,
   poprawkaDlaModelu, rdzenTokena, tokenyWlasne, walidujPaczke, zbudujPrompt,
   zastosujEdycjePaczki, EDYTOWALNE_POLA,
 } from '../app/protokol.js';
@@ -84,9 +86,9 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'OKOLICA GRY:',
     'STACJE (kolejność = kolejność w grze',
     'GRACZE I TRUDNOŚĆ:',
-    'SCHEMAT ODPOWIEDZI (PYT/1.0)',
+    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev2)',
     'WYMAGANIA DODATKOWE:',
-    '"poprawna": indeks poprawnej odpowiedzi',
+    '"poprawna": ZAKODOWANY numer',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
@@ -95,6 +97,18 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     assert.ok(SZABLON_PROMPTU.includes(token), `brak placeholdera ${token}`);
   }
   assert.ok(!SZABLON_PROMPTU.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
+});
+
+test('zbudujPrompt: temat własny wstawia tekst organizatora do listy dziedzin', () => {
+  const { prompt, usterki } = zbudujPrompt({
+    konfig: konfiguracja({ tematy: ['historia', 'wlasny'], tematWlasny: 'kinematografia' }),
+    okolica: { ...SRODEK, promienM: 1000, miejsce: OK.okolica.miejsce },
+    stacje: STACJE,
+    teraz: TERAZ,
+  });
+  assert.deepEqual(usterki, []);
+  assert.ok(prompt.includes('wlasny (kinematografia)'), 'dziedzina własna w opisie dla modelu');
+  assert.ok(prompt.includes('"wlasny"'), 'klucz wlasny na liście JSON');
 });
 
 test('zbudujPrompt: podstawia wszystkie placeholdery i nie zostawia dziur', () => {
@@ -132,15 +146,15 @@ test('zbudujPrompt: brak miejsca daje jawny komunikat, nie pustą lukę', () => 
 test('zbudujPrompt: odmawia bez pozycji, bez stacji i przy rozjeździe liczb', () => {
   const bezPozycji = zbudujPrompt({ konfig: konfiguracja(), okolica: { lat: null, lon: null }, stacje: STACJE });
   assert.equal(bezPozycji.prompt, null);
-  assert.ok(bezPozycji.usterki.some((u) => u.kod === 'P02'));
+  assert.ok(bezPozycji.usterki.some((u) => u.kod === 'WE02'));
 
   const bezStacji = zbudujPrompt({ konfig: konfiguracja(), okolica: { ...SRODEK, promienM: 1000, miejsce: 'x' }, stacje: [] });
   assert.equal(bezStacji.prompt, null);
-  assert.ok(bezStacji.usterki.some((u) => u.kod === 'P03'));
+  assert.ok(bezStacji.usterki.some((u) => u.kod === 'WE03'));
 
   const rozjazd = zbudujPrompt({ konfig: konfiguracja({ liczbaStacji: 5 }), okolica: { ...SRODEK, promienM: 1000, miejsce: 'x' }, stacje: STACJE });
   assert.equal(rozjazd.prompt, null);
-  assert.ok(rozjazd.usterki.some((u) => u.kod === 'P06'));
+  assert.ok(rozjazd.usterki.some((u) => u.kod === 'WE06'));
 });
 
 /* ------------------------------------------------------------- parsowanie */
@@ -182,6 +196,107 @@ test('walidujPaczke: fixture OK przechodzi bez usterek', () => {
 test('walidujPaczke: E01 — zła albo brakująca wersja protokołu', () => {
   assert.ok(kody(klonyPaczki((p) => { p.protokol = 'PYT/2.0'; })).includes('E01'));
   assert.ok(kody(klonyPaczki((p) => { delete p.protokol; })).includes('E01'));
+});
+
+/* -------------------------------- Q2: wariant odwrócony PYT/1.0-rev1 (PROTOKOL §3.4) */
+
+test('rev1: odwrocTekst działa po punktach kodowych (ogonki i emoji przeżywają)', () => {
+  assert.equal(odwrocTekst('Kot'), 'toK');
+  assert.equal(odwrocTekst('zażółć gęślą jaźń'), 'ńźaj ąlśęg ćłóżaz');
+  assert.equal(odwrocTekst('A🏅B'), 'B🏅A', 'emoji to jeden punkt kodowy, nie para surrogate');
+  assert.equal(odwrocTekst(odwrocTekst('Grabowice 1342?')), 'Grabowice 1342?', 'symetria');
+});
+
+test('rev1: round-trip — odwrocPolaPaczki ×2 wraca do oryginału, struktura nietknięta', () => {
+  const raz = odwrocPolaPaczki(OK);
+  assert.equal(raz.protokol, OK.protokol, 'marker nietknięty — odwraca tylko pola tekstowe');
+  assert.equal(raz.pytania[0].tresc, odwrocTekst(OK.pytania[0].tresc));
+  assert.deepEqual(raz.pytania[0].odpowiedzi, OK.pytania[0].odpowiedzi.map(odwrocTekst));
+  assert.equal(raz.pytania[0].wyjasnienie, odwrocTekst(OK.pytania[0].wyjasnienie));
+  assert.equal(raz.pytania[0].zrodla[0].tytul, odwrocTekst(OK.pytania[0].zrodla[0].tytul));
+  assert.equal(raz.uwagi, odwrocTekst(OK.uwagi));
+  // struktura nietknięta
+  assert.equal(raz.pytania[0].id, OK.pytania[0].id);
+  assert.equal(raz.pytania[0].poprawna, OK.pytania[0].poprawna);
+  assert.equal(raz.pytania[0].punkty, OK.pytania[0].punkty);
+  assert.equal(raz.pytania[0].zrodla[0].url, OK.pytania[0].zrodla[0].url);
+  assert.deepEqual(odwrocPolaPaczki(raz), OK, 'dwukrotne odwrócenie = oryginał');
+  assert.deepEqual(OK.protokol, 'PYT/1.0', 'fixture nie zmutowany');
+});
+
+test('rev1: paczka odwrócona przechodzi walidację jak jawna (E01 akceptuje marker)', () => {
+  const rev1 = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV1 };
+  assert.equal(czyPaczkaOdwrocona(rev1), true);
+  assert.equal(czyPaczkaOdwrocona(OK), false);
+  assert.deepEqual(walidujPaczke(rev1, oczekiwane()), [], 'reguły tekstowe działają na odkodowanej treści');
+  // a BEZ dekodera ta sama paczka by poległa: '?' jest na początku, nie na końcu
+  assert.ok(!rev1.pytania[0].tresc.trim().endsWith('?'), 'sanity: odwrócona treść kończy się początkiem zdania');
+});
+
+test('rev1: odkodujPaczkeRev1 normalizuje marker, jawną przepuszcza bez zmian', () => {
+  const rev1 = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV1 };
+  assert.deepEqual(odkodujPaczkeRev1(rev1), OK, 'odkodowana = jawny oryginał z markerem PYT/1.0');
+  assert.equal(odkodujPaczkeRev1(OK), OK, 'jawna paczka wraca tą samą referencją (zero kopiowania)');
+});
+
+/* ---------------- rev2: poprawna słownie od końca, koniec punktów (PROTOKOL §3.4) */
+
+test('rev2: kod pozycyjny — indeks + stacja + numer pytania + 17, w obie strony', () => {
+  assert.equal(numerPytaniaZId('s2p1'), 1);
+  assert.equal(numerPytaniaZId('s12p10'), 10);
+  assert.equal(numerPytaniaZId('pyt1'), null);
+  assert.equal(zakodujPoprawnaRev2(2, { id: 's2p1', stacja: 2 }), 22, 'przykład z szablonu: 2 + 2 + 1 + 17');
+  assert.equal(odkodujPoprawnaRev2(22, { id: 's2p1', stacja: 2 }), 2);
+  assert.equal(odkodujPoprawnaRev2(20, { id: 's1p1', stacja: 1 }), 1);
+  assert.equal(odkodujPoprawnaRev2(99, { id: 's1p1', stacja: 1 }), null, 'spoza zakresu indeksów');
+  for (let i = 0; i <= 3; i++) {
+    assert.equal(odkodujPoprawnaRev2(i, { id: 's1p1', stacja: 1 }), null, `goły indeks ${i} nigdy nie jest kodem (+10 rozłącza zakresy)`);
+  }
+  assert.equal(odkodujPoprawnaRev2(5, { id: 'pyt1', stacja: 2 }), null, 'bez id nie dekodujemy');
+  assert.equal(odkodujPoprawnaRev2('awd', { id: 's2p1', stacja: 2 }), null, 'słowa nie wracają');
+  assert.equal(zakodujPoprawnaRev2(9, { id: 's1p1', stacja: 1 }), null);
+  // ten sam indeks w różnych pytaniach daje różne kody (niepowtarzalność)
+  assert.notEqual(zakodujPoprawnaRev2(1, { id: 's1p1', stacja: 1 }), zakodujPoprawnaRev2(1, { id: 's1p2', stacja: 1 }));
+});
+
+test('rev2: paczka z kodami przechodzi, kod ląduje indeksem w roboczej', () => {
+  const rev2 = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
+  rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p); });
+  assert.equal(czyPaczkaOdwrocona(rev2), true);
+  assert.deepEqual(walidujPaczke(rev2, oczekiwane()), [], 'rev2 waliduje się jak jawna');
+  const robocza = odkodujPaczkeRev2(rev2);
+  assert.equal(robocza.protokol, WERSJA_PROTOKOLU);
+  assert.deepEqual(robocza.pytania.map((p) => p.poprawna), OK.pytania.map((p) => p.poprawna));
+  assert.equal(odkodujPaczkeRev2(OK), OK, 'jawna wraca referencją');
+});
+
+test('rev2: obcy kod to E06 z regułą i przykładem, jawny indeks nie przechodzi', () => {
+  const koduj = (paczka) => paczka.pytania.forEach((p) => {
+    p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p);
+  });
+  const obca = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
+  koduj(obca);
+  obca.pytania[0].poprawna = 99;
+  const usterki = walidujPaczke(obca, oczekiwane());
+  assert.ok(usterki.some((u) => u.kod === 'E06' && /indeks \+ stacja \+ numer pytania \+ 17/.test(u.komunikat)
+    && /2 \+ 2 \+ 1 \+ 17 = 22/.test(u.komunikat)), 'E06 uczy reguły z przykładem');
+  // jawny indeks 0–3 jako „kod" dekoduje się poza zakres (albo w inny indeks) —
+  // model musi liczyć, nie przepisywać
+  const jawnaJakoKod = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
+  assert.ok(kody(jawnaJakoKod).includes('E06'), 'gołe indeksy w rev2 nie przechodzą po cichu');
+});
+
+test('rev2: szablon żąda odwrócenia, poprawnej słownie i samokontroli (reguła 8)', () => {
+  for (const fraza of [
+    'ODWRÓCONE ZNAKAMI',
+    '"PYT/1.0-rev2"',
+    'ZAKODOWANY numer poprawnej odpowiedzi',
+    '2 + 2 + 1 + 17 = 22',
+    'ODCZYTAJ każde odwrócone pole od końca',
+    'samokontrola',
+  ]) {
+    assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
+  }
 });
 
 test('walidujPaczke: E03 — liczba pytań niezgodna z setupem', () => {
@@ -228,6 +343,18 @@ test('walidujPaczke: E12/E13/E14 — temat, duplikaty i zakotwiczenie w okolicy'
   })).includes('E14'));
 });
 
+test('walidujPaczke: stare klucze tematów (sprzed 2026-09-07) są aliasami, nie E12', () => {
+  const stara = klonyPaczki((p) => {
+    p.tematy = ['historia', 'nauka-i-technika'];
+    p.pytania[0].temat = 'nauka-i-technika';
+  });
+  assert.ok(!kody(stara, oczekiwane({ tematy: ['historia', 'nauka'] })).includes('E12'), 'alias na liście i w pytaniu przyjęty');
+  assert.ok(!kody(stara, oczekiwane({ tematy: ['historia', 'nauka'] })).includes('E16'), 'E16 porównuje po normalizacji');
+  const znorm = normalizujTematyPaczki(stara);
+  assert.deepEqual(znorm.tematy, ['historia', 'nauka']);
+  assert.equal(znorm.pytania[0].temat, 'nauka');
+});
+
 test('walidujPaczke: E16/E17 — spójność z konfiguracją gry i zakres współrzędnych', () => {
   assert.ok(kody(klonyPaczki((p) => { p.okolica.promienM = 5000; })).includes('E16'));
   assert.ok(kody(klonyPaczki((p) => { p.okolica.lat = 51.0; })).includes('E16'));
@@ -237,9 +364,9 @@ test('walidujPaczke: E16/E17 — spójność z konfiguracją gry i zakres wspó�
   assert.ok(kody(klonyPaczki((p) => { p.okolica.lat = 999; })).includes('E17'));
 });
 
-test('walidujPaczke: E18/E19/E20 — punkty, identyfikatory i wyjaśnienia', () => {
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].punkty = 5; })).includes('E18'));
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].punkty = 15; })).includes('E18'), 'dla dorosłych protokół przewiduje 20 pkt');
+test('walidujPaczke: E19/E20 — identyfikatory i wyjaśnienia (E18 wycofany w rev2)', () => {
+  assert.ok(!kody(klonyPaczki((p) => { p.pytania[0].punkty = 5; })).includes('E18'), 'pole punkty ignorowane');
+  assert.deepEqual(kody(klonyPaczki((p) => { for (const q of p.pytania) delete q.punkty; })), [], 'schemat bez punktów przechodzi czysto');
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].id = 'pyt1'; })).includes('E19'));
   assert.ok(kody(klonyPaczki((p) => { p.pytania[1].id = p.pytania[0].id; })).includes('E19'));
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].wyjasnienie = 'Bo tak.'; })).includes('E20'));
@@ -333,7 +460,7 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
   assert.deepEqual(s.stacje, [1, 2, 3]);
   assert.deepEqual(s.tematy, ['architektura', 'historia']);
   assert.equal(s.liczbaZrodel, 3);
-  assert.equal(s.punktyRazem, 60);
+  assert.equal(s.punktyRazem, 3, 'rev2: razem = liczba pytań (1 pkt za pytanie)');
   assert.match(s.uwagi, /FIXTURE TESTOWY/);
   assert.deepEqual(podsumowaniePaczki(null), { liczbaPytan: 0, stacje: [], tematy: [], liczbaZrodel: 0, punktyRazem: 0, uwagi: '' });
 });

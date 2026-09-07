@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { zainstalujDom } from './helpers/dom.js';
 import { zapakujPaczke } from '../app/kodowanie.js';
 import { KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY, kluczZestawu } from '../app/zestawy.js';
+import { DOMYSLNY_URL_MOSTU } from '../app/most.js';
 
 const POZYCJA = { lat: 52.12303, lon: 20.74614 }; // Podkowa Leśna (geohash5 u33dc)
 const GEOHASH5 = 'u3qb8'; // policzone z geo.js dla (52.12303, 20.74614)
@@ -43,7 +44,7 @@ const KONFIG_TEST = JSON.stringify({
   schemat: 'konfig/1',
   konfig: {
     tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1,
-    tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', jezyk: 'polski', wspolpraca: 'zespol',
+    tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', jezyk: 'polski',
     karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
   },
 });
@@ -100,9 +101,10 @@ test('zestawy UI: karta propozycji pokazuje paczkę z tego telefonu po ustawieni
   const lista = dom.pobierz('zestawy-lista');
   assert.equal(lista.children.length, 1, 'jedno dopasowanie: geohash5+promień+tematy+wiek');
   assert.match(lista.children[0].children[0].textContent, /z tego telefonu: Podkowa Leśna/);
-  // bez skonfigurowanego źródła Drive karta mówi wprost, że repozytorium nie podłączone
+  // adres Drive jest w kodzie (ADR 0020); tu bez fetch próba pada — karta mówi wprost,
+  // że repozytorium jest niedostępne, a paczka z telefonu i tak działa
   await new Promise((r) => setTimeout(r, 20));
-  assert.match(dom.pobierz('zestawy-status').textContent, /nie jest podłączone/);
+  assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium niedostępne/);
 });
 
 test('zestawy UI: druga gra w tej samej okolicy startuje bez modelu i bez Overpassa', async () => {
@@ -170,6 +172,14 @@ const plikZRepo = () => {
   };
 };
 
+/**
+ * app.js czyta `window.fetch` (LESSONS L18), więc atrapa podstawiona na
+ * globalThis musi trafić też do okna atrapy DOM — po utworzeniu dom.
+ */
+function podlaczFetch(dom) {
+  dom.window.fetch = globalThis.fetch;
+}
+
 function atrapaFetch(odpowiedzi) {
   const wywolania = [];
   const pierwotny = globalThis.fetch;
@@ -188,6 +198,7 @@ test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra be
   try {
     const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
     const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));
     const lista = dom.pobierz('zestawy-lista');
@@ -211,6 +222,7 @@ test('zestawy UI: adres nadpisany w pamięci telefonu wygrywa ze stałą z kodu 
   try {
     const pamiec = new Map([['okolica:repo-zestawow:url', 'https://przyklad.org/paczki/indeks.json'], ['okolica:konfig', KONFIG_TEST]]);
     const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));
     assert.ok(atrap.wywolania.some((u) => u.startsWith('https://przyklad.org/paczki/indeks.json')), 'fetch poszedł do nadpisanego źródła');
@@ -234,7 +246,10 @@ function atrapaPost() {
   const posty = [];
   const pierwotny = globalThis.fetch;
   globalThis.fetch = async (url, opcje = {}) => {
-    if (opcje.method === 'POST') {
+    // Liczy się TYLKO wysyłka na most (text/plain); POST-y Overpass (urlencoded)
+    // dostają 404 jak przed L18 — wtedy window.fetch nie istniało i pobierzSiec
+    // degradowal się po cichu, a goły fetch łapał tylko wysyłkę.
+    if (opcje.method === 'POST' && String(opcje.headers?.['Content-Type'] ?? '').startsWith('text/plain')) {
       posty.push({ url: String(url), opcje });
       return { ok: true, status: 200, json: async () => ({ ok: true, status: 'przyjeta-do-przegladu' }), text: async () => '' };
     }
@@ -252,21 +267,21 @@ async function dojdzDoWklejenia(dom, pozycja = POZYCJA) {
   dom.pobierz('setup-lon').value = String(pozycja.lon);
   dom.kliknij('przycisk-ustaw-reczne');
   dom.kliknij('przycisk-dalej-stacje');
+  // Gdy test podstawia window.fetch, stacje liczą się ASYNCHRONICZNIE (pobranie
+  // sieci w tle) — czekamy, aż STAN.stacje powstaną (pierścień po 404), zanim
+  // ruszymy dalej; bez fetch wszystko jest synchroniczne i czekanie jest puste.
+  await new Promise((r) => setTimeout(r, 30));
   dom.kliknij('przycisk-dalej-prompt');
   dom.kliknij('przycisk-dalej-paczka');
   assert.equal(dom.pobierz('ekran-paczka').hidden, false, 'ekran wklejania widoczny');
 }
-
-test('zgoda Drive: checkbox na ekranie wklejania startuje zaznaczony (decyzja właściciela)', async () => {
-  const dom = await aplikacjaZZestawami({});
-  assert.equal(dom.pobierz('zgoda-drive').checked, true, 'domyślnie „zgadzam się” — opt-out, nie opt-in');
-});
 
 test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain', async () => {
   const atrap = atrapaPost();
   try {
     const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
     const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
     await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
     const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
     dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
@@ -290,36 +305,21 @@ test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain',
   }
 });
 
-test('wysyłka Drive: odhaczona zgoda = zero wysyłki i jawny status', async () => {
-  const atrap = atrapaPost();
-  try {
-    const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
-    const dom = await aplikacjaZZestawami({ pamiec });
-    await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
-    dom.pobierz('zgoda-drive').checked = false;
-    const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
-    dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
-    dom.kliknij('przycisk-sprawdz');
-    await new Promise((r) => setTimeout(r, 30));
-    assert.deepEqual(atrap.posty, [], 'bez zgody nic nie wychodzi z telefonu');
-    assert.match(dom.pobierz('status').textContent, /zgoda odhaczona/);
-  } finally {
-    atrap.przywroc();
-  }
-});
-
-test('wysyłka Drive: brak adresu mostu = zero wysyłki i jawny status', async () => {
+test('wysyłka Drive: adres z kodu — przyjęcie paczki wysyła bez wpisu w pamięci (ADR 0020)', async () => {
   const atrap = atrapaPost();
   try {
     const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA]]);
     const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
     await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
     const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
     dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
     dom.kliknij('przycisk-sprawdz');
     await new Promise((r) => setTimeout(r, 30));
-    assert.deepEqual(atrap.posty, [], 'bez adresu mostu nic nie wychodzi');
-    assert.match(dom.pobierz('status').textContent, /brak adresu repozytorium/);
+    assert.equal(atrap.posty.length, 1, 'przyjęcie paczki wysyła na adres z kodu');
+    assert.equal(atrap.posty[0].url, DOMYSLNY_URL_MOSTU, 'cel wysyłki to stała wdrożeniowa');
+    assert.equal(JSON.parse(atrap.posty[0].opcje.body).schemat, 'TO-zestaw/1');
+    assert.match(dom.pobierz('status').textContent, /WYSŁANA na Drive/);
   } finally {
     atrap.przywroc();
   }
@@ -352,6 +352,7 @@ test('Drive: wpis z `id` na karcie, a kliknięcie pobiera paczkę przez ?akcja=p
   try {
     const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
     const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));
     assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'propozycja z Drive widoczna');
@@ -373,6 +374,7 @@ test('🔌 Sprawdź połączenie: most odpowiada → jawne OK z liczbą zaakcept
   try {
     const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
     const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));
     dom.kliknij('przycisk-test-polaczenia');
@@ -389,6 +391,7 @@ test('🔌 Sprawdź połączenie: most milczy → jawna porażka (CORS/sieć), g
   try {
     const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
     const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));
     dom.kliknij('przycisk-test-polaczenia');

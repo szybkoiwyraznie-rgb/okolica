@@ -23,8 +23,8 @@ stacji.
 (pięć ekranów: setup → pozycja → stacje → prompt → paczka) z walidacją
 konfiguracji, promptem PYT v1.0, walidacją paczki i jej ukrywaniem
 (`TO-paczka/2`). Jako czyste funkcje z testami istnieją też **model rozgrywki**
-(`app/rozgrywka.js`: kolejka graczy, odcinki i czasy, kara za ręczne
-zgłoszenie, punktacja względem mediany tempa, dziennik i podsumowanie) oraz
+(`app/rozgrywka.js`: kolejka graczy i odpowiadania, odcinki, punktacja
+dotarcie-plus-poprawna, dziennik i podsumowanie) oraz
 **warstwa pozycji** (`app/pozycja.js`: filtr dokładności, kryterium dojścia
 z debounce'em, komunikaty błędów GPS, symulacja trasy dla trybu testowego).
 
@@ -67,11 +67,10 @@ kryterium terenowe: jedną prawdziwą okolicę na telefonie (`docs/WORKFLOW.md`
 obrazkową (cztery kroki jako inline SVG, zero plików zewnętrznych),
 a odpowiedź modelu można wkleić albo wczytać z pliku. Paczka z usterkami
 daje czytelną listę kodów E01–E20 i przycisk „skopiuj poprawkę do modelu".
-Po przyjęciu organizator dostaje podgląd „tylko dla organizatora" z ręczną
-edycją pytań — każda poprawka przechodzi przez pełną re-walidację i zostawia
-ślad w `modyfikacje[]` (ADR 0006 pkt 8). Ukrytą paczkę (`TO-paczka/2`) można
-zapisać do pliku `.paczka.json` i wczytać z powrotem — plik niesie kontener,
-nigdy jawne pytania. Nazwa miejsca do promptu jest bramowana ustawieniem
+Po przyjęciu gra zaczyna się OD RAZU (decyzja 2026-09-07 — podgląd,
+ściąganie i edycja zniknęły z ekranu; to zadania właściciela na Drive,
+dokąd zestaw leci automatycznie w chwili przyjęcia). Wcześniej ukrytą
+paczkę (`TO-paczka/2`) nadal można wczytać z pliku ścieżką „⬆ Z pliku". Nazwa miejsca do promptu jest bramowana ustawieniem
 „pobieranie nazwy miejsca", a zapasowa warstwa Nominatim działa tylko po
 wyraźnej zgodzie na ekranie prywatności (domyślnie wyłączona, jedno żądanie
 na grę, cache 30 dni, atrybucja ODbL — ADR 0013). Kamień czeka na kryterium
@@ -94,9 +93,9 @@ zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).
 
 **M7 — podsumowanie, punkty i udostępnianie: kod i testy gotowe.** Po końcu
 gry (naturalnym albo ręcznym) panel wyniku pokazuje pełne podsumowanie:
-zwycięzca z 🏆 i rozbiciem punktacji, ranking, szczegóły graczy (odcinki,
-tempo), tabela stacji (tryb dojścia: GPS / ręczne / pominięta), statystyki
-i medal sprawiedliwości trasy (🏅 widokowe — nie wpływa na punkty, ADR 0014).
+zwycięzca z 🏆, ranking, szczegóły graczy (odcinki, dystans), tabela stacji
+(tryb dojścia: GPS / ręczne / pominięta) i statystyki — bez czasów i tempa
+(ADR 0023: zero presji czasowej).
 Wynik da się udostępnić bez serwera: tekst w formacie przyjaznym komunikatorom
 (wiersze stacji bez `#`, żeby `#1` nie stało się nagłówkiem), obraz PNG
 1080 px rysowany z czystego planu komend (paleta z tokenów CSS), Web Share →
@@ -209,7 +208,6 @@ daje plik do ręcznego wniesienia, gdy most jest niedostępny.
 | `docs/ASSETS.md` | dostawcy kafelków i danych, polityki, atrybucje |
 | `app/`, `index.html` | aplikacja |
 | `test/` | `node --test` — czysta logika, bez DOM i bez sieci |
-| `AME-main.zip` | wzorzec dobrych praktyk z projektu AME (materiał referencyjny) |
 
 ## Prywatność
 

@@ -19,17 +19,17 @@
  * czysta funkcja + atrapa, `docs/LESSONS.md`).
  */
 
-import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-1';
+import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-5';
 
 /**
  * Adres web app Apps Script (…/exec) wpisany na stałe w tej wersji aplikacji.
  *
- * PUSTY = most nie został jeszcze wpisany (stan do wdrożenia właściciela).
- * Aplikacja mówi wtedy wprost, że wspólne repozytorium i gry sieciowe są
- * niedostępne, i działa dalej w trybie lokalnym (LESSONS L6: status jawny,
- * degradacja bez blokady rozgrywki).
+ * Wpisany commitem wdrożeniowym 2026-09-07: właściciel wdrożył most i podał
+ * adres /exec w czacie (ADR 0020 pkt 5). Pusty łańcuch znaczyłby stan sprzed
+ * wdrożenia — aplikacja mówiłaby wprost, że wspólne repozytorium i gry
+ * sieciowe są niedostępne, i działała lokalnie (LESSONS L6).
  */
-export const DOMYSLNY_URL_MOSTU = '';
+export const DOMYSLNY_URL_MOSTU = 'https://script.google.com/macros/s/AKfycbxlScMHr8bR1DSq7cPPr9914A1ur3J9bBRpHNEKV3YFmCcYr37dAN6jpq2zVWuwECGu/exec';
 
 /** Klucz nadpisania adresu dla gry wieloosobowej (historyczne pole „Adres mostu"). */
 export const KLUCZ_URL_MOSTU = 'okolica:multi:url-mostu';
@@ -68,24 +68,31 @@ export function mostSkonfigurowany(pamiec) {
 /**
  * Komunikat stanu mostu po polsku — jeden dla całego UI, żeby karta paczek,
  * karta gry wieloosobowej i rankingi nie wymyślały trzech wersji prawdy.
+ * Po ludzku: skąd jest adres, mówi tylko tryb testowy (Partia 3, pkt 1).
  *
  * @param {{getItem?:Function}|Map} [pamiec] pamięć do odczytu
+ * @param {object} [opcje] `{ testowy }` — dopiski deweloperskie tylko w teście
  * @returns {{podlaczony:boolean, tekst:string}}
  */
-export function stanMostu(pamiec) {
+export function stanMostu(pamiec, { testowy = false } = {}) {
   const zrodlo = pamiec ?? (typeof localStorage !== 'undefined' ? localStorage : null);
   const adres = adresMostu(zrodlo);
   if (adres) {
     const nadpisany = wartoscKlucza(zrodlo, KLUCZ_URL_MOSTU) || wartoscKlucza(zrodlo, KLUCZ_URL_REPO);
+    if (nadpisany) {
+      return { podlaczony: true, tekst: 'Most Drive: podłączony (adres nadpisany na tym telefonie).' };
+    }
     return {
       podlaczony: true,
-      tekst: nadpisany
-        ? 'Most Drive: podłączony (adres nadpisany na tym telefonie).'
-        : 'Most Drive: podłączony — adres jest wpisany w tej wersji aplikacji.',
+      tekst: testowy
+        ? 'Most Drive: podłączony — adres jest wpisany w tej wersji aplikacji (ADR 0020).'
+        : 'Most Drive: podłączony.',
     };
   }
   return {
     podlaczony: false,
-    tekst: 'Most Drive: niepodłączony — ta wersja aplikacji nie ma jeszcze wpisanego adresu. Gramy lokalnie: paczki z tego telefonu i gra na jednym urządzeniu.',
+    tekst: testowy
+      ? 'Most Drive: niepodłączony — ta wersja aplikacji nie ma jeszcze wpisanego adresu (ADR 0020). Gramy lokalnie: paczki z tego telefonu i gra na jednym urządzeniu.'
+      : 'Most Drive: niepodłączony. Gramy lokalnie: paczki z tego telefonu i gra na jednym urządzeniu.',
   };
 }

@@ -113,6 +113,28 @@ test('zestawy: dopasowanie okolicy jest ścisłe (geohash5, promień, wiek, tema
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1, liczbaStacji: 0, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
 });
 
+test('zestawy: wpis z tematem własnym pasuje tylko do tego samego tekstu', () => {
+  const rejestr = {
+    schemat: SCHEMAT_INDEKSU,
+    wpisy: [
+      wpis('ten-sam', '2026-09-06', { tematy: ['historia', 'wlasny'], tematWlasny: 'Kinematografia' }),
+      wpis('inny-tekst', '2026-09-06', { tematy: ['historia', 'wlasny'], tematWlasny: 'wędkarstwo' }),
+      wpis('bez-wlasnego', '2026-09-06', { tematy: ['historia'] }),
+    ],
+  };
+  const kryt = { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'wlasny'], wiek: 'dorosli' };
+  assert.deepEqual(
+    dopasujZestawy(rejestr, { ...kryt, tematWlasny: 'kinematografia' }).map((w) => w.skrot),
+    ['ten-sam', 'bez-wlasnego'],
+    'ten sam tekst (case-insensitive) + wpis bez własnego',
+  );
+  assert.deepEqual(
+    dopasujZestawy(rejestr, kryt).map((w) => w.skrot),
+    ['bez-wlasnego'],
+    'bez tekstu własnego wpisy z wlasny odpadają',
+  );
+});
+
 test('zestawy: plik publiczny wymaga licencji i przeglądu źródeł (ADR 0017 pkt 4)', () => {
   assert.deepEqual(walidujZestawPublicznySurowy(JSON.stringify(publiczny())).usterki, []);
   assert.equal(walidujZestawPublicznySurowy(JSON.stringify(publiczny({ schemat: 'TO-zestaw/0' }))).usterki[0].kod, 'Z07');

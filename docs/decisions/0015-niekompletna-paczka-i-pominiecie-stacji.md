@@ -7,7 +7,7 @@
 ## Kontekst
 
 Model rozgrywki (M1) musiał rozstrzygnąć dwa przypadki, których ADR 0009
-i ADR 0014 nie opisują, a które w terenie zdarzają się naprawdę:
+nie opisuje, a które w terenie zdarzają się naprawdę:
 
 1. **Paczka nie pokrywa wszystkich stacji.** Prompt idzie do modelu AI poza
    aplikacją (ADR 0006), więc organizator może wrócić z paczką na 3 stacje,
@@ -19,12 +19,9 @@ i ADR 0014 nie opisują, a które w terenie zdarzają się naprawdę:
    bywa zepsute (model zwrócił treść niezwiązaną z miejscem), a w trybie
    hot-seat organizator może chcieć iść dalej.
 
-Pierwsza implementacja miała w obu miejscach ciche pułapki: stacja bez pytania
-zostawała w fazie `pytanie` z pustym ekranem i **bez akcji, która ruszyłaby grę
-dalej** (jedynym wyjściem było „pomiń", które kasowało fakt dojścia), a
-pominięcie stacji po dojściu zamieniało odcinek `zakonczony` na `pominiety`,
-czyli wyrzucało z dziennika i z próbek mediany (ADR 0014 pkt 2) pomiar, który
-się wydarzył.
+Pierwsza implementacja miała ciche pułapki: stacja bez pytania zostawała w fazie
+`pytanie` bez akcji wyjścia, a pominięcie po dojściu zamieniało odcinek
+`zakonczony` na `pominiety` — wyrzucało z dziennika fakt, który się wydarzył.
 
 ## Decyzja
 
@@ -35,24 +32,25 @@ się wydarzył.
    uruchomienia — organizator stoi z grupą na ulicy.
 2. **Dojście do stacji bez pytania zamyka ją bez punktów.** `zakonczOdcinek()`
    po zapisaniu dojścia sprawdza, czy stacja jest zamknięta, i jeśli tak —
-   przechodzi dalej. Odcinek zostaje `zakonczony` (czas, tempo, dokładność są
-   zachowane), odpowiedzi nie ma, punktów nie ma. Bez tego gra stanęłaby na
+   przechodzi dalej. Odcinek zostaje `zakonczony` (tryb dojścia i dokładność
+   są zachowane), odpowiedzi nie ma, punktów nie ma. Bez tego gra stanęłaby na
    pustym ekranie pytania.
 3. **Pominąć można tylko odcinek w drodze.** Po dojściu `pominStacje()` odmawia
    z kodem `G13` i komunikatem, który mówi, co zrobić zamiast tego: odpowiedzieć
    na pytanie, choćby błędnie (błędna odpowiedź daje 0 punktów i rusza grę
    dalej — ADR 0009 pkt 5). Powód: pominięcie po dojściu kasowałoby pomiar,
    który się wydarzył, i zmieniał wynik gry wstecz.
-4. **Odcinek pominięty nie wchodzi do próbek mediany.** `premiaCzasu()` liczy
-   próbki wyłącznie z odcinków `zakonczony` (ADR 0014 pkt 2) — pominięcie nie
-   jest wynikiem, który da się porównać z dojściem.
+4. **Odcinek pominięty nie daje punktów.** Pominięcie nie jest dojściem
+   i nie ma odpowiedzi — w podsumowaniu liczy się jako `pominiety`, bez
+   punktów i bez wpływu na pozostałe stacje.
 5. **Liczniki postępu i wyniki liczą tak samo.** `podglad()` (pasek postępu
    w trakcie gry) i `podsumowanie()` (tabela na końcu) używają tej samej
    definicji: `zaliczoneStacje` = odcinki `zakonczony`, `pominietaStacje` =
    odcinki `pominiety`, `pozostaloStacje` = reszta. Dwie różne definicje tej
    samej liczby w jednym interfejsie to usterka, nie styl.
 6. **Kody usterek mają przedrostki dziedzinowe i nie kolidują.** Rozgrywka:
-   `G01`–`G13`. Pozycja i GPS: `P01`–`P09`. Konfiguracja: `K01`–`K20`. Paczka
+   `G01`–`G13`. Pozycja i GPS: `P01`–`P09`. Konfiguracja: `K01`–`K21` z lukami
+   po usuniętych (`K17`, `K19`, `K20` — Partia 2, nie używać ponownie). Paczka
    i prompt: `E01`–`E20`. Każdy komunikat jest pełnym zdaniem z wyjściem
    awaryjnym (ADR 0004 pkt 7) i wchodzi do UI bez przeróbek — warstwa DOM nie
    wymyśla własnych zdań ani własnych kodów.
@@ -79,4 +77,4 @@ się wydarzył.
 
 0004 (kryterium dojścia, komunikaty GPS), 0006 (paczka z zewnątrz),
 0007 pkt 6 (stan bez treści pytań), 0009 (model rozgrywki), 0010 (trwałość
-i jawna odmowa przy obcym schemacie), 0014 (punktacja czasu).
+i jawna odmowa przy obcym schemacie), 0023 (zero presji czasowej).

@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci } from '../app/stacje.js';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci } from '../app/stacje.js';
 import { odlegloscM } from '../app/geo.js';
 
 const WARSZAWA = { lat: 52.2297, lon: 21.0122 };
@@ -55,21 +55,15 @@ test('stacjeProste: offsetObrotu obraca układ, nie zmieniając jego jakości', 
   const bazowy = stacjeProste({ srodek: WARSZAWA, liczbaStacji: 5, promienM: 1000, ziarno: ZIARNO, offsetObrotu: 0 });
   const obrot = stacjeProste({ srodek: WARSZAWA, liczbaStacji: 5, promienM: 1000, ziarno: ZIARNO, offsetObrotu: 36 });
   assert.notDeepEqual(bazowy, obrot);
-  assert.ok(miaraSprawiedliwosci(obrot).udzialOdchylenia < 0.25);
+  const odl = obrot.map((st) => st.odlegloscM);
+  const rozrzut = (Math.max(...odl) - Math.min(...odl)) / (odl.reduce((a, b) => a + b, 0) / odl.length);
+  assert.ok(rozrzut < 0.5, `obrót nie rozwala pierścienia (rozrzut ${Math.round(rozrzut * 100)}%)`);
 });
 
 test('stacjeProste: odrzuca bezsensowne argumenty', () => {
   assert.throws(() => stacjeProste({ srodek: null, liczbaStacji: 5, promienM: 1000, ziarno: ZIARNO }), TypeError);
   assert.throws(() => stacjeProste({ srodek: WARSZAWA, liczbaStacji: 0, promienM: 1000, ziarno: ZIARNO }), TypeError);
   assert.throws(() => stacjeProste({ srodek: WARSZAWA, liczbaStacji: 5, promienM: 0, ziarno: ZIARNO }), TypeError);
-});
-
-test('miaraSprawiedliwosci: odchylenie względem średniej (kryterium M4: ≤ 15%)', () => {
-  const stacje = stacjeProste({ srodek: WARSZAWA, liczbaStacji: 8, promienM: 1000, ziarno: ZIARNO });
-  const m = miaraSprawiedliwosci(stacje);
-  assert.ok(m.sredniaM > 600 && m.sredniaM < 900, `średnia ${m.sredniaM}`);
-  assert.ok(m.udzialOdchylenia <= 0.15, `odchylenie ${Math.round(m.udzialOdchylenia * 100)}% — pierścień ma być równy`);
-  assert.deepEqual(miaraSprawiedliwosci([]), { sredniaM: 0, odchylenieM: 0, udzialOdchylenia: 0 });
 });
 
 test('najmniejszyOdstepM i uzupelnijOdleglosci: geometria układu dla UI', () => {
@@ -81,4 +75,18 @@ test('najmniejszyOdstepM i uzupelnijOdleglosci: geometria układu dla UI', () =>
   const reczne = uzupelnijOdleglosci([{ id: 1, lat: 52.235, lon: 21.02 }, { id: 2, lat: 52.22, lon: 21.0 }], WARSZAWA);
   assert.ok(reczne[0].odlegloscM > 0 && reczne[1].odlegloscM > 0);
   assert.ok(reczne[0].bearing >= 0 && reczne[0].bearing < 360);
+});
+
+test('dystanseOdcinkowM: start→s1 z pola stacji, reszta z macierzy (ADR 0014 pkt 1)', () => {
+  const wynik = {
+    stacje: [{ id: 1, dystansSieciowyM: 812 }, { id: 2, dystansSieciowyM: 640 }, { id: 3, dystansSieciowyM: 905 }],
+    macierz: [[0, 410, 700], [410, 0, null], [700, null, 0]],
+  };
+  assert.deepEqual(dystanseOdcinkowM(wynik), [812, 410, null], 'null = para nieosiągalna (fallback do prostej w rozgrywce)');
+  assert.equal(dystanseOdcinkowM(null), null, 'brak wyniku sieciowego');
+  assert.equal(dystanseOdcinkowM({}), null, 'pusty wynik');
+  assert.deepEqual(
+    dystanseOdcinkowM({ stacje: [{ id: 1 }], macierz: [[0]] }),
+    [null], 'stacja bez pola sieciowego to fallback, nie NaN',
+  );
 });

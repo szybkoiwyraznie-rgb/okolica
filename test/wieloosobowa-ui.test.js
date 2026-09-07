@@ -45,8 +45,9 @@ function atrapaMostu() {
   const gry = new Map(); // idGry → gra
   const ciala = [];      // surowe ciała POST-ów (skaner prywatności)
   const adresy = [];     // wszystkie URL-e (GET i POST)
+  const profile = new Map(); // id → { pseudonim, pin } (lustro profil-* z .gs, ADR 0021)
   const most = {
-    gry, ciala, adresy,
+    gry, ciala, adresy, profile,
     online: true,
     znajdz: (kod) => [...gry.values()].find((g) => g.kod === String(kod).toUpperCase()) ?? null,
     fetchImpl: async (url, opcje = {}) => {
@@ -63,6 +64,8 @@ function atrapaMostu() {
           case 'gra-start': return json(start(dane));
           case 'gra-zdarzenie': return json(zdarzenie(dane));
           case 'gra-zakoncz': return json(zakoncz(dane));
+          case 'profil-ustaw': return json(profilUstaw(dane));
+          case 'profil-sprawdz': return json(profilSprawdz(dane));
           default: return json({ ok: false, blad: `nieznana akcja: ${dane.akcja}` });
         }
       }
@@ -86,6 +89,27 @@ function atrapaMostu() {
     },
   };
 
+  function profilUstaw(dane) {
+    const pseudo = String(dane.pseudonim ?? '').trim().slice(0, 20);
+    const pin = String(dane.pin ?? '');
+    const id = pseudo.toLowerCase().replace(/[^a-z0-9ąćęłńóśźż]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    if (!id) return { ok: false, blad: 'R19' };
+    if (!/^\d{4,8}$/.test(pin)) return { ok: false, blad: 'R20' };
+    const jest = profile.get(id);
+    if (jest) {
+      if (jest.pin !== pin) return { ok: false, blad: 'R20' };
+      return { ok: true, nowy: false, pseudonim: jest.pseudonim };
+    }
+    profile.set(id, { pseudonim: pseudo, pin });
+    return { ok: true, nowy: true, pseudonim: pseudo };
+  }
+  function profilSprawdz(dane) {
+    const id = String(dane.pseudonim ?? '').trim().toLowerCase().replace(/[^a-z0-9ąćęłńóśźż]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+    const jest = id ? profile.get(id) : null;
+    if (!jest) return { ok: false, blad: 'R19' };
+    if (jest.pin !== String(dane.pin ?? '')) return { ok: false, blad: 'R20' };
+    return { ok: true, pseudonim: jest.pseudonim };
+  }
   function znajdzGre(kod, idGry) {
     for (const g of gry.values()) {
       if (idGry && g.idGry === idGry) return g;
@@ -205,8 +229,9 @@ function przelaczNa(u) {
 async function noweUrzadzenie({ pamiec = new Map(), most }) {
   // Adres mostu nie jest wpisywany w UI (ADR 0020) — telefon ma go w pamięci albo w kodzie aplikacji.
   if (!pamiec.has('okolica:multi:url-mostu')) pamiec.set('okolica:multi:url-mostu', URL_MOSTU);
-  globalThis.fetch = most.fetchImpl;
+  globalThis.fetch = most.fetchImpl; // sync.js czyta globalThis.fetch (wstrzykiwalny fetchImpl)
   const dom = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec });
+  dom.window.fetch = most.fetchImpl; // app.js czyta window.fetch (LESSONS L18)
   const u = {
     dom, pamiec,
     globale: {
@@ -502,21 +527,18 @@ test('bez zgody NIE wysyłam niczego — jawna odmowa (setup → multi)', async 
   assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'ze zgodą panel dołączania otwarty');
 });
 
-test('ADR 0020: bez adresu mostu w tej wersji aplikacji gra sieciowa odmawia jawnie, hot-seat zostaje', async () => {
+test('ADR 0020: adres mostu jest w kodzie — telefon bez wpisu w pamięci gra sieciowo od razu', async () => {
   const most = atrapaMostu();
-  // pusty wpis w pamięci = stan `DOMYSLNY_URL_MOSTU === ''` (przed wdrożeniem web app przez właściciela)
+  // pusty wpis w pamięci = brak nadpisania: telefon bierze adres z kodu (stan po wdrożeniu web app)
   const pamiec = new Map([['okolica:multi:url-mostu', '']]);
   const u = await noweUrzadzenie({ pamiec, most });
   await przygotujTelefon(u, 'Iga');
   przelaczNa(u);
-  assert.match(tekst(u, 'multi-most-stan'), /niepodłączony/i, 'karta gry wieloosobowej mówi wprost, że most nie jest wpisany');
-  assert.match(tekst(u, 'most-stan-repo'), /niepodłączony/i, 'karta paczek mówi to samo (jedna prawda o stanie mostu)');
+  assert.match(tekst(u, 'multi-most-stan'), /podłączony/i, 'karta gry wieloosobowej: adres z kodu działa bez wpisywania');
+  assert.match(tekst(u, 'most-stan-repo'), /podłączony/i, 'karta paczek mówi to samo (jedna prawda o stanie mostu)');
   await klik(u, 'przycisk-multi-zaloz');
-  assert.match(tekst(u, 'bledy-multi'), /Brak adresu mostu/, 'odmowa założenia gry z jawnym powodem');
-  assert.match(tekst(u, 'bledy-multi'), /Hot-seat/, 'komunikat podpowiada działającą alternatywę na jednym telefonie');
-  await klik(u, 'przycisk-multi-dolacz');
-  assert.equal(most.ciala.length, 0, 'ZERO wysyłek na most bez adresu');
-  assert.equal(most.adresy.length, 0, 'nawet GET lobby nie poszedł');
+  assert.equal(el(u, 'multi-panel-zaloz').hidden, false, 'panel zakładania otwarty — zero odmowy o adres');
+  assert.doesNotMatch(tekst(u, 'bledy-multi'), /Brak adresu mostu/, 'komunikat o braku adresu nie istnieje w tej wersji');
 });
 
 test('serwer odrzuca zdarzenie poza turą (R08) — klient NIE ponawia i mówi dlaczego', async () => {
@@ -579,4 +601,66 @@ test('SKANER prywatności: współrzędne gracza nie wychodzą w żadnej wysyłc
       }
     }
   }
+});
+
+test('uszkodzony stan z mostu: kod R w statusie, polling nie pada, po naprawie gra wraca', async () => {
+  const most = atrapaMostu();
+  const pamiec = new Map();
+  const zestaw = zasiejZestaw(pamiec, 1);
+  const A = await noweUrzadzenie({ pamiec, most });
+  await przygotujTelefon(A, 'Ala');
+  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestaw.kontener.skrot });
+  await klik(A, 'przycisk-lobby-start');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'organizator w grze');
+
+  const gra = [...most.gry.values()][0];
+  const zapas = gra.konfiguracja;
+  gra.konfiguracja = null; // most oddał uszkodzony stan (np. połowiczny zapis)
+  await przepompuj(A, 2);
+  assert.match(tekst(A, 'status'), /\[R07\]/, 'jawny kod usterki stanu, nie wyjątek w pollingu');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'aplikacja żyje na uszkodzonym stanie');
+
+  gra.konfiguracja = zapas; // most naprawiony
+  await przepompuj(A, 2);
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'gra toczy się dalej po poprawnym stanie');
+});
+
+test('profil PIN: sprawdź wpisuje imię; nieznany proponuje zapis; zły PIN to R20', async () => {
+  const imie = (u) => el(u, 'lista-imion').children[0].value;
+
+  // znany profil: sprawdzenie wpisuje imię i chowa formularz
+  const most = atrapaMostu();
+  most.profile.set('ala', { pseudonim: 'Ala', pin: '1234' });
+  const A = await noweUrzadzenie({ most });
+  assert.equal(el(A, 'form-profil').hidden, true, 'formularz profilu domyślnie schowany');
+  await klik(A, 'przycisk-profil');
+  assert.equal(el(A, 'form-profil').hidden, false, 'przycisk odsłania formularz');
+  ustaw(A, 'profil-pseudonim', 'Ala');
+  ustaw(A, 'profil-pin', '1234');
+  await klik(A, 'przycisk-profil-sprawdz');
+  assert.equal(el(A, 'form-profil').hidden, true, 'po sukcesie formularz znika');
+  assert.equal(imie(A), 'Ala', 'imię z profilu w polu gracza');
+  assert.match(tekst(A, 'status'), /To Ty/, 'potwierdzenie tożsamości');
+
+  // nieznany profil: R19 + przycisk zapisu tworzy profil i wpisuje imię
+  const B = await noweUrzadzenie({ most });
+  await klik(B, 'przycisk-profil');
+  ustaw(B, 'profil-pseudonim', 'Ewa');
+  ustaw(B, 'profil-pin', '9999');
+  await klik(B, 'przycisk-profil-sprawdz');
+  assert.equal(el(B, 'przycisk-profil-zapisz').hidden, false, 'nieznany pseudonim proponuje zapis');
+  assert.match(tekst(B, 'bledy-profil'), /pseudonimu/, 'komunikat R19 po ludzku');
+  await klik(B, 'przycisk-profil-zapisz');
+  assert.equal(imie(B), 'Ewa', 'nowy profil wpisany');
+  assert.match(tekst(B, 'status'), /Zapisano nowy pseudonim/, 'potwierdzenie zapisu');
+  assert.equal(most.profile.get('ewa').pin, '9999', 'PIN zapisany na moście');
+
+  // zły PIN do znanego profilu: R20, imię nietknięte
+  const C = await noweUrzadzenie({ most });
+  await klik(C, 'przycisk-profil');
+  ustaw(C, 'profil-pseudonim', 'Ala');
+  ustaw(C, 'profil-pin', '0000');
+  await klik(C, 'przycisk-profil-sprawdz');
+  assert.match(tekst(C, 'bledy-profil'), /PIN/, 'komunikat R20 po ludzku');
+  assert.equal(imie(C), 'Gracz 1', 'imię nietknięte po odmowie (został domyślny Gracz 1)');
 });

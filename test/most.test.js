@@ -24,20 +24,20 @@ function pamiecZ(wpisy) {
   };
 }
 
-test('most: stała wdrożeniowa jest łańcuchem i do wdrożenia pozostaje pusta', () => {
+test('most: stała wdrożeniowa niesie adres /exec wpisany commitem (ADR 0020 pkt 5)', () => {
   assert.equal(typeof DOMYSLNY_URL_MOSTU, 'string');
-  assert.equal(
+  assert.match(
     DOMYSLNY_URL_MOSTU,
-    '',
-    'do czasu wdrożenia web app przez właściciela stała jest pusta — adres wstawiamy jednym commitem (plan A5/ADR 0020)',
+    /^https:\/\/script\.google\.com\/macros\/s\/.+\/exec$/,
+    'właściciel wdrożył most i podał adres w czacie — stała nie jest już pusta',
   );
 });
 
-test('most: brak jakiegokolwiek adresu daje pusty łańcuch, nie błąd', () => {
-  assert.equal(adresMostu(pamiecZ({})), '');
-  assert.equal(adresMostu(new Map()), '');
+test('most: pusta pamięć = adres z kodu, nie błąd (ADR 0020)', () => {
+  assert.equal(adresMostu(pamiecZ({})), DOMYSLNY_URL_MOSTU);
+  assert.equal(adresMostu(new Map()), DOMYSLNY_URL_MOSTU);
   assert.equal(adresMostu(null), DOMYSLNY_URL_MOSTU, 'bez pamięci zostaje stała z kodu');
-  assert.equal(mostSkonfigurowany(pamiecZ({})), false);
+  assert.equal(mostSkonfigurowany(pamiecZ({})), true, 'telefon znajomego działa bez wpisywania czegokolwiek');
 });
 
 test('most: nadpisanie gry wieloosobowej wygrywa z nadpisaniem repozytorium', () => {
@@ -68,11 +68,16 @@ test('most: przyjmuje gołą Map (pamięć z atrapy DOM) i obiekt localStorage-p
 });
 
 test('most: stan mówi po ludzku i nie odsyła do wpisywania adresu (ADR 0020 pkt 2)', () => {
-  const bez = stanMostu(pamiecZ({}));
-  assert.equal(bez.podlaczony, false);
-  assert.match(bez.tekst, /niepodłączony/i);
-  assert.match(bez.tekst, /nie ma jeszcze wpisanego adresu/);
-  assert.doesNotMatch(bez.tekst, /wklej|wpisz/i, 'pola adresu zniknęły z UI — komunikat nie może do niego odsyłać');
+  const zKodu = stanMostu(pamiecZ({}));
+  assert.equal(zKodu.podlaczony, true);
+  assert.match(zKodu.tekst, /podłączony/);
+  assert.doesNotMatch(zKodu.tekst, /wpisany/, 'poza testem: sam stan, skąd jest adres wie tylko tryb testowy (Partia 3, pkt 1)');
+  assert.doesNotMatch(zKodu.tekst, /wklej|wpisz/i, 'pola adresu nie ma w UI — komunikat nie może do niego odsyłać');
+
+  const roboczy = stanMostu(pamiecZ({}), { testowy: true });
+  assert.match(roboczy.tekst, /adres jest wpisany w tej wersji aplikacji/, 'tryb testowy zachowuje dopisek o pochodzeniu adresu');
+  assert.match(roboczy.tekst, /ADR 0020/, 'dopisek testowy niesie numer decyzji');
+
 
   const z = stanMostu(pamiecZ({ [KLUCZ_URL_MOSTU]: ADRES }));
   assert.equal(z.podlaczony, true);

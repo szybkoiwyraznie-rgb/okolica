@@ -5,19 +5,13 @@
 
 ## Kontekst
 
-Pytania mają być o **tę konkretną okolicę** i o **zadanej trudności**, więc nie
-da się ich przygotować z góry i wbudować w aplikację. Właściciel wskazał
-rozwiązanie: aplikacja układa prompt, człowiek wkleja go do Meta AI / ChatGPT /
-innego modelu, a odpowiedź wkleja z powrotem. To trzyma projekt przy zerze
-backendu, zerze kluczy API, zerze kosztów i zerze rejestracji (ADR 0001),
-a jednocześnie daje dostęp do dowolnego modelu — także takiego z kwerendą
-internetową (warunek ADR 0008).
-
-Alternatywy rozważone i odrzucone: (a) bezpośrednie wywołania API modelu z
-przeglądarki — wymaga klucza w kliencie (nieakceptowalne) albo proxy (backend);
-(b) pytania wbudowane per miasto — nie skaluje się na „dowolną okolicę";
-(c) generowanie pytań lokalnie z danych OSM — daje pytania o faktach, których
-nie ma w OSM (historia, legendy, kultura).
+Pytania o **tę okolicę** i **zadanej trudności** nie da się wbudować z góry.
+Rozwiązanie: aplikacja układa prompt, człowiek wkleja go do modelu AI, a odpowiedź
+wkleja z powrotem — zero backendu, kluczy, kosztów i rejestracji (ADR 0001),
+dostęp do dowolnego modelu, także z kwerendą internetową (ADR 0008).
+Odrzucone: (a) API modelu z przeglądarki — klucz w kliencie albo proxy;
+(b) pytania wbudowane per miasto — nie skaluje się; (c) generowanie z OSM —
+w OSM nie ma historii, legend ani kultury.
 
 ## Decyzja
 
