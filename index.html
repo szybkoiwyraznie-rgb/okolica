@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-14">
-  <script type="module" src="app/app.js?v=m12-14"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-15">
+  <script type="module" src="app/app.js?v=m12-15"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -158,7 +158,9 @@
         <ul id="lista-graczy" class="lista-historii"></ul>
         <p id="profil-stan" class="podpowiedz">Nowe imię = nowy profil i PIN. Kogoś już znasz? Wpisz imię i jego PIN.</p>
         <ul id="bledy-profil"></ul>
-        <label class="pole sprawdz"><input id="hotseat-zgoda" type="checkbox" checked> <span>Zapisz wynik gry na wspólnym Drive — pseudonimy i punkty wejdą do rankingów. Współrzędne, pytania i paczka zostają na telefonie<span class="dopisek-roboczy"> (ADR 0026)</span>.</span></label>
+        <!-- Zgody na zapis wyniku NIE pytamy przy każdej grze (właściciel,
+             2026-09-07): wynik idzie na Drive domyślnie, a co i dokąd trafia
+             opisuje sekcja „Dane i prywatność". -->
       </fieldset>
 
       <fieldset class="pole">
@@ -602,6 +604,24 @@
             Twoich „Pobranych", nie u nas.</li>
           <li>Kod gry — jawny identyfikator rozgrywki w nazwach plików
             i wpisach historii; niczego nie szyfruje.</li>
+        </ul>
+      </div>
+
+      <div class="karta">
+        <h3>Wspólny Drive: historia i rankingi</h3>
+        <ul class="lista-privatnosc">
+          <li><strong>Wynik gry idzie na wspólne konto Google Drive</strong>
+            (domyślnie, bez pytania przy każdej grze): pseudonimy graczy,
+            punkty, liczba poprawnych i błędnych odpowiedzi, nazwa miejscowości
+            i kategoria wiekowa. Na tej podstawie liczone są rankingi.</li>
+          <li><strong>Okolica startu jako geohash5</strong> — przybliżenie
+            rzędu kilku kilometrów, nie punkt GPS. Współrzędne gracza, trasa,
+            pytania i paczka <strong>zostają na telefonie</strong>.</li>
+          <li><strong>Profil pseudonimu</strong> (imię + PIN) leży na Drive,
+            żeby nikt inny nie zagrał pod Twoim imieniem<span class="dopisek-roboczy"> (ADR 0021)</span>.
+            PIN nie jest zapisywany na telefonie.</li>
+          <li>Grasz bez zasięgu albo bez potwierdzonego profilu — wynik zostaje
+            na telefonie (w kolejce) i aplikacja mówi to wprost pod wynikiem.</li>
         </ul>
       </div>
 

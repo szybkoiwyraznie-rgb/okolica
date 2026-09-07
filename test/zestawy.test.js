@@ -89,7 +89,7 @@ test('zestawy: ponowny zapis tego samego skrotu wymienia wpis, nie duplikuje', (
   assert.equal(rejestr.wpisy[0].data, '2026-09-06');
 });
 
-test('zestawy: dopasowanie okolicy jest ścisłe (geohash5, promień, wiek, tematy)', () => {
+test('zestawy: dopasowanie jest ścisłe (okolica, wiek, stacje, pytania, tematy) — promień NIE jest kryterium', () => {
   const rejestr = {
     schemat: SCHEMAT_INDEKSU,
     wpisy: [
@@ -108,7 +108,13 @@ test('zestawy: dopasowanie okolicy jest ścisłe (geohash5, promień, wiek, tema
     ],
   };
   const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], wiek: 'dorosli' });
-  assert.deepEqual(trafione.map((w) => w.skrot), ['pasuje', 'tematy-kolejnosc', 'podzbior', 'mniejszy-promien'], 'kryteria właściciela: stacje, pytania, poziom, tematy⊆, promień paczki ≤');
+  // Promień nie jest kryterium (właściciel, 2026-09-07 — aneks ADR 0024):
+  // nie wpływa na pytania, a trasę i tak wyznaczają stacje paczki.
+  assert.deepEqual(
+    trafione.map((w) => w.skrot),
+    ['pasuje', 'inny-promien', 'tematy-kolejnosc', 'podzbior', 'wiekszy-promien', 'mniejszy-promien'],
+    'kryteria: okolica, stacje, pytania, poziom, tematy⊆ — paczki o innym promieniu też pasują',
+  );
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33', promienM: 1, liczbaStacji: 1, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1, liczbaStacji: 0, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
 });
@@ -296,4 +302,39 @@ test('zbierzMetaZestawu niesie geohash6 (kotwica tolerancji dla nowych paczek)',
   const m = zbierzMetaZestawu({ lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-07 10:00' });
   assert.equal(m.geohash5, geohash(PODKOWA.lat, PODKOWA.lon, 5));
   assert.equal(m.geohash6, geohash(PODKOWA.lat, PODKOWA.lon, 6));
+});
+
+test('zestawy: powodyNiedopasowania mówi wprost, które kryterium nie zagrało', async () => {
+  const { powodyNiedopasowania, czyWOkolicy, odlegloscWpisuM } = await import('../app/zestawy.js');
+  const { geohash } = await import('../app/geo.js');
+  const PODKOWA = { lat: 52.12303, lon: 20.74614 };
+  const LODZ = { lat: 51.7592, lon: 19.4560 };
+  const wpis = (nad = {}) => ({
+    skrot: 'abcd1234', miejsce: 'Podkowa Leśna', geohash5: geohash(PODKOWA.lat, PODKOWA.lon, 5),
+    geohash6: geohash(PODKOWA.lat, PODKOWA.lon, 6), promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
+    liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-06 19:30', ...nad,
+  });
+  const kryteria = (p, nad = {}) => ({
+    geohash5: geohash(p.lat, p.lon, 5), lat: p.lat, lon: p.lon,
+    wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], ...nad,
+  });
+
+  assert.deepEqual(powodyNiedopasowania(wpis(), kryteria(PODKOWA)), [], 'identyczny setup = zero powodów');
+  assert.equal(czyWOkolicy(wpis(), kryteria(PODKOWA)), true, 'ta sama okolica');
+
+  const daleko = powodyNiedopasowania(wpis(), kryteria(LODZ));
+  assert.equal(daleko.length, 1, 'z Łodzi nie pasuje tylko okolica');
+  assert.match(daleko[0], /inna okolica — paczka powstała 9[0-9](\.[0-9])? km stąd/, 'podaje odległość w km');
+  assert.ok(odlegloscWpisuM(wpis(), kryteria(LODZ)) > 90_000, 'ponad 90 km — daleko poza tolerancją 200 m');
+
+  assert.match(powodyNiedopasowania(wpis({ wiek: 'wiek-12' }), kryteria(PODKOWA))[0], /wiek: paczka „wiek-12", setup „dorosli"/);
+  assert.match(powodyNiedopasowania(wpis({ pytaniaNaStacje: 2 }), kryteria(PODKOWA))[0], /pytania na stację: paczka 2, setup 1/);
+  assert.match(powodyNiedopasowania(wpis({ liczbaStacji: 3 }), kryteria(PODKOWA))[0], /liczba stacji: paczka 3, setup 5/);
+  assert.match(powodyNiedopasowania(wpis({ tematy: ['kultura'] }), kryteria(PODKOWA))[0], /tematy spoza setupu: kultura/);
+  assert.equal(
+    powodyNiedopasowania(wpis({ promienM: 5000 }), kryteria(PODKOWA, { promienM: 500 })).length, 0,
+    'promień setupu i paczki nie są kryterium — zero powodów',
+  );
+  const kilka = powodyNiedopasowania(wpis({ wiek: 'wiek-12', liczbaStacji: 3 }), kryteria(PODKOWA));
+  assert.equal(kilka.length, 2, 'kilka niezgodności = kilka powodów, każdy nazwany');
 });

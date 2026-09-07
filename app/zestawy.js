@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-14';
-import { kanonicznyTemat } from './konfig.js?v=m12-14';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-14';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-14';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-15';
+import { kanonicznyTemat } from './konfig.js?v=m12-15';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-15';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-15';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -173,52 +173,90 @@ export const TOLERANCJA_OKOLICY_M = 200;
  * pkt 7). Bez podanej pozycji (`lat`/`lon`) działa dawna reguła „ten sam
  * geohash5" — kryteria muszą wtedy wystarczyć (rejestr lokalny, testy).
  */
+/** Komórka geohash wpisu: `geohash6` gdy jest, inaczej `geohash5` (ADR 0024 pkt 4). */
+function komorkaWpisu(w) {
+  return typeof w?.geohash6 === 'string' && w.geohash6.length === 6 ? w.geohash6 : w?.geohash5;
+}
+
+/**
+ * Tolerancja okolicy dla wpisu: `TOLERANCJA_OKOLICY_M`, a dla kotwicy
+ * SZACOWANEJ (B19 — most dopisał geohash6 starej paczce ze środka ciężkości jej
+ * stacji) dodatkowo promień paczki: start leży w promieniu od KAŻDEJ stacji,
+ * więc ten zapas gwarantuje brak regresji dla plików sprzed B19.
+ */
+function tolerancjaWpisu(w) {
+  return w?.geohash6Szacowany === true && Number.isFinite(w?.promienM) && w.promienM > 0
+    ? TOLERANCJA_OKOLICY_M + w.promienM
+    : TOLERANCJA_OKOLICY_M;
+}
+
+/**
+ * Czy paczka powstała w tej samej okolicy co gracz (± tolerancja). Bez pozycji
+ * (`lat`/`lon`) działa dawna reguła „ten sam geohash5" (rejestr lokalny, testy).
+ */
+export function czyWOkolicy(w, { geohash5, lat, lon } = {}) {
+  if (!(Number.isFinite(lat) && Number.isFinite(lon))) return w?.geohash5 === geohash5;
+  const d = odlegloscDoKomorkiM(komorkaWpisu(w), lat, lon);
+  return d !== null && d <= tolerancjaWpisu(w);
+}
+
+/** Odległość wpisu od gracza w metrach (null, gdy nie da się policzyć). */
+export function odlegloscWpisuM(w, { lat, lon } = {}) {
+  if (!(Number.isFinite(lat) && Number.isFinite(lon))) return null;
+  return odlegloscDoKomorkiM(komorkaWpisu(w), lat, lon);
+}
+
+/**
+ * Powody, dla których wpis NIE pasuje do setupu — pusta lista znaczy „pasuje".
+ * JEDNO źródło prawdy: `dopasujZestawy` filtruje po tym, a UI cytuje powody
+ * wprost (decyzja właściciela 2026-09-07: komunikat ma mówić, CO nie pasuje,
+ * a nie wymieniać cały setup).
+ *
+ * Promień NIE jest kryterium (decyzja 2026-09-07): nie wpływa na pytania,
+ * a trasę i tak wyznaczają stacje paczki.
+ */
+export function powodyNiedopasowania(w, { geohash5, lat, lon, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny = '' } = {}) {
+  const powody = [];
+  if (!czyWOkolicy(w, { geohash5, lat, lon })) {
+    const d = odlegloscWpisuM(w, { lat, lon });
+    powody.push(d == null
+      ? 'inna okolica'
+      : `inna okolica — paczka powstała ${d >= 1000 ? `${Math.round(d / 100) / 10} km` : `${Math.round(d)} m`} stąd`);
+  }
+  if (w?.wiek !== wiek) powody.push(`wiek: paczka „${w?.wiek ?? 'brak'}", setup „${wiek}"`);
+  if (w?.pytaniaNaStacje !== pytaniaNaStacje) {
+    powody.push(`pytania na stację: paczka ${w?.pytaniaNaStacje ?? '?'}, setup ${pytaniaNaStacje}`);
+  }
+  if (w?.liczbaStacji !== liczbaStacji) {
+    powody.push(`liczba stacji: paczka ${w?.liczbaStacji ?? '?'}, setup ${liczbaStacji}`);
+  }
+  const szukany = zbiorTematow((tematy ?? []).map(kanonicznyTemat));
+  const obce = (w?.tematy ?? []).map(kanonicznyTemat).filter((t) => !szukany.has(t));
+  if (obce.length) powody.push(`tematy spoza setupu: ${obce.join(', ')}`);
+  if ((w?.tematy ?? []).map(kanonicznyTemat).includes('wlasny')) {
+    const moj = String(tematWlasny ?? '').trim().toLowerCase();
+    const paczki = String(w?.tematWlasny ?? '').trim().toLowerCase();
+    if (moj === '' || paczki !== moj) powody.push(`temat własny: paczka „${w?.tematWlasny ?? 'brak'}", setup „${moj || 'brak'}"`);
+  }
+  return powody;
+}
+
 export function dopasujZestawy(rejestr, { geohash5, lat, lon, promienM, liczbaStacji, pytaniaNaStacje, tematy, wiek, tematWlasny = '' } = {}) {
   wymaganie(typeof geohash5 === 'string' && geohash5.length === 5, 'dopasujZestawy: geohash5 musi mieć 5 znaków');
-  wymaganie(Number.isFinite(promienM) && promienM > 0, 'dopasujZestawy: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'dopasujZestawy: liczbaStacji musi być dodatnią liczbą całkowitą');
   wymaganie(Number.isInteger(pytaniaNaStacje) && pytaniaNaStacje > 0, 'dopasujZestawy: pytaniaNaStacje musi być dodatnią liczbą całkowitą');
   wymaganie(Array.isArray(tematy) && tematy.length > 0, 'dopasujZestawy: tematy muszą być niepustą listą');
   wymaganie(typeof wiek === 'string' && wiek.length > 0, 'dopasujZestawy: wiek musi być nazwą');
-  const szukany = zbiorTematow(tematy.map(kanonicznyTemat));
   // tolerujemy obie konwencje: surowa lista wpisów (walidacje surowe) i obiekt
   // rejestru `{ schemat, wpisy }` (zapis) — jedno wejście, zero niespodzianek
   const lista = Array.isArray(rejestr) ? rejestr : (rejestr?.wpisy ?? []);
-  // Kryteria właściciela (2026-09-06): ta sama okolica (geohash5), ta sama
-  // liczba stacji i pytań na stację, ten sam poziom (wiek), tematy paczki
-  // NIE SZERSZE niż w setupie oraz promień paczki ≤ promienia z setupu
-  // (stacje bliżej niż oczekiwano są uczciwe, dalej — nie).
-  const mamPozycje = Number.isFinite(lat) && Number.isFinite(lon);
-  // Okolica: odległość od komórki geohash paczki ≤ tolerancji (0 = w środku).
-  // Nowe pliki niosą `geohash6` (≈0,75 × 0,61 km); starsze tylko `geohash5`
-  // (≈3,0 × 4,9 km) — dla nich reguła to dawne „w tej samej komórce" plus
-  // 200 m marginesu na granicy (ADR 0024 pkt 4).
-  const komorkaWpisu = (w) => (typeof w.geohash6 === 'string' && w.geohash6.length === 6 ? w.geohash6 : w.geohash5);
-  // Kotwica szacowana (B19): most dopisał geohash6 starej paczce ze środka
-  // ciężkości jej stacji, bo plik nie pamięta pozycji startowej. Start leży
-  // w promieniu `promienM` od KAŻDEJ stacji, więc poszerzenie tolerancji o ten
-  // promień gwarantuje, że ten sam start dalej się dopasuje (brak regresji),
-  // a nadmiarowe dopasowanie maleje z ~4 km (geohash5) do ~promienM paczki.
-  const tolerancjaWpisu = (w) => (
-    w.geohash6Szacowany === true && Number.isFinite(w.promienM) && w.promienM > 0
-      ? TOLERANCJA_OKOLICY_M + w.promienM
-      : TOLERANCJA_OKOLICY_M
-  );
-  const wOkolicy = (w) => {
-    if (!mamPozycje) return w.geohash5 === geohash5;
-    const d = odlegloscDoKomorkiM(komorkaWpisu(w), lat, lon);
-    return d !== null && d <= tolerancjaWpisu(w);
-  };
-  const mojWlasny = String(tematWlasny ?? '').trim().toLowerCase();
-  const tenSamWlasny = (w) => {
-    if (!w.tematy.map(kanonicznyTemat).includes('wlasny')) return true;
-    return mojWlasny !== '' && String(w.tematWlasny ?? '').trim().toLowerCase() === mojWlasny;
-  };
+  // Kryteria (właściciel, 2026-09-07): ta sama okolica (±200 m od miejsca
+  // wygenerowania), wiek, liczba stacji i pytań na stację oraz tematy paczki
+  // NIE SZERSZE niż w setupie. Promień NIE jest kryterium — nie wpływa na
+  // pytania (aneks ADR 0024).
+  const kryteria = { geohash5, lat, lon, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny };
   return lista
-    .filter((w) => wOkolicy(w) && w.promienM <= promienM
-      && w.liczbaStacji === liczbaStacji && w.pytaniaNaStacje === pytaniaNaStacje
-      && w.wiek === wiek && w.tematy.map(kanonicznyTemat).every((temat) => szukany.has(temat))
-      && tenSamWlasny(w))
+    .filter((w) => !powodyNiedopasowania(w, kryteria).length)
     .sort((a, b) => String(b.data).localeCompare(String(a.data)));
 }
 

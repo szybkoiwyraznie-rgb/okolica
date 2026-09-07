@@ -1842,6 +1842,42 @@ test('sygnały: „🔔 sygnały" startuje włączone, a klik przełącza i zapi
 
 /* --------- wynik gry hot-seat na wspólnym Drive (ADR 0026 aneks) ----------- */
 
+/**
+ * Gra z JEDNYM graczem zapamiętanym bez potwierdzenia: dodajemy go przez UI
+ * przy padniętym moście, więc wchodzi na listę jako „bez potwierdzenia z Drive".
+ */
+async function graZNiepewnymGraczem() {
+  const pamiec = new Map();
+  pamiec.set('okolica:gracze', JSON.stringify({
+    schemat: 'gracze-lokalni/1',
+    gracze: [{ pseudonim: 'Ala', zweryfikowany: false }],
+  }));
+  pamiec.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1',
+    konfig: { liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+  }));
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?niepewny=${Math.random().toString(36).slice(2)}`);
+  const staryFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error('offline'); };
+  try {
+    const chip = dom.pobierz('lista-zapamietanych').children[0]; // zapamiętany, ale niepewny → prosi o PIN
+    for (const fn of chip.zdarzenia.click ?? []) fn({ type: 'click', target: chip, currentTarget: chip });
+    dom.pobierz('profil-pin').value = '1234';
+    dom.kliknij('przycisk-dodaj-gracza');
+    await czekaj(10);
+  } finally {
+    globalThis.fetch = staryFetch;
+  }
+  assert.equal(dom.pobierz('lista-graczy').children.length, 1, 'gracz dodany bez potwierdzenia');
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje');
+  const paczka = czytajFixturePaczka();
+  dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
+  dom.kliknij('przycisk-sprawdz');
+  return { dom, paczka, pamiec };
+}
+
 /** Krótka gra: dwa dojścia ręczne, dwie odpowiedzi, ręczne zakończenie. */
 async function grajDwieStacjeIKoncz(dom) {
   zaczynijGre(dom);
@@ -1927,9 +1963,8 @@ test('hot-seat: bez sieci wynik czeka w kolejce i dojeżdża przy następnym sta
   }
 });
 
-test('hot-seat: bez zgody albo bez potwierdzonego gracza wynik zostaje na telefonie', async () => {
+test('hot-seat: wynik jedzie domyślnie — bez pytania o zgodę przy każdej grze', async () => {
   const { dom } = await graGotowaDoStartu();
-  dom.pobierz('hotseat-zgoda').checked = false; // zgoda odznaczona
   const zadania = [];
   const staryFetch = globalThis.fetch;
   globalThis.fetch = async (adres, opcje) => {
@@ -1938,8 +1973,25 @@ test('hot-seat: bez zgody albo bez potwierdzonego gracza wynik zostaje na telefo
   };
   try {
     await grajDwieStacjeIKoncz(dom);
-    assert.equal(zadania.filter((c) => c.akcja === 'gra-hotseat').length, 0, 'bez zgody nic nie jedzie na Drive (ADR 0013)');
-    assert.equal(dom.pobierz('wynik-drive').textContent, '', 'bez zgody nie ma też komunikatu o wysyłce');
+    assert.equal(zadania.filter((c) => c.akcja === 'gra-hotseat').length, 1, 'zapis jest domyślny (właściciel 2026-09-07)');
+    assert.match(dom.pobierz('wynik-drive').textContent, /na wspólnym Drive/, 'gracz widzi, co się stało');
+  } finally {
+    globalThis.fetch = staryFetch;
+  }
+});
+
+test('hot-seat: bez potwierdzonego profilu wynik zostaje na telefonie — i jest to powiedziane', async () => {
+  const { dom } = await graZNiepewnymGraczem();
+  const zadania = [];
+  const staryFetch = globalThis.fetch;
+  globalThis.fetch = async (adres, opcje) => {
+    zadania.push(JSON.parse(opcje.body));
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
+  try {
+    await grajDwieStacjeIKoncz(dom);
+    assert.equal(zadania.filter((c) => c.akcja === 'gra-hotseat').length, 0, 'bez profilu nie ma gdzie zapisać punktów');
+    assert.match(dom.pobierz('wynik-drive').textContent, /żaden gracz nie ma potwierdzonego profilu/, 'komunikat mówi wprost, dlaczego');
   } finally {
     globalThis.fetch = staryFetch;
   }

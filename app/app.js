@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-14';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-14';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-15';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-15';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -29,21 +29,21 @@ import {
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
-} from './protokol.js?v=m12-14';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-14';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-14';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-14';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-14';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-14';
+} from './protokol.js?v=m12-15';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-15';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-15';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-15';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-15';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-15';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
-  dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
+  czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-14';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-14';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-14';
+} from './zestawy.js?v=m12-15';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-15';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-15';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -63,11 +63,11 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-14';
-import { utworzMape } from './mapa.js?v=m12-14';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-14';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-14';
-import { adresMostu, stanMostu } from './most.js?v=m12-14';
+} from './sieci.js?v=m12-15';
+import { utworzMape } from './mapa.js?v=m12-15';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-15';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-15';
+import { adresMostu, stanMostu } from './most.js?v=m12-15';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -632,14 +632,12 @@ function kluczGryHotseat(r) {
 }
 
 /**
- * Czy wynik tej gry ma lecieć na Drive. Gra wieloosobowa ma wyniki na moście
- * z urzędu (ADR 0019), więc dotyczy to tylko gry na tym telefonie; zgoda jest
- * jawna (ADR 0013), a bez choć jednego gracza potwierdzonego profilem nie ma
- * gdzie zapisać punktów — wtedy nic nie wysyłamy i mówimy to wprost.
+ * Czy jest dokąd zapisać wynik: potrzebny choć jeden gracz potwierdzony
+ * profilem na Drive. Zapis jest DOMYŚLNY i nie pytamy o niego przy każdej
+ * grze (właściciel, 2026-09-07) — co i dokąd trafia, opisuje sekcja „Dane
+ * i prywatność".
  */
 function czyWysylacWynikHotseat() {
-  if (STAN.multi) return false;
-  if (!$('hotseat-zgoda')?.checked) return false;
   return (STAN.graczeZweryfikowani ?? []).some(Boolean);
 }
 
@@ -674,7 +672,11 @@ function stanWysylkiWyniku(tekst) {
 }
 
 async function wyslijWynikHotseat() {
-  if (!czyWysylacWynikHotseat()) return;
+  if (STAN.multi) return; // gra wieloosobowa ma wyniki na moście z urzędu (ADR 0019)
+  if (!czyWysylacWynikHotseat()) {
+    stanWysylkiWyniku('Wynik został na telefonie — żaden gracz nie ma potwierdzonego profilu, więc historia i rankingi z tej gry nie zostaną zapisane.');
+    return;
+  }
   const r = STAN.rozgrywka;
   const klucz = kluczGryHotseat(r);
   if (czytajWyslaneHotseat().includes(klucz)) return; // ta gra już pojechała
@@ -1641,14 +1643,21 @@ function pokazStanMostu() {
   }
 }
 
+/** „1 paczka", „2 paczki", „5 paczek" — komunikat ma brzmieć po polsku. */
+function opisLiczbyPaczek(ile) {
+  if (ile === 1) return 'jest 1 paczka';
+  if (ile > 1 && ile < 5) return `są ${ile} paczki`;
+  return `jest ${ile} paczek`;
+}
+
+/** Licznik pokoleń odświeżeń propozycji — patrz `odswiezPropozycjeZestawow`. */
+let POKOLENIE_PROPOZYCJI = 0;
+
 /**
  * Karta propozycji na ekranie pozycja: najpierw kopie z tego telefonu, potem
  * (asynchronicznie, z timeoutem) dopasowania z repozytorium. Każda awaria
  * repo = „brak propozycji", nigdy blokada gry (ADR 0017 pkt 6).
  */
-/** Licznik pokoleń odświeżeń propozycji — patrz `odswiezPropozycjeZestawow`. */
-let POKOLENIE_PROPOZYCJI = 0;
-
 function odswiezPropozycjeZestawow() {
   const karta = $('zestawy-karta');
   if (!karta) return;
@@ -1726,13 +1735,22 @@ function odswiezPropozycjeZestawow() {
       // naprawić zmianą ustawień.
       if (dopasowane.length) {
         $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
-      } else if (indeks.length) {
-        $('zestawy-status').textContent = 'Repozytorium ma paczki (w indeksie: ' + indeks.length
-          + '), ale żadna nie pasuje do tego setupu: ' + kryteria.liczbaStacji + ' stacji × ' + kryteria.pytaniaNaStacje
-          + ' pytań, wiek ' + kryteria.wiek + ', promień ' + kryteria.promienM + ' m, tematy: ' + kryteria.tematy.join(', ')
-          + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.';
       } else {
-        $('zestawy-status').textContent = 'Repozytorium jest puste — nowe pytania przygotuje model.';
+        // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
+        // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat
+        // mówi WPROST, które kryterium nie pasuje — nie wymienia całego setupu.
+        const bliskie = indeks.filter((m) => czyWOkolicy(m, kryteria));
+        let komunikat;
+        if (bliskie.length) {
+          komunikat = `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale ${bliskie.length === 1 ? 'nie pasuje' : 'nie pasują'}: `
+            + bliskie.map((m) => `${m.miejsce ?? 'paczka bez nazwy'} — ${powodyNiedopasowania(m, kryteria).join('; ')}`).join(' | ')
+            + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.';
+        } else {
+          komunikat = indeks.length
+            ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
+            : 'Repozytorium jest puste — nowe pytania przygotuje model.';
+        }
+        $('zestawy-status').textContent = komunikat;
       }
     })
     .catch(() => {

@@ -708,9 +708,14 @@ test('kontrakt ADR 0026: przejście z ekranu 1 przechodzi przez bramę tożsamo�
 test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat na Drive', () => {
   const WIELOOSOBOWA = czytaj('app/wieloosobowa.js');
   // blok tożsamości JEST listą graczy (decyzja właściciela 2026-09-07)
-  for (const id of ['przycisk-dodaj-gracza', 'lista-graczy', 'lista-zapamietanych', 'hotseat-zgoda', 'wynik-drive']) {
+  for (const id of ['przycisk-dodaj-gracza', 'lista-graczy', 'lista-zapamietanych', 'wynik-drive']) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
+  // Zapis wyniku jest DOMYŚLNY: bez checkboxa przy każdej grze (właściciel,
+  // 2026-09-07), a co i dokąd trafia — opisuje sekcja „Dane i prywatność".
+  assert.ok(!INDEX.includes('id="hotseat-zgoda"'), 'zgody na zapis wyniku nie pytamy przy każdej grze');
+  assert.match(INDEX, /Wspólny Drive: historia i rankingi/, 'sekcja prywatność opisuje zapis wyniku na Drive');
+  assert.match(INDEX, /Wynik gry idzie na wspólne konto Google Drive/, 'sekcja prywatność mówi, że to domyślne');
   assert.ok(!INDEX.includes('id="setup-gracze"'), 'pola „Liczba graczy" nie ma — liczbą jest długość listy');
   assert.ok(!INDEX.includes('id="lista-imion"'), 'ręczne pola imion zastąpiła lista graczy');
   assert.match(INDEX, /Kto gra\?/, 'blok tożsamości pyta „Kto gra?"');
@@ -730,6 +735,18 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   assert.match(GS, /if \(gra\.tryb === 'hotseat'\) return premia;/, 'most nie daje premii w hot-seat (kopia pilnowana testem)');
   // awaria sieci nie gubi wyniku: kolejka i jej opróżnianie przy starcie
   assert.ok(APP.includes('okolica:hotseat-kolejka') && APP.includes('oproznijKolejkeHotseat()'), 'wynik czeka w kolejce i dojeżdża później (ADR 0016 pkt 5)');
+});
+
+test('kontrakt ADR 0024 aneks: promień nie jest kryterium, a komunikat nazywa powód', () => {
+  const ZESTAWY = czytaj('app/zestawy.js');
+  assert.match(ZESTAWY, /export function powodyNiedopasowania/, 'zestawy.js umie nazwać powód niedopasowania');
+  assert.match(ZESTAWY, /export function czyWOkolicy/, 'okolica jest osobnym, jawnym kryterium');
+  assert.equal(/w\.promienM <= promienM/.test(ZESTAWY), false, 'promień paczki nie jest już kryterium dopasowania');
+  assert.match(ZESTAWY, /Promień NIE jest kryterium/, 'reguła jest zapisana przy kodzie, nie tylko w ADR');
+  // komunikat karty paczek cytuje powody, a nie cały setup
+  assert.match(APP, /powodyNiedopasowania\(m, kryteria\)/, 'app.js cytuje powody wprost w komunikacie');
+  assert.equal(/ale żadna nie pasuje do tego setupu/.test(APP), false, 'stary komunikat z całym setupem zniknął');
+  assert.match(APP, /czyWOkolicy\(m, kryteria\)/, 'paczki z innych okolic nie są nawet liczone');
 });
 
 test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', () => {

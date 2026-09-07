@@ -88,10 +88,10 @@ function kliknijPierwszyPrzyciskZestawu(dom) {
   return przycisk;
 }
 
-async function dojdzDoPozycji(dom) {
+async function dojdzDoPozycji(dom, lat = POZYCJA.lat, lon = POZYCJA.lon) {
   dom.kliknij('przycisk-dalej-pozycja');
-  dom.pobierz('setup-lat').value = String(POZYCJA.lat);
-  dom.pobierz('setup-lon').value = String(POZYCJA.lon);
+  dom.pobierz('setup-lat').value = String(lat);
+  dom.pobierz('setup-lon').value = String(lon);
   dom.kliknij('przycisk-ustaw-reczne');
 }
 
@@ -442,7 +442,7 @@ test('zestawy UI: paczka kilka metrów od gracza jest widoczna mimo innego geoha
   }
 });
 
-test('zestawy UI: paczki są, ale nie pasują do setupu — komunikat podaje kryteria (nie „brak paczek")', async () => {
+test('zestawy UI: paczka w okolicy nie pasuje — komunikat mówi CO nie pasuje, nie cały setup', async () => {
   const indeks = {
     schemat: 'TO-indeks/1',
     wpisy: [{ ...indeksZPropozycja().wpisy[0], liczbaStacji: 5 }], // setup ma 3 stacje
@@ -456,9 +456,33 @@ test('zestawy UI: paczki są, ale nie pasują do setupu — komunikat podaje kry
     await new Promise((r) => setTimeout(r, 30));
     assert.equal(dom.pobierz('zestawy-lista').children.length, 0, 'niedopasowana paczka nie udaje propozycji');
     const komunikat = dom.pobierz('zestawy-status').textContent;
-    assert.match(komunikat, /ale żadna nie pasuje do tego setupu/, 'mówi, że paczki SĄ');
-    assert.match(komunikat, /3 stacji × 1 pytań/, 'podaje kryterium, które nie zagrało');
+    assert.match(komunikat, /W tej okolicy jest 1 paczka, ale nie pasuje/, 'mówi, że paczka JEST i że nie pasuje');
+    assert.match(komunikat, /liczba stacji: paczka 5, setup 3/, 'nazywa kryterium, które nie zagrało');
+    assert.match(komunikat, /Podkowa Leśna/, 'mówi, o którą paczkę chodzi');
+    assert.equal(/promień/.test(komunikat), false, 'promień nie jest kryterium, więc nie pojawia się w komunikacie');
+    assert.equal(/tematy:/.test(komunikat), false, 'komunikat nie wymienia całego setupu');
     assert.match(komunikat, /Zmień te ustawienia/, 'mówi, co zrobić');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('zestawy UI: paczka 100 km dalej nie jest ani proponowana, ani wspominana (właściciel 2026-09-07)', async () => {
+  // Paczka z Podkowy Leśnej, a gracz w Łodzi — 97 km od komórki paczki.
+  const POZYCJA_LODZ = { lat: 51.7592, lon: 19.4560 };
+  const indeks = indeksZPropozycja();
+  const atrap = atrapaFetch({ indeks: JSON.stringify(indeks), plik: JSON.stringify(plikZRepo()) });
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom, POZYCJA_LODZ.lat, POZYCJA_LODZ.lon);
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(dom.pobierz('zestawy-lista').children.length, 0, 'odległa paczka nie udaje propozycji');
+    const komunikat = dom.pobierz('zestawy-status').textContent;
+    assert.match(komunikat, /nie ma paczek dla tej okolicy/, 'komunikat mówi o tej okolicy, nie o całym indeksie');
+    assert.equal(/w indeksie/.test(komunikat), false, 'nie liczy paczek z innych okolic');
+    assert.equal(/Podkowa Leśna/.test(komunikat), false, 'nie wymia paczki z drugiego końca kraju');
   } finally {
     atrap.przywroc();
   }
