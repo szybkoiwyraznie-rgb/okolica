@@ -732,3 +732,16 @@ test('kontrakt: cache-busting w CAŁYM grafie — każdy import w app/*.js ma ?v
     }
   }
 });
+
+/* ------------------------------- ADR 0006 aneks 2026-09-07: koniec edycji paczki */
+
+test('kontrakt: ręczna edycja paczki nie istnieje w kodzie (ADR 0006 aneks 2026-09-07)', () => {
+  const protokol = czytaj('app/protokol.js');
+  // Podgląd i edycja organizatora zniknęły z ekranu decyzją właściciela
+  // (2026-09-07), więc funkcja je obsługująca była martwa — a przy tym
+  // walidowała `poprawna` jako 0..3, czyli sprzed rev2 (kod pozycyjny).
+  assert.ok(!protokol.includes('zastosujEdycjePaczki'), 'martwa funkcja edycji usunięta z app/protokol.js');
+  assert.ok(!protokol.includes('EDYTOWALNE_POLA'), 'lista pól edytowalnych usunięta razem z funkcją');
+  assert.ok(!INDEX.includes('podglad-pytania'), 'ekran paczki nie ma podglądu pytania');
+  assert.match(czytaj('app/protokol.js'), /export function poprawkaDlaModelu/, 'ścieżka usterek (poprawka do modelu) zostaje');
+});
