@@ -17,7 +17,7 @@
  * ADR 0014 wycofany). Znaczniki czasu w dzienniku służą tylko kolejności zdarzeń.
  */
 
-import { odlegloscM } from './geo.js?v=m12-6';
+import { odlegloscM } from './geo.js?v=m12-7';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
