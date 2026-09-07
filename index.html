@@ -35,6 +35,7 @@
       <button id="przycisk-motyw" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny">☾ motyw</button>
       <button id="przycisk-sygnaly" class="przycisk przycisk-maly" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)">🔔 sygnały</button>
       <button id="przycisk-test" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Tryb testowy: ręczne współrzędne zamiast GPS">⚙ tryb testowy</button>
+      <button id="przycisk-ranking" class="przycisk przycisk-maly" type="button" title="Rankingi graczy i moje gry (M12)">🏆 rankingi</button>
     </div>
   </header>
 
@@ -620,6 +621,24 @@
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wrocz-prywatnosc" class="przycisk przycisk-glowny" type="button">← wróć</button>
       </div>
+    </section>
+
+    <!-- M12/P6: rankingi graczy (dane z mostu Drive, agregacje po stronie telefonu) -->
+    <section id="ekran-ranking" class="ekran" hidden aria-labelledby="tytul-ranking">
+      <h2 id="tytul-ranking">🏆 Rankingi</h2>
+      <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych ze wspólnego konta Drive. Agregacje liczy telefon — serwer oddaje surowe wiersze (RO-ranking/1).</p>
+      <div class="wiersz">
+        <button id="przycisk-ranking-odswiez" class="przycisk" type="button">🔄 Odśwież</button>
+        <button id="przycisk-wrocz-ranking" class="przycisk" type="button">← wróć</button>
+      </div>
+      <p id="ranking-status" class="podpowiedz" role="status"></p>
+      <div id="ranking-zakladki" class="segment"></div>
+      <div id="ranking-kategorie" class="chipy"></div>
+      <table id="ranking-tabela" class="tabela-wynikow">
+        <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Gry</th><th scope="col">Poprawne</th></tr></thead>
+        <tbody id="ranking-wiersze"></tbody>
+      </table>
+      <ul id="ranking-moje-gry" class="lista-historii" hidden></ul>
     </section>
 
   </main>

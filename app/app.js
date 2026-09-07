@@ -60,7 +60,7 @@ import {
   wczytajDaneZCache,
 } from './sieci.js?v=m11-1';
 import { utworzMape } from './mapa.js?v=m11-1';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, biezacyGraczTury, filtrujLobby, kodPoprawny, normalizujKod, przeliczWyniki, ramkaGeohash, walidujLobbySurowe, zbudujZdarzenie } from './wieloosobowa.js?v=m11-1';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, filtrujLobby, kategorieRankingu, kodPoprawny, normalizujKod, przeliczWyniki, ramkaGeohash, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m11-1';
 import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m11-1';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
@@ -120,6 +120,10 @@ const STAN = {
   multiRepoUrl: null,
   /** M11/P4: dwustopniowa rezygnacja z gry wieloosobowej (jak inne destrukcyjne). */
   multiRezygnacjaUzbrojona: false,
+  /** M12/P6: surowe wiersze RO-ranking/1 z mostu + aktywna zakładka i kategoria. */
+  rankingWiersze: null,
+  rankingZakladka: 'ogolny',
+  rankingKategoria: null,
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
@@ -3285,6 +3289,164 @@ function rezygnujZGryMulti() {
   status('Zrezygnowałeś — Twój wynik poniżej. Synchronizacja działa dalej: gdy inni skończą, zobaczysz ostateczną tabelę.');
 }
 
+/* ================================ M12/P6: rankingi i moje gry (ADR 0019 pkt 7) */
+
+const RANKING_ZAKLADKI = [
+  { klucz: 'ogolny', etykieta: 'Ogólny' },
+  { klucz: 'wiek', etykieta: 'Wiek' },
+  { klucz: 'tematy', etykieta: 'Tematy' },
+  { klucz: 'lokalizacja', etykieta: 'Lokalizacja' },
+  { klucz: 'moje', etykieta: 'Moje gry' },
+];
+
+/** Ekran rankingów nie jest krokiem gry — chowa wszystkie ekrany (jak prywatność). */
+function pokazRankingi() {
+  for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
+  $('ekran-prywatnosc').hidden = true;
+  $('ekran-ranking').hidden = false;
+  window.scrollTo({ top: 0 });
+  void pobierzRankingi();
+}
+
+function wrocZRankingu() {
+  $('ekran-ranking').hidden = true;
+  pokazEkran(EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup');
+}
+
+/** Adres mostu do rankingów: pole gry wieloosobowej, zapasowo indeks repo paczek. */
+function urlMostuRankingu() {
+  if (typeof localStorage === 'undefined') return '';
+  return localStorage.getItem(KLUCZ_URL_MOSTU) ?? localStorage.getItem(KLUCZ_URL_REPO) ?? '';
+}
+
+async function pobierzRankingi() {
+  const url = urlMostuRankingu();
+  if (!url) {
+    STAN.rankingWiersze = [];
+    $('ranking-status').textContent = 'Brak adresu mostu Drive — wpisz go w ustawieniach (rodzaj gry „wieloosobowa" → „Adres mostu") i zapisz.';
+    renderujRankingi();
+    return;
+  }
+  $('ranking-status').textContent = 'Pobieram wyniki zakończonych gier…';
+  try {
+    const odpowiedz = await pobierzGetMulti(urlGet(url, 'ranking'));
+    const { wiersze, usterki } = walidujRankingSurowy(JSON.stringify(odpowiedz ?? null));
+    STAN.rankingWiersze = wiersze;
+    $('ranking-status').textContent = usterki.length && !wiersze.length
+      ? `Odpowiedź mostu jest nieczytelna (${usterki[0].komunikat}).`
+      : (wiersze.length
+        ? `Zakończone gry wieloosobowe: ${wiersze.length} wyników graczy.`
+        : 'Na moście nie ma jeszcze zakończonych gier — rankingi zapełnią się po pierwszych rozgrywkach.');
+  } catch (e) {
+    $('ranking-status').textContent = `Nie udało się pobrać rankingów: ${e?.message ?? e}`;
+  }
+  renderujRankingi();
+}
+
+function renderujRankingi() {
+  const wiersze = STAN.rankingWiersze ?? [];
+  const zakladki = $('ranking-zakladki');
+  zakladki.replaceChildren();
+  for (const z of RANKING_ZAKLADKI) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'przycisk przycisk-maly';
+    b.textContent = z.etykieta;
+    b.setAttribute('aria-pressed', String(STAN.rankingZakladka === z.klucz));
+    b.addEventListener('click', () => {
+      STAN.rankingZakladka = z.klucz;
+      STAN.rankingKategoria = null; // nowa zakładka startuje od pierwszej kategorii
+      renderujRankingi();
+    });
+    zakladki.appendChild(b);
+  }
+  const chipy = $('ranking-kategorie');
+  chipy.replaceChildren();
+  const tbody = $('ranking-wiersze');
+  const mojeLista = $('ranking-moje-gry');
+  const tabela = $('ranking-tabela');
+
+  if (STAN.rankingZakladka === 'moje') {
+    tabela.hidden = true;
+    mojeLista.hidden = false;
+    const pseudonim = (typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_PSEUDONIMU) : null) ?? '';
+    const moje = wiersze.filter((w) => w.pseudonim === pseudonim);
+    mojeLista.replaceChildren();
+    const komunikat = (tekst) => { const li = document.createElement('li'); li.textContent = tekst; mojeLista.appendChild(li); };
+    if (!pseudonim) komunikat('Nie masz jeszcze pseudonimu — ustaw go w ustawieniach gry (rodzaj gry: „Gra na wielu urządzeniach").');
+    else if (!moje.length) komunikat(`Pseudonim „${pseudonim}” nie ma jeszcze zakończonych gier na moście Drive.`);
+    else {
+      for (const w of moje) {
+        const li = document.createElement('li');
+        li.textContent = `${String(w.data ?? '').slice(0, 16).replace('T', ' ')} · ${w.miejsce || 'nieznane miejsce'} · ${w.tryb === TRYBY_GRY.tury ? 'tury' : 'wyścig'} · ${w.punkty} pkt · ${w.poprawne} poprawne, ${w.bledne} błędne · ${w.stacjeZamkniete} stacji`;
+        mojeLista.appendChild(li);
+      }
+    }
+    return;
+  }
+  tabela.hidden = false;
+  mojeLista.hidden = true;
+
+  // kategorie (wiek/tematy/lokalizacja) — chipy z dostępnych wartości
+  const kategorie = kategorieRankingu(wiersze);
+  let filtr = {};
+  let pustoWKategorii = false;
+  const chip = (klucz, etykieta) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'przycisk przycisk-maly';
+    b.textContent = etykieta;
+    b.setAttribute('aria-pressed', String(STAN.rankingKategoria === klucz));
+    b.addEventListener('click', () => { STAN.rankingKategoria = klucz; renderujRankingi(); });
+    chipy.appendChild(b);
+  };
+  if (STAN.rankingZakladka === 'wiek') {
+    pustoWKategorii = kategorie.wieki.length === 0;
+    if (!pustoWKategorii) {
+      if (!kategorie.wieki.includes(STAN.rankingKategoria)) STAN.rankingKategoria = kategorie.wieki[0];
+      for (const k of kategorie.wieki) chip(k, WIEK[k]?.etykieta ?? k);
+      filtr = { wiek: STAN.rankingKategoria };
+    }
+  } else if (STAN.rankingZakladka === 'tematy') {
+    pustoWKategorii = kategorie.tematy.length === 0;
+    if (!pustoWKategorii) {
+      if (!kategorie.tematy.includes(STAN.rankingKategoria)) STAN.rankingKategoria = kategorie.tematy[0];
+      for (const k of kategorie.tematy) chip(k, TEMATY[k]?.etykieta ?? k);
+      filtr = { temat: STAN.rankingKategoria };
+    }
+  } else if (STAN.rankingZakladka === 'lokalizacja') {
+    pustoWKategorii = kategorie.lokalizacje.length === 0;
+    if (!pustoWKategorii) {
+      const klucze = kategorie.lokalizacje.map((l) => l.geohash5);
+      if (!klucze.includes(STAN.rankingKategoria)) STAN.rankingKategoria = klucze[0];
+      for (const l of kategorie.lokalizacje) chip(l.geohash5, l.miejsce || l.geohash5);
+      filtr = { geohash5: STAN.rankingKategoria };
+    }
+  }
+
+  const agregat = pustoWKategorii ? [] : agregujRanking(wiersze, filtr);
+  tbody.replaceChildren();
+  if (!agregat.length) {
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.setAttribute('colspan', '5');
+    td.textContent = 'Brak zakończonych gier w tej kategorii — zapełni się po pierwszych rozgrywkach.';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  const pseudonim = (typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_PSEUDONIMU) : null) ?? '';
+  agregat.forEach((a, i) => {
+    const tr = document.createElement('tr');
+    for (const tekst of [`${i + 1}.`, `${a.pseudonim}${a.pseudonim === pseudonim ? ' (Ty)' : ''}`, String(a.punkty), String(a.gry), `${a.poprawne} ✓ / ${a.bledne} ✗`]) {
+      const td = document.createElement('td');
+      td.textContent = tekst;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  });
+}
+
 function start() {
   wczytajKonfiguracje();
   banerStartowy();
@@ -3315,6 +3477,9 @@ function start() {
   $('przycisk-sygnaly').setAttribute('aria-pressed', String(sygnalyWlaczone()));
   zarejestrujServiceWorker();
   $('przycisk-prywatnosc').addEventListener('click', pokazPrywatnosc);
+  $('przycisk-ranking').addEventListener('click', pokazRankingi); // M12/P6
+  $('przycisk-wrocz-ranking').addEventListener('click', wrocZRankingu);
+  $('przycisk-ranking-odswiez').addEventListener('click', () => { void pobierzRankingi(); });
   $('przycisk-prywatnosc-stopka').addEventListener('click', pokazPrywatnosc);
   $('przycisk-wrocz-prywatnosc').addEventListener('click', wrocZPrywatnosci);
   $('przycisk-czysc-dane').addEventListener('click', czyscDaneWitryny);

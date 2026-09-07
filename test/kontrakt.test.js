@@ -645,3 +645,12 @@ test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', 
   assert.match(APP, /Teraz idzie:/, 'komunikat czyjej tury w UI');
   assert.match(APP, /przycisk-pomin-stacje'\)\.hidden = true/, 'w multi nie ma pomijania stacji (serwer zna tylko dojście/odpowiedź/rezygnację)');
 });
+
+test('kontrakt M12: rankingi liczy telefon, serwer oddaje surowe wiersze', () => {
+  assert.ok(INDEX.includes('id="ekran-ranking"'), 'ekran rankingów w index.html');
+  assert.ok(INDEX.includes('id="przycisk-ranking"'), 'przycisk 🏆 w nagłówku');
+  assert.match(APP, /urlGet\(url, 'ranking'\)/, 'dane z GET akcja=ranking (RO-ranking/1)');
+  assert.match(APP, /agregujRanking\(wiersze, filtr\)/, 'agregacje po stronie telefonu (ADR 0019 pkt 7)');
+  assert.match(APP, /kategorieRankingu\(wiersze\)/, 'zakładki kategorii z dostępnych wierszy');
+  assert.ok(GS.includes("akcja === 'ranking'"), 'most obsługuje akcję ranking');
+});
