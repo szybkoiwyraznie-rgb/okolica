@@ -1039,3 +1039,40 @@ szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-14` (+ `WERSJA_SW`).
 Skrypt mostu (963 linie, md5 `01e1d9bdfa071d2634dc33d87607420f`) **wymaga
 wklejenia** przez właściciela: akcja `gra-hotseat` + premia hot-seat = 0 —
 patrz `docs/setup/most-drive-instrukcja.md` (sekcja „Awaryjnie").
+
+## 2026-09-07 (partia 6) — cztery uwagi właściciela po partii 5
+
+**Zlecenie:** (1) paczki „znajdują się" wiele kilometrów od miejsca
+wygenerowania; (2) komunikat niedopasowania wymienia cały setup i sprawdza
+promień, który nie wpływa na pytania; (3) imię gracza i „Usuń" są za małe
+i sklejone; (4) checkbox zgody na zapis wyniku ma zniknąć — zapis jest
+domyślny, info należy do sekcji prywatność.
+
+- **(1) Diagnoza: dopasowanie działało poprawnie.** Zmierzone na
+  `dopasujMetaIndeksu`: paczka z Podkowy Leśnej przy pozycji w Łodzi = 97 km
+  od komórki paczki przy tolerancji 200 m → **0 dopasowań**, paczka nie
+  wchodziła na listę. Winny był **komunikat**: liczył cały indeks („w indeksie:
+  1") i wyglądało to jak trafienie z drugiego końca kraju. Teraz paczki spoza
+  okolicy nie są ani liczone, ani wspominane (`czyWOkolicy` w `app/app.js`).
+- **(2) Promień wypadł z kryteriów** (aneks ADR 0024): nie wpływa na pytania,
+  a trasę wyznaczają stacje paczki. Nowe `powodyNiedopasowania()` w
+  `app/zestawy.js` jest jedynym rozstrzygającym miejscem — `dopasujZestawy`
+  filtruje po nim, a karta paczek cytuje powody („liczba stacji: paczka 5,
+  setup 3"), bez wymieniania setupu i bez promienia.
+- **(3) Lista graczy**: `font-size: 17px`, `gap: 16px`, `padding: 12px 0`,
+  przycisk 15 px i `nowrap` — imię i „✕ Usuń" nie są już sklejone.
+- **(4) Zgoda usunięta** (dopisek do aneksu ADR 0026): zapis wyniku jest
+  domyślny, a sekcja „Dane i prywatność" dostała kartę „Wspólny Drive: historia
+  i rankingi" z pełnym opisem, co jedzie i co zostaje. Bez potwierdzonego
+  profilu wynik zostaje na telefonie — i `#wynik-drive` mówi to wprost, zamiast
+  milczeć.
+- Testy: `powodyNiedopasowania` (7 przypadków), paczka 97 km dalej nie jest
+  proponowana ani wspominana, komunikat nazywa powód i nie wymienia setupu,
+  zapis domyślny bez zgody, brak potwierdzonego profilu = jawny komunikat.
+  Kontrakt pinuje brak `#hotseat-zgoda`, obecność karty prywatności i brak
+  kryterium promienia.
+
+**Brama na koniec partii:** `npm run brama` = **571 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-15` (+ `WERSJA_SW`).
+Skrypt mostu bez zmian względem partii 5 — **nadal wymaga wklejenia**
+(963 linie, md5 `01e1d9bdfa071d2634dc33d87607420f`).

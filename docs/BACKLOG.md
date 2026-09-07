@@ -207,9 +207,10 @@ wieloosobowej.
 most zapisuje ją jako `RO-gra/1` ze stanem `zakonczona`, więc `GET ranking`
 czyta ją bez zmian. Punkty liczy most (`przeliczWyniki`), premia za kolejność
 w hot-seat = 0, `zestaw: null` (paczka zostaje na telefonie), `geohash5` startu
-zamiast współrzędnych. Wysyłka wymaga zgody `#hotseat-zgoda` i choć jednego
-gracza potwierdzonego profilem; bez sieci polecenie czeka w kolejce i jedzie
-przy następnym starcie, a odcisk gry pilnuje idempotencji.
+zamiast współrzędnych. Wysyłka jest domyślna (bez pytania przy każdej grze —
+decyzja 2026-09-07, opis w sekcji prywatność) i wymaga choć jednego gracza
+potwierdzonego profilem; bez sieci polecenie czeka w kolejce i jedzie przy
+następnym starcie, a odcisk gry pilnuje idempotencji.
 Testy: 3 w `test/aplikacja.test.js` (wysyłka, kolejka offline, brak zgody),
 3 w `test/most-gra.test.js` na atrapie Drive (zapis + rankingi, kasowanie
 współrzędnych i odmowy, parity premii).

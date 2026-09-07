@@ -504,8 +504,11 @@ Reguły są lustrami po obu stronach (`graHotseatDoWysylki` w
   razem, więc „kto skończył pierwszy" byłoby artefaktem kolejności klikania;
 - odpowiedź: `{ ok: true, idGry, wyniki }`; odmowa: `{ ok: false, blad }`.
 
-Prywatność i offline: wysyłka wymaga jawnej zgody na ekranie 1
-(`#hotseat-zgoda`) i choć jednego gracza potwierdzonego profilem PIN. Bez sieci
+Prywatność i offline: wysyłka jest **domyślna** — nie pytamy o nią przy każdej
+grze (decyzja właściciela 2026-09-07); co i dokąd trafia, opisuje sekcja „Dane
+i prywatność" w aplikacji. Warunkiem technicznym jest choć jeden gracz
+potwierdzony profilem PIN (inaczej nie ma gdzie zapisać punktów — komunikat
+pod wynikiem mówi to wprost). Bez sieci
 polecenie czeka w `okolica:hotseat-kolejka` (maks. 5 gier) i jedzie przy
 następnym uruchomieniu, a odcisk gry w `okolica:hotseat-wyslane` pilnuje, żeby
 ta sama gra nie weszła do rankingu dwa razy (ADR 0016 pkt 5).

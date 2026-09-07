@@ -93,3 +93,33 @@ tańszy niż ryzyko.
 właściciela (Apps Script → wklej → wdróż); do tego czasu stare paczki zachowują
 zgrubne dopasowanie, a nowe działają dokładnie. Indeks rośnie o dwa pola na
 wpis (addytywne — stary klient je ignoruje).
+
+## Aneks (2026-09-07): promień nie jest kryterium, a komunikat nazywa powód
+
+Po wdrożeniu B19 właściciel obejrzał ekran 2 i zgłosił dwie rzeczy:
+
+1. „Przestawiam miejsce z Podkowy Leśnej na Łódź i dalej znajduje tę paczkę" —
+   dopasowanie działało poprawnie (97 km ≫ 200 m, paczka nie wchodziła na
+   listę), ale **komunikat liczył cały indeks** („Repozytorium ma paczki
+   (w indeksie: 1)") i wyglądało to jak trafienie z drugiego końca kraju.
+2. „Promień w ogóle nie powinien być sprawdzany, bo nie wpływa na pytania.
+   Jeśli coś nie pasuje, pisz wprost co, a nie wymieniaj cały setup."
+
+Zmiany:
+
+- **`promienM` wypadł z kryteriów dopasowania.** Promień jest wynikiem czasu
+  gry i środka transportu (ADR 0025), nie cechą pytań, a trasę i tak wyznaczają
+  stacje paczki — ich odległości gracz widzi na mapie. Kryteria zostają:
+  okolica (±`TOLERANCJA_OKOLICY_M`), wiek, liczba stacji, pytania na stację,
+  tematy nie szersze niż w setupie.
+- **`powodyNiedopasowania(wpis, kryteria)`** w `app/zestawy.js` jest JEDYNYM
+  miejscem, które rozstrzyga dopasowanie: `dopasujZestawy` filtruje po nim,
+  a UI cytuje zwrócone powody („liczba stacji: paczka 5, setup 3"). Komunikat
+  nie wymienia już setupu ani promienia.
+- **Paczki z innych okolic nie są liczone ani wspominane**: karta mówi albo
+  „nie ma paczek dla tej okolicy", albo „repozytorium jest puste" — to dwie
+  różne sytuacje i tylko pierwszą da się naprawić zmianą setupu.
+
+Konsekwencja: paczka o promieniu większym niż setup może zostać zaproponowana
+(stacje będą dalej, niż planowałeś). To uczciwe — gracz widzi odległości przed
+startem, a czas gry i tak przelicza się na promień (ADR 0025).

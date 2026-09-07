@@ -98,3 +98,17 @@ Konsekwencje aneksu: most wymaga **jednego wklejenia** nowej treści skryptu
 (`test/wieloosobowa-ui.test.js`), trzy wysyłki hot-seat
 (`test/aplikacja.test.js`), trzy po stronie mostu na atrapie Drive
 (`test/most-gra.test.js`), kontrakt pinuje brak `#setup-gracze`.
+
+### Dopisek (2026-09-07, po obejrzeniu partii 5): bez pytania o zgodę przy każdej grze
+
+Checkbox „Zapisz wynik gry na wspólnym Drive" (`#hotseat-zgoda`) zniknął
+z ekranu 1. Właściciel: „Domyślnie zapisujemy na Drive i nie musimy o to co
+chwilę pytać w prywatnej aplikacji — info jest w sekcji prywatność".
+
+- Zapis wyniku jest **domyślny**; warunkiem technicznym zostaje choć jeden
+  gracz potwierdzony profilem (bez profilu nie ma gdzie zapisać punktów —
+  wtedy `#wynik-drive` mówi to wprost).
+- Sekcja „Dane i prywatność" dostała kartę **„Wspólny Drive: historia
+  i rankingi"**: co jedzie (pseudonimy, punkty, poprawne/błędne, miejscowość,
+  kategoria wiekowa, geohash5 okolicy), co zostaje (współrzędne, trasa,
+  pytania, paczka), oraz że profil z PIN-em leży na Drive (ADR 0021).
