@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, odwrocPolaPaczki, zakodujPoprawna } from '../app/protokol.js';
+import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -846,7 +846,7 @@ test('Q2 end-to-end: wklejona paczka odwrócona (rev1) jest odkodowana i przyję
     'organizator czyta odkodowaną treść, nie odwróconą');
 });
 
-test('rev2 end-to-end: wklejona paczka ze słowami jest odkodowana i przyjęta', async () => {
+test('rev2 end-to-end: wklejona paczka z kodami jest odkodowana i przyjęta', async () => {
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
@@ -856,7 +856,7 @@ test('rev2 end-to-end: wklejona paczka ze słowami jest odkodowana i przyjęta',
   await import(`../app/app.js?rev2=${Math.random().toString(36).slice(2)}`);
   const jawna = czytajFixturePaczka();
   const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
-  rev2.pytania.forEach((p, i) => { p.poprawna = zakodujPoprawna(jawna.pytania[i].poprawna); delete p.punkty; });
+  rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.punkty; });
   dom.pobierz('pole-odpowiedz').value = JSON.stringify(rev2);
   dom.kliknij('przycisk-sprawdz');
   assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev2/, 'nagłówek mówi, co się stało');

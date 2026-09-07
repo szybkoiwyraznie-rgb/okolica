@@ -14,8 +14,8 @@ import { fileURLToPath } from 'node:url';
 
 import {
   SCHEMAT_KONTENERA, SZABLON_PROMPTU, TOKENY_MIEJSCA, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2,
-  czyPaczkaOdwrocona, czyZakotwiczone, normalizujTekst, normalizujTematyPaczki, odkodujPaczkeRev1, odkodujPaczkeRev2,
-  odkodujPoprawna, zakodujPoprawna,
+  czyPaczkaOdwrocona, czyZakotwiczone, normalizujTekst, normalizujTematyPaczki, numerPytaniaZId, odkodujPaczkeRev1, odkodujPaczkeRev2,
+  odkodujPoprawnaRev2, zakodujPoprawnaRev2,
   odwrocPolaPaczki, odwrocTekst, parsujOdpowiedzModela, podsumowaniePaczki,
   poprawkaDlaModelu, rdzenTokena, tokenyWlasne, walidujPaczke, zbudujPrompt,
   zastosujEdycjePaczki, EDYTOWALNE_POLA,
@@ -88,7 +88,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'GRACZE I TRUDNOŚĆ:',
     'SCHEMAT ODPOWIEDZI (PYT/1.0-rev2)',
     'WYMAGANIA DODATKOWE:',
-    '"poprawna": numer poprawnej odpowiedzi SŁOWNIE',
+    '"poprawna": ZAKODOWANY numer',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
@@ -241,19 +241,27 @@ test('rev1: odkodujPaczkeRev1 normalizuje marker, jawną przepuszcza bez zmian',
 
 /* ---------------- rev2: poprawna słownie od końca, koniec punktów (PROTOKOL §3.4) */
 
-test('rev2: kodek poprawnej — słowo w obie strony, obcość daje null', () => {
-  assert.deepEqual([0, 1, 2, 3].map(zakodujPoprawna), ['nedej', 'awd', 'yzrt', 'yretzc']);
-  assert.equal(odkodujPoprawna('awd'), 1);
-  assert.equal(odkodujPoprawna(' Awd '), 1, 'tolerancja wielkości liter i spacji');
-  assert.equal(odkodujPoprawna(2), 2, 'liczba przechodzi (jawna/rev1/tolerowana w rev2)');
-  assert.equal(odkodujPoprawna('szesc'), null);
-  assert.equal(odkodujPoprawna(null), null);
-  assert.equal(zakodujPoprawna(9), null);
+test('rev2: kod pozycyjny — indeks + stacja + numer pytania + 10, w obie strony', () => {
+  assert.equal(numerPytaniaZId('s2p1'), 1);
+  assert.equal(numerPytaniaZId('s12p10'), 10);
+  assert.equal(numerPytaniaZId('pyt1'), null);
+  assert.equal(zakodujPoprawnaRev2(2, { id: 's2p1', stacja: 2 }), 15, 'przykład z szablonu: 2 + 2 + 1 + 10');
+  assert.equal(odkodujPoprawnaRev2(15, { id: 's2p1', stacja: 2 }), 2);
+  assert.equal(odkodujPoprawnaRev2(13, { id: 's1p1', stacja: 1 }), 1);
+  assert.equal(odkodujPoprawnaRev2(99, { id: 's1p1', stacja: 1 }), null, 'spoza zakresu indeksów');
+  for (let i = 0; i <= 3; i++) {
+    assert.equal(odkodujPoprawnaRev2(i, { id: 's1p1', stacja: 1 }), null, `goły indeks ${i} nigdy nie jest kodem (+10 rozłącza zakresy)`);
+  }
+  assert.equal(odkodujPoprawnaRev2(5, { id: 'pyt1', stacja: 2 }), null, 'bez id nie dekodujemy');
+  assert.equal(odkodujPoprawnaRev2('awd', { id: 's2p1', stacja: 2 }), null, 'słowa nie wracają');
+  assert.equal(zakodujPoprawnaRev2(9, { id: 's1p1', stacja: 1 }), null);
+  // ten sam indeks w różnych pytaniach daje różne kody (niepowtarzalność)
+  assert.notEqual(zakodujPoprawnaRev2(1, { id: 's1p1', stacja: 1 }), zakodujPoprawnaRev2(1, { id: 's1p2', stacja: 1 }));
 });
 
-test('rev2: paczka ze słowami przechodzi, słowo ląduje indeksem w roboczej', () => {
+test('rev2: paczka z kodami przechodzi, kod ląduje indeksem w roboczej', () => {
   const rev2 = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
-  rev2.pytania.forEach((p, i) => { p.poprawna = zakodujPoprawna(OK.pytania[i].poprawna); });
+  rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p); });
   assert.equal(czyPaczkaOdwrocona(rev2), true);
   assert.deepEqual(walidujPaczke(rev2, oczekiwane()), [], 'rev2 waliduje się jak jawna');
   const robocza = odkodujPaczkeRev2(rev2);
@@ -262,22 +270,28 @@ test('rev2: paczka ze słowami przechodzi, słowo ląduje indeksem w roboczej', 
   assert.equal(odkodujPaczkeRev2(OK), OK, 'jawna wraca referencją');
 });
 
-test('rev2: obce słowo to E06 z podpowiedzią, liczba przechodzi bez odrzucania', () => {
+test('rev2: obcy kod to E06 z regułą i przykładem, jawny indeks nie przechodzi', () => {
+  const koduj = (paczka) => paczka.pytania.forEach((p) => {
+    p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p);
+  });
   const obca = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
-  obca.pytania.forEach((p, i) => { p.poprawna = zakodujPoprawna(OK.pytania[i].poprawna); });
-  obca.pytania[0].poprawna = 'szesc';
+  koduj(obca);
+  obca.pytania[0].poprawna = 99;
   const usterki = walidujPaczke(obca, oczekiwane());
-  assert.ok(usterki.some((u) => u.kod === 'E06' && /nedej\/awd\/yzrt\/yretzc/.test(u.komunikat)), 'E06 mówi, jak zapisać słowo');
-  const liczbowa = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
-  assert.deepEqual(kody(liczbowa), [], 'liczba w rev2 tolerowana (PROTOKOL §3.4)');
+  assert.ok(usterki.some((u) => u.kod === 'E06' && /indeks \+ stacja \+ numer pytania \+ 10/.test(u.komunikat)
+    && /2 \+ 2 \+ 1 \+ 10 = 15/.test(u.komunikat)), 'E06 uczy reguły z przykładem');
+  // jawny indeks 0–3 jako „kod" dekoduje się poza zakres (albo w inny indeks) —
+  // model musi liczyć, nie przepisywać
+  const jawnaJakoKod = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
+  assert.ok(kody(jawnaJakoKod).includes('E06'), 'gołe indeksy w rev2 nie przechodzą po cichu');
 });
 
 test('rev2: szablon żąda odwrócenia, poprawnej słownie i samokontroli (reguła 8)', () => {
   for (const fraza of [
     'ODWRÓCONE ZNAKAMI',
     '"PYT/1.0-rev2"',
-    'SŁOWNIE po polsku i ODWRÓĆ',
-    '"nedej", 2 → "awd", 3 → "yzrt", 4 → "yretzc"',
+    'ZAKODOWANY numer poprawnej odpowiedzi',
+    '2 + 2 + 1 + 10 = 15',
     'ODCZYTAJ każde odwrócone pole od końca',
     'samokontrola',
   ]) {

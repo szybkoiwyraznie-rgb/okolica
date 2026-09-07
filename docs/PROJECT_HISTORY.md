@@ -679,6 +679,27 @@ z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
 `profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
 Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).
 
+## 2026-09-07 — rev2: kod pozycyjny poprawnej + bump ?v= (koniec cienia SW), gałąź `arena/01a07b16-okolica`
+
+1. **Niewidoczne zmiany — winny Service Worker.** `sw.js` (w katalogu głównym,
+   nie w `app/`) serwuje skorupę cache-first, a `?v=`/WERSJA_SW stały na
+   `m12-2` od kilku paczek — przeglądarka nie miała po co pytać serwera.
+   (Wcześniejsza diagnoza „sw.js nie istnieje" była błędna — sprawdzono tylko
+   `app/`.) Bump `m12-2 → m12-3` w `index.html`, `app/*.js` i `WERSJA_SW`:
+   nowy SW instaluje się przy odświeżeniu, stare cache'e kasuje `activate`.
+   Nauka na przyszłość: KAŻDA paczka ruszająca kod kończy się bumpem `?v=`
+   (LESSONS L29) — inaczej podgląd kłamie.
+2. **`poprawna` kodem pozycyjnym zamiast słowem.** Słowa dało się czytać wspak,
+   więc rev2 to rachunek: indeks + stacja + numer pytania + 10 (np. s2p1
+   z poprawną trzecią: 2 + 2 + 1 + 10 = 15). Inny dla każdego pytania,
+   nieczytelny na pierwszy rzut oka, model dodaje cztery małe liczby.
+   +10 rozłącza zakresy: goły indeks 0–3 nigdy nie przejdzie za kod (E06
+   zamiast cichego złego klucza). Klucz ze środka gry odrzucony: dryf
+   współrzędnych (E16 dopuszcza 500 m) mógłby uniemożliwić dekodowanie.
+   Słowa rev2 nie zdążyły wyjść do użytkownika (cień SW) — nie ma czego migrować.
+
+Brama: 522/522, sync szablonu OK, kontrast AA OK, budżet 39964/40000.
+
 ## 2026-09-07 — Protokół rev2 (1 pkt, poprawna słownie) + miasto w opisach, gałąź `arena/01a07b16-okolica`
 
 1. **Koniec trudności i E18.** Każde pytanie daje 1 pkt; pole `punkty` zniknęło

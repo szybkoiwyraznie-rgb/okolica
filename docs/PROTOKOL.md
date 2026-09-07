@@ -49,7 +49,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. Pola "tresc", "odpowiedzi", "wyjasnienie", "uwagi" oraz "tytul" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład "Kot" jako "toK"), pole "poprawna" zapisz SŁOWNIE po polsku i ODWRÓĆ (patrz wymagania), a w polu "protokol" wpisz "PYT/1.0-rev2". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).
+8. Pola "tresc", "odpowiedzi", "wyjasnienie", "uwagi" oraz "tytul" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład "Kot" jako "toK"), a w polu "protokol" wpisz "PYT/1.0-rev2". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).
 
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
@@ -84,7 +84,7 @@ SCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:
       "temat": "historia",
       "tresc": "Treść pytania zakończona znakiem zapytania?",
       "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
-      "poprawna": "awd",
+      "poprawna": 13,
       "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
       "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }]
     }
@@ -96,7 +96,7 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": numer poprawnej odpowiedzi SŁOWNIE po polsku i ODWRÓCONY: 1 → "nedej", 2 → "awd", 3 → "yzrt", 4 → "yretzc".
+- "poprawna": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola "id" + 10 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 10 = 15).
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "uwagi": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.
@@ -156,7 +156,7 @@ repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
-| `poprawna` | liczba albo tekst | jawna i rev1: `0..3`; rev2: odwrócone słowo (`nedej`/`awd`/`yzrt`/`yretzc` = odpowiedź 1–4; liczba też przejdzie) |
+| `poprawna` | liczba całkowita | jawna i rev1: `0..3`; rev2: indeks + stacja + numer pytania + 10 (kod pozycyjny) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
 | `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
@@ -200,7 +200,7 @@ reguły §3.2 i §6 działają na odczytanej treści. Cel jak w §3.3: ochrona p
 przypadkowym wglądem (ekran organizatora, schowek), nie szyfrowanie. Walidator
 przyjmuje oba warianty.
 
-**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to numer odpowiedzi słownie i od końca (`1→nedej, 2→awd, 3→yzrt, 4→yretzc` — nie da się ściągnąć zerknięciem), a pola `punkty` nie ma (każde pytanie daje 1 pkt). Walidator przyjmie liczbę w `poprawna` także w rev2, a `punkty` ignoruje wszędzie; szablon z §2 generuje rev2.
+**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to kod pozycyjny (indeks + stacja + numer pytania + 10, np. s2p1 z poprawną trzecią: 2 + 2 + 1 + 10 = 15 — inny dla każdego pytania, a +10 sprawia, że goły indeks nigdy nie przejdzie za kod), a pola `punkty` nie ma (każde pytanie daje 1 pkt). Szablon z §2 generuje rev2.
 
 
 ## 4. Kategorie wiekowe i wymagania trudności
@@ -320,7 +320,7 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
   od końca (§3.4). Nie podbija wersji schematu (kształt pól ten sam, jak
   kontener ≠ paczka); walidator akceptuje oba markery, szablon generuje
   odwrócony.
-- **Wariant `PYT/1.0-rev2`** — `poprawna` słownie od końca, koniec pola
+- **Wariant `PYT/1.0-rev2`** — `poprawna` kodem pozycyjnym, koniec pola
   `punkty` (§3.4). Jak rev1: zapis, nie nowa wersja; walidator przyjmuje
   `PYT/1.0`, `-rev1` i `-rev2`, szablon generuje rev2. Dawne paczki działają
   bez migratora (M8 nieopublikowany, a reguły i tak łagodnieją).
