@@ -679,6 +679,19 @@ z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
 `profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
 Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).
 
+## 2026-09-07 — Kod +17, ponowienie przy cache, ?v=m12-4, gałąź `arena/01a07b16-okolica`
+
+1. **Przesunięcie kodu 10 → 17** (decyzja właściciela): przykład w szablonie
+   to 2 + 2 + 1 + 17 = 22. Własność zachowana: goły indeks 0–3 nigdy nie
+   przejdzie za kod.
+2. **„Pobierz sieć ponownie" widoczne przy danych z cache.** Przycisk istniał,
+   ale `renderujStacje` chował go zawsze, gdy sieć była gotowa — więc przy
+   danych z pamięci telefonu nie dało się wymusić świeżego pobrania. Teraz:
+   cache → przycisk widoczny (klik omija cache i woła Overpass), świeże dane
+   → przycisk znika jak dawniej.
+
+Brama: 523/523, sync szablonu OK, kontrast AA OK, budżet 39964/40000.
+
 ## 2026-09-07 — rev2: kod pozycyjny poprawnej + bump ?v= (koniec cienia SW), gałąź `arena/01a07b16-okolica`
 
 1. **Niewidoczne zmiany — winny Service Worker.** `sw.js` (w katalogu głównym,

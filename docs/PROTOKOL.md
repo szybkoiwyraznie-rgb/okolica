@@ -84,7 +84,7 @@ SCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:
       "temat": "historia",
       "tresc": "Treść pytania zakończona znakiem zapytania?",
       "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
-      "poprawna": 13,
+      "poprawna": 20,
       "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
       "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }]
     }
@@ -96,7 +96,7 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola "id" + 10 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 10 = 15).
+- "poprawna": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola "id" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "uwagi": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.
@@ -156,7 +156,7 @@ repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
-| `poprawna` | liczba całkowita | jawna i rev1: `0..3`; rev2: indeks + stacja + numer pytania + 10 (kod pozycyjny) |
+| `poprawna` | liczba całkowita | jawna i rev1: `0..3`; rev2: indeks + stacja + numer pytania + 17 (kod pozycyjny) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
 | `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
@@ -200,7 +200,7 @@ reguły §3.2 i §6 działają na odczytanej treści. Cel jak w §3.3: ochrona p
 przypadkowym wglądem (ekran organizatora, schowek), nie szyfrowanie. Walidator
 przyjmuje oba warianty.
 
-**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to kod pozycyjny (indeks + stacja + numer pytania + 10, np. s2p1 z poprawną trzecią: 2 + 2 + 1 + 10 = 15 — inny dla każdego pytania, a +10 sprawia, że goły indeks nigdy nie przejdzie za kod), a pola `punkty` nie ma (każde pytanie daje 1 pkt). Szablon z §2 generuje rev2.
+**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to kod pozycyjny (indeks + stacja + numer pytania + 17, np. s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22 — inny dla każdego pytania, a +17 sprawia, że goły indeks nigdy nie przejdzie za kod), a pola `punkty` nie ma (każde pytanie daje 1 pkt). Szablon z §2 generuje rev2.
 
 
 ## 4. Kategorie wiekowe i wymagania trudności

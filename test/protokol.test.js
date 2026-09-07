@@ -241,13 +241,13 @@ test('rev1: odkodujPaczkeRev1 normalizuje marker, jawną przepuszcza bez zmian',
 
 /* ---------------- rev2: poprawna słownie od końca, koniec punktów (PROTOKOL §3.4) */
 
-test('rev2: kod pozycyjny — indeks + stacja + numer pytania + 10, w obie strony', () => {
+test('rev2: kod pozycyjny — indeks + stacja + numer pytania + 17, w obie strony', () => {
   assert.equal(numerPytaniaZId('s2p1'), 1);
   assert.equal(numerPytaniaZId('s12p10'), 10);
   assert.equal(numerPytaniaZId('pyt1'), null);
-  assert.equal(zakodujPoprawnaRev2(2, { id: 's2p1', stacja: 2 }), 15, 'przykład z szablonu: 2 + 2 + 1 + 10');
-  assert.equal(odkodujPoprawnaRev2(15, { id: 's2p1', stacja: 2 }), 2);
-  assert.equal(odkodujPoprawnaRev2(13, { id: 's1p1', stacja: 1 }), 1);
+  assert.equal(zakodujPoprawnaRev2(2, { id: 's2p1', stacja: 2 }), 22, 'przykład z szablonu: 2 + 2 + 1 + 17');
+  assert.equal(odkodujPoprawnaRev2(22, { id: 's2p1', stacja: 2 }), 2);
+  assert.equal(odkodujPoprawnaRev2(20, { id: 's1p1', stacja: 1 }), 1);
   assert.equal(odkodujPoprawnaRev2(99, { id: 's1p1', stacja: 1 }), null, 'spoza zakresu indeksów');
   for (let i = 0; i <= 3; i++) {
     assert.equal(odkodujPoprawnaRev2(i, { id: 's1p1', stacja: 1 }), null, `goły indeks ${i} nigdy nie jest kodem (+10 rozłącza zakresy)`);
@@ -278,8 +278,8 @@ test('rev2: obcy kod to E06 z regułą i przykładem, jawny indeks nie przechodz
   koduj(obca);
   obca.pytania[0].poprawna = 99;
   const usterki = walidujPaczke(obca, oczekiwane());
-  assert.ok(usterki.some((u) => u.kod === 'E06' && /indeks \+ stacja \+ numer pytania \+ 10/.test(u.komunikat)
-    && /2 \+ 2 \+ 1 \+ 10 = 15/.test(u.komunikat)), 'E06 uczy reguły z przykładem');
+  assert.ok(usterki.some((u) => u.kod === 'E06' && /indeks \+ stacja \+ numer pytania \+ 17/.test(u.komunikat)
+    && /2 \+ 2 \+ 1 \+ 17 = 22/.test(u.komunikat)), 'E06 uczy reguły z przykładem');
   // jawny indeks 0–3 jako „kod" dekoduje się poza zakres (albo w inny indeks) —
   // model musi liczyć, nie przepisywać
   const jawnaJakoKod = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
@@ -291,7 +291,7 @@ test('rev2: szablon żąda odwrócenia, poprawnej słownie i samokontroli (regu�
     'ODWRÓCONE ZNAKAMI',
     '"PYT/1.0-rev2"',
     'ZAKODOWANY numer poprawnej odpowiedzi',
-    '2 + 2 + 1 + 10 = 15',
+    '2 + 2 + 1 + 17 = 22',
     'ODCZYTAJ każde odwrócone pole od końca',
     'samokontrola',
   ]) {

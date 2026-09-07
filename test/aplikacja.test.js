@@ -682,6 +682,31 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, true, 'przy sieci ponowienie znika');
 });
 
+test('stacje: sieć z cache pokazuje ponowienie, klik dowozi świeże dane z Overpass', async () => {
+  const pamiecCache = new Map();
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+    JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: pamiecCache });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const wywolania = [];
+  domAtrapa.window.fetch = async (url) => {
+    wywolania.push(url);
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(150);
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /z pamięci telefonu/, 'najpierw cache');
+  assert.equal(wywolania.length, 0, 'wejście na ekran nie woła sieci przy świeżym cache');
+  assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false, 'przy cache widać „Pobierz sieć ponownie"');
+  domAtrapa.kliknij('przycisk-siec-ponow');
+  await czekaj(250);
+  assert.equal(wywolania.length, 1, 'ponowienie omija cache i woła Overpass');
+  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('z pamięci'), 'po ponowieniu dane świeże');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /Śródmieście, Warszawa/, 'stacje sieciowe z miejsca');
+  assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, true, 'przy świeżych danych ponowienie znika');
+});
+
 test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2', async () => {
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
