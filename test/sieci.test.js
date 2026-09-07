@@ -206,13 +206,14 @@ test('zapytanie: promień R×1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out 
   assert.ok(z.includes(pozycjaDoZapytania({ lat: 52.22973, lon: 21.01224 }).lat.toFixed(5)));
   assert.match(q, /is_in\(52\.22975,21\.01225\)->\.obszary;/);
   assert.match(q, /area\.obszary\["boundary"="administrative"\];/, 'filtr obszarów kropką (nawias = HTTP 400)');
-  assert.match(q, /is_in\(52\.22975,21\.01225\)->\.obszary;\n\(/, 'is_in PRZED unią — set .obszary gotowy dla area.obszary w środku');
-  assert.match(q, /  area\.obszary\["boundary"="administrative"\];\n\);/, 'filtr obszarów W ŚRODKU unii — samodzielny za unią nadpisałby set domyślny i out dałby same obszary, zero dróg (S02; LESSONS L30)');
+  assert.match(q, /is_in\(52\.22975,21\.01225\)->\.obszary;\narea\.obszary\["boundary"="administrative"\];\nout tags;\n\(/, 'obszary: samodzielne zdanie z NATYCHMIASTOWYM out tags — czytamy tylko tagi, geometria granic (np. całego kraju) to megabajty i minuty (LESSONS L30)');
+  assert.equal(q.match(/area\.obszary/g).length, 1, 'filtr obszarów występuje raz — poza unią, z własnym wydrukiem');
   assert.match(q, /way\["building"\]/);
   assert.match(q, /way\["landuse"="railway"\]/);
   assert.match(q, /node\["barrier"\]/);
   assert.match(q, /node\["place"="square"\]/);
-  assert.match(q, /^out geom;$/m);
+  assert.match(q, /^out tags;$/m);
+  assert.equal(q.match(/^out geom;$/gm).length, 1, 'jeden wydruk geometrii dla całej unii (ulice, POI, budynki)');
 });
 
 test('zapytanie: klasy dróg z TRYBY — piesza bez secondary, samochód bez motorway i bez schodów', () => {
@@ -416,6 +417,21 @@ test('graf: deterministyczny — dwa budowania identyczne', () => {
   assert.deepEqual(a.liczniki, b.liczniki);
 });
 
+test('graf: węzły niosą nazwy ulic, skrzyżowanie zbiera wszystkie (do opisów stacji)', () => {
+  const pion = droga(SRODEK_TEST, 0, 100, 3, { highway: 'residential', name: 'Pionowa' });
+  const szczyt = pion.punkty.at(-1);
+  const poziom = droga(szczyt, 90, 100, 3, { highway: 'residential', name: 'Pozioma' });
+  const g = budujGraf({ drogi: [pion, poziom] }, { tryb: 'piesza' });
+  const skrzyzowanie = snapujPunkt(g, szczyt, { maxM: 5 });
+  assert.deepEqual(g.wezly[skrzyzowanie].ulice, ['Pionowa', 'Pozioma'], 'wspólny wierzchołek zbiera obie nazwy, posortowane');
+  // indeks 1 to pierwszy węzeł interpolowany na Pionowej (kolejność deterministyczna)
+  assert.deepEqual(g.wezly[1].ulice, ['Pionowa'], 'węzeł interpolowany dziedziczy nazwę waya');
+  // bezimienna droga: pusta lista, nie null (bezpieczny odczyt w kandydatach)
+  const anonim = droga(przesunPunkt(SRODEK_TEST, 180, 500), 90, 100, 3, { highway: 'path' });
+  const g2 = budujGraf({ drogi: [anonim] }, { tryb: 'piesza' });
+  assert.deepEqual(g2.wezly[0].ulice, []);
+});
+
 test("graf centrum: interpolacja działa, a klasy dróg zależą od trybu", () => {
   const dane = parsujOdpowiedz(czytajFixture('centrum'));
   const g = budujGraf(dane, { tryb: 'piesza' });
@@ -569,6 +585,23 @@ test('kandydaci centrum: deterministyczni i kompletowi (typy, nazwy)', () => {
   assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.nazwa === 'Kawa za Rogiem'), 'kawiarnia kandydatem');
   assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.poi?.tags.place === 'square'), 'plac kandydatem');
   assert.ok(a.kandydaci.some((k) => k.typ === 'siec'), 'zwykłe węzły sieci też');
+});
+
+test('kandydaci: zwykły węzeł niesie nazwę ulicy, skrzyżowanie obie (do promptu AI)', () => {
+  const pion = droga(SRODEK_TEST, 0, 100, 3, { highway: 'residential', name: 'Pionowa' });
+  const szczyt = pion.punkty.at(-1);
+  const poziom = droga(szczyt, 90, 100, 3, { highway: 'residential', name: 'Pozioma' });
+  const graf = budujGraf({ drogi: [pion, poziom] }, { tryb: 'piesza' });
+  const { kandydaci } = kandydaciNaStacje({}, graf, { tryb: 'piesza' });
+  const naSkrzyzowaniu = kandydaci.find((k) => k.wezel === snapujPunkt(graf, szczyt, { maxM: 5 }));
+  assert.equal(naSkrzyzowaniu.typ, 'siec');
+  assert.equal(naSkrzyzowaniu.nazwa, 'skrzyżowanie: Pionowa / Pozioma');
+  assert.ok(kandydaci.some((k) => k.typ === 'siec' && k.nazwa === 'Pionowa'), 'węzeł wzdłuż ulicy niesie jej nazwę');
+  // bezimienna droga: null, nie pustość udająca nazwę
+  const anonim = droga(przesunPunkt(SRODEK_TEST, 180, 500), 90, 100, 3, { highway: 'path' });
+  const grafAnonim = budujGraf({ drogi: [anonim] }, { tryb: 'piesza' });
+  const bezimienni = kandydaciNaStacje({}, grafAnonim, { tryb: 'piesza' }).kandydaci;
+  assert.ok(bezimienni.length > 0 && bezimienni.every((k) => k.nazwa === null), 'ścieżka bez nazwy — fallback w UI i prompcie');
 });
 
 test('kandydaci przedmieście: domy wykluczone, prywatny dojazd nie kusi', () => {

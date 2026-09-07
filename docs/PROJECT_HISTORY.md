@@ -679,6 +679,23 @@ z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
 `profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
 Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).
 
+## 2026-09-07 — Overpass: dieta odpowiedzi + nazwy ulic w stacjach, gałąź `arena/01a07b16-okolica`
+
+1. **3–5 minut czekania — przyczyna i dieta.** `out geom` drukował obszarom
+   pełną geometrię granic (m.in. całego kraju) — megabajty, których parser
+   i tak nie czyta (bierze tylko tagi). Obszary idą teraz osobnym zdaniem
+   z natychmiastowym `out tags`, reszta bez zmian w jednej unii `out geom`
+   (ciągle jedno zapytanie na grę). LESSONS L30 doprecyzowana (samodzielne
+   zdanie legalne tylko z natychmiastowym `out`), polityka instancji
+   i timeoutów bez zmian (przypięte testami do ASSETS §2).
+2. **Stacje z nazwami ulic.** Graf niesie przy węźle posortowane `ulice`
+   (nazwy way'ów ze schodzących się dróg), kandydaci sieciowi dostają nazwę
+   ulicy albo „skrzyżowanie: A / B" — opis płynie do listy na ekranie stacji
+   i do `{LISTA_STACJI}` w prompcie AI (a przy okazji do heurystyki E14).
+   Bezimienne drogi zostają przy uczciwym fallbacku.
+
+Brama: 517/517, sync szablonu OK, kontrast AA OK, budżet 39829/40000.
+
 ## 2026-09-07 — Partia 3 (poprawki właściciela), gałąź `arena/01a07b16-okolica`
 
 1. **Ekran 1, dopiski deweloperskie tylko w teście.** `stanMostu()` dostał

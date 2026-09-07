@@ -112,14 +112,16 @@ export function budujZapytanieOverpass({ srodek, promienM, tryb = 'piesza' }) {
   const klasy = `^(${trybKonfig.klasyDrog.join('|')})$`;
   const around = `around:${promien},${lat},${lon}`;
 
-  // Kolejność ma znaczenie: `is_in` NAJPIERW (wypełnia nazwany set
-  // `.obszary`), a filtr `area.obszary` jest CZŁONKIEM unii. Samodzielne
-  // `area.obszary[...];` za unią nadpisałoby set domyślny `_` i `out`
-  // wydrukowałby SAME OBSZARY bez dróg (S02 mimo dróg w terenie —
-  // LESSONS L30).
+  // Dwa wydruki, jedno zapytanie: obszary OSOBNO z `out tags` (czytamy
+  // tylko tagi — geometria granic, np. całego kraju, to megabajty i minuty),
+  // a cała reszta w JEDNEJ unii z `out geom`. Samodzielne zdanie jest
+  // legalne TYLKO z natychmiastowym `out`: bez niego nadpisałoby set
+  // domyślny `_` i zgubiło unię (LESSONS L30).
   return [
     `[out:json][timeout:${POLITYKA.timeoutZapytaniaS}];`,
     `is_in(${lat},${lon})->.obszary;`,
+    'area.obszary["boundary"="administrative"];', // kropka, nie nawias (nawias = HTTP 400)
+    'out tags;',
     '(',
     `  way["highway"~"${klasy}"](${around});`,
     `  node["amenity"](${around});`,
@@ -136,7 +138,6 @@ export function budujZapytanieOverpass({ srodek, promienM, tryb = 'piesza' }) {
     `  way["building"](${around});`,
     `  way["landuse"="railway"](${around});`,
     `  node["barrier"](${around});`,
-    '  area.obszary["boundary"="administrative"];', // kropka, nie nawias (nawias = HTTP 400); W unii (za unią = S02)
     ');',
     'out geom;',
     '',
@@ -317,6 +318,8 @@ export function czyDrogaDostepna(droga, tryb) {
  * ≤ `krokM` wzdłuż DOSTĘPNYCH dróg; krawędzie dwukierunkowe z wagą w metrach.
  * Wierzchołki współdzielone przez way'e poznajemy po współrzędnych
  * (zaokrąglenie do 6 miejsc — `out geom` powtarza te same liczby).
+ * Każdy węzeł niesie posortowane `ulice` (nazwy way'ów, które się w nim
+ * spotykają — do opisów stacji w UI i w prompcie AI).
  * Deterministyczny: kolejność wejścia → kolejność węzłów i krawędzi.
  */
 export function budujGraf(sparsowane, { tryb = 'piesza' } = {}) {
@@ -349,7 +352,8 @@ export function budujGraf(sparsowane, { tryb = 'piesza' } = {}) {
   const wezly = [];
   const sasiedztwo = [];
   const indeksKlucza = new Map();
-  function wezel(p) {
+  const nazwyWezlow = []; // równolegle do `wezly`: zbiór nazw ulic (skrzyżowania zbierają)
+  function wezel(p, nazwaUlicy = null) {
     const klucz = `${p.lat.toFixed(6)},${p.lon.toFixed(6)}`;
     let i = indeksKlucza.get(klucz);
     if (i === undefined) {
@@ -357,7 +361,9 @@ export function budujGraf(sparsowane, { tryb = 'piesza' } = {}) {
       indeksKlucza.set(klucz, i);
       wezly.push({ id: i, lat: p.lat, lon: p.lon, klucz });
       sasiedztwo.push([]);
+      nazwyWezlow.push(new Set());
     }
+    if (nazwaUlicy) nazwyWezlow[i].add(nazwaUlicy);
     return i;
   }
   function krawedz(a, b, metry) {
@@ -366,22 +372,27 @@ export function budujGraf(sparsowane, { tryb = 'piesza' } = {}) {
   }
 
   for (const d of dostepne) {
+    const nazwaUlicy = typeof d.tags?.name === 'string' ? d.tags.name.trim() || null : null;
     for (let s = 1; s < d.punkty.length; s++) {
       const a = d.punkty[s - 1];
       const b = d.punkty[s];
       const dlugosc = odlegloscM(a, b);
       if (!(dlugosc > 0)) continue; // zdegenerowany segment — nic nie wnosi
       const czesci = Math.max(1, Math.ceil(dlugosc / krok));
-      let poprz = wezel(a);
+      let poprz = wezel(a, nazwaUlicy);
       for (let c = 1; c < czesci; c++) {
         const t = c / czesci;
-        const idx = wezel({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t });
+        const idx = wezel({ lat: a.lat + (b.lat - a.lat) * t, lon: a.lon + (b.lon - a.lon) * t }, nazwaUlicy);
         krawedz(poprz, idx, dlugosc / czesci);
         poprz = idx;
       }
-      const ostatni = wezel(b);
+      const ostatni = wezel(b, nazwaUlicy);
       krawedz(poprz, ostatni, dlugosc / czesci);
     }
+  }
+  for (let i = 0; i < wezly.length; i++) {
+    // zwykły sort (nie localeCompare — ten zależy od ICU telefonu)
+    wezly[i].ulice = [...nazwyWezlow[i]].sort();
   }
 
   return {
@@ -540,6 +551,18 @@ function wStrefieWykluczen(punkt, wykluczenia) {
 }
 
 /**
+ * Nazwa kandydata sieciowego do opisów (UI + prompt AI): ulica, na której
+ * stoi węzeł, albo „skrzyżowanie: A / B", gdy spotyka się ich kilka.
+ * Węzeł przy bezimiennej drodze daje null — opis zastępuje fallback.
+ */
+function nazwaUlicyWezla(wezel) {
+  const ulice = wezel?.ulice ?? [];
+  if (ulice.length === 0) return null;
+  if (ulice.length === 1) return ulice[0];
+  return `skrzyżowanie: ${ulice.join(' / ')}`;
+}
+
+/**
  * Kandydaci na stacje (ADR 0005 pkt 3):
  * - **węzły dostępnej sieci** (po interpolacji co ≤ 50 m — „punkty wzdłuż
  *   dróg") dla pieszego i roweru;
@@ -606,7 +629,7 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
       lon: wezel.lon,
       typ,
       poi: zrodlo,
-      nazwa: zrodlo?.tags?.name ?? null,
+      nazwa: typ === 'poi' ? zrodlo?.tags?.name ?? null : nazwaUlicyWezla(wezel),
     });
     return true;
   }
