@@ -203,6 +203,8 @@ function przelaczNa(u) {
 }
 
 async function noweUrzadzenie({ pamiec = new Map(), most }) {
+  // Adres mostu nie jest wpisywany w UI (ADR 0020) — telefon ma go w pamięci albo w kodzie aplikacji.
+  if (!pamiec.has('okolica:multi:url-mostu')) pamiec.set('okolica:multi:url-mostu', URL_MOSTU);
   globalThis.fetch = most.fetchImpl;
   const dom = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec });
   const u = {
@@ -284,10 +286,9 @@ function zasiejZestaw(pamiec, ileStacji) {
   return { stacje, kontener, meta };
 }
 
-/** Tożsamość + pozycja (ręczna, tryb testowy) + adres mostu — telefon gotowy do gry. */
+/** Tożsamość + pozycja (ręczna, tryb testowy) — telefon gotowy do gry (adres mostu: ADR 0020). */
 async function przygotujTelefon(u, pseudonim) {
   ustaw(u, 'multi-pseudonim', pseudonim);
-  ustaw(u, 'multi-url-mostu', URL_MOSTU);
   ustaw(u, 'setup-lat', String(PODKOWA.lat));
   ustaw(u, 'setup-lon', String(PODKOWA.lon));
   await klik(u, 'przycisk-ustaw-reczne');
@@ -488,13 +489,34 @@ test('bez zgody NIE wysyłam niczego — jawna odmowa (setup → multi)', async 
   assert.equal(el(u, 'bledy-multi').hidden, false, 'odmowa widoczna w polu błędów');
   assert.match(tekst(u, 'bledy-multi'), /Bez zgody/, 'komunikat mówi wprost o zgodzie');
   await klik(u, 'przycisk-multi-dolacz');
-  assert.equal(most.ciala.length, 0, 'ZERO wysyłek na most bez zgody');
-  assert.equal(most.adresy.length, 0, 'nawet GET lobby nie poszedł');
+  assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez zgody');
+  assert.deepEqual(
+    most.adresy.filter((a) => /[?&]akcja=(gry|gra-stan|ranking)/.test(a)),
+    [],
+    'żaden GET gry wieloosobowej nie poszedł (odczyt indeksu paczek jest bez zgody — ADR 0017 pkt 6)',
+  );
   // po przywróceniu zgody — droga wolna (panel się otwiera)
   przelaczNa(u);
   u.dom.pobierz('multi-zgoda').checked = true;
   await klik(u, 'przycisk-multi-dolacz');
   assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'ze zgodą panel dołączania otwarty');
+});
+
+test('ADR 0020: bez adresu mostu w tej wersji aplikacji gra sieciowa odmawia jawnie, hot-seat zostaje', async () => {
+  const most = atrapaMostu();
+  // pusty wpis w pamięci = stan `DOMYSLNY_URL_MOSTU === ''` (przed wdrożeniem web app przez właściciela)
+  const pamiec = new Map([['okolica:multi:url-mostu', '']]);
+  const u = await noweUrzadzenie({ pamiec, most });
+  await przygotujTelefon(u, 'Iga');
+  przelaczNa(u);
+  assert.match(tekst(u, 'multi-most-stan'), /niepodłączony/i, 'karta gry wieloosobowej mówi wprost, że most nie jest wpisany');
+  assert.match(tekst(u, 'most-stan-repo'), /niepodłączony/i, 'karta paczek mówi to samo (jedna prawda o stanie mostu)');
+  await klik(u, 'przycisk-multi-zaloz');
+  assert.match(tekst(u, 'bledy-multi'), /Brak adresu mostu/, 'odmowa założenia gry z jawnym powodem');
+  assert.match(tekst(u, 'bledy-multi'), /Hot-seat/, 'komunikat podpowiada działającą alternatywę na jednym telefonie');
+  await klik(u, 'przycisk-multi-dolacz');
+  assert.equal(most.ciala.length, 0, 'ZERO wysyłek na most bez adresu');
+  assert.equal(most.adresy.length, 0, 'nawet GET lobby nie poszedł');
 });
 
 test('serwer odrzuca zdarzenie poza turą (R08) — klient NIE ponawia i mówi dlaczego', async () => {

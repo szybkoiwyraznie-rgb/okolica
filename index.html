@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m11-1">
-  <script type="module" src="app/app.js?v=m11-1"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-1">
+  <script type="module" src="app/app.js?v=m12-1"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -82,14 +82,8 @@
           <button id="przycisk-multi-zaloz" class="przycisk przycisk-glowny" type="button">🌐 Załóż grę</button>
           <button id="przycisk-multi-dolacz" class="przycisk" type="button">🔗 Dołącz do gry</button>
         </div>
-        <details id="multi-most-detale">
-          <summary>Adres mostu (Apps Script) — zaawansowane</summary>
-          <div class="wiersz">
-            <input id="multi-url-mostu" type="url" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://script.google.com/macros/s/…/exec">
-            <button id="przycisk-multi-zapisz-url" class="przycisk" type="button">Zapisz</button>
-          </div>
-          <p class="podpowiedz">Ten sam web app, co repozytorium paczek — obsługuje też gry (ADR 0016, 0019).</p>
-        </details>
+        <p id="multi-most-stan" class="podpowiedz">Most Drive: sprawdzam stan w tej wersji aplikacji…</p>
+        <p class="podpowiedz">Adres mostu jest wpisany w tę wersję aplikacji (ADR 0020) — ten sam web app Apps Script obsługuje paczki, gry i rankingi (ADR 0016, 0018, 0019). Nie musisz nic konfigurować.</p>
       </div>
 
       <!-- M6/R6: wznowienie przerwanej gry — jawne, kasowanie dwustopniowe -->
@@ -292,13 +286,9 @@
         <p class="duzy">📦 Paczki dla tej okolicy</p>
         <p id="zestawy-status" class="podpowiedz">Sprawdzam, czy ta okolica ma już gotowe pytania…</p>
         <ul id="zestawy-lista" class="lista-zestawow"></ul>
-        <details id="zestawy-zaawansowane" class="podpowiedz">
-          <summary>Źródło repozytorium (zaawansowane)</summary>
-          <label class="pole"><span>Adres indeksu paczek</span><input id="pole-url-repo" type="text" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec"></label>
-          <button id="przycisk-zapisz-url-repo" class="przycisk" type="button">Zapisz źródło i odśwież</button>
-          <button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie</button>
-          <p class="podpowiedz">Tu wklejasz adres web app Apps Script mostu Drive (instrukcja: docs/setup). Bez adresu karta pokazuje tylko paczki z tego telefonu. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela (ADR 0017 pkt 6).</p>
-        </details>
+        <p id="most-stan-repo" class="podpowiedz">Most Drive: sprawdzam stan w tej wersji aplikacji…</p>
+        <button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie</button>
+        <p class="podpowiedz">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji (ADR 0020) — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela (ADR 0017 pkt 6).</p>
       </div>
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">

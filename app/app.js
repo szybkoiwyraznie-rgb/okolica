@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m11-1';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m11-1';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-1';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-1';
 import {
   parsujOdpowiedzModela,
   podsumowaniePaczki,
@@ -25,21 +25,21 @@ import {
   zastosujEdycjePaczki,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
-} from './protokol.js?v=m11-1';
-import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m11-1';
-import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m11-1';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m11-1';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m11-1';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m11-1';
+} from './protokol.js?v=m12-1';
+import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-1';
+import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-1';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-1';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-1';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-1';
 import {
-  KLUCZ_REJESTRU, KLUCZ_URL_REPO, SCHEMAT_LOKALNY,
+  KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m11-1';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m11-1';
-import { ROLE_PALETY, czasTekst, dystansTekst, etykietaOdcinka, medalTekst, planObrazuWyniku, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m11-1';
+} from './zestawy.js?v=m12-1';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-1';
+import { ROLE_PALETY, czasTekst, dystansTekst, etykietaOdcinka, medalTekst, planObrazuWyniku, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m12-1';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -58,17 +58,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m11-1';
-import { utworzMape } from './mapa.js?v=m11-1';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, filtrujLobby, kategorieRankingu, kodPoprawny, normalizujKod, przeliczWyniki, ramkaGeohash, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m11-1';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m11-1';
+} from './sieci.js?v=m12-1';
+import { utworzMape } from './mapa.js?v=m12-1';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, filtrujLobby, kategorieRankingu, kodPoprawny, normalizujKod, przeliczWyniki, ramkaGeohash, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-1';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-1';
+import { adresMostu, stanMostu } from './most.js?v=m12-1';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
-/** M11/P4 (ADR 0019): tożsamość i most gry wieloosobowej — osobne klucze, „kasuj dane" czyści wszystko. */
+/** M11/P4 (ADR 0019): tożsamość i most gry wieloosobowej — osobne klucze, „kasuj dane" czyści wszystko.
+ *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
 const KLUCZ_PSEUDONIMU = 'okolica:pseudonim';
 const KLUCZ_ZGODY_MULTI = 'okolica:multi:zgoda';
-const KLUCZ_URL_MOSTU = 'okolica:multi:url-mostu';
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
 
@@ -1201,6 +1202,22 @@ function wierszZestawu(opis, etykietaZrodla, akcji) {
 }
 
 /**
+ * Stan mostu Drive w UI (ADR 0020): adres jest wpisany w kod aplikacji, więc
+ * użytkownik go nie konfiguruje — ale MA widzieć, czy wspólne repozytorium,
+ * gry sieciowe i rankingi są w tej wersji podłączone (LESSONS L6: status jawny).
+ * Jeden tekst z `app/most.js` trafia do obu miejsc, żeby nie było dwóch prawd.
+ */
+function pokazStanMostu() {
+  const { tekst, podlaczony } = stanMostu();
+  for (const id of ['most-stan-repo', 'multi-most-stan']) {
+    const el = $(id);
+    if (!el) continue;
+    el.textContent = tekst;
+    el.classList.toggle('bledy', !podlaczony); // brak mostu = widoczne ostrzeżenie, nie szara podpowiedź
+  }
+}
+
+/**
  * Karta propozycji na ekranie pozycja: najpierw kopie z tego telefonu, potem
  * (asynchronicznie, z timeoutem) dopasowania z repozytorium. Każda awaria
  * repo = „brak propozycji", nigdy blokada gry (ADR 0017 pkt 6).
@@ -1233,13 +1250,12 @@ function odswiezPropozycjeZestawow() {
       () => grajZZestawemLokalnym(wpis.skrot),
     ));
   }
-  const poleUrl = $('pole-url-repo');
-  const url = typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_URL_REPO) : null;
-  if (poleUrl && !poleUrl.value) poleUrl.value = url ?? '';
+  const url = adresMostu(); // ADR 0020: adres z kodu aplikacji (albo nadpisany w pamięci telefonu)
+  pokazStanMostu();
   if (!url) {
     $('zestawy-status').textContent = lokalne.length
-      ? 'Masz gotowe paczki z tego telefonu. Wspólne repozytorium (Drive) nie jest podłączone — adres wpiszesz w „Źródło repozytorium”.'
-      : 'Wspólne repozytorium (Drive) nie jest podłączone — adres wpiszesz w „Źródło repozytorium” (zaawansowane).';
+      ? 'Masz gotowe paczki z tego telefonu. Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji.'
+      : 'Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji — nowe pytania przygotuje model.';
     return;
   }
   $('zestawy-status').textContent = lokalne.length
@@ -1273,13 +1289,13 @@ function odswiezPropozycjeZestawow() {
 /**
  * M9b/D4: „🔌 Sprawdź połączenie" — jawna próba mostu Drive na żywym
  * wdrożeniu (instrument ryzyka CORS/redirect z ADR 0016): GET indeksu,
- * walidacja i komunikat po ludzku. Nie zapisuje adresu (od tego jest
- * „Zapisz źródło"); awaria nigdy nie blokuje gry (LESSONS L6: status jawny).
+ * walidacja i komunikat po ludzku. Adres bierze z kodu aplikacji (ADR 0020),
+ * nic nie zapisuje; awaria nigdy nie blokuje gry (LESSONS L6: status jawny).
  */
 function sprawdzPolaczenieZRepo() {
-  const url = ($('pole-url-repo')?.value ?? '').trim();
+  const url = adresMostu();
   if (!url) {
-    status('Brak adresu do sprawdzenia — wklej adres web app mostu Drive w polu „Adres indeksu paczek".');
+    status('Nie mam czego sprawdzać: ta wersja aplikacji nie ma wpisanego adresu mostu Drive (ADR 0020). Wspólne paczki, gry sieciowe i rankingi są wyłączone — gramy lokalnie.');
     return;
   }
   status('Sprawdzam połączenie z mostem Drive…');
@@ -2267,9 +2283,9 @@ function wyslijZestawNaDrive() {
     status('Paczka przyjęta. Nie wysłano na Drive: zgoda odhaczona na tym ekranie.');
     return;
   }
-  const url = typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_URL_REPO) : null;
+  const url = adresMostu(); // ADR 0020: jeden adres z kodu aplikacji
   if (!url) {
-    status('Paczka przyjęta. Nie wysłano na Drive: brak adresu repozytorium („Źródło repozytorium” na karcie „📦 Paczki…”).');
+    status('Paczka przyjęta. Nie wysłano na Drive: brak adresu repozytorium w tej wersji aplikacji (ADR 0020) — paczka zostaje na tym telefonie.');
     return;
   }
   if (!STAN.pozycja || !STAN.stacje.length || !STAN.paczka) {
@@ -2650,9 +2666,9 @@ function banerStartowy() {
 
 /* ================================ M11/P4: gra na wielu urządzeniach (ADR 0019) */
 
-/** Adres mostu gier z pola setupu (ten sam web app co repozytorium paczek). */
+/** Adres mostu gier (ADR 0020): wpisany w kod aplikacji — ten sam web app co repozytorium paczek i rankingi. */
 function urlMostuMulti() {
-  return ($('multi-url-mostu').value ?? '').trim();
+  return adresMostu();
 }
 
 /** GET do mostu z limitem 8 s i jawnym błędem — współdzielony przez lobby, indeks i wznowienie. */
@@ -2696,16 +2712,16 @@ function walidujGotowoscMulti() {
   if (!$('multi-zgoda').checked) {
     usterki.push('Bez zgody na wysyłanie danych do mostu Drive nie założę gry ani nie dołączę — pseudonim i wyniki muszą trafić na serwer. Współrzędne nigdy nie opuszczają telefonu. Jeśli nie chcesz wysyłać niczego, wybierz rodzaj gry „Hot-seat”.');
   }
-  if (!urlMostuMulti()) usterki.push('Brak adresu mostu — wklej adres web app Apps Script w „Adres mostu (Apps Script)” i zapisz go.');
+  if (!urlMostuMulti()) usterki.push('Brak adresu mostu w tej wersji aplikacji (ADR 0020) — gra na wielu urządzeniach jest wyłączona. Wybierz rodzaj gry „Hot-seat", żeby grać na jednym telefonie.');
   return usterki;
 }
 
 function wczytajUstawieniaMulti() {
+  pokazStanMostu(); // adres mostu jest w kodzie (ADR 0020) — UI pokazuje stan, nie pole do wpisywania
   if (typeof localStorage === 'undefined') return;
   $('multi-pseudonim').value = localStorage.getItem(KLUCZ_PSEUDONIMU) ?? '';
   const zgoda = localStorage.getItem(KLUCZ_ZGODY_MULTI);
   if (zgoda !== null) $('multi-zgoda').checked = zgoda === '1'; // domyślnie z HTML: zaznaczona
-  $('multi-url-mostu').value = localStorage.getItem(KLUCZ_URL_MOSTU) ?? localStorage.getItem(KLUCZ_URL_REPO) ?? '';
   if (localStorage.getItem(KLUCZ_RODZAJU_GRY) === 'multi') {
     STAN.rodzajGry = 'multi';
     $('setup-rodzaj').value = 'multi';
@@ -2811,7 +2827,7 @@ function odswiezZrodlaMulti() {
   select.replaceChildren();
   STAN.multiZrodlo = null;
   STAN.multiRepoMety = [];
-  STAN.multiRepoUrl = typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_URL_REPO) : null;
+  STAN.multiRepoUrl = adresMostu() || null; // ADR 0020: adres z kodu aplikacji
   const opcje = [];
   const sesjaGotowa = STAN.stacje.length > 0 && (STAN.kontenerPaczki || (STAN.paczka && STAN.usterkiPaczki.length === 0));
   if (sesjaGotowa) opcje.push({ value: 'sesja', tekst: `📦 Paczka z tej sesji (${STAN.stacje.length} stacji)` });
@@ -2987,7 +3003,7 @@ async function odswiezLobby() {
   const url = urlMostuMulti();
   const lista = $('multi-lobby-lista');
   if (!url) {
-    $('multi-lobby-status').textContent = 'Brak adresu mostu — wpisz go w ustawieniach („Adres mostu”) i zapisz.';
+    $('multi-lobby-status').textContent = 'Brak adresu mostu w tej wersji aplikacji (ADR 0020) — lista gier w okolicy jest niedostępna.';
     return;
   }
   $('multi-lobby-status').textContent = 'Pobieram listę gier z mostu Drive…';
@@ -3313,17 +3329,16 @@ function wrocZRankingu() {
   pokazEkran(EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup');
 }
 
-/** Adres mostu do rankingów: pole gry wieloosobowej, zapasowo indeks repo paczek. */
+/** Adres mostu do rankingów (ADR 0020): ten sam web app co repozytorium paczek i gry. */
 function urlMostuRankingu() {
-  if (typeof localStorage === 'undefined') return '';
-  return localStorage.getItem(KLUCZ_URL_MOSTU) ?? localStorage.getItem(KLUCZ_URL_REPO) ?? '';
+  return adresMostu();
 }
 
 async function pobierzRankingi() {
   const url = urlMostuRankingu();
   if (!url) {
     STAN.rankingWiersze = [];
-    $('ranking-status').textContent = 'Brak adresu mostu Drive — wpisz go w ustawieniach (rodzaj gry „wieloosobowa" → „Adres mostu") i zapisz.';
+    $('ranking-status').textContent = 'Brak adresu mostu Drive w tej wersji aplikacji (ADR 0020) — rankingi są niedostępne.';
     renderujRankingi();
     return;
   }
@@ -3655,16 +3670,6 @@ function start() {
     pobierzPlik(`okolica-${meta.geohash5}.zestaw.json`, JSON.stringify(plik, null, 2), 'application/json');
     status('Zapisano plik TO-zestaw/1 — to surowa paczka: przed publikacją wymaga przeglądu źródeł i edycji pola „przegladZrodel” (ADR 0008 pkt 6, ADR 0017 pkt 5).');
   });
-  $('przycisk-zapisz-url-repo').addEventListener('click', () => {
-    if (typeof localStorage === 'undefined') return;
-    const wartosc = $('pole-url-repo').value.trim();
-    if (wartosc) localStorage.setItem(KLUCZ_URL_REPO, wartosc);
-    else localStorage.removeItem(KLUCZ_URL_REPO);
-    status(wartosc
-      ? 'Zapisano źródło repozytorium paczek (Drive Apps Script) — aplikacja tylko czyta indeks i paczki (ADR 0017 pkt 6).'
-      : 'Usunięto źródło repozytorium — propozycje współdzielone wyłączone, zostają paczki z tego telefonu.');
-    odswiezPropozycjeZestawow();
-  });
   $('przycisk-test-polaczenia').addEventListener('click', () => sprawdzPolaczenieZRepo());
   $('przycisk-eksport-paczki').addEventListener('click', () => {
     if (!STAN.paczka) return;
@@ -3730,16 +3735,6 @@ function start() {
   });
   $('multi-zgoda').addEventListener('change', () => {
     if (typeof localStorage !== 'undefined') localStorage.setItem(KLUCZ_ZGODY_MULTI, $('multi-zgoda').checked ? '1' : '0');
-  });
-  $('przycisk-multi-zapisz-url').addEventListener('click', () => {
-    const wartosc = ($('multi-url-mostu').value ?? '').trim();
-    if (typeof localStorage !== 'undefined') {
-      if (wartosc) localStorage.setItem(KLUCZ_URL_MOSTU, wartosc);
-      else localStorage.removeItem(KLUCZ_URL_MOSTU);
-    }
-    status(wartosc
-      ? 'Zapisano adres mostu gier — zakładanie i dołączanie jest gotowe.'
-      : 'Usunięto adres mostu — bez niego gra wieloosobowa nie wystartuje.');
   });
   $('przycisk-multi-zaloz').addEventListener('click', () => {
     const usterki = walidujGotowoscMulti();

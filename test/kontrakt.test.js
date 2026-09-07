@@ -584,9 +584,26 @@ test('kontrakt M9b: zgoda na wysyłkę Drive jest na ekranie wklejania i domyśl
   assert.ok(INDEX.indexOf('id="zgoda-drive"') < INDEX.indexOf('id="przycisk-sprawdz"'), 'zgoda widoczna PRZED przyciskiem przyjęcia');
 });
 
-test('kontrakt M9b: „🔌 Sprawdź połączenie" żyje w źródłach repozytorium (instrument CORS z ADR 0016)', () => {
+test('kontrakt M9b: „🔌 Sprawdź połączenie" żyje w karcie repozytorium (instrument CORS z ADR 0016)', () => {
   assert.match(INDEX, /<button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie<\/button>/, 'przycisk próby mostu obecny');
-  assert.ok(INDEX.indexOf('id="przycisk-test-polaczenia"') > INDEX.indexOf('id="przycisk-zapisz-url-repo"'), 'próba połączenia obok zapisu źródła');
+  assert.ok(INDEX.indexOf('id="przycisk-test-polaczenia"') > INDEX.indexOf('id="most-stan-repo"'), 'próba połączenia obok stanu mostu');
+});
+
+test('kontrakt ADR 0020: adres mostu jest wpisany w kod, a UI nie ma pola do wpisywania', () => {
+  const MOST = czytaj('app/most.js');
+  assert.match(MOST, /export const DOMYSLNY_URL_MOSTU = /, 'stała wdrożeniowa adresu mostu żyje w app/most.js');
+  assert.match(MOST, /export function adresMostu/, 'reguła wyboru adresu jest funkcją modułu');
+  assert.match(APP, /from '\.\/most\.js\?v=/, 'app.js bierze adres z modułu mostu');
+  // ADR 0020 pkt 2: pola i przyciski zapisu adresu zniknęły z interfejsu
+  for (const id of ['pole-url-repo', 'multi-url-mostu', 'przycisk-zapisz-url-repo', 'przycisk-multi-zapisz-url']) {
+    assert.ok(!INDEX.includes(`id="${id}"`), `#${id} nie istnieje w index.html — adresu nie wpisuje się ręcznie`);
+  }
+  for (const id of ['most-stan-repo', 'multi-most-stan']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `stan mostu jest jawny w #${id} (LESSONS L6)`);
+  }
+  // komunikaty nie mogą odsyłać do pola, którego już nie ma
+  assert.ok(!/wklej adres|wpisz adres|wpisz go w ustawieniach/i.test(APP), 'żaden komunikat nie każe wpisywać adresu mostu');
+  assert.ok(!APP.includes('KLUCZ_URL_REPO'), 'app.js nie sięga po klucz adresu wprost — wszystko przez adresMostu()');
 });
 
 test('kontrakt M10: sw.js bez API Node, a WERSJA_SW == wersja cache-bust aplikacji', () => {
@@ -627,7 +644,7 @@ test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językie
 
 test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', () => {
   // ekrany i panele (ADR 0019, plan M11/P4)
-  for (const id of ['ekran-multi', 'karta-multi', 'multi-panel-zaloz', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi', 'setup-rodzaj', 'multi-pseudonim', 'multi-zgoda', 'multi-url-mostu']) {
+  for (const id of ['ekran-multi', 'karta-multi', 'multi-panel-zaloz', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi', 'setup-rodzaj', 'multi-pseudonim', 'multi-zgoda', 'multi-most-stan']) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
   // zgoda domyślnie zaznaczona (jak przy wysyłce paczek) i WYMAGANA przed wysyłką

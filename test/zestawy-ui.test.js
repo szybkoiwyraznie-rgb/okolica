@@ -206,15 +206,15 @@ test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra be
   }
 });
 
-test('zestawy UI: własny URL repozytorium wygrywa z domyślnym (switchability, ADR 0017 pkt 6)', async () => {
+test('zestawy UI: adres nadpisany w pamięci telefonu wygrywa ze stałą z kodu (ADR 0020)', async () => {
   const atrap = atrapaFetch({ indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [] }) });
   try {
     const pamiec = new Map([['okolica:repo-zestawow:url', 'https://przyklad.org/paczki/indeks.json'], ['okolica:konfig', KONFIG_TEST]]);
     const dom = await aplikacjaZZestawami({ pamiec });
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));
-    assert.ok(atrap.wywolania.some((u) => u.startsWith('https://przyklad.org/paczki/indeks.json')), 'fetch poszedł do własnego źródła');
-    assert.equal(dom.pobierz('pole-url-repo').value, 'https://przyklad.org/paczki/indeks.json', 'pole pokazuje aktywne źródło');
+    assert.ok(atrap.wywolania.some((u) => u.startsWith('https://przyklad.org/paczki/indeks.json')), 'fetch poszedł do nadpisanego źródła');
+    assert.match(dom.pobierz('most-stan-repo').textContent, /nadpisany/, 'stan mostu mówi wprost, że adres jest nadpisany na tym telefonie');
     assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium nie ma paczek/);
   } finally {
     atrap.przywroc();

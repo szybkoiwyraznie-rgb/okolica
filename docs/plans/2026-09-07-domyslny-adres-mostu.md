@@ -37,17 +37,17 @@ zmienił, a nowa wersja jeszcze nie dojechała".
       `adresMostu(pamiec?)` (nadpisanie multi → nadpisanie repo → stała) i
       `mostSkonfigurowany(pamiec?)`; moduł nie dotyka DOM ani `fetch`
       (wzorzec: czysta funkcja + wstrzyknięta pamięć). Testy `test/most.test.js`.
-- [ ] **A2 — `app/app.js` przez jeden adres**: wszystkie odczyty adresu
+- [x] **A2 — `app/app.js` przez jeden adres**: wszystkie odczyty adresu
       (propozycje paczek, „🔌 Sprawdź połączenie", wysyłka zestawu na Drive,
       gra wieloosobowa, rankingi, wznowienie sesji multi) idą przez
       `adresMostu()`; usunięte nasłuchy pól i przycisków zapisu adresu;
       komunikaty UI bez obietnicy „wpisz adres" — zamiast tego jawny stan
       (podłączony / nie skonfigurowany w tej wersji).
-- [ ] **A3 — `index.html` bez pól adresu**: w karcie paczek zostaje status
+- [x] **A3 — `index.html` bez pól adresu**: w karcie paczek zostaje status
       `#most-stan-repo` i przycisk „🔌 Sprawdź połączenie"; w karcie gry
       wieloosobowej status `#multi-most-stan` zamiast `<details>` z polem;
       cache-bust `?v=m12-1` wszędzie + `WERSJA_SW = 'm12-1'` (AGENTS §7).
-- [ ] **A4 — testy**: nowy `test/most.test.js` (kolejność resolution, pusta
+- [x] **A4 — testy**: nowy `test/most.test.js` (kolejność resolution, pusta
       stała, nadpisanie), zaktualizowane `test/kontrakt.test.js` (brak pól
       adresu, stała w kodzie, spójność cache-bust), `test/zestawy-ui.test.js`
       i `test/wieloosobowa-ui.test.js` (adres z pamięci, nie z pola);
