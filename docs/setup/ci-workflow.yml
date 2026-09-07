@@ -1,0 +1,47 @@
+# Receptura CI — LUSTRO live pliku `.github/workflows/ci.yml`.
+#
+# Historia: pierwotnie plik był TYLKO lustrem, bo token Areny dostawał 403
+# `workflows` przy pushu (LESSONS L4). 2026-09-06, po odświeżeniu tokena,
+# agent wypchnął live workflow i CI odpaliło się na PR — 403 był przywiązany
+# do instancji tokena, nie trwały. Lustro zostaje jako punkt odniesienia
+# audytu („czy brama na GitHubie robi to samo, co bramka lokalna"), a test
+# kontraktowy pilnuje, że live plik jest IDENTYCZNY z recepturą poniżej
+# (edytuj jedno — edytuj oba).
+
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Zero zależności runtime i deweloperskich (ADR 0001) — brak `npm ci`.
+      - name: Testy (geodezja, konfiguracja, protokół PYT, kontrakty)
+        run: npm test
+
+      - name: Szablon promptu zgodny między dokumentem a kodem (PROTOKOL §2)
+        run: npm run check
+
+      - name: Brak zależności i brak sekretów w drzewie
+        run: |
+          test ! -d node_modules
+          ! grep -rnE "(api[_-]?key|secret|token)\s*[:=]\s*['\"][A-Za-z0-9]{16,}" app/ tools/ index.html
+          echo "OK: brak kluczy API i zależności w repozytorium"

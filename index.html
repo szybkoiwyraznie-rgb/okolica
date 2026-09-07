@@ -1,0 +1,644 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Tajemnicza Okolica — terenowa gra quizowa</title>
+  <meta name="description" content="Tajemnicza Okolica: gra terenowa na mapie. Aplikacja znajduje stacje w Twojej okolicy, prowadzi do nich graczy i zadaje pytania o to miejsce.">
+  <meta name="theme-color" content="#f6f2e9">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%232f6f4f'/%3E%3Cpath d='M22 10 L13 14 L10 23 L19 19 Z' fill='%23f6f2e9'/%3E%3Ccircle cx='16' cy='16' r='1.8' fill='%232f6f4f'/%3E%3C/svg%3E">
+  <link rel="manifest" href="assets/manifest.json">
+  <link rel="apple-touch-icon" href="assets/ikony/ikona-180.png">
+  <script>
+    // Strażnik motywu: ustawia html[data-motyw] PRZED pierwszym malowaniem,
+    // żeby przeładowanie nie mignęło złym tłem (wzorzec z AME, ADR 0011).
+    try {
+      const zapisany = localStorage.getItem('okolica:motyw');
+      const systemowy = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'ciemny' : 'jasny';
+      document.documentElement.dataset.motyw = zapisany || systemowy;
+    } catch (e) { /* brak dostępu do pamięci — zostaje motyw z CSS */ }
+  </script>
+  <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
+       w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
+  <link rel="stylesheet" href="app/styles.css?v=m12-1">
+  <script type="module" src="app/app.js?v=m12-1"></script>
+</head>
+<body>
+  <div id="baner" class="baner" hidden></div>
+
+  <header class="gora">
+    <div class="tytul">
+      <h1>Tajemnicza Okolica</h1>
+      <p id="podtytul">gra terenowa w miejscu, w którym stoisz</p>
+    </div>
+    <div class="akcje">
+      <button id="przycisk-motyw" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny">☾ motyw</button>
+      <button id="przycisk-sygnaly" class="przycisk przycisk-maly" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)">🔔 sygnały</button>
+      <button id="przycisk-test" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Tryb testowy: ręczne współrzędne zamiast GPS">⚙ tryb testowy</button>
+      <button id="przycisk-ranking" class="przycisk przycisk-maly" type="button" title="Rankingi graczy i moje gry (M12)">🏆 rankingi</button>
+    </div>
+  </header>
+
+  <nav id="kroki" class="kroki" aria-label="Kroki przygotowania gry">
+    <ol>
+      <li data-krok="setup" class="aktywny">1 · ustawienia</li>
+      <li data-krok="pozycja">2 · pozycja</li>
+      <li data-krok="stacje">3 · stacje</li>
+      <li data-krok="prompt">4 · pytania</li>
+      <li data-krok="paczka">5 · paczka</li>
+      <li data-krok="gra">6 · gra</li>
+    </ol>
+  </nav>
+
+  <main class="tresc">
+
+    <!-- KROK 1: konfiguracja rozgrywki -->
+    <section id="ekran-setup" class="ekran" aria-labelledby="tytul-setup">
+      <h2 id="tytul-setup">Ustawienia gry</h2>
+
+      <!-- M11/P4: hot-seat albo gra na wielu urządzeniach (ADR 0019) -->
+      <label class="pole">
+        <span>Rodzaj gry</span>
+        <select id="setup-rodzaj">
+          <option value="hotseat">Hot-seat — jeden telefon podawany dalej</option>
+          <option value="multi">Gra na wielu urządzeniach — każdy ma swój telefon</option>
+        </select>
+      </label>
+
+      <div id="karta-multi" class="karta" hidden>
+        <div id="multi-wznowienie" class="karta karta-wznowienie" hidden>
+          <p id="multi-wznowienie-opis" class="duzy"></p>
+          <div class="wiersz">
+            <button id="przycisk-multi-wroc" class="przycisk przycisk-glowny" type="button">↩ Wróć do gry</button>
+            <button id="przycisk-multi-porzuc" class="przycisk" type="button">🗑 Porzuć zapamiętaną grę</button>
+          </div>
+        </div>
+        <label class="pole">
+          <span>Pseudonim (widzą go inni gracze)</span>
+          <input id="multi-pseudonim" type="text" maxlength="24" autocomplete="nickname" spellcheck="false" placeholder="np. Marta">
+        </label>
+        <label class="pole sprawdz"><input id="multi-zgoda" type="checkbox" checked> <span>Zgadzam się na wysyłanie pseudonimu i wyników gry na wspólne konto Google Drive. Współrzędne nigdy nie opuszczają telefonu (ADR 0019).</span></label>
+        <div class="wiersz">
+          <button id="przycisk-multi-zaloz" class="przycisk przycisk-glowny" type="button">🌐 Załóż grę</button>
+          <button id="przycisk-multi-dolacz" class="przycisk" type="button">🔗 Dołącz do gry</button>
+        </div>
+        <p id="multi-most-stan" class="podpowiedz">Most Drive: sprawdzam stan w tej wersji aplikacji…</p>
+        <p class="podpowiedz">Adres mostu jest wpisany w tę wersję aplikacji (ADR 0020) — ten sam web app Apps Script obsługuje paczki, gry i rankingi (ADR 0016, 0018, 0019). Nie musisz nic konfigurować.</p>
+      </div>
+
+      <!-- M6/R6: wznowienie przerwanej gry — jawne, kasowanie dwustopniowe -->
+      <div id="karta-wznowienie" class="karta karta-wznowienie" hidden>
+        <p id="wznowienie-opis" class="duzy"></p>
+        <div class="wiersz">
+          <button id="przycisk-wznow-gre" class="przycisk przycisk-glowny" type="button">▶ Wznów grę</button>
+          <button id="przycisk-kasuj-zapis" class="przycisk" type="button">🗑 Nowa gra (kasuje zapis)</button>
+        </div>
+      </div>
+
+      <!-- M7/P6: historia gier — skróty (bez treści i współrzędnych, ADR 0010 pkt 1) -->
+      <div id="karta-historia" class="karta" hidden>
+        <details id="historia-detale">
+          <summary id="historia-naglowek">Poprzednie gry</summary>
+          <p id="historia-usterki" class="bledy" role="alert" hidden></p>
+          <ul id="historia-lista" class="lista-historii"></ul>
+          <button id="przycisk-kasuj-historie" class="przycisk przycisk-maly" type="button">🗑 Kasuj historię</button>
+        </details>
+      </div>
+
+      <fieldset class="pole">
+        <legend>Sposób poruszania się</legend>
+        <div id="lista-trybow" class="segment"></div>
+        <p id="opis-trybu" class="podpowiedz"></p>
+      </fieldset>
+
+      <div class="siatka">
+        <label class="pole">
+          <span>Promień gry (m)</span>
+          <input id="setup-promien" type="number" min="200" max="50000" step="100" inputmode="numeric">
+        </label>
+        <label class="pole">
+          <span>Liczba stacji</span>
+          <input id="setup-stacje" type="number" min="3" max="12" step="1" inputmode="numeric">
+        </label>
+        <label class="pole">
+          <span>Pytań na stację</span>
+          <input id="setup-pytania" type="number" min="1" max="3" step="1" inputmode="numeric">
+        </label>
+        <label class="pole">
+          <span>Liczba graczy</span>
+          <input id="setup-gracze" type="number" min="1" max="8" step="1" inputmode="numeric">
+        </label>
+      </div>
+
+      <fieldset class="pole" id="pole-imiona">
+        <legend>Gracze</legend>
+        <div id="lista-imion" class="lista-imion"></div>
+      </fieldset>
+
+      <fieldset class="pole">
+        <legend>Kategoria wiekowa (trudność pytań)</legend>
+        <div id="lista-wieku" class="segment"></div>
+      </fieldset>
+
+      <fieldset class="pole">
+        <legend>Tematy pytań</legend>
+        <div id="lista-tematow" class="chipy"></div>
+      </fieldset>
+
+      <div class="siatka">
+        <label class="pole">
+          <span>Kto odpowiada</span>
+          <select id="setup-wspolpraca"></select>
+        </label>
+        <label class="pole">
+          <span>Język pytań</span>
+          <select id="setup-jezyk"></select>
+        </label>
+        <label class="pole">
+          <span>Podkład mapy</span>
+          <select id="setup-podklad"></select>
+        </label>
+        <label class="pole">
+          <span>Kara za „jestem na miejscu" (s)</span>
+          <input id="setup-kara" type="number" min="0" max="600" step="15" inputmode="numeric">
+        </label>
+      </div>
+
+      <div class="pole">
+        <label for="setup-kod"><span>Kod gry (identyfikator rozgrywki)</span></label>
+        <div class="wiersz">
+          <input id="setup-kod" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="np. K7M2QP">
+          <button id="przycisk-kod" class="przycisk" type="button" title="Zaproponuj losowy kod">🎲 zaproponuj</button>
+        </div>
+        <p class="podpowiedz">Krótki identyfikator rozgrywki — trafia do eksportu paczki i do przyszłego repozytorium paczek (ADR 0010). Nie chroni pytań: przed podglądem ukrywa je obfuskacja bez klucza (ADR 0007).</p>
+      </div>
+
+      <label class="pole sprawdz"><input id="setup-geokodacja" type="checkbox"> <span>Pobierz nazwę miejsca (dzielnica, miasto) — wysyła przybliżoną pozycję do Overpass</span></label>
+
+      <button id="przycisk-prywatnosc" class="przycisk" type="button">🔐 Dane i prywatność</button>
+
+      <p id="bledy-setup" class="bledy" role="alert" hidden></p>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-dalej-pozycja" class="przycisk przycisk-glowny" type="button">📍 Dalej: moja pozycja</button>
+      </div>
+    </section>
+
+    <!-- M11/P4: ekran gry wieloosobowej (załóż / dołącz / lobby) -->
+    <section id="ekran-multi" class="ekran" hidden aria-labelledby="tytul-multi">
+      <h2 id="tytul-multi">Gra na wielu urządzeniach</h2>
+      <p class="podpowiedz">Każdy gracz ma swój telefon. Na serwer jadą wyłącznie pseudonimy, zdarzenia gry i wyniki — współrzędne zostają na urządzeniach (ADR 0019 pkt 3).</p>
+      <p id="bledy-multi" class="bledy" role="alert" hidden></p>
+
+      <div id="multi-panel-zaloz" class="karta" hidden>
+        <h3>Załóż grę</h3>
+        <fieldset class="pole">
+          <legend>Tryb gry</legend>
+          <div id="multi-tryby" class="segment"></div>
+          <p id="multi-tryb-opis" class="podpowiedz"></p>
+        </fieldset>
+        <label class="pole">
+          <span>Źródło pytań i stacji</span>
+          <select id="multi-zrodlo"></select>
+        </label>
+        <p id="multi-zaloz-info" class="podpowiedz" role="status"></p>
+        <div class="wiersz">
+          <button id="przycisk-zaloz-gre" class="przycisk przycisk-glowny" type="button">🚀 Zakładam (wyślij na Drive)</button>
+          <button id="przycisk-multi-wstecz-zaloz" class="przycisk" type="button">← Ustawienia</button>
+        </div>
+      </div>
+
+      <div id="multi-panel-dolacz" class="karta" hidden>
+        <h3>Dołącz do gry</h3>
+        <div class="wiersz">
+          <input id="multi-kod" type="text" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="kod gry, np. K2H7QM" aria-label="Kod gry">
+          <button id="przycisk-dolacz-kod" class="przycisk przycisk-glowny" type="button">Dołącz z kodem</button>
+        </div>
+        <p class="podpowiedz">Kod dostajesz od organizatora. Albo wybierz grę z listy poniżej — bez kodu.</p>
+        <ul id="multi-lobby-lista" class="lista-historii"></ul>
+        <p id="multi-lobby-status" class="podpowiedz" role="status"></p>
+        <div class="wiersz">
+          <button id="przycisk-odswiez-lobby" class="przycisk" type="button">🔄 Odśwież listę</button>
+          <button id="przycisk-multi-wstecz-dolacz" class="przycisk" type="button">← Ustawienia</button>
+        </div>
+      </div>
+
+      <div id="multi-panel-lobby" class="karta" hidden>
+        <h3>Lobby</h3>
+        <p class="podpowiedz">Kod gry — przekaż go innym graczom:</p>
+        <p id="lobby-kod" class="kod-duzy" aria-live="polite"></p>
+        <p id="lobby-tryb" class="podpowiedz"></p>
+        <ul id="lobby-gracze" class="lista-historii"></ul>
+        <p id="lobby-status" class="podpowiedz" role="status"></p>
+        <div id="lobby-widownia" hidden>
+          <table class="tabela-wynikow">
+            <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Czas dojść</th></tr></thead>
+            <tbody id="lobby-widownia-wiersze"></tbody>
+          </table>
+        </div>
+        <div class="wiersz">
+          <button id="przycisk-lobby-start" class="przycisk przycisk-glowny" type="button" hidden>▶ Start gry (organizator)</button>
+          <button id="przycisk-lobby-opusc" class="przycisk" type="button">Opuść lobby</button>
+        </div>
+      </div>
+
+      <p id="multi-sync-pasek" class="podpowiedz" role="status"></p>
+    </section>
+
+    <!-- KROK 2: pozycja -->
+    <section id="ekran-pozycja" class="ekran" hidden aria-labelledby="tytul-pozycja">
+      <h2 id="tytul-pozycja">Gdzie jesteś?</h2>
+      <p class="podpowiedz">Geolokalizacja działa tylko przez HTTPS (GitHub Pages) albo localhost i wymaga zgody.</p>
+      <div id="karta-pozycji" class="karta">
+        <p id="pozycja-status" class="duzy">Czekam na pozycję…</p>
+        <p id="pozycja-dokladnosc" class="badge">dokładność: —</p>
+        <p id="pozycja-wspolrzedne" class="kod"></p>
+        <p id="pozycja-miejsce" class="podpowiedz"></p>
+      </div>
+      <div id="mapa-pozycja" class="mapa">
+        <svg id="mapa-pozycja-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
+          <g id="mapa-pozycja-kafelki" class="warstwa-kafelki"></g>
+          <g id="mapa-pozycja-okregi" class="warstwa-okregi"></g>
+          <g id="mapa-pozycja-pinezki" class="warstwa-pinezki"></g>
+          <g id="mapa-pozycja-marker" class="warstwa-marker"></g>
+        </svg>
+        <div class="mapa-przyciski">
+          <button id="mapa-pozycja-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+          <button id="mapa-pozycja-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+          <button id="mapa-pozycja-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+        </div>
+        <p id="mapa-pozycja-skala" class="mapa-skala"></p>
+        <p id="mapa-pozycja-atrybucja" class="mapa-atrybucja"></p>
+      </div>
+      <div class="wiersz">
+        <button id="przycisk-gps" class="przycisk przycisk-glowny" type="button">🛰 Włącz GPS</button>
+        <button id="przycisk-recznie" class="przycisk" type="button">✎ Wpisz ręcznie</button>
+        <button id="przycisk-symulacja" class="przycisk" type="button" aria-pressed="false" hidden>▶ Symuluj dojście (250 m)</button>
+      </div>
+      <div id="reczne-wspolrzedne" class="karta" hidden>
+        <div class="siatka">
+          <label class="pole"><span>Szerokość (lat)</span><input id="setup-lat" type="text" inputmode="decimal" autocomplete="off" placeholder="52.23178 lub 52°07'22.9&quot;N"></label>
+          <label class="pole"><span>Długość (lon)</span><input id="setup-lon" type="text" inputmode="decimal" autocomplete="off" placeholder="21.01234 lub 21°00'44.3&quot;E"></label>
+        </div>
+        <p id="reczne-podpowiedz" class="podpowiedz">Wklej współrzędne z Google Maps w pierwsze pole — np. <b>52°07'22.9"N 20°44'46.1"E</b> albo <b>52.123028, 20.746139</b> — a drugie zostaw puste. Uwaga: stopnie-minuty-sekundy to nie dziesiętne (52°07'22.9" = 52.12303, nie 52.07229). W trybie testowym pozycję ustawisz też krótkim stuknięciem w mapę.</p>
+        <button id="przycisk-ustaw-reczne" class="przycisk" type="button">Ustaw tę pozycję</button>
+      </div>
+      <div id="zestawy-karta" class="karta" hidden>
+        <p class="duzy">📦 Paczki dla tej okolicy</p>
+        <p id="zestawy-status" class="podpowiedz">Sprawdzam, czy ta okolica ma już gotowe pytania…</p>
+        <ul id="zestawy-lista" class="lista-zestawow"></ul>
+        <p id="most-stan-repo" class="podpowiedz">Most Drive: sprawdzam stan w tej wersji aplikacji…</p>
+        <button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie</button>
+        <p class="podpowiedz">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji (ADR 0020) — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela (ADR 0017 pkt 6).</p>
+      </div>
+      <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wstecz-setup" class="przycisk" type="button">← ustawienia</button>
+        <button id="przycisk-dalej-stacje" class="przycisk przycisk-glowny" type="button" disabled>Dalej: stacje →</button>
+      </div>
+    </section>
+
+    <!-- KROK 3: stacje -->
+    <section id="ekran-stacje" class="ekran" hidden aria-labelledby="tytul-stacje">
+      <h2 id="tytul-stacje">Stacje w Twojej okolicy</h2>
+      <p id="stacje-tryb" class="podpowiedz"></p>
+      <p id="bledy-stacje" class="bledy" role="alert" hidden></p>
+      <div id="mapa-stacje" class="mapa">
+        <svg id="mapa-stacje-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
+          <g id="mapa-stacje-kafelki" class="warstwa-kafelki"></g>
+          <g id="mapa-stacje-okregi" class="warstwa-okregi"></g>
+          <g id="mapa-stacje-pinezki" class="warstwa-pinezki"></g>
+          <g id="mapa-stacje-marker" class="warstwa-marker"></g>
+        </svg>
+        <div class="mapa-przyciski">
+          <button id="mapa-stacje-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+          <button id="mapa-stacje-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+          <button id="mapa-stacje-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+        </div>
+        <p id="mapa-stacje-skala" class="mapa-skala"></p>
+        <p id="mapa-stacje-atrybucja" class="mapa-atrybucja"></p>
+      </div>
+      <ol id="lista-stacji" class="lista-stacji"></ol>
+      <p id="stacje-sprawiedliwosc" class="badge"></p>
+      <div class="wiersz">
+        <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
+        <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
+        <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
+      </div>
+      <p class="podpowiedz">Stacje są rozstawione w pierścieniu (ADR 0005 pkt 4). Punkty na sieci dróg, placów i szlaków — „nigdy w budynku ani na terenie prywatnym" — dojdą w kamieniu M4; patrz <code>docs/ROADMAP.md</code>.</p>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wstecz-pozycja" class="przycisk" type="button">← pozycja</button>
+        <button id="przycisk-dalej-prompt" class="przycisk przycisk-glowny" type="button">Dalej: pytania →</button>
+      </div>
+    </section>
+
+    <!-- KROK 4: prompt -->
+    <section id="ekran-prompt" class="ekran" hidden aria-labelledby="tytul-prompt">
+      <h2 id="tytul-prompt">Prompt dla modelu AI</h2>
+      <!-- Instrukcja obrazkowa (M5/J6): cztery kroki jako inline SVG — zero
+           plików zewnętrznych i zero CDN (ADR 0001 pkt 1, ADR 0011 pkt 6).
+           Kolejność DOM = kolejność kroków; karty ≥ 44 px (cel dotykowy). -->
+      <ol class="instrukcja instrukcja-obrazkowa" id="instrukcja-promptu">
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="8" y="8" width="22" height="28" rx="3"></rect>
+            <path d="M16 40h20a4 4 0 0 0 4-4V16"></path>
+          </svg>
+          <span>1. <strong>Kopiuj prompt</strong> przyciskiem poniżej.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 10h26a4 4 0 0 1 4 4v12a4 4 0 0 1-4 4H18l-8 7v-7H8a2 2 0 0 1-2-2V12a2 2 0 0 1 2-2z"></path>
+            <circle cx="32" cy="32" r="7"></circle>
+            <path d="M37 37l5 5"></path>
+          </svg>
+          <span>2. Wklej do modelu AI <strong>z włączonym wyszukiwaniem
+            w internecie</strong> (Meta AI, ChatGPT, Gemini…) — prompt wymaga
+            źródeł do każdego faktu.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 10c-6 0-4 12-9 14 5 2 3 14 9 14"></path>
+            <path d="M31 10c6 0 4 12 9 14-5 2-3 14-9 14"></path>
+            <circle cx="24" cy="24" r="2" fill="currentColor" stroke="none"></circle>
+          </svg>
+          <span>3. <strong>Kopiuj odpowiedź</strong> modelu — cały blok
+            kodu JSON.</span>
+        </li>
+        <li>
+          <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="14" y="8" width="24" height="32" rx="3"></rect>
+            <path d="M20 8a4 4 0 0 1 8 0"></path>
+            <path d="M10 28H4m6 0-4-4m4 4-4 4"></path>
+            <path d="M20 24h12M20 30h8"></path>
+          </svg>
+          <span>4. Wróć tutaj i <strong>wklej z powrotem</strong> w kroku 5 —
+            aplikacja sprawdzi paczkę i ukryje ją przed graczami.</span>
+        </li>
+      </ol>
+      <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
+      <p id="prompt-licznik" class="badge"></p>
+      <div class="wiersz">
+        <button id="przycisk-kopiuj-prompt" class="przycisk przycisk-glowny" type="button">⧉ Kopiuj prompt</button>
+        <button id="przycisk-pobierz-prompt" class="przycisk" type="button">⬇ Zapisz jako plik</button>
+      </div>
+      <p id="bledy-prompt" class="bledy" role="alert" hidden></p>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wstecz-stacje" class="przycisk" type="button">← stacje</button>
+        <button id="przycisk-dalej-paczka" class="przycisk przycisk-glowny" type="button">Dalej: wklej odpowiedź →</button>
+      </div>
+    </section>
+
+    <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
+    <section id="ekran-paczka" class="ekran" hidden aria-labelledby="tytul-paczka">
+      <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
+      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny. Po sprawdzeniu aplikacja ukryje paczkę: tekst stanie się nieczytelny przy kopiowaniu, ale <strong>nie jest zaszyfrowany</strong> (obfuskacja bez klucza, ADR 0007). Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
+      <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="10" placeholder="Wklej tutaj odpowiedź modelu (blok JSON)" aria-label="Odpowiedź modelu AI"></textarea>
+      <label class="zgoda-wiersz"><input id="zgoda-drive" type="checkbox" checked><span>📤 Wyślij ten zestaw na Drive do przeglądu właściciela (repozytorium paczek pytań). Zgoda jest zaznaczona domyślnie — odhacz, jeśli zestaw ma zostać tylko na tym telefonie.</span></label>
+      <div class="wiersz">
+        <button id="przycisk-wklej" class="przycisk" type="button">📋 Wklej ze schowka</button>
+        <label class="przycisk przycisk-plik">⬆ Z pliku<input id="plik-odpowiedz" type="file" accept=".json,.txt,application/json,text/plain"></label>
+      </div>
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wstecz-prompt" class="przycisk" type="button">← prompt</button>
+        <button id="przycisk-sprawdz" class="przycisk przycisk-glowny" type="button">✓ Sprawdź i przyjmij</button>
+      </div>
+      <div id="wynik-walidacji" class="karta" hidden>
+        <p id="wynik-naglowek" class="duzy"></p>
+        <ul id="wynik-usterki" class="usterki"></ul>
+        <dl id="wynik-podsumowanie" class="podsumowanie"></dl>
+        <button id="przycisk-poprawka" class="przycisk" type="button" hidden>⧉ Kopiuj poprawkę do modelu</button>
+        <button id="przycisk-ukryj" class="przycisk" type="button" hidden>⧉ Ukryj paczkę (TO-paczka/2)</button>
+        <button id="przycisk-eksport-paczki" class="przycisk" type="button" hidden>⬇ Zapisz paczkę (plik)</button>
+        <button id="przycisk-eksport-zestawu" class="przycisk" type="button" hidden>⬇ Paczka do repozytorium (TO-zestaw/1)</button>
+        <button id="przycisk-start-gry" class="przycisk przycisk-glowny" type="button" hidden>▶ Zacznij grę</button>
+        <div id="podglad-organizatora" class="podglad" hidden>
+          <p class="ostrzezenie"><strong>👁 Tylko dla organizatora</strong> — gracze nie powinni widzieć tych treści (ADR 0006 pkt 8). Każda ręczna poprawka zapisuje się w paczce jako „modyfikacje", a po ukryciu podgląd znika z ekranu.</p>
+          <div id="podglad-pytania"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Ekran pomocniczy (poza krokami gry): dane i prywatność — ADR 0013 pkt 7 -->
+    <!-- KROK 6: GRA (M6/R3) — jeden ekran, cztery panele faz:
+         oczekiwanie → odcinek → pytanie → koniec. Kolejność DOM = kolejność
+         faz; jeden GŁÓWNY przycisk na fazę (ADR 0011); cele dotykowe ≥ 44 px. -->
+    <section id="ekran-gra" class="ekran" hidden aria-labelledby="tytul-gra">
+      <h2 id="tytul-gra">Gra</h2>
+
+      <div class="gra-badges">
+        <p id="gra-kolejka" class="badge badge-duzy">Kolej: —</p>
+        <p id="gra-dystans" class="badge badge-duzy badge-dystans" aria-live="polite">— m</p>
+        <p id="gra-postep" class="podpowiedz">stacja — z —</p>
+      </div>
+
+      <div id="mapa-gra" class="mapa">
+        <svg id="mapa-gra-svg" class="mapa-svg" role="img" aria-label="Mapa gry" tabindex="0">
+          <g id="mapa-gra-kafelki" class="warstwa-kafelki"></g>
+          <g id="mapa-gra-okregi" class="warstwa-okregi"></g>
+          <g id="mapa-gra-pinezki" class="warstwa-pinezki"></g>
+          <g id="mapa-gra-marker" class="warstwa-marker"></g>
+        </svg>
+        <div class="mapa-przyciski">
+          <button id="mapa-gra-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+          <button id="mapa-gra-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+          <button id="mapa-gra-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+        </div>
+        <p id="mapa-gra-skala" class="mapa-skala"></p>
+        <p id="mapa-gra-atrybucja" class="mapa-atrybucja"></p>
+      </div>
+
+      <p id="bledy-gra" class="bledy" role="alert" hidden></p>
+      <p id="gra-komunikat" class="podpowiedz" role="status"></p>
+
+      <!-- M11/P4: panel gry wieloosobowej — tury, żywe wyniki, pasek synchronizacji -->
+      <div id="gra-panel-multi" class="karta gra-panel" hidden>
+        <p id="gra-multi-tura" class="duzy" role="status"></p>
+        <table id="gra-multi-tabela" class="tabela-wynikow">
+          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Czas dojść</th></tr></thead>
+          <tbody id="gra-multi-wiersze"></tbody>
+        </table>
+        <p id="gra-multi-sync" class="podpowiedz" role="status"></p>
+        <button id="przycisk-multi-rezygnuj" class="przycisk" type="button">🏳 Rezygnuję z gry</button>
+      </div>
+
+      <!-- FAZA A: przygotowanie / oczekiwanie — kto idzie i start odcinka -->
+      <div id="gra-panel-oczekuje" class="karta gra-panel">
+        <p id="gra-kto-idzie" class="duzy">Kto idzie: —</p>
+        <p id="gra-cel-stacji" class="podpowiedz"></p>
+        <button id="przycisk-start-odcinka" class="przycisk przycisk-glowny przycisk-fazy" type="button">▶ Idę do stacji —</button>
+      </div>
+
+      <!-- FAZA B: odcinek w drodze — dystans na żywo, ręczne zgłoszenie, pauza -->
+      <div id="gra-panel-odcinek" class="karta gra-panel" hidden>
+        <p id="gra-dystans-odcinka" class="duzy duzy-dystans">— m</p>
+        <p id="gra-prog-dojscia" class="badge">próg dojścia: —</p>
+        <div class="wiersz">
+          <button id="przycisk-reczne-dojscie" class="przycisk" type="button">✋ Jestem na miejscu (ręczne — kara)</button>
+          <button id="przycisk-pauza" class="przycisk" type="button" aria-pressed="false">⏸ Pauza</button>
+          <button id="przycisk-symulacja-gra" class="przycisk" type="button" hidden>▶ Symuluj dojście (tryb testowy)</button>
+        </div>
+        <p id="gra-pauza-komunikat" class="podpowiedz" hidden></p>
+      </div>
+
+      <!-- FAZA C: pytanie — odsłaniane DOPIERO w chwili dojścia (ADR 0007 pkt 6) -->
+      <div id="gra-panel-pytanie" class="karta gra-panel" hidden>
+        <p id="gra-pytanie-naglowek" class="badge">Stacja zdobyta · pytanie — z —</p>
+        <p id="gra-pytanie-tresc" class="duzy"></p>
+        <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
+        <div id="gra-wynik-odpowiedzi" class="gra-wynik-odpowiedzi" hidden>
+          <p id="gra-odpowiedz-ocena" class="duzy"></p>
+          <p id="gra-wyjasnienie" class="podpowiedz"></p>
+          <ul id="gra-zrodla" class="lista-zrodel"></ul>
+        </div>
+        <button id="przycisk-nastepna-stacja" class="przycisk przycisk-glowny przycisk-fazy" type="button" hidden>Następna stacja →</button>
+      </div>
+
+      <!-- FAZA D: koniec — pełne podsumowanie (M7): zwycięzca, medal trasy, ranking, statystyki, szczegóły -->
+      <div id="gra-panel-koniec" class="karta gra-panel" hidden>
+        <p class="duzy">🏁 Koniec gry!</p>
+        <div id="gra-wynik-zwyciezca" class="karta-zwyciezcy"></div>
+        <p id="gra-wynik-medal" class="medal-trasy" role="status"></p>
+        <table id="gra-wyniki" class="tabela-wynikow">
+          <thead>
+            <tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th></tr>
+          </thead>
+          <tbody id="gra-wyniki-tbody"></tbody>
+        </table>
+        <dl id="gra-wynik-statystyki" class="statystyki-gry"></dl>
+        <details id="gra-wynik-szczegoly">
+          <summary>Szczegóły graczy</summary>
+          <div id="gra-wynik-gracze" class="gracze-szczegoly"></div>
+        </details>
+        <details id="gra-wynik-stacje-detale">
+          <summary>Stacje</summary>
+          <table id="gra-wynik-stacje" class="tabela-wynikow tabela-stacje">
+            <thead>
+              <tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Stan</th><th scope="col">Czas</th><th scope="col">Punkty</th></tr>
+            </thead>
+            <tbody id="gra-wynik-stacje-tbody"></tbody>
+          </table>
+        </details>
+        <div class="wiersz" id="wynik-eksport">
+          <button id="przycisk-udostepnij-wynik" class="przycisk" type="button" hidden>⤴ Udostępnij wynik</button>
+          <button id="przycisk-kopiuj-wynik" class="przycisk przycisk-maly" type="button" hidden>📋 Kopiuj wynik</button>
+          <button id="przycisk-pobierz-wynik" class="przycisk przycisk-maly" type="button">⬇ Wynik .txt</button>
+          <button id="przycisk-pobierz-obraz" class="przycisk przycisk-maly" type="button">🖼 Wynik .png</button>
+          <button id="przycisk-udostepnij-obraz" class="przycisk przycisk-maly" type="button" hidden>⤴ Udostępnij obraz</button>
+        </div>
+        <details id="gra-wynik-tekst-detale">
+          <summary>Tekst wyniku</summary>
+          <textarea id="pole-wynik-tekst" class="pole-tekstowe" rows="12" readonly aria-label="Tekst wyniku do skopiowania"></textarea>
+        </details>
+      </div>
+
+      <div class="wiersz">
+        <button id="przycisk-pomin-stacje" class="przycisk" type="button" disabled>⏭ Pomiń odcinek (tylko w drodze)</button>
+        <button id="przycisk-zakoncz-gre" class="przycisk przycisk-maly" type="button">■ Zakończ grę</button>
+      </div>
+    </section>
+
+    <section id="ekran-prywatnosc" class="ekran" hidden aria-labelledby="tytul-prywatnosc">
+      <h2 id="tytul-prywatnosc">Dane i prywatność</h2>
+      <p class="podpowiedz">Krótko i po ludzku: co ta aplikacja pobiera, dokąd trafia
+      Twoja pozycja, co zostaje na telefonie i jak to skasować.</p>
+
+      <div class="karta">
+        <h3>Co jest pobierane i od kogo</h3>
+        <ul class="lista-privatnosc">
+          <li><strong>Kafelki mapy</strong> — od dostawcy podkładu (domyślnie
+            OpenStreetMap, opcjonalnie OpenTopoMap albo Esri World Imagery;
+            podkład można całkiem wyłączyć). Do dostawcy trafia tylko obszar
+            widoczny na ekranie i powiększenie.</li>
+          <li><strong>Sieć drogowa i nazwa miejsca</strong> — z Overpass API
+            (od kamienia M4): zaokrąglony środek i promień Twojej okolicy, bez
+            identyfikatora użytkownika. Pobieranie nazwy miejsca można wyłączyć
+            w ustawieniach.</li>
+          <li><strong>Nazwa miejsca — warstwa zapasowa (Nominatim, OSMF)</strong>
+            — <label class="sprawdz"><input id="geokodacja-zapasowa" type="checkbox">
+            <span>zezwól (domyślnie <strong>wyłączone</strong>)</span></label>.
+            Używana tylko, gdy Overpass nie zwrócił nazwy miejsca, a pobieranie
+            nazwy jest włączone w ustawieniach: <strong>jedno</strong> żądanie
+            na grę z zaokrąglonymi współrzędnymi, bez identyfikatora
+            użytkownika; wynik trafia do pamięci telefonu na 30 dni. Dane:
+            © OpenStreetMap contributors (ODbL). Adres usługi można przełączyć
+            kluczem <code>okolica:geokodacja-endpoint</code> bez aktualizacji
+            aplikacji (wymóg polityki OSMF).</li>
+          <li><strong>Nic więcej.</strong> Bez analityki, ciasteczek, konta
+            i zewnętrznych skryptów.</li>
+        </ul>
+      </div>
+
+      <div class="karta">
+        <h3>Dokąd trafia Twoja pozycja</h3>
+        <ul class="lista-privatnosc">
+          <li>Fixy GPS służą wyłącznie do prowadzenia gry i <strong>nie
+            opuszczają telefonu</strong> poza żądaniami mapy opisanymi wyżej.</li>
+          <li>Geolokalizacja wymaga Twojej zgody i połączenia HTTPS. Bez zgody
+            zostają współrzędne ręczne i tryb testowy.</li>
+        </ul>
+      </div>
+
+      <div class="karta">
+        <h3>Co zostaje na telefonie</h3>
+        <ul class="lista-privatnosc">
+          <li>Ustawienia gry i motyw: <code>okolica:konfig</code>,
+            <code>okolica:motyw</code>.</li>
+          <li>W kolejnych kamieniach: cache sieci drogowej, ukryta paczka pytań
+            i historia gier — wszystko pod kluczami <code>okolica:*</code>.</li>
+          <li>Pliki, które sam zapiszesz (prompt, paczka, wynik) — lądują w
+            Twoich „Pobranych", nie u nas.</li>
+        </ul>
+      </div>
+
+      <div class="karta">
+        <h3>Paczka pytań</h3>
+        <p class="podpowiedz">Paczka jest <strong>ukryta</strong> — nieczytelna
+        przy kopiowaniu — ale <strong>nie zaszyfrowana</strong> (ADR 0007).
+        Nie wklejaj do pytań danych osobowych: każdy, kto ma
+        dostęp do pliku paczki, może ją odczytać.</p>
+      </div>
+
+      <div class="karta">
+        <h3>Jak to skasować</h3>
+        <p class="podpowiedz">W przeglądarce: ustawienia strony → dane witryny
+        → usuń. Albo przyciskiem poniżej — usuwa klucze <code>okolica:*</code>
+        z tej przeglądarki. Stan właśnie rozgrywanej gry zostaje w pamięci do
+        odświeżenia strony.</p>
+        <button id="przycisk-czysc-dane" class="przycisk" type="button">🗑 Wyczyść zapisane dane gry</button>
+        <p id="czysc-dane-status" class="podpowiedz" role="status"></p>
+      </div>
+
+      <div class="wiersz przyciski-dolu">
+        <button id="przycisk-wrocz-prywatnosc" class="przycisk przycisk-glowny" type="button">← wróć</button>
+      </div>
+    </section>
+
+    <!-- M12/P6: rankingi graczy (dane z mostu Drive, agregacje po stronie telefonu) -->
+    <section id="ekran-ranking" class="ekran" hidden aria-labelledby="tytul-ranking">
+      <h2 id="tytul-ranking">🏆 Rankingi</h2>
+      <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych ze wspólnego konta Drive. Agregacje liczy telefon — serwer oddaje surowe wiersze (RO-ranking/1).</p>
+      <div class="wiersz">
+        <button id="przycisk-ranking-odswiez" class="przycisk" type="button">🔄 Odśwież</button>
+        <button id="przycisk-wrocz-ranking" class="przycisk" type="button">← wróć</button>
+      </div>
+      <p id="ranking-status" class="podpowiedz" role="status"></p>
+      <div id="ranking-zakladki" class="segment"></div>
+      <div id="ranking-kategorie" class="chipy"></div>
+      <table id="ranking-tabela" class="tabela-wynikow">
+        <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Gry</th><th scope="col">Poprawne</th></tr></thead>
+        <tbody id="ranking-wiersze"></tbody>
+      </table>
+      <ul id="ranking-moje-gry" class="lista-historii" hidden></ul>
+    </section>
+
+  </main>
+
+  <footer class="dol">
+    <span id="status">M2 — mapa i model rozgrywki: setup, pozycja, stacje, prompt, paczka</span>
+    <span class="separator">·</span>
+    <span>protokół <span id="stopka-protokol">PYT/1.0</span></span>
+    <span class="separator">·</span>
+    <button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">dane i prywatność</button>
+  </footer>
+</body>
+</html>

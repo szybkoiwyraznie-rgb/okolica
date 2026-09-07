@@ -1,0 +1,76 @@
+{
+  "opis": "Sekwencja fixów GPS z odbiciem sygnału: materiał testowy dla kryterium dojścia z ADR 0004 pkt 2 (próg max(25 m, 1,2 × accuracy) ograniczony do 100 m + dwa kolejne trafienia) i dla filtru dokładności z pkt 4.",
+  "uwagi": "FIXTURE TESTOWY: współrzędne, dokładności i komentarze są zmyślone na potrzeby testów reguł dojścia (test/pozycja.test.js). Nie jest to zapis prawdziwej trasy i nie wolno go używać w grze ani publikować.",
+  "stacja": {
+    "id": 1,
+    "lat": 52.239,
+    "lon": 21.02,
+    "opis": ""
+  },
+  "fixy": [
+    {
+      "t": 0,
+      "lat": 52.237732,
+      "lon": 21.019247,
+      "accuracy": 15,
+      "oczekiwanyDystansM": 150,
+      "komentarz": "start trasy — 150 m od stacji"
+    },
+    {
+      "t": 5000,
+      "lat": 52.238324,
+      "lon": 21.019598,
+      "accuracy": 20,
+      "oczekiwanyDystansM": 80,
+      "komentarz": "gracz podchodzi"
+    },
+    {
+      "t": 10000,
+      "lat": 52.238848,
+      "lon": 21.01991,
+      "accuracy": 12,
+      "oczekiwanyDystansM": 18,
+      "komentarz": "pierwsze trafienie w próg 25 m — debounce czeka na drugie"
+    },
+    {
+      "t": 15000,
+      "lat": 52.237817,
+      "lon": 21.019297,
+      "accuracy": 60,
+      "oczekiwanyDystansM": 140,
+      "komentarz": "ODBICIE SYGNAŁU (urban canyon): pojedynczy fix daleko, przy accuracy 60 m próg to 72 m"
+    },
+    {
+      "t": 20000,
+      "lat": 52.238831,
+      "lon": 21.0199,
+      "accuracy": 14,
+      "oczekiwanyDystansM": 20,
+      "komentarz": "trafienie po odbiciu — licznik zaczyna od nowa"
+    },
+    {
+      "t": 25000,
+      "lat": 52.238865,
+      "lon": 21.01992,
+      "accuracy": 10,
+      "oczekiwanyDystansM": 16,
+      "komentarz": "drugie trafienie z rzędu — stacja się zapala"
+    },
+    {
+      "t": 30000,
+      "lat": 52.236887,
+      "lon": 21.018744,
+      "accuracy": 300,
+      "oczekiwanyDystansM": 250,
+      "komentarz": "fix niedokładny (accuracy 300 m): próg jest ograniczony do 100 m, więc trafienia nie ma, a gracz dostaje ostrzeżenie"
+    },
+    {
+      "t": 35000,
+      "lat": 91.5,
+      "lon": 21,
+      "accuracy": 10,
+      "oczekiwanyDystansM": null,
+      "komentarz": "fix niepoprawny (szerokość poza zakresem) — odrzucony, historia się nie zmienia"
+    }
+  ]
+}

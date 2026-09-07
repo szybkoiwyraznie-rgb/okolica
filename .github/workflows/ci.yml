@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Zero zależności runtime i deweloperskich (ADR 0001) — brak `npm ci`.
+      - name: Testy (geodezja, konfiguracja, protokół PYT, kontrakty)
+        run: npm test
+
+      - name: Szablon promptu zgodny między dokumentem a kodem (PROTOKOL §2)
+        run: npm run check
+
+      - name: Brak zależności i brak sekretów w drzewie
+        run: |
+          test ! -d node_modules
+          ! grep -rnE "(api[_-]?key|secret|token)\s*[:=]\s*['\"][A-Za-z0-9]{16,}" app/ tools/ index.html
+          echo "OK: brak kluczy API i zależności w repozytorium"

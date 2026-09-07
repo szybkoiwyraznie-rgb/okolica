@@ -1,0 +1,640 @@
+# PROJECT_HISTORY — dziennik sesji
+
+> Zapis tego, co przyniosła sesja (fakty, nie plany). Jeden wpis na sesję,
+> najnowszy na dole. Nie jest lekturą startową (`AGENTS.md` §0) — czytasz
+> punktowo, grepem. Stan bieżący: `docs/ROADMAP.md` i najnowszy
+> `docs/setup/HANDOFF_*.md`.
+
+## 2026-09-05 — sesja M0 (fundament), gałąź `arena/01a07282-okolica`, PR #2
+
+**Zlecenie właściciela:** nowy projekt „Tajemnicza Okolica" — terenowa gra
+quizowa na mapie (geolokalizacja, stacje, pytania generowane przez model AI
+i wklejane z powrotem, szyfrowanie odpowiedzi, mobilny UI), prowadzony wg
+dobrych praktyk projektu AME (wzorzec: `AME-main.zip`).
+
+**Audyt stanu zastanego:** `main` = `3ca4c3d` („Add files via upload"):
+jednozdaniowy `README.md` + `AME-main.zip` (308 plików, ~20 MB po rozpakowaniu).
+Kodu, testów, CI ani dokumentacji brak — start od zera, regresji do sprawdzenia
+brak. Z archiwum wzorca wczytano: `AGENTS.md` (286 linii), `docs/setup/ENVIRONMENT.md`,
+`docs/WORKFLOW.md`, `docs/decisions/README.md` (27 ADR-ów), `docs/LESSONS.md`
+(24 lekcje), `docs/ARCHITECTURE.md`, `README.md`, `index.html`,
+`.github/workflows/ci.yml`, mechanizm kafelków z `app/map.js`
+(`PODKLADY_ONLINE`, `rysujPodkladOnline`).
+
+**Co zrobiono:**
+
+- Struktura i konfiguracja: `package.json` (zero zależności, `node --test`),
+  `.gitignore` (narzędzia sesji poza repo, eksporty paczek), `README.md`.
+- Zasady: `AGENTS.md` (§0 lektura startowa, §1 źródło prawdy, §2 cztery reguły
+  sesji, §3 zasady treści PYT, §4 granice, §5 tabela „gdzie zapisać regułę"),
+  `docs/setup/ENVIRONMENT.md` (sandbox, git, sieć, headless Chromium, live
+  preview), `docs/LESSONS.md` L1–L6.
+- Rejestr ADR + ADR 0001–0013 (7 zaakceptowanych, 6 proponowanych).
+- `docs/PROTOKOL.md` — protokół PYT v1.0: pętla treści, dosłowny szablon
+  promptu, schemat paczki, kategorie wiekowe (7/10/12/15/dorośli), kanon 10
+  tematów, 20 kodów usterek walidacji (E01–E20), wersjonowanie.
+- Dokumentacja projektu: `ARCHITECTURE`, `ROADMAP` (M0–M10), `BACKLOG` (B1–B15),
+  `WORKFLOW`, `ASSETS`, `plans/PLAN_2026-09-05-fundament.md`,
+  `setup/ci-workflow.yml`.
+- Kwerenda polityk dostawców (`web_search`, 2026-09-05) — **wynik zmienił
+  decyzję**: CARTO wymaga klucza API (odpada przy ADR 0001), OpenFreeMap /
+  VersaTiles / Maptoolkit są wektorowe (wymagałyby MapLibre). Rewizja ADR 0003
+  przed akceptacją, wpis w `ASSETS` §1.1, lekcja L8. Przyjęto: OSM Standard
+  jako podkład domyślny (zgodnie z briefem), OpenTopoMap i Esri jako warstwy
+  opcjonalne; Overpass (3 instancje z przełączaniem) jako źródło sieci drogowej
+  **i** nazwy miejsca — Nominatim domyślnie wyłączony (ASSETS §3, LESSONS).
+- Szkielet aplikacji (E5, commit `89a0586`): `tools/synchronizuj-szablon.mjs`
+  (szablon promptu: dokument → kod, `--check` w bramie), `app/geo.js`,
+  `app/konfig.js`, `app/protokol.js`, `app/stacje.js`, `app/app.js`,
+  `index.html`, `app/styles.css` — pięć ekranów M0 (setup → pozycja → stacje →
+  prompt → paczka), mobile-first z celami ≥44 px, tryb testowy `?tryb=test`
+  z ręcznymi współrzędnymi (ADR 0004 pkt 6), banery dla `file://` i braku
+  secure context, `localStorage` (`okolica:konfig`, `okolica:motyw`).
+- Testy (E6, commity `8011f0f` i następny): 82 testy w pięciu plikach, na
+  wartościach referencyjnych (geohash z Wikipedii, odległość Warszawa–Kraków,
+  `metryNaPiksel(0,0)` = 156543,03) i kontrprzykładach (mutanty paczki dla
+  każdego kodu E01–E20, fałszywe kotwice „ludzkości"/„wojna").
+  `test/kontrakt.test.js` pilnuje zgodności dokument ↔ kod: szablon promptu,
+  tabele §4/§5, wersja protokołu w czterech miejscach, cache-busting, brak API
+  Node i ścieżek od korzenia, identyfikatory DOM, rejestr ADR, numeracja LESSONS,
+  zero zależności.
+- Zmiany reguł trwałych w tej sesji: `LESSONS` L7–L9, `PROTOKOL` §3.2 i §6
+  (E10 — zarezerwowane TLD; E14 — heurystyka w czterech krokach z nazwami list
+  z kodu), ADR 0003 pkt 5 (zoom przeglądowy vs zoom uliczny trybu).
+- **Decyzje właściciela (2026-09-05, po przeglądzie M0)** — rozstrzygnięte trzy
+  ADR-y proponowane i jedna sprawa porządkowa:
+  - **ADR 0003 zaakceptowany**: podkład domyślny = OSM Standard (OpenTopoMap
+    i Esri World Imagery zostają warstwami opcjonalnymi).
+  - **ADR 0009 zaakceptowany**: „na razie hot-seat" — jedno urządzenie, bez
+    synchronizacji; gra na wielu urządzeniach zostaje w `BACKLOG` B1.
+  - **ADR 0007 przepisany PRZED akceptacją** (dozwolone dla statusu
+    *Proponowana*, `LESSONS` L8) i zaakceptowany: właściciel wybrał „proste
+    kodowanie bez klucza — nieczytelne na pierwszy rzut oka przy kopiowaniu,
+    a nie zabezpieczone przed odszyfrowaniem". Zamiast PBKDF2 + AES-GCM jest
+    `app/kodowanie.js` (XOR ze strumieniem z stałego ziarna → base64url,
+    kontener `TO-paczka/2`, suma kontrolna FNV-1a), a `kod gry` zostaje
+    identyfikatorem rozgrywki, nie kluczem. Plik ADR zmienił też nazwę
+    (`0007-ukrywanie-paczki-obfuskacja-bez-klucza.md`). Prawdziwe szyfrowanie:
+    `BACKLOG` B16. W dokumentacji i w UI obowiązuje słowo „ukryte", nie
+    „zaszyfrowane" (ADR 0007 pkt 5).
+  - **`AME-main.zip` usunięty** z korzenia (`git rm`) — wzorce organizacyjne są
+    przeniesione, plik zostaje w historii git.
+  - Zmiana kontenera `TO-paczka/1` → `/2` **nie podbiła** wersji protokołu
+    (schemat paczki bez zmian, aplikacja nieopublikowana) — reguła zapisana
+    w `PROTOKOL` §7.
+  - Poprawki terminologiczne w **zaakceptowanych** ADR 0001 i 0006 (odsyłacz
+    „krypto" → „ukrywanie paczki"): korekta odsyłaczy, nie zmiana decyzji —
+    decyzji w zaakceptowanym ADR nie ruszamy, zastępuje ją nowy ADR
+    (`LESSONS` L8).
+
+**Fakty operacyjne do pamiętania:**
+
+- Commit `3e61917` ma komunikat opisujący etap E1, a zawiera też E2 (rejestr
+  ADR) — `git add -A` złapał więcej niż komunikat. Historia wypchnięta, więc
+  bez poprawiania (zakaz force push); lekcja L7.
+- Agent nie zapisuje `.github/workflows/` (403 `workflows`, LESSONS L4) —
+  receptura CI leży w `docs/setup/ci-workflow.yml`.
+- W trakcie sesji token GitHub na kilkanaście minut stracił ważność
+  (`Bad credentials`) — praca szła dalej lokalnie, a po powrocie autoryzacji
+  wszystko wyszło jednym pushem (`a6dcb32..1a4d378`) razem z aktualizacją opisu
+  PR #2. Wniosek operacyjny: błąd autoryzacji blokuje push i PR, nie blokuje
+  commitowania.
+- `AME-main.zip` pozostaje nietknięty w korzeniu; jego los (przeniesienie do
+  `docs/archive/` albo usunięcie po przeniesieniu wzorców) jest pytaniem do
+  właściciela, nie decyzją sesji.
+
+**Do decyzji właściciela:** ADR-y proponowane 0002, 0003, 0005, 0007, 0009,
+0010, 0013 (lista w opisie PR #2).
+
+## 2026-09-05 — sesja M1 (model rozgrywki i pozycja), ta sama gałąź, PR #2
+
+**Zlecenie właściciela:** „Kontynuuj w tej sesji zgodnie z roadmapą" — brak
+nowej decyzji, więc sesja wzięła najwyższy nieukończony kamień (`docs/ROADMAP.md`
+M1) i szła etapami F1–F5 z własnego planu
+(`docs/plans/PLAN_2026-09-05-m1-rozgrywka-i-pozycja.md`).
+
+**Co zrobiono:**
+
+- **ADR 0014 (*Proponowana*) — punktacja czasu.** ADR 0009 pkt 5 kazał liczyć
+  premię „względem mediany odcinków tej samej stacji dla wszystkich graczy",
+  co w modelu hot-seat (jeden gracz idzie do jednej stacji) ma zawsze jedną
+  próbkę, czyli premię stale zerową. Reguła zastępcza zachowuje intencję
+  (porównywać tempo, nie surowy czas): `tempo = czasS / dystansOdcinkaM`
+  z karą za ręczne zgłoszenie w czasie, łańcuch zbiorów próbek (ta sama stacja
+  ≥ 2 → wszystkie zakończone odcinki ≥ 2 → premia 0),
+  `premia = round(punktyPodstawowe × 0,5 × ogranicz((mediana − tempo)/mediana, ±0,5))`
+  → maks. ±25% punktów za odpowiedź; limit odcinka zeruje premię, ale nie
+  przerywa gry. Dystans odcinka jest **łańcuchowy** (start gry → stacja 1,
+  potem stacja poprzednia → następna).
+- **`app/rozgrywka.js` + `test/rozgrywka.test.js`** (36 testów): stan
+  `rozgrywka/1` — kolejka cykliczna `gracz = stacja mod N`, odcinki (start na
+  jawnej akcji, `czasMs` wstrzykiwany, kara `karaRecznaS`, `poLimitie`),
+  odpowiedzi z pełnym śladem punktacji, tryby współpracy `solo`/`zespol`/
+  `wszyscy`, wiele pytań na stację, pomijanie stacji, `podsumowanie()`,
+  `podglad()`, `wczytajStan()` z odmową `G12` i wskazówką migracji, kody
+  `G01`–`G13` jako pełne zdania. Stan jest niezmiennikowy (`structuredClone`)
+  i **nie zawiera treści pytań** — kontrakt testowany na prawdziwej paczce
+  z `test/fixtures/paczka-ok.json`.
+- **`app/pozycja.js` + `test/pozycja.test.js`** (21 testów) i fixture
+  `test/fixtures/trasa-odbicie.json`: filtr dokładności (`ocenFix`: `ok` /
+  `niedokladny` / `bez-dokladnosci` / `niepoprawny`), historia fixów
+  (`dodajFix`, maks. 40, bez mutacji), kryterium dojścia (`stanDojscia` na
+  `geo.czyDotarl` + zdanie „ile zostało i dlaczego nie zapala"), komunikaty
+  błędów GPS `P01`–`P09` z wyjściem awaryjnym, symulacja trasy dla trybu
+  testowego (deterministyczna, zero `Math.random()`, z postojem, bez którego
+  debounce by się nie spełnił), cienka osłona `watchPozycja()`.
+- **`test/helpers/dom.js`** — wspólna atrapa DOM wyciągnięta z
+  `test/aplikacja.test.js` (`zainstalujDom`, `atrapaGeolokalizacji`,
+  `stubElementu`, `ukryteWHtml`); każde wywołanie zakłada świeże globale, więc
+  test chcący `?tryb=test` importuje `app.js` od nowa bez kolizji nasłuchów.
+- **Refactor `app/app.js`:** geolokalizacja wyłącznie przez `pozycja.js`
+  (brak `watchPosition`/`clearWatch`/opcji watchera w warstwie DOM — pilnuje
+  nowy kontrakt), pauza śledzenia przy `visibilitychange` i wznowienie z
+  komunikatami P07/P09, współrzędne ręczne przez `ocenFix` z odmową przy
+  pustym polu (`Number('') === 0` dawało pozycję „Null Island").
+- **Hartowanie `domyslnaKonfiguracja`:** `liczbaGraczy: "dużo"` w
+  `localStorage` wchodziło do formularza jako `NaN` (`Math.max(1, NaN)` = NaN),
+  a pusta lista imion blokowałaby `nowaRozgrywka()`. Wartość nienumeryczna =
+  brak danych → default z briefu (LESSONS L10).
+- **Dwie usterki modelowe znalezione przy testach** (naprawione w M1, opisane
+  w ADR 0015, LESSONS L11): stacja bez pytania w paczce zostawiała grę w fazie
+  `pytanie` z pustym ekranem i bez akcji wyjścia (dziś: `brakPytan` w stanie,
+  ostrzeżenie `BRAK-PYTAN` w dzienniku, dojście zamyka stację bez punktów) oraz
+  `pominStacje()` po dojściu kasowała pomiar dojścia i wyrzucała tempo z próbek
+  mediany (dziś: odmowa `G13` z komunikatem „odpowiedz, choćby błędnie").
+- **Dokumentacja:** ADR 0015 (*Proponowana*) + rejestr, `ARCHITECTURE`
+  (opisy modułów, przepływ rozgrywki z prawdziwymi nazwami funkcji — wcześniej
+  obiecywał `rozgrywka.nastepnyGracz()`, której nie ma; algorytmy dojścia,
+  punktacji i symulacji; schemat stanu; testowanie), `LESSONS` L10–L12,
+  `HANDOFF_2026-09-05-m1.md`, cache-busting `?v=m0-2` → `?v=m1-1`.
+
+**Brama na koniec sesji:** `npm run brama` = **177 testów**, 0 fail (było 105)
++ `synchronizuj-szablon --check` zielone. Commity: `56e0dc6` (F1), `8eec03c`
+(F2), `3537e59` i `0046216` (F3), `78a1bd0` (hartowanie), `09faf5c` (F4),
+`cfa9fdb` (F5 — dokumentacja). Wszystko na `arena/01a07282-okolica`, PR #2.
+
+**Do decyzji właściciela (dochodzą z tej sesji):** ADR 0014 (punktacja czasu —
+mediana tempa) i ADR 0015 (niekompletna paczka, pominięcie tylko w drodze,
+przedrostki kodów). Pozostałe proponowane: 0002, 0005, 0010, 0013.
+
+## 2026-09-05 — sesja M2 (mapa), ta sama gałąź, PR #2
+
+**Zakres z planu `docs/plans/2026-09-05-m2-mapa.md` (G1–G6):** mapa SVG
+z podkładem rastrowym bez klucza API i warstwami własnymi, sterowana palcem.
+
+**Co powstało:**
+
+- `app/mapa.js` — dwie warstwy w jednym module: **czysta** (zoom ↔ skala,
+  środek ↔ przesunięcie, `punktNaEkranie`, `zmienSkale` z kotwicą i widełkami
+  `maxZoom` podkładu, `urlKafelka`, `planKafelkow`, metry ↔ piksele ↔ jednostki
+  świata, `skalaBar`, `planMapy`) i **DOM** (`utworzMape()`: SVG, gesty,
+  przyciski, atrybucja, `aria-label`, `zniszcz()`).
+- Dwa panele w `index.html` (ekran pozycji i ekran stacji) ze szkieletem
+  statycznym: `<svg role="img">`, cztery warstwy `<g>`, trzy przyciski z
+  `aria-label`, pola paska skali i atrybucji. Style w `app/styles.css`
+  (45 vh, `touch-action: none` tylko na panelu, cele 44 px, atrybucja jako pasek
+  chowany wyłącznie gdy pusta, przyciemnienie kafelków w motywie ciemnym).
+- Wpięcie w `app/app.js`: `utworzMapy()`, `odswiezWarstwy()`,
+  `centrujNaPozycji()` (tylko pierwszy fix), `zmienPodklad()`, odświeżenie
+  panelu w `pokazEkran()` i przy `resize`, hartowany `zoomDlaPromienia()`.
+- Testy: `test/mapa.test.js` (50), +9 testów wpięcia w `test/aplikacja.test.js`,
+  +5 kontraktowych w `test/kontrakt.test.js`; atrapa DOM rozszerzona o
+  `createElementNS`, `replaceChildren`, `removeChild`, `getBoundingClientRect`
+  z `ustawProstokat()` i naprawdę działający `removeEventListener`.
+
+**Co wyszło przy okazji (usterki, nie plan):**
+
+- **Trzy usterki w nowym module**, wszystkie złapane przez testy przed
+  wpięciem: odwrotne przeliczenie metrów na jednostki świata (koło dokładności
+  12 m miało promień większy niż cały świat — LESSONS L15), pusta sygnatura
+  siatki kafelków kolidująca z wartością po resecie (podkład „brak" i schowany
+  panel zostawiały stare kafelki — LESSONS L13) oraz przyciski ± rejestrowane
+  dwa razy (klik zmieniało zoom o 2, a `zniszcz()` zdejmowało jeden nasłuch —
+  LESSONS L14).
+- **Jedna usterka istniejąca od M0**: na ekran pozycji da się wejść przyciskiem
+  trybu testowego, który nie waliduje setupu, więc przy wyczyszczonym polu
+  promienia przejście „Dalej: stacje" kończyło się **niezłapanym**
+  `TypeError: stacjeProste: promienM > 0` — ekran się pokazywał, a lista stacji
+  i mapa zostawały puste. Teraz przejście waliduje `STAN.konfig` i odmawia
+  jawnie: kody z `konfig.js` (np. `[K12]`) trafiają do `bledy-pozycja`, a pasek
+  stanu odsyła do ustawień gry.
+- **Korekta przypisania kamieni w dokumentacji** (z początku tej sesji, commit
+  `cfa9fdb`): poprzedni handoff przypisywał `app/trwalosc.js` do M5, a w
+  `ROADMAP` M5 to pętla pytań — trwałość stanu gry należy do M6 (kryterium:
+  wznowienie po zamknięciu przeglądarki). Poprawione w `ARCHITECTURE`, w planie
+  M1, w `ROADMAP` (M3 dostał adnotację, co z niego jest już zrobione) i w nowym
+  handoffie.
+
+**Brama na koniec sesji:** `npm run brama` = **241 testów**, 0 fail (było 177)
++ `synchronizuj-szablon --check` zielone. Commity: `cfa9fdb` (M1/F5 —
+dokumentacja), `03f2a56` (M2/G1 — plan), `59b5573` (M2/G2–G4 — moduł i testy),
+`e65f26b` (M2/G5 — wpięcie w UI), plus commit G6 (dokumentacja).
+
+**Zamknięcie kamienia (tego samego dnia):** właściciel obejrzał mapę w live
+preview Areny (zrzut: Centrum Warszawy na ekranie „pozycja") i potwierdził
+kryterium wizualne — podkład OSM ładuje się i jest czytelny, pasek skali
+„100 m", atrybucja na miejscu, przyciski ＋ − ◎ w narożniku; przy odmowie zgody
+na geolokalizację ekran pokazał kod `P02` z podpowiedzią (ADR 0004 pkt 7).
+`ROADMAP` dostała ✅, a gesty drag/pinch zostają do obserwacji przy pierwszym
+teście terenowym (M4/M6). Commity tej sesji są wypchnięte, opis i tytuł PR #2
+zaktualizowane przez GraphQL (`updatePullRequest`).
+
+**Stan operacyjny:** w środku sesji uwierzytelnienie GitHub tymczasowo
+odmawiało (`Bad credentials`), więc commity od `cfa9fdb` wzwyż czekały lokalnie;
+po odświeżeniu tokena przez właściciela wszystko jest wypchnięte na
+`arena/01a07282-okolica` (21 commitów razem z M0), a opis i tytuł PR #2
+zaktualizowane.
+
+**M3 w toku (2026-09-05, ta sama sesja):** ekran „dane i prywatność"
+z dwustopniowym kasowaniem kluczy `okolica:*` (commit `8abb11c`) i symulacja
+dojścia w UI trybu testowego — `sekwencjaSymulowana` odtwarzana `setInterval`,
+wspólny z GPS-em lej `przyjmijFix()`, pauza w tle zatrzymuje strumień
+(`5c0264f`), plus dokumentacja H4 (ten wpis, `WORKFLOW` §4.2, `ROADMAP`,
+`ARCHITECTURE`, `README`, LESSONS L16–L17). Brama: **249 testów**, 0 fail
++ szablon zgodny; cache-busting `?v=m3-1`. Kamień **niezamknięty**: czeka na
+weryfikację właściciela — kryterium „pełna konfiguracja bez przewijania na
+360 px" i zachowanie symulacji/GPS na żywo (`docs/WORKFLOW.md` §4.2).
+
+**M4 — stacje z sieci drogowej (2026-09-05, ta sama sesja):** kod kamienia
+zrealizowany w ośmiu krokach planu `docs/plans/2026-09-05-m4-stacje-z-sieci-drogowej.md`.
+I1 — `sieci.js`: instancje Overpass (ASSETS §2), polityka (timeout 20 s,
+odstęp 30 s), budowa zapytania `R × 1,15` z siatką współrzędnych ~6 m i
+kodami S01–S13 (`1eddbae`). I2 — generator fixture'ów Overpass
+(`tools/generuj-fixture-overpass.mjs`: centrum / przedmieście / las) (`0e2182d`).
+I3 — parser odpowiedzi `out geom` (`c5f12a5`). I4 — `klasyDrog` per tryb,
+w tym `tertiary` poza pieszą (`87bf665`). I5 — `punktWPolygonie`, bariery,
+wykluczenia i kandydaci na stacje co ~50 m (`758a845`). I6 — `wybierzStacje`:
+pierścień 0,7R ± 20%, greedy po `|d_sieci − r|`, separacja kątowa ≥ 0,7 × 360°/N
+i sieciowa ≥ 0,5 r, pass zamian, kody S12/S13; fixture'y przebudowane na
+wspólne wierzchołki (LESSONS: geometryczne przecięcia bez wspólnych węzłów =
+rozspójnione komponenty) (`7cf3967`). I7 — UI: cache `okolica:sieci:*`
+(TTL 30 dni, LRU 2 MB, budżet 8 MB odpowiedzi), pobieranie przez
+`window.fetch` z łańcuchem instancji i `AbortController`, synchroniczna
+degradacja bez sieci, przycisk „Tryb uproszczony" (`8d72fc0`). I8 — tryb
+ręczny: `wspolrzedneZEkranu`, przeciąganie pinezek z celem dotykowym 48 px,
+`zrodlo: 'reczne'`, dystans tylko w linii prostej (LESSONS L18–L19,
+`8c7808e`). I9 — ten wpis, `ARCHITECTURE`, `ROADMAP` (bez ✅ — kryterium
+terenowe należy do właściciela).
+
+Wyniki na fixture'ach (kryterium ≤ 15% udziału odchylenia): centrum 3,3%,
+przedmieście 3,9%, las 0,2%; wybór 4–5 stacji w 10–15 ms na atrapie. Brama:
+**313 testów**, 0 fail + szablon promptu zgodny; cache-busting `?v=m4-1`.
+
+**Stan operacyjny:** w trakcie I7 uwierzytelnienie GitHub wygasło
+(`GH_TOKEN is no longer valid`), a podczas oczekiwania na odświeżenie tokena
+sandbox ponownie zrootował `.git` na początek gałęzi — obiekty commitów
+`8d72fc0` (I7), `8c7808e` (I8) i `f090c2b` (I9) zginęły lokalnie. Drzewo
+robocze zachowało stan końcowy, więc odzyskanie poszło procedurą
+`ENVIRONMENT` §2 (kopia drzewa → `reset --hard FETCH_HEAD` = `7cf3967` →
+kopia z powrotem → brama 313/313), a I7–I9 wypchnięto jako jeden commit
+odtworzeniowy z uczciwym opisem incydentu; przypadek „commity niewypchnięte"
+trafił do `ENVIRONMENT` §2. Kamień M4 **niezamknięty**: kod gotowy,
+kryterium terenowe czeka na właściciela (`WORKFLOW` §4.2) razem z zaległym
+M3 (konfiguracja bez przewijania na 360 px).
+
+## 2026-09-06 — M5: pętla pytań (kod gotowy, J1–J6)
+
+Kamień M5 w sześciu krokach, wszystkie na zielonej bramie i wypchnięte od
+razu (procedura po incydentach re-root `.git` z M4):
+
+- **J1** (`f23184f`) — plan kamienia: `docs/plans/2026-09-06-m5-petla-pytan.md`
+  z decyzjami projektowymi (kształt `modyfikacje[]` = PROTOKOL §3.1, edycja
+  z pełną re-walidacją, eksport = ukryty kontener, geokodacja domyślnie
+  WYŁĄCZONA, instrukcja = inline SVG).
+- **J2** (`06b3949`) — `protokol.zastosujEdycjePaczki(paczka, edycje)`:
+  atomowa edycja pól z `EDYTOWALNE_POLA` (treść, odpowiedzi, poprawna,
+  wyjaśnienie, źródła, punkty), ślad w `modyfikacje[]` `{ data, opis }`,
+  wynik i tak przechodzi pełne `walidujPaczke`. 313→318 testów.
+- **J3** (`76a7c32`) — podgląd „tylko dla organizatora" (ADR 0006 pkt 8):
+  karty pytań po przyjęciu paczki, banner, zwijanie przy ukrywaniu i przy
+  obu ścieżkach odrzucenia; zapis poprawki diffuje pola, wymienia
+  `STAN.paczka` i re-waliduje całość — usterki blokują „Ukryj paczkę".
+  Przy okazji spłacony fragment B16 (`renderujUsterki` na
+  `replaceChildren`, LESSONS L19). 318→321.
+- **J4** (`0935d95`) — eksport ukrytej paczki do pliku
+  `okolica-<kodGry>.paczka.json` (kontener `TO-paczka/2`, nigdy plaintext;
+  nazwa oczyszczona do `[a-z0-9-]`, ≤ 24 znaki), import bez zmian ścieżką
+  „⬆ Z pliku". Przycisk widoczny dokładnie wtedy, gdy „Ukryj paczkę".
+  Duplikat helpera `pobierzPlik` złapany przez `node --check` → LESSONS L20.
+  321→322.
+- **J5** (`5665d70`) — zapasowa nazwa miejsca (Nominatim `reverse`,
+  ASSETS §3): opt-in na ekranie prywatności, domyślnie WYŁĄCZONA (ADR 0013
+  pkt 2), jedno żądanie na sesję i tylko gdy Overpass nie dał nazwy,
+  obowiązkowy cache `okolica:miejsce:<geohash6>` (30 dni), atrybucja ODbL,
+  endpoint przełączalny bez aktualizacji aplikacji. Przy okazji wyszedł
+  prawdziwy bug: checkbox „pobieranie nazwy miejsca" w setupie był
+  dekoracyjny — `konfig.geokodacja` nigdzie nie bramowało UI ani promptu
+  (ADR 0013 pkt 3). Naprawione z testami. 324→330 (LESSONS L21: `odstep=0`
+  w testach z padającym fetchem).
+- **J6** (ten commit) — instrukcja obrazkowa ekranu promptu: cztery kroki
+  jako inline SVG (kopiuj → model z wyszukiwaniem → kopiuj odpowiedź →
+  wklej z powrotem), siatka 2×2 czytelna na 360 px, cele ≥ 44 px; dokumenty
+  (README, ROADMAP, ARCHITECTURE A.4–A.8, ten wpis) i cache-busting
+  `?v=m5-1`. Brama: **332 testy**, 0 fail + szablon promptu zgodny.
+
+**Kamień M5 niezamknięty**: kryterium właściciela — pełna pętla
+z prawdziwym modelem AI (`WORKFLOW` §4.2) — czeka razem z zaległymi
+kryteriami M3 (konfiguracja bez przewijania na 360 px) i M4 (prawdziwa
+okolica na telefonie). Właściciel wraca do testów polowych; do tego czasu
+agent koduje kamienie wg `ROADMAP` (następny: M6 — trwałość stanu
+i interfejs gry).
+
+## 2026-09-06 — M6: rozgrywka (kod gotowy, R1–R8)
+
+Kamień M6 w ośmiu krokach, wszystkie na zielonej bramie i wypchnięte od razu
+(procedura po incydentach re-root `.git` z M4):
+
+- **R1** (`fe7548d`) — plan kamienia: `docs/plans/2026-09-06-m6-rozgrywka.md`
+  z decyzjami (jeden ekran i cztery panele faz; snapshot bez plaintextu;
+  odsłonięcie pytania dopiero w tranzycji; czas z `performance.now()`;
+  zapis po każdej tranzycji; dwustopniowe akcje destrukcyjne; minimalny wynik
+  w M6, pełne podsumowanie w M7) i rozpiską R2–R8.
+- **R2** (`c023f1b`) — `app/trwalosc.js` (czyste): schemat `stan-gry/1`,
+  `zbierajStan`/`serializujStan`/`walidujStanSurowy` (atomowa, kody
+  `T01`–`T10`), budżet 2 MB (`T07`), klucze `okolica:gra:<kod>`
+  + `okolica:gra-aktywna`, strażnik anty-plaintext (odmowa przyjęcia jawnej
+  paczki), `test/trwalosc.test.js`.
+- **R3** (`ce01958`) — szkielet `ekran-gra` w HTML+CSS: cztery panele faz,
+  badge kolejki/dystansu/postępu, mapa gry z atrybucją, pola pytań i tabeli
+  wyniku, przyciski faz (w tym dwustopniowe pominięcie i zakończenie),
+  krok „6 · gra" w pasku postępu; kontrakt na identyfikatory w teście.
+- **R4** (`ea703b7`) — wiring faz `przygotowanie`/`odcinek`: start gry kasuje
+  `STAN.paczka` (ADR 0007 pkt 4), zegar gry z odejmowaniem pauz, wspólny lej
+  fixów GPS i symulacji (`przyjmijFix` → `aktualizujGreNaFix`), dojście przez
+  `stanDojscia` albo ręczne z karą, pauza (także `visibilitychange` = pełna
+  pauza, watcher GPS staje), mapa gry ze stacjami i markerem.
+- **R5** (`5e75f4e`) — pętla pytania: `odpakujPaczke` wyłącznie w fazie
+  `pytanie` (ADR 0007 pkt 6), ocena/punkty/premia z `zapiszOdpowiedz`,
+  zablokowane przyciski po pierwszym wyborze, wyjaśnienie i źródła
+  (`rel="noopener"`) trzymają panel do „Następna stacja", rotacja hot-seat
+  (`ktoOdpowiada`), ostrzeżenie o stacji bez pytań.
+- **R6** (`f94a77f`) — trwałość w UI: `zegarMs` w snaphocie (kotwica rebazy),
+  `zapiszGre()` po każdej tranzycji, baner `#karta-wznowienie` na setupie
+  (faza, stacja n/N, data; zepsuty zapis → kody `T` i ukryte „Wznów"),
+  `wznowGre()` z rebazą osi czasu (czas zamknięcia karty poza odcinkiem,
+  ADR 0004 pkt 3), dwustopniowe kasowanie zapisu, pominięcie stacji (G11/G13),
+  ręczne zakończenie z wczesnym wynikiem (zapis zostaje), `pokazWyniki()`
+  z `podsumowanie()` (ranking, 🏆).
+- **R7** (`0d706c3`) — integracja: pełna gra 3 stacje z dojściem SYMULACJĄ
+  (ścieżka GPS — bez klikania „ręcznie", pytanie z kontenera na każdej stacji,
+  wynik z rankingiem, zapis: wszystkie odcinki `zakonczony`/`gps`); zero żądań
+  sieciowych w trakcie gry (utrata zasięgu); stacja bez pytania zamyka się
+  samym dojściem (ADR 0015 — snapshot zbudowany czystymi modułami, wznowiony
+  przez UI, bo walidator paczki taki stan odrzuca kodem E05). Złapany
+  prawdziwy wyścig: `krokSymulacji` nie gasł po tranzycji fazy, liczył
+  `stanDojscia` z wyczyszczonej historii i nadpisywał status gry (LESSONS L22).
+- **R8** (ten commit) — dokumenty: README (status M6), ROADMAP („kod M6
+  gotowy"), ARCHITECTURE (B.1–B.6 z realnym UI, `trwalosc.js` w drzewie
+  modułów i w §Stan i trwałość), LESSONS L22–L23, ten wpis
+  i cache-busting `?v=m6-1`. Brama: **358 testów**, 0 fail + szablon zgodny.
+
+**Kamień M6 niezamknięty**: kryterium terenowe właściciela (`WORKFLOW` §4.2) —
+pełna gra NA TELEFONIE od setupu do wyniku, z utratą zasięgu w trakcie i z
+zamknięciem przeglądarki (wznowienie z rebazą zegara) — czeka razem
+z zaległymi kryteriami M3 (360 px), M4 (prawdziwa okolica) i M5 (pętla
+z prawdziwym modelem). Do M7 zostaje pełne podsumowanie (czasy,
+sprawiedliwość trasy, eksport wyniku) i historia gier (`okolica:historia`).
+
+## 2026-09-06 — M7: podsumowanie, punkty i udostępnianie (kod gotowy, P1–P8)
+
+Kamień w ośmiu krokach, wszystkie na zielonej bramie i wypchnięte od razu:
+
+- **P1** (`ce852f3`) — plan kamienia: `docs/plans/2026-09-06-m7-podsumowanie.md`
+  z decyzjami (podsumowanie rośnie w `gra-panel-koniec`; medal
+  sprawiedliwości widokowy 🏅, bez wpływu na punkty; eksporty = czyste moduły
+  + cienka warstwa wykonawcza DOM; prywatność: ani treści pytań, ani
+  współrzędnych w eksportach i historii; historia `okolica:historia` limit 50,
+  zastąpienie idempotentne po kluczu gry; kody `H` jawne; share chowany gdy
+  niedostępny, plik zawsze).
+- **P2** (`4eaaec1`) — API historii w `app/trwalosc.js` (czyste):
+  `KLUCZ_HISTORII`, schemat `historia/1`, wpis `historia-gra/1`, `skrotGry()`,
+  `dodajWpisHistorii()` (niezmiennikowo, limit 50, zastąpienie po `klucz`),
+  `walidujHistorieSurowa()` (atomowa, kody `H01`–`H04`) + testy jednostkowe.
+- **P3** (`8e707b8`) — pełne podsumowanie w panelu D: karta zwycięzcy
+  (🏆, punkty, rozbicie podstawowe + premie), ranking, szczegóły graczy
+  (odcinki, czas, tempo, ręczne dojścia), tabela stacji (tryb dojścia, czas
+  albo kreska), statystyki gry, medal `wynik.sprawiedliwoscTrasy()` (próg
+  udziału odchylenia 0,15; pole sieciowe gdy dostępne); na ≤ 360 px tabele
+  składają się w karty (czytelność w słońcu); kontrakt identyfikatorów.
+- **P4** (`7e8254f`) — `app/wynik.js` (czyste): `wynikTekstowy()` (wiersze
+  stacji bez `#` — `#1` na początku linii staje się nagłówkiem w
+  komunikatorach), `dataWynikuTekst()`, nazwy plików
+  `okolica-<kod>.wynik.txt/.png`; przyciski „⤴ Udostępnij" / „📋 Kopiuj" /
+  „⬇ Wynik .txt" (Web Share → schowek → plik) + strażnik prywatności
+  w testach.
+- **P5** (`0a9e9eb`) — eksport obrazkowy: `planObrazuWyniku()` (PNG 1080 px;
+  komendy odwołują się wyłącznie do ról palety `ROLE_PALETY`), cienki
+  wykonawca `rysujWynikNaCanvas()`, kolory rozwiązane z tokenów CSS
+  (`getComputedStyle`) w chwili eksportu z paletą awaryjną; zrąb DOM testów
+  z rozszerzonym stub-em canvas (rekorder komend) i `getComputedStyle`.
+- **P6** (`ae824e0`) — historia w UI: hook w `zapiszGre()` — wpis po każdej
+  tranzycji prowadzącej do fazy `koniec` albo po ręcznym zakończeniu
+  (`zakonczGreRecznie` dostało brakujące `zapiszGre()`; bez niego wpis
+  „przerwana" nigdy by nie powstał), karta „Poprzednie gry" na setupie
+  (najnowsza pierwsza, znacznik `(przerwana)`, jawne kody `H` przy zepsutym
+  zapisie, dwustopniowe kasowanie bez `confirm()`).
+- **P7** (`455e532`) — integracja end-to-end: pełna gra z dojściem GPS
+  (symulacja ×3 stacje, poprawne odpowiedzi) → podsumowanie z prawdziwą
+  punktacją (widełki POLICZONE z modelu: 2 × 20 pkt ± premia), eksporty
+  tekstowy i obrazkowy spójne z panelem, pełny wpis historii — ze
+  strażnikami prywatności (pytania odsłonięte w grze nie wyciekają do
+  eksportów ani historii). Złapany błąd odczytu: regex po złączonym
+  textContent karty łapał „142 pkt" z „Gracz 1" + „42 pkt" (LESSONS L24).
+- **P8** (ten commit) — dokumenty (README, ROADMAP „kod M7 gotowy",
+  ARCHITECTURE: drzewo + przepływ 6 + §Stan i trwałość, LESSONS L24),
+  cache-busting `?v=m6-1` → `?v=m7-1`, aktualizacja PR #2. Brama:
+  **383 testy**, 0 fail + szablon promptu zgodny.
+
+Zostało na M7 (właściciel, teren): podsumowanie czytelne w słońcu na 360 px;
+eksport (share/schowek/plik/obraz) na Chrome Android i Safari iOS.
+
+## 2026-09-06 — Zadania właściciela po M7: współrzędne z Google Maps, tap na mapie, CI
+
+Dwie uwagi właściciela po zamknięciu M7, zrealizowane poza kolejnością
+ROADMAP (zlecenie właściciela), plan `docs/plans/2026-09-06-wspolrzedne-dms-i-ci.md`:
+
+- **Diagnoza (ważna):** model dziesiętny aplikacji jest WŁAŚCIWY —
+  `52°07'22.9"N` to `52 + 7/60 + 22.9/3600 = 52.12303`, a nie `52.07229`
+  (złączenie cyfr DMS to częsty błąd odczytu; dla wejścia 52.07229 aplikacja
+  zachowała się poprawnie, lokalizując ~20 km od Podkowy Leśnej). Dodatkowo
+  pola `type="number"` fizycznie nie wpuszczały wklejenia `°'"NSEW`.
+  Naprawa = wejście, nie model.
+- **D1** (`592e16d`) — plan z diagnozą, decyzjami i kryteriami akceptacji.
+- **D2** (`e5b1c11`) — `geo.parsujWspolrzedne` (czyste): dziesiętne z kropką
+  i polskim przecinkiem, DMS (° ' " ′ ″, N/S/E/W, pary w jednym polu,
+  kolejność E-first), odmowy jawne z komunikatami (minuty ≥ 60, konflikt pary,
+  oś, śmieci); 6 testów z oczekiwaniami LICZONYMI z definicji DMS (L24).
+  Brama po D2: **389** (w komunikacie commita omyłkowo „404" — liczba z głowy
+  przed odpaleniem bramy; historia nie jest amendowana, zakaz force push
+  ADR 0012 — korekta niniejszym).
+- **D3** (`6aec925`) — pola tekstowe + podpowiedź z przykładem Google Maps,
+  przycisk przez parser, **stuknięcie mapy pozycji** w trybie testowym
+  (`mapa.js`: jeden palec, ruch < 10 px, bez pinch-a, tylko `pointerup`;
+  bramka: tryb testowy + ekran pozycji; `ustawNasluchStukniecia`); zrąb DOM:
+  `querySelectorAll('#id tag')` — bez tego `czytajSetupZDomu` czytało pustą
+  listę imion i każda nawigacja z setupu padała w testach na K08. Brama
+  **393/393**; oczekiwania tap-a liczone z widoku po `centrujNaPozycji`
+  (zoom z `dopasujZoomDoPromienia`) — co do cyfry jak w aplikacji.
+- **D4** (`d7b5aed` + ten commit) — **CI na GitHubie**: live
+  `.github/workflows/ci.yml` z receptury w `docs/setup/` — push przeszedł BEZ
+  403 (aneks L4: blokada była przywiązana do instancji tokena). Pierwszy run
+  czerwony: stary kontrakt assertował NIEISTNIENIE `.github/workflows` —
+  odwrócony na „live == lustro co do bajta". Dokumenty: WORKFLOW §4.1
+  (wklejanie z Google Maps i tap w procedurze właściciela), L4 aneks,
+  ARCHITECTURE (drzewo: parser w geo.js, tap w mapa.js), ROADMAP M8
+  (adnotacja o przyspieszeniu CI).
+
+Do potwierdzenia przez właściciela (kryteria z planu): wklejenie
+`52°07'22.9"N 20°44'46.1"E` → Podkowa Leśna przy ul. Bukowej; rozróżnienie
+tap/pan na żywym telefonie; zielone CI na PR #2.
+
+## 2026-09-06 — M8: publikacja i brama jakości (plan PB1–PB6)
+
+- **PB1** plan `docs/plans/2026-09-06-m8-publikacja.md` (commit 7d6b2a4).
+- **PB2** ikony i manifest: `tools/generuj-ikony.mjs` (czysty Node: własny
+  enkoder PNG z CRC32, supersampling ×4; motyw kompasu z favicona; dwa
+  przebiegi = te same bajty) → `assets/ikony/` (svg, 192, 512, maskable-512,
+  apple 180) + `assets/manifest.json` (ścieżki „./", standalone, lang pl) +
+  `.nojekyll` + linki w `index.html`; testy generatora (6) i kontrakt M8
+  (IHDR vs deklarowane sizes, zakaz ścieżek root-absolute). Brama 400/400.
+- **PB3** próba włączenia Pages przez agenta: `gh api …/pages -X POST` → 403
+  „Resource not accessible by integration" (token bez uprawnień admin);
+  GET → 404. Publikacja zostaje jednorazową czynnością właściciela;
+  `WORKFLOW.md` §5 przepisany (literówka adresu, .nojekyll, stan CI).
+- **PB4** audyt dostawców check-listą `ASSETS.md` §5 → nowy §6: kod ↔ tabela
+  bez rozjazdów (szablony i PODKLADY pilnuje kontrakt, Overpass i Nominatim
+  ręcznie), polityki zweryfikowane 2026-09-06 (OSM tiles bez zmian; Overpass —
+  sprzeczne świadectwa o zapasowych instancjach, nasz fallback to pokrywa).
+- **PB5** ADR 0002 → Zaakceptowana (oba pytania otwarte rozstrzygnięte),
+  drzewo w ARCHITECTURE, akapit Pages w README, domknięcie M8 w ROADMAP,
+  ten wpis. **PB6** opis PR #2 rozszerzony o M8.
+- Do kryterium M8 brakuje wyłącznie włączenia Pages przez właściciela
+  (Settings → Pages, `WORKFLOW.md` §5) i sprawdzenia telefonu na żywo.
+
+## 2026-09-06 — M9: repozytorium paczek pytań (plan R1–R7)
+
+- **R1** ADR 0017 (Proponowana, wdrożona): schemat publiczny `TO-zestaw/1`
+  (meta z licencją CC BY-SA 4.0 i przeglądem źródeł + jawne stacje + kontener
+  TO-paczka/2), indeks z samych meta, geohash5 jako granularność, moderacja
+  wyłącznie właściciela, konfigurowalny URL repozytorium, kopia lokalna z LRU.
+- **R2** `app/zestawy.js`: czyste walidacje surowe (Z01–Z10), dopasowanie
+  (geohash5, promień, wiek, tematy paczki ⊆ tematy konfiguracji), LRU
+  1,5 MB / 8 wpisów z jawną listą usuniętych; 9 testów.
+- **R3** karta „📦 Paczki dla tej okolicy" na ekranie pozycji: propozycje
+  lokalne od razu, repozytorium asynchronicznie (timeout 6 s, awaria = brak
+  propozycji, nigdy blokada); start gry z paczki pomija stacje/prompt/wklej;
+  kopia lokalna zapisywana po KAŻDYM starcie; eksport TO-zestaw/1; 4 testy
+  przepływu, w tym kryterium „druga gra bez modelu i Overpassa".
+- **R4** `tools/generuj-indeks-paczek.mjs`: brama publikacji w kodzie
+  (schema, licencja, dekodowalność, pokrycie stacji pytaniami, przegląd
+  źródeł); kontrakt indeks↔katalog; `data/paczki/README.md` ze ścieżką
+  publikacji.
+- **R5** pierwsza paczka kuratorowana `podkowa-lesna.zestaw.json`: 3 stacje
+  w przestrzeni publicznej (współrzędne z Wikipedii), 6 pytań, 9 źródeł
+  sprawdzonych 2026-09-06; jako KANDYDAT (znacznik „oczekuje przeglądu" —
+  narzędzie pomija ją z ostrzeżeniem, indeks pozostaje pusty do decyzji
+  właściciela). Pułapka geohash5 odnotowana: Podkowa leży na granicy dwóch
+  komórek (u3q8x / u3qb8) — paczka proponuje się graczom z komórki u3q8x.
+- **R6** testy fetch-repozytorium: propozycja z indeksu, start gry z pliku,
+  override URL (switchability); sklejanie URL pliku względem katalogu
+  indeksu (stub DOM nie ma document.baseURI).
+- **R7** dokumentacja: README (sekcja repozytorium), ARCHITECTURE (drzewo),
+  ROADMAP (domknięcie), ten wpis, opis PR #2.
+- Stan bramy po M9: **421/421** + szablon zgodny; CI zielone na gałęzi.
+
+## 2026-09-06 — decyzja właściciela: współdzielone repozytorium paczek na Google Drive
+
+Właściciel (po M9): mechanizm współdzielenia zestawów pytań NIE był z nim
+ustalony — M9 zbudował wersję plikową w repo jako propozycję (ADR 0017
+Proponowana). Ustalenie wiążące: współdzielone repozytorium żyje na
+wydzielonym koncie **Google Drive** z mostem Apps Script (ADR 0016 →
+Zaakceptowana jako kierunek): zestaw po grze trafia na Drive do katalogu
+„do przeglądu”, właściciel ocenia i akceptuje, zaakceptowany jest dostępny
+dla kompatybilnych gier. Kompatybilność wg właściciela: lokalizacja, liczba
+pytań, liczba stacji, poziom (wiek), tematy nie szersze niż w setupie —
+wbite w `app/zestawy.js` tego samego dnia (plus promień paczki ≤ promienia
+z setupu). Kopia lokalna na telefonie (druga gra bez modelu) zostaje — to
+nie współdzielenie, tylko oszczędność własnych gier. Wdrożenie mostu Drive:
+spike CORS, wpis w ASSETS, ekran zgody prywatności — kolejny krok po
+akceptacji szczegółów przepływu przez właściciela.
+
+- 2026-09-06 (M9b/D2+D3) — decyzja właściciela o zgodzie na wysyłkę: checkbox na ekranie wklejania odpowiedzi AI, domyślnie ZAZNACZONY („zgadzam się"), użytkownik może odhaczyć (opt-out). Uzasadnienie: „zakładając, że tylko ja będę z tego korzystał, to w sumie nie ma żadnego znaczenia" — bez dodatkowego klikania, ale widoczne. Wdrożone razem z automatyczną wysyłką TO-zestaw/1 (POST text/plain, bez preflightu CORS) i jawnymi statusami każdej gałęzi (LESSONS L6); brama 420/420.
+
+- 2026-09-06 (M9b/D4, ustalenia właściciela) — właściciel: (1) NIC jeszcze nie wklejał do Apps Script — wydzielone konto Drive będzie backendem WIELOZADANIOWYM: repozytorium paczek, gra wieloosobowa na kilku urządzeniach (parowanie graczy/gier przez Drive, koniec wyłączności hot-seat), dane użytkowników, statystyki i score (zaciąganie/zapis); (2) wdrożenie mostu ODROCZONE, aż całość kodu będzie gotowa; (3) finalną instrukcję wdrożenia agent ma wyświetlić W CZACIE (instrukcja + okna txt z treścią do przeklejenia), nie jako plik w repozytorium. Zapisano jako ADR 0018 (Zaakceptowana) + M11/M12 w ROADMAP + aktualizacja B17. Równolegle dowiezione M9b/D4+D5: indeks Drive z `id`, `urlPaczkiZRepo`, przycisk „🔌 Sprawdź połączenie" (instrument próby CORS), bump cache `?v=m9b-1`; brama 428/428.
+
+- 2026-09-06 (M10/T1–T8) — dopracowanie terenowe: Service Worker `sw.js` (offline: skorupa + kafelki ostatniej okolicy, cache-first, limit 600 z ewikcją, POST/API bez cache; testy harnessem `new Function` — install/activate/fetch/ewikcja), bateria „budzenie przy zbliżaniu" (`PROFILE_GPS` dokładny/oszczędny + `profilBaterii` z histerezą 250/150 m, restart watchera ze jawnym statusem), sygnały (`app/sygnaly.js`: dotarcie/start odcinka/ocena — wibracja + nuty Web Audio, przełącznik „🔔 sygnały" domyślnie włączony, `okolica:sygnaly`), audyt WCAG AA jako brama (`tools/audyt-kontrastu.mjs` — 0 naruszeń w obu motywach, referencje: 21:1 czerń/biel, #767676 ≈ 4.54:1), checklista terenowa WORKFLOW §4.3, LESSONS L25 (starzejąca się atrapa DOM), cache-bust `?v=m10-1` (w tym `WERSJA_SW` — kontrakt pilnuje synchronizacji). Tryb nocny istniał od M7 — bez nowego kodu. Brama 450/450. Teren: czekamy na test właściciela (§4.3).
+
+- 2026-09-06 (M11/M12 — decyzje właściciela) — parowanie graczy: OBIE drogi (lobby z grami w najbliższej okolicy ALBO 6-znakowy kod do przekazania); model rozgrywki: OBA tryby (wyścig równoległy + tury asynchroniczne); dane gracza: pseudonim + wyniki + pełna historia + rankingi ogólne i w kategoriach wiekowych, tematycznych i lokalizacyjnych (np. „najlepsi w Podkowie Leśnej"), „o ile sensownie do ogarnięcia" — przy skali kilku graczy agregacja po meta gry jest tania. Zapisano jako ADR 0019 (Zaakceptowana) + aneks ADR 0009 (hot-seat = tryb offline) + ROADMAP M11/M12 + plan `plans/2026-09-06-m11-m12-gra-wieloosobowa-i-rankingi.md`. Zasada prywatności podtrzymana: współrzędne NIGDY nie wychodzą na Drive — synchronizacja zdarzeniami (dojście/odpowiedź/punkty/czas).
+
+- 2026-09-06 (M11/M12, P1–P7) — gra wieloosobowa na wielu urządzeniach + rankingi: sekcja gier w moście Apps Script (`RO-gra/1`: lobby z wygasaniem 24 h, kody z alfabetu bez 0/O/1/I, wyścig i tury ze STAŁYM przypisaniem stacji `gracze[(i-1)%N]` — rezygnacja pomija stacje zamiast przesuwać kolejkę; `RO-zdarzenie/1` z białą listą pól — współrzędne graczy nigdy nie opuszczają telefonu; LockService; `RO-lobby/1` bez kodów i zestawów; `RO-ranking/1` surowe wiersze), moduły czyste `app/wieloosobowa.js` (walidacja R01–R18, sąsiedztwo geohash5, maszynka tur, wyniki, agregacje) i `app/sync.js` (polling 10/12/30 s wg fazy, kolejka offline FIFO, rozróżnienie odmowa↔awaria), UI: rodzaj gry w setupie, zakładanie (źródło: paczka sesji / z telefonu / z Drive), dołączanie kodem i z listy gier okolicy, lobby z dużym kodem, panel wyścigu/tur + żywa tabela wyników, dwustopniowa rezygnacja, powrót po odświeżeniu telefonu (`okolica:multi:sesja`, zamknięte stacje nie wracają), ekran 🏆 Rankingi (ogólny/wiek/tematy/lokalizacja + „Moje gry"). Testy: dwa „urządzenia" (dwie instalacje atrapy DOM + dwa importy app.js) z atrapą mostu — wyścig z odcinkiem offline, tury z bramką kolejki i resume, odmowa bez zgody, R08 poza turą, skaner współrzędnych w POST-ach; rankingi z atrapą (agregacje, kategorie, puste, śmieci). Dokumentacja: PROTOKOL §9 (aneks RO-*), ARCHITECTURE (moduły + przepływ synchronizacji), README, ASSETS §7.1 (quota gier), WORKFLOW §4.4 (test na dwa telefony), ADR 0019 aneks (doprecyzowanie tur), LESSONS L26–L27. Brama 489/489, cache-bust `?v=m11-1`. Czekamy na: wdrożenie mostu przez właściciela (instrukcja w czacie — P8, ADR 0018) i test terenowy.
+
+## 2026-09-07 — adres mostu w kodzie aplikacji (ADR 0020) + odzyskanie i wypchnięcie P6–P8
+
+**GitHub odzyskany.** Token sesji wygasł 2026-09-06 w połowie pracy (trzecie
+takie zdarzenie); właściciel odświeżył połączenie. Dodatkowo sandbox odtworzył
+`.git` z płytkiego klona: lokalne commity P6–P8 zniknęły z bazy obiektów, choć
+drzewo robocze miało całą treść. Odzyskanie zgodnie z `ENVIRONMENT` §2:
+`git fetch origin <gałąź>` → `git reset --mixed FETCH_HEAD` (HEAD z powrotem na
+`653a2dc` = P5) → `git status` pokazał dokładnie deltę P6–P8 → odtworzenie
+commitów z drzewa: `c835676` (P6, kod i testy rankingów) i `12f3236` (P7+P8,
+dokumentacja + robocza instrukcja wdrożenia). Granulacja nieco inna niż
+pierwotna (4 commity → 2), TREŚĆ identyczna; brama 489/489 przed pushem, CI
+zielone na `12f3236`, PR #2 MERGEABLE.
+
+**Pytanie właściciela i decyzja.** Właściciel zakwestionował ostatni krok
+instrukcji wdrożenia (wklejenie adresu web app w aplikacji): „te dane muszą być
+wpisane w repozytorium, żeby były trwałe i dostępne za każdym razem gdy utworzę
+nową wersję aplikacji webowej". Wyjaśnienie: adres w `localStorage` jest
+przypięty do origin, nie do wersji kodu, więc build go nie kasuje (LESSONS L28)
+— ale zastrzeżenie wskazało realny problem ZASIĘGU: w grze wieloosobowej każdy
+telefon uczestnika sam rozmawia z mostem, więc każdy znajomy musiałby adres
+wkleić ręcznie. Ankieta w czacie, decyzje właściciela (wiązujące → ADR 0020):
+(1) adres wpisany NA STAŁE w kodzie i **pola wpisywania znikają z UI**;
+(2) **bez dodatkowego klucza dostępu** w moście (repo publiczne → klucz byłby
+jawny; wystarczą `REVIEW_SECRET`, kod gry, `organizatorId`, bramka tur);
+(3) mechanizm TERAZ z pustą stałą, prawdziwy adres jednym commitem po wdrożeniu.
+
+**Wdrożenie (plan `plans/2026-09-07-domyslny-adres-mostu.md`, A1–A5):**
+
+- **A1** `app/most.js`: `DOMYSLNY_URL_MOSTU` (pusta do wdrożenia),
+  `KLUCZ_URL_MOSTU`, `adresMostu(pamiec?)` (nadpisanie multi → nadpisanie repo
+  → stała), `mostSkonfigurowany()`, `stanMostu()`; moduł bez DOM i bez `fetch`,
+  pamięć wstrzykiwana (obsługuje `localStorage` i gołą `Map` z harnessu).
+  `test/most.test.js`: 8 testów. Commit `4a414b3`; brama 497/497.
+- **A2** `app/app.js`: wszystkie odczyty adresu przez `adresMostu()` (propozycje
+  paczek, „🔌 Sprawdź połączenie", wysyłka zestawu na Drive, `urlMostuMulti`,
+  walidacja gotowości multi, lobby, źródła zestawu, rankingi); usunięte nasłuchy
+  pól i przycisków zapisu; nowa `pokazStanMostu()` — jeden tekst stanu do
+  `#most-stan-repo` i `#multi-most-stan`, brak mostu dostaje klasę `.bledy`;
+  komunikaty bez odsyłania do nieistniejącego pola (przy odmowie gry sieciowej
+  podpowiedź „Hot-seat").
+- **A3** `index.html`: karta paczek bez `<details>` z polem (zostaje stan
+  + przycisk próby), karta multi bez `<details>` z polem (zostaje stan);
+  cache-bust `?v=m12-1` w HTML i we WSZYSTKICH modułach `app/*.js` + `WERSJA_SW`
+  (LESSONS L29: query jest częścią identyfikatora modułu — podbicie częściowe
+  dałoby dwa egzemplarze modułu).
+- **A4** testy: kontrakt ADR 0020 (stała w `app/most.js`, import w `app.js`,
+  brak czterech id pól/przycisków adresu, jawny stan, zero komunikatów każących
+  wpisywać adres, `app.js` nie sięga po klucz wprost); harness dwóch urządzeń
+  zasiewa adres w pamięci zamiast w polu; nowy test stanu bez adresu (odmowa
+  założenia i dołączenia, zero wysyłek, podpowiedź hot-seat); doprecyzowana
+  bramka zgody (POST-y zero, GET-y gier zero; odczyt indeksu paczek jest bez
+  zgody — ADR 0017 pkt 6). Commit `52f122c`; brama 499/499.
+- **A5** dokumentacja: ADR 0020 (Zaakceptowana) + rejestr, aneksy ADR 0016
+  i 0018, dopisek w AGENTS.md §4 (adres mostu to publiczny punkt końcowy, nie
+  sekret; sekrety mostu tylko w Script Properties), ARCHITECTURE (drzewo:
+  `wieloosobowa.js`, `sync.js`, `most.js` — pierwsze dwa dotąd brakowały;
+  przepływ multi + akapit o stałej wdrożeniowej), README (adres w kodzie,
+  „zero konfiguracji na każdym telefonie", zakresy ADR/M w tabeli), ASSETS §7
+  (zdolność wpisana w kod + rotacja), WORKFLOW §4.4 (punkt 0: stan mostu; kroki
+  bez wpisywania adresu; warunek: commit z adresem scalony do `main`),
+  `docs/setup/most-drive-instrukcja.md` (§4 = podaj adres w czacie → commit →
+  `main`; nadpisanie awaryjne przez konsolę; rotacja adresu przez NOWE
+  wdrożenie), ROADMAP (M11/M12: czekamy też na adres w `app/most.js`),
+  LESSONS L28–L29, ten wpis, handoff.
+
+**Stan na koniec sesji:** brama **499/499** + szablon spójny + audyt WCAG AA
+0 naruszeń; cache-bust `?v=m12-1`. Czekamy na: (1) wdrożenie mostu przez
+właściciela i podanie adresu `/exec` w czacie → wpis do `DOMYSLNY_URL_MOSTU`
+jednym commitem; (2) scalenie PR #2 do `main` (Pages serwuje `main`) — dopiero
+wtedy testy terenowe na telefonach; (3) test dwóch telefonów (WORKFLOW §4.4).

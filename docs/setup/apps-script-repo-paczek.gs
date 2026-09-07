@@ -1,0 +1,674 @@
+/**
+ * MOST DRIVE (paczki + gry wieloosobowe + rankingi): Google Drive + Apps Script
+ * (ADR 0016, 0018, 0019; plany M9b i M11/M12).
+ *
+ * Przepływ (decyzje właściciela 2026-09-06):
+ *   1. aplikacja po „✓ Sprawdź i przyjmij” wysyła plik TO-zestaw/1 (doPost),
+ *   2. skrypt zapisuje go w katalogu „do przeglądu” i mailuje właścicielowi
+ *      link do podglądu (token z Properties skryptu),
+ *   3. właściciel klika „Zaakceptuj” lub „Odrzuć” na stronie przeglądu,
+ *   4. gracze pobierają indeks i paczki WYŁĄCZNIE z katalogu zaakceptowanych
+ *      (doGet: akcja=indeks / akcja=paczka).
+ *
+ * Wdrożenie: docs/setup/most-drive-instrukcja.md (krok po kroku, bez wiedzy
+ * programistycznej). Właściwości skryptu (Ustawienia → Właściwości skryptu):
+ *   OWNER_EMAIL   — e-mail właściciela (powiadomienia o przeglądzie)
+ *   REVIEW_SECRET — dowolny długi ciąg znaków (zdolność linku przeglądu)
+ *
+ * Zero kluczy API w aplikacji (ADR 0001): web app.deployowana jako
+ * „każdy może być anonimowy”, URL jest jedyną zdolnością.
+ *
+ * M11 (ADR 0019): TEN SAM most obsługuje gry wieloosobowe na wielu
+ * urządzeniach — doPost: gra-zaloz / gra-dolacz / gra-start / gra-zdarzenie /
+ * gra-zakoncz; doGet: gry (lobby) / gra-stan / ranking. Stan gry (RO-gra/1)
+ * żyje w katalogach okolica-gry-{otwarte,zakonczone}; zdarzenia NIE zawierają
+ * współrzędnych graczy (ADR 0013/0019 pkt 3 — pola lat/lon są kasowane).
+ */
+
+const FOLDERY = {
+  przeglad: 'okolica-paczki-do-przegladu',
+  zaakceptowane: 'okolica-paczki-zaakceptowane',
+  odrzucone: 'okolica-paczki-odrzucone',
+  gryOtwarte: 'okolica-gry-otwarte',
+  gryZakonczone: 'okolica-gry-zakonczone',
+};
+const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
+const SCHEMAT_KONTENERA = 'TO-paczka/2';
+const ZNAK_OCZEKUJE = 'oczekuje przeglądu';
+
+/* ---------------------------------------------------------- infrastruktura */
+
+function ustawienia() {
+  const p = PropertiesService.getScriptProperties();
+  return { email: p.getProperty('OWNER_EMAIL'), sekret: p.getProperty('REVIEW_SECRET') };
+}
+
+function folder(nazwa) {
+  const it = DriveApp.getFoldersByName(nazwa);
+  if (it.hasNext()) return it.next();
+  return DriveApp.createFolder(nazwa);
+}
+
+/** Jednorazowo: zakłada katalogi (paczki + gry). Uruchom z edytora po wdrożeniu. */
+function setup() {
+  Object.values(FOLDERY).forEach(folder);
+  return 'katalogi gotowe: ' + Object.values(FOLDERY).join(', ');
+}
+
+function json(obiekt) {
+  return ContentService.createTextOutput(JSON.stringify(obiekt))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+function urlSerwisu() {
+  return ScriptApp.getService().getUrl();
+}
+
+/* ------------------------------------------- kontener TO-paczka/2 (odczyt) */
+/* Ten sam algorytm co app/kodowanie.js: xmur3+mulberry32 → XOR → base64url. */
+
+const ZIARNO_MASKI = 'okolica:maska:b64x1:v2';
+
+function strumienMaski(dlugosc) {
+  let h = 1779033703 ^ ZIARNO_MASKI.length;
+  for (let i = 0; i < ZIARNO_MASKI.length; i++) {
+    h = Math.imul(h ^ ZIARNO_MASKI.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let a = h >>> 0;
+  const bajty = new Uint8Array(dlugosc);
+  for (let i = 0; i < dlugosc; i++) {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    bajty[i] = ((t ^ (t >>> 14)) >>> 0) % 256;
+  }
+  return bajty;
+}
+
+function zBase64url(tekst) {
+  const b64 = String(tekst).replace(/-/g, '+').replace(/_/g, '/');
+  const dop = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+  const bajty = Utilities.base64Decode(dop);
+  return new Uint8Array(bajty);
+}
+
+function skrotFnv1a(bajty) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < bajty.length; i++) {
+    h ^= bajty[i];
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+/** Kontener → plaintext PYT; rzuca Error przy uszkodzeniu (jak odpakujPaczke). */
+function odpakujKontener(kontener) {
+  if (!kontener || kontener.schemat !== SCHEMAT_KONTENERA) throw new Error('to nie jest kontener ' + SCHEMAT_KONTENERA);
+  const bajty = zBase64url(kontener.dane);
+  const maska = strumienMaski(bajty.length);
+  const czyste = new Uint8Array(bajty.length);
+  for (let i = 0; i < bajty.length; i++) czyste[i] = bajty[i] ^ maska[i];
+  const tekst = Utilities.newBlob(czyste).getDataAsString('UTF-8');
+  if (skrotFnv1a(czyste) !== kontener.skrot) throw new Error('suma kontrolna się nie zgadza (urwanie lub podmiana)');
+  return JSON.parse(tekst);
+}
+
+/* ------------------------------------------------------------- walidacja */
+
+function czyMetaOk(meta) {
+  return !!meta && typeof meta === 'object'
+    && typeof meta.geohash5 === 'string' && meta.geohash5.length === 5
+    && Number.isFinite(meta.promienM) && meta.promienM > 0
+    && Array.isArray(meta.tematy) && meta.tematy.length > 0
+    && typeof meta.wiek === 'string' && meta.wiek.length > 0
+    && Number.isInteger(meta.liczbaStacji) && meta.liczbaStacji > 0
+    && Number.isInteger(meta.pytaniaNaStacje) && meta.pytaniaNaStacje > 0
+    && typeof meta.licencja === 'string' && meta.licencja.length > 0
+    && typeof meta.przegladZrodel === 'string' && meta.przegladZrodel.length > 0;
+}
+
+function walidujKandydata(plik) {
+  const bledy = [];
+  if (!plik || typeof plik !== 'object' || plik.schemat !== SCHEMAT_ZESTAWU) bledy.push('schemat musi brzmieć ' + SCHEMAT_ZESTAWU);
+  if (!czyMetaOk(plik.meta)) bledy.push('meta niekompletna (geohash5, promienM, tematy, wiek, liczby, licencja, przegladZrodel)');
+  if (!Array.isArray(plik.stacje) || plik.stacje.length === 0) bledy.push('brak stacji');
+  let paczka = null;
+  try {
+    paczka = odpakujKontener(plik.kontener);
+  } catch (e) {
+    bledy.push('kontener: ' + e.message);
+  }
+  if (paczka) {
+    const liczby = {};
+    (paczka.pytania || []).forEach((p) => { liczby[p.stacja] = (liczby[p.stacja] || 0) + 1; });
+    for (let i = 1; i <= plik.stacje.length; i++) {
+      if (!liczby[i]) bledy.push('stacja ' + i + ' nie ma pytań');
+    }
+  }
+  return { bledy, paczka };
+}
+
+/* ------------------------------------------------------------------- API */
+
+function doGet(e) {
+  const akcja = (e && e.parameter && e.parameter.akcja) || 'indeks';
+  try {
+    if (akcja === 'indeks') return json(budujIndeks());
+    if (akcja === 'paczka') return json(paczkaPrzezId(e.parameter.id));
+    if (akcja === 'gry') return json(listaGier());
+    if (akcja === 'gra-stan') return json(stanGry(e.parameter.kod, e.parameter.id));
+    if (akcja === 'ranking') return json(rankingi());
+    if (akcja === 'przeglad') return stronaPrzegladu(e.parameter);
+    return json({ blad: 'nieznana akcja' });
+  } catch (err) {
+    return json({ blad: String((err && err.message) || err) });
+  }
+}
+
+function doPost(e) {
+  try {
+    const cialo = JSON.parse(e.postData.contents);
+    // M9b: wysyłka zestawu — ciało jest PLIKIEM TO-zestaw/1 (bez pola akcja).
+    if (cialo.schemat === SCHEMAT_ZESTAWU) return json(przyjmijKandydata(cialo));
+    // M11 (ADR 0019): polecenia i zdarzenia gier wieloosobowych.
+    switch (cialo.akcja) {
+      case 'gra-zaloz': return json(zalozGre(cialo));
+      case 'gra-dolacz': return json(dolaczDoGry(cialo));
+      case 'gra-start': return json(startGryMulti(cialo));
+      case 'gra-zdarzenie': return json(przyjmijZdarzenie(cialo));
+      case 'gra-zakoncz': return json(zakonczGre(cialo));
+      default: return json({ ok: false, blad: 'nieznana akcja albo schemat ciała' });
+    }
+  } catch (err) {
+    return json({ ok: false, blad: String((err && err.message) || err) });
+  }
+}
+
+/** Indeks WYŁĄCZNIE z katalogu zaakceptowanych: same meta + id pliku. */
+function budujIndeks() {
+  const wpisy = [];
+  const pliki = folder(FOLDERY.zaakceptowane).getFiles();
+  while (pliki.hasNext()) {
+    const plik = pliki.next();
+    try {
+      const zestaw = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+      if (zestaw.schemat !== SCHEMAT_ZESTAWU || !czyMetaOk(zestaw.meta)) continue;
+      wpisy.push(Object.assign({}, zestaw.meta, {
+        id: plik.getId(),
+        skrot: zestaw.kontener && zestaw.kontener.skrot,
+        stacji: zestaw.stacje.length,
+      }));
+    } catch (e) { /* uszkodzony plik nie psuje indeksu */ }
+  }
+  wpisy.sort((a, b) => String(a.miejsce + a.data).localeCompare(String(b.miejsce + b.data)));
+  return { schemat: 'TO-indeks/1', wpisy };
+}
+
+function plikPrzezId(id) {
+  return DriveApp.getFileById(id);
+}
+
+function paczkaPrzezId(id) {
+  const plik = plikPrzezId(id);
+  const rodzice = plik.getParents();
+  const wZaakceptowanych = rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
+  if (!wZaakceptowane) return { blad: 'ta paczka nie jest zaakceptowana' };
+  return JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+}
+
+/** Przyjmuje zestaw z aplikacji: katalog przeglądu + e-mail z linkiem. */
+function przyjmijKandydata(plik) {
+  const { bledy } = walidujKandydata(plik);
+  if (bledy.length) return { ok: false, blad: bledy.join('; ') };
+  const skrot = plik.kontener.skrot;
+  const nazwa = plik.meta.geohash5 + '-' + skrot + '.zestaw.json';
+  const wszedzie = [FOLDERY.zaakceptowane, FOLDERY.przeglad, FOLDERY.odrzucone];
+  for (const nazwaFolderu of wszedzie) {
+    const it = folder(nazwaFolderu).getFilesByName(nazwa);
+    if (it.hasNext()) {
+      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-obiegu', nazwa };
+    }
+  }
+  const utworzony = folder(FOLDERY.przeglad).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
+  powiadomWlasciciela(utworzony, plik);
+  return { ok: true, status: 'przyjeta-do-przegladu', nazwa };
+}
+
+function powiadomWlasciciela(plikDrive, zestaw) {
+  const { email, sekret } = ustawienia();
+  if (!email || !sekret) return; // bez ustawień skrypt milczy, paczka czeka
+  const link = urlSerwisu() + '?akcja=przeglad&token=' + encodeURIComponent(sekret) + '&id=' + encodeURIComponent(plikDrive.getId());
+  const meta = zestaw.meta;
+  const temat = 'Tajemnicza Okolica: paczka pytań do przeglądu (' + meta.miejsce + ')';
+  const cialo = 'Nowa paczka pytań czeka na Twój przegląd.\n\n'
+    + 'Miejsce: ' + meta.miejsce + ' (geohash ' + meta.geohash5 + ')\n'
+    + 'Stacje: ' + meta.liczbaStacji + ' × ' + meta.pytaniaNaStacje + ' pytań, poziom: ' + meta.wiek + '\n'
+    + 'Tematy: ' + meta.tematy.join(', ') + '\n'
+    + 'Utworzono: ' + meta.data + ' przez ' + meta.autor + '\n\n'
+    + 'Podgląd i akceptacja jednym kliknięciem:\n' + link + '\n\n'
+    + 'Pamiętaj: sprawdź źródła pytań i miejsca stacji (ADR 0008 pkt 6).';
+  MailApp.sendEmail(email, temat, cialo);
+}
+
+/* ------------------------------------------------- strona przeglądu (HTML) */
+
+function esc(tekst) {
+  return String(tekst == null ? '' : tekst)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function stronaPrzegladu(param) {
+  const { sekret } = ustawienia();
+  if (!sekret || param.token !== sekret) {
+    return HtmlService.createHtmlOutput('<p>Brak ważnego tokena przeglądu.</p>');
+  }
+  const plik = plikPrzezId(param.id);
+  const zestaw = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+  const paczka = odpakujKontener(zestaw.kontener);
+  const meta = zestaw.meta;
+  const sekcje = zestaw.stacje.map((stacja, i) => {
+    const pytania = (paczka.pytania || []).filter((p) => p.stacja === i + 1);
+    const wiersze = pytania.map((p) => {
+      const odpowiedzi = p.odpowiedzi.map((o, k) => '<li' + (k === p.poprawna ? ' style="color:#2f6f4f;font-weight:700"' : '') + '>' + esc(o) + (k === p.poprawna ? ' ✓' : '') + '</li>').join('');
+      const zrodla = (p.zrodla || []).map((z) => '<a href="' + esc(z.url) + '">' + esc(z.tytul) + '</a>').join(', ');
+      return '<h3>' + esc(p.id) + ' (' + esc(p.temat) + ')</h3><p>' + esc(p.tresc) + '</p><ul>' + odpowiedzi + '</ul>'
+        + '<p><em>' + esc(p.wyjasnienie) + '</em></p><p>Źródła: ' + zrodla + '</p>';
+    }).join('');
+    return '<section><h2>Stacja ' + (i + 1) + ': ' + esc(stacja.opis || '') + ' [' + Number(stacja.lat).toFixed(5) + ', ' + Number(stacja.lon).toFixed(5) + ']</h2>' + wiersze + '</section>';
+  }).join('');
+  const html = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
+    + '<style>body{font-family:sans-serif;margin:16px;line-height:1.5}h1{font-size:20px}section{border-top:2px solid #2f6f4f;margin-top:16px;padding-top:8px}button{font-size:18px;padding:14px 22px;margin:8px 8px 8px 0;border-radius:10px;border:1px solid #444}</style>'
+    + '<h1>Paczka: ' + esc(meta.miejsce) + '</h1>'
+    + '<p>geohash ' + esc(meta.geohash5) + ' · ' + esc(meta.liczbaStacji) + ' stacji × ' + esc(meta.pytaniaNaStacje) + ' pytań · poziom ' + esc(meta.wiek) + ' · tematy: ' + esc(meta.tematy.join(', ')) + '<br>utworzono ' + esc(meta.data) + ' · autor: ' + esc(meta.autor) + ' · licencja ' + esc(meta.licencja) + '</p>'
+    + '<p><strong>Uwagi twórcy:</strong> ' + esc(paczka.uwagi || '') + '</p>'
+    + sekcje
+    + '<div><button onclick="google.script.run.withSuccessHandler(o=>document.body.innerHTML=\'<h1>✔ Zaakceptowano</h1><p>Paczka jest dostępna dla graczy.</p>\').zatwierdz(\'' + esc(param.id) + '\')">✔ Zaakceptuj</button>'
+    + '<button onclick="google.script.run.withSuccessHandler(o=>document.body.innerHTML=\'<h1>✘ Odrzucono</h1><p>Paczka trafiła do katalogu odrzuconych.</p>\').odrzuc(\'' + esc(param.id) + '\')">✘ Odrzuć</button></div>';
+  return HtmlService.createHtmlOutput(html).setTitle('Przegląd paczki');
+}
+
+/** Akcje ze strony przeglądu (google.script.run). */
+function zatwierdz(id) {
+  przenies(id, FOLDERY.zaakceptowane);
+  return 'zaakceptowano';
+}
+
+function odrzuc(id) {
+  przenies(id, FOLDERY.odrzucone);
+  return 'odrzucono';
+}
+
+function przenies(id, nazwaFolderu) {
+  const plik = plikPrzezId(id);
+  const cel = folder(nazwaFolderu);
+  const rodzice = plik.getParents();
+  while (rodzice.hasNext()) rodzice.next().removeFile(plik);
+  cel.addFile(plik);
+}
+
+/* --------------------------------------- gry wieloosobowe (M11, ADR 0019) */
+
+const SCHEMAT_GRY = 'RO-gra/1';
+const SCHEMAT_ZDARZENIA = 'RO-zdarzenie/1';
+const ALFABET_KODU = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ'; // bez 0/O/1/I (kod czyta się przez telefon)
+const DLUGOSC_KODU = 6;
+const MAKS_GRACZY = 8;
+const WYGASANIE_LOBBY_MS = 24 * 60 * 60 * 1000; // otwarta gra gaśnie po 24 h (plan M11, ryzyko „porzucone lobby")
+const TYPY_ZDARZEN = ['start', 'dojscie', 'odpowiedz', 'rezygnacja', 'koniec'];
+const POLA_ZAKAZANE_W_ZDARZENIU = ['lat', 'lon', 'szerokosc', 'dlugosc', 'latitude', 'longitude']; // ADR 0013/0019 pkt 3
+
+/** Zapis pod LockService — stany wyścigu dwóch urządzeń (plan M11, ryzyko 2). */
+function zBlokada(fn) {
+  const blokada = LockService.getScriptLock();
+  try {
+    blokada.waitLock(20000);
+    return fn();
+  } catch (err) {
+    return { ok: false, blad: 'most jest zajęty — spróbuj ponownie za chwilę (' + ((err && err.message) || err) + ')' };
+  } finally {
+    try { blokada.releaseLock(); } catch (e2) { /* nie było blokady */ }
+  }
+}
+
+function nazwaPlikuGry(kod) { return 'gra-' + kod + '.json'; }
+
+/** Kod gry: 6 znaków z alfabetu bez mylących znaków, unikalny w obu katalogach. */
+function wolnyKod() {
+  for (let proba = 0; proba < 40; proba += 1) {
+    let kod = '';
+    for (let i = 0; i < DLUGOSC_KODU; i += 1) kod += ALFABET_KODU.charAt(Math.floor(Math.random() * ALFABET_KODU.length));
+    const zajety = folder(FOLDERY.gryOtwarte).getFilesByName(nazwaPlikuGry(kod)).hasNext()
+      || folder(FOLDERY.gryZakonczone).getFilesByName(nazwaPlikuGry(kod)).hasNext();
+    if (!zajety) return kod;
+  }
+  return null;
+}
+
+function znajdzGre(kod, idGry) {
+  try {
+    if (idGry) {
+      const plik = DriveApp.getFileById(idGry);
+      return { plik, gra: JSON.parse(plik.getBlob().getDataAsString('UTF-8')) };
+    }
+    if (kod) {
+      const k = String(kod).toUpperCase().replace(/[^A-Z0-9]/g, '');
+      let it = folder(FOLDERY.gryOtwarte).getFilesByName(nazwaPlikuGry(k));
+      if (!it.hasNext()) it = folder(FOLDERY.gryZakonczone).getFilesByName(nazwaPlikuGry(k));
+      if (!it.hasNext()) return null;
+      const plik = it.next();
+      return { plik, gra: JSON.parse(plik.getBlob().getDataAsString('UTF-8')) };
+    }
+  } catch (err) {
+    return null;
+  }
+  return null;
+}
+
+function zapiszGre(plik, gra) { plik.setContent(JSON.stringify(gra, null, 2)); }
+
+function bledyGryKandydata(dane) {
+  const bledy = [];
+  if (!dane || (dane.tryb !== 'wyscig' && dane.tryb !== 'tury')) bledy.push('tryb musi być „wyscig” albo „tury”');
+  const org = dane && dane.organizator;
+  const pseudonim = org && typeof org.pseudonim === 'string' ? org.pseudonim.trim() : '';
+  if (!pseudonim) bledy.push('pseudonim organizatora jest wymagany');
+  else if (pseudonim.length > 24) bledy.push('pseudonim maks. 24 znaki');
+  const k = dane && dane.konfiguracja;
+  if (!k || !(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0) || typeof k.wiek !== 'string'
+    || !Array.isArray(k.tematy) || !k.tematy.length || typeof k.miejsce !== 'string'
+    || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
+    bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5)');
+  }
+  const z = dane && dane.zestaw;
+  if (!z || !Array.isArray(z.stacje) || !z.stacje.length || !z.kontener
+    || z.kontener.schemat !== SCHEMAT_KONTENERA || !z.meta) {
+    bledy.push('zestaw gry wymaga stacji, kontenera ' + SCHEMAT_KONTENERA + ' i metadanych');
+  } else if (k && z.stacje.length !== k.liczbaStacji) {
+    bledy.push('liczba stacji zestawu nie zgadza się z konfiguracją');
+  }
+  return bledy;
+}
+
+/** POST gra-zaloz: lobby z kodem (organizator + jego zestaw z telefonu). */
+function zalozGre(dane) {
+  return zBlokada(() => {
+    const bledy = bledyGryKandydata(dane);
+    if (bledy.length) return { ok: false, blad: bledy.join('; ') };
+    const kod = wolnyKod();
+    if (!kod) return { ok: false, blad: 'brak wolnych kodów gier — spróbuj później' };
+    const teraz = new Date().toISOString();
+    const gra = {
+      schemat: SCHEMAT_GRY,
+      kod,
+      idGry: null,
+      tryb: dane.tryb,
+      stan: 'lobby',
+      utworzono: teraz,
+      organizatorId: 'g-1',
+      gracze: [{ id: 'g-1', pseudonim: String(dane.organizator.pseudonim).trim().slice(0, 24), dolaczyl: teraz }],
+      konfiguracja: dane.konfiguracja,
+      zestaw: { stacje: dane.zestaw.stacje, kontener: dane.zestaw.kontener, meta: dane.zestaw.meta },
+      zdarzenia: [],
+      wyniki: {},
+    };
+    const plik = folder(FOLDERY.gryOtwarte).createFile(nazwaPlikuGry(kod), JSON.stringify(gra, null, 2), 'application/json');
+    gra.idGry = plik.getId();
+    zapiszGre(plik, gra); // idGry ląduje w stanie (lobby odsyła je graczom)
+    return { ok: true, gra };
+  });
+}
+
+/** Lobby: otwarte gry BEZ kodów i BEZ zestawów — dołączenie kliknięciem przez idGry. */
+function archiwizujPrzeterminowane() {
+  const pliki = folder(FOLDERY.gryOtwarte).getFiles();
+  const terazMs = Date.now();
+  while (pliki.hasNext()) {
+    const plik = pliki.next();
+    try {
+      const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+      if (gra.schemat !== SCHEMAT_GRY) continue;
+      const wiekMs = terazMs - new Date(gra.utworzono).getTime();
+      if (wiekMs > WYGASANIE_LOBBY_MS && gra.stan !== 'zakonczona') {
+        gra.stan = 'archiwum';
+        zapiszGre(plik, gra);
+        przenies(plik.getId(), FOLDERY.gryZakonczone);
+      }
+    } catch (err) { /* uszkodzony plik zostaje — nie archiwizujemy na siłę */ }
+  }
+}
+
+function listaGier() {
+  archiwizujPrzeterminowane();
+  const wpisy = [];
+  const pliki = folder(FOLDERY.gryOtwarte).getFiles();
+  while (pliki.hasNext()) {
+    const plik = pliki.next();
+    try {
+      const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+      if (gra.schemat !== SCHEMAT_GRY || gra.stan === 'zakonczona' || gra.stan === 'archiwum') continue;
+      if (gra.gracze.length >= MAKS_GRACZY) continue; // pełna — nie wisi w lobby
+      wpisy.push({
+        idGry: plik.getId(),
+        tryb: gra.tryb,
+        stan: gra.stan,
+        miejsce: gra.konfiguracja.miejsce,
+        geohash5: gra.konfiguracja.geohash5,
+        wiek: gra.konfiguracja.wiek,
+        tematy: gra.konfiguracja.tematy,
+        liczbaGraczy: gra.gracze.length,
+        utworzono: gra.utworzono,
+        organizator: gra.gracze[0] && gra.gracze[0].pseudonim,
+      });
+    } catch (err) { /* uszkodzony plik nie psuje lobby */ }
+  }
+  return { schemat: 'RO-lobby/1', wpisy };
+}
+
+/** POST gra-dolacz: kod ALBO idGry (z lobby) + pseudonim; tylko w lobby. */
+function dolaczDoGry(dane) {
+  return zBlokada(() => {
+    const pseudonim = String((dane && dane.pseudonim) || '').trim().slice(0, 24);
+    if (!pseudonim) return { ok: false, blad: 'pseudonim jest wymagany' };
+    const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma gry o takim kodzie/identyfikatorze' };
+    const gra = znaleziona.gra;
+    if (gra.stan !== 'lobby') return { ok: false, blad: 'ta gra już wystartowała albo się zakończyła — dołączyć można tylko w lobby' };
+    if (gra.gracze.length >= MAKS_GRACZY) return { ok: false, blad: 'gra jest pełna (maks. ' + MAKS_GRACZY + ' graczy)' };
+    if (gra.gracze.some((g) => g.pseudonim === pseudonim)) return { ok: false, blad: 'ten pseudonim już gra w tej grze — wybierz inny' };
+    const gracz = { id: 'g-' + (gra.gracze.length + 1), pseudonim, dolaczyl: new Date().toISOString() };
+    gra.gracze.push(gracz);
+    zapiszGre(znaleziona.plik, gra);
+    return { ok: true, graczId: gracz.id, gra };
+  });
+}
+
+/** POST gra-start: organizator rusza grę (lobby → trwa). */
+function startGryMulti(dane) {
+  return zBlokada(() => {
+    const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma takiej gry' };
+    const gra = znaleziona.gra;
+    if (gra.stan !== 'lobby') return { ok: false, blad: 'gra nie jest już w lobby (stan: ' + gra.stan + ')' };
+    if (String(dane && dane.organizatorId) !== gra.organizatorId) return { ok: false, blad: 'tylko organizator może wystartować grę' };
+    gra.stan = 'trwa';
+    gra.zdarzenia.push({
+      kolejnosc: gra.zdarzenia.length + 1, graczId: gra.organizatorId, typ: 'start',
+      stacjaId: null, dane: {}, tSerwera: new Date().toISOString(),
+    });
+    zapiszGre(znaleziona.plik, gra);
+    return { ok: true, gra };
+  });
+}
+
+/**
+ * Tury: stacja i (1-based) należy do gracza gracze[(i-1) % N] — kolejka jest
+ * USTALONA przy starcie i nie przesuwa się; rezygnacja gracza POMIJA jego
+ * stacje (moduł app/wieloosobowa.js ma identyczną logikę — pilnuje kontrakt).
+ */
+function biezacyGraczTury(gra) {
+  const zamkniete = {};
+  const rezygnacje = {};
+  gra.zdarzenia.forEach((z) => {
+    if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true;
+    if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true;
+  });
+  const N = gra.gracze.length;
+  if (!N) return null;
+  for (let i = 1; i <= gra.konfiguracja.liczbaStacji; i += 1) {
+    if (zamkniete[i]) continue;
+    const wlasciciel = gra.gracze[(i - 1) % N];
+    if (rezygnacje[wlasciciel.id]) continue; // stacje rezygnującego są pomijane
+    return wlasciciel.id;
+  }
+  return null; // wszystkie stacje zamknięte albo pominięte
+}
+
+function czyKompletna(gra) {
+  const N = gra.konfiguracja.liczbaStacji;
+  const rezygnacje = {};
+  gra.zdarzenia.forEach((z) => { if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true; });
+  if (gra.tryb === 'tury') {
+    const zamkniete = {};
+    gra.zdarzenia.forEach((z) => { if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true; });
+    const liczbaGraczy = gra.gracze.length;
+    if (!liczbaGraczy) return true;
+    for (let i = 1; i <= N; i += 1) {
+      const wlasciciel = gra.gracze[(i - 1) % liczbaGraczy];
+      if (!zamkniete[i] && !rezygnacje[wlasciciel.id]) return false; // stacja czeka na właściciela
+    }
+    return true;
+  }
+  return gra.gracze.every((g) => {
+    if (rezygnacje[g.id]) return true;
+    const stacje = {};
+    gra.zdarzenia.forEach((z) => { if (z.graczId === g.id && z.typ === 'odpowiedz' && z.stacjaId) stacje[z.stacjaId] = true; });
+    return Object.keys(stacje).length >= N;
+  });
+}
+
+function przeliczWyniki(gra) {
+  const wyniki = {};
+  gra.gracze.forEach((g) => {
+    wyniki[g.id] = { pseudonim: g.pseudonim, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, stacjeZamkniete: 0, zrezygnowal: false };
+  });
+  gra.zdarzenia.forEach((z) => {
+    const w = wyniki[z.graczId];
+    if (!w) return;
+    if (z.typ === 'dojscie') w.czasOdcinkowMs += Number(z.dane && z.dane.czasOdcinkaMs) || 0;
+    if (z.typ === 'odpowiedz') {
+      w.stacjeZamkniete += 1;
+      w.punkty += Number(z.dane && z.dane.punktyRazem) || 0;
+      if (z.dane && z.dane.poprawna) w.poprawne += 1; else w.bledne += 1;
+    }
+    if (z.typ === 'rezygnacja') w.zrezygnowal = true;
+  });
+  return wyniki;
+}
+
+/** POST gra-zdarzenie: walidacja spójności + append (kolejnosc, tSerwera) + auto-koniec. */
+function przyjmijZdarzenie(dane) {
+  return zBlokada(() => {
+    const z = dane && dane.zdarzenie;
+    if (!z || z.schemat !== SCHEMAT_ZDARZENIA) return { ok: false, blad: 'oczekiwałem zdarzenia ' + SCHEMAT_ZDARZENIA };
+    if (TYPY_ZDARZEN.indexOf(z.typ) < 0) return { ok: false, blad: 'nieznany typ zdarzenia: ' + z.typ };
+    const znaleziona = znajdzGre(z.kod, z.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma takiej gry' };
+    const gra = znaleziona.gra;
+    if (gra.stan !== 'trwa') return { ok: false, blad: 'gra się nie toczy (stan: ' + gra.stan + ')' };
+    const gracz = gra.gracze.filter((g) => g.id === z.graczId)[0];
+    if (!gracz) return { ok: false, blad: 'nie ma takiego gracza w tej grze' };
+    const zrezygnowal = gra.zdarzenia.some((e) => e.graczId === z.graczId && e.typ === 'rezygnacja');
+    if (zrezygnowal && (z.typ === 'dojscie' || z.typ === 'odpowiedz')) {
+      return { ok: false, blad: 'ten gracz zrezygnował — zdarzenia dojścia/odpowiedzi są odrzucane' };
+    }
+    if (z.typ === 'dojscie' || z.typ === 'odpowiedz') {
+      const n = Number(z.stacjaId);
+      if (!(n >= 1 && n <= gra.konfiguracja.liczbaStacji)) return { ok: false, blad: 'stacjaId poza zakresem gry (1–' + gra.konfiguracja.liczbaStacji + ')' };
+      if (gra.tryb === 'tury') {
+        const czyj = biezacyGraczTury(gra);
+        if (czyj !== z.graczId) return { ok: false, blad: 'teraz jest tura gracza ' + czyj + ' — poczekaj na swoją kolej' };
+      }
+      if (z.typ === 'odpowiedz') {
+        const byloDojscie = gra.zdarzenia.some((e) => e.typ === 'dojscie' && e.graczId === z.graczId && Number(e.stacjaId) === n);
+        if (!byloDojscie) return { ok: false, blad: 'odpowiedź bez dojścia do tej stacji — niewłaściwa kolejność zdarzeń' };
+        const bylaOdpowiedz = gra.zdarzenia.some((e) => e.typ === 'odpowiedz' && e.graczId === z.graczId && Number(e.stacjaId) === n);
+        if (bylaOdpowiedz) return { ok: false, blad: 'ta stacja jest już przez Ciebie odpowiedziana' };
+      }
+    }
+    const zdarzenieDane = (z.dane && typeof z.dane === 'object') ? z.dane : {};
+    POLA_ZAKAZANE_W_ZDARZENIU.forEach((pole) => { delete zdarzenieDane[pole]; }); // współrzędne NIGDY (ADR 0019 pkt 3)
+    const zdarzenie = {
+      kolejnosc: gra.zdarzenia.length + 1,
+      graczId: z.graczId,
+      typ: z.typ,
+      stacjaId: z.stacjaId != null ? Number(z.stacjaId) : null,
+      dane: zdarzenieDane,
+      tSerwera: new Date().toISOString(),
+    };
+    gra.zdarzenia.push(zdarzenie);
+    if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+      gra.wyniki = przeliczWyniki(gra);
+      gra.stan = 'zakonczona';
+    }
+    zapiszGre(znaleziona.plik, gra);
+    if (gra.stan === 'zakonczona') przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
+    return { ok: true, kolejnosc: zdarzenie.kolejnosc, stan: gra.stan, wyniki: gra.wyniki };
+  });
+}
+
+/** POST gra-zakoncz: organizator kończy przedwcześnie (np. wszyscy rezygnują). */
+function zakonczGre(dane) {
+  return zBlokada(() => {
+    const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma takiej gry' };
+    const gra = znaleziona.gra;
+    if (gra.stan === 'zakonczona' || gra.stan === 'archiwum') return { ok: true, gra };
+    if (String(dane && dane.graczId) !== gra.organizatorId) return { ok: false, blad: 'tylko organizator może zakończyć grę przed czasem' };
+    gra.stan = 'zakonczona';
+    gra.wyniki = przeliczWyniki(gra);
+    zapiszGre(znaleziona.plik, gra);
+    przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
+    return { ok: true, gra };
+  });
+}
+
+/** GET ranking: surowe wiersze z gier zakończonych — agregacje liczy aplikacja (testowalne, czyste). */
+function rankingi() {
+  const wiersze = [];
+  const pliki = folder(FOLDERY.gryZakonczone).getFiles();
+  while (pliki.hasNext()) {
+    const plik = pliki.next();
+    try {
+      const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+      if (gra.schemat !== SCHEMAT_GRY || gra.stan !== 'zakonczona' || !gra.wyniki) continue;
+      Object.keys(gra.wyniki).forEach((id) => {
+        const w = gra.wyniki[id];
+        if (w.zrezygnowal && !(w.stacjeZamkniete > 0)) return; // rezygnacja bez wyniku nie idzie do rankingu
+        wiersze.push({
+          pseudonim: w.pseudonim,
+          punkty: w.punkty,
+          poprawne: w.poprawne,
+          bledne: w.bledne,
+          czasOdcinkowMs: w.czasOdcinkowMs,
+          stacjeZamkniete: w.stacjeZamkniete,
+          data: gra.utworzono,
+          tryb: gra.tryb,
+          miejsce: gra.konfiguracja.miejsce,
+          geohash5: gra.konfiguracja.geohash5,
+          wiek: gra.konfiguracja.wiek,
+          tematy: gra.konfiguracja.tematy,
+        });
+      });
+    } catch (err) { /* uszkodzony plik nie psuje rankingu */ }
+  }
+  return { schemat: 'RO-ranking/1', wiersze };
+}
+
+function stanGry(kod, idGry) {
+  const znaleziona = znajdzGre(kod, idGry);
+  if (!znaleziona) return { ok: false, blad: 'nie ma takiej gry' };
+  return { ok: true, gra: znaleziona.gra };
+}

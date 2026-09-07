@@ -1,0 +1,16 @@
+# Zależności narzędzi sesji (instalowane WYŁĄCZNIE poza repozytorium — ENVIRONMENT §4)
+node_modules/
+package-lock.json
+
+# Śmieci systemowe i logi
+*.log
+.DS_Store
+Thumbs.db
+
+# Robocze pliki sesji (komunikaty commitów piszemy poza repo — ENVIRONMENT §3)
+.msg.txt
+
+# Paczki pytań z rozgrywek i eksporty lokalne (dane graczy, prywatność — ADR 0013)
+*.paczka.json
+*.paczka.txt
+data/paczki-lokalne/

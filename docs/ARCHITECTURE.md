@@ -1,0 +1,456 @@
+# ARCHITECTURE — budowa aplikacji i danych „Tajemniczej Okolicy"
+
+## Przegląd
+
+Aplikacja to statyczna strona (ADR 0001): `index.html` + moduły ES w `app/` +
+dane w `data/` + assety w `assets/`. Działa z dowolnego serwera statycznego
+(GitHub Pages, `npm run serwer`). Bez backendu, bez builda aplikacji, bez
+zależności npm. Treść pytań pochodzi z zewnątrz (model AI) i wchodzi przez
+pętlę protokołu PYT (ADR 0006, `docs/PROTOKOL.md`).
+
+```
+index.html                  — powłoka UI: ekrany (setup → prompt → paczka → gra → wynik),
+                              stopka z wersją protokołu, baner file://
+sw.js                       — Service Worker (M10): offline skorupa + kafelki
+                              ostatniej okolicy (cache-first, limit i ewikcja;
+                              classic script, rejestracja z app.js, WERSJA_SW
+                              == ?v= aplikacji — pilnuje kontrakt)
+.nojekyll                     — Pages bez przetwarzania Jekyll (M8)
+app/
+  app.js                    — bootstrap: router ekranów, stan sesji, spinanie modułów
+  konfig.js                 — kanon konfiguracji: TRYBY, PROMIENIE, WIEK, TEMATY,
+                              DOMYSLNE, ograniczenia (czyste dane + walidacja setupu)
+  geo.js                    — geodezja i projekcja: haversine, bearing, Web Mercator,
+                              siatka kafelków, pierścienie, dopasowanie zoomu,
+                              parsowanie współrzędnych z pól (dziesiętne, polski
+                              przecinek, DMS z Google Maps) (czyste)
+  pozycja.js                — geolokalizacja: osłona watchPozycja(), filtr
+                              dokładności (ocenFix), kryterium dojścia
+                              (stanDojscia), komunikaty P01–P09, symulacja trasy
+                              dla trybu testowego (ADR 0004, 0015); M10: profile
+                              baterii PROFILE_GPS + histereza profilBaterii
+                              („budzenie przy zbliżaniu": oszczędny >250 m,
+                              dokładny <150 m)
+  sieci.js                  — Overpass (czyste): budowa zapytania (R × 1,15),
+                              parsowanie odpowiedzi, graf sieci, Dijkstra,
+                              snapowanie, kandydaci na stacje, filtry
+                              dostępności, pomocniki cache sieci (klucz
+                              geohash-6, TTL 30 dni, LRU 2 MB); samo
+                              pobieranie siedzi w app.js (window.fetch)
+  stacje.js                 — wybór stacji: pierścienie, separacja kątowa, pass
+                              wyrównujący, ziarno i RNG deterministyczny (czyste)
+  protokol.js               — SZABLON_PROMPTU, zbudujPrompt(), walidujPaczke(),
+                              TOKENY_MIEJSCA, kody usterek E01–E20 (czyste)
+  kodowanie.js              — ukrywanie paczki: XOR ze strumieniem z stałego ziarna
+                              + base64url, kontener TO-paczka/2, suma FNV-1a
+                              (czyste, synchroniczne, bez WebCrypto — ADR 0007)
+  rozgrywka.js              — stan gry `rozgrywka/1`: kolejki graczy, odcinki
+                              i czasy, odpowiedzi, punktacja (ADR 0014), dziennik,
+                              podsumowanie, kody G01–G13 (czyste, zegar wstrzykiwany)
+  trwalosc.js               — trwałość stanu gry: snapshot `stan-gry/1`, klucze
+                              `okolica:gra:*`, walidacja T01–T10, budżet 2 MB;
+                              historia gier `okolica:historia` (`historia/1`,
+                              kody H01–H04, limit 50) (czyste; ADR 0010)
+  zestawy.js                — M9/M9b: repozytorium paczek (TO-zestaw/1, LRU,
+                              dopasowanie, indeks Drive z `id` → urlPaczkiZRepo)
+  wynik.js                  — wynik: sprawiedliwość trasy, eksport tekstowy,
+                              plan komend obrazu (PNG 1080 px) i nazwy plików
+                              (czyste; bez DOM, bez treści pytań, bez
+                              współrzędnych)
+  mapa.js                   — mapa: matematyka widoku (zoom ↔ skala, środek ↔
+                              przesunięcie, piksele ↔ współrzędne), adresy
+                              kafelków, plan rysowania i pasek skali (czyste)
+                              + warstwa SVG z gestami pan/pinch, tap-em
+                              (pozycja testowa: jeden palec, <10 px, tylko
+                              pointerup), przyciskami ±/◎, atrybucją i trybem
+                              ręcznym — przeciąganie pinezek stacji (DOM,
+                              ADR 0005 pkt 8b)
+  ui.js                     — ekrany i komponenty: setup, prompt, walidacja, gra,
+                              wynik; komunikaty, aria-live (DOM)
+  styles.css                — tokeny palety, motyw jasny/ciemny, cele dotykowe ≥44 px
+                              (kontrasty WCAG AA pilnowane bramą: tools/audyt-kontrastu.mjs)
+  sygnaly.js                — M10: plany sygnałów zdarzeń (wibracja + nuty Web
+                              Audio) i przełącznik `okolica:sygnaly` (czyste;
+                              odtwarzanie w app.js, brak API = cichy no-op)
+  wieloosobowa.js           — M11/M12: schematy RO-* (gra, zdarzenie, lobby,
+                              ranking), walidacja z kodami R01–R18, kody gier
+                              (alfabet bez 0/O/1/I), ramka i sąsiedztwo geohash5
+                              dla lobby, maszynka tur, wyniki, agregacje
+                              rankingów (czyste; ADR 0019)
+  sync.js                   — M11: synchronizacja z mostem Drive — polecenieMostu
+                              (POST + znacznik odmowaMostu), urlGet/urlStanGry,
+                              interwały pollingu zależne od fazy gry, kolejka
+                              zdarzeń offline (flush FIFO), wstrzykiwane
+                              fetchImpl i harmonogram (czyste; ADR 0019)
+  most.js                   — adres mostu Drive: DOMYSLNY_URL_MOSTU (stała
+                              wdrożeniowa WPISANA W KOD, ADR 0020), adresMostu()
+                              (nadpisanie w pamięci telefonu → stała),
+                              stanMostu() z jednym komunikatem dla całego UI
+                              (czyste; bez DOM, bez fetch)
+data/
+  przyklady/zestaw-*.json   — zestawy referencyjne TO-zestaw/1 (zweryfikowane
+                              źródła, ADR 0008; NIE publikowane automatycznie)
+  kanon-tematow.json        — (opcjonalnie) kanon tematów, gdy wyjdzie poza kod
+  UWAGA (decyzja właściciela 2026-09-06): repozytorium plikowe `data/paczki/`
+  USUNIĘTE — współdzielone paczki żyją na Drive (most: docs/setup/, ADR 0016/0018)
+assets/
+  ikony/ikona.svg           — ikona-kompas: ten sam motyw co favicon w index.html
+  ikony/ikona-192/512/180.png, ikona-maskable-512.png
+                            — rastry z tools/generuj-ikony.mjs (deterministyczne, M8)
+  manifest.json             — PWA-lite: „dodaj do ekranu głównego" (ścieżki „./", M8)
+tools/
+  sprawdz-kontrakt.mjs      — brama dodatkowa: kontrakt dokument↔kod, brak node: w app/
+  synchronizuj-szablon.mjs  — przepisanie szablonu promptu do app/ (jedno źródło)
+  generuj-fixture-overpass.mjs — fixture offline z realnej odpowiedzi Overpass (M6)
+  generuj-ikony.mjs         — ikony SVG+PNG bez zależności; npm run ikony (M8)
+  audyt-kontrastu.mjs       — M10: brama WCAG AA — kontrasty tokenów palety
+                              (jasny + ciemny) dla par rola→tło; npm run audyt
+test/                       — node --test; fixture'y w test/fixtures/
+docs/                       — protokół, ADR, plany, handoffy (patrz AGENTS.md §0);
+                              setup/: most Drive Apps Script (kod + instrukcja, M9b)
+```
+
+## Podział: czyste funkcje vs warstwa DOM
+
+Wszystko, co da się policzyć, jest **czystą funkcją** w module bez DOM i bez
+`node:*` (LESSONS L6): geodezja, projekcja, siatka kafelków, budowa zapytania
+Overpass, graf i Dijkstra, wybór stacji, budowa promptu, walidacja paczki,
+ukrywanie paczki, punktacja, migracje stanu, a od M2 także **matematyka widoku
+mapy i plan rysowania** (`mapa.js`: zoom ↔ skala, adresy kafelków, pinezki,
+okręgi, pasek skali). Warstwa DOM jest cienka: w `mapa.js` to `utworzMape()`
+(SVG, gesty, przyciski), a reszta ekranów siedzi w `app.js` (docelowo `ui.js`) —
+pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
+(`performance.now` / `mulberry32(ziarno)`), nie czytane z globali w środku logiki.
+
+Od M11 tę samą zasadę trzymają moduły wieloosobowe: `wieloosobowa.js`
+(schematy RO-*, walidacja z kodami R01–R18, kody gier, sąsiedztwo geohash5
+dla lobby, maszynka tur, wyniki, agregacje rankingów — zero DOM) i `sync.js`
+(polling mostu z interwałami zależnymi od fazy gry, kolejka zdarzeń offline
+z flusheM FIFO, rozróżnienie „odmowa mostu" vs „awaria sieci", wstrzykiwane
+`fetchImpl` i harmonogram). Orkiestracja DOM gry wieloosobowej i rankingów
+siedzi w `app.js` (sekcje M11/P4 i M12/P6).
+
+Od ADR 0020 adres mostu nie jest elementem interfejsu, tylko **stałą
+wdrożeniową w kodzie**: `most.js` rozstrzyga, z którym adresem rozmawiamy
+(nadpisanie w pamięci telefonu → `DOMYSLNY_URL_MOSTU` z repozytorium), i daje
+całemu UI jeden tekst stanu (`pokazStanMostu()` w `app.js` → `#most-stan-repo`
+i `#multi-most-stan`). Pól wpisywania adresu nie ma — wymiana adresu to nowy
+commit i nowa wersja aplikacji.
+
+## Przepływ danych
+
+### A. Przygotowanie gry
+
+1. `ui.js` zbiera konfigurację → `konfig.walidujSetup()` (limity, spójność).
+2. `pozycja.js` czyta pierwszy fix GPS (albo współrzędne z trybu testowego).
+   Pierwszy fix centruje widok mapy (`app.js: centrujNaPozycji`) w zoomie
+   dobranym do promienia gry (`geo.dopasujZoomDoPromienia`), a kolejne tylko
+   przesuwają marker — potem mapę prowadzi palec gracza. W trybie testowym
+   fixy zamiast z GPS płyną z `sekwencjaSymulowana(trasaProsta(...))`
+   odtwarzanej przez `setInterval` (przycisk „Symuluj dojście"); oba strumienie
+   wchodzą w stan **jednym lejem** `app.js: przyjmijFix()`, więc badge, mapa
+   i próg dojścia zachowują się identycznie z sygnałem i bez niego, a pauza
+   w tle (`visibilitychange`) zatrzymuje jedno i drugie.
+3. `sieci.budujZapytanieOverpass({ srodek, promienM, tryb })` składa jedno
+   zapytanie dla `R × 1.15`; pobiera je `app.js` przez `window.fetch`
+   (łańcuch instancji z `ASSETS` §2: 30 s odstępu po 429/5xx, timeout 20 s
+   przez `AbortController`, budżet 8 MB odpowiedzi). Najpierw jednak cache
+   `okolica:sieci:<geohash6>-<R>` (ADR 0010 pkt 1): trafiony wpis = zero
+   zapytań do Overpass. Dalej `sieci.parsujOdpowiedz` → `budujGraf`
+   (Dijkstra z pozycji startowej) → `kandydaciNaStacje` (filtry dostępności,
+   bariery, wykluczenia). Bez `window.fetch` (offline, atrapy) wszystko
+   zostaje synchroniczne i gra degraduje — patrz pkt 4.
+4. `stacje.wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno })` →
+   N stacji ze ścieżkami, dystansem sieciowym i miarą sprawiedliwości
+   (odchylenie standardowe); sieć za uboga → wynik częściowy z kodem `S12`.
+   Degradacja (ADR 0005 pkt 8, nigdy cicha): brak sieci → `stacjeProste`
+   (pierścień, dystans w linii prostej) + ostrzeżenie w UI; start za daleko
+   od sieci → `S13`; tryb ręczny (pkt 8b) → organizator przeciąga pinezki
+   (`mapa.ustawTrybReczny`), dystans tylko w linii prostej.
+   Lista stacji trafia na mapę jako numerowane pinezki
+   (`mapa.zaznaczStacje`), a promień gry jako przerywany okrąg.
+   Nazwa miejsca: podstawowa z obszarów administracyjnych TEGO SAMEGO
+   zapytania Overpass (`sieci.nazwaMiejsca`); zapasowa —
+   `uzupelnijMiejsceZapasowe` (Nominatim `reverse`, opt-in kluczem
+   `okolica:geokodacja-zapasowa`, domyślnie wyłączona, ADR 0013 pkt 2):
+   jedno żądanie na sesję, tylko gdy Overpass nie dał nazwy, najpierw cache
+   `okolica:miejsce:<geohash6>` (30 dni), wynik z atrybucją ODbL, endpoint
+   przełączalny kluczem `okolica:geokodacja-endpoint`. Całe nazewnictwo
+   miejsca (UI i prompt) jest bramowane `konfig.geokodacja` — przy
+   wyłączonym prompt niesie same współrzędne (ADR 0013 pkt 3).
+5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka;
+   ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
+   SVG w `index.html` (zero plików zewnętrznych, ADR 0001 pkt 1/ADR 0011).
+6. Organizator ↔ model AI (poza systemem); odpowiedź wraca wklejeniem albo
+   plikiem (`plik-odpowiedz`).
+7. Wklejona odpowiedź → `protokol.walidujPaczke()` → usterki (z przyciskiem
+   „skopiuj poprawkę") albo przyjęcie. Przyjęta paczka otwiera podgląd
+   „tylko dla organizatora" (`renderujPodgladOrganizatora`): ręczna edycja
+   pytań diffuje pola z `protokol.EDYTOWALNE_POLA`, zapisuje przez
+   `zastosujEdycjePaczki` (atomowo, ślad w `modyfikacje[]`) i PO KAŻDEJ
+   poprawce re-waliduje całość — usterki blokują ukrycie paczki.
+8. `kodowanie.zapakujPaczke(paczka, WERSJA_PROTOKOLU)` → kontener `TO-paczka/2`
+   → `trwalosc.zapiszPaczke()`. Dodatkowo eksport do pliku
+   `okolica-<kodGry>.paczka.json` (przycisk „⬇ Zapisz paczkę") — plik niesie
+   ten sam kontener, nigdy plaintext (ADR 0010 pkt 3), i jest czytany z
+   powrotem ścieżką „⬆ Z pliku" (gotowość na repozytorium paczek, M9).
+
+### B. Rozgrywka
+
+1. Jeden `ekran-gra` z czterema panelami faz (`gra-panel-oczekuje` /
+   `-odcinek` / `-pytanie` / `-koniec`) — zero żonglowania ekranami
+   w terenie (ADR 0011: jeden główny przycisk na fazę); mapa z podkładem
+   (ADR 0003), stacje, pozycja gracza, badge „czyja kolejka" i „ile metrów"
+   (ADR 0009/0011). Na setupie baner `#karta-wznowienie`: znaleziony zapis
+   gry → wznowienie albo dwustopniowe kasowanie.
+2. Akcja użytkownika startuje odcinek → `rozgrywka.startOdcinka({ stacjaId,
+   czasMs })`; `czasMs` podaje warstwa DOM z `performance.now()`, bo logika nie
+   czyta zegara (ADR 0004 pkt 3). Po KAŻDEJ tranzycji (start gry, start/koniec
+   odcinka, odpowiedź, pauza, pominięcie) leci `trwalosc.zbierajStan()` →
+   `serializujStan()` → `localStorage`; snapshot niesie `zegarMs` (kotwicę
+   zegara sesji) — przy wznowieniu wszystkie znaczniki czasu są rebazowane
+   o `performance.now() − zegarMs`, więc czas zamknięcia karty nie wlicza się
+   w odcinek.
+3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (filtr dokładności,
+   kody P05/P06) → `dodajFix()` (historia, maks. 40 pomiarów) → `stanDojscia()`
+   (próg `max(25 m, 1,2 × accuracy)` ograniczony do 100 m + dwa kolejne
+   trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`: czas,
+   kara za ręczne zgłoszenie, dokładność, `poLimitie`. GPS i symulacja dojścia
+   (tryb testowy) karmią aplikację tym samym lejem `przyjmijFix()`; symulacja
+   ustępuje grze — gdy faza przestaje być `odcinek` (dojście, pauza, ręczny
+   koniec), odtwarzanie staje i nie nadpisuje statusu gry.
+4. `kodowanie.odpakujPaczke(kontener)` → pytanie dla stacji **odsłaniane w chwili
+   dojścia**, nie na starcie (ADR 0007 pkt 6): `STAN.paczka` jest kasowany przy
+   starcie gry, a warstwa DOM woła `odpakujPaczke` wyłącznie w tranzycji do fazy
+   `pytanie` i w `renderujPytanie()`.
+5. Odpowiedź → `rozgrywka.zapiszOdpowiedz({ stacjaId, graczId, pytanie,
+   wybrana })` → punkty i premia/potrącenie za tempo (ADR 0014) → ocena
+   (`✓ Dobrze!` / `✗ Źle`), wyjaśnienie i klikalne źródła (`rel="noopener"`)
+   zostają na ekranie do „Następna stacja"; przyciski odpowiedzi blokują się po
+   pierwszym wyborze. Następna kolejka: `graczNaStacji()` / `ktoOdpowiada()` /
+   `podglad()` → ekran „kto idzie dalej". Stacja bez pytania w paczce zamyka
+   się samym dojściem, a pominąć da się tylko odcinek w drodze (ADR 0015);
+   ręczne zakończenie gry pokazuje wczesny wynik, ale NIE kasuje zapisu —
+   grę można wznowić.
+6. Koniec → pełne podsumowanie w `gra-panel-koniec` z `podsumowanie()`:
+   zwycięzca z rozbiciem punktacji, ranking, karty graczy (odcinki, tempo),
+   tabela stacji (tryb dojścia GPS/ręczne/pominięta, zmierzony czas),
+   statystyki + medal sprawiedliwości trasy (`wynik.sprawiedliwoscTrasy()`,
+   widokowy — ADR 0014). Eksporty z `app/wynik.js`: tekst `wynikTekstowy()`,
+   obraz `planObrazuWyniku()` → wykonawca canvas → PNG 1080 px (kolory
+   z tokenów CSS w chwili eksportu); udostępnianie Web Share → schowek →
+   plik. Skrót gry ląduje w historii `okolica:historia` (jeden wpis na klucz
+   gry; ręczne zakończenie znaczy `przerwana`, naturalny koniec zastępuje
+   wpis — ADR 0010 pkt 1).
+
+### Gra wieloosobowa i synchronizacja (M11/M12)
+
+1. `app.js` (karta-multi w setupie) zbiera pseudonim i zgodę — adres mostu
+   bierze z kodu (`adresMostu()` w `app/most.js`, ADR 0020) →
+   `sync.polecenieMostu` POSTuje `gra-zaloz` / `gra-dolacz`. Zgoda jest
+   wymagana: bez niej jawna odmowa i ZERO żądań (ADR 0019 pkt 3).
+2. `utworzSynchronizacje` prowadzi pętlę nienakładających się kroków:
+   GET `gra-stan` z interwałem zależnym od fazy (lobby 10 s, wyścig 12 s,
+   tury: moja 10 s / czekam 30 s, zakończona 0 = koniec pollingu). Zdarzenia
+   (`dojscie`/`odpowiedz`/`rezygnacja`) wychodzą natychmiast, a bez sieci
+   czekają w kolejce (flush FIFO po powrocie); odmowa mostu nie jest ponawiana.
+3. Stan serwera (`RO-gra/1`) zasila lokalny silnik (`rozgrywka.js`): wyścig =
+   wszystkie stacje, tury = tylko własne (`i % N === mojIndeks`, oryginalne id
+   stacji — pytania z kontenera pasują po id). Brak pozycji = środek trasy z
+   pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca z
+   `okolica:multi:sesja`, a zamknięte już stacje nie wracają do rozgrywki.
+4. Rankingi: GET `ranking` → surowe wiersze `RO-ranking/1` → agregacje liczy
+   telefon (`agregujRanking` / `kategorieRankingu`) — serwer tylko przechowuje.
+
+## Kluczowe algorytmy
+
+- **Odległość**: haversine (`odlegloscM`) — dla skali 25 m–10 km błąd modelu
+  kulistego jest poniżej progu dojścia; bez Vincenty'ego (koszt, brak zysku).
+- **Projekcja**: Web Mercator, `projektuj(lat, lon)` → jednostki świata
+  `[0..SZER]`, jak w AME (`app/geo.js`); odwrotność `odwroc(x, y)`.
+- **Siatka kafelków**: `z = clamp(round(log2(skala × SZER / 256)), 0, maxZoom)`
+  (`geo.siatkaKafelkow`), widoczny prostokąt świata → zakres `tx/ty`, a potem
+  `mapa.planKafelkow` dokłada margines jednego kafelka (drag nie odsłania
+  pustki) i tnie do `MAX_KAFELEK = 48` z flagą `przyciete` — „lekkie użycie"
+  z polityki OSM Tile Usage (`ASSETS` §1). Adresy: `urlKafelka` podstawia
+  `{z}/{x}/{y}` po nazwach (Esri ma odwrotnie: `{z}/{y}/{x}`), poddomeny
+  OpenTopoMap rotują deterministycznie z `(x + y) % 3` (losowa rotacja psułaby
+  cache przeglądarki), a podkład `brak` nie daje żadnego żądania.
+- **Widok i jednostki**: `ekranPx = jednostkaSwiata × skala + przesunięcie`,
+  `zoom = log2(skala × 3600 / 256)`. Warstwy metryczne (kafelki, okręgi) mają
+  jeden `transform="translate(x y) scale(skala)"` i dzieci w jednostkach
+  świata, więc pan/zoom zmienia **jeden atrybut**, a lista kafelków jest
+  przebudowywana tylko przy zmianie sygnatury siatki. Pinezki i marker są
+  w pikselach, bo mają stały rozmiar na ekranie; obrys okręgów ma
+  `vector-effect="non-scaling-stroke"`. Metry na jednostkę świata to
+  `metryNaPiksel(lat, zoom) × skala` (dzielenie dałoby okręgi większe niż świat).
+- **Gesty**: Pointer Events z `Map` aktywnych wskaźników — jeden palec = pan
+  (przesunięcie o deltę), dwa = pinch (`zmienSkale` z kotwicą w środku palców),
+  kółko myszy = zoom z `preventDefault` (`{passive: false}`). Zoom jest
+  ograniczany do `maxZoom` podkładu, więc aplikacja nie prosi o nieistniejące
+  kafelki. `touch-action: none` tylko na panelu — reszta strony zostaje
+  przybliżalna (dostępność, ADR 0011). W trybie ręcznym palec na pinezce
+  (niewidoczny cel dotykowy 48 px) przejmuje gest: widok nie panuje, pinezka
+  jedzie z palcem (`wspolrzedneZEkranu`, siatka 1e-6 ≈ 0,1 m), a callback
+  `onZmiana(index, {lat, lon})` wołany jest raz, po puszczeniu — klik bez
+  ruchu nic nie zmienia (ADR 0005 pkt 8b).
+- **Pasek skali**: największy „ładny" krok z `KROKI_SKALI_M` (5 m–500 km),
+  który mieści się w 80 px; krótszy niż 14 px nie jest rysowany (przy widoku
+  całej Ziemi nic by nie mówił).
+- **Dostępność**: klasy `highway` per tryb + wykluczenia (`access=private`,
+  `foot=no`, poligony `building`, `landuse=railway`) → `czyDostepny(way, tryb)`.
+- **Dijkstra** po grafie węzłów OSM z wagą = długość geometryczna krawędzi;
+  start snapowany do najbliższego dopuszczalnego węzła.
+- **Wybór stacji**: greedy po `|d_sieci − r|` z separacją kątową ≥ `0.7×360/N`
+  i sieciową ≥ `0.5×r`, potem pass zamian parami minimalizujący odchylenie
+  standardowe `d_sieci` (ADR 0005 pkt 5). Deterministyczny pod ziarnem.
+- **Ukrywanie paczki**: obfuskacja bez klucza — UTF-8 JSON ⊕ strumień bajtów
+  z stałego ziarna → base64url → kontener `TO-paczka/2` + suma kontrolna FNV-1a
+  (ADR 0007). To bariera przed przypadkowym wglądem, **nie szyfrowanie**.
+- **Kryterium dojścia**: `progDojsciaM(accuracy) = ogranicz(1,2 × accuracy,
+  25 m, 100 m)` (brak dokładności → 100 m, czyli najostrzej) plus dwa kolejne
+  fixy w progu — debounce przeciw odbiciom sygnału (`geo.czyDotarl`, opakowane
+  przez `pozycja.stanDojscia` zdaniem dla gracza: ile metrów zostało i dlaczego
+  stacja się nie zapala). Fix niedokładny dostaje ostrzeżenie, ale nie jest
+  odrzucany (ADR 0004 pkt 2 i 4).
+- **Punktacja czasu** (ADR 0014): `tempo = czasS / dystansOdcinkaM` [s/m], gdzie
+  `czasS` zawiera karę za ręczne zgłoszenie, a dystans jest **łańcuchowy**
+  (start gry → stacja 1, potem stacja poprzednia → następna). Mediana próbek
+  (najpierw ta sama stacja ≥ 2, inaczej wszystkie zakończone odcinki ≥ 2,
+  inaczej premia 0), `premia = round(punktyPodstawowe × 0,5 × ogranicz((mediana
+  − tempo)/mediana, ±0,5))` → maks. ±25% punktów za odpowiedź. Przekroczony
+  limit odcinka zeruje premię i oznacza `poLimitie`, ale nie przerywa gry.
+- **Symulacja trasy** (tryb testowy, ADR 0004 pkt 6): interpolacja po łamanej
+  punktów (`punktNaTrasie`) + deterministyczny rozrzut i zmienna dokładność
+  z `szum(t)` liczonego z czasu — zero `Math.random()`, więc ta sama trasa daje
+  te same fixy w teście i w przeglądarce. `sekwencjaSymulowana` dokłada postój
+  przy stacji, bez którego debounce nigdy by się nie spełnił.
+
+## Stan i trwałość
+
+Jedyny trwały nośnik to `localStorage` (klucze `okolica:*`, ADR 0010 pkt 1)
+plus plik `.paczka.json` eksportowany przez użytkownika.
+
+Stan rozgrywki (`schemat: 'rozgrywka/1'`, `app/rozgrywka.js`) jest
+**zdarzeniowy i niezmiennikowy**: każda funkcja zwraca nowy obiekt
+(`structuredClone`), a argument zostaje nietknięty, bo UI trzyma referencje.
+Dziennik `{ czasMs, typ, … }` (`start`, `start-odcinka`, `dojscie`, `odpowiedz`,
+`pominiecie`, `ostrzezenie`, `koniec`) pozwala przeliczyć wynik i odtworzyć
+przebieg — debugging terenowy bez zgadywania. Odcinki niosą pomiar (`czasS`,
+`karaS`, `trybDojscia`, `accuracyM`, `odlegloscKoncowaM`, `tempo`, `poLimitie`),
+a odpowiedzi pełny ślad punktacji (`punktyPodstawowe`, `premiaCzasu`,
+`punktyRazem`, `tempo`, `medianaTempa`, `probek`, `zrodloProbek`) — wynik da się
+wyjaśnić graczowi liczba po liczbie (ADR 0011, ADR 0014 pkt 8).
+
+Stan **nie zawiera treści pytań**: z paczki bierze tylko `{ stacja, pytanieId }`,
+a z odpowiedzi poprawność i punkty (ADR 0007 pkt 6). Dlatego może leżeć w
+`localStorage` i w eksporcie, a pytanie odsłania się dopiero z ukrytej paczki
+w chwili dojścia.
+
+Stan sesji (pamięć, `app/app.js`): `STAN.ekran` zapamiętuje, na który ekran
+wraca pomocniczy ekran „dane i prywatność" (otwierany z setupu i ze stopki,
+nie należy do paska pięciu kroków); `STAN.historiaFixow` to ograniczona
+historia wspólna GPS-u i symulacji; `STAN.symulacja` trzyma odtwarzaną trasę
+(`{fixy, indeks, cel, timer}`); `STAN.siec` trzyma stan sieci drogowej
+(`brak`/`gotowa` + graf i kandydaci przebudowywani tylko przy zmianie trybu),
+`STAN.wynikSieci` wynik wyboru sieciowego, a `STAN.wymusPierscien` i
+`STAN.trybReczny` znaczniki degradacji (ADR 0005 pkt 8). Kasowanie danych jest **dwustopniowe**
+(pierwszy klik uzbraja, drugi wykonuje) i usuwa wyłącznie klucze `okolica:*` —
+aplikacja nie wywołuje `confirm()`/`alert()` (ADR 0015 pkt 6), komunikaty idą
+do pól z `role="status"`/`role="alert"`.
+
+Cache sieci drogowej (M4) to klucze `okolica:sieci:<geohash6>-<R>` z wpisem
+`{ schemat: 'sieci/1', zapisanoMs, dane }`: TTL 30 dni, wpisy „z przyszłości"
+(>1 dnia) odrzucane jak podejrzany zegar, puste drogi = wpis bezużyteczny,
+a przy sumie ponad 2 MB najstarsze wpisy wypadają (LRU, `przycijCacheSieci`).
+Odpowiedź >8 MB jest użyta do gry, ale nie zapisana (kod `S04` w UI).
+
+Każdy zapis ma pole `schemat`; nieznana wersja = migracja albo jawny komunikat
+(`wczytajStan()`, kod `G12` ze wskazówką migracji), nigdy ciche odrzucenie.
+
+Trwałość stanu gry (M6) żyje w `app/trwalosc.js`: snapshot `stan-gry/1`
+(`zbierajStan()` → `serializujStan()`, budżet 2 MB — kod `T07`, walidacja
+wczytania `walidujStanSurowy()` atomowa z kodami `T01`–`T10`, m.in. `T08` na
+zepsute znaczniki czasu `zapisanoMs`/`zegarMs`). Klucze:
+`okolica:gra:<kod>` (`kluczStanu()`, `oczyscKodGry()` — pusty kod gry staje się
+`'gra'`, bo surowy `''` jest falsy i baner wznowienia nigdy by nie wstał) oraz
+`okolica:gra-aktywna` (`KLUCZ_AKTYWNEJ`) ze znormalizowanym kluczem bieżącej
+gry. Snapshot niesie konfig, stacje, `kontenerPaczki` (`TO-paczka/2`) i stan
+`rozgrywka/1` — NIGDY jawnych pytań (test-strażnik w R2 i R7); `zbierajStan`
+odmawia przyjęcia `STAN.paczka` w jakiejkolwiek postaci. Zapis leci po każdej
+tranzycji synchronicznie (`beforeunload` jest na telefonach zawodny), a błędy
+zapisu nie zatrzymują gry — idą do statusu. Wznowienie rebazuje oś czasu
+(`zegarMs`), kasuje bufor trafień i centrowanie mapy; kasowanie zapisu i
+ręczne zakończenie gry są dwustopniowe (ADR 0015 pkt 6).
+
+Historia gier (M7) żyje obok zapisów w `app/trwalosc.js`: klucz
+`okolica:historia`, schemat `historia/1`, wpis `historia-gra/1` — skrót BEZ
+treści pytań i BEZ współrzędnych (data, miejsce z konfiga — bramowane
+geokodacją jak w promptach, tryb, zwycięzca, punkty, poprawne, czasy,
+znacznik `przerwana`). Limit 50 wpisów (najstarsze wypadają),
+a zastąpienie po kluczu gry jest idempotentne: dokończenie przerwanej gry
+NADPISUJE wpis, nie dokłada drugiego. Wpis powstaje w hooku `zapiszGre()` —
+po każdej tranzycji, która zostawia grę w fazie `koniec` albo z
+`graZakonczonaRecznie` (obejmuje więc też wznowienie gry już zakończonej).
+Wczytanie waliduje `walidujHistorieSurowa()` (kody `H01`–`H04`), a zepsuty
+zapis odzywa się w UI jawnie tymi kodami i oferuje dwustopniowe kasowanie —
+nigdy cicho (ADR 0010 pkt 6).
+
+## Testowanie
+
+- `npm test` (`node --test`) — czyste funkcje na fixture'ach:
+  `test/fixtures/paczka-ok.json` (poprawna paczka PYT z zastrzeżeniem, że dane są
+  zmyślone), `test/fixtures/trasa-odbicie.json` (sekwencja fixów GPS z odbiciem
+  sygnału, z oczekiwanym dystansem przy każdym fixie); od M4 dochodzą
+  `overpass-*.json` (centrum miasta / przedmieście / las) i pełny zestaw 20 klas
+  usterek paczki.
+- Reguły gry testowane są **przejściem, nie pojedynczym wywołaniem**: pełna gra
+  3 graczy × 5 stacji od startu do podsumowania na wstrzykniętym zegarze
+  (`test/rozgrywka.test.js`), przejścia faz przy paczce bez pełnego pokrycia,
+  odmowy z kodami `G01`–`G13`, determinizm i brak mutacji stanu wejściowego.
+- Mapa (M2) jest testowana **dwuwarstwowo**: `test/mapa.test.js` sprawdza część
+  czystą (round-trip środek ↔ widok, kotwica i widełki zoomu, adresy kafelków
+  wszystkich podkładów wraz z kolejnością `{z}/{y}/{x}` Esri i deterministyczną
+  poddomeną, limit i margines siatki, spójność metrów między jednostkami świata
+  a pikselami, pasek skali, plan dla schowanego panelu) oraz warstwę DOM na
+  atrapie (drag, pinch, kółko, przyciski ±/◎, zmiana podkładu, przywrócenie
+  warstw po pokazaniu panelu, `zniszcz()` zdejmujące nasłuchy). Wygląd —
+  kafelki naprawdę widoczne na ekranie — potwierdza właściciel w live preview,
+  bo w sandboxie nie ma ani przeglądarki, ani sieci do kafelków (LESSONS L3).
+- Testy kontraktowe: szablon promptu w `docs/PROTOKOL.md` ↔ `SZABLON_PROMPTU`;
+  kanon tematów w protokole ↔ `TEMATY`; wersja protokołu ↔ stopka ↔ README;
+  wersja cache-bustingu w `index.html` ↔ importy; brak `node:`/`require(` w `app/`;
+  brak ścieżek od korzenia w `index.html` (ADR 0002 pkt 3); rejestr ADR ↔ pliki
+  na dysku i status w pliku ↔ status w rejestrze; geolokalizacja w `app.js`
+  wyłącznie przez `pozycja.js` (brak `watchPosition`, `clearWatch` i opcji
+  watchera w warstwie DOM — ADR 0004 pkt 1); od M2 także: kompletność obu szkieletów paneli mapy w `index.html` (svg z `role="img"` i `aria-label`, przyciski z `type="button"`), zakaz domyślnego `display: none` dla atrybucji i obowiązkowe `touch-action: none` na panelu, brak `fetch`/geolokalizacji/`alert`/`node:` w `mapa.js`, a szablony URL kafelków identyczne z `docs/ASSETS.md` §1 (po ujednoliceniu zapisu poddomen `{s}` ↔ `{a,b,c}`); od M4 także: przyciski degradacji (`przycisk-pierścien`, `przycisk-reczne`) z `aria-pressed="false"` i `hidden`, pole błędów sieci `#bledy-stacje` z `role="alert"` i zakaz `alert()` przy błędach Overpass.
+- Warstwa DOM: testy na atrapie `test/helpers/dom.js` — `zainstalujDom()` zakłada
+  świeże globale i zwraca uchwyty (`kliknij`, `wyslijZdarzenieDokumentu`,
+  `wyslijZdarzenieOkna`, `ustawHidden`, `ustawGeolokalizacje`, `ustawProstokat`),
+  a `atrapaGeolokalizacji()` udaje `watchPosition`/`clearWatch`. Atrapa jest celowo
+  głupia (`querySelector` → `null`, `innerHTML` niczego nie parsuje), ale od M2
+  umie to, czego potrzebuje SVG: `createElementNS`, `replaceChildren`,
+  `removeChild`, `getBoundingClientRect` z ustawialnym rozmiarem (test
+  schowanego panelu) i no-op `setPointerCapture`; `removeEventListener` naprawdę
+  zdejmuje nasłuch, więc test `zniszcz()` sprawdza zachowanie, a nie atrapę.
+  Test chcący inny stan startowy (np. `?tryb=test`) zakłada własną atrapę
+  i importuje `app.js` od nowa — egzemplarze nie dzielą wtedy nasłuchów zdarzeń.
+  Weryfikacja wizualna: live preview u właściciela; headless Chromium
+  360 × 640 (ENVIRONMENT §4.1) dopiero, gdy będzie w środowisku dostępny.
+- Sieć w testach jest **zabroniona** (LESSONS L3): Overpass i kafelki tylko
+  na fixture'ach i w przeglądarce. Aplikacja czyta fetch wyłącznie przez
+  `window.fetch` (Node ≥ 18 ma globalny — LESSONS L18), więc atrapa bez
+  `window.fetch` daje synchroniczną degradację, a testy sieciowe podstawiają
+  własną atrapę (`domAtrapa.window.fetch = …`) i ćwiczą cały łańcuch instancji
+  z `?odstep=0` (pauzy 30 s skrócone do zera, polityka domyślna nietknięta).
+  Listy w UI przebudowujemy przez `replaceChildren`, bo `innerHTML = ''` jest
+  w atrapie inertne (LESSONS L19).
+
+## Czego NIE ma w architekturze (świadomie)
+
+- Backendu, bazy danych, kont użytkowników, logowania (ADR 0001/0006).
+- Biblioteki mapowej, frameworka UI, bundlera, webfontów (ADR 0001/0011).
+- Analityki i ciasteczek (ADR 0013).
+- Nawigacji krok-po-kroku: pokazujemy stację i dystans, nie prowadzimy po
+  skrętach (odpowiedzialność i bezpieczeństwo użytkownika; BACKLOG B7).
+- Synchronizacji wielu urządzeń (ADR 0009 pkt 6; BACKLOG B1).
