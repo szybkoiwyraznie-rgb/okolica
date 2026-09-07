@@ -10,7 +10,8 @@ import {
   bearingStopnie, czyDotarl, czyWspolrzedneOk, dopasujZoomDoPromienia, formatujWspolrzedne,
   geohash, KOMUNIKATY_WSPOLRZEDNYCH, metryNaPiksel, odlegloscM, odwroc, ogranicz,
   parsujWspolrzedne, przesunPunkt, projektuj,
-  progDojsciaM, punktyNaOkregu, siatkaKafelkow, wspolrzedneDoKafelka,
+  progDojsciaM, punktyNaOkregu, ramkaGeohash, odlegloscDoKomorkiM, sasiednieGeohash,
+  siatkaKafelkow, wspolrzedneDoKafelka,
 } from '../app/geo.js';
 
 const WARSZAWA = { lat: 52.2297, lon: 21.0122 };
@@ -305,4 +306,31 @@ test('parsujWspolrzedne: round-trip z formatujWspolrzedne', () => {
   assert.equal(zPowrotem.ok, true);
   assert.equal(zPowrotem.lat, 52.2297);
   assert.equal(zPowrotem.lon, 21.0122);
+});
+
+/* ------ ADR 0024: odległość punktu od komórki geohash ------ */
+
+test('odlegloscDoKomorkiM: 0 w środku komórki, dodatnia na zewnątrz, null dla śmieci', () => {
+  const p = { lat: 52.1141, lon: 20.6622 };
+  const gh = geohash(p.lat, p.lon, 6);
+  assert.equal(odlegloscDoKomorkiM(gh, p.lat, p.lon), 0, 'punkt w komórce = 0');
+
+  const r = ramkaGeohash(gh);
+  const poza = przesunPunkt({ lat: r.latMax, lon: (r.lonMin + r.lonMax) / 2 }, 0, 500);
+  const d = odlegloscDoKomorkiM(gh, poza.lat, poza.lon);
+  assert.ok(d > 400 && d < 600, `~500 m od krawędzi (wyszło ${d.toFixed(0)} m)`);
+
+  assert.equal(odlegloscDoKomorkiM('u3q!8', p.lat, p.lon), null, 'śmieciowy geohash = null, nie 0');
+  assert.equal(odlegloscDoKomorkiM(gh, 91, 0), null, 'zła szerokość = null');
+});
+
+test('ramkaGeohash i sasiednieGeohash są osiągalne z obu modułów (przeniesione do geo.js)', async () => {
+  const w = await import('../app/wieloosobowa.js');
+  assert.equal(typeof w.ramkaGeohash, 'function', 're-eksport z wieloosobowa.js działa');
+  assert.equal(typeof w.sasiednieGeohash, 'function');
+  // Nie porównujemy tożsamości funkcji: w node `../app/geo.js` i `./geo.js?v=…`
+  // to dwie instancje modułu (przeglądarka widzi jeden URL). Liczy się wynik.
+  assert.deepEqual(w.ramkaGeohash('u3q8q'), ramkaGeohash('u3q8q'), 'ramka ta sama z obu ścieżek');
+  assert.deepEqual(w.sasiednieGeohash('u3q8q'), sasiednieGeohash('u3q8q'), 'sąsiedzi ci sami');
+  assert.equal(sasiednieGeohash('u3q8q').length, 8, 'sąsiedzi dalej się liczą');
 });

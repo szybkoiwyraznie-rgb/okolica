@@ -12,7 +12,6 @@
  * pól, a most kasuje zakazane pola dodatkowo po swojej stronie.
  */
 
-import { ALFABET_GEOHASH, geohash, ogranicz } from './geo.js?v=m12-7';
 
 export const SCHEMAT_GRY = 'RO-gra/1';
 export const SCHEMAT_ZDARZENIA = 'RO-zdarzenie/1';
@@ -102,65 +101,13 @@ export function kodPoprawny(tekst) {
   return k.length === DLUGOSC_KODU && [...k].every((znak) => ALFABET_KODU.includes(znak));
 }
 
-/* ------------------------------------------- sąsiedztwo geohash5 (lobby) */
+// Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
+// `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
+// (app.js, testy) nie zmieniały ścieżki.
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-8';
 
-/** Ramka bounding-box geohasha (dekoder do pary z `geo.geohash`). */
-export function ramkaGeohash(gh) {
-  const tekst = String(gh ?? '').toLowerCase();
-  if (!tekst.length) return null;
-  let latMin = -90; let latMax = 90; let lonMin = -180; let lonMax = 180;
-  let nawetLon = true;
-  for (const znak of tekst) {
-    const v = ALFABET_GEOHASH.indexOf(znak);
-    if (v < 0) return null;
-    for (let bit = 4; bit >= 0; bit -= 1) {
-      const b = (v >> bit) & 1;
-      if (nawetLon) {
-        const srodek = (lonMin + lonMax) / 2;
-        if (b) lonMin = srodek; else lonMax = srodek;
-      } else {
-        const srodek = (latMin + latMax) / 2;
-        if (b) latMin = srodek; else latMax = srodek;
-      }
-      nawetLon = !nawetLon;
-    }
-  }
-  return { latMin, latMax, lonMin, lonMax };
-}
+export { ramkaGeohash, sasiednieGeohash };
 
-/**
- * Osiem komórek sąsiadujących z geohashem (ta sama precyzja) — lobby gier
- * „w najbliższej okolicy" = własna komórka + sąsiedzi (ADR 0019 pkt 1).
- * Geometrycznie: środek komórki przesunięty o jej rozmiar w 8 kierunkach,
- * zakodowany z powrotem tym samym `geo.geohash` (jedno źródło prawdy).
- */
-export function sasiednieGeohash(gh) {
-  const r = ramkaGeohash(gh);
-  if (!r) return [];
-  const dLat = r.latMax - r.latMin;
-  const dLon = r.lonMax - r.lonMin;
-  const sLat = (r.latMin + r.latMax) / 2;
-  const sLon = (r.lonMin + r.lonMax) / 2;
-  const precyzja = String(gh).length;
-  const kierunki = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
-  const wynik = [];
-  for (const [dx, dy] of kierunki) {
-    const lat = ogranicz(sLat + dy * dLat, -89.9999, 89.9999);
-    let lon = sLon + dx * dLon;
-    while (lon > 180) lon -= 360;
-    while (lon < -180) lon += 360;
-    let sasiad = null;
-    try {
-      sasiad = geohash(lat, lon, precyzja);
-    } catch {
-      sasiad = null; // przy słupach/antimeridianie kierunek wypada — lobby bez niego
-    }
-    if (sasiad && sasiad !== String(gh).toLowerCase() && !wynik.includes(sasiad)) wynik.push(sasiad);
-  }
-  return wynik;
-}
-
-/** Filtr lobby: gry w mojej komórce geohash5 albo u sąsiadów. */
 export function filtrujLobby(wpisy, { geohash5 } = {}) {
   if (!Array.isArray(wpisy)) return [];
   if (!geohash5) return [];

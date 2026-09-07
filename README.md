@@ -159,9 +159,10 @@ na telefonie kopię swojej paczki (stacje + ukryte pytania), a współdzielone
 repozytorium żyje na wydzielonym koncie **Google Drive** z mostem Apps Script
 (ADR 0016/0018 — w repozytorium kodu NIE ma plików paczek). Na ekranie
 „Gdzie jesteś?" karta „📦 Paczki dla tej okolicy" proponuje dopasowane
-paczki według kryteriów właściciela (ta sama okolica, ta sama liczba stacji
-i pytań, ten sam poziom, tematy nie szersze niż w setupie, promień paczki nie
-większy niż w setupie) — wybór startuje grę bez promptu, bez wklejania, bez
+paczki według kryteriów właściciela (okolica w zasięgu 200 m od komórki
+geohash paczki — kilka metrów różnicy w starcie nie gubi propozycji, ADR 0024;
+ta sama liczba stacji i pytań, ten sam poziom, tematy nie szersze niż w setupie,
+promień paczki nie większy niż w setupie) — wybór startuje grę bez promptu, bez wklejania, bez
 Overpassa i bez modelu. Przyjęcie paczki z AI (ekran wklejania) automatycznie
 i bez pytania wysyła ją na Drive do przeglądu właściciela (decyzja
 2026-09-07: checkbox zgody usunięty, ADR 0016 aneks). Właściciel

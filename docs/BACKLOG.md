@@ -152,3 +152,19 @@ aż tak szczypać". Wdrożone: `LIMIT_TOKENOW = 100_000` w
 przestaje być obowiązkowa przy każdym dopisku, ale zasada „reguła trafia tam,
 gdzie jej miejsce" (`AGENTS.md` §5) zostaje; archiwizacja ADR-ów (wariant a)
 i podział LESSONS (wariant c) wracają, gdy zbliżymy się do nowego progu.
+
+## B19 — Geohash6 dla starych paczek: dopisanie w moście Drive
+
+Po ADR 0024 dopasowanie okolicy liczy odległość od komórki geohash paczki
+z tolerancją 200 m. Nowe paczki niosą `geohash6` (≈0,75 × 0,61 km), ale pliki
+opublikowane wcześniej mają tylko `geohash5` (≈3,0 × 4,9 km) — dla nich reguła
+zostaje zgrubna („gracz w tej samej komórce" plus 200 m), więc paczka
+zakotwiczona 3 km dalej też się pokaże.
+
+Rozwiązanie bez migracji plików: `budujIndeks` w
+`docs/setup/apps-script-repo-paczek.gs` czyta CAŁY plik paczki (ma
+`zestaw.stacje`), więc może dopisać `geohash6` z pierwszej stacji, gdy `meta`
+go nie ma. Prywatność bez zmian (ADR 0024 pkt 5: dokładne stacje i tak są
+publiczne przez `?akcja=paczka&id=`), klient już woli `geohash6`. Koszt:
+~25 linii kodera geohash w Apps Script (bez testów w tym repozytorium — skrypt
+działa poza nim) i jednorazowe wklejenie nowej wersji skryptu przez właściciela.

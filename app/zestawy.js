@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash } from './geo.js?v=m12-7';
-import { kanonicznyTemat } from './konfig.js?v=m12-7';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-7';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-7';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-8';
+import { kanonicznyTemat } from './konfig.js?v=m12-8';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-8';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-8';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -157,11 +157,23 @@ export function dolozWpisRejestru(rejestr, wpis, { bajty, teraz } = {}) {
 const zbiorTematow = (tematy) => new Set(tematy);
 
 /**
- * Dopasowanie okolicy: ten sam geohash5, ten sam promień, ten sam wiek i ten
- * sam zestaw tematów (reguły z ADR 0017 pkt 7 — ściśle i przewidywalnie; UI
- * pokazuje metadane, więc organizator widzi, dlaczego propozycja pasuje).
+ * Tolerancja dopasowania okolicy w metrach (ADR 0024): komórka geohash paczki
+ * powiększona o ten margines. Kilka metrów różnicy w miejscu startu — albo
+ * przejście przez granicę komórki — NIE zmienia listy propozycji, co przy
+ * regule „ten sam geohash5 albo nic" gubiło paczki (zgłoszenie właściciela
+ * z 2026-09-07: zatwierdzona paczka dla Podkowy Leśnej nie pojawia się na
+ * ekranie pozycji).
  */
-export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pytaniaNaStacje, tematy, wiek, tematWlasny = '' } = {}) {
+export const TOLERANCJA_OKOLICY_M = 200;
+
+/**
+ * Dopasowanie okolicy (ADR 0024): paczka pasuje, gdy jej komórka geohash jest
+ * w zasięgu `TOLERANCJA_OKOLICY_M` od pozycji gracza; reszta kryteriów bez
+ * zmian (promień, wiek, liczba stacji i pytań, tematy nie szersze — ADR 0017
+ * pkt 7). Bez podanej pozycji (`lat`/`lon`) działa dawna reguła „ten sam
+ * geohash5" — kryteria muszą wtedy wystarczyć (rejestr lokalny, testy).
+ */
+export function dopasujZestawy(rejestr, { geohash5, lat, lon, promienM, liczbaStacji, pytaniaNaStacje, tematy, wiek, tematWlasny = '' } = {}) {
   wymaganie(typeof geohash5 === 'string' && geohash5.length === 5, 'dopasujZestawy: geohash5 musi mieć 5 znaków');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'dopasujZestawy: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'dopasujZestawy: liczbaStacji musi być dodatnią liczbą całkowitą');
@@ -176,13 +188,24 @@ export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pyta
   // liczba stacji i pytań na stację, ten sam poziom (wiek), tematy paczki
   // NIE SZERSZE niż w setupie oraz promień paczki ≤ promienia z setupu
   // (stacje bliżej niż oczekiwano są uczciwe, dalej — nie).
+  const mamPozycje = Number.isFinite(lat) && Number.isFinite(lon);
+  // Okolica: odległość od komórki geohash paczki ≤ tolerancji (0 = w środku).
+  // Nowe pliki niosą `geohash6` (≈0,75 × 0,61 km); starsze tylko `geohash5`
+  // (≈3,0 × 4,9 km) — dla nich reguła to dawne „w tej samej komórce" plus
+  // 200 m marginesu na granicy (ADR 0024 pkt 4).
+  const komorkaWpisu = (w) => (typeof w.geohash6 === 'string' && w.geohash6.length === 6 ? w.geohash6 : w.geohash5);
+  const wOkolicy = (w) => {
+    if (!mamPozycje) return w.geohash5 === geohash5;
+    const d = odlegloscDoKomorkiM(komorkaWpisu(w), lat, lon);
+    return d !== null && d <= TOLERANCJA_OKOLICY_M;
+  };
   const mojWlasny = String(tematWlasny ?? '').trim().toLowerCase();
   const tenSamWlasny = (w) => {
     if (!w.tematy.map(kanonicznyTemat).includes('wlasny')) return true;
     return mojWlasny !== '' && String(w.tematWlasny ?? '').trim().toLowerCase() === mojWlasny;
   };
   return lista
-    .filter((w) => w.geohash5 === geohash5 && w.promienM <= promienM
+    .filter((w) => wOkolicy(w) && w.promienM <= promienM
       && w.liczbaStacji === liczbaStacji && w.pytaniaNaStacje === pytaniaNaStacje
       && w.wiek === wiek && w.tematy.map(kanonicznyTemat).every((temat) => szukany.has(temat))
       && tenSamWlasny(w))
@@ -282,6 +305,10 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
   return {
     miejsce: typeof miejsce === 'string' && miejsce ? miejsce : 'nazwa nieustalona',
     geohash5: geohash(lat, lon, 5),
+    // Dokładniejsza kotwica dopasowania (ADR 0024): ~1,2 × 0,6 km. Pole
+    // addytywne — stare pliki bez niego czytają się dalej (dopasowanie zgrubne).
+    // Wymiary na 52°N: geohash6 ≈ 0,75 × 0,61 km (0,46 km²); geohash5 ≈ 3,0 × 4,9 km.
+    geohash6: geohash(lat, lon, 6),
     promienM,
     tematy: [...tematy],
     wiek,

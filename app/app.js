@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-7';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-7';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-8';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-8';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -29,21 +29,21 @@ import {
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
-} from './protokol.js?v=m12-7';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-7';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-7';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-7';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-7';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-7';
+} from './protokol.js?v=m12-8';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-8';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-8';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-8';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-8';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-8';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-7';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-7';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-7';
+} from './zestawy.js?v=m12-8';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-8';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-8';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -63,11 +63,11 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-7';
-import { utworzMape } from './mapa.js?v=m12-7';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-7';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-7';
-import { adresMostu, stanMostu } from './most.js?v=m12-7';
+} from './sieci.js?v=m12-8';
+import { utworzMape } from './mapa.js?v=m12-8';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-8';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-8';
+import { adresMostu, stanMostu } from './most.js?v=m12-8';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1326,6 +1326,10 @@ function odswiezPropozycjeZestawow() {
   karta.hidden = false;
   const kryteria = {
     geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5),
+    // Pełna pozycja: dopasowanie liczy odległość od komórki paczki z tolerancją
+    // (ADR 0024), więc kilka metrów różnicy w starcie nie gubi propozycji.
+    lat: STAN.pozycja.lat,
+    lon: STAN.pozycja.lon,
     promienM: STAN.konfig.promienM,
     liczbaStacji: STAN.konfig.liczbaStacji,
     pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
@@ -1364,8 +1368,11 @@ function odswiezPropozycjeZestawow() {
   const timer = setTimeout(() => kontroler?.abort(), 6000);
   f(url, kontroler ? { signal: kontroler.signal } : undefined)
     .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
-    .then((tekst) => dopasujMetaIndeksu(walidujIndeksSurowy(tekst).indeks, kryteria))
-    .then((dopasowane) => {
+    .then((tekst) => {
+      const indeks = walidujIndeksSurowy(tekst).indeks;
+      return { indeks, dopasowane: dopasujMetaIndeksu(indeks, kryteria) };
+    })
+    .then(({ indeks, dopasowane }) => {
       for (const meta of dopasowane) {
         lista.append(wierszZestawu(
           `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
@@ -1373,9 +1380,19 @@ function odswiezPropozycjeZestawow() {
           () => grajZZestawemZRepo(meta, url),
         ));
       }
-      $('zestawy-status').textContent = dopasowane.length
-        ? 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.'
-        : 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.';
+      // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
+      // które nie pasują do setupu, to dwie różne sytuacje — i tylko drugą da się
+      // naprawić zmianą ustawień.
+      if (dopasowane.length) {
+        $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
+      } else if (indeks.length) {
+        $('zestawy-status').textContent = 'Repozytorium ma paczki (w indeksie: ' + indeks.length
+          + '), ale żadna nie pasuje do tego setupu: ' + kryteria.liczbaStacji + ' stacji × ' + kryteria.pytaniaNaStacje
+          + ' pytań, wiek ' + kryteria.wiek + ', promień ' + kryteria.promienM + ' m, tematy: ' + kryteria.tematy.join(', ')
+          + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.';
+      } else {
+        $('zestawy-status').textContent = 'Repozytorium jest puste — nowe pytania przygotuje model.';
+      }
     })
     .catch(() => {
       $('zestawy-status').textContent = lokalne.length
@@ -2765,6 +2782,7 @@ function odswiezZrodlaMulti() {
   if (STAN.multiRepoUrl && STAN.pozycja) {
     const kryteria = {
       geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5),
+      lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, // tolerancja okolicy (ADR 0024)
       promienM: STAN.konfig.promienM, liczbaStacji: STAN.konfig.liczbaStacji,
       pytaniaNaStacje: STAN.konfig.pytaniaNaStacje, tematy: STAN.konfig.tematy, wiek: STAN.konfig.wiek,
     };
