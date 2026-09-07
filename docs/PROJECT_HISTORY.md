@@ -1111,7 +1111,18 @@ domyślny, info należy do sekcji prywatność.
   Teraz komunikat cytuje odpowiedź mostu („most Drive odmówił: nieznana akcja
   albo schemat ciała") i mówi, że wynik poleci po wklejeniu aktualnej wersji;
   kolejka zostaje w obu przypadkach, żeby wyniki doszły same.
-- Testy: **573, 0 fail** (nowy: „jawna odmowa mostu nie udaje awarii sieci");
+- **Literówka w skrypcie mostu zablokowała pobieranie paczek z repozytorium.**
+  Zgłoszone: „Graj z tą paczką" → „Paczka z repozytorium jest niekompletna (Plik
+  publiczny ma inny schemat niż „TO-zestaw/1")". W `paczkaPrzezId` zadeklarowane
+  było `wZaakceptowanych`, czytane `wZaakceptowane` → ReferenceError przy każdym
+  pobraniu, `doGet` odpowiadał `{blad:"… is not defined"}`, a aplikacja mówiła
+  „inny schemat". Paczka na Drive była poprawna. Naprawa: jedna litera w `.gs`
+  (md5 `7d8cb9f2…`) + nowy `test/most-paczka.test.js`, który WYKONUJE skrypt na
+  atrapie Drive (przyjęcie → akceptacja → indeks → pobranie → walidacja w
+  aplikacji) i przegląda wszystkie akcje pod kątem `is not defined`; aplikacja
+  cytuje teraz `blad` mostu (kod Z11) zamiast zasłaniać go „innym schematem".
+  LESSONS L33.
+- Testy: **576, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu);
   kontrakt pinuje `sumaPytanWpisu`, brak `id="multi-zgoda"` i punkt „Gra na
   wielu telefonach" w prywatności.
 

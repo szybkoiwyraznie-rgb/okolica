@@ -319,3 +319,20 @@ wyników jest w `.then()` — starsza odpowiedź nie wie, że jest starsza.
 (`POKOLENIE_PROPOZYCJI`): `const pokolenie = ++LICZNIK` przed żądaniem i
 `if (pokolenie !== LICZNIK) return` przed dopisaniem ORAZ w `.catch()`
 (komunikat błędu też należy do konkretnego pokolenia).
+
+## L33 — skrypt `.gs` bez testu wykonującego jego ścieżki chowa literówki
+
+**Objaw:** „Graj z tą paczką" → „Paczka z repozytorium jest niekompletna (Plik
+publiczny ma inny schemat niż „TO-zestaw/1”)" — a plik na Drive był poprawny.
+**Przyczyna:** w `paczkaPrzezId` zadeklarowane było `wZaakceptowanych`, czytane
+`wZaakceptowane` → `ReferenceError` przy KAŻDYM pobraniu paczki; `doGet` łapie
+wyjątek i odpowiada `{blad:"wZaakceptowane is not defined"}`, a aplikacja widziała
+JSON bez `schemat` i mówiła „inny schemat" (Z07). Testy `.gs` wykonywały tylko
+wycięte funkcje (`premiaZaKolejnosc`, geohash), więc ścieżka paczki nie była
+uruchamiana nigdzie.
+**Reguła:** (1) każda ścieżka mostu, od której zależy aplikacja, ma test
+WYKONUJĄCY tekst `.gs` na atrapie Drive (`test/most-paczka.test.js`: przyjęcie →
+akceptacja → indeks → pobranie → walidacja po stronie aplikacji) plus przegląd
+akcji z asercją „brak `is not defined` w odpowiedzi"; (2) aplikacja NIE chowa
+odpowiedzi mostu — `{blad:…}` jest cytowane w komunikacie (kod Z11), bo „inny
+schemat" brzmi jak uszkodzony plik i wysyła na poszukiwania nie tam, gdzie wina.

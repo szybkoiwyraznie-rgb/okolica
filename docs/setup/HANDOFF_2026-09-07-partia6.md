@@ -18,8 +18,8 @@
 | 7 | Błąd: setup 5 stacji, ekran stacji pokazał 4, ekran pytań `[WE06] … (4) nie zgadza się z konfiguracją (5)` | Sieć słusznie dała 4 (S12), ale setup zostawał przy 5 — teraz setup idzie za wyborem, promień liczy się od nowa, a ekran mówi dlaczego i jak zwiększyć promień (§5) | (commit 3) |
 | — | Dokumenty + cache-bust (runda 2) | ADR 0019 dopisek, ADR 0024 uzupełnienie, PROTOKOL §9, instrukcja, PROJECT_HISTORY, `?v=m12-16` | (commit 4) |
 
-**Brama na koniec partii:** `npm run brama` = **573 testów, 0 fail** + sync
-szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-17` (43 miejsca
+**Brama na koniec partii:** `npm run brama` = **576 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-18` (43 miejsca
 + `WERSJA_SW`).
 
 ## 2. Co wisi
@@ -36,6 +36,7 @@ szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-17` (43 miejsca
    | `2b46aca` B19 | 798 | `924671bf` | kotwica geohash6 dla starych paczek | `function geohashPunkt`, `function kotwicaZestawu` |
    | `cc50f14` premia | 842 | `d74367b0` | premia za kolejność (pierwszy G−1, ostatni 0) | `function premiaZaKolejnosc` |
    | `72fb2a3` gra-hotseat | 963 | `01e1d9bd` | akcja `gra-hotseat` (wynik z jednego telefonu) | `case 'gra-hotseat'`, `function przyjmijGreHotseat` |
+   | poprawka literówki (§9) | 963 | `7d8cb9f2` | `paczkaPrzezId` przestaje rzucać ReferenceError | `const wZaakceptowane =` w `paczkaPrzezId` |
 
    Czyli mając wersję geohash (798 linii), brakuje **premii i `gra-hotseat`**
    (+167 linii). Objaw bez `gra-hotseat`: most odpowiada
@@ -134,4 +135,34 @@ aktualnego skryptu wyniki same dojdą):
 
 Test: „hot-seat: jawna odmowa mostu nie udaje awarii sieci — komunikat nazywa
 powód" (`test/aplikacja.test.js`) — bez poprawki pada na pierwszej asercji.
-Brama: **573 testy, 0 fail**; cache-bust `?v=m12-17` + `WERSJA_SW`.
+Brama: **576 testów, 0 fail**; cache-bust `?v=m12-18` + `WERSJA_SW`.
+
+## 9. Zgłoszony błąd: „Graj z tą paczką" → „Plik publiczny ma inny schemat niż TO-zestaw/1"
+
+**Objaw:** na ekranie 2 pasująca paczka z repozytorium, po kliknięciu stopka mówi
+„Paczka z repozytorium jest niekompletna (Plik publiczny ma inny schemat niż
+„TO-zestaw/1”.) — gramy zwykłą ścieżką."
+
+**Przyczyna (literówka w skrypcie mostu, nie w paczce):**
+
+```js
+const wZaakceptowanych = rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
+if (!wZaakceptowane) return { blad: 'ta paczka nie jest zaakceptowana' };  // ← czyta inną nazwę
+```
+
+`ReferenceError` przy każdym pobraniu paczki; `doGet` łapie wyjątek i odpowiada
+`{blad:"wZaakceptowane is not defined"}`, a aplikacja — widząc JSON bez `schemat`
+— mówiła „inny schemat" (Z07). Paczka na Drive była w porządku.
+
+**Naprawa:** jedna litera w `.gs` (`const wZaakceptowane =`), czyli **jedna linia
+do poprawienia we wklejonym skrypcie**; plik ma teraz 963 linie i md5
+`7d8cb9f2c9ce051d89621c0db5725cd2`.
+
+**Dwie rzeczy, żeby to nie wróciło:**
+- `test/most-paczka.test.js` — WYKONUJE tekst `.gs` na atrapie Drive i przechodzi
+  całą drogę: przyjęcie → akceptacja → indeks → pobranie → walidacja po stronie
+  aplikacji (plus przegląd wszystkich akcji z asercją „brak `is not defined`").
+  Bez naprawy pada; wcześniej ścieżka paczki nie była wykonywana w żadnym teście.
+- Aplikacja nie chowa już odpowiedzi mostu: `{blad:…}` jest cytowane wprost
+  (nowy kod **Z11**: „Most Drive nie wydał paczki: <powód>"), więc następna taka
+  awaria pokaże prawdziwy powód na ekranie. LESSONS L33.

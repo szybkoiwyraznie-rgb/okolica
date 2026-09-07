@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-17';
-import { kanonicznyTemat } from './konfig.js?v=m12-17';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-17';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-17';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-18';
+import { kanonicznyTemat } from './konfig.js?v=m12-18';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-18';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-18';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -44,6 +44,7 @@ export const KODY_ZESTAWOW = {
   Z08: 'Plik publiczny nie ma jawnych stacji ani meta z licencją i przeglądem źródeł (ADR 0017 pkt 1/4).',
   Z09: 'Indeks repozytorium ma inny schemat niż oczekiwany — brak propozycji paczek.',
   Z10: 'Wpis indeksu jest niekompletny (meta bez geohash5/licencji) — pominięty.',
+  Z11: 'Most Drive nie wydał paczki (powód w komunikacie — np. paczka niezaakceptowana albo błąd skryptu).',
 };
 
 function usterka(kod) {
@@ -288,6 +289,12 @@ export function walidujZestawPublicznySurowy(tekst) {
   }
   const usterki = [];
   if (!surowy || typeof surowy !== 'object' || surowy.schemat !== SCHEMAT_ZESTAWU) {
+    // Most odpowiada `{blad: …}` zamiast pliku — albo paczka nie jest
+    // zaakceptowana, albo skrypt w Apps Script się wysypał (np. ReferenceError
+    // złapany przez doGet). Gracz ma zobaczyć PRAWDZIWY powód, a nie „inny
+    // schemat", które brzmi jak uszkodzony plik (Z07).
+    const bladMostu = surowy && typeof surowy.blad === 'string' ? surowy.blad.trim() : '';
+    if (bladMostu) return { zestaw: null, usterki: [{ kod: 'Z11', komunikat: `Most Drive nie wydał paczki: ${bladMostu}` }] };
     return { zestaw: null, usterki: [usterka('Z07')] };
   }
   const meta = surowy.meta;

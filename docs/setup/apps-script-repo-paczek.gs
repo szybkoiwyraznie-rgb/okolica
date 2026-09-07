@@ -338,7 +338,7 @@ function plikPrzezId(id) {
 function paczkaPrzezId(id) {
   const plik = plikPrzezId(id);
   const rodzice = plik.getParents();
-  const wZaakceptowanych = rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
+  const wZaakceptowane = rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
   if (!wZaakceptowane) return { blad: 'ta paczka nie jest zaakceptowana' };
   return JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
 }
