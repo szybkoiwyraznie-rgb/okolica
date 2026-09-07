@@ -816,3 +816,62 @@ dekoder w walidatorze, PROTOKOL §3.4/§7 (szablon **PYT/1.0.2**).
 Poprawki ADR: 0004 pkt 5 + aneks, 0009 pkt 2–5 + aneks, 0013 pkt 3,
 0015 pkt 2/4/6; rejestr + PROJECT_HISTORY. Budżet: nagrobek 0014 finansuje
 0022/0023.
+
+## 2026-09-07 — sesja audytowa (gałąź `arena/01a07c4f-okolica`, PR #4)
+
+**Zlecenie właściciela:** „kontynuujemy projekt". Zaległości kodowych brak:
+wszystkie otwarte kamienie (M3–M8, M10–M12) mają w `ROADMAP` status „kod
+gotowy, czeka kryterium właściciela" (testy terenowe / włączenie Pages — poza
+zasięgiem agenta), a `BACKLOG` nie upoważnia do wzięcia tematu (nagłówek pliku).
+Sesja zaczęła się więc od obowiązkowego audytu poprzedniego PR (`AGENTS.md` §2
+pkt 2) i od naprawy tego, co audyt wykazał.
+
+**Stan zastany:** `main` = `f06ee55` (PR #3 scalony), CI na `main` zielone
+(run `34134119244`), brama `npm test` **521/521**, budżet lektury
+**39988/40000** (rezerwa 12 tok). Klon sesji był płytki (1 commit) — audyt
+wymagał `git fetch origin main --depth=50` (`ENVIRONMENT` §3).
+
+**Audyt PR #3 (`git diff d04a18a..f06ee55`, 74 pliki, +3007/−2765):**
+
+Poprawne i spójne z ADR/protokołem:
+
+- **rev2**: przesunięcie `+17` istnieje jako JEDNA stała
+  (`PRZESUNIECIE_KODU_REV2`, `app/protokol.js:365`) użyta w dekodowaniu
+  (l. 377) i kodowaniu (l. 385) — brak rozjazdu literałów; nieodczytywalny kod
+  staje się znacznikiem `~kod:…` i daje E06 z instrukcją.
+- **ADR 0022/0023**: `ktoOdpowiada()` zwraca jednego gracza z kolejki
+  (`app/rozgrywka.js:190`), a `wspolpraca`/`WSPOLPRACA`, `miaraSprawiedliwosci`,
+  tempo, medal i pola czasowe zniknęły z kodu (grep po `app/`, `index.html`
+  i `test/` — zero trafień).
+- **LESSONS L29**: cache-bust jednolity — `?v=m12-5` w 42 miejscach, zero
+  innej wersji, `WERSJA_SW = 'm12-5'` w `sw.js`.
+- **ADR 0020**: `DOMYSLNY_URL_MOSTU` jest wypełniony żywym adresem `/exec`,
+  pola wpisywania adresu nie istnieją w `index.html`.
+- Fałszywy alarm wyjaśniony (nie usterka): `p.poprawna.slice(5)` w komunikacie
+  E06 jest strzeżone `typeof p.poprawna === 'string' && startsWith('~kod:')`,
+  więc nie ma `TypeError` na liczbie.
+
+Rozjazdy dokumentacja ↔ kod znalezione w audycie (naprawione w tej sesji):
+
+1. **Zgoda na wysyłkę Drive**: checkbox `#zgoda-drive` został usunięty z ekranu
+   wklejania (decyzja właściciela 2026-09-07; `test/kontrakt.test.js:596`
+   pinuje jego brak), ale `README.md` i `docs/ASSETS.md` §7 wciąż opisywały go
+   jako „domyślnie zaznaczony, można odhaczyć", a ADR 0016 (aneks 2026-09-06)
+   podawał jego dosłowny HTML. Dokumenty mówiły więc o mechanizmie, którego
+   w kodzie nie ma — w aplikacji prywatnej wysyłka jest domyślna i cicha.
+2. **Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"**: opisany w `README.md`
+   jako droga ręcznego wniesienia paczki, ale przycisk `przycisk-eksport-zestawu`
+   i cały eksport zniknęły (kontrakt pinuje brak; zero trafień w `index.html`).
+3. **Bramka nazwy miejsca**: `README.md` mówił, że pobieranie nazwy miejsca jest
+   „bramowane ustawieniem", ale przełącznik `setup-geokodacja` usunięto
+   w Partii 2 — nazwa jest pobierana zawsze (ADR 0013 pkt 3 po poprawce);
+   została tylko zgoda na warstwę zapasową Nominatim (`geokodacja-zapasowa`).
+4. **Podgląd i edycja paczki**: ADR 0006 pkt 8 obiecuje organizatorowi podgląd
+   „tylko dla organizatora" i edycję zapisującą `paczka.modyfikacje[]`, a oba
+   zniknęły z ekranu decyzją 2026-09-07 (kontrakt pinuje brak
+   `podglad-organizatora` i `podglad-pytania`). Funkcja
+   `zastosujEdycjePaczki()` została w kodzie bez ŻADNEGO wywołania i bez testu
+   — martwy eksport po usuniętej ścieżce UI.
+5. **`SZABLON_WERSJA`** (`PYT/1.0.5`) nie ma żadnego konsumenta ani testu
+   (`grep` po `app/`, `test/`, `tools/`, `index.html` — tylko deklaracja),
+   więc `PROTOKOL` §7 wymaga podbijania łatki w stałej, której nikt nie czyta.
