@@ -87,11 +87,12 @@ przemyślenia ADR 0009 (jeden telefon) — pewnie jako osobny tryb „prowadząc
 Pełny przegląd: kontrast w słońcu, fokus, `aria-live`, obsługa czytników
 ekranu, alternatywy dla gestów. Zrobić po M7, gdy UI jest kompletny.
 
-## B14 — Narzędzie `tools/budzet-lektury.mjs`
+## B14 — Narzędzie `tools/budzet-lektury.mjs` ✅ ZROBIONE (2026-09-07)
 
 Liczy tokeny lektury startowej (`AGENTS.md` §0, próg 40 tys.) i pilnuje, żeby
-dokumentacja nie rozrosła się ponad budżet. Wzorzec istnieje w AME
-(`tools/budzet-lektury.mjs`).
+dokumentacja nie rozrosła się ponad budżet. Zrobione w sesji S1–S7:
+`tools/budzet-lektury.mjs` + `test/budzet-lektury.test.js` + `npm run budzet`;
+pierwsze użycie ścięło lekturę 49946 → 39667 tok (S5).
 
 ## B15 — Podkład wektorowy (OpenFreeMap) za cenę jednej zależności
 
@@ -139,3 +140,13 @@ przez właściciela (ADR 0018): to samo konto Drive obsłuży też parowanie gie
 wieloosobowych na wielu urządzeniach (M11) oraz profil/statystyki/score
 gracza (M12). Repo paczek wdrażane w M9b; wdrożenie mostu przez właściciela
 odroczone do końca kodowania, instrukcja finalna — w czacie.
+
+## B18 — Mechanizm wzrostu lektury startowej (limit 40k vs rosnący rejestr)
+
+Problem strukturalny po S5 (2026-09-07): każdy nowy ADR i każda lekcja
+POWIĘKSZAJĄ lekturę startową (§0), a limit 40k jest stały. Kondensacja dała
+rezerwę ~330 tok ≈ 1–2 sesje — potem znowu przekroczenie. Opcje: (a) archiwum
+ADR-ów ze streszczeniami w rejestrze (lektura czyta streszczenia, pełne teksty
+punktowo), (b) rosnący próg (np. +1k za kamień milowy — decyzja właściciela),
+(c) podział LESSONS na „aktywne" i „archiwum". Wymaga decyzji właściciela albo
+nowego ADR — nie ciąć decyzji pod limit po cichu.

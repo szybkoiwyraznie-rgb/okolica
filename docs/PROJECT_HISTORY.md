@@ -638,3 +638,31 @@ jawny; wystarczą `REVIEW_SECRET`, kod gry, `organizatorId`, bramka tur);
 właściciela i podanie adresu `/exec` w czacie → wpis do `DOMYSLNY_URL_MOSTU`
 jednym commitem; (2) scalenie PR #2 do `main` (Pages serwuje `main`) — dopiero
 wtedy testy terenowe na telefonach; (3) test dwóch telefonów (WORKFLOW §4.4).
+
+## 2026-09-07 — sesja S1–S7 (kontynuacja), gałąź `arena/01a07b16-okolica`, PR #3
+
+**Zlecenie:** brak zlecenia właściciela; po audycie PR #2 tryb najwyższy
+nieukończony kamień → B14 (budżet lektury) + zaległości dokumentacyjne.
+Plan: `docs/plans/2026-09-07-kontynuacja-audyt-i-budzet-lektury.md`.
+
+**Audyt PR #2 (S2):** M0–M12 scalone w `d04a18a`; usterki po-audytowe naprawione
+w S2/S3: gołe `fetch(` → `fetchPrzegladarki()` (L18, 13 miejsc), strażnik
+nasłuchów setupu (L14), `dystanseOdcinkowM` (ADR 0014/1), `kluczCacheSieci`
+z trybem, dystans sieciowy vs prosta w UI, komunikat K18 (ADR 0007/4),
+`tUrzadzenia` w PROTOKOL §9.2. Brama 511/511.
+
+**S4/S5 (B14 ✅):** `tools/budzet-lektury.mjs` + test + `npm run budzet`;
+kondensacja lektury **49946 → 39667 tok** (limit 40k): ROADMAP do tabel,
+LESSONS do trójczłonu bez dat, AGENTS/ENVIRONMENT/redakcja, konteksty ADR-ów
+do esencji (decyzje nietknięte), rejestr ADR → odsyłacz do AGENTS §5.
+PROTOKOL i treść decyzji: nietknięte (kontrakt).
+
+**S6 (porządki):** D19 kontrakt zakazu gołego `fetch(` (54/54); D12 E16
+dokumentuje wiek/tematy/jezyk; D18 koniec fałszywych `AME-main.zip` (README,
+ENVIRONMENT §3, AGENTS §0/§4, ADR 0002). D8 z planu bez definicji w repo —
+nieodtworzone, do wykreślenia albo doprecyzowania. BACKLOG B18: strukturalny
+problem wzrostu lektury (rezerwa ~330 tok ≈ 1–2 sesje).
+
+**Stan na koniec sesji:** brama **511/511**, kontrakt 54/54, budżet 39667/40000.
+Czekamy na: (1) adres `/exec` mostu w czacie → `DOMYSLNY_URL_MOSTU` + cache-bust;
+(2) scalenie PR #2 i #3 do `main`; (3) testy terenowe (WORKFLOW §4.4).
