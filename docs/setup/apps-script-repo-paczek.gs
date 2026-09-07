@@ -233,6 +233,79 @@ function doPost(e) {
   }
 }
 
+const ALFABET_GEOHASH = '0123456789bcdefghjkmnpqrstuvwxyz';
+
+/**
+ * Koder geohash — przepisany z `geohash()` w `app/geo.js` (B19, ADR 0024 pkt 4).
+ * Apps Script nie może importować modułów aplikacji, więc to kopia; zgodność
+ * obu implementacji pilnuje `test/most-indeks.test.js`, który wykonuje TEN tekst
+ * i porównuje wyniki z `app/geo.js` na siatce współrzędnych.
+ */
+function geohashPunkt(lat, lon, precyzja) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return '';
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return '';
+  let przedzialLat = [-90, 90];
+  let przedzialLon = [-180, 180];
+  let wynik = '';
+  let bit = 0;
+  let znak = 0;
+  let nawet = true; // nawet = dzielimy długość, nieparzyste = szerokość
+  while (wynik.length < precyzja) {
+    if (nawet) {
+      const srodek = (przedzialLon[0] + przedzialLon[1]) / 2;
+      if (lon >= srodek) { znak = znak * 2 + 1; przedzialLon = [srodek, przedzialLon[1]]; }
+      else { znak = znak * 2; przedzialLon = [przedzialLon[0], srodek]; }
+    } else {
+      const srodek = (przedzialLat[0] + przedzialLat[1]) / 2;
+      if (lat >= srodek) { znak = znak * 2 + 1; przedzialLat = [srodek, przedzialLat[1]]; }
+      else { znak = znak * 2; przedzialLat = [przedzialLat[0], srodek]; }
+    }
+    nawet = !nawet;
+    bit += 1;
+    if (bit === 5) {
+      wynik += ALFABET_GEOHASH.charAt(znak);
+      bit = 0;
+      znak = 0;
+    }
+  }
+  return wynik;
+}
+
+/**
+ * Kotwica dopasowania okolicy wpisu indeksu (B19).
+ *
+ * Nowe pliki niosą `meta.geohash6` obliczony z pozycji startowej — to kotwica
+ * dokładna. Pliki opublikowane przed ADR 0024 mają tylko `geohash5`
+ * (≈3,0 × 4,9 km), więc paczka zakotwiczona 3 km dalej też się pokazywała.
+ *
+ * Dla starych plików liczymy geohash6 ze ŚRODKA CIĘŻKOŚCI stacji (nie z pierwszej
+ * stacji: start gry jest w środku obszaru stacji, a pierwsza stacja bywa na jego
+ * skraju). Punkt startowy gry jest nieznany, ale każda stacja leży w promieniu
+ * `meta.promienM` od niego — dlatego wpis dostaje `geohash6Szacowany: true`,
+ * a klient poszerza tolerancję o `promienM`. Efekt: ten sam start dopasuje się
+ * zawsze (brak regresji), a nadmiarowe dopasowanie maleje z ~4 km do ~promienM.
+ */
+function kotwicaZestawu(zestaw) {
+  const meta = zestaw.meta || {};
+  if (typeof meta.geohash6 === 'string' && meta.geohash6.length === 6) {
+    return { geohash6: meta.geohash6, szacowany: false };
+  }
+  const stacje = (zestaw.stacje || []).filter((s) => (
+    s && Number.isFinite(s.lat) && Number.isFinite(s.lon)
+  ));
+  if (!stacje.length) return null;
+  let sumaLat = 0;
+  let sumaLon = 0;
+  for (let i = 0; i < stacje.length; i += 1) {
+    sumaLat += stacje[i].lat;
+    sumaLon += stacje[i].lon;
+  }
+  return {
+    geohash6: geohashPunkt(sumaLat / stacje.length, sumaLon / stacje.length, 6),
+    szacowany: true,
+  };
+}
+
 /** Indeks WYŁĄCZNIE z katalogu zaakceptowanych: same meta + id pliku. */
 function budujIndeks() {
   const wpisy = [];
@@ -242,10 +315,14 @@ function budujIndeks() {
     try {
       const zestaw = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
       if (zestaw.schemat !== SCHEMAT_ZESTAWU || !czyMetaOk(zestaw.meta)) continue;
+      const kotwica = kotwicaZestawu(zestaw);
       wpisy.push(Object.assign({}, zestaw.meta, {
         id: plik.getId(),
         skrot: zestaw.kontener && zestaw.kontener.skrot,
         stacji: zestaw.stacje.length,
+        // B19: pliki sprzed ADR 0024 dostają kotwicę geohash6 ze stacji.
+        geohash6: kotwica ? kotwica.geohash6 : zestaw.meta.geohash6,
+        geohash6Szacowany: kotwica ? kotwica.szacowany : false,
       }));
     } catch (e) { /* uszkodzony plik nie psuje indeksu */ }
   }

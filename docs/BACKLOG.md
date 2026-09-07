@@ -153,21 +153,26 @@ przestaje być obowiązkowa przy każdym dopisku, ale zasada „reguła trafia t
 gdzie jej miejsce" (`AGENTS.md` §5) zostaje; archiwizacja ADR-ów (wariant a)
 i podział LESSONS (wariant c) wracają, gdy zbliżymy się do nowego progu.
 
-## B19 — Geohash6 dla starych paczek: dopisanie w moście Drive
+## B19 — Geohash6 dla starych paczek: dopisanie w moście Drive ✅ ZROBIONE (2026-09-07)
 
 Po ADR 0024 dopasowanie okolicy liczy odległość od komórki geohash paczki
 z tolerancją 200 m. Nowe paczki niosą `geohash6` (≈0,75 × 0,61 km), ale pliki
 opublikowane wcześniej mają tylko `geohash5` (≈3,0 × 4,9 km) — dla nich reguła
-zostaje zgrubna („gracz w tej samej komórce" plus 200 m), więc paczka
-zakotwiczona 3 km dalej też się pokaże.
+była zgrubna, więc paczka zakotwiczona 3 km dalej też się pokazywała.
 
-Rozwiązanie bez migracji plików: `budujIndeks` w
-`docs/setup/apps-script-repo-paczek.gs` czyta CAŁY plik paczki (ma
-`zestaw.stacje`), więc może dopisać `geohash6` z pierwszej stacji, gdy `meta`
-go nie ma. Prywatność bez zmian (ADR 0024 pkt 5: dokładne stacje i tak są
-publiczne przez `?akcja=paczka&id=`), klient już woli `geohash6`. Koszt:
-~25 linii kodera geohash w Apps Script (bez testów w tym repozytorium — skrypt
-działa poza nim) i jednorazowe wklejenie nowej wersji skryptu przez właściciela.
+**Wdrożone (ADR 0024 aneks, decyzje 6–8):** `budujIndeks` liczy dla wpisu bez
+`meta.geohash6` kotwicę ze **środka ciężkości stacji** (nie z pierwszej stacji —
+start leży w środku obszaru, pierwsza stacja bywa na skraju) i oznacza wpis
+`geohash6Szacowany: true`; klient poszerza wtedy tolerancję o `promienM` paczki,
+co daje dowód braku regresji (start w promieniu paczki od środka ciężkości
+zawsze się dopasuje) i shrink nadmiarowego dopasowania z ~4 km do ~`promienM`.
+Koder geohash w Apps Script (`geohashPunkt`) jest **testowany w tym
+repozytorium**: `test/most-indeks.test.js` wykonuje wycięty tekst skryptu
+i porównuje z `app/geo.js` na siatce >500 punktów.
+
+**Zostało u właściciela:** wkleić nową wersję `apps-script-repo-paczek.gs`
+w Apps Script i wdrożyć — bez tego stare paczki zostają przy dopasowaniu
+zgrubnym (działają, tylko szerzej).
 
 ## B20 — Gra sieciowa bez tur: wolna kolejność stacji i premia za kolejność (ADR 0027 część B)
 

@@ -112,7 +112,13 @@ Skrót:
 - Aktualizacja do PIN-profili (Partia 1): wklej nową treść
   `docs/setup/apps-script-repo-paczek.gs`, uruchom raz funkcję `setup`
   (zakłada katalog `okolica-profile`), potem Wdróż → Nowa wersja. Test:
-  setup → To ja → zapisz nowy → na Drive w `okolica-profile` leży plik.
+  ekran 1 → wpisz nowe imię i PIN → „Dalej" → w `okolica-profile` na Drive
+  leży plik `profil-….json`.
+- Aktualizacja do kotwicy geohash6 (B19, ADR 0024 aneks): wklej nową treść
+  skryptu i Wdróż → Nowa wersja (funkcji `setup` uruchamiać nie trzeba). Test:
+  otwórz `<adres>/exec?akcja=indeks` — każdy wpis ma `geohash6` (6 znaków),
+  a paczki sprzed ADR 0024 także `geohash6Szacowany: true`. Bez tego kroku
+  stare paczki dalej dopasowują się zgrubnie (geohash5 ≈ 3 × 5 km).
 - Link przeglądu wycieknie? Zmień `REVIEW_SECRET` we właściwościach skryptu
   (stare linki przestaną działać).
 - Paczka omyłkowo zaakceptowana: na Drive przeciągnij plik z

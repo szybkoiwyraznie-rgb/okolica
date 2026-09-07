@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-11';
-import { kanonicznyTemat } from './konfig.js?v=m12-11';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-11';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-11';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-12';
+import { kanonicznyTemat } from './konfig.js?v=m12-12';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-12';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-12';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -194,10 +194,20 @@ export function dopasujZestawy(rejestr, { geohash5, lat, lon, promienM, liczbaSt
   // (≈3,0 × 4,9 km) — dla nich reguła to dawne „w tej samej komórce" plus
   // 200 m marginesu na granicy (ADR 0024 pkt 4).
   const komorkaWpisu = (w) => (typeof w.geohash6 === 'string' && w.geohash6.length === 6 ? w.geohash6 : w.geohash5);
+  // Kotwica szacowana (B19): most dopisał geohash6 starej paczce ze środka
+  // ciężkości jej stacji, bo plik nie pamięta pozycji startowej. Start leży
+  // w promieniu `promienM` od KAŻDEJ stacji, więc poszerzenie tolerancji o ten
+  // promień gwarantuje, że ten sam start dalej się dopasuje (brak regresji),
+  // a nadmiarowe dopasowanie maleje z ~4 km (geohash5) do ~promienM paczki.
+  const tolerancjaWpisu = (w) => (
+    w.geohash6Szacowany === true && Number.isFinite(w.promienM) && w.promienM > 0
+      ? TOLERANCJA_OKOLICY_M + w.promienM
+      : TOLERANCJA_OKOLICY_M
+  );
   const wOkolicy = (w) => {
     if (!mamPozycje) return w.geohash5 === geohash5;
     const d = odlegloscDoKomorkiM(komorkaWpisu(w), lat, lon);
-    return d !== null && d <= TOLERANCJA_OKOLICY_M;
+    return d !== null && d <= tolerancjaWpisu(w);
   };
   const mojWlasny = String(tematWlasny ?? '').trim().toLowerCase();
   const tenSamWlasny = (w) => {
