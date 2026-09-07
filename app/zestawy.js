@@ -17,6 +17,7 @@
  */
 
 import { geohash } from './geo.js?v=m12-2';
+import { kanonicznyTemat } from './konfig.js?v=m12-2';
 import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-2';
 import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-2';
 
@@ -167,7 +168,7 @@ export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pyta
   wymaganie(Number.isInteger(pytaniaNaStacje) && pytaniaNaStacje > 0, 'dopasujZestawy: pytaniaNaStacje musi być dodatnią liczbą całkowitą');
   wymaganie(Array.isArray(tematy) && tematy.length > 0, 'dopasujZestawy: tematy muszą być niepustą listą');
   wymaganie(typeof wiek === 'string' && wiek.length > 0, 'dopasujZestawy: wiek musi być nazwą');
-  const szukany = zbiorTematow(tematy);
+  const szukany = zbiorTematow(tematy.map(kanonicznyTemat));
   // tolerujemy obie konwencje: surowa lista wpisów (walidacje surowe) i obiekt
   // rejestru `{ schemat, wpisy }` (zapis) — jedno wejście, zero niespodzianek
   const lista = Array.isArray(rejestr) ? rejestr : (rejestr?.wpisy ?? []);
@@ -178,7 +179,7 @@ export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pyta
   return lista
     .filter((w) => w.geohash5 === geohash5 && w.promienM <= promienM
       && w.liczbaStacji === liczbaStacji && w.pytaniaNaStacje === pytaniaNaStacje
-      && w.wiek === wiek && w.tematy.every((temat) => szukany.has(temat)))
+      && w.wiek === wiek && w.tematy.map(kanonicznyTemat).every((temat) => szukany.has(temat)))
     .sort((a, b) => String(b.data).localeCompare(String(a.data)));
 }
 

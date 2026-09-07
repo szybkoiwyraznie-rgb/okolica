@@ -46,7 +46,7 @@ test('TEMATY: kanon 10 tematów, klucze zgodne z formatem (małe litery, myślni
     assert.match(klucz, /^[a-z0-9-]+$/, `klucz tematu "${klucz}"`);
     assert.ok(temat.etykieta && temat.opis, `temat ${klucz} musi mieć etykietę i opis do promptu`);
   }
-  for (const oczekiwany of ['historia', 'przyroda', 'architektura', 'kultura-i-sztuka', 'legendy-i-folklor']) {
+  for (const oczekiwany of ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia']) {
     assert.ok(TEMATY[oczekiwany], `brak tematu ${oczekiwany}`);
   }
 });
@@ -62,18 +62,19 @@ test('PODKLADY: klucze zgodne z docs/ASSETS.md, brak dostawców z kluczem API', 
   assert.ok(!Object.keys(PODKLADY).some((k) => /carto|voyager|positron/i.test(k)));
 });
 
-test('domyslnaKonfiguracja: 2 graczy, 5 stacji, dorośli, pieszo, zgodnie z briefem', () => {
+test('domyslnaKonfiguracja: 1 gracz, 5 stacji, dorośli, pieszo, zgodnie z briefem', () => {
   const k = domyslnaKonfiguracja();
   assert.equal(k.tryb, 'piesza');
   assert.equal(k.promienM, 1000);
-  assert.equal(k.liczbaGraczy, 2);
+  assert.equal(k.liczbaGraczy, 1);
   assert.equal(k.liczbaStacji, 5);
   assert.equal(k.pytaniaNaStacje, 1);
   assert.equal(k.wiek, 'dorosli');
   assert.equal(k.jezyk, 'polski');
   assert.equal(k.karaRecznaS, 60);
-  assert.deepEqual(k.imiona, ['Gracz 1', 'Gracz 2']);
+  assert.deepEqual(k.imiona, ['Gracz 1']);
   assert.equal(k.geokodacja, false, 'geokodacja domyślnie wyłączona (ADR 0013 pkt 3)');
+  assert.deepEqual(k.tematy, ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia'], 'domyślnie wszystkie tematy zaznaczone (decyzja z 2026-09-07)');
   assert.deepEqual(walidujSetup(k), []);
 
   const cztery = domyslnaKonfiguracja(4);
@@ -178,7 +179,7 @@ test('kanony są zamknięte: współpraca, języki i ograniczenia mają sens', (
 });
 
 test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', () => {
-  const d = domyslnaKonfiguracja(2);
+  const d = domyslnaKonfiguracja();
   assert.deepEqual(oczyscKonfiguracje(null), d);
   assert.deepEqual(oczyscKonfiguracje({}), d);
   assert.deepEqual(oczyscKonfiguracje('śmieci'), d);
@@ -199,6 +200,7 @@ test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', (
 
   // listy: tylko kanon; pusty wynik → domyślne tematy
   assert.deepEqual(oczyscKonfiguracje({ tematy: ['historia', 'kosmos'] }).tematy, ['historia']);
+  assert.deepEqual(oczyscKonfiguracje({ tematy: ['nauka-i-technika', 'historia', 'nauka'] }).tematy, ['nauka', 'historia'], 'aliasy mapowane na klucze kanoniczne z deduplikacją');
   assert.deepEqual(oczyscKonfiguracje({ tematy: ['kosmos'] }).tematy, d.tematy);
   assert.deepEqual(oczyscKonfiguracje({ liczbaGraczy: 3, imiona: ['Ada', '   '] }).imiona, ['Ada', 'Gracz 2', 'Gracz 3']);
   // tekst zamiast liczby: `Number("dużo")` = NaN, więc pole ma wrócić do domyślnej

@@ -107,35 +107,55 @@ export const TEMATY = {
     etykieta: 'Architektura',
     opis: 'budynki, style, autorzy projektów, detale, układ ulic i zabudowy',
   },
-  'kultura-i-sztuka': {
-    etykieta: 'Kultura i sztuka',
+  kultura: {
+    etykieta: 'Kultura',
     opis: 'instytucje kultury, pomniki sztuki, murale, festiwale, twórcy związani z miejscem',
   },
-  'legendy-i-folklor': {
-    etykieta: 'Legendy i folklor',
+  legendy: {
+    etykieta: 'Legendy',
     opis: 'podania miejskie, legendy, zwyczaje, przesądy, opowieści o miejscu',
   },
-  'ludzie-i-postacie': {
-    etykieta: 'Ludzie i postacie',
+  ludzie: {
+    etykieta: 'Ludzie',
     opis: 'mieszkańcy, patroni ulic, postaci historyczne związane z okolicą',
   },
-  'nauka-i-technika': {
-    etykieta: 'Nauka i technika',
+  nauka: {
+    etykieta: 'Nauka',
     opis: 'wynalazki, zakłady, infrastruktura, badania, obiekty inżynieryjne',
   },
-  'sport-i-rekreacja': {
-    etykieta: 'Sport i rekreacja',
+  sport: {
+    etykieta: 'Sport',
     opis: 'kluby, obiekty sportowe, trasy, wydarzenia sportowe, miejsca wypoczynku',
   },
-  'jedzenie-i-handel': {
-    etykieta: 'Jedzenie i handel',
+  jedzenie: {
+    etykieta: 'Jedzenie',
     opis: 'targi, lokale, rzemiosło, dawni i obecni kupcy, produkty lokalne',
   },
-  'geografia-i-woda': {
-    etykieta: 'Geografia i woda',
+  geografia: {
+    etykieta: 'Geografia',
     opis: 'rzeki, jeziora, wzgórza, granice administracyjne, nazwy geograficzne, mosty',
   },
 };
+
+/**
+ * Stare klucze kanonu (sprzed decyzji właściciela z 2026-09-07 o nazwach
+ * jednoczłonowych) → klucze kanoniczne. Paczki i konfiguracje zapisane
+ * starymi kluczami są przyjmowane i normalizowane, nie odrzucane.
+ */
+export const ALIASY_TEMATOW = {
+  'kultura-i-sztuka': 'kultura',
+  'legendy-i-folklor': 'legendy',
+  'ludzie-i-postacie': 'ludzie',
+  'nauka-i-technika': 'nauka',
+  'sport-i-rekreacja': 'sport',
+  'jedzenie-i-handel': 'jedzenie',
+  'geografia-i-woda': 'geografia',
+};
+
+/** Klucz kanoniczny tematu (aliasy historyczne mapowane na nowe klucze). */
+export function kanonicznyTemat(temat) {
+  return ALIASY_TEMATOW[temat] ?? temat;
+}
 
 /** Kto odpowiada na pytanie przy stacji (ADR 0009 pkt 4). */
 export const WSPOLPRACA = {
@@ -166,13 +186,13 @@ export const OGRANICZENIA = {
   dlugoscImienia: { min: 1, max: 20 },
 };
 
-/** Wartości domyślne ekranu setup (brief właściciela z 2026-09-05). */
+/** Wartości domyślne ekranu setup (brief właściciela z 2026-09-05; liczba graczy: decyzja z 2026-09-07 — hot-seat startuje od 1). */
 export const DOMYSLNE = {
   tryb: 'piesza',
-  liczbaGraczy: 2,
+  liczbaGraczy: 1,
   liczbaStacji: 5,
   pytaniaNaStacje: 1,
-  tematy: ['historia', 'przyroda', 'architektura'],
+  tematy: ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia'],
   wiek: 'dorosli',
   jezyk: 'polski',
   wspolpraca: 'zespol',
@@ -288,7 +308,7 @@ export function oczyscKonfiguracje(surowa) {
   }
 
   // listy i teksty
-  konfig.tematy = Array.isArray(zrodlo.tematy) ? zrodlo.tematy.filter((t) => Object.hasOwn(TEMATY, t)) : [];
+  konfig.tematy = Array.isArray(zrodlo.tematy) ? [...new Set(zrodlo.tematy.map(kanonicznyTemat))].filter((t) => Object.hasOwn(TEMATY, t)) : [];
   if (konfig.tematy.length === 0) konfig.tematy = [...domyslne.tematy];
   konfig.imiona = Array.isArray(zrodlo.imiona)
     ? zrodlo.imiona.slice(0, konfig.liczbaGraczy).map((imie, i) => (typeof imie === 'string' && imie.trim() ? imie.trim().slice(0, OGRANICZENIA.dlugoscImienia.max) : `Gracz ${i + 1}`))
@@ -369,7 +389,7 @@ export function walidujSetup(konfig) {
     const kod = String(konfig.kodGry).trim();
     const { min: minD, max: maxD } = OGRANICZENIA.dlugoscKoduGry;
     if (kod.length < minD || kod.length > maxD) {
-      dodaj('K18', 'kodGry', `Kod gry musi mieć od ${minD} do ${maxD} znaków (albo zostaw puste; pytania zawsze kryje obfuskacja kontenera, nie ten kod — ADR 0007 pkt 4).`);
+      dodaj('K18', 'kodGry', `Kod gry musi mieć od ${minD} do ${maxD} znaków (albo zostaw puste; pytań nie chroni kod, tylko ukrycie paczki).`);
     }
   }
 

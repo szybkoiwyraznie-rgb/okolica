@@ -763,7 +763,7 @@ async function aplikacjaZPrzyjetaPaczka() {
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
   }));
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?podglad=${Math.random().toString(36).slice(2)}`);
@@ -791,7 +791,7 @@ test('podgląd organizatora: przyjęta paczka pokazuje pytania, a odrzucona nie'
   const pamiecKonfig2 = new Map();
   pamiecKonfig2.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
   }));
   const dom2 = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig2 });
   await import(`../app/app.js?podglad2=${Math.random().toString(36).slice(2)}`);
@@ -1016,7 +1016,7 @@ async function graGotowaDoStartu() {
   const pamiec = new Map();
   pamiec.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?gra=${Math.random().toString(36).slice(2)}`);

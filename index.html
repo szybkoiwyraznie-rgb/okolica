@@ -29,7 +29,7 @@
   <header class="gora">
     <div class="tytul">
       <h1>Tajemnicza Okolica</h1>
-      <p id="podtytul">gra terenowa w miejscu, w którym stoisz</p>
+      <p id="podtytul">gra terenowa gdzie tylko chcesz</p>
     </div>
     <div class="akcje">
       <button id="przycisk-motyw" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny">☾ motyw</button>
@@ -77,13 +77,13 @@
           <span>Pseudonim (widzą go inni gracze)</span>
           <input id="multi-pseudonim" type="text" maxlength="24" autocomplete="nickname" spellcheck="false" placeholder="np. Marta">
         </label>
-        <label class="pole sprawdz"><input id="multi-zgoda" type="checkbox" checked> <span>Zgadzam się na wysyłanie pseudonimu i wyników gry na wspólne konto Google Drive. Współrzędne nigdy nie opuszczają telefonu (ADR 0019).</span></label>
+        <label class="pole sprawdz"><input id="multi-zgoda" type="checkbox" checked> <span>Zgadzam się na wysyłanie pseudonimu i wyników gry na wspólne konto Google Drive. Współrzędne nigdy nie opuszczają telefonu<span class="dopisek-roboczy"> (ADR 0019)</span>.</span></label>
         <div class="wiersz">
           <button id="przycisk-multi-zaloz" class="przycisk przycisk-glowny" type="button">🌐 Załóż grę</button>
           <button id="przycisk-multi-dolacz" class="przycisk" type="button">🔗 Dołącz do gry</button>
         </div>
         <p id="multi-most-stan" class="podpowiedz">Most Drive: sprawdzam stan w tej wersji aplikacji…</p>
-        <p class="podpowiedz">Adres mostu jest wpisany w tę wersję aplikacji (ADR 0020) — ten sam web app Apps Script obsługuje paczki, gry i rankingi (ADR 0016, 0018, 0019). Nie musisz nic konfigurować.</p>
+        <p class="podpowiedz">Adres mostu jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — ten sam web app Apps Script obsługuje paczki, gry i rankingi<span class="dopisek-roboczy"> (ADR 0016, 0018, 0019)</span>. Nie musisz nic konfigurować.</p>
       </div>
 
       <!-- M6/R6: wznowienie przerwanej gry — jawne, kasowanie dwustopniowe -->
@@ -158,10 +158,6 @@
           <span>Podkład mapy</span>
           <select id="setup-podklad"></select>
         </label>
-        <label class="pole">
-          <span>Kara za „jestem na miejscu" (s)</span>
-          <input id="setup-kara" type="number" min="0" max="600" step="15" inputmode="numeric">
-        </label>
       </div>
 
       <div class="pole">
@@ -170,7 +166,7 @@
           <input id="setup-kod" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="np. K7M2QP">
           <button id="przycisk-kod" class="przycisk" type="button" title="Zaproponuj losowy kod">🎲 zaproponuj</button>
         </div>
-        <p class="podpowiedz">Krótki identyfikator rozgrywki — trafia do eksportu paczki i do przyszłego repozytorium paczek (ADR 0010). Nie chroni pytań: przed podglądem ukrywa je obfuskacja bez klucza (ADR 0007).</p>
+        <p class="podpowiedz">Krótki identyfikator rozgrywki — trafia do eksportu paczki i do repozytorium paczek<span class="dopisek-roboczy"> (ADR 0010)</span>. Nie chroni pytań: przed podglądem ukrywa je obfuskacja bez klucza<span class="dopisek-roboczy"> (ADR 0007)</span>.</p>
       </div>
 
       <label class="pole sprawdz"><input id="setup-geokodacja" type="checkbox"> <span>Pobierz nazwę miejsca (dzielnica, miasto) — wysyła przybliżoną pozycję do Overpass</span></label>
@@ -186,7 +182,7 @@
     <!-- M11/P4: ekran gry wieloosobowej (załóż / dołącz / lobby) -->
     <section id="ekran-multi" class="ekran" hidden aria-labelledby="tytul-multi">
       <h2 id="tytul-multi">Gra na wielu urządzeniach</h2>
-      <p class="podpowiedz">Każdy gracz ma swój telefon. Na serwer jadą wyłącznie pseudonimy, zdarzenia gry i wyniki — współrzędne zostają na urządzeniach (ADR 0019 pkt 3).</p>
+      <p class="podpowiedz">Każdy gracz ma swój telefon. Na serwer jadą wyłącznie pseudonimy, zdarzenia gry i wyniki — współrzędne zostają na urządzeniach<span class="dopisek-roboczy"> (ADR 0019 pkt 3)</span>.</p>
       <p id="bledy-multi" class="bledy" role="alert" hidden></p>
 
       <div id="multi-panel-zaloz" class="karta" hidden>
@@ -288,7 +284,7 @@
         <ul id="zestawy-lista" class="lista-zestawow"></ul>
         <p id="most-stan-repo" class="podpowiedz">Most Drive: sprawdzam stan w tej wersji aplikacji…</p>
         <button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie</button>
-        <p class="podpowiedz">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji (ADR 0020) — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela (ADR 0017 pkt 6).</p>
+        <p class="podpowiedz">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela<span class="dopisek-roboczy"> (ADR 0017 pkt 6)</span>.</p>
       </div>
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">
@@ -324,7 +320,7 @@
         <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
         <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
       </div>
-      <p class="podpowiedz">Stacje są rozstawione w pierścieniu (ADR 0005 pkt 4). Punkty na sieci dróg, placów i szlaków — „nigdy w budynku ani na terenie prywatnym" — dojdą w kamieniu M4; patrz <code>docs/ROADMAP.md</code>.</p>
+      <p class="podpowiedz">Stacje stoją w pierścieniu albo na sieci dróg, placów i szlaków — nigdy w budynku ani na terenie prywatnym<span class="dopisek-roboczy"> (ADR 0005)</span>.</p>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wstecz-pozycja" class="przycisk" type="button">← pozycja</button>
         <button id="przycisk-dalej-prompt" class="przycisk przycisk-glowny" type="button">Dalej: pytania →</button>
@@ -391,7 +387,7 @@
     <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
     <section id="ekran-paczka" class="ekran" hidden aria-labelledby="tytul-paczka">
       <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
-      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny. Po sprawdzeniu aplikacja ukryje paczkę: tekst stanie się nieczytelny przy kopiowaniu, ale <strong>nie jest zaszyfrowany</strong> (obfuskacja bez klucza, ADR 0007). Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
+      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny. Po sprawdzeniu aplikacja ukryje paczkę: tekst stanie się nieczytelny przy kopiowaniu, ale <strong>nie jest zaszyfrowany</strong> (obfuskacja bez klucza<span class="dopisek-roboczy">, ADR 0007</span>). Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
       <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="10" placeholder="Wklej tutaj odpowiedź modelu (blok JSON)" aria-label="Odpowiedź modelu AI"></textarea>
       <label class="zgoda-wiersz"><input id="zgoda-drive" type="checkbox" checked><span>📤 Wyślij ten zestaw na Drive do przeglądu właściciela (repozytorium paczek pytań). Zgoda jest zaznaczona domyślnie — odhacz, jeśli zestaw ma zostać tylko na tym telefonie.</span></label>
       <div class="wiersz">
@@ -412,7 +408,7 @@
         <button id="przycisk-eksport-zestawu" class="przycisk" type="button" hidden>⬇ Paczka do repozytorium (TO-zestaw/1)</button>
         <button id="przycisk-start-gry" class="przycisk przycisk-glowny" type="button" hidden>▶ Zacznij grę</button>
         <div id="podglad-organizatora" class="podglad" hidden>
-          <p class="ostrzezenie"><strong>👁 Tylko dla organizatora</strong> — gracze nie powinni widzieć tych treści (ADR 0006 pkt 8). Każda ręczna poprawka zapisuje się w paczce jako „modyfikacje", a po ukryciu podgląd znika z ekranu.</p>
+          <p class="ostrzezenie"><strong>👁 Tylko dla organizatora</strong> — gracze nie powinni widzieć tych treści<span class="dopisek-roboczy"> (ADR 0006 pkt 8)</span>. Każda ręczna poprawka zapisuje się w paczce jako „modyfikacje", a po ukryciu podgląd znika z ekranu.</p>
           <div id="podglad-pytania"></div>
         </div>
       </div>
@@ -593,7 +589,7 @@
       <div class="karta">
         <h3>Paczka pytań</h3>
         <p class="podpowiedz">Paczka jest <strong>ukryta</strong> — nieczytelna
-        przy kopiowaniu — ale <strong>nie zaszyfrowana</strong> (ADR 0007).
+        przy kopiowaniu — ale <strong>nie zaszyfrowana</strong><span class="dopisek-roboczy"> (ADR 0007)</span>.
         Nie wklejaj do pytań danych osobowych: każdy, kto ma
         dostęp do pliku paczki, może ją odczytać.</p>
       </div>

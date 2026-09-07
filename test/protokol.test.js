@@ -14,7 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   SCHEMAT_KONTENERA, SZABLON_PROMPTU, TOKENY_MIEJSCA, WERSJA_PROTOKOLU,
-  czyZakotwiczone, normalizujTekst, parsujOdpowiedzModela, podsumowaniePaczki,
+  czyZakotwiczone, normalizujTekst, normalizujTematyPaczki, parsujOdpowiedzModela, podsumowaniePaczki,
   poprawkaDlaModelu, rdzenTokena, tokenyWlasne, walidujPaczke, zbudujPrompt,
   zastosujEdycjePaczki, EDYTOWALNE_POLA,
 } from '../app/protokol.js';
@@ -226,6 +226,18 @@ test('walidujPaczke: E12/E13/E14 — temat, duplikaty i zakotwiczenie w okolicy'
     p.pytania[0].tresc = 'W którym roku wybuchła druga wojna światowa?';
     p.pytania[0].wyjasnienie = 'Druga wojna światowa wybuchła 1 września 1939 roku i była największym konfliktem w dziejach ludzkości.';
   })).includes('E14'));
+});
+
+test('walidujPaczke: stare klucze tematów (sprzed 2026-09-07) są aliasami, nie E12', () => {
+  const stara = klonyPaczki((p) => {
+    p.tematy = ['historia', 'nauka-i-technika'];
+    p.pytania[0].temat = 'nauka-i-technika';
+  });
+  assert.ok(!kody(stara, oczekiwane({ tematy: ['historia', 'nauka'] })).includes('E12'), 'alias na liście i w pytaniu przyjęty');
+  assert.ok(!kody(stara, oczekiwane({ tematy: ['historia', 'nauka'] })).includes('E16'), 'E16 porównuje po normalizacji');
+  const znorm = normalizujTematyPaczki(stara);
+  assert.deepEqual(znorm.tematy, ['historia', 'nauka']);
+  assert.equal(znorm.pytania[0].temat, 'nauka');
 });
 
 test('walidujPaczke: E16/E17 — spójność z konfiguracją gry i zakres współrzędnych', () => {

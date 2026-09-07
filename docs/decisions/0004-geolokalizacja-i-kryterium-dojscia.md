@@ -63,3 +63,9 @@ na sesję; ciągły GPS je baterię.
 
 0003 (marker pozycji), 0005 (stacje muszą być osiągalne), 0009 (kolejność
 graczy), 0013 (prywatność).
+
+## Aneks (2026-09-07): kara ręczna stała, bez pola w setupie
+
+Decyzja właściciela: pole „Kara za „jestem na miejscu"" zniknęło z setupu
+(myliło). Kara z pkt 5 działa dalej jako **stałe +60 s** (wartość w
+`DOMYSLNE.karaRecznaS`, walidacja K17 dla starych zapisów).

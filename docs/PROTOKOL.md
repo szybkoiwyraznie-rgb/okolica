@@ -219,13 +219,17 @@ commicie (AGENTS.md §3).
 | `historia` | Historia | dzieje miejsca, daty, wydarzenia, dawne nazwy, ślady historii w terenie |
 | `przyroda` | Przyroda | drzewa, rośliny, zwierzęta, wody, parki, formy terenu, ochrona przyrody |
 | `architektura` | Architektura | budynki, style, autorzy projektów, detale, układ ulic i zabudowy |
-| `kultura-i-sztuka` | Kultura i sztuka | instytucje kultury, pomniki sztuki, murale, festiwale, twórcy związani z miejscem |
-| `legendy-i-folklor` | Legendy i folklor | podania miejskie, legendy, zwyczaje, przesądy, opowieści o miejscu |
-| `ludzie-i-postacie` | Ludzie i postacie | mieszkańcy, patroni ulic, postaci historyczne związane z okolicą |
-| `nauka-i-technika` | Nauka i technika | wynalazki, zakłady, infrastruktura, badania, obiekty inżynieryjne |
-| `sport-i-rekreacja` | Sport i rekreacja | kluby, obiekty sportowe, trasy, wydarzenia sportowe, miejsca wypoczynku |
-| `jedzenie-i-handel` | Jedzenie i handel | targi, lokale, rzemiosło, dawni i obecni kupcy, produkty lokalne |
-| `geografia-i-woda` | Geografia i woda | rzeki, jeziora, wzgórza, granice administracyjne, nazwy geograficzne, mosty |
+| `kultura` | Kultura | instytucje kultury, pomniki sztuki, murale, festiwale, twórcy związani z miejscem |
+| `legendy` | Legendy | podania miejskie, legendy, zwyczaje, przesądy, opowieści o miejscu |
+| `ludzie` | Ludzie | mieszkańcy, patroni ulic, postaci historyczne związane z okolicą |
+| `nauka` | Nauka | wynalazki, zakłady, infrastruktura, badania, obiekty inżynieryjne |
+| `sport` | Sport | kluby, obiekty sportowe, trasy, wydarzenia sportowe, miejsca wypoczynku |
+| `jedzenie` | Jedzenie | targi, lokale, rzemiosło, dawni i obecni kupcy, produkty lokalne |
+| `geografia` | Geografia | rzeki, jeziora, wzgórza, granice administracyjne, nazwy geograficzne, mosty |
+
+Stare klucze dwuczłonowe (`kultura-i-sztuka` itd., sprzed 2026-09-07) są
+przyjmowane jako aliasy i normalizowane do nowych (`ALIASY_TEMATOW`
+w `app/konfig.js`) — paczki zapisane przed zmianą działają dalej.
 
 ## 6. Reguły walidacji i kody usterek
 

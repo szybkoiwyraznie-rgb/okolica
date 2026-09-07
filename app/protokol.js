@@ -11,7 +11,7 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, liczbaPytan } from './konfig.js?v=m12-2';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-2';
 import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-2';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
@@ -314,6 +314,21 @@ function czyLiczbaCalkowita(v) {
 }
 
 /**
+ * Mapuje tematy paczki na klucze kanoniczne (aliasy historyczne → nowe klucze).
+ * Wołane raz, przy przyjęciu paczki — w dół (kontener, zestaw, dopasowanie)
+ * płynie już jeden słownik.
+ */
+export function normalizujTematyPaczki(paczka) {
+  if (Array.isArray(paczka.tematy)) paczka.tematy = [...new Set(paczka.tematy.map(kanonicznyTemat))];
+  if (Array.isArray(paczka.pytania)) {
+    for (const p of paczka.pytania) {
+      if (typeof p.temat === 'string') p.temat = kanonicznyTemat(p.temat);
+    }
+  }
+  return paczka;
+}
+
+/**
  * Walidacja paczki pytań wg protokołu §3 i §6. Zwraca listę usterek
  * `{ kod, pole, komunikat }`; pusta lista = paczka do przyjęcia.
  * `oczekiwane`: `{ liczbaStacji, liczbaPytan, wiek, tematy, promienM, lat, lon, jezyk, teraz, stacje }`.
@@ -362,12 +377,14 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   if (!Array.isArray(paczka.tematy) || paczka.tematy.length === 0) dodaj('E15', 'tematy', 'Brak listy tematów albo lista jest pusta.');
   else {
     paczka.tematy.forEach((t, i) => {
-      if (!TEMATY[t]) dodaj('E12', `tematy[${i}]`, `Temat "${t}" nie należy do kanonu (PROTOKOL §5).`);
+      if (!TEMATY[kanonicznyTemat(t)]) dodaj('E12', `tematy[${i}]`, `Temat "${t}" nie należy do kanonu (PROTOKOL §5).`);
     });
     if (new Set(paczka.tematy).size !== paczka.tematy.length) dodaj('E15', 'tematy', 'Tematy powtarzają się na liście.');
     if (Array.isArray(oczekiwane.tematy) && oczekiwane.tematy.length) {
-      const brak = oczekiwane.tematy.filter((t) => !paczka.tematy.includes(t));
-      const nadmiar = paczka.tematy.filter((t) => !oczekiwane.tematy.includes(t));
+      const spodz = oczekiwane.tematy.map(kanonicznyTemat);
+      const sa = paczka.tematy.map(kanonicznyTemat);
+      const brak = oczekiwane.tematy.filter((t) => !sa.includes(kanonicznyTemat(t)));
+      const nadmiar = paczka.tematy.filter((t) => !spodz.includes(kanonicznyTemat(t)));
       if (brak.length || nadmiar.length) {
         dodaj('E16', 'tematy', `Tematy paczki nie pokrywają się z konfiguracją (brak: ${brak.join(', ') || '—'}; nadmiar: ${nadmiar.join(', ') || '—'}).`);
       }
@@ -418,7 +435,7 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
       pytaniaNaStacje.set(p.stacja, (pytaniaNaStacje.get(p.stacja) ?? 0) + 1);
     }
 
-    if (!TEMATY[p.temat]) dodaj('E12', `${pole}.temat`, `Temat "${p.temat}" nie należy do kanonu (PROTOKOL §5).`);
+    if (!TEMATY[kanonicznyTemat(p.temat)]) dodaj('E12', `${pole}.temat`, `Temat "${p.temat}" nie należy do kanonu (PROTOKOL §5).`);
 
     if (typeof p.tresc !== 'string' || p.tresc.trim().length < 20 || p.tresc.trim().length > 400) {
       dodaj('E15', `${pole}.tresc`, 'Treść pytania musi mieć od 20 do 400 znaków.');

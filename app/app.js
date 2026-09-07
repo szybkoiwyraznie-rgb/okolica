@@ -18,6 +18,7 @@
 import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-2';
 import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-2';
 import {
+  normalizujTematyPaczki,
   parsujOdpowiedzModela,
   podsumowaniePaczki,
   poprawkaDlaModelu,
@@ -226,6 +227,14 @@ function status(tekst) {
   $('status').textContent = tekst;
 }
 
+/**
+ * Dopisek roboczy (np. odniesienie do ADR): dokładany do komunikatu tylko
+ * w trybie testowym. Poza nim UI mówi po ludzku, bez żargonu projektowego.
+ */
+function ADR(tekst) {
+  return STAN.trybTestowy ? tekst : '';
+}
+
 function pokazBledy(idPola, usterki) {
   const pole = $(idPola);
   if (!usterki || usterki.length === 0) {
@@ -348,7 +357,6 @@ function renderujSetup() {
   $('setup-stacje').value = k.liczbaStacji;
   $('setup-pytania').value = k.pytaniaNaStacje;
   $('setup-gracze').value = k.liczbaGraczy;
-  $('setup-kara').value = k.karaRecznaS;
   $('setup-kod').value = k.kodGry ?? '';
   $('setup-geokodacja').checked = !!k.geokodacja;
   $('setup-promien').min = OGRANICZENIA.promienM.min;
@@ -370,7 +378,6 @@ function renderujSetup() {
   czytajLiczbe('setup-stacje', 'liczbaStacji');
   czytajLiczbe('setup-pytania', 'pytaniaNaStacje');
   czytajLiczbe('setup-gracze', 'liczbaGraczy');
-  czytajLiczbe('setup-kara', 'karaRecznaS');
 
   $('setup-kod').addEventListener('input', (e) => { STAN.konfig.kodGry = e.target.value.trim(); });
   $('setup-geokodacja').addEventListener('change', (e) => {
@@ -386,7 +393,7 @@ function renderujSetup() {
   $('przycisk-kod').addEventListener('click', () => {
     STAN.konfig.kodGry = proponujKodGry(rngZZiarna(`kod:${Date.now()}`));
     $('setup-kod').value = STAN.konfig.kodGry;
-    status('Zaproponowano kod gry — identyfikator rozgrywki do eksportu i udostępniania paczki (ADR 0007: pytania ukrywa obfuskacja, nie ten kod).');
+    status('Zaproponowano kod gry — identyfikator rozgrywki do eksportu i udostępniania paczki.' + ADR(' Pytania ukrywa obfuskacja, nie ten kod (ADR 0007 pkt 4).'));
   });
 }
 
@@ -457,7 +464,7 @@ function wlaczGps() {
     onBlad: (blad) => {
       pokazBledy('bledy-pozycja', [{ kod: blad.kod, pole: 'geolocation', komunikat: blad.komunikat }]);
       $('pozycja-status').textContent = 'Brak pozycji';
-      status('Położenie niedostępne — dojście można zgłaszać ręcznie (ADR 0004 pkt 5) albo grać w trybie testowym (pkt 6).');
+      status('Położenie niedostępne — dojście można zgłaszać ręcznie albo grać w trybie testowym.' + ADR(' (ADR 0004 pkt 5–6)'));
     },
   });
   if (!STAN.watcher.czyAktywny()) $('pozycja-status').textContent = 'Brak pozycji';
@@ -726,7 +733,7 @@ function ustawSiec(dane, { zCache, klucz }) {
 function renderujMiejsce() {
   const pole = $('pozycja-miejsce');
   if (!STAN.konfig.geokodacja) {
-    pole.textContent = 'nazwa miejsca: wyłączona w ustawieniach — prompt ma same współrzędne (ADR 0013 pkt 3)';
+    pole.textContent = 'nazwa miejsca: wyłączona w ustawieniach — prompt ma same współrzędne' + ADR(' (ADR 0013 pkt 3)');
     return;
   }
   if (!STAN.miejsce) {
@@ -1046,7 +1053,7 @@ function renderujStacje() {
     $('stacje-sprawiedliwosc').textContent = `średnio ${m.sredniaM} m od startu · odchylenie ${m.odchylenieM} m (${Math.round(m.udzialOdchylenia * 100)}%) · najmniejszy odstęp między stacjami ${najmniejszyOdstepM(STAN.stacje)} m`;
     $('stacje-tryb').textContent = STAN.wymusPierscien
       ? `${ZRODLA_STACJI.pierscien} — wymuszony przyciskiem. ${STAN.siec.stan === 'gotowa' ? 'Sieć drogowa jest pobrana: wyłącz tryb uproszczony tym samym przyciskiem.' : 'Sieć drogowa niedostępna (offline albo limit Overpass).'}`
-      : `${ZRODLA_STACJI.pierscien}. Stacje z sieci dróg, placów i szlaków (ADR 0005) pojawią się po pobraniu danych Overpass — wymaga połączenia z internetem.`;
+      : `${ZRODLA_STACJI.pierscien}. Stacje z sieci dróg, placów i szlaków pojawią się po pobraniu danych Overpass — wymaga połączenia z internetem.` + ADR(' (ADR 0005)');
     if (STAN.trybReczny) {
       $('stacje-tryb').textContent += ' Tryb ręczny WŁĄCZONY: przeciągnij pinezki na mapie. Dystans pokazujemy tylko w linii prostej — osiągalność niezweryfikowana.';
     } else if (STAN.stacje.some((s) => s.zrodlo === 'reczne')) {
@@ -1313,7 +1320,7 @@ function odswiezPropozycjeZestawow() {
 function sprawdzPolaczenieZRepo() {
   const url = adresMostu();
   if (!url) {
-    status('Nie mam czego sprawdzać: ta wersja aplikacji nie ma wpisanego adresu mostu Drive (ADR 0020). Wspólne paczki, gry sieciowe i rankingi są wyłączone — gramy lokalnie.');
+    status('Nie mam czego sprawdzać: ta wersja aplikacji nie ma wpisanego adresu mostu Drive. Wspólne paczki, gry sieciowe i rankingi są wyłączone — gramy lokalnie.' + ADR(' (ADR 0020)'));
     return;
   }
   status('Sprawdzam połączenie z mostem Drive…');
@@ -1329,11 +1336,11 @@ function sprawdzPolaczenieZRepo() {
         status(`Most odpowiada, ale indeks jest nieczytelny (${usterki[0]?.komunikat ?? 'nieznany błąd'}) — upewnij się, że adres wskazuje web app mostu paczek.`);
         return;
       }
-      status(`Połączenie OK: most odpowiada, zaakceptowanych zestawów w indeksie: ${indeks.length}. Przeglądarka przepuściła odpowiedź — próba CORS z ADR 0016 zaliczona.`);
+      status(`Połączenie OK: most odpowiada, zaakceptowanych zestawów w indeksie: ${indeks.length}. Przeglądarka przepuściła odpowiedź — próba CORS zaliczona.` + ADR(' (ADR 0016)'));
       odswiezPropozycjeZestawow();
     })
     .catch(() => {
-      status('Połączenie NIE działa: brak odpowiedzi mostu (CORS, przekierowanie web app, sieć albo zły adres). Gra toczy się zwykłą ścieżką — to dokładnie przypadek z ryzyk ADR 0016; zapisz ten wynik.');
+      status('Połączenie NIE działa: brak odpowiedzi mostu (CORS, przekierowanie web app, sieć albo zły adres). Gra toczy się zwykłą ścieżką; zapisz ten wynik.' + ADR(' To dokładnie przypadek z ryzyk ADR 0016.'));
     })
     .finally(() => clearTimeout(timer));
 }
@@ -1350,7 +1357,7 @@ function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
   STAN.usterkiPaczki = [];
   startGry();
   if (STAN.rozgrywka) {
-    status(`Gra z gotowej paczki (${zrodlo}): ${STAN.rozgrywka.stacje.length} stacji, bez modelu i bez Overpassa (ADR 0017 pkt 7).`);
+    status(`Gra z gotowej paczki (${zrodlo}): ${STAN.rozgrywka.stacje.length} stacji, bez modelu i bez Overpassa.` + ADR(' (ADR 0017 pkt 7)'));
   }
   return true;
 }
@@ -1448,7 +1455,7 @@ function startOdcinkaGry() {
   pokazBledy('bledy-gra', wynik.usterki);
   if (wynik.usterki.length === 0) {
     STAN.historiaFixow = []; // nowy odcinek liczy dojście od zera (plan M6, ryzyko 4)
-    status('Odcinek rozpoczęty — idźcie. Stacja zapala się po dwóch kolejnych fixach w progu (ADR 0004 pkt 2).');
+    status('Odcinek rozpoczęty — idźcie. Stacja zapala się po dwóch kolejnych fixach w progu.' + ADR(' (ADR 0004 pkt 2)'));
     odegrajSygnal('startOdcinka'); // M10/T4
     if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   } else {
@@ -2273,7 +2280,7 @@ function sprawdzOdpowiedz() {
   }
 
   wynik.dataset.stan = 'ok';
-  STAN.paczka = paczka;
+  STAN.paczka = normalizujTematyPaczki(paczka);
   $('wynik-naglowek').textContent = 'Paczka przyjęta';
   $('przycisk-poprawka').hidden = true;
   $('przycisk-ukryj').hidden = false;
@@ -2310,7 +2317,7 @@ function wyslijZestawNaDrive() {
   }
   const url = adresMostu(); // ADR 0020: jeden adres z kodu aplikacji
   if (!url) {
-    status('Paczka przyjęta. Nie wysłano na Drive: brak adresu repozytorium w tej wersji aplikacji (ADR 0020) — paczka zostaje na tym telefonie.');
+    status('Paczka przyjęta. Nie wysłano na Drive: brak adresu repozytorium w tej wersji aplikacji — paczka zostaje na tym telefonie.' + ADR(' (ADR 0020)'));
     return;
   }
   if (!STAN.pozycja || !STAN.stacje.length || !STAN.paczka) {
@@ -3043,7 +3050,7 @@ async function odswiezLobby() {
   const url = urlMostuMulti();
   const lista = $('multi-lobby-lista');
   if (!url) {
-    $('multi-lobby-status').textContent = 'Brak adresu mostu w tej wersji aplikacji (ADR 0020) — lista gier w okolicy jest niedostępna.';
+    $('multi-lobby-status').textContent = 'Brak adresu mostu w tej wersji aplikacji — lista gier w okolicy jest niedostępna.' + ADR(' (ADR 0020)');
     return;
   }
   $('multi-lobby-status').textContent = 'Pobieram listę gier z mostu Drive…';
@@ -3387,7 +3394,7 @@ async function pobierzRankingi() {
   const url = urlMostuRankingu();
   if (!url) {
     STAN.rankingWiersze = [];
-    $('ranking-status').textContent = 'Brak adresu mostu Drive w tej wersji aplikacji (ADR 0020) — rankingi są niedostępne.';
+    $('ranking-status').textContent = 'Brak adresu mostu Drive w tej wersji aplikacji — rankingi są niedostępne.' + ADR(' (ADR 0020)');
     renderujRankingi();
     return;
   }
@@ -3526,6 +3533,7 @@ function start() {
 
   if (location.search.includes('tryb=test')) {
     STAN.trybTestowy = true;
+    document.body.classList.add('tryb-testowy');
     $('przycisk-test').setAttribute('aria-pressed', 'true');
     $('reczne-wspolrzedne').hidden = false;
     $('przycisk-symulacja').hidden = false;
@@ -3550,6 +3558,7 @@ function start() {
   $('przycisk-symulacja').addEventListener('click', przelaczSymulacje);
   $('przycisk-test').addEventListener('click', () => {
     STAN.trybTestowy = !STAN.trybTestowy;
+    document.body.classList.toggle('tryb-testowy', STAN.trybTestowy);
     $('przycisk-test').setAttribute('aria-pressed', String(STAN.trybTestowy));
     $('reczne-wspolrzedne').hidden = !STAN.trybTestowy;
     $('przycisk-symulacja').hidden = !STAN.trybTestowy;
@@ -3661,7 +3670,7 @@ function start() {
       STAN.mapy.stacje.ustawTrybReczny(true, przestawStacjeRecznie);
     }
     renderujStacje();
-    status('Tryb ręczny: przeciągnij pinezki na mapie. Dystans liczymy w linii prostej — osiągalności NIE weryfikujemy (ADR 0005 pkt 8).');
+    status('Tryb ręczny: przeciągnij pinezki na mapie. Dystans liczymy w linii prostej — osiągalności NIE weryfikujemy.' + ADR(' (ADR 0005 pkt 8)'));
   });
   $('przycisk-dalej-prompt').addEventListener('click', () => {
     pokazEkran('prompt');
@@ -3710,14 +3719,14 @@ function start() {
     $('pole-odpowiedz').value = tekst;
     kopiujTekst(tekst, e.currentTarget, `⧉ Ukryj paczkę (${SCHEMAT_KONTENERA})`, 'pole-odpowiedz');
     zwijPodgladOrganizatora(); // plaintext pytań znika z ekranu po ukryciu
-    status(`Paczka ukryta w kontenerze ${SCHEMAT_KONTENERA} — to obfuskacja bez klucza, nie szyfrowanie (ADR 0007).`);
+    status(`Paczka ukryta w kontenerze ${SCHEMAT_KONTENERA} — to obfuskacja bez klucza, nie szyfrowanie.` + ADR(' (ADR 0007)'));
   });
   $('przycisk-eksport-zestawu').addEventListener('click', () => {
     if (!STAN.kontenerPaczki || !STAN.stacje.length || !STAN.pozycja) return;
     const meta = metaBiezacejOkolicy();
     const plik = zbudujPlikZestawu({ stacje: STAN.stacje, kontener: STAN.kontenerPaczki, meta });
     pobierzPlik(`okolica-${meta.geohash5}.zestaw.json`, JSON.stringify(plik, null, 2), 'application/json');
-    status('Zapisano plik TO-zestaw/1 — to surowa paczka: przed publikacją wymaga przeglądu źródeł i edycji pola „przegladZrodel” (ADR 0008 pkt 6, ADR 0017 pkt 5).');
+    status('Zapisano plik TO-zestaw/1 — to surowa paczka: przed publikacją wymaga przeglądu źródeł i edycji pola „przegladZrodel”.' + ADR(' (ADR 0008 pkt 6, ADR 0017 pkt 5)'));
   });
   $('przycisk-test-polaczenia').addEventListener('click', () => sprawdzPolaczenieZRepo());
   $('przycisk-eksport-paczki').addEventListener('click', () => {
