@@ -445,7 +445,8 @@ test('zestawy UI: paczka kilka metrów od gracza jest widoczna mimo innego geoha
 test('zestawy UI: paczka w okolicy nie pasuje — komunikat mówi CO nie pasuje, nie cały setup', async () => {
   const indeks = {
     schemat: 'TO-indeks/1',
-    wpisy: [{ ...indeksZPropozycja().wpisy[0], liczbaStacji: 5 }], // setup ma 3 stacje
+    // setup chce 3 pytań (3 stacje × 1), a paczka ma 2 — za mało
+    wpisy: [{ ...indeksZPropozycja().wpisy[0], liczbaStacji: 2, pytaniaNaStacje: 1 }],
   };
   const atrap = atrapaFetch({ indeks: JSON.stringify(indeks), plik: JSON.stringify(plikZRepo()) });
   try {
@@ -457,7 +458,7 @@ test('zestawy UI: paczka w okolicy nie pasuje — komunikat mówi CO nie pasuje,
     assert.equal(dom.pobierz('zestawy-lista').children.length, 0, 'niedopasowana paczka nie udaje propozycji');
     const komunikat = dom.pobierz('zestawy-status').textContent;
     assert.match(komunikat, /W tej okolicy jest 1 paczka, ale nie pasuje/, 'mówi, że paczka JEST i że nie pasuje');
-    assert.match(komunikat, /liczba stacji: paczka 5, setup 3/, 'nazywa kryterium, które nie zagrało');
+    assert.match(komunikat, /za mało pytań: paczka ma 2 \(2 stacji × 1\), a setup chce 3/, 'nazywa kryterium, które nie zagrało');
     assert.match(komunikat, /Podkowa Leśna/, 'mówi, o którą paczkę chodzi');
     assert.equal(/promień/.test(komunikat), false, 'promień nie jest kryterium, więc nie pojawia się w komunikacie');
     assert.equal(/tematy:/.test(komunikat), false, 'komunikat nie wymienia całego setupu');

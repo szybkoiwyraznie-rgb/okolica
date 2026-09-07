@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-15';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-15';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-16';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-16';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -29,21 +29,21 @@ import {
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
-} from './protokol.js?v=m12-15';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-15';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-15';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-15';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-15';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-15';
+} from './protokol.js?v=m12-16';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-16';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-16';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-16';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-16';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-16';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-15';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-15';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-15';
+} from './zestawy.js?v=m12-16';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-16';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-16';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -63,18 +63,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-15';
-import { utworzMape } from './mapa.js?v=m12-15';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-15';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-15';
-import { adresMostu, stanMostu } from './most.js?v=m12-15';
+} from './sieci.js?v=m12-16';
+import { utworzMape } from './mapa.js?v=m12-16';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-16';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-16';
+import { adresMostu, stanMostu } from './most.js?v=m12-16';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
 /** M11/P4 (ADR 0019): tożsamość i most gry wieloosobowej — osobne klucze, „kasuj dane" czyści wszystko.
  *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
 const KLUCZ_PSEUDONIMU = 'okolica:pseudonim';
-const KLUCZ_ZGODY_MULTI = 'okolica:multi:zgoda';
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
 
@@ -1326,12 +1325,28 @@ function przeliczZTegoCoJest() {
       });
       STAN.stacje = wynik.stacje;
       STAN.wynikSieci = wynik;
-      pokazBledy('bledy-stacje', []);
+      // Sieć bywa za uboga na zamówioną liczbę stacji (S12): wybrane stacje SĄ
+      // wtedy składem gry, więc konfiguracja IDZIE ZA NIMI. Bez tego setup mówił
+      // „5", mapa pokazywała 4, a budowa promptu stawała na WE06 (właściciel,
+      // 2026-09-07). Paczka i gra wieloosobowa też porównują te dwie liczby.
+      const zamowione = STAN.konfig.liczbaStacji;
+      if (wynik.stacje.length !== zamowione) {
+        STAN.konfig.liczbaStacji = wynik.stacje.length;
+        $('setup-stacje').value = String(wynik.stacje.length);
+        przeliczPromienZCzasu(); // mniej stacji = dłuższy odcinek na ten sam czas (ADR 0025)
+        pokazBledy('bledy-stacje', [{
+          kod: 'S12',
+          pole: 'siec',
+          komunikat: `Sieć drogowa w tej okolicy nie dała ${zamowione} stacji w wymaganych odstępach — jest ich ${wynik.stacje.length} i tyle będzie w grze (setup zmieniony na ${wynik.stacje.length}). Chcesz ${zamowione}? Zwiększ czas gry, żeby powiększyć promień, albo zmień okolicę.`,
+        }]);
+      } else {
+        pokazBledy('bledy-stacje', []);
+      }
       renderujStacje();
       odswiezWarstwy();
       centrujNaPozycji();
       status(wynik.usterki.length
-        ? `Sieć jest za uboga na ${STAN.konfig.liczbaStacji} stacji — wybrano ${wynik.stacje.length} (kod S12). Zmień okolicę albo promień, jeśli chcesz komplet.`
+        ? `Sieć jest za uboga na ${zamowione} stacji — w grze będzie ${wynik.stacje.length} (kod S12). Zwiększ czas gry albo zmień okolicę, jeśli chcesz komplet.`
         : `Stacje z sieci drogowej: ${wynik.stacje.length} punktów osiągalnych w promieniu ${STAN.konfig.promienM} m.`);
       return;
     } catch (blad) {
@@ -2999,15 +3014,17 @@ function pokazBledyMulti(komunikaty) {
   if (komunikaty.length) status(komunikaty[0]);
 }
 
-/** Walidacja przed KAŻDĄ wysyłką na most — bez zgody NIE nadajemy (plan M11/P4). */
+/**
+ * Walidacja przed KAŻDĄ wysyłką na most. Zgody NIE sprawdzamy (właściciel,
+ * 2026-09-07): gra na wielu telefonach z natury działa przez wspólny Drive,
+ * a co i dokąd trafia opisuje sekcja „Dane i prywatność". Kto nie chce
+ * wysyłać niczego, gra w hot-seat.
+ */
 function walidujGotowoscMulti() {
   const usterki = [];
   const pseudonim = ($('multi-pseudonim').value ?? '').trim();
   if (!pseudonim) usterki.push('Wpisz pseudonim — widzą go inni gracze w lobby i w wynikach.');
   else if (pseudonim.length > 24) usterki.push('Pseudonim może mieć najwyżej 24 znaki.');
-  if (!$('multi-zgoda').checked) {
-    usterki.push('Bez zgody na wysyłanie danych do mostu Drive nie założę gry ani nie dołączę — pseudonim i wyniki muszą trafić na serwer. Współrzędne nigdy nie opuszczają telefonu. Jeśli nie chcesz wysyłać niczego, wybierz rodzaj gry „Hot-seat”.');
-  }
   if (!urlMostuMulti()) usterki.push('Brak adresu mostu w tej wersji aplikacji (ADR 0020) — gra na wielu urządzeniach jest wyłączona. Wybierz rodzaj gry „Hot-seat", żeby grać na jednym telefonie.');
   return usterki;
 }
@@ -3016,8 +3033,6 @@ function wczytajUstawieniaMulti() {
   pokazStanMostu(); // adres mostu jest w kodzie (ADR 0020) — UI pokazuje stan, nie pole do wpisywania
   if (typeof localStorage === 'undefined') return;
   $('multi-pseudonim').value = localStorage.getItem(KLUCZ_PSEUDONIMU) ?? '';
-  const zgoda = localStorage.getItem(KLUCZ_ZGODY_MULTI);
-  if (zgoda !== null) $('multi-zgoda').checked = zgoda === '1'; // domyślnie z HTML: zaznaczona
   if (localStorage.getItem(KLUCZ_RODZAJU_GRY) === 'multi') {
     STAN.rodzajGry = 'multi';
     $('setup-rodzaj').value = 'multi';
@@ -3258,7 +3273,7 @@ async function zalozGreMulti() {
     const wynik = await polecenieMostu(urlMostuMulti(), {
       akcja: 'gra-zaloz',
       tryb: STAN.multiTryb,
-      organizator: { pseudonim: ($('multi-pseudonim').value ?? '').trim(), zgoda: $('multi-zgoda').checked },
+      organizator: { pseudonim: ($('multi-pseudonim').value ?? '').trim() },
       konfiguracja: {
         liczbaStacji: z.stacje.length,
         pytaniaNaStacje: z.meta.pytaniaNaStacje,
@@ -3289,7 +3304,6 @@ async function dolaczDoGryMulti({ kod = null, idGry = null } = {}) {
     const wynik = await polecenieMostu(urlMostuMulti(), {
       akcja: 'gra-dolacz', kod, idGry,
       pseudonim: ($('multi-pseudonim').value ?? '').trim(),
-      zgoda: $('multi-zgoda').checked,
     });
     wejdzDoGryMulti(wynik.gra, wynik.graczId, 'gosc');
     status('Jesteś w grze — czekasz w lobby, aż organizator wystartuje.');
@@ -4131,9 +4145,6 @@ function start() {
   });
   $('multi-pseudonim').addEventListener('input', () => {
     if (typeof localStorage !== 'undefined') localStorage.setItem(KLUCZ_PSEUDONIMU, ($('multi-pseudonim').value ?? '').trim());
-  });
-  $('multi-zgoda').addEventListener('change', () => {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(KLUCZ_ZGODY_MULTI, $('multi-zgoda').checked ? '1' : '0');
   });
   $('przycisk-multi-zaloz').addEventListener('click', () => {
     const usterki = walidujGotowoscMulti();

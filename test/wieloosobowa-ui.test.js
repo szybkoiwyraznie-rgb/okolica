@@ -515,27 +515,27 @@ test('tury end-to-end: dołącz kodem → bramka tury → resume po odświeżeni
   assert.equal(mostTury.znajdz(kodTur).zdarzenia.every((z) => !POLA_ZAKAZANE.some((p) => p in (z.dane ?? {}))), true, 'serwer nie przyjął współrzędnych w zdarzeniach');
 });
 
-test('bez zgody NIE wysyłam niczego — jawna odmowa (setup → multi)', async () => {
+test('bez pseudonimu NIE wysyłam niczego — jawna odmowa (setup → multi)', async () => {
   const most = atrapaMostu();
   const u = await noweUrzadzenie({ most });
   await przygotujTelefon(u, 'Daria');
   przelaczNa(u);
-  u.dom.pobierz('multi-zgoda').checked = false; // właściciel może odznaczyć (decyzja 2026-09-06)
+  u.dom.pobierz('multi-pseudonim').value = ''; // zgody już nie ma — bramką jest pseudonim
   await klik(u, 'przycisk-multi-zaloz');
   assert.equal(el(u, 'bledy-multi').hidden, false, 'odmowa widoczna w polu błędów');
-  assert.match(tekst(u, 'bledy-multi'), /Bez zgody/, 'komunikat mówi wprost o zgodzie');
+  assert.match(tekst(u, 'bledy-multi'), /Wpisz pseudonim/, 'komunikat mówi wprost, czego brakuje');
   await klik(u, 'przycisk-multi-dolacz');
-  assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez zgody');
+  assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez pseudonimu');
   assert.deepEqual(
     most.adresy.filter((a) => /[?&]akcja=(gry|gra-stan|ranking)/.test(a)),
     [],
-    'żaden GET gry wieloosobowej nie poszedł (odczyt indeksu paczek jest bez zgody — ADR 0017 pkt 6)',
+    'żaden GET gry wieloosobowej nie poszedł (odczyt indeksu paczek jest bez bramki — ADR 0017 pkt 6)',
   );
-  // po przywróceniu zgody — droga wolna (panel się otwiera)
+  // z pseudonimem — droga wolna (panel się otwiera)
   przelaczNa(u);
-  u.dom.pobierz('multi-zgoda').checked = true;
+  u.dom.pobierz('multi-pseudonim').value = 'Daria';
   await klik(u, 'przycisk-multi-dolacz');
-  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'ze zgodą panel dołączania otwarty');
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'z pseudonimem panel dołączania otwarty');
 });
 
 test('ADR 0020: adres mostu jest w kodzie — telefon bez wpisu w pamięci gra sieciowo od razu', async () => {

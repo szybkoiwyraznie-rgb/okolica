@@ -1996,3 +1996,38 @@ test('hot-seat: bez potwierdzonego profilu wynik zostaje na telefonie — i jest
     globalThis.fetch = staryFetch;
   }
 });
+
+test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, a prompt się buduje (S12)', async () => {
+  // Ten sam fixture co w teście cache, ale zamówione 10 stacji: sieć nie da
+  // rozstawić tylu w wymaganych odstępach, więc wybór zwróci mniej (S12).
+  const { przeliczenieCzasu } = await import('../app/konfig.js');
+  const zamowione = 10;
+  const { promienM } = przeliczenieCzasu({ czasGryMin: 240, tryb: 'piesza', liczbaStacji: zamowione, pytaniaNaStacje: 1 });
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM, tryb: 'piesza' });
+  const pamiec = new Map([
+    [klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane })],
+    ['okolica:konfig', JSON.stringify({
+      schemat: 'konfig/1',
+      konfig: { czasGryMin: 240, liczbaStacji: zamowione, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'] },
+    })],
+  ]);
+  const dom = await aplikacjaZSiecia({ pamiec });
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje');
+
+  const ile = dom.pobierz('lista-stacji').children.length;
+  assert.ok(ile >= 1 && ile < zamowione, `sieć dała mniej niż zamówione ${zamowione} (jest ${ile})`);
+  assert.match(dom.pobierz('bledy-stacje').textContent, /S12/, 'kod usterki widoczny na ekranie stacji');
+  assert.match(dom.pobierz('bledy-stacje').textContent, new RegExp(`nie dała ${zamowione} stacji`), 'komunikat mówi, dlaczego jest ich mniej');
+  // sedno naprawy: setup nie może zostać przy zamówionej liczbie
+  assert.equal(dom.pobierz('setup-stacje').value, String(ile), 'pole setupu idzie za wyborem');
+  assert.match(dom.pobierz('setup-promien-info').textContent, /Promień gry/, 'promień przeliczony dla nowej liczby stacji');
+
+  // i prompt się buduje — przed naprawą stawał na WE06 (4 ≠ 5 u właściciela)
+  dom.kliknij('przycisk-dalej-prompt');
+  assert.equal(dom.pobierz('ekran-prompt').hidden, false, 'przejście na ekran pytań');
+  assert.equal(/WE06/.test(dom.pobierz('bledy-prompt').textContent), false, 'bez WE06: liczba stacji zgadza się z konfiguracją');
+  assert.ok(dom.pobierz('pole-prompt').value.length > 200, 'treść promptu zbudowana');
+  assert.match(dom.pobierz('pole-prompt').value, new RegExp(`od 1 do ${ile}\\b`), 'prompt mówi o tylu stacjach, ile jest na mapie');
+});

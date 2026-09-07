@@ -108,12 +108,13 @@ test('zestawy: dopasowanie jest ścisłe (okolica, wiek, stacje, pytania, tematy
     ],
   };
   const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], wiek: 'dorosli' });
-  // Promień nie jest kryterium (właściciel, 2026-09-07 — aneks ADR 0024):
-  // nie wpływa na pytania, a trasę i tak wyznaczają stacje paczki.
+  // Kryteria (właściciel, 2026-09-07 — aneks ADR 0024): okolica, wiek, ŁĄCZNA
+  // liczba pytań (paczka może mieć więcej) i tematy⊆. Promień, liczba stacji
+  // i pytania na stację z osobna NIE są kryteriami.
   assert.deepEqual(
     trafione.map((w) => w.skrot),
-    ['pasuje', 'inny-promien', 'tematy-kolejnosc', 'podzbior', 'wiekszy-promien', 'mniejszy-promien'],
-    'kryteria: okolica, stacje, pytania, poziom, tematy⊆ — paczki o innym promieniu też pasują',
+    ['pasuje', 'inny-promien', 'tematy-kolejnosc', 'podzbior', 'wiecej-stacji', 'wiecej-pytan', 'wiekszy-promien', 'mniejszy-promien'],
+    '6 i 10 pytań przy setupie 5 × 1 = 5 pytań: więcej pytań nie przeszkadza',
   );
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33', promienM: 1, liczbaStacji: 1, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1, liczbaStacji: 0, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
@@ -328,13 +329,20 @@ test('zestawy: powodyNiedopasowania mówi wprost, które kryterium nie zagrało'
   assert.ok(odlegloscWpisuM(wpis(), kryteria(LODZ)) > 90_000, 'ponad 90 km — daleko poza tolerancją 200 m');
 
   assert.match(powodyNiedopasowania(wpis({ wiek: 'wiek-12' }), kryteria(PODKOWA))[0], /wiek: paczka „wiek-12", setup „dorosli"/);
-  assert.match(powodyNiedopasowania(wpis({ pytaniaNaStacje: 2 }), kryteria(PODKOWA))[0], /pytania na stację: paczka 2, setup 1/);
-  assert.match(powodyNiedopasowania(wpis({ liczbaStacji: 3 }), kryteria(PODKOWA))[0], /liczba stacji: paczka 3, setup 5/);
   assert.match(powodyNiedopasowania(wpis({ tematy: ['kultura'] }), kryteria(PODKOWA))[0], /tematy spoza setupu: kultura/);
+  // ŁĄCZNA liczba pytań: 5 × 1 = 5 w setupie — paczka może mieć więcej, mniej nie
+  assert.deepEqual(powodyNiedopasowania(wpis({ liczbaStacji: 1, pytaniaNaStacje: 5 }), kryteria(PODKOWA)), [], '1 stacja × 5 pytań = 5 pytań: pasuje');
+  assert.deepEqual(powodyNiedopasowania(wpis({ liczbaStacji: 5, pytaniaNaStacje: 4 }), kryteria(PODKOWA)), [], '20 pytań przy 5 wymaganych: nadmiar nie przeszkadza');
+  assert.match(
+    powodyNiedopasowania(wpis({ liczbaStacji: 2, pytaniaNaStacje: 2 }), kryteria(PODKOWA))[0],
+    /za mało pytań: paczka ma 4 \(2 stacji × 2\), a setup chce 5/,
+    '4 pytania przy 5 wymaganych: za mało',
+  );
+  assert.match(powodyNiedopasowania(wpis({ liczbaStacji: undefined }), kryteria(PODKOWA))[0], /brak danych o liczbie pytań/, 'wpis bez danych o pytaniach = jawny powód');
   assert.equal(
     powodyNiedopasowania(wpis({ promienM: 5000 }), kryteria(PODKOWA, { promienM: 500 })).length, 0,
     'promień setupu i paczki nie są kryterium — zero powodów',
   );
-  const kilka = powodyNiedopasowania(wpis({ wiek: 'wiek-12', liczbaStacji: 3 }), kryteria(PODKOWA));
+  const kilka = powodyNiedopasowania(wpis({ wiek: 'wiek-12', liczbaStacji: 1, pytaniaNaStacje: 1 }), kryteria(PODKOWA));
   assert.equal(kilka.length, 2, 'kilka niezgodności = kilka powodów, każdy nazwany');
 });

@@ -742,21 +742,29 @@ test('kontrakt ADR 0024 aneks: promień nie jest kryterium, a komunikat nazywa p
   assert.match(ZESTAWY, /export function powodyNiedopasowania/, 'zestawy.js umie nazwać powód niedopasowania');
   assert.match(ZESTAWY, /export function czyWOkolicy/, 'okolica jest osobnym, jawnym kryterium');
   assert.equal(/w\.promienM <= promienM/.test(ZESTAWY), false, 'promień paczki nie jest już kryterium dopasowania');
-  assert.match(ZESTAWY, /Promień NIE jest kryterium/, 'reguła jest zapisana przy kodzie, nie tylko w ADR');
+  assert.match(ZESTAWY, /NIE są kryteriami: promień/, 'reguła jest zapisana przy kodzie, nie tylko w ADR');
+  assert.match(ZESTAWY, /export function sumaPytanWpisu/, 'kryterium jest ŁĄCZNA liczba pytań, nie stacje × pytania');
+  assert.match(ZESTAWY, /środek transportu \(właściciel wycofał/, 'środek transportu jawnie NIE jest kryterium');
+  assert.match(ZESTAWY, /za mało pytań: paczka ma/, 'komunikat podaje liczby: ile ma paczka, ile chce setup');
   // komunikat karty paczek cytuje powody, a nie cały setup
   assert.match(APP, /powodyNiedopasowania\(m, kryteria\)/, 'app.js cytuje powody wprost w komunikacie');
   assert.equal(/ale żadna nie pasuje do tego setupu/.test(APP), false, 'stary komunikat z całym setupem zniknął');
   assert.match(APP, /czyWOkolicy\(m, kryteria\)/, 'paczki z innych okolic nie są nawet liczone');
 });
 
-test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', () => {
+test('kontrakt M11: UI gry wieloosobowej — ekrany, pseudonim, bramki', () => {
   // ekrany i panele (ADR 0019, plan M11/P4)
-  for (const id of ['ekran-multi', 'karta-multi', 'multi-panel-zaloz', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi', 'setup-rodzaj', 'multi-pseudonim', 'multi-zgoda', 'multi-most-stan']) {
+  for (const id of ['ekran-multi', 'karta-multi', 'multi-panel-zaloz', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi', 'setup-rodzaj', 'multi-pseudonim', 'multi-most-stan']) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
-  // zgoda domyślnie zaznaczona (jak przy wysyłce paczek) i WYMAGANA przed wysyłką
-  assert.match(INDEX, /id="multi-zgoda"[^>]*\bchecked\b/, 'zgoda multi domyślnie zaznaczona w HTML');
-  assert.match(APP, /Bez zgody na wysyłanie danych/, 'bez zgody jawna odmowa wysyłki (plan P4)');
+  // Zgody na wysyłkę NIE pytamy przy każdej grze (właściciel, 2026-09-07):
+  // gra na wielu telefonach z natury działa przez Drive, a opis jest w sekcji
+  // prywatność — tak samo jak przy wyniku hot-seat.
+  assert.ok(!INDEX.includes('id="multi-zgoda"'), 'checkboxa zgody multi nie ma');
+  assert.ok(!APP.includes('multi-zgoda'), 'kod nie czyta już pola zgody multi');
+  assert.ok(!APP.includes('okolica:multi:zgoda'), 'klucz zgody multi zniknął');
+  assert.match(INDEX, /Gra na wielu telefonach/, 'sekcja prywatność opisuje grę wieloosobową');
+  assert.match(APP, /Wpisz pseudonim/, 'bez pseudonimu jawna odmowa wysyłki (plan P4)');
   assert.ok(APP.includes("'okolica:pseudonim'"), 'pseudonim utrwalany pod ustalonym kluczem (M12)');
   // akcje mostu wołane z aplikacji istnieją w .gs (jedna lista prawdy);
   // gra-zdarzenie wysyła warstwa synchronizacji (app/sync.js), nie app.js wprost

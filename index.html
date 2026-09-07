@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-15">
-  <script type="module" src="app/app.js?v=m12-15"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-16">
+  <script type="module" src="app/app.js?v=m12-16"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -77,7 +77,10 @@
           <span>Pseudonim (widzą go inni gracze)</span>
           <input id="multi-pseudonim" type="text" maxlength="24" autocomplete="nickname" spellcheck="false" placeholder="np. Marta">
         </label>
-        <label class="pole sprawdz"><input id="multi-zgoda" type="checkbox" checked> <span>Zgadzam się na wysyłanie pseudonimu i wyników gry na wspólne konto Google Drive. Współrzędne nigdy nie opuszczają telefonu<span class="dopisek-roboczy"> (ADR 0019)</span>.</span></label>
+        <!-- Zgody na wysyłkę pseudonimu i wyników NIE pytamy przy każdej grze
+             (właściciel, 2026-09-07): gra wieloosobowa z natury działa przez
+             wspólny Drive, a co i dokąd trafia opisuje sekcja „Dane
+             i prywatność". -->
         <div class="wiersz">
           <button id="przycisk-multi-zaloz" class="przycisk przycisk-glowny" type="button">🌐 Załóż grę</button>
           <button id="przycisk-multi-dolacz" class="przycisk" type="button">🔗 Dołącz do gry</button>
@@ -609,11 +612,23 @@
 
       <div class="karta">
         <h3>Wspólny Drive: historia i rankingi</h3>
+        <p class="podpowiedz">Wszystko, co opuszcza telefon, jest wymienione
+        poniżej — i tylko to. Nie pytamy o zgodę przy każdej grze: bez tych
+        danych nie byłoby ani historii, ani rankingów, ani gry na kilku
+        telefonach.</p>
         <ul class="lista-privatnosc">
           <li><strong>Wynik gry idzie na wspólne konto Google Drive</strong>
             (domyślnie, bez pytania przy każdej grze): pseudonimy graczy,
             punkty, liczba poprawnych i błędnych odpowiedzi, nazwa miejscowości
             i kategoria wiekowa. Na tej podstawie liczone są rankingi.</li>
+          <li><strong>Gra na wielu telefonach</strong> — dodatkowo: Twój
+            pseudonim w lobby (widzą go inni gracze), kolejne dojścia
+            i odpowiedzi w trakcie gry oraz kod gry. Współrzędne gracza
+            <strong>nigdy</strong> nie opuszczają telefonu — inni widzą tylko
+            Twój postęp, nie to, gdzie stoisz<span class="dopisek-roboczy"> (ADR 0019)</span>.</li>
+          <li><strong>Paczki pytań, które wyślesz do wspólnego repozytorium</strong>
+            — przechodzą przez przegląd właściciela, zanim ktokolwiek je
+            pobierze; w pliku zostają pytania, stacje i nazwa miejscowości.</li>
           <li><strong>Okolica startu jako geohash5</strong> — przybliżenie
             rzędu kilku kilometrów, nie punkt GPS. Współrzędne gracza, trasa,
             pytania i paczka <strong>zostają na telefonie</strong>.</li>

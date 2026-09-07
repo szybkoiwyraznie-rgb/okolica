@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-15';
-import { kanonicznyTemat } from './konfig.js?v=m12-15';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-15';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-15';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-16';
+import { kanonicznyTemat } from './konfig.js?v=m12-16';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-16';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-16';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -206,14 +206,27 @@ export function odlegloscWpisuM(w, { lat, lon } = {}) {
   return odlegloscDoKomorkiM(komorkaWpisu(w), lat, lon);
 }
 
+/** Łączna liczba pytań wpisu (stacje × pytania na stację) albo null, gdy wpis nie ma tych danych. */
+export function sumaPytanWpisu(w) {
+  const stacje = Number(w?.liczbaStacji);
+  const naStacje = Number(w?.pytaniaNaStacje);
+  return Number.isFinite(stacje) && Number.isFinite(naStacje) ? stacje * naStacje : null;
+}
+
 /**
  * Powody, dla których wpis NIE pasuje do setupu — pusta lista znaczy „pasuje".
  * JEDNO źródło prawdy: `dopasujZestawy` filtruje po tym, a UI cytuje powody
  * wprost (decyzja właściciela 2026-09-07: komunikat ma mówić, CO nie pasuje,
  * a nie wymieniać cały setup).
  *
- * Promień NIE jest kryterium (decyzja 2026-09-07): nie wpływa na pytania,
- * a trasę i tak wyznaczają stacje paczki.
+ * Kryteria (właściciel, 2026-09-07): okolica ±`TOLERANCJA_OKOLICY_M`, wiek,
+ * ŁĄCZNA liczba pytań (paczka może mieć więcej — nadmiar nie przeszkadza)
+ * i tematy nie szersze niż w setupie.
+ *
+ * NIE są kryteriami: promień (nie wpływa na pytania, trasę wyznaczają stacje),
+ * liczba stacji i pytania na stację z osobna („jak gra ma mieć 20 pytań, to
+ * musi być paczka, która ma 20 pytań — nieważne, czy 5 stacji po 4, czy 2 po 10")
+ * oraz środek transportu (właściciel wycofał: „olej, nie bierz pod uwagę").
  */
 export function powodyNiedopasowania(w, { geohash5, lat, lon, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny = '' } = {}) {
   const powody = [];
@@ -224,11 +237,12 @@ export function powodyNiedopasowania(w, { geohash5, lat, lon, wiek, liczbaStacji
       : `inna okolica — paczka powstała ${d >= 1000 ? `${Math.round(d / 100) / 10} km` : `${Math.round(d)} m`} stąd`);
   }
   if (w?.wiek !== wiek) powody.push(`wiek: paczka „${w?.wiek ?? 'brak'}", setup „${wiek}"`);
-  if (w?.pytaniaNaStacje !== pytaniaNaStacje) {
-    powody.push(`pytania na stację: paczka ${w?.pytaniaNaStacje ?? '?'}, setup ${pytaniaNaStacje}`);
-  }
-  if (w?.liczbaStacji !== liczbaStacji) {
-    powody.push(`liczba stacji: paczka ${w?.liczbaStacji ?? '?'}, setup ${liczbaStacji}`);
+  const chce = Number(liczbaStacji) * Number(pytaniaNaStacje);
+  const ma = sumaPytanWpisu(w);
+  if (ma == null) {
+    powody.push('brak danych o liczbie pytań w paczce');
+  } else if (ma < chce) {
+    powody.push(`za mało pytań: paczka ma ${ma} (${w.liczbaStacji} stacji × ${w.pytaniaNaStacje}), a setup chce ${chce}`);
   }
   const szukany = zbiorTematow((tematy ?? []).map(kanonicznyTemat));
   const obce = (w?.tematy ?? []).map(kanonicznyTemat).filter((t) => !szukany.has(t));
@@ -251,9 +265,9 @@ export function dopasujZestawy(rejestr, { geohash5, lat, lon, promienM, liczbaSt
   // rejestru `{ schemat, wpisy }` (zapis) — jedno wejście, zero niespodzianek
   const lista = Array.isArray(rejestr) ? rejestr : (rejestr?.wpisy ?? []);
   // Kryteria (właściciel, 2026-09-07): ta sama okolica (±200 m od miejsca
-  // wygenerowania), wiek, liczba stacji i pytań na stację oraz tematy paczki
-  // NIE SZERSZE niż w setupie. Promień NIE jest kryterium — nie wpływa na
-  // pytania (aneks ADR 0024).
+  // wygenerowania), wiek, ŁĄCZNA liczba pytań (paczka może mieć więcej) oraz
+  // tematy paczki NIE SZERSZE niż w setupie. Promień, liczba stacji i środek
+  // transportu NIE są kryteriami (aneks ADR 0024).
   const kryteria = { geohash5, lat, lon, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny };
   return lista
     .filter((w) => !powodyNiedopasowania(w, kryteria).length)
