@@ -16,8 +16,8 @@ test('estymator: ceil(znaki/4), deterministyczny, pusty tekst to 0', () => {
   assert.equal(liczTokeny('zażółć'.repeat(50)), liczTokeny('zażółć'.repeat(50)), 'determinizm na polskich znakach');
 });
 
-test('limit: 40 000 tokenów z AGENTS.md §0', () => {
-  assert.equal(LIMIT_TOKENOW, 40_000);
+test('limit: 100 000 tokenów z AGENTS.md §0 (decyzja właściciela 2026-09-07, B18)', () => {
+  assert.equal(LIMIT_TOKENOW, 100_000);
 });
 
 test('lista lektury: pozycje 1–6 w kolejności §0 (ADR-y po README rejestru)', () => {

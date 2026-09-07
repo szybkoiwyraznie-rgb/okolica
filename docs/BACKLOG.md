@@ -89,7 +89,7 @@ ekranu, alternatywy dla gestów. Zrobić po M7, gdy UI jest kompletny.
 
 ## B14 — Narzędzie `tools/budzet-lektury.mjs` ✅ ZROBIONE (2026-09-07)
 
-Liczy tokeny lektury startowej (`AGENTS.md` §0, próg 40 tys.) i pilnuje, żeby
+Liczy tokeny lektury startowej (`AGENTS.md` §0, próg 100 tys.) i pilnuje, żeby
 dokumentacja nie rozrosła się ponad budżet. Zrobione w sesji S1–S7:
 `tools/budzet-lektury.mjs` + `test/budzet-lektury.test.js` + `npm run budzet`;
 pierwsze użycie ścięło lekturę 49946 → 39667 tok (S5).
@@ -141,12 +141,14 @@ wieloosobowych na wielu urządzeniach (M11) oraz profil/statystyki/score
 gracza (M12). Repo paczek wdrażane w M9b; wdrożenie mostu przez właściciela
 odroczone do końca kodowania, instrukcja finalna — w czacie.
 
-## B18 — Mechanizm wzrostu lektury startowej (limit 40k vs rosnący rejestr)
+## B18 — Mechanizm wzrostu lektury startowej ✅ ROZSTRZYGNIĘTY (2026-09-07)
 
-Problem strukturalny po S5 (2026-09-07): każdy nowy ADR i każda lekcja
-POWIĘKSZAJĄ lekturę startową (§0), a limit 40k jest stały. Kondensacja dała
-rezerwę ~330 tok ≈ 1–2 sesje — potem znowu przekroczenie. Opcje: (a) archiwum
-ADR-ów ze streszczeniami w rejestrze (lektura czyta streszczenia, pełne teksty
-punktowo), (b) rosnący próg (np. +1k za kamień milowy — decyzja właściciela),
-(c) podział LESSONS na „aktywne" i „archiwum". Wymaga decyzji właściciela albo
-nowego ADR — nie ciąć decyzji pod limit po cichu.
+Problem strukturalny po S5: każdy nowy ADR i każda lekcja POWIĘKSZAJĄ lekturę
+startową (§0), a limit był stały — kondensacja dawała rezerwę ~1–2 sesji, potem
+znowu przekroczenie. **Decyzja właściciela (2026-09-07): próg rośnie z 40 tys.
+na 100 tys. tokenów** — „40k to za mało na taki duży projekt, nie ma sensu się
+aż tak szczypać". Wdrożone: `LIMIT_TOKENOW = 100_000` w
+`tools/budzet-lektury.mjs`, `AGENTS.md` §0, testy. Kondensacja dokumentów
+przestaje być obowiązkowa przy każdym dopisku, ale zasada „reguła trafia tam,
+gdzie jej miejsce" (`AGENTS.md` §5) zostaje; archiwizacja ADR-ów (wariant a)
+i podział LESSONS (wariant c) wracają, gdy zbliżymy się do nowego progu.

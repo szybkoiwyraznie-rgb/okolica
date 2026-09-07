@@ -305,7 +305,7 @@ test('kontrakt: LESSONS ma ciągłą numerację i wymagany format', () => {
 
 test('kontrakt: AGENTS.md nie obiecuje lektury pliku, którego nie ma w §0', () => {
   assert.ok(AGENTS.includes('docs/PROTOKOL.md') && AGENTS.includes('docs/setup/ENVIRONMENT.md'));
-  assert.ok(AGENTS.includes('40 tys. tokenów'), 'budżet lektury startowej musi być jawny');
+  assert.ok(AGENTS.includes('100 tys. tokenów'), 'budżet lektury startowej musi być jawny');
 });
 
 /* ------------------------------- decyzje: ADR ↔ rejestr ↔ kod */
