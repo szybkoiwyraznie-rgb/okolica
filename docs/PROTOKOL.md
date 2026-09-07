@@ -49,7 +49,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. Pola "tresc", "odpowiedzi", "wyjasnienie", "uwagi" oraz "tytul" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład "Kot" jako "toK"), a w polu "protokol" wpisz "PYT/1.0-rev1". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).
+8. Pola "tresc", "odpowiedzi", "wyjasnienie", "uwagi" oraz "tytul" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład "Kot" jako "toK"), pole "poprawna" zapisz SŁOWNIE po polsku i ODWRÓĆ (patrz wymagania), a w polu "protokol" wpisz "PYT/1.0-rev2". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).
 
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
@@ -69,9 +69,9 @@ GRACZE I TRUDNOŚĆ:
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
-SCHEMAT ODPOWIEDZI (PYT/1.0-rev1) — dokładnie te pola:
+SCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:
 {
-  "protokol": "PYT/1.0-rev1",
+  "protokol": "PYT/1.0-rev2",
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "wiek": "{WIEK}",
   "tematy": [{TEMATY_JSON}],
@@ -84,10 +84,9 @@ SCHEMAT ODPOWIEDZI (PYT/1.0-rev1) — dokładnie te pola:
       "temat": "historia",
       "tresc": "Treść pytania zakończona znakiem zapytania?",
       "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
-      "poprawna": 0,
+      "poprawna": "awd",
       "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
-      "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }],
-      "punkty": 10
+      "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }]
     }
   ],
   "uwagi": ""
@@ -97,9 +96,8 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": indeks poprawnej odpowiedzi, liczba całkowita od 0 do 3.
+- "poprawna": numer poprawnej odpowiedzi SŁOWNIE po polsku i ODWRÓCONY: 1 → "nedej", 2 → "awd", 3 → "yzrt", 4 → "yretzc".
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
-- "punkty": 10 za pytanie łatwe, 15 za średnie, 20 za trudne — zgodnie z kategorią wiekową.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "uwagi": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.
 ```
@@ -158,13 +156,12 @@ repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
-| `poprawna` | liczba całkowita | `0..3` |
+| `poprawna` | liczba albo tekst | jawna i rev1: `0..3`; rev2: odwrócone słowo (`nedej`/`awd`/`yzrt`/`yretzc` = odpowiedź 1–4; liczba też przejdzie) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
 | `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
 | `zrodla[].tytul` | tekst | niepusty |
 | `zrodla[].sprawdzono` | tekst | `RRRR-MM-DD`, nie w przyszłości |
-| `punkty` | liczba | `10`, `15` albo `20` |
 
 ### 3.3 Kontener ukrytej paczki (ADR 0007 pkt 2)
 
@@ -201,7 +198,9 @@ Wariant zapisu, nie nowa wersja schematu: model odwraca znakami pola tekstowe
 `"protokol": "PYT/1.0-rev1"`. Walidator odkodowuje paczkę PRZED walidacją, więc
 reguły §3.2 i §6 działają na odczytanej treści. Cel jak w §3.3: ochrona przed
 przypadkowym wglądem (ekran organizatora, schowek), nie szyfrowanie. Walidator
-przyjmuje oba warianty; szablon z §2 generuje odwrócony.
+przyjmuje oba warianty.
+
+**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to numer odpowiedzi słownie i od końca (`1→nedej, 2→awd, 3→yzrt, 4→yretzc` — nie da się ściągnąć zerknięciem), a pola `punkty` nie ma (każde pytanie daje 1 pkt). Walidator przyjmie liczbę w `poprawna` także w rev2, a `punkty` ignoruje wszędzie; szablon z §2 generuje rev2.
 
 
 ## 4. Kategorie wiekowe i wymagania trudności
@@ -210,13 +209,13 @@ Klucz kategorii jest wartością pola `wiek`; tekst z kolumny „opis trudności
 trafia do promptu jako `{OPIS_TRUDNOSCI}`. **Obniżenie trudności nie zwalnia
 z wymogu źródła** (ADR 0008 pkt 7).
 
-| Klucz | Etykieta | Opis trudności (do promptu) | Punkty |
-| --- | --- | --- | --- |
-| `7` | 7 lat | Zdania krótkie, do 15 słów. Słownictwo codzienne, bez terminów specjalistycznych. Jedno pytanie = jeden fakt. Odpowiedzi rzeczowe i nazwy, bez dat i liczb wielocyfrowych. Preferowane pytania o rzeczy, które dziecko może zobaczyć albo zna z spaceru. | 10 |
-| `10` | 10 lat | Zdania do 20 słów. Pojęcia proste, jedno pojęcie specjalistyczne na pytanie dopuszczalne, jeśli wyjaśnienie je tłumaczy. Jedna data albo jedna liczba w pytaniu dopuszczalna. | 10 |
-| `12` | 12 lat | Pełne zdania, terminy z objaśnieniem w wyjaśnieniu. Daty, liczby i porównania dopuszczalne. Pytanie może wymagać dwóch kroków rozumowania. | 15 |
-| `15` | 15 lat | Jak dla dorosłych, ale bez żargonu akademickiego i bez pytań wymagających wiedzy specjalistycznej z poziomu studiów. | 15 |
-| `dorosli` | dorośli | Bez ograniczeń długości i słownictwa. Dopuszczalne pytania porównawcze, przyczynowo-skutkowe i o szczegóły (daty dzienne, nazwiska, liczby). | 20 |
+| Klucz | Etykieta | Opis trudności (do promptu) |
+| --- | --- | --- |
+| `7` | 7 lat | Zdania krótkie, do 15 słów. Słownictwo codzienne, bez terminów specjalistycznych. Jedno pytanie = jeden fakt. Odpowiedzi rzeczowe i nazwy, bez dat i liczb wielocyfrowych. Preferowane pytania o rzeczy, które dziecko może zobaczyć albo zna z spaceru. |
+| `10` | 10 lat | Zdania do 20 słów. Pojęcia proste, jedno pojęcie specjalistyczne na pytanie dopuszczalne, jeśli wyjaśnienie je tłumaczy. Jedna data albo jedna liczba w pytaniu dopuszczalna. |
+| `12` | 12 lat | Pełne zdania, terminy z objaśnieniem w wyjaśnieniu. Daty, liczby i porównania dopuszczalne. Pytanie może wymagać dwóch kroków rozumowania. |
+| `15` | 15 lat | Jak dla dorosłych, ale bez żargonu akademickiego i bez pytań wymagających wiedzy specjalistycznej z poziomu studiów. |
+| `dorosli` | dorośli | Bez ograniczeń długości i słownictwa. Dopuszczalne pytania porównawcze, przyczynowo-skutkowe i o szczegóły (daty dzienne, nazwiska, liczby). |
 
 ## 5. Kanon tematów
 
@@ -256,7 +255,7 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
 | `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
 | `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
-| `E06` | `poprawna` poza zakresem indeksów `odpowiedzi` |
+| `E06` | `poprawna` poza zakresem albo (rev2) nieznane słowo |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
 | `E09` | pytanie bez `zrodla` albo lista pusta |
@@ -268,7 +267,7 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E15` | pole wymagane puste albo nie tekstem/liczbą zgodnie z §3 |
 | `E16` | paczka niespójna z konfiguracją gry: `okolica` (promień, środek > 500 m) albo `wiek`, `tematy`, `jezyk` |
 | `E17` | współrzędne poza zakresem (`lat`, `lon`) |
-| `E18` | `punkty` spoza skali `{10, 15, 20}` albo niezgodne z kategorią wiekową |
+| `E18` | wycofany (rev2: 1 pkt za pytanie, pole `punkty` ignorowane) |
 | `E19` | `id` pytania nieunikalne albo niezgodne ze wzorem |
 | `E20` | `wyjasnienie` krótsze niż 60 znaków albo dosłownie powtarza `tresc` |
 
@@ -321,13 +320,17 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
   od końca (§3.4). Nie podbija wersji schematu (kształt pól ten sam, jak
   kontener ≠ paczka); walidator akceptuje oba markery, szablon generuje
   odwrócony.
+- **Wariant `PYT/1.0-rev2`** — `poprawna` słownie od końca, koniec pola
+  `punkty` (§3.4). Jak rev1: zapis, nie nowa wersja; walidator przyjmuje
+  `PYT/1.0`, `-rev1` i `-rev2`, szablon generuje rev2. Dawne paczki działają
+  bez migratora (M8 nieopublikowany, a reguły i tak łagodnieją).
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 
 ```json
 {
   "protokol": "PYT/1.0",
-  "okolica": { "lat": 52.23178, "lon": 21.01234, "promienM": 1000, "miejsce": "Warszawa, Śródmieście, woj. mazowieckie, Polska" },
+  "okolica": { "lat": 52.23178, "lon": 21.01234, "promienM": 1000, "miejsce": "Śródmieście, Warszawa" },
   "wiek": "dorosli",
   "tematy": ["historia"],
   "jezyk": "polski",
@@ -341,8 +344,7 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
       "odpowiedzi": ["Bracka", "Mazowiecka", "Zgoda", "Jasna"],
       "poprawna": 2,
       "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda (X 1918).",
-      "zrodla": [{ "url": "https://pl.wikipedia.org/wiki/Polska_Agencja_Telegraficzna", "tytul": "Polska Agencja Telegraficzna — Wikipedia", "sprawdzono": "2026-09-05" }],
-      "punkty": 20
+      "zrodla": [{ "url": "https://pl.wikipedia.org/wiki/Polska_Agencja_Telegraficzna", "tytul": "Polska Agencja Telegraficzna — Wikipedia", "sprawdzono": "2026-09-05" }]
     }
   ],
   "uwagi": ""

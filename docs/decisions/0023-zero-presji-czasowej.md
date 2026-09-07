@@ -11,7 +11,7 @@ nie zabawa — a „uczciwość" i tak była umowna (światła, tłum, pogoda).
 
 ## Decyzja
 
-1. **Punktacja**: punkty za poprawną odpowiedź (waga z paczki), zero składnika
+1. **Punktacja**: 1 pkt za każdą poprawną odpowiedź (koniec wagi trudności z paczki — protokół rev2), zero składnika
    czasowego. Remisy rozstrzyga kolejność zgłoszeń (sort stabilny).
 2. **Koniec kary, limitu, premii, tempa i medalu**: z kodu wypadają
    `PUNKTACJA`, `premiaCzasu()`, `karaRecznaS`, `limitCzasuOdcinkaS`,

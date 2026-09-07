@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, odwrocPolaPaczki } from '../app/protokol.js';
+import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, odwrocPolaPaczki, zakodujPoprawna } from '../app/protokol.js';
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -846,6 +846,23 @@ test('Q2 end-to-end: wklejona paczka odwrócona (rev1) jest odkodowana i przyję
     'organizator czyta odkodowaną treść, nie odwróconą');
 });
 
+test('rev2 end-to-end: wklejona paczka ze słowami jest odkodowana i przyjęta', async () => {
+  const pamiecKonfig = new Map();
+  pamiecKonfig.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1',
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+  }));
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
+  await import(`../app/app.js?rev2=${Math.random().toString(36).slice(2)}`);
+  const jawna = czytajFixturePaczka();
+  const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
+  rev2.pytania.forEach((p, i) => { p.poprawna = zakodujPoprawna(jawna.pytania[i].poprawna); delete p.punkty; });
+  dom.pobierz('pole-odpowiedz').value = JSON.stringify(rev2);
+  dom.kliknij('przycisk-sprawdz');
+  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev2/, 'nagłówek mówi, co się stało');
+  assert.equal(dom.pobierz('podglad-organizatora').hidden, false, 'podgląd otwiera się z przyjęciem');
+});
+
 test('podgląd organizatora: edycja przechodzi re-walidację, psucie blokuje ukrycie, modyfikacje[] podróżują z kontenerem', async () => {
   const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
   const miejsce = paczka.okolica.miejsce;
@@ -1192,14 +1209,14 @@ test('M6: pytanie odsłania się DOPIERO na stacji i ma cztery odpowiedzi (ADR 0
   assert.equal(dom.pobierz('podglad-organizatora').hidden, true);
 });
 
-test('M6: poprawna odpowiedź — ocena, punkty z premią, wyjaśnienie i źródła z linkami', async () => {
+test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z linkami', async () => {
   const { dom, paczka } = await graWFaziePytania();
   const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   const dobry = przyciski[pierwsze.poprawna];
   for (const fn of dobry.zdarzenia.click ?? []) fn({ type: 'click', target: dobry, currentTarget: dobry });
 
-  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze! \+\d+ pkt/, 'ocena z punktami (podstawowe + ewentualna premia)');
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze! \+1 pkt/, 'ocena: 1 pkt za poprawną (rev2)');
   assert.ok(dobry.classList.contains('poprawna'), 'poprawna odpowiedź podświetlona');
   przyciski.forEach((b) => assert.equal(b.disabled, true, 'po odpowiedzi przyciski zablokowane — bez poprawek'));
   assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie z paczki');
@@ -1740,20 +1757,20 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'naturalny koniec po ostatniej stacji');
 
   // 1. PEŁNE podsumowanie z prawdziwą punktacją (nie zera z pominięć):
-  //    Gracz 1 ma 2 poprawne (stacje 1 i 3), Gracz 2 jedną; punkty = baza,
+  //    Gracz 1 ma 2 poprawne (stacje 1 i 3), Gracz 2 jedną; punkty = 1 za poprawną (rev2),
   //    bez premii (Partia 2) → G1 = 40 pkt, G2 = 20 pkt
   const kartaZw = dom.pobierz('gra-wynik-zwyciezca');
   assert.match(kartaZw.children[0].textContent, /^🏆 Gracz 1$/, 'dwie poprawne wygrywają z jedną');
   // punkty CZYTAMY Z ELEMENTU, nie regexem po złączonym textContent (L23:
   // 'Gracz 1' + '42 pkt' złączone dałoby '142 pkt')
   const punktyZw = Number(kartaZw.children[1].textContent.replace(' pkt', ''));
-  assert.equal(punktyZw, 40, 'zwycięzca: 2 × 20 pkt bazowych, zero premii');
+  assert.equal(punktyZw, 2, 'zwycięzca: 2 × 1 pkt (rev2), zero premii');
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
   assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
   assert.equal(wiersze[0].children[2].textContent, '2/2', 'Gracz 1: dwie poprawne, zero błędnych');
   assert.equal(wiersze[1].children[2].textContent, '1/1', 'Gracz 2: jedna poprawna');
   const karty = dom.pobierz('gra-wynik-gracze').children;
-  assert.match(karty[0].textContent, /40 pkt · poprawne 2, błędne 0/, 'punkty i poprawność z prawdziwej gry');
+  assert.match(karty[0].textContent, /2 pkt · poprawne 2, błędne 0/, 'punkty i poprawność z prawdziwej gry');
   assert.match(karty[0].textContent, /odcinki: 2 · dystans/);
   assert.match(karty[0].textContent, /ręczne dojścia: 0/);
   const statystyki = dom.pobierz('gra-wynik-statystyki').textContent;
@@ -1795,7 +1812,7 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
   assert.equal(w.przerwana, false);
   assert.equal(w.zwyciezca, 'Gracz 1');
   assert.equal(w.zaliczoneStacje, 3);
-  assert.equal(w.punktyRazem, 60, 'suma punktów: 3 × 20, zero premii');
+  assert.equal(w.punktyRazem, 3, 'suma punktów: 3 × 1 (rev2), zero premii');
   const jsonHistorii = JSON.stringify(historia);
   for (const pytanie of paczka.pytania) {
     assert.equal(jsonHistorii.includes(pytanie.tresc), false, 'treść pytania wyciekła do historii');

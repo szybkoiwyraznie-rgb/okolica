@@ -71,12 +71,13 @@ test('kontrakt: szablon promptu w docs/PROTOKOL.md jest identyczny z SZABLON_PRO
 test('kontrakt: kategorie wiekowe w protokole §4 = WIEK w app/konfig.js', () => {
   const wiersze = tabelaSekcji(PROTOKOL, '## 4. Kategorie wiekowe i wymagania trudności');
   assert.equal(wiersze.length, Object.keys(WIEK).length, `w dokumencie ${wiersze.length} kategorii, w kodzie ${Object.keys(WIEK).length}`);
-  for (const [klucz, etykieta, opis, punkty] of wiersze) {
+  for (const wiersz of wiersze) {
+    assert.equal(wiersz.length, 3, 'tabela §4 ma 3 kolumny (koniec kolumny Punkty w rev2)');
+    const [klucz, etykieta, opis] = wiersz;
     const k = bezOgrodzenia(klucz);
     assert.ok(WIEK[k], `kategoria „${k}" jest w protokole, a nie ma jej w kodzie`);
     assert.equal(WIEK[k].etykieta, etykieta, `etykieta kategorii ${k}`);
     assert.equal(WIEK[k].opisTrudnosci, opis, `opis trudności kategorii ${k} trafia dosłownie do promptu`);
-    assert.equal(WIEK[k].punkty, Number(punkty), `punkty kategorii ${k}`);
   }
 });
 

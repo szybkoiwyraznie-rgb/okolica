@@ -679,6 +679,26 @@ z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
 `profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
 Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).
 
+## 2026-09-07 — Protokół rev2 (1 pkt, poprawna słownie) + miasto w opisach, gałąź `arena/01a07b16-okolica`
+
+1. **Koniec trudności i E18.** Każde pytanie daje 1 pkt; pole `punkty` zniknęło
+   ze schematu, walidator je ignoruje (E18 wycofany), punktacja w rozgrywce to
+   `poprawna ? 1 : 0`. Wiek dalej steruje tylko językiem pytań
+   (`opisTrudnosci` bez zmian). Zdarzenia multi niosą punkty liczone po stronie
+   klienta, więc most (Apps Script) nie wymaga zmian — sumuje to, co dostaje.
+2. **`poprawna` zakodowana.** W rev2 model podaje numer odpowiedzi słownie
+   i od końca (`1→nedej, 2→awd, 3→yzrt, 4→yretzc`) — nie da się ściągnąć
+   zerknięciem na wklejony JSON. W aplikacji paczka robocza ma indeks 0–3 jak
+   dawniej; walidator toleruje liczbę w rev2 (bez odrzucania), obce słowo to
+   E06 z podpowiedzią. Szablon generuje rev2, jawna/rev1/rev2 przyjmowane —
+   dawne paczki działają bez migratora (M8 nieopublikowany).
+3. **Miasto w miejscu i stacjach.** `{MIEJSCE}` to „dzielnica, miasto"
+   (np. „Śródmieście, Warszawa" — format jak warstwa Nominatim), stacje niosą
+   „ulica, miasto" i „skrzyżowanie: A / B, miasto". Miasto = najdrobniejszy
+   obszar z poziomem 7–8, inaczej 6 (miasto na prawach powiatu).
+
+Brama: 522/522, sync szablonu OK, kontrast AA OK, budżet 39981/40000.
+
 ## 2026-09-07 — Kopiuj prompt: jeden klik kopiuje (execCommand), gałąź `arena/01a07b16-okolica`
 
 Przyczyna: `navigator.clipboard.writeText` rzuca w iframe podglądu (uprawnienia),

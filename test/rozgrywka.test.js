@@ -29,7 +29,7 @@ const START = { lat: 52.23178, lon: 21.01234 };
 const ZIARNO = 'okolica:52.23178:21.01234:1000:5:2026-09-05';
 const STACJE = stacjeProste({ srodek: START, liczbaStacji: 5, promienM: 1000, ziarno: ZIARNO });
 
-/** Paczka syntetyczna: 1 pytanie na stację, `poprawna` i `punkty` jawne w teście. */
+/** Paczka syntetyczna: 1 pytanie na stację, `poprawna` jawna w teście. */
 function paczka(stacje = STACJE, pytaniaNaStacje = 1) {
   return {
     protokol: 'PYT/1.0',
@@ -37,7 +37,6 @@ function paczka(stacje = STACJE, pytaniaNaStacje = 1) {
       id: `s${s.id}p${k + 1}`,
       stacja: s.id,
       poprawna: s.id % 4,
-      punkty: 20,
     }))),
   };
 }
@@ -64,7 +63,7 @@ function przejdzStacje(stan, { stacjaId = stan.biezacaStacja, startMs, koniecMs,
   let biezacy = poDojsciu.stan;
   for (const graczId of ktoOdpowiada(biezacy, stacjaId)) {
     for (const pytanieId of pytaniaStacji(biezacy, stacjaId)) {
-      const pytanie = { id: pytanieId, poprawna: stacjaId % 4, punkty: 20 };
+      const pytanie = { id: pytanieId, poprawna: stacjaId % 4 };
       const wybrana = wybrane ? wybrane({ stacjaId, graczId, pytanieId }) : pytanie.poprawna;
       const wynik = zapiszOdpowiedz(biezacy, { stacjaId, graczId, pytanie, wybrana, czasMs: koniecMs + 5000 });
       assert.deepEqual(wynik.usterki, [], `odpowiedź ${pytanieId}/${graczId}`);
@@ -203,12 +202,12 @@ test('zakonczOdcinek: odmowa przed startem, po zakończeniu i przy ujemnym czasi
 
 /* ------------------------------------------------------------------ punktacja */
 
-test('zapiszOdpowiedz: punkty za poprawną, zero śladu czasowego (Partia 2)', () => {
+test('zapiszOdpowiedz: 1 pkt za poprawną, zero śladu czasowego (rev2, Partia 2)', () => {
   const stan = przejdzStacje(nowa(), { stacjaId: 1, startMs: 0, koniecMs: 300_000 });
   const odpowiedz = stan.odpowiedzi[0];
   assert.equal(odpowiedz.poprawna, true);
-  assert.equal(odpowiedz.punktyPodstawowe, 20);
-  assert.equal(odpowiedz.punktyRazem, 20, 'punkty = baza, bez premii');
+  assert.equal(odpowiedz.punktyPodstawowe, 1);
+  assert.equal(odpowiedz.punktyRazem, 1, 'rev2: każde pytanie daje 1 pkt, bez wagi i bez premii');
   assert.deepEqual(Object.keys(odpowiedz).sort(), ['gracz', 'poprawna', 'punktyPodstawowe', 'punktyRazem', 'pytanieId', 'stacja', 'wybrana']);
   assert.equal(stan.dziennik.at(-1).typ, 'odpowiedz');
 });
@@ -223,12 +222,12 @@ test('zapiszOdpowiedz: błędna odpowiedź daje zero punktów', () => {
 
 test('zapiszOdpowiedz: kody usterek G01/G02/G05/G06/G07/G08/G10', () => {
   const stan = zakonczOdcinek(startOdcinka(nowa(), { czasMs: 0 }).stan, { czasMs: 300_000 }).stan;
-  const ok = { id: 's1p1', poprawna: 1, punkty: 20 };
+  const ok = { id: 's1p1', poprawna: 1 };
 
   assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 99, pytanie: ok, wybrana: 1, czasMs: 1 }).usterki.map((u) => u.kod), ['G01']);
   assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, graczId: 42, pytanie: ok, wybrana: 1, czasMs: 1 }).usterki.map((u) => u.kod), ['G02'], 'gracza 42 nie ma w rozgrywce');
   assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, graczId: 2, pytanie: ok, wybrana: 1, czasMs: 1 }).usterki.map((u) => u.kod), ['G07'], 'gracz spoza kolejki w trybie „zespół"');
-  assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: { id: 's9p9', poprawna: 0, punkty: 20 }, wybrana: 0, czasMs: 1 }).usterki.map((u) => u.kod), ['G05']);
+  assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: { id: 's9p9', poprawna: 0 }, wybrana: 0, czasMs: 1 }).usterki.map((u) => u.kod), ['G05']);
   assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: ok, wybrana: 7, czasMs: 1 }).usterki.map((u) => u.kod), ['G08']);
 
   const po = zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: ok, wybrana: 1, czasMs: 1 }).stan;
@@ -275,7 +274,7 @@ test('stacja bez pytania: dojście zamyka ją bez punktów i gra idzie dalej', (
   assert.equal(poDojsciu.biezacaStacja, 5, 'stacja bez pytania zamyka się samym dojściem');
   assert.equal(poDojsciu.odpowiedzi.length, 3, 'odpowiedzi tylko z stacji 1–3');
   assert.deepEqual(podsumowanie(poDojsciu).stacjeBezPytan, [4, 5]);
-  assert.deepEqual(zapiszOdpowiedz(poDojsciu, { stacjaId: 4, pytanie: { id: 's4p1', poprawna: 0, punkty: 20 }, wybrana: 0, czasMs: 1 }).usterki.map((u) => u.kod), ['G05'], 'nie da się odpowiedzieć na pytanie, którego nie ma');
+  assert.deepEqual(zapiszOdpowiedz(poDojsciu, { stacjaId: 4, pytanie: { id: 's4p1', poprawna: 0 }, wybrana: 0, czasMs: 1 }).usterki.map((u) => u.kod), ['G05'], 'nie da się odpowiedzieć na pytanie, którego nie ma');
 });
 
 /* ---------------------------------------------------------- kolejka odpowiadania */
@@ -286,7 +285,7 @@ test('odpowiada zawsze gracz z kolejki (ADR 0022 — wybór trybu usunięty)', (
   assert.equal(graczNaStacji(nowa(), 5), 2, 'stacja 5 przy 3 graczach → gracz 2');
   const stan = nowa();
   const poDojsciu = zakonczOdcinek(startOdcinka(stan, { czasMs: 0 }).stan, { czasMs: 300_000 }).stan;
-  const pytanie = { id: 's1p1', poprawna: 1, punkty: 20 };
+  const pytanie = { id: 's1p1', poprawna: 1 };
   const obcy = zapiszOdpowiedz(poDojsciu, { stacjaId: 1, graczId: 2, pytanie, wybrana: 1, czasMs: 1 });
   assert.deepEqual(obcy.usterki.map((u) => u.kod), ['G07'], 'obcy gracz odrzucony kodem G07');
 });
@@ -298,9 +297,9 @@ test('pytaniaNaStacje = 2: stacja zamyka się po obu pytaniach', () => {
   });
   assert.deepEqual(pytaniaStacji(stan, 1), ['s1p1', 's1p2']);
   stan = zakonczOdcinek(startOdcinka(stan, { czasMs: 0 }).stan, { czasMs: 300_000 }).stan;
-  const a = zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: { id: 's1p1', poprawna: 1, punkty: 15 }, wybrana: 1, czasMs: 1 }).stan;
+  const a = zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: { id: 's1p1', poprawna: 1 }, wybrana: 1, czasMs: 1 }).stan;
   assert.equal(a.faza, FAZY.pytanie, 'pierwsze pytanie nie zamyka stacji');
-  const b = zapiszOdpowiedz(a, { stacjaId: 1, pytanie: { id: 's1p2', poprawna: 2, punkty: 15 }, wybrana: 0, czasMs: 2 }).stan;
+  const b = zapiszOdpowiedz(a, { stacjaId: 1, pytanie: { id: 's1p2', poprawna: 2 }, wybrana: 0, czasMs: 2 }).stan;
   assert.equal(b.faza, FAZY.przygotowanie);
   assert.equal(b.odpowiedzi.length, 2);
 });
@@ -374,7 +373,7 @@ test('pełna gra 3 graczy × 5 stacji: od startu do podsumowania', () => {
   assert.equal(stan.odpowiedzi.length, 5);
   assert.equal(stan.dziennik.at(-1).typ, 'koniec');
   assert.deepEqual(startOdcinka(stan, { stacjaId: 1, czasMs: t }).usterki.map((u) => u.kod), ['G10'], 'po końcu gry nie ma nowych odcinków');
-  assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: { id: 's1p1', poprawna: 1, punkty: 20 }, wybrana: 1, czasMs: t }).usterki.map((u) => u.kod), ['G10']);
+  assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: { id: 's1p1', poprawna: 1 }, wybrana: 1, czasMs: t }).usterki.map((u) => u.kod), ['G10']);
 
   const s = podsumowanie(stan);
   assert.equal(s.zaliczoneStacje, 5);

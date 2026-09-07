@@ -340,7 +340,7 @@ export function zapiszOdpowiedz(stan, { stacjaId = stan.biezacaStacja, graczId =
   if (juzOdpowiedzial(nowy, stacjaId, gracz, pytanie.id)) return { stan: nowy, usterki: [usterka('G06')] };
 
   const poprawna = wybrana === pytanie.poprawna;
-  const punktyPodstawowe = poprawna ? Math.max(0, Number(pytanie.punkty) || 0) : 0;
+  const punktyPodstawowe = poprawna ? 1 : 0; // rev2: każde pytanie daje 1 pkt, bez wagi z paczki
   const wpis = {
     stacja: stacjaId,
     gracz,

@@ -21,6 +21,7 @@ import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
   odkodujPaczkeRev1,
+  odkodujPaczkeRev2,
   parsujOdpowiedzModela,
   podsumowaniePaczki,
   poprawkaDlaModelu,
@@ -28,6 +29,7 @@ import {
   zastosujEdycjePaczki,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
+  WERSJA_PROTOKOLU_REV2,
 } from './protokol.js?v=m12-2';
 import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-2';
 import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-2';
@@ -2320,7 +2322,8 @@ function sprawdzOdpowiedz() {
   // Q2 (PROTOKOL §3.4): wariant odwrócony odkodowujemy PRZED walidacją —
   // dalej płynie postać czytelna z markerem PYT/1.0.
   const bylaOdwrocona = czyPaczkaOdwrocona(paczka);
-  const robocza = odkodujPaczkeRev1(paczka);
+  const wariant = paczka.protokol === WERSJA_PROTOKOLU_REV2 ? 'rev2' : 'rev1';
+  const robocza = paczka.protokol === WERSJA_PROTOKOLU_REV2 ? odkodujPaczkeRev2(paczka) : odkodujPaczkeRev1(paczka);
   const usterki = walidujPaczke(robocza, oczekiwane());
   STAN.usterkiPaczki = usterki;
   if (usterki.length) {
@@ -2340,7 +2343,7 @@ function sprawdzOdpowiedz() {
 
   wynik.dataset.stan = 'ok';
   STAN.paczka = normalizujTematyPaczki(robocza);
-  $('wynik-naglowek').textContent = bylaOdwrocona ? 'Paczka przyjęta (odwrócona, rev1 — odkodowana)' : 'Paczka przyjęta';
+  $('wynik-naglowek').textContent = bylaOdwrocona ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana)` : 'Paczka przyjęta';
   $('przycisk-poprawka').hidden = true;
   $('przycisk-ukryj').hidden = false;
   $('przycisk-eksport-paczki').hidden = false;
@@ -2357,7 +2360,7 @@ function sprawdzOdpowiedz() {
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
-  status(bylaOdwrocona ? 'Paczka odwrócona (rev1) — odkodowana i przyjęta do pamięci sesji.' : 'Paczka pytań zwalidowana i przyjęta do pamięci sesji.');
+  status(bylaOdwrocona ? `Paczka odwrócona (${wariant}) — odkodowana i przyjęta do pamięci sesji.` : 'Paczka pytań zwalidowana i przyjęta do pamięci sesji.');
   wyslijZestawNaDrive();
 }
 
@@ -2484,7 +2487,7 @@ function kartaPytania(p) {
   karta.className = 'pytanie-karta';
 
   const naglowek = document.createElement('h3');
-  naglowek.textContent = `${p.id} · stacja ${p.stacja} · ${p.temat} · ${p.punkty} pkt`;
+  naglowek.textContent = `${p.id} · stacja ${p.stacja} · ${p.temat}`;
   karta.appendChild(naglowek);
 
   const tresc = document.createElement('textarea');

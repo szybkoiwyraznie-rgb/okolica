@@ -91,7 +91,8 @@ Zasady użycia w kodzie:
 - **Rozwiązanie przyjęte**: nazwę miejsca (dzielnica, miasto, region, państwo)
   wyciągamy z obszarów administracyjnych zwróconych przez Overpass
   (`is_in(lat,lon)` + `area["boundary"="administrative"]`). Jeden dostawca,
-  jedno zapytanie, zero dodatkowej polityki.
+  jedno zapytanie, zero dodatkowej polityki. Stacje dopisują miasto do nazwy
+  („ulica, miasto") — ulice o tej samej nazwie powtarzają się między miastami.
 - **Nominatim publiczny** (`https://nominatim.openstreetmap.org/reverse`) jest
   dopuszczony **wyłącznie jako opcjonalna warstwa zapasowa**, po spełnieniu
   [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/):

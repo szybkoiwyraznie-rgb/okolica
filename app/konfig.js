@@ -58,36 +58,31 @@ export const TRYBY = {
 
 /**
  * Kategorie wiekowe (protokół PYT §4). `opisTrudnosci` jest wklejany do promptu
- * jako `{OPIS_TRUDNOSCI}`; `punkty` to bazowa waga pytania.
+ * jako `{OPIS_TRUDNOSCI}`; wagi punktowej nie ma (rev2: każde pytanie 1 pkt).
  */
 export const WIEK = {
   7: {
     etykieta: '7 lat',
-    punkty: 10,
     opisTrudnosci:
       'Zdania krótkie, do 15 słów. Słownictwo codzienne, bez terminów specjalistycznych. Jedno pytanie = jeden fakt. Odpowiedzi rzeczowe i nazwy, bez dat i liczb wielocyfrowych. Preferowane pytania o rzeczy, które dziecko może zobaczyć albo zna z spaceru.',
   },
   10: {
     etykieta: '10 lat',
-    punkty: 10,
     opisTrudnosci:
       'Zdania do 20 słów. Pojęcia proste, jedno pojęcie specjalistyczne na pytanie dopuszczalne, jeśli wyjaśnienie je tłumaczy. Jedna data albo jedna liczba w pytaniu dopuszczalna.',
   },
   12: {
     etykieta: '12 lat',
-    punkty: 15,
     opisTrudnosci:
       'Pełne zdania, terminy z objaśnieniem w wyjaśnieniu. Daty, liczby i porównania dopuszczalne. Pytanie może wymagać dwóch kroków rozumowania.',
   },
   15: {
     etykieta: '15 lat',
-    punkty: 15,
     opisTrudnosci:
       'Jak dla dorosłych, ale bez żargonu akademickiego i bez pytań wymagających wiedzy specjalistycznej z poziomu studiów.',
   },
   dorosli: {
     etykieta: 'dorośli',
-    punkty: 20,
     opisTrudnosci:
       'Bez ograniczeń długości i słownictwa. Dopuszczalne pytania porównawcze, przyczynowo-skutkowe i o szczegóły (daty dzienne, nazwiska, liczby).',
   },

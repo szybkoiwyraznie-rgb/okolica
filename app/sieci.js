@@ -273,11 +273,29 @@ export function parsujOdpowiedz(odpowiedz) {
 }
 
 /**
+ * Miasto z obszarów administracyjnych (do dopisków „ulica, miasto"):
+ * najdrobniejszy obszar z poziomem 7–8 (gmina/miasto), a gdy go nie ma —
+ * z poziomem 6 (miasto na prawach powiatu, jak Warszawa). Obszary idą od
+ * grubego do drobnego (parser je sortuje), więc szukamy od końca.
+ */
+export function miastoZObszarow(obszary) {
+  if (!Array.isArray(obszary)) return null;
+  const znajdz = (poziomy) => [...obszary].reverse().find((o) => poziomy.includes(o.adminLevel))?.name ?? null;
+  return znajdz([7, 8]) ?? znajdz([6]);
+}
+
+/**
  * Nazwa miejsca do promptu (`{MIEJSCE}`, ADR 0005 pkt 1): najdrobniejszy
- * obszar administracyjny z nazwą — zwykle dzielnica/gmina. Bez Nominatim.
+ * obszar z nazwą plus miasto („Śródmieście, Warszawa" — sama dzielnica
+ * powtarza się w stu miastach). Format jak w warstwie zapasowej Nominatim.
+ * Bez Nominatim.
  */
 export function nazwaMiejsca(sparsowane) {
-  return sparsowane?.obszary?.at(-1)?.name ?? null;
+  const obszary = sparsowane?.obszary;
+  const drobny = obszary?.at(-1)?.name ?? null;
+  if (!drobny) return null;
+  const miasto = miastoZObszarow(obszary);
+  return miasto && miasto !== drobny ? `${drobny}, ${miasto}` : drobny;
 }
 
 /* ------------------------------------------------- graf sieci i Dijkstra */
@@ -562,6 +580,12 @@ function nazwaUlicyWezla(wezel) {
   return `skrzyżowanie: ${ulice.join(' / ')}`;
 }
 
+/** Dopisek miasta do nazwy stacji („Krucza, Warszawa") — null i duplikat bez zmian. */
+function dopiszMiasto(nazwa, miasto) {
+  if (!nazwa || !miasto || nazwa === miasto || nazwa.endsWith(`, ${miasto}`)) return nazwa;
+  return `${nazwa}, ${miasto}`;
+}
+
 /**
  * Kandydaci na stacje (ADR 0005 pkt 3):
  * - **węzły dostępnej sieci** (po interpolacji co ≤ 50 m — „punkty wzdłuż
@@ -594,6 +618,7 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
   const kandydaci = [];
   const zajete = new Map(); // indeks węzła → pozycja na liście kandydatów
   const liczniki = { wykluczonychBryla: 0, wykluczonychBariera: 0, poiBezSieci: 0, zdublowanych: 0 };
+  const miasto = miastoZObszarow(sparsowane?.obszary);
 
   function sprobuj(indeksWezla, typ, zrodlo = null) {
     const wezel = graf.wezly[indeksWezla];
@@ -615,7 +640,7 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
           ...stary,
           typ: 'poi',
           poi: zrodlo,
-          nazwa: zrodlo?.tags?.name ?? null,
+          nazwa: dopiszMiasto(zrodlo?.tags?.name ?? null, miasto),
         };
       } else {
         liczniki.zdublowanych++;
@@ -629,7 +654,9 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
       lon: wezel.lon,
       typ,
       poi: zrodlo,
-      nazwa: typ === 'poi' ? zrodlo?.tags?.name ?? null : nazwaUlicyWezla(wezel),
+      nazwa: typ === 'poi'
+        ? dopiszMiasto(zrodlo?.tags?.name ?? null, miasto)
+        : dopiszMiasto(nazwaUlicyWezla(wezel), miasto),
     });
     return true;
   }

@@ -27,14 +27,12 @@ test('TRYBY: trzy tryby z briefu właściciela i promienie 1/3/10 km', () => {
   }
 });
 
-test('WIEK: pięć kategorii z briefu, punkty rosną z wiekiem', () => {
+test('WIEK: pięć kategorii z briefu, bez wagi punktowej (rev2: 1 pkt za pytanie)', () => {
   assert.deepEqual(Object.keys(WIEK), ['7', '10', '12', '15', 'dorosli']);
-  assert.equal(WIEK[7].punkty, 10);
-  assert.equal(WIEK[12].punkty, 15);
-  assert.equal(WIEK.dorosli.punkty, 20);
   for (const [klucz, kategoria] of Object.entries(WIEK)) {
     assert.ok(kategoria.opisTrudnosci.length > 40, `${klucz}: opis trudności trafia do promptu i musi być konkretny`);
     assert.ok(kategoria.etykieta);
+    assert.deepEqual(Object.keys(kategoria).sort(), ['etykieta', 'opisTrudnosci'], `${klucz}: koniec wagi trudności`);
   }
   // kategoria dziecięca nie może wymagać dat i liczb
   assert.ok(WIEK[7].opisTrudnosci.includes('bez dat'));

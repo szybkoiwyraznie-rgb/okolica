@@ -158,6 +158,7 @@ import {
   POLITYKA,
   budujZapytanieOverpass,
   czyPrzelaczycInstancje,
+  miastoZObszarow,
   nazwaMiejsca,
   parsujOdpowiedz,
   pozycjaDoZapytania,
@@ -274,10 +275,15 @@ test("parser: trzy fixture'y dają drogi, budynki, POI, bariery i obszary", () =
   assert.ok(c.poi.length >= 8);
   assert.ok(c.bariery.length >= 1);
   assert.ok(c.wykluczeniaObszarowe.length >= 1, 'teren kolejowy');
-  assert.equal(nazwaMiejsca(c), 'Śródmieście');
-  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('przedmiescie'))), 'Wawer');
-  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('las'))), 'Bielany');
+  assert.equal(nazwaMiejsca(c), 'Śródmieście, Warszawa');
+  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('przedmiescie'))), 'Wawer, Warszawa');
+  assert.equal(nazwaMiejsca(parsujOdpowiedz(czytajFixture('las'))), 'Bielany, Warszawa');
   assert.equal(nazwaMiejsca({ obszary: [] }), null);
+  assert.equal(nazwaMiejsca({}), null, 'bez obszarów nie zmyślamy (Partia 2)');
+  assert.equal(miastoZObszarow(c.obszary), 'Warszawa', 'miasto z poziomu 6 (miasto na prawach powiatu)');
+  assert.equal(miastoZObszarow(parsujOdpowiedz(czytajFixture('las')).obszary), 'Warszawa', 'miasto z poziomu 8 (gmina)');
+  assert.equal(miastoZObszarow([]), null);
+  assert.equal(nazwaMiejsca({ obszary: [{ name: 'Warszawa', adminLevel: 8 }] }), 'Warszawa', 'miasto najdrobniejsze — bez duplikatu');
   const l = parsujOdpowiedz(czytajFixture('las'));
   assert.equal(l.budynki.length, 0, 'las bez budynków');
 });
@@ -563,7 +569,7 @@ test('kandydaci centrum (piesza): dużo, żadnego w budynku ani na terenie kolej
   const muzeum = kandydaci.find((k) => k.poi?.tags?.tourism === 'museum');
   assert.ok(muzeum, 'muzeum jest kandydatem');
   assert.equal(muzeum.typ, 'poi');
-  assert.equal(muzeum.nazwa, 'Muzeum Okolicy');
+  assert.equal(muzeum.nazwa, 'Muzeum Okolicy, Warszawa');
   const brylaMuzeum = dane.budynki.find((b) => b.tags.tourism === 'museum');
   assert.equal(punktWPolygonie(muzeum, brylaMuzeum), false, 'stacja przy muzeum nie stoi w muzeum');
   assert.ok(dystansM(muzeum, brylaMuzeum.punkty[0]) < 60, 'i jest blisko wejścia (≤ 60 m od narożnika)');
@@ -582,7 +588,7 @@ test('kandydaci centrum: deterministyczni i kompletowi (typy, nazwy)', () => {
   const a = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
   const b = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
   assert.deepEqual(a, b);
-  assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.nazwa === 'Kawa za Rogiem'), 'kawiarnia kandydatem');
+  assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.nazwa === 'Kawa za Rogiem, Warszawa'), 'kawiarnia kandydatem');
   assert.ok(a.kandydaci.some((k) => k.typ === 'poi' && k.poi?.tags.place === 'square'), 'plac kandydatem');
   assert.ok(a.kandydaci.some((k) => k.typ === 'siec'), 'zwykłe węzły sieci też');
 });
@@ -623,15 +629,15 @@ test('kandydaci przedmieście: domy wykluczone, prywatny dojazd nie kusi', () =>
     }
   }
   assert.ok(kandydaci.some((k) => dystansM(k, wlot) < 5), 'wlot z publicznej ulicy zostaje kandydatem');
-  assert.ok(kandydaci.some((k) => k.nazwa === 'Sklep u Kowalskich'), 'sklep kandydatem');
+  assert.ok(kandydaci.some((k) => k.nazwa === 'Sklep u Kowalskich, Warszawa'), 'sklep kandydatem');
 });
 
 test('kandydaci las (piesza): parking i polana przy sieci, odległe POI przepadają z licznikiem', () => {
   const dane = parsujOdpowiedz(czytajFixture('las'));
   const graf = budujGraf(dane, { tryb: 'piesza' });
   const { kandydaci, liczniki } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
-  assert.ok(kandydaci.some((k) => k.nazwa === 'Parking Leśny'), 'parking leśny');
-  assert.ok(kandydaci.some((k) => k.nazwa === 'Polana Piknikowa'), 'polana piknikowa');
+  assert.ok(kandydaci.some((k) => k.nazwa === 'Parking Leśny, Warszawa'), 'parking leśny');
+  assert.ok(kandydaci.some((k) => k.nazwa === 'Polana Piknikowa, Warszawa'), 'polana piknikowa');
   assert.equal(dane.budynki.length, 0, 'w lesie zero budynków — filtry brył nie mają roboty');
   assert.ok(liczniki.poiBezSieci >= 2, `punkt widokowy i szczyt są daleko od ścieżek (poiBezSieci=${liczniki.poiBezSieci})`);
 });
