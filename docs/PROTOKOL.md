@@ -369,6 +369,8 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
 `{ schemat: "RO-zdarzenie/1", kod | idGry, graczId, typ, stacjaId, dane, tUrzadzenia }`
 
 - `typ`: `start` | `dojscie` | `odpowiedz` | `rezygnacja` | `koniec`.
+- `tUrzadzenia`: znacznik czasu urządzenia w ms (liczba, opcjonalny —
+  most go ignoruje; czas gry stempluje serwer polem `tSerwera`).
 - `dane` — BIAŁA lista pól (`POLA_DANYCH_ZDARZENIA`): `czasOdcinkaMs`,
   `czasOdpowiedziMs`, `trybDojscia`, `poprawna`, `punktyBaza`, `premiaCzasu`,
   `punktyRazem`, `powod`. Cokolwiek innego nie wychodzi z telefonu, a most
