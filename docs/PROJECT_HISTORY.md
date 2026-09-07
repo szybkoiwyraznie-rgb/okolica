@@ -679,6 +679,18 @@ z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
 `profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
 Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).
 
+## 2026-09-07 — Kopiuj prompt: jeden klik kopiuje (execCommand), gałąź `arena/01a07b16-okolica`
+
+Przyczyna: `navigator.clipboard.writeText` rzuca w iframe podglądu (uprawnienia),
+więc każdy klik lądował w awaryjnym zaznaczaniu — a przy zwiniętym `<details>`
+nawet ono szło w próżnię. `kopiujTekst` ma teraz trzy szczeble: schowek
+asynchroniczny → `execCommand('copy')` na tymczasowym polu (niezależny od
+`<details>`) → ostatnia deska: rozwiń `<details>` i zaznacz do ręcznego Ctrl+C.
+„✓ skopiowano" znaczy, że tekst TRAFIŁ do schowka. Regresja: test kliknięcia
+przy zablokowanym schowku w `test/aplikacja.test.js`.
+
+Brama: 518/518, sync szablonu OK, kontrast AA OK, budżet 39829/40000.
+
 ## 2026-09-07 — Overpass: dieta odpowiedzi + nazwy ulic w stacjach, gałąź `arena/01a07b16-okolica`
 
 1. **3–5 minut czekania — przyczyna i dieta.** `out geom` drukował obszarom

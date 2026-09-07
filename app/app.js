@@ -2209,23 +2209,51 @@ function budujPromptEkran() {
 
 async function kopiujTekst(tekst, przycisk, etykieta, idPolaZapasowego = 'pole-prompt') {
   const przywroc = () => { przycisk.textContent = etykieta; };
+  przycisk.textContent = (await kopiujDoSchowka(tekst, idPolaZapasowego)) ? '✓ skopiowano' : '⚠ zaznaczone — skopiuj ręcznie';
+  window.setTimeout(przywroc, 2500);
+}
+
+/**
+ * Kopiowanie trzema szczeblami — jeden klik ma KOPIOWAĆ, nie zaznaczać:
+ * 1) `navigator.clipboard.writeText` (nowoczesne przeglądarki);
+ * 2) `document.execCommand('copy')` na tymczasowym polu — działa tam, gdzie
+ *    iframe albo uprawnienia blokują schowek asynchroniczny, i nie zależy
+ *    od tego, czy `<details>` z polem jest rozwinięty;
+ * 3) ostatnia deska: rozwiń `<details>` i zaznacz tekst w polu ekranowym —
+ *    użytkownik dokończy ręcznie. Zwraca true, gdy tekst TRAFIŁ do schowka.
+ */
+async function kopiujDoSchowka(tekst, idPolaZapasowego) {
   try {
-    if (navigator.clipboard?.writeText) {
+    if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
       await navigator.clipboard.writeText(tekst);
-      przycisk.textContent = '✓ skopiowano';
-    } else {
-      throw new Error('brak navigator.clipboard');
+      return true;
     }
-  } catch (e) {
-    void e;
-    // Schowek bywa niedostępny (iframe preview, starsze przeglądarki) — zaznacz
-    // tekst i każ skopiować ręcznie. Zero komunikatu „nie działa" bez wyjścia.
+  } catch (e) { void e; }
+  try {
+    if (typeof document.execCommand === 'function') {
+      const tymczasowe = document.createElement('textarea');
+      tymczasowe.value = tekst;
+      tymczasowe.setAttribute('readonly', '');
+      tymczasowe.style.position = 'fixed';
+      tymczasowe.style.opacity = '0';
+      document.body.appendChild(tymczasowe);
+      tymczasowe.select();
+      const ok = document.execCommand('copy');
+      tymczasowe.remove();
+      if (ok) return true;
+    }
+  } catch (e) { void e; }
+  try {
+    // Schowek nieosiągalny w żaden sposób — zaznacz tekst i każ skopiować
+    // ręcznie. Zero komunikatu „nie działa" bez wyjścia.
     const pole = $(idPolaZapasowego);
+    if (!pole) return false;
+    const zwiniety = typeof pole.closest === 'function' ? pole.closest('details') : null;
+    if (zwiniety) zwiniety.open = true; // schowane pole zaznaczyłoby się w próżnię
     pole.focus();
     pole.setSelectionRange(0, pole.value.length);
-    przycisk.textContent = '⚠ zaznaczone — skopiuj ręcznie';
-  }
-  window.setTimeout(przywroc, 2500);
+  } catch (e) { void e; }
+  return false;
 }
 
 function pobierzPlik(nazwa, tresc, typ) {

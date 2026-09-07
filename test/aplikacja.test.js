@@ -980,6 +980,35 @@ test('nazwa miejsca ZAWSZE trafia do UI i do promptu (Partia 2: koniec opcji geo
     'model dostaje miejscowość w prompcie (ADR 0006 pkt 3)');
 });
 
+test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe podglądu)', async () => {
+  const pamiecCache = new Map();
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+    JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
+  // schowek asynchroniczny zablokowany jak w iframe podglądu
+  Object.assign(navigator, { clipboard: { writeText: async () => { throw new Error('NotAllowedError'); } } });
+  const polecenia = [];
+  document.execCommand = (polecenie) => { polecenia.push(polecenie); return true; };
+  try {
+    ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+    domAtrapa.kliknij('przycisk-dalej-stacje');
+    domAtrapa.kliknij('przycisk-dalej-prompt');
+    const prompt = domAtrapa.pobierz('pole-prompt').value;
+    assert.ok(prompt.length > 100, 'prompt zbudowany');
+    const przed = domAtrapa.utworzone.length;
+    domAtrapa.kliknij('przycisk-kopiuj-prompt');
+    await czekaj(50);
+    assert.deepEqual(polecenia, ['copy'], 'awaryjnie: execCommand(copy) na tymczasowym polu');
+    const tymczasowe = domAtrapa.utworzone.slice(przed).filter((el) => String(el.tagName).toLowerCase() === 'textarea');
+    assert.equal(tymczasowe.length, 1, 'jedno tymczasowe pole');
+    assert.equal(tymczasowe[0].value, prompt, 'do schowka trafia CAŁY prompt — klik kopiuje, nie zaznacza');
+    assert.equal(domAtrapa.pobierz('przycisk-kopiuj-prompt').textContent, '✓ skopiowano');
+  } finally {
+    delete document.execCommand;
+  }
+});
+
 test('warstwa zapasowa: domyślnie ZERO żądań do Nominatim (ADR 0013 pkt 2)', async () => {
   const pamiecCache = new Map();
   const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, {});
