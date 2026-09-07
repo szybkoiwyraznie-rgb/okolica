@@ -23,8 +23,8 @@ stacji.
 (pięć ekranów: setup → pozycja → stacje → prompt → paczka) z walidacją
 konfiguracji, promptem PYT v1.0, walidacją paczki i jej ukrywaniem
 (`TO-paczka/2`). Jako czyste funkcje z testami istnieją też **model rozgrywki**
-(`app/rozgrywka.js`: kolejka graczy, odcinki i czasy, kara za ręczne
-zgłoszenie, punktacja względem mediany tempa, dziennik i podsumowanie) oraz
+(`app/rozgrywka.js`: kolejka graczy i odpowiadania, odcinki, punktacja
+dotarcie-plus-poprawna, dziennik i podsumowanie) oraz
 **warstwa pozycji** (`app/pozycja.js`: filtr dokładności, kryterium dojścia
 z debounce'em, komunikaty błędów GPS, symulacja trasy dla trybu testowego).
 
@@ -94,9 +94,9 @@ zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).
 
 **M7 — podsumowanie, punkty i udostępnianie: kod i testy gotowe.** Po końcu
 gry (naturalnym albo ręcznym) panel wyniku pokazuje pełne podsumowanie:
-zwycięzca z 🏆 i rozbiciem punktacji, ranking, szczegóły graczy (odcinki,
-tempo), tabela stacji (tryb dojścia: GPS / ręczne / pominięta), statystyki
-i medal sprawiedliwości trasy (🏅 widokowe — nie wpływa na punkty, ADR 0014).
+zwycięzca z 🏆, ranking, szczegóły graczy (odcinki, dystans), tabela stacji
+(tryb dojścia: GPS / ręczne / pominięta) i statystyki — bez czasów i tempa
+(ADR 0023: zero presji czasowej).
 Wynik da się udostępnić bez serwera: tekst w formacie przyjaznym komunikatorom
 (wiersze stacji bez `#`, żeby `#1` nie stało się nagłówkiem), obraz PNG
 1080 px rysowany z czystego planu komend (paleta z tokenów CSS), Web Share →

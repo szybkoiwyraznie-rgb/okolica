@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
 test('TRYBY: trzy tryby z briefu właściciela i promienie 1/3/10 km', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
@@ -71,9 +71,10 @@ test('domyslnaKonfiguracja: 1 gracz, 5 stacji, dorośli, pieszo, zgodnie z brief
   assert.equal(k.pytaniaNaStacje, 1);
   assert.equal(k.wiek, 'dorosli');
   assert.equal(k.jezyk, 'polski');
-  assert.equal(k.karaRecznaS, 60);
+  assert.equal(k.karaRecznaS, undefined, 'koniec kary czasowej (Partia 2: zero presji czasowej)');
+  assert.equal(k.limitCzasuOdcinkaS, undefined, 'koniec limitu czasu odcinka (Partia 2)');
   assert.deepEqual(k.imiona, ['Gracz 1']);
-  assert.equal(k.geokodacja, false, 'geokodacja domyślnie wyłączona (ADR 0013 pkt 3)');
+  assert.equal(k.geokodacja, undefined, 'brak opcji geokodacji — nazwa miejsca zawsze pobierana (ADR 0013 pkt 3 po Partii 2)');
   assert.deepEqual(k.tematy, ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia'], 'domyślnie wszystkie tematy zaznaczone (decyzja z 2026-09-07)');
   assert.deepEqual(walidujSetup(k), []);
 
@@ -126,11 +127,8 @@ test('walidujSetup: przyjmuje poprawną i odrzuca każdą klasę błędu', () =>
   assert.ok(kody({ ...baza, tematy: [] }).includes('K14'));
   assert.ok(kody({ ...baza, tematy: ['historia', 'historia'] }).includes('K16'));
   assert.ok(kody({ ...baza, tematy: ['kosmos'] }).includes('K15'));
-  assert.ok(kody({ ...baza, karaRecznaS: 9999 }).includes('K17'));
   assert.ok(kody({ ...baza, kodGry: 'AB' }).includes('K18'));
   assert.ok(kody({ ...baza, kodGry: '' }).length === 0, 'pusty kod gry jest dozwolony (gra bez ukrywania pytań)');
-  assert.ok(kody({ ...baza, limitCzasuOdcinkaS: -5 }).includes('K19'));
-  assert.ok(kody({ ...baza, geokodacja: 'tak' }).includes('K20'));
   assert.ok(kody({ ...baza, tematy: ['historia', 'wlasny'], tematWlasny: '' }).includes('K21'), 'wlasny bez tekstu to K21');
   assert.ok(!kody({ ...baza, tematy: ['historia', 'wlasny'], tematWlasny: 'kinematografia' }).includes('K21'), 'wlasny z tekstem przechodzi');
   assert.ok(kody(null).includes('K01'));
@@ -163,17 +161,20 @@ test('rngZZiarna: to samo ziarno → ten sam ciąg, wartości w [0,1)', () => {
   for (const v of ciagA) assert.ok(v >= 0 && v < 1);
 });
 
-test('proponujKodGry: 6 znaków bez znaków mylonych wzrokowo, deterministyczny pod RNG', () => {
-  const kod = proponujKodGry(rngZZiarna('ziarno-kodu'));
-  assert.equal(kod.length, 6);
-  assert.match(kod, /^[23456789ABCDEFGHJKMNPQRSTUVWXYZ]+$/);
-  assert.equal(proponujKodGry(rngZZiarna('ziarno-kodu')), kod);
-  assert.equal(proponujKodGry(rngZZiarna('x'), OGRANICZENIA.dlugoscKoduGry.max).length, 8);
+test('domyslnyKodGry: slug z imion, miejsca i daty z godziną (Partia 2, pkt 7)', () => {
+  const kiedy = new Date(2026, 8, 7, 14, 32);
+  const kod = domyslnyKodGry({ imiona: ['Ala', 'Łukasz'], miejsce: 'Podkowa Leśna, Polska', teraz: kiedy });
+  assert.equal(kod, 'ala-lukasz-podkowa-lesna-0709-1432');
+  assert.match(kod, /^[a-z0-9-]+$/, 'bezpieczny do nazw plików i kluczy');
+  assert.ok(kod.length <= OGRANICZENIA.dlugoscKoduGry.max);
+  assert.equal(
+    domyslnyKodGry({ imiona: [], miejsce: '', teraz: kiedy }),
+    'gra-teren-0709-1432',
+    'sensowne zapasy przy braku danych',
+  );
 });
 
-test('kanony są zamknięte: współpraca, języki i ograniczenia mają sens', () => {
-  assert.deepEqual(Object.keys(WSPOLPRACA), ['solo', 'zespol', 'wszyscy']);
-  assert.equal(DOMYSLNE.wspolpraca, 'zespol');
+test('kanony są zamknięte: języki i ograniczenia mają sens (współpraca usunięta — ADR 0022)', () => {
   assert.ok(JEZYKI.polski === 'polski');
   assert.equal(OGRANICZENIA.liczbaGraczy.max, 8);
   assert.equal(OGRANICZENIA.liczbaStacji.min, 3);
@@ -187,18 +188,16 @@ test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', (
   assert.deepEqual(oczyscKonfiguracje('śmieci'), d);
 
   // klucz spoza kanonu wraca do wartości domyślnej, nie do `undefined`
-  const zle = oczyscKonfiguracje({ tryb: 'konny', wiek: 'nestor', podklad: 'carto', jezyk: 'klingon', wspolpraca: 'telepatia' });
+  const zle = oczyscKonfiguracje({ tryb: 'konny', wiek: 'nestor', podklad: 'carto', jezyk: 'klingon' });
   assert.equal(zle.tryb, d.tryb);
   assert.equal(zle.wiek, d.wiek);
   assert.equal(zle.podklad, d.podklad);
   assert.equal(zle.jezyk, d.jezyk);
-  assert.equal(zle.wspolpraca, d.wspolpraca);
 
   // liczby: zacisk do widełek, NaN odrzucony, tekst liczbowy z inputa przyjęty
   assert.equal(oczyscKonfiguracje({ liczbaStacji: 99 }).liczbaStacji, OGRANICZENIA.liczbaStacji.max);
   assert.equal(oczyscKonfiguracje({ liczbaGraczy: -3 }).liczbaGraczy, 1);
   assert.equal(oczyscKonfiguracje({ promienM: Number.NaN }).promienM, d.promienM);
-  assert.equal(oczyscKonfiguracje({ karaRecznaS: '120' }).karaRecznaS, 120);
 
   // listy: tylko kanon; pusty wynik → domyślne tematy
   assert.deepEqual(oczyscKonfiguracje({ tematy: ['historia', 'kosmos'] }).tematy, ['historia']);
@@ -215,10 +214,7 @@ test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', (
   assert.equal(smieciowaLiczba.imiona.length, smieciowaLiczba.liczbaGraczy);
   assert.deepEqual(walidujSetup(smieciowaLiczba), []);
 
-  // geokodacja domyślnie wyłączona i tylko jako `true` (ADR 0013 pkt 3)
-  assert.equal(oczyscKonfiguracje({ geokodacja: 'tak' }).geokodacja, false);
-  assert.equal(oczyscKonfiguracje({ geokodacja: true }).geokodacja, true);
 
   // kod gry przycięty do limitu
-  assert.equal(oczyscKonfiguracje({ kodGry: '  ABCDEFGHIJK  ' }).kodGry.length, OGRANICZENIA.dlugoscKoduGry.max);
+  assert.equal(oczyscKonfiguracje({ kodGry: '  ' + 'A'.repeat(50) + '  ' }).kodGry.length, OGRANICZENIA.dlugoscKoduGry.max);
 });

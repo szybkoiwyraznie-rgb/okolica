@@ -499,7 +499,7 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
     'gra-wyniki', 'gra-wyniki-tbody',
-    'gra-wynik-zwyciezca', 'gra-wynik-medal', 'gra-wynik-statystyki',
+    'gra-wynik-zwyciezca', 'gra-wynik-statystyki',
     'gra-wynik-szczegoly', 'gra-wynik-gracze',
     'gra-wynik-stacje', 'gra-wynik-stacje-tbody',
     'wynik-eksport', 'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',

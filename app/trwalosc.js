@@ -213,7 +213,6 @@ function czyPodsumowanieOk(p) {
   return !!p && typeof p === 'object'
     && Array.isArray(p.ranking)
     && Number.isFinite(p.punktyRazem)
-    && Number.isFinite(p.czasGryS)
     && Number.isFinite(p.zaliczoneStacje)
     && Number.isFinite(p.pominietaStacje);
 }
@@ -230,7 +229,7 @@ function czyWpisHistoriiOk(w) {
     && Array.isArray(w.tematy)
     && Number.isFinite(w.liczbaGraczy) && Number.isFinite(w.liczbaStacji)
     && (w.zwyciezca === null || typeof w.zwyciezca === 'string')
-    && Number.isFinite(w.punktyRazem) && Number.isFinite(w.czasGryS)
+    && Number.isFinite(w.punktyRazem)
     && Number.isFinite(w.zaliczoneStacje) && Number.isFinite(w.pominietaStacje)
     && typeof w.przerwana === 'boolean';
 }
@@ -267,7 +266,6 @@ export function skrotGry({ rozgrywka, konfig, stacje, podsumowanie, miejsce = nu
     liczbaStacji: stacje.length,
     zwyciezca,
     punktyRazem: podsumowanie.punktyRazem,
-    czasGryS: podsumowanie.czasGryS,
     zaliczoneStacje: podsumowanie.zaliczoneStacje,
     pominietaStacje: podsumowanie.pominietaStacje,
     przerwana: Boolean(przerwana),

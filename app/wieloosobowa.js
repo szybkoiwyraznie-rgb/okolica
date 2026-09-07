@@ -29,10 +29,9 @@ export const TRYBY_GRY = Object.freeze({ wyscig: 'wyscig', tury: 'tury' });
 export const STANY_GRY = Object.freeze(['lobby', 'trwa', 'zakonczona', 'archiwum']);
 export const TYPY_ZDARZEN = Object.freeze(['start', 'dojscie', 'odpowiedz', 'rezygnacja', 'koniec']);
 
-/** Biała lista pól `dane` zdarzenia — cokolwiek innego NIE jedzie na Drive. */
+/** Biała lista pól `dane` zdarzenia — zero presji czasowej (Partia 2): czasów nie ma, cokolwiek innego NIE jedzie na Drive. */
 export const POLA_DANYCH_ZDARZENIA = Object.freeze([
-  'czasOdcinkaMs', 'czasOdpowiedziMs', 'trybDojscia', 'poprawna',
-  'punktyBaza', 'premiaCzasu', 'punktyRazem', 'powod',
+  'trybDojscia', 'poprawna', 'punktyRazem', 'powod',
 ]);
 
 export const KODY_WIELOOSOBOWE = {
@@ -358,10 +357,9 @@ export function czyKompletna(gra) {
 
 /** Postęp jednego gracza (żywa tabela w wyścigu, resume w turach). */
 export function postepGracza(gra, graczId) {
-  const postep = { stacjeZamkniete: 0, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, zrezygnowal: false };
+  const postep = { stacjeZamkniete: 0, punkty: 0, poprawne: 0, bledne: 0, zrezygnowal: false };
   for (const z of gra?.zdarzenia ?? []) {
     if (z.graczId !== graczId) continue;
-    if (z.typ === 'dojscie') postep.czasOdcinkowMs += Number(z.dane?.czasOdcinkaMs) || 0;
     if (z.typ === 'odpowiedz') {
       postep.stacjeZamkniete += 1;
       postep.punkty += Number(z.dane?.punktyRazem) || 0;

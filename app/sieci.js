@@ -132,7 +132,7 @@ export function budujZapytanieOverpass({ srodek, promienM, tryb = 'piesza' }) {
     `  node["barrier"](${around});`,
     ');',
     `is_in(${lat},${lon})->.obszary;`,
-    'area(.obszary)["boundary"="administrative"];',
+    'area.obszary["boundary"="administrative"];', // kropka, nie nawias: filtr na secie z is_in (LESSONS)
     'out geom;',
     '',
   ].join('\n');

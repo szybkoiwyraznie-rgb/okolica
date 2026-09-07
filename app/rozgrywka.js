@@ -13,10 +13,11 @@
  * - **Stan nie zawiera treści pytań** (ADR 0007 pkt 6) — tylko identyfikatory,
  *   poprawność i punkty. Dlatego może trafić do `localStorage` i do eksportu.
  *
- * Punktacja: ADR 0009 pkt 5 (ramy) + ADR 0014 (reguła czasu — mediana tempa).
+ * Punktacja: dotarcie + poprawna odpowiedź (Partia 2: koniec premii czasowej,
+ * ADR 0014 wycofany). Znaczniki czasu w dzienniku służą tylko kolejności zdarzeń.
  */
 
-import { ogranicz, odlegloscM } from './geo.js?v=m12-2';
+import { odlegloscM } from './geo.js?v=m12-2';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
@@ -40,18 +41,6 @@ export const STANY_ODCINKA = {
   pominiety: 'pominiety',
 };
 
-/**
- * Stałe punktacji (ADR 0014 pkt 3). Zmiana = zmiana kodu i testu, nie decyzja
- * sesji „na oko".
- * - `udzialPremiiCzasu` × `zaciskWzgledny` = ±25% punktów za odpowiedź,
- * - `minProbek` — poniżej tylu próbek premii nie ma wcale (brak odniesienia).
- */
-export const PUNKTACJA = {
-  udzialPremiiCzasu: 0.5,
-  zaciskWzgledny: 0.5,
-  minProbek: 2,
-};
-
 /** Kody usterek rozgrywki — trafiają wprost do komunikatów UI. */
 export const KODY_ROZGRYWKI = {
   G01: 'Nieznana stacja — nie ma jej w tej rozgrywce.',
@@ -60,7 +49,7 @@ export const KODY_ROZGRYWKI = {
   G04: 'Odcinek nie jest w trakcie — nie ma czego kończyć.',
   G05: 'Do tej stacji nie przypisano pytania w paczce.',
   G06: 'Ten gracz już odpowiedział na pytanie tej stacji.',
-  G07: 'Teraz odpowiada inny gracz (tryb „sam gracz z kolejki" albo „zespół").',
+  G07: 'Na tę stację odpowiada gracz z kolejki — nie Twoja kolej.',
   G08: 'Odpowiedź musi być jedną z czterech (0–3).',
   G09: 'Czas zakończenia jest wcześniejszy niż start odcinka.',
   G10: 'Gra jest już zakończona — ten ruch nie zmieni wyniku. Zobacz podsumowanie.',
@@ -85,15 +74,6 @@ function wymaganie(warunek, komunikat) {
 
 function dodajZdarzenie(stan, czasMs, typ, dane = {}) {
   stan.dziennik.push({ czasMs, typ, ...dane });
-}
-
-/** Mediana — odporna na jeden bardzo wolny odcinek (ADR 0014 pkt 7). */
-export function mediana(lista) {
-  const posortowane = [...lista].filter((v) => Number.isFinite(v)).sort((a, b) => a - b);
-  const n = posortowane.length;
-  if (n === 0) return 0;
-  const srodek = Math.floor(n / 2);
-  return n % 2 === 1 ? posortowane[srodek] : (posortowane[srodek - 1] + posortowane[srodek]) / 2;
 }
 
 /**
@@ -145,9 +125,6 @@ export function nowaRozgrywka({ konfig, stacje, paczka, srodek, gracze = null, c
     ziarno: String(ziarno),
     kodGry: String(konfig.kodGry ?? ''),
     tryb: konfig.tryb,
-    wspolpraca: konfig.wspolpraca,
-    karaRecznaS: Number.isFinite(konfig.karaRecznaS) ? konfig.karaRecznaS : 0,
-    limitCzasuOdcinkaS: Number.isFinite(konfig.limitCzasuOdcinkaS) ? konfig.limitCzasuOdcinkaS : 0,
     start: { lat: srodek.lat, lon: srodek.lon },
     startMs: czasMs,
     gracze: listaGraczy,
@@ -159,8 +136,6 @@ export function nowaRozgrywka({ konfig, stacje, paczka, srodek, gracze = null, c
       stan: STANY_ODCINKA.oczekuje,
       startMs: null,
       koniecMs: null,
-      czasS: null,
-      karaS: 0,
       trybDojscia: null,
       accuracyM: null,
       odlegloscKoncowaM: null,
@@ -168,8 +143,6 @@ export function nowaRozgrywka({ konfig, stacje, paczka, srodek, gracze = null, c
         ? Math.round(dystanseOdcinkowM[i])
         : dystansOdcinkaM({ stacje, start: srodek }, s.id),
       dystansSieciowy: Number.isFinite(dystanseOdcinkowM?.[i]) && dystanseOdcinkowM[i] >= 0,
-      poLimitie: false,
-      tempo: null,
     })),
     odpowiedzi: [],
     dziennik: [],
@@ -183,7 +156,6 @@ export function nowaRozgrywka({ konfig, stacje, paczka, srodek, gracze = null, c
     graczy: listaGraczy.length,
     stacji: stacje.length,
     pytan: pytania.length,
-    wspolpraca: stan.wspolpraca,
   });
   if (stan.brakPytan.length > 0) {
     dodajZdarzenie(stan, czasMs, 'ostrzezenie', {
@@ -212,13 +184,11 @@ export function graczNaStacji(stan, stacjaId = stan.biezacaStacja) {
 }
 
 /**
- * Kto odpowiada na pytanie tej stacji (ADR 0009 pkt 4):
- * `solo` i `zespol` → tylko gracz z kolejki (w `zespol` punkty i tak idą na jego
- * konto), `wszyscy` → każdy gracz osobno, punkty osobno.
+ * Kto odpowiada na pytanie tej stacji: ZAWSZE gracz z kolejki (ADR 0022 —
+ * wybór trybu odpowiadania usunięty z setupu, zastępuje ADR 0009 pkt 4).
  */
 export function ktoOdpowiada(stan, stacjaId = stan.biezacaStacja) {
   const zKolejki = graczNaStacji(stan, stacjaId);
-  if (stan.wspolpraca === 'wszyscy') return stan.gracze.map((g) => g.id);
   return zKolejki == null ? [] : [zKolejki];
 }
 
@@ -282,8 +252,8 @@ export function startOdcinka(stan, { stacjaId = stan.biezacaStacja, czasMs } = {
 
 /**
  * Zakończenie odcinka: dojście z GPS (`trybDojscia: 'gps'`) albo ręczne
- * zgłoszenie (`'reczne'`), które dolicza karę czasową (ADR 0004 pkt 5,
- * ADR 0014 pkt 6 — kara jest czasowa, nie punktowa).
+ * zgłoszenie (`'reczne'`), odnotowane w dzienniku bez kary (Partia 2: zero
+ * presji czasowej — tryb ręczny jest pełnoprawny, ADR 0004 pkt 5).
  *
  * @param {object} [args.fix] ostatni fix GPS `{lat, lon, accuracy}` — do dziennika
  */
@@ -299,28 +269,18 @@ export function zakonczOdcinek(stan, { stacjaId = stan.biezacaStacja, czasMs, tr
   if (odcinek.stan === STANY_ODCINKA.zakonczony) return { stan: nowy, usterki: [usterka('G03')] };
   if (czasMs < odcinek.startMs) return { stan: nowy, usterki: [usterka('G09')] };
 
-  const czasS = (czasMs - odcinek.startMs) / 1000;
-  const karaS = trybDojscia === TRYBY_DOJSCIA.reczne ? nowy.karaRecznaS : 0;
-  const czasSKorygowany = czasS + karaS;
   odcinek.stan = STANY_ODCINKA.zakonczony;
   odcinek.koniecMs = czasMs;
-  odcinek.czasS = Math.round(czasSKorygowany * 10) / 10;
-  odcinek.karaS = karaS;
   odcinek.trybDojscia = trybDojscia;
   odcinek.accuracyM = fix && Number.isFinite(fix.accuracy) ? Math.round(fix.accuracy) : null;
   odcinek.odlegloscKoncowaM = fix ? Math.round(odlegloscM(fix, nowy.stacje.find((s) => s.id === stacjaId))) : null;
-  odcinek.poLimitie = nowy.limitCzasuOdcinkaS > 0 && czasSKorygowany > nowy.limitCzasuOdcinkaS;
-  odcinek.tempo = czasSKorygowany / Math.max(odcinek.dystansM, 1);
   nowy.faza = FAZY.pytanie;
   nowy.biezacaStacja = stacjaId;
   dodajZdarzenie(nowy, czasMs, 'dojscie', {
     stacja: stacjaId,
     gracz: odcinek.gracz,
-    czasS: odcinek.czasS,
-    karaS,
     trybDojscia,
     accuracyM: odcinek.accuracyM,
-    poLimitie: odcinek.poLimitie,
   });
   // Stacja bez pytania w paczce (`brakPytan`) zamyka się samym dojściem: bez tego
   // gra stanęłaby w fazie `pytanie` z pustym ekranem i bez akcji, która ruszyłaby
@@ -334,10 +294,8 @@ export function zakonczOdcinek(stan, { stacjaId = stan.biezacaStacja, czasMs, tr
  * ślepy zaułek bez przejścia). Działa **tylko w drodze** — po dojściu gracz
  * odpowiada na pytanie, nawet błędnie (`G13`), żeby nie kasować faktu dojścia.
  *
- * Odcinek dostaje stan `pominiety`, punkty i premia przepadają, a jego tempo nie
- * wchodzi do próbek mediany (ADR 0014 pkt 2 — porównujemy tylko realne dojścia).
- * Zdarzenie z powodem idzie do dziennika: wynik ma być wyjaśnialny, nie
- * „magicznie" krótszy.
+ * Odcinek dostaje stan `pominiety`, punkty przepadają. Zdarzenie z powodem
+ * idzie do dziennika: wynik ma być wyjaśnialny, nie „magicznie" krótszy.
  */
 export function pominStacje(stan, { stacjaId = stan.biezacaStacja, czasMs, powod = '' } = {}) {
   wymaganie(Number.isFinite(czasMs), 'czasMs jest wymagany');
@@ -356,37 +314,6 @@ export function pominStacje(stan, { stacjaId = stan.biezacaStacja, czasMs, powod
 }
 
 /**
- * Premia/potrącenie za czas (ADR 0014 pkt 2–5).
- *
- * Próbki: najpierw odcinki **tej samej stacji** (gdy będzie ich ≥2 — przyszłe
- * warianty gry), potem wszystkie zakończone odcinki bieżącej gry. Mniej niż
- * `minProbek` → premii nie ma, bo nie ma odniesienia.
- *
- * @returns {{ premia: number, medianaTempa: number, probek: number, zrodlo: string }}
- */
-export function premiaCzasu(stan, { stacjaId, tempo, punktyPodstawowe }) {
-  const zakon = stan.odcinki.filter((o) => o.stan === STANY_ODCINKA.zakonczony && Number.isFinite(o.tempo));
-  const teSame = zakon.filter((o) => o.stacja === stacjaId).map((o) => o.tempo);
-  const wszystkie = zakon.map((o) => o.tempo);
-  const probki = teSame.length >= PUNKTACJA.minProbek ? teSame : wszystkie;
-  const zrodlo = teSame.length >= PUNKTACJA.minProbek ? 'stacja' : 'gra';
-
-  const odcinek = znajdzOdcinek(stan, stacjaId);
-  const poLimitie = Boolean(odcinek?.poLimitie);
-  if (punktyPodstawowe <= 0 || poLimitie || probki.length < PUNKTACJA.minProbek || !(tempo > 0)) {
-    return { premia: 0, medianaTempa: mediana(probki), probek: probki.length, zrodlo };
-  }
-  const medianaTempa = mediana(probki);
-  const wzgledne = ogranicz((medianaTempa - tempo) / medianaTempa, -PUNKTACJA.zaciskWzgledny, PUNKTACJA.zaciskWzgledny);
-  return {
-    premia: Math.round(punktyPodstawowe * PUNKTACJA.udzialPremiiCzasu * wzgledne),
-    medianaTempa,
-    probek: probki.length,
-    zrodlo,
-  };
-}
-
-/**
  * Zapis odpowiedzi. Treść pytania NIE wchodzi do stanu (ADR 0007 pkt 6) —
  * wywołujący podaje `{ id, poprawna, punkty }` z odsłoniętej paczki.
  *
@@ -394,7 +321,7 @@ export function premiaCzasu(stan, { stacjaId, tempo, punktyPodstawowe }) {
  * @param {number} args.wybrana indeks odpowiedzi 0–3
  * @param {number} [args.graczId] domyślnie gracz z kolejki (albo pierwszy z listy przy `wszyscy`)
  */
-export function zapiszOdpowiedz(stan, { stacjaId = stan.biezacaStacja, graczId = null, pytanie, wybrana, czasOdpowiedziMs = 0, czasMs } = {}) {
+export function zapiszOdpowiedz(stan, { stacjaId = stan.biezacaStacja, graczId = null, pytanie, wybrana, czasMs } = {}) {
   wymaganie(pytanie && pytanie.id != null, 'pytanie {id, poprawna, punkty} jest wymagane');
   wymaganie(Number.isFinite(czasMs), 'czasMs jest wymagany');
   const nowy = kopia(stan);
@@ -414,11 +341,6 @@ export function zapiszOdpowiedz(stan, { stacjaId = stan.biezacaStacja, graczId =
 
   const poprawna = wybrana === pytanie.poprawna;
   const punktyPodstawowe = poprawna ? Math.max(0, Number(pytanie.punkty) || 0) : 0;
-  const { premia, medianaTempa, probek, zrodlo } = premiaCzasu(nowy, {
-    stacjaId,
-    tempo: odcinek.tempo ?? 0,
-    punktyPodstawowe,
-  });
   const wpis = {
     stacja: stacjaId,
     gracz,
@@ -426,14 +348,7 @@ export function zapiszOdpowiedz(stan, { stacjaId = stan.biezacaStacja, graczId =
     wybrana,
     poprawna,
     punktyPodstawowe,
-    premiaCzasu: premia,
-    punktyRazem: punktyPodstawowe + premia,
-    tempo: odcinek.tempo ?? null,
-    medianaTempa,
-    probek,
-    zrodloProbek: zrodlo,
-    poLimitie: Boolean(odcinek.poLimitie),
-    czasOdpowiedziS: Math.round((Number.isFinite(czasOdpowiedziMs) ? czasOdpowiedziMs : 0) / 100) / 10,
+    punktyRazem: punktyPodstawowe,
   };
   nowy.odpowiedzi.push(wpis);
   dodajZdarzenie(nowy, czasMs, 'odpowiedz', {
@@ -453,34 +368,28 @@ export function czyKoniec(stan) {
 }
 
 /**
- * Podsumowanie: punkty i czasy per gracz, przebieg per stacja, ranking.
+ * Podsumowanie: punkty per gracz, przebieg per stacja, ranking.
  * Liczone ze stanu, więc da się je odtworzyć z dziennika (ARCHITECTURE).
+ * Remisy rozstrzyga kolejność zgłoszeń — stabilny sort, bez dogrywki czasem.
  */
 export function podsumowanie(stan) {
   const gracze = stan.gracze.map((g) => {
     const odpowiedzi = stan.odpowiedzi.filter((o) => o.gracz === g.id);
     const odcinki = stan.odcinki.filter((o) => o.gracz === g.id);
-    const czasOdcinkowS = odcinki
-      .filter((o) => Number.isFinite(o.czasS))
-      .reduce((suma, o) => suma + o.czasS, 0);
     const dystansM = odcinki.reduce((suma, o) => suma + (o.dystansM || 0), 0);
     return {
       id: g.id,
       imie: g.imie,
       punkty: odpowiedzi.reduce((suma, o) => suma + o.punktyRazem, 0),
       punktyOdpowiedzi: odpowiedzi.reduce((suma, o) => suma + o.punktyPodstawowe, 0),
-      premieCzasu: odpowiedzi.reduce((suma, o) => suma + o.premiaCzasu, 0),
       poprawne: odpowiedzi.filter((o) => o.poprawna).length,
       bledne: odpowiedzi.filter((o) => !o.poprawna).length,
       odcinki: odcinki.length,
-      czasOdcinkowS: Math.round(czasOdcinkowS),
       dystansM,
-      srednieTempoSM: dystansM > 0 ? Math.round((czasOdcinkowS / dystansM) * 1000) / 1000 : 0,
       reczneDojscia: odcinki.filter((o) => o.trybDojscia === TRYBY_DOJSCIA.reczne).length,
-      poLimitie: odcinki.filter((o) => o.poLimitie).length,
     };
   });
-  const ranking = [...gracze].sort((a, b) => b.punkty - a.punkty || a.czasOdcinkowS - b.czasOdcinkowS).map((g) => g.id);
+  const ranking = [...gracze].sort((a, b) => b.punkty - a.punkty).map((g) => g.id);
   const stacje = stan.stacje.map((s) => {
     const odcinek = znajdzOdcinek(stan, s.id);
     const odpowiedzi = stan.odpowiedzi.filter((o) => o.stacja === s.id);
@@ -488,15 +397,12 @@ export function podsumowanie(stan) {
       id: s.id,
       gracz: odcinek?.gracz ?? null,
       stan: odcinek?.stan ?? STANY_ODCINKA.oczekuje,
-      czasS: odcinek?.czasS ?? null,
       dystansM: odcinek?.dystansM ?? 0,
-      tempo: odcinek?.tempo ?? null,
       trybDojscia: odcinek?.trybDojscia ?? null,
       poprawne: odpowiedzi.filter((o) => o.poprawna).length,
       punkty: odpowiedzi.reduce((suma, o) => suma + o.punktyRazem, 0),
     };
   });
-  const koniecMs = stan.dziennik.length ? stan.dziennik[stan.dziennik.length - 1].czasMs : stan.startMs;
   return {
     schemat: stan.schemat,
     faza: stan.faza,
@@ -508,7 +414,6 @@ export function podsumowanie(stan) {
     zaliczoneStacje: stacje.filter((s) => s.stan === STANY_ODCINKA.zakonczony).length,
     pominietaStacje: stacje.filter((s) => s.stan === STANY_ODCINKA.pominiety).length,
     stacjeBezPytan: stan.stacje.filter((s) => pytaniaStacji(stan, s.id).length === 0).map((s) => s.id),
-    czasGryS: Math.max(0, Math.round((koniecMs - stan.startMs) / 1000)),
     zdarzen: stan.dziennik.length,
   };
 }

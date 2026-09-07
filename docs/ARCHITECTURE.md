@@ -214,8 +214,8 @@ commit i nowa wersja aplikacji.
 3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (filtr dokładności,
    kody P05/P06) → `dodajFix()` (historia, maks. 40 pomiarów) → `stanDojscia()`
    (próg `max(25 m, 1,2 × accuracy)` ograniczony do 100 m + dwa kolejne
-   trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`: czas,
-   kara za ręczne zgłoszenie, dokładność, `poLimitie`. GPS i symulacja dojścia
+   trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`:
+   tryb dojścia i dokładność (bez kary, ADR 0023). GPS i symulacja dojścia
    (tryb testowy) karmią aplikację tym samym lejem `przyjmijFix()`; symulacja
    ustępuje grze — gdy faza przestaje być `odcinek` (dojście, pauza, ręczny
    koniec), odtwarzanie staje i nie nadpisuje statusu gry.
@@ -224,7 +224,7 @@ commit i nowa wersja aplikacji.
    starcie gry, a warstwa DOM woła `odpakujPaczke` wyłącznie w tranzycji do fazy
    `pytanie` i w `renderujPytanie()`.
 5. Odpowiedź → `rozgrywka.zapiszOdpowiedz({ stacjaId, graczId, pytanie,
-   wybrana })` → punkty i premia/potrącenie za tempo (ADR 0014) → ocena
+   wybrana })` → punkty za poprawną odpowiedź (ADR 0023) → ocena
    (`✓ Dobrze!` / `✗ Źle`), wyjaśnienie i klikalne źródła (`rel="noopener"`)
    zostają na ekranie do „Następna stacja"; przyciski odpowiedzi blokują się po
    pierwszym wyborze. Następna kolejka: `graczNaStacji()` / `ktoOdpowiada()` /
@@ -233,10 +233,9 @@ commit i nowa wersja aplikacji.
    ręczne zakończenie gry pokazuje wczesny wynik, ale NIE kasuje zapisu —
    grę można wznowić.
 6. Koniec → pełne podsumowanie w `gra-panel-koniec` z `podsumowanie()`:
-   zwycięzca z rozbiciem punktacji, ranking, karty graczy (odcinki, tempo),
-   tabela stacji (tryb dojścia GPS/ręczne/pominięta, zmierzony czas),
-   statystyki + medal sprawiedliwości trasy (`wynik.sprawiedliwoscTrasy()`,
-   widokowy — ADR 0014). Eksporty z `app/wynik.js`: tekst `wynikTekstowy()`,
+   zwycięzca, ranking, karty graczy (odcinki, dystans, ręczne dojścia),
+   tabela stacji (tryb dojścia GPS/ręczne/pominięta), statystyki.
+   Eksporty z `app/wynik.js`: tekst `wynikTekstowy()`,
    obraz `planObrazuWyniku()` → wykonawca canvas → PNG 1080 px (kolory
    z tokenów CSS w chwili eksportu); udostępnianie Web Share → schowek →
    plik. Skrót gry ląduje w historii `okolica:historia` (jeden wpis na klucz
@@ -313,13 +312,10 @@ commit i nowa wersja aplikacji.
   przez `pozycja.stanDojscia` zdaniem dla gracza: ile metrów zostało i dlaczego
   stacja się nie zapala). Fix niedokładny dostaje ostrzeżenie, ale nie jest
   odrzucany (ADR 0004 pkt 2 i 4).
-- **Punktacja czasu** (ADR 0014): `tempo = czasS / dystansOdcinkaM` [s/m], gdzie
-  `czasS` zawiera karę za ręczne zgłoszenie, a dystans jest **łańcuchowy**
-  (start gry → stacja 1, potem stacja poprzednia → następna). Mediana próbek
-  (najpierw ta sama stacja ≥ 2, inaczej wszystkie zakończone odcinki ≥ 2,
-  inaczej premia 0), `premia = round(punktyPodstawowe × 0,5 × ogranicz((mediana
-  − tempo)/mediana, ±0,5))` → maks. ±25% punktów za odpowiedź. Przekroczony
-  limit odcinka zeruje premię i oznacza `poLimitie`, ale nie przerywa gry.
+- **Punktacja** (ADR 0023): punkty za poprawną odpowiedź (waga z paczki),
+  zero składnika czasowego; remisy rozstrzyga kolejność zgłoszeń. Dystans
+  odcinka jest **łańcuchowy** (start gry → stacja 1, potem stacja poprzednia
+  → następna) i służy informacji, nie punktom.
 - **Symulacja trasy** (tryb testowy, ADR 0004 pkt 6): interpolacja po łamanej
   punktów (`punktNaTrasie`) + deterministyczny rozrzut i zmienna dokładność
   z `szum(t)` liczonego z czasu — zero `Math.random()`, więc ta sama trasa daje
@@ -336,11 +332,11 @@ Stan rozgrywki (`schemat: 'rozgrywka/1'`, `app/rozgrywka.js`) jest
 (`structuredClone`), a argument zostaje nietknięty, bo UI trzyma referencje.
 Dziennik `{ czasMs, typ, … }` (`start`, `start-odcinka`, `dojscie`, `odpowiedz`,
 `pominiecie`, `ostrzezenie`, `koniec`) pozwala przeliczyć wynik i odtworzyć
-przebieg — debugging terenowy bez zgadywania. Odcinki niosą pomiar (`czasS`,
-`karaS`, `trybDojscia`, `accuracyM`, `odlegloscKoncowaM`, `tempo`, `poLimitie`),
-a odpowiedzi pełny ślad punktacji (`punktyPodstawowe`, `premiaCzasu`,
-`punktyRazem`, `tempo`, `medianaTempa`, `probek`, `zrodloProbek`) — wynik da się
-wyjaśnić graczowi liczba po liczbie (ADR 0011, ADR 0014 pkt 8).
+przebieg — debugging terenowy bez zgadywania. Odcinki niosą tryb dojścia,
+dokładność i dystans (`trybDojscia`, `accuracyM`, `odlegloscKoncowaM`,
+`dystansM`), a odpowiedzi — wynik punktacji (`punktyPodstawowe`,
+`punktyRazem`) — wynik da się wyjaśnić graczowi liczba po liczbie
+(ADR 0011, ADR 0023).
 
 Stan **nie zawiera treści pytań**: z paczki bierze tylko `{ stacja, pytanieId }`,
 a z odpowiedzi poprawność i punkty (ADR 0007 pkt 6). Dlatego może leżeć w

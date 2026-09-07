@@ -15,10 +15,12 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, WSPOLPRACA, domyslnaKonfiguracja, liczbaPytan, oczyscKonfiguracje, proponujKodGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-2';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-2';
 import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-2';
 import {
+  czyPaczkaOdwrocona,
   normalizujTematyPaczki,
+  odkodujPaczkeRev1,
   parsujOdpowiedzModela,
   podsumowaniePaczki,
   poprawkaDlaModelu,
@@ -28,7 +30,7 @@ import {
   WERSJA_PROTOKOLU,
 } from './protokol.js?v=m12-2';
 import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-2';
-import { ZRODLA_STACJI, dystanseOdcinkowM, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-2';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-2';
 import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-2';
 import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-2';
 import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-2';
@@ -40,7 +42,7 @@ import {
   urlPaczkiZRepo,
 } from './zestawy.js?v=m12-2';
 import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-2';
-import { ROLE_PALETY, czasTekst, dystansTekst, etykietaOdcinka, medalTekst, planObrazuWyniku, sprawiedliwoscTrasy, tempoTekst, wynikTekstowy } from './wynik.js?v=m12-2';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-2';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -330,10 +332,8 @@ function renderujSelecty() {
     }
     select.value = wybrany;
   };
-  wypelnij('setup-wspolpraca', WSPOLPRACA, STAN.konfig.wspolpraca);
   wypelnij('setup-jezyk', JEZYKI, STAN.konfig.jezyk);
   wypelnij('setup-podklad', PODKLADY, STAN.konfig.podklad);
-  $('setup-wspolpraca').addEventListener('change', (e) => { STAN.konfig.wspolpraca = e.target.value; });
   $('setup-jezyk').addEventListener('change', (e) => { STAN.konfig.jezyk = e.target.value; });
   $('setup-podklad').addEventListener('change', (e) => { zmienPodklad(e.target.value); });
 }
@@ -411,8 +411,6 @@ function renderujSetup() {
   $('setup-stacje').value = k.liczbaStacji;
   $('setup-pytania').value = k.pytaniaNaStacje;
   $('setup-gracze').value = k.liczbaGraczy;
-  $('setup-kod').value = k.kodGry ?? '';
-  $('setup-geokodacja').checked = !!k.geokodacja;
   $('setup-promien').min = OGRANICZENIA.promienM.min;
   $('setup-promien').max = OGRANICZENIA.promienM.max;
 
@@ -433,21 +431,11 @@ function renderujSetup() {
   czytajLiczbe('setup-pytania', 'pytaniaNaStacje');
   czytajLiczbe('setup-gracze', 'liczbaGraczy');
 
-  $('setup-kod').addEventListener('input', (e) => { STAN.konfig.kodGry = e.target.value.trim(); });
-  $('setup-geokodacja').addEventListener('change', (e) => {
-    STAN.konfig.geokodacja = e.target.checked;
-    renderujMiejsce(); // przełączenie widać od razu (ADR 0013 pkt 3)
-  });
   $('geokodacja-zapasowa').addEventListener('change', (e) => {
     localStorage.setItem('okolica:geokodacja-zapasowa', e.target.checked ? '1' : '0');
     status(e.target.checked
       ? 'Warstwa zapasowa nazwy miejsca (Nominatim) włączona — jedno żądanie, tylko gdy Overpass nie da nazwy. © OpenStreetMap (ODbL).'
       : 'Warstwa zapasowa nazwy miejsca (Nominatim) wyłączona — tak jest domyślnie.');
-  });
-  $('przycisk-kod').addEventListener('click', () => {
-    STAN.konfig.kodGry = proponujKodGry(rngZZiarna(`kod:${Date.now()}`));
-    $('setup-kod').value = STAN.konfig.kodGry;
-    status('Zaproponowano kod gry — identyfikator rozgrywki do eksportu i udostępniania paczki.' + ADR(' Pytania ukrywa obfuskacja, nie ten kod (ADR 0007 pkt 4).'));
   });
 }
 
@@ -780,16 +768,12 @@ function ustawSiec(dane, { zCache, klucz }) {
 }
 
 /**
- * Wyświetlenie nazwy miejsca z bramą `konfig.geokodacja` (ADR 0013 pkt 3:
- * wyłączona w setupie = prompt i UI mają same współrzędne) oraz atrybucją
- * ODbL, gdy miejsce pochodzi z warstwy zapasowej Nominatim (ASSETS §3).
+ * Wyświetlenie nazwy miejsca (zawsze pobierana — ADR 0013 pkt 3 po poprawce
+ * z Partii 2) oraz atrybucją ODbL, gdy miejsce pochodzi z warstwy zapasowej
+ * Nominatim (ASSETS §3).
  */
 function renderujMiejsce() {
   const pole = $('pozycja-miejsce');
-  if (!STAN.konfig.geokodacja) {
-    pole.textContent = 'nazwa miejsca: wyłączona w ustawieniach — prompt ma same współrzędne' + ADR(' (ADR 0013 pkt 3)');
-    return;
-  }
   if (!STAN.miejsce) {
     pole.textContent = 'nazwa miejsca: brak — pobierana z siecią dróg na ekranie stacji';
     return;
@@ -817,7 +801,7 @@ function ustawMiejsce(miejsce, zrodlo) {
  * `okolica:geokodacja-endpoint` (wymóg OSMF „bez aktualizacji oprogramowania").
  */
 async function uzupelnijMiejsceZapasowe() {
-  if (!STAN.pozycja || STAN.miejsce || !STAN.konfig.geokodacja) return;
+  if (!STAN.pozycja || STAN.miejsce) return;
   if (STAN.miejsceProbowane) return;
   STAN.miejsceProbowane = true;
   if (localStorage.getItem('okolica:geokodacja-zapasowa') !== '1') return;
@@ -984,7 +968,7 @@ function przeliczZTegoCoJest() {
       centrujNaPozycji();
       status(wynik.usterki.length
         ? `Sieć jest za uboga na ${STAN.konfig.liczbaStacji} stacji — wybrano ${wynik.stacje.length} (kod S12). Zmień okolicę albo promień, jeśli chcesz komplet.`
-        : `Stacje z sieci drogowej: ${wynik.stacje.length} punktów osiągalnych, odchylenie dystansów ${Math.round(wynik.sprawiedliwosc.udzialOdchylenia * 100)}%.`);
+        : `Stacje z sieci drogowej: ${wynik.stacje.length} punktów osiągalnych w promieniu ${STAN.konfig.promienM} m.`);
       return;
     } catch (blad) {
       pokazBledy('bledy-stacje', [{
@@ -1014,6 +998,7 @@ async function przeliczStacjeZPobraniem(klucz) {
   if (trwaPobieranieSieci) return;
   trwaPobieranieSieci = true;
   $('przycisk-przelicz').disabled = true;
+  $('stacje-ladowanie').hidden = false;
   try {
     const ok = await pobierzSiec(Date.now());
     if (!ok && STAN.siec.stan !== 'gotowa') {
@@ -1024,6 +1009,7 @@ async function przeliczStacjeZPobraniem(klucz) {
   } finally {
     trwaPobieranieSieci = false;
     $('przycisk-przelicz').disabled = false;
+    $('stacje-ladowanie').hidden = true;
   }
 }
 
@@ -1096,15 +1082,15 @@ function renderujStacje() {
   }));
   if (sieciowe) {
     const w = STAN.wynikSieci;
-    $('stacje-sprawiedliwosc').textContent = `sieciowo: średnio ${w.sprawiedliwosc.sredniaM} m od startu · odchylenie ${w.sprawiedliwosc.odchylenieM} m (${Math.round(w.sprawiedliwosc.udzialOdchylenia * 100)}%) · pierścień ${w.pierscien.r} m (pasmo ${w.pierscien.pasmo[0]}–${w.pierscien.pasmo[1]} m) · najmniejszy odstęp ${najmniejszyOdstepM(STAN.stacje)} m`;
-    const miejsce = STAN.konfig.geokodacja && STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
+    $('stacje-sprawiedliwosc').textContent = `sieciowo: pierścień ${w.pierscien.r} m (pasmo ${w.pierscien.pasmo[0]}–${w.pierscien.pasmo[1]} m) · najmniejszy odstęp ${najmniejszyOdstepM(STAN.stacje)} m`;
+    const miejsce = STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
     const cache = STAN.siec.zCache ? ' (z pamięci telefonu — Overpass nie został wywołany)' : '';
     $('stacje-tryb').textContent = `${ZRODLA_STACJI.siec}${cache}${miejsce}.`;
     $('przycisk-pierścien').hidden = false;
     $('przycisk-reczne').hidden = true;
+    $('przycisk-siec-ponow').hidden = true;
   } else {
-    const m = miaraSprawiedliwosci(STAN.stacje);
-    $('stacje-sprawiedliwosc').textContent = `średnio ${m.sredniaM} m od startu · odchylenie ${m.odchylenieM} m (${Math.round(m.udzialOdchylenia * 100)}%) · najmniejszy odstęp między stacjami ${najmniejszyOdstepM(STAN.stacje)} m`;
+    $('stacje-sprawiedliwosc').textContent = `losowo w promieniu ${STAN.konfig.promienM} m · najmniejszy odstęp między stacjami ${najmniejszyOdstepM(STAN.stacje)} m`;
     $('stacje-tryb').textContent = STAN.wymusPierscien
       ? `${ZRODLA_STACJI.pierscien} — wymuszony przyciskiem. ${STAN.siec.stan === 'gotowa' ? 'Sieć drogowa jest pobrana: wyłącz tryb uproszczony tym samym przyciskiem.' : 'Sieć drogowa niedostępna (offline albo limit Overpass).'}`
       : `${ZRODLA_STACJI.pierscien}. Stacje z sieci dróg, placów i szlaków pojawią się po pobraniu danych Overpass — wymaga połączenia z internetem.` + ADR(' (ADR 0005)');
@@ -1115,6 +1101,7 @@ function renderujStacje() {
     }
     $('przycisk-pierścien').hidden = STAN.siec.stan !== 'gotowa';
     $('przycisk-reczne').hidden = false;
+    $('przycisk-siec-ponow').hidden = STAN.siec.stan === 'gotowa';
   }
 }
 
@@ -1465,6 +1452,11 @@ function startGry() {
   STAN.graPauza = false;
   STAN.graPauzaStartMs = 0;
   STAN.pauzaSkumulowanaMs = 0;
+  if (!STAN.konfig.kodGry) {
+    // Kod gry nie jest w setupie (Partia 2, pkt 7): identyfikator z imion,
+    // miejsca i daty — do plików i kluczy, nie do ochrony pytań.
+    STAN.konfig.kodGry = domyslnyKodGry({ imiona: STAN.konfig.imiona, miejsce: STAN.miejsce ?? '' });
+  }
   STAN.kontenerPaczki = zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU);
   zapiszZestawLokalnyPoStarcie();
   STAN.rozgrywka = nowaRozgrywka({
@@ -1535,14 +1527,10 @@ function zakonczOdcinekGry(trybDojscia, fix) {
   odegrajSygnal('dotarcie'); // M10/T4: wibracja + dwa tony w górę
   if (STAN.multi) {
     // M11/P4: dojście jedzie na serwer BEZ współrzędnych (biała lista pól, ADR 0019 pkt 3)
-    const odcinek = wynik.stan.odcinki.find((o) => o.stacja === stacjaPrzed);
-    void wyslijZdarzenieMulti('dojscie', stacjaPrzed, {
-      czasOdcinkaMs: odcinek && Number.isFinite(odcinek.startMs) && Number.isFinite(odcinek.koniecMs) ? odcinek.koniecMs - odcinek.startMs : null,
-      trybDojscia,
-    });
+    void wyslijZdarzenieMulti('dojscie', stacjaPrzed, { trybDojscia });
   }
   status(trybDojscia === TRYBY_DOJSCIA.reczne
-    ? 'Dojście zgłoszone ręcznie — kara czasowa doliczona do odcinka (ADR 0004 pkt 5).'
+    ? 'Dojście zgłoszone ręcznie — odnotowane, bez kary (ADR 0004 pkt 5).'
     : 'Stacja osiągnięta — próg dojścia zadziałał z GPS. Brawo!');
   renderujGre();
   if (STAN.rozgrywka.faza === FAZY.pytanie) renderujPytanie(); // ADR 0007 pkt 6: pytanie DOPIERO teraz
@@ -1656,7 +1644,6 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
     graczId: para.graczId,
     pytanie,
     wybrana,
-    czasOdpowiedziMs: Math.max(0, performance.now() - STAN.pytaniePokazaneMs),
     czasMs: zegarGry(),
   });
   STAN.rozgrywka = wynik.stan;
@@ -1677,14 +1664,11 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
     // M11/P4: wynik odpowiedzi jedzie na serwer — punkty liczy też serwer (spójność ponad zaufaniem)
     void wyslijZdarzenieMulti('odpowiedz', stacjaOdp, {
       poprawna: dobrze,
-      punktyBaza: wpis.punktyPodstawowe,
-      premiaCzasu: wpis.premiaCzasu,
       punktyRazem: wpis.punktyRazem,
-      czasOdpowiedziMs: Math.round(wpis.czasOdpowiedziS * 100),
     });
   }
   $('gra-odpowiedz-ocena').textContent = dobrze
-    ? `✓ Dobrze! +${wpis.punktyRazem} pkt${wpis.premiaCzasu ? ` (w tym premia za tempo ${wpis.premiaCzasu > 0 ? '+' : ''}${wpis.premiaCzasu} pkt)` : ''}`
+    ? `✓ Dobrze! +${wpis.punktyRazem} pkt`
     : `✗ Źle (0 pkt). Poprawna odpowiedź: ${'ABCD'[pytanie.poprawna]}. ${pytanie.odpowiedzi[pytanie.poprawna]}`;
   $('gra-wyjasnienie').textContent = pytanie.wyjasnienie ?? '';
   const zrodla = $('gra-zrodla');
@@ -1776,7 +1760,7 @@ function zapiszGreDoHistorii(przerwana = false) {
       konfig: { ...STAN.konfig, kodGry: String(STAN.konfig.kodGry ?? '') },
       stacje: STAN.stacje,
       podsumowanie: podsumowanie(r),
-      miejsce: STAN.konfig.geokodacja && STAN.miejsce ? STAN.miejsce : null,
+      miejsce: STAN.miejsce ? STAN.miejsce : null,
       terazMs: Date.now(),
       przerwana,
     });
@@ -1830,7 +1814,6 @@ function renderujHistorieGier() {
       w.miejsce,
       TRYBY[w.tryb]?.etykieta ?? w.tryb,
       w.zwyciezca ? `🏆 ${w.zwyciezca} — ${w.punktyRazem} pkt` : 'brak zwycięzcy',
-      czasTekst(w.czasGryS),
     ];
     li.textContent = czesci.filter(Boolean).join(' · ') + (w.przerwana ? ' · (przerwana)' : '');
     return li;
@@ -1994,11 +1977,9 @@ function dataWynikuTekst(teraz = new Date()) {
 }
 
 /**
- * Pełne podsumowanie (M7) z `podsumowanie()` i `miaraSprawiedliwosci()` —
- * warstwa DOM nie liczy własnej matematyki (plan M7, kryteria kodu). Medal
- * 🏅 „Uczciwa trasa" przy udziale odchylenia ≤ 0,15 (kryterium jakości M4,
- * ADR 0005 pkt 5): z pól sieciowych, gdy stacje je mają (także po wznowieniu
- * gry z zapisu — snapshot niesie stacje z `dystansSieciowyM`).
+ * Pełne podsumowanie (M7) z `podsumowanie()` — warstwa DOM nie liczy
+ * własnej matematyki (plan M7, kryteria kodu). Bez czasów i tempa
+ * (Partia 2: zero presji czasowej).
  */
 function pokazWyniki() {
   const r = STAN.rozgrywka;
@@ -2019,7 +2000,7 @@ function pokazWyniki() {
     punkty.textContent = `${zwyciezca.punkty} pkt`;
     const detale = document.createElement('p');
     detale.className = 'zwyciezca-detale';
-    detale.textContent = `poprawne ${zwyciezca.poprawne}/${zwyciezca.poprawne + zwyciezca.bledne} · czas odcinków ${czasTekst(zwyciezca.czasOdcinkowS)}`;
+    detale.textContent = `poprawne ${zwyciezca.poprawne}/${zwyciezca.poprawne + zwyciezca.bledne}`;
     kartaZw.append(imie, punkty, detale);
   } else {
     const p = document.createElement('p');
@@ -2027,11 +2008,7 @@ function pokazWyniki() {
     kartaZw.appendChild(p);
   }
 
-  // 2. medal sprawiedliwości trasy (widok, nie punkty — plan M7, decyzja 2)
-  const sprawiedliwosc = sprawiedliwoscTrasy(STAN.stacje);
-  $('gra-wynik-medal').textContent = medalTekst(sprawiedliwosc);
-
-  // 3. ranking — tabela jak w M6 (miejsce, gracz, punkty, poprawne)
+  // 2. ranking — tabela jak w M6 (miejsce, gracz, punkty, poprawne)
   const tbody = $('gra-wyniki-tbody');
   tbody.replaceChildren();
   for (const id of wynik.ranking) {
@@ -2050,7 +2027,6 @@ function pokazWyniki() {
   const dl = $('gra-wynik-statystyki');
   dl.replaceChildren();
   const pary = [
-    ['czas gry', czasTekst(wynik.czasGryS)],
     ['zaliczone', `${wynik.zaliczoneStacje} z ${r.stacje.length}`],
     ['pominięte', String(wynik.pominietaStacje)],
     ['stacje bez pytań', wynik.stacjeBezPytan.length ? wynik.stacjeBezPytan.map((s) => `#${s}`).join(', ') : 'brak'],
@@ -2077,10 +2053,10 @@ function pokazWyniki() {
     naglowek.textContent = `${g.imie}${id === wynik.zwyciezca ? ' 🏆' : ''} · ${g.punkty} pkt`;
     const rozbicie = document.createElement('p');
     rozbicie.className = 'rozbicie';
-    rozbicie.textContent = `podstawowe ${g.punktyOdpowiedzi} + premie ${g.premieCzasu} · poprawne ${g.poprawne}, błędne ${g.bledne}`;
+    rozbicie.textContent = `${g.punkty} pkt · poprawne ${g.poprawne}, błędne ${g.bledne}`;
     const odcinki = document.createElement('p');
     odcinki.className = 'odcinki';
-    odcinki.textContent = `odcinki: ${g.odcinki} · czas ${czasTekst(g.czasOdcinkowS)} · dystans ${dystansTekst(g.dystansM)} · tempo ${tempoTekst(g.srednieTempoSM)} · ręczne dojścia: ${g.reczneDojscia} · po limicie: ${g.poLimitie}`;
+    odcinki.textContent = `odcinki: ${g.odcinki} · dystans ${dystansTekst(g.dystansM)} · ręczne dojścia: ${g.reczneDojscia}`;
     karta.append(naglowek, rozbicie, odcinki);
     karty.appendChild(karta);
   }
@@ -2094,7 +2070,6 @@ function pokazWyniki() {
       String(s.id),
       s.gracz != null ? (imiona.get(s.gracz) ?? `#${s.gracz}`) : '—',
       etykietaOdcinka(s),
-      s.czasS != null ? czasTekst(s.czasS) : '—',
       String(s.punkty),
     ]) {
       const td = document.createElement('td');
@@ -2109,9 +2084,8 @@ function pokazWyniki() {
   const tekst = wynikTekstowy({
     podsumowanie: wynik,
     konfig: STAN.konfig,
-    miejsce: STAN.konfig.geokodacja && STAN.miejsce ? STAN.miejsce : null,
+    miejsce: STAN.miejsce ? STAN.miejsce : null,
     data: dataWynikuTekst(),
-    sprawiedliwosc,
     przerwana: STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec,
   });
   STAN.wynikTekst = tekst;
@@ -2192,9 +2166,8 @@ async function eksportujWynikObraz(udostepnij = false) {
     const plan = planObrazuWyniku({
       podsumowanie: podsumowanie(r),
       konfig: STAN.konfig,
-      miejsce: STAN.konfig.geokodacja && STAN.miejsce ? STAN.miejsce : null,
+      miejsce: STAN.miejsce ? STAN.miejsce : null,
       data: dataWynikuTekst(),
-      sprawiedliwosc: sprawiedliwoscTrasy(STAN.stacje),
       przerwana: STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec,
     });
     const nazwa = nazwaPlikuObrazuWyniku(r.kodGry ?? STAN.konfig?.kodGry);
@@ -2222,8 +2195,7 @@ async function eksportujWynikObraz(udostepnij = false) {
 function budujPromptEkran() {
   const wynik = zbudujPrompt({
     konfig: STAN.konfig,
-    // konfig.geokodacja=false → prompt ma same współrzędne (ADR 0013 pkt 3)
-    okolica: { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, miejsce: STAN.konfig.geokodacja ? STAN.miejsce : '' },
+    okolica: { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, miejsce: STAN.miejsce ?? '' },
     stacje: STAN.stacje,
   });
   pokazBledy('bledy-prompt', wynik.usterki);
@@ -2317,7 +2289,11 @@ function sprawdzOdpowiedz() {
     return;
   }
 
-  const usterki = walidujPaczke(paczka, oczekiwane());
+  // Q2 (PROTOKOL §3.4): wariant odwrócony odkodowujemy PRZED walidacją —
+  // dalej płynie postać czytelna z markerem PYT/1.0.
+  const bylaOdwrocona = czyPaczkaOdwrocona(paczka);
+  const robocza = odkodujPaczkeRev1(paczka);
+  const usterki = walidujPaczke(robocza, oczekiwane());
   STAN.usterkiPaczki = usterki;
   if (usterki.length) {
     wynik.dataset.stan = 'blad';
@@ -2335,8 +2311,8 @@ function sprawdzOdpowiedz() {
   }
 
   wynik.dataset.stan = 'ok';
-  STAN.paczka = normalizujTematyPaczki(paczka);
-  $('wynik-naglowek').textContent = 'Paczka przyjęta';
+  STAN.paczka = normalizujTematyPaczki(robocza);
+  $('wynik-naglowek').textContent = bylaOdwrocona ? 'Paczka przyjęta (odwrócona, rev1 — odkodowana)' : 'Paczka przyjęta';
   $('przycisk-poprawka').hidden = true;
   $('przycisk-ukryj').hidden = false;
   $('przycisk-eksport-paczki').hidden = false;
@@ -2347,13 +2323,13 @@ function sprawdzOdpowiedz() {
     : zKontenera.zrodlo === 'json'
       ? 'jawny JSON od modelu — przed ukryciem'
       : null;
-  renderujPodsumowaniePaczki(paczka, postac);
+  renderujPodsumowaniePaczki(robocza, postac);
   $('podglad-organizatora').hidden = false;
   renderujPodgladOrganizatora();
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
-  status('Paczka pytań zwalidowana i przyjęta do pamięci sesji.');
+  status(bylaOdwrocona ? 'Paczka odwrócona (rev1) — odkodowana i przyjęta do pamięci sesji.' : 'Paczka pytań zwalidowana i przyjęta do pamięci sesji.');
   wyslijZestawNaDrive();
 }
 
@@ -3313,7 +3289,6 @@ function renderujWierszeWynikow(tbody, gra) {
       String(w.punkty),
       `${w.poprawne}/${w.poprawne + w.bledne}`,
       String(w.stacjeZamkniete),
-      czasTekst(Math.round((w.czasOdcinkowMs ?? 0) / 1000)),
     ];
     for (const tekst of komorki) {
       const td = document.createElement('td');
@@ -3704,6 +3679,11 @@ function start() {
   });
 
   $('przycisk-wstecz-pozycja').addEventListener('click', () => pokazEkran('pozycja'));
+  $('przycisk-siec-ponow').addEventListener('click', () => {
+    pokazBledy('bledy-stacje', []);
+    status('Ponownie pobieram sieć drogową…');
+    void przeliczStacjeZPobraniem(kluczSieci());
+  });
   $('przycisk-przelicz').addEventListener('click', () => {
     STAN.ziarnoOffset += 1;
     STAN.obrot = (STAN.obrot + 360 / (STAN.konfig.liczbaStacji * 2)) % 360;

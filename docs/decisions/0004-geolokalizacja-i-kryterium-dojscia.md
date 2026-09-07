@@ -32,10 +32,9 @@ na sesję; ciągły GPS je baterię.
    `accuracy > 100 m`, kreska dokładności rysowana na mapie (ADR 0003 pkt 4).
    Gracz widzi, dlaczego stacja się „nie zapala".
 5. **Tryb ręczny jako część gry, nie wyjątek**: przycisk „jestem na miejscu"
-   dostępny zawsze; jego użycie zapisuje zdarzenie `reczne` w dzienniku
-   rozgrywki i dolicza karę czasową (domyślnie +60 s, konfigurowalną w setupie,
-   0 = wyłączona). Bez tego gra jest niegrywalna w budynku, w metrze i na
-   urządzeniach bez GPS.
+   dostępny zawsze; jego użycie zapisuje zdarzenie w dzienniku rozgrywki,
+   bez kary (kara czasowa usunięta w Partii 2, ADR 0023). Bez tego gra jest
+   niegrywalna w budynku, w metrze i na urządzeniach bez GPS.
 6. **Tryb testowy** (`?tryb=test`): ręczne współrzędne + symulacja trasy
    (lista fixów odtwarzana z zadaną częstotliwością). To jedyny sposób
    weryfikacji rozgrywki w sandboxie bez GPS (ENVIRONMENT §4.1, §5) i sposób
@@ -64,8 +63,8 @@ na sesję; ciągły GPS je baterię.
 0003 (marker pozycji), 0005 (stacje muszą być osiągalne), 0009 (kolejność
 graczy), 0013 (prywatność).
 
-## Aneks (2026-09-07): kara ręczna stała, bez pola w setupie
+## Aneks (2026-09-07): kara ręczna stała, bez pola w setupie — ZNIESIONA w Partii 2
 
-Decyzja właściciela: pole „Kara za „jestem na miejscu"" zniknęło z setupu
-(myliło). Kara z pkt 5 działa dalej jako **stałe +60 s** (wartość w
-`DOMYSLNE.karaRecznaS`, walidacja K17 dla starych zapisów).
+Decyzja właściciela (Partia 1): pole „Kara za „jestem na miejscu"" zniknęło
+z setupu (myliło), kara działała jako stałe +60 s. Decyzja właściciela
+(Partia 2, ADR 0023): kara zniesiona w całości — ręczne dojście bez kary.

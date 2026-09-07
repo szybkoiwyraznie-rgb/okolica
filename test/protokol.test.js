@@ -13,8 +13,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  SCHEMAT_KONTENERA, SZABLON_PROMPTU, TOKENY_MIEJSCA, WERSJA_PROTOKOLU,
-  czyZakotwiczone, normalizujTekst, normalizujTematyPaczki, parsujOdpowiedzModela, podsumowaniePaczki,
+  SCHEMAT_KONTENERA, SZABLON_PROMPTU, TOKENY_MIEJSCA, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1,
+  czyPaczkaOdwrocona, czyZakotwiczone, normalizujTekst, normalizujTematyPaczki, odkodujPaczkeRev1,
+  odwrocPolaPaczki, odwrocTekst, parsujOdpowiedzModela, podsumowaniePaczki,
   poprawkaDlaModelu, rdzenTokena, tokenyWlasne, walidujPaczke, zbudujPrompt,
   zastosujEdycjePaczki, EDYTOWALNE_POLA,
 } from '../app/protokol.js';
@@ -84,7 +85,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'OKOLICA GRY:',
     'STACJE (kolejność = kolejność w grze',
     'GRACZE I TRUDNOŚĆ:',
-    'SCHEMAT ODPOWIEDZI (PYT/1.0)',
+    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev1)',
     'WYMAGANIA DODATKOWE:',
     '"poprawna": indeks poprawnej odpowiedzi',
   ]) {
@@ -194,6 +195,58 @@ test('walidujPaczke: fixture OK przechodzi bez usterek', () => {
 test('walidujPaczke: E01 — zła albo brakująca wersja protokołu', () => {
   assert.ok(kody(klonyPaczki((p) => { p.protokol = 'PYT/2.0'; })).includes('E01'));
   assert.ok(kody(klonyPaczki((p) => { delete p.protokol; })).includes('E01'));
+});
+
+/* -------------------------------- Q2: wariant odwrócony PYT/1.0-rev1 (PROTOKOL §3.4) */
+
+test('rev1: odwrocTekst działa po punktach kodowych (ogonki i emoji przeżywają)', () => {
+  assert.equal(odwrocTekst('Kot'), 'toK');
+  assert.equal(odwrocTekst('zażółć gęślą jaźń'), 'ńźaj ąlśęg ćłóżaz');
+  assert.equal(odwrocTekst('A🏅B'), 'B🏅A', 'emoji to jeden punkt kodowy, nie para surrogate');
+  assert.equal(odwrocTekst(odwrocTekst('Grabowice 1342?')), 'Grabowice 1342?', 'symetria');
+});
+
+test('rev1: round-trip — odwrocPolaPaczki ×2 wraca do oryginału, struktura nietknięta', () => {
+  const raz = odwrocPolaPaczki(OK);
+  assert.equal(raz.protokol, OK.protokol, 'marker nietknięty — odwraca tylko pola tekstowe');
+  assert.equal(raz.pytania[0].tresc, odwrocTekst(OK.pytania[0].tresc));
+  assert.deepEqual(raz.pytania[0].odpowiedzi, OK.pytania[0].odpowiedzi.map(odwrocTekst));
+  assert.equal(raz.pytania[0].wyjasnienie, odwrocTekst(OK.pytania[0].wyjasnienie));
+  assert.equal(raz.pytania[0].zrodla[0].tytul, odwrocTekst(OK.pytania[0].zrodla[0].tytul));
+  assert.equal(raz.uwagi, odwrocTekst(OK.uwagi));
+  // struktura nietknięta
+  assert.equal(raz.pytania[0].id, OK.pytania[0].id);
+  assert.equal(raz.pytania[0].poprawna, OK.pytania[0].poprawna);
+  assert.equal(raz.pytania[0].punkty, OK.pytania[0].punkty);
+  assert.equal(raz.pytania[0].zrodla[0].url, OK.pytania[0].zrodla[0].url);
+  assert.deepEqual(odwrocPolaPaczki(raz), OK, 'dwukrotne odwrócenie = oryginał');
+  assert.deepEqual(OK.protokol, 'PYT/1.0', 'fixture nie zmutowany');
+});
+
+test('rev1: paczka odwrócona przechodzi walidację jak jawna (E01 akceptuje marker)', () => {
+  const rev1 = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV1 };
+  assert.equal(czyPaczkaOdwrocona(rev1), true);
+  assert.equal(czyPaczkaOdwrocona(OK), false);
+  assert.deepEqual(walidujPaczke(rev1, oczekiwane()), [], 'reguły tekstowe działają na odkodowanej treści');
+  // a BEZ dekodera ta sama paczka by poległa: '?' jest na początku, nie na końcu
+  assert.ok(!rev1.pytania[0].tresc.trim().endsWith('?'), 'sanity: odwrócona treść kończy się początkiem zdania');
+});
+
+test('rev1: odkodujPaczkeRev1 normalizuje marker, jawną przepuszcza bez zmian', () => {
+  const rev1 = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV1 };
+  assert.deepEqual(odkodujPaczkeRev1(rev1), OK, 'odkodowana = jawny oryginał z markerem PYT/1.0');
+  assert.equal(odkodujPaczkeRev1(OK), OK, 'jawna paczka wraca tą samą referencją (zero kopiowania)');
+});
+
+test('rev1: szablon żąda odwrócenia i samokontroli (reguła 8)', () => {
+  for (const fraza of [
+    'ODWRÓCONE ZNAKAMI',
+    '"PYT/1.0-rev1"',
+    'ODCZYTAJ każde odwrócone pole od końca',
+    'samokontrola',
+  ]) {
+    assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
+  }
 });
 
 test('walidujPaczke: E03 — liczba pytań niezgodna z setupem', () => {

@@ -59,26 +59,6 @@ export function uzupelnijOdleglosci(stacje, srodek) {
   }));
 }
 
-/**
- * Miara sprawiedliwości układu (ADR 0005 pkt 5): średnia i odchylenie
- * standardowe odległości stacji od środka — domyślnie w linii prostej, dla
- * stacji z sieci z `pole: 'dystansSieciowyM'` (bo sprawiedliwość liczy się
- * na dystansie sieciowym). `udzialOdchylenia` ≤ 0.15 to kryterium jakości
- * z ROADMAP M4.
- */
-export function miaraSprawiedliwosci(stacje, { pole = 'odlegloscM' } = {}) {
-  const d = stacje.map((s) => s[pole]).filter((v) => Number.isFinite(v));
-  if (d.length === 0) return { sredniaM: 0, odchylenieM: 0, udzialOdchylenia: 0 };
-  const sredniaM = d.reduce((a, b) => a + b, 0) / d.length;
-  const wariancja = d.reduce((a, b) => a + (b - sredniaM) ** 2, 0) / d.length;
-  const odchylenieM = Math.sqrt(wariancja);
-  return {
-    sredniaM: Math.round(sredniaM),
-    odchylenieM: Math.round(odchylenieM),
-    udzialOdchylenia: sredniaM ? odchylenieM / sredniaM : 0,
-  };
-}
-
 /** Minimalna odległość między dwiema stacjami (metry) — do passu wyrównującego. */
 export function najmniejszyOdstepM(stacje) {
   let min = Infinity;
@@ -289,7 +269,6 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
   return {
     stacje: zOdleglosciami,
     macierz,
-    sprawiedliwosc: miaraSprawiedliwosci(zOdleglosciami, { pole: 'dystansSieciowyM' }),
     pierscien: { r: Math.round(r), pasmo: [Math.round(pasmo[0]), Math.round(pasmo[1])], start },
     liczniki: { kandydatow: kandydaci.length, ocenionych: ocenieni.length, dijkstr: pamiecDijkstra.size },
     usterki,

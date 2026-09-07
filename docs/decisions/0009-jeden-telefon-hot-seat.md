@@ -19,22 +19,17 @@ rywalizacja na wspólnej trasie.
 2. **Kolejka graczy jest jawna i cykliczna**: stacje przypisane po kolei
    (`gracz = stacja mod N`), ekran przed startem odcinka mówi **kto idzie**,
    dużym drukiem i kolorem przypisanym do gracza. Zmiana kolejności możliwa
-   tylko przed startem gry (potem wymagałaby przeliczenia uczciwości trasy,
-   ADR 0005 pkt 5).
-3. **Czas liczy się per odcinek i per gracz**: start odcinka na jawnej akcji
-   (ADR 0004 pkt 3), stop po spełnieniu kryterium dojścia. Dziennik rozgrywki
-   trzyma `{ stacja, gracz, start, koniec, trybDojscia, accuracy }`.
-4. **Pytanie zadaje się graczowi z kolejki**; pozostali mogą doradzać albo nie —
-   decyduje ustawienie setupu `wspolpraca`: `solo` (tylko gracz z kolejki
-   odpowiada), `zespol` (dowolny gracz, punkty na konto gracza z kolejki),
-   `wszyscy` (każdy odpowiada osobno na tym samym telefonie, punkty osobno).
-5. **Punktacja** (dopracowanie w M7, ramy tutaj): punkty za poprawną odpowiedź
-   (waga tematu/trudności) + premia/potrącenie za czas względem **mediany
-   odcinków tej samej stacji dla wszystkich graczy** — a nie względem stałego
-   limitu, bo długość odcinka zależy od układu trasy. W modelu hot-seat do
-   jednej stacji idzie jeden gracz, więc regułę próbek doprecyzowuje **ADR 0014**
-   (mediana tempa `[s/m]` z łańcuchem zbiorów próbek). Ręczne zgłoszenie dojścia
-   (ADR 0004 pkt 5) dolicza karę konfigurowalną.
+   tylko przed startem gry.
+3. **Odcinek zaczyna jawna akcja, kończy dojście** (ADR 0004 pkt 3).
+   Dziennik rozgrywki trzyma `{ stacja, gracz, start, koniec, trybDojscia,
+   accuracy }` jako kolejność zdarzeń — czasy nie wchodzą do punktacji
+   (ADR 0023: zero presji czasowej).
+4. **Na pytanie odpowiada gracz z kolejki** (ADR 0022 — ustawienie
+   `wspolpraca` usunięte z setupu w Partii 2); odpowiedź spoza kolejki jest
+   odrzucana kodem G07. Doradzanie na głos to sprawa graczy, nie reguły.
+5. **Punktacja** (ADR 0023): punkty za poprawną odpowiedź (waga z paczki),
+   zero składnika czasowego; remisy rozstrzyga kolejność zgłoszeń. Ręczne
+   zgłoszenie dojścia (ADR 0004 pkt 5) jest pełnoprawne i bez kary.
 6. **Gra na wielu urządzeniach jest odłożona** (`docs/BACKLOG.md` B1) i wymaga:
    nowego ADR, decyzji o usłudze synchronizującej albo o trybie
    „kod rozgrywki + wymiana stanów przez paczki" (bez serwera), oraz osobnego
@@ -46,25 +41,25 @@ rywalizacja na wspólnej trasie.
 
 - Zero kosztów infrastruktury i zero kont — gra jest „wejdź i graj".
 - Uczciwość: gracze idą tą samą trasą, ale w innym momencie (światła, tłum) —
-  dlatego punktacja od mediany, a nie od limitu (pkt 5).
+  dlatego gra w ogóle nie mierzy czasu (pkt 5, ADR 0023).
 - Wątek UX: telefon jest jeden, więc interfejs musi w sekundę pokazywać
   „czyja kolejka" i „ile jeszcze metrów" — bez przewijania i bez małego druku
   (ADR 0011).
 - Ograniczenie: gra nie działa dla graczy rozproszonych po mieście
   (każdy swoim tempem). To świadoma rezygnacja na rzecz prostoty i prywatności.
-- Testy: `test/rozgrywka.test.js` — przydział kolejek, liczenie czasów,
+- Testy: `test/rozgrywka.test.js` — przydział kolejek, kolejka odpowiadania,
   punktacja (czyste funkcje z wstrzykiwanym zegarem, bez `Date.now()` w środku).
 
 ## Powiązania
 
-0004 (czasy i dojścia), 0005 (uczciwość trasy), 0010 (eksport stanu),
-0011 (UI „czyja kolejka"), 0013 (prywatność).
+0004 (dojścia), 0005 (wybór stacji), 0010 (eksport stanu),
+0011 (UI „czyja kolejka"), 0013 (prywatność), 0022 (kolejka odpowiada),
+0023 (zero presji czasowej).
 
 ## Aneks (2026-09-06): multi-device obok hot-seat (ADR 0019, M11)
 
 Hot-seat na jednym telefonie ZOSTAJE jako tryb domyślny i jedyny działający
 offline. Decyzją właściciela (ADR 0019) dochodzi gra na wielu urządzeniach
 przez most Drive: parowanie lobby+kod, tryby wyścig i tury, synchronizacja
-zdarzeniami BEZ współrzędnych. Punktacja czasu (pkt 5 niniejszego ADR)
-działa w obu trybach per gracz; mediana tempa (ADR 0014) liczna jest z
-odcinków własnego gracza.
+zdarzeniami BEZ współrzędnych. (Partia 2: punktacja czasu z ADR 0014
+wycofana w obu trybach — ADR 0023.)

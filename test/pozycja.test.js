@@ -389,7 +389,7 @@ test('integracja: dojście z fixture’a kończy odcinek w rozgrywce', async () 
   const { nowaRozgrywka, zakonczOdcinek, startOdcinka, TRYBY_DOJSCIA } = await import('../app/rozgrywka.js');
   const { domyslnaKonfiguracja } = await import('../app/konfig.js');
   const stan = nowaRozgrywka({
-    konfig: { ...domyslnaKonfiguracja(1), liczbaStacji: 1, karaRecznaS: 60, kodGry: 'TEST01' },
+    konfig: { ...domyslnaKonfiguracja(1), liczbaStacji: 1, kodGry: 'TEST01' },
     stacje: [STACJA],
     paczka: { pytania: [{ id: 's1p1', stacja: 1, poprawna: 0, punkty: 20 }] },
     srodek: START,
@@ -410,7 +410,7 @@ test('integracja: dojście z fixture’a kończy odcinek w rozgrywce', async () 
 
   const { stan: po, usterki } = zakonczOdcinek(wTrakcie, { czasMs: czasDojscia, trybDojscia: TRYBY_DOJSCIA.gps, fix: ostatni });
   assert.deepEqual(usterki, []);
-  assert.equal(po.odcinki[0].czasS, 25);
+  assert.equal(po.odcinki[0].koniecMs, 25_000, 'znacznik dojścia zapisany (czasu odcinka nie liczymy od Partii 2)');
   assert.equal(po.odcinki[0].accuracyM, 10);
   assert.ok(po.odcinki[0].odlegloscKoncowaM <= 25, `odległość końcowa ${po.odcinki[0].odlegloscKoncowaM} m mieści się w progu`);
 });

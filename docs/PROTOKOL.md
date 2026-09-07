@@ -49,6 +49,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
+8. Pola "tresc", "odpowiedzi", "wyjasnienie", "uwagi" oraz "tytul" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład "Kot" jako "toK"), a w polu "protokol" wpisz "PYT/1.0-rev1". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).
 
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
@@ -68,9 +69,9 @@ GRACZE I TRUDNOŚĆ:
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
-SCHEMAT ODPOWIEDZI (PYT/1.0) — dokładnie te pola:
+SCHEMAT ODPOWIEDZI (PYT/1.0-rev1) — dokładnie te pola:
 {
-  "protokol": "PYT/1.0",
+  "protokol": "PYT/1.0-rev1",
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "wiek": "{WIEK}",
   "tematy": [{TEMATY_JSON}],
@@ -109,7 +110,7 @@ WYMAGANIA DODATKOWE:
 | Placeholder | Wartość | Źródło |
 | --- | --- | --- |
 | `{LAT}`, `{LON}` | środek gry, 5 miejsc po przecinku (~1 m) | geolokalizacja albo tryb testowy (ADR 0004) |
-| `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt wyłączony albo niedostępny — `brak odczytu (tylko współrzędne)` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
+| `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt niedostępny — `brak odczytu (tylko współrzędne)` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
 | `{PROMIEN_M}` | promień gry w metrach | setup, z domyślnej wartości trybu (ADR 0003/§4.2) |
 | `{TRYB}` | `piesza` / `rower` / `samochodowa` — etykieta polska | setup |
 | `{LISTA_STACJI}` | po jednej linii: `- stacja N: LAT, LON — <opis miejsca albo „punkt przy ulicy X"> (ODLEGLOSC m od środka)` | wybór stacji (ADR 0005) |
@@ -133,7 +134,7 @@ repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
 
 | Pole | Typ | Wymagane | Zasady |
 | --- | --- | --- | --- |
-| `protokol` | tekst | tak | dokładnie `"PYT/1.0"` |
+| `protokol` | tekst | tak | `"PYT/1.0"` albo `"PYT/1.0-rev1"` (wariant odwrócony, §3.4) |
 | `okolica.lat` | liczba | tak | `-90 ≤ lat ≤ 90` |
 | `okolica.lon` | liczba | tak | `-180 ≤ lon ≤ 180` |
 | `okolica.promienM` | liczba | tak | `100–50000`, zgodna z konfiguracją gry |
@@ -192,6 +193,15 @@ w schowku albo w pliku), nie przed zdeterminowanym graczem. Dlatego w paczce nie
 wolno trzymać danych osobowych ani niczego, co nie może zostać upublicznione
 (ADR 0013). Aplikacja przyjmuje też **jawny JSON** paczki (§3.1) — odpowiedź
 modelu jest jawna, ukrywa ją dopiero aplikacja po walidacji.
+
+### 3.4 Paczka odwrócona (`PYT/1.0-rev1`)
+
+Wariant zapisu, nie nowa wersja schematu: model odwraca znakami pola tekstowe
+(`tresc`, `odpowiedzi`, `wyjasnienie`, `uwagi`, `zrodla[].tytul`) i wpisuje
+`"protokol": "PYT/1.0-rev1"`. Walidator odkodowuje paczkę PRZED walidacją, więc
+reguły §3.2 i §6 działają na odczytanej treści. Cel jak w §3.3: ochrona przed
+przypadkowym wglądem (ekran organizatora, schowek), nie szyfrowanie. Walidator
+przyjmuje oba warianty; szablon z §2 generuje odwrócony.
 
 
 ## 4. Kategorie wiekowe i wymagania trudności
@@ -307,6 +317,10 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
   się nie zmienił, a aplikacja nie była opublikowana — nie istnieje paczka
   użytkownika do zmigrowania. Po pierwszej publikacji Pages (M8) każda zmiana
   kontenera wymaga migratora (`app/migracje.js`) i wpisu tutaj.
+- **Wariant odwrócony `PYT/1.0-rev1` (Partia 2)** — zapis pól tekstowych
+  od końca (§3.4). Nie podbija wersji schematu (kształt pól ten sam, jak
+  kontener ≠ paczka); walidator akceptuje oba markery, szablon generuje
+  odwrócony.
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 
@@ -359,7 +373,7 @@ Schematy mostu Drive (`docs/setup/apps-script-repo-paczek.gs`; ADR 0016, 0018,
 | `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza) |
 | `zestaw` | `{stacje, kontener TO-paczka/2, meta TO-zestaw/1}` | mapa gry + ukryte pytania (ADR 0007) |
 | `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
-| `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal}}` | liczone przez most przy zamknięciu gry |
+| `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, stacjeZamkniete, zrezygnowal}}` | liczone przez most przy zamknięciu gry |
 
 Reguły gry: dołączenie tylko w `lobby`; start tylko przez organizatora.
 **Tury**: stacja `i` (1-based) należy NA STAŁE do gracza `gracze[(i-1) % N]`
@@ -376,9 +390,9 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
 - `typ`: `start` | `dojscie` | `odpowiedz` | `rezygnacja` | `koniec`.
 - `tUrzadzenia`: znacznik czasu urządzenia w ms (liczba, opcjonalny —
   most go ignoruje; czas gry stempluje serwer polem `tSerwera`).
-- `dane` — BIAŁA lista pól (`POLA_DANYCH_ZDARZENIA`): `czasOdcinkaMs`,
-  `czasOdpowiedziMs`, `trybDojscia`, `poprawna`, `punktyBaza`, `premiaCzasu`,
-  `punktyRazem`, `powod`. Cokolwiek innego nie wychodzi z telefonu, a most
+- `dane` — BIAŁA lista pól (`POLA_DANYCH_ZDARZENIA`): `trybDojscia`,
+  `poprawna`, `punktyRazem`, `powod` (pola czasowe usunięte w Partii 2,
+  ADR 0023). Cokolwiek innego nie wychodzi z telefonu, a most
   dodatkowo kasuje pola `lat/lon/szerokosc/dlugosc/latitude/longitude`
   (ADR 0013/0019 pkt 3 — współrzędne gracza NIGDY).
 - Most waliduje SPÓJNOŚĆ (nie zaufanie): gra musi trwać, gracz istnieć,

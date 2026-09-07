@@ -792,3 +792,17 @@ test('tryb ręczny: przeciągnięcie pinezki przesuwa stację, woła callback i 
   assert.equal(pinezki.children[0].zdarzenia.pointerdown, undefined, 'po wyłączeniu nowe pinezki bez nasłuchu drag');
   mapa.zniszcz();
 });
+
+test('T2: środek zadany przy schowanym panelu ląduje na środku po pokazaniu (bez przesunięcia E+S)', () => {
+  const dom = zainstalujDom();
+  const mapa = utworzMape({ id: ID, srodek: WARSZAWA, zoom: 14, doc: dom.document });
+  const PODKOWA = { lat: 52.12303, lon: 20.74614 };
+  dom.ustawProstokat(ID, { width: 0, height: 0 }); // ekran stacji schowany
+  mapa.ustawSrodek({ ...PODKOWA, zoom: 14 }); // pierwszy fix centruje WSZYSTKIE mapy
+  dom.ustawProstokat(ID, { width: 360, height: 320 }); // wejście na ekran stacji
+  mapa.odswiez();
+  const srodek = srodekWidoku(mapa.widok(), { szerokosc: 360, wysokosc: 320 });
+  assert.ok(Math.abs(srodek.lat - PODKOWA.lat) < 0.0001, `lat środka: ${srodek.lat}`);
+  assert.ok(Math.abs(srodek.lon - PODKOWA.lon) < 0.0001, `lon środka: ${srodek.lon}`);
+  mapa.zniszcz();
+});

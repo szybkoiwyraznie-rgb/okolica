@@ -163,10 +163,6 @@
 
       <div class="siatka">
         <label class="pole">
-          <span>Kto odpowiada</span>
-          <select id="setup-wspolpraca"></select>
-        </label>
-        <label class="pole">
           <span>Język pytań</span>
           <select id="setup-jezyk"></select>
         </label>
@@ -176,16 +172,7 @@
         </label>
       </div>
 
-      <div class="pole">
-        <label for="setup-kod"><span>Kod gry (identyfikator rozgrywki)</span></label>
-        <div class="wiersz">
-          <input id="setup-kod" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="8" placeholder="np. K7M2QP">
-          <button id="przycisk-kod" class="przycisk" type="button" title="Zaproponuj losowy kod">🎲 zaproponuj</button>
-        </div>
-        <p class="podpowiedz">Krótki identyfikator rozgrywki — trafia do eksportu paczki i do repozytorium paczek<span class="dopisek-roboczy"> (ADR 0010)</span>. Nie chroni pytań: przed podglądem ukrywa je obfuskacja bez klucza<span class="dopisek-roboczy"> (ADR 0007)</span>.</p>
-      </div>
 
-      <label class="pole sprawdz"><input id="setup-geokodacja" type="checkbox"> <span>Pobierz nazwę miejsca (dzielnica, miasto) — wysyła przybliżoną pozycję do Overpass</span></label>
 
       <button id="przycisk-prywatnosc" class="przycisk" type="button">🔐 Dane i prywatność</button>
 
@@ -243,7 +230,7 @@
         <p id="lobby-status" class="podpowiedz" role="status"></p>
         <div id="lobby-widownia" hidden>
           <table class="tabela-wynikow">
-            <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Czas dojść</th></tr></thead>
+            <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th></tr></thead>
             <tbody id="lobby-widownia-wiersze"></tbody>
           </table>
         </div>
@@ -328,11 +315,13 @@
         </div>
         <p id="mapa-stacje-skala" class="mapa-skala"></p>
         <p id="mapa-stacje-atrybucja" class="mapa-atrybucja"></p>
+        <div id="stacje-ladowanie" class="nakladka-ladowanie" role="status" hidden><span>⏳ Pobieram dane sieci drogowej…</span></div>
       </div>
       <ol id="lista-stacji" class="lista-stacji"></ol>
       <p id="stacje-sprawiedliwosc" class="badge"></p>
       <div class="wiersz">
         <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
+        <button id="przycisk-siec-ponow" class="przycisk" type="button" hidden>↻ Pobierz sieć ponownie</button>
         <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
         <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
       </div>
@@ -387,8 +376,11 @@
             aplikacja sprawdzi paczkę i ukryje ją przed graczami.</span>
         </li>
       </ol>
-      <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
-      <p id="prompt-licznik" class="badge"></p>
+      <details id="prompt-zwiniety" class="zwiniety">
+        <summary>Pokaż treść promptu</summary>
+        <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
+        <p id="prompt-licznik" class="badge"></p>
+      </details>
       <div class="wiersz">
         <button id="przycisk-kopiuj-prompt" class="przycisk przycisk-glowny" type="button">⧉ Kopiuj prompt</button>
         <button id="przycisk-pobierz-prompt" class="przycisk" type="button">⬇ Zapisz jako plik</button>
@@ -466,7 +458,7 @@
       <div id="gra-panel-multi" class="karta gra-panel" hidden>
         <p id="gra-multi-tura" class="duzy" role="status"></p>
         <table id="gra-multi-tabela" class="tabela-wynikow">
-          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Czas dojść</th></tr></thead>
+          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th></tr></thead>
           <tbody id="gra-multi-wiersze"></tbody>
         </table>
         <p id="gra-multi-sync" class="podpowiedz" role="status"></p>
@@ -485,7 +477,7 @@
         <p id="gra-dystans-odcinka" class="duzy duzy-dystans">— m</p>
         <p id="gra-prog-dojscia" class="badge">próg dojścia: —</p>
         <div class="wiersz">
-          <button id="przycisk-reczne-dojscie" class="przycisk" type="button">✋ Jestem na miejscu (ręczne — kara)</button>
+          <button id="przycisk-reczne-dojscie" class="przycisk" type="button">✋ Jestem na miejscu (ręczne)</button>
           <button id="przycisk-pauza" class="przycisk" type="button" aria-pressed="false">⏸ Pauza</button>
           <button id="przycisk-symulacja-gra" class="przycisk" type="button" hidden>▶ Symuluj dojście (tryb testowy)</button>
         </div>
@@ -505,11 +497,10 @@
         <button id="przycisk-nastepna-stacja" class="przycisk przycisk-glowny przycisk-fazy" type="button" hidden>Następna stacja →</button>
       </div>
 
-      <!-- FAZA D: koniec — pełne podsumowanie (M7): zwycięzca, medal trasy, ranking, statystyki, szczegóły -->
+      <!-- FAZA D: koniec — pełne podsumowanie (M7): zwycięzca, ranking, statystyki, szczegóły -->
       <div id="gra-panel-koniec" class="karta gra-panel" hidden>
         <p class="duzy">🏁 Koniec gry!</p>
         <div id="gra-wynik-zwyciezca" class="karta-zwyciezcy"></div>
-        <p id="gra-wynik-medal" class="medal-trasy" role="status"></p>
         <table id="gra-wyniki" class="tabela-wynikow">
           <thead>
             <tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th></tr>
@@ -525,7 +516,7 @@
           <summary>Stacje</summary>
           <table id="gra-wynik-stacje" class="tabela-wynikow tabela-stacje">
             <thead>
-              <tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Stan</th><th scope="col">Czas</th><th scope="col">Punkty</th></tr>
+              <tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Stan</th><th scope="col">Punkty</th></tr>
             </thead>
             <tbody id="gra-wynik-stacje-tbody"></tbody>
           </table>
@@ -563,13 +554,12 @@
             widoczny na ekranie i powiększenie.</li>
           <li><strong>Sieć drogowa i nazwa miejsca</strong> — z Overpass API
             (od kamienia M4): zaokrąglony środek i promień Twojej okolicy, bez
-            identyfikatora użytkownika. Pobieranie nazwy miejsca można wyłączyć
-            w ustawieniach.</li>
+            identyfikatora użytkownika.</li>
           <li><strong>Nazwa miejsca — warstwa zapasowa (Nominatim, OSMF)</strong>
             — <label class="sprawdz"><input id="geokodacja-zapasowa" type="checkbox">
             <span>zezwól (domyślnie <strong>wyłączone</strong>)</span></label>.
-            Używana tylko, gdy Overpass nie zwrócił nazwy miejsca, a pobieranie
-            nazwy jest włączone w ustawieniach: <strong>jedno</strong> żądanie
+            Używana tylko, gdy Overpass nie zwrócił nazwy miejsca:
+            <strong>jedno</strong> żądanie
             na grę z zaokrąglonymi współrzędnymi, bez identyfikatora
             użytkownika; wynik trafia do pamięci telefonu na 30 dni. Dane:
             © OpenStreetMap contributors (ODbL). Adres usługi można przełączyć
@@ -599,6 +589,8 @@
             i historia gier — wszystko pod kluczami <code>okolica:*</code>.</li>
           <li>Pliki, które sam zapiszesz (prompt, paczka, wynik) — lądują w
             Twoich „Pobranych", nie u nas.</li>
+          <li>Kod gry — jawny identyfikator rozgrywki w nazwach plików
+            i wpisach historii; niczego nie szyfruje.</li>
         </ul>
       </div>
 

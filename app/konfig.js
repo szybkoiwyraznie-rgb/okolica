@@ -161,13 +161,6 @@ export function kanonicznyTemat(temat) {
   return ALIASY_TEMATOW[temat] ?? temat;
 }
 
-/** Kto odpowiada na pytanie przy stacji (ADR 0009 pkt 4). */
-export const WSPOLPRACA = {
-  solo: { etykieta: 'Sam gracz z kolejki', opis: 'Pozostali nie podpowiadają' },
-  zespol: { etykieta: 'Zespół', opis: 'Dowolny gracz odpowiada, punkty na konto gracza z kolejki' },
-  wszyscy: { etykieta: 'Każdy osobno', opis: 'Wszyscy odpowiadają na tym samym telefonie, punkty osobno' },
-};
-
 /** Języki treści pytań (interfejs jest zawsze po polsku — ADR 0011 pkt 8). */
 export const JEZYKI = { polski: 'polski', angielski: 'angielski', niemiecki: 'niemiecki', ukrainski: 'ukraiński' };
 
@@ -185,8 +178,7 @@ export const OGRANICZENIA = {
   liczbaStacji: { min: 3, max: 12 },
   pytaniaNaStacje: { min: 1, max: 3 },
   promienM: { min: 200, max: 50000 },
-  karaRecznaS: { min: 0, max: 600 },
-  dlugoscKoduGry: { min: 4, max: 8 },
+  dlugoscKoduGry: { min: 4, max: 40 },
   dlugoscImienia: { min: 1, max: 20 },
 };
 
@@ -200,11 +192,7 @@ export const DOMYSLNE = {
   tematWlasny: '', // tekst organizatora dla tematu `wlasny` (niezaznaczony domyślnie)
   wiek: 'dorosli',
   jezyk: 'polski',
-  wspolpraca: 'zespol',
-  karaRecznaS: 60,
   podklad: 'osm',
-  geokodacja: false,
-  limitCzasuOdcinkaS: 0, // 0 = bez limitu
 };
 
 /** Konfiguracja startowa dla `liczbaGraczy` graczy (imiona domyślne). */
@@ -261,13 +249,26 @@ export function rngZZiarna(ziarno) {
   };
 }
 
+/** Polskie znaki → ASCII (kod gry ląduje w nazwach plików i kluczach). */
+function ascii(czlon) {
+  return String(czlon ?? '').toLowerCase()
+    .replace(/ą/g, 'a').replace(/ć/g, 'c').replace(/ę/g, 'e').replace(/ł/g, 'l')
+    .replace(/ń/g, 'n').replace(/ó/g, 'o').replace(/ś/g, 's').replace(/ź|ż/g, 'z')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+}
+
 /**
- * Proponowany `kod gry` (ADR 0007 pkt 2): 6 znaków z alfabetu bez znaków
- * mylonych wzrokowo (0/O, 1/l/I). RNG wstrzykiwany — testowalne.
+ * Domyślny `kod gry` (Partia 2, pkt 7): identyfikator z imion, miejsca i daty
+ * z godziną (`ala-ewa-podkowa-0709-1432`) — czytelny w plikach i unikalny
+ * między grami tego samego dnia. Kod niczego nie chroni (ADR 0007 pkt 2:
+ * pytań chroni ukrycie paczki), więc nie ma go w setupie.
  */
-export function proponujKodGry(losuj = Math.random, dlugosc = 6) {
-  const alfabet = '23456789ABCDEFGHJKMNPQRSTUVWXYZ';
-  return Array.from({ length: dlugosc }, () => alfabet[Math.floor(losuj() * alfabet.length)]).join('');
+export function domyslnyKodGry({ imiona = [], miejsce = '', teraz = new Date() } = {}) {
+  const kto = imiona.filter((i) => String(i ?? '').trim()).slice(0, 2).map(ascii).filter(Boolean).join('-') || 'gra';
+  const gdzie = ascii(String(miejsce).split(',')[0].split(' ').slice(0, 2).join(' ')) || 'teren';
+  const d = teraz instanceof Date ? teraz : new Date(teraz);
+  const nr = (n) => String(n).padStart(2, '0');
+  return `${kto}-${gdzie}-${nr(d.getDate())}${nr(d.getMonth() + 1)}-${nr(d.getHours())}${nr(d.getMinutes())}`.slice(0, 40);
 }
 
 /**
@@ -288,7 +289,7 @@ export function oczyscKonfiguracje(surowa) {
   const konfig = { ...domyslne };
 
   // pola wybierane z kanonu: klucz musi istnieć, inaczej default
-  const kanony = { tryb: TRYBY, wiek: WIEK, podklad: PODKLADY, wspolpraca: WSPOLPRACA, jezyk: JEZYKI };
+  const kanony = { tryb: TRYBY, wiek: WIEK, podklad: PODKLADY, jezyk: JEZYKI };
   for (const [pole, kanon] of Object.entries(kanony)) {
     if (Object.hasOwn(kanon, zrodlo[pole])) konfig[pole] = zrodlo[pole];
   }
@@ -300,8 +301,6 @@ export function oczyscKonfiguracje(surowa) {
     liczbaStacji: OGRANICZENIA.liczbaStacji,
     pytaniaNaStacje: OGRANICZENIA.pytaniaNaStacje,
     promienM: OGRANICZENIA.promienM,
-    karaRecznaS: OGRANICZENIA.karaRecznaS,
-    limitCzasuOdcinkaS: { min: 0, max: 86400 },
   };
   for (const [pole, zakres] of Object.entries(liczby)) {
     const v = Number(zrodlo[pole]);
@@ -320,7 +319,6 @@ export function oczyscKonfiguracje(surowa) {
     ? zrodlo.imiona.slice(0, konfig.liczbaGraczy).map((imie, i) => (typeof imie === 'string' && imie.trim() ? imie.trim().slice(0, OGRANICZENIA.dlugoscImienia.max) : `Gracz ${i + 1}`))
     : [...domyslne.imiona];
   while (konfig.imiona.length < konfig.liczbaGraczy) konfig.imiona.push(`Gracz ${konfig.imiona.length + 1}`);
-  konfig.geokodacja = zrodlo.geokodacja === true;
   if (typeof zrodlo.kodGry === 'string') {
     konfig.kodGry = zrodlo.kodGry.trim().slice(0, OGRANICZENIA.dlugoscKoduGry.max);
   }
@@ -338,7 +336,6 @@ export function walidujSetup(konfig) {
   if (!TRYBY[konfig.tryb]) dodaj('K02', 'tryb', `Nieznany tryb „${konfig.tryb}". Wybierz pieszą, rowerową albo samochodową.`);
   if (!WIEK[konfig.wiek]) dodaj('K03', 'wiek', `Nieznana kategoria wiekowa „${konfig.wiek}".`);
   if (!JEZYKI[konfig.jezyk]) dodaj('K04', 'jezyk', `Nieznany język pytań „${konfig.jezyk}".`);
-  if (!WSPOLPRACA[konfig.wspolpraca]) dodaj('K05', 'wspolpraca', `Nieznany tryb odpowiadania „${konfig.wspolpraca}".`);
   if (!PODKLADY[konfig.podklad]) dodaj('K06', 'podklad', `Nieznany podkład mapy „${konfig.podklad}".`);
 
   const { min: minG, max: maxG } = OGRANICZENIA.liczbaGraczy;
@@ -386,10 +383,6 @@ export function walidujSetup(konfig) {
     }
   }
 
-  const { min: minK, max: maxK } = OGRANICZENIA.karaRecznaS;
-  if (!Number.isFinite(konfig.karaRecznaS) || konfig.karaRecznaS < minK || konfig.karaRecznaS > maxK) {
-    dodaj('K17', 'karaRecznaS', `Kara za ręczne zgłoszenie dojścia: 0–${maxK} sekund.`);
-  }
 
   if (konfig.kodGry !== '' && konfig.kodGry != null) {
     const kod = String(konfig.kodGry).trim();
@@ -399,12 +392,6 @@ export function walidujSetup(konfig) {
     }
   }
 
-  if (!Number.isFinite(konfig.limitCzasuOdcinkaS) || konfig.limitCzasuOdcinkaS < 0) {
-    dodaj('K19', 'limitCzasuOdcinkaS', 'Limit czasu odcinka musi być liczbą sekund ≥ 0 (0 = bez limitu).');
-  }
-  if (typeof konfig.geokodacja !== 'boolean') {
-    dodaj('K20', 'geokodacja', 'Pobieranie nazwy miejsca musi być włączone albo wyłączone.');
-  }
   if (Array.isArray(konfig.tematy) && konfig.tematy.includes('wlasny')
     && (typeof konfig.tematWlasny !== 'string' || !konfig.tematWlasny.trim())) {
     dodaj('K21', 'tematWlasny', 'Zaznaczyłeś temat „Dopisz sam" — wpisz dziedzinę (np. kinematografia).');

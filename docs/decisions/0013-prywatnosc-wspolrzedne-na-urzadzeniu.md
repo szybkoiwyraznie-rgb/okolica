@@ -29,8 +29,8 @@ każde zapytanie ujawnia dostawcy przybliżoną pozycję. To decyzja właścicie
      zaokrąglona do ~5 m (5. miejsca po przecinku) i powiększony promień
      (`R × 1.15`), żeby nie dało się z bbox-a odtworzyć dokładnego startu;
    - nazwa miejsca: z **tego samego** zapytania Overpass (obszary
-     administracyjne), bez dodatkowego dostawcy — i **wyłączalna** w setupie
-     (wtedy prompt ma same współrzędne, ADR 0006 pkt 3).
+     administracyjne), bez dodatkowego dostawcy — pobierana **zawsze**
+     (przełącznik w setupie usunięty w Partii 2).
 4. **Dane gracza zostają na urządzeniu**: fixy GPS, dziennik rozgrywki,
    odpowiedzi i wyniki trafiają wyłącznie do `localStorage` (ADR 0010) i do
    eksportowanego pliku, który użytkownik sam wybiera. Aplikacja nie ma
@@ -58,8 +58,8 @@ każde zapytanie ujawnia dostawcy przybliżoną pozycję. To decyzja właścicie
 ## Konsekwencje
 
 - Zależność od zewnętrznych dostawców jest widoczna i policzalna — da się ją
-  wyłączyć (podkład offline, cache sieci, geokodacja wyłączona), a gra działa
-  dalej w trybie zdegradowanym (ADR 0003 pkt 3, 0005 pkt 8).
+  ograniczyć (podkład offline, cache sieci, brak zgody na warstwę zapasową),
+  a gra działa dalej w trybie zdegradowanym (ADR 0003 pkt 3, 0005 pkt 8).
 - Brak analityki = brak wiedzy o użyciu. Rozwój opiera się na testach
   właściciela i zgłoszeniach, nie na metrykach.
 - Jeśli kiedykolwiek pojawi się backend (multiplayer, ADR 0009 pkt 6), ten ADR

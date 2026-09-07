@@ -44,7 +44,7 @@ const KONFIG_TEST = JSON.stringify({
   schemat: 'konfig/1',
   konfig: {
     tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1,
-    tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', jezyk: 'polski', wspolpraca: 'zespol',
+    tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', jezyk: 'polski',
     karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
   },
 });

@@ -444,6 +444,8 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
     aktywnaStacja: null,
     plan: null,
     sygnaturaKafelkow: '',
+    /** Środek zadany przy schowanym panelu — do zastosowania przy pierwszym rysowaniu (T2). */
+    oczekujacySrodek: null,
     /** Tryb ręczny (ADR 0005 pkt 8b): pinezki-stacje można przeciągać. */
     trybReczny: false,
     onStacjaPrzesunieta: null,
@@ -586,6 +588,11 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
 
   function rysuj() {
     stan.rozmiar = rozmiarPanelu(kontener);
+    if (stan.oczekujacySrodek && stan.rozmiar.szerokosc > 0 && stan.rozmiar.wysokosc > 0) {
+      const o = stan.oczekujacySrodek;
+      stan.oczekujacySrodek = null;
+      stan.widok = widokNaSrodek({ lat: o.lat, lon: o.lon, zoom: o.zoom, rozmiar: stan.rozmiar });
+    }
     const plan = planMapy({
       widok: stan.widok,
       rozmiar: stan.rozmiar,
@@ -797,12 +804,16 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
     /** Ustawia środek i (opcjonalnie) zoom, potem przerysowuje. */
     ustawSrodek({ lat, lon, zoom: z = null }) {
       const zoomDocelowy = Math.min(z ?? zoomWidoku(stan.widok), maxZoomPodkladu(stan.podklad));
-      stan.widok = widokNaSrodek({
-        lat,
-        lon,
-        zoom: zoomDocelowy,
-        rozmiar: rozmiarPanelu(kontener),
-      });
+      const rozmiar = rozmiarPanelu(kontener);
+      if (rozmiar.szerokosc <= 0 || rozmiar.wysokosc <= 0) {
+        // Schowany panel: widok policzony teraz kotwiczyłby środek w lewym
+        // górnym rogu, a po pokazaniu mapa byłaby przesunięta o pół ekranu
+        // na wschód i południe (T2/Partia 2). Odkładamy do pierwszego rysowania.
+        stan.oczekujacySrodek = { lat, lon, zoom: zoomDocelowy };
+        return rysuj();
+      }
+      stan.oczekujacySrodek = null;
+      stan.widok = widokNaSrodek({ lat, lon, zoom: zoomDocelowy, rozmiar });
       return rysuj();
     },
     ustawPodklad(klucz) {

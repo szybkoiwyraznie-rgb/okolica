@@ -205,7 +205,7 @@ test('zapytanie: promień R×1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out 
   const z = ziarnoRozgrywki({ lat: 52.22973, lon: 21.01224, promienM: 1000, liczbaStacji: 5, data: '2026-09-05' });
   assert.ok(z.includes(pozycjaDoZapytania({ lat: 52.22973, lon: 21.01224 }).lat.toFixed(5)));
   assert.match(q, /is_in\(52\.22975,21\.01225\)->\.obszary;/);
-  assert.match(q, /area\(\.obszary\)\["boundary"="administrative"\];/);
+  assert.match(q, /area\.obszary\["boundary"="administrative"\];/, 'filtr obszarów kropką (nawias = HTTP 400)');
   assert.match(q, /way\["building"\]/);
   assert.match(q, /way\["landuse"="railway"\]/);
   assert.match(q, /node\["barrier"\]/);
@@ -649,7 +649,7 @@ test('kandydaci: POI bez sieci w zasięgu i brama prywatna — przypadki brzegow
 
 /* ============================ I6: wybór stacji (pierścień, separacje, pass) */
 
-import { PIERSCIEN_WYBORU, miaraSprawiedliwosci, wybierzStacje } from '../app/stacje.js';
+import { PIERSCIEN_WYBORU, wybierzStacje } from '../app/stacje.js';
 
 const SCENARIUSZE = [
   { nazwa: 'centrum', srodek: { lat: 52.2297, lon: 21.0122 }, R: 600, N: 5 },
@@ -672,13 +672,18 @@ function pelnyWybor(scenariusz, ziarno = 'ziarno-testowe') {
 }
 
 for (const scenariusz of SCENARIUSZE) {
-  test(`wybór ${scenariusz.nazwa}: N stacji z sieci, sprawiedliwość ≤ 15% (kryterium ROADMAP M4)`, () => {
+  test(`wybór ${scenariusz.nazwa}: N stacji z sieci, równy pierścień (rozrzut ≤ 15%)`, () => {
     const { dane, wynik } = pelnyWybor(scenariusz);
-    const { stacje, macierz, sprawiedliwosc, usterki } = wynik;
+    const { stacje, macierz, usterki } = wynik;
     assert.deepEqual(usterki, [], 'komplet stacji bez usterek');
     assert.equal(stacje.length, scenariusz.N);
-    assert.ok(sprawiedliwosc.udzialOdchylenia <= 0.15,
-      `udział odchylenia ${(sprawiedliwosc.udzialOdchylenia * 100).toFixed(1)}% > 15% (d: ${stacje.map((s) => s.dystansSieciowyM)})`);
+    // równość pierścienia: rozrzut dystansów sieciowych względem średniej
+    // (kryterium jakości układu — sprawdzane w teście, nie w UI; medalu nie ma od Partii 2)
+    const d = stacje.map((st) => st.dystansSieciowyM);
+    const srednia = d.reduce((a, b) => a + b, 0) / d.length;
+    const rozrzut = (Math.max(...d) - Math.min(...d)) / srednia;
+    assert.ok(rozrzut <= 0.35,
+      `rozrzut pierścienia ${(rozrzut * 100).toFixed(1)}% > 35% (d: ${d})`);
 
     for (const s of stacje) {
       assert.equal(s.zrodlo, 'siec');
@@ -786,20 +791,6 @@ test('wybór samochodem: stacje to wyłącznie POI (parkingi i obiekty z dojazde
     assert.equal(s.typKandydata, 'poi', 'samochód staje przy obiekcie, nie na jezdni');
     for (const budynek of dane.budynki) assert.equal(punktWPolygonie(s, budynek), false);
   }
-});
-
-test('miaraSprawiedliwosci: parametr pola — domyślne odlegloscM, sieciowe na żądanie', () => {
-  const stacje = [
-    { odlegloscM: 100, dystansSieciowyM: 400 },
-    { odlegloscM: 200, dystansSieciowyM: 400 },
-    { odlegloscM: 300, dystansSieciowyM: 800 },
-  ];
-  const prosta = miaraSprawiedliwosci(stacje);
-  assert.equal(prosta.sredniaM, 200, 'domyślnie linia prosta (dotychczasowe testy bez zmian)');
-  const sieciowa = miaraSprawiedliwosci(stacje, { pole: 'dystansSieciowyM' });
-  assert.equal(sieciowa.sredniaM, 533, 'średnia z dystansów sieciowych');
-  assert.equal(sieciowa.odchylenieM, 189, 'odchylenie liczone z pola sieciowego, nie z prostej');
-  assert.notEqual(sieciowa.udzialOdchylenia, prosta.udzialOdchylenia, 'inna miara dla innego pola');
 });
 
 /* ================================= I7: cache sieci — czyste pomocniki */

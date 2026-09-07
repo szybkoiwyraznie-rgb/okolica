@@ -678,3 +678,22 @@ miejscowość → powiat → województwo → kraj → kontynent → świat; św
 z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
 `profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
 Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).
+
+## 2026-09-07 — Partia 2 (poprawki właściciela), gałąź `arena/01a07b16-okolica`
+
+**T3** (Overpass 400): `area(.obszary)` → `area._` w `is_in` (składnia Overpass
+QL: input set kropką); test regresji na 400. **T2**: `{MIEJSCE}` uciekane do
+JSON w szablonie (cudzysłów w nazwie nie rwie promptu). **T1+T4**: nakładka
+ładowania sieci + jawny retry po 400 z kodem S03 (test 80/80). **Q1**: pole
+promptu w `<details>` (setup krótszy). **(7)**: kod gry autogenerowany
+(`imiona-miejsce-DDMM-HHMM`, max 40) — koniec pola w setupie; K18 tylko
+legacy. **S3**: koniec `wspolpraca` — odpowiada gracz z kolejki (ADR 0022,
+G07 „nie Twoja kolej"). **S2**: geokodacja zawsze (koniec `K20` i checkboxa;
+Nominatim-zapas za zgodą bez zmian). **S1**: zero presji czasowej (ADR 0023,
+ADR 0014 wycofana do nagrobka): koniec premii, kary, limitu, tempa, medalu
+i pól czasowych multi (§9.2); ranking sortem stabilnym. **Q2**: wariant
+odwrócony `PYT/1.0-rev1` — reguła 8 szablonu (odwracanie + samokontrola),
+dekoder w walidatorze, PROTOKOL §3.4/§7 (szablon **PYT/1.0.2**).
+Poprawki ADR: 0004 pkt 5 + aneks, 0009 pkt 2–5 + aneks, 0013 pkt 3,
+0015 pkt 2/4/6; rejestr + PROJECT_HISTORY. Budżet: nagrobek 0014 finansuje
+0022/0023.
