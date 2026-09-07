@@ -198,8 +198,8 @@ function atrapaMostu() {
       tSerwera: new Date().toISOString(),
     });
     if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+      gra.stan = 'zakonczona'; // jak w moście: stan PRZED wynikami (premia, ADR 0027 pkt 5)
       gra.wyniki = przeliczWyniki(gra);
-      gra.stan = 'zakonczona';
     }
     return { ok: true, kolejnosc: gra.zdarzenia.at(-1).kolejnosc, stan: gra.stan, wyniki: gra.wyniki };
   }

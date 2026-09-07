@@ -673,10 +673,49 @@ function czyKompletna(gra) {
   });
 }
 
+/**
+ * Premia za kolejność ukończenia (ADR 0027 część B pkt 5): pierwszy gracz, który
+ * zamknął wszystkie stacje, dostaje G−1 punktów, drugi G−2, …, ostatni 0.
+ * Kolejność z `kolejnosc` zdarzeń (nadawana w `zBlokada`), NIE z zegara
+ * urządzenia. Rezygnujący i niedokończeni premii nie dostają.
+ *
+ * Reguła jest KOPIĄ `premiaZaKolejnosc` z `app/wieloosobowa.js` — zgodność
+ * pilnuje `test/most-gra.test.js`, który wykonuje ten tekst i porównuje wyniki.
+ */
+function premiaZaKolejnosc(gra) {
+  const premia = {};
+  const gracze = gra.gracze || [];
+  const N = Number(gra.konfiguracja && gra.konfiguracja.liczbaStacji) || 0;
+  if (gracze.length < 2 || N < 1) return premia;
+  const rezygnacje = {};
+  const zamkniete = {};
+  const ostatnia = {};
+  gra.zdarzenia.forEach((z) => {
+    if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true;
+    if (z.typ === 'odpowiedz' && z.stacjaId != null) {
+      if (!zamkniete[z.graczId]) zamkniete[z.graczId] = {};
+      zamkniete[z.graczId][z.stacjaId] = true;
+      ostatnia[z.graczId] = Number(z.kolejnosc) || 0;
+    }
+  });
+  const skonczeni = gracze
+    .filter((g) => !rezygnacje[g.id] && zamkniete[g.id] && Object.keys(zamkniete[g.id]).length >= N)
+    .map((g) => ({ id: g.id, koniec: ostatnia[g.id] || 0 }))
+    .sort((a, b) => a.koniec - b.koniec);
+  for (let i = 0; i < skonczeni.length; i += 1) {
+    const ile = gracze.length - (i + 1);
+    if (ile > 0) premia[skonczeni[i].id] = ile;
+  }
+  return premia;
+}
+
 function przeliczWyniki(gra) {
+  const premia = premiaZaKolejnosc(gra);
+  // premia wchodzi do punktów dopiero w podsumowaniu (ADR 0027 pkt 5)
+  const koniec = gra.stan === 'zakonczona' || gra.stan === 'archiwum';
   const wyniki = {};
   gra.gracze.forEach((g) => {
-    wyniki[g.id] = { pseudonim: g.pseudonim, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, stacjeZamkniete: 0, zrezygnowal: false };
+    wyniki[g.id] = { pseudonim: g.pseudonim, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, stacjeZamkniete: 0, zrezygnowal: false, premia: 0 };
   });
   gra.zdarzenia.forEach((z) => {
     const w = wyniki[z.graczId];
@@ -688,6 +727,11 @@ function przeliczWyniki(gra) {
       if (z.dane && z.dane.poprawna) w.poprawne += 1; else w.bledne += 1;
     }
     if (z.typ === 'rezygnacja') w.zrezygnowal = true;
+  });
+  gra.gracze.forEach((g) => {
+    const w = wyniki[g.id];
+    w.premia = premia[g.id] || 0;
+    if (koniec) w.punkty += w.premia;
   });
   return wyniki;
 }
@@ -734,8 +778,8 @@ function przyjmijZdarzenie(dane) {
     };
     gra.zdarzenia.push(zdarzenie);
     if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+      gra.stan = 'zakonczona'; // stan PRZED wynikami: premia wchodzi do punktów (ADR 0027 pkt 5)
       gra.wyniki = przeliczWyniki(gra);
-      gra.stan = 'zakonczona';
     }
     zapiszGre(znaleziona.plik, gra);
     if (gra.stan === 'zakonczona') przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);

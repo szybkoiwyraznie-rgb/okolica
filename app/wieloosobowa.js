@@ -315,11 +315,16 @@ export function czyKompletna(gra) {
   });
 }
 
-/** Postęp jednego gracza (żywa tabela w wyścigu, resume w turach). */
+/**
+ * Postęp jednego gracza (żywa tabela w wyścigu, resume w turach). Pola i reguły
+ * są IDENTYCZNE z `przeliczWyniki` w moście Drive — pilnuje tego
+ * `test/most-gra.test.js`, więc telefon pokazuje to samo co Drive.
+ */
 export function postepGracza(gra, graczId) {
-  const postep = { stacjeZamkniete: 0, punkty: 0, poprawne: 0, bledne: 0, zrezygnowal: false };
+  const postep = { stacjeZamkniete: 0, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, zrezygnowal: false };
   for (const z of gra?.zdarzenia ?? []) {
     if (z.graczId !== graczId) continue;
+    if (z.typ === 'dojscie') postep.czasOdcinkowMs += Number(z.dane?.czasOdcinkaMs) || 0;
     if (z.typ === 'odpowiedz') {
       postep.stacjeZamkniete += 1;
       postep.punkty += Number(z.dane?.punktyRazem) || 0;
@@ -330,11 +335,59 @@ export function postepGracza(gra, graczId) {
   return postep;
 }
 
-/** Wyniki zbiorcze (to samo co `przeliczWyniki` w moście — aplikacja liczy podgląd). */
+/**
+ * Premia za kolejność ukończenia (ADR 0027 część B pkt 5): pierwszy gracz, który
+ * zamknął wszystkie stacje, dostaje (G − 1) punktów, drugi (G − 2), …, ostatni 0.
+ *
+ * - kolejność bierze się z `kolejnosc` zdarzeń nadawanej przez most, NIE z zegara
+ *   urządzenia (ADR 0027 pkt 4) — dwa telefony nie mają wspólnego czasu;
+ * - gracz, który zrezygnował albo nie zamknął wszystkich stacji (gospodarz
+ *   zakończył grę wcześniej), premii nie dostaje;
+ * - remis kolejności jest niemożliwy: `kolejnosc` jest nadawana sekwencyjnie
+ *   w blokadzie zapisu mostu (`zBlokada`), więc każdy ma inną.
+ *
+ * Zwraca mapę `graczId → premia` (brak klucza = 0).
+ */
+export function premiaZaKolejnosc(gra) {
+  const premia = {};
+  const gracze = gra?.gracze ?? [];
+  const N = Number(gra?.konfiguracja?.liczbaStacji) || 0;
+  if (gracze.length < 2 || N < 1) return premia; // jeden gracz: premia zawsze 0
+  const rezygnacje = new Set((gra.zdarzenia ?? []).filter((z) => z.typ === 'rezygnacja').map((z) => z.graczId));
+  const ostatnia = new Map();
+  for (const z of gra.zdarzenia ?? []) {
+    if (z.typ === 'odpowiedz' && z.stacjaId != null) ostatnia.set(z.graczId, Number(z.kolejnosc) || 0);
+  }
+  const skonczeni = gracze
+    .map((g) => ({ id: g.id, postep: postepGracza(gra, g.id), koniec: ostatnia.get(g.id) ?? 0 }))
+    .filter((w) => !w.postep.zrezygnowal && !rezygnacje.has(w.id) && w.postep.stacjeZamkniete >= N)
+    .sort((a, b) => a.koniec - b.koniec);
+  skonczeni.forEach((w, i) => {
+    const ile = gracze.length - (i + 1);
+    if (ile > 0) premia[w.id] = ile;
+  });
+  return premia;
+}
+
+/**
+ * Wyniki zbiorcze (to samo co `przeliczWyniki` w moście — aplikacja liczy
+ * podgląd). Premia za kolejność jest liczona zawsze, ale do `punkty` wchodzi
+ * DOPIERO w grze zakończonej (ADR 0027 pkt 5): częściowy wynik nie sugeruje
+ * premii, której jeszcze nie ma.
+ */
 export function przeliczWyniki(gra) {
+  const premia = premiaZaKolejnosc(gra);
+  const koniec = gra?.stan === 'zakonczona' || gra?.stan === 'archiwum';
   const wyniki = {};
   for (const g of gra?.gracze ?? []) {
-    wyniki[g.id] = { pseudonim: g.pseudonim, ...postepGracza(gra, g.id) };
+    const postep = postepGracza(gra, g.id);
+    const ile = premia[g.id] ?? 0;
+    wyniki[g.id] = {
+      pseudonim: g.pseudonim,
+      ...postep,
+      premia: ile,
+      punkty: postep.punkty + (koniec ? ile : 0),
+    };
   }
   return wyniki;
 }
