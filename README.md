@@ -70,8 +70,8 @@ daje czytelną listę kodów E01–E20 i przycisk „skopiuj poprawkę do modelu
 Po przyjęciu gra zaczyna się OD RAZU (decyzja 2026-09-07 — podgląd,
 ściąganie i edycja zniknęły z ekranu; to zadania właściciela na Drive,
 dokąd zestaw leci automatycznie w chwili przyjęcia). Wcześniej ukrytą
-paczkę (`TO-paczka/2`) nadal można wczytać z pliku ścieżką „⬆ Z pliku". Nazwa miejsca do promptu jest bramowana ustawieniem
-„pobieranie nazwy miejsca", a zapasowa warstwa Nominatim działa tylko po
+paczkę (`TO-paczka/2`) nadal można wczytać z pliku ścieżką „⬆ Z pliku". Nazwa miejsca do promptu jest pobierana ZAWSZE (ADR 0013 pkt 3 —
+przełącznik usunięty w Partii 2), a zapasowa warstwa Nominatim działa tylko po
 wyraźnej zgodzie na ekranie prywatności (domyślnie wyłączona, jedno żądanie
 na grę, cache 30 dni, atrybucja ODbL — ADR 0013). Kamień czeka na kryterium
 właściciela: pełna pętla z prawdziwym modelem (`docs/WORKFLOW.md` §4.2).
@@ -163,13 +163,14 @@ paczki według kryteriów właściciela (ta sama okolica, ta sama liczba stacji
 i pytań, ten sam poziom, tematy nie szersze niż w setupie, promień paczki nie
 większy niż w setupie) — wybór startuje grę bez promptu, bez wklejania, bez
 Overpassa i bez modelu. Przyjęcie paczki z AI (ekran wklejania) automatycznie
-wysyła ją na Drive do przeglądu właściciela — zgoda jest checkboxem na tym
-samym ekranie, domyślnie zaznaczonym, można odhaczyć (opt-out). Właściciel
+i bez pytania wysyła ją na Drive do przeglądu właściciela (decyzja
+2026-09-07: checkbox zgody usunięty, ADR 0016 aneks). Właściciel
 akceptuje kandydatów linkiem z e-maila; adres mostu jest **wpisany w kod
 aplikacji** (`DOMYSLNY_URL_MOSTU` w `app/most.js`, ADR 0020) — żadne urządzenie
 nie konfiguruje go ręcznie, a przycisk „🔌 Sprawdź połączenie" robi jawną próbę
 CORS na żywym wdrożeniu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
-daje plik do ręcznego wniesienia, gdy most jest niedostępny.
+zniknął z ekranu razem z podglądem (decyzja 2026-09-07) — przegląd i wnoszenie
+zestawów dzieją się na Drive właściciela.
 
 ## Gra wieloosobowa i rankingi (M11/M12)
 

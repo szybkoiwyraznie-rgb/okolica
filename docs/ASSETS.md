@@ -185,8 +185,8 @@ akcji; nowy dostawca przechodzi pełną checklistę §5.
   `docs/setup/most-drive-instrukcja.md` — wersja robocza; finalna instrukcja
   dla właściciela w czacie, ADR 0018).
 - **Co płynie**: DO Drive — kandydaci na zestawy (TO-zestaw/1: meta + stacje
-  + ukryty kontener pytań) wysyłani automatycznie przy przyjęciu paczki, za
-  domyślnie zaznaczoną zgodą (checkbox na ekranie wklejania). Z Drive — tylko
+  + ukryty kontener pytań) wysyłani automatycznie i bez pytania przy przyjęciu
+  paczki (decyzja 2026-09-07: checkbox zgody usunięty, ADR 0016 aneks). Z Drive — tylko
   indeks zaakceptowanych (`?akcja=indeks`) i paczki (`?akcja=paczka&id=…`).
 - **Klucze i polityka**: BRAK kluczy API w kodzie; adres web app jest zdolnością
   (capability) i od ADR 0020 jest WPISANY W KOD aplikacji (`DOMYSLNY_URL_MOSTU`
