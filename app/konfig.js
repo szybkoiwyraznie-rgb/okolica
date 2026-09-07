@@ -20,7 +20,6 @@ export const TRYBY = {
     etykieta: 'piesza',
     ikona: '🚶',
     opis: 'Pieszo — stacje w zasięgu spaceru, chodniki, ścieżki i place',
-    promienM: 1000,
     zoom: 17,
     predkoscKmh: 4.5,
     klasyDrog: [
@@ -32,7 +31,6 @@ export const TRYBY = {
     etykieta: 'rowerowa',
     ikona: '🚴',
     opis: 'Rowerem — drogi rowerowe i spokojne ulice, bez schodów',
-    promienM: 3000,
     zoom: 15,
     predkoscKmh: 15,
     klasyDrog: [
@@ -45,7 +43,6 @@ export const TRYBY = {
     etykieta: 'samochodowa',
     ikona: '🚗',
     opis: 'Samochodem — stacje przy parkingu albo obiekcie z dojazdem',
-    promienM: 10000,
     zoom: 13,
     predkoscKmh: 40,
     klasyDrog: [
@@ -173,6 +170,7 @@ export const OGRANICZENIA = {
   liczbaStacji: { min: 3, max: 12 },
   pytaniaNaStacje: { min: 1, max: 3 },
   promienM: { min: 200, max: 50000 },
+  czasGryMin: { min: 10, max: 480 },
   dlugoscKoduGry: { min: 4, max: 40 },
   dlugoscImienia: { min: 1, max: 20 },
 };
@@ -183,12 +181,69 @@ export const DOMYSLNE = {
   liczbaGraczy: 1,
   liczbaStacji: 5,
   pytaniaNaStacje: 1,
+  czasGryMin: 60, // planowany czas gry; promień jest z niego liczony (ADR 0025)
   tematy: ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia'],
   tematWlasny: '', // tekst organizatora dla tematu `wlasny` (niezaznaczony domyślnie)
   wiek: 'dorosli',
   jezyk: 'polski',
   podklad: 'osm',
 };
+
+/**
+ * Parametry przeliczenia planowanego czasu gry na promień (ADR 0025).
+ *
+ * - `sekundyNaPytanie`: przeczytanie pytania, narada i odpowiedź przy stacji.
+ * - `udzialDrogi`: z czasu, który zostaje po pytaniach, tylko ta część realnie
+ *   idzie na przemieszczanie się (reszta: czytanie tablic, rozmowa, czekanie
+ *   na grupę, światła, zapas).
+ * - `wspolczynnikTrasy`: trasa przez N stacji rozmieszczonych w kole o
+ *   promieniu R ma długość ≈ 1,4·√N·R (klasyczne przybliżenie TSP daje
+ *   0,71·√(N·πR²) ≈ 1,26·√N·R; 1,4 dokłada ~10% na kręte chodniki).
+ * - `krokM`: zaokrąglenie — mapa i tak nie rozróżnia dziesiątek metrów.
+ */
+export const PARAMETRY_CZASU = {
+  sekundyNaPytanie: 90,
+  udzialDrogi: 0.4,
+  wspolczynnikTrasy: 1.4,
+  krokM: 50,
+};
+
+/**
+ * Przeliczenie planowanego czasu gry na promień wyszukiwania stacji (ADR 0025)
+ * wraz ze składowymi — UI pokazuje je jako uzasadnienie liczby.
+ *
+ * Kalibracja właściciela (2026-09-07): 60 min, pieszo (4,5 km/h), 5 stacji
+ * × 1 pytanie → **500 m**. Wzór: odpowiedzi 5 × 90 s = 7,5 min; na drogę
+ * (60 − 7,5) × 0,4 = 21 min = 1575 m przy 4,5 km/h; promień = 1575 / (1,4·√5)
+ * ≈ 503 m → 500 m po zaokrągleniu.
+ *
+ * Wynik jest zawsze w widełkach `OGRANICZENIA.promienM`: gdy pytania zjadają
+ * cały czas, zostaje minimum (200 m), nie zero i nie NaN.
+ */
+export function przeliczenieCzasu({ czasGryMin, tryb, liczbaStacji, pytaniaNaStacje } = {}) {
+  const minuty = Number.isFinite(czasGryMin) ? czasGryMin : 0;
+  const predkoscKmh = TRYBY[tryb]?.predkoscKmh ?? TRYBY[DOMYSLNE.tryb].predkoscKmh;
+  const stacje = Number.isInteger(liczbaStacji) && liczbaStacji > 0 ? liczbaStacji : 1;
+  const pytania = stacje * (Number.isInteger(pytaniaNaStacje) && pytaniaNaStacje > 0 ? pytaniaNaStacje : 1);
+  const czasOdpowiedziS = pytania * PARAMETRY_CZASU.sekundyNaPytanie;
+  const czasDrogiS = Math.max(0, minuty * 60 - czasOdpowiedziS) * PARAMETRY_CZASU.udzialDrogi;
+  const trasaM = czasDrogiS * ((predkoscKmh * 1000) / 3600);
+  const surowyM = trasaM / (PARAMETRY_CZASU.wspolczynnikTrasy * Math.sqrt(stacje));
+  const { min, max } = OGRANICZENIA.promienM;
+  const zaokraglony = Math.round(surowyM / PARAMETRY_CZASU.krokM) * PARAMETRY_CZASU.krokM;
+  return {
+    pytania,
+    czasOdpowiedziMin: czasOdpowiedziS / 60,
+    czasDrogiMin: czasDrogiS / 60,
+    trasaM: Math.round(trasaM),
+    promienM: Math.min(max, Math.max(min, zaokraglony)),
+  };
+}
+
+/** Sam promień (liczba) — tam, gdzie składowe nie są potrzebne. */
+export function promienZCzasuGry(kryteria) {
+  return przeliczenieCzasu(kryteria).promienM;
+}
 
 /** Konfiguracja startowa dla `liczbaGraczy` graczy (imiona domyślne). */
 export function domyslnaKonfiguracja(liczbaGraczy = DOMYSLNE.liczbaGraczy) {
@@ -203,7 +258,13 @@ export function domyslnaKonfiguracja(liczbaGraczy = DOMYSLNE.liczbaGraczy) {
   return {
     ...DOMYSLNE,
     liczbaGraczy: n,
-    promienM: TRYBY[DOMYSLNE.tryb].promienM,
+    czasGryMin: DOMYSLNE.czasGryMin,
+    promienM: promienZCzasuGry({
+      czasGryMin: DOMYSLNE.czasGryMin,
+      tryb: DOMYSLNE.tryb,
+      liczbaStacji: DOMYSLNE.liczbaStacji,
+      pytaniaNaStacje: DOMYSLNE.pytaniaNaStacje,
+    }),
     imiona: Array.from({ length: n }, (_, i) => `Gracz ${i + 1}`),
   };
 }
@@ -295,16 +356,22 @@ export function oczyscKonfiguracje(surowa) {
     liczbaGraczy: OGRANICZENIA.liczbaGraczy,
     liczbaStacji: OGRANICZENIA.liczbaStacji,
     pytaniaNaStacje: OGRANICZENIA.pytaniaNaStacje,
-    promienM: OGRANICZENIA.promienM,
+    czasGryMin: OGRANICZENIA.czasGryMin,
   };
   for (const [pole, zakres] of Object.entries(liczby)) {
     const v = Number(zrodlo[pole]);
     if (!Number.isFinite(v)) continue;
     konfig[pole] = Math.min(Math.max(Math.round(v), zakres.min), zakres.max);
   }
-  if (TRYBY[konfig.tryb] && konfig.promienM === domyslne.promienM && zrodlo.promienM === undefined) {
-    konfig.promienM = TRYBY[konfig.tryb].promienM;
-  }
+  // Promień jest WYNIKIEM, nie wejściem (ADR 0025): liczy się z czasu, trybu
+  // i liczby pytań — także dla starych zapisów, które niosły własny `promienM`
+  // (migracja: brak `czasGryMin` = domyślne 60 min).
+  konfig.promienM = promienZCzasuGry({
+    czasGryMin: konfig.czasGryMin,
+    tryb: konfig.tryb,
+    liczbaStacji: konfig.liczbaStacji,
+    pytaniaNaStacje: konfig.pytaniaNaStacje,
+  });
 
   // listy i teksty
   konfig.tematy = Array.isArray(zrodlo.tematy) ? [...new Set(zrodlo.tematy.map(kanonicznyTemat))].filter((t) => Object.hasOwn(TEMATY, t)) : [];
@@ -358,6 +425,11 @@ export function walidujSetup(konfig) {
   const { min: minP, max: maxP } = OGRANICZENIA.pytaniaNaStacje;
   if (!Number.isInteger(konfig.pytaniaNaStacje) || konfig.pytaniaNaStacje < minP || konfig.pytaniaNaStacje > maxP) {
     dodaj('K11', 'pytaniaNaStacje', `Liczba pytań na stację musi być liczbą od ${minP} do ${maxP}.`);
+  }
+
+  const { min: minC, max: maxC } = OGRANICZENIA.czasGryMin;
+  if (!Number.isFinite(konfig.czasGryMin) || konfig.czasGryMin < minC || konfig.czasGryMin > maxC) {
+    dodaj('K19', 'czasGryMin', `Planowany czas gry musi mieścić się w zakresie ${minC}–${maxC} minut.`);
   }
 
   const { min: minR, max: maxR } = OGRANICZENIA.promienM;

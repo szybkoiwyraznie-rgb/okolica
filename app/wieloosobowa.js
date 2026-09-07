@@ -104,7 +104,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-8';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-9';
 
 export { ramkaGeohash, sasiednieGeohash };
 

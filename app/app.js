@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-8';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-8';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-9';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-9';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -29,21 +29,21 @@ import {
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
-} from './protokol.js?v=m12-8';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-8';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-8';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-8';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-8';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-8';
+} from './protokol.js?v=m12-9';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-9';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-9';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-9';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-9';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-9';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-8';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-8';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-8';
+} from './zestawy.js?v=m12-9';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-9';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-9';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -63,11 +63,11 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-8';
-import { utworzMape } from './mapa.js?v=m12-8';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-8';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-8';
-import { adresMostu, stanMostu } from './most.js?v=m12-8';
+} from './sieci.js?v=m12-9';
+import { utworzMape } from './mapa.js?v=m12-9';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-9';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-9';
+import { adresMostu, stanMostu } from './most.js?v=m12-9';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -257,7 +257,7 @@ function renderujTryby() {
   lista.innerHTML = '';
   for (const [klucz, tryb] of Object.entries(TRYBY)) {
     const etykieta = document.createElement('label');
-    etykieta.innerHTML = `<input type="radio" name="tryb" value="${klucz}"><strong>${tryb.ikona} ${tryb.etykieta}</strong><span>${tryb.promienM / 1000} km</span>`;
+    etykieta.innerHTML = `<input type="radio" name="tryb" value="${klucz}"><strong>${tryb.ikona} ${tryb.etykieta}</strong><span>${String(tryb.predkoscKmh).replace('.', ',')} km/h</span>`;
     lista.appendChild(etykieta);
   }
   const zaznaczonyTryb = lista.querySelector(`input[value="${STAN.konfig.tryb}"]`) ?? lista.querySelector('input');
@@ -269,8 +269,7 @@ function renderujTryby() {
     const wybrany = lista.querySelector('input:checked')?.value;
     if (!wybrany || !TRYBY[wybrany]) return;
     STAN.konfig.tryb = wybrany;
-    STAN.konfig.promienM = TRYBY[wybrany].promienM;
-    $('setup-promien').value = STAN.konfig.promienM;
+    przeliczPromienZCzasu(); // ADR 0025: promień wynika z czasu i prędkości trybu
     aktualizujOpisTrybu();
   });
   aktualizujOpisTrybu();
@@ -407,14 +406,38 @@ async function obsluzProfil(rejestruj) {
  */
 let setupNasluchyPodpiete = false;
 
+/**
+ * Promień gry jest WYNIKIEM, nie polem (ADR 0025): organizator wpisuje, ile ma
+ * czasu, a promień liczy się z czasu, sposobu poruszania i liczby pytań
+ * (`przeliczenieCzasu` w konfig.js). Akapit `#setup-promien-info` pokazuje
+ * składowe, żeby liczba nie była magią (LESSONS L6).
+ */
+function przeliczPromienZCzasu() {
+  const k = STAN.konfig;
+  const r = przeliczenieCzasu({
+    czasGryMin: k.czasGryMin, tryb: k.tryb,
+    liczbaStacji: k.liczbaStacji, pytaniaNaStacje: k.pytaniaNaStacje,
+  });
+  k.promienM = r.promienM;
+  const info = $('setup-promien-info');
+  if (!info) return;
+  const minuty = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
+  const odleglosc = (m) => (m >= 1000 ? `${minuty(m / 1000)} km` : `${Math.round(m)} m`);
+  info.textContent = Number.isFinite(k.czasGryMin)
+    // Krótko: setup ma się mieścić na 360 px bez przewijania (WORKFLOW §4.2).
+    ? `Promień gry: ${odleglosc(r.promienM)} (z ${k.czasGryMin} min: ${r.pytania} ${r.pytania === 1 ? 'pytanie' : 'pytań'} ≈ ${minuty(r.czasOdpowiedziMin)} min, droga ≈ ${minuty(r.czasDrogiMin)} min, trasa ≈ ${odleglosc(r.trasaM)}).`
+    : 'Wpisz planowany czas gry — promień policzy się z niego sam.';
+}
+
 function renderujSetup() {
   const k = STAN.konfig;
-  $('setup-promien').value = k.promienM;
+  $('setup-czas').value = k.czasGryMin;
   $('setup-stacje').value = k.liczbaStacji;
   $('setup-pytania').value = k.pytaniaNaStacje;
   $('setup-gracze').value = k.liczbaGraczy;
-  $('setup-promien').min = OGRANICZENIA.promienM.min;
-  $('setup-promien').max = OGRANICZENIA.promienM.max;
+  $('setup-czas').min = OGRANICZENIA.czasGryMin.min;
+  $('setup-czas').max = OGRANICZENIA.czasGryMin.max;
+  przeliczPromienZCzasu();
 
   // Wartości pól odświeżamy za każdym razem, nasłuchy — tylko raz (L14).
   if (setupNasluchyPodpiete) return;
@@ -427,8 +450,9 @@ function renderujSetup() {
       STAN.konfig = { ...STAN.konfig, imiona: dostosujImiona(Number.isFinite(v) ? v : 1) };
       renderujImiona();
     }
+    przeliczPromienZCzasu(); // czas, stacje i pytania wchodzą do wzoru (ADR 0025)
   });
-  czytajLiczbe('setup-promien', 'promienM');
+  czytajLiczbe('setup-czas', 'czasGryMin');
   czytajLiczbe('setup-stacje', 'liczbaStacji');
   czytajLiczbe('setup-pytania', 'pytaniaNaStacje');
   czytajLiczbe('setup-gracze', 'liczbaGraczy');

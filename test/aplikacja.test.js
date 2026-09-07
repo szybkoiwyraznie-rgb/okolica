@@ -27,7 +27,7 @@ import {
   parsujOdpowiedz,
   upraszczajDaneDoCache,
 } from '../app/sieci.js';
-import { DOMYSLNE, PODKLADY, TEMATY, TRYBY } from '../app/konfig.js';
+import { DOMYSLNE, PODKLADY, TEMATY, TRYBY, domyslnaKonfiguracja } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
 import { widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
 import { dopasujZoomDoPromienia } from '../app/geo.js';
@@ -63,7 +63,9 @@ test('bootstrap: lista trybów i tematów jest wyrenderowana z kanonu', () => {
 });
 
 test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
-  assert.equal(pobierz('setup-promien').value, String(TRYBY[DOMYSLNE.tryb].promienM));
+  assert.equal(pobierz('setup-czas').value, String(DOMYSLNE.czasGryMin), 'czas gry jest polem, promień nie (ADR 0025)');
+  assert.match(pobierz('setup-promien-info').textContent, /Promień gry: 500 m/, 'promień policzony i pokazany z uzasadnieniem');
+  assert.match(pobierz('setup-promien-info').textContent, /5 pytań/, 'składowe są jawne');
   assert.equal(pobierz('setup-stacje').value, String(DOMYSLNE.liczbaStacji));
   assert.equal(pobierz('setup-pytania').value, String(DOMYSLNE.pytaniaNaStacje));
   assert.equal(pobierz('setup-gracze').value, String(DOMYSLNE.liczbaGraczy));
@@ -417,13 +419,14 @@ test('mapa: obrót telefonu (resize) przelicza widok na nowy rozmiar panelu', as
   assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
 });
 
-test('mapa: wyczyszczony promień nie wysypuje przejścia — jest jawna odmowa z kodem K12', async () => {
+test('mapa: wyczyszczony czas gry nie wysypuje przejścia — jest jawna odmowa z kodem K19', async () => {
   const domMapy = await aplikacjaZMapa();
   const gpsMapy = atrapaGeolokalizacji({ idWatcha: 504 });
   domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
-  // gracz czyści pole promienia → `Number('') = 0`, czyli wartość skończona,
-  // która przechodzi przez hartowanie liczb w setupie
-  wyslij(domMapy.pobierz('setup-promien'), 'input', { target: { value: '' } });
+  // gracz czyści pole czasu gry → `Number('') = 0`, czyli wartość skończona,
+  // która przechodzi przez hartowanie liczb w setupie (promień zjeżdża wtedy
+  // na minimum 200 m, więc odmowa musi przyjść z walidacji czasu — K19)
+  wyslij(domMapy.pobierz('setup-czas'), 'input', { target: { value: '' } });
   domMapy.kliknij('przycisk-gps');
   gpsMapy.wyslijFix(52.235, 21.015, 15);
 
@@ -431,20 +434,21 @@ test('mapa: wyczyszczony promień nie wysypuje przejścia — jest jawna odmowa 
   // a nie urwać się wyjątkiem w nasłuchu (LESSONS L10)
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.equal(domMapy.pobierz('ekran-stacje').hidden, true, 'przejście jest odmówione, nie urwane');
-  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /\[K12\]/, 'kod z konfig.js, komunikat dla człowieka');
-  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /Promień gry/);
+  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /\[K19\]/, 'kod z konfig.js, komunikat dla człowieka');
+  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /Planowany czas gry/);
   assert.match(domMapy.pobierz('status').textContent, /Wróć do ustawień gry/);
 
-  // mapa pozycji działa dalej i nie ma okręgu promienia, którego nie ma
+  // mapa pozycji działa dalej; promień zjeżdża na minimum (200 m), więc okrąg
+  // promienia JEST — zniknąłby dopiero, gdyby promień nie był liczbą (ADR 0025)
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1);
   assert.deepEqual(
     domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
-    ['okrag-dokladnosc'],
+    ['okrag-dokladnosc', 'okrag-promien'],
   );
   assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
 
-  // po poprawieniu promienia przejście działa
-  wyslij(domMapy.pobierz('setup-promien'), 'input', { target: { value: '1200' } });
+  // po wpisaniu czasu gry przejście działa (promień liczy się sam — ADR 0025)
+  wyslij(domMapy.pobierz('setup-czas'), 'input', { target: { value: '90' } });
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.equal(domMapy.pobierz('ekran-stacje').hidden, false);
   assert.equal(domMapy.pobierz('mapa-stacje-pinezki').children.length, DOMYSLNE.liczbaStacji);
@@ -585,6 +589,17 @@ function czytajFixtureOverpass(nazwa) {
   return JSON.parse(readFileSync(join(KATALOG_APP, 'test', 'fixtures', `overpass-${nazwa}.json`), 'utf8'));
 }
 
+/**
+ * Fixture'y Overpass są ułożone pod promień 1000 m — przy mniejszym sieć jest
+ * za uboga i aplikacja słusznie wraca do pierścienia. Promień liczy się teraz
+ * z czasu gry (ADR 0025), więc testy sieciowe ustawiają 110 min (5 stacji
+ * × 1 pytanie → 1000 m), a nie promień wprost.
+ */
+function konfigNa1000m(pamiec) {
+  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { czasGryMin: 110 } }));
+  return pamiec;
+}
+
 async function aplikacjaZSiecia({ search = '?tryb=test', pamiec = new Map() } = {}) {
   const domAtrapa = zainstalujDom({ search, pamiec });
   await import(`../app/app.js?siec=${Math.random().toString(36).slice(2)}`);
@@ -616,7 +631,7 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
   const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
 
-  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
   // też synchronicznie: cache zastępuje sieć
@@ -630,7 +645,7 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
 });
 
 test('stacje: udane pobranie z pierwszej instancji zapisuje cache i rysuje sieć', async () => {
-  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(new Map()) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const wywolania = [];
   domAtrapa.window.fetch = async (url, opcje) => {
@@ -687,7 +702,7 @@ test('stacje: sieć z cache pokazuje ponowienie, klik dowozi świeże dane z Ove
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
   pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
-  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: pamiecCache });
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const wywolania = [];
   domAtrapa.window.fetch = async (url) => {
@@ -775,7 +790,7 @@ test('stacje: przycisk „Tryb uproszczony" wymusza pierścień i wraca do sieci
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
   const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
-  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/);
@@ -842,7 +857,9 @@ test('Q2 end-to-end: wklejona paczka odwrócona (rev1) od razu zaczyna grę', as
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+    // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
+    // fixture paczki jest ułożony pod ten promień
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?rev1=${Math.random().toString(36).slice(2)}`);
@@ -862,7 +879,9 @@ test('rev2 end-to-end: wklejona paczka z kodami od razu zaczyna grę', async () 
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+    // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
+    // fixture paczki jest ułożony pod ten promień
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?rev2=${Math.random().toString(36).slice(2)}`);
@@ -901,7 +920,7 @@ test('nazwa miejsca ZAWSZE trafia do UI i do promptu (Partia 2: koniec opcji geo
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
   pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
-  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
   assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście/,
@@ -916,7 +935,7 @@ test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe pod
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
   pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
-  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   // schowek asynchroniczny zablokowany jak w iframe podglądu
   Object.assign(navigator, { clipboard: { writeText: async () => { throw new Error('NotAllowedError'); } } });
   const polecenia = [];
@@ -1019,7 +1038,9 @@ async function graGotowaDoStartu() {
   const pamiec = new Map();
   pamiec.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
-    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+    // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
+    // fixture paczki jest ułożony pod ten promień
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?gra=${Math.random().toString(36).slice(2)}`);
@@ -1214,7 +1235,7 @@ test('M6: wznowienie po „zamknięciu przeglądarki" — nowa instancja, ta sam
   assert.match(dom2.pobierz('wznowienie-opis').textContent, /faza: odcinek/);
 
   dom2.kliknij('przycisk-wznow-gre');
-  assert.equal(dom2.pobierz('setup-promien').zdarzenia.input.length, 1, 'L14: wznowienie nie dokleja drugiego nasłuchu pól setupu');
+  assert.equal(dom2.pobierz('setup-czas').zdarzenia.input.length, 1, 'L14: wznowienie nie dokleja drugiego nasłuchu pól setupu');
   assert.equal(dom2.pobierz('ekran-gra').hidden, false, 'wznowienie wraca na ekran gry');
   assert.equal(dom2.pobierz('gra-panel-odcinek').hidden, false, 'faza odcinka odtworzona');
   assert.equal(dom2.pobierz('karta-wznowienie').hidden, true, 'baner znika po wznowieniu');
@@ -1346,7 +1367,7 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
   const { stacjeProste } = await import('../app/stacje.js');
   const { domyslnaKonfiguracja } = await import('../app/konfig.js');
   const paczka = czytajFixturePaczka();
-  const konfig = { ...domyslnaKonfiguracja(2), kodGry: 'adr-0015', promienM: 1000, liczbaStacji: 4 };
+  const konfig = { ...domyslnaKonfiguracja(2), kodGry: 'adr-0015', liczbaStacji: 4, czasGryMin: 99 }; // 99 min → 1000 m (ADR 0025)
   const stacje = stacjeProste({ srodek: { lat: 52.2297, lon: 21.0122 }, liczbaStacji: 4, promienM: 1000, ziarno: 'z' });
   const rozgrywka = nowaRozgrywka({ konfig, stacje, paczka, srodek: { lat: 52.2297, lon: 21.0122 }, czasMs: 0, ziarno: 'z' });
   assert.deepEqual(rozgrywka.brakPytan, [4], 'model widzi stację bez pytania (M1)');
@@ -1745,12 +1766,13 @@ test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie
   domT.kliknij('przycisk-ustaw-reczne');
 
   // Po ręcznym ustawieniu `pokazPozycje` woła `centrujNaPozycji`: mapa jest
-  // wyśrodkowana NA POZYCJI w zoomie dobranym do promienia gry (1000 m przy
-  // szerokości panelu z atrapy → zoom z `dopasujZoomDoPromienia`). Oczekiwany
-  // punkt tap-a LICZĘ czystymi funkcjami z dokładnie tym widokiem (L24) —
-  // zgaduje się co do cyfry z tym, co robi aplikacja.
+  // wyśrodkowana NA POZYCJI w zoomie dobranym do promienia gry (promień liczy
+  // się z czasu gry — ADR 0025 — więc biorę go z kanonu, nie z liczby wpisanej
+  // na sztywno; szerokość panelu z atrapy → zoom z `dopasujZoomDoPromienia`).
+  // Oczekiwany punkt tap-a LICZĘ czystymi funkcjami z dokładnie tym widokiem
+  // (L24) — zgaduje się co do cyfry z tym, co robi aplikacja.
   const rect = domT.pobierz('mapa-pozycja').getBoundingClientRect();
-  const zoom = dopasujZoomDoPromienia(1000, rect.width, 52.2297);
+  const zoom = dopasujZoomDoPromienia(domyslnaKonfiguracja().promienM, rect.width, 52.2297);
   const widok = widokNaSrodek({ lat: 52.2297, lon: 21.0122, zoom, rozmiar: { szerokosc: rect.width, wysokosc: rect.height } });
   const geo = wspolrzedneZEkranu(40 - rect.left, 0 - rect.top, widok);
   const oczLat = Math.round(geo.lat * 1e6) / 1e6;

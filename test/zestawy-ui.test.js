@@ -41,10 +41,12 @@ const metaWpisu = () => ({
 });
 
 /** Setup z 2 stacjami i 1 pytaniem — tyle niesie wpis testowy (kryteria właściciela). */
+// czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025): wpisy
+// testowe mają promienM 1000, a dopasowanie wymaga promienia paczki ≤ setupu.
 const KONFIG_TEST = JSON.stringify({
   schemat: 'konfig/1',
   konfig: {
-    tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1,
+    tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
     tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', jezyk: 'polski',
     karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
   },
@@ -240,7 +242,7 @@ import { readFileSync as czytajPlik } from 'node:fs';
 
 const KONFIG_WYSYLKA = JSON.stringify({
   schemat: 'konfig/1',
-  konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
+  konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
 });
 
 function atrapaPost() {

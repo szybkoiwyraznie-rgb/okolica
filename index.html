@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-8">
-  <script type="module" src="app/app.js?v=m12-8"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-9">
+  <script type="module" src="app/app.js?v=m12-9"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -113,8 +113,8 @@
 
       <div class="siatka">
         <label class="pole">
-          <span>Promień gry (m)</span>
-          <input id="setup-promien" type="number" min="200" max="50000" step="100" inputmode="numeric">
+          <span>Planowany czas gry (min)</span>
+          <input id="setup-czas" type="number" min="10" max="480" step="5" inputmode="numeric">
         </label>
         <label class="pole">
           <span>Liczba stacji</span>
@@ -129,6 +129,10 @@
           <input id="setup-gracze" type="number" min="1" max="8" step="1" inputmode="numeric">
         </label>
       </div>
+      <!-- Promień nie jest polem: liczy się z czasu, sposobu poruszania i liczby
+           pytań (ADR 0025), a ten akapit mówi jak — liczba bez uzasadnienia
+           byłaby magią (LESSONS L6). -->
+      <p id="setup-promien-info" class="podpowiedz"></p>
 
       <fieldset class="pole" id="pole-imiona">
         <legend>Gracze</legend>

@@ -109,7 +109,7 @@ WYMAGANIA DODATKOWE:
 | --- | --- | --- |
 | `{LAT}`, `{LON}` | środek gry, 5 miejsc po przecinku (~1 m) | geolokalizacja albo tryb testowy (ADR 0004) |
 | `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt niedostępny — `brak odczytu (tylko współrzędne)` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
-| `{PROMIEN_M}` | promień gry w metrach | setup, z domyślnej wartości trybu (ADR 0003/§4.2) |
+| `{PROMIEN_M}` | promień gry w metrach | setup: liczony z planowanego czasu gry, trybu i liczby pytań (ADR 0025) |
 | `{TRYB}` | `piesza` / `rower` / `samochodowa` — etykieta polska | setup |
 | `{LISTA_STACJI}` | po jednej linii: `- stacja N: LAT, LON — <opis miejsca albo „punkt przy ulicy X"> (ODLEGLOSC m od środka)` | wybór stacji (ADR 0005) |
 | `{LICZBA_GRACZY}` | 1–8 | setup |

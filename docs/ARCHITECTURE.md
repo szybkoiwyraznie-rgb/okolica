@@ -18,8 +18,9 @@ sw.js                       — Service Worker (M10): offline skorupa + kafelki
 .nojekyll                     — Pages bez przetwarzania Jekyll (M8)
 app/
   app.js                    — bootstrap: router ekranów, stan sesji, spinanie modułów
-  konfig.js                 — kanon konfiguracji: TRYBY, PROMIENIE, WIEK, TEMATY,
-                              DOMYSLNE, ograniczenia (czyste dane + walidacja setupu)
+  konfig.js                 — kanon konfiguracji: TRYBY, WIEK, TEMATY, DOMYSLNE,
+                              ograniczenia, walidacja setupu (K01–K21) i przeliczenie
+                              planowanego czasu gry na promień (ADR 0025)
   geo.js                    — geodezja i projekcja: haversine, bearing, Web Mercator,
                               siatka kafelków, pierścienie, dopasowanie zoomu,
                               parsowanie współrzędnych z pól (dziesiętne, polski

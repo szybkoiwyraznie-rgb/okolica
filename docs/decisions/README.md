@@ -37,6 +37,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` | Zaakceptowana |
 | [0023](0023-zero-presji-czasowej.md) | Zero presji czasowej: punktacja to dotarcie plus poprawna odpowiedź | Zaakceptowana |
 | [0024](0024-tolerancja-dopasowania-okolicy.md) | Dopasowanie okolicy z tolerancją: odległość od komórki geohash, nie „ten sam geohash" | Zaakceptowana |
+| [0025](0025-czas-gry-zamiast-promienia.md) | Czas gry zamiast promienia: promień jest wynikiem, nie polem | Zaakceptowana |
 
 ## Szablon ADR
 
