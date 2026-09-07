@@ -19,17 +19,17 @@
  * czysta funkcja + atrapa, `docs/LESSONS.md`).
  */
 
-import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-1';
+import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-2';
 
 /**
  * Adres web app Apps Script (…/exec) wpisany na stałe w tej wersji aplikacji.
  *
- * PUSTY = most nie został jeszcze wpisany (stan do wdrożenia właściciela).
- * Aplikacja mówi wtedy wprost, że wspólne repozytorium i gry sieciowe są
- * niedostępne, i działa dalej w trybie lokalnym (LESSONS L6: status jawny,
- * degradacja bez blokady rozgrywki).
+ * Wpisany commitem wdrożeniowym 2026-09-07: właściciel wdrożył most i podał
+ * adres /exec w czacie (ADR 0020 pkt 5). Pusty łańcuch znaczyłby stan sprzed
+ * wdrożenia — aplikacja mówiłaby wprost, że wspólne repozytorium i gry
+ * sieciowe są niedostępne, i działała lokalnie (LESSONS L6).
  */
-export const DOMYSLNY_URL_MOSTU = '';
+export const DOMYSLNY_URL_MOSTU = 'https://script.google.com/macros/s/AKfycbxlScMHr8bR1DSq7cPPr9914A1ur3J9bBRpHNEKV3YFmCcYr37dAN6jpq2zVWuwECGu/exec';
 
 /** Klucz nadpisania adresu dla gry wieloosobowej (historyczne pole „Adres mostu"). */
 export const KLUCZ_URL_MOSTU = 'okolica:multi:url-mostu';

@@ -503,21 +503,18 @@ test('bez zgody NIE wysyłam niczego — jawna odmowa (setup → multi)', async 
   assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'ze zgodą panel dołączania otwarty');
 });
 
-test('ADR 0020: bez adresu mostu w tej wersji aplikacji gra sieciowa odmawia jawnie, hot-seat zostaje', async () => {
+test('ADR 0020: adres mostu jest w kodzie — telefon bez wpisu w pamięci gra sieciowo od razu', async () => {
   const most = atrapaMostu();
-  // pusty wpis w pamięci = stan `DOMYSLNY_URL_MOSTU === ''` (przed wdrożeniem web app przez właściciela)
+  // pusty wpis w pamięci = brak nadpisania: telefon bierze adres z kodu (stan po wdrożeniu web app)
   const pamiec = new Map([['okolica:multi:url-mostu', '']]);
   const u = await noweUrzadzenie({ pamiec, most });
   await przygotujTelefon(u, 'Iga');
   przelaczNa(u);
-  assert.match(tekst(u, 'multi-most-stan'), /niepodłączony/i, 'karta gry wieloosobowej mówi wprost, że most nie jest wpisany');
-  assert.match(tekst(u, 'most-stan-repo'), /niepodłączony/i, 'karta paczek mówi to samo (jedna prawda o stanie mostu)');
+  assert.match(tekst(u, 'multi-most-stan'), /podłączony/i, 'karta gry wieloosobowej: adres z kodu działa bez wpisywania');
+  assert.match(tekst(u, 'most-stan-repo'), /podłączony/i, 'karta paczek mówi to samo (jedna prawda o stanie mostu)');
   await klik(u, 'przycisk-multi-zaloz');
-  assert.match(tekst(u, 'bledy-multi'), /Brak adresu mostu/, 'odmowa założenia gry z jawnym powodem');
-  assert.match(tekst(u, 'bledy-multi'), /Hot-seat/, 'komunikat podpowiada działającą alternatywę na jednym telefonie');
-  await klik(u, 'przycisk-multi-dolacz');
-  assert.equal(most.ciala.length, 0, 'ZERO wysyłek na most bez adresu');
-  assert.equal(most.adresy.length, 0, 'nawet GET lobby nie poszedł');
+  assert.equal(el(u, 'multi-panel-zaloz').hidden, false, 'panel zakładania otwarty — zero odmowy o adres');
+  assert.doesNotMatch(tekst(u, 'bledy-multi'), /Brak adresu mostu/, 'komunikat o braku adresu nie istnieje w tej wersji');
 });
 
 test('serwer odrzuca zdarzenie poza turą (R08) — klient NIE ponawia i mówi dlaczego', async () => {

@@ -20,7 +20,7 @@
 | M6 — Rozgrywka | 🟡 kod gotowy, czeka kryterium | ekran gry, trwalosc.js, wznowienie; CZYTAJ: §M6 (telefon) |
 | M7 — Podsumowanie i udostępnianie | 🟡 kod gotowy, czeka kryterium | ranking, eksporty, historia; CZYTAJ: §M7 (słońce/eksporty) |
 | M8 — Publikacja i brama jakości | 🟡 kod gotowy, czeka właściciela | manifest, ikony, CI, ASSETS §6; publikację włącza właściciel (WORKFLOW §5) |
-| M9 — Repozytorium paczek | ✅ zamknięty 2026-09-06 (rewizja M9b) | kopia lokalna + most Drive; wdrożenie mostu odroczone (łańcuch w HANDOFF) |
+| M9 — Repozytorium paczek | ✅ zamknięty 2026-09-06 (rewizja M9b) | kopia lokalna + most Drive; most wdrożony 2026-09-07, adres w kodzie |
 | M10 — Dopracowanie terenowe | 🟡 kod gotowy, czeka kryterium | sw.js, PROFILE_GPS, sygnały, WCAG AA 0 naruszeń; CZYTAJ: §M10 (§4.3) |
 | M11 — Gra wieloosobowa (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | most `.gs` + wieloosobowa.js/sync.js + UI, brama 489/489; CZYTAJ: §M11 |
 | M12 — Rankingi (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | pseudonim + ekran 🏆, agregacje na telefonie; CZYTAJ: §M12 |
@@ -91,16 +91,14 @@ właściciela wg §4.3 (offline, bateria, sygnały, progi) — wynik do LESSONS.
 Kod zamknięty (2026-09-06, P1–P7, brama 489/489): sekcja gier w moście `.gs`,
 `app/wieloosobowa.js` + `app/sync.js`, pełne UI (rodzaj gry, zakładanie,
 kod/lobby, panel wyścigu/tur, rezygnacja, powrót po odświeżeniu).
-**Czeka**: wdrożenie mostu przez właściciela (instrukcja w czacie, ADR 0018),
-adres web app do `app/most.js` (`DOMYSLNY_URL_MOSTU`, ADR 0020) i test
-terenowy WORKFLOW §4.4.
+**Czeka**: scalenie adresu mostu do `main` (Pages) i test dwóch telefonów
+w terenie (WORKFLOW §4.4).
 
 ## M12 — Profil, statystyki i rankingi gracza na Drive (decyzje właściciela: ADR 0019)
 
 Kod zamknięty (2026-09-06, P6): pseudonim, wyniki z mostu, ekran 🏆
 (ogólny + WIEK/TEMATY/LOKALIZACJA + „Moje gry"; agregacje liczy telefon).
-**Czeka**: wdrożenie mostu i test terenowy (WORKFLOW §4.4 pkt 7) — oba
-wymagają adresu mostu w `app/most.js` scalanego do `main` (ADR 0020).
+**Czeka**: scalenie adresu mostu do `main` i test terenowy (WORKFLOW §4.4 pkt 7).
 
 ## Zasady prowadzenia roadmapy
 

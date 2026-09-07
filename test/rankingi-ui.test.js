@@ -142,10 +142,10 @@ test('puste rankingi i śmieciowa odpowiedź mostu są jawne (LESSONS L6)', asyn
   assert.equal(wierszeTabeli(smieci.dom).length, 1, 'tabela z komunikatem zamiast śmieci');
 });
 
-test('bez adresu mostu ekran rankingów tłumaczy, co ustawić', async () => {
+test('adres mostu jest w kodzie — rankingi pobierają bez wpisu w pamięci (ADR 0020)', async () => {
   const pamiec = new Map();
-  pamiec.set('okolica:multi:url-mostu', ''); // pusty = jak brak
-  const { dom, most } = await telefonZRankingiem({ pamiec, pseudonim: null });
-  assert.match(dom.pobierz('ranking-status').textContent, /Brak adresu mostu Drive/, 'status wskazuje ustawienia');
-  assert.equal(most.adresy.length, 0, 'zero żądań bez adresu');
+  pamiec.set('okolica:multi:url-mostu', ''); // pusty = brak nadpisania, adres z kodu
+  const { dom, most } = await telefonZRankingiem({ pamiec });
+  assert.ok(most.adresy[0].includes('akcja=ranking'), 'żądanie GET akcja=ranking poszło na adres z kodu');
+  assert.match(dom.pobierz('ranking-status').textContent, /4 wyników graczy/, 'status mówi, ile wierszy przyszło');
 });

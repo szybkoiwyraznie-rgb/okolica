@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import { zainstalujDom } from './helpers/dom.js';
 import { zapakujPaczke } from '../app/kodowanie.js';
 import { KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY, kluczZestawu } from '../app/zestawy.js';
+import { DOMYSLNY_URL_MOSTU } from '../app/most.js';
 
 const POZYCJA = { lat: 52.12303, lon: 20.74614 }; // Podkowa Leśna (geohash5 u33dc)
 const GEOHASH5 = 'u3qb8'; // policzone z geo.js dla (52.12303, 20.74614)
@@ -100,9 +101,10 @@ test('zestawy UI: karta propozycji pokazuje paczkę z tego telefonu po ustawieni
   const lista = dom.pobierz('zestawy-lista');
   assert.equal(lista.children.length, 1, 'jedno dopasowanie: geohash5+promień+tematy+wiek');
   assert.match(lista.children[0].children[0].textContent, /z tego telefonu: Podkowa Leśna/);
-  // bez skonfigurowanego źródła Drive karta mówi wprost, że repozytorium nie podłączone
+  // adres Drive jest w kodzie (ADR 0020); tu bez fetch próba pada — karta mówi wprost,
+  // że repozytorium jest niedostępne, a paczka z telefonu i tak działa
   await new Promise((r) => setTimeout(r, 20));
-  assert.match(dom.pobierz('zestawy-status').textContent, /nie jest podłączone/);
+  assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium niedostępne/);
 });
 
 test('zestawy UI: druga gra w tej samej okolicy startuje bez modelu i bez Overpassa', async () => {
@@ -327,7 +329,7 @@ test('wysyłka Drive: odhaczona zgoda = zero wysyłki i jawny status', async () 
   }
 });
 
-test('wysyłka Drive: brak adresu mostu = zero wysyłki i jawny status', async () => {
+test('wysyłka Drive: adres z kodu — przyjęcie paczki wysyła bez wpisu w pamięci (ADR 0020)', async () => {
   const atrap = atrapaPost();
   try {
     const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA]]);
@@ -338,8 +340,10 @@ test('wysyłka Drive: brak adresu mostu = zero wysyłki i jawny status', async (
     dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
     dom.kliknij('przycisk-sprawdz');
     await new Promise((r) => setTimeout(r, 30));
-    assert.deepEqual(atrap.posty, [], 'bez adresu mostu nic nie wychodzi');
-    assert.match(dom.pobierz('status').textContent, /brak adresu repozytorium/);
+    assert.equal(atrap.posty.length, 1, 'przyjęcie paczki wysyła na adres z kodu');
+    assert.equal(atrap.posty[0].url, DOMYSLNY_URL_MOSTU, 'cel wysyłki to stała wdrożeniowa');
+    assert.equal(JSON.parse(atrap.posty[0].opcje.body).schemat, 'TO-zestaw/1');
+    assert.match(dom.pobierz('status').textContent, /WYSŁANA na Drive/);
   } finally {
     atrap.przywroc();
   }
