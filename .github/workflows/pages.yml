@@ -1,0 +1,52 @@
+name: Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # Publikujemy tylko zielony kod: ta sama brama co w `ci.yml` (ADR 0001 —
+      # zero zależności, więc bez `npm ci`).
+      - name: Testy (geodezja, konfiguracja, protokół PYT, kontrakty)
+        run: npm test
+
+      - name: Szablon promptu zgodny między dokumentem a kodem (PROTOKOL §2)
+        run: npm run check
+
+      # `.git` nie jest treścią strony — bez tego trafiałby do artefaktu.
+      - name: Usuń .git z drzewa strony
+        run: rm -rf .git
+
+      # ADR 0002: publikacja z katalogu głównego gałęzi `main`, wszystkie
+      # ścieżki względne, `.nojekyll` w korzeniu (przy Source: GitHub Actions
+      # Jekyll i tak nie przetwarza plików).
+      - name: Artefakt strony (korzeń repozytorium)
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./
+
+      - name: Wdrożenie na GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

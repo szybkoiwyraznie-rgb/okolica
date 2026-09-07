@@ -173,6 +173,24 @@ test('kontrakt: live CI jest identyczny z lustrem receptury (LESSONS L4, aktuali
   assert.match(live, /run: npm run check/, 'sprawdzenie szablonu jest w CI');
 });
 
+test('kontrakt: live workflow Pages jest identyczny z lustrem receptury (ADR 0002)', () => {
+  // Pages z `Source: GitHub Actions` nie buduje strony sam — czeka na ten
+  // workflow (wgranie artefaktu + `deploy-pages`). Lustro jak dla CI (L4).
+  assert.ok(existsSync(join(ROOT, '.github/workflows/pages.yml')), 'brak live workflow Pages — strona się nie opublikuje');
+  const live = czytaj('.github/workflows/pages.yml');
+  const lustro = czytaj('docs/setup/pages-workflow.yml');
+  const receptura = lustro.slice(lustro.indexOf('name: Pages'));
+  assert.ok(receptura.startsWith('name: Pages'), 'lustro w docs/setup straciło recepturę Pages');
+  assert.equal(live, receptura, 'live workflow Pages rozjechał się z lustrem — edytuj oba naraz');
+  assert.match(live, /pages: write/, 'workflow potrzebuje uprawnienia pages: write');
+  assert.match(live, /id-token: write/, 'deploy-pages wymaga id-token: write');
+  assert.match(live, /name: github-pages/, 'środowisko github-pages jest wymagane przez deploy-pages');
+  assert.match(live, /uses: actions\/upload-pages-artifact@v3/, 'artefakt strony');
+  assert.match(live, /uses: actions\/deploy-pages@v4/, 'wdrożenie na Pages');
+  assert.match(live, /path: \.\//, 'publikacja z korzenia repozytorium (ADR 0002)');
+  assert.match(live, /run: npm test/, 'na Pages trafia tylko zielony kod');
+});
+
 /* --------------------------------------------------------- UI: DOM ↔ index */
 
 test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html', () => {
