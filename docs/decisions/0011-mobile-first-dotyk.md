@@ -5,12 +5,10 @@
 
 ## Kontekst
 
-Właściciel: „użytkownicy będą korzystali na telefonach, np. w przeglądarce
-Chrome, więc wszelkie sterowanie czy przyklejanie promptów musi się odbywać
-z punktu widzenia mobila i ekranu dotykowego". Gra dzieje się **na zewnątrz**:
-jedna ręka zajęta, ekran w słońcu, rękawiczki, pośpiech, mokry ekran, pauza na
-środku chodnika. Desktop jest odbiorcą wtórnym (organizator przygotowuje
-paczkę przy biurku).
+Gra dzieje się **na zewnątrz, na telefonie** (Chrome mobilny; sterowanie
+i wklejanie promptów z punktu widzenia dotyku): jedna ręka zajęta, ekran
+w słońcu, rękawiczki, pośpiech, mokry ekran. Desktop jest wtórny (organizator
+przygotowuje paczkę przy biurku).
 
 ## Decyzja
 

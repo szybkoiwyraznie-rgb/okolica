@@ -5,13 +5,11 @@
 
 ## Kontekst
 
-Sedno gry: aplikacja musi **przez cały czas** wiedzieć, gdzie jest gracz, i sama
-rozstrzygnąć, że doszedł do stacji — bez klikania „jestem". Właściciel wskazał
-to jako jedną z najważniejszych cech. Realia: GPS w telefonie daje dokładność
-5–30 m w otwartym terenie, 30–100 m w zabudowie („urban canyon"), w budynku
-bywa bezużyteczny; `watchPosition` działa tylko w kontekście bezpiecznym
-(HTTPS/localhost); iOS i Android pytają o zgodę raz na sesję; ciągły GPS je
-baterię.
+Aplikacja musi **przez cały czas** znać pozycję gracza i sama rozstrzygnąć
+dojście do stacji — bez klikania „jestem" (jedna z najważniejszych cech).
+Realia: GPS 5–30 m w terenie, 30–100 m w zabudowie, w budynku bezużyteczny;
+`watchPosition` tylko w kontekście bezpiecznym (HTTPS/localhost); zgoda raz
+na sesję; ciągły GPS je baterię.
 
 ## Decyzja
 

@@ -6,10 +6,8 @@
 
 ## Kontekst
 
-ROADMAP M9 chce, żeby **druga gra w tej samej okolicy nie wołała modelu**,
-a ciekawe paczki dało się publikować do ponownego użycia (ADR 0010 pkt 4).
-Trzy pytania musiały dostać własną decyzję, zanim powstanie kod (dlatego ten
-ADR, a nie „przy okazji"):
+M9: **druga gra w tej samej okolicy nie woła modelu**, a ciekawe paczki idą do
+ponownego użycia (ADR 0010 pkt 4). Trzy pytania wymagały własnej decyzji przed kodem:
 
 1. **Prywatność**: paczka zdradza, gdzie organizator urządza gry — geohash
    paczki ≈ okolica zamieszkania (ADR 0013). Co wolno umieścić w indeksie

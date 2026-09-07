@@ -16,13 +16,10 @@ Nowa sesja startuje z czystego klona i ma dostęp wyłącznie do:
 2. **tekstu pierwszego promptu**.
 
 **Nie przetrwa NIC innego** — pliki lokalne, `/tmp`, historia czatu, zmienne
-środowiskowe, zainstalowane zależności, niewypchnięte commity, uruchomione
-serwery. Konsekwencje:
-
-- **Praca istnieje dopiero po `git push`.** Commituj i pushuj po każdym
-  samodzielnie zielonym kroku.
-- Wszystko, co ma przetrwać, zapisz w repozytorium (kod, testy, ADR, lekcje,
-  handoff). Blok przekazania w czacie jest kopią wiedzy z repo, nie nośnikiem.
+środowiskowe, zależności, niewypchnięte commity, serwery. Konsekwencje:
+**praca istnieje dopiero po `git push`** (commituj i pushuj po każdym zielonym
+kroku); wszystko trwałe zapisuj w repozytorium — blok przekazania w czacie jest
+kopią, nie nośnikiem.
 
 ## 2. Sandbox potrafi zresetować workspace w trakcie sesji
 
@@ -41,21 +38,18 @@ git reset --hard FETCH_HEAD                     # odtwórz historię sesji lokal
 git push -u origin <gałąź-sesji>                # pierwszy push po odzyskaniu z -u
 ```
 
-**Gdy zginęły commity NIEwypchnięte** (obiekty znikają z `.git`, ale drzewo
-robocze ma stan końcowy — przypadek z 2026-09-06: M4/I7–I9 czekały lokalnie na
-odświeżenie tokena): ZANIM wykonasz `reset --hard`, skopiuj całe repo
-`cp -a <repo> /tmp/kopia-drzewa`, potem zresetuj do `FETCH_HEAD` i skopiuj
-zawartość kopii z powrotem (pomiń `.git`). `git status` względem zdalnego HEAD
-powinien pokazać dokładnie różnicę utraconych kroków — uruchom bramę i odtwórz
-commity (uczciwie opisując odtworzenie w komunikacie). `git push --force`
-pozostaje zakazane: zdalna gałąź jest źródłem prawdy.
+**Gdy zginęły commity NIEwypchnięte** (drzewo robocze ma stan końcowy, obiekty
+zniknęły z `.git`): ZANIM wykonasz `reset --hard`, skopiuj repo
+`cp -a <repo> /tmp/kopia-drzewa`, zresetuj do `FETCH_HEAD`, skopiuj zawartość
+z powrotem (pomiń `.git`); `git status` pokaże różnicę utraconych kroków —
+uruchom bramę i odtwórz commity (opisując odtworzenie w komunikacie).
+`--force` zakazane: zdalna gałąź jest źródłem prawdy.
 
 Jeśli po resecie zdarzyło Ci się zacommitować na `main`, przenieś commit:
 `git branch backup-<opis> <sha>` → `git reset --hard FETCH_HEAD` →
 `git cherry-pick <sha>`.
 
-**Profilaktyka:** po każdym commicie `git log --oneline -1` + `git status`;
-pushuj od razu; przed długimi operacjami upewnij się, że praca jest wypchnięta.
+**Profilaktyka:** po commicie `git log --oneline -1` + `git status`; push od razu.
 
 ## 3. Git i GitHub
 
@@ -63,11 +57,9 @@ pushuj od razu; przed długimi operacjami upewnij się, że praca jest wypchnię
   Token potrafi wygasnąć w trakcie sesji (objaw: push prosi o hasło).
   Commity lokalne są bezpieczne — poproś właściciela o reconnect GitHub
   w Arenie i ponów push. **Nigdy nie proś o token w czacie.**
-- **Agent nie zapisuje plików w `.github/workflows/`** — push i `gh api`
-  zwracają 403 `workflows` (brak uprawnienia w tokenie GitHub App). Receptura
-  CI leży w `docs/setup/ci-workflow.yml` (lustro do wklejenia przez
-  właściciela). Stan bramy (`gh run list`) sprawdzamy po to, żeby go **opisać**
-  w handoffie, nie żeby komuś coś zlecać.
+- **CI: najpierw spróbuj pusha `.github/workflows/`** (403 `workflows` bywa
+  przywiązany do instancji tokena — LESSONS L4); dopiero przy 403 fallback na
+  lustro `docs/setup/ci-workflow.yml`. Stan bramy opisuj w handoffie, nie zlecaj.
 - **Komunikaty commitów pisz do pliku poza repozytorium** (np. `/home/user/msg.txt`)
   i commituj przez `git commit -F`. Backticki i `$(...)` w `git commit -m "…"`
   wykonują podstawienie komend bash i zjadają słowa z komunikatu.
@@ -86,34 +78,22 @@ pushuj od razu; przed długimi operacjami upewnij się, że praca jest wypchnię
 
 ## 4. Sieć i narzędzia
 
-- **Swobodny egress HTTPS z sandboxa jest zablokowany** (curl do losowych
-  hostów → kod 000). Działa: `api.github.com`, rejestr npm. Konsekwencja dla
-  tego projektu: **Overpass API, kafelki i Nominatim są NIEDOSTĘPNE z sandboxa**
-  — działają za to w przeglądarce użytkownika (aplikacja jest klientem, nie
-  backendem). Testy nie mogą więc wołać sieci: logikę stacji testujemy na
-  fixture'ach TopoJSON/GeoJSON w `test/fixtures/`.
-- Dane z sieci potrzebne agentowi (polityki dostawców, dokumentacja Overpass
-  QL, przykłady) pozyskuj narzędziami agenta (`fetch_page`, `web_search`),
-  a nie `curl`/`fetch` w sandboxie.
+- **Egress HTTPS zablokowany** (LESSONS L3): Overpass, kafelki i Nominatim są
+  NIEDOSTĘPNE z sandboxa (działają w przeglądarce użytkownika); logikę stacji
+  testujemy na fixture'ach w `test/fixtures/`. Dane z sieci pozyskuj
+  `fetch_page`/`web_search`, nie `curl`/`fetch`.
 - **`write_file` działa tylko w workspace.** Skrypty pomocnicze poza repo
   twórz przez `bash` + heredok.
-- **Polskie znaki:** narzędzie `edit_file` potrafi je uszkodzić (mojibake
-  `Ä…` zamiast `ą`) oraz wplatać obce glify. Nowe pliki twórz `write_file`;
-  istniejące pliki z polskim tekstem edytuj przez `python3` + `pathlib`
-  z `encoding='utf-8'`. Po każdej edycji `git diff` pod kątem mojibake.
-- Testy logiki uruchomisz bez przeglądarki: `node --test`. Node 22 ma te same
-  API co przeglądarka (`TextEncoder`/`TextDecoder`, `atob`/`btoa`,
-  `globalThis.crypto`), więc moduły czyste — w tym `app/kodowanie.js` (ADR 0007)
-  — testują się w Node **tym samym kodem**, bez API Node (LESSONS L6).
+- **Polskie znaki:** jak LESSONS L2 (`write_file` dla nowych, `python3`+`pathlib`
+  dla istniejących, `git diff` po edycji).
+- Testy logiki: `node --test` (moduły czyste testują się tym samym kodem — LESSONS L6).
 - Do uruchomienia aplikacji użyj serwera statycznego na `0.0.0.0`
   (`npm run serwer` = `python3 -m http.server 8000 --bind 0.0.0.0`).
 
 ### 4.1 Przeglądarka do weryfikacji wizualnej (headless Chromium z npm)
 
-Swobodny egress jest zablokowany, więc `npx puppeteer browsers install chrome`
-kończy się błędem (Chrome pobiera się z hostów Google, nie z rejestru npm).
-Binarkę da się zdobyć **z paczki npm** — `@sparticuz/chromium` niesie
-w tarballi skompresowany Chromium i potrzebne biblioteki:
+Egress zablokowany (LESSONS L3), więc Chrome instalujesz **z paczki npm**
+(`@sparticuz/chromium` niesie Chromium i biblioteki w tarballi):
 
 ```bash
 mkdir -p /home/user/.narzedzia && cd /home/user/.narzedzia   # poza repozytorium!
@@ -136,13 +116,10 @@ Potem `puppeteer.launch({ executablePath: process.env.CHROME_PATH, args:
   drzewem, więc `package.json` zostaje bez zależności (ADR 0001).
 - `node_modules` i `.cache` nie wchodzą do snapshotu workspace; po resecie
   sandboxa przepis trzeba powtórzyć (kilkanaście sekund).
-- **Geolokalizacji w headless Chromium nie da się odczytać z urządzenia** —
-  wstrzykuj pozycję przez `page.evaluateOnNewDocument()` (nadpisanie
-  `navigator.geolocation`) albo użyj **trybu testowego aplikacji** (ręczne
-  współrzędne, `docs/WORKFLOW.md` §3). To samo dotyczy sandboxa Areny:
-  urządzenie agenta nie ma GPS.
-- Zrzutów PNG agent nie musi „oglądać" — analizuj piksele programowo (`pngjs`),
-  a w razie potrzeby przeczytaj obraz narzędziem `read_file` (agent ma vision).
+- **Brak GPS w headless/sandboxie**: pozycję wstrzykuj przez
+  `page.evaluateOnNewDocument()` albo użyj **trybu testowego aplikacji**
+  (`WORKFLOW` §3).
+- PNG analizuj programowo (`pngjs`); w razie potrzeby `read_file` (vision).
 
 ## 5. Live preview Areny
 
@@ -162,29 +139,23 @@ Potem `puppeteer.launch({ executablePath: process.env.CHROME_PATH, args:
 
 | Operacja | Czas | Uwagi |
 |---|---|---|
-| `npm test` | < 5 s | node --test, zero zależności |
-| start serwera statycznego | < 2 s | `npm run serwer` |
+| `npm run brama` | ~20 s | ~500 testów, zero zależności |
 | zapytanie Overpass (w przeglądarce) | 2–20 s | zależy od promienia i obciążenia instancji |
 | pełny obrót M-kamienia | 20–60 min | czytanie + kod + testy + commity |
 
 ## 7. Checklista startu sesji
 
-1. `git log --oneline -3`, `git status`, `git rev-parse --abbrev-ref HEAD` —
-   gdzie jestem, czy czysto, czy na gałęzi sesji.
+1. `git log --oneline -3` + `git status` + `git rev-parse --abbrev-ref HEAD`.
 2. Lektura obowiązkowa wg `AGENTS.md` §0 (całe pliki).
-3. `npm test` — potwierdź zieloność przed zmianami (to jest TWOJA brama).
-4. Otwórz PR gałęzi sesji (ADR 0012), zanim zaczniesz kodowanie.
-5. Audyt poprzedniego scalonego PR przed nową pracą; wynik do opisu PR
-   i `docs/PROJECT_HISTORY.md`.
-6. Brak zlecenia właściciela po audycie = najwyższy otwarty kamień milowy
-   z `docs/ROADMAP.md` (nie pytanie „co robimy?").
+3. `npm test` — zieloność przed zmianami.
+4. PR gałęzi sesji (ADR 0012) przed kodowaniem.
+5. Audyt poprzedniego scalonego PR; wynik do opisu PR i `PROJECT_HISTORY.md`.
+6. Brak zlecenia = najwyższy otwarty kamień z `ROADMAP.md`.
 
 ## 8. Checklista przed końcem sesji
 
-1. `npm test` zielone; przy zmianach UI — sprawdzone na żywo (360 px, palec).
-2. Wszystko zacommitowane **i wypchnięte** (`git status` czysty).
-3. Najnowszy `docs/setup/HANDOFF_<data>.md` opisuje aktualny stan.
-4. Reguły trwałe trafiły do ADR / PROTOKOŁU / `AGENTS.md` / `docs/LESSONS.md`
-   / `docs/ASSETS.md`, a nie tylko do handoffu.
-5. Opis PR zaktualizowany kumulatywnie (w tym wynik audytu).
-6. W czacie wypisany blok przekazania projektu dla następnego agenta.
+1. `npm test` zielone; UI sprawdzone na żywo (360 px, palec).
+2. Wszystko zacommitowane **i wypchnięte**.
+3. Handoff aktualny (`HANDOFF_<data>.md` + `PROJECT_HISTORY.md` + stan CI).
+4. Reguły trwałe w ADR / PROTOKOLE / AGENTS / LESSONS / ASSETS, nie w handoffie.
+5. Opis PR zaktualizowany (w tym wynik audytu) + blok przekazania w czacie.

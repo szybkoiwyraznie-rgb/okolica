@@ -5,13 +5,10 @@
 
 ## Kontekst
 
-Właściciel: „w prompcie dla modelu ważne jest, by wymagać od niego kwerendy
-internetowej dla wszystkich danych używanych w quizie, żeby nic sam nie
-wymyślał i nie konfabulował". Gra uczy o realnej okolicy: zmyślona data
-budowy kościoła, nieistniejący pomnik albo wymyślony cytat to nie drobiazg —
-to kompromitacja rozgrywki i wprowadzanie graczy (w tym dzieci) w błąd.
-AME rozwiązuje ten sam problem regułą „Scryfall dla kart, źródła www dla
-wpisów" (ich ADR 0008) — przenosimy mechanizm.
+Prompt musi wymagać od modelu kwerendy internetowej dla każdego faktu — gra
+uczy o realnej okolicy, a zmyślona data czy nieistniejący pomnik to kompromitacja
+rozgrywki i wprowadzanie graczy (w tym dzieci) w błąd. Mechanizm przeniesiony
+z AME („Scryfall dla kart, źródła www dla wpisów").
 
 ## Decyzja
 

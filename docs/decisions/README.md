@@ -5,9 +5,8 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 
 ## Statusy
 
-- **Proponowana** — kierunek do dyskusji; nie jest jeszcze zobowiązaniem. Nie
-  buduj na niej trwałych rozwiązań bez akceptacji (właściciela albo własnej,
-  zapisanej w tym pliku jako zmiana statusu + wpis w `PROJECT_HISTORY.md`).
+- **Proponowana** — kierunek do dyskusji, nie zobowiązanie; trwałych rozwiązań
+  bez akceptacji nie buduj (akceptacja = zmiana statusu + wpis w historii).
 - **Zaakceptowana** — obowiązuje w projekcie.
 - **Odrzucona** — rozważona, ale nieprzyjęta.
 - **Zastąpiona** — historyczna; nowszy ADR wskazuje aktualną decyzję.
@@ -55,18 +54,9 @@ Numeracja: kolejna wolna liczba czterocyfrowa. Rejestr aktualizuj w tej tabeli
 w tym samym commicie, w którym dodajesz ADR. Nazwy plików: ASCII, małe litery,
 myślniki (bez polskich znaków) — linki nie mogą się rozsypywać w narzędziach.
 
-## Gdzie zapisać regułę (ADR vs PROTOKÓŁ vs LESSONS vs handoff)
+## Gdzie zapisać regułę
 
-Reguły trwałe nie mogą mieszkać w handoffie — handoff opisuje JEDNĄ sesję
-i traci aktualność. Podział:
-
-| Rodzaj treści | Miejsce |
-| --- | --- |
-| Wiążąca decyzja o granicach, danych, mapie, dostawcach, deploymencie, prywatności | **ADR** (`docs/decisions/`) |
-| Szablon promptu, schemat paczki pytań, rygory treści | **`docs/PROTOKOL.md`** |
-| Powtarzalna pułapka, wniosek diagnostyczny | **`docs/LESSONS.md`** |
-| Zasada obowiązująca każdego agenta | **`AGENTS.md`** |
-| Stałe ograniczenie środowiska | **`docs/setup/ENVIRONMENT.md`** |
-| Dostawca danych/kafelków, polityka użycia, atrybucja | **`docs/ASSETS.md`** |
-| Stan jednej sesji | `docs/setup/HANDOFF_*.md` |
-| Pomysł „może kiedyś" | `docs/BACKLOG.md` |
+Kanoniczną tabelę „rodzaj treści → miejsce" trzyma `AGENTS.md` §5 (jedno
+miejsce, bez kopii): wiążąca decyzja → ADR tutaj; szablon/schemat/rygory →
+PROTOKÓŁ; pułapka diagnostyczna → LESSONS; reszta wg tabeli. Reguły trwałe
+nigdy w handoffie (jedna sesja, traci aktualność).

@@ -5,12 +5,10 @@
 
 ## Kontekst
 
-Aplikacja bez przerwy zna dokładne położenie użytkownika (ADR 0004) i — w grze
-dla dzieci — jest używana w miejscu zamieszkania. Jednocześnie potrzebuje
-zewnętrznych danych: kafelków mapy i sieci drogowej. Każde takie zapytanie
- ujawnia dostawcy przybliżoną pozycję. To decyzja właściciela, nie techniczna
-drobnostka: dotyczy RODO/GDPR (dane o lokalizacji to dane osobowe), a gra może
-być używana przez osoby poniżej 16 lat.
+Aplikacja zna dokładne położenie użytkownika (ADR 0004), także dzieci w miejscu
+zamieszkania — a potrzebuje zewnętrznych danych (kafelki, sieć drogowa), więc
+każde zapytanie ujawnia dostawcy przybliżoną pozycję. To decyzja właściciela
+(RODO: lokalizacja to dane osobowe; gra także dla osób poniżej 16 lat).
 
 ## Decyzja
 

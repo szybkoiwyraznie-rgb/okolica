@@ -6,13 +6,11 @@
 
 ## Kontekst
 
-Właściciel opisuje grę dla „jednego lub kilku graczy", w której „do kolejnych
-punktów ma dotrzeć jak najszybciej kolejny gracz". Zero backendu (ADR 0001)
-oznacza, że synchronizacja wielu urządzeń musiałaby korzystać z usługi trzeciej
-(Firebase, Supabase, własny relay przez WebSocket) — to zależności, konta,
-koszty i nowy model prywatności. Alternatywa: wszyscy grają na **jednym
-telefonie**, podawanym sobie po kolei (hot-seat), a rywalizacja toczy się na
-wspólnej trasie.
+Gra dla „jednego lub kilku graczy": „do kolejnych punktów ma dotrzeć jak
+najszybciej kolejny gracz". Zero backendu (ADR 0001): synchronizacja wielu
+urządzeń wymagałaby usługi trzeciej (zależności, konta, koszty, nowy model
+prywatności). Alternatywa: wszyscy grają na **jednym telefonie** (hot-seat),
+rywalizacja na wspólnej trasie.
 
 ## Decyzja
 

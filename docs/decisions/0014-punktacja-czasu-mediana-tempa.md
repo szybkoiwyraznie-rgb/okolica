@@ -11,12 +11,9 @@ trudności) **plus premia albo potrącenie za czas**, liczone „względem media
 odcinków tej samej stacji dla wszystkich graczy — a nie względem stałego limitu,
 bo długość odcinka zależy od układu trasy".
 
-W modelu hot-seat (ADR 0009 pkt 1–2, zaakceptowany) **do jednej stacji idzie
-jeden gracz**: kolejka jest cykliczna (`gracz = stacja mod N`), więc dla danej
-stacji istnieje dokładnie jeden odcinek. Mediana „odcinków tej samej stacji dla
-wszystkich graczy" ma wtedy jedną próbkę — premia byłaby zawsze zerowa, a cały
-element rywalizacji z czasu by wyparował. Intencja ADR 0009 jest czytelna i
-słuszna: **porównywać tempo, nie surowy czas**, bo odcinki mają różną długość.
+W hot-seat **do jednej stacji idzie jeden gracz** (`gracz = stacja mod N`), więc
+mediana „odcinków tej samej stacji" ma jedną próbkę, a premia byłaby zawsze
+zerowa. Intencja ADR 0009 zostaje: **porównywać tempo, nie surowy czas**.
 
 Potrzebna więc reguła, która (a) zachowuje intencję, (b) działa przy jednej
 próbce na stację, (c) nie karze gracza za to, że trafił mu się dłuższy odcinek,

@@ -5,18 +5,13 @@
 
 ## Kontekst
 
-Decyzje właściciela z 2026-09-06 (po M10, w rozwinięciu ADR 0018 — Drive jako
-backend wielozadaniowy):
+Decyzje właściciela z 2026-09-06 (po M10, w rozwinięciu ADR 0018):
 
-1. **Parowanie graczy**: NAJLEPIEJ lobby z grami w najbliższej okolicy ALBO
-   kod do przekazania — **obie opcje** (właściciel: „lobby z grami w mojej
-   najbliższej okolicy ALBO kod do przekazania (obie opcje)").
-2. **Model rozgrywki**: **oba tryby** — wyścig równoległy i tury
-   asynchroniczne, wybór przy zakładaniu gry.
-3. **Dane graczy (M12)**: pseudonim + wyniki gry + pełna historia + rankingi,
-   „ale także rankingi w kategoriach wiekowych, tematycznych i związanych
-   z lokalizacją (np. najlepsi w Podkowie Leśnej) — o ile to jest sensownie
-   do ogarnięcia".
+1. **Parowanie**: lobby z grami w najbliższej okolicy ALBO kod — **obie opcje**.
+2. **Model rozgrywki**: **oba tryby** — wyścig równoległy i tury asynchroniczne.
+3. **Dane graczy (M12)**: pseudonim + wyniki + pełna historia + rankingi także
+   w kategoriach wiekowych, tematycznych i lokalizacyjnych — „o ile to jest
+   sensownie do ogarnięcia".
 
 Siły: aplikacja statyczna bez własnego serwera (ADR 0001) — synchronizacja
 wyłącznie przez most Apps Script (ADR 0016); prywatność współrzędnych

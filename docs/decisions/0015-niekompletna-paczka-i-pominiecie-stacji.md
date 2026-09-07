@@ -19,11 +19,9 @@ i ADR 0014 nie opisują, a które w terenie zdarzają się naprawdę:
    bywa zepsute (model zwrócił treść niezwiązaną z miejscem), a w trybie
    hot-seat organizator może chcieć iść dalej.
 
-Pierwsza implementacja miała w obu miejscach ciche pułapki: stacja bez pytania
-zostawała w fazie `pytanie` z pustym ekranem i **bez akcji, która ruszyłaby grę
-dalej** (jedynym wyjściem było „pomiń", które kasowało fakt dojścia), a
-pominięcie stacji po dojściu zamieniało odcinek `zakonczony` na `pominiety`,
-czyli wyrzucało z dziennika i z próbek mediany (ADR 0014 pkt 2) pomiar, który
+Pierwsza implementacja miała ciche pułapki: stacja bez pytania zostawała w fazie
+`pytanie` bez akcji wyjścia, a pominięcie po dojściu zamieniało odcinek
+`zakonczony` na `pominiety` — wyrzucało z dziennika i z mediany pomiar, który
 się wydarzył.
 
 ## Decyzja

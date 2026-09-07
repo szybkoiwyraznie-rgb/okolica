@@ -5,11 +5,9 @@
 
 ## Kontekst
 
-Projekt prowadzą zmieniające się sesje agenckie (Arena i inni runnerzy), z
-których każda startuje z czystego klona i widzi tylko `main` + pierwszy prompt
-(ENVIRONMENT §1). Bez dyscypliny gita praca przepada po końcu sandboxa, a
-kolejna sesja nie wie, co zastała. Wzorzec pochodzi z AME (ich ADR 0004), gdzie
-przeżył kilkadziesiąt sesji i kilkanaście resetów workspace.
+Zmieniające się sesje agenckie startują z czystego klona (ENVIRONMENT §1).
+Bez dyscypliny gita praca przepada po końcu sandboxa, a kolejna sesja nie wie,
+co zastała. Wzorzec z AME (ich ADR 0004) — przeżył kilkadziesiąt sesji.
 
 ## Decyzja
 
