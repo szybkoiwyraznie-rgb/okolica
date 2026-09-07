@@ -80,16 +80,16 @@ stacjaId?, dane?, tUrzadzenia }`; most nadaje `kolejnosc` i `tSerwera`.
       „odświeżeniu"; odrzucenie zdarzenia poza turą; SKANER ciał POST-ów pod
       kątem współrzędnych (zero lat/lon w czymkolwiek, co wychodzi); kontrakt
       (zgoda wymagana, ekrany, kody).
-- [ ] **P6 — M12: profil i rankingi**: pseudonim `okolica:pseudonim` (edycja
+- [x] **P6 — M12: profil i rankingi**: pseudonim `okolica:pseudonim` (edycja
       w setupie/prywatności), wyniki wysyłane przy zakończeniu, ekran
       „🏆 Rankingi": ogólny + zakładki WIEK / TEMATY / LOKALIZACJA (dane z
       `akcja=ranking`), ekran „Moje gry" (historia zakończonych z udziałem
       gracza). Testy: agregacje (atrapa mostu), kategorie, puste rankingi.
-- [ ] **P7 — dokumentacja**: PROTOKOL aneks (RO-gra/1, RO-zdarzenie/1, kody R),
+- [x] **P7 — dokumentacja**: PROTOKOL aneks (RO-gra/1, RO-zdarzenie/1, kody R),
       ARCHITECTURE (moduły, przepływ synchronizacji), README, ASSETS §7
       (rozszerzenie: gry i rankingi), WORKFLOW §4.4 (test terenowy na dwa
       telefony), ROADMAP M11/M12 ✅, PROJECT_HISTORY, LESSONS z pułapek.
-- [ ] **P8 — JEDNA instrukcja wdrożenia (ADR 0018 pkt 3)**: gdy P1–P7 świecą
+- [x] **P8 — JEDNA instrukcja wdrożenia (ADR 0018 pkt 3)**: gdy P1–P7 świecą
       na zielono — instrukcja w CZACIE (kroki + okna txt do wklejenia):
       scalony skrypt (paczki + gry + rankingi), script properties, `setup()`,
       deploy „anyone anonymous", wklejenie URL do aplikacji, próba „🔌 Sprawdź

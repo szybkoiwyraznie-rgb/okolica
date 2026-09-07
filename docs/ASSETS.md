@@ -196,3 +196,20 @@ akcji; nowy dostawca przechodzi pełną checklistę §5.
   (kopia lokalna + zwykła ścieżka prompt→model).
 - **Docelowo (ADR 0018)**: to samo konto obsłuży parowanie gier na wielu
   urządzeniach (M11) i profil/statystyki gracza (M12) — ta sekcja będzie rosła.
+
+### 7.1 Gry i rankingi (M11/M12, ADR 0019) — ruch na tym samym moście
+
+- **Katalogi**: `okolica-gry-otwarte` (lobby i trwające) oraz
+  `okolica-gry-zakonczone` (zakończone i archiwum); jedna gra = jeden plik
+  JSON nazwany kodem gry.
+- **Quota**: polling z interwałami zależnymi od fazy (lobby 10 s, wyścig 12 s,
+  tury: moja 10 s / czekam 30 s, zakończona 0). Orientacyjnie: wyścig 4 graczy
+  ≈ 20 GET/min w szczycie; POST-y tylko przy zdarzeniach — gra 5-stacyjna to
+  ≈ 10–12 POST-ów na gracza. Zapisy szereguje `LockService` (20 s), lista
+  zdarzeń jest append-only, a aplikacja jest idempotentna wobec powtórek.
+- **Licencje**: plik gry niesie kontener pytań `TO-paczka/2` (treści CC BY-SA
+  4.0 jak paczki) — dostęp tylko dla graczy tej gry (kod albo `idGry` z lobby;
+  lobby NIE pokazuje kodów ani zestawów).
+- **Prywatność**: współrzędne graczy nigdy nie trafiają na Drive (biała lista
+  pól zdarzenia + kasowanie `lat/lon/...` po stronie mostu); w konfiguracji
+  gry jest tylko geohash5 i nazwa miejsca.

@@ -107,6 +107,14 @@ okręgi, pasek skali). Warstwa DOM jest cienka: w `mapa.js` to `utworzMape()`
 pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 (`performance.now` / `mulberry32(ziarno)`), nie czytane z globali w środku logiki.
 
+Od M11 tę samą zasadę trzymają moduły wieloosobowe: `wieloosobowa.js`
+(schematy RO-*, walidacja z kodami R01–R18, kody gier, sąsiedztwo geohash5
+dla lobby, maszynka tur, wyniki, agregacje rankingów — zero DOM) i `sync.js`
+(polling mostu z interwałami zależnymi od fazy gry, kolejka zdarzeń offline
+z flusheM FIFO, rozróżnienie „odmowa mostu" vs „awaria sieci", wstrzykiwane
+`fetchImpl` i harmonogram). Orkiestracja DOM gry wieloosobowej i rankingów
+siedzi w `app.js` (sekcje M11/P4 i M12/P6).
+
 ## Przepływ danych
 
 ### A. Przygotowanie gry
@@ -212,6 +220,24 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
    plik. Skrót gry ląduje w historii `okolica:historia` (jeden wpis na klucz
    gry; ręczne zakończenie znaczy `przerwana`, naturalny koniec zastępuje
    wpis — ADR 0010 pkt 1).
+
+### Gra wieloosobowa i synchronizacja (M11/M12)
+
+1. `app.js` (karta-multi w setupie) zbiera pseudonim, zgodę i adres mostu →
+   `sync.polecenieMostu` POSTuje `gra-zaloz` / `gra-dolacz`. Zgoda jest
+   wymagana: bez niej jawna odmowa i ZERO żądań (ADR 0019 pkt 3).
+2. `utworzSynchronizacje` prowadzi pętlę nienakładających się kroków:
+   GET `gra-stan` z interwałem zależnym od fazy (lobby 10 s, wyścig 12 s,
+   tury: moja 10 s / czekam 30 s, zakończona 0 = koniec pollingu). Zdarzenia
+   (`dojscie`/`odpowiedz`/`rezygnacja`) wychodzą natychmiast, a bez sieci
+   czekają w kolejce (flush FIFO po powrocie); odmowa mostu nie jest ponawiana.
+3. Stan serwera (`RO-gra/1`) zasila lokalny silnik (`rozgrywka.js`): wyścig =
+   wszystkie stacje, tury = tylko własne (`i % N === mojIndeks`, oryginalne id
+   stacji — pytania z kontenera pasują po id). Brak pozycji = środek trasy z
+   pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca z
+   `okolica:multi:sesja`, a zamknięte już stacje nie wracają do rozgrywki.
+4. Rankingi: GET `ranking` → surowe wiersze `RO-ranking/1` → agregacje liczy
+   telefon (`agregujRanking` / `kategorieRankingu`) — serwer tylko przechowuje.
 
 ## Kluczowe algorytmy
 

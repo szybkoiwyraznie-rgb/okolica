@@ -421,3 +421,41 @@ WŁASNEJ świeżej instalacji (`zainstalujDom()` + `import app.js?<losowe>`) alb
 stać w pliku PRZED pierwszą reinstalacją. Plikowy harness jest wiarygodny
 tylko do pierwszej podmiany globali; przy asercji „klik nie zadziałał"
 pierwsze podejrzenie = rozjazd rejestrów, nie logika aplikacji.
+
+## L26 (2026-09-06, Tajemnicza Okolica) — wrapper timera, który nie zwraca promise'a, oszukuje testy
+
+**Objaw:** test synchronizacji z wstrzykniętym harmonogramem: `await
+odpalOstatni()` „wykonał" krok, fetch został zapisany w stubie, ale callback
+`onStan` nie zdążył się wywołać i asercja widziała stary stan. Izolowany debug
+pokazywał fetch, potem ciszę — jakby kod urywał się w połowie.
+
+**Przyczyna:** harmonogram planował krok wrapperem `ustaw(() => { krok(); },
+ms)` — arrow z blokiem i bez `return` zwraca `undefined`, więc `await` na
+wrapperze nie czekał na NIC; asynchroniczny `krok()` kończył się dopiero po
+asercjach.
+
+**Reguła:** wrappery asynchronicznych funkcji (harmonogramy, debounce, flushe
+kolejek) ZWRACAJĄ promise — `ustaw(() => krok(), ms)` zamiast `() => { krok();
+}`. W teście z wstrzykniętym timerem pierwsza asercja, która „widzi za mało",
+to podejrzenie o niewyczekany promise w środku, nie o logikę modułu.
+
+## L27 (2026-09-06, Tajemnicza Okolica) — dwa „urządzenia" w jednym procesie: globale są współdzielone, tło wchodzi w paradę
+
+**Objaw:** test dwóch instalacji atrapy DOM + dwóch importów `app.js`,
+grających przeciw wspólnej atrapie mostu: polling pierwszego „urządzenia"
+lądował w DOM drugiego — `$()` czyta `document` z globali W CZASIE WYWOŁANIA,
+a backgroundowy `setTimeout` nie wie, czyje globale są aktualnie wstawione.
+
+**Przyczyna:** `globalThis` jest jedno; test przełącza atrapy między
+urządzeniami, a prawdziwe timery odpalają się między przełączeniami, w środku
+czyichś `await`.
+
+**Reguła:** harness wieloinstancyjny (wzorzec: `test/wieloosobowa-ui.test.js`):
+(1) tryb testowy dostaje RĘCZNY harmonogram — kolejka timerów na `window`,
+test sam pompuje kroki po przełączeniu globali (`?odstep=0` → zero pollingu
+w tle, pełna determinacja); (2) każdy async klik kończy „oddech"
+(`await setTimeout 0`) ZANIM test przełączy urządzenie; (3) przełączanie tylko
+jawnym helperem (`przelaczNa`), który podmienia `document/window/navigator/
+localStorage/location` jednym ruchem. Do tego: atrapa „serwera" jako lustro
+kontraktu z modułu współdzielonego (parzystość z `.gs` pilnuje osobny test
+kontraktowy) — logika nie rozjeżdża się w trzech miejscach.

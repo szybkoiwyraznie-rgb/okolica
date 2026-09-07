@@ -171,6 +171,24 @@ akceptuje kandydatów linkiem z e-maila; adres mostu wpisuje się w UI
 CORS na żywym wdrożeniu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
 daje plik do ręcznego wniesienia, gdy most jest niedostępny.
 
+## Gra wieloosobowa i rankingi (M11/M12)
+
+- **Wiele urządzeń**: każdy gracz ma swój telefon. Parowanie 6-znakowym kodem
+  gry albo z listy otwartych gier w okolicy (sąsiedztwo geohash5). Dwa tryby:
+  **wyścig** (wszyscy jednocześnie na tej samej trasie) i **tury** (każda
+  stacja ma stałego właściciela — serwer pilnuje kolejności).
+- **Wspólny stan**: Google Drive + Apps Script — ten sam most co repozytorium
+  paczek (ADR 0016/0018/0019). Na serwer jadą wyłącznie pseudonimy, zdarzenia
+  gry i wyniki; **współrzędne graczy nigdy nie opuszczają telefonu** (biała
+  lista pól zdarzenia + kasowanie po stronie mostu). Bez zgody na wysyłkę
+  aplikacja odmawia założenia gry i dołączenia.
+- **Offline**: zdarzenia z trasy czekają w kolejce i wychodzą automatycznie po
+  powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca z zapamiętanej
+  sesji — zamknięte stacje nie wracają.
+- **🏆 Rankingi**: ogólny + kategorie wiek / tematy / lokalizacja (np.
+  „najlepsi w Podkowie Leśnej") oraz historia „Moje gry". Agregacje liczy
+  telefon; serwer oddaje surowe wiersze zakończonych gier.
+
 ## Repozytorium
 
 | Ścieżka | Zawartość |

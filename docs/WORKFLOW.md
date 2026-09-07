@@ -157,6 +157,38 @@ zapisuje skorupę i kafelki „na później".
 7. Wynik → `docs/LESSONS.md` (objaw → przyczyna → reguła) i ewentualna
    korekta `PROG_BATERII_M` / planów sygnałów / progów dojścia.
 
+### 4.4 Weryfikacja M11/M12 na dwóch telefonach (robi właściciel)
+
+Warunek: most wdrożony według instrukcji z czatu (P8, ADR 0018) — ten sam web
+app co repozytorium paczek. Drugi telefon: dowolny (Chrome), ta sama albo inna
+sieć — gra jest asynchroniczna.
+
+1. **Założenie**: telefon A: Ustawienia → Rodzaj gry „Gra na wielu
+   urządzeniach" → pseudonim, zgoda zaznaczona, adres mostu zapisany →
+   „🌐 Załóż grę" → tryb (najpierw wyścig), źródło paczki → „🚀 Zakładam".
+   Zapisać 6-znakowy kod z lobby.
+2. **Dołączenie kodem**: telefon B: pseudonim + adres mostu → „🔗 Dołącz" →
+   kod → oba telefony widzą się na liście graczy w lobby (odświeżenie ≤10 s).
+3. **Dołączenie z lobby**: druga gra założona na A powinna pojawić się na B
+   pod „Dołącz" z miejscem, trybem i odległością — wejście kliknięciem, bez
+   przepisywania kodu.
+4. **Start i trasa (wyścig)**: A klika „▶ Start gry". Na obu: odcinek → dojście
+   → pytanie → odpowiedź. Obserwować: tabela wyników drugiego gracza odświeża
+   się (≤12 s); pasek synchronizacji pokazuje „kolejka" po zgubieniu sieci
+   (np. między blokami) i zdarzenia wychodzą po powrocie.
+5. **Tury**: druga gra w trybie „tury" — gracz nieaktywny widzi „Teraz idzie:
+   X (jej/jego telefon)" i nie może wystartować odcinka (odmowa też z serwera,
+   gdyby stan był stary); po zamknięciu stacji poprzednika pojawia się „Twoja
+   tura!".
+6. **Odświeżenie**: w trakcie gry przeładować stronę na B → baner „Telefon
+   pamięta grę…" → „↩ Wróć do gry" → zamknięte stacje nie wracają, tury i
+   wyniki są aktualne.
+7. **Koniec i rankingi**: po ostatniej odpowiedzi oba telefony pokazują
+   ostateczną tabelę; w nagłówku „🏆 rankingi" → ogólny / wiek / tematy /
+   lokalizacja + „Moje gry" (wpisy z zakończonych gier).
+8. **Obserwacje** → `docs/LESSONS.md`: dokładność GPS przy stacjach, opóźnienia
+   żywej tabeli, odmowy mostu (jawne w statusie), zużycie baterii przy pollingu.
+
 ## 5. Publikacja na GitHub Pages (jednorazowo, właściciel)
 
 Settings → Pages → **Source: Deploy from a branch** → Branch: `main`,

@@ -89,3 +89,15 @@ gracz), ADR 0016 (backend), ADR 0017 (geohash5 jako kryterium okolicy —
 przeniesione na lobby i ranking lokalizacyjny), ADR 0018 (wielozadaniowość,
 wdrożenie odroczone), plan `docs/plans/2026-09-06-m11-m12-gra-wieloosobowa-i-rankingi.md`,
 ROADMAP M11/M12.
+
+## Aneks (2026-09-06, implementacja P1–P3): doprecyzowanie tur
+
+Punkt 2 mówił, że tury działają „jak kolejka hot-seat (ADR 0009)". Implementacja
+doprecyzowała regułę: stacja `i` (1-based) należy NA STAŁE do gracza
+`gracze[(i-1) % N]` (N ustalone przy starcie), kolejka **nie przesuwa się**,
+a rezygnacja gracza **pomija** jego stacje. Wariant „zawężania listy aktywnych"
+został odrzucony: przemapowałby stacje między graczami w trakcie gry, więc
+pytania z kontenera (dopasowane po id stacji) rozjechałyby się na telefonach,
+które już pobrały stan. Reguła jest zlustrowana identycznie w moście (`.gs`)
+i `app/wieloosobowa.js`; zgodność pilnuje `test/kontrakt.test.js`. Pozostałe
+punkty decyzji bez zmian.

@@ -350,6 +350,17 @@ Synchronizacja ZDARZENIAMI bez współrzędnych (ADR 0013/0019); stan gry
 bez antycheatu (gra dla znajomych). Plan:
 `plans/2026-09-06-m11-m12-gra-wieloosobowa-i-rankingi.md`.
 
+✅ **Kod zamknięty (2026-09-06, P1–P7)**: sekcja gier w moście `.gs`
+(gra-zaloz/dolacz/start/zdarzenie/zakoncz, lobby z wygasaniem 24 h,
+LockService, kasowanie współrzędnych ze zdarzeń), moduły `app/wieloosobowa.js`
+i `app/sync.js` (polling wg fazy, kolejka offline FIFO), UI: rodzaj gry
+w setupie, zakładanie (paczka sesji / z telefonu / z Drive), dołączanie kodem
+i z listy okolicy, lobby z kodem, panel wyścigu/tur z żywą tabelą wyników,
+dwustopniowa rezygnacja, powrót do gry po odświeżeniu telefonu. Testy: dwa
+„urządzenia" z atrapą mostu end-to-end + skaner prywatności POST-ów; brama
+489/489. Czekamy na: wdrożenie mostu przez właściciela (instrukcja w czacie,
+ADR 0018) i test terenowy WORKFLOW §4.4.
+
 ## M12 — Profil, statystyki i rankingi gracza na Drive (decyzje właściciela: ADR 0019)
 
 Pseudonim (lokalnie `okolica:pseudonim`) + wyniki gier + pełna historia na
@@ -357,6 +368,14 @@ Drive + rankingi liczone przez most z gier zakończonych: ogólny oraz kategorie
 WIEK, TEMATY i LOKALIZACJA (np. „najlepsi w Podkowie Leśnej" — geohash5/miejsce
 z meta gry). Prywatność: jawna zgoda przy zakładaniu/dołączaniu do gry
 (wymagana dla trybu wieloosobowego). Zależy od M11 (wspólny stan i zdarzenia).
+
+✅ **Kod zamknięty (2026-09-06, P6)**: pseudonim `okolica:pseudonim`, wyniki
+liczone przez most ze zdarzeń przy zamknięciu gry, ekran „🏆 Rankingi":
+ogólny + kategorie WIEK / TEMATY / LOKALIZACJA + „Moje gry". Doprecyzowanie
+wobec opisu wyżej: agregacje liczy TELEFON (`agregujRanking`,
+`kategorieRankingu`), a most oddaje surowe wiersze `RO-ranking/1` — przy skali
+„znajomi" to tańsze i testowalne bez wdrożenia. Czekamy na: wdrożenie
+i test terenowy (WORKFLOW §4.4 pkt 7).
 
 ## Zasady prowadzenia roadmapy
 

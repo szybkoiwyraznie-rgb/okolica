@@ -1,5 +1,6 @@
 /**
- * MOST REPOZYTORIUM PACZEK: Google Drive + Apps Script (ADR 0016, plan M9b).
+ * MOST DRIVE (paczki + gry wieloosobowe + rankingi): Google Drive + Apps Script
+ * (ADR 0016, 0018, 0019; plany M9b i M11/M12).
  *
  * Przepływ (decyzje właściciela 2026-09-06):
  *   1. aplikacja po „✓ Sprawdź i przyjmij” wysyła plik TO-zestaw/1 (doPost),

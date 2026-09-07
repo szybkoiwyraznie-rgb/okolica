@@ -332,3 +332,86 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
 
 Przykład jest ilustracją formatu: fakt i adres źródła przed użyciem w paczce
 referencyjnej w repo musi zweryfikować agent (`fetch_page`, ADR 0008 pkt 6).
+
+## 9. Aneks M11/M12: schematy gry wieloosobowej (RO-*) i kody R
+
+Schematy mostu Drive (`docs/setup/apps-script-repo-paczek.gs`; ADR 0016, 0018,
+0019). Jedno źródło prawdy walidacji po stronie aplikacji: `app/wieloosobowa.js`
+— most ma lustro dla Apps Script, a zgodność obu pilnuje `test/kontrakt.test.js`.
+
+### 9.1 `RO-gra/1` — stan gry (plik JSON w katalogu gier)
+
+| Pole | Typ / zakres | Uwagi |
+|---|---|---|
+| `schemat` | `"RO-gra/1"` | stała |
+| `kod` | 6 znaków | alfabet `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (bez 0/O/1/I) |
+| `idGry` | string | id pliku Drive; lobby odsyła je graczom |
+| `tryb` | `"wyscig"` \| `"tury"` | wybrany przy założeniu, niezmienny |
+| `stan` | `lobby` \| `trwa` \| `zakonczona` \| `archiwum` | otwarta gra bez startu → `archiwum` po 24 h |
+| `utworzono` | ISO 8601 | |
+| `organizatorId` | `"g-1"` | założyciel; tylko on startuje i kończy przedwcześnie |
+| `gracze` | `[{id: "g-N", pseudonim, dolaczyl}]` | maks. 8, pseudonim ≤24 znaków, unikalny w grze |
+| `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza) |
+| `zestaw` | `{stacje, kontener TO-paczka/2, meta TO-zestaw/1}` | mapa gry + ukryte pytania (ADR 0007) |
+| `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
+| `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal}}` | liczone przez most przy zamknięciu gry |
+
+Reguły gry: dołączenie tylko w `lobby`; start tylko przez organizatora.
+**Tury**: stacja `i` (1-based) należy NA STAŁE do gracza `gracze[(i-1) % N]`
+— kolejka jest ustalona przy starcie i **nie przesuwa się**; rezygnacja gracza
+**pomija** jego stacje (nie zawęża kolejki — zawężenie przemapowałoby stacje
+między graczami w trakcie gry i rozjechałoby pytania z kontenera). Wyścig:
+wszyscy idą wszystkie stacje jednocześnie; gra kończy się, gdy każdy
+niezrezygnowany gracz odpowiedział na wszystkich stacjach.
+
+### 9.2 `RO-zdarzenie/1` — zdarzenie gracza
+
+`{ schemat: "RO-zdarzenie/1", kod | idGry, graczId, typ, stacjaId, dane, tUrzadzenia }`
+
+- `typ`: `start` | `dojscie` | `odpowiedz` | `rezygnacja` | `koniec`.
+- `dane` — BIAŁA lista pól (`POLA_DANYCH_ZDARZENIA`): `czasOdcinkaMs`,
+  `czasOdpowiedziMs`, `trybDojscia`, `poprawna`, `punktyBaza`, `premiaCzasu`,
+  `punktyRazem`, `powod`. Cokolwiek innego nie wychodzi z telefonu, a most
+  dodatkowo kasuje pola `lat/lon/szerokosc/dlugosc/latitude/longitude`
+  (ADR 0013/0019 pkt 3 — współrzędne gracza NIGDY).
+- Most waliduje SPÓJNOŚĆ (nie zaufanie): gra musi trwać, gracz istnieć,
+  w turach `biezacyGraczTury(gra) === graczId` (odmowa: „teraz jest tura
+  gracza g-N"), `dojscie` przed `odpowiedz` na danej stacji, bez duplikatów,
+  `stacjaId` w zakresie `1..liczbaStacji`. Odmowa wraca jako `{ok:false, blad}`
+  i NIE jest ponawiana przez `app/sync.js` (awaria sieci — przeciwnie: ląduje
+  w kolejce offline i wychodzi FIFO po powrocie połączenia).
+
+### 9.3 `RO-lobby/1` i `RO-ranking/1`
+
+- `RO-lobby/1`: `{ schemat, wpisy: [{ idGry, tryb, stan, miejsce, geohash5,
+  wiek, tematy, liczbaGraczy, utworzono, organizator }] }` — BEZ kodów i BEZ
+  zestawów (prywatność otwartych gier); aplikacja filtruje po geohash5
+  pozycji + 8 sąsiadach (`filtrujLobby`) i dołącza przez `idGry`.
+- `RO-ranking/1`: `{ schemat, wiersze: [{ pseudonim, punkty, poprawne, bledne,
+  czasOdcinkowMs, stacjeZamkniete, data, tryb, miejsce, geohash5, wiek,
+  tematy }] }` — surowe wiersze z gier zakończonych (rezygnacja bez wyniku nie
+  wchodzi); agregacje (ogólny/wiek/tematy/lokalizacja) liczy telefon:
+  `agregujRanking`, `kategorieRankingu` (ADR 0019 pkt 7).
+
+### 9.4 Kody usterek R01–R18 (`KODY_WIELOOSOBOWE` w `app/wieloosobowa.js`)
+
+| Kod | Znaczenie |
+|---|---|
+| R01 | Stan gry nie jest poprawnym JSON-em. |
+| R02 | To nie jest gra schematu `RO-gra/1` (inna wersja aplikacji). |
+| R03 | Kod gry niepoprawny (6 znaków z alfabetu bez 0, O, 1, I). |
+| R04 | Tryb gry nieznany (oczekiwano `wyscig` albo `tury`). |
+| R05 | Stan gry nieznany (lobby / trwa / zakonczona / archiwum). |
+| R06 | Gra nie ma graczy — stan uszkodzony. |
+| R07 | Konfiguracja gry niekompletna. |
+| R08 | Zestaw gry uszkodzony (stacje / kontener TO-paczka/2 / meta). |
+| R09 | Zdarzenia gry uszkodzone (kolejność, gracz, typ, czas serwera). |
+| R10 | Zdarzenie nie jest poprawnym JSON-em. |
+| R11 | To nie jest zdarzenie schematu `RO-zdarzenie/1`. |
+| R12 | Typ zdarzenia nieznany. |
+| R13 | Zdarzenie nie wskazuje gry (kod/idGry) albo gracza. |
+| R14 | Stacja zdarzenia poza zakresem gry albo zły typ. |
+| R15 | Lista lobby nieczytelna albo zły schemat (`RO-lobby/1`). |
+| R16 | Część wpisów lobby uszkodzona — odfiltrowane. |
+| R17 | Ranking nieczytelny albo zły schemat (`RO-ranking/1`). |
+| R18 | Część wierszy rankingu uszkodzona — odfiltrowane. |
