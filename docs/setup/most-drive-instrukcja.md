@@ -114,6 +114,14 @@ Skrót:
   (zakłada katalog `okolica-profile`), potem Wdróż → Nowa wersja. Test:
   ekran 1 → wpisz nowe imię i PIN → „Dalej" → w `okolica-profile` na Drive
   leży plik `profil-….json`.
+- Aktualizacja do wyniku hot-seat (B22, ADR 0026 aneks): wklej nową treść
+  `docs/setup/apps-script-repo-paczek.gs` i Wdróż → Nowa wersja (`setup` nie jest
+  potrzebny — katalogi już istnieją). Nowa akcja `gra-hotseat` zapisuje grę
+  z jednego telefonu w `okolica-gry-zakonczone`, więc rankingi widzą ją od razu.
+  Test: zagraj grę na jednym telefonie z dodanym graczem (imię + PIN) i zgodą
+  „Zapisz wynik gry na wspólnym Drive" → po zakończeniu pod wynikiem pojawi się
+  „☁ Wynik jest na wspólnym Drive", a na Drive przybędzie plik
+  `gra-hotseat-….json`; rankingi pokażą punkty tych pseudonimów.
 - Aktualizacja do kotwicy geohash6 (B19, ADR 0024 aneks) i premii za kolejność
   (ADR 0027 część B): wklej nową treść skryptu i Wdróż → Nowa wersja (funkcji
   `setup` uruchamiać nie trzeba). Test: otwórz `<adres>/exec?akcja=indeks` —

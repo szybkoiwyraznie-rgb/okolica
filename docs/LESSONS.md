@@ -305,3 +305,17 @@ decyzją 2026-09-07; wyłapał to dopiero audyt następnej sesji.
 README/ASSETS/ADR nie czyta żaden test.
 **Reguła:** „funkcja znika z ekranu" = w tym samym commicie grep po README,
 ASSETS, ARCHITECTURE, WORKFLOW i ADR-ach (aneks, nie edycja decyzji — L8).
+
+## L32 — asynchroniczne odświeżenie listy bez licznika pokoleń dubluje wpisy
+
+**Objaw:** po dołożeniu listy graczy karta repozytorium pokazywała każdą paczkę
+DWA razy (`test/zestawy-ui.test.js`: `2 !== 1`). Setup woła
+`odswiezPropozycjeZestawow()` przy każdej zmianie (pozycja, gracze, czas), więc
+dwa żądania indeksu nakładały się: oba czyściły listę na starcie, a potem oba
+dopisywały swoje dopasowania.
+**Przyczyna:** `replaceChildren()` czyści listę synchronicznie, ale dopisanie
+wyników jest w `.then()` — starsza odpowiedź nie wie, że jest starsza.
+**Reguła:** każde asynchroniczne renderowanie listy ma licznik pokoleń
+(`POKOLENIE_PROPOZYCJI`): `const pokolenie = ++LICZNIK` przed żądaniem i
+`if (pokolenie !== LICZNIK) return` przed dopisaniem ORAZ w `.catch()`
+(komunikat błędu też należy do konkretnego pokolenia).

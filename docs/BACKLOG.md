@@ -195,3 +195,21 @@ wklejenie takiej paczki przechodzi przez `parsujOdpowiedzModela` i przez limit
 `localStorage`/Drive. Do zrobienia: zmierzyć prompt i odpowiedź dla 40 pytań
 (narzędzie albo test z fixturem), ewentualnie dzielić generację na partie
 (po jednej stacji) i scalać w aplikacji.
+
+## B22 — Wynik gry hot-seat na wspólnym Drive (per pseudonim) ✅ ZROBIONE (2026-09-07)
+
+Gra na jednym telefonie zostawiała wynik tylko w historii telefonu: punkty
+graczy nie wchodziły do rankingów, choć to te same pseudonimy co w grze
+wieloosobowej.
+
+**Wdrożone (ADR 0026 aneks, decyzja 3 właściciela):** nowa akcja mostu
+`gra-hotseat` (PROTOKOL §9.5) — telefon wysyła skończoną grę jednym poleceniem,
+most zapisuje ją jako `RO-gra/1` ze stanem `zakonczona`, więc `GET ranking`
+czyta ją bez zmian. Punkty liczy most (`przeliczWyniki`), premia za kolejność
+w hot-seat = 0, `zestaw: null` (paczka zostaje na telefonie), `geohash5` startu
+zamiast współrzędnych. Wysyłka wymaga zgody `#hotseat-zgoda` i choć jednego
+gracza potwierdzonego profilem; bez sieci polecenie czeka w kolejce i jedzie
+przy następnym starcie, a odcisk gry pilnuje idempotencji.
+Testy: 3 w `test/aplikacja.test.js` (wysyłka, kolejka offline, brak zgody),
+3 w `test/most-gra.test.js` na atrapie Drive (zapis + rankingi, kasowanie
+współrzędnych i odmowy, parity premii).

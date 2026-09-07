@@ -462,3 +462,50 @@ nie ma.
 | R18 | Część wierszy rankingu uszkodzona — odfiltrowane. |
 | R19 | Nieznany pseudonim (brak pliku profilu). |
 | R20 | PIN niepoprawny albo nie pasuje do pseudonimu. |
+
+### 9.5 `gra-hotseat` — wynik gry z jednego telefonu (ADR 0026 aneks)
+
+Gra na jednym telefonie (hot-seat) nie ma lobby, kodu ani zdarzeń na żywo:
+telefon wysyła SKOŃCZONĄ grę jednym poleceniem POST, a most zapisuje ją jako
+zwykłą grę `RO-gra/1` ze stanem `zakonczona` w katalogu
+`okolica-gry-zakonczone`. `GET ?akcja=ranking` czyta ten sam format, więc
+rankingi hot-seat i gier na wielu urządzeniach są JEDNYMI rankingami — bez
+osobnej ścieżki w aplikacji.
+
+```json
+{
+  "akcja": "gra-hotseat",
+  "tryb": "hotseat",
+  "konfiguracja": {
+    "miejsce": "Podkowa Leśna", "geohash5": "u3qb8", "wiek": "dorosli",
+    "tematy": ["historia"], "liczbaStacji": 3, "pytaniaNaStacje": 3
+  },
+  "gracze": [{ "id": 1, "pseudonim": "Ala" }, { "id": 2, "pseudonim": "Jan" }],
+  "zdarzenia": [
+    { "schemat": "RO-zdarzenie/1", "graczId": 1, "typ": "dojscie",
+      "stacjaId": 1, "dane": { "trybDojscia": "gps" } },
+    { "schemat": "RO-zdarzenie/1", "graczId": 1, "typ": "odpowiedz",
+      "stacjaId": 1, "dane": { "poprawna": true, "punktyRazem": 10 } }
+  ]
+}
+```
+
+Reguły są lustrami po obu stronach (`graHotseatDoWysylki` w
+`app/wieloosobowa.js` i `bledyGryHotseat` w moście):
+
+- `tryb` musi być `hotseat`; `gracze` 1–8, pseudonimy unikalne, ≤ 24 znaków;
+- `zdarzenia` wyłącznie `dojscie` i `odpowiedz`, 1–400 sztuk, `stacjaId`
+  w zakresie 1–`liczbaStacji`, `graczId` z listy graczy;
+- `konfiguracja` jak w grze wieloosobowej: `geohash5` startu zamiast punktu
+  gracza (ADR 0019 pkt 3), a pola `lat`/`lon` most kasuje dodatkowo;
+- `zestaw` jest `null` — paczka i pytania NIGDY nie wchodzą na Drive (ADR 0013);
+- punkty liczy MOST (`przeliczWyniki`), nie telefon: wynik rankingu nie zależy
+  od wersji aplikacji. Premia za kolejność w hot-seat wynosi 0 — gracze idą
+  razem, więc „kto skończył pierwszy" byłoby artefaktem kolejności klikania;
+- odpowiedź: `{ ok: true, idGry, wyniki }`; odmowa: `{ ok: false, blad }`.
+
+Prywatność i offline: wysyłka wymaga jawnej zgody na ekranie 1
+(`#hotseat-zgoda`) i choć jednego gracza potwierdzonego profilem PIN. Bez sieci
+polecenie czeka w `okolica:hotseat-kolejka` (maks. 5 gier) i jedzie przy
+następnym uruchomieniu, a odcisk gry w `okolica:hotseat-wyslane` pilnuje, żeby
+ta sama gra nie weszła do rankingu dwa razy (ADR 0016 pkt 5).

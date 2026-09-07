@@ -995,3 +995,47 @@ Dwa punkty z listy „zostało" partii 3, oba wdrożone.
 **Brama na koniec partii:** 560/560 + sync szablonu OK + WCAG AA 0 naruszeń.
 Podgląd serwuje `?v=m12-13`. Skrypt mostu wymaga wklejenia przez właściciela
 (kotwica geohash6 + premia) — patrz `docs/setup/most-drive-instrukcja.md`.
+
+## 2026-09-07 (partia 5) — ekran 1: lista graczy = tożsamość + wynik hot-seat na Drive
+
+**Zlecenie właściciela (punkt 8):** „Gracze" (liczba) i „👤 Kim jesteś?"
+(imię + PIN) były nie do zrozumienia — „to trzeba zintegrować": wpisujesz imię
+i PIN, klikasz „➕ Dodaj gracza", nowe imię zakłada profil z tym PIN-em, zajęte
+wymaga PIN-u właściciela. Lista dodanych graczy zastępuje pole liczby.
+
+**Trzy decyzje właściciela (ankieta w czacie):** (1) PIN sprawdzany od razu
+przy dodawaniu, pole „Liczba graczy" **znika** — „tyle ilu się doda, tylu
+będzie"; (2) lista jest zapamiętywana na telefonie i **nie pyta o PIN
+ponownie**; (3) **zrób teraz**: wynik gry hot-seat idzie na Drive per gracz.
+
+- **Jeden blok „👤 Kto gra?"** (`#pole-tozsamosc`): imię + PIN + „➕ Dodaj
+  gracza", lista `#lista-graczy` z „✕ Usuń", przyciski zapamiętanych
+  `#lista-zapamietanych`, akapit stanu. Z `index.html` zniknęły `#setup-gracze`
+  i `#lista-imion`; `liczbaGraczy` jest pochodna (`max(1, imiona.length)`),
+  a `pytaniaNaStacje = min(gracze, 8)` idzie za listą (K22 zostaje spełnione).
+- **`okolica:profil` → `okolica:gracze`** (schemat `gracze-lokalni/1`, maks. 8,
+  PIN nigdy lokalnie). Przy starcie potwierdzeni gracze wracają na listę sami,
+  bez PIN-u i bez sieci; niepotwierdzeni czekają jako przyciski i wymagają PIN-u.
+  Usunięcie jest trwałe — `przywrocGraczy({ zListy: true })` tylko przy
+  uruchomieniu, bo inaczej usunięty gracz wracał natychmiast.
+- **Wynik hot-seat na Drive** (B22): nowa akcja mostu `gra-hotseat`
+  (PROTOKOL §9.5) zapisuje grę z jednego telefonu jako `RO-gra/1` ze stanem
+  `zakonczona`, więc `GET ranking` czyta ją bez zmian. Punkty liczy most, premia
+  hot-seat = 0 (po obu stronach — parity pilnowany testem), `zestaw: null`,
+  `geohash5` startu zamiast współrzędnych, pola `lat`/`lon` kasowane także
+  w moście. Zgoda `#hotseat-zgoda`, kolejka offline `okolica:hotseat-kolejka`,
+  odcisk gry `okolica:hotseat-wyslane` (wynik jednej gry raz).
+- Los wysyłki ma **własną linię** `#wynik-drive`, nie wspólny `#status`:
+  wysyłka kończy się w nieprzewidywalnej chwili i nadpisywała komunikat
+  „Obraz wyniku zapisany jako plik .png" (wyłapał test M7).
+- **L32**: asynchroniczne odświeżenie listy bez licznika pokoleń dublowało
+  paczki z repozytorium — `POKOLENIE_PROPOZYCJI` przed żądaniem, sprawdzenie
+  przed dopisaniem i w `.catch()`.
+- Literówka `prycisk.disabled` w `dodajGracza` rzucała `ReferenceError` przy
+  każdym kliknięciu „Dodaj gracza" — wyłapał dopiero nowy test bramy.
+
+**Brama na koniec partii:** `npm run brama` = **567 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-14` (+ `WERSJA_SW`).
+Skrypt mostu (963 linie, md5 `01e1d9bdfa071d2634dc33d87607420f`) **wymaga
+wklejenia** przez właściciela: akcja `gra-hotseat` + premia hot-seat = 0 —
+patrz `docs/setup/most-drive-instrukcja.md` (sekcja „Awaryjnie").
