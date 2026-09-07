@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import {
   FAZY, KODY_ROZGRYWKI, SCHEMAT_ROZGRYWKI, STANY_ODCINKA, TRYBY_DOJSCIA,
   czyKoniec, dystansOdcinkaM, graczNaStacji, ktoOdpowiada, nowaRozgrywka,
-  podglad, podsumowanie, pominStacje, pytaniaStacji, startOdcinka,
+  podglad, podsumowanie, pominStacje, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka,
   wczytajStan, zapiszOdpowiedz, zakonczOdcinek,
 } from '../app/rozgrywka.js';
 import { domyslnaKonfiguracja } from '../app/konfig.js';
@@ -348,7 +348,7 @@ test('ostatnia stacja bez pytania: dojście kończy grę, nie zostawia pustego e
 
 test('KODY_ROZGRYWKI: każdy komunikat jest pełnym zdaniem gotowym do UI', () => {
   const kody = Object.entries(KODY_ROZGRYWKI);
-  assert.equal(kody.length, 13);
+  assert.equal(kody.length, 14); // +G14: stacja zamknięta/pominięta (ADR 0027 część B)
   for (const [kod, komunikat] of kody) {
     assert.match(kod, /^G\d{2}$/, `kod ${kod}`);
     assert.ok(komunikat.length >= 25, `${kod}: komunikat za krótki — „${komunikat}"`);
@@ -514,4 +514,63 @@ test('nowaRozgrywka: dystanse sieciowe z parametru, fallback do prostej na nulla
   assert.ok(prosta.odcinki.every((o) => o.dystansSieciowy === false));
   assert.equal(podglad(prosta).dystansSieciowy, false);
   assert.throws(() => nowa({}, { dystanseOdcinkowM: [1, 2] }), /długości/, 'zła długość to fail-fast, nie ciche przesunięcie');
+});
+
+/* ---------- ADR 0027 część B: wolna kolejność stacji (skierujDoStacji) ------ */
+
+test('wolna kolejność: gracz idzie do stacji w swojej kolejności, nie po kolei', () => {
+  let stan = nowa();
+  assert.equal(stan.biezacaStacja, 1, 'na starcie bieżąca jest pierwsza stacja');
+
+  const wybrana = skierujDoStacji(stan, { stacjaId: 4, czasMs: 1000 });
+  assert.deepEqual(wybrana.usterki, [], 'wybór stacji 4 jest poprawny');
+  assert.equal(wybrana.stan.biezacaStacja, 4, 'bieżąca stacja idzie za wyborem');
+  assert.equal(wybrana.stan.faza, FAZY.przygotowanie, 'po wyborze wracamy do przygotowania odcinka');
+  assert.ok(wybrana.stan.dziennik.some((z) => z.typ === 'wybor-stacji' && z.stacja === 4), 'wybór trafia do dziennika');
+
+  stan = przejdzStacje(wybrana.stan, { stacjaId: 4, startMs: 2000, koniecMs: 60_000 });
+  // przejdzDalej ustawił najniższą niezamkniętą — wybór i tak jest wolny
+  const druga = skierujDoStacji(stan, { stacjaId: 2, czasMs: 61_000 });
+  assert.deepEqual(druga.usterki, []);
+  stan = przejdzStacje(druga.stan, { stacjaId: 2, startMs: 62_000, koniecMs: 120_000 });
+
+  assert.deepEqual(stacjeDoWyboru(stan), [1, 3, 5], 'zamknięte stacje znikają z wyboru');
+});
+
+test('wolna kolejność: domknięcie wszystkich stacji w dowolnej kolejności kończy grę', () => {
+  let stan = nowa();
+  let czas = 0;
+  for (const stacjaId of [5, 3, 1, 4, 2]) {
+    const wybrana = skierujDoStacji(stan, { stacjaId, czasMs: (czas += 1000) });
+    assert.deepEqual(wybrana.usterki, [], `wybór ${stacjaId}`);
+    stan = przejdzStacje(wybrana.stan, { stacjaId, startMs: czas, koniecMs: (czas += 60_000) });
+  }
+  assert.equal(czyKoniec(stan), true, 'gra się skończyła');
+  const podsumowanieStanu = podsumowanie(stan);
+  assert.equal(podsumowanieStanu.zaliczoneStacje, 5, 'wszystkie stacje zaliczone');
+});
+
+test('skierujDoStacji odmawia: obca stacja, zamknięta i gra po końcu', () => {
+  let stan = nowa();
+  assert.equal(skierujDoStacji(stan, { stacjaId: 99, czasMs: 10 }).usterki[0].kod, 'G01', 'nieznana stacja');
+
+  stan = przejdzStacje(stan, { stacjaId: 1, startMs: 1000, koniecMs: 60_000 });
+  assert.equal(skierujDoStacji(stan, { stacjaId: 1, czasMs: 61_000 }).usterki[0].kod, 'G14', 'zamkniętej stacji nie da się wybrać drugi raz');
+
+  let czas = 70_000;
+  for (const stacjaId of stacjeDoWyboru(stan)) {
+    const wybrana = skierujDoStacji(stan, { stacjaId, czasMs: (czas += 1000) });
+    stan = przejdzStacje(wybrana.stan, { stacjaId, startMs: czas, koniecMs: (czas += 60_000) });
+  }
+  assert.equal(czyKoniec(stan), true, 'wszystko zamknięte');
+  assert.equal(skierujDoStacji(stan, { stacjaId: 1, czasMs: czas + 1000 }).usterki[0].kod, 'G10', 'po końcu gry wybór jest odrzucony');
+});
+
+test('stacjeDoWyboru: lista maleje, pominięta stacja też znika', () => {
+  let stan = nowa();
+  assert.deepEqual(stacjeDoWyboru(stan), [1, 2, 3, 4, 5], 'na starcie wszystkie');
+  const poStarcie = startOdcinka(stan, { stacjaId: 2, czasMs: 1000 });
+  assert.deepEqual(stacjeDoWyboru(poStarcie.stan), [1, 3, 4, 5], 'odcinek w drodze nie wraca na listę wyboru');
+  const poPominieciu = pominStacje(poStarcie.stan, { stacjaId: 2, czasMs: 2000, powod: 'test' });
+  assert.deepEqual(stacjeDoWyboru(poPominieciu.stan), [1, 3, 4, 5], 'pominięta stacja zostaje poza wyborem');
 });

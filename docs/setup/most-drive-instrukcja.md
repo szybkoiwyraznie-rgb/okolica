@@ -114,11 +114,13 @@ Skrót:
   (zakłada katalog `okolica-profile`), potem Wdróż → Nowa wersja. Test:
   ekran 1 → wpisz nowe imię i PIN → „Dalej" → w `okolica-profile` na Drive
   leży plik `profil-….json`.
-- Aktualizacja do kotwicy geohash6 (B19, ADR 0024 aneks): wklej nową treść
-  skryptu i Wdróż → Nowa wersja (funkcji `setup` uruchamiać nie trzeba). Test:
-  otwórz `<adres>/exec?akcja=indeks` — każdy wpis ma `geohash6` (6 znaków),
-  a paczki sprzed ADR 0024 także `geohash6Szacowany: true`. Bez tego kroku
-  stare paczki dalej dopasowują się zgrubnie (geohash5 ≈ 3 × 5 km).
+- Aktualizacja do kotwicy geohash6 (B19, ADR 0024 aneks) i premii za kolejność
+  (ADR 0027 część B): wklej nową treść skryptu i Wdróż → Nowa wersja (funkcji
+  `setup` uruchamiać nie trzeba). Test: otwórz `<adres>/exec?akcja=indeks` —
+  każdy wpis ma `geohash6` (6 znaków), a paczki sprzed ADR 0024 także
+  `geohash6Szacowany: true`. Bez tego kroku stare paczki dalej dopasowują się
+  zgrubnie (geohash5 ≈ 3 × 5 km), a wyniki gier nie zawierają premii
+  za kolejność ukończenia (telefon pokazuje ją i tak — liczy ją aplikacja).
 - Link przeglądu wycieknie? Zmień `REVIEW_SECRET` we właściwościach skryptu
   (stare linki przestaną działać).
 - Paczka omyłkowo zaakceptowana: na Drive przeciągnij plik z

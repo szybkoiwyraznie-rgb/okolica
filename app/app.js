@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-12';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-12';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-13';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-13';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -29,21 +29,21 @@ import {
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
-} from './protokol.js?v=m12-12';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-12';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-12';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-12';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-12';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-12';
+} from './protokol.js?v=m12-13';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-13';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-13';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-13';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-13';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-13';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-12';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-12';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-12';
+} from './zestawy.js?v=m12-13';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-13';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-13';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -63,11 +63,11 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-12';
-import { utworzMape } from './mapa.js?v=m12-12';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujProfilLokalny, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-12';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-12';
-import { adresMostu, stanMostu } from './most.js?v=m12-12';
+} from './sieci.js?v=m12-13';
+import { utworzMape } from './mapa.js?v=m12-13';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujProfilLokalny, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-13';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-13';
+import { adresMostu, stanMostu } from './most.js?v=m12-13';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -3168,10 +3168,46 @@ function onStanGryMulti(gra) {
 }
 
 /**
- * Lokalny silnik gry wieloosobowej: wyścig = wszystkie stacje, tury = tylko
- * własne (stacja i należy do gracze[i % N] — kolejka USTALONA przy starcie,
- * rezygnacje pomijają stacje, nie przesuwają). Przy powrocie po odświeżeniu
- * zamknięte już stacje nie wracają — reszta rozgrywa się normalnie.
+ * Pytanie gracza w grze sieciowej (ADR 0027 część B pkt 2): paczka ma
+ * `pytaniaNaStacje = liczbaGraczy` pytań przy każdej stacji, a pytanie `k`
+ * należy do gracza `k`. Dzięki temu każde urządzenie zna swoje pytanie BEZ
+ * negocjacji z innymi — nie ma wyścigu o pytanie ani blokady przy braku
+ * zasięgu, a serwer nie musi rozstrzygać, kto pierwszy.
+ *
+ * Paczka mniejsza niż liczba graczy nie zostawia nikogo bez pytania: indeks
+ * zawija się (`k mod liczba pytań stacji`), więc gracze dzielą pytanie. Gra i
+ * tak toczy się na osobnych telefonach, a pusty zestaw pytań zatrzymałby
+ * rozgrywkę — więc dzielenie jest tu mniejszym złem niż brak pytania.
+ *
+ * Reguła dotyczy obu trybów multi: w turach właściciel stacji też odpowiada na
+ * jedno pytanie (serwer odrzuca drugą odpowiedź tego samego gracza do stacji).
+ */
+function pytaniaDlaGracza(paczka, { liczbaGraczy, indeksGracza }) {
+  if (!(liczbaGraczy > 1) || !(indeksGracza >= 0)) return paczka;
+  const przezStacje = new Map();
+  for (const q of paczka.pytania) {
+    const lista = przezStacje.get(q.stacja) ?? [];
+    lista.push(q);
+    przezStacje.set(q.stacja, lista);
+  }
+  const wybrane = new Set();
+  for (const lista of przezStacje.values()) {
+    // Paczka z `pytaniaNaStacje = liczbaGraczy` (domyślna po ADR 0027 część A)
+    // daje każdemu WŁASNE pytanie. Starsza/mniejsza paczka nie zostawia gracza
+    // bez pytania: indeks zawija się, więc gracze dzielą pytanie — w grze
+    // sieciowej każdy odpowiada na swoim telefonie, więc to uczciwe, a brak
+    // pytania zatrzymałby grę (rozgrywka wymaga niepustej paczki).
+    wybrane.add(lista[indeksGracza % lista.length]);
+  }
+  return { ...paczka, pytania: paczka.pytania.filter((q) => wybrane.has(q)) };
+}
+
+/**
+ * Lokalny silnik gry wieloosobowej: wyścig = wszystkie stacje w WOLNEJ
+ * kolejności (ADR 0027 część B), tury = tylko własne (stacja i należy do
+ * gracze[i % N] — kolejka USTALONA przy starcie, rezygnacje pomijają stacje,
+ * nie przesuwają). Przy powrocie po odświeżeniu zamknięte już stacje nie
+ * wracają — reszta rozgrywa się normalnie.
  */
 function uruchomGreMulti(gra) {
   const m = STAN.multi;
@@ -3195,6 +3231,9 @@ function uruchomGreMulti(gra) {
   }
   const srodek = STAN.pozycja ? { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon } : { lat: moje[0].lat, lon: moje[0].lon };
   const konfig = oczyscKonfiguracje({ ...STAN.konfig, liczbaGraczy: 1, imiona: [m.pseudonim], kodGry: gra.kod });
+  // pytanie tego gracza przy każdej stacji (indeks = pozycja w `gra.gracze`)
+  const paczkaGracza = pytaniaDlaGracza(paczka, { liczbaGraczy: N, indeksGracza: mojIndeks });
+  m.indeksGracza = mojIndeks;
   STAN.stacje = moje;
   STAN.kontenerPaczki = gra.zestaw.kontener;
   STAN.paczka = paczka;
@@ -3204,7 +3243,7 @@ function uruchomGreMulti(gra) {
   STAN.pauzaSkumulowanaMs = 0;
   STAN.graZakonczonaRecznie = false;
   STAN.rozgrywka = nowaRozgrywka({
-    konfig, stacje: moje, paczka, srodek,
+    konfig, stacje: moje, paczka: paczkaGracza, srodek,
     gracze: [{ id: 1, imie: m.pseudonim }],
     czasMs: zegarGry(), ziarno: gra.kod,
   });
@@ -3232,6 +3271,8 @@ function wyslijZdarzenieMulti(typ, stacjaId, dane) {
 
 function renderujWierszeWynikow(tbody, gra) {
   const wyniki = przeliczWyniki(gra);
+  const koniec = gra?.stan === 'zakonczona' || gra?.stan === 'archiwum';
+  const wszystkich = Number(gra?.konfiguracja?.liczbaStacji) || 0;
   const wiersze = Object.entries(wyniki)
     .sort((a, b) => b[1].punkty - a[1].punkty || b[1].poprawne - a[1].poprawne || a[1].pseudonim.localeCompare(b[1].pseudonim, 'pl'));
   tbody.replaceChildren();
@@ -3241,7 +3282,10 @@ function renderujWierszeWynikow(tbody, gra) {
       `${w.pseudonim}${id === STAN.multi?.graczId ? ' (Ty)' : ''}${w.zrezygnowal ? ' — zrezygnował(a)' : ''}`,
       String(w.punkty),
       `${w.poprawne}/${w.poprawne + w.bledne}`,
-      String(w.stacjeZamkniete),
+      // postęp każdego gracza (ADR 0027 część B): ile stacji z ilu
+      wszystkich > 0 ? `${w.stacjeZamkniete}/${wszystkich}` : String(w.stacjeZamkniete),
+      // premia za kolejność ukończenia wchodzi do punktów dopiero w podsumowaniu
+      w.premia > 0 ? (koniec ? `+${w.premia}` : `+${w.premia} (na koniec)`) : '—',
     ];
     for (const tekst of komorki) {
       const td = document.createElement('td');
@@ -3300,17 +3344,62 @@ function renderujPanelMulti() {
       tura.textContent = 'Wszystkie stacje zamknięte albo pominięte — czekam na zakończenie gry.';
     }
   } else if (graSieToczy) {
-    tura.textContent = `Wyścig! Wszyscy idą jednocześnie — Twoich stacji zostało: ${r.stacje.length}. Wyniki na żywo poniżej.`;
+    const zostalo = r ? stacjeDoWyboru(r).length : 0;
+    tura.textContent = `Wyścig! Każdy idzie swoją kolejnością — zostało Ci ${zostalo} stacji. Wyniki na żywo poniżej.`;
   } else {
     tura.textContent = gra.stan === 'zakonczona' ? 'Gra zakończona — ostateczne wyniki:' : 'Gra wieloosobowa.';
   }
   renderujWierszeWynikow($('gra-multi-wiersze'), gra);
+  renderujWyborStacji(gra, r, graSieToczy);
   // tury: przycisk drogi zablokowany, dopóki idzie ktoś inny (serwer i tak pilnuje)
   if (r && r.faza === FAZY.przygotowanie && gra.tryb === TRYBY_GRY.tury && gra.stan === 'trwa') {
     $('przycisk-start-odcinka').disabled = STAN.graPauza || biezacyGraczTury(gra) !== m.graczId;
   }
   $('przycisk-pomin-stacje').hidden = true; // w multi pomijania nie ma — patrz pominStacjeGry
   renderujPasekSync();
+}
+
+/**
+ * Wolna kolejność stacji (ADR 0027 część B pkt 2): w wyścigu gracz wybiera
+ * dowolną stację, do której jeszcze nie doszedł. Lista znika w turach (tam
+ * kolejność ustala kolejka) i po zamknięciu wszystkich stacji.
+ */
+function renderujWyborStacji(gra, r, graSieToczy) {
+  const blok = $('multi-wybor-stacji');
+  const mozna = Boolean(graSieToczy && r && gra.tryb === TRYBY_GRY.wyscig && r.faza === FAZY.przygotowanie);
+  const dostepne = mozna ? stacjeDoWyboru(r) : [];
+  blok.hidden = dostepne.length === 0;
+  if (!dostepne.length) return;
+  const lista = $('multi-wybor-przyciski');
+  lista.replaceChildren();
+  for (const stacjaId of dostepne) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'przycisk';
+    const cel = STAN.stacje?.find((s) => Number(s.id) === Number(stacjaId));
+    b.textContent = `Stacja ${stacjaId}${cel?.opis ? ` · ${cel.opis}` : ''}`;
+    b.disabled = STAN.graPauza;
+    b.setAttribute('aria-pressed', String(Number(r.biezacaStacja) === Number(stacjaId)));
+    b.addEventListener('click', () => wybierzStacjeMulti(stacjaId));
+    lista.appendChild(b);
+  }
+}
+
+/** Klik w stację z listy: bieżąca stacja idzie za wyborem (silnik waliduje G14/G10). */
+function wybierzStacjeMulti(stacjaId) {
+  const r = STAN.rozgrywka;
+  if (!r || r.faza !== FAZY.przygotowanie) return;
+  const wynik = skierujDoStacji(r, { stacjaId, czasMs: zegarGry() });
+  STAN.rozgrywka = wynik.stan;
+  pokazBledy('bledy-gra', wynik.usterki);
+  if (wynik.usterki.length > 0) {
+    status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
+    return;
+  }
+  zapiszGre();
+  renderujGre();
+  renderujPanelMulti();
+  status(`Idziesz do stacji ${stacjaId}. Kolejność jest dowolna — po drodze możesz wybrać inną.`);
 }
 
 function renderujPasekSync() {

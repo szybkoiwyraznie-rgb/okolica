@@ -174,17 +174,24 @@ i porównuje z `app/geo.js` na siatce >500 punktów.
 w Apps Script i wdrożyć — bez tego stare paczki zostają przy dopasowaniu
 zgrubnym (działają, tylko szerzej).
 
-## B20 — Gra sieciowa bez tur: wolna kolejność stacji i premia za kolejność (ADR 0027 część B)
+## B20 — Gra sieciowa bez tur: wolna kolejność stacji i premia za kolejność ✅ ZROBIONE (2026-09-07)
 
-Projekt jest w ADR 0027 (część B): każdy gracz na swoim telefonie zalicza
-stacje w dowolnej kolejności, pytanie bierze z paczki wg swojego indeksu
-(`pytaniaNaStacje = liczbaGraczy`), 1 pkt za poprawną, premia `G−1 … 0` za
-kolejność ukończenia, podsumowanie gdy wszyscy skończą albo gospodarz zakończy.
-Do zrobienia: `rozgrywka.js` (koniec bramkowania turą, postęp gracza, premia),
-`wieloosobowa.js` (walidacja zdarzeń bez kolejki, premia w `przeliczWyniki`),
-`app.js` (lista stacji do wyboru, postęp graczy, przycisk gospodarza),
-PROTOKOL §9, testy. Most Drive bez zmian.
+Wdrożone według ADR 0027 część B (rozliczenie projektu jest w tym ADR-ze,
+pkt 7): `skierujDoStacji` + `stacjeDoWyboru` w silniku, `premiaZaKolejnosc`
+i premia w `przeliczWyniki` po obu stronach (aplikacja i most), pytanie wg
+indeksu gracza, lista stacji do wyboru, postęp `ile z ilu` i kolumna premii,
+PROTOKOL §9, aneks ADR 0022, testy (w tym parity most ↔ aplikacja).
 
-Przed wdrożeniem: sprawdzić budżet promptu i limit wklejenia dla
+**Zostało do sprawdzenia (B21)**: budżet promptu i limit wklejenia dla
 `stacje × gracze` pytań (8 graczy × 5 stacji = 40 pytań) — dziś domyślny setup
-generuje ich 5.
+generuje ich 5, a protokół nie był testowany przy 40 pytaniach w jednej paczce.
+
+## B21 — Duża paczka: budżet promptu i limit wklejenia dla `stacje × gracze` pytań
+
+Po ADR 0027 część A domyślny setup generuje `liczbaStacji × liczbaGraczy` pytań,
+a maksimum to 5 × 8 = 40 (widełki pytań 1–8). Niezmierzone: ile tokenów ma
+prompt dla 40 pytań, czy model mieści się w swoim limicie odpowiedzi, czy
+wklejenie takiej paczki przechodzi przez `parsujOdpowiedzModela` i przez limit
+`localStorage`/Drive. Do zrobienia: zmierzyć prompt i odpowiedź dla 40 pytań
+(narzędzie albo test z fixturem), ewentualnie dzielić generację na partie
+(po jednej stacji) i scalać w aplikacji.

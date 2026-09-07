@@ -959,3 +959,39 @@ bez tur) zaprojektowana w ADR 0027 część B.
 **Brama na koniec partii:** 538/538 + sync szablonu OK + WCAG AA 0 naruszeń.
 Podgląd serwuje `?v=m12-11`. Ostatnie dwa commity czekały na push (token GitHub
 w środowisku wygasł) — patrz `docs/setup/HANDOFF_2026-09-07-partia3.md`.
+
+## 2026-09-07 (partia 4) — B19: kotwica geohash6 dla starych paczek i B20: gra sieciowa bez tur
+
+Dwa punkty z listy „zostało" partii 3, oba wdrożone.
+
+- **B19 (ADR 0024 aneks)**: paczki opublikowane przed ADR 0024 mają tylko
+  `geohash5` (≈3,0 × 4,9 km), więc reguła „odległość od komórki ≤ 200 m" łapała
+  też paczkę 3 km dalej. `budujIndeks` w moście Drive liczy teraz dla takich
+  wpisów kotwicę ze **środka ciężkości stacji** (nie z pierwszej stacji — start
+  leży w środku obszaru, pierwsza stacja bywa na skraju) i oznacza wpis
+  `geohash6Szacowany`; klient poszerza wtedy tolerancję o `promienM` paczki.
+  To dowód braku regresji (start leży w promieniu paczki od każdej stacji, więc
+  od środka ciężkości tym bardziej) przy shrinku nadmiarowego dopasowania
+  z ~4 km do ~`promienM`. Koder geohash w Apps Script jest kopią `app/geo.js`
+  i **jest testowany**: `test/most-indeks.test.js` wykonuje wycięty tekst
+  skryptu i porównuje na siatce >500 punktów.
+- **B20 (ADR 0027 część B)**: gra sieciowa bez tur. Gracz wybiera dowolną
+  niezaliczoną stację (`skierujDoStacji`, G14 dla zamkniętej), pytanie bierze
+  wg własnego indeksu (`pytaniaNaStacje = liczbaGraczy`, indeks zawija się przy
+  mniejszej paczce, żeby nikt nie został bez pytania), 1 pkt za poprawną.
+  **Premia za kolejność ukończenia**: pierwszy `G−1`, …, ostatni 0, liczona
+  z `kolejnosc` zdarzeń mostu (nie z zegara urządzenia), wchodzi do punktów
+  dopiero w podsumowaniu. Reguła jest po obu stronach — w `app/wieloosobowa.js`
+  i w moście — a `test/most-gra.test.js` porównuje wyniki obu implementacji na
+  pięciu scenariuszach. Serwer NIE wymagał zmian w walidacji: tury bramkował
+  tylko przy `tryb === 'tury'`.
+- Przy okazji wyszło, że `postepGracza` w aplikacji nie liczył `czasOdcinkowMs`,
+  choć most go liczy — kształt wyników telefonu i Drive różnił się polem.
+  Ujednolicone; parity pilnuje test.
+- Nowy **BACKLOG B21**: budżet promptu i limit wklejenia dla 40 pytań
+  (5 stacji × 8 graczy) — po części A domyślny setup generuje ich
+  `stacje × gracze`, a protokół był testowany przy 5.
+
+**Brama na koniec partii:** 560/560 + sync szablonu OK + WCAG AA 0 naruszeń.
+Podgląd serwuje `?v=m12-13`. Skrypt mostu wymaga wklejenia przez właściciela
+(kotwica geohash6 + premia) — patrz `docs/setup/most-drive-instrukcja.md`.

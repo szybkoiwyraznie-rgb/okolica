@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-12">
-  <script type="module" src="app/app.js?v=m12-12"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-13">
+  <script type="module" src="app/app.js?v=m12-13"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -240,7 +240,7 @@
         <p id="lobby-status" class="podpowiedz" role="status"></p>
         <div id="lobby-widownia" hidden>
           <table class="tabela-wynikow">
-            <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th></tr></thead>
+            <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Premia</th></tr></thead>
             <tbody id="lobby-widownia-wiersze"></tbody>
           </table>
         </div>
@@ -457,8 +457,13 @@
       <!-- M11/P4: panel gry wieloosobowej — tury, żywe wyniki, pasek synchronizacji -->
       <div id="gra-panel-multi" class="karta gra-panel" hidden>
         <p id="gra-multi-tura" class="duzy" role="status"></p>
+        <!-- ADR 0027 część B: wolna kolejność stacji — gracz wybiera, dokąd idzie -->
+        <div id="multi-wybor-stacji" hidden>
+          <p class="podpowiedz">Kolejność jest dowolna — wybierz stację, do której idziesz:</p>
+          <div id="multi-wybor-przyciski" class="chipy" role="group" aria-label="Wybór stacji"></div>
+        </div>
         <table id="gra-multi-tabela" class="tabela-wynikow">
-          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th></tr></thead>
+          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Premia</th></tr></thead>
           <tbody id="gra-multi-wiersze"></tbody>
         </table>
         <p id="gra-multi-sync" class="podpowiedz" role="status"></p>

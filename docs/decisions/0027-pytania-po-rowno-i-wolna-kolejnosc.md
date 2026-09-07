@@ -1,6 +1,6 @@
 # 0027 — Pytania po równo na gracza (wdrożone) i wolna kolejność stacji w grze sieciowej (projekt)
 
-- Status: Zaakceptowana (2026-09-07, decyzja właściciela; część A wdrożona, część B — projekt do wdrożenia)
+- Status: Zaakceptowana (2026-09-07, decyzja właściciela; część A i część B wdrożone)
 - Data: 2026-09-07
 
 ## Kontekst
@@ -40,7 +40,7 @@ sieciowej — urządzenie gracza. Stąd wspólna decyzja.
    są **niepoprawne** (3 pytania nie dzielą się na 2 graczy) — fixture'y testów
    przeszły na 3 graczy.
 
-## Decyzja — część B: gra sieciowa bez tur (PROJEKT, do wdrożenia)
+## Decyzja — część B: gra sieciowa bez tur (WDROŻONE 2026-09-07)
 
 Model docelowy, spójny z częścią A i z istniejącym protokołem RO-*:
 
@@ -63,20 +63,30 @@ Model docelowy, spójny z częścią A i z istniejącym protokołem RO-*:
 6. **Podsumowanie**: gdy wszyscy gracze skończyli ALBO gospodarz kliknie
    „Zakończ Grę" (istniejący dwustopniowy mechanizm zakończenia). Ranking i
    karty graczy rozsyłają się pollingiem jak dotąd.
-7. **Zakres zmian** (szacunek na następną sesję):
-   - `app/rozgrywka.js`: koniec bramkowania turą w grze sieciowej, stan
-     „zaliczone stacje gracza", premia kolejności w `podsumowanie`;
-   - `app/wieloosobowa.js`: walidacja zdarzeń bez kolejki (R**), agregacja
-     premii w `przeliczWyniki`;
-   - `app/app.js`: ekran gry wieloosobowej — lista stacji do wyboru zamiast
-     „Idę do stacji N", wskaźnik postępu każdego gracza, przycisk gospodarza;
-   - `docs/PROTOKOL.md` §9: opis zdarzeń i premii (schematy RO-* bez zmian
-     kształtu — dochodzi znaczenie, nie pola);
-   - most Drive: bez zmian (zdarzenia już są kolejką append-only);
-   - testy: wolna kolejność, premia 3/2/1/0 dla 4 graczy, remis kolejności,
-     koniec przez gospodarza przy nieukończonych graczach.
-   ADR 0022 („odpowiada gracz z kolejki") zostaje dla hot-seatu; dla gry
-   sieciowej wymaga aneksu, nie uchylenia.
+7. **Co faktycznie zostało zmienione** (rozliczenie projektu):
+   - `app/rozgrywka.js`: `skierujDoStacji()` + `stacjeDoWyboru()` (kod G14 dla
+     stacji zamkniętej/pominiętej). Bramkowania turą w grze sieciowej NIE było
+     co usuwać: lokalny stan gry multi zawsze dotyczy jednego gracza
+     (`liczbaGraczy: 1`), więc kolejka degeneruje do „ja" — premia kolejności
+     żyje w wynikach mostu, nie w `podsumowanie()`;
+   - `app/wieloosobowa.js`: `premiaZaKolejnosc()` + premia w `przeliczWyniki`
+     (poza `punkty` do końca gry); `postepGracza` dostał `czasOdcinkowMs`, żeby
+     kształt wyników był IDENTYCZNY z mostem;
+   - `app/app.js`: `pytaniaDlaGracza()` (pytanie wg indeksu gracza, indeks
+     zawija się przy mniejszej paczce), lista stacji do wyboru
+     (`#multi-wybor-stacji`), postęp `ile z ilu` i kolumna premii w tabelach;
+   - `docs/setup/apps-script-repo-paczek.gs`: premia w `przeliczWyniki` i stan
+     `zakonczona` PRZED liczeniem wyników (ta sama reguła „koniec" co w
+     aplikacji). Walidacja zdarzeń bez kolejki była już gotowa — serwer
+     bramkuje tury tylko przy `tryb === 'tury'`;
+   - `docs/PROTOKOL.md` §9: reguły wyścigu i premii, pole `wyniki.premia`
+     (schematy RO-* bez zmiany kształtu — doszło jedno pole wyników);
+   - ADR 0022 dostał aneks (kolejka zostaje w hot-seacie i w turach).
+   - testy: `test/most-gra.test.js` (parity premia/wyniki most ↔ aplikacja),
+     premia 3/2/1/0 dla 4 graczy, kolejność z `kolejnosc` mimo kłamiących
+     zegarów, koniec przez gospodarza przy nieukończonych, wolna kolejność
+     w silniku (G14/G10) i w UI (wybór stacji, pytanie per gracz, malejąca
+     lista), tury bez listy wyboru.
 
 ## Konsekwencje
 

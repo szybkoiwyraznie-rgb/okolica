@@ -375,15 +375,31 @@ Schematy mostu Drive (`docs/setup/apps-script-repo-paczek.gs`; ADR 0016, 0018,
 | `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza) |
 | `zestaw` | `{stacje, kontener TO-paczka/2, meta TO-zestaw/1}` | mapa gry + ukryte pytania (ADR 0007) |
 | `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
-| `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, stacjeZamkniete, zrezygnowal}}` | liczone przez most przy zamknięciu gry |
+| `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal, premia}}` | liczone przez most przy zamknięciu gry; `punkty` zawierają `premia` (ADR 0027 część B) |
 
 Reguły gry: dołączenie tylko w `lobby`; start tylko przez organizatora.
 **Tury**: stacja `i` (1-based) należy NA STAŁE do gracza `gracze[(i-1) % N]`
 — kolejka jest ustalona przy starcie i **nie przesuwa się**; rezygnacja gracza
 **pomija** jego stacje (nie zawęża kolejki — zawężenie przemapowałoby stacje
-między graczami w trakcie gry i rozjechałoby pytania z kontenera). Wyścig:
-wszyscy idą wszystkie stacje jednocześnie; gra kończy się, gdy każdy
-niezrezygnowany gracz odpowiedział na wszystkich stacjach.
+między graczami w trakcie gry i rozjechałoby pytania z kontenera).
+
+**Wyścig (ADR 0027 część B — wolna kolejność)**: każdy gracz idzie do
+WSZYSTKICH stacji w **dowolnej kolejności**, na swoim telefonie i bez
+uzgadniania z innymi. Pytanie bierze wg własnego indeksu: pytanie `k` przy
+danej stacji należy do gracza `k` (`pytaniaNaStacje = liczbaGraczy`), więc nie
+ma wyścigu o pytanie ani blokady przy braku zasięgu; paczka mniejsza niż
+liczba graczy dzieli pytanie (indeks zawija się). 1 pkt za poprawną odpowiedź,
+bez składnika czasowego (ADR 0023 pkt 1). Gra kończy się, gdy każdy
+niezrezygnowany gracz odpowiedział na wszystkich stacjach, ALBO gdy organizator
+zakończy ją przed czasem.
+
+**Premia za kolejność ukończenia**: pierwszy gracz, który zamknął wszystkie
+stacje, dostaje `G − 1` punktów, drugi `G − 2`, …, ostatni 0 (G = liczba
+graczy). Kolejność bierze się z `kolejnosc` zdarzeń nadawanej przez most, nie
+z zegara urządzenia. Rezygnujący i gracze niedokończeni premii nie dostają.
+Premia wchodzi do `punkty` dopiero w podsumowaniu (`stan: zakonczona`) —
+częściowy wynik jej nie pokazuje, żeby nie sugerować punktów, których jeszcze
+nie ma.
 
 ### 9.2 `RO-zdarzenie/1` — zdarzenie gracza
 
