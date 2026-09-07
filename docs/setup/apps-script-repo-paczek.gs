@@ -224,6 +224,7 @@ function doPost(e) {
       case 'gra-start': return json(startGryMulti(cialo));
       case 'gra-zdarzenie': return json(przyjmijZdarzenie(cialo));
       case 'gra-zakoncz': return json(zakonczGre(cialo));
+      case 'gra-hotseat': return json(przyjmijGreHotseat(cialo));
       case 'profil-ustaw': return json(ustawProfil(cialo));
       case 'profil-sprawdz': return json(sprawdzProfil(cialo));
       default: return json({ ok: false, blad: 'nieznana akcja albo schemat ciała' });
@@ -687,6 +688,9 @@ function premiaZaKolejnosc(gra) {
   const gracze = gra.gracze || [];
   const N = Number(gra.konfiguracja && gra.konfiguracja.liczbaStacji) || 0;
   if (gracze.length < 2 || N < 1) return premia;
+  // Hot-seat (jedna gra na jednym telefonie, ADR 0026 aneks): gracze idą razem,
+  // więc „kto pierwszy skończył" jest artefaktem kolejności klikania — premii 0.
+  if (gra.tryb === 'hotseat') return premia;
   const rezygnacje = {};
   const zamkniete = {};
   const ostatnia = {};
@@ -800,6 +804,123 @@ function zakonczGre(dane) {
     zapiszGre(znaleziona.plik, gra);
     przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
     return { ok: true, gra };
+  });
+}
+
+/* ------------- hot-seat: gra z jednego telefonu na Drive (ADR 0026 aneks) --- */
+
+const MAKS_ZDARZEN_HOTSEAT = 400; // 8 graczy × 8 stacji × (dojście + odpowiedź) z zapasem
+
+function nazwaPlikuHotseat() {
+  return 'gra-hotseat-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.json';
+}
+
+/**
+ * Walidacja gry hot-seat — lustro `graHotseatDoWysylki` z `app/wieloosobowa.js`
+ * (Apps Script nie może importować modułów, więc reguły są po dwóch stronach).
+ * Zestawu ani pytań NIE przyjmujemy: paczka zostaje na telefonie, na Drive
+ * jedzie wyłącznie wynik (ADR 0013, ADR 0019 pkt 3).
+ */
+function bledyGryHotseat(dane) {
+  const bledy = [];
+  if (!dane || dane.tryb !== 'hotseat') bledy.push('tryb musi być „hotseat”');
+  const k = dane && dane.konfiguracja;
+  if (!k || !(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0) || typeof k.wiek !== 'string'
+    || !Array.isArray(k.tematy) || !k.tematy.length || typeof k.miejsce !== 'string'
+    || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
+    bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5)');
+  }
+  const gracze = (dane && dane.gracze) || [];
+  if (!Array.isArray(gracze) || gracze.length < 1) bledy.push('gra wymaga co najmniej jednego gracza');
+  else if (gracze.length > MAKS_GRACZY) bledy.push('maksymalnie ' + MAKS_GRACZY + ' graczy w jednej grze');
+  const pseudonimy = {};
+  for (let i = 0; i < (Array.isArray(gracze) ? gracze.length : 0); i += 1) {
+    const g = gracze[i];
+    const pseudo = g && typeof g.pseudonim === 'string' ? g.pseudonim.trim() : '';
+    if (!pseudo) { bledy.push('gracz ' + (i + 1) + ' nie ma pseudonimu'); continue; }
+    if (pseudo.length > 24) bledy.push('pseudonim maks. 24 znaki');
+    const klucz = pseudo.toLowerCase();
+    if (pseudonimy[klucz]) bledy.push('pseudonim „' + pseudo + '” jest na liście dwa razy');
+    pseudonimy[klucz] = true;
+  }
+  const zdarzenia = (dane && dane.zdarzenia) || [];
+  if (!Array.isArray(zdarzenia) || !zdarzenia.length) bledy.push('gra bez dojść i odpowiedzi nie ma wyniku');
+  else if (zdarzenia.length > MAKS_ZDARZEN_HOTSEAT) bledy.push('za dużo zdarzeń (maksymalnie ' + MAKS_ZDARZEN_HOTSEAT + ')');
+  return bledy;
+}
+
+/**
+ * POST gra-hotseat: telefon przysyła SKOŃCZONĄ grę z jednego urządzenia. Most
+ * zapisuje ją jako grę zakończoną (RO-gra/1) w katalogu gier zakończonych, więc
+ * GET ranking czyta ją bez zmian — rankingi hot-seat i gier na wielu telefonach
+ * liczą się razem, bez osobnej ścieżki (ADR 0026 aneks).
+ *
+ * Punkty liczy most (`przeliczWyniki`), nie telefon: klient przysyła fakty
+ * (dojścia i odpowiedzi), więc ranking nie zależy od wersji aplikacji.
+ */
+function przyjmijGreHotseat(dane) {
+  return zBlokada(() => {
+    const bledy = bledyGryHotseat(dane);
+    if (bledy.length) return { ok: false, blad: bledy.join('; ') };
+    const k = dane.konfiguracja;
+    const konfiguracja = {
+      miejsce: String(k.miejsce).slice(0, 80),
+      geohash5: String(k.geohash5),
+      wiek: String(k.wiek).slice(0, 24),
+      tematy: k.tematy.map(String).slice(0, 12),
+      liczbaStacji: Number(k.liczbaStacji),
+      pytaniaNaStacje: Number(k.pytaniaNaStacje),
+    };
+    const teraz = new Date().toISOString();
+    const naLiscie = {};
+    const gracze = dane.gracze.map((g) => {
+      const id = String(g.id != null ? g.id : '').trim().slice(0, 12);
+      naLiscie[id] = true;
+      return { id: id, pseudonim: String(g.pseudonim).trim().slice(0, 24), dolaczyl: teraz };
+    });
+    const zdarzenia = [];
+    for (let i = 0; i < dane.zdarzenia.length; i += 1) {
+      const z = dane.zdarzenia[i] || {};
+      if (z.schemat !== SCHEMAT_ZDARZENIA) return { ok: false, blad: 'zdarzenie ' + (i + 1) + ' nie jest ' + SCHEMAT_ZDARZENIA };
+      if (z.typ !== 'dojscie' && z.typ !== 'odpowiedz') {
+        return { ok: false, blad: 'hot-seat przyjmuje tylko dojścia i odpowiedzi (dostałem „' + z.typ + '”)' };
+      }
+      const graczId = String(z.graczId != null ? z.graczId : '').trim().slice(0, 12);
+      if (!naLiscie[graczId]) return { ok: false, blad: 'zdarzenie ' + (i + 1) + ' dotyczy gracza spoza listy' };
+      const stacjaId = Number(z.stacjaId);
+      if (!(stacjaId >= 1 && stacjaId <= konfiguracja.liczbaStacji)) {
+        return { ok: false, blad: 'stacjaId poza zakresem gry (1–' + konfiguracja.liczbaStacji + ')' };
+      }
+      const daneZdarzenia = (z.dane && typeof z.dane === 'object') ? z.dane : {};
+      POLA_ZAKAZANE_W_ZDARZENIU.forEach((pole) => { delete daneZdarzenia[pole]; }); // współrzędne NIGDY (ADR 0019 pkt 3)
+      zdarzenia.push({
+        kolejnosc: zdarzenia.length + 1,
+        graczId: graczId,
+        typ: z.typ,
+        stacjaId: stacjaId,
+        dane: daneZdarzenia,
+        tSerwera: teraz,
+      });
+    }
+    const gra = {
+      schemat: SCHEMAT_GRY,
+      kod: null,          // hot-seat nie ma lobby — nie ma kodu do podyktowania
+      idGry: null,
+      tryb: 'hotseat',
+      stan: 'zakonczona',
+      utworzono: teraz,
+      organizatorId: gracze[0].id,
+      gracze: gracze,
+      konfiguracja: konfiguracja,
+      zestaw: null,       // paczka i pytania zostają na telefonie (ADR 0013)
+      zdarzenia: zdarzenia,
+      wyniki: {},
+    };
+    gra.wyniki = przeliczWyniki(gra); // premia hot-seat = 0 (gracze idą razem)
+    const plik = folder(FOLDERY.gryZakonczone).createFile(nazwaPlikuHotseat(), JSON.stringify(gra, null, 2), 'application/json');
+    gra.idGry = plik.getId();
+    zapiszGre(plik, gra);
+    return { ok: true, idGry: gra.idGry, wyniki: gra.wyniki };
   });
 }
 
