@@ -68,7 +68,9 @@ test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
   assert.match(pobierz('setup-promien-info').textContent, /5 pytań/, 'składowe są jawne');
   assert.equal(pobierz('setup-stacje').value, String(DOMYSLNE.liczbaStacji));
   assert.equal(pobierz('setup-pytania').value, String(DOMYSLNE.pytaniaNaStacje));
-  assert.equal(pobierz('setup-gracze').value, String(DOMYSLNE.liczbaGraczy));
+  // pola „Liczba graczy" nie ma: graczy dodaje się w bloku tożsamości
+  // (ADR 0026 aneks), a zapamiętany gracz wraca na listę bez PIN-u
+  assert.equal(pobierz('lista-graczy').children.length, 1, 'zapamiętany gracz jest na liście');
 });
 
 test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', () => {
@@ -272,7 +274,7 @@ test('bootstrap: uszkodzona konfiguracja w localStorage nie kładzie startu', as
   await import(`../app/app.js?powtorka=${Date.now()}`);
   assert.equal(domSmieci.pobierz('ekran-setup').hidden, false, 'aplikacja musi wystartować nawet na śmieciowym stanie');
   assert.ok(domSmieci.pobierz('status').textContent.length > 20);
-  assert.equal(domSmieci.pobierz('setup-gracze').value, String(DOMYSLNE.liczbaGraczy), 'śmieciowy stan nie wchodzi do formularza');
+  assert.equal(domSmieci.pobierz('setup-stacje').value, String(DOMYSLNE.liczbaStacji), 'śmieciowy stan nie wchodzi do formularza');
   assert.ok(pamiec.size >= 0, 'pamięć pierwszej sesji zostaje nietknięta');
 });
 
@@ -509,7 +511,8 @@ test('prywatność: czyszczenie jest dwustopniowe i rusza tylko klucze obolica:*
   assert.equal(pamiecPriv.has('okolica:konfig'), false, 'konfig usunięty');
   assert.equal(pamiecPriv.has('okolica:motyw'), false, 'motyw usunięty');
   assert.equal(pamiecPriv.get('inna-apka:stan'), 'nie ruszać', 'obce klucze zostają nietknięte');
-  assert.match(domMapy.pobierz('czysc-dane-status').textContent, /Usunięto zapisane dane \(2\)/);
+  assert.equal(pamiecPriv.has('okolica:gracze'), false, 'lista graczy (tożsamość) też jest czyszczona');
+  assert.match(domMapy.pobierz('czysc-dane-status').textContent, /Usunięto zapisane dane \(3\)/);
 
   // trzeci klik zaczyna od nowa: znów tylko uzbraja
   domMapy.kliknij('przycisk-czysc-dane');
@@ -1038,6 +1041,12 @@ test('warstwa zapasowa: HTTP 429 → komunikat, bez wyjątku i bez ponawiania w 
  *  Zwraca też `pamiec` — testy trwałości (R6) czytają klucze zapisu gry. */
 async function graGotowaDoStartu() {
   const pamiec = new Map();
+  // Lista graczy nie jest polem konfigu, tylko zapamiętaną tożsamością
+  // (ADR 0026 aneks): trzy potwierdzone imiona wracają na listę bez PIN-u.
+  pamiec.set('okolica:gracze', JSON.stringify({
+    schemat: 'gracze-lokalni/1',
+    gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })),
+  }));
   pamiec.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
     // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
@@ -1829,4 +1838,109 @@ test('sygnały: „🔔 sygnały" startuje włączone, a klik przełącza i zapi
   assert.equal(prz.getAttribute('aria-pressed'), 'true');
   assert.equal(globalThis.localStorage.getItem('okolica:sygnaly'), '1', 'włączenie zapisane');
   assert.match(domSygnaly.pobierz('status').textContent, /Sygnały włączone/);
+});
+
+/* --------- wynik gry hot-seat na wspólnym Drive (ADR 0026 aneks) ----------- */
+
+/** Krótka gra: dwa dojścia ręczne, dwie odpowiedzi, ręczne zakończenie. */
+async function grajDwieStacjeIKoncz(dom) {
+  zaczynijGre(dom);
+  for (let i = 0; i < 2; i += 1) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-reczne-dojscie');
+    kliknijOdpowiedz(dom, 0);
+    dom.kliknij('przycisk-nastepna-stacja');
+  }
+  dom.kliknij('przycisk-zakoncz-gre'); // pierwszy klik tylko uzbraja
+  dom.kliknij('przycisk-zakoncz-gre'); // drugi kończy grę i pokazuje wynik
+  await czekaj(20);
+}
+
+test('hot-seat: wynik gry leci na wspólny Drive jednym poleceniem, bez współrzędnych', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  dom.pobierz('hotseat-zgoda').checked = true;
+  const zadania = [];
+  const staryFetch = globalThis.fetch;
+  globalThis.fetch = async (adres, opcje) => {
+    zadania.push({ adres: String(adres), cialo: JSON.parse(opcje.body) });
+    return { ok: true, status: 200, json: async () => ({ ok: true, idGry: 'h-1', wyniki: {} }) };
+  };
+  try {
+    await grajDwieStacjeIKoncz(dom);
+    const hotseat = zadania.filter((z) => z.cialo.akcja === 'gra-hotseat');
+    assert.equal(hotseat.length, 1, 'dokładnie jedno polecenie gra-hotseat na koniec gry');
+    const { cialo } = hotseat[0];
+    assert.equal(cialo.tryb, 'hotseat');
+    assert.deepEqual(cialo.gracze.map((g) => g.pseudonim), ['Gracz 1', 'Gracz 2', 'Gracz 3'], 'skład gry z listy graczy');
+    assert.match(cialo.konfiguracja.geohash5, /^[0-9b-z]{5}$/, 'geohash5 zamiast punktu startu (ADR 0019 pkt 3)');
+    assert.equal(cialo.konfiguracja.liczbaStacji, 3, 'liczba stacji z rozgrywki, nie z pola setupu');
+    const typy = cialo.zdarzenia.map((z) => z.typ);
+    assert.equal(typy.filter((t) => t === 'dojscie').length, 2, 'dwa dojścia z dziennika gry');
+    assert.equal(typy.filter((t) => t === 'odpowiedz').length, 2, 'dwie odpowiedzi z dziennika gry');
+    // prywatność: ani współrzędnych, ani pytań, ani paczki
+    assert.equal(/"(lat|lon|szerokosc|dlugosc|accuracyM|pytanieId)"/.test(JSON.stringify(cialo)), false, 'zero współrzędnych i id pytań w poleceniu');
+    assert.equal(cialo.zestaw, undefined, 'paczka zostaje na telefonie (ADR 0013)');
+    assert.match(dom.pobierz('wynik-drive').textContent, /na wspólnym Drive/, 'jawne potwierdzenie wysyłki na ekranie wyniku');
+    // idempotencja: kolejny zapis tej samej gry nie wysyła wyniku drugi raz
+    const przed = zadania.length;
+    dom.kliknij('przycisk-zakoncz-gre');
+    dom.kliknij('przycisk-zakoncz-gre');
+    await czekaj(20);
+    assert.equal(zadania.length, przed, 'ta sama gra nie wchodzi do rankingów dwa razy');
+    assert.equal(pamiec.has('okolica:hotseat-kolejka'), false, 'udana wysyłka nie zostawia kolejki');
+  } finally {
+    globalThis.fetch = staryFetch;
+  }
+});
+
+test('hot-seat: bez sieci wynik czeka w kolejce i dojeżdża przy następnym starcie', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  dom.pobierz('hotseat-zgoda').checked = true;
+  const staryFetch = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error('offline'); };
+  try {
+    await grajDwieStacjeIKoncz(dom);
+    assert.match(dom.pobierz('wynik-drive').textContent, /czeka w kolejce/, 'awaria jest jawna, nie cicha');
+    const kolejka = JSON.parse(pamiec.get('okolica:hotseat-kolejka'));
+    assert.equal(kolejka.schemat, 'hotseat-kolejka/1');
+    assert.equal(kolejka.gry.length, 1, 'jedna gra w kolejce');
+    assert.equal(kolejka.gry[0].akcja, 'gra-hotseat');
+  } finally {
+    globalThis.fetch = staryFetch;
+  }
+
+  // restart aplikacji na tej samej pamięci telefonu: kolejka się opróżnia
+  const zadania = [];
+  globalThis.fetch = async (adres, opcje) => {
+    zadania.push(JSON.parse(opcje.body));
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
+  try {
+    const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
+    await import(`../app/app.js?hotseat=${Math.random().toString(36).slice(2)}`);
+    await czekaj(20);
+    assert.equal(zadania.filter((c) => c.akcja === 'gra-hotseat').length, 1, 'wynik z kolejki dojechał na Drive');
+    assert.equal(pamiec.has('okolica:hotseat-kolejka'), false, 'kolejka wyczyszczona po udanej wysyłce');
+    assert.match(dom2.pobierz('status').textContent, /doszły na wspólny Drive/, 'gracz widzi, że zaległy wynik doszedł');
+  } finally {
+    globalThis.fetch = staryFetch;
+  }
+});
+
+test('hot-seat: bez zgody albo bez potwierdzonego gracza wynik zostaje na telefonie', async () => {
+  const { dom } = await graGotowaDoStartu();
+  dom.pobierz('hotseat-zgoda').checked = false; // zgoda odznaczona
+  const zadania = [];
+  const staryFetch = globalThis.fetch;
+  globalThis.fetch = async (adres, opcje) => {
+    zadania.push(JSON.parse(opcje.body));
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
+  try {
+    await grajDwieStacjeIKoncz(dom);
+    assert.equal(zadania.filter((c) => c.akcja === 'gra-hotseat').length, 0, 'bez zgody nic nie jedzie na Drive (ADR 0013)');
+    assert.equal(dom.pobierz('wynik-drive').textContent, '', 'bez zgody nie ma też komunikatu o wysyłce');
+  } finally {
+    globalThis.fetch = staryFetch;
+  }
 });

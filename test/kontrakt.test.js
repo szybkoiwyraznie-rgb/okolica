@@ -663,7 +663,7 @@ test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
 });
 
 test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językiem', () => {
-  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'profil-ustaw', 'profil-sprawdz']) {
+  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'gra-hotseat', 'profil-ustaw', 'profil-sprawdz']) {
     assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
   }
   for (const a of ['gry', 'gra-stan', 'ranking']) {
@@ -703,6 +703,33 @@ test('kontrakt ADR 0026: przejście z ekranu 1 przechodzi przez bramę tożsamo�
     'brama jest PRZED przejściem na ekran pozycji (inaczej imię nie jest wymagane)',
   );
   assert.ok(handler.includes('return;'), 'odmowa bramy zatrzymuje przejście');
+});
+
+test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat na Drive', () => {
+  const WIELOOSOBOWA = czytaj('app/wieloosobowa.js');
+  // blok tożsamości JEST listą graczy (decyzja właściciela 2026-09-07)
+  for (const id of ['przycisk-dodaj-gracza', 'lista-graczy', 'lista-zapamietanych', 'hotseat-zgoda', 'wynik-drive']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
+  }
+  assert.ok(!INDEX.includes('id="setup-gracze"'), 'pola „Liczba graczy" nie ma — liczbą jest długość listy');
+  assert.ok(!INDEX.includes('id="lista-imion"'), 'ręczne pola imion zastąpiła lista graczy');
+  assert.match(INDEX, /Kto gra\?/, 'blok tożsamości pyta „Kto gra?"');
+  assert.ok(APP.includes("'okolica:gracze'"), 'lista graczy utrwalana pod ustalonym kluczem');
+  assert.ok(APP.includes('gracze-lokalni/1'), 'schemat zapamiętanej listy graczy');
+  assert.ok(!APP.includes("'okolica:profil'"), 'stary klucz jednego profilu nie wraca');
+  // PIN nigdy nie zostaje na telefonie — zapisuje się imię i znacznik potwierdzenia
+  const zapis = APP.slice(APP.indexOf('function zapamietajGracza'), APP.indexOf('function przywrocGraczy'));
+  assert.match(zapis, /\{ pseudonim: imie, zweryfikowany \}/, 'zapamietajGracza zapisuje imię i potwierdzenie, nie PIN');
+  // hot-seat: wynik gry z jednego telefonu jedzie na Drive jednym poleceniem
+  assert.ok(APP.includes('graHotseatDoWysylki'), 'app.js buduje polecenie gra-hotseat');
+  assert.ok(WIELOOSOBOWA.includes("akcja: 'gra-hotseat'"), 'moduł wieloosobowa buduje tę akcję');
+  assert.ok(GS.includes("case 'gra-hotseat'"), 'most przyjmuje gra-hotseat');
+  assert.ok(PROTOKOL.includes('gra-hotseat'), 'PROTOKOL §9 dokumentuje gra-hotseat');
+  // punkty liczy most, premia hot-seat = 0 — po obu stronach tak samo
+  assert.match(WIELOOSOBOWA, /if \(gra\?\.tryb === TRYB_HOTSEAT\) return premia;/, 'aplikacja nie daje premii w hot-seat');
+  assert.match(GS, /if \(gra\.tryb === 'hotseat'\) return premia;/, 'most nie daje premii w hot-seat (kopia pilnowana testem)');
+  // awaria sieci nie gubi wyniku: kolejka i jej opróżnianie przy starcie
+  assert.ok(APP.includes('okolica:hotseat-kolejka') && APP.includes('oproznijKolejkeHotseat()'), 'wynik czeka w kolejce i dojeżdża później (ADR 0016 pkt 5)');
 });
 
 test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', () => {

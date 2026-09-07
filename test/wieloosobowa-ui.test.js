@@ -226,11 +226,11 @@ function przelaczNa(u) {
   Object.defineProperty(globalThis, 'location', { configurable: true, writable: true, value: u.globale.location });
 }
 
-async function noweUrzadzenie({ pamiec = new Map(), most }) {
+async function noweUrzadzenie({ pamiec = new Map(), most, bezGracza = false }) {
   // Adres mostu nie jest wpisywany w UI (ADR 0020) — telefon ma go w pamięci albo w kodzie aplikacji.
   if (!pamiec.has('okolica:multi:url-mostu')) pamiec.set('okolica:multi:url-mostu', URL_MOSTU);
   globalThis.fetch = most.fetchImpl; // sync.js czyta globalThis.fetch (wstrzykiwalny fetchImpl)
-  const dom = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec });
+  const dom = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec, bezGracza });
   dom.window.fetch = most.fetchImpl; // app.js czyta window.fetch (LESSONS L18)
   const u = {
     dom, pamiec,
@@ -636,77 +636,136 @@ test('uszkodzony stan z mostu: kod R w statusie, polling nie pada, po naprawie g
   assert.equal(el(A, 'ekran-gra').hidden, false, 'gra toczy się dalej po poprawnym stanie');
 });
 
-test('brama tożsamości (ADR 0026): nowe imię zakłada profil, zajęte wymaga PIN-u, zły PIN blokuje ekran 1', async () => {
-  const imie = (u) => el(u, 'lista-imion').children[0].value;
+test('lista graczy = tożsamość (ADR 0026 aneks): dodaj, odmowa PIN-u, zapamiętanie, usuwanie', async () => {
+  const lista = (u) => [...el(u, 'lista-graczy').children].map((li) => li.children[0].textContent);
   const most = atrapaMostu();
   most.profile.set('ala', { pseudonim: 'Ala', pin: '1234' });
 
-  // 1) imię zajęte + POPRAWNY PIN → przechodzi, imię w polu gracza
-  const A = await noweUrzadzenie({ most });
-  ustaw(A, 'profil-pseudonim', 'Ala');
-  ustaw(A, 'profil-pin', '1234');
-  await klik(A, 'przycisk-dalej-pozycja');
-  await oddech();
-  assert.equal(el(A, 'ekran-pozycja').hidden, false, 'poprawny PIN otwiera ekran 2');
-  assert.equal(imie(A), 'Ala', 'imię z profilu w polu gracza');
-  assert.match(tekst(A, 'status'), /To Ty/, 'potwierdzenie tożsamości');
-  assert.equal(el(A, 'profil-pin').value, '', 'PIN nie zostaje w polu');
-
-  // 2) imię WOLNE → jedno wołanie zakłada profil na moście
-  const B = await noweUrzadzenie({ most });
-  ustaw(B, 'profil-pseudonim', 'Ewa');
-  ustaw(B, 'profil-pin', '9999');
-  await klik(B, 'przycisk-dalej-pozycja');
+  // 1) wolne imię + PIN → jedno wołanie zakłada profil i gracz jest na liście
+  const A = await noweUrzadzenie({ most, bezGracza: true });
+  ustaw(A, 'profil-pseudonim', 'Ewa');
+  ustaw(A, 'profil-pin', '9999');
+  await klik(A, 'przycisk-dodaj-gracza');
   await oddech();
   assert.equal(most.profile.get('ewa')?.pin, '9999', 'profil Ewy powstał na moście');
-  assert.equal(imie(B), 'Ewa', 'nowe imię wpisane');
-  assert.match(tekst(B, 'status'), /Założono profil/, 'jawne potwierdzenie założenia profilu');
+  assert.deepEqual(lista(A), ['1. Ewa'], 'gracz na liście po dodaniu');
+  assert.match(tekst(A, 'status'), /Założono profil/, 'jawne potwierdzenie założenia profilu');
+  assert.equal(el(A, 'profil-pin').value, '', 'PIN nie zostaje w polu (ADR 0013)');
+  assert.equal(el(A, 'profil-pseudonim').value, '', 'pole imienia jest gotowe na kolejnego gracza');
+  assert.equal(el(A, 'setup-pytania').value, '1', 'pytania na stację idą za liczbą graczy (K22)');
 
-  // 3) imię zajęte + ZŁY PIN → odmowa R20, zostajesz na ekranie 1
-  const C = await noweUrzadzenie({ most });
+  // 2) to samo imię drugi raz → odmowa lokalna, bez wołania mostu
+  const przed = most.adresy.length;
+  ustaw(A, 'profil-pseudonim', 'ewa');
+  ustaw(A, 'profil-pin', '9999');
+  await klik(A, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.match(tekst(A, 'bledy-profil'), /jest już na liście/, 'duplikat nie wchodzi na listę');
+  assert.deepEqual(lista(A), ['1. Ewa'], 'lista bez zmian');
+  assert.equal(most.adresy.length, przed, 'duplikat nie leci w sieć');
+
+  // 3) drugi gracz: lista zastępuje pole „Liczba graczy" i podnosi pytania na stację
+  ustaw(A, 'profil-pseudonim', 'Jan');
+  ustaw(A, 'profil-pin', '2222');
+  await klik(A, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.deepEqual(lista(A), ['1. Ewa', '2. Jan'], 'kolejność dodawania to kolejność gry');
+  assert.equal(el(A, 'setup-pytania').value, '2', 'dwa pytania na stację przy dwóch graczach');
+
+  // 4) „✕ Usuń" zdejmuje gracza z listy
+  const przyciskUsun = el(A, 'lista-graczy').children[0].children[1];
+  przelaczNa(A); kliknijEl(przyciskUsun); await oddech();
+  assert.deepEqual(lista(A), ['1. Jan'], 'usunięty gracz znika z listy');
+  assert.equal(el(A, 'setup-pytania').value, '1', 'pytania wracają do jednego gracza');
+
+  // 5) zajęte imię + POPRAWNY PIN → przechodzi, profil bez zmian
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  ustaw(B, 'profil-pseudonim', 'Ala');
+  ustaw(B, 'profil-pin', '1234');
+  await klik(B, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.deepEqual(lista(B), ['1. Ala'], 'znane imię wchodzi na listę');
+  assert.match(tekst(B, 'status'), /To Ty/, 'potwierdzenie tożsamości');
+
+  // 6) zajęte imię + ZŁY PIN → R20, gracz NIE trafia na listę, brama nie puszcza
+  const C = await noweUrzadzenie({ most, bezGracza: true });
   ustaw(C, 'profil-pseudonim', 'Ala');
   ustaw(C, 'profil-pin', '0000');
-  await klik(C, 'przycisk-dalej-pozycja');
+  await klik(C, 'przycisk-dodaj-gracza');
   await oddech();
-  assert.equal(el(C, 'ekran-pozycja').hidden, true, 'zły PIN NIE puszcza dalej');
+  assert.deepEqual(lista(C), [], 'zły PIN = brak gracza na liście');
   assert.match(tekst(C, 'bledy-profil'), /PIN/, 'komunikat R20 po ludzku');
-  assert.equal(imie(C), 'Gracz 1', 'imię nietknięte po odmowie');
+  await klik(C, 'przycisk-dalej-pozycja');
+  assert.equal(el(C, 'ekran-pozycja').hidden, true, 'pusta lista nie puszcza na ekran 2');
+  // pusta lista to usterka K08 — komunikat mówi wprost, gdzie dodać gracza
+  assert.match(tekst(C, 'bledy-setup'), /Nie dodano jeszcze żadnego gracza/, 'K08 prowadzi do bloku „Kto gra?"');
 
-  // 4) brak imienia albo PIN-u → brama odmawia, zanim cokolwiek poleci w sieć
-  const D = await noweUrzadzenie({ most });
-  await klik(D, 'przycisk-dalej-pozycja');
-  await oddech();
-  assert.equal(el(D, 'ekran-pozycja').hidden, true, 'bez imienia nie ma przejścia');
+  // 7) puste pola → odmowa lokalna, zanim cokolwiek poleci w sieć
+  const D = await noweUrzadzenie({ most, bezGracza: true });
+  const adresyD = most.adresy.length;
+  await klik(D, 'przycisk-dodaj-gracza');
   assert.match(tekst(D, 'bledy-profil'), /Wpisz imię/);
   ustaw(D, 'profil-pseudonim', 'Jan');
-  await klik(D, 'przycisk-dalej-pozycja');
-  await oddech();
+  await klik(D, 'przycisk-dodaj-gracza');
   assert.match(tekst(D, 'bledy-profil'), /4–8 cyfr/, 'PIN jest wymagany');
+  assert.equal(most.adresy.length, adresyD, 'bez imienia i PIN-u nie ma wołania mostu');
 
-  // 5) most nie odpowiada → gra NIE staje (ADR 0016 pkt 5), degradacja jawna
+  // 8) most nie odpowiada → gracz wchodzi bez potwierdzenia, gra nie staje (ADR 0016 pkt 5)
   const padniety = atrapaMostu();
   padniety.fetchImpl = async () => { throw new Error('offline'); };
-  const E = await noweUrzadzenie({ most: padniety });
+  const E = await noweUrzadzenie({ most: padniety, bezGracza: true });
   ustaw(E, 'profil-pseudonim', 'Ola');
   ustaw(E, 'profil-pin', '4321');
-  await klik(E, 'przycisk-dalej-pozycja');
+  await klik(E, 'przycisk-dodaj-gracza');
   await oddech();
+  assert.deepEqual(lista(E), ['1. Ola — bez potwierdzenia z Drive'], 'gracz dodany mimo awarii');
+  assert.match(tekst(E, 'profil-stan'), /bez potwierdzenia/, 'degradacja jest jawna');
+  await klik(E, 'przycisk-dalej-pozycja');
   assert.equal(el(E, 'ekran-pozycja').hidden, false, 'awaria mostu nie blokuje gry');
-  assert.match(tekst(E, 'profil-stan'), /lokalnie/, 'degradacja jest jawna');
 
-  // 6) imię zweryfikowane NA TYM TELEFONIE → przechodzi bez mostu i bez PIN-u w sieci
+  // 9) zapamiętany na tym telefonie → wraca na listę BEZ PIN-u i bez wołania mostu
+  const adresyF = padniety.adresy.length;
   const F = await noweUrzadzenie({
     most: padniety,
     pamiec: new Map([
       ['okolica:multi:url-mostu', URL_MOSTU],
-      ['okolica:profil', JSON.stringify({ schemat: 'profil-lokalny/1', pseudonim: 'Ala', zweryfikowany: true, kiedy: '2026-09-07T10:00:00.000Z' })],
+      ['okolica:gracze', JSON.stringify({
+        schemat: 'gracze-lokalni/1',
+        gracze: [
+          { pseudonim: 'Ala', zweryfikowany: true },
+          { pseudonim: 'Tomek', zweryfikowany: false },
+        ],
+        kiedy: '2026-09-07T10:00:00.000Z',
+      })],
     ]),
   });
-  assert.equal(el(F, 'profil-pseudonim').value, 'Ala', 'imię z tego telefonu wraca do pola');
+  assert.deepEqual(lista(F), ['1. Ala'], 'potwierdzony gracz wraca sam, bez klikania');
+  assert.equal(el(F, 'lista-zapamietanych').children.length, 1, 'niepewny gracz czeka jako przycisk');
   await klik(F, 'przycisk-dalej-pozycja');
+  assert.equal(el(F, 'ekran-pozycja').hidden, false, 'znany z telefonu gracz przechodzi bez mostu');
+  assert.equal(padniety.adresy.length, adresyF, 'zapamiętany gracz nie woła mostu o PIN');
+
+  // 10) zapamiętany BEZ potwierdzenia: klik w przycisk prosi o PIN, nie puszcza bez niego
+  const G = await noweUrzadzenie({
+    most,
+    pamiec: new Map([
+      ['okolica:multi:url-mostu', URL_MOSTU],
+      ['okolica:gracze', JSON.stringify({
+        schemat: 'gracze-lokalni/1',
+        gracze: [{ pseudonim: 'Tomek', zweryfikowany: false }],
+        kiedy: '2026-09-07T10:00:00.000Z',
+      })],
+    ]),
+  });
+  assert.deepEqual(lista(G), [], 'niepewny gracz nie wchodzi na listę sam');
+  przelaczNa(G); kliknijEl(el(G, 'lista-zapamietanych').children[0]); await oddech();
+  assert.match(tekst(G, 'bledy-profil'), /wpisz jego PIN/, 'klik prosi o PIN');
+  assert.equal(el(G, 'profil-pseudonim').value, 'Tomek', 'imię jest już wpisane');
+  ustaw(G, 'profil-pin', '7777');
+  await klik(G, 'przycisk-dodaj-gracza');
   await oddech();
-  assert.equal(el(F, 'ekran-pozycja').hidden, false, 'znane z telefonu imię przechodzi bez mostu');
-  assert.equal(imie(F), 'Ala');
+  assert.deepEqual(lista(G), ['1. Tomek'], 'po poprawnym PIN-ie gracz jest na liście');
+  assert.match(tekst(G, 'status'), /Założono profil/, 'niepewny gracz został potwierdzony na moście');
 });
 
 /* ------- ADR 0027 część B: wolna kolejność i pytanie wg indeksu gracza ------ */

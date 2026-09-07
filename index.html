@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-13">
-  <script type="module" src="app/app.js?v=m12-13"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-14">
+  <script type="module" src="app/app.js?v=m12-14"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -122,29 +122,25 @@
         </label>
         <label class="pole">
           <span>Pytań na stację</span>
-          <input id="setup-pytania" type="number" min="1" max="3" step="1" inputmode="numeric">
-        </label>
-        <label class="pole">
-          <span>Liczba graczy</span>
-          <input id="setup-gracze" type="number" min="1" max="8" step="1" inputmode="numeric">
+          <input id="setup-pytania" type="number" min="1" max="8" step="1" inputmode="numeric">
         </label>
       </div>
+      <!-- Liczba graczy NIE jest polem (decyzja właściciela 2026-09-07): tylu
+           graczy, ilu dodasz w bloku „Kto gra?" poniżej. Pole do wpisywania
+           liczby myliło się z listą imion i z tożsamością. -->
       <!-- Promień nie jest polem: liczy się z czasu, sposobu poruszania i liczby
            pytań (ADR 0025), a ten akapit mówi jak — liczba bez uzasadnienia
            byłaby magią (LESSONS L6). -->
       <p id="setup-promien-info" class="podpowiedz"></p>
 
-      <fieldset class="pole" id="pole-imiona">
-        <legend>Gracze</legend>
-        <div id="lista-imion" class="lista-imion"></div>
-      </fieldset>
-
-      <!-- Tożsamość jest BRAMĄ ekranu 1 (ADR 0026): imię idzie do historii gier
-           i rankingów na wspólnym Drive, więc przejście dalej wymaga imienia,
-           które most potwierdzi. Jedno wołanie `profil-ustaw` robi wszystko:
-           wolne imię zakłada profil, zajęte wymaga Twojego PIN-u (R20 = odmowa). -->
+      <!-- Tożsamość i lista graczy to JEDNO (ADR 0026 aneks, decyzja właściciela
+           2026-09-07): każdy gracz na tym telefonie ma imię i PIN, a „Dodaj
+           gracza" potwierdza imię na wspólnym Drive — nowe imię zakłada profil
+           z tym PIN-em, zajęte wymaga PIN-u właściciela (R20 = odmowa). Liczba
+           graczy jest długością tej listy, więc osobne pole do wpisywania liczby
+           zniknęło (myliło: „Gracze" i „Kim jesteś?" pytały o to samo). -->
       <fieldset class="pole" id="pole-tozsamosc">
-        <legend>👤 Kim jesteś?</legend>
+        <legend>👤 Kto gra?</legend>
         <div class="siatka">
           <label class="pole">
             <span>Imię (pseudonim)</span>
@@ -155,8 +151,14 @@
             <input id="profil-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off">
           </label>
         </div>
-        <p id="profil-stan" class="podpowiedz">Nowe imię = nowy profil: od tej gry Twoje punkty i historia trafiają na wspólny Drive. Imię zajęte? Wpisz swój PIN.</p>
+        <div class="wiersz">
+          <button id="przycisk-dodaj-gracza" class="przycisk przycisk-glowny" type="button">➕ Dodaj gracza</button>
+        </div>
+        <div id="lista-zapamietanych" class="chipy" role="group" aria-label="Zapamiętani na tym telefonie"></div>
+        <ul id="lista-graczy" class="lista-historii"></ul>
+        <p id="profil-stan" class="podpowiedz">Nowe imię = nowy profil i PIN. Kogoś już znasz? Wpisz imię i jego PIN.</p>
         <ul id="bledy-profil"></ul>
+        <label class="pole sprawdz"><input id="hotseat-zgoda" type="checkbox" checked> <span>Zapisz wynik gry na wspólnym Drive — pseudonimy i punkty wejdą do rankingów. Współrzędne, pytania i paczka zostają na telefonie<span class="dopisek-roboczy"> (ADR 0026)</span>.</span></label>
       </fieldset>
 
       <fieldset class="pole">
@@ -513,6 +515,10 @@
           <tbody id="gra-wyniki-tbody"></tbody>
         </table>
         <dl id="gra-wynik-statystyki" class="statystyki-gry"></dl>
+        <!-- Los wysyłki wyniku na Drive ma WŁASNĄ linię: wspólny `#status` jest
+             jeden, a wysyłka kończy się w nieprzewidywalnej chwili — nie może
+             nadpisać tego, co gracz właśnie zrobił (ADR 0026 aneks). -->
+        <p id="wynik-drive" class="podpowiedz"></p>
         <details id="gra-wynik-szczegoly">
           <summary>Szczegóły graczy</summary>
           <div id="gra-wynik-gracze" class="gracze-szczegoly"></div>

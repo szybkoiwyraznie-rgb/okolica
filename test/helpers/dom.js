@@ -126,7 +126,17 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
  * @param {Map}    [args.pamiec] wspólna pamięć `localStorage` między importami
  * @returns {object} uchwyty: `pobierz`, `elementy`, `pamiec`, `wyslijZdarzenie*`, `ustaw*`
  */
-export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geolocation = undefined, pamiec = new Map() } = {}) {
+export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geolocation = undefined, pamiec = new Map(), bezGracza = false } = {}) {
+  // Tożsamość jest bramą ekranu 1 (ADR 0026 aneks): bez gracza na liście nie da
+  // się przejść dalej, a testy nawigacji, mapy i paczek nie są o tożsamości.
+  // Telefon w teście ma więc zapamiętanego, potwierdzonego gracza — jak po
+  // pierwszej udanej grze. Testy bramy dają `bezGracza: true` (pusta lista).
+  if (!bezGracza && !pamiec.has('okolica:gracze')) {
+    pamiec.set('okolica:gracze', JSON.stringify({
+      schemat: 'gracze-lokalni/1',
+      gracze: [{ pseudonim: 'Ala', zweryfikowany: true }],
+    }));
+  }
   const html = readFileSync(join(KATALOG, sciezkaHtml), 'utf8');
   const ukryte = ukryteWHtml(html);
   const elementy = new Map();
@@ -156,10 +166,8 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     getElementById: pobierz,
     querySelector() { return null; },
     querySelectorAll(selektor) {
-      // Minimalna wierność: wzorzec '#id tag' — aplikacja czyta nim listę
-      // imion ('#lista-imion input' w `czytajSetupZDomu`), a bez tego KAŻDA
-      // nawigacja z setupu padała na K08 w atrapie. Pełnego silnika
-      // selektorów do atrapy nie budujemy — inne wzorce dają [] jak dotąd.
+      // Minimalna wierność: wzorzec '#id tag' (pełnego silnika selektorów do
+      // atrapy nie budujemy — inne wzorce dają [] jak dotąd).
       const m = /^#([\w-]+)\s+([a-zA-Z][\w-]*)$/.exec(String(selektor ?? '').trim());
       if (!m) return [];
       const rodzic = pobierz(m[1]);

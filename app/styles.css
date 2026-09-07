@@ -594,6 +594,9 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   font-variant-numeric: tabular-nums;
 }
 .lista-historii li:last-child { border-bottom: none; }
+/* Lista graczy (ADR 0026 aneks): imię z lewej, „✕ Usuń" z prawej — na 360 px
+   przycisk ma zostać w zasięgu kciuka, a nie pod nazwą (WORKFLOW §4.2). */
+#lista-graczy li { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 
 /* M9/R3: karta propozycji paczek — wiersze dotykowe jak reszta list (ADR 0011). */
 .lista-zestawow {

@@ -419,7 +419,10 @@ export function walidujSetup(konfig) {
     dodaj('K07', 'liczbaGraczy', `Liczba graczy musi być liczbą całkowitą od ${minG} do ${maxG}.`);
   }
   if (!Array.isArray(konfig.imiona) || konfig.imiona.length !== konfig.liczbaGraczy) {
-    dodaj('K08', 'imiona', `Lista imion musi mieć dokładnie ${konfig.liczbaGraczy} pozycji.`);
+    const ileImion = Array.isArray(konfig.imiona) ? konfig.imiona.length : 0;
+    dodaj('K08', 'imiona', ileImion === 0
+      ? 'Nie dodano jeszcze żadnego gracza — w bloku „Kto gra?" wpisz imię i PIN, potem „➕ Dodaj gracza".'
+      : `Lista graczy ma ${ileImion} pozycji, a graczy jest ${konfig.liczbaGraczy} — dodaj albo usuń gracza.`);
   } else {
     konfig.imiona.forEach((imie, i) => {
       if (typeof imie !== 'string' || imie.trim().length < OGRANICZENIA.dlugoscImienia.min || imie.trim().length > OGRANICZENIA.dlugoscImienia.max) {
