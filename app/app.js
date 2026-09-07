@@ -1268,7 +1268,7 @@ function wierszZestawu(opis, etykietaZrodla, akcji) {
  * Jeden tekst z `app/most.js` trafia do obu miejsc, żeby nie było dwóch prawd.
  */
 function pokazStanMostu() {
-  const { tekst, podlaczony } = stanMostu();
+  const { tekst, podlaczony } = stanMostu(undefined, { testowy: STAN.trybTestowy });
   for (const id of ['most-stan-repo', 'multi-most-stan']) {
     const el = $(id);
     if (!el) continue;

@@ -68,24 +68,31 @@ export function mostSkonfigurowany(pamiec) {
 /**
  * Komunikat stanu mostu po polsku — jeden dla całego UI, żeby karta paczek,
  * karta gry wieloosobowej i rankingi nie wymyślały trzech wersji prawdy.
+ * Po ludzku: skąd jest adres, mówi tylko tryb testowy (Partia 3, pkt 1).
  *
  * @param {{getItem?:Function}|Map} [pamiec] pamięć do odczytu
+ * @param {object} [opcje] `{ testowy }` — dopiski deweloperskie tylko w teście
  * @returns {{podlaczony:boolean, tekst:string}}
  */
-export function stanMostu(pamiec) {
+export function stanMostu(pamiec, { testowy = false } = {}) {
   const zrodlo = pamiec ?? (typeof localStorage !== 'undefined' ? localStorage : null);
   const adres = adresMostu(zrodlo);
   if (adres) {
     const nadpisany = wartoscKlucza(zrodlo, KLUCZ_URL_MOSTU) || wartoscKlucza(zrodlo, KLUCZ_URL_REPO);
+    if (nadpisany) {
+      return { podlaczony: true, tekst: 'Most Drive: podłączony (adres nadpisany na tym telefonie).' };
+    }
     return {
       podlaczony: true,
-      tekst: nadpisany
-        ? 'Most Drive: podłączony (adres nadpisany na tym telefonie).'
-        : 'Most Drive: podłączony — adres jest wpisany w tej wersji aplikacji.',
+      tekst: testowy
+        ? 'Most Drive: podłączony — adres jest wpisany w tej wersji aplikacji (ADR 0020).'
+        : 'Most Drive: podłączony.',
     };
   }
   return {
     podlaczony: false,
-    tekst: 'Most Drive: niepodłączony — ta wersja aplikacji nie ma jeszcze wpisanego adresu. Gramy lokalnie: paczki z tego telefonu i gra na jednym urządzeniu.',
+    tekst: testowy
+      ? 'Most Drive: niepodłączony — ta wersja aplikacji nie ma jeszcze wpisanego adresu (ADR 0020). Gramy lokalnie: paczki z tego telefonu i gra na jednym urządzeniu.'
+      : 'Most Drive: niepodłączony. Gramy lokalnie: paczki z tego telefonu i gra na jednym urządzeniu.',
   };
 }

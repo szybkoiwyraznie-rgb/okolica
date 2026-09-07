@@ -228,6 +228,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 body:not(.tryb-testowy) .dopisek-roboczy {
   display: none;
 }
+/* Całe akapity deweloperskie (adres mostu, web app): tylko w trybie testowym. */
+body:not(.tryb-testowy) .tylko-test {
+  display: none;
+}
 
 .podpowiedz { margin: 6px 0; color: var(--tekst-slaby); font-size: 14px; }
 .instrukcja { padding-left: 20px; margin: 8px 0 12px; }

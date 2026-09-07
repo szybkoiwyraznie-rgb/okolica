@@ -679,6 +679,21 @@ z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
 `profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
 Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).
 
+## 2026-09-07 — Partia 3 (poprawki właściciela), gałąź `arena/01a07b16-okolica`
+
+1. **Ekran 1, dopiski deweloperskie tylko w teście.** `stanMostu()` dostał
+   opcję `{ testowy }`: poza testem pokazuje sam stan („Most Drive:
+   podłączony."), a pochodzenie adresu (ADR 0020) mówi tylko w `?tryb=test`.
+   Akapity o wpisanym adresie i web appie (karta multi + karta repozytorium)
+   dostały klasę `tylko-test`, gaszoną w CSS poza trybem testowym.
+2. **Ekran 3, S02 w mieście z drogami — naprawione.** Pierwotna przyczyna:
+   `area.obszary[...];` stało jako ODRĘBNE zdanie po unii i nadpisywało set
+   domyślny, więc `out geom` zwracało same obszary bez dróg. `is_in` idzie
+   teraz PRZED unią, a filtr obszarów jest jej CZŁONKIEM. Regresji pilnują
+   dwa asercje kształtu w `test/sieci.test.js` + LESSONS L30 (reguła + test).
+
+Brama: 515/515, sync szablonu OK, kontrast AA OK, budżet 39847/40000.
+
 ## 2026-09-07 — Partia 2 (poprawki właściciela), gałąź `arena/01a07b16-okolica`
 
 **T3** (Overpass 400): `area(.obszary)` → `area._` w `is_in` (składnia Overpass

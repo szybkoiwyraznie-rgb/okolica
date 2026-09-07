@@ -112,8 +112,14 @@ export function budujZapytanieOverpass({ srodek, promienM, tryb = 'piesza' }) {
   const klasy = `^(${trybKonfig.klasyDrog.join('|')})$`;
   const around = `around:${promien},${lat},${lon}`;
 
+  // Kolejność ma znaczenie: `is_in` NAJPIERW (wypełnia nazwany set
+  // `.obszary`), a filtr `area.obszary` jest CZŁONKIEM unii. Samodzielne
+  // `area.obszary[...];` za unią nadpisałoby set domyślny `_` i `out`
+  // wydrukowałby SAME OBSZARY bez dróg (S02 mimo dróg w terenie —
+  // LESSONS L30).
   return [
     `[out:json][timeout:${POLITYKA.timeoutZapytaniaS}];`,
+    `is_in(${lat},${lon})->.obszary;`,
     '(',
     `  way["highway"~"${klasy}"](${around});`,
     `  node["amenity"](${around});`,
@@ -130,9 +136,8 @@ export function budujZapytanieOverpass({ srodek, promienM, tryb = 'piesza' }) {
     `  way["building"](${around});`,
     `  way["landuse"="railway"](${around});`,
     `  node["barrier"](${around});`,
+    '  area.obszary["boundary"="administrative"];', // kropka, nie nawias (nawias = HTTP 400); W unii (za unią = S02)
     ');',
-    `is_in(${lat},${lon})->.obszary;`,
-    'area.obszary["boundary"="administrative"];', // kropka, nie nawias: filtr na secie z is_in (LESSONS)
     'out geom;',
     '',
   ].join('\n');

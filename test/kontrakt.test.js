@@ -615,6 +615,10 @@ test('kontrakt ADR 0020: adres mostu jest wpisany w kod, a UI nie ma pola do wpi
   for (const id of ['most-stan-repo', 'multi-most-stan']) {
     assert.ok(INDEX.includes(`id="${id}"`), `stan mostu jest jawny w #${id} (LESSONS L6)`);
   }
+  // Partia 3, pkt 1: akapity o pochodzeniu adresu i web appie żyją tylko w trybie testowym
+  assert.match(INDEX, /<p class="podpowiedz tylko-test">Adres mostu jest wpisany/, 'akapit mostu w karcie multi: tylko test');
+  assert.match(INDEX, /<p class="podpowiedz tylko-test">Adres wspólnego repozytorium jest wpisany/, 'akapit repozytorium: tylko test');
+  assert.match(STYLE, /body:not\(\.tryb-testowy\) \.tylko-test\s*\{\s*display: none;/, 'CSS gasi .tylko-test poza trybem testowym');
   // komunikaty nie mogą odsyłać do pola, którego już nie ma
   assert.ok(!/wklej adres|wpisz adres|wpisz go w ustawieniach/i.test(APP), 'żaden komunikat nie każe wpisywać adresu mostu');
   assert.ok(!APP.includes('KLUCZ_URL_REPO'), 'app.js nie sięga po klucz adresu wprost — wszystko przez adresMostu()');

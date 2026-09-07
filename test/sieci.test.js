@@ -206,6 +206,8 @@ test('zapytanie: promień R×1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out 
   assert.ok(z.includes(pozycjaDoZapytania({ lat: 52.22973, lon: 21.01224 }).lat.toFixed(5)));
   assert.match(q, /is_in\(52\.22975,21\.01225\)->\.obszary;/);
   assert.match(q, /area\.obszary\["boundary"="administrative"\];/, 'filtr obszarów kropką (nawias = HTTP 400)');
+  assert.match(q, /is_in\(52\.22975,21\.01225\)->\.obszary;\n\(/, 'is_in PRZED unią — set .obszary gotowy dla area.obszary w środku');
+  assert.match(q, /  area\.obszary\["boundary"="administrative"\];\n\);/, 'filtr obszarów W ŚRODKU unii — samodzielny za unią nadpisałby set domyślny i out dałby same obszary, zero dróg (S02; LESSONS L30)');
   assert.match(q, /way\["building"\]/);
   assert.match(q, /way\["landuse"="railway"\]/);
   assert.match(q, /node\["barrier"\]/);

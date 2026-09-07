@@ -285,3 +285,13 @@ index.html app/*.js` + `WERSJA_SW` w `sw.js`, a przed `git add` przegląd
 `git status`. Nowy moduł dostaje `?v=` od razu. Kontrakt pilnuje całego grafu
 `app/*.js` (od audytu 2026-09-07). Przy podejrzeniu rozjazdu:
 `grep -rn "?v=" app/ index.html sw.js` ma pokazać jedną wersję.
+## L30 — Overpass: zapytanie za unią NADPISUJE set domyślny, więc `out` drukuje tylko je
+
+**Objaw:** S02 „Brak danych sieci drogowej" w śródmieściu Warszawy; w JSON-u
+same `area`, zero dróg.
+**Przyczyna:** `area.obszary[...];` stało jako ODRĘBNE zdanie po unii — wyniki
+bez nazwy lądują w secie domyślnym `_`, a każde kolejne zapytanie go
+nadpisuje. `out geom` wydrukował więc tylko ostatni wynik: obszary.
+**Reguła:** nazwane sety wypełniaj PRZED unią (`is_in(...)->.obszary;`), a filtr
+`area.nazwa[...]` dawaj W ŚRODEK unii — nigdy jako zdanie po niej. Regresji
+pilnuje test kształtu (`/is_in.*->\.obszary;\n\(/` i `/  area\.obszary.*;\n\);/`).

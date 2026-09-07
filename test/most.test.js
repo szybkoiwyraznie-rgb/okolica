@@ -71,8 +71,13 @@ test('most: stan mówi po ludzku i nie odsyła do wpisywania adresu (ADR 0020 pk
   const zKodu = stanMostu(pamiecZ({}));
   assert.equal(zKodu.podlaczony, true);
   assert.match(zKodu.tekst, /podłączony/);
-  assert.match(zKodu.tekst, /adres jest wpisany w tej wersji aplikacji/);
+  assert.doesNotMatch(zKodu.tekst, /wpisany/, 'poza testem: sam stan, skąd jest adres wie tylko tryb testowy (Partia 3, pkt 1)');
   assert.doesNotMatch(zKodu.tekst, /wklej|wpisz/i, 'pola adresu nie ma w UI — komunikat nie może do niego odsyłać');
+
+  const roboczy = stanMostu(pamiecZ({}), { testowy: true });
+  assert.match(roboczy.tekst, /adres jest wpisany w tej wersji aplikacji/, 'tryb testowy zachowuje dopisek o pochodzeniu adresu');
+  assert.match(roboczy.tekst, /ADR 0020/, 'dopisek testowy niesie numer decyzji');
+
 
   const z = stanMostu(pamiecZ({ [KLUCZ_URL_MOSTU]: ADRES }));
   assert.equal(z.podlaczony, true);
