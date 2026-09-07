@@ -578,3 +578,19 @@ test('dystansOdcinkaM: pierwszy odcinek od startu, kolejne od poprzedniej stacji
   assert.equal(d2, Math.round(odlegloscM(STACJE[0], STACJE[1])), 'drugi odcinek: stacja 1 → stacja 2');
   assert.equal(dystansOdcinkaM(stan, 99), 0);
 });
+
+test('nowaRozgrywka: dystanse sieciowe z parametru, fallback do prostej na nullach (ADR 0014 pkt 1)', () => {
+  const stan = nowa({}, { dystanseOdcinkowM: [812, 410, null, 700, 555] });
+  assert.deepEqual(stan.odcinki.map((o) => o.dystansM).slice(0, 2), [812, 410]);
+  assert.deepEqual(stan.odcinki.map((o) => o.dystansM).slice(3), [700, 555]);
+  assert.ok(stan.odcinki[2].dystansM > 0, 'null = fallback do linii prostej');
+  assert.deepEqual(stan.odcinki.map((o) => o.dystansSieciowy), [true, true, false, true, true]);
+  const pod = podglad(stan);
+  assert.equal(pod.dystansM, 812, 'podgląd niesie dystans odcinka (sieciowy)');
+  assert.equal(pod.dystansSieciowy, true, 'podgląd mówi, skąd jest dystans');
+  // bez parametru: jak dotąd (prosta kreska, flaga false) — zestawy, multi, stare zapisy
+  const prosta = nowa();
+  assert.ok(prosta.odcinki.every((o) => o.dystansSieciowy === false));
+  assert.equal(podglad(prosta).dystansSieciowy, false);
+  assert.throws(() => nowa({}, { dystanseOdcinkowM: [1, 2] }), /długości/, 'zła długość to fail-fast, nie ciche przesunięcie');
+});

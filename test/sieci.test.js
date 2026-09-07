@@ -812,12 +812,15 @@ import {
   wczytajDaneZCache,
 } from '../app/sieci.js';
 
-test('cache: klucz to geohash-6 + promień (ADR 0010 pkt 1)', () => {
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
-  assert.match(klucz, /^okolica:sieci:[0-9bcdefghjkmnpqrstuvwxyz]{6}-1000$/, 'geohash-6 (base32 bez a,i,l,o)');
-  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000.4 }), klucz, 'promień zaokrąglony');
+test('cache: klucz to geohash-6 + promień + tryb (ADR 0010 pkt 1)', () => {
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  assert.match(klucz, /^okolica:sieci:[0-9bcdefghjkmnpqrstuvwxyz]{6}-1000-piesza$/, 'geohash-6 (base32 bez a,i,l,o)');
+  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000.4, tryb: 'piesza' }), klucz, 'promień zaokrąglony');
+  assert.notEqual(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'samochodowa' }), klucz, 'ten sam obszar innym trybem to OSOBNY wpis (inne klasy dróg)');
   assert.throws(() => kluczCacheSieci({ lat: 999, lon: 1, promienM: 100 }), (e) => e.kod === 'S05');
   assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 0 }), (e) => e.kod === 'S06');
+  assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 100 }), (e) => e.kod === 'S07', 'tryb wymagany');
+  assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 100, tryb: 'kosmos' }), (e) => e.kod === 'S07');
 });
 
 test('cache: runda w obie strony — uproszczone dane dają IDENTYCZNY wybór stacji', () => {

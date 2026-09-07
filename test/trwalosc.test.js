@@ -111,6 +111,7 @@ test('trwałość: walidujStanSurowy — każdy rodzaj uszkodzenia ma własny ko
     ['zepsuty kontener', { ...baza, kontenerPaczki: { schemat: SCHEMAT_KONTENERA, dane: '' } }, ['T05']],
     ['zepsuta rozgrywka', { ...baza, rozgrywka: { ...baza.rozgrywka, faza: 'kosmos' } }, ['T04']],
     ['zepsuta pozycja', { ...baza, pozycja: { lat: 'tu', lon: 'tam' } }, ['T10']],
+    ['pusty ekran', { ...baza, ekran: '' }, ['T11']],
     ['kilka usterek naraz', { ...baza, zapisanoMs: null, pozycja: 'śmieci' }, ['T08', 'T10']],
   ];
   for (const [opis, surowe, kody] of przypadki) {

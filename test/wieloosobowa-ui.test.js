@@ -205,8 +205,9 @@ function przelaczNa(u) {
 async function noweUrzadzenie({ pamiec = new Map(), most }) {
   // Adres mostu nie jest wpisywany w UI (ADR 0020) — telefon ma go w pamięci albo w kodzie aplikacji.
   if (!pamiec.has('okolica:multi:url-mostu')) pamiec.set('okolica:multi:url-mostu', URL_MOSTU);
-  globalThis.fetch = most.fetchImpl;
+  globalThis.fetch = most.fetchImpl; // sync.js czyta globalThis.fetch (wstrzykiwalny fetchImpl)
   const dom = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec });
+  dom.window.fetch = most.fetchImpl; // app.js czyta window.fetch (LESSONS L18)
   const u = {
     dom, pamiec,
     globale: {
@@ -579,4 +580,26 @@ test('SKANER prywatności: współrzędne gracza nie wychodzą w żadnej wysyłc
       }
     }
   }
+});
+
+test('uszkodzony stan z mostu: kod R w statusie, polling nie pada, po naprawie gra wraca', async () => {
+  const most = atrapaMostu();
+  const pamiec = new Map();
+  const zestaw = zasiejZestaw(pamiec, 1);
+  const A = await noweUrzadzenie({ pamiec, most });
+  await przygotujTelefon(A, 'Ala');
+  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestaw.kontener.skrot });
+  await klik(A, 'przycisk-lobby-start');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'organizator w grze');
+
+  const gra = [...most.gry.values()][0];
+  const zapas = gra.konfiguracja;
+  gra.konfiguracja = null; // most oddał uszkodzony stan (np. połowiczny zapis)
+  await przepompuj(A, 2);
+  assert.match(tekst(A, 'status'), /\[R07\]/, 'jawny kod usterki stanu, nie wyjątek w pollingu');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'aplikacja żyje na uszkodzonym stanie');
+
+  gra.konfiguracja = zapas; // most naprawiony
+  await przepompuj(A, 2);
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'gra toczy się dalej po poprawnym stanie');
 });

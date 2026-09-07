@@ -15,6 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { SZABLON_PROMPTU, WERSJA_PROTOKOLU } from '../app/protokol.js';
 import { PODKLADY, TEMATY, WIEK } from '../app/konfig.js';
 import { KODOWANIE, SCHEMAT_KONTENERA } from '../app/kodowanie.js';
+import { KODY_POZYCJI } from '../app/pozycja.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const czytaj = (sciezka) => readFileSync(join(ROOT, sciezka), 'utf8');
@@ -670,4 +671,32 @@ test('kontrakt M12: rankingi liczy telefon, serwer oddaje surowe wiersze', () =>
   assert.match(APP, /agregujRanking\(wiersze, filtr\)/, 'agregacje po stronie telefonu (ADR 0019 pkt 7)');
   assert.match(APP, /kategorieRankingu\(wiersze\)/, 'zakładki kategorii z dostępnych wierszy');
   assert.ok(GS.includes("akcja === 'ranking'"), 'most obsługuje akcję ranking');
+});
+
+test('ADR 0015 pkt 6: kody usterek wejścia promptu (WE**) nie kolidują z kodami pozycji (P**)', () => {
+  const PROTOKOL_JS = czytaj('app/protokol.js');
+  const start = PROTOKOL_JS.indexOf('export function zbudujPrompt(');
+  assert.ok(start >= 0, 'zbudujPrompt istnieje w app/protokol.js');
+  const cialo = PROTOKOL_JS.slice(start, PROTOKOL_JS.indexOf('export function parsujOdpowiedzModela', start));
+  const kodyPromptu = [...cialo.matchAll(/dodaj\('([A-Z]+\d+)'/g)].map((m) => m[1]);
+  assert.ok(kodyPromptu.length >= 7, `zbudujPrompt zgłasza co najmniej 7 kodów (jest ${kodyPromptu.length})`);
+  for (const kod of kodyPromptu) {
+    assert.match(kod, /^WE\d+$/, `${kod}: domena wejścia promptu ma własny prefiks WE (nie P jak pozycja)`);
+    assert.ok(!(kod in KODY_POZYCJI), `${kod} nie istnieje w KODY_POZYCJI`);
+  }
+});
+
+test('kontrakt: cache-busting w CAŁYM grafie — każdy import w app/*.js ma ?v= jak index.html', () => {
+  const wersja = [...INDEX.matchAll(/\?v=([\w-]+)/g)].map((m) => m[1])[0];
+  assert.ok(wersja, 'index.html wersjonuje zasoby przez ?v=');
+  const pliki = readdirSync(join(ROOT, 'app')).filter((f) => f.endsWith('.js'));
+  assert.ok(pliki.length >= 10, 'katalog app/ ma moduły do sprawdzenia');
+  for (const plik of pliki) {
+    const tresc = czytaj(`app/${plik}`);
+    const gole = [...tresc.matchAll(/from '\.\/[a-z]+\.js'/g)].map((m) => m[0]);
+    assert.deepEqual(gole, [], `${plik}: gołe importy bez ?v= tworzą drugą instancję modułu w przeglądarce (split cache)`);
+    for (const m of tresc.matchAll(/from '\.\/[a-z]+\.js\?v=([\w-]+)'/g)) {
+      assert.equal(m[1], wersja, `${plik}: znacznik ${m[1]} różny od index.html (${wersja})`);
+    }
+  }
 });

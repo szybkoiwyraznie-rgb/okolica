@@ -615,7 +615,7 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
   // UI i prompt mają same współrzędne (ADR 0013 pkt 3, test bramy niżej)
   pamiecCache.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { geokodacja: true } }));
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
 
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
@@ -650,7 +650,7 @@ test('stacje: udane pobranie z pierwszej instancji zapisuje cache i rysuje sieć
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/);
   assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('z pamięci'), 'świeżo pobrane');
   assert.match(domAtrapa.pobierz('status').textContent, /Stacje z sieci drogowej|za uboga/);
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
   const wpis = JSON.parse(domAtrapa.pamiec.get(klucz));
   assert.equal(wpis.schemat, SCHEMAT_SIECI);
   assert.ok(Number.isFinite(wpis.zapisanoMs));
@@ -689,7 +689,7 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
 test('stacje: przycisk „Tryb uproszczony" wymusza pierścień i wraca do sieci', async () => {
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -925,7 +925,7 @@ async function aplikacjaZKonfigiem(pamiecCache, konfig = {}) {
 test('geokodacja WYŁĄCZONA w setupie: miejsce nie trafia do UI ani do promptu (ADR 0013 pkt 3)', async () => {
   const pamiecCache = new Map(); // konfig domyślny → geokodacja: false (K20)
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: pamiecCache });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -1047,7 +1047,7 @@ test('M6: start gry — przycisk z przyjętą paczką, ekran gry i faza A (przyg
   assert.match(dom.pobierz('gra-postep').textContent, /stacja 1 z 3/, 'postęp z bieżącej stacji');
   assert.match(dom.pobierz('gra-kolejka').textContent, /Kolej: Gracz 1/, 'badge kolejki z imieniem (domyślne imiona z konfigu)');
   assert.match(dom.pobierz('przycisk-start-odcinka').textContent, /Idę do stacji 1/, 'główny przycisk fazy mówi, dokąd idzie');
-  assert.match(dom.pobierz('gra-cel-stacji').textContent, /m drogą od poprzedniego punktu/, 'cel z dystansem drogowym z modelu');
+  assert.match(dom.pobierz('gra-cel-stacji').textContent, /m w linii prostej od poprzedniego punktu/, 'pierścień (brak sieci): etykieta mówi wprost, że to prosta kreska (ADR 0014 pkt 1)');
   assert.match(dom.pobierz('gra-dystans').textContent, /\d+ m/, 'badge dystansu w linii prostej z bieżącej pozycji');
 });
 
@@ -1212,6 +1212,7 @@ test('M6: wznowienie po „zamknięciu przeglądarki" — nowa instancja, ta sam
   assert.match(dom2.pobierz('wznowienie-opis').textContent, /faza: odcinek/);
 
   dom2.kliknij('przycisk-wznow-gre');
+  assert.equal(dom2.pobierz('setup-promien').zdarzenia.input.length, 1, 'L14: wznowienie nie dokleja drugiego nasłuchu pól setupu');
   assert.equal(dom2.pobierz('ekran-gra').hidden, false, 'wznowienie wraca na ekran gry');
   assert.equal(dom2.pobierz('gra-panel-odcinek').hidden, false, 'faza odcinka odtworzona');
   assert.equal(dom2.pobierz('karta-wznowienie').hidden, true, 'baner znika po wznowieniu');

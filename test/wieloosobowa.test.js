@@ -173,6 +173,21 @@ test('PRYWATNOŚĆ: zbudujZdarzenie przepuszcza wyłącznie białą listę pól'
   assert.throws(() => zbudujZdarzenie({ graczId: 'g-1', typ: 'start' }), TypeError, 'bez kodu/idGry odrzucone');
 });
 
+test('zbudujZdarzenie: tUrzadzenia to skończone ms albo brak pola (nigdy NaN/null)', () => {
+  const z = zbudujZdarzenie({ kod: 'K2H7QM', graczId: 'g-1', typ: 'start', tUrzadzenia: 1_757_000_000_000 });
+  assert.equal(z.tUrzadzenia, 1_757_000_000_000);
+  const iso = zbudujZdarzenie({ kod: 'K2H7QM', graczId: 'g-1', typ: 'start', tUrzadzenia: new Date(1_757_000_000_000).toISOString() });
+  assert.ok(!('tUrzadzenia' in iso), 'ISO-tekst pomijany (Number()=NaN serializował się do null)');
+  const bez = zbudujZdarzenie({ kod: 'K2H7QM', graczId: 'g-1', typ: 'start' });
+  assert.ok(!('tUrzadzenia' in bez), 'pole opcjonalne');
+});
+
+test('biezacyGraczTury: uszkodzony stan to null, nie TypeError (telefon nie ufa mostowi)', () => {
+  assert.equal(biezacyGraczTury(null), null);
+  assert.equal(biezacyGraczTury({ ...graTury(), konfiguracja: null }), null);
+  assert.equal(biezacyGraczTury({ ...graTury(), konfiguracja: {} }), null);
+});
+
 /* ------------------------------------------- maszynka tur i wyniki */
 
 function graTury(zdarzenia = []) {

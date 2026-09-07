@@ -41,10 +41,11 @@ const oddech = () => new Promise((r) => setTimeout(r, 0));
 
 async function telefonZRankingiem({ odpowiedz = { schemat: 'RO-ranking/1', wiersze: WIERSZE }, pamiec = new Map(), pseudonim = 'Ala' } = {}) {
   const most = atrapaMostu(odpowiedz);
-  globalThis.fetch = most.fetchImpl;
+  globalThis.fetch = most.fetchImpl; // sync.js czyta globalThis.fetch (wstrzykiwalny fetchImpl)
   if (pseudonim) pamiec.set('okolica:pseudonim', pseudonim);
   if (!pamiec.has('okolica:multi:url-mostu')) pamiec.set('okolica:multi:url-mostu', URL_MOSTU);
   const dom = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec });
+  dom.window.fetch = most.fetchImpl; // app.js czyta window.fetch (LESSONS L18)
   await import(`../app/app.js?r=${Math.random()}`);
   const kliknij = async (id) => { dom.kliknij(id); await oddech(); };
   await kliknij('przycisk-ranking');

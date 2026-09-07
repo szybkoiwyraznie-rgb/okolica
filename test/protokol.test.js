@@ -132,15 +132,15 @@ test('zbudujPrompt: brak miejsca daje jawny komunikat, nie pustą lukę', () => 
 test('zbudujPrompt: odmawia bez pozycji, bez stacji i przy rozjeździe liczb', () => {
   const bezPozycji = zbudujPrompt({ konfig: konfiguracja(), okolica: { lat: null, lon: null }, stacje: STACJE });
   assert.equal(bezPozycji.prompt, null);
-  assert.ok(bezPozycji.usterki.some((u) => u.kod === 'P02'));
+  assert.ok(bezPozycji.usterki.some((u) => u.kod === 'WE02'));
 
   const bezStacji = zbudujPrompt({ konfig: konfiguracja(), okolica: { ...SRODEK, promienM: 1000, miejsce: 'x' }, stacje: [] });
   assert.equal(bezStacji.prompt, null);
-  assert.ok(bezStacji.usterki.some((u) => u.kod === 'P03'));
+  assert.ok(bezStacji.usterki.some((u) => u.kod === 'WE03'));
 
   const rozjazd = zbudujPrompt({ konfig: konfiguracja({ liczbaStacji: 5 }), okolica: { ...SRODEK, promienM: 1000, miejsce: 'x' }, stacje: STACJE });
   assert.equal(rozjazd.prompt, null);
-  assert.ok(rozjazd.usterki.some((u) => u.kod === 'P06'));
+  assert.ok(rozjazd.usterki.some((u) => u.kod === 'WE06'));
 });
 
 /* ------------------------------------------------------------- parsowanie */
