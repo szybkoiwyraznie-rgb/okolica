@@ -372,6 +372,18 @@ test('kontrakt: atrybucja dostawcy nie jest domyślnie chowana w CSS (ADR 0003 p
   assert.ok(/\.mapa\s*\{[^}]*touch-action:\s*none/.test(STYLE), 'gest mapy wymaga touch-action: none na panelu');
 });
 
+test('kontrakt: żadne app/*.js nie woła gołego fetch( — tylko window.fetch (D19, LESSONS L18)', () => {
+  const GOLY_FETCH = /(?<![\w$.])fetch\s*\(/;
+  const pliki = readdirSync(join(ROOT, 'app')).filter((n) => n.endsWith('.js'));
+  assert.ok(pliki.length > 5, 'strażnik bez plików to atrapa');
+  for (const nazwa of pliki) {
+    const kod = czytaj(`app/${nazwa}`)
+      .replace(/\/\*[\s\S]*?\*\//g, '') // komentarze blokowe
+      .replace(/(^|[^:])\/\/.*$/gm, '$1'); // komentarze liniowe (nie :// w URL-ach)
+    assert.ok(!GOLY_FETCH.test(kod), `${nazwa}: gołe fetch( — użyj fetchPrzegladarki()/window.fetch (L18)`);
+  }
+});
+
 test('kontrakt: mapa.js nie woła sieci, geolokalizacji ani alertów — rysuje to, co dostał', () => {
   assert.ok(!/\bfetch\s*\(/.test(MAPA), 'mapa.js nie może sam pobierać danych (kafelki ładuje <image>)');
   assert.ok(!/navigator\.geolocation|watchPosition/.test(MAPA), 'pozycja wchodzi do mapy przez app.js, nie z API');
