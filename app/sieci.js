@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-4';
-import { TRYBY } from './konfig.js?v=m12-4';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-5';
+import { TRYBY } from './konfig.js?v=m12-5';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -30,6 +30,18 @@ export const INSTANCJE_OVERPASS = [
   { nazwa: 'private.coffee', url: 'https://overpass.private.coffee/api/interpreter' },
   { nazwa: 'VK Maps', url: 'https://maps.mail.ru/osm/tools/overpass/api/interpreter' },
 ];
+
+/**
+ * Kolejność prób łańcucha: zapamiętana sprawna instancja pierwsza, reszta
+ * bez zmian (ASSETS §2). Nieznany/pusty adres = kolejność domyślna.
+ * Pamiętanie DOBREJ instancji to mniej doomed-zapytań, nie więcej ruchu.
+ */
+export function kolejnoscInstancji(zapamietanyUrl = null) {
+  if (typeof zapamietanyUrl !== 'string' || !zapamietanyUrl) return [...INSTANCJE_OVERPASS];
+  const znana = INSTANCJE_OVERPASS.find((i) => i.url === zapamietanyUrl);
+  if (!znana) return [...INSTANCJE_OVERPASS];
+  return [znana, ...INSTANCJE_OVERPASS.filter((i) => i.url !== zapamietanyUrl)];
+}
 
 export const POLITYKA = {
   /** Timeout `fetch` po naszej stronie (ADR 0005, konsekwencje). */

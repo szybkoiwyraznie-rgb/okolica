@@ -184,16 +184,14 @@ commit i nowa wersja aplikacji.
 6. Organizator ↔ model AI (poza systemem); odpowiedź wraca wklejeniem albo
    plikiem (`plik-odpowiedz`).
 7. Wklejona odpowiedź → `protokol.walidujPaczke()` → usterki (z przyciskiem
-   „skopiuj poprawkę") albo przyjęcie. Przyjęta paczka otwiera podgląd
-   „tylko dla organizatora" (`renderujPodgladOrganizatora`): ręczna edycja
-   pytań diffuje pola z `protokol.EDYTOWALNE_POLA`, zapisuje przez
-   `zastosujEdycjePaczki` (atomowo, ślad w `modyfikacje[]`) i PO KAŻDEJ
-   poprawce re-waliduje całość — usterki blokują ukrycie paczki.
+   „skopiuj poprawkę") albo przyjęcie. Przyjęta paczka OD RAZU zaczyna grę
+   (decyzja 2026-09-07): podgląd, ściąganie i edycja zniknęły z ekranu —
+   to zadania właściciela na Drive, dokąd zestaw leci automatycznie
+   w chwili przyjęcia (wysyłka domyślna, bez pytania o zgodę).
 8. `kodowanie.zapakujPaczke(paczka, WERSJA_PROTOKOLU)` → kontener `TO-paczka/2`
-   → `trwalosc.zapiszPaczke()`. Dodatkowo eksport do pliku
-   `okolica-<kodGry>.paczka.json` (przycisk „⬇ Zapisz paczkę") — plik niesie
-   ten sam kontener, nigdy plaintext (ADR 0010 pkt 3), i jest czytany z
-   powrotem ścieżką „⬆ Z pliku" (gotowość na repozytorium paczek, M9).
+   → `trwalosc.zapiszPaczke()`; gra czyta pytania z kontenera i odsłania je
+   dopiero na stacjach. Import wcześniej ukrytej paczki ścieżką „⬆ Z pliku"
+   działa jak dawniej (M9).
 
 ### B. Rozgrywka
 

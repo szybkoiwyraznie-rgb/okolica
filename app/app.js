@@ -15,36 +15,34 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-4';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-4';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-5';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-5';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
   odkodujPaczkeRev1,
   odkodujPaczkeRev2,
   parsujOdpowiedzModela,
-  podsumowaniePaczki,
   poprawkaDlaModelu,
   walidujPaczke,
-  zastosujEdycjePaczki,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
   WERSJA_PROTOKOLU_REV2,
-} from './protokol.js?v=m12-4';
-import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-4';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-4';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-4';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-4';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-4';
+} from './protokol.js?v=m12-5';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-5';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-5';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-5';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-5';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-5';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-4';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-4';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-4';
+} from './zestawy.js?v=m12-5';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-5';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-5';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -55,6 +53,7 @@ import {
   budujUrlGeokodacji,
   budujZapytanieOverpass,
   czyPrzelaczycInstancje,
+  kolejnoscInstancji,
   kandydaciNaStacje,
   kluczCacheSieci,
   miejsceZOdpowiedziNominatim,
@@ -63,11 +62,11 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-4';
-import { utworzMape } from './mapa.js?v=m12-4';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-4';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-4';
-import { adresMostu, stanMostu } from './most.js?v=m12-4';
+} from './sieci.js?v=m12-5';
+import { utworzMape } from './mapa.js?v=m12-5';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-5';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-5';
+import { adresMostu, stanMostu } from './most.js?v=m12-5';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -877,11 +876,36 @@ function grafDlaTrybu(tryb) {
   }
 }
 
+const KLUCZ_SPRAWNEJ_INSTANCJI = 'okolica:overpass-sprawny';
+
+/** Adres instancji, która dowiozła ostatnio — albo null (kolejność domyślna). */
+function czytajSprawnaInstancje() {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    return localStorage.getItem(KLUCZ_SPRAWNEJ_INSTANCJI);
+  } catch {
+    return null;
+  }
+}
+
+function zapiszSprawnaInstancje(url) {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    localStorage.setItem(KLUCZ_SPRAWNEJ_INSTANCJI, url);
+  } catch {
+    /* brak pamięci — następna gra zacznie od FOSSGIS jak dawniej */
+  }
+}
+
 /**
- * Pobranie sieci z łańcucha instancji (ASSETS §2): sekwencyjnie, z pauzą
- * `odstepMs` po 406/429/5xx, timeoutem 20 s przez `AbortController` i
- * budżetem 8 MB na cache. `fetch` jest czytany w chwili wywołania, więc test
- * może podstawić atrapę po imporcie aplikacji.
+ * Pobranie sieci z łańcucha instancji (ASSETS §2): sekwencyjnie, timeout
+ * 20 s przez `AbortController`, budżet 8 MB na cache. Pauza 30 s TYLKO po
+ * odpowiedzi 406/429/5xx (tego wymaga polityka FOSSGIS); timeout/brak
+ * odpowiedzi to MARTWA instancja — przełączenie jest OD RAZU, bo nie ma
+ * kogo szanować pauzą (decyzja 2026-09-07: koniec ~100 s czekania).
+ * Sprawna instancja ląduje w pamięci telefonu i następna gra próbuje ją
+ * pierwszą (`kolejnoscInstancji`). `fetch` czytany w chwili wywołania,
+ * więc test może podstawić atrapę po imporcie aplikacji.
  */
 async function pobierzSiec(terazMs) {
   // Celowo `window.fetch`, nie gołe `fetch`: Node ≥ 18 MA globalny fetch i
@@ -895,9 +919,10 @@ async function pobierzSiec(terazMs) {
     tryb: STAN.konfig.tryb,
   });
   const pauza = (ms) => new Promise((rozwiaz) => setTimeout(rozwiaz, ms));
-  for (let i = 0; i < INSTANCJE_OVERPASS.length; i++) {
-    const instancja = INSTANCJE_OVERPASS[i];
-    const ostatnia = i === INSTANCJE_OVERPASS.length - 1;
+  const lancuch = kolejnoscInstancji(czytajSprawnaInstancje());
+  for (let i = 0; i < lancuch.length; i++) {
+    const instancja = lancuch[i];
+    const ostatnia = i === lancuch.length - 1;
     status(`Pobieram sieć dróg: ${instancja.nazwa}… (jedno zapytanie na grę)`);
     try {
       const kontroler = typeof AbortController === 'function' ? new AbortController() : null;
@@ -926,6 +951,7 @@ async function pobierzSiec(terazMs) {
         status(KODY_SIECI.S04);
       }
       ustawSiec(dane, { zCache: false, klucz: kluczSieci() });
+      zapiszSprawnaInstancje(instancja.url);
       return true;
     } catch (blad) {
       const przelacz = !ostatnia && czyPrzelaczycInstancje({
@@ -934,8 +960,9 @@ async function pobierzSiec(terazMs) {
         bladSieci: blad?.name === 'TypeError' || blad?.name === 'NetworkError',
       });
       if (przelacz) {
-        status(`${instancja.nazwa} nie odpowiada — czekam ${Math.round(STAN.odstepOverpassMs / 1000)} s i próbuję kolejną instancję.`);
-        await pauza(STAN.odstepOverpassMs);
+        // Martwa instancja (timeout/abort/błąd sieci): przełączenie OD RAZU,
+        // bez pauzy — pauza 30 s należy się tylko limitom (429/406/5xx).
+        status(`${instancja.nazwa} nie odpowiada — próbuję kolejną instancję.`);
         continue;
       }
       pokazBledy('bledy-stacje', [{
@@ -1475,8 +1502,6 @@ function startGry() {
     dystanseOdcinkowM: dystanseOdcinkowM(STAN.wynikSieci),
   });
   STAN.paczka = null;
-  $('przycisk-start-gry').hidden = true;
-  zwijPodgladOrganizatora();
   STAN.historiaFixow = [];
   pokazEkran('gra');
   if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
@@ -2300,10 +2325,8 @@ function sprawdzOdpowiedz() {
     : parsujOdpowiedzModela(tekst);
   const wynik = $('wynik-walidacji');
   const listaUsterek = $('wynik-usterki');
-  const podsumowanie = $('wynik-podsumowanie');
   wynik.hidden = false;
   listaUsterek.innerHTML = '';
-  podsumowanie.innerHTML = '';
 
   if (!paczka) {
     wynik.dataset.stan = 'blad';
@@ -2312,11 +2335,6 @@ function sprawdzOdpowiedz() {
     STAN.paczka = null;
     renderujUsterki([blad]);
     $('przycisk-poprawka').hidden = false;
-    $('przycisk-ukryj').hidden = true;
-    $('przycisk-eksport-paczki').hidden = true;
-    $('przycisk-eksport-zestawu').hidden = true;
-    $('przycisk-start-gry').hidden = true;
-    $('podglad-organizatora').hidden = true;
     status('Odpowiedź odrzucona na etapie odczytu (parsowanie JSON albo kontener).');
     return;
   }
@@ -2334,11 +2352,6 @@ function sprawdzOdpowiedz() {
     $('wynik-naglowek').textContent = `Paczka odrzucona — usterek: ${usterki.length}`;
     renderujUsterki(usterki);
     $('przycisk-poprawka').hidden = false;
-    $('przycisk-ukryj').hidden = true;
-    $('przycisk-eksport-paczki').hidden = true;
-    $('przycisk-eksport-zestawu').hidden = true;
-    $('przycisk-start-gry').hidden = true;
-    $('podglad-organizatora').hidden = true;
     status('Paczka odrzucona przez walidator (protokół PYT §6).');
     return;
   }
@@ -2347,38 +2360,26 @@ function sprawdzOdpowiedz() {
   STAN.paczka = normalizujTematyPaczki(robocza);
   $('wynik-naglowek').textContent = bylaOdwrocona ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana)` : 'Paczka przyjęta';
   $('przycisk-poprawka').hidden = true;
-  $('przycisk-ukryj').hidden = false;
-  $('przycisk-eksport-paczki').hidden = false;
-  $('przycisk-eksport-zestawu').hidden = false;
-  $('przycisk-start-gry').hidden = false;
-  const postac = zKontenera.zrodlo === 'kontener'
-    ? 'paczka ukryta (kontener TO-paczka/2)'
-    : zKontenera.zrodlo === 'json'
-      ? 'jawny JSON od modelu — przed ukryciem'
-      : null;
-  renderujPodsumowaniePaczki(robocza, postac);
-  $('podglad-organizatora').hidden = false;
-  renderujPodgladOrganizatora();
+  renderujUsterki([]);
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
-  status(bylaOdwrocona ? `Paczka odwrócona (${wariant}) — odkodowana i przyjęta do pamięci sesji.` : 'Paczka pytań zwalidowana i przyjęta do pamięci sesji.');
   wyslijZestawNaDrive();
+  // Decyzja właściciela 2026-09-07: poprawna paczka = OD RAZU gra. Podgląd,
+  // ściąganie i edycja nie są graczowi potrzebne — to zadania właściciela
+  // na Drive, dokąd zestaw właśnie poleciał. Guard startGry pilnuje
+  // kolejności kroków, gdyby ktoś tu dotarł bez pozycji albo stacji.
+  startGry();
 }
 
 /**
  * M9b/D2+D3: automatyczna wysyłka zestawu na Drive w chwili przyjęcia
- * (decyzja właściciela 2026-09-06): zgoda to checkbox na TYM ekranie,
- * domyślnie zaznaczony; odhaczenie = zestaw zostaje na telefonie.
- * Brak zgody, brak adresu mostu albo brak pozycji = zero wysyłki i JAWNY
- * status (LESSONS L6). POST text/plain omija preflight CORS (plan M9b).
+ * (decyzja właściciela 2026-09-07: prywatna aplikacja — wysyłka DOMYŚLNA,
+ * bez checkboxa i bez przypominajki; checkbox z 2026-09-06 usunięty).
+ * Brak adresu mostu, pozycji albo fetch = zero wysyłki i JAWNY status
+ * (LESSONS L6). POST text/plain omija preflight CORS (plan M9b).
  */
 function wyslijZestawNaDrive() {
-  const zgoda = $('zgoda-drive') ? $('zgoda-drive').checked : false;
-  if (!zgoda) {
-    status('Paczka przyjęta. Nie wysłano na Drive: zgoda odhaczona na tym ekranie.');
-    return;
-  }
   const url = adresMostu(); // ADR 0020: jeden adres z kodu aplikacji
   if (!url) {
     status('Paczka przyjęta. Nie wysłano na Drive: brak adresu repozytorium w tej wersji aplikacji — paczka zostaje na tym telefonie.' + ADR(' (ADR 0020)'));
@@ -2423,209 +2424,10 @@ function renderujUsterki(usterki) {
   }));
 }
 
-/** Podsumowanie przyjętej paczki jako `dt/dd` (też replaceChildren — L19). */
-function renderujPodsumowaniePaczki(paczka, postac = null) {
-  const s = podsumowaniePaczki(paczka);
-  const wiersze = [
-    ['pytania', `${s.liczbaPytan} (stacje: ${s.stacje.join(', ')})`],
-    ['tematy', s.tematy.join(', ')],
-    ['źródła', `${s.liczbaZrodel} adresów — pokazane graczom po odpowiedzi`],
-    ['punkty', `${s.punktyRazem} do zdobycia`],
-  ];
-  if (s.uwagi) wiersze.push(['uwagi modelu', s.uwagi]);
-  if (Array.isArray(paczka.modyfikacje) && paczka.modyfikacje.length) {
-    wiersze.push(['ręczne poprawki', `${paczka.modyfikacje.length} — zapisane w paczce (ADR 0006 pkt 8)`]);
-  }
-  if (postac) wiersze.push(['postać', postac]);
-  wiersze.push(['następny krok', 'rozgrywka — kamień M6 (pytania zostaną ukryte w pamięci urządzenia)']);
-  const wezly = [];
-  for (const [dt, dd] of wiersze) {
-    const dtEl = document.createElement('dt');
-    dtEl.textContent = dt;
-    const ddEl = document.createElement('dd');
-    ddEl.textContent = dd;
-    wezly.push(dtEl, ddEl);
-  }
-  $('wynik-podsumowanie').replaceChildren(...wezly);
-}
-
-/** Nazwa pliku paczki: kod gry oczyszczony do `[a-z0-9-]` (ADR 0010 pkt 3). */
-function nazwaPlikuPaczki(kodGry) {
-  const oczyszczony = String(kodGry ?? '').toLowerCase().replace(/[^a-z0-9-]/g, '').slice(0, 24);
-  return `okolica-${oczyszczony || 'gra'}.paczka.json`;
-}
-
-/** Nazwa pliku z tekstem wyniku (M7) — ten sam oczyszczony kod gry co paczka. */
 function nazwaPlikuWyniku(kodGry) {
   return `okolica-${oczyscKodGry(kodGry)}.wynik.txt`;
 }
 
-
-/** Zwinięcie podglądu: plaintext pytań znika z DOM (ADR 0007 pkt 4). */
-function zwijPodgladOrganizatora() {
-  $('podglad-organizatora').hidden = true;
-  $('podglad-pytania').replaceChildren();
-}
-
-/* ------------------------------------- podgląd i edycja organizatora (M5) */
-
-/**
- * Podgląd „tylko dla organizatora" (ADR 0006 pkt 8): pytania z przyjętej
- * paczki z formularzem edycji. Zapis poprawki przechodzi przez czystą
- * `zastosujEdycjePaczki` (atomowość + `modyfikacje[]`), a wynik jest
- * RE-walidowany całym `walidujPaczke` — edycja nie omija protokołu.
- */
-function renderujPodgladOrganizatora() {
-  const kontener = $('podglad-pytania');
-  if (!STAN.paczka || !Array.isArray(STAN.paczka.pytania)) {
-    kontener.replaceChildren();
-    return;
-  }
-  kontener.replaceChildren(...STAN.paczka.pytania.map((pytanie) => kartaPytania(pytanie)));
-}
-
-function kartaPytania(p) {
-  const karta = document.createElement('article');
-  karta.className = 'pytanie-karta';
-
-  const naglowek = document.createElement('h3');
-  naglowek.textContent = `${p.id} · stacja ${p.stacja} · ${p.temat}`;
-  karta.appendChild(naglowek);
-
-  const tresc = document.createElement('textarea');
-  tresc.className = 'pole-tekstowe';
-  tresc.rows = 3;
-  tresc.value = p.tresc;
-  tresc.setAttribute('aria-label', `Treść pytania ${p.id}`);
-  karta.appendChild(tresc);
-
-  const odpowiedzi = document.createElement('div');
-  odpowiedzi.className = 'edycja-odpowiedzi';
-  const inputyOdpowiedzi = [];
-  const radioPoprawne = [];
-  (Array.isArray(p.odpowiedzi) ? p.odpowiedzi : []).forEach((odp, i) => {
-    const wiersz = document.createElement('div');
-    wiersz.className = 'wiersz-odpowiedzi';
-    const radio = document.createElement('input');
-    radio.type = 'radio';
-    radio.name = `poprawna-${p.id}`;
-    radio.checked = i === p.poprawna;
-    radio.setAttribute('aria-label', `Oznacz odpowiedź ${i + 1} jako poprawną`);
-    const input = document.createElement('input');
-    input.type = 'text';
-    input.className = 'pole-tekstowe';
-    input.maxLength = 80;
-    input.value = odp;
-    input.setAttribute('aria-label', `Odpowiedź ${i + 1} pytania ${p.id}`);
-    wiersz.appendChild(radio);
-    wiersz.appendChild(input);
-    odpowiedzi.appendChild(wiersz);
-    inputyOdpowiedzi.push(input);
-    radioPoprawne.push(radio);
-  });
-  karta.appendChild(odpowiedzi);
-
-  const wyjasnienie = document.createElement('textarea');
-  wyjasnienie.className = 'pole-tekstowe';
-  wyjasnienie.rows = 3;
-  wyjasnienie.value = p.wyjasnienie ?? '';
-  wyjasnienie.setAttribute('aria-label', `Wyjaśnienie pytania ${p.id}`);
-  karta.appendChild(wyjasnienie);
-
-  const zrodla = document.createElement('div');
-  zrodla.className = 'edycja-zrodel';
-  // wiersze w osobnym kontenerze: przy samym `appendChild` nowy wiersz
-  // wylądowałby ZA przyciskiem „Dodaj źródło" (insertBefore nie istnieje
-  // w atrapie), więc przycisk jest rodzeństwem listy, nie jej elementem
-  const listaZrodel = document.createElement('div');
-  zrodla.appendChild(listaZrodel);
-  const wierszeZrodel = [];
-  function dodajWierszZrodla(z) {
-    const wiersz = document.createElement('div');
-    wiersz.className = 'wiersz-zrodla';
-    const url = document.createElement('input');
-    url.type = 'text';
-    url.className = 'pole-tekstowe';
-    url.value = z?.url ?? '';
-    url.setAttribute('aria-label', 'Adres URL źródła');
-    const tytul = document.createElement('input');
-    tytul.type = 'text';
-    tytul.className = 'pole-tekstowe';
-    tytul.value = z?.tytul ?? '';
-    tytul.setAttribute('aria-label', 'Tytuł źródła');
-    const sprawdzono = document.createElement('input');
-    sprawdzono.type = 'text';
-    sprawdzono.className = 'pole-tekstowe pole-data';
-    sprawdzono.value = z?.sprawdzono ?? '';
-    sprawdzono.placeholder = 'RRRR-MM-DD';
-    sprawdzono.setAttribute('aria-label', 'Data sprawdzenia źródła');
-    wiersz.appendChild(url);
-    wiersz.appendChild(tytul);
-    wiersz.appendChild(sprawdzono);
-    listaZrodel.appendChild(wiersz);
-    wierszeZrodel.push({ wiersz, url, tytul, sprawdzono });
-  }
-  for (const z of Array.isArray(p.zrodla) ? p.zrodla : []) dodajWierszZrodla(z);
-  const dodajZrodlo = document.createElement('button');
-  dodajZrodlo.type = 'button';
-  dodajZrodlo.className = 'przycisk przycisk-maly';
-  dodajZrodlo.textContent = '＋ Dodaj źródło';
-  dodajZrodlo.addEventListener('click', () => dodajWierszZrodla(null));
-  zrodla.appendChild(dodajZrodlo);
-  karta.appendChild(zrodla);
-
-  const zapisz = document.createElement('button');
-  zapisz.type = 'button';
-  zapisz.className = 'przycisk';
-  zapisz.textContent = '💾 Zapisz poprawkę';
-  zapisz.addEventListener('click', () => zapiszPoprawke(p, { tresc, inputyOdpowiedzi, radioPoprawne, wyjasnienie, wierszeZrodel }));
-  karta.appendChild(zapisz);
-  return karta;
-}
-
-function zapiszPoprawke(p, pola) {
-  const zmiany = {};
-  if (pola.tresc.value !== p.tresc) zmiany.tresc = pola.tresc.value;
-  const noweOdpowiedzi = pola.inputyOdpowiedzi.map((input) => input.value);
-  if (noweOdpowiedzi.join('|') !== (p.odpowiedzi ?? []).join('|')) zmiany.odpowiedzi = noweOdpowiedzi;
-  const indexPoprawnej = pola.radioPoprawne.findIndex((radio) => radio.checked);
-  if (indexPoprawnej >= 0 && indexPoprawnej !== p.poprawna) zmiany.poprawna = indexPoprawnej;
-  if (pola.wyjasnienie.value !== (p.wyjasnienie ?? '')) zmiany.wyjasnienie = pola.wyjasnienie.value;
-  const noweZrodla = pola.wierszeZrodel
-    .map(({ url, tytul, sprawdzono }) => ({ url: url.value.trim(), tytul: tytul.value.trim(), sprawdzono: sprawdzono.value.trim() }))
-    .filter((z) => z.url || z.tytul || z.sprawdzono);
-  if (JSON.stringify(noweZrodla) !== JSON.stringify(p.zrodla ?? [])) zmiany.zrodla = noweZrodla;
-
-  if (Object.keys(zmiany).length === 0) {
-    status('Brak zmian do zapisania — pytanie zostaje, jak było.');
-    return;
-  }
-  const wynik = zastosujEdycjePaczki(STAN.paczka, [{ pytanieId: p.id, zmiany }], { terazMs: Date.now() });
-  if (!wynik.paczka) {
-    $('wynik-walidacji').dataset.stan = 'blad';
-    renderujUsterki(wynik.usterki);
-    status('Poprawka odrzucona — paczka zostaje bez zmian.');
-    return;
-  }
-  STAN.paczka = wynik.paczka;
-  // edycja NIE omija protokołu: cała paczka przechodzi walidację jeszcze raz
-  const usterki = walidujPaczke(STAN.paczka, oczekiwane());
-  STAN.usterkiPaczki = usterki;
-  renderujUsterki(usterki);
-  $('wynik-walidacji').dataset.stan = usterki.length ? 'blad' : 'ok';
-  $('wynik-naglowek').textContent = usterki.length
-    ? `Paczka po poprawce wymaga naprawy — usterek: ${usterki.length}`
-    : 'Paczka przyjęta (po ręcznej poprawce)';
-  $('przycisk-ukryj').hidden = usterki.length > 0;
-  $('przycisk-eksport-paczki').hidden = usterki.length > 0;
-  $('przycisk-start-gry').hidden = usterki.length > 0;
-  $('przycisk-poprawka').hidden = usterki.length === 0;
-  renderujPodsumowaniePaczki(STAN.paczka, null);
-  renderujPodgladOrganizatora();
-  status(usterki.length
-    ? 'Poprawka zapisana w modyfikacje[], ale paczka ma teraz usterki — napraw je albo cofnij zmianę przed ukryciem.'
-    : `Poprawka zapisana w modyfikacje[] (łącznie ${STAN.paczka.modyfikacje.length}); paczka przeszła re-walidację protokołu.`);
-}
 
 /* ------------------------- sygnały (M10/T4), Service Worker (M10/T2), bateria (M10/T3) */
 
@@ -3788,35 +3590,7 @@ function start() {
     $('pole-odpowiedz').value = tekst;
   });
 
-  // Ukrycie przyjętej paczki (ADR 0007): kontener do schowka i do pola, żeby dało
-  // się go przenieść na inne urządzenie albo zapisać w pliku. Komunikat mówi
-  // wprost, że to obfuskacja — bez złudzenia bezpieczeństwa (pkt 5).
-  $('przycisk-ukryj').addEventListener('click', (e) => {
-    if (!STAN.paczka) return;
-    const tekst = JSON.stringify(zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU));
-    $('pole-odpowiedz').value = tekst;
-    kopiujTekst(tekst, e.currentTarget, `⧉ Ukryj paczkę (${SCHEMAT_KONTENERA})`, 'pole-odpowiedz');
-    zwijPodgladOrganizatora(); // plaintext pytań znika z ekranu po ukryciu
-    status(`Paczka ukryta w kontenerze ${SCHEMAT_KONTENERA} — to obfuskacja bez klucza, nie szyfrowanie.` + ADR(' (ADR 0007)'));
-  });
-  $('przycisk-eksport-zestawu').addEventListener('click', () => {
-    if (!STAN.kontenerPaczki || !STAN.stacje.length || !STAN.pozycja) return;
-    const meta = metaBiezacejOkolicy();
-    const plik = zbudujPlikZestawu({ stacje: STAN.stacje, kontener: STAN.kontenerPaczki, meta });
-    pobierzPlik(`okolica-${meta.geohash5}.zestaw.json`, JSON.stringify(plik, null, 2), 'application/json');
-    status('Zapisano plik TO-zestaw/1 — to surowa paczka: przed publikacją wymaga przeglądu źródeł i edycji pola „przegladZrodel”.' + ADR(' (ADR 0008 pkt 6, ADR 0017 pkt 5)'));
-  });
   $('przycisk-test-polaczenia').addEventListener('click', () => sprawdzPolaczenieZRepo());
-  $('przycisk-eksport-paczki').addEventListener('click', () => {
-    if (!STAN.paczka) return;
-    // plik niesie WYŁĄCZNIE ukryty kontener — plaintext nigdy nie opuszcza
-    // ekranu (ADR 0007 pkt 4); import: ekran paczki → „⬆ Z pliku"
-    const tekst = `${JSON.stringify(zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU), null, 2)}\n`;
-    const nazwa = nazwaPlikuPaczki(STAN.konfig.kodGry);
-    pobierzPlik(nazwa, tekst, 'application/json'); // helper z M0 (prompt → plik)
-    status(`Paczka zapisana do pliku ${nazwa} (w środku kontener ${SCHEMAT_KONTENERA}, nie plaintext). Wgrasz ją z powrotem przez „⬆ Z pliku".`);
-  });
-  $('przycisk-start-gry').addEventListener('click', () => startGry());
   $('przycisk-start-odcinka').addEventListener('click', () => startOdcinkaGry());
   $('przycisk-reczne-dojscie').addEventListener('click', () => zakonczOdcinekGry(TRYBY_DOJSCIA.reczne, null));
   $('przycisk-pauza').addEventListener('click', () => przelaczPauzeGry());

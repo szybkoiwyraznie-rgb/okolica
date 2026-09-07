@@ -276,11 +276,6 @@ async function dojdzDoWklejenia(dom, pozycja = POZYCJA) {
   assert.equal(dom.pobierz('ekran-paczka').hidden, false, 'ekran wklejania widoczny');
 }
 
-test('zgoda Drive: checkbox na ekranie wklejania startuje zaznaczony (decyzja właściciela)', async () => {
-  const dom = await aplikacjaZZestawami({});
-  assert.equal(dom.pobierz('zgoda-drive').checked, true, 'domyślnie „zgadzam się” — opt-out, nie opt-in');
-});
-
 test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain', async () => {
   const atrap = atrapaPost();
   try {
@@ -305,25 +300,6 @@ test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain',
     assert.match(cialo.meta.przegladZrodel, /oczekuje przeglądu/, 'kandydat wychodzi ze znacznikiem');
     assert.equal(cialo.kontener.schemat, 'TO-paczka/2');
     assert.match(dom.pobierz('status').textContent, /WYSŁANA na Drive/);
-  } finally {
-    atrap.przywroc();
-  }
-});
-
-test('wysyłka Drive: odhaczona zgoda = zero wysyłki i jawny status', async () => {
-  const atrap = atrapaPost();
-  try {
-    const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
-    const dom = await aplikacjaZZestawami({ pamiec });
-    podlaczFetch(dom);
-    await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
-    dom.pobierz('zgoda-drive').checked = false;
-    const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
-    dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
-    dom.kliknij('przycisk-sprawdz');
-    await new Promise((r) => setTimeout(r, 30));
-    assert.deepEqual(atrap.posty, [], 'bez zgody nic nie wychodzi z telefonu');
-    assert.match(dom.pobierz('status').textContent, /zgoda odhaczona/);
   } finally {
     atrap.przywroc();
   }

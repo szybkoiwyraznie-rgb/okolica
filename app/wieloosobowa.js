@@ -12,7 +12,7 @@
  * pól, a most kasuje zakazane pola dodatkowo po swojej stronie.
  */
 
-import { ALFABET_GEOHASH, geohash, ogranicz } from './geo.js?v=m12-4';
+import { ALFABET_GEOHASH, geohash, ogranicz } from './geo.js?v=m12-5';
 
 export const SCHEMAT_GRY = 'RO-gra/1';
 export const SCHEMAT_ZDARZENIA = 'RO-zdarzenie/1';

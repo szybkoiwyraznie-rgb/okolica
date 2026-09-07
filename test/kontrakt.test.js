@@ -210,15 +210,12 @@ test('kontrakt: przycisk trybu testowego ma w HTML stan początkowy aria-pressed
 
   assert.match(INDEX, /id="bledy-stacje"[^>]*role="alert"/, 'błędy sieci drogowej w polu role=alert (nie alert())');
 
-  const eksportPaczki = INDEX.match(/<button id="przycisk-eksport-paczki"[^>]*>/)?.[0];
-  assert.ok(eksportPaczki, 'brak eksportu paczki do pliku (ADR 0010 pkt 3)');
-  assert.match(eksportPaczki, /type="button"/);
-  assert.match(eksportPaczki, /\bhidden\b/, 'eksport dopiero z przyjętą paczką');
-
-  const podglad = INDEX.match(/<div id="podglad-organizatora"[^>]*>/)?.[0];
-  assert.ok(podglad, 'brak podglądu organizatora (ADR 0006 pkt 8)');
-  assert.match(podglad, /\bhidden\b/, 'podgląd domyślnie schowany — otwiera się dopiero z przyjętą paczką');
-  assert.match(INDEX, /Tylko dla organizatora/, 'podgląd ma jawne ostrzeżenie, że to treści nie dla graczy');
+  // Decyzja właściciela 2026-09-07: poprawna paczka od razu zaczyna grę —
+  // podgląd, ściąganie i edycja zniknęły z ekranu (zadania właściciela na Drive).
+  for (const id of ['przycisk-ukryj', 'przycisk-eksport-paczki', 'przycisk-eksport-zestawu', 'przycisk-start-gry', 'podglad-organizatora', 'podglad-pytania', 'wynik-podsumowanie', 'zgoda-drive']) {
+    assert.ok(!INDEX.includes(`id="${id}"`), `ekran paczki nie ma #${id} — usunięty decyzją 2026-09-07`);
+  }
+  assert.ok(!INDEX.includes('Tylko dla organizatora'), 'ostrzeżenie podglądu zniknęło razem z podglądem');
   assert.match(INDEX, /id="bledy-stacje"[^>]*\bhidden\b/, 'pole błędów stacji domyślnie schowane');
 });
 
@@ -506,13 +503,13 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'wynik-eksport', 'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',
     'przycisk-pobierz-obraz', 'przycisk-udostepnij-obraz',
     'gra-wynik-tekst-detale', 'pole-wynik-tekst',
-    'przycisk-pomin-stacje', 'przycisk-zakoncz-gre', 'przycisk-start-gry',
+    'przycisk-pomin-stacje', 'przycisk-zakoncz-gre',
   ];
   for (const id of wymagane) assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
   assert.match(html, /id="bledy-gra" class="bledy" role="alert"/, 'błędy faz mają role="alert" (jak inne ekrany)');
   assert.match(html, /id="gra-komunikat" class="podpowiedz" role="status"/, 'komunikat fazy ma role="status"');
   assert.match(html, /id="przycisk-pomin-stacje"[^>]*disabled/, 'pominięcie domyślnie wyłączone (tylko w drodze, ADR 0015)');
-  assert.match(html, /id="przycisk-start-gry"[^>]*hidden/, 'start gry domyślnie ukryty — pojawi się z przyjętą paczką (R4)');
+  assert.ok(!html.includes('id="przycisk-start-gry"'), 'ręcznego startu nie ma — gra rusza sama po Sprawdź (decyzja 2026-09-07)');
   assert.match(html, /id="przycisk-udostepnij-wynik"[^>]*hidden/, 'share tylko z navigator.share (M7, decyzja 8)');
   assert.match(html, /id="przycisk-kopiuj-wynik"[^>]*hidden/, 'kopiowanie tylko z navigator.clipboard (M7, decyzja 8)');
   assert.match(html, /id="przycisk-udostepnij-obraz"[^>]*hidden/, 'udostępnianie obrazu tylko z navigator.canShare+File (M7/P5)');
@@ -592,11 +589,12 @@ test('kontrakt M8: manifest, ikony i ścieżki względne pod Pages (ADR 0002)', 
   assert.ok(!/(?:href|src)="\/[^/"]/.test(INDEX), 'zero ścieżek root-absolute w index.html');
 });
 
-test('kontrakt M9b: zgoda na wysyłkę Drive jest na ekranie wklejania i domyślnie zaznaczona', () => {
-  // Decyzja właściciela (2026-09-06): checkbox zgody żyje na ekranie
-  // „Wklej odpowiedź modelu" i startuje ZAZNACZONY — odhaczenie to opt-out.
-  assert.match(INDEX, /<input id="zgoda-drive" type="checkbox" checked>/, 'checkbox zgody Drive: obecny i domyślnie zaznaczony');
-  assert.ok(INDEX.indexOf('id="zgoda-drive"') < INDEX.indexOf('id="przycisk-sprawdz"'), 'zgoda widoczna PRZED przyciskiem przyjęcia');
+test('kontrakt M9b: wysyłka Drive jest domyślna — ekran wklejania nie pyta o zgodę', () => {
+  // Decyzja właściciela (2026-09-07): prywatna aplikacja — zestaw leci na
+  // Drive zawsze, bez checkboxa i bez przypominajki (checkbox z 2026-09-06
+  // usunięty z ekranu i z kodu).
+  assert.ok(!INDEX.includes('id="zgoda-drive"'), 'checkbox zgody Drive usunięty z ekranu wklejania');
+  assert.match(INDEX, /od razu zaczyna grę/, 'ekran mówi wprost: poprawna paczka = natychmiastowy start');
 });
 
 test('kontrakt M9b: „🔌 Sprawdź połączenie" żyje w karcie repozytorium (instrument CORS z ADR 0016)', () => {

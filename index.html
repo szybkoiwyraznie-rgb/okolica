@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-4">
-  <script type="module" src="app/app.js?v=m12-4"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-5">
+  <script type="module" src="app/app.js?v=m12-5"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -395,9 +395,8 @@
     <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
     <section id="ekran-paczka" class="ekran" hidden aria-labelledby="tytul-paczka">
       <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
-      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny. Po sprawdzeniu aplikacja ukryje paczkę: tekst stanie się nieczytelny przy kopiowaniu, ale <strong>nie jest zaszyfrowany</strong> (obfuskacja bez klucza<span class="dopisek-roboczy">, ADR 0007</span>). Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
+      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i nie jest zaszyfrowany. Poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive do przeglądu właściciela); przy usterkach dostaniesz poprawkę do odesłania modelowi. Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
       <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="10" placeholder="Wklej tutaj odpowiedź modelu (blok JSON)" aria-label="Odpowiedź modelu AI"></textarea>
-      <label class="zgoda-wiersz"><input id="zgoda-drive" type="checkbox" checked><span>📤 Wyślij ten zestaw na Drive do przeglądu właściciela (repozytorium paczek pytań). Zgoda jest zaznaczona domyślnie — odhacz, jeśli zestaw ma zostać tylko na tym telefonie.</span></label>
       <div class="wiersz">
         <button id="przycisk-wklej" class="przycisk" type="button">📋 Wklej ze schowka</button>
         <label class="przycisk przycisk-plik">⬆ Z pliku<input id="plik-odpowiedz" type="file" accept=".json,.txt,application/json,text/plain"></label>
@@ -409,16 +408,7 @@
       <div id="wynik-walidacji" class="karta" hidden>
         <p id="wynik-naglowek" class="duzy"></p>
         <ul id="wynik-usterki" class="usterki"></ul>
-        <dl id="wynik-podsumowanie" class="podsumowanie"></dl>
         <button id="przycisk-poprawka" class="przycisk" type="button" hidden>⧉ Kopiuj poprawkę do modelu</button>
-        <button id="przycisk-ukryj" class="przycisk" type="button" hidden>⧉ Ukryj paczkę (TO-paczka/2)</button>
-        <button id="przycisk-eksport-paczki" class="przycisk" type="button" hidden>⬇ Zapisz paczkę (plik)</button>
-        <button id="przycisk-eksport-zestawu" class="przycisk" type="button" hidden>⬇ Paczka do repozytorium (TO-zestaw/1)</button>
-        <button id="przycisk-start-gry" class="przycisk przycisk-glowny" type="button" hidden>▶ Zacznij grę</button>
-        <div id="podglad-organizatora" class="podglad" hidden>
-          <p class="ostrzezenie"><strong>👁 Tylko dla organizatora</strong> — gracze nie powinni widzieć tych treści<span class="dopisek-roboczy"> (ADR 0006 pkt 8)</span>. Każda ręczna poprawka zapisuje się w paczce jako „modyfikacje", a po ukryciu podgląd znika z ekranu.</p>
-          <div id="podglad-pytania"></div>
-        </div>
       </div>
     </section>
 

@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash } from './geo.js?v=m12-4';
-import { kanonicznyTemat } from './konfig.js?v=m12-4';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-4';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-4';
+import { geohash } from './geo.js?v=m12-5';
+import { kanonicznyTemat } from './konfig.js?v=m12-5';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-5';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-5';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';

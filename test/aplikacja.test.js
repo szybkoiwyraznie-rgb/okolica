@@ -70,13 +70,12 @@ test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
 
 test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', () => {
   assert.ok(pobierz('status').textContent.length > 20, 'pasek stanu milczy po starcie');
-  assert.equal(pobierz('przycisk-ukryj').hidden, true, 'nie ma przyjętej paczki — nie ma czego ukrywać');
   assert.equal(pobierz('wynik-walidacji').hidden, true, 'karta wyniku jest w HTML ukryta i bootstrap jej nie odsłania');
   assert.equal(pobierz('wynik-naglowek').textContent, '', 'żaden wynik nie został wyrenderowany przed wklejeniem paczki');
 });
 
 test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
-  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-sprawdz', 'przycisk-poprawka', 'przycisk-ukryj', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-gps', 'przycisk-ustaw-reczne']) {
+  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-sprawdz', 'przycisk-poprawka', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-gps', 'przycisk-ustaw-reczne']) {
     assert.ok(pobierz(id).zdarzenia.click?.length >= 1, `#${id} nie ma nasłuchu click — przycisk byłby martwy`);
   }
 });
@@ -707,6 +706,40 @@ test('stacje: sieć z cache pokazuje ponowienie, klik dowozi świeże dane z Ove
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, true, 'przy świeżych danych ponowienie znika');
 });
 
+test('Overpass: timeout martwej instancji przełącza OD RAZU, bez 30 s pauzy', async () => {
+  // Pełny odstęp (bez odstep=0): stary kod czekałby tu 30 s na martwą instancję.
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test' });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const wywolania = [];
+  domAtrapa.window.fetch = async (url) => {
+    wywolania.push(url);
+    if (wywolania.length === 1) throw Object.assign(new Error('timeout'), { name: 'AbortError' });
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  const start = Date.now();
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(500);
+  const trwalo = Date.now() - start;
+  assert.equal(wywolania.length, 2, 'martwa FOSSGIS → od razu private.coffee');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'druga instancja dowiozła');
+  assert.ok(trwalo < 10_000, `przełączenie po timeoutcie bez pauzy (trwało ${trwalo} ms, pauza 30 s odpadła)`);
+  assert.equal(domAtrapa.pamiec.get('okolica:overpass-sprawny'), INSTANCJE_OVERPASS[1].url, 'sprawna instancja zapamiętana');
+});
+
+test('Overpass: zapamiętana sprawna instancja jest próbowana pierwsza', async () => {
+  const pamiec = new Map([['okolica:overpass-sprawny', INSTANCJE_OVERPASS[2].url]]);
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const wywolania = [];
+  domAtrapa.window.fetch = async (url) => {
+    wywolania.push(url);
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(250);
+  assert.deepEqual(wywolania, [INSTANCJE_OVERPASS[2].url], 'VK Maps pierwsza — zero doomed-zapytań do FOSSGIS');
+});
+
 test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2', async () => {
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -804,56 +837,7 @@ function czytajFixturePaczka() {
   return JSON.parse(readFileSync(join(KATALOG_APP, 'test', 'fixtures', 'paczka-ok.json'), 'utf8'));
 }
 
-/**
- * Świeża aplikacja z przyjętą paczką z fixture'a. Konfig z pamięci musi
- * zgadzać się z fixturem (3 stacje × 1 pytanie, tematy historia+architektura,
- * promień 1000 m) — inaczej walidator słusznie zgłosi E03/E16/E05.
- */
-async function aplikacjaZPrzyjetaPaczka() {
-  const pamiecKonfig = new Map();
-  pamiecKonfig.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1',
-    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
-  }));
-  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
-  await import(`../app/app.js?podglad=${Math.random().toString(36).slice(2)}`);
-  const paczka = czytajFixturePaczka();
-  domAtrapa.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
-  domAtrapa.kliknij('przycisk-sprawdz');
-  return { dom: domAtrapa, paczka };
-}
-
-function kliknijW(el) {
-  for (const fn of el.zdarzenia.click ?? []) fn({ type: 'click', target: el, currentTarget: el });
-  return (el.zdarzenia.click ?? []).length;
-}
-
-test('podgląd organizatora: przyjęta paczka pokazuje pytania, a odrzucona nie', async () => {
-  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta/);
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, false, 'podgląd otwiera się z przyjęciem');
-  const karty = dom.pobierz('podglad-pytania').children;
-  assert.equal(karty.length, paczka.pytania.length, 'karta na każde pytanie');
-  assert.match(karty[0].children[0].textContent, new RegExp(`^${paczka.pytania[0].id} · stacja`), 'nagłówek karty z id i stacją');
-  assert.equal(karty[0].children[1].value, paczka.pytania[0].tresc, 'treść w polu edycji');
-
-  // odrzucona paczka nie pokazuje podglądu
-  const pamiecKonfig2 = new Map();
-  pamiecKonfig2.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1',
-    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], promienM: 1000 },
-  }));
-  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig2 });
-  await import(`../app/app.js?podglad2=${Math.random().toString(36).slice(2)}`);
-  const zepsuta = czytajFixturePaczka();
-  zepsuta.protokol = 'PYT/9.9';
-  dom2.pobierz('pole-odpowiedz').value = JSON.stringify(zepsuta);
-  dom2.kliknij('przycisk-sprawdz');
-  assert.match(dom2.pobierz('wynik-naglowek').textContent, /odrzucona|Nie da się/);
-  assert.equal(dom2.pobierz('podglad-organizatora').hidden, true, 'przy odmowie podgląd zostaje zamknięty');
-});
-
-test('Q2 end-to-end: wklejona paczka odwrócona (rev1) jest odkodowana i przyjęta', async () => {
+test('Q2 end-to-end: wklejona paczka odwrócona (rev1) od razu zaczyna grę', async () => {
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
@@ -861,17 +845,19 @@ test('Q2 end-to-end: wklejona paczka odwrócona (rev1) jest odkodowana i przyję
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?rev1=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
   const jawna = czytajFixturePaczka();
   const rev1 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV1 };
   dom.pobierz('pole-odpowiedz').value = JSON.stringify(rev1);
   dom.kliknij('przycisk-sprawdz');
   assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev1/, 'nagłówek mówi, co się stało');
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, false, 'podgląd otwiera się z przyjęciem');
-  assert.equal(dom.pobierz('podglad-pytania').children[0].children[1].value, jawna.pytania[0].tresc,
-    'organizator czyta odkodowaną treść, nie odwróconą');
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę (decyzja 2026-09-07)');
+  assert.equal(dom.pobierz('ekran-paczka').hidden, true);
+  assert.equal(dom.pobierz('pole-odpowiedz').value, '', 'plaintext nie zostaje w polu wklejenia');
 });
 
-test('rev2 end-to-end: wklejona paczka z kodami jest odkodowana i przyjęta', async () => {
+test('rev2 end-to-end: wklejona paczka z kodami od razu zaczyna grę', async () => {
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1',
@@ -879,113 +865,15 @@ test('rev2 end-to-end: wklejona paczka z kodami jest odkodowana i przyjęta', as
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?rev2=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
   const jawna = czytajFixturePaczka();
   const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
   rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.punkty; });
   dom.pobierz('pole-odpowiedz').value = JSON.stringify(rev2);
   dom.kliknij('przycisk-sprawdz');
   assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev2/, 'nagłówek mówi, co się stało');
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, false, 'podgląd otwiera się z przyjęciem');
-});
-
-test('podgląd organizatora: edycja przechodzi re-walidację, psucie blokuje ukrycie, modyfikacje[] podróżują z kontenerem', async () => {
-  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
-  const miejsce = paczka.okolica.miejsce;
-
-  // 1) edycja psująca protokół (za krótka treść) — zapisana, ale blokuje ukrycie
-  let karta = dom.pobierz('podglad-pytania').children[0];
-  karta.children[1].value = 'za krótka treść';
-  const zapisz1 = karta.children[karta.children.length - 1];
-  assert.match(zapisz1.textContent, /Zapisz poprawkę/);
-  assert.ok(kliknijW(zapisz1) > 0, 'przycisk zapisu ma nasłuch');
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /wymaga naprawy/, 're-walidacja całej paczki po edycji');
-  assert.equal(dom.pobierz('przycisk-ukryj').hidden, true, 'zepsuta paczka się nie ukryje');
-  assert.equal(dom.pobierz('przycisk-poprawka').hidden, false, 'poprawka do modelu znów dostępna');
-  assert.ok(dom.pobierz('wynik-usterki').children.length > 0, 'usterki widoczne na liście');
-  assert.match(dom.pobierz('status').textContent, /modyfikacje/, 'status mówi o zapisie poprawki');
-
-  // 2) edycja dobra — paczka wraca do czystej
-  karta = dom.pobierz('podglad-pytania').children[0];
-  const dobraTresc = `${miejsce} — pytanie poprawione ręcznie przez organizatora gry terenowej?`;
-  karta.children[1].value = dobraTresc;
-  const zapisz2 = karta.children[karta.children.length - 1];
-  kliknijW(zapisz2);
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(po ręcznej poprawce\)/);
-  assert.equal(dom.pobierz('przycisk-ukryj').hidden, false);
-  assert.equal(dom.pobierz('wynik-usterki').children.length, 0, 'lista usterek wyczyszczona (replaceChildren)');
-
-  // 3) ukrycie zwija podgląd (plaintext znika z DOM), a kontener niesie modyfikacje[]
-  dom.kliknij('przycisk-ukryj');
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, true, 'po ukryciu podgląd zwinięty');
-  assert.equal(dom.pobierz('podglad-pytania').children.length, 0, 'plaintext pytań usunięty z DOM');
-  const kontenerTekst = dom.pobierz('pole-odpowiedz').value;
-  assert.ok(kontenerTekst.startsWith('{'), 'kontener w polu zapasowym (JSON)');
-  const { odpakujPaczke } = await import('../app/kodowanie.js');
-  const zPowrotem = odpakujPaczke(kontenerTekst);
-  assert.equal(zPowrotem.paczka.pytania[0].tresc, dobraTresc, 'ostatnia (dobra) edycja w ukrytej paczce');
-  assert.equal(zPowrotem.paczka.modyfikacje.length, 2, 'obie poprawki zapisane (ta psująca też — ślad audytu)');
-  assert.match(zPowrotem.paczka.modyfikacje[0].opis, /^pytanie s1p1: poprawiono treść pytania$/);
-  assert.match(zPowrotem.paczka.modyfikacje[1].data, /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/);
-});
-
-test('podgląd organizatora: zmiana poprawnej odpowiedzi i dodanie źródła trafiają do paczki', async () => {
-  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
-  const karta = dom.pobierz('podglad-pytania').children[0];
-  // kolejność w karcie: h3, tresc, odpowiedzi(div), wyjasnienie, zrodla(div), zapisz
-  const blokOdpowiedzi = karta.children[2];
-  const wierszeOdp = blokOdpowiedzi.children; // 4 × (radio + input)
-  assert.equal(wierszeOdp.length, 4);
-  // atrapa nie wiąże radio w grupę (przeglądarka sama zdejmie `checked`
-  // z pozostałych) — test odwzorowuje stan PO kliknięciu trzeciej opcji
-  wierszeOdp.forEach((wiersz, i) => { wiersz.children[0].checked = i === 2; });
-  const blokZrodel = karta.children[4];
-  const listaZrodel = blokZrodel.children[0];
-  const dodajZrodlo = blokZrodel.children[1];
-  assert.match(dodajZrodlo.textContent, /Dodaj źródło/);
-  const ilePrzed = listaZrodel.children.length;
-  kliknijW(dodajZrodlo);
-  assert.equal(listaZrodel.children.length, ilePrzed + 1, 'nowy wiersz źródła doszedł do listy');
-  const nowyWiersz = listaZrodel.children[listaZrodel.children.length - 1];
-  nowyWiersz.children[0].value = 'https://archiwum-miejskie.pl/dokument/123';
-  nowyWiersz.children[1].value = 'Archiwum miejskie — dokument 123';
-  nowyWiersz.children[2].value = '2026-09-06';
-
-  kliknijW(karta.children[karta.children.length - 1]);
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(po ręcznej poprawce\)/, `usterki: ${dom.pobierz('wynik-usterki').children.map((li) => li.innerHTML).join('; ')}`);
-  dom.kliknij('przycisk-ukryj');
-  const { odpakujPaczke } = await import('../app/kodowanie.js');
-  const zPowrotem = odpakujPaczke(dom.pobierz('pole-odpowiedz').value);
-  const p0 = zPowrotem.paczka.pytania[0];
-  assert.equal(p0.poprawna, 2, 'poprawna odpowiedź przełączona radiem');
-  assert.equal(p0.zrodla.length, paczka.pytania[0].zrodla.length + 1, 'nowe źródło doklejone');
-  assert.equal(p0.zrodla[p0.zrodla.length - 1].url, 'https://archiwum-miejskie.pl/dokument/123');
-  assert.match(zPowrotem.paczka.modyfikacje[0].opis, /poprawną odpowiedź, źródła/);
-});
-
-test('paczka: eksport do pliku niesie ukryty kontener — round-trip przez import', async () => {
-  const { dom, paczka } = await aplikacjaZPrzyjetaPaczka();
-  assert.equal(dom.pobierz('przycisk-eksport-paczki').hidden, false, 'eksport dostępny z przyjętą paczką');
-  // przechwyć zawartość Blob (atrapa domyślnie gubi części — tylko size)
-  const BlobOryginal = globalThis.Blob;
-  const czesci = [];
-  globalThis.Blob = class { constructor(c) { czesci.push(...(c ?? [])); this.size = (c ?? []).join('').length; } };
-  try {
-    dom.kliknij('przycisk-eksport-paczki');
-  } finally {
-    globalThis.Blob = BlobOryginal;
-  }
-  assert.equal(czesci.length, 1, 'jeden plik na klik');
-  const kontener = JSON.parse(czesci[0]);
-  assert.equal(kontener.schemat, 'TO-paczka/2', 'plik niesie kontener, nie plaintext');
-  assert.ok(!czesci[0].includes(paczka.pytania[0].tresc), 'treść pytania NIE występuje w pliku jawnie');
-  const { odpakujPaczke } = await import('../app/kodowanie.js');
-  const zPowrotem = odpakujPaczke(czesci[0]);
-  assert.deepEqual(
-    zPowrotem.paczka.pytania.map((q) => q.tresc),
-    paczka.pytania.map((q) => q.tresc),
-    'import pliku odtwarza paczkę (ścieżka „⬆ Z pliku" czyta ten sam format)',
-  );
-  assert.match(dom.pobierz('status').textContent, /okolica-[a-z0-9-]+\.paczka\.json/, 'nazwa pliku z oczyszczonym kodem gry i rozszerzeniem z .gitignore');
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę (decyzja 2026-09-07)');
 });
 
 /* ================== M5/J5: brama geokodacji + warstwa zapasowa (Nominatim) */
@@ -1134,26 +1022,23 @@ async function graGotowaDoStartu() {
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?gra=${Math.random().toString(36).slice(2)}`);
-  const paczka = czytajFixturePaczka();
-  dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
-  dom.kliknij('przycisk-sprawdz');
   ustawPozycjeTestowa(dom, '52.2297', '21.0122');
   dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
+  const paczka = czytajFixturePaczka();
+  dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
+  dom.kliknij('przycisk-sprawdz'); // poprawna paczka SAMA zaczyna grę (decyzja 2026-09-07)
   return { dom, paczka, pamiec };
 }
 
 function zaczynijGre(dom) {
-  dom.kliknij('przycisk-start-gry');
+  // Gra startuje sama w chwili Sprawdź — helper tylko to potwierdza.
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra wystartowała sama po przyjęciu paczki');
 }
 
-test('M6: start gry — przycisk z przyjętą paczką, ekran gry i faza A (przygotowanie)', async () => {
+test('M6: start gry — przyjęta paczka sama otwiera ekran gry i fazę A (przygotowanie)', async () => {
   const { dom } = await graGotowaDoStartu();
-  assert.equal(dom.pobierz('przycisk-start-gry').hidden, false, 'start gry dostępny z przyjętą paczką');
   zaczynijGre(dom);
-  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'ekran gry widoczny');
   assert.equal(dom.pobierz('ekran-paczka').hidden, true, 'ekran paczki schowany');
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, true, 'podgląd organizatora zwinięty — gra, nie przygotowanie');
-  assert.equal(dom.pobierz('przycisk-start-gry').hidden, true, 'nie da się zacząć drugiej gry tym samym przyciskiem');
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'panel A widoczny w fazie przygotowanie');
   for (const panel of ['gra-panel-odcinek', 'gra-panel-pytanie', 'gra-panel-koniec']) {
     assert.equal(dom.pobierz(panel).hidden, true, `${panel} ukryty poza swoją fazą`);
@@ -1230,8 +1115,9 @@ test('M6: pytanie odsłania się DOPIERO na stacji i ma cztery odpowiedzi (ADR 0
   });
   assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, true, 'ocena i wyjaśnienie dopiero po odpowiedzi');
   assert.equal(dom.pobierz('przycisk-nastepna-stacja').hidden, true);
-  // przed dojściem treści pytania nie było NICZYM w UI — strażnik: ekran paczki schowany, podgląd zwinięty
-  assert.equal(dom.pobierz('podglad-organizatora').hidden, true);
+  // przed dojściem treści pytania nie było NICZYM w UI — strażnik: ekran paczki schowany, pole wklejenia puste
+  assert.equal(dom.pobierz('ekran-paczka').hidden, true);
+  assert.equal(dom.pobierz('pole-odpowiedz').value, '');
 });
 
 test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z linkami', async () => {

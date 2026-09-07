@@ -679,6 +679,27 @@ z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
 `profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
 Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).
 
+## 2026-09-07 — Overpass fail-fast + Ekran 5: gra od razu (?v=m12-5), gałąź `arena/01a07b16-okolica`
+
+1. **~100 s Overpass = martwe instancje + pauzy 30 s.** Łańcuch czekał pełny
+   odstęp także po timeoutcie/braku odpowiedzi, a pauza 30 s należy się
+   tylko limitom (tego wymaga polityka FOSSGIS przy 429/406). Od teraz:
+   timeout/błąd sieci = przełączenie OD RAZU, bez pauzy; adres instancji,
+   która dowiozła, ląduje w `okolica:overpass-sprawny` i następna gra
+   próbuje ją pierwszą. Cache Drive dla sieci ODRZUCONY: localStorage
+   kryje powtórki na tym telefonie, a po fail-faście pierwsze pobranie
+   to sekundy; most Drive to osobny deployment (`.gs`), więc zysk nie
+   wart ceny. Nazwa miejsca już dziś leci gratis w tym samym zapytaniu
+   (ASSETS §2 pkt 5) — osobne źródło niepotrzebne.
+2. **Ekran 5: poprawna paczka od razu zaczyna grę** (decyzja właściciela).
+   Z ekranu i kodu zniknęły: podgląd organizatora + edycja (`kartaPytania`,
+   `zapiszPoprawke`), „Ukryj paczkę", oba eksporty, ręczny „Zacznij grę"
+   i checkbox zgody Drive — wysyłka jest domyślna i cicha (prywatna
+   aplikacja). Ścieżka usterek bez zmian: lista kodów + poprawka do
+   modelu. Import „⬆ Z pliku" działa jak dawniej.
+
+Brama: 520/520, sync szablonu OK, kontrast AA OK, budżet 39964/40000.
+
 ## 2026-09-07 — Kod +17, ponowienie przy cache, ?v=m12-4, gałąź `arena/01a07b16-okolica`
 
 1. **Przesunięcie kodu 10 → 17** (decyzja właściciela): przykład w szablonie

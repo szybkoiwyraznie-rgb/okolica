@@ -67,11 +67,10 @@ kryterium terenowe: jedną prawdziwą okolicę na telefonie (`docs/WORKFLOW.md`
 obrazkową (cztery kroki jako inline SVG, zero plików zewnętrznych),
 a odpowiedź modelu można wkleić albo wczytać z pliku. Paczka z usterkami
 daje czytelną listę kodów E01–E20 i przycisk „skopiuj poprawkę do modelu".
-Po przyjęciu organizator dostaje podgląd „tylko dla organizatora" z ręczną
-edycją pytań — każda poprawka przechodzi przez pełną re-walidację i zostawia
-ślad w `modyfikacje[]` (ADR 0006 pkt 8). Ukrytą paczkę (`TO-paczka/2`) można
-zapisać do pliku `.paczka.json` i wczytać z powrotem — plik niesie kontener,
-nigdy jawne pytania. Nazwa miejsca do promptu jest bramowana ustawieniem
+Po przyjęciu gra zaczyna się OD RAZU (decyzja 2026-09-07 — podgląd,
+ściąganie i edycja zniknęły z ekranu; to zadania właściciela na Drive,
+dokąd zestaw leci automatycznie w chwili przyjęcia). Wcześniej ukrytą
+paczkę (`TO-paczka/2`) nadal można wczytać z pliku ścieżką „⬆ Z pliku". Nazwa miejsca do promptu jest bramowana ustawieniem
 „pobieranie nazwy miejsca", a zapasowa warstwa Nominatim działa tylko po
 wyraźnej zgodzie na ekranie prywatności (domyślnie wyłączona, jedno żądanie
 na grę, cache 30 dni, atrybucja ODbL — ADR 0013). Kamień czeka na kryterium

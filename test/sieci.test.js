@@ -158,6 +158,7 @@ import {
   POLITYKA,
   budujZapytanieOverpass,
   czyPrzelaczycInstancje,
+  kolejnoscInstancji,
   miastoZObszarow,
   nazwaMiejsca,
   parsujOdpowiedz,
@@ -166,6 +167,16 @@ import {
 } from '../app/sieci.js';
 import { TRYBY } from '../app/konfig.js';
 import { ziarnoRozgrywki } from '../app/konfig.js';
+
+test('kolejnoscInstancji: zapamiętana pierwsza, reszta bez zmian; obcy adres ignorowany', () => {
+  const domyslna = INSTANCJE_OVERPASS.map((i) => i.url);
+  assert.deepEqual(kolejnoscInstancji(null).map((i) => i.url), domyslna);
+  assert.deepEqual(kolejnoscInstancji('').map((i) => i.url), domyslna);
+  assert.deepEqual(kolejnoscInstancji('https://obca.example/api').map((i) => i.url), domyslna);
+  const vk = INSTANCJE_OVERPASS[2].url;
+  assert.deepEqual(kolejnoscInstancji(vk).map((i) => i.url),
+    [vk, INSTANCJE_OVERPASS[0].url, INSTANCJE_OVERPASS[1].url], 'sprawna instancja pierwsza, bez dubla');
+});
 
 test('instancje: łańcuch dokładnie jak ASSETS §2, w kolejności głównej', () => {
   assert.deepEqual(INSTANCJE_OVERPASS.map((i) => i.url), [

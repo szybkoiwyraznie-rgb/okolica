@@ -16,7 +16,7 @@
 | M2 — Mapa | ✅ 2026-09-05 | renderer SVG + 3 podkłady |
 | M3 — Konfiguracja i geolokalizacja | 🟡 kod gotowy, czeka kryterium | ekran prywatności + symulacja w UI; CZYTAJ: §M3 (360 px) |
 | M4 — Stacje z sieci drogowej | 🟡 kod gotowy, czeka kryterium | pipeline Overpass + UI, 3/3 fixture'y ≤ 15%; CZYTAJ: §M4 (teren) |
-| M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | edycja, podgląd, eksport/import, Nominatim opt-in; CZYTAJ: §M5 (model) |
+| M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | auto-start gry po przyjęciu, cicha wysyłka Drive, Nominatim opt-in; CZYTAJ: §M5 (model) |
 | M6 — Rozgrywka | 🟡 kod gotowy, czeka kryterium | ekran gry, trwalosc.js, wznowienie; CZYTAJ: §M6 (telefon) |
 | M7 — Podsumowanie i udostępnianie | 🟡 kod gotowy, czeka kryterium | ranking, eksporty, historia; CZYTAJ: §M7 (słońce/eksporty) |
 | M8 — Publikacja i brama jakości | 🟡 kod gotowy, czeka właściciela | manifest, ikony, CI, ASSETS §6; publikację włącza właściciel (WORKFLOW §5) |
@@ -45,7 +45,7 @@ Kod gotowy: pipeline Overpass, cache, degradacja do pierścienia, pinezki.
 
 ## M5 — Pętla pytań (prompt → model → walidacja → paczka)
 
-Kod gotowy: edycja `modyfikacje[]`, podgląd, eksport/import, Nominatim opt-in.
+Kod gotowy: auto-start gry po przyjęciu, cicha wysyłka Drive, import ukrytej paczki, Nominatim opt-in (podgląd/edycja/eksport usunięte decyzją 2026-09-07).
 **Czeka kryterium**: pełna pętla z prawdziwym modelem AI.
 
 ## M6 — Rozgrywka
