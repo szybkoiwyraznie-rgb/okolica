@@ -870,8 +870,11 @@ Rozjazdy dokumentacja ↔ kod znalezione w audycie (naprawione w tej sesji):
    „tylko dla organizatora" i edycję zapisującą `paczka.modyfikacje[]`, a oba
    zniknęły z ekranu decyzją 2026-09-07 (kontrakt pinuje brak
    `podglad-organizatora` i `podglad-pytania`). Funkcja
-   `zastosujEdycjePaczki()` została w kodzie bez ŻADNEGO wywołania i bez testu
-   — martwy eksport po usuniętej ścieżce UI.
+   `zastosujEdycjePaczki()` została w kodzie bez żadnego wywołania w aplikacji
+   (testy jednostkowe miała — korekta pierwszego odczytu, który pominął
+   `test/protokol.test.js`): martwy eksport po usuniętej ścieżce UI, przy tym
+   sprzed rev2 — walidowała `poprawna` jako `0..3`, a protokół wymaga kodu
+   pozycyjnego, więc ponowne włączenie edycji psułoby paczki rev2.
 5. **`SZABLON_WERSJA`** (`PYT/1.0.5`) nie ma żadnego konsumenta ani testu
    (`grep` po `app/`, `test/`, `tools/`, `index.html` — tylko deklaracja),
    więc `PROTOKOL` §7 wymaga podbijania łatki w stałej, której nikt nie czyta.

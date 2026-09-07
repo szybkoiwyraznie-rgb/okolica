@@ -745,3 +745,15 @@ test('kontrakt: ręczna edycja paczki nie istnieje w kodzie (ADR 0006 aneks 2026
   assert.ok(!INDEX.includes('podglad-pytania'), 'ekran paczki nie ma podglądu pytania');
   assert.match(czytaj('app/protokol.js'), /export function poprawkaDlaModelu/, 'ścieżka usterek (poprawka do modelu) zostaje');
 });
+
+test('kontrakt: SZABLON_WERSJA ma konsumenta w UI (PROTOKOL §7 — łatka szablonu)', () => {
+  // Audyt PR #3: PROTOKOL §7 każe podbijać łatkę szablonu w `SZABLON_WERSJA`,
+  // a stałej nie czytał ani kod, ani test — podbicie byłoby niewidoczne.
+  assert.match(INDEX, /<span id="stopka-szablon">PYT\/1\.0\.\d+<\/span>/, 'stopka ma miejsce na wersję szablonu');
+  const app = czytaj('app/app.js');
+  assert.match(app, /SZABLON_WERSJA/, 'app.js importuje stałą');
+  assert.match(app, /\$\('stopka-szablon'\)\.textContent = SZABLON_WERSJA/, 'app.js ją renderuje');
+  const stala = czytaj('app/protokol.js').match(/export const SZABLON_WERSJA = '([^']+)'/);
+  assert.ok(stala, 'stała jest eksportowana z app/protokol.js');
+  assert.match(stala[1], /^PYT\/1\.0\.\d+$/, 'łatka protokołu ma kształt PYT/1.0.N');
+});

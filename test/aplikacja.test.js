@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
+import { SZABLON_WERSJA, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -52,8 +52,9 @@ test('bootstrap: widoczny jest ekran setupu, reszta ukryta', () => {
   }
 });
 
-test('bootstrap: stopka pokazuje obowiązującą wersję protokołu', () => {
+test('bootstrap: stopka pokazuje obowiązującą wersję protokołu i łatki szablonu', () => {
   assert.equal(pobierz('stopka-protokol').textContent, WERSJA_PROTOKOLU);
+  assert.equal(pobierz('stopka-szablon').textContent, SZABLON_WERSJA, 'łatka szablonu widoczna (PROTOKOL §7)');
 });
 
 test('bootstrap: lista trybów i tematów jest wyrenderowana z kanonu', () => {
