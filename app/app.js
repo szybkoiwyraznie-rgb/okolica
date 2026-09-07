@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-16';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-16';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-17';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-17';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -29,21 +29,21 @@ import {
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
-} from './protokol.js?v=m12-16';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-16';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-16';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-16';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-16';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-16';
+} from './protokol.js?v=m12-17';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-17';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-17';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-17';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-17';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-17';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-16';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-16';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-16';
+} from './zestawy.js?v=m12-17';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-17';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-17';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -63,11 +63,11 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-16';
-import { utworzMape } from './mapa.js?v=m12-16';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-16';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-16';
-import { adresMostu, stanMostu } from './most.js?v=m12-16';
+} from './sieci.js?v=m12-17';
+import { utworzMape } from './mapa.js?v=m12-17';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-17';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-17';
+import { adresMostu, stanMostu } from './most.js?v=m12-17';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -694,9 +694,14 @@ async function wyslijWynikHotseat() {
   try {
     await polecenieMostu(url, bud.polecenie);
     stanWysylkiWyniku('☁ Wynik jest na wspólnym Drive — punkty graczy weszły do rankingów.');
-  } catch {
+  } catch (e) {
+    // Kolejka zostaje w obu przypadkach, ale powód musi być prawdziwy: jawna
+    // odmowa mostu (np. skrypt w Apps Script bez akcji `gra-hotseat`) to nie
+    // awaria sieci — patrz kontrakt `polecenieMostu` w app/sync.js.
     zapiszKolejkeHotseat([...czytajKolejkeHotseat(), bud.polecenie]);
-    stanWysylkiWyniku('Drive nie odpowiedział — wynik czeka w kolejce i poleci przy najbliższym uruchomieniu aplikacji.');
+    stanWysylkiWyniku(e?.odmowaMostu
+      ? `Wynik został na telefonie — most Drive odmówił: ${String(e.message ?? 'nieznany powód')}. Wynik czeka w kolejce i poleci, gdy most przyjmie akcję gra-hotseat (w Apps Script potrzebna jest aktualna wersja skryptu).`
+      : 'Drive nie odpowiedział — wynik czeka w kolejce i poleci przy najbliższym uruchomieniu aplikacji.');
   }
 }
 
@@ -708,16 +713,21 @@ async function oproznijKolejkeHotseat() {
   if (!gry.length) return;
   const zostaly = [];
   let doszlo = 0;
+  let odmowa = null;
   for (const polecenie of gry) {
     try {
       await polecenieMostu(url, polecenie);
       doszlo += 1;
-    } catch {
-      zostaly.push(polecenie); // sieć nadal nie działa — zostanie na później
+    } catch (e) {
+      zostaly.push(polecenie); // zostanie na później
+      if (e?.odmowaMostu) odmowa = String(e.message ?? 'nieznany powód'); // jawna odmowa, nie awaria sieci
     }
   }
   zapiszKolejkeHotseat(zostaly);
   if (doszlo) status(`Wyniki gier z kolejki (${doszlo}) doszły na wspólny Drive — rankingi są pełne.`);
+  if (odmowa) {
+    status(`Most Drive odmówił przyjęcia ${zostaly.length} wyników z kolejki: ${odmowa}. Zostaną ponowione przy następnym uruchomieniu — w Apps Script potrzebna jest aktualna wersja skryptu mostu.`);
+  }
 }
 
 /**

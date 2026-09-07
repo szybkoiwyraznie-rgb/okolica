@@ -18,16 +18,31 @@
 | 7 | Błąd: setup 5 stacji, ekran stacji pokazał 4, ekran pytań `[WE06] … (4) nie zgadza się z konfiguracją (5)` | Sieć słusznie dała 4 (S12), ale setup zostawał przy 5 — teraz setup idzie za wyborem, promień liczy się od nowa, a ekran mówi dlaczego i jak zwiększyć promień (§5) | (commit 3) |
 | — | Dokumenty + cache-bust (runda 2) | ADR 0019 dopisek, ADR 0024 uzupełnienie, PROTOKOL §9, instrukcja, PROJECT_HISTORY, `?v=m12-16` | (commit 4) |
 
-**Brama na koniec partii:** `npm run brama` = **572 testów, 0 fail** + sync
-szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-16` (43 miejsca
+**Brama na koniec partii:** `npm run brama` = **573 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-17` (43 miejsca
 + `WERSJA_SW`).
 
 ## 2. Co wisi
 
-1. **Wklejenie skryptu mostu (z partii 5, bez zmian):**
-   `docs/setup/apps-script-repo-paczek.gs`, 963 linie, md5
-   `01e1d9bdfa071d2634dc33d87607420f` — akcja `gra-hotseat` + premia hot-seat 0.
-   Kroki: `docs/setup/most-drive-instrukcja.md` → „Awaryjnie".
+1. **Wklejenie skryptu mostu — sprawdź, którą wersję masz w Apps Script.**
+   Partia 6 skryptu NIE ruszała (`git log cfc357a^..HEAD -- docs/setup/apps-script-repo-paczek.gs`
+   = puste); ostatnia zmiana to `72fb2a3` z partii 5. Właściciel potwierdził,
+   że wersję z geohash wkleił wcześniej, więc do sprawdzenia zostaje to, co po
+   niej:
+
+   | commit | linie | md5 (początek) | co dodaje | marker w Apps Script |
+   |---|---|---|---|---|
+   | `f06ee55` (main) | 721 | `f5dee86d` | — | — |
+   | `2b46aca` B19 | 798 | `924671bf` | kotwica geohash6 dla starych paczek | `function geohashPunkt`, `function kotwicaZestawu` |
+   | `cc50f14` premia | 842 | `d74367b0` | premia za kolejność (pierwszy G−1, ostatni 0) | `function premiaZaKolejnosc` |
+   | `72fb2a3` gra-hotseat | 963 | `01e1d9bd` | akcja `gra-hotseat` (wynik z jednego telefonu) | `case 'gra-hotseat'`, `function przyjmijGreHotseat` |
+
+   Czyli mając wersję geohash (798 linii), brakuje **premii i `gra-hotseat`**
+   (+167 linii). Objaw bez `gra-hotseat`: most odpowiada
+   `{ok:false, blad:"nieznana akcja albo schemat ciała"}`, a wynik hot-seat
+   czeka w kolejce `okolica:hotseat-kolejka` i jest ponawiany przy każdym
+   uruchomieniu. Od partii 6 ten komunikat jest jawny (patrz §8).
+   Kroki wklejenia: `docs/setup/most-drive-instrukcja.md` → „Awaryjnie".
 2. **Kryteria dopasowania paczki — ROZSTRZYGNIONE (odpowiedź właściciela,
    ten sam dzień).** Zostają cztery: **okolica ±200 m · wiek · tematy nie
    szersze niż setup · suma pytań co najmniej jak w setupie.**
@@ -100,3 +115,23 @@ npm run serwer    # podgląd 0.0.0.0:8000 (360 px)
   zmian, testy i wywołania nietknięte) — pole jest po prostu ignorowane.
 - Wynik gry nie jedzie na Drive, gdy żaden gracz nie ma potwierdzonego profilu
   (np. cały czas bez zasięgu) — `#wynik-drive` mówi to wprost.
+
+## 8. Dopisek: jawna odmowa mostu nie udaje awarii sieci
+
+`polecenieMostu()` (`app/sync.js`) rzuca Error z `odmowaMostu = true`, gdy most
+odpowie `{ok:false, …}` — kontrakt mówi „nie ponawiać". `wyslijWynikHotseat()`
+i `oproznijKolejkeHotseat()` łapały każdy błąd tak samo i pisały „Drive nie
+odpowiedział", więc przy starszym skrypcie w Apps Script gracz dostawał fałszywą
+diagnozę, a kolejka mieliła w nieskończoność bez słowa wyjaśnienia.
+
+Teraz oba miejsca rozróżniają przypadki (kolejka zostaje w obu — po wklejeniu
+aktualnego skryptu wyniki same dojdą):
+- `#wynik-drive`: „Wynik został na telefonie — most Drive odmówił: <odpowiedź
+  mostu>. Wynik czeka w kolejce i poleci, gdy most przyjmie akcję gra-hotseat
+  (w Apps Script potrzebna jest aktualna wersja skryptu).";
+- `#status` przy starcie: „Most Drive odmówił przyjęcia N wyników z kolejki:
+  <odpowiedź>. Zostaną ponowione przy następnym uruchomieniu…".
+
+Test: „hot-seat: jawna odmowa mostu nie udaje awarii sieci — komunikat nazywa
+powód" (`test/aplikacja.test.js`) — bez poprawki pada na pierwszej asercji.
+Brama: **573 testy, 0 fail**; cache-bust `?v=m12-17` + `WERSJA_SW`.

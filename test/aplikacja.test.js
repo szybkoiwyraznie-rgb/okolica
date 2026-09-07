@@ -1997,6 +1997,29 @@ test('hot-seat: bez potwierdzonego profilu wynik zostaje na telefonie — i jest
   }
 });
 
+test('hot-seat: jawna odmowa mostu nie udaje awarii sieci — komunikat nazywa powód', async () => {
+  // Sytuacja z życia: w Apps Script wisi starsza wersja skryptu bez akcji
+  // `gra-hotseat`, więc most odpowiada {ok:false, blad:'nieznana akcja…'}.
+  const { dom } = await graGotowaDoStartu();
+  const zadania = [];
+  const staryFetch = globalThis.fetch;
+  globalThis.fetch = async (adres, opcje) => {
+    zadania.push(JSON.parse(opcje.body));
+    return { ok: true, status: 200, json: async () => ({ ok: false, blad: 'nieznana akcja albo schemat ciała' }) };
+  };
+  try {
+    await grajDwieStacjeIKoncz(dom);
+    assert.equal(zadania.filter((c) => c.akcja === 'gra-hotseat').length, 1, 'aplikacja próbowała zapisać');
+    const tekst = dom.pobierz('wynik-drive').textContent;
+    assert.match(tekst, /most Drive odmówił/, 'powód jest prawdziwy: odmowa, nie „nie odpowiedział"');
+    assert.match(tekst, /nieznana akcja albo schemat ciała/, 'gracz widzi odpowiedź mostu');
+    assert.match(tekst, /czeka w kolejce/, 'wynik nie ginie — poleci po wklejeniu aktualnego skryptu');
+    assert.equal(/Drive nie odpowiedział/.test(tekst), false, 'bez fałszywej diagnozy awarii sieci');
+  } finally {
+    globalThis.fetch = staryFetch;
+  }
+});
+
 test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, a prompt się buduje (S12)', async () => {
   // Ten sam fixture co w teście cache, ale zamówione 10 stacji: sieć nie da
   // rozstawić tylu w wymaganych odstępach, więc wybór zwróci mniej (S12).

@@ -1100,8 +1100,20 @@ domyślny, info należy do sekcji prywatność.
   stacji mówi dlaczego jest ich mniej i jak zwiększyć promień, żeby dostać 5.
   Test: „sieć za uboga na zamówioną liczbę — setup idzie za wyborem, a prompt
   się buduje (S12)" w `test/aplikacja.test.js` (bez naprawy pada).
-- Testy: **572, 0 fail**; kontrakt pinuje `sumaPytanWpisu`, brak
-  `id="multi-zgoda"` i punkt „Gra na wielu telefonach" w prywatności.
+- **Jawna odmowa mostu nie udaje awarii sieci.** Właściciel zapytał, czy partia 6
+  zmieniała skrypt mostu (nie zmieniała — `git log cfc357a^..HEAD --
+  docs/setup/apps-script-repo-paczek.gs` = puste; wersję z geohash miał wklejoną
+  wcześniej). Przy okazji wyszło: `wyslijWynikHotseat()` i
+  `oproznijKolejkeHotseat()` łapały każdy błąd jednakowo i pisały „Drive nie
+  odpowiedział", choć `polecenieMostu()` oznacza jawną odmowę flagą
+  `odmowaMostu` (kontrakt: „nie ponawiać"). Przy starszym skrypcie w Apps Script
+  gracz dostawał fałszywą diagnozę, a kolejka mieliła bez słowa wyjaśnienia.
+  Teraz komunikat cytuje odpowiedź mostu („most Drive odmówił: nieznana akcja
+  albo schemat ciała") i mówi, że wynik poleci po wklejeniu aktualnej wersji;
+  kolejka zostaje w obu przypadkach, żeby wyniki doszły same.
+- Testy: **573, 0 fail** (nowy: „jawna odmowa mostu nie udaje awarii sieci");
+  kontrakt pinuje `sumaPytanWpisu`, brak `id="multi-zgoda"` i punkt „Gra na
+  wielu telefonach" w prywatności.
 
 **Brama na koniec partii:** `npm run brama` = **572 testów, 0 fail** + sync
 szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-16` (+ `WERSJA_SW`).
