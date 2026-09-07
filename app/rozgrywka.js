@@ -16,7 +16,7 @@
  * Punktacja: ADR 0009 pkt 5 (ramy) + ADR 0014 (reguła czasu — mediana tempa).
  */
 
-import { ogranicz, odlegloscM } from './geo.js';
+import { ogranicz, odlegloscM } from './geo.js?v=m12-1';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
@@ -122,12 +122,17 @@ export function dystansOdcinkaM(stan, stacjaId) {
  * @param {number} [args.czasMs] znacznik startu z wstrzykniętego zegara
  * @param {string} [args.ziarno] ziarno rozgrywki (odtwarzalność, ADR 0005 pkt 6)
  */
-export function nowaRozgrywka({ konfig, stacje, paczka, srodek, gracze = null, czasMs = 0, ziarno = '' }) {
+export function nowaRozgrywka({ konfig, stacje, paczka, srodek, gracze = null, czasMs = 0, ziarno = '', dystanseOdcinkowM = null }) {
   wymaganie(konfig && typeof konfig === 'object', 'konfig jest wymagany');
   wymaganie(Array.isArray(stacje) && stacje.length > 0, 'stacje muszą być niepustą listą');
   wymaganie(paczka && Array.isArray(paczka.pytania) && paczka.pytania.length > 0, 'paczka z pytaniami jest wymagana');
   wymaganie(srodek && Number.isFinite(srodek.lat) && Number.isFinite(srodek.lon), 'srodek musi mieć lat i lon');
   wymaganie(Number.isFinite(czasMs), 'czasMs musi być liczbą');
+  // Dystanse sieciowe (ADR 0014 pkt 1): tablica długości N z liczbami albo
+  // nullami; null na pozycji = fallback do linii prostej dla tego odcinka.
+  // Brak parametru (zestawy, multi, stare ścieżki) = w całości prosta kreska.
+  wymaganie(dystanseOdcinkowM === null || (Array.isArray(dystanseOdcinkowM) && dystanseOdcinkowM.length === stacje.length),
+    'dystanseOdcinkowM muszą być tablicą długości równej liczbie stacji albo null');
 
   const listaGraczy = (gracze ?? (konfig.imiona ?? []).map((imie, i) => ({ id: i + 1, imie })))
     .map((g, i) => ({ id: g?.id ?? i + 1, imie: String(g?.imie ?? `Gracz ${i + 1}`) }));
@@ -159,7 +164,10 @@ export function nowaRozgrywka({ konfig, stacje, paczka, srodek, gracze = null, c
       trybDojscia: null,
       accuracyM: null,
       odlegloscKoncowaM: null,
-      dystansM: dystansOdcinkaM({ stacje, start: srodek }, s.id),
+      dystansM: Number.isFinite(dystanseOdcinkowM?.[i]) && dystanseOdcinkowM[i] >= 0
+        ? Math.round(dystanseOdcinkowM[i])
+        : dystansOdcinkaM({ stacje, start: srodek }, s.id),
+      dystansSieciowy: Number.isFinite(dystanseOdcinkowM?.[i]) && dystanseOdcinkowM[i] >= 0,
       poLimitie: false,
       tempo: null,
     })),
@@ -519,7 +527,8 @@ export function podglad(stan) {
     stacja: stacja ? { id: stacja.id, lat: stacja.lat, lon: stacja.lon, opis: stacja.opis } : null,
     gracz: gracz ? { id: gracz.id, imie: gracz.imie } : null,
     odpowiadaja: stacja ? ktoOdpowiada(stan, stacja.id) : [],
-    dystansM: stacja ? dystansOdcinkaM(stan, stacja.id) : 0,
+    dystansM: stacja ? (znajdzOdcinek(stan, stacja.id)?.dystansM ?? dystansOdcinkaM(stan, stacja.id)) : 0,
+    dystansSieciowy: stacja ? Boolean(znajdzOdcinek(stan, stacja.id)?.dystansSieciowy) : false,
     zaliczoneStacje: zaliczone,
     pominietaStacje: pominieta,
     pozostaloStacje: stan.stacje.length - zaliczone - pominieta,

@@ -16,8 +16,9 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash } from './geo.js';
-import { SCHEMAT_KONTENERA } from './kodowanie.js';
+import { geohash } from './geo.js?v=m12-1';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-1';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-1';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -286,8 +287,8 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
 
 /**
  * Plik publiczny TO-zestaw/1: meta + jawne stacje + kontener (ADR 0017 pkt 1).
- * `przegladZrodel` wychodzi jako „oczekuje przeglądu" — publikacja (commit do
- * `data/paczki/`) wymaga ręcznej edycji tego pola przez właściciela (pkt 5).
+ * `przegladZrodel` wychodzi jako „oczekuje przeglądu" — publikacja (akceptacja
+ * przez właściciela na moście Drive, ADR 0018) wymaga przeglądu źródeł (pkt 5).
  */
 export function zbudujPlikZestawu({ stacje, kontener, meta, autor = 'organizator' } = {}) {
   wymaganie(Array.isArray(stacje) && stacje.length > 0 && stacje.every(czyStacjaOk),
@@ -297,7 +298,7 @@ export function zbudujPlikZestawu({ stacje, kontener, meta, autor = 'organizator
     'zbudujPlikZestawu: meta musi być kompletna (zbierzMetaZestawu)');
   return {
     schemat: SCHEMAT_ZESTAWU,
-    protokol: 'PYT/1.0',
+    protokol: WERSJA_PROTOKOLU,
     meta: {
       ...meta,
       autor: String(autor),

@@ -278,7 +278,9 @@ export function zbudujZdarzenie({ kod, idGry, graczId, typ, stacjaId = null, dan
   if (kod) zdarzenie.kod = kod;
   if (idGry) zdarzenie.idGry = idGry;
   if (stacjaId != null) zdarzenie.stacjaId = Number(stacjaId);
-  if (tUrzadzenia != null) zdarzenie.tUrzadzenia = Number(tUrzadzenia);
+  // tUrzadzenia: TYLKO skończona liczba ms (np. Date.now()) — ISO-tekst dałby
+  // Number()=NaN, a JSON.stringify(NaN) to null, czyli śmieć w protokole.
+  if (tUrzadzenia != null && Number.isFinite(Number(tUrzadzenia))) zdarzenie.tUrzadzenia = Number(tUrzadzenia);
   return zdarzenie;
 }
 
@@ -299,7 +301,12 @@ export function biezacyGraczTury(gra) {
   }
   const N = (gra.gracze ?? []).length;
   if (!N) return null;
-  for (let i = 1; i <= gra.konfiguracja.liczbaStacji; i += 1) {
+  // Uszkodzony stan z mostu (brak konfiguracji) to null, nie TypeError —
+  // pętla pollingu nie może paść na cudzych danych (lustro .gs zakłada
+  // poprawny stan, bo most go sam zapisał; telefon nie ma tej gwarancji).
+  const liczbaStacji = gra.konfiguracja?.liczbaStacji ?? 0;
+  if (!(liczbaStacji >= 1)) return null;
+  for (let i = 1; i <= liczbaStacji; i += 1) {
     if (zamkniete.has(i)) continue;
     const wlasciciel = gra.gracze[(i - 1) % N];
     if (rezygnacje.has(wlasciciel.id)) continue; // stacje rezygnującego pominięte

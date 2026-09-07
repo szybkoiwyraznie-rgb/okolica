@@ -11,8 +11,8 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, liczbaPytan } from './konfig.js';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js';
+import { TEMATY, WIEK, TRYBY, liczbaPytan } from './konfig.js?v=m12-1';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-1';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.0';
@@ -20,10 +20,10 @@ export const WERSJA_PROTOKOLU = 'PYT/1.0';
 /** Wersja łatki szablonu promptu (kosmetyka szablonu bez zmiany schematu). */
 export const SZABLON_WERSJA = 'PYT/1.0.0';
 
-/** Schemat kontenera zaszyfrowanego (ADR 0007 pkt 3). */
+/** Schemat kontenera z obfuskowanymi pytaniami (ADR 0007 pkt 3 i 5: maskowanie, nie szyfrowanie). */
 // Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
 // protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
-export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js';
+export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-1';
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.
@@ -160,24 +160,25 @@ export function opisListyStacji(stacje, srodek) {
 
 /**
  * Buduje prompt z szablonu §2 protokołu. Zwraca `{ prompt, usterki }` —
- * usterki (K** setupu) pojawiają się, gdy brakuje danych wejściowych; prompt
- * jest wtedy `null`, żeby nie wysłać modelowi dziurawego zadania.
+ * usterki (kody WE**, prefiks własny domeny wejścia promptu — ADR 0015 pkt 6)
+ * pojawiają się, gdy brakuje danych wejściowych; prompt jest wtedy `null`,
+ * żeby nie wysłać modelowi dziurawego zadania.
  */
 export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
   const usterki = [];
   const dodaj = (kod, pole, komunikat) => usterki.push({ kod, pole, komunikat });
 
-  if (!konfig) dodaj('P01', 'konfig', 'Brak konfiguracji — najpierw ekran ustawień.');
+  if (!konfig) dodaj('WE01', 'konfig', 'Brak konfiguracji — najpierw ekran ustawień.');
   if (!okolica || !czyWspolrzedneOk(okolica?.lat, okolica?.lon)) {
-    dodaj('P02', 'okolica', 'Brak poprawnej pozycji (współrzędnych) — bez niej prompt nie ma okolicy.');
+    dodaj('WE02', 'okolica', 'Brak poprawnej pozycji (współrzędnych) — bez niej prompt nie ma okolicy.');
   }
   if (!Array.isArray(stacje) || stacje.length === 0) {
-    dodaj('P03', 'stacje', 'Brak stacji — ustaw je (albo użyj trybu uproszczonego), zanim poprosisz model o pytania.');
+    dodaj('WE03', 'stacje', 'Brak stacji — ustaw je (albo użyj trybu uproszczonego), zanim poprosisz model o pytania.');
   }
-  if (konfig && !TRYBY[konfig.tryb]) dodaj('P04', 'tryb', `Nieznany tryb „${konfig.tryb}".`);
-  if (konfig && !WIEK[konfig.wiek]) dodaj('P05', 'wiek', `Nieznana kategoria wiekowa „${konfig.wiek}".`);
+  if (konfig && !TRYBY[konfig.tryb]) dodaj('WE04', 'tryb', `Nieznany tryb „${konfig.tryb}".`);
+  if (konfig && !WIEK[konfig.wiek]) dodaj('WE05', 'wiek', `Nieznana kategoria wiekowa „${konfig.wiek}".`);
   if (konfig && stacje && stacje.length !== konfig.liczbaStacji) {
-    dodaj('P06', 'liczbaStacji', `Liczba stacji (${stacje.length}) nie zgadza się z konfiguracją (${konfig.liczbaStacji}).`);
+    dodaj('WE06', 'liczbaStacji', `Liczba stacji (${stacje.length}) nie zgadza się z konfiguracją (${konfig.liczbaStacji}).`);
   }
   if (usterki.length) return { prompt: null, usterki };
 
@@ -207,7 +208,7 @@ export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
   }
   const resztki = [...prompt.matchAll(/\{[A-Z_]+\}/g)].map((m) => m[0]);
   if (resztki.length) {
-    dodaj('P07', 'szablon', `W szablonie zostały niepodstawione placeholdery: ${[...new Set(resztki)].join(', ')}. Uruchom \`npm run build\`.`);
+    dodaj('WE07', 'szablon', `W szablonie zostały niepodstawione placeholdery: ${[...new Set(resztki)].join(', ')}. Uruchom \`npm run build\`.`);
     return { prompt: null, usterki };
   }
   return { prompt, usterki };

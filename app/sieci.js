@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js';
-import { TRYBY } from './konfig.js';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-1';
+import { TRYBY } from './konfig.js?v=m12-1';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -625,11 +625,17 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
 
 export const SCHEMAT_SIECI = 'sieci/1';
 
-/** Klucz cache: geohash-6 + promień gry — ta sama okolica i R = ten sam wpis. */
-export function kluczCacheSieci({ lat, lon, promienM }) {
+/**
+ * Klucz cache: geohash-6 + promień gry + TRYB — graf zależy od trybu
+ * (klasy dróg piesza/rower/samochód), więc wpis pieszy nie może obsłużyć
+ * gry samochodowej (osobny wpis na tryb; stare klucze bez trybu wygasają
+ * naturalnie przez TTL — nikt ich już nie odczytuje).
+ */
+export function kluczCacheSieci({ lat, lon, promienM, tryb }) {
   if (!czyWspolrzedneOk(lat, lon)) throw usterka('S05');
   if (!Number.isFinite(promienM) || promienM <= 0) throw usterka('S06');
-  return `okolica:sieci:${geohash(lat, lon, 6)}-${Math.round(promienM)}`;
+  if (!TRYBY[tryb]) throw usterka('S07', String(tryb));
+  return `okolica:sieci:${geohash(lat, lon, 6)}-${Math.round(promienM)}-${tryb}`;
 }
 
 function okraglijPunkty(punkty) {

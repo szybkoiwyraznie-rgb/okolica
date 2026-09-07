@@ -369,7 +369,7 @@ export function walidujSetup(konfig) {
     const kod = String(konfig.kodGry).trim();
     const { min: minD, max: maxD } = OGRANICZENIA.dlugoscKoduGry;
     if (kod.length < minD || kod.length > maxD) {
-      dodaj('K18', 'kodGry', `Kod gry musi mieć od ${minD} do ${maxD} znaków (albo zostaw puste, żeby nie ukrywać pytań).`);
+      dodaj('K18', 'kodGry', `Kod gry musi mieć od ${minD} do ${maxD} znaków (albo zostaw puste; pytania zawsze kryje obfuskacja kontenera, nie ten kod — ADR 0007 pkt 4).`);
     }
   }
 

@@ -27,7 +27,7 @@ import {
   WERSJA_PROTOKOLU,
 } from './protokol.js?v=m12-1';
 import { SCHEMAT_KONTENERA, odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-1';
-import { ZRODLA_STACJI, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-1';
+import { ZRODLA_STACJI, dystanseOdcinkowM, miaraSprawiedliwosci, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-1';
 import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-1';
 import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-1';
 import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-1';
@@ -60,7 +60,7 @@ import {
   wczytajDaneZCache,
 } from './sieci.js?v=m12-1';
 import { utworzMape } from './mapa.js?v=m12-1';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, filtrujLobby, kategorieRankingu, kodPoprawny, normalizujKod, przeliczWyniki, ramkaGeohash, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-1';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, filtrujLobby, kategorieRankingu, kodPoprawny, normalizujKod, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-1';
 import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-1';
 import { adresMostu, stanMostu } from './most.js?v=m12-1';
 
@@ -335,6 +335,13 @@ function renderujImiona() {
   });
 }
 
+/**
+ * Nasłuchy pól setupu podpina się RAZ (LESSONS L14): renderujSetup() odpala
+ * i przy starcie, i przy wznowieniu gry — bez strażnika każdy input/select
+ * dostałby drugi handler (m.in. podwójne przebudowy list i statusy).
+ */
+let setupNasluchyPodpiete = false;
+
 function renderujSetup() {
   const k = STAN.konfig;
   $('setup-promien').value = k.promienM;
@@ -346,6 +353,10 @@ function renderujSetup() {
   $('setup-geokodacja').checked = !!k.geokodacja;
   $('setup-promien').min = OGRANICZENIA.promienM.min;
   $('setup-promien').max = OGRANICZENIA.promienM.max;
+
+  // Wartości pól odświeżamy za każdym razem, nasłuchy — tylko raz (L14).
+  if (setupNasluchyPodpiete) return;
+  setupNasluchyPodpiete = true;
 
   const czytajLiczbe = (idPola, pole) => $(idPola).addEventListener('input', (e) => {
     const v = Number(e.target.value);
@@ -663,9 +674,9 @@ function ziarno() {
 
 /* --- sieć drogowa (M4): cache, pobieranie z łańcuchem instancji, wybór --- */
 
-/** Klucz cache sieci dla bieżącej pozycji i promienia (ADR 0010 pkt 1). */
+/** Klucz cache sieci dla bieżącej pozycji, promienia i trybu (ADR 0010 pkt 1). */
 function kluczSieci() {
-  return kluczCacheSieci({ lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM });
+  return kluczCacheSieci({ lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, tryb: STAN.konfig.tryb });
 }
 
 function odczytajCacheSieci(klucz, terazMs) {
@@ -1117,7 +1128,7 @@ function renderujGre({ panele = true } = {}) {
 
   if (panele && r.faza === FAZY.przygotowanie && pod.stacja) {
     $('gra-kto-idzie').textContent = pod.gracz ? `Idzie: ${pod.gracz.imie} → stacja ${indeks + 1}` : `Stacja ${indeks + 1}`;
-    $('gra-cel-stacji').textContent = `${pod.stacja.opis || 'Cel bez opisu'} · ${formatujWspolrzedne(pod.stacja.lat, pod.stacja.lon)} · ${Math.round(pod.dystansM)} m drogą od poprzedniego punktu`;
+    $('gra-cel-stacji').textContent = `${pod.stacja.opis || 'Cel bez opisu'} · ${formatujWspolrzedne(pod.stacja.lat, pod.stacja.lon)} · ${Math.round(pod.dystansM)} m ${pod.dystansSieciowy ? 'drogą' : 'w linii prostej'} od poprzedniego punktu`;
     $('przycisk-start-odcinka').textContent = `▶ Idę do stacji ${indeks + 1}`;
   }
 
@@ -1261,9 +1272,16 @@ function odswiezPropozycjeZestawow() {
   $('zestawy-status').textContent = lokalne.length
     ? 'Masz gotowe paczki z tego telefonu; sprawdzam też repozytorium…'
     : 'Sprawdzam repozytorium paczek dla tej okolicy…';
+  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
+  if (!f) {
+    $('zestawy-status').textContent = lokalne.length
+      ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
+      : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
+    return;
+  }
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = setTimeout(() => kontroler?.abort(), 6000);
-  fetch(url, kontroler ? { signal: kontroler.signal } : undefined)
+  f(url, kontroler ? { signal: kontroler.signal } : undefined)
     .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
     .then((tekst) => dopasujMetaIndeksu(walidujIndeksSurowy(tekst).indeks, kryteria))
     .then((dopasowane) => {
@@ -1299,9 +1317,11 @@ function sprawdzPolaczenieZRepo() {
     return;
   }
   status('Sprawdzam połączenie z mostem Drive…');
+  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
+  if (!f) { status('Nie da się sprawdzić: to środowisko nie ma fetch.'); return; }
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = setTimeout(() => kontroler?.abort(), 8000);
-  fetch(url, kontroler ? { signal: kontroler.signal } : undefined)
+  f(url, kontroler ? { signal: kontroler.signal } : undefined)
     .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
     .then((tekst) => {
       const { indeks, usterki } = walidujIndeksSurowy(tekst);
@@ -1354,7 +1374,9 @@ function grajZZestawemZRepo(wpis, urlIndeksu) {
   // Drive) jedzie przez `?akcja=paczka&id=…`, wpis z `plik` jak dotąd.
   const url = urlPaczkiZRepo(urlIndeksu, wpis);
   status(`Pobieram paczkę z repozytorium: ${wpis.miejsce}…`);
-  fetch(url)
+  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
+  if (!f) { status('Nie da się pobrać: to środowisko nie ma fetch.'); return; }
+  f(url)
     .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
     .then((tekst) => {
       const { zestaw, usterki } = walidujZestawPublicznySurowy(tekst);
@@ -1390,6 +1412,9 @@ function startGry() {
     srodek: STAN.pozycja,
     czasMs: zegarGry(),
     ziarno: ziarno(),
+    // ADR 0014 pkt 1: układ z sieci niesie dystanse drogowe (STAN.wynikSieci
+    // istnieje tylko wtedy — pierścień i ręczne przesunięcia go kasują).
+    dystanseOdcinkowM: dystanseOdcinkowM(STAN.wynikSieci),
   });
   STAN.paczka = null;
   $('przycisk-start-gry').hidden = true;
@@ -2297,7 +2322,9 @@ function wyslijZestawNaDrive() {
     kontener: zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU),
     meta: metaBiezacejOkolicy(),
   });
-  fetch(url, {
+  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
+  if (!f) { status('Paczka przyjęta. Nie wysłano na Drive: to środowisko nie ma fetch.'); return; }
+  f(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(plik),
@@ -2671,12 +2698,23 @@ function urlMostuMulti() {
   return adresMostu();
 }
 
+/**
+ * `window.fetch`, nie gołe `fetch` (LESSONS L18): Node ≥ 18 ma globalny fetch
+ * i testy na atrapie DOM wołałyby prawdziwą sieć. Zwraca funkcję albo null
+ * (środowisko bez fetch — wołający degraduje się JAWNIE, nigdy po cichu).
+ */
+function fetchPrzegladarki() {
+  return typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
+}
+
 /** GET do mostu z limitem 8 s i jawnym błędem — współdzielony przez lobby, indeks i wznowienie. */
 async function pobierzGetMulti(url) {
+  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
+  if (!f) throw new Error('to środowisko nie ma fetch — nie da się zapytać mostu');
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = setTimeout(() => kontroler?.abort(), 8000);
   try {
-    const odp = await fetch(url, kontroler ? { signal: kontroler.signal } : undefined);
+    const odp = await f(url, kontroler ? { signal: kontroler.signal } : undefined);
     if (!odp.ok) throw new Error(`HTTP ${odp.status}`);
     return await odp.json();
   } finally {
@@ -2686,10 +2724,12 @@ async function pobierzGetMulti(url) {
 
 /** GET, którego odpowiedź jest tekstem (indeks/paczka z repo — jak w M9b). */
 async function pobierzGetTekst(url) {
+  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
+  if (!f) throw new Error('to środowisko nie ma fetch — nie da się zapytać mostu');
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = setTimeout(() => kontroler?.abort(), 8000);
   try {
-    const odp = await fetch(url, kontroler ? { signal: kontroler.signal } : undefined);
+    const odp = await f(url, kontroler ? { signal: kontroler.signal } : undefined);
     if (!odp.ok) throw new Error(`HTTP ${odp.status}`);
     return await odp.text();
   } finally {
@@ -3102,7 +3142,16 @@ async function przywrocGreMulti() {
 function onStanGryMulti(gra) {
   const m = STAN.multi;
   if (!m || !gra || gra.schemat !== SCHEMAT_GRY) return;
-  m.gra = gra;
+  // Stan z mostu WALIDUJEMY (kody R**), zanim dotknie renderu i maszynki tur:
+  // uszkodzony stan to jawny status i czekanie na poprawny, nie TypeError
+  // w pętli pollingu (wcześniej sprawdzaliśmy tylko `schemat`).
+  const { gra: czysta, usterki } = walidujGreSurowa(JSON.stringify(gra));
+  if (!czysta) {
+    const u = usterki[0];
+    status(`Most zwrócił uszkodzony stan gry ([${u?.kod ?? 'R?'}] ${u?.komunikat ?? 'nieznany powód'}) — czekam na poprawny, gra toczy się dalej.`);
+    return;
+  }
+  m.gra = czysta;
   m.ostatniStanMs = Date.now();
   if (gra.stan === 'trwa' && !STAN.rozgrywka && STAN.ekran !== 'gra') uruchomGreMulti(gra);
   if (gra.stan === 'zakonczona' || gra.stan === 'archiwum') {
@@ -3183,7 +3232,7 @@ function wyslijZdarzenieMulti(typ, stacjaId, dane) {
   if (!m?.sync) return Promise.resolve(null);
   const zdarzenie = zbudujZdarzenie({
     kod: m.gra.kod, idGry: m.gra.idGry ?? null, graczId: m.graczId,
-    typ, stacjaId, dane, tUrzadzenia: new Date().toISOString(),
+    typ, stacjaId, dane, tUrzadzenia: Date.now(),
   });
   return m.sync.wyslijZdarzenie(zdarzenie).then((wynik) => { renderujPasekSync(); return wynik; });
 }

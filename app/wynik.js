@@ -8,8 +8,8 @@
  * Prywatność (ADR 0013): tekst wyniku NIE niesie treści pytań ani
  * współrzędnych — stacje występują jako NUMERY, miejsce jako nazwa.
  */
-import { STANY_ODCINKA, TRYBY_DOJSCIA } from './rozgrywka.js';
-import { miaraSprawiedliwosci } from './stacje.js';
+import { STANY_ODCINKA, TRYBY_DOJSCIA } from './rozgrywka.js?v=m12-1';
+import { miaraSprawiedliwosci } from './stacje.js?v=m12-1';
 
 /** Próg medalu „uczciwa trasa" — kryterium jakości z ROADMAP M4 (ADR 0005 pkt 5). */
 export const PROG_MEDALU = 0.15;

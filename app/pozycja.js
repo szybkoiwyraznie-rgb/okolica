@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-1';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -138,7 +138,7 @@ export function ocenFix(fix, { maxAccuracyM = GRANICE.maxAccuracyM } = {}) {
       stan: STANY_FIXA.bezDokladnosci,
       akceptowany: true,
       kod: null,
-      komunikat: 'Brak danych o dokładności — próg dojścia jest ustawiony najostrzej (100 m).',
+      komunikat: 'Brak danych o dokładności — próg dojścia jest ustawiony najłagodniej (100 m), żeby nie blokować gry.',
       progM: progDojsciaM(null),
     };
   }
