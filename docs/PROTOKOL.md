@@ -251,7 +251,7 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E13` | duplikat pytania (znormalizowana `tresc` występuje więcej niż raz) |
 | `E14` | brak zakotwiczenia miejscowego: ani `tresc`, ani `wyjasnienie` nie odnosi się do miejsca z `okolica.miejsce` ani do nazwy/opisu stacji |
 | `E15` | pole wymagane puste albo nie tekstem/liczbą zgodnie z §3 |
-| `E16` | `okolica` w paczce niespójna z konfiguracją gry (promień, środek odległy o > 500 m) |
+| `E16` | paczka niespójna z konfiguracją gry: `okolica` (promień, środek > 500 m) albo `wiek`, `tematy`, `jezyk` |
 | `E17` | współrzędne poza zakresem (`lat`, `lon`) |
 | `E18` | `punkty` spoza skali `{10, 15, 20}` albo niezgodne z kategorią wiekową |
 | `E19` | `id` pytania nieunikalne albo niezgodne ze wzorem |

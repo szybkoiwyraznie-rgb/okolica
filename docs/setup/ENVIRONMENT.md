@@ -72,9 +72,8 @@ Jeśli po resecie zdarzyło Ci się zacommitować na `main`, przenieś commit:
   `git diff <sha>^..<sha>`.
 - **`git checkout <plik>` cofa niezacommitowane zmiany w tym pliku** —
   zacommituj pracę przed takimi operacjami.
-- Ten repozytorium ma w korzeniu plik binarny właściciela (`AME-main.zip`,
-  ~6,5 MB). Nie usuwaj go, nie nadpisuj i nie „porządkuj" bez decyzji
-  właściciela; czytanie przez `unzip -p`/`unzip -l` bez rozpakowywania.
+- Referencyjne archiwum AME właściciela NIE leży w repo (usunięte decyzją
+  z 2026-09-05, ADR 0002 pkt 6); kontrakt pilnuje, żeby nie wróciło.
 
 ## 4. Sieć i narzędzia
 

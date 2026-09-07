@@ -209,7 +209,6 @@ daje plik do ręcznego wniesienia, gdy most jest niedostępny.
 | `docs/ASSETS.md` | dostawcy kafelków i danych, polityki, atrybucje |
 | `app/`, `index.html` | aplikacja |
 | `test/` | `node --test` — czysta logika, bez DOM i bez sieci |
-| `AME-main.zip` | wzorzec dobrych praktyk z projektu AME (materiał referencyjny) |
 
 ## Prywatność
 
