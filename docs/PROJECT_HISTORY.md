@@ -878,3 +878,38 @@ Rozjazdy dokumentacja ↔ kod znalezione w audycie (naprawione w tej sesji):
 5. **`SZABLON_WERSJA`** (`PYT/1.0.5`) nie ma żadnego konsumenta ani testu
    (`grep` po `app/`, `test/`, `tools/`, `index.html` — tylko deklaracja),
    więc `PROTOKOL` §7 wymaga podbijania łatki w stałej, której nikt nie czyta.
+
+**Fakt operacyjny tej sesji (LESSONS L29 złamana i naprawiona w miejscu):**
+commit `a251d14` podbił `?v=m12-6` w `index.html`, `app/app.js` i `sw.js`, ale
+`git add` z jawną listą pominął 12 modułów `app/`, które ten sam `sed` podbił
+w drzewie roboczym — wypchnięty commit miał więc DWA znaczniki wersji
+(dowód: czysty checkout HEAD, `node --test test/kontrakt.test.js` →
+`mapa.js: znacznik m12-5 różny od index.html (m12-6)`). Naprawione committem
+`f1d8040`; reguła L29 doprecyzowana (`git add index.html app/ sw.js`, nie lista
+z pamięci). Wniosek: przegląd `git status --short` PRZED `git commit` trzeba
+CZYTAĆ — w tym przypadku pokazał ` M app/*.js` i został przeoczony.
+
+**Co naprawiono (rozjazdy 1–5 z audytu):**
+
+- `README.md` + `ASSETS` §7: usunięte opisy mechanizmów, których nie ma w UI
+  (zgoda `#zgoda-drive`, eksport TO-zestaw/1, przełącznik geokodacji). Zgoda
+  w grze wieloosobowej (`#multi-zgoda`) istnieje i jest opisana poprawnie.
+- Aneksy ADR 0006 (pkt 8 — podgląd i edycja bez ścieżki w interfejsie)
+  i ADR 0016 (koniec checkboxa zgody, wysyłka domyślna i cicha). Zaakceptowanych
+  ADR nie edytujemy pod zmianę znaczenia (L8), więc aneks, nie korekta decyzji.
+- `LESSONS` L31: usunięcie funkcji z UI zostawia jej opis w dokumentach.
+- `app/protokol.js`: martwa `zastosujEdycjePaczki()` + `EDYTOWALNE_POLA`
+  usunięte (brak wywołania w aplikacji; przy tym walidacja `poprawna` jako
+  `0..3` sprzed rev2), razem z pięcioma testami tej ścieżki; brak pinuje
+  kontrakt, żeby funkcja nie wróciła po cichu.
+- `SZABLON_WERSJA` (PROTOKOL §7) dostała konsumenta: stopka pokazuje
+  „protokół PYT/1.0 · szablon PYT/1.0.5", kontrakt pinuje element, render
+  i kształt `PYT/1.0.N`. Cache-bust `m12-5 → m12-6`.
+- Budżet lektury (B18): aneksy i lekcja opłacone kondensacją nagrobka ADR 0014
+  (listę identyfikatorów niesie ADR 0023), sekcji M3–M12 w `ROADMAP`
+  (inwentarze kamieni są w tabeli; wskaźniki `§Mx` → jeden `§Kryteria`)
+  i sekcji kamieni zamkniętych: **39988 → 39964 tok** przy większej treści.
+
+**Brama na koniec sesji:** 518/518 (521 − 5 testów usuniętej ścieżki edycji
++ 2 nowe kontrakty) + sync szablonu OK + WCAG AA 0 naruszeń. Podgląd na żywo
+sprawdzony: stopka serwuje `PYT/1.0.5`, moduły i `sw.js` zwracają 200.

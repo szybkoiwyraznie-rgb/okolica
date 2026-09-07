@@ -281,10 +281,11 @@ zagrożenia (ADR + procedura rotacji), nie przemilczeniem.
 **Przyczyna:** `./x.js?v=m11-1` i `./x.js?v=m12-1` to DWA różne moduły (dwa
 egzemplarze stanu); kontrakt pilnował tylko index.html + app.js.
 **Reguła:** podbicie to JEDEN ruch: `sed -i 's/?v=STARA/?v=NOWA/g'
-index.html app/*.js` + `WERSJA_SW` w `sw.js`, a przed `git add` przegląd
-`git status`. Nowy moduł dostaje `?v=` od razu. Kontrakt pilnuje całego grafu
+index.html app/*.js` + `WERSJA_SW` w `sw.js`, a `git add index.html app/ sw.js`
+— nigdy lista plików z pamięci. Nowy moduł dostaje `?v=` od razu. Kontrakt pilnuje całego grafu
 `app/*.js` (od audytu 2026-09-07). Przy podejrzeniu rozjazdu:
 `grep -rn "?v=" app/ index.html sw.js` ma pokazać jedną wersję.
+
 ## L30 — Overpass: `out` czyta set domyślny, więc drukuj minimum i od razu
 
 **Objaw:** S02 w śródmieściu (w JSON-u same `area`), potem odpowiedź 3–5 minut.
