@@ -161,7 +161,7 @@ const zbiorTematow = (tematy) => new Set(tematy);
  * sam zestaw tematów (reguły z ADR 0017 pkt 7 — ściśle i przewidywalnie; UI
  * pokazuje metadane, więc organizator widzi, dlaczego propozycja pasuje).
  */
-export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pytaniaNaStacje, tematy, wiek } = {}) {
+export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pytaniaNaStacje, tematy, wiek, tematWlasny = '' } = {}) {
   wymaganie(typeof geohash5 === 'string' && geohash5.length === 5, 'dopasujZestawy: geohash5 musi mieć 5 znaków');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'dopasujZestawy: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'dopasujZestawy: liczbaStacji musi być dodatnią liczbą całkowitą');
@@ -176,10 +176,16 @@ export function dopasujZestawy(rejestr, { geohash5, promienM, liczbaStacji, pyta
   // liczba stacji i pytań na stację, ten sam poziom (wiek), tematy paczki
   // NIE SZERSZE niż w setupie oraz promień paczki ≤ promienia z setupu
   // (stacje bliżej niż oczekiwano są uczciwe, dalej — nie).
+  const mojWlasny = String(tematWlasny ?? '').trim().toLowerCase();
+  const tenSamWlasny = (w) => {
+    if (!w.tematy.map(kanonicznyTemat).includes('wlasny')) return true;
+    return mojWlasny !== '' && String(w.tematWlasny ?? '').trim().toLowerCase() === mojWlasny;
+  };
   return lista
     .filter((w) => w.geohash5 === geohash5 && w.promienM <= promienM
       && w.liczbaStacji === liczbaStacji && w.pytaniaNaStacje === pytaniaNaStacje
-      && w.wiek === wiek && w.tematy.map(kanonicznyTemat).every((temat) => szukany.has(temat)))
+      && w.wiek === wiek && w.tematy.map(kanonicznyTemat).every((temat) => szukany.has(temat))
+      && tenSamWlasny(w))
     .sort((a, b) => String(b.data).localeCompare(String(a.data)));
 }
 
@@ -266,7 +272,7 @@ export function dopasujMetaIndeksu(indeks, kryteria) {
  * Meta dopasowania z bieżącej konfiguracji i pozycji (geohash5 z `geo.js`).
  * Czysta funkcja: warstwa DOM podaje wyłącznie fakty (ADR 0017 pkt 3).
  */
-export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje } = {}) {
+export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '' } = {}) {
   wymaganie(Number.isFinite(lat) && Number.isFinite(lon), 'zbierzMetaZestawu: pozycja musi być liczbami');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'zbierzMetaZestawu: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'zbierzMetaZestawu: liczbaStacji musi być dodatnią liczbą całkowitą');
@@ -283,6 +289,7 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
     data: typeof data === 'string' && data ? data : new Date().toISOString().slice(0, 16).replace('T', ' '),
     liczbaStacji,
     pytaniaNaStacje,
+    tematWlasny: typeof tematWlasny === 'string' ? tematWlasny.trim().slice(0, 40) : '',
   };
 }
 

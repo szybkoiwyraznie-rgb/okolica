@@ -109,6 +109,10 @@ Skrót:
 
 - Zmieniłeś coś w skrypcie → **Wdróż → Zarządzaj wdrożeniami → Edytuj → Nowa
   wersja**; adres `/exec` zostaje ten sam.
+- Aktualizacja do PIN-profili (Partia 1): wklej nową treść
+  `docs/setup/apps-script-repo-paczek.gs`, uruchom raz funkcję `setup`
+  (zakłada katalog `okolica-profile`), potem Wdróż → Nowa wersja. Test:
+  setup → To ja → zapisz nowy → na Drive w `okolica-profile` leży plik.
 - Link przeglądu wycieknie? Zmień `REVIEW_SECRET` we właściwościach skryptu
   (stare linki przestaną działać).
 - Paczka omyłkowo zaakceptowana: na Drive przeciągnij plik z

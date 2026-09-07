@@ -1,6 +1,6 @@
 # LESSONS — rejestr lekcji
 
-Format: `## LN (data, pochodzenie) — tytuł`, objaw → przyczyna → reguła.
+Format: `## LN (pochodzenie) — tytuł`, objaw → przyczyna → reguła; bez nawiasu = ten projekt.
 Czytasz CAŁY rejestr na start sesji (`AGENTS.md` §0). Nowe lekcje dopisuj na
 końcu — nigdy nie zmieniaj numeracji istniejących. Pełne historie sesji:
 `docs/PROJECT_HISTORY.md`.
@@ -61,7 +61,7 @@ najpierw samo `npm test` (patrzysz na exit code).
 (`globalThis.crypto.subtle`, `fetch`, `localStorage`, `navigator.geolocation`);
 kontrakt grep`uje `app/**.js` pod kątem `node:` i `require(`.
 
-## L7 (TO) — `git add -A` commituje więcej, niż opisuje komunikat
+## L7 — `git add -A` commituje więcej, niż opisuje komunikat
 
 **Objaw:** commit „M0/E1" (`3e61917`) zawierał też cały rejestr ADR (etap E2).
 **Przyczyna:** `git add -A` chwyta wszystko w drzewie, niezależnie od komunikatu.
@@ -70,7 +70,7 @@ komunikatu; albo `git add <ścieżki>` jawnie per etap. Rozjazd po pushu:
 **nie poprawiaj historii** (zakaz force push, ADR 0012) — opisz w handoffie
 i w opisie PR.
 
-## L8 (TO) — polityki darmowych dostawców map zmieniają się pod projektem
+## L8 — polityki darmowych dostawców map zmieniają się pod projektem
 
 **Objaw:** CARTO w 2026 wymaga klucza API; „darmowe bez klucza" okazały się
 wektorowe (= MapLibre, zakazane ADR 0001).
@@ -81,7 +81,7 @@ z „bez klucza" i „rastrowe" z „wektorowe".
 rastry/wektory, politykę użycia. ADR-y *Proponowane* poprawia się przed
 akceptacją — po akceptacji tylko nowy ADR zastępujący.
 
-## L9 (TO) — heurystyka tekstowa na podłańcuchach łapie słowa, których nie szukała
+## L9 — heurystyka tekstowa na podłańcuchach łapie słowa, których nie szukała
 
 **Objaw:** pytanie o II wojnę światową „zakotwiczyło się" w Grabowicach (E14
 przepuścił); testy miały tylko przykłady dodatnie.
@@ -93,7 +93,7 @@ liście (`WYRAZY_POSPOLITE_MIEJSCA`); nazwa własna = wielka litera nie na pocz�
 zdania (wyjątki: `SKROTY_Z_KROPKA`). Każdą regułę testuj **kontrprzykładem
 z prawdziwego tekstu**; opis heurystyki w protokole z nazwami list z kodu.
 
-## L10 (TO) — widełki nie chronią przed NaN: `Math.max(1, NaN)` daje NaN
+## L10 — widełki nie chronią przed NaN: `Math.max(1, NaN)` daje NaN
 
 **Objaw:** `liczbaGraczy: "dużo"` z localStorage wchodziła do UI jako NaN;
 wychwycił to test bootstrapu na atrapie DOM, nie testy jednostkowe.
@@ -104,7 +104,7 @@ kontrprzykłady liczbowe, ale nie tekstowe — a tekst przychodzi z localStorage
 klasa śmieci ma własny kontrprzykład, a asercja dotyczy **tego, co zostało
 wyrenderowane** (commit `78a1bd0`).
 
-## L11 (TO) — faza bez akcji wyjścia: testuj przejścia na danych niekompletnych
+## L11 — faza bez akcji wyjścia: testuj przejścia na danych niekompletnych
 
 **Objaw:** paczka 3/5 stacji — gra utknęła w fazie `pytanie` z pustym ekranem,
 a `pominStacje()` kasowało pomiar czasu.
@@ -115,7 +115,7 @@ fazy zapisz, która akcja z niej wyprowadza — brak to usterka modelu. Akcja
 „pomiń" nie kasuje pomiaru, który się wydarzył (odmowa `G13`; ADR 0010 pkt 6,
 ADR 0015 pkt 2–3; commity `8eec03c`, `09faf5c`).
 
-## L12 (TO) — łańcuch szukany przepisany z pamięci różni się jedną literą
+## L12 — łańcuch szukany przepisany z pamięci różni się jedną literą
 
 **Objaw:** splice przerwał się na `AssertionError` (`t.count(stary) == 0`):
 `stan.stacji.length` zamiast `stan.stacje.length`.
@@ -126,7 +126,7 @@ przepisuj; przed zamianą asertuj `t.count(stary) == 1`; „ok" drukuj **po**
 zapisie. Przy nieudanym porównaniu diagnozuj znak po znaku — „niewidoczny
 znak" to zwykle literówka.
 
-## L13 (TO) — schowany panel ma rozmiar zerowy, a mapa wraca pusta
+## L13 — schowany panel ma rozmiar zerowy, a mapa wraca pusta
 
 **Objaw:** po powrocie na ekran warstwa kafelków pusta (zero `<image>`), choć
 widok i zoom się zgadzały.
@@ -137,7 +137,7 @@ optymalizacja sygnatury porównała pustą z pustą i nic nie wstawiła.
 go przy pokazaniu ekranu i przy `resize`. Test: rozmiar 0 → przerysuj →
 przywróć → przerysuj → warstwy wróciły (commit `e65f26b`).
 
-## L14 (TO) — nasłuch zarejestrowany dwa razy działa dwa razy, a zdejmuje się raz
+## L14 — nasłuch zarejestrowany dwa razy działa dwa razy, a zdejmuje się raz
 
 **Objaw:** „＋" zmieniał zoom o dwa stopnie; po `zniszcz()` gest nadal działał.
 **Przyczyna:** podpięcie w pętli własnej **i** w pętli ogólnej; `removeEventListener`
@@ -146,7 +146,7 @@ usuwa jedno wystąpienie, drugie przeżywało.
 tę samą listę. Test: asercja liczby nasłuchów po utworzeniu **i** po zniszczeniu,
 potem zdarzenie i sprawdzenie, że stan się nie zmienił (commit `e65f26b`).
 
-## L15 (TO) — przy dwóch modelach jednostek test musi przeliczać z powrotem
+## L15 — przy dwóch modelach jednostek test musi przeliczać z powrotem
 
 **Objaw:** koło ±12 m miało promień 152 897 jednostek (świat = 3600); testy „r > 0" zielone.
 **Przyczyna:** odwrócone dzielenie przy trzech modelach jednostek (metry ↔ piksele ↔ świat).
@@ -154,7 +154,7 @@ potem zdarzenie i sprawdzenie, że stan się nie zmienił (commit `e65f26b`).
 porządku wielkości względem stałej świata. Funkcje nazywaj z jednostką
 (`promienWSwiecie`), przelicznik opisz zdaniem w komentarzu (commit `59b5573`).
 
-## L16 (TO) — test nie przejdzie drzwiami, które czytają nieparsowany DOM
+## L16 — test nie przejdzie drzwiami, które czytają nieparsowany DOM
 
 **Objaw:** `querySelectorAll('#lista-imion input')` w atrapie puste → K08 odrzucał przejście.
 **Przyczyna:** atrapa celowo nie parsuje HTML; ścieżki czytające kolekcję
@@ -163,7 +163,7 @@ z wnętrza elementu widzą w teście pustkę.
 **zweryfikowany stan** (`STAN.konfig`) zamiast DOM. Nie dopisuj parsera HTML
 do atrapy dla jednego testu (commit `e65f26b`).
 
-## L17 (TO) — kontrakt na zakazany wywołanie grepuje kod, nie prozę
+## L17 — kontrakt na zakazany wywołanie grepuje kod, nie prozę
 
 **Objaw:** zakaz `confirm()` oblał na docblocku tłumaczącym zakaz.
 **Przyczyna:** test grepował surowy plik, a zakaz dotyczy wywołań, nie słów.
@@ -171,7 +171,7 @@ do atrapy dla jednego testu (commit `e65f26b`).
 „Nie pisz tych nazw w komentarzach" jest gorsze — komentarz „czemu nie" ma
 wartość i będzie powracał (commit `8abb11c`).
 
-## L18 (TO) — Node ≥ 18 ma globalny `fetch`: aplikacja w testach dzwoniła w świat
+## L18 — Node ≥ 18 ma globalny `fetch`: aplikacja w testach dzwoniła w świat
 
 **Objaw:** brama 82 s zamiast 5 s, w logach próby wyjścia na `overpass-api.de`.
 **Przyczyna:** `typeof fetch === 'function'` w Node 22 to prawda; atrapa nie
@@ -180,7 +180,7 @@ wystawia `window.fetch`, ale gołe `fetch` resolvingowało się na globalne.
 nigdy gołą nazwę globalną; testy podstawiają atrapę PO imporcie, a kod czyta
 ją w chwili wywołania (commit M4/I7).
 
-## L19 (TO) — atrapa DOM: `innerHTML = ''` nie kasuje dzieci
+## L19 — atrapa DOM: `innerHTML = ''` nie kasuje dzieci
 
 **Objaw:** test czytał `children[0]` po re-renderze i widział STARĄ stację.
 **Przyczyna:** w atrapie `innerHTML` jest zwykłym polem — `appendChild`
@@ -189,7 +189,7 @@ dokładał nowe `li` ZA starymi.
 z `innerHTML = ''` migrujemy przy okazji (pozostałe: setup, gracze, prompt,
 podsumowanie — BACKLOG B16).
 
-## L20 (TO) — nowy helper bez grep-a: `pobierzPlik` zadeklarowany drugi raz
+## L20 — nowy helper bez grep-a: `pobierzPlik` zadeklarowany drugi raz
 
 **Objaw:** `Identifier 'pobierzPlik' has already been declared` (splice M5/J4).
 **Przyczyna:** helper dodany „z pamięci"; pierwsza deklaracja 140 linii wyżej.
@@ -197,7 +197,7 @@ podsumowanie — BACKLOG B16).
 module — jest, to użyj istniejącej (z jej sygnaturą). Dotyczy też importów
 i stałych.
 
-## L21 (TO) — test z padającym fetchem bez `odstep=0` czekał 90 sekund na instancje Overpass
+## L21 — test z padającym fetchem bez `odstep=0` czekał 90 sekund na instancje Overpass
 
 **Objaw:** brama 66 s zamiast 8 s; asercje po 150 ms widziały stan sprzed pobrania.
 **Przyczyna:** 503 na Overpass → łańcuch przełączania 30 s × 3; warstwa zapasowa
@@ -206,7 +206,7 @@ wołana dopiero po jego zakończeniu.
 z `search: '?tryb=test&odstep=0'`. Oczekiwania na zaokrągleniach LICZYMY
 (`node -e`), nie zgadujemy (`(21.012345).toFixed(5) === '21.01234'`).
 
-## L22 (TO) — symulacja dojścia przeżyła tranzycję fazy i nadpisała status gry
+## L22 — symulacja dojścia przeżyła tranzycję fazy i nadpisała status gry
 
 **Objaw:** status „Symulacja: fix 9/9…" zamiast „Stacja osiągnięta"; panel
 pytania się nie otwierał. Jednostkowo wszystko zielone.
@@ -217,7 +217,7 @@ i PO zdarzeniu — czy powód jego istnienia trwa, i gaśnie BEZ nadpisywania
 statusu. Kamień bez testu „pełna pętla do wyniku" ma nieprzetestowane
 spięcie czasowe (M6/R7).
 
-## L23 (TO) — oczekiwania asercji pisane z pamięci: tautologia i sparafrazowany komunikat
+## L23 — oczekiwania asercji pisane z pamięci: tautologia i sparafrazowany komunikat
 
 **Objaw:** tautologia `x.hidden === (false === false ? x.hidden : null)` (nigdy
 nie pada); `/można wznowić/` vs „można **ją** wznowić".
@@ -227,7 +227,7 @@ Asercja, której obie strony wyrażają tę samą wartość, jest zakazana: albo
 stan PRZED vs oczekiwany literał, albo brak asercji. Tautologia jest gorsza
 niż brak testu.
 
-## L24 (TO) — regex liczbowy po złączonym textContent przeczytał „142 pkt" z „Gracz 1" + „42 pkt"
+## L24 — regex liczbowy po złączonym textContent przeczytał „142 pkt" z „Gracz 1" + „42 pkt"
 
 **Objaw:** „punkty zwycięzcy: 142" przy maksimum z modelu 60 (test M7/P7).
 **Przyczyna:** zrąb skleja tekst potomków bez separatorów (jak przeglądarka):
@@ -236,7 +236,7 @@ niż brak testu.
 nigdy regexem po złączonym textContent przodka; regex tylko zakotwiczony
 separatorem wewnątrz JEDNEGO elementu.
 
-## L25 (TO) — plikowa atrapa DOM starzeje się, gdy późniejszy test reinstaluje otoczenie
+## L25 — plikowa atrapa DOM starzeje się, gdy późniejszy test reinstaluje otoczenie
 
 **Objaw:** klik „nie działał" tylko w kontekście całego pliku; izolowany scenariusz zielony.
 **Przyczyna:** plik instaluje DOM raz; późniejsze testy podmieniają globale —
@@ -245,7 +245,7 @@ klik szedł do starego rejestru, a `$` aplikacji czytał nowy stub.
 instalacji albo stoi PRZED pierwszą reinstalacją. „Klik nie zadziałał" →
 pierwsze podejrzenie to rozjazd rejestrów, nie logika.
 
-## L26 (TO) — wrapper timera, który nie zwraca promise'a, oszukuje testy
+## L26 — wrapper timera, który nie zwraca promise'a, oszukuje testy
 
 **Objaw:** `await odpalOstatni()` „wykonał" krok, ale `onStan` nie zdążył się wywołać.
 **Przyczyna:** `() => { krok(); }` zwraca `undefined` — `await` nie czekał na nic.
@@ -253,7 +253,7 @@ pierwsze podejrzenie to rozjazd rejestrów, nie logika.
 (`() => krok()`). Asercja „widząca za mało" po wstrzykniętym timerze →
 podejrzenie o niewyczekany promise.
 
-## L27 (TO) — dwa „urządzenia" w jednym procesie: globale są współdzielone, tło wchodzi w paradę
+## L27 — dwa „urządzenia" w jednym procesie: globale są współdzielone, tło wchodzi w paradę
 
 **Objaw:** polling urządzenia A lądował w DOM urządzenia B.
 **Przyczyna:** `globalThis` jest jedno, a timery odpalają się między
@@ -264,7 +264,7 @@ w trybie testowym (`?odstep=0` → zero pollingu w tle, test pompuje kroki);
 (3) przełączanie tylko jawnym helperem (`przelaczNa`). Atrapa serwera jako
 lustro kontraktu modułu współdzielonego.
 
-## L28 (TO) — „nietrwałe" czy „za wąskie"? Konfiguracja w localStorage przeżywa rebuild, ale nie przeżywa nowego telefonu
+## L28 — „nietrwałe" czy „za wąskie"? Konfiguracja w localStorage przeżywa rebuild, ale nie przeżywa nowego telefonu
 
 **Objaw:** właściciel odrzucił ręczne wklejanie adresu mostu w aplikacji.
 **Przyczyna:** zastrzeżenie trafne co do ZASIĘGU (każdy telefon znajomego musi
@@ -275,7 +275,7 @@ każdym urządzeniu w aplikacji bez budowania (ADR 0001) mieszka w KODZIE
 W REPOZYTORIUM (ADR 0020) — a publiczność repozytorium staje się częścią modelu
 zagrożenia (ADR + procedura rotacji), nie przemilczeniem.
 
-## L29 (TO) — cache-bust `?v=` w ESM: query jest częścią identyfikatora modułu, więc podbija się go WSZĘDZIE naraz
+## L29 — cache-bust `?v=` w ESM: query jest częścią identyfikatora modułu, więc podbija się go WSZĘDZIE naraz
 
 **Objaw:** dwa moduły miały starą wersję `?v=` w importach i omal nie weszły do commita.
 **Przyczyna:** `./x.js?v=m11-1` i `./x.js?v=m12-1` to DWA różne moduły (dwa

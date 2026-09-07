@@ -40,13 +40,13 @@ test('WIEK: pięć kategorii z briefu, punkty rosną z wiekiem', () => {
   assert.ok(WIEK[7].opisTrudnosci.includes('bez dat'));
 });
 
-test('TEMATY: kanon 10 tematów, klucze zgodne z formatem (małe litery, myślniki)', () => {
-  assert.equal(Object.keys(TEMATY).length, 10);
+test('TEMATY: kanon 11 tematów, klucze zgodne z formatem (małe litery, myślniki)', () => {
+  assert.equal(Object.keys(TEMATY).length, 11);
   for (const [klucz, temat] of Object.entries(TEMATY)) {
     assert.match(klucz, /^[a-z0-9-]+$/, `klucz tematu "${klucz}"`);
     assert.ok(temat.etykieta && temat.opis, `temat ${klucz} musi mieć etykietę i opis do promptu`);
   }
-  for (const oczekiwany of ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia']) {
+  for (const oczekiwany of ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia', 'wlasny']) {
     assert.ok(TEMATY[oczekiwany], `brak tematu ${oczekiwany}`);
   }
 });
@@ -131,6 +131,8 @@ test('walidujSetup: przyjmuje poprawną i odrzuca każdą klasę błędu', () =>
   assert.ok(kody({ ...baza, kodGry: '' }).length === 0, 'pusty kod gry jest dozwolony (gra bez ukrywania pytań)');
   assert.ok(kody({ ...baza, limitCzasuOdcinkaS: -5 }).includes('K19'));
   assert.ok(kody({ ...baza, geokodacja: 'tak' }).includes('K20'));
+  assert.ok(kody({ ...baza, tematy: ['historia', 'wlasny'], tematWlasny: '' }).includes('K21'), 'wlasny bez tekstu to K21');
+  assert.ok(!kody({ ...baza, tematy: ['historia', 'wlasny'], tematWlasny: 'kinematografia' }).includes('K21'), 'wlasny z tekstem przechodzi');
   assert.ok(kody(null).includes('K01'));
 });
 
@@ -201,6 +203,8 @@ test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', (
   // listy: tylko kanon; pusty wynik → domyślne tematy
   assert.deepEqual(oczyscKonfiguracje({ tematy: ['historia', 'kosmos'] }).tematy, ['historia']);
   assert.deepEqual(oczyscKonfiguracje({ tematy: ['nauka-i-technika', 'historia', 'nauka'] }).tematy, ['nauka', 'historia'], 'aliasy mapowane na klucze kanoniczne z deduplikacją');
+  assert.equal(oczyscKonfiguracje({ tematWlasny: '  Wędkarstwo  ' }).tematWlasny, 'Wędkarstwo', 'tekst własny przycięty');
+  assert.equal(oczyscKonfiguracje({}).tematWlasny, '', 'brak tekstu to pusty łańcuch');
   assert.deepEqual(oczyscKonfiguracje({ tematy: ['kosmos'] }).tematy, d.tematy);
   assert.deepEqual(oczyscKonfiguracje({ liczbaGraczy: 3, imiona: ['Ada', '   '] }).imiona, ['Ada', 'Gracz 2', 'Gracz 3']);
   // tekst zamiast liczby: `Number("dużo")` = NaN, więc pole ma wrócić do domyślnej

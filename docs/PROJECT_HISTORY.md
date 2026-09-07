@@ -666,3 +666,15 @@ problem wzrostu lektury (rezerwa ~330 tok ≈ 1–2 sesje).
 **Stan na koniec sesji:** brama **511/511**, kontrakt 54/54, budżet 39667/40000.
 Czekamy na: (1) adres `/exec` mostu w czacie → `DOMYSLNY_URL_MOSTU` + cache-bust;
 (2) scalenie PR #2 i #3 do `main`; (3) testy terenowe (WORKFLOW §4.4).
+
+## 2026-09-07 — Partia 1 (Ekran 1) + most `/exec`, gałąź `arena/01a07b16-okolica`
+
+Most Drive wdrożony (`DOMYSLNY_URL_MOSTU`, `?v=m12-2`, ROADMAP M9/M11/M12).
+Setup: tagline „gra terenowa gdzie tylko chcesz", 1 gracz domyślnie, kanon
+1-członowy `wlasny` (11 kluczy + 7 aliasów), kara poza setupem (stałe 60 s,
+aneks 0004), dopiski `(ADR…)` tylko w Trybie Testowym. Szablon promptu
+**PYT/1.0.1**: zasada 4 = drabina lokalności (stacja → ulica → dzielnica →
+miejscowość → powiat → województwo → kraj → kontynent → świat; świat tylko
+z haczykiem do okolicy). PIN-profil: `RO-profil/1` + akcje `profil-ustaw` /
+`profil-sprawdz` (ADR 0021), przycisk „To ja" w setupie wpisuje pseudonim.
+Brama 519/519, budżet 39838/40000. Most wymaga Nowej wersji (PIN-akcje).

@@ -2,7 +2,7 @@
  * `wieloosobowa.js` — M11/P2: gra wieloosobowa na wielu urządzeniach (ADR 0019).
  *
  * Moduł CZYSTY: schematy `RO-gra/1`, `RO-zdarzenie/1`, `RO-lobby/1`,
- * `RO-ranking/1`, walidacje surowe (kody R01–R18), kody gier, sąsiedztwo
+ * `RO-ranking/1`, `RO-profil/1`, walidacje surowe (kody R01–R20), kody gier, sąsiedztwo
  * geohash5 (lobby „w najbliższej okolicy"), maszynka tur, przeliczanie wyników
  * i agregacje rankingów. Zero DOM, zero sieci, zero `node:` — warstwa DOM
  * (`app.js`) i synchronizacja (`sync.js`, P3) podają wyłącznie fakty.
@@ -18,6 +18,7 @@ export const SCHEMAT_GRY = 'RO-gra/1';
 export const SCHEMAT_ZDARZENIA = 'RO-zdarzenie/1';
 export const SCHEMAT_LOBBY = 'RO-lobby/1';
 export const SCHEMAT_RANKINGU = 'RO-ranking/1';
+export const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (ADR 0021)
 
 /** Alfabet kodu gry: bez 0/O/1/I — kod dyktuje się przez telefon (ADR 0019 pkt 1). */
 export const ALFABET_KODU = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
@@ -53,10 +54,28 @@ export const KODY_WIELOOSOBOWE = {
   R16: 'Część wpisów lobby jest uszkodzona — zostały odfiltrowane.',
   R17: `Ranking nie jest poprawnym JSON-em albo ma inny schemat niż „${SCHEMAT_RANKINGU}".`,
   R18: 'Część wierszy rankingu jest uszkodzona — zostały odfiltrowane.',
+  R19: 'Nie mamy takiego pseudonimu — sprawdź pisownię albo zapisz go przyciskiem „Zapisz nowy".',
+  R20: 'PIN jest niepoprawny albo nie pasuje do tego pseudonimu (4–8 cyfr).',
 };
 
 function usterka(kod) {
   return { kod, komunikat: KODY_WIELOOSOBOWE[kod] ?? kod };
+}
+
+/** Pseudonim do pliku profilu: przycięty, pojedyncze spacje, maks. 20 znaków. */
+export function normalizujPseudonim(wartosc) {
+  return String(wartosc ?? '').trim().replace(/\s+/g, ' ').slice(0, 20);
+}
+
+/** PIN-prosty (ADR 0021): 4–8 cyfr, bez spacji. */
+export function czyPinPoprawny(pin) {
+  return /^\d{4,8}$/.test(String(pin ?? '').trim());
+}
+
+/** Jawna odmowa mostu przy profilu: kod R19/R20 → zdanie dla gracza. */
+export function komunikatBleduProfilu(blad) {
+  const kod = String(blad ?? '').trim();
+  return KODY_WIELOOSOBOWE[kod] ?? `Most odmówił: ${kod || 'nieznany błąd'}.`;
 }
 
 /* ------------------------------------------------------------- kody gier */

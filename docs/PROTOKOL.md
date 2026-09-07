@@ -45,7 +45,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.
 2. Każde pytanie ma pole "zrodla" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.
 3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
-4. Wszystkie pytania dotyczą OKOLICY podanej niżej (miejsca, dzielnicy, miasta, regionu, państwa) albo konkretnych stacji z listy. Zakazane są pytania z wiedzy ogólnej o świecie, niezwiązane z tą okolicą.
+4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego potwierdzonego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
@@ -226,6 +226,7 @@ commicie (AGENTS.md §3).
 | `sport` | Sport | kluby, obiekty sportowe, trasy, wydarzenia sportowe, miejsca wypoczynku |
 | `jedzenie` | Jedzenie | targi, lokale, rzemiosło, dawni i obecni kupcy, produkty lokalne |
 | `geografia` | Geografia | rzeki, jeziora, wzgórza, granice administracyjne, nazwy geograficzne, mosty |
+| `wlasny` | Dopisz sam | dziedzina wpisana przez organizatora w setupie |
 
 Stare klucze dwuczłonowe (`kultura-i-sztuka` itd., sprzed 2026-09-07) są
 przyjmowane jako aliasy i normalizowane do nowych (`ALIASY_TEMATOW`
@@ -322,10 +323,10 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
       "id": "s1p1",
       "stacja": 1,
       "temat": "historia",
-      "tresc": "Przy jakiej ulicy stoi kamienica, w której w 1918 roku mieściła się pierwsza siedziba Polskiej Agencji Telegraficznej?",
+      "tresc": "Przy jakiej ulicy stała pierwsza siedziba Polskiej Agencji Telegraficznej (1918)?",
       "odpowiedzi": ["Bracka", "Mazowiecka", "Zgoda", "Jasna"],
       "poprawna": 2,
-      "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda; agencję powołano w październiku 1918 roku, jeszcze przed formalnym odzyskaniem niepodległości.",
+      "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda (X 1918).",
       "zrodla": [{ "url": "https://pl.wikipedia.org/wiki/Polska_Agencja_Telegraficzna", "tytul": "Polska Agencja Telegraficzna — Wikipedia", "sprawdzono": "2026-09-05" }],
       "punkty": 20
     }
@@ -398,8 +399,12 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
   tematy }] }` — surowe wiersze z gier zakończonych (rezygnacja bez wyniku nie
   wchodzi); agregacje (ogólny/wiek/tematy/lokalizacja) liczy telefon:
   `agregujRanking`, `kategorieRankingu` (ADR 0019 pkt 7).
+- `RO-profil/1`: `{ schemat, pseudonim, pin, utworzono }` — plik
+  `profil-<id>.json` w katalogu `okolica-profile`; PIN jawnym tekstem
+  (ADR 0021). Akcje mostu: `profil-ustaw` (utwórz albo potwierdź),
+  `profil-sprawdz` (tylko potwierdź); odmowy kodami R19/R20 w polu `blad`.
 
-### 9.4 Kody usterek R01–R18 (`KODY_WIELOOSOBOWE` w `app/wieloosobowa.js`)
+### 9.4 Kody usterek R01–R20 (`KODY_WIELOOSOBOWE` w `app/wieloosobowa.js`)
 
 | Kod | Znaczenie |
 |---|---|
@@ -421,3 +426,5 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
 | R16 | Część wpisów lobby uszkodzona — odfiltrowane. |
 | R17 | Ranking nieczytelny albo zły schemat (`RO-ranking/1`). |
 | R18 | Część wierszy rankingu uszkodzona — odfiltrowane. |
+| R19 | Nieznany pseudonim (brak pliku profilu). |
+| R20 | PIN niepoprawny albo nie pasuje do pseudonimu. |

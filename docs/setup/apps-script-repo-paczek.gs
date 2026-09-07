@@ -31,8 +31,10 @@ const FOLDERY = {
   odrzucone: 'okolica-paczki-odrzucone',
   gryOtwarte: 'okolica-gry-otwarte',
   gryZakonczone: 'okolica-gry-zakonczone',
+  profile: 'okolica-profile',
 };
 const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
+const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (ADR 0021)
 const SCHEMAT_KONTENERA = 'TO-paczka/2';
 const ZNAK_OCZEKUJE = 'oczekuje przeglądu';
 
@@ -150,6 +152,49 @@ function walidujKandydata(plik) {
   return { bledy, paczka };
 }
 
+/* ------------------------------------------------- profile (ADR 0021) */
+
+function idProfilu(pseudonim) {
+  const s = String(pseudonim || '').trim().toLowerCase()
+    .replace(/[^a-z0-9ąćęłńóśźż]+/g, '-').replace(/^-+|-+$/g, '');
+  return s.slice(0, 40);
+}
+
+function czytajProfil(id) {
+  const it = folder(FOLDERY.profile).getFilesByName('profil-' + id + '.json');
+  if (!it.hasNext()) return null;
+  try {
+    const p = JSON.parse(it.next().getBlob().getDataAsString('UTF-8'));
+    return p && p.schemat === SCHEMAT_PROFILU ? p : null;
+  } catch (e) { return null; }
+}
+
+function ustawProfil(cialo) {
+  const pseudo = String((cialo && cialo.pseudonim) || '').trim().slice(0, 20);
+  const pin = String((cialo && cialo.pin) || '');
+  const id = idProfilu(pseudo);
+  if (!id) return { ok: false, blad: 'R19' };
+  if (!/^\d{4,8}$/.test(pin)) return { ok: false, blad: 'R20' };
+  const jest = czytajProfil(id);
+  if (jest) {
+    if (jest.pin !== pin) return { ok: false, blad: 'R20' };
+    return { ok: true, nowy: false, pseudonim: jest.pseudonim || pseudo };
+  }
+  folder(FOLDERY.profile).createFile('profil-' + id + '.json', JSON.stringify({
+    schemat: SCHEMAT_PROFILU, pseudonim: pseudo, pin,
+    utworzono: new Date().toISOString(),
+  }), 'application/json');
+  return { ok: true, nowy: true, pseudonim: pseudo };
+}
+
+function sprawdzProfil(cialo) {
+  const id = idProfilu(cialo && cialo.pseudonim);
+  const jest = id ? czytajProfil(id) : null;
+  if (!jest) return { ok: false, blad: 'R19' };
+  if (jest.pin !== String((cialo && cialo.pin) || '')) return { ok: false, blad: 'R20' };
+  return { ok: true, pseudonim: jest.pseudonim || '' };
+}
+
 /* ------------------------------------------------------------------- API */
 
 function doGet(e) {
@@ -179,6 +224,8 @@ function doPost(e) {
       case 'gra-start': return json(startGryMulti(cialo));
       case 'gra-zdarzenie': return json(przyjmijZdarzenie(cialo));
       case 'gra-zakoncz': return json(zakonczGre(cialo));
+      case 'profil-ustaw': return json(ustawProfil(cialo));
+      case 'profil-sprawdz': return json(sprawdzProfil(cialo));
       default: return json({ ok: false, blad: 'nieznana akcja albo schemat ciała' });
     }
   } catch (err) {

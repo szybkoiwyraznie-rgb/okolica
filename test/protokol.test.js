@@ -97,6 +97,18 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
   assert.ok(!SZABLON_PROMPTU.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
 });
 
+test('zbudujPrompt: temat własny wstawia tekst organizatora do listy dziedzin', () => {
+  const { prompt, usterki } = zbudujPrompt({
+    konfig: konfiguracja({ tematy: ['historia', 'wlasny'], tematWlasny: 'kinematografia' }),
+    okolica: { ...SRODEK, promienM: 1000, miejsce: OK.okolica.miejsce },
+    stacje: STACJE,
+    teraz: TERAZ,
+  });
+  assert.deepEqual(usterki, []);
+  assert.ok(prompt.includes('wlasny (kinematografia)'), 'dziedzina własna w opisie dla modelu');
+  assert.ok(prompt.includes('"wlasny"'), 'klucz wlasny na liście JSON');
+});
+
 test('zbudujPrompt: podstawia wszystkie placeholdery i nie zostawia dziur', () => {
   const { prompt, usterki } = zbudujPrompt({
     konfig: konfiguracja(),

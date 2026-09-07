@@ -61,7 +61,7 @@ import {
   wczytajDaneZCache,
 } from './sieci.js?v=m12-2';
 import { utworzMape } from './mapa.js?v=m12-2';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, filtrujLobby, kategorieRankingu, kodPoprawny, normalizujKod, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-2';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-2';
 import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-2';
 import { adresMostu, stanMostu } from './most.js?v=m12-2';
 
@@ -305,9 +305,17 @@ function renderujTematy() {
     const box = lista.querySelector(`input[value="${klucz}"]`);
     if (box) box.checked = true;
   }
+  const poleWlasne = $('setup-temat-wlasny');
+  poleWlasne.value = STAN.konfig.tematWlasny ?? '';
+  const odswiezPoleWlasne = () => {
+    poleWlasne.hidden = ![...lista.querySelectorAll('input:checked')].some((i) => i.value === 'wlasny');
+  };
+  odswiezPoleWlasne();
   lista.addEventListener('change', () => {
     STAN.konfig.tematy = [...lista.querySelectorAll('input:checked')].map((i) => i.value);
+    odswiezPoleWlasne();
   });
+  poleWlasne.addEventListener('input', () => { STAN.konfig.tematWlasny = poleWlasne.value; });
 }
 
 function renderujSelecty() {
@@ -342,6 +350,52 @@ function renderujImiona() {
     pole.addEventListener('input', () => { STAN.konfig.imiona[i] = pole.value; });
     lista.appendChild(pole);
   });
+}
+
+/**
+ * PIN-profil (ADR 0021): pseudonim ląduje w pierwszym pustym polu imienia
+ * (albo w pierwszym, gdy wszystkie zajęte) — typowo jest jedno pole.
+ */
+function wpiszImieZProfilu(pseudonim) {
+  const imiona = STAN.konfig.imiona;
+  const wolne = (i) => !(i ?? '').trim() || /^Gracz \d+$/.test((i ?? '').trim());
+  let cel = imiona.findIndex(wolne);
+  if (cel < 0) cel = 0;
+  imiona[cel] = pseudonim;
+  // document-poziom jak czytajSetupZDomu (atrapa DOM nie wspiera elementowego querySelectorAll)
+  const pola = document.querySelectorAll('#lista-imion input');
+  if (pola[cel]) pola[cel].value = pseudonim;
+}
+
+async function obsluzProfil(rejestruj) {
+  const pseudo = normalizujPseudonim($('profil-pseudonim').value);
+  const pin = ($('profil-pin').value ?? '').trim();
+  if (!pseudo) { pokazBledy('bledy-profil', [{ komunikat: 'Wpisz pseudonim.' }]); return; }
+  if (!czyPinPoprawny(pin)) { pokazBledy('bledy-profil', [{ komunikat: 'PIN to 4–8 cyfr.' }]); return; }
+  const url = adresMostu();
+  if (!url) { pokazBledy('bledy-profil', [{ komunikat: 'Brak adresu mostu — profil niedostępny.' }]); return; }
+  status(rejestruj ? 'Zapisuję nowy pseudonim…' : 'Sprawdzam profil…');
+  try {
+    const wynik = await polecenieMostu(url, {
+      akcja: rejestruj ? 'profil-ustaw' : 'profil-sprawdz', pseudonim: pseudo, pin,
+    });
+    pokazBledy('bledy-profil', []);
+    wpiszImieZProfilu(wynik.pseudonim || pseudo);
+    $('przycisk-profil-zapisz').hidden = true;
+    $('form-profil').hidden = true;
+    status(wynik.nowy
+      ? `Zapisano nowy pseudonim „${wynik.pseudonim || pseudo}" — od teraz jest Twój (PIN-em go potwierdzasz).`
+      : `To Ty — wpisano „${wynik.pseudonim || pseudo}".`);
+  } catch (e) {
+    if (e?.odmowaMostu) {
+      const kod = String(e.message ?? '').trim();
+      if (kod === 'R19' && !rejestruj) $('przycisk-profil-zapisz').hidden = false;
+      pokazBledy('bledy-profil', [{ komunikat: komunikatBleduProfilu(kod) }]);
+      status(komunikatBleduProfilu(kod));
+    } else {
+      pokazBledy('bledy-profil', [{ komunikat: `Most nie odpowiada (${e?.message ?? e}). Spróbuj przy lepszym sygnale.` }]);
+    }
+  }
 }
 
 /**
@@ -1173,6 +1227,7 @@ function metaBiezacejOkolicy() {
     miejsce: STAN.miejsce ?? '',
     liczbaStacji: STAN.konfig.liczbaStacji,
     pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
+    tematWlasny: STAN.konfig.tematWlasny ?? '',
   });
 }
 
@@ -2858,6 +2913,7 @@ function metaSesjiMulti(stacje) {
     promienM: STAN.konfig.promienM, tematy: STAN.konfig.tematy, wiek: STAN.konfig.wiek,
     jezyk: STAN.konfig.jezyk, miejsce: STAN.miejsce ?? '',
     liczbaStacji: stacje.length, pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
+    tematWlasny: STAN.konfig.tematWlasny ?? '',
   });
 }
 
@@ -2866,6 +2922,7 @@ function metaZWpisuLokalnego(z) {
   return {
     miejsce: z.miejsce, geohash5: z.geohash5, promienM: z.promienM, tematy: z.tematy,
     wiek: z.wiek, jezyk: z.jezyk, data: z.data, liczbaStacji: z.liczbaStacji, pytaniaNaStacje: z.pytaniaNaStacje,
+    tematWlasny: z.tematWlasny ?? '',
   };
 }
 
@@ -3566,6 +3623,14 @@ function start() {
     pokazPozycje();
     status(STAN.trybTestowy ? 'Tryb testowy: współrzędne ręczne zamiast GPS (ADR 0004 pkt 6).' : 'Tryb testowy wyłączony.');
   });
+
+  $('przycisk-profil').addEventListener('click', () => {
+    const form = $('form-profil');
+    form.hidden = !form.hidden;
+    if (!form.hidden) { pokazBledy('bledy-profil', []); $('przycisk-profil-zapisz').hidden = true; }
+  });
+  $('przycisk-profil-sprawdz').addEventListener('click', () => { void obsluzProfil(false); });
+  $('przycisk-profil-zapisz').addEventListener('click', () => { void obsluzProfil(true); });
 
   $('przycisk-dalej-pozycja').addEventListener('click', () => {
     const usterki = walidujSetup(czytajSetupZDomu());

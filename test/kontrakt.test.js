@@ -16,6 +16,7 @@ import { SZABLON_PROMPTU, WERSJA_PROTOKOLU } from '../app/protokol.js';
 import { PODKLADY, TEMATY, WIEK } from '../app/konfig.js';
 import { KODOWANIE, SCHEMAT_KONTENERA } from '../app/kodowanie.js';
 import { KODY_POZYCJI } from '../app/pozycja.js';
+import { KODY_WIELOOSOBOWE } from '../app/wieloosobowa.js';
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const czytaj = (sciezka) => readFileSync(join(ROOT, sciezka), 'utf8');
@@ -641,18 +642,34 @@ test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
 });
 
 test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językiem', () => {
-  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz']) {
+  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'profil-ustaw', 'profil-sprawdz']) {
     assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
   }
   for (const a of ['gry', 'gra-stan', 'ranking']) {
     assert.ok(GS.includes(`akcja === '${a}'`), `doGet mostu obsługuje ${a}`);
   }
-  for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-ranking/1']) {
+  for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-ranking/1', 'RO-profil/1']) {
     assert.ok(GS.includes(s), `most zna schemat ${s}`);
   }
   assert.ok(GS.includes("'23456789ABCDEFGHJKLMNPQRSTUVWXYZ'"), 'alfabet kodu gry identyczny w moście i w module');
   assert.match(GS, /POLA_ZAKAZANE_W_ZDARZENIU/, 'most kasuje współrzędne ze zdarzeń (ADR 0019 pkt 3)');
   assert.ok(GS.includes('okolica-gry-otwarte') && GS.includes('okolica-gry-zakonczone'), 'katalogi gier w setup()');
+  assert.ok(GS.includes('okolica-profile'), 'katalog profili PIN (ADR 0021)');
+});
+
+test('kontrakt Partia 1 (3): PIN-profil — UI, kody R19/R20, dokumentacja §9', () => {
+  for (const id of ['przycisk-profil', 'form-profil', 'profil-pseudonim', 'profil-pin', 'bledy-profil', 'przycisk-profil-sprawdz', 'przycisk-profil-zapisz']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
+  }
+  for (const k of ['R19', 'R20']) {
+    assert.ok(KODY_WIELOOSOBOWE[k], `KODY_WIELOOSOBOWE zna ${k}`);
+    assert.ok(PROTOKOL.includes(`| ${k} |`), `PROTOKOL §9.4 dokumentuje ${k}`);
+  }
+  assert.match(
+    APP,
+    /akcja: rejestruj \? 'profil-ustaw' : 'profil-sprawdz'/,
+    'app.js woła obie akcje profilowe mostu',
+  );
 });
 
 test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', () => {

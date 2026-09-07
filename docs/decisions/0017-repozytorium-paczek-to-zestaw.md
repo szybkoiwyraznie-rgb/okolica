@@ -100,3 +100,11 @@ automatyczna przy przyjęciu (zgoda = domyślnie zaznaczony checkbox na ekranie
 wklejania), akceptacja właściciela linkiem z e-maila. Niezmienne: schemat
 `TO-zestaw/1`, kryteria dopasowania, CC BY-SA 4.0, moderacja właściciela
 i zasada „aplikacja z repozytorium tylko czyta".
+
+## Aneks 2026-09-07 — `tematWlasny` w meta (Partia 1, pkt 4)
+
+Meta TO-zestaw/1 zyskuje opcjonalne pole `tematWlasny` (łańcuch ≤ 40 znaków,
+puste gdy nieużywane): tekst organizatora dla tematu `wlasny` z kanonu
+(PROTOKOL §5). Dopasowanie: wpis z `wlasny` pasuje tylko do tego samego
+tekstu (porównanie bez wielkości liter). Pole addytywne — wersja schematu
+bez zmian, stare pliki (bez pola) czytają się jak `tematWlasny: ''`.

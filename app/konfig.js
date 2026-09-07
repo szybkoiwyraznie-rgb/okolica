@@ -135,6 +135,10 @@ export const TEMATY = {
     etykieta: 'Geografia',
     opis: 'rzeki, jeziora, wzgórza, granice administracyjne, nazwy geograficzne, mosty',
   },
+  wlasny: {
+    etykieta: 'Dopisz sam',
+    opis: 'dziedzina wpisana przez organizatora w setupie',
+  },
 };
 
 /**
@@ -193,6 +197,7 @@ export const DOMYSLNE = {
   liczbaStacji: 5,
   pytaniaNaStacje: 1,
   tematy: ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia'],
+  tematWlasny: '', // tekst organizatora dla tematu `wlasny` (niezaznaczony domyślnie)
   wiek: 'dorosli',
   jezyk: 'polski',
   wspolpraca: 'zespol',
@@ -309,6 +314,7 @@ export function oczyscKonfiguracje(surowa) {
 
   // listy i teksty
   konfig.tematy = Array.isArray(zrodlo.tematy) ? [...new Set(zrodlo.tematy.map(kanonicznyTemat))].filter((t) => Object.hasOwn(TEMATY, t)) : [];
+  konfig.tematWlasny = typeof zrodlo.tematWlasny === 'string' ? zrodlo.tematWlasny.trim().slice(0, 40) : '';
   if (konfig.tematy.length === 0) konfig.tematy = [...domyslne.tematy];
   konfig.imiona = Array.isArray(zrodlo.imiona)
     ? zrodlo.imiona.slice(0, konfig.liczbaGraczy).map((imie, i) => (typeof imie === 'string' && imie.trim() ? imie.trim().slice(0, OGRANICZENIA.dlugoscImienia.max) : `Gracz ${i + 1}`))
@@ -398,6 +404,10 @@ export function walidujSetup(konfig) {
   }
   if (typeof konfig.geokodacja !== 'boolean') {
     dodaj('K20', 'geokodacja', 'Pobieranie nazwy miejsca musi być włączone albo wyłączone.');
+  }
+  if (Array.isArray(konfig.tematy) && konfig.tematy.includes('wlasny')
+    && (typeof konfig.tematWlasny !== 'string' || !konfig.tematWlasny.trim())) {
+    dodaj('K21', 'tematWlasny', 'Zaznaczyłeś temat „Dopisz sam" — wpisz dziedzinę (np. kinematografia).');
   }
 
   return u;

@@ -1,6 +1,6 @@
 /**
  * Testy `app/wieloosobowa.js` (M11/P2) — czyste schematy gry wieloosobowej:
- * kody, sąsiedztwo geohash5 (lobby), walidacje surowe R01–R18, maszynka tur,
+ * kody, sąsiedztwo geohash5 (lobby), walidacje surowe R01–R20, maszynka tur,
  * wyniki, biała lista danych zdarzenia (PRYWATNOŚĆ: zero współrzędnych) i
  * agregacje rankingów (M12). Wartości referencyjne, nie „co wyszło".
  */
@@ -10,9 +10,10 @@ import assert from 'node:assert/strict';
 import { geohash } from '../app/geo.js';
 import {
   ALFABET_KODU, DLUGOSC_KODU, KODY_WIELOOSOBOWE, MAKS_GRACZY, SCHEMAT_GRY,
-  SCHEMAT_LOBBY, SCHEMAT_RANKINGU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
-  agregujRanking, biezacyGraczTury, czyKompletna, filtrujLobby, generujKod,
-  kategorieRankingu, kodPoprawny, normalizujKod, postepGracza, przeliczWyniki,
+  SCHEMAT_LOBBY, SCHEMAT_PROFILU, SCHEMAT_RANKINGU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
+  agregujRanking, biezacyGraczTury, czyKompletna, czyPinPoprawny, filtrujLobby, generujKod,
+  kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim,
+  postepGracza, przeliczWyniki,
   ramkaGeohash, sasiednieGeohash, walidujGreSurowa, walidujLobbySurowe,
   walidujRankingSurowy, walidujZdarzenieSurowe, zbudujZdarzenie,
 } from '../app/wieloosobowa.js';
@@ -293,4 +294,25 @@ test('walidujRankingSurowy: R17 dla śmieci, R18 filtruje wiersze', () => {
   assert.equal(zepsuty.wiersze.length, 1);
   assert.deepEqual(zepsuty.usterki.map((u) => u.kod), ['R18']);
   assert.deepEqual(walidujRankingSurowy('nie-json').usterki.map((u) => u.kod), ['R17']);
+});
+
+test('profil PIN (ADR 0021): normalizacja pseudonimu i reguła PIN-u', () => {
+  assert.equal(SCHEMAT_PROFILU, 'RO-profil/1');
+  assert.equal(normalizujPseudonim('  Ala   Kowalska  '), 'Ala Kowalska');
+  assert.equal(normalizujPseudonim(null), '');
+  assert.equal(normalizujPseudonim('x'.repeat(30)).length, 20);
+  assert.ok(czyPinPoprawny('1234'));
+  assert.ok(czyPinPoprawny('12345678'));
+  assert.ok(!czyPinPoprawny('123'), 'za krótki');
+  assert.ok(!czyPinPoprawny('123456789'), 'za długi');
+  assert.ok(!czyPinPoprawny('12a4'), 'tylko cyfry');
+  assert.ok(!czyPinPoprawny(''), 'pusty odrzucony');
+});
+
+test('profil PIN: kody R19/R20 z komunikatami dla gracza', () => {
+  assert.ok(KODY_WIELOOSOBOWE.R19.includes('pseudonimu'));
+  assert.ok(KODY_WIELOOSOBOWE.R20.includes('PIN'));
+  assert.equal(komunikatBleduProfilu('R19'), KODY_WIELOOSOBOWE.R19);
+  assert.equal(komunikatBleduProfilu('R20'), KODY_WIELOOSOBOWE.R20);
+  assert.ok(komunikatBleduProfilu('R99').startsWith('Most odmówił:'));
 });

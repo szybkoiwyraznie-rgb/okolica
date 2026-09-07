@@ -133,6 +133,20 @@
       <fieldset class="pole" id="pole-imiona">
         <legend>Gracze</legend>
         <div id="lista-imion" class="lista-imion"></div>
+        <button id="przycisk-profil" type="button" class="przycisk">👤 To ja — pobierz imię z Drive</button>
+        <div id="form-profil" hidden>
+          <label>
+            <span>Pseudonim z rankingu</span>
+            <input id="profil-pseudonim" type="text" maxlength="20" autocomplete="off">
+          </label>
+          <label>
+            <span>PIN (4–8 cyfr)</span>
+            <input id="profil-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off">
+          </label>
+          <ul id="bledy-profil"></ul>
+          <button id="przycisk-profil-sprawdz" type="button" class="przycisk">✓ Sprawdź i wpisz</button>
+          <button id="przycisk-profil-zapisz" type="button" class="przycisk" hidden>＋ Zapisz jako nowy</button>
+        </div>
       </fieldset>
 
       <fieldset class="pole">
@@ -143,6 +157,8 @@
       <fieldset class="pole">
         <legend>Tematy pytań</legend>
         <div id="lista-tematow" class="chipy"></div>
+        <input id="setup-temat-wlasny" type="text" maxlength="40" autocomplete="off"
+          placeholder="Twoja dziedzina, np. kinematografia" aria-label="Własna dziedzina pytań" hidden>
       </fieldset>
 
       <div class="siatka">
