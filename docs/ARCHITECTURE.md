@@ -72,6 +72,21 @@ app/
   sygnaly.js                — M10: plany sygnałów zdarzeń (wibracja + nuty Web
                               Audio) i przełącznik `okolica:sygnaly` (czyste;
                               odtwarzanie w app.js, brak API = cichy no-op)
+  wieloosobowa.js           — M11/M12: schematy RO-* (gra, zdarzenie, lobby,
+                              ranking), walidacja z kodami R01–R18, kody gier
+                              (alfabet bez 0/O/1/I), ramka i sąsiedztwo geohash5
+                              dla lobby, maszynka tur, wyniki, agregacje
+                              rankingów (czyste; ADR 0019)
+  sync.js                   — M11: synchronizacja z mostem Drive — polecenieMostu
+                              (POST + znacznik odmowaMostu), urlGet/urlStanGry,
+                              interwały pollingu zależne od fazy gry, kolejka
+                              zdarzeń offline (flush FIFO), wstrzykiwane
+                              fetchImpl i harmonogram (czyste; ADR 0019)
+  most.js                   — adres mostu Drive: DOMYSLNY_URL_MOSTU (stała
+                              wdrożeniowa WPISANA W KOD, ADR 0020), adresMostu()
+                              (nadpisanie w pamięci telefonu → stała),
+                              stanMostu() z jednym komunikatem dla całego UI
+                              (czyste; bez DOM, bez fetch)
 data/
   przyklady/zestaw-*.json   — zestawy referencyjne TO-zestaw/1 (zweryfikowane
                               źródła, ADR 0008; NIE publikowane automatycznie)
@@ -114,6 +129,13 @@ dla lobby, maszynka tur, wyniki, agregacje rankingów — zero DOM) i `sync.js`
 z flusheM FIFO, rozróżnienie „odmowa mostu" vs „awaria sieci", wstrzykiwane
 `fetchImpl` i harmonogram). Orkiestracja DOM gry wieloosobowej i rankingów
 siedzi w `app.js` (sekcje M11/P4 i M12/P6).
+
+Od ADR 0020 adres mostu nie jest elementem interfejsu, tylko **stałą
+wdrożeniową w kodzie**: `most.js` rozstrzyga, z którym adresem rozmawiamy
+(nadpisanie w pamięci telefonu → `DOMYSLNY_URL_MOSTU` z repozytorium), i daje
+całemu UI jeden tekst stanu (`pokazStanMostu()` w `app.js` → `#most-stan-repo`
+i `#multi-most-stan`). Pól wpisywania adresu nie ma — wymiana adresu to nowy
+commit i nowa wersja aplikacji.
 
 ## Przepływ danych
 
@@ -223,7 +245,8 @@ siedzi w `app.js` (sekcje M11/P4 i M12/P6).
 
 ### Gra wieloosobowa i synchronizacja (M11/M12)
 
-1. `app.js` (karta-multi w setupie) zbiera pseudonim, zgodę i adres mostu →
+1. `app.js` (karta-multi w setupie) zbiera pseudonim i zgodę — adres mostu
+   bierze z kodu (`adresMostu()` w `app/most.js`, ADR 0020) →
    `sync.polecenieMostu` POSTuje `gra-zaloz` / `gra-dolacz`. Zgoda jest
    wymagana: bez niej jawna odmowa i ZERO żądań (ADR 0019 pkt 3).
 2. `utworzSynchronizacje` prowadzi pętlę nienakładających się kroków:

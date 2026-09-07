@@ -567,3 +567,74 @@ akceptacji szczegółów przepływu przez właściciela.
 - 2026-09-06 (M11/M12 — decyzje właściciela) — parowanie graczy: OBIE drogi (lobby z grami w najbliższej okolicy ALBO 6-znakowy kod do przekazania); model rozgrywki: OBA tryby (wyścig równoległy + tury asynchroniczne); dane gracza: pseudonim + wyniki + pełna historia + rankingi ogólne i w kategoriach wiekowych, tematycznych i lokalizacyjnych (np. „najlepsi w Podkowie Leśnej"), „o ile sensownie do ogarnięcia" — przy skali kilku graczy agregacja po meta gry jest tania. Zapisano jako ADR 0019 (Zaakceptowana) + aneks ADR 0009 (hot-seat = tryb offline) + ROADMAP M11/M12 + plan `plans/2026-09-06-m11-m12-gra-wieloosobowa-i-rankingi.md`. Zasada prywatności podtrzymana: współrzędne NIGDY nie wychodzą na Drive — synchronizacja zdarzeniami (dojście/odpowiedź/punkty/czas).
 
 - 2026-09-06 (M11/M12, P1–P7) — gra wieloosobowa na wielu urządzeniach + rankingi: sekcja gier w moście Apps Script (`RO-gra/1`: lobby z wygasaniem 24 h, kody z alfabetu bez 0/O/1/I, wyścig i tury ze STAŁYM przypisaniem stacji `gracze[(i-1)%N]` — rezygnacja pomija stacje zamiast przesuwać kolejkę; `RO-zdarzenie/1` z białą listą pól — współrzędne graczy nigdy nie opuszczają telefonu; LockService; `RO-lobby/1` bez kodów i zestawów; `RO-ranking/1` surowe wiersze), moduły czyste `app/wieloosobowa.js` (walidacja R01–R18, sąsiedztwo geohash5, maszynka tur, wyniki, agregacje) i `app/sync.js` (polling 10/12/30 s wg fazy, kolejka offline FIFO, rozróżnienie odmowa↔awaria), UI: rodzaj gry w setupie, zakładanie (źródło: paczka sesji / z telefonu / z Drive), dołączanie kodem i z listy gier okolicy, lobby z dużym kodem, panel wyścigu/tur + żywa tabela wyników, dwustopniowa rezygnacja, powrót po odświeżeniu telefonu (`okolica:multi:sesja`, zamknięte stacje nie wracają), ekran 🏆 Rankingi (ogólny/wiek/tematy/lokalizacja + „Moje gry"). Testy: dwa „urządzenia" (dwie instalacje atrapy DOM + dwa importy app.js) z atrapą mostu — wyścig z odcinkiem offline, tury z bramką kolejki i resume, odmowa bez zgody, R08 poza turą, skaner współrzędnych w POST-ach; rankingi z atrapą (agregacje, kategorie, puste, śmieci). Dokumentacja: PROTOKOL §9 (aneks RO-*), ARCHITECTURE (moduły + przepływ synchronizacji), README, ASSETS §7.1 (quota gier), WORKFLOW §4.4 (test na dwa telefony), ADR 0019 aneks (doprecyzowanie tur), LESSONS L26–L27. Brama 489/489, cache-bust `?v=m11-1`. Czekamy na: wdrożenie mostu przez właściciela (instrukcja w czacie — P8, ADR 0018) i test terenowy.
+
+## 2026-09-07 — adres mostu w kodzie aplikacji (ADR 0020) + odzyskanie i wypchnięcie P6–P8
+
+**GitHub odzyskany.** Token sesji wygasł 2026-09-06 w połowie pracy (trzecie
+takie zdarzenie); właściciel odświeżył połączenie. Dodatkowo sandbox odtworzył
+`.git` z płytkiego klona: lokalne commity P6–P8 zniknęły z bazy obiektów, choć
+drzewo robocze miało całą treść. Odzyskanie zgodnie z `ENVIRONMENT` §2:
+`git fetch origin <gałąź>` → `git reset --mixed FETCH_HEAD` (HEAD z powrotem na
+`653a2dc` = P5) → `git status` pokazał dokładnie deltę P6–P8 → odtworzenie
+commitów z drzewa: `c835676` (P6, kod i testy rankingów) i `12f3236` (P7+P8,
+dokumentacja + robocza instrukcja wdrożenia). Granulacja nieco inna niż
+pierwotna (4 commity → 2), TREŚĆ identyczna; brama 489/489 przed pushem, CI
+zielone na `12f3236`, PR #2 MERGEABLE.
+
+**Pytanie właściciela i decyzja.** Właściciel zakwestionował ostatni krok
+instrukcji wdrożenia (wklejenie adresu web app w aplikacji): „te dane muszą być
+wpisane w repozytorium, żeby były trwałe i dostępne za każdym razem gdy utworzę
+nową wersję aplikacji webowej". Wyjaśnienie: adres w `localStorage` jest
+przypięty do origin, nie do wersji kodu, więc build go nie kasuje (LESSONS L28)
+— ale zastrzeżenie wskazało realny problem ZASIĘGU: w grze wieloosobowej każdy
+telefon uczestnika sam rozmawia z mostem, więc każdy znajomy musiałby adres
+wkleić ręcznie. Ankieta w czacie, decyzje właściciela (wiązujące → ADR 0020):
+(1) adres wpisany NA STAŁE w kodzie i **pola wpisywania znikają z UI**;
+(2) **bez dodatkowego klucza dostępu** w moście (repo publiczne → klucz byłby
+jawny; wystarczą `REVIEW_SECRET`, kod gry, `organizatorId`, bramka tur);
+(3) mechanizm TERAZ z pustą stałą, prawdziwy adres jednym commitem po wdrożeniu.
+
+**Wdrożenie (plan `plans/2026-09-07-domyslny-adres-mostu.md`, A1–A5):**
+
+- **A1** `app/most.js`: `DOMYSLNY_URL_MOSTU` (pusta do wdrożenia),
+  `KLUCZ_URL_MOSTU`, `adresMostu(pamiec?)` (nadpisanie multi → nadpisanie repo
+  → stała), `mostSkonfigurowany()`, `stanMostu()`; moduł bez DOM i bez `fetch`,
+  pamięć wstrzykiwana (obsługuje `localStorage` i gołą `Map` z harnessu).
+  `test/most.test.js`: 8 testów. Commit `4a414b3`; brama 497/497.
+- **A2** `app/app.js`: wszystkie odczyty adresu przez `adresMostu()` (propozycje
+  paczek, „🔌 Sprawdź połączenie", wysyłka zestawu na Drive, `urlMostuMulti`,
+  walidacja gotowości multi, lobby, źródła zestawu, rankingi); usunięte nasłuchy
+  pól i przycisków zapisu; nowa `pokazStanMostu()` — jeden tekst stanu do
+  `#most-stan-repo` i `#multi-most-stan`, brak mostu dostaje klasę `.bledy`;
+  komunikaty bez odsyłania do nieistniejącego pola (przy odmowie gry sieciowej
+  podpowiedź „Hot-seat").
+- **A3** `index.html`: karta paczek bez `<details>` z polem (zostaje stan
+  + przycisk próby), karta multi bez `<details>` z polem (zostaje stan);
+  cache-bust `?v=m12-1` w HTML i we WSZYSTKICH modułach `app/*.js` + `WERSJA_SW`
+  (LESSONS L29: query jest częścią identyfikatora modułu — podbicie częściowe
+  dałoby dwa egzemplarze modułu).
+- **A4** testy: kontrakt ADR 0020 (stała w `app/most.js`, import w `app.js`,
+  brak czterech id pól/przycisków adresu, jawny stan, zero komunikatów każących
+  wpisywać adres, `app.js` nie sięga po klucz wprost); harness dwóch urządzeń
+  zasiewa adres w pamięci zamiast w polu; nowy test stanu bez adresu (odmowa
+  założenia i dołączenia, zero wysyłek, podpowiedź hot-seat); doprecyzowana
+  bramka zgody (POST-y zero, GET-y gier zero; odczyt indeksu paczek jest bez
+  zgody — ADR 0017 pkt 6). Commit `52f122c`; brama 499/499.
+- **A5** dokumentacja: ADR 0020 (Zaakceptowana) + rejestr, aneksy ADR 0016
+  i 0018, dopisek w AGENTS.md §4 (adres mostu to publiczny punkt końcowy, nie
+  sekret; sekrety mostu tylko w Script Properties), ARCHITECTURE (drzewo:
+  `wieloosobowa.js`, `sync.js`, `most.js` — pierwsze dwa dotąd brakowały;
+  przepływ multi + akapit o stałej wdrożeniowej), README (adres w kodzie,
+  „zero konfiguracji na każdym telefonie", zakresy ADR/M w tabeli), ASSETS §7
+  (zdolność wpisana w kod + rotacja), WORKFLOW §4.4 (punkt 0: stan mostu; kroki
+  bez wpisywania adresu; warunek: commit z adresem scalony do `main`),
+  `docs/setup/most-drive-instrukcja.md` (§4 = podaj adres w czacie → commit →
+  `main`; nadpisanie awaryjne przez konsolę; rotacja adresu przez NOWE
+  wdrożenie), ROADMAP (M11/M12: czekamy też na adres w `app/most.js`),
+  LESSONS L28–L29, ten wpis, handoff.
+
+**Stan na koniec sesji:** brama **499/499** + szablon spójny + audyt WCAG AA
+0 naruszeń; cache-bust `?v=m12-1`. Czekamy na: (1) wdrożenie mostu przez
+właściciela i podanie adresu `/exec` w czacie → wpis do `DOMYSLNY_URL_MOSTU`
+jednym commitem; (2) scalenie PR #2 do `main` (Pages serwuje `main`) — dopiero
+wtedy testy terenowe na telefonach; (3) test dwóch telefonów (WORKFLOW §4.4).

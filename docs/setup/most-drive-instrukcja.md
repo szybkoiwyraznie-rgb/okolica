@@ -10,7 +10,8 @@ akceptujesz je jednym kliknięciem z e-maila, a gracze pobierają wyłącznie
 zaakceptowane; (2) gry wieloosobowe na wielu urządzeniach — lobby, kody,
 wyścig i tury, stan gry na Drive; (3) rankingi z zakończonych gier. Aplikacja
 nie zna żadnych haseł ani kluczy — zna tylko adres web app, który poniżej
-skopiujesz.
+skopiujesz i podasz w czacie: trafi do kodu aplikacji (ADR 0020), więc żadne
+urządzenie nie będzie go wpisywać ręcznie.
 
 Czas: ~15 minut, jednorazowo. Potrzebne: wydzielone konto Google (ADR 0016)
 i przeglądarka z dostępem do aplikacji (może być telefon).
@@ -45,17 +46,33 @@ i przeglądarka z dostępem do aplikacji (może być telefon).
    i token przeglądu (świadoma decyzja prostoty, ADR 0016).
 3. Skopiuj adres web app (kończy się na `/exec`).
 
-## 4. Podłączenie aplikacji
+## 4. Podłączenie aplikacji (ADR 0020: adres żyje w kodzie, nie w interfejsie)
 
-1. **Repozytorium paczek**: w grze ekran „Gdzie jesteś?" → karta „📦 Paczki…"
-   → **Źródło repozytorium (zaawansowane)** → wklej adres z kroku 3 → „Zapisz
-   źródło i odśwież" (albo „🔌 Sprawdź połączenie" — jawna próba mostu).
-   Zgoda na wysyłkę zestawu jest checkboxem na ekranie wklejania odpowiedzi
-   modelu („📤 Wyślij ten zestaw na Drive…"), domyślnie zaznaczonym — bez niej
-   aplikacja niczego nie wyśle.
-2. **Gra wieloosobowa i rankingi**: Ustawienia gry → Rodzaj gry „Gra na wielu
-   urządzeniach" → w karcie multi wklej TEN SAM adres w „Adres mostu
-   (Apps Script)" → „Zapisz". Jeden web app obsługuje paczki i gry (ADR 0018).
+Adres web app wpisuje się w REPOZYTORIUM, nie w aplikacji — dzięki temu każdy
+telefon (Twój i każdego znajomego) działa bez konfigurowania czegokolwiek.
+Pola wpisywania adresu zostały z interfejsu usunięte decyzją właściciela.
+
+1. **Podaj adres z kroku 3 w czacie** agentowi — trafia do stałej
+   `DOMYSLNY_URL_MOSTU` w `app/most.js`, jednym commitem z podbiciem
+   cache-bustingu (`?v=` w `index.html` i we wszystkich importach `app/*.js`
+   oraz `WERSJA_SW` w `sw.js`; spójności pilnuje `test/kontrakt.test.js`).
+2. **Scal do `main`**: GitHub Pages serwuje `main` (ADR 0002), więc adres
+   zacznie działać na telefonach dopiero po scaleniu i przebudowaniu strony
+   (~1–2 min).
+3. **Sprawdź stan w aplikacji**: karta „📦 Paczki dla tej okolicy" i karta gry
+   wieloosobowej pokazują „Most Drive: podłączony — adres jest wpisany w tej
+   wersji aplikacji". Przycisk „🔌 Sprawdź połączenie" robi jawną próbę CORS na
+   żywym wdrożeniu (ADR 0016). Stan „niepodłączony" znaczy, że ta wersja
+   aplikacji adresu jeszcze nie ma.
+4. **Jeden adres, trzy zadania** (ADR 0018): repozytorium paczek, gry
+   wieloosobowe i rankingi. Zgoda na wysyłkę zestawu jest checkboxem na ekranie
+   wklejania odpowiedzi modelu, domyślnie zaznaczonym — bez niej aplikacja
+   niczego nie wyśle.
+5. **Awaryjnie, bez nowej wersji aplikacji**: adres można nadpisać w pamięci
+   JEDNEGO telefonu (konsola przeglądarki:
+   `localStorage.setItem('okolica:multi:url-mostu', '<adres>')`). Interfejs
+   celowo nie ma do tego pola (ADR 0020 pkt 2–3); „Kasuj dane" w ustawieniach
+   przywraca adres z kodu.
 
 ## 5. Test końcowy paczek (kryterium M9b)
 
@@ -76,11 +93,11 @@ i przeglądarka z dostępem do aplikacji (może być telefon).
 Pełna checklista terenowa: `docs/WORKFLOW.md` §4.4 (8 punktów, dwa telefony).
 Skrót:
 
-1. Telefon A: Ustawienia → rodzaj „wieloosobowa" → pseudonim, zgoda, adres
-   mostu → „🌐 Załóż grę" → tryb, źródło paczki → „🚀 Zakładam" → zapisz kod
-   z lobby.
-2. Telefon B: pseudonim + adres mostu → „🔗 Dołącz" → wpisz kod (albo wybierz
-   grę z listy „w okolicy") → oba telefony widzą się w lobby.
+1. Telefon A: Ustawienia → rodzaj „wieloosobowa" → pseudonim, zgoda →
+   „🌐 Załóż grę" → tryb, źródło paczki → „🚀 Zakładam" → zapisz kod z lobby.
+2. Telefon B: sam pseudonim (adres mostu jest w kodzie aplikacji — ADR 0020) →
+   „🔗 Dołącz" → wpisz kod (albo wybierz grę z listy „w okolicy") → oba
+   telefony widzą się w lobby.
 3. A: „▶ Start gry" → oboje: odcinek → dojście → pytanie → odpowiedź; tabela
    wyników drugiego gracza odświeża się w ~12 s.
 4. Po zakończeniu: nagłówek „🏆 rankingi" → ogólny / wiek / tematy /
@@ -96,3 +113,7 @@ Skrót:
   (stare linki przestaną działać).
 - Paczka omyłkowo zaakceptowana: na Drive przeciągnij plik z
   `…-zaakceptowane` do `…-odrzucone` — zniknie z indeksu natychmiast.
+- Adres wyciekł albo ktoś nadużywa mostu (fałszywe paczki, śmieciowe gry,
+  zużycie limitu): **Wdróż → Nowe wdrożenie** daje NOWY adres `/exec` — podaj
+  go w czacie (nowy commit ze stałą `DOMYSLNY_URL_MOSTU`), a stare wdrożenie
+  usuń. Uwaga: nowa WERSJA tego samego wdrożenia adresu NIE zmienia.

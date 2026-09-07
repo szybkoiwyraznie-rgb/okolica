@@ -160,15 +160,22 @@ zapisuje skorupę i kafelki „na później".
 ### 4.4 Weryfikacja M11/M12 na dwóch telefonach (robi właściciel)
 
 Warunek: most wdrożony według instrukcji z czatu (P8, ADR 0018) — ten sam web
-app co repozytorium paczek. Drugi telefon: dowolny (Chrome), ta sama albo inna
-sieć — gra jest asynchroniczna.
+app co repozytorium paczek — a jego adres **wpisany w kod aplikacji**
+(`DOMYSLNY_URL_MOSTU` w `app/most.js`, ADR 0020) i scalony do `main`, bo Pages
+serwuje `main`. Drugi telefon: dowolny (Chrome), ta sama albo inna sieć — gra
+jest asynchroniczna i NIE wymaga konfigurowania adresu.
 
+0. **Stan mostu**: na obu telefonach karta „📦 Paczki dla tej okolicy" i karta
+   gry wieloosobowej pokazują „Most Drive: podłączony — adres jest wpisany
+   w tej wersji aplikacji". Gdy widzisz „niepodłączony", aplikacja jest starsza
+   niż wdrożenie mostu — sprawdź, czy commit z adresem jest w `main`.
 1. **Założenie**: telefon A: Ustawienia → Rodzaj gry „Gra na wielu
-   urządzeniach" → pseudonim, zgoda zaznaczona, adres mostu zapisany →
-   „🌐 Załóż grę" → tryb (najpierw wyścig), źródło paczki → „🚀 Zakładam".
-   Zapisać 6-znakowy kod z lobby.
-2. **Dołączenie kodem**: telefon B: pseudonim + adres mostu → „🔗 Dołącz" →
-   kod → oba telefony widzą się na liście graczy w lobby (odświeżenie ≤10 s).
+   urządzeniach" → pseudonim, zgoda zaznaczona → „🌐 Załóż grę" → tryb
+   (najpierw wyścig), źródło paczki → „🚀 Zakładam". Zapisać 6-znakowy kod
+   z lobby.
+2. **Dołączenie kodem**: telefon B: sam pseudonim (nic więcej do ustawienia) →
+   „🔗 Dołącz" → kod → oba telefony widzą się na liście graczy w lobby
+   (odświeżenie ≤10 s).
 3. **Dołączenie z lobby**: druga gra założona na A powinna pojawić się na B
    pod „Dołącz" z miejscem, trybem i odległością — wejście kliknięciem, bez
    przepisywania kodu.

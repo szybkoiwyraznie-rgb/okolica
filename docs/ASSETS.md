@@ -184,8 +184,11 @@ akcji; nowy dostawca przechodzi pełną checklistę §5.
   domyślnie zaznaczoną zgodą (checkbox na ekranie wklejania). Z Drive — tylko
   indeks zaakceptowanych (`?akcja=indeks`) i paczki (`?akcja=paczka&id=…`).
 - **Klucze i polityka**: BRAK kluczy API w kodzie; adres web app jest zdolnością
-  (capability) wpisywaną w UI; POST-y `text/plain` (bez preflightu CORS);
-  aplikacja tylko czyta — nigdy nie usuwa i nie edytuje na Drive.
+  (capability) i od ADR 0020 jest WPISANY W KOD aplikacji (`DOMYSLNY_URL_MOSTU`
+  w `app/most.js`) — publiczny jak cała aplikacja na Pages, rotacja = nowe
+  wdrożenie web app + nowy commit; sekrety mostu (`REVIEW_SECRET`, `OWNER_EMAIL`)
+  żyją wyłącznie w Script Properties konta Google. POST-y `text/plain` (bez
+  preflightu CORS); aplikacja tylko czyta — nigdy nie usuwa i nie edytuje na Drive.
 - **Prywatność (ADR 0013)**: współrzędne w wysyłanym zestawie to stacje gry
   (przestrzeń publiczna) + geohash5 okolicy, bez śledzenia gracza; moderacja
   właściciela (e-mail z linkiem przeglądu) jest bramą przed udostępnieniem.

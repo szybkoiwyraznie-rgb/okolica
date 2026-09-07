@@ -459,3 +459,46 @@ jawnym helperem (`przelaczNa`), który podmienia `document/window/navigator/
 localStorage/location` jednym ruchem. Do tego: atrapa „serwera" jako lustro
 kontraktu z modułu współdzielonego (parzystość z `.gs` pilnuje osobny test
 kontraktowy) — logika nie rozjeżdża się w trzech miejscach.
+
+## L28 (2026-09-07, Tajemnicza Okolica) — „nietrwałe" czy „za wąskie"? Konfiguracja w localStorage przeżywa rebuild, ale nie przeżywa nowego telefonu
+
+**Objaw:** właściciel odrzucił krok instrukcji wdrożenia („wklej adres mostu
+w aplikacji"): „Co z tego, że ja to wpiszę w aplikację skoro źródło
+w repozytorium nie będzie tych danych? Każdy następny build nie będzie ich
+miał". Obawa o build była nietrafna, ale zastrzeżenie wskazało realny problem.
+
+**Przyczyna:** `localStorage` jest przypięty do ORIGIN (adresu strony), nie do
+wersji kodu — nowa wersja aplikacji, rebuild ani ponowne wdrożenie Pages nic
+tam nie kasują. Kasuje dopiero: inny telefon, inna przeglądarka, czyszczenie
+danych, tryb prywatny. Koszt pojawił się przy ZASIĘGU: w grze wieloosobowej
+każdy telefon uczestnika sam rozmawia z mostem, więc ręczna konfiguracja
+musiałaby się wydarzyć na każdym urządzeniu znajomego.
+
+**Reguła:** rozróżniaj TRWAŁOŚĆ (origin → przeżywa build) od ZASIĘGU (jedno
+urządzenie → nie przeżywa nowego telefonu) i odpowiadaj na to drugie, gdy
+właściciel mówi „nietrwałe". Jeżeli konfiguracja jest potrzebna na każdym
+urządzeniu uczestnika, to w aplikacji statycznej bez kroku budowania (ADR 0001)
+jedynym miejscem na stałą jest KOD W REPOZYTORIUM (ADR 0020) — a wtedy
+publiczność repozytorium (wymóg Pages) staje się częścią modelu zagrożenia i
+musi być opisana w ADR wraz z procedurą rotacji (nowe wdrożenie web app = nowy
+adres `/exec` = nowy commit ze stałą), nie przemilczana.
+
+## L29 (2026-09-07, Tajemnicza Okolica) — cache-bust `?v=` w ESM: query jest częścią identyfikatora modułu, więc podbija się go WSZĘDZIE naraz
+
+**Objaw:** po podbiciu wersji cache-bustingu w `index.html` i `app/app.js`
+dwa moduły (`app/sync.js`, `app/wieloosobowa.js`) miały w swoich importach
+starą wersję; `git status` pokazał je jako zmodyfikowane przez sed, ale omal
+nie zostały pominięte przy `git add` — commit poszedłby z rozjechanym grafem.
+
+**Przyczyna:** w modułach ES query jest częścią identyfikatora:
+`./wieloosobowa.js?v=m11-1` i `./wieloosobowa.js?v=m12-1` to DWA różne moduły
+— dwa egzemplarze stanu i stałych, w przeglądarce i w `node --test` tak samo.
+Kontrakt pilnuje spójności `index.html` + `app/app.js`, więc rozjazd w importach
+modułów niższego poziomu NIE czerwieni bramy.
+
+**Reguła:** podbicie wersji to JEDEN ruch na wszystkich plikach grafu:
+`sed -i 's/?v=STARA/?v=NOWA/g' index.html app/*.js` + `WERSJA_SW` w `sw.js`,
+a przed `git add` przegląd `git status` — każdy plik zmieniony przez sed idzie
+do commita. Nowy moduł wchodzący do grafu dostaje `?v=` w swoim imporcie od
+razu (wzorzec: `app/most.js`). Przy podejrzeniu rozjazdu: `grep -rn "?v=" app/
+index.html sw.js` musi pokazać dokładnie jedną wersję.

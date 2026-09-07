@@ -36,6 +36,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1`, geohash5 w indeksie, CC BY-SA 4.0, moderacja właściciela | Proponowana |
 | [0018](0018-drive-backend-wielozadaniowy.md) | Drive jako backend wielozadaniowy (paczki, parowanie gier, statystyki); wdrożenie odroczone, instrukcja w czacie | Zaakceptowana |
 | [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa na wielu urządzeniach: lobby + kod gry, wyścig i tury, zdarzenia bez współrzędnych, rankingi (ogólne/wiek/tematy/lokalizacja) | Zaakceptowana |
+| [0020](0020-adres-mostu-wpisany-w-kod-aplikacji.md) | Adres mostu Drive wpisany w kod aplikacji (`DOMYSLNY_URL_MOSTU`), bez pola do wpisywania w UI; nadpisanie techniczne w `localStorage` | Zaakceptowana |
 
 ## Szablon ADR
 

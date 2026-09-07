@@ -166,8 +166,9 @@ większy niż w setupie) — wybór startuje grę bez promptu, bez wklejania, be
 Overpassa i bez modelu. Przyjęcie paczki z AI (ekran wklejania) automatycznie
 wysyła ją na Drive do przeglądu właściciela — zgoda jest checkboxem na tym
 samym ekranie, domyślnie zaznaczonym, można odhaczyć (opt-out). Właściciel
-akceptuje kandydatów linkiem z e-maila; adres mostu wpisuje się w UI
-(„Źródło repozytorium"), a przycisk „🔌 Sprawdź połączenie" robi jawną próbę
+akceptuje kandydatów linkiem z e-maila; adres mostu jest **wpisany w kod
+aplikacji** (`DOMYSLNY_URL_MOSTU` w `app/most.js`, ADR 0020) — żadne urządzenie
+nie konfiguruje go ręcznie, a przycisk „🔌 Sprawdź połączenie" robi jawną próbę
 CORS na żywym wdrożeniu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
 daje plik do ręcznego wniesienia, gdy most jest niedostępny.
 
@@ -182,6 +183,9 @@ daje plik do ręcznego wniesienia, gdy most jest niedostępny.
   gry i wyniki; **współrzędne graczy nigdy nie opuszczają telefonu** (biała
   lista pól zdarzenia + kasowanie po stronie mostu). Bez zgody na wysyłkę
   aplikacja odmawia założenia gry i dołączenia.
+- **Zero konfiguracji na każdym telefonie**: adres mostu jest wpisany w kod tej
+  wersji aplikacji (ADR 0020), więc telefon znajomego działa od razu — interfejs
+  pokazuje stan mostu (podłączony / niepodłączony), nie pole do wpisywania.
 - **Offline**: zdarzenia z trasy czekają w kolejce i wychodzą automatycznie po
   powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca z zapamiętanej
   sesji — zamknięte stacje nie wracają.
@@ -195,9 +199,9 @@ daje plik do ręcznego wniesienia, gdy most jest niedostępny.
 |---|---|
 | `AGENTS.md` | **zasady pracy agentów — lektura startowa każdej sesji** |
 | `docs/PROTOKOL.md` | protokół PYT v1.0: szablon promptu, schemat JSON, walidacja |
-| `docs/decisions/` | rejestr decyzji architektonicznych (ADR 0001–0013) |
+| `docs/decisions/` | rejestr decyzji architektonicznych (ADR 0001–0020) |
 | `docs/ARCHITECTURE.md` | budowa aplikacji, przepływ danych, algorytm stacji |
-| `docs/ROADMAP.md` | kamienie milowe M0–M10 i status |
+| `docs/ROADMAP.md` | kamienie milowe M0–M12 i status |
 | `docs/WORKFLOW.md` | procedura sesji + procedura testowania w terenie |
 | `docs/LESSONS.md` | rejestr lekcji (objaw → przyczyna → reguła) |
 | `docs/setup/ENVIRONMENT.md` | stałe ograniczenia sandboxa, gita i sieci |

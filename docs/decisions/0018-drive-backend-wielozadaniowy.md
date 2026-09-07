@@ -57,3 +57,17 @@ ADR 0016 (backend Drive — niniejszy ADR rozszerza go o wielozadaniowość),
 ADR 0009 (hot-seat — rewizja przy M11), ADR 0013 (prywatność — zgody przy
 nowych danych), ADR 0017 (zestawy), plan `2026-09-06-m9b-most-drive.md`,
 BACKLOG B17, ROADMAP M11/M12.
+
+## Aneks (2026-09-07): ostatni krok instrukcji się zmienia (ADR 0020)
+
+Pkt 3 pozostaje w mocy (wdrożenie przez właściciela, instrukcja w czacie),
+ale jej ostatni krok NIE polega już na wklejeniu adresu w aplikacji. Od ADR
+0020 adres web app jest stałą w kodzie: właściciel po wdrożeniu podaje adres
+w czacie, agent wpisuje go do `DOMYSLNY_URL_MOSTU` w `app/most.js` (jeden
+commit razem z podbiciem cache-bustingu), a aplikacja działa bez konfiguracji
+na każdym urządzeniu — także na telefonach znajomych, co jest warunkiem gry
+wieloosobowej z pkt 2. Pola wpisywania adresu zniknęły z interfejsu; zostały
+jawny stan mostu i przycisk „🔌 Sprawdź połączenie". Pliki `docs/setup/`
+nadal są wersjami roboczymi i źródłem prawdy dla testów/kontraktów, z tym że
+`most-drive-instrukcja.md` §4 opisuje przekazanie adresu w czacie zamiast
+wklejania w UI.

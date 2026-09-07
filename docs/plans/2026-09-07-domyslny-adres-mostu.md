@@ -52,7 +52,7 @@ zmienił, a nowa wersja jeszcze nie dojechała".
       adresu, stała w kodzie, spójność cache-bust), `test/zestawy-ui.test.js`
       i `test/wieloosobowa-ui.test.js` (adres z pamięci, nie z pola);
       brama zielona (testy + szablon + audyt WCAG AA).
-- [ ] **A5 — dokumentacja**: ADR 0020 (Zaakceptowana), aneksy ADR 0016 i
+- [x] **A5 — dokumentacja**: ADR 0020 (Zaakceptowana), aneksy ADR 0016 i
       0018, dopisek w AGENTS.md §4 (adres mostu to nie sekret),
       ARCHITECTURE, README, WORKFLOW (§4.4 test bez konfiguracji),
       `docs/setup/most-drive-instrukcja.md` §4 (adres podajesz w czacie →

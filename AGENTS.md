@@ -145,9 +145,13 @@ Ponadto:
 - **Zero zależności npm w `package.json`** — runtime i dev. Narzędzia agenta
   (np. headless Chromium do weryfikacji wizualnej) instaluje się WYŁĄCZNIE poza
   repozytorium (`ENVIRONMENT` §4.1).
-- **Zero backendu i zero sekretów w repo.** Wymiana z modelem AI odbywa się
-  przez schowek użytkownika (ADR 0006). Nie commituj kluczy API, tokenów ani
-  danych graczy.
+- **Zero sekretów w repo.** Wymiana z modelem AI odbywa się przez schowek
+  użytkownika (ADR 0006). Nie commituj kluczy API, tokenów ani danych graczy.
+  Backend projektu to most Apps Script na wydzielonym koncie Drive (ADR 0016,
+  0018), a jego **adres web app jest publicznym punktem końcowym, nie sekretem**
+  — dlatego od ADR 0020 jest wpisany w kod (`DOMYSLNY_URL_MOSTU` w `app/most.js`),
+  żeby każde urządzenie działało bez konfiguracji. Sekrety mostu (`REVIEW_SECRET`,
+  `OWNER_EMAIL`) żyją WYŁĄCZNIE w Script Properties konta Google — nigdy w repo.
 - **Współrzędne gracza nie opuszczają urządzenia inaczej niż przez zapytania
   do dostawców map/danych wymienionych w `docs/ASSETS.md`** (ADR 0013). Zero
   analityki, zero ciasteczek, zero zewnętrznych skryptów.

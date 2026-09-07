@@ -123,3 +123,20 @@ Zgoda żyje na ekranie wklejania odpowiedzi AI jako checkbox
 ale z możliwością odhaczenia, gdy zestaw ma zostać tylko na telefonie.
 Wcześniejszy pomysł jednorazowej zgody opt-in w karcie prywatności — odrzucony.
 Bez zgody albo bez adresu mostu: zero wysyłek i jawny status (LESSONS L6).
+
+## Aneks (2026-09-07): adres mostu jest w kodzie aplikacji, nie w UI (ADR 0020)
+
+Właściciel zdecydował, że adres web app nie jest konfigurowany przez
+użytkownika: trafia do repozytorium jako stała `DOMYSLNY_URL_MOSTU`
+w `app/most.js`, a pola „Źródło repozytorium (zaawansowane)" i „Adres mostu
+(Apps Script)" znikają z interfejsu. Powód: w grze wieloosobowej (ADR 0019)
+każdy telefon uczestnika rozmawia z mostem sam, więc adres musiałby być
+wklejony na każdym urządzeniu z osobna. Konsekwencja dla ryzyk tego ADR-u:
+adres jest publiczny jak cały kod aplikacji (repo publiczne — wymóg Pages),
+więc „zdolność" (capability) może trafić w obce ręce; reakcją jest nowe
+wdrożenie web app (nowy adres `/exec`) i nowy commit ze stałą, a nie zmiana
+logiki mostu. Próba CORS z pkt. „Ograniczenia techniczne" zostaje
+w interfejsie jako przycisk „🔌 Sprawdź połączenie" i jawny stan mostu
+(`#most-stan-repo`, `#multi-most-stan`). Reguła „bez zgody albo bez adresu
+mostu: zero wysyłek i jawny status" obowiązuje bez zmian — „brak adresu"
+oznacza teraz pustą stałą w tej wersji aplikacji.

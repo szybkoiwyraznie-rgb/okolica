@@ -359,7 +359,9 @@ i z listy okolicy, lobby z kodem, panel wyścigu/tur z żywą tabelą wyników,
 dwustopniowa rezygnacja, powrót do gry po odświeżeniu telefonu. Testy: dwa
 „urządzenia" z atrapą mostu end-to-end + skaner prywatności POST-ów; brama
 489/489. Czekamy na: wdrożenie mostu przez właściciela (instrukcja w czacie,
-ADR 0018) i test terenowy WORKFLOW §4.4.
+ADR 0018), wpisanie adresu web app do `app/most.js` (`DOMYSLNY_URL_MOSTU`,
+ADR 0020 — od 2026-09-07 aplikacja nie ma pola do wpisywania adresu) i test
+terenowy WORKFLOW §4.4.
 
 ## M12 — Profil, statystyki i rankingi gracza na Drive (decyzje właściciela: ADR 0019)
 
@@ -375,7 +377,8 @@ ogólny + kategorie WIEK / TEMATY / LOKALIZACJA + „Moje gry". Doprecyzowanie
 wobec opisu wyżej: agregacje liczy TELEFON (`agregujRanking`,
 `kategorieRankingu`), a most oddaje surowe wiersze `RO-ranking/1` — przy skali
 „znajomi" to tańsze i testowalne bez wdrożenia. Czekamy na: wdrożenie
-i test terenowy (WORKFLOW §4.4 pkt 7).
+i test terenowy (WORKFLOW §4.4 pkt 7) — oba wymagają adresu mostu wpisanego
+w `app/most.js` i scalonego do `main` (ADR 0020).
 
 ## Zasady prowadzenia roadmapy
 
