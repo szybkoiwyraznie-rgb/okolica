@@ -1,85 +1,84 @@
 # 0031 — Duży setup generuje pytania partiami, a aplikacja sama je scala
 
-- Status: Zaakceptowana (2026-09-08, decyzja właściciela)
+- Status: Wycofana (2026-09-08, decyzja właściciela — tego samego dnia, w którym została podjęta)
 - Data: 2026-09-08
+- Zastąpiona przez: brak (wraca stan z ADR sprzed B21: jedno zlecenie na całą paczkę)
 
 ## Kontekst
 
-Pomiar z 2026-09-07 (B21, `test/duza-paczka.test.js`) pokazał, gdzie jest wąskie
-gardło dużych setupów:
+Pomiar z 2026-09-07 (B21, `test/duza-paczka.test.js`) pokazał, że przy dużych
+setupach rośnie **wyjście** modelu — ~210 tokenów na pytanie — a nie prompt
+(stały, ~1 356 tokenów) i nie pamięć (kontener 40 pytań = 35,6 kB, 1,8% budżetu
+stanu). Z tego pomiaru wyciągnąłem wniosek, że przy 40 pytaniach (~8 350
+tokenów) model z limitem wyjścia 4 tys. tokenów urwie JSON w połowie, i zapisałem
+to w `app/protokol.js` jako `PROG_ODPOWIEDZI_TOKENY = 4000`.
 
-| | 5 pytań (1 gracz) | 40 pytań (5 stacji × 8 graczy) |
-|---|---|---|
-| prompt | 5 422 zn / ~1 356 tok | 5 423 zn / ~1 356 tok (**stały**) |
-| odpowiedź modelu | 4 469 zn / ~1 118 tok | 33 392 zn / ~8 348 tok |
-| kontener `TO-paczka/2` | 4,8 kB | 35,6 kB |
+Na tym założeniu stanęła decyzja o dzieleniu generacji na partie:
+`planPartii()` / `scalPartie()`, globalne numery stacji w promptcie części
+(szablon `PYT/1.0.7`), walidacja części wobec jej własnego zakresu stacji
+(`oczekiwane.stacjeNumery`), kody WE08/WE09/WE10/E21, paski `#prompt-partia`
+i `#paczka-partia`, sekcja PROTOKOL §2.2. Wdrożone i zielone w commicie
+`0b2ca68`.
 
-Prompt nie rośnie, pamięć nie jest problemem — rośnie **wyjście** modelu
-(~210 tokenów na pytanie). Przy limicie wyjścia 4 tys. tokenów paczka 40 pytań
-nie mieści się i model urywa JSON w połowie, co wraca jako E01/E02 bez
-wskazania prawdziwej przyczyny. Do tej pory ekran pytań tylko ostrzegał
-(`#prompt-rozmiar`).
+## Dlaczego wycofana
 
-Właściciel zgodził się na dzielenie generacji na partie. Wariant „po jednej
-stacji", rozważany w B21, jest zły z drugiej strony: 40 pytań przy 1 pytaniu na
-stację to 40 promptów i 40 wklejeń zamiast trzech.
+**Założenie o limicie wyjścia było moje, nie właściciela — i było błędne.**
+Właściciel (2026-09-08): *„Żaden z modeli których używam nie ma nawet
+w przybliżeniu takich limitów. Sugerowany Meta.ai ma output token limit 64k
+tokens, Google Studio models 64k, ChatGPT5+ 128k output tokens limit."*
+
+Liczba 4 000 nie była pomiarem żadnego modelu, którego właściciel używa — była
+moim ostrożnościowym założeniem o „części modeli", zapisanym w komentarzu jako
+fakt (*„Modele z limitem wyjścia 4 tys. tokenów urywają taką odpowiedź
+w połowie"*).
+
+Konsekwencja jest policzalna. Największy setup, jaki aplikacja w ogóle pozwala
+zbudować (`OGRANICZENIA`: 12 stacji × 8 graczy = **96 pytań**), daje odpowiedź
+~**20 250 tokenów** / ~80 tys. znaków:
+
+| limit wyjścia modelu | ile razy więcej niż maksymalny setup |
+|---|---|
+| 32 000 | 1,6× |
+| 64 000 | 3,2× |
+| 128 000 | 6,3× |
+
+`planPartii({ liczbaStacji: 12, pytaniaNaStacje: 8, progTokeny: 64000 })` zwraca
+**1 część**. Czyli przy modelach właściciela dzielenie nie odpaliłoby się nigdy,
+przy żadnej konfiguracji dostępnej w aplikacji.
+
+Zostawał więc kod, który nie może się wykonać: dwa elementy UI, sekcja protokołu,
+pięć kodów błędów i 16 testów pilnujących ścieżki, którą nikt nie pójdzie.
+Właściciel: *„Według mnie to nie ma większego sensu"* — i wybrał usunięcie,
+nie podniesienie progu.
 
 ## Decyzja
 
-**1. Partie liczy się z budżetu tokenów, ale pakuje CAŁYMI stacjami.**
-`planPartii()` (`app/protokol.js`) liczy `maksPytan = ⌊(prog − 90) / 210⌋` —
-18 pytań przy domyślnym progu 4 000 tokenów — a potem
-`stacjiWPartii = max(1, ⌊maksPytan / pytaniaNaStacje⌋)` i wypełnia partie
-kolejno. Pytanie należy do dokładnie jednej stacji, więc stacja nigdy nie jest
-dzielona między partie. Stacja większa niż budżet idzie sama i dostaje jawne
-ostrzeżenie: odpowiedź i tak może zostać urwana.
+Cały mechanizm partii usunięty przez `git revert 0b2ca68` — `app/protokol.js`,
+`app/app.js`, `index.html` i `docs/PROTOKOL.md` wróciły bajt-w-bajt do stanu
+z `4e29879`, a szablon do `PYT/1.0.6`. Aplikacja zawsze generuje pytania jednym
+zleceniem, tak jak przed B21.
 
-**2. Numery stacji są GLOBALNE, także w promptcie części.** Szablon (PYT/1.0.7)
-mówi wprost: *„numer stacji DOKŁADNIE taki, jaki stoi przy niej w liście STACJE
-powyżej — nie numeruj stacji od nowa, nawet jeśli lista nie zaczyna się od 1"*.
-To sedno całej decyzji: przy globalnych numerach identyfikatory `s<stacja>p<n>`
-są unikalne w całej paczce, więc **scalanie jest zwykłym złączeniem list**.
-Ponowna numeracja (stacja 4 jako „1") zderzyłaby `s1p1` z trzech części i po
-scaleniu paczka byłaby nie do odratowania — stąd zakaz w szablonie, a nie
-przemapowywanie odpowiedzi w aplikacji.
+**Co zostaje z B21** (to nie zależało od błędnego założenia i ma wartość samą
+w sobie):
 
-**3. Część waliduje się wobec JEJ zakresu stacji, całość wobec setupu.**
-`walidujPaczke` przyjmuje `oczekiwane.stacjeNumery`; bez niego działa po staremu
-(1..N). E04 ma dwa komunikaty — „spoza zakresu części" i „spoza setupu" — bo
-właściciel musi wiedzieć, czy model wyszedł poza zlecenie, czy poza grę.
-E05 (stacja bez pytania) i E06 (rozkład) też idą po zakresie części.
+- `szacunekOdpowiedzi()` i stałe `BAZA_ODPOWIEDZI_*` / `*_NA_PYTANIE` w
+  `app/protokol.js` — pomiar ~830 znaków i ~210 tokenów na pytanie był prawdziwy;
+- linia `#prompt-rozmiar` na ekranie pytań: mówi właścicielowi, jak duża będzie
+  odpowiedź, zanim zmarnuje generację. Nie blokuje niczego;
+- `test/duza-paczka.test.js` — pilnuje, żeby pomiar nie rozjechał się z fiksturem.
 
-**4. Scalanie nie naprawia, tylko odmawia.** `scalPartie()` bierze nagłówek
-z pierwszej części, pytania złącza w kolejności, `uwagi` skleja. Powtórzone `id`
-między częściami to **E19** z nazwaniem części, w której identyfikator był
-pierwszy raz — z usterkami funkcja zwraca `paczka: null`, bo dwie odpowiedzi na
-te same pytania to nie paczka. Pusta lista części to **E21**. Złożona paczka
-przechodzi jeszcze raz pełną walidację wobec setupu, zanim wystartuje gra.
-
-**5. Nowe kody.** WE08 (`liczbaStacji` nie jest liczbą całkowitą ≥ 1) i WE09
-(`pytaniaNaStacje` j.w.) — wejście planu; WE10 — partia wskazuje stacje, których
-nie ma na mapie; E21 — nie ma czego scalać. E18 zostaje wycofany, E19 dostaje
-drugie życie przy scalaniu.
-
-**6. UI mówi, która to część, na obu ekranach.** `#prompt-partia` i
-`#paczka-partia` pokazują `Część 2 z 3 — stacje 3–4, 8 pytań · zebrane: 1 z 2`.
-Po przyjęciu części aplikacja sama wraca na ekran promptu z kolejną; gra startuje
-dopiero po złożeniu całości. Mały setup nie udaje podziału — wskaźnik jest
-schowany, a nagłówek brzmi „Paczka przyjęta".
+`PROG_ODPOWIEDZI_TOKENY = 4000` zostaje w kodzie wyłącznie jako próg tego
+**ostrzeżenia**. Nie steruje już żadnym zachowaniem aplikacji.
 
 ## Konsekwencje
 
-- Właściciel dużego setupu wkleja odpowiedź 2–3 razy zamiast raz, ale każda
-  część mieści się w limicie wyjścia modelu. Bez tego 40 pytań było
-  nieosiągalne w ogóle.
-- Stan partii (`STAN.partie`) żyje w pamięci modułu i ginie przy odświeżeniu
-  strony — tak samo jak `STAN.paczka` przed startem gry. Zebrane części nie są
-  zapisywane do `localStorage`: to surowy plaintext, którego ADR 0007 pkt 4 nie
-  pozwala trzymać w DOM ani w zapisie.
-- Zmiana liczby stacji albo pytań na stację kasuje zebrane części
-  (`planPartiiBiezacej` porównuje sygnaturę) — starych części nie da się
-  uczciwie doczepić do nowego planu.
-- Szablon urósł o dwie linie (`{LICZBA_STACJI}`, `{ZAKRES}`) i sekcję §2.2;
-  `SZABLON_WERSJA` = `PYT/1.0.7`. Testy czytają stałą dynamicznie, więc
-  podbicie nic nie psuje; literała `PYT/1.0.6` w `test/helpers/most.js` to
-  fikstura schematu, nie wersja szablonu.
+- Gdyby właściciel kiedyś użył modelu z małym limitem wyjścia, objaw wróci jako
+  E01/E02 po wklejeniu uciętego JSON-u — ale `#prompt-rozmiar` powie mu wcześniej,
+  jak duża miała być odpowiedź, więc rozpozna przyczynę.
+- Jeśli kiedyś dzielenie stanie się potrzebne, ten ADR jest gotowym projektem:
+  pakowanie całymi stacjami, globalne numery stacji (bez nich `s<stacja>p<n>`
+  zderzają się po scaleniu), walidacja części wobec jej zakresu i odmowa
+  scalania przy kolizji `id`. Nie trzeba wymyślać od nowa.
+- LESSONS L37 zostaje: bug, który znalazł test UI (`odpakujPaczke` zwraca paczkę
+  także dla jawnego JSON-a, a formę rozróżnia dopiero pole `zrodlo`), dotyczy
+  kodu, który nadal żyje.

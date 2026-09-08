@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-26';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-26';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-27';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-27';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -31,23 +31,21 @@ import {
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
   PROG_ODPOWIEDZI_TOKENY,
-  planPartii,
-  scalPartie,
-} from './protokol.js?v=m12-26';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-26';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-26';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-26';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-26';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-26';
+} from './protokol.js?v=m12-27';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-27';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-27';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-27';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-27';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-27';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-26';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-26';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-26';
+} from './zestawy.js?v=m12-27';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-27';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-27';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -67,17 +65,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-26';
-import { utworzMape } from './mapa.js?v=m12-26';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-26';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-26';
-import { adresMostu, stanMostu } from './most.js?v=m12-26';
+} from './sieci.js?v=m12-27';
+import { utworzMape } from './mapa.js?v=m12-27';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-27';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-27';
+import { adresMostu, stanMostu } from './most.js?v=m12-27';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-26';
+} from './oceny.js?v=m12-27';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -112,9 +110,6 @@ const STAN = {
   ocenianePytanieId: '',
   ocenianyGracz: '',
   usterkiPaczki: [],
-  /** B21 (PROTOKOL §2.2): `{ plan, biezaca, zebrane }` — null, gdy cała paczka
-   *  mieści się w jednym zleceniu do modelu. */
-  partie: null,
   /** M6: stan gry `rozgrywka/1` — null do „▶ Zacznij grę". */
   rozgrywka: null,
   /** M6: ukryty kontener paczki na czas gry (TO-paczka/2) — nigdy plaintext (ADR 0007 pkt 4). */
@@ -2901,74 +2896,31 @@ async function eksportujWynikObraz(udostepnij = false) {
 
 /* ---------------------------------------------------------------- prompt */
 
-/**
- * B21 (PROTOKOL §2.2): plan dzielenia generacji na partie. Nowy plan kasuje
- * zebrane części — zmiana setupu albo liczby stacji oznacza inne pytania, więc
- * starych części nie da się uczciwie doczepić.
- */
-function planPartiiBiezacej() {
-  const plan = planPartii({
-    liczbaStacji: STAN.konfig.liczbaStacji,
-    pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
-  });
-  const sygnatura = `${STAN.konfig.liczbaStacji}x${STAN.konfig.pytaniaNaStacje}`;
-  if (plan.partie.length > 1) {
-    if (!STAN.partie || STAN.partie.sygnatura !== sygnatura) {
-      STAN.partie = { sygnatura, plan, biezaca: 0, zebrane: [] };
-    }
-  } else {
-    STAN.partie = null;
-  }
-  return plan;
-}
-
-/** Wspólny opis postępu partii na ekranach 4 i 5 (B21). */
-function pokazStanPartii() {
-  const czesc = STAN.partie?.plan.partie[STAN.partie.biezaca] ?? null;
-  const etykieta = czesc
-    ? `Część ${czesc.numer} z ${czesc.ile} — stacje ${czesc.stacje[0]}${czesc.stacje.length > 1 ? `–${czesc.stacje.at(-1)}` : ''}, ${czesc.liczbaPytan} pytań`
-      + (STAN.partie.zebrane.length ? ` · zebrane: ${STAN.partie.zebrane.length} z ${czesc.ile - 1}` : '')
-    : '';
-  for (const id of ['prompt-partia', 'paczka-partia']) {
-    const el = $(id);
-    el.hidden = !czesc;
-    el.textContent = etykieta;
-  }
-}
-
 function budujPromptEkran() {
-  // B21: wąskim gardłem jest WYJŚCIE modelu (~210 tokenów na pytanie), więc
-  // duży setup dzielimy na partie pakowane całymi stacjami (PROTOKOL §2.2).
-  const plan = planPartiiBiezacej();
-  pokazStanPartii();
-  const czesc = STAN.partie?.plan.partie[STAN.partie.biezaca] ?? null;
   const wynik = zbudujPrompt({
     konfig: STAN.konfig,
     okolica: { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, miejsce: STAN.miejsce ?? '' },
     stacje: STAN.stacje,
-    partia: czesc,
   });
-  pokazBledy('bledy-prompt', [...wynik.usterki, ...plan.ostrzezenia.map((komunikat) => ({ kod: 'B21', pole: 'partie', komunikat }))]);
+  pokazBledy('bledy-prompt', wynik.usterki);
   STAN.prompt = wynik.prompt;
   $('pole-prompt').value = wynik.prompt ?? '';
-  const ilePytan = czesc ? czesc.liczbaPytan : liczbaPytan(STAN.konfig);
-  const ileStacji = czesc ? czesc.stacje.length : STAN.konfig.liczbaStacji;
   $('prompt-licznik').textContent = wynik.prompt
-    ? `${wynik.prompt.length} znaków · ${ilePytan} pytań · ${ileStacji} stacji${czesc ? ` (część ${czesc.numer}/${czesc.ile})` : ''} · protokół ${WERSJA_PROTOKOLU}`
+    ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji · protokół ${WERSJA_PROTOKOLU}`
     : 'prompt nie został zbudowany';
-  // Prompt jest stały (~1,4 tys. tokenów) niezależnie od liczby pytań — rośnie
-  // ODPOWIEDŹ modelu. Mówimy o tym ZANIM właściciel zmarnuje generację: ucięty
-  // JSON wraca jako E01/E02 bez wskazania prawdziwej przyczyny.
+  // B21: prompt jest stały (~1,4 tys. tokenów) niezależnie od liczby pytań —
+  // rośnie ODPOWIEDŹ modelu (~210 tokenów na pytanie), a to ona mieści się albo
+  // nie w limicie wyjścia. Mówimy o tym ZANIM właściciel zmarnuje generację:
+  // ucięty JSON wraca jako E01/E02 bez wskazania prawdziwej przyczyny.
+  const ilePytan = liczbaPytan(STAN.konfig);
   const rozmiar = szacunekOdpowiedzi(ilePytan);
   const elRozmiar = $('prompt-rozmiar');
   elRozmiar.hidden = !wynik.prompt;
   elRozmiar.textContent = wynik.prompt
     ? `Odpowiedź modelu będzie miała około ${Math.round(rozmiar.znaki / 100) / 10} tys. znaków (~${Math.round(rozmiar.tokeny / 100) / 10} tys. tokenów) dla ${ilePytan} pytań.`
-      + (czesc
-        ? ` To część ${czesc.numer} z ${czesc.ile} — po przyjęciu odpowiedzi aplikacja poprosi o następną i sama złoży całość.`
-        : (rozmiar.tokeny > PROG_ODPOWIEDZI_TOKENY
-          ? ' To więcej niż limit wyjścia części modeli — jeśli wróci ucięty JSON, zmniejsz liczbę graczy albo stacji i wygeneruj pytania jeszcze raz.'
-          : ''))
+      + (rozmiar.tokeny > PROG_ODPOWIEDZI_TOKENY
+        ? ' To więcej niż limit wyjścia części modeli — jeśli wróci ucięty JSON, zmniejsz liczbę graczy albo stacji i wygeneruj pytania jeszcze raz.'
+        : '')
     : '';
   $('przycisk-dalej-paczka').disabled = !wynik.prompt;
 }
@@ -3036,15 +2988,10 @@ function pobierzPlik(nazwa, tresc, typ) {
 
 /* ------------------------------------------------------------- walidacja */
 
-function oczekiwane({ calaPaczka = false } = {}) {
-  // B21: przy generowaniu partiami walidujemy CZĘŚĆ — dokładnie te stacje,
-  // które obejmuje bieżące zlecenie (PROTOKOL §2.2). Po scaleniu części
-  // sprawdzamy już CAŁOŚĆ wobec setupu.
-  const czesc = calaPaczka ? null : (STAN.partie?.plan.partie[STAN.partie.biezaca] ?? null);
+function oczekiwane() {
   return {
     liczbaStacji: STAN.konfig.liczbaStacji,
-    stacjeNumery: czesc ? czesc.stacje : undefined,
-    liczbaPytan: czesc ? czesc.liczbaPytan : liczbaPytan(STAN.konfig),
+    liczbaPytan: liczbaPytan(STAN.konfig),
     wiek: STAN.konfig.wiek,
     tematy: STAN.konfig.tematy,
     promienM: STAN.konfig.promienM,
@@ -3099,63 +3046,13 @@ function sprawdzOdpowiedz() {
   }
 
   wynik.dataset.stan = 'ok';
+  STAN.paczka = normalizujTematyPaczki(robocza);
+  $('wynik-naglowek').textContent = bylaOdwrocona ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana)` : 'Paczka przyjęta';
   $('przycisk-poprawka').hidden = true;
   renderujUsterki([]);
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
-  const przyjeta = normalizujTematyPaczki(robocza);
-
-  // B21 (PROTOKOL §2.2): w trybie partii to jeszcze nie cała paczka. Gotowy
-  // kontener `TO-paczka/2` to cała paczka, więc partie wtedy pomijamy — ale
-  // UWAGA: `odpakujPaczke` zwraca paczkę TAKŻE dla jawnego JSON-a (`zrodlo:
-  // 'json'`), więc rozróżniamy po `zrodlo`, nie po obecności `paczka`.
-  if (STAN.partie && zKontenera.zrodlo !== 'kontener') {
-    STAN.partie.zebrane.push(przyjeta);
-    const ile = STAN.partie.plan.partie.length;
-    if (STAN.partie.zebrane.length < ile) {
-      STAN.partie.biezaca = STAN.partie.zebrane.length;
-      $('wynik-naglowek').textContent = `Część ${STAN.partie.zebrane.length} z ${ile} przyjęta (${przyjeta.pytania.length} pytań)`;
-      status(`Część ${STAN.partie.zebrane.length} z ${ile} zapisana. Wróć na ekran promptu po część ${STAN.partie.biezaca + 1}.`);
-      pokazEkran('prompt');
-      budujPromptEkran();
-      return;
-    }
-    const scalona = scalPartie(STAN.partie.zebrane);
-    if (scalona.usterki.length) {
-      wynik.dataset.stan = 'blad';
-      STAN.paczka = null;
-      STAN.usterkiPaczki = scalona.usterki;
-      $('wynik-naglowek').textContent = `Części nie dało się złożyć — usterek: ${scalona.usterki.length}`;
-      renderujUsterki(scalona.usterki);
-      $('przycisk-poprawka').hidden = false;
-      status('Scalanie części nie wyszło — identyfikatory pytań muszą być unikalne w całej paczce (E19).');
-      return;
-    }
-    const cala = normalizujTematyPaczki(scalona.paczka);
-    const usterkiCalosci = walidujPaczke(cala, oczekiwane({ calaPaczka: true }));
-    if (usterkiCalosci.length) {
-      wynik.dataset.stan = 'blad';
-      STAN.paczka = null;
-      STAN.usterkiPaczki = usterkiCalosci;
-      $('wynik-naglowek').textContent = `Złożona paczka odrzucona — usterek: ${usterkiCalosci.length}`;
-      renderujUsterki(usterkiCalosci);
-      $('przycisk-poprawka').hidden = false;
-      status('Każda część była poprawna, ale złożona paczka nie zgadza się z konfiguracją.');
-      return;
-    }
-    STAN.partie = null;
-    pokazStanPartii();
-    $('wynik-naglowek').textContent = `Paczka złożona z ${ile} części — przyjęta (${cala.pytania.length} pytań)`;
-    status(`Paczka złożona z ${ile} części: ${cala.pytania.length} pytań.` + ADR(' (B21, PROTOKOL §2.2)'));
-    STAN.paczka = cala;
-    wyslijZestawNaDrive();
-    startGry();
-    return;
-  }
-
-  STAN.paczka = przyjeta;
-  $('wynik-naglowek').textContent = bylaOdwrocona ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana)` : 'Paczka przyjęta';
   wyslijZestawNaDrive();
   // Decyzja właściciela 2026-09-07: poprawna paczka = OD RAZU gra. Podgląd,
   // ściąganie i edycja nie są graczowi potrzebne — to zadania właściciela
@@ -4474,7 +4371,7 @@ function start() {
     if (!STAN.prompt) return;
     pobierzPlik(`prompt-okolica-${geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5)}.txt`, STAN.prompt, 'text/plain;charset=utf-8');
   });
-  $('przycisk-dalej-paczka').addEventListener('click', () => { pokazStanPartii(); pokazEkran('paczka'); });
+  $('przycisk-dalej-paczka').addEventListener('click', () => pokazEkran('paczka'));
 
   $('przycisk-wstecz-prompt').addEventListener('click', () => pokazEkran('prompt'));
   $('przycisk-wklej').addEventListener('click', async (e) => {

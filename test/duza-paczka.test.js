@@ -24,10 +24,58 @@ import { BUDZET_STANU_BAJTY } from '../app/trwalosc.js';
 import { BUDZET_ZESTAWOW_BAJTY } from '../app/zestawy.js';
 import { liczTokeny } from '../tools/budzet-lektury.mjs';
 
-import {
-  OKOLICA_PACZKI as OKOLICA, TEMATY_PACZKI as TEMATY,
-  konfigPaczki as konfig, paczkaPyr as paczka, stacjePaczki as stacje,
-} from './helpers/paczki.js';
+const OKOLICA = { lat: 52.12303, lon: 20.74614, miejsce: 'Podkowa Leśna', promienM: 1000 };
+const TEMATY = ['historia', 'architektura', 'przyroda'];
+
+function stacje(n) {
+  return Array.from({ length: n }, (_, i) => ({
+    id: i + 1,
+    lat: OKOLICA.lat + i * 0.002,
+    lon: OKOLICA.lon + i * 0.002,
+    opis: `Punkt przy ulicy Modrzewiowej ${i + 1}, przy skrzyżowaniu z Aleją Lipową`,
+  }));
+}
+
+function konfig(graczy) {
+  return {
+    czasGryMin: 110, tryb: 'piesza', wiek: 'dorosli', jezyk: 'polski',
+    tematy: TEMATY, liczbaStacji: 5, pytaniaNaStacje: graczy,
+    liczbaGraczy: graczy, promienM: 1000,
+  };
+}
+
+/** Realistyczna paczka rev2: unikalne treści, ~140 znaków pytania, jedno źródło. */
+function paczka(liczbaStacji, naStacje) {
+  const pytania = [];
+  for (let s = 1; s <= liczbaStacji; s += 1) {
+    for (let p = 1; p <= naStacje; p += 1) {
+      pytania.push({
+        id: `s${s}p${p}`,
+        stacja: s,
+        temat: TEMATY[(s + p) % 3],
+        tresc: `Który rok określa powstanie obiektu numer ${s} przy ulicy Modrzewiowej w Podkowie Leśnej, według karty ${p} gminnej ewidencji zabytków?`,
+        odpowiedzi: [`rok 19${20 + s} albo 19${21 + s}`, `rok 19${30 + p} albo 19${31 + p}`, 'rok 1948 albo 1949', 'rok 1961 albo 1962'],
+        poprawna: 17 + s + p + ((s + p) % 4),
+        wyjasnienie: `Obiekt numer ${s} wpisano do gminnej ewidencji zabytków w roku 19${20 + s}, a karta ${p} wiąże go z pierwszym planem regulacyjnym miasta-ogrodu, więc data wynika z dokumentu, nie z tradycji ustnej.`,
+        zrodla: [{
+          url: `https://www.podkowalesna.pl/zabytki/modrzewiowa-${s}-${p}`,
+          tytul: 'Gminna ewidencja zabytków — karta obiektu',
+          sprawdzono: '2026-09-07',
+        }],
+      });
+    }
+  }
+  return {
+    protokol: 'PYT/1.0-rev2',
+    okolica: OKOLICA,
+    wiek: 'dorosli',
+    tematy: TEMATY,
+    jezyk: 'polski',
+    utworzono: '2026-09-07 12:00',
+    pytania,
+    uwagi: '',
+  };
+}
 
 /** Odpowiedź modelu tak, jak ją wkleja właściciel: blok ```json z polami rev2. */
 function odpowiedzModelu(liczbaStacji, naStacje) {

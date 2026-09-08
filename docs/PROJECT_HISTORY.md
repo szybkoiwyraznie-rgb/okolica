@@ -1284,47 +1284,47 @@ Skrypt mostu bez zmian względem wpisu powyżej — 1093 linie, md5
 - Testy: **610, 0 fail**; `npm run brama` = 610 + sync szablonu OK + WCAG AA
   0 naruszeń. Cache-bust `?v=m12-25` (43 miejsca + `WERSJA_SW`).
 
-## 2026-09-08 — B21 domknięte: duży setup generuje pytania partiami (ADR 0031)
+## 2026-09-08 — B21: dzielenie na partie wdrożone, a potem wycofane tego samego dnia (ADR 0031)
 
-Pomiar z 2026-09-07 pokazał, że wąskim gardłem dużych setupów nie jest prompt
-(stały, ~1 356 tokenów) ani pamięć (kontener 40 pytań = 35,6 kB, 1,8% budżetu
-stanu), tylko **wyjście modelu**: ~210 tokenów na pytanie, więc 40 pytań to
-~8 350 tokenów i model z limitem 4 tys. urywa JSON w połowie. Właściciel zgodził
-się na dzielenie generacji na partie.
+Z pomiaru B21 wyciągnąłem wniosek, że przy ~210 tokenach na pytanie model
+z limitem wyjścia 4 tys. tokenów urwie odpowiedź na 40 pytań w połowie, i na tym
+założeniu zbudowałem generowanie partiami: `planPartii()` / `scalPartie()`,
+globalne numery stacji w promptcie części (szablon `PYT/1.0.7`), walidacja części
+wobec jej własnego zakresu (`oczekiwane.stacjeNumery`), kody WE08/WE09/WE10/E21,
+paski `#prompt-partia` i `#paczka-partia`, PROTOKOL §2.2. Wdrożone i zielone
+w `0b2ca68` (627 testów, brama czysta).
 
-- **`planPartii()` / `scalPartie()` / `pytaniaWBudzecie()` w `app/protokol.js`.**
-  Partie liczy się z budżetu (`maksPytan = ⌊(4000 − 90) / 210⌋ = 18`), ale pakuje
-  CAŁYMI stacjami: 5 stacji × 8 pytań → 3 części (1–2, 3–4, 5), każda ≤ 3 450
-  tokenów. Stacja większa niż budżet idzie sama i dostaje jawne ostrzeżenie.
-  Wariant „po jednej stacji" z B21 odrzucony — to 40 wklejeń zamiast trzech.
-- **Numery stacji zostają globalne, także w promptcie części.** Szablon
-  `PYT/1.0.7` mówi wprost „nie numeruj stacji od nowa, nawet jeśli lista nie
-  zaczyna się od 1" — dzięki temu `s<stacja>p<n>` są unikalne w całej paczce
-  i scalanie jest zwykłym złączeniem list, bez przemapowywania odpowiedzi.
-  `opisListyStacji()` dostał opcjonalny parametr `numery`.
-- **Szablon (PROTOKOL §2 + nowy §2.2):** dwie nowe linie —
-  `liczba stacji w tym zleceniu: {LICZBA_STACJI}` i `zakres tego zlecenia:
-  {ZAKRES}` (`cała paczka` albo `część k z n tej samej paczki — wyłącznie
-  stacje <zakres>`). `SZABLON_WERSJA` = `PYT/1.0.7`.
-- **Walidacja części vs całości.** `walidujPaczke` przyjmuje
-  `oczekiwane.stacjeNumery`; E04 ma dwa komunikaty (spoza części / spoza setupu),
-  E05 i E06 idą po zakresie części. Nowe kody: **WE08/WE09** (wejście planu),
-  **WE10** (partia wskazuje nieistniejące stacje), **E21** (nie ma czego scalać);
-  **E19** obsługuje kolizję `id` między częściami i z usterkami `scalPartie`
-  zwraca `paczka: null`. Złożona paczka przechodzi pełną walidację wobec setupu,
-  zanim wystartuje gra.
-- **UI:** `#prompt-partia` i `#paczka-partia` — `Część 2 z 3 — stacje 3–4,
-  8 pytań · zebrane: 1 z 2`. Po przyjęciu części aplikacja sama wraca na ekran
-  promptu z kolejną; gra startuje dopiero po złożeniu całości. Mały setup nie
-  udaje podziału (wskaźnik schowany, nagłówek „Paczka przyjęta"). Zebrane części
-  żyją w pamięci modułu — plaintext nie idzie do `localStorage` (ADR 0007 pkt 4).
-- **Bug znaleziony przez test UI, nie przez testy jednostkowe (LESSONS L37):**
-  gałąź scalania była martwa, bo rozróżnienie „kontener vs odpowiedź modelu"
-  zapisałem jako `!zKontenera.paczka`, a `odpakujPaczke()` zwraca paczkę także
-  dla jawnego JSON-a — formę rozróżnia dopiero pole `zrodlo`. Pierwsza przyjęta
-  część startowała grę z 15 pytaniami. Poprawka: `zKontenera.zrodlo !== 'kontener'`.
-- Testy: **627, 0 fail** (+17: `test/partie.test.js` 14 — w tym pełny obieg
-  plan → prompty części → walidacja każdej → scalenie → pełna walidacja, oraz
-  `test/partie-ui.test.js` 2 — ekrany 4 → 5 → 4 → 5 → gra). Fikstury paczek
-  wyniesione do `test/helpers/paczki.js` (wspólne z `duza-paczka.test.js`).
-  Cache-bust `?v=m12-26` + `WERSJA_SW`.
+W trakcie pracy wyszedł jeden prawdziwy bug, złapany dopiero przez test UI
+(**LESSONS L37**): gałąź scalania była martwa, bo „wklejono kontener" od „wklejono
+odpowiedź modelu" rozróżniałem przez `!zKontenera.paczka`, a `odpakujPaczke()`
+zwraca paczkę także dla jawnego JSON-a — formę rozróżnia dopiero pole
+`zrodlo: 'kontener' | 'json' | null`. Pierwsza przyjęta część startowała grę
+z 15 pytaniami.
+
+**Właściciel zakwestionował samo założenie** i miał rację: *„Żaden z modeli
+których używam nie ma nawet w przybliżeniu takich limitów. […] Meta.ai ma output
+token limit 64k tokens, Google Studio models 64k, ChatGPT5+ 128k."* Liczba 4 000
+była moim ostrożnościowym założeniem zapisanym w komentarzu jak fakt, nie
+pomiarem jego modeli.
+
+Policzone: największy setup, jaki aplikacja pozwala zbudować (`OGRANICZENIA`
+12 stacji × 8 graczy = **96 pytań**), to ~**20 250 tokenów** odpowiedzi — 1,6 raza
+mniej niż 32k, 3,2 raza mniej niż 64k. `planPartii` przy progu 64 000 zwraca
+**1 część**, czyli dzielenie nie odpaliłoby się nigdy. Właściciel wybrał usunięcie
+mechanizmu, nie podniesienie progu.
+
+- **Usunięte przez `git revert 0b2ca68`** — `app/protokol.js`, `app/app.js`,
+  `index.html` i `docs/PROTOKOL.md` wróciły bajt-w-bajt do stanu z `4e29879`,
+  szablon do `PYT/1.0.6`. Aplikacja znowu generuje jednym zleceniem.
+- **Zostaje z B21** (nie zależało od błędnego założenia): `szacunekOdpowiedzi()`
+  ze stałymi pomiaru i linia `#prompt-rozmiar` na ekranie pytań — informuje
+  o rozmiarze odpowiedzi przed generacją, nic nie blokuje.
+  `PROG_ODPOWIEDZI_TOKENY` to już tylko próg tego ostrzeżenia.
+- **Zostaje LESSONS L37** — dotyczy `odpakujPaczke()`, które nadal żyje.
+- ADR 0031 ma status **Wycofana** i zostaje jako gotowy projekt na wypadek,
+  gdyby dzielenie kiedyś stało się potrzebne (pakowanie całymi stacjami,
+  globalne numery stacji, walidacja części wobec zakresu, odmowa scalania przy
+  kolizji `id`).
+- Testy: **610, 0 fail** — dokładnie tyle, ile przed B21 (`test/partie.test.js`
+  i `test/partie-ui.test.js` usunięte razem z mechanizmem). `npm run brama`
+  = 610 + sync szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-27`.

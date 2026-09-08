@@ -66,8 +66,6 @@ GRACZE I TRUDNOŚĆ:
 - wymagania trudności: {OPIS_TRUDNOSCI}
 - tematy pytań (wyłącznie z tej listy): {TEMATY}
 - liczba pytań łącznie: {LICZBA_PYTAN}
-- liczba stacji w tym zleceniu: {LICZBA_STACJI}
-- zakres tego zlecenia: {ZAKRES}
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
@@ -96,7 +94,7 @@ SCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:
 
 WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
-- "stacja": numer stacji DOKŁADNIE taki, jaki stoi przy niej w liście STACJE powyżej — nie numeruj stacji od nowa, nawet jeśli lista nie zaczyna się od 1; KAŻDA stacja z tej listy ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
+- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
 - "poprawna": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola "id" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
@@ -123,8 +121,7 @@ WYMAGANIA DODATKOWE:
 | `{JEZYK}` | `polski` (domyślnie) albo inny z setupu | setup |
 | `{DATA}` | `RRRR-MM-DD GG:MM` czasu lokalnego urządzenia | aplikacja |
 | `{DATA_KROTKA}` | `RRRR-MM-DD` | aplikacja |
-| `{LICZBA_STACJI}` | liczba stacji **w tym zleceniu** (przy podziale na partie — liczba stacji tej części) | setup / plan partii §2.2 |
-| `{ZAKRES}` | `cała paczka — wszystkie stacje z listy powyżej` albo `część 2 z 3 tej samej paczki — przygotuj pytania WYŁĄCZNIE do stacji z listy powyżej; pozostałe stacje powstaną w osobnych zleceniach i zostaną scalone w jedną paczkę` | plan partii §2.2 |
+| `{LICZBA_STACJI}` | liczba stacji | setup |
 
 Daty w promptcie pochodzą z zegara urządzenia i **nie są zapisywane w danych
 repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
@@ -142,44 +139,6 @@ ograniczeniem jest limit wyjścia modelu. Stałe szacunku żyją w
 a ekran promptu podaje przewidywany rozmiar odpowiedzi i ostrzega powyżej progu
 — ucięty JSON wracałby jako E01/E02 bez wskazania prawdziwej przyczyny.
 Pomiar spinają testy `test/duza-paczka.test.js`.
-
-### 2.2 Generowanie partiami (B21)
-
-Skoro wąskim gardłem jest **wyjście** modelu, przy dużym setupie pytania
-powstają w kilku zleceniach, a aplikacja scala je w jedną paczkę.
-
-**Plan partii** (`planPartii` w `app/protokol.js`, czysta funkcja): budżet to
-`PROG_ODPOWIEDZI_TOKENY` (4 000), a pytania na partię liczy się ze stałych
-pomiaru — `maksPytan = floor((prog − BAZA_ODPOWIEDZI_TOKENY) / TOKENY_NA_PYTANIE)`,
-czyli 18 pytań przy ustawieniach domyślnych. Partie pakowane są **całymi
-stacjami**: `stacjiWPartii = max(1, floor(maksPytan / pytaniaNaStacje))`.
-Stacji nigdy nie dzielimy między partie, bo pytanie należy do jednej stacji,
-a wtedy identyfikatory `s<stacja>p<n>` zostają unikalne w całej paczce
-i scalanie jest zwykłym złączeniem list (`scalPartie`). Dzielenie „po jednej
-stacji" — rozważane w B21 — dałoby 40 wklejeń zamiast trzech, więc odpada.
-
-Jedna stacja większa niż budżet (np. 24 pytania na stację) idzie osobną partią
-i dostaje jawne ostrzeżenie: odpowiedź i tak może zostać urwana.
-
-Błędne wejście planu to osobne kody, bo to błąd **budowania zlecenia**, nie
-paczki: `WE08` — `liczbaStacji` nie jest liczbą całkowitą ≥ 1, `WE09` —
-`pytaniaNaStacje` nie jest liczbą całkowitą ≥ 1.
-
-**Numery stacji są globalne.** Lista STACJI w promptcie partii zawiera tylko
-stacje tej części, ale z ich prawdziwymi numerami, a szablon wprost zakazuje
-numerowania od nowa. Dzięki temu `walidujPaczke` sprawdza partię przez
-`oczekiwane.stacjeNumery` (E04: stacja spoza listy części; E05: każda stacja
-części ma pytanie), a scalona paczka przechodzi tę samą walidację z pełnym
-zakresem — bez żadnego przemapowywania.
-
-**Walidacja partii** używa `oczekiwane.liczbaPytan` tej części. Dopiero scalona
-paczka jest sprawdzana wobec setupu (E03: łączna liczba pytań) i pakowana
-w kontener `TO-paczka/2`. Powtórzone `id` między częściami to E19, a brak
-przyjętych części do scalenia — E21.
-
-**Kolejność w UI:** ekran 4 pokazuje „Część k z n" i prompt tej części; ekran 5
-przyjmuje odpowiedź tylko dla niej, zapisuje i wraca po następną. Ostatnia
-część domyka scalenie i gra rusza jak dotąd.
 
 ## 3. Schemat paczki PYT/1.0
 
@@ -308,7 +267,7 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E01` | brak pola `protokol` albo inna wersja niż `PYT/1.0` |
 | `E02` | JSON nieparsowalny (w tym wiele bloków, tekst poza blokiem) |
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
-| `E04` | `stacja` poza oczekiwanym zakresem: `1..LICZBA_STACJI` dla całej paczki albo spoza listy `stacjeNumery` przy walidacji części (§2.2) |
+| `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
 | `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
 | `E06` | `poprawna` poza zakresem albo (rev2) nieznane słowo |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
@@ -325,7 +284,6 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E18` | wycofany (rev2: 1 pkt za pytanie, pole `punkty` ignorowane) |
 | `E19` | `id` pytania nieunikalne albo niezgodne ze wzorem |
 | `E20` | `wyjasnienie` krótsze niż 60 znaków albo dosłownie powtarza `tresc` |
-| `E21` | nie ma czego scalać — `scalPartie` dostało pustą listę części (§2.2) |
 
 **Heurystyka zakotwiczenia (E14)** — cztery kroki, wszystkie w
 `app/protokol.js`, wszystkie testowane:

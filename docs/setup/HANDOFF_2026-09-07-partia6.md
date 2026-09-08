@@ -189,8 +189,9 @@ Wdrożone: `szacunekOdpowiedzi()` i `PROG_ODPOWIEDZI_TOKENY = 4000` w
 `<details>`, więc widoczna) z ostrzeżeniem powyżej progu. **Do obejrzenia na
 telefonie przy okazji**: czy ta linia nie rozjeżdża układu na 360 px.
 
-**Domknięte 2026-09-08 (ADR 0031, sekcja 13):** generowanie partiami jest
-wdrożone — ale nie „po jednej stacji", tylko całymi stacjami z budżetu tokenów.
+**Rozstrzygnięte 2026-09-08 (ADR 0031 — wycofana, sekcja 13): dzielenia na
+partie NIE BĘDZIE.** Próg 4 000 tokenów był założeniem, nie pomiarem modeli
+właściciela (64k–128k wyjścia), a największy możliwy setup to ~20 250 tokenów.
 
 ## 12. Oceny pytań przez graczy (ADR 0028) — stan na 2026-09-08
 
@@ -219,38 +220,26 @@ wdrożenie" daje nowy adres i łamie ADR 0020. Instrukcja z pełną treścią p�
 w czacie razem z gotową aplikacją, żeby wklejać raz.
 
 
-## 13. B21 domknięte: generowanie pytań partiami (ADR 0031) — stan na 2026-09-08
+## 13. B21 zamknięte: dzielenia na partie nie będzie (ADR 0031 wycofana)
 
-Duży setup (5 stacji × 8 graczy = 40 pytań) nie mieści się w limicie wyjścia
-modelu (~210 tokenów na pytanie → ~8 350 tokenów przy progu 4 000), więc
-aplikacja dzieli zlecenie na partie i sama składa odpowiedź.
+Stan na 2026-09-08 po `git revert 0b2ca68`: aplikacja generuje pytania **jednym
+zleceniem**, tak jak przed B21. Nie ma pasków „Część k z n", nie ma sekcji
+PROTOKOL §2.2, nie ma kodów WE08/WE09/WE10/E21, szablon wrócił do `PYT/1.0.6`.
 
-**Jak to wygląda dla właściciela:** ekran pytań pokazuje nad promptem
-`Część 1 z 3 — stacje 1–2, 16 pytań`. Wkleja się odpowiedź tak samo jak zawsze;
-po przyjęciu części aplikacja sama wraca na ekran promptu z kolejną częścią,
-a gra startuje dopiero po trzeciej. Mały setup nie zmienia się wcale — żadnego
-wskaźnika, jedno wklejenie.
+**Dlaczego:** mechanizm stał na założeniu, że model urwie odpowiedź powyżej
+4 tys. tokenów wyjścia. Właściciel używa modeli z limitem 64k–128k tokenów,
+a największy setup dostępny w aplikacji (12 stacji × 8 graczy = 96 pytań) to
+~20 250 tokenów odpowiedzi. Dzielenie nie odpaliłoby się nigdy.
 
-**Co się zmieniło w protokole (`PYT/1.0.7`, PROTOKOL §2 i nowy §2.2):**
+**Co z tamtej pracy zostało i jest widoczne:** linia `#prompt-rozmiar` na ekranie
+pytań — „Odpowiedź modelu będzie miała około X tys. znaków (~Y tys. tokenów)
+dla N pytań". To informacja, nie blokada; przy modelach właściciela ostrzeżenie
+o przekroczeniu progu się nie pojawi.
 
-- dwie nowe linie w sekcji `GRACZE I TRUDNOŚĆ`: `liczba stacji w tym zleceniu`
-  oraz `zakres tego zlecenia` (`cała paczka` albo `część k z n tej samej paczki`);
-- reguła pola `"stacja"` mówi teraz wprost: **nie numeruj stacji od nowa, nawet
-  jeśli lista nie zaczyna się od 1** — bez tego identyfikatory `s1p1` zderzyłyby
-  się po scaleniu trzech części;
-- nowe kody: **WE08/WE09** (błędne wejście planu partii), **WE10** (partia
-  wskazuje stacje, których nie ma na mapie), **E21** (nie ma czego scalać),
-  a **E19** dostał drugie życie — kolizja `id` między częściami.
+**Do obejrzenia na telefonie przy okazji:** czy linia `#prompt-rozmiar` nie
+rozjeżdża układu na 360 px (jest poza zwiniętym `<details>`, więc widoczna).
 
-**Co trzeba wiedzieć przy diagnozie:**
-
-- część waliduje się wobec WŁASNEGO zakresu stacji, nie 1..N — komunikat E04
-  brzmi wtedy „nie należy do tej części (oczekiwano stacji 3–4)";
-- złożona paczka przechodzi jeszcze raz pełną walidację wobec setupu, więc
-  każda część może być zielona, a całość odrzucona (np. E03 za mało pytań);
-- zebrane części żyją TYLKO w pamięci karty — odświeżenie strony w połowie
-  generacji kasuje postęp (plaintext nie może iść do `localStorage`, ADR 0007);
-- zmiana liczby stacji albo pytań na stację w setupie kasuje zebrane części.
-
-**Do obejrzenia na telefonie przy okazji:** czy pasek `Część k z n` nad promptem
-nie rozjeżdża układu na 360 px (`.badge-duzy` w węższej kolumnie ekranu 4).
+**Gdyby kiedyś wróciło:** ADR 0031 zostaje jako gotowy projekt — pakowanie
+całymi stacjami, globalne numery stacji (bez nich identyfikatory `s<stacja>p<n>`
+zderzają się po scaleniu), walidacja części wobec jej zakresu, odmowa scalania
+przy kolizji `id`. Nie trzeba wymyślać od nowa.

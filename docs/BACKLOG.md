@@ -187,9 +187,9 @@ PROTOKOL §9, aneks ADR 0022, testy (w tym parity most ↔ aplikacja).
 
 **Sprawdzone w B21**: budżet promptu i limit wklejenia dla `stacje × gracze`
 pytań (8 graczy × 5 stacji = 40 pytań). Wyszło, że wąskim gardłem jest wyjście
-modelu, a nie prompt ani pamięć — patrz B21 (domknięte generowaniem partiami).
+modelu, a nie prompt ani pamięć — patrz B21 (zamknięte: dzielenia nie będzie).
 
-## B21 — Duża paczka: budżet promptu i generowanie partiami ✅ ZROBIONE (2026-09-08)
+## B21 — Duża paczka: budżet promptu i limit wklejenia ✅ ZAMKNIĘTE (2026-09-08)
 
 **Zmierzone** (`test/duza-paczka.test.js`, PROTOKOL §2 „Budżet rozmiaru"):
 
@@ -207,19 +207,18 @@ przewidywany rozmiar odpowiedzi (`#prompt-rozmiar`) i ostrzega powyżej progu,
 zanim właściciel zmarnuje generację (ucięty JSON wracał jako E01/E02 bez
 wskazania przyczyny).
 
-**Domknięte (2026-09-08, ADR 0031):** właściciel zgodził się na dzielenie
-generacji na partie — ale NIE „po jednej stacji", bo to 40 wklejeń zamiast
-trzech. Partie liczy się z budżetu tokenów (`maksPytan = 18` przy progu 4 000),
-a pakuje całymi stacjami: `planPartii()` → 5 stacji × 8 pytań = 3 części
-(1–2, 3–4, 5), każda ≤ 3 450 tokenów odpowiedzi. Numery stacji zostają
-GLOBALNE (szablon PYT/1.0.7 zakazuje numerowania od nowa), więc `s<stacja>p<n>`
-są unikalne w całej paczce i `scalPartie()` tylko złącza listy. Część waliduje
-się wobec własnego zakresu (`oczekiwane.stacjeNumery`), złożona paczka — wobec
-setupu. Nowe kody: WE08/WE09/WE10, E21; E19 obsługuje kolizję `id` między
-częściami. UI pokazuje `Część 2 z 3 — stacje 3–4, 8 pytań` na ekranach 4 i 5,
-a gra startuje dopiero po złożeniu całości.
-Testy: `test/partie.test.js` (14, czyste funkcje + pełny obieg) i
-`test/partie-ui.test.js` (2, ekrany 4 → 5 → 4 → 5 → gra).
+**Domknięte (2026-09-08, ADR 0031 — wycofana):** dzielenie generacji na partie
+zostało najpierw wdrożone (`0b2ca68`), a tego samego dnia usunięte
+(`git revert`). Powód: próg `PROG_ODPOWIEDZI_TOKENY = 4000` był moim
+założeniem, nie pomiarem modeli właściciela. Właściciel używa modeli z limitem
+wyjścia 64k–128k tokenów, a największy setup, jaki aplikacja pozwala zbudować
+(12 stacji × 8 graczy = 96 pytań), to ~20 250 tokenów odpowiedzi — 3,2 raza
+mniej niż 64k. Dzielenie nie odpaliłoby się przy żadnej dostępnej konfiguracji.
+
+**Z B21 zostaje:** `szacunekOdpowiedzi()` ze stałymi pomiaru (~830 znaków
+i ~210 tokenów na pytanie) oraz linia `#prompt-rozmiar` na ekranie pytań —
+informuje o rozmiarze odpowiedzi przed generacją i nie blokuje niczego.
+`PROG_ODPOWIEDZI_TOKENY` jest już tylko progiem tego ostrzeżenia.
 
 ## B22 — Wynik gry hot-seat na wspólnym Drive (per pseudonim) ✅ ZROBIONE (2026-09-07)
 
