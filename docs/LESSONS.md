@@ -507,3 +507,20 @@ a stopką, pozycjonuj `absolute` względem kontenera, który ten obszar zajmuje
 a nie `fixed` względem viewportu. Podawaj `top` I `bottom` jawnie — wtedy
 wysokość wynika z ograniczeń, a nie z ilości treści, i `overflow-y: auto`
 dostaje coś do przewijania.
+
+## L42 — warstwa tła sięga pod to, co ją przykrywa; jej sterowanie musi to omijać
+
+**Objaw:** przyciski +/− mapy chowały się pod belką nagłówka.
+
+**Przyczyna:** mapa-tło ma `position: fixed; inset: 0`, czyli sięga pod samą
+belkę. Jej przyciski dziedziczyły uniwersalne `.mapa-przyciski { top: 8px;
+right: 8px }` — liczone od kontenera mapy, a więc od viewportu. Belka ma
+`z-index: 3` i nieprzezroczyste tło, więc malowała się nad nimi. W wariancie
+poziomym ten sam los spotykał je ze strony panelu pozycji (`z-index: 2`,
+prawa strona).
+
+**Reguła:** gdy element staje się pełnoekranowym tłem, przejrzyj WSZYSTKIE jego
+dzieci pozycjonowane od jego krawędzi — ich punkty odniesienia zmieniły sens.
+Sterowanie trzymaj w obszarze, którego nie przykrywa żaden element o wyższym
+`z-index`. Odległości od elementów o zmiennej wysokości (belka z
+`flex-wrap: wrap`) mierz w JS i wystawiaj jako zmienną CSS, a nie wpisuj stałej.

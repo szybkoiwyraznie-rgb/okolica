@@ -262,6 +262,27 @@ test('kontrakt: panel pozycji jest w `.tresc` i ograniczony belką oraz stopką'
   }
 });
 
+test('kontrakt: przyciski +/− mapy-tła są poniżej belki i przy lewej krawędzi', () => {
+  // Mapa-tło ma `position: fixed; inset: 0`, więc sięga POD samą belkę, a belka
+  // (`z-index: 3`, nieprzezroczyste tło) i panel pozycji (`z-index: 2`) malują
+  // się NAD mapą (`z-index: 0`). Domyślne `top: 8px; right: 8px` chowało więc
+  // przyciski pod belką, a w wariancie poziomym także pod panelem (zgłoszenie
+  // właściciela 2026-09-08).
+  const od = STYLE.indexOf("body[data-ekran='setup'] #mapa-pozycja .mapa-przyciski");
+  assert.ok(od > 0, 'brak reguły dla przycisków mapy-tła');
+  const blok = STYLE.slice(od, STYLE.indexOf('\n}', od));
+  assert.ok(blok.includes("body[data-ekran='pozycja']"), 'reguła ma dotyczyć też ekranu pozycji');
+  assert.ok(blok.includes('var(--wysokosc-belki'),
+    'top musi iść z mierzonej wysokości belki — `.akcje` się zawija i stała by się rozsypała');
+  assert.ok(blok.includes('right: auto'), 'przyciski muszą zejść z prawej — tam stoi panel pozycji');
+  assert.ok(blok.includes('left:'), 'przyciski mają być przy lewej krawędzi');
+
+  // Pomiar musi działać na starcie I przy zmianie rozmiaru okna (obrót telefonu).
+  assert.ok(APP.includes('function ustawWysokoscBelki'), 'brak funkcji mierzącej belkę');
+  assert.equal(APP.split('ustawWysokoscBelki();').length - 1, 2,
+    'pomiar wołany dokładnie dwa razy: w start() i w nasłuchu resize');
+});
+
 test('kontrakt: mapa-tło resetuje max-height i margin z reguły bazowej .mapa (L40)', () => {
   // `.mapa` deklaruje `height: 45vh; min-height: 240px; max-height: 460px;
   // margin: 10px 0`. Selektor z id nadpisuje właściwość po właściwości, więc bez

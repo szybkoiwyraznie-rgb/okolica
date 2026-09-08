@@ -1575,3 +1575,38 @@ media queries, więc gałęzie pion/poziom są przypięte kontraktem na poziomie
 
 Testy: **627, 0 fail**; brama = 627 + sync szablonu OK + WCAG AA 0.
 Cache-bust `?v=m12-36`.
+
+## 2026-09-08 — przyciski +/− mapy chowały się pod belką
+
+Właściciel: *„jeszcze przyciski +- na mapie chowają się pod belkę nagówka"*.
+
+**Przyczyna.** Mapa-tło ma `position: fixed; inset: 0`, więc sięga POD samą
+belkę. Jej przyciski brały uniwersalne `.mapa-przyciski { top: 8px; right: 8px }`
+— liczone od kontenera mapy, czyli teraz od viewportu. Belka ma `z-index: 3`
+i nieprzezroczyste tło, więc malowała się nad nimi. W wariancie poziomym ten sam
+los czekał je ze strony panelu pozycji (`z-index: 2`, prawa strona). → **L42**.
+
+**Poprawka.** Dla mapy-tła na ekranach `setup` i `pozycja`:
+
+```css
+top: calc(var(--wysokosc-belki, 64px) + 10px);
+right: auto;
+left: 10px;
+```
+
+Poniżej belki i przy lewej krawędzi — z dala od panelu, który stoi przy prawej.
+Wysokość belki **mierzy** nowa funkcja `ustawWysokoscBelki()` w `app/app.js`,
+wołana w `start()` i w nasłuchu `resize`, bo `.akcje` ma `flex-wrap: wrap` i na
+wąskim ekranie belka rośnie — stała liczba w CSS w końcu by się rozsypała.
+Funkcja ma straż na `offsetHeight` nienumeryczny albo ≤ 0, więc atrapa DOM
+w testach (której `document.querySelector` zwraca `null`) przechodzi bez
+wyjątku.
+
+**Weryfikacja.** Kaskada `jsdom` dla `#mapa-pozycja .mapa-przyciski`:
+`top: calc(var(--wysokosc-belki, 64px) + 10px)`, `left: 10px`, `right: auto`.
+`jsdom` nie rozwija `calc()` ani `var()`, więc liczbę pikseli potwierdza dopiero
+przeglądarka. Kontrakt sprawdzony negatywnie: usunięcie `right: auto` wywala
+test z komunikatem „przyciski muszą zejść z prawej".
+
+Testy: **628, 0 fail**; brama = 628 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-37`.

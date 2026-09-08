@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-36';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-36';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-37';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-37';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -31,21 +31,21 @@ import {
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-36';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-36';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-36';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-36';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-36';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-36';
+} from './protokol.js?v=m12-37';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-37';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-37';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-37';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-37';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-37';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-36';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-36';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-36';
+} from './zestawy.js?v=m12-37';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-37';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-37';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -65,17 +65,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-36';
-import { utworzMape } from './mapa.js?v=m12-36';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-36';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-36';
-import { adresMostu, stanMostu } from './most.js?v=m12-36';
+} from './sieci.js?v=m12-37';
+import { utworzMape } from './mapa.js?v=m12-37';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-37';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-37';
+import { adresMostu, stanMostu } from './most.js?v=m12-37';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-36';
+} from './oceny.js?v=m12-37';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -4222,6 +4222,24 @@ function renderujRankingi() {
  * `?test=true`, `?test=1`, `?test=tak` oraz historyczne `?tryb=test`, którego
  * używają testy (`test/helpers/dom.js`). Wielkość liter bez znaczenia.
  */
+/**
+ * Wysokość belki jako zmienna CSS `--wysokosc-belki`.
+ *
+ * Przyciski +/− mapy-tła muszą siedzieć PONIŻEJ belki: mapa-tło ma
+ * `position: fixed; inset: 0`, więc sięga pod samą belkę, a belka ma `z-index: 3`
+ * i nieprzezroczyste tło — przy domyślnym `top: 8px` przyciski znikały pod nią
+ * (zgłoszenie właściciela 2026-09-08). Stałej liczby w CSS nie chcemy: `.akcje`
+ * ma `flex-wrap: wrap`, więc na wąskim ekranie belka rośnie i każda stała
+ * w końcu przestaje wystarczać. Mierzymy.
+ */
+function ustawWysokoscBelki() {
+  const belka = document.querySelector('.gora');
+  if (!belka) return; // atrapa DOM w testach nie ma `querySelector` po klasie
+  const wysokosc = belka.offsetHeight;
+  if (!Number.isFinite(wysokosc) || wysokosc <= 0) return;
+  document.documentElement.style.setProperty('--wysokosc-belki', `${Math.round(wysokosc)}px`);
+}
+
 function czyTrybTestowyWUrl() {
   if (typeof location === 'undefined' || typeof location.search !== 'string') return false;
   const parametr = new URLSearchParams(location.search);
@@ -4239,6 +4257,7 @@ function start() {
   if ($('stopka-wersja')) {
     $('stopka-wersja').textContent = new URL(import.meta.url).searchParams.get('v') || 'dev';
   }
+  ustawWysokoscBelki();
   // Łatka szablonu (PROTOKOL §7): organizator widzi, którą wersją promptu gra.
   $('stopka-szablon').textContent = SZABLON_WERSJA;
 
@@ -4320,6 +4339,7 @@ function start() {
   // Obrót telefonu albo zmiana rozmiaru okna: panele map mają inne wymiary,
   // więc widok trzeba przeliczyć (rozmiar bierzemy z `getBoundingClientRect`).
   window.addEventListener('resize', () => {
+    ustawWysokoscBelki(); // belka mogła urosnąć/zmaleć (`.akcje` się zawija)
     kazdaMapa((mapa) => mapa.odswiez());
   });
 

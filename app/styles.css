@@ -970,6 +970,21 @@ body[data-ekran='setup'] #ekran-setup {
 }
 .gora { position: relative; z-index: 3; }
 
+/* Przyciski +/− mapy-tła muszą być w obszarze, którego nic nie przykrywa.
+   Mapa-tło sięga pod samą belkę, a belka (`z-index: 3`, nieprzezroczyste tło)
+   i panel pozycji (`z-index: 2`) malują się NAD mapą (`z-index: 0`) — więc
+   domyślne `top: 8px; right: 8px` chowało przyciski pod belką, a w wariancie
+   poziomym dodatkowo pod panelem, który stoi przy prawej. Stąd: poniżej belki
+   i przy LEWEJ krawędzi. Wysokość belki mierzy JS (`--wysokosc-belki`, patrz
+   `ustawWysokoscBelki()`), bo `.akcje` ma `flex-wrap: wrap` i na wąskim
+   ekranie belka rośnie — stała liczba by się rozsypała. */
+body[data-ekran='setup'] #mapa-pozycja .mapa-przyciski,
+body[data-ekran='pozycja'] #mapa-pozycja .mapa-przyciski {
+  top: calc(var(--wysokosc-belki, 64px) + 10px);
+  right: auto;
+  left: 10px;
+}
+
 /* Ekran pozycji: mapa jest tłem, a treść ekranu to PANEL w podziale ekranu —
    w pionie na dole, w poziomie z prawej. `position` jest tu konieczne: bez niego
    karta zostaje `static`, a element statyczny maluje się POD ustalonym tłem
