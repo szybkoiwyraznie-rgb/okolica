@@ -225,6 +225,31 @@ test('kontrakt: mapa jest trwałym spodem aplikacji, a setup kartą nad nią', (
   assert.ok(STYLE.includes("body[data-ekran='setup'] #ekran-setup"), 'setup ma regułę karty nad mapą');
 });
 
+// Ekran stacji: mapa i lista obok siebie, nie jedna nad drugą (właściciel:
+// „te stacje odnoszą się właśnie do mapy"). Atrapa nie liczy pikseli, więc
+// pilnujemy struktury i tego, że reguły istnieją dla obu orientacji.
+test('kontrakt: ekran stacji dzieli się na mapę i przewijany panel', () => {
+  const ekran = INDEX.match(/<section id="ekran-stacje"[\s\S]*?<\/section>/)?.[0] ?? '';
+  const obszar = ekran.slice(ekran.indexOf('<div class="stacje-obszar">'));
+  assert.ok(obszar.includes('id="mapa-stacje"'), 'mapa jest w .stacje-obszar');
+  assert.ok(obszar.includes('id="stacje-panel"'), 'panel stacji jest w .stacje-obszar');
+  assert.ok(obszar.includes('id="lista-stacji"'), 'lista stacji jest w panelu');
+  assert.ok(obszar.includes('id="przycisk-dalej-prompt"'), 'przycisk „Dalej" jest w panelu');
+  assert.ok(!obszar.includes('id="tytul-stacje"'), 'tytuł sekcji zostaje NAD obszarem — inaczej w poziomie stałby się kolumną');
+
+  assert.ok(STYLE.includes('#ekran-stacje:not([hidden]) .stacje-obszar'), 'obszar ma regułę podziału');
+  assert.ok(STYLE.includes('#ekran-stacje:not([hidden]) #stacje-panel'), 'panel ma regułę');
+  // Proste sprawdzenia tekstowe zamiast literałów regex z metaznakami CSS —
+  // te drugie rozjeżdżają parser przy byle escapowaniu.
+  const pion = STYLE.slice(STYLE.indexOf('@media (max-width: 900px) and (orientation: portrait)'));
+  assert.ok(pion.includes('#ekran-stacje:not([hidden]) #stacje-panel'), 'panel stacji ma regułę w bloku pionu');
+  assert.ok(pion.includes('max-height: 42dvh'), 'panel w pionie ma ograniczoną wysokość i przewija się w środku');
+  const poziom = STYLE.slice(STYLE.indexOf('@media (orientation: landscape), (min-width: 901px)'));
+  assert.ok(poziom.includes('#ekran-stacje:not([hidden]) #stacje-panel'), 'panel stacji ma regułę w bloku poziomu');
+  assert.ok(poziom.includes('overflow-y: auto'), 'panel w poziomie przewija się w środku');
+  assert.ok(poziom.includes('#ekran-stacje:not([hidden]) .stacje-obszar'), 'obszar dzieli się w poziomie na kolumny');
+});
+
 test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=true', () => {
   // Decyzja właściciela 2026-09-08: przełącznik w nagłówku kusił do grania bez
   // GPS, a wyniki i tak szły na Drive i do rankingów (ADR 0029). Pilnujemy, żeby

@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-30">
-  <script type="module" src="app/app.js?v=m12-30"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-31">
+  <script type="module" src="app/app.js?v=m12-31"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -323,34 +323,42 @@
       <h2 id="tytul-stacje">Stacje w Twojej okolicy</h2>
       <p id="stacje-tryb" class="podpowiedz"></p>
       <p id="bledy-stacje" class="bledy" role="alert" hidden></p>
-      <div id="mapa-stacje" class="mapa">
-        <svg id="mapa-stacje-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
-          <g id="mapa-stacje-kafelki" class="warstwa-kafelki"></g>
-          <g id="mapa-stacje-okregi" class="warstwa-okregi"></g>
-          <g id="mapa-stacje-pinezki" class="warstwa-pinezki"></g>
-          <g id="mapa-stacje-marker" class="warstwa-marker"></g>
-        </svg>
-        <div class="mapa-przyciski">
-          <button id="mapa-stacje-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
-          <button id="mapa-stacje-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
-          <button id="mapa-stacje-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+      <div class="stacje-obszar">
+        <div id="mapa-stacje" class="mapa">
+          <svg id="mapa-stacje-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
+            <g id="mapa-stacje-kafelki" class="warstwa-kafelki"></g>
+            <g id="mapa-stacje-okregi" class="warstwa-okregi"></g>
+            <g id="mapa-stacje-pinezki" class="warstwa-pinezki"></g>
+            <g id="mapa-stacje-marker" class="warstwa-marker"></g>
+          </svg>
+          <div class="mapa-przyciski">
+            <button id="mapa-stacje-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+            <button id="mapa-stacje-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+            <button id="mapa-stacje-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+          </div>
+          <p id="mapa-stacje-skala" class="mapa-skala"></p>
+          <p id="mapa-stacje-atrybucja" class="mapa-atrybucja"></p>
+          <div id="stacje-ladowanie" class="nakladka-ladowanie" role="status" hidden><span>⏳ Pobieram dane sieci drogowej…</span></div>
         </div>
-        <p id="mapa-stacje-skala" class="mapa-skala"></p>
-        <p id="mapa-stacje-atrybucja" class="mapa-atrybucja"></p>
-        <div id="stacje-ladowanie" class="nakladka-ladowanie" role="status" hidden><span>⏳ Pobieram dane sieci drogowej…</span></div>
-      </div>
-      <ol id="lista-stacji" class="lista-stacji"></ol>
-      <p id="stacje-sprawiedliwosc" class="badge"></p>
-      <div class="wiersz">
-        <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
-        <button id="przycisk-siec-ponow" class="przycisk" type="button" hidden>↻ Pobierz sieć ponownie</button>
-        <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
-        <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
-      </div>
-      <p class="podpowiedz">Stacje stoją w pierścieniu albo na sieci dróg, placów i szlaków — nigdy w budynku ani na terenie prywatnym<span class="dopisek-roboczy"> (ADR 0005)</span>.</p>
-      <div class="wiersz przyciski-dolu">
-        <button id="przycisk-wstecz-pozycja" class="przycisk" type="button">← pozycja</button>
-        <button id="przycisk-dalej-prompt" class="przycisk przycisk-glowny" type="button">Dalej: pytania →</button>
+        <!-- Decyzja właściciela 2026-09-08: stacje odnoszą się do mapy, więc lista
+             NIE może jej zasłaniać. Mapa zostaje na wierzchu, a lista z
+             przyciskami jedzie obok (poziom) albo pod (pion) i przewija się
+             WEWNĄTRZ siebie — strona się nie przewija. -->
+        <div id="stacje-panel" class="stacje-panel">
+          <ol id="lista-stacji" class="lista-stacji"></ol>
+          <p id="stacje-sprawiedliwosc" class="badge"></p>
+          <div class="wiersz">
+            <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
+            <button id="przycisk-siec-ponow" class="przycisk" type="button" hidden>↻ Pobierz sieć ponownie</button>
+            <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
+            <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
+          </div>
+          <p class="podpowiedz">Stacje stoją w pierścieniu albo na sieci dróg, placów i szlaków — nigdy w budynku ani na terenie prywatnym<span class="dopisek-roboczy"> (ADR 0005)</span>.</p>
+          <div class="wiersz przyciski-dolu">
+            <button id="przycisk-wstecz-pozycja" class="przycisk" type="button">← pozycja</button>
+            <button id="przycisk-dalej-prompt" class="przycisk przycisk-glowny" type="button">Dalej: pytania →</button>
+          </div>
+        </div>
       </div>
     </section>
 

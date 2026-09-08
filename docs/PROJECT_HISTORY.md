@@ -1384,3 +1384,31 @@ testów tej zmiany NIE sprawdza — przechodzą tak samo przed i po. Pilnuje jej
 nowy kontrakt na strukturę (mapa jest pierwszym dzieckiem `<main>`, ekran
 pozycji nie ma własnej mapy, reguła `visibility` istnieje, ikonka jest podpięta)
 i audyt WCAG. **Układ trzeba obejrzeć na telefonie.**
+
+## 2026-09-08 — ekran stacji: mapa i lista obok siebie, nie jedna nad drugą
+
+Właściciel odrzucił pomysł listy nad mapą i miał rację: *„Ekran stacji nie może
+być nad mapą bo te stacje odnoszą się właśnie do mapy. […] chyba muszą być pod,
+albo może podzielić ekran na dwie części i w jednej zostawić mapę, a w drugiej
+scrollowany obszar na stacje?"*
+
+Wszedł podział, nie „pod": w pionie lista zasłaniałaby pół mapy i tak, a obok
+siebie widać pinezkę i jej opis jednocześnie.
+
+- Struktura: `#ekran-stacje` (kolumna: tytuł, tryb, błędy + `.stacje-obszar`),
+  a dopiero `.stacje-obszar` dzieli się na `#mapa-stacje` i `#stacje-panel`
+  (lista, badge sprawiedliwości, przyciski układu, „← pozycja", „Dalej: pytania").
+  Nagłówek sekcji musi zostać NAD obszarem — inaczej w poziomie tytuł stałby się
+  jedną z kolumn.
+- PION: mapa `flex: 1 1 auto` zajmuje wszystko, co zostanie; panel `max-height:
+  42dvh` z przewijaniem w środku. Strona się nie przewija (`100dvh`,
+  `overflow: hidden`), tak jak na ekranie gry (ADR 0030).
+- POZIOM i szeroki ekran (`min-width: 901px`): mapa z lewej, panel 44% z prawej,
+  przewijanie w panelu.
+- `.mapa { height: 45vh; max-height: 460px }` jest na tym ekranie nadpisane na
+  `height: auto; flex: 1 1 auto` — mapa dostaje tyle, ile naprawdę jest.
+
+**Uczciwie o weryfikacji:** tak samo jak przy mapie-tle — atrapa DOM nie liczy
+pikseli, więc 619 testów tej zmiany nie sprawdza. Pilnuje jej nowy kontrakt na
+strukturę i na obecność reguł dla obu orientacji oraz audyt WCAG. Proporcje
+(42dvh / 44%) trzeba obejrzeć na telefonie.

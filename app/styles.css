@@ -964,3 +964,90 @@ body[data-ekran='pozycja'] #ekran-pozycja {
   border: 1px solid var(--linia);
   border-radius: var(--promien);
 }
+
+/* --- Ekran stacji: mapa i lista OBOK siebie (decyzja właściciela 2026-09-08) --
+ * Właściciel: „Ekran stacji nie może być nad mapą bo te stacje odnoszą się właśnie
+ * do mapy. […] chyba muszą być pod, albo może podzielić ekran na dwie części i
+ * w jednej zostawić mapę, a w drugiej scrollowany obszar na stacje?"
+ * Podział jest lepszy niż „pod": w pionie lista zasłaniałaby pół mapy i tak,
+ * a obok siebie widać pinezkę i jej opis jednocześnie. Przewijanie dzieje się
+ * WEWNĄTRZ panelu — strona się nie przewija (wzorzec z ADR 0030).
+ * Struktura: `#ekran-stacje` (kolumna: nagłówek + `.stacje-obszar`), a dopiero
+ * `.stacje-obszar` dzieli się na mapę i panel — inaczej w poziomie tytuł sekcji
+ * stałby się jedną z kolumn.
+ */
+
+/* PION: mapa u góry zajmuje, co zostanie; panel na dole. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body[data-ekran='stacje'] { height: 100dvh; overflow: hidden; }
+  body[data-ekran='stacje'] .tresc { height: 100%; overflow: hidden; }
+  #ekran-stacje:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: none;
+    overflow: hidden;
+  }
+  #ekran-stacje:not([hidden]) .stacje-obszar {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  #ekran-stacje:not([hidden]) #mapa-stacje {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+  }
+  #ekran-stacje:not([hidden]) #stacje-panel {
+    flex: 0 0 auto;
+    max-height: 42dvh;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    margin-top: 8px;
+    padding: 8px;
+    background: var(--tlo-karta);
+    border: 1px solid var(--linia);
+    border-radius: var(--promien);
+  }
+}
+
+/* POZIOM i szeroki ekran: mapa z lewej, lista z prawej. */
+@media (orientation: landscape), (min-width: 901px) {
+  body[data-ekran='stacje'] { height: 100dvh; overflow: hidden; }
+  body[data-ekran='stacje'] .tresc { height: 100%; overflow: hidden; }
+  #ekran-stacje:not([hidden]) {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    max-width: none;
+    overflow: hidden;
+  }
+  #ekran-stacje:not([hidden]) .stacje-obszar {
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    gap: 10px;
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  #ekran-stacje:not([hidden]) #mapa-stacje {
+    flex: 1 1 auto;
+    height: auto;
+    min-height: 0;
+    max-height: none;
+    margin: 0;
+  }
+  #ekran-stacje:not([hidden]) #stacje-panel {
+    flex: 0 0 44%;
+    max-width: 44%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 10px;
+    background: var(--tlo-karta);
+    border: 1px solid var(--linia);
+    border-radius: var(--promien);
+  }
+}
