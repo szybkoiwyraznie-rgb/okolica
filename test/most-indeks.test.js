@@ -4,32 +4,23 @@
  * Skrypt `docs/setup/apps-script-repo-paczek.gs` działa poza tym repozytorium
  * (Google Apps Script, brak modułów ESM), ale jego koder geohash jest KOPIĄ
  * `geohash()` z `app/geo.js` — a kopia bez testu rozjeżdża się po cichu i wtedy
- * paczki znikają z ekranu 2. Dlatego testy poniżej WYKONUJĄ tekst ze skryptu
- * (wycięty między znacznikami) i porównują wyniki z implementacją aplikacji na
+ * paczki znikają z ekranu 2. Dlatego testy poniżej wykonują CAŁY skrypt z atrapą
+ * Drive (`test/helpers/most.js`) i porównują wyniki z implementacją aplikacji na
  * siatce współrzędnych. Zmiana którejkolwiek strony bez drugiej = czerwono.
+ *
+ * Wcześniej te testy wycinały z pliku sam koder — przechodziły nawet wtedy, gdy
+ * reszta skryptu nie dawała się uruchomić (LESSONS L33).
  */
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 
 import { geohash } from '../app/geo.js';
-import { dopasujZestawy } from '../app/zestawy.js';
+import { dopasujZestawy, walidujIndeksSurowy } from '../app/zestawy.js';
+import { uruchomMost, zestawPrzykladowy, idPoNazwie } from './helpers/most.js';
 
-const ROOT = join(import.meta.dirname, '..');
-const GS = readFileSync(join(ROOT, 'docs/setup/apps-script-repo-paczek.gs'), 'utf8');
-
-/** Wycina ze skryptu koder geohash i `kotwicaZestawu`, zwraca je jako funkcje. */
-function funkcjeMostu() {
-  const start = GS.indexOf("const ALFABET_GEOHASH = '");
-  const koniec = GS.indexOf('/** Indeks WYŁĄCZNIE', start);
-  assert.ok(start >= 0 && koniec > start, 'skrypt mostu ma koder geohash przed budujIndeks');
-  // eslint-disable-next-line no-new-func — celowo: wykonujemy tekst skryptu, nie jego kopię
-  return new Function(`${GS.slice(start, koniec)}; return { geohashPunkt, kotwicaZestawu };`)();
-}
-
-const { geohashPunkt, kotwicaZestawu } = funkcjeMostu();
+const { most } = uruchomMost();
+const { geohashPunkt, kotwicaZestawu } = most;
 
 test('koder geohash w moście Drive daje te same komórki co app/geo.js', () => {
   let porownan = 0;
@@ -88,11 +79,26 @@ test('kotwicaZestawu: nowa paczka ma kotwicę dokładną, stara — szacowaną z
   );
 });
 
-test('budujIndeks dopisuje geohash6 i znacznik kotwicy szacowanej (B19)', () => {
-  const cialo = GS.slice(GS.indexOf('function budujIndeks()'), GS.indexOf('function plikPrzezId'));
-  assert.match(cialo, /kotwicaZestawu\(zestaw\)/, 'indeks liczy kotwicę z całego pliku paczki');
-  assert.match(cialo, /geohash6: kotwica \? kotwica\.geohash6/, 'wpis indeksu niesie geohash6');
-  assert.match(cialo, /geohash6Szacowany: kotwica \? kotwica\.szacowany/, 'wpis mówi, czy kotwica jest szacowana');
+test('most: indeks sam liczy kotwicę ze stacji, gdy paczka nie ma geohash6 (B19)', () => {
+  const { most: mostSwiezy, pliki } = uruchomMost();
+  const zestaw = zestawPrzykladowy({ bezKotwicy: true });
+  assert.equal(zestaw.meta.geohash6, undefined, 'fixture bez kotwicy — jak paczka sprzed B19');
+
+  const przyjeta = mostSwiezy.przyjmijKandydata(zestaw);
+  assert.equal(przyjeta.ok, true, `przyjęcie do przeglądu: ${JSON.stringify(przyjeta)}`);
+  assert.equal(mostSwiezy.zatwierdz(idPoNazwie(pliki, przyjeta.nazwa)), 'zaakceptowano');
+
+  const indeks = walidujIndeksSurowy(JSON.stringify(mostSwiezy.budujIndeks()));
+  assert.deepEqual(indeks.usterki, [], 'indeks bez usterek');
+  assert.equal(indeks.indeks.length, 1, 'zaakceptowana paczka jest w indeksie');
+
+  const srednia = {
+    lat: zestaw.stacje.reduce((a, s) => a + s.lat, 0) / zestaw.stacje.length,
+    lon: zestaw.stacje.reduce((a, s) => a + s.lon, 0) / zestaw.stacje.length,
+  };
+  const wpis = indeks.indeks[0];
+  assert.equal(wpis.geohash6, geohash(srednia.lat, srednia.lon, 6), 'kotwica oszacowana ze środka stacji');
+  assert.equal(wpis.geohash6Szacowany, true, 'wpis mówi, że kotwica jest szacowana');
 });
 
 /* ---- Klient: jak tolerancja czyta kotwicę szacowaną (app/zestawy.js) ---- */

@@ -21,6 +21,33 @@ function iterator(tab) {
   return { hasNext: () => i < tab.length, next: () => tab[i++] };
 }
 
+/** Nazwy funkcji zadeklarowane w tekście skryptu (kolejność jak w pliku). */
+export function listaFunkcji(tekst) {
+  return [...tekst.matchAll(/^function ([A-Za-z0-9_]+)\s*\(/gm)].map((m) => m[1]);
+}
+
+/**
+ * Ciało przekazywane do `new Function`. Zwracam je osobno, bo `tools/zasieg-mostu.mjs`
+ * musi wiedzieć, jakie przesunięcie ma tekst .gs względem wykonywanego skryptu,
+ * żeby przełożyć pokrycie V8 na numery linii pliku.
+ */
+export function cialoSkryptu(bezFolder, funkcje) {
+  return `
+    function folder(nazwa) {
+      const it = DriveApp.getFoldersByName(nazwa);
+      if (it.hasNext()) return it.next();
+      return DriveApp.createFolder(nazwa);
+    }
+    ${bezFolder}
+    return { ${funkcje.join(', ')} };
+  `;
+}
+
+/** Tekst .gs bez własnego `folder()` (podstawiamy atrapę) — tak jest wykonywany. */
+export function tekstWykonywany() {
+  return GS.replace(/^function folder\(nazwa\) \{[\s\S]*?\n\}/m, '');
+}
+
 /**
  * Uruchamia cały skrypt mostu z atrapą Drive. `getParents()` zwraca ŻYWĄ listę
  * rodziców (jak FolderIterator w Apps Script), więc `przenies()` jest testowane
@@ -85,15 +112,29 @@ export function uruchomMost() {
     },
   };
 
+  // Właściwości skryptu: właściciel wpisuje je w Apps Script (OWNER_EMAIL,
+  // REVIEW_SECRET). Bez nich strona przeglądu i powiadomienie są martwe.
+  const wlasnosci = new Map([
+    ['OWNER_EMAIL', 'wlasciciel@example.invalid'],
+    ['REVIEW_SECRET', 'sekret-testowy-0123456789'],
+  ]);
+  const wyslaneMaile = [];
   const serwisy = {
     DriveApp,
-    PropertiesService: { getScriptProperties: () => ({ getProperty: () => null }) },
+    PropertiesService: {
+      getScriptProperties: () => ({
+        getProperty: (klucz) => (wlasnosci.has(klucz) ? wlasnosci.get(klucz) : null),
+        setProperty: (klucz, wartosc) => { wlasnosci.set(klucz, String(wartosc)); },
+      }),
+    },
     ContentService: {
       MimeType: { JSON: 'application/json' },
       createTextOutput: (tekst) => ({ setMimeType: () => ({ tekst }) }),
     },
     LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
-    MailApp: { sendEmail() {} },
+    MailApp: {
+      sendEmail: (adres, temat, tresc) => { wyslaneMaile.push({ adres, temat, tresc }); },
+    },
     HtmlService: {
       createHtmlOutput: (html) => ({ setTitle: () => ({ html }), html }),
     },
@@ -106,24 +147,72 @@ export function uruchomMost() {
 
   // `folder()` z atrapą zwraca obiekty z `getName`/`addFile`, więc podstawiamy
   // własną (identyczną logicznie) — reszta skryptu jest wykonywana bez zmian.
-  const bezFolder = GS.replace(/^function folder\(nazwa\) \{[\s\S]*?\n\}/m, '');
+  const bezFolder = tekstWykonywany();
   const parametry = Object.keys(serwisy);
   // eslint-disable-next-line no-new-func — celowo: wykonujemy tekst skryptu, nie jego kopię
-  const fabryka = new Function(...parametry, `
-    function folder(nazwa) {
-      const it = DriveApp.getFoldersByName(nazwa);
-      if (it.hasNext()) return it.next();
-      return DriveApp.createFolder(nazwa);
-    }
-    ${bezFolder}
-    return {
-      doGet, doPost, setup, przyjmijKandydata, zatwierdz, odrzuc, budujIndeks,
-      paczkaPrzezId, przenies, zalozGre, dolaczDoGry, startGryMulti,
-      przyjmijZdarzenie, zakonczGre, przyjmijGreHotseat, ustawProfil, sprawdzProfil,
-      stanGry, listaGier, rankingi, przeliczWyniki, archiwizujPrzeterminowane,
-    };
-  `);
+  // Lista eksportów buduje się SAMA z tekstu .gs — nowa funkcja w moście jest
+  // od razu osiągalna w testach (i od razu trafia pod „przegląd" niżej).
+  const funkcje = listaFunkcji(bezFolder);
+  const fabryka = new Function(...parametry, cialoSkryptu(bezFolder, funkcje));
   const api = fabryka(...parametry.map((k) => serwisy[k]));
-  return { most: api, pliki };
+  return { most: api, pliki, funkcje, wlasnosci, wyslaneMaile };
+}
+
+/* --------------------------------------------------- fixtures paczek (wspólne) */
+
+import { zapakujPaczke } from '../../app/kodowanie.js';
+
+/* ----------------------------------------------------------------- fixtures */
+
+export function zestawPrzykladowy({ stacje = 3, bezKotwicy = false } = {}) {
+  const paczka = {
+    schemat: 'PYT/1.0.6',
+    pytania: Array.from({ length: stacje }, (_, i) => ({
+      id: `s${i + 1}p1`,
+      stacja: i + 1,
+      temat: 'historia',
+      tresc: `Pytanie ${i + 1}?`,
+      odpowiedzi: ['a', 'b', 'c', 'd'],
+      poprawna: 17 + (i + 1) + (i + 1) + 1,
+      wyjasnienie: 'bo tak',
+      zrodla: [{ tytul: 'Źródło', url: 'https://przyklad.invalid/x' }],
+    })),
+  };
+  const wynik = {
+    schemat: 'TO-zestaw/1',
+    meta: {
+      miejsce: 'Podkowa Leśna',
+      geohash5: 'u3qb8',
+      geohash6: 'u3qb8g',
+      promienM: 1000,
+      tematy: ['historia'],
+      wiek: 'dorosli',
+      liczbaStacji: stacje,
+      pytaniaNaStacje: 1,
+      licencja: 'CC BY 4.0',
+      przegladZrodel: 'przejrzane 2026-09-01',
+      data: '2026-09-01',
+      autor: 'Jan',
+    },
+    stacje: Array.from({ length: stacje }, (_, i) => ({
+      id: i + 1,
+      lat: 52.12 + i * 0.002,
+      lon: 20.74 + i * 0.002,
+      opis: `stacja ${i + 1}`,
+    })),
+    kontener: zapakujPaczke(paczka, 'PYT/1.0.6'),
+  };
+  if (bezKotwicy) delete wynik.meta.geohash6; // paczka sprzed B19 — kotwicę trzeba oszacować
+  return wynik;
+}
+
+/** Odpowiedź mostu tak, jak widzi ją aplikacja: tekst JSON. */
+export function tekstOdpowiedzi(wynik) {
+  return JSON.stringify(wynik);
+}
+
+export function idPoNazwie(pliki, nazwa) {
+  for (const [id, plik] of pliki) if (plik.nazwa === nazwa) return id;
+  return null;
 }
 

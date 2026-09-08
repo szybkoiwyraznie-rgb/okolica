@@ -15,54 +15,7 @@ import assert from 'node:assert/strict';
 import { zapakujPaczke } from '../app/kodowanie.js';
 import { walidujZestawPublicznySurowy, walidujIndeksSurowy } from '../app/zestawy.js';
 
-import { uruchomMost } from './helpers/most.js';
-
-/* ----------------------------------------------------------------- fixtures */
-
-function zestawPrzykladowy({ stacje = 3 } = {}) {
-  const paczka = {
-    schemat: 'PYT/1.0.6',
-    pytania: Array.from({ length: stacje }, (_, i) => ({
-      id: `s${i + 1}p1`,
-      stacja: i + 1,
-      temat: 'historia',
-      tresc: `Pytanie ${i + 1}?`,
-      odpowiedzi: ['a', 'b', 'c', 'd'],
-      poprawna: 17 + (i + 1) + (i + 1) + 1,
-      wyjasnienie: 'bo tak',
-      zrodla: [{ tytul: 'Źródło', url: 'https://przyklad.invalid/x' }],
-    })),
-  };
-  return {
-    schemat: 'TO-zestaw/1',
-    meta: {
-      miejsce: 'Podkowa Leśna',
-      geohash5: 'u3qb8',
-      geohash6: 'u3qb8g',
-      promienM: 1000,
-      tematy: ['historia'],
-      wiek: 'dorosli',
-      liczbaStacji: stacje,
-      pytaniaNaStacje: 1,
-      licencja: 'CC BY 4.0',
-      przegladZrodel: 'przejrzane 2026-09-01',
-      data: '2026-09-01',
-      autor: 'Jan',
-    },
-    stacje: Array.from({ length: stacje }, (_, i) => ({
-      id: i + 1,
-      lat: 52.12 + i * 0.002,
-      lon: 20.74 + i * 0.002,
-      opis: `stacja ${i + 1}`,
-    })),
-    kontener: zapakujPaczke(paczka, 'PYT/1.0.6'),
-  };
-}
-
-/** Odpowiedź mostu tak, jak widzi ją aplikacja: tekst JSON. */
-function tekstOdpowiedzi(wynik) {
-  return JSON.stringify(wynik);
-}
+import { uruchomMost, zestawPrzykladowy, tekstOdpowiedzi, idPoNazwie } from './helpers/most.js';
 
 /* -------------------------------------------------------------------- testy */
 
@@ -128,7 +81,3 @@ test('most: żadna akcja nie odpowiada błędem wykonania skryptu', () => {
 });
 
 /** Id pliku po nazwie — tak właściciel dostaje je w linku z e-maila. */
-function idPoNazwie(pliki, nazwa) {
-  for (const [id, plik] of pliki) if (plik.nazwa === nazwa) return id;
-  return null;
-}
