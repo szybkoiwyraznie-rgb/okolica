@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-21">
-  <script type="module" src="app/app.js?v=m12-21"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-22">
+  <script type="module" src="app/app.js?v=m12-22"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -490,7 +490,6 @@
         <p id="gra-dystans-odcinka" class="duzy duzy-dystans">— m</p>
         <p id="gra-prog-dojscia" class="badge">próg dojścia: —</p>
         <div class="wiersz">
-          <button id="przycisk-reczne-dojscie" class="przycisk" type="button">✋ Jestem na miejscu (ręczne)</button>
           <button id="przycisk-pauza" class="przycisk" type="button" aria-pressed="false">⏸ Pauza</button>
           <button id="przycisk-symulacja-gra" class="przycisk" type="button" hidden>▶ Symuluj dojście (tryb testowy)</button>
         </div>
@@ -557,6 +556,7 @@
           <summary>Tekst wyniku</summary>
           <textarea id="pole-wynik-tekst" class="pole-tekstowe" rows="12" readonly aria-label="Tekst wyniku do skopiowania"></textarea>
         </details>
+        <button id="przycisk-nowa-gra" class="przycisk przycisk-glowny" type="button">🏠 Wróć na początek — nowa gra</button>
       </div>
 
       <div class="wiersz">

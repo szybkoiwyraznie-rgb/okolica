@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-21';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-21';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-22';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-22';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -31,21 +31,21 @@ import {
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-21';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-21';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-21';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-21';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-21';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-21';
+} from './protokol.js?v=m12-22';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-22';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-22';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-22';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-22';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-22';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-21';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-21';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-21';
+} from './zestawy.js?v=m12-22';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-22';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-22';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -65,17 +65,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-21';
-import { utworzMape } from './mapa.js?v=m12-21';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-21';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-21';
-import { adresMostu, stanMostu } from './most.js?v=m12-21';
+} from './sieci.js?v=m12-22';
+import { utworzMape } from './mapa.js?v=m12-22';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-22';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-22';
+import { adresMostu, stanMostu } from './most.js?v=m12-22';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-21';
+} from './oceny.js?v=m12-22';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1625,7 +1625,6 @@ function renderujGre({ panele = true } = {}) {
 
   if (panele) {
     $('przycisk-start-odcinka').disabled = STAN.graPauza;
-    $('przycisk-reczne-dojscie').disabled = STAN.graPauza;
     $('przycisk-symulacja-gra').hidden = !(STAN.trybTestowy && r.faza === FAZY.odcinek);
     $('przycisk-pomin-stacje').disabled = r.faza !== FAZY.odcinek || STAN.graPauza; // ADR 0015 pkt 2: tylko w drodze
   }
@@ -2608,6 +2607,12 @@ function pominStacjeGry() {
 function zakonczGreRecznie() {
   const r = STAN.rozgrywka;
   if (!r) return;
+  if (r.faza === FAZY.koniec) {
+    // Gra już się skończyła: klikanie „Zakończ grę" nic nie zmienia, więc mówimy
+    // wprost, gdzie jest wyjście (właściciel, 2026-09-08).
+    status('Ta gra już się zakończyła — wynik jest powyżej. Nową grę zaczniesz przyciskiem „Wróć na początek".');
+    return;
+  }
   if (!STAN.graZakonczonaUzbrojone) {
     STAN.graZakonczonaUzbrojone = true;
     $('przycisk-zakoncz-gre').textContent = '⚠ Kliknij ponownie, aby zakończyć';
@@ -2624,6 +2629,31 @@ function zakonczGreRecznie() {
   renderujGre();
   zapiszGre(); // M7/P6: ręczne zakończenie JEST tranzycją — zapis + wpis historii „przerwana"
   status('Gra zakończona wcześniej — wynik poniżej. Zapis został, więc można ją wznowić.');
+}
+
+/**
+ * „Wróć na początek" (właściciel, 2026-09-08): po zakończeniu gry nie było
+ * wyjścia z ekranu gry. Wynik jest już w historii, więc sprzątamy stan bieżącej
+ * rozgrywki i wracamy do setupu — ustawienia graczy i setup zostają.
+ */
+function wrocNaPoczatek() {
+  const r = STAN.rozgrywka;
+  zatrzymajSymulacje();
+  if (typeof localStorage !== 'undefined') {
+    const kod = r ? oczyscKodGry(r.kodGry) : '';
+    if (kod) localStorage.removeItem(kluczStanu(kod));
+    localStorage.removeItem(KLUCZ_AKTYWNEJ); // baner „wznów grę" nie proponuje skończonej gry
+  }
+  STAN.rozgrywka = null;
+  STAN.graZakonczonaRecznie = false;
+  STAN.graZakonczonaUzbrojone = false;
+  STAN.kontenerPaczki = null;
+  STAN.paczkaRepoId = '';
+  STAN.tokenGry = '';
+  STAN.ocenianePytanieId = '';
+  STAN.ocenianyGracz = '';
+  pokazEkran('ekran-setup');
+  status('Gotowe do nowej gry — setup i gracze zostali, wynik jest w historii.');
 }
 
 /* ------------------------------------------------- pełne podsumowanie (M7) */
@@ -4355,7 +4385,13 @@ function start() {
 
   $('przycisk-test-polaczenia').addEventListener('click', () => sprawdzPolaczenieZRepo());
   $('przycisk-start-odcinka').addEventListener('click', () => startOdcinkaGry());
-  $('przycisk-reczne-dojscie').addEventListener('click', () => zakonczOdcinekGry(TRYBY_DOJSCIA.reczne, null));
+  // ADR 0029: ręcznego zgłaszania dojścia NIE MA w interfejsie (właściciel,
+  // 2026-09-08). Elementu nie ma w index.html, więc w przeglądarce ten warunek
+  // jest fałszywy i dojście da się zamknąć tylko GPS-em albo pominięciem
+  // odcinka. Podpięcie zostaje wyłącznie jako szew dla testów atrapy DOM.
+  const reczneDojscie = $('przycisk-reczne-dojscie');
+  if (reczneDojscie) reczneDojscie.addEventListener('click', () => zakonczOdcinekGry(TRYBY_DOJSCIA.reczne, null));
+  $('przycisk-nowa-gra').addEventListener('click', () => wrocNaPoczatek());
   $('przycisk-pauza').addEventListener('click', () => przelaczPauzeGry());
   $('przycisk-symulacja-gra').addEventListener('click', () => przelaczSymulacjeDoStacji());
   $('przycisk-nastepna-stacja').addEventListener('click', () => nastepnaStacja());

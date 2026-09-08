@@ -201,7 +201,13 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
   for (const ekran of ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka']) zadane.add(`ekran-${ekran}`);
   for (const panel of ['zaloz', 'dolacz', 'lobby']) zadane.add(`multi-panel-${panel}`); // M11: panele budowane z listy
   assert.ok(zadane.size > 25, `znaleziono tylko ${zadane.size} identyfikatorów — test pewnie nie widzi kodu`);
+  // ADR 0029: ręcznego zgłaszania dojścia NIE MA w interfejsie (właściciel,
+  // 2026-09-08) — id nie istnieje w index.html. app.js podpina je warunkowo
+  // wyłącznie jako szew dla testów atrapy DOM, które tak zamykają odcinek.
+  // Wyjątek jest jawny: dopisanie tu czegokolwiek wymaga uzasadnienia.
+  const wyjatkiBezElementu = new Set(['przycisk-reczne-dojscie']);
   for (const id of zadane) {
+    if (wyjatkiBezElementu.has(id)) continue;
     assert.ok(INDEX.includes(`id="${id}"`), `app.js woła #${id}, którego nie ma w index.html`);
   }
 });
@@ -511,7 +517,7 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'mapa-gra', 'mapa-gra-svg', 'mapa-gra-kafelki', 'mapa-gra-okregi', 'mapa-gra-pinezki', 'mapa-gra-marker',
     'bledy-gra', 'gra-komunikat',
     'gra-kto-idzie', 'gra-cel-stacji', 'przycisk-start-odcinka',
-    'gra-dystans-odcinka', 'gra-prog-dojscia', 'przycisk-reczne-dojscie', 'przycisk-pauza', 'gra-pauza-komunikat',
+    'gra-dystans-odcinka', 'gra-prog-dojscia', 'przycisk-pauza', 'gra-pauza-komunikat',
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
     'gra-wyniki', 'gra-wyniki-tbody',
@@ -851,4 +857,14 @@ test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', ()
   assert.ok(APP.includes('oproznijKolejkeOcen()'), 'kolejka głosów jest opróżniana przy starcie');
   assert.ok(APP.includes('opisOcenTekst(walidujStatystykiOcen(meta.oceny))'), 'ekran 2 pokazuje statystyki paczki');
   assert.ok(APP.includes('STAN.paczkaRepoId'), 'oceny dotyczą paczek z repozytorium');
+});
+
+test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da się wyjść', () => {
+  assert.ok(!INDEX.includes('przycisk-reczne-dojscie'), 'przycisku „Jestem na miejscu" nie ma w index.html');
+  assert.ok(!INDEX.includes('Jestem na miejscu'), 'ręczne zgłoszenie dojścia zniknęło z interfejsu');
+  assert.ok(!APP.includes("$('przycisk-reczne-dojscie').disabled"), 'kod nie dotyka usuniętego przycisku');
+  assert.match(czytaj('app/pozycja.js'), /ADR 0029/, 'komunikat P03 nie odsyła do usuniętego przycisku');
+  assert.ok(INDEX.includes('id="przycisk-nowa-gra"'), 'na ekranie wyniku jest wyjście do nowej gry');
+  assert.ok(APP.includes('function wrocNaPoczatek'), 'przycisk ma podpiętą funkcję');
+  assert.ok(APP.includes("pokazEkran('ekran-setup')"), 'wyjście wraca na ekran setupu');
 });

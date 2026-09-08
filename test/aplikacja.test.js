@@ -1116,14 +1116,15 @@ test('M6: pauza — przyciski stają, wznowienie jawne (ADR 0004 pkt 1)', async 
   dom.kliknij('przycisk-pauza');
   assert.equal(pauza.getAttribute('aria-pressed'), 'true', 'aria-pressed po pauzie');
   assert.match(pauza.textContent, /Wznów/, 'przycisk zmienia rolę');
-  assert.equal(dom.pobierz('przycisk-reczne-dojscie').disabled, true, 'w pauzie nie ma akcji fazowych');
+  assert.equal(dom.pobierz('przycisk-start-odcinka').disabled, true, 'w pauzie nie ma akcji fazowych');
+  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true, 'w pauzie nie ma też pomijania odcinka');
   assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true);
   assert.equal(dom.pobierz('gra-pauza-komunikat').hidden, false, 'komunikat pauzy widoczny');
 
   dom.kliknij('przycisk-pauza');
   assert.equal(pauza.getAttribute('aria-pressed'), 'false');
   assert.match(pauza.textContent, /Pauza/);
-  assert.equal(dom.pobierz('przycisk-reczne-dojscie').disabled, false, 'wznowienie odblokowuje akcje');
+  assert.equal(dom.pobierz('przycisk-start-odcinka').disabled, false, 'wznowienie odblokowuje akcje');
 });
 
 /* ================= M6/R5: pętla pytania — odsłonięcie, odpowiedź, źródła */

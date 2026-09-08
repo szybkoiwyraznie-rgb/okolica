@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-21';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-22';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -83,7 +83,7 @@ export const STANY_FIXA = Object.freeze({
 export const KODY_POZYCJI = {
   P01: 'Ta przeglądarka nie udostępnia położenia (brak `navigator.geolocation`). Otwórz stronę przez HTTPS albo zagraj w trybie testowym (⚙) — dojście możesz też zgłaszać ręcznie.',
   P02: 'Brak zgody na dostęp do położenia. W Chrome dotknij ikony lokalizacji przy adresie i wybierz „Zawsze zezwalaj", a potem odśwież stronę. Możesz też grać w trybie ręcznym — karę czasową da się wyłączyć w ustawieniach.',
-  P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń albo zgłoś dojście przyciskiem „jestem na miejscu".',
+  P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek (ADR 0029: dojście zalicza tylko GPS).',
   P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni; dojście możesz też zgłosić ręcznie.',
   P05: 'Dokładność ±{accuracy} m jest niewystarczająca, żeby rozstrzygnąć dojście (próg to najwyżej 100 m). Przejdź w miejsce z lepszym widokiem nieba albo zgłoś dojście ręcznie.',
   P06: 'Otrzymano współrzędne spoza zakresu — ten pomiar został odrzucony. Jeśli powtarza się, zagraj w trybie ręcznym.',

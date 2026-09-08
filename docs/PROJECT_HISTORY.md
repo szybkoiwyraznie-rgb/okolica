@@ -1186,6 +1186,17 @@ domyślny, info należy do sekcji prywatność.
   pliku), a pobranie paczki nie zabiera głosów na telefon gracza. `.gs`: 963 →
   **1093 wiersze, md5 `620f28c734136654d9a4a01ebfe7853b`** — właściciel musi wkleić
   nową wersję. Zasięg testów mostu: 867/894 wierszy (97,0%).
+- **Po pierwszej prawdziwej rozgrywce właściciela (2026-09-08): ADR 0029
+  i wyjście z gry.** (1) Przycisk ręcznego zgłaszania dojścia usunięty
+  z index.html w obu trybach: fałszował próg dojścia, a wynik i tak szedł na
+  Drive i do rankingów; tryb testowy ma symulację, która rozstrzyga dojście tym
+  samym kodem co GPS. Model i etykieta stanu rreczne zostają dla starych
+  zapisów; komunikat P03 nie odsyła już do przycisku, tylko każe wyjść na
+  otwartą przestrzeń i przypomina o pominięciu odcinka. (2) Po zakończeniu gry
+  nie było wyjścia z ekranu gry: doszedł przycisk nowej gry (sprząta bieżącą
+  rozgrywkę i wskaźnik wznowienia, setup i gracze zostają), a przycisk
+  zakończenia na skończonej grze mówi wprost, gdzie jest wyjście, zamiast
+  milczeć.
 - Testy: **591, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
   budżet dużej paczki, wstrzykiwanie HTML z OSM, cykl gry, hot-seat, prywatność
   zdarzeń, wygasanie lobby, przegląd i powiadomienie właściciela);

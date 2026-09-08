@@ -41,6 +41,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0026](0026-tozsamosc-brama-ekranu-1.md) | Tożsamość jest bramą ekranu 1: imię + PIN, jedno wołanie mostu | Zaakceptowana |
 | [0027](0027-pytania-po-rowno-i-wolna-kolejnosc.md) | Pytania po równo na gracza (wdrożone) i wolna kolejność stacji w grze sieciowej (projekt) | Zaakceptowana |
 | [0028](0028-oceny-pytan-graczy.md) | Oceny pytań przez graczy: jeden kciuk, jeden głos na gracza i pytanie, wysyłka w tle | Zaakceptowana |
+| [0029](0029-brak-recznego-dojscia.md) | Dojście zalicza tylko GPS: ręczne zgłaszanie usunięte z interfejsu | Zaakceptowana |
 
 ## Szablon ADR
 
