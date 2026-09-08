@@ -229,6 +229,25 @@ test('kontrakt: panel ekranu pozycji ma `position` — bez niego chowa się pod 
   assert.ok(STYLE.includes('@media (orientation: landscape), (min-width: 901px)'), 'podział ma wariant poziomy');
 });
 
+test('kontrakt: mapa-tło resetuje max-height i margin z reguły bazowej .mapa (L40)', () => {
+  // `.mapa` deklaruje `height: 45vh; min-height: 240px; max-height: 460px;
+  // margin: 10px 0`. Selektor z id nadpisuje właściwość po właściwości, więc bez
+  // jawnych resetów mapa-tło była `fixed` na całą szerokość, ale ŚCIĘTA do
+  // 460 px i przesunięta o 10 px — właściciel widział „mapę na pół ekranu"
+  // mimo `height: 100%`. Te same resety mają #mapa-gra i #mapa-stacje.
+  const start = STYLE.indexOf('#mapa-pozycja {');
+  assert.ok(start > 0, 'brak reguły #mapa-pozycja');
+  const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+  assert.ok(blok.includes('max-height: none'), 'max-height nie zresetowany — mapa ścięta do 460 px');
+  assert.ok(blok.includes('margin: 0'), 'margin nie zresetowany — mapa przesunięta o 10 px');
+  assert.ok(blok.includes('min-height: 0'), 'min-height nie zresetowany');
+});
+
+test('kontrakt: stopka pokazuje numer budowy — inaczej nie poznać wersji z cache', () => {
+  assert.ok(INDEX.includes('id="stopka-wersja"'), 'w stopce brakuje znacznika wersji');
+  assert.ok(APP.includes("searchParams.get('v')"), 'app.js nie bierze wersji z ?v= własnego modułu');
+});
+
 test('kontrakt: mapa jest trwałym spodem aplikacji, a setup kartą nad nią', () => {
   const main = INDEX.match(/<main class="tresc">([\s\S]*?)<section id="ekran-setup"/)?.[1] ?? '';
   assert.match(main, /<div id="mapa-pozycja" class="mapa">/, 'mapa pozycji jest pierwszym elementem <main>, nie w ekranie pozycji');

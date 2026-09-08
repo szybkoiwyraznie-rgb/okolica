@@ -1495,3 +1495,43 @@ własnej pozycji, więc mapa malowała się NAD nią. `.dol` dostało
 
 Testy: **624, 0 fail**; brama = 624 + sync szablonu OK + WCAG AA 0.
 Cache-bust `?v=m12-34`.
+
+## 2026-09-08 — mapa „na pół ekranu": reguła z id nie nadpisała max-height
+
+Właściciel po Ctrl+Shift+R: *„mam dalej mapę na pół ekranu, a na drugiej stronie
+napisy pod warstwą mapy"*. Tym razem to NIE był cache — błąd był w CSS i dotyczył
+też najnowszej budowy.
+
+**Przyczyna.** Reguła bazowa `.mapa` (`app/styles.css:334`) deklaruje
+`height: 45vh; min-height: 240px; max-height: 460px; margin: 10px 0`. Reguła
+`#mapa-pozycja` nadpisała `position`, `height`, `width` i `border` — ale
+`max-height: 460px` i `margin: 10px 0` przyszły z klasy i dalej obowiązywały,
+bo wyższa specyficzność działa **na każdą właściwość osobno**, nie na całą
+regułę. Mapa była więc `position: fixed` na całą szerokość, lecz ścięta do
+**460 px** i przesunięta o 10 px w dół — pas u góry pod nagłówkiem, dokładnie to,
+co właściciel opisał. Wzorzec był znany: `#mapa-gra` (linia 747) i `#mapa-stacje`
+(1032/1071) mają `min-height: 0; max-height: none; margin: 0`. Tylko reguła
+dodana przy zmianie „mapa jako tło" ich nie powtórzyła. → LESSONS **L40**.
+
+**Weryfikacja.** W sandboxie nie da się postawić przeglądarki
+(`storage.googleapis.com` i `deb.debian.org` odpowiadają `000`), więc kaskadę
+policzył `jsdom` zainstalowany poza repozytorium, na prawdziwych `index.html`
+i `app/styles.css`, dla `div#mapa-pozycja.mapa`:
+
+| | przed (`7447943`) | po |
+|---|---|---|
+| `position` | fixed | fixed |
+| `height` | 100% | 100% |
+| `max-height` | **460px** | **none** |
+| `min-height` | **240px** | **0px** |
+| `margin-top` | **10px** | **0px** |
+| `#ekran-pozycja` (ekran pozycji) | fixed, z 2 | fixed, z 2 |
+
+**Numer budowy w stopce.** Właściciel dwa razy oceniał starą wersję i nie miał
+jak tego stwierdzić. Stopka pokazuje teraz `wersja m12-35`, brane z `?v=` w
+adresie własnego modułu (`new URL(import.meta.url).searchParams.get('v')`), więc
+nie ma drugiej stałej do pamiętania przy podbijaniu cache-bust.
+
+Dwa nowe kontrakty: reguła `#mapa-pozycja` ma resety `max-height`/`margin`/
+`min-height`, a stopka ma znacznik wersji. Testy: **626, 0 fail**; brama = 626 +
+sync szablonu OK + WCAG AA 0. Cache-bust `?v=m12-35`.

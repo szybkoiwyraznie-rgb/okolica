@@ -9,8 +9,8 @@
  * Moduł czysty: bez DOM, bez sieci, bez `Math.random()` (losowość z ziarna).
  */
 
-import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js?v=m12-34';
-import { rngZZiarna } from './konfig.js?v=m12-34';
+import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js?v=m12-35';
+import { rngZZiarna } from './konfig.js?v=m12-35';
 
 /** Źródło układu stacji — pokazywane w UI i zapisywane w paczce rozgrywki. */
 export const ZRODLA_STACJI = {
@@ -73,7 +73,7 @@ export function najmniejszyOdstepM(stacje) {
 
 /* =========================== M4: stacje z sieci drogowej (ADR 0005 pkt 5) */
 
-import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js?v=m12-34';
+import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js?v=m12-35';
 
 /** Stałe pierścienia i separacji z ADR 0005 pkt 5 — wszystkie konfigurowalne. */
 export const PIERSCIEN_WYBORU = {

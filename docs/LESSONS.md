@@ -468,3 +468,23 @@ i `z-index`: bez `position` właściwość `z-index` w ogóle nie działa, a kol
 malowania bierze się z przepływu, nie z intencji. Oba błady są niewidoczne dla
 testów, które nie renderują — dlatego kontrakt ma pilnować przyczyny (atrybut
 w HTML, `position` w bloku reguły), nie efektu.
+
+## L40 — selektor z id nadpisuje tylko te właściwości, które wymieni
+
+**Objaw:** mapa-tło miała `position: fixed; inset: 0; height: 100%`, a mimo to
+właściciel widział ją „na pół ekranu" — pas 460 px u góry, przesunięty o 10 px.
+
+**Przyczyna:** reguła bazowa `.mapa` deklaruje `height: 45vh; min-height: 240px;
+max-height: 460px; margin: 10px 0`. Reguła `#mapa-pozycja` nadpisała `position`,
+`height` i `border` — a `max-height: 460px` i `margin: 10px 0` przyszły z klasy
+i dalej obowiązywały, bo wyższa specyficzność działa **na każdą właściwość
+osobno**, nie na całą regułę. Dokładnie te resety (`min-height: 0;
+max-height: none; margin: 0`) miały w tym samym pliku `#mapa-gra` i
+`#mapa-stacje` — wzorzec był znany, tylko nowa reguła go nie powtórzyła.
+
+**Reguła:** rozszerzając element, który ma regułę bazową z `max-height`,
+`min-height`, `margin` albo `border`, wypisz w nowej regule JAWNE resety dla
+wszystkich właściwości wymiarujących — nie tylko tej, którą zmieniasz. Sprawdź
+regułę bazową właściwość po właściwości, a nie „czy nadpisałem to, co chciałem
+zmienić". Testy tego nie złapią: kontrakt szuka w CSS podłańcuchów, a
+`test/helpers/dom.js` w ogóle nie liczy kaskady.

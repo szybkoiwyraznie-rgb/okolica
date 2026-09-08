@@ -935,7 +935,17 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   inset: 0;
   width: 100%;
   height: 100%;
+  /* Reguła bazowa `.mapa` daje `height: 45vh; min-height: 240px;
+     max-height: 460px; margin: 10px 0`. Selektor z id nadpisuje TYLKO te
+     właściwości, które wymieni — więc bez jawnych resetów mapa-tło była
+     `position: fixed` na całą szerokość, ale ŚCIĘTA do 460 px i przesunięta
+     o 10 px w dół: właściciel widział „mapę na pół ekranu", nie na cały
+     viewport. Te same resety mają #mapa-gra i #mapa-stacje niżej. */
+  min-height: 0;
+  max-height: none;
+  margin: 0;
   border: 0;
+  border-radius: 0;
   z-index: 0;
 }
 body:not([data-ekran='setup']):not([data-ekran='pozycja']) #mapa-pozycja { visibility: hidden; }
