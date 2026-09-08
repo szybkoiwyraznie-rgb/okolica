@@ -105,24 +105,35 @@ function piszPamiec(pamiec, klucz, wartosc) {
   else if (typeof pamiec.set === 'function') pamiec.set(klucz, wartosc);
 }
 
-/**
- * Tożsamość głosującego dla tego telefonu.
- *
- * Zweryfikowany profil wygrywa: ten sam człowiek na dwóch telefonach ma wtedy
- * jeden głos na pytanie. Bez profilu (host hot-seat, gracz bez PIN-u) głos jest
- * liczony na urządzenie — identyfikator powstaje raz i zostaje w pamięci.
- *
- * @param {{pseudonim?:string, zweryfikowany?:boolean, pamiec?:{getItem?:Function}|Map, losuj?:Function}} [opcje]
- * @returns {{id:string, zrodlo:'profil'|'urzadzenie'}}
- */
-export function idGlosujacego({ pseudonim = '', zweryfikowany = false, pamiec = null, losuj } = {}) {
-  const slug = slugGlosujacego(pseudonim);
-  if (zweryfikowany && slug) return { id: slug, zrodlo: 'profil' };
+/** Identyfikator urządzenia z pamięci (tworzony raz, zapisany na stałe). */
+function idUrzadzenia(pamiec, losuj) {
   const zapamietany = slugGlosujacego(czytajPamiec(pamiec, KLUCZ_GLOSUJACEGO));
-  if (zapamietany) return { id: zapamietany, zrodlo: 'urzadzenie' };
+  if (zapamietany) return zapamietany;
   const nowy = nowyIdUrzadzenia({ losuj });
   piszPamiec(pamiec, KLUCZ_GLOSUJACEGO, nowy);
-  return { id: nowy, zrodlo: 'urzadzenie' };
+  return nowy;
+}
+
+/**
+ * Tożsamość głosującego (ADR 0028 pkt 2).
+ *
+ * - **Zweryfikowany profil (PIN)** → slug pseudonimu: ten sam człowiek na dwóch
+ *   telefonach ma jeden głos na pytanie.
+ * - **Bez weryfikacji** → urządzenie + imię odpowiadającego gracza. To ważne
+ *   w hot-seat: na jednym telefonie gra kilka osób i KAŻDA musi móc ocenić to
+ *   samo pytanie, więc sam identyfikator urządzenia byłby za gruby.
+ *
+ * @param {{pseudonim?:string, zweryfikowany?:boolean, imie?:string, pamiec?:{getItem?:Function}|Map, losuj?:Function}} [opcje]
+ * @returns {{id:string, zrodlo:'profil'|'urzadzenie'}}
+ */
+export function idGlosujacego({ pseudonim = '', zweryfikowany = false, imie = '', pamiec = null, losuj } = {}) {
+  const slug = slugGlosujacego(pseudonim);
+  if (zweryfikowany && slug) return { id: slug, zrodlo: 'profil' };
+  const urzadzenie = idUrzadzenia(pamiec, losuj);
+  const kto = slugGlosujacego(imie);
+  if (!kto) return { id: urzadzenie, zrodlo: 'urzadzenie' };
+  // Krótki kawałek id urządzenia + imię: mieści się w 40 znakach slugu.
+  return { id: slugGlosujacego(`${urzadzenie.slice(0, 12)}-${kto}`), zrodlo: 'urzadzenie' };
 }
 
 /* ---------------------------------------------------------- głosy lokalne */
@@ -147,6 +158,25 @@ export function walidujOcenyLokalne(surowy) {
       && (g.ocena === OCENA_PLUS || g.ocena === OCENA_MINUS))
     .slice(-MAKS_OCEN_LOKALNIE);
   return { schemat: SCHEMAT_OCENY_LOKALNE, glosy };
+}
+
+/**
+ * Walidacja głosów z surowego tekstu (localStorage) — wzorzec projektu:
+ * `waliduj…Surowy(tekst)` zwraca stan albo pusty stan z usterką, nigdy wyjątek.
+ */
+export function walidujOcenyLokalneTekst(tekst) {
+  if (typeof tekst !== 'string' || !tekst.trim()) return { oceny: noweOceny(), usterki: [] };
+  let surowy = null;
+  try {
+    surowy = JSON.parse(tekst);
+  } catch {
+    surowy = null;
+  }
+  const oceny = walidujOcenyLokalne(surowy);
+  if (!oceny) {
+    return { oceny: noweOceny(), usterki: [{ kod: 'O05', pole: KLUCZ_OCEN, komunikat: 'Zapamiętane oceny były nieczytelne — zaczynam od pustej listy.' }] };
+  }
+  return { oceny, usterki: [] };
 }
 
 /** Klucz „już ocenione": jedna para (głosujący, pytanie) w jednej paczce. */
@@ -221,6 +251,40 @@ export function walidujKolejkeOcen(surowy) {
       && (z.ocena === OCENA_PLUS || z.ocena === OCENA_MINUS) && z.gracz)
     .slice(-MAKS_KOLEJKI_OCEN);
   return { schemat: SCHEMAT_KOLEJKI_OCEN, zadania };
+}
+
+/** Walidacja kolejki z surowego tekstu: dla śmieci zwraca pustą kolejkę. */
+export function walidujKolejkeOcenTekst(tekst) {
+  const pusta = { schemat: SCHEMAT_KOLEJKI_OCEN, zadania: [] };
+  if (typeof tekst !== 'string' || !tekst.trim()) return pusta;
+  let surowy = null;
+  try {
+    surowy = JSON.parse(tekst);
+  } catch {
+    surowy = null;
+  }
+  return walidujKolejkeOcen(surowy) ?? pusta;
+}
+
+/** Usuwa z kolejki głos, który dojechał na most. */
+export function usunZKolejkiOcen(kolejka, zadanie) {
+  const stan = walidujKolejkeOcen(kolejka) ?? { schemat: SCHEMAT_KOLEJKI_OCEN, zadania: [] };
+  if (!zadanie) return stan;
+  return {
+    schemat: SCHEMAT_KOLEJKI_OCEN,
+    zadania: stan.zadania.filter((z) => !(z.paczkaId === zadanie.paczkaId && z.pytanieId === zadanie.pytanieId && z.gracz === zadanie.gracz)),
+  };
+}
+
+/**
+ * Token gry do licznika „użyta w X grach" (ADR 0028 pkt 6). Losowy, bez danych
+ * gracza; losowanie wstrzykiwalne, żeby testy były deterministyczne.
+ */
+export function nowyTokenGry({ losuj } = {}) {
+  const zrodlo = typeof losuj === 'function' ? losuj : Math.random;
+  let token = '';
+  for (let i = 0; i < 2; i += 1) token += Math.floor(zrodlo() * 16 ** 6).toString(16).padStart(6, '0');
+  return `gra-${token}`;
 }
 
 /**

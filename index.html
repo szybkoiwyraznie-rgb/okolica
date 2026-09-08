@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-20">
-  <script type="module" src="app/app.js?v=m12-20"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-21">
+  <script type="module" src="app/app.js?v=m12-21"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -501,6 +501,14 @@
       <div id="gra-panel-pytanie" class="karta gra-panel" hidden>
         <p id="gra-pytanie-naglowek" class="badge">Stacja zdobyta · pytanie — z —</p>
         <p id="gra-pytanie-tresc" class="duzy"></p>
+        <!-- ADR 0028: ocena pytania — jeden kciuk, jeden głos na gracza i pytanie.
+             Panel jest PRZED odpowiedziami i zostaje w tym samym slocie po
+             odsłonięciu wyniku, więc ocenić można przed albo po odpowiedzi. -->
+        <p id="gra-oceny" class="ocen-panel" hidden>
+          <span id="gra-oceny-etykieta" class="podpowiedz">Oceń pytanie</span>
+          <button id="gra-ocena-plus" class="przycisk przycisk-maly ocen-kciuk" type="button" aria-pressed="false" aria-label="Oceń pytanie pozytywnie">👍</button>
+          <button id="gra-ocena-minus" class="przycisk przycisk-maly ocen-kciuk" type="button" aria-pressed="false" aria-label="Oceń pytanie negatywnie">👎</button>
+        </p>
         <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
         <div id="gra-wynik-odpowiedzi" class="gra-wynik-odpowiedzi" hidden>
           <p id="gra-odpowiedz-ocena" class="duzy"></p>

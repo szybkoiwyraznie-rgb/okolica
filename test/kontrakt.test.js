@@ -839,3 +839,16 @@ test('kontrakt: SZABLON_WERSJA ma konsumenta w UI (PROTOKOL §7 — łatka szabl
   assert.ok(stala, 'stała jest eksportowana z app/protokol.js');
   assert.match(stala[1], /^PYT\/1\.0\.\d+$/, 'łatka protokołu ma kształt PYT/1.0.N');
 });
+
+test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', () => {
+  for (const id of ['gra-oceny', 'gra-oceny-etykieta', 'gra-ocena-plus', 'gra-ocena-minus']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
+  }
+  assert.match(INDEX, /Oceń pytanie/, 'panel jest nazwany po ludzku');
+  assert.ok(INDEX.indexOf('id="gra-oceny"') < INDEX.indexOf('id="gra-odpowiedzi"'), 'panel stoi przy pytaniu, przed odpowiedziami');
+  assert.ok(APP.includes('kliknijOcene(OCENA_PLUS)') && APP.includes('kliknijOcene(OCENA_MINUS)'), 'oba kciuki są podpięte');
+  assert.ok(APP.includes('wyslijOceneWTle'), 'głos jedzie w tle, nie blokuje gry');
+  assert.ok(APP.includes('oproznijKolejkeOcen()'), 'kolejka głosów jest opróżniana przy starcie');
+  assert.ok(APP.includes('opisOcenTekst(walidujStatystykiOcen(meta.oceny))'), 'ekran 2 pokazuje statystyki paczki');
+  assert.ok(APP.includes('STAN.paczkaRepoId'), 'oceny dotyczą paczek z repozytorium');
+});

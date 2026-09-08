@@ -67,19 +67,24 @@ test('oceny: zweryfikowany profil wygrywa, bez profilu głos jest liczony na urz
   const zProfilem = idGlosujacego({ pseudonim: 'Ania', zweryfikowany: true, pamiec });
   assert.deepEqual(zProfilem, { id: 'ania', zrodlo: 'profil' });
 
-  // Host hot-seat bez PIN-u: identyfikator urządzenia, zapisany raz.
-  const pierwszy = idGlosujacego({ pamiec, losuj: losujZiarno([0.5, 0.25, 0.125, 0.0625]) });
+  // Hot-seat bez PIN-u: urządzenie + imię gracza, zapisane raz.
+  const pierwszy = idGlosujacego({ pamiec, imie: 'Ania', losuj: losujZiarno([0.5, 0.25, 0.125, 0.0625]) });
   assert.equal(pierwszy.zrodlo, 'urzadzenie');
-  assert.match(pierwszy.id, /^urz-[0-9a-f]{24}$/, `identyfikator urządzenia: ${pierwszy.id}`);
-  assert.equal(pamiec.get(KLUCZ_GLOSUJACEGO), pierwszy.id, 'identyfikator zostaje w pamięci');
+  assert.match(pierwszy.id, /^urz-[0-9a-f]{8}-ania$/, `tożsamość gracza na urządzeniu: ${pierwszy.id}`);
+  assert.match(pamiec.get(KLUCZ_GLOSUJACEGO), /^urz-[0-9a-f]{24}$/, 'identyfikator urządzenia zostaje w pamięci');
 
-  const drugi = idGlosujacego({ pamiec, losuj: losujZiarno([0.9]) });
-  assert.equal(drugi.id, pierwszy.id, 'ten sam telefon = ten sam głosujący');
+  const tenSam = idGlosujacego({ pamiec, imie: 'Ania', losuj: losujZiarno([0.9]) });
+  assert.equal(tenSam.id, pierwszy.id, 'ten sam gracz na tym samym telefonie = ten sam głosujący');
+
+  // Drugi gracz na TYM samym telefonie musi móc ocenić to samo pytanie.
+  const drugiGracz = idGlosujacego({ pamiec, imie: 'Bartek' });
+  assert.notEqual(drugiGracz.id, pierwszy.id, 'każdy gracz hot-seat głosuje osobno');
+  assert.equal(drugiGracz.id, 'urz-' + pamiec.get(KLUCZ_GLOSUJACEGO).slice(4, 12) + '-bartek');
 
   // Niezweryfikowany pseudonim NIE daje tożsamości profilu (inaczej każdy mógłby
   // się podszyć pod czyjeś imię i zdjąć mu głos z pytania).
-  const bezWeryfikacji = idGlosujacego({ pseudonim: 'Ania', zweryfikowany: false, pamiec });
-  assert.equal(bezWeryfikacji.zrodlo, 'urzadzenie', 'imię bez PIN-u nie jest tożsamością');
+  const bezWeryfikacji = idGlosujacego({ pseudonim: 'Ania', zweryfikowany: false, imie: 'Ania', pamiec });
+  assert.equal(bezWeryfikacji.zrodlo, 'urzadzenie', 'imię bez PIN-u nie jest tożsamością profilu');
 });
 
 test('oceny: jeden głos na pytanie — drugi klik nie leci w sieć', () => {

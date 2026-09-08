@@ -659,3 +659,7 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   margin: 2px 0 0;
   flex: 0 0 auto;
 }
+
+/* ADR 0028: panel oceny pytania — mały, obok treści, klikalny jedną ręką. */
+.ocen-panel { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
+.ocen-kciuk { font-size: 18px; line-height: 1; min-width: 44px; }
