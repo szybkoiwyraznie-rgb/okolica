@@ -1145,8 +1145,18 @@ domyślny, info należy do sekcji prywatność.
   Testy: „nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem"
   (wroga nazwa w fixture Overpass, asercja: brak elementu `IMG` w wierszu)
   + poprawione 3 asercje, które czytały inertne `innerHTML` w atrapie.
-- Testy: **582, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
-  budżet dużej paczki, wstrzykiwanie HTML z OSM);
+- **Most: cały cykl gry wieloosobowej wykonywany w testach (LESSONS L33).**
+  Atrapa Drive wyprowadzona do `test/helpers/most.js` (wspólna dla paczek i gier)
+  i rozszerzona o ścieżki GET: `stanGry`, `listaGry`, `rankingi`,
+  `przeliczWyniki`, `archiwizujPrzeterminowane`. Nowy `test/most-gra-cycle.test.js`:
+  założenie → dołączenie → start → dojście/odpowiedź → **kolejka tur pilnowana
+  przez most** (cudza stacja odrzucona z nazwaniem gracza) → auto-koniec →
+  rankingi; profil gracza (pseudonim + PIN 4–8, R19/R20, cudzy pseudonim nie do
+  przejęcia); i asercja prywatności czytająca **plik z Drive**, nie odpowiedź
+  mostu: `lat/lon/szerokosc/dlugosc/latitude/longitude` wysłane w `dane` zdarzenia
+  nie lądują na dysku (ADR 0013/0019 pkt 3), inne pola zostają.
+- Testy: **586, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
+  budżet dużej paczki, wstrzykiwanie HTML z OSM, cykl gry i prywatność zdarzeń);
   kontrakt pinuje `sumaPytanWpisu`, brak `id="multi-zgoda"` i punkt „Gra na
   wielu telefonach" w prywatności.
 
