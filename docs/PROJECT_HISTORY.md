@@ -1163,9 +1163,22 @@ domyślny, info należy do sekcji prywatność.
   typ inny niż dojście/odpowiedź, gracz bez pseudonimu. `archiwizujPrzeterminowane`
   przenosi otwartą grę starszą niż `WYGASANIE_LOBBY_MS` (24 h) do archiwum i znika
   ona z `listaGier()`.
-- Testy: **589, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
+- **Zasięg mostu mierzony, nie zgadywany: `npm run zasieg-mostu`.** Narzędzie
+  uruchamia testy z `NODE_V8_COVERAGE`, znajduje profil skryptu z `new Function`
+  i przekłada pokrycie na wiersze `docs/setup/apps-script-repo-paczek.gs`
+  (przesunięcie V8 kalibrowane na nazwach funkcji; bez kalibracji narzędzie rzuca
+  błąd zamiast podawać zmyślone liczby). Start pomiaru: 702/790 (88,9%),
+  po domknięciu dziur **767/790 (97,1%)**. Zamknięte dziury: koder geohash
+  i `kotwicaZestawu` (test wycinał je z pliku i wykonywał kopię — idą przez
+  atrapę, razem z `budujIndeks` na paczce bez `meta.geohash6`: kotwica szacowana
+  ze środka stacji + znacznik `geohash6Szacowany`), `stronaPrzegladu` + `esc`
+  (token z `REVIEW_SECRET` wymagany, cudzy token odmawia, `<img onerror>`
+  w opisie stacji i `<script>` w miejscu są pokazane jako tekst) oraz
+  `powiadomWlasciciela` (mail z linkiem przeglądu — atrapa ma właściwości skryptu
+  i przechwytuje `MailApp`, więc test bierze token z linku jak właściciel).
+- Testy: **591, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
   budżet dużej paczki, wstrzykiwanie HTML z OSM, cykl gry, hot-seat, prywatność
-  zdarzeń, wygasanie lobby);
+  zdarzeń, wygasanie lobby, przegląd i powiadomienie właściciela);
   kontrakt pinuje `sumaPytanWpisu`, brak `id="multi-zgoda"` i punkt „Gra na
   wielu telefonach" w prywatności.
 

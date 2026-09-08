@@ -333,11 +333,20 @@ JSON bez `schemat` i mówiła „inny schemat" (Z07). Testy `.gs` wykonywały ty
 wycięte funkcje (`premiaZaKolejnosc`, geohash), więc ścieżka paczki nie była
 uruchamiana nigdzie.
 **Reguła:** (1) każda ścieżka mostu, od której zależy aplikacja, ma test
-WYKONUJĄCY tekst `.gs` na atrapie Drive (`test/most-paczka.test.js`: przyjęcie →
-akceptacja → indeks → pobranie → walidacja po stronie aplikacji) plus przegląd
-akcji z asercją „brak `is not defined` w odpowiedzi"; (2) aplikacja NIE chowa
-odpowiedzi mostu — `{blad:…}` jest cytowane w komunikacie (kod Z11), bo „inny
-schemat" brzmi jak uszkodzony plik i wysyła na poszukiwania nie tam, gdzie wina.
+WYKONUJĄCY tekst `.gs` na atrapie Drive (atrapa: `test/helpers/most.js`;
+ścieżka paczki: przyjęcie → akceptacja → indeks → pobranie → walidacja po stronie
+aplikacji) plus przegląd każdej funkcji z asercją „brak `is not defined`";
+(2) aplikacja NIE chowa odpowiedzi mostu — `{blad:…}` jest cytowane w komunikacie
+(kod Z11), bo „inny schemat" brzmi jak uszkodzony plik i wysyła na poszukiwania
+nie tam, gdzie wina; (3) test, który WYCINA funkcję z pliku i robi z niej
+`new Function`, przechodzi także wtedy, gdy reszta skryptu nie daje się uruchomić
+— tak było z koderem geohash, przeniesionym na atrapę 2026-09-08.
+**Ile skryptu naprawdę wykonujemy, mierzy `npm run zasieg-mostu`**: uruchamia
+testy z `NODE_V8_COVERAGE`, bierze profil skryptu z `new Function` i przekłada
+pokrycie na wiersze pliku (przesunięcie V8 kalibrowane na nazwach funkcji — bez
+kalibracji narzędzie rzuca błąd zamiast podawać zmyślone liczby). 2026-09-08:
+767/790 wierszy kodu (97,1%); reszta to gałęzie trybu wyścig (`czyKompletna`,
+`premiaZaKolejnosc`, `zakonczGre`) i ścieżki błędów walidacji.
 
 ## L34 — dane z zewnątrz idą do DOM przez `textContent`, nie `innerHTML`
 
