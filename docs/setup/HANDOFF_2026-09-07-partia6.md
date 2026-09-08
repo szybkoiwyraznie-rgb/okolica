@@ -19,7 +19,7 @@
 | — | Dokumenty + cache-bust (runda 2) | ADR 0019 dopisek, ADR 0024 uzupełnienie, PROTOKOL §9, instrukcja, PROJECT_HISTORY, `?v=m12-16` | (commit 4) |
 
 **Brama na koniec partii:** `npm run brama` = **610 testów, 0 fail** + sync
-szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-23` (43 miejsca
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-24` (43 miejsca
 + `WERSJA_SW`). Stan z 2026-09-08: doszły oceny pytań w interfejsie (ADR 0028),
 ADR 0029 i ADR 0030 — szczegóły w `docs/PROJECT_HISTORY.md`.
 

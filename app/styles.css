@@ -762,11 +762,12 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
     gap: 4px;
   }
   #ekran-gra:not([hidden]) .badge-duzy {
+    /* Tylko rozmiar i cień: tła NIE ruszamy, bo `#gra-dystans` ma własne
+       `.badge-dystans { background: akcent; color: akcent-tekst }`, a ten
+       selektor (id) by je nadpisał — w jasnym motywie wyszłoby białe na białym. */
     font-size: 14px;
     padding: 5px 9px;
     min-height: 32px;
-    background: var(--tlo-karta);
-    border: 1px solid var(--linia);
     box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
   }
   #ekran-gra:not([hidden]) #gra-postep {
@@ -817,6 +818,11 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
     position: relative;
     z-index: 2;
     margin: 0 8px 6px;
+  }
+  /* Komunikat dostaje tło karty, bo leży prosto na mapie. Alertu błędu NIE
+     malujemy: `.bledy` ma własne `blad-tlo`/`blad`, a ten selektor (id) by je
+     przykrył i błąd przestałby wyglądać jak błąd. */
+  #ekran-gra:not([hidden]) > #gra-komunikat {
     padding: 7px 10px;
     border: 1px solid var(--linia);
     border-radius: 10px;

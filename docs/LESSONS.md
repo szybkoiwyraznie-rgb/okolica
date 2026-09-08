@@ -362,3 +362,24 @@ fragmentów bez podstawiania danych (w `app/app.js` nie zostało ani jedno).
 Test: „stacje: nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem"
 (`test/aplikacja.test.js`) — podstawia wrogą nazwę w fixture i sprawdza, że
 w wierszu nie powstał element `IMG`.
+
+## L35 — nakładając warstwę w CSS, selektor z id zabiera elementowi jego własne tło
+
+**Objaw:** nowy układ rozgrywki (ADR 0030) kładzie karty i komunikaty NA mapie,
+więc każdy element nad mapą dostał wspólne `background: var(--tlo-karta)`.
+Dwie reguły trafiły przy tym w elementy, które mają własne tło z klasy:
+`#gra-dystans` (`.badge-dystans { background: akcent; color: akcent-tekst }`)
+i `#bledy-gra` (`.bledy { background: blad-tlo; color: blad }`). Selektor
+`#ekran-gra:not([hidden]) .badge-duzy` ma specyficzność (1,2,0) i wygrywa
+z klasowym (0,1,0), więc badge dystansu został **białym napisem na prawie białej
+karcie** w jasnym motywie, a alert błędu przestał być czerwony.
+**Przyczyna:** „dodaję tło, żeby tekst był czytelny na mapie" zastosowane do
+listy selektorów bez sprawdzenia, co każdy z tych elementów już ma. Audyt
+kontrastu tego nie łapie — liczy pary tokenów z palety, nie to, który selektor
+wygrał w kaskadzie.
+**Reguła:** przy wspólnych regułach dla kilku elementów tło dostają tylko te,
+które go nie mają; reszcie zostawiamy własne. Gdy warstwa musi być wspólna,
+sprawdź kaskadę jawnie — i zostaw test, który ją pinuje: kontrakt ADR 0030
+wycina z CSS komentarze i sprawdza, że **żadna** reguła celująca w `#bledy-gra`
+ani `.badge-duzy` nie deklaruje `background` (test ma zęby: wstrzyknięcie tła
+do `.badge-duzy` go wywala).

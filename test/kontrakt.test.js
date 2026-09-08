@@ -892,4 +892,21 @@ test('kontrakt ADR 0030: rozgrywka na telefonie układa się pod orientację, a 
   // Rozpychacz zamiast justify-content: flex-end — przy nadmiarze treści karty
   // nie uciekają nad górną krawędź (znany błąd flexboksa).
   assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\)::before \{ content: ''; flex: 1 1 auto; \}/, 'karty schodzą na dół rozpychaczem, nie flex-end');
+
+  // Dwa nadpisania, które ten układ potrafi zepsuć jednym selektorem z id:
+  // (a) `#gra-dystans` ma własne tło akcentu i biały napis — w jasnym motywie
+  //     nadpisanie tła dałoby białe na białym;
+  // (b) `#bledy-gra` ma `blad-tlo`/`blad` z `.bledy` — nadpisanie tła kartą
+  //     sprawiłoby, że błąd przestaje wyglądać jak błąd.
+  // Reguły z id wygrywają z klasowymi, więc pilnujemy wprost: żadna reguła
+  // celująca w te dwa elementy nie deklaruje tła. Bez komentarzy — uzasadnienia
+  // w CSS cytują te same nazwy własności.
+  const reguly = [...STYLE.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map((m) => ({ selektor: m[1].trim(), cialo: m[2] }));
+  assert.ok(reguly.length > 100, 'parser reguł CSS coś widzi');
+  for (const trafiony of ['#bledy-gra', '.badge-duzy']) {
+    for (const { selektor, cialo } of reguly.filter((r) => r.selektor.includes(trafiony))) {
+      assert.ok(!/background:/.test(cialo), `reguła „${selektor}” nie nadpisuje tła elementu ${trafiony}`);
+    }
+  }
 });

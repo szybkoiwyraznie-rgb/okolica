@@ -72,3 +72,10 @@ starcie (np. `if (szerokosc < wysokosc)` w JS), rozsypałoby się przy obrocie.
 - Koszt: długi wynik końca gry przewija się wewnątrz karty, a nie na stronie.
   To świadome — mapa nie jest wtedy potrzebna do chodzenia, a zasada „strona się
   nie przewija" jest warta więcej niż pełna tabela od razu.
+- Pułapka kaskady, w którą ten układ łatwo wchodzi: wspólna reguła „daj tło,
+  żeby tekst był czytelny na mapie" napisana selektorem z id wygrywa z klasową
+  i zabiera elementowi jego własne tło. Trafiło to `#gra-dystans` (biały napis
+  na prawie białej karcie w jasnym motywie) i `#bledy-gra` (alert przestał być
+  czerwony). Tło dostają tylko elementy, które go nie mają; kontrakt ADR 0030
+  pinuje to wprost (LESSONS L35), bo audyt kontrastu liczy pary tokenów
+  z palety i nie widzi, który selektor wygrał.

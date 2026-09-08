@@ -1246,7 +1246,7 @@ Skrypt mostu bez zmian względem partii 5 — **nadal wymaga wklejenia**
   rozpychacz zamiast `flex-end`, atrybucja dostawcy nie znika z dołem mapy).
 
 **Brama na koniec partii:** `npm run brama` = **610 testów, 0 fail** + sync
-szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-23` (+ `WERSJA_SW`).
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-24` (+ `WERSJA_SW`).
 Skrypt mostu bez zmian względem wpisu powyżej — 1093 linie, md5
 `620f28c734136654d9a4a01ebfe7853b`; właściciel deklaruje, że wkleił tę wersję
 (niezweryfikowane z sandboxa — `script.google.com` jest stąd nieosiągalny).
