@@ -1283,3 +1283,48 @@ Skrypt mostu bez zmian względem wpisu powyżej — 1093 linie, md5
   wznowieniu wpisuje współrzędne tak jak gracz na ekranie pozycji.
 - Testy: **610, 0 fail**; `npm run brama` = 610 + sync szablonu OK + WCAG AA
   0 naruszeń. Cache-bust `?v=m12-25` (43 miejsca + `WERSJA_SW`).
+
+## 2026-09-08 — B21 domknięte: duży setup generuje pytania partiami (ADR 0031)
+
+Pomiar z 2026-09-07 pokazał, że wąskim gardłem dużych setupów nie jest prompt
+(stały, ~1 356 tokenów) ani pamięć (kontener 40 pytań = 35,6 kB, 1,8% budżetu
+stanu), tylko **wyjście modelu**: ~210 tokenów na pytanie, więc 40 pytań to
+~8 350 tokenów i model z limitem 4 tys. urywa JSON w połowie. Właściciel zgodził
+się na dzielenie generacji na partie.
+
+- **`planPartii()` / `scalPartie()` / `pytaniaWBudzecie()` w `app/protokol.js`.**
+  Partie liczy się z budżetu (`maksPytan = ⌊(4000 − 90) / 210⌋ = 18`), ale pakuje
+  CAŁYMI stacjami: 5 stacji × 8 pytań → 3 części (1–2, 3–4, 5), każda ≤ 3 450
+  tokenów. Stacja większa niż budżet idzie sama i dostaje jawne ostrzeżenie.
+  Wariant „po jednej stacji" z B21 odrzucony — to 40 wklejeń zamiast trzech.
+- **Numery stacji zostają globalne, także w promptcie części.** Szablon
+  `PYT/1.0.7` mówi wprost „nie numeruj stacji od nowa, nawet jeśli lista nie
+  zaczyna się od 1" — dzięki temu `s<stacja>p<n>` są unikalne w całej paczce
+  i scalanie jest zwykłym złączeniem list, bez przemapowywania odpowiedzi.
+  `opisListyStacji()` dostał opcjonalny parametr `numery`.
+- **Szablon (PROTOKOL §2 + nowy §2.2):** dwie nowe linie —
+  `liczba stacji w tym zleceniu: {LICZBA_STACJI}` i `zakres tego zlecenia:
+  {ZAKRES}` (`cała paczka` albo `część k z n tej samej paczki — wyłącznie
+  stacje <zakres>`). `SZABLON_WERSJA` = `PYT/1.0.7`.
+- **Walidacja części vs całości.** `walidujPaczke` przyjmuje
+  `oczekiwane.stacjeNumery`; E04 ma dwa komunikaty (spoza części / spoza setupu),
+  E05 i E06 idą po zakresie części. Nowe kody: **WE08/WE09** (wejście planu),
+  **WE10** (partia wskazuje nieistniejące stacje), **E21** (nie ma czego scalać);
+  **E19** obsługuje kolizję `id` między częściami i z usterkami `scalPartie`
+  zwraca `paczka: null`. Złożona paczka przechodzi pełną walidację wobec setupu,
+  zanim wystartuje gra.
+- **UI:** `#prompt-partia` i `#paczka-partia` — `Część 2 z 3 — stacje 3–4,
+  8 pytań · zebrane: 1 z 2`. Po przyjęciu części aplikacja sama wraca na ekran
+  promptu z kolejną; gra startuje dopiero po złożeniu całości. Mały setup nie
+  udaje podziału (wskaźnik schowany, nagłówek „Paczka przyjęta"). Zebrane części
+  żyją w pamięci modułu — plaintext nie idzie do `localStorage` (ADR 0007 pkt 4).
+- **Bug znaleziony przez test UI, nie przez testy jednostkowe (LESSONS L37):**
+  gałąź scalania była martwa, bo rozróżnienie „kontener vs odpowiedź modelu"
+  zapisałem jako `!zKontenera.paczka`, a `odpakujPaczke()` zwraca paczkę także
+  dla jawnego JSON-a — formę rozróżnia dopiero pole `zrodlo`. Pierwsza przyjęta
+  część startowała grę z 15 pytaniami. Poprawka: `zKontenera.zrodlo !== 'kontener'`.
+- Testy: **627, 0 fail** (+17: `test/partie.test.js` 14 — w tym pełny obieg
+  plan → prompty części → walidacja każdej → scalenie → pełna walidacja, oraz
+  `test/partie-ui.test.js` 2 — ekrany 4 → 5 → 4 → 5 → gra). Fikstury paczek
+  wyniesione do `test/helpers/paczki.js` (wspólne z `duza-paczka.test.js`).
+  Cache-bust `?v=m12-26` + `WERSJA_SW`.

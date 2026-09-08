@@ -11,8 +11,8 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-25';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-25';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-26';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-26';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.0';
@@ -24,18 +24,18 @@ export const WERSJA_PROTOKOLU_REV1 = 'PYT/1.0-rev1';
 export const WERSJA_PROTOKOLU_REV2 = 'PYT/1.0-rev2';
 
 /** Wersja łatki szablonu promptu (kosmetyka szablonu bez zmiany schematu). */
-export const SZABLON_WERSJA = 'PYT/1.0.6'; // 1.0.6: pytania „z wybranych dziedzin" (decyzja właściciela)
+export const SZABLON_WERSJA = 'PYT/1.0.7'; // 1.0.7: {ZAKRES} i globalna numeracja stacji — generowanie partiami (B21, PROTOKOL §2.2)
 
 /** Schemat kontenera z obfuskowanymi pytaniami (ADR 0007 pkt 3 i 5: maskowanie, nie szyfrowanie). */
 // Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
 // protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
-export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-25';
+export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-26';
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.
  * NIE EDYTUJ RĘCZNIE — zmień dokument i uruchom `npm run build`.
  */
-export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego potwierdzonego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. Pola \"tresc\", \"odpowiedzi\", \"wyjasnienie\", \"uwagi\" oraz \"tytul\" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład \"Kot\" jako \"toK\"), a w polu \"protokol\" wpisz \"PYT/1.0-rev2\". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev2\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 20,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola \"id\" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
+export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego potwierdzonego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. Pola \"tresc\", \"odpowiedzi\", \"wyjasnienie\", \"uwagi\" oraz \"tytul\" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład \"Kot\" jako \"toK\"), a w polu \"protokol\" wpisz \"PYT/1.0-rev2\". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- liczba stacji w tym zleceniu: {LICZBA_STACJI}\n- zakres tego zlecenia: {ZAKRES}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev2\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 20,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji DOKŁADNIE taki, jaki stoi przy niej w liście STACJE powyżej — nie numeruj stacji od nowa, nawet jeśli lista nie zaczyna się od 1; KAŻDA stacja z tej listy ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola \"id\" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
 /* SZABLON-KONIEC */
 
 /**
@@ -153,13 +153,20 @@ const ZAKAZANE_HOSTY = ['example.com', 'example.org', 'example.net', 'przyklad.o
 const ZAKAZANE_TLD = ['.invalid', '.test', '.localhost', '.example', '.local'];
 
 /** Linie listy stacji do placeholdera `{LISTA_STACJI}`. */
-export function opisListyStacji(stacje, srodek) {
+/**
+ * Lista stacji do promptu. `numery` pozwala podać GLOBALNE numery stacji — przy
+ * generowaniu partiami (PROTOKOL §2.2) prompt pokazuje wycinek listy, a model
+ * ma zakaz numerowania stacji od nowa, bo identyfikatory `s<stacja>p<n>` muszą
+ * zostać unikalne w całej, scalonej paczce.
+ */
+export function opisListyStacji(stacje, srodek, numery = null) {
   return stacje
     .map((s, i) => {
+      const numerStacji = Array.isArray(numery) && Number.isFinite(numery[i]) ? numery[i] : i + 1;
       const [lat, lon] = formatujWspolrzedne(s.lat, s.lon).split(', ');
       const dystans = srodek ? Math.round(odlegloscM(srodek, s)) : null;
       const opis = s.opis && s.opis.trim() ? s.opis.trim() : 'punkt w terenie (bez nazwy)';
-      return `- stacja ${i + 1}: ${lat}, ${lon} — ${opis}${dystans != null ? ` (${dystans} m od środka gry)` : ''}`;
+      return `- stacja ${numerStacji}: ${lat}, ${lon} — ${opis}${dystans != null ? ` (${dystans} m od środka gry)` : ''}`;
     })
     .join('\n');
 }
@@ -170,7 +177,7 @@ export function opisListyStacji(stacje, srodek) {
  * pojawiają się, gdy brakuje danych wejściowych; prompt jest wtedy `null`,
  * żeby nie wysłać modelowi dziurawego zadania.
  */
-export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
+export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date(), partia = null }) {
   const usterki = [];
   const dodaj = (kod, pole, komunikat) => usterki.push({ kod, pole, komunikat });
 
@@ -188,6 +195,20 @@ export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
   }
   if (usterki.length) return { prompt: null, usterki };
 
+  // PROTOKOL §2.2 (B21): partia zawęża zlecenie do wycinka stacji, ale numery
+  // stacji zostają GLOBALNE — inaczej `s<stacja>p<n>` zderzyłyby się po scaleniu.
+  const numeryStacji = partia && Array.isArray(partia.stacje) && partia.stacje.length
+    ? partia.stacje.filter((n) => Number.isInteger(n) && n >= 1 && n <= stacje.length)
+    : stacje.map((_, i) => i + 1);
+  if (partia && numeryStacji.length === 0) {
+    dodaj('WE10', 'partia', `Partia nie wskazuje żadnej istniejącej stacji (${JSON.stringify(partia.stacje)} przy ${stacje.length} stacjach).`);
+    return { prompt: null, usterki };
+  }
+  const stacjePartii = numeryStacji.map((n) => stacje[n - 1]);
+  const pytaniaPartii = partia && Number.isFinite(partia.liczbaPytan)
+    ? partia.liczbaPytan
+    : numeryStacji.length * konfig.pytaniaNaStacje;
+
   const tematyLista = konfig.tematy.filter((t) => TEMATY[t]);
   const podstawienia = {
     LAT: okolica.lat.toFixed(5),
@@ -195,14 +216,17 @@ export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
     MIEJSCE: okolica.miejsce && okolica.miejsce.trim() ? okolica.miejsce.trim() : 'brak odczytu (tylko współrzędne)',
     PROMIEN_M: String(Math.round(konfig.promienM)),
     TRYB: TRYBY[konfig.tryb].etykieta,
-    LISTA_STACJI: opisListyStacji(stacje, okolica),
+    LISTA_STACJI: opisListyStacji(stacjePartii, okolica, numeryStacji),
     LICZBA_GRACZY: String(konfig.liczbaGraczy),
-    LICZBA_STACJI: String(stacje.length),
+    LICZBA_STACJI: String(numeryStacji.length),
     WIEK: konfig.wiek,
     OPIS_TRUDNOSCI: WIEK[konfig.wiek].opisTrudnosci,
     TEMATY: tematyLista.map((t) => (t === 'wlasny' && konfig.tematWlasny ? `wlasny (${konfig.tematWlasny.trim().slice(0, 40)})` : `${t} (${TEMATY[t].opis})`)).join(', '),
     TEMATY_JSON: tematyLista.map((t) => JSON.stringify(t)).join(', '),
-    LICZBA_PYTAN: String(liczbaPytan(konfig)),
+    LICZBA_PYTAN: String(pytaniaPartii),
+    ZAKRES: partia && Number.isFinite(partia.numer) && Number.isFinite(partia.ile) && partia.ile > 1
+      ? `część ${partia.numer} z ${partia.ile} tej samej paczki — przygotuj pytania WYŁĄCZNIE do stacji z listy powyżej; pozostałe stacje powstaną w osobnych zleceniach i zostaną scalone w jedną paczkę`
+      : 'cała paczka — wszystkie stacje z listy powyżej',
     JEZYK: konfig.jezyk,
     DATA: formatujDate(teraz),
     DATA_KROTKA: formatujDateKrotka(teraz),
@@ -247,6 +271,99 @@ export function szacunekOdpowiedzi(liczbaPytan) {
     znaki: BAZA_ODPOWIEDZI_ZNAKI + ZNAKI_NA_PYTANIE * n,
     tokeny: BAZA_ODPOWIEDZI_TOKENY + TOKENY_NA_PYTANIE * n,
   };
+}
+
+/* --- B21: generowanie pytań partiami (PROTOKOL §2.2) --------------------
+ * Pomiar (2026-09-07) pokazał, że wąskim gardłem jest WYJŚCIE modelu: ~210
+ * tokenów na pytanie, więc paczka 40 pytań to ~8 350 tokenów i model z limitem
+ * 4 tys. urywa JSON w połowie. Dzielenie „po jednej stacji" — rozważane w B21 —
+ * byłoby złe z drugiej strony: 40 wklejeń zamiast trzech. Partie są więc
+ * liczone z budżetu tokenów, ale pakowane CAŁYMI stacjami: pytanie należy do
+ * jednej stacji, a stacja nigdy nie jest dzielona między partie, więc `id`
+ * w postaci `s<stacja>p<n>` zostają unikalne w całej paczce i scalanie jest
+ * zwykłym złączeniem list.
+ */
+
+/** Maksymalna liczba pytań w jednej partii przy danym budżecie tokenów (B21). */
+export function pytaniaWBudzecie(progTokeny = PROG_ODPOWIEDZI_TOKENY) {
+  const prog = Number.isFinite(progTokeny) && progTokeny > BAZA_ODPOWIEDZI_TOKENY ? progTokeny : PROG_ODPOWIEDZI_TOKENY;
+  return Math.max(1, Math.floor((prog - BAZA_ODPOWIEDZI_TOKENY) / TOKENY_NA_PYTANIE));
+}
+
+/**
+ * Plan generowania pytań partiami (PROTOKOL §2.2). Czysta funkcja — bez DOM
+ * i bez zegara, więc plan jest testowalny i odtwarzalny.
+ *
+ * @returns {{partie: Array<{numer:number,ile:number,stacje:number[],liczbaPytan:number,tokeny:number}>,
+ *            razemPytan: number, usterki: Array, ostrzezenia: string[]}}
+ */
+export function planPartii({ liczbaStacji, pytaniaNaStacje, progTokeny = PROG_ODPOWIEDZI_TOKENY } = {}) {
+  const usterki = [];
+  const ostrzezenia = [];
+  const n = Number(liczbaStacji);
+  const naStacje = Number(pytaniaNaStacje);
+  if (!Number.isInteger(n) || n < 1) {
+    usterki.push({ kod: 'WE08', pole: 'liczbaStacji', komunikat: `Liczba stacji musi być liczbą całkowitą ≥ 1, jest „${liczbaStacji}”.` });
+    return { partie: [], razemPytan: 0, usterki, ostrzezenia };
+  }
+  if (!Number.isInteger(naStacje) || naStacje < 1) {
+    usterki.push({ kod: 'WE09', pole: 'pytaniaNaStacje', komunikat: `Liczba pytań na stację musi być liczbą całkowitą ≥ 1, jest „${pytaniaNaStacje}”.` });
+    return { partie: [], razemPytan: 0, usterki, ostrzezenia };
+  }
+  const maksPytan = pytaniaWBudzecie(progTokeny);
+  const stacjiWPartii = Math.max(1, Math.floor(maksPytan / naStacje));
+  if (naStacje > maksPytan) {
+    ostrzezenia.push(`Jedna stacja ma ${naStacje} pytań (~${szacunekOdpowiedzi(naStacje).tokeny} tokenów odpowiedzi), czyli więcej niż budżet partii (~${szacunekOdpowiedzi(maksPytan).tokeny}). Każda stacja pójdzie osobną partią, a odpowiedź i tak może zostać urwana — zmniejsz liczbę pytań na stację.`);
+  }
+  const partie = [];
+  for (let pierwszy = 1; pierwszy <= n; pierwszy += stacjiWPartii) {
+    const stacje = [];
+    for (let st = pierwszy; st <= n && stacje.length < stacjiWPartii; st += 1) stacje.push(st);
+    partie.push({
+      numer: partie.length + 1,
+      ile: 0, // uzupełnione poniżej, gdy znamy liczbę części
+      stacje,
+      liczbaPytan: stacje.length * naStacje,
+      tokeny: szacunekOdpowiedzi(stacje.length * naStacje).tokeny,
+    });
+  }
+  for (const czesc of partie) czesc.ile = partie.length;
+  return { partie, razemPytan: n * naStacje, usterki, ostrzezenia };
+}
+
+/**
+ * Scala części z powrotem w jedną paczkę (PROTOKOL §2.2). Nagłówek bierze
+ * z pierwszej części, pytania złącza w kolejności części, `uwagi` skleja
+ * z tych części, które coś powiedziały. Identyfikatory muszą zostać unikalne:
+ * stacja należy dokładnie do jednej partii, więc powtórka `id` oznacza, że
+ * model wynumerował pytania od nowa i część jest do poprawki (E19).
+ */
+export function scalPartie(czesci) {
+  const lista = (Array.isArray(czesci) ? czesci : []).filter((c) => c && typeof c === 'object' && !Array.isArray(c));
+  if (lista.length === 0) {
+    return { paczka: null, usterki: [{ kod: 'E21', pole: 'czesci', komunikat: 'Nie ma czego scalać — brak przyjętych części paczki.' }] };
+  }
+  const pytania = [];
+  const uwagi = [];
+  const usterki = [];
+  const widziane = new Map();
+  for (const [i, czesc] of lista.entries()) {
+    for (const pytanie of (Array.isArray(czesc.pytania) ? czesc.pytania : [])) {
+      if (!pytanie || typeof pytanie !== 'object') continue;
+      if (widziane.has(pytanie.id)) {
+        usterki.push({ kod: 'E19', pole: `część ${i + 1}`, komunikat: `Pytanie „${pytanie.id}" pojawia się drugi raz (pierwszy raz w części ${widziane.get(pytanie.id)}) — identyfikatory muszą być unikalne w całej paczce.` });
+        continue;
+      }
+      widziane.set(pytanie.id, i + 1);
+      pytania.push(pytanie);
+    }
+    if (typeof czesc.uwagi === 'string' && czesc.uwagi.trim()) uwagi.push(czesc.uwagi.trim());
+  }
+  // Z usterkami nie ma czego oddawać — scalenie z powtórzonym `id` nie jest
+  // paczką, tylko dwiema odpowiedziami na te same pytania (E19).
+  if (usterki.length) return { paczka: null, usterki };
+  const paczka = { ...lista[0], pytania, uwagi: uwagi.join(' ') };
+  return { paczka, usterki };
 }
 
 /**
@@ -546,6 +663,13 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   }
 
   const liczbaStacji = oczekiwane.liczbaStacji ?? null;
+  // PROTOKOL §2.2 (B21): przy walidacji CZĘŚCI paczki oczekujemy dokładnie tych
+  // stacji, które obejmuje partia — nie `1..liczbaStacji` całej paczki.
+  const zakresStacji = Array.isArray(oczekiwane.stacjeNumery) && oczekiwane.stacjeNumery.length
+    ? oczekiwane.stacjeNumery.filter((n) => Number.isInteger(n) && n >= 1)
+    : (Number.isFinite(liczbaStacji) && liczbaStacji > 0
+      ? Array.from({ length: liczbaStacji }, (_, i) => i + 1)
+      : null);
   if (Number.isFinite(oczekiwane.liczbaPytan) && paczka.pytania.length !== oczekiwane.liczbaPytan) {
     dodaj('E03', 'pytania', `Liczba pytań (${paczka.pytania.length}) nie zgadza się z oczekiwaną (${oczekiwane.liczbaPytan} = ${oczekiwane.liczbaStacji} stacji × pytania na stację).`);
   }
@@ -565,8 +689,10 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
     else widoczneId.add(p.id);
 
     if (!czyLiczbaCalkowita(p.stacja)) dodaj('E04', `${pole}.stacja`, 'Pole "stacja" musi być liczbą całkowitą.');
-    else if (Number.isFinite(liczbaStacji) && (p.stacja < 1 || p.stacja > liczbaStacji)) {
-      dodaj('E04', `${pole}.stacja`, `Stacja ${p.stacja} jest poza zakresem 1..${liczbaStacji}.`);
+    else if (zakresStacji && !zakresStacji.includes(p.stacja)) {
+      dodaj('E04', `${pole}.stacja`, zakresStacji.length === liczbaStacji && Number.isFinite(liczbaStacji)
+        ? `Stacja ${p.stacja} jest poza zakresem 1..${liczbaStacji}.`
+        : `Stacja ${p.stacja} nie należy do tej części — oczekiwano stacji: ${zakresStacji.join(', ')}.`);
     } else {
       pytaniaNaStacje.set(p.stacja, (pytaniaNaStacje.get(p.stacja) ?? 0) + 1);
     }
@@ -637,8 +763,8 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   });
 
   // --- pokrycie stacji ---
-  if (Number.isFinite(liczbaStacji) && liczbaStacji) {
-    for (let s = 1; s <= liczbaStacji; s++) {
+  if (zakresStacji) {
+    for (const s of zakresStacji) {
       if (!pytaniaNaStacje.has(s)) dodaj('E05', `stacja ${s}`, `Stacja ${s} nie ma żadnego pytania.`);
     }
     const licznosci = [...pytaniaNaStacje.values()];

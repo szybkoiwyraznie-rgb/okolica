@@ -403,3 +403,25 @@ a asercje o braku żądań mają zostać surowe (`assert.deepEqual(wywolania, []
 bo filtr „oprócz kafelków" właśnie tu uśpiłby czujność. Naprawa: bramka
 `if (STAN.ekran === 'pozycja')` przy wywołaniu, nie w środku funkcji — dwa
 pozostałe wywołania to jawne akcje gracza i mają działać zawsze.
+
+## L37 — „nie ma paczki" to nie to samo co „to nie kontener"
+
+**Objaw:** dzielenie generacji na partie (B21) działało w testach czystych
+funkcji (`planPartii`, `scalPartie`, `walidujPaczke` z zakresem stacji — 14/14
+zielone), a w aplikacji pierwsza przyjęta część od razu startowała grę z 15
+pytaniami i ostrzeżeniem „paczka nie ma pytań do stacji 4". Gałąź scalania była
+martwa.
+**Przyczyna:** rozróżnienie „wklejono gotowy kontener" od „wklejono odpowiedź
+modelu" zapisałem jako `!zKontenera.paczka`. Tymczasem `odpakujPaczke()`
+z tolerancji wklejenia przyjmuje trzy formy — kontener, sam blob i **jawny JSON
+paczki** — i dla wszystkich trzech zwraca `paczka`, a formę rozróżnia polem
+`zrodlo: 'kontener' | 'json' | null`. Warunek był więc zawsze fałszywy dokładnie
+wtedy, gdy miał być prawdziwy. Testy czyste tego nie widzą, bo nie wołają
+`odpakujPaczke` — zobaczył to dopiero test UI, który przeszedł ekrany 4 → 5
+i sprawdził, na którym ekranie aplikacja stoi PO kliknięciu „Sprawdź".
+**Reguła:** funkcja, która zwraca `{ wynik, blad, zrodlo }`, mówi w `zrodlo`,
+SKĄD wynik pochodzi — i to jest jedyne miejsce, w którym wolno rozróżniać
+ścieżki. Nigdy przez „czy wynik jest pusty", bo tolerancja wejścia sprawia, że
+wynik jest niepusty dla każdej formy. A ścieżkę UI, która składa kilka kroków
+w jedną całość, trzeba testować przez UI: asercja „na którym ekranie skończyło"
+łapie martwą gałąź, której testy jednostkowe nie mają jak zobaczyć.

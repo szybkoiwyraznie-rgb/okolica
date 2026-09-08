@@ -189,8 +189,8 @@ Wdrożone: `szacunekOdpowiedzi()` i `PROG_ODPOWIEDZI_TOKENY = 4000` w
 `<details>`, więc widoczna) z ostrzeżeniem powyżej progu. **Do obejrzenia na
 telefonie przy okazji**: czy ta linia nie rozjeżdża układu na 360 px.
 
-Do decyzji właściciela: dzielenie generacji na partie (po jednej stacji) —
-opis w `docs/BACKLOG.md` B21.
+**Domknięte 2026-09-08 (ADR 0031, sekcja 13):** generowanie partiami jest
+wdrożone — ale nie „po jednej stacji", tylko całymi stacjami z budżetu tokenów.
 
 ## 12. Oceny pytań przez graczy (ADR 0028) — stan na 2026-09-08
 
@@ -218,3 +218,39 @@ i na ekranie 2, cache-bust.
 wdrożenie" daje nowy adres i łamie ADR 0020. Instrukcja z pełną treścią pójdzie
 w czacie razem z gotową aplikacją, żeby wklejać raz.
 
+
+## 13. B21 domknięte: generowanie pytań partiami (ADR 0031) — stan na 2026-09-08
+
+Duży setup (5 stacji × 8 graczy = 40 pytań) nie mieści się w limicie wyjścia
+modelu (~210 tokenów na pytanie → ~8 350 tokenów przy progu 4 000), więc
+aplikacja dzieli zlecenie na partie i sama składa odpowiedź.
+
+**Jak to wygląda dla właściciela:** ekran pytań pokazuje nad promptem
+`Część 1 z 3 — stacje 1–2, 16 pytań`. Wkleja się odpowiedź tak samo jak zawsze;
+po przyjęciu części aplikacja sama wraca na ekran promptu z kolejną częścią,
+a gra startuje dopiero po trzeciej. Mały setup nie zmienia się wcale — żadnego
+wskaźnika, jedno wklejenie.
+
+**Co się zmieniło w protokole (`PYT/1.0.7`, PROTOKOL §2 i nowy §2.2):**
+
+- dwie nowe linie w sekcji `GRACZE I TRUDNOŚĆ`: `liczba stacji w tym zleceniu`
+  oraz `zakres tego zlecenia` (`cała paczka` albo `część k z n tej samej paczki`);
+- reguła pola `"stacja"` mówi teraz wprost: **nie numeruj stacji od nowa, nawet
+  jeśli lista nie zaczyna się od 1** — bez tego identyfikatory `s1p1` zderzyłyby
+  się po scaleniu trzech części;
+- nowe kody: **WE08/WE09** (błędne wejście planu partii), **WE10** (partia
+  wskazuje stacje, których nie ma na mapie), **E21** (nie ma czego scalać),
+  a **E19** dostał drugie życie — kolizja `id` między częściami.
+
+**Co trzeba wiedzieć przy diagnozie:**
+
+- część waliduje się wobec WŁASNEGO zakresu stacji, nie 1..N — komunikat E04
+  brzmi wtedy „nie należy do tej części (oczekiwano stacji 3–4)";
+- złożona paczka przechodzi jeszcze raz pełną walidację wobec setupu, więc
+  każda część może być zielona, a całość odrzucona (np. E03 za mało pytań);
+- zebrane części żyją TYLKO w pamięci karty — odświeżenie strony w połowie
+  generacji kasuje postęp (plaintext nie może iść do `localStorage`, ADR 0007);
+- zmiana liczby stacji albo pytań na stację w setupie kasuje zebrane części.
+
+**Do obejrzenia na telefonie przy okazji:** czy pasek `Część k z n` nad promptem
+nie rozjeżdża układu na 360 px (`.badge-duzy` w węższej kolumnie ekranu 4).

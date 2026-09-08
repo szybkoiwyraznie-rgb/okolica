@@ -2129,5 +2129,7 @@ test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, 
   assert.equal(dom.pobierz('ekran-prompt').hidden, false, 'przejście na ekran pytań');
   assert.equal(/WE06/.test(dom.pobierz('bledy-prompt').textContent), false, 'bez WE06: liczba stacji zgadza się z konfiguracją');
   assert.ok(dom.pobierz('pole-prompt').value.length > 200, 'treść promptu zbudowana');
-  assert.match(dom.pobierz('pole-prompt').value, new RegExp(`od 1 do ${ile}\\b`), 'prompt mówi o tylu stacjach, ile jest na mapie');
+  // PYT/1.0.7 (B21): szablon nie mówi już „od 1 do N" — przy generowaniu
+  // partiami numery stacji są globalne, więc prompt podaje liczbę wprost.
+  assert.match(dom.pobierz('pole-prompt').value, new RegExp(`liczba stacji w tym zleceniu: ${ile}\\b`), 'prompt mówi o tylu stacjach, ile jest na mapie');
 });

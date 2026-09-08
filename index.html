@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-25">
-  <script type="module" src="app/app.js?v=m12-25"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-26">
+  <script type="module" src="app/app.js?v=m12-26"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -393,6 +393,9 @@
             aplikacja sprawdzi paczkę i ukryje ją przed graczami.</span>
         </li>
       </ol>
+      <!-- B21 (PROTOKOL §2.2): duży setup generuje pytania partiami — model
+           ma limit wyjścia, więc jedno zlecenie na 40 pytań wraca ucięte. -->
+      <p id="prompt-partia" class="badge badge-duzy" hidden></p>
       <details id="prompt-zwiniety" class="zwiniety">
         <summary>Pokaż treść promptu</summary>
         <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
@@ -414,6 +417,7 @@
     <section id="ekran-paczka" class="ekran" hidden aria-labelledby="tytul-paczka">
       <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
       <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i nie jest zaszyfrowany. Poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive do przeglądu właściciela); przy usterkach dostaniesz poprawkę do odesłania modelowi. Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
+      <p id="paczka-partia" class="badge badge-duzy" hidden></p>
       <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="10" placeholder="Wklej tutaj odpowiedź modelu (blok JSON)" aria-label="Odpowiedź modelu AI"></textarea>
       <div class="wiersz">
         <button id="przycisk-wklej" class="przycisk" type="button">📋 Wklej ze schowka</button>
@@ -697,7 +701,7 @@
     <span class="separator">·</span>
     <span>protokół <span id="stopka-protokol">PYT/1.0</span></span>
     <span class="separator">·</span>
-    <span>szablon <span id="stopka-szablon">PYT/1.0.6</span></span>
+    <span>szablon <span id="stopka-szablon">PYT/1.0.7</span></span>
     <span class="separator">·</span>
     <button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">dane i prywatność</button>
   </footer>

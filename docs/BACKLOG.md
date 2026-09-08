@@ -185,11 +185,11 @@ i premia w `przeliczWyniki` po obu stronach (aplikacja i most), pytanie wg
 indeksu gracza, lista stacji do wyboru, postęp `ile z ilu` i kolumna premii,
 PROTOKOL §9, aneks ADR 0022, testy (w tym parity most ↔ aplikacja).
 
-**Zostało do sprawdzenia (B21)**: budżet promptu i limit wklejenia dla
-`stacje × gracze` pytań (8 graczy × 5 stacji = 40 pytań) — dziś domyślny setup
-generuje ich 5, a protokół nie był testowany przy 40 pytaniach w jednej paczce.
+**Sprawdzone w B21**: budżet promptu i limit wklejenia dla `stacje × gracze`
+pytań (8 graczy × 5 stacji = 40 pytań). Wyszło, że wąskim gardłem jest wyjście
+modelu, a nie prompt ani pamięć — patrz B21 (domknięte generowaniem partiami).
 
-## B21 — Duża paczka: budżet promptu i limit wklejenia 🟡 ZMIERZONE (2026-09-07)
+## B21 — Duża paczka: budżet promptu i generowanie partiami ✅ ZROBIONE (2026-09-08)
 
 **Zmierzone** (`test/duza-paczka.test.js`, PROTOKOL §2 „Budżet rozmiaru"):
 
@@ -207,10 +207,19 @@ przewidywany rozmiar odpowiedzi (`#prompt-rozmiar`) i ostrzega powyżej progu,
 zanim właściciel zmarnuje generację (ucięty JSON wracał jako E01/E02 bez
 wskazania przyczyny).
 
-**Zostało (decyzja właściciela, nie kod):** czy przy dużych setupach dzielić
-generację na partie (po jednej stacji) i scalać w aplikacji. To zmiana UX
-ekranu pytań (kilka promptów, kilka wklejeń, scalanie) — bez zgody właściciela
-nie ruszam; dziś wystarczy ostrzeżenie i mniejsza liczba graczy/stacji.
+**Domknięte (2026-09-08, ADR 0031):** właściciel zgodził się na dzielenie
+generacji na partie — ale NIE „po jednej stacji", bo to 40 wklejeń zamiast
+trzech. Partie liczy się z budżetu tokenów (`maksPytan = 18` przy progu 4 000),
+a pakuje całymi stacjami: `planPartii()` → 5 stacji × 8 pytań = 3 części
+(1–2, 3–4, 5), każda ≤ 3 450 tokenów odpowiedzi. Numery stacji zostają
+GLOBALNE (szablon PYT/1.0.7 zakazuje numerowania od nowa), więc `s<stacja>p<n>`
+są unikalne w całej paczce i `scalPartie()` tylko złącza listy. Część waliduje
+się wobec własnego zakresu (`oczekiwane.stacjeNumery`), złożona paczka — wobec
+setupu. Nowe kody: WE08/WE09/WE10, E21; E19 obsługuje kolizję `id` między
+częściami. UI pokazuje `Część 2 z 3 — stacje 3–4, 8 pytań` na ekranach 4 i 5,
+a gra startuje dopiero po złożeniu całości.
+Testy: `test/partie.test.js` (14, czyste funkcje + pełny obieg) i
+`test/partie-ui.test.js` (2, ekrany 4 → 5 → 4 → 5 → gra).
 
 ## B22 — Wynik gry hot-seat na wspólnym Drive (per pseudonim) ✅ ZROBIONE (2026-09-07)
 
