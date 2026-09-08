@@ -1155,8 +1155,17 @@ domyślny, info należy do sekcji prywatność.
   przejęcia); i asercja prywatności czytająca **plik z Drive**, nie odpowiedź
   mostu: `lat/lon/szerokosc/dlugosc/latitude/longitude` wysłane w `dane` zdarzenia
   nie lądują na dysku (ADR 0013/0019 pkt 3), inne pola zostają.
-- Testy: **586, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
-  budżet dużej paczki, wstrzykiwanie HTML z OSM, cykl gry i prywatność zdarzeń);
+- **Hot-seat i wygasanie lobby też wykonywane w testach.** `przyjmijGreHotseat`
+  przyjmuje grę z jednego telefonu: wyniki liczone po stronie mostu, plik ląduje
+  w `gryZakonczone`, `kod: null` (brak lobby), **`zestaw: null` — paczka i pytania
+  zostają na telefonie (ADR 0013)**, współrzędne wycięte ze zdarzeń, a gra wchodzi
+  do rankingu. Odrzucane: zdarzenie gracza spoza listy, `stacjaId` poza zakresem,
+  typ inny niż dojście/odpowiedź, gracz bez pseudonimu. `archiwizujPrzeterminowane`
+  przenosi otwartą grę starszą niż `WYGASANIE_LOBBY_MS` (24 h) do archiwum i znika
+  ona z `listaGier()`.
+- Testy: **589, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
+  budżet dużej paczki, wstrzykiwanie HTML z OSM, cykl gry, hot-seat, prywatność
+  zdarzeń, wygasanie lobby);
   kontrakt pinuje `sumaPytanWpisu`, brak `id="multi-zgoda"` i punkt „Gra na
   wielu telefonach" w prywatności.
 

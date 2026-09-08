@@ -132,3 +132,86 @@ test('most: profil gracza to pseudonim + PIN, a nie wolny wpis', () => {
   assert.equal(przejecie.blad, 'R20', 'cudzy pseudonim z innym PIN-em nie przechodzi');
   assert.equal(most.ustawProfil({ pseudonim: 'Kasia', pin: '1234' }).nowy, false, 'ten sam PIN nie zakłada drugiego profilu');
 });
+
+function konfiguracjaHotseat() {
+  return { miejsce: 'Warszawa, Śródmieście', geohash5: 'u3qcd', wiek: 'wiek-12', tematy: ['nawigacja'], liczbaStacji: 2, pytaniaNaStacje: 2 };
+}
+
+function zdarzenieHotseat(graczId, typ, stacjaId, dane = {}) {
+  return { schemat: 'RO-zdarzenie/1', graczId, typ, stacjaId, dane };
+}
+
+test('most: gra hot-seat wchodzi na Drive bez paczki i bez współrzędnych', () => {
+  const { most, pliki } = uruchomMost();
+  const wynik = most.przyjmijGreHotseat({
+    tryb: 'hotseat',
+    konfiguracja: konfiguracjaHotseat(),
+    gracze: [{ id: 'a1', pseudonim: 'Ania' }, { id: 'b2', pseudonim: 'Bartek' }],
+    zdarzenia: [
+      zdarzenieHotseat('a1', 'dojscie', 1, { lat: 52.2297, lon: 21.0122, trasa: 'rynek → muzeum' }),
+      zdarzenieHotseat('a1', 'odpowiedz', 1, { punkty: [1, 1] }),
+      zdarzenieHotseat('b2', 'dojscie', 2, { szerokosc: 52.23, dlugosc: 21.02 }),
+      zdarzenieHotseat('b2', 'odpowiedz', 2, { punkty: [0, 1] }),
+    ],
+  });
+  assert.equal(wynik.ok, true, `wysyłka hot-seat: ${wynik.blad}`);
+  assert.deepEqual(Object.keys(wynik.wyniki).sort(), ['a1', 'b2'], 'wyniki dla obu graczy');
+
+  const gra = JSON.parse(pliki.get(wynik.idGry).tresc);
+  assert.equal(gra.tryb, 'hotseat', 'tryb zapisany');
+  assert.equal(gra.stan, 'zakonczona', 'hot-seat wchodzi jako gra zakończona');
+  assert.equal(gra.kod, null, 'hot-seat nie ma kodu lobby');
+  assert.equal(gra.zestaw, null, 'paczka i pytania zostają na telefonie (ADR 0013)');
+  for (const z of gra.zdarzenia) {
+    for (const pole of ['lat', 'lon', 'szerokosc', 'dlugosc', 'latitude', 'longitude']) {
+      assert.equal(pole in z.dane, false, `pole ${pole} nie ma prawa zostać na Drive`);
+    }
+  }
+  assert.equal(gra.zdarzenia[0].dane.trasa, 'rynek → muzeum', 'inne pola zdarzenia zostają');
+
+  const ranking = most.rankingi();
+  const pseudonimy = ranking.wiersze.map((w) => w.pseudonim).sort();
+  assert.deepEqual(pseudonimy, ['Ania', 'Bartek'], 'gra hot-seat wchodzi do rankingu');
+});
+
+test('most: hot-seat odrzuca zdarzenia spoza listy graczy i spoza zakresu stacji', () => {
+  const { most } = uruchomMost();
+  const baza = {
+    tryb: 'hotseat',
+    konfiguracja: konfiguracjaHotseat(),
+    gracze: [{ id: 'a1', pseudonim: 'Ania' }],
+  };
+  const obcy = most.przyjmijGreHotseat({ ...baza, zdarzenia: [zdarzenieHotseat('x9', 'dojscie', 1)] });
+  assert.equal(obcy.ok, false, 'gracz spoza listy jest odrzucony');
+  assert.match(obcy.blad, /gracza spoza listy/, `powód jest jawny: ${obcy.blad}`);
+
+  const pozaZakresem = most.przyjmijGreHotseat({ ...baza, zdarzenia: [zdarzenieHotseat('a1', 'dojscie', 7)] });
+  assert.match(pozaZakresem.blad, /stacjaId poza zakresem/, `powód jest jawny: ${pozaZakresem.blad}`);
+
+  const zlyTyp = most.przyjmijGreHotseat({ ...baza, zdarzenia: [zdarzenieHotseat('a1', 'rezygnacja', 1)] });
+  assert.match(zlyTyp.blad, /tylko dojścia i odpowiedzi/, `powód jest jawny: ${zlyTyp.blad}`);
+
+  const bezPseudonimu = most.przyjmijGreHotseat({ ...baza, gracze: [{ id: 'a1', pseudonim: '  ' }], zdarzenia: [] });
+  assert.match(bezPseudonimu.blad, /nie ma pseudonimu/, `powód jest jawny: ${bezPseudonimu.blad}`);
+});
+
+test('most: lobby wygasa — stara otwarta gra idzie do archiwum i znika z listy', () => {
+  const { most, pliki } = uruchomMost();
+  const zalozona = most.zalozGre({ tryb: 'wyscig', organizator: { pseudonim: 'Ania' }, konfiguracja: konfiguracja(), zestaw: zestaw() });
+  assert.equal(zalozona.ok, true, `założenie: ${zalozona.blad}`);
+  const idGry = zalozona.gra.idGry;
+  assert.equal(most.listaGier().wpisy.length, 1, 'świeża gra jest w lobby');
+
+  // Starzymy wpis na dysku — atrapa trzyma surowy rekord, więc to ta sama operacja,
+  // którą zrobiłby czas.
+  const rekord = pliki.get(idGry);
+  const stare = JSON.parse(rekord.tresc);
+  stare.utworzono = new Date(Date.now() - 40 * 24 * 3600 * 1000).toISOString();
+  rekord.tresc = JSON.stringify(stare);
+
+  most.archiwizujPrzeterminowane();
+
+  const poArchiwizacji = JSON.parse(pliki.get(idGry).tresc);
+  assert.equal(poArchiwizacji.stan, 'archiwum', 'przeterminowana gra jest archiwizowana');
+  assert.equal(most.listaGier().wpisy.length, 0, 'archiwum nie zaśmieca lobby');
+});
