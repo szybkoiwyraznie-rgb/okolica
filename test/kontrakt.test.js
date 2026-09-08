@@ -220,6 +220,14 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
   const naglowek = INDEX.match(/<div class="akcje">[\s\S]*?<\/div>/)?.[0] ?? '';
   assert.equal(/test/i.test(naglowek), false, `w akcjach nagłówka nie ma trybu testowego: ${naglowek}`);
   assert.ok(APP.includes('czyTrybTestowyWUrl'), 'tryb testowy czyta się z parametru adresu');
+
+  // Rankingi są warstwą z dwoma wyjściami (decyzja właściciela 2026-09-08) —
+  // z poprzedniego układu „ekran" nie dało się na telefonie wyjść.
+  assert.match(INDEX, /<section id="ekran-ranking" class="ekran warstwa" hidden role="dialog" aria-modal="true"/);
+  assert.match(INDEX, /<button id="przycisk-ranking-krzyzyk"[^>]*aria-label="Zamknij rankingi">✕<\/button>/, 'krzyżyk w rogu warstwy');
+  assert.match(INDEX, /<button id="przycisk-wrocz-ranking"[^>]*>Zamknij rankingi<\/button>/, 'klawisz zamknięcia zamiast „← wróć"');
+  assert.ok(APP.includes("$('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu)"), 'krzyżyk jest podpięty');
+  assert.ok(STYLE.includes('.warstwa-krzyzyk'), 'krzyżyk ma styl');
   assert.match(APP, /'true', '1', 'tak'/, 'przyjmowane formy parametru ?test=');
 
   const symulacja = INDEX.match(/<button id="przycisk-symulacja"[^>]*>/)?.[0];

@@ -871,3 +871,49 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
      +/−/◎ nie ma już miejsca. */
   #ekran-gra:not([hidden]) .mapa-skala { top: auto; bottom: 8px; left: 8px; right: auto; }
 }
+
+/* --- Warstwa nad aplikacją (rankingi) -------------------------------------
+ * Decyzja właściciela 2026-09-08: rankingi nie są osobnym ekranem, tylko
+ * warstwą nad tym, co gracz robił — z klawiszem „Zamknij rankingi" i krzyżykiem
+ * w prawym górnym rogu. Karta ma PEŁNE tło, więc kontrast tekstu nie zależy od
+ * tego, co jest pod spodem (audyt WCAG liczy pary z palety, nie przezroczystość).
+ * Na końcu pliku celowo: `.ekran` ustawia `max-width` i musi tu przegrać.
+ */
+.warstwa {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  max-width: none;
+  margin: 0;
+  padding: 16px 12px 32px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: color-mix(in srgb, var(--tekst) 62%, transparent);
+}
+.warstwa[hidden] { display: none; }
+.warstwa-karta {
+  position: relative;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 18px 16px 20px;
+  background: var(--tlo-karta);
+  color: var(--tekst);
+  border: 1px solid var(--linia);
+  border-radius: var(--promien);
+}
+.warstwa-krzyzyk {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  min-width: var(--cel);
+  min-height: var(--cel);
+  padding: 0;
+  border: 1px solid var(--linia);
+  border-radius: 999px;
+  background: var(--tlo-pole);
+  color: var(--tekst);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+}
+.warstwa h2 { padding-right: 52px; }

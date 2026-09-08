@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-28">
-  <script type="module" src="app/app.js?v=m12-28"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-29">
+  <script type="module" src="app/app.js?v=m12-29"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -672,21 +672,27 @@
     </section>
 
     <!-- M12/P6: rankingi graczy (dane z mostu Drive, agregacje po stronie telefonu) -->
-    <section id="ekran-ranking" class="ekran" hidden aria-labelledby="tytul-ranking">
-      <h2 id="tytul-ranking">🏆 Rankingi</h2>
-      <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych:</p>
-      <div class="wiersz">
-        <button id="przycisk-ranking-odswiez" class="przycisk" type="button">🔄 Odśwież</button>
-        <button id="przycisk-wrocz-ranking" class="przycisk" type="button">← wróć</button>
+    <!-- Decyzja właściciela 2026-09-08: rankingi są WARSTWĄ nad aplikacją,
+         nie osobnym ekranem — z klawiszem „Zamknij rankingi" i krzyżykiem
+         w prawym górnym rogu, bo z poprzedniego układu nie dało się wyjść. -->
+    <section id="ekran-ranking" class="ekran warstwa" hidden role="dialog" aria-modal="true" aria-labelledby="tytul-ranking">
+      <div class="warstwa-karta">
+        <button id="przycisk-ranking-krzyzyk" class="warstwa-krzyzyk" type="button" aria-label="Zamknij rankingi">✕</button>
+        <h2 id="tytul-ranking">🏆 Rankingi</h2>
+        <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych:</p>
+        <div class="wiersz">
+          <button id="przycisk-ranking-odswiez" class="przycisk" type="button">🔄 Odśwież</button>
+          <button id="przycisk-wrocz-ranking" class="przycisk" type="button">Zamknij rankingi</button>
+        </div>
+        <p id="ranking-status" class="podpowiedz" role="status"></p>
+        <div id="ranking-zakladki" class="segment"></div>
+        <div id="ranking-kategorie" class="chipy"></div>
+        <table id="ranking-tabela" class="tabela-wynikow">
+          <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Gry</th><th scope="col">Poprawne</th></tr></thead>
+          <tbody id="ranking-wiersze"></tbody>
+        </table>
+        <ul id="ranking-moje-gry" class="lista-historii" hidden></ul>
       </div>
-      <p id="ranking-status" class="podpowiedz" role="status"></p>
-      <div id="ranking-zakladki" class="segment"></div>
-      <div id="ranking-kategorie" class="chipy"></div>
-      <table id="ranking-tabela" class="tabela-wynikow">
-        <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Gry</th><th scope="col">Poprawne</th></tr></thead>
-        <tbody id="ranking-wiersze"></tbody>
-      </table>
-      <ul id="ranking-moje-gry" class="lista-historii" hidden></ul>
     </section>
 
   </main>

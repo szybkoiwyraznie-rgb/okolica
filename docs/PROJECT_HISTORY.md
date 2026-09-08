@@ -1328,3 +1328,36 @@ mechanizmu, nie podniesienie progu.
 - Testy: **610, 0 fail** — dokładnie tyle, ile przed B21 (`test/partie.test.js`
   i `test/partie-ui.test.js` usunięte razem z mechanizmem). `npm run brama`
   = 610 + sync szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-27`.
+
+## 2026-09-08 — pięć uwag właściciela po ostatnich zmianach
+
+**(1) „Możesz też grać w trybie ręcznym — karę czasową da się wyłączyć
+w ustawieniach"** — tego komunikatu nie ma w kodzie od `4e29879` (P02
+w `app/pozycja.js`); właściciel widział go z przestarzałej kopii. Przy okazji
+wyszło, że P01/P02/P06/P08 odsyłały do przycisku „⚙", który właśnie zniknął —
+wszystkie cztery mówią teraz o `?test=true` (LESSONS L31).
+
+**(2) Zdanie o ocenach** na ekran 2 — wg wzoru właściciela:
+było `Użyta w 1 grze · 50% na tak · 50% na nie (2 ocen).`, jest
+`Użyta w 1 grze, 2 oceny (50% 👍, 50% 👎)`. Nowa `liczbaOcenTekst()` odmienia
+„ocena/oceny/ocen" po polsku, z nastkami 12–14 przy formie „ocen".
+
+**(3) Przelacznik „⚙ tryb testowy" usunięty z nagłówka.** Tryb testowy wchodzi
+wyłącznie parametrem adresu: `?test=true`, `?test=1`, `?test=tak` albo
+historyczne `?tryb=test` (używają go testy) — helper `czyTrybTestowyWUrl()`.
+Kontrakt pilnuje, żeby przycisk nie wrócił.
+
+**(4) Rankingi:** opis skrócony do „Wyniki zakończonych gier wieloosobowych:",
+a błędy mostu idą przez `bladMostuPoPolsku()` — nasz własny timeout 8 s
+z `AbortController` wracał jako angielskie „signal is aborted without reason"
+(Chrome) albo „The user aborted a request." (Firefox).
+
+**(4b) Rankingi są warstwą** (`role="dialog"`, karta z pełnym tłem) z klawiszem
+„Zamknij rankingi" i krzyżykiem w prawym górnym rogu. Przy okazji prawdziwy bug
+(**LESSONS L38**): `ekran-ranking` nie należał do `EKRANY`, więc prywatność go
+nie chowała, a „wróć" czytało `STAN.ekran` — który przy wejściu na rankingi się
+nie zmienia — i zawsze zrzucało na setup. Są `STAN.powrotZRankingu`
+i `powrotZPrywatnosci`; powrót z prywatności na rankingi nie pyta mostu drugi raz.
+
+Testy: **618, 0 fail**; `npm run brama` = 618 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-29`.

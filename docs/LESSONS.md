@@ -429,3 +429,20 @@ gałąź, której testy jednostkowe nie mają jak zobaczyć.
 — nie dlatego, że było zepsute, tylko dlatego, że stało na błędnym założeniu
 o limicie wyjścia modeli. Lekcja zostaje, bo dotyczy `odpakujPaczke()`, które
 nadal żyje, i testowania ścieżek UI w ogóle.
+
+## L38 — ekran spoza listy ekranów jest niewidzialny dla kodu, który ją przegląda
+
+**Objaw:** otwarcie „dane i prywatność" z rankingu zostawiało rankingi widoczne
+pod spodem, a „wróć" zrzucało gracza na setup zamiast na rankingi.
+**Przyczyna:** `pokazPrywatnosc()` i `wrocZPrywatnosci()` przeglądały stałą
+`EKRANY = ['setup','multi','pozycja','stacje','prompt','paczka','gra']`, a
+`ekran-ranking` — dodany później, w M12 — nigdy do niej nie trafił. Pętla
+`for (const e of EKRANY)` chowała więc siedem ekranów i ósmy zostawał na wierzchu;
+`STAN.ekran` przy wejściu na rankingi się nie zmienia, więc „wróć" czytało ekran
+sprzed nich. Objaw był podwójny, a przyczyna jedna: lista, która przestała być
+kompletna, gdy doszedł nowy ekran.
+**Reguła:** jeżeli jakiś stan jest przeglądem listy (`EKRANY`, słownik, rejestr),
+nowy element tej listy musi być dodany do niej, a nie obok niej. Albo — lepiej —
+przegląd niech pyta DOM o to, co faktycznie jest widoczne, zamiast ufać stałej.
+Test, który to łapie, kosztuje dwa kliknięcia: otwórz warstwę, otwórz z niej
+drugą, wróć i sprawdź, gdzie jesteś.

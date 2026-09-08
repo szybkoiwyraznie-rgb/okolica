@@ -496,6 +496,34 @@ test('prywatność: ekran otwiera się z setupu i ze stopki, a „wróć" prowad
   assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'powrót na rankingi, nie na setup');
 });
 
+// Decyzja właściciela 2026-09-08: rankingi są warstwą z dwoma wyjściami.
+test('rankingi: warstwa zamyka się i krzyżykiem, i klawiszem, i wraca tam, skąd przyszła', async () => {
+  const domMapy = await aplikacjaZMapa();
+  domMapy.kliknij('przycisk-ranking');
+  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'rankingi otwarte');
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'spód ustępuje warstwie');
+
+  domMapy.kliknij('przycisk-ranking-krzyzyk'); // krzyżyk w prawym górnym rogu
+  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'krzyżyk zamyka warstwę');
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, false, 'wróciliśmy na setup, nie w próżnię');
+
+  domMapy.kliknij('przycisk-ranking');
+  domMapy.kliknij('przycisk-wrocz-ranking'); // klawisz „Zamknij rankingi"
+  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'klawisz też zamyka');
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, false);
+});
+
+test('rankingi: prywatność otwarta z warstwy wraca na rankingi, nie na setup', async () => {
+  const domMapy = await aplikacjaZMapa();
+  domMapy.kliknij('przycisk-ranking');
+  domMapy.kliknij('przycisk-prywatnosc-stopka');
+  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'prywatność chowa rankingi — wcześniej zostawały pod spodem');
+  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
+  domMapy.kliknij('przycisk-wrocz-prywatnosc');
+  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, true);
+  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'powrót na rankingi');
+});
+
 test('prywatność: czyszczenie jest dwustopniowe i rusza tylko klucze obolica:*', async () => {
   const pamiecPriv = new Map();
   pamiecPriv.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { liczbaGraczy: 2 } }));
