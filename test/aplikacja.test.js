@@ -57,6 +57,15 @@ test('bootstrap: stopka pokazuje obowiązującą wersję protokołu i łatki sza
   assert.equal(pobierz('stopka-szablon').textContent, SZABLON_WERSJA, 'łatka szablonu widoczna (PROTOKOL §7)');
 });
 
+test('bootstrap: start() wpisuje numer budowy do stopki, nie zostawia placeholdera', () => {
+  // Właściciel dwa razy oceniał starą wersję z cache i nie miał jak tego
+  // stwierdzić, więc stopka pokazuje `?v=` z adresu własnego modułu. Tu moduł
+  // jest importowany z pliku — bez `?v=` — więc wypada 'dev'. Ważne jest to,
+  // że pole jest WYPEŁNIONE przez start(), a nie że zostało HTML-owe '—'.
+  assert.notEqual(pobierz('stopka-wersja').textContent, '—', 'placeholder z HTML nie został nadpisany');
+  assert.equal(pobierz('stopka-wersja').textContent, 'dev');
+});
+
 test('bootstrap: lista trybów i tematów jest wyrenderowana z kanonu', () => {
   assert.equal(pobierz('lista-trybow').children.length, Object.keys(TRYBY).length, 'trzy tryby ruchu');
   assert.equal(pobierz('lista-tematow').children.length, Object.keys(TEMATY).length, 'dziesięć tematów z kanonu');
