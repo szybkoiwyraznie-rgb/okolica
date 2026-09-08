@@ -1468,3 +1468,30 @@ obejrzeć na telefonie i na desktopie.
 
 Testy: **622, 0 fail**; brama = 622 + sync szablonu OK + WCAG AA 0.
 Cache-bust `?v=m12-33`.
+
+## 2026-09-08 — stara wersja w podglądzie: service worker przybijał do cache
+
+Właściciel: *„Na razie mam starą wersję - pewnie cache."* Miał rację, a winny był
+konkretny: service worker obsługiwał **każdy** GET z własnej domeny cache-first,
+w tym `index.html`. Stary `index.html` wyciągał stare `?v=`, a te też siedziały
+w cache — więc aktualizacja nie docierała bez ręcznego czyszczenia danych. To
+drugie takie zgłoszenie (pierwszym był komunikat P02 zobaczony z `main`).
+
+- `sw.js`: nowa funkcja `zSieciNajpierw()` i rozróżnienie w nasłuchu `fetch` —
+  **skorupa** (`req.mode === 'navigate'`, `/`, `/index.html`) idzie z sieci
+  z cache jako wyjściem awaryjnym, **reszta** same-origin (moduły z `?v=`,
+  ikony) zostaje cache-first, bo ich adres i tak zmienia się przy każdej wersji.
+  Kafelki bez zmian. Offline nadal działa: brak sieci → cache.
+- Dwa nowe testy w `test/sw.test.js`: skorupa jest pytana z sieci mimo obecności
+  w precache, a moduł z `?v=` za drugim razem idzie z cache.
+
+**Stopka nad mapą.** Właściciel: *„Belka powinna zostać, ale mapa powinna się
+pokazywać w całym viewporcie (może zostać jeszcze stopka z komunikatami na dole)."*
+Reguła `#mapa-pozycja { position: fixed; inset: 0 }` już była poza media query,
+więc mapa na desktopie obejmuje cały viewport — ale `<footer class="dol">` jest
+rodzeństwem `<main class="tresc">`, które ma `z-index: 1`, a stopka nie miała
+własnej pozycji, więc mapa malowała się NAD nią. `.dol` dostało
+`position: relative; z-index: 3` — tyle samo co nagłówek.
+
+Testy: **624, 0 fail**; brama = 624 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-34`.

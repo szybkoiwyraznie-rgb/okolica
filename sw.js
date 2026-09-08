@@ -3,8 +3,10 @@
  * `app/app.js`, zero zależności i zero analityki (ADR 0001, ADR 0013).
  *
  * Reguły:
- * - GET same-origin: cache-first (skorupa, moduły, ikony) — aplikacja
- *   otwiera się i gra z lokalnej paczki bez sieci;
+ * - GET same-origin: SKORUPA (`index.html`, nawigacje) network-first z cache
+ *   jako wyjściem awaryjnym, reszta (moduły z `?v=`, ikony) cache-first —
+ *   aplikacja otwiera się i gra z lokalnej paczki bez sieci, a aktualizacja
+ *   dociera bez ręcznego czyszczenia danych (zgłoszenie właściciela 2026-09-08);
  * - GET kafelków mapy dowolnego dostawcy (ścieżka `/z/x/y.png|jpg|webp`):
  *   cache-first z limitem MAKS_KAFELKI i ewikcją najstarszych wpisów —
  *   „ostatnia okolica" zostaje na telefonie;
@@ -16,7 +18,7 @@
  * activate. */
 'use strict';
 
-const WERSJA_SW = 'm12-33';
+const WERSJA_SW = 'm12-34';
 const PREFIKS_CACHE = 'okolica';
 const CACHE_SHELL = `${PREFIKS_CACHE}-shell-${WERSJA_SW}`;
 const CACHE_KAFELKI = `${PREFIKS_CACHE}-kafelki-${WERSJA_SW}`;
@@ -39,6 +41,27 @@ const WZOR_KAFELKA = /\/\d+\/\d+\/\d+(?:@\dx)?\.(?:png|jpe?g|webp)(?:[?#]|$)/i;
 async function przytnij(cache, maks) {
   const klucze = await cache.keys();
   for (let i = 0; i < klucze.length - maks; i += 1) await cache.delete(klucze[i]);
+}
+
+/**
+ * Skorupa MUSI być z sieci, kiedy sieć jest: to `index.html` niesie wersje
+ * `?v=` wszystkich modułów. Cache-first na skorupie przybija użytkownika do
+ * starej wersji — stary `index.html` wyciąga stare `?v=`, a te też siedzą
+ * w cache, więc aktualizacja nie dociera bez ręcznego czyszczenia danych
+ * (właściciel trafił na to dwa razy z rzędu, 2026-09-08). Offline wracamy
+ * do cache, więc aplikacja nadal się otwiera.
+ */
+async function zSieciNajpierw(req, nazwa) {
+  const cache = await caches.open(nazwa);
+  try {
+    const odp = await fetch(req);
+    if (odp && odp.ok) cache.put(req, odp.clone());
+    return odp;
+  } catch (e) {
+    const trafiony = await cache.match(req);
+    if (trafiony) return trafiony;
+    throw e;
+  }
 }
 
 async function zCacheNajpierw(req, nazwa, maks) {
@@ -84,7 +107,14 @@ self.addEventListener('fetch', (zdarzenie) => {
   }
   if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
   if (url.origin === self.location.origin) {
-    zdarzenie.respondWith(zCacheNajpierw(req, CACHE_SHELL, 0));
+    // Skorupa z sieci (żeby aktualizacja docierała), reszta z cache — pliki
+    // modułów mają `?v=` w adresie, więc i tak zmieniają URL przy każdej wersji.
+    const czySkorupa = req.mode === 'navigate'
+      || url.pathname.endsWith('/')
+      || url.pathname.endsWith('/index.html');
+    zdarzenie.respondWith(czySkorupa
+      ? zSieciNajpierw(req, CACHE_SHELL)
+      : zCacheNajpierw(req, CACHE_SHELL, 0));
     return;
   }
   if (WZOR_KAFELKA.test(url.pathname)) {

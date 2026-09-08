@@ -313,6 +313,11 @@ body:not(.tryb-testowy) .tylko-test {
 
 /* --- stopka --- */
 .dol {
+  /* Nad mapą-tłem: stopka jest rodzeństwem `<main class="tresc">`, które ma
+     `z-index: 1`, więc bez własnej pozycji mapa malowałaby się nad nią
+     (zgłoszenie właściciela 2026-09-08: stopka z komunikatami ma zostać). */
+  position: relative;
+  z-index: 3;
   display: flex;
   gap: 8px;
   flex-wrap: wrap;
