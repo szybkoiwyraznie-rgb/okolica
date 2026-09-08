@@ -446,3 +446,25 @@ nowy element tej listy musi być dodany do niej, a nie obok niej. Albo — lepie
 przegląd niech pyta DOM o to, co faktycznie jest widoczne, zamiast ufać stałej.
 Test, który to łapie, kosztuje dwa kliknięcia: otwórz warstwę, otwórz z niej
 drugą, wróć i sprawdź, gdzie jesteś.
+
+## L39 — stan początkowy musi być w HTML, a warstwa nad tłem musi mieć `position`
+
+**Objaw:** dwa zgłoszenia z jednego podglądu. (1) „Odpalenie aplikacji powoduje
+pokazanie się przez chwilę starego setupu, który po sekundzie zamienia się w nowy
+setup na warstwie." (2) „Drugi ekran w dalszym ciągu jest pod mapą. Wystaje tylko
+kawałek napisu i przyciski."
+**Przyczyna:** dwie różne dziury w tym samym pomyśle „ekran jako warstwa nad
+mapą". Pierwsza: reguły układu wisiały na `body[data-ekran='setup']`, a ten
+atrybut ustawia `pokazEkran()` — czyli JS, po wczytaniu modułu. Do tego momentu
+selektor nie łapie, setup renderuje się w przepływie jak przed zmianą, a reguła
+`body:not([data-ekran='setup'])…` chowa mapę. Potem JS rusza i wszystko
+przeskakuje. Druga: reguła panelu ustawiała tło, szerokość i marginesy, ale nie
+`position` — element `static` maluje się POD elementem ustalonym z `z-index: 0`,
+więc karta pozycji zniknęła pod pełnoekranowym tłem mapy.
+**Reguła:** jeśli układ zależy od stanu, stan początkowy musi stać w HTML, a nie
+powstawać w JS — inaczej pierwsze klatki są w innym układzie niż reszta i użytkownik
+widzi przeskok. A każda warstwa, która ma leżeć NA czymś, musi mieć `position`
+i `z-index`: bez `position` właściwość `z-index` w ogóle nie działa, a kolejność
+malowania bierze się z przepływu, nie z intencji. Oba błady są niewidoczne dla
+testów, które nie renderują — dlatego kontrakt ma pilnować przyczyny (atrybut
+w HTML, `position` w bloku reguły), nie efektu.

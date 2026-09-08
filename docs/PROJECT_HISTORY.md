@@ -1439,3 +1439,32 @@ z nagłówka to jedyna widoczna droga, więc komunikaty musiały ją pokazywać.
 Testy: **+2 asercje** na ścieżce, na której utknął właściciel („✎ Wpisz ręcznie"
 odsłania pola bez trybu testowego; ręczna pozycja odblokowuje „Dalej: stacje").
 **620, 0 fail**; brama = 620 + sync szablonu OK + WCAG AA 0. Cache-bust `?v=m12-32`.
+
+## 2026-09-08 — podgląd: mignięcie starego setupu i ekran pozycji pod mapą
+
+Dwa zgłoszenia właściciela z jednego podglądu, dwie różne dziury w tym samym
+pomyśle „ekran jako warstwa nad mapą" (**LESSONS L39**).
+
+**(1) Mignięcie starego setupu.** Reguły układu wisiały na
+`body[data-ekran='setup']`, a ten atrybut ustawia `pokazEkran()` — czyli JS, po
+wczytaniu modułu. Do tego momentu selektor nie łapie: setup renderuje się
+w przepływie jak przed zmianą, a reguła `body:not([data-ekran='setup'])…` chowa
+mapę. Po starcie JS wszystko przeskakuje. Naprawa: `<body data-ekran="setup">`
+w HTML, czyli stan początkowy taki sam jak docelowy.
+
+**(2) Ekran pozycji pod mapą.** Reguła `body[data-ekran='pozycja']
+#ekran-pozycja` ustawiała tło, szerokość i marginesy, ale **nie `position`** —
+karta zostawała `static`, a element statyczny maluje się POD elementem ustalonym
+z `z-index: 0`, więc znikała pod pełnoekranowym tłem mapy. Naprawa: panel
+`position: fixed` w podziale ekranu — w pionie na dole (`max-height: 52dvh`),
+w poziomie i na szerokim ekranie z prawej (`width: 44%`, kotwiczony od dołu
+z `max-height: calc(100dvh - 110px)`, żeby nie wlazł pod nagłówek). Tło pełne,
+nie półprzezroczyste: nad mapą półprzezroczystość robi tekst nieczytelnym.
+
+**Uczciwie o weryfikacji:** atrapa DOM nie renderuje, więc 622 testy nadal nie
+sprawdzają układu. Nowe kontrakty pilnują PRZYCZYN, nie efektów: `data-ekran`
+w HTML i `position: fixed` w bloku reguły panelu. Proporcje (52dvh / 44%) trzeba
+obejrzeć na telefonie i na desktopie.
+
+Testy: **622, 0 fail**; brama = 622 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-33`.

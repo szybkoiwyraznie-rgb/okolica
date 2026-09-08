@@ -15,7 +15,7 @@
  * `ekranPx = jednostkaSwiata * skala + przesuniecie`, a
  * `zoom = log2(skala * SZEROKOSC_SWIATA / ROZMIAR_KAFELKA)`.
  */
-import { PODKLADY } from './konfig.js?v=m12-32';
+import { PODKLADY } from './konfig.js?v=m12-33';
 import {
   ROZMIAR_KAFELKA,
   SZEROKOSC_SWIATA,
@@ -26,7 +26,7 @@ import {
   odwroc,
   projektuj,
   siatkaKafelkow,
-} from './geo.js?v=m12-32';
+} from './geo.js?v=m12-33';
 
 /** Przestrzeń nazw SVG (elementy SVG tworzy się przez `createElementNS`). */
 export const PRZESTRZEN_SVG = 'http://www.w3.org/2000/svg';

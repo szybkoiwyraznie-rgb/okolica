@@ -955,14 +955,44 @@ body[data-ekran='setup'] #ekran-setup {
 }
 .gora { position: relative; z-index: 3; }
 
-/* Ekran pozycji nie ma już własnej mapy — jego treść to karta nad wspólnym tłem. */
+/* Ekran pozycji: mapa jest tłem, a treść ekranu to PANEL w podziale ekranu —
+   w pionie na dole, w poziomie z prawej. `position` jest tu konieczne: bez niego
+   karta zostaje `static`, a element statyczny maluje się POD ustalonym tłem
+   mapy (`z-index: 0`) i znika pod nią — tak to właśnie wyglądało w podglądzie.
+   Tło jest pełne, nie półprzezroczyste: półprzezroczyste nad mapą robi tekst
+   nieczytelnym, a audyt WCAG liczy pary z palety, nie to, co prześwituje. */
 body[data-ekran='pozycja'] #ekran-pozycja {
-  max-width: 640px;
-  margin: 0 auto;
+  position: fixed;
+  z-index: 2;
   padding: 12px;
-  background: color-mix(in srgb, var(--tlo-karta) 92%, transparent);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  background: var(--tlo-karta);
   border: 1px solid var(--linia);
   border-radius: var(--promien);
+}
+/* PION: panel na dole, mapa nad nim. */
+@media (max-width: 900px) and (orientation: portrait) {
+  body[data-ekran='pozycja'] #ekran-pozycja {
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    margin: 0 auto;
+    max-width: 640px;
+    max-height: 52dvh;
+  }
+}
+/* POZIOM i szeroki ekran: panel z prawej, mapa z lewej. Kotwiczony od dołu
+   i z limitem wysokości, żeby nie wlazł pod nagłówek. */
+@media (orientation: landscape), (min-width: 901px) {
+  body[data-ekran='pozycja'] #ekran-pozycja {
+    right: 10px;
+    bottom: 10px;
+    width: 44%;
+    max-width: 460px;
+    max-height: calc(100dvh - 110px);
+  }
 }
 
 /* --- Ekran stacji: mapa i lista OBOK siebie (decyzja właściciela 2026-09-08) --

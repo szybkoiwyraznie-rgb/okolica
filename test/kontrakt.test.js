@@ -211,6 +211,24 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
 
 // Atrapa DOM nie liczy pikseli, więc układu „mapa na spodzie" nie da się
 // przetestować zachowaniem — pilnujemy przynajmniej struktury i reguł CSS.
+// Dwa mignięcia z podglądu (2026-09-08). Atrapa nie renderuje, więc pilnujemy
+// przyczyn wprost: stanu początkowego w HTML i `position` w regule panelu.
+test('kontrakt: <body> ma data-ekran w HTML — inaczej setup miga przed startem JS', () => {
+  // `pokazEkran()` ustawia `data-ekran` dopiero po wczytaniu modułu. Bez
+  // atrybutu w HTML reguły `body[data-ekran=…]` nie łapią: setup renderuje się
+  // w przepływie („stary"), mapa jest schowana, a po chwili wszystko przeskakuje.
+  assert.match(INDEX, /<body data-ekran="setup">/, 'stan początkowy ekranu jest w HTML, nie tylko z JS');
+});
+
+test('kontrakt: panel ekranu pozycji ma `position` — bez niego chowa się pod mapą', () => {
+  const reg = STYLE.slice(STYLE.indexOf('body[data-ekran=\'pozycja\'] #ekran-pozycja {'));
+  const blok = reg.slice(0, reg.indexOf('}'));
+  assert.ok(blok.includes('position: fixed'),
+    'element `static` maluje się POD ustalonym tłem mapy (z-index: 0) — panel musi być ustalony');
+  assert.ok(blok.includes('background: var(--tlo-karta)'), 'tło panelu jest pełne, nie półprzezroczyste nad mapą');
+  assert.ok(STYLE.includes('@media (orientation: landscape), (min-width: 901px)'), 'podział ma wariant poziomy');
+});
+
 test('kontrakt: mapa jest trwałym spodem aplikacji, a setup kartą nad nią', () => {
   const main = INDEX.match(/<main class="tresc">([\s\S]*?)<section id="ekran-setup"/)?.[1] ?? '';
   assert.match(main, /<div id="mapa-pozycja" class="mapa">/, 'mapa pozycji jest pierwszym elementem <main>, nie w ekranie pozycji');
