@@ -1813,7 +1813,11 @@ function odswiezPropozycjeZestawow() {
           `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
           '🌍 repozytorium:',
           () => grajZZestawemZRepo(meta, url),
-          opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
+          // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
+          // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
+          meta.oceny === undefined
+            ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
+            : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
         ));
       }
       // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
