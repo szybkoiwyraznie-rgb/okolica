@@ -39,11 +39,17 @@ Dwie wady, które to potwierdzają:
    „zaliczona (ręcznie)" **zostają**: zapisane gry i historia mogą zawierać takie
    odcinki, a stary wynik musi się dać odczytać. Nowa gra nie może ich jednak
    wytworzyć — w interfejsie nie ma czym.
-4. Podpięcie kliknięcia zostaje w `app.js` **warunkowo** (`if (element)`) jako
-   szew dla testów atrapy DOM, które zamykają tak odcinek (10 miejsc);
-   w przeglądarce elementu nie ma, więc gałąź jest martwa. Kontrakt „app.js nie
-   woła nieistniejących id" ma ten jeden wyjątek wpisany jawnie, z uzasadnieniem
-   — dopisanie kolejnego wymaga powodu.
+4. **Szew dla testów też został usunięty** (dopisek 2026-09-08, ten sam dzień).
+   Przez chwilę podpięcie kliknięcia zostawało w `app.js` warunkowo
+   (`if (element)`) jako skrót dla testów atrapy DOM. To było półśrodkiem: martwa
+   gałąź w kodzie produkcyjnym i jeden jawny wyjątek w kontrakcie „app.js nie
+   woła nieistniejących id". Teraz w `app.js` nie ma ani elementu, ani gałęzi,
+   a kontrakt nie ma wyjątków. Testy (14 miejsc: 8 w `test/aplikacja.test.js`,
+   6 w `test/wieloosobowa-ui.test.js`) zamykają odcinek przez
+   `dojdzSymulacja()` — klik w „▶ Symuluj dojście" i aktywne czekanie, aż panel
+   drogi zniknie — czyli dokładnie tą drogą, którą ADR wskazuje jako jedyną.
+   Gałąź statusu „Dojście zgłoszone ręcznie" w `zakonczOdcinekGry` była przy tym
+   martwa i też wypadła.
 
 ## Konsekwencje
 

@@ -144,6 +144,10 @@ test('zestawy UI: brak pozycji albo wyczyszczony promień chowają kartę', asyn
   dom.pobierz('setup-lat').value = String(POZYCJA.lat);
   dom.pobierz('setup-lon').value = String(POZYCJA.lon);
   dom.kliknij('przycisk-ustaw-reczne');
+  // Nasłuch `przycisk-dalej-pozycja` jest asynchroniczny, więc przejście na ekran
+  // pozycji domyka się mikrozadaniem. Karta propozycji odświeża się tylko TAM
+  // (a nie przy każdym fixie, także w grze), więc asercja musi poczekać.
+  await new Promise((r) => setTimeout(r, 30));
   assert.equal(dom.pobierz('zestawy-karta').hidden, false, 'poprawna konfiguracja odsłania kartę');
 });
 

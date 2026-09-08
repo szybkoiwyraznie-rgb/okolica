@@ -248,6 +248,35 @@ async function noweUrzadzenie({ pamiec = new Map(), most, bezGracza = false }) {
 function ustaw(u, id, wartosc) { przelaczNa(u); u.dom.pobierz(id).value = wartosc; }
 function kliknijEl(el) { for (const fn of el.zdarzenia.click ?? []) fn({ type: 'click', target: el, currentTarget: el }); }
 async function klik(u, id) { przelaczNa(u); u.dom.kliknij(id); await oddech(); }
+
+/**
+ * ADR 0029: dojście rozstrzyga wyłącznie strumień fixów, więc testy nie mają już
+ * „ręcznego" przycisku — karmią aplikację symulacją, która idzie przez ten sam
+ * `przyjmijFix` co GPS. Czekamy aktywnie na skutek (panel drogi znika), więc
+ * brak dojścia wywala test zamiast po cichu sprawdzać coś dalej.
+ */
+/**
+ * W trybie testowym nie ma GPS, a po wznowieniu gry wieloosobowej pozycja nie
+ * wraca z mostu — współrzędne z zasady nie opuszczają telefonu (ADR 0013), więc
+ * w prawdziwej grze daje je watcher wznowiony przez `uruchomGreMulti`. Tu gracz
+ * po prostu wie, gdzie jest, czyli wpisuje współrzędne jak na ekranie pozycji.
+ */
+async function ustawPozycjeTestowa(u, { lat = PODKOWA.lat, lon = PODKOWA.lon } = {}) {
+  ustaw(u, 'setup-lat', String(lat));
+  ustaw(u, 'setup-lon', String(lon));
+  await klik(u, 'przycisk-ustaw-reczne');
+}
+
+async function dojdzSymulacja(u, { maksMs = 5000 } = {}) {
+  await klik(u, 'przycisk-symulacja-gra');
+  const start = Date.now();
+  while (el(u, 'gra-panel-odcinek').hidden === false) {
+    if (Date.now() - start > maksMs) {
+      throw new Error(`symulacja nie domknęła dojścia w ${maksMs} ms — status: ${tekst(u, 'status')}`);
+    }
+    await new Promise((r) => setTimeout(r, 40));
+  }
+}
 async function zmien(u, id) {
   przelaczNa(u);
   const el = u.dom.pobierz(id);
@@ -343,11 +372,11 @@ async function dolaczKodemUI(u, kod) {
   assert.equal(el(u, 'multi-panel-lobby').hidden, false, 'gość trafił do lobby');
 }
 
-/** Odcinek od startu do „następna stacja": droga + ręczne dojście + poprawna odpowiedź. */
+/** Odcinek od startu do „następna stacja": droga + dojście z fixów (ADR 0029) + poprawna odpowiedź. */
 async function przejdzStacje(u) {
   await klik(u, 'przycisk-start-odcinka');
   assert.equal(el(u, 'gra-panel-odcinek').hidden, false, 'panel drogi widoczny');
-  await klik(u, 'przycisk-reczne-dojscie'); // POST dojscie (trybDojscia: reczne)
+  await dojdzSymulacja(u); // POST dojscie (trybDojscia: gps)
   przelaczNa(u);
   const odpowiedzi = u.dom.pobierz('gra-odpowiedzi').children;
   assert.ok(odpowiedzi.length === 4, 'pytanie odsłonięte z czterema odpowiedziami');
@@ -400,7 +429,7 @@ test('wyścig end-to-end: załóż → dołącz przez lobby → start → droga 
   await przejdzStacje(A);
   mostWyscig.online = false;
   await klik(B, 'przycisk-start-odcinka');
-  await klik(B, 'przycisk-reczne-dojscie'); // nie wyjdzie — kolejka
+  await dojdzSymulacja(B); // nie wyjdzie — kolejka
   przelaczNa(B);
   kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
   await oddech();
@@ -481,7 +510,7 @@ test('tury end-to-end: dołącz kodem → bramka tury → resume po odświeżeni
   assert.match(tekst(B, 'gra-multi-tura'), /Twoja tura/, 'B widzi swoją turę po odświeżeniu');
   await klik(B, 'przycisk-start-odcinka');
   assert.equal(el(B, 'gra-panel-odcinek').hidden, false, 'w swojej turze B rusza');
-  await klik(B, 'przycisk-reczne-dojscie');
+  await dojdzSymulacja(B);
   przelaczNa(B);
   kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
   await oddech();
@@ -495,6 +524,7 @@ test('tury end-to-end: dołącz kodem → bramka tury → resume po odświeżeni
   assert.equal(el(B2, 'ekran-gra').hidden, false, 'powrót prosto do gry');
   assert.equal(tekst(B2, 'gra-postep'), 'stacja 1 z 1', 'zamknięta stacja 2 nie wraca — została tylko 4');
   assert.match(tekst(B2, 'gra-multi-tura'), /Teraz idzie: Celina/, 'po powrocie tura znowu A (stacja 3)');
+  await ustawPozycjeTestowa(B2); // świeży telefon: GPS brak, więc pozycja z ekranu 2
 
   // A zamyka 3, B2 zamyka 4 → gra kompletna
   await przepompuj(A, 1);
@@ -799,12 +829,12 @@ test('wolna kolejność: wybór stacji z listy i pytanie własne dla każdego gr
   assert.match(tekst(A, 'przycisk-start-odcinka'), /stacji 3/, 'przycisk drogi wskazuje wybraną stację');
 
   await klik(A, 'przycisk-start-odcinka');
-  await klik(A, 'przycisk-reczne-dojscie');
+  await dojdzSymulacja(A);
   assert.match(tekst(A, 'gra-pytanie-tresc'), /stacji 3\? \(wariant 1\)/, 'organizator (indeks 0) ma pierwsze pytanie stacji');
 
   // Bartek gra u siebie, bez uzgadniania: ta sama stacja 1, ale DRUGIE pytanie
   await klik(B, 'przycisk-start-odcinka');
-  await klik(B, 'przycisk-reczne-dojscie');
+  await dojdzSymulacja(B);
   assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji 1\? \(wariant 2\)/, 'gość (indeks 1) ma drugie pytanie tej stacji');
 
   // po zamknięciu stacji lista wyboru maleje
@@ -836,7 +866,7 @@ test('pytania mniejszej paczki są dzielone, a nie gubione (indeks się zawija)'
   await przepompuj(B, 1);
 
   await klik(B, 'przycisk-start-odcinka');
-  await klik(B, 'przycisk-reczne-dojscie');
+  await dojdzSymulacja(B);
   assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji 1\?/, 'gość ma pytanie mimo paczki mniejszej niż liczba graczy');
   przelaczNa(B);
   assert.equal(B.dom.pobierz('gra-odpowiedzi').children.length, 4, 'cztery odpowiedzi do wyboru');

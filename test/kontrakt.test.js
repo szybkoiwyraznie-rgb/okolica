@@ -201,13 +201,10 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
   for (const ekran of ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka']) zadane.add(`ekran-${ekran}`);
   for (const panel of ['zaloz', 'dolacz', 'lobby']) zadane.add(`multi-panel-${panel}`); // M11: panele budowane z listy
   assert.ok(zadane.size > 25, `znaleziono tylko ${zadane.size} identyfikatorów — test pewnie nie widzi kodu`);
-  // ADR 0029: ręcznego zgłaszania dojścia NIE MA w interfejsie (właściciel,
-  // 2026-09-08) — id nie istnieje w index.html. app.js podpina je warunkowo
-  // wyłącznie jako szew dla testów atrapy DOM, które tak zamykają odcinek.
-  // Wyjątek jest jawny: dopisanie tu czegokolwiek wymaga uzasadnienia.
-  const wyjatkiBezElementu = new Set(['przycisk-reczne-dojscie']);
+  // ADR 0029: ręcznego zgłaszania dojścia nie ma nigdzie — ani w index.html,
+  // ani w app.js. Wyjątków od tej reguły nie ma: każdy id wołany z aplikacji
+  // musi istnieć w interfejsie.
   for (const id of zadane) {
-    if (wyjatkiBezElementu.has(id)) continue;
     assert.ok(INDEX.includes(`id="${id}"`), `app.js woła #${id}, którego nie ma w index.html`);
   }
 });
@@ -867,6 +864,13 @@ test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da si�
   assert.ok(INDEX.includes('id="przycisk-nowa-gra"'), 'na ekranie wyniku jest wyjście do nowej gry');
   assert.ok(APP.includes('function wrocNaPoczatek'), 'przycisk ma podpiętą funkcję');
   assert.ok(APP.includes("pokazEkran('ekran-setup')"), 'wyjście wraca na ekran setupu');
+  // LESSONS L31: gdy funkcja znika z interfejsu, jej opis zostaje w komunikatach.
+  // Sześć kodów `P` i jeden komunikat `stanDojscia` kazały „zgłosić dojście
+  // ręcznie" jeszcze po usunięciu przycisku — gracz czytał instrukcję, której
+  // nie dało się wykonać.
+  for (const [gdzie, tekst] of [['app/pozycja.js', czytaj('app/pozycja.js')], ['app/app.js', APP], ['index.html', INDEX]]) {
+    assert.ok(!/zgłoś dojście ręcznie|zgłaszać ręcznie|w trybie ręcznym/i.test(tekst), `${gdzie} nadal odsyła do ręcznego zgłaszania dojścia`);
+  }
 });
 
 test('kontrakt ADR 0030: rozgrywka na telefonie układa się pod orientację, a strona się nie przewija', () => {

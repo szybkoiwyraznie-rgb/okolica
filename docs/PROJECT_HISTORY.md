@@ -1250,3 +1250,36 @@ szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-24` (+ `WERSJA_SW`).
 Skrypt mostu bez zmian względem wpisu powyżej — 1093 linie, md5
 `620f28c734136654d9a4a01ebfe7853b`; właściciel deklaruje, że wkleił tę wersję
 (niezweryfikowane z sandboxa — `script.google.com` jest stąd nieosiągalny).
+
+## 2026-09-08 — szew ręcznego dojścia usunięty do końca; przy okazji wyszły dwa prawdziwe bugi
+
+- **Ręcznego zgłaszania dojścia nie ma już nigdzie (dopisek do ADR 0029).**
+  Zostało podpięcie w `app.js` jako warunek `if (element)` — szew dla testów
+  atrapy DOM i jeden jawny wyjątek w kontrakcie „app.js nie woła
+  nieistniejących id". Teraz nie ma ani gałęzi, ani wyjątku. Testy (14 miejsc:
+  8 w `test/aplikacja.test.js`, 6 w `test/wieloosobowa-ui.test.js` — nie 10,
+  jak było w notatkach) zamykają odcinek przez `dojdzSymulacja()`: klik
+  w „▶ Symuluj dojście" i aktywne czekanie, aż panel drogi zniknie, z jawnym
+  błędem po 5 s zamiast cichego przejścia dalej. Martwa gałąź statusu
+  „Dojście zgłoszone ręcznie" w `zakonczOdcinekGry` też wypadła.
+- **Siedem komunikatów nadal kazało zgłaszać dojście ręcznie** (LESSONS L31):
+  P01, P02, P04, P05, P06, P08 w `app/pozycja.js`, komunikat `stanDojscia`
+  o zepsutej stacji oraz status błędu geolokalizacji w `app/app.js`. Wszystkie
+  mówią teraz, co gracz MOŻE zrobić: otwarta przestrzeń, dokładniejszy pomiar,
+  pominięcie odcinka, tryb testowy dla organizatora. Kontrakt ADR 0029 pilnuje,
+  żeby takie sformułowania nie wróciły do `app/pozycja.js`, `app/app.js`
+  ani `index.html`.
+- **Bug znaleziony dzięki przejściu na ścieżkę produkcyjną (LESSONS L36):**
+  `pokazPozycje()` wołało `odswiezPropozycjeZestawow()` bezwarunkowo, a jest
+  wołane z `przyjmijFix()` — więc **każdy fix GPS odpytywał most Drive o indeks
+  paczek** przez całą rozgrywkę, choć karta propozycji żyje na ekranie pozycji.
+  Test „utrata zasięgu — zero żądań sieciowych" tego nie widział, bo ręczny
+  przycisk zamykał odcinek bez fixów. Bramka `if (STAN.ekran === 'pozycja')`
+  przy wywołaniu (nie w środku funkcji — dwa pozostałe wywołania to jawne akcje
+  gracza); asercja w teście zostaje surowa.
+- **Wznowienie gry wieloosobowej nie przywraca pozycji** — i słusznie:
+  współrzędne z zasady nie opuszczają telefonu (ADR 0013), a watcher GPS
+  wznawia `uruchomGreMulti`. W trybie testowym GPS nie ma, więc test po
+  wznowieniu wpisuje współrzędne tak jak gracz na ekranie pozycji.
+- Testy: **610, 0 fail**; `npm run brama` = 610 + sync szablonu OK + WCAG AA
+  0 naruszeń. Cache-bust `?v=m12-25` (43 miejsca + `WERSJA_SW`).

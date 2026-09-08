@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-24';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-24';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-25';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-25';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -31,21 +31,21 @@ import {
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-24';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-24';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-24';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-24';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-24';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-24';
+} from './protokol.js?v=m12-25';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-25';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-25';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-25';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-25';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-25';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-24';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-24';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-24';
+} from './zestawy.js?v=m12-25';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-25';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-25';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -65,17 +65,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-24';
-import { utworzMape } from './mapa.js?v=m12-24';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-24';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-24';
-import { adresMostu, stanMostu } from './most.js?v=m12-24';
+} from './sieci.js?v=m12-25';
+import { utworzMape } from './mapa.js?v=m12-25';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-25';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-25';
+import { adresMostu, stanMostu } from './most.js?v=m12-25';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-24';
+} from './oceny.js?v=m12-25';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -868,7 +868,12 @@ function pokazPozycje() {
     STAN.wycentrowane = true;
     centrujNaPozycji();
   }
-  odswiezPropozycjeZestawow();
+  // Karta propozycji paczek żyje na ekranie pozycji (`#zestawy-karta`
+  // w `#ekran-pozycja`). `pokazPozycje()` jest wołane przy KAŻDYM fixie, a fixy
+  // w grze lecą cały czas — bez tej bramki cała rozgrywka to seria zapytań do
+  // mostu o indeks, którego nikt wtedy nie ogląda: bateria, transfer i limit
+  // kwoty Apps Script idą w błoto (ADR 0013: żadnych zbędnych żądań).
+  if (STAN.ekran === 'pozycja') odswiezPropozycjeZestawow();
 }
 
 /** Zamyka watcher, jeśli działa (ADR 0004 pkt 1: jeden watcher na rozgrywkę). */
@@ -896,7 +901,7 @@ function wlaczGps() {
     onBlad: (blad) => {
       pokazBledy('bledy-pozycja', [{ kod: blad.kod, pole: 'geolocation', komunikat: blad.komunikat }]);
       $('pozycja-status').textContent = 'Brak pozycji';
-      status('Położenie niedostępne — dojście można zgłaszać ręcznie albo grać w trybie testowym.' + ADR(' (ADR 0004 pkt 5–6)'));
+      status('Położenie niedostępne — gra czeka na sygnał. Wyjdź na otwartą przestrzeń, a jeśli stacja jest nieosiągalna, pomiń odcinek.' + ADR(' (ADR 0029)'));
     },
   });
   if (!STAN.watcher.czyAktywny()) $('pozycja-status').textContent = 'Brak pozycji';
@@ -2040,9 +2045,10 @@ function zakonczOdcinekGry(trybDojscia, fix) {
     // M11/P4: dojście jedzie na serwer BEZ współrzędnych (biała lista pól, ADR 0019 pkt 3)
     void wyslijZdarzenieMulti('dojscie', stacjaPrzed, { trybDojscia });
   }
-  status(trybDojscia === TRYBY_DOJSCIA.reczne
-    ? 'Dojście zgłoszone ręcznie — odnotowane, bez kary (ADR 0004 pkt 5).'
-    : 'Stacja osiągnięta — próg dojścia zadziałał z GPS. Brawo!');
+  // ADR 0029: jedynym trybem dojścia, jaki ta funkcja może teraz dostać, jest
+  // GPS (albo symulacja, która jest tym samym strumieniem fixów) — gałąź
+  // „zgłoszone ręcznie" była martwa razem z usuniętym przyciskiem.
+  status('Stacja osiągnięta — próg dojścia zadziałał z GPS. Brawo!');
   renderujGre();
   if (STAN.rozgrywka.faza === FAZY.pytanie) renderujPytanie(); // ADR 0007 pkt 6: pytanie DOPIERO teraz
   zapiszGre();
@@ -4394,12 +4400,10 @@ function start() {
 
   $('przycisk-test-polaczenia').addEventListener('click', () => sprawdzPolaczenieZRepo());
   $('przycisk-start-odcinka').addEventListener('click', () => startOdcinkaGry());
-  // ADR 0029: ręcznego zgłaszania dojścia NIE MA w interfejsie (właściciel,
-  // 2026-09-08). Elementu nie ma w index.html, więc w przeglądarce ten warunek
-  // jest fałszywy i dojście da się zamknąć tylko GPS-em albo pominięciem
-  // odcinka. Podpięcie zostaje wyłącznie jako szew dla testów atrapy DOM.
-  const reczneDojscie = $('przycisk-reczne-dojscie');
-  if (reczneDojscie) reczneDojscie.addEventListener('click', () => zakonczOdcinekGry(TRYBY_DOJSCIA.reczne, null));
+  // ADR 0029: ręcznego zgłaszania dojścia NIE MA — ani w index.html, ani tutaj.
+  // Dojście zamyka wyłącznie strumień fixów (GPS albo symulacja w trybie
+  // testowym, która karmi aplikację tym samym `przyjmijFix`); testy idą tą samą
+  // drogą, więc nie ma drugiego, produkcyjnie martwego wejścia do fazy pytania.
   $('przycisk-nowa-gra').addEventListener('click', () => wrocNaPoczatek());
   $('przycisk-pauza').addEventListener('click', () => przelaczPauzeGry());
   $('przycisk-symulacja-gra').addEventListener('click', () => przelaczSymulacjeDoStacji());

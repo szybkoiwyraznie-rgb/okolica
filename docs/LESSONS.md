@@ -383,3 +383,23 @@ sprawdź kaskadę jawnie — i zostaw test, który ją pinuje: kontrakt ADR 0030
 wycina z CSS komentarze i sprawdza, że **żadna** reguła celująca w `#bledy-gra`
 ani `.badge-duzy` nie deklaruje `background` (test ma zęby: wstrzyknięcie tła
 do `.badge-duzy` go wywala).
+
+## L36 — skrót w teście ukrywa żądania, które ścieżka produkcyjna wykonuje
+
+**Objaw:** test „utrata zasięgu w trakcie gry — zero żądań sieciowych"
+przechodził, dopóki odcinek zamykał klik w usunięty potem przycisk ręcznego
+dojścia. Gdy ten sam test przeszedł symulacją (strumień fixów, ADR 0029),
+w logu `fetch` pojawiło się **osiem** żądań do mostu Drive — po jednym na fix.
+**Przyczyna:** `pokazPozycje()` wołało `odswiezPropozycjeZestawow()`
+bezwarunkowo, a `pokazPozycje()` jest wołane z `przyjmijFix()`, czyli przy
+KAŻDYM fixie. Karta propozycji paczek żyje na ekranie pozycji, więc cała
+rozgrywka odświeżała indeks repozytorium, którego nikt wtedy nie ogląda:
+bateria, transfer i limit kwoty Apps Script szły w błoto. Ręczny przycisk
+zamykał odcinek jednym wywołaniem bez fixów, więc skrót w teście nigdy tego
+nie pokazał.
+**Reguła:** test, który zastępuje ścieżkę produkcyjną skrótem, testuje skrót.
+Usunięcie skrótu jest okazją, żeby sprawdzić, co ścieżka naprawdę robi —
+a asercje o braku żądań mają zostać surowe (`assert.deepEqual(wywolania, [])`),
+bo filtr „oprócz kafelków" właśnie tu uśpiłby czujność. Naprawa: bramka
+`if (STAN.ekran === 'pozycja')` przy wywołaniu, nie w środku funkcji — dwa
+pozostałe wywołania to jawne akcje gracza i mają działać zawsze.

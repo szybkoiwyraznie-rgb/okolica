@@ -191,9 +191,9 @@ test('GPS: niedokładny fix pokazuje ostrzeżenie P05 i nie przerywa gry', () =>
 test('GPS: błąd przeglądarki daje komunikat z wyjściem awaryjnym (ADR 0004 pkt 7)', () => {
   gps.wyslijBlad(1, 'User denied Geolocation');
   assert.match(pobierz('bledy-pozycja').textContent, /\[P02\]/);
-  assert.match(pobierz('bledy-pozycja').textContent, /ustawieniach|ręczn/i);
+  assert.match(pobierz('bledy-pozycja').textContent, /tryb testowy/i, 'P02 daje wykonalne wyjście — ADR 0029: ręcznego zgłoszenia nie ma');
   assert.equal(pobierz('pozycja-status').textContent, 'Brak pozycji');
-  assert.match(pobierz('status').textContent, /ręcznie|trybie testowym/);
+  assert.match(pobierz('status').textContent, /otwartą przestrzeń|pomiń odcinek/, 'status daje wykonalne wyjście (ADR 0029)');
 
   gps.wyslijBlad(2, 'Position unavailable');
   assert.match(pobierz('bledy-pozycja').textContent, /\[P03\]/);
@@ -523,6 +523,24 @@ test('prywatność: czyszczenie jest dwustopniowe i rusza tylko klucze obolica:*
 /* ------------------------------------------- symulacja dojścia (M3, tryb testowy) */
 
 const czekaj = (ms) => new Promise((rozwiaz) => setTimeout(rozwiaz, ms));
+
+/**
+ * ADR 0029: dojście rozstrzyga wyłącznie strumień fixów, więc testy nie mają
+ * już „ręcznego" przycisku — karmią aplikację symulacją, która idzie przez ten
+ * sam `przyjmijFix` co GPS. Czekamy aktywnie na skutek (panel odcinka znika),
+ * dzięki czemu test jest tak szybki, jak pozwala debounce dojścia, a gdy
+ * dojście nie nastąpi — mówi wprost, zamiast po cichu sprawdzać coś dalej.
+ */
+async function dojdzSymulacja(dom, { maksMs = 5000 } = {}) {
+  dom.kliknij('przycisk-symulacja-gra');
+  const start = Date.now();
+  while (dom.pobierz('gra-panel-odcinek').hidden === false) {
+    if (Date.now() - start > maksMs) {
+      throw new Error(`symulacja nie domknęła dojścia w ${maksMs} ms — status: ${dom.pobierz('status').textContent}`);
+    }
+    await czekaj(40);
+  }
+}
 
 test('symulacja: przycisk istnieje tylko w trybie testowym', async () => {
   const domMapy = await aplikacjaZMapa();
@@ -1086,7 +1104,7 @@ test('M6: start gry — przyjęta paczka sama otwiera ekran gry i fazę A (przyg
   assert.match(dom.pobierz('gra-dystans').textContent, /\d+ m/, 'badge dystansu w linii prostej z bieżącej pozycji');
 });
 
-test('M6: odcinek — start, ręczne dojście z karą i odmowa drugiego startu (G03)', async () => {
+test('M6: odcinek — start, dojście ze strumienia fixów i odmowa drugiego startu (G03)', async () => {
   const { dom } = await graGotowaDoStartu();
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
@@ -1099,11 +1117,12 @@ test('M6: odcinek — start, ręczne dojście z karą i odmowa drugiego startu (
   dom.kliknij('przycisk-start-odcinka');
   assert.match(dom.pobierz('bledy-gra').textContent, /G03/, 'kod rozgrywki widoczny w alercie');
 
-  // ręczne zgłoszenie dojścia: kara i przejście do fazy pytania
-  dom.kliknij('przycisk-reczne-dojscie');
+  // ADR 0029: dojście rozstrzyga strumień fixów. Symulacja karmi aplikację tym
+  // samym `przyjmijFix` co GPS, więc to ścieżka produkcyjna, a nie skrót.
+  await dojdzSymulacja(dom);
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'faza pytania — panel C (wypełnienie treścią w R5)');
   assert.equal(dom.pobierz('gra-panel-odcinek').hidden, true);
-  assert.match(dom.pobierz('status').textContent, /ręcznie/, 'status mówi wprost o ręcznym zgłoszeniu');
+  assert.match(dom.pobierz('status').textContent, /próg dojścia zadziałał z GPS/, 'status mówi o dojściu z fixów — ręcznego zgłoszenia już nie ma');
   assert.equal(dom.pobierz('bledy-gra').hidden, true, 'poprawna tranzycja czyści poprzedni błąd');
 });
 
@@ -1129,12 +1148,12 @@ test('M6: pauza — przyciski stają, wznowienie jawne (ADR 0004 pkt 1)', async 
 
 /* ================= M6/R5: pętla pytania — odsłonięcie, odpowiedź, źródła */
 
-/** Pełna ścieżka do fazy pytania: start gry → odcinek → ręczne dojście. */
+/** Pełna ścieżka do fazy pytania: start gry → odcinek → dojście z fixów (ADR 0029). */
 async function graWFaziePytania() {
   const { dom, paczka } = await graGotowaDoStartu();
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
-  dom.kliknij('przycisk-reczne-dojscie');
+  await dojdzSymulacja(dom);
   return { dom, paczka };
 }
 
@@ -1230,7 +1249,7 @@ test('M6: zapis gry ląduje w pamięci po każdym ruchu i nie niesie plaintextu'
   assert.equal(snapshot.rozgrywka.faza, 'odcinek', 'zapis po starcie odcinka');
   assert.equal(snapshot.rozgrywka.odcinki[0].stan, 'w-trakcie');
 
-  dom.kliknij('przycisk-reczne-dojscie');
+  await dojdzSymulacja(dom);
   snapshot = JSON.parse(pamiec.get(kluczZapisu));
   assert.equal(snapshot.rozgrywka.faza, 'pytanie', 'zapis po dojściu');
 });
@@ -1256,7 +1275,7 @@ test('M6: wznowienie po „zamknięciu przeglądarki" — nowa instancja, ta sam
   assert.equal(dom2.pobierz('karta-wznowienie').hidden, true, 'baner znika po wznowieniu');
 
   // rebaza zegara działa: zakończenie odcinka NIE daje G09 (czas końca < startu)
-  dom2.kliknij('przycisk-reczne-dojscie');
+  await dojdzSymulacja(dom2);
   assert.equal(dom2.pobierz('bledy-gra').hidden, true, `brak błędu, a jest: ${dom2.pobierz('bledy-gra').textContent}`);
   assert.equal(dom2.pobierz('gra-panel-pytanie').hidden, false, 'gra toczy się dalej po wznowieniu');
 });
@@ -1363,12 +1382,16 @@ test('M6/R7: utrata zasięgu w trakcie gry — zero żądań sieciowych, gra ży
   dom.window.fetch = async (adres) => { wywolania.push(String(adres)); return { ok: false, status: 503 }; };
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
-  dom.kliknij('przycisk-reczne-dojscie');
+  await dojdzSymulacja(dom);
   kliknijOdpowiedz(dom, 0);
   dom.kliknij('przycisk-nastepna-stacja');
   dom.kliknij('przycisk-start-odcinka');
   await czekaj(100);
-  assert.equal(wywolania.length, 0, 'ani Overpass, ani Nominatim, ani nic innego — stacje i pytania są na telefonie');
+  // Dojście idzie strumieniem fixów (ADR 0029), więc ten test przeszedł drogę
+  // produkcyjną i dopiero wtedy pokazał, że `pokazPozycje()` odświeżało
+  // propozycje paczek przy KAŻDYM fixie — także w trakcie gry. Bramka
+  // `STAN.ekran === 'pozycja'` to zamyka; asercja zostaje surowa: zero żądań.
+  assert.deepEqual(wywolania, [], 'ani Overpass, ani Nominatim, ani most — gra żyje z pamięci');
   assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'gra toczy się dalej bez sieci');
 });
 
@@ -1408,7 +1431,7 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
   }
   assert.match(dom.pobierz('gra-postep').textContent, /stacja 4 z 4/, 'gramy o stację bez pytania');
   dom.kliknij('przycisk-start-odcinka');
-  dom.kliknij('przycisk-reczne-dojscie');
+  await dojdzSymulacja(dom);
   // ADR 0015: dojście zamyka stację BEZ fazy pytania — gra kończy się od razu
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, true, 'stacja bez pytania nie otwiera panelu pytania');
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'ostatnia stacja zamknięta dojściem = koniec gry');
@@ -1528,7 +1551,7 @@ test('M7: ręczne zakończenie — tekst wyniku mówi wprost, że gra przerwana 
   const { dom } = await graGotowaDoStartu();
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
-  dom.kliknij('przycisk-reczne-dojscie');
+  await dojdzSymulacja(dom);
   kliknijOdpowiedz(dom, 0);
   dom.kliknij('przycisk-zakoncz-gre'); // uzbrojenie
   dom.kliknij('przycisk-zakoncz-gre'); // wykonanie → wczesny wynik
@@ -1881,12 +1904,12 @@ async function graZNiepewnymGraczem() {
   return { dom, paczka, pamiec };
 }
 
-/** Krótka gra: dwa dojścia ręczne, dwie odpowiedzi, ręczne zakończenie. */
+/** Krótka gra: dwa dojścia z fixów (ADR 0029), dwie odpowiedzi, ręczne zakończenie. */
 async function grajDwieStacjeIKoncz(dom) {
   zaczynijGre(dom);
   for (let i = 0; i < 2; i += 1) {
     dom.kliknij('przycisk-start-odcinka');
-    dom.kliknij('przycisk-reczne-dojscie');
+    await dojdzSymulacja(dom);
     kliknijOdpowiedz(dom, 0);
     dom.kliknij('przycisk-nastepna-stacja');
   }
