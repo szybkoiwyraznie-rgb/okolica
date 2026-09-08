@@ -1412,3 +1412,30 @@ siebie widać pinezkę i jej opis jednocześnie.
 pikseli, więc 619 testów tej zmiany nie sprawdza. Pilnuje jej nowy kontrakt na
 strukturę i na obecność reguł dla obu orientacji oraz audyt WCAG. Proporcje
 (42dvh / 44%) trzeba obejrzeć na telefonie.
+
+## 2026-09-08 — podgląd: wyszarzone „Dalej: stacje" i komunikaty odsyłające nie tam, gdzie trzeba
+
+Właściciel odpalił podgląd i na ekranie pozycji zobaczył tylko P02 i wyszarzone
+„Dalej: stacje →". Przyczyna nie była w układzie: podgląd działa w ramce bez
+`allow="geolocation"`, więc `getCurrentPosition` kończy się odmową (`BLEDY_API[1]`
+→ P02), a `pokazPozycje()` (`app/app.js:861-873`) odblokowuje przycisk dopiero,
+gdy `STAN.pozycja` istnieje.
+
+Problem w tym, że komunikaty kazały otwierać aplikację z `?test=true`, a to
+niepotrzebne: `ustawPozycjeRecznie()` (`app/app.js:961-981`) **nie ma bramki
+trybu testowego** — przycisk „✎ Wpisz ręcznie" odsłania pola lat/lon zawsze,
+a ustawiona pozycja odblokowuje przejście. Po usunięciu przełącznika trybu
+z nagłówka to jedyna widoczna droga, więc komunikaty musiały ją pokazywać.
+
+- P01, P06, P08 wskazują „✎ Wpisz ręcznie" zamiast `?test=true`.
+- P02 wskazuje obie drogi i mówi prawdę o ograniczeniu: ręczna pozycja pozwala
+  iść dalej, ale **bez strumienia pozycji gra nie rozstrzygnie dojścia** — do
+  rozegrania partii bez GPS potrzebna jest symulacja z `?test=true` (ADR 0029).
+- Status po ręcznym ustawieniu brzmiał „Pozycja ustawiona ręcznie (tryb
+  testowy)." — a trybu testowego tam nie ma (LESSONS L31: komunikat nie może
+  twierdzić czegoś, czego kod nie sprawdza).
+- Komentarz przy `przycisk-dalej-stacje` odsyłał do usuniętego przełącznika.
+
+Testy: **+2 asercje** na ścieżce, na której utknął właściciel („✎ Wpisz ręcznie"
+odsłania pola bez trybu testowego; ręczna pozycja odblokowuje „Dalej: stacje").
+**620, 0 fail**; brama = 620 + sync szablonu OK + WCAG AA 0. Cache-bust `?v=m12-32`.

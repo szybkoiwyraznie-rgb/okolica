@@ -85,9 +85,16 @@ test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
   }
 });
 
-/* ------------------------------------------------- współrzędne ręczne (tryb test) */
+/* ------------------------------------------------- współrzędne ręczne */
 
 test('ręczne współrzędne: puste pola nie ustawiają pozycji (0,0) „na Null Island"', () => {
+  // Po usunięciu przełącznika trybu testowego z nagłówka to jedyna WIDOCZNA
+  // droga do wpisania pozycji, gdy geolokalizacja nie działa (np. podgląd
+  // w ramce bez `allow="geolocation"`) — musi działać bez ?test=true.
+  assert.equal(pobierz('reczne-wspolrzedne').hidden, true, 'pola domyślnie schowane');
+  dom.kliknij('przycisk-recznie');
+  assert.equal(pobierz('reczne-wspolrzedne').hidden, false, '„✎ Wpisz ręcznie" odsłania pola bez trybu testowego');
+
   pobierz('setup-lat').value = '';
   pobierz('setup-lon').value = '';
   dom.kliknij('przycisk-ustaw-reczne');
@@ -110,6 +117,11 @@ test('ręczne współrzędne: zakresy są pilnowane, a poprawna pozycja przechod
   assert.equal(pobierz('bledy-pozycja').hidden, true);
   assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustawiona ręcznie');
   assert.match(pobierz('pozycja-wspolrzedne').textContent, /52\.23178, 21\.01234/);
+  // Ścieżka, na której utknął właściciel na podglądzie: geolokalizacja
+  // niedostępna, „Dalej: stacje" wyszarzone. Ręczne współrzędne NIE są trybem
+  // testowym (`ustawPozycjeRecznie` nie ma bramki), więc muszą odblokowywać.
+  assert.equal(pobierz('przycisk-dalej-stacje').disabled, false,
+    'ręczna pozycja odblokowuje „Dalej: stacje" bez trybu testowego');
   assert.match(pobierz('pozycja-wspolrzedne').textContent, /geohash/);
   assert.equal(pobierz('pozycja-dokladnosc').textContent, 'dokładność: nieznana (wpisana ręcznie)');
   assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
@@ -1859,7 +1871,7 @@ test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie
   assert.ok(wyslij(svg, 'pointerdown', { pointerId: 31, clientX: 40, clientY: 0 }) > 0, 'svg mapy pozycji ma nasłuch pointerdown');
   wyslij(svg, 'pointerup', { pointerId: 31, clientX: 40, clientY: 0 });
 
-  assert.match(domT.pobierz('status').textContent, /Pozycja testowa ustawiona z mapy/, 'status mówi, że pozycja jest z mapy');
+  assert.match(domT.pobierz('status').textContent, /Pozycja ustawiona z mapy/, 'status mówi, że pozycja jest z mapy');
   assert.equal(Number(domT.pobierz('setup-lat').value), oczLat, 'pole lat wypełnione współrzędnymi stuknięcia');
   assert.equal(Number(domT.pobierz('setup-lon').value), oczLon, 'pole lon wypełnione współrzędnymi stuknięcia');
   assert.match(
