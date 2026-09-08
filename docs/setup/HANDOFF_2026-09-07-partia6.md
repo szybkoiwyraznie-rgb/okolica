@@ -190,3 +190,30 @@ telefonie przy okazji**: czy ta linia nie rozjeżdża układu na 360 px.
 
 Do decyzji właściciela: dzielenie generacji na partie (po jednej stacji) —
 opis w `docs/BACKLOG.md` B21.
+
+## 12. Oceny pytań przez graczy (ADR 0028) — stan na 2026-09-08
+
+Zlecenie właściciela: kciuk w górę/dół przy pytaniu, jeden głos na gracza
+i pytanie, wysyłka w tle, a na ekranie 2 „użyta w X grach · % na tak · % na nie".
+
+**Zrobione i zielone:**
+- ADR 0028 (Zaakceptowana) + rejestr.
+- `app/oceny.js` — czysty model: slug głosującego (lustro `idProfilu`, parzystość
+  testowana przez wykonanie obu implementacji), `idGlosujacego`, `ocenPytanie`
+  (drugi klik = O03 i nic nie leci w sieć), kolejka wysyłki, walidacje i polski
+  tekst statystyk.
+- Most: katalog `okolica-oceny-paczek`, plik `RO-oceny/1` na paczkę, akcje
+  `ocena` i `uzycie`, `podsumowanieOcen` w `budujIndeks`. Testy wykonują `.gs`.
+
+**Czeka (następny krok):** panel z dwiema ikonami w `index.html` +rysowanie w
+`renderujPytanie()` (ten sam slot po odpowiedzi), wysyłka w tle z kolejką
+`okolica:oceny-kolejka`, ping `uzycie` po pobraniu paczki z repo (id paczki jest
+w `grajZZestawemZRepo` jako `wpis.id`), statystyki w `walidujIndeksSurowy`
+i na ekranie 2, cache-bust.
+
+**Do wklejenia przez właściciela:** `.gs` urósł do 1093 wierszy
+(md5 `620f28c734136654d9a4a01ebfe7853b`) — wdrożenie ISTNIEJĄCYM wdrożeniem
+(Wdróż → Zarządzaj wdrożeniami → ołówek → „Nowa wersja" → Wdróż), bo „Nowe
+wdrożenie" daje nowy adres i łamie ADR 0020. Instrukcja z pełną treścią pójdzie
+w czacie razem z gotową aplikacją, żeby wklejać raz.
+
