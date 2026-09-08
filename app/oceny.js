@@ -355,6 +355,20 @@ export function liczbaGierTekst(liczba) {
 }
 
 /**
+ * Polska odmiana rzeczownika przy liczbie ocen: 1 ocena, 2–4 oceny, 5+ ocen.
+ * Nastki 12–14 idą z formą „ocen" (12 ocen, nie „12 oceny") — bez tego
+ * reguła „ostatnia cyfra 2–4" daje „12 oceny".
+ */
+export function liczbaOcenTekst(liczba) {
+  const n = Math.abs(Math.round(Number(liczba)));
+  const ostatnie = n % 10;
+  const nastek = n % 100;
+  if (n === 1) return 'ocena';
+  if (ostatnie >= 2 && ostatnie <= 4 && (nastek < 12 || nastek > 14)) return 'oceny';
+  return 'ocen';
+}
+
+/**
  * Zdanie na ekran 2: ile gier użyło paczki i jak gracze ocenili pytania.
  *
  * @param {object|null} statystyki wynik `walidujStatystykiOcen` (null = brak danych)
@@ -364,6 +378,6 @@ export function opisOcenTekst(statystyki) {
   if (!statystyki) return 'Brak danych o ocenach — repozytorium nie odpowiedziało.';
   const { glosow, procentPlus, procentMinus, uzytaWGrach } = statystyki;
   const gry = uzytaWGrach > 0 ? `Użyta ${liczbaGierTekst(uzytaWGrach)}` : 'Jeszcze nie użyta w grze';
-  if (!glosow) return `${gry} · jeszcze bez ocen graczy.`;
-  return `${gry} · ${procentPlus}% na tak · ${procentMinus}% na nie (${glosow} ${glosow === 1 ? 'ocena' : 'ocen'}).`;
+  if (!glosow) return `${gry}, jeszcze bez ocen graczy.`;
+  return `${gry}, ${glosow} ${liczbaOcenTekst(glosow)} (${procentPlus}% 👍, ${procentMinus}% 👎)`;
 }

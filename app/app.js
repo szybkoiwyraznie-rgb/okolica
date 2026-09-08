@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-27';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-27';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-28';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-28';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -31,21 +31,21 @@ import {
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-27';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-27';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-27';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-27';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-27';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-27';
+} from './protokol.js?v=m12-28';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-28';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-28';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-28';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-28';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-28';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-27';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-27';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-27';
+} from './zestawy.js?v=m12-28';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-28';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-28';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -65,17 +65,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-27';
-import { utworzMape } from './mapa.js?v=m12-27';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-27';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-27';
-import { adresMostu, stanMostu } from './most.js?v=m12-27';
+} from './sieci.js?v=m12-28';
+import { utworzMape } from './mapa.js?v=m12-28';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-28';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-28';
+import { adresMostu, stanMostu } from './most.js?v=m12-28';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-27';
+} from './oceny.js?v=m12-28';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -110,6 +110,9 @@ const STAN = {
   ocenianePytanieId: '',
   ocenianyGracz: '',
   usterkiPaczki: [],
+  /** Ekran, na który wracamy z rankingu i z prywatności (oba są poza EKRANY). */
+  powrotZRankingu: 'setup',
+  powrotZPrywatnosci: 'setup',
   /** M6: stan gry `rozgrywka/1` — null do „▶ Zacznij grę". */
   rozgrywka: null,
   /** M6: ukryty kontener paczki na czas gry (TO-paczka/2) — nigdy plaintext (ADR 0007 pkt 4). */
@@ -213,8 +216,14 @@ function pokazPrywatnosc() {
   // ADR 0030: ekran prywatności chowa wszystkie ekrany gry, więc znacznik
   // `data-ekran` musi zniknąć razem z nimi — inaczej reguły „bez przewijania”
   // zostałyby na długim dokumencie, którego nie dałoby się przeczytać.
+  // Rankingi NIE należą do EKRANY, więc chowamy je jawnie i zapamiętujemy,
+  // że to stamtąd przyszliśmy — bez tego „wróć" zrzucało gracza na setup.
+  STAN.powrotZPrywatnosci = $('ekran-ranking').hidden
+    ? (EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup')
+    : 'ranking';
   document.body.dataset.ekran = 'prywatnosc';
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
+  $('ekran-ranking').hidden = true;
   $('ekran-prywatnosc').hidden = false;
   $('geokodacja-zapasowa').checked = localStorage.getItem('okolica:geokodacja-zapasowa') === '1';
   window.scrollTo({ top: 0 });
@@ -222,6 +231,10 @@ function pokazPrywatnosc() {
 
 function wrocZPrywatnosci() {
   $('ekran-prywatnosc').hidden = true;
+  if (STAN.powrotZPrywatnosci === 'ranking') {
+    pokazRankingi({ bezPobierania: true }); // dane już są — nie pytamy mostu drugi raz
+    return;
+  }
   pokazEkran(EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup');
 }
 
@@ -3284,15 +3297,38 @@ function fetchPrzegladarki() {
 }
 
 /** GET do mostu z limitem 8 s i jawnym błędem — współdzielony przez lobby, indeks i wznowienie. */
+/**
+ * Nasz własny limit czasu (8 s) przerywa żądanie przez `AbortController`,
+ * a przeglądarka opisuje to PO ANGIELSKU i od swojej strony: Chrome daje
+ * „signal is aborted without reason", Firefox „The user aborted a request.".
+ * Dla gracza to bełkot, więc rozróżniamy nasze przerwanie od prawdziwej awarii
+ * sieci i zawsze oddajemy komunikat po polsku (LESSONS: komunikat musi nazywać
+ * przyczynę, nie wyjątek).
+ */
+function bladMostuPoPolsku(e, { przekroczonyCzas, url }) {
+  if (przekroczonyCzas) return new Error('most Drive nie odpowiedział w 8 sekund — sprawdź połączenie albo spróbuj za chwilę');
+  const tekst = String(e?.message ?? e ?? '');
+  if (e?.name === 'AbortError' || /abort/i.test(tekst)) {
+    return new Error('połączenie z mostem Drive zostało przerwane — spróbuj jeszcze raz');
+  }
+  if (/failed to fetch|networkerror|load failed/i.test(tekst)) {
+    return new Error('brak połączenia z mostem Drive — telefon jest offline albo adres repozytorium nie odpowiada');
+  }
+  return new Error(`${tekst}${url ? ` (${url})` : ''}`);
+}
+
 async function pobierzGetMulti(url) {
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
   if (!f) throw new Error('to środowisko nie ma fetch — nie da się zapytać mostu');
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(() => kontroler?.abort(), 8000);
+  let przekroczonyCzas = false;
+  const timer = setTimeout(() => { przekroczonyCzas = true; kontroler?.abort(); }, 8000);
   try {
     const odp = await f(url, kontroler ? { signal: kontroler.signal } : undefined);
     if (!odp.ok) throw new Error(`HTTP ${odp.status}`);
     return await odp.json();
+  } catch (e) {
+    throw bladMostuPoPolsku(e, { przekroczonyCzas, url: null });
   } finally {
     clearTimeout(timer);
   }
@@ -4031,17 +4067,20 @@ const RANKING_ZAKLADKI = [
 ];
 
 /** Ekran rankingów nie jest krokiem gry — chowa wszystkie ekrany (jak prywatność). */
-function pokazRankingi() {
+function pokazRankingi({ bezPobierania = false } = {}) {
+  // Zapamiętujemy ekran, z którego gracz przyszedł: `STAN.ekran` nie zmienia się
+  // przy wejściu na rankingi, więc bez tego „wróć" zawsze zrzucało na setup.
+  STAN.powrotZRankingu = EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup';
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-prywatnosc').hidden = true;
   $('ekran-ranking').hidden = false;
   window.scrollTo({ top: 0 });
-  void pobierzRankingi();
+  if (!bezPobierania) void pobierzRankingi();
 }
 
 function wrocZRankingu() {
   $('ekran-ranking').hidden = true;
-  pokazEkran(EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup');
+  pokazEkran(STAN.powrotZRankingu ?? 'setup');
 }
 
 /** Adres mostu do rankingów (ADR 0020): ten sam web app co repozytorium paczek i gry. */
@@ -4177,6 +4216,19 @@ function renderujRankingi() {
   });
 }
 
+/**
+ * Tryb testowy wchodzi WYŁĄCZNIE parametrem adresu (decyzja właściciela
+ * 2026-09-08 — przycisk w nagłówku usunięty). Przyjmowane formy:
+ * `?test=true`, `?test=1`, `?test=tak` oraz historyczne `?tryb=test`, którego
+ * używają testy (`test/helpers/dom.js`). Wielkość liter bez znaczenia.
+ */
+function czyTrybTestowyWUrl() {
+  if (typeof location === 'undefined' || typeof location.search !== 'string') return false;
+  const parametr = new URLSearchParams(location.search);
+  if (parametr.get('tryb') === 'test') return true;
+  return ['true', '1', 'tak'].includes(String(parametr.get('test') ?? '').trim().toLowerCase());
+}
+
 function start() {
   wczytajKonfiguracje();
   banerStartowy();
@@ -4199,10 +4251,13 @@ function start() {
   // Wyniki, które nie doszły na Drive w terenie, jadą przy starcie (ADR 0016 pkt 5).
   void oproznijKolejkeHotseat();
 
-  if (location.search.includes('tryb=test')) {
+  if (czyTrybTestowyWUrl()) {
+    // Decyzja właściciela 2026-09-08: tryb testowy NIE MA przycisku w
+    // interfejsie — wchodzi się tylko parametrem adresu (`?test=true`).
+    // Przełącznik w nagłówku kusił do grania bez GPS, a wyniki i tak szły
+    // na Drive i do rankingów (ADR 0029).
     STAN.trybTestowy = true;
     document.body.classList.add('tryb-testowy');
-    $('przycisk-test').setAttribute('aria-pressed', 'true');
     $('reczne-wspolrzedne').hidden = false;
     $('przycisk-symulacja').hidden = false;
   }
@@ -4224,17 +4279,6 @@ function start() {
   $('przycisk-wrocz-prywatnosc').addEventListener('click', wrocZPrywatnosci);
   $('przycisk-czysc-dane').addEventListener('click', czyscDaneWitryny);
   $('przycisk-symulacja').addEventListener('click', przelaczSymulacje);
-  $('przycisk-test').addEventListener('click', () => {
-    STAN.trybTestowy = !STAN.trybTestowy;
-    document.body.classList.toggle('tryb-testowy', STAN.trybTestowy);
-    $('przycisk-test').setAttribute('aria-pressed', String(STAN.trybTestowy));
-    $('reczne-wspolrzedne').hidden = !STAN.trybTestowy;
-    $('przycisk-symulacja').hidden = !STAN.trybTestowy;
-    pokazEkran('pozycja');
-    pokazPozycje();
-    status(STAN.trybTestowy ? 'Tryb testowy: współrzędne ręczne zamiast GPS (ADR 0004 pkt 6).' : 'Tryb testowy wyłączony.');
-  });
-
 
   $('przycisk-dalej-pozycja').addEventListener('click', async () => {
     const usterki = walidujSetup(czytajSetupZDomu());

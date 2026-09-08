@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-27';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-28';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -81,14 +81,14 @@ export const STANY_FIXA = Object.freeze({
  * „G01" nie znaczyło dwóch różnych rzeczy w jednym interfejsie.
  */
 export const KODY_POZYCJI = {
-  P01: 'Ta przeglądarka nie udostępnia położenia (brak `navigator.geolocation`). Otwórz stronę przez HTTPS albo włącz tryb testowy (⚙). Bez położenia dojścia nie da się rozstrzygnąć — odcinek można za to pominąć.',
-  P02: 'Brak zgody na dostęp do położenia. W Chrome dotknij ikony lokalizacji przy adresie i wybierz „Zawsze zezwalaj", a potem odśwież stronę. Bez zgody gra nie rozstrzygnie dojścia — organizator może za to włączyć tryb testowy (⚙).',
+  P01: 'Ta przeglądarka nie udostępnia położenia (brak `navigator.geolocation`). Otwórz stronę przez HTTPS albo otwórz aplikację z parametrem ?test=true. Bez położenia dojścia nie da się rozstrzygnąć — odcinek można za to pominąć.',
+  P02: 'Brak zgody na dostęp do położenia. W Chrome dotknij ikony lokalizacji przy adresie i wybierz „Zawsze zezwalaj", a potem odśwież stronę. Bez zgody gra nie rozstrzygnie dojścia — organizator może za to otworzyć aplikację z parametrem ?test=true (tryb testowy, współrzędne wpisane ręcznie).',
   P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek (ADR 0029: dojście zalicza tylko GPS).',
   P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek.',
   P05: 'Dokładność ±{accuracy} m jest niewystarczająca, żeby rozstrzygnąć dojście (próg to najwyżej 100 m). Przejdź w miejsce z lepszym widokiem nieba i poczekaj na dokładniejszy pomiar.',
-  P06: 'Otrzymano współrzędne spoza zakresu — ten pomiar został odrzucony. Jeśli powtarza się, wyjdź na otwartą przestrzeń albo włącz tryb testowy (⚙).',
+  P06: 'Otrzymano współrzędne spoza zakresu — ten pomiar został odrzucony. Jeśli powtarza się, wyjdź na otwartą przestrzeń albo otwórz aplikację z parametrem ?test=true.',
   P07: 'Śledzenie położenia jest wstrzymane, bo aplikacja działa w tle — oszczędzamy baterię. Wróć na kartę, żeby je wznowić (ADR 0004 pkt 1).',
-  P08: 'Nieznany błąd położenia: {message}. Wyjdź na otwartą przestrzeń, a jeśli to nie pomoże — włącz tryb testowy (⚙) albo pomiń odcinek.',
+  P08: 'Nieznany błąd położenia: {message}. Wyjdź na otwartą przestrzeń, a jeśli to nie pomoże — otwórz aplikację z parametrem ?test=true albo pomiń odcinek.',
   P09: 'Wznowiono śledzenie położenia — pierwszy pomiar po powrocie potrafi trwać kilka sekund.',
 };
 

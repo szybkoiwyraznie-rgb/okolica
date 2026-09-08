@@ -209,10 +209,18 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
   }
 });
 
-test('kontrakt: przycisk trybu testowego ma w HTML stan początkowy aria-pressed="false"', () => {
-  // Atrapa DOM nie parsuje atrybutów, więc `test/aplikacja.test.js` sprawdza tylko
-  // przełączenie; stan startowy pilnuje ten kontrakt.
-  assert.match(INDEX, /id="przycisk-test"[^>]*aria-pressed="false"/);
+test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=true', () => {
+  // Decyzja właściciela 2026-09-08: przełącznik w nagłówku kusił do grania bez
+  // GPS, a wyniki i tak szły na Drive i do rankingów (ADR 0029). Pilnujemy, żeby
+  // nie wrócił — LESSONS L31: usunięty element ma zostać usunięty.
+  assert.equal(/id="przycisk-test"/.test(INDEX), false, 'przycisk trybu testowego zniknął z HTML');
+  // W nagłówku nie ma żadnego przełącznika trybu. Słowo „tryb testowy" zostaje
+  // w etykiecie symulacji dojścia i na stronie prywatności — tam opisuje stan,
+  // a nie przełącza go, więc jest prawdziwe.
+  const naglowek = INDEX.match(/<div class="akcje">[\s\S]*?<\/div>/)?.[0] ?? '';
+  assert.equal(/test/i.test(naglowek), false, `w akcjach nagłówka nie ma trybu testowego: ${naglowek}`);
+  assert.ok(APP.includes('czyTrybTestowyWUrl'), 'tryb testowy czyta się z parametru adresu');
+  assert.match(APP, /'true', '1', 'tak'/, 'przyjmowane formy parametru ?test=');
 
   const symulacja = INDEX.match(/<button id="przycisk-symulacja"[^>]*>/)?.[0];
   assert.ok(symulacja, 'brak przycisku symulacji dojścia (M3)');

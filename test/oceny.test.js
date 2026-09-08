@@ -30,6 +30,7 @@ import {
   walidujOdpowiedzOceny,
   walidujStatystykiOcen,
   liczbaGierTekst,
+  liczbaOcenTekst,
   opisOcenTekst,
 } from '../app/oceny.js';
 import { uruchomMost } from './helpers/most.js';
@@ -186,17 +187,31 @@ test('oceny: język statystyk na ekran 2', () => {
 
   assert.equal(
     opisOcenTekst(walidujStatystykiOcen({ glosow: 27, plus: 20, minus: 7, uzytaWGrach: 12 })),
-    'Użyta w 12 grach · 74% na tak · 26% na nie (27 ocen).',
+    'Użyta w 12 grach, 27 ocen (74% 👍, 26% 👎)',
   );
   assert.equal(
     opisOcenTekst(walidujStatystykiOcen({ glosow: 1, plus: 1, minus: 0, uzytaWGrach: 1 })),
-    'Użyta w 1 grze · 100% na tak · 0% na nie (1 ocena).',
+    'Użyta w 1 grze, 1 ocena (100% 👍, 0% 👎)',
   );
   assert.equal(
     opisOcenTekst(walidujStatystykiOcen({ glosow: 0, plus: 0, minus: 0, uzytaWGrach: 0 })),
-    'Jeszcze nie użyta w grze · jeszcze bez ocen graczy.',
+    'Jeszcze nie użyta w grze, jeszcze bez ocen graczy.',
   );
   assert.equal(opisOcenTekst(null), 'Brak danych o ocenach — repozytorium nie odpowiedziało.');
+
+  // Wzór właściciela z 2026-09-08 dosłownie: „Użyta w 1 grze, 2 oceny (50% 👍, 50% 👎)"
+  assert.equal(
+    opisOcenTekst(walidujStatystykiOcen({ glosow: 2, plus: 1, minus: 1, uzytaWGrach: 1 })),
+    'Użyta w 1 grze, 2 oceny (50% 👍, 50% 👎)',
+  );
+  // Polska odmiana: nastki 12–14 idą z „ocen", nie z „oceny"
+  assert.equal(liczbaOcenTekst(1), 'ocena');
+  assert.equal(liczbaOcenTekst(2), 'oceny');
+  assert.equal(liczbaOcenTekst(4), 'oceny');
+  assert.equal(liczbaOcenTekst(5), 'ocen');
+  assert.equal(liczbaOcenTekst(12), 'ocen');
+  assert.equal(liczbaOcenTekst(14), 'ocen');
+  assert.equal(liczbaOcenTekst(22), 'oceny');
 });
 
 test('oceny: głosy przeżywają restart aplikacji (pamięć → stan → pamięć)', () => {

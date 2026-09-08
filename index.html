@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-27">
-  <script type="module" src="app/app.js?v=m12-27"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-28">
+  <script type="module" src="app/app.js?v=m12-28"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -34,7 +34,6 @@
     <div class="akcje">
       <button id="przycisk-motyw" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny">☾ motyw</button>
       <button id="przycisk-sygnaly" class="przycisk przycisk-maly" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)">🔔 sygnały</button>
-      <button id="przycisk-test" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Tryb testowy: ręczne współrzędne zamiast GPS">⚙ tryb testowy</button>
       <button id="przycisk-ranking" class="przycisk przycisk-maly" type="button" title="Rankingi graczy i moje gry (M12)">🏆 rankingi</button>
     </div>
   </header>
@@ -675,7 +674,7 @@
     <!-- M12/P6: rankingi graczy (dane z mostu Drive, agregacje po stronie telefonu) -->
     <section id="ekran-ranking" class="ekran" hidden aria-labelledby="tytul-ranking">
       <h2 id="tytul-ranking">🏆 Rankingi</h2>
-      <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych ze wspólnego konta Drive. Agregacje liczy telefon — serwer oddaje surowe wiersze (RO-ranking/1).</p>
+      <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych:</p>
       <div class="wiersz">
         <button id="przycisk-ranking-odswiez" class="przycisk" type="button">🔄 Odśwież</button>
         <button id="przycisk-wrocz-ranking" class="przycisk" type="button">← wróć</button>

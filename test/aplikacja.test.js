@@ -221,19 +221,22 @@ test('GPS: karta w tle zamyka watcher, powrót wznawia śledzenie (ADR 0004 pkt 
   assert.equal(gps.wywolania.watch, 2);
 });
 
-test('przełącznik trybu testowego: odsłania ręczne współrzędne i pokazuje ekran pozycji', () => {
-  // stan początkowy `aria-pressed="false"` jest w index.html — atrapa nie parsuje
-  // atrybutów, więc sprawdzamy przełączenie, a nie wartość startową
-  dom.kliknij('przycisk-test');
-  assert.equal(pobierz('przycisk-test').dataset['attr-aria-pressed'], 'true');
-  assert.equal(pobierz('reczne-wspolrzedne').hidden, false);
-  assert.equal(pobierz('ekran-pozycja').hidden, false, 'przełącznik od razu pokazuje ekran pozycji');
-  assert.match(pobierz('status').textContent, /Tryb testowy: współrzędne ręczne/);
-
-  dom.kliknij('przycisk-test');
-  assert.equal(pobierz('przycisk-test').dataset['attr-aria-pressed'], 'false');
-  assert.equal(pobierz('reczne-wspolrzedne').hidden, true);
-});
+// Decyzja właściciela 2026-09-08: przycisku trybu testowego NIE MA — wchodzi
+// się wyłącznie parametrem adresu. Testujemy wszystkie przyjmowane formy.
+for (const [adres, czyWlaczony] of [
+  ['?test=true', true], ['?test=1', true], ['?test=TAK', true],
+  ['?tryb=test', true], ['?test=false', false], ['?test=0', false], ['', false],
+]) {
+  test(`tryb testowy z adresu: „${adres || '(bez parametru)'}" → ${czyWlaczony ? 'włączony' : 'wyłączony'}`, async () => {
+    const domTest = zainstalujDom({ search: adres });
+    await import(`../app/app.js?urltest=${Math.random().toString(36).slice(2)}`);
+    assert.equal(domTest.pobierz('reczne-wspolrzedne').hidden, !czyWlaczony,
+      'ręczne współrzędne są odsłonięte tylko w trybie testowym');
+    assert.equal(domTest.pobierz('przycisk-symulacja').hidden, !czyWlaczony,
+      'symulacja dojścia jest tylko w trybie testowym');
+    assert.equal(domTest.document.body.classList.contains('tryb-testowy'), czyWlaczony);
+  });
+}
 
 test('tryb testowy z adresu: ?tryb=test nie wznawia GPS po powrocie z tła', async () => {
   // osobna atrapa DOM = osobny egzemplarz aplikacji bez nasłuchów z poprzednich importów
@@ -242,8 +245,7 @@ test('tryb testowy z adresu: ?tryb=test nie wznawia GPS po powrocie z tła', asy
   domTest.ustawGeolokalizacje(gpsTest.geolocation);
   await import(`../app/app.js?trybtest=${Date.now()}`);
 
-  assert.equal(domTest.pobierz('przycisk-test').dataset['attr-aria-pressed'], 'true', 'tryb testowy z URL jest włączony na starcie');
-  assert.equal(domTest.pobierz('reczne-wspolrzedne').hidden, false);
+  assert.equal(domTest.pobierz('reczne-wspolrzedne').hidden, false, 'tryb testowy z URL jest włączony na starcie');
 
   domTest.kliknij('przycisk-gps'); // gracz może włączyć GPS nawet w trybie testowym
   assert.equal(gpsTest.wywolania.watch, 1);
@@ -481,16 +483,17 @@ test('prywatność: ekran otwiera się z setupu i ze stopki, a „wróć" prowad
   assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, true);
   assert.equal(domMapy.pobierz('ekran-setup').hidden, false, 'wróciliśmy na setup');
 
-  // ze stopki, w trakcie gry: powrót ma prowadzić na ekran, z którego przyszliśmy
-  // (na pozycję wchodzimy trybem testowym — przejście z setupu czyta imiona
-  // z prawdziwego DOM, którego atrapa nie parsuje)
-  domMapy.kliknij('przycisk-test');
-  assert.equal(domMapy.pobierz('ekran-pozycja').hidden, false);
+  // ze stopki, na innym ekranie: powrót ma prowadzić na ekran, z którego
+  // przyszliśmy. Bierzemy rankingi, bo przejście setup → pozycja wymaga imion
+  // z prawdziwego DOM, którego atrapa nie parsuje (przycisk trybu testowego,
+  // który kiedyś tu pomagał, został usunięty — decyzja właściciela 2026-09-08).
+  domMapy.kliknij('przycisk-ranking');
+  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false);
   domMapy.kliknij('przycisk-prywatnosc-stopka');
   assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
-  assert.equal(domMapy.pobierz('ekran-pozycja').hidden, true);
+  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true);
   domMapy.kliknij('przycisk-wrocz-prywatnosc');
-  assert.equal(domMapy.pobierz('ekran-pozycja').hidden, false, 'powrót na ekran pozycji, nie na setup');
+  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'powrót na rankingi, nie na setup');
 });
 
 test('prywatność: czyszczenie jest dwustopniowe i rusza tylko klucze obolica:*', async () => {
@@ -542,13 +545,14 @@ async function dojdzSymulacja(dom, { maksMs = 5000 } = {}) {
   }
 }
 
-test('symulacja: przycisk istnieje tylko w trybie testowym', async () => {
-  const domMapy = await aplikacjaZMapa();
-  assert.equal(domMapy.pobierz('przycisk-symulacja').hidden, true, 'bez trybu testowego nie ma symulacji');
-  domMapy.kliknij('przycisk-test');
-  assert.equal(domMapy.pobierz('przycisk-symulacja').hidden, false);
-  domMapy.kliknij('przycisk-test');
-  assert.equal(domMapy.pobierz('przycisk-symulacja').hidden, true, 'wyłączenie trybu testowego chowa symulację');
+test('symulacja: przycisk istnieje tylko w trybie testowym (z adresu)', async () => {
+  const bezTrybu = await aplikacjaZMapa();
+  assert.equal(bezTrybu.pobierz('przycisk-symulacja').hidden, true, 'bez trybu testowego nie ma symulacji');
+
+  // Wyłączyć trybu testowego się nie da — jest tylko parametrem adresu, więc
+  // „wyłączenie" to po prostu wejście bez niego (sprawdzone wyżej).
+  const zTrybem = await aplikacjaZMapa({ search: '?test=true' });
+  assert.equal(zTrybem.pobierz('przycisk-symulacja').hidden, false, '?test=true odsłania symulację');
 });
 
 test('symulacja: odtworzenie trasy prowadzi pozycję do celu i spełnia debounce dojścia', async () => {
