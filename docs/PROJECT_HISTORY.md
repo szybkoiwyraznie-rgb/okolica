@@ -1207,3 +1207,46 @@ domyślny, info należy do sekcji prywatność.
 szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-16` (+ `WERSJA_SW`).
 Skrypt mostu bez zmian względem partii 5 — **nadal wymaga wklejenia**
 (963 linie, md5 `01e1d9bdfa071d2634dc33d87607420f`).
+
+## 2026-09-08 — oceny pytań w interfejsie (ADR 0028) i rozgrywka pod orientację telefonu (ADR 0030), gałąź `arena/01a07c4f-okolica`
+
+- **Oceny pytań w interfejsie (ADR 0028, część gracza).** Panel z dwoma kciukami
+  w slocie pytania — ten sam przed odpowiedzią i po niej, więc ocenić można
+  w każdej chwili, ale raz: klucz (głosujący, pytanie) jest pilnowany lokalnie
+  (`okolica:oceny`) i niezależnie na moście. Głos jedzie w tle i nie blokuje gry,
+  a nieudane wysyłki wracają do kolejki `okolica:oceny-kolejka` i próbują
+  ponownie przy starcie. Tożsamość głosującego: profil zweryfikowany PIN-em daje
+  slug pseudonimu, inaczej `urz-<8 hex id urządzenia>-<slug imienia>` — dzięki
+  temu w hot-seat każdy z graczy ma własny głos, a nie jeden na telefon.
+  Ekran 2 pokazuje statystyki paczki z indeksu (`Użyta w 12 grach · 74% na tak
+  · 26% na nie (27 ocen).`); brak pola `oceny` w indeksie jest komunikowany jako
+  stary most, a nie jako awaria repozytorium. Panel jest schowany dla paczek
+  wygenerowanych lokalnie, bo nie ma gdzie zbierać głosów.
+- **Rozgrywka pod orientację telefonu (ADR 0030).** Właściciel przed pierwszym
+  wyjściem w teren: mapa ma mieć proporcje ekranu telefonu („na desktopie mam tą
+  mapę gry otwartą w 16:9, na mobile powinna się otwierać na proporcje ekranu
+  mobile"), pytania mają leżeć NA mapie („przewijanie na mobile to koszmar"),
+  a obrót telefonu ma przełączać układ dynamicznie. Układ wybiera CSS zapytaniem
+  o orientację — pion i poziom — a nie JS zgadywaniem modelu: przeglądarka
+  przelicza zapytania na żywo, więc obrót działa bez przeładowania i bez
+  nasłuchiwania `orientationchange`. Mapa gry jest tłem obszaru gry, więc ma
+  dokładnie proporcje urządzenia (renderer i tak mierzy się
+  z `getBoundingClientRect` i przelicza widok przy każdym `resize`), a karty faz
+  leżą nad nią i przewijają się w środku karty: w pionie przypięte do dołu,
+  w poziomie w prawej kolumnie. Strona gry się nie przewija
+  (`body[data-ekran='gra']`; znacznik ustawia `pokazEkran`, bo CSS nie ma
+  selektora rodzica, a `pokazPrywatnosc` go zdejmuje). Karty schodzą na dół
+  rozpychaczem `::before`, nie `justify-content: flex-end` — przy przepełnieniu
+  ten drugi chowa początek kolumny poza zasięg przewijania. Pasek kroków 1–6
+  schowany w grze (opisuje przygotowanie), stopka cienka, ale z `#status`,
+  atrybucja dostawcy przeniesiona na górę mapy (ADR 0003 pkt 3), skala pod
+  przyciski +/−/◎. Desktop bez zmian.
+- Testy: **610, 0 fail** (nowe: kontrakt ADR 0030 — orientacja w CSS, znacznik
+  `data-ekran` na `<body>`, mapa tłem, karty nad mapą z własnym przewijaniem,
+  rozpychacz zamiast `flex-end`, atrybucja dostawcy nie znika z dołem mapy).
+
+**Brama na koniec partii:** `npm run brama` = **610 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-23` (+ `WERSJA_SW`).
+Skrypt mostu bez zmian względem wpisu powyżej — 1093 linie, md5
+`620f28c734136654d9a4a01ebfe7853b`; właściciel deklaruje, że wkleił tę wersję
+(niezweryfikowane z sandboxa — `script.google.com` jest stąd nieosiągalny).

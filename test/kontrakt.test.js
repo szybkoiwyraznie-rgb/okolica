@@ -868,3 +868,28 @@ test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da si�
   assert.ok(APP.includes('function wrocNaPoczatek'), 'przycisk ma podpiętą funkcję');
   assert.ok(APP.includes("pokazEkran('ekran-setup')"), 'wyjście wraca na ekran setupu');
 });
+
+test('kontrakt ADR 0030: rozgrywka na telefonie układa się pod orientację, a strona się nie przewija', () => {
+  // Który ekran jest na wierzchu, mówi znacznik na <body>: CSS nie ma selektora
+  // rodzica, a reguły „mapa tłem, karty nad nią, bez przewijania” muszą działać
+  // wyłącznie na ekranie gry.
+  assert.match(APP, /document\.body\.dataset\.ekran = nazwa/, 'pokazEkran() oznacza ekran na <body>');
+  assert.match(APP, /document\.body\.dataset\.ekran = 'prywatnosc'/, 'ekran prywatności zdejmuje znacznik gry');
+
+  // Oba układy są zapytane o orientację — przeglądarka przelicza zapytania na
+  // żywo, więc obrót telefonu przełącza układ bez przeładowania.
+  assert.match(STYLE, /orientation: portrait/, 'jest układ pionowy');
+  assert.match(STYLE, /orientation: landscape/, 'jest układ poziomy');
+  assert.match(STYLE, /body\[data-ekran='gra'\] \{ height: 100dvh; overflow: hidden; \}/, 'strona gry się nie przewija');
+
+  // Mapa jest tłem obszaru gry — w proporcjach urządzenia, nie w stałym 45vh.
+  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\) #mapa-gra \{\n    position: absolute;\n    inset: 0;/, 'mapa gry wypełnia obszar gry');
+  // Karty faz leżą NA mapie i mają własne przewijanie.
+  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\) > \.gra-panel \{[^}]*z-index: 2;/s, 'karty faz są nad mapą');
+  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\) > \.gra-panel \{[^}]*overflow-y: auto;/s, 'długie pytanie przewija się w karcie, nie wypycha mapy');
+  // Atrybucja dostawcy (ADR 0003 pkt 3) nie znika razem z dołem mapy.
+  assert.match(STYLE, /\.mapa-atrybucja \{[^}]*bottom: auto;/s, 'atrybucja dostawcy została widoczna nad mapą');
+  // Rozpychacz zamiast justify-content: flex-end — przy nadmiarze treści karty
+  // nie uciekają nad górną krawędź (znany błąd flexboksa).
+  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\)::before \{ content: ''; flex: 1 1 auto; \}/, 'karty schodzą na dół rozpychaczem, nie flex-end');
+});
