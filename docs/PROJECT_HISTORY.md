@@ -1361,3 +1361,26 @@ i `powrotZPrywatnosci`; powrót z prywatności na rankingi nie pyta mostu drugi 
 
 Testy: **618, 0 fail**; `npm run brama` = 618 + sync szablonu OK + WCAG AA 0.
 Cache-bust `?v=m12-29`.
+
+## 2026-09-08 — mapa stała się trwałym spodem aplikacji (uwaga 5, wersja krokowa)
+
+Właściciel: *„ten cały setup też powinien otwierać się na warstwie nad mapą. Mapa
+powinna być centralnym elementem aplikacji zawsze na spodzie. I ikonka setup na
+górze strony."* Z trzech wariantów wybrał krokowy: mapa z ekranu pozycji staje
+się wspólnym tłem, ekrany stacji i gry zostają przy swoich mapach na później.
+
+- `#mapa-pozycja` wyszedł z `#ekran-pozycja` i jest pierwszym elementem `<main>`
+  — `position: fixed; inset: 0; z-index: 0`. Widać go pod setupem i pod ekranem
+  pozycji; na pozostałych ekranach chowa go `visibility: hidden`, **nie**
+  `display: none`, bo mapa mierzy swój rozmiar przy rysowaniu kafelków, a element
+  `display:none` ma zerowy — po powrocie zoom i skala rozsypałyby się.
+- `#ekran-setup` jest kartą nad mapą: centrowana, `max-height: 78dvh`,
+  przewijanie WEWNĄTRZ karty, nagłówek nad nią (`z-index: 3`).
+- W nagłówku doszła ikonka „⚙ setup" (`pokazEkran('setup')` — ta sama akcja co
+  istniejący `przycisk-wstecz-setup`).
+
+**Uczciwie o weryfikacji:** atrapa DOM w testach nie liczy pikseli, więc 618
+testów tej zmiany NIE sprawdza — przechodzą tak samo przed i po. Pilnuje jej
+nowy kontrakt na strukturę (mapa jest pierwszym dzieckiem `<main>`, ekran
+pozycji nie ma własnej mapy, reguła `visibility` istnieje, ikonka jest podpięta)
+i audyt WCAG. **Układ trzeba obejrzeć na telefonie.**

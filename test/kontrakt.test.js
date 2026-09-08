@@ -209,6 +209,22 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
   }
 });
 
+// Atrapa DOM nie liczy pikseli, więc układu „mapa na spodzie" nie da się
+// przetestować zachowaniem — pilnujemy przynajmniej struktury i reguł CSS.
+test('kontrakt: mapa jest trwałym spodem aplikacji, a setup kartą nad nią', () => {
+  const main = INDEX.match(/<main class="tresc">([\s\S]*?)<section id="ekran-setup"/)?.[1] ?? '';
+  assert.match(main, /<div id="mapa-pozycja" class="mapa">/, 'mapa pozycji jest pierwszym elementem <main>, nie w ekranie pozycji');
+  const ekranPozycja = INDEX.match(/<section id="ekran-pozycja"[\s\S]*?<\/section>/)?.[0] ?? '';
+  assert.equal(/id="mapa-pozycja"/.test(ekranPozycja), false, 'ekran pozycji nie zawiera już własnej mapy');
+
+  assert.match(INDEX, /<button id="przycisk-setup"[^>]*>⚙ setup<\/button>/, 'ikonka setup w nagłówku');
+  assert.ok(APP.includes("$('przycisk-setup').addEventListener('click', () => pokazEkran('setup'))"), 'ikonka setup jest podpięta');
+
+  assert.ok(STYLE.includes('body:not([data-ekran=\'setup\']):not([data-ekran=\'pozycja\']) #mapa-pozycja { visibility: hidden; }'),
+    'mapa jest chowana przez visibility, nie display — display zerowałby jej pomiar');
+  assert.ok(STYLE.includes("body[data-ekran='setup'] #ekran-setup"), 'setup ma regułę karty nad mapą');
+});
+
 test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=true', () => {
   // Decyzja właściciela 2026-09-08: przełącznik w nagłówku kusił do grania bez
   // GPS, a wyniki i tak szły na Drive i do rankingów (ADR 0029). Pilnujemy, żeby

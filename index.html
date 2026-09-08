@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-29">
-  <script type="module" src="app/app.js?v=m12-29"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-30">
+  <script type="module" src="app/app.js?v=m12-30"></script>
 </head>
 <body>
   <div id="baner" class="baner" hidden></div>
@@ -32,6 +32,7 @@
       <p id="podtytul">gra terenowa gdzie tylko chcesz</p>
     </div>
     <div class="akcje">
+      <button id="przycisk-setup" class="przycisk przycisk-maly" type="button" title="Ustawienia gry">⚙ setup</button>
       <button id="przycisk-motyw" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny">☾ motyw</button>
       <button id="przycisk-sygnaly" class="przycisk przycisk-maly" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)">🔔 sygnały</button>
       <button id="przycisk-ranking" class="przycisk przycisk-maly" type="button" title="Rankingi graczy i moje gry (M12)">🏆 rankingi</button>
@@ -50,6 +51,26 @@
   </nav>
 
   <main class="tresc">
+    <!-- Decyzja właściciela 2026-09-08: mapa jest centralnym elementem
+         aplikacji i leży NA SPODZIE. Wyszła z #ekran-pozycja — widać ją pod
+         setupem i pod ekranem pozycji; resztę ekranów chowa CSS przez
+         `visibility`, bo `display:none` zerowałoby jej pomiar. -->
+      <div id="mapa-pozycja" class="mapa">
+        <svg id="mapa-pozycja-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
+          <g id="mapa-pozycja-kafelki" class="warstwa-kafelki"></g>
+          <g id="mapa-pozycja-okregi" class="warstwa-okregi"></g>
+          <g id="mapa-pozycja-pinezki" class="warstwa-pinezki"></g>
+          <g id="mapa-pozycja-marker" class="warstwa-marker"></g>
+        </svg>
+        <div class="mapa-przyciski">
+          <button id="mapa-pozycja-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+          <button id="mapa-pozycja-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+          <button id="mapa-pozycja-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+        </div>
+        <p id="mapa-pozycja-skala" class="mapa-skala"></p>
+        <p id="mapa-pozycja-atrybucja" class="mapa-atrybucja"></p>
+      </div>
+
 
     <!-- KROK 1: konfiguracja rozgrywki -->
     <section id="ekran-setup" class="ekran" aria-labelledby="tytul-setup">
@@ -268,21 +289,6 @@
         <p id="pozycja-dokladnosc" class="badge">dokładność: —</p>
         <p id="pozycja-wspolrzedne" class="kod"></p>
         <p id="pozycja-miejsce" class="podpowiedz"></p>
-      </div>
-      <div id="mapa-pozycja" class="mapa">
-        <svg id="mapa-pozycja-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
-          <g id="mapa-pozycja-kafelki" class="warstwa-kafelki"></g>
-          <g id="mapa-pozycja-okregi" class="warstwa-okregi"></g>
-          <g id="mapa-pozycja-pinezki" class="warstwa-pinezki"></g>
-          <g id="mapa-pozycja-marker" class="warstwa-marker"></g>
-        </svg>
-        <div class="mapa-przyciski">
-          <button id="mapa-pozycja-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
-          <button id="mapa-pozycja-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
-          <button id="mapa-pozycja-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
-        </div>
-        <p id="mapa-pozycja-skala" class="mapa-skala"></p>
-        <p id="mapa-pozycja-atrybucja" class="mapa-atrybucja"></p>
       </div>
       <div class="wiersz">
         <button id="przycisk-gps" class="przycisk przycisk-glowny" type="button">🛰 Włącz GPS</button>

@@ -917,3 +917,50 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   cursor: pointer;
 }
 .warstwa h2 { padding-right: 52px; }
+
+/* --- Mapa jako trwały spód aplikacji (decyzja właściciela 2026-09-08) ------
+ * Mapa pozycji wyszła z #ekran-pozycja i jest teraz tłem całej aplikacji:
+ * widać ją pod setupem i pod ekranem pozycji. Na pozostałych ekranach chowa ją
+ * `visibility`, a NIE `display` — mapa mierzy swój rozmiar przy rysowaniu
+ * kafelków, a element `display:none` ma zerowy, więc po powrocie zoom i skala
+ * rozsypałyby się.
+ */
+#mapa-pozycja {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  z-index: 0;
+}
+body:not([data-ekran='setup']):not([data-ekran='pozycja']) #mapa-pozycja { visibility: hidden; }
+.tresc { position: relative; z-index: 1; }
+
+/* Setup jako karta NAD mapą: centrowana, z ograniczoną wysokością, żeby mapa
+   była widoczna nad i pod nią. Przewijanie dzieje się WEWNĄTRZ karty, nie na
+   stronie. Nagłówek zostaje nad kartą, bo to z niego wraca się do ustawień. */
+body[data-ekran='setup'] #ekran-setup {
+  position: fixed;
+  inset: 11dvh 10px;
+  z-index: 2;
+  max-width: 640px;
+  max-height: 78dvh;
+  margin: auto;
+  padding: 14px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--tlo-karta);
+  border: 1px solid var(--linia);
+  border-radius: var(--promien);
+}
+.gora { position: relative; z-index: 3; }
+
+/* Ekran pozycji nie ma już własnej mapy — jego treść to karta nad wspólnym tłem. */
+body[data-ekran='pozycja'] #ekran-pozycja {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 12px;
+  background: color-mix(in srgb, var(--tlo-karta) 92%, transparent);
+  border: 1px solid var(--linia);
+  border-radius: var(--promien);
+}
