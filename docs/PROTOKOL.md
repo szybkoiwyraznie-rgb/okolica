@@ -126,6 +126,20 @@ WYMAGANIA DODATKOWE:
 Daty w promptcie pochodzą z zegara urządzenia i **nie są zapisywane w danych
 repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
 
+**Budżet rozmiaru (B21, pomiar 2026-09-07).** Prompt **nie rośnie** z liczbą
+pytań — 5 422 znaki (~1 356 tokenów) dla 5 pytań i 5 423 znaki dla 40, bo
+z szablonu zmienia się tylko cyfra w `{LICZBA_PYTAN}`. Rośnie **odpowiedź**:
+realistyczna paczka rev2 (treść ~140 znaków, 4 odpowiedzi, wyjaśnienie ~200
+znaków, jedno źródło) to 4 469 znaków / ~1 118 tokenów dla 5 pytań i
+33 392 znaków / ~8 348 tokenów dla 40 pytań (5 stacji × 8 graczy) — czyli
+~830 znaków i ~210 tokenów na pytanie. Kontener `TO-paczka/2` dla 40 pytań ma
+~36 kB (1,8% budżetu stanu, 2,4% rejestru), więc pamięć nie jest ograniczeniem;
+ograniczeniem jest limit wyjścia modelu. Stałe szacunku żyją w
+`app/protokol.js` (`szacunekOdpowiedzi`, `PROG_ODPOWIEDZI_TOKENY = 4000`),
+a ekran promptu podaje przewidywany rozmiar odpowiedzi i ostrzega powyżej progu
+— ucięty JSON wracałby jako E01/E02 bez wskazania prawdziwej przyczyny.
+Pomiar spinają testy `test/duza-paczka.test.js`.
+
 ## 3. Schemat paczki PYT/1.0
 
 ### 3.1 Poziom paczki

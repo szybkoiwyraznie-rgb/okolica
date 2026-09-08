@@ -186,15 +186,28 @@ PROTOKOL §9, aneks ADR 0022, testy (w tym parity most ↔ aplikacja).
 `stacje × gracze` pytań (8 graczy × 5 stacji = 40 pytań) — dziś domyślny setup
 generuje ich 5, a protokół nie był testowany przy 40 pytaniach w jednej paczce.
 
-## B21 — Duża paczka: budżet promptu i limit wklejenia dla `stacje × gracze` pytań
+## B21 — Duża paczka: budżet promptu i limit wklejenia 🟡 ZMIERZONE (2026-09-07)
 
-Po ADR 0027 część A domyślny setup generuje `liczbaStacji × liczbaGraczy` pytań,
-a maksimum to 5 × 8 = 40 (widełki pytań 1–8). Niezmierzone: ile tokenów ma
-prompt dla 40 pytań, czy model mieści się w swoim limicie odpowiedzi, czy
-wklejenie takiej paczki przechodzi przez `parsujOdpowiedzModela` i przez limit
-`localStorage`/Drive. Do zrobienia: zmierzyć prompt i odpowiedź dla 40 pytań
-(narzędzie albo test z fixturem), ewentualnie dzielić generację na partie
-(po jednej stacji) i scalać w aplikacji.
+**Zmierzone** (`test/duza-paczka.test.js`, PROTOKOL §2 „Budżet rozmiaru"):
+
+| | 5 pytań (1 gracz) | 40 pytań (5 stacji × 8 graczy) |
+|---|---|---|
+| prompt | 5 422 zn / ~1 356 tok | 5 423 zn / ~1 356 tok (**stały**) |
+| odpowiedź modelu | 4 469 zn / ~1 118 tok | 33 392 zn / ~8 348 tok |
+| `parsujOdpowiedzModela` + `walidujPaczke` | OK, 0 usterek | OK, 0 usterek |
+| kontener `TO-paczka/2` | 4,8 kB (0,2% stanu / 0,3% rejestru) | 35,6 kB (1,8% / 2,4%) |
+
+Wniosek: **prompt i pamięć nie są problemem, jest nim limit wyjścia modelu**
+(~210 tokenów na pytanie). Wdrożone: `szacunekOdpowiedzi()` +
+`PROG_ODPOWIEDZI_TOKENY = 4000` w `app/protokol.js`, a ekran promptu pokazuje
+przewidywany rozmiar odpowiedzi (`#prompt-rozmiar`) i ostrzega powyżej progu,
+zanim właściciel zmarnuje generację (ucięty JSON wracał jako E01/E02 bez
+wskazania przyczyny).
+
+**Zostało (decyzja właściciela, nie kod):** czy przy dużych setupach dzielić
+generację na partie (po jednej stacji) i scalać w aplikacji. To zmiana UX
+ekranu pytań (kilka promptów, kilka wklejeń, scalanie) — bez zgody właściciela
+nie ruszam; dziś wystarczy ostrzeżenie i mniejsza liczba graczy/stacji.
 
 ## B22 — Wynik gry hot-seat na wspólnym Drive (per pseudonim) ✅ ZROBIONE (2026-09-07)
 

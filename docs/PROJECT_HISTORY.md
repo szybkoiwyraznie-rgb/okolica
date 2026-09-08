@@ -1122,7 +1122,20 @@ domyślny, info należy do sekcji prywatność.
   aplikacji) i przegląda wszystkie akcje pod kątem `is not defined`; aplikacja
   cytuje teraz `blad` mostu (kod Z11) zamiast zasłaniać go „innym schematem".
   LESSONS L33.
-- Testy: **576, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu);
+- **B21 zmierzone (bez zlecenia terenowego — właściciel nie miał czasu testować):**
+  prompt jest stały (~1 356 tokenów dla 5 i dla 40 pytań), rośnie odpowiedź
+  modelu: 4 469 znaków / ~1 118 tokenów dla 5 pytań i 33 392 / ~8 348 dla 40
+  (5 stacji × 8 graczy), czyli ~210 tokenów na pytanie; kontener `TO-paczka/2`
+  dla 40 pytań to 35,6 kB (1,8% budżetu stanu, 2,4% rejestru). Wąskie gardło to
+  limit wyjścia modelu, nie pamięć. Wdrożone: `szacunekOdpowiedzi()` +
+  `PROG_ODPOWIEDZI_TOKENY = 4000` (`app/protokol.js`) i widoczna linia
+  `#prompt-rozmiar` na ekranie pytań z ostrzeżeniem powyżej progu — ucięty JSON
+  wracał wcześniej jako E01/E02 bez wskazania przyczyny. Testy:
+  `test/duza-paczka.test.js` (4) + test UI w `test/aplikacja.test.js`; protokół
+  §2 „Budżet rozmiaru", BACKLOG B21, HANDOFF §10. Dzielenie generacji na partie
+  zostaje jako decyzja właściciela.
+- Testy: **581, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
+  budżet dużej paczki);
   kontrakt pinuje `sumaPytanWpisu`, brak `id="multi-zgoda"` i punkt „Gra na
   wielu telefonach" w prywatności.
 

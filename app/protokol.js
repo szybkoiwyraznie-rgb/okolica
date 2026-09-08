@@ -11,8 +11,8 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-18';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-18';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-19';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-19';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.0';
@@ -29,7 +29,7 @@ export const SZABLON_WERSJA = 'PYT/1.0.6'; // 1.0.6: pytania „z wybranych dzie
 /** Schemat kontenera z obfuskowanymi pytaniami (ADR 0007 pkt 3 i 5: maskowanie, nie szyfrowanie). */
 // Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
 // protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
-export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-18';
+export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-19';
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.
@@ -218,6 +218,35 @@ export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
     return { prompt: null, usterki };
   }
   return { prompt, usterki };
+}
+
+/* --- B21: budżet odpowiedzi modelu (pomiar 2026-09-07) -------------------
+ * Prompt NIE rośnie z liczbą pytań (5 422 znaki dla 5 pytań i 5 423 dla 40 —
+ * zmienia się tylko cyfra), więc wąskim gardłem jest ODPOWIEDŹ: zmierzona na
+ * realistycznej paczce rev2 (treść ~140 znaków, 4 odpowiedzi, wyjaśnienie
+ * ~200 znaków, jedno źródło) wyszła 4 469 znaków / ~1 118 tokenów dla 5 pytań
+ * i 33 392 znaków / ~8 348 tokenów dla 40 pytań (5 stacji × 8 graczy).
+ * Czyli ~830 znaków i ~210 tokenów na pytanie. Modele z limitem wyjścia
+ * 4 tys. tokenów urywają taką odpowiedź w połowie — stąd jawne ostrzeżenie
+ * na ekranie promptu (PROG_ODPOWIEDZI_TOKENY) zamiast cichego E01/E02 po
+ * wklejeniu uciętego JSON-u. Stałe są przybliżeniem; test `duza-paczka`
+ * porównuje je z prawdziwym fiksturem 40 pytań.
+ */
+export const BAZA_ODPOWIEDZI_ZNAKI = 340;
+export const ZNAKI_NA_PYTANIE = 830;
+export const BAZA_ODPOWIEDZI_TOKENY = 90;
+export const TOKENY_NA_PYTANIE = 210;
+/** Powyżej tylu tokenów odpowiedzi ekran promptu ostrzega o możliwym urwaniu. */
+export const PROG_ODPOWIEDZI_TOKENY = 4_000;
+
+/** Szacowany rozmiar odpowiedzi modelu dla `liczbaPytan` pytań (B21). */
+export function szacunekOdpowiedzi(liczbaPytan) {
+  const n = Number.isFinite(liczbaPytan) && liczbaPytan > 0 ? Math.round(liczbaPytan) : 0;
+  return {
+    pytania: n,
+    znaki: BAZA_ODPOWIEDZI_ZNAKI + ZNAKI_NA_PYTANIE * n,
+    tokeny: BAZA_ODPOWIEDZI_TOKENY + TOKENY_NA_PYTANIE * n,
+  };
 }
 
 /**

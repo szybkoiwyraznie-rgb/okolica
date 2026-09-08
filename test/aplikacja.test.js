@@ -2020,6 +2020,20 @@ test('hot-seat: jawna odmowa mostu nie udaje awarii sieci — komunikat nazywa p
   }
 });
 
+test('ekran pytań: mówi z góry, jak duża będzie odpowiedź modelu (B21)', async () => {
+  const domAtrapa = await aplikacjaZSiecia();
+  ustawPozycjeTestowa(domAtrapa);
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, false, 'jesteśmy na ekranie pytań');
+  const tekst = domAtrapa.pobierz('prompt-rozmiar').textContent;
+  assert.equal(domAtrapa.pobierz('prompt-rozmiar').hidden, false, 'linia rozmiaru jest widoczna (badge jest w zwiniętym <details>)');
+  assert.match(tekst, /Odpowiedź modelu będzie miała około/, 'mówi, co zwróci model');
+  assert.match(tekst, /token/, 'podaje rząd wielkości w tokenach');
+  // 5 pytań to ~1,1 tys. tokenów — poniżej progu, więc bez straszenia.
+  assert.equal(/limit wyjścia/.test(tekst), false, 'przy małej paczce nie ostrzegamy');
+});
+
 test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, a prompt się buduje (S12)', async () => {
   // Ten sam fixture co w teście cache, ale zamówione 10 stacji: sieć nie da
   // rozstawić tylu w wymaganych odstępach, więc wybór zwróci mniej (S12).

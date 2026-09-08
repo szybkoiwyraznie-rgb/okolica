@@ -18,8 +18,8 @@
 | 7 | Błąd: setup 5 stacji, ekran stacji pokazał 4, ekran pytań `[WE06] … (4) nie zgadza się z konfiguracją (5)` | Sieć słusznie dała 4 (S12), ale setup zostawał przy 5 — teraz setup idzie za wyborem, promień liczy się od nowa, a ekran mówi dlaczego i jak zwiększyć promień (§5) | (commit 3) |
 | — | Dokumenty + cache-bust (runda 2) | ADR 0019 dopisek, ADR 0024 uzupełnienie, PROTOKOL §9, instrukcja, PROJECT_HISTORY, `?v=m12-16` | (commit 4) |
 
-**Brama na koniec partii:** `npm run brama` = **576 testów, 0 fail** + sync
-szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-18` (43 miejsca
+**Brama na koniec partii:** `npm run brama` = **581 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-19` (43 miejsca
 + `WERSJA_SW`).
 
 ## 2. Co wisi
@@ -166,3 +166,27 @@ do poprawienia we wklejonym skrypcie**; plik ma teraz 963 linie i md5
 - Aplikacja nie chowa już odpowiedzi mostu: `{blad:…}` jest cytowane wprost
   (nowy kod **Z11**: „Most Drive nie wydał paczki: <powód>"), więc następna taka
   awaria pokaże prawdziwy powód na ekranie. LESSONS L33.
+
+## 10. B21 zmierzone: budżet promptu i odpowiedzi dla 40 pytań
+
+Właściciel: „jeśli masz jeszcze jakieś zadania w roadmapie, to jest najlepszy
+moment, bo nie mam teraz czasu testować" — wzięte zostało jedyne wprost otwarte
+zadanie (B21, „zostało do sprawdzenia" po B20), które mierzy się testami bez
+terenu i nie dotyka skryptu mostu.
+
+Pomiar (realistyczny fikstur rev2, `test/duza-paczka.test.js`):
+
+| | 5 pytań | 40 pytań (5 stacji × 8 graczy) |
+|---|---|---|
+| prompt | 5 422 zn / ~1 356 tok | 5 423 zn / ~1 356 tok (stały) |
+| odpowiedź | 4 469 zn / ~1 118 tok | 33 392 zn / ~8 348 tok |
+| parser + walidacja | OK, 0 usterek | OK, 0 usterek |
+| kontener | 4,8 kB | 35,6 kB (1,8% budżetu stanu) |
+
+Wdrożone: `szacunekOdpowiedzi()` i `PROG_ODPOWIEDZI_TOKENY = 4000` w
+`app/protokol.js`, linia `#prompt-rozmiar` na ekranie pytań (poza zwiniętym
+`<details>`, więc widoczna) z ostrzeżeniem powyżej progu. **Do obejrzenia na
+telefonie przy okazji**: czy ta linia nie rozjeżdża układu na 360 px.
+
+Do decyzji właściciela: dzielenie generacji na partie (po jednej stacji) —
+opis w `docs/BACKLOG.md` B21.
