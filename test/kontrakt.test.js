@@ -220,13 +220,46 @@ test('kontrakt: <body> ma data-ekran w HTML — inaczej setup miga przed startem
   assert.match(INDEX, /<body data-ekran="setup">/, 'stan początkowy ekranu jest w HTML, nie tylko z JS');
 });
 
-test('kontrakt: panel ekranu pozycji ma `position` — bez niego chowa się pod mapą', () => {
-  const reg = STYLE.slice(STYLE.indexOf('body[data-ekran=\'pozycja\'] #ekran-pozycja {'));
-  const blok = reg.slice(0, reg.indexOf('}'));
-  assert.ok(blok.includes('position: fixed'),
-    'element `static` maluje się POD ustalonym tłem mapy (z-index: 0) — panel musi być ustalony');
+test('kontrakt: panel pozycji jest w `.tresc` i ograniczony belką oraz stopką', () => {
+  // Panel NIE jest `fixed` względem viewportu: wtedy jego ograniczeniem był cały
+  // ekran, a stopka ma wyższy `z-index` i przykrywała dolne przyciski bez
+  // możliwości przewinięcia (zgłoszenie właściciela 2026-09-08). Jest `absolute`
+  // względem `.tresc`, które jest elementem flexa dokładnie między belką a stopką.
+  // Blok tniemy po `\n}`, nie po pierwszym `}`: komentarz w regule zawiera
+  // `{ display: flex; … }`, więc naiwne indexOf('}') urywało blok w pół słowa.
+  const start = STYLE.indexOf('body[data-ekran=\'pozycja\'] #ekran-pozycja {');
+  assert.ok(start > 0, 'brak reguły panelu pozycji');
+  const blok = STYLE.slice(start, STYLE.indexOf('\n}', start));
+  assert.ok(blok.includes('position: absolute'),
+    'element `static` maluje się POD mapą, a `fixed` wyjeżdża pod stopkę — ma być `absolute` w `.tresc`');
+  assert.ok(STYLE.includes('.tresc { position: relative; z-index: 1; }'),
+    '`.tresc` musi być containing blockiem dla panelu');
+  assert.ok(blok.includes('margin: 0'), '`.ekran` daje `margin: 0 auto` — bez resetu przesuwa panel (L40)');
+  assert.ok(blok.includes('overflow-y: auto'), 'treść, która się nie mieści, musi dać się przewinąć');
   assert.ok(blok.includes('background: var(--tlo-karta)'), 'tło panelu jest pełne, nie półprzezroczyste nad mapą');
-  assert.ok(STYLE.includes('@media (orientation: landscape), (min-width: 901px)'), 'podział ma wariant poziomy');
+
+  // W obu wariantach `top` I `bottom` podane jawnie: przy `top: auto`
+  // przeglądarka bierze pozycję statyczną i IGNORUJE `bottom`, więc panel
+  // nie byłby ograniczony od dołu.
+  // Ten sam nagłówek @media występuje w pliku kilka razy (ADR 0030, stacje),
+  // więc szukamy tego bloku, który RZECZYWIŚCIE zawiera regułę panelu.
+  const wariantPanelu = (mq) => {
+    let od = STYLE.indexOf(mq);
+    while (od >= 0) {
+      const nastepny = STYLE.indexOf('@media', od + mq.length);
+      const blok = STYLE.slice(od, nastepny < 0 ? undefined : nastepny);
+      if (blok.includes('#ekran-pozycja')) return blok;
+      od = STYLE.indexOf(mq, od + mq.length);
+    }
+    return null;
+  };
+  for (const mq of ['@media (max-width: 900px) and (orientation: portrait)',
+                    '@media (orientation: landscape), (min-width: 901px)']) {
+    const wariant = wariantPanelu(mq);
+    assert.ok(wariant, `brak wariantu z regułą panelu: ${mq}`);
+    assert.ok(wariant.includes('top:'), `w ${mq} brakuje jawnego top`);
+    assert.ok(wariant.includes('bottom:'), `w ${mq} brakuje jawnego bottom`);
+  }
 });
 
 test('kontrakt: mapa-tło resetuje max-height i margin z reguły bazowej .mapa (L40)', () => {
@@ -237,7 +270,7 @@ test('kontrakt: mapa-tło resetuje max-height i margin z reguły bazowej .mapa (
   // mimo `height: 100%`. Te same resety mają #mapa-gra i #mapa-stacje.
   const start = STYLE.indexOf('#mapa-pozycja {');
   assert.ok(start > 0, 'brak reguły #mapa-pozycja');
-  const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+  const blok = STYLE.slice(start, STYLE.indexOf('\n}', start));
   assert.ok(blok.includes('max-height: none'), 'max-height nie zresetowany — mapa ścięta do 460 px');
   assert.ok(blok.includes('margin: 0'), 'margin nie zresetowany — mapa przesunięta o 10 px');
   assert.ok(blok.includes('min-height: 0'), 'min-height nie zresetowany');

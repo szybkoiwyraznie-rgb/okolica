@@ -977,9 +977,20 @@ body[data-ekran='setup'] #ekran-setup {
    Tło jest pełne, nie półprzezroczyste: półprzezroczyste nad mapą robi tekst
    nieczytelnym, a audyt WCAG liczy pary z palety, nie to, co prześwituje. */
 body[data-ekran='pozycja'] #ekran-pozycja {
-  position: fixed;
+  /* Panel jest pozycjonowany WZGLĘDEM `.tresc`, a nie względem viewportu.
+     `.tresc` ma `position: relative` i jest elementem flexa dokładnie między
+     belką a stopką (`body { display: flex; flex-direction: column }` +
+     `.tresc { flex: 1 1 auto }`), więc jego ramka wyznacza panelowi sufit
+     i podłogę: panel NIE MOŻE wjechać pod stopkę i schować przycisków.
+     Przy `position: fixed` ograniczeniem był viewport, a stopka ma wyższy
+     `z-index` — dolne przyciski znikały pod nią bez możliwości przewinięcia
+     (zgłoszenie właściciela 2026-09-08). */
+  position: absolute;
   z-index: 2;
   padding: 12px;
+  /* `.ekran` deklaruje `max-width: 720px; margin: 0 auto`. Bez jawnego resetu
+     `margin: 0 auto` zostaje i przy `left: auto` przesuwa panel (L40). */
+  margin: 0;
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -987,26 +998,32 @@ body[data-ekran='pozycja'] #ekran-pozycja {
   border: 1px solid var(--linia);
   border-radius: var(--promien);
 }
-/* PION: panel na dole, mapa nad nim. */
+/* PION: panel dokowany do dołu obszaru treści, mapa zostaje nad nim.
+   `top` podany JAWNIE: przy `top: auto` przeglądarka bierze pozycję statyczną
+   i ignoruje `bottom`, więc panel nie przykleiłby się do dołu. Wysokość wynika
+   z pary top/bottom, więc gdy treść się nie mieści — przewija się w panelu. */
 @media (max-width: 900px) and (orientation: portrait) {
   body[data-ekran='pozycja'] #ekran-pozycja {
+    top: 42dvh;
     left: 10px;
     right: 10px;
     bottom: 10px;
     margin: 0 auto;
     max-width: 640px;
-    max-height: 52dvh;
   }
 }
-/* POZIOM i szeroki ekran: panel z prawej, mapa z lewej. Kotwiczony od dołu
-   i z limitem wysokości, żeby nie wlazł pod nagłówek. */
+/* POZIOM i szeroki ekran: panel z prawej, mapa z lewej. `top` I `bottom`
+   podane jawnie — wtedy wysokość wynika z ograniczeń obszaru treści, a nie
+   z ilości treści, więc panel zawsze mieści się między belką a stopką.
+   Wcześniejsze `max-height: calc(100dvh - 110px)` było liczone od viewportu,
+   a panel startował niżej, więc i tak wyjeżdżał pod stopkę. */
 @media (orientation: landscape), (min-width: 901px) {
   body[data-ekran='pozycja'] #ekran-pozycja {
+    top: 10px;
     right: 10px;
     bottom: 10px;
     width: 44%;
     max-width: 460px;
-    max-height: calc(100dvh - 110px);
   }
 }
 

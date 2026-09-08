@@ -1535,3 +1535,43 @@ nie ma drugiej stałej do pamiętania przy podbijaniu cache-bust.
 Dwa nowe kontrakty: reguła `#mapa-pozycja` ma resety `max-height`/`margin`/
 `min-height`, a stopka ma znacznik wersji. Testy: **626, 0 fail**; brama = 626 +
 sync szablonu OK + WCAG AA 0. Cache-bust `?v=m12-35`.
+
+## 2026-09-08 — panel pozycji wjeżdżał pod stopkę, przyciski były nieosiągalne
+
+Właściciel, już na poprawnej budowie (`stopka m12-35`, mapa na cały viewport):
+*„panel wyboru pozycji zajmuje 1/2 ekranu od prawej i 2/3 ekranu od dołu i chowa
+się pod stopkę co powoduje, że przyciski są ukryte, a że nie ma przewijania to są
+niedostępne […] daj mi przynajmniej przewijanie jak się nie mieści na ekranie"*.
+
+**Przyczyna.** Panel miał `position: fixed`, czyli mierzył od **viewportu**,
+a żyje w obszarze między belką a stopką. `max-height: calc(100dvh - 110px)` był
+liczony od wysokości okna, choć panel startuje niżej (pod belką), więc i tak
+wystawał pod stopkę — a stopka ma `z-index: 3` i maluje się nad nim. Do tego
+`bottom: 10px` w ogóle nie działało: dla elementu ustalonego przy `top: auto`
+przeglądarka bierze pozycję statyczną i **ignoruje `bottom`**, więc wysokość
+szła z treści, a `overflow-y: auto` nie miało czego przewijać. → LESSONS **L41**.
+
+**Poprawka.** `body { display: flex; flex-direction: column }` +
+`.tresc { flex: 1 1 auto; position: relative }` oznacza, że `.tresc` zajmuje
+dokładnie pas między belką a stopką. Panel jest teraz `position: absolute`
+względem `.tresc`, więc jego sufit i podłoga są wyznaczone z góry:
+
+- poziom/szeroki ekran: `top: 10px; right: 10px; bottom: 10px; width: 44%` —
+  wysokość wynika z ograniczeń, nie z ilości treści;
+- pion: `top: 42dvh; left/right: 10px; bottom: 10px; max-width: 640px` —
+  dokowany do dołu, mapa zostaje nad nim;
+- w obu wariantach `top` i `bottom` są jawne, więc `overflow-y: auto` dostaje
+  coś do przewijania, gdy treść się nie mieści.
+
+Przy okazji drugi przeciek w rodzaju L40: `.ekran { max-width: 720px;
+margin: 0 auto }` — reguła panelu nie deklarowała `margin`, więc `margin: 0 auto`
+z klasy dalej obowiązywało. Dodane jawne `margin: 0`.
+
+**Weryfikacja.** Kaskada policzona `jsdom` na prawdziwych `index.html` i
+`app/styles.css` dla `data-ekran="pozycja"`: `position: absolute`,
+`z-index: 2`, `margin-top: 0px`, `overflow-y: auto`. `jsdom` nie wartościuje
+media queries, więc gałęzie pion/poziom są przypięte kontraktem na poziomie
+źródła (oba warianty muszą mieć jawne `top` i `bottom`), nie kaskadą.
+
+Testy: **627, 0 fail**; brama = 627 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-36`.

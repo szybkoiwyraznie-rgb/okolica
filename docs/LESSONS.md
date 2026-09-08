@@ -488,3 +488,22 @@ wszystkich właściwości wymiarujących — nie tylko tej, którą zmieniasz. S
 regułę bazową właściwość po właściwości, a nie „czy nadpisałem to, co chciałem
 zmienić". Testy tego nie złapią: kontrakt szuka w CSS podłańcuchów, a
 `test/helpers/dom.js` w ogóle nie liczy kaskady.
+
+## L41 — `position: fixed` mierzy od viewportu, nie od widocznego obszaru
+
+**Objaw:** panel ekranu pozycji na desktopie wjeżdżał pod stopkę; dolne
+przyciski znikały, a ponieważ strona się nie przewija — były nieosiągalne.
+
+**Przyczyna:** panel miał `position: fixed` z `bottom: 10px` i
+`max-height: calc(100dvh - 110px)`. Oba ograniczenia liczone były od viewportu,
+tymczasem panel żyje w obszarze między belką a stopką, a stopka ma wyższy
+`z-index` i maluje się nad nim. Dodatkowo `bottom` w ogóle nie działało: dla
+elementu ustalonego przy `top: auto` przeglądarka bierze pozycję statyczną
+i **ignoruje `bottom`**, więc wysokość szła z treści i z `max-height`.
+
+**Reguła:** element, który ma się zmieścić w obszarze między nagłówkiem
+a stopką, pozycjonuj `absolute` względem kontenera, który ten obszar zajmuje
+(tu `.tresc { position: relative }` jako `flex: 1 1 auto` w kolumnie flex),
+a nie `fixed` względem viewportu. Podawaj `top` I `bottom` jawnie — wtedy
+wysokość wynika z ograniczeń, a nie z ilości treści, i `overflow-y: auto`
+dostaje coś do przewijania.
