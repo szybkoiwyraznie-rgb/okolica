@@ -1176,6 +1176,16 @@ domyślny, info należy do sekcji prywatność.
   w opisie stacji i `<script>` w miejscu są pokazane jako tekst) oraz
   `powiadomWlasciciela` (mail z linkiem przeglądu — atrapa ma właściwości skryptu
   i przechwytuje `MailApp`, więc test bierze token z linku jak właściciel).
+- **Oceny pytań na moście (ADR 0028, część serwerowa).** Nowy katalog
+  `okolica-oceny-paczek` z plikiem `RO-oceny/1` na paczkę (głosy + tokeny gier),
+  akcje `ocena` i `uzycie`, `podsumowanieOcen` w `budujIndeks`. Reguły: głosować
+  można tylko na paczkę zaakceptowaną, tożsamość liczy most (`idProfilu`), jeden
+  głos na (gracz, pytanie) — duplikat wraca `{ok:true, juzBylo:true}` zamiast
+  błędu, licznik „użyta w X grach" liczy różne tokeny gry. W pliku ocen nie ma
+  współrzędnych ani PIN-u (test dokłada je do żądania na złość i sprawdza zawartość
+  pliku), a pobranie paczki nie zabiera głosów na telefon gracza. `.gs`: 963 →
+  **1093 wiersze, md5 `620f28c734136654d9a4a01ebfe7853b`** — właściciel musi wkleić
+  nową wersję. Zasięg testów mostu: 867/894 wierszy (97,0%).
 - Testy: **591, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
   budżet dużej paczki, wstrzykiwanie HTML z OSM, cykl gry, hot-seat, prywatność
   zdarzeń, wygasanie lobby, przegląd i powiadomienie właściciela);

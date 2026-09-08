@@ -32,10 +32,13 @@ const FOLDERY = {
   gryOtwarte: 'okolica-gry-otwarte',
   gryZakonczone: 'okolica-gry-zakonczone',
   profile: 'okolica-profile',
+  oceny: 'okolica-oceny-paczek', // ADR 0028: głosy graczy, osobno od paczek
 };
 const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (ADR 0021)
 const SCHEMAT_KONTENERA = 'TO-paczka/2';
+const SCHEMAT_OCENY = 'RO-oceny/1';  // ADR 0028: plik ocen jednej paczki
+const SCHEMAT_OCENA = 'RO-ocena/1';  // ADR 0028: pojedynczy głos (kciuk w górę/dół)
 const ZNAK_OCZEKUJE = 'oczekuje przeglądu';
 
 /* ---------------------------------------------------------- infrastruktura */
@@ -195,6 +198,129 @@ function sprawdzProfil(cialo) {
   return { ok: true, pseudonim: jest.pseudonim || '' };
 }
 
+/* ---------------------------- oceny pytań przez graczy (ADR 0028) */
+
+const MAKS_GLOSOW_NA_PACZKE = 5000;
+const MAKS_GIER_NA_PACZKE = 500;
+
+/** Id pliku Drive jest z [A-Za-z0-9_-], ale nazwę pliku i tak składamy ostrożnie. */
+function nazwaPlikuOcen(paczkaId) {
+  return 'oceny-' + String(paczkaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) + '.json';
+}
+
+/** Głosy paczki albo null, gdy paczka nie była jeszcze oceniana. */
+function czytajOceny(paczkaId) {
+  const it = folder(FOLDERY.oceny).getFilesByName(nazwaPlikuOcen(paczkaId));
+  if (!it.hasNext()) return null;
+  try {
+    const dane = JSON.parse(it.next().getBlob().getDataAsString('UTF-8'));
+    if (!dane || dane.schemat !== SCHEMAT_OCENY) return null;
+    if (!Array.isArray(dane.glosy)) dane.glosy = [];
+    if (!Array.isArray(dane.gry)) dane.gry = [];
+    return dane;
+  } catch (e) {
+    return null; // uszkodzony plik ocen nie może zepsuć indeksu ani głosu
+  }
+}
+
+function pusteOceny(paczkaId) {
+  return { schemat: SCHEMAT_OCENY, paczkaId: String(paczkaId), glosy: [], gry: [] };
+}
+
+function zapiszOceny(oceny) {
+  const nazwa = nazwaPlikuOcen(oceny.paczkaId);
+  const tekst = JSON.stringify(oceny, null, 2);
+  const it = folder(FOLDERY.oceny).getFilesByName(nazwa);
+  if (it.hasNext()) {
+    const plik = it.next();
+    plik.setContent(tekst);
+    return plik;
+  }
+  return folder(FOLDERY.oceny).createFile(nazwa, tekst, 'application/json');
+}
+
+/** Czy paczka o tym id jest w katalogu zaakceptowanych (głosować można tylko na takie). */
+function paczkaJestWRepo(paczkaId) {
+  try {
+    const rodzice = DriveApp.getFileById(String(paczkaId)).getParents();
+    return rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Statystyki do indeksu i do odpowiedzi na głos. Przy dwóch ikonach nie ma
+ * głosów neutralnych, więc plus + minus = glosow (ADR 0028 pkt 5).
+ */
+function podsumowanieOcen(oceny) {
+  const glosy = (oceny && oceny.glosy) || [];
+  let plus = 0;
+  glosy.forEach((g) => { if (Number(g.ocena) === 1) plus += 1; });
+  return {
+    glosow: glosy.length,
+    plus: plus,
+    minus: glosy.length - plus,
+    uzytaWGrach: ((oceny && oceny.gry) || []).length,
+  };
+}
+
+/** POST ocena: jeden głos gracza na pytanie. Duplikat nie jest błędem. */
+function przyjmijOcene(cialo) {
+  return zBlokada(() => {
+    if (!cialo || cialo.schemat !== SCHEMAT_OCENA) return { ok: false, blad: 'oczekiwałem głosu ' + SCHEMAT_OCENA };
+    const paczkaId = String(cialo.paczkaId || '').trim();
+    if (!paczkaId) return { ok: false, blad: 'głos bez paczki — nie wiadomo, co ocenić' };
+    if (!paczkaJestWRepo(paczkaId)) return { ok: false, blad: 'nie ma takiej paczki w repozytorium (albo nie jest zaakceptowana)' };
+    const pytanieId = String(cialo.pytanieId || '').trim().slice(0, 40);
+    if (!pytanieId) return { ok: false, blad: 'głos bez identyfikatora pytania' };
+    const ocena = Number(cialo.ocena) === -1 ? -1 : (Number(cialo.ocena) === 1 ? 1 : 0);
+    if (!ocena) return { ok: false, blad: 'ocena musi być kciukiem w górę (1) albo w dół (-1)' };
+    const gracz = idProfilu(cialo.gracz); // ADR 0028 pkt 2: tożsamość liczy most
+    if (!gracz) return { ok: false, blad: 'głos bez tożsamości gracza' };
+
+    const oceny = czytajOceny(paczkaId) || pusteOceny(paczkaId);
+    const juzBylo = oceny.glosy.some((g) => g.gracz === gracz && g.pytanieId === pytanieId);
+    if (!juzBylo) {
+      oceny.glosy.push({
+        pytanieId: pytanieId,
+        gracz: gracz,
+        ocena: ocena,
+        gra: String(cialo.gra || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40),
+        kiedy: new Date().toISOString(),
+      });
+      if (oceny.glosy.length > MAKS_GLOSOW_NA_PACZKE) {
+        oceny.glosy.splice(0, oceny.glosy.length - MAKS_GLOSOW_NA_PACZKE);
+      }
+      zapiszOceny(oceny);
+    }
+    return { ok: true, juzBylo: juzBylo, podsumowanie: podsumowanieOcen(oceny) };
+  });
+}
+
+/**
+ * POST uzycie: gra pobrała paczkę — token gry wchodzi do licznika „użyta w X
+ * grach" (ADR 0028 pkt 6). Osobna akcja, żeby pobranie paczki (GET) zostało
+ * czystym odczytem.
+ */
+function przyjmijUzycie(cialo) {
+  return zBlokada(() => {
+    const paczkaId = String((cialo && cialo.paczkaId) || '').trim();
+    if (!paczkaId) return { ok: false, blad: 'brak paczki' };
+    if (!paczkaJestWRepo(paczkaId)) return { ok: false, blad: 'nie ma takiej paczki w repozytorium (albo nie jest zaakceptowana)' };
+    const token = String((cialo && cialo.gra) || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+    if (!token) return { ok: false, blad: 'brak tokena gry' };
+    const oceny = czytajOceny(paczkaId) || pusteOceny(paczkaId);
+    const juzBylo = oceny.gry.indexOf(token) >= 0;
+    if (!juzBylo) {
+      oceny.gry.push(token);
+      if (oceny.gry.length > MAKS_GIER_NA_PACZKE) oceny.gry.splice(0, oceny.gry.length - MAKS_GIER_NA_PACZKE);
+      zapiszOceny(oceny);
+    }
+    return { ok: true, juzBylo: juzBylo, podsumowanie: podsumowanieOcen(oceny) };
+  });
+}
+
 /* ------------------------------------------------------------------- API */
 
 function doGet(e) {
@@ -225,6 +351,8 @@ function doPost(e) {
       case 'gra-zdarzenie': return json(przyjmijZdarzenie(cialo));
       case 'gra-zakoncz': return json(zakonczGre(cialo));
       case 'gra-hotseat': return json(przyjmijGreHotseat(cialo));
+      case 'ocena': return json(przyjmijOcene(cialo));
+      case 'uzycie': return json(przyjmijUzycie(cialo));
       case 'profil-ustaw': return json(ustawProfil(cialo));
       case 'profil-sprawdz': return json(sprawdzProfil(cialo));
       default: return json({ ok: false, blad: 'nieznana akcja albo schemat ciała' });
@@ -324,6 +452,8 @@ function budujIndeks() {
         // B19: pliki sprzed ADR 0024 dostają kotwicę geohash6 ze stacji.
         geohash6: kotwica ? kotwica.geohash6 : zestaw.meta.geohash6,
         geohash6Szacowany: kotwica ? kotwica.szacowany : false,
+        // ADR 0028: statystyki ocen — ekran 2 pokazuje je przy wyborze paczki.
+        oceny: podsumowanieOcen(czytajOceny(plik.getId())),
       }));
     } catch (e) { /* uszkodzony plik nie psuje indeksu */ }
   }

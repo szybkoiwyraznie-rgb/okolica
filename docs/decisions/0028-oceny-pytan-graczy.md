@@ -50,9 +50,11 @@ jedynym sygnałem jakości, który nie wymaga pracy właściciela.
    odmianę („użyta w 1 grze / w 3 grach") składa `app/oceny.js`, żeby jedno
    miejsce odpowiadało za język. Przy dwóch ikonach nie ma głosu neutralnego,
    więc `plus + minus = glosow` i procenty sumują się do 100 (74/26, nie 74/21).
-6. **„Użyta w X grach"** = liczba różnych tokenów gry, które pobrały paczkę:
-   aplikacja dokłada `&gra=<token>` do `akcja=paczka`. Bez parametru `gra` most
-   zachowuje się dokładnie jak dziś (starsze wersje aplikacji nie psują indeksu).
+6. **„Użyta w X grach"** = liczba różnych tokenów gry, które zgłosiły użycie
+   paczki: aplikacja wysyła w tle `akcja:'uzycie'` z tokenem gry, a most liczy
+   różne tokeny (ponowienie tego samego tokena nie jest liczone drugi raz).
+   Pobranie paczki (`akcja=paczka`) zostaje czystym odczytem — licznik nie może
+   zepsuć krytycznej ścieżki pobierania pytań.
 7. **Prywatność.** Głos niesie `paczkaId`, `pytanieId`, `ocena` (1 / −1),
    `gracz` (slug pseudonimu albo id urządzenia) i token gry. **Nigdy**
    współrzędnych gracza (ADR 0013), PIN-u (ADR 0021) ani treści pytania.
