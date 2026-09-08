@@ -831,11 +831,13 @@ test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia
   const pinezki = domAtrapa.pobierz('mapa-stacje-pinezki');
   const svg = domAtrapa.pobierz('mapa-stacje-svg');
   assert.ok(pinezki.children.length >= 3, 'pierścień rozstawiony na mapie');
-  const dystansPrzed = domAtrapa.pobierz('lista-stacji').children[0].innerHTML;
+  // textContent, nie innerHTML: wiersz jest zbudowany z węzłów (LESSONS L19),
+  // a atrapa DOM nie parsuje innerHTML — pole zostałoby puste.
+  const dystansPrzed = domAtrapa.pobierz('lista-stacji').children[0].textContent;
   wyslijNa(pinezki.children[0], 'pointerdown', { pointerId: 11, clientX: 0, clientY: 0, stopPropagation() {} });
   wyslijNa(svg, 'pointermove', { pointerId: 11, clientX: 100, clientY: 100 });
   wyslijNa(svg, 'pointerup', { pointerId: 11 });
-  const dystansPo = domAtrapa.pobierz('lista-stacji').children[0].innerHTML;
+  const dystansPo = domAtrapa.pobierz('lista-stacji').children[0].textContent;
   assert.notEqual(dystansPo, dystansPrzed, 'lista odświeżona po przeciągnięciu');
   assert.match(dystansPo, /ustawiona ręcznie \(linia prosta — osiągalność niezweryfikowana\)/);
 
@@ -847,7 +849,7 @@ test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia
   domAtrapa.kliknij('przycisk-przelicz');
   assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'false');
   assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('ręcznie'), 'nowy układ nie udaje ręcznego');
-  assert.ok(!domAtrapa.pobierz('lista-stacji').children[0].innerHTML.includes('ręcznie'));
+  assert.ok(!domAtrapa.pobierz('lista-stacji').children[0].textContent.includes('ręcznie'));
 });
 
 /* --------------------------------------- M5/J3: podgląd i edycja organizatora */
@@ -2032,6 +2034,43 @@ test('ekran pytań: mówi z góry, jak duża będzie odpowiedź modelu (B21)', a
   assert.match(tekst, /token/, 'podaje rząd wielkości w tokenach');
   // 5 pytań to ~1,1 tys. tokenów — poniżej progu, więc bez straszenia.
   assert.equal(/limit wyjścia/.test(tekst), false, 'przy małej paczce nie ostrzegamy');
+});
+
+test('stacje: nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem', async () => {
+  // Nazwy stacji pochodzą z `tags.name` w Overpass, czyli z danych edytowanych
+  // przez obcych ludzi. Gdyby wiersz listy składał się przez innerHTML, obiekt
+  // o nazwie <img onerror=…> wykonałby skrypt w aplikacji.
+  const wroga = '<img src=x onerror="alert(1)">';
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  for (const grupa of ['drogi', 'poi', 'bariery']) {
+    for (const el of dane[grupa] ?? []) {
+      if (el.tags && typeof el.tags.name === 'string') el.tags.name = wroga;
+    }
+  }
+  const pamiec = konfigNa1000m(new Map());
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  pamiec.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+
+  const domAtrapa = await aplikacjaZSiecia({ pamiec });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+
+  const wiersze = domAtrapa.pobierz('lista-stacji').children;
+  assert.ok(wiersze.length >= 3, 'stacje są wyrenderowane');
+  const zNazwa = wiersze.filter((li) => li.textContent.includes(wroga));
+  assert.ok(zNazwa.length > 0, 'wroga nazwa trafiła na listę (jako tekst)');
+  for (const li of zNazwa) {
+    const znaczniki = [];
+    const zbierz = (wezel) => {
+      for (const dziecko of wezel.children ?? []) {
+        znaczniki.push(String(dziecko.tagName ?? '').toUpperCase());
+        zbierz(dziecko);
+      }
+    };
+    zbierz(li);
+    assert.equal(znaczniki.includes('IMG'), false, `w wierszu powstał element IMG: ${znaczniki.join(',')}`);
+    assert.ok(li.children.every((d) => String(d.tagName).toUpperCase() !== 'SCRIPT'), 'bez SCRIPT');
+  }
 });
 
 test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, a prompt się buduje (S12)', async () => {

@@ -186,8 +186,10 @@ ją w chwili wywołania (commit M4/I7).
 **Przyczyna:** w atrapie `innerHTML` jest zwykłym polem — `appendChild`
 dokładał nowe `li` ZA starymi.
 **Reguła:** listy przebudowujemy przez `replaceChildren(...)`; miejsca
-z `innerHTML = ''` migrujemy przy okazji (pozostałe: setup, gracze, prompt,
-podsumowanie — BACKLOG B16).
+z `innerHTML = ''` migrujemy przy okazji. **Zrobione 2026-09-08** (BACKLOG B16):
+w `app/app.js` nie zostało ani jedno żywe `innerHTML` — tryby, segmenty, tematy,
+selecty, lista stacji i lista usterek budują węzły (`createElement` +
+`textContent`), więc atrapa i przeglądarka zachowują się identycznie.
 
 ## L20 — nowy helper bez grep-a: `pobierzPlik` zadeklarowany drugi raz
 
@@ -336,3 +338,18 @@ akceptacja → indeks → pobranie → walidacja po stronie aplikacji) plus prze
 akcji z asercją „brak `is not defined` w odpowiedzi"; (2) aplikacja NIE chowa
 odpowiedzi mostu — `{blad:…}` jest cytowane w komunikacie (kod Z11), bo „inny
 schemat" brzmi jak uszkodzony plik i wysyła na poszukiwania nie tam, gdzie wina.
+
+## L34 — dane z zewnątrz idą do DOM przez `textContent`, nie `innerHTML`
+
+**Objaw:** `renderujStacje` składało wiersz przez ``li.innerHTML = `… ${opis} …` ``,
+a `opis` to nazwa z `tags.name` w Overpass — tekst edytowany przez obcych ludzi.
+Obiekt OSM o nazwie `<img src=x onerror=…>` wykonałby skrypt w aplikacji.
+**Przyczyna:** ten sam skrót myślowy co w L19 (innerHTML jako wygodny szablon),
+ale tu podstawiane dane są zewnętrzne: Overpass, meta paczki z repozytorium,
+odpowiedź mostu. Atrapa DOM tego nie pokazuje, bo innerHTML jest w niej inertne.
+**Reguła:** wszystko, co przyszło spoza aplikacji, jest **tekstem** —
+`createElement` + `textContent`/`append`; `innerHTML` tylko dla statycznych
+fragmentów bez podstawiania danych (w `app/app.js` nie zostało ani jedno).
+Test: „stacje: nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem"
+(`test/aplikacja.test.js`) — podstawia wrogą nazwę w fixture i sprawdza, że
+w wierszu nie powstał element `IMG`.

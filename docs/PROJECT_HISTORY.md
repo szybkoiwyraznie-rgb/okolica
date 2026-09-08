@@ -1134,8 +1134,19 @@ domyślny, info należy do sekcji prywatność.
   `test/duza-paczka.test.js` (4) + test UI w `test/aplikacja.test.js`; protokół
   §2 „Budżet rozmiaru", BACKLOG B21, HANDOFF §10. Dzielenie generacji na partie
   zostaje jako decyzja właściciela.
-- Testy: **581, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
-  budżet dużej paczki);
+- **B16 zrobione: koniec `innerHTML` w `app/app.js` (LESSONS L19) + zamknięta
+  dziura na dane zewnętrzne (LESSONS L34).** Tryby, segmenty, tematy, selecty,
+  lista stacji i lista usterek budują węzły (`createElement` + `textContent`),
+  więc atrapa DOM i przeglądarka zachowują się identycznie. Przy migracji wyszło,
+  że wiersz stacji wstawiał przez `innerHTML` **nazwę z OSM** (`tags.name`
+  przez `dopiszMiasto`), a komunikaty usterek cytują metadane paczki z Drive
+  i odpowiedź mostu — obiekt OSM o nazwie `<img src=x onerror=…>` wykonałby
+  skrypt w aplikacji. Wszystko, co zewnętrzne, idzie teraz przez `textContent`.
+  Testy: „nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem"
+  (wroga nazwa w fixture Overpass, asercja: brak elementu `IMG` w wierszu)
+  + poprawione 3 asercje, które czytały inertne `innerHTML` w atrapie.
+- Testy: **582, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
+  budżet dużej paczki, wstrzykiwanie HTML z OSM);
   kontrakt pinuje `sumaPytanWpisu`, brak `id="multi-zgoda"` i punkt „Gra na
   wielu telefonach" w prywatności.
 

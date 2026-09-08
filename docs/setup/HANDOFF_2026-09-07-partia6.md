@@ -18,8 +18,8 @@
 | 7 | Błąd: setup 5 stacji, ekran stacji pokazał 4, ekran pytań `[WE06] … (4) nie zgadza się z konfiguracją (5)` | Sieć słusznie dała 4 (S12), ale setup zostawał przy 5 — teraz setup idzie za wyborem, promień liczy się od nowa, a ekran mówi dlaczego i jak zwiększyć promień (§5) | (commit 3) |
 | — | Dokumenty + cache-bust (runda 2) | ADR 0019 dopisek, ADR 0024 uzupełnienie, PROTOKOL §9, instrukcja, PROJECT_HISTORY, `?v=m12-16` | (commit 4) |
 
-**Brama na koniec partii:** `npm run brama` = **581 testów, 0 fail** + sync
-szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-19` (43 miejsca
+**Brama na koniec partii:** `npm run brama` = **582 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-20` (43 miejsca
 + `WERSJA_SW`).
 
 ## 2. Co wisi

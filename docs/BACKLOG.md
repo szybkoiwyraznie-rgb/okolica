@@ -114,10 +114,13 @@ secure context), migratora dla paczek `b64x1` i decyzji właściciela o utracie
 paczki przy zapomnianym kodzie. Nie ruszać, dopóki obfuskacja wystarcza — koszt
 to zarządzanie kluczami i realne ryzyko utraty treści.
 
-- **B16 — migracja list z `innerHTML=''` na `replaceChildren`** (LESSONS L19):
-  `renderujStacje` już migrowane (M4/I8); pozostałe miejsca w `app/app.js`
-  (setup, gracze, prompt, podsumowanie, usterki) przepisać przy okazji
-  dotykania ich w M5, żeby testy na atrapie nigdy nie czytały starych dzieci.
+- **B16 — migracja list z `innerHTML=''` na `replaceChildren` ✅ ZROBIONE (2026-09-08)**
+  (LESSONS L19): w `app/app.js` nie zostało żadne żywe `innerHTML` — tryby,
+  segmenty (wiek/poziom), tematy, selecty, lista stacji i lista usterek budują
+  węzły. Przy okazji wyszła dziura: wiersz stacji wstawiał **nazwę z OSM**
+  (`tags.name`) przez `innerHTML`, a komunikaty usterek cytują metadane paczki
+  i odpowiedź mostu — wszystko, co zewnętrzne, idzie teraz przez `textContent`
+  (LESSONS L34; test z wrogą nazwą w fixture Overpass).
 
 ## B17 — Trwały backend: Google Drive + Apps Script (konto wydzielone)
 

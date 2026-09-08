@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-19';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-19';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-20';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-20';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -31,21 +31,21 @@ import {
   SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-19';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-19';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-19';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-19';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-19';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-19';
+} from './protokol.js?v=m12-20';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-20';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-20';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-20';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-20';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-20';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-19';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-19';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-19';
+} from './zestawy.js?v=m12-20';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-20';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-20';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -65,11 +65,11 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-19';
-import { utworzMape } from './mapa.js?v=m12-19';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-19';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-19';
-import { adresMostu, stanMostu } from './most.js?v=m12-19';
+} from './sieci.js?v=m12-20';
+import { utworzMape } from './mapa.js?v=m12-20';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-20';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-20';
+import { adresMostu, stanMostu } from './most.js?v=m12-20';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -255,12 +255,21 @@ function pokazBledy(idPola, usterki) {
 
 function renderujTryby() {
   const lista = $('lista-trybow');
-  lista.innerHTML = '';
-  for (const [klucz, tryb] of Object.entries(TRYBY)) {
+  // Węzły zamiast innerHTML (LESSONS L19, BACKLOG B16): atrapa DOM w testach
+  // nie parsuje innerHTML, a poza tym nic zewnętrznego nie trafia do znaczników.
+  lista.replaceChildren(...Object.entries(TRYBY).map(([klucz, tryb]) => {
     const etykieta = document.createElement('label');
-    etykieta.innerHTML = `<input type="radio" name="tryb" value="${klucz}"><strong>${tryb.ikona} ${tryb.etykieta}</strong><span>${String(tryb.predkoscKmh).replace('.', ',')} km/h</span>`;
-    lista.appendChild(etykieta);
-  }
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'tryb';
+    input.value = klucz;
+    const mocne = document.createElement('strong');
+    mocne.textContent = `${tryb.ikona} ${tryb.etykieta}`;
+    const predkosc = document.createElement('span');
+    predkosc.textContent = `${String(tryb.predkoscKmh).replace('.', ',')} km/h`;
+    etykieta.append(input, mocne, predkosc);
+    return etykieta;
+  }));
   const zaznaczonyTryb = lista.querySelector(`input[value="${STAN.konfig.tryb}"]`) ?? lista.querySelector('input');
   if (zaznaczonyTryb) {
     zaznaczonyTryb.checked = true;
@@ -283,12 +292,17 @@ function aktualizujOpisTrybu() {
 
 function renderujSegment(nazwaPola, dane, wybranyKlucz, onChange) {
   const lista = $(nazwaPola);
-  lista.innerHTML = '';
-  for (const [klucz, pozycja] of Object.entries(dane)) {
+  lista.replaceChildren(...Object.entries(dane).map(([klucz, pozycja]) => {
     const etykieta = document.createElement('label');
-    etykieta.innerHTML = `<input type="radio" name="${nazwaPola}" value="${klucz}"><strong>${pozycja.etykieta}</strong>`;
-    lista.appendChild(etykieta);
-  }
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = nazwaPola;
+    input.value = klucz;
+    const mocne = document.createElement('strong');
+    mocne.textContent = pozycja.etykieta;
+    etykieta.append(input, mocne);
+    return etykieta;
+  }));
   const zaznaczony = lista.querySelector(`input[value="${wybranyKlucz}"]`);
   if (zaznaczony) zaznaczony.checked = true;
   lista.addEventListener('change', () => {
@@ -299,12 +313,17 @@ function renderujSegment(nazwaPola, dane, wybranyKlucz, onChange) {
 
 function renderujTematy() {
   const lista = $('lista-tematow');
-  lista.innerHTML = '';
-  for (const [klucz, temat] of Object.entries(TEMATY)) {
+  lista.replaceChildren(...Object.entries(TEMATY).map(([klucz, temat]) => {
     const etykieta = document.createElement('label');
-    etykieta.innerHTML = `<input type="checkbox" value="${klucz}" title="${temat.opis}"><span>${temat.etykieta}</span>`;
-    lista.appendChild(etykieta);
-  }
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = klucz;
+    input.title = temat.opis;
+    const nazwa = document.createElement('span');
+    nazwa.textContent = temat.etykieta;
+    etykieta.append(input, nazwa);
+    return etykieta;
+  }));
   for (const klucz of STAN.konfig.tematy) {
     const box = lista.querySelector(`input[value="${klucz}"]`);
     if (box) box.checked = true;
@@ -325,7 +344,7 @@ function renderujTematy() {
 function renderujSelecty() {
   const wypelnij = (idPola, dane, wybrany) => {
     const select = $(idPola);
-    select.innerHTML = '';
+    select.replaceChildren();
     for (const [klucz, pozycja] of Object.entries(dane)) {
       const option = document.createElement('option');
       option.value = klucz;
@@ -1468,7 +1487,23 @@ function renderujStacje() {
     const opis = s.zrodlo === 'reczne'
       ? 'ustawiona ręcznie (linia prosta — osiągalność niezweryfikowana)'
       : s.opis || (sieciowe ? 'punkt przy sieci dróg' : 'punkt w terenie (osiągalność niezweryfikowana)');
-    li.innerHTML = `<span class="numer">${s.id}</span><span class="opis">${opis}<br><span class="kod">${formatujWspolrzedne(s.lat, s.lon)} · ${s.bearing}°</span></span><span class="dystans">${dystans}</span>`;
+    // Opis stacji bywa nazwą z OSM (`tags.name` przez `dopiszMiasto`), czyli
+    // tekstem z zewnątrz — do DOM idzie przez textContent, nigdy przez
+    // innerHTML (wstrzyknięty znacznik wykonałby się w aplikacji).
+    const numer = document.createElement('span');
+    numer.classList.add('numer');
+    numer.textContent = String(s.id);
+    const kod = document.createElement('span');
+    kod.classList.add('kod');
+    kod.textContent = `${formatujWspolrzedne(s.lat, s.lon)} · ${s.bearing}°`;
+    const opisEl = document.createElement('span');
+    opisEl.classList.add('opis');
+    opisEl.textContent = opis;
+    opisEl.append(document.createElement('br'), kod);
+    const dystansEl = document.createElement('span');
+    dystansEl.classList.add('dystans');
+    dystansEl.textContent = dystans;
+    li.append(numer, opisEl, dystansEl);
     return li;
   }));
   if (sieciowe) {
@@ -2751,7 +2786,7 @@ function sprawdzOdpowiedz() {
   const wynik = $('wynik-walidacji');
   const listaUsterek = $('wynik-usterki');
   wynik.hidden = false;
-  listaUsterek.innerHTML = '';
+  listaUsterek.replaceChildren();
 
   if (!paczka) {
     wynik.dataset.stan = 'blad';
@@ -2844,7 +2879,22 @@ function renderujUsterki(usterki) {
   // zachowują się wtedy identycznie, a stare wiersze nie zalegają w DOM
   $('wynik-usterki').replaceChildren(...usterki.map((u) => {
     const li = document.createElement('li');
-    li.innerHTML = `<code>${u.kod}</code> ${u.pole ? `<strong>${u.pole}</strong> — ` : ''}${u.komunikat}`;
+    const kod = document.createElement('code');
+    kod.textContent = u.kod ?? '';
+    li.append(kod);
+    // Komunikaty cytują dane z zewnątrz (meta paczki, odpowiedź mostu), więc
+    // tekst idzie przez textContent — innerHTML wykonałby znacznik z paczki.
+    if (u.pole) {
+      const pole = document.createElement('strong');
+      pole.textContent = ` ${u.pole}`;
+      const reszta = document.createElement('span');
+      reszta.textContent = ` — ${u.komunikat ?? ''}`;
+      li.append(pole, reszta);
+    } else {
+      const reszta = document.createElement('span');
+      reszta.textContent = ` ${u.komunikat ?? ''}`;
+      li.append(reszta);
+    }
     return li;
   }));
 }
