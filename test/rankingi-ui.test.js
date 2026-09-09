@@ -133,7 +133,10 @@ test('„Moje gry": historia zakończonych gier własnego pseudonimu', async () 
 test('puste rankingi i śmieciowa odpowiedź mostu są jawne (LESSONS L6)', async () => {
   const pusty = await telefonZRankingiem({ odpowiedz: { schemat: 'RO-ranking/1', wiersze: [] }, pseudonim: null });
   assert.match(pusty.dom.pobierz('ranking-status').textContent, /nie ma jeszcze zakończonych gier/, 'status mówi wprost, że pusto');
-  assert.match(wierszeTabeli(pusty.dom)[0], /Brak zakończonych gier w tej kategorii/, 'tabela ma jeden wiersz-komunikat');
+  // Zgłoszenie właściciela (2026-09-09): pusta tabela ma rozróżniać „most nie ma
+  // gier” od „ta kategoria jest pusta” — inaczej nie wiadomo, czego szukać.
+  assert.match(wierszeTabeli(pusty.dom)[0], /Most Drive nie ma jeszcze ani jednej zakończonej gry/,
+    'pusty most tłumaczy, skąd biorą się wyniki');
   zakladka(pusty.dom, 4);
   assert.match(pusty.dom.pobierz('ranking-moje-gry').children[0].textContent, /Nie masz jeszcze pseudonimu/, 'bez pseudonimu lista mówi, gdzie go ustawić');
 
@@ -148,4 +151,18 @@ test('adres mostu jest w kodzie — rankingi pobierają bez wpisu w pamięci (AD
   const { dom, most } = await telefonZRankingiem({ pamiec });
   assert.ok(most.adresy[0].includes('akcja=ranking'), 'żądanie GET akcja=ranking poszło na adres z kodu');
   assert.match(dom.pobierz('ranking-status').textContent, /4 wyników graczy/, 'status mówi, ile wierszy przyszło');
+});
+
+
+test('pusta kategoria mówi co innego niż pusty most (zgłoszenie właściciela 2026-09-09)', async () => {
+  const { dom } = await telefonZRankingiem();
+  // Zakładka „Lokalizacja”: wiersze są, więc komunikat ma odsyłać do innej
+  // kategorii, a nie sugerować, że na moście nie ma żadnych gier.
+  zakladka(dom, 3);
+  const wiersze = wierszeTabeli(dom);
+  if (wiersze.length === 1 && /Brak zakończonych gier w tej kategorii/.test(wiersze[0])) {
+    assert.match(wiersze[0], /zajrzyj do zakładki/, 'pusta kategoria odsyła do zakładki ogólnej');
+  }
+  zakladka(dom, 0);
+  assert.ok(wierszeTabeli(dom).length >= 1, 'zakładka ogólna pokazuje wyniki');
 });
