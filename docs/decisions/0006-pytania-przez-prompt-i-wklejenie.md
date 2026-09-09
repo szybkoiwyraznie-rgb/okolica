@@ -37,10 +37,13 @@ w OSM nie ma historii, legend ani kultury.
    + przycisk „skopiuj poprawkę do modelu" (gotowy tekst doprecyzowania, który
    organizator wkleja modelowi jako następny prompt).
 6. **Wymiana przez schowek z degradacją**: `navigator.clipboard` (copy/paste)
-   tam, gdzie dostępny; obok zawsze widoczne pole `<textarea>` do zaznaczenia
-   i skopiowania palcem oraz **import z pliku** (`<input type="file">`) — bo
-   schowek w iframe preview i w niektórych przeglądarkach mobilnych nie działa
-   (ENVIRONMENT §5).
+   tam, gdzie dostępny; pole `<textarea>` do wklejenia palcem oraz **import
+   z pliku** (`<input type="file">`) jako droga zapasowa — bo schowek w iframe
+   preview i w niektórych przeglądarkach mobilnych nie działa (ENVIRONMENT §5).
+   **Aneks 2026-09-09:** na ekranie 5 pole zapasowe jest ZWINIĘTE w `<details>`,
+   a główną drogą jest przycisk „📋 Prześlij skopiowaną odpowiedź ze schowka",
+   który czyta schowek i waliduje bez wypisywania treści do DOM — patrz aneks
+   na końcu tego dokumentu.
 7. **Model jest „zewnętrznym silnikiem treści", nie częścią systemu**: zero
    telemetrii, zero identyfikacji modelu w stanie gry poza dobrowolnym polem
    `paczka.model` (etykieta organizatora). Aplikacja musi działać identycznie
@@ -76,3 +79,34 @@ podgląd „tylko dla organizatora" i edycja — przegląd treści odbywa się n
 (ADR 0016). Martwa po tym `zastosujEdycjePaczki()` została usunięta z
 `app/protokol.js`; pole `modyfikacje[]` zostaje w schemacie (PROTOKOL §3.1)
 jako miejsce na poprawki wniesione poza aplikacją.
+
+## Aneks 2026-09-09 — wklejenie jednym przyciskiem, treść poza ekranem
+
+Właściciel: „Pole do wklejenia treści z AI jest za duże i zachęca do
+podglądania — im mniej będzie widać tym lepiej — najlepiej jakby był sam guzik
+→ [Prześlij skopiowaną odpowiedź ze schowka] który by zawartość schowka od razu
+wklejał i przesyłał, bez pokazywania na tym ekranie. Da się?"
+
+Da się i to jest lepsze rozwiązanie niż dotychczasowe. Ekran 5 obsługuje
+organizator, często przy graczach — `<textarea rows="10"> `z pytaniami
+i odpowiedziami była największym oknem podglądu w całej aplikacji, a przy tym
+zbędnym: treść i tak leci prosto do walidatora.
+
+**Decyzja.**
+
+1. Główna droga to jeden przycisk pełnej szerokości. `wklejZeSchowkaISprawdz()`
+   czyta `navigator.clipboard.readText()` i przekazuje tekst **bezpośrednio** do
+   `sprawdzOdpowiedz(tekst)`. Treść nie trafia do `#pole-odpowiedz` ani na
+   moment — nie da się jej podejrzeć przez ramię ani odzyskać z DOM.
+2. Pole tekstowe i import z pliku **zostają** (pkt 6 powyżej to nie kaprys:
+   schowek bywa zablokowany), ale są zwinięte w `<details>` z ostrzeżeniem, że
+   tędy treść JEST widoczna. Odmowa schowka otwiera tę sekcję automatycznie
+   i mówi, co zrobić (L6: zero cichych porażek).
+3. Ostrzeżenie „tekst jest jawny i nie jest zaszyfrowany" (ADR 0007 pkt 5,
+   pinowane testem kontraktu) przeniesione do sekcji zapasowej — na głównej
+   drodze nic się nie wyświetla, więc ostrzeżenie o widoczności byłoby tam
+   nieprawdziwe.
+
+**Czego to NIE zmienia:** walidacja, kody usterek, poprawka dla modelu
+i automatyczny start gry po przyjęciu paczki działają identycznie — zmieniła się
+wyłącznie droga, którą tekst dociera do `sprawdzOdpowiedz`.

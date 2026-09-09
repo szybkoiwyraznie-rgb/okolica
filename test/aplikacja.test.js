@@ -2465,3 +2465,85 @@ test('start: „▶ Zacznij” otwiera setup, nie tylko zamyka intro', async () 
   assert.equal(domIntro.pobierz('przycisk-setup').getAttribute('aria-pressed'), 'true',
     'ikona w belce świeci — stan zgodny z F3');
 });
+
+/**
+ * Zgłoszenie właściciela (2026-09-09): „Pole do wklejenia treści z AI jest za
+ * duże i zachęca do podglądania (…) najlepiej jakby był sam guzik →
+ * [Prześlij skopiowaną odpowiedź ze schowka] który by zawartość schowka od razu
+ * wklejał i przesyłał, bez pokazywania na tym ekranie."
+ */
+test('ekran 5: przycisk ze schowka waliduje BEZ pokazywania treści w polu', async () => {
+  const paczka = czytajFixturePaczka();
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  // Schowek oddaje gotową paczkę; `writeText` niepotrzebny na tej ścieżce.
+  Object.assign(navigator, { clipboard: { readText: async () => JSON.stringify(paczka) } });
+  await import(`../app/app.js?schowek=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+
+  domAtrapa.kliknij('przycisk-wklej-sprawdz');
+  await new Promise((r) => setTimeout(r, 0)); // handler jest async (readText)
+
+  assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '',
+    'pole awaryjne zostaje puste — pytania nie pokazały się na ekranie');
+  assert.equal(domAtrapa.pobierz('wklejka-awaria').open, false,
+    'sekcja awaryjna zostaje zwinięta, gdy schowek zadziałał');
+  // Poprawna paczka od razu zaczyna grę (decyzja 2026-09-07).
+  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'gra wystartowała prosto ze schowka');
+});
+
+test('ekran 5: treść ze schowka nie ląduje w polu NAWET gdy walidacja odrzuci', async () => {
+  // Ten test jest właściwym strażnikiem prywatności ekranu. Przy poprawnej
+  // paczce pole i tak jest czyszczone po przyjęciu (ADR 0007 pkt 4), więc samo
+  // „puste na końcu" nie dowodzi niczego — kod mógłby wpisać tekst do DOM
+  // i posprzątać po sobie. Ścieżka BŁĘDU nie czyści pola, więc jeśli treść
+  // kiedykolwiek tam trafi, zostanie i test to zobaczy.
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  const smiec = '{"protokol":"PYT/1.0-rev5","pytania":[]}';
+  Object.assign(navigator, { clipboard: { readText: async () => smiec } });
+  await import(`../app/app.js?schowek4=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+
+  domAtrapa.kliknij('przycisk-wklej-sprawdz');
+  await new Promise((r) => setTimeout(r, 0));
+
+  assert.equal(domAtrapa.pobierz('wynik-walidacji').hidden, false, 'walidator się wypowiedział');
+  assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '',
+    'odrzucona treść też nie trafia do pola — inaczej pytania wiszą na ekranie');
+  assert.match(domAtrapa.pobierz('wklejka-status').textContent, /usterek|odczytać/,
+    'przycisk daje informację zwrotną, mimo że treści nie widać');
+});
+
+test('ekran 5: zablokowany schowek otwiera pole awaryjne i mówi, co zrobić (L6)', async () => {
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  Object.assign(navigator, {
+    clipboard: { readText: async () => { throw new Error('NotAllowedError'); } },
+  });
+  await import(`../app/app.js?schowek2=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+
+  domAtrapa.kliknij('przycisk-wklej-sprawdz');
+  await new Promise((r) => setTimeout(r, 0));
+
+  assert.equal(domAtrapa.pobierz('wklejka-awaria').open, true,
+    'odmowa schowka otwiera drogę zapasową (ADR 0006 pkt 6)');
+  const status = domAtrapa.pobierz('wklejka-status').textContent;
+  assert.match(status, /schowk/i, 'status nazywa przyczynę');
+  assert.match(status, /palcem|pliku/, 'i podaje wykonalne wyjście — cichej porażki nie ma');
+});
+
+test('ekran 5: pusty schowek nie udaje sukcesu', async () => {
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  Object.assign(navigator, { clipboard: { readText: async () => '   ' } });
+  await import(`../app/app.js?schowek3=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+
+  domAtrapa.kliknij('przycisk-wklej-sprawdz');
+  await new Promise((r) => setTimeout(r, 0));
+
+  assert.match(domAtrapa.pobierz('wklejka-status').textContent, /pust/i, 'mówi wprost, że schowek jest pusty');
+  assert.equal(domAtrapa.pobierz('wynik-walidacji').hidden, true, 'nie pokazuje wyniku walidacji dla niczego');
+});

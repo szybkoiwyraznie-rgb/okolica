@@ -1218,3 +1218,28 @@ test('pola tekstowe: PIN wygląda jak zwykłe pole (wspólna reguła obejmuje pa
   assert.match(INDEX, /<input id="profil-pseudonim" type="text"[^>]*>/, 'pseudonim: pole tekstowe bez klasy');
   assert.match(INDEX, /<input id="profil-pin" type="password"[^>]*>/, 'PIN: pole hasłowe bez klasy');
 });
+
+/**
+ * Zgłoszenie właściciela (2026-09-09): „Wyjaśnienie po odpowiedzi na pytanie
+ * pisz taką samą dużą czcionką jak pytanie bo inaczej trudno ją odczytać na
+ * urządzeniu bo jest maczkiem." Wyjaśnienie było klasą `.podpowiedz` (14 px,
+ * kolor przygaszony) — a to tekst czytany w terenie, często dłuższy od pytania.
+ */
+test('gra: wyjaśnienie po odpowiedzi jest czytelne jak pytanie, nie jak podpowiedź', () => {
+  assert.match(INDEX, /<p id="gra-wyjasnienie" class="gra-wyjasnienie">/,
+    'wyjaśnienie ma własną klasę, nie .podpowiedz');
+
+  const start = STYLE.indexOf('.gra-wyjasnienie {');
+  assert.ok(start >= 0, 'reguła .gra-wyjasnienie istnieje');
+  const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+
+  // Rozmiar pytania (`.karta .duzy`) jest źródłem prawdy — czytamy go z pliku,
+  // zamiast wpisywać liczbę drugi raz (L12/L20: asercje kopiowane z kodu).
+  const duzy = STYLE.slice(STYLE.indexOf('.karta .duzy'), STYLE.indexOf('}', STYLE.indexOf('.karta .duzy')));
+  const rozmiarPytania = /font-size:\s*(\d+)px/.exec(duzy)?.[1];
+  assert.ok(rozmiarPytania, 'da się odczytać rozmiar czcionki pytania');
+  assert.match(blok, new RegExp(`font-size:\\s*${rozmiarPytania}px`),
+    `wyjaśnienie ma ten sam rozmiar co pytanie (${rozmiarPytania}px)`);
+  assert.match(blok, /color: var\(--tekst\)/,
+    'pełny kolor tekstu, nie przygaszony --tekst-slaby');
+});

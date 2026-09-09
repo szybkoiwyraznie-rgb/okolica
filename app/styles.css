@@ -200,6 +200,31 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .przycisk[disabled] { opacity: 0.45; cursor: not-allowed; }
 .przycisk-glowny { background: var(--akcent); border-color: var(--akcent); color: var(--akcent-tekst); flex: 1 1 auto; }
 .przycisk-maly { min-height: 38px; padding: 8px 12px; font-size: 14px; font-weight: 500; }
+
+/* Ekran 5 (zgłoszenie właściciela 2026-09-09): główna droga to JEDEN duży
+   przycisk — schowek trafia prosto do walidacji, treść nie pokazuje się na
+   ekranie. Pełna szerokość i większy tekst, bo to jedyna akcja tego kroku
+   i naciska się ją w biegu, jedną ręką. */
+.przycisk-wklejka {
+  display: block;
+  width: 100%;
+  margin: 12px 0 6px;
+  padding: 16px;
+  font-size: 17px;
+}
+
+/* Awaryjne pole wklejenia (ADR 0006 pkt 6) — zwinięte, żeby nie kusiło do
+   podglądania pytań, ale osiągalne, gdy schowek jest zablokowany. */
+.wklejka-awaria { margin: 10px 0; }
+.wklejka-awaria > summary {
+  min-height: var(--cel);
+  display: flex;
+  align-items: center;
+  cursor: pointer;
+  color: var(--tekst-slaby);
+  font-size: 14px;
+}
+.wklejka-awaria[open] > summary { margin-bottom: 6px; }
 /* Przyciski nagłówka (decyzja właściciela 2026-09-09): same ikony bez
    obwódki + jedyny napis, CTA „START GRY" — belka to jeden smukły rząd.
    Cel dotykowy celowo poniżej --cel: tak ma być na iPhonie, a znaczenie
@@ -574,6 +599,20 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   margin-top: 10px;
   padding-top: 10px;
 }
+/* Zgłoszenie właściciela (2026-09-09): wyjaśnienie po odpowiedzi było klasą
+   `.podpowiedz` — 14 px w kolorze `--tekst-slaby`. To tekst czytany w terenie,
+   w słońcu, często w biegu, i bywa dłuższy niż samo pytanie, więc „maczek"
+   był realnie nie do odczytania. Teraz 20 px jak `.duzy` (pytanie), ale wagą
+   400, nie 600: przy kilku zdaniach pogrubienie męczy, a wielkość i tak
+   załatwia czytelność. Kolor pełny `--tekst` zamiast przygaszonego — kontrast
+   rośnie, więc audyt WCAG nie może na tym stracić. */
+.gra-wyjasnienie {
+  margin: 8px 0;
+  font-size: 20px;
+  line-height: 1.45;
+  color: var(--tekst);
+}
+
 .lista-zrodel { padding-left: 20px; margin: 6px 0; font-size: 14px; }
 .lista-zrodel a { color: var(--akcent); }
 

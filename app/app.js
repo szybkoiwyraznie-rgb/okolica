@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-47';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-47';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-48';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-48';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -35,21 +35,21 @@ import {
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-47';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-47';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-47';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-47';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-47';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-47';
+} from './protokol.js?v=m12-48';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-48';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-48';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-48';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-48';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-48';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-47';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-47';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-47';
+} from './zestawy.js?v=m12-48';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-48';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-48';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -69,17 +69,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-47';
-import { utworzMape } from './mapa.js?v=m12-47';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-47';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-47';
-import { adresMostu, stanMostu } from './most.js?v=m12-47';
+} from './sieci.js?v=m12-48';
+import { utworzMape } from './mapa.js?v=m12-48';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-48';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-48';
+import { adresMostu, stanMostu } from './most.js?v=m12-48';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-47';
+} from './oceny.js?v=m12-48';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -3219,8 +3219,52 @@ function oczekiwane() {
   };
 }
 
-function sprawdzOdpowiedz() {
-  const tekst = $('pole-odpowiedz').value;
+/**
+ * Wklejenie ze schowka + natychmiastowa walidacja (zgłoszenie właściciela
+ * 2026-09-09: „najlepiej jakby był sam guzik → [Prześlij skopiowaną odpowiedź
+ * ze schowka] który by zawartość schowka od razu wklejał i przesyłał, bez
+ * pokazywania na tym ekranie").
+ *
+ * Sedno: tekst NIE trafia do `#pole-odpowiedz` — idzie prosto do
+ * `sprawdzOdpowiedz(tekst)`. Dzięki temu pytania nie pojawiają się w DOM nawet
+ * na moment i nie da się ich podejrzeć przez ramię ani cofnięciem ekranu.
+ *
+ * Schowek bywa niedostępny (iframe podglądu, część przeglądarek mobilnych,
+ * brak zgody — ENVIRONMENT §5), więc odmowa nie jest błędem krytycznym:
+ * otwieramy sekcję awaryjną z polem tekstowym (ADR 0006 pkt 6) i mówimy, co
+ * robić. Cichej porażki nie ma (L6).
+ */
+async function wklejZeSchowkaISprawdz(przycisk) {
+  const etykieta = '📋 Prześlij skopiowaną odpowiedź ze schowka';
+  const status = $('wklejka-status');
+  let tekst = '';
+  try {
+    tekst = await navigator.clipboard.readText();
+  } catch (err) {
+    void err;
+    status.textContent = 'Przeglądarka nie dała dostępu do schowka. Otwórz sekcję poniżej i wklej treść palcem (przytrzymaj pole) albo wczytaj z pliku.';
+    $('wklejka-awaria').open = true;
+    return;
+  }
+  if (!tekst.trim()) {
+    status.textContent = 'Schowek jest pusty — skopiuj najpierw całą odpowiedź modelu w czacie.';
+    return;
+  }
+  status.textContent = 'Sprawdzam odpowiedź…';
+  if (przycisk) przycisk.textContent = '⏳ sprawdzam…';
+  try {
+    sprawdzOdpowiedz(tekst);
+  } finally {
+    if (przycisk) przycisk.textContent = etykieta;
+  }
+}
+
+/**
+ * Walidacja i przyjęcie paczki. `tekstZewnetrzny` podaje treść z pominięciem
+ * DOM (droga ze schowka); bez argumentu bierze zawartość pola awaryjnego.
+ */
+function sprawdzOdpowiedz(tekstZewnetrzny = null) {
+  const tekst = typeof tekstZewnetrzny === 'string' ? tekstZewnetrzny : $('pole-odpowiedz').value;
   // Najpierw próba odczytania ukrytej paczki (kontener TO-paczka/2 albo sam
   // blob), potem jawna odpowiedź modelu. `odpakujPaczke` nie rzuca wyjątków —
   // wklejony tekst bywa śmieciem i UI ma to pokazać komunikatem (ADR 0007).
@@ -3243,6 +3287,7 @@ function sprawdzOdpowiedz() {
     STAN.paczka = null;
     renderujUsterki([blad]);
     $('przycisk-poprawka').hidden = false;
+    $('wklejka-status').textContent = 'Nie udało się odczytać tej treści — szczegóły niżej.';
     status('Odpowiedź odrzucona na etapie odczytu (parsowanie JSON albo kontener).');
     return;
   }
@@ -3269,6 +3314,7 @@ function sprawdzOdpowiedz() {
     $('wynik-naglowek').textContent = `Paczka odrzucona — usterek: ${usterki.length}`;
     renderujUsterki(usterki);
     $('przycisk-poprawka').hidden = false;
+    $('wklejka-status').textContent = `Paczka ma ${usterki.length} usterek — szczegóły i poprawka niżej.`;
     status('Paczka odrzucona przez walidator (protokół PYT §6).');
     return;
   }
@@ -3284,6 +3330,8 @@ function sprawdzOdpowiedz() {
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
+  $('wklejka-status').textContent = '';
+  $('wklejka-awaria').open = false; // sekcja awaryjna nie zostaje otwarta na następny raz
   wyslijZestawNaDrive();
   // Decyzja właściciela 2026-09-07: poprawna paczka = OD RAZU gra. Podgląd,
   // ściąganie i edycja nie są graczowi potrzebne — to zadania właściciela
@@ -4753,7 +4801,11 @@ function start() {
     $('pole-odpowiedz').value = await plik.text();
     status(`Wczytano odpowiedź z pliku ${plik.name}.`);
   });
-  $('przycisk-sprawdz').addEventListener('click', sprawdzOdpowiedz);
+  $('przycisk-wklej-sprawdz').addEventListener('click', (e) => wklejZeSchowkaISprawdz(e.currentTarget));
+  // Pole awaryjne ma własny przycisk — `sprawdzOdpowiedz` bez argumentu czyta DOM.
+  // Uwaga: `addEventListener('click', sprawdzOdpowiedz)` przekazałoby OBIEKT
+  // ZDARZENIA jako `tekstZewnetrzny`; strzałka to odcina.
+  $('przycisk-sprawdz').addEventListener('click', () => sprawdzOdpowiedz());
   $('przycisk-poprawka').addEventListener('click', (e) => {
     const tekst = poprawkaDlaModelu(STAN.usterkiPaczki, { liczbaPytan: liczbaPytan(STAN.konfig), factcheck: STAN.poprawkaFactcheck });
     kopiujTekst(tekst, e.currentTarget, '⧉ Kopiuj poprawkę do modelu');

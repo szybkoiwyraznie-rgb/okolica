@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-47">
-  <script type="module" src="app/app.js?v=m12-47"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-48">
+  <script type="module" src="app/app.js?v=m12-48"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -430,15 +430,26 @@
     <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
     <section id="ekran-paczka" class="ekran" hidden aria-labelledby="tytul-paczka">
       <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
-      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i nie jest zaszyfrowany. Poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive do przeglądu właściciela); przy usterkach dostaniesz poprawkę do odesłania modelowi. Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
-      <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="10" placeholder="Wklej tutaj odpowiedź modelu (blok JSON)" aria-label="Odpowiedź modelu AI"></textarea>
-      <div class="wiersz">
-        <button id="przycisk-wklej" class="przycisk" type="button">📋 Wklej ze schowka</button>
-        <label class="przycisk przycisk-plik">⬆ Z pliku<input id="plik-odpowiedz" type="file" accept=".json,.txt,application/json,text/plain"></label>
-      </div>
+      <p class="podpowiedz">Skopiuj całą odpowiedź modelu w czacie, wróć tutaj i naciśnij przycisk poniżej — treść <strong>nie pokaże się na ekranie</strong>, więc gracze nie podejrzą pytań. Poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive do przeglądu właściciela); przy usterkach dostaniesz poprawkę do odesłania modelowi.</p>
+      <!-- Zgłoszenie właściciela (2026-09-09): duże pole zachęcało do
+           podglądania pytań. Główna droga to jeden przycisk, który czyta
+           schowek i NATYCHMIAST waliduje — treść nie trafia do DOM.
+           Pole tekstowe zostaje jako degradacja (ADR 0006 pkt 6: schowek bywa
+           zablokowany), ale schowane w <details>, więc domyślnie nic nie widać. -->
+      <button id="przycisk-wklej-sprawdz" class="przycisk przycisk-glowny przycisk-wklejka" type="button">📋 Prześlij skopiowaną odpowiedź ze schowka</button>
+      <p id="wklejka-status" class="podpowiedz" role="status" aria-live="polite"></p>
+      <details id="wklejka-awaria" class="wklejka-awaria">
+        <summary>Schowek nie działa? Wklej ręcznie albo wczytaj z pliku</summary>
+        <p class="podpowiedz">Uwaga: tędy wklejony tekst <strong>jest widoczny na tym ekranie</strong> i nie jest zaszyfrowany — nie pokazuj go wtedy graczom. Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
+        <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="4" placeholder="Wklej tutaj odpowiedź modelu (blok JSON)" aria-label="Odpowiedź modelu AI"></textarea>
+        <div class="wiersz">
+          <button id="przycisk-wklej" class="przycisk" type="button">📋 Wklej ze schowka</button>
+          <label class="przycisk przycisk-plik">⬆ Z pliku<input id="plik-odpowiedz" type="file" accept=".json,.txt,application/json,text/plain"></label>
+          <button id="przycisk-sprawdz" class="przycisk" type="button">✓ Sprawdź i przyjmij</button>
+        </div>
+      </details>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wstecz-prompt" class="przycisk" type="button">← prompt</button>
-        <button id="przycisk-sprawdz" class="przycisk przycisk-glowny" type="button">✓ Sprawdź i przyjmij</button>
       </div>
       <div id="wynik-walidacji" class="karta" hidden>
         <p id="wynik-naglowek" class="duzy"></p>
@@ -529,7 +540,7 @@
         <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
         <div id="gra-wynik-odpowiedzi" class="gra-wynik-odpowiedzi" hidden>
           <p id="gra-odpowiedz-ocena" class="duzy"></p>
-          <p id="gra-wyjasnienie" class="podpowiedz"></p>
+          <p id="gra-wyjasnienie" class="gra-wyjasnienie"></p>
           <ul id="gra-zrodla" class="lista-zrodel"></ul>
         </div>
         <button id="przycisk-nastepna-stacja" class="przycisk przycisk-glowny przycisk-fazy" type="button" hidden>Następna stacja →</button>
