@@ -15,10 +15,11 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-38';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-38';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-39';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-39';
 import {
   czyPaczkaOdwrocona,
+  czyWariantFactcheck,
   normalizujTematyPaczki,
   odkodujPaczkeRev1,
   odkodujPaczkeRev2,
@@ -29,23 +30,25 @@ import {
   zbudujPrompt,
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
+  SZABLON_WERSJA_BEZ_WERYFIKACJI,
   WERSJA_PROTOKOLU_REV2,
+  WERSJA_PROTOKOLU_REV3,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-38';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-38';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-38';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-38';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-38';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-38';
+} from './protokol.js?v=m12-39';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-39';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-39';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-39';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-39';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-39';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-38';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-38';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-38';
+} from './zestawy.js?v=m12-39';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-39';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-39';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -65,17 +68,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-38';
-import { utworzMape } from './mapa.js?v=m12-38';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-38';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-38';
-import { adresMostu, stanMostu } from './most.js?v=m12-38';
+} from './sieci.js?v=m12-39';
+import { utworzMape } from './mapa.js?v=m12-39';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-39';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-39';
+import { adresMostu, stanMostu } from './most.js?v=m12-39';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-38';
+} from './oceny.js?v=m12-39';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -99,6 +102,10 @@ const STAN = {
   obrot: 0,
   ziarnoOffset: 0,
   prompt: null,
+  /** ADR 0032: wariant promptu z ekranu 4 (checkbox „Pytania z fact check") — false = domyślny bez weryfikacji. */
+  promptFactcheck: false,
+  /** ADR 0032: wariant korekty dla modelu — ze znacznika wklejki, a dla E02 z checkboxa. */
+  poprawkaFactcheck: true,
   paczka: null,
   /** ADR 0028: id paczki z repozytorium Drive — tylko takie paczki zbierają oceny. */
   paczkaRepoId: '',
@@ -1684,6 +1691,7 @@ function metaBiezacejOkolicy() {
     liczbaStacji: STAN.konfig.liczbaStacji,
     pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
     tematWlasny: STAN.konfig.tematWlasny ?? '',
+    factcheck: czyWariantFactcheck(STAN.paczka),
   });
 }
 
@@ -2910,17 +2918,26 @@ async function eksportujWynikObraz(udostepnij = false) {
 /* ---------------------------------------------------------------- prompt */
 
 function budujPromptEkran() {
+  // ADR 0032: checkbox wybiera wariant — domyślnie (pusty) pytania bez
+  // weryfikacji z pamięci modelu; zaznaczony to twarda kwerenda w sieci.
+  const factcheck = $('prompt-factcheck').checked === true;
+  STAN.promptFactcheck = factcheck;
   const wynik = zbudujPrompt({
     konfig: STAN.konfig,
     okolica: { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, miejsce: STAN.miejsce ?? '' },
     stacje: STAN.stacje,
+    factcheck,
   });
   pokazBledy('bledy-prompt', wynik.usterki);
   STAN.prompt = wynik.prompt;
   $('pole-prompt').value = wynik.prompt ?? '';
   $('prompt-licznik').textContent = wynik.prompt
-    ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji · protokół ${WERSJA_PROTOKOLU}`
+    ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji · protokół ${factcheck ? WERSJA_PROTOKOLU_REV2 : WERSJA_PROTOKOLU_REV3}`
     : 'prompt nie został zbudowany';
+  $('prompt-podglad-naglowek').textContent = `Pokaż treść promptu (${factcheck ? 'z fact check' : 'bez fact-check'})`;
+  $('prompt-tryb-opis').textContent = factcheck
+    ? `Tryb: pytania z fact check (szablon ${SZABLON_WERSJA}) — model sprawdza każdy fakt w sieci, odpowiedź wraca w minuty; każde pytanie ma źródła.`
+    : `Tryb: pytania bez fact-check (szablon ${SZABLON_WERSJA_BEZ_WERYFIKACJI}) — model korzysta z własnej wiedzy, odpowiedź wraca w sekundy; możliwe zmyślone fakty.`;
   // B21: prompt jest stały (~1,4 tys. tokenów) niezależnie od liczby pytań —
   // rośnie ODPOWIEDŹ modelu (~210 tokenów na pytanie), a to ona mieści się albo
   // nie w limicie wyjścia. Mówimy o tym ZANIM właściciel zmarnuje generację:
@@ -3033,6 +3050,9 @@ function sprawdzOdpowiedz() {
   if (!paczka) {
     wynik.dataset.stan = 'blad';
     $('wynik-naglowek').textContent = 'Nie da się odczytać odpowiedzi';
+    // E02: znacznika nie ma (nieparsowalne) — korekta celuje w wariant,
+    // który organizator właśnie zbudował (stan checkboxa z ekranu promptu).
+    STAN.poprawkaFactcheck = STAN.promptFactcheck;
     STAN.usterkiPaczki = [blad];
     STAN.paczka = null;
     renderujUsterki([blad]);
@@ -3044,10 +3064,18 @@ function sprawdzOdpowiedz() {
   // Q2 (PROTOKOL §3.4): wariant odwrócony odkodowujemy PRZED walidacją —
   // dalej płynie postać czytelna z markerem PYT/1.0.
   const bylaOdwrocona = czyPaczkaOdwrocona(paczka);
-  const wariant = paczka.protokol === WERSJA_PROTOKOLU_REV2 ? 'rev2' : 'rev1';
-  const robocza = paczka.protokol === WERSJA_PROTOKOLU_REV2 ? odkodujPaczkeRev2(paczka) : odkodujPaczkeRev1(paczka);
+  let wariant = 'rev1';
+  if (paczka.protokol === WERSJA_PROTOKOLU_REV2) wariant = 'rev2';
+  if (paczka.protokol === WERSJA_PROTOKOLU_REV3) wariant = 'rev3';
+  const robocza = (paczka.protokol === WERSJA_PROTOKOLU_REV2 || paczka.protokol === WERSJA_PROTOKOLU_REV3)
+    ? odkodujPaczkeRev2(paczka)
+    : odkodujPaczkeRev1(paczka);
   const usterki = walidujPaczke(robocza, oczekiwane());
   STAN.usterkiPaczki = usterki;
+  // Korekta celuje w profil walidacji wklejki (znacznik), nie w checkbox —
+  // wklejona paczka rev2 ma dostać przypomnienie o kwerendzie także wtedy,
+  // gdy checkbox jest akurat pusty.
+  STAN.poprawkaFactcheck = czyWariantFactcheck(paczka);
   if (usterki.length) {
     wynik.dataset.stan = 'blad';
     STAN.paczka = null;
@@ -3060,7 +3088,10 @@ function sprawdzOdpowiedz() {
 
   wynik.dataset.stan = 'ok';
   STAN.paczka = normalizujTematyPaczki(robocza);
-  $('wynik-naglowek').textContent = bylaOdwrocona ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana)` : 'Paczka przyjęta';
+  const weryfikacja = czyWariantFactcheck(robocza) ? 'fact check' : 'bez fact-check';
+  $('wynik-naglowek').textContent = bylaOdwrocona
+    ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana; ${weryfikacja})`
+    : `Paczka przyjęta (${weryfikacja})`;
   $('przycisk-poprawka').hidden = true;
   renderujUsterki([]);
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
@@ -3454,6 +3485,19 @@ function renderujTrybyMulti() {
     : 'Wszyscy idą tę samą trasę jednocześnie, każdy na swoim telefonie. Wygrywa najlepszy wynik — tabela jest żywa.';
 }
 
+/**
+ * Wariant weryfikacji bieżącej sesji (ADR 0032): z paczki w pamięci, a po
+ * wznowieniu (plaintext tylko w kontenerze) przez odpakowanie. Nieznane = true.
+ */
+function factcheckBiezacejSesji() {
+  if (STAN.paczka) return czyWariantFactcheck(STAN.paczka);
+  if (STAN.kontenerPaczki) {
+    const { paczka } = odpakujPaczke(STAN.kontenerPaczki);
+    if (paczka) return czyWariantFactcheck(paczka);
+  }
+  return true;
+}
+
 /** Meta zestawu z sesji — bez pozycji liczymy od pierwszej stacji (uczciwe: i tak tam idziemy). */
 function metaSesjiMulti(stacje) {
   const punkt = STAN.pozycja ?? (stacje.length ? { lat: stacje[0].lat, lon: stacje[0].lon } : null);
@@ -3464,6 +3508,7 @@ function metaSesjiMulti(stacje) {
     jezyk: STAN.konfig.jezyk, miejsce: STAN.miejsce ?? '',
     liczbaStacji: stacje.length, pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
     tematWlasny: STAN.konfig.tematWlasny ?? '',
+    factcheck: factcheckBiezacejSesji(),
   });
 }
 
@@ -3473,6 +3518,7 @@ function metaZWpisuLokalnego(z) {
     miejsce: z.miejsce, geohash5: z.geohash5, promienM: z.promienM, tematy: z.tematy,
     wiek: z.wiek, jezyk: z.jezyk, data: z.data, liczbaStacji: z.liczbaStacji, pytaniaNaStacje: z.pytaniaNaStacje,
     tematWlasny: z.tematWlasny ?? '',
+    factcheck: z.factcheck ?? true,
   };
 }
 
@@ -4439,6 +4485,7 @@ function start() {
 
   $('przycisk-wstecz-stacje').addEventListener('click', () => pokazEkran('stacje'));
   $('przycisk-kopiuj-prompt').addEventListener('click', (e) => kopiujTekst(STAN.prompt ?? '', e.currentTarget, '⧉ Kopiuj prompt'));
+  $('prompt-factcheck').addEventListener('change', () => budujPromptEkran());
   $('przycisk-pobierz-prompt').addEventListener('click', () => {
     if (!STAN.prompt) return;
     pobierzPlik(`prompt-okolica-${geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5)}.txt`, STAN.prompt, 'text/plain;charset=utf-8');
@@ -4465,7 +4512,7 @@ function start() {
   });
   $('przycisk-sprawdz').addEventListener('click', sprawdzOdpowiedz);
   $('przycisk-poprawka').addEventListener('click', (e) => {
-    const tekst = poprawkaDlaModelu(STAN.usterkiPaczki, { liczbaPytan: liczbaPytan(STAN.konfig) });
+    const tekst = poprawkaDlaModelu(STAN.usterkiPaczki, { liczbaPytan: liczbaPytan(STAN.konfig), factcheck: STAN.poprawkaFactcheck });
     kopiujTekst(tekst, e.currentTarget, '⧉ Kopiuj poprawkę do modelu');
     $('pole-odpowiedz').value = tekst;
   });

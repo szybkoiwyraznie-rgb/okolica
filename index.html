@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-38">
-  <script type="module" src="app/app.js?v=m12-38"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-39">
+  <script type="module" src="app/app.js?v=m12-39"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -386,9 +386,8 @@
             <circle cx="32" cy="32" r="7"></circle>
             <path d="M37 37l5 5"></path>
           </svg>
-          <span>2. Wklej do modelu AI <strong>z włączonym wyszukiwaniem
-            w internecie</strong> (Meta AI, ChatGPT, Gemini…) — prompt wymaga
-            źródeł do każdego faktu.</span>
+          <span>2. Wklej do modelu AI (Meta AI, ChatGPT, Gemini…) — z włączonym wyszukiwaniem
+            w internecie, gdy prompt ma fact check; do wariantu bez weryfikacji wystarczy zwykły model.</span>
         </li>
         <li>
           <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -411,15 +410,17 @@
         </li>
       </ol>
       <details id="prompt-zwiniety" class="zwiniety">
-        <summary>Pokaż treść promptu</summary>
+        <summary id="prompt-podglad-naglowek">Pokaż treść promptu</summary>
         <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
         <p id="prompt-licznik" class="badge"></p>
       </details>
       <p id="prompt-rozmiar" class="podpowiedz" hidden></p>
       <div class="wiersz">
         <button id="przycisk-kopiuj-prompt" class="przycisk przycisk-glowny" type="button">⧉ Kopiuj prompt</button>
+        <label class="sprawdz"><input id="prompt-factcheck" type="checkbox"> <span>Pytania z fact check</span></label>
         <button id="przycisk-pobierz-prompt" class="przycisk" type="button">⬇ Zapisz jako plik</button>
       </div>
+      <p id="prompt-tryb-opis" class="podpowiedz"></p>
       <p id="bledy-prompt" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wstecz-stacje" class="przycisk" type="button">← stacje</button>

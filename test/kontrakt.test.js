@@ -66,6 +66,35 @@ test('kontrakt: szablon promptu w docs/PROTOKOL.md jest identyczny z SZABLON_PRO
   assert.equal(SZABLON_PROMPTU, zDokumentu, 'uruchom `npm run build` (tools/synchronizuj-szablon.mjs) i wcommituj kod razem z dokumentem');
 });
 
+test('kontrakt: szablon bez weryfikacji w docs/PROTOKOL.md §2.2 jest identyczny z SZABLON_PROMPTU_BEZ_WERYFIKACJI', () => {
+  const start = PROTOKOL.indexOf('<!-- szablon-promptu-bez:start -->');
+  const koniec = PROTOKOL.indexOf('<!-- szablon-promptu-bez:koniec -->');
+  assert.ok(start >= 0 && koniec > start, 'brak znaczników szablonu §2.2 w protokole');
+  const linie = PROTOKOL.slice(start, koniec).split('\n');
+  const otwarcie = linie.findIndex((l) => l.trim().startsWith('```'));
+  const zamkniecie = linie.map((l) => l.trim()).lastIndexOf('```');
+  assert.ok(otwarcie >= 0 && zamkniecie > otwarcie, 'szablon §2.2 w protokole nie jest w ogrodzeniu');
+  const zDokumentu = linie.slice(otwarcie + 1, zamkniecie).join('\n').trim();
+  assert.equal(SZABLON_PROMPTU_BEZ_WERYFIKACJI, zDokumentu, 'uruchom `npm run build` (tools/synchronizuj-szablon.mjs) i wcommituj kod razem z dokumentem');
+});
+
+test('kontrakt ADR 0032: ekran promptu ma checkbox fact-check (domyślnie pusty, po prawej od Kopiuj)', () => {
+  const ekran = INDEX.split('id="ekran-prompt"')[1].split('</section>')[0];
+  assert.match(ekran, /id="prompt-factcheck" type="checkbox"/, 'checkbox wariantu');
+  assert.ok(!/id="prompt-factcheck" type="checkbox"[^>]*checked/.test(ekran), 'domyślnie pusty — wariant bez weryfikacji');
+  assert.match(ekran, /Pytania z fact check/, 'etykieta jak w zleceniu');
+  assert.ok(ekran.indexOf('id="przycisk-kopiuj-prompt"') < ekran.indexOf('id="prompt-factcheck"')
+    && ekran.indexOf('id="prompt-factcheck"') < ekran.indexOf('id="przycisk-pobierz-prompt"'),
+    'checkbox po prawej od „Kopiuj prompt"');
+  assert.match(ekran, /id="prompt-tryb-opis"/, 'opis trybu pod przyciskiem');
+  assert.match(ekran, /id="prompt-podglad-naglowek"/, 'nagłówek podglądu mówi, który wariant widać');
+});
+
+test('kontrakt ADR 0032: wersja szablonu bez weryfikacji ma konsumenta w UI (jak SZABLON_WERSJA)', () => {
+  assert.match(APP, /SZABLON_WERSJA_BEZ_WERYFIKACJI/, 'app.js importuje stałą');
+  assert.match(APP, /szablon \$\{SZABLON_WERSJA_BEZ_WERYFIKACJI\}/, 'opis trybu pokazuje wersję szablonu §2.2');
+});
+
 /* ------------------------------------------------- kanony treści: doc ↔ kod */
 
 test('kontrakt: kategorie wiekowe w protokole §4 = WIEK w app/konfig.js', () => {

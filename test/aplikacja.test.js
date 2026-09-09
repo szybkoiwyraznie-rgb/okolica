@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SZABLON_WERSJA, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
+import { SZABLON_WERSJA, SZABLON_WERSJA_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -971,7 +971,92 @@ test('rev2 end-to-end: wklejona paczka z kodami od razu zaczyna grę', async () 
   dom.pobierz('pole-odpowiedz').value = JSON.stringify(rev2);
   dom.kliknij('przycisk-sprawdz');
   assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev2/, 'nagłówek mówi, co się stało');
+  assert.match(dom.pobierz('wynik-naglowek').textContent, /; fact check\)$/, 'nagłówek ogłasza weryfikację (ADR 0032)');
   assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę (decyzja 2026-09-07)');
+  const rejestr = JSON.parse(pamiecKonfig.get('okolica:zestawy'));
+  assert.equal(rejestr.wpisy[0].factcheck, true, 'meta w rejestrze mówi: zweryfikowana');
+});
+
+/* --------------------------------------- ADR 0032: wariant bez fact-check */
+
+/** Atrapa nie przełącza checkboxów sama — stan + zdarzenie `change` jak w przeglądarce. */
+function przelaczCheckbox(domAtrapa, id, wartosc) {
+  const el = domAtrapa.pobierz(id);
+  el.checked = wartosc;
+  for (const fn of el.zdarzenia.change ?? []) fn({ type: 'change', target: el, currentTarget: el });
+}
+
+function pamiecKonfig3x1() {
+  const pamiecKonfig = new Map();
+  pamiecKonfig.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1',
+    konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+  }));
+  return pamiecKonfig;
+}
+
+test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie rev3; zaznaczenie daje rev2', async () => {
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  await import(`../app/app.js?fc1=${Math.random().toString(36).slice(2)}`);
+  assert.equal(domAtrapa.pobierz('prompt-factcheck').checked, false, 'checkbox startuje pusty (atrapa czyta prawdziwy index.html)');
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev3/, 'domyślny prompt generuje rev3');
+  assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
+  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes('bez fact-check'), 'opis mówi o wariancie');
+  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes(SZABLON_WERSJA_BEZ_WERYFIKACJI), 'opis pokazuje wersję szablonu §2.2');
+  assert.match(domAtrapa.pobierz('prompt-podglad-naglowek').textContent, /bez fact-check/);
+  assert.match(domAtrapa.pobierz('prompt-licznik').textContent, /PYT\/1\.0-rev3/);
+  przelaczCheckbox(domAtrapa, 'prompt-factcheck', true);
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev2/, 'zaznaczony checkbox generuje rev2');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /wykonaj kwerendę w internecie/);
+  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes('z fact check'), 'opis mówi o wariancie');
+  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes(SZABLON_WERSJA), 'opis pokazuje wersję szablonu §2');
+  przelaczCheckbox(domAtrapa, 'prompt-factcheck', false);
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev3/, 'odznaczenie wraca do rev3');
+});
+
+test('ADR 0032 end-to-end: paczka rev3 bez źródeł przyjęta, rejestr niesie factcheck:false', async () => {
+  const pamiecKonfig = pamiecKonfig3x1();
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
+  await import(`../app/app.js?fc2=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  const jawna = czytajFixturePaczka();
+  const rev3 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV3 };
+  rev3.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.zrodla; delete p.punkty; });
+  domAtrapa.pobierz('pole-odpowiedz').value = JSON.stringify(rev3);
+  domAtrapa.kliknij('przycisk-sprawdz');
+  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev3 — odkodowana; bez fact-check\)/);
+  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'rev3 bez źródeł zaczyna grę');
+  const rejestr = JSON.parse(pamiecKonfig.get('okolica:zestawy'));
+  assert.equal(rejestr.wpisy.length, 1);
+  assert.equal(rejestr.wpisy[0].factcheck, false, 'meta w rejestrze mówi: bez weryfikacji');
+});
+
+test('ADR 0032: poprawka celuje w profil wklejki — E02 w checkbox, odrzucona w znacznik', async () => {
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  await import(`../app/app.js?fc3=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  domAtrapa.kliknij('przycisk-dalej-prompt'); // STAN.promptFactcheck = false (pusty checkbox)
+  // E02: śmieć nieparsowalny → korekta za checkboxem (tu: bez weryfikacji)
+  domAtrapa.pobierz('pole-odpowiedz').value = 'to nie jest JSON ani kontener {{{';
+  domAtrapa.kliknij('przycisk-sprawdz');
+  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Nie da się odczytać/);
+  domAtrapa.kliknij('przycisk-poprawka');
+  assert.match(domAtrapa.pobierz('pole-odpowiedz').value, /bez kwerendy w internecie/, 'E02 przy pustym checkboxie: korekta bez kwerendy');
+  // odrzucona rev2 (za mało pytań) → korekta za znacznikiem, mimo pustego checkboxa
+  const jawna = czytajFixturePaczka();
+  const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
+  rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.punkty; });
+  rev2.pytania = rev2.pytania.slice(0, 2); // E03: oczekiwane 3 pytania
+  domAtrapa.pobierz('pole-odpowiedz').value = JSON.stringify(rev2);
+  domAtrapa.kliknij('przycisk-sprawdz');
+  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Paczka odrzucona/);
+  domAtrapa.kliknij('przycisk-poprawka');
+  assert.match(domAtrapa.pobierz('pole-odpowiedz').value, /kwerenda internetowa dla każdego faktu/, 'odrzucona rev2: korekta żąda kwerendy');
 });
 
 /* ================== M5/J5: brama geokodacji + warstwa zapasowa (Nominatim) */
