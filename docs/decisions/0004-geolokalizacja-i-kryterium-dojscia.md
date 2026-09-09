@@ -68,3 +68,12 @@ graczy), 0013 (prywatność).
 Decyzja właściciela (Partia 1): pole „Kara za „jestem na miejscu"" zniknęło
 z setupu (myliło), kara działała jako stałe +60 s. Decyzja właściciela
 (Partia 2, ADR 0023): kara zniesiona w całości — ręczne dojście bez kary.
+
+## Aneks (2026-09-08): tryb testowy wchodzi tylko parametrem adresu
+
+Decyzja właściciela: przycisk „⚙ tryb testowy" zniknął z nagłówka (kusił do
+grania bez GPS, a wyniki i tak szły na Drive i do rankingów — ADR 0029).
+Kanoniczne wejście to **`?test=true`** (przyjmowane też `?test=1`, `?test=tak`
+oraz historyczne `?tryb=test` z pkt 6, którego używają testy). Tryb odsłania
+ręczne współrzędne i symulację trasy; GPS nie startuje. Formy wejścia pinuje
+test w `test/aplikacja.test.js`.

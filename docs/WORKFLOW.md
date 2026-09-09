@@ -57,7 +57,7 @@ Koniec sesji:
 Agent nie ma GPS ani terenu (ENVIRONMENT §4.1, §5) — część kryteriów da się
 sprawdzić tylko na zewnątrz. Procedura dla właściciela:
 
-1. Tryb testowy w domu (`?tryb=test`): ustaw współrzędne swojej okolicy,
+1. Tryb testowy w domu (`?test=true`): ustaw współrzędne swojej okolicy,
    wgraj fixture trasy albo klikaj „symuluj fix" — sprawdź logikę bez GPS.
 2. W terenie: `npm run serwer` nie jest dostępny, więc graj na Pages albo przez
    live preview Areny (HTTPS). Zabierz powerbank.
@@ -74,7 +74,7 @@ L3), więc kryterium „podkład widoczny" sprawdza właściciel. Agent uruchami
 serwer (`npm run serwer`, port 8000/8080, `--bind 0.0.0.0`), a preview Areny
 jest widoczne jako karta obok rozmowy.
 
-1. Otwórz preview i dodaj `?tryb=test` — tryb testowy odsłania ręczne
+1. Otwórz preview i dodaj `?test=true` — tryb testowy odsłania ręczne
    współrzędne, więc nie potrzebujesz GPS.
 2. Ustaw współrzędne swojej okolicy — wpisz dziesiętne (np. `52.2297`,
    `21.0122`), **wklej z Google Maps** (np. `52°07'22.9"N 20°44'46.1"E` albo
@@ -117,7 +117,7 @@ symulacji na żywo sprawdza właściciel (agent nie ma przeglądarki, LESSONS L3
    co się stanie, drugi kasuje; komunikat w polu pod przyciskiem liczy
    usunięte klucze. Sprawdź w DevTools → Application → Local Storage, że
    zniknęły tylko `okolica:*`.
-3. **Symulacja:** `?tryb=test` → ustaw współrzędne → „▶ Symuluj dojście
+3. **Symulacja:** `?test=true` → ustaw współrzędne → „▶ Symuluj dojście
    (250 m)": badge i marker mapy jadą, pasek stanu odlicza fixy i metry, na
    końcu „cel osiągnięty — debounce dojścia spełniony". Drugi klik zatrzymuje
    strumień; **zejście karty w tło też** (po powrocie nic nie „dogania").
