@@ -34,23 +34,35 @@ Koniec sesji:
 
 ## 3. Przygotowanie gry (organizator, na telefonie)
 
-1. Otwórz aplikację → ekran **Setup**: liczba graczy i imiona, tryb ruchu
-   (piesza 1 km / rower 3 km / samochód 10 km — promień edytowalny), liczba
-   stacji, tematy, kategoria wiekowa, język, `kod gry` (do ukrycia pytań),
-   kara za ręczne zgłoszenie dojścia.
-2. **Zgódź się na geolokalizację** i poczekaj na fix z akceptowalną dokładnością
-   (badge „±X m"; przy > 100 m przejdź w miejsce z lepszym widokiem nieba).
-3. „Ustaw stacje" → aplikacja pobiera sieć drogową okolicy (Overpass) i rysuje
-   stacje; możesz je przesunąć ręcznie, jeśli któraś jest źle.
-4. „Przygotuj pytania" → aplikacja pokazuje prompt → **kopiuj** → wklej do
-   modelu AI z włączoną kwerendą internetową (Meta AI, ChatGPT, Gemini…).
-5. Skopiuj odpowiedź modelu (blok JSON) → wróć do aplikacji → wklej →
-   „Sprawdź i zaszyfruj". Usterki: lista kodów E01–E20 i gotowa poprawka do
-   wklejenia modelowi.
-6. Podgląd „tylko dla organizatora" (opcjonalnie): popraw treść ręcznie,
-   zapisz zmianę w `modyfikacje[]`.
-7. **Eksportuj paczkę** (`.paczka.json`) — zabezpieczenie na wypadek czyszczenia
-   danych przeglądarki (ADR 0010 pkt 3).
+1. Ekran **Setup**: w bloku „👤 Kto gra?” dodaj graczy (imię + PIN każdego —
+   bez co najmniej jednego gracza nie ma przejścia dalej, ADR 0026), wybierz
+   tryb ruchu, **planowany czas gry** (promień liczy aplikacja i pokazuje go
+   z uzasadnieniem, ADR 0025), liczbę stacji, pytań na stację (łączna liczba
+   pytań musi dzielić się równo między graczy — K22, ADR 0027), tematy,
+   kategorię wiekową, język i podkład mapy.
+2. Ekran **pozycji**: „🛰 Włącz GPS” i poczekaj na fix (badge „±X m”; przy
+   > 100 m przejdź w miejsce z lepszym widokiem nieba) albo „✎ Wpisz ręcznie”
+   (dziesiętne lub wklejka z Google Maps). Karta „📦 Paczki dla tej okolicy”
+   proponuje gotowe paczki z repozytorium — wybór startuje grę bez modelu.
+3. Ekran **stacji**: aplikacja pobiera sieć drogową okolicy (Overpass) i rysuje
+   stacje; „🔄 Inny układ” losuje od nowa. Gdy sieć jest za uboga, gra ma tyle
+   stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci:
+   „◎ Tryb uproszczony” albo „✋ Ustaw stacje ręcznie”.
+4. Ekran **pytań**: „⧉ Kopiuj prompt” → wklej do modelu AI z włączoną kwerendą
+   internetową (Meta AI, ChatGPT, Gemini…). Linia pod promptem mówi, jak duża
+   będzie odpowiedź, zanim zmarnujesz generację.
+5. Ekran **paczki**: wklej odpowiedź modelu („📋 Wklej ze schowka”) albo wczytaj
+   „⬆ Z pliku” → „✓ Sprawdź i przyjmij”. Usterki: lista kodów E01–E20 i gotowa
+   „⧉ poprawka do modelu”. Poprawna paczka **od razu zaczyna grę** (i leci na
+   Drive do przeglądu właściciela); pytania są ukrywane (TO-paczka/2), a pole
+   wklejania czyszczone.
+6. **Gra**: odcinek startuje jawną akcją, dojście zalicza tylko GPS (dwa fixy
+   w progu, ADR 0004/0029); stację nieosiągalną pomiń. Pytanie odsłania się
+   dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Pauza (także
+   automatyczna w tle) nie wlicza czasu postoju do wyniku.
+7. **Wynik**: podsumowanie z rankingiem, udostępnianie tekstem lub obrazem PNG,
+   historia na setupie; wynik gry z jednego telefonu jedzie na wspólny Drive
+   do rankingów (ADR 0026 aneks), gdy choć jeden gracz ma potwierdzony profil.
 
 ## 4. Test terenowy (obowiązkowy dla M3, M4, M6, M7, M10)
 
