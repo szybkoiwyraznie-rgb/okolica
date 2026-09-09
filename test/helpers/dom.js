@@ -289,6 +289,24 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
       for (const fn of zdarzeniaOkna[typ] ?? []) fn({ type: typ, ...zdarzenie });
       return (zdarzeniaOkna[typ] ?? []).length;
     },
+    /**
+     * Wklejenie tekstu do pola: ustawia wartość i odpala `paste`, tak jak
+     * przeglądarka po Ctrl+V albo „Wklej" z menu dotykowego. `clipboardData`
+     * jest obecne, bo prawdziwe zdarzenie je niesie — kod produkcyjny czyta
+     * treść stamtąd, nie z pola (w chwili `paste` pole jest jeszcze puste).
+     */
+    wklej(id, tekst) {
+      const el = pobierz(id);
+      el.value = tekst;
+      const zdarzenie = {
+        type: 'paste',
+        target: el,
+        currentTarget: el,
+        clipboardData: { getData: () => tekst },
+      };
+      for (const fn of el.zdarzenia.paste ?? []) fn(zdarzenie);
+      return (el.zdarzenia.paste ?? []).length;
+    },
     /** Klik w element (wszystkie nasłuchy `click`). */
     kliknij(id) {
       const el = pobierz(id);

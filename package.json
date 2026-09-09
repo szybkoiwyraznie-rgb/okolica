@@ -11,7 +11,7 @@
     "brama": "node --test && node tools/synchronizuj-szablon.mjs --check && node tools/audyt-kontrastu.mjs",
     "fixture": "node tools/generuj-fixture-overpass.mjs",
     "ikony": "node tools/generuj-ikony.mjs",
-    "serwer": "python3 -m http.server 8000 --bind 0.0.0.0",
+    "serwer": "node tools/serwer.mjs .",
     "audyt": "node tools/audyt-kontrastu.mjs",
     "budzet": "node tools/budzet-lektury.mjs",
     "zasieg-mostu": "node tools/zasieg-mostu.mjs"

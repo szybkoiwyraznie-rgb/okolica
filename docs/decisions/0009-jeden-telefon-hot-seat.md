@@ -63,3 +63,23 @@ offline. Decyzją właściciela (ADR 0019) dochodzi gra na wielu urządzeniach
 przez most Drive: parowanie lobby+kod, tryby wyścig i tury, synchronizacja
 zdarzeniami BEZ współrzędnych. (Partia 2: punktacja czasu z ADR 0014
 wycofana w obu trybach — ADR 0023.)
+
+## Aneks 2026-09-09 — jeden przycisk zamiast dwóch po odpowiedzi
+
+Właściciel: „po odpowiedzi klikam »Następna stacja →«, a potem jeszcze »Idę do
+stacji X« — to ma być jeden guzik\". Miał rację: obie akcje należały do tej samej
+decyzji gracza („skończyliśmy tę stację, idziemy dalej\"), a rozdzielał je tylko
+podział na panele fazowe. Na telefonie w marszu to jeden dotyk za dużo.
+
+Przycisk pod wyjaśnieniem niesie teraz komplet informacji i obie akcje:
+`▶ Gracz 2, stacja 3 — idę →`. Po kliknięciu model przechodzi do fazy
+`przygotowanie` i **od razu** otwiera odcinek (`startOdcinkaGry`), więc panel A
+w typowym przebiegu w ogóle się nie pokazuje. Panel A zostaje w interfejsie —
+startuje pierwszą stację (nie ma jej poprzedniej odpowiedzi) i obsługuje wyjątki.
+
+**Automatu nie ma tam, gdzie odbierałby decyzję albo łamał regułę** — decyduje
+`czyStartPoDalej()`: w pauzie (zegar stoi, ADR 0004 pkt 1), w wyścigu (ADR 0027
+część B: gracz sam wybiera stację) i w turach, gdy droga należy do kogoś innego.
+W tych przypadkach przycisk wraca do napisu „Następna stacja →\" i zostaje panel A.
+Etykieta jest przeliczana także w `renderujGre`, więc pauza wciśnięta **w trakcie
+czytania wyjaśnienia** natychmiast cofa obietnicę startu.

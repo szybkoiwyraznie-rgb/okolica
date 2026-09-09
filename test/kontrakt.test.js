@@ -354,7 +354,7 @@ test('kontrakt: mapa jest trwałym spodem aplikacji, a setup kartą nad nią', (
   assert.equal(/id="mapa-pozycja"/.test(ekranPozycja), false, 'ekran pozycji nie zawiera już własnej mapy');
 
   assert.match(INDEX, /<button id="przycisk-setup"[^>]*>⚙ START GRY<\/button>/, 'START GRY w nagłówku (decyzja 2026-09-09)');
-  assert.ok(APP.includes("$('przycisk-setup').addEventListener('click', () => pokazEkran('setup'))"), 'ikonka setup jest podpięta');
+  assert.ok(APP.includes("$('przycisk-setup').addEventListener('click', przelaczSetup)"), 'ikonka setup jest podpięta (F3: przełącznik)');
 
   assert.ok(STYLE.includes('body:not([data-ekran=\'setup\']):not([data-ekran=\'pozycja\']):not([data-ekran=\'mapa\']) #mapa-pozycja { visibility: hidden; }'),
     'mapa jest chowana przez visibility, nie display — display zerowałby jej pomiar');
@@ -1049,6 +1049,23 @@ test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', ()
   assert.ok(APP.includes('STAN.paczkaRepoId'), 'oceny dotyczą paczek z repozytorium');
 });
 
+/**
+ * Aneks ADR 0028 (właściciel, 2026-09-09): „Nie ma paczek, które nie istnieją
+ * na Drive. Każda powinna móc być oceniona” — także wygenerowana przed chwilą
+ * i ta wzięta z pamięci telefonu.
+ */
+test('kontrakt ADR 0028 aneks: ocenić można każdą paczkę, bo każda jest na Drive', () => {
+  assert.ok(!APP.includes("STAN.paczkaRepoId = ''; // ADR 0028: paczka z telefonu nie zbiera ocen"),
+    'paczka z telefonu nie jest już wykluczona z oceniania');
+  assert.ok(APP.includes('idPaczkiDlaZestawu('), 'aplikacja odzyskuje identyfikator paczki z pamięci telefonu');
+  assert.ok(APP.includes('zapamietajIdPaczkiDlaZestawu('), 'identyfikator jest zapamiętywany przy skrócie kontenera');
+  assert.ok(APP.includes('okolica:paczki-drive'), 'mapa skrót → id paczki ma własny klucz w localStorage');
+  assert.match(GS, /nazwa === FOLDERY\.zaakceptowane \|\| nazwa === FOLDERY\.przeglad/,
+    'most przyjmuje głosy również dla paczek czekających na przegląd');
+  assert.match(GS, /status: 'przyjeta-do-przegladu', nazwa, id: utworzony\.getId\(\)/,
+    'most oddaje id przyjętej paczki — bez niego telefon nie wie, co ocenia');
+});
+
 test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da się wyjść', () => {
   assert.ok(!INDEX.includes('przycisk-reczne-dojscie'), 'przycisku „Jestem na miejscu" nie ma w index.html');
   assert.ok(!INDEX.includes('Jestem na miejscu'), 'ręczne zgłoszenie dojścia zniknęło z interfejsu');
@@ -1106,4 +1123,123 @@ test('kontrakt ADR 0030: rozgrywka na telefonie układa się pod orientację, a 
       assert.ok(!/background:/.test(cialo), `reguła „${selektor}” nie nadpisuje tła elementu ${trafiony}`);
     }
   }
+});
+
+/**
+ * Uwagi właściciela 2026-09-09 (A1, A2, A3) do warstw nad mapą:
+ * intro ma być większe i wyśrodkowane, rankingi nie mogą chować się pod belką,
+ * a każda warstwa ma przyciemniać mapę tak jak rankingi.
+ */
+test('uwaga A1: ekran startowy ma duży, wyśrodkowany tytuł i rozwinięte intro', () => {
+  assert.ok(INDEX.includes('class="warstwa-start-karta"'), 'treść intro siedzi w karcie wewnątrz warstwy');
+  assert.match(STYLE, /\.warstwa-start h1 \{[^}]*font-size: clamp\(28px, 8vw, 40px\)/s, 'tytuł skaluje się z ekranem');
+  assert.match(STYLE, /\.warstwa-start h1 \{[^}]*text-align: center/s, 'tytuł jest wyśrodkowany');
+  assert.match(STYLE, /\.podtytul-start \{[^}]*text-align: center/s, 'podtytuł też');
+  // Intro ma być dłuższe niż jedno zdanie — pinujemy liczbę akapitów, nie treść.
+  const intro = INDEX.slice(INDEX.indexOf('warstwa-start-karta'), INDEX.indexOf('przycisk-start-zacznij'));
+  assert.ok((intro.match(/<p[ >]/g) ?? []).length >= 4, 'intro ma co najmniej cztery akapity');
+  assert.ok(intro.includes('zgody na dostęp do lokalizacji'), 'intro uprzedza o zgodzie na lokalizację');
+});
+
+test('uwaga A2: warstwy nad mapą zaczynają się PONIŻEJ górnej belki', () => {
+  assert.match(STYLE, /\.warstwa \{[^}]*padding: calc\(var\(--wysokosc-belki, 64px\) \+ 12px\)/s,
+    'rankingi odsunięte o zmierzoną wysokość belki, nie o stałe 16 px');
+  assert.match(STYLE, /\.warstwa-start \{[^}]*padding: calc\(var\(--wysokosc-belki, 64px\) \+ 12px\)/s,
+    'okno startowe tak samo');
+  assert.ok(APP.includes('function ustawWysokoscBelki'), 'wysokość belki mierzy JS');
+  assert.ok(APP.includes("document.documentElement.style.setProperty('--wysokosc-belki'"),
+    'zmierzona wysokość trafia do zmiennej CSS');
+});
+
+test('uwaga A3: każda warstwa nad mapą przyciemnia ją tak samo', () => {
+  const kozuch = /background: color-mix\(in srgb, var\(--tekst\) 62%, transparent\)/;
+  for (const [selektor, opis] of [['.warstwa {', 'rankingi'], ['.warstwa-start {', 'okno startowe'], ["body[data-ekran='setup']::before {", 'karta setupu']]) {
+    const start = STYLE.indexOf(selektor);
+    assert.ok(start >= 0, `reguła ${selektor} istnieje`);
+    const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+    assert.match(blok, kozuch, `${opis} przyciemniają mapę tym samym kolorem`);
+  }
+  assert.match(STYLE, /body\[data-ekran='setup'\]::before \{[^}]*pointer-events: none/s,
+    'kożuch setupu nie przechwytuje kliknięć');
+  assert.match(STYLE, /\.warstwa-start \{[^}]*inset: 0/s,
+    'okno startowe rozciąga się na cały ekran — inaczej mapa dookoła zostaje jasna');
+});
+
+/**
+ * Zgłoszenie właściciela (2026-09-09): etykieta „Planowany czas gry (min)”
+ * łamała się na dwa wiersze, bo `.siatka` miała na szerokim ekranie sztywne
+ * `repeat(4, 1fr)` — czwarta kolumna zostawała pusta (pole „liczba graczy”
+ * zniknęło w 2026-09-07), a trzy realne pola dostawały po ~145 px w karcie
+ * setupu ograniczonej do 640 px.
+ */
+test('siatka pól setupu dopasowuje liczbę kolumn do liczby pól (bez pustej kolumny)', () => {
+  const start = STYLE.indexOf('.siatka {');
+  assert.ok(start >= 0, 'reguła .siatka istnieje');
+  const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+
+  assert.match(blok, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(100%,\s*175px\),\s*1fr\)\)/,
+    'auto-fit liczy kolumny z dostępnego miejsca; 175 px trzyma progi zwijania tam, gdzie były');
+  assert.doesNotMatch(STYLE, /\.siatka \{[^}]*repeat\(4, 1fr\)/s,
+    'żadna reguła nie wymusza czterech kolumn — przy trzech polach zostawała pusta');
+  assert.doesNotMatch(STYLE, /@media[^{]*\{\s*\.siatka \{/,
+    'siatka nie potrzebuje już zapytań @media: auto-fit zwija ją sam');
+
+  // `min(100%, …)` jest tu istotne: samo `minmax(190px, 1fr)` przepełnia rząd
+  // na ekranie 360 px zamiast zwinąć siatkę do jednej kolumny.
+  assert.ok(blok.includes('min(100%, 175px)'),
+    'minimum przycięte do szerokości kontenera — inaczej wąski telefon dostaje poziomy scroll');
+});
+
+/**
+ * Zgłoszenie właściciela (2026-09-09): pole PIN przy imieniu gracza było
+ * wyraźnie mniejsze od pola „Imię (pseudonim)” obok. Przyczyna: wspólna reguła
+ * pól wymienia typy `input` jawnie (musi — inaczej złapałaby ~70 przycisków
+ * `type="button"`), a `password` z tej listy wypadł, więc PIN dostawał domyślny
+ * wygląd przeglądarki zamiast wysokości `--cel` i `font-size: 17px`.
+ */
+test('pola tekstowe: PIN wygląda jak zwykłe pole (wspólna reguła obejmuje password)', () => {
+  const start = STYLE.indexOf("input[type='number']");
+  assert.ok(start >= 0, 'reguła wspólna dla pól istnieje');
+  const selektor = STYLE.slice(start, STYLE.indexOf('{', start));
+
+  for (const typ of ['text', 'password', 'number']) {
+    assert.ok(selektor.includes(`input[type='${typ}']`), `typ ${typ} korzysta ze wspólnej reguły pól`);
+  }
+
+  // Reguła nadaje wysokość celu dotykowego i rozmiar tekstu — to one decydują
+  // o tym, czy dwa pola w jednej siatce wyglądają tak samo (ADR 0011: ≥44 px).
+  const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+  assert.match(blok, /min-height: var\(--cel\)/, 'wspólna wysokość pól');
+  assert.match(blok, /width: 100%/, 'pole wypełnia kolumnę siatki');
+  assert.match(blok, /font-size: 17px/, 'wspólny rozmiar tekstu');
+
+  // PIN i pseudonim stoją w tej samej siatce, więc różnicę widać od razu —
+  // pinujemy, że oba są zwykłymi polami tekstowymi bez klas modyfikujących.
+  assert.match(INDEX, /<input id="profil-pseudonim" type="text"[^>]*>/, 'pseudonim: pole tekstowe bez klasy');
+  assert.match(INDEX, /<input id="profil-pin" type="password"[^>]*>/, 'PIN: pole hasłowe bez klasy');
+});
+
+/**
+ * Zgłoszenie właściciela (2026-09-09): „Wyjaśnienie po odpowiedzi na pytanie
+ * pisz taką samą dużą czcionką jak pytanie bo inaczej trudno ją odczytać na
+ * urządzeniu bo jest maczkiem." Wyjaśnienie było klasą `.podpowiedz` (14 px,
+ * kolor przygaszony) — a to tekst czytany w terenie, często dłuższy od pytania.
+ */
+test('gra: wyjaśnienie po odpowiedzi jest czytelne jak pytanie, nie jak podpowiedź', () => {
+  assert.match(INDEX, /<p id="gra-wyjasnienie" class="gra-wyjasnienie">/,
+    'wyjaśnienie ma własną klasę, nie .podpowiedz');
+
+  const start = STYLE.indexOf('.gra-wyjasnienie {');
+  assert.ok(start >= 0, 'reguła .gra-wyjasnienie istnieje');
+  const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+
+  // Rozmiar pytania (`.karta .duzy`) jest źródłem prawdy — czytamy go z pliku,
+  // zamiast wpisywać liczbę drugi raz (L12/L20: asercje kopiowane z kodu).
+  const duzy = STYLE.slice(STYLE.indexOf('.karta .duzy'), STYLE.indexOf('}', STYLE.indexOf('.karta .duzy')));
+  const rozmiarPytania = /font-size:\s*(\d+)px/.exec(duzy)?.[1];
+  assert.ok(rozmiarPytania, 'da się odczytać rozmiar czcionki pytania');
+  assert.match(blok, new RegExp(`font-size:\\s*${rozmiarPytania}px`),
+    `wyjaśnienie ma ten sam rozmiar co pytanie (${rozmiarPytania}px)`);
+  assert.match(blok, /color: var\(--tekst\)/,
+    'pełny kolor tekstu, nie przygaszony --tekst-slaby');
 });

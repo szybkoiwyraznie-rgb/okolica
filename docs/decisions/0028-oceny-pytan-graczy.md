@@ -84,3 +84,35 @@ jedynym sygnałem jakości, który nie wymaga pracy właściciela.
 - `RO-oceny/1` jest nowy, więc nie ma migracji; brak pliku ocen = zero głosów.
 - Statystyki są jawne dla wszystkich (w indeksie) — to cel: mają pomagać
   w wyborze paczki. Nie pokazujemy, kto jak głosował.
+
+## Aneks (2026-09-09): ocenić można KAŻDĄ paczkę, bo każda jest na Drive
+
+Zgłoszenie właściciela: „łapki są nieaktywne”. Sprawdzenie pokazało, że pkt 1
+w pierwotnym brzmieniu („oceny dotyczą paczek z repozytorium”) był w praktyce
+węższy, niż zakładał właściciel:
+
+> Każda paczka albo jest ściągnięta z repozytorium na ekranie pasujących paczek,
+> albo wygenerowana przez AI — ale w momencie generowania jest zapisywana w repo.
+> Nie ma paczek, które nie istnieją na Drive. Każda powinna móc być oceniona.
+
+Panel ocen znikał w dwóch częstych sytuacjach: przy paczce właśnie wygenerowanej
+(leży na Drive, ale w katalogu **przeglądu**, a most przyjmował głosy tylko dla
+**zaakceptowanych**) i przy drugiej grze tą samą paczką z pamięci telefonu
+(aplikacja nie pamiętała identyfikatora pliku).
+
+**Postanowienie.**
+
+1. Most przyjmuje głosy dla paczek **zaakceptowanych oraz czekających na
+   przegląd**. Paczki odrzucone dalej nie zbierają głosów — są poza obiegiem.
+2. Odpowiedź mostu na wysyłkę zestawu niesie `id` utworzonego pliku, także przy
+   duplikacie (`juz-w-obiegu` / `juz-zaakceptowana`). Bez tego telefon nie wie,
+   co ocenia.
+3. Aplikacja zapamiętuje parę `skrót kontenera → id pliku Drive`
+   (`okolica:paczki-drive`, maks. 24 wpisy). Dzięki temu gra z paczki wziętej
+   z pamięci telefonu też pozwala ocenić pytania.
+4. Panel pozostaje ukryty tylko wtedy, gdy identyfikatora naprawdę nie znamy
+   (np. paczka wklejona ręcznie przy wyłączonym moście) — cisza jest wtedy
+   uzasadniona, bo głos nie miałby dokąd pojechać.
+
+Reguła „jeden głos na gracza i pytanie” (pkt 2) i zakres danych (pkt 7)
+zostają bez zmian.

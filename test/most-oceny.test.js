@@ -138,3 +138,35 @@ test('most: pobranie paczki nie zabiera głosów na telefon gracza', () => {
   assert.equal(pobrana.oceny, undefined, 'głosy nie jadą razem z paczką (ADR 0028 pkt 4)');
   assert.equal(JSON.stringify(pobrana).includes('"gracz"'), false, 'w paczce nie ma pól głosu');
 });
+
+/**
+ * Właściciel (2026-09-09): „Nie ma paczek, które nie istnieją na Drive. Każda
+ * powinna móc być oceniona”. Paczka wygenerowana przez model leci na Drive od
+ * razu, ale czeka w katalogu przeglądu — a gracz gra nią natychmiast.
+ */
+test('most: paczka czekająca na przegląd też zbiera oceny (ADR 0028 aneks)', () => {
+  const stan = uruchomMost();
+  const przyjeta = stan.most.przyjmijKandydata(zestawPrzykladowy());
+  assert.equal(przyjeta.ok, true, `przyjęcie: ${przyjeta.blad}`);
+  assert.equal(typeof przyjeta.id, 'string', 'most oddaje id pliku — telefon musi wiedzieć, co ocenia');
+  assert.ok(przyjeta.id, 'id nie jest puste');
+
+  const wynik = stan.most.przyjmijOcene(glos({ paczkaId: przyjeta.id }));
+  assert.equal(wynik.ok, true, `głos na paczkę w przeglądzie: ${wynik.blad}`);
+  assert.equal(wynik.podsumowanie.glosow, 1, 'głos policzony przed akceptacją');
+
+  // Po akceptacji głosy zebrane wcześniej zostają i dochodzą nowe.
+  assert.equal(stan.most.zatwierdz(przyjeta.id), 'zaakceptowano');
+  const poAkceptacji = stan.most.przyjmijOcene(glos({ paczkaId: przyjeta.id, pytanieId: 's2p1' }));
+  assert.equal(poAkceptacji.podsumowanie.glosow, 2, 'akceptacja nie gubi wcześniejszych głosów');
+});
+
+test('most: powtórna wysyłka tego samego zestawu oddaje id istniejącej paczki', () => {
+  const stan = uruchomMost();
+  const zestaw = zestawPrzykladowy();
+  const pierwsza = stan.most.przyjmijKandydata(zestaw);
+  const druga = stan.most.przyjmijKandydata(zestaw);
+  assert.equal(druga.ok, true, 'duplikat nie jest błędem');
+  assert.equal(druga.status, 'juz-w-obiegu');
+  assert.equal(druga.id, pierwsza.id, 'ten sam zestaw = ten sam identyfikator do oceniania');
+});

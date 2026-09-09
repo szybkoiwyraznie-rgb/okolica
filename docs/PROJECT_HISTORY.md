@@ -1701,3 +1701,139 @@ to napisz mi, jak wywołuje się teraz tryb testowy.”
 Kodu i CSS nie ruszano — `?v=m12-37` bez zmian. ROADMAP bez zmian (wszystkie
 kamienie kodowo gotowe, kryteria po stronie właściciela). Handoff:
 `docs/setup/HANDOFF_2026-09-09.md`.
+
+## 2026-09-09 (sesja następna) — audyt PR #5
+
+Audyt wykonany przed jakimkolwiek kodowaniem (ADR 0012 §2) na
+`git diff 110a666..bb3e163`, plik po pliku. **Uwaga metodyczna:** opis PR #5
+i handoff mówiły o sesji „porządkowej, bez zmian kodu”, a scalony diff niesie
+35 plików i 1452 dodane linie — poza porządkami dokumentacyjnymi (F1, F2)
+weszły trzy większe zakresy dołożone później w tej samej gałęzi. Audyt objął
+całość diffu, nie tylko to, co opisywał handoff.
+
+**Zakres 1 — wariant „Pytania (bez fact check)” (ADR 0032, commity C1–C3).**
+`app/protokol.js`: `WERSJA_PROTOKOLU_REV3`, drugi szablon
+(`SZABLON_PROMPTU_BEZ_WERYFIKACJI`, wersjonowany osobno jako
+`PYT/1.0-nofc.1`), bramka E09 przez `wariantWejsciowy` stawiane przez dekoder,
+E10 z komunikatem wariantowym, `poprawkaDlaModelu({factcheck})`.
+Zgodne z ADR 0032 §3 (nośnik wariantu przez pole na paczce roboczej, bo
+dekoder normalizuje znacznik) i PROTOKOL §2.2/§3.4/§6. Reguła addytywna
+`factcheck !== false` konsekwentnie w `zestawy.js` (`zbierzMetaZestawu`),
+`trwalosc.js` (`skrotGry`) i w `czyWpisFactcheck` w `app.js` — jak `geohash6`
+z ADR 0024. Znaczek Q ma `role="img"` + `aria-label` (informacja, nie
+dekoracja) i pojawia się TYLKO przy wariancie zweryfikowanym, więc brak
+znaczka nie jest dwuznaczny. `tools/synchronizuj-szablon.mjs` przepisany na
+tablicę `SZABLONY` — dwa bloki, jedno źródło prawdy (PROTOKOL), kontrakt
+pilnuje obu.
+
+**Zakres 2 — oceny per gracz, nie per telefon (ADR 0028 pkt 2).**
+`kluczGlosu` niesie teraz głosującego, `znajdzGlos` zwraca wpis (panel
+potrzebuje `aria-pressed`), a `STAN.oceniajacyId` liczony raz przy renderze
+panelu i używany przy kliku — poprawka realnego rozjazdu „już ocenione”
+kontra głos. Głos sprzed zmiany (bez pola `gracz`) blokuje każdego; wybór
+świadomy i opisany w kodzie: milczące odblokowanie dublowałoby głosy, a most
+odrzuciłby duplikat dopiero po fakcie. Walidator lokalny normalizuje wpisy
+(`map` na białą listę pól) — obce pola z localStorage nie wchodzą dalej.
+
+**Zakres 3 — ekran startowy i smukła belka (decyzja właściciela 2026-09-09).**
+Nowy stan `data-ekran="mapa"` (poza `EKRANY`, jak prywatność i rankingi),
+`pokazMapeStartowa()` + `ukryjStart()`, okno `#ekran-start` 80%×80% nad mapą,
+nagłówek bez tytułu (ikony + „⚙ START GRY”). Lekcje L38/L39 zastosowane:
+stan początkowy stoi w HTML (`<body data-ekran="mapa">`, `#ekran-setup hidden`),
+a wejścia poboczne (prywatność, rankingi) jawnie wołają `ukryjStart()` i
+obsługują powrót na `mapa`. Warstwa ma `position: fixed` i `z-index: 10`
+(L39), przyciski mapy chowają się przy otwartym oknie (L42).
+
+**Wynik audytu: kod przyjęty bez zastrzeżeń.** Kontrola spójności: `?v=m12-40`
+w 43 miejscach (jedna wersja wszędzie, L29), `npm test` 656/656 zielone na
+`bb3e163` przed jakąkolwiek zmianą tej sesji.
+
+**Znaleziska (dokumentacja — realizacja w tej sesji):**
+
+- G1: trzy zakresy powyżej nie mają wpisu w `docs/PROJECT_HISTORY.md`
+  (dziennik kończy się na wersji „sesja porządkowa, bez zmian kodu”),
+  a `HANDOFF_2026-09-09.md` §1 wymienia tylko F1/F2 i podaje nieaktualne
+  „628 testów” oraz „`?v=m12-37` bez zmian”. Ten wpis zamyka lukę w dzienniku.
+- G2: `README.md` §Status nie zna wariantu bez fact-check ani ekranu
+  startowego („pięć ekranów: setup → …”), a `docs/ARCHITECTURE.md` §1 opisuje
+  powłokę jako „setup → prompt → paczka → gra → wynik”. To dokładnie wzorzec
+  z L31 (funkcja wchodzi/znika w UI, proza zostaje) — do poprawienia.
+
+## 2026-09-09 (sesja bieżąca) — dwanaście zgłoszeń właściciela z terenu
+
+Sesja realizacyjna na gałęzi `arena/01a08645-okolica` (PR #6). Właściciel zgłosił
+uwagi z trzech środowisk: sandbox (B*), desktop na Pages (D*), realny iPhone (E*),
+plus obserwacje z Google Drive (F*) i poprawki warstw (A*). Zgłoszenia E1/E2
+były już zrealizowane w PR #5 (ekran startowy, smukła belka), B1 okazało się
+szersze niż opis — poniżej stan po tej sesji.
+
+**Zgłoszenie F1 — pliki `gra-hotseat-*` mnożyły się na Drive bez nowych gier.**
+Przyczyna złożona z dwóch elementów: `oproznijKolejkeHotseat()` wysyła kolejkę
+przy KAŻDYM starcie aplikacji (`app/app.js`), a `przyjmijGreHotseat()` w moście
+zakładał nowy plik przy każdym żądaniu (`createFile(nazwaPlikuHotseat())` z nazwą
+opartą o `Date.now()`). Jedna gra, której most kiedyś odmówił (starsza wersja
+skryptu bez akcji `gra-hotseat`), przy każdym odświeżeniu zostawiała nowy plik.
+Naprawa: `graHotseatDoWysylki` wysyła `odcisk` (FNV-1a z klucza gry), most nazywa
+nim plik i nadpisuje istniejący. Brak odcisku (stara aplikacja) = zachowanie jak
+dotąd. Commit `a41b0b7`.
+
+**Zgłoszenia B1 i F2 — łapki nieaktywne, rankingi puste.** Diagnoza obaliła
+pierwotną hipotezę. Kod trzymał się wąskiej litery ADR 0028 („oceny dotyczą
+paczek z repozytorium”), a właściciel doprecyzował: *„Nie ma paczek, które nie
+istnieją na Drive. Każda powinna móc być oceniona”*. Panel znikał, gdy paczka
+była świeżo wygenerowana (leży w katalogu PRZEGLĄDU, a most przyjmował głosy
+tylko dla ZAAKCEPTOWANYCH) oraz przy drugiej grze z pamięci telefonu (aplikacja
+nie znała `id` pliku Drive). Naprawa po obu stronach: `paczkaJestWRepo` obejmuje
+przegląd, `przyjmijKandydata` oddaje `id` także przy duplikacie, aplikacja
+zapamiętuje parę skrót→id w `okolica:paczki-drive` (LRU 24). Aneks do ADR 0028.
+Przy F2 rozdzielono też komunikaty pustego rankingu: „most nie ma gier” vs
+„ta kategoria jest pusta” (L6). Commity `349984c`, `d8628cb`.
+
+**Zgłoszenia A1–A3 — warstwy nad mapą.** Intro rozwinięte do czterech akapitów
+z wyśrodkowanym tytułem `clamp(28px, 8vw, 40px)`; poprawiony podtytuł („gra
+terenowa tam, gdzie akurat jesteś” — poprzedni miał błąd interpunkcyjny
+i mylące znaczenie). Rankingi wchodziły pod belkę, bo `.warstwa` ma `inset: 0`,
+a stałe 16 px nie mijało belki ~64 px — odstęp liczy się teraz od zmierzonej
+`--wysokosc-belki`. Wszystkie trzy warstwy (rankingi, intro, setup) przyciemniają
+mapę tym samym kolorem; setup jako karta dostał kożuch na `::before` `<body>`
+z `pointer-events: none`. Commit `4d6984f`.
+
+**Zgłoszenie D1 — brakujące kafelki na desktopie.** Też dwie przyczyny naraz:
+`MAX_KAFELEK = 48` było MNIEJ, niż potrzebuje jeden ekran Full HD (1920×900
+przy z16 = siatka 9×6 z marginesem = 54 kafelki), a przycinanie działało
+row-major z `break`iem, więc ucinało płaski dolny pas i prawy brzeg. Sufit
+podniesiony do 120 (nadal jeden ekran z zapasem, nie pobieranie hurtowe),
+a przycinanie odrzuca teraz kafelki najdalsze od środka panelu. Nota
+w `ASSETS.md` (L31). Commit `084f482`.
+
+**Zgłoszenie F3 — stany ikon w belce.** ⚙ START GRY i 🏆 Rankingi zachowują się
+jak 🔔 Sygnały: świecą przy otwartej warstwie, a klik w świecącą ikonę ją
+zamyka. Stan liczy jedna funkcja `odswiezStanIkonBelki()` wołana ze wszystkich
+przejść — rozsypanie tego po ścieżkach (przycisk, krzyżyk, Escape, „wróć”,
+prywatność) dałoby ikonę świecącą nad zamkniętą warstwą. Commit `084f482`.
+
+**Zgłoszenie B3 — pusta strona po „Wróć na początek”.** Zweryfikowane jako już
+naprawione w PR #5 (`wrocNaPoczatek` → `pokazMapeStartowa`). Dołożony test
+regresji, bo żaden nie pilnował tej ścieżki. Commit `084f482`.
+
+**Zgłoszenie B2 — koniec odwracania liter (ADR 0033).** Właściciel: *„odwracanie
+liter jest za trudne dla modeli AI i przekręcają przez to wyrazy (…) zostawmy
+TYLKO kodowanie poprawnej odpowiedzi”*. Odwracanie znak po znaku jest dla modelu
+zawodne (pracuje na tokenach), a reguła samokontroli z rev2 tego nie ratowała.
+Nowe markery `PYT/1.0-rev4` (z fact-check) i `-rev5` (bez) — tekst zapisywany
+normalnie, kod pozycyjny `poprawna` zostaje. Zgodność wstecz obowiązkowa:
+walidator przyjmuje wszystkie markery, a odwracanie dekoduje tylko dla
+rev1/rev2/rev3, bo takie paczki leżą na Drive. Szablony `PYT/1.0.7`
+i `PYT/1.0-nofc.2`; schemat PYT bez zmiany wersji (kształt pól ten sam).
+Commit `2af0ae7`.
+
+**Brama na koniec:** `npm test` **673/673**, szablony zsynchronizowane,
+WCAG AA 0 naruszeń. Cache-bust przeszedł `m12-40 → m12-43` (L29, razem
+z `WERSJA_SW`) — trzy podbicia, bo każdy commit ruszał kod albo CSS.
+
+**Ograniczenie weryfikacji tej sesji:** narzędzia podglądu w przeglądarce
+(Chromium + puppeteer w `/home/user/.narzedzia/`) nie przetrwały resetu
+workspace, a egress jest zablokowany (L3), więc nie dało się ich odtworzyć.
+Zmiany wizualne (A1–A3, F3) sprawdzono testami kontraktu na CSS i analizą
+kaskady, nie zrzutem ekranu — potwierdzenie wyglądu zostaje po stronie
+właściciela. Serwer podglądu (`npm run serwer`, port 8000) był uruchomiony.

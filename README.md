@@ -19,10 +19,13 @@ stacji.
 
 ## Status
 
-**M1 — geodezja i model rozgrywki: zrobione.** Działa szkielet aplikacji
-(pięć ekranów: setup → pozycja → stacje → prompt → paczka) z walidacją
-konfiguracji, promptem PYT v1.0, walidacją paczki i jej ukrywaniem
-(`TO-paczka/2`). Jako czyste funkcje z testami istnieją też **model rozgrywki**
+**M1 — geodezja i model rozgrywki: zrobione.** Działa szkielet aplikacji:
+po starcie widać ekran startowy z intro nad mapą, a przygotowanie gry to pięć
+kroków (setup → pozycja → stacje → prompt → paczka) otwieranych przyciskiem
+„⚙ START GRY” w belce. Jest walidacja konfiguracji, prompt PYT v1.0 w dwóch
+wariantach — bez fact-check (domyślny, ADR 0032) i z fact-check — oraz walidacja
+paczki i jej ukrywanie (`TO-paczka/2`). Od 2026-09-09 model nie odwraca już
+liter: kodowany jest wyłącznie numer poprawnej odpowiedzi (ADR 0033). Jako czyste funkcje z testami istnieją też **model rozgrywki**
 (`app/rozgrywka.js`: kolejka graczy i odpowiadania, odcinki, punktacja
 dotarcie-plus-poprawna, dziennik i podsumowanie) oraz
 **warstwa pozycji** (`app/pozycja.js`: filtr dokładności, kryterium dojścia
@@ -79,8 +82,8 @@ właściciela: pełna pętla z prawdziwym modelem (`docs/WORKFLOW.md` §4.2).
 **M6 — rozgrywka: kod i testy gotowe.** Gra jest klikalna od setupu do
 wyniku: jeden ekran gry z czterema panelami faz („kto idzie" → odcinek z mapą
 i dystansem → pytanie odsłaniane DOPIERO w chwili dojścia → wynik), dojście
-z GPS (próg `max(25 m, 1,2 × accuracy)` + dwa kolejne trafienia) albo ręczne
-z karą, pauza (również automatyczna po schowaniu karty), pominięcie stacji
+z GPS (stały próg 25 m + dwa kolejne trafienia; ręczne zaliczanie usunięte
+w ADR 0029), pauza (również automatyczna po schowaniu karty), pominięcie stacji
 w drodze i ręczne zakończenie z wczesnym wynikiem. Pytania żyją w ukrytym
 kontenerze (`TO-paczka/2`) — w stanie gry i w zapisie nigdy nie ma ich treści.
 Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji (`stan-gry/1`), więc
@@ -114,7 +117,7 @@ Safari iOS (`docs/WORKFLOW.md` §4.2).
 npm test                       # same testy (node --test, zero zależności)
 npm run brama                  # brama: testy + check szablonu + audyt WCAG (M10)
 npm run audyt                  # sam audyt kontrastu WCAG AA (motyw jasny i ciemny)
-npm run serwer                 # python3 -m http.server 8000 --bind 0.0.0.0
+npm run serwer                 # node tools/serwer.mjs . — podgląd na 0.0.0.0:8000
 # otwórz http://localhost:8000
 ```
 

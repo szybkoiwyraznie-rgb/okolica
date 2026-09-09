@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-40';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-51';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -85,7 +85,7 @@ export const KODY_POZYCJI = {
   P02: 'Brak zgody na dostęp do położenia. W Chrome dotknij ikony lokalizacji przy adresie i wybierz „Zawsze zezwalaj", a potem odśwież stronę. Współrzędne możesz też wpisać ręcznie („✎ Wpisz ręcznie") i iść dalej — ale bez strumienia pozycji gra nie rozstrzygnie dojścia do stacji. Do rozegrania partii bez GPS potrzebny jest tryb testowy z symulacją: otwórz aplikację z parametrem ?test=true.',
   P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek (ADR 0029: dojście zalicza tylko GPS).',
   P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek.',
-  P05: 'Dokładność ±{accuracy} m jest niewystarczająca, żeby rozstrzygnąć dojście (próg to najwyżej 100 m). Przejdź w miejsce z lepszym widokiem nieba i poczekaj na dokładniejszy pomiar.',
+  P05: 'Dokładność ±{accuracy} m jest niewystarczająca wobec progu dojścia (25 m), więc GPS nie rozstrzygnie, czy stoisz przy stacji. Przejdź w miejsce z lepszym widokiem nieba i poczekaj na dokładniejszy pomiar. Jeśli sygnał nie wraca, odcinek można pominąć.',
   P06: 'Otrzymano współrzędne spoza zakresu — ten pomiar został odrzucony. Jeśli powtarza się, wyjdź na otwartą przestrzeń albo wpisz współrzędne ręcznie („✎ Wpisz ręcznie").',
   P07: 'Śledzenie położenia jest wstrzymane, bo aplikacja działa w tle — oszczędzamy baterię. Wróć na kartę, żeby je wznowić (ADR 0004 pkt 1).',
   P08: 'Nieznany błąd położenia: {message}. Wyjdź na otwartą przestrzeń, a jeśli to nie pomoże — wpisz współrzędne ręcznie („✎ Wpisz ręcznie") albo pomiń odcinek.',
@@ -125,9 +125,14 @@ export function fixZPozycji(pozycja, czasMs, zrodlo = ZRODLA_FIXA.gps) {
  * Ocena fixu: czy nadaje się do gry i co powiedzieć graczowi.
  *
  * Zasada z ADR 0004 pkt 4 — **niedokładność jest jawna, nie ukrywana**: fix
- * z `accuracy > 100 m` dostaje ostrzeżenie, ale NIE jest odrzucany, bo próg
- * dojścia i tak jest ograniczony do 100 m (`progDojsciaM`), czyli surowy.
- * Odrzucamy tylko współrzędne, które nie mają sensu (NaN, poza zakresem).
+ * z `accuracy > 100 m` dostaje ostrzeżenie, ale NIE jest odrzucany. Sam fix
+ * bywa dobry mimo pesymistycznej `accuracy`, a o zaliczeniu i tak decyduje
+ * stały próg 25 m (`progDojsciaM`) — słaby pomiar po prostu do niego nie
+ * dobije. Odrzucamy tylko współrzędne bez sensu (NaN, poza zakresem).
+ *
+ * Wyjściem awaryjnym jest pominięcie odcinka (ADR 0015 pkt 2), NIE ręczne
+ * zaliczenie: przycisk „jestem na miejscu" usunięty w ADR 0029, więc żaden
+ * komunikat nie może do niego odsyłać.
  */
 export function ocenFix(fix, { maxAccuracyM = GRANICE.maxAccuracyM } = {}) {
   if (!fix || !czyWspolrzedneOk(fix.lat, fix.lon)) {
@@ -138,7 +143,7 @@ export function ocenFix(fix, { maxAccuracyM = GRANICE.maxAccuracyM } = {}) {
       stan: STANY_FIXA.bezDokladnosci,
       akceptowany: true,
       kod: null,
-      komunikat: 'Brak danych o dokładności — próg dojścia jest ustawiony najłagodniej (100 m), żeby nie blokować gry.',
+      komunikat: 'Brak danych o dokładności pomiaru — próg dojścia jest zwykły (25 m). Jeśli stacja nie zapala się mimo dojścia na miejsce, poczekaj na lepszy pomiar albo pomiń odcinek.',
       progM: progDojsciaM(null),
     };
   }

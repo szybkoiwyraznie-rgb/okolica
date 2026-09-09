@@ -913,6 +913,6 @@ test('ADR 0032: panel multi pokazuje Q dla zweryfikowanej, notkę dla paczki bez
   await przygotujTelefon(B, 'Bartek');
   await zalozGreUI(B, { tryb: 'wyscig', skrot: zestaw2.kontener.skrot });
   await klik(B, 'przycisk-lobby-start');
-  assert.match(tekst(B, 'multi-factcheck'), /bez fact-check/);
+  assert.match(tekst(B, 'multi-factcheck'), /bez wymuszonego fact-checku/);
   assert.equal(maQ(B), false, 'brak znaczka dla wariantu bez weryfikacji');
 });

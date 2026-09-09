@@ -25,12 +25,11 @@ z AME („Scryfall dla kart, źródła www dla wpisów").
    dat, liczb, cytatów, autorów i adresów; nakazuje zmniejszyć liczbę pytań
    w temacie i opisać brak w `uwagi`, jeśli źródeł nie ma. Pytanie „na oko"
    jest gorsze niż brak pytania.
-4. **Zakotwiczenie w miejscu**: każde pytanie odnosi się do obiektu, ulicy,
-   dzielnicy, wydarzenia albo postaci z okolicy gry. Walidator sprawdza
-   heurystyką leksykalną (nazwa miejsca z `okolica.miejsce`, nazwy własne ze
-   stacji, słowa-klucze dzielnicy), że treść lub wyjaśnienie zawiera odniesienie
-   miejscowe — pytanie czysto ogólne („ile lat miała królowa Wiktoria") jest
-   odrzucane jako `brak-zakotwiczenia`.
+4. **Zakotwiczenie w miejscu** (~~walidowane~~ → **proszone**, aneks
+   2026-09-09): pytanie powinno odnosić się do obiektu, ulicy, dzielnicy,
+   wydarzenia albo postaci z okolicy gry. Do 2026-09-09 pilnował tego walidator
+   (kod `E14`, heurystyka leksykalna) — **już nie**. Zakotwiczenie jest prośbą
+   w prompcie; pytanie ogólne przechodzi. Powód w aneksie niżej.
 5. **Źródła są pokazywane graczowi** po odpowiedzi, razem z wyjaśnieniem —
    to część wartości edukacyjnej i mechanizm samokontroli: jeśli gracz widzi
    adres, organizator zauważy, gdy źródło jest zmyślone.
@@ -60,3 +59,29 @@ z AME („Scryfall dla kart, źródła www dla wpisów").
 
 0006 (pętla treści), 0007 (walidacja przed ukryciem), 0010 (repozytorium
 paczek i ich przegląd), `docs/PROTOKOL.md` §2–§3.
+
+
+## Aneks 2026-09-09 — pkt 4 przestaje być bramką walidatora
+
+Właściciel, po zobaczeniu dwóch usterek `E14` na własnej paczce: „to bez sensu.
+Przy niektórych kategoriach (szczególnie tych custom) nigdy nie będzie
+nawiązania do miejsca i będą pytania z wiedzy ogólnej. To jak najbardziej
+dopuszczalne i pożądane".
+
+Pierwotne założenie pkt 4 — że gra terenowa bez lokalnych pytań traci sens —
+jest prawdziwe dla tematów typu „historia" czy „architektura", ale nie dla
+tematu własnego, który organizator wpisuje ręcznie (np. „muzyka lat 90.").
+Tam kotwica miejscowa albo nie istnieje, albo model musiałby ją naciągnąć —
+a naciągnięty fakt jest gorszy niż uczciwe pytanie ogólne.
+
+Kosztem błędu była cała runda z modelem: organizator stoi w terenie, dostaje
+odrzuconą paczkę i musi wrócić do czatu. Przy regule, która bywa błędna z
+założenia, ta cena jest nie do przyjęcia — dlatego kod `E14`, heurystyka
+`czyZakotwiczone` i jej listy słów zostały usunięte z `app/protokol.js`,
+a nie tylko złagodzone. Zakotwiczenie zostaje w zasadzie 4 obu szablonów
+promptu: „schodź na najniższy poziom, na którym masz pewny fakt (…) gdy temat
+nie ma lokalnego zaczepienia, pytanie z wiedzy ogólnej jest w porządku".
+
+Konsekwencja dla ADR 0008: pkt 4 nie jest już kryterium przyjęcia paczki.
+Punkty 1–3 i 5–6 (kwerenda, źródła, pokazywanie źródeł graczowi) zostają bez
+zmian w wariancie z fact-checkiem.

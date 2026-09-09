@@ -223,9 +223,59 @@ test('planKafelkow pokrywa widoczny zakres z marginesem i trzyma się limitu pol
 });
 
 test('planKafelkow przycina przy ogromnym panelu i małym zoomie (ochrona przed hurtowym pobieraniem)', () => {
-  const plan = planKafelkow(widok(3, { szerokosc: 6000, wysokosc: 6000 }), { szerokosc: 6000, wysokosc: 6000 }, 'osm');
+  // Zoom 6 (nie 3): przy z3 cały świat to 64 kafelki, więc plan nie miałby jak
+  // przekroczyć sufitu i test sprawdzałby wyłącznie rozmiar świata.
+  const panel = { szerokosc: 6000, wysokosc: 6000 };
+  const plan = planKafelkow(widok(6, panel), panel, 'osm');
   assert.equal(plan.kafelki.length, MAX_KAFELEK);
   assert.equal(plan.przyciete, true);
+});
+
+/**
+ * Zgłoszenie właściciela D1 (2026-09-09): na desktopie brakowało skrajnego
+ * dolnego-prawego kafelka i kilku w najniższym rzędzie. Powodem był sufit 48
+ * kafelków (Full HD potrzebuje ~54) plus przycinanie row-major, które przy
+ * przekroczeniu limitu ucinało płaski dolny pas siatki.
+ */
+test('D1: plan dla okna Full HD jest kompletny — żadnego brakującego rzędu ani kolumny', () => {
+  for (const panel of [
+    { szerokosc: 1920, wysokosc: 900 },   // Full HD z paskiem przeglądarki
+    { szerokosc: 1920, wysokosc: 1080 },  // pełny ekran
+    { szerokosc: 2560, wysokosc: 1300 },  // QHD
+  ]) {
+    const plan = planKafelkow(widok(16, panel), panel, 'osm');
+    assert.equal(plan.przyciete, false, `panel ${panel.szerokosc}×${panel.wysokosc} mieści się bez przycinania`);
+
+    // Siatka musi być pełnym prostokątem: każdy rząd ma komplet kolumn.
+    const rzedy = new Map();
+    for (const k of plan.kafelki) {
+      if (!rzedy.has(k.ty)) rzedy.set(k.ty, new Set());
+      rzedy.get(k.ty).add(k.tx);
+    }
+    const szerokosciRzedow = [...rzedy.values()].map((s) => s.size);
+    assert.equal(new Set(szerokosciRzedow).size, 1,
+      `każdy rząd ma tyle samo kafelków (dostałem ${szerokosciRzedow.join(', ')})`);
+
+    // Skrajny dolny-prawy kafelek istnieje.
+    const maxTy = Math.max(...plan.kafelki.map((k) => k.ty));
+    const maxTx = Math.max(...plan.kafelki.map((k) => k.tx));
+    assert.ok(plan.kafelki.some((k) => k.ty === maxTy && k.tx === maxTx),
+      'dolny-prawy kafelek jest w planie');
+  }
+});
+
+test('D1: gdy przycinanie jest konieczne, znikają obrzeża — nie cały dolny pas', () => {
+  const panel = { szerokosc: 8000, wysokosc: 8000 };
+  const plan = planKafelkow(widok(7, panel), panel, 'osm');
+  assert.equal(plan.przyciete, true, 'warunek wstępny: ten plan trzeba przyciąć');
+
+  // Rozkład kafelków wokół środka planu musi być symetryczny — stary kod
+  // zostawiał wyłącznie górne rzędy, więc środek ciężkości leciał do góry.
+  const srodekTy = (Math.min(...plan.kafelki.map((k) => k.ty)) + Math.max(...plan.kafelki.map((k) => k.ty))) / 2;
+  const powyzej = plan.kafelki.filter((k) => k.ty < srodekTy).length;
+  const ponizej = plan.kafelki.filter((k) => k.ty > srodekTy).length;
+  assert.ok(Math.abs(powyzej - ponizej) <= plan.kafelki.length * 0.15,
+    `kafelki rozłożone symetrycznie w pionie (${powyzej} nad, ${ponizej} pod środkiem)`);
 });
 
 test('planKafelkow dla schowanego panelu i wyłączonego podkładu jest pusty', () => {

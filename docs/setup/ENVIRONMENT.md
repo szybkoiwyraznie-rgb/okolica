@@ -87,7 +87,13 @@ Jeśli po resecie zdarzyło Ci się zacommitować na `main`, przenieś commit:
   dla istniejących, `git diff` po edycji).
 - Testy logiki: `node --test` (moduły czyste testują się tym samym kodem — LESSONS L6).
 - Do uruchomienia aplikacji użyj serwera statycznego na `0.0.0.0`
-  (`npm run serwer` = `python3 -m http.server 8000 --bind 0.0.0.0`).
+  (`npm run serwer` = `node tools/serwer.mjs .`, port 8000 na `0.0.0.0`).
+  Do 2026-09-09 był to `python3 -m http.server`; odpowiada on w **HTTP/1.0**
+  bez `keep-alive`, przez co proxy podglądu Areny (Cloudflare) potrafi zwrócić
+  **„Bad gateway”**, choć serwer lokalnie oddaje 200. Własny serwer mówi
+  HTTP/1.1, trzyma `keepAliveTimeout` 65 s (dłużej niż proxy, więc to proxy
+  zamyka połączenie pierwsze) i dokłada `Cache-Control: no-store` oraz typy
+  MIME dla `.mjs`/`.webmanifest`.
 
 ### 4.1 Przeglądarka do weryfikacji wizualnej (headless Chromium z npm)
 

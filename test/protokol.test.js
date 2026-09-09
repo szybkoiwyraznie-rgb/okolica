@@ -13,13 +13,13 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  SCHEMAT_KONTENERA, SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, TOKENY_MIEJSCA, WERSJA_PROTOKOLU,
+  SCHEMAT_KONTENERA, SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU,
   WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3,
-  czyPaczkaOdwrocona, czyWariantFactcheck, czyZakotwiczone, normalizujTekst, normalizujTematyPaczki, numerPytaniaZId,
+  czyPaczkaOdwrocona, czyWariantFactcheck, normalizujTekst, normalizujTematyPaczki, numerPytaniaZId,
   odkodujPaczkeRev1, odkodujPaczkeRev2,
   odkodujPoprawnaRev2, zakodujPoprawnaRev2,
   odwrocPolaPaczki, odwrocTekst, parsujOdpowiedzModela, podsumowaniePaczki,
-  poprawkaDlaModelu, rdzenTokena, tokenyWlasne, walidujPaczke, zbudujPrompt,
+  poprawkaDlaModelu, walidujPaczke, zbudujPrompt,
 } from '../app/protokol.js';
 import { domyslnaKonfiguracja, liczbaPytan } from '../app/konfig.js';
 import { przesunPunkt } from '../app/geo.js';
@@ -88,7 +88,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'OKOLICA GRY:',
     'STACJE (kolejność = kolejność w grze',
     'GRACZE I TRUDNOŚĆ:',
-    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev2)',
+    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev4)',
     'WYMAGANIA DODATKOWE:',
     '"poprawna": ZAKODOWANY numer',
   ]) {
@@ -292,16 +292,21 @@ test('rev2: obcy kod to E06 z regułą i przykładem, jawny indeks nie przechodz
   assert.ok(kody(jawnaJakoKod).includes('E06'), 'gołe indeksy w rev2 nie przechodzą po cichu');
 });
 
-test('rev2: szablon żąda odwrócenia, poprawnej słownie i samokontroli (reguła 8)', () => {
+/**
+ * B2 (decyzja właściciela 2026-09-09): odwracanie liter USUNIĘTE — modele
+ * przekręcały wyrazy. Zostaje wyłącznie kod pozycyjny poprawnej odpowiedzi.
+ */
+test('rev4: szablon koduje poprawną, ale NIE każe odwracać tekstu (reguła 8)', () => {
   for (const fraza of [
-    'ODWRÓCONE ZNAKAMI',
-    '"PYT/1.0-rev2"',
+    '"PYT/1.0-rev4"',
     'ZAKODOWANY numer poprawnej odpowiedzi',
     '2 + 2 + 1 + 17 = 22',
-    'ODCZYTAJ każde odwrócone pole od końca',
-    'samokontrola',
+    'zapisz NORMALNIE',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
+  }
+  for (const zakazana of ['ODWRÓCONE ZNAKAMI', 'ODCZYTAJ każde odwrócone pole od końca', 'toK']) {
+    assert.ok(!SZABLON_PROMPTU.includes(zakazana), `szablon nie może już żądać odwracania: ${zakazana}`);
   }
 });
 
@@ -327,20 +332,39 @@ function paczkaOdwrocona(marker, bezZrodel = false) {
   return paczka;
 }
 
-test('ADR 0032: szablon bez weryfikacji mówi wprost: pamięć zamiast kwerendy, źródła opcjonalne', () => {
+test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktów', () => {
+  // Właściciel 2026-09-09: „W prompcie wprost zakazujesz szukania źródeł
+  // w internecie i nakazujesz używania pamięci treningowej. Po co? Po prostu
+  // nie wymuszaj niczego. (…) Może nie ma nic w pamięci treningowej i wyszuka,
+  // a nie że zakazujesz."
   assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.length > 2000, `szablon §2.2 ma ${SZABLON_PROMPTU_BEZ_WERYFIKACJI.length} znaków — wygląda na niekompletny`);
   for (const fraza of [
-    'NIE wymaga sprawdzania faktów w internecie',
-    'NIE wykonuj kwerendy w internecie',
+    'Podawaj wyłącznie fakty, których jesteś pewien',
+    'Sposób ich ustalenia zostawiamy Tobie',
     'OPCJONALNE',
-    'zmyślony albo niepewny adres jest gorszy niż brak adresu',
-    '"PYT/1.0-rev3"',
-    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev3)',
+    'Nigdy nie zmyślaj adresu',
+    '"PYT/1.0-rev5"',
+    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev5)',
     'ZAKODOWANY numer poprawnej odpowiedzi',
-    'ODWRÓCONE ZNAKAMI',
+    'zapisz NORMALNIE',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
   }
+
+  // SEDNO zgłoszenia: żadnego zakazu ani nakazu co do sposobu zdobycia faktu.
+  for (const zakaz of [
+    'NIE wykonuj kwerendy',
+    'NIE wymaga sprawdzania faktów w internecie',
+    'WYŁĄCZNIE z własnej wiedzy',
+    'pamięci treningowej',
+    'bez kwerendy w internecie',
+  ]) {
+    assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(zakaz),
+      `szablon §2.2 nadal wymusza sposób zdobycia faktu: „${zakaz}"`);
+  }
+  // B2: odwracanie liter usunięte także z wariantu bez fact-check.
+  assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('ODWRÓCONE ZNAKAMI'),
+    'szablon §2.2 nie żąda już odwracania');
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('wykonaj kwerendę w internecie'),
     'twarda kwerenda z §2 nie przecieka do §2.2');
   for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{LICZBA_GRACZY}', '{WIEK}', '{OPIS_TRUDNOSCI}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
@@ -349,16 +373,16 @@ test('ADR 0032: szablon bez weryfikacji mówi wprost: pamięć zamiast kwerendy,
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
 });
 
-test('zbudujPrompt: domyślnie bez weryfikacji (rev3), fact-check na życzenie (rev2)', () => {
+test('zbudujPrompt: domyślnie bez weryfikacji (rev5), fact-check na życzenie (rev4)', () => {
   const domyslny = zbudujPrompt(wejscieBudowy());
   assert.deepEqual(domyslny.usterki, []);
-  assert.ok(domyslny.prompt.includes('PYT/1.0-rev3'), 'domyślny prompt generuje rev3');
+  assert.ok(domyslny.prompt.includes('PYT/1.0-rev5'), 'domyślny prompt generuje rev5');
   assert.ok(!domyslny.prompt.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
   const jawnyBez = zbudujPrompt(wejscieBudowy({ factcheck: false }));
   assert.equal(jawnyBez.prompt, domyslny.prompt, 'jawne factcheck:false = domyślne');
   const fc = zbudujPrompt(wejscieBudowy({ factcheck: true }));
   assert.deepEqual(fc.usterki, []);
-  assert.ok(fc.prompt.includes('PYT/1.0-rev2'), 'prompt z fact-check generuje rev2');
+  assert.ok(fc.prompt.includes('PYT/1.0-rev4'), 'prompt z fact-check generuje rev4');
   assert.ok(fc.prompt.includes('wykonaj kwerendę w internecie'), 'prompt z fact-check żąda kwerendy');
 });
 
@@ -415,7 +439,9 @@ test('poprawkaDlaModelu: wariantowa — domyślnie fact-check, bez weryfikacji b
   assert.ok(fc.includes('kwerenda internetowa dla każdego faktu'), 'domyślna korekta jak dziś');
   assert.ok(poprawkaDlaModelu(usterki).includes('kwerenda internetowa dla każdego faktu'), 'stara sygnatura działa');
   const bez = poprawkaDlaModelu(usterki, { liczbaPytan: 3, factcheck: false });
-  assert.ok(bez.includes('bez kwerendy w internecie'), 'korekta bez weryfikacji nie żąda kwerendy');
+  assert.ok(bez.includes('sposób ich ustalenia zostawiamy Tobie'),
+    'korekta bez weryfikacji nie narzuca sposobu zdobycia faktu (zgłoszenie 2026-09-09)');
+  assert.ok(!bez.includes('bez kwerendy w internecie'), 'i nie zakazuje kwerendy');
   assert.ok(bez.includes('źródła opcjonalne'), 'korekta bez weryfikacji mówi o opcjonalnych źródłach');
   assert.ok(!bez.includes('kwerenda internetowa dla każdego faktu'), 'twarda kwerenda nie przecieka');
   assert.ok(bez.includes('[E03]') && bez.includes('PYT/1.0'), 'nagłówek i lista usterek wspólne');
@@ -470,14 +496,10 @@ test('walidujPaczke: E09/E10/E11 — źródła są wymagane i muszą być prawdz
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla[0].sprawdzono = '2026-09-09'; })).includes('E11'));
 });
 
-test('walidujPaczke: E12/E13/E14 — temat, duplikaty i zakotwiczenie w okolicy', () => {
+test('walidujPaczke: E12/E13 — temat spoza kanonu i duplikat treści', () => {
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].temat = 'kosmos'; })).includes('E12'));
   assert.ok(kody(klonyPaczki((p) => { p.tematy = ['historia', 'kosmos']; })).includes('E12'));
   assert.ok(kody(klonyPaczki((p) => { p.pytania[1].tresc = p.pytania[0].tresc; })).includes('E13'));
-  assert.ok(kody(klonyPaczki((p) => {
-    p.pytania[0].tresc = 'W którym roku wybuchła druga wojna światowa?';
-    p.pytania[0].wyjasnienie = 'Druga wojna światowa wybuchła 1 września 1939 roku i była największym konfliktem w dziejach ludzkości.';
-  })).includes('E14'));
 });
 
 test('walidujPaczke: stare klucze tematów (sprzed 2026-09-07) są aliasami, nie E12', () => {
@@ -527,56 +549,46 @@ test('walidujPaczke: E11 — data utworzenia w przyszłości', () => {
   assert.ok(kody(klonyPaczki((p) => { p.utworzono = '5 września 2026'; })).includes('E11'));
 });
 
-/* ------------------------------------------------- heurystyka zakotwiczenia */
+/* ------------------------- zakotwiczenie: prośba w prompcie, nie bramka E14 */
 
-test('czyZakotwiczone: odmiana nazwy miejsca jest rozpoznawana (rdzeń 5 znaków)', () => {
-  const pytanie = { tresc: 'Przy jakiej ulicy stoi kamienica w warszawskim Śródmieściu?', wyjasnienie: 'Kamienica przy ulicy Zgoda w Warszawie powstała w 1912 roku jako dom dochodowy.' };
-  assert.equal(czyZakotwiczone(pytanie, { miejsce: 'Warszawa, Śródmieście, Polska' }), true);
+/**
+ * Zgłoszenie właściciela 2026-09-09: „przy niektórych kategoriach (szczególnie
+ * tych custom) nigdy nie będzie nawiązania do miejsca i będą pytania z wiedzy
+ * ogólnej. To jak najbardziej dopuszczalne i pożądane. Ten test i błąd jest bez
+ * sensu." Heurystyka `E14` została usunięta — te testy pilnują, żeby nie
+ * wróciła tylnymi drzwiami.
+ */
+test('walidujPaczke: pytanie z wiedzy ogólnej PRZECHODZI — E14 nie istnieje', () => {
+  const ogolna = klonyPaczki((p) => {
+    p.pytania[0].tresc = 'W którym roku wybuchła druga wojna światowa?';
+    p.pytania[0].wyjasnienie = 'Druga wojna światowa wybuchła 1 września 1939 roku i była największym konfliktem w dziejach ludzkości.';
+    p.pytania[1].tresc = 'Kto napisał „Pana Tadeusza"?';
+    p.pytania[1].wyjasnienie = 'Adam Mickiewicz ukończył poemat w Paryżu w 1834 roku, na emigracji po powstaniu listopadowym.';
+  });
+  const usterki = kody(ogolna);
+  assert.ok(!usterki.includes('E14'), 'kod E14 nie jest już przydzielany');
+  assert.deepEqual(usterki, [], 'paczka z pytaniami ogólnymi przechodzi walidację czysto');
 });
 
-test('czyZakotwiczone: rdzeń trafia w początek wyrazu, nie w jego środek', () => {
-  // „kościół" → rdzeń „kości": musi łapać „kościoła", ale nie „ludzkości".
-  assert.equal(czyZakotwiczone({ tresc: 'Kiedy konsekrowano kościół św. Anny?', wyjasnienie: 'Konsekracja kościoła nastąpiła w 1782 roku.' }, { miejsce: 'Grabowice, Polska' }), true);
-  assert.equal(
-    czyZakotwiczone(
-      { tresc: 'W którym roku wybuchła druga wojna światowa?', wyjasnienie: 'Była największym konfliktem w dziejach ludzkości i objęła całą Europę.' },
-      { miejsce: 'Stare Miasto, woj. mazowieckie, Polska' },
-    ),
-    false,
-    '„woj." nie może łapać „wojna", a „ludzkości" nie może uchodzić za „kościół"',
-  );
+test('protokół: kod E14 jest wycofany w kodzie i w dokumentacji', () => {
+  const zrodlo = readFileSync(new URL('../app/protokol.js', import.meta.url), 'utf8');
+  assert.ok(!/dodaj\('E14'/.test(zrodlo), 'walidator nie zgłasza E14');
+  for (const symbol of ['czyZakotwiczone', 'tokenyWlasne', 'TOKENY_MIEJSCA', 'SLOWA_POSPOLITE', 'WYRAZY_POSPOLITE_MIEJSCA', 'SKROTY_Z_KROPKA']) {
+    assert.ok(!new RegExp(`export (const|function) ${symbol}\\b`).test(zrodlo), `${symbol} usunięty razem z heurystyką`);
+  }
+  const protokol = readFileSync(new URL('../docs/PROTOKOL.md', import.meta.url), 'utf8');
+  assert.match(protokol, /\| `E14` \| wycofany/, 'tabela kodów mówi wprost, że E14 jest wycofany');
 });
 
-test('tokenyWlasne: odrzuca wyrazy pospolite nazw administracyjnych i krótkie skróty', () => {
-  const tokeny = tokenyWlasne({ miejsce: 'Grabowice, Stare Miasto, woj. mazowieckie, Polska' }, []);
-  assert.ok(tokeny.includes('grabowice'));
-  assert.ok(tokeny.includes('mazowieckie'), 'nazwa regionu jest kotwicą');
-  assert.ok(!tokeny.includes('stare') && !tokeny.includes('miasto'), '„Stare Miasto" to nie nazwa własna');
-  assert.ok(!tokeny.includes('woj'), 'skrót 3-literowy daje fałszywe trafienia');
-  assert.ok(!tokeny.includes('polska'), '„Polska" jest wszędzie — nie kotwiczy niczego');
-});
-
-test('czyZakotwiczone: słowo lokalne + nazwa własna przechodzi, pytanie ogólne nie', () => {
-  assert.equal(czyZakotwiczone({ tresc: 'Który most w Grabowicach zbudowano jako pierwszy?', wyjasnienie: 'Most nad stawem miejskim w Grabowicach oddano do użytku w 1901 roku.' }, { miejsce: 'Grabowice, Polska' }), true);
-  assert.equal(czyZakotwiczone({ tresc: 'W którym roku wybuchła druga wojna światowa?', wyjasnienie: 'Druga wojna światowa wybuchła 1 września 1939 roku i była największym konfliktem w dziejach.' }, { miejsce: 'Grabowice, Polska' }), false);
-  assert.equal(czyZakotwiczone({ tresc: '', wyjasnienie: '' }, { miejsce: 'Grabowice' }), false);
-});
-
-test('tokenyWlasne: odrzuca słowa pospolite i tokeny lokalne, zostawia nazwy', () => {
-  const t = tokenyWlasne({ miejsce: 'Warszawa, Śródmieście, woj. mazowieckie, Polska' }, [{ opis: 'park Skaryszewski' }]);
-  assert.ok(t.includes('warszawa'));
-  assert.ok(t.includes('skaryszewski'));
-  assert.ok(!t.includes('park'), 'słowo lokalne z TOKENY_MIEJSCA nie jest nazwą własną');
-});
-
-test('rdzenTokena i normalizujTekst: stabilna normalizacja do porównań', () => {
-  assert.equal(rdzenTokena('Warszawa'), 'warsz');
-  assert.equal(rdzenTokena('Ratusz'), 'ratus');
-  assert.equal(rdzenTokena('most'), 'most');
-  assert.equal(rdzenTokena(''), '');
-  assert.equal(normalizujTekst('  Kościół św. Anny!  '), 'kościół św anny');
-  assert.equal(normalizujTekst(null), '');
-  assert.ok(TOKENY_MIEJSCA.includes('kościół') && TOKENY_MIEJSCA.includes('park'));
+test('prompt: zakotwiczenie zostaje PROŚBĄ — oba warianty dopuszczają pytanie ogólne', () => {
+  for (const [nazwa, szablon] of [['rev4', SZABLON_PROMPTU], ['rev5', SZABLON_PROMPTU_BEZ_WERYFIKACJI]]) {
+    assert.ok(!szablon.includes('Czyste pytania ogólne bez kotwicy są zakazane'),
+      `${nazwa}: zakaz pytań ogólnych zniknął z zasady 4`);
+    assert.match(szablon, /wiedzy ogólnej jest w porządku/,
+      `${nazwa}: prompt wprost dopuszcza pytanie ogólne, gdy temat nie ma lokalnego zaczepienia`);
+    assert.match(szablon, /Kotwicz pytanie możliwie blisko okolicy/,
+      `${nazwa}: prośba o kotwicę zostaje — to nadal gra terenowa`);
+  }
 });
 
 /* ------------------------------------------------------- poprawka i wynik */
@@ -605,4 +617,55 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
 test('stałe protokołu: wersja i schemat kontenera', () => {
   assert.equal(WERSJA_PROTOKOLU, 'PYT/1.0');
   assert.equal(SCHEMAT_KONTENERA, 'TO-paczka/2', 'kontener po decyzji z ADR 0007 (obfuskacja bez klucza)');
+});
+
+/* ---- B2 (2026-09-09): koniec odwracania liter, zostaje kod poprawnej ---- */
+
+/** Paczka rev4/rev5: tekst NORMALNY, zakodowana tylko `poprawna`. */
+function paczkaBezOdwracania(marker, bezZrodel = false) {
+  const paczka = structuredClone(OK);
+  paczka.protokol = marker;
+  paczka.pytania.forEach((p) => {
+    p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p);
+    if (bezZrodel) delete p.zrodla;
+  });
+  return paczka;
+}
+
+test('B2: rev4 waliduje się bez odwracania, a dekoder odzyskuje indeks poprawnej', () => {
+  const rev4 = paczkaBezOdwracania('PYT/1.0-rev4');
+  assert.equal(czyPaczkaOdwrocona(rev4), false, 'rev4 nie jest wariantem odwróconym');
+  assert.deepEqual(walidujPaczke(rev4, oczekiwane()), [], 'rev4 przechodzi walidację');
+
+  const robocza = odkodujPaczkeRev2(rev4);
+  assert.equal(robocza.protokol, 'PYT/1.0', 'marker znormalizowany');
+  assert.equal(robocza.wariantWejsciowy, 'PYT/1.0-rev4', 'wariant wejściowy zapamiętany');
+  for (const pyt of robocza.pytania) {
+    const wzorzec = OK.pytania.find((q) => q.id === pyt.id);
+    assert.equal(pyt.tresc, wzorzec.tresc, 'treść czytelna bez odwracania');
+    assert.equal(pyt.poprawna, wzorzec.poprawna, 'kod poprawnej rozkodowany do indeksu');
+  }
+  assert.equal(czyWariantFactcheck(robocza), true, 'rev4 to wariant z fact-check');
+});
+
+test('B2: rev5 to rev4 bez wymogu źródeł (ADR 0032 zachowane)', () => {
+  const rev5 = paczkaBezOdwracania('PYT/1.0-rev5', true);
+  assert.deepEqual(walidujPaczke(rev5, oczekiwane()), [], 'rev5 bez źródeł waliduje się czysto');
+  assert.equal(czyWariantFactcheck(odkodujPaczkeRev2(rev5)), false, 'rev5 to wariant bez fact-check');
+
+  // Ten sam brak źródeł w rev4 musi być błędem — profile się nie zlały.
+  const rev4bezZrodel = paczkaBezOdwracania('PYT/1.0-rev4', true);
+  const usterki = walidujPaczke(rev4bezZrodel, oczekiwane());
+  assert.ok(usterki.some((u) => u.kod === 'E09'), 'rev4 nadal wymaga źródeł (E09)');
+});
+
+test('B2: stare paczki rev2/rev3 (odwrócone) dają się odczytać — leżą na Drive', () => {
+  for (const marker of ['PYT/1.0-rev2', 'PYT/1.0-rev3']) {
+    const stara = paczkaOdwrocona(marker, marker === 'PYT/1.0-rev3');
+    assert.equal(czyPaczkaOdwrocona(stara), true, `${marker} to wariant odwrócony`);
+    assert.deepEqual(walidujPaczke(stara, oczekiwane()), [], `${marker} nadal się waliduje`);
+    const robocza = odkodujPaczkeRev2(stara);
+    assert.equal(robocza.pytania[0].tresc, OK.pytania[0].tresc, `${marker}: tekst odwrócony z powrotem`);
+    assert.equal(robocza.pytania[0].poprawna, OK.pytania[0].poprawna, `${marker}: kod rozkodowany`);
+  }
 });

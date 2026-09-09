@@ -240,10 +240,21 @@ function zapiszOceny(oceny) {
 }
 
 /** Czy paczka o tym id jest w katalogu zaakceptowanych (głosować można tylko na takie). */
+/**
+ * Czy paczka jest na Drive i wolno ją oceniać.
+ *
+ * Właściciel (2026-09-09): „Nie ma paczek, które nie istnieją na Drive. Każda
+ * powinna móc być oceniona”. Paczka wygenerowana przez model leci na Drive od
+ * razu, ale ląduje w katalogu PRZEGLĄDU — gracz gra nią natychmiast, więc
+ * ocenianie tylko paczek już zaakceptowanych odcinało większość rozgrywek.
+ * Oceny zbieramy więc dla przeglądu i akceptacji; odrzucone są poza obiegiem.
+ */
 function paczkaJestWRepo(paczkaId) {
   try {
     const rodzice = DriveApp.getFileById(String(paczkaId)).getParents();
-    return rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
+    if (!rodzice.hasNext()) return false;
+    const nazwa = rodzice.next().getName();
+    return nazwa === FOLDERY.zaakceptowane || nazwa === FOLDERY.przeglad;
   } catch (e) {
     return false;
   }
@@ -483,12 +494,14 @@ function przyjmijKandydata(plik) {
   for (const nazwaFolderu of wszedzie) {
     const it = folder(nazwaFolderu).getFilesByName(nazwa);
     if (it.hasNext()) {
-      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-obiegu', nazwa };
+      // `id` wraca także przy duplikacie: telefon, który gra tą paczką, musi
+      // znać jej identyfikator, żeby dało się ją ocenić (ADR 0028, aneks 2026-09-09).
+      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-obiegu', nazwa, id: it.next().getId() };
     }
   }
   const utworzony = folder(FOLDERY.przeglad).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
   powiadomWlasciciela(utworzony, plik);
-  return { ok: true, status: 'przyjeta-do-przegladu', nazwa };
+  return { ok: true, status: 'przyjeta-do-przegladu', nazwa, id: utworzony.getId() };
 }
 
 function powiadomWlasciciela(plikDrive, zestaw) {
@@ -941,7 +954,16 @@ function zakonczGre(dane) {
 
 const MAKS_ZDARZEN_HOTSEAT = 400; // 8 graczy × 8 stacji × (dojście + odpowiedź) z zapasem
 
-function nazwaPlikuHotseat() {
+/**
+ * Nazwa pliku gry hot-seat.
+ *
+ * Z odciskiem (klucz idempotencji z aplikacji) nazwa jest STAŁA dla danej gry —
+ * powtórna wysyłka trafia na istniejący plik i most jej nie duplikuje. Bez
+ * odcisku (stara wersja aplikacji) zostaje nazwa losowa jak dotąd.
+ */
+function nazwaPlikuHotseat(odcisk) {
+  const o = String(odcisk == null ? '' : odcisk).replace(/[^a-z0-9]/gi, '').slice(0, 16);
+  if (o) return 'gra-hotseat-' + o + '.json';
   return 'gra-hotseat-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.json';
 }
 
@@ -1047,7 +1069,16 @@ function przyjmijGreHotseat(dane) {
       wyniki: {},
     };
     gra.wyniki = przeliczWyniki(gra); // premia hot-seat = 0 (gracze idą razem)
-    const plik = folder(FOLDERY.gryZakonczone).createFile(nazwaPlikuHotseat(), JSON.stringify(gra, null, 2), 'application/json');
+    // Idempotencja (zgłoszenie właściciela 2026-09-09): telefon wysyła kolejkę
+    // przy KAŻDYM starcie aplikacji, więc ta sama gra potrafi przyjść wiele
+    // razy. Plik o nazwie z odciskiem gry nadpisujemy zamiast zakładać drugi —
+    // inaczej katalog gier zakończonych puchnie, a ranking liczy grę wielokrotnie.
+    const katalog = folder(FOLDERY.gryZakonczone);
+    const nazwa = nazwaPlikuHotseat(dane.odcisk);
+    const istniejace = katalog.getFilesByName(nazwa);
+    const plik = istniejace.hasNext()
+      ? istniejace.next()
+      : katalog.createFile(nazwa, JSON.stringify(gra, null, 2), 'application/json');
     gra.idGry = plik.getId();
     zapiszGre(plik, gra);
     return { ok: true, idGry: gra.idGry, wyniki: gra.wyniki };

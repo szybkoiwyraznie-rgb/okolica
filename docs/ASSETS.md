@@ -163,8 +163,17 @@ kod ↔ ten plik oraz reweryfikacja polityk „na dziś".
 
 - OSM Tile Usage Policy: bez zmian istotnych dla nas — ważny UA *albo*
   Referer, widoczna atrybucja, cache lokalny ≥7 dni/Expires, zakaz ciężkiego
-  użycia. Nasz profil (kilkanaście kafelków na ekran, cache przeglądarki)
+  użycia. Nasz profil (jeden ekran kafelków naraz, cache przeglądarki)
   mieści się w polityce; brak akcji.
+
+  **Korekta 2026-09-09 (zgłoszenie D1).** Sufit `MAX_KAFELEK` podniesiony z 48
+  do 120. Powód: 48 to było mniej, niż potrzebuje JEDEN ekran desktopowy
+  (1920×900 przy zoomie 16 = siatka 9×6 z marginesem, czyli 54 kafelki), więc
+  limit nie chronił przed hurtowym pobieraniem, tylko wycinał dolny-prawy róg
+  mapy. 120 nadal odpowiada jednemu ekranowi z zapasem (QHD w orientacji
+  poziomej), a nie pobieraniu obszarów na zapas — profil „lekki” zostaje bez
+  zmian. Przycinanie odrzuca teraz kafelki najdalsze od środka, więc nawet po
+  przekroczeniu sufitu widoczny obszar jest pełny.
 - Overpass: instancja główna (FOSSGIS) bez zmian; **uwaga**: pojedynczy raport
   użytkownika (Reddit, 2026-03) opisuje 403/time-outy na instancjach
   zapasowych (VK Maps, private.coffee), podczas gdy blog GIS (2026-04)

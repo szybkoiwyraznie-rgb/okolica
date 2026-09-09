@@ -9,7 +9,9 @@ zależności npm. Treść pytań pochodzi z zewnątrz (model AI) i wchodzi przez
 pętlę protokołu PYT (ADR 0006, `docs/PROTOKOL.md`).
 
 ```
-index.html                  — powłoka UI: ekrany (setup → prompt → paczka → gra → wynik),
+index.html                  — powłoka UI: ekran startowy z intro nad mapą, mapa jako
+                              trwałe tło, kroki gry (setup → pozycja → stacje → prompt →
+                              paczka → gra → wynik), warstwy rankingów i prywatności,
                               stopka z wersją protokołu, baner file://
 sw.js                       — Service Worker (M10): offline skorupa + kafelki
                               ostatniej okolicy (cache-first, limit i ewikcja;
@@ -187,17 +189,19 @@ commit i nowa wersja aplikacji.
 5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka;
    ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
    SVG w `index.html` (zero plików zewnętrznych, ADR 0001 pkt 1/ADR 0011).
-6. Organizator ↔ model AI (poza systemem); odpowiedź wraca wklejeniem albo
-   plikiem (`plik-odpowiedz`).
-7. Wklejona odpowiedź → `protokol.walidujPaczke()` → usterki (z przyciskiem
-   „skopiuj poprawkę") albo przyjęcie. Przyjęta paczka OD RAZU zaczyna grę
+6. Organizator ↔ model AI (poza systemem); odpowiedź wraca **wklejeniem** —
+   palcem do `#pole-odpowiedz` albo przyciskiem „📋 Wklej ze schowka".
+   Import z pliku usunięty 2026-09-09 (ADR 0006, aneks trzeciej tury).
+7. Wklejenie samo odpala `protokol.walidujPaczke()` (nasłuch `paste`, bez
+   osobnego „Sprawdź") → usterki (z przyciskiem „skopiuj poprawkę") albo
+   przyjęcie. Przyjęta paczka OD RAZU zaczyna grę
    (decyzja 2026-09-07): podgląd, ściąganie i edycja zniknęły z ekranu —
    to zadania właściciela na Drive, dokąd zestaw leci automatycznie
    w chwili przyjęcia (wysyłka domyślna, bez pytania o zgodę).
 8. `kodowanie.zapakujPaczke(paczka, WERSJA_PROTOKOLU)` → kontener `TO-paczka/2`
    → `trwalosc.zapiszPaczke()`; gra czyta pytania z kontenera i odsłania je
-   dopiero na stacjach. Import wcześniej ukrytej paczki ścieżką „⬆ Z pliku"
-   działa jak dawniej (M9).
+   dopiero na stacjach. Wcześniej ukrytą paczkę (kontener) można wkleić do tego
+   samego pola — `sprawdzOdpowiedz` próbuje najpierw `odpakujPaczke` (M9).
 
 ### B. Rozgrywka
 
@@ -217,7 +221,7 @@ commit i nowa wersja aplikacji.
    w odcinek.
 3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (filtr dokładności,
    kody P05/P06) → `dodajFix()` (historia, maks. 40 pomiarów) → `stanDojscia()`
-   (próg `max(25 m, 1,2 × accuracy)` ograniczony do 100 m + dwa kolejne
+   (próg 25 m na stałe, ADR 0004 aneks 2026-09-09, + dwa kolejne
    trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`:
    tryb dojścia i dokładność (bez kary, ADR 0023). GPS i symulacja dojścia
    (tryb testowy) karmią aplikację tym samym lejem `przyjmijFix()`; symulacja
@@ -310,9 +314,9 @@ commit i nowa wersja aplikacji.
 - **Ukrywanie paczki**: obfuskacja bez klucza — UTF-8 JSON ⊕ strumień bajtów
   z stałego ziarna → base64url → kontener `TO-paczka/2` + suma kontrolna FNV-1a
   (ADR 0007). To bariera przed przypadkowym wglądem, **nie szyfrowanie**.
-- **Kryterium dojścia**: `progDojsciaM(accuracy) = ogranicz(1,2 × accuracy,
-  25 m, 100 m)` (brak dokładności → 100 m, czyli najostrzej) plus dwa kolejne
-  fixy w progu — debounce przeciw odbiciom sygnału (`geo.czyDotarl`, opakowane
+- **Kryterium dojścia**: `progDojsciaM() = 25 m` na stałe (ADR 0004 aneks
+  2026-09-09 — dokładność fixu nie rozluźnia już progu: zaliczenie ze 100 m
+  to inne miejsce) plus dwa kolejne fixy w progu — debounce przeciw odbiciom sygnału (`geo.czyDotarl`, opakowane
   przez `pozycja.stanDojscia` zdaniem dla gracza: ile metrów zostało i dlaczego
   stacja się nie zapala). Fix niedokładny dostaje ostrzeżenie, ale nie jest
   odrzucany (ADR 0004 pkt 2 i 4).

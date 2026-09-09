@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-40';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-40';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-51';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-51';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -31,24 +31,25 @@ import {
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
   SZABLON_WERSJA_BEZ_WERYFIKACJI,
-  WERSJA_PROTOKOLU_REV2,
-  WERSJA_PROTOKOLU_REV3,
+  WARIANTY_Z_KODEM,
+  WERSJA_PROTOKOLU_REV4,
+  WERSJA_PROTOKOLU_REV5,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-40';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-40';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-40';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-40';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-40';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-40';
+} from './protokol.js?v=m12-51';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-51';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-51';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-51';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-51';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-51';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-40';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-40';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-40';
+} from './zestawy.js?v=m12-51';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-51';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-51';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -68,17 +69,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-40';
-import { utworzMape } from './mapa.js?v=m12-40';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-40';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-40';
-import { adresMostu, stanMostu } from './most.js?v=m12-40';
+} from './sieci.js?v=m12-51';
+import { utworzMape } from './mapa.js?v=m12-51';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-51';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-51';
+import { adresMostu, stanMostu } from './most.js?v=m12-51';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-40';
+} from './oceny.js?v=m12-51';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -197,6 +198,28 @@ function $(id) {
 
 const EKRANY = ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra'];
 
+/**
+ * Stan ikon w belce (zgłoszenie właściciela F3, 2026-09-09).
+ *
+ * Ikony ⚙ START GRY i 🏆 Rankingi zachowują się teraz jak 🔔 Sygnały: gdy ich
+ * warstwa jest otwarta, ikona jest „wciśnięta” (`aria-pressed="true"`, a CSS
+ * daje jej tło akcentu). Powtórny klik w podświetloną ikonę zamyka warstwę.
+ * Jedno miejsce liczy stan, bo warstwy otwiera i zamyka kilka ścieżek
+ * (przycisk, krzyżyk, Escape, „wróć”) — rozsypanie tego po nich gwarantowałoby
+ * ikonę świecącą nad zamkniętą warstwą.
+ */
+function odswiezStanIkonBelki() {
+  const ustaw = (id, wlaczona) => {
+    const el = $(id);
+    if (el) el.setAttribute('aria-pressed', String(Boolean(wlaczona)));
+  };
+  const ranking = $('ekran-ranking');
+  ustaw('przycisk-ranking', ranking && ranking.hidden === false);
+  // „START GRY” świeci na całej ścieżce przygotowania gry (ekrany 1–5), bo to
+  // ta sama warstwa setupu — nie tylko na pierwszym jej kroku.
+  ustaw('przycisk-setup', EKRANY.includes(STAN.ekran) && (!ranking || ranking.hidden !== false));
+}
+
 function pokazEkran(nazwa) {
   ukryjStart(); // krok gry chowa okno startowe (poza nim okno nie ma czego przykrywać)
   STAN.ekran = nazwa;
@@ -214,6 +237,7 @@ function pokazEkran(nazwa) {
     }
   }
   odswiezMapeEkranu(nazwa);
+  odswiezStanIkonBelki();
   window.scrollTo({ top: 0 });
 }
 
@@ -235,6 +259,7 @@ function pokazMapeStartowa() {
     }
   }
   odswiezMapeEkranu('pozycja'); // mapa na spodzie to instancja pozycji
+  odswiezStanIkonBelki();
   window.scrollTo({ top: 0 });
 }
 
@@ -267,6 +292,7 @@ function pokazPrywatnosc() {
   $('ekran-ranking').hidden = true;
   $('ekran-prywatnosc').hidden = false;
   $('geokodacja-zapasowa').checked = localStorage.getItem('okolica:geokodacja-zapasowa') === '1';
+  odswiezStanIkonBelki(); // prywatność gasi ikony obu warstw (F3)
   window.scrollTo({ top: 0 });
 }
 
@@ -755,6 +781,9 @@ function polecenieHotseat() {
     pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
     gracze: (r.gracze ?? []).map((g) => ({ id: g.id, pseudonim: g.imie })),
     dziennik: r.dziennik,
+    // Ten sam odcisk gry co lokalny rejestr wysłanych — most po nim rozpoznaje
+    // powtórkę i nie zakłada drugiego pliku (zgłoszenie właściciela 2026-09-09).
+    kluczGry: kluczGryHotseat(r),
   });
 }
 
@@ -1693,6 +1722,10 @@ function renderujGre({ panele = true } = {}) {
   }
 
   if (panele) {
+    // Pauza (albo cudza tura) w trakcie czytania wyjaśnienia zmienia sens
+    // przycisku „dalej" — musi przestać obiecywać start odcinka.
+    const dalej = $('przycisk-nastepna-stacja');
+    if (!dalej.hidden && r.faza !== FAZY.koniec) dalej.textContent = etykietaPrzyciskuDalej(r);
     $('przycisk-start-odcinka').disabled = STAN.graPauza;
     $('przycisk-symulacja-gra').hidden = !(STAN.trybTestowy && r.faza === FAZY.odcinek);
     $('przycisk-pomin-stacje').disabled = r.faza !== FAZY.odcinek || STAN.graPauza; // ADR 0015 pkt 2: tylko w drodze
@@ -1711,6 +1744,62 @@ function czytajRejestrZestawow() {
   if (typeof localStorage === 'undefined') return nowyRejestr();
   const { rejestr } = walidujRejestrSurowy(localStorage.getItem(KLUCZ_REJESTRU) ?? '');
   return rejestr;
+}
+
+/**
+ * Identyfikator paczki na Drive zapamiętany przy skrócie kontenera.
+ *
+ * ADR 0028 aneks (właściciel 2026-09-09): każda paczka jest na Drive — ta
+ * z repozytorium przychodzi z `id` we wpisie indeksu, ta wygenerowana dostaje
+ * `id` w odpowiedzi mostu na wysyłkę. Zapamiętanie go przy skrócie sprawia, że
+ * druga gra z pamięci telefonu też pozwala ocenić pytania.
+ */
+const KLUCZ_ID_PACZEK = 'okolica:paczki-drive';
+const MAKS_ID_PACZEK = 24;
+
+function czytajIdPaczek() {
+  if (typeof localStorage === 'undefined') return {};
+  try {
+    const surowy = JSON.parse(localStorage.getItem(KLUCZ_ID_PACZEK) ?? 'null');
+    if (!surowy || typeof surowy !== 'object' || typeof surowy.pary !== 'object' || !surowy.pary) return {};
+    const czyste = {};
+    for (const [skrot, id] of Object.entries(surowy.pary)) {
+      if (typeof skrot === 'string' && typeof id === 'string' && id) czyste[skrot] = id;
+    }
+    return czyste;
+  } catch {
+    return {}; // śmieci w localStorage nie kładą aplikacji (LESSONS L10)
+  }
+}
+
+function zapamietajIdPaczkiDlaZestawu(skrot, id) {
+  if (typeof localStorage === 'undefined') return;
+  if (typeof skrot !== 'string' || !skrot || typeof id !== 'string' || !id) return;
+  const pary = czytajIdPaczek();
+  delete pary[skrot]; // najświeższy wpis idzie na koniec (proste LRU)
+  pary[skrot] = id;
+  const klucze = Object.keys(pary).slice(-MAKS_ID_PACZEK);
+  const przyciete = {};
+  for (const k of klucze) przyciete[k] = pary[k];
+  try {
+    localStorage.setItem(KLUCZ_ID_PACZEK, JSON.stringify({ schemat: 'paczki-drive/1', pary: przyciete }));
+  } catch {
+    /* pełna pamięć telefonu nie może zepsuć gry — ocena po prostu nie zadziała */
+  }
+}
+
+function idPaczkiDlaZestawu(skrot) {
+  return typeof skrot === 'string' && skrot ? (czytajIdPaczek()[skrot] ?? '') : '';
+}
+
+/**
+ * Panel ocen po spóźnionym poznaniu `id` paczki: wysyłka na Drive kończy się
+ * PO tym, jak gracz może już patrzeć na pytanie, więc kciuki trzeba odsłonić
+ * bez czekania na następny render.
+ */
+function odswiezPanelOcenPoIdPaczki() {
+  if (!STAN.ocenianePytanieId) return;
+  renderujPanelOcen({ id: STAN.ocenianePytanieId });
 }
 
 /** Meta dopasowania z bieżącej konfiguracji i pozycji (wspólna dla zapisu i eksportu). */
@@ -2010,7 +2099,11 @@ function grajZZestawemLokalnym(skrot) {
     odswiezPropozycjeZestawow();
     return;
   }
-  STAN.paczkaRepoId = ''; // ADR 0028: paczka z telefonu nie zbiera ocen
+  // ADR 0028 aneks (właściciel 2026-09-09): paczka z pamięci telefonu też jest
+  // na Drive — jeśli znamy jej identyfikator, kciuki działają jak przy paczce
+  // wziętej z repozytorium. Nie znamy = panel zostaje schowany (jak dotąd).
+  STAN.paczkaRepoId = idPaczkiDlaZestawu(zestaw.kontener?.skrot);
+  if (STAN.paczkaRepoId && !STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
   przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: 'z tego telefonu' });
 }
 
@@ -2033,6 +2126,9 @@ function grajZZestawemZRepo(wpis, urlIndeksu) {
       // pliku Drive i token tej gry, a licznik „użyta w X grach" dostaje ping.
       STAN.paczkaRepoId = typeof wpis.id === 'string' ? wpis.id : '';
       if (!STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
+      // Druga gra tą samą paczką idzie już z pamięci telefonu — bez tego wpisu
+      // straciłaby prawo do oceny (ADR 0028 aneks 2026-09-09).
+      zapamietajIdPaczkiDlaZestawu(zestaw.kontener?.skrot, STAN.paczkaRepoId);
       wyslijUzycieWTle(STAN.paczkaRepoId);
       przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
     })
@@ -2449,12 +2545,7 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
   }
   $('gra-wynik-odpowiedzi').hidden = false;
   $('przycisk-nastepna-stacja').hidden = false;
-  const faza = wynik.stan.faza;
-  $('przycisk-nastepna-stacja').textContent = faza === FAZY.koniec
-    ? '🏁 Zobacz wynik →'
-    : faza === FAZY.pytanie
-      ? 'Następne pytanie →'
-      : 'Następna stacja →';
+  $('przycisk-nastepna-stacja').textContent = etykietaPrzyciskuDalej(wynik.stan);
   // Paczka bez źródeł (rev3) nie ma „źródeł poniżej" — status nie może ich obiecywać.
   const maZrodla = Array.isArray(pytanie.zrodla) && pytanie.zrodla.length > 0;
   status(dobrze
@@ -2464,12 +2555,51 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
   zapiszGre();
 }
 
-/** „Następna stacja/pytanie": domyka pokaz wyjaśnienia i przełącza fazę. */
+/**
+ * Zgłoszenie właściciela 2026-09-09: między odpowiedzią a wyjściem w drogę były
+ * DWA kliknięcia — „Następna stacja →", a po nim jeszcze „▶ Idę do stacji X" na
+ * panelu oczekiwania. Na telefonie w marszu to jeden klik za dużo, więc przycisk
+ * pod wyjaśnieniem od razu startuje odcinek i mówi, kto i dokąd idzie.
+ *
+ * Automatu NIE MA tam, gdzie odebrałby graczowi decyzję albo złamał regułę:
+ * w pauzie, w wyścigu (ADR 0027 część B: gracz sam wybiera stację) i w turach,
+ * gdy droga należy do kogoś innego. Wtedy zostaje stary panel A ze startem.
+ */
+function czyStartPoDalej() {
+  if (STAN.graPauza) return false;
+  const m = STAN.multi;
+  if (!m) return true;
+  const gra = m.gra;
+  if (!gra || gra.stan !== 'trwa') return true;
+  if (gra.tryb === TRYBY_GRY.wyscig) return false; // wolna kolejność — wybór należy do gracza
+  if (gra.tryb === TRYBY_GRY.tury) return biezacyGraczTury(gra) === m.graczId;
+  return true;
+}
+
+/** Napis na przycisku pod wyjaśnieniem — zależny od fazy PO zapisaniu odpowiedzi. */
+function etykietaPrzyciskuDalej(stan) {
+  if (stan.faza === FAZY.koniec) return '🏁 Zobacz wynik →';
+  if (stan.faza === FAZY.pytanie) return 'Następne pytanie →';
+  if (!czyStartPoDalej()) return 'Następna stacja →';
+  const pod = podglad(stan);
+  const indeks = stan.stacje.findIndex((s) => s.id === stan.biezacaStacja);
+  const kto = pod.gracz ? `${pod.gracz.imie}, ` : '';
+  return `▶ ${kto}stacja ${indeks + 1} — idę →`;
+}
+
+/**
+ * „Następna stacja/pytanie": domyka pokaz wyjaśnienia, przełącza fazę i — jeśli
+ * wolno (patrz `czyStartPoDalej`) — od razu otwiera odcinek, bez drugiego klika.
+ */
 function nastepnaStacja() {
   const r = STAN.rozgrywka;
   if (!r) return;
   renderujGre();
-  if (r.faza === FAZY.pytanie) renderujPytanie();
+  if (r.faza === FAZY.pytanie) {
+    renderujPytanie();
+    return;
+  }
+  if (r.faza === FAZY.przygotowanie && czyStartPoDalej()) startOdcinkaGry();
 }
 
 /* ----------------------------------------- M6/R6: trwałość i wznowienie gry */
@@ -2823,7 +2953,7 @@ function pokazWyniki() {
     opis.textContent = ' Pytania zweryfikowane w sieci (fact check)';
     fcEl.append(znaczekFactcheck(), opis);
   } else {
-    fcEl.textContent = 'Pytania z pamięci modelu (bez fact-check — możliwe zmyślone fakty)';
+    fcEl.textContent = 'Pytania bez wymuszonego fact-checku — model nie musiał sprawdzać faktów w sieci';
   }
 
   // 2. ranking — tabela jak w M6 (miejsce, gracz, punkty, poprawne)
@@ -3013,7 +3143,8 @@ async function eksportujWynikObraz(udostepnij = false) {
 
 function budujPromptEkran() {
   // ADR 0032: checkbox wybiera wariant — domyślnie (pusty) pytania bez
-  // weryfikacji z pamięci modelu; zaznaczony to twarda kwerenda w sieci.
+  // weryfikacji (model sam decyduje, czy sprawdzi w sieci); zaznaczony to
+  // twarda, wymuszona kwerenda dla każdego faktu.
   const factcheck = $('prompt-factcheck').checked === true;
   STAN.promptFactcheck = factcheck;
   const wynik = zbudujPrompt({
@@ -3026,7 +3157,7 @@ function budujPromptEkran() {
   STAN.prompt = wynik.prompt;
   $('pole-prompt').value = wynik.prompt ?? '';
   $('prompt-licznik').textContent = wynik.prompt
-    ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji · protokół ${factcheck ? WERSJA_PROTOKOLU_REV2 : WERSJA_PROTOKOLU_REV3}`
+    ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji · protokół ${factcheck ? WERSJA_PROTOKOLU_REV4 : WERSJA_PROTOKOLU_REV5}`
     : 'prompt nie został zbudowany';
   $('prompt-podglad-naglowek').textContent = `Pokaż treść promptu (${factcheck ? 'z fact check' : 'bez fact-check'})`;
   $('prompt-tryb-opis').textContent = factcheck
@@ -3127,8 +3258,12 @@ function oczekiwane() {
   };
 }
 
-function sprawdzOdpowiedz() {
-  const tekst = $('pole-odpowiedz').value;
+/**
+ * Walidacja i przyjęcie paczki. `tekstZewnetrzny` podaje treść z pominięciem
+ * DOM (droga ze schowka); bez argumentu bierze zawartość pola awaryjnego.
+ */
+function sprawdzOdpowiedz(tekstZewnetrzny = null) {
+  const tekst = typeof tekstZewnetrzny === 'string' ? tekstZewnetrzny : $('pole-odpowiedz').value;
   // Najpierw próba odczytania ukrytej paczki (kontener TO-paczka/2 albo sam
   // blob), potem jawna odpowiedź modelu. `odpakujPaczke` nie rzuca wyjątków —
   // wklejony tekst bywa śmieciem i UI ma to pokazać komunikatem (ADR 0007).
@@ -3151,17 +3286,19 @@ function sprawdzOdpowiedz() {
     STAN.paczka = null;
     renderujUsterki([blad]);
     $('przycisk-poprawka').hidden = false;
+    $('wklejka-status').textContent = 'Nie udało się odczytać tej treści — szczegóły niżej.';
     status('Odpowiedź odrzucona na etapie odczytu (parsowanie JSON albo kontener).');
     return;
   }
 
   // Q2 (PROTOKOL §3.4): wariant odwrócony odkodowujemy PRZED walidacją —
   // dalej płynie postać czytelna z markerem PYT/1.0.
+  // B2 (2026-09-09): bieżące warianty rev4/rev5 NIE odwracają tekstu — kodowany
+  // jest tylko numer poprawnej odpowiedzi. Odwracanie czytamy dalej, bo paczki
+  // rev1/rev2/rev3 leżą na Drive i muszą dać się otworzyć.
   const bylaOdwrocona = czyPaczkaOdwrocona(paczka);
-  let wariant = 'rev1';
-  if (paczka.protokol === WERSJA_PROTOKOLU_REV2) wariant = 'rev2';
-  if (paczka.protokol === WERSJA_PROTOKOLU_REV3) wariant = 'rev3';
-  const robocza = (paczka.protokol === WERSJA_PROTOKOLU_REV2 || paczka.protokol === WERSJA_PROTOKOLU_REV3)
+  const wariant = String(paczka.protokol ?? '').replace('PYT/1.0-', '') || 'rev1';
+  const robocza = WARIANTY_Z_KODEM.includes(paczka.protokol)
     ? odkodujPaczkeRev2(paczka)
     : odkodujPaczkeRev1(paczka);
   const usterki = walidujPaczke(robocza, oczekiwane());
@@ -3176,6 +3313,7 @@ function sprawdzOdpowiedz() {
     $('wynik-naglowek').textContent = `Paczka odrzucona — usterek: ${usterki.length}`;
     renderujUsterki(usterki);
     $('przycisk-poprawka').hidden = false;
+    $('wklejka-status').textContent = `Paczka ma ${usterki.length} usterek — szczegóły i poprawka niżej.`;
     status('Paczka odrzucona przez walidator (protokół PYT §6).');
     return;
   }
@@ -3185,12 +3323,13 @@ function sprawdzOdpowiedz() {
   const weryfikacja = czyWariantFactcheck(robocza) ? 'fact check' : 'bez fact-check';
   $('wynik-naglowek').textContent = bylaOdwrocona
     ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana; ${weryfikacja})`
-    : `Paczka przyjęta (${weryfikacja})`;
+    : `Paczka przyjęta (${wariant === 'rev1' ? '' : `${wariant}, `}${weryfikacja})`;
   $('przycisk-poprawka').hidden = true;
   renderujUsterki([]);
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
+  $('wklejka-status').textContent = '';
   wyslijZestawNaDrive();
   // Decyzja właściciela 2026-09-07: poprawna paczka = OD RAZU gra. Podgląd,
   // ściąganie i edycja nie są graczowi potrzebne — to zadania właściciela
@@ -3230,6 +3369,15 @@ function wyslijZestawNaDrive() {
   })
     .then((odp) => odp.json().catch(() => ({})))
     .then((wynik) => {
+      // ADR 0028 aneks (właściciel 2026-09-09): KAŻDA paczka jest na Drive, więc
+      // każdą wolno ocenić. Most oddaje `id` pliku także przy duplikacie —
+      // zapamiętujemy je, inaczej łapki nie miałyby czego oceniać.
+      if (wynik?.ok && typeof wynik.id === 'string' && wynik.id) {
+        STAN.paczkaRepoId = wynik.id;
+        if (!STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
+        zapamietajIdPaczkiDlaZestawu(STAN.kontenerPaczki?.skrot, wynik.id);
+        odswiezPanelOcenPoIdPaczki();
+      }
       if (wynik?.ok && wynik.status === 'przyjeta-do-przegladu') {
         status('Paczka przyjęta i WYSŁANA na Drive: czeka na Twój przegląd — e-mail z linkiem przyjdzie za chwilę.');
       } else if (wynik?.ok) {
@@ -4120,7 +4268,7 @@ function renderujPanelMulti() {
     opis.textContent = ' Pytania zweryfikowane w sieci (fact check)';
     fcMulti.append(znaczekFactcheck(), opis);
   } else {
-    fcMulti.textContent = 'Pytania z pamięci modelu (bez fact-check)';
+    fcMulti.textContent = 'Pytania bez wymuszonego fact-checku';
   }
   renderujWyborStacji(gra, r, graSieToczy);
   // tury: przycisk drogi zablokowany, dopóki idzie ktoś inny (serwer i tak pilnuje)
@@ -4226,6 +4374,7 @@ function pokazRankingi({ bezPobierania = false } = {}) {
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-prywatnosc').hidden = true;
   $('ekran-ranking').hidden = false;
+  odswiezStanIkonBelki();
   window.scrollTo({ top: 0 });
   if (!bezPobierania) void pobierzRankingi();
 }
@@ -4234,6 +4383,24 @@ function wrocZRankingu() {
   $('ekran-ranking').hidden = true;
   if (STAN.powrotZRankingu === 'mapa') { pokazMapeStartowa(); return; }
   pokazEkran(STAN.powrotZRankingu ?? 'setup');
+}
+
+/**
+ * Klik w ikonę belki: otwiera warstwę albo — gdy ta już świeci — zamyka ją
+ * i wraca na mapę (F3). Zamknięcie setupu wraca na mapę startową, bo to jest
+ * spód aplikacji; zamknięcie rankingów wraca tam, skąd gracz przyszedł.
+ */
+function przelaczSetup() {
+  if (EKRANY.includes(STAN.ekran) && $('ekran-ranking')?.hidden !== false) {
+    pokazMapeStartowa();
+    return;
+  }
+  pokazEkran('setup');
+}
+
+function przelaczRankingi() {
+  if ($('ekran-ranking')?.hidden === false) { wrocZRankingu(); return; }
+  pokazRankingi();
 }
 
 /** Adres mostu do rankingów (ADR 0020): ten sam web app co repozytorium paczek i gry. */
@@ -4352,7 +4519,12 @@ function renderujRankingi() {
     const tr = document.createElement('tr');
     const td = document.createElement('td');
     td.setAttribute('colspan', '5');
-    td.textContent = 'Brak zakończonych gier w tej kategorii — zapełni się po pierwszych rozgrywkach.';
+    // Zgłoszenie właściciela (2026-09-09): „puste rankingi” bez wskazówki, czy
+    // to brak gier na moście, czy filtr kategorii. Rozdzielamy oba przypadki —
+    // pusty ekran musi mówić, czego brakuje (LESSONS L6).
+    td.textContent = wiersze.length
+      ? 'Brak zakończonych gier w tej kategorii — wybierz inną albo zajrzyj do zakładki „Ogólny”.'
+      : 'Most Drive nie ma jeszcze ani jednej zakończonej gry. Wynik trafia tam po zakończeniu rozgrywki, gdy przynajmniej jeden gracz ma potwierdzony profil.';
     tr.appendChild(td);
     tbody.appendChild(tr);
     return;
@@ -4445,16 +4617,23 @@ function start() {
     STAN.odstepOverpassMs = 0;
   }
 
-  $('przycisk-setup').addEventListener('click', () => pokazEkran('setup')); // START GRY w nagłówku
+  $('przycisk-setup').addEventListener('click', przelaczSetup); // START GRY w nagłówku (F3: przełącznik)
   $('ekran-start').addEventListener('click', ukryjStart); // okno startowe: klik gdziekolwiek zamyka
-  $('przycisk-start-zacznij').addEventListener('click', ukryjStart); // to samo jawnym przyciskiem
+  // „▶ Zacznij” (właściciel 2026-09-09): jawny przycisk intro otwiera setup,
+  // dokładnie jak ⚙ START GRY w belce — samo zamknięcie okna zostawiało gracza
+  // na pustej mapie i kazało szukać drugiego przycisku. `stopPropagation`, bo
+  // klik bąbelkuje do warstwy, której handler tylko zamyka okno.
+  $('przycisk-start-zacznij').addEventListener('click', (z) => {
+    z.stopPropagation?.();
+    pokazEkran('setup'); // sam woła ukryjStart()
+  });
   document.addEventListener('keydown', (z) => { if (z.key === 'Escape') ukryjStart(); });
   $('przycisk-motyw').addEventListener('click', przelaczMotyw);
   $('przycisk-sygnaly').addEventListener('click', przelaczSygnaly);
   $('przycisk-sygnaly').setAttribute('aria-pressed', String(sygnalyWlaczone()));
   zarejestrujServiceWorker();
   $('przycisk-prywatnosc').addEventListener('click', pokazPrywatnosc);
-  $('przycisk-ranking').addEventListener('click', pokazRankingi); // M12/P6
+  $('przycisk-ranking').addEventListener('click', przelaczRankingi); // M12/P6 (F3: przełącznik)
   $('przycisk-wrocz-ranking').addEventListener('click', wrocZRankingu);
   $('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu); // krzyżyk w rogu warstwy
   $('przycisk-ranking-odswiez').addEventListener('click', () => { void pobierzRankingi(); });
@@ -4603,24 +4782,44 @@ function start() {
   $('przycisk-dalej-paczka').addEventListener('click', () => pokazEkran('paczka'));
 
   $('przycisk-wstecz-prompt').addEventListener('click', () => pokazEkran('prompt'));
+  // Zgłoszenie właściciela 2026-09-09 (trzecia tura): „ma zostać pole i guzik
+  // »Wklej ze schowka« → po wklejeniu czegokolwiek ma się automatycznie
+  // zatwierdzać". Wklejenie jest już decyzją organizatora — osobne „Sprawdź
+  // i przyjmij" tylko dokładało klik w terenie, więc zniknęło razem z importem
+  // z pliku (ścieżka, z której nikt nigdy nie korzystał).
   $('przycisk-wklej').addEventListener('click', async (e) => {
     try {
       const tekst = await navigator.clipboard.readText();
+      if (!tekst.trim()) {
+        $('wklejka-status').textContent = 'Schowek jest pusty — skopiuj najpierw całą odpowiedź modelu w czacie.';
+        return;
+      }
       $('pole-odpowiedz').value = tekst;
-      e.currentTarget.textContent = '✓ wklejono';
+      sprawdzOdpowiedz(tekst);
     } catch (err) {
       void err;
-      e.currentTarget.textContent = '⚠ schowek zablokowany — wklej palcem (przytrzymaj pole)';
+      // Schowek bywa zablokowany (ENVIRONMENT §5) — wtedy zostaje wklejenie
+      // palcem do pola obok, które i tak samo się zatwierdzi. L6: mówimy o tym.
+      e.currentTarget.textContent = '⚠ schowek zablokowany';
+      $('wklejka-status').textContent = 'Przeglądarka nie dała dostępu do schowka — wklej treść palcem: przytrzymaj pole powyżej i wybierz „Wklej".';
+      window.setTimeout(() => { e.currentTarget.textContent = '📋 Wklej ze schowka'; }, 3000);
     }
-    window.setTimeout(() => { e.currentTarget.textContent = '📋 Wklej ze schowka'; }, 3000);
   });
-  $('plik-odpowiedz').addEventListener('change', async (e) => {
-    const plik = e.target.files?.[0];
-    if (!plik) return;
-    $('pole-odpowiedz').value = await plik.text();
-    status(`Wczytano odpowiedź z pliku ${plik.name}.`);
+
+  /**
+   * Wklejenie palcem (Ctrl+V albo menu dotykowe) waliduje samo z siebie.
+   *
+   * Treść bierzemy z `clipboardData`, NIE z pola: `paste` leci PRZED wstawieniem
+   * tekstu, więc `pole.value` jest w tej chwili jeszcze puste (albo ma poprzednią
+   * zawartość). Domyślnej akcji nie blokujemy — pole ma pokazać, że coś w nim
+   * jest, a `sprawdzOdpowiedz` i tak je wyczyści po przyjęciu paczki.
+   */
+  $('pole-odpowiedz').addEventListener('paste', (e) => {
+    const tekst = e.clipboardData?.getData('text') ?? '';
+    if (!tekst.trim()) return; // wklejenie obrazka albo pustki nie udaje paczki
+    $('pole-odpowiedz').value = tekst;
+    sprawdzOdpowiedz(tekst);
   });
-  $('przycisk-sprawdz').addEventListener('click', sprawdzOdpowiedz);
   $('przycisk-poprawka').addEventListener('click', (e) => {
     const tekst = poprawkaDlaModelu(STAN.usterkiPaczki, { liczbaPytan: liczbaPytan(STAN.konfig), factcheck: STAN.poprawkaFactcheck });
     kopiujTekst(tekst, e.currentTarget, '⧉ Kopiuj poprawkę do modelu');

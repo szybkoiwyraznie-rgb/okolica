@@ -283,3 +283,40 @@ test('most: premia hot-seat = 0 po obu stronach (kopia pilnowana testem)', () =>
   const wynikiKlient = przeliczWynikiKlient(gra);
   assert.deepEqual(wynikiMost['2'].punkty, wynikiKlient['2'].punkty, 'punkty identyczne po obu stronach');
 });
+
+/**
+ * Zgłoszenie właściciela (2026-09-09): na Drive przybywały pliki `gra-hotseat-*`,
+ * choć nikt nie kończył nowych gier. Kolejka z telefonu leci przy każdym starcie
+ * aplikacji, więc most MUSI rozpoznać powtórkę zamiast zakładać kolejny plik.
+ */
+test('most: powtórna wysyłka tej samej gry hot-seat nie tworzy drugiego pliku', () => {
+  const most = mostHotseat();
+  const polecenie = polecenieHotseat();
+  polecenie.odcisk = 'a1b2c3d4';
+
+  const pierwsza = most.przyjmijGreHotseat(polecenie);
+  assert.equal(pierwsza.ok, true, `pierwszy zapis przyjęty (${pierwsza.blad ?? ''})`);
+  const poPierwszej = [...most.pliki.values()].length;
+
+  const druga = most.przyjmijGreHotseat(polecenie);
+  assert.equal(druga.ok, true, 'powtórka też kończy się sukcesem (klient nie widzi błędu)');
+  assert.equal([...most.pliki.values()].length, poPierwszej, 'ta sama gra = ten sam plik');
+  assert.equal(druga.idGry, pierwsza.idGry, 'powtórka wskazuje ten sam plik gry');
+
+  const ranking = most.rankingi();
+  assert.equal(ranking.wiersze.length, 2, 'ranking liczy grę raz, nie dwa razy');
+
+  // Inna gra (inny odcisk) nadal zakłada własny plik.
+  const inna = polecenieHotseat({ gracze: ['Ola'] });
+  inna.odcisk = '99887766';
+  assert.equal(most.przyjmijGreHotseat(inna).ok, true, 'inna gra przyjęta');
+  assert.equal([...most.pliki.values()].length, poPierwszej + 1, 'inna gra = nowy plik');
+});
+
+test('most: gra hot-seat bez odcisku (stara aplikacja) nadal działa', () => {
+  const most = mostHotseat();
+  const wynik = most.przyjmijGreHotseat(polecenieHotseat());
+  assert.equal(wynik.ok, true, `zapis bez odcisku przyjęty (${wynik.blad ?? ''})`);
+  const nazwa = [...most.pliki.values()][0].nazwa;
+  assert.match(nazwa, /^gra-hotseat-.*\.json$/, 'nazwa jak dotąd — losowa');
+});

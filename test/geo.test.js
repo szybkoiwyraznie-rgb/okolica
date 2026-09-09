@@ -120,13 +120,19 @@ test('geohash: wartość referencyjna z Wikipedii i stabilność prefiksów', ()
   assert.throws(() => geohash(999, 0, 5), TypeError);
 });
 
-test('progDojsciaM: podłoga 25 m, sufit 100 m, mnożnik 1,2 (ADR 0004 pkt 2)', () => {
-  assert.equal(progDojsciaM(5), 25);
-  assert.equal(progDojsciaM(10), 25);
-  assert.equal(progDojsciaM(50), 60);
-  assert.equal(progDojsciaM(200), 100);
-  assert.equal(progDojsciaM(undefined), 100);
-  assert.equal(progDojsciaM(50, { min: 10, max: 500, mnoznik: 2 }), 100);
+test('progDojsciaM: stałe 25 m niezależnie od dokładności (ADR 0004 pkt 2 po aneksie)', () => {
+  // Decyzja właściciela 2026-09-09: „Większy próg zaliczenia niż 25m nie ma
+  // sensu (…) nie powinniśmy zezwalać na zaliczenie ze 100m. To zupełnie inne
+  // miejsce." Dokładność fixu nie rozluźnia już progu — słaby sygnał daje
+  // ostrzeżenie P05 i przycisk „jestem na miejscu", nie cichą taryfę ulgową.
+  for (const accuracy of [3, 5, 10, 20, 50, 100, 200, 1000]) {
+    assert.equal(progDojsciaM(accuracy), 25, `accuracy ${accuracy} m nie zmienia progu`);
+  }
+  assert.equal(progDojsciaM(undefined), 25, 'brak dokładności też daje 25 m');
+  assert.equal(progDojsciaM(null), 25);
+  assert.equal(progDojsciaM(0), 25, 'zero i wartości bez sensu nie rozszerzają progu');
+  assert.equal(progDojsciaM(-5), 25);
+  assert.equal(progDojsciaM(50, { prog: 40 }), 40, 'próg zostaje parametrem (przyszłe polityki)');
 });
 
 test('czyDotarl: wymaga dwóch kolejnych trafień w progu', () => {
@@ -146,11 +152,23 @@ test('czyDotarl: wymaga dwóch kolejnych trafień w progu', () => {
   assert.ok(Math.abs(wynik.dystansM - 10) < 2);
 });
 
-test('czyDotarl: duża niedokładność rozszerza próg do 1,2 × accuracy', () => {
+test('czyDotarl: duża niedokładność NIE rozszerza progu (regresja 2026-09-09)', () => {
   const stacja = WARSZAWA;
-  const fix = przesunPunkt(WARSZAWA, 90, 55); // ~55 m od stacji
-  assert.equal(czyDotarl([{ lat: fix.lat, lon: fix.lon, accuracy: 20 }, { lat: fix.lat, lon: fix.lon, accuracy: 20 }], stacja).dotarl, false);
-  assert.equal(czyDotarl([{ lat: fix.lat, lon: fix.lon, accuracy: 60 }, { lat: fix.lat, lon: fix.lon, accuracy: 60 }], stacja).dotarl, true);
+  const fix = przesunPunkt(WARSZAWA, 90, 55); // ~55 m od stacji — poza progiem 25 m
+  const para = (accuracy) => [
+    { lat: fix.lat, lon: fix.lon, accuracy },
+    { lat: fix.lat, lon: fix.lon, accuracy },
+  ];
+  assert.equal(czyDotarl(para(20), stacja).dotarl, false, '55 m to za daleko przy dobrym sygnale');
+  assert.equal(czyDotarl(para(60), stacja).dotarl, false, 'i tak samo za daleko przy słabym — 55 m to inne miejsce');
+  assert.equal(czyDotarl(para(200), stacja).dotarl, false, 'nawet skrajnie słaby fix nie zalicza z 55 m');
+  assert.equal(czyDotarl(para(200), stacja).progM, 25, 'próg raportowany graczowi zostaje 25 m');
+
+  // Blisko stacji zalicza się niezależnie od zgłoszonej dokładności: sam fix
+  // bywa dobry mimo pesymistycznego `accuracy` (ocenFix go nie odrzuca).
+  const przy = przesunPunkt(WARSZAWA, 90, 15);
+  const paraPrzy = [{ lat: przy.lat, lon: przy.lon, accuracy: 200 }, { lat: przy.lat, lon: przy.lon, accuracy: 200 }];
+  assert.equal(czyDotarl(paraPrzy, stacja).dotarl, true, '15 m od stacji to dojście');
 });
 
 test('formatujWspolrzedne i ogranicz: format do promptu i zaciski', () => {

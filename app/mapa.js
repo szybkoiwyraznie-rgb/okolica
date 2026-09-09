@@ -15,7 +15,7 @@
  * `ekranPx = jednostkaSwiata * skala + przesuniecie`, a
  * `zoom = log2(skala * SZEROKOSC_SWIATA / ROZMIAR_KAFELKA)`.
  */
-import { PODKLADY } from './konfig.js?v=m12-40';
+import { PODKLADY } from './konfig.js?v=m12-51';
 import {
   ROZMIAR_KAFELKA,
   SZEROKOSC_SWIATA,
@@ -26,7 +26,7 @@ import {
   odwroc,
   projektuj,
   siatkaKafelkow,
-} from './geo.js?v=m12-40';
+} from './geo.js?v=m12-51';
 
 /** Przestrzeń nazw SVG (elementy SVG tworzy się przez `createElementNS`). */
 export const PRZESTRZEN_SVG = 'http://www.w3.org/2000/svg';
@@ -39,8 +39,14 @@ export const MARGINES_KAFELKOW = 1;
  * (`ASSETS` §1) dopuszcza „lekkie" użycie — kilkanaście kafelków na ekran —
  * więc przy bardzo małym zoomie i dużym panelu plan jest przycinany, a nie
  * rozciągany w nieskończoność.
+ *
+ * Zgłoszenie właściciela D1 (2026-09-09): na desktopie brakowało dolnego-prawego
+ * kafelka i kilku w najniższym rzędzie. 48 nie starczało na zwykły ekran Full HD:
+ * 1920×900 przy zoomie 16 to siatka 9×6 = 54 kafelki z marginesem. Sufit jest
+ * teraz liczony pod realne okno przeglądarki (z zapasem na obrót i panel boczny),
+ * a samo przycinanie przestało być row-major — patrz `planKafelkow`.
  */
-export const MAX_KAFELEK = 48;
+export const MAX_KAFELEK = 120;
 
 /** Najmniejsze powiększenie widoku (zoom 0 to cały świat w jednym kafelku). */
 export const ZOOM_MIN = 1;
@@ -210,17 +216,18 @@ export function planKafelkow(widok, rozmiar, podklad = 'osm') {
   const ty1 = Math.min(n - 1, siatka.ty1 + MARGINES_KAFELKOW);
   const rozmiarKafelkaSwiat = SZEROKOSC_SWIATA / n;
 
-  const kafelki = [];
-  let przyciete = false;
+  // D1 (2026-09-09): przycinanie NIE może być row-major. Stary kod przerywał
+  // pętlę po przekroczeniu sufitu, więc gdy plan był choćby o jeden kafelek za
+  // duży, znikał cały dolny rząd i prawy brzeg — dokładnie to, co właściciel
+  // widział na desktopie. Gdy trzeba przyciąć, odrzucamy kafelki NAJDALSZE od
+  // środka panelu: brakować zaczyna na obrzeżach marginesu, równomiernie ze
+  // wszystkich stron, a widoczny obszar zostaje pełny.
+  const wszystkie = [];
   for (let ty = ty0; ty <= ty1; ty += 1) {
     for (let tx = tx0; tx <= tx1; tx += 1) {
-      if (kafelki.length >= MAX_KAFELEK) {
-        przyciete = true;
-        break;
-      }
       const url = urlKafelka(podklad, siatka.z, tx, ty);
       if (url === null) return { ...puste, z: siatka.z, rozmiarKafelkaSwiat };
-      kafelki.push({
+      wszystkie.push({
         url,
         z: siatka.z,
         tx,
@@ -230,8 +237,21 @@ export function planKafelkow(widok, rozmiar, podklad = 'osm') {
         rozmiar: rozmiarKafelkaSwiat,
       });
     }
-    if (przyciete) break;
   }
+
+  const przyciete = wszystkie.length > MAX_KAFELEK;
+  if (!przyciete) return { kafelki: wszystkie, przyciete, z: siatka.z, rozmiarKafelkaSwiat };
+
+  // Środek widocznego zakresu (bez marginesu) w jednostkach siatki.
+  const srodkowyTx = (siatka.tx0 + siatka.tx1) / 2;
+  const srodkowyTy = (siatka.ty0 + siatka.ty1) / 2;
+  const odlegloscOdSrodka = (k) => (k.tx - srodkowyTx) ** 2 + (k.ty - srodkowyTy) ** 2;
+  const kafelki = [...wszystkie]
+    .sort((a, b) => odlegloscOdSrodka(a) - odlegloscOdSrodka(b) || a.ty - b.ty || a.tx - b.tx)
+    .slice(0, MAX_KAFELEK)
+    // Kolejność rysowania zostaje row-major: SVG maluje w kolejności listy,
+    // a stabilny porządek ułatwia porównywanie planów w testach.
+    .sort((a, b) => a.ty - b.ty || a.tx - b.tx);
   return { kafelki, przyciete, z: siatka.z, rozmiarKafelkaSwiat };
 }
 
