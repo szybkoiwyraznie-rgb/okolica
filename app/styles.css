@@ -201,30 +201,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .przycisk-glowny { background: var(--akcent); border-color: var(--akcent); color: var(--akcent-tekst); flex: 1 1 auto; }
 .przycisk-maly { min-height: 38px; padding: 8px 12px; font-size: 14px; font-weight: 500; }
 
-/* Ekran 5 (zgłoszenie właściciela 2026-09-09): główna droga to JEDEN duży
-   przycisk — schowek trafia prosto do walidacji, treść nie pokazuje się na
-   ekranie. Pełna szerokość i większy tekst, bo to jedyna akcja tego kroku
-   i naciska się ją w biegu, jedną ręką. */
-.przycisk-wklejka {
-  display: block;
-  width: 100%;
-  margin: 12px 0 6px;
-  padding: 16px;
-  font-size: 17px;
-}
+/* Ekran 5 (zgłoszenie właściciela 2026-09-09, druga tura): schowek bywa
+   zablokowany przez przeglądarkę, więc wklejanie wraca do pola tekstowego.
+   Pole jest CELOWO niskie (3 wiersze) — mieści nagłówek paczki, a pytań
+   przy tej wysokości nie da się przeczytać przez ramię. Bez `resize`, żeby
+   nikt nie rozciągnął go odruchowo na cały ekran. */
+.pole-tekstowe#pole-odpowiedz { resize: none; }
 
-/* Awaryjne pole wklejenia (ADR 0006 pkt 6) — zwinięte, żeby nie kusiło do
-   podglądania pytań, ale osiągalne, gdy schowek jest zablokowany. */
-.wklejka-awaria { margin: 10px 0; }
-.wklejka-awaria > summary {
-  min-height: var(--cel);
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  color: var(--tekst-slaby);
-  font-size: 14px;
-}
-.wklejka-awaria[open] > summary { margin-bottom: 6px; }
 /* Przyciski nagłówka (decyzja właściciela 2026-09-09): same ikony bez
    obwódki + jedyny napis, CTA „START GRY" — belka to jeden smukły rząd.
    Cel dotykowy celowo poniżej --cel: tak ma być na iPhonie, a znaczenie

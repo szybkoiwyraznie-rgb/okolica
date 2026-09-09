@@ -46,7 +46,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.
 2. Każde pytanie ma pole "zrodla" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.
 3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
-4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego potwierdzonego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.
+4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
@@ -162,7 +162,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Gdy czegoś nie jesteś pewien, uprość pytanie albo pomiń temat i opisz to w polu "uwagi".
 2. Pole "zrodla" jest OPCJONALNE: jeśli masz adres potwierdzający fakt, podaj go; jeśli nie — pomiń pole albo zostaw pustą listę. Nigdy nie zmyślaj adresu: niepewny URL jest gorszy niż jego brak.
 3. Nie wymyślaj nazw, dat, liczb, cytatów ani autorów. Nie zgaduj. Gdy nie masz pewności co do faktu, wybierz łatwiejszy fakt z tego samego tematu; jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
-4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego pewnego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.
+4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
@@ -373,7 +373,7 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E11` | data (`utworzono`, `sprawdzono`) w przyszłości albo w złym formacie |
 | `E12` | `temat` spoza kanonu §5 |
 | `E13` | duplikat pytania (znormalizowana `tresc` występuje więcej niż raz) |
-| `E14` | brak zakotwiczenia miejscowego: ani `tresc`, ani `wyjasnienie` nie odnosi się do miejsca z `okolica.miejsce` ani do nazwy/opisu stacji |
+| `E14` | wycofany 2026-09-09 (zakotwiczenie miejscowe jest prośbą w prompcie, nie bramką walidatora — patrz niżej) |
 | `E15` | pole wymagane puste albo nie tekstem/liczbą zgodnie z §3 |
 | `E16` | paczka niespójna z konfiguracją gry: `okolica` (promień, środek > 500 m) albo `wiek`, `tematy`, `jezyk` |
 | `E17` | współrzędne poza zakresem (`lat`, `lon`) |
@@ -381,34 +381,19 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E19` | `id` pytania nieunikalne albo niezgodne ze wzorem |
 | `E20` | `wyjasnienie` krótsze niż 60 znaków albo dosłownie powtarza `tresc` |
 
-**Heurystyka zakotwiczenia (E14)** — cztery kroki, wszystkie w
-`app/protokol.js`, wszystkie testowane:
+**Zakotwiczenie miejscowe (dawny E14) — wycofane 2026-09-09.** Walidator miał
+heurystykę, która odrzucała pytania bez nazwy z `okolica.miejsce` ani z opisu
+stacji. Właściciel zgłosił, że to bramka bez sensu: „przy niektórych kategoriach
+(szczególnie tych custom) nigdy nie będzie nawiązania do miejsca i będą pytania
+z wiedzy ogólnej. To jak najbardziej dopuszczalne i pożądane".
 
-1. **Tokeny własne**: nazwy z `okolica.miejsce` (rozbite po przecinkach i
-   spacjach) oraz z `opis`-ów stacji. Odrzucane są: wyrazy krótsze niż 4 znaki,
-   liczby, słowa z listy ogólnej (`TOKENY_MIEJSCA`) i wyrazy pospolite nazw
-   administracyjnych (`WYRAZY_POSPOLITE_MIEJSCA`: „stare", „miasto", „gmina",
-   „polska"…). Nazwy regionów („mazowieckie") zostają — pytanie o Mazowsze jest
-   uczciwie zakotwiczone.
-2. **Rdzeń tokena** = pierwsze 5 znaków po normalizacji (małe litery, bez
-   interpunkcji), więc obejmuje polską odmianę: „Warszawa" → „warsz" trafia w
-   „warszawskim". Rdzeń musi pasować do **początku wyrazu** w pytaniu — inaczej
-   „kościół" → „kości" łapałoby „ludzkości", a „woj." → „woj" łapałoby „wojna".
-   Trafienie w którykolwiek token własny kończy sprawdzenie wynikiem
-   „zakotwiczone".
-3. Jeśli trafienia nie ma, pytanie może przejść warunkowo: musi zawierać słowo z
-   listy lokalnej (`TOKENY_MIEJSCA`: „ulica", „rynek", „kościół", „most",
-   „kamienica"…) **oraz** nazwę własną.
-4. **Nazwa własna** = wyraz pisany wielką literą, który nie zaczyna zdania (po
-   polsku każde zdanie zaczyna się wielką literą), nie jest słowem pospolitym
-   (`SLOWA_POSPOLITE`) i nie idzie za kropką innego zdania — z wyjątkiem
-   skrótów z listy `SKROTY_Z_KROPKA`, bo „kościół św. Anny" to jedna nazwa, nie
-   dwa zdania.
-
-Heurystyka jest celowo nadmiernie wyłapująca: fałszywe odrzucenie (E14) naprawia
-się jednym zdaniem o miejscu w treści pytania, a przepuszczenie pytania
-ogólnego („kto napisał Pana Tadeusza?") psuje sens gry terenowej. Listy słów są
-dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
+Kod, listy słów (`TOKENY_MIEJSCA`, `SLOWA_POSPOLITE`, `WYRAZY_POSPOLITE_MIEJSCA`,
+`SKROTY_Z_KROPKA`) i funkcje pomocnicze (`czyZakotwiczone`, `tokenyWlasne`,
+`rdzenTokena`) zostały usunięte z `app/protokol.js`. Zakotwiczenie zostaje
+**prośbą w prompcie** (§2 i §2.2, zasada 4): model ma schodzić na najniższy
+poziom drabiny, na którym ma pewny fakt, ale pytanie ogólne jest dopuszczalne.
+Kod `E14` nie jest przydzielany ponownie — numery kodów raz wydane zostają
+zajęte, tak samo jak wycofany `E18`.
 
 ## 7. Wersjonowanie i migracje
 

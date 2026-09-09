@@ -12,8 +12,8 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-49';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-49';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-50';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-50';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.0';
@@ -69,106 +69,35 @@ export const SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.0-nofc.2'; // .2: bez odwra
 /** Schemat kontenera z obfuskowanymi pytaniami (ADR 0007 pkt 3 i 5: maskowanie, nie szyfrowanie). */
 // Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
 // protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
-export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-49';
+export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-50';
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.
  * NIE EDYTUJ RĘCZNIE — zmień dokument i uruchom `npm run build`.
  */
-export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego potwierdzonego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. W polu \"protokol\" wpisz \"PYT/1.0-rev4\". Wszystkie pola tekstowe zapisz NORMALNIE, w naturalnej kolejności liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer poprawnej odpowiedzi (pole \"poprawna\", zasada niżej).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev4) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev4\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 20,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola \"id\" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
+export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. W polu \"protokol\" wpisz \"PYT/1.0-rev4\". Wszystkie pola tekstowe zapisz NORMALNIE, w naturalnej kolejności liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer poprawnej odpowiedzi (pole \"poprawna\", zasada niżej).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev4) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev4\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 20,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola \"id\" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
 /* SZABLON-KONIEC */
 
 /* SZABLON-BEZ-START
  * Treść generowana z docs/PROTOKOL.md §2.2 przez tools/synchronizuj-szablon.mjs.
  * NIE EDYTUJ RĘCZNIE — zmień dokument i uruchom `npm run build`.
  */
-export const SZABLON_PROMPTU_BEZ_WERYFIKACJI = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Gdy czegoś nie jesteś pewien, uprość pytanie albo pomiń temat i opisz to w polu \"uwagi\".\n2. Pole \"zrodla\" jest OPCJONALNE: jeśli masz adres potwierdzający fakt, podaj go; jeśli nie — pomiń pole albo zostaw pustą listę. Nigdy nie zmyślaj adresu: niepewny URL jest gorszy niż jego brak.\n3. Nie wymyślaj nazw, dat, liczb, cytatów ani autorów. Nie zgaduj. Gdy nie masz pewności co do faktu, wybierz łatwiejszy fakt z tego samego tematu; jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego pewnego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. W polu \"protokol\" wpisz \"PYT/1.0-rev5\". Wszystkie pola tekstowe zapisz NORMALNIE, w naturalnej kolejności liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer poprawnej odpowiedzi (pole \"poprawna\", zasada niżej).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev5) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev5\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 20,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola \"id\" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"zrodla\": pusta lista ALBO lista źródeł w kształcie jak w schemacie; podawaj tylko adresy, co do których masz pewność (pełny adres https://, prawdziwy i działający), każdy z tytułem i datą sprawdzenia RRRR-MM-DD; adres przykładowy albo zmyślony unieważnia pytanie.\n- \"uwagi\": czego nie udało się ustalić z własnej wiedzy, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko pewne.";
+export const SZABLON_PROMPTU_BEZ_WERYFIKACJI = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Gdy czegoś nie jesteś pewien, uprość pytanie albo pomiń temat i opisz to w polu \"uwagi\".\n2. Pole \"zrodla\" jest OPCJONALNE: jeśli masz adres potwierdzający fakt, podaj go; jeśli nie — pomiń pole albo zostaw pustą listę. Nigdy nie zmyślaj adresu: niepewny URL jest gorszy niż jego brak.\n3. Nie wymyślaj nazw, dat, liczb, cytatów ani autorów. Nie zgaduj. Gdy nie masz pewności co do faktu, wybierz łatwiejszy fakt z tego samego tematu; jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. W polu \"protokol\" wpisz \"PYT/1.0-rev5\". Wszystkie pola tekstowe zapisz NORMALNIE, w naturalnej kolejności liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer poprawnej odpowiedzi (pole \"poprawna\", zasada niżej).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev5) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev5\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 20,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola \"id\" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"zrodla\": pusta lista ALBO lista źródeł w kształcie jak w schemacie; podawaj tylko adresy, co do których masz pewność (pełny adres https://, prawdziwy i działający), każdy z tytułem i datą sprawdzenia RRRR-MM-DD; adres przykładowy albo zmyślony unieważnia pytanie.\n- \"uwagi\": czego nie udało się ustalić z własnej wiedzy, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko pewne.";
 /* SZABLON-BEZ-KONIEC */
 
 /**
- * Tokeny lokalne używane przez heurystykę zakotwiczenia pytania w miejscu
- * (protokół §6, kod E14). Rozszerzanie listy = zmiana kodu z testem, nie
- * decyzja „na oko" w trakcie sesji.
+ * Zgłoszenie właściciela 2026-09-09: heurystyka zakotwiczenia (kod `E14`)
+ * została USUNIĘTA razem z listami słów, które ją zasilały (`TOKENY_MIEJSCA`,
+ * `SLOWA_POSPOLITE`, `WYRAZY_POSPOLITE_MIEJSCA`, `SKROTY_Z_KROPKA`).
+ *
+ * Powód: „przy niektórych kategoriach (szczególnie tych custom) nigdy nie
+ * będzie nawiązania do miejsca i będą pytania z wiedzy ogólnej. To jak
+ * najbardziej dopuszczalne i pożądane". Walidator odrzucał więc paczki, które
+ * są poprawne — a fałszywe odrzucenie kosztuje organizatora całą rundę z
+ * modelem. Zakotwiczenie zostaje PROŚBĄ w prompcie (§2 i §2.2 zasada 4), nie
+ * bramką: model ma schodzić na najniższy poziom, na którym ma fakt, ale pytanie
+ * ogólne przechodzi.
  */
-export const TOKENY_MIEJSCA = [
-  'ulica', 'ul.', 'aleja', 'al.', 'plac', 'pl.', 'rynek', 'skwer', 'bulwar',
-  'park', 'las', 'cmentarz', 'kościół', 'kaplica', 'klasztor', 'synagoga', 'cerkiew',
-  'most', 'kładka', 'wiadukt', 'tunel', 'rzeka', 'strumień', 'jezioro', 'staw', 'kanał',
-  'wzgórze', 'góra', 'kamieniołom', 'dzielnica', 'osiedle', 'przedmieście', 'sołectwo',
-  'kamienica', 'pałac', 'zamek', 'dwór', 'ratusz', 'fort', 'mur', 'brama', 'baszta',
-  'pomnik', 'rzeźba', 'mural', 'fabryka', 'zakład', 'elektrownia', 'gazownia', 'wodociągi',
-  'dworzec', 'przystanek', 'stacja', 'metro', 'depot', 'szkoła', 'uniwersytet', 'biblioteka',
-  'teatr', 'kino', 'muzeum', 'galeria', 'stadion', 'hala', 'basen', 'boisko',
-  'szpital', 'apteka', 'targ', 'bazar', 'rynek warzywny', 'poczta', 'straż', 'koszary',
-];
-
-/**
- * Słowa, które bywają wielką literą na początku zdania i nie są nazwami
- * własnymi — heurystyka E14 ich nie liczy jako „nazwy własnej".
- */
-export const SLOWA_POSPOLITE = new Set([
-  'Przy', 'Jakie', 'Jaki', 'Jaka', 'Który', 'Która', 'Które', 'Gdzie', 'Kiedy', 'Kto',
-  'Co', 'Czy', 'W', 'We', 'Z', 'Ze', 'Na', 'Nad', 'Pod', 'Przed', 'Za', 'Od', 'Do', 'O',
-  'Po', 'Przez', 'Dla', 'Między', 'Pomiędzy', 'Według', 'Wobec', 'Oraz', 'I', 'A', 'Ale',
-  'To', 'Ten', 'Ta', 'Te', 'Jest', 'Był', 'Była', 'Było', 'Są', 'Został', 'Została',
-  'Polska', 'Polski', 'Polskie', 'Polskiej', 'Wikipedia', 'Wikipedii', 'Internet',
-]);
-
-/**
- * Wyrazy pospolite, które wchodzą w skład nazw administracyjnych i nie są
- * kotwicą pytania. Bez tej listy „Stare Miasto" albo „woj. mazowieckie"
- * łapałyby pytania o byle co: rdzeń „woj" trafia w „wojna", „stare" w
- * „stare fotografie". Nazwy regionów („mazowieckie") zostają — pytanie
- * „kto mieszkał na Mazowszu" jest uczciwie zakotwiczone.
- */
-export const WYRAZY_POSPOLITE_MIEJSCA = new Set([
-  'stare', 'stary', 'stara', 'nowe', 'nowy', 'nowa', 'miasto', 'miasta', 'wieś', 'wies',
-  'wioska', 'osiedle', 'dzielnica', 'gmina', 'powiat', 'województwo', 'wojewodztwo',
-  'miejscowość', 'miejscowosc', 'okolica', 'region', 'kraj', 'polska', 'polski', 'polskie',
-  'polskiej', 'polsce', 'dolne', 'dolny', 'górne', 'gorne', 'górny', 'wielkie', 'wielki',
-  'wielka', 'małe', 'male', 'mała', 'północne', 'polnocne', 'południowe', 'poludniowe',
-  'wschodnie', 'zachodnie', 'święte',
-]);
-
-/**
- * Skróty z kropką, po których wielka litera NIE zaczyna nowego zdania
- * („kościół św. Anny", „ul. Zgoda", „ks. Jerzy"). Bez tej listy podział na
- * zdania ciąłby nazwy własne w pół i heurystyka E14 gubiła kotwicę.
- */
-export const SKROTY_Z_KROPKA = new Set([
-  'św', 'sw', 'p', 'r', 'nr', 'al', 'ul', 'pl', 'ks', 'dr', 'prof', 'pp', 'tzw', 'np',
-  'tj', 'itd', 'w', 'z', 'm', 's', 'nn', 'oo', 'bp', 'abp', 'kard', 'gen', 'płk', 'plk',
-  'im', 'pw', 'godz', 'ok', 'zm', 'ur', 'tzn', 'vs', 'rynek',
-]);
-
-/**
- * Wyrazy wielką literą wewnątrz pola, które nie są początkiem zdania —
- * kandydaci na nazwy własne (heurystyka E14, krok 4).
- */
-function nazwyWlasneKandydaci(tekst) {
-  const wyrazy = String(tekst ?? '').trim().split(/\s+/).filter(Boolean);
-  const znalezione = [];
-  for (let i = 1; i < wyrazy.length; i++) {
-    if (!/^[\p{Lu}\p{Lt}]/u.test(wyrazy[i])) continue;
-    const poprzedni = wyrazy[i - 1];
-    if (/[.!?…]$/.test(poprzedni)) {
-      const czysty = normalizujTekst(poprzedni.replace(/[.!?…,]/gu, ''));
-      if (!SKROTY_Z_KROPKA.has(czysty)) continue; // nowy akapit zdania, nie nazwa
-    }
-    znalezione.push(wyrazy[i]);
-  }
-  return znalezione;
-}
-
-/**
- * Rdzeń tokena: pierwsze 5 znaków po normalizacji (albo cały token, gdy krótszy).
- * Dzięki temu heurystyka zakotwiczenia obejmuje polską odmianę: „Warszawa"
- * trafia w „warszawskim", „Warszawy", „Warszawą".
- */
-export function rdzenTokena(token) {
-  const t = normalizujTekst(token);
-  return t.length >= 5 ? t.slice(0, 5) : t;
-}
 
 /** Normalizacja do porównań: małe litery, bez interpunkcji, pojedyncze spacje. */
 export function normalizujTekst(tekst) {
@@ -325,71 +254,6 @@ export function parsujOdpowiedzModela(tekst) {
     }
   }
   return { paczka: null, blad: { kod: 'E02', pole: 'json', komunikat: 'Nie udało się odczytać JSON-a z odpowiedzi. Poproś model o sam blok JSON, bez komentarzy (poprawka gotowa do skopiowania).' } };
-}
-
-/** Tokeny nazw własnych z miejsca i z opisów stacji (do heurystyki E14). */
-export function tokenyWlasne(okolica, stacje = []) {
-  const czesci = [
-    ...String(okolica?.miejsce ?? '').split(/[,;]/).flatMap((c) => c.split(/\s+/)),
-    ...stacje.flatMap((s) => String(s?.opis ?? '').split(/[,;]/).flatMap((c) => c.split(/\s+/))),
-  ];
-  const czyste = new Set();
-  for (const surowe of czesci) {
-    const t = normalizujTekst(surowe);
-    // 4 znaki minimum: rdzeń 3-literowy („woj", „las", „mur") daje za dużo
-    // fałszywych trafień, a prawdziwe nazwy własne niemal zawsze są dłuższe.
-    if (t.length < 4) continue;
-    if (TOKENY_MIEJSCA.includes(t)) continue;
-    if (WYRAZY_POSPOLITE_MIEJSCA.has(t)) continue;
-    if (SLOWA_POSPOLITE.has(surowe) || SLOWA_POSPOLITE.has(surowe.charAt(0).toUpperCase() + surowe.slice(1))) continue;
-    if (/^\d+$/.test(t)) continue;
-    czyste.add(t);
-  }
-  return [...czyste];
-}
-
-/**
- * Heurystyka zakotwiczenia pytania w okolicy (protokół §6, kod E14):
- * przechodzi, jeśli tekst zawiera nazwę własną z miejsca/stacji ALBO zawiera
- * słowo lokalne + nazwę własną nieznaną jako pospolitą.
- */
-export function czyZakotwiczone(pytanie, okolica, stacje = []) {
-  const surowy = `${pytanie?.tresc ?? ''} ${pytanie?.wyjasnienie ?? ''}`;
-  const tekst = normalizujTekst(surowy);
-  if (!tekst) return false;
-
-  // Rdzeń musi trafiać w POCZĄTEK wyrazu, nie w jego środek: „kościół" →
-  // „kości" pasuje do „kościoła", ale nie do „ludzkości".
-  const slowa = tekst.split(/\s+/).filter(Boolean);
-  const trafiaRdzen = (token) => {
-    const rdzen = rdzenTokena(token);
-    return rdzen.length >= 4 && slowa.some((s) => s.startsWith(rdzen));
-  };
-
-  if (tokenyWlasne(okolica, stacje).some(trafiaRdzen)) return true;
-
-  const maSlowoLokalne = TOKENY_MIEJSCA.some((t) => {
-    const n = normalizujTekst(t);
-    return n.length >= 3 && slowa.some((s) => s.startsWith(n));
-  });
-
-  // Nazwa własna = wyraz wielką literą, który NIE zaczyna zdania (po polsku
-  // każde zdanie zaczyna się wielką literą, więc bez tego wykluczenia każde
-  // pytanie wyglądałoby na zakotwiczone) i nie jest słowem pospolitym.
-  // Podział na zdania uwzględnia skróty z kropką („św. Anny" to jedna nazwa).
-  const kandydaci = [
-    ...nazwyWlasneKandydaci(pytanie?.tresc),
-    ...nazwyWlasneKandydaci(pytanie?.wyjasnienie),
-  ];
-  const maNazweWlasna = kandydaci.some((s) => {
-    const t = normalizujTekst(s.replace(/[.,;:!?…"„»«()\[\]]/gu, ''));
-    if (t.length < 3) return false;
-    if (WYRAZY_POSPOLITE_MIEJSCA.has(t)) return false;
-    const zWielkiej = t.charAt(0).toUpperCase() + t.slice(1);
-    return !SLOWA_POSPOLITE.has(zWielkiej) && !SLOWA_POSPOLITE.has(t);
-  });
-
-  return maSlowoLokalne && maNazweWlasna;
 }
 
 function czyLiczbaCalkowita(v) {
@@ -702,9 +566,6 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
       const klucz = normalizujTekst(p.tresc);
       if (widoczneTresci.has(klucz)) dodaj('E13', `${pole}.tresc`, `Pytanie powtarza treść pytania ${widoczneTresci.get(klucz)}.`);
       else widoczneTresci.set(klucz, p.id ?? `#${i}`);
-      if (!czyZakotwiczone(p, okolica, oczekiwane.stacje ?? [])) {
-        dodaj('E14', `${pole}.tresc`, 'Pytanie nie odnosi się do okolicy gry (brak nazwy miejsca albo obiektu z okolicy) — to pytanie z wiedzy ogólnej.');
-      }
     }
   });
 

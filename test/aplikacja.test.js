@@ -2487,55 +2487,40 @@ test('start: „▶ Zacznij” otwiera setup, nie tylko zamyka intro', async () 
 });
 
 /**
- * Zgłoszenie właściciela (2026-09-09): „Pole do wklejenia treści z AI jest za
- * duże i zachęca do podglądania (…) najlepiej jakby był sam guzik →
- * [Prześlij skopiowaną odpowiedź ze schowka] który by zawartość schowka od razu
- * wklejał i przesyłał, bez pokazywania na tym ekranie."
+ * Zgłoszenie właściciela (2026-09-09, druga tura): „Ta zmiana z wklejaniem
+ * pytań od AI jednym przyciskiem chyba nie zadziała, bo przeglądarka to
+ * blokuje — mam napis: Przeglądarka nie dała dostępu do schowka. Wracamy do
+ * usuniętej wersji, czyli wklejania w pole, możesz je zmniejszyć tylko do
+ * trzech wierszy, wtedy i tak nic nie widać poza uwagami."
+ *
+ * Wniosek na przyszłość: `navigator.clipboard.readText()` NIE jest drogą, na
+ * której można oprzeć jedyną akcję ekranu — przeglądarka mobilna potrafi jej
+ * odmówić bez pytania użytkownika. Prywatności pilnuje teraz WYSOKOŚĆ pola.
  */
-test('ekran 5: przycisk ze schowka waliduje BEZ pokazywania treści w polu', async () => {
+test('ekran 5: pole wklejenia ma trzy wiersze i nie da się go rozciągnąć', () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const pole = html.match(/<textarea id="pole-odpowiedz"[^>]*>/)[0];
+  assert.match(pole, /rows="3"/, 'trzy wiersze — więcej znowu kusiłoby do czytania pytań');
+  const css = readFileSync(new URL('../app/styles.css', import.meta.url), 'utf8');
+  assert.match(css, /#pole-odpowiedz\s*\{[^}]*resize:\s*none/, 'bez uchwytu rozciągania');
+});
+
+test('ekran 5: wklejona odpowiedź przechodzi walidację i zaczyna grę', async () => {
   const paczka = czytajFixturePaczka();
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
-  // Schowek oddaje gotową paczkę; `writeText` niepotrzebny na tej ścieżce.
-  Object.assign(navigator, { clipboard: { readText: async () => JSON.stringify(paczka) } });
-  await import(`../app/app.js?schowek=${Math.random().toString(36).slice(2)}`);
+  await import(`../app/app.js?wklejka=${Math.random().toString(36).slice(2)}`);
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
 
-  domAtrapa.kliknij('przycisk-wklej-sprawdz');
-  await new Promise((r) => setTimeout(r, 0)); // handler jest async (readText)
+  domAtrapa.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
+  domAtrapa.kliknij('przycisk-sprawdz');
 
+  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę');
   assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '',
-    'pole awaryjne zostaje puste — pytania nie pokazały się na ekranie');
-  assert.equal(domAtrapa.pobierz('wklejka-awaria').open, false,
-    'sekcja awaryjna zostaje zwinięta, gdy schowek zadziałał');
-  // Poprawna paczka od razu zaczyna grę (decyzja 2026-09-07).
-  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'gra wystartowała prosto ze schowka');
+    'pole wyczyszczone po przyjęciu — plaintext nie zostaje w DOM (ADR 0007 pkt 4)');
 });
 
-test('ekran 5: treść ze schowka nie ląduje w polu NAWET gdy walidacja odrzuci', async () => {
-  // Ten test jest właściwym strażnikiem prywatności ekranu. Przy poprawnej
-  // paczce pole i tak jest czyszczone po przyjęciu (ADR 0007 pkt 4), więc samo
-  // „puste na końcu" nie dowodzi niczego — kod mógłby wpisać tekst do DOM
-  // i posprzątać po sobie. Ścieżka BŁĘDU nie czyści pola, więc jeśli treść
-  // kiedykolwiek tam trafi, zostanie i test to zobaczy.
-  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
-  const smiec = '{"protokol":"PYT/1.0-rev5","pytania":[]}';
-  Object.assign(navigator, { clipboard: { readText: async () => smiec } });
-  await import(`../app/app.js?schowek4=${Math.random().toString(36).slice(2)}`);
-  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
-  domAtrapa.kliknij('przycisk-dalej-stacje');
-
-  domAtrapa.kliknij('przycisk-wklej-sprawdz');
-  await new Promise((r) => setTimeout(r, 0));
-
-  assert.equal(domAtrapa.pobierz('wynik-walidacji').hidden, false, 'walidator się wypowiedział');
-  assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '',
-    'odrzucona treść też nie trafia do pola — inaczej pytania wiszą na ekranie');
-  assert.match(domAtrapa.pobierz('wklejka-status').textContent, /usterek|odczytać/,
-    'przycisk daje informację zwrotną, mimo że treści nie widać');
-});
-
-test('ekran 5: zablokowany schowek otwiera pole awaryjne i mówi, co zrobić (L6)', async () => {
+test('ekran 5: zablokowany schowek NIE zatrzymuje ekranu — mówi, że trzeba wkleić palcem (L6)', async () => {
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
   Object.assign(navigator, {
     clipboard: { readText: async () => { throw new Error('NotAllowedError'); } },
@@ -2544,26 +2529,29 @@ test('ekran 5: zablokowany schowek otwiera pole awaryjne i mówi, co zrobić (L6
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
 
-  domAtrapa.kliknij('przycisk-wklej-sprawdz');
+  domAtrapa.kliknij('przycisk-wklej');
   await new Promise((r) => setTimeout(r, 0));
 
-  assert.equal(domAtrapa.pobierz('wklejka-awaria').open, true,
-    'odmowa schowka otwiera drogę zapasową (ADR 0006 pkt 6)');
   const status = domAtrapa.pobierz('wklejka-status').textContent;
-  assert.match(status, /schowk/i, 'status nazywa przyczynę');
-  assert.match(status, /palcem|pliku/, 'i podaje wykonalne wyjście — cichej porażki nie ma');
+  assert.match(status, /schowk/i, 'status nazywa przyczynę — to jest ten komunikat, który zobaczył właściciel');
+  assert.match(status, /palcem|pliku/, 'i podaje wykonalne wyjście, bo pole jest tuż obok');
+  // Kluczowa różnica wobec poprzedniej wersji: droga główna (pole + „Sprawdź")
+  // działa dalej mimo odmowy schowka.
+  assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '', 'nic nie wklejono, ale pole jest gotowe');
 });
 
-test('ekran 5: pusty schowek nie udaje sukcesu', async () => {
+test('ekran 5: schowek, gdy działa, wypełnia pole i nie waliduje sam z siebie', async () => {
+  const paczka = czytajFixturePaczka();
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
-  Object.assign(navigator, { clipboard: { readText: async () => '   ' } });
-  await import(`../app/app.js?schowek3=${Math.random().toString(36).slice(2)}`);
+  Object.assign(navigator, { clipboard: { readText: async () => JSON.stringify(paczka) } });
+  await import(`../app/app.js?schowek=${Math.random().toString(36).slice(2)}`);
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
 
-  domAtrapa.kliknij('przycisk-wklej-sprawdz');
+  domAtrapa.kliknij('przycisk-wklej');
   await new Promise((r) => setTimeout(r, 0));
 
-  assert.match(domAtrapa.pobierz('wklejka-status').textContent, /pust/i, 'mówi wprost, że schowek jest pusty');
-  assert.equal(domAtrapa.pobierz('wynik-walidacji').hidden, true, 'nie pokazuje wyniku walidacji dla niczego');
+  assert.notEqual(domAtrapa.pobierz('pole-odpowiedz').value, '', 'treść ze schowka trafia do pola');
+  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, true, 'samo wklejenie nie zaczyna gry — decyduje „Sprawdź"');
+  assert.match(domAtrapa.pobierz('wklejka-status').textContent, /Sprawdź/, 'status mówi, co nacisnąć dalej');
 });

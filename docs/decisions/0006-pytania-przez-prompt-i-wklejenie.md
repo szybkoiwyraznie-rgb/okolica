@@ -110,3 +110,36 @@ zbędnym: treść i tak leci prosto do walidatora.
 **Czego to NIE zmienia:** walidacja, kody usterek, poprawka dla modelu
 i automatyczny start gry po przyjęciu paczki działają identycznie — zmieniła się
 wyłącznie droga, którą tekst dociera do `sprawdzOdpowiedz`.
+
+## Aneks 2026-09-09 (druga tura) — odwrót: pole wraca, schowek schodzi do roli pomocnika
+
+Poprzedni aneks nie przetrwał kontaktu z telefonem właściciela: „ta zmiana z
+wklejaniem pytań od AI jednym przyciskiem chyba nie zadziała, bo przeglądarka to
+blokuje — mam napis: Przeglądarka nie dała dostępu do schowka\".
+
+To nie jest usterka do naprawienia, tylko granica platformy. `navigator.clipboard
+.readText()` wymaga bezpiecznego kontekstu, aktywnego gestu i zgody — a część
+przeglądarek mobilnych odmawia niezależnie od tego wszystkiego (pkt 6 tego ADR
+przewidywał to od początku; błędem było oparcie na tej ścieżce **jedynej** akcji
+ekranu). Droga awaryjna ukryta w `<details>` okazała się drogą główną, tyle że
+schowaną przed użytkownikiem, który jej właśnie potrzebował.
+
+**Decyzja (zastępuje pkt 1–3 poprzedniego aneksu):**
+
+1. Wklejanie wraca do pola tekstowego `#pole-odpowiedz` + przycisk „✓ Sprawdź
+   i przyjmij\" — droga, która działa **zawsze**, bo wklejenie palcem jest gestem
+   użytkownika, nie żądaniem API.
+2. Prywatności pilnuje **wysokość pola: `rows="3"` plus `resize: none`**.
+   Właściciel: „możesz je zmniejszyć tylko do trzech wierszy, wtedy i tak nic nie
+   widać poza uwagami\". Trzy wiersze monospace mieszczą nagłówek JSON-a; treści
+   pytań nikt przez ramię nie przeczyta, a organizator widzi, że coś wkleił.
+3. „📋 Wklej ze schowka\" zostaje jako **wygoda**: wypełnia pole, nie waliduje
+   samo z siebie. Odmowa schowka nie blokuje niczego — status mówi „wklej treść
+   palcem (przytrzymaj pole powyżej) albo wczytaj z pliku\", a pole jest tuż obok.
+4. Ostrzeżenie „nie jest zaszyfrowany\" (ADR 0007 pkt 5, pin w teście kontraktu)
+   wraca na główny opis ekranu, bo znowu jest prawdziwe.
+
+**Reguła na przyszłość:** funkcja przeglądarki, której użytkownik nie może
+wymusić (schowek, powiadomienia, orientacja, pełny ekran), może **ulepszać**
+ścieżkę, ale nigdy nie może być jedyną drogą do celu. Test „ekran 5: zablokowany
+schowek NIE zatrzymuje ekranu\" pilnuje, że droga główna działa mimo odmowy.

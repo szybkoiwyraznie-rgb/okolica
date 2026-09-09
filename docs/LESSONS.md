@@ -92,6 +92,12 @@ tokeny < 4 znaków odpadają, wyrazy pospolite z nazw administracyjnych na włas
 liście (`WYRAZY_POSPOLITE_MIEJSCA`); nazwa własna = wielka litera nie na początku
 zdania (wyjątki: `SKROTY_Z_KROPKA`). Każdą regułę testuj **kontrprzykładem
 z prawdziwego tekstu**; opis heurystyki w protokole z nazwami list z kodu.
+**Dopisek 2026-09-09:** heurystyka E14 została w końcu **usunięta** — nie
+dlatego, że była źle napisana, tylko dlatego, że pilnowała reguły, która bywa
+fałszywa (pytania ogólne są dopuszczalne, zwłaszcza przy temacie własnym).
+Lekcja drugiego rzędu: zanim dopracujesz heurystykę, sprawdź, czy reguła, której
+broni, na pewno obowiązuje zawsze. Walidator, który myli się w dobrej wierze,
+kosztuje użytkownika całą rundę z modelem.
 
 ## L10 — widełki nie chronią przed NaN: `Math.max(1, NaN)` daje NaN
 

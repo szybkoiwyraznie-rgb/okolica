@@ -13,13 +13,13 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  SCHEMAT_KONTENERA, SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, TOKENY_MIEJSCA, WERSJA_PROTOKOLU,
+  SCHEMAT_KONTENERA, SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU,
   WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3,
-  czyPaczkaOdwrocona, czyWariantFactcheck, czyZakotwiczone, normalizujTekst, normalizujTematyPaczki, numerPytaniaZId,
+  czyPaczkaOdwrocona, czyWariantFactcheck, normalizujTekst, normalizujTematyPaczki, numerPytaniaZId,
   odkodujPaczkeRev1, odkodujPaczkeRev2,
   odkodujPoprawnaRev2, zakodujPoprawnaRev2,
   odwrocPolaPaczki, odwrocTekst, parsujOdpowiedzModela, podsumowaniePaczki,
-  poprawkaDlaModelu, rdzenTokena, tokenyWlasne, walidujPaczke, zbudujPrompt,
+  poprawkaDlaModelu, walidujPaczke, zbudujPrompt,
 } from '../app/protokol.js';
 import { domyslnaKonfiguracja, liczbaPytan } from '../app/konfig.js';
 import { przesunPunkt } from '../app/geo.js';
@@ -496,14 +496,10 @@ test('walidujPaczke: E09/E10/E11 — źródła są wymagane i muszą być prawdz
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla[0].sprawdzono = '2026-09-09'; })).includes('E11'));
 });
 
-test('walidujPaczke: E12/E13/E14 — temat, duplikaty i zakotwiczenie w okolicy', () => {
+test('walidujPaczke: E12/E13 — temat spoza kanonu i duplikat treści', () => {
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].temat = 'kosmos'; })).includes('E12'));
   assert.ok(kody(klonyPaczki((p) => { p.tematy = ['historia', 'kosmos']; })).includes('E12'));
   assert.ok(kody(klonyPaczki((p) => { p.pytania[1].tresc = p.pytania[0].tresc; })).includes('E13'));
-  assert.ok(kody(klonyPaczki((p) => {
-    p.pytania[0].tresc = 'W którym roku wybuchła druga wojna światowa?';
-    p.pytania[0].wyjasnienie = 'Druga wojna światowa wybuchła 1 września 1939 roku i była największym konfliktem w dziejach ludzkości.';
-  })).includes('E14'));
 });
 
 test('walidujPaczke: stare klucze tematów (sprzed 2026-09-07) są aliasami, nie E12', () => {
@@ -553,56 +549,46 @@ test('walidujPaczke: E11 — data utworzenia w przyszłości', () => {
   assert.ok(kody(klonyPaczki((p) => { p.utworzono = '5 września 2026'; })).includes('E11'));
 });
 
-/* ------------------------------------------------- heurystyka zakotwiczenia */
+/* ------------------------- zakotwiczenie: prośba w prompcie, nie bramka E14 */
 
-test('czyZakotwiczone: odmiana nazwy miejsca jest rozpoznawana (rdzeń 5 znaków)', () => {
-  const pytanie = { tresc: 'Przy jakiej ulicy stoi kamienica w warszawskim Śródmieściu?', wyjasnienie: 'Kamienica przy ulicy Zgoda w Warszawie powstała w 1912 roku jako dom dochodowy.' };
-  assert.equal(czyZakotwiczone(pytanie, { miejsce: 'Warszawa, Śródmieście, Polska' }), true);
+/**
+ * Zgłoszenie właściciela 2026-09-09: „przy niektórych kategoriach (szczególnie
+ * tych custom) nigdy nie będzie nawiązania do miejsca i będą pytania z wiedzy
+ * ogólnej. To jak najbardziej dopuszczalne i pożądane. Ten test i błąd jest bez
+ * sensu." Heurystyka `E14` została usunięta — te testy pilnują, żeby nie
+ * wróciła tylnymi drzwiami.
+ */
+test('walidujPaczke: pytanie z wiedzy ogólnej PRZECHODZI — E14 nie istnieje', () => {
+  const ogolna = klonyPaczki((p) => {
+    p.pytania[0].tresc = 'W którym roku wybuchła druga wojna światowa?';
+    p.pytania[0].wyjasnienie = 'Druga wojna światowa wybuchła 1 września 1939 roku i była największym konfliktem w dziejach ludzkości.';
+    p.pytania[1].tresc = 'Kto napisał „Pana Tadeusza"?';
+    p.pytania[1].wyjasnienie = 'Adam Mickiewicz ukończył poemat w Paryżu w 1834 roku, na emigracji po powstaniu listopadowym.';
+  });
+  const usterki = kody(ogolna);
+  assert.ok(!usterki.includes('E14'), 'kod E14 nie jest już przydzielany');
+  assert.deepEqual(usterki, [], 'paczka z pytaniami ogólnymi przechodzi walidację czysto');
 });
 
-test('czyZakotwiczone: rdzeń trafia w początek wyrazu, nie w jego środek', () => {
-  // „kościół" → rdzeń „kości": musi łapać „kościoła", ale nie „ludzkości".
-  assert.equal(czyZakotwiczone({ tresc: 'Kiedy konsekrowano kościół św. Anny?', wyjasnienie: 'Konsekracja kościoła nastąpiła w 1782 roku.' }, { miejsce: 'Grabowice, Polska' }), true);
-  assert.equal(
-    czyZakotwiczone(
-      { tresc: 'W którym roku wybuchła druga wojna światowa?', wyjasnienie: 'Była największym konfliktem w dziejach ludzkości i objęła całą Europę.' },
-      { miejsce: 'Stare Miasto, woj. mazowieckie, Polska' },
-    ),
-    false,
-    '„woj." nie może łapać „wojna", a „ludzkości" nie może uchodzić za „kościół"',
-  );
+test('protokół: kod E14 jest wycofany w kodzie i w dokumentacji', () => {
+  const zrodlo = readFileSync(new URL('../app/protokol.js', import.meta.url), 'utf8');
+  assert.ok(!/dodaj\('E14'/.test(zrodlo), 'walidator nie zgłasza E14');
+  for (const symbol of ['czyZakotwiczone', 'tokenyWlasne', 'TOKENY_MIEJSCA', 'SLOWA_POSPOLITE', 'WYRAZY_POSPOLITE_MIEJSCA', 'SKROTY_Z_KROPKA']) {
+    assert.ok(!new RegExp(`export (const|function) ${symbol}\\b`).test(zrodlo), `${symbol} usunięty razem z heurystyką`);
+  }
+  const protokol = readFileSync(new URL('../docs/PROTOKOL.md', import.meta.url), 'utf8');
+  assert.match(protokol, /\| `E14` \| wycofany/, 'tabela kodów mówi wprost, że E14 jest wycofany');
 });
 
-test('tokenyWlasne: odrzuca wyrazy pospolite nazw administracyjnych i krótkie skróty', () => {
-  const tokeny = tokenyWlasne({ miejsce: 'Grabowice, Stare Miasto, woj. mazowieckie, Polska' }, []);
-  assert.ok(tokeny.includes('grabowice'));
-  assert.ok(tokeny.includes('mazowieckie'), 'nazwa regionu jest kotwicą');
-  assert.ok(!tokeny.includes('stare') && !tokeny.includes('miasto'), '„Stare Miasto" to nie nazwa własna');
-  assert.ok(!tokeny.includes('woj'), 'skrót 3-literowy daje fałszywe trafienia');
-  assert.ok(!tokeny.includes('polska'), '„Polska" jest wszędzie — nie kotwiczy niczego');
-});
-
-test('czyZakotwiczone: słowo lokalne + nazwa własna przechodzi, pytanie ogólne nie', () => {
-  assert.equal(czyZakotwiczone({ tresc: 'Który most w Grabowicach zbudowano jako pierwszy?', wyjasnienie: 'Most nad stawem miejskim w Grabowicach oddano do użytku w 1901 roku.' }, { miejsce: 'Grabowice, Polska' }), true);
-  assert.equal(czyZakotwiczone({ tresc: 'W którym roku wybuchła druga wojna światowa?', wyjasnienie: 'Druga wojna światowa wybuchła 1 września 1939 roku i była największym konfliktem w dziejach.' }, { miejsce: 'Grabowice, Polska' }), false);
-  assert.equal(czyZakotwiczone({ tresc: '', wyjasnienie: '' }, { miejsce: 'Grabowice' }), false);
-});
-
-test('tokenyWlasne: odrzuca słowa pospolite i tokeny lokalne, zostawia nazwy', () => {
-  const t = tokenyWlasne({ miejsce: 'Warszawa, Śródmieście, woj. mazowieckie, Polska' }, [{ opis: 'park Skaryszewski' }]);
-  assert.ok(t.includes('warszawa'));
-  assert.ok(t.includes('skaryszewski'));
-  assert.ok(!t.includes('park'), 'słowo lokalne z TOKENY_MIEJSCA nie jest nazwą własną');
-});
-
-test('rdzenTokena i normalizujTekst: stabilna normalizacja do porównań', () => {
-  assert.equal(rdzenTokena('Warszawa'), 'warsz');
-  assert.equal(rdzenTokena('Ratusz'), 'ratus');
-  assert.equal(rdzenTokena('most'), 'most');
-  assert.equal(rdzenTokena(''), '');
-  assert.equal(normalizujTekst('  Kościół św. Anny!  '), 'kościół św anny');
-  assert.equal(normalizujTekst(null), '');
-  assert.ok(TOKENY_MIEJSCA.includes('kościół') && TOKENY_MIEJSCA.includes('park'));
+test('prompt: zakotwiczenie zostaje PROŚBĄ — oba warianty dopuszczają pytanie ogólne', () => {
+  for (const [nazwa, szablon] of [['rev4', SZABLON_PROMPTU], ['rev5', SZABLON_PROMPTU_BEZ_WERYFIKACJI]]) {
+    assert.ok(!szablon.includes('Czyste pytania ogólne bez kotwicy są zakazane'),
+      `${nazwa}: zakaz pytań ogólnych zniknął z zasady 4`);
+    assert.match(szablon, /wiedzy ogólnej jest w porządku/,
+      `${nazwa}: prompt wprost dopuszcza pytanie ogólne, gdy temat nie ma lokalnego zaczepienia`);
+    assert.match(szablon, /Kotwicz pytanie możliwie blisko okolicy/,
+      `${nazwa}: prośba o kotwicę zostaje — to nadal gra terenowa`);
+  }
 });
 
 /* ------------------------------------------------------- poprawka i wynik */
