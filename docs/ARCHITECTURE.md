@@ -9,7 +9,9 @@ zależności npm. Treść pytań pochodzi z zewnątrz (model AI) i wchodzi przez
 pętlę protokołu PYT (ADR 0006, `docs/PROTOKOL.md`).
 
 ```
-index.html                  — powłoka UI: ekrany (setup → prompt → paczka → gra → wynik),
+index.html                  — powłoka UI: ekran startowy z intro nad mapą, mapa jako
+                              trwałe tło, kroki gry (setup → pozycja → stacje → prompt →
+                              paczka → gra → wynik), warstwy rankingów i prywatności,
                               stopka z wersją protokołu, baner file://
 sw.js                       — Service Worker (M10): offline skorupa + kafelki
                               ostatniej okolicy (cache-first, limit i ewikcja;

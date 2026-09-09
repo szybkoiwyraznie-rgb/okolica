@@ -1758,3 +1758,82 @@ w 43 miejscach (jedna wersja wszędzie, L29), `npm test` 656/656 zielone na
   startowego („pięć ekranów: setup → …”), a `docs/ARCHITECTURE.md` §1 opisuje
   powłokę jako „setup → prompt → paczka → gra → wynik”. To dokładnie wzorzec
   z L31 (funkcja wchodzi/znika w UI, proza zostaje) — do poprawienia.
+
+## 2026-09-09 (sesja bieżąca) — dwanaście zgłoszeń właściciela z terenu
+
+Sesja realizacyjna na gałęzi `arena/01a08645-okolica` (PR #6). Właściciel zgłosił
+uwagi z trzech środowisk: sandbox (B*), desktop na Pages (D*), realny iPhone (E*),
+plus obserwacje z Google Drive (F*) i poprawki warstw (A*). Zgłoszenia E1/E2
+były już zrealizowane w PR #5 (ekran startowy, smukła belka), B1 okazało się
+szersze niż opis — poniżej stan po tej sesji.
+
+**Zgłoszenie F1 — pliki `gra-hotseat-*` mnożyły się na Drive bez nowych gier.**
+Przyczyna złożona z dwóch elementów: `oproznijKolejkeHotseat()` wysyła kolejkę
+przy KAŻDYM starcie aplikacji (`app/app.js`), a `przyjmijGreHotseat()` w moście
+zakładał nowy plik przy każdym żądaniu (`createFile(nazwaPlikuHotseat())` z nazwą
+opartą o `Date.now()`). Jedna gra, której most kiedyś odmówił (starsza wersja
+skryptu bez akcji `gra-hotseat`), przy każdym odświeżeniu zostawiała nowy plik.
+Naprawa: `graHotseatDoWysylki` wysyła `odcisk` (FNV-1a z klucza gry), most nazywa
+nim plik i nadpisuje istniejący. Brak odcisku (stara aplikacja) = zachowanie jak
+dotąd. Commit `a41b0b7`.
+
+**Zgłoszenia B1 i F2 — łapki nieaktywne, rankingi puste.** Diagnoza obaliła
+pierwotną hipotezę. Kod trzymał się wąskiej litery ADR 0028 („oceny dotyczą
+paczek z repozytorium”), a właściciel doprecyzował: *„Nie ma paczek, które nie
+istnieją na Drive. Każda powinna móc być oceniona”*. Panel znikał, gdy paczka
+była świeżo wygenerowana (leży w katalogu PRZEGLĄDU, a most przyjmował głosy
+tylko dla ZAAKCEPTOWANYCH) oraz przy drugiej grze z pamięci telefonu (aplikacja
+nie znała `id` pliku Drive). Naprawa po obu stronach: `paczkaJestWRepo` obejmuje
+przegląd, `przyjmijKandydata` oddaje `id` także przy duplikacie, aplikacja
+zapamiętuje parę skrót→id w `okolica:paczki-drive` (LRU 24). Aneks do ADR 0028.
+Przy F2 rozdzielono też komunikaty pustego rankingu: „most nie ma gier” vs
+„ta kategoria jest pusta” (L6). Commity `349984c`, `d8628cb`.
+
+**Zgłoszenia A1–A3 — warstwy nad mapą.** Intro rozwinięte do czterech akapitów
+z wyśrodkowanym tytułem `clamp(28px, 8vw, 40px)`; poprawiony podtytuł („gra
+terenowa tam, gdzie akurat jesteś” — poprzedni miał błąd interpunkcyjny
+i mylące znaczenie). Rankingi wchodziły pod belkę, bo `.warstwa` ma `inset: 0`,
+a stałe 16 px nie mijało belki ~64 px — odstęp liczy się teraz od zmierzonej
+`--wysokosc-belki`. Wszystkie trzy warstwy (rankingi, intro, setup) przyciemniają
+mapę tym samym kolorem; setup jako karta dostał kożuch na `::before` `<body>`
+z `pointer-events: none`. Commit `4d6984f`.
+
+**Zgłoszenie D1 — brakujące kafelki na desktopie.** Też dwie przyczyny naraz:
+`MAX_KAFELEK = 48` było MNIEJ, niż potrzebuje jeden ekran Full HD (1920×900
+przy z16 = siatka 9×6 z marginesem = 54 kafelki), a przycinanie działało
+row-major z `break`iem, więc ucinało płaski dolny pas i prawy brzeg. Sufit
+podniesiony do 120 (nadal jeden ekran z zapasem, nie pobieranie hurtowe),
+a przycinanie odrzuca teraz kafelki najdalsze od środka panelu. Nota
+w `ASSETS.md` (L31). Commit `084f482`.
+
+**Zgłoszenie F3 — stany ikon w belce.** ⚙ START GRY i 🏆 Rankingi zachowują się
+jak 🔔 Sygnały: świecą przy otwartej warstwie, a klik w świecącą ikonę ją
+zamyka. Stan liczy jedna funkcja `odswiezStanIkonBelki()` wołana ze wszystkich
+przejść — rozsypanie tego po ścieżkach (przycisk, krzyżyk, Escape, „wróć”,
+prywatność) dałoby ikonę świecącą nad zamkniętą warstwą. Commit `084f482`.
+
+**Zgłoszenie B3 — pusta strona po „Wróć na początek”.** Zweryfikowane jako już
+naprawione w PR #5 (`wrocNaPoczatek` → `pokazMapeStartowa`). Dołożony test
+regresji, bo żaden nie pilnował tej ścieżki. Commit `084f482`.
+
+**Zgłoszenie B2 — koniec odwracania liter (ADR 0033).** Właściciel: *„odwracanie
+liter jest za trudne dla modeli AI i przekręcają przez to wyrazy (…) zostawmy
+TYLKO kodowanie poprawnej odpowiedzi”*. Odwracanie znak po znaku jest dla modelu
+zawodne (pracuje na tokenach), a reguła samokontroli z rev2 tego nie ratowała.
+Nowe markery `PYT/1.0-rev4` (z fact-check) i `-rev5` (bez) — tekst zapisywany
+normalnie, kod pozycyjny `poprawna` zostaje. Zgodność wstecz obowiązkowa:
+walidator przyjmuje wszystkie markery, a odwracanie dekoduje tylko dla
+rev1/rev2/rev3, bo takie paczki leżą na Drive. Szablony `PYT/1.0.7`
+i `PYT/1.0-nofc.2`; schemat PYT bez zmiany wersji (kształt pól ten sam).
+Commit `2af0ae7`.
+
+**Brama na koniec:** `npm test` **673/673**, szablony zsynchronizowane,
+WCAG AA 0 naruszeń. Cache-bust przeszedł `m12-40 → m12-43` (L29, razem
+z `WERSJA_SW`) — trzy podbicia, bo każdy commit ruszał kod albo CSS.
+
+**Ograniczenie weryfikacji tej sesji:** narzędzia podglądu w przeglądarce
+(Chromium + puppeteer w `/home/user/.narzedzia/`) nie przetrwały resetu
+workspace, a egress jest zablokowany (L3), więc nie dało się ich odtworzyć.
+Zmiany wizualne (A1–A3, F3) sprawdzono testami kontraktu na CSS i analizą
+kaskady, nie zrzutem ekranu — potwierdzenie wyglądu zostaje po stronie
+właściciela. Serwer podglądu (`npm run serwer`, port 8000) był uruchomiony.
