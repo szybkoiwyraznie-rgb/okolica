@@ -12,7 +12,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SZABLON_PROMPTU, WERSJA_PROTOKOLU } from '../app/protokol.js';
+import { SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU } from '../app/protokol.js';
 import { PODKLADY, TEMATY, WIEK } from '../app/konfig.js';
 import { KODOWANIE, SCHEMAT_KONTENERA } from '../app/kodowanie.js';
 import { KODY_POZYCJI } from '../app/pozycja.js';

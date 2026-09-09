@@ -32,10 +32,11 @@ Krok (2) jest poza systemem: model jest **zewnętrznym silnikiem treści**
 
 ## 2. Szablon promptu (dosłowny)
 
-Szablon jest **jednym źródłem prawdy**: tekst poniżej i stała
-`SZABLON_PROMPTU` w `app/protokol.js` muszą być identyczne znak w znak
-(pilnuje `test/protokol.test.js`). Placeholdery `{NAZWA}` podstawia
-`zbudujPrompt()`; nic innego nie wolno w szablonie zmieniać ręcznie.
+Szablony są **jednym źródłem prawdy**: blok w §2 i stała
+`SZABLON_PROMPTU` w `app/protokol.js` muszą być identyczne znak w znak —
+i tak samo blok w §2.2 i `SZABLON_PROMPTU_BEZ_WERYFIKACJI`
+(pilnuje `test/kontrakt.test.js` i `npm run check`). Placeholdery `{NAZWA}`
+podstawia `zbudujPrompt()`; nic innego nie wolno w szablonach zmieniać ręcznie.
 
 <!-- szablon-promptu:start -->
 ```tekst
@@ -138,7 +139,82 @@ ograniczeniem jest limit wyjścia modelu. Stałe szacunku żyją w
 `app/protokol.js` (`szacunekOdpowiedzi`, `PROG_ODPOWIEDZI_TOKENY = 4000`),
 a ekran promptu podaje przewidywany rozmiar odpowiedzi i ostrzega powyżej progu
 — ucięty JSON wracałby jako E01/E02 bez wskazania prawdziwej przyczyny.
-Pomiar spinają testy `test/duza-paczka.test.js`.
+Pomiar spinają testy `test/duza-paczka.test.js`. Szacunek jest wspólny dla
+obu wariantów promptu (górne ograniczenie; paczka bez weryfikacji zwykle
+wychodzi mniejsza, bo nie niesie źródeł).
+
+### 2.2 Wariant „Pytania (bez fact check)" (domyślny, ADR 0032)
+
+Ten sam kształt odpowiedzi co §2, inny kontrakt z modelem: fakty z własnej
+wiedzy (bez kwerendy w internecie), źródła opcjonalne. Znacznik odpowiedzi:
+`PYT/1.0-rev3`.
+
+<!-- szablon-promptu-bez:start -->
+```tekst
+Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin. Ten wariant NIE wymaga sprawdzania faktów w internecie — korzystaj z własnej wiedzy.
+
+ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
+1. Korzystaj WYŁĄCZNIE z własnej wiedzy (pamięci treningowej) — NIE wykonuj kwerendy w internecie; ta generacja ma być szybka. Wybieraj fakty pewne i powszechnie znane; gdy czegoś nie jesteś pewien, uprość pytanie albo pomiń temat i opisz to w polu "uwagi".
+2. Pole "zrodla" jest OPCJONALNE: możesz je pominąć albo podać pustą listę. Wpisz adres URL TYLKO wtedy, gdy jesteś pewien, że taki adres istnieje i zawiera ten fakt — zmyślony albo niepewny adres jest gorszy niż brak adresu.
+3. Nie wymyślaj nazw, dat, liczb, cytatów ani autorów. Nie zgaduj. Gdy nie masz pewności co do faktu, wybierz łatwiejszy fakt z tego samego tematu; jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
+4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego pewnego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.
+5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
+6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
+7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
+8. Pola "tresc", "odpowiedzi", "wyjasnienie", "uwagi" oraz "tytul" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład "Kot" jako "toK"), a w polu "protokol" wpisz "PYT/1.0-rev3". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).
+
+OKOLICA GRY:
+- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
+- miejsce: {MIEJSCE}
+- promień gry: {PROMIEN_M} m
+- sposób poruszania się: {TRYB}
+
+STACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):
+{LISTA_STACJI}
+
+GRACZE I TRUDNOŚĆ:
+- liczba graczy: {LICZBA_GRACZY}
+- kategoria wiekowa: {WIEK}
+- wymagania trudności: {OPIS_TRUDNOSCI}
+- tematy pytań (wyłącznie z tej listy): {TEMATY}
+- liczba pytań łącznie: {LICZBA_PYTAN}
+- język pytań: {JEZYK}
+- data przygotowania: {DATA}
+
+SCHEMAT ODPOWIEDZI (PYT/1.0-rev3) — dokładnie te pola:
+{
+  "protokol": "PYT/1.0-rev3",
+  "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
+  "wiek": "{WIEK}",
+  "tematy": [{TEMATY_JSON}],
+  "jezyk": "{JEZYK}",
+  "utworzono": "{DATA}",
+  "pytania": [
+    {
+      "id": "s1p1",
+      "stacja": 1,
+      "temat": "historia",
+      "tresc": "Treść pytania zakończona znakiem zapytania?",
+      "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
+      "poprawna": 20,
+      "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
+      "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }]
+    }
+  ],
+  "uwagi": ""
+}
+
+WYMAGANIA DODATKOWE:
+- "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
+- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
+- "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
+- "poprawna": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola "id" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).
+- "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
+- "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
+- "zrodla": pusta lista ALBO lista źródeł w kształcie jak w schemacie; podawaj tylko adresy, co do których masz pewność (pełny adres https://, prawdziwy i działający), każdy z tytułem i datą sprawdzenia RRRR-MM-DD; adres przykładowy albo zmyślony unieważnia pytanie.
+- "uwagi": czego nie udało się ustalić z własnej wiedzy, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko pewne.
+```
+<!-- szablon-promptu-bez:koniec -->
 
 ## 3. Schemat paczki PYT/1.0
 
@@ -170,7 +246,7 @@ Pomiar spinają testy `test/duza-paczka.test.js`.
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
-| `poprawna` | liczba całkowita | jawna i rev1: `0..3`; rev2: indeks + stacja + numer pytania + 17 (kod pozycyjny) |
+| `poprawna` | liczba całkowita | jawna i rev1: `0..3`; rev2/rev3: indeks + stacja + numer pytania + 17 (kod pozycyjny) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
 | `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
@@ -221,7 +297,8 @@ przyjmuje oba warianty.
 
 Klucz kategorii jest wartością pola `wiek`; tekst z kolumny „opis trudności"
 trafia do promptu jako `{OPIS_TRUDNOSCI}`. **Obniżenie trudności nie zwalnia
-z wymogu źródła** (ADR 0008 pkt 7).
+z wymogu źródła** (ADR 0008 pkt 7) — w wariancie z fact-check; wariant bez
+weryfikacji źródeł nie wymaga wcale (ADR 0032).
 
 | Klucz | Etykieta | Opis trudności (do promptu) |
 | --- | --- | --- |
@@ -272,7 +349,7 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E06` | `poprawna` poza zakresem albo (rev2) nieznane słowo |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
-| `E09` | pytanie bez `zrodla` albo lista pusta |
+| `E09` | pytanie bez `zrodla` albo lista pusta (nie dotyczy rev3 — źródła opcjonalne) |
 | `E10` | `zrodla[].url` nie jest adresem `http(s)` albo jest adresem zabronionym: domena przykładowa (`example.com`, `przyklad.org`, `twojastrona.pl`) albo zarezerwowane TLD (`.invalid`, `.test`, `.localhost`, `.example`, `.local`) |
 | `E11` | data (`utworzono`, `sprawdzono`) w przyszłości albo w złym formacie |
 | `E12` | `temat` spoza kanonu §5 |
