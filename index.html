@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-50">
-  <script type="module" src="app/app.js?v=m12-50"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-51">
+  <script type="module" src="app/app.js?v=m12-51"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -430,18 +430,17 @@
     <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
     <section id="ekran-paczka" class="ekran" hidden aria-labelledby="tytul-paczka">
       <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
-      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i <strong>nie jest zaszyfrowany</strong>. Poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive do przeglądu właściciela); przy usterkach dostaniesz poprawkę do odesłania modelowi. Można wkleić odpowiedź modelu (JSON) albo wcześniej ukrytą paczkę.</p>
-      <!-- Zgłoszenie właściciela 2026-09-09 (druga tura): jeden przycisk czytający
-           schowek NIE DZIAŁA na telefonie właściciela — przeglądarka odmawia
-           dostępu do `navigator.clipboard`. Wracamy do wklejania w pole, ale
-           pole ma trzy wiersze: przy takiej wysokości widać w nim praktycznie
-           tylko nagłówek paczki, więc gracz nie podejrzy pytań przez ramię. -->
-      <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="3" placeholder="Wklej tutaj odpowiedź modelu (blok JSON)" aria-label="Odpowiedź modelu AI"></textarea>
+      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i <strong>nie jest zaszyfrowany</strong>. Wklej odpowiedź modelu do pola poniżej: sprawdzenie rusza samo, a poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive do przeglądu właściciela). Przy usterkach dostaniesz poprawkę do odesłania modelowi.</p>
+      <!-- Zgłoszenie właściciela 2026-09-09 (trzecia tura): „ma zostać pole
+           i guzik »Wklej ze schowka« → po wklejeniu czegokolwiek ma się
+           automatycznie zatwierdzać". Wklejenie JEST decyzją organizatora, więc
+           osobne „Sprawdź i przyjmij" tylko dokładało klik. Import z pliku
+           usunięty — nie było takiej ścieżki w życiu gry.
+           Pole zostaje niskie (3 wiersze), żeby nie dało się czytać pytań. -->
+      <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="3" placeholder="Wklej tutaj odpowiedź modelu (blok JSON) — sprawdzi się sama" aria-label="Odpowiedź modelu AI"></textarea>
       <p id="wklejka-status" class="podpowiedz" role="status" aria-live="polite"></p>
       <div class="wiersz">
-        <button id="przycisk-wklej" class="przycisk" type="button">📋 Wklej ze schowka</button>
-        <label class="przycisk przycisk-plik">⬆ Z pliku<input id="plik-odpowiedz" type="file" accept=".json,.txt,application/json,text/plain"></label>
-        <button id="przycisk-sprawdz" class="przycisk przycisk-glowny" type="button">✓ Sprawdź i przyjmij</button>
+        <button id="przycisk-wklej" class="przycisk przycisk-glowny" type="button">📋 Wklej ze schowka</button>
       </div>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wstecz-prompt" class="przycisk" type="button">← prompt</button>

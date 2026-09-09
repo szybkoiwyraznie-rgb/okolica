@@ -232,8 +232,6 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .przycisk-ikona:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
 #przycisk-setup { font-size: 14px; letter-spacing: 0.3px; }
 .przycisk[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
-.przycisk-plik { position: relative; overflow: hidden; display: inline-flex; align-items: center; }
-.przycisk-plik input[type='file'] { position: absolute; inset: 0; opacity: 0; font-size: 200px; cursor: pointer; }
 
 /* --- segmenty (tryb, wiek) i chipy (tematy) --- */
 .segment { display: flex; flex-wrap: wrap; gap: 8px; }

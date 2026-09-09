@@ -291,8 +291,7 @@ test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain',
     podlaczFetch(dom);
     await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
     const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
-    dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
-    dom.kliknij('przycisk-sprawdz');
+    dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
     await new Promise((r) => setTimeout(r, 30));
     assert.equal(atrap.posty.length, 1, 'dokładnie jedna wysyłka po przyjęciu');
     const { url, opcje } = atrap.posty[0];
@@ -320,8 +319,7 @@ test('wysyłka Drive: adres z kodu — przyjęcie paczki wysyła bez wpisu w pam
     podlaczFetch(dom);
     await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
     const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
-    dom.pobierz('pole-odpowiedz').value = JSON.stringify(paczka);
-    dom.kliknij('przycisk-sprawdz');
+    dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
     await new Promise((r) => setTimeout(r, 30));
     assert.equal(atrap.posty.length, 1, 'przyjęcie paczki wysyła na adres z kodu');
     assert.equal(atrap.posty[0].url, DOMYSLNY_URL_MOSTU, 'cel wysyłki to stała wdrożeniowa');

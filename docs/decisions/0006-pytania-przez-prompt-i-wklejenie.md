@@ -143,3 +143,37 @@ schowaną przed użytkownikiem, który jej właśnie potrzebował.
 wymusić (schowek, powiadomienia, orientacja, pełny ekran), może **ulepszać**
 ścieżkę, ale nigdy nie może być jedyną drogą do celu. Test „ekran 5: zablokowany
 schowek NIE zatrzymuje ekranu\" pilnuje, że droga główna działa mimo odmowy.
+
+
+## Aneks 2026-09-09 (trzecia tura) — wklejenie JEST zatwierdzeniem; koniec importu z pliku
+
+Właściciel: „może dałoby się zrobić tak, żeby wklejenie paste w okno było
+ręczne, ale po wklejeniu »Sprawdź i przyjmij« nie było konieczne i engine sam
+się akceptował (…) żadne wczytywanie z pliku nie jest potrzebne, jakiego znowu
+pliku?".
+
+Trafna obserwacja: organizator, który właśnie wkleił blok JSON, **już podjął
+decyzję**. Przycisk „✓ Sprawdź i przyjmij" nie dokładał żadnej informacji ani
+możliwości cofnięcia — walidacja i tak nic nie psuje (zła paczka daje usterki
+i poprawkę, dobra zaczyna grę). Był to czysty koszt: drugi dotyk na ulicy,
+z telefonem w jednej ręce.
+
+**Decyzja (zastępuje pkt 1 poprzedniego aneksu):**
+
+1. Nasłuch `paste` na `#pole-odpowiedz` odpala `sprawdzOdpowiedz(tekst)`
+   natychmiast. Treść czytamy z `event.clipboardData`, **nie** z pola: zdarzenie
+   `paste` leci PRZED wstawieniem tekstu, więc `pole.value` jest w tej chwili
+   jeszcze puste — klasyczna pułapka, przez którą walidacja sprawdzałaby
+   poprzednią zawartość.
+2. „📋 Wklej ze schowka" robi to samo jednym klikiem (czyta schowek → waliduje).
+   Odmowa schowka nie blokuje niczego: status kieruje do wklejenia palcem.
+3. Puste wklejenie (spacje, obrazek — `clipboardData` bez tekstu) **nie**
+   uruchamia walidacji. Inaczej ekran krzyczałby usterkami bez powodu.
+4. Import z pliku (`#plik-odpowiedz`, `.przycisk-plik`) **usunięty** wraz z CSS.
+   Paczka zawsze przychodzi z czatu przez schowek; plik był ścieżką wymyśloną
+   przy projektowaniu, nigdy używaną. Wczytanie ukrytej paczki z repozytorium
+   zestawów działa dalej — to osobny ekran.
+
+**Czego to NIE zmienia:** kody usterek, poprawka dla modelu, automatyczny start
+gry po przyjęciu i czyszczenie pola po walidacji (ADR 0007 pkt 4) bez zmian.
+Prywatności ekranu nadal pilnuje wysokość pola (`rows="3"`, `resize: none`).
