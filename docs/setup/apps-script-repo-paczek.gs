@@ -941,7 +941,16 @@ function zakonczGre(dane) {
 
 const MAKS_ZDARZEN_HOTSEAT = 400; // 8 graczy × 8 stacji × (dojście + odpowiedź) z zapasem
 
-function nazwaPlikuHotseat() {
+/**
+ * Nazwa pliku gry hot-seat.
+ *
+ * Z odciskiem (klucz idempotencji z aplikacji) nazwa jest STAŁA dla danej gry —
+ * powtórna wysyłka trafia na istniejący plik i most jej nie duplikuje. Bez
+ * odcisku (stara wersja aplikacji) zostaje nazwa losowa jak dotąd.
+ */
+function nazwaPlikuHotseat(odcisk) {
+  const o = String(odcisk == null ? '' : odcisk).replace(/[^a-z0-9]/gi, '').slice(0, 16);
+  if (o) return 'gra-hotseat-' + o + '.json';
   return 'gra-hotseat-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.json';
 }
 
@@ -1047,7 +1056,16 @@ function przyjmijGreHotseat(dane) {
       wyniki: {},
     };
     gra.wyniki = przeliczWyniki(gra); // premia hot-seat = 0 (gracze idą razem)
-    const plik = folder(FOLDERY.gryZakonczone).createFile(nazwaPlikuHotseat(), JSON.stringify(gra, null, 2), 'application/json');
+    // Idempotencja (zgłoszenie właściciela 2026-09-09): telefon wysyła kolejkę
+    // przy KAŻDYM starcie aplikacji, więc ta sama gra potrafi przyjść wiele
+    // razy. Plik o nazwie z odciskiem gry nadpisujemy zamiast zakładać drugi —
+    // inaczej katalog gier zakończonych puchnie, a ranking liczy grę wielokrotnie.
+    const katalog = folder(FOLDERY.gryZakonczone);
+    const nazwa = nazwaPlikuHotseat(dane.odcisk);
+    const istniejace = katalog.getFilesByName(nazwa);
+    const plik = istniejace.hasNext()
+      ? istniejace.next()
+      : katalog.createFile(nazwa, JSON.stringify(gra, null, 2), 'application/json');
     gra.idGry = plik.getId();
     zapiszGre(plik, gra);
     return { ok: true, idGry: gra.idGry, wyniki: gra.wyniki };

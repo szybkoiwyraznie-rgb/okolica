@@ -492,6 +492,33 @@ export function zdarzeniaHotseatu(dziennik) {
 }
 
 /**
+ * Odcisk gry hot-seat (FNV-1a, 8 znaków hex) — klucz idempotencji wysyłki.
+ *
+ * Zgłoszenie właściciela (2026-09-09): na Drive przybywały pliki `gra-hotseat-*`
+ * mimo braku nowych rozgrywek. Powód: kolejka wysyłana przy KAŻDYM starcie
+ * aplikacji, a most zakładał nowy plik przy każdym żądaniu. Odcisk jedzie
+ * w poleceniu i pozwala mostowi rozpoznać tę samą grę (nazwa pliku).
+ *
+ * Liczony z tekstu, bez `TextEncoder`: klucz jest zbudowany z kodu gry, czasu
+ * startu i imion, więc znaki spoza ASCII kodujemy przez `charCodeAt` bajtowo
+ * (ten sam wynik po obu stronach nie jest potrzebny — most klucza nie liczy).
+ */
+export function odciskHotseat(tekst) {
+  let h = 0x811c9dc5;
+  const s = String(tekst ?? '');
+  for (let i = 0; i < s.length; i += 1) {
+    const kod = s.charCodeAt(i);
+    h ^= kod & 0xff;
+    h = Math.imul(h, 0x01000193) >>> 0;
+    if (kod > 0xff) {
+      h ^= (kod >> 8) & 0xff;
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+  }
+  return h.toString(16).padStart(8, '0');
+}
+
+/**
  * Polecenie `gra-hotseat` — cała zakończona gra w jednym żądaniu. Walidacja jest
  * lokalnym lustrem `bledyGryHotseat` z mostu (Apps Script nie może importować
  * modułów, więc reguły są po dwóch stronach; zgodność pilnuje test kontraktu).
@@ -499,7 +526,7 @@ export function zdarzeniaHotseatu(dziennik) {
  * Zwraca `{ ok: false, usterki }` zamiast rzucać: brak wyniku na Drive nigdy nie
  * może zepsuć gry, która właśnie się skończyła (ADR 0016 pkt 5).
  */
-export function graHotseatDoWysylki({ miejsce, geohash5, wiek, tematy, liczbaStacji, pytaniaNaStacje, gracze, dziennik } = {}) {
+export function graHotseatDoWysylki({ miejsce, geohash5, wiek, tematy, liczbaStacji, pytaniaNaStacje, gracze, dziennik, kluczGry = '' } = {}) {
   const usterki = [];
   if (typeof miejsce !== 'string' || !miejsce.trim()) usterki.push('brak nazwy miejsca');
   if (!/^[0-9b-z]{5}$/.test(String(geohash5 ?? ''))) usterki.push('geohash5 musi mieć 5 znaków (przybliżenie okolicy, ADR 0024 pkt 4)');
@@ -529,6 +556,9 @@ export function graHotseatDoWysylki({ miejsce, geohash5, wiek, tematy, liczbaSta
       },
       gracze: lista.map((g) => ({ id: g.id, pseudonim: g.pseudonim.trim().slice(0, 24) })),
       zdarzenia,
+      // Klucz idempotencji: most po nim rozpoznaje, że ta sama gra już u niego
+      // jest, i NIE zakłada drugiego pliku (zgłoszenie właściciela 2026-09-09).
+      odcisk: odciskHotseat(kluczGry || [miejsce, geohash5, lista.map((g) => g.pseudonim).join(','), zdarzenia.length].join('|')),
     },
   };
 }

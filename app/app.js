@@ -755,6 +755,9 @@ function polecenieHotseat() {
     pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
     gracze: (r.gracze ?? []).map((g) => ({ id: g.id, pseudonim: g.imie })),
     dziennik: r.dziennik,
+    // Ten sam odcisk gry co lokalny rejestr wysłanych — most po nim rozpoznaje
+    // powtórkę i nie zakłada drugiego pliku (zgłoszenie właściciela 2026-09-09).
+    kluczGry: kluczGryHotseat(r),
   });
 }
 
