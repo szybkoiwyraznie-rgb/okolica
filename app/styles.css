@@ -21,6 +21,7 @@
   --blad-tlo: #fbeaea;
   --ok: #2f6f4f;
   --ok-tlo: #e6f2ea;
+  --zloto: #7d6300;
   --promien: 14px;
   --cel: 44px;
   --odstep: 14px;
@@ -41,6 +42,7 @@ html[data-motyw='ciemny'] {
   --blad-tlo: #33201f;
   --ok: #86dcab;
   --ok-tlo: #1d2f25;
+  --zloto: #e3b341;
 }
 
 * { box-sizing: border-box; }
@@ -224,6 +226,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .karta .duzy { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
 .kod { margin: 6px 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; color: var(--tekst-slaby); word-break: break-all; }
 .badge { display: inline-block; margin: 6px 0; padding: 5px 10px; border-radius: 999px; background: var(--akcent-slaby); font-size: 13px; }
+/* Znaczek Q (ADR 0032): złota litera przy paczkach zweryfikowanych w sieci. */
+.znaczek-factcheck { color: var(--zloto); font-weight: 700; }
 /* Dopiski robocze (odniesienia do ADR): widoczne tylko w trybie testowym. */
 body:not(.tryb-testowy) .dopisek-roboczy {
   display: none;

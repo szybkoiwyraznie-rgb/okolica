@@ -483,6 +483,7 @@
       <!-- M11/P4: panel gry wieloosobowej — tury, żywe wyniki, pasek synchronizacji -->
       <div id="gra-panel-multi" class="karta gra-panel" hidden>
         <p id="gra-multi-tura" class="duzy" role="status"></p>
+        <p id="multi-factcheck" class="podpowiedz" hidden></p>
         <!-- ADR 0027 część B: wolna kolejność stacji — gracz wybiera, dokąd idzie -->
         <div id="multi-wybor-stacji" hidden>
           <p class="podpowiedz">Kolejność jest dowolna — wybierz stację, do której idziesz:</p>
@@ -539,6 +540,7 @@
       <div id="gra-panel-koniec" class="karta gra-panel" hidden>
         <p class="duzy">🏁 Koniec gry!</p>
         <div id="gra-wynik-zwyciezca" class="karta-zwyciezcy"></div>
+        <p id="gra-wynik-factcheck" class="podpowiedz"></p>
         <table id="gra-wyniki" class="tabela-wynikow">
           <thead>
             <tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th></tr>

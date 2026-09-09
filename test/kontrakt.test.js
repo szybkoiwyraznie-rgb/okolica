@@ -90,6 +90,22 @@ test('kontrakt ADR 0032: ekran promptu ma checkbox fact-check (domyślnie pusty,
   assert.match(ekran, /id="prompt-podglad-naglowek"/, 'nagłówek podglądu mówi, który wariant widać');
 });
 
+test('kontrakt ADR 0032: znaczek Q ma token złota w obu motywach i klasę', () => {
+  assert.match(STYLE, /--zloto: #7d6300;/, 'złoto jasne (kontrast pilnuje brama)');
+  assert.match(STYLE, /--zloto: #e3b341;/, 'złoto ciemne');
+  assert.match(STYLE, /\.znaczek-factcheck \{ color: var\(--zloto\); font-weight: 700; \}/, 'klasa znaczka');
+  const audyt = czytaj('tools/audyt-kontrastu.mjs');
+  assert.match(audyt, /tekst: 'zloto', tlo: 'tlo-karta'/, 'brama pilnuje kontrastu na karcie');
+  assert.match(audyt, /tekst: 'zloto', tlo: 'tlo'/, 'brama pilnuje kontrastu na tle strony');
+});
+
+test('kontrakt ADR 0032: wynik i panel multi mają linię wariantu', () => {
+  assert.match(INDEX, /id="gra-wynik-factcheck"/, 'linia wariantu na ekranie wyniku');
+  assert.match(INDEX, /id="multi-factcheck"/, 'linia wariantu w panelu multi');
+  assert.match(APP, /\$\('gra-wynik-factcheck'\)/, 'pokazWyniki ją wypełnia');
+  assert.match(APP, /\$\('multi-factcheck'\)/, 'renderujPanelMulti ją wypełnia');
+});
+
 test('kontrakt ADR 0032: wersja szablonu bez weryfikacji ma konsumenta w UI (jak SZABLON_WERSJA)', () => {
   assert.match(APP, /SZABLON_WERSJA_BEZ_WERYFIKACJI/, 'app.js importuje stałą');
   assert.match(APP, /szablon \$\{SZABLON_WERSJA_BEZ_WERYFIKACJI\}/, 'opis trybu pokazuje wersję szablonu §2.2');

@@ -883,3 +883,36 @@ test('w turach nie ma wolnego wyboru stacji — kolejność ustala kolejka', asy
   assert.equal(el(A, 'multi-wybor-stacji').hidden, true, 'tury: lista wyboru schowana');
   assert.match(tekst(A, 'gra-multi-tura'), /Twoja tura|Teraz idzie/, 'tury: komunikat czyjej tury zostaje');
 });
+
+test('ADR 0032: panel multi pokazuje Q dla zweryfikowanej, notkę dla paczki bez weryfikacji', async () => {
+  const maQ = (u) => [...el(u, 'multi-factcheck').children].some((c) => c.className === 'znaczek-factcheck' && c.textContent === 'Q');
+
+  const most = atrapaMostu();
+  const pamiec = new Map();
+  const zestaw = zasiejZestaw(pamiec, 2); // meta z factcheck:true (domyślne)
+  const A = await noweUrzadzenie({ pamiec, most });
+  await przygotujTelefon(A, 'Ala');
+  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestaw.kontener.skrot });
+  await klik(A, 'przycisk-lobby-start');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'organizator w grze');
+  assert.equal(el(A, 'multi-factcheck').hidden, false, 'linia wariantu widoczna');
+  assert.match(tekst(A, 'multi-factcheck'), /fact check/);
+  assert.equal(maQ(A), true, 'Q w panelu multi dla paczki zweryfikowanej');
+
+  // wariant bez weryfikacji: ta sama paczka, meta z factcheck:false
+  const most2 = atrapaMostu();
+  const pamiec2 = new Map();
+  const zestaw2 = zasiejZestaw(pamiec2, 2);
+  for (const klucz of [kluczZestawu(zestaw2.kontener.skrot), KLUCZ_REJESTRU]) {
+    const zapis = JSON.parse(pamiec2.get(klucz));
+    if (zapis.wpisy) zapis.wpisy.forEach((w) => { w.factcheck = false; });
+    else zapis.factcheck = false;
+    pamiec2.set(klucz, JSON.stringify(zapis));
+  }
+  const B = await noweUrzadzenie({ pamiec: pamiec2, most: most2 });
+  await przygotujTelefon(B, 'Bartek');
+  await zalozGreUI(B, { tryb: 'wyscig', skrot: zestaw2.kontener.skrot });
+  await klik(B, 'przycisk-lobby-start');
+  assert.match(tekst(B, 'multi-factcheck'), /bez fact-check/);
+  assert.equal(maQ(B), false, 'brak znaczka dla wariantu bez weryfikacji');
+});

@@ -1724,11 +1724,35 @@ function zapiszZestawLokalnyPoStarcie() {
   }
 }
 
-function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '') {
+/**
+ * Reguła odczytu flagi weryfikacji (ADR 0032 §4): brak pola w starych
+ * zapisach (meta, rejestr, indeks, historia) = paczka zweryfikowana.
+ */
+function czyWpisFactcheck(wpis) {
+  return wpis?.factcheck !== false;
+}
+
+/**
+ * Znaczek Q (ADR 0032): złota litera dla paczek zweryfikowanych w sieci.
+ * Niesie informację (nie jest dekoracją) — stąd role="img" z etykietą.
+ * Dla wariantu bez weryfikacji go NIE renderujemy (brak znaczka = brak weryfikacji).
+ */
+function znaczekFactcheck() {
+  const s = document.createElement('span');
+  s.className = 'znaczek-factcheck';
+  s.setAttribute('role', 'img');
+  s.setAttribute('aria-label', 'pytania zweryfikowane w sieci');
+  s.title = 'Pytania zweryfikowane w sieci (fact check)';
+  s.textContent = 'Q';
+  return s;
+}
+
+function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '', factcheck = true) {
   const li = document.createElement('li');
   const opisEl = document.createElement('span');
   opisEl.className = 'opis-zestawu';
   opisEl.textContent = `${etykietaZrodla} ${opis}`;
+  if (factcheck) opisEl.append(' ', znaczekFactcheck());
   const przycisk = document.createElement('button');
   przycisk.type = 'button';
   przycisk.className = 'przycisk';
@@ -1807,6 +1831,8 @@ function odswiezPropozycjeZestawow() {
       `${wpis.miejsce} · ${wpis.data} · ${wpis.liczbaStacji} stacji × ${wpis.pytaniaNaStacje} pytań · ${wpis.tematy.join(', ')} · ${wpis.wiek}`,
       '📱 z tego telefonu:',
       () => grajZZestawemLokalnym(wpis.skrot),
+      '',
+      czyWpisFactcheck(wpis),
     ));
   }
   const url = adresMostu(); // ADR 0020: adres z kodu aplikacji (albo nadpisany w pamięci telefonu)
@@ -1852,6 +1878,7 @@ function odswiezPropozycjeZestawow() {
           meta.oceny === undefined
             ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
             : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
+          czyWpisFactcheck(meta),
         ));
       }
       // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
@@ -2379,7 +2406,11 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
     : faza === FAZY.pytanie
       ? 'Następne pytanie →'
       : 'Następna stacja →';
-  status(dobrze ? 'Poprawna odpowiedź zapisana.' : 'Odpowiedź zapisana — wyjaśnienie i źródła poniżej.');
+  // Paczka bez źródeł (rev3) nie ma „źródeł poniżej" — status nie może ich obiecywać.
+  const maZrodla = Array.isArray(pytanie.zrodla) && pytanie.zrodla.length > 0;
+  status(dobrze
+    ? 'Poprawna odpowiedź zapisana.'
+    : maZrodla ? 'Odpowiedź zapisana — wyjaśnienie i źródła poniżej.' : 'Odpowiedź zapisana — wyjaśnienie poniżej.');
   renderujGre({ panele: false }); // badge'e tak; panele dopiero po „Następna stacja"
   zapiszGre();
 }
@@ -2451,6 +2482,7 @@ function zapiszGreDoHistorii(przerwana = false) {
       miejsce: STAN.miejsce ? STAN.miejsce : null,
       terazMs: Date.now(),
       przerwana,
+      factcheck: factcheckBiezacejSesji(),
     });
     const surowy = localStorage.getItem(KLUCZ_HISTORII);
     let { historia, usterki } = walidujHistorieSurowa(surowy);
@@ -2507,6 +2539,7 @@ function renderujHistorieGier() {
       w.zwyciezca ? `🏆 ${w.zwyciezca} — ${w.punktyRazem} pkt` : 'brak zwycięzcy',
     ];
     li.textContent = czesci.filter(Boolean).join(' · ') + (w.przerwana ? ' · (przerwana)' : '');
+    if (czyWpisFactcheck(w)) li.append(' ', znaczekFactcheck());
     return li;
   }));
 }
@@ -2730,6 +2763,17 @@ function pokazWyniki() {
     const p = document.createElement('p');
     p.textContent = 'Brak zwycięzcy — żadna odpowiedź nie została zapisana.';
     kartaZw.appendChild(p);
+  }
+
+  // 1b. wariant weryfikacji pytań (ADR 0032): Q tylko dla zweryfikowanych.
+  const fcEl = $('gra-wynik-factcheck');
+  fcEl.replaceChildren();
+  if (factcheckBiezacejSesji()) {
+    const opis = document.createElement('span');
+    opis.textContent = ' Pytania zweryfikowane w sieci (fact check)';
+    fcEl.append(znaczekFactcheck(), opis);
+  } else {
+    fcEl.textContent = 'Pytania z pamięci modelu (bez fact-check — możliwe zmyślone fakty)';
   }
 
   // 2. ranking — tabela jak w M6 (miejsce, gracz, punkty, poprawne)
@@ -4017,6 +4061,17 @@ function renderujPanelMulti() {
     tura.textContent = gra.stan === 'zakonczona' ? 'Gra zakończona — ostateczne wyniki:' : 'Gra wieloosobowa.';
   }
   renderujWierszeWynikow($('gra-multi-wiersze'), gra);
+  // ADR 0032: wariant weryfikacji zestawu — meta jedzie w środku RO-gra/1.
+  const fcMulti = $('multi-factcheck');
+  fcMulti.hidden = false;
+  fcMulti.replaceChildren();
+  if (czyWpisFactcheck(gra.zestaw?.meta)) {
+    const opis = document.createElement('span');
+    opis.textContent = ' Pytania zweryfikowane w sieci (fact check)';
+    fcMulti.append(znaczekFactcheck(), opis);
+  } else {
+    fcMulti.textContent = 'Pytania z pamięci modelu (bez fact-check)';
+  }
   renderujWyborStacji(gra, r, graSieToczy);
   // tury: przycisk drogi zablokowany, dopóki idzie ktoś inny (serwer i tak pilnuje)
   if (r && r.faza === FAZY.przygotowanie && gra.tryb === TRYBY_GRY.tury && gra.stan === 'trwa') {

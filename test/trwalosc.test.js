@@ -191,6 +191,13 @@ test('historia: skrotGry — pełny skrót (historia-gra/1) BEZ treści pytań i
   assert.equal(przerwany.miejsce, null);
 });
 
+test('historia: skrotGry niesie factcheck (ADR 0032), domyślnie true', () => {
+  const { konfig, stacje, rozgrywka } = snapshotReferencyjny();
+  const wspolne = { rozgrywka, konfig, stacje, podsumowanie: podsumowanie(rozgrywka), terazMs: 1_757_000_000_000 };
+  assert.equal(skrotGry(wspolne).factcheck, true, 'domyślnie zweryfikowana');
+  assert.equal(skrotGry({ ...wspolne, factcheck: false }).factcheck, false, 'bez weryfikacji na życzenie');
+});
+
 test('historia: skrotGry odmawia niekompletnych danych (TypeError — jak zbierajStan)', () => {
   const { konfig, stacje, rozgrywka } = snapshotReferencyjny();
   const pod = podsumowanie(rozgrywka);

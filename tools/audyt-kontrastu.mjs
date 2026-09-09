@@ -31,6 +31,8 @@ export const PARY = Object.freeze([
   { tekst: 'blad', tlo: 'blad-tlo', prog: 4.5, opis: 'komunikat błędu na tle błędu' },
   { tekst: 'ok', tlo: 'ok-tlo', prog: 4.5, opis: 'komunikat powodzenia na tle OK' },
   { tekst: 'ostrzezenie', tlo: 'tlo-karta', prog: 4.5, opis: 'ostrzeżenie na karcie' },
+  { tekst: 'zloto', tlo: 'tlo-karta', prog: 4.5, opis: 'znaczek Q na karcie (ADR 0032)' },
+  { tekst: 'zloto', tlo: 'tlo', prog: 4.5, opis: 'znaczek Q na tle strony (ADR 0032)' },
   { tekst: 'linia', tlo: 'tlo-karta', prog: 3.0, opis: 'granica karty (dekoracja)', informacyjnie: true },
 ]);
 
