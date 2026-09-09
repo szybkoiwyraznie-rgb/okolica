@@ -75,7 +75,7 @@ import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchroniza
 import { adresMostu, stanMostu } from './most.js?v=m12-39';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
-  walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, walidujKolejkeOcenTekst,
+  walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
 } from './oceny.js?v=m12-39';
@@ -116,6 +116,8 @@ const STAN = {
   /** ADR 0028: pytanie i gracz, przy których stoi panel oceny. */
   ocenianePytanieId: '',
   ocenianyGracz: '',
+  /** ADR 0028: tożsamość głosującego spod panelu — ta sama przy renderze i kliku. */
+  oceniajacyId: '',
   usterkiPaczki: [],
   /** Ekran, na który wracamy z rankingu i z prywatności (oba są poza EKRANY). */
   powrotZRankingu: 'setup',
@@ -2189,6 +2191,25 @@ function zapiszKolejkeOcen(kolejka) {
  * z repozytorium — paczka wygenerowana na tym telefonie nie ma gdzie zbierać
  * głosów, więc panelu nie ma (bez komunikatu o brakującej funkcji).
  */
+/**
+ * Tożsamość głosującego spod panelu ocen. ADR 0026 aneks: na telefonie jest
+ * LISTA graczy, nie jeden profil — głosującego szukamy po imieniu
+ * odpowiadającego gracza, bo w hot-seat każdy gracz ocenia osobno (ADR 0028
+ * pkt 2) i sam identyfikator telefonu byłby za gruby. Jedno miejsce liczenia
+ * dla renderu panelu i dla klika — inaczej „już ocenione" mijałoby się z głosem.
+ */
+function idGlosujacegoPanelu(imie) {
+  const zapamietani = czytajGraczyLokalnych();
+  const klucz = normalizujPseudonim(imie).toLowerCase();
+  const naLiscie = (zapamietani?.gracze ?? []).find((g) => String(g.pseudonim).toLowerCase() === klucz) ?? null;
+  return idGlosujacego({
+    pseudonim: naLiscie?.pseudonim ?? '',
+    zweryfikowany: naLiscie?.zweryfikowany === true,
+    imie: imie ?? '',
+    pamiec: pamiecOcen(),
+  }).id;
+}
+
 function renderujPanelOcen(pytanie, gracz = null) {
   const panel = $('gra-oceny');
   if (!panel) return;
@@ -2196,12 +2217,18 @@ function renderujPanelOcen(pytanie, gracz = null) {
     panel.hidden = true;
     STAN.ocenianePytanieId = '';
     STAN.ocenianyGracz = '';
+    STAN.oceniajacyId = '';
     return;
   }
   panel.hidden = false;
   STAN.ocenianePytanieId = pytanie.id;
-  STAN.ocenianyGracz = gracz?.imie ?? '';
-  const glos = STAN.oceny.glosy.find((g) => g.paczkaId === STAN.paczkaRepoId && g.pytanieId === pytanie.id) ?? null;
+  if (gracz) {
+    STAN.ocenianyGracz = gracz.imie ?? '';
+    STAN.oceniajacyId = idGlosujacegoPanelu(gracz.imie);
+  }
+  // Odświeżenie po głosie woła bez gracza — tożsamość głosującego zostaje ta,
+  // która głosowała, bo `idGlosujacego` z pustym imieniem liczy inne id.
+  const glos = znajdzGlos(STAN.oceny, { paczkaId: STAN.paczkaRepoId, pytanieId: pytanie.id, graczId: STAN.oceniajacyId });
   const plus = $('gra-ocena-plus');
   const minus = $('gra-ocena-minus');
   if (plus) {
@@ -2222,20 +2249,9 @@ function renderujPanelOcen(pytanie, gracz = null) {
  */
 function kliknijOcene(ocena) {
   if (!STAN.paczkaRepoId || !STAN.ocenianePytanieId) return;
-  const pamiec = pamiecOcen();
-  // ADR 0026 aneks: na telefonie jest LISTA graczy, nie jeden profil. Głosującego
-  // szukamy po imieniu odpowiadającego gracza — w hot-seat każdy gracz ocenia
-  // osobno (ADR 0028 pkt 2), więc sam identyfikator telefonu byłby za gruby.
-  const zapamietani = czytajGraczyLokalnych();
-  const imie = STAN.ocenianyGracz ?? '';
-  const klucz = normalizujPseudonim(imie).toLowerCase();
-  const naLiscie = (zapamietani?.gracze ?? []).find((g) => String(g.pseudonim).toLowerCase() === klucz) ?? null;
-  const { id } = idGlosujacego({
-    pseudonim: naLiscie?.pseudonim ?? '',
-    zweryfikowany: naLiscie?.zweryfikowany === true,
-    imie,
-    pamiec,
-  });
+  // Tożsamość spod renderu panelu — ten sam głosujący, którego sprawdzało
+  // „już ocenione" (głosowanie bez renderu nie istnieje, awaryjnie liczymy).
+  const id = STAN.oceniajacyId || idGlosujacegoPanelu(STAN.ocenianyGracz);
   const wynik = ocenPytanie(STAN.oceny, {
     paczkaId: STAN.paczkaRepoId,
     pytanieId: STAN.ocenianePytanieId,
@@ -2721,6 +2737,7 @@ function wrocNaPoczatek() {
   STAN.tokenGry = '';
   STAN.ocenianePytanieId = '';
   STAN.ocenianyGracz = '';
+  STAN.oceniajacyId = '';
   pokazEkran('ekran-setup');
   status('Gotowe do nowej gry — setup i gracze zostali, wynik jest w historii.');
 }

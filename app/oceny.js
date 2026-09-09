@@ -156,6 +156,7 @@ export function walidujOcenyLokalne(surowy) {
       && typeof g.paczkaId === 'string' && g.paczkaId
       && typeof g.pytanieId === 'string' && g.pytanieId
       && (g.ocena === OCENA_PLUS || g.ocena === OCENA_MINUS))
+    .map((g) => ({ paczkaId: g.paczkaId, pytanieId: g.pytanieId, ocena: g.ocena, gracz: typeof g.gracz === 'string' ? g.gracz : '' }))
     .slice(-MAKS_OCEN_LOKALNIE);
   return { schemat: SCHEMAT_OCENY_LOKALNE, glosy };
 }
@@ -180,14 +181,31 @@ export function walidujOcenyLokalneTekst(tekst) {
 }
 
 /** Klucz „już ocenione": jedna para (głosujący, pytanie) w jednej paczce. */
-export function kluczGlosu({ paczkaId, pytanieId }) {
-  return `${paczkaId}::${pytanieId}`;
+export function kluczGlosu({ paczkaId, pytanieId, gracz = '' }) {
+  return `${paczkaId}::${pytanieId}::${gracz ?? ''}`;
 }
 
-/** Czy ten gracz już ocenił to pytanie (na tym telefonie). */
-export function juzOcenione(oceny, { paczkaId, pytanieId }) {
-  const klucz = kluczGlosu({ paczkaId, pytanieId });
-  return (oceny?.glosy ?? []).some((g) => kluczGlosu(g) === klucz);
+/**
+ * Czy ten głosujący już ocenił to pytanie (na tym telefonie). Głos sprzed
+ * klucza głosującego (bez pola `gracz`) blokuje każdego — tak jak dotąd:
+ * milczące odblokowanie starych głosów pozwoliłoby je zdublować, a most
+ * odrzuciłby duplikat dopiero po fakcie.
+ */
+export function juzOcenione(oceny, { paczkaId, pytanieId, graczId = '' }) {
+  return znajdzGlos(oceny, { paczkaId, pytanieId, graczId }) !== null;
+}
+
+/**
+ * Głos tego głosującego na to pytanie albo null. To samo dopasowanie co
+ * `juzOcenione`, ale zwraca wpis — panel potrzebuje wartości (aria-pressed).
+ */
+export function znajdzGlos(oceny, { paczkaId, pytanieId, graczId = '' }) {
+  const klucz = kluczGlosu({ paczkaId, pytanieId, gracz: graczId });
+  return (oceny?.glosy ?? []).find((g) => {
+    if (!g || g.paczkaId !== paczkaId || g.pytanieId !== pytanieId) return false;
+    if (!g.gracz) return true; // głos sprzed klucza głosującego (jw.)
+    return kluczGlosu(g) === klucz;
+  }) ?? null;
 }
 
 /**
@@ -210,10 +228,10 @@ export function ocenPytanie(oceny, { paczkaId, pytanieId, ocena, graczId, gra = 
   if (!graczId) {
     return { oceny: stan, usterki: [{ kod: 'O05', pole: 'graczId', komunikat: 'Brak tożsamości głosującego — ocena nie może być policzona.' }], doWysylki: null };
   }
-  if (juzOcenione(stan, { paczkaId, pytanieId })) {
+  if (juzOcenione(stan, { paczkaId, pytanieId, graczId })) {
     return { oceny: stan, usterki: [{ kod: 'O03', pole: 'pytanieId', komunikat: KODY_OCEN.O03 }], doWysylki: null };
   }
-  const glosy = [...stan.glosy, { paczkaId, pytanieId, ocena }].slice(-MAKS_OCEN_LOKALNIE);
+  const glosy = [...stan.glosy, { paczkaId, pytanieId, ocena, gracz: graczId }].slice(-MAKS_OCEN_LOKALNIE);
   const nowy = { schemat: SCHEMAT_OCENY_LOKALNE, glosy };
   return {
     oceny: nowy,

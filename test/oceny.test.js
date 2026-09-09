@@ -23,6 +23,7 @@ import {
   noweOceny,
   walidujOcenyLokalne,
   juzOcenione,
+  znajdzGlos,
   ocenPytanie,
   budujZadanieOceny,
   walidujKolejkeOcen,
@@ -93,7 +94,8 @@ test('oceny: jeden głos na pytanie — drugi klik nie leci w sieć', () => {
   assert.deepEqual(pierwszy.usterki, [], 'pierwszy głos jest przyjęty');
   assert.equal(pierwszy.doWysylki.schemat, SCHEMAT_OCENA);
   assert.equal(pierwszy.doWysylki.gra, 'gra-1', 'głos niesie token gry');
-  assert.equal(juzOcenione(pierwszy.oceny, { paczkaId: 'plik-1', pytanieId: 's1p1' }), true);
+  assert.equal(juzOcenione(pierwszy.oceny, { paczkaId: 'plik-1', pytanieId: 's1p1', graczId: 'ania' }), true);
+  assert.equal(juzOcenione(pierwszy.oceny, { paczkaId: 'plik-1', pytanieId: 's1p1', graczId: 'bartek' }), false, 'cudzy głos nie blokuje');
 
   // Ten sam gracz, to samo pytanie, INNA gra i odwrotny kciuk — dalej jeden głos.
   const drugi = ocenPytanie(pierwszy.oceny, { ...GLOS, ocena: OCENA_MINUS, gra: 'gra-2' });
@@ -106,6 +108,35 @@ test('oceny: jeden głos na pytanie — drugi klik nie leci w sieć', () => {
   const innePytanie = ocenPytanie(pierwszy.oceny, { ...GLOS, pytanieId: 's1p2' });
   assert.deepEqual(innePytanie.usterki, [], 'inne pytanie to inny głos');
   assert.equal(innePytanie.oceny.glosy.length, 2);
+});
+
+test('oceny: drugi gracz ocenia to samo pytanie (hot-seat, zgłoszenie 2026-09-09)', () => {
+  const ani = ocenPytanie(noweOceny(), { ...GLOS, graczId: 'ania' });
+  assert.deepEqual(ani.usterki, []);
+  // Ten sam telefon, to samo pytanie, INNY gracz — głos wchodzi. Wcześniej
+  // lokalna reguła „już ocenione" nie znała głosującego i kciuki gasły drugiemu
+  // graczowi, choć most (po `gracz` + `pytanieId`) by go przyjął.
+  const bartek = ocenPytanie(ani.oceny, { ...GLOS, graczId: 'bartek', ocena: OCENA_MINUS });
+  assert.deepEqual(bartek.usterki, [], 'drugi gracz głosuje na to samo pytanie');
+  assert.equal(bartek.doWysylki.gracz, 'bartek');
+  assert.equal(bartek.oceny.glosy.length, 2);
+  // A ten sam gracz dalej ma jeden głos.
+  const dublet = ocenPytanie(bartek.oceny, { ...GLOS, graczId: 'ania' });
+  assert.equal(dublet.usterki[0].kod, 'O03');
+  // Panel czyta wartość głosu tego głosującego (aria-pressed).
+  assert.equal(znajdzGlos(bartek.oceny, { paczkaId: 'plik-1', pytanieId: 's1p1', graczId: 'ania' }).ocena, OCENA_PLUS);
+  assert.equal(znajdzGlos(bartek.oceny, { paczkaId: 'plik-1', pytanieId: 's1p1', graczId: 'celina' }), null);
+});
+
+test('oceny: głos sprzed klucza głosującego blokuje każdego (zgodność wstecz)', () => {
+  const stare = walidujOcenyLokalne({
+    schemat: SCHEMAT_OCENY_LOKALNE,
+    glosy: [{ paczkaId: 'plik-1', pytanieId: 's1p1', ocena: 1 }],
+  });
+  assert.equal(stare.glosy.length, 1, 'stary głos przechodzi walidację');
+  assert.equal(juzOcenione(stare, { paczkaId: 'plik-1', pytanieId: 's1p1', graczId: 'ktokolwiek' }), true);
+  const ponowny = ocenPytanie(stare, { ...GLOS, graczId: 'ktokolwiek' });
+  assert.equal(ponowny.usterki[0].kod, 'O03', 'stary głos nie daje się zdublować');
 });
 
 test('oceny: śmieci na wejściu dostają kod, nie ciszę', () => {
@@ -220,7 +251,7 @@ test('oceny: głosy przeżywają restart aplikacji (pamięć → stan → pamię
   pamiec.set(KLUCZ_OCEN, JSON.stringify(pierwszy.oceny));
 
   const poRestarcie = walidujOcenyLokalne(JSON.parse(pamiec.get(KLUCZ_OCEN)));
-  assert.equal(juzOcenione(poRestarcie, { paczkaId: 'plik-1', pytanieId: 's1p1' }), true, 'po restarcie pytanie jest dalej ocenione');
+  assert.equal(juzOcenione(poRestarcie, { paczkaId: 'plik-1', pytanieId: 's1p1', graczId: 'ania' }), true, 'po restarcie pytanie jest dalej ocenione');
   const drugiRaz = ocenPytanie(poRestarcie, GLOS);
   assert.equal(drugiRaz.usterki[0].kod, 'O03', 'w innej sesji tego samego pytania nie da się ocenić drugi raz');
 });
