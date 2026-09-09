@@ -2449,3 +2449,19 @@ test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, 
   assert.ok(dom.pobierz('pole-prompt').value.length > 200, 'treść promptu zbudowana');
   assert.match(dom.pobierz('pole-prompt').value, new RegExp(`od 1 do ${ile}\\b`), 'prompt mówi o tylu stacjach, ile jest na mapie');
 });
+
+/**
+ * Właściciel (2026-09-09): „▶ Zacznij” na intro ma otwierać setup, tak jak
+ * ⚙ START GRY w belce — samo zamknięcie okna zostawiało gracza na pustej mapie.
+ */
+test('start: „▶ Zacznij” otwiera setup, nie tylko zamyka intro', async () => {
+  const domIntro = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  await import(`../app/app.js?zacznij=${Math.random().toString(36).slice(2)}`);
+  assert.equal(domIntro.pobierz('ekran-start').hidden, false, 'warunek wstępny: intro otwarte');
+
+  domIntro.kliknij('przycisk-start-zacznij');
+  assert.equal(domIntro.pobierz('ekran-start').hidden, true, 'intro znika');
+  assert.equal(domIntro.pobierz('ekran-setup').hidden, false, 'setup jest otwarty');
+  assert.equal(domIntro.pobierz('przycisk-setup').getAttribute('aria-pressed'), 'true',
+    'ikona w belce świeci — stan zgodny z F3');
+});
