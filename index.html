@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-41">
-  <script type="module" src="app/app.js?v=m12-41"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-42">
+  <script type="module" src="app/app.js?v=m12-42"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -720,12 +720,32 @@
          (80% ekranu) znika po kliknięciu gdziekolwiek na nie i zostaje sama
          mapa; setup otwiera przycisk START GRY w nagłówku. -->
     <section id="ekran-start" class="warstwa-start" role="dialog" aria-modal="true" aria-labelledby="tytul-start">
-      <h1 id="tytul-start">Tajemnicza Okolica</h1>
-      <p id="podtytul-start" class="podtytul-start">gra terenowa gdzie tylko chcesz</p>
-      <p>Tajemnicza Okolica wyznacza stacje w Twojej prawdziwej okolicy, a model AI układa pytania o to miejsce — jego historię, ulice i ludzi. Idziesz od stacji do stacji: sam, z rodziną albo każdy na własnym.</p>
-      <p>Ustaw grę przyciskiem <strong>START GRY</strong> i ruszaj w teren.</p>
-      <button id="przycisk-start-zacznij" class="przycisk przycisk-glowny" type="button">▶ Zacznij</button>
-      <p class="podpowiedz">Kliknij gdziekolwiek, żeby zamknąć.</p>
+      <div class="warstwa-start-karta">
+        <h1 id="tytul-start">Tajemnicza&nbsp;Okolica</h1>
+        <p id="podtytul-start" class="podtytul-start">gra terenowa tam, gdzie akurat jesteś</p>
+
+        <p>Tajemnicza Okolica zamienia najbliższe ulice w planszę do gry. Aplikacja
+          wyznacza kilka stacji w promieniu spaceru od Twojej pozycji, a model AI
+          układa pytania o to konkretne miejsce — o jego historię, architekturę,
+          przyrodę i ludzi, którzy tu mieszkali.</p>
+
+        <p>Zasada jest prosta. Idziesz do stacji, a telefon sam rozpoznaje, że
+          jesteś na miejscu — wtedy odsłania pytanie. Odpowiadasz, zbierasz punkty
+          i ruszasz do następnej. Nie ma pośpiechu ani odliczania: liczy się to,
+          co zauważysz po drodze.</p>
+
+        <p>Grać można w pojedynkę, całą rodziną z jednego telefonu albo każdy na
+          swoim — wtedy wyniki spotykają się we wspólnym rankingu. Pytania
+          pobierają się z wyprzedzeniem, więc słaby zasięg w terenie niczego nie
+          przerywa.</p>
+
+        <p class="podpowiedz">Potrzebujesz tylko zgody na dostęp do lokalizacji.
+          Twoje współrzędne zostają na telefonie — nigdy nie trafiają na serwer.</p>
+
+        <button id="przycisk-start-zacznij" class="przycisk przycisk-glowny" type="button">▶ Zacznij</button>
+        <p class="podpowiedz">Potem otwórz <strong>⚙ START GRY</strong> w górnej belce, żeby ustawić rozgrywkę.
+          To okno zamkniesz kliknięciem w dowolnym miejscu.</p>
+      </div>
     </section>
 
   </main>

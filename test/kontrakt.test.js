@@ -1124,3 +1124,43 @@ test('kontrakt ADR 0030: rozgrywka na telefonie układa się pod orientację, a 
     }
   }
 });
+
+/**
+ * Uwagi właściciela 2026-09-09 (A1, A2, A3) do warstw nad mapą:
+ * intro ma być większe i wyśrodkowane, rankingi nie mogą chować się pod belką,
+ * a każda warstwa ma przyciemniać mapę tak jak rankingi.
+ */
+test('uwaga A1: ekran startowy ma duży, wyśrodkowany tytuł i rozwinięte intro', () => {
+  assert.ok(INDEX.includes('class="warstwa-start-karta"'), 'treść intro siedzi w karcie wewnątrz warstwy');
+  assert.match(STYLE, /\.warstwa-start h1 \{[^}]*font-size: clamp\(28px, 8vw, 40px\)/s, 'tytuł skaluje się z ekranem');
+  assert.match(STYLE, /\.warstwa-start h1 \{[^}]*text-align: center/s, 'tytuł jest wyśrodkowany');
+  assert.match(STYLE, /\.podtytul-start \{[^}]*text-align: center/s, 'podtytuł też');
+  // Intro ma być dłuższe niż jedno zdanie — pinujemy liczbę akapitów, nie treść.
+  const intro = INDEX.slice(INDEX.indexOf('warstwa-start-karta'), INDEX.indexOf('przycisk-start-zacznij'));
+  assert.ok((intro.match(/<p[ >]/g) ?? []).length >= 4, 'intro ma co najmniej cztery akapity');
+  assert.ok(intro.includes('zgody na dostęp do lokalizacji'), 'intro uprzedza o zgodzie na lokalizację');
+});
+
+test('uwaga A2: warstwy nad mapą zaczynają się PONIŻEJ górnej belki', () => {
+  assert.match(STYLE, /\.warstwa \{[^}]*padding: calc\(var\(--wysokosc-belki, 64px\) \+ 12px\)/s,
+    'rankingi odsunięte o zmierzoną wysokość belki, nie o stałe 16 px');
+  assert.match(STYLE, /\.warstwa-start \{[^}]*padding: calc\(var\(--wysokosc-belki, 64px\) \+ 12px\)/s,
+    'okno startowe tak samo');
+  assert.ok(APP.includes('function ustawWysokoscBelki'), 'wysokość belki mierzy JS');
+  assert.ok(APP.includes("document.documentElement.style.setProperty('--wysokosc-belki'"),
+    'zmierzona wysokość trafia do zmiennej CSS');
+});
+
+test('uwaga A3: każda warstwa nad mapą przyciemnia ją tak samo', () => {
+  const kozuch = /background: color-mix\(in srgb, var\(--tekst\) 62%, transparent\)/;
+  for (const [selektor, opis] of [['.warstwa {', 'rankingi'], ['.warstwa-start {', 'okno startowe'], ["body[data-ekran='setup']::before {", 'karta setupu']]) {
+    const start = STYLE.indexOf(selektor);
+    assert.ok(start >= 0, `reguła ${selektor} istnieje`);
+    const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+    assert.match(blok, kozuch, `${opis} przyciemniają mapę tym samym kolorem`);
+  }
+  assert.match(STYLE, /body\[data-ekran='setup'\]::before \{[^}]*pointer-events: none/s,
+    'kożuch setupu nie przechwytuje kliknięć');
+  assert.match(STYLE, /\.warstwa-start \{[^}]*inset: 0/s,
+    'okno startowe rozciąga się na cały ekran — inaczej mapa dookoła zostaje jasna');
+});
