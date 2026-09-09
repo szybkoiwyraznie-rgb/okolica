@@ -527,7 +527,7 @@ Sterowanie trzymaj w obszarze, którego nie przykrywa żaden element o wyższym
 
 ## L43 — `python3 -m http.server` a „Bad gateway” w podglądzie Areny
 
-**Objaw (właściciel, 2026-09-09):** podgląd sandboxa nie otwiera się, Cloudflare
+**Objaw:** (zgłoszenie właściciela, 2026-09-09) podgląd sandboxa nie otwiera się, Cloudflare
 zwraca *Bad gateway* — mimo że `curl http://localhost:8000` z sandboxa daje 200,
 proces żyje, port nasłuchuje na `0.0.0.0`, a nawet dwanaście równoległych żądań
 przechodzi bez błędu.

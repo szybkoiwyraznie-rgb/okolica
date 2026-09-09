@@ -1164,3 +1164,28 @@ test('uwaga A3: każda warstwa nad mapą przyciemnia ją tak samo', () => {
   assert.match(STYLE, /\.warstwa-start \{[^}]*inset: 0/s,
     'okno startowe rozciąga się na cały ekran — inaczej mapa dookoła zostaje jasna');
 });
+
+/**
+ * Zgłoszenie właściciela (2026-09-09): etykieta „Planowany czas gry (min)”
+ * łamała się na dwa wiersze, bo `.siatka` miała na szerokim ekranie sztywne
+ * `repeat(4, 1fr)` — czwarta kolumna zostawała pusta (pole „liczba graczy”
+ * zniknęło w 2026-09-07), a trzy realne pola dostawały po ~145 px w karcie
+ * setupu ograniczonej do 640 px.
+ */
+test('siatka pól setupu dopasowuje liczbę kolumn do liczby pól (bez pustej kolumny)', () => {
+  const start = STYLE.indexOf('.siatka {');
+  assert.ok(start >= 0, 'reguła .siatka istnieje');
+  const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+
+  assert.match(blok, /grid-template-columns:\s*repeat\(auto-fit,\s*minmax\(min\(100%,\s*175px\),\s*1fr\)\)/,
+    'auto-fit liczy kolumny z dostępnego miejsca; 175 px trzyma progi zwijania tam, gdzie były');
+  assert.doesNotMatch(STYLE, /\.siatka \{[^}]*repeat\(4, 1fr\)/s,
+    'żadna reguła nie wymusza czterech kolumn — przy trzech polach zostawała pusta');
+  assert.doesNotMatch(STYLE, /@media[^{]*\{\s*\.siatka \{/,
+    'siatka nie potrzebuje już zapytań @media: auto-fit zwija ją sam');
+
+  // `min(100%, …)` jest tu istotne: samo `minmax(190px, 1fr)` przepełnia rząd
+  // na ekranie 360 px zamiast zwinąć siatkę do jednej kolumny.
+  assert.ok(blok.includes('min(100%, 175px)'),
+    'minimum przycięte do szerokości kontenera — inaczej wąski telefon dostaje poziomy scroll');
+});

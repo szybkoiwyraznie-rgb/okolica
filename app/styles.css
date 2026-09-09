@@ -110,9 +110,27 @@ body {
 .ekran { max-width: 720px; margin: 0 auto; }
 .ekran h2 { margin: 4px 0 12px; font-size: 22px; }
 
-.siatka { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-@media (max-width: 380px) { .siatka { grid-template-columns: 1fr; } }
-@media (min-width: 900px) { .siatka { grid-template-columns: repeat(4, 1fr); } }
+/* Zgłoszenie właściciela (2026-09-09): „Planowany czas gry (min)" łamał się na
+   dwa wiersze przy pustej czwartej kolumnie. `repeat(4, 1fr)` na szerokim
+   ekranie było sztywne — dzieliło rząd na cztery części niezależnie od tego,
+   ile pól faktycznie w nim stoi, a rzędy mają ich trzy (czas/stacje/pytania)
+   albo dwa (język/podkład, lat/lon). Do tego karta setupu ma `max-width: 640px`,
+   więc „szeroki ekran" nie znaczy szeroki kontener: kolumny wychodziły po ~145 px
+   i najdłuższa etykieta się nie mieściła.
+   `auto-fit` + `minmax` liczy kolumny z DOSTĘPNEGO miejsca i faktycznej liczby
+   pól: nigdy nie zostawia pustej kolumny. Minimum 175 px dobrane tak, by progi
+   zwijania zostały tam, gdzie były: karta setupu daje ~612 px kontenera na
+   desktopie (3 kolumny × 197 px — etykieta mieści się w linii), ~366 px na
+   telefonie 414 px (2 kolumny, jak dotąd) i ~312 px na 360 px (1 kolumna, co
+   wcześniej robiło `@media (max-width: 380px)`).
+   `min(100%, 175px)` zamiast samego 175 px, bo minimum większe niż kontener
+   przepełnia rząd zamiast zwinąć go do jednej kolumny — wąski telefon dostałby
+   poziomy scroll. Obie reguły @media znikają: auto-fit zwija siatkę sam. */
+.siatka {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 175px), 1fr));
+  gap: 10px;
+}
 
 .wiersz { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin: 10px 0; }
 .przyciski-dolu { margin-top: 18px; justify-content: space-between; }
