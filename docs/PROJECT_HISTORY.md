@@ -1675,3 +1675,29 @@ w tej sesji przed zmianami. `?v=m12-37` spójne (43 miejsca + `WERSJA_SW`).
 - F2 (starsze niż PR #4, z listy L31): `docs/WORKFLOW.md` §3 opisuje usunięte
   mechaniki (promień edytowalny, kod gry do ukrycia, kara za ręczne zgłoszenie,
   „Sprawdź i zaszyfruj", podgląd organizatora) — do przepisania na stan obecny.
+
+## 2026-09-09 — sesja porządkowa: audyt PR #4, tryb testowy w docs, WORKFLOW §3
+
+Zlecenie właściciela: „Kontynuujemy projekt. Jak skończysz część obowiązkową,
+to napisz mi, jak wywołuje się teraz tryb testowy.”
+
+**Część obowiązkowa (AGENTS §0 + §2):** lektura startowa w całości, budżet
+56 132 / 100 000 tokenów, `npm test` 628 zielone przed zmianami, PR #5 gałęzi
+`arena/01a085c2-okolica` przed kodowaniem, audyt PR #4 plik po pliku (wpis
+„2026-09-09 — audyt PR #4” powyżej; kod przyjęty, 2 znaleziska dokumentacyjne).
+
+**Praca (3 commity, każdy zielony 628/628 i od razu wypchnięty):**
+
+- F1 (`4ad03da`): kanoniczne `?test=true` w README, WORKFLOW §4 i aneksie
+  ADR 0004 — przycisk trybu testowego usunięto z UI 2026-09-08, a dokumenty
+  podawały tylko historyczne `?tryb=test` (działa dalej, pinuje je test).
+- F2 (`1fae8bd`): WORKFLOW §3 przepisany na stan obecny (L31) — stary opisywał
+  promień edytowalny, kod gry do ukrycia, karę za ręczne dojście, „Sprawdź
+  i zaszyfruj”, podgląd organizatora i eksport paczki.
+- Weryfikacja na żywo (headless Chromium, 360 px): `?test=true/1/TAK`
+  i `?tryb=test` włączają tryb (klasa, ręczne współrzędne, symulacja),
+  `?test=false/0` i czysty adres nie; `#przycisk-test` nie istnieje.
+
+Kodu i CSS nie ruszano — `?v=m12-37` bez zmian. ROADMAP bez zmian (wszystkie
+kamienie kodowo gotowe, kryteria po stronie właściciela). Handoff:
+`docs/setup/HANDOFF_2026-09-09.md`.
