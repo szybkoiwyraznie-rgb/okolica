@@ -20,32 +20,31 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-39">
-  <script type="module" src="app/app.js?v=m12-39"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-40">
+  <script type="module" src="app/app.js?v=m12-40"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
      nie łapią — setup renderował się w przepływie („stary"), mapa była
      schowana, a po ~1 s wszystko przeskakiwało. -->
-<body data-ekran="setup">
+<body data-ekran="mapa">
   <div id="baner" class="baner" hidden></div>
 
+  <!-- Nagłówek bez tytułu (decyzja właściciela 2026-09-09): tytuł i podtytuł
+       mieszkają na ekranie startowym, a tu zostaje jeden smukły rząd —
+       ikony bez obwódki i jedyny napis, CTA „START GRY". -->
   <header class="gora">
-    <div class="tytul">
-      <h1>Tajemnicza Okolica</h1>
-      <p id="podtytul">gra terenowa gdzie tylko chcesz</p>
-    </div>
     <div class="akcje">
-      <button id="przycisk-setup" class="przycisk przycisk-maly" type="button" title="Ustawienia gry">⚙ setup</button>
-      <button id="przycisk-motyw" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny">☾ motyw</button>
-      <button id="przycisk-sygnaly" class="przycisk przycisk-maly" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)">🔔 sygnały</button>
-      <button id="przycisk-ranking" class="przycisk przycisk-maly" type="button" title="Rankingi graczy i moje gry (M12)">🏆 rankingi</button>
+      <button id="przycisk-setup" class="przycisk-ikona" type="button" title="START GRY — ustawienia gry">⚙ START GRY</button>
+      <button id="przycisk-motyw" class="przycisk-ikona" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny" aria-label="Przełącz motyw">☾</button>
+      <button id="przycisk-sygnaly" class="przycisk-ikona" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)" aria-label="Sygnały dojścia">🔔</button>
+      <button id="przycisk-ranking" class="przycisk-ikona" type="button" title="Rankingi graczy i moje gry (M12)" aria-label="Rankingi">🏆</button>
     </div>
   </header>
 
   <nav id="kroki" class="kroki" aria-label="Kroki przygotowania gry">
     <ol>
-      <li data-krok="setup" class="aktywny">1 · ustawienia</li>
+      <li data-krok="setup">1 · ustawienia</li>
       <li data-krok="pozycja">2 · pozycja</li>
       <li data-krok="stacje">3 · stacje</li>
       <li data-krok="prompt">4 · pytania</li>
@@ -77,7 +76,7 @@
 
 
     <!-- KROK 1: konfiguracja rozgrywki -->
-    <section id="ekran-setup" class="ekran" aria-labelledby="tytul-setup">
+    <section id="ekran-setup" class="ekran" hidden aria-labelledby="tytul-setup">
       <h2 id="tytul-setup">Ustawienia gry</h2>
 
       <!-- M11/P4: hot-seat albo gra na wielu urządzeniach (ADR 0019) -->
@@ -714,6 +713,19 @@
         </table>
         <ul id="ranking-moje-gry" class="lista-historii" hidden></ul>
       </div>
+    </section>
+
+    <!-- Ekran startowy (decyzja właściciela 2026-09-09): tytuł, podtytuł
+         i intro nad mapą. Start aplikacji NIE otwiera już setupu — okno
+         (80% ekranu) znika po kliknięciu gdziekolwiek na nie i zostaje sama
+         mapa; setup otwiera przycisk START GRY w nagłówku. -->
+    <section id="ekran-start" class="warstwa-start" role="dialog" aria-modal="true" aria-labelledby="tytul-start">
+      <h1 id="tytul-start">Tajemnicza Okolica</h1>
+      <p id="podtytul-start" class="podtytul-start">gra terenowa gdzie tylko chcesz</p>
+      <p>Tajemnicza Okolica wyznacza stacje w Twojej prawdziwej okolicy, a model AI układa pytania o to miejsce — jego historię, ulice i ludzi. Idziesz od stacji do stacji: sam, z rodziną albo każdy na własnym.</p>
+      <p>Ustaw grę przyciskiem <strong>START GRY</strong> i ruszaj w teren.</p>
+      <button id="przycisk-start-zacznij" class="przycisk przycisk-glowny" type="button">▶ Zacznij</button>
+      <p class="podpowiedz">Kliknij gdziekolwiek, żeby zamknąć.</p>
     </section>
 
   </main>

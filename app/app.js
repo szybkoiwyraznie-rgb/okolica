@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-39';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-39';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-40';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-40';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -34,21 +34,21 @@ import {
   WERSJA_PROTOKOLU_REV2,
   WERSJA_PROTOKOLU_REV3,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-39';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-39';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-39';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-39';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-39';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-39';
+} from './protokol.js?v=m12-40';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-40';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-40';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-40';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-40';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-40';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-39';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-39';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-39';
+} from './zestawy.js?v=m12-40';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-40';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-40';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -68,17 +68,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-39';
-import { utworzMape } from './mapa.js?v=m12-39';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-39';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-39';
-import { adresMostu, stanMostu } from './most.js?v=m12-39';
+} from './sieci.js?v=m12-40';
+import { utworzMape } from './mapa.js?v=m12-40';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-40';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-40';
+import { adresMostu, stanMostu } from './most.js?v=m12-40';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-39';
+} from './oceny.js?v=m12-40';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -198,6 +198,7 @@ function $(id) {
 const EKRANY = ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra'];
 
 function pokazEkran(nazwa) {
+  ukryjStart(); // krok gry chowa okno startowe (poza nim okno nie ma czego przykrywać)
   STAN.ekran = nazwa;
   // ADR 0030: stan ekranu na <body>. CSS nie ma selektora rodzica, a układ
   // rozgrywki na telefonie (mapa tłem, karty faz NA mapie, bez przewijania
@@ -217,6 +218,36 @@ function pokazEkran(nazwa) {
 }
 
 /**
+ * Mapa startowa (decyzja właściciela 2026-09-09): sama mapa-tło, nagłówek
+ * i stopka — bez formularza. Stan lądowania po starcie (gdy zniknie okno
+ * startowe) i po „Wróć na początek". Poza EKRANY jak prywatność i rankingi:
+ * to nie krok przygotowania gry, tylko spód, na którym gra się zaczyna.
+ */
+function pokazMapeStartowa() {
+  STAN.ekran = 'mapa';
+  document.body.dataset.ekran = 'mapa';
+  for (const e of EKRANY) {
+    $(`ekran-${e}`).hidden = true;
+    const krok = document.querySelector(`#kroki li[data-krok="${e}"]`);
+    if (krok) {
+      krok.classList.remove('aktywny');
+      krok.classList.remove('zrobione');
+    }
+  }
+  odswiezMapeEkranu('pozycja'); // mapa na spodzie to instancja pozycji
+  window.scrollTo({ top: 0 });
+}
+
+/** Okno startowe znika po kliknięciu gdziekolwiek na nie (jw.). */
+function ukryjStart() {
+  const w = $('ekran-start');
+  if (w) w.hidden = true;
+  document.body.classList.remove('okno-start');
+  const mp = document.querySelector('#mapa-pozycja .mapa-przyciski');
+  if (mp) mp.hidden = false;
+}
+
+/**
  * Ekran „dane i prywatność" (ADR 0013 pkt 7) nie jest krokiem gry: chowa
  * wszystkie ekrany z paska kroków i pokazuje siebie, a powrót prowadzi na
  * ekran zapamiętany w `STAN.ekran`.
@@ -230,6 +261,7 @@ function pokazPrywatnosc() {
   STAN.powrotZPrywatnosci = $('ekran-ranking').hidden
     ? (EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup')
     : 'ranking';
+  ukryjStart(); // okno startowe nie przykrywa karty prywatności
   document.body.dataset.ekran = 'prywatnosc';
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-ranking').hidden = true;
@@ -244,6 +276,7 @@ function wrocZPrywatnosci() {
     pokazRankingi({ bezPobierania: true }); // dane już są — nie pytamy mostu drugi raz
     return;
   }
+  if (STAN.ekran === 'mapa') { pokazMapeStartowa(); return; }
   pokazEkran(EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup');
 }
 
@@ -2738,7 +2771,7 @@ function wrocNaPoczatek() {
   STAN.ocenianePytanieId = '';
   STAN.ocenianyGracz = '';
   STAN.oceniajacyId = '';
-  pokazEkran('ekran-setup');
+  pokazMapeStartowa();
   status('Gotowe do nowej gry — setup i gracze zostali, wynik jest w historii.');
 }
 
@@ -4188,7 +4221,8 @@ const RANKING_ZAKLADKI = [
 function pokazRankingi({ bezPobierania = false } = {}) {
   // Zapamiętujemy ekran, z którego gracz przyszedł: `STAN.ekran` nie zmienia się
   // przy wejściu na rankingi, więc bez tego „wróć" zawsze zrzucało na setup.
-  STAN.powrotZRankingu = EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup';
+  ukryjStart(); // warstwa rankingów wchodzi nad wszystko, okno startowe znika
+  STAN.powrotZRankingu = EKRANY.includes(STAN.ekran) || STAN.ekran === 'mapa' ? STAN.ekran : 'setup';
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-prywatnosc').hidden = true;
   $('ekran-ranking').hidden = false;
@@ -4198,6 +4232,7 @@ function pokazRankingi({ bezPobierania = false } = {}) {
 
 function wrocZRankingu() {
   $('ekran-ranking').hidden = true;
+  if (STAN.powrotZRankingu === 'mapa') { pokazMapeStartowa(); return; }
   pokazEkran(STAN.powrotZRankingu ?? 'setup');
 }
 
@@ -4410,7 +4445,10 @@ function start() {
     STAN.odstepOverpassMs = 0;
   }
 
-  $('przycisk-setup').addEventListener('click', () => pokazEkran('setup')); // ikonka setup w nagłówku
+  $('przycisk-setup').addEventListener('click', () => pokazEkran('setup')); // START GRY w nagłówku
+  $('ekran-start').addEventListener('click', ukryjStart); // okno startowe: klik gdziekolwiek zamyka
+  $('przycisk-start-zacznij').addEventListener('click', ukryjStart); // to samo jawnym przyciskiem
+  document.addEventListener('keydown', (z) => { if (z.key === 'Escape') ukryjStart(); });
   $('przycisk-motyw').addEventListener('click', przelaczMotyw);
   $('przycisk-sygnaly').addEventListener('click', przelaczSygnaly);
   $('przycisk-sygnaly').setAttribute('aria-pressed', String(sygnalyWlaczone()));
@@ -4681,7 +4719,13 @@ function start() {
 
   sprawdzZapisGry(); // M6/R6: baner wznowienia, jeśli telefon pamięta grę
   renderujHistorieGier(); // M7/P6: lista poprzednich gier na setupie
-  pokazEkran('setup');
+  // Start to mapa + okno startowe, nie setup (decyzja właściciela 2026-09-09).
+  pokazMapeStartowa();
+  const start = $('ekran-start');
+  if (start) start.hidden = false;
+  document.body.classList.add('okno-start');
+  const mp = document.querySelector('#mapa-pozycja .mapa-przyciski');
+  if (mp) mp.hidden = true;
   status(`M0 — fundament. Ustawienia domyślne: ${TRYBY[STAN.konfig.tryb].etykieta}, ${STAN.konfig.liczbaStacji} stacji, ${DOMYSLNE.pytaniaNaStacje} pytanie na stację, wiek ${WIEK[STAN.konfig.wiek].etykieta}.`);
 }
 

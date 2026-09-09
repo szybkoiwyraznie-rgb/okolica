@@ -45,11 +45,21 @@ test('bootstrap: aplikacja startuje bez wyjątku na atrapie DOM', () => {
   assert.ok(dom.elementy.size > 40, `aplikacja dotknęła tylko ${dom.elementy.size} elementów — wygląda na urwany start`);
 });
 
-test('bootstrap: widoczny jest ekran setupu, reszta ukryta', () => {
-  assert.equal(pobierz('ekran-setup').hidden, false, 'ekran setupu ma być widoczny na starcie');
-  for (const ekran of ['pozycja', 'stacje', 'prompt', 'paczka']) {
+test('bootstrap: na starcie jest mapa z oknem startowym, nie setup (decyzja 2026-09-09)', () => {
+  assert.equal(pobierz('ekran-start').hidden, false, 'okno startowe ma być widoczne na starcie');
+  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka']) {
     assert.equal(pobierz(`ekran-${ekran}`).hidden, true, `ekran ${ekran} ma być na starcie ukryty`);
   }
+});
+
+test('start: klik w okno je zamyka, a START GRY otwiera setup', () => {
+  assert.equal(pobierz('ekran-start').hidden, false, 'warunek wstępny: okno jest otwarte');
+  dom.kliknij('ekran-start');
+  assert.equal(pobierz('ekran-start').hidden, true, 'klik gdziekolwiek zamyka okno');
+  assert.equal(pobierz('ekran-setup').hidden, true, 'po zamknięciu zostaje sama mapa');
+  dom.kliknij('przycisk-setup');
+  assert.equal(pobierz('ekran-setup').hidden, false, 'START GRY otwiera setup');
+  assert.equal(pobierz('ekran-start').hidden, true, 'setup nie wskrzesza okna');
 });
 
 test('bootstrap: stopka pokazuje obowiązującą wersję protokołu i łatki szablonu', () => {
@@ -295,7 +305,8 @@ test('bootstrap: uszkodzona konfiguracja w localStorage nie kładzie startu', as
   const domSmieci = zainstalujDom({ pamiec: pamiecSmieci });
   // ponowne wczytanie modułu z odświeżonym query — nowy egzemplarz, ten sam kod
   await import(`../app/app.js?powtorka=${Date.now()}`);
-  assert.equal(domSmieci.pobierz('ekran-setup').hidden, false, 'aplikacja musi wystartować nawet na śmieciowym stanie');
+  assert.equal(domSmieci.pobierz('ekran-start').hidden, false, 'aplikacja musi wystartować nawet na śmieciowym stanie (mapa + okno)');
+  assert.equal(domSmieci.pobierz('ekran-setup').hidden, true, 'setup nie otwiera się sam na starcie');
   assert.ok(domSmieci.pobierz('status').textContent.length > 20);
   assert.equal(domSmieci.pobierz('setup-stacje').value, String(DOMYSLNE.liczbaStacji), 'śmieciowy stan nie wchodzi do formularza');
   assert.ok(pamiec.size >= 0, 'pamięć pierwszej sesji zostaje nietknięta');
@@ -498,11 +509,12 @@ test('prywatność: ekran otwiera się z setupu i ze stopki, a „wróć" prowad
 
   domMapy.kliknij('przycisk-prywatnosc');
   assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'ekran gry ustępuje miejsca prywatności');
+  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'prywatność chowa okno startowe');
 
   domMapy.kliknij('przycisk-wrocz-prywatnosc');
   assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, true);
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, false, 'wróciliśmy na setup');
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'wróciliśmy na mapę, nie na setup');
+  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'powrót nie wskrzesza okna');
 
   // ze stopki, na innym ekranie: powrót ma prowadzić na ekran, z którego
   // przyszliśmy. Bierzemy rankingi, bo przejście setup → pozycja wymaga imion
@@ -522,16 +534,17 @@ test('rankingi: warstwa zamyka się i krzyżykiem, i klawiszem, i wraca tam, sk�
   const domMapy = await aplikacjaZMapa();
   domMapy.kliknij('przycisk-ranking');
   assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'rankingi otwarte');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'spód ustępuje warstwie');
+  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'warstwa chowa okno startowe');
 
   domMapy.kliknij('przycisk-ranking-krzyzyk'); // krzyżyk w prawym górnym rogu
   assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'krzyżyk zamyka warstwę');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, false, 'wróciliśmy na setup, nie w próżnię');
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'wróciliśmy na mapę, nie w próżnię');
 
   domMapy.kliknij('przycisk-ranking');
   domMapy.kliknij('przycisk-wrocz-ranking'); // klawisz „Zamknij rankingi"
   assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'klawisz też zamyka');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, false);
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, true);
+  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'powrót nie wskrzesza okna');
 });
 
 test('rankingi: prywatność otwarta z warstwy wraca na rankingi, nie na setup', async () => {
