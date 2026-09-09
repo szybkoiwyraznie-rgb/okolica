@@ -1610,3 +1610,68 @@ test z komunikatem „przyciski muszą zejść z prawej".
 
 Testy: **628, 0 fail**; brama = 628 + sync szablonu OK + WCAG AA 0.
 Cache-bust `?v=m12-37`.
+
+## 2026-09-09 — audyt PR #4 (sesja `arena/01a085c2-okolica`)
+
+**Audyt poprzedniego scalonego PR** (`f06ee55..110a666`, 79 plików, +9187/−942,
+AGENTS §2 pkt 2): przegląd plik po pliku — logika, zgodność z ADR i protokołem,
+zieloność testów. Stan: **przyjęty bez zastrzeżeń do kodu**; dwa znaleziska
+dotyczą wyłącznie dokumentacji i idą do naprawy w tej sesji.
+
+**Co sprawdzono (kod):**
+
+- `app/geo.js` — `ramkaGeohash`/`sasiednieGeohash` przeniesione z `wieloosobowa.js`
+  bez zmiany logiki (re-eksport dla importerów); nowe `odlegloscDoKomorkiM`
+  zwraca `null` dla śmieci (L6). Zgodne z ADR 0024.
+- `app/konfig.js` — czas gry zamiast promienia (ADR 0025): wzór z jawnymi stałymi,
+  punkt kalibracyjny 60 min/5 stacji → 500 m w teście; K19/K22, widełki pytań
+  1–8 (ADR 0027), migracja starego zapisu przez przeliczenie. `TRYBY[].promienM`
+  usunięte w całości — grep nie znajduje sierot.
+- `app/protokol.js` — szablon `PYT/1.0.6` (sync z PROTOKOL §2 pilnuje brama),
+  B21 `szacunekOdpowiedzi` + `#prompt-rozmiar`, usunięcie martwej
+  `zastosujEdycjePaczki` po decyzji o starcie gry od razu (aneks ADR 0006).
+- `app/zestawy.js` — `powodyNiedopasowania` jako jedyne źródło prawdy (UI cytuje
+  powody), `sumaPytanWpisu`, kotwica geohash6, Z11 cytuje `{blad}` mostu (L33).
+- `app/wieloosobowa.js` — premia za kolejność z `kolejnosc` mostu (nie z zegara),
+  hot-seat premia 0, `graHotseatDoWysylki` jako lustro `bledyGryHotseat`,
+  profile lokalne bez PIN-u w zapisie. Zgodne z ADR 0026 aneks i PROTOKOL §9.5.
+- `app/oceny.js` (nowy) — slug lustrem `idProfilu` mostu (parzystość testowana
+  wykonaniem obu stron), O03 blokuje drugi głos lokalnie, kolejka offline.
+  Zgodne z ADR 0028.
+- `app/rozgrywka.js` — G14 + `skierujDoStacji`/`stacjeDoWyboru` (ADR 0027 B);
+  silnik nie bramkuje turą gry sieciowej, bo stan multi to 1 gracz (aneks ADR 0022).
+- `app/pozycja.js` — komunikaty P01–P06/P08 bez ręcznego dojścia (ADR 0029);
+  P02 wskazuje `?test=true`.
+- `app/app.js` — brama tożsamości w „Dalej" (lista, nie jedno imię),
+  S12: setup idzie za wyborem stacji z jawnym komunikatem, tryb testowy TYLKO
+  parametrem adresu (`czyTrybTestowyWUrl`: `?test=true|1|tak`, historyczne
+  `?tryb=test`; przycisk usunięty decyzją właściciela), oceny w `renderujPytanie`,
+  wysyłka hot-seat z rozróżnieniem odmowy mostu od awarii sieci.
+- `index.html` — usunięcia pinowane kontraktem (`przycisk-test`,
+  `przycisk-reczne-dojscie`, zgody, `setup-gracze`); nowe: `lista-graczy`,
+  `profil-stan`, `gra-oceny`, `prompt-rozmiar`, `wynik-drive`, `stopka-wersja`,
+  `data-ekran="setup"` w HTML (L39).
+- `app/styles.css` — ADR 0030 (dwa układy pod orientację, strona gry bez
+  przewijania), kontrakt pinuje brak `background` na `#bledy-gra`/`.badge-duzy`
+  (L35); L40–L42 rozliczone w PROJECT_HISTORY.
+- `sw.js` — skorupa network-first (naprawia „stara wersja w podglądzie"),
+  reszta cache-first; POST/API bez cache bez zmian.
+- `apps-script-repo-paczek.gs` — akcje `gra-hotseat`/`ocena`/`uzycie`, premia
+  w `przeliczWyniki`, `geohashPunkt`+`kotwicaZestawu`, literówka
+  `wZaakceptowane` naprawiona; zasięg mierzony `npm run zasieg-mostu` (L33).
+- `.github/workflows/pages.yml` + lustro `docs/setup/pages-workflow.yml`
+  (identyczne po odcięciu nagłówka lustra; kontrakt pilnuje).
+- `tools/zasieg-mostu.mjs` + `npm run zasieg-mostu` — pokrycie mostu na wiersze
+  pliku z kalibracją przesunięcia V8.
+
+**Zieloność:** `npm test` 628/628 + brama (sync szablonu, WCAG AA 0) — potwierdzone
+w tej sesji przed zmianami. `?v=m12-37` spójne (43 miejsca + `WERSJA_SW`).
+
+**Znaleziska (dokumentacja, naprawa w tej sesji):**
+
+- F1: kanoniczne wejście w tryb testowy to `?test=true` (przycisk usunięty),
+  a `docs/WORKFLOW.md` §4 i `README.md` nadal podają tylko `?tryb=test`.
+  Historyczna forma działa (pinuje ją test), ale dokumenty mają mówić kanon.
+- F2 (starsze niż PR #4, z listy L31): `docs/WORKFLOW.md` §3 opisuje usunięte
+  mechaniki (promień edytowalny, kod gry do ukrycia, kara za ręczne zgłoszenie,
+  „Sprawdź i zaszyfruj", podgląd organizatora) — do przepisania na stan obecny.
