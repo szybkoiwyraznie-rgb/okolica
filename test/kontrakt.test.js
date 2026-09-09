@@ -1189,3 +1189,32 @@ test('siatka pól setupu dopasowuje liczbę kolumn do liczby pól (bez pustej ko
   assert.ok(blok.includes('min(100%, 175px)'),
     'minimum przycięte do szerokości kontenera — inaczej wąski telefon dostaje poziomy scroll');
 });
+
+/**
+ * Zgłoszenie właściciela (2026-09-09): pole PIN przy imieniu gracza było
+ * wyraźnie mniejsze od pola „Imię (pseudonim)” obok. Przyczyna: wspólna reguła
+ * pól wymienia typy `input` jawnie (musi — inaczej złapałaby ~70 przycisków
+ * `type="button"`), a `password` z tej listy wypadł, więc PIN dostawał domyślny
+ * wygląd przeglądarki zamiast wysokości `--cel` i `font-size: 17px`.
+ */
+test('pola tekstowe: PIN wygląda jak zwykłe pole (wspólna reguła obejmuje password)', () => {
+  const start = STYLE.indexOf("input[type='number']");
+  assert.ok(start >= 0, 'reguła wspólna dla pól istnieje');
+  const selektor = STYLE.slice(start, STYLE.indexOf('{', start));
+
+  for (const typ of ['text', 'password', 'number']) {
+    assert.ok(selektor.includes(`input[type='${typ}']`), `typ ${typ} korzysta ze wspólnej reguły pól`);
+  }
+
+  // Reguła nadaje wysokość celu dotykowego i rozmiar tekstu — to one decydują
+  // o tym, czy dwa pola w jednej siatce wyglądają tak samo (ADR 0011: ≥44 px).
+  const blok = STYLE.slice(start, STYLE.indexOf('}', start));
+  assert.match(blok, /min-height: var\(--cel\)/, 'wspólna wysokość pól');
+  assert.match(blok, /width: 100%/, 'pole wypełnia kolumnę siatki');
+  assert.match(blok, /font-size: 17px/, 'wspólny rozmiar tekstu');
+
+  // PIN i pseudonim stoją w tej samej siatce, więc różnicę widać od razu —
+  // pinujemy, że oba są zwykłymi polami tekstowymi bez klas modyfikujących.
+  assert.match(INDEX, /<input id="profil-pseudonim" type="text"[^>]*>/, 'pseudonim: pole tekstowe bez klasy');
+  assert.match(INDEX, /<input id="profil-pin" type="password"[^>]*>/, 'PIN: pole hasłowe bez klasy');
+});

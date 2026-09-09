@@ -146,7 +146,17 @@ body {
 }
 fieldset.pole { border-top: 1px solid var(--linia); padding-top: 12px; }
 
-input[type='number'], input[type='text'], select, textarea {
+/* Lista typów jest JAWNA, bo `input` bez filtra złapałby 73 przyciski
+   (`type="button"`), checkboxy i pole pliku. Zgłoszenie właściciela
+   2026-09-09: PIN (`type='password'`) wypadał z tej listy i zostawał
+   z domyślnym wyglądem przeglądarki — niższy i węższy od pola „Imię
+   (pseudonim)" tuż obok, mimo że oba stoją w tej samej siatce.
+   Dopisane od razu `tel`, `email`, `search` i `url`: to pozostałe typy
+   tekstowe, które wyglądają jak zwykłe pole, więc następne takie pole nie
+   powtórzy tej usterki. */
+input[type='number'], input[type='text'], input[type='password'],
+input[type='tel'], input[type='email'], input[type='search'], input[type='url'],
+select, textarea {
   width: 100%;
   min-height: var(--cel);
   padding: 10px 12px;
