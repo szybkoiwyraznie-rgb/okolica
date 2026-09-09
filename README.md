@@ -82,8 +82,8 @@ właściciela: pełna pętla z prawdziwym modelem (`docs/WORKFLOW.md` §4.2).
 **M6 — rozgrywka: kod i testy gotowe.** Gra jest klikalna od setupu do
 wyniku: jeden ekran gry z czterema panelami faz („kto idzie" → odcinek z mapą
 i dystansem → pytanie odsłaniane DOPIERO w chwili dojścia → wynik), dojście
-z GPS (próg `max(25 m, 1,2 × accuracy)` + dwa kolejne trafienia) albo ręczne
-z karą, pauza (również automatyczna po schowaniu karty), pominięcie stacji
+z GPS (stały próg 25 m + dwa kolejne trafienia; ręczne zaliczanie usunięte
+w ADR 0029), pauza (również automatyczna po schowaniu karty), pominięcie stacji
 w drodze i ręczne zakończenie z wczesnym wynikiem. Pytania żyją w ukrytym
 kontenerze (`TO-paczka/2`) — w stanie gry i w zapisie nigdy nie ma ich treści.
 Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji (`stan-gry/1`), więc

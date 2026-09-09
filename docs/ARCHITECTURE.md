@@ -219,7 +219,7 @@ commit i nowa wersja aplikacji.
    w odcinek.
 3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (filtr dokładności,
    kody P05/P06) → `dodajFix()` (historia, maks. 40 pomiarów) → `stanDojscia()`
-   (próg `max(25 m, 1,2 × accuracy)` ograniczony do 100 m + dwa kolejne
+   (próg 25 m na stałe, ADR 0004 aneks 2026-09-09, + dwa kolejne
    trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`:
    tryb dojścia i dokładność (bez kary, ADR 0023). GPS i symulacja dojścia
    (tryb testowy) karmią aplikację tym samym lejem `przyjmijFix()`; symulacja
@@ -312,9 +312,9 @@ commit i nowa wersja aplikacji.
 - **Ukrywanie paczki**: obfuskacja bez klucza — UTF-8 JSON ⊕ strumień bajtów
   z stałego ziarna → base64url → kontener `TO-paczka/2` + suma kontrolna FNV-1a
   (ADR 0007). To bariera przed przypadkowym wglądem, **nie szyfrowanie**.
-- **Kryterium dojścia**: `progDojsciaM(accuracy) = ogranicz(1,2 × accuracy,
-  25 m, 100 m)` (brak dokładności → 100 m, czyli najostrzej) plus dwa kolejne
-  fixy w progu — debounce przeciw odbiciom sygnału (`geo.czyDotarl`, opakowane
+- **Kryterium dojścia**: `progDojsciaM() = 25 m` na stałe (ADR 0004 aneks
+  2026-09-09 — dokładność fixu nie rozluźnia już progu: zaliczenie ze 100 m
+  to inne miejsce) plus dwa kolejne fixy w progu — debounce przeciw odbiciom sygnału (`geo.czyDotarl`, opakowane
   przez `pozycja.stanDojscia` zdaniem dla gracza: ile metrów zostało i dlaczego
   stacja się nie zapala). Fix niedokładny dostaje ostrzeżenie, ale nie jest
   odrzucany (ADR 0004 pkt 2 i 4).

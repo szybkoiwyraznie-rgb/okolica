@@ -758,9 +758,24 @@ for (const scenariusz of SCENARIUSZE) {
       assert.ok(odlegloscM(s.sciezkaPunkty[0], scenariusz.srodek) < 160, 'ścieżka zaczyna się przy pozycji startowej');
     }
 
-    // separacje: kątowa ≥ 0.7×360/N i sieciowa ≥ 0.5r, para ≥ 0.3r (ADR 0005 pkt 5)
+    // Separacje (ADR 0005 pkt 5 + aneks 2026-09-09): sieciowa ≥ 0.5r i dystans
+    // od startu w [0.35R, R] są TWARDE, kąt ustępuje wg drabinki. Test pyta
+    // o rzeczywisty szczebel (`wynik.separacje`), a nie o górny próg — inaczej
+    // pinowałby zachowanie sprzed drabinki.
     const r = scenariusz.R * PIERSCIEN_WYBORU.udzial;
-    const katMin = PIERSCIEN_WYBORU.separacjaKatowaUdzial * (360 / scenariusz.N);
+    const katMin = wynik.separacje.katMinStopnie;
+    assert.ok(PIERSCIEN_WYBORU.drabinkaKatowa.includes(wynik.separacje.szczebelKatowy === 0
+      ? PIERSCIEN_WYBORU.drabinkaKatowa[0]
+      : PIERSCIEN_WYBORU.drabinkaKatowa[wynik.separacje.szczebelKatowy]),
+    'szczebel pochodzi z drabinki');
+
+    for (const s of stacje) {
+      assert.ok(s.dystansSieciowyM >= PIERSCIEN_WYBORU.udzialMin * scenariusz.R - 1,
+        `stacja ${s.id}: ${s.dystansSieciowyM} m bliżej startu niż ${Math.round(PIERSCIEN_WYBORU.udzialMin * scenariusz.R)} m`);
+      assert.ok(s.dystansSieciowyM <= scenariusz.R + 1,
+        `stacja ${s.id}: ${s.dystansSieciowyM} m dalej niż promień ${scenariusz.R} m`);
+    }
+
     for (let i = 0; i < stacje.length; i++) {
       for (let j = i + 1; j < stacje.length; j++) {
         let dk = Math.abs(stacje[i].kat - stacje[j].kat) % 360;
@@ -769,8 +784,6 @@ for (const scenariusz of SCENARIUSZE) {
         const dsiec = macierz[i][j];
         assert.ok(dsiec === null || dsiec >= PIERSCIEN_WYBORU.separacjaSieciowaUdzial * r - 1,
           `separacja sieciowa ${dsiec} < ${(PIERSCIEN_WYBORU.separacjaSieciowaUdzial * r).toFixed(0)} m`);
-        assert.ok(dsiec === null || dsiec >= PIERSCIEN_WYBORU.karaParaUdzial * r - 1,
-          `para ${stacje[i].id}↔${stacje[j].id} bliżej niż ${(PIERSCIEN_WYBORU.karaParaUdzial * r).toFixed(0)} m po passie`);
       }
     }
 
@@ -960,4 +973,79 @@ test('geokodacja: nazwa miejsca z jsonv2 — dzielnica i miasto, śmieci → nul
   assert.equal(miejsceZOdpowiedziNominatim({}), null);
   assert.equal(miejsceZOdpowiedziNominatim(null), null);
   assert.equal(miejsceZOdpowiedziNominatim('nie-obiekt'), null);
+});
+
+/* ---- zgłoszenia właściciela 2026-09-09: zakres od startu i drabinka kątowa */
+
+test('wybór: stacje sięgają pełnego R, nie zatrzymują się na 0.84 R', () => {
+  // Właściciel: „skoro R=1000m to wyobrażam sobie stacje oddalone od 350m do
+  // 1000m od miejsca startu (skoro promień to 1000m to czemu zatrzymujemy się
+  // na 840m?)". Pasmo wokół r zostaje preferencją w sorcie, ale nie odrzuca.
+  const { graf, kandydaci } = pelnyWybor(SCENARIUSZE[1]);
+  const srodek = SCENARIUSZE[1].srodek;
+  const R = 1000;
+
+  const w = wybierzStacje({ graf, kandydaci, srodek, konfig: { liczbaStacji: 8, promienM: R }, ziarno: 'zakres' });
+  for (const s of w.stacje) {
+    assert.ok(s.dystansSieciowyM >= 0.35 * R - 1, `${s.dystansSieciowyM} m — bliżej niż 350 m od startu`);
+    assert.ok(s.dystansSieciowyM <= R + 1, `${s.dystansSieciowyM} m — dalej niż promień ${R} m`);
+  }
+  assert.deepEqual(w.pierscien.zakres, [350, 1000], 'zakres raportowany w wyniku');
+
+  // Sedno zmiany: kandydaci POZA dawnym pasmem (0.8r–1.2r = 560–840 m) nie są
+  // już odrzucani. Porównujemy z wariantem, który ma zakres zawężony do pasma —
+  // gdyby zakres nadal wiązał, oba wyniki byłyby identyczne.
+  const wąski = wybierzStacje({
+    graf, kandydaci, srodek, konfig: { liczbaStacji: 8, promienM: R }, ziarno: 'zakres',
+    stale: { ...PIERSCIEN_WYBORU, udzialMin: 0.56, udzialMax: 0.84 },
+  });
+  const pozaDawnymPasmem = w.stacje.filter((s) => s.dystansSieciowyM < 560 || s.dystansSieciowyM > 840);
+  assert.ok(w.stacje.length >= wąski.stacje.length,
+    'szerszy zakres nie może dać mniej stacji niż dawne pasmo');
+  assert.ok(pozaDawnymPasmem.length > 0 || w.stacje.length > wąski.stacje.length,
+    `zakres realnie się poszerzył (poza pasmem: ${pozaDawnymPasmem.length}, stacji: ${w.stacje.length} vs ${wąski.stacje.length})`);
+});
+
+test('wybór: drabinka kątowa ustępuje zamiast oddawać stacje (zgłoszenie 2c)', () => {
+  // Fixture „przedmieście" to dokładnie przypadek właściciela: przy sztywnym
+  // kącie 0.7×360/N sieć dawała 4 stacje i ani jednej więcej.
+  const { graf, kandydaci } = pelnyWybor(SCENARIUSZE[1]);
+  const srodek = SCENARIUSZE[1].srodek;
+
+  const zDrabinka = wybierzStacje({ graf, kandydaci, srodek, konfig: { liczbaStacji: 8, promienM: 1000 }, ziarno: 'drab' });
+  const bezDrabinki = wybierzStacje({
+    graf, kandydaci, srodek, konfig: { liczbaStacji: 8, promienM: 1000 }, ziarno: 'drab',
+    stale: { ...PIERSCIEN_WYBORU, drabinkaKatowa: [PIERSCIEN_WYBORU.separacjaKatowaUdzial] },
+  });
+
+  assert.ok(zDrabinka.stacje.length > bezDrabinki.stacje.length,
+    `drabinka daje więcej stacji (${zDrabinka.stacje.length}) niż sztywny kąt (${bezDrabinki.stacje.length})`);
+  assert.equal(zDrabinka.stacje.length, 8, 'komplet ośmiu stacji');
+  assert.equal(zDrabinka.separacje.ustapiono, true, 'wynik mówi wprost, że kąt ustąpił');
+  assert.ok(zDrabinka.separacje.szczebelKatowy > 0, 'i na którym szczeblu stanął');
+
+  // Ustępstwo dotyczy WYŁĄCZNIE kąta — twarde progi trzymają na każdym szczeblu.
+  const r = 1000 * PIERSCIEN_WYBORU.udzial;
+  for (let i = 0; i < zDrabinka.stacje.length; i++) {
+    assert.ok(zDrabinka.stacje[i].dystansSieciowyM >= 350 - 1, 'dystans od startu nie ustępuje');
+    for (let j = i + 1; j < zDrabinka.stacje.length; j++) {
+      const d = zDrabinka.macierz[i][j];
+      assert.ok(d === null || d >= PIERSCIEN_WYBORU.separacjaSieciowaUdzial * r - 1,
+        `separacja sieciowa ${d} m < 350 m mimo ustępstwa kątowego`);
+    }
+  }
+});
+
+test('wybór: przy dobrej sieci drabinka NIE schodzi — pełny kąt zostaje', () => {
+  // Regresja w drugą stronę: ustępstwo ma być ostatecznością, nie domyślną
+  // ścieżką. Gęste centrum musi wystarczyć na pełnym szczeblu.
+  const { graf, kandydaci } = pelnyWybor(SCENARIUSZE[0]);
+  const w = wybierzStacje({
+    graf, kandydaci, srodek: SCENARIUSZE[0].srodek,
+    konfig: { liczbaStacji: 5, promienM: 600 }, ziarno: 'gesto',
+  });
+  assert.equal(w.stacje.length, 5);
+  assert.equal(w.separacje.szczebelKatowy, 0, 'pełny kąt wystarczył');
+  assert.equal(w.separacje.ustapiono, false);
+  assert.equal(w.separacje.katMinStopnie, Math.round(0.7 * (360 / 5) * 10) / 10);
 });

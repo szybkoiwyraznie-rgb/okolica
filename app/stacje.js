@@ -9,8 +9,8 @@
  * Moduł czysty: bez DOM, bez sieci, bez `Math.random()` (losowość z ziarna).
  */
 
-import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js?v=m12-45';
-import { rngZZiarna } from './konfig.js?v=m12-45';
+import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js?v=m12-46';
+import { rngZZiarna } from './konfig.js?v=m12-46';
 
 /** Źródło układu stacji — pokazywane w UI i zapisywane w paczce rozgrywki. */
 export const ZRODLA_STACJI = {
@@ -73,16 +73,38 @@ export function najmniejszyOdstepM(stacje) {
 
 /* =========================== M4: stacje z sieci drogowej (ADR 0005 pkt 5) */
 
-import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js?v=m12-45';
+import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js?v=m12-46';
 
 /** Stałe pierścienia i separacji z ADR 0005 pkt 5 — wszystkie konfigurowalne. */
 export const PIERSCIEN_WYBORU = {
-  /** Docelowy dystans sieciowy: `r = R × udzial`. */
+  /** Docelowy dystans sieciowy: `r = R × udzial` — stacje CIĄŻĄ do tego okręgu. */
   udzial: 0.7,
   /** Pasmo wokół r: `[r × (1 − tolerancja), r × (1 + tolerancja)]`. */
   tolerancja: 0.2,
-  /** Separacja kątowa od startu między stacjami: `≥ udzial × 360°/N`. */
+  /**
+   * DOPUSZCZALNY dystans sieciowy od startu (decyzja właściciela 2026-09-09):
+   * `[udzialMin × R, R]`. Pasmo wokół `r` zostaje jako preferencja w sorcie,
+   * ale nie odrzuca już kandydatów — właściciel: „skoro R=1000m to wyobrażam
+   * sobie stacje oddalone od 350m do 1000m od miejsca startu (skoro promień to
+   * 1000m to czemu zatrzymujemy się na 840m?)". Dolne 0.35 × R to dokładnie
+   * separacja sieciowa (0.5 × 0.7 × R = 0.35 × R), więc „nie bliżej niż 350 m"
+   * znaczy to samo od startu i między stacjami.
+   */
+  udzialMin: 0.35,
+  /** Górna granica dystansu od startu: `udzialMax × R` (1.0 = pełny promień). */
+  udzialMax: 1,
+  /** Separacja kątowa od startu między stacjami: `≥ udzial × 360°/N` (górny szczebel drabinki). */
   separacjaKatowaUdzial: 0.7,
+  /**
+   * Drabinka ustępstw kątowych (decyzja właściciela 2026-09-09). Gdy sieć nie
+   * pozwala rozstawić N stacji przy pełnym kącie, schodzimy szczebel niżej,
+   * zamiast oddawać mniej stacji: 0.7 → 0.5 → 0.35 → 0.2 → 0 (brak wymogu).
+   * Właściciel: „nie widzę sensu w tej separacji kątowej (…) jeśli koniecznie
+   * chcesz to utrzymać to możesz zrobić jakąś drabinkę priorytetów — od
+   * dzisiejszego kąta stopniowo aż do braku wymaganego kąta (o ile 2a i 2b są
+   * spełnione)". Separacja sieciowa i dystans od startu NIE ustępują nigdy.
+   */
+  drabinkaKatowa: [0.7, 0.5, 0.35, 0.2, 0],
   /** Separacja SIECIOWA między stacjami: `≥ udzial × r`. */
   separacjaSieciowaUdzial: 0.5,
   /** Pass wyrównujący karze pary bliższe niż `udzial × r`. */
@@ -165,7 +187,11 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
 
   const r = R * stale.udzial;
   const pasmo = [r * (1 - stale.tolerancja), r * (1 + stale.tolerancja)];
-  const katMin = N > 1 ? stale.separacjaKatowaUdzial * (360 / N) : 0;
+  // Zakres DOPUSZCZALNY (2026-09-09): od `udzialMin × R` do pełnego R. Pasmo
+  // wokół r zostaje tylko preferencją w sorcie — kandydat 950 m przy R=1000
+  // jest gorszy od kandydata 700 m, ale nie jest już odrzucany.
+  const dolnyM = stale.udzialMin * R;
+  const gornyM = (stale.udzialMax ?? 1) * R;
   const siecMin = stale.separacjaSieciowaUdzial * r;
   const karaParaM = stale.karaParaUdzial * r;
 
@@ -178,6 +204,7 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
     const k = kandydaci[i];
     const d = dStart.dystanse[k.wezel];
     if (!Number.isFinite(d)) continue; // nieosiągalny — nie istnieje dla gry
+    if (d < dolnyM || d > gornyM) continue; // poza dopuszczalnym zakresem od startu
     const szum = (losuj() - 0.5) * 2 * stale.szumZiarnaUdzial * r;
     ocenieni.push({ k, d, kat: bearingStopnie(srodek, k), score: Math.abs(d - r) + szum, i });
   }
@@ -195,23 +222,57 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
     return w;
   }
 
-  // 2) greedy z separacjami
-  const wybrane = []; // { k, d, kat, wynik }
-  function spelniaSeparacje(propozycja, bezIndeksu = null) {
-    for (let s = 0; s < wybrane.length; s++) {
+  // 2) greedy z separacjami — z DRABINKĄ ustępstw kątowych (2026-09-09).
+  //
+  // Kąt jest jedynym progiem, który ustępuje. Separacja sieciowa (350 m przy
+  // R=1000) i zakres dystansu od startu obowiązują na każdym szczeblu: to one
+  // pilnują, żeby stacje nie stały jedna na drugiej. Kąt tylko ROZKŁADA je
+  // wokół startu, a w sieci, która biegnie jednym korytarzem (rzeka, las,
+  // osiedle bez przelotów), sztywne 0.7 × 360°/N oddawało mniej stacji, niż
+  // dało się uczciwie postawić.
+  //
+  // Każdy szczebel liczymy od zera na tej samej liście `ocenieni` (jest już
+  // posortowana deterministycznie), więc wynik nie zależy od kolejności prób.
+  // Schodzimy niżej TYLKO gdy nie udało się zebrać kompletu N.
+  let wybrane = []; // { k, d, kat, wynik }
+  let zajete = new Set();
+  let katMin = 0;
+  let szczebelKatowy = 0;
+
+  const drabinka = Array.isArray(stale.drabinkaKatowa) && stale.drabinkaKatowa.length
+    ? stale.drabinkaKatowa
+    : [stale.separacjaKatowaUdzial];
+
+  function spelniaSeparacje(propozycja, wybr, prog, bezIndeksu = null) {
+    for (let s = 0; s < wybr.length; s++) {
       if (s === bezIndeksu) continue;
-      if (roznicaKatow(propozycja.kat, wybrane[s].kat) < katMin) return false;
-      const dystans = wybrane[s].wynik.dystanse[propozycja.k.wezel];
+      if (roznicaKatow(propozycja.kat, wybr[s].kat) < prog) return false;
+      const dystans = wybr[s].wynik.dystanse[propozycja.k.wezel];
       if (Number.isFinite(dystans) && dystans < siecMin) return false;
     }
     return true;
   }
-  const zajete = new Set();
-  for (const x of ocenieni) {
-    if (wybrane.length >= N) break;
-    if (!spelniaSeparacje(x)) continue;
-    wybrane.push({ ...x, wynik: wynikZWezla(x.k.wezel) });
-    zajete.add(x.i);
+
+  for (let szczebel = 0; szczebel < drabinka.length; szczebel++) {
+    const prog = N > 1 ? drabinka[szczebel] * (360 / N) : 0;
+    const proba = [];
+    const zajeteProby = new Set();
+    for (const x of ocenieni) {
+      if (proba.length >= N) break;
+      if (!spelniaSeparacje(x, proba, prog)) continue;
+      proba.push({ ...x, wynik: wynikZWezla(x.k.wezel) });
+      zajeteProby.add(x.i);
+    }
+    // Zapamiętujemy najlepszą próbę: niższy szczebel nigdy nie daje mniej
+    // stacji (progi tylko maleją), ale zapis wprost jest odporny na zmianę
+    // drabinki na nieposortowaną.
+    if (proba.length > wybrane.length) {
+      wybrane = proba;
+      zajete = zajeteProby;
+      katMin = prog;
+      szczebelKatowy = szczebel;
+    }
+    if (wybrane.length >= N) break; // komplet — nie schodzimy niżej bez potrzeby
   }
 
   // 3) pass wyrównujący: zamiana stacji na lepszą alternatywę
@@ -225,7 +286,7 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
     for (let s = 0; s < wybrane.length; s++) {
       for (const alt of alternatywy) {
         if (zajete.has(alt.i)) continue;
-        if (!spelniaSeparacje(alt, s)) continue;
+        if (!spelniaSeparacje(alt, wybrane, katMin, s)) continue; // ten sam szczebel drabinki, co greedy
         const proba = wybrane.map((w, idx) => (idx === s ? { ...alt, wynik: wynikZWezla(alt.k.wezel) } : w));
         const nowyKoszt = kosztUkladu(proba.map((w) => w.d), macierzZ(proba), karaParaM);
         if (nowyKoszt < koszt - 1) { // ściśle lepiej o ponad metr — koniec dryfu
@@ -269,7 +330,19 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
   return {
     stacje: zOdleglosciami,
     macierz,
-    pierscien: { r: Math.round(r), pasmo: [Math.round(pasmo[0]), Math.round(pasmo[1])], start },
+    pierscien: {
+      r: Math.round(r),
+      pasmo: [Math.round(pasmo[0]), Math.round(pasmo[1])],
+      zakres: [Math.round(dolnyM), Math.round(gornyM)],
+      start,
+    },
+    /** Na którym szczeblu drabinki stanął układ (0 = pełny kąt) — do diagnozy i UI. */
+    separacje: {
+      katMinStopnie: Math.round(katMin * 10) / 10,
+      szczebelKatowy,
+      ustapiono: szczebelKatowy > 0,
+      siecMinM: Math.round(siecMin),
+    },
     liczniki: { kandydatow: kandydaci.length, ocenionych: ocenieni.length, dijkstr: pamiecDijkstra.size },
     usterki,
   };

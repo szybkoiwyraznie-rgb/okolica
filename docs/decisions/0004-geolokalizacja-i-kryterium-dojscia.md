@@ -19,8 +19,9 @@ na sesję; ciągły GPS je baterię.
    końcu gry i przy przejściu w tło (`visibilitychange` — oszczędność baterii,
    z komunikatem „wznowiono śledzenie").
 2. **Kryterium dojścia** (czysta funkcja `czyDotarl(fix, stacja)`):
-   `odległość(fix, stacja) ≤ próg`, gdzie
-   `próg = ogranicz(max(25 m, 1.2 × fix.accuracy), 25 m, 100 m)`,
+   `odległość(fix, stacja) ≤ próg`, gdzie `próg = 25 m` **na stałe**
+   (aneks 2026-09-09 na końcu dokumentu; do tej daty
+   `ogranicz(max(25 m, 1.2 × fix.accuracy), 25 m, 100 m)`),
    oraz **dwa kolejne fixy** spełniające warunek (debounce przeciw pojedynczym
    odbiciom sygnału). Próg jest zapisany w paczce rozgrywki — zmiana w kodzie
    nie zmienia trwającej gry.
@@ -77,3 +78,34 @@ Kanoniczne wejście to **`?test=true`** (przyjmowane też `?test=1`, `?test=tak`
 oraz historyczne `?tryb=test` z pkt 6, którego używają testy). Tryb odsłania
 ręczne współrzędne i symulację trasy; GPS nie startuje. Formy wejścia pinuje
 test w `test/aplikacja.test.js`.
+
+## Aneks 2026-09-09 — próg dojścia to stałe 25 m
+
+Właściciel po rozgrywce w terenie: „Próg zaliczenia stacji jest za duży.
+Większy próg zaliczenia niż 25m nie ma sensu. Nie rozumiem do końca tej
+zależności od dokładności — wg mnie nie powinniśmy zezwalać na zaliczenie ze
+100m. To zupełnie inne miejsce."
+
+**Co było źle w pierwotnej regule.** Skalowanie progu dokładnością fixu miało
+chronić gracza przed słabym sygnałem, ale robiło to kosztem sensu gry: przy
+`accuracy = 100 m` stacja zaliczała się ze 100 m, czyli z innej ulicy albo
+innego skrzyżowania. Gra terenowa polega na dojściu **w konkretne miejsce** —
+próg, który rośnie właśnie wtedy, gdy pomiar jest najmniej wiarygodny, znosi tę
+zasadę dokładnie wtedy, gdy jest najbardziej potrzebna. Do tego działo się to
+cicho: gracz nie wiedział, że zaliczono mu stację z odległości, z której jej
+nie widać.
+
+**Decyzja.** `progDojsciaM()` zwraca 25 m niezależnie od `accuracy`. Parametr
+zostaje w sygnaturze (wywołania go przekazują, a przyszła polityka — np. inny
+próg dla trybu rowerowego — ma gdzie usiąść), ale dziś jest ignorowany.
+
+**Co z graczem przy słabym sygnale.** Nic mu nie zabieramy, bo poluzowany próg
+nigdy nie był pomocą — był cichym fałszowaniem wyniku. Zamiast tego badge
+„±X m" i ostrzeżenie P05 mówią wprost, że GPS nie rozstrzygnie dojścia,
+a wyjściem jest pominięcie odcinka (ADR 0015 pkt 2). Ręczne zaliczenie NIE
+wraca — usunięte w ADR 0029 i ten aneks tego nie zmienia; żaden komunikat nie
+może do niego odsyłać.
+
+**Konsekwencja dla pkt 4 powyżej:** próg ostrzeżenia (`accuracy > 100 m`)
+zostaje jako granica „pomiar bezużyteczny", ale nie ma już związku z progiem
+dojścia — to dwie niezależne liczby.

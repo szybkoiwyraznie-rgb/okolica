@@ -322,12 +322,28 @@ export function parsujWspolrzedne(surowyLat, surowyLon = '') {
 }
 
 /**
- * Próg dojścia do stacji w metrach z dokładności fixu (ADR 0004 pkt 2):
- * `max(25 m, 1.2 × accuracy)`, ograniczony do 100 m.
+ * Próg dojścia do stacji w metrach — **stałe 25 m** (ADR 0004 pkt 2 po aneksie
+ * z 2026-09-09, decyzja właściciela).
+ *
+ * Do 2026-09-09 próg rósł z niedokładnością fixu: `ogranicz(1.2 × accuracy,
+ * 25, 100)`. Intencją było „nie karz gracza za słaby sygnał", ale skutek był
+ * odwrotny do celu gry: przy `accuracy = 100 m` stacja zaliczała się ze 100 m,
+ * czyli **z zupełnie innego miejsca** — innej ulicy, innego skrzyżowania.
+ * Właściciel: „Większy próg zaliczenia niż 25m nie ma sensu (…) nie powinniśmy
+ * zezwalać na zaliczenie ze 100m. To zupełnie inne miejsce."
+ *
+ * Słaby sygnał nie znika przez poluzowanie progu — zmienia się tylko to, czy
+ * gra o nim mówi. Teraz mówi: gracz widzi „±X m" i ostrzeżenie P05, a gdy GPS
+ * naprawdę nie wystarcza, ma przycisk „jestem na miejscu" (ADR 0004 pkt 5),
+ * który jest częścią gry, nie obejściem. To uczciwsze niż ciche zaliczanie
+ * stacji, przy której gracza nie było.
+ *
+ * Parametr `accuracyM` zostaje w sygnaturze: wywołania w `czyDotarl`
+ * i `pozycja.js` go przekazują, a przyszła zmiana polityki (np. inny próg dla
+ * trybu rowerowego) ma gdzie usiąść. Dziś jest ignorowany.
  */
-export function progDojsciaM(accuracyM, { min = 25, max = 100, mnoznik = 1.2 } = {}) {
-  const a = Number.isFinite(accuracyM) && accuracyM > 0 ? accuracyM : max;
-  return ogranicz(mnoznik * a, min, max);
+export function progDojsciaM(accuracyM, { prog = 25 } = {}) {
+  return prog;
 }
 
 /**
