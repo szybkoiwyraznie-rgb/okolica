@@ -62,6 +62,56 @@ test('start: klik w okno je zamyka, a START GRY otwiera setup', () => {
   assert.equal(pobierz('ekran-start').hidden, true, 'setup nie wskrzesza okna');
 });
 
+/**
+ * Zgłoszenie właściciela F3 (2026-09-09): ikony ⚙ START GRY i 🏆 Rankingi mają
+ * pokazywać stan otwartej warstwy (jak 🔔 Sygnały), a klik w podświetloną ikonę
+ * ma tę warstwę zamykać.
+ */
+test('F3: ikona START GRY świeci przy otwartym setupie i zamyka go drugim kliknięciem', () => {
+  // Testy dzielą jedną atrapę DOM, więc ustawiamy stan wyjściowy jawnie
+  // i przywracamy go na końcu — kolejne testy zastają otwarty setup.
+  if (pobierz('ekran-setup').hidden) dom.kliknij('przycisk-setup');
+  assert.equal(pobierz('przycisk-setup').getAttribute('aria-pressed'), 'true', 'ikona świeci nad otwartym setupem');
+
+  dom.kliknij('przycisk-setup');
+  assert.equal(pobierz('ekran-setup').hidden, true, 'drugi klik zamyka setup');
+  assert.equal(pobierz('przycisk-setup').getAttribute('aria-pressed'), 'false', 'ikona gaśnie razem z warstwą');
+
+  dom.kliknij('przycisk-setup'); // stan jak przed testem
+  assert.equal(pobierz('ekran-setup').hidden, false, 'setup wraca dla kolejnych testów');
+});
+
+test('F3: ikona Rankingów świeci przy otwartej warstwie i zamyka ją drugim kliknięciem', () => {
+  if (pobierz('ekran-setup').hidden) dom.kliknij('przycisk-setup');
+  dom.kliknij('przycisk-ranking');
+  assert.equal(pobierz('ekran-ranking').hidden, false, 'rankingi otwarte');
+  assert.equal(pobierz('przycisk-ranking').getAttribute('aria-pressed'), 'true', 'ikona rankingów świeci');
+  assert.equal(pobierz('przycisk-setup').getAttribute('aria-pressed'), 'false', 'druga ikona pozostaje zgaszona');
+
+  dom.kliknij('przycisk-ranking');
+  assert.equal(pobierz('ekran-ranking').hidden, true, 'drugi klik zamyka rankingi');
+  assert.equal(pobierz('przycisk-ranking').getAttribute('aria-pressed'), 'false', 'ikona gaśnie');
+});
+
+/**
+ * Zgłoszenie właściciela B3: „Wróć na początek” dawało pustą stronę (sam
+ * nagłówek i stopka). Mapa musi zostać widoczna — `data-ekran='mapa'` jest tym,
+ * co CSS trzyma jako widoczny spód aplikacji.
+ */
+test('B3: „Wróć na początek” zostawia mapę, nie pustą stronę', () => {
+  if (pobierz('ekran-setup').hidden) dom.kliknij('przycisk-setup');
+
+  dom.kliknij('przycisk-nowa-gra');
+  assert.equal(globalThis.document.body.dataset.ekran, 'mapa', 'body wraca na stan mapy startowej');
+  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra']) {
+    assert.equal(pobierz(`ekran-${ekran}`).hidden, true, `ekran ${ekran} schowany`);
+  }
+  assert.equal(pobierz('ekran-start').hidden, true, 'okno intro nie wraca');
+
+  dom.kliknij('przycisk-setup'); // stan jak przed testem
+  assert.equal(pobierz('ekran-setup').hidden, false, 'setup wraca dla kolejnych testów');
+});
+
 test('bootstrap: stopka pokazuje obowiązującą wersję protokołu i łatki szablonu', () => {
   assert.equal(pobierz('stopka-protokol').textContent, WERSJA_PROTOKOLU);
   assert.equal(pobierz('stopka-szablon').textContent, SZABLON_WERSJA, 'łatka szablonu widoczna (PROTOKOL §7)');

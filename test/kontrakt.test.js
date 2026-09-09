@@ -354,7 +354,7 @@ test('kontrakt: mapa jest trwałym spodem aplikacji, a setup kartą nad nią', (
   assert.equal(/id="mapa-pozycja"/.test(ekranPozycja), false, 'ekran pozycji nie zawiera już własnej mapy');
 
   assert.match(INDEX, /<button id="przycisk-setup"[^>]*>⚙ START GRY<\/button>/, 'START GRY w nagłówku (decyzja 2026-09-09)');
-  assert.ok(APP.includes("$('przycisk-setup').addEventListener('click', () => pokazEkran('setup'))"), 'ikonka setup jest podpięta');
+  assert.ok(APP.includes("$('przycisk-setup').addEventListener('click', przelaczSetup)"), 'ikonka setup jest podpięta (F3: przełącznik)');
 
   assert.ok(STYLE.includes('body:not([data-ekran=\'setup\']):not([data-ekran=\'pozycja\']):not([data-ekran=\'mapa\']) #mapa-pozycja { visibility: hidden; }'),
     'mapa jest chowana przez visibility, nie display — display zerowałby jej pomiar');

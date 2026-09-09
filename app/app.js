@@ -197,6 +197,28 @@ function $(id) {
 
 const EKRANY = ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra'];
 
+/**
+ * Stan ikon w belce (zgłoszenie właściciela F3, 2026-09-09).
+ *
+ * Ikony ⚙ START GRY i 🏆 Rankingi zachowują się teraz jak 🔔 Sygnały: gdy ich
+ * warstwa jest otwarta, ikona jest „wciśnięta” (`aria-pressed="true"`, a CSS
+ * daje jej tło akcentu). Powtórny klik w podświetloną ikonę zamyka warstwę.
+ * Jedno miejsce liczy stan, bo warstwy otwiera i zamyka kilka ścieżek
+ * (przycisk, krzyżyk, Escape, „wróć”) — rozsypanie tego po nich gwarantowałoby
+ * ikonę świecącą nad zamkniętą warstwą.
+ */
+function odswiezStanIkonBelki() {
+  const ustaw = (id, wlaczona) => {
+    const el = $(id);
+    if (el) el.setAttribute('aria-pressed', String(Boolean(wlaczona)));
+  };
+  const ranking = $('ekran-ranking');
+  ustaw('przycisk-ranking', ranking && ranking.hidden === false);
+  // „START GRY” świeci na całej ścieżce przygotowania gry (ekrany 1–5), bo to
+  // ta sama warstwa setupu — nie tylko na pierwszym jej kroku.
+  ustaw('przycisk-setup', EKRANY.includes(STAN.ekran) && (!ranking || ranking.hidden !== false));
+}
+
 function pokazEkran(nazwa) {
   ukryjStart(); // krok gry chowa okno startowe (poza nim okno nie ma czego przykrywać)
   STAN.ekran = nazwa;
@@ -214,6 +236,7 @@ function pokazEkran(nazwa) {
     }
   }
   odswiezMapeEkranu(nazwa);
+  odswiezStanIkonBelki();
   window.scrollTo({ top: 0 });
 }
 
@@ -235,6 +258,7 @@ function pokazMapeStartowa() {
     }
   }
   odswiezMapeEkranu('pozycja'); // mapa na spodzie to instancja pozycji
+  odswiezStanIkonBelki();
   window.scrollTo({ top: 0 });
 }
 
@@ -267,6 +291,7 @@ function pokazPrywatnosc() {
   $('ekran-ranking').hidden = true;
   $('ekran-prywatnosc').hidden = false;
   $('geokodacja-zapasowa').checked = localStorage.getItem('okolica:geokodacja-zapasowa') === '1';
+  odswiezStanIkonBelki(); // prywatność gasi ikony obu warstw (F3)
   window.scrollTo({ top: 0 });
 }
 
@@ -4301,6 +4326,7 @@ function pokazRankingi({ bezPobierania = false } = {}) {
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-prywatnosc').hidden = true;
   $('ekran-ranking').hidden = false;
+  odswiezStanIkonBelki();
   window.scrollTo({ top: 0 });
   if (!bezPobierania) void pobierzRankingi();
 }
@@ -4309,6 +4335,24 @@ function wrocZRankingu() {
   $('ekran-ranking').hidden = true;
   if (STAN.powrotZRankingu === 'mapa') { pokazMapeStartowa(); return; }
   pokazEkran(STAN.powrotZRankingu ?? 'setup');
+}
+
+/**
+ * Klik w ikonę belki: otwiera warstwę albo — gdy ta już świeci — zamyka ją
+ * i wraca na mapę (F3). Zamknięcie setupu wraca na mapę startową, bo to jest
+ * spód aplikacji; zamknięcie rankingów wraca tam, skąd gracz przyszedł.
+ */
+function przelaczSetup() {
+  if (EKRANY.includes(STAN.ekran) && $('ekran-ranking')?.hidden !== false) {
+    pokazMapeStartowa();
+    return;
+  }
+  pokazEkran('setup');
+}
+
+function przelaczRankingi() {
+  if ($('ekran-ranking')?.hidden === false) { wrocZRankingu(); return; }
+  pokazRankingi();
 }
 
 /** Adres mostu do rankingów (ADR 0020): ten sam web app co repozytorium paczek i gry. */
@@ -4525,7 +4569,7 @@ function start() {
     STAN.odstepOverpassMs = 0;
   }
 
-  $('przycisk-setup').addEventListener('click', () => pokazEkran('setup')); // START GRY w nagłówku
+  $('przycisk-setup').addEventListener('click', przelaczSetup); // START GRY w nagłówku (F3: przełącznik)
   $('ekran-start').addEventListener('click', ukryjStart); // okno startowe: klik gdziekolwiek zamyka
   $('przycisk-start-zacznij').addEventListener('click', ukryjStart); // to samo jawnym przyciskiem
   document.addEventListener('keydown', (z) => { if (z.key === 'Escape') ukryjStart(); });
@@ -4534,7 +4578,7 @@ function start() {
   $('przycisk-sygnaly').setAttribute('aria-pressed', String(sygnalyWlaczone()));
   zarejestrujServiceWorker();
   $('przycisk-prywatnosc').addEventListener('click', pokazPrywatnosc);
-  $('przycisk-ranking').addEventListener('click', pokazRankingi); // M12/P6
+  $('przycisk-ranking').addEventListener('click', przelaczRankingi); // M12/P6 (F3: przełącznik)
   $('przycisk-wrocz-ranking').addEventListener('click', wrocZRankingu);
   $('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu); // krzyżyk w rogu warstwy
   $('przycisk-ranking-odswiez').addEventListener('click', () => { void pobierzRankingi(); });
