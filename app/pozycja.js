@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-5';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-37';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -81,14 +81,14 @@ export const STANY_FIXA = Object.freeze({
  * „G01" nie znaczyło dwóch różnych rzeczy w jednym interfejsie.
  */
 export const KODY_POZYCJI = {
-  P01: 'Ta przeglądarka nie udostępnia położenia (brak `navigator.geolocation`). Otwórz stronę przez HTTPS albo zagraj w trybie testowym (⚙) — dojście możesz też zgłaszać ręcznie.',
-  P02: 'Brak zgody na dostęp do położenia. W Chrome dotknij ikony lokalizacji przy adresie i wybierz „Zawsze zezwalaj", a potem odśwież stronę. Możesz też grać w trybie ręcznym — karę czasową da się wyłączyć w ustawieniach.',
-  P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń albo zgłoś dojście przyciskiem „jestem na miejscu".',
-  P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni; dojście możesz też zgłosić ręcznie.',
-  P05: 'Dokładność ±{accuracy} m jest niewystarczająca, żeby rozstrzygnąć dojście (próg to najwyżej 100 m). Przejdź w miejsce z lepszym widokiem nieba albo zgłoś dojście ręcznie.',
-  P06: 'Otrzymano współrzędne spoza zakresu — ten pomiar został odrzucony. Jeśli powtarza się, zagraj w trybie ręcznym.',
+  P01: 'Ta przeglądarka nie udostępnia położenia (brak `navigator.geolocation`). Otwórz stronę przez HTTPS albo wpisz współrzędne przyciskiem „✎ Wpisz ręcznie". Bez strumienia pozycji gra nie rozstrzygnie dojścia do stacji — odcinek można za to pominąć.',
+  P02: 'Brak zgody na dostęp do położenia. W Chrome dotknij ikony lokalizacji przy adresie i wybierz „Zawsze zezwalaj", a potem odśwież stronę. Współrzędne możesz też wpisać ręcznie („✎ Wpisz ręcznie") i iść dalej — ale bez strumienia pozycji gra nie rozstrzygnie dojścia do stacji. Do rozegrania partii bez GPS potrzebny jest tryb testowy z symulacją: otwórz aplikację z parametrem ?test=true.',
+  P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek (ADR 0029: dojście zalicza tylko GPS).',
+  P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek.',
+  P05: 'Dokładność ±{accuracy} m jest niewystarczająca, żeby rozstrzygnąć dojście (próg to najwyżej 100 m). Przejdź w miejsce z lepszym widokiem nieba i poczekaj na dokładniejszy pomiar.',
+  P06: 'Otrzymano współrzędne spoza zakresu — ten pomiar został odrzucony. Jeśli powtarza się, wyjdź na otwartą przestrzeń albo wpisz współrzędne ręcznie („✎ Wpisz ręcznie").',
   P07: 'Śledzenie położenia jest wstrzymane, bo aplikacja działa w tle — oszczędzamy baterię. Wróć na kartę, żeby je wznowić (ADR 0004 pkt 1).',
-  P08: 'Nieznany błąd położenia: {message}. Zgłoś dojście ręcznie albo włącz tryb testowy (⚙), żeby dokończyć grę.',
+  P08: 'Nieznany błąd położenia: {message}. Wyjdź na otwartą przestrzeń, a jeśli to nie pomoże — wpisz współrzędne ręcznie („✎ Wpisz ręcznie") albo pomiń odcinek.',
   P09: 'Wznowiono śledzenie położenia — pierwszy pomiar po powrocie potrafi trwać kilka sekund.',
 };
 
@@ -186,7 +186,7 @@ export function stanDojscia(historia, stacja, { wymaganeTrafnienia = GRANICE.wym
       accuracyM: czysta.at(-1)?.accuracy == null ? null : Math.round(czysta.at(-1).accuracy),
       stanFixa: czysta.at(-1) ? ocenFix(czysta.at(-1)).stan : null,
       kod: 'P06',
-      komunikat: 'Brak poprawnych współrzędnych stacji — nie ma czego rozstrzygać. Odśwież układ stacji albo zgłoś dojście ręcznie.',
+      komunikat: 'Brak poprawnych współrzędnych stacji — nie ma czego rozstrzygać. Odśwież układ stacji albo pomiń ten odcinek.',
     };
   }
   const wynik = czyDotarl(czysta, stacja, { wymaganeTrafnienia });

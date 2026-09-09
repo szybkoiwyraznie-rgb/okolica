@@ -186,7 +186,10 @@ test('stanDojscia: komunikat mówi, ile zostało i dlaczego stacja się nie zapa
   const niedokladny = stanDojscia(historiaZFixturea(7), STACJA);
   assert.equal(niedokladny.kod, 'P05');
   assert.match(niedokladny.komunikat, /niewystarczająca/);
-  assert.match(niedokladny.komunikat, /zgłoś dojście ręcznie/, 'ostrzeżenie zawsze daje wyjście awaryjne');
+  // ADR 0029: ręcznego zgłaszania dojścia nie ma, więc ostrzeżenie musi mówić,
+  // co gracz MOŻE zrobić — nie odsyłać do przycisku, którego już nie ma.
+  assert.match(niedokladny.komunikat, /lepszym widokiem nieba/, 'ostrzeżenie daje wykonalne wyjście awaryjne');
+  assert.ok(!/ręcznie/.test(niedokladny.komunikat), 'ostrzeżenie nie odsyła do usuniętego ręcznego zgłoszenia');
 });
 
 test('stanDojscia: zepsuta stacja albo zepsuta historia nie wywracają gry', () => {
@@ -214,7 +217,9 @@ test('bladGeolokalizacji: kody przeglądarki na komunikaty z wyjściem awaryjnym
     assert.equal(b.kod, kod);
     assert.equal(b.trybAwaryjny, 'reczny');
     assert.ok(b.komunikat.length > 40, `${kod}: komunikat ma wyjaśniać, nie straszyć`);
-    assert.match(b.komunikat, /ręczn|ustawieniach|otwartą przestrzeń|HTTPS/i, `${kod}: musi proponować wyjście`);
+    // ADR 0029: ręcznego zgłoszenia nie ma, więc wyjściem awaryjnym jest
+    // otwarta przestrzeń, tryb testowy albo zgoda przeglądarki — nie przycisk.
+    assert.match(b.komunikat, /ustawieniach|otwart|HTTPS|tryb testowy|Zawsze zezwalaj/i, `${kod}: musi proponować wykonalne wyjście`);
   }
   const nieznany = bladGeolokalizacji({ code: 9, message: 'weird internal failure' });
   assert.equal(nieznany.kod, 'P08');

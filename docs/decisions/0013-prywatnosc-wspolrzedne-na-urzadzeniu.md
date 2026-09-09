@@ -42,7 +42,9 @@ każde zapytanie ujawnia dostawcy przybliżoną pozycję. To decyzja właścicie
 6. **Publiczne repozytorium paczek (ADR 0010 pkt 4) jest ryzykiem prywatności**:
    geohash paczki ≈ okolica zamieszkania organizatora, a treść pytań może
    zdradzać trasę spaceru z dzieckiem. Dlatego: publikacja wyłącznie paczek
-   **zgrubnych** (geohash-5 ≈ 4,9 × 4,9 km, bez dokładnego środka), decyzja
+   **zgrubnych** (geohash-5 ≈ 3,0 × 4,9 km, bez dokładnego środka; od
+   2026-09-07 indeks niesie też geohash-6 ≈ 0,75 × 0,61 km jako kotwicę
+   dopasowania — uzasadnienie i granice w ADR 0024 pkt 5), decyzja
    o każdej publikacji po stronie właściciela, oraz jawna zgoda organizatora
    w UI eksportu („udostępniasz paczkę publicznie — zawiera przybliżoną
    okolicę").

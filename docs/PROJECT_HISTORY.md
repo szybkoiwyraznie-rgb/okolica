@@ -816,3 +816,797 @@ dekoder w walidatorze, PROTOKOL §3.4/§7 (szablon **PYT/1.0.2**).
 Poprawki ADR: 0004 pkt 5 + aneks, 0009 pkt 2–5 + aneks, 0013 pkt 3,
 0015 pkt 2/4/6; rejestr + PROJECT_HISTORY. Budżet: nagrobek 0014 finansuje
 0022/0023.
+
+## 2026-09-07 — sesja audytowa (gałąź `arena/01a07c4f-okolica`, PR #4)
+
+**Zlecenie właściciela:** „kontynuujemy projekt". Zaległości kodowych brak:
+wszystkie otwarte kamienie (M3–M8, M10–M12) mają w `ROADMAP` status „kod
+gotowy, czeka kryterium właściciela" (testy terenowe / włączenie Pages — poza
+zasięgiem agenta), a `BACKLOG` nie upoważnia do wzięcia tematu (nagłówek pliku).
+Sesja zaczęła się więc od obowiązkowego audytu poprzedniego PR (`AGENTS.md` §2
+pkt 2) i od naprawy tego, co audyt wykazał.
+
+**Stan zastany:** `main` = `f06ee55` (PR #3 scalony), CI na `main` zielone
+(run `34134119244`), brama `npm test` **521/521**, budżet lektury
+**39988/40000** (rezerwa 12 tok). Klon sesji był płytki (1 commit) — audyt
+wymagał `git fetch origin main --depth=50` (`ENVIRONMENT` §3).
+
+**Audyt PR #3 (`git diff d04a18a..f06ee55`, 74 pliki, +3007/−2765):**
+
+Poprawne i spójne z ADR/protokołem:
+
+- **rev2**: przesunięcie `+17` istnieje jako JEDNA stała
+  (`PRZESUNIECIE_KODU_REV2`, `app/protokol.js:365`) użyta w dekodowaniu
+  (l. 377) i kodowaniu (l. 385) — brak rozjazdu literałów; nieodczytywalny kod
+  staje się znacznikiem `~kod:…` i daje E06 z instrukcją.
+- **ADR 0022/0023**: `ktoOdpowiada()` zwraca jednego gracza z kolejki
+  (`app/rozgrywka.js:190`), a `wspolpraca`/`WSPOLPRACA`, `miaraSprawiedliwosci`,
+  tempo, medal i pola czasowe zniknęły z kodu (grep po `app/`, `index.html`
+  i `test/` — zero trafień).
+- **LESSONS L29**: cache-bust jednolity — `?v=m12-5` w 42 miejscach, zero
+  innej wersji, `WERSJA_SW = 'm12-5'` w `sw.js`.
+- **ADR 0020**: `DOMYSLNY_URL_MOSTU` jest wypełniony żywym adresem `/exec`,
+  pola wpisywania adresu nie istnieją w `index.html`.
+- Fałszywy alarm wyjaśniony (nie usterka): `p.poprawna.slice(5)` w komunikacie
+  E06 jest strzeżone `typeof p.poprawna === 'string' && startsWith('~kod:')`,
+  więc nie ma `TypeError` na liczbie.
+
+Rozjazdy dokumentacja ↔ kod znalezione w audycie (naprawione w tej sesji):
+
+1. **Zgoda na wysyłkę Drive**: checkbox `#zgoda-drive` został usunięty z ekranu
+   wklejania (decyzja właściciela 2026-09-07; `test/kontrakt.test.js:596`
+   pinuje jego brak), ale `README.md` i `docs/ASSETS.md` §7 wciąż opisywały go
+   jako „domyślnie zaznaczony, można odhaczyć", a ADR 0016 (aneks 2026-09-06)
+   podawał jego dosłowny HTML. Dokumenty mówiły więc o mechanizmie, którego
+   w kodzie nie ma — w aplikacji prywatnej wysyłka jest domyślna i cicha.
+2. **Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"**: opisany w `README.md`
+   jako droga ręcznego wniesienia paczki, ale przycisk `przycisk-eksport-zestawu`
+   i cały eksport zniknęły (kontrakt pinuje brak; zero trafień w `index.html`).
+3. **Bramka nazwy miejsca**: `README.md` mówił, że pobieranie nazwy miejsca jest
+   „bramowane ustawieniem", ale przełącznik `setup-geokodacja` usunięto
+   w Partii 2 — nazwa jest pobierana zawsze (ADR 0013 pkt 3 po poprawce);
+   została tylko zgoda na warstwę zapasową Nominatim (`geokodacja-zapasowa`).
+4. **Podgląd i edycja paczki**: ADR 0006 pkt 8 obiecuje organizatorowi podgląd
+   „tylko dla organizatora" i edycję zapisującą `paczka.modyfikacje[]`, a oba
+   zniknęły z ekranu decyzją 2026-09-07 (kontrakt pinuje brak
+   `podglad-organizatora` i `podglad-pytania`). Funkcja
+   `zastosujEdycjePaczki()` została w kodzie bez żadnego wywołania w aplikacji
+   (testy jednostkowe miała — korekta pierwszego odczytu, który pominął
+   `test/protokol.test.js`): martwy eksport po usuniętej ścieżce UI, przy tym
+   sprzed rev2 — walidowała `poprawna` jako `0..3`, a protokół wymaga kodu
+   pozycyjnego, więc ponowne włączenie edycji psułoby paczki rev2.
+5. **`SZABLON_WERSJA`** (`PYT/1.0.5`) nie ma żadnego konsumenta ani testu
+   (`grep` po `app/`, `test/`, `tools/`, `index.html` — tylko deklaracja),
+   więc `PROTOKOL` §7 wymaga podbijania łatki w stałej, której nikt nie czyta.
+
+**Fakt operacyjny tej sesji (LESSONS L29 złamana i naprawiona w miejscu):**
+commit `a251d14` podbił `?v=m12-6` w `index.html`, `app/app.js` i `sw.js`, ale
+`git add` z jawną listą pominął 12 modułów `app/`, które ten sam `sed` podbił
+w drzewie roboczym — wypchnięty commit miał więc DWA znaczniki wersji
+(dowód: czysty checkout HEAD, `node --test test/kontrakt.test.js` →
+`mapa.js: znacznik m12-5 różny od index.html (m12-6)`). Naprawione committem
+`f1d8040`; reguła L29 doprecyzowana (`git add index.html app/ sw.js`, nie lista
+z pamięci). Wniosek: przegląd `git status --short` PRZED `git commit` trzeba
+CZYTAĆ — w tym przypadku pokazał ` M app/*.js` i został przeoczony.
+
+**Co naprawiono (rozjazdy 1–5 z audytu):**
+
+- `README.md` + `ASSETS` §7: usunięte opisy mechanizmów, których nie ma w UI
+  (zgoda `#zgoda-drive`, eksport TO-zestaw/1, przełącznik geokodacji). Zgoda
+  w grze wieloosobowej (`#multi-zgoda`) istnieje i jest opisana poprawnie.
+- Aneksy ADR 0006 (pkt 8 — podgląd i edycja bez ścieżki w interfejsie)
+  i ADR 0016 (koniec checkboxa zgody, wysyłka domyślna i cicha). Zaakceptowanych
+  ADR nie edytujemy pod zmianę znaczenia (L8), więc aneks, nie korekta decyzji.
+- `LESSONS` L31: usunięcie funkcji z UI zostawia jej opis w dokumentach.
+- `app/protokol.js`: martwa `zastosujEdycjePaczki()` + `EDYTOWALNE_POLA`
+  usunięte (brak wywołania w aplikacji; przy tym walidacja `poprawna` jako
+  `0..3` sprzed rev2), razem z pięcioma testami tej ścieżki; brak pinuje
+  kontrakt, żeby funkcja nie wróciła po cichu.
+- `SZABLON_WERSJA` (PROTOKOL §7) dostała konsumenta: stopka pokazuje
+  „protokół PYT/1.0 · szablon PYT/1.0.5", kontrakt pinuje element, render
+  i kształt `PYT/1.0.N`. Cache-bust `m12-5 → m12-6`.
+- Budżet lektury (B18): aneksy i lekcja opłacone kondensacją nagrobka ADR 0014
+  (listę identyfikatorów niesie ADR 0023), sekcji M3–M12 w `ROADMAP`
+  (inwentarze kamieni są w tabeli; wskaźniki `§Mx` → jeden `§Kryteria`)
+  i sekcji kamieni zamkniętych: **39988 → 39964 tok** przy większej treści.
+
+**Brama na koniec sesji:** 518/518 (521 − 5 testów usuniętej ścieżki edycji
++ 2 nowe kontrakty) + sync szablonu OK + WCAG AA 0 naruszeń. Podgląd na żywo
+sprawdzony: stopka serwuje `PYT/1.0.5`, moduły i `sw.js` zwracają 200.
+
+## 2026-09-07 (partia 3) — siedem punktów właściciela: Pages, budżet, prompt, tolerancja okolicy, czas gry, tożsamość, hot-seat
+
+Właściciel zgłosił siedem rzeczy naraz. Sześć wdrożonych, siódma (gra sieciowa
+bez tur) zaprojektowana w ADR 0027 część B.
+
+- **Punkt 7 — GitHub Pages**: przy `Source: GitHub Actions` GitHub czeka na
+  workflow wołający `actions/deploy-pages`, a takiego nie było. Doszedł
+  `.github/workflows/pages.yml` (brama → `upload-pages-artifact@v3` z `path: ./`
+  → `deploy-pages@v4`, uprawnienia `pages`/`id-token`) + lustro
+  `docs/setup/pages-workflow.yml` pinowane kontraktem (bajt w bajt od
+  `name: Pages`). Pułapka: kontrakt wymaga `run: npm test` w jednej linii, więc
+  bramę rozbiliśmy na dwa kroki zamiast bloku `run: |`.
+- **Punkt 5 — budżet lektury 40 → 100 tys. tokenów**: `LIMIT_TOKENOW`,
+  `AGENTS.md` §0, testy i BACKLOG (B14, B18 rozstrzygnięty decyzją właściciela:
+  „40k to za mało na taki duży projekt"). Kondensacja przestaje być obowiązkowa
+  przy każdym dopisku; zasada „reguła trafia tam, gdzie jej miejsce" zostaje.
+- **Punkt 2 — prompt**: „Gracze idą od stacji do stacji … i przy każdej stacji
+  dostają pytania **z wybranych dziedzin**" (PROTOKOL §2 → `SZABLON_PROMPTU`,
+  łatka `PYT/1.0.6`).
+- **Punkt 3 — paczki „nie dla tej okolicy"**: przyczyną był filtr
+  `w.geohash5 === geohash5`, a geohash to siatka: punkty ~1 m od siebie po dwóch
+  stronach granicy mają różne geohash5 (u3q8q vs u3q8w). Teraz dopasowanie liczy
+  **odległość od komórki geohash paczki z tolerancją 200 m**
+  (`odlegloscDoKomorkiM` w `geo.js`, ADR 0024), nowe paczki niosą `geohash6`
+  (≈0,75 × 0,61 km) jako dokładniejszą kotwicę, a komunikat braku mówi, ile
+  paczek jest w indeksie i które kryterium nie zagrało. Prywatność bez zmian:
+  dokładne stacje i tak są publiczne przez `?akcja=paczka&id=`.
+- **Punkt 4 — czas gry zamiast promienia**: pole promienia zniknęło, jest
+  planowany czas gry (60 min domyślnie), a promień liczy `przeliczenieCzasu`
+  (90 s na pytanie, 40% reszty na drogę, trasa ≈ 1,4·√N·R) — kalibracja
+  właściciela 60 min / pieszo / 5 pytań → **500 m** (ADR 0025). Konsekwencja:
+  domyślny promień gry 1000 → 500 m, a `TRYBY[x].promienM` usunięte.
+- **Punkt 1 — tożsamość bramą ekranu 1**: imię + PIN obok siebie, jedno wołanie
+  `profil-ustaw` (wolne imię zakłada profil, zajęte wymaga PIN-u, zły PIN = R20
+  i zostajesz na ekranie 1). Zweryfikowane na tym telefonie imię przechodzi bez
+  sieci, a awaria mostu nie blokuje gry — tylko mówi, że historia nie zostanie
+  zapisana (ADR 0026). Przełącznik i przycisk „Sprawdź" zniknęły: mniej klikania.
+- **Punkt 6A — hot-seat**: pytania muszą dzielić się równo między graczy (K22),
+  domyślnie `pytaniaNaStacje = liczbaGraczy`, widełki pytań 1–8 (ADR 0027).
+  Układ „2 graczy × 3 stacje × 1 pytanie" jest teraz niepoprawny — fixture'y
+  przeszły na 3 graczy.
+
+**Brama na koniec partii:** 538/538 + sync szablonu OK + WCAG AA 0 naruszeń.
+Podgląd serwuje `?v=m12-11`. Ostatnie dwa commity czekały na push (token GitHub
+w środowisku wygasł) — patrz `docs/setup/HANDOFF_2026-09-07-partia3.md`.
+
+## 2026-09-07 (partia 4) — B19: kotwica geohash6 dla starych paczek i B20: gra sieciowa bez tur
+
+Dwa punkty z listy „zostało" partii 3, oba wdrożone.
+
+- **B19 (ADR 0024 aneks)**: paczki opublikowane przed ADR 0024 mają tylko
+  `geohash5` (≈3,0 × 4,9 km), więc reguła „odległość od komórki ≤ 200 m" łapała
+  też paczkę 3 km dalej. `budujIndeks` w moście Drive liczy teraz dla takich
+  wpisów kotwicę ze **środka ciężkości stacji** (nie z pierwszej stacji — start
+  leży w środku obszaru, pierwsza stacja bywa na skraju) i oznacza wpis
+  `geohash6Szacowany`; klient poszerza wtedy tolerancję o `promienM` paczki.
+  To dowód braku regresji (start leży w promieniu paczki od każdej stacji, więc
+  od środka ciężkości tym bardziej) przy shrinku nadmiarowego dopasowania
+  z ~4 km do ~`promienM`. Koder geohash w Apps Script jest kopią `app/geo.js`
+  i **jest testowany**: `test/most-indeks.test.js` wykonuje wycięty tekst
+  skryptu i porównuje na siatce >500 punktów.
+- **B20 (ADR 0027 część B)**: gra sieciowa bez tur. Gracz wybiera dowolną
+  niezaliczoną stację (`skierujDoStacji`, G14 dla zamkniętej), pytanie bierze
+  wg własnego indeksu (`pytaniaNaStacje = liczbaGraczy`, indeks zawija się przy
+  mniejszej paczce, żeby nikt nie został bez pytania), 1 pkt za poprawną.
+  **Premia za kolejność ukończenia**: pierwszy `G−1`, …, ostatni 0, liczona
+  z `kolejnosc` zdarzeń mostu (nie z zegara urządzenia), wchodzi do punktów
+  dopiero w podsumowaniu. Reguła jest po obu stronach — w `app/wieloosobowa.js`
+  i w moście — a `test/most-gra.test.js` porównuje wyniki obu implementacji na
+  pięciu scenariuszach. Serwer NIE wymagał zmian w walidacji: tury bramkował
+  tylko przy `tryb === 'tury'`.
+- Przy okazji wyszło, że `postepGracza` w aplikacji nie liczył `czasOdcinkowMs`,
+  choć most go liczy — kształt wyników telefonu i Drive różnił się polem.
+  Ujednolicone; parity pilnuje test.
+- Nowy **BACKLOG B21**: budżet promptu i limit wklejenia dla 40 pytań
+  (5 stacji × 8 graczy) — po części A domyślny setup generuje ich
+  `stacje × gracze`, a protokół był testowany przy 5.
+
+**Brama na koniec partii:** 560/560 + sync szablonu OK + WCAG AA 0 naruszeń.
+Podgląd serwuje `?v=m12-13`. Skrypt mostu wymaga wklejenia przez właściciela
+(kotwica geohash6 + premia) — patrz `docs/setup/most-drive-instrukcja.md`.
+
+## 2026-09-07 (partia 5) — ekran 1: lista graczy = tożsamość + wynik hot-seat na Drive
+
+**Zlecenie właściciela (punkt 8):** „Gracze" (liczba) i „👤 Kim jesteś?"
+(imię + PIN) były nie do zrozumienia — „to trzeba zintegrować": wpisujesz imię
+i PIN, klikasz „➕ Dodaj gracza", nowe imię zakłada profil z tym PIN-em, zajęte
+wymaga PIN-u właściciela. Lista dodanych graczy zastępuje pole liczby.
+
+**Trzy decyzje właściciela (ankieta w czacie):** (1) PIN sprawdzany od razu
+przy dodawaniu, pole „Liczba graczy" **znika** — „tyle ilu się doda, tylu
+będzie"; (2) lista jest zapamiętywana na telefonie i **nie pyta o PIN
+ponownie**; (3) **zrób teraz**: wynik gry hot-seat idzie na Drive per gracz.
+
+- **Jeden blok „👤 Kto gra?"** (`#pole-tozsamosc`): imię + PIN + „➕ Dodaj
+  gracza", lista `#lista-graczy` z „✕ Usuń", przyciski zapamiętanych
+  `#lista-zapamietanych`, akapit stanu. Z `index.html` zniknęły `#setup-gracze`
+  i `#lista-imion`; `liczbaGraczy` jest pochodna (`max(1, imiona.length)`),
+  a `pytaniaNaStacje = min(gracze, 8)` idzie za listą (K22 zostaje spełnione).
+- **`okolica:profil` → `okolica:gracze`** (schemat `gracze-lokalni/1`, maks. 8,
+  PIN nigdy lokalnie). Przy starcie potwierdzeni gracze wracają na listę sami,
+  bez PIN-u i bez sieci; niepotwierdzeni czekają jako przyciski i wymagają PIN-u.
+  Usunięcie jest trwałe — `przywrocGraczy({ zListy: true })` tylko przy
+  uruchomieniu, bo inaczej usunięty gracz wracał natychmiast.
+- **Wynik hot-seat na Drive** (B22): nowa akcja mostu `gra-hotseat`
+  (PROTOKOL §9.5) zapisuje grę z jednego telefonu jako `RO-gra/1` ze stanem
+  `zakonczona`, więc `GET ranking` czyta ją bez zmian. Punkty liczy most, premia
+  hot-seat = 0 (po obu stronach — parity pilnowany testem), `zestaw: null`,
+  `geohash5` startu zamiast współrzędnych, pola `lat`/`lon` kasowane także
+  w moście. Zgoda `#hotseat-zgoda`, kolejka offline `okolica:hotseat-kolejka`,
+  odcisk gry `okolica:hotseat-wyslane` (wynik jednej gry raz).
+- Los wysyłki ma **własną linię** `#wynik-drive`, nie wspólny `#status`:
+  wysyłka kończy się w nieprzewidywalnej chwili i nadpisywała komunikat
+  „Obraz wyniku zapisany jako plik .png" (wyłapał test M7).
+- **L32**: asynchroniczne odświeżenie listy bez licznika pokoleń dublowało
+  paczki z repozytorium — `POKOLENIE_PROPOZYCJI` przed żądaniem, sprawdzenie
+  przed dopisaniem i w `.catch()`.
+- Literówka `prycisk.disabled` w `dodajGracza` rzucała `ReferenceError` przy
+  każdym kliknięciu „Dodaj gracza" — wyłapał dopiero nowy test bramy.
+
+**Brama na koniec partii:** `npm run brama` = **567 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-14` (+ `WERSJA_SW`).
+Skrypt mostu (963 linie, md5 `01e1d9bdfa071d2634dc33d87607420f`) **wymaga
+wklejenia** przez właściciela: akcja `gra-hotseat` + premia hot-seat = 0 —
+patrz `docs/setup/most-drive-instrukcja.md` (sekcja „Awaryjnie").
+
+## 2026-09-07 (partia 6) — cztery uwagi właściciela po partii 5
+
+**Zlecenie:** (1) paczki „znajdują się" wiele kilometrów od miejsca
+wygenerowania; (2) komunikat niedopasowania wymienia cały setup i sprawdza
+promień, który nie wpływa na pytania; (3) imię gracza i „Usuń" są za małe
+i sklejone; (4) checkbox zgody na zapis wyniku ma zniknąć — zapis jest
+domyślny, info należy do sekcji prywatność.
+
+- **(1) Diagnoza: dopasowanie działało poprawnie.** Zmierzone na
+  `dopasujMetaIndeksu`: paczka z Podkowy Leśnej przy pozycji w Łodzi = 97 km
+  od komórki paczki przy tolerancji 200 m → **0 dopasowań**, paczka nie
+  wchodziła na listę. Winny był **komunikat**: liczył cały indeks („w indeksie:
+  1") i wyglądało to jak trafienie z drugiego końca kraju. Teraz paczki spoza
+  okolicy nie są ani liczone, ani wspominane (`czyWOkolicy` w `app/app.js`).
+- **(2) Promień wypadł z kryteriów** (aneks ADR 0024): nie wpływa na pytania,
+  a trasę wyznaczają stacje paczki. Nowe `powodyNiedopasowania()` w
+  `app/zestawy.js` jest jedynym rozstrzygającym miejscem — `dopasujZestawy`
+  filtruje po nim, a karta paczek cytuje powody („liczba stacji: paczka 5,
+  setup 3"), bez wymieniania setupu i bez promienia.
+- **(3) Lista graczy**: `font-size: 17px`, `gap: 16px`, `padding: 12px 0`,
+  przycisk 15 px i `nowrap` — imię i „✕ Usuń" nie są już sklejone.
+- **(4) Zgoda usunięta** (dopisek do aneksu ADR 0026): zapis wyniku jest
+  domyślny, a sekcja „Dane i prywatność" dostała kartę „Wspólny Drive: historia
+  i rankingi" z pełnym opisem, co jedzie i co zostaje. Bez potwierdzonego
+  profilu wynik zostaje na telefonie — i `#wynik-drive` mówi to wprost, zamiast
+  milczeć.
+- Testy: `powodyNiedopasowania` (7 przypadków), paczka 97 km dalej nie jest
+  proponowana ani wspominana, komunikat nazywa powód i nie wymienia setupu,
+  zapis domyślny bez zgody, brak potwierdzonego profilu = jawny komunikat.
+  Kontrakt pinuje brak `#hotseat-zgoda`, obecność karty prywatności i brak
+  kryterium promienia.
+
+### Dopisek (ten sam dzień, 2026-09-07): odpowiedź właściciela i naprawa WE06
+
+- **Kryteria paczki ostatecznie:** okolica (±200 m) · wiek · **suma pytań
+  co najmniej jak w setupie** · tematy nie szersze. Właściciel: „istotna jest
+  ilość pytań w sumie, a nie ilość pytań na stację — jak gra ma mieć w sumie
+  20 pytań to musi być paczka która ma 20 pytań, niezależnie od tego czy jest
+  5 stacji po 4 pytania czy 2 stacje po 10"; „Liczba stacji jest nieistotna
+  o ile suma pytań się zgadza"; paczka z większą liczbą pytań też pasuje.
+  **Liczba stacji, pytania na stację i środek transportu wypadły z kryteriów**
+  (transport — właściciel wycofał wcześniejsze „dodaj"). Nowa funkcja
+  `sumaPytanWpisu()`, poprawione `powodyNiedopasowania()` (powód: „za mało
+  pytań: paczka ma 4 (2 stacji × 2), a setup chce 5"), aneks ADR 0024.
+- **(5) Zgoda usunięta także z gry wieloosobowej** — `#multi-zgoda` i
+  `okolica:multi:zgoda` zniknęły (dopisek do ADR 0019); sekcja prywatności
+  dostała punkt „Gra na wielu telefonach" (pseudonim w lobby, dojścia i
+  odpowiedzi, kod gry; współrzędne zostają na telefonie) i punkt o paczkach
+  pytań. Bramką wejścia do multi jest pseudonim — i tak nie da się grać bez
+  niego. Schematy `RO-*` nigdy nie miały pola `zgoda`, więc most bez zmian.
+- **(6) Naprawiony zgłoszony błąd** (setup 5 stacji, sieć dała 4, ekran pytań:
+  `[WE06] liczbaStacji: Liczba stacji (4) nie zgadza się z konfiguracją (5)`):
+  `wybierzStacje()` słusznie oddaje mniej stacji, gdy sieć nie pozwala
+  zachować odstępów (S12), ale `przeliczZTegoCoJest()` zostawiał
+  `liczbaStacji` przy zamówieniu i `budujPrompt()` trafiał w niezmiennik.
+  Teraz **to, co wybrano, jest grą**: setup i pole `#setup-stacje` dostają
+  faktyczną liczbę, promień liczy się z niej od nowa (ADR 0025), a ekran
+  stacji mówi dlaczego jest ich mniej i jak zwiększyć promień, żeby dostać 5.
+  Test: „sieć za uboga na zamówioną liczbę — setup idzie za wyborem, a prompt
+  się buduje (S12)" w `test/aplikacja.test.js` (bez naprawy pada).
+- **Jawna odmowa mostu nie udaje awarii sieci.** Właściciel zapytał, czy partia 6
+  zmieniała skrypt mostu (nie zmieniała — `git log cfc357a^..HEAD --
+  docs/setup/apps-script-repo-paczek.gs` = puste; wersję z geohash miał wklejoną
+  wcześniej). Przy okazji wyszło: `wyslijWynikHotseat()` i
+  `oproznijKolejkeHotseat()` łapały każdy błąd jednakowo i pisały „Drive nie
+  odpowiedział", choć `polecenieMostu()` oznacza jawną odmowę flagą
+  `odmowaMostu` (kontrakt: „nie ponawiać"). Przy starszym skrypcie w Apps Script
+  gracz dostawał fałszywą diagnozę, a kolejka mieliła bez słowa wyjaśnienia.
+  Teraz komunikat cytuje odpowiedź mostu („most Drive odmówił: nieznana akcja
+  albo schemat ciała") i mówi, że wynik poleci po wklejeniu aktualnej wersji;
+  kolejka zostaje w obu przypadkach, żeby wyniki doszły same.
+- **Literówka w skrypcie mostu zablokowała pobieranie paczek z repozytorium.**
+  Zgłoszone: „Graj z tą paczką" → „Paczka z repozytorium jest niekompletna (Plik
+  publiczny ma inny schemat niż „TO-zestaw/1")". W `paczkaPrzezId` zadeklarowane
+  było `wZaakceptowanych`, czytane `wZaakceptowane` → ReferenceError przy każdym
+  pobraniu, `doGet` odpowiadał `{blad:"… is not defined"}`, a aplikacja mówiła
+  „inny schemat". Paczka na Drive była poprawna. Naprawa: jedna litera w `.gs`
+  (md5 `7d8cb9f2…`) + nowy `test/most-paczka.test.js`, który WYKONUJE skrypt na
+  atrapie Drive (przyjęcie → akceptacja → indeks → pobranie → walidacja w
+  aplikacji) i przegląda wszystkie akcje pod kątem `is not defined`; aplikacja
+  cytuje teraz `blad` mostu (kod Z11) zamiast zasłaniać go „innym schematem".
+  LESSONS L33.
+- **B21 zmierzone (bez zlecenia terenowego — właściciel nie miał czasu testować):**
+  prompt jest stały (~1 356 tokenów dla 5 i dla 40 pytań), rośnie odpowiedź
+  modelu: 4 469 znaków / ~1 118 tokenów dla 5 pytań i 33 392 / ~8 348 dla 40
+  (5 stacji × 8 graczy), czyli ~210 tokenów na pytanie; kontener `TO-paczka/2`
+  dla 40 pytań to 35,6 kB (1,8% budżetu stanu, 2,4% rejestru). Wąskie gardło to
+  limit wyjścia modelu, nie pamięć. Wdrożone: `szacunekOdpowiedzi()` +
+  `PROG_ODPOWIEDZI_TOKENY = 4000` (`app/protokol.js`) i widoczna linia
+  `#prompt-rozmiar` na ekranie pytań z ostrzeżeniem powyżej progu — ucięty JSON
+  wracał wcześniej jako E01/E02 bez wskazania przyczyny. Testy:
+  `test/duza-paczka.test.js` (4) + test UI w `test/aplikacja.test.js`; protokół
+  §2 „Budżet rozmiaru", BACKLOG B21, HANDOFF §10. Dzielenie generacji na partie
+  zostaje jako decyzja właściciela.
+- **B16 zrobione: koniec `innerHTML` w `app/app.js` (LESSONS L19) + zamknięta
+  dziura na dane zewnętrzne (LESSONS L34).** Tryby, segmenty, tematy, selecty,
+  lista stacji i lista usterek budują węzły (`createElement` + `textContent`),
+  więc atrapa DOM i przeglądarka zachowują się identycznie. Przy migracji wyszło,
+  że wiersz stacji wstawiał przez `innerHTML` **nazwę z OSM** (`tags.name`
+  przez `dopiszMiasto`), a komunikaty usterek cytują metadane paczki z Drive
+  i odpowiedź mostu — obiekt OSM o nazwie `<img src=x onerror=…>` wykonałby
+  skrypt w aplikacji. Wszystko, co zewnętrzne, idzie teraz przez `textContent`.
+  Testy: „nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem"
+  (wroga nazwa w fixture Overpass, asercja: brak elementu `IMG` w wierszu)
+  + poprawione 3 asercje, które czytały inertne `innerHTML` w atrapie.
+- **Most: cały cykl gry wieloosobowej wykonywany w testach (LESSONS L33).**
+  Atrapa Drive wyprowadzona do `test/helpers/most.js` (wspólna dla paczek i gier)
+  i rozszerzona o ścieżki GET: `stanGry`, `listaGry`, `rankingi`,
+  `przeliczWyniki`, `archiwizujPrzeterminowane`. Nowy `test/most-gra-cycle.test.js`:
+  założenie → dołączenie → start → dojście/odpowiedź → **kolejka tur pilnowana
+  przez most** (cudza stacja odrzucona z nazwaniem gracza) → auto-koniec →
+  rankingi; profil gracza (pseudonim + PIN 4–8, R19/R20, cudzy pseudonim nie do
+  przejęcia); i asercja prywatności czytająca **plik z Drive**, nie odpowiedź
+  mostu: `lat/lon/szerokosc/dlugosc/latitude/longitude` wysłane w `dane` zdarzenia
+  nie lądują na dysku (ADR 0013/0019 pkt 3), inne pola zostają.
+- **Hot-seat i wygasanie lobby też wykonywane w testach.** `przyjmijGreHotseat`
+  przyjmuje grę z jednego telefonu: wyniki liczone po stronie mostu, plik ląduje
+  w `gryZakonczone`, `kod: null` (brak lobby), **`zestaw: null` — paczka i pytania
+  zostają na telefonie (ADR 0013)**, współrzędne wycięte ze zdarzeń, a gra wchodzi
+  do rankingu. Odrzucane: zdarzenie gracza spoza listy, `stacjaId` poza zakresem,
+  typ inny niż dojście/odpowiedź, gracz bez pseudonimu. `archiwizujPrzeterminowane`
+  przenosi otwartą grę starszą niż `WYGASANIE_LOBBY_MS` (24 h) do archiwum i znika
+  ona z `listaGier()`.
+- **Zasięg mostu mierzony, nie zgadywany: `npm run zasieg-mostu`.** Narzędzie
+  uruchamia testy z `NODE_V8_COVERAGE`, znajduje profil skryptu z `new Function`
+  i przekłada pokrycie na wiersze `docs/setup/apps-script-repo-paczek.gs`
+  (przesunięcie V8 kalibrowane na nazwach funkcji; bez kalibracji narzędzie rzuca
+  błąd zamiast podawać zmyślone liczby). Start pomiaru: 702/790 (88,9%),
+  po domknięciu dziur **767/790 (97,1%)**. Zamknięte dziury: koder geohash
+  i `kotwicaZestawu` (test wycinał je z pliku i wykonywał kopię — idą przez
+  atrapę, razem z `budujIndeks` na paczce bez `meta.geohash6`: kotwica szacowana
+  ze środka stacji + znacznik `geohash6Szacowany`), `stronaPrzegladu` + `esc`
+  (token z `REVIEW_SECRET` wymagany, cudzy token odmawia, `<img onerror>`
+  w opisie stacji i `<script>` w miejscu są pokazane jako tekst) oraz
+  `powiadomWlasciciela` (mail z linkiem przeglądu — atrapa ma właściwości skryptu
+  i przechwytuje `MailApp`, więc test bierze token z linku jak właściciel).
+- **Oceny pytań na moście (ADR 0028, część serwerowa).** Nowy katalog
+  `okolica-oceny-paczek` z plikiem `RO-oceny/1` na paczkę (głosy + tokeny gier),
+  akcje `ocena` i `uzycie`, `podsumowanieOcen` w `budujIndeks`. Reguły: głosować
+  można tylko na paczkę zaakceptowaną, tożsamość liczy most (`idProfilu`), jeden
+  głos na (gracz, pytanie) — duplikat wraca `{ok:true, juzBylo:true}` zamiast
+  błędu, licznik „użyta w X grach" liczy różne tokeny gry. W pliku ocen nie ma
+  współrzędnych ani PIN-u (test dokłada je do żądania na złość i sprawdza zawartość
+  pliku), a pobranie paczki nie zabiera głosów na telefon gracza. `.gs`: 963 →
+  **1093 wiersze, md5 `620f28c734136654d9a4a01ebfe7853b`** — właściciel musi wkleić
+  nową wersję. Zasięg testów mostu: 867/894 wierszy (97,0%).
+- **Po pierwszej prawdziwej rozgrywce właściciela (2026-09-08): ADR 0029
+  i wyjście z gry.** (1) Przycisk ręcznego zgłaszania dojścia usunięty
+  z index.html w obu trybach: fałszował próg dojścia, a wynik i tak szedł na
+  Drive i do rankingów; tryb testowy ma symulację, która rozstrzyga dojście tym
+  samym kodem co GPS. Model i etykieta stanu rreczne zostają dla starych
+  zapisów; komunikat P03 nie odsyła już do przycisku, tylko każe wyjść na
+  otwartą przestrzeń i przypomina o pominięciu odcinka. (2) Po zakończeniu gry
+  nie było wyjścia z ekranu gry: doszedł przycisk nowej gry (sprząta bieżącą
+  rozgrywkę i wskaźnik wznowienia, setup i gracze zostają), a przycisk
+  zakończenia na skończonej grze mówi wprost, gdzie jest wyjście, zamiast
+  milczeć.
+- Testy: **591, 0 fail** (nowe: droga paczki przez most, jawna odmowa mostu,
+  budżet dużej paczki, wstrzykiwanie HTML z OSM, cykl gry, hot-seat, prywatność
+  zdarzeń, wygasanie lobby, przegląd i powiadomienie właściciela);
+  kontrakt pinuje `sumaPytanWpisu`, brak `id="multi-zgoda"` i punkt „Gra na
+  wielu telefonach" w prywatności.
+
+**Brama na koniec partii:** `npm run brama` = **572 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-16` (+ `WERSJA_SW`).
+Skrypt mostu bez zmian względem partii 5 — **nadal wymaga wklejenia**
+(963 linie, md5 `01e1d9bdfa071d2634dc33d87607420f`).
+
+## 2026-09-08 — oceny pytań w interfejsie (ADR 0028) i rozgrywka pod orientację telefonu (ADR 0030), gałąź `arena/01a07c4f-okolica`
+
+- **Oceny pytań w interfejsie (ADR 0028, część gracza).** Panel z dwoma kciukami
+  w slocie pytania — ten sam przed odpowiedzią i po niej, więc ocenić można
+  w każdej chwili, ale raz: klucz (głosujący, pytanie) jest pilnowany lokalnie
+  (`okolica:oceny`) i niezależnie na moście. Głos jedzie w tle i nie blokuje gry,
+  a nieudane wysyłki wracają do kolejki `okolica:oceny-kolejka` i próbują
+  ponownie przy starcie. Tożsamość głosującego: profil zweryfikowany PIN-em daje
+  slug pseudonimu, inaczej `urz-<8 hex id urządzenia>-<slug imienia>` — dzięki
+  temu w hot-seat każdy z graczy ma własny głos, a nie jeden na telefon.
+  Ekran 2 pokazuje statystyki paczki z indeksu (`Użyta w 12 grach · 74% na tak
+  · 26% na nie (27 ocen).`); brak pola `oceny` w indeksie jest komunikowany jako
+  stary most, a nie jako awaria repozytorium. Panel jest schowany dla paczek
+  wygenerowanych lokalnie, bo nie ma gdzie zbierać głosów.
+- **Rozgrywka pod orientację telefonu (ADR 0030).** Właściciel przed pierwszym
+  wyjściem w teren: mapa ma mieć proporcje ekranu telefonu („na desktopie mam tą
+  mapę gry otwartą w 16:9, na mobile powinna się otwierać na proporcje ekranu
+  mobile"), pytania mają leżeć NA mapie („przewijanie na mobile to koszmar"),
+  a obrót telefonu ma przełączać układ dynamicznie. Układ wybiera CSS zapytaniem
+  o orientację — pion i poziom — a nie JS zgadywaniem modelu: przeglądarka
+  przelicza zapytania na żywo, więc obrót działa bez przeładowania i bez
+  nasłuchiwania `orientationchange`. Mapa gry jest tłem obszaru gry, więc ma
+  dokładnie proporcje urządzenia (renderer i tak mierzy się
+  z `getBoundingClientRect` i przelicza widok przy każdym `resize`), a karty faz
+  leżą nad nią i przewijają się w środku karty: w pionie przypięte do dołu,
+  w poziomie w prawej kolumnie. Strona gry się nie przewija
+  (`body[data-ekran='gra']`; znacznik ustawia `pokazEkran`, bo CSS nie ma
+  selektora rodzica, a `pokazPrywatnosc` go zdejmuje). Karty schodzą na dół
+  rozpychaczem `::before`, nie `justify-content: flex-end` — przy przepełnieniu
+  ten drugi chowa początek kolumny poza zasięg przewijania. Pasek kroków 1–6
+  schowany w grze (opisuje przygotowanie), stopka cienka, ale z `#status`,
+  atrybucja dostawcy przeniesiona na górę mapy (ADR 0003 pkt 3), skala pod
+  przyciski +/−/◎. Desktop bez zmian.
+- Testy: **610, 0 fail** (nowe: kontrakt ADR 0030 — orientacja w CSS, znacznik
+  `data-ekran` na `<body>`, mapa tłem, karty nad mapą z własnym przewijaniem,
+  rozpychacz zamiast `flex-end`, atrybucja dostawcy nie znika z dołem mapy).
+
+**Brama na koniec partii:** `npm run brama` = **610 testów, 0 fail** + sync
+szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-24` (+ `WERSJA_SW`).
+Skrypt mostu bez zmian względem wpisu powyżej — 1093 linie, md5
+`620f28c734136654d9a4a01ebfe7853b`; właściciel deklaruje, że wkleił tę wersję
+(niezweryfikowane z sandboxa — `script.google.com` jest stąd nieosiągalny).
+
+## 2026-09-08 — szew ręcznego dojścia usunięty do końca; przy okazji wyszły dwa prawdziwe bugi
+
+- **Ręcznego zgłaszania dojścia nie ma już nigdzie (dopisek do ADR 0029).**
+  Zostało podpięcie w `app.js` jako warunek `if (element)` — szew dla testów
+  atrapy DOM i jeden jawny wyjątek w kontrakcie „app.js nie woła
+  nieistniejących id". Teraz nie ma ani gałęzi, ani wyjątku. Testy (14 miejsc:
+  8 w `test/aplikacja.test.js`, 6 w `test/wieloosobowa-ui.test.js` — nie 10,
+  jak było w notatkach) zamykają odcinek przez `dojdzSymulacja()`: klik
+  w „▶ Symuluj dojście" i aktywne czekanie, aż panel drogi zniknie, z jawnym
+  błędem po 5 s zamiast cichego przejścia dalej. Martwa gałąź statusu
+  „Dojście zgłoszone ręcznie" w `zakonczOdcinekGry` też wypadła.
+- **Siedem komunikatów nadal kazało zgłaszać dojście ręcznie** (LESSONS L31):
+  P01, P02, P04, P05, P06, P08 w `app/pozycja.js`, komunikat `stanDojscia`
+  o zepsutej stacji oraz status błędu geolokalizacji w `app/app.js`. Wszystkie
+  mówią teraz, co gracz MOŻE zrobić: otwarta przestrzeń, dokładniejszy pomiar,
+  pominięcie odcinka, tryb testowy dla organizatora. Kontrakt ADR 0029 pilnuje,
+  żeby takie sformułowania nie wróciły do `app/pozycja.js`, `app/app.js`
+  ani `index.html`.
+- **Bug znaleziony dzięki przejściu na ścieżkę produkcyjną (LESSONS L36):**
+  `pokazPozycje()` wołało `odswiezPropozycjeZestawow()` bezwarunkowo, a jest
+  wołane z `przyjmijFix()` — więc **każdy fix GPS odpytywał most Drive o indeks
+  paczek** przez całą rozgrywkę, choć karta propozycji żyje na ekranie pozycji.
+  Test „utrata zasięgu — zero żądań sieciowych" tego nie widział, bo ręczny
+  przycisk zamykał odcinek bez fixów. Bramka `if (STAN.ekran === 'pozycja')`
+  przy wywołaniu (nie w środku funkcji — dwa pozostałe wywołania to jawne akcje
+  gracza); asercja w teście zostaje surowa.
+- **Wznowienie gry wieloosobowej nie przywraca pozycji** — i słusznie:
+  współrzędne z zasady nie opuszczają telefonu (ADR 0013), a watcher GPS
+  wznawia `uruchomGreMulti`. W trybie testowym GPS nie ma, więc test po
+  wznowieniu wpisuje współrzędne tak jak gracz na ekranie pozycji.
+- Testy: **610, 0 fail**; `npm run brama` = 610 + sync szablonu OK + WCAG AA
+  0 naruszeń. Cache-bust `?v=m12-25` (43 miejsca + `WERSJA_SW`).
+
+## 2026-09-08 — B21: dzielenie na partie wdrożone, a potem wycofane tego samego dnia (ADR 0031)
+
+Z pomiaru B21 wyciągnąłem wniosek, że przy ~210 tokenach na pytanie model
+z limitem wyjścia 4 tys. tokenów urwie odpowiedź na 40 pytań w połowie, i na tym
+założeniu zbudowałem generowanie partiami: `planPartii()` / `scalPartie()`,
+globalne numery stacji w promptcie części (szablon `PYT/1.0.7`), walidacja części
+wobec jej własnego zakresu (`oczekiwane.stacjeNumery`), kody WE08/WE09/WE10/E21,
+paski `#prompt-partia` i `#paczka-partia`, PROTOKOL §2.2. Wdrożone i zielone
+w `0b2ca68` (627 testów, brama czysta).
+
+W trakcie pracy wyszedł jeden prawdziwy bug, złapany dopiero przez test UI
+(**LESSONS L37**): gałąź scalania była martwa, bo „wklejono kontener" od „wklejono
+odpowiedź modelu" rozróżniałem przez `!zKontenera.paczka`, a `odpakujPaczke()`
+zwraca paczkę także dla jawnego JSON-a — formę rozróżnia dopiero pole
+`zrodlo: 'kontener' | 'json' | null`. Pierwsza przyjęta część startowała grę
+z 15 pytaniami.
+
+**Właściciel zakwestionował samo założenie** i miał rację: *„Żaden z modeli
+których używam nie ma nawet w przybliżeniu takich limitów. […] Meta.ai ma output
+token limit 64k tokens, Google Studio models 64k, ChatGPT5+ 128k."* Liczba 4 000
+była moim ostrożnościowym założeniem zapisanym w komentarzu jak fakt, nie
+pomiarem jego modeli.
+
+Policzone: największy setup, jaki aplikacja pozwala zbudować (`OGRANICZENIA`
+12 stacji × 8 graczy = **96 pytań**), to ~**20 250 tokenów** odpowiedzi — 1,6 raza
+mniej niż 32k, 3,2 raza mniej niż 64k. `planPartii` przy progu 64 000 zwraca
+**1 część**, czyli dzielenie nie odpaliłoby się nigdy. Właściciel wybrał usunięcie
+mechanizmu, nie podniesienie progu.
+
+- **Usunięte przez `git revert 0b2ca68`** — `app/protokol.js`, `app/app.js`,
+  `index.html` i `docs/PROTOKOL.md` wróciły bajt-w-bajt do stanu z `4e29879`,
+  szablon do `PYT/1.0.6`. Aplikacja znowu generuje jednym zleceniem.
+- **Zostaje z B21** (nie zależało od błędnego założenia): `szacunekOdpowiedzi()`
+  ze stałymi pomiaru i linia `#prompt-rozmiar` na ekranie pytań — informuje
+  o rozmiarze odpowiedzi przed generacją, nic nie blokuje.
+  `PROG_ODPOWIEDZI_TOKENY` to już tylko próg tego ostrzeżenia.
+- **Zostaje LESSONS L37** — dotyczy `odpakujPaczke()`, które nadal żyje.
+- ADR 0031 ma status **Wycofana** i zostaje jako gotowy projekt na wypadek,
+  gdyby dzielenie kiedyś stało się potrzebne (pakowanie całymi stacjami,
+  globalne numery stacji, walidacja części wobec zakresu, odmowa scalania przy
+  kolizji `id`).
+- Testy: **610, 0 fail** — dokładnie tyle, ile przed B21 (`test/partie.test.js`
+  i `test/partie-ui.test.js` usunięte razem z mechanizmem). `npm run brama`
+  = 610 + sync szablonu OK + WCAG AA 0 naruszeń. Cache-bust `?v=m12-27`.
+
+## 2026-09-08 — pięć uwag właściciela po ostatnich zmianach
+
+**(1) „Możesz też grać w trybie ręcznym — karę czasową da się wyłączyć
+w ustawieniach"** — tego komunikatu nie ma w kodzie od `4e29879` (P02
+w `app/pozycja.js`); właściciel widział go z przestarzałej kopii. Przy okazji
+wyszło, że P01/P02/P06/P08 odsyłały do przycisku „⚙", który właśnie zniknął —
+wszystkie cztery mówią teraz o `?test=true` (LESSONS L31).
+
+**(2) Zdanie o ocenach** na ekran 2 — wg wzoru właściciela:
+było `Użyta w 1 grze · 50% na tak · 50% na nie (2 ocen).`, jest
+`Użyta w 1 grze, 2 oceny (50% 👍, 50% 👎)`. Nowa `liczbaOcenTekst()` odmienia
+„ocena/oceny/ocen" po polsku, z nastkami 12–14 przy formie „ocen".
+
+**(3) Przelacznik „⚙ tryb testowy" usunięty z nagłówka.** Tryb testowy wchodzi
+wyłącznie parametrem adresu: `?test=true`, `?test=1`, `?test=tak` albo
+historyczne `?tryb=test` (używają go testy) — helper `czyTrybTestowyWUrl()`.
+Kontrakt pilnuje, żeby przycisk nie wrócił.
+
+**(4) Rankingi:** opis skrócony do „Wyniki zakończonych gier wieloosobowych:",
+a błędy mostu idą przez `bladMostuPoPolsku()` — nasz własny timeout 8 s
+z `AbortController` wracał jako angielskie „signal is aborted without reason"
+(Chrome) albo „The user aborted a request." (Firefox).
+
+**(4b) Rankingi są warstwą** (`role="dialog"`, karta z pełnym tłem) z klawiszem
+„Zamknij rankingi" i krzyżykiem w prawym górnym rogu. Przy okazji prawdziwy bug
+(**LESSONS L38**): `ekran-ranking` nie należał do `EKRANY`, więc prywatność go
+nie chowała, a „wróć" czytało `STAN.ekran` — który przy wejściu na rankingi się
+nie zmienia — i zawsze zrzucało na setup. Są `STAN.powrotZRankingu`
+i `powrotZPrywatnosci`; powrót z prywatności na rankingi nie pyta mostu drugi raz.
+
+Testy: **618, 0 fail**; `npm run brama` = 618 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-29`.
+
+## 2026-09-08 — mapa stała się trwałym spodem aplikacji (uwaga 5, wersja krokowa)
+
+Właściciel: *„ten cały setup też powinien otwierać się na warstwie nad mapą. Mapa
+powinna być centralnym elementem aplikacji zawsze na spodzie. I ikonka setup na
+górze strony."* Z trzech wariantów wybrał krokowy: mapa z ekranu pozycji staje
+się wspólnym tłem, ekrany stacji i gry zostają przy swoich mapach na później.
+
+- `#mapa-pozycja` wyszedł z `#ekran-pozycja` i jest pierwszym elementem `<main>`
+  — `position: fixed; inset: 0; z-index: 0`. Widać go pod setupem i pod ekranem
+  pozycji; na pozostałych ekranach chowa go `visibility: hidden`, **nie**
+  `display: none`, bo mapa mierzy swój rozmiar przy rysowaniu kafelków, a element
+  `display:none` ma zerowy — po powrocie zoom i skala rozsypałyby się.
+- `#ekran-setup` jest kartą nad mapą: centrowana, `max-height: 78dvh`,
+  przewijanie WEWNĄTRZ karty, nagłówek nad nią (`z-index: 3`).
+- W nagłówku doszła ikonka „⚙ setup" (`pokazEkran('setup')` — ta sama akcja co
+  istniejący `przycisk-wstecz-setup`).
+
+**Uczciwie o weryfikacji:** atrapa DOM w testach nie liczy pikseli, więc 618
+testów tej zmiany NIE sprawdza — przechodzą tak samo przed i po. Pilnuje jej
+nowy kontrakt na strukturę (mapa jest pierwszym dzieckiem `<main>`, ekran
+pozycji nie ma własnej mapy, reguła `visibility` istnieje, ikonka jest podpięta)
+i audyt WCAG. **Układ trzeba obejrzeć na telefonie.**
+
+## 2026-09-08 — ekran stacji: mapa i lista obok siebie, nie jedna nad drugą
+
+Właściciel odrzucił pomysł listy nad mapą i miał rację: *„Ekran stacji nie może
+być nad mapą bo te stacje odnoszą się właśnie do mapy. […] chyba muszą być pod,
+albo może podzielić ekran na dwie części i w jednej zostawić mapę, a w drugiej
+scrollowany obszar na stacje?"*
+
+Wszedł podział, nie „pod": w pionie lista zasłaniałaby pół mapy i tak, a obok
+siebie widać pinezkę i jej opis jednocześnie.
+
+- Struktura: `#ekran-stacje` (kolumna: tytuł, tryb, błędy + `.stacje-obszar`),
+  a dopiero `.stacje-obszar` dzieli się na `#mapa-stacje` i `#stacje-panel`
+  (lista, badge sprawiedliwości, przyciski układu, „← pozycja", „Dalej: pytania").
+  Nagłówek sekcji musi zostać NAD obszarem — inaczej w poziomie tytuł stałby się
+  jedną z kolumn.
+- PION: mapa `flex: 1 1 auto` zajmuje wszystko, co zostanie; panel `max-height:
+  42dvh` z przewijaniem w środku. Strona się nie przewija (`100dvh`,
+  `overflow: hidden`), tak jak na ekranie gry (ADR 0030).
+- POZIOM i szeroki ekran (`min-width: 901px`): mapa z lewej, panel 44% z prawej,
+  przewijanie w panelu.
+- `.mapa { height: 45vh; max-height: 460px }` jest na tym ekranie nadpisane na
+  `height: auto; flex: 1 1 auto` — mapa dostaje tyle, ile naprawdę jest.
+
+**Uczciwie o weryfikacji:** tak samo jak przy mapie-tle — atrapa DOM nie liczy
+pikseli, więc 619 testów tej zmiany nie sprawdza. Pilnuje jej nowy kontrakt na
+strukturę i na obecność reguł dla obu orientacji oraz audyt WCAG. Proporcje
+(42dvh / 44%) trzeba obejrzeć na telefonie.
+
+## 2026-09-08 — podgląd: wyszarzone „Dalej: stacje" i komunikaty odsyłające nie tam, gdzie trzeba
+
+Właściciel odpalił podgląd i na ekranie pozycji zobaczył tylko P02 i wyszarzone
+„Dalej: stacje →". Przyczyna nie była w układzie: podgląd działa w ramce bez
+`allow="geolocation"`, więc `getCurrentPosition` kończy się odmową (`BLEDY_API[1]`
+→ P02), a `pokazPozycje()` (`app/app.js:861-873`) odblokowuje przycisk dopiero,
+gdy `STAN.pozycja` istnieje.
+
+Problem w tym, że komunikaty kazały otwierać aplikację z `?test=true`, a to
+niepotrzebne: `ustawPozycjeRecznie()` (`app/app.js:961-981`) **nie ma bramki
+trybu testowego** — przycisk „✎ Wpisz ręcznie" odsłania pola lat/lon zawsze,
+a ustawiona pozycja odblokowuje przejście. Po usunięciu przełącznika trybu
+z nagłówka to jedyna widoczna droga, więc komunikaty musiały ją pokazywać.
+
+- P01, P06, P08 wskazują „✎ Wpisz ręcznie" zamiast `?test=true`.
+- P02 wskazuje obie drogi i mówi prawdę o ograniczeniu: ręczna pozycja pozwala
+  iść dalej, ale **bez strumienia pozycji gra nie rozstrzygnie dojścia** — do
+  rozegrania partii bez GPS potrzebna jest symulacja z `?test=true` (ADR 0029).
+- Status po ręcznym ustawieniu brzmiał „Pozycja ustawiona ręcznie (tryb
+  testowy)." — a trybu testowego tam nie ma (LESSONS L31: komunikat nie może
+  twierdzić czegoś, czego kod nie sprawdza).
+- Komentarz przy `przycisk-dalej-stacje` odsyłał do usuniętego przełącznika.
+
+Testy: **+2 asercje** na ścieżce, na której utknął właściciel („✎ Wpisz ręcznie"
+odsłania pola bez trybu testowego; ręczna pozycja odblokowuje „Dalej: stacje").
+**620, 0 fail**; brama = 620 + sync szablonu OK + WCAG AA 0. Cache-bust `?v=m12-32`.
+
+## 2026-09-08 — podgląd: mignięcie starego setupu i ekran pozycji pod mapą
+
+Dwa zgłoszenia właściciela z jednego podglądu, dwie różne dziury w tym samym
+pomyśle „ekran jako warstwa nad mapą" (**LESSONS L39**).
+
+**(1) Mignięcie starego setupu.** Reguły układu wisiały na
+`body[data-ekran='setup']`, a ten atrybut ustawia `pokazEkran()` — czyli JS, po
+wczytaniu modułu. Do tego momentu selektor nie łapie: setup renderuje się
+w przepływie jak przed zmianą, a reguła `body:not([data-ekran='setup'])…` chowa
+mapę. Po starcie JS wszystko przeskakuje. Naprawa: `<body data-ekran="setup">`
+w HTML, czyli stan początkowy taki sam jak docelowy.
+
+**(2) Ekran pozycji pod mapą.** Reguła `body[data-ekran='pozycja']
+#ekran-pozycja` ustawiała tło, szerokość i marginesy, ale **nie `position`** —
+karta zostawała `static`, a element statyczny maluje się POD elementem ustalonym
+z `z-index: 0`, więc znikała pod pełnoekranowym tłem mapy. Naprawa: panel
+`position: fixed` w podziale ekranu — w pionie na dole (`max-height: 52dvh`),
+w poziomie i na szerokim ekranie z prawej (`width: 44%`, kotwiczony od dołu
+z `max-height: calc(100dvh - 110px)`, żeby nie wlazł pod nagłówek). Tło pełne,
+nie półprzezroczyste: nad mapą półprzezroczystość robi tekst nieczytelnym.
+
+**Uczciwie o weryfikacji:** atrapa DOM nie renderuje, więc 622 testy nadal nie
+sprawdzają układu. Nowe kontrakty pilnują PRZYCZYN, nie efektów: `data-ekran`
+w HTML i `position: fixed` w bloku reguły panelu. Proporcje (52dvh / 44%) trzeba
+obejrzeć na telefonie i na desktopie.
+
+Testy: **622, 0 fail**; brama = 622 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-33`.
+
+## 2026-09-08 — stara wersja w podglądzie: service worker przybijał do cache
+
+Właściciel: *„Na razie mam starą wersję - pewnie cache."* Miał rację, a winny był
+konkretny: service worker obsługiwał **każdy** GET z własnej domeny cache-first,
+w tym `index.html`. Stary `index.html` wyciągał stare `?v=`, a te też siedziały
+w cache — więc aktualizacja nie docierała bez ręcznego czyszczenia danych. To
+drugie takie zgłoszenie (pierwszym był komunikat P02 zobaczony z `main`).
+
+- `sw.js`: nowa funkcja `zSieciNajpierw()` i rozróżnienie w nasłuchu `fetch` —
+  **skorupa** (`req.mode === 'navigate'`, `/`, `/index.html`) idzie z sieci
+  z cache jako wyjściem awaryjnym, **reszta** same-origin (moduły z `?v=`,
+  ikony) zostaje cache-first, bo ich adres i tak zmienia się przy każdej wersji.
+  Kafelki bez zmian. Offline nadal działa: brak sieci → cache.
+- Dwa nowe testy w `test/sw.test.js`: skorupa jest pytana z sieci mimo obecności
+  w precache, a moduł z `?v=` za drugim razem idzie z cache.
+
+**Stopka nad mapą.** Właściciel: *„Belka powinna zostać, ale mapa powinna się
+pokazywać w całym viewporcie (może zostać jeszcze stopka z komunikatami na dole)."*
+Reguła `#mapa-pozycja { position: fixed; inset: 0 }` już była poza media query,
+więc mapa na desktopie obejmuje cały viewport — ale `<footer class="dol">` jest
+rodzeństwem `<main class="tresc">`, które ma `z-index: 1`, a stopka nie miała
+własnej pozycji, więc mapa malowała się NAD nią. `.dol` dostało
+`position: relative; z-index: 3` — tyle samo co nagłówek.
+
+Testy: **624, 0 fail**; brama = 624 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-34`.
+
+## 2026-09-08 — mapa „na pół ekranu": reguła z id nie nadpisała max-height
+
+Właściciel po Ctrl+Shift+R: *„mam dalej mapę na pół ekranu, a na drugiej stronie
+napisy pod warstwą mapy"*. Tym razem to NIE był cache — błąd był w CSS i dotyczył
+też najnowszej budowy.
+
+**Przyczyna.** Reguła bazowa `.mapa` (`app/styles.css:334`) deklaruje
+`height: 45vh; min-height: 240px; max-height: 460px; margin: 10px 0`. Reguła
+`#mapa-pozycja` nadpisała `position`, `height`, `width` i `border` — ale
+`max-height: 460px` i `margin: 10px 0` przyszły z klasy i dalej obowiązywały,
+bo wyższa specyficzność działa **na każdą właściwość osobno**, nie na całą
+regułę. Mapa była więc `position: fixed` na całą szerokość, lecz ścięta do
+**460 px** i przesunięta o 10 px w dół — pas u góry pod nagłówkiem, dokładnie to,
+co właściciel opisał. Wzorzec był znany: `#mapa-gra` (linia 747) i `#mapa-stacje`
+(1032/1071) mają `min-height: 0; max-height: none; margin: 0`. Tylko reguła
+dodana przy zmianie „mapa jako tło" ich nie powtórzyła. → LESSONS **L40**.
+
+**Weryfikacja.** W sandboxie nie da się postawić przeglądarki
+(`storage.googleapis.com` i `deb.debian.org` odpowiadają `000`), więc kaskadę
+policzył `jsdom` zainstalowany poza repozytorium, na prawdziwych `index.html`
+i `app/styles.css`, dla `div#mapa-pozycja.mapa`:
+
+| | przed (`7447943`) | po |
+|---|---|---|
+| `position` | fixed | fixed |
+| `height` | 100% | 100% |
+| `max-height` | **460px** | **none** |
+| `min-height` | **240px** | **0px** |
+| `margin-top` | **10px** | **0px** |
+| `#ekran-pozycja` (ekran pozycji) | fixed, z 2 | fixed, z 2 |
+
+**Numer budowy w stopce.** Właściciel dwa razy oceniał starą wersję i nie miał
+jak tego stwierdzić. Stopka pokazuje teraz `wersja m12-35`, brane z `?v=` w
+adresie własnego modułu (`new URL(import.meta.url).searchParams.get('v')`), więc
+nie ma drugiej stałej do pamiętania przy podbijaniu cache-bust.
+
+Dwa nowe kontrakty: reguła `#mapa-pozycja` ma resety `max-height`/`margin`/
+`min-height`, a stopka ma znacznik wersji. Testy: **626, 0 fail**; brama = 626 +
+sync szablonu OK + WCAG AA 0. Cache-bust `?v=m12-35`.
+
+## 2026-09-08 — panel pozycji wjeżdżał pod stopkę, przyciski były nieosiągalne
+
+Właściciel, już na poprawnej budowie (`stopka m12-35`, mapa na cały viewport):
+*„panel wyboru pozycji zajmuje 1/2 ekranu od prawej i 2/3 ekranu od dołu i chowa
+się pod stopkę co powoduje, że przyciski są ukryte, a że nie ma przewijania to są
+niedostępne […] daj mi przynajmniej przewijanie jak się nie mieści na ekranie"*.
+
+**Przyczyna.** Panel miał `position: fixed`, czyli mierzył od **viewportu**,
+a żyje w obszarze między belką a stopką. `max-height: calc(100dvh - 110px)` był
+liczony od wysokości okna, choć panel startuje niżej (pod belką), więc i tak
+wystawał pod stopkę — a stopka ma `z-index: 3` i maluje się nad nim. Do tego
+`bottom: 10px` w ogóle nie działało: dla elementu ustalonego przy `top: auto`
+przeglądarka bierze pozycję statyczną i **ignoruje `bottom`**, więc wysokość
+szła z treści, a `overflow-y: auto` nie miało czego przewijać. → LESSONS **L41**.
+
+**Poprawka.** `body { display: flex; flex-direction: column }` +
+`.tresc { flex: 1 1 auto; position: relative }` oznacza, że `.tresc` zajmuje
+dokładnie pas między belką a stopką. Panel jest teraz `position: absolute`
+względem `.tresc`, więc jego sufit i podłoga są wyznaczone z góry:
+
+- poziom/szeroki ekran: `top: 10px; right: 10px; bottom: 10px; width: 44%` —
+  wysokość wynika z ograniczeń, nie z ilości treści;
+- pion: `top: 42dvh; left/right: 10px; bottom: 10px; max-width: 640px` —
+  dokowany do dołu, mapa zostaje nad nim;
+- w obu wariantach `top` i `bottom` są jawne, więc `overflow-y: auto` dostaje
+  coś do przewijania, gdy treść się nie mieści.
+
+Przy okazji drugi przeciek w rodzaju L40: `.ekran { max-width: 720px;
+margin: 0 auto }` — reguła panelu nie deklarowała `margin`, więc `margin: 0 auto`
+z klasy dalej obowiązywało. Dodane jawne `margin: 0`.
+
+**Weryfikacja.** Kaskada policzona `jsdom` na prawdziwych `index.html` i
+`app/styles.css` dla `data-ekran="pozycja"`: `position: absolute`,
+`z-index: 2`, `margin-top: 0px`, `overflow-y: auto`. `jsdom` nie wartościuje
+media queries, więc gałęzie pion/poziom są przypięte kontraktem na poziomie
+źródła (oba warianty muszą mieć jawne `top` i `bottom`), nie kaskadą.
+
+Testy: **627, 0 fail**; brama = 627 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-36`.
+
+## 2026-09-08 — przyciski +/− mapy chowały się pod belką
+
+Właściciel: *„jeszcze przyciski +- na mapie chowają się pod belkę nagówka"*.
+
+**Przyczyna.** Mapa-tło ma `position: fixed; inset: 0`, więc sięga POD samą
+belkę. Jej przyciski brały uniwersalne `.mapa-przyciski { top: 8px; right: 8px }`
+— liczone od kontenera mapy, czyli teraz od viewportu. Belka ma `z-index: 3`
+i nieprzezroczyste tło, więc malowała się nad nimi. W wariancie poziomym ten sam
+los czekał je ze strony panelu pozycji (`z-index: 2`, prawa strona). → **L42**.
+
+**Poprawka.** Dla mapy-tła na ekranach `setup` i `pozycja`:
+
+```css
+top: calc(var(--wysokosc-belki, 64px) + 10px);
+right: auto;
+left: 10px;
+```
+
+Poniżej belki i przy lewej krawędzi — z dala od panelu, który stoi przy prawej.
+Wysokość belki **mierzy** nowa funkcja `ustawWysokoscBelki()` w `app/app.js`,
+wołana w `start()` i w nasłuchu `resize`, bo `.akcje` ma `flex-wrap: wrap` i na
+wąskim ekranie belka rośnie — stała liczba w CSS w końcu by się rozsypała.
+Funkcja ma straż na `offsetHeight` nienumeryczny albo ≤ 0, więc atrapa DOM
+w testach (której `document.querySelector` zwraca `null`) przechodzi bez
+wyjątku.
+
+**Weryfikacja.** Kaskada `jsdom` dla `#mapa-pozycja .mapa-przyciski`:
+`top: calc(var(--wysokosc-belki, 64px) + 10px)`, `left: 10px`, `right: auto`.
+`jsdom` nie rozwija `calc()` ani `var()`, więc liczbę pikseli potwierdza dopiero
+przeglądarka. Kontrakt sprawdzony negatywnie: usunięcie `right: auto` wywala
+test z komunikatem „przyciski muszą zejść z prawej".
+
+Testy: **628, 0 fail**; brama = 628 + sync szablonu OK + WCAG AA 0.
+Cache-bust `?v=m12-37`.

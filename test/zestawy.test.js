@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BUDZET_ZESTAWOW_BAJTY, KLUCZ_REJESTRU, KLUCZ_URL_REPO,
+  BUDZET_ZESTAWOW_BAJTY, KLUCZ_REJESTRU, KLUCZ_URL_REPO, TOLERANCJA_OKOLICY_M,
   MAKS_ZESTAWOW, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY, SCHEMAT_ZESTAWU,
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu,
   nowyRejestr, rozmiarBajty, urlPaczkiZRepo, walidujIndeksSurowy, walidujRejestrSurowy,
@@ -89,7 +89,7 @@ test('zestawy: ponowny zapis tego samego skrotu wymienia wpis, nie duplikuje', (
   assert.equal(rejestr.wpisy[0].data, '2026-09-06');
 });
 
-test('zestawy: dopasowanie okolicy jest ścisłe (geohash5, promień, wiek, tematy)', () => {
+test('zestawy: dopasowanie jest ścisłe (okolica, wiek, stacje, pytania, tematy) — promień NIE jest kryterium', () => {
   const rejestr = {
     schemat: SCHEMAT_INDEKSU,
     wpisy: [
@@ -108,7 +108,14 @@ test('zestawy: dopasowanie okolicy jest ścisłe (geohash5, promień, wiek, tema
     ],
   };
   const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], wiek: 'dorosli' });
-  assert.deepEqual(trafione.map((w) => w.skrot), ['pasuje', 'tematy-kolejnosc', 'podzbior', 'mniejszy-promien'], 'kryteria właściciela: stacje, pytania, poziom, tematy⊆, promień paczki ≤');
+  // Kryteria (właściciel, 2026-09-07 — aneks ADR 0024): okolica, wiek, ŁĄCZNA
+  // liczba pytań (paczka może mieć więcej) i tematy⊆. Promień, liczba stacji
+  // i pytania na stację z osobna NIE są kryteriami.
+  assert.deepEqual(
+    trafione.map((w) => w.skrot),
+    ['pasuje', 'inny-promien', 'tematy-kolejnosc', 'podzbior', 'wiecej-stacji', 'wiecej-pytan', 'wiekszy-promien', 'mniejszy-promien'],
+    '6 i 10 pytań przy setupie 5 × 1 = 5 pytań: więcej pytań nie przeszkadza',
+  );
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33', promienM: 1, liczbaStacji: 1, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1, liczbaStacji: 0, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
 });
@@ -206,4 +213,136 @@ test('urlPaczkiZRepo: `id` → baza bez query + akcja=paczka (kontrakt mostu Dri
 test('urlPaczkiZRepo: `plik` względny skleja się z katalogiem, absolutny przechodzi', () => {
   assert.equal(urlPaczkiZRepo('https://repo.example/paczki/indeks.json', { plik: 'a.zestaw.json' }), 'https://repo.example/paczki/a.zestaw.json');
   assert.equal(urlPaczkiZRepo('https://repo.example/paczki/indeks.json', { plik: 'https://cdn.example/b.json' }), 'https://cdn.example/b.json');
+});
+
+/* ------ ADR 0024: okolica z tolerancją, nie „ten sam geohash albo nic" ------ */
+
+import { geohash, przesunPunkt, ramkaGeohash } from '../app/geo.js';
+
+// Scenariusz właściciela z 2026-09-07: zatwierdzona paczka dla Podkowy Leśnej
+// nie pojawiała się na ekranie pozycji, bo start był o kilka metrów od pinu
+// paczki — po drugiej stronie granicy komórki geohash. Punkty poniżej dzieli
+// ~1 m, a ich geohash5 się różni (u3q8q vs u3q8w): dawna reguła gubiła paczkę.
+const PODKOWA = { lat: 52.1141, lon: 20.6622 };
+const RAMKA6 = ramkaGeohash(geohash(PODKOWA.lat, PODKOWA.lon, 6));
+const GRACZ = { lat: RAMKA6.latMax - 1e-5, lon: (RAMKA6.lonMin + RAMKA6.lonMax) / 2 };
+const START_PACZKI = { lat: RAMKA6.latMax + 1e-5, lon: GRACZ.lon };
+const DALEKO = przesunPunkt(GRACZ, 0, 3000); // ~2,4 km od komórki geohash6 paczki
+// Punkt 6 km na północ: już w innej komórce geohash5 (u3q8y), ~4,9 km od gracza.
+// 3 km NIE wystarczą — geohash5 ma ≈3,0 × 4,9 km, więc sąsiednia komórka bywa tuż obok.
+const DALEKO_GH5 = przesunPunkt(GRACZ, 0, 6000);
+
+assert.notEqual(
+  geohash(GRACZ.lat, GRACZ.lon, 5),
+  geohash(START_PACZKI.lat, START_PACZKI.lon, 5),
+  'test ma sens: punkty ~1 m od siebie mają RÓŻNY geohash5 (granica komórki)',
+);
+
+const kryteriaOkolicy = (nad = {}) => ({
+  geohash5: geohash(GRACZ.lat, GRACZ.lon, 5),
+  lat: GRACZ.lat,
+  lon: GRACZ.lon,
+  promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], wiek: 'dorosli',
+  ...nad,
+});
+
+const rejestrZOkolica = (anchor, nad = {}) => dolozWpisRejestru(nowyRejestr(), wpis('okoliczna', '2026-09-07 10:00', {
+  geohash5: geohash(anchor.lat, anchor.lon, 5),
+  geohash6: geohash(anchor.lat, anchor.lon, 6),
+  ...nad,
+}), { bajty: 4096 }).rejestr;
+
+test('dopasowanie okolicy: paczka kilka metrów dalej (za granicą geohasha) JEST widoczna (ADR 0024)', () => {
+  assert.equal(TOLERANCJA_OKOLICY_M, 200, 'tolerancja zgodna z decyzją właściciela (100–200 m)');
+  const trafione = dopasujZestawy(rejestrZOkolica(START_PACZKI), kryteriaOkolicy());
+  assert.deepEqual(trafione.map((w) => w.skrot), ['okoliczna'], 'kilka metrów różnicy w starcie nie gubi paczki');
+});
+
+test('dopasowanie okolicy: paczka ~2,4 km dalej NIE jest widoczna (tolerancja to nie promień gry)', () => {
+  assert.deepEqual(dopasujZestawy(rejestrZOkolica(DALEKO), kryteriaOkolicy()), [], 'granica tolerancji działa w obie strony');
+
+  const bokiem = przesunPunkt(GRACZ, 270, 1000); // sąsiednia komórka geohash6, ~375 m od niej
+  assert.deepEqual(dopasujZestawy(rejestrZOkolica(bokiem), kryteriaOkolicy()), [], '1 km w bok = już poza tolerancją 200 m');
+});
+
+test('dopasowanie okolicy: stare pliki bez geohash6 czytają się zgrubnie (komórka geohash5)', () => {
+  // Wpis legacy: tylko geohash5 paczki. Gracz jest w sąsiedniej komórce geohash6,
+  // ale w tej samej komórce geohash5 → odległość 0 → widoczna.
+  const r = dolozWpisRejestru(nowyRejestr(), wpis('stara', '2026-08-01 10:00', {
+    geohash5: geohash(GRACZ.lat, GRACZ.lon, 5),
+  }), { bajty: 4096 }).rejestr;
+  assert.deepEqual(dopasujZestawy(r, kryteriaOkolicy()).map((w) => w.skrot), ['stara'], 'brak geohash6 nie wyklucza paczki');
+
+  const daleka = dolozWpisRejestru(nowyRejestr(), wpis('stara-daleka', '2026-08-01 10:00', {
+    geohash5: geohash(DALEKO_GH5.lat, DALEKO_GH5.lon, 5),
+  }), { bajty: 4096 }).rejestr;
+  assert.deepEqual(dopasujZestawy(daleka, kryteriaOkolicy()), [], 'inna komórka geohash5 i >200 m od niej = nie pasuje');
+});
+
+test('dopasowanie okolicy: wpis legacy z tej samej komórki geohash5 pasuje nawet ~4 km dalej (udokumentowana zgrubność)', () => {
+  // Konsekwencja ADR 0024 pkt 4: stary plik bez geohash6 nie ma dokładniejszej
+  // kotwicy, więc „w komórce geohash5" = pasuje (to dawna reguła). Dlatego nowe
+  // paczki niosą geohash6 — a dopóki ich nie ma, po pobraniu paczki UI mówi,
+  // jak daleko są stacje.
+  const trzyKm = przesunPunkt(GRACZ, 180, 3000); // 3 km na południe, ta sama komórka geohash5
+  assert.equal(geohash(trzyKm.lat, trzyKm.lon, 5), geohash(GRACZ.lat, GRACZ.lon, 5), 'test ma sens: ta sama komórka geohash5');
+  const r = dolozWpisRejestru(nowyRejestr(), wpis('stara-tez-okolica', '2026-08-01 10:00', {
+    geohash5: geohash(trzyKm.lat, trzyKm.lon, 5),
+  }), { bajty: 4096 }).rejestr;
+  assert.deepEqual(dopasujZestawy(r, kryteriaOkolicy()).map((w) => w.skrot), ['stara-tez-okolica']);
+});
+
+test('dopasowanie okolicy: bez podanej pozycji działa dawna reguła (rejestr lokalny, testy)', () => {
+  const bezPozycji = { geohash5: geohash(START_PACZKI.lat, START_PACZKI.lon, 5), promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], wiek: 'dorosli' };
+  assert.deepEqual(dopasujZestawy(rejestrZOkolica(START_PACZKI), bezPozycji).map((w) => w.skrot), ['okoliczna'], 'ten sam geohash5 = pasuje');
+  assert.deepEqual(dopasujZestawy(rejestrZOkolica(START_PACZKI), { ...bezPozycji, geohash5: geohash(GRACZ.lat, GRACZ.lon, 5) }), [], 'inny geohash5 = nie pasuje');
+});
+
+test('zbierzMetaZestawu niesie geohash6 (kotwica tolerancji dla nowych paczek)', async () => {
+  const { zbierzMetaZestawu } = await import('../app/zestawy.js');
+  const m = zbierzMetaZestawu({ lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-07 10:00' });
+  assert.equal(m.geohash5, geohash(PODKOWA.lat, PODKOWA.lon, 5));
+  assert.equal(m.geohash6, geohash(PODKOWA.lat, PODKOWA.lon, 6));
+});
+
+test('zestawy: powodyNiedopasowania mówi wprost, które kryterium nie zagrało', async () => {
+  const { powodyNiedopasowania, czyWOkolicy, odlegloscWpisuM } = await import('../app/zestawy.js');
+  const { geohash } = await import('../app/geo.js');
+  const PODKOWA = { lat: 52.12303, lon: 20.74614 };
+  const LODZ = { lat: 51.7592, lon: 19.4560 };
+  const wpis = (nad = {}) => ({
+    skrot: 'abcd1234', miejsce: 'Podkowa Leśna', geohash5: geohash(PODKOWA.lat, PODKOWA.lon, 5),
+    geohash6: geohash(PODKOWA.lat, PODKOWA.lon, 6), promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
+    liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-06 19:30', ...nad,
+  });
+  const kryteria = (p, nad = {}) => ({
+    geohash5: geohash(p.lat, p.lon, 5), lat: p.lat, lon: p.lon,
+    wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], ...nad,
+  });
+
+  assert.deepEqual(powodyNiedopasowania(wpis(), kryteria(PODKOWA)), [], 'identyczny setup = zero powodów');
+  assert.equal(czyWOkolicy(wpis(), kryteria(PODKOWA)), true, 'ta sama okolica');
+
+  const daleko = powodyNiedopasowania(wpis(), kryteria(LODZ));
+  assert.equal(daleko.length, 1, 'z Łodzi nie pasuje tylko okolica');
+  assert.match(daleko[0], /inna okolica — paczka powstała 9[0-9](\.[0-9])? km stąd/, 'podaje odległość w km');
+  assert.ok(odlegloscWpisuM(wpis(), kryteria(LODZ)) > 90_000, 'ponad 90 km — daleko poza tolerancją 200 m');
+
+  assert.match(powodyNiedopasowania(wpis({ wiek: 'wiek-12' }), kryteria(PODKOWA))[0], /wiek: paczka „wiek-12", setup „dorosli"/);
+  assert.match(powodyNiedopasowania(wpis({ tematy: ['kultura'] }), kryteria(PODKOWA))[0], /tematy spoza setupu: kultura/);
+  // ŁĄCZNA liczba pytań: 5 × 1 = 5 w setupie — paczka może mieć więcej, mniej nie
+  assert.deepEqual(powodyNiedopasowania(wpis({ liczbaStacji: 1, pytaniaNaStacje: 5 }), kryteria(PODKOWA)), [], '1 stacja × 5 pytań = 5 pytań: pasuje');
+  assert.deepEqual(powodyNiedopasowania(wpis({ liczbaStacji: 5, pytaniaNaStacje: 4 }), kryteria(PODKOWA)), [], '20 pytań przy 5 wymaganych: nadmiar nie przeszkadza');
+  assert.match(
+    powodyNiedopasowania(wpis({ liczbaStacji: 2, pytaniaNaStacje: 2 }), kryteria(PODKOWA))[0],
+    /za mało pytań: paczka ma 4 \(2 stacji × 2\), a setup chce 5/,
+    '4 pytania przy 5 wymaganych: za mało',
+  );
+  assert.match(powodyNiedopasowania(wpis({ liczbaStacji: undefined }), kryteria(PODKOWA))[0], /brak danych o liczbie pytań/, 'wpis bez danych o pytaniach = jawny powód');
+  assert.equal(
+    powodyNiedopasowania(wpis({ promienM: 5000 }), kryteria(PODKOWA, { promienM: 500 })).length, 0,
+    'promień setupu i paczki nie są kryterium — zero powodów',
+  );
+  const kilka = powodyNiedopasowania(wpis({ wiek: 'wiek-12', liczbaStacji: 1, pytaniaNaStacje: 1 }), kryteria(PODKOWA));
+  assert.equal(kilka.length, 2, 'kilka niezgodności = kilka powodów, każdy nazwany');
 });

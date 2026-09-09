@@ -18,12 +18,15 @@ sw.js                       — Service Worker (M10): offline skorupa + kafelki
 .nojekyll                     — Pages bez przetwarzania Jekyll (M8)
 app/
   app.js                    — bootstrap: router ekranów, stan sesji, spinanie modułów
-  konfig.js                 — kanon konfiguracji: TRYBY, PROMIENIE, WIEK, TEMATY,
-                              DOMYSLNE, ograniczenia (czyste dane + walidacja setupu)
+  konfig.js                 — kanon konfiguracji: TRYBY, WIEK, TEMATY, DOMYSLNE,
+                              ograniczenia, walidacja setupu (K01–K21) i przeliczenie
+                              planowanego czasu gry na promień (ADR 0025)
   geo.js                    — geodezja i projekcja: haversine, bearing, Web Mercator,
                               siatka kafelków, pierścienie, dopasowanie zoomu,
                               parsowanie współrzędnych z pól (dziesiętne, polski
-                              przecinek, DMS z Google Maps) (czyste)
+                              przecinek, DMS z Google Maps), kodowanie geohash
+                              i jego komórki (`ramkaGeohash`, `sasiednieGeohash`,
+                              `odlegloscDoKomorkiM` — ADR 0024) (czyste)
   pozycja.js                — geolokalizacja: osłona watchPozycja(), filtr
                               dokładności (ocenFix), kryterium dojścia
                               (stanDojscia), komunikaty P01–P09, symulacja trasy
@@ -52,7 +55,9 @@ app/
                               historia gier `okolica:historia` (`historia/1`,
                               kody H01–H04, limit 50) (czyste; ADR 0010)
   zestawy.js                — M9/M9b: repozytorium paczek (TO-zestaw/1, LRU,
-                              dopasowanie, indeks Drive z `id` → urlPaczkiZRepo)
+                              dopasowanie okolicy z tolerancją 200 m od komórki
+                              geohash — ADR 0024, indeks Drive z `id` →
+                              urlPaczkiZRepo)
   wynik.js                  — wynik: sprawiedliwość trasy, eksport tekstowy,
                               plan komend obrazu (PNG 1080 px) i nazwy plików
                               (czyste; bez DOM, bez treści pytań, bez
@@ -74,8 +79,9 @@ app/
                               odtwarzanie w app.js, brak API = cichy no-op)
   wieloosobowa.js           — M11/M12: schematy RO-* (gra, zdarzenie, lobby,
                               ranking), walidacja z kodami R01–R18, kody gier
-                              (alfabet bez 0/O/1/I), ramka i sąsiedztwo geohash5
-                              dla lobby, maszynka tur, wyniki, agregacje
+                              (alfabet bez 0/O/1/I), sąsiedztwo geohash5 dla lobby
+                              (ramka i sąsiedzi mieszkają w `geo.js`, tu
+                              re-eksport), maszynka tur, wyniki, agregacje
                               rankingów (czyste; ADR 0019)
   sync.js                   — M11: synchronizacja z mostem Drive — polecenieMostu
                               (POST + znacznik odmowaMostu), urlGet/urlStanGry,
@@ -124,7 +130,7 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 
 Od M11 tę samą zasadę trzymają moduły wieloosobowe: `wieloosobowa.js`
 (schematy RO-*, walidacja z kodami R01–R18, kody gier, sąsiedztwo geohash5
-dla lobby, maszynka tur, wyniki, agregacje rankingów — zero DOM) i `sync.js`
+dla lobby — z `geo.js`, maszynka tur, wyniki, agregacje rankingów — zero DOM) i `sync.js`
 (polling mostu z interwałami zależnymi od fazy gry, kolejka zdarzeń offline
 z flusheM FIFO, rozróżnienie „odmowa mostu" vs „awaria sieci", wstrzykiwane
 `fetchImpl` i harmonogram). Orkiestracja DOM gry wieloosobowej i rankingów

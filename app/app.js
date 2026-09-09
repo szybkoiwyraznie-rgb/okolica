@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-5';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-5';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-37';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-37';
 import {
   czyPaczkaOdwrocona,
   normalizujTematyPaczki,
@@ -24,25 +24,28 @@ import {
   odkodujPaczkeRev2,
   parsujOdpowiedzModela,
   poprawkaDlaModelu,
+  szacunekOdpowiedzi,
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
+  SZABLON_WERSJA,
   WERSJA_PROTOKOLU_REV2,
-} from './protokol.js?v=m12-5';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-5';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-5';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-5';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-5';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-5';
+  PROG_ODPOWIEDZI_TOKENY,
+} from './protokol.js?v=m12-37';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-37';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-37';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-37';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-37';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-37';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
-  dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr,
+  czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-5';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-5';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-5';
+} from './zestawy.js?v=m12-37';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-37';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-37';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -62,18 +65,23 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-5';
-import { utworzMape } from './mapa.js?v=m12-5';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, zbudujZdarzenie } from './wieloosobowa.js?v=m12-5';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-5';
-import { adresMostu, stanMostu } from './most.js?v=m12-5';
+} from './sieci.js?v=m12-37';
+import { utworzMape } from './mapa.js?v=m12-37';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-37';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-37';
+import { adresMostu, stanMostu } from './most.js?v=m12-37';
+import {
+  KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
+  walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, walidujKolejkeOcenTekst,
+  dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
+  opisOcenTekst,
+} from './oceny.js?v=m12-37';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
 /** M11/P4 (ADR 0019): tożsamość i most gry wieloosobowej — osobne klucze, „kasuj dane" czyści wszystko.
  *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
 const KLUCZ_PSEUDONIMU = 'okolica:pseudonim';
-const KLUCZ_ZGODY_MULTI = 'okolica:multi:zgoda';
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
 
@@ -92,7 +100,19 @@ const STAN = {
   ziarnoOffset: 0,
   prompt: null,
   paczka: null,
+  /** ADR 0028: id paczki z repozytorium Drive — tylko takie paczki zbierają oceny. */
+  paczkaRepoId: '',
+  /** ADR 0028: token tej gry; most liczy z niego „użyta w X grach". */
+  tokenGry: '',
+  /** ADR 0028: głosy tego telefonu — reguła „już ocenione" działa między sesjami. */
+  oceny: noweOceny(),
+  /** ADR 0028: pytanie i gracz, przy których stoi panel oceny. */
+  ocenianePytanieId: '',
+  ocenianyGracz: '',
   usterkiPaczki: [],
+  /** Ekran, na który wracamy z rankingu i z prywatności (oba są poza EKRANY). */
+  powrotZRankingu: 'setup',
+  powrotZPrywatnosci: 'setup',
   /** M6: stan gry `rozgrywka/1` — null do „▶ Zacznij grę". */
   rozgrywka: null,
   /** M6: ukryty kontener paczki na czas gry (TO-paczka/2) — nigdy plaintext (ADR 0007 pkt 4). */
@@ -170,6 +190,11 @@ const EKRANY = ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra'
 
 function pokazEkran(nazwa) {
   STAN.ekran = nazwa;
+  // ADR 0030: stan ekranu na <body>. CSS nie ma selektora rodzica, a układ
+  // rozgrywki na telefonie (mapa tłem, karty faz NA mapie, bez przewijania
+  // strony) musi działać wyłącznie na ekranie gry — nie na setupie, gdzie
+  // przewijanie jest normalne i potrzebne.
+  document.body.dataset.ekran = nazwa;
   for (const e of EKRANY) {
     $(`ekran-${e}`).hidden = e !== nazwa;
     const krok = document.querySelector(`#kroki li[data-krok="${e}"]`);
@@ -188,7 +213,17 @@ function pokazEkran(nazwa) {
  * ekran zapamiętany w `STAN.ekran`.
  */
 function pokazPrywatnosc() {
+  // ADR 0030: ekran prywatności chowa wszystkie ekrany gry, więc znacznik
+  // `data-ekran` musi zniknąć razem z nimi — inaczej reguły „bez przewijania”
+  // zostałyby na długim dokumencie, którego nie dałoby się przeczytać.
+  // Rankingi NIE należą do EKRANY, więc chowamy je jawnie i zapamiętujemy,
+  // że to stamtąd przyszliśmy — bez tego „wróć" zrzucało gracza na setup.
+  STAN.powrotZPrywatnosci = $('ekran-ranking').hidden
+    ? (EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup')
+    : 'ranking';
+  document.body.dataset.ekran = 'prywatnosc';
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
+  $('ekran-ranking').hidden = true;
   $('ekran-prywatnosc').hidden = false;
   $('geokodacja-zapasowa').checked = localStorage.getItem('okolica:geokodacja-zapasowa') === '1';
   window.scrollTo({ top: 0 });
@@ -196,6 +231,10 @@ function pokazPrywatnosc() {
 
 function wrocZPrywatnosci() {
   $('ekran-prywatnosc').hidden = true;
+  if (STAN.powrotZPrywatnosci === 'ranking') {
+    pokazRankingi({ bezPobierania: true }); // dane już są — nie pytamy mostu drugi raz
+    return;
+  }
   pokazEkran(EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup');
 }
 
@@ -253,12 +292,21 @@ function pokazBledy(idPola, usterki) {
 
 function renderujTryby() {
   const lista = $('lista-trybow');
-  lista.innerHTML = '';
-  for (const [klucz, tryb] of Object.entries(TRYBY)) {
+  // Węzły zamiast innerHTML (LESSONS L19, BACKLOG B16): atrapa DOM w testach
+  // nie parsuje innerHTML, a poza tym nic zewnętrznego nie trafia do znaczników.
+  lista.replaceChildren(...Object.entries(TRYBY).map(([klucz, tryb]) => {
     const etykieta = document.createElement('label');
-    etykieta.innerHTML = `<input type="radio" name="tryb" value="${klucz}"><strong>${tryb.ikona} ${tryb.etykieta}</strong><span>${tryb.promienM / 1000} km</span>`;
-    lista.appendChild(etykieta);
-  }
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = 'tryb';
+    input.value = klucz;
+    const mocne = document.createElement('strong');
+    mocne.textContent = `${tryb.ikona} ${tryb.etykieta}`;
+    const predkosc = document.createElement('span');
+    predkosc.textContent = `${String(tryb.predkoscKmh).replace('.', ',')} km/h`;
+    etykieta.append(input, mocne, predkosc);
+    return etykieta;
+  }));
   const zaznaczonyTryb = lista.querySelector(`input[value="${STAN.konfig.tryb}"]`) ?? lista.querySelector('input');
   if (zaznaczonyTryb) {
     zaznaczonyTryb.checked = true;
@@ -268,8 +316,7 @@ function renderujTryby() {
     const wybrany = lista.querySelector('input:checked')?.value;
     if (!wybrany || !TRYBY[wybrany]) return;
     STAN.konfig.tryb = wybrany;
-    STAN.konfig.promienM = TRYBY[wybrany].promienM;
-    $('setup-promien').value = STAN.konfig.promienM;
+    przeliczPromienZCzasu(); // ADR 0025: promień wynika z czasu i prędkości trybu
     aktualizujOpisTrybu();
   });
   aktualizujOpisTrybu();
@@ -282,12 +329,17 @@ function aktualizujOpisTrybu() {
 
 function renderujSegment(nazwaPola, dane, wybranyKlucz, onChange) {
   const lista = $(nazwaPola);
-  lista.innerHTML = '';
-  for (const [klucz, pozycja] of Object.entries(dane)) {
+  lista.replaceChildren(...Object.entries(dane).map(([klucz, pozycja]) => {
     const etykieta = document.createElement('label');
-    etykieta.innerHTML = `<input type="radio" name="${nazwaPola}" value="${klucz}"><strong>${pozycja.etykieta}</strong>`;
-    lista.appendChild(etykieta);
-  }
+    const input = document.createElement('input');
+    input.type = 'radio';
+    input.name = nazwaPola;
+    input.value = klucz;
+    const mocne = document.createElement('strong');
+    mocne.textContent = pozycja.etykieta;
+    etykieta.append(input, mocne);
+    return etykieta;
+  }));
   const zaznaczony = lista.querySelector(`input[value="${wybranyKlucz}"]`);
   if (zaznaczony) zaznaczony.checked = true;
   lista.addEventListener('change', () => {
@@ -298,12 +350,17 @@ function renderujSegment(nazwaPola, dane, wybranyKlucz, onChange) {
 
 function renderujTematy() {
   const lista = $('lista-tematow');
-  lista.innerHTML = '';
-  for (const [klucz, temat] of Object.entries(TEMATY)) {
+  lista.replaceChildren(...Object.entries(TEMATY).map(([klucz, temat]) => {
     const etykieta = document.createElement('label');
-    etykieta.innerHTML = `<input type="checkbox" value="${klucz}" title="${temat.opis}"><span>${temat.etykieta}</span>`;
-    lista.appendChild(etykieta);
-  }
+    const input = document.createElement('input');
+    input.type = 'checkbox';
+    input.value = klucz;
+    input.title = temat.opis;
+    const nazwa = document.createElement('span');
+    nazwa.textContent = temat.etykieta;
+    etykieta.append(input, nazwa);
+    return etykieta;
+  }));
   for (const klucz of STAN.konfig.tematy) {
     const box = lista.querySelector(`input[value="${klucz}"]`);
     if (box) box.checked = true;
@@ -324,7 +381,7 @@ function renderujTematy() {
 function renderujSelecty() {
   const wypelnij = (idPola, dane, wybrany) => {
     const select = $(idPola);
-    select.innerHTML = '';
+    select.replaceChildren();
     for (const [klucz, pozycja] of Object.entries(dane)) {
       const option = document.createElement('option');
       option.value = klucz;
@@ -339,63 +396,395 @@ function renderujSelecty() {
   $('setup-podklad').addEventListener('change', (e) => { zmienPodklad(e.target.value); });
 }
 
-function renderujImiona() {
-  const lista = $('lista-imion');
-  lista.innerHTML = '';
-  STAN.konfig.imiona.forEach((imie, i) => {
-    const pole = document.createElement('input');
-    pole.type = 'text';
-    pole.value = imie;
-    pole.maxLength = OGRANICZENIA.dlugoscImienia.max;
-    pole.setAttribute('aria-label', `Imię gracza ${i + 1}`);
-    pole.addEventListener('input', () => { STAN.konfig.imiona[i] = pole.value; });
-    lista.appendChild(pole);
+/* ------- lista graczy = tożsamość (ADR 0026 aneks, decyzja 2026-09-07) ------ */
+
+/**
+ * Lista graczy jest JEDYNYM miejscem, w którym wpisuje się ludzi do gry na tym
+ * telefonie: imię + PIN, a „Dodaj gracza" potwierdza imię na wspólnym Drive.
+ * `liczbaGraczy` i `imiona` są WYNIKIEM długości listy — pola do wpisywania
+ * liczby nie ma, bo myliło się z listą imion i z tożsamością.
+ */
+function renderujListeGraczy() {
+  const imiona = Array.isArray(STAN.konfig.imiona) ? STAN.konfig.imiona : [];
+  const lista = $('lista-graczy');
+  lista.replaceChildren();
+  imiona.forEach((imie, i) => {
+    const li = document.createElement('li');
+    const kto = document.createElement('span');
+    const pewny = STAN.graczeZweryfikowani?.[i] !== false;
+    kto.textContent = `${i + 1}. ${imie || `Gracz ${i + 1}`}${pewny ? '' : ' — bez potwierdzenia z Drive'}`;
+    li.appendChild(kto);
+    const usun = document.createElement('button');
+    usun.type = 'button';
+    usun.className = 'przycisk przycisk-maly';
+    usun.textContent = '✕ Usuń';
+    usun.setAttribute('aria-label', `Usuń gracza ${imie || i + 1} z listy`);
+    usun.addEventListener('click', () => usunGracza(i));
+    li.appendChild(usun);
+    lista.appendChild(li);
+  });
+  STAN.konfig.liczbaGraczy = Math.max(1, imiona.length);
+}
+
+/**
+ * Pytania na stację idą za liczbą graczy (ADR 0027 część A): każdy gracz
+ * odpowiada raz przy każdej stacji, więc pytania muszą dzielić się równo (K22).
+ */
+function synchronizujPytaniaZGraczami() {
+  const graczy = Math.max(1, STAN.konfig.imiona?.length ?? 1);
+  const ile = Math.min(graczy, OGRANICZENIA.pytaniaNaStacje.max);
+  if (STAN.konfig.pytaniaNaStacje !== ile) {
+    STAN.konfig.pytaniaNaStacje = ile;
+    $('setup-pytania').value = ile;
+  }
+}
+
+function usunGracza(indeks) {
+  const imiona = [...(STAN.konfig.imiona ?? [])];
+  const [usuniete] = imiona.splice(indeks, 1);
+  STAN.konfig.imiona = imiona;
+  STAN.graczeZweryfikowani = [...(STAN.graczeZweryfikowani ?? [])].filter((_, i) => i !== indeks);
+  renderujListeGraczy();
+  synchronizujPytaniaZGraczami();
+  przeliczPromienZCzasu(); // pytania wchodzą do wzoru na promień (ADR 0025)
+  przywrocGraczy();
+  status(usuniete ? `„${usuniete}" usunięte z listy graczy.` : 'Lista graczy bez zmian.');
+}
+
+/** Klucz i schemat listy graczy zapamiętanej na tym telefonie (ADR 0026 aneks). */
+const KLUCZ_GRACZY = 'okolica:gracze';
+
+function czytajGraczyLokalnych() {
+  try {
+    return walidujGraczyLokalnych(JSON.parse(localStorage.getItem(KLUCZ_GRACZY) ?? 'null'));
+  } catch {
+    return null; // śmieci w localStorage nie kładą setupu (LESSONS L10)
+  }
+}
+
+/** Zapamiętuje gracza potwierdzonego na moście — PIN nie jest zapisywany. */
+function zapamietajGracza(pseudonim, { zweryfikowany = true } = {}) {
+  const imie = normalizujPseudonim(pseudonim);
+  if (!imie) return;
+  const zapis = czytajGraczyLokalnych();
+  const gracze = (zapis?.gracze ?? []).filter((g) => g.pseudonim.toLowerCase() !== imie.toLowerCase());
+  gracze.unshift({ pseudonim: imie, zweryfikowany });
+  localStorage.setItem(KLUCZ_GRACZY, JSON.stringify({
+    schemat: 'gracze-lokalni/1', gracze: gracze.slice(0, MAKS_GRACZY), kiedy: new Date().toISOString(),
+  }));
+}
+
+/**
+ * Zapamiętani gracze wracają jako przyciski: jedno kliknięcie dodaje ich do gry
+ * BEZ pytania o PIN (decyzja właściciela 2026-09-07). Kto nie jest jeszcze
+ * potwierdzony na tym telefonie, dostaje kursor w polu PIN.
+ *
+ * `zListy: true` tylko przy starcie aplikacji — wtedy potwierdzeni gracze sami
+ * wskakują na listę. Przy każdej późniejszej zmianie (dodanie, usunięcie)
+ * funkcja TYLKO przerysowuje przyciski i znaczniki potwierdzenia: bez tego
+ * rozróżnienia usunięty gracz wracałby na listę w tej samej chwili.
+ */
+function przywrocGraczy({ zListy = false } = {}) {
+  const zapamietani = czytajGraczyLokalnych()?.gracze ?? [];
+  if (zListy) {
+    // Zapamiętana lista wraca do gry BEZ pytania o PIN (decyzja właściciela
+    // 2026-09-07) — ale tylko gracze potwierdzeni kiedyś na moście; niepewni
+    // zostają jako przyciski i wymagają PIN-u.
+    for (const g of zapamietani) {
+      if (!g.zweryfikowany) continue;
+      const juz = (STAN.konfig.imiona ?? []).some((i) => normalizujPseudonim(i).toLowerCase() === g.pseudonim.toLowerCase());
+      if (juz || (STAN.konfig.imiona ?? []).length >= MAKS_GRACZY) continue;
+      STAN.konfig.imiona = [...(STAN.konfig.imiona ?? []), g.pseudonim];
+      STAN.graczeZweryfikowani = [...(STAN.graczeZweryfikowani ?? []), true];
+    }
+  }
+  renderujListeGraczy();
+  const wGrze = new Set((STAN.konfig.imiona ?? []).map((i) => normalizujPseudonim(i).toLowerCase()));
+  const wolni = zapamietani.filter((g) => !wGrze.has(g.pseudonim.toLowerCase()));
+  const pasek = $('lista-zapamietanych');
+  pasek.replaceChildren();
+  for (const g of wolni) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'przycisk przycisk-maly';
+    b.textContent = `➕ ${g.pseudonim}`;
+    b.setAttribute('aria-label', `Dodaj zapamiętanego gracza ${g.pseudonim}`);
+    b.addEventListener('click', () => { void dodajZapamietanegoGracza(g); });
+    pasek.appendChild(b);
+  }
+  // kto z bieżącej listy jest potwierdzony na tym telefonie — bez ponownego PIN-u
+  const pewni = new Map(zapamietani.map((g) => [g.pseudonim.toLowerCase(), g.zweryfikowany]));
+  STAN.graczeZweryfikowani = (STAN.konfig.imiona ?? []).map((imie) => (
+    pewni.get(normalizujPseudonim(imie).toLowerCase()) ?? (STAN.graczeZweryfikowani?.[(STAN.konfig.imiona ?? []).indexOf(imie)] ?? false)
+  ));
+  if ((STAN.konfig.imiona ?? []).length) {
+    $('profil-stan').textContent = 'Gracze z tego telefonu są już na liście — bez PIN-u. Usuń albo dodaj kolejnego.';
+  } else if (zapamietani.length) {
+    $('profil-stan').textContent = 'Ten telefon pamięta graczy — dodaj ich jednym kliknięciem (bez PIN-u) albo wpisz nowe imię z PIN-em.';
+  }
+}
+
+function dodajGraczaDoListy(imie, { zweryfikowany }) {
+  STAN.konfig.imiona = [...(STAN.konfig.imiona ?? []), imie];
+  STAN.graczeZweryfikowani = [...(STAN.graczeZweryfikowani ?? []), zweryfikowany];
+  pokazBledy('bledy-profil', []);
+  $('profil-pseudonim').value = '';
+  $('profil-pin').value = ''; // PIN nie zostaje w polu (ADR 0013)
+  renderujListeGraczy();
+  synchronizujPytaniaZGraczami();
+  przeliczPromienZCzasu(); // liczba pytań wchodzi do wzoru na promień (ADR 0025)
+  przywrocGraczy();
+}
+
+/** Zapamiętany i potwierdzony gracz wchodzi jednym kliknięciem, bez PIN-u. */
+async function dodajZapamietanegoGracza(zapamietany) {
+  if (!zapamietany?.zweryfikowany) {
+    $('profil-pseudonim').value = zapamietany?.pseudonim ?? '';
+    $('profil-pin').value = '';
+    pokazBledy('bledy-profil', [{ komunikat: 'Ten gracz nie był jeszcze potwierdzony na tym telefonie — wpisz jego PIN.' }]);
+    $('profil-pin').focus?.();
+    return false;
+  }
+  if ((STAN.konfig.imiona ?? []).length >= MAKS_GRACZY) {
+    pokazBledy('bledy-profil', [{ komunikat: `Maksymalnie ${MAKS_GRACZY} graczy na jednym telefonie.` }]);
+    return false;
+  }
+  dodajGraczaDoListy(zapamietany.pseudonim, { zweryfikowany: true });
+  status(`„${zapamietany.pseudonim}" dodany do gry — ten telefon już go potwierdził.`);
+  return true;
+}
+
+/**
+ * „➕ Dodaj gracza": jedno wołanie `profil-ustaw` robi całą robotę — wolne imię
+ * zakłada profil z tym PIN-em, zajęte wymaga PIN-u właściciela, a zły PIN to
+ * odmowa R20 i gracz NIE trafia na listę. Most, który nie odpowiada, nie
+ * blokuje gry (ADR 0016 pkt 5) — gracz wchodzi bez potwierdzenia, a komunikat
+ * mówi wprost, że historia nie zostanie zapisana.
+ */
+async function dodajGracza() {
+  const przycisk = $('przycisk-dodaj-gracza');
+  if (przycisk.disabled) return false; // jedno kliknięcie = jedno żądanie
+  const pseudo = normalizujPseudonim($('profil-pseudonim').value);
+  const pin = ($('profil-pin').value ?? '').trim();
+  const odmowa = (komunikat, pole = 'profil-pin') => {
+    pokazBledy('bledy-profil', [{ komunikat }]);
+    $(pole).focus?.();
+    return false;
+  };
+  if (!pseudo) return odmowa('Wpisz imię gracza — trafia do historii gier i rankingów.', 'profil-pseudonim');
+  if ((STAN.konfig.imiona ?? []).length >= MAKS_GRACZY) {
+    return odmowa(`Maksymalnie ${MAKS_GRACZY} graczy na jednym telefonie.`, 'profil-pseudonim');
+  }
+  if ((STAN.konfig.imiona ?? []).some((i) => normalizujPseudonim(i).toLowerCase() === pseudo.toLowerCase())) {
+    return odmowa(`„${pseudo}" jest już na liście graczy.`, 'profil-pseudonim');
+  }
+  if (!czyPinPoprawny(pin)) {
+    return odmowa('PIN to 4–8 cyfr. Nowe imię dostaje nowy PIN, zajęte wymaga PIN-u właściciela.');
+  }
+
+  const url = adresMostu();
+  przycisk.disabled = true;
+  try {
+    if (!url) {
+      dodajGraczaDoListy(pseudo, { zweryfikowany: false });
+      $('profil-stan').textContent = 'Ta wersja aplikacji nie ma adresu mostu — gracz dodany, ale historia i rankingi nie zostaną zapisane.';
+      status(`„${pseudo}" dodany bez potwierdzenia (brak adresu mostu).`);
+      return true;
+    }
+    status(`Sprawdzam imię „${pseudo}" na wspólnym Drive…`);
+    let wynik;
+    try {
+      wynik = await polecenieMostu(url, { akcja: 'profil-ustaw', pseudonim: pseudo, pin });
+    } catch (e) {
+      if (e?.odmowaMostu) return odmowa(komunikatBleduProfilu(String(e.message ?? '').trim()));
+      dodajGraczaDoListy(pseudo, { zweryfikowany: false });
+      $('profil-stan').textContent = 'Drive nie odpowiada — gracz dodany bez potwierdzenia. Historia i rankingi z tej gry nie zostaną zapisane; spróbuj przy następnej grze.';
+      status('Nie udało się sprawdzić imienia na Drive — gracz dodany lokalnie.');
+      return true;
+    }
+    const imie = wynik.pseudonim || pseudo;
+    zapamietajGracza(imie);
+    dodajGraczaDoListy(imie, { zweryfikowany: true });
+    $('profil-stan').textContent = wynik.nowy
+      ? `Nowy profil „${imie}" założony z tym PIN-em. Dodaj kolejnego gracza albo przejdź dalej.`
+      : `„${imie}" potwierdzone PIN-em — witaj z powrotem. Dodaj kolejnego gracza albo przejdź dalej.`;
+    status(wynik.nowy
+      ? `Założono profil „${imie}" — historia i rankingi tego gracza są na wspólnym Drive.`
+      : `To Ty — „${imie}" potwierdzone PIN-em.`);
+    return true;
+  } finally {
+    przycisk.disabled = false;
+  }
+}
+
+/**
+ * BRAMA tożsamości ekranu 1 (ADR 0026): na ekran 2 przechodzi się z co
+ * najmniej jednym graczem na liście. Same imiona są już sprawdzone — każde
+ * przeszło przez `profil-ustaw` przy dodawaniu (albo przez zapamiętanie na tym
+ * telefonie), więc brama tylko pilnuje, żeby lista nie była pusta, i mówi
+ * wprost, gdy któryś gracz nie ma potwierdzenia z Drive.
+ */
+async function bramkaTozsamosci() {
+  const imiona = (STAN.konfig.imiona ?? []).map((i) => normalizujPseudonim(i)).filter(Boolean);
+  if (!imiona.length) {
+    const komunikat = 'Dodaj co najmniej jednego gracza: imię i PIN, potem „➕ Dodaj gracza".';
+    pokazBledy('bledy-profil', [{ komunikat }]);
+    $('profil-stan').textContent = komunikat;
+    $('profil-pseudonim').focus?.();
+    return false;
+  }
+  const bezPotwierdzenia = imiona.filter((_, i) => STAN.graczeZweryfikowani?.[i] === false);
+  pokazBledy('bledy-profil', []);
+  if (bezPotwierdzenia.length) {
+    $('profil-stan').textContent = `Grasz lokalnie: ${bezPotwierdzenia.join(', ')} ${bezPotwierdzenia.length === 1 ? 'nie ma' : 'nie mają'} potwierdzenia z Drive — historia i rankingi z tej gry nie zostaną zapisane.`;
+    status('Część graczy bez potwierdzenia z Drive — grasz lokalnie.');
+  }
+  return true;
+}
+
+/* ------ wynik gry hot-seat na wspólnym Drive (ADR 0026 aneks) -------------- */
+
+/** Klucze localStorage kolejki i rejestru wysłanych (schematy w `wieloosobowa.js`). */
+const KLUCZ_KOLEJKI_HOTSEAT = 'okolica:hotseat-kolejka';
+const KLUCZ_WYSLANYCH_HOTSEAT = 'okolica:hotseat-wyslane';
+const MAKS_KOLEJKA_HOTSEAT = 5;
+const MAKS_REJESTR_WYSLANYCH = 30;
+
+function czytajKolejkeHotseat() {
+  try {
+    return walidujKolejkeHotseat(JSON.parse(localStorage.getItem(KLUCZ_KOLEJKI_HOTSEAT) ?? 'null'));
+  } catch {
+    return []; // śmieci w localStorage nie kładą aplikacji (LESSONS L10)
+  }
+}
+
+function zapiszKolejkeHotseat(gry) {
+  if (!gry.length) {
+    localStorage.removeItem(KLUCZ_KOLEJKI_HOTSEAT);
+    return;
+  }
+  localStorage.setItem(KLUCZ_KOLEJKI_HOTSEAT, JSON.stringify({ schemat: SCHEMAT_KOLEJKI_HOTSEAT, gry: gry.slice(-MAKS_KOLEJKA_HOTSEAT) }));
+}
+
+function czytajWyslaneHotseat() {
+  try {
+    return walidujWyslaneHotseat(JSON.parse(localStorage.getItem(KLUCZ_WYSLANYCH_HOTSEAT) ?? 'null'));
+  } catch {
+    return [];
+  }
+}
+
+function zaznaczWyslanyHotseat(klucz) {
+  const klucze = [...czytajWyslaneHotseat().filter((k) => k !== klucz), klucz];
+  localStorage.setItem(KLUCZ_WYSLANYCH_HOTSEAT, JSON.stringify({ schemat: SCHEMAT_WYSLANYCH_HOTSEAT, klucze: klucze.slice(-MAKS_REJESTR_WYSLANYCH) }));
+}
+
+/**
+ * Odcisk gry: kod (pusty w grze lokalnej) + chwila startu + skład. Zapis gry
+ * odświeża się przy każdej tranzycji, a wynik ma trafić na Drive RAZ — bez tego
+ * klucza ta sama gra weszłaby do rankingów tyle razy, ile razy się zapisała.
+ */
+function kluczGryHotseat(r) {
+  return [String(r.kodGry || 'gra'), Number(r.startMs) || 0, (r.gracze ?? []).map((g) => g.imie).join(',')].join('|');
+}
+
+/**
+ * Czy jest dokąd zapisać wynik: potrzebny choć jeden gracz potwierdzony
+ * profilem na Drive. Zapis jest DOMYŚLNY i nie pytamy o niego przy każdej
+ * grze (właściciel, 2026-09-07) — co i dokąd trafia, opisuje sekcja „Dane
+ * i prywatność".
+ */
+function czyWysylacWynikHotseat() {
+  return (STAN.graczeZweryfikowani ?? []).some(Boolean);
+}
+
+/** Polecenie `gra-hotseat` z bieżącej rozgrywki (fakty, nie gotowe punkty). */
+function polecenieHotseat() {
+  const r = STAN.rozgrywka;
+  if (!r) return { ok: false, usterki: ['brak zakończonej gry'] };
+  return graHotseatDoWysylki({
+    miejsce: STAN.miejsce || 'nieznane miejsce',
+    // geohash5 STARTU gry — tak samo jak w konfiguracji gry wieloosobowej
+    // (ADR 0019 pkt 3): przybliżenie okolicy, nie punkt gracza.
+    geohash5: Number.isFinite(r.start?.lat) ? geohash(r.start.lat, r.start.lon, 5) : '',
+    wiek: STAN.konfig.wiek,
+    tematy: STAN.konfig.tematy,
+    liczbaStacji: r.stacje.length,
+    pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
+    gracze: (r.gracze ?? []).map((g) => ({ id: g.id, pseudonim: g.imie })),
+    dziennik: r.dziennik,
   });
 }
 
 /**
- * PIN-profil (ADR 0021): pseudonim ląduje w pierwszym pustym polu imienia
- * (albo w pierwszym, gdy wszystkie zajęte) — typowo jest jedno pole.
+ * Koniec gry na tym telefonie = wynik na wspólnym Drive (decyzja właściciela
+ * 2026-09-07). Punkty liczy most z przesłanych faktów, więc rankingi hot-seat
+ * i gier wieloosobowych są jednymi rankingami. Awaria sieci niczego nie gubi:
+ * polecenie czeka w kolejce i leci przy następnym uruchomieniu (ADR 0016 pkt 5).
  */
-function wpiszImieZProfilu(pseudonim) {
-  const imiona = STAN.konfig.imiona;
-  const wolne = (i) => !(i ?? '').trim() || /^Gracz \d+$/.test((i ?? '').trim());
-  let cel = imiona.findIndex(wolne);
-  if (cel < 0) cel = 0;
-  imiona[cel] = pseudonim;
-  // document-poziom jak czytajSetupZDomu (atrapa DOM nie wspiera elementowego querySelectorAll)
-  const pola = document.querySelectorAll('#lista-imion input');
-  if (pola[cel]) pola[cel].value = pseudonim;
+/** Komunikat o wysyłce idzie na WŁASNĄ linię wyniku, nie na wspólny `#status`. */
+function stanWysylkiWyniku(tekst) {
+  const linia = $('wynik-drive');
+  if (linia) linia.textContent = tekst;
 }
 
-async function obsluzProfil(rejestruj) {
-  const pseudo = normalizujPseudonim($('profil-pseudonim').value);
-  const pin = ($('profil-pin').value ?? '').trim();
-  if (!pseudo) { pokazBledy('bledy-profil', [{ komunikat: 'Wpisz pseudonim.' }]); return; }
-  if (!czyPinPoprawny(pin)) { pokazBledy('bledy-profil', [{ komunikat: 'PIN to 4–8 cyfr.' }]); return; }
+async function wyslijWynikHotseat() {
+  if (STAN.multi) return; // gra wieloosobowa ma wyniki na moście z urzędu (ADR 0019)
+  if (!czyWysylacWynikHotseat()) {
+    stanWysylkiWyniku('Wynik został na telefonie — żaden gracz nie ma potwierdzonego profilu, więc historia i rankingi z tej gry nie zostaną zapisane.');
+    return;
+  }
+  const r = STAN.rozgrywka;
+  const klucz = kluczGryHotseat(r);
+  if (czytajWyslaneHotseat().includes(klucz)) return; // ta gra już pojechała
+  const bud = polecenieHotseat();
+  if (!bud.ok) {
+    stanWysylkiWyniku(`Wynik został na telefonie: ${bud.usterki.join('; ')}.`);
+    return;
+  }
+  zaznaczWyslanyHotseat(klucz); // raz na grę — niezależnie od wyniku wysyłki
   const url = adresMostu();
-  if (!url) { pokazBledy('bledy-profil', [{ komunikat: 'Brak adresu mostu — profil niedostępny.' }]); return; }
-  status(rejestruj ? 'Zapisuję nowy pseudonim…' : 'Sprawdzam profil…');
+  if (!url) {
+    stanWysylkiWyniku('Wynik został na telefonie — ta wersja aplikacji nie ma adresu mostu Drive.');
+    return;
+  }
+  stanWysylkiWyniku('Wysyłam wynik na wspólny Drive…');
   try {
-    const wynik = await polecenieMostu(url, {
-      akcja: rejestruj ? 'profil-ustaw' : 'profil-sprawdz', pseudonim: pseudo, pin,
-    });
-    pokazBledy('bledy-profil', []);
-    wpiszImieZProfilu(wynik.pseudonim || pseudo);
-    $('przycisk-profil-zapisz').hidden = true;
-    $('form-profil').hidden = true;
-    status(wynik.nowy
-      ? `Zapisano nowy pseudonim „${wynik.pseudonim || pseudo}" — od teraz jest Twój (PIN-em go potwierdzasz).`
-      : `To Ty — wpisano „${wynik.pseudonim || pseudo}".`);
+    await polecenieMostu(url, bud.polecenie);
+    stanWysylkiWyniku('☁ Wynik jest na wspólnym Drive — punkty graczy weszły do rankingów.');
   } catch (e) {
-    if (e?.odmowaMostu) {
-      const kod = String(e.message ?? '').trim();
-      if (kod === 'R19' && !rejestruj) $('przycisk-profil-zapisz').hidden = false;
-      pokazBledy('bledy-profil', [{ komunikat: komunikatBleduProfilu(kod) }]);
-      status(komunikatBleduProfilu(kod));
-    } else {
-      pokazBledy('bledy-profil', [{ komunikat: `Most nie odpowiada (${e?.message ?? e}). Spróbuj przy lepszym sygnale.` }]);
+    // Kolejka zostaje w obu przypadkach, ale powód musi być prawdziwy: jawna
+    // odmowa mostu (np. skrypt w Apps Script bez akcji `gra-hotseat`) to nie
+    // awaria sieci — patrz kontrakt `polecenieMostu` w app/sync.js.
+    zapiszKolejkeHotseat([...czytajKolejkeHotseat(), bud.polecenie]);
+    stanWysylkiWyniku(e?.odmowaMostu
+      ? `Wynik został na telefonie — most Drive odmówił: ${String(e.message ?? 'nieznany powód')}. Wynik czeka w kolejce i poleci, gdy most przyjmie akcję gra-hotseat (w Apps Script potrzebna jest aktualna wersja skryptu).`
+      : 'Drive nie odpowiedział — wynik czeka w kolejce i poleci przy najbliższym uruchomieniu aplikacji.');
+  }
+}
+
+/** Start aplikacji: wyniki z kolejki jadą na Drive (bez nich rankingi byłyby dziurawe). */
+async function oproznijKolejkeHotseat() {
+  const url = adresMostu();
+  if (!url) return;
+  const gry = czytajKolejkeHotseat();
+  if (!gry.length) return;
+  const zostaly = [];
+  let doszlo = 0;
+  let odmowa = null;
+  for (const polecenie of gry) {
+    try {
+      await polecenieMostu(url, polecenie);
+      doszlo += 1;
+    } catch (e) {
+      zostaly.push(polecenie); // zostanie na później
+      if (e?.odmowaMostu) odmowa = String(e.message ?? 'nieznany powód'); // jawna odmowa, nie awaria sieci
     }
+  }
+  zapiszKolejkeHotseat(zostaly);
+  if (doszlo) status(`Wyniki gier z kolejki (${doszlo}) doszły na wspólny Drive — rankingi są pełne.`);
+  if (odmowa) {
+    status(`Most Drive odmówił przyjęcia ${zostaly.length} wyników z kolejki: ${odmowa}. Zostaną ponowione przy następnym uruchomieniu — w Apps Script potrzebna jest aktualna wersja skryptu mostu.`);
   }
 }
 
@@ -406,14 +795,37 @@ async function obsluzProfil(rejestruj) {
  */
 let setupNasluchyPodpiete = false;
 
+/**
+ * Promień gry jest WYNIKIEM, nie polem (ADR 0025): organizator wpisuje, ile ma
+ * czasu, a promień liczy się z czasu, sposobu poruszania i liczby pytań
+ * (`przeliczenieCzasu` w konfig.js). Akapit `#setup-promien-info` pokazuje
+ * składowe, żeby liczba nie była magią (LESSONS L6).
+ */
+function przeliczPromienZCzasu() {
+  const k = STAN.konfig;
+  const r = przeliczenieCzasu({
+    czasGryMin: k.czasGryMin, tryb: k.tryb,
+    liczbaStacji: k.liczbaStacji, pytaniaNaStacje: k.pytaniaNaStacje,
+  });
+  k.promienM = r.promienM;
+  const info = $('setup-promien-info');
+  if (!info) return;
+  const minuty = (v) => String(Math.round(v * 10) / 10).replace('.', ',');
+  const odleglosc = (m) => (m >= 1000 ? `${minuty(m / 1000)} km` : `${Math.round(m)} m`);
+  info.textContent = Number.isFinite(k.czasGryMin)
+    // Krótko: setup ma się mieścić na 360 px bez przewijania (WORKFLOW §4.2).
+    ? `Promień gry: ${odleglosc(r.promienM)} (z ${k.czasGryMin} min: ${r.pytania} ${r.pytania === 1 ? 'pytanie' : 'pytań'} ≈ ${minuty(r.czasOdpowiedziMin)} min, droga ≈ ${minuty(r.czasDrogiMin)} min, trasa ≈ ${odleglosc(r.trasaM)}).`
+    : 'Wpisz planowany czas gry — promień policzy się z niego sam.';
+}
+
 function renderujSetup() {
   const k = STAN.konfig;
-  $('setup-promien').value = k.promienM;
+  $('setup-czas').value = k.czasGryMin;
   $('setup-stacje').value = k.liczbaStacji;
   $('setup-pytania').value = k.pytaniaNaStacje;
-  $('setup-gracze').value = k.liczbaGraczy;
-  $('setup-promien').min = OGRANICZENIA.promienM.min;
-  $('setup-promien').max = OGRANICZENIA.promienM.max;
+  $('setup-czas').min = OGRANICZENIA.czasGryMin.min;
+  $('setup-czas').max = OGRANICZENIA.czasGryMin.max;
+  przeliczPromienZCzasu();
 
   // Wartości pól odświeżamy za każdym razem, nasłuchy — tylko raz (L14).
   if (setupNasluchyPodpiete) return;
@@ -422,15 +834,12 @@ function renderujSetup() {
   const czytajLiczbe = (idPola, pole) => $(idPola).addEventListener('input', (e) => {
     const v = Number(e.target.value);
     STAN.konfig[pole] = Number.isFinite(v) ? v : null;
-    if (pole === 'liczbaGraczy') {
-      STAN.konfig = { ...STAN.konfig, imiona: dostosujImiona(Number.isFinite(v) ? v : 1) };
-      renderujImiona();
-    }
+    przeliczPromienZCzasu(); // czas, stacje i pytania wchodzą do wzoru (ADR 0025)
   });
-  czytajLiczbe('setup-promien', 'promienM');
+  czytajLiczbe('setup-czas', 'czasGryMin');
   czytajLiczbe('setup-stacje', 'liczbaStacji');
   czytajLiczbe('setup-pytania', 'pytaniaNaStacje');
-  czytajLiczbe('setup-gracze', 'liczbaGraczy');
+  $('przycisk-dodaj-gracza').addEventListener('click', () => { void dodajGracza(); });
 
   $('geokodacja-zapasowa').addEventListener('change', (e) => {
     localStorage.setItem('okolica:geokodacja-zapasowa', e.target.checked ? '1' : '0');
@@ -440,16 +849,9 @@ function renderujSetup() {
   });
 }
 
-function dostosujImiona(n) {
-  const ile = Math.max(1, Math.min(OGRANICZENIA.liczbaGraczy.max, Number.isFinite(n) ? n : 1));
-  const obecne = Array.isArray(STAN.konfig.imiona) ? STAN.konfig.imiona : [];
-  return Array.from({ length: ile }, (_, i) => obecne[i] ?? `Gracz ${i + 1}`);
-}
-
 function czytajSetupZDomu() {
-  const k = STAN.konfig;
-  k.imiona = [...document.querySelectorAll('#lista-imion input')].map((i) => i.value);
-  return k;
+  // imiona i liczba graczy nie mają pól: żyją w liście graczy (`STAN.konfig`)
+  return STAN.konfig;
 }
 
 /* --------------------------------------------------------------- pozycja */
@@ -479,7 +881,12 @@ function pokazPozycje() {
     STAN.wycentrowane = true;
     centrujNaPozycji();
   }
-  odswiezPropozycjeZestawow();
+  // Karta propozycji paczek żyje na ekranie pozycji (`#zestawy-karta`
+  // w `#ekran-pozycja`). `pokazPozycje()` jest wołane przy KAŻDYM fixie, a fixy
+  // w grze lecą cały czas — bez tej bramki cała rozgrywka to seria zapytań do
+  // mostu o indeks, którego nikt wtedy nie ogląda: bateria, transfer i limit
+  // kwoty Apps Script idą w błoto (ADR 0013: żadnych zbędnych żądań).
+  if (STAN.ekran === 'pozycja') odswiezPropozycjeZestawow();
 }
 
 /** Zamyka watcher, jeśli działa (ADR 0004 pkt 1: jeden watcher na rozgrywkę). */
@@ -507,7 +914,7 @@ function wlaczGps() {
     onBlad: (blad) => {
       pokazBledy('bledy-pozycja', [{ kod: blad.kod, pole: 'geolocation', komunikat: blad.komunikat }]);
       $('pozycja-status').textContent = 'Brak pozycji';
-      status('Położenie niedostępne — dojście można zgłaszać ręcznie albo grać w trybie testowym.' + ADR(' (ADR 0004 pkt 5–6)'));
+      status('Położenie niedostępne — gra czeka na sygnał. Wyjdź na otwartą przestrzeń, a jeśli stacja jest nieosiągalna, pomiń odcinek.' + ADR(' (ADR 0029)'));
     },
   });
   if (!STAN.watcher.czyAktywny()) $('pozycja-status').textContent = 'Brak pozycji';
@@ -569,7 +976,7 @@ function ustawPozycjeRecznie(surowyLat, surowyLon, { zMapy = false } = {}) {
   STAN.dokladnoscM = fix.accuracy;
   pokazBledy('bledy-pozycja', []);
   pokazPozycje();
-  status(zMapy ? 'Pozycja testowa ustawiona z mapy.' : 'Pozycja ustawiona ręcznie (tryb testowy).');
+  status(zMapy ? 'Pozycja ustawiona z mapy.' : 'Pozycja ustawiona ręcznie.');
   return true;
 }
 
@@ -991,12 +1398,28 @@ function przeliczZTegoCoJest() {
       });
       STAN.stacje = wynik.stacje;
       STAN.wynikSieci = wynik;
-      pokazBledy('bledy-stacje', []);
+      // Sieć bywa za uboga na zamówioną liczbę stacji (S12): wybrane stacje SĄ
+      // wtedy składem gry, więc konfiguracja IDZIE ZA NIMI. Bez tego setup mówił
+      // „5", mapa pokazywała 4, a budowa promptu stawała na WE06 (właściciel,
+      // 2026-09-07). Paczka i gra wieloosobowa też porównują te dwie liczby.
+      const zamowione = STAN.konfig.liczbaStacji;
+      if (wynik.stacje.length !== zamowione) {
+        STAN.konfig.liczbaStacji = wynik.stacje.length;
+        $('setup-stacje').value = String(wynik.stacje.length);
+        przeliczPromienZCzasu(); // mniej stacji = dłuższy odcinek na ten sam czas (ADR 0025)
+        pokazBledy('bledy-stacje', [{
+          kod: 'S12',
+          pole: 'siec',
+          komunikat: `Sieć drogowa w tej okolicy nie dała ${zamowione} stacji w wymaganych odstępach — jest ich ${wynik.stacje.length} i tyle będzie w grze (setup zmieniony na ${wynik.stacje.length}). Chcesz ${zamowione}? Zwiększ czas gry, żeby powiększyć promień, albo zmień okolicę.`,
+        }]);
+      } else {
+        pokazBledy('bledy-stacje', []);
+      }
       renderujStacje();
       odswiezWarstwy();
       centrujNaPozycji();
       status(wynik.usterki.length
-        ? `Sieć jest za uboga na ${STAN.konfig.liczbaStacji} stacji — wybrano ${wynik.stacje.length} (kod S12). Zmień okolicę albo promień, jeśli chcesz komplet.`
+        ? `Sieć jest za uboga na ${zamowione} stacji — w grze będzie ${wynik.stacje.length} (kod S12). Zwiększ czas gry albo zmień okolicę, jeśli chcesz komplet.`
         : `Stacje z sieci drogowej: ${wynik.stacje.length} punktów osiągalnych w promieniu ${STAN.konfig.promienM} m.`);
       return;
     } catch (blad) {
@@ -1106,7 +1529,23 @@ function renderujStacje() {
     const opis = s.zrodlo === 'reczne'
       ? 'ustawiona ręcznie (linia prosta — osiągalność niezweryfikowana)'
       : s.opis || (sieciowe ? 'punkt przy sieci dróg' : 'punkt w terenie (osiągalność niezweryfikowana)');
-    li.innerHTML = `<span class="numer">${s.id}</span><span class="opis">${opis}<br><span class="kod">${formatujWspolrzedne(s.lat, s.lon)} · ${s.bearing}°</span></span><span class="dystans">${dystans}</span>`;
+    // Opis stacji bywa nazwą z OSM (`tags.name` przez `dopiszMiasto`), czyli
+    // tekstem z zewnątrz — do DOM idzie przez textContent, nigdy przez
+    // innerHTML (wstrzyknięty znacznik wykonałby się w aplikacji).
+    const numer = document.createElement('span');
+    numer.classList.add('numer');
+    numer.textContent = String(s.id);
+    const kod = document.createElement('span');
+    kod.classList.add('kod');
+    kod.textContent = `${formatujWspolrzedne(s.lat, s.lon)} · ${s.bearing}°`;
+    const opisEl = document.createElement('span');
+    opisEl.classList.add('opis');
+    opisEl.textContent = opis;
+    opisEl.append(document.createElement('br'), kod);
+    const dystansEl = document.createElement('span');
+    dystansEl.classList.add('dystans');
+    dystansEl.textContent = dystans;
+    li.append(numer, opisEl, dystansEl);
     return li;
   }));
   if (sieciowe) {
@@ -1213,7 +1652,6 @@ function renderujGre({ panele = true } = {}) {
 
   if (panele) {
     $('przycisk-start-odcinka').disabled = STAN.graPauza;
-    $('przycisk-reczne-dojscie').disabled = STAN.graPauza;
     $('przycisk-symulacja-gra').hidden = !(STAN.trybTestowy && r.faza === FAZY.odcinek);
     $('przycisk-pomin-stacje').disabled = r.faza !== FAZY.odcinek || STAN.graPauza; // ADR 0015 pkt 2: tylko w drodze
   }
@@ -1278,7 +1716,7 @@ function zapiszZestawLokalnyPoStarcie() {
   }
 }
 
-function wierszZestawu(opis, etykietaZrodla, akcji) {
+function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '') {
   const li = document.createElement('li');
   const opisEl = document.createElement('span');
   opisEl.className = 'opis-zestawu';
@@ -1288,7 +1726,15 @@ function wierszZestawu(opis, etykietaZrodla, akcji) {
   przycisk.className = 'przycisk';
   przycisk.textContent = '▶ Graj z tą paczką';
   przycisk.addEventListener('click', akcji);
-  li.append(opisEl, przycisk);
+  li.append(opisEl);
+  if (statystyki) {
+    // ADR 0028 pkt 5: zdanie o ocenach graczy — jedno miejsce na język.
+    const ocenyEl = document.createElement('p');
+    ocenyEl.className = 'podpowiedz';
+    ocenyEl.textContent = statystyki;
+    li.append(ocenyEl);
+  }
+  li.append(przycisk);
   return li;
 }
 
@@ -1308,6 +1754,16 @@ function pokazStanMostu() {
   }
 }
 
+/** „1 paczka", „2 paczki", „5 paczek" — komunikat ma brzmieć po polsku. */
+function opisLiczbyPaczek(ile) {
+  if (ile === 1) return 'jest 1 paczka';
+  if (ile > 1 && ile < 5) return `są ${ile} paczki`;
+  return `jest ${ile} paczek`;
+}
+
+/** Licznik pokoleń odświeżeń propozycji — patrz `odswiezPropozycjeZestawow`. */
+let POKOLENIE_PROPOZYCJI = 0;
+
 /**
  * Karta propozycji na ekranie pozycja: najpierw kopie z tego telefonu, potem
  * (asynchronicznie, z timeoutem) dopasowania z repozytorium. Każda awaria
@@ -1325,6 +1781,10 @@ function odswiezPropozycjeZestawow() {
   karta.hidden = false;
   const kryteria = {
     geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5),
+    // Pełna pozycja: dopasowanie liczy odległość od komórki paczki z tolerancją
+    // (ADR 0024), więc kilka metrów różnicy w starcie nie gubi propozycji.
+    lat: STAN.pozycja.lat,
+    lon: STAN.pozycja.lon,
     promienM: STAN.konfig.promienM,
     liczbaStacji: STAN.konfig.liczbaStacji,
     pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
@@ -1361,22 +1821,56 @@ function odswiezPropozycjeZestawow() {
   }
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timer = setTimeout(() => kontroler?.abort(), 6000);
+  // Odświeżenie jest asynchroniczne, a setup woła je przy każdej zmianie
+  // (pozycja, liczba graczy, czas). Bez tego licznika dwie nakładające się
+  // próby dopisałyby te same paczki drugi raz — lista musi pokazywać jedno
+  // pokolenie odpowiedzi, więc starsze ignorujemy (LESSONS L32).
+  const pokolenie = ++POKOLENIE_PROPOZYCJI;
   f(url, kontroler ? { signal: kontroler.signal } : undefined)
     .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
-    .then((tekst) => dopasujMetaIndeksu(walidujIndeksSurowy(tekst).indeks, kryteria))
-    .then((dopasowane) => {
+    .then((tekst) => {
+      const indeks = walidujIndeksSurowy(tekst).indeks;
+      return { indeks, dopasowane: dopasujMetaIndeksu(indeks, kryteria) };
+    })
+    .then(({ indeks, dopasowane }) => {
+      if (pokolenie !== POKOLENIE_PROPOZYCJI) return; // nowsze odświeżenie wygrało
       for (const meta of dopasowane) {
         lista.append(wierszZestawu(
           `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
           '🌍 repozytorium:',
           () => grajZZestawemZRepo(meta, url),
+          // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
+          // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
+          meta.oceny === undefined
+            ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
+            : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
         ));
       }
-      $('zestawy-status').textContent = dopasowane.length
-        ? 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.'
-        : 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.';
+      // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
+      // które nie pasują do setupu, to dwie różne sytuacje — i tylko drugą da się
+      // naprawić zmianą ustawień.
+      if (dopasowane.length) {
+        $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
+      } else {
+        // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
+        // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat
+        // mówi WPROST, które kryterium nie pasuje — nie wymienia całego setupu.
+        const bliskie = indeks.filter((m) => czyWOkolicy(m, kryteria));
+        let komunikat;
+        if (bliskie.length) {
+          komunikat = `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale ${bliskie.length === 1 ? 'nie pasuje' : 'nie pasują'}: `
+            + bliskie.map((m) => `${m.miejsce ?? 'paczka bez nazwy'} — ${powodyNiedopasowania(m, kryteria).join('; ')}`).join(' | ')
+            + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.';
+        } else {
+          komunikat = indeks.length
+            ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
+            : 'Repozytorium jest puste — nowe pytania przygotuje model.';
+        }
+        $('zestawy-status').textContent = komunikat;
+      }
     })
     .catch(() => {
+      if (pokolenie !== POKOLENIE_PROPOZYCJI) return; // komunikat należy do nowszej próby
       $('zestawy-status').textContent = lokalne.length
         ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
         : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
@@ -1446,6 +1940,7 @@ function grajZZestawemLokalnym(skrot) {
     odswiezPropozycjeZestawow();
     return;
   }
+  STAN.paczkaRepoId = ''; // ADR 0028: paczka z telefonu nie zbiera ocen
   przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: 'z tego telefonu' });
 }
 
@@ -1464,6 +1959,11 @@ function grajZZestawemZRepo(wpis, urlIndeksu) {
         status(`Paczka z repozytorium jest niekompletna (${usterki[0]?.komunikat ?? 'błąd'}) — gramy zwykłą ścieżką.`);
         return;
       }
+      // ADR 0028: oceny graczy dotyczą paczek z repozytorium — zapamiętujemy id
+      // pliku Drive i token tej gry, a licznik „użyta w X grach" dostaje ping.
+      STAN.paczkaRepoId = typeof wpis.id === 'string' ? wpis.id : '';
+      if (!STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
+      wyslijUzycieWTle(STAN.paczkaRepoId);
       przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
     })
     .catch(() => status('Nie udało się pobrać paczki z repozytorium — sprawdź połączenie albo graj zwykłą ścieżką.'));
@@ -1558,9 +2058,10 @@ function zakonczOdcinekGry(trybDojscia, fix) {
     // M11/P4: dojście jedzie na serwer BEZ współrzędnych (biała lista pól, ADR 0019 pkt 3)
     void wyslijZdarzenieMulti('dojscie', stacjaPrzed, { trybDojscia });
   }
-  status(trybDojscia === TRYBY_DOJSCIA.reczne
-    ? 'Dojście zgłoszone ręcznie — odnotowane, bez kary (ADR 0004 pkt 5).'
-    : 'Stacja osiągnięta — próg dojścia zadziałał z GPS. Brawo!');
+  // ADR 0029: jedynym trybem dojścia, jaki ta funkcja może teraz dostać, jest
+  // GPS (albo symulacja, która jest tym samym strumieniem fixów) — gałąź
+  // „zgłoszone ręcznie" była martwa razem z usuniętym przyciskiem.
+  status('Stacja osiągnięta — próg dojścia zadziałał z GPS. Brawo!');
   renderujGre();
   if (STAN.rozgrywka.faza === FAZY.pytanie) renderujPytanie(); // ADR 0007 pkt 6: pytanie DOPIERO teraz
   zapiszGre();
@@ -1617,6 +2118,155 @@ function przelaczSymulacjeDoStacji() {
  * zostały (`ktoOdpowiada`, referencje `{stacja, pytanieId}`); treść bierzemy
  * z odsłoniętej paczki po id.
  */
+/* ------------------------------------------------- oceny pytań (ADR 0028) */
+
+/** Pamięć przeglądarki albo null (goły Node w testach logiki). */
+function pamiecOcen() {
+  return typeof localStorage === 'undefined' ? null : localStorage;
+}
+
+/** Głosy tego telefonu z pamięci — uszkodzony wpis nie wywraca rozgrywki. */
+function zaladujOcenyLokalne() {
+  const pamiec = pamiecOcen();
+  if (!pamiec) return;
+  const { oceny, usterki } = walidujOcenyLokalneTekst(pamiec.getItem(KLUCZ_OCEN) ?? '');
+  STAN.oceny = oceny;
+  if (usterki.length) status(usterki[0].komunikat);
+}
+
+function zapiszOcenyLokalne() {
+  const pamiec = pamiecOcen();
+  if (pamiec) pamiec.setItem(KLUCZ_OCEN, JSON.stringify(STAN.oceny));
+}
+
+function kolejkaOcen() {
+  const pamiec = pamiecOcen();
+  return walidujKolejkeOcenTekst(pamiec ? pamiec.getItem(KLUCZ_KOLEJKI_OCEN) ?? '' : '');
+}
+
+function zapiszKolejkeOcen(kolejka) {
+  const pamiec = pamiecOcen();
+  if (pamiec) pamiec.setItem(KLUCZ_KOLEJKI_OCEN, JSON.stringify(kolejka));
+}
+
+/**
+ * Panel „Oceń pytanie" (ADR 0028 pkt 1). Pokazuje się tylko przy paczce
+ * z repozytorium — paczka wygenerowana na tym telefonie nie ma gdzie zbierać
+ * głosów, więc panelu nie ma (bez komunikatu o brakującej funkcji).
+ */
+function renderujPanelOcen(pytanie, gracz = null) {
+  const panel = $('gra-oceny');
+  if (!panel) return;
+  if (!STAN.paczkaRepoId || !pytanie) {
+    panel.hidden = true;
+    STAN.ocenianePytanieId = '';
+    STAN.ocenianyGracz = '';
+    return;
+  }
+  panel.hidden = false;
+  STAN.ocenianePytanieId = pytanie.id;
+  STAN.ocenianyGracz = gracz?.imie ?? '';
+  const glos = STAN.oceny.glosy.find((g) => g.paczkaId === STAN.paczkaRepoId && g.pytanieId === pytanie.id) ?? null;
+  const plus = $('gra-ocena-plus');
+  const minus = $('gra-ocena-minus');
+  if (plus) {
+    plus.setAttribute('aria-pressed', glos?.ocena === OCENA_PLUS ? 'true' : 'false');
+    plus.disabled = Boolean(glos);
+  }
+  if (minus) {
+    minus.setAttribute('aria-pressed', glos?.ocena === OCENA_MINUS ? 'true' : 'false');
+    minus.disabled = Boolean(glos);
+  }
+  const etykieta = $('gra-oceny-etykieta');
+  if (etykieta) etykieta.textContent = glos ? 'To pytanie masz już ocenione — dzięki.' : 'Oceń pytanie (nie musisz)';
+}
+
+/**
+ * Klik w kciuk: zapis lokalny + wysyłka w tle (ADR 0028 pkt 3). Interfejs nigdy
+ * nie czeka na most — głos jest widoczny od razu, a kolejka pilnuje dostarczenia.
+ */
+function kliknijOcene(ocena) {
+  if (!STAN.paczkaRepoId || !STAN.ocenianePytanieId) return;
+  const pamiec = pamiecOcen();
+  // ADR 0026 aneks: na telefonie jest LISTA graczy, nie jeden profil. Głosującego
+  // szukamy po imieniu odpowiadającego gracza — w hot-seat każdy gracz ocenia
+  // osobno (ADR 0028 pkt 2), więc sam identyfikator telefonu byłby za gruby.
+  const zapamietani = czytajGraczyLokalnych();
+  const imie = STAN.ocenianyGracz ?? '';
+  const klucz = normalizujPseudonim(imie).toLowerCase();
+  const naLiscie = (zapamietani?.gracze ?? []).find((g) => String(g.pseudonim).toLowerCase() === klucz) ?? null;
+  const { id } = idGlosujacego({
+    pseudonim: naLiscie?.pseudonim ?? '',
+    zweryfikowany: naLiscie?.zweryfikowany === true,
+    imie,
+    pamiec,
+  });
+  const wynik = ocenPytanie(STAN.oceny, {
+    paczkaId: STAN.paczkaRepoId,
+    pytanieId: STAN.ocenianePytanieId,
+    ocena,
+    graczId: id,
+    gra: STAN.tokenGry,
+  });
+  if (wynik.usterki.length) {
+    status(wynik.usterki.map((u) => u.komunikat).join(' '));
+    renderujPanelOcen({ id: STAN.ocenianePytanieId });
+    return;
+  }
+  STAN.oceny = wynik.oceny;
+  zapiszOcenyLokalne();
+  renderujPanelOcen({ id: STAN.ocenianePytanieId });
+  status(ocena === OCENA_PLUS
+    ? 'Dzięki — pytanie ocenione na tak. Głos leci na wspólny Drive w tle.'
+    : 'Dzięki — pytanie ocenione na nie. Głos leci na wspólny Drive w tle.');
+  void wyslijOceneWTle(wynik.doWysylki);
+}
+
+/**
+ * Wysyłka głosu w tle. Niepowodzenie (brak sieci, stary most, odmowa) nie jest
+ * błędem gracza: głos trafia do kolejki i poleci przy następnym uruchomieniu.
+ */
+function wyslijOceneWTle(zadanie) {
+  if (!zadanie) return Promise.resolve();
+  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
+  const url = adresMostu();
+  if (!f || !url) {
+    zapiszKolejkeOcen(dodajDoKolejkiOcen(kolejkaOcen(), zadanie));
+    return Promise.resolve();
+  }
+  return f(url, { method: 'POST', body: JSON.stringify(zadanie) })
+    .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
+    .then((tekst) => {
+      const wynik = walidujOdpowiedzOceny(tekst);
+      if (wynik.ok) {
+        zapiszKolejkeOcen(usunZKolejkiOcen(kolejkaOcen(), zadanie));
+        return;
+      }
+      zapiszKolejkeOcen(dodajDoKolejkiOcen(kolejkaOcen(), zadanie));
+      status(`${wynik.usterki[0].komunikat} Ocena czeka w kolejce i poleci przy najbliższym uruchomieniu aplikacji.`);
+    })
+    .catch(() => {
+      zapiszKolejkeOcen(dodajDoKolejkiOcen(kolejkaOcen(), zadanie));
+      status('Ocena nie dojechała na wspólny Drive — czeka w kolejce i poleci przy najbliższym uruchomieniu aplikacji.');
+    });
+}
+
+/** Głosy z kolejki przy starcie aplikacji (ADR 0028 pkt 3). */
+function oproznijKolejkeOcen() {
+  for (const zadanie of kolejkaOcen().zadania) void wyslijOceneWTle(zadanie);
+}
+
+/** Ping „użyta w X grach" — tło, bez wpływu na start gry (ADR 0028 pkt 6). */
+function wyslijUzycieWTle(paczkaId) {
+  if (!paczkaId) return;
+  const f = fetchPrzegladarki();
+  const url = adresMostu();
+  if (!f || !url) return;
+  void f(url, { method: 'POST', body: JSON.stringify({ akcja: 'uzycie', paczkaId, gra: STAN.tokenGry }) })
+    .then(() => undefined)
+    .catch(() => undefined); // licznik jest pomocniczy: brak sieci nie jest komunikatem dla gracza
+}
+
 function renderujPytanie() {
   const r = STAN.rozgrywka;
   if (!r || r.faza !== FAZY.pytanie) return;
@@ -1648,6 +2298,7 @@ function renderujPytanie() {
   $('gra-komunikat').textContent = '';
   $('gra-pytanie-naglowek').textContent = `Stacja ${r.biezacaStacja} zdobyta · pytanie ${idPytan.indexOf(para.pytanieId) + 1} z ${idPytan.length} · odpowiada ${gracz?.imie ?? '?'}`;
   $('gra-pytanie-tresc').textContent = pytanie.tresc;
+  renderujPanelOcen(pytanie, gracz);
   const lista = $('gra-odpowiedzi');
   lista.replaceChildren();
   pytanie.odpowiedzi.forEach((odp, i) => {
@@ -1803,6 +2454,9 @@ function zapiszGreDoHistorii(przerwana = false) {
     }
     localStorage.setItem(KLUCZ_HISTORII, JSON.stringify(dodajWpisHistorii(historia, wpis)));
     renderujHistorieGier();
+    // ADR 0026 aneks: ten sam koniec gry, który trafia do historii telefonu,
+    // wysyła wynik na wspólny Drive (idempotentnie po odcisku gry).
+    void wyslijWynikHotseat();
   } catch (blad) {
     status(`Nie udało się dopisać gry do historii: ${blad?.message ?? blad}. Wynik gry i zapis nie są tym dotknięte.`);
   }
@@ -1927,6 +2581,8 @@ function wznowGre() {
   $('przycisk-pauza').textContent = '⏸ Pauza';
   $('przycisk-pauza').setAttribute('aria-pressed', 'false');
   renderujSetup(); // konfiguracja z zapisu wraca do pól setupu
+  // Skład gry bierze się z zapisu — tu tylko przyciski zapamiętanych (ADR 0026 aneks).
+  przywrocGraczy();
   pokazEkran('gra');
   if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   status(`Gra „${r.kodGry || 'bez kodu'}" wznowiona — faza: ${r.faza}. Czas zamknięcia przeglądarki nie wlicza się w odcinek.`);
@@ -1979,6 +2635,12 @@ function pominStacjeGry() {
 function zakonczGreRecznie() {
   const r = STAN.rozgrywka;
   if (!r) return;
+  if (r.faza === FAZY.koniec) {
+    // Gra już się skończyła: klikanie „Zakończ grę" nic nie zmienia, więc mówimy
+    // wprost, gdzie jest wyjście (właściciel, 2026-09-08).
+    status('Ta gra już się zakończyła — wynik jest powyżej. Nową grę zaczniesz przyciskiem „Wróć na początek".');
+    return;
+  }
   if (!STAN.graZakonczonaUzbrojone) {
     STAN.graZakonczonaUzbrojone = true;
     $('przycisk-zakoncz-gre').textContent = '⚠ Kliknij ponownie, aby zakończyć';
@@ -1995,6 +2657,31 @@ function zakonczGreRecznie() {
   renderujGre();
   zapiszGre(); // M7/P6: ręczne zakończenie JEST tranzycją — zapis + wpis historii „przerwana"
   status('Gra zakończona wcześniej — wynik poniżej. Zapis został, więc można ją wznowić.');
+}
+
+/**
+ * „Wróć na początek" (właściciel, 2026-09-08): po zakończeniu gry nie było
+ * wyjścia z ekranu gry. Wynik jest już w historii, więc sprzątamy stan bieżącej
+ * rozgrywki i wracamy do setupu — ustawienia graczy i setup zostają.
+ */
+function wrocNaPoczatek() {
+  const r = STAN.rozgrywka;
+  zatrzymajSymulacje();
+  if (typeof localStorage !== 'undefined') {
+    const kod = r ? oczyscKodGry(r.kodGry) : '';
+    if (kod) localStorage.removeItem(kluczStanu(kod));
+    localStorage.removeItem(KLUCZ_AKTYWNEJ); // baner „wznów grę" nie proponuje skończonej gry
+  }
+  STAN.rozgrywka = null;
+  STAN.graZakonczonaRecznie = false;
+  STAN.graZakonczonaUzbrojone = false;
+  STAN.kontenerPaczki = null;
+  STAN.paczkaRepoId = '';
+  STAN.tokenGry = '';
+  STAN.ocenianePytanieId = '';
+  STAN.ocenianyGracz = '';
+  pokazEkran('ekran-setup');
+  status('Gotowe do nowej gry — setup i gracze zostali, wynik jest w historii.');
 }
 
 /* ------------------------------------------------- pełne podsumowanie (M7) */
@@ -2053,6 +2740,7 @@ function pokazWyniki() {
   }
 
   // 4. statystyki gry (dt/dd — na 360 px dwie kolumny, liczby tabular-nums)
+  stanWysylkiWyniku(''); // los wysyłki z poprzedniej gry nie zostaje na ekranie
   const dl = $('gra-wynik-statystyki');
   dl.replaceChildren();
   const pary = [
@@ -2233,6 +2921,20 @@ function budujPromptEkran() {
   $('prompt-licznik').textContent = wynik.prompt
     ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji · protokół ${WERSJA_PROTOKOLU}`
     : 'prompt nie został zbudowany';
+  // B21: prompt jest stały (~1,4 tys. tokenów) niezależnie od liczby pytań —
+  // rośnie ODPOWIEDŹ modelu (~210 tokenów na pytanie), a to ona mieści się albo
+  // nie w limicie wyjścia. Mówimy o tym ZANIM właściciel zmarnuje generację:
+  // ucięty JSON wraca jako E01/E02 bez wskazania prawdziwej przyczyny.
+  const ilePytan = liczbaPytan(STAN.konfig);
+  const rozmiar = szacunekOdpowiedzi(ilePytan);
+  const elRozmiar = $('prompt-rozmiar');
+  elRozmiar.hidden = !wynik.prompt;
+  elRozmiar.textContent = wynik.prompt
+    ? `Odpowiedź modelu będzie miała około ${Math.round(rozmiar.znaki / 100) / 10} tys. znaków (~${Math.round(rozmiar.tokeny / 100) / 10} tys. tokenów) dla ${ilePytan} pytań.`
+      + (rozmiar.tokeny > PROG_ODPOWIEDZI_TOKENY
+        ? ' To więcej niż limit wyjścia części modeli — jeśli wróci ucięty JSON, zmniejsz liczbę graczy albo stacji i wygeneruj pytania jeszcze raz.'
+        : '')
+    : '';
   $('przycisk-dalej-paczka').disabled = !wynik.prompt;
 }
 
@@ -2326,7 +3028,7 @@ function sprawdzOdpowiedz() {
   const wynik = $('wynik-walidacji');
   const listaUsterek = $('wynik-usterki');
   wynik.hidden = false;
-  listaUsterek.innerHTML = '';
+  listaUsterek.replaceChildren();
 
   if (!paczka) {
     wynik.dataset.stan = 'blad';
@@ -2419,7 +3121,22 @@ function renderujUsterki(usterki) {
   // zachowują się wtedy identycznie, a stare wiersze nie zalegają w DOM
   $('wynik-usterki').replaceChildren(...usterki.map((u) => {
     const li = document.createElement('li');
-    li.innerHTML = `<code>${u.kod}</code> ${u.pole ? `<strong>${u.pole}</strong> — ` : ''}${u.komunikat}`;
+    const kod = document.createElement('code');
+    kod.textContent = u.kod ?? '';
+    li.append(kod);
+    // Komunikaty cytują dane z zewnątrz (meta paczki, odpowiedź mostu), więc
+    // tekst idzie przez textContent — innerHTML wykonałby znacznik z paczki.
+    if (u.pole) {
+      const pole = document.createElement('strong');
+      pole.textContent = ` ${u.pole}`;
+      const reszta = document.createElement('span');
+      reszta.textContent = ` — ${u.komunikat ?? ''}`;
+      li.append(pole, reszta);
+    } else {
+      const reszta = document.createElement('span');
+      reszta.textContent = ` ${u.komunikat ?? ''}`;
+      li.append(reszta);
+    }
     return li;
   }));
 }
@@ -2545,7 +3262,6 @@ function wczytajKonfiguracje() {
     if (schemat !== 'konfig/1' || !konfig) return; // migracje: ADR 0010 pkt 6
     // sanitizacja: stary schemat albo ręczna edycja nie może wysypać UI
     STAN.konfig = oczyscKonfiguracje(konfig);
-    STAN.konfig.imiona = dostosujImiona(STAN.konfig.liczbaGraczy);
   } catch (e) {
     void e;
   }
@@ -2581,15 +3297,38 @@ function fetchPrzegladarki() {
 }
 
 /** GET do mostu z limitem 8 s i jawnym błędem — współdzielony przez lobby, indeks i wznowienie. */
+/**
+ * Nasz własny limit czasu (8 s) przerywa żądanie przez `AbortController`,
+ * a przeglądarka opisuje to PO ANGIELSKU i od swojej strony: Chrome daje
+ * „signal is aborted without reason", Firefox „The user aborted a request.".
+ * Dla gracza to bełkot, więc rozróżniamy nasze przerwanie od prawdziwej awarii
+ * sieci i zawsze oddajemy komunikat po polsku (LESSONS: komunikat musi nazywać
+ * przyczynę, nie wyjątek).
+ */
+function bladMostuPoPolsku(e, { przekroczonyCzas, url }) {
+  if (przekroczonyCzas) return new Error('most Drive nie odpowiedział w 8 sekund — sprawdź połączenie albo spróbuj za chwilę');
+  const tekst = String(e?.message ?? e ?? '');
+  if (e?.name === 'AbortError' || /abort/i.test(tekst)) {
+    return new Error('połączenie z mostem Drive zostało przerwane — spróbuj jeszcze raz');
+  }
+  if (/failed to fetch|networkerror|load failed/i.test(tekst)) {
+    return new Error('brak połączenia z mostem Drive — telefon jest offline albo adres repozytorium nie odpowiada');
+  }
+  return new Error(`${tekst}${url ? ` (${url})` : ''}`);
+}
+
 async function pobierzGetMulti(url) {
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
   if (!f) throw new Error('to środowisko nie ma fetch — nie da się zapytać mostu');
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(() => kontroler?.abort(), 8000);
+  let przekroczonyCzas = false;
+  const timer = setTimeout(() => { przekroczonyCzas = true; kontroler?.abort(); }, 8000);
   try {
     const odp = await f(url, kontroler ? { signal: kontroler.signal } : undefined);
     if (!odp.ok) throw new Error(`HTTP ${odp.status}`);
     return await odp.json();
+  } catch (e) {
+    throw bladMostuPoPolsku(e, { przekroczonyCzas, url: null });
   } finally {
     clearTimeout(timer);
   }
@@ -2616,15 +3355,17 @@ function pokazBledyMulti(komunikaty) {
   if (komunikaty.length) status(komunikaty[0]);
 }
 
-/** Walidacja przed KAŻDĄ wysyłką na most — bez zgody NIE nadajemy (plan M11/P4). */
+/**
+ * Walidacja przed KAŻDĄ wysyłką na most. Zgody NIE sprawdzamy (właściciel,
+ * 2026-09-07): gra na wielu telefonach z natury działa przez wspólny Drive,
+ * a co i dokąd trafia opisuje sekcja „Dane i prywatność". Kto nie chce
+ * wysyłać niczego, gra w hot-seat.
+ */
 function walidujGotowoscMulti() {
   const usterki = [];
   const pseudonim = ($('multi-pseudonim').value ?? '').trim();
   if (!pseudonim) usterki.push('Wpisz pseudonim — widzą go inni gracze w lobby i w wynikach.');
   else if (pseudonim.length > 24) usterki.push('Pseudonim może mieć najwyżej 24 znaki.');
-  if (!$('multi-zgoda').checked) {
-    usterki.push('Bez zgody na wysyłanie danych do mostu Drive nie założę gry ani nie dołączę — pseudonim i wyniki muszą trafić na serwer. Współrzędne nigdy nie opuszczają telefonu. Jeśli nie chcesz wysyłać niczego, wybierz rodzaj gry „Hot-seat”.');
-  }
   if (!urlMostuMulti()) usterki.push('Brak adresu mostu w tej wersji aplikacji (ADR 0020) — gra na wielu urządzeniach jest wyłączona. Wybierz rodzaj gry „Hot-seat", żeby grać na jednym telefonie.');
   return usterki;
 }
@@ -2633,8 +3374,6 @@ function wczytajUstawieniaMulti() {
   pokazStanMostu(); // adres mostu jest w kodzie (ADR 0020) — UI pokazuje stan, nie pole do wpisywania
   if (typeof localStorage === 'undefined') return;
   $('multi-pseudonim').value = localStorage.getItem(KLUCZ_PSEUDONIMU) ?? '';
-  const zgoda = localStorage.getItem(KLUCZ_ZGODY_MULTI);
-  if (zgoda !== null) $('multi-zgoda').checked = zgoda === '1'; // domyślnie z HTML: zaznaczona
   if (localStorage.getItem(KLUCZ_RODZAJU_GRY) === 'multi') {
     STAN.rodzajGry = 'multi';
     $('setup-rodzaj').value = 'multi';
@@ -2764,6 +3503,7 @@ function odswiezZrodlaMulti() {
   if (STAN.multiRepoUrl && STAN.pozycja) {
     const kryteria = {
       geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5),
+      lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, // tolerancja okolicy (ADR 0024)
       promienM: STAN.konfig.promienM, liczbaStacji: STAN.konfig.liczbaStacji,
       pytaniaNaStacje: STAN.konfig.pytaniaNaStacje, tematy: STAN.konfig.tematy, wiek: STAN.konfig.wiek,
     };
@@ -2874,7 +3614,7 @@ async function zalozGreMulti() {
     const wynik = await polecenieMostu(urlMostuMulti(), {
       akcja: 'gra-zaloz',
       tryb: STAN.multiTryb,
-      organizator: { pseudonim: ($('multi-pseudonim').value ?? '').trim(), zgoda: $('multi-zgoda').checked },
+      organizator: { pseudonim: ($('multi-pseudonim').value ?? '').trim() },
       konfiguracja: {
         liczbaStacji: z.stacje.length,
         pytaniaNaStacje: z.meta.pytaniaNaStacje,
@@ -2905,7 +3645,6 @@ async function dolaczDoGryMulti({ kod = null, idGry = null } = {}) {
     const wynik = await polecenieMostu(urlMostuMulti(), {
       akcja: 'gra-dolacz', kod, idGry,
       pseudonim: ($('multi-pseudonim').value ?? '').trim(),
-      zgoda: $('multi-zgoda').checked,
     });
     wejdzDoGryMulti(wynik.gra, wynik.graczId, 'gosc');
     status('Jesteś w grze — czekasz w lobby, aż organizator wystartuje.');
@@ -3050,10 +3789,46 @@ function onStanGryMulti(gra) {
 }
 
 /**
- * Lokalny silnik gry wieloosobowej: wyścig = wszystkie stacje, tury = tylko
- * własne (stacja i należy do gracze[i % N] — kolejka USTALONA przy starcie,
- * rezygnacje pomijają stacje, nie przesuwają). Przy powrocie po odświeżeniu
- * zamknięte już stacje nie wracają — reszta rozgrywa się normalnie.
+ * Pytanie gracza w grze sieciowej (ADR 0027 część B pkt 2): paczka ma
+ * `pytaniaNaStacje = liczbaGraczy` pytań przy każdej stacji, a pytanie `k`
+ * należy do gracza `k`. Dzięki temu każde urządzenie zna swoje pytanie BEZ
+ * negocjacji z innymi — nie ma wyścigu o pytanie ani blokady przy braku
+ * zasięgu, a serwer nie musi rozstrzygać, kto pierwszy.
+ *
+ * Paczka mniejsza niż liczba graczy nie zostawia nikogo bez pytania: indeks
+ * zawija się (`k mod liczba pytań stacji`), więc gracze dzielą pytanie. Gra i
+ * tak toczy się na osobnych telefonach, a pusty zestaw pytań zatrzymałby
+ * rozgrywkę — więc dzielenie jest tu mniejszym złem niż brak pytania.
+ *
+ * Reguła dotyczy obu trybów multi: w turach właściciel stacji też odpowiada na
+ * jedno pytanie (serwer odrzuca drugą odpowiedź tego samego gracza do stacji).
+ */
+function pytaniaDlaGracza(paczka, { liczbaGraczy, indeksGracza }) {
+  if (!(liczbaGraczy > 1) || !(indeksGracza >= 0)) return paczka;
+  const przezStacje = new Map();
+  for (const q of paczka.pytania) {
+    const lista = przezStacje.get(q.stacja) ?? [];
+    lista.push(q);
+    przezStacje.set(q.stacja, lista);
+  }
+  const wybrane = new Set();
+  for (const lista of przezStacje.values()) {
+    // Paczka z `pytaniaNaStacje = liczbaGraczy` (domyślna po ADR 0027 część A)
+    // daje każdemu WŁASNE pytanie. Starsza/mniejsza paczka nie zostawia gracza
+    // bez pytania: indeks zawija się, więc gracze dzielą pytanie — w grze
+    // sieciowej każdy odpowiada na swoim telefonie, więc to uczciwe, a brak
+    // pytania zatrzymałby grę (rozgrywka wymaga niepustej paczki).
+    wybrane.add(lista[indeksGracza % lista.length]);
+  }
+  return { ...paczka, pytania: paczka.pytania.filter((q) => wybrane.has(q)) };
+}
+
+/**
+ * Lokalny silnik gry wieloosobowej: wyścig = wszystkie stacje w WOLNEJ
+ * kolejności (ADR 0027 część B), tury = tylko własne (stacja i należy do
+ * gracze[i % N] — kolejka USTALONA przy starcie, rezygnacje pomijają stacje,
+ * nie przesuwają). Przy powrocie po odświeżeniu zamknięte już stacje nie
+ * wracają — reszta rozgrywa się normalnie.
  */
 function uruchomGreMulti(gra) {
   const m = STAN.multi;
@@ -3077,6 +3852,9 @@ function uruchomGreMulti(gra) {
   }
   const srodek = STAN.pozycja ? { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon } : { lat: moje[0].lat, lon: moje[0].lon };
   const konfig = oczyscKonfiguracje({ ...STAN.konfig, liczbaGraczy: 1, imiona: [m.pseudonim], kodGry: gra.kod });
+  // pytanie tego gracza przy każdej stacji (indeks = pozycja w `gra.gracze`)
+  const paczkaGracza = pytaniaDlaGracza(paczka, { liczbaGraczy: N, indeksGracza: mojIndeks });
+  m.indeksGracza = mojIndeks;
   STAN.stacje = moje;
   STAN.kontenerPaczki = gra.zestaw.kontener;
   STAN.paczka = paczka;
@@ -3086,7 +3864,7 @@ function uruchomGreMulti(gra) {
   STAN.pauzaSkumulowanaMs = 0;
   STAN.graZakonczonaRecznie = false;
   STAN.rozgrywka = nowaRozgrywka({
-    konfig, stacje: moje, paczka, srodek,
+    konfig, stacje: moje, paczka: paczkaGracza, srodek,
     gracze: [{ id: 1, imie: m.pseudonim }],
     czasMs: zegarGry(), ziarno: gra.kod,
   });
@@ -3114,6 +3892,8 @@ function wyslijZdarzenieMulti(typ, stacjaId, dane) {
 
 function renderujWierszeWynikow(tbody, gra) {
   const wyniki = przeliczWyniki(gra);
+  const koniec = gra?.stan === 'zakonczona' || gra?.stan === 'archiwum';
+  const wszystkich = Number(gra?.konfiguracja?.liczbaStacji) || 0;
   const wiersze = Object.entries(wyniki)
     .sort((a, b) => b[1].punkty - a[1].punkty || b[1].poprawne - a[1].poprawne || a[1].pseudonim.localeCompare(b[1].pseudonim, 'pl'));
   tbody.replaceChildren();
@@ -3123,7 +3903,10 @@ function renderujWierszeWynikow(tbody, gra) {
       `${w.pseudonim}${id === STAN.multi?.graczId ? ' (Ty)' : ''}${w.zrezygnowal ? ' — zrezygnował(a)' : ''}`,
       String(w.punkty),
       `${w.poprawne}/${w.poprawne + w.bledne}`,
-      String(w.stacjeZamkniete),
+      // postęp każdego gracza (ADR 0027 część B): ile stacji z ilu
+      wszystkich > 0 ? `${w.stacjeZamkniete}/${wszystkich}` : String(w.stacjeZamkniete),
+      // premia za kolejność ukończenia wchodzi do punktów dopiero w podsumowaniu
+      w.premia > 0 ? (koniec ? `+${w.premia}` : `+${w.premia} (na koniec)`) : '—',
     ];
     for (const tekst of komorki) {
       const td = document.createElement('td');
@@ -3182,17 +3965,62 @@ function renderujPanelMulti() {
       tura.textContent = 'Wszystkie stacje zamknięte albo pominięte — czekam na zakończenie gry.';
     }
   } else if (graSieToczy) {
-    tura.textContent = `Wyścig! Wszyscy idą jednocześnie — Twoich stacji zostało: ${r.stacje.length}. Wyniki na żywo poniżej.`;
+    const zostalo = r ? stacjeDoWyboru(r).length : 0;
+    tura.textContent = `Wyścig! Każdy idzie swoją kolejnością — zostało Ci ${zostalo} stacji. Wyniki na żywo poniżej.`;
   } else {
     tura.textContent = gra.stan === 'zakonczona' ? 'Gra zakończona — ostateczne wyniki:' : 'Gra wieloosobowa.';
   }
   renderujWierszeWynikow($('gra-multi-wiersze'), gra);
+  renderujWyborStacji(gra, r, graSieToczy);
   // tury: przycisk drogi zablokowany, dopóki idzie ktoś inny (serwer i tak pilnuje)
   if (r && r.faza === FAZY.przygotowanie && gra.tryb === TRYBY_GRY.tury && gra.stan === 'trwa') {
     $('przycisk-start-odcinka').disabled = STAN.graPauza || biezacyGraczTury(gra) !== m.graczId;
   }
   $('przycisk-pomin-stacje').hidden = true; // w multi pomijania nie ma — patrz pominStacjeGry
   renderujPasekSync();
+}
+
+/**
+ * Wolna kolejność stacji (ADR 0027 część B pkt 2): w wyścigu gracz wybiera
+ * dowolną stację, do której jeszcze nie doszedł. Lista znika w turach (tam
+ * kolejność ustala kolejka) i po zamknięciu wszystkich stacji.
+ */
+function renderujWyborStacji(gra, r, graSieToczy) {
+  const blok = $('multi-wybor-stacji');
+  const mozna = Boolean(graSieToczy && r && gra.tryb === TRYBY_GRY.wyscig && r.faza === FAZY.przygotowanie);
+  const dostepne = mozna ? stacjeDoWyboru(r) : [];
+  blok.hidden = dostepne.length === 0;
+  if (!dostepne.length) return;
+  const lista = $('multi-wybor-przyciski');
+  lista.replaceChildren();
+  for (const stacjaId of dostepne) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'przycisk';
+    const cel = STAN.stacje?.find((s) => Number(s.id) === Number(stacjaId));
+    b.textContent = `Stacja ${stacjaId}${cel?.opis ? ` · ${cel.opis}` : ''}`;
+    b.disabled = STAN.graPauza;
+    b.setAttribute('aria-pressed', String(Number(r.biezacaStacja) === Number(stacjaId)));
+    b.addEventListener('click', () => wybierzStacjeMulti(stacjaId));
+    lista.appendChild(b);
+  }
+}
+
+/** Klik w stację z listy: bieżąca stacja idzie za wyborem (silnik waliduje G14/G10). */
+function wybierzStacjeMulti(stacjaId) {
+  const r = STAN.rozgrywka;
+  if (!r || r.faza !== FAZY.przygotowanie) return;
+  const wynik = skierujDoStacji(r, { stacjaId, czasMs: zegarGry() });
+  STAN.rozgrywka = wynik.stan;
+  pokazBledy('bledy-gra', wynik.usterki);
+  if (wynik.usterki.length > 0) {
+    status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
+    return;
+  }
+  zapiszGre();
+  renderujGre();
+  renderujPanelMulti();
+  status(`Idziesz do stacji ${stacjaId}. Kolejność jest dowolna — po drodze możesz wybrać inną.`);
 }
 
 function renderujPasekSync() {
@@ -3239,17 +4067,20 @@ const RANKING_ZAKLADKI = [
 ];
 
 /** Ekran rankingów nie jest krokiem gry — chowa wszystkie ekrany (jak prywatność). */
-function pokazRankingi() {
+function pokazRankingi({ bezPobierania = false } = {}) {
+  // Zapamiętujemy ekran, z którego gracz przyszedł: `STAN.ekran` nie zmienia się
+  // przy wejściu na rankingi, więc bez tego „wróć" zawsze zrzucało na setup.
+  STAN.powrotZRankingu = EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup';
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-prywatnosc').hidden = true;
   $('ekran-ranking').hidden = false;
   window.scrollTo({ top: 0 });
-  void pobierzRankingi();
+  if (!bezPobierania) void pobierzRankingi();
 }
 
 function wrocZRankingu() {
   $('ekran-ranking').hidden = true;
-  pokazEkran(EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup');
+  pokazEkran(STAN.powrotZRankingu ?? 'setup');
 }
 
 /** Adres mostu do rankingów (ADR 0020): ten sam web app co repozytorium paczek i gry. */
@@ -3385,23 +4216,73 @@ function renderujRankingi() {
   });
 }
 
+/**
+ * Tryb testowy wchodzi WYŁĄCZNIE parametrem adresu (decyzja właściciela
+ * 2026-09-08 — przycisk w nagłówku usunięty). Przyjmowane formy:
+ * `?test=true`, `?test=1`, `?test=tak` oraz historyczne `?tryb=test`, którego
+ * używają testy (`test/helpers/dom.js`). Wielkość liter bez znaczenia.
+ */
+/**
+ * Wysokość belki jako zmienna CSS `--wysokosc-belki`.
+ *
+ * Przyciski +/− mapy-tła muszą siedzieć PONIŻEJ belki: mapa-tło ma
+ * `position: fixed; inset: 0`, więc sięga pod samą belkę, a belka ma `z-index: 3`
+ * i nieprzezroczyste tło — przy domyślnym `top: 8px` przyciski znikały pod nią
+ * (zgłoszenie właściciela 2026-09-08). Stałej liczby w CSS nie chcemy: `.akcje`
+ * ma `flex-wrap: wrap`, więc na wąskim ekranie belka rośnie i każda stała
+ * w końcu przestaje wystarczać. Mierzymy.
+ */
+function ustawWysokoscBelki() {
+  const belka = document.querySelector('.gora');
+  if (!belka) return; // atrapa DOM w testach nie ma `querySelector` po klasie
+  const wysokosc = belka.offsetHeight;
+  if (!Number.isFinite(wysokosc) || wysokosc <= 0) return;
+  document.documentElement.style.setProperty('--wysokosc-belki', `${Math.round(wysokosc)}px`);
+}
+
+function czyTrybTestowyWUrl() {
+  if (typeof location === 'undefined' || typeof location.search !== 'string') return false;
+  const parametr = new URLSearchParams(location.search);
+  if (parametr.get('tryb') === 'test') return true;
+  return ['true', '1', 'tak'].includes(String(parametr.get('test') ?? '').trim().toLowerCase());
+}
+
 function start() {
   wczytajKonfiguracje();
   banerStartowy();
   $('stopka-protokol').textContent = WERSJA_PROTOKOLU;
+  // Numer budowy w stopce: właściciel dwa razy oceniał starą wersję z cache i
+  // nie miał jak tego stwierdzić. Bierzemy go z `?v=` w adresie TEGO modułu,
+  // więc nie ma drugiej stałej do pamiętania przy podbijaniu cache-bust.
+  if ($('stopka-wersja')) {
+    $('stopka-wersja').textContent = new URL(import.meta.url).searchParams.get('v') || 'dev';
+  }
+  ustawWysokoscBelki();
+  // Łatka szablonu (PROTOKOL §7): organizator widzi, którą wersją promptu gra.
+  $('stopka-szablon').textContent = SZABLON_WERSJA;
 
   renderujTryby();
   renderujSegment('lista-wieku', WIEK, STAN.konfig.wiek, (wiek) => { STAN.konfig.wiek = wiek; });
   renderujTematy();
   renderujSelecty();
-  renderujImiona();
   renderujSetup();
+  // Lista graczy zaczyna PUSTA: domyślne „Gracz 1" z kanonu nie przeszło przez
+  // most, więc nie może udawać tożsamości (ADR 0026 aneks). Zapamiętani gracze
+  // wracają jako przyciski — jedno kliknięcie, bez PIN-u.
+  STAN.konfig.imiona = [];
+  renderujListeGraczy();
+  przywrocGraczy({ zListy: true });
   utworzMapy();
+  // Wyniki, które nie doszły na Drive w terenie, jadą przy starcie (ADR 0016 pkt 5).
+  void oproznijKolejkeHotseat();
 
-  if (location.search.includes('tryb=test')) {
+  if (czyTrybTestowyWUrl()) {
+    // Decyzja właściciela 2026-09-08: tryb testowy NIE MA przycisku w
+    // interfejsie — wchodzi się tylko parametrem adresu (`?test=true`).
+    // Przełącznik w nagłówku kusił do grania bez GPS, a wyniki i tak szły
+    // na Drive i do rankingów (ADR 0029).
     STAN.trybTestowy = true;
     document.body.classList.add('tryb-testowy');
-    $('przycisk-test').setAttribute('aria-pressed', 'true');
     $('reczne-wspolrzedne').hidden = false;
     $('przycisk-symulacja').hidden = false;
   }
@@ -3411,6 +4292,7 @@ function start() {
     STAN.odstepOverpassMs = 0;
   }
 
+  $('przycisk-setup').addEventListener('click', () => pokazEkran('setup')); // ikonka setup w nagłówku
   $('przycisk-motyw').addEventListener('click', przelaczMotyw);
   $('przycisk-sygnaly').addEventListener('click', przelaczSygnaly);
   $('przycisk-sygnaly').setAttribute('aria-pressed', String(sygnalyWlaczone()));
@@ -3418,35 +4300,32 @@ function start() {
   $('przycisk-prywatnosc').addEventListener('click', pokazPrywatnosc);
   $('przycisk-ranking').addEventListener('click', pokazRankingi); // M12/P6
   $('przycisk-wrocz-ranking').addEventListener('click', wrocZRankingu);
+  $('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu); // krzyżyk w rogu warstwy
   $('przycisk-ranking-odswiez').addEventListener('click', () => { void pobierzRankingi(); });
   $('przycisk-prywatnosc-stopka').addEventListener('click', pokazPrywatnosc);
   $('przycisk-wrocz-prywatnosc').addEventListener('click', wrocZPrywatnosci);
   $('przycisk-czysc-dane').addEventListener('click', czyscDaneWitryny);
   $('przycisk-symulacja').addEventListener('click', przelaczSymulacje);
-  $('przycisk-test').addEventListener('click', () => {
-    STAN.trybTestowy = !STAN.trybTestowy;
-    document.body.classList.toggle('tryb-testowy', STAN.trybTestowy);
-    $('przycisk-test').setAttribute('aria-pressed', String(STAN.trybTestowy));
-    $('reczne-wspolrzedne').hidden = !STAN.trybTestowy;
-    $('przycisk-symulacja').hidden = !STAN.trybTestowy;
-    pokazEkran('pozycja');
-    pokazPozycje();
-    status(STAN.trybTestowy ? 'Tryb testowy: współrzędne ręczne zamiast GPS (ADR 0004 pkt 6).' : 'Tryb testowy wyłączony.');
-  });
 
-  $('przycisk-profil').addEventListener('click', () => {
-    const form = $('form-profil');
-    form.hidden = !form.hidden;
-    if (!form.hidden) { pokazBledy('bledy-profil', []); $('przycisk-profil-zapisz').hidden = true; }
-  });
-  $('przycisk-profil-sprawdz').addEventListener('click', () => { void obsluzProfil(false); });
-  $('przycisk-profil-zapisz').addEventListener('click', () => { void obsluzProfil(true); });
-
-  $('przycisk-dalej-pozycja').addEventListener('click', () => {
+  $('przycisk-dalej-pozycja').addEventListener('click', async () => {
     const usterki = walidujSetup(czytajSetupZDomu());
     pokazBledy('bledy-setup', usterki);
     if (usterki.length) {
       status(`Konfiguracja ma usterek: ${usterki.length}.`);
+      return;
+    }
+    // Tożsamość przed zapisem konfiguracji: imię z profilu jest częścią setupu
+    // (wpisuje się w `imiona`), więc najpierw brama, potem zapis (ADR 0026).
+    const przyciskDalej = $('przycisk-dalej-pozycja');
+    przyciskDalej.disabled = true; // jedno kliknięcie = jedno wołanie mostu
+    let przeszedl;
+    try {
+      przeszedl = await bramkaTozsamosci();
+    } finally {
+      przyciskDalej.disabled = false;
+    }
+    if (!przeszedl) {
+      status('Bez potwierdzonego imienia nie idziemy dalej — wpisz imię i PIN.');
       return;
     }
     zapiszKonfiguracje();
@@ -3460,6 +4339,7 @@ function start() {
   // Obrót telefonu albo zmiana rozmiaru okna: panele map mają inne wymiary,
   // więc widok trzeba przeliczyć (rozmiar bierzemy z `getBoundingClientRect`).
   window.addEventListener('resize', () => {
+    ustawWysokoscBelki(); // belka mogła urosnąć/zmaleć (`.akcje` się zawija)
     kazdaMapa((mapa) => mapa.odswiez());
   });
 
@@ -3496,8 +4376,8 @@ function start() {
 
   $('przycisk-wstecz-setup').addEventListener('click', () => pokazEkran('setup'));
   $('przycisk-dalej-stacje').addEventListener('click', () => {
-    // Na ekran pozycji da się wejść także przyciskiem trybu testowego, który
-    // nie waliduje setupu, a `stacjeProste` odmawia przy niedodatnim promieniu
+    // Na ekran pozycji da się wejść także ikonką setup w nagłówku, która nie
+    // waliduje setupu, a `stacjeProste` odmawia przy niedodatnim promieniu
     // albo liczbie stacji. Zamiast wyjątku w nasłuchu — jawna odmowa z kodami
     // z `konfig.js` (LESSONS L10: walidacja nie może zakładać, że ktoś
     // wcześniej posprzątał).
@@ -3592,10 +4472,19 @@ function start() {
 
   $('przycisk-test-polaczenia').addEventListener('click', () => sprawdzPolaczenieZRepo());
   $('przycisk-start-odcinka').addEventListener('click', () => startOdcinkaGry());
-  $('przycisk-reczne-dojscie').addEventListener('click', () => zakonczOdcinekGry(TRYBY_DOJSCIA.reczne, null));
+  // ADR 0029: ręcznego zgłaszania dojścia NIE MA — ani w index.html, ani tutaj.
+  // Dojście zamyka wyłącznie strumień fixów (GPS albo symulacja w trybie
+  // testowym, która karmi aplikację tym samym `przyjmijFix`); testy idą tą samą
+  // drogą, więc nie ma drugiego, produkcyjnie martwego wejścia do fazy pytania.
+  $('przycisk-nowa-gra').addEventListener('click', () => wrocNaPoczatek());
   $('przycisk-pauza').addEventListener('click', () => przelaczPauzeGry());
   $('przycisk-symulacja-gra').addEventListener('click', () => przelaczSymulacjeDoStacji());
   $('przycisk-nastepna-stacja').addEventListener('click', () => nastepnaStacja());
+  // ADR 0028: oceny pytań — kliknięcie jest jednoklikowe i nie blokuje gry.
+  $('gra-ocena-plus').addEventListener('click', () => kliknijOcene(OCENA_PLUS));
+  $('gra-ocena-minus').addEventListener('click', () => kliknijOcene(OCENA_MINUS));
+  zaladujOcenyLokalne();
+  oproznijKolejkeOcen();
   $('przycisk-pomin-stacje').addEventListener('click', () => pominStacjeGry());
   $('przycisk-zakoncz-gre').addEventListener('click', () => zakonczGreRecznie());
   $('przycisk-wznow-gre').addEventListener('click', () => wznowGre());
@@ -3642,9 +4531,6 @@ function start() {
   });
   $('multi-pseudonim').addEventListener('input', () => {
     if (typeof localStorage !== 'undefined') localStorage.setItem(KLUCZ_PSEUDONIMU, ($('multi-pseudonim').value ?? '').trim());
-  });
-  $('multi-zgoda').addEventListener('change', () => {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(KLUCZ_ZGODY_MULTI, $('multi-zgoda').checked ? '1' : '0');
   });
   $('przycisk-multi-zaloz').addEventListener('click', () => {
     const usterki = walidujGotowoscMulti();

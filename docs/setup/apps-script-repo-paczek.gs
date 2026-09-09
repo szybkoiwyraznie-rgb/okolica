@@ -32,10 +32,13 @@ const FOLDERY = {
   gryOtwarte: 'okolica-gry-otwarte',
   gryZakonczone: 'okolica-gry-zakonczone',
   profile: 'okolica-profile',
+  oceny: 'okolica-oceny-paczek', // ADR 0028: głosy graczy, osobno od paczek
 };
 const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (ADR 0021)
 const SCHEMAT_KONTENERA = 'TO-paczka/2';
+const SCHEMAT_OCENY = 'RO-oceny/1';  // ADR 0028: plik ocen jednej paczki
+const SCHEMAT_OCENA = 'RO-ocena/1';  // ADR 0028: pojedynczy głos (kciuk w górę/dół)
 const ZNAK_OCZEKUJE = 'oczekuje przeglądu';
 
 /* ---------------------------------------------------------- infrastruktura */
@@ -195,6 +198,129 @@ function sprawdzProfil(cialo) {
   return { ok: true, pseudonim: jest.pseudonim || '' };
 }
 
+/* ---------------------------- oceny pytań przez graczy (ADR 0028) */
+
+const MAKS_GLOSOW_NA_PACZKE = 5000;
+const MAKS_GIER_NA_PACZKE = 500;
+
+/** Id pliku Drive jest z [A-Za-z0-9_-], ale nazwę pliku i tak składamy ostrożnie. */
+function nazwaPlikuOcen(paczkaId) {
+  return 'oceny-' + String(paczkaId || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 64) + '.json';
+}
+
+/** Głosy paczki albo null, gdy paczka nie była jeszcze oceniana. */
+function czytajOceny(paczkaId) {
+  const it = folder(FOLDERY.oceny).getFilesByName(nazwaPlikuOcen(paczkaId));
+  if (!it.hasNext()) return null;
+  try {
+    const dane = JSON.parse(it.next().getBlob().getDataAsString('UTF-8'));
+    if (!dane || dane.schemat !== SCHEMAT_OCENY) return null;
+    if (!Array.isArray(dane.glosy)) dane.glosy = [];
+    if (!Array.isArray(dane.gry)) dane.gry = [];
+    return dane;
+  } catch (e) {
+    return null; // uszkodzony plik ocen nie może zepsuć indeksu ani głosu
+  }
+}
+
+function pusteOceny(paczkaId) {
+  return { schemat: SCHEMAT_OCENY, paczkaId: String(paczkaId), glosy: [], gry: [] };
+}
+
+function zapiszOceny(oceny) {
+  const nazwa = nazwaPlikuOcen(oceny.paczkaId);
+  const tekst = JSON.stringify(oceny, null, 2);
+  const it = folder(FOLDERY.oceny).getFilesByName(nazwa);
+  if (it.hasNext()) {
+    const plik = it.next();
+    plik.setContent(tekst);
+    return plik;
+  }
+  return folder(FOLDERY.oceny).createFile(nazwa, tekst, 'application/json');
+}
+
+/** Czy paczka o tym id jest w katalogu zaakceptowanych (głosować można tylko na takie). */
+function paczkaJestWRepo(paczkaId) {
+  try {
+    const rodzice = DriveApp.getFileById(String(paczkaId)).getParents();
+    return rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Statystyki do indeksu i do odpowiedzi na głos. Przy dwóch ikonach nie ma
+ * głosów neutralnych, więc plus + minus = glosow (ADR 0028 pkt 5).
+ */
+function podsumowanieOcen(oceny) {
+  const glosy = (oceny && oceny.glosy) || [];
+  let plus = 0;
+  glosy.forEach((g) => { if (Number(g.ocena) === 1) plus += 1; });
+  return {
+    glosow: glosy.length,
+    plus: plus,
+    minus: glosy.length - plus,
+    uzytaWGrach: ((oceny && oceny.gry) || []).length,
+  };
+}
+
+/** POST ocena: jeden głos gracza na pytanie. Duplikat nie jest błędem. */
+function przyjmijOcene(cialo) {
+  return zBlokada(() => {
+    if (!cialo || cialo.schemat !== SCHEMAT_OCENA) return { ok: false, blad: 'oczekiwałem głosu ' + SCHEMAT_OCENA };
+    const paczkaId = String(cialo.paczkaId || '').trim();
+    if (!paczkaId) return { ok: false, blad: 'głos bez paczki — nie wiadomo, co ocenić' };
+    if (!paczkaJestWRepo(paczkaId)) return { ok: false, blad: 'nie ma takiej paczki w repozytorium (albo nie jest zaakceptowana)' };
+    const pytanieId = String(cialo.pytanieId || '').trim().slice(0, 40);
+    if (!pytanieId) return { ok: false, blad: 'głos bez identyfikatora pytania' };
+    const ocena = Number(cialo.ocena) === -1 ? -1 : (Number(cialo.ocena) === 1 ? 1 : 0);
+    if (!ocena) return { ok: false, blad: 'ocena musi być kciukiem w górę (1) albo w dół (-1)' };
+    const gracz = idProfilu(cialo.gracz); // ADR 0028 pkt 2: tożsamość liczy most
+    if (!gracz) return { ok: false, blad: 'głos bez tożsamości gracza' };
+
+    const oceny = czytajOceny(paczkaId) || pusteOceny(paczkaId);
+    const juzBylo = oceny.glosy.some((g) => g.gracz === gracz && g.pytanieId === pytanieId);
+    if (!juzBylo) {
+      oceny.glosy.push({
+        pytanieId: pytanieId,
+        gracz: gracz,
+        ocena: ocena,
+        gra: String(cialo.gra || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40),
+        kiedy: new Date().toISOString(),
+      });
+      if (oceny.glosy.length > MAKS_GLOSOW_NA_PACZKE) {
+        oceny.glosy.splice(0, oceny.glosy.length - MAKS_GLOSOW_NA_PACZKE);
+      }
+      zapiszOceny(oceny);
+    }
+    return { ok: true, juzBylo: juzBylo, podsumowanie: podsumowanieOcen(oceny) };
+  });
+}
+
+/**
+ * POST uzycie: gra pobrała paczkę — token gry wchodzi do licznika „użyta w X
+ * grach" (ADR 0028 pkt 6). Osobna akcja, żeby pobranie paczki (GET) zostało
+ * czystym odczytem.
+ */
+function przyjmijUzycie(cialo) {
+  return zBlokada(() => {
+    const paczkaId = String((cialo && cialo.paczkaId) || '').trim();
+    if (!paczkaId) return { ok: false, blad: 'brak paczki' };
+    if (!paczkaJestWRepo(paczkaId)) return { ok: false, blad: 'nie ma takiej paczki w repozytorium (albo nie jest zaakceptowana)' };
+    const token = String((cialo && cialo.gra) || '').replace(/[^A-Za-z0-9_-]/g, '').slice(0, 40);
+    if (!token) return { ok: false, blad: 'brak tokena gry' };
+    const oceny = czytajOceny(paczkaId) || pusteOceny(paczkaId);
+    const juzBylo = oceny.gry.indexOf(token) >= 0;
+    if (!juzBylo) {
+      oceny.gry.push(token);
+      if (oceny.gry.length > MAKS_GIER_NA_PACZKE) oceny.gry.splice(0, oceny.gry.length - MAKS_GIER_NA_PACZKE);
+      zapiszOceny(oceny);
+    }
+    return { ok: true, juzBylo: juzBylo, podsumowanie: podsumowanieOcen(oceny) };
+  });
+}
+
 /* ------------------------------------------------------------------- API */
 
 function doGet(e) {
@@ -224,6 +350,9 @@ function doPost(e) {
       case 'gra-start': return json(startGryMulti(cialo));
       case 'gra-zdarzenie': return json(przyjmijZdarzenie(cialo));
       case 'gra-zakoncz': return json(zakonczGre(cialo));
+      case 'gra-hotseat': return json(przyjmijGreHotseat(cialo));
+      case 'ocena': return json(przyjmijOcene(cialo));
+      case 'uzycie': return json(przyjmijUzycie(cialo));
       case 'profil-ustaw': return json(ustawProfil(cialo));
       case 'profil-sprawdz': return json(sprawdzProfil(cialo));
       default: return json({ ok: false, blad: 'nieznana akcja albo schemat ciała' });
@@ -231,6 +360,79 @@ function doPost(e) {
   } catch (err) {
     return json({ ok: false, blad: String((err && err.message) || err) });
   }
+}
+
+const ALFABET_GEOHASH = '0123456789bcdefghjkmnpqrstuvwxyz';
+
+/**
+ * Koder geohash — przepisany z `geohash()` w `app/geo.js` (B19, ADR 0024 pkt 4).
+ * Apps Script nie może importować modułów aplikacji, więc to kopia; zgodność
+ * obu implementacji pilnuje `test/most-indeks.test.js`, który wykonuje TEN tekst
+ * i porównuje wyniki z `app/geo.js` na siatce współrzędnych.
+ */
+function geohashPunkt(lat, lon, precyzja) {
+  if (!Number.isFinite(lat) || !Number.isFinite(lon)) return '';
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) return '';
+  let przedzialLat = [-90, 90];
+  let przedzialLon = [-180, 180];
+  let wynik = '';
+  let bit = 0;
+  let znak = 0;
+  let nawet = true; // nawet = dzielimy długość, nieparzyste = szerokość
+  while (wynik.length < precyzja) {
+    if (nawet) {
+      const srodek = (przedzialLon[0] + przedzialLon[1]) / 2;
+      if (lon >= srodek) { znak = znak * 2 + 1; przedzialLon = [srodek, przedzialLon[1]]; }
+      else { znak = znak * 2; przedzialLon = [przedzialLon[0], srodek]; }
+    } else {
+      const srodek = (przedzialLat[0] + przedzialLat[1]) / 2;
+      if (lat >= srodek) { znak = znak * 2 + 1; przedzialLat = [srodek, przedzialLat[1]]; }
+      else { znak = znak * 2; przedzialLat = [przedzialLat[0], srodek]; }
+    }
+    nawet = !nawet;
+    bit += 1;
+    if (bit === 5) {
+      wynik += ALFABET_GEOHASH.charAt(znak);
+      bit = 0;
+      znak = 0;
+    }
+  }
+  return wynik;
+}
+
+/**
+ * Kotwica dopasowania okolicy wpisu indeksu (B19).
+ *
+ * Nowe pliki niosą `meta.geohash6` obliczony z pozycji startowej — to kotwica
+ * dokładna. Pliki opublikowane przed ADR 0024 mają tylko `geohash5`
+ * (≈3,0 × 4,9 km), więc paczka zakotwiczona 3 km dalej też się pokazywała.
+ *
+ * Dla starych plików liczymy geohash6 ze ŚRODKA CIĘŻKOŚCI stacji (nie z pierwszej
+ * stacji: start gry jest w środku obszaru stacji, a pierwsza stacja bywa na jego
+ * skraju). Punkt startowy gry jest nieznany, ale każda stacja leży w promieniu
+ * `meta.promienM` od niego — dlatego wpis dostaje `geohash6Szacowany: true`,
+ * a klient poszerza tolerancję o `promienM`. Efekt: ten sam start dopasuje się
+ * zawsze (brak regresji), a nadmiarowe dopasowanie maleje z ~4 km do ~promienM.
+ */
+function kotwicaZestawu(zestaw) {
+  const meta = zestaw.meta || {};
+  if (typeof meta.geohash6 === 'string' && meta.geohash6.length === 6) {
+    return { geohash6: meta.geohash6, szacowany: false };
+  }
+  const stacje = (zestaw.stacje || []).filter((s) => (
+    s && Number.isFinite(s.lat) && Number.isFinite(s.lon)
+  ));
+  if (!stacje.length) return null;
+  let sumaLat = 0;
+  let sumaLon = 0;
+  for (let i = 0; i < stacje.length; i += 1) {
+    sumaLat += stacje[i].lat;
+    sumaLon += stacje[i].lon;
+  }
+  return {
+    geohash6: geohashPunkt(sumaLat / stacje.length, sumaLon / stacje.length, 6),
+    szacowany: true,
+  };
 }
 
 /** Indeks WYŁĄCZNIE z katalogu zaakceptowanych: same meta + id pliku. */
@@ -242,10 +444,16 @@ function budujIndeks() {
     try {
       const zestaw = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
       if (zestaw.schemat !== SCHEMAT_ZESTAWU || !czyMetaOk(zestaw.meta)) continue;
+      const kotwica = kotwicaZestawu(zestaw);
       wpisy.push(Object.assign({}, zestaw.meta, {
         id: plik.getId(),
         skrot: zestaw.kontener && zestaw.kontener.skrot,
         stacji: zestaw.stacje.length,
+        // B19: pliki sprzed ADR 0024 dostają kotwicę geohash6 ze stacji.
+        geohash6: kotwica ? kotwica.geohash6 : zestaw.meta.geohash6,
+        geohash6Szacowany: kotwica ? kotwica.szacowany : false,
+        // ADR 0028: statystyki ocen — ekran 2 pokazuje je przy wyborze paczki.
+        oceny: podsumowanieOcen(czytajOceny(plik.getId())),
       }));
     } catch (e) { /* uszkodzony plik nie psuje indeksu */ }
   }
@@ -260,7 +468,7 @@ function plikPrzezId(id) {
 function paczkaPrzezId(id) {
   const plik = plikPrzezId(id);
   const rodzice = plik.getParents();
-  const wZaakceptowanych = rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
+  const wZaakceptowane = rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
   if (!wZaakceptowane) return { blad: 'ta paczka nie jest zaakceptowana' };
   return JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
 }
@@ -596,10 +804,52 @@ function czyKompletna(gra) {
   });
 }
 
+/**
+ * Premia za kolejność ukończenia (ADR 0027 część B pkt 5): pierwszy gracz, który
+ * zamknął wszystkie stacje, dostaje G−1 punktów, drugi G−2, …, ostatni 0.
+ * Kolejność z `kolejnosc` zdarzeń (nadawana w `zBlokada`), NIE z zegara
+ * urządzenia. Rezygnujący i niedokończeni premii nie dostają.
+ *
+ * Reguła jest KOPIĄ `premiaZaKolejnosc` z `app/wieloosobowa.js` — zgodność
+ * pilnuje `test/most-gra.test.js`, który wykonuje ten tekst i porównuje wyniki.
+ */
+function premiaZaKolejnosc(gra) {
+  const premia = {};
+  const gracze = gra.gracze || [];
+  const N = Number(gra.konfiguracja && gra.konfiguracja.liczbaStacji) || 0;
+  if (gracze.length < 2 || N < 1) return premia;
+  // Hot-seat (jedna gra na jednym telefonie, ADR 0026 aneks): gracze idą razem,
+  // więc „kto pierwszy skończył" jest artefaktem kolejności klikania — premii 0.
+  if (gra.tryb === 'hotseat') return premia;
+  const rezygnacje = {};
+  const zamkniete = {};
+  const ostatnia = {};
+  gra.zdarzenia.forEach((z) => {
+    if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true;
+    if (z.typ === 'odpowiedz' && z.stacjaId != null) {
+      if (!zamkniete[z.graczId]) zamkniete[z.graczId] = {};
+      zamkniete[z.graczId][z.stacjaId] = true;
+      ostatnia[z.graczId] = Number(z.kolejnosc) || 0;
+    }
+  });
+  const skonczeni = gracze
+    .filter((g) => !rezygnacje[g.id] && zamkniete[g.id] && Object.keys(zamkniete[g.id]).length >= N)
+    .map((g) => ({ id: g.id, koniec: ostatnia[g.id] || 0 }))
+    .sort((a, b) => a.koniec - b.koniec);
+  for (let i = 0; i < skonczeni.length; i += 1) {
+    const ile = gracze.length - (i + 1);
+    if (ile > 0) premia[skonczeni[i].id] = ile;
+  }
+  return premia;
+}
+
 function przeliczWyniki(gra) {
+  const premia = premiaZaKolejnosc(gra);
+  // premia wchodzi do punktów dopiero w podsumowaniu (ADR 0027 pkt 5)
+  const koniec = gra.stan === 'zakonczona' || gra.stan === 'archiwum';
   const wyniki = {};
   gra.gracze.forEach((g) => {
-    wyniki[g.id] = { pseudonim: g.pseudonim, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, stacjeZamkniete: 0, zrezygnowal: false };
+    wyniki[g.id] = { pseudonim: g.pseudonim, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, stacjeZamkniete: 0, zrezygnowal: false, premia: 0 };
   });
   gra.zdarzenia.forEach((z) => {
     const w = wyniki[z.graczId];
@@ -611,6 +861,11 @@ function przeliczWyniki(gra) {
       if (z.dane && z.dane.poprawna) w.poprawne += 1; else w.bledne += 1;
     }
     if (z.typ === 'rezygnacja') w.zrezygnowal = true;
+  });
+  gra.gracze.forEach((g) => {
+    const w = wyniki[g.id];
+    w.premia = premia[g.id] || 0;
+    if (koniec) w.punkty += w.premia;
   });
   return wyniki;
 }
@@ -657,8 +912,8 @@ function przyjmijZdarzenie(dane) {
     };
     gra.zdarzenia.push(zdarzenie);
     if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+      gra.stan = 'zakonczona'; // stan PRZED wynikami: premia wchodzi do punktów (ADR 0027 pkt 5)
       gra.wyniki = przeliczWyniki(gra);
-      gra.stan = 'zakonczona';
     }
     zapiszGre(znaleziona.plik, gra);
     if (gra.stan === 'zakonczona') przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
@@ -679,6 +934,123 @@ function zakonczGre(dane) {
     zapiszGre(znaleziona.plik, gra);
     przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
     return { ok: true, gra };
+  });
+}
+
+/* ------------- hot-seat: gra z jednego telefonu na Drive (ADR 0026 aneks) --- */
+
+const MAKS_ZDARZEN_HOTSEAT = 400; // 8 graczy × 8 stacji × (dojście + odpowiedź) z zapasem
+
+function nazwaPlikuHotseat() {
+  return 'gra-hotseat-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8) + '.json';
+}
+
+/**
+ * Walidacja gry hot-seat — lustro `graHotseatDoWysylki` z `app/wieloosobowa.js`
+ * (Apps Script nie może importować modułów, więc reguły są po dwóch stronach).
+ * Zestawu ani pytań NIE przyjmujemy: paczka zostaje na telefonie, na Drive
+ * jedzie wyłącznie wynik (ADR 0013, ADR 0019 pkt 3).
+ */
+function bledyGryHotseat(dane) {
+  const bledy = [];
+  if (!dane || dane.tryb !== 'hotseat') bledy.push('tryb musi być „hotseat”');
+  const k = dane && dane.konfiguracja;
+  if (!k || !(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0) || typeof k.wiek !== 'string'
+    || !Array.isArray(k.tematy) || !k.tematy.length || typeof k.miejsce !== 'string'
+    || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
+    bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5)');
+  }
+  const gracze = (dane && dane.gracze) || [];
+  if (!Array.isArray(gracze) || gracze.length < 1) bledy.push('gra wymaga co najmniej jednego gracza');
+  else if (gracze.length > MAKS_GRACZY) bledy.push('maksymalnie ' + MAKS_GRACZY + ' graczy w jednej grze');
+  const pseudonimy = {};
+  for (let i = 0; i < (Array.isArray(gracze) ? gracze.length : 0); i += 1) {
+    const g = gracze[i];
+    const pseudo = g && typeof g.pseudonim === 'string' ? g.pseudonim.trim() : '';
+    if (!pseudo) { bledy.push('gracz ' + (i + 1) + ' nie ma pseudonimu'); continue; }
+    if (pseudo.length > 24) bledy.push('pseudonim maks. 24 znaki');
+    const klucz = pseudo.toLowerCase();
+    if (pseudonimy[klucz]) bledy.push('pseudonim „' + pseudo + '” jest na liście dwa razy');
+    pseudonimy[klucz] = true;
+  }
+  const zdarzenia = (dane && dane.zdarzenia) || [];
+  if (!Array.isArray(zdarzenia) || !zdarzenia.length) bledy.push('gra bez dojść i odpowiedzi nie ma wyniku');
+  else if (zdarzenia.length > MAKS_ZDARZEN_HOTSEAT) bledy.push('za dużo zdarzeń (maksymalnie ' + MAKS_ZDARZEN_HOTSEAT + ')');
+  return bledy;
+}
+
+/**
+ * POST gra-hotseat: telefon przysyła SKOŃCZONĄ grę z jednego urządzenia. Most
+ * zapisuje ją jako grę zakończoną (RO-gra/1) w katalogu gier zakończonych, więc
+ * GET ranking czyta ją bez zmian — rankingi hot-seat i gier na wielu telefonach
+ * liczą się razem, bez osobnej ścieżki (ADR 0026 aneks).
+ *
+ * Punkty liczy most (`przeliczWyniki`), nie telefon: klient przysyła fakty
+ * (dojścia i odpowiedzi), więc ranking nie zależy od wersji aplikacji.
+ */
+function przyjmijGreHotseat(dane) {
+  return zBlokada(() => {
+    const bledy = bledyGryHotseat(dane);
+    if (bledy.length) return { ok: false, blad: bledy.join('; ') };
+    const k = dane.konfiguracja;
+    const konfiguracja = {
+      miejsce: String(k.miejsce).slice(0, 80),
+      geohash5: String(k.geohash5),
+      wiek: String(k.wiek).slice(0, 24),
+      tematy: k.tematy.map(String).slice(0, 12),
+      liczbaStacji: Number(k.liczbaStacji),
+      pytaniaNaStacje: Number(k.pytaniaNaStacje),
+    };
+    const teraz = new Date().toISOString();
+    const naLiscie = {};
+    const gracze = dane.gracze.map((g) => {
+      const id = String(g.id != null ? g.id : '').trim().slice(0, 12);
+      naLiscie[id] = true;
+      return { id: id, pseudonim: String(g.pseudonim).trim().slice(0, 24), dolaczyl: teraz };
+    });
+    const zdarzenia = [];
+    for (let i = 0; i < dane.zdarzenia.length; i += 1) {
+      const z = dane.zdarzenia[i] || {};
+      if (z.schemat !== SCHEMAT_ZDARZENIA) return { ok: false, blad: 'zdarzenie ' + (i + 1) + ' nie jest ' + SCHEMAT_ZDARZENIA };
+      if (z.typ !== 'dojscie' && z.typ !== 'odpowiedz') {
+        return { ok: false, blad: 'hot-seat przyjmuje tylko dojścia i odpowiedzi (dostałem „' + z.typ + '”)' };
+      }
+      const graczId = String(z.graczId != null ? z.graczId : '').trim().slice(0, 12);
+      if (!naLiscie[graczId]) return { ok: false, blad: 'zdarzenie ' + (i + 1) + ' dotyczy gracza spoza listy' };
+      const stacjaId = Number(z.stacjaId);
+      if (!(stacjaId >= 1 && stacjaId <= konfiguracja.liczbaStacji)) {
+        return { ok: false, blad: 'stacjaId poza zakresem gry (1–' + konfiguracja.liczbaStacji + ')' };
+      }
+      const daneZdarzenia = (z.dane && typeof z.dane === 'object') ? z.dane : {};
+      POLA_ZAKAZANE_W_ZDARZENIU.forEach((pole) => { delete daneZdarzenia[pole]; }); // współrzędne NIGDY (ADR 0019 pkt 3)
+      zdarzenia.push({
+        kolejnosc: zdarzenia.length + 1,
+        graczId: graczId,
+        typ: z.typ,
+        stacjaId: stacjaId,
+        dane: daneZdarzenia,
+        tSerwera: teraz,
+      });
+    }
+    const gra = {
+      schemat: SCHEMAT_GRY,
+      kod: null,          // hot-seat nie ma lobby — nie ma kodu do podyktowania
+      idGry: null,
+      tryb: 'hotseat',
+      stan: 'zakonczona',
+      utworzono: teraz,
+      organizatorId: gracze[0].id,
+      gracze: gracze,
+      konfiguracja: konfiguracja,
+      zestaw: null,       // paczka i pytania zostają na telefonie (ADR 0013)
+      zdarzenia: zdarzenia,
+      wyniki: {},
+    };
+    gra.wyniki = przeliczWyniki(gra); // premia hot-seat = 0 (gracze idą razem)
+    const plik = folder(FOLDERY.gryZakonczone).createFile(nazwaPlikuHotseat(), JSON.stringify(gra, null, 2), 'application/json');
+    gra.idGry = plik.getId();
+    zapiszGre(plik, gra);
+    return { ok: true, idGry: gra.idGry, wyniki: gra.wyniki };
   });
 }
 

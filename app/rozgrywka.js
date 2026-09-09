@@ -17,7 +17,7 @@
  * ADR 0014 wycofany). Znaczniki czasu w dzienniku służą tylko kolejności zdarzeń.
  */
 
-import { odlegloscM } from './geo.js?v=m12-5';
+import { odlegloscM } from './geo.js?v=m12-37';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
@@ -57,6 +57,7 @@ export const KODY_ROZGRYWKI = {
   G12: 'Nieznany albo uszkodzony schemat stanu rozgrywki.',
   G13: 'Gracz już doszedł do tej stacji — pominąć można tylko odcinek w drodze. '
     + 'Odpowiedz na pytanie (nawet błędnie), żeby gra poszła dalej.',
+  G14: 'Ta stacja jest już zamknięta albo pominięta — wybierz inną.',
 };
 
 function usterka(kod) {
@@ -227,6 +228,36 @@ function przejdzDalej(stan, czasMs) {
   stan.biezacaStacja = nastepna.id;
   const odcinek = znajdzOdcinek(stan, nastepna.id);
   stan.faza = odcinek && odcinek.stan === STANY_ODCINKA.zakonczony ? FAZY.pytanie : FAZY.przygotowanie;
+}
+
+/**
+ * Wolna kolejność stacji (ADR 0027 część B pkt 2): w grze sieciowej bez tur
+ * gracz wybiera DOWOLNĄ stację, do której jeszcze nie doszedł, zamiast iść po
+ * kolei. Wybór jest jawny (kliknięcie), a odcinek zaczyna się osobno — przez
+ * `startOdcinka`, które i tak przyjmuje `stacjaId`.
+ *
+ * Silnik nie zgaduje trasy i nie blokuje: jedyna reguła to „nie ta sama stacja
+ * drugi raz" (G14) i „nie po końcu gry" (G10). Kto pierwszy zamknie wszystkie
+ * stacje, dostaje premię (ADR 0027 pkt 5) — liczy ją most, nie ten moduł.
+ */
+export function skierujDoStacji(stan, { stacjaId, czasMs } = {}) {
+  wymaganie(Number.isFinite(czasMs), 'czasMs jest wymagany');
+  const nowy = kopia(stan);
+  const odcinek = znajdzOdcinek(nowy, stacjaId);
+  if (!odcinek) return { stan: nowy, usterki: [usterka('G01')] };
+  if (nowy.faza === FAZY.koniec) return { stan: nowy, usterki: [usterka('G10')] };
+  if (odcinek.stan !== STANY_ODCINKA.oczekuje) return { stan: nowy, usterki: [usterka('G14')] };
+  nowy.biezacaStacja = stacjaId;
+  nowy.faza = FAZY.przygotowanie;
+  dodajZdarzenie(nowy, czasMs, 'wybor-stacji', { stacja: stacjaId });
+  return { stan: nowy, usterki: [] };
+}
+
+/** Stacje, które ten gracz może jeszcze wybrać (wolna kolejność). */
+export function stacjeDoWyboru(stan) {
+  return stan.odcinki
+    .filter((o) => o.stan === STANY_ODCINKA.oczekuje)
+    .map((o) => o.stacja);
 }
 
 /**

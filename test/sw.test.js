@@ -56,10 +56,10 @@ function atrapaOtoczenia({ maksKafelki } = {}) {
   return { nasluchy, magazyny, fetchWywolania, tick };
 }
 
-function zdarzenieFetch(url, method = 'GET') {
+function zdarzenieFetch(url, method = 'GET', mode = 'cors') {
   let odpowiedz = null;
   return {
-    request: { method, url },
+    request: { method, url, mode },
     respondWith: (p) => { odpowiedz = p; },
     get odpowiedz() { return odpowiedz; },
   };
@@ -110,6 +110,34 @@ test('SW fetch: same-origin cache-first — druga wizyta bez sieci', async () =>
   const odp2 = await z2.odpowiedz;
   assert.ok(odp2, 'drugi raz: odpowiedź z cache');
   assert.equal(env.fetchWywolania.length, 1, 'drugi raz: BEZ sieci (cache-first)');
+});
+
+test('SW fetch: skorupa idzie z sieci, choć jest w cache — inaczej aktualizacja nie dociera', async () => {
+  const env = atrapaOtoczenia();
+  await zdarzenieInstall(env); // index.html ląduje w precache
+  env.fetchWywolania.length = 0;
+
+  // Właściciel dwa razy z rzędu widział starą wersję (2026-09-08): cache-first
+  // na skorupie przybijał go do starego index.html, a ten wyciągał stare `?v=`.
+  const z = zdarzenieFetch(`${SCOPE}index.html`, 'GET', 'navigate');
+  env.nasluchy.fetch(z);
+  await z.odpowiedz;
+  assert.deepEqual(env.fetchWywolania, [`${SCOPE}index.html`],
+    'skorupa jest pytana z sieci, choć siedzi w cache');
+});
+
+test('SW fetch: moduł z ?v= zostaje cache-first — wersjonowany adres i tak się zmienia', async () => {
+  const env = atrapaOtoczenia();
+  await zdarzenieInstall(env);
+  env.fetchWywolania.length = 0;
+  const z1 = zdarzenieFetch(`${SCOPE}app/geo.js?v=m12-33`);
+  env.nasluchy.fetch(z1);
+  await z1.odpowiedz;
+  assert.equal(env.fetchWywolania.length, 1, 'pierwszy raz: sieć');
+  const z2 = zdarzenieFetch(`${SCOPE}app/geo.js?v=m12-33`);
+  env.nasluchy.fetch(z2);
+  await z2.odpowiedz;
+  assert.equal(env.fetchWywolania.length, 1, 'drugi raz bez sieci — cache-first dla plików z wersją');
 });
 
 test('SW fetch: kafelki dostawcy mapy trafiają do cache kafelków (opaque OK)', async () => {

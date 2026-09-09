@@ -198,8 +198,8 @@ function atrapaMostu() {
       tSerwera: new Date().toISOString(),
     });
     if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+      gra.stan = 'zakonczona'; // jak w moście: stan PRZED wynikami (premia, ADR 0027 pkt 5)
       gra.wyniki = przeliczWyniki(gra);
-      gra.stan = 'zakonczona';
     }
     return { ok: true, kolejnosc: gra.zdarzenia.at(-1).kolejnosc, stan: gra.stan, wyniki: gra.wyniki };
   }
@@ -226,11 +226,11 @@ function przelaczNa(u) {
   Object.defineProperty(globalThis, 'location', { configurable: true, writable: true, value: u.globale.location });
 }
 
-async function noweUrzadzenie({ pamiec = new Map(), most }) {
+async function noweUrzadzenie({ pamiec = new Map(), most, bezGracza = false }) {
   // Adres mostu nie jest wpisywany w UI (ADR 0020) — telefon ma go w pamięci albo w kodzie aplikacji.
   if (!pamiec.has('okolica:multi:url-mostu')) pamiec.set('okolica:multi:url-mostu', URL_MOSTU);
   globalThis.fetch = most.fetchImpl; // sync.js czyta globalThis.fetch (wstrzykiwalny fetchImpl)
-  const dom = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec });
+  const dom = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec, bezGracza });
   dom.window.fetch = most.fetchImpl; // app.js czyta window.fetch (LESSONS L18)
   const u = {
     dom, pamiec,
@@ -248,6 +248,35 @@ async function noweUrzadzenie({ pamiec = new Map(), most }) {
 function ustaw(u, id, wartosc) { przelaczNa(u); u.dom.pobierz(id).value = wartosc; }
 function kliknijEl(el) { for (const fn of el.zdarzenia.click ?? []) fn({ type: 'click', target: el, currentTarget: el }); }
 async function klik(u, id) { przelaczNa(u); u.dom.kliknij(id); await oddech(); }
+
+/**
+ * ADR 0029: dojście rozstrzyga wyłącznie strumień fixów, więc testy nie mają już
+ * „ręcznego" przycisku — karmią aplikację symulacją, która idzie przez ten sam
+ * `przyjmijFix` co GPS. Czekamy aktywnie na skutek (panel drogi znika), więc
+ * brak dojścia wywala test zamiast po cichu sprawdzać coś dalej.
+ */
+/**
+ * W trybie testowym nie ma GPS, a po wznowieniu gry wieloosobowej pozycja nie
+ * wraca z mostu — współrzędne z zasady nie opuszczają telefonu (ADR 0013), więc
+ * w prawdziwej grze daje je watcher wznowiony przez `uruchomGreMulti`. Tu gracz
+ * po prostu wie, gdzie jest, czyli wpisuje współrzędne jak na ekranie pozycji.
+ */
+async function ustawPozycjeTestowa(u, { lat = PODKOWA.lat, lon = PODKOWA.lon } = {}) {
+  ustaw(u, 'setup-lat', String(lat));
+  ustaw(u, 'setup-lon', String(lon));
+  await klik(u, 'przycisk-ustaw-reczne');
+}
+
+async function dojdzSymulacja(u, { maksMs = 5000 } = {}) {
+  await klik(u, 'przycisk-symulacja-gra');
+  const start = Date.now();
+  while (el(u, 'gra-panel-odcinek').hidden === false) {
+    if (Date.now() - start > maksMs) {
+      throw new Error(`symulacja nie domknęła dojścia w ${maksMs} ms — status: ${tekst(u, 'status')}`);
+    }
+    await new Promise((r) => setTimeout(r, 40));
+  }
+}
 async function zmien(u, id) {
   przelaczNa(u);
   const el = u.dom.pobierz(id);
@@ -280,29 +309,29 @@ function stacjeTestowe(ile) {
   }));
 }
 
-function paczkaTestowa(stacje) {
+function paczkaTestowa(stacje, pytaniaNaStacje = 1) {
   return {
     protokol: WERSJA_PROTOKOLU,
     okolica: { lat: stacje[0].lat, lon: stacje[0].lon, promienM: 1000, miejsce: 'Podkowa Leśna' },
     wiek: 'dorosli', tematy: ['historia'], jezyk: 'polski', utworzono: '2026-09-06 10:00',
-    pytania: stacje.map((s) => ({
-      id: `s${s.id}p1`, stacja: s.id, temat: 'historia',
-      tresc: `Co wydarzyło się przy stacji ${s.id}?`,
+    pytania: stacje.flatMap((s) => Array.from({ length: pytaniaNaStacje }, (_, k) => ({
+      id: `s${s.id}p${k + 1}`, stacja: s.id, temat: 'historia',
+      tresc: `Co wydarzyło się przy stacji ${s.id}? (wariant ${k + 1})`,
       odpowiedzi: ['to', 'tamto', 'owo', 'nic'], poprawna: 0,
       wyjasnienie: 'Bo tak wynika ze źródeł.',
       zrodla: [{ url: 'https://pl.wikipedia.org/wiki/Podkowa_Le%C5%9Bna', tytul: 'Podkowa Leśna — Wikipedia', sprawdzono: '2026-09-06' }],
       punkty: 20,
-    })),
+    }))),
   };
 }
 
 /** Zestaw lokalny w pamięci telefonu (rejestr + wpis) — źródło „z tego telefonu". */
-function zasiejZestaw(pamiec, ileStacji) {
+function zasiejZestaw(pamiec, ileStacji, pytaniaNaStacje = 1) {
   const stacje = stacjeTestowe(ileStacji);
-  const kontener = zapakujPaczke(paczkaTestowa(stacje), WERSJA_PROTOKOLU);
+  const kontener = zapakujPaczke(paczkaTestowa(stacje, pytaniaNaStacje), WERSJA_PROTOKOLU);
   const meta = zbierzMetaZestawu({
     lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
-    jezyk: 'polski', miejsce: 'Podkowa Leśna', liczbaStacji: stacje.length, pytaniaNaStacje: 1,
+    jezyk: 'polski', miejsce: 'Podkowa Leśna', liczbaStacji: stacje.length, pytaniaNaStacje,
   });
   pamiec.set(kluczZestawu(kontener.skrot), JSON.stringify({ schemat: SCHEMAT_LOKALNY, stacje, kontener, ...meta, kodGry: 'MULTITEST' }));
   const rejestr = nowyRejestr();
@@ -343,11 +372,11 @@ async function dolaczKodemUI(u, kod) {
   assert.equal(el(u, 'multi-panel-lobby').hidden, false, 'gość trafił do lobby');
 }
 
-/** Odcinek od startu do „następna stacja": droga + ręczne dojście + poprawna odpowiedź. */
+/** Odcinek od startu do „następna stacja": droga + dojście z fixów (ADR 0029) + poprawna odpowiedź. */
 async function przejdzStacje(u) {
   await klik(u, 'przycisk-start-odcinka');
   assert.equal(el(u, 'gra-panel-odcinek').hidden, false, 'panel drogi widoczny');
-  await klik(u, 'przycisk-reczne-dojscie'); // POST dojscie (trybDojscia: reczne)
+  await dojdzSymulacja(u); // POST dojscie (trybDojscia: gps)
   przelaczNa(u);
   const odpowiedzi = u.dom.pobierz('gra-odpowiedzi').children;
   assert.ok(odpowiedzi.length === 4, 'pytanie odsłonięte z czterema odpowiedziami');
@@ -400,7 +429,7 @@ test('wyścig end-to-end: załóż → dołącz przez lobby → start → droga 
   await przejdzStacje(A);
   mostWyscig.online = false;
   await klik(B, 'przycisk-start-odcinka');
-  await klik(B, 'przycisk-reczne-dojscie'); // nie wyjdzie — kolejka
+  await dojdzSymulacja(B); // nie wyjdzie — kolejka
   przelaczNa(B);
   kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
   await oddech();
@@ -432,6 +461,17 @@ test('wyścig end-to-end: załóż → dołącz przez lobby → start → droga 
   assert.equal(wyniki['g-1'].stacjeZamkniete, 2, 'Ala zamknęła 2 stacje');
   assert.equal(wyniki['g-2'].stacjeZamkniete, 2, 'Bartek zamknął 2 stacje (w tym z kolejki offline)');
   assert.equal(wyniki['g-1'].poprawne, 2, 'obie odpowiedzi Ali poprawne');
+  // premia za kolejność ukończenia (ADR 0027 część B pkt 5): Ala pierwsza, Bartek drugi
+  assert.equal(wyniki['g-1'].premia, 1, 'Ala skończyła pierwsza: premia G−1 = 1');
+  assert.equal(wyniki['g-2'].premia, 0, 'Bartek drugi: premia 0');
+  assert.equal(wyniki['g-1'].punkty, 3, 'podsumowanie: 2 pkt z odpowiedzi + premia 1');
+  assert.equal(wyniki['g-2'].punkty, 2, 'Bartek: 2 pkt, bez premii');
+  // tabela na obu telefonach: kolumna premii i postęp „ile z ilu"
+  for (const [nazwa, u] of [['A', A], ['B', B]]) {
+    const wiersze = [...el(u, 'gra-multi-wiersze').children];
+    assert.match(wiersze[0].textContent, /Ala.*2\/2.*\+1/, `${nazwa}: pierwsza w tabeli ma postęp 2/2 i premię +1`);
+    assert.match(wiersze[1].textContent, /Bartek.*2\/2.*—/, `${nazwa}: drugi ma postęp 2/2 i kreskę zamiast premii`);
+  }
 });
 
 const mostTury = atrapaMostu();
@@ -470,7 +510,7 @@ test('tury end-to-end: dołącz kodem → bramka tury → resume po odświeżeni
   assert.match(tekst(B, 'gra-multi-tura'), /Twoja tura/, 'B widzi swoją turę po odświeżeniu');
   await klik(B, 'przycisk-start-odcinka');
   assert.equal(el(B, 'gra-panel-odcinek').hidden, false, 'w swojej turze B rusza');
-  await klik(B, 'przycisk-reczne-dojscie');
+  await dojdzSymulacja(B);
   przelaczNa(B);
   kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
   await oddech();
@@ -484,6 +524,7 @@ test('tury end-to-end: dołącz kodem → bramka tury → resume po odświeżeni
   assert.equal(el(B2, 'ekran-gra').hidden, false, 'powrót prosto do gry');
   assert.equal(tekst(B2, 'gra-postep'), 'stacja 1 z 1', 'zamknięta stacja 2 nie wraca — została tylko 4');
   assert.match(tekst(B2, 'gra-multi-tura'), /Teraz idzie: Celina/, 'po powrocie tura znowu A (stacja 3)');
+  await ustawPozycjeTestowa(B2); // świeży telefon: GPS brak, więc pozycja z ekranu 2
 
   // A zamyka 3, B2 zamyka 4 → gra kompletna
   await przepompuj(A, 1);
@@ -504,27 +545,27 @@ test('tury end-to-end: dołącz kodem → bramka tury → resume po odświeżeni
   assert.equal(mostTury.znajdz(kodTur).zdarzenia.every((z) => !POLA_ZAKAZANE.some((p) => p in (z.dane ?? {}))), true, 'serwer nie przyjął współrzędnych w zdarzeniach');
 });
 
-test('bez zgody NIE wysyłam niczego — jawna odmowa (setup → multi)', async () => {
+test('bez pseudonimu NIE wysyłam niczego — jawna odmowa (setup → multi)', async () => {
   const most = atrapaMostu();
   const u = await noweUrzadzenie({ most });
   await przygotujTelefon(u, 'Daria');
   przelaczNa(u);
-  u.dom.pobierz('multi-zgoda').checked = false; // właściciel może odznaczyć (decyzja 2026-09-06)
+  u.dom.pobierz('multi-pseudonim').value = ''; // zgody już nie ma — bramką jest pseudonim
   await klik(u, 'przycisk-multi-zaloz');
   assert.equal(el(u, 'bledy-multi').hidden, false, 'odmowa widoczna w polu błędów');
-  assert.match(tekst(u, 'bledy-multi'), /Bez zgody/, 'komunikat mówi wprost o zgodzie');
+  assert.match(tekst(u, 'bledy-multi'), /Wpisz pseudonim/, 'komunikat mówi wprost, czego brakuje');
   await klik(u, 'przycisk-multi-dolacz');
-  assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez zgody');
+  assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez pseudonimu');
   assert.deepEqual(
     most.adresy.filter((a) => /[?&]akcja=(gry|gra-stan|ranking)/.test(a)),
     [],
-    'żaden GET gry wieloosobowej nie poszedł (odczyt indeksu paczek jest bez zgody — ADR 0017 pkt 6)',
+    'żaden GET gry wieloosobowej nie poszedł (odczyt indeksu paczek jest bez bramki — ADR 0017 pkt 6)',
   );
-  // po przywróceniu zgody — droga wolna (panel się otwiera)
+  // z pseudonimem — droga wolna (panel się otwiera)
   przelaczNa(u);
-  u.dom.pobierz('multi-zgoda').checked = true;
+  u.dom.pobierz('multi-pseudonim').value = 'Daria';
   await klik(u, 'przycisk-multi-dolacz');
-  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'ze zgodą panel dołączania otwarty');
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'z pseudonimem panel dołączania otwarty');
 });
 
 test('ADR 0020: adres mostu jest w kodzie — telefon bez wpisu w pamięci gra sieciowo od razu', async () => {
@@ -625,42 +666,220 @@ test('uszkodzony stan z mostu: kod R w statusie, polling nie pada, po naprawie g
   assert.equal(el(A, 'ekran-gra').hidden, false, 'gra toczy się dalej po poprawnym stanie');
 });
 
-test('profil PIN: sprawdź wpisuje imię; nieznany proponuje zapis; zły PIN to R20', async () => {
-  const imie = (u) => el(u, 'lista-imion').children[0].value;
-
-  // znany profil: sprawdzenie wpisuje imię i chowa formularz
+test('lista graczy = tożsamość (ADR 0026 aneks): dodaj, odmowa PIN-u, zapamiętanie, usuwanie', async () => {
+  const lista = (u) => [...el(u, 'lista-graczy').children].map((li) => li.children[0].textContent);
   const most = atrapaMostu();
   most.profile.set('ala', { pseudonim: 'Ala', pin: '1234' });
-  const A = await noweUrzadzenie({ most });
-  assert.equal(el(A, 'form-profil').hidden, true, 'formularz profilu domyślnie schowany');
-  await klik(A, 'przycisk-profil');
-  assert.equal(el(A, 'form-profil').hidden, false, 'przycisk odsłania formularz');
-  ustaw(A, 'profil-pseudonim', 'Ala');
-  ustaw(A, 'profil-pin', '1234');
-  await klik(A, 'przycisk-profil-sprawdz');
-  assert.equal(el(A, 'form-profil').hidden, true, 'po sukcesie formularz znika');
-  assert.equal(imie(A), 'Ala', 'imię z profilu w polu gracza');
-  assert.match(tekst(A, 'status'), /To Ty/, 'potwierdzenie tożsamości');
 
-  // nieznany profil: R19 + przycisk zapisu tworzy profil i wpisuje imię
-  const B = await noweUrzadzenie({ most });
-  await klik(B, 'przycisk-profil');
-  ustaw(B, 'profil-pseudonim', 'Ewa');
-  ustaw(B, 'profil-pin', '9999');
-  await klik(B, 'przycisk-profil-sprawdz');
-  assert.equal(el(B, 'przycisk-profil-zapisz').hidden, false, 'nieznany pseudonim proponuje zapis');
-  assert.match(tekst(B, 'bledy-profil'), /pseudonimu/, 'komunikat R19 po ludzku');
-  await klik(B, 'przycisk-profil-zapisz');
-  assert.equal(imie(B), 'Ewa', 'nowy profil wpisany');
-  assert.match(tekst(B, 'status'), /Zapisano nowy pseudonim/, 'potwierdzenie zapisu');
-  assert.equal(most.profile.get('ewa').pin, '9999', 'PIN zapisany na moście');
+  // 1) wolne imię + PIN → jedno wołanie zakłada profil i gracz jest na liście
+  const A = await noweUrzadzenie({ most, bezGracza: true });
+  ustaw(A, 'profil-pseudonim', 'Ewa');
+  ustaw(A, 'profil-pin', '9999');
+  await klik(A, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.equal(most.profile.get('ewa')?.pin, '9999', 'profil Ewy powstał na moście');
+  assert.deepEqual(lista(A), ['1. Ewa'], 'gracz na liście po dodaniu');
+  assert.match(tekst(A, 'status'), /Założono profil/, 'jawne potwierdzenie założenia profilu');
+  assert.equal(el(A, 'profil-pin').value, '', 'PIN nie zostaje w polu (ADR 0013)');
+  assert.equal(el(A, 'profil-pseudonim').value, '', 'pole imienia jest gotowe na kolejnego gracza');
+  assert.equal(el(A, 'setup-pytania').value, '1', 'pytania na stację idą za liczbą graczy (K22)');
 
-  // zły PIN do znanego profilu: R20, imię nietknięte
-  const C = await noweUrzadzenie({ most });
-  await klik(C, 'przycisk-profil');
+  // 2) to samo imię drugi raz → odmowa lokalna, bez wołania mostu
+  const przed = most.adresy.length;
+  ustaw(A, 'profil-pseudonim', 'ewa');
+  ustaw(A, 'profil-pin', '9999');
+  await klik(A, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.match(tekst(A, 'bledy-profil'), /jest już na liście/, 'duplikat nie wchodzi na listę');
+  assert.deepEqual(lista(A), ['1. Ewa'], 'lista bez zmian');
+  assert.equal(most.adresy.length, przed, 'duplikat nie leci w sieć');
+
+  // 3) drugi gracz: lista zastępuje pole „Liczba graczy" i podnosi pytania na stację
+  ustaw(A, 'profil-pseudonim', 'Jan');
+  ustaw(A, 'profil-pin', '2222');
+  await klik(A, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.deepEqual(lista(A), ['1. Ewa', '2. Jan'], 'kolejność dodawania to kolejność gry');
+  assert.equal(el(A, 'setup-pytania').value, '2', 'dwa pytania na stację przy dwóch graczach');
+
+  // 4) „✕ Usuń" zdejmuje gracza z listy
+  const przyciskUsun = el(A, 'lista-graczy').children[0].children[1];
+  przelaczNa(A); kliknijEl(przyciskUsun); await oddech();
+  assert.deepEqual(lista(A), ['1. Jan'], 'usunięty gracz znika z listy');
+  assert.equal(el(A, 'setup-pytania').value, '1', 'pytania wracają do jednego gracza');
+
+  // 5) zajęte imię + POPRAWNY PIN → przechodzi, profil bez zmian
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  ustaw(B, 'profil-pseudonim', 'Ala');
+  ustaw(B, 'profil-pin', '1234');
+  await klik(B, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.deepEqual(lista(B), ['1. Ala'], 'znane imię wchodzi na listę');
+  assert.match(tekst(B, 'status'), /To Ty/, 'potwierdzenie tożsamości');
+
+  // 6) zajęte imię + ZŁY PIN → R20, gracz NIE trafia na listę, brama nie puszcza
+  const C = await noweUrzadzenie({ most, bezGracza: true });
   ustaw(C, 'profil-pseudonim', 'Ala');
   ustaw(C, 'profil-pin', '0000');
-  await klik(C, 'przycisk-profil-sprawdz');
+  await klik(C, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.deepEqual(lista(C), [], 'zły PIN = brak gracza na liście');
   assert.match(tekst(C, 'bledy-profil'), /PIN/, 'komunikat R20 po ludzku');
-  assert.equal(imie(C), 'Gracz 1', 'imię nietknięte po odmowie (został domyślny Gracz 1)');
+  await klik(C, 'przycisk-dalej-pozycja');
+  assert.equal(el(C, 'ekran-pozycja').hidden, true, 'pusta lista nie puszcza na ekran 2');
+  // pusta lista to usterka K08 — komunikat mówi wprost, gdzie dodać gracza
+  assert.match(tekst(C, 'bledy-setup'), /Nie dodano jeszcze żadnego gracza/, 'K08 prowadzi do bloku „Kto gra?"');
+
+  // 7) puste pola → odmowa lokalna, zanim cokolwiek poleci w sieć
+  const D = await noweUrzadzenie({ most, bezGracza: true });
+  const adresyD = most.adresy.length;
+  await klik(D, 'przycisk-dodaj-gracza');
+  assert.match(tekst(D, 'bledy-profil'), /Wpisz imię/);
+  ustaw(D, 'profil-pseudonim', 'Jan');
+  await klik(D, 'przycisk-dodaj-gracza');
+  assert.match(tekst(D, 'bledy-profil'), /4–8 cyfr/, 'PIN jest wymagany');
+  assert.equal(most.adresy.length, adresyD, 'bez imienia i PIN-u nie ma wołania mostu');
+
+  // 8) most nie odpowiada → gracz wchodzi bez potwierdzenia, gra nie staje (ADR 0016 pkt 5)
+  const padniety = atrapaMostu();
+  padniety.fetchImpl = async () => { throw new Error('offline'); };
+  const E = await noweUrzadzenie({ most: padniety, bezGracza: true });
+  ustaw(E, 'profil-pseudonim', 'Ola');
+  ustaw(E, 'profil-pin', '4321');
+  await klik(E, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.deepEqual(lista(E), ['1. Ola — bez potwierdzenia z Drive'], 'gracz dodany mimo awarii');
+  assert.match(tekst(E, 'profil-stan'), /bez potwierdzenia/, 'degradacja jest jawna');
+  await klik(E, 'przycisk-dalej-pozycja');
+  assert.equal(el(E, 'ekran-pozycja').hidden, false, 'awaria mostu nie blokuje gry');
+
+  // 9) zapamiętany na tym telefonie → wraca na listę BEZ PIN-u i bez wołania mostu
+  const adresyF = padniety.adresy.length;
+  const F = await noweUrzadzenie({
+    most: padniety,
+    pamiec: new Map([
+      ['okolica:multi:url-mostu', URL_MOSTU],
+      ['okolica:gracze', JSON.stringify({
+        schemat: 'gracze-lokalni/1',
+        gracze: [
+          { pseudonim: 'Ala', zweryfikowany: true },
+          { pseudonim: 'Tomek', zweryfikowany: false },
+        ],
+        kiedy: '2026-09-07T10:00:00.000Z',
+      })],
+    ]),
+  });
+  assert.deepEqual(lista(F), ['1. Ala'], 'potwierdzony gracz wraca sam, bez klikania');
+  assert.equal(el(F, 'lista-zapamietanych').children.length, 1, 'niepewny gracz czeka jako przycisk');
+  await klik(F, 'przycisk-dalej-pozycja');
+  assert.equal(el(F, 'ekran-pozycja').hidden, false, 'znany z telefonu gracz przechodzi bez mostu');
+  assert.equal(padniety.adresy.length, adresyF, 'zapamiętany gracz nie woła mostu o PIN');
+
+  // 10) zapamiętany BEZ potwierdzenia: klik w przycisk prosi o PIN, nie puszcza bez niego
+  const G = await noweUrzadzenie({
+    most,
+    pamiec: new Map([
+      ['okolica:multi:url-mostu', URL_MOSTU],
+      ['okolica:gracze', JSON.stringify({
+        schemat: 'gracze-lokalni/1',
+        gracze: [{ pseudonim: 'Tomek', zweryfikowany: false }],
+        kiedy: '2026-09-07T10:00:00.000Z',
+      })],
+    ]),
+  });
+  assert.deepEqual(lista(G), [], 'niepewny gracz nie wchodzi na listę sam');
+  przelaczNa(G); kliknijEl(el(G, 'lista-zapamietanych').children[0]); await oddech();
+  assert.match(tekst(G, 'bledy-profil'), /wpisz jego PIN/, 'klik prosi o PIN');
+  assert.equal(el(G, 'profil-pseudonim').value, 'Tomek', 'imię jest już wpisane');
+  ustaw(G, 'profil-pin', '7777');
+  await klik(G, 'przycisk-dodaj-gracza');
+  await oddech();
+  assert.deepEqual(lista(G), ['1. Tomek'], 'po poprawnym PIN-ie gracz jest na liście');
+  assert.match(tekst(G, 'status'), /Założono profil/, 'niepewny gracz został potwierdzony na moście');
+});
+
+/* ------- ADR 0027 część B: wolna kolejność i pytanie wg indeksu gracza ------ */
+
+const mostWolna = atrapaMostu();
+
+test('wolna kolejność: wybór stacji z listy i pytanie własne dla każdego gracza', async () => {
+  // paczka 3 stacje × 2 pytania = na dwóch graczy (domyślne po ADR 0027 część A)
+  const pamiecA = new Map();
+  const zestaw = zasiejZestaw(pamiecA, 3, 2);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostWolna });
+  await przygotujTelefon(A, 'Ala');
+  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestaw.kontener.skrot });
+  const kod = tekst(A, 'lobby-kod');
+
+  const B = await noweUrzadzenie({ most: mostWolna });
+  await przygotujTelefon(B, 'Bartek');
+  await dolaczKodemUI(B, kod);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+
+  // lista wyboru: trzy stacje do wzięcia w dowolnej kolejności
+  assert.equal(el(A, 'multi-wybor-stacji').hidden, false, 'wyścig pokazuje wybór stacji');
+  const przyciski = [...el(A, 'multi-wybor-przyciski').children];
+  assert.deepEqual(przyciski.map((b) => b.textContent.split(' ·')[0]), ['Stacja 1', 'Stacja 2', 'Stacja 3'], 'trzy stacje do wyboru');
+
+  // Ala wybiera stację 3 — gra idzie tam, nie „po kolei"
+  kliknijEl(przyciski[2]);
+  await oddech();
+  assert.match(tekst(A, 'przycisk-start-odcinka'), /stacji 3/, 'przycisk drogi wskazuje wybraną stację');
+
+  await klik(A, 'przycisk-start-odcinka');
+  await dojdzSymulacja(A);
+  assert.match(tekst(A, 'gra-pytanie-tresc'), /stacji 3\? \(wariant 1\)/, 'organizator (indeks 0) ma pierwsze pytanie stacji');
+
+  // Bartek gra u siebie, bez uzgadniania: ta sama stacja 1, ale DRUGIE pytanie
+  await klik(B, 'przycisk-start-odcinka');
+  await dojdzSymulacja(B);
+  assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji 1\? \(wariant 2\)/, 'gość (indeks 1) ma drugie pytanie tej stacji');
+
+  // po zamknięciu stacji lista wyboru maleje
+  przelaczNa(A);
+  kliknijEl(A.dom.pobierz('gra-odpowiedzi').children[0]);
+  await oddech();
+  await klik(A, 'przycisk-nastepna-stacja');
+  assert.deepEqual(
+    [...el(A, 'multi-wybor-przyciski').children].map((b) => b.textContent.split(' ·')[0]),
+    ['Stacja 1', 'Stacja 2'],
+    'zamknięta stacja znika z wyboru',
+  );
+});
+
+test('pytania mniejszej paczki są dzielone, a nie gubione (indeks się zawija)', async () => {
+  // paczka z JEDNYM pytaniem na stację przy dwóch graczach: gra się nie zatrzymuje
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  const zestaw = zasiejZestaw(pamiecA, 2, 1);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala');
+  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestaw.kontener.skrot });
+  const kod = tekst(A, 'lobby-kod');
+  const B = await noweUrzadzenie({ most });
+  await przygotujTelefon(B, 'Bartek');
+  await dolaczKodemUI(B, kod);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+
+  await klik(B, 'przycisk-start-odcinka');
+  await dojdzSymulacja(B);
+  assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji 1\?/, 'gość ma pytanie mimo paczki mniejszej niż liczba graczy');
+  przelaczNa(B);
+  assert.equal(B.dom.pobierz('gra-odpowiedzi').children.length, 4, 'cztery odpowiedzi do wyboru');
+});
+
+test('w turach nie ma wolnego wyboru stacji — kolejność ustala kolejka', async () => {
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  const zestaw = zasiejZestaw(pamiecA, 2);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala');
+  await zalozGreUI(A, { tryb: 'tury', skrot: zestaw.kontener.skrot });
+  await klik(A, 'przycisk-lobby-start');
+  assert.equal(el(A, 'multi-wybor-stacji').hidden, true, 'tury: lista wyboru schowana');
+  assert.match(tekst(A, 'gra-multi-tura'), /Twoja tura|Teraz idzie/, 'tury: komunikat czyjej tury zostaje');
 });

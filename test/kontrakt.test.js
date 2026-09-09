@@ -173,6 +173,24 @@ test('kontrakt: live CI jest identyczny z lustrem receptury (LESSONS L4, aktuali
   assert.match(live, /run: npm run check/, 'sprawdzenie szablonu jest w CI');
 });
 
+test('kontrakt: live workflow Pages jest identyczny z lustrem receptury (ADR 0002)', () => {
+  // Pages z `Source: GitHub Actions` nie buduje strony sam — czeka na ten
+  // workflow (wgranie artefaktu + `deploy-pages`). Lustro jak dla CI (L4).
+  assert.ok(existsSync(join(ROOT, '.github/workflows/pages.yml')), 'brak live workflow Pages — strona się nie opublikuje');
+  const live = czytaj('.github/workflows/pages.yml');
+  const lustro = czytaj('docs/setup/pages-workflow.yml');
+  const receptura = lustro.slice(lustro.indexOf('name: Pages'));
+  assert.ok(receptura.startsWith('name: Pages'), 'lustro w docs/setup straciło recepturę Pages');
+  assert.equal(live, receptura, 'live workflow Pages rozjechał się z lustrem — edytuj oba naraz');
+  assert.match(live, /pages: write/, 'workflow potrzebuje uprawnienia pages: write');
+  assert.match(live, /id-token: write/, 'deploy-pages wymaga id-token: write');
+  assert.match(live, /name: github-pages/, 'środowisko github-pages jest wymagane przez deploy-pages');
+  assert.match(live, /uses: actions\/upload-pages-artifact@v3/, 'artefakt strony');
+  assert.match(live, /uses: actions\/deploy-pages@v4/, 'wdrożenie na Pages');
+  assert.match(live, /path: \.\//, 'publikacja z korzenia repozytorium (ADR 0002)');
+  assert.match(live, /run: npm test/, 'na Pages trafia tylko zielony kod');
+});
+
 /* --------------------------------------------------------- UI: DOM ↔ index */
 
 test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html', () => {
@@ -183,15 +201,166 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
   for (const ekran of ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka']) zadane.add(`ekran-${ekran}`);
   for (const panel of ['zaloz', 'dolacz', 'lobby']) zadane.add(`multi-panel-${panel}`); // M11: panele budowane z listy
   assert.ok(zadane.size > 25, `znaleziono tylko ${zadane.size} identyfikatorów — test pewnie nie widzi kodu`);
+  // ADR 0029: ręcznego zgłaszania dojścia nie ma nigdzie — ani w index.html,
+  // ani w app.js. Wyjątków od tej reguły nie ma: każdy id wołany z aplikacji
+  // musi istnieć w interfejsie.
   for (const id of zadane) {
     assert.ok(INDEX.includes(`id="${id}"`), `app.js woła #${id}, którego nie ma w index.html`);
   }
 });
 
-test('kontrakt: przycisk trybu testowego ma w HTML stan początkowy aria-pressed="false"', () => {
-  // Atrapa DOM nie parsuje atrybutów, więc `test/aplikacja.test.js` sprawdza tylko
-  // przełączenie; stan startowy pilnuje ten kontrakt.
-  assert.match(INDEX, /id="przycisk-test"[^>]*aria-pressed="false"/);
+// Atrapa DOM nie liczy pikseli, więc układu „mapa na spodzie" nie da się
+// przetestować zachowaniem — pilnujemy przynajmniej struktury i reguł CSS.
+// Dwa mignięcia z podglądu (2026-09-08). Atrapa nie renderuje, więc pilnujemy
+// przyczyn wprost: stanu początkowego w HTML i `position` w regule panelu.
+test('kontrakt: <body> ma data-ekran w HTML — inaczej setup miga przed startem JS', () => {
+  // `pokazEkran()` ustawia `data-ekran` dopiero po wczytaniu modułu. Bez
+  // atrybutu w HTML reguły `body[data-ekran=…]` nie łapią: setup renderuje się
+  // w przepływie („stary"), mapa jest schowana, a po chwili wszystko przeskakuje.
+  assert.match(INDEX, /<body data-ekran="setup">/, 'stan początkowy ekranu jest w HTML, nie tylko z JS');
+});
+
+test('kontrakt: panel pozycji jest w `.tresc` i ograniczony belką oraz stopką', () => {
+  // Panel NIE jest `fixed` względem viewportu: wtedy jego ograniczeniem był cały
+  // ekran, a stopka ma wyższy `z-index` i przykrywała dolne przyciski bez
+  // możliwości przewinięcia (zgłoszenie właściciela 2026-09-08). Jest `absolute`
+  // względem `.tresc`, które jest elementem flexa dokładnie między belką a stopką.
+  // Blok tniemy po `\n}`, nie po pierwszym `}`: komentarz w regule zawiera
+  // `{ display: flex; … }`, więc naiwne indexOf('}') urywało blok w pół słowa.
+  const start = STYLE.indexOf('body[data-ekran=\'pozycja\'] #ekran-pozycja {');
+  assert.ok(start > 0, 'brak reguły panelu pozycji');
+  const blok = STYLE.slice(start, STYLE.indexOf('\n}', start));
+  assert.ok(blok.includes('position: absolute'),
+    'element `static` maluje się POD mapą, a `fixed` wyjeżdża pod stopkę — ma być `absolute` w `.tresc`');
+  assert.ok(STYLE.includes('.tresc { position: relative; z-index: 1; }'),
+    '`.tresc` musi być containing blockiem dla panelu');
+  assert.ok(blok.includes('margin: 0'), '`.ekran` daje `margin: 0 auto` — bez resetu przesuwa panel (L40)');
+  assert.ok(blok.includes('overflow-y: auto'), 'treść, która się nie mieści, musi dać się przewinąć');
+  assert.ok(blok.includes('background: var(--tlo-karta)'), 'tło panelu jest pełne, nie półprzezroczyste nad mapą');
+
+  // W obu wariantach `top` I `bottom` podane jawnie: przy `top: auto`
+  // przeglądarka bierze pozycję statyczną i IGNORUJE `bottom`, więc panel
+  // nie byłby ograniczony od dołu.
+  // Ten sam nagłówek @media występuje w pliku kilka razy (ADR 0030, stacje),
+  // więc szukamy tego bloku, który RZECZYWIŚCIE zawiera regułę panelu.
+  const wariantPanelu = (mq) => {
+    let od = STYLE.indexOf(mq);
+    while (od >= 0) {
+      const nastepny = STYLE.indexOf('@media', od + mq.length);
+      const blok = STYLE.slice(od, nastepny < 0 ? undefined : nastepny);
+      if (blok.includes('#ekran-pozycja')) return blok;
+      od = STYLE.indexOf(mq, od + mq.length);
+    }
+    return null;
+  };
+  for (const mq of ['@media (max-width: 900px) and (orientation: portrait)',
+                    '@media (orientation: landscape), (min-width: 901px)']) {
+    const wariant = wariantPanelu(mq);
+    assert.ok(wariant, `brak wariantu z regułą panelu: ${mq}`);
+    assert.ok(wariant.includes('top:'), `w ${mq} brakuje jawnego top`);
+    assert.ok(wariant.includes('bottom:'), `w ${mq} brakuje jawnego bottom`);
+  }
+});
+
+test('kontrakt: przyciski +/− mapy-tła są poniżej belki i przy lewej krawędzi', () => {
+  // Mapa-tło ma `position: fixed; inset: 0`, więc sięga POD samą belkę, a belka
+  // (`z-index: 3`, nieprzezroczyste tło) i panel pozycji (`z-index: 2`) malują
+  // się NAD mapą (`z-index: 0`). Domyślne `top: 8px; right: 8px` chowało więc
+  // przyciski pod belką, a w wariancie poziomym także pod panelem (zgłoszenie
+  // właściciela 2026-09-08).
+  const od = STYLE.indexOf("body[data-ekran='setup'] #mapa-pozycja .mapa-przyciski");
+  assert.ok(od > 0, 'brak reguły dla przycisków mapy-tła');
+  const blok = STYLE.slice(od, STYLE.indexOf('\n}', od));
+  assert.ok(blok.includes("body[data-ekran='pozycja']"), 'reguła ma dotyczyć też ekranu pozycji');
+  assert.ok(blok.includes('var(--wysokosc-belki'),
+    'top musi iść z mierzonej wysokości belki — `.akcje` się zawija i stała by się rozsypała');
+  assert.ok(blok.includes('right: auto'), 'przyciski muszą zejść z prawej — tam stoi panel pozycji');
+  assert.ok(blok.includes('left:'), 'przyciski mają być przy lewej krawędzi');
+
+  // Pomiar musi działać na starcie I przy zmianie rozmiaru okna (obrót telefonu).
+  assert.ok(APP.includes('function ustawWysokoscBelki'), 'brak funkcji mierzącej belkę');
+  assert.equal(APP.split('ustawWysokoscBelki();').length - 1, 2,
+    'pomiar wołany dokładnie dwa razy: w start() i w nasłuchu resize');
+});
+
+test('kontrakt: mapa-tło resetuje max-height i margin z reguły bazowej .mapa (L40)', () => {
+  // `.mapa` deklaruje `height: 45vh; min-height: 240px; max-height: 460px;
+  // margin: 10px 0`. Selektor z id nadpisuje właściwość po właściwości, więc bez
+  // jawnych resetów mapa-tło była `fixed` na całą szerokość, ale ŚCIĘTA do
+  // 460 px i przesunięta o 10 px — właściciel widział „mapę na pół ekranu"
+  // mimo `height: 100%`. Te same resety mają #mapa-gra i #mapa-stacje.
+  const start = STYLE.indexOf('#mapa-pozycja {');
+  assert.ok(start > 0, 'brak reguły #mapa-pozycja');
+  const blok = STYLE.slice(start, STYLE.indexOf('\n}', start));
+  assert.ok(blok.includes('max-height: none'), 'max-height nie zresetowany — mapa ścięta do 460 px');
+  assert.ok(blok.includes('margin: 0'), 'margin nie zresetowany — mapa przesunięta o 10 px');
+  assert.ok(blok.includes('min-height: 0'), 'min-height nie zresetowany');
+});
+
+test('kontrakt: stopka pokazuje numer budowy — inaczej nie poznać wersji z cache', () => {
+  assert.ok(INDEX.includes('id="stopka-wersja"'), 'w stopce brakuje znacznika wersji');
+  assert.ok(APP.includes("searchParams.get('v')"), 'app.js nie bierze wersji z ?v= własnego modułu');
+});
+
+test('kontrakt: mapa jest trwałym spodem aplikacji, a setup kartą nad nią', () => {
+  const main = INDEX.match(/<main class="tresc">([\s\S]*?)<section id="ekran-setup"/)?.[1] ?? '';
+  assert.match(main, /<div id="mapa-pozycja" class="mapa">/, 'mapa pozycji jest pierwszym elementem <main>, nie w ekranie pozycji');
+  const ekranPozycja = INDEX.match(/<section id="ekran-pozycja"[\s\S]*?<\/section>/)?.[0] ?? '';
+  assert.equal(/id="mapa-pozycja"/.test(ekranPozycja), false, 'ekran pozycji nie zawiera już własnej mapy');
+
+  assert.match(INDEX, /<button id="przycisk-setup"[^>]*>⚙ setup<\/button>/, 'ikonka setup w nagłówku');
+  assert.ok(APP.includes("$('przycisk-setup').addEventListener('click', () => pokazEkran('setup'))"), 'ikonka setup jest podpięta');
+
+  assert.ok(STYLE.includes('body:not([data-ekran=\'setup\']):not([data-ekran=\'pozycja\']) #mapa-pozycja { visibility: hidden; }'),
+    'mapa jest chowana przez visibility, nie display — display zerowałby jej pomiar');
+  assert.ok(STYLE.includes("body[data-ekran='setup'] #ekran-setup"), 'setup ma regułę karty nad mapą');
+});
+
+// Ekran stacji: mapa i lista obok siebie, nie jedna nad drugą (właściciel:
+// „te stacje odnoszą się właśnie do mapy"). Atrapa nie liczy pikseli, więc
+// pilnujemy struktury i tego, że reguły istnieją dla obu orientacji.
+test('kontrakt: ekran stacji dzieli się na mapę i przewijany panel', () => {
+  const ekran = INDEX.match(/<section id="ekran-stacje"[\s\S]*?<\/section>/)?.[0] ?? '';
+  const obszar = ekran.slice(ekran.indexOf('<div class="stacje-obszar">'));
+  assert.ok(obszar.includes('id="mapa-stacje"'), 'mapa jest w .stacje-obszar');
+  assert.ok(obszar.includes('id="stacje-panel"'), 'panel stacji jest w .stacje-obszar');
+  assert.ok(obszar.includes('id="lista-stacji"'), 'lista stacji jest w panelu');
+  assert.ok(obszar.includes('id="przycisk-dalej-prompt"'), 'przycisk „Dalej" jest w panelu');
+  assert.ok(!obszar.includes('id="tytul-stacje"'), 'tytuł sekcji zostaje NAD obszarem — inaczej w poziomie stałby się kolumną');
+
+  assert.ok(STYLE.includes('#ekran-stacje:not([hidden]) .stacje-obszar'), 'obszar ma regułę podziału');
+  assert.ok(STYLE.includes('#ekran-stacje:not([hidden]) #stacje-panel'), 'panel ma regułę');
+  // Proste sprawdzenia tekstowe zamiast literałów regex z metaznakami CSS —
+  // te drugie rozjeżdżają parser przy byle escapowaniu.
+  const pion = STYLE.slice(STYLE.indexOf('@media (max-width: 900px) and (orientation: portrait)'));
+  assert.ok(pion.includes('#ekran-stacje:not([hidden]) #stacje-panel'), 'panel stacji ma regułę w bloku pionu');
+  assert.ok(pion.includes('max-height: 42dvh'), 'panel w pionie ma ograniczoną wysokość i przewija się w środku');
+  const poziom = STYLE.slice(STYLE.indexOf('@media (orientation: landscape), (min-width: 901px)'));
+  assert.ok(poziom.includes('#ekran-stacje:not([hidden]) #stacje-panel'), 'panel stacji ma regułę w bloku poziomu');
+  assert.ok(poziom.includes('overflow-y: auto'), 'panel w poziomie przewija się w środku');
+  assert.ok(poziom.includes('#ekran-stacje:not([hidden]) .stacje-obszar'), 'obszar dzieli się w poziomie na kolumny');
+});
+
+test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=true', () => {
+  // Decyzja właściciela 2026-09-08: przełącznik w nagłówku kusił do grania bez
+  // GPS, a wyniki i tak szły na Drive i do rankingów (ADR 0029). Pilnujemy, żeby
+  // nie wrócił — LESSONS L31: usunięty element ma zostać usunięty.
+  assert.equal(/id="przycisk-test"/.test(INDEX), false, 'przycisk trybu testowego zniknął z HTML');
+  // W nagłówku nie ma żadnego przełącznika trybu. Słowo „tryb testowy" zostaje
+  // w etykiecie symulacji dojścia i na stronie prywatności — tam opisuje stan,
+  // a nie przełącza go, więc jest prawdziwe.
+  const naglowek = INDEX.match(/<div class="akcje">[\s\S]*?<\/div>/)?.[0] ?? '';
+  assert.equal(/test/i.test(naglowek), false, `w akcjach nagłówka nie ma trybu testowego: ${naglowek}`);
+  assert.ok(APP.includes('czyTrybTestowyWUrl'), 'tryb testowy czyta się z parametru adresu');
+
+  // Rankingi są warstwą z dwoma wyjściami (decyzja właściciela 2026-09-08) —
+  // z poprzedniego układu „ekran" nie dało się na telefonie wyjść.
+  assert.match(INDEX, /<section id="ekran-ranking" class="ekran warstwa" hidden role="dialog" aria-modal="true"/);
+  assert.match(INDEX, /<button id="przycisk-ranking-krzyzyk"[^>]*aria-label="Zamknij rankingi">✕<\/button>/, 'krzyżyk w rogu warstwy');
+  assert.match(INDEX, /<button id="przycisk-wrocz-ranking"[^>]*>Zamknij rankingi<\/button>/, 'klawisz zamknięcia zamiast „← wróć"');
+  assert.ok(APP.includes("$('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu)"), 'krzyżyk jest podpięty');
+  assert.ok(STYLE.includes('.warstwa-krzyzyk'), 'krzyżyk ma styl');
+  assert.match(APP, /'true', '1', 'tak'/, 'przyjmowane formy parametru ?test=');
 
   const symulacja = INDEX.match(/<button id="przycisk-symulacja"[^>]*>/)?.[0];
   assert.ok(symulacja, 'brak przycisku symulacji dojścia (M3)');
@@ -287,7 +456,7 @@ test('kontrakt: LESSONS ma ciągłą numerację i wymagany format', () => {
 
 test('kontrakt: AGENTS.md nie obiecuje lektury pliku, którego nie ma w §0', () => {
   assert.ok(AGENTS.includes('docs/PROTOKOL.md') && AGENTS.includes('docs/setup/ENVIRONMENT.md'));
-  assert.ok(AGENTS.includes('40 tys. tokenów'), 'budżet lektury startowej musi być jawny');
+  assert.ok(AGENTS.includes('100 tys. tokenów'), 'budżet lektury startowej musi być jawny');
 });
 
 /* ------------------------------- decyzje: ADR ↔ rejestr ↔ kod */
@@ -493,7 +662,7 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'mapa-gra', 'mapa-gra-svg', 'mapa-gra-kafelki', 'mapa-gra-okregi', 'mapa-gra-pinezki', 'mapa-gra-marker',
     'bledy-gra', 'gra-komunikat',
     'gra-kto-idzie', 'gra-cel-stacji', 'przycisk-start-odcinka',
-    'gra-dystans-odcinka', 'gra-prog-dojscia', 'przycisk-reczne-dojscie', 'przycisk-pauza', 'gra-pauza-komunikat',
+    'gra-dystans-odcinka', 'gra-prog-dojscia', 'przycisk-pauza', 'gra-pauza-komunikat',
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
     'gra-wyniki', 'gra-wyniki-tbody',
@@ -645,7 +814,7 @@ test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
 });
 
 test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językiem', () => {
-  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'profil-ustaw', 'profil-sprawdz']) {
+  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'gra-hotseat', 'profil-ustaw', 'profil-sprawdz']) {
     assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
   }
   for (const a of ['gry', 'gra-stan', 'ranking']) {
@@ -661,28 +830,92 @@ test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językie
 });
 
 test('kontrakt Partia 1 (3): PIN-profil — UI, kody R19/R20, dokumentacja §9', () => {
-  for (const id of ['przycisk-profil', 'form-profil', 'profil-pseudonim', 'profil-pin', 'bledy-profil', 'przycisk-profil-sprawdz', 'przycisk-profil-zapisz']) {
+  // bez osobnego przycisku sprawdzania: brama siedzi w „Dalej" (mniej klikania,
+  // a setup ma się mieścić na 360 px — WORKFLOW §4.2)
+  for (const id of ['pole-tozsamosc', 'profil-pseudonim', 'profil-pin', 'profil-stan', 'bledy-profil']) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
   for (const k of ['R19', 'R20']) {
     assert.ok(KODY_WIELOOSOBOWE[k], `KODY_WIELOOSOBOWE zna ${k}`);
     assert.ok(PROTOKOL.includes(`| ${k} |`), `PROTOKOL §9.4 dokumentuje ${k}`);
   }
-  assert.match(
-    APP,
-    /akcja: rejestruj \? 'profil-ustaw' : 'profil-sprawdz'/,
-    'app.js woła obie akcje profilowe mostu',
-  );
+  // ADR 0026: jedno wołanie `profil-ustaw` zakłada profil ALBO potwierdza PIN
+  assert.ok(APP.includes("akcja: 'profil-ustaw'"), 'app.js woła profil-ustaw (jedna akcja na bramę)');
+  assert.ok(!APP.includes("'profil-sprawdz'"), 'profil-sprawdz nie jest już potrzebne w UI');
 });
 
-test('kontrakt M11: UI gry wieloosobowej — ekrany, zgoda, pseudonim, bramki', () => {
-  // ekrany i panele (ADR 0019, plan M11/P4)
-  for (const id of ['ekran-multi', 'karta-multi', 'multi-panel-zaloz', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi', 'setup-rodzaj', 'multi-pseudonim', 'multi-zgoda', 'multi-most-stan']) {
+test('kontrakt ADR 0026: przejście z ekranu 1 przechodzi przez bramę tożsamości', () => {
+  const start = APP.indexOf("$('przycisk-dalej-pozycja').addEventListener");
+  assert.ok(start > 0, 'nasłuch „Dalej" z ekranu 1 istnieje');
+  const handler = APP.slice(start, APP.indexOf("$('przycisk-gps')", start));
+  assert.ok(handler.includes('await bramkaTozsamosci()'), '„Dalej" czeka na bramę tożsamości');
+  assert.ok(
+    handler.indexOf('bramkaTozsamosci') < handler.indexOf("pokazEkran('pozycja')"),
+    'brama jest PRZED przejściem na ekran pozycji (inaczej imię nie jest wymagane)',
+  );
+  assert.ok(handler.includes('return;'), 'odmowa bramy zatrzymuje przejście');
+});
+
+test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat na Drive', () => {
+  const WIELOOSOBOWA = czytaj('app/wieloosobowa.js');
+  // blok tożsamości JEST listą graczy (decyzja właściciela 2026-09-07)
+  for (const id of ['przycisk-dodaj-gracza', 'lista-graczy', 'lista-zapamietanych', 'wynik-drive']) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
-  // zgoda domyślnie zaznaczona (jak przy wysyłce paczek) i WYMAGANA przed wysyłką
-  assert.match(INDEX, /id="multi-zgoda"[^>]*\bchecked\b/, 'zgoda multi domyślnie zaznaczona w HTML');
-  assert.match(APP, /Bez zgody na wysyłanie danych/, 'bez zgody jawna odmowa wysyłki (plan P4)');
+  // Zapis wyniku jest DOMYŚLNY: bez checkboxa przy każdej grze (właściciel,
+  // 2026-09-07), a co i dokąd trafia — opisuje sekcja „Dane i prywatność".
+  assert.ok(!INDEX.includes('id="hotseat-zgoda"'), 'zgody na zapis wyniku nie pytamy przy każdej grze');
+  assert.match(INDEX, /Wspólny Drive: historia i rankingi/, 'sekcja prywatność opisuje zapis wyniku na Drive');
+  assert.match(INDEX, /Wynik gry idzie na wspólne konto Google Drive/, 'sekcja prywatność mówi, że to domyślne');
+  assert.ok(!INDEX.includes('id="setup-gracze"'), 'pola „Liczba graczy" nie ma — liczbą jest długość listy');
+  assert.ok(!INDEX.includes('id="lista-imion"'), 'ręczne pola imion zastąpiła lista graczy');
+  assert.match(INDEX, /Kto gra\?/, 'blok tożsamości pyta „Kto gra?"');
+  assert.ok(APP.includes("'okolica:gracze'"), 'lista graczy utrwalana pod ustalonym kluczem');
+  assert.ok(APP.includes('gracze-lokalni/1'), 'schemat zapamiętanej listy graczy');
+  assert.ok(!APP.includes("'okolica:profil'"), 'stary klucz jednego profilu nie wraca');
+  // PIN nigdy nie zostaje na telefonie — zapisuje się imię i znacznik potwierdzenia
+  const zapis = APP.slice(APP.indexOf('function zapamietajGracza'), APP.indexOf('function przywrocGraczy'));
+  assert.match(zapis, /\{ pseudonim: imie, zweryfikowany \}/, 'zapamietajGracza zapisuje imię i potwierdzenie, nie PIN');
+  // hot-seat: wynik gry z jednego telefonu jedzie na Drive jednym poleceniem
+  assert.ok(APP.includes('graHotseatDoWysylki'), 'app.js buduje polecenie gra-hotseat');
+  assert.ok(WIELOOSOBOWA.includes("akcja: 'gra-hotseat'"), 'moduł wieloosobowa buduje tę akcję');
+  assert.ok(GS.includes("case 'gra-hotseat'"), 'most przyjmuje gra-hotseat');
+  assert.ok(PROTOKOL.includes('gra-hotseat'), 'PROTOKOL §9 dokumentuje gra-hotseat');
+  // punkty liczy most, premia hot-seat = 0 — po obu stronach tak samo
+  assert.match(WIELOOSOBOWA, /if \(gra\?\.tryb === TRYB_HOTSEAT\) return premia;/, 'aplikacja nie daje premii w hot-seat');
+  assert.match(GS, /if \(gra\.tryb === 'hotseat'\) return premia;/, 'most nie daje premii w hot-seat (kopia pilnowana testem)');
+  // awaria sieci nie gubi wyniku: kolejka i jej opróżnianie przy starcie
+  assert.ok(APP.includes('okolica:hotseat-kolejka') && APP.includes('oproznijKolejkeHotseat()'), 'wynik czeka w kolejce i dojeżdża później (ADR 0016 pkt 5)');
+});
+
+test('kontrakt ADR 0024 aneks: promień nie jest kryterium, a komunikat nazywa powód', () => {
+  const ZESTAWY = czytaj('app/zestawy.js');
+  assert.match(ZESTAWY, /export function powodyNiedopasowania/, 'zestawy.js umie nazwać powód niedopasowania');
+  assert.match(ZESTAWY, /export function czyWOkolicy/, 'okolica jest osobnym, jawnym kryterium');
+  assert.equal(/w\.promienM <= promienM/.test(ZESTAWY), false, 'promień paczki nie jest już kryterium dopasowania');
+  assert.match(ZESTAWY, /NIE są kryteriami: promień/, 'reguła jest zapisana przy kodzie, nie tylko w ADR');
+  assert.match(ZESTAWY, /export function sumaPytanWpisu/, 'kryterium jest ŁĄCZNA liczba pytań, nie stacje × pytania');
+  assert.match(ZESTAWY, /środek transportu \(właściciel wycofał/, 'środek transportu jawnie NIE jest kryterium');
+  assert.match(ZESTAWY, /za mało pytań: paczka ma/, 'komunikat podaje liczby: ile ma paczka, ile chce setup');
+  // komunikat karty paczek cytuje powody, a nie cały setup
+  assert.match(APP, /powodyNiedopasowania\(m, kryteria\)/, 'app.js cytuje powody wprost w komunikacie');
+  assert.equal(/ale żadna nie pasuje do tego setupu/.test(APP), false, 'stary komunikat z całym setupem zniknął');
+  assert.match(APP, /czyWOkolicy\(m, kryteria\)/, 'paczki z innych okolic nie są nawet liczone');
+});
+
+test('kontrakt M11: UI gry wieloosobowej — ekrany, pseudonim, bramki', () => {
+  // ekrany i panele (ADR 0019, plan M11/P4)
+  for (const id of ['ekran-multi', 'karta-multi', 'multi-panel-zaloz', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi', 'setup-rodzaj', 'multi-pseudonim', 'multi-most-stan']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
+  }
+  // Zgody na wysyłkę NIE pytamy przy każdej grze (właściciel, 2026-09-07):
+  // gra na wielu telefonach z natury działa przez Drive, a opis jest w sekcji
+  // prywatność — tak samo jak przy wyniku hot-seat.
+  assert.ok(!INDEX.includes('id="multi-zgoda"'), 'checkboxa zgody multi nie ma');
+  assert.ok(!APP.includes('multi-zgoda'), 'kod nie czyta już pola zgody multi');
+  assert.ok(!APP.includes('okolica:multi:zgoda'), 'klucz zgody multi zniknął');
+  assert.match(INDEX, /Gra na wielu telefonach/, 'sekcja prywatność opisuje grę wieloosobową');
+  assert.match(APP, /Wpisz pseudonim/, 'bez pseudonimu jawna odmowa wysyłki (plan P4)');
   assert.ok(APP.includes("'okolica:pseudonim'"), 'pseudonim utrwalany pod ustalonym kluczem (M12)');
   // akcje mostu wołane z aplikacji istnieją w .gs (jedna lista prawdy);
   // gra-zdarzenie wysyła warstwa synchronizacji (app/sync.js), nie app.js wprost
@@ -729,6 +962,103 @@ test('kontrakt: cache-busting w CAŁYM grafie — każdy import w app/*.js ma ?v
     assert.deepEqual(gole, [], `${plik}: gołe importy bez ?v= tworzą drugą instancję modułu w przeglądarce (split cache)`);
     for (const m of tresc.matchAll(/from '\.\/[a-z]+\.js\?v=([\w-]+)'/g)) {
       assert.equal(m[1], wersja, `${plik}: znacznik ${m[1]} różny od index.html (${wersja})`);
+    }
+  }
+});
+
+/* ------------------------------- ADR 0006 aneks 2026-09-07: koniec edycji paczki */
+
+test('kontrakt: ręczna edycja paczki nie istnieje w kodzie (ADR 0006 aneks 2026-09-07)', () => {
+  const protokol = czytaj('app/protokol.js');
+  // Podgląd i edycja organizatora zniknęły z ekranu decyzją właściciela
+  // (2026-09-07), więc funkcja je obsługująca była martwa — a przy tym
+  // walidowała `poprawna` jako 0..3, czyli sprzed rev2 (kod pozycyjny).
+  assert.ok(!protokol.includes('zastosujEdycjePaczki'), 'martwa funkcja edycji usunięta z app/protokol.js');
+  assert.ok(!protokol.includes('EDYTOWALNE_POLA'), 'lista pól edytowalnych usunięta razem z funkcją');
+  assert.ok(!INDEX.includes('podglad-pytania'), 'ekran paczki nie ma podglądu pytania');
+  assert.match(czytaj('app/protokol.js'), /export function poprawkaDlaModelu/, 'ścieżka usterek (poprawka do modelu) zostaje');
+});
+
+test('kontrakt: SZABLON_WERSJA ma konsumenta w UI (PROTOKOL §7 — łatka szablonu)', () => {
+  // Audyt PR #3: PROTOKOL §7 każe podbijać łatkę szablonu w `SZABLON_WERSJA`,
+  // a stałej nie czytał ani kod, ani test — podbicie byłoby niewidoczne.
+  assert.match(INDEX, /<span id="stopka-szablon">PYT\/1\.0\.\d+<\/span>/, 'stopka ma miejsce na wersję szablonu');
+  const app = czytaj('app/app.js');
+  assert.match(app, /SZABLON_WERSJA/, 'app.js importuje stałą');
+  assert.match(app, /\$\('stopka-szablon'\)\.textContent = SZABLON_WERSJA/, 'app.js ją renderuje');
+  const stala = czytaj('app/protokol.js').match(/export const SZABLON_WERSJA = '([^']+)'/);
+  assert.ok(stala, 'stała jest eksportowana z app/protokol.js');
+  assert.match(stala[1], /^PYT\/1\.0\.\d+$/, 'łatka protokołu ma kształt PYT/1.0.N');
+});
+
+test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', () => {
+  for (const id of ['gra-oceny', 'gra-oceny-etykieta', 'gra-ocena-plus', 'gra-ocena-minus']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
+  }
+  assert.match(INDEX, /Oceń pytanie/, 'panel jest nazwany po ludzku');
+  assert.ok(INDEX.indexOf('id="gra-oceny"') < INDEX.indexOf('id="gra-odpowiedzi"'), 'panel stoi przy pytaniu, przed odpowiedziami');
+  assert.ok(APP.includes('kliknijOcene(OCENA_PLUS)') && APP.includes('kliknijOcene(OCENA_MINUS)'), 'oba kciuki są podpięte');
+  assert.ok(APP.includes('wyslijOceneWTle'), 'głos jedzie w tle, nie blokuje gry');
+  assert.ok(APP.includes('oproznijKolejkeOcen()'), 'kolejka głosów jest opróżniana przy starcie');
+  assert.ok(APP.includes('opisOcenTekst(walidujStatystykiOcen(meta.oceny))'), 'ekran 2 pokazuje statystyki paczki');
+  assert.ok(APP.includes('STAN.paczkaRepoId'), 'oceny dotyczą paczek z repozytorium');
+});
+
+test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da się wyjść', () => {
+  assert.ok(!INDEX.includes('przycisk-reczne-dojscie'), 'przycisku „Jestem na miejscu" nie ma w index.html');
+  assert.ok(!INDEX.includes('Jestem na miejscu'), 'ręczne zgłoszenie dojścia zniknęło z interfejsu');
+  assert.ok(!APP.includes("$('przycisk-reczne-dojscie').disabled"), 'kod nie dotyka usuniętego przycisku');
+  assert.match(czytaj('app/pozycja.js'), /ADR 0029/, 'komunikat P03 nie odsyła do usuniętego przycisku');
+  assert.ok(INDEX.includes('id="przycisk-nowa-gra"'), 'na ekranie wyniku jest wyjście do nowej gry');
+  assert.ok(APP.includes('function wrocNaPoczatek'), 'przycisk ma podpiętą funkcję');
+  assert.ok(APP.includes("pokazEkran('ekran-setup')"), 'wyjście wraca na ekran setupu');
+  // LESSONS L31: gdy funkcja znika z interfejsu, jej opis zostaje w komunikatach.
+  // Sześć kodów `P` i jeden komunikat `stanDojscia` kazały „zgłosić dojście
+  // ręcznie" jeszcze po usunięciu przycisku — gracz czytał instrukcję, której
+  // nie dało się wykonać.
+  for (const [gdzie, tekst] of [['app/pozycja.js', czytaj('app/pozycja.js')], ['app/app.js', APP], ['index.html', INDEX]]) {
+    assert.ok(!/zgłoś dojście ręcznie|zgłaszać ręcznie|w trybie ręcznym/i.test(tekst), `${gdzie} nadal odsyła do ręcznego zgłaszania dojścia`);
+  }
+});
+
+test('kontrakt ADR 0030: rozgrywka na telefonie układa się pod orientację, a strona się nie przewija', () => {
+  // Który ekran jest na wierzchu, mówi znacznik na <body>: CSS nie ma selektora
+  // rodzica, a reguły „mapa tłem, karty nad nią, bez przewijania” muszą działać
+  // wyłącznie na ekranie gry.
+  assert.match(APP, /document\.body\.dataset\.ekran = nazwa/, 'pokazEkran() oznacza ekran na <body>');
+  assert.match(APP, /document\.body\.dataset\.ekran = 'prywatnosc'/, 'ekran prywatności zdejmuje znacznik gry');
+
+  // Oba układy są zapytane o orientację — przeglądarka przelicza zapytania na
+  // żywo, więc obrót telefonu przełącza układ bez przeładowania.
+  assert.match(STYLE, /orientation: portrait/, 'jest układ pionowy');
+  assert.match(STYLE, /orientation: landscape/, 'jest układ poziomy');
+  assert.match(STYLE, /body\[data-ekran='gra'\] \{ height: 100dvh; overflow: hidden; \}/, 'strona gry się nie przewija');
+
+  // Mapa jest tłem obszaru gry — w proporcjach urządzenia, nie w stałym 45vh.
+  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\) #mapa-gra \{\n    position: absolute;\n    inset: 0;/, 'mapa gry wypełnia obszar gry');
+  // Karty faz leżą NA mapie i mają własne przewijanie.
+  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\) > \.gra-panel \{[^}]*z-index: 2;/s, 'karty faz są nad mapą');
+  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\) > \.gra-panel \{[^}]*overflow-y: auto;/s, 'długie pytanie przewija się w karcie, nie wypycha mapy');
+  // Atrybucja dostawcy (ADR 0003 pkt 3) nie znika razem z dołem mapy.
+  assert.match(STYLE, /\.mapa-atrybucja \{[^}]*bottom: auto;/s, 'atrybucja dostawcy została widoczna nad mapą');
+  // Rozpychacz zamiast justify-content: flex-end — przy nadmiarze treści karty
+  // nie uciekają nad górną krawędź (znany błąd flexboksa).
+  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\)::before \{ content: ''; flex: 1 1 auto; \}/, 'karty schodzą na dół rozpychaczem, nie flex-end');
+
+  // Dwa nadpisania, które ten układ potrafi zepsuć jednym selektorem z id:
+  // (a) `#gra-dystans` ma własne tło akcentu i biały napis — w jasnym motywie
+  //     nadpisanie tła dałoby białe na białym;
+  // (b) `#bledy-gra` ma `blad-tlo`/`blad` z `.bledy` — nadpisanie tła kartą
+  //     sprawiłoby, że błąd przestaje wyglądać jak błąd.
+  // Reguły z id wygrywają z klasowymi, więc pilnujemy wprost: żadna reguła
+  // celująca w te dwa elementy nie deklaruje tła. Bez komentarzy — uzasadnienia
+  // w CSS cytują te same nazwy własności.
+  const reguly = [...STYLE.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
+    .map((m) => ({ selektor: m[1].trim(), cialo: m[2] }));
+  assert.ok(reguly.length > 100, 'parser reguł CSS coś widzi');
+  for (const trafiony of ['#bledy-gra', '.badge-duzy']) {
+    for (const { selektor, cialo } of reguly.filter((r) => r.selektor.includes(trafiony))) {
+      assert.ok(!/background:/.test(cialo), `reguła „${selektor}” nie nadpisuje tła elementu ${trafiony}`);
     }
   }
 });

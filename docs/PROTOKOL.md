@@ -39,7 +39,7 @@ Szablon jest **jednym źródłem prawdy**: tekst poniżej i stała
 
 <!-- szablon-promptu:start -->
 ```tekst
-Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania o tę okolicę.
+Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.
 
 ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.
@@ -109,7 +109,7 @@ WYMAGANIA DODATKOWE:
 | --- | --- | --- |
 | `{LAT}`, `{LON}` | środek gry, 5 miejsc po przecinku (~1 m) | geolokalizacja albo tryb testowy (ADR 0004) |
 | `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt niedostępny — `brak odczytu (tylko współrzędne)` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
-| `{PROMIEN_M}` | promień gry w metrach | setup, z domyślnej wartości trybu (ADR 0003/§4.2) |
+| `{PROMIEN_M}` | promień gry w metrach | setup: liczony z planowanego czasu gry, trybu i liczby pytań (ADR 0025) |
 | `{TRYB}` | `piesza` / `rower` / `samochodowa` — etykieta polska | setup |
 | `{LISTA_STACJI}` | po jednej linii: `- stacja N: LAT, LON — <opis miejsca albo „punkt przy ulicy X"> (ODLEGLOSC m od środka)` | wybór stacji (ADR 0005) |
 | `{LICZBA_GRACZY}` | 1–8 | setup |
@@ -125,6 +125,20 @@ WYMAGANIA DODATKOWE:
 
 Daty w promptcie pochodzą z zegara urządzenia i **nie są zapisywane w danych
 repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
+
+**Budżet rozmiaru (B21, pomiar 2026-09-07).** Prompt **nie rośnie** z liczbą
+pytań — 5 422 znaki (~1 356 tokenów) dla 5 pytań i 5 423 znaki dla 40, bo
+z szablonu zmienia się tylko cyfra w `{LICZBA_PYTAN}`. Rośnie **odpowiedź**:
+realistyczna paczka rev2 (treść ~140 znaków, 4 odpowiedzi, wyjaśnienie ~200
+znaków, jedno źródło) to 4 469 znaków / ~1 118 tokenów dla 5 pytań i
+33 392 znaków / ~8 348 tokenów dla 40 pytań (5 stacji × 8 graczy) — czyli
+~830 znaków i ~210 tokenów na pytanie. Kontener `TO-paczka/2` dla 40 pytań ma
+~36 kB (1,8% budżetu stanu, 2,4% rejestru), więc pamięć nie jest ograniczeniem;
+ograniczeniem jest limit wyjścia modelu. Stałe szacunku żyją w
+`app/protokol.js` (`szacunekOdpowiedzi`, `PROG_ODPOWIEDZI_TOKENY = 4000`),
+a ekran promptu podaje przewidywany rozmiar odpowiedzi i ostrzega powyżej progu
+— ucięty JSON wracałby jako E01/E02 bez wskazania prawdziwej przyczyny.
+Pomiar spinają testy `test/duza-paczka.test.js`.
 
 ## 3. Schemat paczki PYT/1.0
 
@@ -360,6 +374,11 @@ Schematy mostu Drive (`docs/setup/apps-script-repo-paczek.gs`; ADR 0016, 0018,
 0019). Jedno źródło prawdy walidacji po stronie aplikacji: `app/wieloosobowa.js`
 — most ma lustro dla Apps Script, a zgodność obu pilnuje `test/kontrakt.test.js`.
 
+Wysyłka do gry wieloosobowej jest **domyślna**: aplikacja nie pyta o zgodę przy
+zakładaniu ani dołączaniu do gry (checkbox `#multi-zgoda` usunięty 2026-09-07,
+dopisek ADR 0019) — co i dokąd trafia, opisuje sekcja „Dane i prywatność"
+w aplikacji. Schematy `RO-*` nigdy nie miały pola `zgoda`.
+
 ### 9.1 `RO-gra/1` — stan gry (plik JSON w katalogu gier)
 
 | Pole | Typ / zakres | Uwagi |
@@ -375,15 +394,31 @@ Schematy mostu Drive (`docs/setup/apps-script-repo-paczek.gs`; ADR 0016, 0018,
 | `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza) |
 | `zestaw` | `{stacje, kontener TO-paczka/2, meta TO-zestaw/1}` | mapa gry + ukryte pytania (ADR 0007) |
 | `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
-| `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, stacjeZamkniete, zrezygnowal}}` | liczone przez most przy zamknięciu gry |
+| `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal, premia}}` | liczone przez most przy zamknięciu gry; `punkty` zawierają `premia` (ADR 0027 część B) |
 
 Reguły gry: dołączenie tylko w `lobby`; start tylko przez organizatora.
 **Tury**: stacja `i` (1-based) należy NA STAŁE do gracza `gracze[(i-1) % N]`
 — kolejka jest ustalona przy starcie i **nie przesuwa się**; rezygnacja gracza
 **pomija** jego stacje (nie zawęża kolejki — zawężenie przemapowałoby stacje
-między graczami w trakcie gry i rozjechałoby pytania z kontenera). Wyścig:
-wszyscy idą wszystkie stacje jednocześnie; gra kończy się, gdy każdy
-niezrezygnowany gracz odpowiedział na wszystkich stacjach.
+między graczami w trakcie gry i rozjechałoby pytania z kontenera).
+
+**Wyścig (ADR 0027 część B — wolna kolejność)**: każdy gracz idzie do
+WSZYSTKICH stacji w **dowolnej kolejności**, na swoim telefonie i bez
+uzgadniania z innymi. Pytanie bierze wg własnego indeksu: pytanie `k` przy
+danej stacji należy do gracza `k` (`pytaniaNaStacje = liczbaGraczy`), więc nie
+ma wyścigu o pytanie ani blokady przy braku zasięgu; paczka mniejsza niż
+liczba graczy dzieli pytanie (indeks zawija się). 1 pkt za poprawną odpowiedź,
+bez składnika czasowego (ADR 0023 pkt 1). Gra kończy się, gdy każdy
+niezrezygnowany gracz odpowiedział na wszystkich stacjach, ALBO gdy organizator
+zakończy ją przed czasem.
+
+**Premia za kolejność ukończenia**: pierwszy gracz, który zamknął wszystkie
+stacje, dostaje `G − 1` punktów, drugi `G − 2`, …, ostatni 0 (G = liczba
+graczy). Kolejność bierze się z `kolejnosc` zdarzeń nadawanej przez most, nie
+z zegara urządzenia. Rezygnujący i gracze niedokończeni premii nie dostają.
+Premia wchodzi do `punkty` dopiero w podsumowaniu (`stan: zakonczona`) —
+częściowy wynik jej nie pokazuje, żeby nie sugerować punktów, których jeszcze
+nie ma.
 
 ### 9.2 `RO-zdarzenie/1` — zdarzenie gracza
 
@@ -419,6 +454,8 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
   `profil-<id>.json` w katalogu `okolica-profile`; PIN jawnym tekstem
   (ADR 0021). Akcje mostu: `profil-ustaw` (utwórz albo potwierdź),
   `profil-sprawdz` (tylko potwierdź); odmowy kodami R19/R20 w polu `blad`.
+  Aplikacja woła wyłącznie `profil-ustaw` — jest bramą tożsamości ekranu 1
+  (ADR 0026): zakłada profil albo potwierdza PIN jednym żądaniem.
 
 ### 9.4 Kody usterek R01–R20 (`KODY_WIELOOSOBOWE` w `app/wieloosobowa.js`)
 
@@ -444,3 +481,53 @@ niezrezygnowany gracz odpowiedział na wszystkich stacjach.
 | R18 | Część wierszy rankingu uszkodzona — odfiltrowane. |
 | R19 | Nieznany pseudonim (brak pliku profilu). |
 | R20 | PIN niepoprawny albo nie pasuje do pseudonimu. |
+
+### 9.5 `gra-hotseat` — wynik gry z jednego telefonu (ADR 0026 aneks)
+
+Gra na jednym telefonie (hot-seat) nie ma lobby, kodu ani zdarzeń na żywo:
+telefon wysyła SKOŃCZONĄ grę jednym poleceniem POST, a most zapisuje ją jako
+zwykłą grę `RO-gra/1` ze stanem `zakonczona` w katalogu
+`okolica-gry-zakonczone`. `GET ?akcja=ranking` czyta ten sam format, więc
+rankingi hot-seat i gier na wielu urządzeniach są JEDNYMI rankingami — bez
+osobnej ścieżki w aplikacji.
+
+```json
+{
+  "akcja": "gra-hotseat",
+  "tryb": "hotseat",
+  "konfiguracja": {
+    "miejsce": "Podkowa Leśna", "geohash5": "u3qb8", "wiek": "dorosli",
+    "tematy": ["historia"], "liczbaStacji": 3, "pytaniaNaStacje": 3
+  },
+  "gracze": [{ "id": 1, "pseudonim": "Ala" }, { "id": 2, "pseudonim": "Jan" }],
+  "zdarzenia": [
+    { "schemat": "RO-zdarzenie/1", "graczId": 1, "typ": "dojscie",
+      "stacjaId": 1, "dane": { "trybDojscia": "gps" } },
+    { "schemat": "RO-zdarzenie/1", "graczId": 1, "typ": "odpowiedz",
+      "stacjaId": 1, "dane": { "poprawna": true, "punktyRazem": 10 } }
+  ]
+}
+```
+
+Reguły są lustrami po obu stronach (`graHotseatDoWysylki` w
+`app/wieloosobowa.js` i `bledyGryHotseat` w moście):
+
+- `tryb` musi być `hotseat`; `gracze` 1–8, pseudonimy unikalne, ≤ 24 znaków;
+- `zdarzenia` wyłącznie `dojscie` i `odpowiedz`, 1–400 sztuk, `stacjaId`
+  w zakresie 1–`liczbaStacji`, `graczId` z listy graczy;
+- `konfiguracja` jak w grze wieloosobowej: `geohash5` startu zamiast punktu
+  gracza (ADR 0019 pkt 3), a pola `lat`/`lon` most kasuje dodatkowo;
+- `zestaw` jest `null` — paczka i pytania NIGDY nie wchodzą na Drive (ADR 0013);
+- punkty liczy MOST (`przeliczWyniki`), nie telefon: wynik rankingu nie zależy
+  od wersji aplikacji. Premia za kolejność w hot-seat wynosi 0 — gracze idą
+  razem, więc „kto skończył pierwszy" byłoby artefaktem kolejności klikania;
+- odpowiedź: `{ ok: true, idGry, wyniki }`; odmowa: `{ ok: false, blad }`.
+
+Prywatność i offline: wysyłka jest **domyślna** — nie pytamy o nią przy każdej
+grze (decyzja właściciela 2026-09-07); co i dokąd trafia, opisuje sekcja „Dane
+i prywatność" w aplikacji. Warunkiem technicznym jest choć jeden gracz
+potwierdzony profilem PIN (inaczej nie ma gdzie zapisać punktów — komunikat
+pod wynikiem mówi to wprost). Bez sieci
+polecenie czeka w `okolica:hotseat-kolejka` (maks. 5 gier) i jedzie przy
+następnym uruchomieniu, a odcisk gry w `okolica:hotseat-wyslane` pilnuje, żeby
+ta sama gra nie weszła do rankingu dwa razy (ADR 0016 pkt 5).

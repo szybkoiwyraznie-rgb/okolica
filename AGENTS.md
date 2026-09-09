@@ -35,8 +35,8 @@ siebie: znasz `wc -l` pliku i wiesz, że dotarłeś do ostatniej linii.
 7. **Najnowszy `docs/setup/HANDOFF_*.md`** — skrót JEDNEJ sesji: stan na koniec
    i rzeczy otwarte. Nie jest źródłem zasad.
 
-Budżet lektury startowej: pozycje 1–6 mają się mieścić w **40 tys. tokenów**
-(`node tools/budzet-lektury.mjs`, gdy już powstanie). Gdy próg zostanie
+Budżet lektury startowej: pozycje 1–6 mają się mieścić w **100 tys. tokenów**
+(`node tools/budzet-lektury.mjs`). Gdy próg zostanie
 przekroczony, skrócenie/rozdzielenie dokumentów staje się obowiązkowym zadaniem
 sesji, a nie opcją.
 

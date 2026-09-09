@@ -11,8 +11,8 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-5';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-5';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-37';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-37';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.0';
@@ -24,18 +24,18 @@ export const WERSJA_PROTOKOLU_REV1 = 'PYT/1.0-rev1';
 export const WERSJA_PROTOKOLU_REV2 = 'PYT/1.0-rev2';
 
 /** Wersja łatki szablonu promptu (kosmetyka szablonu bez zmiany schematu). */
-export const SZABLON_WERSJA = 'PYT/1.0.5'; // rev2: kod pozycyjny z +17, koniec pola punkty
+export const SZABLON_WERSJA = 'PYT/1.0.6'; // 1.0.6: pytania „z wybranych dziedzin" (decyzja właściciela)
 
 /** Schemat kontenera z obfuskowanymi pytaniami (ADR 0007 pkt 3 i 5: maskowanie, nie szyfrowanie). */
 // Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
 // protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
-export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-5';
+export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-37';
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.
  * NIE EDYTUJ RĘCZNIE — zmień dokument i uruchom `npm run build`.
  */
-export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania o tę okolicę.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego potwierdzonego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. Pola \"tresc\", \"odpowiedzi\", \"wyjasnienie\", \"uwagi\" oraz \"tytul\" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład \"Kot\" jako \"toK\"), a w polu \"protokol\" wpisz \"PYT/1.0-rev2\". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev2\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 20,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola \"id\" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
+export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego potwierdzonego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. Pola \"tresc\", \"odpowiedzi\", \"wyjasnienie\", \"uwagi\" oraz \"tytul\" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład \"Kot\" jako \"toK\"), a w polu \"protokol\" wpisz \"PYT/1.0-rev2\". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev2\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 20,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola \"id\" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
 /* SZABLON-KONIEC */
 
 /**
@@ -218,6 +218,35 @@ export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date() }) {
     return { prompt: null, usterki };
   }
   return { prompt, usterki };
+}
+
+/* --- B21: budżet odpowiedzi modelu (pomiar 2026-09-07) -------------------
+ * Prompt NIE rośnie z liczbą pytań (5 422 znaki dla 5 pytań i 5 423 dla 40 —
+ * zmienia się tylko cyfra), więc wąskim gardłem jest ODPOWIEDŹ: zmierzona na
+ * realistycznej paczce rev2 (treść ~140 znaków, 4 odpowiedzi, wyjaśnienie
+ * ~200 znaków, jedno źródło) wyszła 4 469 znaków / ~1 118 tokenów dla 5 pytań
+ * i 33 392 znaków / ~8 348 tokenów dla 40 pytań (5 stacji × 8 graczy).
+ * Czyli ~830 znaków i ~210 tokenów na pytanie. Modele z limitem wyjścia
+ * 4 tys. tokenów urywają taką odpowiedź w połowie — stąd jawne ostrzeżenie
+ * na ekranie promptu (PROG_ODPOWIEDZI_TOKENY) zamiast cichego E01/E02 po
+ * wklejeniu uciętego JSON-u. Stałe są przybliżeniem; test `duza-paczka`
+ * porównuje je z prawdziwym fiksturem 40 pytań.
+ */
+export const BAZA_ODPOWIEDZI_ZNAKI = 340;
+export const ZNAKI_NA_PYTANIE = 830;
+export const BAZA_ODPOWIEDZI_TOKENY = 90;
+export const TOKENY_NA_PYTANIE = 210;
+/** Powyżej tylu tokenów odpowiedzi ekran promptu ostrzega o możliwym urwaniu. */
+export const PROG_ODPOWIEDZI_TOKENY = 4_000;
+
+/** Szacowany rozmiar odpowiedzi modelu dla `liczbaPytan` pytań (B21). */
+export function szacunekOdpowiedzi(liczbaPytan) {
+  const n = Number.isFinite(liczbaPytan) && liczbaPytan > 0 ? Math.round(liczbaPytan) : 0;
+  return {
+    pytania: n,
+    znaki: BAZA_ODPOWIEDZI_ZNAKI + ZNAKI_NA_PYTANIE * n,
+    tokeny: BAZA_ODPOWIEDZI_TOKENY + TOKENY_NA_PYTANIE * n,
+  };
 }
 
 /**
@@ -625,124 +654,6 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
  * Tekst poprawki do wklejenia modelowi (ADR 0006 pkt 5): lista usterek
  * w języku protokołu, gotowa jako następny prompt.
  */
-/** Pola pytania, które organizator może poprawić ręcznie (ADR 0006 pkt 8). */
-export const EDYTOWALNE_POLA = ['tresc', 'odpowiedzi', 'poprawna', 'wyjasnienie', 'zrodla'];
-
-/** Etykiety pól do `modyfikacje[].opis` — opis jest dla ludzi, nie dla kodu. */
-const ETYKIETY_POL = {
-  tresc: 'treść pytania',
-  odpowiedzi: 'odpowiedzi',
-  poprawna: 'poprawną odpowiedź',
-  wyjasnienie: 'wyjaśnienie',
-  zrodla: 'źródła',
-};
-
-/**
- * Ręczna edycja paczki w podglądzie organizatora (ADR 0006 pkt 8).
- *
- * Zwraca NOWĄ paczkę (wejście nietknięte) z dopisanym `modyfikacje[]`
- * w kształcie PROTOKOL §3.1: `{data, opis}`. Edycja jest ATOMOWA: jeśli
- * którakolwiek zmiana jest niedopuszczalna, nie zostaje zastosowana ŻADNA
- * (`paczka: null` + usterki z kanonu E). Pełną zgodność z protokołem
- * sprawdza dopiero `walidujPaczke` na wyniku — ta funkcja odrzuca tylko
- * oczywiste błędy typów i wartości, resztę zostawia walidatorowi.
- *
- * @param {object} paczka zwalidowana paczka PYT/1.0
- * @param {Array<{pytanieId: string, zmiany: object}>} edycje
- * @param {{terazMs?: number}} [args] zegar wstrzykiwany (nie z globali)
- * @returns {{paczka: object|null, usterki: Array, modyfikacje: Array}}
- */
-export function zastosujEdycjePaczki(paczka, edycje, { terazMs = Date.now() } = {}) {
-  if (!paczka || typeof paczka !== 'object' || Array.isArray(paczka)) {
-    throw new TypeError('zastosujEdycjePaczki: paczka musi być obiektem PYT');
-  }
-  if (!Array.isArray(edycje)) {
-    throw new TypeError('zastosujEdycjePaczki: edycje muszą być listą');
-  }
-  const pytania = Array.isArray(paczka.pytania) ? paczka.pytania : [];
-  const usterki = [];
-  const nowePytania = pytania.map((pyt) => ({ ...pyt }));
-  const modyfikacje = [];
-
-  for (const edycja of edycje) {
-    if (!edycja || typeof edycja !== 'object') {
-      throw new TypeError('zastosujEdycjePaczki: każda edycja to obiekt {pytanieId, zmiany}');
-    }
-    const { pytanieId, zmiany } = edycja;
-    if (typeof pytanieId !== 'string' || !pytanieId) {
-      throw new TypeError('zastosujEdycjePaczki: pytanieId musi być niepustym tekstem');
-    }
-    if (!zmiany || typeof zmiany !== 'object' || Array.isArray(zmiany)) {
-      throw new TypeError('zastosujEdycjePaczki: zmiany muszą być obiektem pól');
-    }
-    const idx = nowePytania.findIndex((pyt) => pyt && pyt.id === pytanieId);
-    if (idx < 0) {
-      usterki.push({ kod: 'E19', pole: `edycja(${pytanieId})`, komunikat: `W paczce nie ma pytania o identyfikatorze "${pytanieId}".` });
-      continue;
-    }
-    const zmienionePola = [];
-    for (const [pole, wartosc] of Object.entries(zmiany)) {
-      if (!EDYTOWALNE_POLA.includes(pole)) {
-        usterki.push({
-          kod: 'E15', pole: `edycja(${pytanieId}).${pole}`,
-          komunikat: `Pola "${pole}" nie wolno edytować ręcznie (edytowalne: ${EDYTOWALNE_POLA.join(', ')}) — popraw je u modelu albo w konfiguracji gry.`,
-        });
-        continue;
-      }
-      const cel = `edycja(${pytanieId}).${pole}`;
-      if (pole === 'tresc') {
-        if (typeof wartosc !== 'string' || !wartosc.trim()) {
-          usterki.push({ kod: 'E15', pole: cel, komunikat: 'Nowa treść pytania nie może być pusta.' });
-          continue;
-        }
-        nowePytania[idx].tresc = wartosc.trim();
-      } else if (pole === 'wyjasnienie') {
-        if (typeof wartosc !== 'string' || !wartosc.trim()) {
-          usterki.push({ kod: 'E20', pole: cel, komunikat: 'Nowe wyjaśnienie nie może być puste.' });
-          continue;
-        }
-        nowePytania[idx].wyjasnienie = wartosc.trim();
-      } else if (pole === 'odpowiedzi') {
-        if (!Array.isArray(wartosc) || wartosc.length !== 4 || wartosc.some((o) => typeof o !== 'string' || !o.trim())) {
-          usterki.push({ kod: 'E07', pole: cel, komunikat: 'Odpowiedzi musi być dokładnie 4, każda niepusta.' });
-          continue;
-        }
-        nowePytania[idx].odpowiedzi = wartosc.map((o) => o.trim());
-      } else if (pole === 'poprawna') {
-        if (!Number.isInteger(wartosc) || wartosc < 0 || wartosc > 3) {
-          usterki.push({ kod: 'E06', pole: cel, komunikat: `Indeks poprawnej odpowiedzi (${wartosc}) jest poza zakresem 0..3.` });
-          continue;
-        }
-        nowePytania[idx].poprawna = wartosc;
-      } else if (pole === 'zrodla') {
-        const ok = Array.isArray(wartosc) && wartosc.length > 0 && wartosc.every(
-          (z) => z && typeof z === 'object' && typeof z.url === 'string' && typeof z.tytul === 'string' && typeof z.sprawdzono === 'string',
-        );
-        if (!ok) {
-          usterki.push({ kod: 'E09', pole: cel, komunikat: 'Źródła: niepusta lista obiektów {url, tytul, sprawdzono} (ADR 0008).' });
-          continue;
-        }
-        nowePytania[idx].zrodla = wartosc.map((z) => ({ ...z }));
-      }
-      zmienionePola.push(pole);
-    }
-    if (zmienionePola.length > 0) {
-      modyfikacje.push({
-        data: formatujDate(new Date(terazMs)),
-        opis: `pytanie ${pytanieId}: poprawiono ${zmienionePola.map((pole) => ETYKIETY_POL[pole]).join(', ')}`,
-      });
-    }
-  }
-
-  if (usterki.length > 0) return { paczka: null, usterki, modyfikacje: [] }; // atomowo: wszystko albo nic
-  const poprzednie = Array.isArray(paczka.modyfikacje) ? paczka.modyfikacje : [];
-  return {
-    paczka: { ...paczka, pytania: nowePytania, modyfikacje: [...poprzednie, ...modyfikacje] },
-    usterki: [],
-    modyfikacje,
-  };
-}
-
 export function poprawkaDlaModelu(usterki, { liczbaPytan } = {}) {
   const linie = [
     'Twoja poprzednia odpowiedź została odrzucona przez walidator protokołu PYT/1.0.',

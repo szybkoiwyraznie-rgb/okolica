@@ -36,6 +36,14 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0021](0021-pin-prosty-profilu-pseudonimu.md) | PIN pseudonimu (4-8 cyfr, jawny tekst, RO-profil/1) + przycisk To ja w setupie | Zaakceptowana |
 | [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` | Zaakceptowana |
 | [0023](0023-zero-presji-czasowej.md) | Zero presji czasowej: punktacja to dotarcie plus poprawna odpowiedź | Zaakceptowana |
+| [0024](0024-tolerancja-dopasowania-okolicy.md) | Dopasowanie okolicy z tolerancją: odległość od komórki geohash, nie „ten sam geohash" | Zaakceptowana |
+| [0025](0025-czas-gry-zamiast-promienia.md) | Czas gry zamiast promienia: promień jest wynikiem, nie polem | Zaakceptowana |
+| [0026](0026-tozsamosc-brama-ekranu-1.md) | Tożsamość jest bramą ekranu 1: imię + PIN, jedno wołanie mostu | Zaakceptowana |
+| [0027](0027-pytania-po-rowno-i-wolna-kolejnosc.md) | Pytania po równo na gracza (wdrożone) i wolna kolejność stacji w grze sieciowej (projekt) | Zaakceptowana |
+| [0028](0028-oceny-pytan-graczy.md) | Oceny pytań przez graczy: jeden kciuk, jeden głos na gracza i pytanie, wysyłka w tle | Zaakceptowana |
+| [0029](0029-brak-recznego-dojscia.md) | Dojście zalicza tylko GPS: ręczne zgłaszanie usunięte z interfejsu | Zaakceptowana |
+| [0030](0030-rozgrywka-pod-orientacje-telefonu.md) | Rozgrywka układa się pod orientację telefonu, a pytanie leży NA mapie | Zaakceptowana |
+| [0031](0031-generowanie-pytan-partiami.md) | Duży setup generuje pytania partiami, a aplikacja sama je scala | Wycofana |
 
 ## Szablon ADR
 

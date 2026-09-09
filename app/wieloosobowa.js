@@ -12,7 +12,6 @@
  * pól, a most kasuje zakazane pola dodatkowo po swojej stronie.
  */
 
-import { ALFABET_GEOHASH, geohash, ogranicz } from './geo.js?v=m12-5';
 
 export const SCHEMAT_GRY = 'RO-gra/1';
 export const SCHEMAT_ZDARZENIA = 'RO-zdarzenie/1';
@@ -26,6 +25,11 @@ export const DLUGOSC_KODU = 6;
 export const MAKS_GRACZY = 8;
 
 export const TRYBY_GRY = Object.freeze({ wyscig: 'wyscig', tury: 'tury' });
+/**
+ * Trzeci tryb: gra na jednym telefonie (hot-seat). Nie ma lobby ani zdarzeń na
+ * żywo — wynik leci na Drive JEDNYM poleceniem po zakończeniu (ADR 0026 aneks).
+ */
+export const TRYB_HOTSEAT = 'hotseat';
 export const STANY_GRY = Object.freeze(['lobby', 'trwa', 'zakonczona', 'archiwum']);
 export const TYPY_ZDARZEN = Object.freeze(['start', 'dojscie', 'odpowiedz', 'rezygnacja', 'koniec']);
 
@@ -71,6 +75,37 @@ export function czyPinPoprawny(pin) {
   return /^\d{4,8}$/.test(String(pin ?? '').trim());
 }
 
+/**
+ * Profil zweryfikowany na tym telefonie (`okolica:profil`, ADR 0026): tylko
+ * pseudonim i znacznik weryfikacji — PIN NIGDY nie jest zapisywany lokalnie
+ * (ADR 0013: na telefonie zostaje minimum). `null` dla śmieci.
+ */
+export function walidujProfilLokalny(surowy) {
+  if (!surowy || typeof surowy !== 'object') return null;
+  if (surowy.schemat !== 'profil-lokalny/1') return null;
+  const pseudonim = normalizujPseudonim(surowy.pseudonim);
+  if (!pseudonim) return null;
+  return { schemat: surowy.schemat, pseudonim, zweryfikowany: surowy.zweryfikowany === true, kiedy: surowy.kiedy ?? null };
+}
+
+/**
+ * Lista graczy zapamiętana na tym telefonie (`okolica:gracze`, ADR 0026 aneks):
+ * imiona + znacznik potwierdzenia na moście. PIN NIGDY nie jest zapisywany
+ * lokalnie (ADR 0013) — dlatego zweryfikowany gracz wraca do gry bez pytania
+ * o PIN (decyzja właściciela 2026-09-07). `null` dla śmieci.
+ */
+export function walidujGraczyLokalnych(surowy) {
+  if (!surowy || typeof surowy !== 'object') return null;
+  if (surowy.schemat !== 'gracze-lokalni/1') return null;
+  if (!Array.isArray(surowy.gracze)) return null;
+  const gracze = surowy.gracze
+    .map((g) => (g && typeof g === 'object' ? { pseudonim: normalizujPseudonim(g.pseudonim), zweryfikowany: g.zweryfikowany === true } : null))
+    .filter((g) => g && g.pseudonim)
+    .slice(0, MAKS_GRACZY);
+  if (!gracze.length) return null;
+  return { schemat: surowy.schemat, gracze };
+}
+
 /** Jawna odmowa mostu przy profilu: kod R19/R20 → zdanie dla gracza. */
 export function komunikatBleduProfilu(blad) {
   const kod = String(blad ?? '').trim();
@@ -102,65 +137,13 @@ export function kodPoprawny(tekst) {
   return k.length === DLUGOSC_KODU && [...k].every((znak) => ALFABET_KODU.includes(znak));
 }
 
-/* ------------------------------------------- sąsiedztwo geohash5 (lobby) */
+// Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
+// `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
+// (app.js, testy) nie zmieniały ścieżki.
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-37';
 
-/** Ramka bounding-box geohasha (dekoder do pary z `geo.geohash`). */
-export function ramkaGeohash(gh) {
-  const tekst = String(gh ?? '').toLowerCase();
-  if (!tekst.length) return null;
-  let latMin = -90; let latMax = 90; let lonMin = -180; let lonMax = 180;
-  let nawetLon = true;
-  for (const znak of tekst) {
-    const v = ALFABET_GEOHASH.indexOf(znak);
-    if (v < 0) return null;
-    for (let bit = 4; bit >= 0; bit -= 1) {
-      const b = (v >> bit) & 1;
-      if (nawetLon) {
-        const srodek = (lonMin + lonMax) / 2;
-        if (b) lonMin = srodek; else lonMax = srodek;
-      } else {
-        const srodek = (latMin + latMax) / 2;
-        if (b) latMin = srodek; else latMax = srodek;
-      }
-      nawetLon = !nawetLon;
-    }
-  }
-  return { latMin, latMax, lonMin, lonMax };
-}
+export { ramkaGeohash, sasiednieGeohash };
 
-/**
- * Osiem komórek sąsiadujących z geohashem (ta sama precyzja) — lobby gier
- * „w najbliższej okolicy" = własna komórka + sąsiedzi (ADR 0019 pkt 1).
- * Geometrycznie: środek komórki przesunięty o jej rozmiar w 8 kierunkach,
- * zakodowany z powrotem tym samym `geo.geohash` (jedno źródło prawdy).
- */
-export function sasiednieGeohash(gh) {
-  const r = ramkaGeohash(gh);
-  if (!r) return [];
-  const dLat = r.latMax - r.latMin;
-  const dLon = r.lonMax - r.lonMin;
-  const sLat = (r.latMin + r.latMax) / 2;
-  const sLon = (r.lonMin + r.lonMax) / 2;
-  const precyzja = String(gh).length;
-  const kierunki = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
-  const wynik = [];
-  for (const [dx, dy] of kierunki) {
-    const lat = ogranicz(sLat + dy * dLat, -89.9999, 89.9999);
-    let lon = sLon + dx * dLon;
-    while (lon > 180) lon -= 360;
-    while (lon < -180) lon += 360;
-    let sasiad = null;
-    try {
-      sasiad = geohash(lat, lon, precyzja);
-    } catch {
-      sasiad = null; // przy słupach/antimeridianie kierunek wypada — lobby bez niego
-    }
-    if (sasiad && sasiad !== String(gh).toLowerCase() && !wynik.includes(sasiad)) wynik.push(sasiad);
-  }
-  return wynik;
-}
-
-/** Filtr lobby: gry w mojej komórce geohash5 albo u sąsiadów. */
 export function filtrujLobby(wpisy, { geohash5 } = {}) {
   if (!Array.isArray(wpisy)) return [];
   if (!geohash5) return [];
@@ -281,6 +264,15 @@ export function walidujRankingSurowy(tekst) {
 
 /* ------------------------------------------------- zdarzenia (wysyłka) */
 
+/** `dane` zdarzenia przez BIAŁĄ listę — jedyne miejsce, które decyduje, co jedzie na Drive. */
+export function czyscDaneZdarzenia(dane = {}) {
+  const czyste = {};
+  for (const pole of POLA_DANYCH_ZDARZENIA) {
+    if (dane?.[pole] !== undefined) czyste[pole] = dane[pole];
+  }
+  return czyste;
+}
+
 /**
  * Budowa zdarzenia RO-zdarzenie/1: `dane` przechodzą przez BIAŁĄ listę pól —
  * współrzędne i wszystko nieprzewidziane zostaje na telefonie (ADR 0019 pkt 3).
@@ -288,10 +280,7 @@ export function walidujRankingSurowy(tekst) {
 export function zbudujZdarzenie({ kod, idGry, graczId, typ, stacjaId = null, dane = {}, tUrzadzenia = null } = {}) {
   if (!TYPY_ZDARZEN.includes(typ)) throw new TypeError(`zbudujZdarzenie: nieznany typ „${typ}"`);
   if (!graczId || !(kod || idGry)) throw new TypeError('zbudujZdarzenie: graczId i kod/idGry są wymagane');
-  const czyste = {};
-  for (const pole of POLA_DANYCH_ZDARZENIA) {
-    if (dane[pole] !== undefined) czyste[pole] = dane[pole];
-  }
+  const czyste = czyscDaneZdarzenia(dane);
   const zdarzenie = { schemat: SCHEMAT_ZDARZENIA, graczId, typ, dane: czyste };
   if (kod) zdarzenie.kod = kod;
   if (idGry) zdarzenie.idGry = idGry;
@@ -355,11 +344,16 @@ export function czyKompletna(gra) {
   });
 }
 
-/** Postęp jednego gracza (żywa tabela w wyścigu, resume w turach). */
+/**
+ * Postęp jednego gracza (żywa tabela w wyścigu, resume w turach). Pola i reguły
+ * są IDENTYCZNE z `przeliczWyniki` w moście Drive — pilnuje tego
+ * `test/most-gra.test.js`, więc telefon pokazuje to samo co Drive.
+ */
 export function postepGracza(gra, graczId) {
-  const postep = { stacjeZamkniete: 0, punkty: 0, poprawne: 0, bledne: 0, zrezygnowal: false };
+  const postep = { stacjeZamkniete: 0, punkty: 0, poprawne: 0, bledne: 0, czasOdcinkowMs: 0, zrezygnowal: false };
   for (const z of gra?.zdarzenia ?? []) {
     if (z.graczId !== graczId) continue;
+    if (z.typ === 'dojscie') postep.czasOdcinkowMs += Number(z.dane?.czasOdcinkaMs) || 0;
     if (z.typ === 'odpowiedz') {
       postep.stacjeZamkniete += 1;
       postep.punkty += Number(z.dane?.punktyRazem) || 0;
@@ -370,11 +364,62 @@ export function postepGracza(gra, graczId) {
   return postep;
 }
 
-/** Wyniki zbiorcze (to samo co `przeliczWyniki` w moście — aplikacja liczy podgląd). */
+/**
+ * Premia za kolejność ukończenia (ADR 0027 część B pkt 5): pierwszy gracz, który
+ * zamknął wszystkie stacje, dostaje (G − 1) punktów, drugi (G − 2), …, ostatni 0.
+ *
+ * - kolejność bierze się z `kolejnosc` zdarzeń nadawanej przez most, NIE z zegara
+ *   urządzenia (ADR 0027 pkt 4) — dwa telefony nie mają wspólnego czasu;
+ * - gracz, który zrezygnował albo nie zamknął wszystkich stacji (gospodarz
+ *   zakończył grę wcześniej), premii nie dostaje;
+ * - remis kolejności jest niemożliwy: `kolejnosc` jest nadawana sekwencyjnie
+ *   w blokadzie zapisu mostu (`zBlokada`), więc każdy ma inną.
+ *
+ * Zwraca mapę `graczId → premia` (brak klucza = 0).
+ */
+export function premiaZaKolejnosc(gra) {
+  const premia = {};
+  const gracze = gra?.gracze ?? [];
+  const N = Number(gra?.konfiguracja?.liczbaStacji) || 0;
+  if (gracze.length < 2 || N < 1) return premia; // jeden gracz: premia zawsze 0
+  // Hot-seat (jedna gra na jednym telefonie, ADR 0026 aneks): gracze idą razem,
+  // więc „kto pierwszy skończył" jest artefaktem kolejności klikania — premii 0.
+  if (gra?.tryb === TRYB_HOTSEAT) return premia;
+  const rezygnacje = new Set((gra.zdarzenia ?? []).filter((z) => z.typ === 'rezygnacja').map((z) => z.graczId));
+  const ostatnia = new Map();
+  for (const z of gra.zdarzenia ?? []) {
+    if (z.typ === 'odpowiedz' && z.stacjaId != null) ostatnia.set(z.graczId, Number(z.kolejnosc) || 0);
+  }
+  const skonczeni = gracze
+    .map((g) => ({ id: g.id, postep: postepGracza(gra, g.id), koniec: ostatnia.get(g.id) ?? 0 }))
+    .filter((w) => !w.postep.zrezygnowal && !rezygnacje.has(w.id) && w.postep.stacjeZamkniete >= N)
+    .sort((a, b) => a.koniec - b.koniec);
+  skonczeni.forEach((w, i) => {
+    const ile = gracze.length - (i + 1);
+    if (ile > 0) premia[w.id] = ile;
+  });
+  return premia;
+}
+
+/**
+ * Wyniki zbiorcze (to samo co `przeliczWyniki` w moście — aplikacja liczy
+ * podgląd). Premia za kolejność jest liczona zawsze, ale do `punkty` wchodzi
+ * DOPIERO w grze zakończonej (ADR 0027 pkt 5): częściowy wynik nie sugeruje
+ * premii, której jeszcze nie ma.
+ */
 export function przeliczWyniki(gra) {
+  const premia = premiaZaKolejnosc(gra);
+  const koniec = gra?.stan === 'zakonczona' || gra?.stan === 'archiwum';
   const wyniki = {};
   for (const g of gra?.gracze ?? []) {
-    wyniki[g.id] = { pseudonim: g.pseudonim, ...postepGracza(gra, g.id) };
+    const postep = postepGracza(gra, g.id);
+    const ile = premia[g.id] ?? 0;
+    wyniki[g.id] = {
+      pseudonim: g.pseudonim,
+      ...postep,
+      premia: ile,
+      punkty: postep.punkty + (koniec ? ile : 0),
+    };
   }
   return wyniki;
 }
@@ -419,4 +464,90 @@ export function kategorieRankingu(wiersze) {
     }
   }
   return { wieki: [...wieki].sort(), tematy: [...tematy].sort(), lokalizacje: [...lokalizacje.values()] };
+}
+
+/* ------- hot-seat: wynik gry z jednego telefonu na Drive (ADR 0026 aneks) ---- */
+
+/**
+ * Dziennik lokalnej gry (`app/rozgrywka.js`) → zdarzenia protokołu mostu.
+ * Z dziennika bierzemy TYLKO dojścia i odpowiedzi — reszta (start, wybór
+ * stacji, ostrzeżenia, pominięcia) jest lokalna. Pola `dane` idą przez tę samą
+ * BIAŁĄ listę co w grze wieloosobowej, więc współrzędne, dokładność GPS i id
+ * pytań zostają na telefonie (ADR 0019 pkt 3, ADR 0013).
+ *
+ * Punktacja liczy się na moście tym samym `przeliczWyniki` co w multi — telefon
+ * nie wysyła gotowych punktów, tylko fakty, więc rankingi obu trybów są spójne.
+ */
+export function zdarzeniaHotseatu(dziennik) {
+  const zdarzenia = [];
+  for (const wpis of Array.isArray(dziennik) ? dziennik : []) {
+    if (wpis?.typ !== 'dojscie' && wpis?.typ !== 'odpowiedz') continue;
+    const stacjaId = Number.isFinite(Number(wpis.stacja)) ? Number(wpis.stacja) : null;
+    const dane = wpis.typ === 'dojscie'
+      ? czyscDaneZdarzenia({ trybDojscia: wpis.trybDojscia })
+      : czyscDaneZdarzenia({ poprawna: wpis.poprawna, punktyRazem: wpis.punkty });
+    zdarzenia.push({ schemat: SCHEMAT_ZDARZENIA, graczId: wpis.gracz, typ: wpis.typ, stacjaId, dane });
+  }
+  return zdarzenia;
+}
+
+/**
+ * Polecenie `gra-hotseat` — cała zakończona gra w jednym żądaniu. Walidacja jest
+ * lokalnym lustrem `bledyGryHotseat` z mostu (Apps Script nie może importować
+ * modułów, więc reguły są po dwóch stronach; zgodność pilnuje test kontraktu).
+ *
+ * Zwraca `{ ok: false, usterki }` zamiast rzucać: brak wyniku na Drive nigdy nie
+ * może zepsuć gry, która właśnie się skończyła (ADR 0016 pkt 5).
+ */
+export function graHotseatDoWysylki({ miejsce, geohash5, wiek, tematy, liczbaStacji, pytaniaNaStacje, gracze, dziennik } = {}) {
+  const usterki = [];
+  if (typeof miejsce !== 'string' || !miejsce.trim()) usterki.push('brak nazwy miejsca');
+  if (!/^[0-9b-z]{5}$/.test(String(geohash5 ?? ''))) usterki.push('geohash5 musi mieć 5 znaków (przybliżenie okolicy, ADR 0024 pkt 4)');
+  if (typeof wiek !== 'string' || !wiek.trim()) usterki.push('brak kategorii wieku');
+  if (!Array.isArray(tematy) || !tematy.length) usterki.push('brak tematów');
+  if (!(Number(liczbaStacji) > 0)) usterki.push('liczbaStacji musi być dodatnia');
+  if (!(Number(pytaniaNaStacje) > 0)) usterki.push('pytaniaNaStacje musi być dodatnia');
+  const lista = (Array.isArray(gracze) ? gracze : []).filter((g) => typeof g?.pseudonim === 'string' && g.pseudonim.trim());
+  if (!lista.length) usterki.push('gra bez graczy nie ma wyniku');
+  else if (lista.length > MAKS_GRACZY) usterki.push(`maksymalnie ${MAKS_GRACZY} graczy w jednej grze`);
+  const zdarzenia = zdarzeniaHotseatu(dziennik);
+  if (!zdarzenia.length) usterki.push('gra bez dojść i odpowiedzi — nie ma czego zapisywać');
+  if (usterki.length) return { ok: false, usterki };
+  return {
+    ok: true,
+    usterki: [],
+    polecenie: {
+      akcja: 'gra-hotseat',
+      tryb: TRYB_HOTSEAT,
+      konfiguracja: {
+        miejsce: miejsce.trim(),
+        geohash5,
+        wiek: wiek.trim(),
+        tematy: [...tematy],
+        liczbaStacji: Number(liczbaStacji),
+        pytaniaNaStacje: Number(pytaniaNaStacje),
+      },
+      gracze: lista.map((g) => ({ id: g.id, pseudonim: g.pseudonim.trim().slice(0, 24) })),
+      zdarzenia,
+    },
+  };
+}
+
+export const SCHEMAT_KOLEJKI_HOTSEAT = 'hotseat-kolejka/1';
+export const SCHEMAT_WYSLANYCH_HOTSEAT = 'hotseat-wyslane/1';
+
+/**
+ * Kolejka wyników, które nie doszły na Drive (ADR 0016 pkt 5: awaria sieci nie
+ * blokuje gry). Śmieciowy albo stary zapis daje pustą listę, nigdy wyjątku.
+ */
+export function walidujKolejkeHotseat(surowy) {
+  if (surowy?.schemat !== SCHEMAT_KOLEJKI_HOTSEAT || !Array.isArray(surowy.gry)) return [];
+  return surowy.gry.filter((g) => g?.akcja === 'gra-hotseat' && g?.tryb === TRYB_HOTSEAT
+    && g?.konfiguracja && Array.isArray(g.gracze) && Array.isArray(g.zdarzenia));
+}
+
+/** Klucze gier już wysłanych — wynik jednej gry nie może wejść do rankingu dwa razy. */
+export function walidujWyslaneHotseat(surowy) {
+  if (surowy?.schemat !== SCHEMAT_WYSLANYCH_HOTSEAT || !Array.isArray(surowy.klucze)) return [];
+  return surowy.klucze.filter((k) => typeof k === 'string' && k);
 }

@@ -5,13 +5,18 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
-test('TRYBY: trzy tryby z briefu właściciela i promienie 1/3/10 km', () => {
+test('TRYBY: trzy tryby z briefu właściciela, prędkości 4,5/15/40 km/h, bez własnego promienia (ADR 0025)', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
-  assert.equal(TRYBY.piesza.promienM, 1000);
-  assert.equal(TRYBY.rower.promienM, 3000);
-  assert.equal(TRYBY.samochodowa.promienM, 10000);
+  // Promień nie jest już cechą trybu: liczy się z planowanego czasu gry
+  // (ADR 0025). Z trybu zostaje prędkość — to ona wchodzi do wzoru.
+  assert.equal(TRYBY.piesza.predkoscKmh, 4.5);
+  assert.equal(TRYBY.rower.predkoscKmh, 15);
+  assert.equal(TRYBY.samochodowa.predkoscKmh, 40);
+  for (const tryb of Object.values(TRYBY)) {
+    assert.equal(tryb.promienM, undefined, `${tryb.etykieta}: promień trybu usunięty`);
+  }
   // zoomy szczegółu wg ADR 0003 pkt 5
   assert.equal(TRYBY.piesza.zoom, 17);
   assert.equal(TRYBY.rower.zoom, 15);
@@ -63,7 +68,8 @@ test('PODKLADY: klucze zgodne z docs/ASSETS.md, brak dostawców z kluczem API', 
 test('domyslnaKonfiguracja: 1 gracz, 5 stacji, dorośli, pieszo, zgodnie z briefem', () => {
   const k = domyslnaKonfiguracja();
   assert.equal(k.tryb, 'piesza');
-  assert.equal(k.promienM, 1000);
+  assert.equal(k.czasGryMin, 60, 'domyślny planowany czas gry: 60 min (decyzja właściciela 2026-09-07)');
+  assert.equal(k.promienM, 500, 'kalibracja właściciela: 60 min pieszo, 5 stacji × 1 pytanie → ~500 m');
   assert.equal(k.liczbaGraczy, 1);
   assert.equal(k.liczbaStacji, 5);
   assert.equal(k.pytaniaNaStacje, 1);
@@ -119,7 +125,7 @@ test('walidujSetup: przyjmuje poprawną i odrzuca każdą klasę błędu', () =>
   assert.ok(kody({ ...baza, imiona: ['', 'Ala'] }).includes('K08'));
   assert.ok(kody({ ...baza, liczbaStacji: 2 }).includes('K10'));
   assert.ok(kody({ ...baza, liczbaStacji: 13 }).includes('K10'));
-  assert.ok(kody({ ...baza, pytaniaNaStacje: 4 }).includes('K11'));
+  assert.ok(kody({ ...baza, pytaniaNaStacje: 9 }).includes('K11'), 'widełki pytań sięgają MAKS_GRACZY (ADR 0027)');
   assert.ok(kody({ ...baza, promienM: 50 }).includes('K12'));
   assert.ok(kody({ ...baza, promienM: 99999 }).includes('K12'));
   assert.ok(kody({ ...baza, tematy: [] }).includes('K14'));
@@ -215,4 +221,94 @@ test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', (
 
   // kod gry przycięty do limitu
   assert.equal(oczyscKonfiguracje({ kodGry: '  ' + 'A'.repeat(50) + '  ' }).kodGry.length, OGRANICZENIA.dlugoscKoduGry.max);
+});
+
+/* ------------ ADR 0025: promień liczony z planowanego czasu gry ------------ */
+
+test('promienZCzasuGry: punkt kalibracyjny właściciela (60 min, pieszo, 5 pytań → 500 m)', () => {
+  const r = przeliczenieCzasu({ czasGryMin: 60, tryb: 'piesza', liczbaStacji: 5, pytaniaNaStacje: 1 });
+  assert.equal(r.promienM, 500, `wyszło ${r.promienM} m`);
+  assert.equal(promienZCzasuGry({ czasGryMin: 60, tryb: 'piesza', liczbaStacji: 5, pytaniaNaStacje: 1 }), 500);
+  // składowe mają być jawne — UI pokazuje je jako uzasadnienie promienia
+  assert.equal(r.pytania, 5);
+  assert.equal(r.czasOdpowiedziMin, 7.5, '5 pytań × 90 s');
+  assert.ok(r.czasDrogiMin > 0 && r.trasaM > 0, 'reszta czasu idzie na drogę');
+});
+
+test('promienZCzasuGry: dłuższy czas i szybszy tryb dają większy promień, więcej pytań mniejszy', () => {
+  const baza = { czasGryMin: 60, tryb: 'piesza', liczbaStacji: 5, pytaniaNaStacje: 1 };
+  const krotko = promienZCzasuGry({ ...baza, czasGryMin: 30 });
+  const dlugo = promienZCzasuGry({ ...baza, czasGryMin: 120 });
+  assert.ok(krotko < 500 && 500 < dlugo, `30 min → ${krotko} m, 120 min → ${dlugo} m`);
+  assert.ok(promienZCzasuGry({ ...baza, tryb: 'rower' }) > 500, 'rower jest szybszy = dalej');
+  assert.ok(promienZCzasuGry({ ...baza, tryb: 'samochodowa' }) > promienZCzasuGry({ ...baza, tryb: 'rower' }));
+  assert.ok(promienZCzasuGry({ ...baza, pytaniaNaStacje: 3 }) < 500, 'więcej pytań = mniej czasu na drogę');
+  assert.ok(promienZCzasuGry({ ...baza, liczbaStacji: 12 }) < promienZCzasuGry({ ...baza, liczbaStacji: 3 }), 'więcej stacji = gęstsza trasa');
+});
+
+test('promienZCzasuGry: wynik zawsze w widełkach OGRANICZENIA.promienM i zaokrąglony do kroku', () => {
+  for (const czasGryMin of [1, 10, 45, 60, 180, 480, 5000]) {
+    for (const tryb of Object.keys(TRYBY)) {
+      const r = promienZCzasuGry({ czasGryMin, tryb, liczbaStacji: 12, pytaniaNaStacje: 3 });
+      assert.ok(r >= OGRANICZENIA.promienM.min && r <= OGRANICZENIA.promienM.max, `${czasGryMin} min ${tryb} → ${r} m`);
+      assert.equal(r % PARAMETRY_CZASU.krokM, 0, `${r} m nie jest wielokrotnością kroku`);
+    }
+  }
+  // całe pytanie potrafi zjeść cały czas — wtedy zostaje minimum, nie NaN ani 0
+  assert.equal(promienZCzasuGry({ czasGryMin: 1, tryb: 'piesza', liczbaStacji: 12, pytaniaNaStacje: 3 }), OGRANICZENIA.promienM.min);
+});
+
+test('walidujSetup: K19 dla czasu gry poza widełkami, cisza dla wartości z kanonu', () => {
+  const baza = domyslnaKonfiguracja(2);
+  const kody = (k) => walidujSetup(k).map((u) => u.kod);
+  assert.ok(OGRANICZENIA.czasGryMin.min > 0 && OGRANICZENIA.czasGryMin.max >= 480);
+  assert.ok(kody({ ...baza, czasGryMin: 0 }).includes('K19'), 'zero minut to nie plan');
+  assert.ok(kody({ ...baza, czasGryMin: 5000 }).includes('K19'), 'ponad maksimum');
+  assert.ok(kody({ ...baza, czasGryMin: Number.NaN }).includes('K19'), 'NaN z wyczyszczonego pola');
+  assert.ok(!kody({ ...baza, czasGryMin: 90 }).includes('K19'), '90 min jest w widełkach');
+  assert.ok(!kody(baza).includes('K19'), 'domyślny setup jest poprawny');
+});
+
+test('oczyscKonfiguracje: promień zawsze wynika z czasu, trybu i liczby pytań (ADR 0025)', () => {
+  const zCzasem = oczyscKonfiguracje({ czasGryMin: 120, tryb: 'piesza', liczbaStacji: 5, pytaniaNaStacje: 1 });
+  assert.equal(zCzasem.czasGryMin, 120);
+  assert.equal(zCzasem.promienM, promienZCzasuGry({ czasGryMin: 120, tryb: 'piesza', liczbaStacji: 5, pytaniaNaStacje: 1 }));
+  // stary zapis bez czasu gry (sprzed ADR 0025) dostaje domyślne 60 min i promień z nich
+  const stary = oczyscKonfiguracje({ promienM: 5000, tryb: 'piesza', liczbaStacji: 5, pytaniaNaStacje: 1 });
+  assert.equal(stary.czasGryMin, DOMYSLNE.czasGryMin, 'migracja: brak czasu gry = 60 min');
+  assert.equal(stary.promienM, 500, 'stary promień nie jest już źródłem prawdy');
+  assert.equal(oczyscKonfiguracje({ czasGryMin: 99999 }).czasGryMin, OGRANICZENIA.czasGryMin.max, 'zacisk do widełek');
+  assert.equal(oczyscKonfiguracje({ czasGryMin: 'nie-liczba' }).czasGryMin, DOMYSLNE.czasGryMin, 'śmieci z inputa = domyślne');
+});
+
+/* ---- ADR 0027: pytania po równo na gracza (hot-seat) ---- */
+
+test('pytania dzielą się równo między graczy: K22 dla reszty, cisza dla pełnego podziału', () => {
+  const kody = (k) => walidujSetup(k).map((u) => u.kod);
+  const baza = domyslnaKonfiguracja(2); // 5 stacji × 2 pytania = 10 → 10 % 2 = 0
+  assert.equal(baza.pytaniaNaStacje, 2, 'domyślnie każdy gracz odpowiada raz przy każdej stacji');
+  assert.ok(!kody(baza).includes('K22'), 'domyślny setup 2 graczy jest poprawny');
+
+  assert.ok(kody({ ...baza, liczbaStacji: 3, pytaniaNaStacje: 1 }).includes('K22'), '3 × 1 = 3 pytania dla 2 graczy — nie dzieli się');
+  assert.ok(kody({ ...baza, liczbaStacji: 5, pytaniaNaStacje: 1 }).includes('K22'), '5 pytań dla 2 graczy — nie dzieli się');
+  assert.ok(!kody({ ...baza, liczbaStacji: 4, pytaniaNaStacje: 1 }).includes('K22'), '4 × 1 = 4 dla 2 graczy — po 2 pytania');
+  assert.ok(!kody({ ...baza, liczbaStacji: 3, pytaniaNaStacje: 2 }).includes('K22'), '3 × 2 = 6 dla 2 graczy — po 3 pytania');
+  assert.ok(!kody(domyslnaKonfiguracja(1)).includes('K22'), 'jeden gracz bierze wszystko');
+  assert.ok(!kody(domyslnaKonfiguracja(8)).includes('K22'), '8 graczy: 8 pytań na stację (widełki do MAKS_GRACZY)');
+});
+
+test('hot-seat: pytań jest co najmniej tyle co stacji, a widełki pytań sięgają MAKS_GRACZY', () => {
+  assert.equal(OGRANICZENIA.pytaniaNaStacje.min, 1, 'minimum 1 pytanie na stację = razem tyle co stacji');
+  assert.equal(OGRANICZENIA.pytaniaNaStacje.max, OGRANICZENIA.liczbaGraczy.max, 'każdy gracz może odpowiadać przy każdej stacji');
+  for (const graczy of [1, 2, 3, 5, 8]) {
+    const k = domyslnaKonfiguracja(graczy);
+    assert.equal(k.pytaniaNaStacje, graczy, `${graczy} graczy → ${graczy} pytań na stację`);
+    assert.equal(liczbaPytan(k) % graczy, 0, 'podział bez reszty');
+    assert.ok(liczbaPytan(k) >= k.liczbaStacji, 'pytań nie mniej niż stacji');
+  }
+});
+
+test('oczyscKonfiguracje: pytania na stację zaciskają się do widełek, ale nie psują podziału domyślnego', () => {
+  assert.equal(oczyscKonfiguracje({ pytaniaNaStacje: 99 }).pytaniaNaStacje, OGRANICZENIA.pytaniaNaStacje.max);
+  assert.equal(oczyscKonfiguracje({ liczbaGraczy: 4 }).pytaniaNaStacje, 4, 'zmiana liczby graczy ciągnie domyślne pytania');
 });

@@ -68,3 +68,11 @@ w OSM nie ma historii, legend ani kultury.
 
 0001 (bez zależności/backendu), 0007 (ukrywanie paczki), 0008 (kwerenda
 i źródła), 0010 (trwałość paczki), 0011 (mobile-first).
+
+## Aneks (2026-09-07): pkt 8 bez ścieżki w interfejsie
+
+Decyzja właściciela: poprawna paczka OD RAZU zaczyna grę, a z ekranu zniknęły
+podgląd „tylko dla organizatora" i edycja — przegląd treści odbywa się na Drive
+(ADR 0016). Martwa po tym `zastosujEdycjePaczki()` została usunięta z
+`app/protokol.js`; pole `modyfikacje[]` zostaje w schemacie (PROTOKOL §3.1)
+jako miejsce na poprawki wniesione poza aplikacją.

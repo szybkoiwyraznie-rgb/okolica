@@ -64,7 +64,9 @@ nieść stacje jawnie, inaczej drugie urządzenie nie odtworzy gry.
    konfiguracji + geohash5 + data + kod gry) i rejestr `okolica:zestawy`
    z LRU (budżet 1,5 MB, maks. 8 wpisów — wzorzec cache sieci, ADR 0010 pkt 1).
    Druga gra w okolicy odtwarza stacje i pytania **z pamięci**: zero Overpassa,
-   zero modelu, zero sieci. Dopasowanie propozycji: ten sam geohash5, promień
+   zero modelu, zero sieci. Dopasowanie propozycji: okolica (od 2026-09-07
+   odległość od komórki geohash paczki ≤ 200 m — ADR 0024; wcześniej „ten sam
+   geohash5"), promień
    i wiek, ta sama **liczba stacji i pytań na stację**, **tematy paczki
    zawierają się** w tematach konfiguracji (nie szersze — kryteria właściciela
    z 2026-09-06) oraz promień paczki ≤ promienia z setupu.

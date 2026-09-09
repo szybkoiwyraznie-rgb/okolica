@@ -20,10 +20,14 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-5">
-  <script type="module" src="app/app.js?v=m12-5"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-37">
+  <script type="module" src="app/app.js?v=m12-37"></script>
 </head>
-<body>
+<!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
+     dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
+     nie łapią — setup renderował się w przepływie („stary"), mapa była
+     schowana, a po ~1 s wszystko przeskakiwało. -->
+<body data-ekran="setup">
   <div id="baner" class="baner" hidden></div>
 
   <header class="gora">
@@ -32,9 +36,9 @@
       <p id="podtytul">gra terenowa gdzie tylko chcesz</p>
     </div>
     <div class="akcje">
+      <button id="przycisk-setup" class="przycisk przycisk-maly" type="button" title="Ustawienia gry">⚙ setup</button>
       <button id="przycisk-motyw" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny">☾ motyw</button>
       <button id="przycisk-sygnaly" class="przycisk przycisk-maly" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)">🔔 sygnały</button>
-      <button id="przycisk-test" class="przycisk przycisk-maly" type="button" aria-pressed="false" title="Tryb testowy: ręczne współrzędne zamiast GPS">⚙ tryb testowy</button>
       <button id="przycisk-ranking" class="przycisk przycisk-maly" type="button" title="Rankingi graczy i moje gry (M12)">🏆 rankingi</button>
     </div>
   </header>
@@ -51,6 +55,26 @@
   </nav>
 
   <main class="tresc">
+    <!-- Decyzja właściciela 2026-09-08: mapa jest centralnym elementem
+         aplikacji i leży NA SPODZIE. Wyszła z #ekran-pozycja — widać ją pod
+         setupem i pod ekranem pozycji; resztę ekranów chowa CSS przez
+         `visibility`, bo `display:none` zerowałoby jej pomiar. -->
+      <div id="mapa-pozycja" class="mapa">
+        <svg id="mapa-pozycja-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
+          <g id="mapa-pozycja-kafelki" class="warstwa-kafelki"></g>
+          <g id="mapa-pozycja-okregi" class="warstwa-okregi"></g>
+          <g id="mapa-pozycja-pinezki" class="warstwa-pinezki"></g>
+          <g id="mapa-pozycja-marker" class="warstwa-marker"></g>
+        </svg>
+        <div class="mapa-przyciski">
+          <button id="mapa-pozycja-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+          <button id="mapa-pozycja-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+          <button id="mapa-pozycja-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+        </div>
+        <p id="mapa-pozycja-skala" class="mapa-skala"></p>
+        <p id="mapa-pozycja-atrybucja" class="mapa-atrybucja"></p>
+      </div>
+
 
     <!-- KROK 1: konfiguracja rozgrywki -->
     <section id="ekran-setup" class="ekran" aria-labelledby="tytul-setup">
@@ -77,7 +101,10 @@
           <span>Pseudonim (widzą go inni gracze)</span>
           <input id="multi-pseudonim" type="text" maxlength="24" autocomplete="nickname" spellcheck="false" placeholder="np. Marta">
         </label>
-        <label class="pole sprawdz"><input id="multi-zgoda" type="checkbox" checked> <span>Zgadzam się na wysyłanie pseudonimu i wyników gry na wspólne konto Google Drive. Współrzędne nigdy nie opuszczają telefonu<span class="dopisek-roboczy"> (ADR 0019)</span>.</span></label>
+        <!-- Zgody na wysyłkę pseudonimu i wyników NIE pytamy przy każdej grze
+             (właściciel, 2026-09-07): gra wieloosobowa z natury działa przez
+             wspólny Drive, a co i dokąd trafia opisuje sekcja „Dane
+             i prywatność". -->
         <div class="wiersz">
           <button id="przycisk-multi-zaloz" class="przycisk przycisk-glowny" type="button">🌐 Załóż grę</button>
           <button id="przycisk-multi-dolacz" class="przycisk" type="button">🔗 Dołącz do gry</button>
@@ -113,8 +140,8 @@
 
       <div class="siatka">
         <label class="pole">
-          <span>Promień gry (m)</span>
-          <input id="setup-promien" type="number" min="200" max="50000" step="100" inputmode="numeric">
+          <span>Planowany czas gry (min)</span>
+          <input id="setup-czas" type="number" min="10" max="480" step="5" inputmode="numeric">
         </label>
         <label class="pole">
           <span>Liczba stacji</span>
@@ -122,31 +149,45 @@
         </label>
         <label class="pole">
           <span>Pytań na stację</span>
-          <input id="setup-pytania" type="number" min="1" max="3" step="1" inputmode="numeric">
-        </label>
-        <label class="pole">
-          <span>Liczba graczy</span>
-          <input id="setup-gracze" type="number" min="1" max="8" step="1" inputmode="numeric">
+          <input id="setup-pytania" type="number" min="1" max="8" step="1" inputmode="numeric">
         </label>
       </div>
+      <!-- Liczba graczy NIE jest polem (decyzja właściciela 2026-09-07): tylu
+           graczy, ilu dodasz w bloku „Kto gra?" poniżej. Pole do wpisywania
+           liczby myliło się z listą imion i z tożsamością. -->
+      <!-- Promień nie jest polem: liczy się z czasu, sposobu poruszania i liczby
+           pytań (ADR 0025), a ten akapit mówi jak — liczba bez uzasadnienia
+           byłaby magią (LESSONS L6). -->
+      <p id="setup-promien-info" class="podpowiedz"></p>
 
-      <fieldset class="pole" id="pole-imiona">
-        <legend>Gracze</legend>
-        <div id="lista-imion" class="lista-imion"></div>
-        <button id="przycisk-profil" type="button" class="przycisk">👤 To ja — pobierz imię z Drive</button>
-        <div id="form-profil" hidden>
-          <label>
-            <span>Pseudonim z rankingu</span>
+      <!-- Tożsamość i lista graczy to JEDNO (ADR 0026 aneks, decyzja właściciela
+           2026-09-07): każdy gracz na tym telefonie ma imię i PIN, a „Dodaj
+           gracza" potwierdza imię na wspólnym Drive — nowe imię zakłada profil
+           z tym PIN-em, zajęte wymaga PIN-u właściciela (R20 = odmowa). Liczba
+           graczy jest długością tej listy, więc osobne pole do wpisywania liczby
+           zniknęło (myliło: „Gracze" i „Kim jesteś?" pytały o to samo). -->
+      <fieldset class="pole" id="pole-tozsamosc">
+        <legend>👤 Kto gra?</legend>
+        <div class="siatka">
+          <label class="pole">
+            <span>Imię (pseudonim)</span>
             <input id="profil-pseudonim" type="text" maxlength="20" autocomplete="off">
           </label>
-          <label>
+          <label class="pole">
             <span>PIN (4–8 cyfr)</span>
             <input id="profil-pin" type="password" inputmode="numeric" maxlength="8" autocomplete="off">
           </label>
-          <ul id="bledy-profil"></ul>
-          <button id="przycisk-profil-sprawdz" type="button" class="przycisk">✓ Sprawdź i wpisz</button>
-          <button id="przycisk-profil-zapisz" type="button" class="przycisk" hidden>＋ Zapisz jako nowy</button>
         </div>
+        <div class="wiersz">
+          <button id="przycisk-dodaj-gracza" class="przycisk przycisk-glowny" type="button">➕ Dodaj gracza</button>
+        </div>
+        <div id="lista-zapamietanych" class="chipy" role="group" aria-label="Zapamiętani na tym telefonie"></div>
+        <ul id="lista-graczy" class="lista-historii"></ul>
+        <p id="profil-stan" class="podpowiedz">Nowe imię = nowy profil i PIN. Kogoś już znasz? Wpisz imię i jego PIN.</p>
+        <ul id="bledy-profil"></ul>
+        <!-- Zgody na zapis wyniku NIE pytamy przy każdej grze (właściciel,
+             2026-09-07): wynik idzie na Drive domyślnie, a co i dokąd trafia
+             opisuje sekcja „Dane i prywatność". -->
       </fieldset>
 
       <fieldset class="pole">
@@ -230,7 +271,7 @@
         <p id="lobby-status" class="podpowiedz" role="status"></p>
         <div id="lobby-widownia" hidden>
           <table class="tabela-wynikow">
-            <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th></tr></thead>
+            <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Premia</th></tr></thead>
             <tbody id="lobby-widownia-wiersze"></tbody>
           </table>
         </div>
@@ -252,21 +293,6 @@
         <p id="pozycja-dokladnosc" class="badge">dokładność: —</p>
         <p id="pozycja-wspolrzedne" class="kod"></p>
         <p id="pozycja-miejsce" class="podpowiedz"></p>
-      </div>
-      <div id="mapa-pozycja" class="mapa">
-        <svg id="mapa-pozycja-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
-          <g id="mapa-pozycja-kafelki" class="warstwa-kafelki"></g>
-          <g id="mapa-pozycja-okregi" class="warstwa-okregi"></g>
-          <g id="mapa-pozycja-pinezki" class="warstwa-pinezki"></g>
-          <g id="mapa-pozycja-marker" class="warstwa-marker"></g>
-        </svg>
-        <div class="mapa-przyciski">
-          <button id="mapa-pozycja-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
-          <button id="mapa-pozycja-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
-          <button id="mapa-pozycja-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
-        </div>
-        <p id="mapa-pozycja-skala" class="mapa-skala"></p>
-        <p id="mapa-pozycja-atrybucja" class="mapa-atrybucja"></p>
       </div>
       <div class="wiersz">
         <button id="przycisk-gps" class="przycisk przycisk-glowny" type="button">🛰 Włącz GPS</button>
@@ -301,34 +327,42 @@
       <h2 id="tytul-stacje">Stacje w Twojej okolicy</h2>
       <p id="stacje-tryb" class="podpowiedz"></p>
       <p id="bledy-stacje" class="bledy" role="alert" hidden></p>
-      <div id="mapa-stacje" class="mapa">
-        <svg id="mapa-stacje-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
-          <g id="mapa-stacje-kafelki" class="warstwa-kafelki"></g>
-          <g id="mapa-stacje-okregi" class="warstwa-okregi"></g>
-          <g id="mapa-stacje-pinezki" class="warstwa-pinezki"></g>
-          <g id="mapa-stacje-marker" class="warstwa-marker"></g>
-        </svg>
-        <div class="mapa-przyciski">
-          <button id="mapa-stacje-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
-          <button id="mapa-stacje-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
-          <button id="mapa-stacje-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+      <div class="stacje-obszar">
+        <div id="mapa-stacje" class="mapa">
+          <svg id="mapa-stacje-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
+            <g id="mapa-stacje-kafelki" class="warstwa-kafelki"></g>
+            <g id="mapa-stacje-okregi" class="warstwa-okregi"></g>
+            <g id="mapa-stacje-pinezki" class="warstwa-pinezki"></g>
+            <g id="mapa-stacje-marker" class="warstwa-marker"></g>
+          </svg>
+          <div class="mapa-przyciski">
+            <button id="mapa-stacje-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+            <button id="mapa-stacje-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+            <button id="mapa-stacje-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+          </div>
+          <p id="mapa-stacje-skala" class="mapa-skala"></p>
+          <p id="mapa-stacje-atrybucja" class="mapa-atrybucja"></p>
+          <div id="stacje-ladowanie" class="nakladka-ladowanie" role="status" hidden><span>⏳ Pobieram dane sieci drogowej…</span></div>
         </div>
-        <p id="mapa-stacje-skala" class="mapa-skala"></p>
-        <p id="mapa-stacje-atrybucja" class="mapa-atrybucja"></p>
-        <div id="stacje-ladowanie" class="nakladka-ladowanie" role="status" hidden><span>⏳ Pobieram dane sieci drogowej…</span></div>
-      </div>
-      <ol id="lista-stacji" class="lista-stacji"></ol>
-      <p id="stacje-sprawiedliwosc" class="badge"></p>
-      <div class="wiersz">
-        <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
-        <button id="przycisk-siec-ponow" class="przycisk" type="button" hidden>↻ Pobierz sieć ponownie</button>
-        <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
-        <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
-      </div>
-      <p class="podpowiedz">Stacje stoją w pierścieniu albo na sieci dróg, placów i szlaków — nigdy w budynku ani na terenie prywatnym<span class="dopisek-roboczy"> (ADR 0005)</span>.</p>
-      <div class="wiersz przyciski-dolu">
-        <button id="przycisk-wstecz-pozycja" class="przycisk" type="button">← pozycja</button>
-        <button id="przycisk-dalej-prompt" class="przycisk przycisk-glowny" type="button">Dalej: pytania →</button>
+        <!-- Decyzja właściciela 2026-09-08: stacje odnoszą się do mapy, więc lista
+             NIE może jej zasłaniać. Mapa zostaje na wierzchu, a lista z
+             przyciskami jedzie obok (poziom) albo pod (pion) i przewija się
+             WEWNĄTRZ siebie — strona się nie przewija. -->
+        <div id="stacje-panel" class="stacje-panel">
+          <ol id="lista-stacji" class="lista-stacji"></ol>
+          <p id="stacje-sprawiedliwosc" class="badge"></p>
+          <div class="wiersz">
+            <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
+            <button id="przycisk-siec-ponow" class="przycisk" type="button" hidden>↻ Pobierz sieć ponownie</button>
+            <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
+            <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
+          </div>
+          <p class="podpowiedz">Stacje stoją w pierścieniu albo na sieci dróg, placów i szlaków — nigdy w budynku ani na terenie prywatnym<span class="dopisek-roboczy"> (ADR 0005)</span>.</p>
+          <div class="wiersz przyciski-dolu">
+            <button id="przycisk-wstecz-pozycja" class="przycisk" type="button">← pozycja</button>
+            <button id="przycisk-dalej-prompt" class="przycisk przycisk-glowny" type="button">Dalej: pytania →</button>
+          </div>
+        </div>
       </div>
     </section>
 
@@ -381,6 +415,7 @@
         <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
         <p id="prompt-licznik" class="badge"></p>
       </details>
+      <p id="prompt-rozmiar" class="podpowiedz" hidden></p>
       <div class="wiersz">
         <button id="przycisk-kopiuj-prompt" class="przycisk przycisk-glowny" type="button">⧉ Kopiuj prompt</button>
         <button id="przycisk-pobierz-prompt" class="przycisk" type="button">⬇ Zapisz jako plik</button>
@@ -447,8 +482,13 @@
       <!-- M11/P4: panel gry wieloosobowej — tury, żywe wyniki, pasek synchronizacji -->
       <div id="gra-panel-multi" class="karta gra-panel" hidden>
         <p id="gra-multi-tura" class="duzy" role="status"></p>
+        <!-- ADR 0027 część B: wolna kolejność stacji — gracz wybiera, dokąd idzie -->
+        <div id="multi-wybor-stacji" hidden>
+          <p class="podpowiedz">Kolejność jest dowolna — wybierz stację, do której idziesz:</p>
+          <div id="multi-wybor-przyciski" class="chipy" role="group" aria-label="Wybór stacji"></div>
+        </div>
         <table id="gra-multi-tabela" class="tabela-wynikow">
-          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th></tr></thead>
+          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Premia</th></tr></thead>
           <tbody id="gra-multi-wiersze"></tbody>
         </table>
         <p id="gra-multi-sync" class="podpowiedz" role="status"></p>
@@ -467,7 +507,6 @@
         <p id="gra-dystans-odcinka" class="duzy duzy-dystans">— m</p>
         <p id="gra-prog-dojscia" class="badge">próg dojścia: —</p>
         <div class="wiersz">
-          <button id="przycisk-reczne-dojscie" class="przycisk" type="button">✋ Jestem na miejscu (ręczne)</button>
           <button id="przycisk-pauza" class="przycisk" type="button" aria-pressed="false">⏸ Pauza</button>
           <button id="przycisk-symulacja-gra" class="przycisk" type="button" hidden>▶ Symuluj dojście (tryb testowy)</button>
         </div>
@@ -478,6 +517,14 @@
       <div id="gra-panel-pytanie" class="karta gra-panel" hidden>
         <p id="gra-pytanie-naglowek" class="badge">Stacja zdobyta · pytanie — z —</p>
         <p id="gra-pytanie-tresc" class="duzy"></p>
+        <!-- ADR 0028: ocena pytania — jeden kciuk, jeden głos na gracza i pytanie.
+             Panel jest PRZED odpowiedziami i zostaje w tym samym slocie po
+             odsłonięciu wyniku, więc ocenić można przed albo po odpowiedzi. -->
+        <p id="gra-oceny" class="ocen-panel" hidden>
+          <span id="gra-oceny-etykieta" class="podpowiedz">Oceń pytanie</span>
+          <button id="gra-ocena-plus" class="przycisk przycisk-maly ocen-kciuk" type="button" aria-pressed="false" aria-label="Oceń pytanie pozytywnie">👍</button>
+          <button id="gra-ocena-minus" class="przycisk przycisk-maly ocen-kciuk" type="button" aria-pressed="false" aria-label="Oceń pytanie negatywnie">👎</button>
+        </p>
         <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
         <div id="gra-wynik-odpowiedzi" class="gra-wynik-odpowiedzi" hidden>
           <p id="gra-odpowiedz-ocena" class="duzy"></p>
@@ -498,6 +545,10 @@
           <tbody id="gra-wyniki-tbody"></tbody>
         </table>
         <dl id="gra-wynik-statystyki" class="statystyki-gry"></dl>
+        <!-- Los wysyłki wyniku na Drive ma WŁASNĄ linię: wspólny `#status` jest
+             jeden, a wysyłka kończy się w nieprzewidywalnej chwili — nie może
+             nadpisać tego, co gracz właśnie zrobił (ADR 0026 aneks). -->
+        <p id="wynik-drive" class="podpowiedz"></p>
         <details id="gra-wynik-szczegoly">
           <summary>Szczegóły graczy</summary>
           <div id="gra-wynik-gracze" class="gracze-szczegoly"></div>
@@ -522,6 +573,7 @@
           <summary>Tekst wyniku</summary>
           <textarea id="pole-wynik-tekst" class="pole-tekstowe" rows="12" readonly aria-label="Tekst wyniku do skopiowania"></textarea>
         </details>
+        <button id="przycisk-nowa-gra" class="przycisk przycisk-glowny" type="button">🏠 Wróć na początek — nowa gra</button>
       </div>
 
       <div class="wiersz">
@@ -585,6 +637,36 @@
       </div>
 
       <div class="karta">
+        <h3>Wspólny Drive: historia i rankingi</h3>
+        <p class="podpowiedz">Wszystko, co opuszcza telefon, jest wymienione
+        poniżej — i tylko to. Nie pytamy o zgodę przy każdej grze: bez tych
+        danych nie byłoby ani historii, ani rankingów, ani gry na kilku
+        telefonach.</p>
+        <ul class="lista-privatnosc">
+          <li><strong>Wynik gry idzie na wspólne konto Google Drive</strong>
+            (domyślnie, bez pytania przy każdej grze): pseudonimy graczy,
+            punkty, liczba poprawnych i błędnych odpowiedzi, nazwa miejscowości
+            i kategoria wiekowa. Na tej podstawie liczone są rankingi.</li>
+          <li><strong>Gra na wielu telefonach</strong> — dodatkowo: Twój
+            pseudonim w lobby (widzą go inni gracze), kolejne dojścia
+            i odpowiedzi w trakcie gry oraz kod gry. Współrzędne gracza
+            <strong>nigdy</strong> nie opuszczają telefonu — inni widzą tylko
+            Twój postęp, nie to, gdzie stoisz<span class="dopisek-roboczy"> (ADR 0019)</span>.</li>
+          <li><strong>Paczki pytań, które wyślesz do wspólnego repozytorium</strong>
+            — przechodzą przez przegląd właściciela, zanim ktokolwiek je
+            pobierze; w pliku zostają pytania, stacje i nazwa miejscowości.</li>
+          <li><strong>Okolica startu jako geohash5</strong> — przybliżenie
+            rzędu kilku kilometrów, nie punkt GPS. Współrzędne gracza, trasa,
+            pytania i paczka <strong>zostają na telefonie</strong>.</li>
+          <li><strong>Profil pseudonimu</strong> (imię + PIN) leży na Drive,
+            żeby nikt inny nie zagrał pod Twoim imieniem<span class="dopisek-roboczy"> (ADR 0021)</span>.
+            PIN nie jest zapisywany na telefonie.</li>
+          <li>Grasz bez zasięgu albo bez potwierdzonego profilu — wynik zostaje
+            na telefonie (w kolejce) i aplikacja mówi to wprost pod wynikiem.</li>
+        </ul>
+      </div>
+
+      <div class="karta">
         <h3>Paczka pytań</h3>
         <p class="podpowiedz">Paczka jest <strong>ukryta</strong> — nieczytelna
         przy kopiowaniu — ale <strong>nie zaszyfrowana</strong><span class="dopisek-roboczy"> (ADR 0007)</span>.
@@ -608,21 +690,27 @@
     </section>
 
     <!-- M12/P6: rankingi graczy (dane z mostu Drive, agregacje po stronie telefonu) -->
-    <section id="ekran-ranking" class="ekran" hidden aria-labelledby="tytul-ranking">
-      <h2 id="tytul-ranking">🏆 Rankingi</h2>
-      <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych ze wspólnego konta Drive. Agregacje liczy telefon — serwer oddaje surowe wiersze (RO-ranking/1).</p>
-      <div class="wiersz">
-        <button id="przycisk-ranking-odswiez" class="przycisk" type="button">🔄 Odśwież</button>
-        <button id="przycisk-wrocz-ranking" class="przycisk" type="button">← wróć</button>
+    <!-- Decyzja właściciela 2026-09-08: rankingi są WARSTWĄ nad aplikacją,
+         nie osobnym ekranem — z klawiszem „Zamknij rankingi" i krzyżykiem
+         w prawym górnym rogu, bo z poprzedniego układu nie dało się wyjść. -->
+    <section id="ekran-ranking" class="ekran warstwa" hidden role="dialog" aria-modal="true" aria-labelledby="tytul-ranking">
+      <div class="warstwa-karta">
+        <button id="przycisk-ranking-krzyzyk" class="warstwa-krzyzyk" type="button" aria-label="Zamknij rankingi">✕</button>
+        <h2 id="tytul-ranking">🏆 Rankingi</h2>
+        <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych:</p>
+        <div class="wiersz">
+          <button id="przycisk-ranking-odswiez" class="przycisk" type="button">🔄 Odśwież</button>
+          <button id="przycisk-wrocz-ranking" class="przycisk" type="button">Zamknij rankingi</button>
+        </div>
+        <p id="ranking-status" class="podpowiedz" role="status"></p>
+        <div id="ranking-zakladki" class="segment"></div>
+        <div id="ranking-kategorie" class="chipy"></div>
+        <table id="ranking-tabela" class="tabela-wynikow">
+          <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Gry</th><th scope="col">Poprawne</th></tr></thead>
+          <tbody id="ranking-wiersze"></tbody>
+        </table>
+        <ul id="ranking-moje-gry" class="lista-historii" hidden></ul>
       </div>
-      <p id="ranking-status" class="podpowiedz" role="status"></p>
-      <div id="ranking-zakladki" class="segment"></div>
-      <div id="ranking-kategorie" class="chipy"></div>
-      <table id="ranking-tabela" class="tabela-wynikow">
-        <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Gry</th><th scope="col">Poprawne</th></tr></thead>
-        <tbody id="ranking-wiersze"></tbody>
-      </table>
-      <ul id="ranking-moje-gry" class="lista-historii" hidden></ul>
     </section>
 
   </main>
@@ -631,6 +719,10 @@
     <span id="status">M2 — mapa i model rozgrywki: setup, pozycja, stacje, prompt, paczka</span>
     <span class="separator">·</span>
     <span>protokół <span id="stopka-protokol">PYT/1.0</span></span>
+    <span class="separator">·</span>
+    <span>szablon <span id="stopka-szablon">PYT/1.0.6</span></span>
+    <span class="separator">·</span>
+    <span>wersja <span id="stopka-wersja">—</span></span>
     <span class="separator">·</span>
     <button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">dane i prywatność</button>
   </footer>

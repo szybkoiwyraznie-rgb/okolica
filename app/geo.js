@@ -347,3 +347,81 @@ export function czyDotarl(historia, stacja, { wymaganeTrafnienia = 2 } = {}) {
   }
   return { dotarl: trafienia >= wymaganeTrafnienia, trafienia, progM, dystansM };
 }
+
+/* ------------------------------------- komórki geohash: ramka, sąsiedzi, odległość */
+
+/**
+ * Ramka bounding-box geohasha (dekoder do pary z `geohash`).
+ *
+ * Przeniesione z `app/wieloosobowa.js` (2026-09-07): to geodezja, nie gra
+ * wieloosobowa, a potrzebują jej dwie dziedziny — lobby (ADR 0019 pkt 1)
+ * i dopasowanie zestawów pytań (ADR 0024).
+ */
+export function ramkaGeohash(gh) {
+  const tekst = String(gh ?? '').toLowerCase();
+  if (!tekst.length) return null;
+  let latMin = -90; let latMax = 90; let lonMin = -180; let lonMax = 180;
+  let nawetLon = true;
+  for (const znak of tekst) {
+    const v = ALFABET_GEOHASH.indexOf(znak);
+    if (v < 0) return null;
+    for (let bit = 4; bit >= 0; bit -= 1) {
+      const b = (v >> bit) & 1;
+      if (nawetLon) {
+        const srodek = (lonMin + lonMax) / 2;
+        if (b) lonMin = srodek; else lonMax = srodek;
+      } else {
+        const srodek = (latMin + latMax) / 2;
+        if (b) latMin = srodek; else latMax = srodek;
+      }
+      nawetLon = !nawetLon;
+    }
+  }
+  return { latMin, latMax, lonMin, lonMax };
+}
+
+/**
+ * Osiem komórek sąsiadujących z geohashem (ta sama precyzja) — lobby gier
+ * „w najbliższej okolicy" = własna komórka + sąsiedzi (ADR 0019 pkt 1).
+ * Geometrycznie: środek komórki przesunięty o jej rozmiar w 8 kierunkach,
+ * zakodowany z powrotem tym samym `geohash` (jedno źródło prawdy).
+ */
+export function sasiednieGeohash(gh) {
+  const r = ramkaGeohash(gh);
+  if (!r) return [];
+  const dLat = r.latMax - r.latMin;
+  const dLon = r.lonMax - r.lonMin;
+  const sLat = (r.latMin + r.latMax) / 2;
+  const sLon = (r.lonMin + r.lonMax) / 2;
+  const precyzja = String(gh).length;
+  const kierunki = [[1, 0], [1, 1], [0, 1], [-1, 1], [-1, 0], [-1, -1], [0, -1], [1, -1]];
+  const wynik = [];
+  for (const [dx, dy] of kierunki) {
+    const lat = ogranicz(sLat + dy * dLat, -89.9999, 89.9999);
+    let lon = sLon + dx * dLon;
+    while (lon > 180) lon -= 360;
+    while (lon < -180) lon += 360;
+    let sasiad;
+    try {
+      sasiad = geohash(lat, lon, precyzja);
+    } catch {
+      continue; // skrajne szerokości: sąsiada nie ma — lista krótsza, nie wyjątek
+    }
+    if (sasiad !== String(gh).toLowerCase() && !wynik.includes(sasiad)) wynik.push(sasiad);
+  }
+  return wynik;
+}
+
+/**
+ * Odległość punktu od komórki geohash w metrach: **0, gdy punkt leży
+ * w komórce** (ADR 0024 — dopasowanie okolicy z tolerancją, a nie „ten sam
+ * geohash albo nic"). `null` dla śmieciowego geohasha albo złych współrzędnych
+ * — odmowa jest jawna, nie cicha (LESSONS L6).
+ */
+export function odlegloscDoKomorkiM(gh, lat, lon) {
+  const r = ramkaGeohash(gh);
+  if (!r || !czyWspolrzedneOk(lat, lon)) return null;
+  const najblizszaLat = ogranicz(lat, r.latMin, r.latMax);
+  const najblizszyLon = ogranicz(lon, r.lonMin, r.lonMax);
+  return odlegloscM({ lat, lon }, { lat: najblizszaLat, lon: najblizszyLon });
+}

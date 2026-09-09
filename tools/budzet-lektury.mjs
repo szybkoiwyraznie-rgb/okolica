@@ -2,7 +2,8 @@
 /**
  * budżet-lektury.mjs — strażnik budżetu lektury startowej (AGENTS.md §0, B14).
  *
- * Pozycje 1–6 lektury obowiązkowej mają się mieścić w 40 tys. tokenów.
+ * Pozycje 1–6 lektury obowiązkowej mają się mieścić w 100 tys. tokenów
+ * (decyzja właściciela 2026-09-07: 40 tys. było za ciasne na ten projekt — B18).
  * Narzędzie liczy estymowane tokeny per plik, drukuje raport i KOŃCZY
  * BŁĘDEM (exit 1) przy przekroczeniu — przekroczenie czyni skrócenie
  * dokumentów obowiązkowym zadaniem sesji, a nie opcją.
@@ -22,7 +23,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
 /** Limit z AGENTS.md §0 (pozycje 1–6 lektury startowej). */
-export const LIMIT_TOKENOW = 40_000;
+export const LIMIT_TOKENOW = 100_000;
 
 /** Mianownik estymatora: znaków na token. */
 export const ZNAKOW_NA_TOKEN = 4;

@@ -89,7 +89,7 @@ ekranu, alternatywy dla gestów. Zrobić po M7, gdy UI jest kompletny.
 
 ## B14 — Narzędzie `tools/budzet-lektury.mjs` ✅ ZROBIONE (2026-09-07)
 
-Liczy tokeny lektury startowej (`AGENTS.md` §0, próg 40 tys.) i pilnuje, żeby
+Liczy tokeny lektury startowej (`AGENTS.md` §0, próg 100 tys.) i pilnuje, żeby
 dokumentacja nie rozrosła się ponad budżet. Zrobione w sesji S1–S7:
 `tools/budzet-lektury.mjs` + `test/budzet-lektury.test.js` + `npm run budzet`;
 pierwsze użycie ścięło lekturę 49946 → 39667 tok (S5).
@@ -114,10 +114,13 @@ secure context), migratora dla paczek `b64x1` i decyzji właściciela o utracie
 paczki przy zapomnianym kodzie. Nie ruszać, dopóki obfuskacja wystarcza — koszt
 to zarządzanie kluczami i realne ryzyko utraty treści.
 
-- **B16 — migracja list z `innerHTML=''` na `replaceChildren`** (LESSONS L19):
-  `renderujStacje` już migrowane (M4/I8); pozostałe miejsca w `app/app.js`
-  (setup, gracze, prompt, podsumowanie, usterki) przepisać przy okazji
-  dotykania ich w M5, żeby testy na atrapie nigdy nie czytały starych dzieci.
+- **B16 — migracja list z `innerHTML=''` na `replaceChildren` ✅ ZROBIONE (2026-09-08)**
+  (LESSONS L19): w `app/app.js` nie zostało żadne żywe `innerHTML` — tryby,
+  segmenty (wiek/poziom), tematy, selecty, lista stacji i lista usterek budują
+  węzły. Przy okazji wyszła dziura: wiersz stacji wstawiał **nazwę z OSM**
+  (`tags.name`) przez `innerHTML`, a komunikaty usterek cytują metadane paczki
+  i odpowiedź mostu — wszystko, co zewnętrzne, idzie teraz przez `textContent`
+  (LESSONS L34; test z wrogą nazwą w fixture Overpass).
 
 ## B17 — Trwały backend: Google Drive + Apps Script (konto wydzielone)
 
@@ -141,12 +144,97 @@ wieloosobowych na wielu urządzeniach (M11) oraz profil/statystyki/score
 gracza (M12). Repo paczek wdrażane w M9b; wdrożenie mostu przez właściciela
 odroczone do końca kodowania, instrukcja finalna — w czacie.
 
-## B18 — Mechanizm wzrostu lektury startowej (limit 40k vs rosnący rejestr)
+## B18 — Mechanizm wzrostu lektury startowej ✅ ROZSTRZYGNIĘTY (2026-09-07)
 
-Problem strukturalny po S5 (2026-09-07): każdy nowy ADR i każda lekcja
-POWIĘKSZAJĄ lekturę startową (§0), a limit 40k jest stały. Kondensacja dała
-rezerwę ~330 tok ≈ 1–2 sesje — potem znowu przekroczenie. Opcje: (a) archiwum
-ADR-ów ze streszczeniami w rejestrze (lektura czyta streszczenia, pełne teksty
-punktowo), (b) rosnący próg (np. +1k za kamień milowy — decyzja właściciela),
-(c) podział LESSONS na „aktywne" i „archiwum". Wymaga decyzji właściciela albo
-nowego ADR — nie ciąć decyzji pod limit po cichu.
+Problem strukturalny po S5: każdy nowy ADR i każda lekcja POWIĘKSZAJĄ lekturę
+startową (§0), a limit był stały — kondensacja dawała rezerwę ~1–2 sesji, potem
+znowu przekroczenie. **Decyzja właściciela (2026-09-07): próg rośnie z 40 tys.
+na 100 tys. tokenów** — „40k to za mało na taki duży projekt, nie ma sensu się
+aż tak szczypać". Wdrożone: `LIMIT_TOKENOW = 100_000` w
+`tools/budzet-lektury.mjs`, `AGENTS.md` §0, testy. Kondensacja dokumentów
+przestaje być obowiązkowa przy każdym dopisku, ale zasada „reguła trafia tam,
+gdzie jej miejsce" (`AGENTS.md` §5) zostaje; archiwizacja ADR-ów (wariant a)
+i podział LESSONS (wariant c) wracają, gdy zbliżymy się do nowego progu.
+
+## B19 — Geohash6 dla starych paczek: dopisanie w moście Drive ✅ ZROBIONE (2026-09-07)
+
+Po ADR 0024 dopasowanie okolicy liczy odległość od komórki geohash paczki
+z tolerancją 200 m. Nowe paczki niosą `geohash6` (≈0,75 × 0,61 km), ale pliki
+opublikowane wcześniej mają tylko `geohash5` (≈3,0 × 4,9 km) — dla nich reguła
+była zgrubna, więc paczka zakotwiczona 3 km dalej też się pokazywała.
+
+**Wdrożone (ADR 0024 aneks, decyzje 6–8):** `budujIndeks` liczy dla wpisu bez
+`meta.geohash6` kotwicę ze **środka ciężkości stacji** (nie z pierwszej stacji —
+start leży w środku obszaru, pierwsza stacja bywa na skraju) i oznacza wpis
+`geohash6Szacowany: true`; klient poszerza wtedy tolerancję o `promienM` paczki,
+co daje dowód braku regresji (start w promieniu paczki od środka ciężkości
+zawsze się dopasuje) i shrink nadmiarowego dopasowania z ~4 km do ~`promienM`.
+Koder geohash w Apps Script (`geohashPunkt`) jest **testowany w tym
+repozytorium**: `test/most-indeks.test.js` wykonuje wycięty tekst skryptu
+i porównuje z `app/geo.js` na siatce >500 punktów.
+
+**Zostało u właściciela:** wkleić nową wersję `apps-script-repo-paczek.gs`
+w Apps Script i wdrożyć — bez tego stare paczki zostają przy dopasowaniu
+zgrubnym (działają, tylko szerzej).
+
+## B20 — Gra sieciowa bez tur: wolna kolejność stacji i premia za kolejność ✅ ZROBIONE (2026-09-07)
+
+Wdrożone według ADR 0027 część B (rozliczenie projektu jest w tym ADR-ze,
+pkt 7): `skierujDoStacji` + `stacjeDoWyboru` w silniku, `premiaZaKolejnosc`
+i premia w `przeliczWyniki` po obu stronach (aplikacja i most), pytanie wg
+indeksu gracza, lista stacji do wyboru, postęp `ile z ilu` i kolumna premii,
+PROTOKOL §9, aneks ADR 0022, testy (w tym parity most ↔ aplikacja).
+
+**Sprawdzone w B21**: budżet promptu i limit wklejenia dla `stacje × gracze`
+pytań (8 graczy × 5 stacji = 40 pytań). Wyszło, że wąskim gardłem jest wyjście
+modelu, a nie prompt ani pamięć — patrz B21 (zamknięte: dzielenia nie będzie).
+
+## B21 — Duża paczka: budżet promptu i limit wklejenia ✅ ZAMKNIĘTE (2026-09-08)
+
+**Zmierzone** (`test/duza-paczka.test.js`, PROTOKOL §2 „Budżet rozmiaru"):
+
+| | 5 pytań (1 gracz) | 40 pytań (5 stacji × 8 graczy) |
+|---|---|---|
+| prompt | 5 422 zn / ~1 356 tok | 5 423 zn / ~1 356 tok (**stały**) |
+| odpowiedź modelu | 4 469 zn / ~1 118 tok | 33 392 zn / ~8 348 tok |
+| `parsujOdpowiedzModela` + `walidujPaczke` | OK, 0 usterek | OK, 0 usterek |
+| kontener `TO-paczka/2` | 4,8 kB (0,2% stanu / 0,3% rejestru) | 35,6 kB (1,8% / 2,4%) |
+
+Wniosek: **prompt i pamięć nie są problemem, jest nim limit wyjścia modelu**
+(~210 tokenów na pytanie). Wdrożone: `szacunekOdpowiedzi()` +
+`PROG_ODPOWIEDZI_TOKENY = 4000` w `app/protokol.js`, a ekran promptu pokazuje
+przewidywany rozmiar odpowiedzi (`#prompt-rozmiar`) i ostrzega powyżej progu,
+zanim właściciel zmarnuje generację (ucięty JSON wracał jako E01/E02 bez
+wskazania przyczyny).
+
+**Domknięte (2026-09-08, ADR 0031 — wycofana):** dzielenie generacji na partie
+zostało najpierw wdrożone (`0b2ca68`), a tego samego dnia usunięte
+(`git revert`). Powód: próg `PROG_ODPOWIEDZI_TOKENY = 4000` był moim
+założeniem, nie pomiarem modeli właściciela. Właściciel używa modeli z limitem
+wyjścia 64k–128k tokenów, a największy setup, jaki aplikacja pozwala zbudować
+(12 stacji × 8 graczy = 96 pytań), to ~20 250 tokenów odpowiedzi — 3,2 raza
+mniej niż 64k. Dzielenie nie odpaliłoby się przy żadnej dostępnej konfiguracji.
+
+**Z B21 zostaje:** `szacunekOdpowiedzi()` ze stałymi pomiaru (~830 znaków
+i ~210 tokenów na pytanie) oraz linia `#prompt-rozmiar` na ekranie pytań —
+informuje o rozmiarze odpowiedzi przed generacją i nie blokuje niczego.
+`PROG_ODPOWIEDZI_TOKENY` jest już tylko progiem tego ostrzeżenia.
+
+## B22 — Wynik gry hot-seat na wspólnym Drive (per pseudonim) ✅ ZROBIONE (2026-09-07)
+
+Gra na jednym telefonie zostawiała wynik tylko w historii telefonu: punkty
+graczy nie wchodziły do rankingów, choć to te same pseudonimy co w grze
+wieloosobowej.
+
+**Wdrożone (ADR 0026 aneks, decyzja 3 właściciela):** nowa akcja mostu
+`gra-hotseat` (PROTOKOL §9.5) — telefon wysyła skończoną grę jednym poleceniem,
+most zapisuje ją jako `RO-gra/1` ze stanem `zakonczona`, więc `GET ranking`
+czyta ją bez zmian. Punkty liczy most (`przeliczWyniki`), premia za kolejność
+w hot-seat = 0, `zestaw: null` (paczka zostaje na telefonie), `geohash5` startu
+zamiast współrzędnych. Wysyłka jest domyślna (bez pytania przy każdej grze —
+decyzja 2026-09-07, opis w sekcji prywatność) i wymaga choć jednego gracza
+potwierdzonego profilem; bez sieci polecenie czeka w kolejce i jedzie przy
+następnym starcie, a odcisk gry pilnuje idempotencji.
+Testy: 3 w `test/aplikacja.test.js` (wysyłka, kolejka offline, brak zgody),
+3 w `test/most-gra.test.js` na atrapie Drive (zapis + rankingi, kasowanie
+współrzędnych i odmowy, parity premii).
