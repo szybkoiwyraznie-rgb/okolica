@@ -1701,3 +1701,60 @@ to napisz mi, jak wywołuje się teraz tryb testowy.”
 Kodu i CSS nie ruszano — `?v=m12-37` bez zmian. ROADMAP bez zmian (wszystkie
 kamienie kodowo gotowe, kryteria po stronie właściciela). Handoff:
 `docs/setup/HANDOFF_2026-09-09.md`.
+
+## 2026-09-09 (sesja następna) — audyt PR #5
+
+Audyt wykonany przed jakimkolwiek kodowaniem (ADR 0012 §2) na
+`git diff 110a666..bb3e163`, plik po pliku. **Uwaga metodyczna:** opis PR #5
+i handoff mówiły o sesji „porządkowej, bez zmian kodu”, a scalony diff niesie
+35 plików i 1452 dodane linie — poza porządkami dokumentacyjnymi (F1, F2)
+weszły trzy większe zakresy dołożone później w tej samej gałęzi. Audyt objął
+całość diffu, nie tylko to, co opisywał handoff.
+
+**Zakres 1 — wariant „Pytania (bez fact check)” (ADR 0032, commity C1–C3).**
+`app/protokol.js`: `WERSJA_PROTOKOLU_REV3`, drugi szablon
+(`SZABLON_PROMPTU_BEZ_WERYFIKACJI`, wersjonowany osobno jako
+`PYT/1.0-nofc.1`), bramka E09 przez `wariantWejsciowy` stawiane przez dekoder,
+E10 z komunikatem wariantowym, `poprawkaDlaModelu({factcheck})`.
+Zgodne z ADR 0032 §3 (nośnik wariantu przez pole na paczce roboczej, bo
+dekoder normalizuje znacznik) i PROTOKOL §2.2/§3.4/§6. Reguła addytywna
+`factcheck !== false` konsekwentnie w `zestawy.js` (`zbierzMetaZestawu`),
+`trwalosc.js` (`skrotGry`) i w `czyWpisFactcheck` w `app.js` — jak `geohash6`
+z ADR 0024. Znaczek Q ma `role="img"` + `aria-label` (informacja, nie
+dekoracja) i pojawia się TYLKO przy wariancie zweryfikowanym, więc brak
+znaczka nie jest dwuznaczny. `tools/synchronizuj-szablon.mjs` przepisany na
+tablicę `SZABLONY` — dwa bloki, jedno źródło prawdy (PROTOKOL), kontrakt
+pilnuje obu.
+
+**Zakres 2 — oceny per gracz, nie per telefon (ADR 0028 pkt 2).**
+`kluczGlosu` niesie teraz głosującego, `znajdzGlos` zwraca wpis (panel
+potrzebuje `aria-pressed`), a `STAN.oceniajacyId` liczony raz przy renderze
+panelu i używany przy kliku — poprawka realnego rozjazdu „już ocenione”
+kontra głos. Głos sprzed zmiany (bez pola `gracz`) blokuje każdego; wybór
+świadomy i opisany w kodzie: milczące odblokowanie dublowałoby głosy, a most
+odrzuciłby duplikat dopiero po fakcie. Walidator lokalny normalizuje wpisy
+(`map` na białą listę pól) — obce pola z localStorage nie wchodzą dalej.
+
+**Zakres 3 — ekran startowy i smukła belka (decyzja właściciela 2026-09-09).**
+Nowy stan `data-ekran="mapa"` (poza `EKRANY`, jak prywatność i rankingi),
+`pokazMapeStartowa()` + `ukryjStart()`, okno `#ekran-start` 80%×80% nad mapą,
+nagłówek bez tytułu (ikony + „⚙ START GRY”). Lekcje L38/L39 zastosowane:
+stan początkowy stoi w HTML (`<body data-ekran="mapa">`, `#ekran-setup hidden`),
+a wejścia poboczne (prywatność, rankingi) jawnie wołają `ukryjStart()` i
+obsługują powrót na `mapa`. Warstwa ma `position: fixed` i `z-index: 10`
+(L39), przyciski mapy chowają się przy otwartym oknie (L42).
+
+**Wynik audytu: kod przyjęty bez zastrzeżeń.** Kontrola spójności: `?v=m12-40`
+w 43 miejscach (jedna wersja wszędzie, L29), `npm test` 656/656 zielone na
+`bb3e163` przed jakąkolwiek zmianą tej sesji.
+
+**Znaleziska (dokumentacja — realizacja w tej sesji):**
+
+- G1: trzy zakresy powyżej nie mają wpisu w `docs/PROJECT_HISTORY.md`
+  (dziennik kończy się na wersji „sesja porządkowa, bez zmian kodu”),
+  a `HANDOFF_2026-09-09.md` §1 wymienia tylko F1/F2 i podaje nieaktualne
+  „628 testów” oraz „`?v=m12-37` bez zmian”. Ten wpis zamyka lukę w dzienniku.
+- G2: `README.md` §Status nie zna wariantu bez fact-check ani ekranu
+  startowego („pięć ekranów: setup → …”), a `docs/ARCHITECTURE.md` §1 opisuje
+  powłokę jako „setup → prompt → paczka → gra → wynik”. To dokładnie wzorzec
+  z L31 (funkcja wchodzi/znika w UI, proza zostaje) — do poprawienia.
