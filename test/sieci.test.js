@@ -1049,3 +1049,75 @@ test('wybór: przy dobrej sieci drabinka NIE schodzi — pełny kąt zostaje', (
   assert.equal(w.separacje.ustapiono, false);
   assert.equal(w.separacje.katMinStopnie, Math.round(0.7 * (360 / 5) * 10) / 10);
 });
+
+/* ---- zgłoszenie właściciela 2026-09-09 (3): skupiska i zbyt bliskie pary ---- */
+
+test('wybór: separacja obowiązuje TAKŻE w linii prostej, nie tylko drogami', () => {
+  // Właściciel: „na bank niektóre stacje są mniej niż 350m od siebie. Tak na
+  // oko są takie oddalone o max 100m." Miał rację i przyczyna jest w metryce:
+  // próg liczył się po DROGACH, a przy krętej sieci 388 m drogami to bywa
+  // 121 m na mapie — i to mapę widzi gracz.
+  for (const [scenariusz, N] of [[SCENARIUSZE[1], 10], [SCENARIUSZE[0], 10]]) {
+    const { graf, kandydaci } = pelnyWybor(scenariusz);
+    const w = wybierzStacje({
+      graf, kandydaci, srodek: scenariusz.srodek,
+      konfig: { liczbaStacji: N, promienM: scenariusz.R }, ziarno: 'prosta',
+    });
+    // Próg liczony z PROMIENIA GRY, nie ze stałej `separacjaProstaUdzial` —
+    // inaczej wyzerowanie tej stałej wyzerowałoby też oczekiwanie i test
+    // przechodziłby mimo regresji (sprawdzone: tak właśnie było).
+    // 0.35 × R = 0.5 × r, czyli ta sama liczba co separacja sieciowa.
+    const prog = 0.35 * scenariusz.R;
+    for (let i = 0; i < w.stacje.length; i++) {
+      for (let j = i + 1; j < w.stacje.length; j++) {
+        const prosta = odlegloscM(w.stacje[i], w.stacje[j]);
+        assert.ok(prosta >= prog - 1,
+          `${scenariusz.nazwa}: stacje ${w.stacje[i].id}↔${w.stacje[j].id} dzieli na mapie ${Math.round(prosta)} m < ${Math.round(prog)} m`);
+      }
+    }
+  }
+});
+
+test('wybór: stacje rozkładają się wokół startu, nie zbijają w jedno skupisko', () => {
+  // Właściciel: „większość jest w jednym miejscu mimo dość dużego promienia."
+  // Miara: największa PUSTA luka kątowa. Idealny układ ma wszystkie luki równe
+  // 360/n; luka ponad 2,5× ideału to skupisko widoczne gołym okiem.
+  const najwiekszaLuka = (katy) => {
+    const s = [...katy].sort((a, b) => a - b);
+    let max = 0;
+    for (let i = 0; i < s.length; i++) {
+      const nast = i + 1 < s.length ? s[i + 1] : s[0] + 360;
+      max = Math.max(max, nast - s[i]);
+    }
+    return max;
+  };
+
+  for (const scenariusz of SCENARIUSZE) {
+    const { graf, kandydaci } = pelnyWybor(scenariusz);
+    for (const N of [5, 6, 8]) {
+      const w = wybierzStacje({
+        graf, kandydaci, srodek: scenariusz.srodek,
+        konfig: { liczbaStacji: N, promienM: scenariusz.R }, ziarno: 'rozrzut',
+      });
+      if (w.stacje.length < 3) continue; // sieć za uboga — nie ma czego mierzyć
+      const ideal = 360 / w.stacje.length;
+      const luka = najwiekszaLuka(w.stacje.map((s) => s.kat));
+      assert.ok(luka <= 2.5 * ideal,
+        `${scenariusz.nazwa} N=${N}: pusta luka ${Math.round(luka)}° > 2,5× ideału (${Math.round(ideal)}°) — stacje skupione po jednej stronie`);
+    }
+  }
+});
+
+test('wybór: kara za luki nie psuje równości pierścienia (obie cechy naraz)', () => {
+  // Regresja w drugą stronę: pierwsza wersja poprawki rozrzutu rozwaliła
+  // rozrzut dystansów (65% przy limicie 35%), bo kąt zdominował dobór.
+  // Kubełkowanie kąta (KUBELEK_KATA) przywraca równowagę — pinujemy OBIE.
+  for (const scenariusz of SCENARIUSZE) {
+    const { wynik } = pelnyWybor(scenariusz);
+    const d = wynik.stacje.map((s) => s.dystansSieciowyM);
+    const srednia = d.reduce((a, b) => a + b, 0) / d.length;
+    const rozrzut = (Math.max(...d) - Math.min(...d)) / srednia;
+    assert.ok(rozrzut <= 0.35,
+      `${scenariusz.nazwa}: rozrzut pierścienia ${(rozrzut * 100).toFixed(1)}% — kąt nie może zjeść równości dystansów`);
+  }
+});

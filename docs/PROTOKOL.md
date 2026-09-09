@@ -145,17 +145,22 @@ wychodzi mniejsza, bo nie niesie źródeł).
 
 ### 2.2 Wariant „Pytania (bez fact check)" (domyślny, ADR 0032)
 
-Ten sam kształt odpowiedzi co §2, inny kontrakt z modelem: fakty z własnej
-wiedzy (bez kwerendy w internecie), źródła opcjonalne. Znacznik odpowiedzi:
-`PYT/1.0-rev5`.
+Ten sam kształt odpowiedzi co §2, inny kontrakt z modelem: **nie narzucamy
+sposobu zdobycia faktu** — model sam decyduje, czy sięgnie do sieci, czy do
+własnej wiedzy — a źródła są opcjonalne. Znacznik odpowiedzi: `PYT/1.0-rev5`.
+
+Decyzja właściciela 2026-09-09: wcześniejsza wersja wprost ZAKAZYWAŁA kwerendy
+i nakazywała pamięć treningową. To było wymuszanie bez powodu — jeśli model nie
+ma pewnego faktu w pamięci, lepiej żeby go sprawdził, niż zgadywał. Zakaz
+zostaje wyłącznie w §2 w drugą stronę (tam kwerenda jest OBOWIĄZKOWA).
 
 <!-- szablon-promptu-bez:start -->
 ```tekst
-Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin. Ten wariant NIE wymaga sprawdzania faktów w internecie — korzystaj z własnej wiedzy.
+Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.
 
 ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
-1. Korzystaj WYŁĄCZNIE z własnej wiedzy (pamięci treningowej) — NIE wykonuj kwerendy w internecie; ta generacja ma być szybka. Wybieraj fakty pewne i powszechnie znane; gdy czegoś nie jesteś pewien, uprość pytanie albo pomiń temat i opisz to w polu "uwagi".
-2. Pole "zrodla" jest OPCJONALNE: możesz je pominąć albo podać pustą listę. Wpisz adres URL TYLKO wtedy, gdy jesteś pewien, że taki adres istnieje i zawiera ten fakt — zmyślony albo niepewny adres jest gorszy niż brak adresu.
+1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Gdy czegoś nie jesteś pewien, uprość pytanie albo pomiń temat i opisz to w polu "uwagi".
+2. Pole "zrodla" jest OPCJONALNE: jeśli masz adres potwierdzający fakt, podaj go; jeśli nie — pomiń pole albo zostaw pustą listę. Nigdy nie zmyślaj adresu: niepewny URL jest gorszy niż jego brak.
 3. Nie wymyślaj nazw, dat, liczb, cytatów ani autorów. Nie zgaduj. Gdy nie masz pewności co do faktu, wybierz łatwiejszy fakt z tego samego tematu; jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
 4. Każde pytanie kotwicz na najwęższym możliwym poziomie drabiny: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Wchodź wyżej TYLKO, gdy na węższym nie ma sensownego pewnego faktu (jeden fakt = najniższy poziom). Od poziomu miejscowości nazwa miejsca MUSI paść w treści pytania; poziom świat tylko z jawnym haczykiem do tej okolicy (postać, wydarzenie albo zjawisko stąd). Czyste pytania ogólne bez kotwicy są zakazane.
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.

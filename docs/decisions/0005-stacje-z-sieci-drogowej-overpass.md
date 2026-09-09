@@ -140,3 +140,36 @@ siecMinM }`, więc UI i diagnoza wiedzą, czy i jak bardzo ustąpiono.
 (bez ustępstwa), las 6 → 6 (sieć realnie nie ma więcej miejsc). Usterka S12
 nadal istnieje i nadal jest uczciwa — pojawia się dopiero wtedy, gdy sieć
 naprawdę nie ma gdzie postawić kolejnej stacji.
+
+## Aneks 2026-09-09 — rozrzut stacji: separacja w obu metrykach, układ zamiast zachłanności
+
+Właściciel: stacje wychodzą skupione — „widzę pinezki obok siebie i całą grę po
+jednej stronie startu\". Diagnoza wskazała **dwie niezależne przyczyny**.
+
+**1. Separacja liczona wyłącznie po sieci.** Próg `0.5 × r` sprawdzaliśmy na
+odległości drogowej, więc dwa punkty rozdzielone rzeką albo torami spełniały go
+przy 103 m w linii prostej (krętość do 3,2×). Gracz widzi mapę, nie graf, więc
+próg musi obowiązywać **w obu metrykach naraz**: doszedł `separacjaProstaUdzial
+= 0.5` sprawdzany na `odlegloscM`. Efekt na fixture'ach (minimalna para na
+mapie): przedmieście N=10 121 → 398 m, centrum N=10 103 → 212 m, las N=6
+427 → 833 m. Ceną są 1–2 stacje mniej tam, gdzie sieć jest uboga — uczciwiej niż
+dwie pinezki w jednym kwartale.
+
+**2. Zbieranie „pierwszy pasujący\".** Kandydaci szli posortowani po `score`, a
+kąt był tylko wetem, więc komplet N wypełniał się z jednego łuku i zostawiał
+pustą lukę 119° przy ideale 72°. Zamiast tego `zbierzUkladem` robi **farthest-
+point sampling po kącie**: pierwsza stacja wg `score`, każda kolejna maksymalizuje
+kąt do już wybranych. Kąt jest **kubełkowany** (`KUBELEK_KATA = 20°`) — bez tego
+sampling gonił dziesiąte części stopnia i rozwalał równość promieni pierścienia
+(rozrzut 65,6% przy limicie 35%); po kubełkowaniu remisy rozstrzyga `score`,
+więc oba kryteria żyją obok siebie (rozrzut 0,6–10,2%).
+
+**Pass wyrównujący musiał się o tym dowiedzieć.** Optymalizował samo odchylenie
+dystansów, więc cofał rozrzut wypracowany przy zbieraniu. `kosztUkladu` ma teraz
+trzeci składnik — karę za pustą lukę kątową (`WAGA_LUKI_M_NA_STOPIEN = 2`).
+Największa luka: centrum N=8 64° → 50°, przedmieście N=5 119° → 91°.
+
+Trzy testy w `test/sieci.test.js` pilnują obu metryk separacji, luki kątowej
+(≤ 2,5× ideału) i rozrzutu pierścienia (≤ 35%). Próg w teście liczy się z
+**promienia gry**, nie ze stałej konfiguracji — inaczej wyzerowanie stałej
+zerowałoby też oczekiwanie i asercja byłaby pozorna (LESSONS).

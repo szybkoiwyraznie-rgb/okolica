@@ -1111,7 +1111,7 @@ test('ADR 0032: poprawka celuje w profil wklejki — E02 w checkbox, odrzucona w
   domAtrapa.kliknij('przycisk-sprawdz');
   assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Nie da się odczytać/);
   domAtrapa.kliknij('przycisk-poprawka');
-  assert.match(domAtrapa.pobierz('pole-odpowiedz').value, /bez kwerendy w internecie/, 'E02 przy pustym checkboxie: korekta bez kwerendy');
+  assert.match(domAtrapa.pobierz('pole-odpowiedz').value, /sposób ich ustalenia zostawiamy Tobie/, 'E02 przy pustym checkboxie: korekta nie narzuca sposobu zdobycia faktu');
   // odrzucona rev2 (za mało pytań) → korekta za znacznikiem, mimo pustego checkboxa
   const jawna = czytajFixturePaczka();
   const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
@@ -1154,7 +1154,7 @@ test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł", wyni
     domAtrapa.kliknij('przycisk-nastepna-stacja');
   }
   assert.equal(domAtrapa.pobierz('gra-panel-koniec').hidden, false, 'koniec po ostatniej stacji');
-  assert.match(domAtrapa.pobierz('gra-wynik-factcheck').textContent, /bez fact-check/, 'wynik mówi: bez weryfikacji');
+  assert.match(domAtrapa.pobierz('gra-wynik-factcheck').textContent, /bez wymuszonego fact-checku/, 'wynik mówi: bez wymuszonej weryfikacji');
   assert.equal([...domAtrapa.pobierz('gra-wynik-factcheck').children].length, 0, 'bez znaczka Q dla wariantu bez weryfikacji');
   const { historia } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
   assert.equal(historia.wpisy[0].factcheck, false, 'historia pamięta brak weryfikacji');
@@ -1509,21 +1509,39 @@ test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z link
   assert.match(a.textContent, /sprawdzono/, 'data sprawdzenia źródła widoczna');
   assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, false);
   assert.equal(dom.pobierz('przycisk-nastepna-stacja').hidden, false);
-  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Następna stacja/, 'jedno pytanie, jeden gracz — stacja zamknięta');
+  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Gracz 2, stacja 2 — idę →/, 'jeden przycisk niesie i gracza, i cel — bez drugiego klika (zgłoszenie 2026-09-09)');
   // panele TRZYMAJĄ wyjaśnienie: model jest już w fazie przygotowanie, ale C widoczny
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'wyjaśnienie nie znika zanim gracz kliknie dalej');
   assert.match(dom.pobierz('gra-postep').textContent, /stacja 2 z 3/, 'badge postępu już po zamknięciu stacji');
 });
 
-test('M6: „Następna stacja" przełącza fazę i rotuje gracza (hot-seat, ADR 0009)', async () => {
+test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-seat, ADR 0009)', async () => {
   const { dom } = await graWFaziePytania();
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] });
   dom.kliknij('przycisk-nastepna-stacja');
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, true, 'panel C zamknięty');
-  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'faza przygotowanie — panel A');
-  assert.match(dom.pobierz('gra-kto-idzie').textContent, /Idzie: Gracz 2 → stacja 2/, 'rotacja kolejki (2 graczy z domyślnej konfiguracji)');
-  assert.match(dom.pobierz('przycisk-start-odcinka').textContent, /Idę do stacji 2/);
+  // Zgłoszenie właściciela 2026-09-09: panel oczekiwania NIE ma się już pokazać —
+  // to była druga strona kliknięcia, którą łączymy w jedno.
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true, 'panel A pominięty — start poszedł tym samym klikiem');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'gracz jest już w drodze');
+  assert.match(dom.pobierz('status').textContent, /Odcinek rozpoczęty/, 'odcinek wystartował bez drugiego klika');
+  // rotacja kolejki (2 graczy z domyślnej konfiguracji) widoczna w badge'u kolejki
+  assert.match(dom.pobierz('gra-kolejka').textContent, /Gracz 2/, 'kolej przeszła na drugiego gracza');
+});
+
+test('M6: pauza w trakcie wyjaśnienia — połączony przycisk NIE startuje odcinka (zgłoszenie 2026-09-09)', async () => {
+  const { dom } = await graWFaziePytania();
+  const przyciski = dom.pobierz('gra-odpowiedzi').children;
+  for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] });
+  dom.kliknij('przycisk-pauza');
+  const dalej = dom.pobierz('przycisk-nastepna-stacja');
+  assert.match(dalej.textContent, /Następna stacja/, 'w pauzie przycisk nie obiecuje wyjścia w drogę');
+  assert.doesNotMatch(dalej.textContent, /idę →/, 'żadnej zapowiedzi startu, dopóki gra stoi');
+  dom.kliknij('przycisk-nastepna-stacja');
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'w pauzie zostaje panel A ze startem');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, true, 'odcinek NIE ruszył w pauzie');
+  assert.equal(dom.pobierz('przycisk-start-odcinka').disabled, true, 'start pozostaje zablokowany do wznowienia');
 });
 
 test('M6: błędna odpowiedź — zero punktów, podświetlona poprawna, gra idzie dalej', async () => {
@@ -1539,7 +1557,7 @@ test('M6: błędna odpowiedź — zero punktów, podświetlona poprawna, gra idz
   assert.ok(przyciski[pierwsze.poprawna].classList.contains('poprawna'), 'poprawna na zielono');
   assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie także po błędzie — tu jest najwięcej nauki');
   dom.kliknij('przycisk-nastepna-stacja');
-  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'gra idzie dalej mimo błędu');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'gra idzie dalej mimo błędu — od razu w drogę');
 });
 
 /* ============ M6/R6: trwałość — zapis po tranzycjach, wznowienie, koniec */
@@ -1659,8 +1677,10 @@ test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, w
   zaczynijGre(dom);
   for (const numerStacji of [1, 2, 3]) {
     const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
-    assert.match(dom.pobierz('przycisk-start-odcinka').textContent, new RegExp(`Idę do stacji ${numerStacji}`));
-    dom.kliknij('przycisk-start-odcinka');
+    if (numerStacji === 1) {
+      assert.match(dom.pobierz('przycisk-start-odcinka').textContent, /Idę do stacji 1/);
+      dom.kliknij('przycisk-start-odcinka'); // pierwszą stację startuje panel A — nie ma jeszcze poprzedniej odpowiedzi
+    }
     assert.equal(dom.pobierz('przycisk-symulacja-gra').hidden, false, 'symulacja dostępna w odcinku');
     dom.kliknij('przycisk-symulacja-gra');
     await czekaj(9 * 120 + 600); // dziewięć fixów po 120 ms + zapas (wzorzec z M3)
@@ -1672,7 +1692,7 @@ test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, w
     assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze!/, `stacja ${numerStacji}: poprawna odpowiedź punktuje`);
     const dalej = dom.pobierz('przycisk-nastepna-stacja');
     if (numerStacji < 3) {
-      assert.match(dalej.textContent, /Następna stacja/);
+      assert.match(dalej.textContent, new RegExp(`stacja ${numerStacji + 1} — idę →`), 'przycisk zapowiada następną stację i startuje odcinek');
     } else {
       assert.match(dalej.textContent, /Zobacz wynik/, 'po ostatniej stacji model kończy grę');
     }

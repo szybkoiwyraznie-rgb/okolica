@@ -332,19 +332,35 @@ function paczkaOdwrocona(marker, bezZrodel = false) {
   return paczka;
 }
 
-test('ADR 0032: szablon bez weryfikacji mówi wprost: pamięć zamiast kwerendy, źródła opcjonalne', () => {
+test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktów', () => {
+  // Właściciel 2026-09-09: „W prompcie wprost zakazujesz szukania źródeł
+  // w internecie i nakazujesz używania pamięci treningowej. Po co? Po prostu
+  // nie wymuszaj niczego. (…) Może nie ma nic w pamięci treningowej i wyszuka,
+  // a nie że zakazujesz."
   assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.length > 2000, `szablon §2.2 ma ${SZABLON_PROMPTU_BEZ_WERYFIKACJI.length} znaków — wygląda na niekompletny`);
   for (const fraza of [
-    'NIE wymaga sprawdzania faktów w internecie',
-    'NIE wykonuj kwerendy w internecie',
+    'Podawaj wyłącznie fakty, których jesteś pewien',
+    'Sposób ich ustalenia zostawiamy Tobie',
     'OPCJONALNE',
-    'zmyślony albo niepewny adres jest gorszy niż brak adresu',
+    'Nigdy nie zmyślaj adresu',
     '"PYT/1.0-rev5"',
     'SCHEMAT ODPOWIEDZI (PYT/1.0-rev5)',
     'ZAKODOWANY numer poprawnej odpowiedzi',
     'zapisz NORMALNIE',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
+  }
+
+  // SEDNO zgłoszenia: żadnego zakazu ani nakazu co do sposobu zdobycia faktu.
+  for (const zakaz of [
+    'NIE wykonuj kwerendy',
+    'NIE wymaga sprawdzania faktów w internecie',
+    'WYŁĄCZNIE z własnej wiedzy',
+    'pamięci treningowej',
+    'bez kwerendy w internecie',
+  ]) {
+    assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(zakaz),
+      `szablon §2.2 nadal wymusza sposób zdobycia faktu: „${zakaz}"`);
   }
   // B2: odwracanie liter usunięte także z wariantu bez fact-check.
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('ODWRÓCONE ZNAKAMI'),
@@ -423,7 +439,9 @@ test('poprawkaDlaModelu: wariantowa — domyślnie fact-check, bez weryfikacji b
   assert.ok(fc.includes('kwerenda internetowa dla każdego faktu'), 'domyślna korekta jak dziś');
   assert.ok(poprawkaDlaModelu(usterki).includes('kwerenda internetowa dla każdego faktu'), 'stara sygnatura działa');
   const bez = poprawkaDlaModelu(usterki, { liczbaPytan: 3, factcheck: false });
-  assert.ok(bez.includes('bez kwerendy w internecie'), 'korekta bez weryfikacji nie żąda kwerendy');
+  assert.ok(bez.includes('sposób ich ustalenia zostawiamy Tobie'),
+    'korekta bez weryfikacji nie narzuca sposobu zdobycia faktu (zgłoszenie 2026-09-09)');
+  assert.ok(!bez.includes('bez kwerendy w internecie'), 'i nie zakazuje kwerendy');
   assert.ok(bez.includes('źródła opcjonalne'), 'korekta bez weryfikacji mówi o opcjonalnych źródłach');
   assert.ok(!bez.includes('kwerenda internetowa dla każdego faktu'), 'twarda kwerenda nie przecieka');
   assert.ok(bez.includes('[E03]') && bez.includes('PYT/1.0'), 'nagłówek i lista usterek wspólne');
