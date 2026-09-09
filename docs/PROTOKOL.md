@@ -50,7 +50,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. Pola "tresc", "odpowiedzi", "wyjasnienie", "uwagi" oraz "tytul" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład "Kot" jako "toK"), a w polu "protokol" wpisz "PYT/1.0-rev2". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).
+8. W polu "protokol" wpisz "PYT/1.0-rev4". Wszystkie pola tekstowe zapisz NORMALNIE, w naturalnej kolejności liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer poprawnej odpowiedzi (pole "poprawna", zasada niżej).
 
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
@@ -70,9 +70,9 @@ GRACZE I TRUDNOŚĆ:
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
-SCHEMAT ODPOWIEDZI (PYT/1.0-rev2) — dokładnie te pola:
+SCHEMAT ODPOWIEDZI (PYT/1.0-rev4) — dokładnie te pola:
 {
-  "protokol": "PYT/1.0-rev2",
+  "protokol": "PYT/1.0-rev4",
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "wiek": "{WIEK}",
   "tematy": [{TEMATY_JSON}],
@@ -147,7 +147,7 @@ wychodzi mniejsza, bo nie niesie źródeł).
 
 Ten sam kształt odpowiedzi co §2, inny kontrakt z modelem: fakty z własnej
 wiedzy (bez kwerendy w internecie), źródła opcjonalne. Znacznik odpowiedzi:
-`PYT/1.0-rev3`.
+`PYT/1.0-rev5`.
 
 <!-- szablon-promptu-bez:start -->
 ```tekst
@@ -161,7 +161,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. Pola "tresc", "odpowiedzi", "wyjasnienie", "uwagi" oraz "tytul" w każdym źródle zapisz ODWRÓCONE ZNAKAMI (czytane od końca — na przykład "Kot" jako "toK"), a w polu "protokol" wpisz "PYT/1.0-rev3". Schemat niżej pokazuje KSZTAŁT odpowiedzi, ale wartości tych pól odwracasz. Na końcu ODCZYTAJ każde odwrócone pole od końca i sprawdź, czy po odwróceniu z powrotem zdanie jest poprawne — błąd w odwróceniu unieważnia odpowiedź (samokontrola).
+8. W polu "protokol" wpisz "PYT/1.0-rev5". Wszystkie pola tekstowe zapisz NORMALNIE, w naturalnej kolejności liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer poprawnej odpowiedzi (pole "poprawna", zasada niżej).
 
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
@@ -181,9 +181,9 @@ GRACZE I TRUDNOŚĆ:
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
-SCHEMAT ODPOWIEDZI (PYT/1.0-rev3) — dokładnie te pola:
+SCHEMAT ODPOWIEDZI (PYT/1.0-rev5) — dokładnie te pola:
 {
-  "protokol": "PYT/1.0-rev3",
+  "protokol": "PYT/1.0-rev5",
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "wiek": "{WIEK}",
   "tematy": [{TEMATY_JSON}],
@@ -222,7 +222,7 @@ WYMAGANIA DODATKOWE:
 
 | Pole | Typ | Wymagane | Zasady |
 | --- | --- | --- | --- |
-| `protokol` | tekst | tak | `"PYT/1.0"` albo `"PYT/1.0-rev1"` (wariant odwrócony, §3.4) |
+| `protokol` | tekst | tak | `"PYT/1.0"`, `"-rev1"`, `"-rev2"`, `"-rev3"` (odwrócone, §3.4) albo bieżące `"-rev4"` / `"-rev5"` (bez odwracania) |
 | `okolica.lat` | liczba | tak | `-90 ≤ lat ≤ 90` |
 | `okolica.lon` | liczba | tak | `-180 ≤ lon ≤ 180` |
 | `okolica.promienM` | liczba | tak | `100–50000`, zgodna z konfiguracją gry |
@@ -246,7 +246,7 @@ WYMAGANIA DODATKOWE:
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
-| `poprawna` | liczba całkowita | jawna i rev1: `0..3`; rev2/rev3: indeks + stacja + numer pytania + 17 (kod pozycyjny) |
+| `poprawna` | liczba całkowita | jawna i rev1: `0..3`; rev2/rev3/rev4/rev5: indeks + stacja + numer pytania + 17 (kod pozycyjny) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
 | `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
@@ -290,7 +290,21 @@ reguły §3.2 i §6 działają na odczytanej treści. Cel jak w §3.3: ochrona p
 przypadkowym wglądem (ekran organizatora, schowek), nie szyfrowanie. Walidator
 przyjmuje oba warianty.
 
-**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to kod pozycyjny (indeks + stacja + numer pytania + 17, np. s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22 — inny dla każdego pytania, a +17 sprawia, że goły indeks nigdy nie przejdzie za kod), a pola `punkty` nie ma (każde pytanie daje 1 pkt). Szablon z §2 generuje rev2.
+**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to kod pozycyjny (indeks + stacja + numer pytania + 17, np. s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22 — inny dla każdego pytania, a +17 sprawia, że goły indeks nigdy nie przejdzie za kod), a pola `punkty` nie ma (każde pytanie daje 1 pkt).
+
+**Warianty `PYT/1.0-rev4` i `PYT/1.0-rev5` (bieżące, decyzja właściciela 2026-09-09).**
+Odwracanie tekstu **zniesione**: pola tekstowe zapisuje się normalnie. Zostaje
+wyłącznie kod pozycyjny `poprawna` (jak w rev2). Powód: modele przekręcały
+wyrazy przy odwracaniu, więc bariera przypadkowego wglądu kosztowała jakość
+pytań — a to właśnie kod poprawnej odpowiedzi robi całą robotę, dla której
+odwracanie powstało (ADR 0007: maskowanie, nie szyfrowanie). Różnica między
+nimi to wyłącznie profil źródeł: **rev4** z fact-check (źródła twarde, E09
+obowiązuje, szablon §2), **rev5** bez fact-check (źródła opcjonalne, szablon
+§2.2, domyślny — ADR 0032).
+
+Walidator przyjmuje **wszystkie** markery: `PYT/1.0`, `-rev1`, `-rev2`, `-rev3`,
+`-rev4`, `-rev5`. Odwracanie jest dekodowane tylko dla rev1/rev2/rev3, bo paczki
+w tych wariantach leżą już na Drive i muszą dać się otworzyć.
 
 
 ## 4. Kategorie wiekowe i wymagania trudności
@@ -346,10 +360,10 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
 | `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
 | `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
-| `E06` | `poprawna` poza zakresem albo (rev2) nieznane słowo |
+| `E06` | `poprawna` poza zakresem albo (warianty z kodem) kod nie do odczytania |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
-| `E09` | pytanie bez `zrodla` albo lista pusta (nie dotyczy rev3 — źródła opcjonalne) |
+| `E09` | pytanie bez `zrodla` albo lista pusta (nie dotyczy rev3 i rev5 — źródła opcjonalne) |
 | `E10` | `zrodla[].url` nie jest adresem `http(s)` albo jest adresem zabronionym: domena przykładowa (`example.com`, `przyklad.org`, `twojastrona.pl`) albo zarezerwowane TLD (`.invalid`, `.test`, `.localhost`, `.example`, `.local`) |
 | `E11` | data (`utworzono`, `sprawdzono`) w przyszłości albo w złym formacie |
 | `E12` | `temat` spoza kanonu §5 |
@@ -415,6 +429,12 @@ dane, nie decyzje sesji — ich zmiana idzie przez kod, test i commit.
   `punkty` (§3.4). Jak rev1: zapis, nie nowa wersja; walidator przyjmuje
   `PYT/1.0`, `-rev1` i `-rev2`, szablon generuje rev2. Dawne paczki działają
   bez migratora (M8 nieopublikowany, a reguły i tak łagodnieją).
+- **Warianty `PYT/1.0-rev4` / `PYT/1.0-rev5` (2026-09-09, zgłoszenie B2)** —
+  koniec odwracania liter; zostaje kod pozycyjny `poprawna`. Znów zapis, nie
+  nowa wersja schematu: kształt pól bez zmian, walidator przyjmuje wszystkie
+  dotychczasowe markery, a odwrócone rev1/rev2/rev3 dekoduje jak dotąd (paczki
+  na Drive zostają czytelne). Szablony generują rev4 (§2) i rev5 (§2.2).
+  Wersje szablonów: `PYT/1.0.7` i `PYT/1.0-nofc.2`.
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 

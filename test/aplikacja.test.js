@@ -1058,26 +1058,28 @@ function pamiecKonfig3x1() {
   return pamiecKonfig;
 }
 
-test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie rev3; zaznaczenie daje rev2', async () => {
+test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie rev5; zaznaczenie daje rev4', async () => {
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
   await import(`../app/app.js?fc1=${Math.random().toString(36).slice(2)}`);
   assert.equal(domAtrapa.pobierz('prompt-factcheck').checked, false, 'checkbox startuje pusty (atrapa czyta prawdziwy index.html)');
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
   domAtrapa.kliknij('przycisk-dalej-prompt');
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev3/, 'domyślny prompt generuje rev3');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev5/, 'domyślny prompt generuje rev5');
   assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
+  // B2: nowe warianty nie każą odwracać tekstu.
+  assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('ODWRÓCONE ZNAKAMI'), 'prompt nie żąda odwracania liter');
   assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes('bez fact-check'), 'opis mówi o wariancie');
   assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes(SZABLON_WERSJA_BEZ_WERYFIKACJI), 'opis pokazuje wersję szablonu §2.2');
   assert.match(domAtrapa.pobierz('prompt-podglad-naglowek').textContent, /bez fact-check/);
-  assert.match(domAtrapa.pobierz('prompt-licznik').textContent, /PYT\/1\.0-rev3/);
+  assert.match(domAtrapa.pobierz('prompt-licznik').textContent, /PYT\/1\.0-rev5/);
   przelaczCheckbox(domAtrapa, 'prompt-factcheck', true);
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev2/, 'zaznaczony checkbox generuje rev2');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev4/, 'zaznaczony checkbox generuje rev4');
   assert.match(domAtrapa.pobierz('pole-prompt').value, /wykonaj kwerendę w internecie/);
   assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes('z fact check'), 'opis mówi o wariancie');
   assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes(SZABLON_WERSJA), 'opis pokazuje wersję szablonu §2');
   przelaczCheckbox(domAtrapa, 'prompt-factcheck', false);
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev3/, 'odznaczenie wraca do rev3');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev5/, 'odznaczenie wraca do rev5');
 });
 
 test('ADR 0032 end-to-end: paczka rev3 bez źródeł przyjęta, rejestr niesie factcheck:false', async () => {

@@ -88,7 +88,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'OKOLICA GRY:',
     'STACJE (kolejność = kolejność w grze',
     'GRACZE I TRUDNOŚĆ:',
-    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev2)',
+    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev4)',
     'WYMAGANIA DODATKOWE:',
     '"poprawna": ZAKODOWANY numer',
   ]) {
@@ -292,16 +292,21 @@ test('rev2: obcy kod to E06 z regułą i przykładem, jawny indeks nie przechodz
   assert.ok(kody(jawnaJakoKod).includes('E06'), 'gołe indeksy w rev2 nie przechodzą po cichu');
 });
 
-test('rev2: szablon żąda odwrócenia, poprawnej słownie i samokontroli (reguła 8)', () => {
+/**
+ * B2 (decyzja właściciela 2026-09-09): odwracanie liter USUNIĘTE — modele
+ * przekręcały wyrazy. Zostaje wyłącznie kod pozycyjny poprawnej odpowiedzi.
+ */
+test('rev4: szablon koduje poprawną, ale NIE każe odwracać tekstu (reguła 8)', () => {
   for (const fraza of [
-    'ODWRÓCONE ZNAKAMI',
-    '"PYT/1.0-rev2"',
+    '"PYT/1.0-rev4"',
     'ZAKODOWANY numer poprawnej odpowiedzi',
     '2 + 2 + 1 + 17 = 22',
-    'ODCZYTAJ każde odwrócone pole od końca',
-    'samokontrola',
+    'zapisz NORMALNIE',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
+  }
+  for (const zakazana of ['ODWRÓCONE ZNAKAMI', 'ODCZYTAJ każde odwrócone pole od końca', 'toK']) {
+    assert.ok(!SZABLON_PROMPTU.includes(zakazana), `szablon nie może już żądać odwracania: ${zakazana}`);
   }
 });
 
@@ -334,13 +339,16 @@ test('ADR 0032: szablon bez weryfikacji mówi wprost: pamięć zamiast kwerendy,
     'NIE wykonuj kwerendy w internecie',
     'OPCJONALNE',
     'zmyślony albo niepewny adres jest gorszy niż brak adresu',
-    '"PYT/1.0-rev3"',
-    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev3)',
+    '"PYT/1.0-rev5"',
+    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev5)',
     'ZAKODOWANY numer poprawnej odpowiedzi',
-    'ODWRÓCONE ZNAKAMI',
+    'zapisz NORMALNIE',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
   }
+  // B2: odwracanie liter usunięte także z wariantu bez fact-check.
+  assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('ODWRÓCONE ZNAKAMI'),
+    'szablon §2.2 nie żąda już odwracania');
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('wykonaj kwerendę w internecie'),
     'twarda kwerenda z §2 nie przecieka do §2.2');
   for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{LICZBA_GRACZY}', '{WIEK}', '{OPIS_TRUDNOSCI}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
@@ -349,16 +357,16 @@ test('ADR 0032: szablon bez weryfikacji mówi wprost: pamięć zamiast kwerendy,
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
 });
 
-test('zbudujPrompt: domyślnie bez weryfikacji (rev3), fact-check na życzenie (rev2)', () => {
+test('zbudujPrompt: domyślnie bez weryfikacji (rev5), fact-check na życzenie (rev4)', () => {
   const domyslny = zbudujPrompt(wejscieBudowy());
   assert.deepEqual(domyslny.usterki, []);
-  assert.ok(domyslny.prompt.includes('PYT/1.0-rev3'), 'domyślny prompt generuje rev3');
+  assert.ok(domyslny.prompt.includes('PYT/1.0-rev5'), 'domyślny prompt generuje rev5');
   assert.ok(!domyslny.prompt.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
   const jawnyBez = zbudujPrompt(wejscieBudowy({ factcheck: false }));
   assert.equal(jawnyBez.prompt, domyslny.prompt, 'jawne factcheck:false = domyślne');
   const fc = zbudujPrompt(wejscieBudowy({ factcheck: true }));
   assert.deepEqual(fc.usterki, []);
-  assert.ok(fc.prompt.includes('PYT/1.0-rev2'), 'prompt z fact-check generuje rev2');
+  assert.ok(fc.prompt.includes('PYT/1.0-rev4'), 'prompt z fact-check generuje rev4');
   assert.ok(fc.prompt.includes('wykonaj kwerendę w internecie'), 'prompt z fact-check żąda kwerendy');
 });
 
@@ -605,4 +613,55 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
 test('stałe protokołu: wersja i schemat kontenera', () => {
   assert.equal(WERSJA_PROTOKOLU, 'PYT/1.0');
   assert.equal(SCHEMAT_KONTENERA, 'TO-paczka/2', 'kontener po decyzji z ADR 0007 (obfuskacja bez klucza)');
+});
+
+/* ---- B2 (2026-09-09): koniec odwracania liter, zostaje kod poprawnej ---- */
+
+/** Paczka rev4/rev5: tekst NORMALNY, zakodowana tylko `poprawna`. */
+function paczkaBezOdwracania(marker, bezZrodel = false) {
+  const paczka = structuredClone(OK);
+  paczka.protokol = marker;
+  paczka.pytania.forEach((p) => {
+    p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p);
+    if (bezZrodel) delete p.zrodla;
+  });
+  return paczka;
+}
+
+test('B2: rev4 waliduje się bez odwracania, a dekoder odzyskuje indeks poprawnej', () => {
+  const rev4 = paczkaBezOdwracania('PYT/1.0-rev4');
+  assert.equal(czyPaczkaOdwrocona(rev4), false, 'rev4 nie jest wariantem odwróconym');
+  assert.deepEqual(walidujPaczke(rev4, oczekiwane()), [], 'rev4 przechodzi walidację');
+
+  const robocza = odkodujPaczkeRev2(rev4);
+  assert.equal(robocza.protokol, 'PYT/1.0', 'marker znormalizowany');
+  assert.equal(robocza.wariantWejsciowy, 'PYT/1.0-rev4', 'wariant wejściowy zapamiętany');
+  for (const pyt of robocza.pytania) {
+    const wzorzec = OK.pytania.find((q) => q.id === pyt.id);
+    assert.equal(pyt.tresc, wzorzec.tresc, 'treść czytelna bez odwracania');
+    assert.equal(pyt.poprawna, wzorzec.poprawna, 'kod poprawnej rozkodowany do indeksu');
+  }
+  assert.equal(czyWariantFactcheck(robocza), true, 'rev4 to wariant z fact-check');
+});
+
+test('B2: rev5 to rev4 bez wymogu źródeł (ADR 0032 zachowane)', () => {
+  const rev5 = paczkaBezOdwracania('PYT/1.0-rev5', true);
+  assert.deepEqual(walidujPaczke(rev5, oczekiwane()), [], 'rev5 bez źródeł waliduje się czysto');
+  assert.equal(czyWariantFactcheck(odkodujPaczkeRev2(rev5)), false, 'rev5 to wariant bez fact-check');
+
+  // Ten sam brak źródeł w rev4 musi być błędem — profile się nie zlały.
+  const rev4bezZrodel = paczkaBezOdwracania('PYT/1.0-rev4', true);
+  const usterki = walidujPaczke(rev4bezZrodel, oczekiwane());
+  assert.ok(usterki.some((u) => u.kod === 'E09'), 'rev4 nadal wymaga źródeł (E09)');
+});
+
+test('B2: stare paczki rev2/rev3 (odwrócone) dają się odczytać — leżą na Drive', () => {
+  for (const marker of ['PYT/1.0-rev2', 'PYT/1.0-rev3']) {
+    const stara = paczkaOdwrocona(marker, marker === 'PYT/1.0-rev3');
+    assert.equal(czyPaczkaOdwrocona(stara), true, `${marker} to wariant odwrócony`);
+    assert.deepEqual(walidujPaczke(stara, oczekiwane()), [], `${marker} nadal się waliduje`);
+    const robocza = odkodujPaczkeRev2(stara);
+    assert.equal(robocza.pytania[0].tresc, OK.pytania[0].tresc, `${marker}: tekst odwrócony z powrotem`);
+    assert.equal(robocza.pytania[0].poprawna, OK.pytania[0].poprawna, `${marker}: kod rozkodowany`);
+  }
 });
