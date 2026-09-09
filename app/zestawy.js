@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-37';
-import { kanonicznyTemat } from './konfig.js?v=m12-37';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-37';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-37';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-40';
+import { kanonicznyTemat } from './konfig.js?v=m12-40';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-40';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-40';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -364,7 +364,7 @@ export function dopasujMetaIndeksu(indeks, kryteria) {
  * Meta dopasowania z bieżącej konfiguracji i pozycji (geohash5 z `geo.js`).
  * Czysta funkcja: warstwa DOM podaje wyłącznie fakty (ADR 0017 pkt 3).
  */
-export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '' } = {}) {
+export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '', factcheck = true } = {}) {
   wymaganie(Number.isFinite(lat) && Number.isFinite(lon), 'zbierzMetaZestawu: pozycja musi być liczbami');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'zbierzMetaZestawu: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'zbierzMetaZestawu: liczbaStacji musi być dodatnią liczbą całkowitą');
@@ -386,6 +386,9 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
     liczbaStacji,
     pytaniaNaStacje,
     tematWlasny: typeof tematWlasny === 'string' ? tematWlasny.trim().slice(0, 40) : '',
+    // ADR 0032: false = pytania z pamięci modelu; brak pola w starych
+    // zapisach czytamy jak true (reguła `!== false`, jak geohash6 z ADR 0024).
+    factcheck: Boolean(factcheck),
   };
 }
 

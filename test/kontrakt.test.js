@@ -12,7 +12,7 @@ import { readFileSync, readdirSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SZABLON_PROMPTU, WERSJA_PROTOKOLU } from '../app/protokol.js';
+import { SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU } from '../app/protokol.js';
 import { PODKLADY, TEMATY, WIEK } from '../app/konfig.js';
 import { KODOWANIE, SCHEMAT_KONTENERA } from '../app/kodowanie.js';
 import { KODY_POZYCJI } from '../app/pozycja.js';
@@ -64,6 +64,51 @@ test('kontrakt: szablon promptu w docs/PROTOKOL.md jest identyczny z SZABLON_PRO
   assert.ok(otwarcie >= 0 && zamkniecie > otwarcie, 'szablon w protokole nie jest w ogrodzeniu');
   const zDokumentu = linie.slice(otwarcie + 1, zamkniecie).join('\n').trim();
   assert.equal(SZABLON_PROMPTU, zDokumentu, 'uruchom `npm run build` (tools/synchronizuj-szablon.mjs) i wcommituj kod razem z dokumentem');
+});
+
+test('kontrakt: szablon bez weryfikacji w docs/PROTOKOL.md §2.2 jest identyczny z SZABLON_PROMPTU_BEZ_WERYFIKACJI', () => {
+  const start = PROTOKOL.indexOf('<!-- szablon-promptu-bez:start -->');
+  const koniec = PROTOKOL.indexOf('<!-- szablon-promptu-bez:koniec -->');
+  assert.ok(start >= 0 && koniec > start, 'brak znaczników szablonu §2.2 w protokole');
+  const linie = PROTOKOL.slice(start, koniec).split('\n');
+  const otwarcie = linie.findIndex((l) => l.trim().startsWith('```'));
+  const zamkniecie = linie.map((l) => l.trim()).lastIndexOf('```');
+  assert.ok(otwarcie >= 0 && zamkniecie > otwarcie, 'szablon §2.2 w protokole nie jest w ogrodzeniu');
+  const zDokumentu = linie.slice(otwarcie + 1, zamkniecie).join('\n').trim();
+  assert.equal(SZABLON_PROMPTU_BEZ_WERYFIKACJI, zDokumentu, 'uruchom `npm run build` (tools/synchronizuj-szablon.mjs) i wcommituj kod razem z dokumentem');
+});
+
+test('kontrakt ADR 0032: ekran promptu ma checkbox fact-check (domyślnie pusty, po prawej od Kopiuj)', () => {
+  const ekran = INDEX.split('id="ekran-prompt"')[1].split('</section>')[0];
+  assert.match(ekran, /id="prompt-factcheck" type="checkbox"/, 'checkbox wariantu');
+  assert.ok(!/id="prompt-factcheck" type="checkbox"[^>]*checked/.test(ekran), 'domyślnie pusty — wariant bez weryfikacji');
+  assert.match(ekran, /Pytania z fact check/, 'etykieta jak w zleceniu');
+  assert.ok(ekran.indexOf('id="przycisk-kopiuj-prompt"') < ekran.indexOf('id="prompt-factcheck"')
+    && ekran.indexOf('id="prompt-factcheck"') < ekran.indexOf('id="przycisk-pobierz-prompt"'),
+    'checkbox po prawej od „Kopiuj prompt"');
+  assert.match(ekran, /id="prompt-tryb-opis"/, 'opis trybu pod przyciskiem');
+  assert.match(ekran, /id="prompt-podglad-naglowek"/, 'nagłówek podglądu mówi, który wariant widać');
+});
+
+test('kontrakt ADR 0032: znaczek Q ma token złota w obu motywach i klasę', () => {
+  assert.match(STYLE, /--zloto: #7d6300;/, 'złoto jasne (kontrast pilnuje brama)');
+  assert.match(STYLE, /--zloto: #e3b341;/, 'złoto ciemne');
+  assert.match(STYLE, /\.znaczek-factcheck \{ color: var\(--zloto\); font-weight: 700; \}/, 'klasa znaczka');
+  const audyt = czytaj('tools/audyt-kontrastu.mjs');
+  assert.match(audyt, /tekst: 'zloto', tlo: 'tlo-karta'/, 'brama pilnuje kontrastu na karcie');
+  assert.match(audyt, /tekst: 'zloto', tlo: 'tlo'/, 'brama pilnuje kontrastu na tle strony');
+});
+
+test('kontrakt ADR 0032: wynik i panel multi mają linię wariantu', () => {
+  assert.match(INDEX, /id="gra-wynik-factcheck"/, 'linia wariantu na ekranie wyniku');
+  assert.match(INDEX, /id="multi-factcheck"/, 'linia wariantu w panelu multi');
+  assert.match(APP, /\$\('gra-wynik-factcheck'\)/, 'pokazWyniki ją wypełnia');
+  assert.match(APP, /\$\('multi-factcheck'\)/, 'renderujPanelMulti ją wypełnia');
+});
+
+test('kontrakt ADR 0032: wersja szablonu bez weryfikacji ma konsumenta w UI (jak SZABLON_WERSJA)', () => {
+  assert.match(APP, /SZABLON_WERSJA_BEZ_WERYFIKACJI/, 'app.js importuje stałą');
+  assert.match(APP, /szablon \$\{SZABLON_WERSJA_BEZ_WERYFIKACJI\}/, 'opis trybu pokazuje wersję szablonu §2.2');
 });
 
 /* ------------------------------------------------- kanony treści: doc ↔ kod */
@@ -213,11 +258,11 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
 // przetestować zachowaniem — pilnujemy przynajmniej struktury i reguł CSS.
 // Dwa mignięcia z podglądu (2026-09-08). Atrapa nie renderuje, więc pilnujemy
 // przyczyn wprost: stanu początkowego w HTML i `position` w regule panelu.
-test('kontrakt: <body> ma data-ekran w HTML — inaczej setup miga przed startem JS', () => {
-  // `pokazEkran()` ustawia `data-ekran` dopiero po wczytaniu modułu. Bez
-  // atrybutu w HTML reguły `body[data-ekran=…]` nie łapią: setup renderuje się
-  // w przepływie („stary"), mapa jest schowana, a po chwili wszystko przeskakuje.
-  assert.match(INDEX, /<body data-ekran="setup">/, 'stan początkowy ekranu jest w HTML, nie tylko z JS');
+test('kontrakt: <body> ma data-ekran w HTML — inaczej strona miga przed startem JS', () => {
+  // `pokazEkran()`/`pokazMapeStartowa()` ustawiają `data-ekran` dopiero po
+  // wczytaniu modułu. Bez atrybutu w HTML reguły `body[data-ekran=…]` nie
+  // łapią: mapa startowa jest schowana, a po chwili wszystko przeskakuje.
+  assert.match(INDEX, /<body data-ekran="mapa">/, 'stan początkowy ekranu jest w HTML, nie tylko z JS');
 });
 
 test('kontrakt: panel pozycji jest w `.tresc` i ograniczony belką oraz stopką', () => {
@@ -308,10 +353,10 @@ test('kontrakt: mapa jest trwałym spodem aplikacji, a setup kartą nad nią', (
   const ekranPozycja = INDEX.match(/<section id="ekran-pozycja"[\s\S]*?<\/section>/)?.[0] ?? '';
   assert.equal(/id="mapa-pozycja"/.test(ekranPozycja), false, 'ekran pozycji nie zawiera już własnej mapy');
 
-  assert.match(INDEX, /<button id="przycisk-setup"[^>]*>⚙ setup<\/button>/, 'ikonka setup w nagłówku');
+  assert.match(INDEX, /<button id="przycisk-setup"[^>]*>⚙ START GRY<\/button>/, 'START GRY w nagłówku (decyzja 2026-09-09)');
   assert.ok(APP.includes("$('przycisk-setup').addEventListener('click', () => pokazEkran('setup'))"), 'ikonka setup jest podpięta');
 
-  assert.ok(STYLE.includes('body:not([data-ekran=\'setup\']):not([data-ekran=\'pozycja\']) #mapa-pozycja { visibility: hidden; }'),
+  assert.ok(STYLE.includes('body:not([data-ekran=\'setup\']):not([data-ekran=\'pozycja\']):not([data-ekran=\'mapa\']) #mapa-pozycja { visibility: hidden; }'),
     'mapa jest chowana przez visibility, nie display — display zerowałby jej pomiar');
   assert.ok(STYLE.includes("body[data-ekran='setup'] #ekran-setup"), 'setup ma regułę karty nad mapą');
 });
@@ -1011,7 +1056,7 @@ test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da si�
   assert.match(czytaj('app/pozycja.js'), /ADR 0029/, 'komunikat P03 nie odsyła do usuniętego przycisku');
   assert.ok(INDEX.includes('id="przycisk-nowa-gra"'), 'na ekranie wyniku jest wyjście do nowej gry');
   assert.ok(APP.includes('function wrocNaPoczatek'), 'przycisk ma podpiętą funkcję');
-  assert.ok(APP.includes("pokazEkran('ekran-setup')"), 'wyjście wraca na ekran setupu');
+  assert.ok(APP.includes('pokazMapeStartowa()'), 'wyjście wraca na mapę startową (decyzja 2026-09-09, zgłoszenie (3))');
   // LESSONS L31: gdy funkcja znika z interfejsu, jej opis zostaje w komunikatach.
   // Sześć kodów `P` i jeden komunikat `stanDojscia` kazały „zgłosić dojście
   // ręcznie" jeszcze po usunięciu przycisku — gracz czytał instrukcję, której

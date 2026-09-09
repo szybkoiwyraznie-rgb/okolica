@@ -305,6 +305,13 @@ test('zbierzMetaZestawu niesie geohash6 (kotwica tolerancji dla nowych paczek)',
   assert.equal(m.geohash6, geohash(PODKOWA.lat, PODKOWA.lon, 6));
 });
 
+test('zbierzMetaZestawu niesie factcheck (ADR 0032), domyślnie true', async () => {
+  const { zbierzMetaZestawu } = await import('../app/zestawy.js');
+  const baza = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-07 10:00' };
+  assert.equal(zbierzMetaZestawu(baza).factcheck, true, 'domyślnie zweryfikowana');
+  assert.equal(zbierzMetaZestawu({ ...baza, factcheck: false }).factcheck, false, 'bez weryfikacji na życzenie');
+});
+
 test('zestawy: powodyNiedopasowania mówi wprost, które kryterium nie zagrało', async () => {
   const { powodyNiedopasowania, czyWOkolicy, odlegloscWpisuM } = await import('../app/zestawy.js');
   const { geohash } = await import('../app/geo.js');

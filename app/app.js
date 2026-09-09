@@ -15,10 +15,11 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-37';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-37';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-40';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-40';
 import {
   czyPaczkaOdwrocona,
+  czyWariantFactcheck,
   normalizujTematyPaczki,
   odkodujPaczkeRev1,
   odkodujPaczkeRev2,
@@ -29,23 +30,25 @@ import {
   zbudujPrompt,
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
+  SZABLON_WERSJA_BEZ_WERYFIKACJI,
   WERSJA_PROTOKOLU_REV2,
+  WERSJA_PROTOKOLU_REV3,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-37';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-37';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-37';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-37';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-37';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-37';
+} from './protokol.js?v=m12-40';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-40';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-40';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-40';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-40';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-40';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-37';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-37';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-37';
+} from './zestawy.js?v=m12-40';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-40';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-40';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -65,17 +68,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-37';
-import { utworzMape } from './mapa.js?v=m12-37';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-37';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-37';
-import { adresMostu, stanMostu } from './most.js?v=m12-37';
+} from './sieci.js?v=m12-40';
+import { utworzMape } from './mapa.js?v=m12-40';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-40';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-40';
+import { adresMostu, stanMostu } from './most.js?v=m12-40';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
-  walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, walidujKolejkeOcenTekst,
+  walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-37';
+} from './oceny.js?v=m12-40';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -99,6 +102,10 @@ const STAN = {
   obrot: 0,
   ziarnoOffset: 0,
   prompt: null,
+  /** ADR 0032: wariant promptu z ekranu 4 (checkbox „Pytania z fact check") — false = domyślny bez weryfikacji. */
+  promptFactcheck: false,
+  /** ADR 0032: wariant korekty dla modelu — ze znacznika wklejki, a dla E02 z checkboxa. */
+  poprawkaFactcheck: true,
   paczka: null,
   /** ADR 0028: id paczki z repozytorium Drive — tylko takie paczki zbierają oceny. */
   paczkaRepoId: '',
@@ -109,6 +116,8 @@ const STAN = {
   /** ADR 0028: pytanie i gracz, przy których stoi panel oceny. */
   ocenianePytanieId: '',
   ocenianyGracz: '',
+  /** ADR 0028: tożsamość głosującego spod panelu — ta sama przy renderze i kliku. */
+  oceniajacyId: '',
   usterkiPaczki: [],
   /** Ekran, na który wracamy z rankingu i z prywatności (oba są poza EKRANY). */
   powrotZRankingu: 'setup',
@@ -189,6 +198,7 @@ function $(id) {
 const EKRANY = ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra'];
 
 function pokazEkran(nazwa) {
+  ukryjStart(); // krok gry chowa okno startowe (poza nim okno nie ma czego przykrywać)
   STAN.ekran = nazwa;
   // ADR 0030: stan ekranu na <body>. CSS nie ma selektora rodzica, a układ
   // rozgrywki na telefonie (mapa tłem, karty faz NA mapie, bez przewijania
@@ -208,6 +218,36 @@ function pokazEkran(nazwa) {
 }
 
 /**
+ * Mapa startowa (decyzja właściciela 2026-09-09): sama mapa-tło, nagłówek
+ * i stopka — bez formularza. Stan lądowania po starcie (gdy zniknie okno
+ * startowe) i po „Wróć na początek". Poza EKRANY jak prywatność i rankingi:
+ * to nie krok przygotowania gry, tylko spód, na którym gra się zaczyna.
+ */
+function pokazMapeStartowa() {
+  STAN.ekran = 'mapa';
+  document.body.dataset.ekran = 'mapa';
+  for (const e of EKRANY) {
+    $(`ekran-${e}`).hidden = true;
+    const krok = document.querySelector(`#kroki li[data-krok="${e}"]`);
+    if (krok) {
+      krok.classList.remove('aktywny');
+      krok.classList.remove('zrobione');
+    }
+  }
+  odswiezMapeEkranu('pozycja'); // mapa na spodzie to instancja pozycji
+  window.scrollTo({ top: 0 });
+}
+
+/** Okno startowe znika po kliknięciu gdziekolwiek na nie (jw.). */
+function ukryjStart() {
+  const w = $('ekran-start');
+  if (w) w.hidden = true;
+  document.body.classList.remove('okno-start');
+  const mp = document.querySelector('#mapa-pozycja .mapa-przyciski');
+  if (mp) mp.hidden = false;
+}
+
+/**
  * Ekran „dane i prywatność" (ADR 0013 pkt 7) nie jest krokiem gry: chowa
  * wszystkie ekrany z paska kroków i pokazuje siebie, a powrót prowadzi na
  * ekran zapamiętany w `STAN.ekran`.
@@ -221,6 +261,7 @@ function pokazPrywatnosc() {
   STAN.powrotZPrywatnosci = $('ekran-ranking').hidden
     ? (EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup')
     : 'ranking';
+  ukryjStart(); // okno startowe nie przykrywa karty prywatności
   document.body.dataset.ekran = 'prywatnosc';
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-ranking').hidden = true;
@@ -235,6 +276,7 @@ function wrocZPrywatnosci() {
     pokazRankingi({ bezPobierania: true }); // dane już są — nie pytamy mostu drugi raz
     return;
   }
+  if (STAN.ekran === 'mapa') { pokazMapeStartowa(); return; }
   pokazEkran(EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup');
 }
 
@@ -1684,6 +1726,7 @@ function metaBiezacejOkolicy() {
     liczbaStacji: STAN.konfig.liczbaStacji,
     pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
     tematWlasny: STAN.konfig.tematWlasny ?? '',
+    factcheck: czyWariantFactcheck(STAN.paczka),
   });
 }
 
@@ -1716,11 +1759,35 @@ function zapiszZestawLokalnyPoStarcie() {
   }
 }
 
-function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '') {
+/**
+ * Reguła odczytu flagi weryfikacji (ADR 0032 §4): brak pola w starych
+ * zapisach (meta, rejestr, indeks, historia) = paczka zweryfikowana.
+ */
+function czyWpisFactcheck(wpis) {
+  return wpis?.factcheck !== false;
+}
+
+/**
+ * Znaczek Q (ADR 0032): złota litera dla paczek zweryfikowanych w sieci.
+ * Niesie informację (nie jest dekoracją) — stąd role="img" z etykietą.
+ * Dla wariantu bez weryfikacji go NIE renderujemy (brak znaczka = brak weryfikacji).
+ */
+function znaczekFactcheck() {
+  const s = document.createElement('span');
+  s.className = 'znaczek-factcheck';
+  s.setAttribute('role', 'img');
+  s.setAttribute('aria-label', 'pytania zweryfikowane w sieci');
+  s.title = 'Pytania zweryfikowane w sieci (fact check)';
+  s.textContent = 'Q';
+  return s;
+}
+
+function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '', factcheck = true) {
   const li = document.createElement('li');
   const opisEl = document.createElement('span');
   opisEl.className = 'opis-zestawu';
   opisEl.textContent = `${etykietaZrodla} ${opis}`;
+  if (factcheck) opisEl.append(' ', znaczekFactcheck());
   const przycisk = document.createElement('button');
   przycisk.type = 'button';
   przycisk.className = 'przycisk';
@@ -1799,6 +1866,8 @@ function odswiezPropozycjeZestawow() {
       `${wpis.miejsce} · ${wpis.data} · ${wpis.liczbaStacji} stacji × ${wpis.pytaniaNaStacje} pytań · ${wpis.tematy.join(', ')} · ${wpis.wiek}`,
       '📱 z tego telefonu:',
       () => grajZZestawemLokalnym(wpis.skrot),
+      '',
+      czyWpisFactcheck(wpis),
     ));
   }
   const url = adresMostu(); // ADR 0020: adres z kodu aplikacji (albo nadpisany w pamięci telefonu)
@@ -1844,6 +1913,7 @@ function odswiezPropozycjeZestawow() {
           meta.oceny === undefined
             ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
             : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
+          czyWpisFactcheck(meta),
         ));
       }
       // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
@@ -2154,6 +2224,25 @@ function zapiszKolejkeOcen(kolejka) {
  * z repozytorium — paczka wygenerowana na tym telefonie nie ma gdzie zbierać
  * głosów, więc panelu nie ma (bez komunikatu o brakującej funkcji).
  */
+/**
+ * Tożsamość głosującego spod panelu ocen. ADR 0026 aneks: na telefonie jest
+ * LISTA graczy, nie jeden profil — głosującego szukamy po imieniu
+ * odpowiadającego gracza, bo w hot-seat każdy gracz ocenia osobno (ADR 0028
+ * pkt 2) i sam identyfikator telefonu byłby za gruby. Jedno miejsce liczenia
+ * dla renderu panelu i dla klika — inaczej „już ocenione" mijałoby się z głosem.
+ */
+function idGlosujacegoPanelu(imie) {
+  const zapamietani = czytajGraczyLokalnych();
+  const klucz = normalizujPseudonim(imie).toLowerCase();
+  const naLiscie = (zapamietani?.gracze ?? []).find((g) => String(g.pseudonim).toLowerCase() === klucz) ?? null;
+  return idGlosujacego({
+    pseudonim: naLiscie?.pseudonim ?? '',
+    zweryfikowany: naLiscie?.zweryfikowany === true,
+    imie: imie ?? '',
+    pamiec: pamiecOcen(),
+  }).id;
+}
+
 function renderujPanelOcen(pytanie, gracz = null) {
   const panel = $('gra-oceny');
   if (!panel) return;
@@ -2161,12 +2250,18 @@ function renderujPanelOcen(pytanie, gracz = null) {
     panel.hidden = true;
     STAN.ocenianePytanieId = '';
     STAN.ocenianyGracz = '';
+    STAN.oceniajacyId = '';
     return;
   }
   panel.hidden = false;
   STAN.ocenianePytanieId = pytanie.id;
-  STAN.ocenianyGracz = gracz?.imie ?? '';
-  const glos = STAN.oceny.glosy.find((g) => g.paczkaId === STAN.paczkaRepoId && g.pytanieId === pytanie.id) ?? null;
+  if (gracz) {
+    STAN.ocenianyGracz = gracz.imie ?? '';
+    STAN.oceniajacyId = idGlosujacegoPanelu(gracz.imie);
+  }
+  // Odświeżenie po głosie woła bez gracza — tożsamość głosującego zostaje ta,
+  // która głosowała, bo `idGlosujacego` z pustym imieniem liczy inne id.
+  const glos = znajdzGlos(STAN.oceny, { paczkaId: STAN.paczkaRepoId, pytanieId: pytanie.id, graczId: STAN.oceniajacyId });
   const plus = $('gra-ocena-plus');
   const minus = $('gra-ocena-minus');
   if (plus) {
@@ -2187,20 +2282,9 @@ function renderujPanelOcen(pytanie, gracz = null) {
  */
 function kliknijOcene(ocena) {
   if (!STAN.paczkaRepoId || !STAN.ocenianePytanieId) return;
-  const pamiec = pamiecOcen();
-  // ADR 0026 aneks: na telefonie jest LISTA graczy, nie jeden profil. Głosującego
-  // szukamy po imieniu odpowiadającego gracza — w hot-seat każdy gracz ocenia
-  // osobno (ADR 0028 pkt 2), więc sam identyfikator telefonu byłby za gruby.
-  const zapamietani = czytajGraczyLokalnych();
-  const imie = STAN.ocenianyGracz ?? '';
-  const klucz = normalizujPseudonim(imie).toLowerCase();
-  const naLiscie = (zapamietani?.gracze ?? []).find((g) => String(g.pseudonim).toLowerCase() === klucz) ?? null;
-  const { id } = idGlosujacego({
-    pseudonim: naLiscie?.pseudonim ?? '',
-    zweryfikowany: naLiscie?.zweryfikowany === true,
-    imie,
-    pamiec,
-  });
+  // Tożsamość spod renderu panelu — ten sam głosujący, którego sprawdzało
+  // „już ocenione" (głosowanie bez renderu nie istnieje, awaryjnie liczymy).
+  const id = STAN.oceniajacyId || idGlosujacegoPanelu(STAN.ocenianyGracz);
   const wynik = ocenPytanie(STAN.oceny, {
     paczkaId: STAN.paczkaRepoId,
     pytanieId: STAN.ocenianePytanieId,
@@ -2371,7 +2455,11 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
     : faza === FAZY.pytanie
       ? 'Następne pytanie →'
       : 'Następna stacja →';
-  status(dobrze ? 'Poprawna odpowiedź zapisana.' : 'Odpowiedź zapisana — wyjaśnienie i źródła poniżej.');
+  // Paczka bez źródeł (rev3) nie ma „źródeł poniżej" — status nie może ich obiecywać.
+  const maZrodla = Array.isArray(pytanie.zrodla) && pytanie.zrodla.length > 0;
+  status(dobrze
+    ? 'Poprawna odpowiedź zapisana.'
+    : maZrodla ? 'Odpowiedź zapisana — wyjaśnienie i źródła poniżej.' : 'Odpowiedź zapisana — wyjaśnienie poniżej.');
   renderujGre({ panele: false }); // badge'e tak; panele dopiero po „Następna stacja"
   zapiszGre();
 }
@@ -2443,6 +2531,7 @@ function zapiszGreDoHistorii(przerwana = false) {
       miejsce: STAN.miejsce ? STAN.miejsce : null,
       terazMs: Date.now(),
       przerwana,
+      factcheck: factcheckBiezacejSesji(),
     });
     const surowy = localStorage.getItem(KLUCZ_HISTORII);
     let { historia, usterki } = walidujHistorieSurowa(surowy);
@@ -2499,6 +2588,7 @@ function renderujHistorieGier() {
       w.zwyciezca ? `🏆 ${w.zwyciezca} — ${w.punktyRazem} pkt` : 'brak zwycięzcy',
     ];
     li.textContent = czesci.filter(Boolean).join(' · ') + (w.przerwana ? ' · (przerwana)' : '');
+    if (czyWpisFactcheck(w)) li.append(' ', znaczekFactcheck());
     return li;
   }));
 }
@@ -2680,7 +2770,8 @@ function wrocNaPoczatek() {
   STAN.tokenGry = '';
   STAN.ocenianePytanieId = '';
   STAN.ocenianyGracz = '';
-  pokazEkran('ekran-setup');
+  STAN.oceniajacyId = '';
+  pokazMapeStartowa();
   status('Gotowe do nowej gry — setup i gracze zostali, wynik jest w historii.');
 }
 
@@ -2722,6 +2813,17 @@ function pokazWyniki() {
     const p = document.createElement('p');
     p.textContent = 'Brak zwycięzcy — żadna odpowiedź nie została zapisana.';
     kartaZw.appendChild(p);
+  }
+
+  // 1b. wariant weryfikacji pytań (ADR 0032): Q tylko dla zweryfikowanych.
+  const fcEl = $('gra-wynik-factcheck');
+  fcEl.replaceChildren();
+  if (factcheckBiezacejSesji()) {
+    const opis = document.createElement('span');
+    opis.textContent = ' Pytania zweryfikowane w sieci (fact check)';
+    fcEl.append(znaczekFactcheck(), opis);
+  } else {
+    fcEl.textContent = 'Pytania z pamięci modelu (bez fact-check — możliwe zmyślone fakty)';
   }
 
   // 2. ranking — tabela jak w M6 (miejsce, gracz, punkty, poprawne)
@@ -2910,17 +3012,26 @@ async function eksportujWynikObraz(udostepnij = false) {
 /* ---------------------------------------------------------------- prompt */
 
 function budujPromptEkran() {
+  // ADR 0032: checkbox wybiera wariant — domyślnie (pusty) pytania bez
+  // weryfikacji z pamięci modelu; zaznaczony to twarda kwerenda w sieci.
+  const factcheck = $('prompt-factcheck').checked === true;
+  STAN.promptFactcheck = factcheck;
   const wynik = zbudujPrompt({
     konfig: STAN.konfig,
     okolica: { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, miejsce: STAN.miejsce ?? '' },
     stacje: STAN.stacje,
+    factcheck,
   });
   pokazBledy('bledy-prompt', wynik.usterki);
   STAN.prompt = wynik.prompt;
   $('pole-prompt').value = wynik.prompt ?? '';
   $('prompt-licznik').textContent = wynik.prompt
-    ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji · protokół ${WERSJA_PROTOKOLU}`
+    ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji · protokół ${factcheck ? WERSJA_PROTOKOLU_REV2 : WERSJA_PROTOKOLU_REV3}`
     : 'prompt nie został zbudowany';
+  $('prompt-podglad-naglowek').textContent = `Pokaż treść promptu (${factcheck ? 'z fact check' : 'bez fact-check'})`;
+  $('prompt-tryb-opis').textContent = factcheck
+    ? `Tryb: pytania z fact check (szablon ${SZABLON_WERSJA}) — model sprawdza każdy fakt w sieci, odpowiedź wraca w minuty; każde pytanie ma źródła.`
+    : `Tryb: pytania bez fact-check (szablon ${SZABLON_WERSJA_BEZ_WERYFIKACJI}) — model korzysta z własnej wiedzy, odpowiedź wraca w sekundy; możliwe zmyślone fakty.`;
   // B21: prompt jest stały (~1,4 tys. tokenów) niezależnie od liczby pytań —
   // rośnie ODPOWIEDŹ modelu (~210 tokenów na pytanie), a to ona mieści się albo
   // nie w limicie wyjścia. Mówimy o tym ZANIM właściciel zmarnuje generację:
@@ -3033,6 +3144,9 @@ function sprawdzOdpowiedz() {
   if (!paczka) {
     wynik.dataset.stan = 'blad';
     $('wynik-naglowek').textContent = 'Nie da się odczytać odpowiedzi';
+    // E02: znacznika nie ma (nieparsowalne) — korekta celuje w wariant,
+    // który organizator właśnie zbudował (stan checkboxa z ekranu promptu).
+    STAN.poprawkaFactcheck = STAN.promptFactcheck;
     STAN.usterkiPaczki = [blad];
     STAN.paczka = null;
     renderujUsterki([blad]);
@@ -3044,10 +3158,18 @@ function sprawdzOdpowiedz() {
   // Q2 (PROTOKOL §3.4): wariant odwrócony odkodowujemy PRZED walidacją —
   // dalej płynie postać czytelna z markerem PYT/1.0.
   const bylaOdwrocona = czyPaczkaOdwrocona(paczka);
-  const wariant = paczka.protokol === WERSJA_PROTOKOLU_REV2 ? 'rev2' : 'rev1';
-  const robocza = paczka.protokol === WERSJA_PROTOKOLU_REV2 ? odkodujPaczkeRev2(paczka) : odkodujPaczkeRev1(paczka);
+  let wariant = 'rev1';
+  if (paczka.protokol === WERSJA_PROTOKOLU_REV2) wariant = 'rev2';
+  if (paczka.protokol === WERSJA_PROTOKOLU_REV3) wariant = 'rev3';
+  const robocza = (paczka.protokol === WERSJA_PROTOKOLU_REV2 || paczka.protokol === WERSJA_PROTOKOLU_REV3)
+    ? odkodujPaczkeRev2(paczka)
+    : odkodujPaczkeRev1(paczka);
   const usterki = walidujPaczke(robocza, oczekiwane());
   STAN.usterkiPaczki = usterki;
+  // Korekta celuje w profil walidacji wklejki (znacznik), nie w checkbox —
+  // wklejona paczka rev2 ma dostać przypomnienie o kwerendzie także wtedy,
+  // gdy checkbox jest akurat pusty.
+  STAN.poprawkaFactcheck = czyWariantFactcheck(paczka);
   if (usterki.length) {
     wynik.dataset.stan = 'blad';
     STAN.paczka = null;
@@ -3060,7 +3182,10 @@ function sprawdzOdpowiedz() {
 
   wynik.dataset.stan = 'ok';
   STAN.paczka = normalizujTematyPaczki(robocza);
-  $('wynik-naglowek').textContent = bylaOdwrocona ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana)` : 'Paczka przyjęta';
+  const weryfikacja = czyWariantFactcheck(robocza) ? 'fact check' : 'bez fact-check';
+  $('wynik-naglowek').textContent = bylaOdwrocona
+    ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana; ${weryfikacja})`
+    : `Paczka przyjęta (${weryfikacja})`;
   $('przycisk-poprawka').hidden = true;
   renderujUsterki([]);
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
@@ -3454,6 +3579,19 @@ function renderujTrybyMulti() {
     : 'Wszyscy idą tę samą trasę jednocześnie, każdy na swoim telefonie. Wygrywa najlepszy wynik — tabela jest żywa.';
 }
 
+/**
+ * Wariant weryfikacji bieżącej sesji (ADR 0032): z paczki w pamięci, a po
+ * wznowieniu (plaintext tylko w kontenerze) przez odpakowanie. Nieznane = true.
+ */
+function factcheckBiezacejSesji() {
+  if (STAN.paczka) return czyWariantFactcheck(STAN.paczka);
+  if (STAN.kontenerPaczki) {
+    const { paczka } = odpakujPaczke(STAN.kontenerPaczki);
+    if (paczka) return czyWariantFactcheck(paczka);
+  }
+  return true;
+}
+
 /** Meta zestawu z sesji — bez pozycji liczymy od pierwszej stacji (uczciwe: i tak tam idziemy). */
 function metaSesjiMulti(stacje) {
   const punkt = STAN.pozycja ?? (stacje.length ? { lat: stacje[0].lat, lon: stacje[0].lon } : null);
@@ -3464,6 +3602,7 @@ function metaSesjiMulti(stacje) {
     jezyk: STAN.konfig.jezyk, miejsce: STAN.miejsce ?? '',
     liczbaStacji: stacje.length, pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
     tematWlasny: STAN.konfig.tematWlasny ?? '',
+    factcheck: factcheckBiezacejSesji(),
   });
 }
 
@@ -3473,6 +3612,7 @@ function metaZWpisuLokalnego(z) {
     miejsce: z.miejsce, geohash5: z.geohash5, promienM: z.promienM, tematy: z.tematy,
     wiek: z.wiek, jezyk: z.jezyk, data: z.data, liczbaStacji: z.liczbaStacji, pytaniaNaStacje: z.pytaniaNaStacje,
     tematWlasny: z.tematWlasny ?? '',
+    factcheck: z.factcheck ?? true,
   };
 }
 
@@ -3971,6 +4111,17 @@ function renderujPanelMulti() {
     tura.textContent = gra.stan === 'zakonczona' ? 'Gra zakończona — ostateczne wyniki:' : 'Gra wieloosobowa.';
   }
   renderujWierszeWynikow($('gra-multi-wiersze'), gra);
+  // ADR 0032: wariant weryfikacji zestawu — meta jedzie w środku RO-gra/1.
+  const fcMulti = $('multi-factcheck');
+  fcMulti.hidden = false;
+  fcMulti.replaceChildren();
+  if (czyWpisFactcheck(gra.zestaw?.meta)) {
+    const opis = document.createElement('span');
+    opis.textContent = ' Pytania zweryfikowane w sieci (fact check)';
+    fcMulti.append(znaczekFactcheck(), opis);
+  } else {
+    fcMulti.textContent = 'Pytania z pamięci modelu (bez fact-check)';
+  }
   renderujWyborStacji(gra, r, graSieToczy);
   // tury: przycisk drogi zablokowany, dopóki idzie ktoś inny (serwer i tak pilnuje)
   if (r && r.faza === FAZY.przygotowanie && gra.tryb === TRYBY_GRY.tury && gra.stan === 'trwa') {
@@ -4070,7 +4221,8 @@ const RANKING_ZAKLADKI = [
 function pokazRankingi({ bezPobierania = false } = {}) {
   // Zapamiętujemy ekran, z którego gracz przyszedł: `STAN.ekran` nie zmienia się
   // przy wejściu na rankingi, więc bez tego „wróć" zawsze zrzucało na setup.
-  STAN.powrotZRankingu = EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup';
+  ukryjStart(); // warstwa rankingów wchodzi nad wszystko, okno startowe znika
+  STAN.powrotZRankingu = EKRANY.includes(STAN.ekran) || STAN.ekran === 'mapa' ? STAN.ekran : 'setup';
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-prywatnosc').hidden = true;
   $('ekran-ranking').hidden = false;
@@ -4080,6 +4232,7 @@ function pokazRankingi({ bezPobierania = false } = {}) {
 
 function wrocZRankingu() {
   $('ekran-ranking').hidden = true;
+  if (STAN.powrotZRankingu === 'mapa') { pokazMapeStartowa(); return; }
   pokazEkran(STAN.powrotZRankingu ?? 'setup');
 }
 
@@ -4292,7 +4445,10 @@ function start() {
     STAN.odstepOverpassMs = 0;
   }
 
-  $('przycisk-setup').addEventListener('click', () => pokazEkran('setup')); // ikonka setup w nagłówku
+  $('przycisk-setup').addEventListener('click', () => pokazEkran('setup')); // START GRY w nagłówku
+  $('ekran-start').addEventListener('click', ukryjStart); // okno startowe: klik gdziekolwiek zamyka
+  $('przycisk-start-zacznij').addEventListener('click', ukryjStart); // to samo jawnym przyciskiem
+  document.addEventListener('keydown', (z) => { if (z.key === 'Escape') ukryjStart(); });
   $('przycisk-motyw').addEventListener('click', przelaczMotyw);
   $('przycisk-sygnaly').addEventListener('click', przelaczSygnaly);
   $('przycisk-sygnaly').setAttribute('aria-pressed', String(sygnalyWlaczone()));
@@ -4439,6 +4595,7 @@ function start() {
 
   $('przycisk-wstecz-stacje').addEventListener('click', () => pokazEkran('stacje'));
   $('przycisk-kopiuj-prompt').addEventListener('click', (e) => kopiujTekst(STAN.prompt ?? '', e.currentTarget, '⧉ Kopiuj prompt'));
+  $('prompt-factcheck').addEventListener('change', () => budujPromptEkran());
   $('przycisk-pobierz-prompt').addEventListener('click', () => {
     if (!STAN.prompt) return;
     pobierzPlik(`prompt-okolica-${geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5)}.txt`, STAN.prompt, 'text/plain;charset=utf-8');
@@ -4465,7 +4622,7 @@ function start() {
   });
   $('przycisk-sprawdz').addEventListener('click', sprawdzOdpowiedz);
   $('przycisk-poprawka').addEventListener('click', (e) => {
-    const tekst = poprawkaDlaModelu(STAN.usterkiPaczki, { liczbaPytan: liczbaPytan(STAN.konfig) });
+    const tekst = poprawkaDlaModelu(STAN.usterkiPaczki, { liczbaPytan: liczbaPytan(STAN.konfig), factcheck: STAN.poprawkaFactcheck });
     kopiujTekst(tekst, e.currentTarget, '⧉ Kopiuj poprawkę do modelu');
     $('pole-odpowiedz').value = tekst;
   });
@@ -4562,7 +4719,13 @@ function start() {
 
   sprawdzZapisGry(); // M6/R6: baner wznowienia, jeśli telefon pamięta grę
   renderujHistorieGier(); // M7/P6: lista poprzednich gier na setupie
-  pokazEkran('setup');
+  // Start to mapa + okno startowe, nie setup (decyzja właściciela 2026-09-09).
+  pokazMapeStartowa();
+  const start = $('ekran-start');
+  if (start) start.hidden = false;
+  document.body.classList.add('okno-start');
+  const mp = document.querySelector('#mapa-pozycja .mapa-przyciski');
+  if (mp) mp.hidden = true;
   status(`M0 — fundament. Ustawienia domyślne: ${TRYBY[STAN.konfig.tryb].etykieta}, ${STAN.konfig.liczbaStacji} stacji, ${DOMYSLNE.pytaniaNaStacje} pytanie na stację, wiek ${WIEK[STAN.konfig.wiek].etykieta}.`);
 }
 

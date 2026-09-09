@@ -12,10 +12,10 @@
  *   danych z ekranu prywatności (M3) kasuje zapis gry automatycznie;
  * - zepsuty zapis = jawna odmowa z kodem T, nigdy cichy start od zera.
  */
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-37';
-import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-37';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-37';
-import { geohash } from './geo.js?v=m12-37';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-40';
+import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-40';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-40';
+import { geohash } from './geo.js?v=m12-40';
 
 export const SCHEMAT_STANU = 'stan-gry/1';
 
@@ -240,7 +240,7 @@ function czyWpisHistoriiOk(w) {
  * wstrzykiwany, ADR 0004 pkt 3); `przerwana: true` dla ręcznego zakończenia —
  * dokończenie gry zastąpi wpis pełnym (ta sama `klucz`).
  */
-export function skrotGry({ rozgrywka, konfig, stacje, podsumowanie, miejsce = null, terazMs, przerwana = false } = {}) {
+export function skrotGry({ rozgrywka, konfig, stacje, podsumowanie, miejsce = null, terazMs, przerwana = false, factcheck = true } = {}) {
   wymaganie(czyRozgrywkaOk(rozgrywka), `skrotGry: rozgrywka musi być stanem ${SCHEMAT_ROZGRYWKI}`);
   wymaganie(czyKonfigOk(konfig), 'skrotGry: konfig z tryb i kodGry jest wymagany');
   wymaganie(Array.isArray(stacje) && stacje.length > 0 && stacje.every(czyStacjaOk),
@@ -269,6 +269,9 @@ export function skrotGry({ rozgrywka, konfig, stacje, podsumowanie, miejsce = nu
     zaliczoneStacje: podsumowanie.zaliczoneStacje,
     pominietaStacje: podsumowanie.pominietaStacje,
     przerwana: Boolean(przerwana),
+    // ADR 0032: false = gra na pytaniach z pamięci modelu; brak pola
+    // w starych wpisach czytamy jak true (reguła `!== false`).
+    factcheck: Boolean(factcheck),
   };
 }
 

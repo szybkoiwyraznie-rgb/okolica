@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SZABLON_WERSJA, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
+import { SZABLON_WERSJA, SZABLON_WERSJA_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -45,11 +45,21 @@ test('bootstrap: aplikacja startuje bez wyjątku na atrapie DOM', () => {
   assert.ok(dom.elementy.size > 40, `aplikacja dotknęła tylko ${dom.elementy.size} elementów — wygląda na urwany start`);
 });
 
-test('bootstrap: widoczny jest ekran setupu, reszta ukryta', () => {
-  assert.equal(pobierz('ekran-setup').hidden, false, 'ekran setupu ma być widoczny na starcie');
-  for (const ekran of ['pozycja', 'stacje', 'prompt', 'paczka']) {
+test('bootstrap: na starcie jest mapa z oknem startowym, nie setup (decyzja 2026-09-09)', () => {
+  assert.equal(pobierz('ekran-start').hidden, false, 'okno startowe ma być widoczne na starcie');
+  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka']) {
     assert.equal(pobierz(`ekran-${ekran}`).hidden, true, `ekran ${ekran} ma być na starcie ukryty`);
   }
+});
+
+test('start: klik w okno je zamyka, a START GRY otwiera setup', () => {
+  assert.equal(pobierz('ekran-start').hidden, false, 'warunek wstępny: okno jest otwarte');
+  dom.kliknij('ekran-start');
+  assert.equal(pobierz('ekran-start').hidden, true, 'klik gdziekolwiek zamyka okno');
+  assert.equal(pobierz('ekran-setup').hidden, true, 'po zamknięciu zostaje sama mapa');
+  dom.kliknij('przycisk-setup');
+  assert.equal(pobierz('ekran-setup').hidden, false, 'START GRY otwiera setup');
+  assert.equal(pobierz('ekran-start').hidden, true, 'setup nie wskrzesza okna');
 });
 
 test('bootstrap: stopka pokazuje obowiązującą wersję protokołu i łatki szablonu', () => {
@@ -295,7 +305,8 @@ test('bootstrap: uszkodzona konfiguracja w localStorage nie kładzie startu', as
   const domSmieci = zainstalujDom({ pamiec: pamiecSmieci });
   // ponowne wczytanie modułu z odświeżonym query — nowy egzemplarz, ten sam kod
   await import(`../app/app.js?powtorka=${Date.now()}`);
-  assert.equal(domSmieci.pobierz('ekran-setup').hidden, false, 'aplikacja musi wystartować nawet na śmieciowym stanie');
+  assert.equal(domSmieci.pobierz('ekran-start').hidden, false, 'aplikacja musi wystartować nawet na śmieciowym stanie (mapa + okno)');
+  assert.equal(domSmieci.pobierz('ekran-setup').hidden, true, 'setup nie otwiera się sam na starcie');
   assert.ok(domSmieci.pobierz('status').textContent.length > 20);
   assert.equal(domSmieci.pobierz('setup-stacje').value, String(DOMYSLNE.liczbaStacji), 'śmieciowy stan nie wchodzi do formularza');
   assert.ok(pamiec.size >= 0, 'pamięć pierwszej sesji zostaje nietknięta');
@@ -498,11 +509,12 @@ test('prywatność: ekran otwiera się z setupu i ze stopki, a „wróć" prowad
 
   domMapy.kliknij('przycisk-prywatnosc');
   assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'ekran gry ustępuje miejsca prywatności');
+  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'prywatność chowa okno startowe');
 
   domMapy.kliknij('przycisk-wrocz-prywatnosc');
   assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, true);
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, false, 'wróciliśmy na setup');
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'wróciliśmy na mapę, nie na setup');
+  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'powrót nie wskrzesza okna');
 
   // ze stopki, na innym ekranie: powrót ma prowadzić na ekran, z którego
   // przyszliśmy. Bierzemy rankingi, bo przejście setup → pozycja wymaga imion
@@ -522,16 +534,17 @@ test('rankingi: warstwa zamyka się i krzyżykiem, i klawiszem, i wraca tam, sk�
   const domMapy = await aplikacjaZMapa();
   domMapy.kliknij('przycisk-ranking');
   assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'rankingi otwarte');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'spód ustępuje warstwie');
+  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'warstwa chowa okno startowe');
 
   domMapy.kliknij('przycisk-ranking-krzyzyk'); // krzyżyk w prawym górnym rogu
   assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'krzyżyk zamyka warstwę');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, false, 'wróciliśmy na setup, nie w próżnię');
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'wróciliśmy na mapę, nie w próżnię');
 
   domMapy.kliknij('przycisk-ranking');
   domMapy.kliknij('przycisk-wrocz-ranking'); // klawisz „Zamknij rankingi"
   assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'klawisz też zamyka');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, false);
+  assert.equal(domMapy.pobierz('ekran-setup').hidden, true);
+  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'powrót nie wskrzesza okna');
 });
 
 test('rankingi: prywatność otwarta z warstwy wraca na rankingi, nie na setup', async () => {
@@ -971,7 +984,202 @@ test('rev2 end-to-end: wklejona paczka z kodami od razu zaczyna grę', async () 
   dom.pobierz('pole-odpowiedz').value = JSON.stringify(rev2);
   dom.kliknij('przycisk-sprawdz');
   assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev2/, 'nagłówek mówi, co się stało');
+  assert.match(dom.pobierz('wynik-naglowek').textContent, /; fact check\)$/, 'nagłówek ogłasza weryfikację (ADR 0032)');
   assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę (decyzja 2026-09-07)');
+  const rejestr = JSON.parse(pamiecKonfig.get('okolica:zestawy'));
+  assert.equal(rejestr.wpisy[0].factcheck, true, 'meta w rejestrze mówi: zweryfikowana');
+});
+
+/* --------------------------------------- ADR 0032: wariant bez fact-check */
+
+/** Atrapa nie przełącza checkboxów sama — stan + zdarzenie `change` jak w przeglądarce. */
+function przelaczCheckbox(domAtrapa, id, wartosc) {
+  const el = domAtrapa.pobierz(id);
+  el.checked = wartosc;
+  for (const fn of el.zdarzenia.change ?? []) fn({ type: 'change', target: el, currentTarget: el });
+}
+
+function pamiecKonfig3x1() {
+  const pamiecKonfig = new Map();
+  pamiecKonfig.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1',
+    konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+  }));
+  return pamiecKonfig;
+}
+
+test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie rev3; zaznaczenie daje rev2', async () => {
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  await import(`../app/app.js?fc1=${Math.random().toString(36).slice(2)}`);
+  assert.equal(domAtrapa.pobierz('prompt-factcheck').checked, false, 'checkbox startuje pusty (atrapa czyta prawdziwy index.html)');
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev3/, 'domyślny prompt generuje rev3');
+  assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
+  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes('bez fact-check'), 'opis mówi o wariancie');
+  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes(SZABLON_WERSJA_BEZ_WERYFIKACJI), 'opis pokazuje wersję szablonu §2.2');
+  assert.match(domAtrapa.pobierz('prompt-podglad-naglowek').textContent, /bez fact-check/);
+  assert.match(domAtrapa.pobierz('prompt-licznik').textContent, /PYT\/1\.0-rev3/);
+  przelaczCheckbox(domAtrapa, 'prompt-factcheck', true);
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev2/, 'zaznaczony checkbox generuje rev2');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /wykonaj kwerendę w internecie/);
+  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes('z fact check'), 'opis mówi o wariancie');
+  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes(SZABLON_WERSJA), 'opis pokazuje wersję szablonu §2');
+  przelaczCheckbox(domAtrapa, 'prompt-factcheck', false);
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev3/, 'odznaczenie wraca do rev3');
+});
+
+test('ADR 0032 end-to-end: paczka rev3 bez źródeł przyjęta, rejestr niesie factcheck:false', async () => {
+  const pamiecKonfig = pamiecKonfig3x1();
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
+  await import(`../app/app.js?fc2=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  const jawna = czytajFixturePaczka();
+  const rev3 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV3 };
+  rev3.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.zrodla; delete p.punkty; });
+  domAtrapa.pobierz('pole-odpowiedz').value = JSON.stringify(rev3);
+  domAtrapa.kliknij('przycisk-sprawdz');
+  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev3 — odkodowana; bez fact-check\)/);
+  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'rev3 bez źródeł zaczyna grę');
+  const rejestr = JSON.parse(pamiecKonfig.get('okolica:zestawy'));
+  assert.equal(rejestr.wpisy.length, 1);
+  assert.equal(rejestr.wpisy[0].factcheck, false, 'meta w rejestrze mówi: bez weryfikacji');
+});
+
+test('ADR 0032: poprawka celuje w profil wklejki — E02 w checkbox, odrzucona w znacznik', async () => {
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  await import(`../app/app.js?fc3=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  domAtrapa.kliknij('przycisk-dalej-prompt'); // STAN.promptFactcheck = false (pusty checkbox)
+  // E02: śmieć nieparsowalny → korekta za checkboxem (tu: bez weryfikacji)
+  domAtrapa.pobierz('pole-odpowiedz').value = 'to nie jest JSON ani kontener {{{';
+  domAtrapa.kliknij('przycisk-sprawdz');
+  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Nie da się odczytać/);
+  domAtrapa.kliknij('przycisk-poprawka');
+  assert.match(domAtrapa.pobierz('pole-odpowiedz').value, /bez kwerendy w internecie/, 'E02 przy pustym checkboxie: korekta bez kwerendy');
+  // odrzucona rev2 (za mało pytań) → korekta za znacznikiem, mimo pustego checkboxa
+  const jawna = czytajFixturePaczka();
+  const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
+  rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.punkty; });
+  rev2.pytania = rev2.pytania.slice(0, 2); // E03: oczekiwane 3 pytania
+  domAtrapa.pobierz('pole-odpowiedz').value = JSON.stringify(rev2);
+  domAtrapa.kliknij('przycisk-sprawdz');
+  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Paczka odrzucona/);
+  domAtrapa.kliknij('przycisk-poprawka');
+  assert.match(domAtrapa.pobierz('pole-odpowiedz').value, /kwerenda internetowa dla każdego faktu/, 'odrzucona rev2: korekta żąda kwerendy');
+});
+
+test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł", wynik i historia bez weryfikacji', async () => {
+  const pamiec = new Map();
+  pamiec.set('okolica:gracze', JSON.stringify({ schemat: 'gracze-lokalni/1', gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })) }));
+  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 } }));
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?fcgame=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  const jawna = czytajFixturePaczka();
+  const rev3 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV3 };
+  rev3.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.zrodla; delete p.punkty; });
+  domAtrapa.pobierz('pole-odpowiedz').value = JSON.stringify(rev3);
+  domAtrapa.kliknij('przycisk-sprawdz');
+  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'rev3 zaczyna grę');
+  const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
+  for (const numerStacji of [1, 2, 3]) {
+    const pytanie = jawna.pytania.find((q) => q.stacja === numerStacji);
+    domAtrapa.kliknij('przycisk-start-odcinka');
+    domAtrapa.kliknij('przycisk-symulacja-gra');
+    await czekaj(9 * 120 + 600);
+    assert.equal(domAtrapa.pobierz('gra-panel-pytanie').hidden, false, `stacja ${numerStacji}: pytanie po dojściu GPS`);
+    kliknijOdpowiedz(domAtrapa, numerStacji === 1 ? (pytanie.poprawna + 1) % 4 : pytanie.poprawna);
+    if (numerStacji === 1) {
+      assert.match(domAtrapa.pobierz('status').textContent, /wyjaśnienie poniżej/, 'status nie obiecuje źródeł, których nie ma');
+      assert.equal(domAtrapa.pobierz('status').textContent.includes('źródła'), false, 'słowo „źródła" nie pada przy paczce bez źródeł');
+      assert.equal(domAtrapa.pobierz('gra-zrodla').children.length, 0, 'pusta lista źródeł bez linków');
+    }
+    domAtrapa.kliknij('przycisk-nastepna-stacja');
+  }
+  assert.equal(domAtrapa.pobierz('gra-panel-koniec').hidden, false, 'koniec po ostatniej stacji');
+  assert.match(domAtrapa.pobierz('gra-wynik-factcheck').textContent, /bez fact-check/, 'wynik mówi: bez weryfikacji');
+  assert.equal([...domAtrapa.pobierz('gra-wynik-factcheck').children].length, 0, 'bez znaczka Q dla wariantu bez weryfikacji');
+  const { historia } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
+  assert.equal(historia.wpisy[0].factcheck, false, 'historia pamięta brak weryfikacji');
+});
+
+test('ADR 0032: zła odpowiedź przy paczce ze źródłami — status mówi o źródłach, linki są', async () => {
+  const { dom, paczka } = await graGotowaDoStartu();
+  dom.kliknij('przycisk-start-odcinka');
+  dom.kliknij('przycisk-symulacja-gra');
+  await czekaj(9 * 120 + 600);
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'pytanie po dojściu GPS');
+  const poprawna = paczka.pytania.find((q) => q.stacja === 1).poprawna;
+  kliknijOdpowiedz(dom, (poprawna + 1) % 4);
+  assert.match(dom.pobierz('status').textContent, /wyjaśnienie i źródła poniżej/, 'status jak dawniej, gdy źródła są');
+  assert.ok(dom.pobierz('gra-zrodla').children.length > 0, 'linki do źródeł pod wyjaśnieniem');
+});
+
+test('ADR 0032: historia pokazuje Q dla zweryfikowanych i starszych wpisów, nie dla bez weryfikacji', async () => {
+  const { nowaHistoria, dodajWpisHistorii, skrotGry } = await import('../app/trwalosc.js');
+  const { nowaRozgrywka, podsumowanie } = await import('../app/rozgrywka.js');
+  const { domyslnaKonfiguracja } = await import('../app/konfig.js');
+  const { stacjeProste } = await import('../app/stacje.js');
+  const srodek = { lat: 52.2297, lon: 21.0122 };
+  const paczka = czytajFixturePaczka();
+  const konfig = { ...domyslnaKonfiguracja(2), kodGry: 'w-fc', promienM: 1000, liczbaStacji: 3 };
+  const stacje = stacjeProste({ srodek, liczbaStacji: 3, promienM: 1000, ziarno: 'z' });
+  const rozgrywka = nowaRozgrywka({ konfig, stacje, paczka, srodek, czasMs: 0, ziarno: 'z' });
+  const wspolne = { rozgrywka, stacje, podsumowanie: podsumowanie(rozgrywka) };
+  const wFc = skrotGry({ ...wspolne, konfig, miejsce: 'Mokotów', terazMs: 1 });
+  const wBez = skrotGry({ ...wspolne, konfig: { ...konfig, kodGry: 'w-bez' }, miejsce: 'Ochota', terazMs: 2, factcheck: false });
+  const wStary = skrotGry({ ...wspolne, konfig: { ...konfig, kodGry: 'w-stary' }, miejsce: 'Wola', terazMs: 3 });
+  delete wStary.factcheck; // wpis sprzed ADR 0032
+  const pamiec = new Map();
+  pamiec.set('okolica:historia', JSON.stringify(dodajWpisHistorii(dodajWpisHistorii(dodajWpisHistorii(nowaHistoria(), wFc), wBez), wStary)));
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?fchist=${Math.random().toString(36).slice(2)}`);
+  const pozycje = domAtrapa.pobierz('historia-lista').children;
+  assert.equal(pozycje.length, 3);
+  const maQ = (li) => [...li.children].some((c) => c.className === 'znaczek-factcheck' && c.textContent === 'Q');
+  // najnowsza najpierw: Wola (sprzed ADR), Ochota (bez), Mokotów (zweryfikowana)
+  assert.match(pozycje[0].textContent, /Wola/);
+  assert.equal(maQ(pozycje[0]), true, 'wpis sprzed ADR 0032 traktowany jak zweryfikowany');
+  assert.match(pozycje[1].textContent, /Ochota/);
+  assert.equal(maQ(pozycje[1]), false, 'bez weryfikacji: brak znaczka');
+  assert.match(pozycje[2].textContent, /Mokotów/);
+  assert.equal(maQ(pozycje[2]), true, 'zweryfikowana: znaczek Q');
+});
+
+test('ADR 0032: propozycje paczek pokazują Q tylko dla zweryfikowanych', async () => {
+  const { zbierzMetaZestawu, nowyRejestr } = await import('../app/zestawy.js');
+  const { geohash } = await import('../app/geo.js');
+  const baza = { lat: 52.2297, lon: 21.0122, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1, miejsce: 'Śródmieście' };
+  const metaFc = zbierzMetaZestawu({ ...baza, data: '2026-09-09 10:00' });
+  const metaBez = zbierzMetaZestawu({ ...baza, data: '2026-09-09 11:00', factcheck: false });
+  assert.equal(metaFc.geohash5, geohash(52.2297, 21.0122, 5), 'sanity: wpis w komórce pozycji testowej');
+  const pamiec = pamiecKonfig3x1();
+  // nawigacja na ekran pozycji przechodzi przez bramę setupu (K08) i bramę
+  // tożsamości — jak w prawdziwym użyciu: imiona w konfigu i na liście
+  const konfig = JSON.parse(pamiec.get('okolica:konfig'));
+  konfig.konfig.imiona = ['Gracz 1', 'Gracz 2', 'Gracz 3'];
+  pamiec.set('okolica:konfig', JSON.stringify(konfig));
+  pamiec.set('okolica:gracze', JSON.stringify({ schemat: 'gracze-lokalni/1', gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })) }));
+  pamiec.set('okolica:zestawy', JSON.stringify({ schemat: nowyRejestr().schemat, wpisy: [
+    { skrot: 'aaa', ...metaFc, kodGry: 'x' },
+    { skrot: 'bbb', ...metaBez, kodGry: 'x' },
+  ] }));
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?fclista=${Math.random().toString(36).slice(2)}`);
+  domAtrapa.kliknij('przycisk-dalej-pozycja');
+  await czekaj(20); // handler nawigacji jest asynchroniczny (bramka tożsamości)
+  assert.equal(domAtrapa.pobierz('ekran-pozycja').hidden, false, 'nawigacja przeszła bramę setupu');
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const wiersze = [...domAtrapa.pobierz('zestawy-lista').children];
+  assert.equal(wiersze.length, 2, 'oba wpisy dopasowane do setupu testowego');
+  const maQ = (li) => [...li.children[0].children].some((c) => c?.className === 'znaczek-factcheck');
+  assert.equal(maQ(wiersze.find((li) => li.textContent.includes('11:00'))), false, 'bez weryfikacji: brak znaczka');
+  assert.equal(maQ(wiersze.find((li) => li.textContent.includes('10:00'))), true, 'zweryfikowana: znaczek Q');
 });
 
 /* ================== M5/J5: brama geokodacji + warstwa zapasowa (Nominatim) */
@@ -1730,7 +1938,8 @@ test('M7: lista poprzednich gier na setupie — najnowsza najpierw, dwustopniowe
   const pozycje = dom.pobierz('historia-lista').children;
   assert.equal(pozycje.length, 2);
   assert.match(pozycje[0].textContent, /2026-09-05 18:30 · Ochota/, 'najnowsza najpierw, data i miejsce ze skrótu');
-  assert.match(pozycje[0].textContent, /🏆 Gracz 1 — 0 pkt$/, 'zwycięzca i punkty, bez czasu (Partia 2)');
+  assert.match(pozycje[0].textContent, /🏆 Gracz 1 — 0 pkt/, 'zwycięzca i punkty, bez czasu (Partia 2)');
+  // (bez kotwicy $: od ADR 0032 za tekstem stoi jeszcze znaczek Q)
   assert.equal(pozycje[0].textContent.includes('(przerwana)'), false);
   assert.match(pozycje[1].textContent, /Mokotów/, 'starsza druga');
   assert.match(pozycje[1].textContent, /\(przerwana\)/, 'znacznik przerwanej widoczny');
@@ -1794,6 +2003,9 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
   assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
   assert.equal(wiersze[0].children[2].textContent, '1/1', 'Gracz 1: jedna poprawna, zero błędnych');
   assert.equal(wiersze[1].children[2].textContent, '1/1', 'Gracz 2: jedna poprawna');
+  const fcWynik = dom.pobierz('gra-wynik-factcheck');
+  assert.match(fcWynik.textContent, /fact check/, 'wynik ogłasza weryfikację (ADR 0032)');
+  assert.ok([...fcWynik.children].some((c) => c.className === 'znaczek-factcheck' && c.textContent === 'Q'), 'złoty znaczek Q na wyniku');
   const karty = dom.pobierz('gra-wynik-gracze').children;
   assert.match(karty[0].textContent, /1 pkt · poprawne 1, błędne 0/, 'punkty i poprawność z prawdziwej gry');
   assert.match(karty[0].textContent, /odcinki: 1 · dystans/);
@@ -1838,6 +2050,7 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
   assert.equal(w.zwyciezca, 'Gracz 1');
   assert.equal(w.zaliczoneStacje, 3);
   assert.equal(w.punktyRazem, 3, 'suma punktów: 3 × 1 (rev2), zero premii');
+  assert.equal(w.factcheck, true, 'gra na paczce ze źródłami = zweryfikowana (ADR 0032)');
   const jsonHistorii = JSON.stringify(historia);
   for (const pytanie of paczka.pytania) {
     assert.equal(jsonHistorii.includes(pytanie.tresc), false, 'treść pytania wyciekła do historii');

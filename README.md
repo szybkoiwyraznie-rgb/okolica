@@ -86,7 +86,7 @@ kontenerze (`TO-paczka/2`) — w stanie gry i w zapisie nigdy nie ma ich treści
 Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji (`stan-gry/1`), więc
 zamknięcie przeglądarki nie kończy gry: na setupie czeka baner „wznowienie",
 a zegar odcinka jest rebazowany tak, że czas zamknięcia karty nie wlicza się
-do wyniku (ADR 0004 pkt 3). W trybie testowym (`?tryb=test`) dojście można
+do wyniku (ADR 0004 pkt 3). W trybie testowym (`?test=true`) dojście można
 rozegrać symulacją trasy — gra bez GPS. Kamień czeka na kryterium terenowe
 właściciela: pełna gra na telefonie, z utratą zasięgu w trakcie i z
 zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).

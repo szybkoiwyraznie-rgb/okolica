@@ -21,6 +21,7 @@
   --blad-tlo: #fbeaea;
   --ok: #2f6f4f;
   --ok-tlo: #e6f2ea;
+  --zloto: #7d6300;
   --promien: 14px;
   --cel: 44px;
   --odstep: 14px;
@@ -41,6 +42,7 @@ html[data-motyw='ciemny'] {
   --blad-tlo: #33201f;
   --ok: #86dcab;
   --ok-tlo: #1d2f25;
+  --zloto: #e3b341;
 }
 
 * { box-sizing: border-box; }
@@ -69,7 +71,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: calc(10px + env(safe-area-inset-top, 0)) var(--odstep) 10px;
+  padding: calc(6px + env(safe-area-inset-top, 0)) var(--odstep) 6px;
   border-bottom: 1px solid var(--linia);
   background: var(--tlo-karta);
   position: sticky;
@@ -77,9 +79,7 @@ body {
   z-index: 5;
 }
 
-.tytul h1 { margin: 0; font-size: 20px; letter-spacing: 0.2px; }
-.tytul p { margin: 0; color: var(--tekst-slaby); font-size: 13px; }
-.akcje { display: flex; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.akcje { display: flex; gap: 4px; flex-wrap: wrap; justify-content: flex-end; flex: 1 1 auto; }
 
 /* --- pasek kroków --- */
 .kroki ol {
@@ -172,6 +172,29 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .przycisk[disabled] { opacity: 0.45; cursor: not-allowed; }
 .przycisk-glowny { background: var(--akcent); border-color: var(--akcent); color: var(--akcent-tekst); flex: 1 1 auto; }
 .przycisk-maly { min-height: 38px; padding: 8px 12px; font-size: 14px; font-weight: 500; }
+/* Przyciski nagłówka (decyzja właściciela 2026-09-09): same ikony bez
+   obwódki + jedyny napis, CTA „START GRY" — belka to jeden smukły rząd.
+   Cel dotykowy celowo poniżej --cel: tak ma być na iPhonie, a znaczenie
+   niosą `title` i `aria-label`. Przezroczysta obwódka trzyma rozmiar, gdy
+   stan wciśnięcia (`aria-pressed`) dorysowuje kolor. */
+.przycisk-ikona {
+  min-height: 34px;
+  min-width: 34px;
+  padding: 4px 8px;
+  font-size: 16px;
+  font-family: inherit;
+  font-weight: 600;
+  color: var(--tekst);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.przycisk-ikona:active { transform: translateY(1px); }
+.przycisk-ikona[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
+.przycisk-ikona:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
+#przycisk-setup { font-size: 14px; letter-spacing: 0.3px; }
 .przycisk[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
 .przycisk-plik { position: relative; overflow: hidden; display: inline-flex; align-items: center; }
 .przycisk-plik input[type='file'] { position: absolute; inset: 0; opacity: 0; font-size: 200px; cursor: pointer; }
@@ -224,6 +247,8 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .karta .duzy { margin: 0 0 6px; font-size: 20px; font-weight: 600; }
 .kod { margin: 6px 0; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; color: var(--tekst-slaby); word-break: break-all; }
 .badge { display: inline-block; margin: 6px 0; padding: 5px 10px; border-radius: 999px; background: var(--akcent-slaby); font-size: 13px; }
+/* Znaczek Q (ADR 0032): złota litera przy paczkach zweryfikowanych w sieci. */
+.znaczek-factcheck { color: var(--zloto); font-weight: 700; }
 /* Dopiski robocze (odniesienia do ADR): widoczne tylko w trybie testowym. */
 body:not(.tryb-testowy) .dopisek-roboczy {
   display: none;
@@ -851,9 +876,7 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 @media (orientation: landscape) and (max-height: 620px) {
   /* W poziomie nagłówek zjadałby ~90 px z ~360 px wysokości ekranu. */
   body[data-ekran='gra'] .gora { padding-top: 4px; padding-bottom: 4px; }
-  body[data-ekran='gra'] .gora .tytul p { display: none; }
-  body[data-ekran='gra'] .gora .tytul h1 { font-size: 15px; }
-  body[data-ekran='gra'] .gora .akcje .przycisk-maly { min-height: 34px; padding: 5px 8px; font-size: 12px; }
+  body[data-ekran='gra'] .gora .akcje .przycisk-ikona { min-height: 30px; padding: 3px 6px; font-size: 14px; }
 
   /* Karty zajmują prawe 52% szerokości; lewa strona zostaje dla mapy. */
   #ekran-gra:not([hidden]) > .gra-panel,
@@ -923,9 +946,39 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 }
 .warstwa h2 { padding-right: 52px; }
 
+/* --- Ekran startowy (decyzja właściciela 2026-09-09): okno 80% × 80% nad
+ * mapą — widać nagłówek, stopkę i trochę mapy po bokach. Wzór z karty
+ * setupu (karta nad mapą-tłem), ale węższe: boki pokazują mapę, nie ścianę
+ * tekstu. `z-index: 10` — nad belką (3) i kartami (2), pod rankingami (60).
+ * Całe okno jest klikalne (kursor), bo klik gdziekolwiek je zamyka. */
+.warstwa-start {
+  position: fixed;
+  inset: 10dvh 10vw;
+  z-index: 10;
+  max-width: 560px;
+  margin: auto;
+  padding: 14px 18px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--tlo-karta);
+  color: var(--tekst);
+  border: 1px solid var(--linia);
+  border-radius: var(--promien);
+  cursor: pointer;
+}
+.warstwa-start[hidden] { display: none; }
+.warstwa-start h1 { margin: 0; font-size: 22px; letter-spacing: 0.2px; }
+.warstwa-start p { margin: 0 0 8px; }
+.warstwa-start > :last-child { margin-bottom: 0; }
+/* Przy otwartym oknie przyciski mapy-tła chowają się: karta (80% ekranu)
+   przykrywałaby je do połowy, a klik i tak należy do okna. Znacznik klasą
+   na <body> (nie `:has()`): deterministyczne i działa na starszych Safari. */
+body.okno-start #mapa-pozycja .mapa-przyciski { display: none; }
+.podtytul-start { margin: 0 0 10px; color: var(--tekst-slaby); font-size: 15px; }
+
 /* --- Mapa jako trwały spód aplikacji (decyzja właściciela 2026-09-08) ------
  * Mapa pozycji wyszła z #ekran-pozycja i jest teraz tłem całej aplikacji:
- * widać ją pod setupem i pod ekranem pozycji. Na pozostałych ekranach chowa ją
+ * widać ją pod setupem, pod ekranem pozycji i na mapie startowej. Na pozostałych ekranach chowa ją
  * `visibility`, a NIE `display` — mapa mierzy swój rozmiar przy rysowaniu
  * kafelków, a element `display:none` ma zerowy, więc po powrocie zoom i skala
  * rozsypałyby się.
@@ -948,7 +1001,10 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   border-radius: 0;
   z-index: 0;
 }
-body:not([data-ekran='setup']):not([data-ekran='pozycja']) #mapa-pozycja { visibility: hidden; }
+body:not([data-ekran='setup']):not([data-ekran='pozycja']):not([data-ekran='mapa']) #mapa-pozycja { visibility: hidden; }
+/* Mapa startowa: sam podkład — pasek kroków 1–6 opisuje przygotowanie gry,
+   które jeszcze nie ruszyło, więc oddaje miejsce mapie (jak w grze). */
+body[data-ekran='mapa'] #kroki { display: none; }
 .tresc { position: relative; z-index: 1; }
 
 /* Setup jako karta NAD mapą: centrowana, z ograniczoną wysokością, żeby mapa
@@ -979,7 +1035,8 @@ body[data-ekran='setup'] #ekran-setup {
    `ustawWysokoscBelki()`), bo `.akcje` ma `flex-wrap: wrap` i na wąskim
    ekranie belka rośnie — stała liczba by się rozsypała. */
 body[data-ekran='setup'] #mapa-pozycja .mapa-przyciski,
-body[data-ekran='pozycja'] #mapa-pozycja .mapa-przyciski {
+body[data-ekran='pozycja'] #mapa-pozycja .mapa-przyciski,
+body[data-ekran='mapa'] #mapa-pozycja .mapa-przyciski {
   top: calc(var(--wysokosc-belki, 64px) + 10px);
   right: auto;
   left: 10px;
