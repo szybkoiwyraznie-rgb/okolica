@@ -1716,6 +1716,62 @@ function czytajRejestrZestawow() {
   return rejestr;
 }
 
+/**
+ * Identyfikator paczki na Drive zapamiętany przy skrócie kontenera.
+ *
+ * ADR 0028 aneks (właściciel 2026-09-09): każda paczka jest na Drive — ta
+ * z repozytorium przychodzi z `id` we wpisie indeksu, ta wygenerowana dostaje
+ * `id` w odpowiedzi mostu na wysyłkę. Zapamiętanie go przy skrócie sprawia, że
+ * druga gra z pamięci telefonu też pozwala ocenić pytania.
+ */
+const KLUCZ_ID_PACZEK = 'okolica:paczki-drive';
+const MAKS_ID_PACZEK = 24;
+
+function czytajIdPaczek() {
+  if (typeof localStorage === 'undefined') return {};
+  try {
+    const surowy = JSON.parse(localStorage.getItem(KLUCZ_ID_PACZEK) ?? 'null');
+    if (!surowy || typeof surowy !== 'object' || typeof surowy.pary !== 'object' || !surowy.pary) return {};
+    const czyste = {};
+    for (const [skrot, id] of Object.entries(surowy.pary)) {
+      if (typeof skrot === 'string' && typeof id === 'string' && id) czyste[skrot] = id;
+    }
+    return czyste;
+  } catch {
+    return {}; // śmieci w localStorage nie kładą aplikacji (LESSONS L10)
+  }
+}
+
+function zapamietajIdPaczkiDlaZestawu(skrot, id) {
+  if (typeof localStorage === 'undefined') return;
+  if (typeof skrot !== 'string' || !skrot || typeof id !== 'string' || !id) return;
+  const pary = czytajIdPaczek();
+  delete pary[skrot]; // najświeższy wpis idzie na koniec (proste LRU)
+  pary[skrot] = id;
+  const klucze = Object.keys(pary).slice(-MAKS_ID_PACZEK);
+  const przyciete = {};
+  for (const k of klucze) przyciete[k] = pary[k];
+  try {
+    localStorage.setItem(KLUCZ_ID_PACZEK, JSON.stringify({ schemat: 'paczki-drive/1', pary: przyciete }));
+  } catch {
+    /* pełna pamięć telefonu nie może zepsuć gry — ocena po prostu nie zadziała */
+  }
+}
+
+function idPaczkiDlaZestawu(skrot) {
+  return typeof skrot === 'string' && skrot ? (czytajIdPaczek()[skrot] ?? '') : '';
+}
+
+/**
+ * Panel ocen po spóźnionym poznaniu `id` paczki: wysyłka na Drive kończy się
+ * PO tym, jak gracz może już patrzeć na pytanie, więc kciuki trzeba odsłonić
+ * bez czekania na następny render.
+ */
+function odswiezPanelOcenPoIdPaczki() {
+  if (!STAN.ocenianePytanieId) return;
+  renderujPanelOcen({ id: STAN.ocenianePytanieId });
+}
+
 /** Meta dopasowania z bieżącej konfiguracji i pozycji (wspólna dla zapisu i eksportu). */
 function metaBiezacejOkolicy() {
   return zbierzMetaZestawu({
@@ -2013,7 +2069,11 @@ function grajZZestawemLokalnym(skrot) {
     odswiezPropozycjeZestawow();
     return;
   }
-  STAN.paczkaRepoId = ''; // ADR 0028: paczka z telefonu nie zbiera ocen
+  // ADR 0028 aneks (właściciel 2026-09-09): paczka z pamięci telefonu też jest
+  // na Drive — jeśli znamy jej identyfikator, kciuki działają jak przy paczce
+  // wziętej z repozytorium. Nie znamy = panel zostaje schowany (jak dotąd).
+  STAN.paczkaRepoId = idPaczkiDlaZestawu(zestaw.kontener?.skrot);
+  if (STAN.paczkaRepoId && !STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
   przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: 'z tego telefonu' });
 }
 
@@ -2036,6 +2096,9 @@ function grajZZestawemZRepo(wpis, urlIndeksu) {
       // pliku Drive i token tej gry, a licznik „użyta w X grach" dostaje ping.
       STAN.paczkaRepoId = typeof wpis.id === 'string' ? wpis.id : '';
       if (!STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
+      // Druga gra tą samą paczką idzie już z pamięci telefonu — bez tego wpisu
+      // straciłaby prawo do oceny (ADR 0028 aneks 2026-09-09).
+      zapamietajIdPaczkiDlaZestawu(zestaw.kontener?.skrot, STAN.paczkaRepoId);
       wyslijUzycieWTle(STAN.paczkaRepoId);
       przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
     })
@@ -3233,6 +3296,15 @@ function wyslijZestawNaDrive() {
   })
     .then((odp) => odp.json().catch(() => ({})))
     .then((wynik) => {
+      // ADR 0028 aneks (właściciel 2026-09-09): KAŻDA paczka jest na Drive, więc
+      // każdą wolno ocenić. Most oddaje `id` pliku także przy duplikacie —
+      // zapamiętujemy je, inaczej łapki nie miałyby czego oceniać.
+      if (wynik?.ok && typeof wynik.id === 'string' && wynik.id) {
+        STAN.paczkaRepoId = wynik.id;
+        if (!STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
+        zapamietajIdPaczkiDlaZestawu(STAN.kontenerPaczki?.skrot, wynik.id);
+        odswiezPanelOcenPoIdPaczki();
+      }
       if (wynik?.ok && wynik.status === 'przyjeta-do-przegladu') {
         status('Paczka przyjęta i WYSŁANA na Drive: czeka na Twój przegląd — e-mail z linkiem przyjdzie za chwilę.');
       } else if (wynik?.ok) {

@@ -240,10 +240,21 @@ function zapiszOceny(oceny) {
 }
 
 /** Czy paczka o tym id jest w katalogu zaakceptowanych (głosować można tylko na takie). */
+/**
+ * Czy paczka jest na Drive i wolno ją oceniać.
+ *
+ * Właściciel (2026-09-09): „Nie ma paczek, które nie istnieją na Drive. Każda
+ * powinna móc być oceniona”. Paczka wygenerowana przez model leci na Drive od
+ * razu, ale ląduje w katalogu PRZEGLĄDU — gracz gra nią natychmiast, więc
+ * ocenianie tylko paczek już zaakceptowanych odcinało większość rozgrywek.
+ * Oceny zbieramy więc dla przeglądu i akceptacji; odrzucone są poza obiegiem.
+ */
 function paczkaJestWRepo(paczkaId) {
   try {
     const rodzice = DriveApp.getFileById(String(paczkaId)).getParents();
-    return rodzice.hasNext() && rodzice.next().getName() === FOLDERY.zaakceptowane;
+    if (!rodzice.hasNext()) return false;
+    const nazwa = rodzice.next().getName();
+    return nazwa === FOLDERY.zaakceptowane || nazwa === FOLDERY.przeglad;
   } catch (e) {
     return false;
   }
@@ -483,12 +494,14 @@ function przyjmijKandydata(plik) {
   for (const nazwaFolderu of wszedzie) {
     const it = folder(nazwaFolderu).getFilesByName(nazwa);
     if (it.hasNext()) {
-      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-obiegu', nazwa };
+      // `id` wraca także przy duplikacie: telefon, który gra tą paczką, musi
+      // znać jej identyfikator, żeby dało się ją ocenić (ADR 0028, aneks 2026-09-09).
+      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-obiegu', nazwa, id: it.next().getId() };
     }
   }
   const utworzony = folder(FOLDERY.przeglad).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
   powiadomWlasciciela(utworzony, plik);
-  return { ok: true, status: 'przyjeta-do-przegladu', nazwa };
+  return { ok: true, status: 'przyjeta-do-przegladu', nazwa, id: utworzony.getId() };
 }
 
 function powiadomWlasciciela(plikDrive, zestaw) {

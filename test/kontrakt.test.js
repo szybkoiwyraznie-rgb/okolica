@@ -1049,6 +1049,23 @@ test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', ()
   assert.ok(APP.includes('STAN.paczkaRepoId'), 'oceny dotyczą paczek z repozytorium');
 });
 
+/**
+ * Aneks ADR 0028 (właściciel, 2026-09-09): „Nie ma paczek, które nie istnieją
+ * na Drive. Każda powinna móc być oceniona” — także wygenerowana przed chwilą
+ * i ta wzięta z pamięci telefonu.
+ */
+test('kontrakt ADR 0028 aneks: ocenić można każdą paczkę, bo każda jest na Drive', () => {
+  assert.ok(!APP.includes("STAN.paczkaRepoId = ''; // ADR 0028: paczka z telefonu nie zbiera ocen"),
+    'paczka z telefonu nie jest już wykluczona z oceniania');
+  assert.ok(APP.includes('idPaczkiDlaZestawu('), 'aplikacja odzyskuje identyfikator paczki z pamięci telefonu');
+  assert.ok(APP.includes('zapamietajIdPaczkiDlaZestawu('), 'identyfikator jest zapamiętywany przy skrócie kontenera');
+  assert.ok(APP.includes('okolica:paczki-drive'), 'mapa skrót → id paczki ma własny klucz w localStorage');
+  assert.match(GS, /nazwa === FOLDERY\.zaakceptowane \|\| nazwa === FOLDERY\.przeglad/,
+    'most przyjmuje głosy również dla paczek czekających na przegląd');
+  assert.match(GS, /status: 'przyjeta-do-przegladu', nazwa, id: utworzony\.getId\(\)/,
+    'most oddaje id przyjętej paczki — bez niego telefon nie wie, co ocenia');
+});
+
 test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da się wyjść', () => {
   assert.ok(!INDEX.includes('przycisk-reczne-dojscie'), 'przycisku „Jestem na miejscu" nie ma w index.html');
   assert.ok(!INDEX.includes('Jestem na miejscu'), 'ręczne zgłoszenie dojścia zniknęło z interfejsu');
