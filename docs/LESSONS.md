@@ -524,3 +524,28 @@ dzieci pozycjonowane od jego krawędzi — ich punkty odniesienia zmieniły sens
 Sterowanie trzymaj w obszarze, którego nie przykrywa żaden element o wyższym
 `z-index`. Odległości od elementów o zmiennej wysokości (belka z
 `flex-wrap: wrap`) mierz w JS i wystawiaj jako zmienną CSS, a nie wpisuj stałej.
+
+## L43 — `python3 -m http.server` a „Bad gateway” w podglądzie Areny
+
+**Objaw (właściciel, 2026-09-09):** podgląd sandboxa nie otwiera się, Cloudflare
+zwraca *Bad gateway* — mimo że `curl http://localhost:8000` z sandboxa daje 200,
+proces żyje, port nasłuchuje na `0.0.0.0`, a nawet dwanaście równoległych żądań
+przechodzi bez błędu.
+
+**Przyczyna:** `python3 -m http.server` odpowiada w **HTTP/1.0** i zamyka
+połączenie po każdej odpowiedzi (`SimpleHTTP/0.6 Python/3.11.2`). Proxy podglądu
+utrzymuje pulę połączeń keep-alive; gdy serwer origin rozłącza się pierwszy albo
+nie potwierdza keep-alive, proxy raportuje to jako 502, choć aplikacja jest
+zdrowa. Diagnoza z wnętrza sandboxa **nie wykryje tego przez sam kod odpowiedzi**
+— trzeba spojrzeć na linię statusu (`curl -I` → `HTTP/1.0`), nie na `200`.
+
+**Reguła:** serwerem podglądu jest `node tools/serwer.mjs .` (`npm run serwer`).
+HTTP/1.1 domyślnie, `keepAliveTimeout` 65 s — celowo **dłużej** niż typowe 60 s
+proxy, żeby to proxy zamykało połączenie jako pierwsze (odwrotnie powstaje wyścig
+i sporadyczne 502 przy bezczynności). Dokłada `Cache-Control: no-store` (podgląd
+ma pokazywać bieżący plik) oraz typy MIME `.mjs` i `.webmanifest`, bez których
+moduły ES i manifest PWA nie ładują się mimo statusu 200.
+
+**Przy diagnozie „podgląd nie działa” sprawdzaj w tej kolejności:** proces żyje →
+port na `0.0.0.0` (nie `127.0.0.1`) → **wersja protokołu w odpowiedzi** → typy
+MIME zasobów z `index.html` → dopiero potem szukaj winy po stronie aplikacji.

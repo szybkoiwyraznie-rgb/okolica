@@ -117,7 +117,7 @@ Safari iOS (`docs/WORKFLOW.md` §4.2).
 npm test                       # same testy (node --test, zero zależności)
 npm run brama                  # brama: testy + check szablonu + audyt WCAG (M10)
 npm run audyt                  # sam audyt kontrastu WCAG AA (motyw jasny i ciemny)
-npm run serwer                 # python3 -m http.server 8000 --bind 0.0.0.0
+npm run serwer                 # node tools/serwer.mjs . — podgląd na 0.0.0.0:8000
 # otwórz http://localhost:8000
 ```
 
