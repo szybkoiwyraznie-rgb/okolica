@@ -64,12 +64,34 @@ async function zSieciNajpierw(req, nazwa) {
   }
 }
 
+/**
+ * Czy odpowiedź wolno zapamiętać. `basic` (same-origin): status znany —
+ * cache tylko `ok`. `opaque` (kafelki no-cors): status NIEZNANY — 404/5xx
+ * serwera kafelków wraca z tym samym `type` co dobry obraz, więc jedynym
+ * sprawdzalnym kryterium jest treść: cache tylko ciało, które da się
+ * odczytać jako obraz. Bez tego chwilowy błąd dostawcy zostawał w cache
+ * „kafelkiem" na dobre, a cache-first oddawał pustkę przy każdej następnej
+ * grze w tej samej okolicy (zgłoszenie właściciela 2026-09-09: pusta mapa,
+ * oddalenie pokazuje mapę).
+ */
+async function czyTrafSieDoCache(odp) {
+  if (!odp) return false;
+  if (odp.type === 'basic') return odp.ok;
+  if (odp.type !== 'opaque') return false;
+  try {
+    const blob = await odp.clone().blob();
+    return typeof blob.type === 'string' && blob.type.startsWith('image/');
+  } catch {
+    return false;
+  }
+}
+
 async function zCacheNajpierw(req, nazwa, maks) {
   const cache = await caches.open(nazwa);
   const trafiony = await cache.match(req);
   if (trafiony) return trafiony;
   const odp = await fetch(req);
-  if (odp && (odp.ok || odp.type === 'opaque')) {
+  if (await czyTrafSieDoCache(odp)) {
     // put() bez await: odpowiedź wraca do strony natychmiast
     cache.put(req, odp.clone()).then(() => (maks ? przytnij(cache, maks) : undefined));
   }

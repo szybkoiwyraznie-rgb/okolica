@@ -14,7 +14,16 @@ const KOD_SW = readFileSync(join(ROOT, 'sw.js'), 'utf8');
 const ORIGIN = 'https://przyklad.github.io';
 const SCOPE = `${ORIGIN}/okolica/`;
 
-function atrapaOtoczenia({ maksKafelki } = {}) {
+/**
+ * Odpowiedź obca (kafelki): domyślnie opaque z ciałem OBRAZU. Test awarii
+ * dostawcy wstrzykuje `obcaOdpowiedz` z ciałem nieobrazowym (404/5xx też
+ * wraca jako opaque — status jest niewidoczny, patrz `czyTrafSieDoCache`).
+ */
+function domyslnaOdpowiedzObca() {
+  return { ok: false, type: 'opaque', status: 0, clone() { return this; }, blob: async () => ({ type: 'image/png' }) };
+}
+
+function atrapaOtoczenia({ maksKafelki, obcaOdpowiedz = domyslnaOdpowiedzObca } = {}) {
   const magazyny = new Map();
   const klucz = (req) => (typeof req === 'string' ? req : req.url);
   const cacheStub = (nazwa) => {
@@ -47,8 +56,13 @@ function atrapaOtoczenia({ maksKafelki } = {}) {
   };
   if (maksKafelki != null) selfStub.__MAKS_KAFELKI_TEST__ = maksKafelki;
   const fetchStub = async (req) => {
-    fetchWywolania.push(klucz(req));
-    return { ok: false, type: 'opaque', status: 0, clone() { return this; } };
+    const u = klucz(req);
+    fetchWywolania.push(u);
+    if (u.startsWith(ORIGIN)) {
+      // same-origin: SW widzi status (basic)
+      return { ok: true, type: 'basic', status: 200, clone() { return this; } };
+    }
+    return obcaOdpowiedz(u);
   };
   // eslint-disable-next-line no-new-func -- harness SW bez przeglądarki (M10/T2)
   new Function('self', 'caches', 'fetch', KOD_SW)(selfStub, cachesStub, fetchStub);
@@ -150,6 +164,29 @@ test('SW fetch: kafelki dostawcy mapy trafiają do cache kafelków (opaque OK)',
   const kafelki = [...env.magazyny.keys()].find((k) => k.includes('kafelki'));
   assert.ok(kafelki, 'cache kafelków utworzony');
   assert.equal(env.magazyny.get(kafelki).wpisy.size, 1, 'kafelki zapisany mimo odpowiedzi opaque');
+});
+
+test('SW fetch: błąd dostawcy (opaque 404/5xx) NIE ląduje w cache — nie ma „pustych kafelków na zawsze”', async () => {
+  // Zgłoszenie właściciela (2026-09-09): pusta mapa po grze, oddalenie
+  // pokazywało mapę. Mechanizm: chwilowy błąd serwera kafelków wraca jako
+  // opaque (status niewidoczny), cache-first oddawał go przy każdej następnej
+  // grze w tej okolicy — do ewikcji albo zmiany WERSJA_SW.
+  const ciałoNieObraz = () => ({ ok: false, type: 'opaque', status: 0, clone() { return this; }, blob: async () => ({ type: 'text/html' }) });
+  const env = atrapaOtoczenia({ obcaOdpowiedz: ciałoNieObraz });
+  const url = 'https://tile.openstreetmap.org/19/28861/17402.png';
+  const z1 = zdarzenieFetch(url);
+  env.nasluchy.fetch(z1);
+  await z1.odpowiedz;
+  await env.tick();
+  const kafelki = [...env.magazyny.keys()].find((k) => k.includes('kafelki'));
+  assert.equal(env.magazyny.get(kafelki).wpisy.size, 0, 'ciało nieobrazowe nie jest „kafelkiem”');
+  // kolejna wizyta wraca do sieci, nie do zepsutej pamięci:
+  const z2 = zdarzenieFetch(url);
+  env.nasluchy.fetch(z2);
+  await z2.odpowiedz;
+  await env.tick();
+  assert.equal(env.fetchWywolania.length, 2, 'drugi raz: znowu sieć (cache-first bez awaryjnego wpisu)');
+  assert.equal(env.magazyny.get(kafelki).wpisy.size, 0, 'i tak nie ma co serwować');
 });
 
 test('SW fetch: ewikcja najstarszych kafelków powyżej limitu', async () => {

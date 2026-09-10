@@ -196,6 +196,15 @@
 
       <fieldset class="pole">
         <legend>Tematy pytań</legend>
+        <!-- Skróty zaznaczania (właściciel, 2026-09-09): „wszystkie"/„żadne"
+             ruszają każdy temat z kanonu, poza „Dopisz sam" — to decyzja
+             organizatora, nie skrót. -->
+        <div class="wiersz tematy-akcje">
+          <button id="przycisk-tematy-wszystkie" class="przycisk przycisk-maly" type="button"
+            title="Zaznacz wszystkie tematy (poza „Dopisz sam")">⊞ wszystkie</button>
+          <button id="przycisk-tematy-zadne" class="przycisk przycisk-maly" type="button"
+            title="Odznacz wszystkie tematy (poza „Dopisz sam")">⊟ żadne</button>
+        </div>
         <div id="lista-tematow" class="chipy"></div>
         <input id="setup-temat-wlasny" type="text" maxlength="40" autocomplete="off"
           placeholder="Twoja dziedzina, np. kinematografia" aria-label="Własna dziedzina pytań" hidden>
@@ -214,8 +223,8 @@
 
 
 
-      <button id="przycisk-prywatnosc" class="przycisk" type="button">🔐 Dane i prywatność</button>
-
+      <!-- „🔐 Dane i prywatność" nie ma na ekranie setupu (właściciel, 2026-09-09):
+           dostęp do niego jest zawsze w stopce (#przycisk-prywatnosc-stopka). -->
       <p id="bledy-setup" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-dalej-pozycja" class="przycisk przycisk-glowny" type="button">📍 Dalej: moja pozycja</button>
@@ -417,7 +426,6 @@
       <div class="wiersz">
         <button id="przycisk-kopiuj-prompt" class="przycisk przycisk-glowny" type="button">⧉ Kopiuj prompt</button>
         <label class="sprawdz"><input id="prompt-factcheck" type="checkbox"> <span>Pytania z fact check</span></label>
-        <button id="przycisk-pobierz-prompt" class="przycisk" type="button">⬇ Zapisz jako plik</button>
       </div>
       <p id="prompt-tryb-opis" class="podpowiedz"></p>
       <p id="bledy-prompt" class="bledy" role="alert" hidden></p>

@@ -142,7 +142,32 @@ test('puste rankingi i śmieciowa odpowiedź mostu są jawne (LESSONS L6)', asyn
 
   const smieci = await telefonZRankingiem({ odpowiedz: { schemat: 'RO-gra/1', wiersze: 'to nie ranking' } });
   assert.match(smieci.dom.pobierz('ranking-status').textContent, /nieczytelna/, 'zły schemat = jawny komunikat, nie pusty ekran');
-  assert.equal(wierszeTabeli(smieci.dom).length, 1, 'tabela z komunikatem zamiast śmieci');
+  const wierszeSmieci = wierszeTabeli(smieci.dom);
+  assert.equal(wierszeSmieci.length, 1, 'tabela z komunikatem zamiast śmieci');
+  assert.match(wierszeSmieci[0], /nie zostały pobrane/, 'nieczytelna odpowiedź = brak danych, nie pusty most');
+  assert.ok(!wierszeSmieci[0].includes('ani jednej zakończonej gry'), 'brak danych nie udaje pustego mostu');
+});
+
+test('nieudane pobranie rankingu to brak danych, nie pusty most (zgłoszenie właściciela 2026-09-09)', async () => {
+  // Most odrzuca żądanie (timeout 8 s / awaria sieci): pasek stanu mówi o
+  // błędzie, a tabela NIE może pokazywać „Most Drive nie ma jeszcze ani
+  // jednej zakończonej gry” — to sugerowałoby, że rankingi działają i są puste.
+  const pamiec = new Map();
+  pamiec.set('okolica:multi:url-mostu', URL_MOSTU);
+  const dom = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec });
+  const odrzucenie = async () => { throw new TypeError('Failed to fetch'); };
+  globalThis.fetch = odrzucenie;
+  dom.window.fetch = odrzucenie;
+  await import(`../app/app.js?r=${Math.random()}`);
+  dom.kliknij('przycisk-ranking');
+  await oddech();
+  assert.match(dom.pobierz('ranking-status').textContent, /Nie udało się pobrać rankingów/, 'pasek stanu nazywa błąd');
+  const wiersze = wierszeTabeli(dom);
+  assert.equal(wiersze.length, 1, 'jeden wiersz-komunikat zamiast tabeli');
+  assert.match(wiersze[0], /nie zostały pobrane/, 'tabela mówi wprost: danych nie ma');
+  assert.ok(!wiersze[0].includes('ani jednej zakończonej gry'), 'błąd pobierania nie udaje pustego mostu');
+  zakladka(dom, 4);
+  assert.match(dom.pobierz('ranking-moje-gry').children[0].textContent, /nie zostały pobrane/, 'zakładka „Moje gry” tym samym');
 });
 
 test('adres mostu jest w kodzie — rankingi pobierają bez wpisu w pamięci (ADR 0020)', async () => {

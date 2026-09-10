@@ -189,7 +189,7 @@ test('instancje: łańcuch dokładnie jak ASSETS §2, w kolejności głównej', 
 
 test('polityka: stałe zgodne z ADR 0005 i ADR 0010 pkt 1', () => {
   assert.equal(POLITYKA.timeoutMs, 20_000);
-  assert.equal(POLITYKA.odstepMs, 30_000);
+  assert.equal(POLITYKA.odstepMs, 1_000); // 1 s grzecznościowo po limicie (właściciel, 2026-09-09)
   assert.equal(POLITYKA.mnoznikPromienia, 1.15);
   assert.equal(POLITYKA.maxRozmiarCacheBajtow, 2 * 1024 * 1024);
   assert.equal(POLITYKA.ttlCacheDni, 30);

@@ -30,7 +30,6 @@ import {
   zbudujPrompt,
   WERSJA_PROTOKOLU,
   SZABLON_WERSJA,
-  SZABLON_WERSJA_BEZ_WERYFIKACJI,
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
@@ -440,10 +439,42 @@ function renderujTematy() {
   };
   odswiezPoleWlasne();
   lista.addEventListener('change', () => {
-    STAN.konfig.tematy = [...lista.querySelectorAll('input:checked')].map((i) => i.value);
+    STAN.konfig.tematy = tematyZListy(lista);
     odswiezPoleWlasne();
   });
   poleWlasne.addEventListener('input', () => { STAN.konfig.tematWlasny = poleWlasne.value; });
+}
+
+/**
+ * Tematy zaznaczone na chipach `#lista-tematow` (chip = `label > input+span`).
+ * Odczyt przez `children`, nie `querySelectorAll('input:checked')`: atrapa DOM
+ * w testach nie ma silnika selektorów po elementach (LESSONS L19), a `children`
+ * odwzorowuje — skrót „wszystkie/żadne" da się więc przetestować jak w
+ * przeglądarce. W prawdziwym DOM oba odczyty dają to samo.
+ */
+function tematyZListy(lista) {
+  return [...lista.children]
+    .map((etykieta) => etykieta.children[0])
+    .filter((input) => input && input.checked)
+    .map((input) => input.value);
+}
+
+/**
+ * Skróty „⊞ wszystkie"/„⊟ żadne" przy tematach pytań (właściciel, 2026-09-09).
+ * „Dopisz sam" (`wlasny`) skrót nie rusza — to decyzja organizatora, nie
+ * temat z kanonu. Stan konfiguracji czyta z DOMu tym samym kodem co handler
+ * `change`, więc ręczne i skrócone zaznaczanie dają identyczny wynik.
+ */
+function ustawWszystkieTematy(zaznacz) {
+  const lista = $('lista-tematow');
+  for (const etykieta of lista.children) {
+    const input = etykieta.children[0];
+    if (!input || input.value === 'wlasny') continue;
+    input.checked = zaznacz;
+  }
+  STAN.konfig.tematy = tematyZListy(lista);
+  const poleWlasne = $('setup-temat-wlasny');
+  poleWlasne.hidden = !STAN.konfig.tematy.includes('wlasny');
 }
 
 function renderujSelecty() {
@@ -1377,10 +1408,11 @@ function zapiszSprawnaInstancje(url) {
 
 /**
  * Pobranie sieci z łańcucha instancji (ASSETS §2): sekwencyjnie, timeout
- * 20 s przez `AbortController`, budżet 8 MB na cache. Pauza 30 s TYLKO po
- * odpowiedzi 406/429/5xx (tego wymaga polityka FOSSGIS); timeout/brak
- * odpowiedzi to MARTWA instancja — przełączenie jest OD RAZU, bo nie ma
- * kogo szanować pauzą (decyzja 2026-09-07: koniec ~100 s czekania).
+ * 20 s przez `AbortController`, budżet 8 MB na cache. Krótka pauza (1 s)
+ * TYLKO po odpowiedzi 406/429/5xx (grzeczność wobec limitu publicznego);
+ * timeout/brak odpowiedzi to MARTWA instancja — przełączenie jest OD RAZU,
+ * bo nie ma kogo szanować pauzą (decyzja 2026-09-07: koniec ~100 s czekania;
+ * 2026-09-09: pauza limitowa skrócona z 30 s do 1 s).
  * Sprawna instancja ląduje w pamięci telefonu i następna gra próbuje ją
  * pierwszą (`kolejnoscInstancji`). `fetch` czytany w chwili wywołania,
  * więc test może podstawić atrapę po imporcie aplikacji.
@@ -1439,7 +1471,7 @@ async function pobierzSiec(terazMs) {
       });
       if (przelacz) {
         // Martwa instancja (timeout/abort/błąd sieci): przełączenie OD RAZU,
-        // bez pauzy — pauza 30 s należy się tylko limitom (429/406/5xx).
+        // bez pauzy — pauza 1 s należy się tylko limitom (429/406/5xx).
         status(`${instancja.nazwa} nie odpowiada — próbuję kolejną instancję.`);
         continue;
       }
@@ -3160,9 +3192,10 @@ function budujPromptEkran() {
     ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji · protokół ${factcheck ? WERSJA_PROTOKOLU_REV4 : WERSJA_PROTOKOLU_REV5}`
     : 'prompt nie został zbudowany';
   $('prompt-podglad-naglowek').textContent = `Pokaż treść promptu (${factcheck ? 'z fact check' : 'bez fact-check'})`;
+  // Teksty zlecenia właściciela (2026-09-09) — słowo w słowo:
   $('prompt-tryb-opis').textContent = factcheck
-    ? `Tryb: pytania z fact check (szablon ${SZABLON_WERSJA}) — model sprawdza każdy fakt w sieci, odpowiedź wraca w minuty; każde pytanie ma źródła.`
-    : `Tryb: pytania bez fact-check (szablon ${SZABLON_WERSJA_BEZ_WERYFIKACJI}) — model korzysta z własnej wiedzy, odpowiedź wraca w sekundy; możliwe zmyślone fakty.`;
+    ? 'Tryb: pytania z fact check — model sprawdza każdy fakt w sieci ale generowanie pytań trwa dłużej.'
+    : 'Tryb: pytania bez fact-check — model AI korzysta z własnej wiedzy, generowanie pytań trwa krócej.';
   // B21: prompt jest stały (~1,4 tys. tokenów) niezależnie od liczby pytań —
   // rośnie ODPOWIEDŹ modelu (~210 tokenów na pytanie), a to ona mieści się albo
   // nie w limicie wyjścia. Mówimy o tym ZANIM właściciel zmarnuje generację:
@@ -4411,7 +4444,9 @@ function urlMostuRankingu() {
 async function pobierzRankingi() {
   const url = urlMostuRankingu();
   if (!url) {
-    STAN.rankingWiersze = [];
+    // `null`, nie `[]`: brak mostu to BRAK DANYCH, nie potwierdzone pusto —
+    // tabela musi mówić „nie pobrano", nie „nie ma gier" (właściciel, 2026-09-09).
+    STAN.rankingWiersze = null;
     $('ranking-status').textContent = 'Brak adresu mostu Drive w tej wersji aplikacji — rankingi są niedostępne.' + ADR(' (ADR 0020)');
     renderujRankingi();
     return;
@@ -4420,20 +4455,27 @@ async function pobierzRankingi() {
   try {
     const odpowiedz = await pobierzGetMulti(urlGet(url, 'ranking'));
     const { wiersze, usterki } = walidujRankingSurowy(JSON.stringify(odpowiedz ?? null));
-    STAN.rankingWiersze = wiersze;
+    // Nieczytelna odpowiedź bez żadnych wierszy = brak danych, nie pusty most.
+    STAN.rankingWiersze = usterki.length && !wiersze.length ? null : wiersze;
     $('ranking-status').textContent = usterki.length && !wiersze.length
       ? `Odpowiedź mostu jest nieczytelna (${usterki[0].komunikat}).`
       : (wiersze.length
         ? `Zakończone gry wieloosobowe: ${wiersze.length} wyników graczy.`
         : 'Na moście nie ma jeszcze zakończonych gier — rankingi zapełnią się po pierwszych rozgrywkach.');
   } catch (e) {
+    // Porażka nie nadpisuje ostatnio pobranych danych (jeśli były); gdy ich
+    // nie było, `rankingWiersze` zostaje `null` — tabela powie „nie pobrano".
     $('ranking-status').textContent = `Nie udało się pobrać rankingów: ${e?.message ?? e}`;
   }
   renderujRankingi();
 }
 
 function renderujRankingi() {
-  const wiersze = STAN.rankingWiersze ?? [];
+  // `null` = brak danych (pobieranie nie powiodło się, brak mostu, odpowiedź
+  // nieczytelna); `[]` = pusty most potwierdzony udanym pobraniem (właściciel,
+  // 2026-09-09: te dwa stany UI muszą być różne — błąd to nie jest „nie ma
+  // jeszcze ani jednej zakończonej gry").
+  const wiersze = STAN.rankingWiersze;
   const zakladki = $('ranking-zakladki');
   zakladki.replaceChildren();
   for (const z of RANKING_ZAKLADKI) {
@@ -4459,10 +4501,11 @@ function renderujRankingi() {
     tabela.hidden = true;
     mojeLista.hidden = false;
     const pseudonim = (typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_PSEUDONIMU) : null) ?? '';
-    const moje = wiersze.filter((w) => w.pseudonim === pseudonim);
+    const moje = (wiersze ?? []).filter((w) => w.pseudonim === pseudonim);
     mojeLista.replaceChildren();
     const komunikat = (tekst) => { const li = document.createElement('li'); li.textContent = tekst; mojeLista.appendChild(li); };
-    if (!pseudonim) komunikat('Nie masz jeszcze pseudonimu — ustaw go w ustawieniach gry (rodzaj gry: „Gra na wielu urządzeniach").');
+    if (wiersze === null) komunikat('Wyniki nie zostały pobrane — komunikat w pasku stanu. To nie znaczy, że most nie ma Twoich gier.');
+    else if (!pseudonim) komunikat('Nie masz jeszcze pseudonimu — ustaw go w ustawieniach gry (rodzaj gry: „Gra na wielu urządzeniach").');
     else if (!moje.length) komunikat(`Pseudonim „${pseudonim}” nie ma jeszcze zakończonych gier na moście Drive.`);
     else {
       for (const w of moje) {
@@ -4475,6 +4518,18 @@ function renderujRankingi() {
   }
   tabela.hidden = false;
   mojeLista.hidden = true;
+
+  if (wiersze === null) {
+    // NIEudane pobranie nie może udawać pustego rankingu: pusty wiersz mówi
+    // wprost, że danych nie ma, i odsyła do paska stanu (właściciel, 2026-09-09).
+    const tr = document.createElement('tr');
+    const td = document.createElement('td');
+    td.setAttribute('colspan', '5');
+    td.textContent = 'Wyniki nie zostały pobrane — komunikat w pasku stanu nad tabelą. To nie jest potwierdzenie, że most nie ma zakończonych gier.';
+    tr.appendChild(td);
+    tbody.replaceChildren(tr);
+    return;
+  }
 
   // kategorie (wiek/tematy/lokalizacja) — chipy z dostępnych wartości
   const kategorie = kategorieRankingu(wiersze);
@@ -4613,7 +4668,7 @@ function start() {
   }
   if (location.search.includes('odstep=0')) {
     // skrót dla testów/przeglądarki: przełączanie instancji Overpass bez
-    // 30-sekundowych pauz (polityka ASSETS §2 jest domyślnie nietknięta)
+    // pauz limitowych (polityka ASSETS §2 jest domyślnie nietknięta)
     STAN.odstepOverpassMs = 0;
   }
 
@@ -4632,7 +4687,10 @@ function start() {
   $('przycisk-sygnaly').addEventListener('click', przelaczSygnaly);
   $('przycisk-sygnaly').setAttribute('aria-pressed', String(sygnalyWlaczone()));
   zarejestrujServiceWorker();
-  $('przycisk-prywatnosc').addEventListener('click', pokazPrywatnosc);
+  // „🔐 Dane i prywatność" na ekranie setupu nie ma (właściciel, 2026-09-09) —
+  // jedyny dostęp to stopka (`przycisk-prywatnosc-stopka` poniżej).
+  $('przycisk-tematy-wszystkie').addEventListener('click', () => ustawWszystkieTematy(true));
+  $('przycisk-tematy-zadne').addEventListener('click', () => ustawWszystkieTematy(false));
   $('przycisk-ranking').addEventListener('click', przelaczRankingi); // M12/P6 (F3: przełącznik)
   $('przycisk-wrocz-ranking').addEventListener('click', wrocZRankingu);
   $('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu); // krzyżyk w rogu warstwy
@@ -4775,10 +4833,10 @@ function start() {
   $('przycisk-wstecz-stacje').addEventListener('click', () => pokazEkran('stacje'));
   $('przycisk-kopiuj-prompt').addEventListener('click', (e) => kopiujTekst(STAN.prompt ?? '', e.currentTarget, '⧉ Kopiuj prompt'));
   $('prompt-factcheck').addEventListener('change', () => budujPromptEkran());
-  $('przycisk-pobierz-prompt').addEventListener('click', () => {
-    if (!STAN.prompt) return;
-    pobierzPlik(`prompt-okolica-${geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5)}.txt`, STAN.prompt, 'text/plain;charset=utf-8');
-  });
+  // Przycisku „Zapisz jako plik" nie ma (właściciel, 2026-09-09): prompt i tak
+  // idzie do schowka („Kopiuj prompt"), a plik .txt był dodatkową drogą, której
+  // nikt nie używał. Helper `pobierzPlik` zostaje — służą mu PNG podglądu
+  // stacji i eksport wyniku.
   $('przycisk-dalej-paczka').addEventListener('click', () => pokazEkran('paczka'));
 
   $('przycisk-wstecz-prompt').addEventListener('click', () => pokazEkran('prompt'));

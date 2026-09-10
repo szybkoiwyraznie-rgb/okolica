@@ -83,9 +83,10 @@ test('kontrakt ADR 0032: ekran promptu ma checkbox fact-check (domyślnie pusty,
   assert.match(ekran, /id="prompt-factcheck" type="checkbox"/, 'checkbox wariantu');
   assert.ok(!/id="prompt-factcheck" type="checkbox"[^>]*checked/.test(ekran), 'domyślnie pusty — wariant bez weryfikacji');
   assert.match(ekran, /Pytania z fact check/, 'etykieta jak w zleceniu');
-  assert.ok(ekran.indexOf('id="przycisk-kopiuj-prompt"') < ekran.indexOf('id="prompt-factcheck"')
-    && ekran.indexOf('id="prompt-factcheck"') < ekran.indexOf('id="przycisk-pobierz-prompt"'),
+  assert.ok(ekran.indexOf('id="przycisk-kopiuj-prompt"') < ekran.indexOf('id="prompt-factcheck"'),
     'checkbox po prawej od „Kopiuj prompt"');
+  assert.ok(!/id="przycisk-pobierz-prompt"/.test(ekran),
+    'przycisku „Zapisz jako plik" nie ma (właściciel, 2026-09-09)');
   assert.match(ekran, /id="prompt-tryb-opis"/, 'opis trybu pod przyciskiem');
   assert.match(ekran, /id="prompt-podglad-naglowek"/, 'nagłówek podglądu mówi, który wariant widać');
 });
@@ -106,9 +107,13 @@ test('kontrakt ADR 0032: wynik i panel multi mają linię wariantu', () => {
   assert.match(APP, /\$\('multi-factcheck'\)/, 'renderujPanelMulti ją wypełnia');
 });
 
-test('kontrakt ADR 0032: wersja szablonu bez weryfikacji ma konsumenta w UI (jak SZABLON_WERSJA)', () => {
-  assert.match(APP, /SZABLON_WERSJA_BEZ_WERYFIKACJI/, 'app.js importuje stałą');
-  assert.match(APP, /szablon \$\{SZABLON_WERSJA_BEZ_WERYFIKACJI\}/, 'opis trybu pokazuje wersję szablonu §2.2');
+test('kontrakt 2026-09-09: opis trybu promptu mówi teksty właściciela, słowo w słowo', () => {
+  assert.match(APP, /Tryb: pytania z fact check — model sprawdza każdy fakt w sieci ale generowanie pytań trwa dłużej\./,
+    'tekst trybu z fact check (zlecenie 2026-09-09)');
+  assert.match(APP, /Tryb: pytania bez fact-check — model AI korzysta z własnej wiedzy, generowanie pytań trwa krócej\./,
+    'tekst trybu bez fact-check (zlecenie 2026-09-09)');
+  assert.ok(!/szablon \$\{SZABLON_WERSJA/.test(APP),
+    'opis trybu nie miesza już wersji szablonu (właściciel, 2026-09-09)');
 });
 
 /* ------------------------------------------------- kanony treści: doc ↔ kod */
@@ -623,9 +628,11 @@ test('kontrakt: szablony URL kafelków są dokładnie te z docs/ASSETS.md §1', 
 });
 
 test('kontrakt: ekran „dane i prywatność" ma cztery karty z ADR 0013 pkt 7 i przycisk kasowania', () => {
-  for (const id of ['ekran-prywatnosc', 'przycisk-prywatnosc', 'przycisk-prywatnosc-stopka', 'przycisk-wrocz-prywatnosc', 'przycisk-czysc-dane', 'czysc-dane-status']) {
+  for (const id of ['ekran-prywatnosc', 'przycisk-prywatnosc-stopka', 'przycisk-wrocz-prywatnosc', 'przycisk-czysc-dane', 'czysc-dane-status']) {
     assert.ok(INDEX.includes(`id="${id}"`), `brak #${id} w index.html`);
   }
+  assert.ok(!/id="przycisk-prywatnosc"/.test(INDEX),
+    'przycisku „Dane i prywatność" na ekranie setupu nie ma (właściciel, 2026-09-09) — dostęp tylko ze stopki');
   const sekcja = INDEX.slice(INDEX.indexOf('id="ekran-prywatnosc"'), INDEX.indexOf('</section>', INDEX.indexOf('id="ekran-prywatnosc"')));
   for (const temat of ['Co jest pobierane', 'Dokąd trafia Twoja pozycja', 'Co zostaje na telefonie', 'Jak to skasować']) {
     assert.ok(sekcja.includes(temat), `ekran prywatności nie mówi: ${temat} (ADR 0013 pkt 7)`);

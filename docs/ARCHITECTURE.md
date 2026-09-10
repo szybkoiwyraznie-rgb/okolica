@@ -15,8 +15,10 @@ index.html                  — powłoka UI: ekran startowy z intro nad mapą, m
                               stopka z wersją protokołu, baner file://
 sw.js                       — Service Worker (M10): offline skorupa + kafelki
                               ostatniej okolicy (cache-first, limit i ewikcja;
-                              classic script, rejestracja z app.js, WERSJA_SW
-                              == ?v= aplikacji — pilnuje kontrakt)
+                              opaque cache-uje się tylko, gdy ciało dekoduje
+                              się jako obraz — LESSONS L44; classic script,
+                              rejestracja z app.js, WERSJA_SW == ?v=
+                              aplikacji — pilnuje kontrakt)
 .nojekyll                     — Pages bez przetwarzania Jekyll (M8)
 app/
   app.js                    — bootstrap: router ekranów, stan sesji, spinanie modułów
@@ -161,7 +163,7 @@ commit i nowa wersja aplikacji.
    w tle (`visibilitychange`) zatrzymuje jedno i drugie.
 3. `sieci.budujZapytanieOverpass({ srodek, promienM, tryb })` składa jedno
    zapytanie dla `R × 1.15`; pobiera je `app.js` przez `window.fetch`
-   (łańcuch instancji z `ASSETS` §2: 30 s odstępu po 429/5xx, timeout 20 s
+   (łańcuch instancji z `ASSETS` §2: 1 s odstępu po 429/5xx, timeout 20 s
    przez `AbortController`, budżet 8 MB odpowiedzi). Najpierw jednak cache
    `okolica:sieci:<geohash6>-<R>` (ADR 0010 pkt 1): trafiony wpis = zero
    zapytań do Overpass. Dalej `sieci.parsujOdpowiedz` → `budujGraf`
@@ -446,7 +448,7 @@ nigdy cicho (ADR 0010 pkt 6).
   `window.fetch` (Node ≥ 18 ma globalny — LESSONS L18), więc atrapa bez
   `window.fetch` daje synchroniczną degradację, a testy sieciowe podstawiają
   własną atrapę (`domAtrapa.window.fetch = …`) i ćwiczą cały łańcuch instancji
-  z `?odstep=0` (pauzy 30 s skrócone do zera, polityka domyślna nietknięta).
+  z `?odstep=0` (pauzy limitowe skrócone do zera, polityka domyślna nietknięta).
   Listy w UI przebudowujemy przez `replaceChildren`, bo `innerHTML = ''` jest
   w atrapie inertne (LESSONS L19).
 

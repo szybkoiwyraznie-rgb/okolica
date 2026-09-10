@@ -19,7 +19,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SZABLON_WERSJA, SZABLON_WERSJA_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
+import { SZABLON_WERSJA, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -140,6 +140,31 @@ test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
   // pola „Liczba graczy" nie ma: graczy dodaje się w bloku tożsamości
   // (ADR 0026 aneks), a zapamiętany gracz wraca na listę bez PIN-u
   assert.equal(pobierz('lista-graczy').children.length, 1, 'zapamiętany gracz jest na liście');
+});
+
+test('setup: skróty „wszystkie/żadne" ruszają cały kanon tematów, „Dopisz sam" jest wyjątkiem', () => {
+  const lista = pobierz('lista-tematow');
+  const chipy = [...lista.children].map((e) => e.children[0]);
+  assert.equal(chipy.length, Object.keys(TEMATY).length, 'po checkboxie na temat z kanonu');
+
+  dom.kliknij('przycisk-tematy-wszystkie');
+  for (const input of chipy) {
+    assert.equal(input.checked, input.value !== 'wlasny', `po „wszystkie": ${input.value}`);
+  }
+
+  dom.kliknij('przycisk-tematy-zadne');
+  for (const input of chipy) assert.equal(input.checked, false, `po „żadnych": ${input.value}`);
+
+  // „Dopisz sam" to decyzja organizatora — skrót nie rusza go w żadną stronę.
+  const wlasny = chipy.find((i) => i.value === 'wlasny');
+  wlasny.checked = true;
+  dom.kliknij('przycisk-tematy-wszystkie');
+  assert.equal(wlasny.checked, true, '„wszystkie" nie nadpisuje „Dopisz sam"');
+  assert.equal(pobierz('setup-temat-wlasny').hidden, false, 'pole własnego tematu widać, gdy „Dopisz sam" jest zaznaczony');
+  dom.kliknij('przycisk-tematy-zadne');
+  assert.equal(wlasny.checked, true, '„żadne" nie nadpisuje „Dopisz sam"');
+  for (const input of chipy) if (input.value !== 'wlasny') assert.equal(input.checked, false, `po „żadnych": ${input.value}`);
+  assert.equal(pobierz('setup-temat-wlasny').hidden, false, 'pole własnego tematu zostaje widoczne');
 });
 
 test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', () => {
@@ -557,11 +582,13 @@ test('mapa: gest palcem na panelu zmienia widok (drag działa z aplikacji)', asy
 
 /* ------------------------------------------------- dane i prywatność (M3) */
 
-test('prywatność: ekran otwiera się z setupu i ze stopki, a „wróć" prowadzi na właściwy ekran', async () => {
+test('prywatność: ekran otwiera się ze stopki, a „wróć" prowadzi na właściwy ekran', async () => {
   const domMapy = await aplikacjaZMapa();
   assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, true, 'ekran prywatności jest domyślnie schowany');
 
-  domMapy.kliknij('przycisk-prywatnosc');
+  // Przycisku na ekranie setupu nie ma (właściciel, 2026-09-09; brak pinuje
+  // kontrakt) — dostęp jest zawsze w stopce, więc i z mapy startowej.
+  domMapy.kliknij('przycisk-prywatnosc-stopka');
   assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
   assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'prywatność chowa okno startowe');
 
@@ -620,7 +647,7 @@ test('prywatność: czyszczenie jest dwustopniowe i rusza tylko klucze obolica:*
   const domMapy = zainstalujDom({ pamiec: pamiecPriv });
   await import(`../app/app.js?priv=${Math.random().toString(36).slice(2)}`);
 
-  domMapy.kliknij('przycisk-prywatnosc');
+  domMapy.kliknij('przycisk-prywatnosc-stopka'); // przycisk setupu nie ma (2026-09-09)
   domMapy.kliknij('przycisk-czysc-dane');
   assert.match(domMapy.pobierz('czysc-dane-status').textContent, /Kliknij ponownie/, 'pierwszy klik tylko uzbraja');
   assert.ok(pamiecPriv.has('okolica:konfig'), 'po uzbrojeniu nic nie zostało usunięte');
@@ -863,8 +890,9 @@ test('stacje: sieć z cache pokazuje ponowienie, klik dowozi świeże dane z Ove
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, true, 'przy świeżych danych ponowienie znika');
 });
 
-test('Overpass: timeout martwej instancji przełącza OD RAZU, bez 30 s pauzy', async () => {
-  // Pełny odstęp (bez odstep=0): stary kod czekałby tu 30 s na martwą instancję.
+test('Overpass: timeout martwej instancji przełącza OD RAZU, bez pauzy limitowej', async () => {
+  // Pełny odstęp (bez odstep=0): stary kod czekałby tu 30 s na martwą instancję
+  // (pauza limitowa skrócona do 1 s, ale po martwej instancji i tak nie ma).
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test' });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const wywolania = [];
@@ -879,7 +907,7 @@ test('Overpass: timeout martwej instancji przełącza OD RAZU, bez 30 s pauzy', 
   const trwalo = Date.now() - start;
   assert.equal(wywolania.length, 2, 'martwa FOSSGIS → od razu private.coffee');
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'druga instancja dowiozła');
-  assert.ok(trwalo < 10_000, `przełączenie po timeoutcie bez pauzy (trwało ${trwalo} ms, pauza 30 s odpadła)`);
+  assert.ok(trwalo < 10_000, `przełączenie po timeoutcie bez pauzy (trwało ${trwalo} ms, pauza limitowa odpadła)`);
   assert.equal(domAtrapa.pamiec.get('okolica:overpass-sprawny'), INSTANCJE_OVERPASS[1].url, 'sprawna instancja zapamiętana');
 });
 
@@ -1071,15 +1099,17 @@ test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie rev5; zaznaczenie d
   assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
   // B2: nowe warianty nie każą odwracać tekstu.
   assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('ODWRÓCONE ZNAKAMI'), 'prompt nie żąda odwracania liter');
-  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes('bez fact-check'), 'opis mówi o wariancie');
-  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes(SZABLON_WERSJA_BEZ_WERYFIKACJI), 'opis pokazuje wersję szablonu §2.2');
+  assert.match(domAtrapa.pobierz('prompt-tryb-opis').textContent,
+    /Tryb: pytania bez fact-check — model AI korzysta z własnej wiedzy, generowanie pytań trwa krócej\./,
+    'opis mówi tekstem właściciela (2026-09-09), słowo w słowo');
   assert.match(domAtrapa.pobierz('prompt-podglad-naglowek').textContent, /bez fact-check/);
   assert.match(domAtrapa.pobierz('prompt-licznik').textContent, /PYT\/1\.0-rev5/);
   przelaczCheckbox(domAtrapa, 'prompt-factcheck', true);
   assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev4/, 'zaznaczony checkbox generuje rev4');
   assert.match(domAtrapa.pobierz('pole-prompt').value, /wykonaj kwerendę w internecie/);
-  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes('z fact check'), 'opis mówi o wariancie');
-  assert.ok(domAtrapa.pobierz('prompt-tryb-opis').textContent.includes(SZABLON_WERSJA), 'opis pokazuje wersję szablonu §2');
+  assert.match(domAtrapa.pobierz('prompt-tryb-opis').textContent,
+    /Tryb: pytania z fact check — model sprawdza każdy fakt w sieci ale generowanie pytań trwa dłużej\./,
+    'opis mówi tekstem właściciela (2026-09-09), słowo w słowo');
   przelaczCheckbox(domAtrapa, 'prompt-factcheck', false);
   assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev5/, 'odznaczenie wraca do rev5');
 });

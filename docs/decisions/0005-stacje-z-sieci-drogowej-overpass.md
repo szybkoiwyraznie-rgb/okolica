@@ -173,3 +173,13 @@ Trzy testy w `test/sieci.test.js` pilnują obu metryk separacji, luki kątowej
 (≤ 2,5× ideału) i rozrzutu pierścienia (≤ 35%). Próg w teście liczy się z
 **promienia gry**, nie ze stałej konfiguracji — inaczej wyzerowanie stałej
 zerowałoby też oczekiwanie i asercja byłaby pozorna (LESSONS).
+
+## Aneks 2026-09-09 — pauza limitowa 30 s → 1 s
+
+Właściciel po rozgrywkach z przełączaniem instancji: odstęp 30 s między
+serwerami Overpass jest za długi — limit publiczny i tak nie resetuje się
+w sekundy, a łańcuch (FOSSGIS → private.coffee → VK Maps) i tak przełącza
+na serwer, który odpowiada. Decyzja: `POLITYKA.odstepMs = 1_000` — krótka
+pauza grzecznościowa po `429`/`406`/5xx; przełączenie po martwej instancji
+zostaje OD RAZU, jak dotąd. `?odstep=0` (skrót testowy) nietknięte. Zmienia
+pkt 1 Decyzji („pauza 30 s między próbami”) i `ASSETS` §2 pkt 3.

@@ -145,6 +145,24 @@ export function przesunWidok(widok, dxPx, dyPx) {
 }
 
 /**
+ * Samonaprawa widoku: zoom w zakresie `[ZOOM_MIN, maxZoomPodkladu]`, środek
+ * nietknięty. Wszystkie normalne drogi (gesty, `ustawSrodek`) zooma clampują
+ * same, ale zgłoszenie właściciela 2026-09-09 (pusta mapa po grze — „jakby
+ * silnik jeszcze przybliżał, aż poza dostępny zoom") każe mieć drugie dno:
+ * gdyby widok poza zakresem pojawił się z jakiegokolwiek powodu (stary stan,
+ * przyszła regresja), następne `rysuj()` wciąga go z powrotem, a kafelki
+ * i tak są planowane w zakresie podkładu (`siatkaKafelkow`). W zakresie
+ * zwraca ten sam obiekt — bez zbędnego przepisywania stanu.
+ */
+export function ustalibujWidok(widok, podklad) {
+  sprawdzWidok(widok);
+  const zoom = zoomWidoku(widok);
+  if (!Number.isFinite(zoom)) return widok; // NaN zostawiamy `sprawdzWidok` w planie
+  const zoomKlucz = ogranicz(zoom, ZOOM_MIN, maxZoomPodkladu(podklad));
+  return zoomKlucz === zoom ? widok : { x: widok.x, y: widok.y, skala: skalaZZoomu(zoomKlucz) };
+}
+
+/**
  * Zmiana skali z zachowaniem punktu zaczepienia (środek dwupalcowego gestu,
  * kursor, środek panelu). Zoom jest ograniczany do `[minZoom, maxZoom]`,
  * więc „zoom poza podkład" nie prosi dostawcy o nieistniejące kafelki.
@@ -608,6 +626,10 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
 
   function rysuj() {
     stan.rozmiar = rozmiarPanelu(kontener);
+    // Samonaprawa (zgłoszenie 4, 2026-09-09): widok poza zakresem zoomu
+    // podkładu wraca do zakresu przy każdym rysowaniu — „pustej mapy przez
+    // zbyt duże przybliżenie" nie da się utrzymać dłużej niż jeden rys.
+    stan.widok = ustalibujWidok(stan.widok, stan.podklad);
     if (stan.oczekujacySrodek && stan.rozmiar.szerokosc > 0 && stan.rozmiar.wysokosc > 0) {
       const o = stan.oczekujacySrodek;
       stan.oczekujacySrodek = null;
