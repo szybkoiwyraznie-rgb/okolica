@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-59';
-import { TRYBY } from './konfig.js?v=m12-59';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-60';
+import { TRYBY } from './konfig.js?v=m12-60';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -29,13 +29,13 @@ export const INSTANCJE_OVERPASS = [
   { nazwa: 'FOSSGIS (główna)', url: 'https://overpass-api.de/api/interpreter' },
   { nazwa: 'private.coffee', url: 'https://overpass.private.coffee/api/interpreter' },
   { nazwa: 'VK Maps', url: 'https://maps.mail.ru/osm/tools/overpass/api/interpreter' },
+  { nazwa: 'Adikso (Polska)', url: 'https://overpass.osm.adikso.net/api/interpreter' },
 ];
 
-/** FOSSGIS zawsze pierwszy; zapamiętany sukces porządkuje tylko rezerwy. */
+/** Zapamiętana sprawna instancja pierwsza; pozostałe w kolejności domyślnej. */
 export function kolejnoscInstancji(zapamietanyUrl = null) {
-  const [glowna, ...rezerwy] = INSTANCJE_OVERPASS;
-  return [glowna, ...rezerwy.filter(i => i.url === zapamietanyUrl),
-    ...rezerwy.filter(i => i.url !== zapamietanyUrl)];
+  const znana = INSTANCJE_OVERPASS.find(i => i.url === zapamietanyUrl);
+  return znana ? [znana, ...INSTANCJE_OVERPASS.filter(i => i !== znana)] : [...INSTANCJE_OVERPASS];
 }
 
 export const POLITYKA = {

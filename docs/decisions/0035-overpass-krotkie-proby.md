@@ -1,10 +1,10 @@
-# 0035 — Overpass: FOSSGIS pierwszy, krótkie próby i jawny przebieg
+# 0035 — Overpass: krótkie próby i diagnostyka połączenia
 
 - Status: Zaakceptowana
 - Data: 2026-09-10
 - Podstawa: właściciel nie widzi próby FOSSGIS, chce 10 s zamiast wydłużania i więcej serwerów, jeśli to możliwe.
 
-## Decyzja
+## Decyzja pierwotna — punkty 1, 4 i 5 zmienione aneksem poniżej
 
 1. FOSSGIS zawsze pierwszy. Ostatnia sprawna instancja porządkuje wyłącznie
    rezerwy. Nie pomijamy FOSSGIS na podstawie pamięci telefonu.
@@ -33,3 +33,27 @@ Regresje: FOSSGIS mimo zapamiętanego VK, brak nagłówków, zatrzymane ciało,
 niestandardowy błąd abort, trzy próby po 10 s, lista błędów, rezerwa po 403.
 Testy używają przyspieszonych timerów i atrap sieci; nie dowodzą bieżącej
 sprawności publicznych instancji ani przyczyny porannego/popołudniowego zdarzenia.
+
+
+## Aneks 2026-09-10 — korekta właściciela (m12-60, obowiązuje)
+
+Wymuszenie FOSSGIS na początku i diagnostyka na ekranie stacji nie były
+intencją właściciela. Przywracamy pierwszeństwo ostatniej sprawnej instancji
+z `okolica:overpass-sprawny`; pozostałe zachowują kolejność bazową bez dubli.
+Lista prób (serwery, numery, wyniki) trafia wyłącznie do ⓘ Informacje.
+Na stacjach zostaje ogólny postęp/błąd z odesłaniem do informacji, bez nazw
+serwerów i szczegółów technicznych. Limit 10 s i naprawy timeoutu bez zmian.
+
+Na wyraźne życzenie właściciela dodano czwartą instancję:
+`https://overpass.osm.adikso.net/api/interpreter` (do podanego `/api/`
+dopisujemy standardowy endpoint `interpreter`). Po sukcesie jest pamiętana
+na tych samych zasadach. W razie niepowodzenia nie blokuje pozostałych.
+Własna próba HTTPS POST z sandboxa zakończyła się błędem TLS (curl 35,
+HTTP 000); odczyt strony przez narzędzie WWW również się nie udał. Nie
+potwierdzono dostępności, CORS, polityki ani zakresu danych instancji.
+To świadomie dodana próba wskazanego serwera, nie deklaracja jego sprawności.
+Dostawca wymieniony w ASSETS oraz sekcji prywatności. Do sprawdzenia z telefonu.
+
+Testy: preferencja VK i Adikso, pełny łańcuch czterech prób, sukces Adikso
+z atrapą danych z Polski, umiejscowienie logu wyłącznie w Informacjach,
+brak nazw instancji w błędzie na stacjach. Żadnych nowych kluczy ani opłat.

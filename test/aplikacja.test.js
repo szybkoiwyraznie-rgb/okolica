@@ -697,7 +697,7 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   domAtrapa.kliknij('przycisk-podejrzyj-mape');
   assert.equal(domAtrapa.pobierz('ekran-stacje').inert, false);
   assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, true, 'nakładka znika po odpowiedzi');
-  assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /HTTP 400/, 'błąd zapytania jawny (kod S03)');
+  assert.match(domAtrapa.pobierz('siec-proby').textContent, /HTTP 400/, 'błąd zapytania jawny (kod S03)');
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false, 'po porażce widać ponowienie');
   domAtrapa.window.fetch = async (url) => { wywolania.push(url); return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) }; };
   domAtrapa.kliknij('przycisk-siec-ponow');
@@ -753,7 +753,7 @@ test('Overpass: timeout martwej instancji przełącza OD RAZU, bez pauzy limitow
   assert.equal(domAtrapa.pamiec.get('okolica:overpass-sprawny'), INSTANCJE_OVERPASS[1].url, 'sprawna instancja zapamiętana');
 });
 
-test('Overpass: FOSSGIS pierwszy także po zapamiętanym sukcesie VK Maps', async () => {
+test('Overpass: zapamiętany sukces VK Maps ma pierwszeństwo', async () => {
   const pamiec = new Map([['okolica:overpass-sprawny', INSTANCJE_OVERPASS[2].url]]);
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -764,7 +764,7 @@ test('Overpass: FOSSGIS pierwszy także po zapamiętanym sukcesie VK Maps', asyn
   };
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(250);
-  assert.deepEqual(wywolania, [INSTANCJE_OVERPASS[0].url], 'FOSSGIS nie zostaje pominięty przez zapis VK Maps');
+  assert.deepEqual(wywolania, [INSTANCJE_OVERPASS[2].url], 'zapamiętany VK Maps pierwszy');
 });
 
 test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2', async () => {
@@ -773,7 +773,7 @@ test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2', as
   const odwiedzone = [];
   domAtrapa.window.fetch = async (url) => {
     odwiedzone.push(url);
-    if (odwiedzone.length < 3) return { ok: false, status: 429 };
+    if (odwiedzone.length < INSTANCJE_OVERPASS.length) return { ok: false, status: 429 };
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
   };
   domAtrapa.kliknij('przycisk-dalej-stacje');
@@ -789,7 +789,7 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
   domAtrapa.window.fetch = async () => { ileProb++; return { ok: false, status: 504 }; };
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(300);
-  assert.equal(ileProb, 3, 'próbuje wszystkich instancji');
+  assert.equal(ileProb, INSTANCJE_OVERPASS.length, 'próbuje wszystkich instancji');
   assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, false);
   assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /\[S03\]/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
@@ -2531,7 +2531,7 @@ test('teren: automatyczny GPS bez API pokazuje P01; błędny fix nie zmienia poz
 });
 
 for (const etap of ['nagłówki', 'ciało', 'nietypowy abort']) {
-  test(`Overpass: 10 s obejmuje ${etap}; pełny łańcuch od FOSSGIS i czytelne wyniki`, async () => {
+  test(`Overpass: 10 s obejmuje ${etap}; pełny łańcuch od zapamiętanej instancji i czytelne wyniki`, async () => {
     const pamiec = new Map([['okolica:overpass-sprawny', INSTANCJE_OVERPASS[1].url]]);
     const d = await aplikacjaZSiecia({ search: '?test=true&odstep=0', pamiec });
     ustawPozycjeTestowa(d, '52.2297', '21.0122');
@@ -2552,17 +2552,18 @@ for (const etap of ['nagłówki', 'ciało', 'nietypowy abort']) {
     try {
       d.kliknij('przycisk-dalej-stacje');
       await czekaj(100);
-      assert.deepEqual(adresy, INSTANCJE_OVERPASS.map(i => i.url));
-      assert.deepEqual(czasy, [10_000, 10_000, 10_000]);
+      assert.deepEqual(adresy, [INSTANCJE_OVERPASS[1], ...INSTANCJE_OVERPASS.filter((_, i) => i !== 1)].map(i => i.url));
+      assert.deepEqual(czasy, INSTANCJE_OVERPASS.map(() => 10_000));
       assert.ok(sygnaly.every(s => s.aborted));
       assert.equal(d.pobierz('stacje-ladowanie').hidden, true);
       const proby = d.pobierz('siec-proby').children;
-      assert.equal(proby.length, 3);
-      for (let i = 0; i < 3; i++) {
-        assert.match(proby[i].textContent, new RegExp(`Próba ${i + 1}/3:`));
+      assert.equal(proby.length, INSTANCJE_OVERPASS.length);
+      for (let i = 0; i < INSTANCJE_OVERPASS.length; i++) {
+        assert.match(proby[i].textContent, new RegExp(`Próba ${i + 1}/${INSTANCJE_OVERPASS.length}:`));
         assert.match(proby[i].textContent, /przekroczono czas oczekiwania 10 s/);
       }
-      assert.match(d.pobierz('bledy-stacje').textContent, /FOSSGIS/);
+      assert.match(d.pobierz('siec-proby').textContent, /FOSSGIS/);
+      assert.doesNotMatch(d.pobierz('bledy-stacje').textContent, /FOSSGIS|private.coffee|VK Maps|Adikso/);
       assert.doesNotMatch(d.pobierz('bledy-stacje').textContent, /signal is aborted/);
     } finally { globalThis.setTimeout = oryginalnyTimer; }
   });
@@ -2583,4 +2584,29 @@ test('Overpass: HTTP 403 nie kończy łańcucha; rezerwa dowozi wynik', async ()
   assert.match(d.pobierz('siec-proby').textContent, /FOSSGIS.*HTTP 403/);
   assert.match(d.pobierz('siec-proby').textContent, /private.coffee.*pobrano/);
   assert.equal(d.pobierz('bledy-stacje').hidden, true);
+});
+
+
+test('Overpass: Adikso jako rezerwa dowozi dane i staje się pierwszą próbą kolejnej gry', async () => {
+  const d = await aplikacjaZSiecia({ search: '?test=true&odstep=0' });
+  ustawPozycjeTestowa(d, '52.2297', '21.0122');
+  const polski = 'https://overpass.osm.adikso.net/api/interpreter';
+  const adresy = [];
+  d.window.fetch = async url => {
+    adresy.push(url);
+    if (url !== polski) throw new TypeError('Failed to fetch');
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  d.kliknij('przycisk-dalej-stacje');
+  await czekaj(100);
+  assert.equal(adresy.at(-1), polski);
+  assert.equal(d.pamiec.get('okolica:overpass-sprawny'), polski);
+  assert.equal(d.pobierz('bledy-stacje').hidden, true);
+  const kolejna = await aplikacjaZSiecia({ search: '?test=true&odstep=0', pamiec: new Map([['okolica:overpass-sprawny', polski]]) });
+  ustawPozycjeTestowa(kolejna, '52.2297', '21.0122');
+  const nowe = [];
+  kolejna.window.fetch = async url => { nowe.push(url); return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) }; };
+  kolejna.kliknij('przycisk-dalej-stacje');
+  await czekaj(100);
+  assert.deepEqual(nowe, [polski]);
 });

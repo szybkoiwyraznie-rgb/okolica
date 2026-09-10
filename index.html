@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-59">
-  <script type="module" src="app/app.js?v=m12-59"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-60">
+  <script type="module" src="app/app.js?v=m12-60"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -354,7 +354,6 @@
     <section id="ekran-stacje" class="ekran panel-centralny" hidden aria-labelledby="tytul-stacje">
           <div id="stacje-ladowanie" class="nakladka-ladowanie" role="status" hidden><span>⏳ Pobieram dane sieci drogowej…</span></div>
       <h2 id="tytul-stacje">Stacje w Twojej okolicy</h2>
-      <ol id="siec-proby" class="siec-proby" aria-live="polite" aria-label="Próby pobrania sieci dróg" hidden></ol>
       <p id="stacje-tryb" class="podpowiedz"></p>
       <p id="bledy-stacje" class="bledy" role="alert" hidden></p>
       <div class="stacje-obszar">
@@ -607,8 +606,8 @@
             podkład można całkiem wyłączyć). Do dostawcy trafia tylko obszar
             widoczny na ekranie i powiększenie.</li>
           <li><strong>Sieć drogowa i nazwa miejsca</strong> — z Overpass API
-            (od kamienia M4): zaokrąglony środek i promień Twojej okolicy, bez
-            identyfikatora użytkownika.</li>
+            (FOSSGIS, private.coffee, VK Maps lub Adikso): zaokrąglony środek
+            i promień Twojej okolicy, bez identyfikatora użytkownika.</li>
           <li><strong>Nazwa miejsca — warstwa zapasowa (Nominatim, OSMF)</strong>
             — <label class="sprawdz"><input id="geokodacja-zapasowa" type="checkbox">
             <span>zezwól (domyślnie <strong>wyłączone</strong>)</span></label>.
@@ -763,6 +762,8 @@
       <button id="przycisk-zamknij-informacje" class="warstwa-krzyzyk" type="button" aria-label="Zamknij informacje">✕</button>
       <h2 id="tytul-informacje">Informacje</h2>
       <div class="informacje-tresc">
+      <ol id="siec-proby" class="siec-proby" aria-live="polite" aria-label="Próby pobrania sieci dróg" hidden></ol>
+
 
     <span id="status" role="status" aria-live="polite">M2 — mapa i model rozgrywki: setup, pozycja, stacje, prompt, paczka</span>
     <span class="separator" aria-hidden="true">·</span>

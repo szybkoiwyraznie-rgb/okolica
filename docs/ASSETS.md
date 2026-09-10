@@ -70,6 +70,7 @@ Podkład `brak` ma szablon `null`: zero żądań, zero atrybucji dostawcy.
 | **główna (FOSSGIS)** | `https://overpass-api.de/api/interpreter` | [Polityka](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances): < 10 000 zapytań/dobę i < 1 GB/dobę przy użyciu jednorazowym; **dla aplikacji/strony limity dzielone przez 100** (≈ 100 zapytań i 10 MB/dobę, liczone jako suma ruchu WSZYSTKICH użytkowników); wymagany `User-Agent` **albo** `Referer` identyfikujący aplikację; brak równoległych zapytań; przy `429`/`406` pauza 30 s; serwis bywa przeciążony — „use alternatives if possible". | domyślna |
 | **private.coffee** (dawniej kumi.systems) | `https://overpass.private.coffee/api/interpreter` | bez limitu zapytań (prośba o zgłaszanie dużych projektów z wyprzedzeniem) | zapasowa 1 |
 | **VK Maps** | `https://maps.mail.ru/osm/tools/overpass/api/interpreter` | bez limitów deklarowanych | zapasowa 2 |
+| **Adikso (Polska, wskazany przez właściciela)** | `https://overpass.osm.adikso.net/api/interpreter` | Polityka i zasięg niepotwierdzone; próba HTTPS z sandboxa: błąd TLS. Dodany do prób na wyraźne życzenie właściciela, bez gwarancji dostępności. | zapasowa 3; po sukcesie pierwsza |
 | Geofabrik / Tracestrack / FairwayMapper / Overspan | z kluczem w URL | płatne albo wymagane konto | **odrzucone** (ADR 0001) |
 
 Zasady użycia w kodzie:
@@ -85,12 +86,12 @@ Zasady użycia w kodzie:
    w sekundy). Timeout/brak odpowiedzi to MARTWA instancja: przełączenie
    jest OD RAZU, bez pauzy — nie ma kogo szanować pauzą (2026-09-07).
    Adres instancji, która dowiozła, ląduje w `okolica:overpass-sprawny`
-   i porządkuje kolejność rezerw. **FOSSGIS zawsze pierwszy**, potem
-   zapamiętana sprawna rezerwa i pozostała (ADR 0035). Każda próba ma
+   i daje jej **pierwszeństwo przed wszystkimi pozostałymi** (aneks ADR 0035).
+   Bez zapisu: FOSSGIS → private.coffee → VK Maps → Adikso. Każda próba ma
    **10 s na nagłówki i ciało**, z limitem wykonania QL 8 s. Timeout
    zawsze przełącza dalej, niezależnie od nazwy błędu przeglądarki.
    HTTP 403/404 również przełącza dalej; HTTP 400 kończy błędne zapytanie.
-   Lista prób z numerem, serwerem i wynikiem jest widoczna w panelu stacji.
+   Lista prób z numerem, serwerem i wynikiem jest widoczna wyłącznie w panelu ⓘ Informacje.
 4. Budżet rozmiaru odpowiedzi: dla `R = 10 km` (tryb samochodowy) dzielimy
    bbox na ćwiartki i pobieramy sekwencyjnie (ADR 0005, konsekwencje).
 5. Nazwa miejsca do promptu (`{MIEJSCE}`) pochodzi z **tego samego zapytania**
@@ -159,7 +160,7 @@ kod ↔ ten plik oraz reweryfikacja polityk „na dziś".
 - Klucze `PODKLADY` (`app/konfig.js`) mają wpisy w §1 — egzekwuje kontrakt;
   osobny kontrakt pilnuje, że CARTO nie wróci do kodu (§1.1).
 - `INSTANCJE_OVERPASS` (`app/sieci.js`) == tabela §2 co do URL-i (FOSSGIS →
-  private.coffee → VK Maps); sprawdzenie ręczne (tabela w markdown nie jest
+  private.coffee → VK Maps → Adikso); sprawdzenie ręczne (tabela w markdown nie jest
   parsowana w testach — świadomie, §2 niesie też opisy polityk).
 - Nominatim: opt-in + komunikat w UI (`app/app.js`, „Warstwa zapasowa…")
   == §3 i ADR 0013; endpoint konfigurowalny, cache sesyjny, jedno żądanie.

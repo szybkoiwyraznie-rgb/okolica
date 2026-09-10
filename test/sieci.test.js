@@ -175,7 +175,7 @@ test('kolejnoscInstancji: zapamiętana pierwsza, reszta bez zmian; obcy adres ig
   assert.deepEqual(kolejnoscInstancji('https://obca.example/api').map((i) => i.url), domyslna);
   const vk = INSTANCJE_OVERPASS[2].url;
   assert.deepEqual(kolejnoscInstancji(vk).map((i) => i.url),
-    [INSTANCJE_OVERPASS[0].url, vk, INSTANCJE_OVERPASS[1].url], 'FOSSGIS pierwszy, sprawna rezerwa druga, bez dubla');
+    [vk, ...domyslna.filter(url => url !== vk)], 'zapamiętany sukces pierwszy, pozostałe bez dubli');
 });
 
 test('instancje: łańcuch dokładnie jak ASSETS §2, w kolejności głównej', () => {
@@ -183,6 +183,7 @@ test('instancje: łańcuch dokładnie jak ASSETS §2, w kolejności głównej', 
     'https://overpass-api.de/api/interpreter',
     'https://overpass.private.coffee/api/interpreter',
     'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+    'https://overpass.osm.adikso.net/api/interpreter',
   ]);
   for (const i of INSTANCJE_OVERPASS) assert.match(i.url, /^https:\/\//);
 });

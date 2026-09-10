@@ -47,3 +47,12 @@ test('teren: pomiar poza 50 m zeruje potwierdzenie dojścia', () => {
     assert.equal(ocen([blisko, daleko, blisko, { ...blisko }], stacja).dotarl, true);
   }
 });
+
+
+test('Overpass: lista prób wyłącznie w panelu Informacji', () => {
+  const s = html();
+  const informacje = s.match(/<section id="ekran-informacje"[\s\S]*?<\/section>/)[0];
+  const stacje = s.match(/<section id="ekran-stacje"[\s\S]*?<\/section>/)[0];
+  assert.ok(informacje.includes('id="siec-proby"'));
+  assert.ok(!stacje.includes('id="siec-proby"'));
+});
