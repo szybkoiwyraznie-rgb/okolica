@@ -49,6 +49,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 
 | [0034](0034-uproszczenie-terenowe-i-warstwy.md) | Uproszczenie terenowe: setup, warstwy, dojście 50 m | Zaakceptowana |
 | [0035](0035-overpass-krotkie-proby.md) | Overpass: próby po 10 s, preferencje i diagnostyka w Informacjach | Zaakceptowana |
+| [0036](0036-pasek-podczas-drogi.md) | Pasek podczas drogi, sterowanie w Informacjach, duży panel pytania | Zaakceptowana |
 
 ## Szablon ADR
 

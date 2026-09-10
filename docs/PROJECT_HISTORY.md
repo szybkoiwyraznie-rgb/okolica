@@ -2032,3 +2032,22 @@ Meta AI, ChatGPT i Gemini mają target=_blank oraz rel=noopener noreferrer;
 karta gry nie jest zastępowana. Brama: 687 testów, zgodne szablony,
 0 naruszeń kontrastu. Przekazanie: ta sama gałąź, PR #8 bez merge;
 preview odświeżyć do m12-62.
+
+
+## Pasek podczas drogi — m12-63 / ADR 0036
+
+W drodze centralny panel zastąpiony jednowierszowym paskiem przy dolnej
+krawędzi: „Kto: Imię (125 m) · stacja 1 z 5”. Mapa nieprzygaszona; oko,
+atrybucja i skala powyżej paska. Dotychczasowe sterowanie przenoszone jako
+te same węzły do ⓘ Informacje (pauza, pominięcie, zakończenie, multi itp.).
+Pytanie po dojściu automatycznie wraca do dużego panelu szerokości 90%,
+zamyka Informacje; podgląd oka nadal zachowuje stan. Przygotowanie i wyniki
+bez zmiany układu. Pauza nie zmienia paska w centralny panel.
+
+Brama: **688 testów**, szablony zgodne, **0 naruszeń kontrastu**.
+Chromium 360×640, 320×568, 844×390: pasek 37 px przy samym dole,
+jedna linia, oko nad nim, brak scrolla strony; pauza i symulacja działają
+z Informacji, dojście odsłania pytanie. Zero błędów JS. Próba z fixture,
+nie test GPS w terenie. Narzędzia/screenshoty poza repo w /home/user/.narzedzia.
+Przekazanie: ta sama gałąź i PR #8, bez merge. Preview na porcie 8000,
+odświeżyć do m12-63; sprawdzić pasek i dojście na telefonie.

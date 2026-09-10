@@ -79,10 +79,10 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
       toggle(c, czyNa) { if (czyNa) this.dodane.add(c); else this.dodane.delete(c); },
       contains(c) { return this.dodane.has(c); },
     },
-    appendChild(dziecko) { this.children.push(dziecko); return dziecko; },
+    appendChild(dziecko) { if (dziecko.parentNode) dziecko.parentNode.removeChild(dziecko); this.children.push(dziecko); dziecko.parentNode = this; return dziecko; },
     removeChild(dziecko) {
       const i = this.children.indexOf(dziecko);
-      if (i >= 0) this.children.splice(i, 1);
+      if (i >= 0) { this.children.splice(i, 1); dziecko.parentNode = null; }
       return dziecko;
     },
     /** Jak w przeglądarce (Chrome 86+): podmiana całej listy dzieci. */

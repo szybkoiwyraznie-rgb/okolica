@@ -845,3 +845,18 @@ body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
 #stacje-ladowanie { position: static; padding: 8px; margin-bottom: 8px; }
 .siec-proby { padding-left: 24px; font-size: 14px; overflow-wrap: anywhere; }
 .siec-proby li { margin-bottom: 6px; }
+
+/* Droga: tylko jednowierszowy pasek przy dolnej krawędzi. Pytania bez zmian. */
+body.gra-w-drodze #ekran-gra:not([hidden]) {
+  top: auto; bottom: 0; left: 0; right: 0; transform: none;
+  width: 100%; max-width: none; max-height: none; margin: 0;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-radius: 0; border-width: 1px 0 0; box-shadow: none;
+  overflow: hidden;
+}
+#gra-pasek { margin: 0; white-space: nowrap; font-size: 14px; line-height: 20px; overflow-x: auto; }
+body.gra-w-drodze #przycisk-podejrzyj-mape { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+body.gra-w-drodze #mapa-gra .mapa-atrybucja { bottom: calc(36px + env(safe-area-inset-bottom, 0px)); }
+body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+#informacje-gra { margin-bottom: 16px; }
+#informacje-gra h2 { padding-right: 48px; }

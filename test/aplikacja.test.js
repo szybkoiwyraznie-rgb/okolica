@@ -2631,3 +2631,29 @@ test('Informacje: ikonka wskazuje otwarcie, zamknięcie i zachowuje stan podczas
   d.kliknij('przycisk-informacje');
   d.kliknij('przycisk-ranking'); sprawdz(false);
 });
+
+test('droga: pasek na mapie, sterowanie w Informacjach, po dojściu duży panel pytania', async () => {
+  const { dom } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('gra-slot-sterowanie'));
+  dom.kliknij('przycisk-start-odcinka');
+  assert.equal(dom.pobierz('gra-pasek').hidden, false);
+  assert.match(dom.pobierz('gra-pasek').textContent, /^Kto: Gracz 1 \(\d+ m\) · stacja 1 z 3$/);
+  assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('informacje-gra'));
+  assert.equal(dom.document.body.classList.contains('gra-w-drodze'), true);
+  assert.equal(dom.pobierz('przygaszenie-mapy').hidden, true, 'bez przygaszenia mapy podczas marszu');
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('informacje-gra').hidden, false);
+  dom.kliknij('przycisk-pauza');
+  assert.equal(dom.pobierz('przycisk-pauza').getAttribute('aria-pressed'), 'true');
+  assert.equal(dom.pobierz('gra-pasek').hidden, false, 'pauza nie zmienia układu drogi');
+  dom.kliknij('przycisk-pauza');
+  await dojdzSymulacja(dom);
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false);
+  assert.equal(dom.pobierz('gra-pasek').hidden, true);
+  assert.equal(dom.document.body.classList.contains('gra-w-drodze'), false);
+  assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('gra-slot-sterowanie'));
+  assert.equal(dom.pobierz('ekran-informacje').hidden, true, 'pytanie pojawia się automatycznie także po użyciu Informacji');
+  assert.equal(dom.pobierz('informacje-gra').hidden, true);
+  assert.equal(dom.pobierz('przygaszenie-mapy').hidden, false);
+});

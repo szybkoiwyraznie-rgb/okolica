@@ -48,6 +48,8 @@ danych jest dwustopniowe i rusza tylko klucze `okolica:*`. GPS startuje automaty
 W trybie testowym pozycję wskazuje się na mapie; w grze zostaje symulacja
 dojścia do stacji. GPS i symulacja używają tej samej reguły ≤50 m.
 Setup, lista stacji i pytania są przewijanymi panelami nad przygaszoną mapą.
+Podczas drogi zostaje tylko jednowierszowy pasek na dole (gracz, dystans, stacja),
+a sterowanie jest w ⓘ Informacje; po dojściu wraca duży panel pytania (ADR 0036).
 Oko w prawym dolnym rogu chowa je bez przerywania procesu lub gry.
 Wybory nowego setupu: 7, 12, dorośli; tematy alfabetyczne z Ciekawostkami,
 bez Sportu i Jedzenia. Stare paczki i zapisy pozostają czytelne (ADR 0034).
