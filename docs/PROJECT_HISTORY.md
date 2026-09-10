@@ -2051,3 +2051,54 @@ z Informacji, dojście odsłania pytanie. Zero błędów JS. Próba z fixture,
 nie test GPS w terenie. Narzędzia/screenshoty poza repo w /home/user/.narzedzia.
 Przekazanie: ta sama gałąź i PR #8, bez merge. Preview na porcie 8000,
 odświeżyć do m12-63; sprawdzić pasek i dojście na telefonie.
+## Sesja 2026-09-10c — audyt PR #8 (gałąź arena/01a08d11-okolica)
+
+Audyt scalonego PR #8 (squash `5614019`, 42 pliki, +1420/−1538), plik po pliku:
+
+- **`app/geo.js`** — `progDojsciaM()` zwraca stałe 50 m (ADR 0034); `czyDotarl`
+  liczy dwa kolejne trafienia ≤ 50 m, pomiar poza progiem przerywa serię.
+  Zgodne z aneksem ADR 0034 (m12-58). Sygnatura traci parametr `accuracyM` —
+  spójnie z ADR 0034 pkt 2 („accuracy nie bierze udziału"), który zastępuje
+  filozofię „parametr zostaje na przyszłość" z aneksu ADR 0004.
+- **`app/pozycja.js`** — usunięte stany `niedokladny`/`bezDokladnosci`, kod P05
+  i pole `accuracyM` w wynikach; komunikaty odchudzone. Zgodne z ADR 0034 pkt 2
+  (stare pola dokładności tolerowane przy odczycie — zapisy nie są przeliczane).
+- **`app/konfig.js`** — `WIEK_SETUP` (7/12/dorośli), `TEMATY_SETUP`
+  (alfabetycznie, z Ciekawostkami, bez Sportu/Jedzenia) + 
+  `konfiguracjaNowegoSetupu` (10→12, 15→dorosli; usunięte tematy wypadają,
+  puste tematy wracają do domyślnych). Zgodne z ADR 0034 pkt 1; kanon odczytu
+  (WIEK/TEMATY) nietknięty — stare paczki i zapisy czytane dalej.
+- **`app/sieci.js`** — czwarta instancja Adikso (ADR 0035 aneks), limit 10 s
+  na próbę, QL 8 s, przełączanie po 403/404/406/429/5xx, 400 kończy;
+  zapamiętana sprawna instancja pierwsza. Zgodne z ADR 0035 + aneks m12-60.
+- **`app/mapa.js`** — `ustalibujWidok` przy clampie zoomu przelicza x/y wokół
+  środka panelu przez `zmienSkale` (jak gest) — naprawia dryf środka mapy
+  z audytu PR #7 / LESSONS L44. Podpis wymaga `rozmiar`; wywołanie w `rysuj()`
+  przekazuje `stan.rozmiar`.
+- **`sw.js`** — `czyTrafSieDoCache` przyjmuje wyłącznie sukcesy basic/cors;
+  opaque pomijane (status 0, nieczytelne ciało — bez pozornej walidacji blob,
+  korekta L44). Skutek jawny i udokumentowany: podkład offline nie jest
+  gwarantowany (ROADMAP/handoff mówią to wprost).
+- **`app/app.js` + `index.html` + `styles.css`** — centralny panel 90% nad
+  przygaszoną mapą, oko (podgląd), stopka → ⓘ Informacje, sterowanie drogą
+  przenoszone TYMI SAMYMI węzłami (ADR 0036), ekran pozycji bez GPS/ręcznych
+  pól/symulacji 250 m, GPS automatyczny, tap mapy w trybie testowym przez
+  `fixZPozycji(..., ZRODLA_FIXA.symulacja)`, instrukcja promptu zwinięta
+  z linkami `target=_blank rel="noopener noreferrer"`. Zgodne z ADR 0034/0036.
+- **Cache-busting** `?v=m12-63` jednolity w całym grafie (kontrakt pilnuje;
+  LESSONS L29). `WERSJA_SW` podniesiona razem z `?v=`.
+- **Testy** — nowy `test/teren.test.js` (granice 50/50,001 m, dwie trafienia,
+  zerowanie serii, brak starych kontrolek, lista prób wyłącznie w Informacjach,
+  nagłówek promptu); pozostałe zaktualizowane do nowych reguł. Bramka na main:
+  **688/688 zielone** (potwierdzone na starcie sesji), szablony zgodne,
+  audyt kontrastu **0 naruszeń**.
+- **Dokumentacja** — PROTOKOL §4/§5 (kanon odczytu vs wybór setupu), ASSETS
+  (Adikso, limity 10 s/8 s), ARCHITECTURE, ROADMAP, LESSONS (korekta L44),
+  ADR 0034/0035/0036 + rejestr, HANDOFF 2026-09-10. Spójne z kodem.
+
+Usterek blokujących brak. Uwagi (nieblokujące): drobna pusta linia po
+`return` w `stanDojscia` (kosmetyka); warto pamiętać, że przy `accuracy`
+ponownie pojawiającym się w przyszłych decyzjach sygnatura `progDojsciaM()`
+jest już bez parametru — zmiana polityki wymaga jawnego ADR.
+
+
