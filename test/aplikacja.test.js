@@ -278,7 +278,7 @@ test('tryb testowy z adresu: ?tryb=test nie wznawia GPS po powrocie z tła', asy
 test('GPS: limit historii i próg dokładności są z pozycja.js, nie wpisane w UI', () => {
   // kontrakt na stałe: gdyby UI zaczął mieć własny próg, rozjechałby się z regułą dojścia
   assert.equal('maxAccuracyM' in GRANICE, false);
-  assert.equal(GRANICE.wymaganeTrafnienia, 1);
+  assert.equal(GRANICE.wymaganeTrafnienia, 2);
 });
 
 /* ------------------------------------------------------------- stan z pamięci */

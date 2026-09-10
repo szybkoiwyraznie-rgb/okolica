@@ -12,10 +12,11 @@
    Ostatni setup z wiekiem 10 przechodzi na 12, z 15 na dorosłych;
    usunięte tematy nie przechodzą do nowego setupu. Zapis trwającej gry
    nie jest przeliczany. Schemat PYT pozostaje 1.0 (pole tematu z kanonu).
-2. Dojście: pojedyncza poprawna pozycja w odległości ≤50 m otwiera pytania.
+2. Dojście: dwa kolejne poprawne pomiary w odległości ≤50 m otwierają pytania.
+   Pomiar poza promieniem zeruje potwierdzenie.
    `accuracy` z GPS nie bierze udziału w decyzji, komunikatach ani rysowaniu
-   koła. Nie ma ostrzeżenia o dokładności, progu dokładności ani debounce
-   dwóch fixów. Nieprawidłowe współrzędne nadal są odrzucane.
+   koła. Nie ma ostrzeżenia o dokładności ani progu dokładności.
+   Dwa pomiary potwierdzają dojście niezależnie od wartości accuracy. Nieprawidłowe współrzędne nadal są odrzucane.
    Zastępuje kryterium i raportowanie z ADR 0004; ADR 0029 (bez ręcznego
    zaliczania) pozostaje. Stare pola dokładności są tolerowane przy odczycie.
 3. Setup i karty odpowiedzi: centralny panel nad przygaszoną mapą,
@@ -42,3 +43,14 @@ każdej accuracy, usunięte kontrolki, przełączniki warstw oraz weryfikację
 układu w Chromium mobile w pionie i poziomie. Bez nowych dostawców danych,
 frameworków, zależności ani zmian mostu. Próba w przeglądarce nie zastępuje
 kolejnego testu terenowego właściciela.
+
+
+## Aneks 2026-09-10 — potwierdzenie dojścia
+
+Po rozważeniu ochrony przed pojedynczym skokiem pozycji właściciel zatwierdził
+**dwa kolejne pomiary ≤50 m**, zamiast pierwotnego jednego. Nierówność została
+jawnie potwierdzona: równe lub mniej niż 50 m. Odczyt poza promieniem przerywa
+serię; trzeba ponownie zebrać dwa trafienia. Nie przywracamy oceny accuracy.
+Dotyczy GPS i symulacji, również podczas podglądu mapy. Brak dodatkowego
+odliczania czasu: czekamy na następny pomiar. Profil GPS przy stacji pozostaje
+aktywny jak dotychczas; częstotliwość faktycznych odczytów zależy od urządzenia.

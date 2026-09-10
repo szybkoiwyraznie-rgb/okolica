@@ -126,8 +126,8 @@ test('stanDojscia: pusta historia nie zapala stacji i nie rzuca wyjątkiem', () 
 });
 
 test('stanDojscia: dystans bez diagnoz dokładności', () => {
-  const blisko = stanDojscia(historiaZFixturea(3), STACJA);
-  assert.equal(blisko.dotarl, true, 'pojedynczy fix wystarcza');
+  const blisko = stanDojscia(historiaZFixturea(6), STACJA);
+  assert.equal(blisko.dotarl, true, 'dwa kolejne fixy wystarczają');
   assert.match(blisko.komunikat, /Jesteś na miejscu/);
   const daleko = stanDojscia(historiaZFixturea(2), STACJA);
   assert.equal(daleko.dotarl, false);
@@ -353,12 +353,12 @@ test('integracja: dojście z fixture’a kończy odcinek w rozgrywce', async () 
     ostatni = fixZFixturea(fix);
     if (stanDojscia(historia, STACJA).dotarl) { czasDojscia = fix.t; break; }
   }
-  assert.equal(czasDojscia, 10_000, 'pierwszy fix w promieniu 50 m');
+  assert.equal(czasDojscia, 25_000, 'drugie kolejne trafienie po odbiciu poza 50 m');
 
   const { stan: po, usterki } = zakonczOdcinek(wTrakcie, { czasMs: czasDojscia, trybDojscia: TRYBY_DOJSCIA.gps, fix: ostatni });
   assert.deepEqual(usterki, []);
-  assert.equal(po.odcinki[0].koniecMs, 10_000, 'znacznik dojścia zapisany (czasu odcinka nie liczymy od Partii 2)');
-  assert.equal(po.odcinki[0].accuracyM, 12);
+  assert.equal(po.odcinki[0].koniecMs, 25_000, 'znacznik dojścia zapisany (czasu odcinka nie liczymy od Partii 2)');
+  assert.equal(po.odcinki[0].accuracyM, 10);
   assert.ok(po.odcinki[0].odlegloscKoncowaM <= 50, `odległość końcowa ${po.odcinki[0].odlegloscKoncowaM} m mieści się w progu`);
 });
 

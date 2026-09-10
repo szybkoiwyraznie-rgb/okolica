@@ -1959,3 +1959,16 @@ Przeczytano lekturę startową; budżet 65 458/100 000. Bazowe `npm test`:
   instrukcja; dojście podczas podglądu i powrót do pytania. Zero błędów JS.
   Próby z fixture/fallbackiem sieci, nie potwierdzenie rzeczywistej gry terenowej.
 - Handoff zaktualizowany; PR #8 bez scalenia, kryteria właściciela nadal otwarte.
+
+
+### Korekta 2026-09-10 — dwa kolejne pomiary ≤50 m (m12-58)
+
+Właściciel przyjął rekomendację potwierdzania dojścia drugim pomiarem i jawnie
+potwierdził nierówność ≤50 m. Zmieniono domyślne kryterium geo/pozycja i tekst
+startu odcinka, bez przywracania oceny accuracy. Regresje najpierw czerwone:
+jeden fix nie wystarcza, dwa wystarczają, pomiar >50 m przerywa serię.
+Poprzednie wdrożenie jednego fixa opisane wyżej jest zastąpione aneksem ADR 0034.
+
+Weryfikacja m12-58: pełna brama **679 testów**, zgodne szablony i **0 naruszeń
+kontrastu**. Testy rozgrywki i dojścia podczas podglądu mapy przechodzą.
+Do potwierdzenia na telefonie pozostaje czas oczekiwania na drugi odczyt GPS.

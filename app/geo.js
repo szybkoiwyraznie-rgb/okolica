@@ -324,8 +324,8 @@ export function parsujWspolrzedne(surowyLat, surowyLon = '') {
 /** ADR 0034: stały dystans dojścia, niezależny od accuracy. */
 export function progDojsciaM() { return 50; }
 
-/** Pojedynczy najnowszy fix w promieniu 50 m wystarcza. */
-export function czyDotarl(historia, stacja, { wymaganeTrafnienia = 1 } = {}) {
+/** Dwa kolejne fixy w promieniu 50 m; pomiar poza promieniem przerywa serię. */
+export function czyDotarl(historia, stacja, { wymaganeTrafnienia = 2 } = {}) {
   if (!Array.isArray(historia) || historia.length === 0) return { dotarl: false, trafienia: 0, progM: 0, dystansM: Infinity };
   const ostatni = historia[historia.length - 1];
   const progM = progDojsciaM();

@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-57';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-58';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -54,7 +54,7 @@ export function profilBaterii({ poprzedni = 'dokladny', dystansM = null } = {}) 
 /** Granice reguł pozycji. Zmiana = zmiana kodu i testu, nie decyzja sesji. */
 export const GRANICE = Object.freeze({
   /** ADR 0034: pojedynczy fix w promieniu 50 m zapala stację. */
-  wymaganeTrafnienia: 1,
+  wymaganeTrafnienia: 2,
   /** Ile fixów trzymamy w pamięci (historia dojścia + rysowanie śladu na mapie, M2). */
   historiaFixow: 40,
   /** Domyślny rozrzut symulowanego GPS — tyle, ile realnie daje telefon w otwartym terenie. */
