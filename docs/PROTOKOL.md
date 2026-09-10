@@ -314,6 +314,9 @@ w tych wariantach leżą już na Drive i muszą dać się otworzyć.
 
 ## 4. Kategorie wiekowe i wymagania trudności
 
+Od 2026-09-10 (ADR 0034) setup pokazuje tylko **7, 12, dorośli**.
+10 i 15 poniżej pozostają wyłącznie w kanonie odczytu starych paczek.
+
 Klucz kategorii jest wartością pola `wiek`; tekst z kolumny „opis trudności"
 trafia do promptu jako `{OPIS_TRUDNOSCI}`. **Obniżenie trudności nie zwalnia
 z wymogu źródła** (ADR 0008 pkt 7) — w wariancie z fact-check; wariant bez
@@ -329,12 +332,18 @@ weryfikacji źródeł nie wymaga wcale (ADR 0032).
 
 ## 5. Kanon tematów
 
+Od 2026-09-10 (ADR 0034) nowy setup pokazuje alfabetycznie: Architektura,
+Ciekawostki, Geografia, Historia, Kultura, Legendy, Ludzie, Nauka, Przyroda;
+„Dopisz sam” jest na końcu. Sport i Jedzenie pozostają wyłącznie dla zgodności
+odczytu paczek, nie w wyborze nowej gry. Tabela opisuje pełny kanon odczytu.
+
 Klucze: małe litery, myślniki, bez spacji. Nowy temat = dopisanie do tej
 tabeli, do `TEMATY` w `app/konfig.js` i do opisu w promptcie — w tym samym
 commicie (AGENTS.md §3).
 
 | Klucz | Etykieta | Opis do promptu |
 | --- | --- | --- |
+| `ciekawostki` | Ciekawostki | zaskakujące fakty, nietypowe miejsca i mało znane historie okolicy |
 | `historia` | Historia | dzieje miejsca, daty, wydarzenia, dawne nazwy, ślady historii w terenie |
 | `przyroda` | Przyroda | drzewa, rośliny, zwierzęta, wody, parki, formy terenu, ochrona przyrody |
 | `architektura` | Architektura | budynki, style, autorzy projektów, detale, układ ulic i zabudowy |

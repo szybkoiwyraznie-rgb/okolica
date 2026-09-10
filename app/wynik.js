@@ -9,7 +9,7 @@
  * Prywatność (ADR 0013): tekst wyniku NIE niesie treści pytań ani
  * współrzędnych — stacje występują jako NUMERY, miejsce jako nazwa.
  */
-import { STANY_ODCINKA, TRYBY_DOJSCIA } from './rozgrywka.js?v=m12-54';
+import { STANY_ODCINKA, TRYBY_DOJSCIA } from './rozgrywka.js?v=m12-55';
 
 /** Metry → „850 m" albo „1,6 km" (polski przecinek, bez locale — deterministycznie). */
 export function dystansTekst(metry) {

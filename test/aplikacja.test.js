@@ -27,7 +27,7 @@ import {
   parsujOdpowiedz,
   upraszczajDaneDoCache,
 } from '../app/sieci.js';
-import { DOMYSLNE, PODKLADY, TEMATY, TRYBY, domyslnaKonfiguracja } from '../app/konfig.js';
+import { DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
 import { maxZoomPodkladu, widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
 import { dopasujZoomDoPromienia } from '../app/geo.js';
@@ -128,7 +128,7 @@ test('bootstrap: start() wpisuje numer budowy do stopki, nie zostawia placeholde
 
 test('bootstrap: lista trybów i tematów jest wyrenderowana z kanonu', () => {
   assert.equal(pobierz('lista-trybow').children.length, Object.keys(TRYBY).length, 'trzy tryby ruchu');
-  assert.equal(pobierz('lista-tematow').children.length, Object.keys(TEMATY).length, 'dziesięć tematów z kanonu');
+  assert.equal(pobierz('lista-tematow').children.length, Object.keys(TEMATY_SETUP).length, 'dziesięć tematów z kanonu');
 });
 
 test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
@@ -145,7 +145,7 @@ test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
 test('setup: skróty „wszystkie/żadne" ruszają cały kanon tematów, „Dopisz sam" jest wyjątkiem', () => {
   const lista = pobierz('lista-tematow');
   const chipy = [...lista.children].map((e) => e.children[0]);
-  assert.equal(chipy.length, Object.keys(TEMATY).length, 'po checkboxie na temat z kanonu');
+  assert.equal(chipy.length, Object.keys(TEMATY_SETUP).length, 'po checkboxie na temat z kanonu');
 
   dom.kliknij('przycisk-tematy-wszystkie');
   for (const input of chipy) {
