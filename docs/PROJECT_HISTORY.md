@@ -1837,3 +1837,53 @@ workspace, a egress jest zablokowany (L3), więc nie dało się ich odtworzyć.
 Zmiany wizualne (A1–A3, F3) sprawdzono testami kontraktu na CSS i analizą
 kaskady, nie zrzutem ekranu — potwierdzenie wyglądu zostaje po stronie
 właściciela. Serwer podglądu (`npm run serwer`, port 8000) był uruchomiony.
+
+## 2026-09-09 (sesja trzecia) — pięć zgłoszeń właściciela z terenu + audyt PR #6
+
+**Zlecenie:** pięć zgłoszeń: (1) setup — ikona select-all/deselect-all przy
+„Tematy pytań" + usunięcie przycisku „Dane i prywatność" z ekranu 1; (2)
+pauza 30 s między serwerami Overpass za długa; (3) ekran promptu — usunięcie
+„Zapisz jako plik", nowe opisy trybu; (4) ponowne: pusta mapa po „Wróć na
+początek" („za duży zoom, oddalenie pokazuje mapę"); (5) rankingi — po 8 s
+timeout tabela pokazuje „Most Drive nie ma jeszcze ani jednej zakończonej gry"
+(błąd = brak danych, nie pusty most).
+
+**Audyt PR #6 (obowiązkowy, AGENTS.md §2):** PR #6 (`4168aa9`, main)
+przeszedł bez uwag do logiki — jeden rozjazd dokumentacja↔kod: docblock
+`progDojsciaM` w `app/geo.js` obiecywał przycisk „jestem na miejscu" (ADR 0004
+pkt 5), którego ADR 0029 usunął 2026-09-08. Naprawiony w tej sesji.
+
+**Co zrobiono:**
+
+- **(1)** `index.html`: pod legendą „Tematy pytań" przyciski ⊞ wszystkie /
+  ⊟ żadne; usunięty `#przycisk-prywatnosc` (dostęp ze stopki zostaje).
+  `ustawWszystkieTematy` rusza cały kanon poza „Dopisz sam"; stan czytany
+  wspólnym `tematyZListy` (children, nie querySelectorAll — LESSONS L19).
+  Kontrakt pinuje brak przycisku; test zachowania skrótów.
+- **(2)** `POLITYKA.odstepMs: 30_000 → 1_000` — krótka pauza grzecznościowa
+  po 429/406/5xx; przełączenie po martwej instancji zostaje od razu.
+  Aneks ADR 0005, ASSETS §2 pkt 3 (wiersz FOSSGIS = polityka trzeciej strony,
+  nietknięty), ARCHITECTURE, piny testów. `?odstep=0` nietknięte.
+- **(3)** usunięty `#przycisk-pobierz-prompt` + handler; `prompt-tryb-opis`
+  mówi tekstami zlecenia słowo w słowo (poprzednie mieszały wersję szablonu
+  w opisie dla gracza). `pobierzPlik` zostaje (PNG + eksport wyniku).
+- **(4)** headless (2 pełne gry + dokładna sekwencja zgłoszenia: tap mapy na
+  z19 jako pierwszy fix) — **nie odtwarza** pustej mapy: każdy szlak zooma
+  clampuje do maxZoom podkładu, kafelki planowane w zakresie. Naprawiony
+  mechanizm, który zgłoszenie tłumaczy: SW cache-first + opaque (status
+  niewidoczny) — chwilowy 404/5xx serwera kafelków lądował w cache „kafelkiem"
+  i był oddawany przy każdej następnej grze w tej okolicy (LESSONS L44).
+  `sw.js` cache-uje opaque tylko gdy ciało dekoduje się jako obraz;
+  `mapa.ustalibujWidok` w `rysuj()` wciąga widok w zakres zoomu podkładu
+  (drugie dno pod hipotezą „silnik jeszcze przybliżał"). Uwaga do weryfikacji
+  terenowej: jeśli pusta mapa wróci, wersja budowy w stopce + pasek skali na
+  pustej mapie powiedzą, który to stan.
+- **(5)** `STAN.rankingWiersze`: `null` = brak danych (pobieranie nie
+  powiodło się / brak mostu / odpowiedź nieczytelna), `[]` = pusty most
+  potwierdzony. Tabela i „Moje gry" przy `null` mówią „Wyniki nie zostały
+  pobrane — komunikat w pasku stanu" i wprost, że to nie jest potwierdzenie
+  braku gier. Porażka odświeżenia nie nadpisuje dobrych danych.
+
+**Brama:** `npm test` 691/691 (bazowo 687), szablony zsynchronizowane
+(`npm run check` w bramie), cache-bust `m12-51 → m12-52` (44 miejsca +
+`WERSJA_SW`), LESSONS L44.
