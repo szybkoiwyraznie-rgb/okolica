@@ -29,7 +29,7 @@ import {
 } from '../app/sieci.js';
 import { DOMYSLNE, PODKLADY, TEMATY, TRYBY, domyslnaKonfiguracja } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
-import { widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
+import { maxZoomPodkladu, widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
 import { dopasujZoomDoPromienia } from '../app/geo.js';
 import { atrapaGeolokalizacji, zainstalujDom } from './helpers/dom.js';
 
@@ -1734,6 +1734,39 @@ test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, w
   const snapshot = JSON.parse(pamiec.get('okolica:gra:' + pamiec.get('okolica:gra-aktywna')));
   assert.equal(snapshot.rozgrywka.faza, 'koniec');
   assert.equal(snapshot.rozgrywka.odcinki.every((o) => o.stan === 'zakonczony' && o.trybDojscia === 'gps'), true, 'wszystkie odcinki zamknięte dojściem GPS');
+});
+
+/**
+ * Zgłoszenie właściciela (2026-09-09, ponowne): „Wróć na początek — nowa gra"
+ * po wynikach → pusty ekran bez mapy („za duży zoom, oddalenie pokazuje mapę").
+ * Pełna droga w trybie testowym: kompletna gra (symulacja GPS) → wynik →
+ * „Wróć na początek" — mapa na spodzie (`#mapa-pozycja`) rysuje kafelki
+ * w zakresie zoomu podkładu. Samonaprawa widoku przy rysowaniu:
+ * `app/mapa.js` `ustalibujWidok` (zgłoszenie 4).
+ */
+test('zgłoszenie 4: pełna gra → „Wróć na początek" — mapa narysowana z kafelkami, nie pusta', async () => {
+  const { dom, paczka } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  for (const numerStacji of [1, 2, 3]) {
+    const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
+    if (numerStacji === 1) dom.kliknij('przycisk-start-odcinka');
+    await dojdzSymulacja(dom);
+    assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, `stacja ${numerStacji}: pytanie po dojściu`);
+    kliknijOdpowiedz(dom, pytanie.poprawna);
+    dom.kliknij('przycisk-nastepna-stacja');
+  }
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'panel końca');
+  dom.kliknij('przycisk-nowa-gra'); // „🏠 Wróć na początek — nowa gra"
+  assert.equal(dom.document.body.dataset.ekran, 'mapa', 'wraca na ekran mapy');
+  const kafelki = dom.pobierz('mapa-pozycja-kafelki').children;
+  assert.ok(kafelki.length > 0, 'kafelki po „Wróć na początek" — nie pusta mapa');
+  for (const obraz of kafelki) {
+    const adres = obraz.getAttribute('href') ?? '';
+    const m = /\/(\d+)\/\d+\/\d+\.png/.exec(adres);
+    assert.ok(m, `adres kafelka: ${adres}`);
+    const z = Number(m[1]);
+    assert.ok(z >= 0 && z <= maxZoomPodkladu('osm'), `z=${z} w zakresie podkładu`);
+  }
 });
 
 test('M6/R7: utrata zasięgu w trakcie gry — zero żądań sieciowych, gra żyje z pamięci', async () => {

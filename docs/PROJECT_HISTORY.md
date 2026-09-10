@@ -1887,3 +1887,14 @@ pkt 5), którego ADR 0029 usunął 2026-09-08. Naprawiony w tej sesji.
 **Brama:** `npm test` 691/691 (bazowo 687), szablony zsynchronizowane
 (`npm run check` w bramie), cache-bust `m12-51 → m12-52` (44 miejsca +
 `WERSJA_SW`), LESSONS L44.
+
+### Dopełnienie sesji (po otwarciu PR #7)
+
+Audyt własnego PR #7 (protokół: audyt przed mergem) wychwycił trzy
+niedokładności: `ustalibujWidok` przepuszczał `skala: Infinity` (dokładnie
+stan „pustej mapy" — `ogranicz` i tak go leczy, wczesny return zabrany),
+docblock `progDojsciaM` cytował ADR 0015 pkt 2 zamiast pkt 3–4, komentarz
+przy „Zapisz jako plik" mówił o nieistniejącym „PNG podglądu stacji".
+Dopisany test końcowego scenariusza zgłoszenia 4 na poziomie aplikacji:
+pełna gra (symulacja GPS, 3 gracze) → „Wróć na początek" → mapa na spodzie
+narysowana z kafelkami w zakresie zoomu podkładu. Brama: 692/692.
