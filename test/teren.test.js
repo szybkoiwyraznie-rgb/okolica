@@ -56,3 +56,8 @@ test('Overpass: lista prób wyłącznie w panelu Informacji', () => {
   assert.ok(informacje.includes('id="siec-proby"'));
   assert.ok(!stacje.includes('id="siec-proby"'));
 });
+
+
+test('prompt: nagłówek wyraźnie zachęca do otwarcia instrukcji', () => {
+  assert.ok(html().includes('<summary id="tytul-prompt">Prompt dla modelu AI (KLIKNIJ żeby zobaczyć instrukcję)</summary>'));
+});

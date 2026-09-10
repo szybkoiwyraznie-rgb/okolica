@@ -32,7 +32,7 @@
    symulacji 250 m. GPS startuje automatycznie. W trybie testowym pozostaje
    tap mapy do wskazania pozycji i symulacja dojścia w samej rozgrywce.
 6. Instrukcja promptu domyślnie zwinięta, rozwijana nagłówkiem
-   „→ Prompt dla modelu AI (instrukcja)”. Linki Meta AI, ChatGPT i Gemini
+   „Prompt dla modelu AI (KLIKNIJ żeby zobaczyć instrukcję)”. Linki Meta AI, ChatGPT i Gemini
    otwierają nową kartę bez dostępu do opener. Treść promptów i warianty
    fact-check pozostają bez zmian poza nowym tematem w kanonie.
 
