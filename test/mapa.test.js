@@ -92,33 +92,24 @@ test('środek widoku ląduje dokładnie w środku panelu', () => {
   assert.equal(ekran.y, PANEL.wysokosc / 2);
 });
 
-test('ustalibujWidok: zoom poza zakresem podkładu wraca do zakresu, środek zostaje', () => {
-  // Zgłoszenie właściciela (2026-09-09): pusta mapa „za dużym zoomem". Drugie
-  // dno: nawet gdyby widok poza zakresem się pojawił, rysowanie go wciąga.
-  const zaBlisko = widokNaSrodek({ ...WARSZAWA, zoom: 25, rozmiar: PANEL });
-  const po = ustalibujWidok(zaBlisko, 'osm');
-  assert.ok(Math.abs(zoomWidoku(po) - maxZoomPodkladu('osm')) < 1e-9, `z25 → z${maxZoomPodkladu('osm')}`);
-  assert.equal(po.x, zaBlisko.x, 'środek nietknięty (x)');
-  assert.equal(po.y, zaBlisko.y, 'środek nietknięty (y)');
-
-  const zaDaleko = widokNaSrodek({ ...WARSZAWA, zoom: 0.5, rozmiar: PANEL });
-  assert.ok(Math.abs(zoomWidoku(ustalibujWidok(zaDaleko, 'osm')) - ZOOM_MIN) < 1e-9, `pół-zoom → ZOOM_MIN`);
-
-  const wZakresie = widokNaSrodek({ ...WARSZAWA, zoom: 17, rozmiar: PANEL });
-  assert.equal(ustalibujWidok(wZakresie, 'osm'), wZakresie, 'w zakresie — ten sam obiekt, bez przepisywania');
-
-  assert.ok(
-    Math.abs(zoomWidoku(ustalibujWidok(zaBlisko, 'opentopo')) - maxZoomPodkladu('opentopo')) < 1e-9,
-    'limit zależy od podkładu (opentopo = 17)',
-  );
-
-  // `skala: Infinity` przechodzi `sprawdzWidok` — samonaprawa musi go wciągnąć,
-  // nie przepuścić (przepuszczenie = dokładnie ta „pusta mapa").
-  const nieskonczonaSkala = { x: 42, y: 7, skala: Infinity };
-  const poNieskonczonosci = ustalibujWidok(nieskonczonaSkala, 'osm');
-  assert.ok(Math.abs(zoomWidoku(poNieskonczonosci) - maxZoomPodkladu('osm')) < 1e-9, 'Infinity → maxZoom podkładu');
-  assert.equal(poNieskonczonosci.x, 42);
-  assert.equal(poNieskonczonosci.y, 7);
+test('ustalibujWidok: clamp zoomu zachowuje środek geograficzny, nie przesunięcie pikselowe', () => {
+  for (const rozmiar of [PANEL, { szerokosc: 740, wysokosc: 360 }]) {
+    for (const podklad of Object.keys(PODKLADY)) {
+      for (const zoom of [0.5, 17, 25]) {
+        const przed = widokNaSrodek({ ...WARSZAWA, zoom, rozmiar });
+        const po = ustalibujWidok(przed, podklad, rozmiar);
+        const srodek = srodekWidoku(po, rozmiar);
+        assert.ok(Math.abs(srodek.lat - WARSZAWA.lat) < 1e-8, 'szerokość geograficzna bez zmian');
+        assert.ok(Math.abs(srodek.lon - WARSZAWA.lon) < 1e-8, 'długość geograficzna bez zmian');
+        const oczekiwanyZoom = Math.max(ZOOM_MIN, Math.min(zoom, maxZoomPodkladu(podklad)));
+        assert.ok(Math.abs(zoomWidoku(po) - oczekiwanyZoom) < 1e-9);
+        if (zoom === oczekiwanyZoom) assert.equal(po, przed, 'w zakresie ten sam obiekt');
+      }
+    }
+  }
+  const po = ustalibujWidok({ x: 42, y: 7, skala: Infinity }, 'osm', PANEL);
+  assert.ok(Number.isFinite(po.x) && Number.isFinite(po.y) && Number.isFinite(po.skala));
+  assert.ok(Math.abs(zoomWidoku(po) - maxZoomPodkladu('osm')) < 1e-9);
 });
 
 test('punkt na wschód od środka jest na prawo, na północ — wyżej', () => {

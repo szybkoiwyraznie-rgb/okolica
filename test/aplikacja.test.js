@@ -27,7 +27,7 @@ import {
   parsujOdpowiedz,
   upraszczajDaneDoCache,
 } from '../app/sieci.js';
-import { DOMYSLNE, PODKLADY, TEMATY, TRYBY, domyslnaKonfiguracja } from '../app/konfig.js';
+import { DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
 import { maxZoomPodkladu, widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
 import { dopasujZoomDoPromienia } from '../app/geo.js';
@@ -35,7 +35,8 @@ import { atrapaGeolokalizacji, zainstalujDom } from './helpers/dom.js';
 
 /* ------------------------------------------------------------------ bootstrap */
 
-const dom = zainstalujDom();
+const gps = atrapaGeolokalizacji();
+const dom = zainstalujDom({ geolocation: gps.geolocation });
 const { pobierz, pamiec } = dom;
 
 // Import PO ustawieniu globali — app.js uruchamia start() przy wczytaniu.
@@ -128,7 +129,7 @@ test('bootstrap: start() wpisuje numer budowy do stopki, nie zostawia placeholde
 
 test('bootstrap: lista trybów i tematów jest wyrenderowana z kanonu', () => {
   assert.equal(pobierz('lista-trybow').children.length, Object.keys(TRYBY).length, 'trzy tryby ruchu');
-  assert.equal(pobierz('lista-tematow').children.length, Object.keys(TEMATY).length, 'dziesięć tematów z kanonu');
+  assert.equal(pobierz('lista-tematow').children.length, Object.keys(TEMATY_SETUP).length, 'dziesięć tematów z kanonu');
 });
 
 test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
@@ -145,7 +146,7 @@ test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
 test('setup: skróty „wszystkie/żadne" ruszają cały kanon tematów, „Dopisz sam" jest wyjątkiem', () => {
   const lista = pobierz('lista-tematow');
   const chipy = [...lista.children].map((e) => e.children[0]);
-  assert.equal(chipy.length, Object.keys(TEMATY).length, 'po checkboxie na temat z kanonu');
+  assert.equal(chipy.length, Object.keys(TEMATY_SETUP).length, 'po checkboxie na temat z kanonu');
 
   dom.kliknij('przycisk-tematy-wszystkie');
   for (const input of chipy) {
@@ -174,7 +175,7 @@ test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', 
 });
 
 test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
-  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-wklej', 'przycisk-poprawka', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-gps', 'przycisk-ustaw-reczne']) {
+  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-wklej', 'przycisk-poprawka', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-informacje', 'przycisk-podejrzyj-mape']) {
     assert.ok(pobierz(id).zdarzenia.click?.length >= 1, `#${id} nie ma nasłuchu click — przycisk byłby martwy`);
   }
   // Ekran 5 nie ma już przycisku zatwierdzania: walidację odpala samo wklejenie,
@@ -185,117 +186,29 @@ test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
 
 /* ------------------------------------------------- współrzędne ręczne */
 
-test('ręczne współrzędne: puste pola nie ustawiają pozycji (0,0) „na Null Island"', () => {
-  // Po usunięciu przełącznika trybu testowego z nagłówka to jedyna WIDOCZNA
-  // droga do wpisania pozycji, gdy geolokalizacja nie działa (np. podgląd
-  // w ramce bez `allow="geolocation"`) — musi działać bez ?test=true.
-  assert.equal(pobierz('reczne-wspolrzedne').hidden, true, 'pola domyślnie schowane');
-  dom.kliknij('przycisk-recznie');
-  assert.equal(pobierz('reczne-wspolrzedne').hidden, false, '„✎ Wpisz ręcznie" odsłania pola bez trybu testowego');
-
-  pobierz('setup-lat').value = '';
-  pobierz('setup-lon').value = '';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.equal(pobierz('bledy-pozycja').hidden, false, 'brak współrzędnych ma być widoczny');
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P06\]/);
-  assert.match(pobierz('bledy-pozycja').textContent, /Wpisz obie współrzędne/);
-  assert.equal(pobierz('pozycja-wspolrzedne').textContent, '', 'żadna pozycja nie została ustawiona');
-  assert.equal(pobierz('pozycja-status').textContent, '', 'ekran pozycji nie został odświeżony — odmowa, nie cicha zmiana');
-});
-
-test('ręczne współrzędne: zakresy są pilnowane, a poprawna pozycja przechodzi', () => {
-  pobierz('setup-lat').value = '999';
-  pobierz('setup-lon').value = '21';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P06\].*od -90 do 90/, 'kod z pozycja.js, komunikat dla człowieka');
-
-  pobierz('setup-lat').value = '52.23178';
-  pobierz('setup-lon').value = '21.01234';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.equal(pobierz('bledy-pozycja').hidden, true);
-  assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustawiona ręcznie');
-  assert.match(pobierz('pozycja-wspolrzedne').textContent, /52\.23178, 21\.01234/);
-  // Ścieżka, na której utknął właściciel na podglądzie: geolokalizacja
-  // niedostępna, „Dalej: stacje" wyszarzone. Ręczne współrzędne NIE są trybem
-  // testowym (`ustawPozycjeRecznie` nie ma bramki), więc muszą odblokowywać.
-  assert.equal(pobierz('przycisk-dalej-stacje').disabled, false,
-    'ręczna pozycja odblokowuje „Dalej: stacje" bez trybu testowego');
-  assert.match(pobierz('pozycja-wspolrzedne').textContent, /geohash/);
-  assert.equal(pobierz('pozycja-dokladnosc').textContent, 'dokładność: nieznana (wpisana ręcznie)');
-  assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
-});
-
-/* ------------------- współrzędne z Google Maps i tap w mapę (zadanie D3) */
-
-test('D3: para DMS z Google Maps wklejona w pierwsze pole ustawia pozycję', () => {
-  // przykład właściciela: Podkowa Leśna, ul. Bukowa 22; oczekiwania LICZONE
-  // z definicji DMS (L24), nie przepisane z wyjścia
-  const oczLat = 52 + 7 / 60 + 22.9 / 3600;
-  const oczLon = 20 + 44 / 60 + 46.1 / 3600;
-  pobierz('setup-lat').value = '52°07\'22.9"N 20°44\'46.1"E';
-  pobierz('setup-lon').value = '';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.equal(pobierz('bledy-pozycja').hidden, true, pobierz('bledy-pozycja').textContent);
-  const re = new RegExp(`${oczLat.toFixed(5).replace(/\./g, '\\.')}, ${oczLon.toFixed(5).replace(/\./g, '\\.')}`);
-  assert.match(pobierz('pozycja-wspolrzedne').textContent, re, 'na ekranie widać DZIESIĘTNE, które aplikacja zrozumiała');
-  assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustawiona ręcznie');
-  assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
-});
-
-test('D3: błąd zapisu DMS jest jawny — [P06] pod polami, pozycja bez zmian', () => {
-  const przed = pobierz('pozycja-wspolrzedne').textContent;
-  assert.ok(przed.length > 0, 'pozycja z poprzedniego testu — jest co chronić');
-  pobierz('setup-lat').value = '52°75\'00"N';
-  pobierz('setup-lon').value = '';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.equal(pobierz('bledy-pozycja').hidden, false, 'odmowa musi być widoczna');
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P06\]/);
-  assert.match(pobierz('bledy-pozycja').textContent, /mniejsze niż 60/);
-  assert.equal(pobierz('pozycja-wspolrzedne').textContent, przed, 'odmowa nie przestawia pozycji');
-  pobierz('bledy-pozycja').hidden = true; // sprzątamy po teście
-});
-
 /* ------------------------------------------------------------------ GPS */
 
-test('GPS: brak API daje komunikat P01, nie wyjątek i nie biały ekran', () => {
-  // na tym egzemplarzu `navigator.geolocation` jest `undefined` (atrapa bez API)
-  dom.ustawGeolokalizacje(undefined);
-  dom.kliknij('przycisk-gps');
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P01\]/);
-  assert.match(pobierz('bledy-pozycja').textContent, /HTTPS|trybie testowym/);
-  assert.equal(pobierz('pozycja-status').textContent, 'Brak pozycji');
-  assert.equal(pobierz('ekran-setup').hidden, false, 'aplikacja działa dalej');
-});
-
-const gps = atrapaGeolokalizacji();
-
 test('GPS: watcher startuje z opcjami z ADR 0004 pkt 1', () => {
-  dom.ustawGeolokalizacje(gps.geolocation);
-  dom.kliknij('przycisk-gps');
   assert.equal(gps.wywolania.watch, 1, 'jeden watcher na rozgrywkę');
   assert.deepEqual(gps.wywolania.opcje, OPCJE_WATCH);
   assert.deepEqual(OPCJE_WATCH, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
-  assert.equal(pobierz('pozycja-status').textContent, 'Szukam satelitów…');
-  assert.match(pobierz('status').textContent, /pierwszy fix/i);
+  assert.equal(gps.wywolania.watch, 1, 'GPS uruchomiony automatycznie, bez przycisku');
 });
 
 test('GPS: fix trafia na ekran — badge dokładności i odblokowane przejście', () => {
   gps.wyslijFix(52.235, 21.015, 15);
   assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustalona');
-  assert.equal(pobierz('pozycja-dokladnosc').textContent, 'dokładność: ±15 m');
   assert.match(pobierz('pozycja-wspolrzedne').textContent, /52\.23500, 21\.01500/);
   assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
   assert.equal(pobierz('bledy-pozycja').hidden, true, 'poprawny fix czyści poprzednie błędy');
 });
 
-test('GPS: niedokładny fix pokazuje ostrzeżenie P05 i nie przerywa gry', () => {
+test('GPS: accuracy nie powoduje ostrzeżeń', () => {
   gps.wyslijFix(52.236, 21.016, 400);
-  assert.equal(pobierz('bledy-pozycja').hidden, false);
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P05\].*±400 m/);
-  assert.equal(pobierz('pozycja-dokladnosc').textContent, 'dokładność: ±400 m', 'niedokładność jest jawna (ADR 0004 pkt 4)');
+  assert.equal(pobierz('bledy-pozycja').hidden, true, 'accuracy nie powoduje ostrzeżenia');
   assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustalona', 'fix wchodzi do gry — próg dojścia i tak jest surowy');
   assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
-  assert.match(pobierz('status').textContent, /niewystarczająca/);
+  assert.doesNotMatch(pobierz('status').textContent, /niewystarczająca/);
 });
 
 test('GPS: błąd przeglądarki daje komunikat z wyjściem awaryjnym (ADR 0004 pkt 7)', () => {
@@ -340,10 +253,6 @@ for (const [adres, czyWlaczony] of [
   test(`tryb testowy z adresu: „${adres || '(bez parametru)'}" → ${czyWlaczony ? 'włączony' : 'wyłączony'}`, async () => {
     const domTest = zainstalujDom({ search: adres });
     await import(`../app/app.js?urltest=${Math.random().toString(36).slice(2)}`);
-    assert.equal(domTest.pobierz('reczne-wspolrzedne').hidden, !czyWlaczony,
-      'ręczne współrzędne są odsłonięte tylko w trybie testowym');
-    assert.equal(domTest.pobierz('przycisk-symulacja').hidden, !czyWlaczony,
-      'symulacja dojścia jest tylko w trybie testowym');
     assert.equal(domTest.document.body.classList.contains('tryb-testowy'), czyWlaczony);
   });
 }
@@ -355,21 +264,20 @@ test('tryb testowy z adresu: ?tryb=test nie wznawia GPS po powrocie z tła', asy
   domTest.ustawGeolokalizacje(gpsTest.geolocation);
   await import(`../app/app.js?trybtest=${Date.now()}`);
 
-  assert.equal(domTest.pobierz('reczne-wspolrzedne').hidden, false, 'tryb testowy z URL jest włączony na starcie');
+  assert.ok(domTest.document.body.classList.contains('tryb-testowy'));
 
-  domTest.kliknij('przycisk-gps'); // gracz może włączyć GPS nawet w trybie testowym
-  assert.equal(gpsTest.wywolania.watch, 1);
+  assert.equal(gpsTest.wywolania.watch, 0);
   domTest.ustawHidden(true);
   domTest.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.deepEqual(gpsTest.wywolania.clear, [77], 'pauza w tle działa także w trybie testowym');
+  assert.deepEqual(gpsTest.wywolania.clear, [], 'w trybie testowym GPS nie startuje');
   domTest.ustawHidden(false);
   domTest.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.equal(gpsTest.wywolania.watch, 1, 'w trybie testowym śledzenie nie wraca samo — współrzędne są ręczne (ADR 0004 pkt 6)');
+  assert.equal(gpsTest.wywolania.watch, 0, 'w trybie testowym pozycję ustawia mapa');
 });
 
 test('GPS: limit historii i próg dokładności są z pozycja.js, nie wpisane w UI', () => {
   // kontrakt na stałe: gdyby UI zaczął mieć własny próg, rozjechałby się z regułą dojścia
-  assert.equal(GRANICE.maxAccuracyM, 100);
+  assert.equal('maxAccuracyM' in GRANICE, false);
   assert.equal(GRANICE.wymaganeTrafnienia, 2);
 });
 
@@ -426,15 +334,13 @@ test('mapa: bootstrap rysuje kafelki OSM i podpisuje dostawcę', async () => {
 
 test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok na graczu', async () => {
   const domMapy = await aplikacjaZMapa();
-  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 501 });
-  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
-  domMapy.kliknij('przycisk-gps');
+  const gpsMapy = domMapy.gps;
   gpsMapy.wyslijFix(52.235, 21.015, 15);
 
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'brak markera pozycji');
   assert.deepEqual(
     domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
-    ['okrag-dokladnosc', 'okrag-promien'],
+    ['okrag-promien'],
     'koło dokładności i okrąg promienia gry',
   );
   assert.match(
@@ -447,9 +353,7 @@ test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok n
 
 test('mapa: przejście do stacji rysuje numerowane pinezki i okrąg promienia', async () => {
   const domMapy = await aplikacjaZMapa();
-  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 502 });
-  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
-  domMapy.kliknij('przycisk-gps');
+  const gpsMapy = domMapy.gps;
   gpsMapy.wyslijFix(52.235, 21.015, 15);
   domMapy.kliknij('przycisk-dalej-stacje');
 
@@ -462,7 +366,7 @@ test('mapa: przejście do stacji rysuje numerowane pinezki i okrąg promienia', 
   assert.equal(new Set(idPinezek).size, DOMYSLNE.liczbaStacji, 'pinezki mają różne identyfikatory stacji');
   assert.deepEqual(
     domMapy.pobierz('mapa-stacje-okregi').children.map((c) => c.getAttribute('class')),
-    ['okrag-dokladnosc', 'okrag-promien'],
+    ['okrag-promien'],
   );
 });
 
@@ -491,9 +395,7 @@ test('mapa: zmiana podkładu w setupie podmienia kafelki i atrybucję obu map', 
 
 test('mapa: ręczna pozycja w trybie testowym nie udaje koła dokładności', async () => {
   const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
-  domMapy.pobierz('setup-lat').value = '52.23178';
-  domMapy.pobierz('setup-lon').value = '21.01234';
-  domMapy.kliknij('przycisk-ustaw-reczne');
+  domMapy.ustawPozycje('52.23178', '21.01234');
 
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'marker jest — pozycja ustawiona ręcznie');
   assert.deepEqual(
@@ -506,9 +408,7 @@ test('mapa: ręczna pozycja w trybie testowym nie udaje koła dokładności', as
 
 test('mapa: schowany panel nie rysuje, a powrót na ekran przywraca warstwy', async () => {
   const domMapy = await aplikacjaZMapa();
-  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 503 });
-  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
-  domMapy.kliknij('przycisk-gps');
+  const gpsMapy = domMapy.gps;
   gpsMapy.wyslijFix(52.235, 21.015, 15);
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.ok(domMapy.pobierz('mapa-stacje-pinezki').children.length > 0);
@@ -536,13 +436,11 @@ test('mapa: obrót telefonu (resize) przelicza widok na nowy rozmiar panelu', as
 
 test('mapa: wyczyszczony czas gry nie wysypuje przejścia — jest jawna odmowa z kodem K19', async () => {
   const domMapy = await aplikacjaZMapa();
-  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 504 });
-  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
+  const gpsMapy = domMapy.gps;
   // gracz czyści pole czasu gry → `Number('') = 0`, czyli wartość skończona,
   // która przechodzi przez hartowanie liczb w setupie (promień zjeżdża wtedy
   // na minimum 200 m, więc odmowa musi przyjść z walidacji czasu — K19)
   wyslij(domMapy.pobierz('setup-czas'), 'input', { target: { value: '' } });
-  domMapy.kliknij('przycisk-gps');
   gpsMapy.wyslijFix(52.235, 21.015, 15);
 
   // `stacjeProste` odmawia przy niedodatnim promieniu — przejście ma odmówić,
@@ -558,7 +456,7 @@ test('mapa: wyczyszczony czas gry nie wysypuje przejścia — jest jawna odmowa 
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1);
   assert.deepEqual(
     domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
-    ['okrag-dokladnosc', 'okrag-promien'],
+    ['okrag-promien'],
   );
   assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
 
@@ -688,67 +586,6 @@ async function dojdzSymulacja(dom, { maksMs = 5000 } = {}) {
   }
 }
 
-test('symulacja: przycisk istnieje tylko w trybie testowym (z adresu)', async () => {
-  const bezTrybu = await aplikacjaZMapa();
-  assert.equal(bezTrybu.pobierz('przycisk-symulacja').hidden, true, 'bez trybu testowego nie ma symulacji');
-
-  // Wyłączyć trybu testowego się nie da — jest tylko parametrem adresu, więc
-  // „wyłączenie" to po prostu wejście bez niego (sprawdzone wyżej).
-  const zTrybem = await aplikacjaZMapa({ search: '?test=true' });
-  assert.equal(zTrybem.pobierz('przycisk-symulacja').hidden, false, '?test=true odsłania symulację');
-});
-
-test('symulacja: odtworzenie trasy prowadzi pozycję do celu i spełnia debounce dojścia', async () => {
-  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
-  domMapy.pobierz('setup-lat').value = '52.23178';
-  domMapy.pobierz('setup-lon').value = '21.01234';
-  domMapy.kliknij('przycisk-ustaw-reczne');
-  const start = domMapy.pobierz('pozycja-wspolrzedne').textContent;
-  assert.match(start, /52\.23178/);
-
-  domMapy.kliknij('przycisk-symulacja');
-  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'true', 'odtwarzanie wystartowało');
-  assert.match(domMapy.pobierz('status').textContent, /Symulacja trasy: 9 fixów/);
-
-  await czekaj(9 * 120 + 500); // dziewięć fixów po 120 ms + zapas na timery Node
-  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false', 'sekwencja sama się kończy');
-  assert.match(domMapy.pobierz('status').textContent, /cel osiągnięty — debounce dojścia spełniony/);
-  assert.notEqual(domMapy.pobierz('pozycja-wspolrzedne').textContent, start, 'pozycja przeszła trasę, nie stoi w miejscu');
-  assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'marker pojechał z pozycją');
-});
-
-test('symulacja: stop zatrzymuje strumień fixów', async () => {
-  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
-  domMapy.pobierz('setup-lat').value = '52.23178';
-  domMapy.pobierz('setup-lon').value = '21.01234';
-  domMapy.kliknij('przycisk-ustaw-reczne');
-
-  domMapy.kliknij('przycisk-symulacja');
-  await czekaj(300);
-  domMapy.kliknij('przycisk-symulacja');
-  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false');
-  assert.match(domMapy.pobierz('status').textContent, /Symulacja zatrzymana/);
-  const poStop = domMapy.pobierz('pozycja-wspolrzedne').textContent;
-  await czekaj(500);
-  assert.equal(domMapy.pobierz('pozycja-wspolrzedne').textContent, poStop, 'po stopie fixy nie płyną dalej');
-});
-
-test('symulacja: zejście karty w tło zatrzymuje odtwarzanie (uczciwość pomiaru)', async () => {
-  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
-  domMapy.pobierz('setup-lat').value = '52.23178';
-  domMapy.pobierz('setup-lon').value = '21.01234';
-  domMapy.kliknij('przycisk-ustaw-reczne');
-
-  domMapy.kliknij('przycisk-symulacja');
-  await czekaj(250);
-  domMapy.ustawHidden(true);
-  domMapy.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false', 'tło zatrzymuje symulację');
-  const poPauzie = domMapy.pobierz('pozycja-wspolrzedne').textContent;
-  await czekaj(400);
-  assert.equal(domMapy.pobierz('pozycja-wspolrzedne').textContent, poPauzie, 'w tle fixy nie płyną');
-});
-
 /* ------------------------------------------------- M4/I7: stacje z sieci w UI */
 
 const KATALOG_APP = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -775,9 +612,7 @@ async function aplikacjaZSiecia({ search = '?tryb=test', pamiec = new Map() } = 
 }
 
 function ustawPozycjeTestowa(domAtrapa, lat = '52.2297', lon = '21.0122') {
-  domAtrapa.pobierz('setup-lat').value = lat;
-  domAtrapa.pobierz('setup-lon').value = lon;
-  domAtrapa.kliknij('przycisk-ustaw-reczne');
+  domAtrapa.ustawPozycje(lat, lon);
 }
 
 test('stacje: bez window.fetch degradacja do pierścienia jest synchroniczna i jawna', async () => {
@@ -826,7 +661,7 @@ test('stacje: udane pobranie z pierwszej instancji zapisuje cache i rysuje sieć
   assert.equal(wywolania[0].url, INSTANCJE_OVERPASS[0].url, 'zaczynamy od FOSSGIS');
   assert.equal(wywolania[0].opcje.method, 'POST');
   const zapytanie = decodeURIComponent(wywolania[0].opcje.body.replace(/^data=/, ''));
-  assert.match(zapytanie, /^\[out:json\]\[timeout:25\];/);
+  assert.match(zapytanie, /^\[out:json\]\[timeout:8\];/);
   assert.match(zapytanie, /around:1150,52\.2297,21\.0122/, 'R×1.15 i pozycja na siatce ~6 m');
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/);
   assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('z pamięci'), 'świeżo pobrane');
@@ -852,10 +687,17 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(50);
   assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, false, 'nakładka Pobieram dane w trakcie fetch');
+  domAtrapa.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(domAtrapa.pobierz('ekran-stacje').hidden, false, 'oko nie deaktywuje ekranu');
+  assert.equal(domAtrapa.pobierz('ekran-stacje').inert, true);
   puść();
   await czekaj(250);
+  assert.equal(domAtrapa.document.body.dataset.ekran, 'stacje');
+  assert.equal(domAtrapa.pobierz('przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'true');
+  domAtrapa.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(domAtrapa.pobierz('ekran-stacje').inert, false);
   assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, true, 'nakładka znika po odpowiedzi');
-  assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /HTTP 400/, 'błąd zapytania jawny (kod S03)');
+  assert.match(domAtrapa.pobierz('siec-proby').textContent, /HTTP 400/, 'błąd zapytania jawny (kod S03)');
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false, 'po porażce widać ponowienie');
   domAtrapa.window.fetch = async (url) => { wywolania.push(url); return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) }; };
   domAtrapa.kliknij('przycisk-siec-ponow');
@@ -911,7 +753,7 @@ test('Overpass: timeout martwej instancji przełącza OD RAZU, bez pauzy limitow
   assert.equal(domAtrapa.pamiec.get('okolica:overpass-sprawny'), INSTANCJE_OVERPASS[1].url, 'sprawna instancja zapamiętana');
 });
 
-test('Overpass: zapamiętana sprawna instancja jest próbowana pierwsza', async () => {
+test('Overpass: zapamiętany sukces VK Maps ma pierwszeństwo', async () => {
   const pamiec = new Map([['okolica:overpass-sprawny', INSTANCJE_OVERPASS[2].url]]);
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -922,7 +764,7 @@ test('Overpass: zapamiętana sprawna instancja jest próbowana pierwsza', async 
   };
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(250);
-  assert.deepEqual(wywolania, [INSTANCJE_OVERPASS[2].url], 'VK Maps pierwsza — zero doomed-zapytań do FOSSGIS');
+  assert.deepEqual(wywolania, [INSTANCJE_OVERPASS[2].url], 'zapamiętany VK Maps pierwszy');
 });
 
 test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2', async () => {
@@ -931,7 +773,7 @@ test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2', as
   const odwiedzone = [];
   domAtrapa.window.fetch = async (url) => {
     odwiedzone.push(url);
-    if (odwiedzone.length < 3) return { ok: false, status: 429 };
+    if (odwiedzone.length < INSTANCJE_OVERPASS.length) return { ok: false, status: 429 };
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
   };
   domAtrapa.kliknij('przycisk-dalej-stacje');
@@ -947,7 +789,7 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
   domAtrapa.window.fetch = async () => { ileProb++; return { ok: false, status: 504 }; };
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(300);
-  assert.equal(ileProb, 3, 'próbuje wszystkich instancji');
+  assert.equal(ileProb, INSTANCJE_OVERPASS.length, 'próbuje wszystkich instancji');
   assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, false);
   assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /\[S03\]/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
@@ -2204,9 +2046,7 @@ test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie
   const domT = await aplikacjaZMapa({ search: '?tryb=test&odstep=0', pamiec: pamiecMapy });
   domT.kliknij('przycisk-dalej-pozycja'); // bramka tap-a: ekran 'pozycja'
   await czekaj(10); // przejście jest asynchroniczne: czeka na bramę tożsamości
-  domT.pobierz('setup-lat').value = '52.2297';
-  domT.pobierz('setup-lon').value = '21.0122';
-  domT.kliknij('przycisk-ustaw-reczne');
+  domT.ustawPozycje('52.2297', '21.0122');
 
   // Po ręcznym ustawieniu `pokazPozycje` woła `centrujNaPozycji`: mapa jest
   // wyśrodkowana NA POZYCJI w zoomie dobranym do promienia gry (promień liczy
@@ -2226,8 +2066,6 @@ test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie
   wyslij(svg, 'pointerup', { pointerId: 31, clientX: 40, clientY: 0 });
 
   assert.match(domT.pobierz('status').textContent, /Pozycja ustawiona z mapy/, 'status mówi, że pozycja jest z mapy');
-  assert.equal(Number(domT.pobierz('setup-lat').value), oczLat, 'pole lat wypełnione współrzędnymi stuknięcia');
-  assert.equal(Number(domT.pobierz('setup-lon').value), oczLon, 'pole lon wypełnione współrzędnymi stuknięcia');
   assert.match(
     domT.pobierz('pozycja-wspolrzedne').textContent,
     new RegExp(oczLat.toFixed(5).replace(/\./g, '\\.')),
@@ -2632,4 +2470,190 @@ test('ekran 5: pole ma trzy wiersze, a ekran nie ma już importu z pliku ani „
   assert.match(css, /#pole-odpowiedz\s*\{[^}]*resize:\s*none/, 'bez uchwytu rozciągania');
   assert.ok(!html.includes('plik-odpowiedz'), 'import z pliku usunięty z ekranu');
   assert.ok(!html.includes('przycisk-sprawdz'), 'przycisk zatwierdzania usunięty — wklejenie zatwierdza samo');
+});
+
+
+test('teren: oko podczas dojścia nie pauzuje gry; wraca aktualne pytanie i jego odpowiedź', async () => {
+  const { dom } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  dom.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(dom.document.body.dataset.ekran, 'gra');
+  assert.equal(dom.pobierz('ekran-gra').hidden, false);
+  assert.equal(dom.pobierz('ekran-gra').inert, true);
+  assert.equal(dom.pobierz('przygaszenie-mapy').hidden, true);
+  await dojdzSymulacja(dom);
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'dojście działa pod podglądem mapy');
+  assert.equal(dom.pobierz('przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'true');
+  dom.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(dom.pobierz('ekran-gra').inert, false);
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false);
+  const tresc = dom.pobierz('gra-panel-pytanie').textContent;
+  dom.kliknij('przycisk-podejrzyj-mape');
+  dom.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(dom.pobierz('gra-panel-pytanie').textContent, tresc);
+});
+
+test('teren: informacje przełączają się nad setupem; oko, prywatność i powrót zachowują stan', async () => {
+  const dom = await aplikacjaZMapa({ search: '?test=true' });
+  dom.kliknij('przycisk-start-zacznij');
+  dom.pobierz('setup-czas').value = '123';
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false);
+  assert.equal(dom.pobierz('ekran-setup').hidden, false);
+  assert.equal(dom.pobierz('ekran-setup').inert, true);
+  dom.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false);
+  assert.equal(dom.pobierz('ekran-informacje').inert, true);
+  dom.kliknij('przycisk-podejrzyj-mape');
+  dom.kliknij('przycisk-prywatnosc-stopka');
+  assert.equal(dom.pobierz('ekran-prywatnosc').hidden, false);
+  dom.kliknij('przycisk-wrocz-prywatnosc');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false);
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, true);
+  assert.equal(dom.pobierz('ekran-setup').inert, false);
+  assert.equal(dom.pobierz('setup-czas').value, '123');
+});
+
+
+test('teren: automatyczny GPS bez API pokazuje P01; błędny fix nie zmienia pozycji', async () => {
+  const bez = zainstalujDom({ geolocation: null });
+  await import(`../app/app.js?terenBezGps=${Math.random()}`);
+  assert.match(bez.pobierz('bledy-pozycja').textContent, /P01/);
+  assert.equal(bez.pobierz('przycisk-dalej-stacje').disabled, true);
+  const d = await aplikacjaZMapa();
+  d.gps.wyslijFix(52.23, 21.01, 1250);
+  const przed = d.pobierz('pozycja-wspolrzedne').textContent;
+  d.gps.wyslijFix(999, 21, 1);
+  assert.equal(d.pobierz('pozycja-wspolrzedne').textContent, przed);
+  assert.match(d.pobierz('bledy-pozycja').textContent, /P06/);
+});
+
+for (const etap of ['nagłówki', 'ciało', 'nietypowy abort']) {
+  test(`Overpass: 10 s obejmuje ${etap}; pełny łańcuch od zapamiętanej instancji i czytelne wyniki`, async () => {
+    const pamiec = new Map([['okolica:overpass-sprawny', INSTANCJE_OVERPASS[1].url]]);
+    const d = await aplikacjaZSiecia({ search: '?test=true&odstep=0', pamiec });
+    ustawPozycjeTestowa(d, '52.2297', '21.0122');
+    const oryginalnyTimer = globalThis.setTimeout;
+    const sygnaly = [], czasy = [], adresy = [];
+    globalThis.setTimeout = (fn, ms, ...args) => {
+      if (ms === 10_000) { czasy.push(ms); return oryginalnyTimer(fn, 5, ...args); }
+      return oryginalnyTimer(fn, ms, ...args);
+    };
+    d.window.fetch = async (url, opcje) => {
+      adresy.push(url); sygnaly.push(opcje.signal);
+      const zawieszone = () => new Promise((_, reject) => {
+        if (etap === 'nietypowy abort') opcje.signal.addEventListener('abort', () => reject(new Error('signal is aborted without reason')));
+      });
+      if (etap === 'ciało') return { ok: true, status: 200, text: zawieszone };
+      return zawieszone();
+    };
+    try {
+      d.kliknij('przycisk-dalej-stacje');
+      await czekaj(100);
+      assert.deepEqual(adresy, [INSTANCJE_OVERPASS[1], ...INSTANCJE_OVERPASS.filter((_, i) => i !== 1)].map(i => i.url));
+      assert.deepEqual(czasy, INSTANCJE_OVERPASS.map(() => 10_000));
+      assert.ok(sygnaly.every(s => s.aborted));
+      assert.equal(d.pobierz('stacje-ladowanie').hidden, true);
+      const proby = d.pobierz('siec-proby').children;
+      assert.equal(proby.length, INSTANCJE_OVERPASS.length);
+      for (let i = 0; i < INSTANCJE_OVERPASS.length; i++) {
+        assert.match(proby[i].textContent, new RegExp(`Próba ${i + 1}/${INSTANCJE_OVERPASS.length}:`));
+        assert.match(proby[i].textContent, /przekroczono czas oczekiwania 10 s/);
+      }
+      assert.match(d.pobierz('siec-proby').textContent, /FOSSGIS/);
+      assert.doesNotMatch(d.pobierz('bledy-stacje').textContent, /FOSSGIS|private.coffee|VK Maps|Adikso/);
+      assert.doesNotMatch(d.pobierz('bledy-stacje').textContent, /signal is aborted/);
+    } finally { globalThis.setTimeout = oryginalnyTimer; }
+  });
+}
+
+test('Overpass: HTTP 403 nie kończy łańcucha; rezerwa dowozi wynik', async () => {
+  const d = await aplikacjaZSiecia({ search: '?test=true&odstep=0' });
+  ustawPozycjeTestowa(d, '52.2297', '21.0122');
+  const adresy = [];
+  d.window.fetch = async url => {
+    adresy.push(url);
+    if (adresy.length === 1) return { ok: false, status: 403 };
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  d.kliknij('przycisk-dalej-stacje');
+  await czekaj(100);
+  assert.deepEqual(adresy, INSTANCJE_OVERPASS.slice(0, 2).map(i => i.url));
+  assert.match(d.pobierz('siec-proby').textContent, /FOSSGIS.*HTTP 403/);
+  assert.match(d.pobierz('siec-proby').textContent, /private.coffee.*pobrano/);
+  assert.equal(d.pobierz('bledy-stacje').hidden, true);
+});
+
+
+test('Overpass: Adikso jako rezerwa dowozi dane i staje się pierwszą próbą kolejnej gry', async () => {
+  const d = await aplikacjaZSiecia({ search: '?test=true&odstep=0' });
+  ustawPozycjeTestowa(d, '52.2297', '21.0122');
+  const polski = 'https://overpass.osm.adikso.net/api/interpreter';
+  const adresy = [];
+  d.window.fetch = async url => {
+    adresy.push(url);
+    if (url !== polski) throw new TypeError('Failed to fetch');
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  d.kliknij('przycisk-dalej-stacje');
+  await czekaj(100);
+  assert.equal(adresy.at(-1), polski);
+  assert.equal(d.pamiec.get('okolica:overpass-sprawny'), polski);
+  assert.equal(d.pobierz('bledy-stacje').hidden, true);
+  const kolejna = await aplikacjaZSiecia({ search: '?test=true&odstep=0', pamiec: new Map([['okolica:overpass-sprawny', polski]]) });
+  ustawPozycjeTestowa(kolejna, '52.2297', '21.0122');
+  const nowe = [];
+  kolejna.window.fetch = async url => { nowe.push(url); return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) }; };
+  kolejna.kliknij('przycisk-dalej-stacje');
+  await czekaj(100);
+  assert.deepEqual(nowe, [polski]);
+});
+
+test('Informacje: ikonka wskazuje otwarcie, zamknięcie i zachowuje stan podczas podglądu mapy', async () => {
+  const d = await aplikacjaZMapa({ search: '?test=true' });
+  const ikona = d.pobierz('przycisk-informacje');
+  const sprawdz = stan => {
+    assert.equal(ikona.getAttribute('aria-pressed'), String(stan));
+    assert.equal(ikona.getAttribute('aria-expanded'), String(stan));
+    assert.equal(d.pobierz('ekran-informacje').hidden, !stan);
+  };
+  sprawdz(false);
+  d.kliknij('przycisk-informacje'); sprawdz(true);
+  d.kliknij('przycisk-podejrzyj-mape'); sprawdz(true);
+  d.kliknij('przycisk-podejrzyj-mape'); sprawdz(true);
+  d.kliknij('przycisk-informacje'); sprawdz(false);
+  d.kliknij('przycisk-informacje'); sprawdz(true);
+  d.kliknij('przycisk-zamknij-informacje'); sprawdz(false);
+  d.kliknij('przycisk-informacje');
+  d.wyslijZdarzenieDokumentu('keydown', { key: 'Escape' }); sprawdz(false);
+  d.kliknij('przycisk-informacje');
+  d.kliknij('przycisk-ranking'); sprawdz(false);
+});
+
+test('droga: pasek na mapie, sterowanie w Informacjach, po dojściu duży panel pytania', async () => {
+  const { dom } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('gra-slot-sterowanie'));
+  dom.kliknij('przycisk-start-odcinka');
+  assert.equal(dom.pobierz('gra-pasek').hidden, false);
+  assert.match(dom.pobierz('gra-pasek').textContent, /^Kto: Gracz 1 \(\d+ m\) · stacja 1 z 3$/);
+  assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('informacje-gra'));
+  assert.equal(dom.document.body.classList.contains('gra-w-drodze'), true);
+  assert.equal(dom.pobierz('przygaszenie-mapy').hidden, true, 'bez przygaszenia mapy podczas marszu');
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('informacje-gra').hidden, false);
+  dom.kliknij('przycisk-pauza');
+  assert.equal(dom.pobierz('przycisk-pauza').getAttribute('aria-pressed'), 'true');
+  assert.equal(dom.pobierz('gra-pasek').hidden, false, 'pauza nie zmienia układu drogi');
+  dom.kliknij('przycisk-pauza');
+  await dojdzSymulacja(dom);
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false);
+  assert.equal(dom.pobierz('gra-pasek').hidden, true);
+  assert.equal(dom.document.body.classList.contains('gra-w-drodze'), false);
+  assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('gra-slot-sterowanie'));
+  assert.equal(dom.pobierz('ekran-informacje').hidden, true, 'pytanie pojawia się automatycznie także po użyciu Informacji');
+  assert.equal(dom.pobierz('informacje-gra').hidden, true);
+  assert.equal(dom.pobierz('przygaszenie-mapy').hidden, false);
 });

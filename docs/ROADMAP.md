@@ -32,6 +32,10 @@ Szczegóły wykonania: `docs/PROJECT_HISTORY.md` (sesje M0/M1/M2 i M9) oraz
 
 ## Kryteria otwartych kamieni (kod gotowy — czeka właściciel)
 
+Audyt 2026-09-10 (PR #8): poprawiony środek mapy przy ograniczaniu zoomu.
+M10: SW nie zapisuje kafelków opaque, więc podkład offline nie jest gwarantowany;
+warstwy własne i gra lokalna pozostają dostępne. Szczegóły: handoff 2026-09-10.
+
 Zakres kodu każdego kamienia jest w tabeli wyżej i w `PROJECT_HISTORY`;
 tutaj tylko to, co zostało do sprawdzenia:
 

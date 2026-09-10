@@ -9,7 +9,7 @@
  *   dociera bez ręcznego czyszczenia danych (zgłoszenie właściciela 2026-09-08);
  * - GET kafelków mapy dowolnego dostawcy (ścieżka `/z/x/y.png|jpg|webp`):
  *   cache-first z limitem MAKS_KAFELKI i ewikcją najstarszych wpisów —
- *   „ostatnia okolica" zostaje na telefonie;
+ *   dotyczy tylko odpowiedzi z czytelnym statusem (basic/cors), nie opaque;
  * - POST-y (most Drive, Overpass) i obce API bez wzorca kafelka: BEZ cache —
  *   świeżość danych i prywatność (ADR 0005/0013/0016).
  *
@@ -18,7 +18,7 @@
  * activate. */
 'use strict';
 
-const WERSJA_SW = 'm12-52';
+const WERSJA_SW = 'm12-63';
 const PREFIKS_CACHE = 'okolica';
 const CACHE_SHELL = `${PREFIKS_CACHE}-shell-${WERSJA_SW}`;
 const CACHE_KAFELKI = `${PREFIKS_CACHE}-kafelki-${WERSJA_SW}`;
@@ -64,26 +64,12 @@ async function zSieciNajpierw(req, nazwa) {
   }
 }
 
-/**
- * Czy odpowiedź wolno zapamiętać. `basic` (same-origin): status znany —
- * cache tylko `ok`. `opaque` (kafelki no-cors): status NIEZNANY — 404/5xx
- * serwera kafelków wraca z tym samym `type` co dobry obraz, więc jedynym
- * sprawdzalnym kryterium jest treść: cache tylko ciało, które da się
- * odczytać jako obraz. Bez tego chwilowy błąd dostawcy zostawał w cache
- * „kafelkiem" na dobre, a cache-first oddawał pustkę przy każdej następnej
- * grze w tej samej okolicy (zgłoszenie właściciela 2026-09-09: pusta mapa,
- * oddalenie pokazuje mapę).
- */
+/** Cache tylko przy czytelnym statusie sukcesu. Opaque ma status 0,
+ * puste nagłówki i pusty blob — nie da się odróżnić obrazu od awarii.
+ * Nie zmieniamy trybu żądania: no-cors nadal renderuje się online, ale
+ * bez kopii w Cache Storage. Cache HTTP przeglądarki działa niezależnie. */
 async function czyTrafSieDoCache(odp) {
-  if (!odp) return false;
-  if (odp.type === 'basic') return odp.ok;
-  if (odp.type !== 'opaque') return false;
-  try {
-    const blob = await odp.clone().blob();
-    return typeof blob.type === 'string' && blob.type.startsWith('image/');
-  } catch {
-    return false;
-  }
+  return !!odp && (odp.type === 'basic' || odp.type === 'cors') && odp.ok;
 }
 
 async function zCacheNajpierw(req, nazwa, maks) {

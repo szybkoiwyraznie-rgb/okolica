@@ -12,6 +12,7 @@
  * ani jednej asercji, ani skutku ubocznego na poziomie modułu. Wszystko dzieje
  * się dopiero w `zainstalujDom()` (ARCHITECTURE „Testowanie").
  */
+import { projektuj } from '../../app/geo.js';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -78,10 +79,10 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
       toggle(c, czyNa) { if (czyNa) this.dodane.add(c); else this.dodane.delete(c); },
       contains(c) { return this.dodane.has(c); },
     },
-    appendChild(dziecko) { this.children.push(dziecko); return dziecko; },
+    appendChild(dziecko) { if (dziecko.parentNode) dziecko.parentNode.removeChild(dziecko); this.children.push(dziecko); dziecko.parentNode = this; return dziecko; },
     removeChild(dziecko) {
       const i = this.children.indexOf(dziecko);
-      if (i >= 0) this.children.splice(i, 1);
+      if (i >= 0) { this.children.splice(i, 1); dziecko.parentNode = null; }
       return dziecko;
     },
     /** Jak w przeglądarce (Chrome 86+): podmiana całej listy dzieci. */
@@ -137,6 +138,8 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
       gracze: [{ pseudonim: 'Ala', zweryfikowany: true }],
     }));
   }
+  const gpsDom = atrapaGeolokalizacji();
+  if (geolocation === undefined) geolocation = gpsDom.geolocation;
   const html = readFileSync(join(KATALOG, sciezkaHtml), 'utf8');
   const ukryte = ukryteWHtml(html);
   const elementy = new Map();
@@ -156,6 +159,9 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     pobierz(m[1]).checked = true;
   }
 
+  for (const m of html.matchAll(/<(?:button|input|select|textarea)[^>]*\bid="([^"]+)"[^>]*\bdisabled\b/g)) {
+    pobierz(m[1]).disabled = true;
+  }
   const zdarzeniaDokumentu = {};
   const documentStub = {
     documentElement: stubElementu('html', ukryte),
@@ -270,6 +276,22 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
 
   return {
     html,
+    gps: gpsDom,
+    /** Rzeczywiste wejście: fix GPS lub tap w mapę (?test=true), bez pól ręcznych. */
+    ustawPozycje(lat, lon) {
+      if (!documentStub.body.classList.contains('tryb-testowy')) {
+        gpsDom.wyslijFix(Number(lat), Number(lon), 1250);
+        return;
+      }
+      const t = pobierz('mapa-pozycja-kafelki').getAttribute('transform');
+      const [, tx, ty, scale] = t.match(/translate\(([^ ]+) ([^)]+)\) scale\(([^)]+)\)/);
+      const p = projektuj(Number(lat), Number(lon));
+      const rect = pobierz('mapa-pozycja').getBoundingClientRect();
+      const e = { pointerId: 999, clientX: p.x * Number(scale) + Number(tx) + rect.left,
+        clientY: p.y * Number(scale) + Number(ty) + rect.top, preventDefault() {} };
+      const svg = pobierz('mapa-pozycja-svg');
+      for (const typ of ['pointerdown', 'pointerup']) for (const fn of svg.zdarzenia[typ] ?? []) fn({ ...e, type: typ });
+    },
     elementy,
     pobierz,
     pamiec,

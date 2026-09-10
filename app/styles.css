@@ -375,24 +375,6 @@ body:not(.tryb-testowy) .tylko-test {
   font-size: 15px;
 }
 
-/* --- stopka --- */
-.dol {
-  /* Nad mapą-tłem: stopka jest rodzeństwem `<main class="tresc">`, które ma
-     `z-index: 1`, więc bez własnej pozycji mapa malowałaby się nad nią
-     (zgłoszenie właściciela 2026-09-08: stopka z komunikatami ma zostać). */
-  position: relative;
-  z-index: 3;
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
-  padding: 10px var(--odstep);
-  border-top: 1px solid var(--linia);
-  background: var(--tlo-karta);
-  color: var(--tekst-slaby);
-  font-size: 12px;
-}
-.dol .separator { opacity: 0.5; }
-.dol code { font-size: 12px; }
 
 /* --- mapa (M2): panel, warstwy SVG, gesty, atrybucja --- */
 .mapa {
@@ -747,245 +729,7 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 .ocen-panel { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0; }
 .ocen-kciuk { font-size: 18px; line-height: 1; min-width: 44px; }
 
-/* ==================================================================
- * ADR 0030 — rozgrywka dopasowana do orientacji telefonu.
- *
- * Telefon raz jest pionowy, raz poziomy, a obrót potrafi nastąpić w środku
- * pytania. Dlatego nie ma tu jednej „wersji mobilnej”: są dwa układy, oba
- * zapytane o orientację, a zapytania CSS przeglądarka przelicza na żywo —
- * obrót przełącza układ bez przeładowania i bez JS-owego zgadywania modelu.
- * Sama mapa i tak mierzy się z `getBoundingClientRect` (`rozmiarPanelu`,
- * app/mapa.js) i przelicza widok przy każdym `resize` (nasłuch „Obrót
- * telefonu albo zmiana rozmiaru okna” w app.js), więc nowa proporcja pudła
- * od razu daje poprawną projekcję kafelków, okręgów i pinezek.
- *
- * Zasada wspólna: STRONA SIĘ NIE PRZEWIJA. W terenie, jedną ręką, w ruchu,
- * przewijanie to najgorsze, co można graczowi zrobić — pytanie ma leżeć
- * NA mapie, a nie pod nią.
- *
- *   PION   → mapa tłem całego obszaru gry, w proporcjach urządzenia
- *            (na telefonie wychodzi z tego ~9:16, nie kwadrat 344×333 px,
- *            który dawało stare `height: 45vh`); karty faz przypięte do dołu.
- *   POZIOM → karty w prawej kolumnie, mapa widoczna z lewej: w poziomie
- *            wysokości jest ~360 px, więc karta na dole zakryłaby całą mapę.
- *   Szeroki i wysoki ekran (desktop) zostaje przy układzie kolumnowym.
- *
- * Który ekran jest na wierzchu, mówi `body[data-ekran]` (ustawia
- * `pokazEkran`) — patrz wyżej, CSS nie ma selektora rodzica.
- * ================================================================== */
-
-/* --- szkielet wspólny dla obu orientacji telefonu --- */
-@media (max-width: 900px) and (orientation: portrait),
-       (orientation: landscape) and (max-height: 620px) {
-  body[data-ekran='gra'] { height: 100dvh; overflow: hidden; }
-  body[data-ekran='gra'] .tresc { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
-
-  /* Pasek kroków 1–6 opisuje PRZYGOTOWANIE gry; w grze postęp pokazuje badge
-     „stacja X z Y”, więc pasek oddaje swoje piksele mapie. */
-  body[data-ekran='gra'] #kroki { display: none; }
-
-  /* Stopka zostaje — siedzi w niej `#status`, główny kanał komunikatów
-     aplikacji — ale cienka i bez ozdobników. */
-  body[data-ekran='gra'] .dol { padding: 4px 10px; font-size: 11px; }
-  body[data-ekran='gra'] .dol > span:not(#status) { display: none; }
-
-  #ekran-gra:not([hidden]) {
-    position: relative;
-    flex: 1 1 auto;
-    min-height: 0;
-    max-width: none;
-    margin: 0;
-    display: flex;
-    flex-direction: column;
-    /* `auto`, nie `hidden`: gdyby karty jednak nie zmieściły się w ekranie
-       (multiplayer: tabela + panel fazy), gracz musi mieć jak do nich dojść.
-       W zwykłej grze wolnego miejsca jest tyle, że przewijanie nie rusza. */
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-
-  /* Rozpychacz: rośnie, gdy jest wolne miejsce (karty schodzą na dół), i znika
-     do zera, gdy go nie ma — dlatego karty nigdy nie uciekną nad krawędź. */
-  #ekran-gra:not([hidden])::before { content: ''; flex: 1 1 auto; }
-
-  /* Tytuł sekcji musi zostać w drzewie (jest celem `aria-labelledby`), ale nie
-     może zabierać pikseli mapie — chowamy go tak, by czytnik ekranu go widział. */
-  #ekran-gra:not([hidden]) > #tytul-gra {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: 0;
-    padding: 0;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  /* 1. Mapa = tło obszaru gry, w proporcjach urządzenia. */
-  #ekran-gra:not([hidden]) #mapa-gra {
-    position: absolute;
-    inset: 0;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    margin: 0;
-    border: 0;
-    border-radius: 0;
-  }
-
-  /* 2. Pasek stanu gry (kolej, dystans, postęp) — nad mapą, u góry. Z prawej
-     zostaje 56 px na przyciski +/−/◎ mapy. */
-  #ekran-gra:not([hidden]) .gra-badges {
-    position: absolute;
-    top: 20px;
-    left: 8px;
-    right: 56px;
-    z-index: 3;
-    margin: 0;
-    gap: 4px;
-  }
-  #ekran-gra:not([hidden]) .badge-duzy {
-    /* Tylko rozmiar i cień: tła NIE ruszamy, bo `#gra-dystans` ma własne
-       `.badge-dystans { background: akcent; color: akcent-tekst }`, a ten
-       selektor (id) by je nadpisał — w jasnym motywie wyszłoby białe na białym. */
-    font-size: 14px;
-    padding: 5px 9px;
-    min-height: 32px;
-    box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
-  }
-  #ekran-gra:not([hidden]) #gra-postep {
-    margin: 0;
-    padding: 4px 9px;
-    font-size: 11px;
-    background: var(--tlo-karta);
-    border: 1px solid var(--linia);
-    border-radius: 999px;
-  }
-
-  /* Atrybucja dostawcy jest obowiązkowa przy włączonym podkładzie (ADR 0003
-     pkt 3), a dół mapy zasłania teraz karta — pasek wędruje więc na samą górę.
-     Skala ląduje pod przyciskami mapy: te kończą się na 8 + 3×44 + 2×6 = 152 px. */
-  #ekran-gra:not([hidden]) .mapa-atrybucja {
-    bottom: auto;
-    top: 0;
-    text-align: left;
-    border-top: 0;
-    border-bottom: 1px solid var(--linia);
-    padding: 2px 8px;
-  }
-  #ekran-gra:not([hidden]) .mapa-skala {
-    bottom: auto;
-    top: 160px;
-    left: auto;
-    right: 8px;
-  }
-
-  /* 3. Karty faz i komunikaty: NA mapie, nieprzezroczyste, z własnym
-     przewijaniem w środku karty (długie pytanie nie wypycha mapy z ekranu). */
-  #ekran-gra:not([hidden]) > .gra-panel {
-    position: relative;
-    z-index: 2;
-    margin: 0 8px 8px;
-    max-height: 55dvh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    box-shadow: 0 -2px 10px rgb(0 0 0 / 0.2);
-  }
-  /* Podsumowanie końca gry to tabelki i szczegóły — dostaje więcej miejsca,
-     bo mapa nie jest już wtedy potrzebna do chodzenia. */
-  #ekran-gra:not([hidden]) > #gra-panel-koniec { max-height: 72dvh; }
-
-  #ekran-gra:not([hidden]) > #bledy-gra,
-  #ekran-gra:not([hidden]) > #gra-komunikat {
-    position: relative;
-    z-index: 2;
-    margin: 0 8px 6px;
-  }
-  /* Komunikat dostaje tło karty, bo leży prosto na mapie. Alertu błędu NIE
-     malujemy: `.bledy` ma własne `blad-tlo`/`blad`, a ten selektor (id) by je
-     przykrył i błąd przestałby wyglądać jak błąd. */
-  #ekran-gra:not([hidden]) > #gra-komunikat {
-    padding: 7px 10px;
-    border: 1px solid var(--linia);
-    border-radius: 10px;
-    background: var(--tlo-karta);
-  }
-  #ekran-gra:not([hidden]) > #gra-komunikat:empty { display: none; }
-
-  /* Pasek „pomiń odcinek / zakończ grę” też musi być nad mapą. */
-  #ekran-gra:not([hidden]) > .wiersz {
-    position: relative;
-    z-index: 2;
-    margin: 0 8px 8px;
-    padding: 8px;
-    border: 1px solid var(--linia);
-    border-radius: 10px;
-    background: var(--tlo-karta);
-  }
-}
-
-/* --- POZIOM: karty w prawej kolumnie, mapa widoczna z lewej --- */
-@media (orientation: landscape) and (max-height: 620px) {
-  /* W poziomie nagłówek zjadałby ~90 px z ~360 px wysokości ekranu. */
-  body[data-ekran='gra'] .gora { padding-top: 4px; padding-bottom: 4px; }
-  body[data-ekran='gra'] .gora .akcje .przycisk-ikona { min-height: 30px; padding: 3px 6px; font-size: 14px; }
-
-  /* Karty zajmują prawe 52% szerokości; lewa strona zostaje dla mapy. */
-  #ekran-gra:not([hidden]) > .gra-panel,
-  #ekran-gra:not([hidden]) > #bledy-gra,
-  #ekran-gra:not([hidden]) > #gra-komunikat,
-  #ekran-gra:not([hidden]) > .wiersz {
-    width: 52%;
-    margin-left: auto;
-    margin-right: 8px;
-  }
-  /* Wysokości w poziomie jest mało: karta fazy nie może wypchnąć paska
-     przycisków poza ekran. */
-  #ekran-gra:not([hidden]) > .gra-panel { max-height: 52dvh; }
-  #ekran-gra:not([hidden]) > #gra-panel-koniec { max-height: 60dvh; }
-
-  /* Pasek stanu gry i atrybucja tylko nad mapą, nie nad kartami. */
-  #ekran-gra:not([hidden]) .gra-badges { right: 50%; }
-  #ekran-gra:not([hidden]) .mapa-atrybucja { right: 48%; }
-  /* Skala wraca na dół — w poziomie dół mapy jest wolny, a pod przyciskami
-     +/−/◎ nie ma już miejsca. */
-  #ekran-gra:not([hidden]) .mapa-skala { top: auto; bottom: 8px; left: 8px; right: auto; }
-}
-
-/* --- Warstwa nad aplikacją (rankingi) -------------------------------------
- * Decyzja właściciela 2026-09-08: rankingi nie są osobnym ekranem, tylko
- * warstwą nad tym, co gracz robił — z klawiszem „Zamknij rankingi" i krzyżykiem
- * w prawym górnym rogu. Karta ma PEŁNE tło, więc kontrast tekstu nie zależy od
- * tego, co jest pod spodem (audyt WCAG liczy pary z palety, nie przezroczystość).
- * Na końcu pliku celowo: `.ekran` ustawia `max-width` i musi tu przegrać.
- */
-.warstwa {
-  position: fixed;
-  inset: 0;
-  z-index: 60;
-  max-width: none;
-  margin: 0;
-  /* Zgłoszenie właściciela (2026-09-09, A2): karta rankingów wchodziła pod
-     górną belkę — `inset: 0` sięga pod nią, a 16 px odstępu nie wystarczało,
-     żeby ominąć belkę wysoką na ~64 px (i wyższą, gdy `.akcje` się zawija).
-     Wysokość belki mierzy JS w `--wysokosc-belki`, tak jak dla przycisków mapy. */
-  padding: calc(var(--wysokosc-belki, 64px) + 12px) 12px 32px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: color-mix(in srgb, var(--tekst) 62%, transparent);
-}
-.warstwa[hidden] { display: none; }
-.warstwa-karta {
-  position: relative;
-  max-width: 720px;
-  margin: 0 auto;
-  padding: 18px 16px 20px;
-  background: var(--tlo-karta);
-  color: var(--tekst);
-  border: 1px solid var(--linia);
-  border-radius: var(--promien);
-}
+/* Zamykanie paneli pomocniczych (wspólny układ poniżej). */
 .warstwa-krzyzyk {
   position: absolute;
   top: 8px;
@@ -1003,45 +747,6 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 }
 .warstwa h2 { padding-right: 52px; }
 
-/* --- Ekran startowy (decyzja właściciela 2026-09-09): okno 80% × 80% nad
- * mapą — widać nagłówek, stopkę i trochę mapy po bokach. Wzór z karty
- * setupu (karta nad mapą-tłem), ale węższe: boki pokazują mapę, nie ścianę
- * tekstu. `z-index: 10` — nad belką (3) i kartami (2), pod rankingami (60).
- * Całe okno jest klikalne (kursor), bo klik gdziekolwiek je zamyka. */
-/* Zgłoszenie właściciela (2026-09-09, A3): warstwa startowa ma przyciemniać
- * mapę tak samo jak rankingi. Stąd ten sam wzór co `.warstwa`: półprzezroczysty
- * kożuch na CAŁY ekran (`inset: 0`) i karta w środku — wcześniej okno samo było
- * kartą wstawioną w `inset: 10dvh 10vw`, więc mapa dookoła zostawała jasna.
- * `z-index: 10` — nad belką (3) i kartami (2), pod rankingami (60). */
-.warstwa-start {
-  position: fixed;
-  inset: 0;
-  z-index: 10;
-  display: grid;
-  place-items: center;
-  padding: calc(var(--wysokosc-belki, 64px) + 12px) 10px 24px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: color-mix(in srgb, var(--tekst) 62%, transparent);
-  cursor: pointer;
-}
-.warstwa-start[hidden] { display: none; }
-.warstwa-start-karta {
-  width: 100%;
-  max-width: 560px;
-  max-height: 100%;
-  padding: 18px 20px 20px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: var(--tlo-karta);
-  color: var(--tekst);
-  border: 1px solid var(--linia);
-  border-radius: var(--promien);
-}
-/* A1: tytuł i podtytuł są wizytówką aplikacji — duże i wyśrodkowane.
-   `clamp` zamiast stałej: na 360 px ma się zmieścić w jednej linii, a na
-   desktopie nie wyglądać jak nagłówek akapitu. Treść zostaje do lewej —
-   wyśrodkowany akapit czyta się źle. */
 .warstwa-start h1 {
   margin: 0;
   font-size: clamp(28px, 8vw, 40px);
@@ -1070,219 +775,88 @@ body.okno-start #mapa-pozycja .mapa-przyciski { display: none; }
  * kafelków, a element `display:none` ma zerowy, więc po powrocie zoom i skala
  * rozsypałyby się.
  */
-#mapa-pozycja {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  /* Reguła bazowa `.mapa` daje `height: 45vh; min-height: 240px;
-     max-height: 460px; margin: 10px 0`. Selektor z id nadpisuje TYLKO te
-     właściwości, które wymieni — więc bez jawnych resetów mapa-tło była
-     `position: fixed` na całą szerokość, ale ŚCIĘTA do 460 px i przesunięta
-     o 10 px w dół: właściciel widział „mapę na pół ekranu", nie na cały
-     viewport. Te same resety mają #mapa-gra i #mapa-stacje niżej. */
-  min-height: 0;
-  max-height: none;
-  margin: 0;
-  border: 0;
-  border-radius: 0;
-  z-index: 0;
-}
-body:not([data-ekran='setup']):not([data-ekran='pozycja']):not([data-ekran='mapa']) #mapa-pozycja { visibility: hidden; }
-/* Mapa startowa: sam podkład — pasek kroków 1–6 opisuje przygotowanie gry,
-   które jeszcze nie ruszyło, więc oddaje miejsce mapie (jak w grze). */
-body[data-ekran='mapa'] #kroki { display: none; }
-.tresc { position: relative; z-index: 1; }
 
-/* Zgłoszenie właściciela (2026-09-09, A3): każda warstwa nad mapą ma ją
-   przyciemniać tak jak rankingi. Setup jest kartą, nie warstwą, więc kożuch
-   robi pseudoelement `<body>` — leży nad mapą (`z-index: 0`), pod kartą
-   setupu (2) i pod belką (3), która zostaje czytelna, bo z niej wychodzi się
-   z ustawień. Ten sam kolor co `.warstwa` i `.warstwa-start`. */
-body[data-ekran='setup']::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 1;
-  background: color-mix(in srgb, var(--tekst) 62%, transparent);
-  pointer-events: none; /* kożuch tylko przyciemnia — klik należy do mapy i karty */
-}
 
-/* Setup jako karta NAD mapą: centrowana, z ograniczoną wysokością, żeby mapa
-   była widoczna nad i pod nią. Przewijanie dzieje się WEWNĄTRZ karty, nie na
-   stronie. Nagłówek zostaje nad kartą, bo to z niego wraca się do ustawień. */
-body[data-ekran='setup'] #ekran-setup {
-  position: fixed;
-  inset: 11dvh 10px;
-  z-index: 2;
-  max-width: 640px;
-  max-height: 78dvh;
-  margin: auto;
-  padding: 14px;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  background: var(--tlo-karta);
-  border: 1px solid var(--linia);
-  border-radius: var(--promien);
+/* ADR 0034 — jeden układ paneli dla setupu, rozgrywki i informacji. */
+body { height: 100dvh; min-height: 0; overflow: hidden; }
+.gora { position: relative; z-index: 30; flex: 0 0 auto; }
+.gora .akcje { gap: 6px; }
+.gora .przycisk-ikona { min-width: 44px; min-height: 44px; }
+#kroki { display: none; }
+.tresc { position: static; z-index: auto; padding: 0; min-height: 0; }
+#mapa-pozycja, #mapa-stacje, #mapa-gra {
+  position: fixed; inset: var(--wysokosc-belki, 64px) 0 0;
+  width: 100%; height: auto; min-height: 0; max-height: none;
+  margin: 0; border: 0; border-radius: 0; z-index: 0;
+  visibility: hidden;
 }
-.gora { position: relative; z-index: 3; }
-
-/* Przyciski +/− mapy-tła muszą być w obszarze, którego nic nie przykrywa.
-   Mapa-tło sięga pod samą belkę, a belka (`z-index: 3`, nieprzezroczyste tło)
-   i panel pozycji (`z-index: 2`) malują się NAD mapą (`z-index: 0`) — więc
-   domyślne `top: 8px; right: 8px` chowało przyciski pod belką, a w wariancie
-   poziomym dodatkowo pod panelem, który stoi przy prawej. Stąd: poniżej belki
-   i przy LEWEJ krawędzi. Wysokość belki mierzy JS (`--wysokosc-belki`, patrz
-   `ustawWysokoscBelki()`), bo `.akcje` ma `flex-wrap: wrap` i na wąskim
-   ekranie belka rośnie — stała liczba by się rozsypała. */
-body[data-ekran='setup'] #mapa-pozycja .mapa-przyciski,
-body[data-ekran='pozycja'] #mapa-pozycja .mapa-przyciski,
-body[data-ekran='mapa'] #mapa-pozycja .mapa-przyciski {
-  top: calc(var(--wysokosc-belki, 64px) + 10px);
-  right: auto;
-  left: 10px;
+body[data-mapa='pozycja'] #mapa-pozycja,
+body[data-mapa='stacje'] #mapa-stacje,
+body[data-mapa='gra'] #mapa-gra { visibility: visible; }
+.mapa-przyciski { top: 12px; left: 10px; right: auto; }
+.mapa-atrybucja { bottom: 0; padding-right: 76px; z-index: 12; }
+.mapa-skala { bottom: 40px; }
+#przygaszenie-mapy {
+  position: fixed; inset: var(--wysokosc-belki, 64px) 0 0; z-index: 5;
+  background: rgb(0 0 0 / .48); pointer-events: none;
+}
+.panel-centralny:not([hidden]) {
+  position: fixed; z-index: 10;
+  top: calc(var(--wysokosc-belki, 64px) + (100dvh - var(--wysokosc-belki, 64px)) * .45);
+  left: 50%; right: auto; bottom: auto; transform: translate(-50%, -50%);
+  width: 90%; max-width: 720px;
+  max-height: calc((100dvh - var(--wysokosc-belki, 64px)) * .9 - 62px);
+  min-height: 0; height: auto; margin: 0; padding: 16px;
+  overflow-y: auto; overscroll-behavior: contain;
+  background: var(--tlo-karta); color: var(--tekst);
+  border: 1px solid var(--linia); border-radius: var(--promien);
+  box-shadow: 0 12px 40px rgb(0 0 0 / .3); display: block;
+}
+.panel-centralny[hidden], #przygaszenie-mapy[hidden] { display: none; }
+.panel-centralny > .warstwa-karta, .panel-centralny > .warstwa-start-karta {
+  position: static; width: auto; max-width: none; max-height: none;
+  margin: 0; padding: 0; overflow: visible; border: 0; box-shadow: none;
+}
+#ekran-informacje { z-index: 20; }
+body.informacje-otwarte .panel-centralny:not(#ekran-informacje) { visibility: hidden; }
+body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
+#przycisk-podejrzyj-mape {
+  position: fixed; z-index: 40; right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  display: grid; place-items: center; width: 52px; height: 52px;
+  border-radius: 50%; border: 2px solid var(--akcent);
+  background: var(--tlo-karta); color: var(--tekst); cursor: pointer;
+  box-shadow: 0 3px 12px rgb(0 0 0 / .3);
+}
+#przycisk-podejrzyj-mape[aria-pressed='true'] { background: var(--akcent); color: var(--akcent-tekst); }
+#przycisk-podejrzyj-mape:focus-visible { outline: 3px solid var(--tekst); outline-offset: 3px; }
+.informacje-tresc { display: grid; gap: 12px; }
+.informacje-tresc .separator { display: none; }
+.instrukcja a { display: block; padding: 10px 0; overflow-wrap: anywhere; }
+#prompt-instrukcja > summary { font-size: 20px; font-weight: 700; min-height: 44px; }
+.stacje-obszar, #stacje-panel { display: block; overflow: visible; }
+.gra-panel { max-height: none; }
+@media (orientation: landscape) and (max-height: 500px) {
+  .panel-centralny:not([hidden]) { padding: 12px; }
+  .gora { padding-top: 4px; padding-bottom: 4px; }
 }
 
-/* Ekran pozycji: mapa jest tłem, a treść ekranu to PANEL w podziale ekranu —
-   w pionie na dole, w poziomie z prawej. `position` jest tu konieczne: bez niego
-   karta zostaje `static`, a element statyczny maluje się POD ustalonym tłem
-   mapy (`z-index: 0`) i znika pod nią — tak to właśnie wyglądało w podglądzie.
-   Tło jest pełne, nie półprzezroczyste: półprzezroczyste nad mapą robi tekst
-   nieczytelnym, a audyt WCAG liczy pary z palety, nie to, co prześwituje. */
-body[data-ekran='pozycja'] #ekran-pozycja {
-  /* Panel jest pozycjonowany WZGLĘDEM `.tresc`, a nie względem viewportu.
-     `.tresc` ma `position: relative` i jest elementem flexa dokładnie między
-     belką a stopką (`body { display: flex; flex-direction: column }` +
-     `.tresc { flex: 1 1 auto }`), więc jego ramka wyznacza panelowi sufit
-     i podłogę: panel NIE MOŻE wjechać pod stopkę i schować przycisków.
-     Przy `position: fixed` ograniczeniem był viewport, a stopka ma wyższy
-     `z-index` — dolne przyciski znikały pod nią bez możliwości przewinięcia
-     (zgłoszenie właściciela 2026-09-08). */
-  position: absolute;
-  z-index: 2;
-  padding: 12px;
-  /* `.ekran` deklaruje `max-width: 720px; margin: 0 auto`. Bez jawnego resetu
-     `margin: 0 auto` zostaje i przy `left: auto` przesuwa panel (L40). */
-  margin: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  -webkit-overflow-scrolling: touch;
-  background: var(--tlo-karta);
-  border: 1px solid var(--linia);
-  border-radius: var(--promien);
-}
-/* PION: panel dokowany do dołu obszaru treści, mapa zostaje nad nim.
-   `top` podany JAWNIE: przy `top: auto` przeglądarka bierze pozycję statyczną
-   i ignoruje `bottom`, więc panel nie przykleiłby się do dołu. Wysokość wynika
-   z pary top/bottom, więc gdy treść się nie mieści — przewija się w panelu. */
-@media (max-width: 900px) and (orientation: portrait) {
-  body[data-ekran='pozycja'] #ekran-pozycja {
-    top: 42dvh;
-    left: 10px;
-    right: 10px;
-    bottom: 10px;
-    margin: 0 auto;
-    max-width: 640px;
-  }
-}
-/* POZIOM i szeroki ekran: panel z prawej, mapa z lewej. `top` I `bottom`
-   podane jawnie — wtedy wysokość wynika z ograniczeń obszaru treści, a nie
-   z ilości treści, więc panel zawsze mieści się między belką a stopką.
-   Wcześniejsze `max-height: calc(100dvh - 110px)` było liczone od viewportu,
-   a panel startował niżej, więc i tak wyjeżdżał pod stopkę. */
-@media (orientation: landscape), (min-width: 901px) {
-  body[data-ekran='pozycja'] #ekran-pozycja {
-    top: 10px;
-    right: 10px;
-    bottom: 10px;
-    width: 44%;
-    max-width: 460px;
-  }
-}
+/* Postęp nie zasłania listy prób ani oka. */
+#stacje-ladowanie { position: static; padding: 8px; margin-bottom: 8px; }
+.siec-proby { padding-left: 24px; font-size: 14px; overflow-wrap: anywhere; }
+.siec-proby li { margin-bottom: 6px; }
 
-/* --- Ekran stacji: mapa i lista OBOK siebie (decyzja właściciela 2026-09-08) --
- * Właściciel: „Ekran stacji nie może być nad mapą bo te stacje odnoszą się właśnie
- * do mapy. […] chyba muszą być pod, albo może podzielić ekran na dwie części i
- * w jednej zostawić mapę, a w drugiej scrollowany obszar na stacje?"
- * Podział jest lepszy niż „pod": w pionie lista zasłaniałaby pół mapy i tak,
- * a obok siebie widać pinezkę i jej opis jednocześnie. Przewijanie dzieje się
- * WEWNĄTRZ panelu — strona się nie przewija (wzorzec z ADR 0030).
- * Struktura: `#ekran-stacje` (kolumna: nagłówek + `.stacje-obszar`), a dopiero
- * `.stacje-obszar` dzieli się na mapę i panel — inaczej w poziomie tytuł sekcji
- * stałby się jedną z kolumn.
- */
-
-/* PION: mapa u góry zajmuje, co zostanie; panel na dole. */
-@media (max-width: 900px) and (orientation: portrait) {
-  body[data-ekran='stacje'] { height: 100dvh; overflow: hidden; }
-  body[data-ekran='stacje'] .tresc { height: 100%; overflow: hidden; }
-  #ekran-stacje:not([hidden]) {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    max-width: none;
-    overflow: hidden;
-  }
-  #ekran-stacje:not([hidden]) .stacje-obszar {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  #ekran-stacje:not([hidden]) #mapa-stacje {
-    flex: 1 1 auto;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-  }
-  #ekran-stacje:not([hidden]) #stacje-panel {
-    flex: 0 0 auto;
-    max-height: 42dvh;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
-    margin-top: 8px;
-    padding: 8px;
-    background: var(--tlo-karta);
-    border: 1px solid var(--linia);
-    border-radius: var(--promien);
-  }
+/* Droga: tylko jednowierszowy pasek przy dolnej krawędzi. Pytania bez zmian. */
+body.gra-w-drodze #ekran-gra:not([hidden]) {
+  top: auto; bottom: 0; left: 0; right: 0; transform: none;
+  width: 100%; max-width: none; max-height: none; margin: 0;
+  padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+  border-radius: 0; border-width: 1px 0 0; box-shadow: none;
+  overflow: hidden;
 }
-
-/* POZIOM i szeroki ekran: mapa z lewej, lista z prawej. */
-@media (orientation: landscape), (min-width: 901px) {
-  body[data-ekran='stacje'] { height: 100dvh; overflow: hidden; }
-  body[data-ekran='stacje'] .tresc { height: 100%; overflow: hidden; }
-  #ekran-stacje:not([hidden]) {
-    display: flex;
-    flex-direction: column;
-    height: 100%;
-    max-width: none;
-    overflow: hidden;
-  }
-  #ekran-stacje:not([hidden]) .stacje-obszar {
-    display: flex;
-    flex-direction: row;
-    align-items: stretch;
-    gap: 10px;
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  #ekran-stacje:not([hidden]) #mapa-stacje {
-    flex: 1 1 auto;
-    height: auto;
-    min-height: 0;
-    max-height: none;
-    margin: 0;
-  }
-  #ekran-stacje:not([hidden]) #stacje-panel {
-    flex: 0 0 44%;
-    max-width: 44%;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding: 10px;
-    background: var(--tlo-karta);
-    border: 1px solid var(--linia);
-    border-radius: var(--promien);
-  }
-}
+#gra-pasek { margin: 0; white-space: nowrap; font-size: 14px; line-height: 20px; overflow-x: auto; }
+body.gra-w-drodze #przycisk-podejrzyj-mape { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
+body.gra-w-drodze #mapa-gra .mapa-atrybucja { bottom: calc(36px + env(safe-area-inset-bottom, 0px)); }
+body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+#informacje-gra { margin-bottom: 16px; }
+#informacje-gra h2 { padding-right: 48px; }

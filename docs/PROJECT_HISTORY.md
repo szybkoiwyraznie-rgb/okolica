@@ -1898,3 +1898,156 @@ przy „Zapisz jako plik" mówił o nieistniejącym „PNG podglądu stacji".
 Dopisany test końcowego scenariusza zgłoszenia 4 na poziomie aplikacji:
 pełna gra (symulacja GPS, 3 gracze) → „Wróć na początek" → mapa na spodzie
 narysowana z kafelkami w zakresie zoomu podkładu. Brama: 692/692.
+
+## 2026-09-10 — kontynuacja: audyt PR #7
+
+Przeczytano lekturę startową; budżet 65 458/100 000. Bazowe `npm test`:
+692/692. Audyt wszystkich 28 plików diffu `4168aa9..4acde1d`:
+
+- F1: `ustalibujWidok` ogranicza skalę bez przeliczenia przesunięcia.
+  `x/y` to piksele, nie środek geograficzny. Reprodukcja 360×640,
+  52.23/21.01, z25 → z19: środek staje się -90/12684.64.
+  Test utrwalał błędne oczekiwanie niezmienionego x/y. Do naprawy.
+- F2: `Response.blob()` dla opaque ma pusty typ i rozmiar 0. Atrapa
+  `image/png` w `test/sw.test.js` jest nierealistyczna; dobre kafelki
+  no-cors nie trafiają do cache. L44 i ARCHITECTURE błędnie opisują
+  możliwość sprawdzenia ciała opaque. Polityka cache wymaga rozstrzygnięcia;
+  nie potwierdzono przyczyny pustej mapy na telefonie właściciela.
+- F3: handoff kończy się na PR #5; README nadal opisuje usunięte wejście
+  prywatności z setupu i import odpowiedzi z pliku. Do aktualizacji.
+- Pozostałe zmiany: skróty tematów, rozróżnienie braku danych rankingu,
+  opisy promptu i pauza Overpass odpowiadają zapisanym zleceniom; wersje
+  importów i SW spójne (m12-52). Bez zmian schematu PYT.
+
+
+### Wynik kontynuacji 2026-09-10
+
+- F1 naprawiony (`ad3fefd`): clamp przez istniejące `zmienSkale`, zaczep
+  w środku panelu. Test czerwony przed zmianą, następnie 692/692 zielone.
+  Test geograficzny obejmuje wszystkie podkłady, pion i poziom, zoom niski,
+  poprawny i za duży. Chromium 360×640: z25 → z19, środek 52.23/21.01
+  bez zmiany, brak błędów JS.
+- F2: usunięta pozorna inspekcja opaque. Cache tylko sukcesów basic/cors,
+  opaque przekazywane bez zapisu; nie zmieniono trybu pobierania kafelków.
+  Testy CORS 200/cache/ewikcja czerwone przed naprawą, zielone po niej;
+  osobny test błędów CORS i realistycznego opaque. Chromium przy włączonej
+  ochronie origin potwierdziło status 0, pusty typ i rozmiar 0 dla no-cors
+  zarówno 200 PNG, jak i 404. Brak gwarancji podkładu offline opisany jawnie.
+  Przywrócenie cache opaque pozostaje możliwą osobną decyzją, nie zadaniem
+  realizowanym ukrytą zmianą polityki. L44 skorygowana, nie potwierdzamy
+  historycznej hipotezy przyczyny pustej mapy użytkownika.
+- F3: README po usunięciu importu odpowiedzi i wejścia prywatności z setupu;
+  aktualny handoff `HANDOFF_2026-09-10.md`. Roadmapa nadal czeka na kryteria
+  właściciela; sesja nie zalicza testów terenowych ani dwóch telefonów.
+- Brama: 693 testy, synchronizacja obu szablonów, audyt kontrastu 0 naruszeń.
+  Wersja końcowa m12-54. PR #8; żadnego scalenia do main.
+
+
+### Uzupełnienie 2026-09-10 — uwagi z testu terenowego (ADR 0034)
+
+- m12-55 / 9ab77c1: nowy setup 7/12/dorośli, Ciekawostki, brak Sportu/Jedzenia,
+  porządek alfabetyczny; zgodność odczytu historycznych paczek i zapisów.
+- m12-56 / db2219b: jeden fix ≤50 m otwiera pytania, accuracy bez wpływu
+  na decyzję, komunikaty i mapę; granice 50/50.001 m w regresjach.
+- m12-57: centralne warstwy setup/stacje/pytania, oko nie zatrzymuje procesów,
+  mapy odłączone od ukrywanych paneli, informacje zamiast stopki. Bez pól
+  współrzędnych, przycisku GPS i symulacji 250 m. Automatyczny GPS i testowy
+  tap mapy zachowane. Zwinięta instrukcja oraz linki Meta/ChatGPT/Gemini.
+- Brama 678 testów, zgodne szablony, audyt kontrastu 0 naruszeń. Stare testy
+  celowo usuniętych kontrolek zastąpione regresjami nowego zachowania.
+- Chromium 360×640, 320×568, 844×390: układ i przewijanie paneli, oko/mapa,
+  instrukcja; dojście podczas podglądu i powrót do pytania. Zero błędów JS.
+  Próby z fixture/fallbackiem sieci, nie potwierdzenie rzeczywistej gry terenowej.
+- Handoff zaktualizowany; PR #8 bez scalenia, kryteria właściciela nadal otwarte.
+
+
+### Korekta 2026-09-10 — dwa kolejne pomiary ≤50 m (m12-58)
+
+Właściciel przyjął rekomendację potwierdzania dojścia drugim pomiarem i jawnie
+potwierdził nierówność ≤50 m. Zmieniono domyślne kryterium geo/pozycja i tekst
+startu odcinka, bez przywracania oceny accuracy. Regresje najpierw czerwone:
+jeden fix nie wystarcza, dwa wystarczają, pomiar >50 m przerywa serię.
+Poprzednie wdrożenie jednego fixa opisane wyżej jest zastąpione aneksem ADR 0034.
+
+Weryfikacja m12-58: pełna brama **679 testów**, zgodne szablony i **0 naruszeń
+kontrastu**. Testy rozgrywki i dojścia podczas podglądu mapy przechodzą.
+Do potwierdzenia na telefonie pozostaje czas oczekiwania na drugi odczyt GPS.
+
+
+## Overpass — m12-59 (ADR 0035)
+
+Zgłoszenie: właściciel widział private.coffee/VK, nie FOSSGIS, a na końcu
+`signal is aborted without reason`. Nie ustalono historycznej przyczyny.
+Wdrożono FOSSGIS zawsze pierwszy (pamięć sukcesu porządkuje tylko rezerwy),
+10 s na całą próbę z ciałem, QL timeout 8 s, sprzątanie timera w finally,
+rozpoznawanie własnego timeoutu niezależnie od treści/nazwy błędu przeglądarki.
+Brak nagłówków lub zatrzymane ciało nie blokują następnej instancji.
+403/404 i wadliwy JSON także pozwalają przejść dalej; 400 nadal kończy próby.
+Panel stacji pokazuje numer, nazwę i wynik wszystkich wykonanych prób;
+postęp nie przykrywa listy, oko nie zatrzymuje pobierania.
+
+Lista pozostaje trzyinstancyjna. Próba wskazanego overpass.openstreetmap.ru
+z sandboxa: błąd TLS, HTTP 000; nie włączono niesprawdzonej rezerwy.
+Nie potwierdza to globalnej awarii; nie dodano płatnych usług/kluczy.
+Pełna brama: **683 testy**, zgodne szablony, **0 naruszeń kontrastu**.
+Nowe testy obejmują nagłówki/ciało/nietypowy abort, kolejność i listę prób
+oraz sukces rezerwy po HTTP 403. To atrapy, nie test publicznych serwerów
+z telefonu. Preview na porcie 8000; odświeżyć do m12-59.
+Gałąź `arena/01a08b96-okolica`, PR #8, bez merge. Następny krok właściciela:
+sprawdzić na telefonie listę prób i zapisać wyniki, jeśli pobieranie zawiedzie.
+
+
+## Korekta Overpass — m12-60
+
+Właściciel odrzucił wymuszenie FOSSGIS i log na ekranie stacji. Przywrócono
+ostatnią sprawną instancję jako pierwszą; pozostałe bez dubli. Szczegóły
+prób wyłącznie w ⓘ Informacje, na stacjach ogólny postęp/błąd. Dodano wskazany
+Adikso: `https://overpass.osm.adikso.net/api/interpreter` jako czwartą rezerwę,
+która po sukcesie zyskuje pierwszeństwo jak każda inna. Limit 10 s bez zmian.
+Próba HTTPS z sandboxa dała błąd TLS (HTTP 000), więc dostępność i CORS nie
+są potwierdzone. Wdrożono próbę połączenia, nie gwarancję działania serwera.
+Do sprawdzenia na telefonie. Aneks ADR 0035, ASSETS i prywatność aktualne.
+
+Brama: **685 testów**, szablony zgodne, **0 naruszeń kontrastu**. Regresje
+były czerwone przed zmianą. Sukces Adikso sprawdzono na atrapie, nie serwerze.
+Przekazanie: ta sama gałąź `arena/01a08b96-okolica`, PR #8, bez merge.
+Preview odświeżyć do m12-60; przy problemie odczytać wyniki z ⓘ Informacje.
+
+
+## Ikonka Informacji — m12-61
+
+Dodano `aria-pressed` synchronizowane z otwarciem panelu ⓘ, wykorzystujące
+istniejący styl zaznaczenia ikon nagłówka. Zamykanie ikoną, krzyżykiem,
+Escape lub przejściem do rankingów wygasza zaznaczenie; podgląd mapy nie
+wyłącza panelu i zachowuje zaznaczenie. Regresja najpierw czerwona, potem
+zielona. Pełna brama: 686 testów, szablony zgodne, 0 naruszeń kontrastu.
+Przekazanie: ta sama gałąź i PR #8, bez merge; preview odświeżyć do m12-61.
+
+
+## Nagłówek instrukcji — m12-62
+
+Na życzenie właściciela etykieta: „Prompt dla modelu AI (KLIKNIJ żeby zobaczyć
+instrukcję)”. Instrukcja nadal domyślnie zwinięta. Potwierdzono w HTML:
+Meta AI, ChatGPT i Gemini mają target=_blank oraz rel=noopener noreferrer;
+karta gry nie jest zastępowana. Brama: 687 testów, zgodne szablony,
+0 naruszeń kontrastu. Przekazanie: ta sama gałąź, PR #8 bez merge;
+preview odświeżyć do m12-62.
+
+
+## Pasek podczas drogi — m12-63 / ADR 0036
+
+W drodze centralny panel zastąpiony jednowierszowym paskiem przy dolnej
+krawędzi: „Kto: Imię (125 m) · stacja 1 z 5”. Mapa nieprzygaszona; oko,
+atrybucja i skala powyżej paska. Dotychczasowe sterowanie przenoszone jako
+te same węzły do ⓘ Informacje (pauza, pominięcie, zakończenie, multi itp.).
+Pytanie po dojściu automatycznie wraca do dużego panelu szerokości 90%,
+zamyka Informacje; podgląd oka nadal zachowuje stan. Przygotowanie i wyniki
+bez zmiany układu. Pauza nie zmienia paska w centralny panel.
+
+Brama: **688 testów**, szablony zgodne, **0 naruszeń kontrastu**.
+Chromium 360×640, 320×568, 844×390: pasek 37 px przy samym dole,
+jedna linia, oko nad nim, brak scrolla strony; pauza i symulacja działają
+z Informacji, dojście odsłania pytanie. Zero błędów JS. Próba z fixture,
+nie test GPS w terenie. Narzędzia/screenshoty poza repo w /home/user/.narzedzia.
+Przekazanie: ta sama gałąź i PR #8, bez merge. Preview na porcie 8000,
+odświeżyć do m12-63; sprawdzić pasek i dojście na telefonie.

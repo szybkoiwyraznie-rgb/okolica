@@ -573,12 +573,18 @@ potem oddawał tę „pustkę” przy KAŻDEJ następnej grze w tej samej okolic
 zmiany `WERSJA_SW`. Stąd „dalej jest nienaprawione” mimo kolejnych PR-ów:
 zepsuty stan żył w telefonie, nie w repo.
 
-**Reguła:** odpowiedzi o nieznanym statusie (`opaque`) cache-uje się tylko,
-gdy treść daje się zweryfikować — w `sw.js` kafelkiem jest tylko ciało,
-które dekoduje się jako `image/*` (`czyTrafSieDoCache`). Drugie dno po stronie
-mapy: `ustalibujWidok` w `rysuj()` wciąga widok w zakres zoomu podkładu przy
-każdym rysowaniu, więc „pustej mapy przez zbyt duże przybliżenie” nie da się
-utrzymać dłużej niż jeden rys.
+**Korekta audytu 2026-09-10:** poprzednia diagnoza była hipotezą, nie
+potwierdzoną przyczyną objawu na telefonie. Próba odczytu `blob.type` z opaque
+NIE weryfikuje obrazu: przeglądarka zwraca pusty typ i rozmiar 0. Atrapa testowa
+z `image/png` ukryła błąd. SW pomija teraz opaque jawnie; cache-uje wyłącznie
+sukcesy basic/cors. Nie zmieniamy trybu żądań ani dostawców: podkład no-cors
+nie ma gwarancji offline w Cache Storage (cache HTTP działa niezależnie).
+Zmiana polityki na cache opaque wymaga osobnej decyzji, nie pozornej walidacji.
+**Reguła:** testy API muszą odtwarzać ograniczenia platformy, nie upragniony wynik.
+
+Również `ustalibujWidok` wymagał poprawki: x/y to przesunięcie pikselowe,
+a nie środek mapy. Przy zmianie skali przelicza się je wokół środka panelu;
+test sprawdza geograficzny round-trip dla obu orientacji i wszystkich podkładów.
 
 **Przy diagnozie „mapa pusta, a zoom-out ją przywraca”:** najpierw sprawdź,
 CO WIDZI TELEFON (wersja budowy w stopce), potem cache — a nie tylko kod:

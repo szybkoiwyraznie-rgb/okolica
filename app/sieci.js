@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-52';
-import { TRYBY } from './konfig.js?v=m12-52';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-63';
+import { TRYBY } from './konfig.js?v=m12-63';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -29,25 +29,20 @@ export const INSTANCJE_OVERPASS = [
   { nazwa: 'FOSSGIS (główna)', url: 'https://overpass-api.de/api/interpreter' },
   { nazwa: 'private.coffee', url: 'https://overpass.private.coffee/api/interpreter' },
   { nazwa: 'VK Maps', url: 'https://maps.mail.ru/osm/tools/overpass/api/interpreter' },
+  { nazwa: 'Adikso (Polska)', url: 'https://overpass.osm.adikso.net/api/interpreter' },
 ];
 
-/**
- * Kolejność prób łańcucha: zapamiętana sprawna instancja pierwsza, reszta
- * bez zmian (ASSETS §2). Nieznany/pusty adres = kolejność domyślna.
- * Pamiętanie DOBREJ instancji to mniej doomed-zapytań, nie więcej ruchu.
- */
+/** Zapamiętana sprawna instancja pierwsza; pozostałe w kolejności domyślnej. */
 export function kolejnoscInstancji(zapamietanyUrl = null) {
-  if (typeof zapamietanyUrl !== 'string' || !zapamietanyUrl) return [...INSTANCJE_OVERPASS];
-  const znana = INSTANCJE_OVERPASS.find((i) => i.url === zapamietanyUrl);
-  if (!znana) return [...INSTANCJE_OVERPASS];
-  return [znana, ...INSTANCJE_OVERPASS.filter((i) => i.url !== zapamietanyUrl)];
+  const znana = INSTANCJE_OVERPASS.find(i => i.url === zapamietanyUrl);
+  return znana ? [znana, ...INSTANCJE_OVERPASS.filter(i => i !== znana)] : [...INSTANCJE_OVERPASS];
 }
 
 export const POLITYKA = {
   /** Timeout `fetch` po naszej stronie (ADR 0005, konsekwencje). */
-  timeoutMs: 20_000,
-  /** `[timeout:25]` w nagłówku zapytania Overpass QL. */
-  timeoutZapytaniaS: 25,
+  timeoutMs: 10_000,
+  /** `[timeout:8]` w nagłówku zapytania Overpass QL. */
+  timeoutZapytaniaS: 8,
   /**
    * Krótka grzecznościowa pauza po `429`/`406`/5xx (ASSETS §2 pkt 3).
    * 1 s, nie 30 s: limit publiczny i tak nie minie w sekundy, a łańcuch
@@ -91,13 +86,13 @@ export function usterka(kod, powod = null) {
 
 /**
  * Czy po takiej odpowiedzi przełączamy na następną instancję (ASSETS §2):
- * `406`/`429`/`5xx`, timeout albo błąd sieci. `4xx` inne niż 406/429 to błąd
- * ZAPYTANIA — następna instancja odpowie tak samo, więc nie przełączamy.
+ * `403`/`404`/`406`/`429`/`5xx`, timeout albo błąd sieci.
+ * 403/404 mogą dotyczyć instancji; 400 oznacza błąd zapytania i kończy próby.
  */
 export function czyPrzelaczycInstancje({ status = null, timeout = false, bladSieci = false } = {}) {
   if (timeout || bladSieci) return true;
   if (!Number.isFinite(status)) return false;
-  return status === 406 || status === 429 || status >= 500;
+  return status === 403 || status === 404 || status === 406 || status === 429 || status >= 500;
 }
 
 /* --------------------------------------------------- zapytanie Overpass */

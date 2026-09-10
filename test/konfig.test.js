@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TRYBY, WIEK, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
 test('TRYBY: trzy tryby z briefu właściciela, prędkości 4,5/15/40 km/h, bez własnego promienia (ADR 0025)', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
@@ -43,8 +43,8 @@ test('WIEK: pięć kategorii z briefu, bez wagi punktowej (rev2: 1 pkt za pytani
   assert.ok(WIEK[7].opisTrudnosci.includes('bez dat'));
 });
 
-test('TEMATY: kanon 11 tematów, klucze zgodne z formatem (małe litery, myślniki)', () => {
-  assert.equal(Object.keys(TEMATY).length, 11);
+test('TEMATY: kanon odczytu 12 tematów, klucze zgodne z formatem (małe litery, myślniki)', () => {
+  assert.equal(Object.keys(TEMATY).length, 12);
   for (const [klucz, temat] of Object.entries(TEMATY)) {
     assert.match(klucz, /^[a-z0-9-]+$/, `klucz tematu "${klucz}"`);
     assert.ok(temat.etykieta && temat.opis, `temat ${klucz} musi mieć etykietę i opis do promptu`);
@@ -311,4 +311,17 @@ test('hot-seat: pytań jest co najmniej tyle co stacji, a widełki pytań sięga
 test('oczyscKonfiguracje: pytania na stację zaciskają się do widełek, ale nie psują podziału domyślnego', () => {
   assert.equal(oczyscKonfiguracje({ pytaniaNaStacje: 99 }).pytaniaNaStacje, OGRANICZENIA.pytaniaNaStacje.max);
   assert.equal(oczyscKonfiguracje({ liczbaGraczy: 4 }).pytaniaNaStacje, 4, 'zmiana liczby graczy ciągnie domyślne pytania');
+});
+
+
+test('ADR 0034: nowe wybory setupu, alfabetyczne tematy i zgodność odczytu', () => {
+  assert.deepEqual(Object.keys(WIEK_SETUP), ['7', '12', 'dorosli']);
+  assert.deepEqual(Object.keys(TEMATY_SETUP), ['architektura', 'ciekawostki', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda', 'wlasny']);
+  assert.ok(WIEK['10'] && WIEK['15'] && TEMATY.sport && TEMATY.jedzenie);
+  const stara = { ...domyslnaKonfiguracja(), wiek: '10', tematy: ['sport', 'historia'] };
+  const nowa = konfiguracjaNowegoSetupu(stara);
+  assert.equal(nowa.wiek, '12');
+  assert.deepEqual(nowa.tematy, ['historia']);
+  assert.equal(stara.wiek, '10', 'nie mutuje zapisanej gry');
+  assert.equal(konfiguracjaNowegoSetupu({ ...stara, wiek: '15' }).wiek, 'dorosli');
 });

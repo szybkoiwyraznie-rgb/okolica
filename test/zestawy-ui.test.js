@@ -90,9 +90,7 @@ function kliknijPierwszyPrzyciskZestawu(dom) {
 
 async function dojdzDoPozycji(dom, lat = POZYCJA.lat, lon = POZYCJA.lon) {
   dom.kliknij('przycisk-dalej-pozycja');
-  dom.pobierz('setup-lat').value = String(lat);
-  dom.pobierz('setup-lon').value = String(lon);
-  dom.kliknij('przycisk-ustaw-reczne');
+  dom.ustawPozycje(String(lat), String(lon));
 }
 
 test('zestawy UI: karta propozycji pokazuje paczkę z tego telefonu po ustawieniu pozycji', async () => {
@@ -141,9 +139,7 @@ test('zestawy UI: brak pozycji albo wyczyszczony promień chowają kartę', asyn
   const dom = await aplikacjaZZestawami({});
   assert.equal(dom.pobierz('zestawy-karta').hidden, true, 'bez pozycji nie ma propozycji');
   dom.kliknij('przycisk-dalej-pozycja');
-  dom.pobierz('setup-lat').value = String(POZYCJA.lat);
-  dom.pobierz('setup-lon').value = String(POZYCJA.lon);
-  dom.kliknij('przycisk-ustaw-reczne');
+  dom.ustawPozycje(String(POZYCJA.lat), String(POZYCJA.lon));
   // Nasłuch `przycisk-dalej-pozycja` jest asynchroniczny, więc przejście na ekran
   // pozycji domyka się mikrozadaniem. Karta propozycji odświeża się tylko TAM
   // (a nie przy każdym fixie, także w grze), więc asercja musi poczekać.
@@ -270,9 +266,7 @@ const POZYCJA_FIXTURE = { lat: 52.23178, lon: 21.01234 };
 
 async function dojdzDoWklejenia(dom, pozycja = POZYCJA) {
   dom.kliknij('przycisk-dalej-pozycja');
-  dom.pobierz('setup-lat').value = String(pozycja.lat);
-  dom.pobierz('setup-lon').value = String(pozycja.lon);
-  dom.kliknij('przycisk-ustaw-reczne');
+  dom.ustawPozycje(String(pozycja.lat), String(pozycja.lon));
   dom.kliknij('przycisk-dalej-stacje');
   // Gdy test podstawia window.fetch, stacje liczą się ASYNCHRONICZNIE (pobranie
   // sieci w tle) — czekamy, aż STAN.stacje powstaną (pierścień po 404), zanim
@@ -432,9 +426,7 @@ test('zestawy UI: paczka kilka metrów od gracza jest widoczna mimo innego geoha
     const dom = await aplikacjaZZestawami({ pamiec });
     podlaczFetch(dom);
     dom.kliknij('przycisk-dalej-pozycja');
-    dom.pobierz('setup-lat').value = String(POZYCJA_PRZY_GRANICY.lat);
-    dom.pobierz('setup-lon').value = String(POZYCJA_PRZY_GRANICY.lon);
-    dom.kliknij('przycisk-ustaw-reczne');
+    dom.ustawPozycje(String(POZYCJA_PRZY_GRANICY.lat), String(POZYCJA_PRZY_GRANICY.lon));
     await new Promise((r) => setTimeout(r, 30));
     assert.notEqual(geohash(POZYCJA_PRZY_GRANICY.lat, POZYCJA_PRZY_GRANICY.lon, 5), START_PACZKI_PODKOWA.geohash5, 'test ma sens: geohash5 gracza i paczki się różnią');
     assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'paczka z sąsiedniej komórki geohash jest na liście');

@@ -47,6 +47,10 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0032](0032-wariant-bez-fact-check.md) | Wariant „Pytania (bez fact check)" jako domyślny | Zaakceptowana |
 | [0033](0033-koniec-odwracania-liter.md) | Koniec odwracania liter: zostaje kod poprawnej odpowiedzi | Zaakceptowana |
 
+| [0034](0034-uproszczenie-terenowe-i-warstwy.md) | Uproszczenie terenowe: setup, warstwy, dojście 50 m | Zaakceptowana |
+| [0035](0035-overpass-krotkie-proby.md) | Overpass: próby po 10 s, preferencje i diagnostyka w Informacjach | Zaakceptowana |
+| [0036](0036-pasek-podczas-drogi.md) | Pasek podczas drogi, sterowanie w Informacjach, duży panel pytania | Zaakceptowana |
+
 ## Szablon ADR
 
 ```markdown

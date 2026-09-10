@@ -87,6 +87,10 @@ export const WIEK = {
 
 /** Kanon tematów (protokół PYT §5). Klucze: małe litery, myślniki, bez spacji. */
 export const TEMATY = {
+  ciekawostki: {
+    etykieta: 'Ciekawostki',
+    opis: 'zaskakujące fakty, nietypowe miejsca i mało znane historie okolicy',
+  },
   historia: {
     etykieta: 'Historia',
     opis: 'dzieje miejsca, daty, wydarzenia, dawne nazwy, ślady historii w terenie',
@@ -132,6 +136,19 @@ export const TEMATY = {
     opis: 'dziedzina wpisana przez organizatora w setupie',
   },
 };
+
+/** Wybór dla NOWEJ gry; pełne kanony powyżej czytają też stare paczki. */
+export const WIEK_SETUP = Object.fromEntries(['7', '12', 'dorosli'].map(k => [k, WIEK[k]]));
+export const TEMATY_SETUP = Object.fromEntries([
+  'architektura', 'ciekawostki', 'geografia', 'historia', 'kultura',
+  'legendy', 'ludzie', 'nauka', 'przyroda', 'wlasny',
+].map(k => [k, TEMATY[k]]));
+
+export function konfiguracjaNowegoSetupu(konfig) {
+  const wiek = ({ 10: '12', 15: 'dorosli' })[konfig.wiek] ?? konfig.wiek;
+  const tematy = konfig.tematy.filter(t => Object.hasOwn(TEMATY_SETUP, t));
+  return { ...konfig, wiek, tematy: tematy.length ? tematy : [...DOMYSLNE.tematy] };
+}
 
 /**
  * Stare klucze kanonu (sprzed decyzji właściciela z 2026-09-07 o nazwach
