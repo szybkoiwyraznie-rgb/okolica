@@ -151,13 +151,15 @@ export function przesunWidok(widok, dxPx, dyPx) {
  * silnik jeszcze przybliżał, aż poza dostępny zoom") każe mieć drugie dno:
  * gdyby widok poza zakresem pojawił się z jakiegokolwiek powodu (stary stan,
  * przyszła regresja), następne `rysuj()` wciąga go z powrotem, a kafelki
- * i tak są planowane w zakresie podkładu (`siatkaKafelkow`). W zakresie
- * zwraca ten sam obiekt — bez zbędnego przepisywania stanu.
+ * i tak są planowane w zakresie podkładu (`siatkaKafelkow`). `skala: Infinity`
+ * (jedyny nieskończony zoom, który przechodzi `sprawdzWidok`) `ogranicz`
+ * wciąga do `maxZoomPodkladu`; NaN-owska `skala` pada wcześniej w
+ * `sprawdzWidok`. W zakresie zwraca ten sam obiekt — bez zbędnego
+ * przepisywania stanu.
  */
 export function ustalibujWidok(widok, podklad) {
   sprawdzWidok(widok);
   const zoom = zoomWidoku(widok);
-  if (!Number.isFinite(zoom)) return widok; // NaN zostawiamy `sprawdzWidok` w planie
   const zoomKlucz = ogranicz(zoom, ZOOM_MIN, maxZoomPodkladu(podklad));
   return zoomKlucz === zoom ? widok : { x: widok.x, y: widok.y, skala: skalaZZoomu(zoomKlucz) };
 }

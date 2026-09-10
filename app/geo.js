@@ -336,9 +336,9 @@ export function parsujWspolrzedne(surowyLat, surowyLon = '') {
  * gra o nim mówi. Teraz mówi: gracz widzi „±X m" i ostrzeżenie P05. Przycisku
  * ręcznego „jestem na miejscu" nie ma — ADR 0029 usunął go 2026-09-08, bo
  * fałszował grę (jeden klik omijał próg). Gdy GPS naprawdę nie wystarcza,
- * wyjściem jest pominięcie odcinka (ADR 0015 pkt 2) z komunikatem P03 —
- * jawne, z dziennikiem rozgrywki. To uczciwsze niż ciche zaliczanie stacji,
- * przy której gracza nie było.
+ * wyjściem jest pominięcie odcinka (ADR 0015 pkt 3–4; komunikat P03 odsyła
+ * wprost do ADR 0029) — jawne, z dziennikiem rozgrywki. To uczciwsze niż
+ * ciche zaliczanie stacji, przy której gracza nie było.
  *
  * Parametr `accuracyM` zostaje w sygnaturze: wywołania w `czyDotarl`
  * i `pozycja.js` go przekazują, a przyszła zmiana polityki (np. inny próg dla

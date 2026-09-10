@@ -4835,8 +4835,8 @@ function start() {
   $('prompt-factcheck').addEventListener('change', () => budujPromptEkran());
   // Przycisku „Zapisz jako plik" nie ma (właściciel, 2026-09-09): prompt i tak
   // idzie do schowka („Kopiuj prompt"), a plik .txt był dodatkową drogą, której
-  // nikt nie używał. Helper `pobierzPlik` zostaje — służą mu PNG podglądu
-  // stacji i eksport wyniku.
+  // nikt nie używał. Helper `pobierzPlik` zostaje — służą mu obraz wyniku
+  // (PNG, „Wynik .png") i eksport wyniku (tekst).
   $('przycisk-dalej-paczka').addEventListener('click', () => pokazEkran('paczka'));
 
   $('przycisk-wstecz-prompt').addEventListener('click', () => pokazEkran('prompt'));

@@ -111,6 +111,14 @@ test('ustalibujWidok: zoom poza zakresem podkładu wraca do zakresu, środek zos
     Math.abs(zoomWidoku(ustalibujWidok(zaBlisko, 'opentopo')) - maxZoomPodkladu('opentopo')) < 1e-9,
     'limit zależy od podkładu (opentopo = 17)',
   );
+
+  // `skala: Infinity` przechodzi `sprawdzWidok` — samonaprawa musi go wciągnąć,
+  // nie przepuścić (przepuszczenie = dokładnie ta „pusta mapa").
+  const nieskonczonaSkala = { x: 42, y: 7, skala: Infinity };
+  const poNieskonczonosci = ustalibujWidok(nieskonczonaSkala, 'osm');
+  assert.ok(Math.abs(zoomWidoku(poNieskonczonosci) - maxZoomPodkladu('osm')) < 1e-9, 'Infinity → maxZoom podkładu');
+  assert.equal(poNieskonczonosci.x, 42);
+  assert.equal(poNieskonczonosci.y, 7);
 });
 
 test('punkt na wschód od środka jest na prawo, na północ — wyżej', () => {
