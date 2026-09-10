@@ -321,46 +321,18 @@ export function parsujWspolrzedne(surowyLat, surowyLon = '') {
   return { ok: true, lat: lat.wartosc, lon: lon.wartosc, zPary: false, format: dms ? 'dms' : 'dziesietne' };
 }
 
-/**
- * Próg dojścia do stacji w metrach — **stałe 25 m** (ADR 0004 pkt 2 po aneksie
- * z 2026-09-09, decyzja właściciela).
- *
- * Do 2026-09-09 próg rósł z niedokładnością fixu: `ogranicz(1.2 × accuracy,
- * 25, 100)`. Intencją było „nie karz gracza za słaby sygnał", ale skutek był
- * odwrotny do celu gry: przy `accuracy = 100 m` stacja zaliczała się ze 100 m,
- * czyli **z zupełnie innego miejsca** — innej ulicy, innego skrzyżowania.
- * Właściciel: „Większy próg zaliczenia niż 25m nie ma sensu (…) nie powinniśmy
- * zezwalać na zaliczenie ze 100m. To zupełnie inne miejsce."
- *
- * Słaby sygnał nie znika przez poluzowanie progu — zmienia się tylko to, czy
- * gra o nim mówi. Teraz mówi: gracz widzi „±X m" i ostrzeżenie P05. Przycisku
- * ręcznego „jestem na miejscu" nie ma — ADR 0029 usunął go 2026-09-08, bo
- * fałszował grę (jeden klik omijał próg). Gdy GPS naprawdę nie wystarcza,
- * wyjściem jest pominięcie odcinka (ADR 0015 pkt 3–4; komunikat P03 odsyła
- * wprost do ADR 0029) — jawne, z dziennikiem rozgrywki. To uczciwsze niż
- * ciche zaliczanie stacji, przy której gracza nie było.
- *
- * Parametr `accuracyM` zostaje w sygnaturze: wywołania w `czyDotarl`
- * i `pozycja.js` go przekazują, a przyszła zmiana polityki (np. inny próg dla
- * trybu rowerowego) ma gdzie usiąść. Dziś jest ignorowany.
- */
-export function progDojsciaM(accuracyM, { prog = 25 } = {}) {
-  return prog;
-}
+/** ADR 0034: stały dystans dojścia, niezależny od accuracy. */
+export function progDojsciaM() { return 50; }
 
-/**
- * Rozstrzygnięcie dojścia: dystans do stacji vs próg + wymóg dwóch kolejnych
- * trafień (debounce). Czysta funkcja — przyjmuje historię fixów, nie `navigator`.
- * `trafieniaZRzedu` liczy się od końca `historia` (najnowszy fix ostatni).
- */
-export function czyDotarl(historia, stacja, { wymaganeTrafnienia = 2 } = {}) {
+/** Pojedynczy najnowszy fix w promieniu 50 m wystarcza. */
+export function czyDotarl(historia, stacja, { wymaganeTrafnienia = 1 } = {}) {
   if (!Array.isArray(historia) || historia.length === 0) return { dotarl: false, trafienia: 0, progM: 0, dystansM: Infinity };
   const ostatni = historia[historia.length - 1];
-  const progM = progDojsciaM(ostatni?.accuracy);
+  const progM = progDojsciaM();
   const dystansM = odlegloscM(ostatni, stacja);
   let trafienia = 0;
   for (let i = historia.length - 1; i >= 0 && trafienia < wymaganeTrafnienia; i--) {
-    if (odlegloscM(historia[i], stacja) <= progDojsciaM(historia[i]?.accuracy)) trafienia++;
+    if (odlegloscM(historia[i], stacja) <= progDojsciaM()) trafienia++;
     else break;
   }
   return { dotarl: trafienia >= wymaganeTrafnienia, trafienia, progM, dystansM };

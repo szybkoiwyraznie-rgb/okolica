@@ -1,6 +1,6 @@
 /**
- * pozycja.js — wszystko, co dotyczy ustalenia, gdzie jest gracz: filtr
- * dokładności fixu, kryterium dojścia do stacji, komunikaty błędów GPS,
+ * pozycja.js — wszystko, co dotyczy ustalenia, gdzie jest gracz: walidacja
+ * współrzędnych, kryterium dojścia do stacji, komunikaty błędów GPS,
  * symulacja trasy dla trybu testowego i cienka osłona `watchPosition`.
  *
  * Podział ról (ARCHITECTURE „Czyste funkcje vs warstwa DOM"):
@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-55';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-56';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -53,10 +53,8 @@ export function profilBaterii({ poprzedni = 'dokladny', dystansM = null } = {}) 
 
 /** Granice reguł pozycji. Zmiana = zmiana kodu i testu, nie decyzja sesji. */
 export const GRANICE = Object.freeze({
-  /** Powyżej tej dokładności ostrzegamy (ADR 0004 pkt 4) — próg dojścia i tak jest nią ograniczony. */
-  maxAccuracyM: 100,
-  /** Ile kolejnych fixów w progu zapala stację (debounce przeciw odbiciom sygnału, ADR 0004 pkt 2). */
-  wymaganeTrafnienia: 2,
+  /** ADR 0034: pojedynczy fix w promieniu 50 m zapala stację. */
+  wymaganeTrafnienia: 1,
   /** Ile fixów trzymamy w pamięci (historia dojścia + rysowanie śladu na mapie, M2). */
   historiaFixow: 40,
   /** Domyślny rozrzut symulowanego GPS — tyle, ile realnie daje telefon w otwartym terenie. */
@@ -69,8 +67,6 @@ export const ZRODLA_FIXA = Object.freeze({ gps: 'gps', reczne: 'reczne', symulac
 /** Wynik oceny fixu. */
 export const STANY_FIXA = Object.freeze({
   ok: 'ok',
-  niedokladny: 'niedokladny',
-  bezDokladnosci: 'bez-dokladnosci',
   niepoprawny: 'niepoprawny',
 });
 
@@ -85,7 +81,6 @@ export const KODY_POZYCJI = {
   P02: 'Brak zgody na dostęp do położenia. W Chrome dotknij ikony lokalizacji przy adresie i wybierz „Zawsze zezwalaj", a potem odśwież stronę. Współrzędne możesz też wpisać ręcznie („✎ Wpisz ręcznie") i iść dalej — ale bez strumienia pozycji gra nie rozstrzygnie dojścia do stacji. Do rozegrania partii bez GPS potrzebny jest tryb testowy z symulacją: otwórz aplikację z parametrem ?test=true.',
   P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek (ADR 0029: dojście zalicza tylko GPS).',
   P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek.',
-  P05: 'Dokładność ±{accuracy} m jest niewystarczająca wobec progu dojścia (25 m), więc GPS nie rozstrzygnie, czy stoisz przy stacji. Przejdź w miejsce z lepszym widokiem nieba i poczekaj na dokładniejszy pomiar. Jeśli sygnał nie wraca, odcinek można pominąć.',
   P06: 'Otrzymano współrzędne spoza zakresu — ten pomiar został odrzucony. Jeśli powtarza się, wyjdź na otwartą przestrzeń albo wpisz współrzędne ręcznie („✎ Wpisz ręcznie").',
   P07: 'Śledzenie położenia jest wstrzymane, bo aplikacja działa w tle — oszczędzamy baterię. Wróć na kartę, żeby je wznowić (ADR 0004 pkt 1).',
   P08: 'Nieznany błąd położenia: {message}. Wyjdź na otwartą przestrzeń, a jeśli to nie pomoże — wpisz współrzędne ręcznie („✎ Wpisz ręcznie") albo pomiń odcinek.',
@@ -121,42 +116,12 @@ export function fixZPozycji(pozycja, czasMs, zrodlo = ZRODLA_FIXA.gps) {
   return { lat, lon, accuracy, czasMs: Number(czasMs), zrodlo };
 }
 
-/**
- * Ocena fixu: czy nadaje się do gry i co powiedzieć graczowi.
- *
- * Zasada z ADR 0004 pkt 4 — **niedokładność jest jawna, nie ukrywana**: fix
- * z `accuracy > 100 m` dostaje ostrzeżenie, ale NIE jest odrzucany. Sam fix
- * bywa dobry mimo pesymistycznej `accuracy`, a o zaliczeniu i tak decyduje
- * stały próg 25 m (`progDojsciaM`) — słaby pomiar po prostu do niego nie
- * dobije. Odrzucamy tylko współrzędne bez sensu (NaN, poza zakresem).
- *
- * Wyjściem awaryjnym jest pominięcie odcinka (ADR 0015 pkt 2), NIE ręczne
- * zaliczenie: przycisk „jestem na miejscu" usunięty w ADR 0029, więc żaden
- * komunikat nie może do niego odsyłać.
- */
-export function ocenFix(fix, { maxAccuracyM = GRANICE.maxAccuracyM } = {}) {
+/** ADR 0034: walidujemy współrzędne, nie szacunek accuracy telefonu. */
+export function ocenFix(fix) {
   if (!fix || !czyWspolrzedneOk(fix.lat, fix.lon)) {
     return { stan: STANY_FIXA.niepoprawny, akceptowany: false, kod: 'P06', komunikat: komunikat('P06'), progM: 0 };
   }
-  if (fix.accuracy == null || !Number.isFinite(fix.accuracy) || fix.accuracy <= 0) {
-    return {
-      stan: STANY_FIXA.bezDokladnosci,
-      akceptowany: true,
-      kod: null,
-      komunikat: 'Brak danych o dokładności pomiaru — próg dojścia jest zwykły (25 m). Jeśli stacja nie zapala się mimo dojścia na miejsce, poczekaj na lepszy pomiar albo pomiń odcinek.',
-      progM: progDojsciaM(null),
-    };
-  }
-  if (fix.accuracy > maxAccuracyM) {
-    return {
-      stan: STANY_FIXA.niedokladny,
-      akceptowany: true,
-      kod: 'P05',
-      komunikat: komunikat('P05', { accuracy: Math.round(fix.accuracy) }),
-      progM: progDojsciaM(fix.accuracy),
-    };
-  }
-  return { stan: STANY_FIXA.ok, akceptowany: true, kod: null, komunikat: '', progM: progDojsciaM(fix.accuracy) };
+  return { stan: STANY_FIXA.ok, akceptowany: true, kod: null, komunikat: '', progM: progDojsciaM() };
 }
 
 /**
@@ -188,7 +153,6 @@ export function stanDojscia(historia, stacja, { wymaganeTrafnienia = GRANICE.wym
   if (!stacja || !czyWspolrzedneOk(stacja.lat, stacja.lon)) {
     return {
       dotarl: false, trafienia: 0, wymagane: wymaganeTrafnienia, progM: 0, dystansM: null,
-      accuracyM: czysta.at(-1)?.accuracy == null ? null : Math.round(czysta.at(-1).accuracy),
       stanFixa: czysta.at(-1) ? ocenFix(czysta.at(-1)).stan : null,
       kod: 'P06',
       komunikat: 'Brak poprawnych współrzędnych stacji — nie ma czego rozstrzygać. Odśwież układ stacji albo pomiń ten odcinek.',
@@ -203,28 +167,15 @@ export function stanDojscia(historia, stacja, { wymaganeTrafnienia = GRANICE.wym
     wymagane: wymaganeTrafnienia,
     progM: Math.round(wynik.progM),
     dystansM: Number.isFinite(wynik.dystansM) ? Math.round(wynik.dystansM) : null,
-    accuracyM: ostatni?.accuracy == null ? null : Math.round(ostatni.accuracy),
     stanFixa: ocena?.stan ?? null,
     kod: ocena?.kod ?? null,
   };
 
   if (!ostatni) return { ...base, komunikat: 'Czekam na pierwszy pomiar położenia — potrafi trwać kilkanaście sekund.' };
-  if (wynik.dotarl) {
-    return {
-      ...base,
-      komunikat: `Jesteś na miejscu: ${base.dystansM} m od stacji, próg ${base.progM} m, ${wynik.trafienia} kolejne pomiary.`,
-    };
-  }
-  const zdania = [];
-  if (base.dystansM != null) {
-    const brak = Math.max(0, base.dystansM - base.progM);
-    zdania.push(brak > 0 ? `Zostało ${brak} m do progu ${base.progM} m (dystans ${base.dystansM} m).` : `Jesteś w progu ${base.progM} m — czekam na potwierdzenie drugim pomiarem.`);
-  } else {
-    zdania.push('Brak pomiaru odległości do stacji.');
-  }
-  if (wynik.trafienia > 0) zdania.push(`Trafienia z rzędu: ${wynik.trafienia} z ${wymaganeTrafnienia}.`);
-  if (ocena?.kod) zdania.push(ocena.komunikat);
-  return { ...base, komunikat: zdania.join(' ') };
+  return { ...base, komunikat: wynik.dotarl
+    ? `Jesteś na miejscu: ${base.dystansM} m od stacji.`
+    : `${base.dystansM} m do stacji.` };
+
 }
 
 /**

@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-55">
-  <script type="module" src="app/app.js?v=m12-55"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-56">
+  <script type="module" src="app/app.js?v=m12-56"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -298,7 +298,6 @@
       <p class="podpowiedz">Geolokalizacja działa tylko przez HTTPS (GitHub Pages) albo localhost i wymaga zgody.</p>
       <div id="karta-pozycji" class="karta">
         <p id="pozycja-status" class="duzy">Czekam na pozycję…</p>
-        <p id="pozycja-dokladnosc" class="badge">dokładność: —</p>
         <p id="pozycja-wspolrzedne" class="kod"></p>
         <p id="pozycja-miejsce" class="podpowiedz"></p>
       </div>
@@ -519,7 +518,6 @@
       <!-- FAZA B: odcinek w drodze — dystans na żywo, ręczne zgłoszenie, pauza -->
       <div id="gra-panel-odcinek" class="karta gra-panel" hidden>
         <p id="gra-dystans-odcinka" class="duzy duzy-dystans">— m</p>
-        <p id="gra-prog-dojscia" class="badge">próg dojścia: —</p>
         <div class="wiersz">
           <button id="przycisk-pauza" class="przycisk" type="button" aria-pressed="false">⏸ Pauza</button>
           <button id="przycisk-symulacja-gra" class="przycisk" type="button" hidden>▶ Symuluj dojście (tryb testowy)</button>

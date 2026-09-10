@@ -221,7 +221,6 @@ test('ręczne współrzędne: zakresy są pilnowane, a poprawna pozycja przechod
   assert.equal(pobierz('przycisk-dalej-stacje').disabled, false,
     'ręczna pozycja odblokowuje „Dalej: stacje" bez trybu testowego');
   assert.match(pobierz('pozycja-wspolrzedne').textContent, /geohash/);
-  assert.equal(pobierz('pozycja-dokladnosc').textContent, 'dokładność: nieznana (wpisana ręcznie)');
   assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
 });
 
@@ -282,20 +281,17 @@ test('GPS: watcher startuje z opcjami z ADR 0004 pkt 1', () => {
 test('GPS: fix trafia na ekran — badge dokładności i odblokowane przejście', () => {
   gps.wyslijFix(52.235, 21.015, 15);
   assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustalona');
-  assert.equal(pobierz('pozycja-dokladnosc').textContent, 'dokładność: ±15 m');
   assert.match(pobierz('pozycja-wspolrzedne').textContent, /52\.23500, 21\.01500/);
   assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
   assert.equal(pobierz('bledy-pozycja').hidden, true, 'poprawny fix czyści poprzednie błędy');
 });
 
-test('GPS: niedokładny fix pokazuje ostrzeżenie P05 i nie przerywa gry', () => {
+test('GPS: accuracy nie powoduje ostrzeżeń', () => {
   gps.wyslijFix(52.236, 21.016, 400);
-  assert.equal(pobierz('bledy-pozycja').hidden, false);
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P05\].*±400 m/);
-  assert.equal(pobierz('pozycja-dokladnosc').textContent, 'dokładność: ±400 m', 'niedokładność jest jawna (ADR 0004 pkt 4)');
+  assert.equal(pobierz('bledy-pozycja').hidden, true, 'accuracy nie powoduje ostrzeżenia');
   assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustalona', 'fix wchodzi do gry — próg dojścia i tak jest surowy');
   assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
-  assert.match(pobierz('status').textContent, /niewystarczająca/);
+  assert.doesNotMatch(pobierz('status').textContent, /niewystarczająca/);
 });
 
 test('GPS: błąd przeglądarki daje komunikat z wyjściem awaryjnym (ADR 0004 pkt 7)', () => {
@@ -369,8 +365,8 @@ test('tryb testowy z adresu: ?tryb=test nie wznawia GPS po powrocie z tła', asy
 
 test('GPS: limit historii i próg dokładności są z pozycja.js, nie wpisane w UI', () => {
   // kontrakt na stałe: gdyby UI zaczął mieć własny próg, rozjechałby się z regułą dojścia
-  assert.equal(GRANICE.maxAccuracyM, 100);
-  assert.equal(GRANICE.wymaganeTrafnienia, 2);
+  assert.equal('maxAccuracyM' in GRANICE, false);
+  assert.equal(GRANICE.wymaganeTrafnienia, 1);
 });
 
 /* ------------------------------------------------------------- stan z pamięci */
@@ -434,7 +430,7 @@ test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok n
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'brak markera pozycji');
   assert.deepEqual(
     domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
-    ['okrag-dokladnosc', 'okrag-promien'],
+    ['okrag-promien'],
     'koło dokładności i okrąg promienia gry',
   );
   assert.match(
@@ -462,7 +458,7 @@ test('mapa: przejście do stacji rysuje numerowane pinezki i okrąg promienia', 
   assert.equal(new Set(idPinezek).size, DOMYSLNE.liczbaStacji, 'pinezki mają różne identyfikatory stacji');
   assert.deepEqual(
     domMapy.pobierz('mapa-stacje-okregi').children.map((c) => c.getAttribute('class')),
-    ['okrag-dokladnosc', 'okrag-promien'],
+    ['okrag-promien'],
   );
 });
 
@@ -558,7 +554,7 @@ test('mapa: wyczyszczony czas gry nie wysypuje przejścia — jest jawna odmowa 
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1);
   assert.deepEqual(
     domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
-    ['okrag-dokladnosc', 'okrag-promien'],
+    ['okrag-promien'],
   );
   assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
 
@@ -708,7 +704,7 @@ test('symulacja: odtworzenie trasy prowadzi pozycję do celu i spełnia debounce
 
   domMapy.kliknij('przycisk-symulacja');
   assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'true', 'odtwarzanie wystartowało');
-  assert.match(domMapy.pobierz('status').textContent, /Symulacja trasy: 9 fixów/);
+  assert.match(domMapy.pobierz('status').textContent, /Symulacja trasy: 8 fixów/);
 
   await czekaj(9 * 120 + 500); // dziewięć fixów po 120 ms + zapas na timery Node
   assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false', 'sekwencja sama się kończy');

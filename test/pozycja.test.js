@@ -82,39 +82,16 @@ test('fixZPozycji: przyjmuje już płaski fix i toleruje brak accuracy', () => {
   assert.ok(Number.isNaN(fixZPozycji(pozycjaPrzegladarki('abc', 21.0, 8), 7).lat), 'śmieci na wejściu wychodzą jako NaN — ocenFix je odrzuci');
 });
 
-test('ocenFix: dokładny, niedokładny, bez dokładności i niepoprawny', () => {
-  const ok = ocenFix({ lat: 52.23, lon: 21.01, accuracy: 12 });
-  assert.equal(ok.stan, STANY_FIXA.ok);
-  assert.equal(ok.akceptowany, true);
-  assert.equal(ok.progM, 25, 'próg to stałe 25 m (ADR 0004 pkt 2 po aneksie 2026-09-09)');
-
-  assert.equal(ocenFix({ lat: 52.23, lon: 21.01, accuracy: 50 }).progM, 25, 'gorszy sygnał NIE rozluźnia progu');
-
-  const zla = ocenFix({ lat: 52.23, lon: 21.01, accuracy: 300 });
-  assert.equal(zla.stan, STANY_FIXA.niedokladny);
-  assert.equal(zla.akceptowany, true, 'niedokładny fix NIE jest odrzucany — gra toczy się dalej (ADR 0004 pkt 4)');
-  assert.equal(zla.kod, 'P05');
-  assert.equal(zla.progM, 25, 'nawet ±300 m nie pozwala zaliczyć stacji z daleka — to byłoby inne miejsce');
-  assert.match(zla.komunikat, /±300 m/, 'komunikat podaje liczbę, nie ogólnik');
-  assert.ok(!zla.komunikat.includes('{'), 'placeholdery są podstawione');
-
-  const brak = ocenFix({ lat: 52.23, lon: 21.01, accuracy: null });
-  assert.equal(brak.stan, STANY_FIXA.bezDokladnosci);
-  assert.equal(brak.akceptowany, true);
-  assert.equal(brak.progM, 25, 'bez danych o dokładności próg jest zwykły, nie ulgowy');
-  assert.equal(ocenFix({ lat: 52.23, lon: 21.01, accuracy: 0 }).stan, STANY_FIXA.bezDokladnosci);
-
-  for (const zepsuty of [{ lat: NaN, lon: 21, accuracy: 5 }, { lat: 91, lon: 21, accuracy: 5 }, { lat: 52, lon: -181, accuracy: 5 }, null]) {
-    const ocena = ocenFix(zepsuty);
-    assert.equal(ocena.stan, STANY_FIXA.niepoprawny, `fix ${JSON.stringify(zepsuty)}`);
-    assert.equal(ocena.akceptowany, false);
-    assert.equal(ocena.kod, 'P06');
+test('ocenFix: ignoruje accuracy, odrzuca tylko niepoprawne współrzędne', () => {
+  for (const accuracy of [null, 0, 12, 300, 1250]) {
+    assert.deepEqual(ocenFix({ lat: 52.23, lon: 21.01, accuracy }), {
+      stan: 'ok', akceptowany: true, kod: null, komunikat: '', progM: 50,
+    });
   }
-});
-
-test('ocenFix: stany fixów z fixture\'a trasy z odbiciem', () => {
-  const stany = TRASA_ODBICIE.fixy.map((f) => ocenFix(fixZFixturea(f)).stan);
-  assert.deepEqual(stany, ['ok', 'ok', 'ok', 'ok', 'ok', 'ok', 'niedokladny', 'niepoprawny']);
+  for (const fix of [null, { lat: 91, lon: 21 }, { lat: NaN, lon: 21 }]) {
+    assert.equal(ocenFix(fix).akceptowany, false);
+    assert.equal(ocenFix(fix).kod, 'P06');
+  }
 });
 
 test('dodajFix: nie mutuje historii, odrzuca śmieci i trzyma limit', () => {
@@ -148,49 +125,13 @@ test('stanDojscia: pusta historia nie zapala stacji i nie rzuca wyjątkiem', () 
   assert.equal(stanDojscia(null, STACJA).dotarl, false);
 });
 
-test('stanDojscia: sekwencja z odbiciem sygnału — pojedynczy fix nie zapala stacji', () => {
-  const oczekiwane = [
-    { t: 0, dotarl: false, trafienia: 0, prog: 25 },
-    { t: 5000, dotarl: false, trafienia: 0, prog: 25 },
-    { t: 10000, dotarl: false, trafienia: 1, prog: 25 }, // pierwszy w progu
-    { t: 15000, dotarl: false, trafienia: 0, prog: 25 }, // ODBICIE — licznik od zera
-    { t: 20000, dotarl: false, trafienia: 1, prog: 25 },
-    { t: 25000, dotarl: true, trafienia: 2, prog: 25 }, // dwa z rzędu = dojście
-    { t: 30000, dotarl: false, trafienia: 0, prog: 25 }, // accuracy 300 m — próg bez zmian
-    { t: 35000, dotarl: false, trafienia: 0, prog: 25 }, // fix odrzucony, stan bez zmian
-  ];
-  oczekiwane.forEach((oczekiwany, i) => {
-    const fix = TRASA_ODBICIE.fixy[i];
-    const s = stanDojscia(historiaZFixturea(i + 1), STACJA);
-    assert.equal(s.dotarl, oczekiwany.dotarl, `t=${oczekiwany.t}: ${fix.komentarz}`);
-    assert.equal(s.trafienia, oczekiwany.trafienia, `t=${oczekiwany.t}`);
-    assert.equal(s.progM, oczekiwany.prog, `t=${oczekiwany.t}`);
-    if (fix.oczekiwanyDystansM != null) {
-      assert.ok(Math.abs(s.dystansM - fix.oczekiwanyDystansM) <= 1, `t=${oczekiwany.t}: dystans ${s.dystansM} vs ${fix.oczekiwanyDystansM}`);
-    }
-  });
-});
-
-test('stanDojscia: komunikat mówi, ile zostało i dlaczego stacja się nie zapala', () => {
-  const przedOdbiciem = stanDojscia(historiaZFixturea(3), STACJA);
-  assert.match(przedOdbiciem.komunikat, /w progu 25 m/);
-  assert.match(przedOdbiciem.komunikat, /Trafienia z rzędu: 1 z 2/);
-
+test('stanDojscia: dystans bez diagnoz dokładności', () => {
+  const blisko = stanDojscia(historiaZFixturea(3), STACJA);
+  assert.equal(blisko.dotarl, true, 'pojedynczy fix wystarcza');
+  assert.match(blisko.komunikat, /Jesteś na miejscu/);
   const daleko = stanDojscia(historiaZFixturea(2), STACJA);
-  assert.match(daleko.komunikat, /Zostało 55 m do progu 25 m \(dystans 80 m\)/);
-
-  const dojście = stanDojscia(historiaZFixturea(6), STACJA);
-  assert.equal(dojście.dotarl, true);
-  assert.match(dojście.komunikat, /Jesteś na miejscu: 16 m od stacji, próg 25 m, 2 kolejne pomiary/);
-
-  const niedokladny = stanDojscia(historiaZFixturea(7), STACJA);
-  assert.equal(niedokladny.kod, 'P05');
-  assert.match(niedokladny.komunikat, /niewystarczająca/);
-  assert.match(niedokladny.komunikat, /progu dojścia \(25 m\)/, 'ostrzeżenie podaje realny próg, nie dawne 100 m');
-  // ADR 0029: ręcznego zgłaszania dojścia nie ma, więc ostrzeżenie musi mówić,
-  // co gracz MOŻE zrobić — nie odsyłać do przycisku, którego już nie ma.
-  assert.match(niedokladny.komunikat, /lepszym widokiem nieba/, 'ostrzeżenie daje wykonalne wyjście awaryjne');
-  assert.ok(!/ręcznie/.test(niedokladny.komunikat), 'ostrzeżenie nie odsyła do usuniętego ręcznego zgłoszenia');
+  assert.equal(daleko.dotarl, false);
+  assert.equal(daleko.komunikat, '80 m do stacji.');
 });
 
 test('stanDojscia: zepsuta stacja albo zepsuta historia nie wywracają gry', () => {
@@ -231,7 +172,7 @@ test('bladGeolokalizacji: kody przeglądarki na komunikaty z wyjściem awaryjnym
 
 test('KODY_POZYCJI: pełne zdania gotowe do UI, osobny przedrostek od kodów rozgrywki', () => {
   const kody = Object.entries(KODY_POZYCJI);
-  assert.equal(kody.length, 9);
+  assert.equal(kody.length, 8);
   for (const [kod, tekst] of kody) {
     assert.match(kod, /^P\d{2}$/, `kod ${kod}`);
     assert.ok(tekst.length >= 40, `${kod}: za krótki — „${tekst}"`);
@@ -348,7 +289,7 @@ test('watchPozycja: opcje z ADR 0004 pkt 1 i spłaszczony fix w callbacku', () =
   assert.deepEqual(bledy, []);
 
   atrapa.wyslijPozycje(pozycjaPrzegladarki(52.23, 21.01, 400));
-  assert.equal(fixy[1].ocena.stan, STANY_FIXA.niedokladny, 'UI dostaje ocenę razem z fixem — badge „±400 m" bez drugiej funkcji');
+  assert.equal(fixy[1].ocena.stan, STANY_FIXA.ok, 'accuracy ignorowane');
 
   atrapa.wyslijBlad({ code: 1, message: 'User denied Geolocation' });
   assert.equal(bledy.length, 1);
@@ -412,13 +353,13 @@ test('integracja: dojście z fixture’a kończy odcinek w rozgrywce', async () 
     ostatni = fixZFixturea(fix);
     if (stanDojscia(historia, STACJA).dotarl) { czasDojscia = fix.t; break; }
   }
-  assert.equal(czasDojscia, 25_000, 'stacja zapala się przy drugim trafieniu z rzędu');
+  assert.equal(czasDojscia, 10_000, 'pierwszy fix w promieniu 50 m');
 
   const { stan: po, usterki } = zakonczOdcinek(wTrakcie, { czasMs: czasDojscia, trybDojscia: TRYBY_DOJSCIA.gps, fix: ostatni });
   assert.deepEqual(usterki, []);
-  assert.equal(po.odcinki[0].koniecMs, 25_000, 'znacznik dojścia zapisany (czasu odcinka nie liczymy od Partii 2)');
-  assert.equal(po.odcinki[0].accuracyM, 10);
-  assert.ok(po.odcinki[0].odlegloscKoncowaM <= 25, `odległość końcowa ${po.odcinki[0].odlegloscKoncowaM} m mieści się w progu`);
+  assert.equal(po.odcinki[0].koniecMs, 10_000, 'znacznik dojścia zapisany (czasu odcinka nie liczymy od Partii 2)');
+  assert.equal(po.odcinki[0].accuracyM, 12);
+  assert.ok(po.odcinki[0].odlegloscKoncowaM <= 50, `odległość końcowa ${po.odcinki[0].odlegloscKoncowaM} m mieści się w progu`);
 });
 
 /* ------------------------------------------------- bateria (M10/T3) */
