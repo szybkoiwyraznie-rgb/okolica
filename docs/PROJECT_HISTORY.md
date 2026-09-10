@@ -1941,3 +1941,21 @@ Przeczytano lekturę startową; budżet 65 458/100 000. Bazowe `npm test`:
   właściciela; sesja nie zalicza testów terenowych ani dwóch telefonów.
 - Brama: 693 testy, synchronizacja obu szablonów, audyt kontrastu 0 naruszeń.
   Wersja końcowa m12-54. PR #8; żadnego scalenia do main.
+
+
+### Uzupełnienie 2026-09-10 — uwagi z testu terenowego (ADR 0034)
+
+- m12-55 / 9ab77c1: nowy setup 7/12/dorośli, Ciekawostki, brak Sportu/Jedzenia,
+  porządek alfabetyczny; zgodność odczytu historycznych paczek i zapisów.
+- m12-56 / db2219b: jeden fix ≤50 m otwiera pytania, accuracy bez wpływu
+  na decyzję, komunikaty i mapę; granice 50/50.001 m w regresjach.
+- m12-57: centralne warstwy setup/stacje/pytania, oko nie zatrzymuje procesów,
+  mapy odłączone od ukrywanych paneli, informacje zamiast stopki. Bez pól
+  współrzędnych, przycisku GPS i symulacji 250 m. Automatyczny GPS i testowy
+  tap mapy zachowane. Zwinięta instrukcja oraz linki Meta/ChatGPT/Gemini.
+- Brama 678 testów, zgodne szablony, audyt kontrastu 0 naruszeń. Stare testy
+  celowo usuniętych kontrolek zastąpione regresjami nowego zachowania.
+- Chromium 360×640, 320×568, 844×390: układ i przewijanie paneli, oko/mapa,
+  instrukcja; dojście podczas podglądu i powrót do pytania. Zero błędów JS.
+  Próby z fixture/fallbackiem sieci, nie potwierdzenie rzeczywistej gry terenowej.
+- Handoff zaktualizowany; PR #8 bez scalenia, kryteria właściciela nadal otwarte.

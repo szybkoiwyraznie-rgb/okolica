@@ -17,3 +17,19 @@ test('teren: 50 m, jeden fix, bez znaczenia accuracy ani ostrzeżeń', () => {
     }
   }
 });
+
+import { readFileSync } from 'node:fs';
+const html = () => readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+test('teren: bez stopki i zbędnych kontrolek pozycji, informacje i oko', () => {
+  const s = html();
+  assert.doesNotMatch(s, /<footer\b/);
+  for (const id of ['przycisk-gps','przycisk-recznie','przycisk-ustaw-reczne','przycisk-symulacja','setup-lat','setup-lon','pozycja-dokladnosc','gra-prog-dojscia']) {
+    assert.ok(!s.includes(`id="${id}"`), id);
+  }
+  for (const id of ['przycisk-informacje','przycisk-podejrzyj-mape','ekran-informacje']) assert.ok(s.includes(`id="${id}"`));
+  assert.match(s, /<details id="prompt-instrukcja"[^>]*>/);
+  assert.doesNotMatch(s, /<details id="prompt-instrukcja"[^>]*\bopen\b/);
+  for (const url of ['https://meta.ai/', 'https://chatgpt.com/', 'https://gemini.google.com/']) {
+    assert.ok(s.includes(`href="${url}" target="_blank" rel="noopener noreferrer"`));
+  }
+});

@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-56">
-  <script type="module" src="app/app.js?v=m12-56"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-57">
+  <script type="module" src="app/app.js?v=m12-57"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -38,9 +38,13 @@
       <button id="przycisk-setup" class="przycisk-ikona" type="button" title="START GRY — ustawienia gry">⚙ START GRY</button>
       <button id="przycisk-motyw" class="przycisk-ikona" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny" aria-label="Przełącz motyw">☾</button>
       <button id="przycisk-sygnaly" class="przycisk-ikona" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)" aria-label="Sygnały dojścia">🔔</button>
+      <button id="przycisk-informacje" class="przycisk-ikona" type="button" aria-label="Informacje" title="Informacje" aria-expanded="false" aria-controls="ekran-informacje"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor"/></svg></button>
       <button id="przycisk-ranking" class="przycisk-ikona" type="button" title="Rankingi graczy i moje gry (M12)" aria-label="Rankingi">🏆</button>
     </div>
   </header>
+  <button id="przycisk-podejrzyj-mape" type="button" aria-label="Podejrzyj mapę" title="Podejrzyj mapę" aria-pressed="false">
+    <svg viewBox="0 0 24 24" width="26" height="26" aria-hidden="true"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+  </button>
 
   <nav id="kroki" class="kroki" aria-label="Kroki przygotowania gry">
     <ol>
@@ -75,8 +79,38 @@
       </div>
 
 
+<div id="mapa-stacje" class="mapa">
+          <svg id="mapa-stacje-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
+            <g id="mapa-stacje-kafelki" class="warstwa-kafelki"></g>
+            <g id="mapa-stacje-okregi" class="warstwa-okregi"></g>
+            <g id="mapa-stacje-pinezki" class="warstwa-pinezki"></g>
+            <g id="mapa-stacje-marker" class="warstwa-marker"></g>
+          </svg>
+          <div class="mapa-przyciski">
+            <button id="mapa-stacje-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+            <button id="mapa-stacje-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+            <button id="mapa-stacje-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+          </div>
+          <p id="mapa-stacje-skala" class="mapa-skala"></p>
+          <p id="mapa-stacje-atrybucja" class="mapa-atrybucja"></p>
+        </div>
+<div id="mapa-gra" class="mapa">
+        <svg id="mapa-gra-svg" class="mapa-svg" role="img" aria-label="Mapa gry" tabindex="0">
+          <g id="mapa-gra-kafelki" class="warstwa-kafelki"></g>
+          <g id="mapa-gra-okregi" class="warstwa-okregi"></g>
+          <g id="mapa-gra-pinezki" class="warstwa-pinezki"></g>
+          <g id="mapa-gra-marker" class="warstwa-marker"></g>
+        </svg>
+        <div class="mapa-przyciski">
+          <button id="mapa-gra-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
+          <button id="mapa-gra-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
+          <button id="mapa-gra-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
+        </div>
+        <p id="mapa-gra-skala" class="mapa-skala"></p>
+        <p id="mapa-gra-atrybucja" class="mapa-atrybucja"></p>
+      </div>
     <!-- KROK 1: konfiguracja rozgrywki -->
-    <section id="ekran-setup" class="ekran" hidden aria-labelledby="tytul-setup">
+    <section id="ekran-setup" class="ekran panel-centralny" hidden aria-labelledby="tytul-setup">
       <h2 id="tytul-setup">Ustawienia gry</h2>
 
       <!-- M11/P4: hot-seat albo gra na wielu urządzeniach (ADR 0019) -->
@@ -232,7 +266,7 @@
     </section>
 
     <!-- M11/P4: ekran gry wieloosobowej (załóż / dołącz / lobby) -->
-    <section id="ekran-multi" class="ekran" hidden aria-labelledby="tytul-multi">
+    <section id="ekran-multi" class="ekran panel-centralny" hidden aria-labelledby="tytul-multi">
       <h2 id="tytul-multi">Gra na wielu urządzeniach</h2>
       <p class="podpowiedz">Każdy gracz ma swój telefon. Na serwer jadą wyłącznie pseudonimy, zdarzenia gry i wyniki — współrzędne zostają na urządzeniach<span class="dopisek-roboczy"> (ADR 0019 pkt 3)</span>.</p>
       <p id="bledy-multi" class="bledy" role="alert" hidden></p>
@@ -293,26 +327,13 @@
     </section>
 
     <!-- KROK 2: pozycja -->
-    <section id="ekran-pozycja" class="ekran" hidden aria-labelledby="tytul-pozycja">
+    <section id="ekran-pozycja" class="ekran panel-centralny" hidden aria-labelledby="tytul-pozycja">
       <h2 id="tytul-pozycja">Gdzie jesteś?</h2>
       <p class="podpowiedz">Geolokalizacja działa tylko przez HTTPS (GitHub Pages) albo localhost i wymaga zgody.</p>
       <div id="karta-pozycji" class="karta">
         <p id="pozycja-status" class="duzy">Czekam na pozycję…</p>
         <p id="pozycja-wspolrzedne" class="kod"></p>
         <p id="pozycja-miejsce" class="podpowiedz"></p>
-      </div>
-      <div class="wiersz">
-        <button id="przycisk-gps" class="przycisk przycisk-glowny" type="button">🛰 Włącz GPS</button>
-        <button id="przycisk-recznie" class="przycisk" type="button">✎ Wpisz ręcznie</button>
-        <button id="przycisk-symulacja" class="przycisk" type="button" aria-pressed="false" hidden>▶ Symuluj dojście (250 m)</button>
-      </div>
-      <div id="reczne-wspolrzedne" class="karta" hidden>
-        <div class="siatka">
-          <label class="pole"><span>Szerokość (lat)</span><input id="setup-lat" type="text" inputmode="decimal" autocomplete="off" placeholder="52.23178 lub 52°07'22.9&quot;N"></label>
-          <label class="pole"><span>Długość (lon)</span><input id="setup-lon" type="text" inputmode="decimal" autocomplete="off" placeholder="21.01234 lub 21°00'44.3&quot;E"></label>
-        </div>
-        <p id="reczne-podpowiedz" class="podpowiedz">Wklej współrzędne z Google Maps w pierwsze pole — np. <b>52°07'22.9"N 20°44'46.1"E</b> albo <b>52.123028, 20.746139</b> — a drugie zostaw puste. Uwaga: stopnie-minuty-sekundy to nie dziesiętne (52°07'22.9" = 52.12303, nie 52.07229). W trybie testowym pozycję ustawisz też krótkim stuknięciem w mapę.</p>
-        <button id="przycisk-ustaw-reczne" class="przycisk" type="button">Ustaw tę pozycję</button>
       </div>
       <div id="zestawy-karta" class="karta" hidden>
         <p class="duzy">📦 Paczki dla tej okolicy</p>
@@ -330,27 +351,13 @@
     </section>
 
     <!-- KROK 3: stacje -->
-    <section id="ekran-stacje" class="ekran" hidden aria-labelledby="tytul-stacje">
+    <section id="ekran-stacje" class="ekran panel-centralny" hidden aria-labelledby="tytul-stacje">
+          <div id="stacje-ladowanie" class="nakladka-ladowanie" role="status" hidden><span>⏳ Pobieram dane sieci drogowej…</span></div>
       <h2 id="tytul-stacje">Stacje w Twojej okolicy</h2>
       <p id="stacje-tryb" class="podpowiedz"></p>
       <p id="bledy-stacje" class="bledy" role="alert" hidden></p>
       <div class="stacje-obszar">
-        <div id="mapa-stacje" class="mapa">
-          <svg id="mapa-stacje-svg" class="mapa-svg" role="img" aria-label="Mapa okolicy" tabindex="0">
-            <g id="mapa-stacje-kafelki" class="warstwa-kafelki"></g>
-            <g id="mapa-stacje-okregi" class="warstwa-okregi"></g>
-            <g id="mapa-stacje-pinezki" class="warstwa-pinezki"></g>
-            <g id="mapa-stacje-marker" class="warstwa-marker"></g>
-          </svg>
-          <div class="mapa-przyciski">
-            <button id="mapa-stacje-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
-            <button id="mapa-stacje-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
-            <button id="mapa-stacje-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
-          </div>
-          <p id="mapa-stacje-skala" class="mapa-skala"></p>
-          <p id="mapa-stacje-atrybucja" class="mapa-atrybucja"></p>
-          <div id="stacje-ladowanie" class="nakladka-ladowanie" role="status" hidden><span>⏳ Pobieram dane sieci drogowej…</span></div>
-        </div>
+
         <!-- Decyzja właściciela 2026-09-08: stacje odnoszą się do mapy, więc lista
              NIE może jej zasłaniać. Mapa zostaje na wierzchu, a lista z
              przyciskami jedzie obok (poziom) albo pod (pion) i przewija się
@@ -374,8 +381,9 @@
     </section>
 
     <!-- KROK 4: prompt -->
-    <section id="ekran-prompt" class="ekran" hidden aria-labelledby="tytul-prompt">
-      <h2 id="tytul-prompt">Prompt dla modelu AI</h2>
+    <section id="ekran-prompt" class="ekran panel-centralny" hidden aria-labelledby="tytul-prompt">
+      <details id="prompt-instrukcja" class="zwiniety">
+      <summary id="tytul-prompt">→ Prompt dla modelu AI (instrukcja)</summary>
       <!-- Instrukcja obrazkowa (M5/J6): cztery kroki jako inline SVG — zero
            plików zewnętrznych i zero CDN (ADR 0001 pkt 1, ADR 0011 pkt 6).
            Kolejność DOM = kolejność kroków; karty ≥ 44 px (cel dotykowy). -->
@@ -393,8 +401,11 @@
             <circle cx="32" cy="32" r="7"></circle>
             <path d="M37 37l5 5"></path>
           </svg>
-          <span>2. Wklej do modelu AI (Meta AI, ChatGPT, Gemini…) — z włączonym wyszukiwaniem
-            w internecie, gdy prompt ma fact check; do wariantu bez weryfikacji wystarczy zwykły model.</span>
+          <span>2. Wklej do jednego z czatów AI i wygeneruj odpowiedź:
+            <a href="https://meta.ai/" target="_blank" rel="noopener noreferrer">https://meta.ai/</a>
+            <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">https://chatgpt.com/</a>
+            <a href="https://gemini.google.com/" target="_blank" rel="noopener noreferrer">https://gemini.google.com/</a>
+          </span>
         </li>
         <li>
           <svg viewBox="0 0 48 48" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
@@ -416,6 +427,7 @@
             aplikacja sprawdzi paczkę i ukryje ją przed graczami.</span>
         </li>
       </ol>
+      </details>
       <details id="prompt-zwiniety" class="zwiniety">
         <summary id="prompt-podglad-naglowek">Pokaż treść promptu</summary>
         <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
@@ -435,7 +447,7 @@
     </section>
 
     <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
-    <section id="ekran-paczka" class="ekran" hidden aria-labelledby="tytul-paczka">
+    <section id="ekran-paczka" class="ekran panel-centralny" hidden aria-labelledby="tytul-paczka">
       <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
       <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i <strong>nie jest zaszyfrowany</strong>. Wklej odpowiedź modelu do pola poniżej: sprawdzenie rusza samo, a poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive do przeglądu właściciela). Przy usterkach dostaniesz poprawkę do odesłania modelowi.</p>
       <!-- Zgłoszenie właściciela 2026-09-09 (trzecia tura): „ma zostać pole
@@ -463,7 +475,7 @@
     <!-- KROK 6: GRA (M6/R3) — jeden ekran, cztery panele faz:
          oczekiwanie → odcinek → pytanie → koniec. Kolejność DOM = kolejność
          faz; jeden GŁÓWNY przycisk na fazę (ADR 0011); cele dotykowe ≥ 44 px. -->
-    <section id="ekran-gra" class="ekran" hidden aria-labelledby="tytul-gra">
+    <section id="ekran-gra" class="ekran panel-centralny" hidden aria-labelledby="tytul-gra">
       <h2 id="tytul-gra">Gra</h2>
 
       <div class="gra-badges">
@@ -472,21 +484,7 @@
         <p id="gra-postep" class="podpowiedz">stacja — z —</p>
       </div>
 
-      <div id="mapa-gra" class="mapa">
-        <svg id="mapa-gra-svg" class="mapa-svg" role="img" aria-label="Mapa gry" tabindex="0">
-          <g id="mapa-gra-kafelki" class="warstwa-kafelki"></g>
-          <g id="mapa-gra-okregi" class="warstwa-okregi"></g>
-          <g id="mapa-gra-pinezki" class="warstwa-pinezki"></g>
-          <g id="mapa-gra-marker" class="warstwa-marker"></g>
-        </svg>
-        <div class="mapa-przyciski">
-          <button id="mapa-gra-przybliz" class="mapa-przycisk" type="button" aria-label="Przybliż mapę">＋</button>
-          <button id="mapa-gra-oddal" class="mapa-przycisk" type="button" aria-label="Oddal mapę">−</button>
-          <button id="mapa-gra-centruj" class="mapa-przycisk" type="button" aria-label="Pokaż moją pozycję">◎</button>
-        </div>
-        <p id="mapa-gra-skala" class="mapa-skala"></p>
-        <p id="mapa-gra-atrybucja" class="mapa-atrybucja"></p>
-      </div>
+
 
       <p id="bledy-gra" class="bledy" role="alert" hidden></p>
       <p id="gra-komunikat" class="podpowiedz" role="status"></p>
@@ -595,7 +593,7 @@
       </div>
     </section>
 
-    <section id="ekran-prywatnosc" class="ekran" hidden aria-labelledby="tytul-prywatnosc">
+    <section id="ekran-prywatnosc" class="ekran panel-centralny" hidden aria-labelledby="tytul-prywatnosc">
       <h2 id="tytul-prywatnosc">Dane i prywatność</h2>
       <p class="podpowiedz">Krótko i po ludzku: co ta aplikacja pobiera, dokąd trafia
       Twoja pozycja, co zostaje na telefonie i jak to skasować.</p>
@@ -706,7 +704,7 @@
     <!-- Decyzja właściciela 2026-09-08: rankingi są WARSTWĄ nad aplikacją,
          nie osobnym ekranem — z klawiszem „Zamknij rankingi" i krzyżykiem
          w prawym górnym rogu, bo z poprzedniego układu nie dało się wyjść. -->
-    <section id="ekran-ranking" class="ekran warstwa" hidden role="dialog" aria-modal="true" aria-labelledby="tytul-ranking">
+    <section id="ekran-ranking" class="ekran warstwa panel-centralny" hidden role="dialog" aria-modal="false" aria-labelledby="tytul-ranking">
       <div class="warstwa-karta">
         <button id="przycisk-ranking-krzyzyk" class="warstwa-krzyzyk" type="button" aria-label="Zamknij rankingi">✕</button>
         <h2 id="tytul-ranking">🏆 Rankingi</h2>
@@ -730,7 +728,7 @@
          i intro nad mapą. Start aplikacji NIE otwiera już setupu — okno
          (80% ekranu) znika po kliknięciu gdziekolwiek na nie i zostaje sama
          mapa; setup otwiera przycisk START GRY w nagłówku. -->
-    <section id="ekran-start" class="warstwa-start" role="dialog" aria-modal="true" aria-labelledby="tytul-start">
+    <section id="ekran-start" class="warstwa-start panel-centralny" role="dialog" aria-modal="false" aria-labelledby="tytul-start">
       <div class="warstwa-start-karta">
         <h1 id="tytul-start">Tajemnicza&nbsp;Okolica</h1>
         <p id="podtytul-start" class="podtytul-start">gra terenowa tam, gdzie akurat jesteś</p>
@@ -760,18 +758,26 @@
       </div>
     </section>
 
+    <section id="ekran-informacje" class="ekran panel-centralny" hidden role="dialog" aria-labelledby="tytul-informacje">
+      <button id="przycisk-zamknij-informacje" class="warstwa-krzyzyk" type="button" aria-label="Zamknij informacje">✕</button>
+      <h2 id="tytul-informacje">Informacje</h2>
+      <div class="informacje-tresc">
+
+    <span id="status" role="status" aria-live="polite">M2 — mapa i model rozgrywki: setup, pozycja, stacje, prompt, paczka</span>
+    <span class="separator" aria-hidden="true">·</span>
+    <span>protokół <span id="stopka-protokol">PYT/1.0</span></span>
+    <span class="separator" aria-hidden="true">·</span>
+    <span>szablon <span id="stopka-szablon">PYT/1.0.7</span></span>
+    <span class="separator" aria-hidden="true">·</span>
+    <span>wersja <span id="stopka-wersja">—</span></span>
+    <span class="separator" aria-hidden="true">·</span>
+    <button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">dane i prywatność</button>
+
+      </div>
+    </section>
+    <div id="przygaszenie-mapy" hidden aria-hidden="true"></div>
   </main>
 
-  <footer class="dol">
-    <span id="status">M2 — mapa i model rozgrywki: setup, pozycja, stacje, prompt, paczka</span>
-    <span class="separator">·</span>
-    <span>protokół <span id="stopka-protokol">PYT/1.0</span></span>
-    <span class="separator">·</span>
-    <span>szablon <span id="stopka-szablon">PYT/1.0.7</span></span>
-    <span class="separator">·</span>
-    <span>wersja <span id="stopka-wersja">—</span></span>
-    <span class="separator">·</span>
-    <button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">dane i prywatność</button>
-  </footer>
+
 </body>
 </html>

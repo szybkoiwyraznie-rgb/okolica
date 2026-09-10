@@ -270,126 +270,23 @@ test('kontrakt: <body> ma data-ekran w HTML — inaczej strona miga przed starte
   assert.match(INDEX, /<body data-ekran="mapa">/, 'stan początkowy ekranu jest w HTML, nie tylko z JS');
 });
 
-test('kontrakt: panel pozycji jest w `.tresc` i ograniczony belką oraz stopką', () => {
-  // Panel NIE jest `fixed` względem viewportu: wtedy jego ograniczeniem był cały
-  // ekran, a stopka ma wyższy `z-index` i przykrywała dolne przyciski bez
-  // możliwości przewinięcia (zgłoszenie właściciela 2026-09-08). Jest `absolute`
-  // względem `.tresc`, które jest elementem flexa dokładnie między belką a stopką.
-  // Blok tniemy po `\n}`, nie po pierwszym `}`: komentarz w regule zawiera
-  // `{ display: flex; … }`, więc naiwne indexOf('}') urywało blok w pół słowa.
-  const start = STYLE.indexOf('body[data-ekran=\'pozycja\'] #ekran-pozycja {');
-  assert.ok(start > 0, 'brak reguły panelu pozycji');
-  const blok = STYLE.slice(start, STYLE.indexOf('\n}', start));
-  assert.ok(blok.includes('position: absolute'),
-    'element `static` maluje się POD mapą, a `fixed` wyjeżdża pod stopkę — ma być `absolute` w `.tresc`');
-  assert.ok(STYLE.includes('.tresc { position: relative; z-index: 1; }'),
-    '`.tresc` musi być containing blockiem dla panelu');
-  assert.ok(blok.includes('margin: 0'), '`.ekran` daje `margin: 0 auto` — bez resetu przesuwa panel (L40)');
-  assert.ok(blok.includes('overflow-y: auto'), 'treść, która się nie mieści, musi dać się przewinąć');
-  assert.ok(blok.includes('background: var(--tlo-karta)'), 'tło panelu jest pełne, nie półprzezroczyste nad mapą');
 
-  // W obu wariantach `top` I `bottom` podane jawnie: przy `top: auto`
-  // przeglądarka bierze pozycję statyczną i IGNORUJE `bottom`, więc panel
-  // nie byłby ograniczony od dołu.
-  // Ten sam nagłówek @media występuje w pliku kilka razy (ADR 0030, stacje),
-  // więc szukamy tego bloku, który RZECZYWIŚCIE zawiera regułę panelu.
-  const wariantPanelu = (mq) => {
-    let od = STYLE.indexOf(mq);
-    while (od >= 0) {
-      const nastepny = STYLE.indexOf('@media', od + mq.length);
-      const blok = STYLE.slice(od, nastepny < 0 ? undefined : nastepny);
-      if (blok.includes('#ekran-pozycja')) return blok;
-      od = STYLE.indexOf(mq, od + mq.length);
-    }
-    return null;
-  };
-  for (const mq of ['@media (max-width: 900px) and (orientation: portrait)',
-                    '@media (orientation: landscape), (min-width: 901px)']) {
-    const wariant = wariantPanelu(mq);
-    assert.ok(wariant, `brak wariantu z regułą panelu: ${mq}`);
-    assert.ok(wariant.includes('top:'), `w ${mq} brakuje jawnego top`);
-    assert.ok(wariant.includes('bottom:'), `w ${mq} brakuje jawnego bottom`);
-  }
-});
 
-test('kontrakt: przyciski +/− mapy-tła są poniżej belki i przy lewej krawędzi', () => {
-  // Mapa-tło ma `position: fixed; inset: 0`, więc sięga POD samą belkę, a belka
-  // (`z-index: 3`, nieprzezroczyste tło) i panel pozycji (`z-index: 2`) malują
-  // się NAD mapą (`z-index: 0`). Domyślne `top: 8px; right: 8px` chowało więc
-  // przyciski pod belką, a w wariancie poziomym także pod panelem (zgłoszenie
-  // właściciela 2026-09-08).
-  const od = STYLE.indexOf("body[data-ekran='setup'] #mapa-pozycja .mapa-przyciski");
-  assert.ok(od > 0, 'brak reguły dla przycisków mapy-tła');
-  const blok = STYLE.slice(od, STYLE.indexOf('\n}', od));
-  assert.ok(blok.includes("body[data-ekran='pozycja']"), 'reguła ma dotyczyć też ekranu pozycji');
-  assert.ok(blok.includes('var(--wysokosc-belki'),
-    'top musi iść z mierzonej wysokości belki — `.akcje` się zawija i stała by się rozsypała');
-  assert.ok(blok.includes('right: auto'), 'przyciski muszą zejść z prawej — tam stoi panel pozycji');
-  assert.ok(blok.includes('left:'), 'przyciski mają być przy lewej krawędzi');
 
-  // Pomiar musi działać na starcie I przy zmianie rozmiaru okna (obrót telefonu).
-  assert.ok(APP.includes('function ustawWysokoscBelki'), 'brak funkcji mierzącej belkę');
-  assert.equal(APP.split('ustawWysokoscBelki();').length - 1, 2,
-    'pomiar wołany dokładnie dwa razy: w start() i w nasłuchu resize');
-});
 
-test('kontrakt: mapa-tło resetuje max-height i margin z reguły bazowej .mapa (L40)', () => {
-  // `.mapa` deklaruje `height: 45vh; min-height: 240px; max-height: 460px;
-  // margin: 10px 0`. Selektor z id nadpisuje właściwość po właściwości, więc bez
-  // jawnych resetów mapa-tło była `fixed` na całą szerokość, ale ŚCIĘTA do
-  // 460 px i przesunięta o 10 px — właściciel widział „mapę na pół ekranu"
-  // mimo `height: 100%`. Te same resety mają #mapa-gra i #mapa-stacje.
-  const start = STYLE.indexOf('#mapa-pozycja {');
-  assert.ok(start > 0, 'brak reguły #mapa-pozycja');
-  const blok = STYLE.slice(start, STYLE.indexOf('\n}', start));
-  assert.ok(blok.includes('max-height: none'), 'max-height nie zresetowany — mapa ścięta do 460 px');
-  assert.ok(blok.includes('margin: 0'), 'margin nie zresetowany — mapa przesunięta o 10 px');
-  assert.ok(blok.includes('min-height: 0'), 'min-height nie zresetowany');
-});
+
 
 test('kontrakt: stopka pokazuje numer budowy — inaczej nie poznać wersji z cache', () => {
   assert.ok(INDEX.includes('id="stopka-wersja"'), 'w stopce brakuje znacznika wersji');
   assert.ok(APP.includes("searchParams.get('v')"), 'app.js nie bierze wersji z ?v= własnego modułu');
 });
 
-test('kontrakt: mapa jest trwałym spodem aplikacji, a setup kartą nad nią', () => {
-  const main = INDEX.match(/<main class="tresc">([\s\S]*?)<section id="ekran-setup"/)?.[1] ?? '';
-  assert.match(main, /<div id="mapa-pozycja" class="mapa">/, 'mapa pozycji jest pierwszym elementem <main>, nie w ekranie pozycji');
-  const ekranPozycja = INDEX.match(/<section id="ekran-pozycja"[\s\S]*?<\/section>/)?.[0] ?? '';
-  assert.equal(/id="mapa-pozycja"/.test(ekranPozycja), false, 'ekran pozycji nie zawiera już własnej mapy');
 
-  assert.match(INDEX, /<button id="przycisk-setup"[^>]*>⚙ START GRY<\/button>/, 'START GRY w nagłówku (decyzja 2026-09-09)');
-  assert.ok(APP.includes("$('przycisk-setup').addEventListener('click', przelaczSetup)"), 'ikonka setup jest podpięta (F3: przełącznik)');
-
-  assert.ok(STYLE.includes('body:not([data-ekran=\'setup\']):not([data-ekran=\'pozycja\']):not([data-ekran=\'mapa\']) #mapa-pozycja { visibility: hidden; }'),
-    'mapa jest chowana przez visibility, nie display — display zerowałby jej pomiar');
-  assert.ok(STYLE.includes("body[data-ekran='setup'] #ekran-setup"), 'setup ma regułę karty nad mapą');
-});
 
 // Ekran stacji: mapa i lista obok siebie, nie jedna nad drugą (właściciel:
 // „te stacje odnoszą się właśnie do mapy"). Atrapa nie liczy pikseli, więc
 // pilnujemy struktury i tego, że reguły istnieją dla obu orientacji.
-test('kontrakt: ekran stacji dzieli się na mapę i przewijany panel', () => {
-  const ekran = INDEX.match(/<section id="ekran-stacje"[\s\S]*?<\/section>/)?.[0] ?? '';
-  const obszar = ekran.slice(ekran.indexOf('<div class="stacje-obszar">'));
-  assert.ok(obszar.includes('id="mapa-stacje"'), 'mapa jest w .stacje-obszar');
-  assert.ok(obszar.includes('id="stacje-panel"'), 'panel stacji jest w .stacje-obszar');
-  assert.ok(obszar.includes('id="lista-stacji"'), 'lista stacji jest w panelu');
-  assert.ok(obszar.includes('id="przycisk-dalej-prompt"'), 'przycisk „Dalej" jest w panelu');
-  assert.ok(!obszar.includes('id="tytul-stacje"'), 'tytuł sekcji zostaje NAD obszarem — inaczej w poziomie stałby się kolumną');
 
-  assert.ok(STYLE.includes('#ekran-stacje:not([hidden]) .stacje-obszar'), 'obszar ma regułę podziału');
-  assert.ok(STYLE.includes('#ekran-stacje:not([hidden]) #stacje-panel'), 'panel ma regułę');
-  // Proste sprawdzenia tekstowe zamiast literałów regex z metaznakami CSS —
-  // te drugie rozjeżdżają parser przy byle escapowaniu.
-  const pion = STYLE.slice(STYLE.indexOf('@media (max-width: 900px) and (orientation: portrait)'));
-  assert.ok(pion.includes('#ekran-stacje:not([hidden]) #stacje-panel'), 'panel stacji ma regułę w bloku pionu');
-  assert.ok(pion.includes('max-height: 42dvh'), 'panel w pionie ma ograniczoną wysokość i przewija się w środku');
-  const poziom = STYLE.slice(STYLE.indexOf('@media (orientation: landscape), (min-width: 901px)'));
-  assert.ok(poziom.includes('#ekran-stacje:not([hidden]) #stacje-panel'), 'panel stacji ma regułę w bloku poziomu');
-  assert.ok(poziom.includes('overflow-y: auto'), 'panel w poziomie przewija się w środku');
-  assert.ok(poziom.includes('#ekran-stacje:not([hidden]) .stacje-obszar'), 'obszar dzieli się w poziomie na kolumny');
-});
 
 test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=true', () => {
   // Decyzja właściciela 2026-09-08: przełącznik w nagłówku kusił do grania bez
@@ -405,16 +302,15 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
 
   // Rankingi są warstwą z dwoma wyjściami (decyzja właściciela 2026-09-08) —
   // z poprzedniego układu „ekran" nie dało się na telefonie wyjść.
-  assert.match(INDEX, /<section id="ekran-ranking" class="ekran warstwa" hidden role="dialog" aria-modal="true"/);
+  assert.match(INDEX, /<section id="ekran-ranking" class="ekran warstwa panel-centralny" hidden role="dialog" aria-modal="false"/);
   assert.match(INDEX, /<button id="przycisk-ranking-krzyzyk"[^>]*aria-label="Zamknij rankingi">✕<\/button>/, 'krzyżyk w rogu warstwy');
   assert.match(INDEX, /<button id="przycisk-wrocz-ranking"[^>]*>Zamknij rankingi<\/button>/, 'klawisz zamknięcia zamiast „← wróć"');
   assert.ok(APP.includes("$('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu)"), 'krzyżyk jest podpięty');
   assert.ok(STYLE.includes('.warstwa-krzyzyk'), 'krzyżyk ma styl');
   assert.match(APP, /'true', '1', 'tak'/, 'przyjmowane formy parametru ?test=');
 
-  const symulacja = INDEX.match(/<button id="przycisk-symulacja"[^>]*>/)?.[0];
+  const symulacja = INDEX.match(/<button id="przycisk-symulacja-gra"[^>]*>/)?.[0];
   assert.ok(symulacja, 'brak przycisku symulacji dojścia (M3)');
-  assert.match(symulacja, /aria-pressed="false"/, 'symulacja startuje wyłączona');
   assert.match(symulacja, /\bhidden\b/, 'symulacja tylko w trybie testowym');
 
   const pierscien = INDEX.match(/<button id="przycisk-pierścien"[^>]*>/)?.[0];
@@ -666,14 +562,13 @@ test('kontrakt: instrukcja promptu to cztery kroki jako inline SVG (ADR 0001 pkt
   assert.equal((instrukcja.match(/<svg /g) ?? []).length, 4, 'cztery ikony, po jednej na krok');
   assert.equal((instrukcja.match(/<li>/g) ?? []).length, 4, 'kolejność DOM = kolejność kroków');
   // kolejność treści: kopiuj → model z internetem → odpowiedź → z powrotem
-  const kroki = ['Kopiuj prompt', 'wyszukiwaniem', 'Kopiuj odpowiedź', 'wklej z powrotem'];
+  const kroki = ['Kopiuj prompt', 'czatów AI', 'Kopiuj odpowiedź', 'wklej z powrotem'];
   let poprzedni = -1;
   for (const krok of kroki) {
     const i = instrukcja.indexOf(krok);
     assert.ok(i > poprzedni, `krok „${krok}" obecny i w kolejności`);
     poprzedni = i;
   }
-  assert.match(instrukcja, /włączonym wyszukiwaniem\s*\n?\s*w internecie/, 'krok 2 podkreśla wymóg szukania w sieci (ADR 0008)');
   assert.equal((html.match(/<img /g) ?? []).length, 0, 'zero <img> — grafika wyłącznie inline (zero plików zewnętrznych)');
   assert.equal((html.match(/xlink:href="http|href="http[^"]*\.(png|jpg|svg)/g) ?? []).length, 0, 'SVG nie ciągnie nic z sieci');
 });
@@ -767,14 +662,7 @@ test('kontrakt: karta historii gier na setupie (M7/P6)', () => {
   assert.match(html, /id="przycisk-kasuj-historie"[^>]*type="button"/, 'kasowanie historii to type=button');
 });
 
-test('kontrakt: ręczne współrzędne przyjmują wklejenie z Google Maps (zadanie właściciela D3)', () => {
-  assert.match(INDEX, /id="setup-lat" type="text"/, 'pole lat musi być tekstowe — type="number" nie wpuści °\'"NSEW z wklejenia');
-  assert.match(INDEX, /id="setup-lon" type="text"/, 'pole lon musi być tekstowe');
-  assert.match(INDEX, /id="setup-lat"[^>]*inputmode="decimal"/, 'klawiatura numeryczna na telefonie zostaje');
-  assert.ok(INDEX.includes('id="reczne-podpowiedz"'), 'brak podpowiedzi z przykładem Google Maps');
-  assert.match(INDEX, /id="reczne-podpowiedz" class="podpowiedz"/);
-  assert.match(INDEX, /52°07'22\.9"N 20°44'46\.1"E/, 'podpowiedź niesie prawdziwy przykład pary DMS');
-});
+
 
 test('kontrakt M8: manifest, ikony i ścieżki względne pod Pages (ADR 0002)', () => {
   assert.ok(existsSync(join(ROOT, '.nojekyll')), '.nojekyll musi istnieć — Pages bez przetwarzania Jekyll');
@@ -1090,47 +978,7 @@ test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da si�
   }
 });
 
-test('kontrakt ADR 0030: rozgrywka na telefonie układa się pod orientację, a strona się nie przewija', () => {
-  // Który ekran jest na wierzchu, mówi znacznik na <body>: CSS nie ma selektora
-  // rodzica, a reguły „mapa tłem, karty nad nią, bez przewijania” muszą działać
-  // wyłącznie na ekranie gry.
-  assert.match(APP, /document\.body\.dataset\.ekran = nazwa/, 'pokazEkran() oznacza ekran na <body>');
-  assert.match(APP, /document\.body\.dataset\.ekran = 'prywatnosc'/, 'ekran prywatności zdejmuje znacznik gry');
 
-  // Oba układy są zapytane o orientację — przeglądarka przelicza zapytania na
-  // żywo, więc obrót telefonu przełącza układ bez przeładowania.
-  assert.match(STYLE, /orientation: portrait/, 'jest układ pionowy');
-  assert.match(STYLE, /orientation: landscape/, 'jest układ poziomy');
-  assert.match(STYLE, /body\[data-ekran='gra'\] \{ height: 100dvh; overflow: hidden; \}/, 'strona gry się nie przewija');
-
-  // Mapa jest tłem obszaru gry — w proporcjach urządzenia, nie w stałym 45vh.
-  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\) #mapa-gra \{\n    position: absolute;\n    inset: 0;/, 'mapa gry wypełnia obszar gry');
-  // Karty faz leżą NA mapie i mają własne przewijanie.
-  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\) > \.gra-panel \{[^}]*z-index: 2;/s, 'karty faz są nad mapą');
-  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\) > \.gra-panel \{[^}]*overflow-y: auto;/s, 'długie pytanie przewija się w karcie, nie wypycha mapy');
-  // Atrybucja dostawcy (ADR 0003 pkt 3) nie znika razem z dołem mapy.
-  assert.match(STYLE, /\.mapa-atrybucja \{[^}]*bottom: auto;/s, 'atrybucja dostawcy została widoczna nad mapą');
-  // Rozpychacz zamiast justify-content: flex-end — przy nadmiarze treści karty
-  // nie uciekają nad górną krawędź (znany błąd flexboksa).
-  assert.match(STYLE, /#ekran-gra:not\(\[hidden\]\)::before \{ content: ''; flex: 1 1 auto; \}/, 'karty schodzą na dół rozpychaczem, nie flex-end');
-
-  // Dwa nadpisania, które ten układ potrafi zepsuć jednym selektorem z id:
-  // (a) `#gra-dystans` ma własne tło akcentu i biały napis — w jasnym motywie
-  //     nadpisanie tła dałoby białe na białym;
-  // (b) `#bledy-gra` ma `blad-tlo`/`blad` z `.bledy` — nadpisanie tła kartą
-  //     sprawiłoby, że błąd przestaje wyglądać jak błąd.
-  // Reguły z id wygrywają z klasowymi, więc pilnujemy wprost: żadna reguła
-  // celująca w te dwa elementy nie deklaruje tła. Bez komentarzy — uzasadnienia
-  // w CSS cytują te same nazwy własności.
-  const reguly = [...STYLE.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^{}]*)\}/g)]
-    .map((m) => ({ selektor: m[1].trim(), cialo: m[2] }));
-  assert.ok(reguly.length > 100, 'parser reguł CSS coś widzi');
-  for (const trafiony of ['#bledy-gra', '.badge-duzy']) {
-    for (const { selektor, cialo } of reguly.filter((r) => r.selektor.includes(trafiony))) {
-      assert.ok(!/background:/.test(cialo), `reguła „${selektor}” nie nadpisuje tła elementu ${trafiony}`);
-    }
-  }
-});
 
 /**
  * Uwagi właściciela 2026-09-09 (A1, A2, A3) do warstw nad mapą:
@@ -1148,29 +996,20 @@ test('uwaga A1: ekran startowy ma duży, wyśrodkowany tytuł i rozwinięte intr
   assert.ok(intro.includes('zgody na dostęp do lokalizacji'), 'intro uprzedza o zgodzie na lokalizację');
 });
 
-test('uwaga A2: warstwy nad mapą zaczynają się PONIŻEJ górnej belki', () => {
-  assert.match(STYLE, /\.warstwa \{[^}]*padding: calc\(var\(--wysokosc-belki, 64px\) \+ 12px\)/s,
-    'rankingi odsunięte o zmierzoną wysokość belki, nie o stałe 16 px');
-  assert.match(STYLE, /\.warstwa-start \{[^}]*padding: calc\(var\(--wysokosc-belki, 64px\) \+ 12px\)/s,
-    'okno startowe tak samo');
-  assert.ok(APP.includes('function ustawWysokoscBelki'), 'wysokość belki mierzy JS');
-  assert.ok(APP.includes("document.documentElement.style.setProperty('--wysokosc-belki'"),
-    'zmierzona wysokość trafia do zmiennej CSS');
+test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samodzielnie', () => {
+  assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*var\(--wysokosc-belki/s);
+  assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*overflow-y: auto/s);
+  assert.ok(APP.includes('function ustawWysokoscBelki'));
+  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra', 'ranking', 'informacje']) {
+    const sekcja = INDEX.match(new RegExp(`<section id="ekran-${ekran}"[\\s\\S]*?</section>`))?.[0];
+    assert.ok(sekcja?.includes('panel-centralny'), ekran);
+    assert.ok(!/id="mapa-(pozycja|stacje|gra)"/.test(sekcja), 'mapa poza panelem: ' + ekran);
+  }
+  assert.match(STYLE, /body\.podglad-mapy \.panel-centralny \{[^}]*visibility: hidden/s);
+  assert.match(STYLE, /#przygaszenie-mapy \{[^}]*pointer-events: none/s);
 });
 
-test('uwaga A3: każda warstwa nad mapą przyciemnia ją tak samo', () => {
-  const kozuch = /background: color-mix\(in srgb, var\(--tekst\) 62%, transparent\)/;
-  for (const [selektor, opis] of [['.warstwa {', 'rankingi'], ['.warstwa-start {', 'okno startowe'], ["body[data-ekran='setup']::before {", 'karta setupu']]) {
-    const start = STYLE.indexOf(selektor);
-    assert.ok(start >= 0, `reguła ${selektor} istnieje`);
-    const blok = STYLE.slice(start, STYLE.indexOf('}', start));
-    assert.match(blok, kozuch, `${opis} przyciemniają mapę tym samym kolorem`);
-  }
-  assert.match(STYLE, /body\[data-ekran='setup'\]::before \{[^}]*pointer-events: none/s,
-    'kożuch setupu nie przechwytuje kliknięć');
-  assert.match(STYLE, /\.warstwa-start \{[^}]*inset: 0/s,
-    'okno startowe rozciąga się na cały ekran — inaczej mapa dookoła zostaje jasna');
-});
+
 
 /**
  * Zgłoszenie właściciela (2026-09-09): etykieta „Planowany czas gry (min)”

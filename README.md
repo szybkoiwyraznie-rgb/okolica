@@ -28,13 +28,13 @@ paczki i jej ukrywanie (`TO-paczka/2`). Od 2026-09-09 model nie odwraca już
 liter: kodowany jest wyłącznie numer poprawnej odpowiedzi (ADR 0033). Jako czyste funkcje z testami istnieją też **model rozgrywki**
 (`app/rozgrywka.js`: kolejka graczy i odpowiadania, odcinki, punktacja
 dotarcie-plus-poprawna, dziennik i podsumowanie) oraz
-**warstwa pozycji** (`app/pozycja.js`: filtr dokładności, kryterium dojścia
-z debounce'em, komunikaty błędów GPS, symulacja trasy dla trybu testowego).
+**warstwa pozycji** (`app/pozycja.js`: walidacja współrzędnych, dojście po jednym fixie
+w odległości ≤50 m (bez oceny dokładności GPS), komunikaty błędów GPS, symulacja trasy dla trybu testowego).
 
 **M2 — mapa: kod i testy gotowe.** Na ekranach „pozycja" i „stacje" jest mapa
 SVG z podkładem rastrowym bez klucza API (OSM Standard, OpenTopoMap, Esri World
 Imagery albo podkład wyłączony), gestami palca (drag + pinch), przyciskami
-＋ − ◎, markerem pozycji z kołem dokładności, przerywanym okręgiem promienia gry,
+＋ − ◎, markerem pozycji bez koła dokładności, przerywanym okręgiem promienia gry,
 numerowanymi pinezkami stacji, paskiem skali i zawsze widoczną atrybucją
 dostawcy. Kamień zamknięty 2026-09-05: właściciel potwierdził w live preview,
 że podkład jest widoczny i czytelny, a atrybucja i przyciski są na miejscu
@@ -43,12 +43,16 @@ dostawcy. Kamień zamknięty 2026-09-05: właściciel potwierdził w live previe
 **M3 — konfiguracja i prywatność: kod i testy gotowe.** Ekran „dane
 i prywatność" (cztery karty z ADR 0013: co jest pobierane i od kogo, dokąd
 trafia pozycja, co zostaje na telefonie, jak to skasować; paczka opisana jako
-**ukryta, nie zaszyfrowana**) otwiera się ze stopki, a kasowanie
-danych jest dwustopniowe i rusza tylko klucze `okolica:*`. W trybie testowym
-przycisk „▶ Symuluj dojście (250 m)" odtwarza trasę dziewięciu fixów — GPS
-i symulacja karmią ten sam `przyjmijFix()`, więc badge dokładności, mapa i próg
-dojścia z debounce'em działają identycznie bez sygnału, a pauza w tle zatrzymuje
-oba strumienie. Kamień czeka na weryfikację właściciela: kryterium „pełna
+**ukryta, nie zaszyfrowana**) otwiera się z panelu ⓘ Informacje, a kasowanie
+danych jest dwustopniowe i rusza tylko klucze `okolica:*`. GPS startuje automatycznie. Nie ma ręcznych pól pozycji ani symulacji 250 m.
+W trybie testowym pozycję wskazuje się na mapie; w grze zostaje symulacja
+dojścia do stacji. GPS i symulacja używają tej samej reguły ≤50 m.
+Setup, lista stacji i pytania są przewijanymi panelami nad przygaszoną mapą.
+Oko w prawym dolnym rogu chowa je bez przerywania procesu lub gry.
+Wybory nowego setupu: 7, 12, dorośli; tematy alfabetyczne z Ciekawostkami,
+bez Sportu i Jedzenia. Stare paczki i zapisy pozostają czytelne (ADR 0034).
+Instrukcję promptu rozwija się nagłówkiem; zawiera linki do trzech czatów AI.
+Kamień czeka na weryfikację właściciela: kryterium „pełna
 konfiguracja bez przewijania na 360 px" (`docs/WORKFLOW.md` §4.2).
 
 **M4 — stacje z sieci drogowej: kod i testy gotowe.** Ekran „stacje" liczy
@@ -81,7 +85,7 @@ właściciela: pełna pętla z prawdziwym modelem (`docs/WORKFLOW.md` §4.2).
 **M6 — rozgrywka: kod i testy gotowe.** Gra jest klikalna od setupu do
 wyniku: jeden ekran gry z czterema panelami faz („kto idzie" → odcinek z mapą
 i dystansem → pytanie odsłaniane DOPIERO w chwili dojścia → wynik), dojście
-z GPS (stały próg 25 m + dwa kolejne trafienia; ręczne zaliczanie usunięte
+z GPS (≤50 m, pojedynczy fix niezależnie od accuracy; ręczne zaliczanie usunięte
 w ADR 0029), pauza (również automatyczna po schowaniu karty), pominięcie stacji
 w drodze i ręczne zakończenie z wczesnym wynikiem. Pytania żyją w ukrytym
 kontenerze (`TO-paczka/2`) — w stanie gry i w zapisie nigdy nie ma ich treści.

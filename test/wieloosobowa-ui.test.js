@@ -262,9 +262,9 @@ async function klik(u, id) { przelaczNa(u); u.dom.kliknij(id); await oddech(); }
  * po prostu wie, gdzie jest, czyli wpisuje współrzędne jak na ekranie pozycji.
  */
 async function ustawPozycjeTestowa(u, { lat = PODKOWA.lat, lon = PODKOWA.lon } = {}) {
-  ustaw(u, 'setup-lat', String(lat));
-  ustaw(u, 'setup-lon', String(lon));
-  await klik(u, 'przycisk-ustaw-reczne');
+  przelaczNa(u);
+  u.dom.ustawPozycje(lat, lon);
+  await oddech();
 }
 
 async function dojdzSymulacja(u, { maksMs = 5000 } = {}) {
@@ -343,9 +343,7 @@ function zasiejZestaw(pamiec, ileStacji, pytaniaNaStacje = 1) {
 /** Tożsamość + pozycja (ręczna, tryb testowy) — telefon gotowy do gry (adres mostu: ADR 0020). */
 async function przygotujTelefon(u, pseudonim) {
   ustaw(u, 'multi-pseudonim', pseudonim);
-  ustaw(u, 'setup-lat', String(PODKOWA.lat));
-  ustaw(u, 'setup-lon', String(PODKOWA.lon));
-  await klik(u, 'przycisk-ustaw-reczne');
+  await ustawPozycjeTestowa(u);
 }
 
 async function zalozGreUI(u, { tryb = 'wyscig', skrot }) {

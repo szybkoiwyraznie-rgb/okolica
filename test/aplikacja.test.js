@@ -35,7 +35,8 @@ import { atrapaGeolokalizacji, zainstalujDom } from './helpers/dom.js';
 
 /* ------------------------------------------------------------------ bootstrap */
 
-const dom = zainstalujDom();
+const gps = atrapaGeolokalizacji();
+const dom = zainstalujDom({ geolocation: gps.geolocation });
 const { pobierz, pamiec } = dom;
 
 // Import PO ustawieniu globali — app.js uruchamia start() przy wczytaniu.
@@ -174,7 +175,7 @@ test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', 
 });
 
 test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
-  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-wklej', 'przycisk-poprawka', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-gps', 'przycisk-ustaw-reczne']) {
+  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-wklej', 'przycisk-poprawka', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-informacje', 'przycisk-podejrzyj-mape']) {
     assert.ok(pobierz(id).zdarzenia.click?.length >= 1, `#${id} nie ma nasłuchu click — przycisk byłby martwy`);
   }
   // Ekran 5 nie ma już przycisku zatwierdzania: walidację odpala samo wklejenie,
@@ -185,97 +186,13 @@ test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
 
 /* ------------------------------------------------- współrzędne ręczne */
 
-test('ręczne współrzędne: puste pola nie ustawiają pozycji (0,0) „na Null Island"', () => {
-  // Po usunięciu przełącznika trybu testowego z nagłówka to jedyna WIDOCZNA
-  // droga do wpisania pozycji, gdy geolokalizacja nie działa (np. podgląd
-  // w ramce bez `allow="geolocation"`) — musi działać bez ?test=true.
-  assert.equal(pobierz('reczne-wspolrzedne').hidden, true, 'pola domyślnie schowane');
-  dom.kliknij('przycisk-recznie');
-  assert.equal(pobierz('reczne-wspolrzedne').hidden, false, '„✎ Wpisz ręcznie" odsłania pola bez trybu testowego');
-
-  pobierz('setup-lat').value = '';
-  pobierz('setup-lon').value = '';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.equal(pobierz('bledy-pozycja').hidden, false, 'brak współrzędnych ma być widoczny');
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P06\]/);
-  assert.match(pobierz('bledy-pozycja').textContent, /Wpisz obie współrzędne/);
-  assert.equal(pobierz('pozycja-wspolrzedne').textContent, '', 'żadna pozycja nie została ustawiona');
-  assert.equal(pobierz('pozycja-status').textContent, '', 'ekran pozycji nie został odświeżony — odmowa, nie cicha zmiana');
-});
-
-test('ręczne współrzędne: zakresy są pilnowane, a poprawna pozycja przechodzi', () => {
-  pobierz('setup-lat').value = '999';
-  pobierz('setup-lon').value = '21';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P06\].*od -90 do 90/, 'kod z pozycja.js, komunikat dla człowieka');
-
-  pobierz('setup-lat').value = '52.23178';
-  pobierz('setup-lon').value = '21.01234';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.equal(pobierz('bledy-pozycja').hidden, true);
-  assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustawiona ręcznie');
-  assert.match(pobierz('pozycja-wspolrzedne').textContent, /52\.23178, 21\.01234/);
-  // Ścieżka, na której utknął właściciel na podglądzie: geolokalizacja
-  // niedostępna, „Dalej: stacje" wyszarzone. Ręczne współrzędne NIE są trybem
-  // testowym (`ustawPozycjeRecznie` nie ma bramki), więc muszą odblokowywać.
-  assert.equal(pobierz('przycisk-dalej-stacje').disabled, false,
-    'ręczna pozycja odblokowuje „Dalej: stacje" bez trybu testowego');
-  assert.match(pobierz('pozycja-wspolrzedne').textContent, /geohash/);
-  assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
-});
-
-/* ------------------- współrzędne z Google Maps i tap w mapę (zadanie D3) */
-
-test('D3: para DMS z Google Maps wklejona w pierwsze pole ustawia pozycję', () => {
-  // przykład właściciela: Podkowa Leśna, ul. Bukowa 22; oczekiwania LICZONE
-  // z definicji DMS (L24), nie przepisane z wyjścia
-  const oczLat = 52 + 7 / 60 + 22.9 / 3600;
-  const oczLon = 20 + 44 / 60 + 46.1 / 3600;
-  pobierz('setup-lat').value = '52°07\'22.9"N 20°44\'46.1"E';
-  pobierz('setup-lon').value = '';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.equal(pobierz('bledy-pozycja').hidden, true, pobierz('bledy-pozycja').textContent);
-  const re = new RegExp(`${oczLat.toFixed(5).replace(/\./g, '\\.')}, ${oczLon.toFixed(5).replace(/\./g, '\\.')}`);
-  assert.match(pobierz('pozycja-wspolrzedne').textContent, re, 'na ekranie widać DZIESIĘTNE, które aplikacja zrozumiała');
-  assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustawiona ręcznie');
-  assert.equal(pobierz('przycisk-dalej-stacje').disabled, false);
-});
-
-test('D3: błąd zapisu DMS jest jawny — [P06] pod polami, pozycja bez zmian', () => {
-  const przed = pobierz('pozycja-wspolrzedne').textContent;
-  assert.ok(przed.length > 0, 'pozycja z poprzedniego testu — jest co chronić');
-  pobierz('setup-lat').value = '52°75\'00"N';
-  pobierz('setup-lon').value = '';
-  dom.kliknij('przycisk-ustaw-reczne');
-  assert.equal(pobierz('bledy-pozycja').hidden, false, 'odmowa musi być widoczna');
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P06\]/);
-  assert.match(pobierz('bledy-pozycja').textContent, /mniejsze niż 60/);
-  assert.equal(pobierz('pozycja-wspolrzedne').textContent, przed, 'odmowa nie przestawia pozycji');
-  pobierz('bledy-pozycja').hidden = true; // sprzątamy po teście
-});
-
 /* ------------------------------------------------------------------ GPS */
 
-test('GPS: brak API daje komunikat P01, nie wyjątek i nie biały ekran', () => {
-  // na tym egzemplarzu `navigator.geolocation` jest `undefined` (atrapa bez API)
-  dom.ustawGeolokalizacje(undefined);
-  dom.kliknij('przycisk-gps');
-  assert.match(pobierz('bledy-pozycja').textContent, /\[P01\]/);
-  assert.match(pobierz('bledy-pozycja').textContent, /HTTPS|trybie testowym/);
-  assert.equal(pobierz('pozycja-status').textContent, 'Brak pozycji');
-  assert.equal(pobierz('ekran-setup').hidden, false, 'aplikacja działa dalej');
-});
-
-const gps = atrapaGeolokalizacji();
-
 test('GPS: watcher startuje z opcjami z ADR 0004 pkt 1', () => {
-  dom.ustawGeolokalizacje(gps.geolocation);
-  dom.kliknij('przycisk-gps');
   assert.equal(gps.wywolania.watch, 1, 'jeden watcher na rozgrywkę');
   assert.deepEqual(gps.wywolania.opcje, OPCJE_WATCH);
   assert.deepEqual(OPCJE_WATCH, { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
-  assert.equal(pobierz('pozycja-status').textContent, 'Szukam satelitów…');
-  assert.match(pobierz('status').textContent, /pierwszy fix/i);
+  assert.equal(gps.wywolania.watch, 1, 'GPS uruchomiony automatycznie, bez przycisku');
 });
 
 test('GPS: fix trafia na ekran — badge dokładności i odblokowane przejście', () => {
@@ -336,10 +253,6 @@ for (const [adres, czyWlaczony] of [
   test(`tryb testowy z adresu: „${adres || '(bez parametru)'}" → ${czyWlaczony ? 'włączony' : 'wyłączony'}`, async () => {
     const domTest = zainstalujDom({ search: adres });
     await import(`../app/app.js?urltest=${Math.random().toString(36).slice(2)}`);
-    assert.equal(domTest.pobierz('reczne-wspolrzedne').hidden, !czyWlaczony,
-      'ręczne współrzędne są odsłonięte tylko w trybie testowym');
-    assert.equal(domTest.pobierz('przycisk-symulacja').hidden, !czyWlaczony,
-      'symulacja dojścia jest tylko w trybie testowym');
     assert.equal(domTest.document.body.classList.contains('tryb-testowy'), czyWlaczony);
   });
 }
@@ -351,16 +264,15 @@ test('tryb testowy z adresu: ?tryb=test nie wznawia GPS po powrocie z tła', asy
   domTest.ustawGeolokalizacje(gpsTest.geolocation);
   await import(`../app/app.js?trybtest=${Date.now()}`);
 
-  assert.equal(domTest.pobierz('reczne-wspolrzedne').hidden, false, 'tryb testowy z URL jest włączony na starcie');
+  assert.ok(domTest.document.body.classList.contains('tryb-testowy'));
 
-  domTest.kliknij('przycisk-gps'); // gracz może włączyć GPS nawet w trybie testowym
-  assert.equal(gpsTest.wywolania.watch, 1);
+  assert.equal(gpsTest.wywolania.watch, 0);
   domTest.ustawHidden(true);
   domTest.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.deepEqual(gpsTest.wywolania.clear, [77], 'pauza w tle działa także w trybie testowym');
+  assert.deepEqual(gpsTest.wywolania.clear, [], 'w trybie testowym GPS nie startuje');
   domTest.ustawHidden(false);
   domTest.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.equal(gpsTest.wywolania.watch, 1, 'w trybie testowym śledzenie nie wraca samo — współrzędne są ręczne (ADR 0004 pkt 6)');
+  assert.equal(gpsTest.wywolania.watch, 0, 'w trybie testowym pozycję ustawia mapa');
 });
 
 test('GPS: limit historii i próg dokładności są z pozycja.js, nie wpisane w UI', () => {
@@ -422,9 +334,7 @@ test('mapa: bootstrap rysuje kafelki OSM i podpisuje dostawcę', async () => {
 
 test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok na graczu', async () => {
   const domMapy = await aplikacjaZMapa();
-  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 501 });
-  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
-  domMapy.kliknij('przycisk-gps');
+  const gpsMapy = domMapy.gps;
   gpsMapy.wyslijFix(52.235, 21.015, 15);
 
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'brak markera pozycji');
@@ -443,9 +353,7 @@ test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok n
 
 test('mapa: przejście do stacji rysuje numerowane pinezki i okrąg promienia', async () => {
   const domMapy = await aplikacjaZMapa();
-  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 502 });
-  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
-  domMapy.kliknij('przycisk-gps');
+  const gpsMapy = domMapy.gps;
   gpsMapy.wyslijFix(52.235, 21.015, 15);
   domMapy.kliknij('przycisk-dalej-stacje');
 
@@ -487,9 +395,7 @@ test('mapa: zmiana podkładu w setupie podmienia kafelki i atrybucję obu map', 
 
 test('mapa: ręczna pozycja w trybie testowym nie udaje koła dokładności', async () => {
   const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
-  domMapy.pobierz('setup-lat').value = '52.23178';
-  domMapy.pobierz('setup-lon').value = '21.01234';
-  domMapy.kliknij('przycisk-ustaw-reczne');
+  domMapy.ustawPozycje('52.23178', '21.01234');
 
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'marker jest — pozycja ustawiona ręcznie');
   assert.deepEqual(
@@ -502,9 +408,7 @@ test('mapa: ręczna pozycja w trybie testowym nie udaje koła dokładności', as
 
 test('mapa: schowany panel nie rysuje, a powrót na ekran przywraca warstwy', async () => {
   const domMapy = await aplikacjaZMapa();
-  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 503 });
-  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
-  domMapy.kliknij('przycisk-gps');
+  const gpsMapy = domMapy.gps;
   gpsMapy.wyslijFix(52.235, 21.015, 15);
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.ok(domMapy.pobierz('mapa-stacje-pinezki').children.length > 0);
@@ -532,13 +436,11 @@ test('mapa: obrót telefonu (resize) przelicza widok na nowy rozmiar panelu', as
 
 test('mapa: wyczyszczony czas gry nie wysypuje przejścia — jest jawna odmowa z kodem K19', async () => {
   const domMapy = await aplikacjaZMapa();
-  const gpsMapy = atrapaGeolokalizacji({ idWatcha: 504 });
-  domMapy.ustawGeolokalizacje(gpsMapy.geolocation);
+  const gpsMapy = domMapy.gps;
   // gracz czyści pole czasu gry → `Number('') = 0`, czyli wartość skończona,
   // która przechodzi przez hartowanie liczb w setupie (promień zjeżdża wtedy
   // na minimum 200 m, więc odmowa musi przyjść z walidacji czasu — K19)
   wyslij(domMapy.pobierz('setup-czas'), 'input', { target: { value: '' } });
-  domMapy.kliknij('przycisk-gps');
   gpsMapy.wyslijFix(52.235, 21.015, 15);
 
   // `stacjeProste` odmawia przy niedodatnim promieniu — przejście ma odmówić,
@@ -684,67 +586,6 @@ async function dojdzSymulacja(dom, { maksMs = 5000 } = {}) {
   }
 }
 
-test('symulacja: przycisk istnieje tylko w trybie testowym (z adresu)', async () => {
-  const bezTrybu = await aplikacjaZMapa();
-  assert.equal(bezTrybu.pobierz('przycisk-symulacja').hidden, true, 'bez trybu testowego nie ma symulacji');
-
-  // Wyłączyć trybu testowego się nie da — jest tylko parametrem adresu, więc
-  // „wyłączenie" to po prostu wejście bez niego (sprawdzone wyżej).
-  const zTrybem = await aplikacjaZMapa({ search: '?test=true' });
-  assert.equal(zTrybem.pobierz('przycisk-symulacja').hidden, false, '?test=true odsłania symulację');
-});
-
-test('symulacja: odtworzenie trasy prowadzi pozycję do celu i spełnia debounce dojścia', async () => {
-  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
-  domMapy.pobierz('setup-lat').value = '52.23178';
-  domMapy.pobierz('setup-lon').value = '21.01234';
-  domMapy.kliknij('przycisk-ustaw-reczne');
-  const start = domMapy.pobierz('pozycja-wspolrzedne').textContent;
-  assert.match(start, /52\.23178/);
-
-  domMapy.kliknij('przycisk-symulacja');
-  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'true', 'odtwarzanie wystartowało');
-  assert.match(domMapy.pobierz('status').textContent, /Symulacja trasy: 8 fixów/);
-
-  await czekaj(9 * 120 + 500); // dziewięć fixów po 120 ms + zapas na timery Node
-  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false', 'sekwencja sama się kończy');
-  assert.match(domMapy.pobierz('status').textContent, /cel osiągnięty — debounce dojścia spełniony/);
-  assert.notEqual(domMapy.pobierz('pozycja-wspolrzedne').textContent, start, 'pozycja przeszła trasę, nie stoi w miejscu');
-  assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'marker pojechał z pozycją');
-});
-
-test('symulacja: stop zatrzymuje strumień fixów', async () => {
-  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
-  domMapy.pobierz('setup-lat').value = '52.23178';
-  domMapy.pobierz('setup-lon').value = '21.01234';
-  domMapy.kliknij('przycisk-ustaw-reczne');
-
-  domMapy.kliknij('przycisk-symulacja');
-  await czekaj(300);
-  domMapy.kliknij('przycisk-symulacja');
-  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false');
-  assert.match(domMapy.pobierz('status').textContent, /Symulacja zatrzymana/);
-  const poStop = domMapy.pobierz('pozycja-wspolrzedne').textContent;
-  await czekaj(500);
-  assert.equal(domMapy.pobierz('pozycja-wspolrzedne').textContent, poStop, 'po stopie fixy nie płyną dalej');
-});
-
-test('symulacja: zejście karty w tło zatrzymuje odtwarzanie (uczciwość pomiaru)', async () => {
-  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
-  domMapy.pobierz('setup-lat').value = '52.23178';
-  domMapy.pobierz('setup-lon').value = '21.01234';
-  domMapy.kliknij('przycisk-ustaw-reczne');
-
-  domMapy.kliknij('przycisk-symulacja');
-  await czekaj(250);
-  domMapy.ustawHidden(true);
-  domMapy.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.equal(domMapy.pobierz('przycisk-symulacja').dataset['attr-aria-pressed'], 'false', 'tło zatrzymuje symulację');
-  const poPauzie = domMapy.pobierz('pozycja-wspolrzedne').textContent;
-  await czekaj(400);
-  assert.equal(domMapy.pobierz('pozycja-wspolrzedne').textContent, poPauzie, 'w tle fixy nie płyną');
-});
-
 /* ------------------------------------------------- M4/I7: stacje z sieci w UI */
 
 const KATALOG_APP = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -771,9 +612,7 @@ async function aplikacjaZSiecia({ search = '?tryb=test', pamiec = new Map() } = 
 }
 
 function ustawPozycjeTestowa(domAtrapa, lat = '52.2297', lon = '21.0122') {
-  domAtrapa.pobierz('setup-lat').value = lat;
-  domAtrapa.pobierz('setup-lon').value = lon;
-  domAtrapa.kliknij('przycisk-ustaw-reczne');
+  domAtrapa.ustawPozycje(lat, lon);
 }
 
 test('stacje: bez window.fetch degradacja do pierścienia jest synchroniczna i jawna', async () => {
@@ -848,8 +687,15 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(50);
   assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, false, 'nakładka Pobieram dane w trakcie fetch');
+  domAtrapa.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(domAtrapa.pobierz('ekran-stacje').hidden, false, 'oko nie deaktywuje ekranu');
+  assert.equal(domAtrapa.pobierz('ekran-stacje').inert, true);
   puść();
   await czekaj(250);
+  assert.equal(domAtrapa.document.body.dataset.ekran, 'stacje');
+  assert.equal(domAtrapa.pobierz('przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'true');
+  domAtrapa.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(domAtrapa.pobierz('ekran-stacje').inert, false);
   assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, true, 'nakładka znika po odpowiedzi');
   assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /HTTP 400/, 'błąd zapytania jawny (kod S03)');
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false, 'po porażce widać ponowienie');
@@ -2200,9 +2046,7 @@ test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie
   const domT = await aplikacjaZMapa({ search: '?tryb=test&odstep=0', pamiec: pamiecMapy });
   domT.kliknij('przycisk-dalej-pozycja'); // bramka tap-a: ekran 'pozycja'
   await czekaj(10); // przejście jest asynchroniczne: czeka na bramę tożsamości
-  domT.pobierz('setup-lat').value = '52.2297';
-  domT.pobierz('setup-lon').value = '21.0122';
-  domT.kliknij('przycisk-ustaw-reczne');
+  domT.ustawPozycje('52.2297', '21.0122');
 
   // Po ręcznym ustawieniu `pokazPozycje` woła `centrujNaPozycji`: mapa jest
   // wyśrodkowana NA POZYCJI w zoomie dobranym do promienia gry (promień liczy
@@ -2222,8 +2066,6 @@ test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie
   wyslij(svg, 'pointerup', { pointerId: 31, clientX: 40, clientY: 0 });
 
   assert.match(domT.pobierz('status').textContent, /Pozycja ustawiona z mapy/, 'status mówi, że pozycja jest z mapy');
-  assert.equal(Number(domT.pobierz('setup-lat').value), oczLat, 'pole lat wypełnione współrzędnymi stuknięcia');
-  assert.equal(Number(domT.pobierz('setup-lon').value), oczLon, 'pole lon wypełnione współrzędnymi stuknięcia');
   assert.match(
     domT.pobierz('pozycja-wspolrzedne').textContent,
     new RegExp(oczLat.toFixed(5).replace(/\./g, '\\.')),
@@ -2628,4 +2470,62 @@ test('ekran 5: pole ma trzy wiersze, a ekran nie ma już importu z pliku ani „
   assert.match(css, /#pole-odpowiedz\s*\{[^}]*resize:\s*none/, 'bez uchwytu rozciągania');
   assert.ok(!html.includes('plik-odpowiedz'), 'import z pliku usunięty z ekranu');
   assert.ok(!html.includes('przycisk-sprawdz'), 'przycisk zatwierdzania usunięty — wklejenie zatwierdza samo');
+});
+
+
+test('teren: oko podczas dojścia nie pauzuje gry; wraca aktualne pytanie i jego odpowiedź', async () => {
+  const { dom } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  dom.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(dom.document.body.dataset.ekran, 'gra');
+  assert.equal(dom.pobierz('ekran-gra').hidden, false);
+  assert.equal(dom.pobierz('ekran-gra').inert, true);
+  assert.equal(dom.pobierz('przygaszenie-mapy').hidden, true);
+  await dojdzSymulacja(dom);
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'dojście działa pod podglądem mapy');
+  assert.equal(dom.pobierz('przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'true');
+  dom.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(dom.pobierz('ekran-gra').inert, false);
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false);
+  const tresc = dom.pobierz('gra-panel-pytanie').textContent;
+  dom.kliknij('przycisk-podejrzyj-mape');
+  dom.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(dom.pobierz('gra-panel-pytanie').textContent, tresc);
+});
+
+test('teren: informacje przełączają się nad setupem; oko, prywatność i powrót zachowują stan', async () => {
+  const dom = await aplikacjaZMapa({ search: '?test=true' });
+  dom.kliknij('przycisk-start-zacznij');
+  dom.pobierz('setup-czas').value = '123';
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false);
+  assert.equal(dom.pobierz('ekran-setup').hidden, false);
+  assert.equal(dom.pobierz('ekran-setup').inert, true);
+  dom.kliknij('przycisk-podejrzyj-mape');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false);
+  assert.equal(dom.pobierz('ekran-informacje').inert, true);
+  dom.kliknij('przycisk-podejrzyj-mape');
+  dom.kliknij('przycisk-prywatnosc-stopka');
+  assert.equal(dom.pobierz('ekran-prywatnosc').hidden, false);
+  dom.kliknij('przycisk-wrocz-prywatnosc');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false);
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, true);
+  assert.equal(dom.pobierz('ekran-setup').inert, false);
+  assert.equal(dom.pobierz('setup-czas').value, '123');
+});
+
+
+test('teren: automatyczny GPS bez API pokazuje P01; błędny fix nie zmienia pozycji', async () => {
+  const bez = zainstalujDom({ geolocation: null });
+  await import(`../app/app.js?terenBezGps=${Math.random()}`);
+  assert.match(bez.pobierz('bledy-pozycja').textContent, /P01/);
+  assert.equal(bez.pobierz('przycisk-dalej-stacje').disabled, true);
+  const d = await aplikacjaZMapa();
+  d.gps.wyslijFix(52.23, 21.01, 1250);
+  const przed = d.pobierz('pozycja-wspolrzedne').textContent;
+  d.gps.wyslijFix(999, 21, 1);
+  assert.equal(d.pobierz('pozycja-wspolrzedne').textContent, przed);
+  assert.match(d.pobierz('bledy-pozycja').textContent, /P06/);
 });

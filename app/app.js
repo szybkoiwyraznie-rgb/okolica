@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-56';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, parsujWspolrzedne, przesunPunkt } from './geo.js?v=m12-56';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-57';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-57';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -34,21 +34,21 @@ import {
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-56';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-56';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-56';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-56';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-56';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-56';
+} from './protokol.js?v=m12-57';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-57';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-57';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-57';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-57';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-57';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-56';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-56';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-56';
+} from './zestawy.js?v=m12-57';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-57';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-57';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -68,17 +68,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-56';
-import { utworzMape } from './mapa.js?v=m12-56';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-56';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-56';
-import { adresMostu, stanMostu } from './most.js?v=m12-56';
+} from './sieci.js?v=m12-57';
+import { utworzMape } from './mapa.js?v=m12-57';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-57';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-57';
+import { adresMostu, stanMostu } from './most.js?v=m12-57';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-56';
+} from './oceny.js?v=m12-57';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -221,6 +221,9 @@ function odswiezStanIkonBelki() {
 
 function pokazEkran(nazwa) {
   ukryjStart(); // krok gry chowa okno startowe (poza nim okno nie ma czego przykrywać)
+  zamknijInformacje();
+  $('ekran-ranking').hidden = true;
+  $('ekran-prywatnosc').hidden = true;
   STAN.ekran = nazwa;
   // ADR 0030: stan ekranu na <body>. CSS nie ma selektora rodzica, a układ
   // rozgrywki na telefonie (mapa tłem, karty faz NA mapie, bez przewijania
@@ -237,6 +240,7 @@ function pokazEkran(nazwa) {
   }
   odswiezMapeEkranu(nazwa);
   odswiezStanIkonBelki();
+  odswiezWidocznoscPaneli();
   window.scrollTo({ top: 0 });
 }
 
@@ -247,6 +251,7 @@ function pokazEkran(nazwa) {
  * to nie krok przygotowania gry, tylko spód, na którym gra się zaczyna.
  */
 function pokazMapeStartowa() {
+  zamknijInformacje();
   STAN.ekran = 'mapa';
   document.body.dataset.ekran = 'mapa';
   for (const e of EKRANY) {
@@ -259,6 +264,7 @@ function pokazMapeStartowa() {
   }
   odswiezMapeEkranu('pozycja'); // mapa na spodzie to instancja pozycji
   odswiezStanIkonBelki();
+  odswiezWidocznoscPaneli();
   window.scrollTo({ top: 0 });
 }
 
@@ -269,6 +275,7 @@ function ukryjStart() {
   document.body.classList.remove('okno-start');
   const mp = document.querySelector('#mapa-pozycja .mapa-przyciski');
   if (mp) mp.hidden = false;
+  odswiezWidocznoscPaneli();
 }
 
 /**
@@ -277,6 +284,8 @@ function ukryjStart() {
  * ekran zapamiętany w `STAN.ekran`.
  */
 function pokazPrywatnosc() {
+  STAN.prywatnoscZInformacji = !$('ekran-informacje').hidden;
+  zamknijInformacje();
   // ADR 0030: ekran prywatności chowa wszystkie ekrany gry, więc znacznik
   // `data-ekran` musi zniknąć razem z nimi — inaczej reguły „bez przewijania”
   // zostałyby na długim dokumencie, którego nie dałoby się przeczytać.
@@ -291,7 +300,8 @@ function pokazPrywatnosc() {
   $('ekran-ranking').hidden = true;
   $('ekran-prywatnosc').hidden = false;
   $('geokodacja-zapasowa').checked = localStorage.getItem('okolica:geokodacja-zapasowa') === '1';
-  odswiezStanIkonBelki(); // prywatność gasi ikony obu warstw (F3)
+  odswiezStanIkonBelki();
+  odswiezWidocznoscPaneli(); // prywatność gasi ikony obu warstw (F3)
   window.scrollTo({ top: 0 });
 }
 
@@ -299,6 +309,11 @@ function wrocZPrywatnosci() {
   $('ekran-prywatnosc').hidden = true;
   if (STAN.powrotZPrywatnosci === 'ranking') {
     pokazRankingi({ bezPobierania: true }); // dane już są — nie pytamy mostu drugi raz
+    return;
+  }
+  if (STAN.prywatnoscZInformacji) {
+    if (STAN.ekran === 'mapa') pokazMapeStartowa(); else pokazEkran(STAN.ekran);
+    przelaczInformacje();
     return;
   }
   if (STAN.ekran === 'mapa') { pokazMapeStartowa(); return; }
@@ -330,6 +345,48 @@ function czyscDaneWitryny() {
     ? `Usunięto zapisane dane (${usuniete.length}): ${usuniete.join(
 )}.`
     : 'Nie znaleziono zapisanych danych tej gry.';
+}
+
+const PANELE = [...EKRANY, 'prywatnosc', 'ranking', 'start', 'informacje'];
+
+function odswiezWidocznoscPaneli() {
+  const podglad = STAN.podgladMapy === true;
+  document.body.dataset.mapa = ['stacje', 'prompt', 'paczka'].includes(STAN.ekran)
+    ? 'stacje' : STAN.ekran === 'gra' ? 'gra' : 'pozycja';
+  const info = !$('ekran-informacje').hidden;
+  document.body.classList.toggle('podglad-mapy', podglad);
+  document.body.classList.toggle('informacje-otwarte', info);
+  for (const nazwa of PANELE) {
+    const panel = $(`ekran-${nazwa}`);
+    panel.inert = podglad || (info && nazwa !== 'informacje');
+  }
+  $('przygaszenie-mapy').hidden = podglad || !PANELE.some(n => !$(`ekran-${n}`).hidden);
+  $('przycisk-podejrzyj-mape').setAttribute('aria-pressed', String(podglad));
+  const opis = podglad ? 'Wróć do panelu' : 'Podejrzyj mapę';
+  $('przycisk-podejrzyj-mape').setAttribute('aria-label', opis);
+  $('przycisk-podejrzyj-mape').title = opis;
+  $('przycisk-informacje').setAttribute('aria-expanded', String(info));
+}
+
+function przelaczPodgladMapy() {
+  STAN.podgladMapy = !STAN.podgladMapy;
+  odswiezWidocznoscPaneli();
+  kazdaMapa(m => m.odswiez());
+  $('przycisk-podejrzyj-mape').focus();
+}
+
+function zamknijInformacje() {
+  $('ekran-informacje').hidden = true;
+  document.body.classList.remove('informacje-otwarte');
+  $('przycisk-informacje').setAttribute('aria-expanded', 'false');
+}
+
+function przelaczInformacje() {
+  const otwieramy = $('ekran-informacje').hidden;
+  $('ekran-informacje').hidden = !otwieramy;
+  STAN.podgladMapy = false;
+  odswiezWidocznoscPaneli();
+  $(otwieramy ? 'przycisk-zamknij-informacje' : 'przycisk-informacje').focus();
 }
 
 function status(tekst) {
@@ -961,13 +1018,13 @@ function czytajSetupZDomu() {
 function pokazPozycje() {
   const p = STAN.pozycja;
   if (!p) {
-    $('pozycja-status').textContent = STAN.trybTestowy ? 'Tryb testowy: wpisz współrzędne.' : 'Czekam na pozycję…';
+    $('pozycja-status').textContent = STAN.trybTestowy ? 'Tryb testowy: użyj oka i wskaż miejsce na mapie.' : 'Czekam na pozycję…';
     $('pozycja-wspolrzedne').textContent = '';
     $('przycisk-dalej-stacje').disabled = true;
     odswiezWarstwy();
     return;
   }
-  $('pozycja-status').textContent = STAN.ostatniFix?.zrodlo === ZRODLA_FIXA.reczne ? 'Pozycja ustawiona ręcznie' : 'Pozycja ustalona';
+  $('pozycja-status').textContent = STAN.trybTestowy ? 'Pozycja ustawiona z mapy / symulacji' : 'Pozycja ustalona';
   $('pozycja-wspolrzedne').textContent = `${formatujWspolrzedne(p.lat, p.lon)} · geohash ${geohash(p.lat, p.lon, 6)}`;
   renderujMiejsce();
   $('przycisk-dalej-stacje').disabled = false;
@@ -1039,45 +1096,15 @@ function utworzMapy() {
   // gry ani stacji NIE przestawia gracza.
   if (STAN.mapy.pozycja) {
     STAN.mapy.pozycja.ustawNasluchStukniecia((geo) => {
-      if (!STAN.trybTestowy || STAN.ekran !== 'pozycja') return;
-      $('setup-lat').value = String(geo.lat);
-      $('setup-lon').value = String(geo.lon);
-      ustawPozycjeRecznie(geo.lat, geo.lon, { zMapy: true });
+      if (!STAN.trybTestowy) return;
+      przyjmijFix(fixZPozycji(geo, performance.now(), ZRODLA_FIXA.symulacja));
+      status('Pozycja ustawiona z mapy.');
     });
   }
 }
 
 function kazdaMapa(fn) {
   for (const mapa of Object.values(STAN.mapy)) if (mapa) fn(mapa);
-}
-
-/**
- * Ręczna pozycja z pól tekstowych ALBO ze stuknięcia mapy (zadanie D3).
- * Współrzędne parsuje `geo.parsujWspolrzedne`: dziesiętne (kropka albo polski
- * przecinek), DMS z Google Maps (`52°07'22.9"N`) i pełna para w jednym polu.
- * Odmowa jest jawna ([P06] pod polami) — nigdy cichego „Null Island"
- * (`Number('') === 0`), a zakres sprawdza dalej `ocenFix` (jedno źródło).
- */
-function ustawPozycjeRecznie(surowyLat, surowyLon, { zMapy = false } = {}) {
-  const wynik = parsujWspolrzedne(surowyLat, surowyLon);
-  if (!wynik.ok) {
-    pokazBledy('bledy-pozycja', [{ kod: 'P06', pole: 'wspolrzedne', komunikat: wynik.komunikat }]);
-    return false;
-  }
-  const fix = fixZPozycji({ lat: wynik.lat, lon: wynik.lon, accuracy: null }, performance.now(), ZRODLA_FIXA.reczne);
-  const ocena = ocenFix(fix);
-  if (!ocena.akceptowany) {
-    pokazBledy('bledy-pozycja', [{ kod: ocena.kod, pole: 'wspolrzedne', komunikat: 'Wpisz szerokość od -90 do 90 i długość od -180 do 180 (stopnie dziesiętne albo format Google Maps, np. 52°07\'22.9"N).' }]);
-    return false;
-  }
-  STAN.ostatniFix = fix;
-  STAN.ocenaFixa = ocena;
-  STAN.pozycja = { lat: fix.lat, lon: fix.lon };
-  STAN.dokladnoscM = null; // pole wyłącznie zgodności zapisu, ADR 0034
-  pokazBledy('bledy-pozycja', []);
-  pokazPozycje();
-  status(zMapy ? 'Pozycja ustawiona z mapy.' : 'Pozycja ustawiona ręcznie.');
-  return true;
 }
 
 /** Zoom, przy którym promień gry zajmuje ~40% szerokości panelu (`geo.js`). */
@@ -1125,7 +1152,7 @@ function zmienPodklad(klucz) {
  * po pokazaniu ekranu widok trzeba przeliczyć od nowa.
  */
 function odswiezMapeEkranu(nazwa) {
-  const mapa = STAN.mapy[nazwa];
+  const mapa = STAN.mapy[['prompt', 'paczka'].includes(nazwa) ? 'stacje' : nazwa] ?? STAN.mapy.pozycja;
   if (mapa) mapa.odswiez();
 }
 
@@ -1136,6 +1163,10 @@ function odswiezMapeEkranu(nazwa) {
  */
 function przyjmijFix(fix) {
   const ocena = ocenFix(fix);
+  if (!ocena.akceptowany) {
+    pokazBledy('bledy-pozycja', [{ kod: ocena.kod, pole: 'geolocation', komunikat: ocena.komunikat }]);
+    return;
+  }
   STAN.ostatniFix = fix;
   STAN.ocenaFixa = ocena;
   STAN.pozycja = { lat: fix.lat, lon: fix.lon };
@@ -1151,7 +1182,7 @@ function przyjmijFix(fix) {
 /** Odtwarzanie: jeden fix co tyle ms (tylko tryb testowy, ADR 0004 pkt 6). */
 const SYMULACJA_KROK_MS = 120;
 /** Próba dojścia: 250 m na azymucie 45°, 12 s „marszu", fix co 2 s + postój. */
-const SYMULACJA = { dystansM: 250, bearing: 45, czasMs: 12000, coMs: 2000, accuracyM: 12 };
+const SYMULACJA = { czasMs: 12000, coMs: 2000, accuracyM: 12 };
 
 /** Symulacja ustępuje grze: poza odcinkiem (dojście, pauza, ręczny koniec) nie
  *  odtwarzamy dalej i NIE nadpisujemy statusu gry (M6/R7 — fix „po tranzycji"
@@ -1193,33 +1224,6 @@ function zatrzymajSymulacje() {
   if (!STAN.symulacja) return;
   clearInterval(STAN.symulacja.timer);
   STAN.symulacja = null;
-  $('przycisk-symulacja').setAttribute('aria-pressed', 'false');
-}
-
-/** Start/stop odtwarzania trasy z bieżącej pozycji do punktu 250 m dalej. */
-function przelaczSymulacje() {
-  if (STAN.symulacja) {
-    zatrzymajSymulacje();
-    status('Symulacja zatrzymana — pozycja zostaje tam, gdzie doszła.');
-    return;
-  }
-  if (!STAN.pozycja) {
-    status('Symulacja potrzebuje punktu startu: wpisz współrzędne albo włącz GPS.');
-    return;
-  }
-  const start = { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon };
-  const cel = przesunPunkt(start, SYMULACJA.bearing, SYMULACJA.dystansM);
-  const trasa = trasaProsta({
-    start,
-    cel,
-    czasMs: SYMULACJA.czasMs,
-    accuracyM: SYMULACJA.accuracyM,
-    przystanki: 2,
-  });
-  const fixy = sekwencjaSymulowana(trasa, { coMs: SYMULACJA.coMs, postoj: GRANICE.wymaganeTrafnienia });
-  STAN.symulacja = { fixy, indeks: 0, cel, timer: setInterval(krokSymulacji, SYMULACJA_KROK_MS) };
-  $('przycisk-symulacja').setAttribute('aria-pressed', 'true');
-  status(`Symulacja trasy: ${fixy.length} fixów do punktu ${formatujWspolrzedne(cel.lat, cel.lon)} (${SYMULACJA.dystansM} m, azymut ${SYMULACJA.bearing}°).`);
 }
 
 /* ---------------------------------------------------------------- stacje */
@@ -2226,7 +2230,7 @@ function startOdcinkaGry() {
   pokazBledy('bledy-gra', wynik.usterki);
   if (wynik.usterki.length === 0) {
     STAN.historiaFixow = []; // nowy odcinek liczy dojście od zera (plan M6, ryzyko 4)
-    status('Odcinek rozpoczęty — idźcie. Stacja zapala się po dwóch kolejnych fixach w progu.' + ADR(' (ADR 0004 pkt 2)'));
+    status('Odcinek rozpoczęty — idźcie. Pytanie otworzy się, gdy będziesz nie dalej niż 50 m od stacji.' + ADR(' (ADR 0004 pkt 2)'));
     odegrajSygnal('startOdcinka'); // M10/T4
     if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   } else {
@@ -3535,7 +3539,7 @@ function dostosujProfilGps(dystansM) {
   STAN.profilGps = nowy;
   wlaczGps();
   status(nowy === 'oszczedny'
-    ? 'GPS w trybie oszczędnym — do stacji daleko, bateria odpoczywa; pełna dokładność wróci przy stacji.'
+    ? 'GPS w trybie oszczędnym — do stacji daleko, bateria odpoczywa; częstsze pomiary wrócą przy stacji.'
     : 'GPS w trybie dokładnym — jesteś blisko stacji, łapiemy dojście z metrów.');
 }
 
@@ -4397,6 +4401,7 @@ const RANKING_ZAKLADKI = [
 
 /** Ekran rankingów nie jest krokiem gry — chowa wszystkie ekrany (jak prywatność). */
 function pokazRankingi({ bezPobierania = false } = {}) {
+  zamknijInformacje();
   // Zapamiętujemy ekran, z którego gracz przyszedł: `STAN.ekran` nie zmienia się
   // przy wejściu na rankingi, więc bez tego „wróć" zawsze zrzucało na setup.
   ukryjStart(); // warstwa rankingów wchodzi nad wszystko, okno startowe znika
@@ -4405,6 +4410,7 @@ function pokazRankingi({ bezPobierania = false } = {}) {
   $('ekran-prywatnosc').hidden = true;
   $('ekran-ranking').hidden = false;
   odswiezStanIkonBelki();
+  odswiezWidocznoscPaneli();
   window.scrollTo({ top: 0 });
   if (!bezPobierania) void pobierzRankingi();
 }
@@ -4661,8 +4667,6 @@ function start() {
     // na Drive i do rankingów (ADR 0029).
     STAN.trybTestowy = true;
     document.body.classList.add('tryb-testowy');
-    $('reczne-wspolrzedne').hidden = false;
-    $('przycisk-symulacja').hidden = false;
   }
   if (location.search.includes('odstep=0')) {
     // skrót dla testów/przeglądarki: przełączanie instancji Overpass bez
@@ -4670,6 +4674,9 @@ function start() {
     STAN.odstepOverpassMs = 0;
   }
 
+  $('przycisk-informacje').addEventListener('click', przelaczInformacje);
+  $('przycisk-zamknij-informacje').addEventListener('click', przelaczInformacje);
+  $('przycisk-podejrzyj-mape').addEventListener('click', przelaczPodgladMapy);
   $('przycisk-setup').addEventListener('click', przelaczSetup); // START GRY w nagłówku (F3: przełącznik)
   $('ekran-start').addEventListener('click', ukryjStart); // okno startowe: klik gdziekolwiek zamyka
   // „▶ Zacznij” (właściciel 2026-09-09): jawny przycisk intro otwiera setup,
@@ -4680,7 +4687,14 @@ function start() {
     z.stopPropagation?.();
     pokazEkran('setup'); // sam woła ukryjStart()
   });
-  document.addEventListener('keydown', (z) => { if (z.key === 'Escape') ukryjStart(); });
+  document.addEventListener('keydown', (z) => {
+    if (z.key !== 'Escape') return;
+    if (STAN.podgladMapy) przelaczPodgladMapy();
+    else if (!$('ekran-informacje').hidden) przelaczInformacje();
+    else if (!$('ekran-ranking').hidden) wrocZRankingu();
+    else ukryjStart();
+    odswiezWidocznoscPaneli();
+  });
   $('przycisk-motyw').addEventListener('click', przelaczMotyw);
   $('przycisk-sygnaly').addEventListener('click', przelaczSygnaly);
   $('przycisk-sygnaly').setAttribute('aria-pressed', String(sygnalyWlaczone()));
@@ -4696,7 +4710,6 @@ function start() {
   $('przycisk-prywatnosc-stopka').addEventListener('click', pokazPrywatnosc);
   $('przycisk-wrocz-prywatnosc').addEventListener('click', wrocZPrywatnosci);
   $('przycisk-czysc-dane').addEventListener('click', czyscDaneWitryny);
-  $('przycisk-symulacja').addEventListener('click', przelaczSymulacje);
 
   $('przycisk-dalej-pozycja').addEventListener('click', async () => {
     const usterki = walidujSetup(czytajSetupZDomu());
@@ -4722,10 +4735,9 @@ function start() {
     zapiszKonfiguracje();
     pokazEkran('pozycja');
     pokazPozycje();
-    if (!STAN.trybTestowy && !STAN.pozycja) wlaczGps();
+    if (!STAN.trybTestowy && !STAN.watcher?.czyAktywny()) wlaczGps();
   });
 
-  $('przycisk-gps').addEventListener('click', wlaczGps);
 
   // Obrót telefonu albo zmiana rozmiaru okna: panele map mają inne wymiary,
   // więc widok trzeba przeliczyć (rozmiar bierzemy z `getBoundingClientRect`).
@@ -4757,14 +4769,6 @@ function start() {
     wlaczGps();
     status(komunikatWznowienia().komunikat);
   });
-  $('przycisk-recznie').addEventListener('click', () => {
-    $('reczne-wspolrzedne').hidden = false;
-    $('setup-lat').focus();
-  });
-  $('przycisk-ustaw-reczne').addEventListener('click', () => {
-    ustawPozycjeRecznie($('setup-lat').value, $('setup-lon').value);
-  });
-
   $('przycisk-wstecz-setup').addEventListener('click', () => pokazEkran('setup'));
   $('przycisk-dalej-stacje').addEventListener('click', () => {
     // Na ekran pozycji da się wejść także ikonką setup w nagłówku, która nie
@@ -4979,9 +4983,10 @@ function start() {
   const start = $('ekran-start');
   if (start) start.hidden = false;
   document.body.classList.add('okno-start');
-  const mp = document.querySelector('#mapa-pozycja .mapa-przyciski');
-  if (mp) mp.hidden = true;
+
+  odswiezWidocznoscPaneli();
   status(`M0 — fundament. Ustawienia domyślne: ${TRYBY[STAN.konfig.tryb].etykieta}, ${STAN.konfig.liczbaStacji} stacji, ${DOMYSLNE.pytaniaNaStacje} pytanie na stację, wiek ${WIEK[STAN.konfig.wiek].etykieta}.`);
+  if (!STAN.trybTestowy && !STAN.watcher?.czyAktywny()) wlaczGps();
 }
 
 if (typeof document !== 'undefined' && document.getElementById('ekran-setup')) start();
