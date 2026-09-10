@@ -79,7 +79,7 @@ test('domyslnaKonfiguracja: 1 gracz, 5 stacji, dorośli, pieszo, zgodnie z brief
   assert.equal(k.limitCzasuOdcinkaS, undefined, 'koniec limitu czasu odcinka (Partia 2)');
   assert.deepEqual(k.imiona, ['Gracz 1']);
   assert.equal(k.geokodacja, undefined, 'brak opcji geokodacji — nazwa miejsca zawsze pobierana (ADR 0013 pkt 3 po Partii 2)');
-  assert.deepEqual(k.tematy, ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia'], 'domyślnie wszystkie tematy zaznaczone (decyzja z 2026-09-07)');
+  assert.deepEqual(k.tematy, ['architektura', 'ciekawostki', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda'], 'domyślnie wszystkie tematy NOWEGO setupu, alfabetycznie (ADR 0034; do 2026-09-10: 10 tematów starego kanonu)');
   assert.deepEqual(walidujSetup(k), []);
 
   const cztery = domyslnaKonfiguracja(4);
@@ -324,4 +324,14 @@ test('ADR 0034: nowe wybory setupu, alfabetyczne tematy i zgodność odczytu', (
   assert.deepEqual(nowa.tematy, ['historia']);
   assert.equal(stara.wiek, '10', 'nie mutuje zapisanej gry');
   assert.equal(konfiguracjaNowegoSetupu({ ...stara, wiek: '15' }).wiek, 'dorosli');
+  // ADR 0034 „usunięte tematy nie przechodzą do nowego setupu" — także wtedy,
+  // gdy po filtrze NIE zostaje żaden temat: fallback (DOMYSLNE.tematy) musi
+  // być nowym kanonem setupu, nie starym z `sport`/`jedzenie` (przypadek
+  // brzegowy znaleziony w przeglądzie UI 2026-09-10; LESSONS L11 — dane brzegowe).
+  const samSport = konfiguracjaNowegoSetupu({ ...stara, tematy: ['sport'] });
+  assert.deepEqual(samSport.tematy, DOMYSLNE.tematy);
+  assert.ok(!samSport.tematy.includes('sport') && !samSport.tematy.includes('jedzenie'),
+    'fallback pustych tematów nie wraca do usuniętych sportu/jedzenia');
+  assert.ok(DOMYSLNE.tematy.includes('ciekawostki'), 'nowy temat ADR 0034 jest w domyślnych');
+  assert.ok(!DOMYSLNE.tematy.includes('wlasny'), '„Dopisz sam" nie jest domyślnie zaznaczone');
 });

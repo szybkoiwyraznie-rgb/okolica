@@ -201,7 +201,12 @@ export const DOMYSLNE = {
   liczbaStacji: 5,
   pytaniaNaStacje: 1,
   czasGryMin: 60, // planowany czas gry; promień jest z niego liczony (ADR 0025)
-  tematy: ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia'],
+  // Domyślne zaznaczenie = wszystkie tematy NOWEGO setupu, alfabetycznie
+  // (ADR 0034, 2026-09-10): z Ciekawostkami, bez usuniętych Sportu/Jedzenia
+  // i bez `wlasny` („Dopisz sam" wymaga tekstu organizatora). Ta lista jest
+  // też fallbackiem pustych tematów w `oczyscKonfiguracje` i w
+  // `konfiguracjaNowegoSetupu` — usunięte tematy nie mogą przez nią wracać.
+  tematy: ['architektura', 'ciekawostki', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda'],
   tematWlasny: '', // tekst organizatora dla tematu `wlasny` (niezaznaczony domyślnie)
   wiek: 'dorosli',
   jezyk: 'polski',

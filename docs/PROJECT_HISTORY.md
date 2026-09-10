@@ -2102,3 +2102,49 @@ ponownie pojawiającym się w przyszłych decyzjach sygnatura `progDojsciaM()`
 jest już bez parametru — zmiana polityki wymaga jawnego ADR.
 
 
+
+
+## Sesja 2026-09-10d — weryfikacja na żywo PR #8 + naprawa domyślnych tematów (m12-64)
+
+Kontynuacja sesji `arena/01a08d11-okolica` (PR #9). Po audycie statycznym PR #8
+przeszedł weryfikację dynamiczną: pełna pętla gry w headless Chromium 152
+(360×640 i 844×390, `?test=true`, atrapa `fetch` odrzucająca URL-e poza
+`location.origin` — wymuszona degradacja sieciowa; skrypty poza repo w
+`.narzedzia/`). Potwierdzone na żywo, bez błędów JS:
+
+- setup → 3 graczy (Drive pada → „gracz dodany bez potwierdzenia", ADR 0026
+  pkt 5), tap mapy ustawia pozycję, Overpass pada → jawny **S03** i pierścień
+  zapasowy, 3 stacje, prompt (instrukcja zwinięta), paczka przyjęta przez
+  wklejenie, gra startuje automatycznie;
+- pasek podczas drogi: 20 px tekstu w panelu 37 px (padding 8 px + safe area),
+  przy dolnej krawędzi, „oko" nad paskiem, strona bez przewijania (nadmiar
+  0 px), panel pytania 90% szerokości (324/360; karta wewnętrzna 290 px) —
+  zgodnie z ADR 0036;
+- pauza w ⓘ Informacje (ADR 0036), pasek zostaje po wznowieniu;
+- 3 stacje przez symulację dojścia: pytanie → odpowiedź → wyjaśnienie →
+  przycisk z etykietą kolejnego gracza („▶ Jan, stacja 2 — idę →"),
+  po ostatniej „🏁 Zobacz wynik →" → ranking 3 graczy → „Nowa gra" wraca
+  na mapę startową (ekran `mapa`), status „Gotowe do nowej gry", ⚙ prowadzi
+  do setupu. Poziom 844×390: ten sam układ, panel 720 px.
+
+**Usterka znaleziona i naprawiona** (przypadek brzegowy ADR 0034): stała
+`DOMYSLNE.tematy` w `app/konfig.js` trzymała stary kanon 10 tematów (ze
+`sport` i `jedzeniem`, bez `ciekawostek`). Skutk: migracja starego zapisu, z
+którego po filtrze `konfiguracjaNowegoSetupu` nie zostaje żaden temat (np.
+`tematy: ['sport']`), wrzucała fallback z usuniętymi tematami — organizator
+nie widział ich w UI (brak chipów), a prompt + E16 wymagały pytań ze sportu
+i jedzenia, więc każda paczka zgodna z nowym setupem byłaby odrzucona.
+Do tego nowy temat „Ciekawostki" nie był domyślnie zaznaczony. Naprawa:
+`DOMYSLNE.tematy` = alfabetyczna lista tematów NOWEGO setupu bez `wlasny`
+(`architektura, ciekawostki, geografia, historia, kultura, legendy, ludzie,
+nauka, przyroda`) — jest też fallbackiem w `oczyscKonfiguracje`, więc obie
+ścieżki pustych tematów wracają do nowego kanonu. Test regresji dodany do
+`test/konfig.test.js` (sam `sport` → nowe domyślne, bez sportu/jedzenia;
+ciekawostki w domyślnych; `wlasny` nigdy domyślnie); asercja betonująca
+stary kanon („decyzja z 2026-09-07") zaktualizowana do ADR 0034.
+Potwierdzone na żywo (m12-64): chipy alfabetycznie, 9 tematów domyślnie
+z Ciekawostkami.
+
+Brama: **688/688** + audyt WCAG AA **0 naruszeń** (po naprawie), pełna pętla
+UI w pionie i poziomie czysto na m12-64. Cache-busting `?v=m12-64`
+(+ `WERSJA_SW`) podbity w całym grafie.
