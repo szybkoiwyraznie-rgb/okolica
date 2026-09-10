@@ -14,13 +14,9 @@ const KOD_SW = readFileSync(join(ROOT, 'sw.js'), 'utf8');
 const ORIGIN = 'https://przyklad.github.io';
 const SCOPE = `${ORIGIN}/okolica/`;
 
-/**
- * Odpowiedź obca (kafelki): domyślnie opaque z ciałem OBRAZU. Test awarii
- * dostawcy wstrzykuje `obcaOdpowiedz` z ciałem nieobrazowym (404/5xx też
- * wraca jako opaque — status jest niewidoczny, patrz `czyTrafSieDoCache`).
- */
+/** Czytelna odpowiedź CORS; opaque nie udostępnia ani typu, ani ciała. */
 function domyslnaOdpowiedzObca() {
-  return { ok: false, type: 'opaque', status: 0, clone() { return this; }, blob: async () => ({ type: 'image/png' }) };
+  return { ok: true, type: 'cors', status: 200, clone() { return this; } };
 }
 
 function atrapaOtoczenia({ maksKafelki, obcaOdpowiedz = domyslnaOdpowiedzObca } = {}) {
@@ -154,7 +150,7 @@ test('SW fetch: moduł z ?v= zostaje cache-first — wersjonowany adres i tak si
   assert.equal(env.fetchWywolania.length, 1, 'drugi raz bez sieci — cache-first dla plików z wersją');
 });
 
-test('SW fetch: kafelki dostawcy mapy trafiają do cache kafelków (opaque OK)', async () => {
+test('SW fetch: kafelki dostawcy mapy trafiają do cache kafelków (CORS 200)', async () => {
   const env = atrapaOtoczenia();
   const z = zdarzenieFetch('https://tile.openstreetmap.org/19/28861/17402.png');
   env.nasluchy.fetch(z);
@@ -163,30 +159,33 @@ test('SW fetch: kafelki dostawcy mapy trafiają do cache kafelków (opaque OK)',
   await env.tick();
   const kafelki = [...env.magazyny.keys()].find((k) => k.includes('kafelki'));
   assert.ok(kafelki, 'cache kafelków utworzony');
-  assert.equal(env.magazyny.get(kafelki).wpisy.size, 1, 'kafelki zapisany mimo odpowiedzi opaque');
+  assert.equal(env.magazyny.get(kafelki).wpisy.size, 1, 'czytelna odpowiedź 200 zapisana');
 });
 
-test('SW fetch: błąd dostawcy (opaque 404/5xx) NIE ląduje w cache — nie ma „pustych kafelków na zawsze”', async () => {
-  // Zgłoszenie właściciela (2026-09-09): pusta mapa po grze, oddalenie
-  // pokazywało mapę. Mechanizm: chwilowy błąd serwera kafelków wraca jako
-  // opaque (status niewidoczny), cache-first oddawał go przy każdej następnej
-  // grze w tej okolicy — do ewikcji albo zmiany WERSJA_SW.
-  const ciałoNieObraz = () => ({ ok: false, type: 'opaque', status: 0, clone() { return this; }, blob: async () => ({ type: 'text/html' }) });
-  const env = atrapaOtoczenia({ obcaOdpowiedz: ciałoNieObraz });
-  const url = 'https://tile.openstreetmap.org/19/28861/17402.png';
-  const z1 = zdarzenieFetch(url);
-  env.nasluchy.fetch(z1);
-  await z1.odpowiedz;
-  await env.tick();
-  const kafelki = [...env.magazyny.keys()].find((k) => k.includes('kafelki'));
-  assert.equal(env.magazyny.get(kafelki).wpisy.size, 0, 'ciało nieobrazowe nie jest „kafelkiem”');
-  // kolejna wizyta wraca do sieci, nie do zepsutej pamięci:
-  const z2 = zdarzenieFetch(url);
-  env.nasluchy.fetch(z2);
-  await z2.odpowiedz;
-  await env.tick();
-  assert.equal(env.fetchWywolania.length, 2, 'drugi raz: znowu sieć (cache-first bez awaryjnego wpisu)');
-  assert.equal(env.magazyny.get(kafelki).wpisy.size, 0, 'i tak nie ma co serwować');
+test('SW fetch: opaque nie udostępnia ciała — dobry obraz i błąd nie trafiają do cache', async () => {
+  const opaque = { ok: false, type: 'opaque', status: 0, clone() { return this; }, blob: async () => new Blob([]) };
+  const env = atrapaOtoczenia({ obcaOdpowiedz: () => opaque });
+  for (let i = 0; i < 2; i++) {
+    const z = zdarzenieFetch('https://tile.openstreetmap.org/19/28861/17402.png', 'GET', 'no-cors');
+    env.nasluchy.fetch(z);
+    assert.equal(await z.odpowiedz, opaque, 'odpowiedź nadal wraca do przeglądarki');
+    await env.tick();
+  }
+  const cache = [...env.magazyny.values()][0];
+  assert.equal(cache.wpisy.size, 0);
+  assert.equal(env.fetchWywolania.length, 2);
+});
+
+test('SW fetch: czytelny błąd CORS nie jest cache-owany', async () => {
+  for (const status of [404, 503]) {
+    const odp = { ok: false, type: 'cors', status, clone() { return this; } };
+    const env = atrapaOtoczenia({ obcaOdpowiedz: () => odp });
+    const z = zdarzenieFetch('https://tile.openstreetmap.org/19/28861/17402.png');
+    env.nasluchy.fetch(z);
+    assert.equal(await z.odpowiedz, odp);
+    await env.tick();
+    assert.equal([...env.magazyny.values()][0].wpisy.size, 0);
+  }
 });
 
 test('SW fetch: ewikcja najstarszych kafelków powyżej limitu', async () => {

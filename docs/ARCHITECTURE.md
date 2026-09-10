@@ -15,8 +15,8 @@ index.html                  — powłoka UI: ekran startowy z intro nad mapą, m
                               stopka z wersją protokołu, baner file://
 sw.js                       — Service Worker (M10): offline skorupa + kafelki
                               ostatniej okolicy (cache-first, limit i ewikcja;
-                              opaque cache-uje się tylko, gdy ciało dekoduje
-                              się jako obraz — LESSONS L44; classic script,
+                              cache wyłącznie sukcesów basic/cors; opaque
+                              bez Cache Storage — LESSONS L44; classic script,
                               rejestracja z app.js, WERSJA_SW == ?v=
                               aplikacji — pilnuje kontrakt)
 .nojekyll                     — Pages bez przetwarzania Jekyll (M8)

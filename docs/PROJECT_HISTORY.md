@@ -1918,3 +1918,26 @@ Przeczytano lekturę startową; budżet 65 458/100 000. Bazowe `npm test`:
 - Pozostałe zmiany: skróty tematów, rozróżnienie braku danych rankingu,
   opisy promptu i pauza Overpass odpowiadają zapisanym zleceniom; wersje
   importów i SW spójne (m12-52). Bez zmian schematu PYT.
+
+
+### Wynik kontynuacji 2026-09-10
+
+- F1 naprawiony (`ad3fefd`): clamp przez istniejące `zmienSkale`, zaczep
+  w środku panelu. Test czerwony przed zmianą, następnie 692/692 zielone.
+  Test geograficzny obejmuje wszystkie podkłady, pion i poziom, zoom niski,
+  poprawny i za duży. Chromium 360×640: z25 → z19, środek 52.23/21.01
+  bez zmiany, brak błędów JS.
+- F2: usunięta pozorna inspekcja opaque. Cache tylko sukcesów basic/cors,
+  opaque przekazywane bez zapisu; nie zmieniono trybu pobierania kafelków.
+  Testy CORS 200/cache/ewikcja czerwone przed naprawą, zielone po niej;
+  osobny test błędów CORS i realistycznego opaque. Chromium przy włączonej
+  ochronie origin potwierdziło status 0, pusty typ i rozmiar 0 dla no-cors
+  zarówno 200 PNG, jak i 404. Brak gwarancji podkładu offline opisany jawnie.
+  Przywrócenie cache opaque pozostaje możliwą osobną decyzją, nie zadaniem
+  realizowanym ukrytą zmianą polityki. L44 skorygowana, nie potwierdzamy
+  historycznej hipotezy przyczyny pustej mapy użytkownika.
+- F3: README po usunięciu importu odpowiedzi i wejścia prywatności z setupu;
+  aktualny handoff `HANDOFF_2026-09-10.md`. Roadmapa nadal czeka na kryteria
+  właściciela; sesja nie zalicza testów terenowych ani dwóch telefonów.
+- Brama: 693 testy, synchronizacja obu szablonów, audyt kontrastu 0 naruszeń.
+  Wersja końcowa m12-54. PR #8; żadnego scalenia do main.

@@ -43,7 +43,7 @@ dostawcy. Kamień zamknięty 2026-09-05: właściciel potwierdził w live previe
 **M3 — konfiguracja i prywatność: kod i testy gotowe.** Ekran „dane
 i prywatność" (cztery karty z ADR 0013: co jest pobierane i od kogo, dokąd
 trafia pozycja, co zostaje na telefonie, jak to skasować; paczka opisana jako
-**ukryta, nie zaszyfrowana**) otwiera się z setupu i ze stopki, a kasowanie
+**ukryta, nie zaszyfrowana**) otwiera się ze stopki, a kasowanie
 danych jest dwustopniowe i rusza tylko klucze `okolica:*`. W trybie testowym
 przycisk „▶ Symuluj dojście (250 m)" odtwarza trasę dziewięciu fixów — GPS
 i symulacja karmią ten sam `przyjmijFix()`, więc badge dokładności, mapa i próg
@@ -68,12 +68,11 @@ kryterium terenowe: jedną prawdziwą okolicę na telefonie (`docs/WORKFLOW.md`
 
 **M5 — pętla pytań: kod i testy gotowe.** Ekran promptu ma instrukcję
 obrazkową (cztery kroki jako inline SVG, zero plików zewnętrznych),
-a odpowiedź modelu można wkleić albo wczytać z pliku. Paczka z usterkami
+a wklejenie odpowiedzi modelu automatycznie uruchamia walidację. Paczka z usterkami
 daje czytelną listę kodów E01–E20 i przycisk „skopiuj poprawkę do modelu".
 Po przyjęciu gra zaczyna się OD RAZU (decyzja 2026-09-07 — podgląd,
 ściąganie i edycja zniknęły z ekranu; to zadania właściciela na Drive,
-dokąd zestaw leci automatycznie w chwili przyjęcia). Wcześniej ukrytą
-paczkę (`TO-paczka/2`) nadal można wczytać z pliku ścieżką „⬆ Z pliku". Nazwa miejsca do promptu jest pobierana ZAWSZE (ADR 0013 pkt 3 —
+dokąd zestaw leci automatycznie w chwili przyjęcia). Gotowe zestawy można wybrać na ekranie propozycji paczek. Nazwa miejsca do promptu jest pobierana ZAWSZE (ADR 0013 pkt 3 —
 przełącznik usunięty w Partii 2), a zapasowa warstwa Nominatim działa tylko po
 wyraźnej zgodzie na ekranie prywatności (domyślnie wyłączona, jedno żądanie
 na grę, cache 30 dni, atrybucja ODbL — ADR 0013). Kamień czeka na kryterium
@@ -220,3 +219,11 @@ Współrzędne gracza nie są wysyłane nigdzie poza usługi potrzebne do rysowa
 mapy i wyznaczania stacji (kafelki, Overpass API, odwrotna geokodacja) — i to
 wprost z przeglądarki użytkownika. Zero analityki, zero ciasteczek, zero konta
 (ADR 0013).
+
+### Ograniczenie podkładu offline (audyt 2026-09-10)
+
+Service Worker zapisuje tylko odpowiedzi z czytelnym statusem sukcesu
+(`basic`/`cors`). Kafelki `no-cors` (`opaque`) są przekazywane do wyświetlenia,
+ale nie trafiają do Cache Storage: nie da się sprawdzić ich statusu ani ciała.
+Cache HTTP przeglądarki działa osobno. Nie gwarantujemy więc podkładu mapowego
+po utracie sieci; warstwy własne i lokalna rozgrywka pozostają dostępne.
