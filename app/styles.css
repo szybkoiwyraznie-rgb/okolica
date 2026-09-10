@@ -840,3 +840,8 @@ body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
   .panel-centralny:not([hidden]) { padding: 12px; }
   .gora { padding-top: 4px; padding-bottom: 4px; }
 }
+
+/* Postęp nie zasłania listy prób ani oka. */
+#stacje-ladowanie { position: static; padding: 8px; margin-bottom: 8px; }
+.siec-proby { padding-left: 24px; font-size: 14px; overflow-wrap: anywhere; }
+.siec-proby li { margin-bottom: 6px; }

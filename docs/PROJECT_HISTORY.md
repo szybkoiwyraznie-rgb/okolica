@@ -1972,3 +1972,26 @@ Poprzednie wdrożenie jednego fixa opisane wyżej jest zastąpione aneksem ADR 0
 Weryfikacja m12-58: pełna brama **679 testów**, zgodne szablony i **0 naruszeń
 kontrastu**. Testy rozgrywki i dojścia podczas podglądu mapy przechodzą.
 Do potwierdzenia na telefonie pozostaje czas oczekiwania na drugi odczyt GPS.
+
+
+## Overpass — m12-59 (ADR 0035)
+
+Zgłoszenie: właściciel widział private.coffee/VK, nie FOSSGIS, a na końcu
+`signal is aborted without reason`. Nie ustalono historycznej przyczyny.
+Wdrożono FOSSGIS zawsze pierwszy (pamięć sukcesu porządkuje tylko rezerwy),
+10 s na całą próbę z ciałem, QL timeout 8 s, sprzątanie timera w finally,
+rozpoznawanie własnego timeoutu niezależnie od treści/nazwy błędu przeglądarki.
+Brak nagłówków lub zatrzymane ciało nie blokują następnej instancji.
+403/404 i wadliwy JSON także pozwalają przejść dalej; 400 nadal kończy próby.
+Panel stacji pokazuje numer, nazwę i wynik wszystkich wykonanych prób;
+postęp nie przykrywa listy, oko nie zatrzymuje pobierania.
+
+Lista pozostaje trzyinstancyjna. Próba wskazanego overpass.openstreetmap.ru
+z sandboxa: błąd TLS, HTTP 000; nie włączono niesprawdzonej rezerwy.
+Nie potwierdza to globalnej awarii; nie dodano płatnych usług/kluczy.
+Pełna brama: **683 testy**, zgodne szablony, **0 naruszeń kontrastu**.
+Nowe testy obejmują nagłówki/ciało/nietypowy abort, kolejność i listę prób
+oraz sukces rezerwy po HTTP 403. To atrapy, nie test publicznych serwerów
+z telefonu. Preview na porcie 8000; odświeżyć do m12-59.
+Gałąź `arena/01a08b96-okolica`, PR #8, bez merge. Następny krok właściciela:
+sprawdzić na telefonie listę prób i zapisać wyniki, jeśli pobieranie zawiedzie.

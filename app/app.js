@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-58';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-58';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-59';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-59';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -34,21 +34,21 @@ import {
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-58';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-58';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-58';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-58';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-58';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-58';
+} from './protokol.js?v=m12-59';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-59';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-59';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-59';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-59';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-59';
 import {
   KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo,
-} from './zestawy.js?v=m12-58';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-58';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-58';
+} from './zestawy.js?v=m12-59';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-59';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-59';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -68,17 +68,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-58';
-import { utworzMape } from './mapa.js?v=m12-58';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-58';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-58';
-import { adresMostu, stanMostu } from './most.js?v=m12-58';
+} from './sieci.js?v=m12-59';
+import { utworzMape } from './mapa.js?v=m12-59';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-59';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-59';
+import { adresMostu, stanMostu } from './most.js?v=m12-59';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-58';
+} from './oceny.js?v=m12-59';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1408,84 +1408,94 @@ function zapiszSprawnaInstancje(url) {
   }
 }
 
-/**
- * Pobranie sieci z łańcucha instancji (ASSETS §2): sekwencyjnie, timeout
- * 20 s przez `AbortController`, budżet 8 MB na cache. Krótka pauza (1 s)
- * TYLKO po odpowiedzi 406/429/5xx (grzeczność wobec limitu publicznego);
- * timeout/brak odpowiedzi to MARTWA instancja — przełączenie jest OD RAZU,
- * bo nie ma kogo szanować pauzą (decyzja 2026-09-07: koniec ~100 s czekania;
- * 2026-09-09: pauza limitowa skrócona z 30 s do 1 s).
- * Sprawna instancja ląduje w pamięci telefonu i następna gra próbuje ją
- * pierwszą (`kolejnoscInstancji`). `fetch` czytany w chwili wywołania,
- * więc test może podstawić atrapę po imporcie aplikacji.
- */
-async function pobierzSiec(terazMs) {
-  // Celowo `window.fetch`, nie gołe `fetch`: Node ≥ 18 MA globalny fetch i
-  // testy na atrapie DOM próbowałyby wołać prawdziwy Overpass. Atrapa nie
-  // wystawia `window.fetch`, test podstawia atrapę jawnie (LESSONS L18).
-  const f = typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
-  if (!f) return false; // środowisko bez fetch (atrapy/offline) — degradacja
-  const zapytanie = budujZapytanieOverpass({
-    srodek: STAN.pozycja,
-    promienM: STAN.konfig.promienM,
-    tryb: STAN.konfig.tryb,
-  });
-  const pauza = (ms) => new Promise((rozwiaz) => setTimeout(rozwiaz, ms));
-  const lancuch = kolejnoscInstancji(czytajSprawnaInstancje());
-  for (let i = 0; i < lancuch.length; i++) {
-    const instancja = lancuch[i];
-    const ostatnia = i === lancuch.length - 1;
-    status(`Pobieram sieć dróg: ${instancja.nazwa}… (jedno zapytanie na grę)`);
-    try {
-      const kontroler = typeof AbortController === 'function' ? new AbortController() : null;
-      const timer = kontroler ? setTimeout(() => kontroler.abort(), POLITYKA.timeoutMs) : null;
-      const odpowiedz = await f(instancja.url, {
+/** Limit całej próby (nagłówki i ciało), także gdy fetch nie respektuje abort. */
+async function pobierzTekstSieci(f, url, zapytanie) {
+  const kontroler = new AbortController();
+  let timer;
+  let uplynalCzas = false;
+  try {
+    const limit = new Promise((_, odrzuc) => {
+      timer = setTimeout(() => {
+        uplynalCzas = true;
+        kontroler.abort();
+        odrzuc(Object.assign(new Error('Przekroczono czas oczekiwania 10 s'), { timeout: true }));
+      }, POLITYKA.timeoutMs);
+    });
+    return await Promise.race([limit, (async () => {
+      const odpowiedz = await f(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `data=${encodeURIComponent(zapytanie)}`,
-        signal: kontroler ? kontroler.signal : undefined,
+        signal: kontroler.signal,
       });
-      if (timer) clearTimeout(timer);
-      if (!odpowiedz.ok) {
-        if (!ostatnia && czyPrzelaczycInstancje({ status: odpowiedz.status })) {
-          status(`${instancja.nazwa}: HTTP ${odpowiedz.status} — limit publiczny, czekam ${Math.round(STAN.odstepOverpassMs / 1000)} s i próbuję kolejną instancję.`);
-          await pauza(STAN.odstepOverpassMs);
-          continue;
-        }
-        throw Object.assign(new Error(`HTTP ${odpowiedz.status}`), { status: odpowiedz.status });
-      }
-      const tekst = await odpowiedz.text();
+      if (!odpowiedz.ok) throw Object.assign(new Error(`HTTP ${odpowiedz.status}`), { status: odpowiedz.status });
+      return await odpowiedz.text();
+    })()]);
+  } catch (blad) {
+    // Nie zależymy od nazwy/tekstu błędu zwróconego przez przeglądarkę.
+    if (uplynalCzas || kontroler.signal.aborted) {
+      throw Object.assign(new Error('Przekroczono czas oczekiwania 10 s'), { timeout: true });
+    }
+    throw blad;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/** Sekwencyjnie: FOSSGIS najpierw, 10 s na próbę; jawne wyniki wszystkich prób. */
+async function pobierzSiec(terazMs) {
+  const f = typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
+  if (!f) return false;
+  const zapytanie = budujZapytanieOverpass({
+    srodek: STAN.pozycja, promienM: STAN.konfig.promienM, tryb: STAN.konfig.tryb,
+  });
+  const lancuch = kolejnoscInstancji(czytajSprawnaInstancje());
+  const lista = $('siec-proby');
+  lista.textContent = '';
+  lista.hidden = false;
+  const wyniki = [];
+  for (let i = 0; i < lancuch.length; i++) {
+    const instancja = lancuch[i];
+    const wpis = document.createElement('li');
+    const prefiks = `Próba ${i + 1}/${lancuch.length}: ${instancja.nazwa}`;
+    wpis.textContent = `${prefiks} — pobieram (limit 10 s)…`;
+    lista.appendChild(wpis);
+    status(wpis.textContent);
+    try {
+      const tekst = await pobierzTekstSieci(f, instancja.url, zapytanie);
       const sparsowane = parsujOdpowiedz(JSON.parse(tekst));
       const dane = upraszczajDaneDoCache(sparsowane);
-      if (tekst.length <= 8_000_000) {
-        zapiszCacheSieci(kluczSieci(), dane, terazMs);
-      } else {
-        status(KODY_SIECI.S04);
-      }
+      if (tekst.length <= 8_000_000) zapiszCacheSieci(kluczSieci(), dane, terazMs);
+      else status(KODY_SIECI.S04);
       ustawSiec(dane, { zCache: false, klucz: kluczSieci() });
       zapiszSprawnaInstancje(instancja.url);
+      wpis.textContent = `${prefiks} — pobrano sieć dróg.`;
       return true;
     } catch (blad) {
-      const przelacz = !ostatnia && czyPrzelaczycInstancje({
-        status: blad?.status ?? null,
-        timeout: blad?.name === 'AbortError',
-        bladSieci: blad?.name === 'TypeError' || blad?.name === 'NetworkError',
+      const timeout = blad?.timeout === true || blad?.name === 'AbortError';
+      const opis = timeout ? 'przekroczono czas oczekiwania 10 s'
+        : blad?.status ? `HTTP ${blad.status}`
+        : blad?.name === 'SyntaxError' ? 'niepoprawna odpowiedź serwera'
+        : (blad?.komunikat ?? blad?.message ?? 'błąd połączenia');
+      wpis.textContent = `${prefiks} — ${opis}.`;
+      wyniki.push(`${instancja.nazwa}: ${opis}`);
+      const przelacz = i < lancuch.length - 1 && czyPrzelaczycInstancje({
+        status: blad?.status ?? null, timeout,
+        bladSieci: ['TypeError', 'NetworkError', 'SyntaxError'].includes(blad?.name) || blad?.kod === 'S01',
       });
       if (przelacz) {
-        // Martwa instancja (timeout/abort/błąd sieci): przełączenie OD RAZU,
-        // bez pauzy — pauza 1 s należy się tylko limitom (429/406/5xx).
-        status(`${instancja.nazwa} nie odpowiada — próbuję kolejną instancję.`);
+        const pauza = [406, 429].includes(blad?.status) || blad?.status >= 500;
+        status(`${wpis.textContent} Próbuję kolejną instancję.`);
+        if (pauza) await new Promise(r => setTimeout(r, STAN.odstepOverpassMs));
         continue;
       }
       pokazBledy('bledy-stacje', [{
-        kod: blad?.kod ?? 'S03',
-        pole: 'siec',
-        komunikat: blad?.komunikat ?? `Pobranie sieci dróg nie udało się (${blad?.message ?? instancja.nazwa}).`,
+        kod: blad?.kod ?? 'S03', pole: 'siec',
+        komunikat: `Pobranie sieci dróg nie udało się. ${wyniki.join('; ')}. Spróbuj ponownie lub użyj trybu uproszczonego.`,
       }]);
       return false;
     }
   }
-  pokazBledy('bledy-stacje', [{ kod: 'S03', pole: 'siec', komunikat: KODY_SIECI.S03 }]);
   return false;
 }
 
@@ -1578,6 +1588,8 @@ async function przeliczStacjeZPobraniem(klucz) {
  * czekają na sieć, która nie istnieje.
  */
 function przeliczStacje() {
+  $('siec-proby').textContent = '';
+  $('siec-proby').hidden = true;
   pokazBledy('bledy-stacje', []); // błędy POPRZEDNIEJ próby gasną; nowa próba pokaże własne
   wylaczTrybReczny(); // nowy układ zastępuje ręcznie przesunięte pinezki
   const klucz = kluczSieci();

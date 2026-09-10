@@ -175,7 +175,7 @@ test('kolejnoscInstancji: zapamiętana pierwsza, reszta bez zmian; obcy adres ig
   assert.deepEqual(kolejnoscInstancji('https://obca.example/api').map((i) => i.url), domyslna);
   const vk = INSTANCJE_OVERPASS[2].url;
   assert.deepEqual(kolejnoscInstancji(vk).map((i) => i.url),
-    [vk, INSTANCJE_OVERPASS[0].url, INSTANCJE_OVERPASS[1].url], 'sprawna instancja pierwsza, bez dubla');
+    [INSTANCJE_OVERPASS[0].url, vk, INSTANCJE_OVERPASS[1].url], 'FOSSGIS pierwszy, sprawna rezerwa druga, bez dubla');
 });
 
 test('instancje: łańcuch dokładnie jak ASSETS §2, w kolejności głównej', () => {
@@ -188,7 +188,7 @@ test('instancje: łańcuch dokładnie jak ASSETS §2, w kolejności głównej', 
 });
 
 test('polityka: stałe zgodne z ADR 0005 i ADR 0010 pkt 1', () => {
-  assert.equal(POLITYKA.timeoutMs, 20_000);
+  assert.equal(POLITYKA.timeoutMs, 10_000);
   assert.equal(POLITYKA.odstepMs, 1_000); // 1 s grzecznościowo po limicie (właściciel, 2026-09-09)
   assert.equal(POLITYKA.mnoznikPromienia, 1.15);
   assert.equal(POLITYKA.maxRozmiarCacheBajtow, 2 * 1024 * 1024);
@@ -209,7 +209,7 @@ test('polityka: przełączamy przy 406/429/5xx/timeout/błędzie sieci, nie przy
 
 test('zapytanie: promień R×1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out geom, is_in', () => {
   const q = budujZapytanieOverpass({ srodek: { lat: 52.22973, lon: 21.01224 }, promienM: 1000, tryb: 'piesza' });
-  assert.match(q, /^\[out:json\]\[timeout:25\];/);
+  assert.match(q, /^\[out:json\]\[timeout:8\];/);
   assert.match(q, /around:1150,/, 'promień zapytania = 1000 × 1.15');
   assert.ok(q.includes('52.22975'), 'lat zaokrąglony do siatki (jak ziarno rozgrywki)');
   assert.ok(!q.includes('52.22973'), 'dokładna pozycja NIE opuszcza urządzenia w tej postaci');

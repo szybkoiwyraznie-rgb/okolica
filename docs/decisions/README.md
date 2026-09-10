@@ -48,6 +48,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0033](0033-koniec-odwracania-liter.md) | Koniec odwracania liter: zostaje kod poprawnej odpowiedzi | Zaakceptowana |
 
 | [0034](0034-uproszczenie-terenowe-i-warstwy.md) | Uproszczenie terenowe: setup, warstwy, dojście 50 m | Zaakceptowana |
+| [0035](0035-overpass-krotkie-proby.md) | Overpass: FOSSGIS pierwszy, próby po 10 s i jawne wyniki | Zaakceptowana |
 
 ## Szablon ADR
 

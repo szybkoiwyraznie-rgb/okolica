@@ -163,7 +163,7 @@ commit i nowa wersja aplikacji.
    w tle (`visibilitychange`) zatrzymuje jedno i drugie.
 3. `sieci.budujZapytanieOverpass({ srodek, promienM, tryb })` składa jedno
    zapytanie dla `R × 1.15`; pobiera je `app.js` przez `window.fetch`
-   (łańcuch instancji z `ASSETS` §2: 1 s odstępu po 429/5xx, timeout 20 s
+   (łańcuch instancji z `ASSETS` §2: 1 s odstępu po 429/5xx, timeout 10 s (nagłówki i ciało, ADR 0035)
    przez `AbortController`, budżet 8 MB odpowiedzi). Najpierw jednak cache
    `okolica:sieci:<geohash6>-<R>` (ADR 0010 pkt 1): trafiony wpis = zero
    zapytań do Overpass. Dalej `sieci.parsujOdpowiedz` → `budujGraf`

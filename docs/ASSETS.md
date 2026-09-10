@@ -74,7 +74,7 @@ Podkład `brak` ma szablon `null`: zero żądań, zero atrybucji dostawcy.
 
 Zasady użycia w kodzie:
 
-1. **Jedno zapytanie na grę** (`[out:json][timeout:25]`), nie „na każdy ruch
+1. **Jedno zapytanie na grę** (`[out:json][timeout:8]`), nie „na każdy ruch
    mapy". Promień `R × 1.15`, pozycja zaokrąglona do ~5 m (ADR 0013 pkt 3).
 2. **Cache `okolica:sieci:<geohash6>-<R>`** z TTL 30 dni (ADR 0010) — druga
    gra w tej samej okolicy nie woła sieci wcale.
@@ -85,7 +85,12 @@ Zasady użycia w kodzie:
    w sekundy). Timeout/brak odpowiedzi to MARTWA instancja: przełączenie
    jest OD RAZU, bez pauzy — nie ma kogo szanować pauzą (2026-09-07).
    Adres instancji, która dowiozła, ląduje w `okolica:overpass-sprawny`
-   i następna gra próbuje ją pierwszą (mniej doomed-zapytań).
+   i porządkuje kolejność rezerw. **FOSSGIS zawsze pierwszy**, potem
+   zapamiętana sprawna rezerwa i pozostała (ADR 0035). Każda próba ma
+   **10 s na nagłówki i ciało**, z limitem wykonania QL 8 s. Timeout
+   zawsze przełącza dalej, niezależnie od nazwy błędu przeglądarki.
+   HTTP 403/404 również przełącza dalej; HTTP 400 kończy błędne zapytanie.
+   Lista prób z numerem, serwerem i wynikiem jest widoczna w panelu stacji.
 4. Budżet rozmiaru odpowiedzi: dla `R = 10 km` (tryb samochodowy) dzielimy
    bbox na ćwiartki i pobieramy sekwencyjnie (ADR 0005, konsekwencje).
 5. Nazwa miejsca do promptu (`{MIEJSCE}`) pochodzi z **tego samego zapytania**
