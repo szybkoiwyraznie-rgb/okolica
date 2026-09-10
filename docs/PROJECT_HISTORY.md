@@ -1898,3 +1898,23 @@ przy „Zapisz jako plik" mówił o nieistniejącym „PNG podglądu stacji".
 Dopisany test końcowego scenariusza zgłoszenia 4 na poziomie aplikacji:
 pełna gra (symulacja GPS, 3 gracze) → „Wróć na początek" → mapa na spodzie
 narysowana z kafelkami w zakresie zoomu podkładu. Brama: 692/692.
+
+## 2026-09-10 — kontynuacja: audyt PR #7
+
+Przeczytano lekturę startową; budżet 65 458/100 000. Bazowe `npm test`:
+692/692. Audyt wszystkich 28 plików diffu `4168aa9..4acde1d`:
+
+- F1: `ustalibujWidok` ogranicza skalę bez przeliczenia przesunięcia.
+  `x/y` to piksele, nie środek geograficzny. Reprodukcja 360×640,
+  52.23/21.01, z25 → z19: środek staje się -90/12684.64.
+  Test utrwalał błędne oczekiwanie niezmienionego x/y. Do naprawy.
+- F2: `Response.blob()` dla opaque ma pusty typ i rozmiar 0. Atrapa
+  `image/png` w `test/sw.test.js` jest nierealistyczna; dobre kafelki
+  no-cors nie trafiają do cache. L44 i ARCHITECTURE błędnie opisują
+  możliwość sprawdzenia ciała opaque. Polityka cache wymaga rozstrzygnięcia;
+  nie potwierdzono przyczyny pustej mapy na telefonie właściciela.
+- F3: handoff kończy się na PR #5; README nadal opisuje usunięte wejście
+  prywatności z setupu i import odpowiedzi z pliku. Do aktualizacji.
+- Pozostałe zmiany: skróty tematów, rozróżnienie braku danych rankingu,
+  opisy promptu i pauza Overpass odpowiadają zapisanym zleceniom; wersje
+  importów i SW spójne (m12-52). Bez zmian schematu PYT.
