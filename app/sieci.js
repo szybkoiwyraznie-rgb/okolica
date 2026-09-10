@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-51';
-import { TRYBY } from './konfig.js?v=m12-51';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-52';
+import { TRYBY } from './konfig.js?v=m12-52';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -48,8 +48,12 @@ export const POLITYKA = {
   timeoutMs: 20_000,
   /** `[timeout:25]` w nagłówku zapytania Overpass QL. */
   timeoutZapytaniaS: 25,
-  /** Pauza między próbami i po `429`/`406` (ASSETS §2 pkt 3). */
-  odstepMs: 30_000,
+  /**
+   * Krótka grzecznościowa pauza po `429`/`406`/5xx (ASSETS §2 pkt 3).
+   * 1 s, nie 30 s: limit publiczny i tak nie minie w sekundy, a łańcuch
+   * przełącza instancje, więc gracz nie czeka na jedną (właściciel, 2026-09-09).
+   */
+  odstepMs: 1_000,
   /** Promień zapytania = R gry × 1.15 (ADR 0005 pkt 1). */
   mnoznikPromienia: 1.15,
   /** Odpowiedź większa niż tyle nie trafia do cache (budżet ADR 0010 pkt 1). */

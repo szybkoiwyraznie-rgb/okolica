@@ -555,3 +555,31 @@ moduły ES i manifest PWA nie ładują się mimo statusu 200.
 **Przy diagnozie „podgląd nie działa” sprawdzaj w tej kolejności:** proces żyje →
 port na `0.0.0.0` (nie `127.0.0.1`) → **wersja protokołu w odpowiedzi** → typy
 MIME zasobów z `index.html` → dopiero potem szukaj winy po stronie aplikacji.
+
+## L44 — cache-first dla opaque = pamięć na zawsze (także awarii)
+
+**Objaw:** (zgłoszenie właściciela, 2026-09-09, ponowne po wcześniejszych
+poprawkach) po zakończeniu gry „Wróć na początek” pokazywał pusty ekran —
+„za duży zoom, oddalenie pokazuje mapę”. Headless nie odtworzył tego na
+bieżącym mainie: każdy szlak zooma clampuje do `maxZoom` podkładu, a kafelki
+planuje `siatkaKafelkow` w zakresie 0..maxZoom.
+
+**Przyczyna:** mechanizm, który to tłumaczy (i który był wadliwy w kodzie) —
+service worker cache-uje kafelki cache-first, a odpowiedzi z `no-cors`
+wracają jako **opaque** — z niewidocznym statusem. Chwilowy 404/5xx serwera
+kafelków wyglądał więc tak samo jak dobry obraz i lądował w cache. Cache-first
+potem oddawał tę „pustkę” przy KAŻDEJ następnej grze w tej samej okolicy
+(cache ma trzymać „ostatnią okolicę” — te same kafelki!) aż do ewikcji albo
+zmiany `WERSJA_SW`. Stąd „dalej jest nienaprawione” mimo kolejnych PR-ów:
+zepsuty stan żył w telefonie, nie w repo.
+
+**Reguła:** odpowiedzi o nieznanym statusie (`opaque`) cache-uje się tylko,
+gdy treść daje się zweryfikować — w `sw.js` kafelkiem jest tylko ciało,
+które dekoduje się jako `image/*` (`czyTrafSieDoCache`). Drugie dno po stronie
+mapy: `ustalibujWidok` w `rysuj()` wciąga widok w zakres zoomu podkładu przy
+każdym rysowaniu, więc „pustej mapy przez zbyt duże przybliżenie” nie da się
+utrzymać dłużej niż jeden rys.
+
+**Przy diagnozie „mapa pusta, a zoom-out ją przywraca”:** najpierw sprawdź,
+CO WIDZI TELEFON (wersja budowy w stopce), potem cache — a nie tylko kod:
+błąd w cache klienta przeżywa poprawki w repo.

@@ -146,6 +146,11 @@ body {
 }
 fieldset.pole { border-top: 1px solid var(--linia); padding-top: 12px; }
 
+/* Skróty „⊞ wszystkie / ⊟ żadne" przy tematach pytań (właściciel, 2026-09-09):
+   stoją pod legendą, tuż nad chipami — mniejszy odstęp, żeby wyglądały jak
+   dopisek do legendy, nie osobny wiersz formularza. */
+.tematy-akcje { margin: 2px 0 8px; }
+
 /* Lista typów jest JAWNA, bo `input` bez filtra złapałby 73 przyciski
    (`type="button"`), checkboxy i pole pliku. Zgłoszenie właściciela
    2026-09-09: PIN (`type='password'`) wypadał z tej listy i zostawał

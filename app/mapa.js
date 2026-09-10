@@ -15,7 +15,7 @@
  * `ekranPx = jednostkaSwiata * skala + przesuniecie`, a
  * `zoom = log2(skala * SZEROKOSC_SWIATA / ROZMIAR_KAFELKA)`.
  */
-import { PODKLADY } from './konfig.js?v=m12-51';
+import { PODKLADY } from './konfig.js?v=m12-52';
 import {
   ROZMIAR_KAFELKA,
   SZEROKOSC_SWIATA,
@@ -26,7 +26,7 @@ import {
   odwroc,
   projektuj,
   siatkaKafelkow,
-} from './geo.js?v=m12-51';
+} from './geo.js?v=m12-52';
 
 /** Przestrzeń nazw SVG (elementy SVG tworzy się przez `createElementNS`). */
 export const PRZESTRZEN_SVG = 'http://www.w3.org/2000/svg';
@@ -142,6 +142,26 @@ export function przesunWidok(widok, dxPx, dyPx) {
     throw new TypeError('przesunWidok: przesunięcie musi być liczbą');
   }
   return { ...widok, x: widok.x + dxPx, y: widok.y + dyPx };
+}
+
+/**
+ * Samonaprawa widoku: zoom w zakresie `[ZOOM_MIN, maxZoomPodkladu]`, środek
+ * nietknięty. Wszystkie normalne drogi (gesty, `ustawSrodek`) zooma clampują
+ * same, ale zgłoszenie właściciela 2026-09-09 (pusta mapa po grze — „jakby
+ * silnik jeszcze przybliżał, aż poza dostępny zoom") każe mieć drugie dno:
+ * gdyby widok poza zakresem pojawił się z jakiegokolwiek powodu (stary stan,
+ * przyszła regresja), następne `rysuj()` wciąga go z powrotem, a kafelki
+ * i tak są planowane w zakresie podkładu (`siatkaKafelkow`). `skala: Infinity`
+ * (jedyny nieskończony zoom, który przechodzi `sprawdzWidok`) `ogranicz`
+ * wciąga do `maxZoomPodkladu`; NaN-owska `skala` pada wcześniej w
+ * `sprawdzWidok`. W zakresie zwraca ten sam obiekt — bez zbędnego
+ * przepisywania stanu.
+ */
+export function ustalibujWidok(widok, podklad) {
+  sprawdzWidok(widok);
+  const zoom = zoomWidoku(widok);
+  const zoomKlucz = ogranicz(zoom, ZOOM_MIN, maxZoomPodkladu(podklad));
+  return zoomKlucz === zoom ? widok : { x: widok.x, y: widok.y, skala: skalaZZoomu(zoomKlucz) };
 }
 
 /**
@@ -608,6 +628,10 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
 
   function rysuj() {
     stan.rozmiar = rozmiarPanelu(kontener);
+    // Samonaprawa (zgłoszenie 4, 2026-09-09): widok poza zakresem zoomu
+    // podkładu wraca do zakresu przy każdym rysowaniu — „pustej mapy przez
+    // zbyt duże przybliżenie" nie da się utrzymać dłużej niż jeden rys.
+    stan.widok = ustalibujWidok(stan.widok, stan.podklad);
     if (stan.oczekujacySrodek && stan.rozmiar.szerokosc > 0 && stan.rozmiar.wysokosc > 0) {
       const o = stan.oczekujacySrodek;
       stan.oczekujacySrodek = null;

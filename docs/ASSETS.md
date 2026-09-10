@@ -78,9 +78,11 @@ Zasady użycia w kodzie:
    mapy". Promień `R × 1.15`, pozycja zaokrąglona do ~5 m (ADR 0013 pkt 3).
 2. **Cache `okolica:sieci:<geohash6>-<R>`** z TTL 30 dni (ADR 0010) — druga
    gra w tej samej okolicy nie woła sieci wcale.
-3. **Sekwencyjnie, nigdy równolegle**; przy `429`/`406`/`5xx` — odstęp
-   30 s i przełączenie na instancję zapasową, z komunikatem dla
-   użytkownika. Timeout/brak odpowiedzi to MARTWA instancja: przełączenie
+3. **Sekwencyjnie, nigdy równolegle**; przy `429`/`406`/`5xx` — krótki
+   odstęp 1 s i przełączenie na instancję zapasową, z komunikatem dla
+   użytkownika (właściciel, 2026-09-09: 30 s odstępów między serwerami jest
+   za dużo — łańcuch i tak zmienia serwery, a limit publiczny nie minie
+   w sekundy). Timeout/brak odpowiedzi to MARTWA instancja: przełączenie
    jest OD RAZU, bez pauzy — nie ma kogo szanować pauzą (2026-09-07).
    Adres instancji, która dowiozła, ląduje w `okolica:overpass-sprawny`
    i następna gra próbuje ją pierwszą (mniej doomed-zapytań).
