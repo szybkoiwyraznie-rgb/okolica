@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-60';
-import { TRYBY } from './konfig.js?v=m12-60';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-61';
+import { TRYBY } from './konfig.js?v=m12-61';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 

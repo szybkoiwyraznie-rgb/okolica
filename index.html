@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-60">
-  <script type="module" src="app/app.js?v=m12-60"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-61">
+  <script type="module" src="app/app.js?v=m12-61"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -38,7 +38,7 @@
       <button id="przycisk-setup" class="przycisk-ikona" type="button" title="START GRY — ustawienia gry">⚙ START GRY</button>
       <button id="przycisk-motyw" class="przycisk-ikona" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny" aria-label="Przełącz motyw">☾</button>
       <button id="przycisk-sygnaly" class="przycisk-ikona" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)" aria-label="Sygnały dojścia">🔔</button>
-      <button id="przycisk-informacje" class="przycisk-ikona" type="button" aria-label="Informacje" title="Informacje" aria-expanded="false" aria-controls="ekran-informacje"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor"/></svg></button>
+      <button id="przycisk-informacje" class="przycisk-ikona" type="button" aria-label="Informacje" title="Informacje" aria-expanded="false" aria-pressed="false" aria-controls="ekran-informacje"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor"/></svg></button>
       <button id="przycisk-ranking" class="przycisk-ikona" type="button" title="Rankingi graczy i moje gry (M12)" aria-label="Rankingi">🏆</button>
     </div>
   </header>

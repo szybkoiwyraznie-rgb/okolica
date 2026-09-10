@@ -2610,3 +2610,24 @@ test('Overpass: Adikso jako rezerwa dowozi dane i staje się pierwszą próbą k
   await czekaj(100);
   assert.deepEqual(nowe, [polski]);
 });
+
+test('Informacje: ikonka wskazuje otwarcie, zamknięcie i zachowuje stan podczas podglądu mapy', async () => {
+  const d = await aplikacjaZMapa({ search: '?test=true' });
+  const ikona = d.pobierz('przycisk-informacje');
+  const sprawdz = stan => {
+    assert.equal(ikona.getAttribute('aria-pressed'), String(stan));
+    assert.equal(ikona.getAttribute('aria-expanded'), String(stan));
+    assert.equal(d.pobierz('ekran-informacje').hidden, !stan);
+  };
+  sprawdz(false);
+  d.kliknij('przycisk-informacje'); sprawdz(true);
+  d.kliknij('przycisk-podejrzyj-mape'); sprawdz(true);
+  d.kliknij('przycisk-podejrzyj-mape'); sprawdz(true);
+  d.kliknij('przycisk-informacje'); sprawdz(false);
+  d.kliknij('przycisk-informacje'); sprawdz(true);
+  d.kliknij('przycisk-zamknij-informacje'); sprawdz(false);
+  d.kliknij('przycisk-informacje');
+  d.wyslijZdarzenieDokumentu('keydown', { key: 'Escape' }); sprawdz(false);
+  d.kliknij('przycisk-informacje');
+  d.kliknij('przycisk-ranking'); sprawdz(false);
+});

@@ -2012,3 +2012,13 @@ Brama: **685 testów**, szablony zgodne, **0 naruszeń kontrastu**. Regresje
 były czerwone przed zmianą. Sukces Adikso sprawdzono na atrapie, nie serwerze.
 Przekazanie: ta sama gałąź `arena/01a08b96-okolica`, PR #8, bez merge.
 Preview odświeżyć do m12-60; przy problemie odczytać wyniki z ⓘ Informacje.
+
+
+## Ikonka Informacji — m12-61
+
+Dodano `aria-pressed` synchronizowane z otwarciem panelu ⓘ, wykorzystujące
+istniejący styl zaznaczenia ikon nagłówka. Zamykanie ikoną, krzyżykiem,
+Escape lub przejściem do rankingów wygasza zaznaczenie; podgląd mapy nie
+wyłącza panelu i zachowuje zaznaczenie. Regresja najpierw czerwona, potem
+zielona. Pełna brama: 686 testów, szablony zgodne, 0 naruszeń kontrastu.
+Przekazanie: ta sama gałąź i PR #8, bez merge; preview odświeżyć do m12-61.
