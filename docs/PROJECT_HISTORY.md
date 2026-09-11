@@ -2579,10 +2579,13 @@ koniec hosta), README, WORKFLOW §4.4 (9 punktów), instrukcja mostu §5b
 
 
 
-## Sesja 2026-09-11l — audyt PR #9 (gałąź arena/01a09219-okolica)
+## Sesja 2026-09-11m — audyt PR #9 (gałąź arena/01a09219-okolica), czytanie rozszerzone
 
 Audyt scalonego PR #9 (squash `0b81d0d`, 42+ pliki, ~+1580/−1740), plik po
 pliku, przed nowym zleceniem. Bramka na starcie: **692/692 zielone** na main.
+Równoległa sesja (`arena/01a091fd-okolica`) audytowała ten sam PR we wpisie
+2026-09-11l — wpisy się uzupełniają (tam: streszczenie; tu: pełna lektura
+plików z usterkami nieblokującymi i opisem zgłoszeń cofniętych bez aneksów ADR).
 
 - **`app/konfig.js`** — usunięte `JEZYKI`, nowe `JEZYK_GRY = 'polski'`;
   `oczyscKonfiguracje` zapisuje na sztywno `jezyk='polski'`, `podklad='osm'`
