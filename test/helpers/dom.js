@@ -21,6 +21,15 @@ import { fileURLToPath } from 'node:url';
 export const KATALOG = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
 /**
+ * Prawdziwy fetch Node — łapany PRZY IMPORCIE (zanim jakikolwiek test podstawi
+ * własną atrapę), ale tylko odczytywany: instalacja hermetycznej sieci dzieje
+ * się w `zainstalujDom()`, więc ten moduł nie ma skutków ubocznego.
+ */
+const PRAWDZIWY_FETCH = typeof globalThis.fetch === 'function' ? globalThis.fetch : null;
+/** Aktywna hermetyczna sieć testów: `{ wywolania: string[] }`, eksponowana jako `dom.siec`. */
+let hermetycznaSiec = null;
+
+/**
  * Atrapa nie parsuje HTML-a, więc stan początkowy `hidden` bierzemy z pliku:
  * elementy oznaczone w `index.html` jako ukryte są ukryte również w teście.
  * @returns {Set<string>} identyfikatory elementów z atrybutem `hidden`
@@ -55,7 +64,11 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
     // z dziećmi — M7/P3 czyta tekst całej karty wyniku)
     get textContent() {
       const zDzieci = this.children
-        .map((d) => (d && typeof d.textContent === 'string' ? d.textContent : ''))
+        .map((d) => {
+          if (typeof d === 'string') return d; // Element.append(tekst) — węzeł tekstowy
+          if (typeof d === 'number') return String(d);
+          return d && typeof d.textContent === 'string' ? d.textContent : '';
+        })
         .join('');
       return wlasnyTekst + zDzieci;
     },
@@ -99,7 +112,26 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
       const i = lista.indexOf(fn);
       if (i >= 0) lista.splice(i, 1);
     },
-    querySelector() { return null; },
+    /**
+     * Selektory klas (`.foo`, `span.foo`) — wystarczają testom piguł
+     * informacyjnych; każdy inny selektor zostaje „nie znaleziony",
+     * żeby atrapa nie udawała prawdziwego silnika CSS.
+     */
+    querySelector(selektor) {
+      const m = /^([a-z]+)?\.([a-z0-9_-]+)$/i.exec(String(selektor ?? '').trim());
+      if (!m) return null;
+      const [, typ, klasa] = m;
+      for (const dziecko of this.children) {
+        if (dziecko && typeof dziecko === 'object') {
+          const klasy = String(dziecko.className ?? '').split(/\s+/).filter(Boolean);
+          const tagOk = !typ || String(dziecko.tagName ?? '').toLowerCase() === typ.toLowerCase();
+          if (klasy.includes(klasa) && tagOk) return dziecko;
+          const wNizej = typeof dziecko.querySelector === 'function' ? dziecko.querySelector(selektor) : null;
+          if (wNizej) return wNizej;
+        }
+      }
+      return null;
+    },
     querySelectorAll() { return []; },
     focus() {}, select() {}, setSelectionRange() {}, click() {}, scrollIntoView() {},
     setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture() { return false; },
@@ -249,6 +281,22 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
 
   const navigatorStub = { clipboard: undefined, geolocation, userAgent: 'node-test', language: 'pl-PL' };
 
+  // Hermetyczna sieć (zgłoszenie właściciela 2026-09-11): w katalogu
+  // okolica-gry-zakonczone na Drive pojawiały się dziesiątki plików
+  // gra-hotseat-* — testy kończące grę leciały PRAWDZIWYM POST-em na
+  // produkcyjny most (adres siedzi w DOMYSLNY_URL_MOSTU), a CI ma pełny
+  // dostęp do internetu. Domyślny fetch testów odmawia jak awaria sieci;
+  // testy, którym trzeba odpowiedzi mostu, podstawiają WŁASNĄ atrapę
+  // (atrapaFetch w zestawy-ui, globalThis.fetch = … w hotseat) — te
+  // ŚWIADOMIE zastępują tę, więc nie ruszamy niczego poza prawdziwym fetchem.
+  if (PRAWDZIWY_FETCH && globalThis.fetch === PRAWDZIWY_FETCH) {
+    hermetycznaSiec = { wywolania: [] };
+    globalThis.fetch = async (adres) => {
+      hermetycznaSiec.wywolania.push(String(adres));
+      throw new TypeError(`fetch atrapy: testy nie wychodzą na sieć (${String(adres).slice(0, 80)})`);
+    };
+  }
+
   globalThis.document = documentStub;
   globalThis.window = windowStub;
   // Node 22+ ma własny getter `navigator` — tylko defineProperty go nadpisze.
@@ -296,6 +344,8 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     pobierz,
     pamiec,
     utworzone,
+    /** Hermetyczna sieć tej instancji: lista adresów, których test próbował. */
+    siec: hermetycznaSiec,
     document: documentStub,
     window: windowStub,
     navigator: navigatorStub,

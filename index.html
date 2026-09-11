@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-63">
-  <script type="module" src="app/app.js?v=m12-63"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-74">
+  <script type="module" src="app/app.js?v=m12-74"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -113,15 +113,18 @@
     <section id="ekran-setup" class="ekran panel-centralny" hidden aria-labelledby="tytul-setup">
       <h2 id="tytul-setup">Ustawienia gry</h2>
 
-      <!-- M11/P4: hot-seat albo gra na wielu urządzeniach (ADR 0019) -->
-      <label class="pole">
-        <span>Rodzaj gry</span>
-        <select id="setup-rodzaj">
-          <option value="hotseat">Hot-seat — jeden telefon podawany dalej</option>
-          <option value="multi">Gra na wielu urządzeniach — każdy ma swój telefon</option>
-        </select>
-      </label>
+      <!-- Rodzaj gry (właściciel, 2026-09-11): dwa przyciski obok siebie —
+           toggle jak środek transportu niżej, zamiast selecta. -->
+      <fieldset class="pole">
+        <legend>Rodzaj gry</legend>
+        <div id="lista-rodzajow" class="segment"></div>
+        <p id="rodzaj-opis" class="podpowiedz"></p>
+      </fieldset>
 
+      <!-- Karta multi (przepisany flow, właściciel 2026-09-11): wybór ścieżki
+           załóż/dołącz żyje TU, na setupie; paczka i tak powstaje dalej w
+           zwykłej ścieżce (pozycja → stacje → pytania), a lobby otwiera się
+           po wklejeniu odpowiedzi modelu. -->
       <div id="karta-multi" class="karta" hidden>
         <div id="multi-wznowienie" class="karta karta-wznowienie" hidden>
           <p id="multi-wznowienie-opis" class="duzy"></p>
@@ -130,20 +133,13 @@
             <button id="przycisk-multi-porzuc" class="przycisk" type="button">🗑 Porzuć zapamiętaną grę</button>
           </div>
         </div>
-        <label class="pole">
-          <span>Pseudonim (widzą go inni gracze)</span>
-          <input id="multi-pseudonim" type="text" maxlength="24" autocomplete="nickname" spellcheck="false" placeholder="np. Marta">
-        </label>
-        <!-- Zgody na wysyłkę pseudonimu i wyników NIE pytamy przy każdej grze
-             (właściciel, 2026-09-07): gra wieloosobowa z natury działa przez
-             wspólny Drive, a co i dokąd trafia opisuje sekcja „Dane
-             i prywatność". -->
-        <div class="wiersz">
-          <button id="przycisk-multi-zaloz" class="przycisk przycisk-glowny" type="button">🌐 Załóż grę</button>
-          <button id="przycisk-multi-dolacz" class="przycisk" type="button">🔗 Dołącz do gry</button>
-        </div>
+        <fieldset class="pole">
+          <legend>Co robisz?</legend>
+          <div id="multi-sciezka" class="segment"></div>
+          <p id="multi-sciezka-opis" class="podpowiedz"></p>
+        </fieldset>
         <p id="multi-most-stan" class="podpowiedz">Most Drive: sprawdzam…</p>
-        <p class="podpowiedz tylko-test">Adres mostu jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — ten sam web app Apps Script obsługuje paczki, gry i rankingi<span class="dopisek-roboczy"> (ADR 0016, 0018, 0019)</span>. Nie musisz nic konfigurować.</p>
+        <p class="podpowiedz tylko-test">Adres mostu jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja czyta listę gier w okolicy i zapisuje stan gry.</p>
       </div>
 
       <!-- M6/R6: wznowienie przerwanej gry — jawne, kasowanie dwustopniowe -->
@@ -180,7 +176,9 @@
           <span>Liczba stacji</span>
           <input id="setup-stacje" type="number" min="3" max="12" step="1" inputmode="numeric">
         </label>
-        <label class="pole">
+        <!-- Multi (właściciel, 2026-09-11): liczba stacji = liczba pytań,
+             więc pola „pytań na stację" w tym trybie nie ma. -->
+        <label class="pole" id="pole-pytania">
           <span>Pytań na stację</span>
           <input id="setup-pytania" type="number" min="1" max="8" step="1" inputmode="numeric">
         </label>
@@ -200,7 +198,7 @@
            graczy jest długością tej listy, więc osobne pole do wpisywania liczby
            zniknęło (myliło: „Gracze" i „Kim jesteś?" pytały o to samo). -->
       <fieldset class="pole" id="pole-tozsamosc">
-        <legend>👤 Kto gra?</legend>
+        <legend id="legend-tozsamosc">👤 Kto gra?</legend>
         <div class="siatka">
           <label class="pole">
             <span>Imię (pseudonim)</span>
@@ -244,21 +242,28 @@
           placeholder="Twoja dziedzina, np. kinematografia" aria-label="Własna dziedzina pytań" hidden>
       </fieldset>
 
-      <div class="siatka">
-        <label class="pole">
-          <span>Język pytań</span>
-          <select id="setup-jezyk"></select>
-        </label>
-        <label class="pole">
-          <span>Podkład mapy</span>
-          <select id="setup-podklad"></select>
-        </label>
-      </div>
+      <!-- Język pytań i podkład mapy usunięte (właściciel, 2026-09-11):
+           „w ogóle to nie jest potrzebne w żadnym trybie" — język polski
+           i podkład OSM są zaszyte w kodzie. -->
 
 
 
       <!-- „🔐 Dane i prywatność" nie ma na ekranie setupu (właściciel, 2026-09-09):
            dostęp do niego jest zawsze w stopce (#przycisk-prywatnosc-stopka). -->
+      <!-- Tryb gry wieloosobowej (właściciel, 2026-09-11): z kolejnością
+           (Wspólna Trasa) albo bez (Wyścig na Orientację); w trasie dodatkowy
+           ptaszek „tylko kolejna stacja", domyślnie zaznaczony. -->
+      <fieldset class="pole" id="pole-multi-tryb" hidden>
+        <legend>Tryb gry</legend>
+        <div id="multi-tryby" class="segment"></div>
+        <p id="multi-tryb-opis" class="podpowiedz"></p>
+        <label class="pole wiersz" id="pole-trasa-sekret" hidden>
+          <input id="multi-trasa-sekret" type="checkbox" checked>
+          <span>Widoczna tylko kolejna stacja (trasa-sekret)</span>
+        </label>
+        <p id="multi-punktacja" class="podpowiedz">Punktacja w obu trybach: każda dobra odpowiedź to 1 pkt, a za zaliczenie wszystkich stacji — 3 pkt za 1. miejsce, 2 pkt za 2., 1 pkt za 3.</p>
+      </fieldset>
+
       <p id="bledy-setup" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-dalej-pozycja" class="przycisk przycisk-glowny" type="button">📍 Dalej: moja pozycja</button>
@@ -268,34 +273,11 @@
     <!-- M11/P4: ekran gry wieloosobowej (załóż / dołącz / lobby) -->
     <section id="ekran-multi" class="ekran panel-centralny" hidden aria-labelledby="tytul-multi">
       <h2 id="tytul-multi">Gra na wielu urządzeniach</h2>
-      <p class="podpowiedz">Każdy gracz ma swój telefon. Na serwer jadą wyłącznie pseudonimy, zdarzenia gry i wyniki — współrzędne zostają na urządzeniach<span class="dopisek-roboczy"> (ADR 0019 pkt 3)</span>.</p>
       <p id="bledy-multi" class="bledy" role="alert" hidden></p>
-
-      <div id="multi-panel-zaloz" class="karta" hidden>
-        <h3>Załóż grę</h3>
-        <fieldset class="pole">
-          <legend>Tryb gry</legend>
-          <div id="multi-tryby" class="segment"></div>
-          <p id="multi-tryb-opis" class="podpowiedz"></p>
-        </fieldset>
-        <label class="pole">
-          <span>Źródło pytań i stacji</span>
-          <select id="multi-zrodlo"></select>
-        </label>
-        <p id="multi-zaloz-info" class="podpowiedz" role="status"></p>
-        <div class="wiersz">
-          <button id="przycisk-zaloz-gre" class="przycisk przycisk-glowny" type="button">🚀 Zakładam (wyślij na Drive)</button>
-          <button id="przycisk-multi-wstecz-zaloz" class="przycisk" type="button">← Ustawienia</button>
-        </div>
-      </div>
 
       <div id="multi-panel-dolacz" class="karta" hidden>
         <h3>Dołącz do gry</h3>
-        <div class="wiersz">
-          <input id="multi-kod" type="text" maxlength="6" autocapitalize="characters" autocomplete="off" spellcheck="false" placeholder="kod gry, np. K2H7QM" aria-label="Kod gry">
-          <button id="przycisk-dolacz-kod" class="przycisk przycisk-glowny" type="button">Dołącz z kodem</button>
-        </div>
-        <p class="podpowiedz">Kod dostajesz od organizatora. Albo wybierz grę z listy poniżej — bez kodu.</p>
+        <p class="podpowiedz">Widzisz gry, których host jest w zasięgu ~50 m. Pokazujemy tylko hosta — resztę sobie opowiecie na miejscu.</p>
         <ul id="multi-lobby-lista" class="lista-historii"></ul>
         <p id="multi-lobby-status" class="podpowiedz" role="status"></p>
         <div class="wiersz">
@@ -306,8 +288,7 @@
 
       <div id="multi-panel-lobby" class="karta" hidden>
         <h3>Lobby</h3>
-        <p class="podpowiedz">Kod gry — przekaż go innym graczom:</p>
-        <p id="lobby-kod" class="kod-duzy" aria-live="polite"></p>
+        <p class="podpowiedz">Gracze dołączają z listy w zasięgu ~50 m — kod gry nie jest potrzebny.</p>
         <p id="lobby-tryb" class="podpowiedz"></p>
         <ul id="lobby-gracze" class="lista-historii"></ul>
         <p id="lobby-status" class="podpowiedz" role="status"></p>
@@ -318,7 +299,7 @@
           </table>
         </div>
         <div class="wiersz">
-          <button id="przycisk-lobby-start" class="przycisk przycisk-glowny" type="button" hidden>▶ Start gry (organizator)</button>
+          <button id="przycisk-lobby-start" class="przycisk przycisk-glowny" type="button" hidden>▶ Start gry</button>
           <button id="przycisk-lobby-opusc" class="przycisk" type="button">Opuść lobby</button>
         </div>
       </div>
@@ -329,7 +310,6 @@
     <!-- KROK 2: pozycja -->
     <section id="ekran-pozycja" class="ekran panel-centralny" hidden aria-labelledby="tytul-pozycja">
       <h2 id="tytul-pozycja">Gdzie jesteś?</h2>
-      <p class="podpowiedz">Geolokalizacja działa tylko przez HTTPS (GitHub Pages) albo localhost i wymaga zgody.</p>
       <div id="karta-pozycji" class="karta">
         <p id="pozycja-status" class="duzy">Czekam na pozycję…</p>
         <p id="pozycja-wspolrzedne" class="kod"></p>
@@ -339,8 +319,8 @@
         <p class="duzy">📦 Paczki dla tej okolicy</p>
         <p id="zestawy-status" class="podpowiedz">Sprawdzam, czy ta okolica ma już gotowe pytania…</p>
         <ul id="zestawy-lista" class="lista-zestawow"></ul>
+        <button id="przycisk-zestawy-wiecej" class="przycisk przycisk-zestawy-wiecej" type="button" hidden>Zobacz więcej paczek</button>
         <p id="most-stan-repo" class="podpowiedz">Most Drive: sprawdzam…</p>
-        <button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie</button>
         <p class="podpowiedz tylko-test">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela<span class="dopisek-roboczy"> (ADR 0017 pkt 6)</span>.</p>
       </div>
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
@@ -364,11 +344,9 @@
              WEWNĄTRZ siebie — strona się nie przewija. -->
         <div id="stacje-panel" class="stacje-panel">
           <ol id="lista-stacji" class="lista-stacji"></ol>
-          <p id="stacje-sprawiedliwosc" class="badge"></p>
           <div class="wiersz">
             <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
             <button id="przycisk-siec-ponow" class="przycisk" type="button" hidden>↻ Pobierz sieć ponownie</button>
-            <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
             <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
           </div>
           <p class="podpowiedz">Stacje stoją w pierścieniu albo na sieci dróg, placów i szlaków — nigdy w budynku ani na terenie prywatnym<span class="dopisek-roboczy"> (ADR 0005)</span>.</p>
@@ -433,7 +411,6 @@
         <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
         <p id="prompt-licznik" class="badge"></p>
       </details>
-      <p id="prompt-rozmiar" class="podpowiedz" hidden></p>
       <div class="wiersz">
         <button id="przycisk-kopiuj-prompt" class="przycisk przycisk-glowny" type="button">⧉ Kopiuj prompt</button>
         <label class="sprawdz"><input id="prompt-factcheck" type="checkbox"> <span>Pytania z fact check</span></label>
@@ -475,8 +452,34 @@
     <!-- KROK 6: GRA (M6/R3) — jeden ekran, cztery panele faz:
          oczekiwanie → odcinek → pytanie → koniec. Kolejność DOM = kolejność
          faz; jeden GŁÓWNY przycisk na fazę (ADR 0011); cele dotykowe ≥ 44 px. -->
+
     <section id="ekran-gra" class="ekran panel-centralny" hidden aria-labelledby="tytul-gra">
       <p id="gra-pasek" hidden aria-live="polite"></p>
+
+      <!-- M11/P4: panel gry wieloosobowej — status trybu, żywe wyniki, pasek synchronizacji -->
+      <div id="gra-panel-multi" class="karta gra-panel" hidden>
+        <p id="gra-multi-tura" class="duzy" role="status"></p>
+        <p id="multi-factcheck" class="podpowiedz" hidden></p>
+        <!-- ADR 0027 część B: wolna kolejność stacji — gracz wybiera, dokąd idzie -->
+        <div id="multi-wybor-stacji" hidden>
+          <p class="podpowiedz">Kolejność jest dowolna — wybierz stację, do której idziesz:</p>
+          <div id="multi-wybor-przyciski" class="chipy" role="group" aria-label="Wybór stacji"></div>
+        </div>
+        <table id="gra-multi-tabela" class="tabela-wynikow">
+          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Premia</th></tr></thead>
+          <tbody id="gra-multi-wiersze"></tbody>
+        </table>
+        <!-- Kanał info (właściciel, 2026-09-11): dojścia, odpowiedzi, rezygnacje
+             i koniec gry — odświeżany z pollingiem (co ~30 s). -->
+        <div id="multi-info" hidden>
+          <p class="podpowiedz">Info z gry:</p>
+          <ul id="multi-info-lista" class="lista-historii"></ul>
+        </div>
+        <p id="gra-multi-sync" class="podpowiedz" role="status"></p>
+        <button id="przycisk-multi-zakoncz" class="przycisk" type="button" hidden>⏹ Zakończ grę (host)</button>
+        <button id="przycisk-multi-rezygnuj" class="przycisk" type="button">🏳 Rezygnuję z gry</button>
+      </div>
+
       <div id="gra-slot-sterowanie">
         <div id="gra-sterowanie">
       <h2 id="tytul-gra">Gra</h2>
@@ -492,22 +495,6 @@
       <p id="bledy-gra" class="bledy" role="alert" hidden></p>
       <p id="gra-komunikat" class="podpowiedz" role="status"></p>
 
-      <!-- M11/P4: panel gry wieloosobowej — tury, żywe wyniki, pasek synchronizacji -->
-      <div id="gra-panel-multi" class="karta gra-panel" hidden>
-        <p id="gra-multi-tura" class="duzy" role="status"></p>
-        <p id="multi-factcheck" class="podpowiedz" hidden></p>
-        <!-- ADR 0027 część B: wolna kolejność stacji — gracz wybiera, dokąd idzie -->
-        <div id="multi-wybor-stacji" hidden>
-          <p class="podpowiedz">Kolejność jest dowolna — wybierz stację, do której idziesz:</p>
-          <div id="multi-wybor-przyciski" class="chipy" role="group" aria-label="Wybór stacji"></div>
-        </div>
-        <table id="gra-multi-tabela" class="tabela-wynikow">
-          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Premia</th></tr></thead>
-          <tbody id="gra-multi-wiersze"></tbody>
-        </table>
-        <p id="gra-multi-sync" class="podpowiedz" role="status"></p>
-        <button id="przycisk-multi-rezygnuj" class="przycisk" type="button">🏳 Rezygnuję z gry</button>
-      </div>
 
       <!-- FAZA A: przygotowanie / oczekiwanie — kto idzie i start odcinka -->
       <div id="gra-panel-oczekuje" class="karta gra-panel">
@@ -737,7 +724,7 @@
     <section id="ekran-start" class="warstwa-start panel-centralny" role="dialog" aria-modal="false" aria-labelledby="tytul-start">
       <div class="warstwa-start-karta">
         <h1 id="tytul-start">Tajemnicza&nbsp;Okolica</h1>
-        <p id="podtytul-start" class="podtytul-start">gra terenowa tam, gdzie akurat jesteś</p>
+        <p id="podtytul-start" class="podtytul-start">gra terenowa gdziekolwiek jesteś</p>
 
         <p>Tajemnicza Okolica zamienia najbliższe ulice w planszę do gry. Aplikacja
           wyznacza kilka stacji w promieniu spaceru od Twojej pozycji, a model AI
@@ -746,21 +733,12 @@
 
         <p>Zasada jest prosta. Idziesz do stacji, a telefon sam rozpoznaje, że
           jesteś na miejscu — wtedy odsłania pytanie. Odpowiadasz, zbierasz punkty
-          i ruszasz do następnej. Nie ma pośpiechu ani odliczania: liczy się to,
+          i ruszasz dalej. Nie ma pośpiechu ani odliczania: liczy się to,
           co zauważysz po drodze.</p>
 
-        <p>Grać można w pojedynkę, całą rodziną z jednego telefonu albo każdy na
-          swoim — wtedy wyniki spotykają się we wspólnym rankingu. Pytania
-          pobierają się z wyprzedzeniem, więc słaby zasięg w terenie niczego nie
-          przerywa.</p>
-
-        <p class="podpowiedz">Potrzebujesz tylko zgody na dostęp do lokalizacji.
-          Twoje współrzędne zostają na telefonie — nigdy nie trafiają na serwer.</p>
+        <p>Grać można w pojedynkę, z rodziną i znajomymi na jednym telefonie albo każdy na swoim urządzeniu.</p>
 
         <button id="przycisk-start-zacznij" class="przycisk przycisk-glowny" type="button">▶ Zacznij</button>
-        <p class="podpowiedz">Przycisk wyżej otwiera ustawienia gry — to samo robi
-          <strong>⚙ START GRY</strong> w górnej belce. Samo okno zamkniesz kliknięciem
-          w dowolnym miejscu, zostanie wtedy mapa okolicy.</p>
       </div>
     </section>
 

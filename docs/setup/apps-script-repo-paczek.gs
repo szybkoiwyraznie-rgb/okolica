@@ -2,18 +2,20 @@
  * MOST DRIVE (paczki + gry wieloosobowe + rankingi): Google Drive + Apps Script
  * (ADR 0016, 0018, 0019; plany M9b i M11/M12).
  *
- * Przepływ (decyzje właściciela 2026-09-06):
- *   1. aplikacja po „✓ Sprawdź i przyjmij” wysyła plik TO-zestaw/1 (doPost),
- *   2. skrypt zapisuje go w katalogu „do przeglądu” i mailuje właścicielowi
- *      link do podglądu (token z Properties skryptu),
- *   3. właściciel klika „Zaakceptuj” lub „Odrzuć” na stronie przeglądu,
+ * Przepływ (decyzja właściciela 2026-09-11: koniec sesji przeglądu):
+ *   1. aplikacja po przyjęciu paczki wysyła plik TO-zestaw/1 (doPost),
+ *   2. skrypt waliduje kandydata i zapisuje go OD RAZU w katalogu
+ *      zaakceptowanych — bez kolejki przeglądu i bez maili do właściciela,
+ *   3. o jakości paczek rozstrzygają łapki graczy (ADR 0028); właściciel
+ *      przegląda katalogi na Drive, gdy sam chce, a niechcianą paczkę
+ *      wyłącza z obiegu RĘCZNIE: przeciąga plik do katalogu odrzuconych
+ *      (znika z indeksu natychmiast),
  *   4. gracze pobierają indeks i paczki WYŁĄCZNIE z katalogu zaakceptowanych
  *      (doGet: akcja=indeks / akcja=paczka).
  *
  * Wdrożenie: docs/setup/most-drive-instrukcja.md (krok po kroku, bez wiedzy
- * programistycznej). Właściwości skryptu (Ustawienia → Właściwości skryptu):
- *   OWNER_EMAIL   — e-mail właściciela (powiadomienia o przeglądzie)
- *   REVIEW_SECRET — dowolny długi ciąg znaków (zdolność linku przeglądu)
+ * programistycznej). Skrypt nie potrzebuje żadnych właściwości — adres
+ * wdrożenia jest jedyną zdolnością (ADR 0020).
  *
  * Zero kluczy API w aplikacji (ADR 0001): web app.deployowana jako
  * „każdy może być anonimowy”, URL jest jedyną zdolnością.
@@ -26,7 +28,8 @@
  */
 
 const FOLDERY = {
-  przeglad: 'okolica-paczki-do-przegladu',
+  // „odrzucone” to ręczny kosz właściciela: przeciągnięcie pliku tam
+  // wyłącza paczkę z indeksu (decyzja 2026-09-11 — bez sesji przeglądu).
   zaakceptowane: 'okolica-paczki-zaakceptowane',
   odrzucone: 'okolica-paczki-odrzucone',
   gryOtwarte: 'okolica-gry-otwarte',
@@ -39,14 +42,8 @@ const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (A
 const SCHEMAT_KONTENERA = 'TO-paczka/2';
 const SCHEMAT_OCENY = 'RO-oceny/1';  // ADR 0028: plik ocen jednej paczki
 const SCHEMAT_OCENA = 'RO-ocena/1';  // ADR 0028: pojedynczy głos (kciuk w górę/dół)
-const ZNAK_OCZEKUJE = 'oczekuje przeglądu';
 
 /* ---------------------------------------------------------- infrastruktura */
-
-function ustawienia() {
-  const p = PropertiesService.getScriptProperties();
-  return { email: p.getProperty('OWNER_EMAIL'), sekret: p.getProperty('REVIEW_SECRET') };
-}
 
 function folder(nazwa) {
   const it = DriveApp.getFoldersByName(nazwa);
@@ -57,16 +54,16 @@ function folder(nazwa) {
 /** Jednorazowo: zakłada katalogi (paczki + gry). Uruchom z edytora po wdrożeniu. */
 function setup() {
   Object.values(FOLDERY).forEach(folder);
-  return 'katalogi gotowe: ' + Object.values(FOLDERY).join(', ');
+  // Decyzja właściciela 2026-09-11: żadnych maili ani sesji przeglądu —
+  // paczki lądują w zaakceptowanych od razu. Właściwości skryptu z czasów
+  // przeglądu (adres e-mail, token, adres serwisu) są zbędne i usunięte.
+  return 'katalogi gotowe: ' + Object.values(FOLDERY).join(', ')
+    + '. Paczki zapisują się od razu w zaakceptowanych (bez maili).';
 }
 
 function json(obiekt) {
   return ContentService.createTextOutput(JSON.stringify(obiekt))
     .setMimeType(ContentService.MimeType.JSON);
-}
-
-function urlSerwisu() {
-  return ScriptApp.getService().getUrl();
 }
 
 /* ------------------------------------------- kontener TO-paczka/2 (odczyt) */
@@ -254,7 +251,7 @@ function paczkaJestWRepo(paczkaId) {
     const rodzice = DriveApp.getFileById(String(paczkaId)).getParents();
     if (!rodzice.hasNext()) return false;
     const nazwa = rodzice.next().getName();
-    return nazwa === FOLDERY.zaakceptowane || nazwa === FOLDERY.przeglad;
+    return nazwa === FOLDERY.zaakceptowane;
   } catch (e) {
     return false;
   }
@@ -342,7 +339,6 @@ function doGet(e) {
     if (akcja === 'gry') return json(listaGier());
     if (akcja === 'gra-stan') return json(stanGry(e.parameter.kod, e.parameter.id));
     if (akcja === 'ranking') return json(rankingi());
-    if (akcja === 'przeglad') return stronaPrzegladu(e.parameter);
     return json({ blad: 'nieznana akcja' });
   } catch (err) {
     return json({ blad: String((err && err.message) || err) });
@@ -484,89 +480,30 @@ function paczkaPrzezId(id) {
   return JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
 }
 
-/** Przyjmuje zestaw z aplikacji: katalog przeglądu + e-mail z linkiem. */
+/**
+ * Przyjmuje zestaw z aplikacji — OD RAZU do katalogu zaakceptowanych.
+ * Decyzja właściciela 2026-09-11: koniec sesji przeglądu i maili; o jakości
+ * rozstrzygają łapki graczy (ADR 0028), a ręczne odrzucenie to przeciągnięcie
+ * pliku do katalogu odrzuconych na Drive (paczka znika z indeksu).
+ */
 function przyjmijKandydata(plik) {
   const { bledy } = walidujKandydata(plik);
   if (bledy.length) return { ok: false, blad: bledy.join('; ') };
   const skrot = plik.kontener.skrot;
   const nazwa = plik.meta.geohash5 + '-' + skrot + '.zestaw.json';
-  const wszedzie = [FOLDERY.zaakceptowane, FOLDERY.przeglad, FOLDERY.odrzucone];
+  const wszedzie = [FOLDERY.zaakceptowane, FOLDERY.odrzucone];
   for (const nazwaFolderu of wszedzie) {
     const it = folder(nazwaFolderu).getFilesByName(nazwa);
     if (it.hasNext()) {
       // `id` wraca także przy duplikacie: telefon, który gra tą paczką, musi
       // znać jej identyfikator, żeby dało się ją ocenić (ADR 0028, aneks 2026-09-09).
-      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-obiegu', nazwa, id: it.next().getId() };
+      // Duplikat w odrzuconych = wcześniejsza RĘCZNA decyzja właściciela —
+      // nowy plik nie powstaje, odrzucenie obowiązuje dalej.
+      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-odrzuconych', nazwa, id: it.next().getId() };
     }
   }
-  const utworzony = folder(FOLDERY.przeglad).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
-  powiadomWlasciciela(utworzony, plik);
-  return { ok: true, status: 'przyjeta-do-przegladu', nazwa, id: utworzony.getId() };
-}
-
-function powiadomWlasciciela(plikDrive, zestaw) {
-  const { email, sekret } = ustawienia();
-  if (!email || !sekret) return; // bez ustawień skrypt milczy, paczka czeka
-  const link = urlSerwisu() + '?akcja=przeglad&token=' + encodeURIComponent(sekret) + '&id=' + encodeURIComponent(plikDrive.getId());
-  const meta = zestaw.meta;
-  const temat = 'Tajemnicza Okolica: paczka pytań do przeglądu (' + meta.miejsce + ')';
-  const cialo = 'Nowa paczka pytań czeka na Twój przegląd.\n\n'
-    + 'Miejsce: ' + meta.miejsce + ' (geohash ' + meta.geohash5 + ')\n'
-    + 'Stacje: ' + meta.liczbaStacji + ' × ' + meta.pytaniaNaStacje + ' pytań, poziom: ' + meta.wiek + '\n'
-    + 'Tematy: ' + meta.tematy.join(', ') + '\n'
-    + 'Utworzono: ' + meta.data + ' przez ' + meta.autor + '\n\n'
-    + 'Podgląd i akceptacja jednym kliknięciem:\n' + link + '\n\n'
-    + 'Pamiętaj: sprawdź źródła pytań i miejsca stacji (ADR 0008 pkt 6).';
-  MailApp.sendEmail(email, temat, cialo);
-}
-
-/* ------------------------------------------------- strona przeglądu (HTML) */
-
-function esc(tekst) {
-  return String(tekst == null ? '' : tekst)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function stronaPrzegladu(param) {
-  const { sekret } = ustawienia();
-  if (!sekret || param.token !== sekret) {
-    return HtmlService.createHtmlOutput('<p>Brak ważnego tokena przeglądu.</p>');
-  }
-  const plik = plikPrzezId(param.id);
-  const zestaw = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
-  const paczka = odpakujKontener(zestaw.kontener);
-  const meta = zestaw.meta;
-  const sekcje = zestaw.stacje.map((stacja, i) => {
-    const pytania = (paczka.pytania || []).filter((p) => p.stacja === i + 1);
-    const wiersze = pytania.map((p) => {
-      const odpowiedzi = p.odpowiedzi.map((o, k) => '<li' + (k === p.poprawna ? ' style="color:#2f6f4f;font-weight:700"' : '') + '>' + esc(o) + (k === p.poprawna ? ' ✓' : '') + '</li>').join('');
-      const zrodla = (p.zrodla || []).map((z) => '<a href="' + esc(z.url) + '">' + esc(z.tytul) + '</a>').join(', ');
-      return '<h3>' + esc(p.id) + ' (' + esc(p.temat) + ')</h3><p>' + esc(p.tresc) + '</p><ul>' + odpowiedzi + '</ul>'
-        + '<p><em>' + esc(p.wyjasnienie) + '</em></p><p>Źródła: ' + zrodla + '</p>';
-    }).join('');
-    return '<section><h2>Stacja ' + (i + 1) + ': ' + esc(stacja.opis || '') + ' [' + Number(stacja.lat).toFixed(5) + ', ' + Number(stacja.lon).toFixed(5) + ']</h2>' + wiersze + '</section>';
-  }).join('');
-  const html = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<style>body{font-family:sans-serif;margin:16px;line-height:1.5}h1{font-size:20px}section{border-top:2px solid #2f6f4f;margin-top:16px;padding-top:8px}button{font-size:18px;padding:14px 22px;margin:8px 8px 8px 0;border-radius:10px;border:1px solid #444}</style>'
-    + '<h1>Paczka: ' + esc(meta.miejsce) + '</h1>'
-    + '<p>geohash ' + esc(meta.geohash5) + ' · ' + esc(meta.liczbaStacji) + ' stacji × ' + esc(meta.pytaniaNaStacje) + ' pytań · poziom ' + esc(meta.wiek) + ' · tematy: ' + esc(meta.tematy.join(', ')) + '<br>utworzono ' + esc(meta.data) + ' · autor: ' + esc(meta.autor) + ' · licencja ' + esc(meta.licencja) + '</p>'
-    + '<p><strong>Uwagi twórcy:</strong> ' + esc(paczka.uwagi || '') + '</p>'
-    + sekcje
-    + '<div><button onclick="google.script.run.withSuccessHandler(o=>document.body.innerHTML=\'<h1>✔ Zaakceptowano</h1><p>Paczka jest dostępna dla graczy.</p>\').zatwierdz(\'' + esc(param.id) + '\')">✔ Zaakceptuj</button>'
-    + '<button onclick="google.script.run.withSuccessHandler(o=>document.body.innerHTML=\'<h1>✘ Odrzucono</h1><p>Paczka trafiła do katalogu odrzuconych.</p>\').odrzuc(\'' + esc(param.id) + '\')">✘ Odrzuć</button></div>';
-  return HtmlService.createHtmlOutput(html).setTitle('Przegląd paczki');
-}
-
-/** Akcje ze strony przeglądu (google.script.run). */
-function zatwierdz(id) {
-  przenies(id, FOLDERY.zaakceptowane);
-  return 'zaakceptowano';
-}
-
-function odrzuc(id) {
-  przenies(id, FOLDERY.odrzucone);
-  return 'odrzucono';
+  const utworzony = folder(FOLDERY.zaakceptowane).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
+  return { ok: true, status: 'zaakceptowana', nazwa, id: utworzony.getId() };
 }
 
 function przenies(id, nazwaFolderu) {
@@ -639,7 +576,7 @@ function zapiszGre(plik, gra) { plik.setContent(JSON.stringify(gra, null, 2)); }
 
 function bledyGryKandydata(dane) {
   const bledy = [];
-  if (!dane || (dane.tryb !== 'wyscig' && dane.tryb !== 'tury')) bledy.push('tryb musi być „wyscig” albo „tury”');
+  if (!dane || (dane.tryb !== 'trasa' && dane.tryb !== 'wyscig')) bledy.push('tryb musi być „trasa” albo „wyscig”');
   const org = dane && dane.organizator;
   const pseudonim = org && typeof org.pseudonim === 'string' ? org.pseudonim.trim() : '';
   if (!pseudonim) bledy.push('pseudonim organizatora jest wymagany');
@@ -649,6 +586,16 @@ function bledyGryKandydata(dane) {
     || !Array.isArray(k.tematy) || !k.tematy.length || typeof k.miejsce !== 'string'
     || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
     bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5)');
+  }
+  // geohash8 (~40 m) to miara zasięgu ~50 m dla listy „Dołącz do gry”
+  // (właściciel, 2026-09-11) — pozycja hosta z chwili założenia gry.
+  if (k && (typeof k.geohash8 !== 'string' || k.geohash8.length !== 8)) {
+    bledy.push('konfiguracja wymaga geohash8 (8 znaków, pozycja hosta z chwili założenia)');
+  }
+  // trasaSekret: top-level Boolean, opcjonalny (domyślnie false) — gry sprzed
+  // m12-74 nie mają tego pola, app traktuje brak przy „trasa” jak sekret.
+  if (dane && dane.trasaSekret !== undefined && typeof dane.trasaSekret !== 'boolean') {
+    bledy.push('trasaSekret musi być true/false (jeśli jest)');
   }
   const z = dane && dane.zestaw;
   if (!z || !Array.isArray(z.stacje) || !z.stacje.length || !z.kontener
@@ -673,6 +620,7 @@ function zalozGre(dane) {
       kod,
       idGry: null,
       tryb: dane.tryb,
+      trasaSekret: dane.trasaSekret === true,
       stan: 'lobby',
       utworzono: teraz,
       organizatorId: 'g-1',
@@ -716,7 +664,7 @@ function listaGier() {
     const plik = pliki.next();
     try {
       const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
-      if (gra.schemat !== SCHEMAT_GRY || gra.stan === 'zakonczona' || gra.stan === 'archiwum') continue;
+      if (gra.schemat !== SCHEMAT_GRY || gra.stan !== 'lobby') continue; // po starcie nie ma dołączania (właściciel, 2026-09-11)
       if (gra.gracze.length >= MAKS_GRACZY) continue; // pełna — nie wisi w lobby
       wpisy.push({
         idGry: plik.getId(),
@@ -724,6 +672,7 @@ function listaGier() {
         stan: gra.stan,
         miejsce: gra.konfiguracja.miejsce,
         geohash5: gra.konfiguracja.geohash5,
+        geohash8: typeof gra.konfiguracja.geohash8 === 'string' ? gra.konfiguracja.geohash8 : '',
         wiek: gra.konfiguracja.wiek,
         tematy: gra.konfiguracja.tematy,
         liczbaGraczy: gra.gracze.length,
@@ -771,44 +720,12 @@ function startGryMulti(dane) {
   });
 }
 
-/**
- * Tury: stacja i (1-based) należy do gracza gracze[(i-1) % N] — kolejka jest
- * USTALONA przy starcie i nie przesuwa się; rezygnacja gracza POMIJA jego
- * stacje (moduł app/wieloosobowa.js ma identyczną logikę — pilnuje kontrakt).
- */
-function biezacyGraczTury(gra) {
-  const zamkniete = {};
-  const rezygnacje = {};
-  gra.zdarzenia.forEach((z) => {
-    if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true;
-    if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true;
-  });
-  const N = gra.gracze.length;
-  if (!N) return null;
-  for (let i = 1; i <= gra.konfiguracja.liczbaStacji; i += 1) {
-    if (zamkniete[i]) continue;
-    const wlasciciel = gra.gracze[(i - 1) % N];
-    if (rezygnacje[wlasciciel.id]) continue; // stacje rezygnującego są pomijane
-    return wlasciciel.id;
-  }
-  return null; // wszystkie stacje zamknięte albo pominięte
-}
-
 function czyKompletna(gra) {
   const N = gra.konfiguracja.liczbaStacji;
   const rezygnacje = {};
   gra.zdarzenia.forEach((z) => { if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true; });
-  if (gra.tryb === 'tury') {
-    const zamkniete = {};
-    gra.zdarzenia.forEach((z) => { if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true; });
-    const liczbaGraczy = gra.gracze.length;
-    if (!liczbaGraczy) return true;
-    for (let i = 1; i <= N; i += 1) {
-      const wlasciciel = gra.gracze[(i - 1) % liczbaGraczy];
-      if (!zamkniete[i] && !rezygnacje[wlasciciel.id]) return false; // stacja czeka na właściciela
-    }
-    return true;
-  }
+  // Wspólna Trasa i Wyścig domykają się tak samo: KAŻDY gracz zamyka wszystkie
+  // stacje (w trasie po kolei, w wyścigu w dowolnej kolejności) albo rezygnuje.
   return gra.gracze.every((g) => {
     if (rezygnacje[g.id]) return true;
     const stacje = {};
@@ -818,10 +735,11 @@ function czyKompletna(gra) {
 }
 
 /**
- * Premia za kolejność ukończenia (ADR 0027 część B pkt 5): pierwszy gracz, który
- * zamknął wszystkie stacje, dostaje G−1 punktów, drugi G−2, …, ostatni 0.
- * Kolejność z `kolejnosc` zdarzeń (nadawana w `zBlokada`), NIE z zegara
- * urządzenia. Rezygnujący i niedokończeni premii nie dostają.
+ * Premia za kolejność ukończenia (ADR 0027 część B pkt 5, aneks właściciela
+ * 2026-09-11): STAŁA — 3 pkt za 1. miejsce, 2 za 2., 1 za 3.; 4. i dalej: 0,
+ * niezależnie od liczby graczy. Kolejność z `kolejnosc` zdarzeń (nadawana w
+ * `zBlokada`), NIE z zegara urządzenia. Rezygnujący i niedokończeni premii
+ * nie dostają — ukończenie przed przedwczesnym końcem gry liczy się jak zwykle.
  *
  * Reguła jest KOPIĄ `premiaZaKolejnosc` z `app/wieloosobowa.js` — zgodność
  * pilnuje `test/most-gra.test.js`, który wykonuje ten tekst i porównuje wyniki.
@@ -850,7 +768,7 @@ function premiaZaKolejnosc(gra) {
     .map((g) => ({ id: g.id, koniec: ostatnia[g.id] || 0 }))
     .sort((a, b) => a.koniec - b.koniec);
   for (let i = 0; i < skonczeni.length; i += 1) {
-    const ile = gracze.length - (i + 1);
+    const ile = [3, 2, 1][i] || 0;
     if (ile > 0) premia[skonczeni[i].id] = ile;
   }
   return premia;
@@ -902,10 +820,6 @@ function przyjmijZdarzenie(dane) {
     if (z.typ === 'dojscie' || z.typ === 'odpowiedz') {
       const n = Number(z.stacjaId);
       if (!(n >= 1 && n <= gra.konfiguracja.liczbaStacji)) return { ok: false, blad: 'stacjaId poza zakresem gry (1–' + gra.konfiguracja.liczbaStacji + ')' };
-      if (gra.tryb === 'tury') {
-        const czyj = biezacyGraczTury(gra);
-        if (czyj !== z.graczId) return { ok: false, blad: 'teraz jest tura gracza ' + czyj + ' — poczekaj na swoją kolej' };
-      }
       if (z.typ === 'odpowiedz') {
         const byloDojscie = gra.zdarzenia.some((e) => e.typ === 'dojscie' && e.graczId === z.graczId && Number(e.stacjaId) === n);
         if (!byloDojscie) return { ok: false, blad: 'odpowiedź bez dojścia do tej stacji — niewłaściwa kolejność zdarzeń' };

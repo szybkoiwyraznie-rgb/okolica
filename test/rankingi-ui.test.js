@@ -19,7 +19,7 @@ function wiersz({ pseudonim, punkty, poprawne, bledne, miejsce, geohash5, wiek, 
 const WIERSZE = [
   wiersz({ pseudonim: 'Ala', punkty: 100, poprawne: 5, bledne: 1, miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', wiek: 'dorosli', tematy: ['historia', 'przyroda'] }),
   wiersz({ pseudonim: 'Bartek', punkty: 120, poprawne: 6, bledne: 0, miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', wiek: 'dorosli', tematy: ['historia'] }),
-  wiersz({ pseudonim: 'Ala', punkty: 60, poprawne: 3, bledne: 1, miejsce: 'Milanówek', geohash5: 'u3q9g', wiek: '15', tematy: ['przyroda'], tryb: 'tury', data: '2026-09-02T16:30:00.000Z' }),
+  wiersz({ pseudonim: 'Ala', punkty: 60, poprawne: 3, bledne: 1, miejsce: 'Milanówek', geohash5: 'u3q9g', wiek: '15', tematy: ['przyroda'], tryb: 'trasa', data: '2026-09-02T16:30:00.000Z' }),
   wiersz({ pseudonim: 'Celina', punkty: 80, poprawne: 4, bledne: 2, miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', wiek: 'dorosli', tematy: ['historia'] }),
 ];
 
@@ -127,7 +127,7 @@ test('„Moje gry": historia zakończonych gier własnego pseudonimu', async () 
   assert.equal(lista.hidden, false, 'lista widoczna');
   assert.equal(lista.children.length, 2, 'Ala ma dwie zakończone gry');
   assert.match(lista.children[0].textContent, /2026-09-01 10:00 · Podkowa Leśna · wyścig · 100 pkt · 5 poprawne, 1 błędne · 5 stacji/, 'wiersz historii z datą, miejscem, trybem i wynikiem');
-  assert.match(lista.children[1].textContent, /Milanówek · tury · 60 pkt/, 'druga gra: tury w Milanówku');
+  assert.match(lista.children[1].textContent, /Milanówek · wspólna trasa · 60 pkt/, 'druga gra: wspólna trasa w Milanówku');
 });
 
 test('puste rankingi i śmieciowa odpowiedź mostu są jawne (LESSONS L6)', async () => {

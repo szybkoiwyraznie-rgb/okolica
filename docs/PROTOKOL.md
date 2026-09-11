@@ -482,21 +482,29 @@ w aplikacji. Schematy `RO-*` nigdy nie miały pola `zgoda`.
 | `schemat` | `"RO-gra/1"` | stała |
 | `kod` | 6 znaków | alfabet `23456789ABCDEFGHJKLMNPQRSTUVWXYZ` (bez 0/O/1/I) |
 | `idGry` | string | id pliku Drive; lobby odsyła je graczom |
-| `tryb` | `"wyscig"` \| `"tury"` | wybrany przy założeniu, niezmienny |
+| `tryb` | `"trasa"` \| `"wyscig"` | wybrany przy założeniu, niezmienny |
+| `trasaSekret` | Boolean (opcjonalne) | własność gry (m12-74): mapa pokazuje tylko bieżącą stację; brak pola przy `trasa` = sekret (zgodność wstecz) |
 | `stan` | `lobby` \| `trwa` \| `zakonczona` \| `archiwum` | otwarta gra bez startu → `archiwum` po 24 h |
 | `utworzono` | ISO 8601 | |
 | `organizatorId` | `"g-1"` | założyciel; tylko on startuje i kończy przedwcześnie |
 | `gracze` | `[{id: "g-N", pseudonim, dolaczyl}]` | maks. 8, pseudonim ≤24 znaków, unikalny w grze |
-| `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza) |
+| `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5, geohash8}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza); `geohash8` (~40 m, pozycja hosta z chwili założenia) = miara zasięgu ~50 m listy „Dołącz" (m12-74); przy zakładaniu wymagany, przy odczycie opcjonalny (stare gry) |
 | `zestaw` | `{stacje, kontener TO-paczka/2, meta TO-zestaw/1}` | mapa gry + ukryte pytania (ADR 0007) |
 | `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
 | `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal, premia}}` | liczone przez most przy zamknięciu gry; `punkty` zawierają `premia` (ADR 0027 część B) |
 
-Reguły gry: dołączenie tylko w `lobby`; start tylko przez organizatora.
-**Tury**: stacja `i` (1-based) należy NA STAŁE do gracza `gracze[(i-1) % N]`
-— kolejka jest ustalona przy starcie i **nie przesuwa się**; rezygnacja gracza
-**pomija** jego stacje (nie zawęża kolejki — zawężenie przemapowałoby stacje
-między graczami w trakcie gry i rozjechałoby pytania z kontenera).
+Reguły gry: dołączenie tylko w `lobby` — **po starcie nowi gracze nie wchodzą**
+(właściciel, 2026-09-11; `listaGier` zwracza wyłącznie `stan: "lobby"`);
+start tylko przez organizatora (żeby wystartowała, gra potrzebuje tylko
+organizatora — **solo dozwolone**, właściciel 2026-09-11); **host może
+zakończyć grę przed czasem** (`gra-zakoncz`, tylko organizator) — u wszystkich
+podsumowanie i ranking, a premie za kolejność liczą się też przy takim końcu.
+**Wspólna Trasa** (`trasa`) i **Wyścig na Orientację** (`wyscig`): w obu KAŻDY
+gracz przechodzi wszystkie stacje (w trasie po kolei, w wyścigu w dowolnej
+kolejności), a gra domyka się, gdy wszyscy aktywni (niezrezygnowani) zamkną
+swoje stacje. Punktacja wspólna: 1 pkt za dobrą odpowiedź + premia za
+kolejność ukończenia (ADR 0027 część B). Polling w grze co 30 s, w lobby
+co 10 s (właściciel, 2026-09-11).
 
 **Wyścig (ADR 0027 część B — wolna kolejność)**: każdy gracz idzie do
 WSZYSTKICH stacji w **dowolnej kolejności**, na swoim telefonie i bez
@@ -508,10 +516,12 @@ bez składnika czasowego (ADR 0023 pkt 1). Gra kończy się, gdy każdy
 niezrezygnowany gracz odpowiedział na wszystkich stacjach, ALBO gdy organizator
 zakończy ją przed czasem.
 
-**Premia za kolejność ukończenia**: pierwszy gracz, który zamknął wszystkie
-stacje, dostaje `G − 1` punktów, drugi `G − 2`, …, ostatni 0 (G = liczba
-graczy). Kolejność bierze się z `kolejnosc` zdarzeń nadawanej przez most, nie
-z zegara urządzenia. Rezygnujący i gracze niedokończeni premii nie dostają.
+**Premia za kolejność ukończenia** (aneks właściciela 2026-09-11): STAŁA —
+**3 pkt za 1. miejsce, 2 pkt za 2., 1 pkt za 3.**; 4. i dalsi: 0,
+niezależnie od liczby graczy. Kolejność bierze się z `kolejnosc` zdarzeń
+nadawanej przez most, nie z zegara urządzenia. Rezygnujący i gracze
+niedokończeni premii nie dostają — ale ukończenie wszystkich stacji PRZED
+przedwczesnym końcem gry (host, `gra-zakoncz`) premię zachowuje.
 Premia wchodzi do `punkty` dopiero w podsumowaniu (`stan: zakonczona`) —
 częściowy wynik jej nie pokazuje, żeby nie sugerować punktów, których jeszcze
 nie ma.
@@ -529,8 +539,7 @@ nie ma.
   dodatkowo kasuje pola `lat/lon/szerokosc/dlugosc/latitude/longitude`
   (ADR 0013/0019 pkt 3 — współrzędne gracza NIGDY).
 - Most waliduje SPÓJNOŚĆ (nie zaufanie): gra musi trwać, gracz istnieć,
-  w turach `biezacyGraczTury(gra) === graczId` (odmowa: „teraz jest tura
-  gracza g-N"), `dojscie` przed `odpowiedz` na danej stacji, bez duplikatów,
+  `dojscie` przed `odpowiedz` na danej stacji, bez duplikatów,
   `stacjaId` w zakresie `1..liczbaStacji`. Odmowa wraca jako `{ok:false, blad}`
   i NIE jest ponawiana przez `app/sync.js` (awaria sieci — przeciwnie: ląduje
   w kolejce offline i wychodzi FIFO po powrocie połączenia).
@@ -538,9 +547,13 @@ nie ma.
 ### 9.3 `RO-lobby/1` i `RO-ranking/1`
 
 - `RO-lobby/1`: `{ schemat, wpisy: [{ idGry, tryb, stan, miejsce, geohash5,
-  wiek, tematy, liczbaGraczy, utworzono, organizator }] }` — BEZ kodów i BEZ
-  zestawów (prywatność otwartych gier); aplikacja filtruje po geohash5
-  pozycji + 8 sąsiadach (`filtrujLobby`) i dołącza przez `idGry`.
+  geohash8, wiek, tematy, liczbaGraczy, utworzono, organizator }] }` — BEZ
+  kodów i BEZ zestawów (prywatność otwartych gier); most zwracza WYŁĄCZNIE
+  gry w stanie `lobby` (po starcie nie ma dołączania, właściciel 2026-09-11),
+  a aplikacja filtruje po **geohash8** pozycji + sąsiadach (~50 m od hosta,
+  `filtrujLobby`; fallback geohash5 dla starych mostów) i dołącza przez
+  `idGry`. Wpis w UI pokazuje tylko „Host: <organizator>" — bez miejsca,
+  trybu i licznika graczy.
 - `RO-ranking/1`: `{ schemat, wiersze: [{ pseudonim, punkty, poprawne, bledne,
   czasOdcinkowMs, stacjeZamkniete, data, tryb, miejsce, geohash5, wiek,
   tematy }] }` — surowe wiersze z gier zakończonych (rezygnacja bez wyniku nie
@@ -560,7 +573,7 @@ nie ma.
 | R01 | Stan gry nie jest poprawnym JSON-em. |
 | R02 | To nie jest gra schematu `RO-gra/1` (inna wersja aplikacji). |
 | R03 | Kod gry niepoprawny (6 znaków z alfabetu bez 0, O, 1, I). |
-| R04 | Tryb gry nieznany (oczekiwano `wyscig` albo `tury`). |
+| R04 | Tryb gry nieznany (oczekiwano `trasa` albo `wyscig`). |
 | R05 | Stan gry nieznany (lobby / trwa / zakonczona / archiwum). |
 | R06 | Gra nie ma graczy — stan uszkodzony. |
 | R07 | Konfiguracja gry niekompletna. |

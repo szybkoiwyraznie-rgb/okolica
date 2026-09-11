@@ -589,3 +589,30 @@ test sprawdza geograficzny round-trip dla obu orientacji i wszystkich podkładó
 **Przy diagnozie „mapa pusta, a zoom-out ją przywraca”:** najpierw sprawdź,
 CO WIDZI TELEFON (wersja budowy w stopce), potem cache — a nie tylko kod:
 błąd w cache klienta przeżywa poprawki w repo.
+
+
+## L45 — zmiana kanonu wyboru = zmiana jego domyślnego zaznaczenia (i asercji z datą)
+
+**Objaw:** (weryfikacja na żywo PR #8, 2026-09-10) ADR 0034 usunął Sport
+i Jedzenie z nowego setupu i dodał Ciekawostki, ale `DOMYSLNE.tematy` —
+lista domyślnego zaznaczenia i fallback pustych tematów — została przy
+starym kanonie 10 tematów. Efekt: migracja starego zapisu, z którego po
+filtrze nie zostaje żaden temat (np. `tematy: ['sport']`), dostawała
+fallback ze usuniętymi tematami; organizator nie widział ich w UI (brak
+chipów), a prompt i E16 wymagały pytań ze sportu i jedzenia — każda paczka
+zgodna z nowym setupem byłaby odrzucona. Ciekawostki nigdy nie były
+domyślnie zaznaczone.
+
+**Przyczyna:** zmiana kanonu dotknęła dwie stałe, a edycja objęła jedną
+(`TEMATY_SETUP` nowa, `DOMYSLNE.tematy` stara). Test betonujący starą listę
+(`deepEqual(k.tematy, [...stary kanon], 'decyzja z 2026-09-07')`) przeszedł,
+bo porównywał funkcję z jej własną stałą — asercja potwierdza każdą listę,
+którą funkcja zwraca, i nie widzi niespójności między stałymi w kodzie.
+
+**Reguła:** przy zmianie kanonu wyboru (ADR) przeszukać wszystkie stałe, które
+trzymają jego elementy: kanon odczytu, kanon setupu ORAZ domyślne
+zaznaczenie/fallback — i każdą asercję z komentarzem-datą decyzji („decyzja
+z RRRR-MM-DD"): data w asercji to flaga „przeglądnij mnie przy następnej
+zmianie kanonu". Fallback pustych tematów liczony z tej samej stałej co
+domyślne zaznaczenie (jedno źródło prawdy), a regresja brzegowa (wszystkie
+tematy wypadają w filtrze) ma własny test.

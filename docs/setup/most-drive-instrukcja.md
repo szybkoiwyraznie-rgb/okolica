@@ -5,10 +5,13 @@
 > zapasową dla przyszłych sesji).
 
 Cel: JEDEN web app na Twoim wydzielonym koncie Google obsługuje trzy rzeczy
-(ADR 0016/0018/0019): (1) zestawy pytań po grze same trafiają na Drive, Ty
-akceptujesz je jednym kliknięciem z e-maila, a gracze pobierają wyłącznie
-zaakceptowane; (2) gry wieloosobowe na wielu urządzeniach — lobby, kody,
-wyścig i tury, stan gry na Drive; (3) rankingi z zakończonych gier. Aplikacja
+(ADR 0016/0018/0019): (1) zestawy pytań po grze same trafiają na Drive —
+OD RAZU do katalogu zaakceptowanych, bez sesji przeglądu i bez maili
+(decyzja właściciela 2026-09-11); o jakości paczek rozstrzygają łapki
+graczy (ADR 0028), a niechcianą paczkę wyłączasz z obiegu ręcznie,
+przeciągając plik do katalogu odrzuconych; (2) gry wieloosobowe na wielu
+urządzeniach — lobby, kody, Wspólna Trasa i Wyścig na Orientację, stan gry
+na Drive; (3) rankingi z zakończonych gier. Aplikacja
 nie zna żadnych haseł ani kluczy — zna tylko adres web app, który poniżej
 skopiujesz i podasz w czacie: trafi do kodu aplikacji (ADR 0020), więc żadne
 urządzenie nie będzie go wpisywać ręcznie.
@@ -20,7 +23,7 @@ i przeglądarka z dostępem do aplikacji (może być telefon).
 
 1. Zaloguj się w przeglądarce na **wydzielone konto Google** (to samo, które
    ma być mostem do Drive).
-2. Katalogi (`okolica-paczki-do-przegladu`, `…-zaakceptowane`, `…-odrzucone`
+2. Katalogi (`okolica-paczki-zaakceptowane`, `okolica-paczki-odrzucone`
    oraz `okolica-gry-otwarte`, `okolica-gry-zakonczone`) skrypt założy sam przy
    pierwszym uruchomieniu — nic nie klikaj w Drive.
 
@@ -30,20 +33,18 @@ i przeglądarka z dostępem do aplikacji (może być telefon).
 2. Usuń domyślną zawartość edytora i wklej cały plik
    `docs/setup/apps-script-repo-paczek.gs` z tego repozytorium.
 3. Zapisz (💾). Nazwij projekt np. „okolica-most" (paczki + gry).
-4. **Ustawienia projektu (ikona ⚙ po lewej) → Właściwości skryptu → Dodaj**:
-   - `OWNER_EMAIL` = Twój e-mail na tym koncie,
-   - `REVIEW_SECRET` = dowolny długi ciąg znaków (np. 20 losowych liter i cyfr;
-     to on chroni linki przeglądu — nie pokazuj go nikomu).
-5. W edytorze z listy funkcji wybierz `setup` → **Uruchom** → przy pierwszym
-   uruchomieniu Google poprosi o zgody dla skryptu (Drive, e-mail) — zaakceptuj
-   („Zezwól"). Funkcja założy pięć katalogów na Drive (trzy na paczki, dwa na gry).
+4. W edytorze z listy funkcji wybierz `setup` → **Uruchom** → przy pierwszym
+   uruchomieniu Google poprosi o zgody dla skryptu (Drive) — zaakceptuj
+   („Zezwól"). Funkcja założy cztery katalogi na Drive (dwa na paczki, dwa na
+   gry). Od 2026-09-11 skrypt NIE potrzebuje żadnych właściwości (czasy
+   przeglądu paczek z mailami minęły).
 
 ## 3. Wdrożenie web app
 
 1. Przycisk **Wdróż → Nowe wdrożenie** → typ: **Aplikacja internetowa**.
 2. „Wykonuj jako": **Ja**; „Kto ma dostęp": **Każdy użytkownik** (anonimowo) —
-   bez tego gracze nie pobiorą indeksu; dostęp chronią wyłącznie adres URL
-   i token przeglądu (świadoma decyzja prostoty, ADR 0016).
+   bez tego gracze nie pobiorą indeksu; dostęp chroni wyłącznie adres URL
+   (świadoma decyzja prostoty, ADR 0016).
 3. Skopiuj adres web app (kończy się na `/exec`).
 
 ## 4. Podłączenie aplikacji (ADR 0020: adres żyje w kodzie, nie w interfejsie)
@@ -76,30 +77,41 @@ Pola wpisywania adresu zostały z interfejsu usunięte decyzją właściciela.
 
 ## 5. Test końcowy paczek (kryterium M9b)
 
-1. Zagraj jedną grę z modelem (albo wklej gotową paczkę) i kliknij
-   „✓ Sprawdź i przyjmij" — pasek stanu powie „wysłano na Drive" (albo
-   dlaczego nie).
-2. Na Drive pojawi się plik w `okolica-paczki-do-przegladu`, a na Twoim
-   e-mailu wiadomość z linkiem „Podgląd i akceptacja".
-3. Otwórz link (telefon wystarczy): zobaczysz pytania z odpowiedziami,
-   wyjaśnieniami i źródłami → sprawdź źródła i miejsca stacji (ADR 0008 pkt 6)
-   → **✔ Zaakceptuj**.
-4. Drugi telefon (albo ten sam po czyszczeniu karty propozycji): setup
+1. Zagraj jedną grę z modelem (albo wklej gotową paczkę) — paczka przyjmuje
+   się sama po wklejeniu; pasek stanu powie „WYSŁANA na Drive: dostępna od
+   razu w zestawach" (albo dlaczego nie).
+2. Na Drive plik pojawi się OD RAZU w `okolica-paczki-zaakceptowane` —
+   żadnego maila i żadnego klikania akceptacji (decyzja 2026-09-11).
+   Chcesz podejrzeć pytania? Otwórz plik na Drive — pytania, odpowiedzi,
+   wyjaśnienia i źródła są w środku (kontrola należy do Ciebie, ale na
+   Twoich zasadach i w Twoim czasie).
+3. Drugi telefon (albo ten sam po czyszczeniu karty propozycji): setup
    kompatybilny (ta sama okolica, liczby stacji i pytań, poziom, tematy nie
    szersze) → karta pokaże paczkę z repozytorium → gra bez modelu.
+4. O jakości paczki rozstrzygają łapki graczy (👍👎 przy pytaniu, ADR 0028) —
+   statystyki widzi każdy przy wyborze paczki. Paczka Ci się nie podoba?
+   Przeciągnij plik do `okolica-paczki-odrzucone` — zniknie z indeksu
+   natychmiast.
 
-## 5b. Test końcowy gier wieloosobowych (kryterium M11/M12)
+## 5b. Test końcowy gier wieloosobowych (kryterium M11/M12, m12-74)
 
-Pełna checklista terenowa: `docs/WORKFLOW.md` §4.4 (8 punktów, dwa telefony).
+Pełna checklista terenowa: `docs/WORKFLOW.md` §4.4 (9 punktów, dwa telefony).
 Skrót:
 
-1. Telefon A: Ustawienia → rodzaj „wieloosobowa" → pseudonim →
-   „🌐 Załóż grę" → tryb, źródło paczki → „🚀 Zakładam" → zapisz kod z lobby.
-2. Telefon B: sam pseudonim (adres mostu jest w kodzie aplikacji — ADR 0020) →
-   „🔗 Dołącz" → wpisz kod (albo wybierz grę z listy „w okolicy") → oba
-   telefony widzą się w lobby.
+1. Telefon A: Ustawienia → rodzaj gry „📱 Wielu graczy" → „🚀 Zakładam nową
+   grę" → w „Kto gra?" wpisz swoje imię i PIN (dokładnie jeden gracz na
+   telefon) → tryb (Wspólna Trasa / Wyścig na Orientację) → „📍 Dalej" →
+   pozycja → pasująca paczka z propozycji (albo pełna ścieżka stacje →
+   wklejenie odpowiedzi modelu) → po paczce otwiera się **lobby**.
+   Start gry działa też solo (od 1 gracza).
+2. Telefon B (do ~50 m od A): rodzaj gry multi → „🚪 Dołączam do istniejącej"
+   → imię+PIN (adres mostu jest w kodzie aplikacji — ADR 0020) → „🔍 Pokaż
+   gry w okolicy" → lista pokazuje „Host: <imię A>" → „Dołącz" → oba telefony
+   widzą się w lobby (≤10 s). Kodów nie ma — po starcie dołączenie jest
+   niemożliwe.
 3. A: „▶ Start gry" → oboje: odcinek → dojście → pytanie → odpowiedź; tabela
-   wyników drugiego gracza odświeża się w ~12 s.
+   wyników drugiego gracza i kanał „Info z gry" odświeżają się co ~30 s.
+   A może w każdej chwili kliknąć „⏹ Zakończ grę (host)" — u obu podsumowanie.
 4. Po zakończeniu: nagłówek „🏆 rankingi" → ogólny / wiek / tematy /
    lokalizacja + „Moje gry".
 5. Na Drive w `okolica-gry-zakonczone` leży plik gry (kod w nazwie) — pełna
@@ -122,6 +134,14 @@ Skrót:
   zakończeniu pod wynikiem pojawi się „☁ Wynik jest na wspólnym Drive" (zapis
   jest domyślny, bez pytania o zgodę), a na Drive przybędzie plik
   `gra-hotseat-….json`; rankingi pokażą punkty tych pseudonimów.
+- Aktualizacja do listy ~50 m i premii 3/2/1 (m12-74, ADR 0019/0027 aneksy):
+  wklej nową treść `docs/setup/apps-script-repo-paczek.gs` i Wdróż → Nowa
+  wersja (funkcji `setup` uruchamiać nie trzeba). Zmiany: `gra-zaloz`
+  przyjmuje `trasaSekret` i wymaga `konfiguracja.geohash8`; akcja `listaGier`
+  (lobby) zwraca TYLKO gry w stanie `lobby` z `geohash8` we wpisach; akcja
+  `gra-zakoncz` pozwala hostowi domknąć grę przed czasem; premia to stała
+  3/2/1. Test: załóż grę z telefonu B obok — B widzi „Host: …" na liście
+  „w okolicy"; po starcie ta sama lista jest pusta.
 - Aktualizacja do kotwicy geohash6 (B19, ADR 0024 aneks) i premii za kolejność
   (ADR 0027 część B): wklej nową treść skryptu i Wdróż → Nowa wersja (funkcji
   `setup` uruchamiać nie trzeba). Test: otwórz `<adres>/exec?akcja=indeks` —
@@ -129,10 +149,36 @@ Skrót:
   `geohash6Szacowany: true`. Bez tego kroku stare paczki dalej dopasowują się
   zgrubnie (geohash5 ≈ 3 × 5 km), a wyniki gier nie zawierają premii
   za kolejność ukończenia (telefon pokazuje ją i tak — liczy ją aplikacja).
-- Link przeglądu wycieknie? Zmień `REVIEW_SECRET` we właściwościach skryptu
-  (stare linki przestaną działać).
-- Paczka omyłkowo zaakceptowana: na Drive przeciągnij plik z
-  `…-zaakceptowane` do `…-odrzucone` — zniknie z indeksu natychmiast.
+- **Aktualizacja do paczek bez akceptacji (decyzja właściciela 2026-09-11)**:
+  wklej nową treść `docs/setup/apps-script-repo-paczek.gs` i **Wdróż →
+  Zarządzaj wdrożeniami → Edytuj → Nowa wersja** (funkcji `setup` uruchamiać
+  nie trzeba). Potem sprzątnij Drive: jeśli w `okolica-paczki-do-przegladu`
+  czekają jeszcze jakieś pliki, przenieś je do
+  `okolica-paczki-zaakceptowane` (albo do `…-odrzucone`, jeśli nie chciesz
+  ich udostępniać) i skasuj pusty katalog `okolica-paczki-do-przegladu` —
+  nowy skrypt nigdy go nie założy. Właściwości skryptu `OWNER_EMAIL`,
+  `REVIEW_SECRET` i `URL_SERWISU` są zbędne — możesz je usunąć
+  (Ustawienia projektu → Właściwości skryptu). Od tej wersji paczki lądują
+  w zaakceptowanych od razu, bez maili.
+- Paczka do usunięcia z obiegu (jakość, błąd, duplikat okolicy): na Drive
+  przeciągnij plik z `…-zaakceptowane` do `…-odrzucone` — zniknie z indeksu
+  natychmiast. To Twoja ręczna kontrola jakości zamiast dawnej sesji
+  przeglądu.
+- **W `okolica-gry-zakonczone` leży mnóstwo plików `gra-hotseat-*`?**
+  (zgłoszenie 2026-09-11, drugie) Dwie przyczyny, obie naprawione w m12-67:
+  1) testy w repozytorium kończyły grę PRAWDZIWYM żądaniem na ten most —
+  CI ma pełny internet, więc każdy run testów dokładał pliki z grami
+  testowymi („Gracz 1/2/3", miejsce „nieznane miejsce"); od m12-67 testy
+  mają hermetyczną sieć i nie wychodzą na zewnątrz;
+  2) odświeżenie strony + „Wznów grę" ZAKOŃCZONEJ gry wysyłało wynik
+  drugi raz (każde wznowienie przesuwało znacznik startu gry, więc most
+  brał tę samą grę za nową) — od m12-67 wznowienie zakończonej gry nie
+  wysyła nic.
+  Sprzątanie: na Drive usuń zbędne pliki `gra-hotseat-*.json` — zostaw
+  po jednym dla RZECZYWISTYCH rozgrywek (testowe poznasz po graczy
+  „Gracz 1, Gracz 2, Gracz 3" i miejscu „nieznane miejsce"). Rankingi
+  liczą się z plików przy każdym otwarciu, więc po usunięciu śmieci
+  wyniki same się prostują.
 - Adres wyciekł albo ktoś nadużywa mostu (fałszywe paczki, śmieciowe gry,
   zużycie limitu): **Wdróż → Nowe wdrożenie** daje NOWY adres `/exec` — podaj
   go w czacie (nowy commit ze stałą `DOMYSLNY_URL_MOSTU`), a stare wdrożenie

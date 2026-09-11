@@ -52,8 +52,13 @@ export function tekstWykonywany() {
  * Uruchamia cały skrypt mostu z atrapą Drive. `getParents()` zwraca ŻYWĄ listę
  * rodziców (jak FolderIterator w Apps Script), więc `przenies()` jest testowane
  * tak, jak działa naprawdę.
+ *
+ * `urlSerwisu` parametryzuje atrapę `ScriptApp.getService().getUrl()` —
+ * domyślnie adres `/exec`; testy odporności linku przeglądu podają `/dev`
+ * albo adres starego wdrożenia (znane usterki Apps Scripta, zgłoszenie
+ * właściciela 2026-09-11: „Nie udało się otworzyć pliku…").
  */
-export function uruchomMost() {
+export function uruchomMost({ urlSerwisu = 'https://most.invalid/exec' } = {}) {
   const foldery = new Map();
   const pliki = new Map();
   let licznik = 0;
@@ -96,6 +101,10 @@ export function uruchomMost() {
     return {
       surowy: p,
       getId: () => p.id,
+      // jak DriveApp.File: getUrl prowadzi do pliku na Dysku (awaryjna droga
+      // przeglądu z maila), getName — do nazwy pliku
+      getName: () => p.nazwa,
+      getUrl: () => 'https://drive.example.invalid/file/d/' + p.id + '/view',
       getBlob: () => ({ getDataAsString: () => p.tresc }),
       setContent: (t) => { p.tresc = t; },
       getParents: () => iterator([...p.rodzice].map(apiFolder)),
@@ -138,7 +147,7 @@ export function uruchomMost() {
     HtmlService: {
       createHtmlOutput: (html) => ({ setTitle: () => ({ html }), html }),
     },
-    ScriptApp: { getService: () => ({ getUrl: () => 'https://most.invalid/exec' }) },
+    ScriptApp: { getService: () => ({ getUrl: () => urlSerwisu }) },
     Utilities: {
       base64Decode: (s) => Uint8Array.from(Buffer.from(s, 'base64')),
       newBlob: (bajty) => ({ getDataAsString: () => Buffer.from(bajty).toString('utf8') }),

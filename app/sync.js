@@ -4,7 +4,7 @@
  *
  * Zasady:
  * - polling stanu gry z interwałem zależnym od fazy (czysta `interwalPollingu`):
- *   lobby 10 s, wyścig 12 s, tury — bieżący gracz 10 s, czekający 30 s,
+ *   lobby 10 s, gra w toku 12 s (oba tryby — nikt na nikogo nie czeka),
  *   gra zakończona: zero (sygnał dla warstwy UI, żeby zatrzymać polling —
  *   `zaplanuj` celowo NIGDY nie zwraca 0, tylko awaryjne tempo lobby, bo
  *   jest też wołany bez świeżego stanu; zatrzymanie robi warstwa DOM po
@@ -12,27 +12,27 @@
  * - zdarzenia wychodzą POST-em `text/plain` natychmiast (bez preflightu CORS,
  *   wzorzec M9b); awaria SIECI dokłada zdarzenie do KOLEJKI offline, która
  *   wychodzi przy najbliższym udanym kroku (flush na `online` wystawia
- *   warstwa DOM); ODMOWA mostu (np. „to nie Twoja tura") NIE jest ponawiana
+ *   warstwa DOM); ODMOWA mostu NIE jest ponawiana
  *   — trafia jawnie do `onBlad` (LESSONS L6);
  * - wszystkie zależności (fetch, timery) są wstrzykiwalne — moduł testuje się
  *   bez przeglądarki i bez sieci.
  */
 
-import { biezacyGraczTury } from './wieloosobowa.js?v=m12-63';
-
 export const INTERWALY_MS = Object.freeze({
   lobby: 10_000,
-  wyscig: 12_000,
-  turyMoje: 10_000,
-  turyCzekam: 30_000,
+  // Właściciel, 2026-09-11 (odpowiedź 3A): w TRAKCIE gry odświeżamy co 30 s —
+  // kanał info (dojścia/odpowiedzi/rezygnacje) i żywe wyniki nie muszą
+  // być szybsze, a oszczędzamy baterię i limity mostu. Lobby bez zmian.
+  gra: 30_000,
 });
 
-/** Czysta decyzja: co ile ms odpytywać most o stan gry (0 = nie odpytywać). */
-export function interwalPollingu({ gra = null, graczId = null } = {}) {
+/** Czysta decyzja: co ile ms odpytywać most o stan gry (0 = nie odpytywać).
+ * Wspólna Trasa i Wyścig na Orientację pytają tak samo — w obu każdy gra
+ * we własnym tempie, więc nie ma tempa „czekającego”. */
+export function interwalPollingu({ gra = null } = {}) {
   if (!gra || gra.stan === 'zakonczona' || gra.stan === 'archiwum') return 0;
   if (gra.stan === 'lobby') return INTERWALY_MS.lobby;
-  if (gra.tryb === 'wyscig') return INTERWALY_MS.wyscig;
-  return biezacyGraczTury(gra) === graczId ? INTERWALY_MS.turyMoje : INTERWALY_MS.turyCzekam;
+  return INTERWALY_MS.gra;
 }
 
 /** Baza adresu mostu bez query/hash (web app URL bywa wklejony z ogonem). */

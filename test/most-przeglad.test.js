@@ -1,6 +1,8 @@
 /**
  * Przegląd całego mostu: KAŻDA funkcja z `.gs` zostaje wywołana choć raz, żeby
- * niezadeklarowany identyfikator nie przeżył do wdrożenia.
+ * niezadeklarowany identyfikator nie przeżył do wdrożenia. Od 2026-09-11 most
+ * nie ma sesji przeglądu paczek (decyzja właściciela) — poniżej strażnik,
+ * że procedura naprawdę znikła, a nie tylko „nie jest wołana".
  *
  * LESSONS L33: literówka `wZaakceptowanych` zamiast `wZaakceptowane` dała graczom
  * Z07 na paczce, która leżała w katalogu zaakceptowanych — przeżyła, bo żaden
@@ -14,7 +16,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { uruchomMost, zestawPrzykladowy, idPoNazwie } from './helpers/most.js';
+import { uruchomMost, zestawPrzykladowy, idPoNazwie, tekstOdpowiedzi } from './helpers/most.js';
 
 /**
  * Globalne nazwy środowiska Apps Script, których nie ma w Node. Atrapa
@@ -62,39 +64,39 @@ test('most: każda funkcja .gs daje się wywołać bez niezadeklarowanej nazwy',
   );
 });
 
-test('most: właściciel dostaje link, a strona przeglądu wymaga tokena i nie wykonuje HTML-a z danych paczki', () => {
-  const { most, pliki, wlasnosci, wyslaneMaile } = uruchomMost();
-  const zestaw = zestawPrzykladowy();
-  // Opis stacji i miejsce pochodzą spoza aplikacji (model / OSM / czyjaś ręka).
-  zestaw.stacje[0].opis = '<img src=x onerror="alert(1)">';
-  zestaw.meta.miejsce = 'Podkowa <script>alert(2)</script>';
+test('most: paczka ląduje w zaakceptowanych bez maila i bez strony przeglądu (decyzja właściciela 2026-09-11)', () => {
+  const { most, pliki, wyslaneMaile } = uruchomMost();
+  const przyjeta = most.przyjmijKandydata(zestawPrzykladowy());
+  assert.equal(przyjeta.ok, true, `przyjęcie: ${JSON.stringify(przyjeta)}`);
+  assert.equal(przyjeta.status, 'zaakceptowana', 'status mówi wprost: zaakceptowana od razu');
 
-  const przyjeta = most.przyjmijKandydata(zestaw);
-  assert.equal(przyjeta.ok, true, `przyjęcie do przeglądu: ${JSON.stringify(przyjeta)}`);
+  // Plik leży w zaakceptowanych — z niego indeks i pobranie.
   const idPliku = idPoNazwie(pliki, przyjeta.nazwa);
+  const rodzice = [...pliki.get(idPliku).rodzice].map((f) => f.nazwa);
+  assert.ok(rodzice.includes('okolica-paczki-zaakceptowane'), `plik od razu w katalogu zaakceptowanych (rodzice: ${rodzice.join(', ')})`);
 
-  // Powiadomienie: bez niego właściciel nie wie, że ma co przeglądać.
-  assert.equal(wyslaneMaile.length, 1, 'właściciel dostaje jednego maila');
-  assert.equal(wyslaneMaile[0].adres, wlasnosci.get('OWNER_EMAIL'), 'mail idzie na adres właściciela');
-  const link = String(wyslaneMaile[0].tresc).match(/https?:\/\/\S+/);
-  assert.ok(link, 'w mailu jest link do przeglądu');
-  const token = new URL(link[0]).searchParams.get('token');
-  assert.equal(token, wlasnosci.get('REVIEW_SECRET'), 'link niesie token przeglądu');
+  // Żadnych maili — właściciel przegląda katalogi sam, gdy chce.
+  assert.equal(wyslaneMaile.length, 0, 'właściciel NIE dostaje maila o paczce');
 
-  // Bez tokena strona nie pokazuje nic — przegląd nie jest publiczny.
-  const bezTokena = String(most.doGet({ parameter: { akcja: 'przeglad', id: idPliku } }).html);
-  assert.match(bezTokena, /Brak ważnego tokena/, 'przegląd bez tokena jest odmówiony');
-  const zlyToken = String(most.doGet({ parameter: { akcja: 'przeglad', token: 'cudzy', id: idPliku } }).html);
-  assert.match(zlyToken, /Brak ważnego tokena/, 'cudzy token nie otwiera przeglądu');
+  // Strona przeglądu i akcje zatwierdzania zniknęły z mostu całkowicie.
+  const odp = most.doGet({ parameter: { akcja: 'przeglad', token: 'cokolwiek', id: idPliku } });
+  assert.match(JSON.parse(odp.tekst).blad, /nieznana akcja/, 'akcja=przeglad już nie istnieje');
+  for (const fn of ['stronaPrzegladu', 'zatwierdz', 'odrzuc', 'powiadomWlasciciela', 'urlSerwisu', 'ustawienia']) {
+    assert.equal(typeof most[fn], 'undefined', `funkcja ${fn} zniknęła z mostu`);
+  }
 
-  const html = String(most.doGet({ parameter: { akcja: 'przeglad', token, id: idPliku } }).html);
-  assert.ok(html.length > 200, 'strona przeglądu jest wygenerowana');
-  assert.ok(html.includes(idPliku), 'strona niesie id pliku — z niego właściciel klika akceptację');
+  // Ręczne odrzucenie (przeciągnięcie na Drive) wyłącza paczkę z indeksu.
+  most.przenies(idPliku, 'okolica-paczki-odrzucone');
+  const poOdrzuceniu = JSON.parse(tekstOdpowiedzi(most.budujIndeks()));
+  assert.equal(poOdrzuceniu.wpisy.length, 0, 'odrzucona ręcznie paczka znika z indeksu');
+});
 
-  // LESSONS L34 po stronie mostu: dane paczki są tekstem, nie znacznikami.
-  assert.equal(html.includes('<img src=x'), false, 'wstrzyknięty <img> nie może powstać na stronie');
-  assert.equal(html.includes('<script>alert(2)'), false, 'wstrzyknięty <script> nie może powstać na stronie');
-  assert.ok(html.includes('&lt;img'), 'znacznik jest pokazany jako tekst (ucieczka HTML)');
-  assert.ok(html.includes('&lt;script&gt;'), 'miejsce z <script> jest pokazane jako tekst');
-  assert.ok(html.includes('Pytanie 1?'), 'treść pytania jest widoczna do przeglądu');
+test('most: powtórna wysyłka odrzuconej ręcznie paczki nie tworzy nowego pliku', () => {
+  const stan = uruchomMost();
+  const przyjeta = stan.most.przyjmijKandydata(zestawPrzykladowy());
+  stan.most.przenies(przyjeta.id, 'okolica-paczki-odrzucone');
+  const druga = stan.most.przyjmijKandydata(zestawPrzykladowy());
+  assert.equal(druga.ok, true, 'duplikat nie jest błędem');
+  assert.equal(druga.status, 'juz-w-odrzuconych', 'odrzucenie właściciela obowiązuje dalej — nowy plik nie powstaje');
+  assert.equal(druga.id, przyjeta.id, 'ten sam identyfikator pliku');
 });

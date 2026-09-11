@@ -121,8 +121,9 @@ Ponadto:
 - **Zero sekretów w repo.** Wymiana z modelem przez schowek (ADR 0006); nie
   commituj kluczy, tokenów ani danych graczy. Adres mostu Drive jest **publicznym
   punktem końcowym, nie sekretem** — stąd stała `DOMYSLNY_URL_MOSTU` w kodzie
-  (ADR 0020). Sekrety mostu (`REVIEW_SECRET`, `OWNER_EMAIL`) WYŁĄCZNIE
-  w Script Properties — nigdy w repo.
+  (ADR 0020). Od 2026-09-11 most nie ma żadnych sekretów — procedura
+  przeglądu paczek (token, mail, strona akceptacji) zniesiona decyzją
+  właściciela.
 - **Współrzędne gracza nie opuszczają urządzenia inaczej niż przez zapytania
   do dostawców map/danych wymienionych w `docs/ASSETS.md`** (ADR 0013). Zero
   analityki, zero ciasteczek, zero zewnętrznych skryptów.

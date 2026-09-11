@@ -85,8 +85,8 @@ test('most: indeks sam liczy kotwicę ze stacji, gdy paczka nie ma geohash6 (B19
   assert.equal(zestaw.meta.geohash6, undefined, 'fixture bez kotwicy — jak paczka sprzed B19');
 
   const przyjeta = mostSwiezy.przyjmijKandydata(zestaw);
-  assert.equal(przyjeta.ok, true, `przyjęcie do przeglądu: ${JSON.stringify(przyjeta)}`);
-  assert.equal(mostSwiezy.zatwierdz(idPoNazwie(pliki, przyjeta.nazwa)), 'zaakceptowano');
+  assert.equal(przyjeta.ok, true, `przyjęcie: ${JSON.stringify(przyjeta)}`);
+  assert.equal(przyjeta.status, 'zaakceptowana', 'od 2026-09-11 paczka jest w zaakceptowanych od razu');
 
   const indeks = walidujIndeksSurowy(JSON.stringify(mostSwiezy.budujIndeks()));
   assert.deepEqual(indeks.usterki, [], 'indeks bez usterek');

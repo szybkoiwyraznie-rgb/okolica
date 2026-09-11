@@ -15,8 +15,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
-  BAZA_ODPOWIEDZI_TOKENY, PROG_ODPOWIEDZI_TOKENY, TOKENY_NA_PYTANIE,
-  odwrocPolaPaczki, parsujOdpowiedzModela, szacunekOdpowiedzi, walidujPaczke,
+  odwrocPolaPaczki, parsujOdpowiedzModela, walidujPaczke,
   zbudujPrompt, SZABLON_WERSJA,
 } from '../app/protokol.js';
 import { zapakujPaczke } from '../app/kodowanie.js';
@@ -117,21 +116,3 @@ test('B21: kontener 40 pytań mieści się w budżetach pamięci z ogromnym zapa
   assert.ok(bajty < BUDZET_ZESTAWOW_BAJTY * 0.05, `budżet rejestru ${BUDZET_ZESTAWOW_BAJTY}: ${bajty}`);
 });
 
-test('B21: szacunek odpowiedzi zgadza się z pomiarem (±20%) i ostrzega powyżej progu', () => {
-  for (const [stacji, naStacje] of [[5, 1], [5, 8]]) {
-    const tekst = odpowiedzModelu(stacji, naStacje);
-    const szacunek = szacunekOdpowiedzi(stacji * naStacje);
-    const znaki = new TextEncoder().encode(tekst).length;
-    const tokeny = liczTokeny(tekst);
-    assert.ok(Math.abs(szacunek.znaki - znaki) < znaki * 0.2,
-      `znaki: szacunek ${szacunek.znaki}, pomiar ${znaki}`);
-    assert.ok(Math.abs(szacunek.tokeny - tokeny) < tokeny * 0.2,
-      `tokeny: szacunek ${szacunek.tokeny}, pomiar ${tokeny}`);
-  }
-  // 40 pytań to ~8,4 tys. tokenów — wyraźnie ponad limit wyjścia części modeli,
-  // więc ekran promptu musi ostrzegać; 5 pytań (~1,1 tys.) nie.
-  assert.ok(szacunekOdpowiedzi(40).tokeny > PROG_ODPOWIEDZI_TOKENY);
-  assert.ok(szacunekOdpowiedzi(5).tokeny < PROG_ODPOWIEDZI_TOKENY);
-  assert.ok(BAZA_ODPOWIEDZI_TOKENY + TOKENY_NA_PYTANIE * 20 > PROG_ODPOWIEDZI_TOKENY,
-    'próg ostrzeżenia osiągalny w widełkach setupu (20 pytań)');
-});

@@ -171,7 +171,10 @@ export function kanonicznyTemat(temat) {
 }
 
 /** Języki treści pytań (interfejs jest zawsze po polsku — ADR 0011 pkt 8). */
-export const JEZYKI = { polski: 'polski', angielski: 'angielski', niemiecki: 'niemiecki', ukrainski: 'ukraiński' };
+/** Język pytań jest HARDKODOWANY (właściciel, 2026-09-11): polski, bez pola
+ * w setupie i bez wyboru w jakimkolwiek trybie. Zostaje w konfigu jako
+ * wartość, bo prompt i meta paczki niosą go dalej. */
+export const JEZYK_GRY = 'polski';
 
 /** Podkłady mapy — klucze muszą się zgadzać z `docs/ASSETS.md` §1 (ADR 0003). */
 export const PODKLADY = {
@@ -201,7 +204,12 @@ export const DOMYSLNE = {
   liczbaStacji: 5,
   pytaniaNaStacje: 1,
   czasGryMin: 60, // planowany czas gry; promień jest z niego liczony (ADR 0025)
-  tematy: ['historia', 'przyroda', 'architektura', 'kultura', 'legendy', 'ludzie', 'nauka', 'sport', 'jedzenie', 'geografia'],
+  // Domyślne zaznaczenie = wszystkie tematy NOWEGO setupu, alfabetycznie
+  // (ADR 0034, 2026-09-10): z Ciekawostkami, bez usuniętych Sportu/Jedzenia
+  // i bez `wlasny` („Dopisz sam" wymaga tekstu organizatora). Ta lista jest
+  // też fallbackiem pustych tematów w `oczyscKonfiguracje` i w
+  // `konfiguracjaNowegoSetupu` — usunięte tematy nie mogą przez nią wracać.
+  tematy: ['architektura', 'ciekawostki', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda'],
   tematWlasny: '', // tekst organizatora dla tematu `wlasny` (niezaznaczony domyślnie)
   wiek: 'dorosli',
   jezyk: 'polski',
@@ -368,11 +376,16 @@ export function oczyscKonfiguracje(surowa) {
   const domyslne = domyslnaKonfiguracja(zrodlo.liczbaGraczy);
   const konfig = { ...domyslne };
 
-  // pola wybierane z kanonu: klucz musi istnieć, inaczej default
-  const kanony = { tryb: TRYBY, wiek: WIEK, podklad: PODKLADY, jezyk: JEZYKI };
+  // pola wybierane z kanonu: klucz musi istnieć, inaczej default.
+  // Język (polski) i podkład (OSM) są hardkodowane od 2026-09-11 — stary
+  // zapis z inną wartością jest po cichu przepisany na stałą (właściciel:
+  // „nie jest to potrzebne w żadnym trybie").
+  const kanony = { tryb: TRYBY, wiek: WIEK };
   for (const [pole, kanon] of Object.entries(kanony)) {
     if (Object.hasOwn(kanon, zrodlo[pole])) konfig[pole] = zrodlo[pole];
   }
+  konfig.jezyk = JEZYK_GRY;
+  konfig.podklad = 'osm';
 
   // liczby: skończone i w widełkach (poza widełkami zostawiamy walidujSetup —
   // tu chodzi tylko o wartości, które rozsadziłyby renderowanie)
@@ -428,8 +441,8 @@ export function walidujSetup(konfig) {
 
   if (!TRYBY[konfig.tryb]) dodaj('K02', 'tryb', `Nieznany tryb „${konfig.tryb}". Wybierz pieszą, rowerową albo samochodową.`);
   if (!WIEK[konfig.wiek]) dodaj('K03', 'wiek', `Nieznana kategoria wiekowa „${konfig.wiek}".`);
-  if (!JEZYKI[konfig.jezyk]) dodaj('K04', 'jezyk', `Nieznany język pytań „${konfig.jezyk}".`);
-  if (!PODKLADY[konfig.podklad]) dodaj('K06', 'podklad', `Nieznany podkład mapy „${konfig.podklad}".`);
+  // K04/K06 (język, podkład) usunięte 2026-09-11: wartości są hardkodowane
+  // (polski + OSM), więc nie da się ich ustawić źle.
 
   const { min: minG, max: maxG } = OGRANICZENIA.liczbaGraczy;
   if (!Number.isInteger(konfig.liczbaGraczy) || konfig.liczbaGraczy < minG || konfig.liczbaGraczy > maxG) {

@@ -98,3 +98,25 @@ Model docelowy, spójny z częścią A i z istniejącym protokołem RO-*:
 - Więcej pytań na stację = dłuższy prompt i dłuższa odpowiedź modelu (8 graczy
   × 5 stacji = 40 pytań) — limit znaków wklejenia i budżet promptu trzeba
   sprawdzić przy wdrożeniu części B (BACKLOG B20).
+
+## Aneks (2026-09-11): tryb „tury" usunięty — kolejność bez kolejki
+
+Część B mówiła o „turach bez listy wyboru" jako trzecim trybie. Właściciel
+przepisał tryby (ADR 0019 aneks 2026-09-11): „tury" zniknęły, a ich miejsce
+zajęła **Wspólna Trasa** (`trasa`) — też bez listy wyboru, ale bez
+przypisywania stacji do graczy: KAŻDY przechodzi WSZYSTKIE stacje PO KOLEI
+we własnym tempie. Punktacja i premia za kolejność ukończenia — bez zmian
+(premia jest trybo-agnostyczna od początku). Wyścig na Orientację
+(dawny `wyscig`) zostaje: dowolna kolejność, lista wyboru, per-gracz pytanie.
+
+## Aneks (2026-09-11, m12-74): stała premia 3/2/1 za kolejność ukończenia
+
+Część B pkt 5 mówiła o premii zależnej od liczby graczy (pierwszy G−1, …,
+ostatni 0). Właściciel zastąpił ją **stałą**: **3 pkt za 1. miejsce, 2 pkt
+za 2., 1 pkt za 3.** — 4. i dalsi: 0, niezależnie od liczby graczy.
+Zasady bez zmian: kolejność z `kolejnosc` zdarzeń mostu (nie z zegara
+urządzeń), rezygnujący i niedokończeni bez premii, a **ukończenie wszystkich
+stacji PRZED przedwczesnym końcem gry liczy się jak zwykle** — host kończący
+grę przyciskiem nie odbija premii tym, którzy zdążyli. Reguła jest w dwóch
+miejscach (`app/wieloosobowa.js` i `.gs`) i pilnuje jej `test/most-gra.test.js`
+(wykonuje tekst mostu) oraz `test/wieloosobowa.test.js`.

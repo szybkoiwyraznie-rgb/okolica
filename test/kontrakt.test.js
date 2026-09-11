@@ -249,7 +249,7 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
   for (const id of dolaczone) zadane.add(id);
   // ekrany budowane z listy EKRANY: `ekran-${e}` — sprawdzamy wszystkie warianty
   for (const ekran of ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka']) zadane.add(`ekran-${ekran}`);
-  for (const panel of ['zaloz', 'dolacz', 'lobby']) zadane.add(`multi-panel-${panel}`); // M11: panele budowane z listy
+  for (const panel of ['dolacz', 'lobby']) zadane.add(`multi-panel-${panel}`); // m12-74: panelu „zaloz” nie ma
   assert.ok(zadane.size > 25, `znaleziono tylko ${zadane.size} identyfikatorów — test pewnie nie widzi kodu`);
   // ADR 0029: ręcznego zgłaszania dojścia nie ma nigdzie — ani w index.html,
   // ani w app.js. Wyjątków od tej reguły nie ma: każdy id wołany z aplikacji
@@ -313,10 +313,10 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
   assert.ok(symulacja, 'brak przycisku symulacji dojścia (M3)');
   assert.match(symulacja, /\bhidden\b/, 'symulacja tylko w trybie testowym');
 
-  const pierscien = INDEX.match(/<button id="przycisk-pierścien"[^>]*>/)?.[0];
-  assert.ok(pierscien, 'brak przycisku wymuszania trybu uproszczonego (M4)');
-  assert.match(pierscien, /aria-pressed="false"/, 'tryb uproszczony startuje niewymuszony');
-  assert.match(pierscien, /\bhidden\b/, 'widoczny dopiero gdy sieć jest pobrana');
+  // Właściciel 2026-09-11: przycisk „Tryb uproszczony" usunięty z UI —
+  // degradacja do pierścienia jest automatyczna i jawska (S03), a ręczne
+  // wymuszanie z nikim się nie konsultowało w terenie.
+  assert.equal(INDEX.includes('id="przycisk-pierścien"'), false, 'przycisk „Tryb uproszczony" usunięty z ekranu stacji');
 
   const reczne = INDEX.match(/<button id="przycisk-reczne"[^>]*>/)?.[0];
   assert.ok(reczne, 'brak przycisku trybu ręcznego (ADR 0005 pkt 8b)');
@@ -706,9 +706,21 @@ test('kontrakt M9b: wysyłka Drive jest domyślna — ekran wklejania nie pyta o
   assert.match(INDEX, /od razu zaczyna grę/, 'ekran mówi wprost: poprawna paczka = natychmiastowy start');
 });
 
-test('kontrakt M9b: „🔌 Sprawdź połączenie" żyje w karcie repozytorium (instrument CORS z ADR 0016)', () => {
-  assert.match(INDEX, /<button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie<\/button>/, 'przycisk próby mostu obecny');
-  assert.ok(INDEX.indexOf('id="przycisk-test-polaczenia"') > INDEX.indexOf('id="most-stan-repo"'), 'próba połączenia obok stanu mostu');
+test('kontrakt UI 2026-09-11: usunięte ozdobniki właściciela z testów terenowych', () => {
+  // (1a) wiersz o HTTPS na ekranie pozycji
+  assert.equal(INDEX.includes('Geolokalizacja działa tylko przez HTTPS'), false, 'wiersz o HTTPS/usługach usunięty');
+  // (1b) przycisk próby połączenia
+  assert.equal(INDEX.includes('id="przycisk-test-polaczenia"'), false, 'przycisk „Sprawdź połączenie" usunięty');
+  // (2'b) techniczny badge sprawiedliwości stacji
+  assert.equal(INDEX.includes('id="stacje-sprawiedliwosc"'), false, 'wiersz „sieciowo: pierścień … odstęp" usunięty');
+  // (3) szacunek rozmiaru odpowiedzi
+  assert.equal(INDEX.includes('id="prompt-rozmiar"'), false, 'linia „Odpowiedź modelu będzie miała około…" usunięta');
+  // (6) intro: nowe brzmienia i usunięte zdania
+  assert.match(INDEX, /gra terenowa gdziekolwiek jesteś/, 'podtytuł: „gra terenowa gdziekolwiek jesteś"');
+  assert.match(INDEX, /ruszasz dalej\./, 'zasada: „ruszasz dalej."');
+  assert.match(INDEX, /Grać można w pojedynkę, z rodziną i znajomymi na jednym telefonie albo każdy na swoim urządzeniu\./, 'zdanie o składzie gry (doprecyzowane 2026-09-11: też tryb hasełkowy na jednym telefonie)');
+  assert.equal(INDEX.includes('Potrzebujesz tylko zgody na dostęp do lokalizacji.'), false, 'zdanie o zgodzie usunięte z intro');
+  assert.equal(INDEX.includes('Przycisk wyżej otwiera ustawienia gry'), false, 'zdanie o przycisku/⚙ usunięte z intro');
 });
 
 test('kontrakt ADR 0020: adres mostu jest wpisany w kod, a UI nie ma pola do wpisywania', () => {
@@ -843,10 +855,23 @@ test('kontrakt ADR 0024 aneks: promień nie jest kryterium, a komunikat nazywa p
   assert.match(APP, /czyWOkolicy\(m, kryteria\)/, 'paczki z innych okolic nie są nawet liczone');
 });
 
-test('kontrakt M11: UI gry wieloosobowej — ekrany, pseudonim, bramki', () => {
-  // ekrany i panele (ADR 0019, plan M11/P4)
-  for (const id of ['ekran-multi', 'karta-multi', 'multi-panel-zaloz', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi', 'setup-rodzaj', 'multi-pseudonim', 'multi-most-stan']) {
+test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kodów i źródeł', () => {
+  // ekrany i panele (ADR 0019; m12-74: przepisany flow właściciela)
+  for (const id of [
+    'ekran-multi', 'karta-multi', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi',
+    'multi-most-stan', 'multi-wznowienie',
+    // segmenty na setupie: rodzaj gry, ścieżka multi, tryb + trasa-sekret
+    'lista-rodzajow', 'rodzaj-opis', 'multi-sciezka', 'multi-sciezka-opis',
+    'pole-multi-tryb', 'multi-tryby', 'multi-tryb-opis', 'pole-trasa-sekret', 'multi-trasa-sekret', 'multi-punktacja',
+    // kanał info w grze + koniec gry z ręki hosta
+    'multi-info', 'multi-info-lista', 'przycisk-multi-zakoncz',
+  ]) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
+  }
+  // usunięte w m12-74 (decyzje właściciela 2026-09-11): panel zakładania na
+  // ekranie multi, dołączanie kodem, pole pseudonimu, źródła paczek, kod w lobby
+  for (const id of ['multi-panel-zaloz', 'multi-kod', 'przycisk-dolacz-kod', 'multi-pseudonim', 'multi-zrodlo', 'przycisk-zaloz-gre', 'przycisk-multi-zaloz', 'przycisk-multi-dolacz', 'lobby-kod', 'setup-rodzaj', 'setup-jezyk', 'setup-podklad']) {
+    assert.ok(!INDEX.includes(`id="${id}"`), `#${id} zniknął z index.html (m12-74)`);
   }
   // Zgody na wysyłkę NIE pytamy przy każdej grze (właściciel, 2026-09-07):
   // gra na wielu telefonach z natury działa przez Drive, a opis jest w sekcji
@@ -855,18 +880,33 @@ test('kontrakt M11: UI gry wieloosobowej — ekrany, pseudonim, bramki', () => {
   assert.ok(!APP.includes('multi-zgoda'), 'kod nie czyta już pola zgody multi');
   assert.ok(!APP.includes('okolica:multi:zgoda'), 'klucz zgody multi zniknął');
   assert.match(INDEX, /Gra na wielu telefonach/, 'sekcja prywatność opisuje grę wieloosobową');
-  assert.match(APP, /Wpisz pseudonim/, 'bez pseudonimu jawna odmowa wysyłki (plan P4)');
-  assert.ok(APP.includes("'okolica:pseudonim'"), 'pseudonim utrwalany pod ustalonym kluczem (M12)');
+  // tożsamość = imię+PIN z bloku „Kto gra?” (właściciel, 2026-09-11, odpowiedź 1A)
+  assert.match(APP, /Wpisz swoje imię i PIN w bloku/, 'bez potwierdzonego imienia jawna odmowa');
+  assert.match(APP, /pseudonimGraczaMulti/, 'tożsamość multi to imię z setupu, nie osobne pole');
   // akcje mostu wołane z aplikacji istnieją w .gs (jedna lista prawdy);
   // gra-zdarzenie wysyła warstwa synchronizacji (app/sync.js), nie app.js wprost
   const SYNC = czytaj('app/sync.js');
-  for (const akcja of ['gra-zaloz', 'gra-dolacz', 'gra-start']) {
+  for (const akcja of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zakoncz']) {
     assert.ok(APP.includes(akcja), `app.js woła akcję ${akcja}`);
   }
   assert.ok(SYNC.includes('gra-zdarzenie'), 'sync.js wysyła zdarzenia akcją gra-zdarzenie');
-  // tury: lokalna bramka „nie Twoja tura" + serwer odmawia (R08 po obu stronach)
-  assert.match(APP, /Teraz idzie:/, 'komunikat czyjej tury w UI');
+  // tryby (właściciel, 2026-09-11): Wspólna Trasa i Wyścig na Orientację,
+  // punktacja wspólna — zdanie o niej raz, w index.html (bez dublowania)
+  assert.match(APP, /Wspólna Trasa/, 'UI nazywa tryb Wspólna Trasa');
+  assert.match(APP, /Wyścig na Orientację/, 'UI nazywa tryb Wyścig na Orientację');
+  assert.match(INDEX, /Punktacja w obu trybach/, 'wspólne zdanie o punktacji w index.html');
+  assert.match(INDEX, /3 pkt za 1\. miejsce, 2 pkt za 2\., 1 pkt za 3\./, 'premia 3/2/1 w zdaniu o punktacji');
+  assert.ok(!INDEX.includes('Na serwer jadą wyłącznie pseudonimy'), 'zdanie o tym, co jedzie na serwer, usunięte (właściciel, 2026-09-11)');
+  // m12-74: po wklejeniu paczki otwiera się LOBBY (nie panel „Załóż grę”)
+  assert.match(APP, /multiPoPaczce/, 'fork multi po paczce: lobby, nie gra hot-seat');
+  assert.ok(!APP.includes('sciezkaAiMulti'), 'ścieżka AI jako osobny panel zniknęła — to zwykły setup');
+  assert.ok(!APP.includes('odswiezZrodlaMulti') && !APP.includes('zaladujZrodloMulti'), 'lista źródeł paczek multi usunięta');
+  assert.ok(!APP.includes('normalizujKod($'), 'dołączanie kodem usunięte (odpowiedź 4A)');
+  assert.ok(!APP.includes('biezacyGraczTury'), 'kolejki tur nie ma w aplikacji (tryb usunięty)');
   assert.match(APP, /przycisk-pomin-stacje'\)\.hidden = true/, 'w multi nie ma pomijania stacji (serwer zna tylko dojście/odpowiedź/rezygnację)');
+  // ~50 m po geohash8 hosta (właściciel, 2026-09-11)
+  assert.match(APP, /geohash8/, 'gra niesie geohash8 (zasięg ~50 m)');
+  assert.match(GS, /geohash8/, 'most zna geohash8');
 });
 
 test('kontrakt M12: rankingi liczy telefon, serwer oddaje surowe wiersze', () => {
@@ -955,10 +995,32 @@ test('kontrakt ADR 0028 aneks: ocenić można każdą paczkę, bo każda jest na
   assert.ok(APP.includes('idPaczkiDlaZestawu('), 'aplikacja odzyskuje identyfikator paczki z pamięci telefonu');
   assert.ok(APP.includes('zapamietajIdPaczkiDlaZestawu('), 'identyfikator jest zapamiętywany przy skrócie kontenera');
   assert.ok(APP.includes('okolica:paczki-drive'), 'mapa skrót → id paczki ma własny klucz w localStorage');
-  assert.match(GS, /nazwa === FOLDERY\.zaakceptowane \|\| nazwa === FOLDERY\.przeglad/,
-    'most przyjmuje głosy również dla paczek czekających na przegląd');
-  assert.match(GS, /status: 'przyjeta-do-przegladu', nazwa, id: utworzony\.getId\(\)/,
+  assert.match(GS, /return nazwa === FOLDERY\.zaakceptowane;/,
+    'most przyjmuje głosy dla paczek w zaakceptowanych (od 2026-09-11 bez katalogu przeglądu)');
+  assert.match(GS, /status: 'zaakceptowana', nazwa, id: utworzony\.getId\(\)/,
     'most oddaje id przyjętej paczki — bez niego telefon nie wie, co ocenia');
+});
+
+/**
+ * Decyzja właściciela 2026-09-11 (po fixie linku przeglądu z tego samego dnia):
+ * „W ogóle rezygnujemy z akceptowania paczek. Paczki od razu trafiają do
+ * zaakceptowane. O ich jakości decydują łapki w górę i w dół, nie jest
+ * potrzebna ta sesja sprawdzania właścicielskiego — to nic nie wnosi a tylko
+ * zajmuje czas. Usuwamy całą procedurę akceptacji. Usuwamy maile do
+ * właściciela o nowych paczkach."
+ */
+test('kontrakt decyzji 2026-09-11: akceptacja paczek zniknęła z mostu, paczki żyją od razu', () => {
+  assert.equal(GS.includes('MailApp'), false, 'most nie wysyła maili o paczkach');
+  assert.equal(GS.includes('stronaPrzegladu'), false, 'strona przeglądu zniknęła');
+  assert.equal(GS.includes('zatwierdz'), false, 'akcja zatwierdzania zniknęła');
+  assert.equal(GS.includes("przeglad: 'okolica-paczki-do-przegladu'"), false, 'katalog przeglądu zniknął z FOLDERY');
+  assert.equal(GS.includes('REVIEW_SECRET'), false, 'token przeglądu nie jest już potrzebny');
+  assert.equal(GS.includes('URL_SERWISU'), false, 'właściwość URL_SERWISU nie jest już potrzebna (link przeglądu zniknął)');
+  assert.match(GS, /folder\(FOLDERY\.zaakceptowane\)\.createFile/, 'paczka zapisuje się OD RAZU w zaakceptowanych');
+  // Aplikacja mówi prawdę o tym, co się stało z paczką.
+  assert.ok(APP.includes("wynik.status === 'zaakceptowana'"), 'aplikacja rozpoznaje status bezpośredniej akceptacji');
+  assert.ok(APP.includes('dostępna od razu w zestawach — jakość rozstrzygną łapki graczy'),
+    'status mówi o łapkach, nie o przeglądzie właściciela');
 });
 
 test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da się wyjść', () => {
@@ -991,9 +1053,10 @@ test('uwaga A1: ekran startowy ma duży, wyśrodkowany tytuł i rozwinięte intr
   assert.match(STYLE, /\.warstwa-start h1 \{[^}]*text-align: center/s, 'tytuł jest wyśrodkowany');
   assert.match(STYLE, /\.podtytul-start \{[^}]*text-align: center/s, 'podtytuł też');
   // Intro ma być dłuższe niż jedno zdanie — pinujemy liczbę akapitów, nie treść.
+  // Uwagi terenowe #2 (2026-09-11): akapit o zgodzie na lokalizację skrócony
+  // do wzmianki w podtytule („gdziekolwiek jesteś") — nie asertujemy go tu.
   const intro = INDEX.slice(INDEX.indexOf('warstwa-start-karta'), INDEX.indexOf('przycisk-start-zacznij'));
   assert.ok((intro.match(/<p[ >]/g) ?? []).length >= 4, 'intro ma co najmniej cztery akapity');
-  assert.ok(intro.includes('zgody na dostęp do lokalizacji'), 'intro uprzedza o zgodzie na lokalizację');
 });
 
 test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samodzielnie', () => {

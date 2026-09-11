@@ -2051,3 +2051,528 @@ z Informacji, dojście odsłania pytanie. Zero błędów JS. Próba z fixture,
 nie test GPS w terenie. Narzędzia/screenshoty poza repo w /home/user/.narzedzia.
 Przekazanie: ta sama gałąź i PR #8, bez merge. Preview na porcie 8000,
 odświeżyć do m12-63; sprawdzić pasek i dojście na telefonie.
+## Sesja 2026-09-10c — audyt PR #8 (gałąź arena/01a08d11-okolica)
+
+Audyt scalonego PR #8 (squash `5614019`, 42 pliki, +1420/−1538), plik po pliku:
+
+- **`app/geo.js`** — `progDojsciaM()` zwraca stałe 50 m (ADR 0034); `czyDotarl`
+  liczy dwa kolejne trafienia ≤ 50 m, pomiar poza progiem przerywa serię.
+  Zgodne z aneksem ADR 0034 (m12-58). Sygnatura traci parametr `accuracyM` —
+  spójnie z ADR 0034 pkt 2 („accuracy nie bierze udziału"), który zastępuje
+  filozofię „parametr zostaje na przyszłość" z aneksu ADR 0004.
+- **`app/pozycja.js`** — usunięte stany `niedokladny`/`bezDokladnosci`, kod P05
+  i pole `accuracyM` w wynikach; komunikaty odchudzone. Zgodne z ADR 0034 pkt 2
+  (stare pola dokładności tolerowane przy odczycie — zapisy nie są przeliczane).
+- **`app/konfig.js`** — `WIEK_SETUP` (7/12/dorośli), `TEMATY_SETUP`
+  (alfabetycznie, z Ciekawostkami, bez Sportu/Jedzenia) + 
+  `konfiguracjaNowegoSetupu` (10→12, 15→dorosli; usunięte tematy wypadają,
+  puste tematy wracają do domyślnych). Zgodne z ADR 0034 pkt 1; kanon odczytu
+  (WIEK/TEMATY) nietknięty — stare paczki i zapisy czytane dalej.
+- **`app/sieci.js`** — czwarta instancja Adikso (ADR 0035 aneks), limit 10 s
+  na próbę, QL 8 s, przełączanie po 403/404/406/429/5xx, 400 kończy;
+  zapamiętana sprawna instancja pierwsza. Zgodne z ADR 0035 + aneks m12-60.
+- **`app/mapa.js`** — `ustalibujWidok` przy clampie zoomu przelicza x/y wokół
+  środka panelu przez `zmienSkale` (jak gest) — naprawia dryf środka mapy
+  z audytu PR #7 / LESSONS L44. Podpis wymaga `rozmiar`; wywołanie w `rysuj()`
+  przekazuje `stan.rozmiar`.
+- **`sw.js`** — `czyTrafSieDoCache` przyjmuje wyłącznie sukcesy basic/cors;
+  opaque pomijane (status 0, nieczytelne ciało — bez pozornej walidacji blob,
+  korekta L44). Skutek jawny i udokumentowany: podkład offline nie jest
+  gwarantowany (ROADMAP/handoff mówią to wprost).
+- **`app/app.js` + `index.html` + `styles.css`** — centralny panel 90% nad
+  przygaszoną mapą, oko (podgląd), stopka → ⓘ Informacje, sterowanie drogą
+  przenoszone TYMI SAMYMI węzłami (ADR 0036), ekran pozycji bez GPS/ręcznych
+  pól/symulacji 250 m, GPS automatyczny, tap mapy w trybie testowym przez
+  `fixZPozycji(..., ZRODLA_FIXA.symulacja)`, instrukcja promptu zwinięta
+  z linkami `target=_blank rel="noopener noreferrer"`. Zgodne z ADR 0034/0036.
+- **Cache-busting** `?v=m12-63` jednolity w całym grafie (kontrakt pilnuje;
+  LESSONS L29). `WERSJA_SW` podniesiona razem z `?v=`.
+- **Testy** — nowy `test/teren.test.js` (granice 50/50,001 m, dwie trafienia,
+  zerowanie serii, brak starych kontrolek, lista prób wyłącznie w Informacjach,
+  nagłówek promptu); pozostałe zaktualizowane do nowych reguł. Bramka na main:
+  **688/688 zielone** (potwierdzone na starcie sesji), szablony zgodne,
+  audyt kontrastu **0 naruszeń**.
+- **Dokumentacja** — PROTOKOL §4/§5 (kanon odczytu vs wybór setupu), ASSETS
+  (Adikso, limity 10 s/8 s), ARCHITECTURE, ROADMAP, LESSONS (korekta L44),
+  ADR 0034/0035/0036 + rejestr, HANDOFF 2026-09-10. Spójne z kodem.
+
+Usterek blokujących brak. Uwagi (nieblokujące): drobna pusta linia po
+`return` w `stanDojscia` (kosmetyka); warto pamiętać, że przy `accuracy`
+ponownie pojawiającym się w przyszłych decyzjach sygnatura `progDojsciaM()`
+jest już bez parametru — zmiana polityki wymaga jawnego ADR.
+
+
+
+
+## Sesja 2026-09-10d — weryfikacja na żywo PR #8 + naprawa domyślnych tematów (m12-64)
+
+Kontynuacja sesji `arena/01a08d11-okolica` (PR #9). Po audycie statycznym PR #8
+przeszedł weryfikację dynamiczną: pełna pętla gry w headless Chromium 152
+(360×640 i 844×390, `?test=true`, atrapa `fetch` odrzucająca URL-e poza
+`location.origin` — wymuszona degradacja sieciowa; skrypty poza repo w
+`.narzedzia/`). Potwierdzone na żywo, bez błędów JS:
+
+- setup → 3 graczy (Drive pada → „gracz dodany bez potwierdzenia", ADR 0026
+  pkt 5), tap mapy ustawia pozycję, Overpass pada → jawny **S03** i pierścień
+  zapasowy, 3 stacje, prompt (instrukcja zwinięta), paczka przyjęta przez
+  wklejenie, gra startuje automatycznie;
+- pasek podczas drogi: 20 px tekstu w panelu 37 px (padding 8 px + safe area),
+  przy dolnej krawędzi, „oko" nad paskiem, strona bez przewijania (nadmiar
+  0 px), panel pytania 90% szerokości (324/360; karta wewnętrzna 290 px) —
+  zgodnie z ADR 0036;
+- pauza w ⓘ Informacje (ADR 0036), pasek zostaje po wznowieniu;
+- 3 stacje przez symulację dojścia: pytanie → odpowiedź → wyjaśnienie →
+  przycisk z etykietą kolejnego gracza („▶ Jan, stacja 2 — idę →"),
+  po ostatniej „🏁 Zobacz wynik →" → ranking 3 graczy → „Nowa gra" wraca
+  na mapę startową (ekran `mapa`), status „Gotowe do nowej gry", ⚙ prowadzi
+  do setupu. Poziom 844×390: ten sam układ, panel 720 px.
+
+**Usterka znaleziona i naprawiona** (przypadek brzegowy ADR 0034): stała
+`DOMYSLNE.tematy` w `app/konfig.js` trzymała stary kanon 10 tematów (ze
+`sport` i `jedzeniem`, bez `ciekawostek`). Skutk: migracja starego zapisu, z
+którego po filtrze `konfiguracjaNowegoSetupu` nie zostaje żaden temat (np.
+`tematy: ['sport']`), wrzucała fallback z usuniętymi tematami — organizator
+nie widział ich w UI (brak chipów), a prompt + E16 wymagały pytań ze sportu
+i jedzenia, więc każda paczka zgodna z nowym setupem byłaby odrzucona.
+Do tego nowy temat „Ciekawostki" nie był domyślnie zaznaczony. Naprawa:
+`DOMYSLNE.tematy` = alfabetyczna lista tematów NOWEGO setupu bez `wlasny`
+(`architektura, ciekawostki, geografia, historia, kultura, legendy, ludzie,
+nauka, przyroda`) — jest też fallbackiem w `oczyscKonfiguracje`, więc obie
+ścieżki pustych tematów wracają do nowego kanonu. Test regresji dodany do
+`test/konfig.test.js` (sam `sport` → nowe domyślne, bez sportu/jedzenia;
+ciekawostki w domyślnych; `wlasny` nigdy domyślnie); asercja betonująca
+stary kanon („decyzja z 2026-09-07") zaktualizowana do ADR 0034.
+Potwierdzone na żywo (m12-64): chipy alfabetycznie, 9 tematów domyślnie
+z Ciekawostkami.
+
+Brama: **688/688** + audyt WCAG AA **0 naruszeń** (po naprawie), pełna pętla
+UI w pionie i poziomie czysto na m12-64. Cache-busting `?v=m12-64`
+(+ `WERSJA_SW`) podbity w całym grafie.
+
+
+## Sesja 2026-09-11 — faktyczne tematy, limit listy i sort po ocenach (m12-65)
+
+Zlecenie właściciela (trzy uwagi do karty „📦 Paczki dla tej okolicy"):
+
+1. **Tematy wpisu = faktyczne tematy pytań.** Problem: paczka była odrzucana
+   przy dopasowaniu, bo jej meta niosła listę tematów DOPUSZCZALNYCH w setupu,
+   z którego powstała (model nie zawsze pisze pytania ze wszystkich
+   dopuszczonych). Właściciel: „każde pytanie ma podaną kategorię, wystarczy
+   to sprawdzić". Wdrożone: `faktyczneTematyPytan()` w `app/zestawy.js`
+   (unikalne, kanoniczne, kolejność pierwszego wystąpienia) i `zbierzMetaZestawu`
+   liczy `meta.tematy` z pytań (fallback na listę argumentu bez pytań albo
+   przy pytaniach bez czytelnych tematów). Kryterium dopasowania bez zmian —
+   poprawiły się dane. `metaBiezacejOkolicy`/`metaSesjiMulti` przekazują pytania
+   sesji, więc nowy zapis lokalny i wysyłka na Drive niosą faktyczne tematy
+   (most buduje indeks z meta pliku — `.gs` bez zmian). **Migracja** starego
+   rejestru lokalnego przy starcie (`ujedgajnijTematyWpisowLokalnych`): wpis
+   i pełny zapis przechodzą na faktyczne tematy, idempotentnie, cicho
+   (LESSONS L10); wpis bez czytelnej paczki w pamięci zostaje jak był.
+   Stare pliki na Drive: ponowna wysyłka paczki odświeża wpis.
+2. **Limit listy: 3 paczki + „Zobacz więcej paczek"** (toggle ze „Zobacz mniej
+   paczek"; przycisk chowany, gdy pasują ≤ 3). Lista rysuje się od zera
+   (`renderujZestawy`), kandydaci (lokalne + repo) w jednej kolekcji.
+3. **Sort: najpierw najlepiej oceniane** — największa liczba ocen pozytywnych
+   (`oceny.plus`, ADR 0028), remisy rozstrzyga świeższa data. Paczki z tego
+   telefonu nie mają ocen (żyją na Drive) — startują od zera.
+
+Dokumentacja: ADR 0017 aneks 2026-09-11 (semantyka `meta.tematy` + lista),
+README (kryteria i lista), LESSONS — bez nowej lekcji (wpis w duchu L45:
+zmiana kanonu = przegląd stałych i asercji z datą).
+
+Testy: +2 jednostkowe (`faktyczneTematyPytan`, `zbierzMetaZestawu` z pytaniami),
++3 UI (migracja szerokiego wpisu, limit/zwijanie na 5 paczkach, sort po
+plusach z indeksem Drive) — **693/693** + WCAG AA **0 naruszeń**.
+Weryfikacja na żywo (Chromium 152 headless, 360×640, m12-65): rejestr
+z 5 paczkami o szerokich tematach [historia, przyroda, architektura, kultura]
+i pytaniami tylko [historia, architektura] — po starcie migracja przeliczyła
+wpisy, wąski setup (historia+architektura) dostał 3 widoczne propozycje
+z faktycznymi tematami w opisach, „Zobacz więcej paczek" → 5 → „Zobacz mniej
+paczek" → 3; zero błędów JS. Cache-busting `?v=m12-65` + `WERSJA_SW`.
+
+Uwaga operacyjna: sandbox zresetował się między turami — narzędzia
+(puppeteer, Chromium 152) odtworzone w `.narzedzia`, serwer na 0.0.0.0:8000.
+
+## Sesja 2026-09-11b — uwagi terenowe #2 (m12-66)
+
+Zlecenie właściciela po teście gry w terenie — siedem uwag do wdrożenia:
+
+1. **Intro krótsze i zapraszające.** Podtytuł mówi teraz „…gdziekolwiek
+   jesteś"; akapit o składzie gry skrócony („Grać można w pojedynkę, całą
+   rodziną albo każdy na swoim telefonie."), a zdanie zamykające kończy
+   się „…i ruszasz dalej." Usunięte akapity: „Potrzebujesz tylko zgody na
+   dostęp do lokalizacji." (zgoda i tak wyskakuje przy pierwszym fixie)
+   oraz „Przycisk wyżej otwiera ustawienia gry" (opis przycisku ⚙).
+2. **Ekran pozycji bez instrumentów.** Wiersz o HTTPS i przycisk „🔌
+   Sprawdź połączenie" (M9b/D4) znikają — most działa albo aplikacja sama
+   mówi, że nie; ręczne sprawdzanie było ozdobnikiem.
+3. **Ekran promptu bez wykładu o tokenach.** Akapit „Odpowiedź modelu
+   będzie miała około…" (B21, `#prompt-rozmiar`) usunięty razem z logiką
+   `szacunekOdpowiedzi` i stałymi budżetu (BAZA/PROG/TOKENY_NA_PYTANIE
+   z protokołu). Wolimy uczyć się z uciętych paczek, niż straszyć liczbą.
+4. **Gra: ekran pytania czysty.** (a) W fazie pytania slot sterowania
+   (`#gra-slot-sterowanie` — nagłówek „Gra", badge'y, przyciski pomiń/
+   pauza) jest schowany; panel multi żyje poza slotem. (b) Po kliknięciu
+   odpowiedzi przyciski A–D ZNIKAJĄ zamiast się podświetlać — ocena,
+   wyjaśnienie i źródła mówią wszystko; blokada „jednej odpowiedzi"
+   zostaje wymuszona brakiem przycisków. (c) „Wznów grę" w fazie
+   przygotowania od razu wchodzi w odcinek (droga + pasek), bez
+   międzystrony „Idzie: … ▶ Idę do stacji…" — po zamknięciu przeglądarki
+   gracz ma wracać PROSTO do gry.
+5. **Pasek drogi mówi sam za siebie.** Format: `Kto: {imię} (odległość
+   od stacji {N} m) · stacja {i} z {n}` — nawias z dystansem to zielona
+   pigułka `span.pasek-dystans` (kolory akcentu, kontrast jak
+   `.badge-dystans`). Sterowanie w drodze nadal w Informacjach.
+6. **Usunięte ozdobniki stacji.** Przycisk „Tryb uproszczony" (pierścień,
+   `#przycisk-pierścien`) i wiersz „sprawiedliwości" (`#stacje-
+   sprawiedliwosc`) znikają z UI; stan `wymusPierscien` zostaje w silniku
+   (ADR 0005) — to warstwa prezentacji, nie mechaniki.
+7. **Pigułka dystansu.** — pokryta przez punkt 5 (brama WCAG bez zmian:
+   te same zmienne akcentu co badge dystansu).
+
+Struktura: `#gra-panel-multi` przeniesiony przed `#ekran-gra`, poza
+`#gra-slot-sterowanie` — panel multi nie może znikać razem ze slotem
+w fazie pytania (tury i tabela wyników zostają widoczne).
+
+Testy: kontrakt pierścienia → asercja BRAKU przycisku; kontrakt M9b
+usunięty; nowy kontrakt „usunięte ozdobniki 2026-09-11"; 2 testy
+„Sprawdź połączenie" i test B21 usunięte; test A1 (intro) zaktualizowany
+(akapit o zgodzie już nie istnieje); nowe asercje slotu/paska/odpowiedzi
++ test „wznowienie w fazie przygotowania" + test bramki 250 m. Atrapa
+DOM: `querySelector` rozumie selektory klas (`.pasek-dystans`),
+`textContent` agreguje węzły tekstowe z `append(tekst)` — jak prawdziwy
+Element. **687/687** (było 693; -8 usuniętych, +2 nowe) + WCAG AA
+**0 naruszeń**.
+
+Weryfikacja na żywo (Chromium 152 headless, 360×640, tryb testowy,
+m12-66): 29/29 asercji — intro i ozdobniki, mapa-podgląd → stuknięcie
+→ pozycja testowa, stacje bez pierścienia, prompt bez tokenów, wklejona
+paczka startuje grę, droga z paskiem i pigułką (computed style z tłem
+akcentu), czysty ekran pytania (slot schowany), odpowiedzi znikają po
+kliknięciu, „Następna stacja" wraca do drogi, przeładowanie w fazie
+przygotowania → „Wznów grę" → od razu droga bez międzystrony; zero
+błędów JavaScript.
+
+Narzędzia: sandbox zresetował się ponownie — Chromium 152 odtworzony
+z npm (`@sparticuz/chromium` binaria + biblioteki AL2023 do /tmp),
+Puppeteer-core w `/home/user/.narzedzia` (poza repo). Google CDN
+i apt (HTTP) niedostępne z sandboxa.
+
+## Sesja 2026-09-11c — odporny link przeglądu w mailu (zgłoszenie #7)
+
+Zgłoszenie właściciela: paczka po grze trafiła na Drive do katalogu
+przeglądu, mail z przeglądem przyszedł, ale link z maila otwierał stronę
+Google „Nie udało się otworzyć pliku. Sprawdź adres i spróbuj ponownie."
+
+**Przyczyna (zewnętrzna, znana od 2020):** link przeglądu był budowany z
+`ScriptApp.getService().getUrl()`, które Apps Script potrafi zwrócić źle —
+adres `/dev` (widoczny tylko dla edytujących skrypt) albo adres STAREGO
+wdrożenia po dodaniu nowej wersji. Oba otwierają się stroną błędu Google
+zamiast stroną przeglądu (Stack Overflow 2020–2022, Issue Tracker).
+
+**Naprawa w `docs/setup/apps-script-repo-paczek.gs`:**
+1. `urlSerwisu()` najpierw czyta właściwość skryptu `URL_SERWISU`
+   (właściciel wpisuje raz obecny adres `/exec`), a bez niej prostuje
+   przynajmniej końcówkę `/dev` na `/exec`.
+2. Mail z przeglądem niesie DROGĘ AWARYJNĄ: bezpośredni link do pliku
+   na Dysku (`plikDrive.getUrl()`) i instrukcję ręcznej akceptacji
+   (przeniesienie pliku między folderami — to samo robią przyciski).
+3. `setup()` przypomina o brakujących właściwościach (OWNER_EMAIL,
+   REVIEW_SECRET, URL_SERWISU) — bez nich paczka czeka po cichu albo
+   mail prowadzi donikąd.
+
+Instrukcja wdrożenia: krok 3.4 (URL_SERWISU po skopiowaniu adresu),
+sekcja „Awaryjnie" z objaśnieniem komunikatu Google i ręczną akceptacją,
+wpis aktualizacyjny dla działających wdrożeń.
+
+Testy: +2 (`most-przeglad`) — właściwość URL_SERWISU wygrywa z `/dev`
+z getUrl(); `/dev` bez właściwości jest prostowane; poprawny adres
+przechodzi bez zmian; mail niesie link do pliku i nazwy folderów.
+Atrapa mostu: `uruchomMost({ urlSerwisu })` parametryzuje `getUrl()`,
+`apiPlik` ma `getUrl()`/`getName()` jak DriveApp.File. **689/689.**
+Aplikacja i cache-busting bez zmian (m12-66) — poprawka dotyczy
+wyłącznie skryptu Apps Script i jego wdrożenia.
+
+Wdrożenie u właściciela: wkleić nowy `.gs`, dodać właściwość
+`URL_SERWISU`, Wdróż → Nowa wersja; czekającą paczkę zaakceptować
+ręcznie (przeniesienie pliku do `…-zaakceptowane`).
+
+## Sesja 2026-09-11d — powódź plików gra-hotseat-* na Drive (zgłoszenie #8, drugie)
+
+Zgłoszenie właściciela (ponowne, po fixie z 2026-09-09): w katalogu
+`okolica-gry-zakonczone` dalej przybywają dziesiątki plików — po kilka
+z jednej minuty, jakby każde odświeżenie aplikacji coś tam zapisywało.
+
+**Dwie niezależne przyczyny, fix z 2026-09-09 (odcisk) nie mógł żadnej
+powstrzymać, bo obie zmieniały tożsamość wysyłki:**
+
+1. **Testy jednostkowe strzelały na PRODUKCYJNY most.** Node 22 ma
+   globalny `fetch`, `zainstalujDom` go nie ruszał, a `adresMostu()`
+   zwraca wpisany w kod adres wdrożenia. Testy kończące grę zdarzeniami
+   i zweryfikowanym graczem („PEŁNA GRA z symulacją dojścia", „zgłoszenie
+   4", „M7/P7: PEŁNA GRA z dojściem GPS", „M7: ręczne zakończenie — tekst
+   wyniku") leciały prawdziwym POST-em `gra-hotseat` — w sandboxie
+   developmentu Google był zablokowany (wiemy, bo czerwony test pokazał
+   „fetch failed"), ale CI (GitHub Actions, ubuntu-latest) ma pełny
+   internet: każdy run testów dokładał kilka plików z grami testowymi.
+   Stąd „po kilka plików z jednej minuty".
+2. **Wznowienie ZAKOŃCZONEJ gry wysyłało wynik drugi raz.** `wzrowGre`
+   przy każdym wznowieniu przesuwa zegar (`r.startMs += przesuniecie`),
+   a `kluczGryHotseat` liczy się właśnie z `startMs` — po odświeżeniu
+   i „Wznów grę" (użytkownik chce tylko zobaczyć wynik) gra miała NOWY
+   klucz, lista „wysłane" jej nie poznawała, odcisk dla mostu był inny
+   → nowy plik. Każde odświeżenie = jeden plik więcej.
+
+**Naprawa (m12-67):**
+- `test/helpers/dom.js`: hermetyczna sieć — pierwszy `zainstalujDom`
+  w procesie podstawia pod `globalThis.fetch` atrapę, która ZAWSZE
+  odmawia (jak awaria sieci) i zapisuje próby (`dom.siec.wywolania`).
+  Testy chcące odpowiedzi mostu podstawiają własne atrapy (świadomie
+  je zastępują — rozpoznajemy po referencji do prawdziwego fetcha Node,
+  złapanej przy imporcie). Suita nie może już wyjść na zewnątrz.
+- `app/app.js`: `wznowGre` NIE przesuwa zegara dla gry w fazie `koniec`
+  (zegar nie chodzi, rebasa była szkodliwa) — klucz/odcisk pozostają
+  stabilne, lista wysłanych blokuje powtórkę, a most nadpisuje ten sam
+  plik. Baner wznowienia mówi prawdę: „zapis ZAKOŃCZONEJ gry — możesz
+  jeszcze raz obejrzeć wynik".
+
+Testy: +2 — „sieć testów: fetch domyślnie hermetyczny" (atrapa odmawia,
+własny stub testu wygrywa) i „odświeżenie i Wznów grę ZAKOŃCZONEJ gry
+nie wysyła wyniku drugi raz" (naturalny koniec 3 stacji → kolejka 1;
+dwa przeładowania z wznowieniem → kolejka nadal 1). **691/691.**
+
+Weryfikacja na żywo (Chromium 152 headless, 360×640, tryb testowy,
+m12-67, fetch mostu nagrywany przez przeładowania): pełna gra do
+naturalnego końca = dokładnie JEDEN POST `gra-hotseat`; dwa przeładowania
++ „Wznów grę" = zero dodatknych POST-ów, kolejka pusta, baner „ZAKOŃCZONEJ",
+zero błędów JS — **9/9 asercji**.
+
+Dla właściciela: sprzątanie Drive (usuń testowe `gra-hotseat-*` — gracze
+„Gracz 1/2/3", miejsce „nieznane miejsce") opisane w instrukcji mostu,
+sekcja „Awaryjnie". Rankingi prostują się same po usunięciu śmieci.
+Cache-busting `?v=m12-67` + `WERSJA_SW`.
+
+## Sesja 2026-09-11e — korekty tekstu na ekranie Intro (m12-68)
+
+Dopisek właściciela do zgłoszenia #8: w `okolica-gry-zakonczone` było
+~80 plików, z czego RZECZYWISTYCH zakończonych gier — 2. Reszta ~78
+„wygenerowała się bez zakończenia gry" — czyli dokładnie to, co wykazała
+diagnoza z sesji 2026-09-11d: powódź pochodziła z testów CI (cztery testy
+kończące grę prawdziwym POST-em na most) i ze wznowień zakończonych gier,
+a nie z realnych rozgrywek. Skala 78:2 potwierdza, że hermetyczna sieć
+testów + stabilny klucz wznowień zamykają temat; właściciel czyta Drive
+według instrukcji z „Awaryjnie".
+
+Korekty tekstu na ekranie Intro (prośba właściciela, dosłownie):
+- podtytuł: „gra terenowa tam, gdziekolwiek jesteś" →
+  „rozwiązuj zagadki, gdziekolwiek jesteś";
+- zdanie o składzie: „Grać można w pojedynkę, całą rodziną albo każdy
+  na swoim telefonie." → „Grać można w pojedynkę, z rodziną i znajomymi
+  na jednym telefonie albo każdy na swoim urządzeniu." (doprecyzowanie,
+  że tryb hasełkowy na JEDNYM telefonie to też pełnoprawny sposób gry).
+
+Kontrakt intro w kontrakt.test.js zaktualizowany (podtytuł asertowany
+teraz w pełnym brzmieniu — silniejsza asercja niż sama końcówka).
+Cache-busting `?v=m12-68` + `WERSJA_SW`. Testy 691/691; żywy podgląd
+Chromium 152 (360×640) potwierdza oba teksty i wersję w stopce.
+
+## Sesja 2026-09-11f — podtytuł Intro, ostateczne brzmienie (m12-69)
+
+Właściciel wrócił z trzecią wersją podtytułu (proces iteracyjny, wszystkie
+dosłowne): „gra terenowa tam, gdziekolwiek jesteś" → „rozwiązuj zagadki,
+gdziekolwiek jesteś" (m12-68) → **„gra terenowa gdziekolwiek jesteś"**
+— powrót do „gra terenowa", ale bez „tam" i bez przecinka. Zdanie o
+składzie gry z m12-68 bez zmian.
+
+Kontrakt intro zsynchronizowany, cache-busting `?v=m12-69` + `WERSJA_SW`.
+Testy 691/691; żywy podgląd potwierdza podtytuł i wersję w stopce.
+
+## Sesja 2026-09-11g — P02 bez developerskiej wzmianki o trybie testowym (m12-70)
+
+Właściciel: „Do prób bez GPS służy tryb testowy ?test=true i wskazanie
+miejsca na mapie" w komunikacie błędu GPS (P02, brak zgody na lokalizację)
+to nie informacja dla graczy — usunięte. Komunikat kończy się teraz na
+wykonalnym wyjściu dla użytkownika: „Zezwól na lokalizację w ustawieniach
+przeglądarki i odśwież stronę." Asercja w aplikacja.test.js zsynchronizowana
+(wcześniej pilnowała właśnie wzmianki o trybie testowym — teraz pilnuje,
+że wzmianki NIE ma i że wykonalne wyjście zostało).
+
+Cache-busting `?v=m12-70` + `WERSJA_SW`. Testy 691/691.
+
+## Sesja 2026-09-11h — panel pytania: odpowiedzi giną z WIDOKU, pauza nie kradnie oceny (m12-71)
+
+Zgłoszenie właściciela z najnowszego preview (tryb testowy), dwa punkty:
+
+1. **(4b) Odpowiedzi A–D nie znikały po odpowiedzi.** Kod chował je od
+   m12-66 (`gra-odpowiedzi.hidden = true`), ale CSS `.gra-odpowiedzi
+   { display: grid }` nadpisywał „display: none" z atrybutu [hidden] —
+   reguły autora biją arkusz przeglądarki, więc przyciski zostawały na
+   ekranie, a ocena nie „podnosiła się" w zaoszczędzone miejsce. Testy
+   tego nie widziały, bo atrapa DOM nie liczy stylów. Ten sam błąd
+   dotyczył `.ocen-panel { display: flex }` (kciuki 👍👎 zostawały
+   widoczne bez paczki z repo). Naprawa: twarda reguła globalna
+   `[hidden] { display: none !important }` w styles.css.
+
+2. **„Niechciany layer": pauza wstawiała panel oczekiwania ponad oceną.**
+   Po odpowiedzi gra jest już w fazie przygotowanie, ale panele trzymają
+   ocenę do „Następna stacja" (M6/R5). Pauza — najczęściej AUTOMATYCZNA
+   po zwinięciu okna/karty (visibilitychange) — wołała pełny renderujGre
+   i on przełączał panele wg fazy: panel oczekiwania („▶ Idę do stacji 3,
+   ⏭ Pomiń odcinek, ■ Zakończ grę") wyprzał ocenę, którą gracz czytał.
+   Gore jeszcze: przycisk pauzy mieszka w panelu B (schowanym), więc
+   z panelu A z zablokowanym startem nie było JAK wznowić — pułapka.
+   Naprawa: renderujGre nie przełącza paneli, dopóki trwa pokaz oceny
+   (wyjątek: ręczne zakończenie — wynik „teraz" ważniejszy); „Następna
+   stacja" domyka pokaz, JAWNIE wznawia zegar (etykieta „⏸ Wznów grę
+   i idź dalej →") i prowadzi w drogę jednym klikiem; o pauzie mówi
+   komunikat ekranu gry.
+
+Testy: „pauza w trakcie wyjaśnienia" przepisany na nowy przebieg
+(ocena zostaje, panel A nie wskakuje, jeden klika wznawia + startuje).
+**691/691.** Żywa weryfikacja Chromium 152 (360×640, m12-71): 18/18 —
+display:none odpowiedzi na każdej stacji, ocena w zaoszczędzonym miejscu,
+pauza nie wstawia layera, wznowienie+jedno kliknięcie w drogę, pełna gra
+do końca, regresja #8 (JEDEN POST gra-hotseat), zero błędów JS.
+Cache-busting `?v=m12-71` + `WERSJA_SW`.
+
+Uwaga narzędziowa: CDP `Page.setWebLifecycleState('frozen')` wiernie
+odpala visibilitychange, ale po odmrożeniu zostawia dławienie timerów
+(symulacja 12 s ciągnie się >45 s) — weryfikacja pauzy woła tę samą
+funkcję (`przelaczPauzeGry`) przez DOM-click przycisku pauzy.
+
+## Sesja 2026-09-11i — koniec akceptowania paczek: od razu w zaakceptowanych (m12-72)
+
+Decyzja właściciela (po fixie linku przeglądu z rana): „W ogóle rezygnujemy
+z akceptowania paczek. Paczki od razu trafiają do zaakceptowane. O ich jakości
+decydują łapki w górę i w dół, nie jest potrzebna ta sesja sprawdzania
+właścicielskiego — to nic nie wnosi a tylko zajmuje czas." Cała procedura
+akceptacji i maile o nowych paczkach zniknęły.
+
+**Most (.gs):** przyjmijKandydata zapisuje plik OD RAZU w zaakceptowanych
+(status 'zaakceptowana'); usunięte powiadomWlasciciela (maile), stronaPreglądu,
+zatwierdz/odrzuc, esc, urlSerwisu, ustawienia oraz katalog
+okolica-paczki-do-przegladu i właściwości OWNER_EMAIL/REVIEW_SECRET/URL_SERWISU.
+Duplikat w zaakceptowanych → 'juz-zaakceptowana' (ten sam id — łapki ADR 0028);
+duplikat w odrzuconych → 'juz-w-odrzuconych' (ręczne odrzucenie właściciela
+obowiązuje dalej). Moderacja stała się późna i ręczna: przeciągnięcie pliku
+do odrzuconych wyłącza paczkę z indeksu i zamyka głosowanie.
+
+**Aplikacja:** status po wysyłce mówi „dostępna od razu w zestawach — jakość
+rozstrzygną łapki graczy"; znacznik meta przegladZrodel bez „właściciela"
+(„oczekuje przeglądu — jakość rozstrzygają łapki graczy").
+
+**Testy:** most-paczka/most-przeglad/most-oceny/most-indeks przerobione na nowy
+przepływ (strażnik: zero maili, brak strony przeglądu w moście, akcja=przeglad
+→ nieznana); kontrakt ADR 0028 aneks zsynchronizowany + NOWY test kontraktu
+decyzji 2026-09-11 (MailApp/stronaPrzegladu/zatwierdz/katalog przeglądu/
+REVIEW_SECRET/URL_SERWISU nie istnieją w .gs). 691/691.
+
+**Dla właściciela (wdrożenie ręczne):** wkleić nową treść .gs i Wdróż → Nowa
+wersja; na Drive przenieść zaległości z do-przegladu i skasować ten katalog;
+właściwości skryptu można usunąć — wszystko opisane w instrukcji mostu
+(sekcja „Awaryjnie"). Katalog odrzucone ZOSTAJE jako ręczny kosz (wyłączanie
+paczek z indeksu). ADR 0017 doczekał się aneksu.
+
+## Sesja 2026-09-11j — gra wieloosobowa przepisana: Wspólna Trasa + Wyścig, paczka przed lobby, solo (m12-73)
+
+Właściciel poległ na pierwszym ekranie gry wieloosobowej i zarządził przepisanie
+trybu od zera. Pełne decyzje (konsultacje tego samego dnia) w aneksie ADR 0019
+z 2026-09-11; w skrócie:
+
+- **Tryb „tury" USUNIĘTY** wszędzie (UI, app.js, wieloosobowa.js, sync.js, .gs,
+  testy): nie ma właścicieli stacji ani kolejki; `biezacyGraczTury` zniknęło
+  z modułu i mostu; polling wspólny (lobby 10 s, gra 12 s).
+- **Dwa tryby**: `trasa` = Wspólna Trasa (ta sama trasa PO KOLEI, każdy we
+  własnym tempie, bez listy wyboru) i `wyscig` = Wyścig na Orientację (dawny
+  wyścig, dowolna kolejność — logika bez zmian, uczciwy opis). Punktacja
+  wspólna, jedno zdanie w UI: 1 pkt za dobrą odpowiedź + premia za kolejność
+  ukończenia. Oba tryby domykają się tak samo (każdy zamyka wszystko albo
+  rezygnuje) — `czyKompletna` bez gałęzi tur.
+- **Trasa-sekret**: mapa gry pokazuje tylko bieżącą stację; przy generowaniu
+  paczki dla trasy ekran stacji pokazuje SAM STATUS („wygenerowano N"), bez
+  nazw, współrzędnych i kropek na mapie (`STAN.ukryjStacje`).
+- **Paczka PRZED lobby** (nowy przepływ): pseudonim → „🌐 Załóż grę w tej
+  okolicy" → tryb → źródło: sesja / telefon / Drive / **✨ Wygeneruj pytania
+  w AI** (pełna ścieżka pozycja → stacje → prompt → wklejenie; po przyjęciu
+  paczki WRÓT do panelu „Załóż grę", nie do gry hot-seat — `STAN.multiPoPaczce`).
+  Lista źródeł nigdy niepusta (AI zawsze), statusy jawne (wynik szukania
+  na Drive doklejany do linii źródeł).
+- **Start gry od 1 gracza** (solo) — dozwolony i zakomunikowany w lobby.
+- Z ekranu multi usunięto zdanie „Na serwer jadą wyłącznie pseudonimy…"
+  (index.html) — zachowanie bez zmian (biała lista pól + kasowanie po stronie
+  mostu + SKANER dalej pilnują).
+
+**Wdrożenie .gs:** linia trybu w `bledyGryKandydata` (`trasa`|`wyscig`),
+usunięte `biezacyGraczTury` i kontrola tury w `przyjmijZdarzenie`, gałąź tur
+w `czyKompletna`. Kontrakt `RO-gra/1` zmienia tylko domenę `tryb` (R04);
+stare pliki gier z `tryb: "tury"` są nieczytelne dla nowej wersji (jak każda
+wersja aplikacji).
+
+**Testy:** wieloosobowa-ui — e2e trasy (wspólna trasa, tempo własne, resume,
+sekret), NOWE: start solo i pełna ścieżka AI przed lobby (trasa-sekret na
+ekranie stacji, powrót z paczką, lobby z sesji); wieloosobowa — czyKompletna
+bez tur; sync — jeden rytm; most-gra-cycle — cykl Wspólnej Trasy (odpowiedź
+bez dojścia i duplikat jako odmowy R08); rankingi-ui — etykieta trybu.
+Kontrakt M11 pilnuje nowych nazw trybów, zdania o punktacji, braku zdania
+o serwerze i ścieżki AI. **691/691.**
+
+**Dokumentacja:** aneksy ADR 0019 (pełne decyzje) i ADR 0027 (koniec tur),
+PROTOKOL §9 (domena tryb, R04), ARCHITECTURE (sync, silnik lokalny), README,
+WORKFLOW §4.4 pkt 5, instrukcja mostu §5b, indeks ADR.
+
+## Sesja 2026-09-11k — multi po raz drugi: setup zamiast ekranu, lista ~50 m, kanał info, koniec z ręki hosta (m12-74)
+
+Właściciel przetestował m12-73 i przeprojektował flow: „wykorzystujemy wspólne
+layery, tylko zakres opcji się zmienia". Decyzje (odpowiedzi 1A–4A) w aneksie
+ADR 0019 z m12-74; w skrócie:
+
+- **Segmenty na setupie**: toggle „Hot-seat / Wielu graczy" jak środek
+  transportu; w multi dosiada się „🚀 Zakładam nową grę / 🚪 Dołączam do
+  istniejącej". Ekran `multi-panel-zaloz` (tryb + źródła + „Zakładam")
+  ZNIKNĄŁ — tryb gry i ptaszek „widoczna tylko kolejna stacja" (własność gry
+  `trasaSekret`) wybiera się na setupie. Język i podkład usunięte z UI
+  wszędzie (ADR 0037: hardcode polski + OSM).
+- **Multi-załóż = zwykły setup**: zostaje środek, czas, liczba stacji, wiek,
+  tematy, pozycja; **pytań na stację BRAK** (1 pytanie/stację, forsowane),
+  promień jak w hot-seat; **dokładnie JEDEN gracz na telefon** — host wpisuje
+  imię+PIN w zwykłym bloku „Kto gra?" (odpowiedź 1A; limit 1 z jawną odmową
+  przy drugim). Dalej WSPÓLNA ścieżka: pozycja → pasująca paczka PROSTO
+  do lobby (albo stacje → prompt → wklejenie → lobby). `sciezkaAiMulti`
+  i lista źródeł usunięte.
+- **Dołączanie tylko z listy** (4A): kod gry i `przycisk-dolacz-kod`
+  USUNIĘTE; lista pokazuje wyłącznie `stan: "lobby"` (brak dołączania po
+  starcie, odpowiedź 2) w zasięgu ~50 m od hosta (miarą `konfiguracja.geohash8`
+  ~40 m + sąsiedzi), wpis mówi tylko „Host: Jacek".
+- **Kanał info** `#multi-info`: dojścia, dobre/złe odpowiedzi, rezygnacje,
+  koniec — neutralne płciowo, ostatnie ~8 zdarzeń. Polling w grze co 30 s
+  (3A), lobby 10 s.
+- **Host kończy grę przyciskiem** (`gra-zakoncz`, tylko organizator i tylko
+  `stan: "trwa"`): u wszystkich podsumowanie + ranking. Koniec naturalny bez
+  zmian (wszyscy aktywni domknęli stacje).
+- **Premia stała 3/2/1** za 1./2./3. miejsce ukończenia (aneks ADR 0027);
+  ukończone PRZED przedwczesnym końcem liczy się też. Reguła lustrzana
+  w `.gs` (`most-gra.test.js` ją wykonuje).
+
+**Wdrożenie .gs:** `gra-zaloz` przyjmuje `trasaSekret` i wymaga
+`geohash8`; `listaGier` zwraca tylko `lobby` z `geohash8` we wpisach; nowa
+akcja `gra-zakoncz` (host); premia [3,2,1]; stara premia G−1 usunięta.
+Kontrakt `RO-gra/1`: opcjonalne `trasaSekret` (brak przy `trasa` = sekret),
+wymagany przy zakładaniu `konfiguracja.geohash8` (odczyt — opcjonalny).
+
+**Testy:** wieloosobowa-ui.test.js PRZEPISANY w całości (16 testów: e2e
+wyścig/trasa/solo, paczka przed lobby, bez-gracza odmowa + zero żądań,
+ADR 0020 pusty adres, R08 payload+geohash8, SKANER geohash8, uszkodzony stan
+R07, host-zakończ z premią, wolna kolejność/mniejsza paczka/trasa-bez-wyboru,
+ADR 0032 Q/notka); wieloosobowa — premia 3/2/1 (3 testy); sync — interwały
+30 s/10 s; most-gra — geohash8+trasaSekret+lobby-only+premia; most-gra-cycle —
+cykl nowego flow; kontrakt M11+m12-74; aplikacja — język/podkład zaszte;
+konfig — K04/K06 usunięte, JEZYK_GRY import. Pułapki przepisywania: atrapa
+DOM nie grupuje radiów (helper `wybierzSegment` odznacza ręcznie), helper
+`dom.js` sieje gracza „Ala" (testy multi zawsze `bezGracza: true`), K10
+wymaga ≥3 stacji. **692/692.**
+
+**Dokumentacja:** aneksy ADR 0019 (m12-74) i 0027, NOWY ADR 0037 (język
+i podkład zaszte), rejestr ADR, PROTOKOL §9 (trasaSekret, geohash8,
+lobby-only, premia 3/2/1, 30 s), ARCHITECTURE (setup-multi, sync, info,
+koniec hosta), README, WORKFLOW §4.4 (9 punktów), instrukcja mostu §5b
++ dopisek „Awaryjnie".

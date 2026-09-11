@@ -535,6 +535,14 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   font-size: 18px;
 }
 
+/* Zgłoszenie właściciela 2026-09-11 (preview): przyciski odpowiedzi A–D nie
+   znikały po kliknięciu — `.gra-odpowiedzi { display: grid }` nadpisywał
+   „display: none" wynikające z atrybutu [hidden] (reguły autora biją arkusz
+   przeglądarki). Ten sam mechanizm dotyczył `.ocen-panel { display: flex }`.
+   Stąd twarda reguła globalna: [hidden] ZAWSZE znika, niezależnie od display
+   ustawionego w definicji klasy. */
+[hidden] { display: none !important; }
+
 /* Odpowiedzi: stos (nie siatka) — długie teksty na 360 px, cel ≥ 44 px,
    tekst wyrównany do lewej i zawijany. */
 .gra-odpowiedzi {
@@ -855,8 +863,24 @@ body.gra-w-drodze #ekran-gra:not([hidden]) {
   overflow: hidden;
 }
 #gra-pasek { margin: 0; white-space: nowrap; font-size: 14px; line-height: 20px; overflow-x: auto; }
+/* Pigułka dystansu w pasku drogi (właściciel, uwagi terenowe #2 2026-09-11):
+ * zielona jak badge dystansu — te same zmienne akcentu, więc kontrast WCAG
+ * identyczny jak w .badge-dystans. */
+#gra-pasek .pasek-dystans {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--akcent);
+  color: var(--akcent-tekst);
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
 body.gra-w-drodze #przycisk-podejrzyj-mape { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-atrybucja { bottom: calc(36px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
 #informacje-gra { margin-bottom: 16px; }
 #informacje-gra h2 { padding-right: 48px; }
+
+/* „Zobacz więcej/mniej paczek" pod listą propozycji (właściciel 2026-09-11):
+   pełna szerokość karty, cel dotykowy jak wiersze listy (ADR 0011). */
+.przycisk-zestawy-wiecej { width: 100%; min-height: 44px; }

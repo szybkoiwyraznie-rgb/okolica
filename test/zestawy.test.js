@@ -353,3 +353,31 @@ test('zestawy: powodyNiedopasowania mówi wprost, które kryterium nie zagrało'
   const kilka = powodyNiedopasowania(wpis({ wiek: 'wiek-12', liczbaStacji: 1, pytaniaNaStacje: 1 }), kryteria(PODKOWA));
   assert.equal(kilka.length, 2, 'kilka niezgodności = kilka powodów, każdy nazwany');
 });
+
+/* -------- faktyczne tematy pytań w meta (właściciel 2026-09-11) -------- */
+
+test('faktyczneTematyPytan: unikalne tematy pytań w kolejności pierwszego wystąpienia', async () => {
+  const { faktyczneTematyPytan } = await import('../app/zestawy.js');
+  assert.deepEqual(faktyczneTematyPytan(undefined), [], 'brak listy = pusta lista');
+  assert.deepEqual(faktyczneTematyPytan([]), [], 'zero pytań = pusta lista');
+  assert.deepEqual(faktyczneTematyPytan([{}, { temat: '' }, { temat: '   ' }]), [], 'pytania bez tematu się nie liczą');
+  assert.deepEqual(
+    faktyczneTematyPytan([
+      { temat: 'historia' }, { temat: 'architektura' }, { temat: 'historia' },
+      { temat: 'nauka-i-technika' }, { temat: 'przyroda' },
+    ]),
+    ['historia', 'architektura', 'nauka', 'przyroda'],
+    'duplikaty i aliasy („nauka-i-technika" → „nauka") zwijają się do kanonu',
+  );
+});
+
+test('zbierzMetaZestawu: tematy z FAKTYCZNEJ zawartości pytań, nie z listy dopuszczalnej setupu', async () => {
+  const { zbierzMetaZestawu } = await import('../app/zestawy.js');
+  const wspolne = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1 };
+  const zPytaniami = zbierzMetaZestawu({ ...wspolne, tematy: ['historia', 'przyroda', 'architektura'], pytania: [{ temat: 'historia' }, { temat: 'architektura' }] });
+  assert.deepEqual(zPytaniami.tematy, ['historia', 'architektura'], 'meta opisuje to, co paczka NAPRAWDĘ niesie');
+  const bezPytan = zbierzMetaZestawu({ ...wspolne, tematy: ['historia', 'przyroda'] });
+  assert.deepEqual(bezPytan.tematy, ['historia', 'przyroda'], 'bez pytań zostaje lista z argumentu (eksport meta bez paczki)');
+  const pytaniaBezTematow = zbierzMetaZestawu({ ...wspolne, tematy: ['historia', 'przyroda'], pytania: [{ tresc: 'x?' }, { temat: '' }] });
+  assert.deepEqual(pytaniaBezTematow.tematy, ['historia', 'przyroda'], 'pytania bez czytelnych tematów = fallback na listę argumentu');
+});

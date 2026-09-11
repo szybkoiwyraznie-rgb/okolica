@@ -3,12 +3,18 @@
  * atrapy DOM + dwa importy `app.js`, grające end-to-end przeciw atrapie mostu
  * Drive (lustrzanej wobec `docs/setup/apps-script-repo-paczek.gs`).
  *
- * Scenariusze z planu:
- *  - wyścig: załóż → dołącz PRZEZ LOBBY → start → dojścia → odpowiedzi → koniec
- *    → wyniki po obu stronach; po drodze kolejka offline i flush po powrocie sieci;
- *  - tury: załóż → dołącz KODEM → bramka „nie Twoja tura" → resume po
+ * Scenariusze (m12-74: przepisany flow właściciela 2026-09-11):
+ *  - setup: rodzaj gry i ścieżka multi (załóż/dołącz) to SEGMENTY na setupie,
+ *    tożsamość = imię+PIN z bloku „Kto gra?" (dokładnie jeden gracz);
+ *  - załóż: Dalej → pozycja → PASUJĄCA paczka z telefonu (karta propozycji)
+ *    → lobby; albo pełna ścieżka AI (stacje-sekret → wklejenie) → lobby;
+ *  - dołącz: TYLKO z listy „Host: X" w zasięgu ~50 m (geohash8), bez kodów;
+ *  - wyścig: start → droga offline z kolejką → wyniki po obu stronach;
+ *  - wspólna trasa: ta sama trasa po kolei, każde tempo własne → resume po
  *    „odświeżeniu" telefonu (zamknięte stacje nie wracają) → wyniki;
- *  - odmowa bez zgody (zero wysyłek), odrzucenie zdarzenia poza turą (R08);
+ *    osobno start SOLO i koniec gry z ręki hosta;
+ *  - odmowa bez potwierdzonego imienia (zero wysyłek), odrzucenie odpowiedzi
+ *    bez dojścia (R08);
  *  - SKANER ciał POST: współrzędne GRACZA nigdy nie wychodzą (ADR 0019 pkt 3).
  *    Wyjątek celowy i jawny: `zestaw.stacje` w gra-zaloz — mapa gry jest
  *    współdzielona dokładnie tak jak paczka w repozytorium (ADR 0016/0017).
@@ -18,12 +24,13 @@
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync as czytajPlik } from 'node:fs';
 
 import { zainstalujDom } from './helpers/dom.js';
-import { WERSJA_PROTOKOLU } from '../app/protokol.js';
+import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV3 } from '../app/protokol.js';
 import { zapakujPaczke } from '../app/kodowanie.js';
 import { KLUCZ_REJESTRU, SCHEMAT_LOKALNY, kluczZestawu, nowyRejestr, zbierzMetaZestawu } from '../app/zestawy.js';
-import { biezacyGraczTury, czyKompletna, generujKod, przeliczWyniki, zbudujZdarzenie } from '../app/wieloosobowa.js';
+import { czyKompletna, generujKod, przeliczWyniki, zbudujZdarzenie } from '../app/wieloosobowa.js';
 import { polecenieMostu, utworzSynchronizacje } from '../app/sync.js';
 
 const URL_MOSTU = 'https://script.google.com/macros/s/TEST/exec';
@@ -36,9 +43,9 @@ const POLA_ZAKAZANE = ['lat', 'lon', 'szerokosc', 'dlugosc', 'latitude', 'longit
 
 /**
  * Lustro sekcji gier z `.gs` (te same reguły: lobby-only join, max 8, unikalny
- * pseudonim, start u organizatora, tury wg `biezacyGraczTury`, dojscie przed
- * odpowiedz, kasowanie współrzędnych, `czyKompletna` → wyniki). Logikę tur/
- * wyników bierzemy z `app/wieloosobowa.js` — parzystość moduł↔.gs pilnuje
+ * pseudonim, start u organizatora, dojscie przed odpowiedzią, kasowanie
+ * współrzędnych, `czyKompletna` → wyniki). Logikę wyników bierzemy z
+ * `app/wieloosobowa.js` — parzystość moduł↔.gs pilnuje
  * `test/kontrakt.test.js`, więc atrapa nie może się rozjechać z produkcją.
  */
 function atrapaMostu() {
@@ -72,11 +79,14 @@ function atrapaMostu() {
       const params = new URL(String(url)).searchParams;
       const akcja = params.get('akcja');
       if (akcja === 'gry') {
+        // m12-74: tylko lobby (po starcie nie ma dołączania — właściciel,
+        // 2026-09-11) i z geohash8 hosta (miara zasięgu ~50 m)
         const wpisy = [...gry.values()]
-          .filter((g) => g.stan !== 'zakonczona' && g.stan !== 'archiwum' && g.gracze.length < 8)
+          .filter((g) => g.stan === 'lobby' && g.gracze.length < 8)
           .map((g) => ({
             idGry: g.idGry, tryb: g.tryb, stan: g.stan, miejsce: g.konfiguracja.miejsce,
-            geohash5: g.konfiguracja.geohash5, wiek: g.konfiguracja.wiek, tematy: g.konfiguracja.tematy,
+            geohash5: g.konfiguracja.geohash5, geohash8: g.konfiguracja.geohash8,
+            wiek: g.konfiguracja.wiek, tematy: g.konfiguracja.tematy,
             liczbaGraczy: g.gracze.length, utworzono: g.utworzono, organizator: g.gracze[0]?.pseudonim,
           }));
         return json({ schemat: 'RO-lobby/1', wpisy });
@@ -118,7 +128,7 @@ function atrapaMostu() {
     return null;
   }
   function zaloz(dane) {
-    if (dane.tryb !== 'wyscig' && dane.tryb !== 'tury') return { ok: false, blad: 'tryb musi być wyscig albo tury' };
+    if (dane.tryb !== 'trasa' && dane.tryb !== 'wyscig') return { ok: false, blad: 'tryb musi być trasa albo wyscig' };
     const pseudonim = String(dane.organizator?.pseudonim ?? '').trim();
     if (!pseudonim) return { ok: false, blad: 'pseudonim organizatora jest wymagany' };
     const k = dane.konfiguracja ?? {};
@@ -126,6 +136,12 @@ function atrapaMostu() {
       || !Array.isArray(k.tematy) || !k.tematy.length || typeof k.miejsce !== 'string'
       || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
       return { ok: false, blad: 'konfiguracja gry niekompletna' };
+    }
+    if (typeof k.geohash8 !== 'string' || k.geohash8.length !== 8) {
+      return { ok: false, blad: 'konfiguracja wymaga geohash8 (8 znaków, pozycja hosta)' };
+    }
+    if (dane.trasaSekret !== undefined && typeof dane.trasaSekret !== 'boolean') {
+      return { ok: false, blad: 'trasaSekret musi być true/false' };
     }
     const z = dane.zestaw ?? {};
     if (!Array.isArray(z.stacje) || !z.stacje.length || z.kontener?.schemat !== 'TO-paczka/2' || !z.meta) {
@@ -135,6 +151,7 @@ function atrapaMostu() {
     const teraz = new Date().toISOString();
     const gra = {
       schemat: 'RO-gra/1', kod: generujKod(), idGry: `plik-${gry.size + 1}`, tryb: dane.tryb,
+      trasaSekret: dane.trasaSekret === true,
       stan: 'lobby', utworzono: teraz, organizatorId: 'g-1',
       gracze: [{ id: 'g-1', pseudonim, dolaczyl: teraz }],
       konfiguracja: k, zestaw: { stacje: z.stacje, kontener: z.kontener, meta: z.meta },
@@ -177,10 +194,6 @@ function atrapaMostu() {
     if (z.typ === 'dojscie' || z.typ === 'odpowiedz') {
       const n = Number(z.stacjaId);
       if (!(n >= 1 && n <= gra.konfiguracja.liczbaStacji)) return { ok: false, blad: 'stacjaId poza zakresem' };
-      if (gra.tryb === 'tury') {
-        const czyj = biezacyGraczTury(gra);
-        if (czyj !== z.graczId) return { ok: false, blad: `teraz jest tura gracza ${czyj} — poczekaj na swoją kolej` };
-      }
       if (z.typ === 'odpowiedz') {
         if (!gra.zdarzenia.some((e) => e.typ === 'dojscie' && e.graczId === z.graczId && Number(e.stacjaId) === n)) {
           return { ok: false, blad: 'odpowiedź bez dojścia' };
@@ -286,6 +299,47 @@ async function zmien(u, id) {
 function tekst(u, id) { przelaczNa(u); return u.dom.pobierz(id).textContent; }
 function el(u, id) { przelaczNa(u); return u.dom.pobierz(id); }
 
+/** Czeka (aktywnie, z timeoutem) na warunek — jak dojdzSymulacja, ale ogólnie. */
+async function czekajNa(u, warunek, opis, maksMs = 5000) {
+  const start = Date.now();
+  while (!warunek()) {
+    if (Date.now() - start > maksMs) throw new Error(`${opis} nie nastąpiło w ${maksMs} ms — status: ${tekst(u, 'status')}`);
+    await new Promise((r) => setTimeout(r, 20));
+  }
+}
+
+/** Zaznacza opcję segmentu (radio w etykiecie) i odpala change kontenera.
+ *  Atrapa DOM nie grupuje radiów (przeglądarka odznacza siostra sama), więc
+ *  zdejmujemy „checked” z pozostanych opcji ręcznie. */
+async function wybierzSegment(u, id, wartosc) {
+  przelaczNa(u);
+  const inputy = [...u.dom.pobierz(id).children].flatMap((etykieta) => [...(etykieta?.children ?? [])]);
+  const input = inputy.find((i) => i?.value === wartosc);
+  assert.ok(input, `segment #${id} ma opcję „${wartosc}”`);
+  for (const i of inputy) if (i?.checked !== undefined) i.checked = false;
+  input.checked = true;
+  for (const fn of u.dom.pobierz(id).zdarzenia.change ?? []) fn({ type: 'change', target: input });
+  await oddech();
+}
+
+/** Wpisuje liczbę w pole setupu Z zdarzeniem input (STAN musi ją zobaczyć). */
+async function wpiszLiczbe(u, id, wartosc) {
+  przelaczNa(u);
+  const pole = u.dom.pobierz(id);
+  pole.value = wartosc;
+  for (const fn of pole.zdarzenia.input ?? []) fn({ type: 'input', target: pole });
+  await oddech();
+}
+
+/** Tożsamość m12-74: imię+PIN w bloku „Kto gra?” — jedno wołanie profil-ustaw. */
+async function dodajGraczaUI(u, pseudonim, pin = '1234') {
+  przelaczNa(u);
+  u.dom.pobierz('profil-pseudonim').value = pseudonim;
+  u.dom.pobierz('profil-pin').value = pin;
+  await klik(u, 'przycisk-dodaj-gracza');
+  await czekajNa(u, () => el(u, 'lista-graczy').children.length > 0, `gracz ${pseudonim} na liście`);
+}
+
 /** Pompuje N kroków synchronizacji urządzenia (ręczny harmonogram z `?odstep=0`). */
 async function przepompuj(u, ile = 1) {
   for (let i = 0; i < ile; i += 1) {
@@ -309,9 +363,9 @@ function stacjeTestowe(ile) {
   }));
 }
 
-function paczkaTestowa(stacje, pytaniaNaStacje = 1) {
+function paczkaTestowa(stacje, pytaniaNaStacje = 1, { factcheck = true } = {}) {
   return {
-    protokol: WERSJA_PROTOKOLU,
+    protokol: factcheck ? WERSJA_PROTOKOLU : WERSJA_PROTOKOLU_REV3,
     okolica: { lat: stacje[0].lat, lon: stacje[0].lon, promienM: 1000, miejsce: 'Podkowa Leśna' },
     wiek: 'dorosli', tematy: ['historia'], jezyk: 'polski', utworzono: '2026-09-06 10:00',
     pytania: stacje.flatMap((s) => Array.from({ length: pytaniaNaStacje }, (_, k) => ({
@@ -326,9 +380,9 @@ function paczkaTestowa(stacje, pytaniaNaStacje = 1) {
 }
 
 /** Zestaw lokalny w pamięci telefonu (rejestr + wpis) — źródło „z tego telefonu". */
-function zasiejZestaw(pamiec, ileStacji, pytaniaNaStacje = 1) {
+function zasiejZestaw(pamiec, ileStacji, pytaniaNaStacje = 1, { factcheck = true } = {}) {
   const stacje = stacjeTestowe(ileStacji);
-  const kontener = zapakujPaczke(paczkaTestowa(stacje, pytaniaNaStacje), WERSJA_PROTOKOLU);
+  const kontener = zapakujPaczke(paczkaTestowa(stacje, pytaniaNaStacje, { factcheck }), factcheck ? WERSJA_PROTOKOLU : WERSJA_PROTOKOLU_REV3);
   const meta = zbierzMetaZestawu({
     lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
     jezyk: 'polski', miejsce: 'Podkowa Leśna', liczbaStacji: stacje.length, pytaniaNaStacje,
@@ -340,34 +394,67 @@ function zasiejZestaw(pamiec, ileStacji, pytaniaNaStacje = 1) {
   return { stacje, kontener, meta };
 }
 
-/** Tożsamość + pozycja (ręczna, tryb testowy) — telefon gotowy do gry (adres mostu: ADR 0020). */
-async function przygotujTelefon(u, pseudonim) {
-  ustaw(u, 'multi-pseudonim', pseudonim);
+/** Kod jedynej gry na moście (lobby nie pokazuje już kodu — m12-74). */
+function kodGry(most) {
+  const gry = [...most.gry.values()];
+  assert.equal(gry.length, 1, 'na moście jest dokładnie jedna gra');
+  return gry[0].kod;
+}
+
+/**
+ * Telefon gotowy do gry multi (m12-74): rodzaj gry „Wielu graczy” na setupie,
+ * dokładnie JEDEN potwierdzony gracz (imię+PIN), liczba stacji pod paczkę
+ * (propozycje na ekranie pozycji dopasowują się po liczbie pytań) i pozycja.
+ */
+async function przygotujTelefon(u, pseudonim, { stacje = 2 } = {}) {
+  await wybierzSegment(u, 'lista-rodzajow', 'multi');
+  assert.equal(el(u, 'karta-multi').hidden, false, 'karta multi widoczna po wyborze rodzaju');
+  await wpiszLiczbe(u, 'setup-stacje', String(stacje));
+  await dodajGraczaUI(u, pseudonim);
   await ustawPozycjeTestowa(u);
 }
 
-async function zalozGreUI(u, { tryb = 'wyscig', skrot }) {
-  await klik(u, 'przycisk-multi-zaloz'); // walidacja (pseudonim, zgoda, most) → panel „załóż"
-  assert.equal(el(u, 'multi-panel-zaloz').hidden, false, 'panel zakładania widoczny');
-  if (tryb === 'tury') {
+/**
+ * Zakłada grę przez nowy flow: setup (tryb) → „Dalej: moja pozycja” →
+ * PASUJĄCA paczka z telefonu („▶ Graj z tą paczką”) → lobby.
+ */
+async function zalozGreUI(u, { tryb = 'wyscig', sekret = null } = {}) {
+  przelaczNa(u);
+  const etykietaTrybu = tryb === 'trasa' ? 'Wspólna Trasa' : 'Wyścig na Orientację';
+  const przyciskTrybu = [...u.dom.pobierz('multi-tryby').children].find((b) => b.textContent.includes(etykietaTrybu));
+  assert.ok(przyciskTrybu, `przycisk trybu „${etykietaTrybu}” w segmencie`);
+  kliknijEl(przyciskTrybu);
+  await oddech();
+  if (sekret !== null) {
     przelaczNa(u);
-    const przyciskTury = [...u.dom.pobierz('multi-tryby').children].find((b) => b.textContent.includes('Tury'));
-    assert.ok(przyciskTury, 'przycisk trybu „Tury" w segmencie');
-    kliknijEl(przyciskTury);
+    const ptaszek = u.dom.pobierz('multi-trasa-sekret');
+    ptaszek.checked = sekret;
+    for (const fn of ptaszek.zdarzenia.change ?? []) fn({ type: 'change', target: ptaszek });
     await oddech();
   }
-  ustaw(u, 'multi-zrodlo', `lokalna:${skrot}`);
-  await zmien(u, 'multi-zrodlo');
-  assert.match(tekst(u, 'multi-zaloz-info'), /paczka z tego telefonu/, 'źródło wczytane');
-  await klik(u, 'przycisk-zaloz-gre');
-  assert.match(tekst(u, 'lobby-kod'), /^[23456789ABCDEFGHJKLMNPQRSTUVWXYZ]{6}$/, 'kod gry w lobby');
+  await klik(u, 'przycisk-dalej-pozycja');
+  assert.equal(el(u, 'ekran-pozycja').hidden, false, 'Dalej prowadzi na ekran pozycji');
+  // karta propozycji: lokalna paczka musi się dopasować (m12-74: paczka PRZED lobby)
+  await czekajNa(u, () => el(u, 'zestawy-lista').children.length > 0, 'lokalna paczka w propozycjach');
+  const wiersz = el(u, 'zestawy-lista').children[0];
+  const przyciskPaczki = [...wiersz.children].at(-1);
+  assert.match(przyciskPaczki.textContent, /Graj z tą paczką/);
+  przelaczNa(u);
+  kliknijEl(przyciskPaczki);
+  await czekajNa(u, () => el(u, 'multi-panel-lobby').hidden === false, 'lobby po paczce');
 }
 
-async function dolaczKodemUI(u, kod) {
-  await klik(u, 'przycisk-multi-dolacz');
-  ustaw(u, 'multi-kod', kod);
-  await klik(u, 'przycisk-dolacz-kod');
-  assert.equal(el(u, 'multi-panel-lobby').hidden, false, 'gość trafił do lobby');
+/** Dołącza z listy gier w zasięgu ~50 m (m12-74: bez kodów, wpis „Host: X”). */
+async function dolaczZListyUI(u) {
+  await wybierzSegment(u, 'multi-sciezka', 'dolacz');
+  assert.match(tekst(u, 'przycisk-dalej-pozycja'), /Pokaż gry w okolicy/, 'przycisk dolny zmienia etykietę');
+  await klik(u, 'przycisk-dalej-pozycja');
+  await czekajNa(u, () => el(u, 'multi-lobby-lista').children.length > 0, 'lista gier w zasięgu ~50 m');
+  const wiersz = el(u, 'multi-lobby-lista').children[0];
+  assert.match(wiersz.children[0].textContent, /^Host: /, 'wpis pokazuje tylko hosta');
+  przelaczNa(u);
+  kliknijEl(wiersz.children[1]); // „Dołącz”
+  await czekajNa(u, () => el(u, 'multi-panel-lobby').hidden === false, 'gość w lobby');
 }
 
 /** Odcinek od startu do „następna stacja": droga + dojście z fixów (ADR 0029) + poprawna odpowiedź. */
@@ -388,28 +475,24 @@ async function przejdzStacje(u) {
 const mostWyscig = atrapaMostu();
 let kodWyscigu = null;
 
-test('wyścig end-to-end: załóż → dołącz przez lobby → start → droga offline z kolejką → wyniki po obu stronach', async () => {
-  // urządzenie A: organizator
+test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy → start → droga offline z kolejką → wyniki', async () => {
+  // urządzenie A: organizator — setup multi, tryb wyścig, paczka z telefonu
   const pamiecA = new Map();
-  const zestawA = zasiejZestaw(pamiecA, 2);
-  const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostWyscig });
-  await przygotujTelefon(A, 'Ala');
-  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestawA.kontener.skrot });
-  kodWyscigu = tekst(A, 'lobby-kod');
+  zasiejZestaw(pamiecA, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostWyscig, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  kodWyscigu = kodGry(mostWyscig);
   assert.equal(el(A, 'przycisk-lobby-start').hidden, false, 'organizator widzi przycisk startu');
   assert.match(tekst(A, 'lobby-tryb'), /Wyścig/, 'tryb widoczny w lobby');
+  assert.equal(el(A, 'przycisk-multi-zakoncz').hidden, true, 'w lobby nie ma kończenia gry');
 
-  // urządzenie B: gość dołącza PRZEZ LISTĘ LOBBY (bez kodu)
-  const B = await noweUrzadzenie({ most: mostWyscig });
+  // urządzenie B: gość dołącza Z LISTY gier w zasięgu ~50 m (bez kodu)
+  const B = await noweUrzadzenie({ most: mostWyscig, bezGracza: true });
   await przygotujTelefon(B, 'Bartek');
-  await klik(B, 'przycisk-multi-dolacz');
-  const wierszeLobby = el(B, 'multi-lobby-lista').children;
-  assert.equal(wierszeLobby.length, 1, 'jedna otwarta gra w lobby');
-  assert.match(wierszeLobby[0].textContent, /Podkowa Leśna · wyścig · 1\/8 graczy · organizator: Ala · ok\. \d+(\.\d+)? km/, 'opis gry z miejscem, trybem, organizatorem i odległością od środka komórki geohash');
-  kliknijEl(wierszeLobby[0].children[1]); // „Dołącz"
-  await oddech();
-  assert.equal(el(B, 'multi-panel-lobby').hidden, false, 'gość w lobby');
-  assert.equal(tekst(B, 'lobby-kod'), kodWyscigu, 'ten sam kod gry');
+  await dolaczZListyUI(B);
+  assert.match(tekst(B, 'lobby-tryb'), /Wyścig/, 'gość widzi opcje gry (bez pytań i stacji — tylko ilość)');
+  assert.equal(el(B, 'przycisk-lobby-start').hidden, true, 'gość NIE widzi przycisku startu');
 
   // A widzi Bartka po odświeżeniu stanu (ręczny polling)
   await przepompuj(A, 1);
@@ -435,14 +518,22 @@ test('wyścig end-to-end: załóż → dołącz przez lobby → start → droga 
   assert.match(tekst(B, 'status'), /kolejce/, 'gracz wie, że zdarzenia czekają');
   mostWyscig.online = true;
   await przepompuj(B, 1); // krok: stan + flush kolejki (FIFO)
-  const gra = mostWyscig.znajdz(kodWyscigu);
-  const zdarzeniaB = gra.zdarzenia.filter((z) => z.graczId === 'g-2');
+  const zdarzeniaB = mostWyscig.znajdz(kodWyscigu).zdarzenia.filter((z) => z.graczId === 'g-2');
   assert.deepEqual(zdarzeniaB.map((z) => z.typ), ['dojscie', 'odpowiedz'], 'kolejka wyszła w kolejności FIFO');
   await klik(B, 'przycisk-nastepna-stacja');
 
-  // stacja 2: oboje online — po ostatniej odpowiedzi serwer domyka grę
+  // kanał info (m12-74): dojścia i odpowiedzi zamieniają się w komunikaty
+  await przepompuj(A, 1);
+  const infoA = [...el(A, 'multi-info-lista').children].map((li) => li.textContent).join(' | ');
+  assert.match(infoA, /Bartek: dobra odpowiedź/, 'info: odpowiedź Bartka widoczna');
+  assert.match(infoA, /Bartek jest na stacji/, 'info: dojście Bartka widoczne');
+  assert.match(infoA, /Ala: dobra odpowiedź/, 'info: własna odpowiedź też w kanale');
+
+  // stacje 2–3: oboje online — po ostatniej odpowiedzi serwer domyka grę
+  await przejdzStacje(A);
   await przejdzStacje(A); // A kończy swój zestaw → lokalny ekran wyniku
   await przepompuj(B, 1);
+  await przejdzStacje(B);
   await przejdzStacje(B); // ostatnia odpowiedź → czyKompletna → stan 'zakonczona'
   assert.equal(mostWyscig.znajdz(kodWyscigu).stan, 'zakonczona', 'serwer zamknął grę po wszystkich odpowiedziach');
   await przepompuj(A, 1);
@@ -456,163 +547,273 @@ test('wyścig end-to-end: załóż → dołącz przez lobby → start → droga 
     assert.match(tekst(u, 'gra-multi-sync'), /odświeżanie zatrzymane/, `${nazwa}: polling staje po zakończeniu`);
   }
   const wyniki = mostWyscig.znajdz(kodWyscigu).wyniki;
-  assert.equal(wyniki['g-1'].stacjeZamkniete, 2, 'Ala zamknęła 2 stacje');
-  assert.equal(wyniki['g-2'].stacjeZamkniete, 2, 'Bartek zamknął 2 stacje (w tym z kolejki offline)');
-  assert.equal(wyniki['g-1'].poprawne, 2, 'obie odpowiedzi Ali poprawne');
-  // premia za kolejność ukończenia (ADR 0027 część B pkt 5): Ala pierwsza, Bartek drugi
-  assert.equal(wyniki['g-1'].premia, 1, 'Ala skończyła pierwsza: premia G−1 = 1');
-  assert.equal(wyniki['g-2'].premia, 0, 'Bartek drugi: premia 0');
-  assert.equal(wyniki['g-1'].punkty, 3, 'podsumowanie: 2 pkt z odpowiedzi + premia 1');
-  assert.equal(wyniki['g-2'].punkty, 2, 'Bartek: 2 pkt, bez premii');
-  // tabela na obu telefonach: kolumna premii i postęp „ile z ilu"
+  assert.equal(wyniki['g-1'].stacjeZamkniete, 3, 'Ala zamknęła 3 stacje');
+  assert.equal(wyniki['g-2'].stacjeZamkniete, 3, 'Bartek zamknął 3 stacje (w tym z kolejki offline)');
+  assert.equal(wyniki['g-1'].poprawne, 3, 'wszystkie odpowiedzi Ali poprawne');
+  // premia za kolejność ukończenia: STAŁA 3/2/1 (właściciel, 2026-09-11)
+  assert.equal(wyniki['g-1'].premia, 3, 'Ala skończyła pierwsza: premia 3');
+  assert.equal(wyniki['g-2'].premia, 2, 'Bartek drugi: premia 2 (stała 3/2/1)');
+  assert.equal(wyniki['g-1'].punkty, 6, 'podsumowanie: 3 pkt z odpowiedzi + premia 3');
+  assert.equal(wyniki['g-2'].punkty, 5, 'Bartek: 3 pkt + premia 2');
+  // tabela na obu telefonach: kolumna premii i postęp „ile z ilu”
   for (const [nazwa, u] of [['A', A], ['B', B]]) {
     const wiersze = [...el(u, 'gra-multi-wiersze').children];
-    assert.match(wiersze[0].textContent, /Ala.*2\/2.*\+1/, `${nazwa}: pierwsza w tabeli ma postęp 2/2 i premię +1`);
-    assert.match(wiersze[1].textContent, /Bartek.*2\/2.*—/, `${nazwa}: drugi ma postęp 2/2 i kreskę zamiast premii`);
+    assert.match(wiersze[0].textContent, /Ala.*3\/3.*\+3/, `${nazwa}: pierwsza w tabeli ma postęp 3/3 i premię +3`);
+    assert.match(wiersze[1].textContent, /Bartek.*3\/3.*\+2/, `${nazwa}: drugi ma postęp 3/3 i premię +2`);
   }
 });
 
-const mostTury = atrapaMostu();
-let kodTur = null;
+const mostTrasy = atrapaMostu();
+let kodTrasy = null;
 
-test('tury end-to-end: dołącz kodem → bramka tury → resume po odświeżeniu → wyniki', async () => {
-  // A zakłada grę na 4 stacje (tury: A ma 1 i 3, B ma 2 i 4)
+test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume po odświeżeniu → wyniki', async () => {
+  // A zakłada Wspólną Trasę na 4 stacje: obaj gracze przechodzą WSZYSTKIE,
+  // po kolei, każde we własnym tempie (właściciel, 2026-09-11).
   const pamiecA = new Map();
-  const zestawA = zasiejZestaw(pamiecA, 4);
-  const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostTury });
-  await przygotujTelefon(A, 'Celina');
-  await zalozGreUI(A, { tryb: 'tury', skrot: zestawA.kontener.skrot });
-  kodTur = tekst(A, 'lobby-kod');
+  zasiejZestaw(pamiecA, 4);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostTrasy, bezGracza: true });
+  await przygotujTelefon(A, 'Celina', { stacje: 4 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  assert.match(tekst(A, 'lobby-tryb'), /Wspólna Trasa/, 'lobby nazywa tryb');
+  assert.match(tekst(A, 'lobby-tryb'), /tylko kolejna stacja/, 'lobby mówi o trasa-sekret (domyślnie ✓)');
+  assert.equal(mostTrasy.znajdz(kodGry(mostTrasy)).trasaSekret, true, 'sekret zapisany w grze na moście');
+  kodTrasy = kodGry(mostTrasy);
 
-  // B dołącza KODEM (druga ścieżka parowania)
+  // B dołącza Z LISTY (~50 m, bez kodu — m12-74)
   const pamiecB = new Map();
-  const B = await noweUrzadzenie({ pamiec: pamiecB, most: mostTury });
+  const B = await noweUrzadzenie({ pamiec: pamiecB, most: mostTrasy, bezGracza: true });
   await przygotujTelefon(B, 'Czarek');
-  await dolaczKodemUI(B, kodTur);
-  assert.equal(tekst(B, 'lobby-kod'), kodTur, 'kod przepisany z telefonu na telefon');
+  await dolaczZListyUI(B);
+  assert.match(tekst(B, 'lobby-tryb'), /Wspólna Trasa.*tylko kolejna stacja/, 'opcje gry z sekretem u gościa');
 
   await klik(A, 'przycisk-lobby-start');
   await przepompuj(B, 1);
   assert.equal(el(B, 'ekran-gra').hidden, false, 'B wystartował');
-  assert.equal(tekst(B, 'gra-postep'), 'stacja 1 z 2', 'w turach B ma swoje 2 z 4 stacji');
+  assert.equal(tekst(B, 'gra-postep'), 'stacja 1 z 4', 'trasa: B ma przed sobą wszystkie 4 stacje');
+  assert.equal(el(B, 'multi-wybor-stacji').hidden, true, 'trasa: lista wyboru schowana — kolejność narzuca trasa');
+  assert.match(tekst(B, 'gra-multi-tura'), /Wspólna Trasa/, 'panel mówi: wspólna trasa, po kolei');
 
-  // bramka tury: teraz idzie A — B nie zacznie odcinka (odmowa lokalna, R08 pilnuje serwer)
-  await klik(B, 'przycisk-start-odcinka');
-  assert.match(tekst(B, 'status'), /Teraz idzie: Celina/, 'jawna odmowa: czyja jest tura');
-  assert.equal(el(B, 'gra-panel-odcinek').hidden, true, 'odcinek B nie ruszył');
-  assert.match(tekst(B, 'gra-multi-tura'), /Teraz idzie: Celina/, 'panel tur mówi, kto idzie');
-
-  // A zamyka stację 1 → tura przechodzi na B
-  await przejdzStacje(A);
-  await przepompuj(B, 1);
-  assert.match(tekst(B, 'gra-multi-tura'), /Twoja tura/, 'B widzi swoją turę po odświeżeniu');
-  await klik(B, 'przycisk-start-odcinka');
-  assert.equal(el(B, 'gra-panel-odcinek').hidden, false, 'w swojej turze B rusza');
-  await dojdzSymulacja(B);
-  przelaczNa(B);
-  kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
+  // Nikt na nikogo nie czeka: B zamyka stację 1, a A w tym czasie dopiero RUSZA
+  // swoją stację 1 (to ta sama stacja, ale w własnym tempie każdego gracza).
+  await przejdzStacje(B);
+  await klik(A, 'przycisk-start-odcinka');
+  assert.equal(el(A, 'gra-panel-odcinek').hidden, false, 'A nie czeka na B — tempo własne');
+  await dojdzSymulacja(A);
+  przelaczNa(A);
+  kliknijEl(A.dom.pobierz('gra-odpowiedzi').children[0]);
   await oddech();
-  await klik(B, 'przycisk-nastepna-stacja');
+  await klik(A, 'przycisk-nastepna-stacja');
+  assert.equal(tekst(A, 'gra-postep'), 'stacja 2 z 4', 'A idzie do stacji 2 — kolejność po kolei');
 
-  // RESUME: telefon B „odświeżony" (nowa instalacja DOM, TA SAMA pamięć)
-  const B2 = await noweUrzadzenie({ pamiec: pamiecB, most: mostTury });
+  // RESUME: telefon B „odświeżony” (nowa instalacja DOM, TA SAMA pamięć)
+  const B2 = await noweUrzadzenie({ pamiec: pamiecB, most: mostTrasy, bezGracza: true });
   assert.equal(el(B2, 'multi-wznowienie').hidden, false, 'baner powrotu do gry widoczny po odświeżeniu');
-  assert.match(tekst(B2, 'multi-wznowienie-opis'), new RegExp(kodTur), 'baner pamięta kod gry');
+  assert.match(tekst(B2, 'multi-wznowienie-opis'), /dołączyłeś/, 'baner pamięta, że B dołączył do gry');
   await klik(B2, 'przycisk-multi-wroc');
   assert.equal(el(B2, 'ekran-gra').hidden, false, 'powrót prosto do gry');
-  assert.equal(tekst(B2, 'gra-postep'), 'stacja 1 z 1', 'zamknięta stacja 2 nie wraca — została tylko 4');
-  assert.match(tekst(B2, 'gra-multi-tura'), /Teraz idzie: Celina/, 'po powrocie tura znowu A (stacja 3)');
+  assert.equal(tekst(B2, 'gra-postep'), 'stacja 1 z 3', 'zamknięta stacja 1 nie wraca — zostały 3');
   await ustawPozycjeTestowa(B2); // świeży telefon: GPS brak, więc pozycja z ekranu 2
 
-  // A zamyka 3, B2 zamyka 4 → gra kompletna
-  await przepompuj(A, 1);
+  // A i B2 domykają resztę trasy (po kolei, każdy u siebie) → gra kompletna
   await przejdzStacje(A);
-  await przepompuj(B2, 1);
-  assert.match(tekst(B2, 'gra-multi-tura'), /Twoja tura/, 'ostatnia tura B');
+  await przejdzStacje(A);
+  await przejdzStacje(A);
   await przejdzStacje(B2);
-  assert.equal(mostTury.znajdz(kodTur).stan, 'zakonczona', 'tury domknięte po wszystkich stacjach');
+  await przejdzStacje(B2);
+  await przejdzStacje(B2);
+  assert.equal(mostTrasy.znajdz(kodTrasy).stan, 'zakonczona', 'trasa domknięta: obaj przeszli wszystkie stacje');
   await przepompuj(A, 1);
   await przepompuj(B2, 1);
-  const wyniki = mostTury.znajdz(kodTur).wyniki;
-  assert.deepEqual([wyniki['g-1'].stacjeZamkniete, wyniki['g-2'].stacjeZamkniete], [2, 2], 'po dwie stacje na gracza');
+  const wyniki = mostTrasy.znajdz(kodTrasy).wyniki;
+  assert.deepEqual([wyniki['g-1'].stacjeZamkniete, wyniki['g-2'].stacjeZamkniete], [4, 4], 'po cztery stacje na gracza');
   for (const u of [A, B2]) {
     assert.equal(el(u, 'gra-multi-wiersze').children.length, 2, 'tabela wyników po obu stronach');
     assert.match(tekst(u, 'gra-multi-sync'), /odświeżanie zatrzymane/, 'synchronizacja zatrzymana');
   }
   assert.equal(el(B2, 'multi-wznowienie').hidden, true, 'po zakończeniu gry baner powrotu znika (sesja wyczyszczona)');
-  assert.equal(mostTury.znajdz(kodTur).zdarzenia.every((z) => !POLA_ZAKAZANE.some((p) => p in (z.dane ?? {}))), true, 'serwer nie przyjął współrzędnych w zdarzeniach');
+  assert.equal(mostTrasy.znajdz(kodTrasy).zdarzenia.every((z) => !POLA_ZAKAZANE.some((pz) => pz in (z.dane ?? {}))), true, 'serwer nie przyjął współrzędnych w zdarzeniach');
 });
 
-test('bez pseudonimu NIE wysyłam niczego — jawna odmowa (setup → multi)', async () => {
+test('start SOLO: organizator wystartuje grę z jednym graczem i sam ją domyka', async () => {
   const most = atrapaMostu();
-  const u = await noweUrzadzenie({ most });
-  await przygotujTelefon(u, 'Daria');
-  przelaczNa(u);
-  u.dom.pobierz('multi-pseudonim').value = ''; // zgody już nie ma — bramką jest pseudonim
-  await klik(u, 'przycisk-multi-zaloz');
-  assert.equal(el(u, 'bledy-multi').hidden, false, 'odmowa widoczna w polu błędów');
-  assert.match(tekst(u, 'bledy-multi'), /Wpisz pseudonim/, 'komunikat mówi wprost, czego brakuje');
-  await klik(u, 'przycisk-multi-dolacz');
-  assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez pseudonimu');
+  const pamiec = new Map();
+  zasiejZestaw(pamiec, 3);
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await przygotujTelefon(A, 'Ola', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  const kod = kodGry(most);
+  assert.match(tekst(A, 'lobby-status'), /solo/, 'lobby mówi wprost: można wystartować solo');
+  await klik(A, 'przycisk-lobby-start');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'gra ruszyła z jednym graczem');
+  await przejdzStacje(A);
+  await przejdzStacje(A);
+  await przejdzStacje(A);
+  const gra = most.znajdz(kod);
+  assert.equal(gra.stan, 'zakonczona', 'solo domyka grę sam');
+  assert.deepEqual(Object.keys(gra.wyniki), ['g-1'], 'wyniki dla jednego gracza');
+  assert.equal(gra.wyniki['g-1'].stacjeZamkniete, 3, 'wszystkie stacje zamknięte');
+  assert.equal(gra.wyniki['g-1'].premia, 0, 'bez rywali nie ma premii za kolejność');
+});
+
+test('host kończy grę przyciskiem: podsumowanie u wszystkich, premia liczy się też przy przedwczesnym końcu', async () => {
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(pamiecA, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+
+  // Bartek domyka WSZYSTKIE stacje pierwszy; Ala tylko jedną — i host kończy grę
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  await przejdzStacje(A);
+  await przepompuj(A, 1);
+  assert.equal(el(A, 'przycisk-multi-zakoncz').hidden, false, 'host w grze widzi „Zakończ grę”');
+  assert.equal(el(B, 'przycisk-multi-zakoncz').hidden, true, 'gość go NIE widzi');
+  await klik(A, 'przycisk-multi-zakoncz');
+  await czekajNa(A, () => most.znajdz(kodGry(most)).stan === 'zakonczona', 'most zakończył grę po kliknięciu hosta');
+  const kod = kodGry(most);
+  const wyniki = most.znajdz(kod).wyniki;
+  assert.equal(wyniki['g-2'].premia, 3, 'Bartek skończył przed końcem gry: premia 3 liczy się także przy przedwczesnym końcu');
+  assert.equal(wyniki['g-2'].punkty, 6, '3 odpowiedzi + premia 3');
+  assert.equal(wyniki['g-1'].premia, 0, 'Ala nie domknęła stacji: bez premii');
+  await przepompuj(B, 1);
+  for (const [nazwa, u] of [['A', A], ['B', B]]) {
+    await czekajNa(u, () => el(u, 'gra-multi-wiersze').children.length === 2, `${nazwa}: tabela podsumowania`);
+    assert.match(tekst(u, 'gra-multi-sync'), /odświeżanie zatrzymane/, `${nazwa}: koniec gry zatrzymuje polling`);
+    const info = [...el(u, 'multi-info-lista').children].map((li) => li.textContent).join(' | ');
+    assert.match(info, /zakończył grę|opuszcza grę|dobra odpowiedź/, `${nazwa}: kanał info żyje`);
+  }
+  // kanał info: rezygnacja tez ma komunikat
+});
+
+test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) → wklejenie → LOBBY', async () => {
+  const most = atrapaMostu();
+  // konfig zgodny z fixturem paczka-ok.json (3 stacje × 1 pytanie, tematy z paczki)
+  const KONFIG_AI = JSON.stringify({
+    schemat: 'konfig/1',
+    konfig: {
+      tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
+      tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
+      karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
+    },
+  });
+  const pamiec = new Map([['okolica:konfig', KONFIG_AI]]);
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  // setup: rodzaj gry multi (tryb trasa + sekret to domyślne), dokładnie jeden gracz
+  await wybierzSegment(A, 'lista-rodzajow', 'multi');
+  assert.equal(el(A, 'pole-pytania').hidden, true, 'w multi nie ma pola „pytań na stację”');
+  assert.equal(el(A, 'pole-multi-tryb').hidden, false, 'segment trybu multi widoczny');
+  assert.equal(el(A, 'pole-trasa-sekret').hidden, false, 'ptaszek trasa-sekret widoczny przy trasie');
+  assert.equal(el(A, 'multi-trasa-sekret').checked, true, 'sekret domyślnie zaznaczony');
+  await dodajGraczaUI(A, 'Ewa');
+  await ustawPozycjeTestowa(A, { lat: 52.23178, lon: 21.01234 });
+  await klik(A, 'przycisk-dalej-pozycja');
+  assert.equal(el(A, 'ekran-pozycja').hidden, false, 'Dalej prowadzi na ekran pozycji (ścieżka wspólna)');
+
+  await klik(A, 'przycisk-dalej-stacje');
+  await new Promise((r) => setTimeout(r, 40)); // stacje liczą się asynchronicznie (pierścień po 404)
+  assert.equal(el(A, 'ekran-stacje').hidden, false, 'ekran stacji widoczny');
+  // trasa-sekret: organizator widzi tylko STATUS, nie nazwy ani współrzędne
+  assert.equal(el(A, 'lista-stacji').children.length, 1, 'lista stacji ma jeden wiersz statusu');
+  assert.match(tekst(A, 'lista-stacji'), /Stacje wygenerowano: 3/, 'status mówi tylko ile');
+  assert.match(tekst(A, 'lista-stacji'), /ukryte/i, 'ukrycie jest jawne');
+  assert.doesNotMatch(tekst(A, 'lista-stacji'), /52\./, 'współrzędne stacji nie wyciekają');
+  await klik(A, 'przycisk-dalej-prompt');
+  await klik(A, 'przycisk-dalej-paczka');
+  assert.equal(el(A, 'ekran-paczka').hidden, false, 'ekran wklejania widoczny');
+
+  const paczka = JSON.parse(czytajPlik(new URL('./fixtures/paczka-ok.json', import.meta.url), 'utf8'));
+  A.dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
+  // po wklejeniu odpowiedzi modelu otwiera się LOBBY (m12-74) — bez pośrednich paneli
+  await czekajNa(A, () => el(A, 'multi-panel-lobby').hidden === false, 'lobby po wklejeniu paczki');
+  assert.match(tekst(A, 'lobby-tryb'), /Wspólna Trasa/, 'tryb przetrwał całą ścieżkę');
+  assert.match(tekst(A, 'lobby-tryb'), /tylko kolejna stacja/, 'sekret przetrwał całą ścieżkę');
+  const gra = most.znajdz(kodGry(most));
+  assert.equal(gra.trasaSekret, true, 'gra na moście ma trasaSekret');
+  assert.equal(gra.konfiguracja.pytaniaNaStacje, 1, 'liczba stacji = liczba pytań (1 na stację)');
+  assert.match(gra.konfiguracja.geohash8, /^[0-9b-z]{8}$/, 'konfiguracja niesie geohash8 (~50 m)');
+});
+
+test('bez potwierdzonego imienia NIE wysyłam niczego — jawna odmowa (setup → lista gier)', async () => {
+  const most = atrapaMostu();
+  const u = await noweUrzadzenie({ most, bezGracza: true });
+  await wybierzSegment(u, 'lista-rodzajow', 'multi');
+  await wybierzSegment(u, 'multi-sciezka', 'dolacz');
+  await ustawPozycjeTestowa(u);
+  await klik(u, 'przycisk-dalej-pozycja');
+  assert.match(tekst(u, 'bledy-profil'), /co najmniej jednego gracza/, 'odmowa mówi wprost, czego brakuje');
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, true, 'lista gier się NIE otwiera');
+  await klik(u, 'przycisk-dalej-pozycja');
+  assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez potwierdzonego imienia');
   assert.deepEqual(
     most.adresy.filter((a) => /[?&]akcja=(gry|gra-stan|ranking)/.test(a)),
     [],
     'żaden GET gry wieloosobowej nie poszedł (odczyt indeksu paczek jest bez bramki — ADR 0017 pkt 6)',
   );
-  // z pseudonimem — droga wolna (panel się otwiera)
-  przelaczNa(u);
-  u.dom.pobierz('multi-pseudonim').value = 'Daria';
-  await klik(u, 'przycisk-multi-dolacz');
-  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'z pseudonimem panel dołączania otwarty');
+  // z potwierdzonym imieniem — droga wolna (lista gier się otwiera)
+  await dodajGraczaUI(u, 'Daria');
+  await klik(u, 'przycisk-dalej-pozycja');
+  await czekajNa(u, () => el(u, 'multi-panel-dolacz').hidden === false, 'lista gier otwarta po dodaniu gracza');
 });
 
 test('ADR 0020: adres mostu jest w kodzie — telefon bez wpisu w pamięci gra sieciowo od razu', async () => {
   const most = atrapaMostu();
   // pusty wpis w pamięci = brak nadpisania: telefon bierze adres z kodu (stan po wdrożeniu web app)
   const pamiec = new Map([['okolica:multi:url-mostu', '']]);
-  const u = await noweUrzadzenie({ pamiec, most });
-  await przygotujTelefon(u, 'Iga');
+  const u = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await wybierzSegment(u, 'lista-rodzajow', 'multi');
   przelaczNa(u);
   assert.match(tekst(u, 'multi-most-stan'), /podłączony/i, 'karta gry wieloosobowej: adres z kodu działa bez wpisywania');
   assert.match(tekst(u, 'most-stan-repo'), /podłączony/i, 'karta paczek mówi to samo (jedna prawda o stanie mostu)');
-  await klik(u, 'przycisk-multi-zaloz');
-  assert.equal(el(u, 'multi-panel-zaloz').hidden, false, 'panel zakładania otwarty — zero odmowy o adres');
-  assert.doesNotMatch(tekst(u, 'bledy-multi'), /Brak adresu mostu/, 'komunikat o braku adresu nie istnieje w tej wersji');
+  await dodajGraczaUI(u, 'Iga');
+  await ustawPozycjeTestowa(u);
+  await klik(u, 'przycisk-dalej-pozycja');
+  assert.equal(el(u, 'ekran-pozycja').hidden, false, 'ścieżka multi rusza bez odmowy o adres');
+  assert.doesNotMatch(tekst(u, 'bledy-setup'), /Brak adresu mostu/, 'komunikat o braku adresu nie istnieje w tej wersji');
 });
 
-test('serwer odrzuca zdarzenie poza turą (R08) — klient NIE ponawia i mówi dlaczego', async () => {
+test('serwer odrzuca odpowiedź bez dojścia (R08) — klient NIE ponawia i mówi dlaczego', async () => {
   const most = atrapaMostu();
-  // gra tur na 2 stacje, dwóch graczy, wystartowana — tura g-1
+  // wspólna trasa na 2 stacje, dwóch graczy, wystartowana
   const zalozenie = await polecenieMostu(URL_MOSTU, {
-    akcja: 'gra-zaloz', tryb: 'tury', organizator: { pseudonim: 'Ewa' },
-    konfiguracja: { liczbaStacji: 2, pytaniaNaStacje: 1, wiek: 'dorosli', tematy: ['historia'], promienM: 1000, miejsce: 'Podkowa Leśna', geohash5: 'u3qb8' },
+    akcja: 'gra-zaloz', tryb: 'trasa', trasaSekret: true, organizator: { pseudonim: 'Ewa' },
+    konfiguracja: { liczbaStacji: 2, pytaniaNaStacje: 1, wiek: 'dorosli', tematy: ['historia'], promienM: 1000, miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', geohash8: 'u3qb8xyz' },
     zestaw: { stacje: stacjeTestowe(2), kontener: zapakujPaczke(paczkaTestowa(stacjeTestowe(2)), WERSJA_PROTOKOLU), meta: { miejsce: 'Podkowa Leśna' } },
   }, { fetchImpl: most.fetchImpl });
   const kod = zalozenie.gra.kod;
   await polecenieMostu(URL_MOSTU, { akcja: 'gra-dolacz', kod, pseudonim: 'Filip' }, { fetchImpl: most.fetchImpl });
   await polecenieMostu(URL_MOSTU, { akcja: 'gra-start', kod, organizatorId: 'g-1' }, { fetchImpl: most.fetchImpl });
 
-  // g-2 próbuje poza turą: polecenieMostu rzuca z odmowaMostu, sync NIE kolejkuje
-  const pozaTura = zbudujZdarzenie({ kod, graczId: 'g-2', typ: 'dojscie', stacjaId: 2, dane: { czasOdcinkaMs: 60000, trybDojscia: 'reczne' } });
+  // g-2 odpowiada bez dojścia (kolejność zdarzeń, R08): polecenieMostu rzuca
+  // z odmowaMostu, sync NIE kolejkuje
+  const bezDojscia = zbudujZdarzenie({ kod, graczId: 'g-2', typ: 'odpowiedz', stacjaId: 2, dane: { poprawna: true, punktyRazem: 1 } });
   await assert.rejects(
-    polecenieMostu(URL_MOSTU, { akcja: 'gra-zdarzenie', zdarzenie: pozaTura }, { fetchImpl: most.fetchImpl }),
-    (e) => e.odmowaMostu === true && /tura gracza g-1/.test(e.message),
+    polecenieMostu(URL_MOSTU, { akcja: 'gra-zdarzenie', zdarzenie: bezDojscia }, { fetchImpl: most.fetchImpl }),
+    (e) => e.odmowaMostu === true && /odpowiedź bez dojścia/.test(e.message),
   );
   const bledy = [];
   const sync = utworzSynchronizacje({
     urlMostu: URL_MOSTU, graczId: 'g-2', kod, fetchImpl: most.fetchImpl,
     onBlad: (m) => bledy.push(m), timeout: { ustaw: () => 0, czysc: () => {} },
   });
-  const wynik = await sync.wyslijZdarzenie(pozaTura);
+  const wynik = await sync.wyslijZdarzenie(bezDojscia);
   assert.equal(wynik, null, 'odmowa = brak wyniku');
   assert.equal(sync.kolejkaLength, 0, 'odmowa serwera nie ląduje w kolejce (nie ponawiamy)');
-  assert.match(bledy[0], /tura gracza g-1/, 'gracz dostaje powód odmowy');
+  assert.match(bledy[0], /odpowiedź bez dojścia/, 'gracz dostaje powód odmowy');
 });
 
 test('SKANER prywatności: współrzędne gracza nie wychodzą w żadnej wysyłce (ADR 0019 pkt 3)', () => {
   const WZOR_POL = /"(lat|lon|szerokosc|dlugosc|latitude|longitude)"\s*:/;
   let zbadane = 0;
-  for (const [nazwa, most] of [['wyścig', mostWyscig], ['tury', mostTury]]) {
+  for (const [nazwa, most] of [['wyścig', mostWyscig], ['trasa', mostTrasy]]) {
     for (const tekstCiala of most.ciala) {
       const dane = JSON.parse(tekstCiala);
       const kopia = structuredClone(dane);
@@ -632,9 +833,10 @@ test('SKANER prywatności: współrzędne gracza nie wychodzą w żadnej wysyłc
   }
   assert.ok(zbadane >= 20, `skaner zbadał ${zbadane} ciał — oczekuję pełnych rozgrywek (≥20)`);
   // konfiguracja gry niesie geohash5 (przybliżenie okolicy), NIE punkt gracza
-  for (const most of [mostWyscig, mostTury]) {
+  for (const most of [mostWyscig, mostTrasy]) {
     for (const gra of most.gry.values()) {
       assert.match(gra.konfiguracja.geohash5, /^[0-9b-z]{5}$/, 'geohash5 zamiast współrzędnych w konfiguracji');
+      assert.match(gra.konfiguracja.geohash8, /^[0-9b-z]{8}$/, 'geohash8 (miara ~50 m) zamiast współrzędnych');
       for (const z of gra.zdarzenia) {
         assert.deepEqual(Object.keys(z.dane ?? {}).filter((k) => POLA_ZAKAZANE.includes(k)), [], 'zdarzenie bez pól zakazanych');
       }
@@ -645,10 +847,10 @@ test('SKANER prywatności: współrzędne gracza nie wychodzą w żadnej wysyłc
 test('uszkodzony stan z mostu: kod R w statusie, polling nie pada, po naprawie gra wraca', async () => {
   const most = atrapaMostu();
   const pamiec = new Map();
-  const zestaw = zasiejZestaw(pamiec, 1);
-  const A = await noweUrzadzenie({ pamiec, most });
-  await przygotujTelefon(A, 'Ala');
-  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestaw.kontener.skrot });
+  zasiejZestaw(pamiec, 3);
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
   await klik(A, 'przycisk-lobby-start');
   assert.equal(el(A, 'ekran-gra').hidden, false, 'organizator w grze');
 
@@ -803,15 +1005,14 @@ const mostWolna = atrapaMostu();
 test('wolna kolejność: wybór stacji z listy i pytanie własne dla każdego gracza', async () => {
   // paczka 3 stacje × 2 pytania = na dwóch graczy (domyślne po ADR 0027 część A)
   const pamiecA = new Map();
-  const zestaw = zasiejZestaw(pamiecA, 3, 2);
-  const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostWolna });
-  await przygotujTelefon(A, 'Ala');
-  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestaw.kontener.skrot });
-  const kod = tekst(A, 'lobby-kod');
+  zasiejZestaw(pamiecA, 3, 2);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostWolna, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
 
-  const B = await noweUrzadzenie({ most: mostWolna });
+  const B = await noweUrzadzenie({ most: mostWolna, bezGracza: true });
   await przygotujTelefon(B, 'Bartek');
-  await dolaczKodemUI(B, kod);
+  await dolaczZListyUI(B);
   await przepompuj(A, 1);
   await klik(A, 'przycisk-lobby-start');
   await przepompuj(B, 1);
@@ -821,7 +1022,7 @@ test('wolna kolejność: wybór stacji z listy i pytanie własne dla każdego gr
   const przyciski = [...el(A, 'multi-wybor-przyciski').children];
   assert.deepEqual(przyciski.map((b) => b.textContent.split(' ·')[0]), ['Stacja 1', 'Stacja 2', 'Stacja 3'], 'trzy stacje do wyboru');
 
-  // Ala wybiera stację 3 — gra idzie tam, nie „po kolei"
+  // Ala wybiera stację 3 — gra idzie tam, nie „po kolei”
   kliknijEl(przyciski[2]);
   await oddech();
   assert.match(tekst(A, 'przycisk-start-odcinka'), /stacji 3/, 'przycisk drogi wskazuje wybraną stację');
@@ -851,14 +1052,13 @@ test('pytania mniejszej paczki są dzielone, a nie gubione (indeks się zawija)'
   // paczka z JEDNYM pytaniem na stację przy dwóch graczach: gra się nie zatrzymuje
   const most = atrapaMostu();
   const pamiecA = new Map();
-  const zestaw = zasiejZestaw(pamiecA, 2, 1);
+  zasiejZestaw(pamiecA, 3, 1);
   const A = await noweUrzadzenie({ pamiec: pamiecA, most });
-  await przygotujTelefon(A, 'Ala');
-  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestaw.kontener.skrot });
-  const kod = tekst(A, 'lobby-kod');
-  const B = await noweUrzadzenie({ most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
   await przygotujTelefon(B, 'Bartek');
-  await dolaczKodemUI(B, kod);
+  await dolaczZListyUI(B);
   await przepompuj(A, 1);
   await klik(A, 'przycisk-lobby-start');
   await przepompuj(B, 1);
@@ -870,16 +1070,16 @@ test('pytania mniejszej paczki są dzielone, a nie gubione (indeks się zawija)'
   assert.equal(B.dom.pobierz('gra-odpowiedzi').children.length, 4, 'cztery odpowiedzi do wyboru');
 });
 
-test('w turach nie ma wolnego wyboru stacji — kolejność ustala kolejka', async () => {
+test('we Wspólnej Trasie nie ma wolnego wyboru stacji — kolejność ustala trasa', async () => {
   const most = atrapaMostu();
   const pamiecA = new Map();
-  const zestaw = zasiejZestaw(pamiecA, 2);
+  zasiejZestaw(pamiecA, 3);
   const A = await noweUrzadzenie({ pamiec: pamiecA, most });
-  await przygotujTelefon(A, 'Ala');
-  await zalozGreUI(A, { tryb: 'tury', skrot: zestaw.kontener.skrot });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
   await klik(A, 'przycisk-lobby-start');
-  assert.equal(el(A, 'multi-wybor-stacji').hidden, true, 'tury: lista wyboru schowana');
-  assert.match(tekst(A, 'gra-multi-tura'), /Twoja tura|Teraz idzie/, 'tury: komunikat czyjej tury zostaje');
+  assert.equal(el(A, 'multi-wybor-stacji').hidden, true, 'trasa: lista wyboru schowana');
+  assert.match(tekst(A, 'gra-multi-tura'), /Wspólna Trasa/, 'trasa: komunikat o wspólnej trasie');
 });
 
 test('ADR 0032: panel multi pokazuje Q dla zweryfikowanej, notkę dla paczki bez weryfikacji', async () => {
@@ -887,29 +1087,23 @@ test('ADR 0032: panel multi pokazuje Q dla zweryfikowanej, notkę dla paczki bez
 
   const most = atrapaMostu();
   const pamiec = new Map();
-  const zestaw = zasiejZestaw(pamiec, 2); // meta z factcheck:true (domyślne)
-  const A = await noweUrzadzenie({ pamiec, most });
-  await przygotujTelefon(A, 'Ala');
-  await zalozGreUI(A, { tryb: 'wyscig', skrot: zestaw.kontener.skrot });
+  zasiejZestaw(pamiec, 3); // meta z factcheck:true (domyślne)
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
   await klik(A, 'przycisk-lobby-start');
   assert.equal(el(A, 'ekran-gra').hidden, false, 'organizator w grze');
   assert.equal(el(A, 'multi-factcheck').hidden, false, 'linia wariantu widoczna');
   assert.match(tekst(A, 'multi-factcheck'), /fact check/);
   assert.equal(maQ(A), true, 'Q w panelu multi dla paczki zweryfikowanej');
 
-  // wariant bez weryfikacji: ta sama paczka, meta z factcheck:false
+  // wariant bez weryfikacji: paczka w wariancie bez fact-checku (REV3)
   const most2 = atrapaMostu();
   const pamiec2 = new Map();
-  const zestaw2 = zasiejZestaw(pamiec2, 2);
-  for (const klucz of [kluczZestawu(zestaw2.kontener.skrot), KLUCZ_REJESTRU]) {
-    const zapis = JSON.parse(pamiec2.get(klucz));
-    if (zapis.wpisy) zapis.wpisy.forEach((w) => { w.factcheck = false; });
-    else zapis.factcheck = false;
-    pamiec2.set(klucz, JSON.stringify(zapis));
-  }
-  const B = await noweUrzadzenie({ pamiec: pamiec2, most: most2 });
-  await przygotujTelefon(B, 'Bartek');
-  await zalozGreUI(B, { tryb: 'wyscig', skrot: zestaw2.kontener.skrot });
+  zasiejZestaw(pamiec2, 3, 1, { factcheck: false });
+  const B = await noweUrzadzenie({ pamiec: pamiec2, most: most2, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await zalozGreUI(B, { tryb: 'wyscig' });
   await klik(B, 'przycisk-lobby-start');
   assert.match(tekst(B, 'multi-factcheck'), /bez wymuszonego fact-checku/);
   assert.equal(maQ(B), false, 'brak znaczka dla wariantu bez weryfikacji');
