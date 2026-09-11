@@ -2375,3 +2375,14 @@ Kontrakt intro w kontrakt.test.js zaktualizowany (podtytuł asertowany
 teraz w pełnym brzmieniu — silniejsza asercja niż sama końcówka).
 Cache-busting `?v=m12-68` + `WERSJA_SW`. Testy 691/691; żywy podgląd
 Chromium 152 (360×640) potwierdza oba teksty i wersję w stopce.
+
+## Sesja 2026-09-11f — podtytuł Intro, ostateczne brzmienie (m12-69)
+
+Właściciel wrócił z trzecią wersją podtytułu (proces iteracyjny, wszystkie
+dosłowne): „gra terenowa tam, gdziekolwiek jesteś" → „rozwiązuj zagadki,
+gdziekolwiek jesteś" (m12-68) → **„gra terenowa gdziekolwiek jesteś"**
+— powrót do „gra terenowa", ale bez „tam" i bez przecinka. Zdanie o
+składzie gry z m12-68 bez zmian.
+
+Kontrakt intro zsynchronizowany, cache-busting `?v=m12-69` + `WERSJA_SW`.
+Testy 691/691; żywy podgląd potwierdza podtytuł i wersję w stopce.
