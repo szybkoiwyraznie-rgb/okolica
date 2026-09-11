@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-69';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-70';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -78,7 +78,7 @@ export const STANY_FIXA = Object.freeze({
  */
 export const KODY_POZYCJI = {
   P01: 'Ta przeglądarka nie udostępnia położenia. Otwórz aplikację przez HTTPS w przeglądarce z obsługą lokalizacji.',
-  P02: 'Brak zgody na dostęp do położenia. Zezwól na lokalizację w ustawieniach przeglądarki i odśwież stronę. Do prób bez GPS służy tryb testowy ?test=true i wskazanie miejsca na mapie.',
+  P02: 'Brak zgody na dostęp do położenia. Zezwól na lokalizację w ustawieniach przeglądarki i odśwież stronę.',
   P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek (ADR 0029: dojście zalicza tylko GPS).',
   P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek.',
   P06: 'Otrzymano współrzędne spoza zakresu — pomiar odrzucony. Poczekaj na następną pozycję albo odśwież stronę.',

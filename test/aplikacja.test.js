@@ -214,7 +214,8 @@ test('GPS: accuracy nie powoduje ostrzeżeń', () => {
 test('GPS: błąd przeglądarki daje komunikat z wyjściem awaryjnym (ADR 0004 pkt 7)', () => {
   gps.wyslijBlad(1, 'User denied Geolocation');
   assert.match(pobierz('bledy-pozycja').textContent, /\[P02\]/);
-  assert.match(pobierz('bledy-pozycja').textContent, /tryb testowy/i, 'P02 daje wykonalne wyjście — ADR 0029: ręcznego zgłoszenia nie ma');
+  assert.match(pobierz('bledy-pozycja').textContent, /Zezwól na lokalizację w ustawieniach przeglądarki i odśwież stronę/,
+    'P02 daje wykonalne wyjście — bez developerskiej wzmianki o trybie testowym (usunięta 2026-09-11: to nie informacja dla graczy)');
   assert.equal(pobierz('pozycja-status').textContent, 'Brak pozycji');
   assert.match(pobierz('status').textContent, /otwartą przestrzeń|pomiń odcinek/, 'status daje wykonalne wyjście (ADR 0029)');
 

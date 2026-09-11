@@ -2386,3 +2386,15 @@ składzie gry z m12-68 bez zmian.
 
 Kontrakt intro zsynchronizowany, cache-busting `?v=m12-69` + `WERSJA_SW`.
 Testy 691/691; żywy podgląd potwierdza podtytuł i wersję w stopce.
+
+## Sesja 2026-09-11g — P02 bez developerskiej wzmianki o trybie testowym (m12-70)
+
+Właściciel: „Do prób bez GPS służy tryb testowy ?test=true i wskazanie
+miejsca na mapie" w komunikacie błędu GPS (P02, brak zgody na lokalizację)
+to nie informacja dla graczy — usunięte. Komunikat kończy się teraz na
+wykonalnym wyjściu dla użytkownika: „Zezwól na lokalizację w ustawieniach
+przeglądarki i odśwież stronę." Asercja w aplikacja.test.js zsynchronizowana
+(wcześniej pilnowała właśnie wzmianki o trybie testowym — teraz pilnuje,
+że wzmianki NIE ma i że wykonalne wyjście zostało).
+
+Cache-busting `?v=m12-70` + `WERSJA_SW`. Testy 691/691.
