@@ -1,0 +1,101 @@
+GAME OVERVIEW FOR THE OWNER (GOF) — wytyczne oceny wyglądu gry
+================================================================
+
+Plik dla właściciela i QA: mówi, jak gra ma WYGLĄDAĆ i jak oceniać
+zrzuty ekranu (obrazki wynikowe prac). Obowiązuje cały niniejszy handoff.
+Treść jest tylko-do-odczytu: zmiana wytycznych = nowa decyzja właściciela,
+odnotowana w docs/PROJECT_HISTORY.md. W razie rozjazdu z kodem kod trzeba
+naprawić, nie plik.
+
+
+GOF-0. Dla kogo i na czym
+-------------------------
+Czytelnik gry to 10-latek przy DESKTOPIE. Nie zoomuje przeglądarki (100%
+przez cały czas). To, czego nie widzi od razu, traktuje jak nieistniejące.
+Minimalny obsługiwany pulpit to okno 800×500 px; referencyjny telefon to
+360×740 px (kanon mobilny z ADR 0011 zostaje bez zmian — nic tu nie kasuje
+zasady mobile-first; desktop jest DOKŁADANY obok, nie zamiast).
+
+
+GOF-1. Panel 447 px, bez scrollbara
+-----------------------------------
+a) Na desktopie główny panel treści ma STAŁĄ szerokość 447 px CSS,
+   wyśrodkowany na stronie. 447 px wystarcza na pełny tekst pytań i długie
+   przyciski odpowiedzi; szerszy panel rozlewa wiersze i trudniej go skanować.
+b) Żaden standardowy ekran ani etap gry NIE pokazuje pionowego scrollbara
+   okna przy oknie ≥ 800×500 px i standardowej zawartości (setup: domyślne
+   wartości; pozycja; stacje; prompt; gra: wszystkie fazy; wyniki; lobby).
+   Scrollbar w takim stanie to usterka, nie „tak musi być”.
+c) Zawartość dłuższa niż panel zawija się POZIOMO wewnątrzelementami
+   (pasek drogi ma własny poziomy skrol — zostaje) albo jest skracana
+   zachowawczo (lista paczek: 3 + „Zobacz więcej paczek”). Nigdy rozwalanie
+   strony w pionie.
+d) Poprzednia specyfikacja okna 960×540 px przestaje obowiązywać — liczy się
+   wyłącznie reguła 447 px i brak scrollbara z punktów a–c.
+
+
+GOF-2. Czytelność bez zoomowania
+--------------------------------
+a) Tekst podstawowy: ≥ 16 px. Etykiety przycisków i pól: ≥ 14 px.
+   Komunikaty statusu i podpowiedzi: ≥ 14 px — to czyta 10-latek.
+b) Kontrast co najmniej jak dotychczas (WCAG 2.2 AA — audyt kontrastu
+   zostaje w bramce jakości, wynik ma być 0 naruszeń).
+c) Każdy ekran ma swój GŁÓWNY przycisk widoczny bez przewijania przy oknie
+   800×500 px („Zacznij”, „Dalej”, „Idę do stacji”, „Następna stacja”…).
+   Ukryty główny przycisk = wadliwy ekran.
+d) Klikalny obszar na desktopie nie może być mniejszy niż na telefonie:
+   cele ≥ 44 px wysokości zostają (mysz, touchpad i ekran dotykowy laptopa).
+e) Jedna kolumna, kolejność czytania z góry na dół; nic ważnego nie wisi
+   w pustce na bokach ekranu (pulpit kolor nie wykorzystuje na reklamę ani
+   na drugi zestaw sterowania — to myli dziecko).
+
+
+GOF-3. Telefon jest nietknięty
+------------------------------
+a) Znaczniki, klasy i reguły widoku telefonu pozostają co do piksela
+   jak przed zmianami: cały układ desktopowy żyje WYŁĄCZNIE w zapytaniach
+   medialnych (media query) o progu ❍ ≥ 800 px szerokości okna.
+b) Zero zmian w kolejności ekranów, treściach przycisków i logice gry między
+   telefonem a desktopen — to ta sama aplikacja, ten sam DOM, te same testy
+   behawioralne. Różnica to TYLKO: szerokość panelu, rozmiary pisma,
+   odstępy, ułożenie boczne (marginesy).
+c) 10-latek, który zna grę z telefonu, ma ją poznać na desktopie w 3 sekundy:
+   ten sam tytuł, te same kolory, te same słowa, ten sam główny przycisk
+   na tym samym miejscu w hierarchii ekranu.
+d) Elementy TYLKO-desktopowe (jeśli kiedyś powstaną) muszą się domykać
+   na telefonie bez zaułów w CSS (display:none w media query telefonu)
+   i bez kodu JS, który „wyczuwa” desktop.
+
+
+GOF-4. Jak oceniać zrzuty ekranu (kotwica QA)
+---------------------------------------------
+a) Każdy zrzut w pracy ma w nazwie rozmiar okna, np. `gra-800x500.png`,
+   `setup-360x740.png`. Ocena zawsze względem zadeklarowanego okna.
+b) Test oceniający na zrzucie (checklist — wszystkie pozycje = zaliczone):
+   □ panel ma 447 px (desktop) / pełną szerokość 90% (telefon, jak w kanonie),
+   □ brak pionowego scrollbara okna,
+   □ tekst czytelny przy 100% (główna treść ≥16 px),
+   □ główny przycisk widać w całości,
+   □ układ jest lewy→prawy, góra→dół, bez „wiszącej” zawartości,
+   □ kolory, nagłówek i ikony identyczne jak na telefonie (GOF-3c).
+c) Zrzut nieprzechodzący choć jednego punktu checklisty to usterka do
+   zgłoszenia — z nazwą punktu GOF, nie opinią „ładnie/brzydko”.
+d) Strony porównawcze A/B (z lewej telefon 360×740, z prawej desktop
+   800×500, albo przed/po) czyta się z lewej do prawej; każda kolumna ma
+   podpisany rozmiar okna i etap.
+
+
+GOF-5. Co obejmuje ocena (cała gra)
+-----------------------------------
+Setup, ekran pozycji, stacje, prompt/paczka, wszystkie fazy ekranu gry
+(droga, pytanie, ocena odpowiedzi, koniec), lobby i gra wieloosobowa,
+ranking, ekran wznowienia, startowe okno „Tajemnicza Okolica”. Nowe elementy
+dodane w tym handoffie oceniamy tak samo — reguły są te same dla wszystkich.
+
+
+GOF-6. Dokumentowanie w testach
+-------------------------------
+Każda nowa reguła wyglądu desktopu trafia do testów kontraktowych
+(szerokość panelu, brak reguł poza media query dla JS, identyfikatory
+wymagane przez checklistę), tak żeby „jest ładnie” nie zależało od pamięci
+wykonawcy. Telefonowe testy muszą zostać zielone BEZ zmian — to dowód GOF-3.
