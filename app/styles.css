@@ -855,6 +855,18 @@ body.gra-w-drodze #ekran-gra:not([hidden]) {
   overflow: hidden;
 }
 #gra-pasek { margin: 0; white-space: nowrap; font-size: 14px; line-height: 20px; overflow-x: auto; }
+/* Pigułka dystansu w pasku drogi (właściciel, uwagi terenowe #2 2026-09-11):
+ * zielona jak badge dystansu — te same zmienne akcentu, więc kontrast WCAG
+ * identyczny jak w .badge-dystans. */
+#gra-pasek .pasek-dystans {
+  display: inline-block;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--akcent);
+  color: var(--akcent-tekst);
+  line-height: 18px;
+  font-variant-numeric: tabular-nums;
+}
 body.gra-w-drodze #przycisk-podejrzyj-mape { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-atrybucja { bottom: calc(36px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }

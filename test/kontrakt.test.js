@@ -313,10 +313,10 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
   assert.ok(symulacja, 'brak przycisku symulacji dojścia (M3)');
   assert.match(symulacja, /\bhidden\b/, 'symulacja tylko w trybie testowym');
 
-  const pierscien = INDEX.match(/<button id="przycisk-pierścien"[^>]*>/)?.[0];
-  assert.ok(pierscien, 'brak przycisku wymuszania trybu uproszczonego (M4)');
-  assert.match(pierscien, /aria-pressed="false"/, 'tryb uproszczony startuje niewymuszony');
-  assert.match(pierscien, /\bhidden\b/, 'widoczny dopiero gdy sieć jest pobrana');
+  // Właściciel 2026-09-11: przycisk „Tryb uproszczony" usunięty z UI —
+  // degradacja do pierścienia jest automatyczna i jawska (S03), a ręczne
+  // wymuszanie z nikim się nie konsultowało w terenie.
+  assert.equal(INDEX.includes('id="przycisk-pierścien"'), false, 'przycisk „Tryb uproszczony" usunięty z ekranu stacji');
 
   const reczne = INDEX.match(/<button id="przycisk-reczne"[^>]*>/)?.[0];
   assert.ok(reczne, 'brak przycisku trybu ręcznego (ADR 0005 pkt 8b)');
@@ -706,9 +706,21 @@ test('kontrakt M9b: wysyłka Drive jest domyślna — ekran wklejania nie pyta o
   assert.match(INDEX, /od razu zaczyna grę/, 'ekran mówi wprost: poprawna paczka = natychmiastowy start');
 });
 
-test('kontrakt M9b: „🔌 Sprawdź połączenie" żyje w karcie repozytorium (instrument CORS z ADR 0016)', () => {
-  assert.match(INDEX, /<button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie<\/button>/, 'przycisk próby mostu obecny');
-  assert.ok(INDEX.indexOf('id="przycisk-test-polaczenia"') > INDEX.indexOf('id="most-stan-repo"'), 'próba połączenia obok stanu mostu');
+test('kontrakt UI 2026-09-11: usunięte ozdobniki właściciela z testów terenowych', () => {
+  // (1a) wiersz o HTTPS na ekranie pozycji
+  assert.equal(INDEX.includes('Geolokalizacja działa tylko przez HTTPS'), false, 'wiersz o HTTPS/usługach usunięty');
+  // (1b) przycisk próby połączenia
+  assert.equal(INDEX.includes('id="przycisk-test-polaczenia"'), false, 'przycisk „Sprawdź połączenie" usunięty');
+  // (2'b) techniczny badge sprawiedliwości stacji
+  assert.equal(INDEX.includes('id="stacje-sprawiedliwosc"'), false, 'wiersz „sieciowo: pierścień … odstęp" usunięty');
+  // (3) szacunek rozmiaru odpowiedzi
+  assert.equal(INDEX.includes('id="prompt-rozmiar"'), false, 'linia „Odpowiedź modelu będzie miała około…" usunięta');
+  // (6) intro: nowe brzmienia i usunięte zdania
+  assert.match(INDEX, /gdziekolwiek jesteś/, 'podtytuł: „tam, gdziekolwiek jesteś"');
+  assert.match(INDEX, /ruszasz dalej\./, 'zasada: „ruszasz dalej."');
+  assert.match(INDEX, /Grać można w pojedynkę, całą rodziną albo każdy na swoim telefonie\./, 'skrócone zdanie o składzie gry');
+  assert.equal(INDEX.includes('Potrzebujesz tylko zgody na dostęp do lokalizacji.'), false, 'zdanie o zgodzie usunięte z intro');
+  assert.equal(INDEX.includes('Przycisk wyżej otwiera ustawienia gry'), false, 'zdanie o przycisku/⚙ usunięte z intro');
 });
 
 test('kontrakt ADR 0020: adres mostu jest wpisany w kod, a UI nie ma pola do wpisywania', () => {
@@ -991,9 +1003,10 @@ test('uwaga A1: ekran startowy ma duży, wyśrodkowany tytuł i rozwinięte intr
   assert.match(STYLE, /\.warstwa-start h1 \{[^}]*text-align: center/s, 'tytuł jest wyśrodkowany');
   assert.match(STYLE, /\.podtytul-start \{[^}]*text-align: center/s, 'podtytuł też');
   // Intro ma być dłuższe niż jedno zdanie — pinujemy liczbę akapitów, nie treść.
+  // Uwagi terenowe #2 (2026-09-11): akapit o zgodzie na lokalizację skrócony
+  // do wzmianki w podtytule („gdziekolwiek jesteś") — nie asertujemy go tu.
   const intro = INDEX.slice(INDEX.indexOf('warstwa-start-karta'), INDEX.indexOf('przycisk-start-zacznij'));
   assert.ok((intro.match(/<p[ >]/g) ?? []).length >= 4, 'intro ma co najmniej cztery akapity');
-  assert.ok(intro.includes('zgody na dostęp do lokalizacji'), 'intro uprzedza o zgodzie na lokalizację');
 });
 
 test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samodzielnie', () => {

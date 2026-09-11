@@ -55,7 +55,11 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
     // z dziećmi — M7/P3 czyta tekst całej karty wyniku)
     get textContent() {
       const zDzieci = this.children
-        .map((d) => (d && typeof d.textContent === 'string' ? d.textContent : ''))
+        .map((d) => {
+          if (typeof d === 'string') return d; // Element.append(tekst) — węzeł tekstowy
+          if (typeof d === 'number') return String(d);
+          return d && typeof d.textContent === 'string' ? d.textContent : '';
+        })
         .join('');
       return wlasnyTekst + zDzieci;
     },
@@ -99,7 +103,26 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
       const i = lista.indexOf(fn);
       if (i >= 0) lista.splice(i, 1);
     },
-    querySelector() { return null; },
+    /**
+     * Selektory klas (`.foo`, `span.foo`) — wystarczają testom piguł
+     * informacyjnych; każdy inny selektor zostaje „nie znaleziony",
+     * żeby atrapa nie udawała prawdziwego silnika CSS.
+     */
+    querySelector(selektor) {
+      const m = /^([a-z]+)?\.([a-z0-9_-]+)$/i.exec(String(selektor ?? '').trim());
+      if (!m) return null;
+      const [, typ, klasa] = m;
+      for (const dziecko of this.children) {
+        if (dziecko && typeof dziecko === 'object') {
+          const klasy = String(dziecko.className ?? '').split(/\s+/).filter(Boolean);
+          const tagOk = !typ || String(dziecko.tagName ?? '').toLowerCase() === typ.toLowerCase();
+          if (klasy.includes(klasa) && tagOk) return dziecko;
+          const wNizej = typeof dziecko.querySelector === 'function' ? dziecko.querySelector(selektor) : null;
+          if (wNizej) return wNizej;
+        }
+      }
+      return null;
+    },
     querySelectorAll() { return []; },
     focus() {}, select() {}, setSelectionRange() {}, click() {}, scrollIntoView() {},
     setPointerCapture() {}, releasePointerCapture() {}, hasPointerCapture() { return false; },

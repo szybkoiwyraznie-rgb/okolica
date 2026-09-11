@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-65';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-65';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-66';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-66';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -25,7 +25,6 @@ import {
   odkodujPaczkeRev2,
   parsujOdpowiedzModela,
   poprawkaDlaModelu,
-  szacunekOdpowiedzi,
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
@@ -33,22 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-  PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-65';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-65';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-65';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-65';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-65';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-65';
+} from './protokol.js?v=m12-66';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-66';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-66';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-66';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-66';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-66';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-65';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-65';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-65';
+} from './zestawy.js?v=m12-66';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-66';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-66';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -68,17 +66,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-65';
-import { utworzMape } from './mapa.js?v=m12-65';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-65';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-65';
-import { adresMostu, stanMostu } from './most.js?v=m12-65';
+} from './sieci.js?v=m12-66';
+import { utworzMape } from './mapa.js?v=m12-66';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-66';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-66';
+import { adresMostu, stanMostu } from './most.js?v=m12-66';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-65';
+} from './oceny.js?v=m12-66';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -93,6 +91,10 @@ const STAN = {
   pozycja: null,
   dokladnoscM: null,
   ostatniFix: null,
+  /** Pozycja, przy której OSTATNIO sprawdziliśmy propozycje paczek (uwagi
+   *  terenowe #2, 2026-09-11): null = sprawdź przy najbliższym fixie;
+   *  potem dopiero dystans ≥ 250 m od tej pozycji zezwala na kolejne żądanie. */
+  ostatniaPozycjaZestawow: null,
   ocenaFixa: null,
   pauzaWTle: false,
   /** M10/T3: bieżący profil watchera GPS ('dokladny' | 'oszczedny') — histereza w `profilBaterii`. */
@@ -219,9 +221,17 @@ function odswiezStanIkonBelki() {
   ustaw('przycisk-setup', EKRANY.includes(STAN.ekran) && (!ranking || ranking.hidden !== false));
 }
 
+/** Próg odświeżania propozycji paczek (uwagi terenowe #2, 2026-09-11):
+ *  poniżej 250 m dryf GPS nie zmienia sensu „okolica", a każde odświeżenie
+ *  to żądanie do mostu Drive (limit kwoty Apps Script — ADR 0013). */
+const PROG_ODSWIEZENIA_ZESTAWOW_M = 250;
+
 function pokazEkran(nazwa) {
   ukryjStart(); // krok gry chowa okno startowe (poza nim okno nie ma czego przykrywać)
   zamknijInformacje();
+  // Wejście na ekran pozycji = nowy pobyt na „stronie z paczkami": kontrolna
+  // pozycja wraca do null, więc pierwszy fix sprawdzi propozycje od nowa.
+  if (nazwa === 'pozycja') STAN.ostatniaPozycjaZestawow = null;
   $('ekran-ranking').hidden = true;
   $('ekran-prywatnosc').hidden = true;
   STAN.ekran = nazwa;
@@ -1045,10 +1055,23 @@ function pokazPozycje() {
   }
   // Karta propozycji paczek żyje na ekranie pozycji (`#zestawy-karta`
   // w `#ekran-pozycja`). `pokazPozycje()` jest wołane przy KAŻDYM fixie, a fixy
-  // w grze lecą cały czas — bez tej bramki cała rozgrywka to seria zapytań do
+  // lecą cały czas — bez tej bramki cała rozgrywka to seria zapytań do
   // mostu o indeks, którego nikt wtedy nie ogląda: bateria, transfer i limit
   // kwoty Apps Script idą w błoto (ADR 0013: żadnych zbędnych żądań).
-  if (STAN.ekran === 'pozycja') odswiezPropozycjeZestawow();
+  // Właściciel 2026-09-11 (uwagi terenowe #2): GPS na miejscu dryfuje o metry,
+  // więc oprócz „tylko na ekranie pozycji" dokładamy próg dystansu — sprawdzamy
+  // raz po wejściu na ekran (kontrolna pozycja jest wtedy null), a potem dopiero
+  // po odejściu ≥ 250 m od pozycji ostatniego sprawdzenia.
+  if (STAN.ekran === 'pozycja') {
+    const kontrolna = STAN.ostatniaPozycjaZestawow;
+    const doscDaleko = !kontrolna
+      || !STAN.pozycja
+      || odlegloscM(kontrolna, STAN.pozycja) >= PROG_ODSWIEZENIA_ZESTAWOW_M;
+    if (doscDaleko) {
+      STAN.ostatniaPozycjaZestawow = STAN.pozycja ? { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon } : null;
+      odswiezPropozycjeZestawow();
+    }
+  }
 }
 
 /** Zamyka watcher, jeśli działa (ADR 0004 pkt 1: jeden watcher na rozgrywkę). */
@@ -1669,27 +1692,20 @@ function renderujStacje() {
     return li;
   }));
   if (sieciowe) {
-    const w = STAN.wynikSieci;
-    $('stacje-sprawiedliwosc').textContent = `sieciowo: pierścień ${w.pierscien.r} m (pasmo ${w.pierscien.pasmo[0]}–${w.pierscien.pasmo[1]} m) · najmniejszy odstęp ${najmniejszyOdstepM(STAN.stacje)} m`;
     const miejsce = STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
     const cache = STAN.siec.zCache ? ' (z pamięci telefonu — Overpass nie został wywołany)' : '';
     $('stacje-tryb').textContent = `${ZRODLA_STACJI.siec}${cache}${miejsce}.`;
-    $('przycisk-pierścien').hidden = false;
     $('przycisk-reczne').hidden = true;
     // Sieć z cache (telefon pamięta okolicę) daje ponowienie — świeże pobranie
     // omija cache; przy danych sprzed chwili przycisk nie ma sensu.
     $('przycisk-siec-ponow').hidden = !STAN.siec.zCache;
   } else {
-    $('stacje-sprawiedliwosc').textContent = `losowo w promieniu ${STAN.konfig.promienM} m · najmniejszy odstęp między stacjami ${najmniejszyOdstepM(STAN.stacje)} m`;
-    $('stacje-tryb').textContent = STAN.wymusPierscien
-      ? `${ZRODLA_STACJI.pierscien} — wymuszony przyciskiem. ${STAN.siec.stan === 'gotowa' ? 'Sieć drogowa jest pobrana: wyłącz tryb uproszczony tym samym przyciskiem.' : 'Sieć drogowa niedostępna (offline albo limit Overpass).'}`
-      : `${ZRODLA_STACJI.pierscien}. Stacje z sieci dróg, placów i szlaków pojawią się po pobraniu danych Overpass — wymaga połączenia z internetem.` + ADR(' (ADR 0005)');
+    $('stacje-tryb').textContent = `${ZRODLA_STACJI.pierscien}. Stacje z sieci dróg, placów i szlaków pojawią się po pobraniu danych Overpass — wymaga połączenia z internetem.` + ADR(' (ADR 0005)');
     if (STAN.trybReczny) {
       $('stacje-tryb').textContent += ' Tryb ręczny WŁĄCZONY: przeciągnij pinezki na mapie. Dystans pokazujemy tylko w linii prostej — osiągalność niezweryfikowana.';
     } else if (STAN.stacje.some((s) => s.zrodlo === 'reczne')) {
       $('stacje-tryb').textContent += ` Część stacji ${ZRODLA_STACJI.reczne} — dystans w linii prostej.`;
     }
-    $('przycisk-pierścien').hidden = STAN.siec.stan !== 'gotowa';
     $('przycisk-reczne').hidden = false;
     $('przycisk-siec-ponow').hidden = STAN.siec.stan === 'gotowa';
   }
@@ -1746,7 +1762,15 @@ function odswiezPasekDrogi() {
   const imie = pod.gracz?.imie ?? '—';
   const dystans = STAN.pozycja && pod.stacja ? Math.round(odlegloscM(STAN.pozycja, pod.stacja)) : '—';
   const indeks = r.stacje.findIndex(s => s.id === r.biezacaStacja) + 1;
-  $('gra-pasek').textContent = `Kto: ${imie} (${dystans} m) · stacja ${indeks} z ${r.stacje.length}`;
+  // Właściciel 2026-09-11: dystans w pasku ma być widoczny od razu (zielona
+  // pigułka), nie tylko w Informacjach — dlatego pasek budujemy z węzłów,
+  // a nie z jednego textContent.
+  const pasek = $('gra-pasek');
+  pasek.replaceChildren(`Kto: ${imie} `);
+  const pigulka = document.createElement('span');
+  pigulka.className = 'pasek-dystans';
+  pigulka.textContent = `(odległość od stacji ${dystans} m)`;
+  pasek.append(pigulka, ` · stacja ${indeks} z ${r.stacje.length}`);
   // Dojście ma odsłonić pytanie także po korzystaniu ze sterowania w Informacjach.
   if (STAN.bylPasekDrogi && !droga && !$('gra-panel-pytanie').hidden) zamknijInformacje();
   STAN.bylPasekDrogi = droga;
@@ -1777,6 +1801,10 @@ function renderujGre({ panele = true } = {}) {
 
   if (panele) {
     const koniec = r.faza === FAZY.koniec || STAN.graZakonczonaRecznie;
+    // Właściciel 2026-09-11 (uwagi terenowe #2): w fazie pytania ekran ma być
+    // czysty — pytanie, odpowiedzi i wynik. Nagłówek „Gra", badge'y i przyciski
+    // „pomiń/zakończ" nie są wtedy potrzebne. Panel multi żyje poza slotem.
+    $('gra-slot-sterowanie').hidden = r.faza === FAZY.pytanie;
     $('gra-panel-oczekuje').hidden = koniec || r.faza !== FAZY.przygotowanie;
     $('gra-panel-odcinek').hidden = koniec || r.faza !== FAZY.odcinek;
     $('gra-panel-pytanie').hidden = koniec || r.faza !== FAZY.pytanie;
@@ -2170,40 +2198,6 @@ function odswiezPropozycjeZestawow() {
       $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
         ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
         : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
-    })
-    .finally(() => clearTimeout(timer));
-}
-
-/**
- * M9b/D4: „🔌 Sprawdź połączenie" — jawna próba mostu Drive na żywym
- * wdrożeniu (instrument ryzyka CORS/redirect z ADR 0016): GET indeksu,
- * walidacja i komunikat po ludzku. Adres bierze z kodu aplikacji (ADR 0020),
- * nic nie zapisuje; awaria nigdy nie blokuje gry (LESSONS L6: status jawny).
- */
-function sprawdzPolaczenieZRepo() {
-  const url = adresMostu();
-  if (!url) {
-    status('Nie mam czego sprawdzać: ta wersja aplikacji nie ma wpisanego adresu mostu Drive. Wspólne paczki, gry sieciowe i rankingi są wyłączone — gramy lokalnie.' + ADR(' (ADR 0020)'));
-    return;
-  }
-  status('Sprawdzam połączenie z mostem Drive…');
-  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
-  if (!f) { status('Nie da się sprawdzić: to środowisko nie ma fetch.'); return; }
-  const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(() => kontroler?.abort(), 8000);
-  f(url, kontroler ? { signal: kontroler.signal } : undefined)
-    .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
-    .then((tekst) => {
-      const { indeks, usterki } = walidujIndeksSurowy(tekst);
-      if (!indeks.length && usterki.length) {
-        status(`Most odpowiada, ale indeks jest nieczytelny (${usterki[0]?.komunikat ?? 'nieznany błąd'}) — upewnij się, że adres wskazuje web app mostu paczek.`);
-        return;
-      }
-      status(`Połączenie OK: most odpowiada, zaakceptowanych zestawów w indeksie: ${indeks.length}. Przeglądarka przepuściła odpowiedź — próba CORS zaliczona.` + ADR(' (ADR 0016)'));
-      odswiezPropozycjeZestawow();
-    })
-    .catch(() => {
-      status('Połączenie NIE działa: brak odpowiedzi mostu (CORS, przekierowanie web app, sieć albo zły adres). Gra toczy się zwykłą ścieżką; zapisz ten wynik.' + ADR(' To dokładnie przypadek z ryzyk ADR 0016.'));
     })
     .finally(() => clearTimeout(timer));
 }
@@ -2618,6 +2612,7 @@ function renderujPytanie() {
   renderujPanelOcen(pytanie, gracz);
   const lista = $('gra-odpowiedzi');
   lista.replaceChildren();
+  lista.hidden = false; // poprzednie pytanie schowało przyciski — nowe pokazuje
   pytanie.odpowiedzi.forEach((odp, i) => {
     const b = document.createElement('button');
     b.type = 'button';
@@ -2651,11 +2646,10 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
   }
   const dobrze = wybrana === pytanie.poprawna;
   odegrajSygnal(dobrze ? 'poprawna' : 'bledna'); // M10/T4: melodia w górę / w dół
-  [...$('gra-odpowiedzi').children].forEach((b, i) => {
-    b.disabled = true; // jedna odpowiedź na pytanie — bez poprawek po fakcie
-    if (i === pytanie.poprawna) b.classList.add('poprawna');
-    else if (i === wybrana) b.classList.add('zla');
-  });
+  // Właściciel 2026-09-11 (uwagi terenowe #2): po odpowiedzi przyciski znikają
+  // zamiast się podświetlać — ocena i wyjaśnienie mówią wszystko. Jedna
+  // odpowiedź na pytanie zostaje wymuszona brakiem przycisków do kliknięcia.
+  $('gra-odpowiedzi').hidden = true;
   const wpis = wynik.stan.odpowiedzi.at(-1);
   if (STAN.multi) {
     // M11/P4: wynik odpowiedzi jedzie na serwer — punkty liczy też serwer (spójność ponad zaufaniem)
@@ -2945,6 +2939,10 @@ function wznowGre() {
   status(`Gra „${r.kodGry || 'bez kodu'}" wznowiona — faza: ${r.faza}. Czas zamknięcia przeglądarki nie wlicza się w odcinek.`);
   renderujGre();
   if (r.faza === FAZY.pytanie) renderujPytanie();
+  // Właściciel 2026-09-11 (uwagi terenowe #2): „Wznów grę" nie może pokazywać
+  // międzystrony „Idzie: … ▶ Idę do stacji …" — w fazie przygotowania od razu
+  // droga i pasek na dole ekranu (faza przygotowania czeka tylko na wznawiającego).
+  if (r.faza === FAZY.przygotowanie && czyStartPoDalej()) startOdcinkaGry();
   zapiszGre(); // świeża kotwica zegara
 }
 
@@ -3301,20 +3299,6 @@ function budujPromptEkran() {
   $('prompt-tryb-opis').textContent = factcheck
     ? 'Tryb: pytania z fact check — model sprawdza każdy fakt w sieci ale generowanie pytań trwa dłużej.'
     : 'Tryb: pytania bez fact-check — model AI korzysta z własnej wiedzy, generowanie pytań trwa krócej.';
-  // B21: prompt jest stały (~1,4 tys. tokenów) niezależnie od liczby pytań —
-  // rośnie ODPOWIEDŹ modelu (~210 tokenów na pytanie), a to ona mieści się albo
-  // nie w limicie wyjścia. Mówimy o tym ZANIM właściciel zmarnuje generację:
-  // ucięty JSON wraca jako E01/E02 bez wskazania prawdziwej przyczyny.
-  const ilePytan = liczbaPytan(STAN.konfig);
-  const rozmiar = szacunekOdpowiedzi(ilePytan);
-  const elRozmiar = $('prompt-rozmiar');
-  elRozmiar.hidden = !wynik.prompt;
-  elRozmiar.textContent = wynik.prompt
-    ? `Odpowiedź modelu będzie miała około ${Math.round(rozmiar.znaki / 100) / 10} tys. znaków (~${Math.round(rozmiar.tokeny / 100) / 10} tys. tokenów) dla ${ilePytan} pytań.`
-      + (rozmiar.tokeny > PROG_ODPOWIEDZI_TOKENY
-        ? ' To więcej niż limit wyjścia części modeli — jeśli wróci ucięty JSON, zmniejsz liczbę graczy albo stacji i wygeneruj pytania jeszcze raz.'
-        : '')
-    : '';
   $('przycisk-dalej-paczka').disabled = !wynik.prompt;
 }
 
@@ -4923,14 +4907,6 @@ function start() {
     przeliczStacje();
     status('Przeliczono układ stacji (inne ziarno).');
   });
-  $('przycisk-pierścien').addEventListener('click', () => {
-    STAN.wymusPierscien = !STAN.wymusPierscien;
-    $('przycisk-pierścien').setAttribute('aria-pressed', String(STAN.wymusPierscien));
-    przeliczStacje();
-    status(STAN.wymusPierscien
-      ? 'Tryb uproszczony (pierścień) wymuszony — osiągalność stacji niezweryfikowana (ADR 0005 pkt 8).'
-      : 'Wracam do stacji z sieci drogowej.');
-  });
   $('przycisk-reczne').addEventListener('click', () => {
     if (STAN.trybReczny) {
       wylaczTrybReczny();
@@ -5009,7 +4985,6 @@ function start() {
     $('pole-odpowiedz').value = tekst;
   });
 
-  $('przycisk-test-polaczenia').addEventListener('click', () => sprawdzPolaczenieZRepo());
   // „Zobacz więcej/mniej paczek" (właściciel 2026-09-11): lista startuje
   // zwinięta do trzech najlepszych, przycisk odsłania resztę i zwija z powrotem.
   $('przycisk-zestawy-wiecej').addEventListener('click', () => {

@@ -368,121 +368,6 @@ test('Drive: wpis z `id` na karcie, a kliknięcie pobiera paczkę przez ?akcja=p
   }
 });
 
-test('🔌 Sprawdź połączenie: most odpowiada → jawne OK z liczbą zaakceptowanych zestawów', async () => {
-  const atrap = atrapaFetchDrive({ indeks: INDEKS_DRIVE() });
-  try {
-    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
-    const dom = await aplikacjaZZestawami({ pamiec });
-    podlaczFetch(dom);
-    await dojdzDoPozycji(dom);
-    await new Promise((r) => setTimeout(r, 30));
-    dom.kliknij('przycisk-test-polaczenia');
-    await new Promise((r) => setTimeout(r, 30));
-    assert.match(dom.pobierz('status').textContent, /Połączenie OK/);
-    assert.match(dom.pobierz('status').textContent, /zaakceptowanych zestawów w indeksie: 1/);
-  } finally {
-    atrap.przywroc();
-  }
-});
-
-test('🔌 Sprawdź połączenie: most milczy → jawna porażka (CORS/sieć), gra toczy się dalej', async () => {
-  const atrap = atrapaFetchDrive({ indeks: null });
-  try {
-    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
-    const dom = await aplikacjaZZestawami({ pamiec });
-    podlaczFetch(dom);
-    await dojdzDoPozycji(dom);
-    await new Promise((r) => setTimeout(r, 30));
-    dom.kliknij('przycisk-test-polaczenia');
-    await new Promise((r) => setTimeout(r, 30));
-    assert.match(dom.pobierz('status').textContent, /Połączenie NIE działa/);
-    assert.equal(dom.pobierz('ekran-gry').hidden, false, 'aplikacja żyje dalej');
-  } finally {
-    atrap.przywroc();
-  }
-});
-
-/* -------- ADR 0024: tolerancja okolicy i komunikat, który mówi dlaczego -------- */
-
-// Prawdziwe zgłoszenie właściciela (2026-09-07): start paczki dla Podkowy Leśnej
-// leży ~1 m od pinu gracza, ale po drugiej stronie granicy komórki geohash5
-// (u3q8q vs u3q8w) — dawna reguła „ten sam geohash5" pokazywała pustą listę.
-const POZYCJA_PRZY_GRANICY = { lat: 52.119130625, lon: 20.6597900390625 };
-const START_PACZKI_PODKOWA = { geohash5: 'u3q8w', geohash6: 'u3q8w0' };
-
-test('zestawy UI: paczka kilka metrów od gracza jest widoczna mimo innego geohash5 (ADR 0024)', async () => {
-  const indeks = {
-    schemat: 'TO-indeks/1',
-    wpisy: [{
-      skrot: 'bukowa22', plik: 'podkowa.zestaw.json', miejsce: 'Podkowa Leśna, ul. Bukowa 22',
-      ...START_PACZKI_PODKOWA, promienM: 1000, tematy: TEMATY_DOMYSLNE, wiek: 'dorosli',
-      liczbaStacji: 3, pytaniaNaStacje: 1, licencja: 'CC BY-SA 4.0',
-      przegladZrodel: '2026-09-07 właściciel', data: '2026-09-07 09:00',
-    }],
-  };
-  const atrap = atrapaFetch({ indeks: JSON.stringify(indeks), plik: JSON.stringify(plikZRepo()) });
-  try {
-    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
-    const dom = await aplikacjaZZestawami({ pamiec });
-    podlaczFetch(dom);
-    dom.kliknij('przycisk-dalej-pozycja');
-    dom.ustawPozycje(String(POZYCJA_PRZY_GRANICY.lat), String(POZYCJA_PRZY_GRANICY.lon));
-    await new Promise((r) => setTimeout(r, 30));
-    assert.notEqual(geohash(POZYCJA_PRZY_GRANICY.lat, POZYCJA_PRZY_GRANICY.lon, 5), START_PACZKI_PODKOWA.geohash5, 'test ma sens: geohash5 gracza i paczki się różnią');
-    assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'paczka z sąsiedniej komórki geohash jest na liście');
-    assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium ma paczki/);
-  } finally {
-    atrap.przywroc();
-  }
-});
-
-test('zestawy UI: paczka w okolicy nie pasuje — komunikat mówi CO nie pasuje, nie cały setup', async () => {
-  const indeks = {
-    schemat: 'TO-indeks/1',
-    // setup chce 3 pytań (3 stacje × 1), a paczka ma 2 — za mało
-    wpisy: [{ ...indeksZPropozycja().wpisy[0], liczbaStacji: 2, pytaniaNaStacje: 1 }],
-  };
-  const atrap = atrapaFetch({ indeks: JSON.stringify(indeks), plik: JSON.stringify(plikZRepo()) });
-  try {
-    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
-    const dom = await aplikacjaZZestawami({ pamiec });
-    podlaczFetch(dom);
-    await dojdzDoPozycji(dom);
-    await new Promise((r) => setTimeout(r, 30));
-    assert.equal(dom.pobierz('zestawy-lista').children.length, 0, 'niedopasowana paczka nie udaje propozycji');
-    const komunikat = dom.pobierz('zestawy-status').textContent;
-    assert.match(komunikat, /W tej okolicy jest 1 paczka, ale nie pasuje/, 'mówi, że paczka JEST i że nie pasuje');
-    assert.match(komunikat, /za mało pytań: paczka ma 2 \(2 stacji × 1\), a setup chce 3/, 'nazywa kryterium, które nie zagrało');
-    assert.match(komunikat, /Podkowa Leśna/, 'mówi, o którą paczkę chodzi');
-    assert.equal(/promień/.test(komunikat), false, 'promień nie jest kryterium, więc nie pojawia się w komunikacie');
-    assert.equal(/tematy:/.test(komunikat), false, 'komunikat nie wymienia całego setupu');
-    assert.match(komunikat, /Zmień te ustawienia/, 'mówi, co zrobić');
-  } finally {
-    atrap.przywroc();
-  }
-});
-
-test('zestawy UI: paczka 100 km dalej nie jest ani proponowana, ani wspominana (właściciel 2026-09-07)', async () => {
-  // Paczka z Podkowy Leśnej, a gracz w Łodzi — 97 km od komórki paczki.
-  const POZYCJA_LODZ = { lat: 51.7592, lon: 19.4560 };
-  const indeks = indeksZPropozycja();
-  const atrap = atrapaFetch({ indeks: JSON.stringify(indeks), plik: JSON.stringify(plikZRepo()) });
-  try {
-    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
-    const dom = await aplikacjaZZestawami({ pamiec });
-    podlaczFetch(dom);
-    await dojdzDoPozycji(dom, POZYCJA_LODZ.lat, POZYCJA_LODZ.lon);
-    await new Promise((r) => setTimeout(r, 30));
-    assert.equal(dom.pobierz('zestawy-lista').children.length, 0, 'odległa paczka nie udaje propozycji');
-    const komunikat = dom.pobierz('zestawy-status').textContent;
-    assert.match(komunikat, /nie ma paczek dla tej okolicy/, 'komunikat mówi o tej okolicy, nie o całym indeksie');
-    assert.equal(/w indeksie/.test(komunikat), false, 'nie liczy paczek z innych okolic');
-    assert.equal(/Podkowa Leśna/.test(komunikat), false, 'nie wymia paczki z drugiego końca kraju');
-  } finally {
-    atrap.przywroc();
-  }
-});
-
 /* -------- faktyczne tematy pytań + limit listy + sort po ocenach (właściciel 2026-09-11) -------- */
 
 // setup węższy niż zapisany wpis: paczka ma pytania TYLKO z historii, ale stary
@@ -563,6 +448,34 @@ test('zestawy UI: paczki z największą liczbą ocen pozytywnych są pierwsze (w
     assert.ok(/40% 👍/.test(wiersze[1].textContent), 'druga paczka ma 2 oceny pozytywne na 5 głosów (40% 👍)');
     assert.match(wiersze[2].children[0].textContent, /z tego telefonu/, 'paczka bez ocen jest ostatnia mimo najnowszej daty');
     assert.equal(dom.pobierz('przycisk-zestawy-wiecej').hidden, true, 'przy trzech paczkach przycisk „więcej" jest schowany');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+/* -------- propozycje paczek: raz po wejściu, potem dopiero po 250 m (właściciel 2026-09-11) -------- */
+
+test('zestawy UI: fixy GPS co 3 metry NIE odświeżają propozycji — dopiero 250 m zmienia', async () => {
+  const atrap = atrapaFetchDrive({ indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [] }), plik: null });
+  try {
+    const dom = await aplikacjaZZestawami({ pamiec: new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]) });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom); // pierwsze wejście na ekran + fix → jedno sprawdzenie
+    await new Promise((r) => setTimeout(r, 30));
+    const poWejsciu = atrap.wywolania.length;
+    assert.ok(poWejsciu >= 1, 'przy wejściu na ekran paczki są sprawdzane');
+
+    // GPS dryfuje o 3 metry — kroki poniżej progu 250 m mają być CICHE
+    await dom.ustawPozycje(String(POZYCJA.lat + 0.00001), String(POZYCJA.lon));
+    await dom.ustawPozycje(String(POZYCJA.lat + 0.00002), String(POZYCJA.lon - 0.00001));
+    await dom.ustawPozycje(String(POZYCJA.lat - 0.00002), String(POZYCJA.lon + 0.00002));
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(atrap.wywolania.length, poWejsciu, 'trzy fixy po ~3 m: zero dodatkowych zapytań o indeks');
+
+    // przejście 250 m (≈0.00225° szerokości) — teraz sprawdzamy ponownie
+    await dom.ustawPozycje(String(POZYCJA.lat + 0.00225), String(POZYCJA.lon));
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(atrap.wywolania.length, poWejsciu + 1, 'fix ≥ 250 m od ostatniego sprawdzenia: dokładnie jedno nowe zapytanie');
   } finally {
     atrap.przywroc();
   }

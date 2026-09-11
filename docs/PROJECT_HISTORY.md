@@ -2192,3 +2192,68 @@ paczek" → 3; zero błędów JS. Cache-busting `?v=m12-65` + `WERSJA_SW`.
 
 Uwaga operacyjna: sandbox zresetował się między turami — narzędzia
 (puppeteer, Chromium 152) odtworzone w `.narzedzia`, serwer na 0.0.0.0:8000.
+
+## Sesja 2026-09-11b — uwagi terenowe #2 (m12-66)
+
+Zlecenie właściciela po teście gry w terenie — siedem uwag do wdrożenia:
+
+1. **Intro krótsze i zapraszające.** Podtytuł mówi teraz „…gdziekolwiek
+   jesteś"; akapit o składzie gry skrócony („Grać można w pojedynkę, całą
+   rodziną albo każdy na swoim telefonie."), a zdanie zamykające kończy
+   się „…i ruszasz dalej." Usunięte akapity: „Potrzebujesz tylko zgody na
+   dostęp do lokalizacji." (zgoda i tak wyskakuje przy pierwszym fixie)
+   oraz „Przycisk wyżej otwiera ustawienia gry" (opis przycisku ⚙).
+2. **Ekran pozycji bez instrumentów.** Wiersz o HTTPS i przycisk „🔌
+   Sprawdź połączenie" (M9b/D4) znikają — most działa albo aplikacja sama
+   mówi, że nie; ręczne sprawdzanie było ozdobnikiem.
+3. **Ekran promptu bez wykładu o tokenach.** Akapit „Odpowiedź modelu
+   będzie miała około…" (B21, `#prompt-rozmiar`) usunięty razem z logiką
+   `szacunekOdpowiedzi` i stałymi budżetu (BAZA/PROG/TOKENY_NA_PYTANIE
+   z protokołu). Wolimy uczyć się z uciętych paczek, niż straszyć liczbą.
+4. **Gra: ekran pytania czysty.** (a) W fazie pytania slot sterowania
+   (`#gra-slot-sterowanie` — nagłówek „Gra", badge'y, przyciski pomiń/
+   pauza) jest schowany; panel multi żyje poza slotem. (b) Po kliknięciu
+   odpowiedzi przyciski A–D ZNIKAJĄ zamiast się podświetlać — ocena,
+   wyjaśnienie i źródła mówią wszystko; blokada „jednej odpowiedzi"
+   zostaje wymuszona brakiem przycisków. (c) „Wznów grę" w fazie
+   przygotowania od razu wchodzi w odcinek (droga + pasek), bez
+   międzystrony „Idzie: … ▶ Idę do stacji…" — po zamknięciu przeglądarki
+   gracz ma wracać PROSTO do gry.
+5. **Pasek drogi mówi sam za siebie.** Format: `Kto: {imię} (odległość
+   od stacji {N} m) · stacja {i} z {n}` — nawias z dystansem to zielona
+   pigułka `span.pasek-dystans` (kolory akcentu, kontrast jak
+   `.badge-dystans`). Sterowanie w drodze nadal w Informacjach.
+6. **Usunięte ozdobniki stacji.** Przycisk „Tryb uproszczony" (pierścień,
+   `#przycisk-pierścien`) i wiersz „sprawiedliwości" (`#stacje-
+   sprawiedliwosc`) znikają z UI; stan `wymusPierscien` zostaje w silniku
+   (ADR 0005) — to warstwa prezentacji, nie mechaniki.
+7. **Pigułka dystansu.** — pokryta przez punkt 5 (brama WCAG bez zmian:
+   te same zmienne akcentu co badge dystansu).
+
+Struktura: `#gra-panel-multi` przeniesiony przed `#ekran-gra`, poza
+`#gra-slot-sterowanie` — panel multi nie może znikać razem ze slotem
+w fazie pytania (tury i tabela wyników zostają widoczne).
+
+Testy: kontrakt pierścienia → asercja BRAKU przycisku; kontrakt M9b
+usunięty; nowy kontrakt „usunięte ozdobniki 2026-09-11"; 2 testy
+„Sprawdź połączenie" i test B21 usunięte; test A1 (intro) zaktualizowany
+(akapit o zgodzie już nie istnieje); nowe asercje slotu/paska/odpowiedzi
++ test „wznowienie w fazie przygotowania" + test bramki 250 m. Atrapa
+DOM: `querySelector` rozumie selektory klas (`.pasek-dystans`),
+`textContent` agreguje węzły tekstowe z `append(tekst)` — jak prawdziwy
+Element. **687/687** (było 693; -8 usuniętych, +2 nowe) + WCAG AA
+**0 naruszeń**.
+
+Weryfikacja na żywo (Chromium 152 headless, 360×640, tryb testowy,
+m12-66): 29/29 asercji — intro i ozdobniki, mapa-podgląd → stuknięcie
+→ pozycja testowa, stacje bez pierścienia, prompt bez tokenów, wklejona
+paczka startuje grę, droga z paskiem i pigułką (computed style z tłem
+akcentu), czysty ekran pytania (slot schowany), odpowiedzi znikają po
+kliknięciu, „Następna stacja" wraca do drogi, przeładowanie w fazie
+przygotowania → „Wznów grę" → od razu droga bez międzystrony; zero
+błędów JavaScript.
+
+Narzędzia: sandbox zresetował się ponownie — Chromium 152 odtworzony
+z npm (`@sparticuz/chromium` binaria + biblioteki AL2023 do /tmp),
+Puppeteer-core w `/home/user/.narzedzia` (poza repo). Google CDN
+i apt (HTTP) niedostępne z sandboxa.

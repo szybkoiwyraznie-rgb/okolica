@@ -624,7 +624,6 @@ test('stacje: bez window.fetch degradacja do pierścienia jest synchroniczna i j
   assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3, 'pierścień rozstawiony od razu');
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /Overpass/, 'komunikat mówi, skąd będą prawdziwe stacje');
-  assert.equal(domAtrapa.pobierz('przycisk-pierścien').hidden, true, 'bez pobranej sieci nie ma czego wymuszać');
 });
 
 test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async () => {
@@ -640,10 +639,7 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
   // też synchronicznie: cache zastępuje sieć
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa \(Overpass\) — punkty osiągalne/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /z pamięci telefonu/, 'druga gra w tej okolicy nie woła Overpass');
-  assert.match(domAtrapa.pobierz('stacje-sprawiedliwosc').textContent, /sieciowo/);
-  assert.match(domAtrapa.pobierz('stacje-sprawiedliwosc').textContent, /pierścień 700 m/);
   assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3);
-  assert.equal(domAtrapa.pobierz('przycisk-pierścien').hidden, false, 'przy sieci można wymusić tryb uproszczony');
   assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście/, '{MIEJSCE} z obszaru administracyjnego (bez Nominatim)');
 });
 
@@ -794,28 +790,6 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
   assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /\[S03\]/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
   assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3, 'degradacja rozstawia pierścień (ADR 0005 pkt 8)');
-});
-
-test('stacje: przycisk „Tryb uproszczony" wymusza pierścień i wraca do sieci', async () => {
-  const pamiecCache = new Map();
-  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
-  pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
-  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
-  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
-  domAtrapa.kliknij('przycisk-dalej-stacje');
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/);
-
-  domAtrapa.kliknij('przycisk-pierścien');
-  assert.equal(domAtrapa.pobierz('przycisk-pierścien').dataset['attr-aria-pressed'], 'true');
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /wymuszony/);
-  assert.ok(!domAtrapa.pobierz('stacje-sprawiedliwosc').textContent.includes('sieciowo'), 'pierścień mierzy się w linii prostej');
-  assert.match(domAtrapa.pobierz('status').textContent, /osiągalność stacji niezweryfikowana/);
-
-  domAtrapa.kliknij('przycisk-pierścien');
-  assert.equal(domAtrapa.pobierz('przycisk-pierścien').dataset['attr-aria-pressed'], 'false');
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'wyłączenie wymuszenia wraca do sieci');
-  assert.match(domAtrapa.pobierz('stacje-sprawiedliwosc').textContent, /sieciowo/);
 });
 
 test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia prosta', async () => {
@@ -1282,6 +1256,7 @@ test('M6: start gry — przyjęta paczka sama otwiera ekran gry i fazę A (przyg
   assert.match(dom.pobierz('gra-postep').textContent, /stacja 1 z 3/, 'postęp z bieżącej stacji');
   assert.match(dom.pobierz('gra-kolejka').textContent, /Kolej: Gracz 1/, 'badge kolejki z imieniem (domyślne imiona z konfigu)');
   assert.match(dom.pobierz('przycisk-start-odcinka').textContent, /Idę do stacji 1/, 'główny przycisk fazy mówi, dokąd idzie');
+  assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, false, 'slot sterowania widoczny w fazie przygotowania (start gry)');
   assert.match(dom.pobierz('gra-cel-stacji').textContent, /m w linii prostej od poprzedniego punktu/, 'pierścień (brak sieci): etykieta mówi wprost, że to prosta kreska (ADR 0014 pkt 1)');
   assert.match(dom.pobierz('gra-dystans').textContent, /\d+ m/, 'badge dystansu w linii prostej z bieżącej pozycji');
 });
@@ -1294,6 +1269,7 @@ test('M6: odcinek — start, dojście ze strumienia fixów i odmowa drugiego sta
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true);
   assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, false, 'pominięcie dostępne TYLKO w drodze (ADR 0015 pkt 2)');
   assert.equal(dom.pobierz('przycisk-symulacja-gra').hidden, false, 'w trybie testowym symulacja dojścia do stacji');
+  assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, false, 'slot sterowania widoczny w fazie odcinka');
 
   // drugi start tego samego odcinka → jawna odmowa z kodem G03, nie wyjątek
   dom.kliknij('przycisk-start-odcinka');
@@ -1366,8 +1342,7 @@ test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z link
   for (const fn of dobry.zdarzenia.click ?? []) fn({ type: 'click', target: dobry, currentTarget: dobry });
 
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze! \+1 pkt/, 'ocena: 1 pkt za poprawną (rev2)');
-  assert.ok(dobry.classList.contains('poprawna'), 'poprawna odpowiedź podświetlona');
-  przyciski.forEach((b) => assert.equal(b.disabled, true, 'po odpowiedzi przyciski zablokowane — bez poprawek'));
+  assert.equal(dom.pobierz('gra-odpowiedzi').hidden, true, 'właściciel 2026-09-11: po odpowiedzi przyciski A–D znikają (jedna odpowiedź, bez poprawek)');
   assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie z paczki');
   const zrodla = dom.pobierz('gra-zrodla').children;
   assert.equal(zrodla.length, pierwsze.zrodla.length, 'wszystkie źródła pytania (ADR 0008)');
@@ -1386,9 +1361,16 @@ test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z link
 
 test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-seat, ADR 0009)', async () => {
   const { dom } = await graWFaziePytania();
+  // Właściciel 2026-09-11 (4a): nad boksem pytania nie ma już nagłówka „Gra",
+  // badge'ów ani przycisków pomiń/zakończ — schowane w całej fazie pytania.
+  assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, true, 'slot sterowania schowany w fazie pytania');
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] });
+  // Właściciel 2026-09-11 (4b): po odpowiedzi przyciski A–D znikają — werdykt
+  // i wyjaśnienie unoszą się w górę na zaoszczędzonym miejscu.
+  assert.equal(dom.pobierz('gra-odpowiedzi').hidden, true, 'przyciski odpowiedzi schowane po odpowiedzi');
   dom.kliknij('przycisk-nastepna-stacja');
+  assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, false, 'slot sterowania wraca po wyjściu w drogę');
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, true, 'panel C zamknięty');
   // Zgłoszenie właściciela 2026-09-09: panel oczekiwania NIE ma się już pokazać —
   // to była druga strona kliknięcia, którą łączymy w jedno.
@@ -1413,7 +1395,7 @@ test('M6: pauza w trakcie wyjaśnienia — połączony przycisk NIE startuje odc
   assert.equal(dom.pobierz('przycisk-start-odcinka').disabled, true, 'start pozostaje zablokowany do wznowienia');
 });
 
-test('M6: błędna odpowiedź — zero punktów, podświetlona poprawna, gra idzie dalej', async () => {
+test('M6: błędna odpowiedź — zero punktów, poprawna ujawniona w ocenie, gra idzie dalej', async () => {
   const { dom, paczka } = await graWFaziePytania();
   const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
   const zlyIndex = (pierwsze.poprawna + 1) % 4;
@@ -1422,8 +1404,7 @@ test('M6: błędna odpowiedź — zero punktów, podświetlona poprawna, gra idz
   for (const fn of zly.zdarzenia.click ?? []) fn({ type: 'click', target: zly, currentTarget: zly });
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✗ Źle \(0 pkt\)/);
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, new RegExp(`Poprawna odpowiedź: ${'ABCD'[pierwsze.poprawna]}\\.`), 'poprawna odpowiedź ujawniona po błędzie');
-  assert.ok(zly.classList.contains('zla'), 'błędna podświetlona na czerwono');
-  assert.ok(przyciski[pierwsze.poprawna].classList.contains('poprawna'), 'poprawna na zielono');
+  assert.equal(dom.pobierz('gra-odpowiedzi').hidden, true, 'właściciel 2026-09-11: przyciski A–D znikają po odpowiedzi');
   assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie także po błędzie — tu jest najwięcej nauki');
   dom.kliknij('przycisk-nastepna-stacja');
   assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'gra idzie dalej mimo błędu — od razu w drogę');
@@ -1452,6 +1433,24 @@ test('M6: zapis gry ląduje w pamięci po każdym ruchu i nie niesie plaintextu'
   await dojdzSymulacja(dom);
   snapshot = JSON.parse(pamiec.get(kluczZapisu));
   assert.equal(snapshot.rozgrywka.faza, 'pytanie', 'zapis po dojściu');
+});
+
+test('M6: wznowienie w fazie przygotowania — od razu droga i pasek, bez panelu oczekiwania (właściciel 2026-09-11)', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  zaczynijGre(dom); // faza przygotowanie — zapis właśnie z tej fazy
+  const kluczZapisu = 'okolica:gra:' + pamiec.get('okolica:gra-aktywna');
+  assert.equal(JSON.parse(pamiec.get(kluczZapisu)).rozgrywka.faza, 'przygotowanie');
+
+  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?wznow2=${Math.random().toString(36).slice(2)}`);
+  assert.equal(dom2.pobierz('karta-wznowienie').hidden, false, 'baner wznowienia na setupie');
+  dom2.kliknij('przycisk-wznow-gre');
+  // „Wznów grę" NIE może pokazywać panelu oczekiwania („Idzie: … ▶ Idę do
+  // stacji …") — to miała być międzystrona zastąpiona paskiem na dole.
+  assert.equal(dom2.pobierz('gra-panel-oczekuje').hidden, true, 'panel A NIE pokazuje się po wznowieniu');
+  assert.equal(dom2.pobierz('gra-panel-odcinek').hidden, false, 'wznowienie od razu w fazie odcinka');
+  assert.equal(dom2.pobierz('gra-pasek').hidden, false, 'pasek drogi widoczny od razu');
+  assert.match(dom2.pobierz('status').textContent, /Odcinek rozpoczęty/, 'status potwierdza start odcinka');
 });
 
 test('M6: wznowienie po „zamknięciu przeglądarki" — nowa instancja, ta sama pamięć, rebaza zegara', async () => {
@@ -2281,19 +2280,6 @@ test('hot-seat: jawna odmowa mostu nie udaje awarii sieci — komunikat nazywa p
   }
 });
 
-test('ekran pytań: mówi z góry, jak duża będzie odpowiedź modelu (B21)', async () => {
-  const domAtrapa = await aplikacjaZSiecia();
-  ustawPozycjeTestowa(domAtrapa);
-  domAtrapa.kliknij('przycisk-dalej-stacje');
-  domAtrapa.kliknij('przycisk-dalej-prompt');
-  assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, false, 'jesteśmy na ekranie pytań');
-  const tekst = domAtrapa.pobierz('prompt-rozmiar').textContent;
-  assert.equal(domAtrapa.pobierz('prompt-rozmiar').hidden, false, 'linia rozmiaru jest widoczna (badge jest w zwiniętym <details>)');
-  assert.match(tekst, /Odpowiedź modelu będzie miała około/, 'mówi, co zwróci model');
-  assert.match(tekst, /token/, 'podaje rząd wielkości w tokenach');
-  // 5 pytań to ~1,1 tys. tokenów — poniżej progu, więc bez straszenia.
-  assert.equal(/limit wyjścia/.test(tekst), false, 'przy małej paczce nie ostrzegamy');
-});
 
 test('stacje: nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem', async () => {
   // Nazwy stacji pochodzą z `tags.name` w Overpass, czyli z danych edytowanych
@@ -2638,7 +2624,8 @@ test('droga: pasek na mapie, sterowanie w Informacjach, po dojściu duży panel 
   assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('gra-slot-sterowanie'));
   dom.kliknij('przycisk-start-odcinka');
   assert.equal(dom.pobierz('gra-pasek').hidden, false);
-  assert.match(dom.pobierz('gra-pasek').textContent, /^Kto: Gracz 1 \(\d+ m\) · stacja 1 z 3$/);
+  assert.match(dom.pobierz('gra-pasek').textContent, /^Kto: Gracz 1 \(odległość od stacji \d+ m\) · stacja 1 z 3$/);
+  assert.ok(dom.pobierz('gra-pasek').querySelector('.pasek-dystans'), 'odległość jest zieloną pigułką (właściciel 2026-09-11)');
   assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('informacje-gra'));
   assert.equal(dom.document.body.classList.contains('gra-w-drodze'), true);
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, true, 'bez przygaszenia mapy podczas marszu');

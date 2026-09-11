@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-65">
-  <script type="module" src="app/app.js?v=m12-65"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-66">
+  <script type="module" src="app/app.js?v=m12-66"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -329,7 +329,6 @@
     <!-- KROK 2: pozycja -->
     <section id="ekran-pozycja" class="ekran panel-centralny" hidden aria-labelledby="tytul-pozycja">
       <h2 id="tytul-pozycja">Gdzie jesteś?</h2>
-      <p class="podpowiedz">Geolokalizacja działa tylko przez HTTPS (GitHub Pages) albo localhost i wymaga zgody.</p>
       <div id="karta-pozycji" class="karta">
         <p id="pozycja-status" class="duzy">Czekam na pozycję…</p>
         <p id="pozycja-wspolrzedne" class="kod"></p>
@@ -341,7 +340,6 @@
         <ul id="zestawy-lista" class="lista-zestawow"></ul>
         <button id="przycisk-zestawy-wiecej" class="przycisk przycisk-zestawy-wiecej" type="button" hidden>Zobacz więcej paczek</button>
         <p id="most-stan-repo" class="podpowiedz">Most Drive: sprawdzam…</p>
-        <button id="przycisk-test-polaczenia" class="przycisk" type="button">🔌 Sprawdź połączenie</button>
         <p class="podpowiedz tylko-test">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela<span class="dopisek-roboczy"> (ADR 0017 pkt 6)</span>.</p>
       </div>
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
@@ -365,11 +363,9 @@
              WEWNĄTRZ siebie — strona się nie przewija. -->
         <div id="stacje-panel" class="stacje-panel">
           <ol id="lista-stacji" class="lista-stacji"></ol>
-          <p id="stacje-sprawiedliwosc" class="badge"></p>
           <div class="wiersz">
             <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
             <button id="przycisk-siec-ponow" class="przycisk" type="button" hidden>↻ Pobierz sieć ponownie</button>
-            <button id="przycisk-pierścien" class="przycisk" type="button" aria-pressed="false" hidden>◎ Tryb uproszczony</button>
             <button id="przycisk-reczne" class="przycisk" type="button" aria-pressed="false" hidden>✋ Ustaw stacje ręcznie</button>
           </div>
           <p class="podpowiedz">Stacje stoją w pierścieniu albo na sieci dróg, placów i szlaków — nigdy w budynku ani na terenie prywatnym<span class="dopisek-roboczy"> (ADR 0005)</span>.</p>
@@ -434,7 +430,6 @@
         <textarea id="pole-prompt" class="pole-tekstowe" rows="12" readonly aria-label="Treść promptu do skopiowania"></textarea>
         <p id="prompt-licznik" class="badge"></p>
       </details>
-      <p id="prompt-rozmiar" class="podpowiedz" hidden></p>
       <div class="wiersz">
         <button id="przycisk-kopiuj-prompt" class="przycisk przycisk-glowny" type="button">⧉ Kopiuj prompt</button>
         <label class="sprawdz"><input id="prompt-factcheck" type="checkbox"> <span>Pytania z fact check</span></label>
@@ -476,22 +471,9 @@
     <!-- KROK 6: GRA (M6/R3) — jeden ekran, cztery panele faz:
          oczekiwanie → odcinek → pytanie → koniec. Kolejność DOM = kolejność
          faz; jeden GŁÓWNY przycisk na fazę (ADR 0011); cele dotykowe ≥ 44 px. -->
+
     <section id="ekran-gra" class="ekran panel-centralny" hidden aria-labelledby="tytul-gra">
       <p id="gra-pasek" hidden aria-live="polite"></p>
-      <div id="gra-slot-sterowanie">
-        <div id="gra-sterowanie">
-      <h2 id="tytul-gra">Gra</h2>
-
-      <div class="gra-badges">
-        <p id="gra-kolejka" class="badge badge-duzy">Kolej: —</p>
-        <p id="gra-dystans" class="badge badge-duzy badge-dystans" aria-live="polite">— m</p>
-        <p id="gra-postep" class="podpowiedz">stacja — z —</p>
-      </div>
-
-
-
-      <p id="bledy-gra" class="bledy" role="alert" hidden></p>
-      <p id="gra-komunikat" class="podpowiedz" role="status"></p>
 
       <!-- M11/P4: panel gry wieloosobowej — tury, żywe wyniki, pasek synchronizacji -->
       <div id="gra-panel-multi" class="karta gra-panel" hidden>
@@ -509,6 +491,22 @@
         <p id="gra-multi-sync" class="podpowiedz" role="status"></p>
         <button id="przycisk-multi-rezygnuj" class="przycisk" type="button">🏳 Rezygnuję z gry</button>
       </div>
+
+      <div id="gra-slot-sterowanie">
+        <div id="gra-sterowanie">
+      <h2 id="tytul-gra">Gra</h2>
+
+      <div class="gra-badges">
+        <p id="gra-kolejka" class="badge badge-duzy">Kolej: —</p>
+        <p id="gra-dystans" class="badge badge-duzy badge-dystans" aria-live="polite">— m</p>
+        <p id="gra-postep" class="podpowiedz">stacja — z —</p>
+      </div>
+
+
+
+      <p id="bledy-gra" class="bledy" role="alert" hidden></p>
+      <p id="gra-komunikat" class="podpowiedz" role="status"></p>
+
 
       <!-- FAZA A: przygotowanie / oczekiwanie — kto idzie i start odcinka -->
       <div id="gra-panel-oczekuje" class="karta gra-panel">
@@ -738,7 +736,7 @@
     <section id="ekran-start" class="warstwa-start panel-centralny" role="dialog" aria-modal="false" aria-labelledby="tytul-start">
       <div class="warstwa-start-karta">
         <h1 id="tytul-start">Tajemnicza&nbsp;Okolica</h1>
-        <p id="podtytul-start" class="podtytul-start">gra terenowa tam, gdzie akurat jesteś</p>
+        <p id="podtytul-start" class="podtytul-start">gra terenowa tam, gdziekolwiek jesteś</p>
 
         <p>Tajemnicza Okolica zamienia najbliższe ulice w planszę do gry. Aplikacja
           wyznacza kilka stacji w promieniu spaceru od Twojej pozycji, a model AI
@@ -747,21 +745,12 @@
 
         <p>Zasada jest prosta. Idziesz do stacji, a telefon sam rozpoznaje, że
           jesteś na miejscu — wtedy odsłania pytanie. Odpowiadasz, zbierasz punkty
-          i ruszasz do następnej. Nie ma pośpiechu ani odliczania: liczy się to,
+          i ruszasz dalej. Nie ma pośpiechu ani odliczania: liczy się to,
           co zauważysz po drodze.</p>
 
-        <p>Grać można w pojedynkę, całą rodziną z jednego telefonu albo każdy na
-          swoim — wtedy wyniki spotykają się we wspólnym rankingu. Pytania
-          pobierają się z wyprzedzeniem, więc słaby zasięg w terenie niczego nie
-          przerywa.</p>
-
-        <p class="podpowiedz">Potrzebujesz tylko zgody na dostęp do lokalizacji.
-          Twoje współrzędne zostają na telefonie — nigdy nie trafiają na serwer.</p>
+        <p>Grać można w pojedynkę, całą rodziną albo każdy na swoim telefonie.</p>
 
         <button id="przycisk-start-zacznij" class="przycisk przycisk-glowny" type="button">▶ Zacznij</button>
-        <p class="podpowiedz">Przycisk wyżej otwiera ustawienia gry — to samo robi
-          <strong>⚙ START GRY</strong> w górnej belce. Samo okno zamkniesz kliknięciem
-          w dowolnym miejscu, zostanie wtedy mapa okolicy.</p>
       </div>
     </section>
 
