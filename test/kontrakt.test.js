@@ -716,9 +716,9 @@ test('kontrakt UI 2026-09-11: usunięte ozdobniki właściciela z testów tereno
   // (3) szacunek rozmiaru odpowiedzi
   assert.equal(INDEX.includes('id="prompt-rozmiar"'), false, 'linia „Odpowiedź modelu będzie miała około…" usunięta');
   // (6) intro: nowe brzmienia i usunięte zdania
-  assert.match(INDEX, /gdziekolwiek jesteś/, 'podtytuł: „tam, gdziekolwiek jesteś"');
+  assert.match(INDEX, /rozwiązuj zagadki, gdziekolwiek jesteś/, 'podtytuł: „rozwiązuj zagadki, gdziekolwiek jesteś"');
   assert.match(INDEX, /ruszasz dalej\./, 'zasada: „ruszasz dalej."');
-  assert.match(INDEX, /Grać można w pojedynkę, całą rodziną albo każdy na swoim telefonie\./, 'skrócone zdanie o składzie gry');
+  assert.match(INDEX, /Grać można w pojedynkę, z rodziną i znajomymi na jednym telefonie albo każdy na swoim urządzeniu\./, 'zdanie o składzie gry (doprecyzowane 2026-09-11: też tryb hasełkowy na jednym telefonie)');
   assert.equal(INDEX.includes('Potrzebujesz tylko zgody na dostęp do lokalizacji.'), false, 'zdanie o zgodzie usunięte z intro');
   assert.equal(INDEX.includes('Przycisk wyżej otwiera ustawienia gry'), false, 'zdanie o przycisku/⚙ usunięte z intro');
 });

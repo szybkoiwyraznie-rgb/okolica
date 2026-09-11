@@ -2351,3 +2351,27 @@ Dla właściciela: sprzątanie Drive (usuń testowe `gra-hotseat-*` — gracze
 „Gracz 1/2/3", miejsce „nieznane miejsce") opisane w instrukcji mostu,
 sekcja „Awaryjnie". Rankingi prostują się same po usunięciu śmieci.
 Cache-busting `?v=m12-67` + `WERSJA_SW`.
+
+## Sesja 2026-09-11e — korekty tekstu na ekranie Intro (m12-68)
+
+Dopisek właściciela do zgłoszenia #8: w `okolica-gry-zakonczone` było
+~80 plików, z czego RZECZYWISTYCH zakończonych gier — 2. Reszta ~78
+„wygenerowała się bez zakończenia gry" — czyli dokładnie to, co wykazała
+diagnoza z sesji 2026-09-11d: powódź pochodziła z testów CI (cztery testy
+kończące grę prawdziwym POST-em na most) i ze wznowień zakończonych gier,
+a nie z realnych rozgrywek. Skala 78:2 potwierdza, że hermetyczna sieć
+testów + stabilny klucz wznowień zamykają temat; właściciel czyta Drive
+według instrukcji z „Awaryjnie".
+
+Korekty tekstu na ekranie Intro (prośba właściciela, dosłownie):
+- podtytuł: „gra terenowa tam, gdziekolwiek jesteś" →
+  „rozwiązuj zagadki, gdziekolwiek jesteś";
+- zdanie o składzie: „Grać można w pojedynkę, całą rodziną albo każdy
+  na swoim telefonie." → „Grać można w pojedynkę, z rodziną i znajomymi
+  na jednym telefonie albo każdy na swoim urządzeniu." (doprecyzowanie,
+  że tryb hasełkowy na JEDNYM telefonie to też pełnoprawny sposób gry).
+
+Kontrakt intro w kontrakt.test.js zaktualizowany (podtytuł asertowany
+teraz w pełnym brzmieniu — silniejsza asercja niż sama końcówka).
+Cache-busting `?v=m12-68` + `WERSJA_SW`. Testy 691/691; żywy podgląd
+Chromium 152 (360×640) potwierdza oba teksty i wersję w stopce.
