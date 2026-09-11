@@ -189,17 +189,24 @@ zestawów dzieją się na Drive właściciela.
 
 ## Gra wieloosobowa i rankingi (M11/M12)
 
-- **Wiele urządzeń**: każdy gracz ma swój telefon. Parowanie 6-znakowym kodem
-  gry albo z listy otwartych gier w okolicy (sąsiedztwo geohash5). Dwa tryby:
-  **Wspólna Trasa** (wszyscy tę samą trasę po kolei — trasa jest tajemnicą,
-  na mapie widać tylko bieżącą stację) i **Wyścig na Orientację** (dowolna
-  kolejność stacji). Punktacja w obu: 1 pkt za dobrą odpowiedź + premia za
-  kolejność ukończenia. Start gry możliwy także solo (od 1 gracza).
+- **Wiele urządzeń**: każdy gracz ma swój telefon. Rodzaj gry i ścieżka
+  (załóż / dołącz) wybiera się na ekranie ustawień; tożsamością jest zwykłe
+  imię+PIN (dokładnie jeden gracz na telefon — resztę zapraszasz w lobby).
+  Zakładający przechodzi zwykłą ścieżkę (pozycja → stacje i pytania →
+  wklejenie odpowiedzi modelu) i po paczce otwiera się lobby; dołączający
+  widzi listę gier, których host jest w zasięgu ~50 m (wpis „Host: Jacek",
+  bez kodów). Po starcie dołączyć się nie da. Dwa tryby: **Wspólna Trasa**
+  (wszyscy tę samą trasę po kolei — trasa jest tajemnicą, na mapie widać
+  tylko bieżącą stację) i **Wyścig na Orientację** (dowolna kolejność stacji).
+  Punktacja w obu: 1 pkt za dobrą odpowiedź + stała premia 3/2/1 za kolejność
+  ukończenia. Start gry możliwy także solo (od 1 gracza), a host może zakończyć
+  grę w dowolnym momencie — wszyscy dostają podsumowanie.
 - **Wspólny stan**: Google Drive + Apps Script — ten sam most co repozytorium
   paczek (ADR 0016/0018/0019). Na serwer jadą wyłącznie pseudonimy, zdarzenia
   gry i wyniki; **współrzędne graczy nigdy nie opuszczają telefonu** (biała
-  lista pól zdarzenia + kasowanie po stronie mostu). Bez zgody na wysyłkę
-  aplikacja odmawia założenia gry i dołączenia.
+  lista pól zdarzenia + kasowanie po stronie mostu; okolicę przybliża
+  geohash5/geohash8, nigdy punkt). Bez potwierdzonego imienia aplikacja
+  odmawia założenia gry i dołączenia.
 - **Zero konfiguracji na każdym telefonie**: adres mostu jest wpisany w kod tej
   wersji aplikacji (ADR 0020), więc telefon znajomego działa od razu — interfejs
   pokazuje stan mostu (podłączony / niepodłączony), nie pole do wpisywania.

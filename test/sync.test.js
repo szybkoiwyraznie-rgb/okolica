@@ -44,6 +44,9 @@ const jsonOdp = (obiekt) => ({ ok: true, status: 200, json: async () => obiekt }
 
 test('interwalPollingu: faza gry wyznacza rytm; oba tryby pytają tak samo (ADR 0019 pkt 6)', () => {
   assert.equal(interwalPollingu({}), 0, 'brak gry = brak pollingu');
+  // Właściciel, 2026-09-11 (odpowiedź 3A): w grze co 30 s, w lobby 10 s.
+  assert.equal(INTERWALY_MS.lobby, 10_000, 'lobby: 10 s bez zmian');
+  assert.equal(INTERWALY_MS.gra, 30_000, 'gra w toku: 30 s (kanał info i wyniki nie muszą być szybsze)');
   assert.equal(interwalPollingu({ gra: graLobby, graczId: 'g-1' }), INTERWALY_MS.lobby);
   assert.equal(interwalPollingu({ gra: graWyscig, graczId: 'g-1' }), INTERWALY_MS.gra, 'wyścig: stały rytm w grze');
   assert.equal(interwalPollingu({ gra: graTrasy, graczId: 'g-1' }), INTERWALY_MS.gra, 'trasa: ten sam rytm — nikt na nikogo nie czeka');
@@ -108,7 +111,7 @@ test('sync: start pobiera stan od razu i planuje następny krok wg fazy', async 
   assert.equal(harmo.zaplanowane.at(-1).ms, INTERWALY_MS.lobby, 'lobby: 10 s');
   await harmo.odpalOstatni();
   assert.equal(stanyOdebrane.length, 2);
-  assert.equal(harmo.zaplanowane.at(-1).ms, INTERWALY_MS.gra, 'gra w toku: 12 s');
+  assert.equal(harmo.zaplanowane.at(-1).ms, INTERWALY_MS.gra, 'gra w toku: 30 s');
   assert.equal(stub.wywolania[0].url, `${URL_MOSTU}?akcja=gra-stan&kod=K2H7QM`);
 });
 

@@ -587,6 +587,16 @@ function bledyGryKandydata(dane) {
     || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
     bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5)');
   }
+  // geohash8 (~40 m) to miara zasięgu ~50 m dla listy „Dołącz do gry”
+  // (właściciel, 2026-09-11) — pozycja hosta z chwili założenia gry.
+  if (k && (typeof k.geohash8 !== 'string' || k.geohash8.length !== 8)) {
+    bledy.push('konfiguracja wymaga geohash8 (8 znaków, pozycja hosta z chwili założenia)');
+  }
+  // trasaSekret: top-level Boolean, opcjonalny (domyślnie false) — gry sprzed
+  // m12-74 nie mają tego pola, app traktuje brak przy „trasa” jak sekret.
+  if (dane && dane.trasaSekret !== undefined && typeof dane.trasaSekret !== 'boolean') {
+    bledy.push('trasaSekret musi być true/false (jeśli jest)');
+  }
   const z = dane && dane.zestaw;
   if (!z || !Array.isArray(z.stacje) || !z.stacje.length || !z.kontener
     || z.kontener.schemat !== SCHEMAT_KONTENERA || !z.meta) {
@@ -610,6 +620,7 @@ function zalozGre(dane) {
       kod,
       idGry: null,
       tryb: dane.tryb,
+      trasaSekret: dane.trasaSekret === true,
       stan: 'lobby',
       utworzono: teraz,
       organizatorId: 'g-1',
@@ -653,7 +664,7 @@ function listaGier() {
     const plik = pliki.next();
     try {
       const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
-      if (gra.schemat !== SCHEMAT_GRY || gra.stan === 'zakonczona' || gra.stan === 'archiwum') continue;
+      if (gra.schemat !== SCHEMAT_GRY || gra.stan !== 'lobby') continue; // po starcie nie ma dołączania (właściciel, 2026-09-11)
       if (gra.gracze.length >= MAKS_GRACZY) continue; // pełna — nie wisi w lobby
       wpisy.push({
         idGry: plik.getId(),
@@ -661,6 +672,7 @@ function listaGier() {
         stan: gra.stan,
         miejsce: gra.konfiguracja.miejsce,
         geohash5: gra.konfiguracja.geohash5,
+        geohash8: typeof gra.konfiguracja.geohash8 === 'string' ? gra.konfiguracja.geohash8 : '',
         wiek: gra.konfiguracja.wiek,
         tematy: gra.konfiguracja.tematy,
         liczbaGraczy: gra.gracze.length,
@@ -723,10 +735,11 @@ function czyKompletna(gra) {
 }
 
 /**
- * Premia za kolejność ukończenia (ADR 0027 część B pkt 5): pierwszy gracz, który
- * zamknął wszystkie stacje, dostaje G−1 punktów, drugi G−2, …, ostatni 0.
- * Kolejność z `kolejnosc` zdarzeń (nadawana w `zBlokada`), NIE z zegara
- * urządzenia. Rezygnujący i niedokończeni premii nie dostają.
+ * Premia za kolejność ukończenia (ADR 0027 część B pkt 5, aneks właściciela
+ * 2026-09-11): STAŁA — 3 pkt za 1. miejsce, 2 za 2., 1 za 3.; 4. i dalej: 0,
+ * niezależnie od liczby graczy. Kolejność z `kolejnosc` zdarzeń (nadawana w
+ * `zBlokada`), NIE z zegara urządzenia. Rezygnujący i niedokończeni premii
+ * nie dostają — ukończenie przed przedwczesnym końcem gry liczy się jak zwykle.
  *
  * Reguła jest KOPIĄ `premiaZaKolejnosc` z `app/wieloosobowa.js` — zgodność
  * pilnuje `test/most-gra.test.js`, który wykonuje ten tekst i porównuje wyniki.
@@ -755,7 +768,7 @@ function premiaZaKolejnosc(gra) {
     .map((g) => ({ id: g.id, koniec: ostatnia[g.id] || 0 }))
     .sort((a, b) => a.koniec - b.koniec);
   for (let i = 0; i < skonczeni.length; i += 1) {
-    const ile = gracze.length - (i + 1);
+    const ile = [3, 2, 1][i] || 0;
     if (ile > 0) premia[skonczeni[i].id] = ile;
   }
   return premia;

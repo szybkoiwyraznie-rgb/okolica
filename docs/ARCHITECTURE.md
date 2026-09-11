@@ -254,20 +254,27 @@ commit i nowa wersja aplikacji.
 
 ### Gra wieloosobowa i synchronizacja (M11/M12)
 
-1. `app.js` (karta-multi w setupie) zbiera pseudonim i zgodę — adres mostu
-   bierze z kodu (`adresMostu()` w `app/most.js`, ADR 0020) →
-   `sync.polecenieMostu` POSTuje `gra-zaloz` / `gra-dolacz`. Zgoda jest
-   wymagana: bez niej jawna odmowa i ZERO żądań (ADR 0019 pkt 3).
+1. m12-74 (ADR 0019 aneks): rodzaj gry (hot-seat / multi) i ścieżka
+   (załóż / dołącz) to segmenty na SETUPIE; tożsamością multi jest imię+PIN
+   z bloku „Kto gra?" (dokładnie jeden gracz na telefon). Zakładający przechodzi
+   WSPÓLNĄ ścieżkę (pozycja → pasująca paczka albo stacje → prompt → wklejenie)
+   i po paczce ląduje w lobby (`multiPoPaczce` → `zalozGreMulti`). Dołączający
+   widzi listę gier w zasięgu ~50 m (geohash8 hosta + sąsiedzi, wpis
+   „Host: X") — dołączanie kodem usunięte. Adres mostu z kodu
+   (`adresMostu()`, ADR 0020).
 2. `utworzSynchronizacje` prowadzi pętlę nienakładających się kroków:
    GET `gra-stan` z interwałem zależnym od fazy (lobby 10 s, gra w toku
-   12 s w obu trybach — nikt na nikogo nie czeka, zakończona 0 = koniec
-   pollingu). Zdarzenia
+   30 s — kanał info i żywe wyniki nie muszą być szybsze, właściciel
+   2026-09-11; zakończona 0 = koniec pollingu). Zdarzenia
    (`dojscie`/`odpowiedz`/`rezygnacja`) wychodzą natychmiast, a bez sieci
    czekają w kolejce (flush FIFO po powrocie); odmowa mostu nie jest ponawiana.
 3. Stan serwera (`RO-gra/1`) zasila lokalny silnik (`rozgrywka.js`):
    Wspólna Trasa i Wyścig = KAŻDY przechodzi wszystkie stacje (trasa po kolei
-   i bez listy wyboru — mapa pokazuje tylko bieżącą stację, wyścig dowolnie
-   z listą wyboru). Brak pozycji = środek trasy z
+   i bez listy wyboru — mapa pokazuje tylko bieżącą stację, gdy `trasaSekret`
+   gry jest prawdziwa (domyślnie; brak pola = sekret), wyścig dowolnie
+   z listą wyboru). Kanał `#multi-info` tłumaczy zdarzenia na komunikaty
+   (dojścia/odpowiedzi/rezygnacje/koniec), a host może domknąć grę przyciskiem
+   (`gra-zakoncz`) — premie liczą się też wtedy. Brak pozycji = środek trasy z
    pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca z
    `okolica:multi:sesja`, a zamknięte już stacje nie wracają do rozgrywki.
 4. Rankingi: GET `ranking` → surowe wiersze `RO-ranking/1` → agregacje liczy

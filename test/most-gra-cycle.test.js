@@ -20,6 +20,7 @@ function konfiguracja() {
     tematy: ['nawigacja'],
     miejsce: 'Warszawa, Śródmieście',
     geohash5: 'u3qcd',
+    geohash8: 'u3qcdr0m', // m12-74: pozycja hosta (~40 m) — miara zasięgu ~50 m
   };
 }
 

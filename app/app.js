@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-73';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-73';
+import { DOMYSLNE, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-74';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-74';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-73';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-73';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-73';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-73';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-73';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-73';
+} from './protokol.js?v=m12-74';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-74';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-74';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-74';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-74';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-74';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-73';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-73';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-73';
+} from './zestawy.js?v=m12-74';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-74';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-74';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -66,22 +66,27 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-73';
-import { utworzMape } from './mapa.js?v=m12-73';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-73';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-73';
-import { adresMostu, stanMostu } from './most.js?v=m12-73';
+} from './sieci.js?v=m12-74';
+import { utworzMape } from './mapa.js?v=m12-74';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-74';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-74';
+import { adresMostu, stanMostu } from './most.js?v=m12-74';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-73';
+} from './oceny.js?v=m12-74';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
 /** M11/P4 (ADR 0019): tożsamość i most gry wieloosobowej — osobne klucze, „kasuj dane" czyści wszystko.
  *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
+/** Ostatni potwierdzony gracz na tym telefonie — „Moje gry” w rankingach
+ *  filtrują po nim (m12-74: pole pseudonimu multi zniknęło, tożsamością
+ *  jest imię+PIN z bloku „Kto gra?”, decyzja właściciela 2026-09-11). */
+const KLUCZ_OSTATNIEGO_GRACZA = 'okolica:ostatni-gracz';
+/** Klucz z m11–m12-73 (pseudonim multi) czytany tylko na potrzeby „Moich gier”. */
 const KLUCZ_PSEUDONIMU = 'okolica:pseudonim';
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
@@ -147,20 +152,21 @@ const STAN = {
   rodzajGry: 'hotseat',
   /** M11/P4: sesja gry wieloosobowej `{rola, gra, graczId, pseudonim, urlMostu, sync, ostatniStanMs}` albo null. */
   multi: null,
-  /** M11/P4: załadowany zestaw do założenia gry `{stacje, kontener, meta, opis}`. */
-  multiZrodlo: null,
+  /** M12-74 (właściciel 2026-09-11): ścieżka wybrana na setupie — 'zaloz'
+   *  albo 'dolacz'. Dołączanie działa TYLKO z listy gier ≤50 m (bez kodów). */
+  multiSciezka: 'zaloz',
 /** M11/P4: tryb zakładanej gry ('trasa' | 'wyscig') — decyzja właściciela
  * 2026-09-11: Wspólna Trasa (po kolei) i Wyścig na Orientację (dowolnie). */
   multiTryb: 'trasa',
+  /** Wspólna Trasa z ptaszkiem „widoczna tylko kolejna stacja” (domyślnie ✓,
+   *  właściciel 2026-09-11). Właściwość GRY — jedzie na most jako trasaSekret. */
+  multiTrasaSekret: true,
   /** Ścieżka AI dla multi (właściciel, 2026-09-11): po wklejeniu paczki
    * wracamy do panelu „Załóż grę” z gotową paczką, nie do gry hot-seat. */
   multiPoPaczce: false,
   /** Wspólna Trasa = trasa-sekret: przy generowaniu stacji chowamy listę
    * i kropki na mapie — organizator nie poznaje trasy z góry. */
   ukryjStacje: false,
-  /** M11/P4: mety paczek z repo Drive dla selecta źródła + adres indeksu. */
-  multiRepoMety: [],
-  multiRepoUrl: null,
   /** M11/P4: dwustopniowa rezygnacja z gry wieloosobowej (jak inne destrukcyjne). */
   multiRezygnacjaUzbrojona: false,
   /** M12/P6: surowe wiersze RO-ranking/1 z mostu + aktywna zakładka i kategoria. */
@@ -486,10 +492,13 @@ function renderujSegment(nazwaPola, dane, wybranyKlucz, onChange) {
     etykieta.append(input, mocne);
     return etykieta;
   }));
-  const zaznaczony = lista.querySelector(`input[value="${wybranyKlucz}"]`);
+  const inputDla = (klucz) => [...lista.children].flatMap((l) => [...(l?.children ?? [])]).find((i) => i?.value === klucz);
+  const zaznaczony = inputDla(wybranyKlucz);
   if (zaznaczony) zaznaczony.checked = true;
   lista.addEventListener('change', () => {
-    const wybrany = lista.querySelector('input:checked')?.value;
+    // dzieci kontenera zamiast querySelector('input:checked') — to samo w
+    // przeglądarce, a testowa atrapa DOM umie przejść po dzieciach (L19)
+    const wybrany = [...lista.children].flatMap((l) => [...(l?.children ?? [])]).find((i) => i?.checked)?.value;
     if (wybrany) onChange(wybrany);
   });
 }
@@ -554,24 +563,6 @@ function ustawWszystkieTematy(zaznacz) {
   STAN.konfig.tematy = tematyZListy(lista);
   const poleWlasne = $('setup-temat-wlasny');
   poleWlasne.hidden = !STAN.konfig.tematy.includes('wlasny');
-}
-
-function renderujSelecty() {
-  const wypelnij = (idPola, dane, wybrany) => {
-    const select = $(idPola);
-    select.replaceChildren();
-    for (const [klucz, pozycja] of Object.entries(dane)) {
-      const option = document.createElement('option');
-      option.value = klucz;
-      option.textContent = typeof pozycja === 'string' ? pozycja : pozycja.etykieta;
-      select.appendChild(option);
-    }
-    select.value = wybrany;
-  };
-  wypelnij('setup-jezyk', JEZYKI, STAN.konfig.jezyk);
-  wypelnij('setup-podklad', PODKLADY, STAN.konfig.podklad);
-  $('setup-jezyk').addEventListener('change', (e) => { STAN.konfig.jezyk = e.target.value; });
-  $('setup-podklad').addEventListener('change', (e) => { zmienPodklad(e.target.value); });
 }
 
 /* ------- lista graczy = tożsamość (ADR 0026 aneks, decyzja 2026-09-07) ------ */
@@ -703,6 +694,9 @@ function przywrocGraczy({ zListy = false } = {}) {
 }
 
 function dodajGraczaDoListy(imie, { zweryfikowany }) {
+  if (zweryfikowany && typeof localStorage !== 'undefined') {
+    localStorage.setItem(KLUCZ_OSTATNIEGO_GRACZA, imie); // „Moje gry” w rankingach
+  }
   STAN.konfig.imiona = [...(STAN.konfig.imiona ?? []), imie];
   STAN.graczeZweryfikowani = [...(STAN.graczeZweryfikowani ?? []), zweryfikowany];
   pokazBledy('bledy-profil', []);
@@ -750,6 +744,11 @@ async function dodajGracza() {
     return false;
   };
   if (!pseudo) return odmowa('Wpisz imię gracza — trafia do historii gier i rankingów.', 'profil-pseudonim');
+  if (STAN.rodzajGry === 'multi' && (STAN.konfig.imiona ?? []).length >= 1) {
+    // Właściciel, 2026-09-11: w grze na wielu urządzeniach wpisujesz na setupie
+    // TYLKO siebie (imię+PIN jak w hot-seat) — pozostałych zapraszasz w lobby.
+    return odmowa('W grze na wielu urządzeniach gra z tego telefonu tylko JEDNA osoba — Ty. Pozostałych graczy dołączysz w lobby.', 'profil-pseudonim');
+  }
   if ((STAN.konfig.imiona ?? []).length >= MAKS_GRACZY) {
     return odmowa(`Maksymalnie ${MAKS_GRACZY} graczy na jednym telefonie.`, 'profil-pseudonim');
   }
@@ -809,6 +808,12 @@ async function bramkaTozsamosci() {
     pokazBledy('bledy-profil', [{ komunikat }]);
     $('profil-stan').textContent = komunikat;
     $('profil-pseudonim').focus?.();
+    return false;
+  }
+  if (STAN.rodzajGry === 'multi' && imiona.length > 1) {
+    const komunikat = 'W grze na wielu urządzeniach na tym telefonie gra tylko JEDNA osoba — Ty. Usuń pozostałych graczy z listy (✕ Usuń), pozostałych zaproś w lobby.';
+    pokazBledy('bledy-profil', [{ komunikat }]);
+    $('profil-stan').textContent = komunikat;
     return false;
   }
   const bezPotwierdzenia = imiona.filter((_, i) => STAN.graczeZweryfikowani?.[i] === false);
@@ -1864,7 +1869,10 @@ function renderujGre({ panele = true } = {}) {
   if (STAN.mapy.gra) {
     // Wspólna Trasa to trasa-sekret (właściciel, 2026-09-11): na mapie widać
     // TYLKO bieżącą stację — kolejne odsłaniają się po zamknięciu poprzedniej.
-    const stacjeWidoczne = STAN.multi?.gra?.tryb === TRYBY_GRY.trasa
+    // Sekret jest własnością GRY (pole trasaSekret z mostu); brak pola w starych
+    // grach traktujemy jak sekret (zgodność wstecz z m12-73).
+    const graSekret = STAN.multi?.gra?.tryb === TRYBY_GRY.trasa && STAN.multi.gra.trasaSekret !== false;
+    const stacjeWidoczne = graSekret
       ? STAN.stacje.filter((s) => Number(s.id) === Number(r.biezacaStacja))
       : STAN.stacje;
     STAN.mapy.gra.zaznaczStacje(stacjeWidoczne, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
@@ -1904,7 +1912,7 @@ function ujedgajnijTematyWpisowLokalnych() {
       if (zapisane.length === faktyczne.length && zapisane.every((t, i) => t === faktyczne[i])) continue;
       wpis.tematy = faktyczne;
       if (zestaw) {
-        zestaw.tematy = faktyczne; // pełny wpis też niesie meta (odczyt przez `metaZWpisuLokalnego`)
+        zestaw.tematy = faktyczne; // pełny wpis też niesie spłaszczoną metę
         localStorage.setItem(kluczZestawu(wpis.skrot), JSON.stringify(zestaw));
       }
       zmiana = true;
@@ -2250,6 +2258,15 @@ function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
   STAN.stacje = stacje.map((s, i) => ({ id: s.id ?? i + 1, lat: s.lat, lon: s.lon, opis: s.opis ?? '' }));
   STAN.paczka = paczka;
   STAN.usterkiPaczki = [];
+  if (STAN.multiPoPaczce) {
+    // Wspólny setup (właściciel, 2026-09-11): w multi po wybraniu paczki z
+    // ekranu pozycji też otwiera się lobby, nie gra hot-seat.
+    STAN.multiPoPaczce = false;
+    STAN.ukryjStacje = false;
+    STAN.kontenerPaczki = kontener;
+    void zalozGreMulti();
+    return true;
+  }
   startGry();
   if (STAN.rozgrywka) {
     status(`Gra z gotowej paczki (${zrodlo}): ${STAN.rozgrywka.stacje.length} stacji, bez modelu i bez Overpassa.` + ADR(' (ADR 0017 pkt 7)'));
@@ -3511,18 +3528,12 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
   $('pole-odpowiedz').value = '';
   $('wklejka-status').textContent = '';
   wyslijZestawNaDrive();
-  // Ścieżka AI dla multi (właściciel, 2026-09-11): paczka PRZED lobby — po
-  // wklejeniu wracamy do panelu „Załóż grę” z paczką w sesji, zamiast
-  // startować grę hot-seat.
+  // Multi (właściciel, 2026-09-11): po wklejeniu odpowiedzi modelu otwiera
+  // się LOBBY — gra zakłada się z paczki tej sesji, bez pośredniego panelu.
   if (STAN.multiPoPaczce) {
     STAN.multiPoPaczce = false;
     STAN.ukryjStacje = false;
-    otworzPanelMulti('zaloz');
-    odswiezZrodlaMulti();
-    // Wskazówka ląduje w `multi-zaloz-info` (trwała linia panelu), bo status
-    // nadpisze za chwilę asynchronzna wysyłka zestawu na Drive.
-    status('Paczka gotowa — wybierz „📦 Paczka z tej sesji” i załóż lobby.');
-    $('multi-zaloz-info').textContent += ' Paczka gotowa — możesz zakładać lobby.';
+    void zalozGreMulti();
     return;
   }
   // Decyzja właściciela 2026-09-07: poprawna paczka = OD RAZU gra. Podgląd,
@@ -3834,25 +3845,95 @@ function pokazBledyMulti(komunikaty) {
  */
 function walidujGotowoscMulti() {
   const usterki = [];
-  const pseudonim = ($('multi-pseudonim').value ?? '').trim();
-  if (!pseudonim) usterki.push('Wpisz pseudonim — widzą go inni gracze w lobby i w wynikach.');
-  else if (pseudonim.length > 24) usterki.push('Pseudonim może mieć najwyżej 24 znaki.');
-  if (!urlMostuMulti()) usterki.push('Brak adresu mostu w tej wersji aplikacji (ADR 0020) — gra na wielu urządzeniach jest wyłączona. Wybierz rodzaj gry „Hot-seat", żeby grać na jednym telefonie.');
+  if (!urlMostuMulti()) usterki.push('Brak adresu mostu w tej wersji aplikacji (ADR 0020) — gra na wielu urządzeniach jest wyłączona. Wybierz rodzaj gry „Hot-seat”, żeby grać na jednym telefonie.');
+  // Tożsamość multi = imię+PIN z bloku „Kto gra?” jak w hot-seat (właściciel,
+  // 2026-09-11, profil na wspólnym Drive) — dokładnie JEDEN gracz na telefon.
+  const imiona = (STAN.konfig.imiona ?? []).filter(Boolean);
+  if (!imiona.length) usterki.push('Wpisz swoje imię i PIN w bloku „Kto gra?” — to Twoja tożsamość w grze.');
+  else if (imiona.length > 1) usterki.push('W grze na wielu urządzeniach gra z tego telefonu tylko jedna osoba — usuń pozostałych graczy z listy (✕ Usuń).');
   return usterki;
+}
+
+/** Imię potwierdzonego gracza — tożsamość multi zamiast dawnego pola pseudonimu. */
+function pseudonimGraczaMulti() {
+  return normalizujPseudonim(STAN.konfig.imiona?.[0] ?? '').trim().slice(0, 24);
 }
 
 function wczytajUstawieniaMulti() {
   pokazStanMostu(); // adres mostu jest w kodzie (ADR 0020) — UI pokazuje stan, nie pole do wpisywania
-  if (typeof localStorage === 'undefined') return;
-  $('multi-pseudonim').value = localStorage.getItem(KLUCZ_PSEUDONIMU) ?? '';
-  if (localStorage.getItem(KLUCZ_RODZAJU_GRY) === 'multi') {
+  if (typeof localStorage !== 'undefined' && localStorage.getItem(KLUCZ_RODZAJU_GRY) === 'multi') {
     STAN.rodzajGry = 'multi';
-    $('setup-rodzaj').value = 'multi';
   }
 }
 
+/** Segment „Rodzaj gry” na setupie (właściciel, 2026-09-11): toggle obok
+ *  siebie jak środek transportu — hot-seat albo gra na wielu urządzeniach. */
+const RODZAJE_GRY = {
+  hotseat: { etykieta: '👥 Hot-seat — jeden telefon' },
+  multi: { etykieta: '📱 Wielu graczy — każdy ze swoim' },
+};
+
+const OPISY_RODZAJOW = {
+  hotseat: 'Jeden telefon podawany dalej — wszyscy gracze są na liście poniżej.',
+  multi: 'Każdy gra na swoim telefonie w okolicy, wspólny Drive spina wyniki. Na tym telefonie wpisujesz tylko siebie (imię+PIN), pozostałych graczy dołączysz w lobby.',
+};
+
+function renderujRodzajeGry() {
+  renderujSegment('lista-rodzajow', RODZAJE_GRY, STAN.rodzajGry, (wybrany) => {
+    STAN.rodzajGry = wybrany === 'multi' ? 'multi' : 'hotseat';
+    if (typeof localStorage !== 'undefined') localStorage.setItem(KLUCZ_RODZAJU_GRY, STAN.rodzajGry);
+    renderujRodzajGry();
+    $('rodzaj-opis').textContent = OPISY_RODZAJOW[STAN.rodzajGry];
+    status(STAN.rodzajGry === 'multi'
+      ? 'Gra na wielu urządzeniach: potwierdź swoje imię i PIN, wybierz ścieżkę — zakładasz albo dołączasz.'
+      : 'Hot-seat: jeden telefon podawany dalej (ADR 0009).');
+  });
+  $('rodzaj-opis').textContent = OPISY_RODZAJOW[STAN.rodzajGry];
+}
+
+/** Segment „Co robisz?” na karcie multi (m12-74): załóż nową / dołącz. */
+const SCIEZKI_MULTI = {
+  zaloz: { etykieta: '🚀 Zakładam nową grę' },
+  dolacz: { etykieta: '🚪 Dołączam do istniejącej' },
+};
+
+const OPISY_SCIEZEK = {
+  zaloz: 'Przejdziesz zwykłą ścieżkę: pozycja → stacje i pytania → wklejenie odpowiedzi modelu. Po paczce otworzy się lobby, do którego dołączą gracze z okolicy (~50 m).',
+  dolacz: 'Zobaczysz gry, których host jest w zasięgu ~50 m — dołączasz jednym kliknięciem, bez kodu. Możesz opuścić grę w dowolnym momencie.',
+};
+
+function renderujMultiSciezka() {
+  renderujSegment('multi-sciezka', SCIEZKI_MULTI, STAN.multiSciezka, (wybrany) => {
+    STAN.multiSciezka = wybrany === 'dolacz' ? 'dolacz' : 'zaloz';
+    renderujRodzajGry();
+    $('multi-sciezka-opis').textContent = OPISY_SCIEZEK[STAN.multiSciezka];
+  });
+  $('multi-sciezka-opis').textContent = OPISY_SCIEZEK[STAN.multiSciezka];
+}
+
+/**
+ * Przełączanie widoczności pól setupu wg rodzaju gry i ścieżki multi
+ * (przepisany flow, właściciel 2026-09-11): w multi znika „pytań na stację”
+ * (liczba stacji = liczba pytań), a tryb gry i trasa-sekret wybiera
+ * zakładający. Dołączający nie ustawia nic poza sobą.
+ */
 function renderujRodzajGry() {
-  $('karta-multi').hidden = STAN.rodzajGry !== 'multi';
+  const multi = STAN.rodzajGry === 'multi';
+  const zaloz = multi && STAN.multiSciezka === 'zaloz';
+  $('karta-multi').hidden = !multi;
+  $('pole-pytania').hidden = multi; // liczba stacji = liczba pytań
+  $('pole-multi-tryb').hidden = !zaloz;
+  renderujSekretTrasy();
+  $('przycisk-dalej-pozycja').textContent = multi && STAN.multiSciezka === 'dolacz'
+    ? '🔍 Pokaż gry w okolicy'
+    : '📍 Dalej: moja pozycja';
+  $('legend-tozsamosc').textContent = multi ? '👤 Ty w tej grze' : '👤 Kto gra?';
+  $('przycisk-dodaj-gracza').textContent = multi ? '✔ Potwierdź — to ja' : '➕ Dodaj gracza';
+}
+
+/** Ptaszek „widoczna tylko kolejna stacja” — tylko trasa + ścieżka zakładania. */
+function renderujSekretTrasy() {
+  $('pole-trasa-sekret').hidden = !(STAN.rodzajGry === 'multi' && STAN.multiSciezka === 'zaloz' && STAN.multiTryb === TRYBY_GRY.trasa);
 }
 
 /* --- sesja multi w localStorage: powrót do gry po zgaszeniu ekranu/odświeżeniu --- */
@@ -3893,7 +3974,9 @@ function renderujWznowienieMulti() {
 /* --- ekrany i panele --- */
 
 function otworzPanelMulti(panel) {
-  for (const nazwa of ['zaloz', 'dolacz', 'lobby']) $(`multi-panel-${nazwa}`).hidden = nazwa !== panel;
+  // m12-74: jest tylko lista „Dołącz" i lobby — zakładanie dzieje się na
+  // setupie i we wspólnej ścieżce (pozycja → stacje → paczka → lobby).
+  for (const nazwa of ['dolacz', 'lobby']) $(`multi-panel-${nazwa}`).hidden = nazwa !== panel;
   pokazBledy('bledy-multi', []);
   pokazEkran('multi');
 }
@@ -3923,10 +4006,12 @@ function renderujTrybyMulti() {
     b.addEventListener('click', () => {
       STAN.multiTryb = klucz;
       renderujTrybyMulti();
+      renderujSekretTrasy(); // ptaszek tylko przy Wspólnej Trasie
     });
     lista.appendChild(b);
   }
   $('multi-tryb-opis').textContent = opisy[STAN.multiTryb] ?? opisy[TRYBY_GRY.trasa];
+  renderujSekretTrasy();
 }
 
 /**
@@ -3971,113 +4056,6 @@ function metaSesjiMulti(stacje) {
   });
 }
 
-/** Wpis lokalny ma metę spłaszczoną — zbieram pola potrzebne mostowi (bledyGryKandydata). */
-function metaZWpisuLokalnego(z) {
-  return {
-    miejsce: z.miejsce, geohash5: z.geohash5, promienM: z.promienM, tematy: z.tematy,
-    wiek: z.wiek, jezyk: z.jezyk, data: z.data, liczbaStacji: z.liczbaStacji, pytaniaNaStacje: z.pytaniaNaStacje,
-    tematWlasny: z.tematWlasny ?? '',
-    factcheck: z.factcheck ?? true,
-  };
-}
-
-function odswiezZrodlaMulti() {
-  const select = $('multi-zrodlo');
-  select.replaceChildren();
-  STAN.multiZrodlo = null;
-  STAN.multiRepoMety = [];
-  STAN.multiRepoUrl = adresMostu() || null; // ADR 0020: adres z kodu aplikacji
-  const opcje = [];
-  const sesjaGotowa = STAN.stacje.length > 0 && (STAN.kontenerPaczki || (STAN.paczka && STAN.usterkiPaczki.length === 0));
-  if (sesjaGotowa) opcje.push({ value: 'sesja', tekst: `📦 Paczka z tej sesji (${STAN.stacje.length} stacji)` });
-  for (const wpis of czytajRejestrZestawow()) {
-    opcje.push({ value: `lokalna:${wpis.skrot}`, tekst: `📱 ${wpis.miejsce} · ${wpis.data} · ${wpis.liczbaStacji} stacji × ${wpis.pytaniaNaStacje} pytań · ${wpis.wiek}` });
-  }
-  // Ścieżka AI jest ZAWSZE dostępna (właściciel, 2026-09-11): lista źródeł
-  // nigdy nie jest pusta, a pełne generowanie (pozycja → stacje → prompt →
-  // wklejenie) dzieje się PRZED lobby — po jego końcu wracamy tu z paczką.
-  opcje.push({ value: 'ai', tekst: '✨ Wygeneruj pytania w AI (pełna ścieżka)' });
-  for (const o of opcje) {
-    const op = document.createElement('option');
-    op.value = o.value;
-    op.textContent = o.tekst;
-    select.appendChild(op);
-  }
-  // Pierwsze źródło jest zaznaczane od razu: paczka z sesji/telefonu, a przy
-  // pustym telefonie ścieżka AI (lista NIGDY niepusta, właściciel 2026-09-11).
-  // Status wybranego źródła opisuje `zaladujZrodloMulti`.
-  select.value = opcje[0].value;
-  void zaladujZrodloMulti();
-  // Repo Drive dokładamy asynchronicznie; awaria repo NIE blokuje zakładania (jak w M9/R3)
-  if (STAN.multiRepoUrl && STAN.pozycja) {
-    const kryteria = {
-      geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5),
-      lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, // tolerancja okolicy (ADR 0024)
-      promienM: STAN.konfig.promienM, liczbaStacji: STAN.konfig.liczbaStacji,
-      pytaniaNaStacje: STAN.konfig.pytaniaNaStacje, tematy: STAN.konfig.tematy, wiek: STAN.konfig.wiek,
-    };
-    $('multi-zaloz-info').textContent += ' Szukam pasujących paczek na Drive…';
-    pobierzGetTekst(STAN.multiRepoUrl)
-      .then((tekst) => dopasujMetaIndeksu(walidujIndeksSurowy(tekst).indeks, kryteria))
-      .then((dopasowane) => {
-        for (const meta of dopasowane) {
-          STAN.multiRepoMety.push(meta);
-          const op = document.createElement('option');
-          op.value = `drive:${STAN.multiRepoMety.length - 1}`;
-          op.textContent = `🌍 ${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.wiek}`;
-          select.appendChild(op);
-        }
-        $('multi-zaloz-info').textContent += dopasowane.length
-          ? ` Drive: znaleziono ${dopasowane.length}.`
-          : ' Drive: brak pasujących paczek w tej okolicy.';
-      })
-      .catch(() => { $('multi-zaloz-info').textContent += ' Drive niedostępny — zostały źródła z telefonu.'; });
-  }
-}
-
-async function zaladujZrodloMulti() {
-  const wartosc = $('multi-zrodlo').value ?? '';
-  STAN.multiZrodlo = null;
-  // „✨ Wygeneruj pytania w AI” to nie paczka, tylko wejście w pełną ścieżkę
-  // generowania (pozycja → stacje → prompt → wklejenie) — po jej końcu
-  // wracamy tu z paczką w sesji (właściciel, 2026-09-11: paczka PRZED lobby).
-  if (wartosc === 'ai') {
-    $('przycisk-zaloz-gre').textContent = '✨ Generuję pytania w AI — pełna ścieżka';
-    $('multi-zaloz-info').textContent = 'Ścieżka AI: potwierdzisz pozycję, wygenerujesz stacje i pytania, wkleisz paczkę — a potem wrócisz tu i założysz lobby z gotowymi ustawieniami.';
-    return;
-  }
-  $('przycisk-zaloz-gre').textContent = '🚀 Zakładam (wyślij na Drive)';
-  $('multi-zaloz-info').textContent = 'Wczytuję paczkę…';
-  try {
-    if (wartosc === 'sesja') {
-      const stacje = STAN.stacje.map((s) => ({ id: s.id, lat: s.lat, lon: s.lon, opis: s.opis ?? '' }));
-      const kontener = STAN.kontenerPaczki ?? zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU);
-      const meta = metaSesjiMulti(stacje);
-      if (!meta) throw new Error('nie da się ustalić metadanych okolicy (brak pozycji i stacji)');
-      STAN.multiZrodlo = { stacje, kontener, meta, opis: 'paczka z tej sesji' };
-    } else if (wartosc.startsWith('lokalna:')) {
-      const skrot = wartosc.slice('lokalna:'.length);
-      const { zestaw, usterki } = walidujZestawLokalnySurowy(localStorage.getItem(kluczZestawu(skrot)) ?? '');
-      if (!zestaw) throw new Error(usterki[0]?.komunikat ?? 'nieczytelna paczka');
-      STAN.multiZrodlo = { stacje: zestaw.stacje, kontener: zestaw.kontener, meta: metaZWpisuLokalnego(zestaw), opis: `paczka z tego telefonu (${zestaw.miejsce})` };
-    } else if (wartosc.startsWith('drive:')) {
-      const meta = STAN.multiRepoMety[Number(wartosc.slice('drive:'.length))];
-      if (!meta) throw new Error('wpis repozytorium zniknął — odśwież listę źródeł');
-      const tekst = await pobierzGetTekst(urlPaczkiZRepo(STAN.multiRepoUrl, meta));
-      const { zestaw, usterki } = walidujZestawPublicznySurowy(tekst);
-      if (!zestaw) throw new Error(usterki[0]?.komunikat ?? 'nieczytelna paczka');
-      STAN.multiZrodlo = { stacje: zestaw.stacje, kontener: zestaw.kontener, meta: zestaw.meta, opis: `paczka z Drive (${zestaw.meta.miejsce})` };
-    } else {
-      $('multi-zaloz-info').textContent = 'Wybierz źródło pytań i stacji.';
-      return;
-    }
-    const z = STAN.multiZrodlo;
-    $('multi-zaloz-info').textContent = `${z.opis}: ${z.stacje.length} stacji × ${z.meta.pytaniaNaStacje} pytań · ${z.meta.wiek} · tematy: ${z.meta.tematy.join(', ')} · ${z.meta.miejsce}.`;
-  } catch (e) {
-    $('multi-zaloz-info').textContent = `Nie udało się wczytać paczki: ${e?.message ?? e}. Wybierz inne źródło.`;
-  }
-}
-
 /* --- zakładanie, dołączanie, lobby --- */
 
 /**
@@ -4099,7 +4077,7 @@ function wejdzDoGryMulti(gra, graczId, rola) {
   zatrzymajSyncMulti();
   STAN.multi = {
     rola, gra, graczId,
-    pseudonim: ($('multi-pseudonim').value ?? '').trim(),
+    pseudonim: pseudonimGraczaMulti(), // imię+PIN z setupu (właściciel, 2026-09-11)
     urlMostu: urlMostuMulti(),
     ostatniStanMs: Date.now(),
     sync: null,
@@ -4126,80 +4104,69 @@ function zatrzymajSyncMulti() {
   if (STAN.multi) STAN.multi.sync = null;
 }
 
-/**
- * Pełna ścieżka AI dla gry wieloosobowej (właściciel, 2026-09-11): organizator
- * przechodzi zwykłe generowanie (pozycja → stacje → prompt → wklejenie),
- * a po przyjęciu paczki WRACA do panelu „Załóż grę” — lobby zakłada się
- * dopiero z gotową paczką. W Wspólnej Trasie stacje są po drodze ukryte
- * (trasa-sekret): organizator nie widzi ani kropek na mapie, ani nazw miejsc.
- */
-async function sciezkaAiMulti() {
-  // Walidacja jak przy „Dalej: moja pozycja”, ale BEZ profilu hot-seata
-  // (K07/K08) — tożsamością organizatora jest pseudonim z panelu multi.
-  const usterki = walidujSetup(STAN.konfig).filter((u) => u.kod !== 'K07' && u.kod !== 'K08');
-  if (usterki.length) { pokazBledyMulti(usterki.map((u) => u.komunikat)); return; }
-  zapiszKonfiguracje();
-  STAN.multiPoPaczce = true;
-  STAN.ukryjStacje = STAN.multiTryb === TRYBY_GRY.trasa;
-  pokazBledyMulti([]);
-  status(STAN.ukryjStacje
-    ? 'Ścieżka AI: potwierdź pozycję i wygeneruj stacje (ukryte — trasa-sekret) oraz pytania. Po wklejeniu paczki wrócisz do zakładania gry.'
-    : 'Ścieżka AI: potwierdź pozycję, wygeneruj stacje i pytania, wklej paczkę — potem wrócisz do zakładania gry.');
-  pokazEkran('pozycja');
-  pokazPozycje();
-  if (!STAN.trybTestowy && !STAN.watcher?.czyAktywny()) wlaczGps();
-}
-
 async function zalozGreMulti() {
+  // m12-74 (właściciel, 2026-09-11): grę zakłada się PO wklejeniu odpowiedzi
+  // modelu (albo po wybraniu pasującej paczki na ekranie pozycji) — paczka
+  // bieżącej sesji jest źródłem pytań i stacji, bez listy źródeł i kodów.
   const usterki = walidujGotowoscMulti();
   if (usterki.length) { pokazBledyMulti(usterki); return; }
-  if (($('multi-zrodlo').value ?? '') === 'ai') { void sciezkaAiMulti(); return; }
-  if (!STAN.multiZrodlo) { pokazBledyMulti(['Najpierw wybierz i wczytaj paczkę z pytaniami (lista źródeł wyżej).']); return; }
-  const z = STAN.multiZrodlo;
+  const stacje = STAN.stacje.map((st) => ({ id: st.id, lat: st.lat, lon: st.lon, opis: st.opis ?? '' }));
+  const kontener = STAN.kontenerPaczki ?? (STAN.paczka ? zapakujPaczke(STAN.paczka, WERSJA_PROTOKOLU) : null);
+  const meta = metaSesjiMulti(stacje);
+  if (!stacje.length || !kontener || !meta) {
+    pokazBledyMulti(['Nie ma z czego założyć gry — najpierw wygeneruj stacje i pytania albo wybierz paczkę na ekranie pozycji.']);
+    return;
+  }
+  const sekret = STAN.multiTryb === TRYBY_GRY.trasa && STAN.multiTrasaSekret;
   status('Zakładam grę na mostku Drive…');
   try {
     const wynik = await polecenieMostu(urlMostuMulti(), {
       akcja: 'gra-zaloz',
       tryb: STAN.multiTryb,
-      organizator: { pseudonim: ($('multi-pseudonim').value ?? '').trim() },
+      trasaSekret: sekret, // właściciel 2026-09-11: własność GRY (mapa w grze), nie konfiguracji
+      organizator: { pseudonim: pseudonimGraczaMulti() },
       konfiguracja: {
-        liczbaStacji: z.stacje.length,
-        pytaniaNaStacje: z.meta.pytaniaNaStacje,
-        wiek: z.meta.wiek,
-        tematy: z.meta.tematy,
-        promienM: z.meta.promienM,
-        miejsce: z.meta.miejsce ?? '',
-        geohash5: z.meta.geohash5,
+        liczbaStacji: stacje.length,
+        pytaniaNaStacje: 1, // liczba stacji = liczba pytań (właściciel, 2026-09-11)
+        wiek: meta.wiek,
+        tematy: meta.tematy,
+        promienM: meta.promienM,
+        miejsce: meta.miejsce ?? '',
+        geohash5: meta.geohash5,
+        geohash8: STAN.pozycja ? geohash(STAN.pozycja.lat, STAN.pozycja.lon, 8) : '', // ~40 m: miara zasięgu 50 m
       },
-      zestaw: { stacje: z.stacje, kontener: z.kontener, meta: z.meta },
+      zestaw: { stacje, kontener, meta },
     });
-    status(`Gra założona — kod ${wynik.gra.kod}. Przekaż go innym graczom albo niech dołączą z listy gier w okolicy.`);
+    status('Gra założona — gracze w zasięgu ~50 m zobaczą Cię na liście „Dołącz do gry”. Startujesz z lobby, kiedy zechcesz (możesz i solo).');
     wejdzDoGryMulti(wynik.gra, wynik.gra.organizatorId, 'organizator');
   } catch (e) {
     status(`Nie udało się założyć gry: ${e?.message ?? e}`);
+    pokazBledyMulti([`Nie udało się założyć gry: ${e?.message ?? e}`]);
   }
 }
-
-async function dolaczDoGryMulti({ kod = null, idGry = null } = {}) {
+async function dolaczDoGryMulti({ idGry = null } = {}) {
+  // Właściciel 2026-09-11 (odpowiedź 4A): dołączanie kodem USUNIĘTE —
+  // zostaje lista gier w zasięgu ~50 m od hosta.
   const usterki = walidujGotowoscMulti();
   if (usterki.length) { pokazBledyMulti(usterki); otworzPanelMulti('dolacz'); return; }
-  if (kod && !kodPoprawny(kod)) {
-    pokazBledyMulti([`Kod „${kod}” jest niepoprawny: oczekuję 6 znaków z alfabetu ${ALFABET_KODU} (bez 0, O, 1, I).`]);
+  if (!idGry) {
+    pokazBledyMulti(['Nie wiem, do której gry dołączyć — wybierz hosta z listy gier w okolicy.']);
     return;
   }
-  status(kod ? `Dołączam do gry ${kod}…` : 'Dołączam do gry z listy w okolicy…');
+  status('Dołączam do gry z listy…');
   try {
     const wynik = await polecenieMostu(urlMostuMulti(), {
-      akcja: 'gra-dolacz', kod, idGry,
-      pseudonim: ($('multi-pseudonim').value ?? '').trim(),
+      akcja: 'gra-dolacz',
+      idGry,
+      pseudonim: pseudonimGraczaMulti(),
     });
     wejdzDoGryMulti(wynik.gra, wynik.graczId, 'gosc');
-    status('Jesteś w grze — czekasz w lobby, aż organizator wystartuje.');
+    status('Jesteś w grze — czekasz w lobby, aż host wystartuje.');
   } catch (e) {
     status(`Nie udało się dołączyć: ${e?.message ?? e}`);
+    pokazBledyMulti([`Nie udało się dołączyć: ${e?.message ?? e}`]);
   }
 }
-
 async function odswiezLobby() {
   const url = urlMostuMulti();
   const lista = $('multi-lobby-lista');
@@ -4207,21 +4174,28 @@ async function odswiezLobby() {
     $('multi-lobby-status').textContent = 'Brak adresu mostu w tej wersji aplikacji — lista gier w okolicy jest niedostępna.' + ADR(' (ADR 0020)');
     return;
   }
+  if (!STAN.pozycja) {
+    lista.replaceChildren();
+    $('multi-lobby-status').textContent = 'Czekam na Twoją pozycję — lista pokazuje gry w zasięgu ~50 m od hosta.';
+    return;
+  }
   $('multi-lobby-status').textContent = 'Pobieram listę gier z mostu Drive…';
   try {
     const odpowiedz = await pobierzGetMulti(urlGet(url, 'gry'));
     const { wpisy, usterki } = walidujLobbySurowe(JSON.stringify(odpowiedz ?? null));
     if (usterki.length && !wpisy.length) throw new Error(usterki[0].komunikat);
-    const bliskie = STAN.pozycja ? filtrujLobby(wpisy, { geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5) }) : wpisy;
+    // Dołączenie tylko w lobby — po starcie nowi gracze nie wchodzą
+    // (właściciel, 2026-09-11, odpowiedź 2).
+    const otwarte = wpisy.filter((w) => w.stan === 'lobby');
+    // ~50 m od hosta (właściciel, 2026-09-11): komórka geohash8 (~40 m) +
+    // sąsiedzi, pozycja hosta z chwili założenia gry.
+    const bliskie = filtrujLobby(otwarte, { geohash8: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 8) });
     lista.replaceChildren();
     for (const wpis of bliskie) {
       const li = document.createElement('li');
       const opis = document.createElement('span');
-      const ramka = wpis.geohash5 ? ramkaGeohash(wpis.geohash5) : null;
-      const dystans = ramka && STAN.pozycja
-        ? ` · ok. ${Math.round(odlegloscM(STAN.pozycja, { lat: (ramka.latMin + ramka.latMax) / 2, lon: (ramka.lonMin + ramka.lonMax) / 2 }) / 100) / 10} km`
-        : '';
-      opis.textContent = `${wpis.miejsce || 'nieznane miejsce'} · ${wpis.tryb === TRYBY_GRY.trasa ? 'wspólna trasa' : 'wyścig'} · ${wpis.liczbaGraczy}/${MAKS_GRACZY} graczy · organizator: ${wpis.organizator ?? '?'}${dystans}`;
+      // Tylko host, bez dodatkowych informacji (właściciel, 2026-09-11).
+      opis.textContent = `Host: ${wpis.organizator ?? '?'}`;
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'przycisk przycisk-maly';
@@ -4231,15 +4205,22 @@ async function odswiezLobby() {
       lista.appendChild(li);
     }
     $('multi-lobby-status').textContent = bliskie.length
-      ? (STAN.pozycja
-        ? `Gry w Twojej okolicy (ta sama komórka geohash5 albo sąsiednia): ${bliskie.length}.`
-        : `Otwarte gry: ${bliskie.length}. Ustaw pozycję (krok 2), żeby zobaczyć najbliższe — bez niej lista jest pełna.`)
-      : 'Brak otwartych gier w tej okolicy — załóż własną albo dołącz z kodem.';
+      ? `Gry w zasięgu ~50 m: ${bliskie.length}.`
+      : 'Brak gier w zasięgu ~50 m — załóż własną albo odśwież za chwilę.';
   } catch (e) {
-    $('multi-lobby-status').textContent = `Nie udało się pobrać lobby: ${e?.message ?? e}. Nadal możesz dołączyć kodem.`;
+    $('multi-lobby-status').textContent = `Nie udało się pobrać listy gier: ${e?.message ?? e}`;
   }
 }
 
+/** Wejście na listę gier z setupu („Pokaż gry w okolicy”): panel + GPS + pobranie. */
+async function otworzListeGier() {
+  otworzPanelMulti('dolacz');
+  if (!STAN.pozycja && !STAN.trybTestowy && !STAN.watcher?.czyAktywny()) {
+    status('Włączam GPS — lista pokazuje gry w zasięgu ~50 m od Ciebie.');
+    wlaczGps();
+  }
+  await odswiezLobby();
+}
 async function startLobby() {
   const m = STAN.multi;
   if (!m || m.rola !== 'organizator') return;
@@ -4260,7 +4241,7 @@ function opuscLobby() {
   if (!m) { pokazEkran('setup'); return; }
   status(m.rola === 'organizator'
     ? 'Wychodzisz z lobby — gra bez organizatora nie wystartuje i po 24 h trafi do archiwum.'
-    : 'Wychodzisz z lobby. Dopóki gra nie wystartowała, możesz dołączyć ponownie (kod albo lista).');
+    : 'Wychodzisz z lobby. Dopóki gra nie wystartowała, możesz dołączyć ponownie z listy gier w okolicy.');
   zatrzymajSyncMulti();
   usunSesjeMulti();
   STAN.multi = null;
@@ -4272,7 +4253,6 @@ function opuscLobby() {
 async function przywrocGreMulti() {
   const sesja = czytajSesjeMulti();
   if (!sesja) { status('Telefon nie pamięta żadnej gry wieloosobowej.'); return; }
-  $('multi-pseudonim').value = sesja.pseudonim;
   status(`Wracam do gry ${sesja.kod}…`);
   try {
     const odpowiedz = await pobierzGetMulti(urlStanGry(sesja.urlMostu, { kod: sesja.kod, idGry: sesja.idGry }));
@@ -4323,7 +4303,7 @@ function onStanGryMulti(gra) {
       STAN.graZakonczonaRecznie = true;
       status(gra.stan === 'archiwum'
         ? 'Lobby wygasło (24 h bez startu) — gra trafiła do archiwum.'
-        : 'Gra wieloosobowa zakończona — wszystkie stacje zamknięte albo wszyscy zrezygnowali. Wyniki poniżej.');
+        : 'Gra wieloosobowa zakończona — host zamknął grę albo wszyscy aktywni gracze domknęli stacje. Wyniki poniżej.');
       pokazWyniki();
       renderujGre();
     } else {
@@ -4468,8 +4448,9 @@ function renderujLobby() {
   const m = STAN.multi;
   if (!m) return;
   const gra = m.gra;
-  $('lobby-kod').textContent = gra.kod ?? '';
-  $('lobby-tryb').textContent = `${gra.tryb === TRYBY_GRY.trasa ? '🗺️ Wspólna Trasa' : '🏁 Wyścig na Orientację'} · ${gra.konfiguracja?.liczbaStacji ?? '?'} stacji · ${gra.konfiguracja?.miejsce || 'nieznane miejsce'}`;
+  // Opcje gry BEZ pytań i stacji — tylko ilość (właściciel, 2026-09-11).
+  const sekret = gra.tryb === TRYBY_GRY.trasa && gra.trasaSekret !== false;
+  $('lobby-tryb').textContent = `${gra.tryb === TRYBY_GRY.trasa ? '🗺️ Wspólna Trasa' : '🏁 Wyścig na Orientację'}${sekret ? ' · tylko kolejna stacja' : ''} · ${gra.konfiguracja?.liczbaStacji ?? '?'} stacji · ${gra.konfiguracja?.miejsce || 'nieznane miejsce'}`;
   const lista = $('lobby-gracze');
   lista.replaceChildren();
   for (const g of gra.gracze ?? []) {
@@ -4523,7 +4504,52 @@ function renderujPanelMulti() {
   }
   renderujWyborStacji(gra, r, graSieToczy);
   $('przycisk-pomin-stacje').hidden = true; // w multi pomijania nie ma — patrz pominStacjeGry
+  renderujInfoMulti(gra);
+  // Host kończy grę, kiedy chce — wszyscy dostają podsumowanie (właściciel, 2026-09-11).
+  $('przycisk-multi-zakoncz').hidden = !(gra.stan === 'trwa' && m.rola === 'organizator');
   renderujPasekSync();
+}
+
+/**
+ * Kanał info z gry (właściciel, 2026-09-11): kto dołączył, kto dotarł do
+ * stacji i czy dobrze odpowiedział, rezygnacje i koniec gry. Komunikaty są
+ * neutralne płciowo i pojawiają się z pollingu (w grze co ~30 s).
+ */
+function renderujInfoMulti(gra) {
+  const blok = $('multi-info');
+  const lista = $('multi-info-lista');
+  const pseudonimy = new Map((gra?.gracze ?? []).map((g) => [g.id, g.pseudonim]));
+  const komunikaty = [];
+  for (const z of gra?.zdarzenia ?? []) {
+    const kto = pseudonimy.get(z.graczId) ?? 'któś';
+    if (z.typ === 'start') komunikaty.push(`▶ ${kto} wystartował grę`);
+    else if (z.typ === 'dojscie') komunikaty.push(`📍 ${kto} jest na stacji ${z.stacjaId}`);
+    else if (z.typ === 'odpowiedz') komunikaty.push(`${z.dane?.poprawna ? '✅' : '❌'} ${kto}: ${z.dane?.poprawna ? 'dobra' : 'zła'} odpowiedź (stacja ${z.stacjaId})`);
+    else if (z.typ === 'rezygnacja') komunikaty.push(`🏳 ${kto} opuszcza grę`);
+    else if (z.typ === 'koniec') komunikaty.push(`⏹ ${kto} zakończył grę`);
+  }
+  blok.hidden = komunikaty.length === 0;
+  lista.replaceChildren(...komunikaty.slice(-8).reverse().map((tekst) => {
+    const li = document.createElement('li');
+    li.textContent = tekst;
+    return li;
+  }));
+}
+
+/** Host kończy grę przed czasem — u wszystkich podsumowanie i ranking. */
+async function zakonczGreMulti() {
+  const m = STAN.multi;
+  if (!m || m.rola !== 'organizator') return;
+  status('Kończę grę na mostku Drive…');
+  try {
+    const wynik = await polecenieMostu(m.urlMostu, {
+      akcja: 'gra-zakoncz', kod: m.gra.kod, idGry: m.gra.idGry ?? null, graczId: m.graczId,
+    });
+    status('Gra zakończona — podsumowanie i ranking końcowy poniżej. Premie za kolejność liczą się też przy takim końcu.');
+    onStanGryMulti(wynik.gra);
+  } catch (e) {
+    status(`Nie udało się zakończyć gry: ${e?.message ?? e}`);
+  }
 }
 
 /**
@@ -4866,7 +4892,6 @@ function start() {
   renderujTryby();
   renderujSegment('lista-wieku', WIEK_SETUP, STAN.konfig.wiek, (wiek) => { STAN.konfig.wiek = wiek; });
   renderujTematy();
-  renderujSelecty();
   renderujSetup();
   // Lista graczy zaczyna PUSTA: domyślne „Gracz 1" z kanonu nie przeszło przez
   // most, więc nie może udawać tożsamości (ADR 0026 aneks). Zapamiętani gracze
@@ -4930,8 +4955,26 @@ function start() {
   $('przycisk-czysc-dane').addEventListener('click', czyscDaneWitryny);
 
   $('przycisk-dalej-pozycja').addEventListener('click', async () => {
-    STAN.multiPoPaczce = false; // to jest zwykła ścieżka hot-seat, nie AI-multi
+    STAN.multiPoPaczce = false; // to jest zwykła ścieżka hot-seat, nie multi
     STAN.ukryjStacje = false;
+    // Multi + „Dołączam do istniejącej” (właściciel, 2026-09-11): przycisk
+    // dolny to „Pokaż gry w okolicy” — potrzebna tylko tożsamość i GPS,
+    // reszta setupu należy do hosta.
+    if (STAN.rodzajGry === 'multi' && STAN.multiSciezka === 'dolacz') {
+      if (!urlMostuMulti()) {
+        pokazBledy('bledy-setup', [{ komunikat: 'Brak adresu mostu w tej wersji aplikacji (ADR 0020) — lista gier w okolicy jest niedostępna. Wybierz rodzaj gry „Hot-seat”.' }]);
+        return;
+      }
+      // Tożsamość (imię+PIN) jest bramką także dla dołączającego — odmowa
+      // ląduje w bloku „Kto gra?”, bo kliknięcie było na setupie.
+      const przeszedlMulti = await bramkaTozsamosci();
+      if (!przeszedlMulti) {
+        status('Bez potwierdzonego imienia nie pokażę listy gier — wpisz imię i PIN.');
+        return;
+      }
+      await otworzListeGier();
+      return;
+    }
     const usterki = walidujSetup(czytajSetupZDomu());
     pokazBledy('bledy-setup', usterki);
     if (usterki.length) {
@@ -4952,10 +4995,24 @@ function start() {
       status('Bez potwierdzonego imienia nie idziemy dalej — wpisz imię i PIN.');
       return;
     }
+    // Multi + „Zakładam nową grę” (właściciel, 2026-09-11): pytań na stację
+    // BRAK — liczba stacji = liczba pytań (po 1 na stację), promień liczy
+    // się jak w hot-seat. Po wklejeniu paczki otworzy się lobby.
+    if (STAN.rodzajGry === 'multi') {
+      STAN.konfig.pytaniaNaStacje = 1;
+      przeliczPromienZCzasu(); // promień zależy od liczby pytań (ADR 0025)
+      STAN.multiPoPaczce = true;
+      STAN.ukryjStacje = STAN.multiTryb === TRYBY_GRY.trasa && STAN.multiTrasaSekret;
+    }
     zapiszKonfiguracje();
     pokazEkran('pozycja');
     pokazPozycje();
     if (!STAN.trybTestowy && !STAN.watcher?.czyAktywny()) wlaczGps();
+    if (STAN.multiPoPaczce) {
+      status(STAN.ukryjStacje
+        ? 'Potwierdź pozycję, wygeneruj stacje i pytania, wklej odpowiedź modelu — po paczce otworzy się lobby. Trasa jest tajemnicą: widzisz tylko komunikat o liczbie stacji.'
+        : 'Potwierdź pozycję, wygeneruj stacje i pytania, wklej odpowiedź modelu — po paczce otworzy się lobby.');
+    }
   });
 
 
@@ -5153,42 +5210,25 @@ function start() {
   $('przycisk-pobierz-obraz').addEventListener('click', () => { void eksportujWynikObraz(false); });
   $('przycisk-udostepnij-obraz').addEventListener('click', () => { void eksportujWynikObraz(true); });
 
-  /* M11/P4: gra na wielu urządzeniach — setup, zakładanie, dołączanie, lobby */
+  /* M11/P4+m12-74: gra na wielu urządzeniach — segmenty na setupie, lobby,
+     kanał info i koniec gry z ręki hosta (bez kodów i bez źródeł paczek). */
   wczytajUstawieniaMulti();
-  renderujRodzajGry();
+  renderujRodzajeGry();
+  renderujMultiSciezka();
   renderujTrybyMulti();
+  renderujRodzajGry();
   renderujWznowienieMulti();
-  $('setup-rodzaj').addEventListener('change', () => {
-    STAN.rodzajGry = $('setup-rodzaj').value === 'multi' ? 'multi' : 'hotseat';
-    if (typeof localStorage !== 'undefined') localStorage.setItem(KLUCZ_RODZAJU_GRY, STAN.rodzajGry);
-    renderujRodzajGry();
-    status(STAN.rodzajGry === 'multi'
-      ? 'Gra na wielu urządzeniach: podaj pseudonim, potem załóż grę albo dołącz (kod lub lista gier w okolicy).'
-      : 'Hot-seat: jeden telefon podawany dalej (ADR 0009).');
+  $('multi-trasa-sekret').addEventListener('change', (e) => {
+    STAN.multiTrasaSekret = e.target.checked;
+    status(STAN.multiTrasaSekret
+      ? 'Trasa-sekret: w grze mapa pokazuje tylko bieżącą stację.'
+      : 'Trasa jawna: mapa w grze pokazuje wszystkie stacje.');
   });
-  $('multi-pseudonim').addEventListener('input', () => {
-    if (typeof localStorage !== 'undefined') localStorage.setItem(KLUCZ_PSEUDONIMU, ($('multi-pseudonim').value ?? '').trim());
-  });
-  $('przycisk-multi-zaloz').addEventListener('click', () => {
-    const usterki = walidujGotowoscMulti();
-    if (usterki.length) { pokazBledyMulti(usterki); return; }
-    otworzPanelMulti('zaloz');
-    odswiezZrodlaMulti();
-  });
-  $('przycisk-multi-dolacz').addEventListener('click', () => {
-    const usterki = walidujGotowoscMulti();
-    if (usterki.length) { pokazBledyMulti(usterki); return; }
-    otworzPanelMulti('dolacz');
-    void odswiezLobby();
-  });
-  $('multi-zrodlo').addEventListener('change', () => { void zaladujZrodloMulti(); });
-  $('przycisk-zaloz-gre').addEventListener('click', () => { void zalozGreMulti(); });
-  $('przycisk-dolacz-kod').addEventListener('click', () => { void dolaczDoGryMulti({ kod: normalizujKod($('multi-kod').value) }); });
-  $('przycisk-odswiez-lobby').addEventListener('click', () => { void odswiezLobby(); });
+  $('przycisk-odswiez-lobby').addEventListener('click', () => { void otworzListeGier(); });
   $('przycisk-lobby-start').addEventListener('click', () => { void startLobby(); });
   $('przycisk-lobby-opusc').addEventListener('click', opuscLobby);
-  $('przycisk-multi-wstecz-zaloz').addEventListener('click', () => pokazEkran('setup'));
   $('przycisk-multi-wstecz-dolacz').addEventListener('click', () => pokazEkran('setup'));
+  $('przycisk-multi-zakoncz').addEventListener('click', () => { void zakonczGreMulti(); });
   $('przycisk-multi-rezygnuj').addEventListener('click', rezygnujZGryMulti);
   $('przycisk-multi-wroc').addEventListener('click', () => { void przywrocGreMulti(); });
   $('przycisk-multi-porzuc').addEventListener('click', () => {

@@ -7,6 +7,9 @@
  * WYKONUJE tekst funkcji ze skryptu i porównuje z implementacją aplikacji na
  * tych samych grach. Premia za kolejność (pierwszy G−1, …, ostatni 0) musi
  * wychodzić identycznie po obu stronach.
+ *
+ * Premia za kolejność jest STAŁA: 3/2/1 pkt za 1./2./3. miejsce (aneks
+ * właściciela 2026-09-11 do ADR 0027).
  */
 
 import { test } from 'node:test';
@@ -97,19 +100,19 @@ test('premia w moście = premia w aplikacji (kopia pilnowana testem)', () => {
 test('wyniki mostu = wyniki aplikacji: punkty z premią, poprawne, odcinki, rezygnacje', () => {
   licznik = 0;
   const gra = graWyscig({ liczbaGraczy: 3, stan: 'trwa' });
-  zakonczWszystkie(gra, 'g-2'); // 1. miejsce → premia 2
+  zakonczWszystkie(gra, 'g-2'); // 1. miejsce → premia 3 (stała 3/2/1)
   odpowiedz(gra, 'g-1', 1, { poprawna: false });
   dojście(gra, 'g-1', 2);
   rezygnacja(gra, 'g-3');
 
   // gra się toczy: premia policzona, ale poza punktami — po obu stronach tak samo
   assert.deepEqual(przeliczWynikiMost(gra), przeliczWynikiKlient(gra), 'wyniki w trakcie gry');
-  assert.equal(przeliczWynikiMost(gra)['g-2'].premia, 2, 'premia pierwszego = G−1 = 2');
+  assert.equal(przeliczWynikiMost(gra)['g-2'].premia, 3, 'premia pierwszego = 3 (stała 3/2/1, właściciel 2026-09-11)');
   assert.equal(przeliczWynikiMost(gra)['g-2'].punkty, 3, 'w trakcie gry punkty bez premii');
 
   gra.stan = 'zakonczona';
   assert.deepEqual(przeliczWynikiMost(gra), przeliczWynikiKlient(gra), 'wyniki końcowe');
-  assert.equal(przeliczWynikiMost(gra)['g-2'].punkty, 5, 'podsumowanie: 3 pkt + premia 2');
+  assert.equal(przeliczWynikiMost(gra)['g-2'].punkty, 6, 'podsumowanie: 3 pkt + premia 3');
   assert.equal(przeliczWynikiMost(gra)['g-1'].punkty, 0, 'błędna odpowiedź = 0 pkt, brak premii');
   assert.equal(przeliczWynikiMost(gra)['g-1'].bledne, 1);
   assert.equal(przeliczWynikiMost(gra)['g-1'].czasOdcinkowMs, 45_000, 'czas odcinka z dojścia');

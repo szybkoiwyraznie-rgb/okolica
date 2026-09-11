@@ -249,7 +249,7 @@ test('kontrakt: wszystkie identyfikatory wołane z app.js istnieją w index.html
   for (const id of dolaczone) zadane.add(id);
   // ekrany budowane z listy EKRANY: `ekran-${e}` — sprawdzamy wszystkie warianty
   for (const ekran of ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka']) zadane.add(`ekran-${ekran}`);
-  for (const panel of ['zaloz', 'dolacz', 'lobby']) zadane.add(`multi-panel-${panel}`); // M11: panele budowane z listy
+  for (const panel of ['dolacz', 'lobby']) zadane.add(`multi-panel-${panel}`); // m12-74: panelu „zaloz” nie ma
   assert.ok(zadane.size > 25, `znaleziono tylko ${zadane.size} identyfikatorów — test pewnie nie widzi kodu`);
   // ADR 0029: ręcznego zgłaszania dojścia nie ma nigdzie — ani w index.html,
   // ani w app.js. Wyjątków od tej reguły nie ma: każdy id wołany z aplikacji
@@ -855,10 +855,23 @@ test('kontrakt ADR 0024 aneks: promień nie jest kryterium, a komunikat nazywa p
   assert.match(APP, /czyWOkolicy\(m, kryteria\)/, 'paczki z innych okolic nie są nawet liczone');
 });
 
-test('kontrakt M11: UI gry wieloosobowej — ekrany, pseudonim, bramki', () => {
-  // ekrany i panele (ADR 0019, plan M11/P4)
-  for (const id of ['ekran-multi', 'karta-multi', 'multi-panel-zaloz', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi', 'setup-rodzaj', 'multi-pseudonim', 'multi-most-stan']) {
+test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kodów i źródeł', () => {
+  // ekrany i panele (ADR 0019; m12-74: przepisany flow właściciela)
+  for (const id of [
+    'ekran-multi', 'karta-multi', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi',
+    'multi-most-stan', 'multi-wznowienie',
+    // segmenty na setupie: rodzaj gry, ścieżka multi, tryb + trasa-sekret
+    'lista-rodzajow', 'rodzaj-opis', 'multi-sciezka', 'multi-sciezka-opis',
+    'pole-multi-tryb', 'multi-tryby', 'multi-tryb-opis', 'pole-trasa-sekret', 'multi-trasa-sekret', 'multi-punktacja',
+    // kanał info w grze + koniec gry z ręki hosta
+    'multi-info', 'multi-info-lista', 'przycisk-multi-zakoncz',
+  ]) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
+  }
+  // usunięte w m12-74 (decyzje właściciela 2026-09-11): panel zakładania na
+  // ekranie multi, dołączanie kodem, pole pseudonimu, źródła paczek, kod w lobby
+  for (const id of ['multi-panel-zaloz', 'multi-kod', 'przycisk-dolacz-kod', 'multi-pseudonim', 'multi-zrodlo', 'przycisk-zaloz-gre', 'przycisk-multi-zaloz', 'przycisk-multi-dolacz', 'lobby-kod', 'setup-rodzaj', 'setup-jezyk', 'setup-podklad']) {
+    assert.ok(!INDEX.includes(`id="${id}"`), `#${id} zniknął z index.html (m12-74)`);
   }
   // Zgody na wysyłkę NIE pytamy przy każdej grze (właściciel, 2026-09-07):
   // gra na wielu telefonach z natury działa przez Drive, a opis jest w sekcji
@@ -867,12 +880,13 @@ test('kontrakt M11: UI gry wieloosobowej — ekrany, pseudonim, bramki', () => {
   assert.ok(!APP.includes('multi-zgoda'), 'kod nie czyta już pola zgody multi');
   assert.ok(!APP.includes('okolica:multi:zgoda'), 'klucz zgody multi zniknął');
   assert.match(INDEX, /Gra na wielu telefonach/, 'sekcja prywatność opisuje grę wieloosobową');
-  assert.match(APP, /Wpisz pseudonim/, 'bez pseudonimu jawna odmowa wysyłki (plan P4)');
-  assert.ok(APP.includes("'okolica:pseudonim'"), 'pseudonim utrwalany pod ustalonym kluczem (M12)');
+  // tożsamość = imię+PIN z bloku „Kto gra?” (właściciel, 2026-09-11, odpowiedź 1A)
+  assert.match(APP, /Wpisz swoje imię i PIN w bloku/, 'bez potwierdzonego imienia jawna odmowa');
+  assert.match(APP, /pseudonimGraczaMulti/, 'tożsamość multi to imię z setupu, nie osobne pole');
   // akcje mostu wołane z aplikacji istnieją w .gs (jedna lista prawdy);
   // gra-zdarzenie wysyła warstwa synchronizacji (app/sync.js), nie app.js wprost
   const SYNC = czytaj('app/sync.js');
-  for (const akcja of ['gra-zaloz', 'gra-dolacz', 'gra-start']) {
+  for (const akcja of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zakoncz']) {
     assert.ok(APP.includes(akcja), `app.js woła akcję ${akcja}`);
   }
   assert.ok(SYNC.includes('gra-zdarzenie'), 'sync.js wysyła zdarzenia akcją gra-zdarzenie');
@@ -881,11 +895,18 @@ test('kontrakt M11: UI gry wieloosobowej — ekrany, pseudonim, bramki', () => {
   assert.match(APP, /Wspólna Trasa/, 'UI nazywa tryb Wspólna Trasa');
   assert.match(APP, /Wyścig na Orientację/, 'UI nazywa tryb Wyścig na Orientację');
   assert.match(INDEX, /Punktacja w obu trybach/, 'wspólne zdanie o punktacji w index.html');
+  assert.match(INDEX, /3 pkt za 1\. miejsce, 2 pkt za 2\., 1 pkt za 3\./, 'premia 3/2/1 w zdaniu o punktacji');
   assert.ok(!INDEX.includes('Na serwer jadą wyłącznie pseudonimy'), 'zdanie o tym, co jedzie na serwer, usunięte (właściciel, 2026-09-11)');
-  assert.match(APP, /sciezkaAiMulti/, 'ścieżka AI: pełne generowanie PRZED lobby');
-  assert.match(APP, /multiPoPaczce/, 'po wklejeniu paczki wracamy do panelu „Załóż grę", nie do gry hot-seat');
+  // m12-74: po wklejeniu paczki otwiera się LOBBY (nie panel „Załóż grę”)
+  assert.match(APP, /multiPoPaczce/, 'fork multi po paczce: lobby, nie gra hot-seat');
+  assert.ok(!APP.includes('sciezkaAiMulti'), 'ścieżka AI jako osobny panel zniknęła — to zwykły setup');
+  assert.ok(!APP.includes('odswiezZrodlaMulti') && !APP.includes('zaladujZrodloMulti'), 'lista źródeł paczek multi usunięta');
+  assert.ok(!APP.includes('normalizujKod($'), 'dołączanie kodem usunięte (odpowiedź 4A)');
   assert.ok(!APP.includes('biezacyGraczTury'), 'kolejki tur nie ma w aplikacji (tryb usunięty)');
   assert.match(APP, /przycisk-pomin-stacje'\)\.hidden = true/, 'w multi nie ma pomijania stacji (serwer zna tylko dojście/odpowiedź/rezygnację)');
+  // ~50 m po geohash8 hosta (właściciel, 2026-09-11)
+  assert.match(APP, /geohash8/, 'gra niesie geohash8 (zasięg ~50 m)');
+  assert.match(GS, /geohash8/, 'most zna geohash8');
 });
 
 test('kontrakt M12: rankingi liczy telefon, serwer oddaje surowe wiersze', () => {

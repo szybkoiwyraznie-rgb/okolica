@@ -93,22 +93,25 @@ Pola wpisywania adresu zostały z interfejsu usunięte decyzją właściciela.
    Przeciągnij plik do `okolica-paczki-odrzucone` — zniknie z indeksu
    natychmiast.
 
-## 5b. Test końcowy gier wieloosobowych (kryterium M11/M12)
+## 5b. Test końcowy gier wieloosobowych (kryterium M11/M12, m12-74)
 
-Pełna checklista terenowa: `docs/WORKFLOW.md` §4.4 (8 punktów, dwa telefony).
+Pełna checklista terenowa: `docs/WORKFLOW.md` §4.4 (9 punktów, dwa telefony).
 Skrót:
 
-1. Telefon A: Ustawienia → rodzaj „wieloosobowa" → pseudonim →
-   „🌐 Załóż grę w tej okolicy" → tryb (Wspólna Trasa / Wyścig na Orientację)
-   → źródło paczki: sesja / telefon / Drive / „✨ Wygeneruj pytania w AI"
-   (pełna ścieżka pozycja → stacje → wklejenie PRZED lobby; po wklejeniu
-   wracasz z paczką w sesji) → „🚀 Zakładam" → zapisz kod z lobby.
+1. Telefon A: Ustawienia → rodzaj gry „📱 Wielu graczy" → „🚀 Zakładam nową
+   grę" → w „Kto gra?" wpisz swoje imię i PIN (dokładnie jeden gracz na
+   telefon) → tryb (Wspólna Trasa / Wyścig na Orientację) → „📍 Dalej" →
+   pozycja → pasująca paczka z propozycji (albo pełna ścieżka stacje →
+   wklejenie odpowiedzi modelu) → po paczce otwiera się **lobby**.
    Start gry działa też solo (od 1 gracza).
-2. Telefon B: sam pseudonim (adres mostu jest w kodzie aplikacji — ADR 0020) →
-   „🔗 Dołącz" → wpisz kod (albo wybierz grę z listy „w okolicy") → oba
-   telefony widzą się w lobby.
+2. Telefon B (do ~50 m od A): rodzaj gry multi → „🚪 Dołączam do istniejącej"
+   → imię+PIN (adres mostu jest w kodzie aplikacji — ADR 0020) → „🔍 Pokaż
+   gry w okolicy" → lista pokazuje „Host: <imię A>" → „Dołącz" → oba telefony
+   widzą się w lobby (≤10 s). Kodów nie ma — po starcie dołączenie jest
+   niemożliwe.
 3. A: „▶ Start gry" → oboje: odcinek → dojście → pytanie → odpowiedź; tabela
-   wyników drugiego gracza odświeża się w ~12 s.
+   wyników drugiego gracza i kanał „Info z gry" odświeżają się co ~30 s.
+   A może w każdej chwili kliknąć „⏹ Zakończ grę (host)" — u obu podsumowanie.
 4. Po zakończeniu: nagłówek „🏆 rankingi" → ogólny / wiek / tematy /
    lokalizacja + „Moje gry".
 5. Na Drive w `okolica-gry-zakonczone` leży plik gry (kod w nazwie) — pełna
@@ -131,6 +134,14 @@ Skrót:
   zakończeniu pod wynikiem pojawi się „☁ Wynik jest na wspólnym Drive" (zapis
   jest domyślny, bez pytania o zgodę), a na Drive przybędzie plik
   `gra-hotseat-….json`; rankingi pokażą punkty tych pseudonimów.
+- Aktualizacja do listy ~50 m i premii 3/2/1 (m12-74, ADR 0019/0027 aneksy):
+  wklej nową treść `docs/setup/apps-script-repo-paczek.gs` i Wdróż → Nowa
+  wersja (funkcji `setup` uruchamiać nie trzeba). Zmiany: `gra-zaloz`
+  przyjmuje `trasaSekret` i wymaga `konfiguracja.geohash8`; akcja `listaGier`
+  (lobby) zwraca TYLKO gry w stanie `lobby` z `geohash8` we wpisach; akcja
+  `gra-zakoncz` pozwala hostowi domknąć grę przed czasem; premia to stała
+  3/2/1. Test: załóż grę z telefonu B obok — B widzi „Host: …" na liście
+  „w okolicy"; po starcie ta sama lista jest pusta.
 - Aktualizacja do kotwicy geohash6 (B19, ADR 0024 aneks) i premii za kolejność
   (ADR 0027 część B): wklej nową treść skryptu i Wdróż → Nowa wersja (funkcji
   `setup` uruchamiać nie trzeba). Test: otwórz `<adres>/exec?akcja=indeks` —

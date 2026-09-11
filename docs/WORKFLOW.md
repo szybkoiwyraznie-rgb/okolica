@@ -178,35 +178,46 @@ serwuje `main`. Drugi telefon: dowolny (Chrome), ta sama albo inna sieć — gra
 jest asynchroniczna i NIE wymaga konfigurowania adresu.
 
 0. **Stan mostu**: na obu telefonach karta „📦 Paczki dla tej okolicy" i karta
-   gry wieloosobowej pokazują „Most Drive: podłączony — adres jest wpisany
-   w tej wersji aplikacji". Gdy widzisz „niepodłączony", aplikacja jest starsza
-   niż wdrożenie mostu — sprawdź, czy commit z adresem jest w `main`.
-1. **Założenie**: telefon A: Ustawienia → Rodzaj gry „Gra na wielu
-   urządzeniach" → pseudonim, zgoda zaznaczona → „🌐 Załóż grę" → tryb
-   (najpierw wyścig), źródło paczki → „🚀 Zakładam". Zapisać 6-znakowy kod
-   z lobby.
-2. **Dołączenie kodem**: telefon B: sam pseudonim (nic więcej do ustawienia) →
-   „🔗 Dołącz" → kod → oba telefony widzą się na liście graczy w lobby
-   (odświeżenie ≤10 s).
-3. **Dołączenie z lobby**: druga gra założona na A powinna pojawić się na B
-   pod „Dołącz" z miejscem, trybem i odległością — wejście kliknięciem, bez
-   przepisywania kodu.
-4. **Start i trasa (wyścig)**: A klika „▶ Start gry". Na obu: odcinek → dojście
-   → pytanie → odpowiedź. Obserwować: tabela wyników drugiego gracza odświeża
-   się (≤12 s); pasek synchronizacji pokazuje „kolejka" po zgubieniu sieci
-   (np. między blokami) i zdarzenia wychodzą po powrocie.
-5. **Wspólna Trasa**: druga gra w trybie „Wspólna Trasa" — mapa pokazuje
+   gry wieloosobowej na setupie pokazują „Most Drive: podłączony — adres jest
+   wpisany w tej wersji aplikacji". Gdy widzisz „niepodłączony", aplikacja
+   jest starsza niż wdrożenie mostu — sprawdź, czy commit z adresem jest
+   w `main`.
+1. **Założenie (m12-74)**: telefon A: Ustawienia → rodzaj gry „📱 Wielu
+   graczy — każdy ze swoim" → „🚀 Zakładam nową grę" → w bloku „Kto gra?"
+   wpisz imię i PIN (dokładnie JEDEN gracz — to Ty) → tryb gry + przy
+   Wspólnej Trasie ptaszek „widoczna tylko kolejna stacja" (domyślnie ✓) →
+   „📍 Dalej: moja pozycja" → potwierdź pozycję → weź pasującą paczkę
+   z karty propozycji (albo przejdź dalej i wygeneruj nowe pytania) → po
+   wklejeniu odpowiedzi modelu otwiera się **lobby**. Kod gry NIE jest
+   potrzebny — gracze sami się znajdą na liście.
+2. **Dołączenie z listy**: telefon B (do ~50 m od A): rodzaj gry multi →
+   „🚪 Dołączam do istniejącej" → imię+PIN → „🔍 Pokaż gry w okolicy" →
+   na liście widnieje „Host: <imię A>" (bez dodatkowych informacji) →
+   „Dołącz". Oba telefony widzą się na liście graczy w lobby (≤10 s).
+   Po starcie dołączenie jest już niemożliwe — lista pokazuje tylko lobby.
+3. **Start i trasa (wyścig)**: A klika „▶ Start gry" (może i solo). Na obu:
+   odcinek → dojście → pytanie → odpowiedź. Obserwować: tabela wyników
+   drugiego gracza i kanał „Info z gry" (dojścia, dobre/złe odpowiedzi,
+   rezygnacje) odświeżają się co ~30 s; pasek synchronizacji pokazuje
+   „kolejka" po zgubieniu sieci (np. między blokami) i zdarzenia wychodzą
+   po powrocie.
+4. **Wspólna Trasa**: druga gra w trybie „Wspólna Trasa" — mapa pokazuje
    TYLKO bieżącą stację (kolejne odsłaniają się po drodze), lista wyboru
    stacji nie istnieje, a obaj gracze idą tę samą trasę po kolei, każde we
    własnym tempie (nikt na nikogo nie czeka — od razu można startować odcinek).
-6. **Odświeżenie**: w trakcie gry przeładować stronę na B → baner „Telefon
+5. **Odświeżenie**: w trakcie gry przeładować stronę na B → baner „Telefon
    pamięta grę…" → „↩ Wróć do gry" → zamknięte stacje nie wracają, postęp
    i wyniki są aktualne.
-7. **Koniec i rankingi**: po ostatniej odpowiedzi oba telefony pokazują
-   ostateczną tabelę; w nagłówku „🏆 rankingi" → ogólny / wiek / tematy /
-   lokalizacja + „Moje gry" (wpisy z zakończonych gier).
+6. **Koniec z ręki hosta**: A klika „⏹ Zakończ grę (host)" — u obu telefonów
+   podsumowanie i ranking końcowy; premie 3/2/1 za ukończenie przed końcem
+   liczą się także przy takim końcu.
+7. **Koniec naturalny i rankingi**: po ostatniej odpowiedzi (wszyscy aktywni
+   domknęli stacje) oba telefony pokazują ostateczną tabelę; w nagłówku
+   „🏆 rankingi" → ogólny / wiek / tematy / lokalizacja + „Moje gry" (wpisy
+   z zakończonych gier).
 8. **Obserwacje** → `docs/LESSONS.md`: dokładność GPS przy stacjach, opóźnienia
-   żywej tabeli, odmowy mostu (jawne w statusie), zużycie baterii przy pollingu.
+   żywej tabeli i kanału info, odmowy mostu (jawne w statusie), zużycie
+   baterii przy pollingu.
 
 ## 5. Publikacja na GitHub Pages (jednorazowo, właściciel)
 

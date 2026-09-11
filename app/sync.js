@@ -20,7 +20,10 @@
 
 export const INTERWALY_MS = Object.freeze({
   lobby: 10_000,
-  gra: 12_000,
+  // Właściciel, 2026-09-11 (odpowiedź 3A): w TRAKCIE gry odświeżamy co 30 s —
+  // kanał info (dojścia/odpowiedzi/rezygnacje) i żywe wyniki nie muszą
+  // być szybsze, a oszczędzamy baterię i limity mostu. Lobby bez zmian.
+  gra: 30_000,
 });
 
 /** Czysta decyzja: co ile ms odpytywać most o stan gry (0 = nie odpytywać).

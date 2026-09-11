@@ -1,8 +1,9 @@
 # 0019 — Gra wieloosobowa na wielu urządzeniach przez Drive: lobby + kod, wyścig i tury, rankingi
 
-> **Stan na 2026-09-11**: tryby przepisane („tury" usunięte, doszła Wspólna
-> Trasa i ścieżka AI przed lobby) — niniejszy tekst opisuje pierwotną decyzję,
-> obowiązujący kształt definiuje **aneks na końcu**.
+> **Stan na 2026-09-11 (m12-74)**: flow przepisany po raz drugi — segment
+> „załóż/dołącz" na SETUPIE, dołączanie tylko z listy ~50 m (bez kodów), paczka
+> przed lobby ze WSPÓLNEJ ścieżki, kanał info i koniec gry z ręki hosta.
+> Obowiązujący kształt definiuje **ostatni aneks na końcu**.
 
 - Status: Zaakceptowana
 - Data: 2026-09-06
@@ -161,3 +162,50 @@ przepisanie trybu od zera. Decyzje (konsultacje zakończone tego samego dnia):
 Kontrakt `RO-gra/1` zmienia tylko domenę `tryb` (`trasa`|`wyscig`, R04) —
 schemat, zdarzenia i wyniki bez zmian; stare pliki gier z `tryb: "tury"`
 są nieczytelne dla nowej wersji (R04, jak każda inna wersja aplikacji).
+
+## Aneks (2026-09-11, m12-74): setup zamiast ekranu multiplayera, lista ~50 m zamiast kodów
+
+Właściciel przeprojektował flow po pierwszych testach terenowych („wykorzystujemy
+wspólne layery, tylko zakres opcji się zmienia"). Decyzje (odpowiedzi 1A–4A):
+
+1. **Rodzaj gry i ścieżka multi żyją na SETUPIE**: toggle „Hot-seat / Wielu
+   graczy" obok siebie jak środek transportu; w multi dosiada się segment
+   „🚀 Zakładam nową grę / 🚪 Dołączam do istniejącej". Ekran
+   `#multi-panel-zaloz` (tryb + źródła paczek + „Zakładam") ZNIKA — tryb
+   (`trasa`/`wyscig`) i ptaszek „widoczna tylko kolejna stacja" (domyślnie ✓,
+   własność GRY `trasaSekret`) wybiera się na setupie.
+2. **Multi-załóż zostawia**: środek lokomocji, czas, liczbę stacji, wiek,
+   tematy, „moja pozycja". **Pytań na stację BRAK** — liczba stacji = liczba
+   pytań (1 na stację, forsowane w `app.js`), promień liczy się jak w hot-seat
+   (ADR 0025). **Dokładnie JEDEN gracz na telefon** — host wpisuje imię+PIN
+   w zwykłym bloku „Kto gra?" (odpowiedź 1A: wspólny profil Drive, limit 1
+   z jawną odmową przy drugim). Język i podkład mapy usunięte z UI WSZĘDZIE
+   (ADR 0037).
+3. **Dalej to wspólna ścieżka**: pozycja (karta propozycji paczek — pasująca
+   paczka prowadzi PROSTO do lobby) → stacje → prompt → wklejenie → **LOBBY**
+   (opcje gry bez pytań i stacji — tylko ilość). Osobna funkcja
+   `sciezkaAiMulti` i lista źródeł zniknęły: to po prostu zwykły setup.
+4. **Dołączanie tylko z listy** (odpowiedź 4A): kod gry i `przycisk-dolacz-kod`
+   USUNIĘTE. Lista pokazuje gry, których host był w zasięgu **~50 m** przy
+   założeniu — miarą jest `konfiguracja.geohash8` (~40 m, pozycja z chwili
+   założenia; komórka + sąsiedzi), a wpis mówi tylko **„Host: Jacek"**.
+   **Brak dołączania po starcie** (odpowiedź 2) — `listaGier` zwracza wyłącznie
+   `stan: "lobby"`.
+5. **Kanał info w grze** (`#multi-info`): dojścia („X jest na stacji n"),
+   odpowiedzi („X: dobra/zła odpowiedź (stacja n)"), rezygnacje i koniec gry —
+   neutralne płciowo, ostatnie ~8 zdarzeń. **Polling w grze co 30 s**
+   (odpowiedź 3A), lobby bez zmian (10 s).
+6. **Host kończy grę przyciskiem** (`#przycisk-multi-zakoncz`, tylko
+   organizator, tylko `stan: "trwa"`): u wszystkich podsumowanie i ranking;
+   premia za kolejność liczy się także przy takim końcu (ukończone przed
+   końcem = ważne). Koniec gry nadal także automatycznie: wszyscy aktywni
+   (niezrezygnowani) domknęli stacje.
+7. Punktacja: 1 pkt za dobrą odpowiedź + **stała premia 3/2/1** za 1./2./3.
+   miejsce ukończenia (aneks do ADR 0027, także przy przedwczesnym końcu).
+
+Kontrakt `RO-gra/1`: dochodzi opcjonalne pole `trasaSekret` (Boolean,
+top-level; brak pola przy `tryb: "trasa"` = sekret — zgodność wstecz z
+m12-73) i `konfiguracja.geohash8` (8 znaków, wymagane przy zakładaniu;
+stare pliki bez niego są nadal czytelne — walidator odczytu go nie wymaga).
+Wpisy `RO-lobby/1` dokładają `geohash8`. Prywatność bez zmian: biała lista
+pól zdarzeń, kasowanie współrzędnych po stronie mostu i SKANER w testach.

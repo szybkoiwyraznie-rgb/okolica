@@ -144,12 +144,21 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-73';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-74';
 
 export { ramkaGeohash, sasiednieGeohash };
 
-export function filtrujLobby(wpisy, { geohash5 } = {}) {
+/**
+ * Zasięg ~50 m od hosta (właściciel, 2026-09-11): komórka geohash8 (~40 m)
+ * + sąsiedzi; pozycja hosta z chwili założenia gry. Starsze mosty (przed
+ * m12-74) nie zwracają geohash8 — wtedy fallback na geohash5 jak dotąd.
+ */
+export function filtrujLobby(wpisy, { geohash5, geohash8 } = {}) {
   if (!Array.isArray(wpisy)) return [];
+  if (geohash8) {
+    const dozwolone8 = new Set([String(geohash8).toLowerCase(), ...sasiednieGeohash(geohash8)]);
+    return wpisy.filter((w) => dozwolone8.has(String(w?.geohash8 ?? '').toLowerCase()));
+  }
   if (!geohash5) return [];
   const dozwolone = new Set([String(geohash5).toLowerCase(), ...sasiednieGeohash(geohash5)]);
   return wpisy.filter((w) => dozwolone.has(String(w?.geohash5 ?? '').toLowerCase()));
@@ -200,6 +209,9 @@ export function walidujGreSurowa(tekst) {
   if (!konfiguracjaOk(surowa.konfiguracja)) usterki.push(usterka('R07'));
   if (!zestawGryOk(surowa.zestaw, surowa.konfiguracja?.liczbaStacji)) usterki.push(usterka('R08'));
   if (!Array.isArray(surowa.zdarzenia) || !surowa.zdarzenia.every(zdarzenieWGrzeOk)) usterki.push(usterka('R09'));
+  // trasaSekret (m12-74): top-level Boolean, opcjonalne — gry sprzed m12-74
+  // nie mają tego pola i app traktuje brak przy trybie „trasa” jak sekret.
+  if (surowa.trasaSekret !== undefined && typeof surowa.trasaSekret !== 'boolean') usterki.push(usterka('R04'));
   return { gra: usterki.length ? null : surowa, usterki };
 }
 
@@ -227,7 +239,8 @@ function wpisLobbyOk(w) {
   return w && typeof w.idGry === 'string' && w.idGry.length > 0
     && Object.values(TRYBY_GRY).includes(w.tryb)
     && typeof w.geohash5 === 'string' && w.geohash5.length === 5
-    && typeof w.miejsce === 'string' && w.liczbaGraczy > 0;
+    && typeof w.miejsce === 'string' && w.liczbaGraczy > 0
+    && (w.geohash8 === undefined || (typeof w.geohash8 === 'string' && w.geohash8.length === 8));
 }
 
 /** Lista lobby z mostu → {wpisy, usterki} (uszkodzone wpisy przefiltrowane, R16). */
@@ -337,8 +350,11 @@ export function postepGracza(gra, graczId) {
  *
  * - kolejność bierze się z `kolejnosc` zdarzeń nadawanej przez most, NIE z zegara
  *   urządzenia (ADR 0027 pkt 4) — dwa telefony nie mają wspólnego czasu;
- * - gracz, który zrezygnował albo nie zamknął wszystkich stacji (gospodarz
- *   zakończył grę wcześniej), premii nie dostaje;
+ * - gracz, który zrezygnował albo nie zamknął wszystkich stacji (host
+ *   zakończył grę wcześniej), premii nie dostaje — choć ukończenie przed
+ *   końcem gry liczy się jak zwykle (właściciel, 2026-09-11);
+ * - premia jest STAŁA: 3/2/1 pkt za 1./2./3. miejsce (4. i dalej: 0),
+ *   niezależnie od liczby graczy (właściciel, 2026-09-11 — aneks ADR 0027);
  * - remis kolejności jest niemożliwy: `kolejnosc` jest nadawana sekwencyjnie
  *   w blokadzie zapisu mostu (`zBlokada`), więc każdy ma inną.
  *
@@ -362,7 +378,7 @@ export function premiaZaKolejnosc(gra) {
     .filter((w) => !w.postep.zrezygnowal && !rezygnacje.has(w.id) && w.postep.stacjeZamkniete >= N)
     .sort((a, b) => a.koniec - b.koniec);
   skonczeni.forEach((w, i) => {
-    const ile = gracze.length - (i + 1);
+    const ile = [3, 2, 1][i] ?? 0;
     if (ile > 0) premia[w.id] = ile;
   });
   return premia;

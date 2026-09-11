@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
+import { DOMYSLNE, JEZYK_GRY, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
 test('TRYBY: trzy tryby z briefu właściciela, prędkości 4,5/15/40 km/h, bez własnego promienia (ADR 0025)', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
@@ -116,8 +116,10 @@ test('walidujSetup: przyjmuje poprawną i odrzuca każdą klasę błędu', () =>
 
   assert.ok(kody({ ...baza, tryb: 'lotnia' }).includes('K02'));
   assert.ok(kody({ ...baza, wiek: 'seniorzy' }).includes('K03'));
-  assert.ok(kody({ ...baza, jezyk: 'klingon' }).includes('K04'));
-  assert.ok(kody({ ...baza, podklad: 'google' }).includes('K06'));
+  // K04 (język) i K06 (podkład) usunięte (właściciel, 2026-09-11): polski
+  // i OSM są zaszte w kodzie, pól nie ma w UI — nie ma czego walidować.
+  assert.ok(!kody({ ...baza, jezyk: 'klingon' }).includes('K04'), 'K04 już nie istnieje');
+  assert.ok(!kody({ ...baza, podklad: 'google' }).includes('K06'), 'K06 już nie istnieje');
   assert.ok(kody({ ...baza, liczbaGraczy: 0 }).includes('K07'));
   assert.ok(kody({ ...baza, liczbaGraczy: 9 }).includes('K07'));
   assert.ok(kody({ ...baza, imiona: ['Ala'] }).includes('K08'));
@@ -178,8 +180,9 @@ test('domyslnyKodGry: slug z imion, miejsca i daty z godziną (Partia 2, pkt 7)'
   );
 });
 
-test('kanony są zamknięte: języki i ograniczenia mają sens (współpraca usunięta — ADR 0022)', () => {
-  assert.ok(JEZYKI.polski === 'polski');
+test('kanony są zamknięte: język gry i ograniczenia mają sens (współpraca usunięta — ADR 0022)', () => {
+  // Język pytań to STAŁA, nie wybór (właściciel, 2026-09-11): zawsze polski.
+  assert.equal(JEZYK_GRY, 'polski');
   assert.equal(OGRANICZENIA.liczbaGraczy.max, 8);
   assert.equal(OGRANICZENIA.liczbaStacji.min, 3);
   assert.equal(OGRANICZENIA.promienM.max, 50000);

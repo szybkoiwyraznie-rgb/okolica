@@ -341,17 +341,17 @@ test('premia bierze kolejność z `kolejnosc` mostu, nie z zegara urządzenia', 
   zakonczWszystkieStacje(gra, 'g-2');
   // zegary urządzeń kłamią w drugą stronę — kolejność i tak z mostu
   for (const z of gra.zdarzenia) z.tSerwera = z.graczId === 'g-1' ? '2099-01-01T00:00:00.000Z' : '2000-01-01T00:00:00.000Z';
-  assert.deepEqual(premiaZaKolejnosc(gra), { 'g-1': 1 }, 'g-1 skończył pierwszy wg numerów zdarzeń');
+  assert.deepEqual(premiaZaKolejnosc(gra), { 'g-1': 3, 'g-2': 2 }, 'kolejność z numerów zdarzeń: 3 pkt za 1. miejsce, 2 za 2. (właściciel, 2026-09-11)');
 });
 
 test('premia nie wchodzi do punktów, dopóki gra się toczy (ADR 0027 pkt 5)', () => {
   const gra = graWyscig({ liczbaGraczy: 2, stan: 'trwa' });
   zakonczWszystkieStacje(gra, 'g-1');
-  assert.equal(przeliczWyniki(gra)['g-1'].premia, 1, 'premia jest policzona…');
+  assert.equal(przeliczWyniki(gra)['g-1'].premia, 3, 'premia jest policzona…');
   assert.equal(przeliczWyniki(gra)['g-1'].punkty, 3, '…ale częściowy wynik jej nie zawiera (3 × 1 pkt)');
 
   gra.stan = 'zakonczona';
-  assert.equal(przeliczWyniki(gra)['g-1'].punkty, 4, 'podsumowanie dodaje premię (3 + 1)');
+  assert.equal(przeliczWyniki(gra)['g-1'].punkty, 6, 'podsumowanie dodaje premię (3 + 3)');
   assert.equal(przeliczWyniki(gra)['g-2'].punkty, 0, 'gracz, który nie skończył, premii nie ma');
 });
 
@@ -361,7 +361,7 @@ test('premia: rezygnacja i gra zakończona przez gospodarza', () => {
   gra.zdarzenia.push({ kolejnosc: 99, graczId: 'g-3', typ: 'rezygnacja', dane: { powod: 'test' }, tSerwera: 't99' });
   // g-1 nie skończył — gospodarz zakończył grę
   const premia = premiaZaKolejnosc(gra);
-  assert.deepEqual(premia, { 'g-2': 2 }, 'tylko g-2 skończył: premia 3 − 1 = 2; rezygnujący i niedokończony bez premii');
+  assert.deepEqual(premia, { 'g-2': 3 }, 'tylko g-2 skończył: stała premia 3 za 1. miejsce; rezygnujący i niedokończony bez premii');
   assert.equal(przeliczWyniki(gra)['g-3'].zrezygnowal, true, 'rezygnacja widoczna w wynikach');
 });
 

@@ -371,27 +371,18 @@ test('mapa: przejście do stacji rysuje numerowane pinezki i okrąg promienia', 
   );
 });
 
-test('mapa: zmiana podkładu w setupie podmienia kafelki i atrybucję obu map', async () => {
+test('mapa: podkład i język ZASZYTE w kodzie — pól wyboru nie ma, mapy jadą na OSM (właściciel, 2026-09-11)', async () => {
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  assert.ok(!html.includes('id="setup-podklad"'), 'pola wyboru podkładu nie ma w UI');
+  assert.ok(!html.includes('id="setup-jezyk"'), 'pola wyboru języka nie ma w UI');
+
   const domMapy = await aplikacjaZMapa();
-  const select = domMapy.pobierz('setup-podklad');
-
-  select.value = 'esri-satelita';
-  assert.ok(wyslij(select, 'change', { target: select }) > 0, 'select podkładu nie ma nasłuchu change');
   assert.ok(
-    String(domMapy.pobierz('mapa-pozycja-kafelki').children[0].getAttribute('href')).includes('server.arcgisonline.com'),
-    'kafelki Esri (uwaga na kolejność y/x w URL)',
+    domMapy.pobierz('mapa-pozycja-kafelki').children.every((k) => String(k.getAttribute('href')).startsWith('https://tile.openstreetmap.org/')),
+    'kafelki OSM bez dotykania czegokolwiek',
   );
-  assert.equal(domMapy.pobierz('mapa-stacje-atrybucja').textContent, PODKLADY['esri-satelita'].atrybucja);
-
-  select.value = 'brak';
-  wyslij(select, 'change', { target: select });
-  assert.equal(domMapy.pobierz('mapa-pozycja-kafelki').children.length, 0, 'podkład wyłączony = zero żądań');
-  assert.equal(domMapy.pobierz('mapa-stacje-kafelki').children.length, 0);
-  assert.equal(domMapy.pobierz('mapa-pozycja-atrybucja').textContent, '', 'nie ma dostawcy — nie ma podpisu');
-
-  select.value = 'osm';
-  wyslij(select, 'change', { target: select });
-  assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0, 'powrót do OSM po podkładzie „brak"');
+  assert.equal(domMapy.pobierz('mapa-stacje-atrybucja').textContent, PODKLADY.osm.atrybucja);
+  assert.equal(domMapy.pobierz('mapa-gra-atrybucja').textContent, PODKLADY.osm.atrybucja);
 });
 
 test('mapa: ręczna pozycja w trybie testowym nie udaje koła dokładności', async () => {

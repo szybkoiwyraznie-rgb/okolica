@@ -2519,3 +2519,60 @@ o serwerze i ścieżki AI. **691/691.**
 **Dokumentacja:** aneksy ADR 0019 (pełne decyzje) i ADR 0027 (koniec tur),
 PROTOKOL §9 (domena tryb, R04), ARCHITECTURE (sync, silnik lokalny), README,
 WORKFLOW §4.4 pkt 5, instrukcja mostu §5b, indeks ADR.
+
+## Sesja 2026-09-11k — multi po raz drugi: setup zamiast ekranu, lista ~50 m, kanał info, koniec z ręki hosta (m12-74)
+
+Właściciel przetestował m12-73 i przeprojektował flow: „wykorzystujemy wspólne
+layery, tylko zakres opcji się zmienia". Decyzje (odpowiedzi 1A–4A) w aneksie
+ADR 0019 z m12-74; w skrócie:
+
+- **Segmenty na setupie**: toggle „Hot-seat / Wielu graczy" jak środek
+  transportu; w multi dosiada się „🚀 Zakładam nową grę / 🚪 Dołączam do
+  istniejącej". Ekran `multi-panel-zaloz` (tryb + źródła + „Zakładam")
+  ZNIKNĄŁ — tryb gry i ptaszek „widoczna tylko kolejna stacja" (własność gry
+  `trasaSekret`) wybiera się na setupie. Język i podkład usunięte z UI
+  wszędzie (ADR 0037: hardcode polski + OSM).
+- **Multi-załóż = zwykły setup**: zostaje środek, czas, liczba stacji, wiek,
+  tematy, pozycja; **pytań na stację BRAK** (1 pytanie/stację, forsowane),
+  promień jak w hot-seat; **dokładnie JEDEN gracz na telefon** — host wpisuje
+  imię+PIN w zwykłym bloku „Kto gra?" (odpowiedź 1A; limit 1 z jawną odmową
+  przy drugim). Dalej WSPÓLNA ścieżka: pozycja → pasująca paczka PROSTO
+  do lobby (albo stacje → prompt → wklejenie → lobby). `sciezkaAiMulti`
+  i lista źródeł usunięte.
+- **Dołączanie tylko z listy** (4A): kod gry i `przycisk-dolacz-kod`
+  USUNIĘTE; lista pokazuje wyłącznie `stan: "lobby"` (brak dołączania po
+  starcie, odpowiedź 2) w zasięgu ~50 m od hosta (miarą `konfiguracja.geohash8`
+  ~40 m + sąsiedzi), wpis mówi tylko „Host: Jacek".
+- **Kanał info** `#multi-info`: dojścia, dobre/złe odpowiedzi, rezygnacje,
+  koniec — neutralne płciowo, ostatnie ~8 zdarzeń. Polling w grze co 30 s
+  (3A), lobby 10 s.
+- **Host kończy grę przyciskiem** (`gra-zakoncz`, tylko organizator i tylko
+  `stan: "trwa"`): u wszystkich podsumowanie + ranking. Koniec naturalny bez
+  zmian (wszyscy aktywni domknęli stacje).
+- **Premia stała 3/2/1** za 1./2./3. miejsce ukończenia (aneks ADR 0027);
+  ukończone PRZED przedwczesnym końcem liczy się też. Reguła lustrzana
+  w `.gs` (`most-gra.test.js` ją wykonuje).
+
+**Wdrożenie .gs:** `gra-zaloz` przyjmuje `trasaSekret` i wymaga
+`geohash8`; `listaGier` zwraca tylko `lobby` z `geohash8` we wpisach; nowa
+akcja `gra-zakoncz` (host); premia [3,2,1]; stara premia G−1 usunięta.
+Kontrakt `RO-gra/1`: opcjonalne `trasaSekret` (brak przy `trasa` = sekret),
+wymagany przy zakładaniu `konfiguracja.geohash8` (odczyt — opcjonalny).
+
+**Testy:** wieloosobowa-ui.test.js PRZEPISANY w całości (16 testów: e2e
+wyścig/trasa/solo, paczka przed lobby, bez-gracza odmowa + zero żądań,
+ADR 0020 pusty adres, R08 payload+geohash8, SKANER geohash8, uszkodzony stan
+R07, host-zakończ z premią, wolna kolejność/mniejsza paczka/trasa-bez-wyboru,
+ADR 0032 Q/notka); wieloosobowa — premia 3/2/1 (3 testy); sync — interwały
+30 s/10 s; most-gra — geohash8+trasaSekret+lobby-only+premia; most-gra-cycle —
+cykl nowego flow; kontrakt M11+m12-74; aplikacja — język/podkład zaszte;
+konfig — K04/K06 usunięte, JEZYK_GRY import. Pułapki przepisywania: atrapa
+DOM nie grupuje radiów (helper `wybierzSegment` odznacza ręcznie), helper
+`dom.js` sieje gracza „Ala" (testy multi zawsze `bezGracza: true`), K10
+wymaga ≥3 stacji. **692/692.**
+
+**Dokumentacja:** aneksy ADR 0019 (m12-74) i 0027, NOWY ADR 0037 (język
+i podkład zaszte), rejestr ADR, PROTOKOL §9 (trasaSekret, geohash8,
+lobby-only, premia 3/2/1, 30 s), ARCHITECTURE (setup-multi, sync, info,
+koniec hosta), README, WORKFLOW §4.4 (9 punktów), instrukcja mostu §5b
++ dopisek „Awaryjnie".
