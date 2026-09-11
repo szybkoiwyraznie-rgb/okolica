@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-66';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-66';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-67';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-67';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-66';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-66';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-66';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-66';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-66';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-66';
+} from './protokol.js?v=m12-67';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-67';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-67';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-67';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-67';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-67';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-66';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-66';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-66';
+} from './zestawy.js?v=m12-67';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-67';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-67';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -66,17 +66,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-66';
-import { utworzMape } from './mapa.js?v=m12-66';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-66';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-66';
-import { adresMostu, stanMostu } from './most.js?v=m12-66';
+} from './sieci.js?v=m12-67';
+import { utworzMape } from './mapa.js?v=m12-67';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-67';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-67';
+import { adresMostu, stanMostu } from './most.js?v=m12-67';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-66';
+} from './oceny.js?v=m12-67';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -2891,7 +2891,11 @@ function sprawdzZapisGry() {
   $('przycisk-wznow-gre').hidden = false;
   const r = stan.rozgrywka;
   const indeks = r.stacje.findIndex((s) => s.id === r.biezacaStacja) + 1;
-  $('wznowienie-opis').textContent = `Znaleziono niedokończoną grę „${r.kodGry || aktywna}" — faza: ${r.faza}, stacja ${indeks} z ${r.stacje.length}, zapisano ${new Date(stan.zapisanoMs).toLocaleString('pl-PL')}.`;
+  // Zakończona gra nie jest „niedokończona" — baner mówi prawdę: to tylko
+  // ponowne obejrzenie wyniku (wznowienie jej nie wysyła wyniku drugi raz).
+  $('wznowienie-opis').textContent = r.faza === FAZY.koniec
+    ? `Znaleziono zapis ZAKOŃCZONEJ gry „${r.kodGry || aktywna}" — możesz jeszcze raz obejrzeć wynik.`
+    : `Znaleziono niedokończoną grę „${r.kodGry || aktywna}" — faza: ${r.faza}, stacja ${indeks} z ${r.stacje.length}, zapisano ${new Date(stan.zapisanoMs).toLocaleString('pl-PL')}.`;
 }
 
 /**
@@ -2903,8 +2907,14 @@ function sprawdzZapisGry() {
 function wznowGre() {
   const snapshot = STAN.wznowienieKandydat;
   if (!snapshot) return;
-  const przesuniecie = performance.now() - snapshot.zegarMs;
   const r = snapshot.rozgrywka;
+  // Gra ZAKOŃCZONA jest wznawiana tylko po to, by jeszcze raz obejrzeć wynik:
+  // zegar nie chodzi, więc rebaza byłaby szkodliwa — psuje odcisk gry
+  // (kluczGryHotseat liczy się z startMs), a przez to każde odświeżenie
+  // i wznowienie zakończonej gry wysyłało wynik DRUGI raz i most zakładał
+  // kolejny plik gra-hotseat-*.json (zgłoszenie właściciela 2026-09-11:
+  // dziesiątki plików w okolica-gry-zakonczone).
+  const przesuniecie = r.faza === FAZY.koniec ? 0 : performance.now() - snapshot.zegarMs;
   r.startMs += przesuniecie;
   for (const o of r.odcinki) {
     if (o.startMs != null) o.startMs += przesuniecie;

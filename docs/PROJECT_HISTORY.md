@@ -2296,3 +2296,58 @@ wyłącznie skryptu Apps Script i jego wdrożenia.
 Wdrożenie u właściciela: wkleić nowy `.gs`, dodać właściwość
 `URL_SERWISU`, Wdróż → Nowa wersja; czekającą paczkę zaakceptować
 ręcznie (przeniesienie pliku do `…-zaakceptowane`).
+
+## Sesja 2026-09-11d — powódź plików gra-hotseat-* na Drive (zgłoszenie #8, drugie)
+
+Zgłoszenie właściciela (ponowne, po fixie z 2026-09-09): w katalogu
+`okolica-gry-zakonczone` dalej przybywają dziesiątki plików — po kilka
+z jednej minuty, jakby każde odświeżenie aplikacji coś tam zapisywało.
+
+**Dwie niezależne przyczyny, fix z 2026-09-09 (odcisk) nie mógł żadnej
+powstrzymać, bo obie zmieniały tożsamość wysyłki:**
+
+1. **Testy jednostkowe strzelały na PRODUKCYJNY most.** Node 22 ma
+   globalny `fetch`, `zainstalujDom` go nie ruszał, a `adresMostu()`
+   zwraca wpisany w kod adres wdrożenia. Testy kończące grę zdarzeniami
+   i zweryfikowanym graczem („PEŁNA GRA z symulacją dojścia", „zgłoszenie
+   4", „M7/P7: PEŁNA GRA z dojściem GPS", „M7: ręczne zakończenie — tekst
+   wyniku") leciały prawdziwym POST-em `gra-hotseat` — w sandboxie
+   developmentu Google był zablokowany (wiemy, bo czerwony test pokazał
+   „fetch failed"), ale CI (GitHub Actions, ubuntu-latest) ma pełny
+   internet: każdy run testów dokładał kilka plików z grami testowymi.
+   Stąd „po kilka plików z jednej minuty".
+2. **Wznowienie ZAKOŃCZONEJ gry wysyłało wynik drugi raz.** `wzrowGre`
+   przy każdym wznowieniu przesuwa zegar (`r.startMs += przesuniecie`),
+   a `kluczGryHotseat` liczy się właśnie z `startMs` — po odświeżeniu
+   i „Wznów grę" (użytkownik chce tylko zobaczyć wynik) gra miała NOWY
+   klucz, lista „wysłane" jej nie poznawała, odcisk dla mostu był inny
+   → nowy plik. Każde odświeżenie = jeden plik więcej.
+
+**Naprawa (m12-67):**
+- `test/helpers/dom.js`: hermetyczna sieć — pierwszy `zainstalujDom`
+  w procesie podstawia pod `globalThis.fetch` atrapę, która ZAWSZE
+  odmawia (jak awaria sieci) i zapisuje próby (`dom.siec.wywolania`).
+  Testy chcące odpowiedzi mostu podstawiają własne atrapy (świadomie
+  je zastępują — rozpoznajemy po referencji do prawdziwego fetcha Node,
+  złapanej przy imporcie). Suita nie może już wyjść na zewnątrz.
+- `app/app.js`: `wznowGre` NIE przesuwa zegara dla gry w fazie `koniec`
+  (zegar nie chodzi, rebasa była szkodliwa) — klucz/odcisk pozostają
+  stabilne, lista wysłanych blokuje powtórkę, a most nadpisuje ten sam
+  plik. Baner wznowienia mówi prawdę: „zapis ZAKOŃCZONEJ gry — możesz
+  jeszcze raz obejrzeć wynik".
+
+Testy: +2 — „sieć testów: fetch domyślnie hermetyczny" (atrapa odmawia,
+własny stub testu wygrywa) i „odświeżenie i Wznów grę ZAKOŃCZONEJ gry
+nie wysyła wyniku drugi raz" (naturalny koniec 3 stacji → kolejka 1;
+dwa przeładowania z wznowieniem → kolejka nadal 1). **691/691.**
+
+Weryfikacja na żywo (Chromium 152 headless, 360×640, tryb testowy,
+m12-67, fetch mostu nagrywany przez przeładowania): pełna gra do
+naturalnego końca = dokładnie JEDEN POST `gra-hotseat`; dwa przeładowania
++ „Wznów grę" = zero dodatknych POST-ów, kolejka pusta, baner „ZAKOŃCZONEJ",
+zero błędów JS — **9/9 asercji**.
+
+Dla właściciela: sprzątanie Drive (usuń testowe `gra-hotseat-*` — gracze
+„Gracz 1/2/3", miejsce „nieznane miejsce") opisane w instrukcji mostu,
+sekcja „Awaryjnie". Rankingi prostują się same po usunięciu śmieci.
+Cache-busting `?v=m12-67` + `WERSJA_SW`.

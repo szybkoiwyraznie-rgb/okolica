@@ -156,6 +156,21 @@ Skrót:
   o brakujących właściwościach.
 - Paczka omyłkowo zaakceptowana: na Drive przeciągnij plik z
   `…-zaakceptowane` do `…-odrzucone` — zniknie z indeksu natychmiast.
+- **W `okolica-gry-zakonczone` leży mnóstwo plików `gra-hotseat-*`?**
+  (zgłoszenie 2026-09-11, drugie) Dwie przyczyny, obie naprawione w m12-67:
+  1) testy w repozytorium kończyły grę PRAWDZIWYM żądaniem na ten most —
+  CI ma pełny internet, więc każdy run testów dokładał pliki z grami
+  testowymi („Gracz 1/2/3", miejsce „nieznane miejsce"); od m12-67 testy
+  mają hermetyczną sieć i nie wychodzą na zewnątrz;
+  2) odświeżenie strony + „Wznów grę" ZAKOŃCZONEJ gry wysyłało wynik
+  drugi raz (każde wznowienie przesuwało znacznik startu gry, więc most
+  brał tę samą grę za nową) — od m12-67 wznowienie zakończonej gry nie
+  wysyła nic.
+  Sprzątanie: na Drive usuń zbędne pliki `gra-hotseat-*.json` — zostaw
+  po jednym dla RZECZYWISTYCH rozgrywek (testowe poznasz po graczy
+  „Gracz 1, Gracz 2, Gracz 3" i miejscu „nieznane miejsce"). Rankingi
+  liczą się z plików przy każdym otwarciu, więc po usunięciu śmieci
+  wyniki same się prostują.
 - Adres wyciekł albo ktoś nadużywa mostu (fałszywe paczki, śmieciowe gry,
   zużycie limitu): **Wdróż → Nowe wdrożenie** daje NOWY adres `/exec` — podaj
   go w czacie (nowy commit ze stałą `DOMYSLNY_URL_MOSTU`), a stare wdrożenie

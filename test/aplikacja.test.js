@@ -2280,6 +2280,67 @@ test('hot-seat: jawna odmowa mostu nie udaje awarii sieci — komunikat nazywa p
   }
 });
 
+test('sieć testów: fetch domyślnie hermetyczny — żaden test nie wychodzi na prawdziwy internet (zgłoszenie 2026-09-11)', async () => {
+  // Dziesiątki plików gra-hotseat-* w okolica-gry-zakonczone na Drive powstawały
+  // m.in. dlatego, że testy kończące grę leciały PRAWDZIWYM POST-em na produkcyjny
+  // most: Node 22 ma globalny fetch, adres mostu siedzi w DOMYSLNY_URL_MOSTU,
+  // a CI (GitHub Actions) ma pełny dostęp do internetu — każdy run testów
+  // dokładał kilka plików z testowymi grami. Domyślna atrapa DOM odmawia
+  // jak awaria sieci; testy chcące odpowiedzi mostu podstawiają
+  // WŁASNE atrapy (atrapaFetch w zestawy-ui, globalThis.fetch w hotseat).
+  const dom = zainstalujDom({ search: '?tryb=test' });
+  await assert.rejects(
+    () => globalThis.fetch('https://script.google.com/macros/s/przyklad/exec'),
+    /fetch atrapy: testy nie wychodzą na sieć/,
+    'goły zainstalujDom nie woła prawdziwego internetu',
+  );
+  assert.ok(dom.siec.wywolania.length >= 1, 'atrapa zapisuje próbę — przydatne w debugu');
+  // własna atrapa testu nadal wygrywa — tak działają testy hotseat i zestawów
+  const stary = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: true, status: 200, json: async () => ({ ok: true }) });
+  try {
+    const odp = await globalThis.fetch('https://przyklad.test/exec');
+    assert.equal((await odp.json()).ok, true, 'test może świadomie podstawić własny fetch');
+  } finally {
+    globalThis.fetch = stary;
+  }
+});
+
+test('M7/B22: odświeżenie i „Wznów grę” ZAKOŃCZONEJ gry nie wysyła wyniku drugi raz (zgłoszenie 2026-09-11)', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  const { walidujKolejkeHotseat } = await import('../app/wieloosobowa.js');
+  const kolejka = () => walidujKolejkeHotseat(JSON.parse(pamiec.get('okolica:hotseat-kolejka') ?? 'null'));
+
+  // naturalny koniec: trzy stacje z dojściem i odpowiedzią (dziennik ma zdarzenia,
+  // więc polecenie gra-hotseat przechodzi walidację i leci na most)
+  zaczynijGre(dom);
+  for (let numerStacji = 1; numerStacji <= 3; numerStacji += 1) {
+    dom.kliknij('przycisk-start-odcinka');
+    await dojdzSymulacja(dom);
+    kliknijOdpowiedz(dom, 0);
+    dom.kliknij('przycisk-nastepna-stacja');
+  }
+  assert.equal(JSON.parse(pamiec.get('okolica:gra:' + pamiec.get('okolica:gra-aktywna'))).rozgrywka.faza, 'koniec', 'naturalny koniec po trzeciej stacji');
+  await czekaj(30); // wysyłka jest nieblokująca (void) — dajemy jej dojść do kolejki
+  assert.equal(kolejka().length, 1, 'wynik zakończonej gry czeka w kolejce (sieć atrapy odmawia)');
+
+  // „zamknięcie i otwarcie telefonu” + wznowienie ZAKOŃCZONEJ gry — gracz chce
+  // tylko jeszcze raz obejrzeć wynik; NIE może to dokładać nowej wysyłki
+  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?zakonc1=${Math.random().toString(36).slice(2)}`);
+  dom2.kliknij('przycisk-wznow-gre');
+  assert.equal(dom2.pobierz('gra-panel-koniec').hidden, false, 'wznowienie zakończonej gry pokazuje wynik');
+  await czekaj(30);
+  assert.equal(kolejka().length, 1, 'wznowienie zakończonej gry nie dokładuje wysyłki — to wciąż ta sama gra');
+
+  // drugi obrót — dokładnie sytuacja z zgłoszenia („po kilka plików z jednej minuty”)
+  const dom3 = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?zakonc2=${Math.random().toString(36).slice(2)}`);
+  dom3.kliknij('przycisk-wznow-gre');
+  await czekaj(30);
+  assert.equal(kolejka().length, 1, 'każde kolejne odświeżenie zostawia kolejkę bez zmian');
+});
+
 
 test('stacje: nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem', async () => {
   // Nazwy stacji pochodzą z `tags.name` w Overpass, czyli z danych edytowanych
