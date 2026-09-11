@@ -12,10 +12,10 @@
  *   danych z ekranu prywatności (M3) kasuje zapis gry automatycznie;
  * - zepsuty zapis = jawna odmowa z kodem T, nigdy cichy start od zera.
  */
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-71';
-import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-71';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-71';
-import { geohash } from './geo.js?v=m12-71';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-72';
+import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-72';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-72';
+import { geohash } from './geo.js?v=m12-72';
 
 export const SCHEMAT_STANU = 'stan-gry/1';
 

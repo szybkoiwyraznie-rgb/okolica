@@ -2,18 +2,20 @@
  * MOST DRIVE (paczki + gry wieloosobowe + rankingi): Google Drive + Apps Script
  * (ADR 0016, 0018, 0019; plany M9b i M11/M12).
  *
- * Przepływ (decyzje właściciela 2026-09-06):
- *   1. aplikacja po „✓ Sprawdź i przyjmij” wysyła plik TO-zestaw/1 (doPost),
- *   2. skrypt zapisuje go w katalogu „do przeglądu” i mailuje właścicielowi
- *      link do podglądu (token z Properties skryptu),
- *   3. właściciel klika „Zaakceptuj” lub „Odrzuć” na stronie przeglądu,
+ * Przepływ (decyzja właściciela 2026-09-11: koniec sesji przeglądu):
+ *   1. aplikacja po przyjęciu paczki wysyła plik TO-zestaw/1 (doPost),
+ *   2. skrypt waliduje kandydata i zapisuje go OD RAZU w katalogu
+ *      zaakceptowanych — bez kolejki przeglądu i bez maili do właściciela,
+ *   3. o jakości paczek rozstrzygają łapki graczy (ADR 0028); właściciel
+ *      przegląda katalogi na Drive, gdy sam chce, a niechcianą paczkę
+ *      wyłącza z obiegu RĘCZNIE: przeciąga plik do katalogu odrzuconych
+ *      (znika z indeksu natychmiast),
  *   4. gracze pobierają indeks i paczki WYŁĄCZNIE z katalogu zaakceptowanych
  *      (doGet: akcja=indeks / akcja=paczka).
  *
  * Wdrożenie: docs/setup/most-drive-instrukcja.md (krok po kroku, bez wiedzy
- * programistycznej). Właściwości skryptu (Ustawienia → Właściwości skryptu):
- *   OWNER_EMAIL   — e-mail właściciela (powiadomienia o przeglądzie)
- *   REVIEW_SECRET — dowolny długi ciąg znaków (zdolność linku przeglądu)
+ * programistycznej). Skrypt nie potrzebuje żadnych właściwości — adres
+ * wdrożenia jest jedyną zdolnością (ADR 0020).
  *
  * Zero kluczy API w aplikacji (ADR 0001): web app.deployowana jako
  * „każdy może być anonimowy”, URL jest jedyną zdolnością.
@@ -26,7 +28,8 @@
  */
 
 const FOLDERY = {
-  przeglad: 'okolica-paczki-do-przegladu',
+  // „odrzucone” to ręczny kosz właściciela: przeciągnięcie pliku tam
+  // wyłącza paczkę z indeksu (decyzja 2026-09-11 — bez sesji przeglądu).
   zaakceptowane: 'okolica-paczki-zaakceptowane',
   odrzucone: 'okolica-paczki-odrzucone',
   gryOtwarte: 'okolica-gry-otwarte',
@@ -39,14 +42,8 @@ const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (A
 const SCHEMAT_KONTENERA = 'TO-paczka/2';
 const SCHEMAT_OCENY = 'RO-oceny/1';  // ADR 0028: plik ocen jednej paczki
 const SCHEMAT_OCENA = 'RO-ocena/1';  // ADR 0028: pojedynczy głos (kciuk w górę/dół)
-const ZNAK_OCZEKUJE = 'oczekuje przeglądu';
 
 /* ---------------------------------------------------------- infrastruktura */
-
-function ustawienia() {
-  const p = PropertiesService.getScriptProperties();
-  return { email: p.getProperty('OWNER_EMAIL'), sekret: p.getProperty('REVIEW_SECRET') };
-}
 
 function folder(nazwa) {
   const it = DriveApp.getFoldersByName(nazwa);
@@ -57,35 +54,16 @@ function folder(nazwa) {
 /** Jednorazowo: zakłada katalogi (paczki + gry). Uruchom z edytora po wdrożeniu. */
 function setup() {
   Object.values(FOLDERY).forEach(folder);
-  // Zgłoszenie 2026-09-11: setup przypomina o właściwościach, od których
-  // zależy powiadomienie i link przeglądu — bez nich paczka czeka po cichu
-  // albo mail prowadzi donikąd (URL_SERWISU, patrz urlSerwisu()).
-  const brakujace = ['OWNER_EMAIL', 'REVIEW_SECRET', 'URL_SERWISU']
-    .filter(function (klucz) { return !PropertiesService.getScriptProperties().getProperty(klucz); });
+  // Decyzja właściciela 2026-09-11: żadnych maili ani sesji przeglądu —
+  // paczki lądują w zaakceptowanych od razu. Właściwości skryptu z czasów
+  // przeglądu (adres e-mail, token, adres serwisu) są zbędne i usunięte.
   return 'katalogi gotowe: ' + Object.values(FOLDERY).join(', ')
-    + (brakujace.length
-      ? '. BRAK właściwości skryptu: ' + brakujace.join(', ') + ' (Ustawienia projektu → Właściwości skryptu).'
-      : '. Właściwości skryptu (OWNER_EMAIL, REVIEW_SECRET, URL_SERWISU) są ustawione.');
+    + '. Paczki zapisują się od razu w zaakceptowanych (bez maili).';
 }
 
 function json(obiekt) {
   return ContentService.createTextOutput(JSON.stringify(obiekt))
     .setMimeType(ContentService.MimeType.JSON);
-}
-
-function urlSerwisu() {
-  // Zgłoszenie właściciela 2026-09-11: link przeglądu z maila otwierał stronę
-  // Google „Nie udało się otworzyć pliku. Sprawdź adres i spróbuj ponownie."
-  // Winna jest znana, wieloletnia usterka Apps Script: ScriptApp.getService()
-  // .getUrl() potrafi zwrócić adres `/dev` (widoczny tylko dla edytujących
-  // skrypt) albo adres STAREGO wdrożenia po dodaniu nowej wersji. Dlatego:
-  // 1) właściciel raz wpisuje właściwość skryptu URL_SERWISU z obecnym
-  //    adresem `/exec` (krok 3 instrukcji) — ona wygrywa,
-  // 2) bez właściwości przynajmniej prostujemy `/dev` na `/exec`.
-  const wpisany = PropertiesService.getScriptProperties().getProperty('URL_SERWISU');
-  const url = String(wpisany || ScriptApp.getService().getUrl() || '').trim();
-  if (/\/dev\/?$/.test(url)) return url.replace(/\/dev\/?$/, '/exec');
-  return url;
 }
 
 /* ------------------------------------------- kontener TO-paczka/2 (odczyt) */
@@ -273,7 +251,7 @@ function paczkaJestWRepo(paczkaId) {
     const rodzice = DriveApp.getFileById(String(paczkaId)).getParents();
     if (!rodzice.hasNext()) return false;
     const nazwa = rodzice.next().getName();
-    return nazwa === FOLDERY.zaakceptowane || nazwa === FOLDERY.przeglad;
+    return nazwa === FOLDERY.zaakceptowane;
   } catch (e) {
     return false;
   }
@@ -361,7 +339,6 @@ function doGet(e) {
     if (akcja === 'gry') return json(listaGier());
     if (akcja === 'gra-stan') return json(stanGry(e.parameter.kod, e.parameter.id));
     if (akcja === 'ranking') return json(rankingi());
-    if (akcja === 'przeglad') return stronaPrzegladu(e.parameter);
     return json({ blad: 'nieznana akcja' });
   } catch (err) {
     return json({ blad: String((err && err.message) || err) });
@@ -503,95 +480,30 @@ function paczkaPrzezId(id) {
   return JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
 }
 
-/** Przyjmuje zestaw z aplikacji: katalog przeglądu + e-mail z linkiem. */
+/**
+ * Przyjmuje zestaw z aplikacji — OD RAZU do katalogu zaakceptowanych.
+ * Decyzja właściciela 2026-09-11: koniec sesji przeglądu i maili; o jakości
+ * rozstrzygają łapki graczy (ADR 0028), a ręczne odrzucenie to przeciągnięcie
+ * pliku do katalogu odrzuconych na Drive (paczka znika z indeksu).
+ */
 function przyjmijKandydata(plik) {
   const { bledy } = walidujKandydata(plik);
   if (bledy.length) return { ok: false, blad: bledy.join('; ') };
   const skrot = plik.kontener.skrot;
   const nazwa = plik.meta.geohash5 + '-' + skrot + '.zestaw.json';
-  const wszedzie = [FOLDERY.zaakceptowane, FOLDERY.przeglad, FOLDERY.odrzucone];
+  const wszedzie = [FOLDERY.zaakceptowane, FOLDERY.odrzucone];
   for (const nazwaFolderu of wszedzie) {
     const it = folder(nazwaFolderu).getFilesByName(nazwa);
     if (it.hasNext()) {
       // `id` wraca także przy duplikacie: telefon, który gra tą paczką, musi
       // znać jej identyfikator, żeby dało się ją ocenić (ADR 0028, aneks 2026-09-09).
-      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-obiegu', nazwa, id: it.next().getId() };
+      // Duplikat w odrzuconych = wcześniejsza RĘCZNA decyzja właściciela —
+      // nowy plik nie powstaje, odrzucenie obowiązuje dalej.
+      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-odrzuconych', nazwa, id: it.next().getId() };
     }
   }
-  const utworzony = folder(FOLDERY.przeglad).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
-  powiadomWlasciciela(utworzony, plik);
-  return { ok: true, status: 'przyjeta-do-przegladu', nazwa, id: utworzony.getId() };
-}
-
-function powiadomWlasciciela(plikDrive, zestaw) {
-  const { email, sekret } = ustawienia();
-  if (!email || !sekret) return; // bez ustawień skrypt milczy, paczka czeka
-  const link = urlSerwisu() + '?akcja=przeglad&token=' + encodeURIComponent(sekret) + '&id=' + encodeURIComponent(plikDrive.getId());
-  const meta = zestaw.meta;
-  const temat = 'Tajemnicza Okolica: paczka pytań do przeglądu (' + meta.miejsce + ')';
-  const cialo = 'Nowa paczka pytań czeka na Twój przegląd.\n\n'
-    + 'Miejsce: ' + meta.miejsce + ' (geohash ' + meta.geohash5 + ')\n'
-    + 'Stacje: ' + meta.liczbaStacji + ' × ' + meta.pytaniaNaStacje + ' pytań, poziom: ' + meta.wiek + '\n'
-    + 'Tematy: ' + meta.tematy.join(', ') + '\n'
-    + 'Utworzono: ' + meta.data + ' przez ' + meta.autor + '\n\n'
-    + 'Podgląd i akceptacja jednym kliknięciem:\n' + link + '\n\n'
-    // Zgłoszenie 2026-09-11: gdy link serwisu nie otwiera strony przeglądu
-    // (Google pokazuje „Nie udało się otworzyć pliku"), mail ma prowadzić
-    // dalej — bezpośrednio do pliku i z instrukcją ręcznego folderowania.
-    + 'Gdyby link nie otwierał strony przeglądu, plik jest na Dysku:\n' + plikDrive.getUrl() + '\n'
-    + '(folder ' + FOLDERY.przeglad + '). Akceptacja ręczna to przeniesienie pliku\n'
-    + 'do folderu ' + FOLDERY.zaakceptowane + ', odrzucenie — do ' + FOLDERY.odrzucone + '.\n\n'
-    + 'Pamiętaj: sprawdź źródła pytań i miejsca stacji (ADR 0008 pkt 6).';
-  MailApp.sendEmail(email, temat, cialo);
-}
-
-/* ------------------------------------------------- strona przeglądu (HTML) */
-
-function esc(tekst) {
-  return String(tekst == null ? '' : tekst)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function stronaPrzegladu(param) {
-  const { sekret } = ustawienia();
-  if (!sekret || param.token !== sekret) {
-    return HtmlService.createHtmlOutput('<p>Brak ważnego tokena przeglądu.</p>');
-  }
-  const plik = plikPrzezId(param.id);
-  const zestaw = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
-  const paczka = odpakujKontener(zestaw.kontener);
-  const meta = zestaw.meta;
-  const sekcje = zestaw.stacje.map((stacja, i) => {
-    const pytania = (paczka.pytania || []).filter((p) => p.stacja === i + 1);
-    const wiersze = pytania.map((p) => {
-      const odpowiedzi = p.odpowiedzi.map((o, k) => '<li' + (k === p.poprawna ? ' style="color:#2f6f4f;font-weight:700"' : '') + '>' + esc(o) + (k === p.poprawna ? ' ✓' : '') + '</li>').join('');
-      const zrodla = (p.zrodla || []).map((z) => '<a href="' + esc(z.url) + '">' + esc(z.tytul) + '</a>').join(', ');
-      return '<h3>' + esc(p.id) + ' (' + esc(p.temat) + ')</h3><p>' + esc(p.tresc) + '</p><ul>' + odpowiedzi + '</ul>'
-        + '<p><em>' + esc(p.wyjasnienie) + '</em></p><p>Źródła: ' + zrodla + '</p>';
-    }).join('');
-    return '<section><h2>Stacja ' + (i + 1) + ': ' + esc(stacja.opis || '') + ' [' + Number(stacja.lat).toFixed(5) + ', ' + Number(stacja.lon).toFixed(5) + ']</h2>' + wiersze + '</section>';
-  }).join('');
-  const html = '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">'
-    + '<style>body{font-family:sans-serif;margin:16px;line-height:1.5}h1{font-size:20px}section{border-top:2px solid #2f6f4f;margin-top:16px;padding-top:8px}button{font-size:18px;padding:14px 22px;margin:8px 8px 8px 0;border-radius:10px;border:1px solid #444}</style>'
-    + '<h1>Paczka: ' + esc(meta.miejsce) + '</h1>'
-    + '<p>geohash ' + esc(meta.geohash5) + ' · ' + esc(meta.liczbaStacji) + ' stacji × ' + esc(meta.pytaniaNaStacje) + ' pytań · poziom ' + esc(meta.wiek) + ' · tematy: ' + esc(meta.tematy.join(', ')) + '<br>utworzono ' + esc(meta.data) + ' · autor: ' + esc(meta.autor) + ' · licencja ' + esc(meta.licencja) + '</p>'
-    + '<p><strong>Uwagi twórcy:</strong> ' + esc(paczka.uwagi || '') + '</p>'
-    + sekcje
-    + '<div><button onclick="google.script.run.withSuccessHandler(o=>document.body.innerHTML=\'<h1>✔ Zaakceptowano</h1><p>Paczka jest dostępna dla graczy.</p>\').zatwierdz(\'' + esc(param.id) + '\')">✔ Zaakceptuj</button>'
-    + '<button onclick="google.script.run.withSuccessHandler(o=>document.body.innerHTML=\'<h1>✘ Odrzucono</h1><p>Paczka trafiła do katalogu odrzuconych.</p>\').odrzuc(\'' + esc(param.id) + '\')">✘ Odrzuć</button></div>';
-  return HtmlService.createHtmlOutput(html).setTitle('Przegląd paczki');
-}
-
-/** Akcje ze strony przeglądu (google.script.run). */
-function zatwierdz(id) {
-  przenies(id, FOLDERY.zaakceptowane);
-  return 'zaakceptowano';
-}
-
-function odrzuc(id) {
-  przenies(id, FOLDERY.odrzucone);
-  return 'odrzucono';
+  const utworzony = folder(FOLDERY.zaakceptowane).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
+  return { ok: true, status: 'zaakceptowana', nazwa, id: utworzony.getId() };
 }
 
 function przenies(id, nazwaFolderu) {

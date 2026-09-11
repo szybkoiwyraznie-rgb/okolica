@@ -2439,3 +2439,36 @@ Uwaga narzędziowa: CDP `Page.setWebLifecycleState('frozen')` wiernie
 odpala visibilitychange, ale po odmrożeniu zostawia dławienie timerów
 (symulacja 12 s ciągnie się >45 s) — weryfikacja pauzy woła tę samą
 funkcję (`przelaczPauzeGry`) przez DOM-click przycisku pauzy.
+
+## Sesja 2026-09-11i — koniec akceptowania paczek: od razu w zaakceptowanych (m12-72)
+
+Decyzja właściciela (po fixie linku przeglądu z rana): „W ogóle rezygnujemy
+z akceptowania paczek. Paczki od razu trafiają do zaakceptowane. O ich jakości
+decydują łapki w górę i w dół, nie jest potrzebna ta sesja sprawdzania
+właścicielskiego — to nic nie wnosi a tylko zajmuje czas." Cała procedura
+akceptacji i maile o nowych paczkach zniknęły.
+
+**Most (.gs):** przyjmijKandydata zapisuje plik OD RAZU w zaakceptowanych
+(status 'zaakceptowana'); usunięte powiadomWlasciciela (maile), stronaPreglądu,
+zatwierdz/odrzuc, esc, urlSerwisu, ustawienia oraz katalog
+okolica-paczki-do-przegladu i właściwości OWNER_EMAIL/REVIEW_SECRET/URL_SERWISU.
+Duplikat w zaakceptowanych → 'juz-zaakceptowana' (ten sam id — łapki ADR 0028);
+duplikat w odrzuconych → 'juz-w-odrzuconych' (ręczne odrzucenie właściciela
+obowiązuje dalej). Moderacja stała się późna i ręczna: przeciągnięcie pliku
+do odrzuconych wyłącza paczkę z indeksu i zamyka głosowanie.
+
+**Aplikacja:** status po wysyłce mówi „dostępna od razu w zestawach — jakość
+rozstrzygną łapki graczy"; znacznik meta przegladZrodel bez „właściciela"
+(„oczekuje przeglądu — jakość rozstrzygają łapki graczy").
+
+**Testy:** most-paczka/most-przeglad/most-oceny/most-indeks przerobione na nowy
+przepływ (strażnik: zero maili, brak strony przeglądu w moście, akcja=przeglad
+→ nieznana); kontrakt ADR 0028 aneks zsynchronizowany + NOWY test kontraktu
+decyzji 2026-09-11 (MailApp/stronaPrzegladu/zatwierdz/katalog przeglądu/
+REVIEW_SECRET/URL_SERWISU nie istnieją w .gs). 691/691.
+
+**Dla właściciela (wdrożenie ręczne):** wkleić nową treść .gs i Wdróż → Nowa
+wersja; na Drive przenieść zaległości z do-przegladu i skasować ten katalog;
+właściwości skryptu można usunąć — wszystko opisane w instrukcji mostu
+(sekcja „Awaryjnie"). Katalog odrzucone ZOSTAJE jako ręczny kosz (wyłączanie
+paczek z indeksu). ADR 0017 doczekał się aneksu.

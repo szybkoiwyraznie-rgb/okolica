@@ -16,8 +16,8 @@ function paczkaWRepo() {
   const zestaw = zestawPrzykladowy();
   const przyjeta = stan.most.przyjmijKandydata(zestaw);
   assert.equal(przyjeta.ok, true, `przyjęcie: ${przyjeta.blad}`);
+  assert.equal(przyjeta.status, 'zaakceptowana', 'decyzja 2026-09-11: paczka od razu w zaakceptowanych');
   const idPaczki = idPoNazwie(stan.pliki, przyjeta.nazwa);
-  assert.equal(stan.most.zatwierdz(idPaczki), 'zaakceptowano');
   return { ...stan, idPaczki };
 }
 
@@ -140,25 +140,28 @@ test('most: pobranie paczki nie zabiera głosów na telefon gracza', () => {
 });
 
 /**
- * Właściciel (2026-09-09): „Nie ma paczek, które nie istnieją na Drive. Każda
- * powinna móc być oceniona”. Paczka wygenerowana przez model leci na Drive od
- * razu, ale czeka w katalogu przeglądu — a gracz gra nią natychmiast.
+ * Decyzja właściciela 2026-09-11: paczki są w zaakceptowanych OD RAZU (bez
+ * sesji przeglądu) — więc zbierają łapki od pierwszej sekundy. Ręczne
+ * odrzucenie (przeciągnięcie pliku do katalogu odrzuconych) kończy głosowanie.
  */
-test('most: paczka czekająca na przegląd też zbiera oceny (ADR 0028 aneks)', () => {
+test('most: paczka przyjęta od razu zbiera oceny; ręczne odrzucenie je zamyka (ADR 0028 aneks, 2026-09-11)', () => {
   const stan = uruchomMost();
   const przyjeta = stan.most.przyjmijKandydata(zestawPrzykladowy());
   assert.equal(przyjeta.ok, true, `przyjęcie: ${przyjeta.blad}`);
+  assert.equal(przyjeta.status, 'zaakceptowana', 'bez kolejki przeglądu');
   assert.equal(typeof przyjeta.id, 'string', 'most oddaje id pliku — telefon musi wiedzieć, co ocenia');
   assert.ok(przyjeta.id, 'id nie jest puste');
 
   const wynik = stan.most.przyjmijOcene(glos({ paczkaId: przyjeta.id }));
-  assert.equal(wynik.ok, true, `głos na paczkę w przeglądzie: ${wynik.blad}`);
-  assert.equal(wynik.podsumowanie.glosow, 1, 'głos policzony przed akceptacją');
+  assert.equal(wynik.ok, true, `głos na świeżo przyjętą paczkę: ${wynik.blad}`);
+  assert.equal(wynik.podsumowanie.glosow, 1, 'głos liczony od razu');
+  const drugi = stan.most.przyjmijOcene(glos({ paczkaId: przyjeta.id, pytanieId: 's2p1' }));
+  assert.equal(drugi.podsumowanie.glosow, 2, 'głosy się kumulują');
 
-  // Po akceptacji głosy zebrane wcześniej zostają i dochodzą nowe.
-  assert.equal(stan.most.zatwierdz(przyjeta.id), 'zaakceptowano');
-  const poAkceptacji = stan.most.przyjmijOcene(glos({ paczkaId: przyjeta.id, pytanieId: 's2p1' }));
-  assert.equal(poAkceptacji.podsumowanie.glosow, 2, 'akceptacja nie gubi wcześniejszych głosów');
+  // Ręczne odrzucenie na Drive = koniec głosowania (paczka poza repo).
+  stan.most.przenies(przyjeta.id, 'okolica-paczki-odrzucone');
+  const poOdrzuceniu = stan.most.przyjmijOcene(glos({ paczkaId: przyjeta.id, pytanieId: 's3p1' }));
+  assert.equal(poOdrzuceniu.ok, false, 'odrzucona ręcznie paczka nie przyjmuje głosów');
 });
 
 test('most: powtórna wysyłka tego samego zestawu oddaje id istniejącej paczki', () => {
@@ -167,6 +170,6 @@ test('most: powtórna wysyłka tego samego zestawu oddaje id istniejącej paczki
   const pierwsza = stan.most.przyjmijKandydata(zestaw);
   const druga = stan.most.przyjmijKandydata(zestaw);
   assert.equal(druga.ok, true, 'duplikat nie jest błędem');
-  assert.equal(druga.status, 'juz-w-obiegu');
+  assert.equal(druga.status, 'juz-zaakceptowana');
   assert.equal(druga.id, pierwsza.id, 'ten sam zestaw = ten sam identyfikator do oceniania');
 });

@@ -254,7 +254,7 @@ function atrapaPost() {
     // degradowal się po cichu, a goły fetch łapał tylko wysyłkę.
     if (opcje.method === 'POST' && String(opcje.headers?.['Content-Type'] ?? '').startsWith('text/plain')) {
       posty.push({ url: String(url), opcje });
-      return { ok: true, status: 200, json: async () => ({ ok: true, status: 'przyjeta-do-przegladu' }), text: async () => '' };
+      return { ok: true, status: 200, json: async () => ({ ok: true, status: 'zaakceptowana' }), text: async () => '' };
     }
     return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
   };
@@ -297,7 +297,7 @@ test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain',
     assert.equal(cialo.stacje.length, 3, 'stacje z bieżącej sesji');
     assert.equal(cialo.meta.liczbaStacji, 3);
     assert.equal(cialo.meta.pytaniaNaStacje, 1);
-    assert.match(cialo.meta.przegladZrodel, /oczekuje przeglądu/, 'kandydat wychodzi ze znacznikiem');
+    assert.match(cialo.meta.przegladZrodel, /oczekuje przeglądu — jakość rozstrzygają łapki/, 'kandydat wychodzi ze znacznikiem (bez sesji przeglądu właściciela, 2026-09-11)');
     assert.equal(cialo.kontener.schemat, 'TO-paczka/2');
     assert.match(dom.pobierz('status').textContent, /WYSŁANA na Drive/);
   } finally {

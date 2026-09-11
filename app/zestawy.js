@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-71';
-import { kanonicznyTemat } from './konfig.js?v=m12-71';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-71';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-71';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-72';
+import { kanonicznyTemat } from './konfig.js?v=m12-72';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-72';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-72';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -419,8 +419,10 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
 
 /**
  * Plik publiczny TO-zestaw/1: meta + jawne stacje + kontener (ADR 0017 pkt 1).
- * `przegladZrodel` wychodzi jako „oczekuje przeglądu" — publikacja (akceptacja
- * przez właściciela na moście Drive, ADR 0018) wymaga przeglądu źródeł (pkt 5).
+ * `przegladZrodel` mówi „oczekuje przeglądu" — źródła przy każdym pytaniu
+ * (ADR 0008 pkt 5) może przejrzeć każdy (właściciel na Drive albo gracz),
+ * a o jakości paczki rozstrzygają łapki (ADR 0028; sesja przeglądu
+ * właściciela zniesiona 2026-09-11).
  */
 export function zbudujPlikZestawu({ stacje, kontener, meta, autor = 'organizator' } = {}) {
   wymaganie(Array.isArray(stacje) && stacje.length > 0 && stacje.every(czyStacjaOk),
@@ -435,7 +437,7 @@ export function zbudujPlikZestawu({ stacje, kontener, meta, autor = 'organizator
       ...meta,
       autor: String(autor),
       licencja: 'CC BY-SA 4.0',
-      przegladZrodel: 'oczekuje przeglądu właściciela (ADR 0008 pkt 6)',
+      przegladZrodel: 'oczekuje przeglądu — jakość rozstrzygają łapki graczy (ADR 0008 pkt 5, ADR 0028)',
     },
     stacje: stacje.map((s) => ({ lat: s.lat, lon: s.lon, opis: typeof s.opis === 'string' ? s.opis : '' })),
     kontener,

@@ -6,8 +6,9 @@
  * zamieniał się w `{blad:"… is not defined"}`, a aplikacja mówiła tylko
  * „Plik publiczny ma inny schemat niż TO-zestaw/1" (Z07). Gracz nie miał jak
  * zgadnąć, że winny jest skrypt. Test wykonuje tekst `.gs` na atrapie Drive
- * i przechodzi całą drogę: przyjęcie → akceptacja → indeks → pobranie → walidacja
- * po stronie aplikacji. Rozjazd którejkolwiek strony widać od razu.
+ * i przechodzi całą drogę: przyjęcie (od 2026-09-11 od razu do zaakceptowanych,
+ * bez sesji przeglądu) → indeks → pobranie → walidacja po stronie aplikacji.
+ * Rozjazd którejkolwiek strony widać od razu.
  */
 
 import { test } from 'node:test';
@@ -23,21 +24,17 @@ test('most: paczka z repozytorium przechodzi całą drogę i aplikacja ją przyj
   const { most, pliki } = uruchomMost();
   const zestaw = zestawPrzykladowy();
 
+  // Decyzja właściciela 2026-09-11: koniec sesji przeglądu — paczka ląduje
+  // w zaakceptowanych OD RAZU i jest w indeksie natychmiast.
   const przyjeta = most.przyjmijKandydata(zestaw);
-  assert.equal(przyjeta.ok, true, `przyjęcie do przeglądu: ${JSON.stringify(przyjeta)}`);
-  assert.equal(przyjeta.status, 'przyjeta-do-przegladu');
-
-  const indeksPrzed = walidujIndeksSurowy(tekstOdpowiedzi(most.budujIndeks()));
-  assert.equal(indeksPrzed.indeks.length, 0, 'paczka w przeglądzie NIE jest proponowana graczom');
-
-  // Id pliku bierzemy tak, jak bierze je właściciel: z linku przeglądu.
-  const idPliku = idPoNazwie(pliki, przyjeta.nazwa);
-  assert.ok(idPliku, 'plik paczki leży w katalogu przeglądu');
-  assert.equal(most.zatwierdz(idPliku), 'zaakceptowano');
+  assert.equal(przyjeta.ok, true, `przyjęcie: ${JSON.stringify(przyjeta)}`);
+  assert.equal(przyjeta.status, 'zaakceptowana');
 
   const indeksPo = walidujIndeksSurowy(tekstOdpowiedzi(most.budujIndeks()));
   assert.equal(indeksPo.usterki.length, 0, 'indeks bez usterek');
   assert.equal(indeksPo.indeks.length, 1, 'po akceptacji paczka jest w indeksie');
+  const idPliku = idPoNazwie(pliki, przyjeta.nazwa);
+  assert.ok(idPliku, 'plik paczki leży w katalogu zaakceptowanych');
   const wpis = indeksPo.indeks[0];
   assert.equal(wpis.id, idPliku, 'wpis indeksu niesie id pliku Drive');
   assert.equal(wpis.geohash6, 'u3qb8g', 'kotwica geohash6 z meta (B19)');
@@ -50,10 +47,13 @@ test('most: paczka z repozytorium przechodzi całą drogę i aplikacja ją przyj
   assert.equal(pobrane.zestaw.stacje.length, 3);
 });
 
-test('most: paczka spoza katalogu zaakceptowanych dostaje jawny powód', () => {
+test('most: paczka odrzucona ręcznie (poza katalogiem zaakceptowanych) dostaje jawny powód', () => {
   const { most, pliki } = uruchomMost();
   const przyjeta = most.przyjmijKandydata(zestawPrzykladowy({ stacje: 2 }));
   const idPliku = idPoNazwie(pliki, przyjeta.nazwa);
+  // Tak wygląda odrzucenie od 2026-09-11: właściciel przeciąga plik do
+  // katalogu odrzuconych na Drive (przenies robi dokładnie to).
+  most.przenies(idPliku, 'okolica-paczki-odrzucone');
 
   const odpowiedz = most.paczkaPrzezId(idPliku);
   assert.equal(odpowiedz.blad, 'ta paczka nie jest zaakceptowana');
@@ -67,7 +67,7 @@ test('most: paczka spoza katalogu zaakceptowanych dostaje jawny powód', () => {
 
 test('most: żadna akcja nie odpowiada błędem wykonania skryptu', () => {
   const { most } = uruchomMost();
-  const gety = ['indeks', 'paczka', 'gry', 'gra-stan', 'ranking', 'przeglad', 'nieznana'];
+  const gety = ['indeks', 'paczka', 'gry', 'gra-stan', 'ranking', 'nieznana'];
   for (const akcja of gety) {
     const odp = most.doGet({ parameter: { akcja, id: 'BRAK', kod: 'BRAK', token: 'BRAK' } });
     assert.equal(/is not defined/.test(odp.tekst), false, `doGet ${akcja}: ${odp.tekst}`);

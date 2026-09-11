@@ -967,10 +967,32 @@ test('kontrakt ADR 0028 aneks: ocenić można każdą paczkę, bo każda jest na
   assert.ok(APP.includes('idPaczkiDlaZestawu('), 'aplikacja odzyskuje identyfikator paczki z pamięci telefonu');
   assert.ok(APP.includes('zapamietajIdPaczkiDlaZestawu('), 'identyfikator jest zapamiętywany przy skrócie kontenera');
   assert.ok(APP.includes('okolica:paczki-drive'), 'mapa skrót → id paczki ma własny klucz w localStorage');
-  assert.match(GS, /nazwa === FOLDERY\.zaakceptowane \|\| nazwa === FOLDERY\.przeglad/,
-    'most przyjmuje głosy również dla paczek czekających na przegląd');
-  assert.match(GS, /status: 'przyjeta-do-przegladu', nazwa, id: utworzony\.getId\(\)/,
+  assert.match(GS, /return nazwa === FOLDERY\.zaakceptowane;/,
+    'most przyjmuje głosy dla paczek w zaakceptowanych (od 2026-09-11 bez katalogu przeglądu)');
+  assert.match(GS, /status: 'zaakceptowana', nazwa, id: utworzony\.getId\(\)/,
     'most oddaje id przyjętej paczki — bez niego telefon nie wie, co ocenia');
+});
+
+/**
+ * Decyzja właściciela 2026-09-11 (po fixie linku przeglądu z tego samego dnia):
+ * „W ogóle rezygnujemy z akceptowania paczek. Paczki od razu trafiają do
+ * zaakceptowane. O ich jakości decydują łapki w górę i w dół, nie jest
+ * potrzebna ta sesja sprawdzania właścicielskiego — to nic nie wnosi a tylko
+ * zajmuje czas. Usuwamy całą procedurę akceptacji. Usuwamy maile do
+ * właściciela o nowych paczkach."
+ */
+test('kontrakt decyzji 2026-09-11: akceptacja paczek zniknęła z mostu, paczki żyją od razu', () => {
+  assert.equal(GS.includes('MailApp'), false, 'most nie wysyła maili o paczkach');
+  assert.equal(GS.includes('stronaPrzegladu'), false, 'strona przeglądu zniknęła');
+  assert.equal(GS.includes('zatwierdz'), false, 'akcja zatwierdzania zniknęła');
+  assert.equal(GS.includes("przeglad: 'okolica-paczki-do-przegladu'"), false, 'katalog przeglądu zniknął z FOLDERY');
+  assert.equal(GS.includes('REVIEW_SECRET'), false, 'token przeglądu nie jest już potrzebny');
+  assert.equal(GS.includes('URL_SERWISU'), false, 'właściwość URL_SERWISU nie jest już potrzebna (link przeglądu zniknął)');
+  assert.match(GS, /folder\(FOLDERY\.zaakceptowane\)\.createFile/, 'paczka zapisuje się OD RAZU w zaakceptowanych');
+  // Aplikacja mówi prawdę o tym, co się stało z paczką.
+  assert.ok(APP.includes("wynik.status === 'zaakceptowana'"), 'aplikacja rozpoznaje status bezpośredniej akceptacji');
+  assert.ok(APP.includes('dostępna od razu w zestawach — jakość rozstrzygną łapki graczy'),
+    'status mówi o łapkach, nie o przeglądzie właściciela');
 });
 
 test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da się wyjść', () => {

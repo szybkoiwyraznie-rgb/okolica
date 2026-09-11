@@ -137,3 +137,21 @@ dopasowane paczki (lokalne + repozytorium razem), resztę po przycisku
 najpierw paczki z **największą liczbą ocen pozytywnych** (ADR 0028,
 `oceny.plus`), przy remisie świeższa data. Paczki z tego telefonu nie mają
 ocen (życią na Drive) — startują z zerem i lądują wg daty.
+
+## Aneks 2026-09-11 — koniec moderacji wstępnej (decyzja właściciela)
+
+Po drugiej turze uwag terenowych właściciel zdecydował: **sesja sprawdzania
+właścicielskiego znika w całości**. Paczki przyjęte z aplikacji lądują
+OD RAZU w katalogu zaakceptowanych (bez kolejki `…-do-przegladu`, bez maila
+z linkiem, bez strony przeglądu i przycisków akceptacji). Cytat: „O ich
+jakości decydują łapki w górę i w dół, nie jest potrzebna ta sesja
+sprawdzania właścicielskiego — to nic nie wnosi a tylko zajmuje czas."
+
+Niezmienny jest reszta porządku: schemat `TO-zestaw/1`, licencja CC BY-SA 4.0,
+źródła przy każdym pytaniu (ADR 0008) oraz zasada, że gracze pobierają
+wyłącznie katalog zaakceptowanych. Moderacja stała się PÓŹNA i RĘCZNA:
+właściciel przegląda katalogi na Drive, gdy sam chce, a niechcianą paczkę
+wyłącza z obiegu, przeciągając plik do `…-odrzucone` (znika z indeksu).
+Głosy oddane przed odrzuceniem zostają zapisane, ale paczka przestaje
+przyjmować nowe. Właściwości skryptu `OWNER_EMAIL`, `REVIEW_SECRET`
+i `URL_SERWISU` są zbędne i usunięte z wdrożenia.
