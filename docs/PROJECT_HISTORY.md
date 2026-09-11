@@ -2576,3 +2576,21 @@ i podkład zaszte), rejestr ADR, PROTOKOL §9 (trasaSekret, geohash8,
 lobby-only, premia 3/2/1, 30 s), ARCHITECTURE (setup-multi, sync, info,
 koniec hosta), README, WORKFLOW §4.4 (9 punktów), instrukcja mostu §5b
 + dopisek „Awaryjnie".
+
+## Sesja 2026-09-11l — audyt PR #9 (gałąź arena/01a091fd-okolica)
+
+Audyt scalonego PR #9 (squash `0b81d0d`, 49 plików, +2719/−1355), plik po pliku:
+
+- **AGENTS.md** — dopisek o braku sekretów mostu od 2026-09-11 (token, mail, strona akceptacji zniesione). Zgodne z decyzją właściciela i instrukcją mostu.
+- **README.md** — tematy wpisu = faktyczne tematy pytań (migracja starych wpisów), lista 3 najlepsze + „Zobacz więcej paczek”, sort po ocenach pozytywnych (ADR 0028), opis multi przepisany na Wspólna Trasa / Wyścig, lista ~50 m, solo, host kończy.
+- **app/konfig.js** — usunięte JEZYKI/PODKLADY z UI (ADR 0037), JEZYK_GRY='polski', podkład forsowany 'osm', K04/K06 usunięte. Zgodne z ADR 0037.
+- **app/app.js** — sekret trasy (ukryjStacje), pasek drogi z pigułką dystansu (span.pasek-dystans), czysty ekran pytania (slot schowany), brak ozdobników stacji (pierścień/sprawiedliwość), hermetyczna sieć testów (global fetch → atrapa odmawiająca), wznowienie zakończonej gry bez rebazy zegara, migracja tematów lokalnych, faktyczne tematy w meta.
+- **app/zestawy.js** — faktyczneTematyPytan(), zbierzMetaZestawu z pytań, limit 3 + toggle, sort po plusach.
+- **app/mapa.js / pozycja.js / stacje.js / sieci.js / most.js / rozgrywka.js / sync.js / trwalosc.js / wieloosobowa.js / wynik.js** — drobne podbicia wersji, spójne z ADR 0034/0035/0036/0037, premia stała 3/2/1, geohash8, trasaSekret, lobby-only, koniec hosta.
+- **docs/setup/apps-script-repo-paczek.gs** — koniec akceptacji paczek (od razu zaakceptowana), odporny link przeglądu (URL_SERWISU), powódź hotseat naprawiona, premia 3/2/1, geohash8, gra-zakoncz.
+- **index.html / styles.css / sw.js** — wersja m12-65..m12-74 spójna (44 miejsca + WERSJA_SW), nowe elementy (multi-info, pasek-dystans), reguły hidden.
+- **Testy** — 692/692 zielone na main, nowe regresje faktycznych tematów, limitu listy, sortu po ocenach, hermetyczności sieci, wznowienia zakończonej gry.
+
+Wynik audytu: kod spójny z ADR i protokołem, testy zielone, brak blokujących usterek. Uwagi historyczne (powódź hotseat, link przeglądu) rozliczone i przetestowane.
+
+Brama na main: 692/692 + sync szablonów OK + WCAG AA 0 naruszeń. Budżet lektury 71 641/100 000.
