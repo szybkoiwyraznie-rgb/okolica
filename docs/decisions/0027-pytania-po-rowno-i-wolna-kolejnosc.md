@@ -98,3 +98,13 @@ Model docelowy, spójny z częścią A i z istniejącym protokołem RO-*:
 - Więcej pytań na stację = dłuższy prompt i dłuższa odpowiedź modelu (8 graczy
   × 5 stacji = 40 pytań) — limit znaków wklejenia i budżet promptu trzeba
   sprawdzić przy wdrożeniu części B (BACKLOG B20).
+
+## Aneks (2026-09-11): tryb „tury" usunięty — kolejność bez kolejki
+
+Część B mówiła o „turach bez listy wyboru" jako trzecim trybie. Właściciel
+przepisał tryby (ADR 0019 aneks 2026-09-11): „tury" zniknęły, a ich miejsce
+zajęła **Wspólna Trasa** (`trasa`) — też bez listy wyboru, ale bez
+przypisywania stacji do graczy: KAŻDY przechodzi WSZYSTKIE stacje PO KOLEI
+we własnym tempie. Punktacja i premia za kolejność ukończenia — bez zmian
+(premia jest trybo-agnostyczna od początku). Wyścig na Orientację
+(dawny `wyscig`) zostaje: dowolna kolejność, lista wyboru, per-gracz pytanie.

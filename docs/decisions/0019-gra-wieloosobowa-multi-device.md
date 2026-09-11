@@ -1,5 +1,9 @@
 # 0019 — Gra wieloosobowa na wielu urządzeniach przez Drive: lobby + kod, wyścig i tury, rankingi
 
+> **Stan na 2026-09-11**: tryby przepisane („tury" usunięte, doszła Wspólna
+> Trasa i ścieżka AI przed lobby) — niniejszy tekst opisuje pierwotną decyzję,
+> obowiązujący kształt definiuje **aneks na końcu**.
+
 - Status: Zaakceptowana
 - Data: 2026-09-06
 
@@ -118,3 +122,42 @@ wszystkie te informacje)".
   `test/wieloosobowa-ui.test.js`.
 - Schematy `RO-*` nigdy nie miały pola `zgoda` — most go nie czytał, więc
   protokół się nie zmienia.
+
+## Aneks (2026-09-11): przepisanie trybów — koniec „tur", paczka przed lobby, solo
+
+Właściciel poległ na pierwszym ekranie gry wieloosobowej i zarządził
+przepisanie trybu od zera. Decyzje (konsultacje zakończone tego samego dnia):
+
+1. **Tryb „tury" USUNIĘTY** (UI, `app.js`, `app/wieloosobowa.js`,
+   `app/sync.js`, `.gs`, testy). Nie ma pojęcia „właściciela stacji" ani
+   kolejki — `biezacyGraczTury` zniknęło z modułu i z mostu, a polling nie
+   rozróżnia już „moja/czekam" (oba tryby pytają co 12 s).
+2. Dwa tryby zamiast trzech (nazwy robocze wg właściciela):
+   - **`trasa` — Wspólna Trasa**: wszyscy mają tę samą trasę, każdy na swoim
+     telefonie i we własnym tempie; stacje PO KOLEI (bez listy wyboru),
+   - **`wyscig` — Wyścig na Orientację**: dowolna kolejność stacji (lista
+     wyboru — bez zmian, ADR 0027 część B).
+   Punktacja WSPÓLNA (jedno zdanie w UI, bez dublowania): 1 pkt za dobrą
+   odpowiedź + premia za kolejność ukończenia. Oba tryby domykają się tak
+   samo: każdy gracz zamyka wszystkie stacje albo rezygnuje.
+3. **Trasa-sekret**: w Wspólnej Trasie mapa gry pokazuje TYLKO bieżącą
+   stację (kolejne odsłaniają się po drodze), a organizator generujący
+   paczkę nie widzi na ekranie stacji ani kropek na mapie, ani nazw miejsc —
+   tylko status „wygenerowano N stacji". Prompt dla modelu musi oczywiście
+   nieść współrzędne (to jego materiał roboczy).
+4. **Paczka PRZED lobby**: pseudonim → „Załóż grę w tej okolicy" → tryb →
+   źródło (sesja / telefon / Drive / **✨ Wygeneruj pytania w AI** — pełna
+   ścieżka pozycja → stacje → prompt → wklejenie, po której wraca się
+   do panelu z paczką w sesji, NIE do gry hot-seat) → „🚀 Zakładam" → lobby
+   z gotowymi ustawieniami. Lista źródeł NIGDY nie jest pusta (AI zawsze),
+   statusy źródeł są jawne (w tym wynik szukania na Drive).
+5. **Start gry możliwy od 1 gracza** (solo) — most nie wymagał tego nigdy
+   jawnie, teraz UI mówi to wprost, a testy to pilnują.
+6. Z ekranu multi usunięto zdanie „Na serwer jadą wyłącznie pseudonimy…"
+   (współrzędne zostają na urządzeniach) — BEZ zmiany zachowania: zasada
+   NIGDY (pkt 3) dalej pilnują biała lista pól zdarzenia, kasowanie po
+   stronie mostu i SKANER w `test/wieloosobowa-ui.test.js`.
+
+Kontrakt `RO-gra/1` zmienia tylko domenę `tryb` (`trasa`|`wyscig`, R04) —
+schemat, zdarzenia i wyniki bez zmian; stare pliki gier z `tryb: "tury"`
+są nieczytelne dla nowej wersji (R04, jak każda inna wersja aplikacji).

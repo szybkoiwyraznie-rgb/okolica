@@ -11,7 +11,7 @@ import { geohash } from '../app/geo.js';
 import {
   ALFABET_KODU, DLUGOSC_KODU, KODY_WIELOOSOBOWE, MAKS_GRACZY, SCHEMAT_GRY,
   SCHEMAT_LOBBY, SCHEMAT_PROFILU, SCHEMAT_RANKINGU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
-  agregujRanking, biezacyGraczTury, czyKompletna, czyPinPoprawny, filtrujLobby, generujKod,
+  agregujRanking, czyKompletna, czyPinPoprawny, filtrujLobby, generujKod,
   kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim,
   postepGracza, premiaZaKolejnosc, przeliczWyniki,
   ramkaGeohash, sasiednieGeohash, walidujGreSurowa, walidujLobbySurowe,
@@ -103,7 +103,7 @@ test('filtrujLobby: gry z własnej komórki i sąsiednich; bez pozycji = pusto',
   const sasiad = sasiednieGeohash(GH5)[0];
   const wpisy = [
     { idGry: 'a', tryb: 'wyscig', geohash5: GH5, miejsce: 'Tu', liczbaGraczy: 1 },
-    { idGry: 'b', tryb: 'tury', geohash5: sasiad, miejsce: 'Obok', liczbaGraczy: 2 },
+    { idGry: 'b', tryb: 'trasa', geohash5: sasiad, miejsce: 'Obok', liczbaGraczy: 2 },
     { idGry: 'c', tryb: 'wyscig', geohash5: 'v0gq0', miejsce: 'Daleko', liczbaGraczy: 1 },
   ];
   const blisko = filtrujLobby(wpisy, { geohash5: GH5 });
@@ -183,17 +183,11 @@ test('zbudujZdarzenie: tUrzadzenia to skończone ms albo brak pola (nigdy NaN/nu
   assert.ok(!('tUrzadzenia' in bez), 'pole opcjonalne');
 });
 
-test('biezacyGraczTury: uszkodzony stan to null, nie TypeError (telefon nie ufa mostowi)', () => {
-  assert.equal(biezacyGraczTury(null), null);
-  assert.equal(biezacyGraczTury({ ...graTury(), konfiguracja: null }), null);
-  assert.equal(biezacyGraczTury({ ...graTury(), konfiguracja: {} }), null);
-});
+/* ----------------------------- maszynka Wspólnej Trasy i wyniki */
 
-/* ------------------------------------------- maszynka tur i wyniki */
-
-function graTury(zdarzenia = []) {
+function graTrasy(zdarzenia = []) {
   return graWazna({
-    tryb: TRYBY_GRY.tury, stan: 'trwa',
+    tryb: TRYBY_GRY.trasa, stan: 'trwa',
     gracze: [
       { id: 'g-1', pseudonim: 'Ala', dolaczyl: 't1' },
       { id: 'g-2', pseudonim: 'Bartek', dolaczyl: 't2' },
@@ -204,30 +198,17 @@ function graTury(zdarzenia = []) {
 const odp = (graczId, stacjaId, nad = {}) => ({ kolejnosc: 1, graczId, typ: 'odpowiedz', stacjaId, dane: { poprawna: true, punktyRazem: 12, ...nad }, tSerwera: 't' });
 const doj = (graczId, stacjaId, nad = {}) => ({ kolejnosc: 1, graczId, typ: 'dojscie', stacjaId, dane: { trybDojscia: 'gps', ...nad }, tSerwera: 't' });
 
-test('tury: kolejka stacja mod N jak hot-seat, rezygnacja zawęża aktywnych', () => {
-  assert.equal(biezacyGraczTury(graTury()), 'g-1', 'stacja 1 → gracz 1');
-  assert.equal(biezacyGraczTury(graTury([odp('g-1', 1)])), 'g-2', 'stacja 2 → gracz 2');
-  assert.equal(biezacyGraczTury(graTury([odp('g-1', 1), odp('g-2', 2)])), 'g-1', 'stacja 3 → znowu gracz 1');
-  assert.equal(biezacyGraczTury(graTury([odp('g-1', 1), odp('g-2', 2), odp('g-1', 3)])), null, 'wszystko zamknięte → brak tury');
-  assert.equal(biezacyGraczTury(graTury([{ kolejnosc: 1, graczId: 'g-2', typ: 'rezygnacja', dane: {}, tSerwera: 't' }])), 'g-1', 'stacja 1 i tak należy do g-1');
-  assert.equal(
-    biezacyGraczTury(graTury([odp('g-1', 1), { kolejnosc: 2, graczId: 'g-2', typ: 'rezygnacja', dane: {}, tSerwera: 't' }])),
-    'g-1',
-    'rezygnacja NIE przesuwa kolejki: stacja 2 (g-2) pominięta, następna to 3 (znowu g-1)',
-  );
-  assert.equal(biezacyGraczTury(graWazna()), null, 'wyścig nie ma pojęcia tury');
-});
-
-test('tury: czyKompletna z rezygnacją — stacje rezygnującego są pomijane, nie blokują', () => {
+test('trasa: czyKompletna z rezygnacją — rezygnujący nie blokuje domknięcia', () => {
   const rezygn = { kolejnosc: 2, graczId: 'g-2', typ: 'rezygnacja', dane: {}, tSerwera: 't' };
-  assert.equal(czyKompletna(graTury([odp('g-1', 1), rezygn])), false, 'stacja 3 wciąż czeka na g-1');
-  assert.equal(czyKompletna(graTury([odp('g-1', 1), rezygn, odp('g-1', 3)])), true, 'stacja 2 pominięta — gra domknięta');
-  assert.equal(czyKompletna(graTury([rezygn, { kolejnosc: 3, graczId: 'g-1', typ: 'rezygnacja', dane: {}, tSerwera: 't' }])), true, 'wszyscy zrezygnowali = koniec');
+  assert.equal(czyKompletna(graTrasy([odp('g-1', 1), rezygn])), false, 'g-1 ma jeszcze stacje 2 i 3');
+  assert.equal(czyKompletna(graTrasy([odp('g-1', 1), rezygn, odp('g-1', 3)])), false, 'g-1 wciąż ma stację 2');
+  assert.equal(czyKompletna(graTrasy([odp('g-1', 1), rezygn, odp('g-1', 2), odp('g-1', 3)])), true, 'g-1 domknął swoje — gra domknięta');
+  assert.equal(czyKompletna(graTrasy([rezygn, { kolejnosc: 3, graczId: 'g-1', typ: 'rezygnacja', dane: {}, tSerwera: 't' }])), true, 'wszyscy zrezygnowali = koniec');
 });
 
-test('czyKompletna: tury = N odpowiedzi; wyścig = każdy gracz N albo rezygnacja', () => {
-  assert.equal(czyKompletna(graTury([odp('g-1', 1), odp('g-2', 2)])), false, 'tury: 2 z 3');
-  assert.equal(czyKompletna(graTury([odp('g-1', 1), odp('g-2', 2), odp('g-1', 3)])), true, 'tury: 3 z 3');
+test('czyKompletna: trasa i wyścig = każdy gracz N stacji albo rezygnacja', () => {
+  assert.equal(czyKompletna(graTrasy([odp('g-1', 1), odp('g-1', 2), odp('g-1', 3)])), false, 'trasa: g-2 jeszcze nie skończył');
+  assert.equal(czyKompletna(graTrasy([odp('g-1', 1), odp('g-1', 2), odp('g-1', 3), odp('g-2', 1), odp('g-2', 2), odp('g-2', 3)])), true, 'trasa: obaj domknęli');
   const wyscig = graWazna({
     stan: 'trwa',
     gracze: [{ id: 'g-1', pseudonim: 'A', dolaczyl: 't' }, { id: 'g-2', pseudonim: 'B', dolaczyl: 't' }],
@@ -265,7 +246,7 @@ test('walidujLobbySurowe: wpis uszkodzony odpada z R16, obcy schemat z R15', () 
 test('rankingi: agregacje ogólne i kategorie wiek/temat/lokalizacja (ADR 0019 pkt 5)', () => {
   const wiersze = [
     { pseudonim: 'Ala', punkty: 30, poprawne: 3, bledne: 0, data: 'd1', tryb: 'wyscig', miejsce: 'Podkowa Leśna', geohash5: GH5, wiek: 'dorosli', tematy: ['historia', 'architektura'] },
-    { pseudonim: 'Ala', punkty: 10, poprawne: 1, bledne: 1, data: 'd2', tryb: 'tury', miejsce: 'Warszawa', geohash5: 'u3q8x', wiek: 'dorosli', tematy: ['przyroda'] },
+    { pseudonim: 'Ala', punkty: 10, poprawne: 1, bledne: 1, data: 'd2', tryb: 'trasa', miejsce: 'Warszawa', geohash5: 'u3q8x', wiek: 'dorosli', tematy: ['przyroda'] },
     { pseudonim: 'Bartek', punkty: 25, poprawne: 2, bledne: 1, data: 'd1', tryb: 'wyscig', miejsce: 'Podkowa Leśna', geohash5: GH5, wiek: '12-15', tematy: ['historia'] },
   ];
   const ogolny = agregujRanking(wiersze);

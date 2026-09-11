@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-72';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-72';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-73';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-73';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-72';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-72';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-72';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-72';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-72';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-72';
+} from './protokol.js?v=m12-73';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-73';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-73';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-73';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-73';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-73';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-72';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-72';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-72';
+} from './zestawy.js?v=m12-73';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-73';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-73';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -66,17 +66,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-72';
-import { utworzMape } from './mapa.js?v=m12-72';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-72';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-72';
-import { adresMostu, stanMostu } from './most.js?v=m12-72';
+} from './sieci.js?v=m12-73';
+import { utworzMape } from './mapa.js?v=m12-73';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-73';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-73';
+import { adresMostu, stanMostu } from './most.js?v=m12-73';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-72';
+} from './oceny.js?v=m12-73';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -149,8 +149,15 @@ const STAN = {
   multi: null,
   /** M11/P4: załadowany zestaw do założenia gry `{stacje, kontener, meta, opis}`. */
   multiZrodlo: null,
-  /** M11/P4: tryb zakładanej gry ('wyscig' | 'tury'). */
-  multiTryb: 'wyscig',
+/** M11/P4: tryb zakładanej gry ('trasa' | 'wyscig') — decyzja właściciela
+ * 2026-09-11: Wspólna Trasa (po kolei) i Wyścig na Orientację (dowolnie). */
+  multiTryb: 'trasa',
+  /** Ścieżka AI dla multi (właściciel, 2026-09-11): po wklejeniu paczki
+   * wracamy do panelu „Załóż grę” z gotową paczką, nie do gry hot-seat. */
+  multiPoPaczce: false,
+  /** Wspólna Trasa = trasa-sekret: przy generowaniu stacji chowamy listę
+   * i kropki na mapie — organizator nie poznaje trasy z góry. */
+  ukryjStacje: false,
   /** M11/P4: mety paczek z repo Drive dla selecta źródła + adres indeksu. */
   multiRepoMety: [],
   multiRepoUrl: null,
@@ -1157,7 +1164,9 @@ function odswiezWarstwy() {
   kazdaMapa((mapa) => mapa.pokazPozycje(fix));
   if (STAN.mapy.pozycja) STAN.mapy.pozycja.zaznaczStacje([], { promienM: STAN.konfig.promienM });
   if (STAN.mapy.stacje) {
-    STAN.mapy.stacje.zaznaczStacje(STAN.stacje, { promienM: STAN.konfig.promienM, aktywna: null });
+    // trasa-sekret: przy generowaniu paczki dla Wspólnej Trasy mapa stacji
+    // nie rysuje kropek — organizator nie może poznać trasy z góry
+    STAN.mapy.stacje.zaznaczStacje(STAN.ukryjStacje ? [] : STAN.stacje, { promienM: STAN.konfig.promienM, aktywna: null });
   }
 }
 
@@ -1664,6 +1673,18 @@ function wylaczTrybReczny() {
 function renderujStacje() {
   const lista = $('lista-stacji');
   const sieciowe = Boolean(STAN.wynikSieci) && !STAN.wymusPierscien;
+  if (STAN.ukryjStacje) {
+    // Wspólna Trasa = trasa-sekret (właściciel, 2026-09-11): organizator
+    // generujący paczkę nie widzi nazw miejsc ani współrzędnych — tylko
+    // status, że stacje powstały (kropki na mapie chowa `odswiezWarstwy`).
+    const li = document.createElement('li');
+    li.textContent = `Stacje wygenerowano: ${STAN.stacje.length}. Nazwy i położenie są ukryte — trasa odsłania się w czasie gry, po jednej stacji.`;
+    lista.replaceChildren(li);
+    $('stacje-tryb').textContent = 'Tryb tajnej trasy: mapa i lista nie pokazują stacji.';
+    $('przycisk-reczne').hidden = true; // przeciąganie pinezek pokazałoby stacje
+    $('przycisk-siec-ponow').hidden = STAN.siec.stan === 'gotowa';
+    return;
+  }
   // replaceChildren, nie innerHTML='': jedna operacja, bez migotania (i atrapa
   // DOM w testach odwzorowuje replaceChildren, a innerHTML jest tam inertne)
   lista.replaceChildren(...STAN.stacje.map((s) => {
@@ -1841,10 +1862,15 @@ function renderujGre({ panele = true } = {}) {
   }
 
   if (STAN.mapy.gra) {
-    STAN.mapy.gra.zaznaczStacje(STAN.stacje, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
+    // Wspólna Trasa to trasa-sekret (właściciel, 2026-09-11): na mapie widać
+    // TYLKO bieżącą stację — kolejne odsłaniają się po zamknięciu poprzedniej.
+    const stacjeWidoczne = STAN.multi?.gra?.tryb === TRYBY_GRY.trasa
+      ? STAN.stacje.filter((s) => Number(s.id) === Number(r.biezacaStacja))
+      : STAN.stacje;
+    STAN.mapy.gra.zaznaczStacje(stacjeWidoczne, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
   }
   odswiezPasekDrogi();
-  if (STAN.multi) renderujPanelMulti(); // M11/P4: tury, żywe wyniki, pasek synchronizacji
+  if (STAN.multi) renderujPanelMulti(); // M11/P4: żywe wyniki, pasek synchronizacji
 }
 
 /* ---------------- M9/R3: repozytorium paczek (ADR 0017) ---------------- */
@@ -2325,16 +2351,6 @@ function startGry() {
 
 function startOdcinkaGry() {
   if (!STAN.rozgrywka) return;
-  // M11/P4: w turach droga jest zamknięta, dopóki idzie ktoś inny — odmowa
-  // lokalna jest tylko grzecznościowa, tę samą regułę pilnuje serwer (R08).
-  if (STAN.multi && STAN.multi.gra?.tryb === TRYBY_GRY.tury && STAN.multi.gra?.stan === 'trwa') {
-    const czyj = biezacyGraczTury(STAN.multi.gra);
-    if (czyj !== STAN.multi.graczId) {
-      const kto = STAN.multi.gra.gracze.find((g) => g.id === czyj)?.pseudonim ?? czyj ?? '—';
-      status(`Teraz idzie: ${kto} (jej/jego telefon). Swój odcinek zaczniesz, gdy zamknie swoją stację.`);
-      return;
-    }
-  }
   const wynik = startOdcinka(STAN.rozgrywka, { czasMs: zegarGry() });
   STAN.rozgrywka = wynik.stan;
   pokazBledy('bledy-gra', wynik.usterki);
@@ -2723,8 +2739,7 @@ function czyStartPoDalej() {
   const gra = m.gra;
   if (!gra || gra.stan !== 'trwa') return true;
   if (gra.tryb === TRYBY_GRY.wyscig) return false; // wolna kolejność — wybór należy do gracza
-  if (gra.tryb === TRYBY_GRY.tury) return biezacyGraczTury(gra) === m.graczId;
-  return true;
+  return true; // Wspólna Trasa: stacje po kolei — kolejny odcinek rusza od razu
 }
 
 /** Napis na przycisku pod wyjaśnieniem — zależny od fazy PO zapisaniu odpowiedzi. */
@@ -3496,6 +3511,20 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
   $('pole-odpowiedz').value = '';
   $('wklejka-status').textContent = '';
   wyslijZestawNaDrive();
+  // Ścieżka AI dla multi (właściciel, 2026-09-11): paczka PRZED lobby — po
+  // wklejeniu wracamy do panelu „Załóż grę” z paczką w sesji, zamiast
+  // startować grę hot-seat.
+  if (STAN.multiPoPaczce) {
+    STAN.multiPoPaczce = false;
+    STAN.ukryjStacje = false;
+    otworzPanelMulti('zaloz');
+    odswiezZrodlaMulti();
+    // Wskazówka ląduje w `multi-zaloz-info` (trwała linia panelu), bo status
+    // nadpisze za chwilę asynchronzna wysyłka zestawu na Drive.
+    status('Paczka gotowa — wybierz „📦 Paczka z tej sesji” i załóż lobby.');
+    $('multi-zaloz-info').textContent += ' Paczka gotowa — możesz zakładać lobby.';
+    return;
+  }
   // Decyzja właściciela 2026-09-07: poprawna paczka = OD RAZU gra. Podgląd,
   // ściąganie i edycja nie są graczowi potrzebne — to zadania właściciela
   // na Drive, dokąd zestaw właśnie poleciał. Guard startGry pilnuje
@@ -3869,14 +3898,23 @@ function otworzPanelMulti(panel) {
   pokazEkran('multi');
 }
 
+/**
+ * Tryby gry wieloosobowej (właściciel, 2026-09-11): Wspólna Trasa i Wyścig
+ * na Orientację. Punktacja jest WSPÓLNA (zdanie pod listą, w index.html —
+ * bez dublowania), różni się tylko kolejność stacji.
+ */
 function renderujTrybyMulti() {
   const lista = $('multi-tryby');
   lista.replaceChildren();
   const etykiety = {
-    wyscig: '🏁 Wyścig — wszyscy idą jednocześnie',
-    tury: '🔁 Tury — stacje przypisane do graczy',
+    trasa: '🗺️ Wspólna Trasa — ta sama trasa, po kolei',
+    wyscig: '🏁 Wyścig na Orientację — dowolna kolejność stacji',
   };
-  for (const klucz of [TRYBY_GRY.wyscig, TRYBY_GRY.tury]) {
+  const opisy = {
+    [TRYBY_GRY.trasa]: 'Wszyscy mają tę samą trasę, każdy na swoim telefonie i we własnym tempie. Stacje przechodzi się po kolei — trasa jest tajemnicą: na mapie widzisz tylko bieżącą stację, kolejne odsłaniają się po drodze.',
+    [TRYBY_GRY.wyscig]: 'Każdy wybiera własną trasę, a kolejność stacji jest dowolna.',
+  };
+  for (const klucz of [TRYBY_GRY.trasa, TRYBY_GRY.wyscig]) {
     const b = document.createElement('button');
     b.type = 'button';
     b.className = 'przycisk';
@@ -3885,15 +3923,10 @@ function renderujTrybyMulti() {
     b.addEventListener('click', () => {
       STAN.multiTryb = klucz;
       renderujTrybyMulti();
-      $('multi-tryb-opis').textContent = klucz === TRYBY_GRY.tury
-        ? 'Każda stacja ma stałego właściciela (kolejność z chwili startu). Serwer pilnuje kolejności: odpowiedzieć można dopiero, gdy poprzedni gracz zamknie swoją stację.'
-        : 'Wszyscy idą tę samą trasę jednocześnie, każdy na swoim telefonie. Wygrywa najlepszy wynik — tabela jest żywa.';
     });
     lista.appendChild(b);
   }
-  $('multi-tryb-opis').textContent = STAN.multiTryb === TRYBY_GRY.tury
-    ? 'Każda stacja ma stałego właściciela (kolejność z chwili startu). Serwer pilnuje kolejności: odpowiedzieć można dopiero, gdy poprzedni gracz zamknie swoją stację.'
-    : 'Wszyscy idą tę samą trasę jednocześnie, każdy na swoim telefonie. Wygrywa najlepszy wynik — tabela jest żywa.';
+  $('multi-tryb-opis').textContent = opisy[STAN.multiTryb] ?? opisy[TRYBY_GRY.trasa];
 }
 
 /**
@@ -3960,16 +3993,20 @@ function odswiezZrodlaMulti() {
   for (const wpis of czytajRejestrZestawow()) {
     opcje.push({ value: `lokalna:${wpis.skrot}`, tekst: `📱 ${wpis.miejsce} · ${wpis.data} · ${wpis.liczbaStacji} stacji × ${wpis.pytaniaNaStacje} pytań · ${wpis.wiek}` });
   }
+  // Ścieżka AI jest ZAWSZE dostępna (właściciel, 2026-09-11): lista źródeł
+  // nigdy nie jest pusta, a pełne generowanie (pozycja → stacje → prompt →
+  // wklejenie) dzieje się PRZED lobby — po jego końcu wracamy tu z paczką.
+  opcje.push({ value: 'ai', tekst: '✨ Wygeneruj pytania w AI (pełna ścieżka)' });
   for (const o of opcje) {
     const op = document.createElement('option');
     op.value = o.value;
     op.textContent = o.tekst;
     select.appendChild(op);
   }
-  if (!opcje.length) {
-    $('multi-zaloz-info').textContent = 'Brak gotowych paczek. Przejdź zwykłą ścieżkę (pozycja → stacje → model → wklejenie) albo zagraj raz na tym telefonie — paczka się zapisze i wróci tu jako źródło.';
-    return;
-  }
+  // Pierwsze źródło jest zaznaczane od razu: paczka z sesji/telefonu, a przy
+  // pustym telefonie ścieżka AI (lista NIGDY niepusta, właściciel 2026-09-11).
+  // Status wybranego źródła opisuje `zaladujZrodloMulti`.
+  select.value = opcje[0].value;
   void zaladujZrodloMulti();
   // Repo Drive dokładamy asynchronicznie; awaria repo NIE blokuje zakładania (jak w M9/R3)
   if (STAN.multiRepoUrl && STAN.pozycja) {
@@ -3979,6 +4016,7 @@ function odswiezZrodlaMulti() {
       promienM: STAN.konfig.promienM, liczbaStacji: STAN.konfig.liczbaStacji,
       pytaniaNaStacje: STAN.konfig.pytaniaNaStacje, tematy: STAN.konfig.tematy, wiek: STAN.konfig.wiek,
     };
+    $('multi-zaloz-info').textContent += ' Szukam pasujących paczek na Drive…';
     pobierzGetTekst(STAN.multiRepoUrl)
       .then((tekst) => dopasujMetaIndeksu(walidujIndeksSurowy(tekst).indeks, kryteria))
       .then((dopasowane) => {
@@ -3989,14 +4027,26 @@ function odswiezZrodlaMulti() {
           op.textContent = `🌍 ${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.wiek}`;
           select.appendChild(op);
         }
+        $('multi-zaloz-info').textContent += dopasowane.length
+          ? ` Drive: znaleziono ${dopasowane.length}.`
+          : ' Drive: brak pasujących paczek w tej okolicy.';
       })
-      .catch(() => { /* repo niedostępne — zostają źródła z telefonu */ });
+      .catch(() => { $('multi-zaloz-info').textContent += ' Drive niedostępny — zostały źródła z telefonu.'; });
   }
 }
 
 async function zaladujZrodloMulti() {
   const wartosc = $('multi-zrodlo').value ?? '';
   STAN.multiZrodlo = null;
+  // „✨ Wygeneruj pytania w AI” to nie paczka, tylko wejście w pełną ścieżkę
+  // generowania (pozycja → stacje → prompt → wklejenie) — po jej końcu
+  // wracamy tu z paczką w sesji (właściciel, 2026-09-11: paczka PRZED lobby).
+  if (wartosc === 'ai') {
+    $('przycisk-zaloz-gre').textContent = '✨ Generuję pytania w AI — pełna ścieżka';
+    $('multi-zaloz-info').textContent = 'Ścieżka AI: potwierdzisz pozycję, wygenerujesz stacje i pytania, wkleisz paczkę — a potem wrócisz tu i założysz lobby z gotowymi ustawieniami.';
+    return;
+  }
+  $('przycisk-zaloz-gre').textContent = '🚀 Zakładam (wyślij na Drive)';
   $('multi-zaloz-info').textContent = 'Wczytuję paczkę…';
   try {
     if (wartosc === 'sesja') {
@@ -4076,9 +4126,34 @@ function zatrzymajSyncMulti() {
   if (STAN.multi) STAN.multi.sync = null;
 }
 
+/**
+ * Pełna ścieżka AI dla gry wieloosobowej (właściciel, 2026-09-11): organizator
+ * przechodzi zwykłe generowanie (pozycja → stacje → prompt → wklejenie),
+ * a po przyjęciu paczki WRACA do panelu „Załóż grę” — lobby zakłada się
+ * dopiero z gotową paczką. W Wspólnej Trasie stacje są po drodze ukryte
+ * (trasa-sekret): organizator nie widzi ani kropek na mapie, ani nazw miejsc.
+ */
+async function sciezkaAiMulti() {
+  // Walidacja jak przy „Dalej: moja pozycja”, ale BEZ profilu hot-seata
+  // (K07/K08) — tożsamością organizatora jest pseudonim z panelu multi.
+  const usterki = walidujSetup(STAN.konfig).filter((u) => u.kod !== 'K07' && u.kod !== 'K08');
+  if (usterki.length) { pokazBledyMulti(usterki.map((u) => u.komunikat)); return; }
+  zapiszKonfiguracje();
+  STAN.multiPoPaczce = true;
+  STAN.ukryjStacje = STAN.multiTryb === TRYBY_GRY.trasa;
+  pokazBledyMulti([]);
+  status(STAN.ukryjStacje
+    ? 'Ścieżka AI: potwierdź pozycję i wygeneruj stacje (ukryte — trasa-sekret) oraz pytania. Po wklejeniu paczki wrócisz do zakładania gry.'
+    : 'Ścieżka AI: potwierdź pozycję, wygeneruj stacje i pytania, wklej paczkę — potem wrócisz do zakładania gry.');
+  pokazEkran('pozycja');
+  pokazPozycje();
+  if (!STAN.trybTestowy && !STAN.watcher?.czyAktywny()) wlaczGps();
+}
+
 async function zalozGreMulti() {
   const usterki = walidujGotowoscMulti();
   if (usterki.length) { pokazBledyMulti(usterki); return; }
+  if (($('multi-zrodlo').value ?? '') === 'ai') { void sciezkaAiMulti(); return; }
   if (!STAN.multiZrodlo) { pokazBledyMulti(['Najpierw wybierz i wczytaj paczkę z pytaniami (lista źródeł wyżej).']); return; }
   const z = STAN.multiZrodlo;
   status('Zakładam grę na mostku Drive…');
@@ -4146,7 +4221,7 @@ async function odswiezLobby() {
       const dystans = ramka && STAN.pozycja
         ? ` · ok. ${Math.round(odlegloscM(STAN.pozycja, { lat: (ramka.latMin + ramka.latMax) / 2, lon: (ramka.lonMin + ramka.lonMax) / 2 }) / 100) / 10} km`
         : '';
-      opis.textContent = `${wpis.miejsce || 'nieznane miejsce'} · ${wpis.tryb === TRYBY_GRY.tury ? 'tury' : 'wyścig'} · ${wpis.liczbaGraczy}/${MAKS_GRACZY} graczy · organizator: ${wpis.organizator ?? '?'}${dystans}`;
+      opis.textContent = `${wpis.miejsce || 'nieznane miejsce'} · ${wpis.tryb === TRYBY_GRY.trasa ? 'wspólna trasa' : 'wyścig'} · ${wpis.liczbaGraczy}/${MAKS_GRACZY} graczy · organizator: ${wpis.organizator ?? '?'}${dystans}`;
       const b = document.createElement('button');
       b.type = 'button';
       b.className = 'przycisk przycisk-maly';
@@ -4296,11 +4371,11 @@ function pytaniaDlaGracza(paczka, { liczbaGraczy, indeksGracza }) {
 }
 
 /**
- * Lokalny silnik gry wieloosobowej: wyścig = wszystkie stacje w WOLNEJ
- * kolejności (ADR 0027 część B), tury = tylko własne (stacja i należy do
- * gracze[i % N] — kolejka USTALONA przy starcie, rezygnacje pomijają stacje,
- * nie przesuwają). Przy powrocie po odświeżeniu zamknięte już stacje nie
- * wracają — reszta rozgrywa się normalnie.
+ * Lokalny silnik gry wieloosobowej (właściciel, 2026-09-11): w OBU trybach
+ * gracz przechodzi wszystkie stacje — w Wspólnej Trasie PO KOLEI (kolejność
+ * narzuca trasa, bez listy wyboru), w Wyścigu na Orientację w dowolnej
+ * kolejności (ADR 0027 część B). Przy powrocie po odświeżeniu zamknięte
+ * już stacje nie wracają — reszta rozgrywa się normalnie.
  */
 function uruchomGreMulti(gra) {
   const m = STAN.multi;
@@ -4315,7 +4390,7 @@ function uruchomGreMulti(gra) {
   const zamknietePrzezeMnie = new Set(
     gra.zdarzenia.filter((z) => z.graczId === m.graczId && z.typ === 'odpowiedz' && z.stacjaId != null).map((z) => Number(z.stacjaId)),
   );
-  let moje = gra.tryb === TRYBY_GRY.tury ? wszystkie.filter((s, i) => i % N === mojIndeks) : wszystkie;
+  let moje = wszystkie; // oba tryby: każdy przechodzi wszystkie stacje (trasa po kolei, wyścig dowolnie)
   moje = moje.filter((s) => !zamknietePrzezeMnie.has(Number(s.id)));
   if (!moje.length) {
     status(`Gra ${gra.kod} się toczy, ale nie masz już żadnych stacji do przejścia — śledź żywe wyniki na ekranie lobby.`);
@@ -4344,7 +4419,7 @@ function uruchomGreMulti(gra) {
   STAN.historiaFixow = [];
   pokazEkran('gra');
   if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
-  status(`Gra ${gra.kod} (${gra.tryb === TRYBY_GRY.tury ? 'tury' : 'wyścig'}) rozpoczęta: ${moje.length} z ${wszystkie.length} stacji jest Twoich. Pytania odsłaniają się dopiero na stacjach.`
+  status(`Gra ${gra.kod} (${gra.tryb === TRYBY_GRY.trasa ? 'Wspólna Trasa' : 'Wyścig na Orientację'}) rozpoczęta: przed Tobą ${moje.length} z ${wszystkie.length} stacji. Pytania odsłaniają się dopiero na stacjach.`
     + (zamknietePrzezeMnie.size ? ' Zamknięte wcześniej stacje nie wracają — wracasz do gry w połowie drogi.' : ''));
   renderujGre();
   renderujPanelMulti();
@@ -4394,7 +4469,7 @@ function renderujLobby() {
   if (!m) return;
   const gra = m.gra;
   $('lobby-kod').textContent = gra.kod ?? '';
-  $('lobby-tryb').textContent = `${gra.tryb === TRYBY_GRY.tury ? '🔁 Tury' : '🏁 Wyścig'} · ${gra.konfiguracja?.liczbaStacji ?? '?'} stacji · ${gra.konfiguracja?.miejsce || 'nieznane miejsce'}`;
+  $('lobby-tryb').textContent = `${gra.tryb === TRYBY_GRY.trasa ? '🗺️ Wspólna Trasa' : '🏁 Wyścig na Orientację'} · ${gra.konfiguracja?.liczbaStacji ?? '?'} stacji · ${gra.konfiguracja?.miejsce || 'nieznane miejsce'}`;
   const lista = $('lobby-gracze');
   lista.replaceChildren();
   for (const g of gra.gracze ?? []) {
@@ -4407,7 +4482,7 @@ function renderujLobby() {
   $('przycisk-lobby-opusc').hidden = !wLobby;
   if (wLobby) {
     $('lobby-status').textContent = m.rola === 'organizator'
-      ? `Czekasz na graczy (maks. ${MAKS_GRACZY}). Wystartuj, gdy wszyscy dołączą — po starcie dołączenie nie jest już możliwe.`
+      ? `Czekasz na graczy z tej samej okolicy (maks. ${MAKS_GRACZY}). Możesz wystartować od razu — także solo, jednym graczem. Po starcie dołączenie nie jest już możliwe.`
       : 'Czekasz, aż organizator wystartuje grę…';
     $('lobby-widownia').hidden = true;
   } else if (STAN.ekran !== 'gra') {
@@ -4426,19 +4501,11 @@ function renderujPanelMulti() {
   const r = STAN.rozgrywka;
   const tura = $('gra-multi-tura');
   const graSieToczy = gra.stan === 'trwa' && r && r.faza !== FAZY.koniec && !STAN.graZakonczonaRecznie;
-  if (gra.tryb === TRYBY_GRY.tury && graSieToczy) {
-    const czyj = biezacyGraczTury(gra);
-    if (czyj === m.graczId) {
-      tura.textContent = `Twoja tura! Idź do stacji ${r.biezacaStacja} — jest Twoja.`;
-    } else if (czyj) {
-      const kto = gra.gracze.find((g) => g.id === czyj)?.pseudonim ?? czyj;
-      tura.textContent = `Teraz idzie: ${kto} (jej/jego telefon). Czekasz — Twoja stacja odblokuje się, gdy zamknie swoją.`;
-    } else {
-      tura.textContent = 'Wszystkie stacje zamknięte albo pominięte — czekam na zakończenie gry.';
-    }
-  } else if (graSieToczy) {
+  if (graSieToczy) {
     const zostalo = r ? stacjeDoWyboru(r).length : 0;
-    tura.textContent = `Wyścig! Każdy idzie swoją kolejnością — zostało Ci ${zostalo} stacji. Wyniki na żywo poniżej.`;
+    tura.textContent = gra.tryb === TRYBY_GRY.trasa
+      ? `Wspólna Trasa — stacje po kolei, każdy we własnym tempie. Zostało Ci ${zostalo} stacji. Wyniki na żywo poniżej.`
+      : `Wyścig na Orientację — kolejność dowolna. Zostało Ci ${zostalo} stacji. Wyniki na żywo poniżej.`;
   } else {
     tura.textContent = gra.stan === 'zakonczona' ? 'Gra zakończona — ostateczne wyniki:' : 'Gra wieloosobowa.';
   }
@@ -4455,18 +4522,15 @@ function renderujPanelMulti() {
     fcMulti.textContent = 'Pytania bez wymuszonego fact-checku';
   }
   renderujWyborStacji(gra, r, graSieToczy);
-  // tury: przycisk drogi zablokowany, dopóki idzie ktoś inny (serwer i tak pilnuje)
-  if (r && r.faza === FAZY.przygotowanie && gra.tryb === TRYBY_GRY.tury && gra.stan === 'trwa') {
-    $('przycisk-start-odcinka').disabled = STAN.graPauza || biezacyGraczTury(gra) !== m.graczId;
-  }
   $('przycisk-pomin-stacje').hidden = true; // w multi pomijania nie ma — patrz pominStacjeGry
   renderujPasekSync();
 }
 
 /**
- * Wolna kolejność stacji (ADR 0027 część B pkt 2): w wyścigu gracz wybiera
- * dowolną stację, do której jeszcze nie doszedł. Lista znika w turach (tam
- * kolejność ustala kolejka) i po zamknięciu wszystkich stacji.
+ * Wolna kolejność stacji (ADR 0027 część B pkt 2): w Wyścigu na Orientację
+ * gracz wybiera dowolną stację, do której jeszcze nie doszedł. W Wspólnej
+ * Trasie listy nie ma — kolejność narzuca trasa (kolejna stacja po
+ * zamknięciu poprzedniej); lista znika też po zamknięciu wszystkich stacji.
  */
 function renderujWyborStacji(gra, r, graSieToczy) {
   const blok = $('multi-wybor-stacji');
@@ -4663,7 +4727,7 @@ function renderujRankingi() {
     else {
       for (const w of moje) {
         const li = document.createElement('li');
-        li.textContent = `${String(w.data ?? '').slice(0, 16).replace('T', ' ')} · ${w.miejsce || 'nieznane miejsce'} · ${w.tryb === TRYBY_GRY.tury ? 'tury' : 'wyścig'} · ${w.punkty} pkt · ${w.poprawne} poprawne, ${w.bledne} błędne · ${w.stacjeZamkniete} stacji`;
+        li.textContent = `${String(w.data ?? '').slice(0, 16).replace('T', ' ')} · ${w.miejsce || 'nieznane miejsce'} · ${w.tryb === TRYBY_GRY.trasa ? 'wspólna trasa' : 'wyścig'} · ${w.punkty} pkt · ${w.poprawne} poprawne, ${w.bledne} błędne · ${w.stacjeZamkniete} stacji`;
         mojeLista.appendChild(li);
       }
     }
@@ -4866,6 +4930,8 @@ function start() {
   $('przycisk-czysc-dane').addEventListener('click', czyscDaneWitryny);
 
   $('przycisk-dalej-pozycja').addEventListener('click', async () => {
+    STAN.multiPoPaczce = false; // to jest zwykła ścieżka hot-seat, nie AI-multi
+    STAN.ukryjStacje = false;
     const usterki = walidujSetup(czytajSetupZDomu());
     pokazBledy('bledy-setup', usterki);
     if (usterki.length) {
@@ -4923,7 +4989,11 @@ function start() {
     wlaczGps();
     status(komunikatWznowienia().komunikat);
   });
-  $('przycisk-wstecz-setup').addEventListener('click', () => pokazEkran('setup'));
+  $('przycisk-wstecz-setup').addEventListener('click', () => {
+    STAN.multiPoPaczce = false; // porzucono ścieżkę AI-multi
+    STAN.ukryjStacje = false;
+    pokazEkran('setup');
+  });
   $('przycisk-dalej-stacje').addEventListener('click', () => {
     // Na ekran pozycji da się wejść także ikonką setup w nagłówku, która nie
     // waliduje setupu, a `stacjeProste` odmawia przy niedodatnim promieniu

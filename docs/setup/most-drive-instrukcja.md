@@ -10,8 +10,8 @@ OD RAZU do katalogu zaakceptowanych, bez sesji przeglądu i bez maili
 (decyzja właściciela 2026-09-11); o jakości paczek rozstrzygają łapki
 graczy (ADR 0028), a niechcianą paczkę wyłączasz z obiegu ręcznie,
 przeciągając plik do katalogu odrzuconych; (2) gry wieloosobowe na wielu
-urządzeniach — lobby, kody,
-wyścig i tury, stan gry na Drive; (3) rankingi z zakończonych gier. Aplikacja
+urządzeniach — lobby, kody, Wspólna Trasa i Wyścig na Orientację, stan gry
+na Drive; (3) rankingi z zakończonych gier. Aplikacja
 nie zna żadnych haseł ani kluczy — zna tylko adres web app, który poniżej
 skopiujesz i podasz w czacie: trafi do kodu aplikacji (ADR 0020), więc żadne
 urządzenie nie będzie go wpisywać ręcznie.
@@ -99,7 +99,11 @@ Pełna checklista terenowa: `docs/WORKFLOW.md` §4.4 (8 punktów, dwa telefony).
 Skrót:
 
 1. Telefon A: Ustawienia → rodzaj „wieloosobowa" → pseudonim →
-   „🌐 Załóż grę" → tryb, źródło paczki → „🚀 Zakładam" → zapisz kod z lobby.
+   „🌐 Załóż grę w tej okolicy" → tryb (Wspólna Trasa / Wyścig na Orientację)
+   → źródło paczki: sesja / telefon / Drive / „✨ Wygeneruj pytania w AI"
+   (pełna ścieżka pozycja → stacje → wklejenie PRZED lobby; po wklejeniu
+   wracasz z paczką w sesji) → „🚀 Zakładam" → zapisz kod z lobby.
+   Start gry działa też solo (od 1 gracza).
 2. Telefon B: sam pseudonim (adres mostu jest w kodzie aplikacji — ADR 0020) →
    „🔗 Dołącz" → wpisz kod (albo wybierz grę z listy „w okolicy") → oba
    telefony widzą się w lobby.

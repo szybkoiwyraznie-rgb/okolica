@@ -191,8 +191,10 @@ zestawów dzieją się na Drive właściciela.
 
 - **Wiele urządzeń**: każdy gracz ma swój telefon. Parowanie 6-znakowym kodem
   gry albo z listy otwartych gier w okolicy (sąsiedztwo geohash5). Dwa tryby:
-  **wyścig** (wszyscy jednocześnie na tej samej trasie) i **tury** (każda
-  stacja ma stałego właściciela — serwer pilnuje kolejności).
+  **Wspólna Trasa** (wszyscy tę samą trasę po kolei — trasa jest tajemnicą,
+  na mapie widać tylko bieżącą stację) i **Wyścig na Orientację** (dowolna
+  kolejność stacji). Punktacja w obu: 1 pkt za dobrą odpowiedź + premia za
+  kolejność ukończenia. Start gry możliwy także solo (od 1 gracza).
 - **Wspólny stan**: Google Drive + Apps Script — ten sam most co repozytorium
   paczek (ADR 0016/0018/0019). Na serwer jadą wyłącznie pseudonimy, zdarzenia
   gry i wyniki; **współrzędne graczy nigdy nie opuszczają telefonu** (biała

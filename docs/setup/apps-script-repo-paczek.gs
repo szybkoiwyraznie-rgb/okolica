@@ -576,7 +576,7 @@ function zapiszGre(plik, gra) { plik.setContent(JSON.stringify(gra, null, 2)); }
 
 function bledyGryKandydata(dane) {
   const bledy = [];
-  if (!dane || (dane.tryb !== 'wyscig' && dane.tryb !== 'tury')) bledy.push('tryb musi być „wyscig” albo „tury”');
+  if (!dane || (dane.tryb !== 'trasa' && dane.tryb !== 'wyscig')) bledy.push('tryb musi być „trasa” albo „wyscig”');
   const org = dane && dane.organizator;
   const pseudonim = org && typeof org.pseudonim === 'string' ? org.pseudonim.trim() : '';
   if (!pseudonim) bledy.push('pseudonim organizatora jest wymagany');
@@ -708,44 +708,12 @@ function startGryMulti(dane) {
   });
 }
 
-/**
- * Tury: stacja i (1-based) należy do gracza gracze[(i-1) % N] — kolejka jest
- * USTALONA przy starcie i nie przesuwa się; rezygnacja gracza POMIJA jego
- * stacje (moduł app/wieloosobowa.js ma identyczną logikę — pilnuje kontrakt).
- */
-function biezacyGraczTury(gra) {
-  const zamkniete = {};
-  const rezygnacje = {};
-  gra.zdarzenia.forEach((z) => {
-    if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true;
-    if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true;
-  });
-  const N = gra.gracze.length;
-  if (!N) return null;
-  for (let i = 1; i <= gra.konfiguracja.liczbaStacji; i += 1) {
-    if (zamkniete[i]) continue;
-    const wlasciciel = gra.gracze[(i - 1) % N];
-    if (rezygnacje[wlasciciel.id]) continue; // stacje rezygnującego są pomijane
-    return wlasciciel.id;
-  }
-  return null; // wszystkie stacje zamknięte albo pominięte
-}
-
 function czyKompletna(gra) {
   const N = gra.konfiguracja.liczbaStacji;
   const rezygnacje = {};
   gra.zdarzenia.forEach((z) => { if (z.typ === 'rezygnacja') rezygnacje[z.graczId] = true; });
-  if (gra.tryb === 'tury') {
-    const zamkniete = {};
-    gra.zdarzenia.forEach((z) => { if (z.typ === 'odpowiedz' && z.stacjaId) zamkniete[z.stacjaId] = true; });
-    const liczbaGraczy = gra.gracze.length;
-    if (!liczbaGraczy) return true;
-    for (let i = 1; i <= N; i += 1) {
-      const wlasciciel = gra.gracze[(i - 1) % liczbaGraczy];
-      if (!zamkniete[i] && !rezygnacje[wlasciciel.id]) return false; // stacja czeka na właściciela
-    }
-    return true;
-  }
+  // Wspólna Trasa i Wyścig domykają się tak samo: KAŻDY gracz zamyka wszystkie
+  // stacje (w trasie po kolei, w wyścigu w dowolnej kolejności) albo rezygnuje.
   return gra.gracze.every((g) => {
     if (rezygnacje[g.id]) return true;
     const stacje = {};
@@ -839,10 +807,6 @@ function przyjmijZdarzenie(dane) {
     if (z.typ === 'dojscie' || z.typ === 'odpowiedz') {
       const n = Number(z.stacjaId);
       if (!(n >= 1 && n <= gra.konfiguracja.liczbaStacji)) return { ok: false, blad: 'stacjaId poza zakresem gry (1–' + gra.konfiguracja.liczbaStacji + ')' };
-      if (gra.tryb === 'tury') {
-        const czyj = biezacyGraczTury(gra);
-        if (czyj !== z.graczId) return { ok: false, blad: 'teraz jest tura gracza ' + czyj + ' — poczekaj na swoją kolej' };
-      }
       if (z.typ === 'odpowiedz') {
         const byloDojscie = gra.zdarzenia.some((e) => e.typ === 'dojscie' && e.graczId === z.graczId && Number(e.stacjaId) === n);
         if (!byloDojscie) return { ok: false, blad: 'odpowiedź bez dojścia do tej stacji — niewłaściwa kolejność zdarzeń' };

@@ -259,13 +259,15 @@ commit i nowa wersja aplikacji.
    `sync.polecenieMostu` POSTuje `gra-zaloz` / `gra-dolacz`. Zgoda jest
    wymagana: bez niej jawna odmowa i ZERO żądań (ADR 0019 pkt 3).
 2. `utworzSynchronizacje` prowadzi pętlę nienakładających się kroków:
-   GET `gra-stan` z interwałem zależnym od fazy (lobby 10 s, wyścig 12 s,
-   tury: moja 10 s / czekam 30 s, zakończona 0 = koniec pollingu). Zdarzenia
+   GET `gra-stan` z interwałem zależnym od fazy (lobby 10 s, gra w toku
+   12 s w obu trybach — nikt na nikogo nie czeka, zakończona 0 = koniec
+   pollingu). Zdarzenia
    (`dojscie`/`odpowiedz`/`rezygnacja`) wychodzą natychmiast, a bez sieci
    czekają w kolejce (flush FIFO po powrocie); odmowa mostu nie jest ponawiana.
-3. Stan serwera (`RO-gra/1`) zasila lokalny silnik (`rozgrywka.js`): wyścig =
-   wszystkie stacje, tury = tylko własne (`i % N === mojIndeks`, oryginalne id
-   stacji — pytania z kontenera pasują po id). Brak pozycji = środek trasy z
+3. Stan serwera (`RO-gra/1`) zasila lokalny silnik (`rozgrywka.js`):
+   Wspólna Trasa i Wyścig = KAŻDY przechodzi wszystkie stacje (trasa po kolei
+   i bez listy wyboru — mapa pokazuje tylko bieżącą stację, wyścig dowolnie
+   z listą wyboru). Brak pozycji = środek trasy z
    pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca z
    `okolica:multi:sesja`, a zamknięte już stacje nie wracają do rozgrywki.
 4. Rankingi: GET `ranking` → surowe wiersze `RO-ranking/1` → agregacje liczy

@@ -24,7 +24,11 @@ export const ALFABET_KODU = '23456789ABCDEFGHJKLMNPQRSTUVWXYZ';
 export const DLUGOSC_KODU = 6;
 export const MAKS_GRACZY = 8;
 
-export const TRYBY_GRY = Object.freeze({ wyscig: 'wyscig', tury: 'tury' });
+/** Tryby gry wieloosobowej (właściciel, 2026-09-11): „trasa” = Wspólna Trasa
+ * (wszyscy TE SAME stacje PO KOLEI, każdy we własnym tempie), „wyscig” =
+ * Wyścig na Orientację (dowolna kolejność stacji). Punktacja wspólna: 1 pkt
+ * za dobrą odpowiedź + premia za kolejność ukończenia (ADR 0027 B). */
+export const TRYBY_GRY = Object.freeze({ trasa: 'trasa', wyscig: 'wyscig' });
 /**
  * Trzeci tryb: gra na jednym telefonie (hot-seat). Nie ma lobby ani zdarzeń na
  * żywo — wynik leci na Drive JEDNYM poleceniem po zakończeniu (ADR 0026 aneks).
@@ -42,7 +46,7 @@ export const KODY_WIELOOSOBOWE = {
   R01: 'Stan gry nie jest poprawnym JSON-em.',
   R02: `To nie jest gra schematu „${SCHEMAT_GRY}" — pochodzi z innej wersji aplikacji.`,
   R03: 'Kod gry jest niepoprawny (oczekiwano 6 znaków z alfabetu bez 0, O, 1, I).',
-  R04: 'Tryb gry jest nieznany (oczekiwano „wyscig" albo „tury").',
+  R04: 'Tryb gry jest nieznany (oczekiwano „trasa" albo „wyscig").',
   R05: 'Stan gry jest nieznany (oczekiwano lobby, trwa, zakonczona albo archiwum).',
   R06: 'Gra nie ma graczy — stan jest uszkodzony.',
   R07: 'Konfiguracja gry jest niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5).',
@@ -140,7 +144,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-72';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-73';
 
 export { ramkaGeohash, sasiednieGeohash };
 
@@ -293,50 +297,13 @@ export function zbudujZdarzenie({ kod, idGry, graczId, typ, stacjaId = null, dan
 
 /* ------------------------------ maszynka gry (lustra logiki mostu) */
 
-/**
- * Tury: stacja i (1-based) należy do gracza gracze[(i-1) % N] — kolejka jest
- * USTALONA przy starcie i nie przesuwa się; rezygnacja gracza POMIJA jego
- * stacje. Lustro `biezacyGraczTury` z mostu Apps Script (kontrakt pilnuje).
- */
-export function biezacyGraczTury(gra) {
-  if (!gra || gra.tryb !== TRYBY_GRY.tury) return null;
-  const zamkniete = new Set();
-  const rezygnacje = new Set();
-  for (const z of gra.zdarzenia ?? []) {
-    if (z.typ === 'odpowiedz' && z.stacjaId != null) zamkniete.add(Number(z.stacjaId));
-    if (z.typ === 'rezygnacja') rezygnacje.add(z.graczId);
-  }
-  const N = (gra.gracze ?? []).length;
-  if (!N) return null;
-  // Uszkodzony stan z mostu (brak konfiguracji) to null, nie TypeError —
-  // pętla pollingu nie może paść na cudzych danych (lustro .gs zakłada
-  // poprawny stan, bo most go sam zapisał; telefon nie ma tej gwarancji).
-  const liczbaStacji = gra.konfiguracja?.liczbaStacji ?? 0;
-  if (!(liczbaStacji >= 1)) return null;
-  for (let i = 1; i <= liczbaStacji; i += 1) {
-    if (zamkniete.has(i)) continue;
-    const wlasciciel = gra.gracze[(i - 1) % N];
-    if (rezygnacje.has(wlasciciel.id)) continue; // stacje rezygnującego pominięte
-    return wlasciciel.id;
-  }
-  return null; // wszystkie stacje zamknięte albo pominięte
-}
-
 /** Czy gra domknęła się zdarzeniami (oba tryby; rezygnacje zaliczone). */
 export function czyKompletna(gra) {
   if (!gra) return false;
   const N = gra.konfiguracja?.liczbaStacji ?? 0;
   const rezygnacje = new Set((gra.zdarzenia ?? []).filter((z) => z.typ === 'rezygnacja').map((z) => z.graczId));
-  if (gra.tryb === TRYBY_GRY.tury) {
-    const zamkniete = new Set((gra.zdarzenia ?? []).filter((z) => z.typ === 'odpowiedz' && z.stacjaId != null).map((z) => Number(z.stacjaId)));
-    const liczbaGraczy = (gra.gracze ?? []).length;
-    if (!liczbaGraczy) return true;
-    for (let i = 1; i <= N; i += 1) {
-      const wlasciciel = gra.gracze[(i - 1) % liczbaGraczy];
-      if (!zamkniete.has(i) && !rezygnacje.has(wlasciciel.id)) return false; // stacja czeka na właściciela
-    }
-    return true;
-  }
+  // Wspólna Trasa i Wyścig domykają się tak samo: KAŻDY gracz zamyka wszystkie
+  // stacje (w trasie po kolei, w wyścigu w dowolnej kolejności) albo rezygnuje.
   return (gra.gracze ?? []).every((g) => {
     if (rezygnacje.has(g.id)) return true;
     const stacje = new Set((gra.zdarzenia ?? []).filter((z) => z.graczId === g.id && z.typ === 'odpowiedz' && z.stacjaId != null).map((z) => Number(z.stacjaId)));
@@ -345,7 +312,7 @@ export function czyKompletna(gra) {
 }
 
 /**
- * Postęp jednego gracza (żywa tabela w wyścigu, resume w turach). Pola i reguły
+ * Postęp jednego gracza (żywa tabela w obu trybach). Pola i reguły
  * są IDENTYCZNE z `przeliczWyniki` w moście Drive — pilnuje tego
  * `test/most-gra.test.js`, więc telefon pokazuje to samo co Drive.
  */

@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-72">
-  <script type="module" src="app/app.js?v=m12-72"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-73">
+  <script type="module" src="app/app.js?v=m12-73"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -139,7 +139,7 @@
              wspólny Drive, a co i dokąd trafia opisuje sekcja „Dane
              i prywatność". -->
         <div class="wiersz">
-          <button id="przycisk-multi-zaloz" class="przycisk przycisk-glowny" type="button">🌐 Załóż grę</button>
+          <button id="przycisk-multi-zaloz" class="przycisk przycisk-glowny" type="button">🌐 Załóż grę w tej okolicy</button>
           <button id="przycisk-multi-dolacz" class="przycisk" type="button">🔗 Dołącz do gry</button>
         </div>
         <p id="multi-most-stan" class="podpowiedz">Most Drive: sprawdzam…</p>
@@ -268,7 +268,6 @@
     <!-- M11/P4: ekran gry wieloosobowej (załóż / dołącz / lobby) -->
     <section id="ekran-multi" class="ekran panel-centralny" hidden aria-labelledby="tytul-multi">
       <h2 id="tytul-multi">Gra na wielu urządzeniach</h2>
-      <p class="podpowiedz">Każdy gracz ma swój telefon. Na serwer jadą wyłącznie pseudonimy, zdarzenia gry i wyniki — współrzędne zostają na urządzeniach<span class="dopisek-roboczy"> (ADR 0019 pkt 3)</span>.</p>
       <p id="bledy-multi" class="bledy" role="alert" hidden></p>
 
       <div id="multi-panel-zaloz" class="karta" hidden>
@@ -277,6 +276,7 @@
           <legend>Tryb gry</legend>
           <div id="multi-tryby" class="segment"></div>
           <p id="multi-tryb-opis" class="podpowiedz"></p>
+          <p id="multi-punktacja" class="podpowiedz">Punktacja w obu trybach: każda dobra odpowiedź to 1 pkt, a za zaliczenie wszystkich stacji dodatkowe punkty wg kolejności dotarcia.</p>
         </fieldset>
         <label class="pole">
           <span>Źródło pytań i stacji</span>
@@ -318,7 +318,7 @@
           </table>
         </div>
         <div class="wiersz">
-          <button id="przycisk-lobby-start" class="przycisk przycisk-glowny" type="button" hidden>▶ Start gry (organizator)</button>
+          <button id="przycisk-lobby-start" class="przycisk przycisk-glowny" type="button" hidden>▶ Start gry</button>
           <button id="przycisk-lobby-opusc" class="przycisk" type="button">Opuść lobby</button>
         </div>
       </div>
@@ -475,7 +475,7 @@
     <section id="ekran-gra" class="ekran panel-centralny" hidden aria-labelledby="tytul-gra">
       <p id="gra-pasek" hidden aria-live="polite"></p>
 
-      <!-- M11/P4: panel gry wieloosobowej — tury, żywe wyniki, pasek synchronizacji -->
+      <!-- M11/P4: panel gry wieloosobowej — status trybu, żywe wyniki, pasek synchronizacji -->
       <div id="gra-panel-multi" class="karta gra-panel" hidden>
         <p id="gra-multi-tura" class="duzy" role="status"></p>
         <p id="multi-factcheck" class="podpowiedz" hidden></p>

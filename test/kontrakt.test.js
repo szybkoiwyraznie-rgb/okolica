@@ -876,8 +876,15 @@ test('kontrakt M11: UI gry wieloosobowej — ekrany, pseudonim, bramki', () => {
     assert.ok(APP.includes(akcja), `app.js woła akcję ${akcja}`);
   }
   assert.ok(SYNC.includes('gra-zdarzenie'), 'sync.js wysyła zdarzenia akcją gra-zdarzenie');
-  // tury: lokalna bramka „nie Twoja tura" + serwer odmawia (R08 po obu stronach)
-  assert.match(APP, /Teraz idzie:/, 'komunikat czyjej tury w UI');
+  // tryby (właściciel, 2026-09-11): Wspólna Trasa i Wyścig na Orientację,
+  // punktacja wspólna — zdanie o niej raz, w index.html (bez dublowania)
+  assert.match(APP, /Wspólna Trasa/, 'UI nazywa tryb Wspólna Trasa');
+  assert.match(APP, /Wyścig na Orientację/, 'UI nazywa tryb Wyścig na Orientację');
+  assert.match(INDEX, /Punktacja w obu trybach/, 'wspólne zdanie o punktacji w index.html');
+  assert.ok(!INDEX.includes('Na serwer jadą wyłącznie pseudonimy'), 'zdanie o tym, co jedzie na serwer, usunięte (właściciel, 2026-09-11)');
+  assert.match(APP, /sciezkaAiMulti/, 'ścieżka AI: pełne generowanie PRZED lobby');
+  assert.match(APP, /multiPoPaczce/, 'po wklejeniu paczki wracamy do panelu „Załóż grę", nie do gry hot-seat');
+  assert.ok(!APP.includes('biezacyGraczTury'), 'kolejki tur nie ma w aplikacji (tryb usunięty)');
   assert.match(APP, /przycisk-pomin-stacje'\)\.hidden = true/, 'w multi nie ma pomijania stacji (serwer zna tylko dojście/odpowiedź/rezygnację)');
 });
 

@@ -41,7 +41,7 @@ function zdarzenie(kod, graczId, typ, stacjaId, dane = {}) {
 /** Zakłada grę na 2 graczy, dołącza drugiego i startuje — zwraca { most, kod }. */
 function graDwuosobowa() {
   const { most, pliki } = uruchomMost();
-  const zalozona = most.zalozGre({ tryb: 'tury', organizator: { pseudonim: 'Ania' }, konfiguracja: konfiguracja(), zestaw: zestaw() });
+  const zalozona = most.zalozGre({ tryb: 'trasa', organizator: { pseudonim: 'Ania' }, konfiguracja: konfiguracja(), zestaw: zestaw() });
   assert.equal(zalozona.ok, true, `założenie: ${zalozona.blad}`);
   const dolaczony = most.dolaczDoGry({ kod: zalozona.gra.kod, pseudonim: 'Bartek' });
   assert.equal(dolaczony.ok, true, `dołączenie: ${dolaczony.blad}`);
@@ -52,35 +52,41 @@ function graDwuosobowa() {
   return { most, pliki, kod: zalozona.gra.kod, idGry: zalozona.gra.idGry };
 }
 
-test('most: cykl gry tury — dojście, odpowiedź, auto-koniec i rankingi', () => {
+test('most: cykl gry Wspólna Trasa — dojście, odpowiedź, auto-koniec i rankingi', () => {
   const { most, kod } = graDwuosobowa();
 
-  // Tura 1 należy do organizatora (g-1).
+  // Wspólna Trasa (właściciel, 2026-09-11): obaj gracze przechodzą TE SAME
+  // stacje, każdy we własnym tempie. Most pilnuje KOLEJNOŚCI ZDARZEŃ (R08):
+  // odpowiedź tylko po dojściu, a jedną stację zamyka się najwyżej raz.
   const dojscie = most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-1', 'dojscie', 1) });
   assert.equal(dojscie.ok, true, `dojście: ${dojscie.blad}`);
   assert.equal(dojscie.stan, 'trwa', 'gra trwa po dojściu');
 
-  // Tury pilnuje most, nie aplikacja: gracz 2 nie może wejść w cudzą kolej.
-  const zaWczesnie = most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-2', 'dojscie', 1) });
-  assert.equal(zaWczesnie.ok, false, 'most odrzuca zdarzenie z cudzej tury');
-  assert.match(zaWczesnie.blad, /tura gracza g-1/, 'komunikat nazywa gracza, którego jest tura');
+  // Odpowiedź bez dojścia (g-2 jeszcze nie doszedł na stację 1) — odmowa.
+  const bezDojscia = most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-2', 'odpowiedz', 1, { punkty: [1, 1] }) });
+  assert.equal(bezDojscia.ok, false, 'most odrzuca odpowiedź bez dojścia');
+  assert.match(bezDojscia.blad, /odpowiedź bez dojścia/, 'powód jest jawny');
 
   const odpowiedz = most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-1', 'odpowiedz', 1, { punkty: [1, 1] }) });
   assert.equal(odpowiedz.ok, true, `odpowiedź: ${odpowiedz.blad}`);
 
-  // Stacja 1 jest domknięta, ale gra trwa: stacja 2 należy do g-2.
-  assert.equal(odpowiedz.stan, 'trwa', 'gra trwa, póki są stacje bez odpowiedzi');
+  // Stacja 1 domknięta przez g-1, ale w Wspólnej Trasie g-2 też ją przechodzi.
+  assert.equal(odpowiedz.stan, 'trwa', 'gra trwa, póki ktoś ma otwarte stacje');
 
-  // g-1 nie może zagrać za g-2 — kolejka należy do właściciela stacji.
-  const cudzaStacja = most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-1', 'dojscie', 2) });
-  assert.equal(cudzaStacja.ok, false, 'most odrzuca dojście do cudzej stacji');
-  assert.match(cudzaStacja.blad, /tura gracza g-2/, `powód jest jawny: ${cudzaStacja.blad}`);
+  // Powtórna odpowiedź na tę samą stację — odmowa (jedna stacja = jeden zapis).
+  const duplikat = most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-1', 'odpowiedz', 1, { punkty: [1, 1] }) });
+  assert.equal(duplikat.ok, false, 'most odrzuca powtórną odpowiedź na tę samą stację');
+  assert.match(duplikat.blad, /już przez Ciebie odpowiedziana/, `powód jest jawny: ${duplikat.blad}`);
 
-  // Tura 2: g-2 domyka swoją stację i gra kończy się sama.
-  assert.equal(most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-2', 'dojscie', 2) }).ok, true, 'dojście g-2');
+  // Nikt na nikogo nie czeka: g-2 idzie swoimi stacjami równolegle z g-1.
+  assert.equal(most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-2', 'dojscie', 1) }).ok, true, 'dojście g-2 na stację 1');
+  assert.equal(most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-2', 'odpowiedz', 1, { punkty: [1, 0] }) }).ok, true, 'g-2 zamyka stację 1');
+  assert.equal(most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-1', 'dojscie', 2) }).ok, true, 'dojście g-1 na stację 2');
+  assert.equal(most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-1', 'odpowiedz', 2, { punkty: [1, 1] }) }).ok, true, 'g-1 zamyka stację 2');
+  assert.equal(most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-2', 'dojscie', 2) }).ok, true, 'dojście g-2 na stację 2');
   const koniec = most.przyjmijZdarzenie({ zdarzenie: zdarzenie(kod, 'g-2', 'odpowiedz', 2, { punkty: [1, 0] }) });
   assert.equal(koniec.ok, true, `ostatnia odpowiedź: ${koniec.blad}`);
-  assert.equal(koniec.stan, 'zakonczona', 'gra zamknęła się sama, gdy domknięto wszystkie stacje');
+  assert.equal(koniec.stan, 'zakonczona', 'gra zamknęła się sama, gdy każdy domknął wszystkie stacje');
   assert.deepEqual(Object.keys(koniec.wyniki).sort(), ['g-1', 'g-2'], 'wyniki dla obu graczy');
 
   // Stan gry z GET i lista lobby są spójne z tym, co zwróciło zdarzenie.

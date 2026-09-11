@@ -2472,3 +2472,50 @@ wersja; na Drive przenieść zaległości z do-przegladu i skasować ten katalog
 właściwości skryptu można usunąć — wszystko opisane w instrukcji mostu
 (sekcja „Awaryjnie"). Katalog odrzucone ZOSTAJE jako ręczny kosz (wyłączanie
 paczek z indeksu). ADR 0017 doczekał się aneksu.
+
+## Sesja 2026-09-11j — gra wieloosobowa przepisana: Wspólna Trasa + Wyścig, paczka przed lobby, solo (m12-73)
+
+Właściciel poległ na pierwszym ekranie gry wieloosobowej i zarządził przepisanie
+trybu od zera. Pełne decyzje (konsultacje tego samego dnia) w aneksie ADR 0019
+z 2026-09-11; w skrócie:
+
+- **Tryb „tury" USUNIĘTY** wszędzie (UI, app.js, wieloosobowa.js, sync.js, .gs,
+  testy): nie ma właścicieli stacji ani kolejki; `biezacyGraczTury` zniknęło
+  z modułu i mostu; polling wspólny (lobby 10 s, gra 12 s).
+- **Dwa tryby**: `trasa` = Wspólna Trasa (ta sama trasa PO KOLEI, każdy we
+  własnym tempie, bez listy wyboru) i `wyscig` = Wyścig na Orientację (dawny
+  wyścig, dowolna kolejność — logika bez zmian, uczciwy opis). Punktacja
+  wspólna, jedno zdanie w UI: 1 pkt za dobrą odpowiedź + premia za kolejność
+  ukończenia. Oba tryby domykają się tak samo (każdy zamyka wszystko albo
+  rezygnuje) — `czyKompletna` bez gałęzi tur.
+- **Trasa-sekret**: mapa gry pokazuje tylko bieżącą stację; przy generowaniu
+  paczki dla trasy ekran stacji pokazuje SAM STATUS („wygenerowano N"), bez
+  nazw, współrzędnych i kropek na mapie (`STAN.ukryjStacje`).
+- **Paczka PRZED lobby** (nowy przepływ): pseudonim → „🌐 Załóż grę w tej
+  okolicy" → tryb → źródło: sesja / telefon / Drive / **✨ Wygeneruj pytania
+  w AI** (pełna ścieżka pozycja → stacje → prompt → wklejenie; po przyjęciu
+  paczki WRÓT do panelu „Załóż grę", nie do gry hot-seat — `STAN.multiPoPaczce`).
+  Lista źródeł nigdy niepusta (AI zawsze), statusy jawne (wynik szukania
+  na Drive doklejany do linii źródeł).
+- **Start gry od 1 gracza** (solo) — dozwolony i zakomunikowany w lobby.
+- Z ekranu multi usunięto zdanie „Na serwer jadą wyłącznie pseudonimy…"
+  (index.html) — zachowanie bez zmian (biała lista pól + kasowanie po stronie
+  mostu + SKANER dalej pilnują).
+
+**Wdrożenie .gs:** linia trybu w `bledyGryKandydata` (`trasa`|`wyscig`),
+usunięte `biezacyGraczTury` i kontrola tury w `przyjmijZdarzenie`, gałąź tur
+w `czyKompletna`. Kontrakt `RO-gra/1` zmienia tylko domenę `tryb` (R04);
+stare pliki gier z `tryb: "tury"` są nieczytelne dla nowej wersji (jak każda
+wersja aplikacji).
+
+**Testy:** wieloosobowa-ui — e2e trasy (wspólna trasa, tempo własne, resume,
+sekret), NOWE: start solo i pełna ścieżka AI przed lobby (trasa-sekret na
+ekranie stacji, powrót z paczką, lobby z sesji); wieloosobowa — czyKompletna
+bez tur; sync — jeden rytm; most-gra-cycle — cykl Wspólnej Trasy (odpowiedź
+bez dojścia i duplikat jako odmowy R08); rankingi-ui — etykieta trybu.
+Kontrakt M11 pilnuje nowych nazw trybów, zdania o punktacji, braku zdania
+o serwerze i ścieżki AI. **691/691.**
+
+**Dokumentacja:** aneksy ADR 0019 (pełne decyzje) i ADR 0027 (koniec tur),
+PROTOKOL §9 (domena tryb, R04), ARCHITECTURE (sync, silnik lokalny), README,
+WORKFLOW §4.4 pkt 5, instrukcja mostu §5b, indeks ADR.

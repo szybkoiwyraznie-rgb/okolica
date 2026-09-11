@@ -195,13 +195,13 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
    → pytanie → odpowiedź. Obserwować: tabela wyników drugiego gracza odświeża
    się (≤12 s); pasek synchronizacji pokazuje „kolejka" po zgubieniu sieci
    (np. między blokami) i zdarzenia wychodzą po powrocie.
-5. **Tury**: druga gra w trybie „tury" — gracz nieaktywny widzi „Teraz idzie:
-   X (jej/jego telefon)" i nie może wystartować odcinka (odmowa też z serwera,
-   gdyby stan był stary); po zamknięciu stacji poprzednika pojawia się „Twoja
-   tura!".
+5. **Wspólna Trasa**: druga gra w trybie „Wspólna Trasa" — mapa pokazuje
+   TYLKO bieżącą stację (kolejne odsłaniają się po drodze), lista wyboru
+   stacji nie istnieje, a obaj gracze idą tę samą trasę po kolei, każde we
+   własnym tempie (nikt na nikogo nie czeka — od razu można startować odcinek).
 6. **Odświeżenie**: w trakcie gry przeładować stronę na B → baner „Telefon
-   pamięta grę…" → „↩ Wróć do gry" → zamknięte stacje nie wracają, tury i
-   wyniki są aktualne.
+   pamięta grę…" → „↩ Wróć do gry" → zamknięte stacje nie wracają, postęp
+   i wyniki są aktualne.
 7. **Koniec i rankingi**: po ostatniej odpowiedzi oba telefony pokazują
    ostateczną tabelę; w nagłówku „🏆 rankingi" → ogólny / wiek / tematy /
    lokalizacja + „Moje gry" (wpisy z zakończonych gier).
