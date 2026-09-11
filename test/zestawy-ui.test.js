@@ -482,3 +482,88 @@ test('zestawy UI: paczka 100 km dalej nie jest ani proponowana, ani wspominana (
     atrap.przywroc();
   }
 });
+
+/* -------- faktyczne tematy pytań + limit listy + sort po ocenach (właściciel 2026-09-11) -------- */
+
+// setup węższy niż zapisany wpis: paczka ma pytania TYLKO z historii, ale stary
+// wpis niosł listę dopuszczalnych [historia, przyroda, architektura] — dopasowanie
+// odrzucało paczkę, choć pytań z „obcych" tematów w niej nie ma.
+test('zestawy UI: stare wpisy z szeroką listą tematów dopasowują się po faktycznej zawartości pytań', async () => {
+  const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
+  const KONFIG_WASKI = JSON.stringify({
+    schemat: 'konfig/1',
+    konfig: {
+      tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
+      tematy: ['historia'], wiek: 'dorosli', jezyk: 'polski',
+      karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
+    },
+  });
+  const pelny = wpisPelny(kontener);
+  const pamiec = new Map([
+    ['okolica:konfig', KONFIG_WASKI],
+    [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot: kontener.skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'pierwsza' }] })],
+    [kluczZestawu(kontener.skrot), JSON.stringify(pelny)],
+  ]);
+  const dom = await aplikacjaZZestawami({ pamiec });
+  await dojdzDoPozycji(dom);
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'paczka pasuje: pytania decydują, nie lista dopuszczalna');
+  const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
+  assert.deepEqual(rejestr.wpisy[0].tematy, ['historia'], 'wpis rejestru przeszedł na faktyczne tematy');
+  assert.deepEqual(JSON.parse(pamiec.get(kluczZestawu(kontener.skrot))).tematy, ['historia'], 'pełny wpis też niesie faktyczne tematy');
+});
+
+test('zestawy UI: lista pokazuje 3 najlepsze paczki, resztę po „Zobacz więcej paczek"', async () => {
+  const paczkaN = (i) => { const p = paczkaMinimalna(); p.pytania[0].id = `s1p${i}`; p.pytania[0].tresc = `Pytanie numer ${i} z tej okolicy?`; return p; };
+  const kontenery = [1, 2, 3, 4, 5].map((i) => zapakujPaczke(paczkaN(i), 'PYT/1.0'));
+  const wpisy = kontenery.map((k, i) => ({ skrot: k.skrot, bajty: 900, ...metaWpisu(), data: `2026-09-0${i + 1} 09:00`, kodGry: 'gra' }));
+  const pamiec = new Map([
+    ['okolica:konfig', KONFIG_TEST],
+    [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy })],
+    ...kontenery.map((k) => [kluczZestawu(k.skrot), JSON.stringify(wpisPelny(k))]),
+  ]);
+  const dom = await aplikacjaZZestawami({ pamiec });
+  await dojdzDoPozycji(dom);
+  await new Promise((r) => setTimeout(r, 20));
+  assert.equal(dom.pobierz('zestawy-lista').children.length, 3, 'bez rozwinięcia widać trzy paczki');
+  const wiecej = dom.pobierz('przycisk-zestawy-wiecej');
+  assert.equal(wiecej.hidden, false, 'przycisk „Zobacz więcej paczek" jest widoczny');
+  assert.equal(wiecej.textContent, 'Zobacz więcej paczek');
+  dom.kliknij('przycisk-zestawy-wiecej');
+  assert.equal(dom.pobierz('zestawy-lista').children.length, 5, 'rozwinięcie pokazuje wszystkie paczki');
+  assert.equal(dom.pobierz('przycisk-zestawy-wiecej').textContent, 'Zobacz mniej paczek');
+  dom.kliknij('przycisk-zestawy-wiecej');
+  assert.equal(dom.pobierz('zestawy-lista').children.length, 3, 'zwinięcie wraca do trzech');
+  assert.equal(dom.pobierz('przycisk-zestawy-wiecej').textContent, 'Zobacz więcej paczek');
+});
+
+test('zestawy UI: paczki z największą liczbą ocen pozytywnych są pierwsze (właściciel 2026-09-11)', async () => {
+  const wpisOceniony = (plus, minus, data) => ({
+    ...wpisDrive(), id: `drive-${plus}`, data,
+    oceny: { glosow: plus + minus, plus, minus, uzytaWGrach: 1 },
+  });
+  const indeks = { schemat: 'TO-indeks/1', wpisy: [wpisOceniony(7, 2, '2026-09-04 10:00'), wpisOceniony(2, 3, '2026-09-05 10:00')] };
+  const atrap = atrapaFetchDrive({ indeks: JSON.stringify(indeks), plik: JSON.stringify(plikZRepo()) });
+  try {
+    const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
+    const pamiec = new Map([
+      ['okolica:konfig', KONFIG_TEST],
+      ['okolica:repo-zestawow:url', 'https://most.przyklad/exec'],
+      [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot: kontener.skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'gra' }] })],
+      [kluczZestawu(kontener.skrot), JSON.stringify(wpisPelny(kontener))],
+    ]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await new Promise((r) => setTimeout(r, 30));
+    const wiersze = dom.pobierz('zestawy-lista').children;
+    assert.equal(wiersze.length, 3, 'trzy pasujące paczki: dwie z repo, jedna z telefonu');
+    assert.match(wiersze[0].children[0].textContent, /repozytorium/, 'pierwsza paczka pochodzi z repozytorium');
+    assert.ok(/78% 👍/.test(wiersze[0].textContent), 'pierwsza paczka ma 7 ocen pozytywnych na 9 głosów (78% 👍)');
+    assert.ok(/40% 👍/.test(wiersze[1].textContent), 'druga paczka ma 2 oceny pozytywne na 5 głosów (40% 👍)');
+    assert.match(wiersze[2].children[0].textContent, /z tego telefonu/, 'paczka bez ocen jest ostatnia mimo najnowszej daty');
+    assert.equal(dom.pobierz('przycisk-zestawy-wiecej').hidden, true, 'przy trzech paczkach przycisk „więcej" jest schowany');
+  } finally {
+    atrap.przywroc();
+  }
+});

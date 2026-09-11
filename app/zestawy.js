@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-64';
-import { kanonicznyTemat } from './konfig.js?v=m12-64';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-64';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-64';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-65';
+import { kanonicznyTemat } from './konfig.js?v=m12-65';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-65';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-65';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -361,10 +361,28 @@ export function dopasujMetaIndeksu(indeks, kryteria) {
 }
 
 /**
+ * Faktyczne tematy pytań paczki (właściciel, 2026-09-11): każde pytanie nosi
+ * swój temat, więc meta zestawu opisuje to, co paczka NAPRAWDĘ niesie —
+ * a nie listę tematów dopuszczalnych w setupu, z którego paczka powstała
+ * (lista bywała szersza niż treść i dopasowanie odrzucało paczkę, choć
+ * pytań z „obcych" tematów w niej nie było). Unikalne, kanoniczne,
+ * w kolejności pierwszego wystąpienia.
+ */
+export function faktyczneTematyPytan(pytania) {
+  if (!Array.isArray(pytania)) return [];
+  const tematy = [];
+  for (const pytanie of pytania) {
+    const temat = kanonicznyTemat(typeof pytanie?.temat === 'string' ? pytanie.temat.trim() : '');
+    if (temat && !tematy.includes(temat)) tematy.push(temat);
+  }
+  return tematy;
+}
+
+/**
  * Meta dopasowania z bieżącej konfiguracji i pozycji (geohash5 z `geo.js`).
  * Czysta funkcja: warstwa DOM podaje wyłącznie fakty (ADR 0017 pkt 3).
  */
-export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '', factcheck = true } = {}) {
+export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '', factcheck = true, pytania } = {}) {
   wymaganie(Number.isFinite(lat) && Number.isFinite(lon), 'zbierzMetaZestawu: pozycja musi być liczbami');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'zbierzMetaZestawu: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'zbierzMetaZestawu: liczbaStacji musi być dodatnią liczbą całkowitą');
@@ -379,7 +397,14 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
     // Wymiary na 52°N: geohash6 ≈ 0,75 × 0,61 km (0,46 km²); geohash5 ≈ 3,0 × 4,9 km.
     geohash6: geohash(lat, lon, 6),
     promienM,
-    tematy: [...tematy],
+    // Decyzja właściciela 2026-09-11: tematy wpisu = FAKTYCZNE tematy pytań
+    // (pole `pytania` paczki), nie lista dopuszczalnych z setupu. Bez pytań
+    // (eksport meta bez paczki) albo przy pytaniach bez czytelnych tematów
+    // zostaje lista z argumentu — stare zachowanie dla starych ścieżek.
+    tematy: (() => {
+      const faktyczne = faktyczneTematyPytan(pytania);
+      return faktyczne.length ? faktyczne : [...tematy];
+    })(),
     wiek,
     jezyk: typeof jezyk === 'string' && jezyk ? jezyk : 'polski',
     data: typeof data === 'string' && data ? data : new Date().toISOString().slice(0, 16).replace('T', ' '),

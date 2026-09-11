@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-64';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-64';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-65';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-65';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -34,21 +34,21 @@ import {
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
   PROG_ODPOWIEDZI_TOKENY,
-} from './protokol.js?v=m12-64';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-64';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-64';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-64';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-64';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-64';
+} from './protokol.js?v=m12-65';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-65';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-65';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-65';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-65';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-65';
 import {
-  KLUCZ_REJESTRU, SCHEMAT_LOKALNY,
+  KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
-  urlPaczkiZRepo,
-} from './zestawy.js?v=m12-64';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-64';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-64';
+  urlPaczkiZRepo, faktyczneTematyPytan,
+} from './zestawy.js?v=m12-65';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-65';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-65';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -68,17 +68,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-64';
-import { utworzMape } from './mapa.js?v=m12-64';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-64';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-64';
-import { adresMostu, stanMostu } from './most.js?v=m12-64';
+} from './sieci.js?v=m12-65';
+import { utworzMape } from './mapa.js?v=m12-65';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-65';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-65';
+import { adresMostu, stanMostu } from './most.js?v=m12-65';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-64';
+} from './oceny.js?v=m12-65';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1817,6 +1817,39 @@ function czytajRejestrZestawow() {
 }
 
 /**
+ * Jednorazowy porządek rejestru przy starcie (właściciel, 2026-09-11): stare
+ * wpisy niosą listę tematów DOPUSZCZALNYCH w setupu, z którego paczka powstała —
+ * a to bywa szersze niż faktyczna zawartość (model nie zawsze pisze pytania
+ * ze wszystkich tematów). Dopasowanie porównuje tematy wpisu z setupem, więc
+ * paczka była odrzucana, choć pytań z „obcych" tematów w niej nie ma. Tu wpisy
+ * (i pełne zapisy) przechodzą na FAKTYCZNE tematy pytań z paczki. Idempotentne:
+ * drugi start nie zmienia nic, a wpis bez czytelnej paczki zostaje jak był.
+ */
+function ujedgajnijTematyWpisowLokalnych() {
+  if (typeof localStorage === 'undefined') return;
+  try {
+    const wpisy = czytajRejestrZestawow();
+    let zmiana = false;
+    for (const wpis of wpisy) {
+      const { zestaw } = walidujZestawLokalnySurowy(localStorage.getItem(kluczZestawu(wpis.skrot)) ?? '');
+      const faktyczne = faktyczneTematyPytan(odpakujPaczke(zestaw?.kontener).paczka?.pytania ?? []);
+      if (!faktyczne.length) continue; // brak paczki w pamięci albo puste pytania: nie ruszamy
+      const zapisane = [...new Set((wpis.tematy ?? []).map(kanonicznyTemat))];
+      if (zapisane.length === faktyczne.length && zapisane.every((t, i) => t === faktyczne[i])) continue;
+      wpis.tematy = faktyczne;
+      if (zestaw) {
+        zestaw.tematy = faktyczne; // pełny wpis też niesie meta (odczyt przez `metaZWpisuLokalnego`)
+        localStorage.setItem(kluczZestawu(wpis.skrot), JSON.stringify(zestaw));
+      }
+      zmiana = true;
+    }
+    if (zmiana) localStorage.setItem(KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy }));
+  } catch {
+    // porządek rejestru nie może kłaść startu aplikacji (LESSONS L10)
+  }
+}
+
+/**
  * Identyfikator paczki na Drive zapamiętany przy skrócie kontenera.
  *
  * ADR 0028 aneks (właściciel 2026-09-09): każda paczka jest na Drive — ta
@@ -1886,6 +1919,9 @@ function metaBiezacejOkolicy() {
     pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
     tematWlasny: STAN.konfig.tematWlasny ?? '',
     factcheck: czyWariantFactcheck(STAN.paczka),
+    // Faktyczne tematy pytań (właściciel 2026-09-11): meta opisuje zawartość
+    // paczki, nie listę dopuszczalnych z setupu.
+    pytania: pytaniaBiezacejSesji(),
   });
 }
 
@@ -1991,6 +2027,32 @@ function opisLiczbyPaczek(ile) {
 let POKOLENIE_PROPOZYCJI = 0;
 
 /**
+ * Kandydaci bieżącej karty propozycji (lokalne + repo) i stan rozwinięcia.
+ * Właściciel 2026-09-11: lista pokazuje trzy najlepsze paczki, reszta po
+ * przycisku „Zobacz więcej paczek"; pierwsze są najlepiej ocenione.
+ */
+let KANDYDACI_ZESTAWOW = [];
+let ZESTAWY_ROZWINIETE = false;
+const LIMIT_ZESTAWOW_NA_LISCIE = 3;
+
+/** Sort kandydatów: najwięcej ocen pozytywnych pierwsza, przy remisie świeższa data. */
+function sortujKandydatowZestawow(a, b) {
+  return (b.plus - a.plus) || String(b.data).localeCompare(String(a.data));
+}
+
+/** Rysuje listę propozycji od zera: sort, limit i stan przycisku „więcej". */
+function renderujZestawy() {
+  const lista = $('zestawy-lista');
+  lista.replaceChildren();
+  const posortowane = [...KANDYDACI_ZESTAWOW].sort(sortujKandydatowZestawow);
+  const widoczne = ZESTAWY_ROZWINIETE ? posortowane : posortowane.slice(0, LIMIT_ZESTAWOW_NA_LISCIE);
+  for (const k of widoczne) lista.append(wierszZestawu(k.opis, k.etykieta, k.akcja, k.statystyki, k.factcheck));
+  const wiecej = $('przycisk-zestawy-wiecej');
+  wiecej.hidden = KANDYDACI_ZESTAWOW.length <= LIMIT_ZESTAWOW_NA_LISCIE;
+  wiecej.textContent = ZESTAWY_ROZWINIETE ? 'Zobacz mniej paczek' : 'Zobacz więcej paczek';
+}
+
+/**
  * Karta propozycji na ekranie pozycja: najpierw kopie z tego telefonu, potem
  * (asynchronicznie, z timeoutem) dopasowania z repozytorium. Każda awaria
  * repo = „brak propozycji", nigdy blokada gry (ADR 0017 pkt 6).
@@ -2019,30 +2081,33 @@ function odswiezPropozycjeZestawow() {
   };
   const lista = $('zestawy-lista');
   lista.replaceChildren(); // standardowe czyszczenie (atrapa DOM też je umie)
-  const lokalne = dopasujZestawy(czytajRejestrZestawow(), kryteria);
-  for (const wpis of lokalne) {
-    lista.append(wierszZestawu(
-      `${wpis.miejsce} · ${wpis.data} · ${wpis.liczbaStacji} stacji × ${wpis.pytaniaNaStacje} pytań · ${wpis.tematy.join(', ')} · ${wpis.wiek}`,
-      '📱 z tego telefonu:',
-      () => grajZZestawemLokalnym(wpis.skrot),
-      '',
-      czyWpisFactcheck(wpis),
-    ));
-  }
+  // Nowe kryteria (pozycja, setup) = nowa lista: startuje zwinięta.
+  ZESTAWY_ROZWINIETE = false;
+  KANDYDACI_ZESTAWOW = dopasujZestawy(czytajRejestrZestawow(), kryteria).map((wpis) => ({
+    opis: `${wpis.miejsce} · ${wpis.data} · ${wpis.liczbaStacji} stacji × ${wpis.pytaniaNaStacje} pytań · ${wpis.tematy.join(', ')} · ${wpis.wiek}`,
+    etykieta: '📱 z tego telefonu:',
+    akcja: () => grajZZestawemLokalnym(wpis.skrot),
+    statystyki: '',
+    factcheck: czyWpisFactcheck(wpis),
+    // Oceny żyją na Drive (ADR 0028) — paczka z telefonu zaczyna bez głosów.
+    plus: 0,
+    data: wpis.data,
+  }));
+  renderujZestawy();
   const url = adresMostu(); // ADR 0020: adres z kodu aplikacji (albo nadpisany w pamięci telefonu)
   pokazStanMostu();
   if (!url) {
-    $('zestawy-status').textContent = lokalne.length
+    $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
       ? 'Masz gotowe paczki z tego telefonu. Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji.'
       : 'Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji — nowe pytania przygotuje model.';
     return;
   }
-  $('zestawy-status').textContent = lokalne.length
+  $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
     ? 'Masz gotowe paczki z tego telefonu; sprawdzam też repozytorium…'
     : 'Sprawdzam repozytorium paczek dla tej okolicy…';
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
   if (!f) {
-    $('zestawy-status').textContent = lokalne.length
+    $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
       ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
       : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
     return;
@@ -2062,19 +2127,21 @@ function odswiezPropozycjeZestawow() {
     })
     .then(({ indeks, dopasowane }) => {
       if (pokolenie !== POKOLENIE_PROPOZYCJI) return; // nowsze odświeżenie wygrało
-      for (const meta of dopasowane) {
-        lista.append(wierszZestawu(
-          `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
-          '🌍 repozytorium:',
-          () => grajZZestawemZRepo(meta, url),
-          // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
-          // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
-          meta.oceny === undefined
-            ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
-            : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
-          czyWpisFactcheck(meta),
-        ));
-      }
+      KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
+        opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
+        etykieta: '🌍 repozytorium:',
+        akcja: () => grajZZestawemZRepo(meta, url),
+        // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
+        // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
+        statystyki: meta.oceny === undefined
+          ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
+          : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
+        factcheck: czyWpisFactcheck(meta),
+        // Sort listy (właściciel 2026-09-11): najwięcej ocen pozytywnych pierwsza.
+        plus: walidujStatystykiOcen(meta.oceny)?.plus ?? 0,
+        data: meta.data,
+      })));
+      renderujZestawy();
       // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
       // które nie pasują do setupu, to dwie różne sytuacje — i tylko drugą da się
       // naprawić zmianą ustawień.
@@ -2100,7 +2167,7 @@ function odswiezPropozycjeZestawow() {
     })
     .catch(() => {
       if (pokolenie !== POKOLENIE_PROPOZYCJI) return; // komunikat należy do nowszej próby
-      $('zestawy-status').textContent = lokalne.length
+      $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
         ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
         : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
     })
@@ -3799,6 +3866,20 @@ function renderujTrybyMulti() {
 }
 
 /**
+ * Pytania paczki bieżącej sesji — do liczenia FAKTYCZNYCH tematów w meta
+ * (właściciel, 2026-09-11). W pamięci albo przez odpakowanie kontenera
+ * (wzorzec `factcheckBiezacejSesji`).
+ */
+function pytaniaBiezacejSesji() {
+  if (STAN.paczka) return Array.isArray(STAN.paczka.pytania) ? STAN.paczka.pytania : [];
+  if (STAN.kontenerPaczki) {
+    const { paczka } = odpakujPaczke(STAN.kontenerPaczki);
+    return Array.isArray(paczka?.pytania) ? paczka.pytania : [];
+  }
+  return [];
+}
+
+/**
  * Wariant weryfikacji bieżącej sesji (ADR 0032): z paczki w pamięci, a po
  * wznowieniu (plaintext tylko w kontenerze) przez odpakowanie. Nieznane = true.
  */
@@ -3822,6 +3903,7 @@ function metaSesjiMulti(stacje) {
     liczbaStacji: stacje.length, pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
     tematWlasny: STAN.konfig.tematWlasny ?? '',
     factcheck: factcheckBiezacejSesji(),
+    pytania: pytaniaBiezacejSesji(),
   });
 }
 
@@ -4670,6 +4752,10 @@ function czyTrybTestowyWUrl() {
 function start() {
   wczytajKonfiguracje();
   STAN.konfig = konfiguracjaNowegoSetupu(STAN.konfig);
+  // Porządek rejestru paczek (właściciel 2026-09-11): stare wpisy dostają
+  // FAKTYCZNE tematy pytań — dopasowanie przestaje odrzucać paczkę za tematy
+  // dopuszczalne w starym setupie, których w pytaniach nie ma.
+  ujedgajnijTematyWpisowLokalnych();
   banerStartowy();
   $('stopka-protokol').textContent = WERSJA_PROTOKOLU;
   // Numer budowy w stopce: właściciel dwa razy oceniał starą wersję z cache i
@@ -4924,6 +5010,12 @@ function start() {
   });
 
   $('przycisk-test-polaczenia').addEventListener('click', () => sprawdzPolaczenieZRepo());
+  // „Zobacz więcej/mniej paczek" (właściciel 2026-09-11): lista startuje
+  // zwinięta do trzech najlepszych, przycisk odsłania resztę i zwija z powrotem.
+  $('przycisk-zestawy-wiecej').addEventListener('click', () => {
+    ZESTAWY_ROZWINIETE = !ZESTAWY_ROZWINIETE;
+    renderujZestawy();
+  });
   $('przycisk-start-odcinka').addEventListener('click', () => startOdcinkaGry());
   // ADR 0029: ręcznego zgłaszania dojścia NIE MA — ani w index.html, ani tutaj.
   // Dojście zamyka wyłącznie strumień fixów (GPS albo symulacja w trybie

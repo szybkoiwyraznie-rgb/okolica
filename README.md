@@ -170,7 +170,13 @@ repozytorium żyje na wydzielonym koncie **Google Drive** z mostem Apps Script
 paczki według kryteriów właściciela (okolica w zasięgu 200 m od komórki
 geohash paczki — kilka metrów różnicy w starcie nie gubi propozycji, ADR 0024;
 ta sama liczba stacji i pytań, ten sam poziom, tematy nie szersze niż w setupie,
-promień paczki nie większy niż w setupie) — wybór startuje grę bez promptu, bez wklejania, bez
+promień paczki nie większy niż w setupie; tematy wpisu to od 2026-09-11
+FAKTYCZNE tematy pytań paczki, nie lista dopuszczalnych z setupu, w którym
+paczka powstała — stare wpisy rejestru lokalnego przechodzą migrację przy
+starcie, ADR 0017 aneks 2026-09-11). Lista pokazuje trzy najlepsze paczki
+(najpierw najlepiej ocenione — największa liczba ocen pozytywnych, ADR 0028;
+remisy rozstrzyga świeższa data), resztę po przycisku „Zobacz więcej paczek"
+(decyzja właściciela 2026-09-11) — wybór startuje grę bez promptu, bez wklejania, bez
 Overpassa i bez modelu. Przyjęcie paczki z AI (ekran wklejania) automatycznie
 i bez pytania wysyła ją na Drive do przeglądu właściciela (decyzja
 2026-09-07: checkbox zgody usunięty, ADR 0016 aneks). Właściciel

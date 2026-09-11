@@ -2148,3 +2148,47 @@ z Ciekawostkami.
 Brama: **688/688** + audyt WCAG AA **0 naruszeń** (po naprawie), pełna pętla
 UI w pionie i poziomie czysto na m12-64. Cache-busting `?v=m12-64`
 (+ `WERSJA_SW`) podbity w całym grafie.
+
+
+## Sesja 2026-09-11 — faktyczne tematy, limit listy i sort po ocenach (m12-65)
+
+Zlecenie właściciela (trzy uwagi do karty „📦 Paczki dla tej okolicy"):
+
+1. **Tematy wpisu = faktyczne tematy pytań.** Problem: paczka była odrzucana
+   przy dopasowaniu, bo jej meta niosła listę tematów DOPUSZCZALNYCH w setupu,
+   z którego powstała (model nie zawsze pisze pytania ze wszystkich
+   dopuszczonych). Właściciel: „każde pytanie ma podaną kategorię, wystarczy
+   to sprawdzić". Wdrożone: `faktyczneTematyPytan()` w `app/zestawy.js`
+   (unikalne, kanoniczne, kolejność pierwszego wystąpienia) i `zbierzMetaZestawu`
+   liczy `meta.tematy` z pytań (fallback na listę argumentu bez pytań albo
+   przy pytaniach bez czytelnych tematów). Kryterium dopasowania bez zmian —
+   poprawiły się dane. `metaBiezacejOkolicy`/`metaSesjiMulti` przekazują pytania
+   sesji, więc nowy zapis lokalny i wysyłka na Drive niosą faktyczne tematy
+   (most buduje indeks z meta pliku — `.gs` bez zmian). **Migracja** starego
+   rejestru lokalnego przy starcie (`ujedgajnijTematyWpisowLokalnych`): wpis
+   i pełny zapis przechodzą na faktyczne tematy, idempotentnie, cicho
+   (LESSONS L10); wpis bez czytelnej paczki w pamięci zostaje jak był.
+   Stare pliki na Drive: ponowna wysyłka paczki odświeża wpis.
+2. **Limit listy: 3 paczki + „Zobacz więcej paczek"** (toggle ze „Zobacz mniej
+   paczek"; przycisk chowany, gdy pasują ≤ 3). Lista rysuje się od zera
+   (`renderujZestawy`), kandydaci (lokalne + repo) w jednej kolekcji.
+3. **Sort: najpierw najlepiej oceniane** — największa liczba ocen pozytywnych
+   (`oceny.plus`, ADR 0028), remisy rozstrzyga świeższa data. Paczki z tego
+   telefonu nie mają ocen (żyją na Drive) — startują od zera.
+
+Dokumentacja: ADR 0017 aneks 2026-09-11 (semantyka `meta.tematy` + lista),
+README (kryteria i lista), LESSONS — bez nowej lekcji (wpis w duchu L45:
+zmiana kanonu = przegląd stałych i asercji z datą).
+
+Testy: +2 jednostkowe (`faktyczneTematyPytan`, `zbierzMetaZestawu` z pytaniami),
++3 UI (migracja szerokiego wpisu, limit/zwijanie na 5 paczkach, sort po
+plusach z indeksem Drive) — **693/693** + WCAG AA **0 naruszeń**.
+Weryfikacja na żywo (Chromium 152 headless, 360×640, m12-65): rejestr
+z 5 paczkami o szerokich tematach [historia, przyroda, architektura, kultura]
+i pytaniami tylko [historia, architektura] — po starcie migracja przeliczyła
+wpisy, wąski setup (historia+architektura) dostał 3 widoczne propozycje
+z faktycznymi tematami w opisach, „Zobacz więcej paczek" → 5 → „Zobacz mniej
+paczek" → 3; zero błędów JS. Cache-busting `?v=m12-65` + `WERSJA_SW`.
+
+Uwaga operacyjna: sandbox zresetował się między turami — narzędzia
+(puppeteer, Chromium 152) odtworzone w `.narzedzia`, serwer na 0.0.0.0:8000.

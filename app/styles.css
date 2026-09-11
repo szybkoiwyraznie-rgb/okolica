@@ -860,3 +860,7 @@ body.gra-w-drodze #mapa-gra .mapa-atrybucja { bottom: calc(36px + env(safe-area-
 body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
 #informacje-gra { margin-bottom: 16px; }
 #informacje-gra h2 { padding-right: 48px; }
+
+/* „Zobacz więcej/mniej paczek" pod listą propozycji (właściciel 2026-09-11):
+   pełna szerokość karty, cel dotykowy jak wiersze listy (ADR 0011). */
+.przycisk-zestawy-wiecej { width: 100%; min-height: 44px; }

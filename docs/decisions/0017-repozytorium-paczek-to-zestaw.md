@@ -110,3 +110,30 @@ puste gdy nieużywane): tekst organizatora dla tematu `wlasny` z kanonu
 (PROTOKOL §5). Dopasowanie: wpis z `wlasny` pasuje tylko do tego samego
 tekstu (porównanie bez wielkości liter). Pole addytywne — wersja schematu
 bez zmian, stare pliki (bez pola) czytają się jak `tematWlasny: ''`.
+
+## Aneks 2026-09-11 — faktyczne tematy pytań w meta (decyzja właściciela)
+
+**Problem:** `meta.tematy` niosło listę tematów **dopuszczalnych** w setupu,
+z którego paczka powstała — a model nie zawsze pisze pytania ze wszystkich
+dopuszczonych tematów. Dopasowanie porównuje tematy wpisu z setupem (pkt 7:
+„zawierają się, nie szersze"), więc paczka była odrzucana, choć pytań
+z „obcych" tematów w niej nie było. Właściciel: każde pytanie ma podany temat,
+więc wystarczy to sprawdzić.
+
+**Zmiana:** od teraz `meta.tematy` = **faktyczne tematy pytań** paczki
+(unikalne, kanoniczne, w kolejności pierwszego wystąpienia; `zbierzMetaZestawu`
+liczy je z pola `pytania`). Kryterium dopasowania bez zmian (tematy wpisu
+zawierają się w tematach setupu) — poprawiają się dane, nie reguła. Bez pytań
+(eksport meta bez paczki) albo przy pytaniach bez czytelnych tematów zostaje
+lista z argumentu — stare zachowanie. Pole addytywne, schemat bez zmian;
+stare wpisy (repo i rejestr) czytają się po staremu, a rejestr lokalny dostaje
+jednorazową migrację przy starcie (`ujedgajnijTematyWpisowLokalnych` — wpis
+i pełny zapis przechodzą na faktyczne tematy, idempotentnie). Stare pliki
+w repozytorium Drive właściciel może odświeżyć ponowną wysyłką paczki.
+
+**Lista propozycji (to samo zlecenie):** karta pokazuje **trzy najlepsze**
+dopasowane paczki (lokalne + repozytorium razem), resztę po przycisku
+„Zobacz więcej paczek" (toggle ze „Zobacz mniej paczek"). Sortowanie:
+najpierw paczki z **największą liczbą ocen pozytywnych** (ADR 0028,
+`oceny.plus`), przy remisie świeższa data. Paczki z tego telefonu nie mają
+ocen (życią na Drive) — startują z zerem i lądują wg daty.
