@@ -57,7 +57,15 @@ function folder(nazwa) {
 /** Jednorazowo: zakłada katalogi (paczki + gry). Uruchom z edytora po wdrożeniu. */
 function setup() {
   Object.values(FOLDERY).forEach(folder);
-  return 'katalogi gotowe: ' + Object.values(FOLDERY).join(', ');
+  // Zgłoszenie 2026-09-11: setup przypomina o właściwościach, od których
+  // zależy powiadomienie i link przeglądu — bez nich paczka czeka po cichu
+  // albo mail prowadzi donikąd (URL_SERWISU, patrz urlSerwisu()).
+  const brakujace = ['OWNER_EMAIL', 'REVIEW_SECRET', 'URL_SERWISU']
+    .filter(function (klucz) { return !PropertiesService.getScriptProperties().getProperty(klucz); });
+  return 'katalogi gotowe: ' + Object.values(FOLDERY).join(', ')
+    + (brakujace.length
+      ? '. BRAK właściwości skryptu: ' + brakujace.join(', ') + ' (Ustawienia projektu → Właściwości skryptu).'
+      : '. Właściwości skryptu (OWNER_EMAIL, REVIEW_SECRET, URL_SERWISU) są ustawione.');
 }
 
 function json(obiekt) {
@@ -66,7 +74,18 @@ function json(obiekt) {
 }
 
 function urlSerwisu() {
-  return ScriptApp.getService().getUrl();
+  // Zgłoszenie właściciela 2026-09-11: link przeglądu z maila otwierał stronę
+  // Google „Nie udało się otworzyć pliku. Sprawdź adres i spróbuj ponownie."
+  // Winna jest znana, wieloletnia usterka Apps Script: ScriptApp.getService()
+  // .getUrl() potrafi zwrócić adres `/dev` (widoczny tylko dla edytujących
+  // skrypt) albo adres STAREGO wdrożenia po dodaniu nowej wersji. Dlatego:
+  // 1) właściciel raz wpisuje właściwość skryptu URL_SERWISU z obecnym
+  //    adresem `/exec` (krok 3 instrukcji) — ona wygrywa,
+  // 2) bez właściwości przynajmniej prostujemy `/dev` na `/exec`.
+  const wpisany = PropertiesService.getScriptProperties().getProperty('URL_SERWISU');
+  const url = String(wpisany || ScriptApp.getService().getUrl() || '').trim();
+  if (/\/dev\/?$/.test(url)) return url.replace(/\/dev\/?$/, '/exec');
+  return url;
 }
 
 /* ------------------------------------------- kontener TO-paczka/2 (odczyt) */
@@ -516,6 +535,12 @@ function powiadomWlasciciela(plikDrive, zestaw) {
     + 'Tematy: ' + meta.tematy.join(', ') + '\n'
     + 'Utworzono: ' + meta.data + ' przez ' + meta.autor + '\n\n'
     + 'Podgląd i akceptacja jednym kliknięciem:\n' + link + '\n\n'
+    // Zgłoszenie 2026-09-11: gdy link serwisu nie otwiera strony przeglądu
+    // (Google pokazuje „Nie udało się otworzyć pliku"), mail ma prowadzić
+    // dalej — bezpośrednio do pliku i z instrukcją ręcznego folderowania.
+    + 'Gdyby link nie otwierał strony przeglądu, plik jest na Dysku:\n' + plikDrive.getUrl() + '\n'
+    + '(folder ' + FOLDERY.przeglad + '). Akceptacja ręczna to przeniesienie pliku\n'
+    + 'do folderu ' + FOLDERY.zaakceptowane + ', odrzucenie — do ' + FOLDERY.odrzucone + '.\n\n'
     + 'Pamiętaj: sprawdź źródła pytań i miejsca stacji (ADR 0008 pkt 6).';
   MailApp.sendEmail(email, temat, cialo);
 }

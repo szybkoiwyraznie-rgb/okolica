@@ -2257,3 +2257,42 @@ Narzędzia: sandbox zresetował się ponownie — Chromium 152 odtworzony
 z npm (`@sparticuz/chromium` binaria + biblioteki AL2023 do /tmp),
 Puppeteer-core w `/home/user/.narzedzia` (poza repo). Google CDN
 i apt (HTTP) niedostępne z sandboxa.
+
+## Sesja 2026-09-11c — odporny link przeglądu w mailu (zgłoszenie #7)
+
+Zgłoszenie właściciela: paczka po grze trafiła na Drive do katalogu
+przeglądu, mail z przeglądem przyszedł, ale link z maila otwierał stronę
+Google „Nie udało się otworzyć pliku. Sprawdź adres i spróbuj ponownie."
+
+**Przyczyna (zewnętrzna, znana od 2020):** link przeglądu był budowany z
+`ScriptApp.getService().getUrl()`, które Apps Script potrafi zwrócić źle —
+adres `/dev` (widoczny tylko dla edytujących skrypt) albo adres STAREGO
+wdrożenia po dodaniu nowej wersji. Oba otwierają się stroną błędu Google
+zamiast stroną przeglądu (Stack Overflow 2020–2022, Issue Tracker).
+
+**Naprawa w `docs/setup/apps-script-repo-paczek.gs`:**
+1. `urlSerwisu()` najpierw czyta właściwość skryptu `URL_SERWISU`
+   (właściciel wpisuje raz obecny adres `/exec`), a bez niej prostuje
+   przynajmniej końcówkę `/dev` na `/exec`.
+2. Mail z przeglądem niesie DROGĘ AWARYJNĄ: bezpośredni link do pliku
+   na Dysku (`plikDrive.getUrl()`) i instrukcję ręcznej akceptacji
+   (przeniesienie pliku między folderami — to samo robią przyciski).
+3. `setup()` przypomina o brakujących właściwościach (OWNER_EMAIL,
+   REVIEW_SECRET, URL_SERWISU) — bez nich paczka czeka po cichu albo
+   mail prowadzi donikąd.
+
+Instrukcja wdrożenia: krok 3.4 (URL_SERWISU po skopiowaniu adresu),
+sekcja „Awaryjnie" z objaśnieniem komunikatu Google i ręczną akceptacją,
+wpis aktualizacyjny dla działających wdrożeń.
+
+Testy: +2 (`most-przeglad`) — właściwość URL_SERWISU wygrywa z `/dev`
+z getUrl(); `/dev` bez właściwości jest prostowane; poprawny adres
+przechodzi bez zmian; mail niesie link do pliku i nazwy folderów.
+Atrapa mostu: `uruchomMost({ urlSerwisu })` parametryzuje `getUrl()`,
+`apiPlik` ma `getUrl()`/`getName()` jak DriveApp.File. **689/689.**
+Aplikacja i cache-busting bez zmian (m12-66) — poprawka dotyczy
+wyłącznie skryptu Apps Script i jego wdrożenia.
+
+Wdrożenie u właściciela: wkleić nowy `.gs`, dodać właściwość
+`URL_SERWISU`, Wdróż → Nowa wersja; czekającą paczkę zaakceptować
+ręcznie (przeniesienie pliku do `…-zaakceptowane`).

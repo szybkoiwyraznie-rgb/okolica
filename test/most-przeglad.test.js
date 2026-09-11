@@ -98,3 +98,49 @@ test('most: właściciel dostaje link, a strona przeglądu wymaga tokena i nie w
   assert.ok(html.includes('&lt;script&gt;'), 'miejsce z <script> jest pokazane jako tekst');
   assert.ok(html.includes('Pytanie 1?'), 'treść pytania jest widoczna do przeglądu');
 });
+
+/* ----- odporność linku przeglądu (zgłoszenie właściciela 2026-09-11) ----- */
+
+test('most: link przeglądu bierze adres z właściwości URL_SERWISU i prostuje /dev z getUrl', () => {
+  // Znana usterka Apps Script (raportowana od 2020): ScriptApp.getService()
+  // .getUrl() zwraca bywa adres `/dev` albo adres STAREGO wdrożenia po dodaniu
+  // nowej wersji. Oba otwierają się stroną Google „Nie udało się otworzyć
+  // pliku. Sprawdź adres i spróbuj ponownie." zamiast stroną przeglądu.
+  // Dlatego: właściwość skryptu URL_SERWISU wygrywa, a `/dev` jest prostowane.
+
+  // A: właściwość wygrywa — nawet gdy getUrl() zwróciłby adres /dev.
+  const a = uruchomMost({ urlSerwisu: 'https://most.invalid/stary/dev' });
+  a.wlasnosci.set('URL_SERWISU', 'https://most.invalid/dobry/exec');
+  assert.equal(a.most.przyjmijKandydata(zestawPrzykladowy()).ok, true);
+  const linkA = String(a.wyslaneMaile[0].tresc).match(/https?:\/\/\S+/);
+  assert.ok(linkA, 'mail z linkiem przeglądu został wysłany');
+  assert.match(linkA[0], /^https:\/\/most\.invalid\/dobry\/exec\?akcja=przeglad/, 'link prowadzi pod adres z URL_SERWISU, nie z getUrl()');
+
+  // B: bez właściwości adres `/dev` z getUrl() jest prostowany na `/exec`
+  // (adresu dev nie otwiera nikt poza edytującym skrypt).
+  const b = uruchomMost({ urlSerwisu: 'https://most.invalid/stary/dev' });
+  assert.equal(b.most.przyjmijKandydata(zestawPrzykladowy()).ok, true);
+  const linkB = String(b.wyslaneMaile[0].tresc).match(/https?:\/\/\S+/);
+  assert.match(linkB[0], /^https:\/\/most\.invalid\/stary\/exec\?akcja=przeglad/, ' getUrl() z /dev nie trafia do maila');
+
+  // C: bez właściwości i bez /dev adres przechodzi bez zmian (zachowanie z czasów sprawnych wdrożeń).
+  const c = uruchomMost({ urlSerwisu: 'https://most.invalid/swiezyc/exec' });
+  assert.equal(c.most.przyjmijKandydata(zestawPrzykladowy()).ok, true);
+  const linkC = String(c.wyslaneMaile[0].tresc).match(/https?:\/\/\S+/);
+  assert.match(linkC[0], /^https:\/\/most\.invalid\/swiezyc\/exec\?akcja=przeglad/, 'poprawny adres z getUrl() przechodzi bez zmian');
+});
+
+test('most: mail z przeglądem niesie awaryjną drogę — link do pliku na Dysku i ręczne folderowanie', () => {
+  // Nawet gdy link serwisu padnie (zła wersja, zły adres), właściciel ma
+  // w mailu drogę awaryjną: bezpośredni link do pliku i instrukcję ręcznego
+  // przeniesienia między katalogami Drive (to robią przyciski przeglądu).
+  const { most, wyslaneMaile, pliki } = uruchomMost();
+  const przyjeta = most.przyjmijKandydata(zestawPrzykladowy());
+  assert.equal(przyjeta.ok, true);
+  const cialo = String(wyslaneMaile[0].tresc);
+  const idPliku = idPoNazwie(pliki, przyjeta.nazwa);
+  assert.ok(cialo.includes('https://drive.example.invalid/file/d/' + idPliku), 'mail prowadzi też bezpośrednio do pliku na Dysku');
+  assert.ok(cialo.includes('okolica-paczki-do-przegladu'), 'mail nazywa folder przeglądu');
+  assert.ok(cialo.includes('okolica-paczki-zaakceptowane'), 'mail mówi, dokąd przenieść plik przy akceptacji');
+  assert.ok(cialo.includes('okolica-paczki-odrzucone'), 'mail mówi, dokąd przenieść plik przy odrzuceniu');
+});

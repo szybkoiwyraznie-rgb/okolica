@@ -45,6 +45,12 @@ i przeglądarka z dostępem do aplikacji (może być telefon).
    bez tego gracze nie pobiorą indeksu; dostęp chronią wyłącznie adres URL
    i token przeglądu (świadoma decyzja prostoty, ADR 0016).
 3. Skopiuj adres web app (kończy się na `/exec`).
+4. **Wróć do Ustawień projektu (⚙) → Właściwości skryptu → Dodaj**:
+   `URL_SERWISU` = ten skopiowany adres (razem z `https://` i `/exec`).
+   Skrypt wstawia go do linków przeglądu w mailach — bo `getUrl()` Apps Script
+   bywa zawodny (zgłoszenie 2026-09-11: link z maila otwierał stronę Google
+   „Nie udało się otworzyć pliku"; po każdej ZMIANIE wdrożenia na nowy adres
+   zaktualizuj też tę właściwość).
 
 ## 4. Podłączenie aplikacji (ADR 0020: adres żyje w kodzie, nie w interfejsie)
 
@@ -83,7 +89,9 @@ Pola wpisywania adresu zostały z interfejsu usunięte decyzją właściciela.
    e-mailu wiadomość z linkiem „Podgląd i akceptacja".
 3. Otwórz link (telefon wystarczy): zobaczysz pytania z odpowiedziami,
    wyjaśnieniami i źródłami → sprawdź źródła i miejsca stacji (ADR 0008 pkt 6)
-   → **✔ Zaakceptuj**.
+   → **✔ Zaakceptuj**. Gdyby link nie otwierał strony przeglądu, w tym samym
+   mailu jest link awaryjny do pliku na Dysku i instrukcja ręcznej akceptacji
+   (przeniesienie pliku do folderu `…-zaakceptowane`).
 4. Drugi telefon (albo ten sam po czyszczeniu karty propozycji): setup
    kompatybilny (ta sama okolica, liczby stacji i pytań, poziom, tematy nie
    szersze) → karta pokaże paczkę z repozytorium → gra bez modelu.
@@ -131,6 +139,21 @@ Skrót:
   za kolejność ukończenia (telefon pokazuje ją i tak — liczy ją aplikacja).
 - Link przeglądu wycieknie? Zmień `REVIEW_SECRET` we właściwościach skryptu
   (stare linki przestaną działać).
+- **Link z maila pokazuje „Nie udało się otworzyć pliku. Sprawdź adres
+  i spróbuj ponownie."?** To strona błędu Google, nie aplikacji — znana
+  usterka Apps Script: `getUrl()` zwraca adres `/dev` albo adres starego
+  wdrożenia. Naprawa: we **Właściwościach skryptu** ustaw `URL_SERWISU`
+  na obecny adres `/exec` (krok 3.4) i przyślij paczkę ponownie — mail
+  wyjdzie z dobrym linkiem. Paczkę, która czeka, zaakceptuj ręcznie:
+  na Drive przenieś plik z `okolica-paczki-do-przegladu` do
+  `okolica-paczki-zaakceptowane` (odrzucona → `…-odrzucone`) — to samo robią
+  przyciski przeglądu.
+- Aktualizacja do odpornego linku przeglądu (zgłoszenie 2026-09-11):
+  wklej nową treść `docs/setup/apps-script-repo-paczek.gs`, we właściwościach
+  skryptu dodaj `URL_SERWISU` = obecny adres `/exec` (krok 3.4), potem
+  **Wdróż → Zarządzaj wdrożeniami → Edytuj → Nowa wersja**. Od tej wersji
+  mail niesie też awaryjny link do pliku na Dysku i `setup()` przypomina
+  o brakujących właściwościach.
 - Paczka omyłkowo zaakceptowana: na Drive przeciągnij plik z
   `…-zaakceptowane` do `…-odrzucone` — zniknie z indeksu natychmiast.
 - Adres wyciekł albo ktoś nadużywa mostu (fałszywe paczki, śmieciowe gry,
