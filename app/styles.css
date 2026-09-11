@@ -535,6 +535,14 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   font-size: 18px;
 }
 
+/* Zgłoszenie właściciela 2026-09-11 (preview): przyciski odpowiedzi A–D nie
+   znikały po kliknięciu — `.gra-odpowiedzi { display: grid }` nadpisywał
+   „display: none" wynikające z atrybutu [hidden] (reguły autora biją arkusz
+   przeglądarki). Ten sam mechanizm dotyczył `.ocen-panel { display: flex }`.
+   Stąd twarda reguła globalna: [hidden] ZAWSZE znika, niezależnie od display
+   ustawionego w definicji klasy. */
+[hidden] { display: none !important; }
+
 /* Odpowiedzi: stos (nie siatka) — długie teksty na 360 px, cel ≥ 44 px,
    tekst wyrównany do lewej i zawijany. */
 .gra-odpowiedzi {

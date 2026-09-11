@@ -2398,3 +2398,44 @@ przeglądarki i odśwież stronę." Asercja w aplikacja.test.js zsynchronizowana
 że wzmianki NIE ma i że wykonalne wyjście zostało).
 
 Cache-busting `?v=m12-70` + `WERSJA_SW`. Testy 691/691.
+
+## Sesja 2026-09-11h — panel pytania: odpowiedzi giną z WIDOKU, pauza nie kradnie oceny (m12-71)
+
+Zgłoszenie właściciela z najnowszego preview (tryb testowy), dwa punkty:
+
+1. **(4b) Odpowiedzi A–D nie znikały po odpowiedzi.** Kod chował je od
+   m12-66 (`gra-odpowiedzi.hidden = true`), ale CSS `.gra-odpowiedzi
+   { display: grid }` nadpisywał „display: none" z atrybutu [hidden] —
+   reguły autora biją arkusz przeglądarki, więc przyciski zostawały na
+   ekranie, a ocena nie „podnosiła się" w zaoszczędzone miejsce. Testy
+   tego nie widziały, bo atrapa DOM nie liczy stylów. Ten sam błąd
+   dotyczył `.ocen-panel { display: flex }` (kciuki 👍👎 zostawały
+   widoczne bez paczki z repo). Naprawa: twarda reguła globalna
+   `[hidden] { display: none !important }` w styles.css.
+
+2. **„Niechciany layer": pauza wstawiała panel oczekiwania ponad oceną.**
+   Po odpowiedzi gra jest już w fazie przygotowanie, ale panele trzymają
+   ocenę do „Następna stacja" (M6/R5). Pauza — najczęściej AUTOMATYCZNA
+   po zwinięciu okna/karty (visibilitychange) — wołała pełny renderujGre
+   i on przełączał panele wg fazy: panel oczekiwania („▶ Idę do stacji 3,
+   ⏭ Pomiń odcinek, ■ Zakończ grę") wyprzał ocenę, którą gracz czytał.
+   Gore jeszcze: przycisk pauzy mieszka w panelu B (schowanym), więc
+   z panelu A z zablokowanym startem nie było JAK wznowić — pułapka.
+   Naprawa: renderujGre nie przełącza paneli, dopóki trwa pokaz oceny
+   (wyjątek: ręczne zakończenie — wynik „teraz" ważniejszy); „Następna
+   stacja" domyka pokaz, JAWNIE wznawia zegar (etykieta „⏸ Wznów grę
+   i idź dalej →") i prowadzi w drogę jednym klikiem; o pauzie mówi
+   komunikat ekranu gry.
+
+Testy: „pauza w trakcie wyjaśnienia" przepisany na nowy przebieg
+(ocena zostaje, panel A nie wskakuje, jeden klika wznawia + startuje).
+**691/691.** Żywa weryfikacja Chromium 152 (360×640, m12-71): 18/18 —
+display:none odpowiedzi na każdej stacji, ocena w zaoszczędzonym miejscu,
+pauza nie wstawia layera, wznowienie+jedno kliknięcie w drogę, pełna gra
+do końca, regresja #8 (JEDEN POST gra-hotseat), zero błędów JS.
+Cache-busting `?v=m12-71` + `WERSJA_SW`.
+
+Uwaga narzędziowa: CDP `Page.setWebLifecycleState('frozen')` wiernie
+odpala visibilitychange, ale po odmrożeniu zostawia dławienie timerów
+(symulacja 12 s ciągnie się >45 s) — weryfikacja pauzy woła tę samą
+funkcję (`przelaczPauzeGry`) przez DOM-click przycisku pauzy.

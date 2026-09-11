@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-70';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-70';
+import { DOMYSLNE, JEZYKI, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-71';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-71';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-70';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-70';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-70';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-70';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-70';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-70';
+} from './protokol.js?v=m12-71';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-71';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-71';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-71';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-71';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-71';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-70';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-70';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-70';
+} from './zestawy.js?v=m12-71';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-71';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-71';
 import {
   DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
@@ -66,17 +66,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-70';
-import { utworzMape } from './mapa.js?v=m12-70';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-70';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-70';
-import { adresMostu, stanMostu } from './most.js?v=m12-70';
+} from './sieci.js?v=m12-71';
+import { utworzMape } from './mapa.js?v=m12-71';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, biezacyGraczTury, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-71';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-71';
+import { adresMostu, stanMostu } from './most.js?v=m12-71';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-70';
+} from './oceny.js?v=m12-71';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1801,15 +1801,27 @@ function renderujGre({ panele = true } = {}) {
 
   if (panele) {
     const koniec = r.faza === FAZY.koniec || STAN.graZakonczonaRecznie;
-    // Właściciel 2026-09-11 (uwagi terenowe #2): w fazie pytania ekran ma być
-    // czysty — pytanie, odpowiedzi i wynik. Nagłówek „Gra", badge'y i przyciski
-    // „pomiń/zakończ" nie są wtedy potrzebne. Panel multi żyje poza slotem.
-    $('gra-slot-sterowanie').hidden = r.faza === FAZY.pytanie;
-    $('gra-panel-oczekuje').hidden = koniec || r.faza !== FAZY.przygotowanie;
-    $('gra-panel-odcinek').hidden = koniec || r.faza !== FAZY.odcinek;
-    $('gra-panel-pytanie').hidden = koniec || r.faza !== FAZY.pytanie;
-    $('gra-panel-koniec').hidden = !koniec;
-    if (koniec) pokazWyniki();
+    // Właściciel 2026-09-11 (preview, „niechciany layer"): pauza — zwykle
+    // AUTOMATYCZNA po zwinięciu karty/okna (visibilitychange) — woła ten
+    // render i wstawiała panel oczekiwania ponad oceną odpowiedzi, którą
+    // gracz właśnie czyta. Dopóki trwa pokaz oceny (M6/R5), panele się NIE
+    // przełączają; domyka je dopiero „Następna stacja" (patrz nastepnaStacja).
+    // Wyjątek: RĘCZNE zakończenie gry — wynik „teraz" jest ważniejszy niż
+    // dokończenie czytania oceny (naturalny koniec z odpowiedzi czeka
+    // z oceną na „🏁 Zobacz wynik", bo to jeszcze część tej samej odpowiedzi).
+    const pokazOceny = !STAN.graZakonczonaRecznie
+      && !$('gra-panel-pytanie').hidden && !$('gra-wynik-odpowiedzi').hidden;
+    if (!pokazOceny) {
+      // Właściciel 2026-09-11 (uwagi terenowe #2): w fazie pytania ekran ma być
+      // czysty — pytanie, odpowiedzi i wynik. Nagłówek „Gra", badge'y i przyciski
+      // „pomiń/zakończ" nie są wtedy potrzebne. Panel multi żyje poza slotem.
+      $('gra-slot-sterowanie').hidden = r.faza === FAZY.pytanie;
+      $('gra-panel-oczekuje').hidden = koniec || r.faza !== FAZY.przygotowanie;
+      $('gra-panel-odcinek').hidden = koniec || r.faza !== FAZY.odcinek;
+      $('gra-panel-pytanie').hidden = koniec || r.faza !== FAZY.pytanie;
+      $('gra-panel-koniec').hidden = !koniec;
+      if (koniec) pokazWyniki();
+    }
   }
 
   if (panele && r.faza === FAZY.przygotowanie && pod.stacja) {
@@ -2386,6 +2398,14 @@ function przelaczPauzeGry() {
   }
   przycisk.setAttribute('aria-pressed', String(STAN.graPauza));
   $('gra-pauza-komunikat').hidden = false;
+  // Pauza w trakcie pokazu oceny odpowiedzi: panel pytania ZOSTAJE (patrz
+  // renderujGre), więc komunikat z panelu B jest niewidoczny — o pauzie
+  // mówimy w komunikacie ekranu gry i wskazujemy wyjście jednym przyciskiem.
+  if (!$('gra-panel-pytanie').hidden && !$('gra-wynik-odpowiedzi').hidden) {
+    $('gra-komunikat').textContent = STAN.graPauza
+      ? '⏸ Pauza: zegar gry stoi. „Następna stacja" wznowi grę i wyjdzie w drogę.'
+      : 'Gra wznowiona — zegar ruszył.';
+  }
   renderujGre();
   zapiszGre(); // świeża kotwica zegara — wznowienie nie zgubi pauz
 }
@@ -2711,6 +2731,11 @@ function czyStartPoDalej() {
 function etykietaPrzyciskuDalej(stan) {
   if (stan.faza === FAZY.koniec) return '🏁 Zobacz wynik →';
   if (stan.faza === FAZY.pytanie) return 'Następne pytanie →';
+  // Pauza w trakcie czytania oceny (najczęściej automatyczna po zwinięciu
+  // karty): przycisk pauzy mieszka w panelu B i jest wtedy niewidoczny,
+  // więc to „Następna stacja" wznawia zegar i prowadzi dalej — etykieta
+  // mówi o tym wprost (zgłoszenie właściciela 2026-09-11, preview).
+  if (STAN.graPauza && !STAN.multi) return '⏸ Wznów grę i idź dalej →';
   if (!czyStartPoDalej()) return 'Następna stacja →';
   const pod = podglad(stan);
   const indeks = stan.stacje.findIndex((s) => s.id === stan.biezacaStacja);
@@ -2725,6 +2750,14 @@ function etykietaPrzyciskuDalej(stan) {
 function nastepnaStacja() {
   const r = STAN.rozgrywka;
   if (!r) return;
+  // Domknięcie pokazu oceny — od tej chwili renderujGre może przełączać
+  // panele (patrz warunek „pokazOceny" w renderujGre).
+  $('gra-wynik-odpowiedzi').hidden = true;
+  // Pauza nie da się w tym widoku wznowić przyciskiem pauzy (mieszka w
+  // panelu B, schowanym). Klik w „Następna stacja" to JAWNA decyzja gracza
+  // — wznawia zegar (M6: wznowienie jawne, tutaj właśnie przyciskiem)
+  // i prowadzi dalej, zamiast zostawiać panel A z zablokowanym startem.
+  if (STAN.graPauza) przelaczPauzeGry();
   renderujGre();
   if (r.faza === FAZY.pytanie) {
     renderujPytanie();

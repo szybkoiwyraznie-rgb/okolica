@@ -1382,18 +1382,26 @@ test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-s
   assert.match(dom.pobierz('gra-kolejka').textContent, /Gracz 2/, 'kolej przeszła na drugiego gracza');
 });
 
-test('M6: pauza w trakcie wyjaśnienia — połączony przycisk NIE startuje odcinka (zgłoszenie 2026-09-09)', async () => {
+test('M6: pauza w trakcie wyjaśnienia — ocena ZOSTAJE, „Następna stacja" wznawia i prowadzi (właściciel 2026-09-11, preview)', async () => {
   const { dom } = await graWFaziePytania();
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] });
+  // pauza dokładnie tak, jak łapie ją w terenie zwinięcie okna/karty — ten sam kod
   dom.kliknij('przycisk-pauza');
+  // NIECHCIANY LAYER: panel oczekiwania nie może wyprzeć oceny odpowiedzi
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'panel pytania z oceną zostaje na ekranie');
+  assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, false, 'ocena i wyjaśnienie nadal widoczne');
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true, 'panel oczekiwania NIE wskakuje ponad oceną');
+  assert.match(dom.pobierz('gra-komunikat').textContent, /Pauza: zegar gry stoi/, 'o pauzie mówi komunikat ekranu gry (przycisk pauzy siedzi w schowanym panelu B)');
   const dalej = dom.pobierz('przycisk-nastepna-stacja');
-  assert.match(dalej.textContent, /Następna stacja/, 'w pauzie przycisk nie obiecuje wyjścia w drogę');
-  assert.doesNotMatch(dalej.textContent, /idę →/, 'żadnej zapowiedzi startu, dopóki gra stoi');
+  assert.match(dalej.textContent, /Wznów grę i idź dalej/, 'etykieta mówi wprost: klik wznowi i poprowadzi');
+  // jeden klik = wznowienie zegara i wyjście w drogę; koniec pułapki, w której
+  // panel A z zablokowanym startem nie dawał się wznowić (przycisk pauzy ukryty)
   dom.kliknij('przycisk-nastepna-stacja');
-  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'w pauzie zostaje panel A ze startem');
-  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, true, 'odcinek NIE ruszył w pauzie');
-  assert.equal(dom.pobierz('przycisk-start-odcinka').disabled, true, 'start pozostaje zablokowany do wznowienia');
+  assert.equal(dom.pobierz('przycisk-pauza').getAttribute('aria-pressed'), 'false', 'zegar wznowiony tym samym klikiem');
+  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true, 'panel A pominięty');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'gracz od razu w drodze');
+  assert.match(dom.pobierz('status').textContent, /Odcinek rozpoczęty/, 'odcinek wystartował bez drugiego klika');
 });
 
 test('M6: błędna odpowiedź — zero punktów, poprawna ujawniona w ocenie, gra idzie dalej', async () => {
