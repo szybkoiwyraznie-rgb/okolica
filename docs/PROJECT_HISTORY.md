@@ -2576,3 +2576,82 @@ i podkład zaszte), rejestr ADR, PROTOKOL §9 (trasaSekret, geohash8,
 lobby-only, premia 3/2/1, 30 s), ARCHITECTURE (setup-multi, sync, info,
 koniec hosta), README, WORKFLOW §4.4 (9 punktów), instrukcja mostu §5b
 + dopisek „Awaryjnie".
+
+
+
+## Sesja 2026-09-11l — audyt PR #9 (gałąź arena/01a09219-okolica)
+
+Audyt scalonego PR #9 (squash `0b81d0d`, 42+ pliki, ~+1580/−1740), plik po
+pliku, przed nowym zleceniem. Bramka na starcie: **692/692 zielone** na main.
+
+- **`app/konfig.js`** — usunięte `JEZYKI`, nowe `JEZYK_GRY = 'polski'`;
+  `oczyscKonfiguracje` zapisuje na sztywno `jezyk='polski'`, `podklad='osm'`
+  (stary zapis z inną wartością przepisywany po cichu); K04/K06 wycofane.
+  `DOMYSLNE.tematy` = alfabetyczna lista 9 tematów nowego setupu. Zgodne
+  z ADR 0037 i sesją 2026-09-10d.
+- **`app/protokol.js`** — `szacunekOdpowiedzi`, `PROG_ODPOWIEDZI_TOKENY`
+  i stałe budżetu B21 usunięte wraz z akapitem `#prompt-rozmiar` (decyzja
+  właściciela, sesja 2026-09-11b: bełkot developerski; niegroźne, bo E01/E02
+  dalej opisują uciętą odpowiedź). Uwaga dokumentacyjna: ADR 0031 („Co
+  zostaje z B21”) bez aneksu — do oznaczenia przy kolejnej okazji, status
+  ADR to „Wycofana”, ryzyko zamieszania niskie.
+- **`app/app.js`** — największa zmiana: (1) tożsamość multi = imię+PIN
+  z bloku „Kto gra?”, dokładnie 1 gracz na telefon (`walidujGotowoscMulti`,
+  `dodajGracza`, `bramkaTozsamosci`); (2) przepisany flow multi — ścieżki
+  „Załóż/Dołącz” na setupie, paczka zwykłą ścieżką, lobby po wklejeniu,
+  dołączanie wyłącznie z listy ~50 m (geohash8 + sąsiedzi, fallback geohash5),
+  bez kodów; (3) `trasaSekret` jako własność gry (ukryte kropki/lista stacji
+  u organizatora i mapa tylko z bieżącą stacją w grze); (4) premie/kanal
+  info/koniec z ręki hosta; (5) próg 250 m na odświeżanie propozycji paczek
+  (ponowne sprawdzenie po wejściu na ekran pozycji); (6) naprawy zgłoszeń:
+  zakończona gra nie rebazuje zegara przy wznowieniu (koniec powodzi plików
+  gra-hotseat-* na Drive), pauza nie wkłada panelu oczekiwania ponad ocenę
+  odpowiedzi, „Następna stacja” domyka podgląd oceny i wznawia pauzę,
+  odpowiedzi A–D znikają po kliknięciu, wznowienie w fazie przygotowania
+  pomija międzystronę; (7) jednorazowa migracja `ujedgajnijTematyWpisowLokalnych`
+  (idempotentna, w try/catch — nie powalona start aplikacji); (8) usunięte:
+  selecty języka/podkładu, przycisk pierścienia (pierścień zostaje fallbackiem
+  automatycznym), „🔌 Sprawdź połączenie” — wszystkie potwierdzone decyzjami
+  właściciela w tym cmd-cyle (PROJECT_HISTORY 2026-09-11b..k). Uwaga: ADR 0020
+  pkt 2 mówił, że „Sprawdź połączenie zostaje” — decyzja sesji 2026-09-11b
+  nadpisała to bez aneksu ADR (jak wyżej: do odnotowania przy następnej
+  zmianie tego ADR); most-status nadal pokazuje stan połączenia na bieżąco.
+- **`app/wieloosobowa.js`** — `TRYBY_GRY` bez `tury` (trasa/wyścig),
+  `filtrujLobby` po geohash8 z sąsiadami, walidacja `trasaSekret` (kod R04
+  użyty też dla złego typu — niedoskonałość sygnatury, nie blokada),
+  `premiaZaKolejnosc` = stała `[3,2,1][i] ?? 0`. Zgodne z aneksami ADR 0019
+  (m12-74) i 0027 (2026-09-11).
+- **`app/sync.js`** — podpisy `interwalPollingu({gra})`: 10 s lobby / 30 s gra
+  / 60 s zakończona, `czyPollinguUciszyc` wycisza błąd pollingu w grze.
+- **`app/zestawy.js`** — `faktyczneTematyPytan` (unikalne, kanoniczne, kolejność
+  pierwszego wystąpienia), `zbierzMetaZestawu({pytania})` liczy `meta.tematy`
+  z pytań z fallbackiem bez pytań `SCHEMAT_INDEKSU` na indeks repo;
+  `dopasujZestawy` bez zmian (lekka kopia poprzez `{...wpis}`).
+- **`index.html`+`app/styles.css`** — twarda reguła `[hidden]{display:none
+  !important}` (naprawia podgląd `.gra-odpowiedzi` i `.ocen-panel`),
+  `#gra-slot-sterowanie` zwija nagłówek/badge'y w fazie pytania, pigułka
+  dystansu w pasku, karta multi z segmentami, ptaszek trasy-sekret, kanał
+  info, przyciski „Zobacz więcej paczek” i „Zakończ grę (host)”; usunięte
+  pozostałości: `#przycisk-test-polaczenia`, `#prompt-rozmiar`,
+  `#przycisk-pierścien`, `#stacje-sprawiedliwosc`, pola kodu gry.
+- **`docs/setup/apps-script-repo-paczek.gs`** — koniec moderacji wstępnej:
+  zapis prosto do „zaakceptowanych” (usunięte e-mail+token przeglądu), status
+  `zaakceptowana`/`juz-w-odrzuconych`; gry: `geohash8` WYMAGANY przy
+  zakładaniu (app wysyła '', jeśli brak pozycji → most odrzuci — status
+  pokazuje treść błędu), `trasaSekret` opcjonalny, `listaGier` tylko `lobby`,
+  `gra-zakoncz` organizatora, premia `[3,2,1]` (kopia reguły z
+  `wieloosobowa.js`, spójne).
+- **PROTOKOL §9** — zaktualizowany do powyższego (trasaSekret, geohash8,
+  lobby-only, premia 3/2/1, tryby, 30 s); R01/R04/R16 na stan obecny;
+  `odpowiedz.dane` i indeks wpisu lobby z geohash8.
+- **Testy** — `most-osm → most-overpass15` (nazwa), helper `dom.js`
+  obsługuje `children`/`flatMap` (potrzeba segmentów bez `querySelector`),
+  `renderujSegment` już nie dotyka `querySelector` w pełnym DOM; 692/692.
+- **Cache-busting** — `?v=m12-74` jednolite w index.html, sw.js i wszystkich
+  importach; `WERSJA_SW='m12-74'`.
+
+Wniosek: brak usterek blokujących. Nieblokujące: (a) ADR 0020 i ADR 0031 —
+decyzje późniejszych sesji bez aneksów (odnotować przy następnej zmianie);
+(b) R04 sygnalizuje też zły typ `trasaSekret` (można wydzielić R21 w
+przyszłości); (c) przy braku pozycji `zalozGreMulti` wyśle geohash8='' →
+odmowa mostu z czytelnym błędem (zachowanie dopuszczalne, bo gra wymaga GPS).
