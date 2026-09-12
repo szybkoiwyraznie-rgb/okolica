@@ -3467,3 +3467,98 @@ warstwa rankingu pokaże „most Drive odmówił: nieznana akcja”; sprawdzenie
 przez właściciela na telefonie: C (rotacja pytań), D (ekran wyników),
 E (intro) i F (ranking: dwie tabele, ikonka pucharu); potwierdzenie terenowe
 Buga B (≥3 paczki z Podkowy Leśnej); kamienie M3–M8 i M10–M12.
+
+## Sesja 2026-09-12g — audyt PR #14, bug terenowy G: cichy watcher GPS na iPhonie (m12-91)
+
+> Gałąź `arena/01a0967e-okolica` z `a3ca791` (main po squash-merge PR #14).
+
+### 1. Audyt PR #14 (squash `a3ca791`, 52 pliki, +3479/−768)
+
+Zakres: `git fetch origin main --depth=50`; `git diff a3ca791^..a3ca791` plik po
+pliku; brama na HEAD: `npm test` **724/724**, 0 fail.
+
+- **Bug C — rotacja pytań (m12-87)**: `graczPytania()` liczy autora pytania
+  `k` jako gracza z kolejki przesuniętego o `k` cyklicznie po liście graczy
+  (ADR 0009 aneks 2026-09-12, ADR 0022 aneks); `ktoOdpowiada()` zwraca autorów
+  KOLEJNYCH pytań bez duplikatów; `zapiszOdpowiedz` odrzuca nie-autora kodem
+  G07; `stacjaZamknieta` czeka na odpowiedź KAŻDEGO pytania od JEGO autora.
+  Zgodne z protokołem i testami `rozgrywka.test.js`. Bez zastrzeżeń.
+- **Bug D — minimalny ekran wyniku (m12-88)**: usunięcia zgodne z ADR 0038
+  (statystyki, szczegóły, eksporty, linia fact-checku); slot `#gra-slot-sterowanie`
+  schowany w fazie `koniec`; `app/wynik.js` zostaje z testami (świadoma decyzja
+  ADR 0038 pkt 5). Bez zastrzeżeń.
+- **Zgłoszenie F — ranking (m12-90)**: `app/ranking.js` czysty (limit 5, próg 10,
+  sortowanie z remisami, walidacja `RO-ranking/2`), warstwa z `textContent`
+  (L34), warstwy wzajemnie się wygaszają, status mówi, DLACZEGO ranking pusty
+  (L6), próg „Mistrzów” mówiony zawsze. Moście: `rankingi()` per profil
+  (`idProfilu`), pseudonim z profilu, rezygnacja bez odpowiedzi poza sumami,
+  uszkodzone pliki po cichu — wykonywane testem `most-ranking.test.js` (L33).
+  Bez zastrzeżeń.
+- **Sufit zoomu 1000 m** (`geo.js`): `dopasujZoomDoPromienia` z
+  `sufitPromienM` — jeden punkt prawdy, wszystkie ścieżki (tap mapy, pierwszy
+  fix, przeliczenie stacji) przechodzą przez `zoomDlaPromienia`. Testy geo.
+- **Dziennik kanonu** (`konfig.js`): `ZMIANY_KANONU_SETUPU` + `tematyDopelnianeOdKanou`
+  — domknięcie L49 (marker wersją, nie flagą); zapis z markerem ≥ bieżącego
+  nietknięty. Testy konfig.
+- **Limity mostu** (`LIMIT_MOSTU_MS = 15000`, jedna ponowna próba indeksu) —
+  realizacja L51/L52; puste `catch` usunięte, komunikat z powodem.
+- `?v=m12-90` spójne w `index.html`, `app/*.js`, `sw.js` (kontrakt).
+
+**Wniosek:** zmiany zgodne z ADR 0019 (aneksy), 0022, 0027, 0038, 0039;
+PROTOKOL §9.7 spójny z `.gs` (kontrakt); nie znaleziono usterek wymagających
+poprawki w tej sesji.
+
+### 2. Bug G — cichy watcher GPS na iPhonie (m12-91, commity `f8c4d66`, `41b4b50`, dokumentacja)
+
+**Zgłoszenie:** iPhone, Chrome, Pages, zgoda na lokalizację udzielona, GPS
+telefonu sprawny (Google Maps lokalizuje). Ekran „Gdzie jesteś?” wisi na
+„Czekam na pozycję…” w nieskończoność; po wyjściu/wejściu „Szukam
+satelitów…”; w Informacjach „GPS uruchomiony” / „wznowiono śledzenie
+położenia”. Zero fixa, zero błędu — gracz nie ma jak przejść dalej.
+
+**Diagnoza (root cause):** WebKit (wszystkie przeglądarki na iOS) potrafi
+trzymać `watchPosition` w całkowitej ciszy — ani `onFix`, ani `onBlad` —
+ignorując opcję `timeout` (kwerenda: udokumentowana rodzina usterek iOS,
+obejście = watchdog z restartem). Ryzyko rośnie, gdy request poszedł bez
+gestu (nasz `start()` włącza GPS przy ładowaniu strony) i po powrocie
+z tła. Druga warstwa: aplikacja czytała `watcher.czyAktywny()` jako „GPS
+działa”, a to zdanie o własnym wrapperze, nie o dostawcach platformy.
+
+**Naprawa (m12-91):**
+- `pozycja.js` (czyste): `ZEGAR_MILCZENIA_MS = 15 000` (¾ × timeout z
+  ADR 0004 pkt 1), `czyMilczy()` (brak/NaN znaku życia = milczenie, L10),
+  `komunikatMilczenia()` → nowy kod **P10** (sekundy ciszy, numer próby,
+  wyjście awaryjne: iOS Usługi lokalizacji dla przeglądarki). P05 zostaje
+  wycofany, numer nie wraca do puli.
+- `app.js`: znak życia przy KAŻDYM callbacku (fix albo błąd); watchdog
+  co 5 s, uzbrojony TYLKO gdy czekamy na fixa (ekran pozycji albo faza
+  odcinka) — poza tym zero żywych timerów; po 15 s ciszy świeży watcher
+  + P10 z „próba N”; pauza/wznowienie i `zatrzymajGps` zdejmuje zegar.
+- Gest „Dalej”: bez żadnego fixa zakłada świeżego watchera przy każdym
+  wejściu na ekran pozycji (kotwica restartu w geście).
+- „GPS włączony” tylko przy pierwszym starcie — restarty nie nadpisują
+  statusu gry (L22).
+- Kontrakt L17: zakazane wywołania (`watchPosition`, `clearWatch`,
+  `enableHighAccuracy`) szukane w kodzie BEZ komentarzy.
+
+**Weryfikacja:** `npm test` 728/728 (4 nowe: `czyMilczy`, P10, watchdog
+end-to-end na „niemym” watcherze, gest „Dalej”), `check`/`audyt` zielone,
+`?v=m12-91` w całym grafie. Na żywo w headless Chromium (360×740,
+niemy GPS, przyspieszony zegar przez te same gałki co w testach): ekran
+pozycji nie wisi — P10 mówi „(13 s) — zakładam świeży nasłuch (próba 20)”
+i rośnie, zero `pageerror`; zrzut w sesji. **Do potwierdzenia na prawdziwym
+iPhonie** (właściciel): czy po wejściu na „Gdzie jesteś?” pozycja przychodzi
+po restarcie watchera (albo po kliknięciu „Dalej”).
+
+**Dokumentacja:** aneks m12-91 w ADR 0004, LESSONS **L56** (API „aktywne”
+≠ „dostarcza”; znak życia, limit ciszy, gest, uzbrajanie zegara na potrzebę),
+`ARCHITECTURE` (moduł pozycja.js + przepływ fixów), `README` (linia GPS),
+handoff `docs/setup/HANDOFF_2026-09-12g.md`.
+
+### 3. Bramy i stan po sesji
+
+`npm test` **728/728**, `check` OK, `audyt` OK, budżet lektury
+**82 004/100 000**. Wszystko wypchnięte na `arena/01a0967e-okolica` (PR #16).
+
+**Otwarte:** potwierdzenie terenowe bug G na iPhonie; WDROŻENIE `.gs`
+(ranking — ADR 0039); testy terenowe F/C/D/E; bug B; kamienie M3–M8, M10–M12.

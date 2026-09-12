@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-90';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-90';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-91';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-91';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,20 +32,20 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-90';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-90';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-90';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-90';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-90';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-90';
+} from './protokol.js?v=m12-91';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-91';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-91';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-91';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-91';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-91';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-90';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-90';
+} from './zestawy.js?v=m12-91';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-91';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -61,18 +61,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-90';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-90';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-90';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-90';
-import { adresMostu, stanMostu } from './most.js?v=m12-90';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-90';
+} from './sieci.js?v=m12-91';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-91';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-91';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-91';
+import { adresMostu, stanMostu } from './most.js?v=m12-91';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-91';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-90';
+} from './oceny.js?v=m12-91';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -100,6 +100,18 @@ const LIMIT_MOSTU_MS = 15000;
  * Testy skracają odstęp globalem (wzorzec `__MAKS_KAFELKI_TEST__` z `sw.js`).
  */
 const PONOWNA_PROBA_INDEKSU_MS = Number(globalThis.__OKOLICA_PONOWNA_PROBA_MS__) || 800;
+
+/**
+ * Bug G (zgłoszenie terenowe 2026-09-12): WebKit potrafi trzymać
+ * `watchPosition` w całkowitej ciszy — bez fixa i bez błędu, ignorując opcję
+ * `timeout` — a GPS telefonu działa. Watchdog co `KROK_WATCHDOG_GPS_MS`
+ * sprawdza znak życia streamu i po `LIMIT_MILCZENIA_GPS_MS` ciszy zakłada
+ * świeżego watchera (`ZEGAR_MILCZENIA_MS` w `pozycja.js` to granica domyślna).
+ * Gałki globalne istnieją wyłącznie dla testów (wzorzec
+ * `__OKOLICA_PONOWNA_PROBA_MS__`).
+ */
+const KROK_WATCHDOG_GPS_MS = Number(globalThis.__OKOLICA_KROK_GPS_MS__) || 5000;
+const LIMIT_MILCZENIA_GPS_MS = Number(globalThis.__OKOLICA_MILCZENIE_GPS_MS__) || ZEGAR_MILCZENIA_MS;
 
 const STAN = {
   konfig: domyslnaKonfiguracja(),
@@ -186,6 +198,12 @@ const STAN = {
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
+  /** Bug G: ostatni znak życia GPS (fix albo błąd) — `performance.now()`. */
+  gpsOstatniZnakMs: null,
+  /** Bug G: ile razy watchdog zakładał świeżego watchera od ostatniego fixa. */
+  gpsProba: 0,
+  /** Bug G: zegar watchdoga (`setInterval`) — zdejmuje go `zatrzymajGps()`. */
+  gpsTimer: null,
   /** Krótki powód ostatniej nieudanej próby mostu (indeks paczek) — pokazywany
    *  w `#most-stan-repo`, żeby „podłączony” nie było obietnicą bez pokrycia:
    *  adres w kodzie to nie to samo co działające połączenie (LESSONS L6). */
@@ -1215,6 +1233,10 @@ function zatrzymajGps() {
     STAN.watcher.zamknij();
     STAN.watcher = null;
   }
+  if (STAN.gpsTimer) {
+    clearInterval(STAN.gpsTimer);
+    STAN.gpsTimer = null;
+  }
 }
 
 /**
@@ -1225,19 +1247,65 @@ function zatrzymajGps() {
 function wlaczGps() {
   zatrzymajGps();
   $('pozycja-status').textContent = 'Szukam satelitów…';
-  status('GPS włączony — pierwszy fix potrafi trwać kilkanaście sekund.');
+  // Bug G: o „GPS włączony” mówimy tylko na pierwszym starcie. Pauza, wznowienie,
+  // profil baterii i watchdog też przechodzą tędy — restarowi watchera w trakcie
+  // gry NIE wolno nadpisywać statusu rozgrywki (LESSONS L22).
+  if (!STAN.ostatniFix) status('GPS włączony — pierwszy fix potrafi trwać kilkanaście sekund.');
   STAN.watcher = watchPozycja({
     geolocation: navigator.geolocation,
     zegar: () => performance.now(),
     opcje: PROFILE_GPS[STAN.profilGps] ?? PROFILE_GPS.dokladny, // M10/T3: bateria
-    onFix: (fix) => przyjmijFix(fix),
+    onFix: (fix) => {
+      STAN.gpsOstatniZnakMs = performance.now(); // bug G: fix to znak życia
+      STAN.gpsProba = 0;
+      przyjmijFix(fix);
+    },
     onBlad: (blad) => {
+      STAN.gpsOstatniZnakMs = performance.now(); // bug G: błąd to też znak życia — pipe odpowiada
       pokazBledy('bledy-pozycja', [{ kod: blad.kod, pole: 'geolocation', komunikat: blad.komunikat }]);
       $('pozycja-status').textContent = 'Brak pozycji';
       status('Położenie niedostępne — gra czeka na sygnał. Wyjdź na otwartą przestrzeń, a jeśli stacja jest nieosiągalna, pomiń odcinek.' + ADR(' (ADR 0029)'));
     },
   });
+  if (STAN.watcher?.czyAktywny() && !STAN.gpsTimer && czyUzbroicWatchdogGps()) {
+    STAN.gpsTimer = setInterval(tykniecieGps, KROK_WATCHDOG_GPS_MS);
+  }
   if (!STAN.watcher.czyAktywny()) $('pozycja-status').textContent = 'Brak pozycji';
+}
+
+/**
+ * Czy w tej chwili w ogóle czekamy na fixa watchdogiem: na ekranie pozycji albo
+ * w odcinku gry. Poza nimi watcher bywa aktywny (idzie za graczem między
+ * ekranami), ale nie ma czegokolwiek, na co miałby czekać w ciszy — zegar jest
+ * wtedy zbędny, a w testach nie wolno zostawiać żywych interwałów po instancji
+ * (zawiesiłyby pętlę zdarzeń `node --test`).
+ */
+function czyUzbroicWatchdogGps() {
+  if (STAN.trybTestowy || !STAN.watcher?.czyAktywny()) return false;
+  if (STAN.ekran === 'pozycja') return true;
+  const r = STAN.rozgrywka;
+  return Boolean(r) && r.faza === FAZY.odcinek && !STAN.graPauza;
+}
+
+/**
+ * Bug G: tyknięcie watchdoga GPS. Cisza dłuższa niż `LIMIT_MILCZENIA_GPS_MS`
+ * bez JAKIEGOKOLWIEK callbacku oznacza martwy nasłuch (WebKit ignoruje wtedy
+ * własny `timeout`) — zakładamy świeżego watchera i mówimy graczowi, która
+ * to próba. „czyAktywny()” mówi tylko, że NASZ wrapper żyje, nie że WebKit
+ * cokolwiek dostarczy — dokładnie ta pułapka kosztowała bez końca wiszący
+ * ekran „Gdzie jesteś?”.
+ */
+function tykniecieGps() {
+  if (!czyUzbroicWatchdogGps()) {
+    if (STAN.gpsTimer) { clearInterval(STAN.gpsTimer); STAN.gpsTimer = null; }
+    return;
+  }
+  const teraz = performance.now();
+  if (!czyMilczy({ ostatniZnakMs: STAN.gpsOstatniZnakMs, terazMs: teraz, limitMs: LIMIT_MILCZENIA_GPS_MS })) return;
+  const sekundy = Math.round((teraz - STAN.gpsOstatniZnakMs) / 1000);
+  STAN.gpsProba += 1;
+  wlaczGps(); // zatrzymuje starego watchera i zegar, zakłada świeże, resetuje licznik ciszy
+  $('pozycja-status').textContent = komunikatMilczenia({ sekundy, proba: STAN.gpsProba });
 }
 
 /* ------------------------------------------------------------------ mapa */
@@ -4929,7 +4997,10 @@ function start() {
     zapiszKonfiguracje();
     pokazEkran('pozycja');
     pokazPozycje();
-    if (!STAN.trybTestowy && !STAN.watcher?.czyAktywny()) wlaczGps();
+    // Bug G: ten klik jest gestem użytkownika. Watcher z ładowania strony bywa
+    // na iOS „aktywny” i niemy zarazem (WebKit bez callbacków), więc dopóki nie
+    // ma żadnego fixa, odświeżamy nasłuch przy każdym wejściu na ekran pozycji.
+    if (!STAN.trybTestowy && (!STAN.watcher?.czyAktywny() || !STAN.ostatniFix)) wlaczGps();
     if (STAN.multiPoPaczce) {
       status(STAN.ukryjStacje
         ? 'Potwierdź pozycję, wygeneruj stacje i pytania, wklej odpowiedź modelu — po paczce otworzy się lobby. Trasa jest tajemnicą: widzisz tylko komunikat o liczbie stacji.'

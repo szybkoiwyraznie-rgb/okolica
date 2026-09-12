@@ -196,11 +196,15 @@ test('kontrakt: w app/ nie ma API Node ani require (LESSONS L6)', () => {
 
 test('kontrakt: geolokalizacja w app.js idzie przez pozycja.js (ADR 0004 pkt 1)', () => {
   // Jeden watcher na rozgrywkę, reguły i komunikaty w module testowalnym bez DOM.
+  // Zakazane wywołania szukamy w KODZIE BEZ KOMENTARZY (LESSONS L17): zakaz
+  // dotyczy wywołań, nie słów — komentarz „watchPosition milczy” w app.js
+  // (bug G) jest wyjaśnieniem, nie naruszeniem kontraktu.
+  const APP_BEZ_KOMENTARZY = APP.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/^\s*\/\/.*$/gm, ' ');
   assert.ok(/from '\.\/pozycja\.js\?v=/.test(APP), 'app.js musi importować moduł pozycji');
   assert.match(APP, /watchPozycja\(/, 'watcher zakłada osłona z pozycja.js');
-  assert.ok(!/watchPosition/.test(APP), 'app.js nie woła watchPosition samodzielnie');
-  assert.ok(!/clearWatch/.test(APP), 'app.js nie woła clearWatch samodzielnie — zamykanie jest w osłonie');
-  assert.ok(!/enableHighAccuracy/.test(APP), 'opcje watchera mieszkają w pozycja.js, nie w UI');
+  assert.ok(!/watchPosition/.test(APP_BEZ_KOMENTARZY), 'app.js nie woła watchPosition samodzielnie');
+  assert.ok(!/clearWatch/.test(APP_BEZ_KOMENTARZY), 'app.js nie woła clearWatch samodzielnie — zamykanie jest w osłonie');
+  assert.ok(!/enableHighAccuracy/.test(APP_BEZ_KOMENTARZY), 'opcje watchera mieszkają w pozycja.js, nie w UI');
 
   const POZYCJA = czytaj('app/pozycja.js');
   assert.match(POZYCJA, /enableHighAccuracy: true, maximumAge: 2000, timeout: 20000/, 'opcje dokładnie jak w ADR 0004 pkt 1');

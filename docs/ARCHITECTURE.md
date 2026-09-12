@@ -33,9 +33,11 @@ app/
                               `odlegloscDoKomorkiM` — ADR 0024) (czyste)
   pozycja.js                — geolokalizacja: osłona watchPozycja(), filtr
                               dokładności (ocenFix), kryterium dojścia
-                              (stanDojscia), komunikaty P01–P09, symulacja trasy
+                              (stanDojscia), komunikaty P01–P10, symulacja trasy
                               dla trybu testowego (ADR 0004, 0015); M10: profile
-                              baterii PROFILE_GPS + histereza profilBaterii
+                              baterii PROFILE_GPS + histereza profilBaterii;
+                              m12-91 (bug G): watchdog ciszy — czyMilczy,
+                              ZEGAR_MILCZENIA_MS, komunikatMilczenia
                               („budzenie przy zbliżaniu": oszczędny >250 m,
                               dokładny <150 m)
   sieci.js                  — Overpass (czyste): budowa zapytania (R × 1,15),
@@ -161,6 +163,12 @@ commit i nowa wersja aplikacji.
 
 1. `ui.js` zbiera konfigurację → `konfig.walidujSetup()` (limity, spójność).
 2. `pozycja.js` czyta pierwszy fix GPS (albo współrzędne z trybu testowego).
+   Watchdog ciszy (m12-91, bug G): WebKit potrafi trzymać `watchPosition`
+   bez żadnego callbacku, ignorując `timeout`; po 15 s bez znaku życia
+   (fix ALBO błąd) `app.js` zakłada świeżego watchera i pokazuje P10
+   z sekundami i numerem próby. Gest „Dalej” bez fixa też odświeża nasłuch
+   (pierwszy request idzie przy ładowaniu strony, bez gestu — na iOS bywa
+   zawieszony w nieskończoność; aneks m12-91 w ADR 0004).
    Pierwszy fix centruje widok mapy (`app.js: centrujNaPozycji`) w zoomie
    dobranym do promienia gry (`geo.dopasujZoomDoPromienia`), a kolejne tylko
    przesuwają marker — potem mapę prowadzi palec gracza. W trybie testowym
