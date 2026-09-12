@@ -3882,3 +3882,112 @@ działa zgodnie z ADR-ami; rozjeżdżają się teksty dla człowieka):
 WORKFLOW, ARCHITECTURE, ASSETS — po KAŻDEJ decyzji, a nie po całej fali;
 i dodaj strażnika testowego na frazy, które opisują usunięte funkcje
 (L31 mówi „grep po dokumentach”, ale grepa nikt nie uruchamia automatycznie).
+
+### 3. Naprawa dryfu — commity K/2…K/10 (PR #19)
+
+Każdy commit przeszedł przez zieloną bramę przed wypchnięciem; zakresy O* to
+numery z §2 powyżej.
+
+- **K/2 (`50ff842`) — O1, O2, O11, teksty UI.** `index.html`: ekran wklejania
+  mówi „leci na Drive — od razu do wspólnego repozytorium okolicy” zamiast
+  „do przeglądu właściciela”; karta prywatności rozdziela dwa fakty, które
+  brzmiały sprzecznie (repozytorium paczek niesie pytania — ADR 0017 pkt 1;
+  zapis GRY nie — `zestaw: null`, PROTOKOL §9.6). `app/app.js`: trzy statusy
+  wokół pamięci paczek i wysyłki na Drive przestały odsyłać do eksportu pliku
+  i ręcznego wnoszenia (nie ma ich w UI od 2026-09-07, resztę zabrał ADR 0038);
+  komunikat awarii wysyłki NIE obiecuje ponowienia, bo kolejki offline mają
+  wynik hot-seat i oceny, a wysyłka zestawu nie. Kontrakt 82 pinuje nieobecność
+  starych fraz i obecność nowych. `?v=m12-96`.
+- **K/3 (`7a8e188`) — O12, komentarze w kodzie.** Pięć komentarzy w `app.js`
+  obiecywało zachowanie, którego kod celowo nie ma: „marker pozycji z kołem
+  dokładności” (`odswiezWarstwy` daje mapom `{lat, lon}`), „badge dokładności”,
+  „reguły/filtr dokładności” (ADR 0034 pkt 2 — `ocenFix` waliduje współrzędne).
+  Kontrakt 83 pinuje kształt fixa bez `accuracy` i zakazuje fraz. Do tego
+  dev-tekst karty paczek (`tylko-test`): „paczki zaakceptowane przez
+  właściciela” → „paczki z katalogu zaakceptowanych (moderacja zniesiona
+  2026-09-11)”. `?v=m12-97`.
+- **K/4 (`1365606`) — O3, O4, O5, O10, `docs/WORKFLOW.md` §3–§6.** Procedura
+  gry i checklisty terenowe przepisane na UI z 2026-09-12: setup w kolejności
+  z ekranu i bez języka/podkładu (ADR 0037), GPS rusza sam i nie ma pól
+  ręcznych ani badge’a (ADR 0034 pkt 2/5), wklejanie sprawdza się samo
+  (ADR 0006 aneks 3), wynik minimalny (ADR 0038), symulacja dojścia żyje
+  w ekranie gry (`#przycisk-symulacja-gra`), pomiary terenowe bez dokładności
+  GPS, progi wskazane z nazwy (`progDojsciaM`, `PROG_BATERII_M`), pkt 0 §4.4
+  cytuje produkcyjny wariant stanu mostu, pkt 1 ma kolejność tożsamości
+  z 2026-09-12, pkt 7 bez zdania „rankingów między grami nie ma” i nowy pkt 7a
+  (dwie tabele, ≤5 pozycji, próg 10 pytań, wymóg nowego deploymentu — ADR 0039),
+  §6 z kanonem w parach stałych (`TEMATY`+`TEMATY_SETUP`, `WIEK`+`WIEK_SETUP`),
+  rejestrem w `docs/decisions/README.md` i paczką referencyjną `zestaw-*.json`.
+- **K/5 (`608e643`) — O6, O7, O8, trzy dokumenty żywe.** `README`: kryterium M7
+  zawężone do czytelności w słońcu (eksport odpadł z ADR 0038 — ROADMAP
+  zawęził je 2026-09-12, README został przy starym). `ARCHITECTURE`: opis
+  `wynik.js` zgodny z eksportami (`dystansTekst`, `etykietaOdcinka`,
+  `wynikTekstowy`, `ROLE_PALETY`, `planObrazuWyniku`; miara sprawiedliwości
+  żyje w `stacje.js`), nośnik `.paczka.json` usunięty z §Stan i trwałość.
+  `ASSETS` §7: bez `REVIEW_SECRET`/`OWNER_EMAIL` (grep po `.gs`: 0 odczytów
+  właściwości skryptu), bez bramki moderacyjnej, bez „kopii lokalnej” jako
+  drogi wyjścia (zadanie I), akcje mostu uzupełnione; NOWY §7.2 — oceny,
+  profile i ranking (`RO-ranking/2`, katalogi, deployment, quota, prywatność).
+- **K/6 (`66e9e32`) — O9.** ADR 0019 dostał aneks **2026-09-12f**, który trzy
+  nośniki cytowały od tygodnia (rejestr, `.gs` ×2, `test/most-ranking.test.js`).
+  Aneks jest KOTWICĄ, nie kopią decyzji: co wróciło do mostu, co nie wróciło
+  (odesłanie do ADR 0039), R17/R18 zajęte na stałe, ranking jako warstwa
+  z belki ikon.
+- **K/7 (`384cc38`) — O13…O17, `ARCHITECTURE` i komentarz w `pozycja.js`.**
+  Drzewo modułów: widmowy `ui.js` (pliku nigdy nie było — rola wchłonięta do
+  wpisu `app.js`, plus dwa odwołania w §Podział i §A.1) i brakujący `oceny.js`
+  (dopisany: schematy `RO-ocena/1`/`RO-oceny/1`, limity 600/50, `idGlosujacego`
+  i parzystość sluga z `idProfilu()` mostu). Najpoważniejszy rozjazd: próg
+  dojścia opisany jako **25 m** (ADR 0004 aneks 2026-09-09) w dwóch miejscach,
+  gdy `progDojsciaM()` zwraca 50 od ADR 0034 pkt 2; obok „fix niedokładny
+  dostaje ostrzeżenie” (ostrzeżenia nie ma) i `ocenFix` jako „filtr
+  dokładności”. Komentarz `GRANICE.wymaganeTrafnienia` twierdził, że stację
+  zapala „pojedynczy fix”, przy wartości 2. `?v=m12-98`.
+- **K/8 (`a7df8f2`) — strażnik dryfu i L58.** `test/dryf-dokumentow.test.js`
+  (5 asert): 21 martwych fraz sprawdzanych na nośnikach ŻYWYCH z numerem
+  wiersza w komunikacie błędu; drzewo modułów `ARCHITECTURE` ↔ zawartość `app/`
+  w obie strony; eksporty `wynik.js` (import modułu, nie lista z ręki) ↔ opis;
+  most bez `REVIEW_SECRET`/`OWNER_EMAIL`/`PropertiesService` i z
+  `akcja=ranking`; cytowania „ADR NNNN aneks <data>” (także w `test/*.js`) ↔
+  istniejący aneks w pliku decyzji. Historia (`PROJECT_HISTORY`, `LESSONS`,
+  ADR-y, handoffy) jest poza zakresem fraz — tam cytowanie martwej frazy jest
+  dowodem zmiany. Strażnik przy pierwszym uruchomieniu złapał komentarz
+  `fixSymulowany` w `app/pozycja.js` („filtr dokładności”) — poprawiony.
+  LESSONS **L58** (objaw → przyczyna → reguła) + reguła w `AGENTS.md` §5
+  (wiersz tabeli) i §7 (przy USUWANIU przegląd w drugą stronę) + `WORKFLOW` §6.
+  `?v=m12-99`.
+- **K/9 (`4d1ad24`) — tytuły testów.** W `test/aplikacja.test.js` aserty były
+  poprawne, tytuły nie: „badge dokładności”, „marker z kołem dokładności”
+  (warstwa okręgów ma sam `okrag-promien`), „próg dokładności” (aserta
+  sprawdza BRAK `maxAccuracyM`), „ręczna pozycja w trybie testowym” (atrapa
+  symuluje tap w mapę). Pin P02 miał alternatywę `|pomiń odcinek` dla akcji,
+  której nie ma od zadania H — przepisany na nową formę z powodem (L55).
+- **K/10 (`fe0890c`) — O19, publikacja.** `WORKFLOW` §5 kazał klikać
+  „Source: Deploy from a branch”, choć od 2026-09-07 Pages publikuje
+  `.github/workflows/pages.yml` (Source: **GitHub Actions**: brama → `rm -rf
+  .git` → artefakt `path: ./` → `deploy-pages@v4` przy każdym pushu do `main`).
+  `ROADMAP`: wiersz i kryterium M8 bez „publikację włącza właściciel” (działa;
+  kamień zamyka właściciel), kryterium M11/M12 bez licznika „9 punktów”
+  checklisty — liczniki w dokumentach rotują przy każdej zmianie procedury.
+
+Wersje w sesji: `?v=m12-95` → **`m12-99`** (cztery podbicia — każdy commit
+dotykający `app/*.js`, także samych komentarzy: `AGENTS.md` §7, L29).
+
+### 4. Bramy i stan po sesji
+
+- `npm run brama`: **741/741** testów (734 na starcie sesji + kontrakt 82 i 83
+  + 5 testów strażnika dryfu), `npm run check` — szablon zgodny w obu
+  wariantach (PYT/1.0.8 rev4 i PYT/1.0-nofc.3 rev5), audyt kontrastu WCAG AA —
+  0 naruszeń w obu motywach.
+- Weryfikacja na żywo (`AGENTS.md` §7): `npm run serwer` na 0.0.0.0:8000 —
+  serwowany `index.html` niesie nowe teksty i `?v=m12-99`, martwe frazy
+  zniknęły (0 trafień), wszystkie moduły `app/*.js` i `app/styles.css`
+  odpowiadają 200, `sw.js` ma `WERSJA_SW = 'm12-99'`. Przeglądarki w sandboxie
+  nie ma (ENVIRONMENT §4.1, LESSONS L3) — wzrokową weryfikację ekranu
+  „Wklej odpowiedź modelu” i karty „Dane i prywatność” zostawiamy właścicielowi
+  razem z checklistami terenowymi.
+- Gałąź `arena/01a0973d-okolica`, **PR #19** (11 commitów K/1–K/11), baza
+  `main` = `4eb0985`. Nic nie scalone, `main` nietknięty (ADR 0012 pkt 1).
+- Otwarte po sesji: deployment `.gs` z `?akcja=ranking` (właściciel), kryteria
+  terenowe M3–M7 i M10–M12, decyzja o zamknięciu M8, `BACKLOG` bez zmian.
+  Handoff: `docs/setup/HANDOFF_2026-09-12k.md`.
