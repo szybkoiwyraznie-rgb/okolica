@@ -7,7 +7,8 @@
  * spoza kanonu, brak nasłuchu na przycisku, watcher GPS założony z opcjami
  * innymi niż w ADR. Ten test uruchamia prawdziwy bootstrap na minimalnej
  * atrapie DOM (`test/helpers/dom.js`) i sprawdza stan początkowy ekranu oraz
- * przepływ położenia: fix → badge dokładności → ostrzeżenie → błąd → pauza.
+ * przepływ położenia: fix → współrzędne i geohash → błąd → pauza. Dokładności
+ * (`accuracy`) na ekranie i na mapie nie ma — ADR 0034 pkt 2.
  *
  * Atrapa jest celowo głupia: `querySelector` zwraca `null` (jak w pustym
  * kontenerze), `innerHTML` niczego nie parsuje. Kod, który tego nie przeżyje,
@@ -183,7 +184,7 @@ test('GPS: watcher startuje z opcjami z ADR 0004 pkt 1', () => {
   assert.equal(gps.wywolania.watch, 1, 'GPS uruchomiony automatycznie, bez przycisku');
 });
 
-test('GPS: fix trafia na ekran — badge dokładności i odblokowane przejście', () => {
+test('GPS: fix trafia na ekran — współrzędne z geohashem i odblokowane przejście', () => {
   gps.wyslijFix(52.235, 21.015, 15);
   assert.equal(pobierz('pozycja-status').textContent, 'Pozycja ustalona');
   assert.match(pobierz('pozycja-wspolrzedne').textContent, /52\.23500, 21\.01500/);
@@ -205,7 +206,7 @@ test('GPS: błąd przeglądarki daje komunikat z wyjściem awaryjnym (ADR 0004 p
   assert.match(pobierz('bledy-pozycja').textContent, /Zezwól na lokalizację w ustawieniach przeglądarki i odśwież stronę/,
     'P02 daje wykonalne wyjście — bez developerskiej wzmianki o trybie testowym (usunięta 2026-09-11: to nie informacja dla graczy)');
   assert.equal(pobierz('pozycja-status').textContent, 'Brak pozycji');
-  assert.match(pobierz('status').textContent, /otwartą przestrzeń|pomiń odcinek/, 'status daje wykonalne wyjście (ADR 0029)');
+  assert.match(pobierz('status').textContent, /otwartą przestrzeń/, 'status daje wykonalne wyjście (ADR 0029) — akcji pomijania odcinka nie ma od zadania H (2026-09-12)');
 
   gps.wyslijBlad(2, 'Position unavailable');
   assert.match(pobierz('bledy-pozycja').textContent, /\[P03\]/);
@@ -264,8 +265,9 @@ test('tryb testowy z adresu: ?tryb=test nie wznawia GPS po powrocie z tła', asy
   assert.equal(gpsTest.wywolania.watch, 0, 'w trybie testowym pozycję ustawia mapa');
 });
 
-test('GPS: limit historii i próg dokładności są z pozycja.js, nie wpisane w UI', () => {
+test('GPS: limit historii i próg trafień są z pozycja.js, a progu dokładności nie ma wcale', () => {
   // kontrakt na stałe: gdyby UI zaczął mieć własny próg, rozjechałby się z regułą dojścia
+  // (ADR 0034 pkt 2: `accuracy` nie jest kryterium — pola `maxAccuracyM` nie ma i nie będzie)
   assert.equal('maxAccuracyM' in GRANICE, false);
   assert.equal(GRANICE.wymaganeTrafnienia, 2);
 });
@@ -450,7 +452,7 @@ test('mapa: błędne nadpisanie szablonu NIE gasi mapy — zostaje OSM', async (
   }
 });
 
-test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok na graczu', async () => {
+test('mapa: pierwszy fix rysuje marker BEZ koła dokładności i centruje widok na graczu', async () => {
   const domMapy = await aplikacjaZMapa();
   const gpsMapy = domMapy.gps;
   gpsMapy.wyslijFix(52.235, 21.015, 15);
@@ -459,7 +461,7 @@ test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok n
   assert.deepEqual(
     domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
     ['okrag-promien'],
-    'koło dokładności i okrąg promienia gry',
+    'na mapie jest tylko okrąg promienia gry — koła dokładności nie ma (ADR 0034 pkt 2)',
   );
   assert.match(
     domMapy.pobierz('mapa-pozycja-svg').getAttribute('aria-label'),
@@ -502,11 +504,11 @@ test('mapa: podkład i język ZASZYTE w kodzie — pól wyboru nie ma, mapy jad�
   assert.equal(domMapy.pobierz('mapa-gra-atrybucja').textContent, PODKLADY.osm.atrybucja);
 });
 
-test('mapa: ręczna pozycja w trybie testowym nie udaje koła dokładności', async () => {
+test('mapa: pozycja z tapnięcia mapy w trybie testowym nie udaje koła dokładności', async () => {
   const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
   domMapy.ustawPozycje('52.23178', '21.01234');
 
-  assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'marker jest — pozycja ustawiona ręcznie');
+  assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1, 'marker jest — pozycja ustawiona z mapy (pól ręcznych nie ma, ADR 0034 pkt 5)');
   assert.deepEqual(
     domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
     ['okrag-promien'],
@@ -1434,7 +1436,8 @@ test('M6: przy 2 pytaniach na stację gracze odpowiadają NA ZMIANĘ, nie w kó�
 test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-seat, ADR 0009)', async () => {
   const { dom } = await graWFaziePytania();
   // Właściciel 2026-09-11 (4a): nad boksem pytania nie ma już nagłówka „Gra",
-  // badge'ów ani przycisków pomiń/zakończ — schowane w całej fazie pytania.
+  // badge'ów ani przycisków sterowania odcinkiem — schowane w całej fazie pytania
+  // (przycisku „pomiń” nie ma wcale od zadania H, 2026-09-12).
   assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, true, 'slot sterowania schowany w fazie pytania');
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] });
