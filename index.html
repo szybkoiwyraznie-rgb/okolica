@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-77">
-  <script type="module" src="app/app.js?v=m12-77"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-78">
+  <script type="module" src="app/app.js?v=m12-78"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -608,7 +608,7 @@
           <li>Fixy GPS służą wyłącznie do prowadzenia gry i <strong>nie
             opuszczają telefonu</strong> poza żądaniami mapy opisanymi wyżej.</li>
           <li>Geolokalizacja wymaga Twojej zgody i połączenia HTTPS. Bez zgody
-            zostają współrzędne ręczne i tryb testowy.</li>
+            aplikacja nie zna Twojej okolicy i nie przygotuje gry.</li>
         </ul>
       </div>
 
@@ -617,8 +617,8 @@
         <ul class="lista-privatnosc">
           <li>Ustawienia gry i motyw: <code>okolica:konfig</code>,
             <code>okolica:motyw</code>.</li>
-          <li>W kolejnych kamieniach: cache sieci drogowej, ukryta paczka pytań
-            i historia gier — wszystko pod kluczami <code>okolica:*</code>.</li>
+          <li>Cache sieci drogowej, ukryta paczka pytań i historia gier —
+            wszystko pod kluczami <code>okolica:*</code>.</li>
           <li>Kod gry — jawny identyfikator rozgrywki w nazwach plików
             i wpisach historii; niczego nie szyfruje.</li>
         </ul>

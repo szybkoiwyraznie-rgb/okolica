@@ -70,6 +70,7 @@ function atrapaMostu() {
         switch (dane.akcja) {
           case 'gra-zaloz': return json(zaloz(dane));
           case 'gra-dolacz': return json(dolacz(dane));
+          case 'gra-opusc': return json(opusc(dane));
           case 'gra-start': return json(start(dane));
           case 'gra-zdarzenie': return json(zdarzenie(dane));
           case 'gra-zakoncz': return json(zakoncz(dane));
@@ -161,6 +162,20 @@ function atrapaMostu() {
     };
     gry.set(gra.idGry, gra);
     return { ok: true, gra: structuredClone(gra) };
+  }
+  /** Lustro `opuscGre` z .gs: wyjście z lobby prostuje skład gry. */
+  function opusc(dane) {
+    const gra = znajdzGre(dane.kod, dane.idGry);
+    if (!gra) return { ok: false, blad: 'nie ma gry o takim kodzie/identyfikatorze' };
+    if (gra.stan !== 'lobby') return { ok: false, blad: 'gra już wystartowała — wyjście w trakcie gry to rezygnacja, nie opuszczenie lobby' };
+    const indeks = gra.gracze.findIndex((g) => g.id === String(dane.graczId ?? ''));
+    if (indeks < 0) return { ok: false, blad: 'nie ma takiego gracza w tej grze' };
+    if (indeks === 0) {
+      gra.stan = 'archiwum';
+      return { ok: true, zamknieta: true };
+    }
+    gra.gracze.splice(indeks, 1);
+    return { ok: true, zamknieta: false, gra: structuredClone(gra) };
   }
   function dolacz(dane) {
     const pseudonim = String(dane.pseudonim ?? '').trim().slice(0, 24);
@@ -747,6 +762,45 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   assert.equal(gra.trasaSekret, true, 'gra na moście ma trasaSekret');
   assert.equal(gra.konfiguracja.pytaniaNaStacje, 1, 'liczba stacji = liczba pytań (1 na stację)');
   assert.match(gra.konfiguracja.geohash8, /^[0-9b-z]{8}$/, 'konfiguracja niesie geohash8 (~50 m)');
+});
+
+test('wyjście z lobby jest zgłaszane mostowi — inaczej liczba graczy kłamie', async () => {
+  // Właściciel 2026-09-11: „dołączanie i wychodzenie w dowolnym momencie".
+  // Samo wyjście z ekranu zostawiało gracza w `gracze` na moście, a lista gier
+  // w okolicy (liczbaGraczy = gracze.length) obiecywała kogoś, kogo nie było.
+  const most = atrapaMostu();
+  const KONFIG = JSON.stringify({
+    schemat: 'konfig/1', kanon: '2026-09-10',
+    konfig: {
+      tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
+      tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
+      karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
+    },
+  });
+  const A = await noweUrzadzenie({ pamiec: new Map([['okolica:konfig', KONFIG]]), most, bezGracza: true });
+  await wybierzSegment(A, 'lista-rodzajow', 'multi');
+  await dodajGraczaUI(A, 'Ewa');
+  await ustawPozycjeTestowa(A, { lat: 52.23178, lon: 21.01234 });
+  await klik(A, 'przycisk-dalej-pozycja');
+  await klik(A, 'przycisk-dalej-stacje');
+  await new Promise((r) => setTimeout(r, 40));
+  await klik(A, 'przycisk-dalej-prompt');
+  await klik(A, 'przycisk-dalej-paczka');
+  const paczka = JSON.parse(czytajPlik(new URL('./fixtures/paczka-ok.json', import.meta.url), 'utf8'));
+  A.dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
+  await czekajNa(A, () => el(A, 'multi-panel-lobby').hidden === false, 'lobby po wklejeniu paczki');
+
+  await klik(A, 'przycisk-lobby-opusc');
+  await new Promise((r) => setTimeout(r, 40));
+  // Nie wszystkie POST-y są JSON-em (przyjęcie paczki idzie jako `data=…`),
+  // więc czytamy defensywnie — szukamy jednego konkretnego polecenia.
+  const przeczytane = most.ciala.map((c) => { try { return JSON.parse(c); } catch { return null; } });
+  const wyjscie = przeczytane.find((c) => c?.akcja === 'gra-opusc');
+  assert.ok(wyjscie, 'telefon wysłał gra-opusc');
+  assert.equal(wyjscie.graczId, 'g-1', 'wychodzi ten gracz, który klika');
+  assert.equal([...most.gry.values()][0].stan, 'archiwum', 'wyjście organizatora zamyka grę — bez niego nie wystartuje');
+  assert.match(tekst(A, 'status'), /zamykam grę/i, 'komunikat mówi, co się stało z grą');
+  assert.equal(el(A, 'ekran-setup').hidden, false, 'gracz wraca na setup');
 });
 
 test('trasa-sekret z siecią dróg: komunikat mówi „zlokalizowano”, a „Inny układ” zostaje schowany', async () => {

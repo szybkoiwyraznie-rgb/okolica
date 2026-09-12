@@ -74,7 +74,7 @@ test('most: żadna akcja nie odpowiada błędem wykonania skryptu', () => {
     assert.equal(/is not defined/.test(odp.tekst), false, `doGet ${akcja}: ${odp.tekst}`);
   }
   const posty = ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz',
-    'gra-hotseat', 'profil-ustaw', 'profil-sprawdz', 'nieznana'];
+    'gra-hotseat', 'gra-opusc', 'profil-ustaw', 'profil-sprawdz', 'nieznana'];
   for (const akcja of posty) {
     const odp = most.doPost({ postData: { contents: JSON.stringify({ akcja }) } });
     assert.equal(/is not defined/.test(odp.tekst), false, `doPost ${akcja}: ${odp.tekst}`);

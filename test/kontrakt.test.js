@@ -770,7 +770,7 @@ test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
 });
 
 test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językiem', () => {
-  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'gra-hotseat', 'profil-ustaw', 'profil-sprawdz']) {
+  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-opusc', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'gra-hotseat', 'profil-ustaw', 'profil-sprawdz']) {
     assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
   }
   for (const a of ['gry', 'gra-stan']) {
@@ -837,6 +837,12 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   assert.ok(APP.includes('graHotseatDoWysylki'), 'app.js buduje polecenie gra-hotseat');
   assert.ok(WIELOOSOBOWA.includes("akcja: 'gra-hotseat'"), 'moduł wieloosobowa buduje tę akcję');
   assert.ok(GS.includes("case 'gra-hotseat'"), 'most przyjmuje gra-hotseat');
+  // Wyjście z lobby jest jawne po stronie mostu (właściciel 2026-09-11:
+  // „dołączanie i wychodzenie w dowolnym momencie"). Bez tego wychodzący
+  // zostawał w `liczbaGraczy` i lobby obiecywało gracza, którego już nie było.
+  assert.ok(APP.includes("akcja: 'gra-opusc'"), 'app.js zgłasza mostowi wyjście z lobby');
+  assert.ok(GS.includes("case 'gra-opusc'"), 'most przyjmuje gra-opusc');
+  assert.match(GS, /gra\.stan !== 'lobby'[\s\S]{0,200}rezygnacja/, 'po starcie wyjście z lobby jest odmówione');
   assert.ok(PROTOKOL.includes('gra-hotseat'), 'PROTOKOL §9 dokumentuje gra-hotseat');
   // punkty liczy most, premia hot-seat = 0 — po obu stronach tak samo
   assert.match(WIELOOSOBOWA, /if \(gra\?\.tryb === TRYB_HOTSEAT\) return premia;/, 'aplikacja nie daje premii w hot-seat');

@@ -21,7 +21,7 @@
  * „każdy może być anonimowy”, URL jest jedyną zdolnością.
  *
  * M11 (ADR 0019): TEN SAM most obsługuje gry wieloosobowe na wielu
- * urządzeniach — doPost: gra-zaloz / gra-dolacz / gra-start / gra-zdarzenie /
+ * urządzeniach — doPost: gra-zaloz / gra-dolacz / gra-opusc / gra-start / gra-zdarzenie /
  * gra-zakoncz; doGet: gry (lobby) / gra-stan. Stan gry (RO-gra/1)
  * żyje w katalogach okolica-gry-{otwarte,zakonczone}; zdarzenia NIE zawierają
  * współrzędnych graczy (ADR 0013/0019 pkt 3 — pola lat/lon są kasowane).
@@ -353,6 +353,7 @@ function doPost(e) {
     switch (cialo.akcja) {
       case 'gra-zaloz': return json(zalozGre(cialo));
       case 'gra-dolacz': return json(dolaczDoGry(cialo));
+      case 'gra-opusc': return json(opuscGre(cialo));
       case 'gra-start': return json(startGryMulti(cialo));
       case 'gra-zdarzenie': return json(przyjmijZdarzenie(cialo));
       case 'gra-zakoncz': return json(zakonczGre(cialo));
@@ -684,6 +685,42 @@ function listaGier() {
 }
 
 /** POST gra-dolacz: kod ALBO idGry (z lobby) + pseudonim; tylko w lobby. */
+/**
+ * POST gra-opusc: gracz wychodzi z LOBBY przed startem (właściciel 2026-09-11:
+ * „dołączanie i wychodzenie w dowolnym momencie"). Bez tego wychodzący zostawał
+ * w `liczbaGraczy` na liście gier — lobby obiecywało grę z graczem, którego już
+ * nie było, a odświeżenie listy niczego nie prostowało.
+ *
+ * Po starcie wyjście idzie zdarzeniem `rezygnacja`, nie tą akcją: gra trwa,
+ * punkty się liczą, a usunięcie gracza z rozpoczętej gry sfałszowałoby wynik.
+ *
+ * Wyjście ORGANIZATORA zamyka grę i przenosi ją do archiwum — tylko on może
+ * wystartować, więc gra bez niego nie ma ciągu dalszego (ta sama ścieżka co
+ * wygasanie lobby po 24 h).
+ */
+function opuscGre(dane) {
+  return zBlokada(() => {
+    const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma gry o takim kodzie/identyfikatorze' };
+    const gra = znaleziona.gra;
+    if (gra.stan !== 'lobby') {
+      return { ok: false, blad: 'gra już wystartowała — wyjście w trakcie gry to rezygnacja, nie opuszczenie lobby' };
+    }
+    const graczId = String((dane && dane.graczId) || '');
+    const indeks = gra.gracze.findIndex((g) => g.id === graczId);
+    if (indeks < 0) return { ok: false, blad: 'nie ma takiego gracza w tej grze' };
+    if (indeks === 0) {
+      gra.stan = 'archiwum';
+      zapiszGre(znaleziona.plik, gra);
+      przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
+      return { ok: true, zamknieta: true };
+    }
+    gra.gracze.splice(indeks, 1);
+    zapiszGre(znaleziona.plik, gra);
+    return { ok: true, zamknieta: false, gra };
+  });
+}
+
 function dolaczDoGry(dane) {
   return zBlokada(() => {
     const pseudonim = String((dane && dane.pseudonim) || '').trim().slice(0, 24);

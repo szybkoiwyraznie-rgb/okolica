@@ -104,6 +104,45 @@ test('most: cykl gry Wspólna Trasa — dojście, odpowiedź, auto-koniec i hist
   assert.ok(Object.values(graZapisana.wyniki).every((w) => typeof w.punkty === 'number'), 'punkty są liczbami');
 });
 
+test('most: gra-opusc — wyjście gościa prostuje listę gier w lobby', () => {
+  const { most } = uruchomMost();
+  const zalozona = most.zalozGre({ tryb: 'trasa', organizator: { pseudonim: 'Ania' }, konfiguracja: konfiguracja(), zestaw: zestaw() });
+  const kod = zalozona.gra.kod;
+  most.dolaczDoGry({ kod, pseudonim: 'Bartek' });
+  most.dolaczDoGry({ kod, pseudonim: 'Celina' });
+  assert.equal(most.listaGier().wpisy[0].liczbaGraczy, 3, 'trzy osoby w lobby');
+
+  const wyszedl = most.opuscGre({ kod, graczId: 'g-2' });
+  assert.equal(wyszedl.ok, true, `wyjście: ${wyszedl.blad}`);
+  assert.equal(wyszedl.zamknieta, false, 'gra bez organizatora NIE jest zamykana');
+  assert.equal(most.listaGier().wpisy[0].liczbaGraczy, 2, 'lista nie obiecuje gracza, który wyszedł');
+  assert.equal(most.listaGier().wpisy[0].organizator, 'Ania', 'organizator zostaje');
+  assert.equal(most.opuscGre({ kod, graczId: 'g-2' }).ok, false, 'drugie wyjście tego samego gracza odmówione');
+  assert.equal(most.opuscGre({ kod, graczId: 'g-99' }).ok, false, 'nie ma takiego gracza w tej grze');
+});
+
+test('most: po starcie wyjście z lobby jest odmówione — to rezygnacja, nie wyjście', () => {
+  const { most, kod } = graDwuosobowa(); // już wystartowana
+  const odmowa = most.opuscGre({ kod, graczId: 'g-2' });
+  assert.equal(odmowa.ok, false, 'gracz w trakcie gry nie znika z gry');
+  assert.match(odmowa.blad, /rezygnacja/, 'odmowa nazywa właściwą drogę wyjścia');
+  const stan = most.stanGry(kod);
+  assert.equal(Object.keys((stan.gra ?? stan).gracze ?? (stan.gra ?? stan).wyniki).length >= 2, true, 'skład gry nietknięty');
+});
+
+test('most: wyjście ORGANIZATORA z lobby zamyka grę i zrzuca ją z listy', () => {
+  const { most } = uruchomMost();
+  const zalozona = most.zalozGre({ tryb: 'trasa', organizator: { pseudonim: 'Ania' }, konfiguracja: konfiguracja(), zestaw: zestaw() });
+  const kod = zalozona.gra.kod;
+  most.dolaczDoGry({ kod, pseudonim: 'Bartek' });
+
+  const wyszedl = most.opuscGre({ kod, graczId: 'g-1' });
+  assert.equal(wyszedl.ok, true, `wyjście organizatora: ${wyszedl.blad}`);
+  assert.equal(wyszedl.zamknieta, true, 'gra bez organizatora nie ma ciągu dalszego');
+  assert.equal(most.listaGier().wpisy.length, 0, 'zamknięta gra znika z lobby od razu, nie po 24 h');
+  assert.equal(most.opuscGre({ kod, graczId: 'g-2' }).ok, false, 'w zamkniętej grze nie ma już lobby');
+});
+
 test('most: współrzędne w zdarzeniu są wycinane po stronie serwera', () => {
   const { most, pliki, kod, idGry } = graDwuosobowa();
   const zTrasa = most.przyjmijZdarzenie({
