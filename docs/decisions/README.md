@@ -31,7 +31,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device) | Zaakceptowana |
 | [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1`, geohash5 w indeksie, CC BY-SA 4.0, moderacja właściciela | Proponowana |
 | [0018](0018-drive-backend-wielozadaniowy.md) | Drive jako backend wielozadaniowy (paczki, gry, statystyki) | Zaakceptowana |
-| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby + kod, Wspólna Trasa/Wyścig, rankingi | Zaakceptowana |
+| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig (rankingi usunięte — aneks 2026-09-11b) | Zaakceptowana |
 | [0020](0020-adres-mostu-wpisany-w-kod-aplikacji.md) | Adres mostu Drive w kodzie aplikacji, bez pola w UI | Zaakceptowana |
 | [0021](0021-pin-prosty-profilu-pseudonimu.md) | PIN pseudonimu (4-8 cyfr, jawny tekst, RO-profil/1) + przycisk To ja w setupie | Zaakceptowana |
 | [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` | Zaakceptowana |

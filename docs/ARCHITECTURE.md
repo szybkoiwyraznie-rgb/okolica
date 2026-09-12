@@ -11,7 +11,7 @@ pętlę protokołu PYT (ADR 0006, `docs/PROTOKOL.md`).
 ```
 index.html                  — powłoka UI: ekran startowy z intro nad mapą, mapa jako
                               trwałe tło, kroki gry (setup → pozycja → stacje → prompt →
-                              paczka → gra → wynik), warstwy rankingów i prywatności,
+                              paczka → gra → wynik), warstwa prywatności,
                               stopka z wersją protokołu, baner file://
 sw.js                       — Service Worker (M10): offline skorupa + kafelki
                               ostatniej okolicy (cache-first, limit i ewikcja;
@@ -82,11 +82,11 @@ app/
                               Audio) i przełącznik `okolica:sygnaly` (czyste;
                               odtwarzanie w app.js, brak API = cichy no-op)
   wieloosobowa.js           — M11/M12: schematy RO-* (gra, zdarzenie, lobby,
-                              ranking), walidacja z kodami R01–R18, kody gier
-                              (alfabet bez 0/O/1/I), sąsiedztwo geohash5 dla lobby
-                              (ramka i sąsiedzi mieszkają w `geo.js`, tu
-                              re-eksport), maszynka tur, wyniki, agregacje
-                              rankingów (czyste; ADR 0019)
+                              profil), walidacja z kodami R01–R20 (R17/R18
+                              wycofane z rankingami), kody gier (alfabet bez
+                              0/O/1/I), sąsiedztwo geohash5 dla lobby (ramka
+                              i sąsiedzi mieszkają w `geo.js`, tu re-eksport)
+                              i wyniki (czyste; ADR 0019)
   sync.js                   — M11: synchronizacja z mostem Drive — polecenieMostu
                               (POST + znacznik odmowaMostu), urlGet/urlStanGry,
                               interwały pollingu zależne od fazy gry, kolejka
@@ -133,12 +133,12 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 (`performance.now` / `mulberry32(ziarno)`), nie czytane z globali w środku logiki.
 
 Od M11 tę samą zasadę trzymają moduły wieloosobowe: `wieloosobowa.js`
-(schematy RO-*, walidacja z kodami R01–R18, kody gier, sąsiedztwo geohash5
-dla lobby — z `geo.js`, maszynka tur, wyniki, agregacje rankingów — zero DOM) i `sync.js`
+(schematy RO-*, walidacja z kodami R01–R20, kody gier, sąsiedztwo geohash5
+dla lobby — z `geo.js`, wyniki — zero DOM) i `sync.js`
 (polling mostu z interwałami zależnymi od fazy gry, kolejka zdarzeń offline
 z flusheM FIFO, rozróżnienie „odmowa mostu" vs „awaria sieci", wstrzykiwane
-`fetchImpl` i harmonogram). Orkiestracja DOM gry wieloosobowej i rankingów
-siedzi w `app.js` (sekcje M11/P4 i M12/P6).
+`fetchImpl` i harmonogram). Orkiestracja DOM gry wieloosobowej siedzi
+w `app.js` (sekcja M11/P4).
 
 Od ADR 0020 adres mostu nie jest elementem interfejsu, tylko **stałą
 wdrożeniową w kodzie**: `most.js` rozstrzyga, z którym adresem rozmawiamy
@@ -278,8 +278,12 @@ commit i nowa wersja aplikacji.
    (`gra-zakoncz`) — premie liczą się też wtedy. Brak pozycji = środek trasy z
    pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca z
    `okolica:multi:sesja`, a zamknięte już stacje nie wracają do rozgrywki.
-4. Rankingi: GET `ranking` → surowe wiersze `RO-ranking/1` → agregacje liczy
-   telefon (`agregujRanking` / `kategorieRankingu`) — serwer tylko przechowuje.
+4. Koniec gry: podsumowanie liczy telefon (`przeliczWyniki`), a most zapisuje
+   grę w historii (`RO-gra/1`, stan `zakonczona`). Rankingów nie ma — usunięte
+   z aplikacji i z mostu (właściciel, 2026-09-11; aneks ADR 0019).
+5. Wyjście z lobby: POST `gra-opusc` prostuje skład gry, więc `liczbaGraczy`
+   w `RO-lobby/1` nie obiecuje gracza, który wyszedł; wyjście organizatora
+   zamyka grę (stan `archiwum`).
 
 ## Kluczowe algorytmy
 

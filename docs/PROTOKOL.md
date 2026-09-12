@@ -496,7 +496,8 @@ Reguły gry: dołączenie tylko w `lobby` — **po starcie nowi gracze nie wchod
 start tylko przez organizatora (żeby wystartowała, gra potrzebuje tylko
 organizatora — **solo dozwolone**, właściciel 2026-09-11); **host może
 zakończyć grę przed czasem** (`gra-zakoncz`, tylko organizator) — u wszystkich
-podsumowanie i ranking, a premie za kolejność liczą się też przy takim końcu.
+podsumowanie z tabelą końcową, a premie za kolejność liczą się też przy takim
+końcu.
 **Wspólna Trasa** (`trasa`) i **Wyścig na Orientację** (`wyscig`): w obu KAŻDY
 gracz przechodzi wszystkie stacje (w trasie po kolei, w wyścigu w dowolnej
 kolejności), a gra domyka się, gdy wszyscy aktywni (niezrezygnowani) zamkną
@@ -542,7 +543,7 @@ nie ma.
   i NIE jest ponawiana przez `app/sync.js` (awaria sieci — przeciwnie: ląduje
   w kolejce offline i wychodzi FIFO po powrocie połączenia).
 
-### 9.3 `RO-lobby/1` i `RO-ranking/1`
+### 9.3 `RO-lobby/1`
 
 - `RO-lobby/1`: `{ schemat, wpisy: [{ idGry, tryb, stan, miejsce, geohash5,
   geohash8, wiek, tematy, liczbaGraczy, utworzono, organizator }] }` — BEZ
@@ -552,11 +553,10 @@ nie ma.
   `filtrujLobby`; fallback geohash5 dla starych mostów) i dołącza przez
   `idGry`. Wpis w UI pokazuje tylko „Host: <organizator>" — bez miejsca,
   trybu i licznika graczy.
-- `RO-ranking/1`: `{ schemat, wiersze: [{ pseudonim, punkty, poprawne, bledne,
-  czasOdcinkowMs, stacjeZamkniete, data, tryb, miejsce, geohash5, wiek,
-  tematy }] }` — surowe wiersze z gier zakończonych (rezygnacja bez wyniku nie
-  wchodzi); agregacje (ogólny/wiek/tematy/lokalizacja) liczy telefon:
-  `agregujRanking`, `kategorieRankingu` (ADR 0019 pkt 7).
+- **`RO-ranking/1` wycofany** (właściciel, 2026-09-11): rankingi usunięte
+  z aplikacji i z mostu (`GET ?akcja=ranking` nie istnieje). Gra kończy się
+  PODSUMOWANIEM na telefonie gracza, a na Drive zostaje historia gier
+  (`RO-gra/1` ze stanem `zakonczona`). Schemat nie wraca do puli nazw.
 - `RO-profil/1`: `{ schemat, pseudonim, pin, utworzono }` — plik
   `profil-<id>.json` w katalogu `okolica-profile`; PIN jawnym tekstem
   (ADR 0021). Akcje mostu: `profil-ustaw` (utwórz albo potwierdź),
@@ -565,6 +565,10 @@ nie ma.
   (ADR 0026): zakłada profil albo potwierdza PIN jednym żądaniem.
 
 ### 9.4 Kody usterek R01–R20 (`KODY_WIELOOSOBOWE` w `app/wieloosobowa.js`)
+
+Numery wycofanych kodów (R17, R18) zostają zajęte NA STAŁE i nie dostaną nowego
+znaczenia — inaczej starszy klient w terenie odczytałby cudzy błąd jako swój
+(ten sam powód, dla którego E14 i E18 w pakietach są wycofane).
 
 | Kod | Znaczenie |
 |---|---|
@@ -584,19 +588,41 @@ nie ma.
 | R14 | Stacja zdarzenia poza zakresem gry albo zły typ. |
 | R15 | Lista lobby nieczytelna albo zły schemat (`RO-lobby/1`). |
 | R16 | Część wpisów lobby uszkodzona — odfiltrowane. |
-| R17 | Ranking nieczytelny albo zły schemat (`RO-ranking/1`). |
-| R18 | Część wierszy rankingu uszkodzona — odfiltrowane. |
+| R17 | **wycofany** — ranking nieczytelny (kody R17/R18 odeszły z `RO-ranking/1`). |
+| R18 | **wycofany** — wiersze rankingu uszkodzone. |
 | R19 | Nieznany pseudonim (brak pliku profilu). |
 | R20 | PIN niepoprawny albo nie pasuje do pseudonimu. |
 
-### 9.5 `gra-hotseat` — wynik gry z jednego telefonu (ADR 0026 aneks)
+### 9.5 `gra-opusc` — wyjście z lobby (właściciel, 2026-09-11)
+
+„Dołączanie i wychodzenie w dowolnym momencie" działa w obie strony: wyjście
+jest POLECENIEM, nie tylko zamknięciem ekranu. Bez niego wychodzący zostawał
+w `gra.gracze`, a `RO-lobby/1` liczy `liczbaGraczy: gracze.length` — lobby
+obiecywało gracza, którego już nie było, i odświeżanie listy niczego nie
+prostowało.
+
+```json
+{ "akcja": "gra-opusc", "kod": "ABC123", "idGry": null, "graczId": "g-2" }
+```
+
+- działa WYŁĄCZNIE w stanie `lobby`; po starcie odmawia, bo wyjście w trakcie
+  gry to zdarzenie `rezygnacja` (gra trwa, punkty się liczą, a usunięcie gracza
+  z rozpoczętej gry sfałszowałoby wynik);
+- wyjście gościa: `{ ok: true, zamknieta: false, gra }` — gracz znika ze składu;
+- wyjście ORGANIZATORA: `{ ok: true, zamknieta: true }` — gra dostaje stan
+  `archiwum` i przenosi się do `okolica-gry-zakonczone` (ta sama droga co
+  wygasanie lobby po 24 h). Tylko organizator może wystartować, więc gra bez
+  niego nie ma ciągu dalszego;
+- aplikacja wysyła polecenie w tle: telefon jest wolny od razu, a niepowodzenie
+  jest powiedziane graczowi na głos (LESSONS L6).
+
+### 9.6 `gra-hotseat` — wynik gry z jednego telefonu (ADR 0026 aneks)
 
 Gra na jednym telefonie (hot-seat) nie ma lobby, kodu ani zdarzeń na żywo:
 telefon wysyła SKOŃCZONĄ grę jednym poleceniem POST, a most zapisuje ją jako
 zwykłą grę `RO-gra/1` ze stanem `zakonczona` w katalogu
-`okolica-gry-zakonczone`. `GET ?akcja=ranking` czyta ten sam format, więc
-rankingi hot-seat i gier na wielu urządzeniach są JEDNYMI rankingami — bez
-osobnej ścieżki w aplikacji.
+`okolica-gry-zakonczone` — historia hot-seat i gier na wielu urządzeniach jest
+jedna, bez osobnej ścieżki w aplikacji.
 
 ```json
 {
@@ -625,7 +651,7 @@ Reguły są lustrami po obu stronach (`graHotseatDoWysylki` w
 - `konfiguracja` jak w grze wieloosobowej: `geohash5` startu zamiast punktu
   gracza (ADR 0019 pkt 3), a pola `lat`/`lon` most kasuje dodatkowo;
 - `zestaw` jest `null` — paczka i pytania NIGDY nie wchodzą na Drive (ADR 0013);
-- punkty liczy MOST (`przeliczWyniki`), nie telefon: wynik rankingu nie zależy
+- punkty liczy MOST (`przeliczWyniki`), nie telefon: wynik nie zależy
   od wersji aplikacji. Premia za kolejność w hot-seat wynosi 0 — gracze idą
   razem, więc „kto skończył pierwszy" byłoby artefaktem kolejności klikania;
 - odpowiedź: `{ ok: true, idGry, wyniki }`; odmowa: `{ ok: false, blad }`.
@@ -637,4 +663,4 @@ potwierdzony profilem PIN (inaczej nie ma gdzie zapisać punktów — komunikat
 pod wynikiem mówi to wprost). Bez sieci
 polecenie czeka w `okolica:hotseat-kolejka` (maks. 5 gier) i jedzie przy
 następnym uruchomieniu, a odcisk gry w `okolica:hotseat-wyslane` pilnuje, żeby
-ta sama gra nie weszła do rankingu dwa razy (ADR 0016 pkt 5).
+ta sama gra nie weszła do historii dwa razy (ADR 0016 pkt 5).

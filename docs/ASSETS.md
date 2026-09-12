@@ -222,7 +222,7 @@ akcji; nowy dostawca przechodzi pełną checklistę §5.
 - **Docelowo (ADR 0018)**: to samo konto obsłuży parowanie gier na wielu
   urządzeniach (M11) i profil/statystyki gracza (M12) — ta sekcja będzie rosła.
 
-### 7.1 Gry i rankingi (M11/M12, ADR 0019) — ruch na tym samym moście
+### 7.1 Gry i historia gier (M11/M12, ADR 0019) — ruch na tym samym moście
 
 - **Katalogi**: `okolica-gry-otwarte` (lobby i trwające) oraz
   `okolica-gry-zakonczone` (zakończone i archiwum); jedna gra = jeden plik

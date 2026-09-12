@@ -2749,3 +2749,137 @@ z audytu PR #9), pozostają otwarte; plan sesji trzyma je w kolejce roboczej
 **Stan:** kod nietknięty; jedyna zmiana tej sesji to plan
 `docs/plans/2026-09-12-sesja-startowa.md` oraz ten wpis. Brak handoffu
 końcowego — sesja trwa i czeka na zadanie właściciela.
+## Sesja 2026-09-12b — odzyskanie sesji #12, poprawki właściciela, audyt multi (m12-75 → m12-78)
+
+**Gałąź:** `arena/01a09489-okolica`, PR #13. **Zlecenie właściciela (2026-09-12):**
+(1) przenieść do repozytorium zmiany poprzedniej sesji (#12, sesja urwana — patch
+`01a09256-…` wgrany przez właściciela jako `5aadacb`), sprawdzając każdą zmianę
+względem jego listy poprawek (1, 2, 3a–3e, 4a–4j) i względem sensu; (2) dokończyć
+punkt 4j i zrobić dogłębny audyt, czy CAŁY pierwotny pomysł gry wieloosobowej
+został wprowadzony poprawnie — „a jeśli brakuje albo są błędy to dodaj to i napraw".
+
+### 1. `77dfe93` — salvage sesji #12 (m12-75)
+
+33 pliki, +507/−530. Każda zmiana z patcha sprawdzona z listą właściciela:
+**zrobione** 1 (brak wyboru języka i podkładu — `JEZYK_GRY='polski'`, `osm`
+wymuszone w `oczyscKonfiguracje`, kody K04/K06 usunięte), 2 (fallback
+Nominatim/geokodowanie wycięty w całości), 3a–3e (setup multi: dokładnie jeden
+gracz, bez „Poprzednie gry", wszystkie tematy poza „Dopisz sam" zaznaczone,
+„Dalej" zamiast osobnej bramki, lista graczy = tożsamość), 4a–4i (trasa-sekret,
+lobby dopiero po wklejeniu paczki, wpisy „Host: <imię>", kanał info, koniec gry
+z ręki hosta, premia 3/2/1 po obu stronach, polling 30 s/10 s).
+**Nie zrobione: 4j** (rankingi) — właściciel potwierdził w kolejnej wiadomości:
+„tak, usuwamy też rankingi z mostu".
+
+Brama po salvage: **689 pass / 0 fail**, 0 naruszeń WCAG AA (main: 692;
+−3 = usunięte testy fallbacku Nominatim). `?v=m12-75` ×42, `WERSJA_SW='m12-75'`.
+
+### 2. `5a905f1` + `b8193a0` — trasa-sekret: dwie luki z audytu (m12-76)
+
+Właściciel: „nie pokazuja nam sie stacje na mapie ani lista lokacji tylko
+komunikat — wygenerowano i zlokalizowano/nie zlokalizowano X stacji i nie ma
+opcji inny układ". Stan faktyczny:
+
+- **przycisk „🔄 Inny układ" (`#przycisk-przelicz`) nie był chowany** w tajnej
+  trasie — przełączany był tylko `disabled` (`app/app.js:1510/1520`), a nowy
+  układ stacji odsłania punkty, które mają zostać tajemnicą. Teraz `hidden`
+  w gałęzi `STAN.ukryjStacje` i `hidden = false` na ścieżce zwykłej
+  (`renderujStacje` rysuje oba stany).
+- **komunikat nie rozróżniał stacji ZLOKALIZOWANYCH na sieci dróg od układu
+  pierścieniowego** (osiągalność niezweryfikowana). Organizator musi to wiedzieć
+  ZANIM wyjdzie w teren — komunikat mówi teraz wprost, którą z dwóch sytuacji
+  ma (ten sam warunek `sieciowe`, którym renderuje się reszta ekranu).
+
+Testy: asercja pełnej ścieżki AI (pierścień po 404 → „NIE zlokalizowano"
++ przycisk schowany) oraz nowy test ze siecią z cache telefonu → „Wygenerowano
+i zlokalizowano stacji: 3" bez wycieku współrzędnych.
+
+`b8193a0` to **commit naprawczy własnego błędu**: `git add` objął tylko cztery
+pliki, więc podbicie `?v=` w pozostałych modułach `app/*.js` zostało w drzewie
+roboczym i commit `5a905f1` nie był samodzielnie zielony (kontrakt wymaga jednej
+wersji w całym grafie importów). Dokładnie ta pułapka jest w LESSONS L29 —
+historii nie przepisywaliśmy.
+
+### 3. `772429e` — 4j: rankingi usunięte w całości (m12-77)
+
+24 pliki, +149/−2942. Nie „schowane z interfejsu" — nie ma ich po żadnej stronie:
+
+- **aplikacja**: sekcja „M12/P6: rankingi i moje gry" (−215 linii: `pokazRankingi`,
+  `wrocZRankingu`, `przelaczRankingi`, `urlMostuRankingu`, `pobierzRankingi`,
+  `renderujRankingi`, `RANKING_ZAKLADKI`), importy `agregujRanking` /
+  `kategorieRankingu` / `walidujRankingSurowy`, pola `STAN`, `'ranking'`
+  z `PANELE`, ikona 🏆 z nasłuchami, gałąź Escape; komunikaty „historia
+  i rankingi" → „historia gier" (10 miejsc), karta prywatności bez „liczone są
+  rankingi" i bez słowa „pseudonim" (pole pseudonimu zniknęło w m12-74);
+- **pułapka**: `przelaczSetup` (przycisk „START GRY") siedział W ŚRODKU usuwanej
+  sekcji i wyleciał razem z nią — 16 testów UI padło na `ReferenceError`.
+  Przywrócony obok `PANELE`, już bez warunku „chyba że rankingi są otwarte";
+- **klucze** `okolica:ostatni-gracz` i `okolica:pseudonim` przestają istnieć —
+  czytały je wyłącznie „Moje gry" (to jest domknięcie znalezionej w audycie
+  PR #12 pary: klucz zapisywany, którego nikt nie czytał, i klucz czytany,
+  którego nikt nie zapisuje);
+- **most**: `GET ?akcja=ranking` i `rankingi()` (−32 linie). Zapis gry
+  (`gra-hotseat`, `przeliczWyniki`) ZOSTAJE — bez niego nie byłoby historii
+  ani podsumowania;
+- **protokół**: kody R17/R18 wycofane razem z `RO-ranking/1`, numery zajęte
+  NA STAŁE (precedens E14/E18 — inaczej starszy klient w terenie odczytałby
+  cudzy błąd jako swój);
+- **testy**: usunięty `test/rankingi-ui.test.js`; kontrakt M12 zastąpiony
+  kontraktem ODWROTNYM (LESSONS L31): ekranu, przycisku i akcji mostu nie ma;
+  testy mostu sprawdzają wynik graczy w ZAPISIE gry zamiast w osobnym GET.
+
+Sprzątanie: skasowany `01a09256-…patch` (125 KB) z katalogu głównego.
+Brama: **676 pass / 0 fail** (spadek o 14 = usunięte testy rankingów).
+
+Domknięte przy okazji znalezisko z audytu PR #12 (uwaga 7): martwa funkcja
+`zmienPodklad` **już nie istnieje** w `app/` — wyciął ją salvage (brak wyboru
+podkładu, poprawka 1), więc zapis ADR 0037 jest teraz zgodny z kodem.
+
+### 4. `536986f` — audyt: wyjście z lobby było zrobione w połowie (m12-78)
+
+Punkt pierwotnego pomysłu „dołączanie i wychodzenie w dowolnym momencie" nie był
+spełniony. Dołączanie szło przez most (`gra-dolacz`), a **wychodzenie tylko
+gasiło ekran** — gracz zostawał w `gra.gracze`, a `listaGier()` zwraca
+`liczbaGraczy: gra.gracze.length`. Lobby obiecywało więc gracza, którego już
+nie było, i odświeżanie listy co 10 s niczego nie prostowało.
+
+- **most**: nowa akcja `gra-opusc` + `opuscGre()` — wyjście gościa usuwa go
+  ze składu; wyjście ORGANIZATORA zamyka grę (stan `archiwum`, przeniesienie do
+  `okolica-gry-zakonczone` — ta sama droga co wygasanie po 24 h), bo tylko on
+  może wystartować; po starcie akcja odmawia i nazywa właściwą drogę
+  (wyjście w trakcie gry to zdarzenie `rezygnacja`);
+- **aplikacja**: `opuscLobby()` wysyła polecenie w tle (telefon wolny od razu,
+  niepowodzenie powiedziane na głos — LESSONS L6);
+- **dwa nieprawdziwe zdania w prywatności**: „Bez zgody zostają współrzędne
+  ręczne i tryb testowy" (ręczne pinezki to ustawianie STACJI, a ręcznego
+  wpisywania własnej pozycji nie ma wcale — ekran „Gdzie jesteś?" czeka na GPS;
+  tryb testowy to wejście przez `?test=` i nie należy do tekstu dla gracza)
+  oraz „W kolejnych kamieniach: cache sieci drogowej, ukryta paczka pytań
+  i historia gier" — wszystkie trzy już są.
+
+Testy: trzy testy mostu + test UI (kliknięcie „Opuść lobby" wysyła `gra-opusc`
+z właściwym `graczId`, gra kończy w archiwum) + kontrakt. Brama: **680/680**.
+
+### Audyt reszty pierwotnego pomysłu — co sprawdzone i ZGODNE
+
+Czytane w kodzie, nie z dokumentów: lobby pokazuje wyłącznie tryb, notkę
+o sekrecie, `liczbaStacji` i `miejsce` (`renderujLobby`, `app/app.js:4451`);
+start tylko u organizatora, solo dozwolone (`przycisk-lobby-start`); przycisk
+„Opuść lobby" widoczny przez całe lobby; kanał info (`renderujInfoMulti`,
+`:4522`) nadaje `start` / `dojscie` (📍) / `odpowiedz` (✅/❌) / `rezygnacja` (🏳)
+/ `koniec`; `INTERWALY_MS {lobby: 10_000, gra: 30_000}` (`app/sync.js:21`);
+koniec z ręki hosta (`zakonczGreMulti`, `:4544`); premia 3/2/1 zduplikowana
+w `app/wieloosobowa.js` i w `.gs` (parity pilnowane testem); `pytaniaNaStacje=1`
++ `przeliczPromienZCzasu()` + `multiPoPaczce` + `ukryjStacje` ustawiane
+w nasłuchu `przycisk-dalej-pozycja` (`:4746`, gałąź multi `:4774-4779`); lobby otwiera się dopiero po wklejeniu
+paczki (test E2E `test/wieloosobowa-ui.test.js`). Notki robocze z numerami ADR
+są w `<span class="dopisek-roboczy">` — niewidoczne poza `?tryb=test`
+(`app/styles.css:292`), więc nie są tekstem dla gracza.
+
+**Dokumentacja:** PROTOKOL §9.3 (`RO-ranking/1` wycofany), §9.4 (R17/R18),
+nowy §9.5 `gra-opusc` (`gra-hotseat` → §9.6), ADR 0019 **aneks 2026-09-11b**,
+rejestr ADR, README, ARCHITECTURE, WORKFLOW (＋ krok 7a testu terenowego),
+ROADMAP M12 („Historia gier"), ASSETS §7.1, BACKLOG (§9.5 → §9.6). Treści
+ADR-ów 0004/0020/0021/0026/0027/0029 wspominające rankingi zostają — to zapis
+historyczny, a obowiązujący kształt definiuje aneks ADR 0019 (wzorzec z ADR
+0014/0031: status, nie przepisywanie).

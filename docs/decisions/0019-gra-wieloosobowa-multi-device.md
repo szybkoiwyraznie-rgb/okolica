@@ -1,9 +1,10 @@
 # 0019 — Gra wieloosobowa na wielu urządzeniach przez Drive: lobby + kod, wyścig i tury, rankingi
 
-> **Stan na 2026-09-11 (m12-74)**: flow przepisany po raz drugi — segment
+> **Stan na 2026-09-11 (m12-78)**: flow przepisany po raz drugi — segment
 > „załóż/dołącz" na SETUPIE, dołączanie tylko z listy ~50 m (bez kodów), paczka
 > przed lobby ze WSPÓLNEJ ścieżki, kanał info i koniec gry z ręki hosta.
-> Obowiązujący kształt definiuje **ostatni aneks na końcu**.
+> **Rankingi usunięte w całości** (aneks 2026-09-11b) — tytuł ADR jest
+> historyczny, obowiązujący kształt definiuje **ostatni aneks na końcu**.
 
 - Status: Zaakceptowana
 - Data: 2026-09-06
@@ -209,3 +210,32 @@ m12-73) i `konfiguracja.geohash8` (8 znaków, wymagane przy zakładaniu;
 stare pliki bez niego są nadal czytelne — walidator odczytu go nie wymaga).
 Wpisy `RO-lobby/1` dokładają `geohash8`. Prywatność bez zmian: biała lista
 pól zdarzeń, kasowanie współrzędnych po stronie mostu i SKANER w testach.
+
+---
+
+## Aneks 2026-09-11b (m12-77/m12-78): rankingi usunięte, wyjście z lobby jawne
+
+Decyzja właściciela (2026-09-11): **„tak, usuwamy też rankingi z mostu"**.
+Punkt 5 i 7 powyżej zostają (kanał info, punktacja 1 pkt + premia 3/2/1), ale
+**rankingi jako funkcja przestają istnieć** — nie są schowane z interfejsu,
+nie ma ich po żadnej stronie.
+
+1. **Koniec gry = podsumowanie na telefonie.** Gracz widzi tabelę końcową
+   swojej gry (`przeliczWyniki`, premia 3/2/1 bez zmian). Na Drive zostaje
+   **historia gier** (`RO-gra/1` ze stanem `zakonczona`) — zapis gry zostaje,
+   bo bez niego nie byłoby czego pokazać ani czego policzyć.
+2. **Zniknęło**: ekran 🏆 w aplikacji (zakładki ogólny/wiek/tematy/lokalizacja
+   i „Moje gry"), `GET ?akcja=ranking` i `rankingi()` w moście, schemat
+   `RO-ranking/1`, agregacje `agregujRanking`/`kategorieRankingu`, walidacja
+   `walidujRankingSurowy`.
+3. **Kody R17 i R18 są wycofane** i ich numery zostają zajęte na stałe —
+   inaczej starszy klient w terenie odczytałby nowy błąd pod starym numerem
+   jako swój (precedens: E14 i E18 w pakietach). Klucze `okolica:ostatni-gracz`
+   i `okolica:pseudonim` przestają istnieć: czytały je wyłącznie „Moje gry".
+4. **Wyjście z lobby jest poleceniem, nie tylko zamknięciem ekranu** — nowa
+   akcja `gra-opusc` (PROTOKOL §9.5). Wcześniejszy kształt „dołączanie
+   i wychodzenie w dowolnym momencie" (aneks 2026-09-11, pkt 4) był zrobiony
+   w połowie: dołączanie szło przez most, a wychodzenie zostawiało gracza
+   w `gra.gracze`, więc `liczbaGraczy` w `RO-lobby/1` obiecywało kogoś, kogo
+   już nie było. Wyjście organizatora zamyka grę (stan `archiwum`) — tylko on
+   może wystartować. Po starcie wyjście to nadal zdarzenie `rezygnacja`.

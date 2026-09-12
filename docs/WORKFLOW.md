@@ -60,9 +60,10 @@ Koniec sesji:
    w progu, ADR 0004/0029); stację nieosiągalną pomiń. Pytanie odsłania się
    dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Pauza (także
    automatyczna w tle) nie wlicza czasu postoju do wyniku.
-7. **Wynik**: podsumowanie z rankingiem, udostępnianie tekstem lub obrazem PNG,
-   historia na setupie; wynik gry z jednego telefonu jedzie na wspólny Drive
-   do rankingów (ADR 0026 aneks), gdy choć jeden gracz ma potwierdzony profil.
+7. **Wynik**: podsumowanie z tabelą końcową, udostępnianie tekstem lub obrazem
+   PNG, historia na setupie; wynik gry z jednego telefonu jedzie na wspólny
+   Drive do historii gier (ADR 0026 aneks), gdy choć jeden gracz ma
+   potwierdzony profil.
 
 ## 4. Test terenowy (obowiązkowy dla M3, M4, M6, M7, M10)
 
@@ -214,10 +215,12 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
 6. **Koniec z ręki hosta**: A klika „⏹ Zakończ grę (host)" — u obu telefonów
    podsumowanie i ranking końcowy; premie 3/2/1 za ukończenie przed końcem
    liczą się także przy takim końcu.
-7. **Koniec naturalny i rankingi**: po ostatniej odpowiedzi (wszyscy aktywni
-   domknęli stacje) oba telefony pokazują ostateczną tabelę; w nagłówku
-   „🏆 rankingi" → ogólny / wiek / tematy / lokalizacja + „Moje gry" (wpisy
-   z zakończonych gier).
+7. **Koniec naturalny**: po ostatniej odpowiedzi (wszyscy aktywni domknęli
+   stacje) oba telefony pokazują ostateczną tabelę. Rankingów między grami
+   nie ma (właściciel, 2026-09-11) — na Drive zostaje historia gier.
+7a. **Wyjście z lobby**: B klika „Opuść lobby" przed startem → na A lista
+   graczy maleje po odświeżeniu (≤ 10 s), a gdy wychodzi HOST, gra znika
+   z listy gier w okolicy (`gra-opusc`).
 8. **Obserwacje** → `docs/LESSONS.md`: dokładność GPS przy stacjach, opóźnienia
    żywej tabeli i kanału info, odmowy mostu (jawne w statusie), zużycie
    baterii przy pollingu.

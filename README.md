@@ -190,7 +190,7 @@ CORS na żywym wdrożeniu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
 zniknął z ekranu razem z podglądem (decyzja 2026-09-07) — przegląd i wnoszenie
 zestawów dzieją się na Drive właściciela.
 
-## Gra wieloosobowa i rankingi (M11/M12)
+## Gra wieloosobowa (M11/M12)
 
 - **Wiele urządzeń**: każdy gracz ma swój telefon. Rodzaj gry i ścieżka
   (załóż / dołącz) wybiera się na ekranie ustawień; tożsamością jest zwykłe
@@ -216,9 +216,9 @@ zestawów dzieją się na Drive właściciela.
 - **Offline**: zdarzenia z trasy czekają w kolejce i wychodzą automatycznie po
   powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca z zapamiętanej
   sesji — zamknięte stacje nie wracają.
-- **🏆 Rankingi**: ogólny + kategorie wiek / tematy / lokalizacja (np.
-  „najlepsi w Podkowie Leśnej") oraz historia „Moje gry". Agregacje liczy
-  telefon; serwer oddaje surowe wiersze zakończonych gier.
+- **Podsumowanie zamiast rankingów** (właściciel, 2026-09-11): gra kończy się
+  tabelą końcową na telefonie gracza, a na wspólnym Drive zostaje historia gier.
+  Rankingu graczy między grami nie ma — ani w aplikacji, ani w moście.
 
 ## Repozytorium
 

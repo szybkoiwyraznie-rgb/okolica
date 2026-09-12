@@ -227,7 +227,7 @@ graczy nie wchodziły do rankingów, choć to te same pseudonimy co w grze
 wieloosobowej.
 
 **Wdrożone (ADR 0026 aneks, decyzja 3 właściciela):** nowa akcja mostu
-`gra-hotseat` (PROTOKOL §9.5) — telefon wysyła skończoną grę jednym poleceniem,
+`gra-hotseat` (PROTOKOL §9.6) — telefon wysyła skończoną grę jednym poleceniem,
 most zapisuje ją jako `RO-gra/1` ze stanem `zakonczona`, więc `GET ranking`
 czyta ją bez zmian. Punkty liczy most (`przeliczWyniki`), premia za kolejność
 w hot-seat = 0, `zestaw: null` (paczka zostaje na telefonie), `geohash5` startu
