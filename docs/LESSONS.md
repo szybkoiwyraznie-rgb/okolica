@@ -882,3 +882,33 @@ nie da efektu. (5) Infrastruktura testowa: zegar watchdoga uzbrajaj tylko
 gdy na niego czekasz — żywy `setInterval` po instancji atrapy wisi pętlę
 zdarzeń `node --test` (objaw: plik testowy „timeout” bez żadnej asercji).
 
+## L57 (2026-09-12) — zmiana formatu danych wymaga inwentaryzacji WSZYSTKICH jego nośników; wspólne pliki przeżywają aplikację jak localStorage
+
+**Objaw:** decyzja z 2026-09-11 (`meta.tematy` = faktyczne tematy pytań,
+ADR 0017 aneks) nie zadziałała dla paczek starych — właściciel zgłosił to
+2026-09-12: „to miało być już naprawione, ale nie jest”. Zmiana była
+w trzech miejscach — meta nowych wysyłek (klient), migracja rejestru
+LOKALNEGO przy starcie, reguła dopasowania po stronie klienta — a nie
+w czwartym: pliki na Drive niosą stare meta, a indeks mostu przepisuje je
+wprost.
+
+**Przyczyna:** przy zmianie sensu pola inwentaryzowałem KOD (skąd reguła
+czyta tematy), a nie DANE (gdzie mieszkają stare wartości i kto je pisze).
+Dwa utrudnienia: (1) plik na wspólnym Drive przeżywa aplikację tak samo jak
+`localStorage` (L28 — trwałość niezależna od rebuilda), więc „nowy kod
+poprawi stare dane” było prawdą tylko dla danych lokalnych; (2) aneks ADR
+obiecywał, że „właściciel może odświeżyć stare pliki ponowną wysyłką paczki” —
+a ta droga była martwa: most przy duplikacie zwraca istniejący plik bez
+nadpisania (ADR 0028: paczka to treść niezmienna), więc „odświeżenie
+ponowną wysyłką” było zapiskiem, nie mechanizmem.
+
+**Reguła:** przy zmianie formatu/sensu danych wspólnych policz KAŻDE miejsce,
+w którym mogą mieszkać stare wartości: `localStorage` (klucze + migracja
+przy starcie), pliki współdzielone (Drive/GitHub), indeksy pochodne,
+eksporty — i dla każdego: kto pisze nową wartość, kto migruje starą i jakim
+MECHANIZMEM (backfill w indeksie, ponowne wdrożenie, kasowanie pliku,
+ręczna edycja). Obietnica w ADR („X da się odświeżyć przez Y”) musi być
+ścieżką, którą da się uruchomić — najlepiej przetestowaną. Tu zadziałał
+backfill w indeksie mostu (wzorzec B19: plik niezmienny, indeks dopisuje
+pole) — jedna zmiana w `.gs` naprawiła WSZYSTKIE stare paczki naraz,
+bez wchodzenia właścicielowi w Dysk.
