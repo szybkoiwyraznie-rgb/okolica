@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-93';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-94';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -79,11 +79,11 @@ export const STANY_FIXA = Object.freeze({
 export const KODY_POZYCJI = {
   P01: 'Ta przeglądarka nie udostępnia położenia. Otwórz aplikację przez HTTPS w przeglądarce z obsługą lokalizacji.',
   P02: 'Brak zgody na dostęp do położenia. Zezwól na lokalizację w ustawieniach przeglądarki i odśwież stronę.',
-  P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek (ADR 0029: dojście zalicza tylko GPS).',
-  P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, pomiń odcinek.',
+  P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, zakończ grę przyciskiem „■ Zakończ grę” (ADR 0029: dojście zalicza tylko GPS).',
+  P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, zakończ grę przyciskiem „■ Zakończ grę”.',
   P06: 'Otrzymano współrzędne spoza zakresu — pomiar odrzucony. Poczekaj na następną pozycję albo odśwież stronę.',
   P07: 'Śledzenie położenia jest wstrzymane, bo aplikacja działa w tle — oszczędzamy baterię. Wróć na kartę, żeby je wznowić (ADR 0004 pkt 1).',
-  P08: 'Nieznany błąd położenia: {message}. Wyjdź na otwartą przestrzeń, odśwież stronę albo pomiń odcinek.',
+  P08: 'Nieznany błąd położenia: {message}. Wyjdź na otwartą przestrzeń, odśwież stronę albo zakończ grę przyciskiem „■ Zakończ grę”.',
   P09: 'Wznowiono śledzenie położenia — pierwszy pomiar po powrocie potrafi trwać kilka sekund.',
   P10: 'Telefon nie podaje położenia mimo włączonego GPS ({sekundy} s) — zakładam świeży nasłuch (próba {proba}). Jeśli po kilku próbach nadal nic: zamknij aplikację (kartę przeglądarki) i otwórz ją ponownie — w takiej sytuacji to jedyny pewny sposób, żeby pozycja wróciła.',
 };
@@ -182,7 +182,7 @@ export function stanDojscia(historia, stacja, { wymaganeTrafnienia = GRANICE.wym
       dotarl: false, trafienia: 0, wymagane: wymaganeTrafnienia, progM: 0, dystansM: null,
       stanFixa: czysta.at(-1) ? ocenFix(czysta.at(-1)).stan : null,
       kod: 'P06',
-      komunikat: 'Brak poprawnych współrzędnych stacji — nie ma czego rozstrzygać. Odśwież układ stacji albo pomiń ten odcinek.',
+      komunikat: 'Brak poprawnych współrzędnych stacji — nie ma czego rozstrzygać. Odśwież układ stacji albo zakończ grę przyciskiem „■ Zakończ grę”.',
     };
   }
   const wynik = czyDotarl(czysta, stacja, { wymaganeTrafnienia });

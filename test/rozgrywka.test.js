@@ -16,7 +16,7 @@ import { fileURLToPath } from 'node:url';
 import {
   FAZY, KODY_ROZGRYWKI, SCHEMAT_ROZGRYWKI, STANY_ODCINKA, TRYBY_DOJSCIA,
   czyKoniec, dystansOdcinkaM, graczNaStacji, graczPytania, ktoOdpowiada, nowaRozgrywka,
-  podglad, podsumowanie, pominStacje, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka,
+  podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka,
   wczytajStan, zapiszOdpowiedz, zakonczOdcinek,
 } from '../app/rozgrywka.js';
 import { domyslnaKonfiguracja } from '../app/konfig.js';
@@ -371,28 +371,40 @@ test('rotacja pytań: trzech graczy i trzy pytania na stacji — każdy po jedny
   assert.equal(graczPytania(stan, 9, 's9p1'), null, 'nieznana stacja nie ma autora pytania');
 });
 
-/* ----------------------------------------------------------------- pomijanie */
+/* ----------------------- zadanie H: pomijania nie ma; stare zapisy czytelne */
 
-test('pominStacje: tylko w trakcie odcinka, bez punktów, z wpisem w dzienniku', () => {
-  const stan = nowa();
-  assert.deepEqual(pominStacje(stan, { stacjaId: 1, czasMs: 0 }).usterki.map((u) => u.kod), ['G11'], 'nie można pominąć odcinka, który się nie zaczął');
-  const wTrakcie = startOdcinka(stan, { czasMs: 0 }).stan;
-  const { stan: po, usterki } = pominStacje(wTrakcie, { stacjaId: 1, czasMs: 60_000, powod: 'remont mostu' });
-  assert.deepEqual(usterki, []);
-  assert.equal(po.odcinki[0].stan, STANY_ODCINKA.pominiety);
-  assert.equal(po.biezacaStacja, 2);
-  assert.equal(po.odpowiedzi.length, 0);
-  assert.equal(po.dziennik.at(-1).typ, 'pominiecie');
-  assert.equal(po.dziennik.at(-1).powod, 'remont mostu');
-  assert.deepEqual(pominStacje(po, { stacjaId: 1, czasMs: 1 }).usterki.map((u) => u.kod), ['G03']);
-});
+/**
+ * Zadanie H (2026-09-12): akcja pomijania usunięta, ale stan `pominiety`
+ * zostaje w zapisach sprzed tej daty — ten helper odtwarza taki zapis
+ * (start, potem ręczne domknięcie odcinka jak w wycofanej `pominStacje`,
+ * łącznie z tranzycją do następnej stacji).
+ */
+function jakoPominieta(stan, { stacjaId = stan.biezacaStacja, czasMs, powod = 'zapis sprzed zadania H' }) {
+  const poStarcie = startOdcinka(stan, { stacjaId, czasMs: czasMs - 1000 });
+  assert.deepEqual(poStarcie.usterki, [], `start odcinka ${stacjaId}`);
+  const stary = JSON.parse(JSON.stringify(poStarcie.stan));
+  const odcinek = stary.odcinki.find((o) => o.stacja === stacjaId);
+  odcinek.stan = STANY_ODCINKA.pominiety;
+  odcinek.koniecMs = czasMs;
+  stary.dziennik.push({ czasMs, typ: 'pominiecie', stacja: stacjaId, gracz: odcinek.gracz, powod });
+  const nastepny = stary.odcinki.find((o) => o.stan === STANY_ODCINKA.oczekuje || o.stan === STANY_ODCINKA.wTrakcie);
+  if (!nastepny) {
+    stary.biezacaStacja = null;
+    stary.faza = FAZY.koniec;
+    stary.dziennik.push({ czasMs, typ: 'koniec' });
+  } else {
+    stary.biezacaStacja = nastepny.stacja;
+    stary.faza = nastepny.stan === STANY_ODCINKA.zakonczony ? FAZY.pytanie : FAZY.przygotowanie;
+  }
+  return stary;
+}
 
-test('pominStacje: po dojściu do stacji pominąć się nie da (G13)', () => {
-  const poDojsciu = zakonczOdcinek(startOdcinka(nowa(), { czasMs: 0 }).stan, { czasMs: 300_000 }).stan;
-  const { stan: po, usterki } = pominStacje(poDojsciu, { stacjaId: 1, czasMs: 301_000 });
-  assert.deepEqual(usterki.map((u) => u.kod), ['G13']);
-  assert.equal(po.odcinki[0].stan, STANY_ODCINKA.zakonczony, 'odmowa nie zmienia stanu');
-  assert.match(usterki[0].komunikat, /Odpowiedz na pytanie/, 'komunikat mówi, co zrobić zamiast tego');
+test('zadanie H: akcji pomijania nie ma — ani eksportu, ani kodów G11/G13', async () => {
+  const modul = await import('../app/rozgrywka.js');
+  assert.equal(modul.pominStacje, undefined, 'eksport pominStacje usunięty z silnika');
+  assert.ok(!('G11' in KODY_ROZGRYWKI), 'G11 wycofany (numer zajęty, nie wraca do puli)');
+  assert.ok(!('G13' in KODY_ROZGRYWKI), 'G13 wycofany (numer zajęty, nie wraca do puli)');
+  assert.equal(STANY_ODCINKA.pominiety, 'pominiety', 'stan zostaje — stare zapisy muszą być czytelne');
 });
 
 test('ostatnia stacja bez pytania: dojście kończy grę, nie zostawia pustego ekranu', () => {
@@ -415,7 +427,7 @@ test('ostatnia stacja bez pytania: dojście kończy grę, nie zostawia pustego e
 
 test('KODY_ROZGRYWKI: każdy komunikat jest pełnym zdaniem gotowym do UI', () => {
   const kody = Object.entries(KODY_ROZGRYWKI);
-  assert.equal(kody.length, 14); // +G14: stacja zamknięta/pominięta (ADR 0027 część B)
+  assert.equal(kody.length, 12); // zadanie H: −G11/−G13 (wycofane, numery zajęte); G12/G14 zostają
   for (const [kod, komunikat] of kody) {
     assert.match(kod, /^G\d{2}$/, `kod ${kod}`);
     assert.ok(komunikat.length >= 25, `${kod}: komunikat za krótki — „${komunikat}"`);
@@ -477,7 +489,8 @@ test('podsumowanie: gra w trakcie i gra z pominiętą stacją', () => {
   assert.equal(s1.faza, FAZY.przygotowanie);
   assert.equal(s1.zaliczoneStacje, 1);
 
-  const zPominieta = pominStacje(startOdcinka(wTrakcie, { stacjaId: 2, czasMs: 400_000 }).stan, { stacjaId: 2, czasMs: 500_000 }).stan;
+  // stan jak ze starego zapisu (sprzed zadania H) — silnik go już nie tworzy
+  const zPominieta = jakoPominieta(wTrakcie, { stacjaId: 2, czasMs: 500_000 });
   const s2 = podsumowanie(zPominieta);
   assert.equal(s2.pominietaStacje, 1);
   assert.equal(s2.zaliczoneStacje, 1);
@@ -638,6 +651,6 @@ test('stacjeDoWyboru: lista maleje, pominięta stacja też znika', () => {
   assert.deepEqual(stacjeDoWyboru(stan), [1, 2, 3, 4, 5], 'na starcie wszystkie');
   const poStarcie = startOdcinka(stan, { stacjaId: 2, czasMs: 1000 });
   assert.deepEqual(stacjeDoWyboru(poStarcie.stan), [1, 3, 4, 5], 'odcinek w drodze nie wraca na listę wyboru');
-  const poPominieciu = pominStacje(poStarcie.stan, { stacjaId: 2, czasMs: 2000, powod: 'test' });
-  assert.deepEqual(stacjeDoWyboru(poPominieciu.stan), [1, 3, 4, 5], 'pominięta stacja zostaje poza wyborem');
+  const poPominieciu = jakoPominieta(stan, { stacjaId: 2, czasMs: 2000 });
+  assert.deepEqual(stacjeDoWyboru(poPominieciu), [1, 3, 4, 5], 'pominięta stacja zostaje poza wyborem');
 });

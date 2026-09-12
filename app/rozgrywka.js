@@ -17,7 +17,7 @@
  * ADR 0014 wycofany). Znaczniki czasu w dzienniku służą tylko kolejności zdarzeń.
  */
 
-import { odlegloscM } from './geo.js?v=m12-93';
+import { odlegloscM } from './geo.js?v=m12-94';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
@@ -38,6 +38,9 @@ export const STANY_ODCINKA = {
   oczekuje: 'oczekuje',
   wTrakcie: 'w-trakcie',
   zakonczony: 'zakonczony',
+  // Zadanie H (2026-09-12): akcja pomijania usunięta — stan `pominiety`
+  // powstaje już tylko w zapisach sprzed tej daty; silnik go CZYTA (liczniki,
+  // guards), ale nic go nie tworzy. Kody G11/G13 wycofane (numery zajęte).
   pominiety: 'pominiety',
 };
 
@@ -53,10 +56,7 @@ export const KODY_ROZGRYWKI = {
   G08: 'Odpowiedź musi być jedną z czterech (0–3).',
   G09: 'Czas zakończenia jest wcześniejszy niż start odcinka.',
   G10: 'Gra jest już zakończona — ten ruch nie zmieni wyniku. Zobacz podsumowanie.',
-  G11: 'Odcinek nie był rozpoczęty — nie można go pominąć.',
   G12: 'Nieznany albo uszkodzony schemat stanu rozgrywki.',
-  G13: 'Gracz już doszedł do tej stacji — pominąć można tylko odcinek w drodze. '
-    + 'Odpowiedz na pytanie (nawet błędnie), żeby gra poszła dalej.',
   G14: 'Ta stacja jest już zamknięta albo pominięta — wybierz inną.',
 };
 
@@ -348,30 +348,6 @@ export function zakonczOdcinek(stan, { stacjaId = stan.biezacaStacja, czasMs, tr
   // gra stanęłaby w fazie `pytanie` z pustym ekranem i bez akcji, która ruszyłaby
   // ją dalej. Jawne ostrzeżenie o braku jest w dzienniku od `nowaRozgrywka`.
   if (stacjaZamknieta(nowy, stacjaId)) przejdzDalej(nowy, czasMs);
-  return { stan: nowy, usterki: [] };
-}
-
-/**
- * Pominięcie stacji (w terenie bywa nieosiągalna: remont, zamknięty park,
- * ślepy zaułek bez przejścia). Działa **tylko w drodze** — po dojściu gracz
- * odpowiada na pytanie, nawet błędnie (`G13`), żeby nie kasować faktu dojścia.
- *
- * Odcinek dostaje stan `pominiety`, punkty przepadają. Zdarzenie z powodem
- * idzie do dziennika: wynik ma być wyjaśnialny, nie „magicznie" krótszy.
- */
-export function pominStacje(stan, { stacjaId = stan.biezacaStacja, czasMs, powod = '' } = {}) {
-  wymaganie(Number.isFinite(czasMs), 'czasMs jest wymagany');
-  const nowy = kopia(stan);
-  const odcinek = znajdzOdcinek(nowy, stacjaId);
-  if (!odcinek) return { stan: nowy, usterki: [usterka('G01')] };
-  if (odcinek.stan === STANY_ODCINKA.oczekuje) return { stan: nowy, usterki: [usterka('G11')] };
-  if (odcinek.stan === STANY_ODCINKA.zakonczony) return { stan: nowy, usterki: [usterka('G13')] };
-  if (odcinek.stan === STANY_ODCINKA.pominiety) return { stan: nowy, usterki: [usterka('G03')] };
-
-  odcinek.stan = STANY_ODCINKA.pominiety;
-  odcinek.koniecMs = czasMs;
-  dodajZdarzenie(nowy, czasMs, 'pominiecie', { stacja: stacjaId, gracz: odcinek.gracz, powod: String(powod) });
-  przejdzDalej(nowy, czasMs);
   return { stan: nowy, usterki: [] };
 }
 

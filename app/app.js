@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-93';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-93';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-94';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-94';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,20 +32,20 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-93';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-93';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-93';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-93';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-93';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-93';
+} from './protokol.js?v=m12-94';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-94';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-94';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-94';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-94';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-94';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-93';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-93';
+} from './zestawy.js?v=m12-94';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-94';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -61,18 +61,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-93';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-93';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-93';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-93';
-import { adresMostu, stanMostu } from './most.js?v=m12-93';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-93';
+} from './sieci.js?v=m12-94';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-94';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-94';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-94';
+import { adresMostu, stanMostu } from './most.js?v=m12-94';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-94';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-93';
+} from './oceny.js?v=m12-94';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1264,7 +1264,7 @@ function wlaczGps() {
       STAN.gpsOstatniZnakMs = performance.now(); // bug G: błąd to też znak życia — pipe odpowiada
       pokazBledy('bledy-pozycja', [{ kod: blad.kod, pole: 'geolocation', komunikat: blad.komunikat }]);
       $('pozycja-status').textContent = 'Brak pozycji';
-      status('Położenie niedostępne — gra czeka na sygnał. Wyjdź na otwartą przestrzeń, a jeśli stacja jest nieosiągalna, pomiń odcinek.' + ADR(' (ADR 0029)'));
+      status('Położenie niedostępne — gra czeka na sygnał. Wyjdź na otwartą przestrzeń, a jeśli stacja jest nieosiągalna, zakończ grę przyciskiem „■ Zakończ grę”.' + ADR(' (ADR 0029)'));
     },
   });
   if (STAN.watcher?.czyAktywny() && !STAN.gpsTimer && czyUzbroicWatchdogGps()) {
@@ -1967,11 +1967,11 @@ function renderujGre({ panele = true } = {}) {
       && !$('gra-panel-pytanie').hidden && !$('gra-wynik-odpowiedzi').hidden;
     if (!pokazOceny) {
       // Właściciel 2026-09-11 (uwagi terenowe #2): w fazie pytania ekran ma być
-      // czysty — pytanie, odpowiedzi i wynik. Nagłówek „Gra", badge'y i przyciski
-      // „pomiń/zakończ" nie są wtedy potrzebne. Panel multi żyje poza slotem.
+      // czysty — pytanie, odpowiedzi i wynik. Nagłówek „Gra”, badge'y i przycisk
+      // „Zakończ grę” nie jest wtedy potrzebny. Panel multi żyje poza slotem.
       // Zgłoszenie właściciela 2026-09-12 (D a): na ekranie wyników slot
-      // sterowania („Gra”, badge'y kolejki/dystansu, „Pomiń odcinek”,
-      // „Zakończ grę”) znika CAŁY — nad wynikami zostawały resztki stanu gry.
+      // sterowania („Gra”, badge'y kolejki/dystansu, „Zakończ grę”) znika CAŁY —
+      // nad wynikami zostawały resztki stanu gry.
       $('gra-slot-sterowanie').hidden = r.faza === FAZY.pytanie || koniec;
       $('gra-panel-oczekuje').hidden = koniec || r.faza !== FAZY.przygotowanie;
       $('gra-panel-odcinek').hidden = koniec || r.faza !== FAZY.odcinek;
@@ -1994,7 +1994,6 @@ function renderujGre({ panele = true } = {}) {
     if (!dalej.hidden && r.faza !== FAZY.koniec) dalej.textContent = etykietaPrzyciskuDalej(r);
     $('przycisk-start-odcinka').disabled = STAN.graPauza;
     $('przycisk-symulacja-gra').hidden = !(STAN.trybTestowy && r.faza === FAZY.odcinek);
-    $('przycisk-pomin-stacje').disabled = r.faza !== FAZY.odcinek || STAN.graPauza; // ADR 0015 pkt 2: tylko w drodze
   }
 
   if (STAN.mapy.gra) {
@@ -3260,25 +3259,6 @@ function kasujZapisGry() {
   STAN.wznowienieKandydat = null;
   $('karta-wznowienie').hidden = true;
   status('Zapis gry skasowany. Możesz ustawić nową.');
-}
-
-/** Pominięcie odcinka w drodze (ADR 0015 pkt 2) — kody G11/G13 trafiają do UI. */
-function pominStacjeGry() {
-  if (!STAN.rozgrywka) return;
-  if (STAN.multi) {
-    // serwer zna tylko zdarzenia dojscie/odpowiedz/rezygnacja — „pominięta" stacja
-    // blokowałaby grę na zawsze, więc w multi pomijania NIE ma (ADR 0019)
-    status('W grze wieloosobowej nie da się pominąć stacji — każda jest czyimś celem. Jeśli nie możesz iść dalej, zrezygnuj (panel gry wieloosobowej).');
-    return;
-  }
-  const wynik = pominStacje(STAN.rozgrywka, { czasMs: zegarGry(), powod: 'pominięcie z ekranu gry' });
-  STAN.rozgrywka = wynik.stan;
-  pokazBledy('bledy-gra', wynik.usterki);
-  status(wynik.usterki.length > 0
-    ? wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' ')
-    : 'Odcinek pominięty — stacja nie liczy się do punktów ani do mediany tempa (ADR 0015).');
-  renderujGre();
-  zapiszGre();
 }
 
 /**
@@ -4697,7 +4677,6 @@ function renderujPanelMulti() {
     fcMulti.textContent = 'Pytania bez wymuszonego fact-checku';
   }
   renderujWyborStacji(gra, r, graSieToczy);
-  $('przycisk-pomin-stacje').hidden = true; // w multi pomijania nie ma — patrz pominStacjeGry
   renderujInfoMulti(gra);
   // Host kończy grę, kiedy chce — wszyscy dostają podsumowanie (właściciel, 2026-09-11).
   $('przycisk-multi-zakoncz').hidden = !(gra.stan === 'trwa' && m.rola === 'organizator');
@@ -5181,7 +5160,6 @@ function start() {
   $('gra-ocena-minus').addEventListener('click', () => kliknijOcene(OCENA_MINUS));
   zaladujOcenyLokalne();
   oproznijKolejkeOcen();
-  $('przycisk-pomin-stacje').addEventListener('click', () => pominStacjeGry());
   $('przycisk-zakoncz-gre').addEventListener('click', () => zakonczGreRecznie());
   $('przycisk-wznow-gre').addEventListener('click', () => wznowGre());
   $('przycisk-kasuj-zapis').addEventListener('click', () => kasujZapisGry());
