@@ -100,10 +100,13 @@ test('kontrakt ADR 0032: znaczek Q ma token złota w obu motywach i klasę', () 
   assert.match(audyt, /tekst: 'zloto', tlo: 'tlo'/, 'brama pilnuje kontrastu na tle strony');
 });
 
-test('kontrakt ADR 0032: wynik i panel multi mają linię wariantu', () => {
-  assert.match(INDEX, /id="gra-wynik-factcheck"/, 'linia wariantu na ekranie wyniku');
-  assert.match(INDEX, /id="multi-factcheck"/, 'linia wariantu w panelu multi');
-  assert.match(APP, /\$\('gra-wynik-factcheck'\)/, 'pokazWyniki ją wypełnia');
+test('kontrakt ADR 0032/0038: linia wariantu została tylko w panelu multi', () => {
+  // Zgłoszenie właściciela 2026-09-12 (D c): zdanie „Pytania bez wymuszonego
+  // fact-checku — model nie musiał sprawdzać faktów w sieci” (i jego mutacja
+  // „fact check”) zniknęło z ekranu wyników razem z CAŁĄ linią wariantu.
+  assert.ok(!INDEX.includes('id="gra-wynik-factcheck"'), 'ekran wyniku bez linii wariantu (ADR 0038)');
+  assert.ok(!APP.includes('gra-wynik-factcheck'), 'pokazWyniki nie wypełnia już tej linii (ADR 0038)');
+  assert.match(INDEX, /id="multi-factcheck"/, 'linia wariantu w panelu multi zostaje (ADR 0032)');
   assert.match(APP, /\$\('multi-factcheck'\)/, 'renderujPanelMulti ją wypełnia');
 });
 
@@ -616,23 +619,25 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'gra-dystans-odcinka', 'przycisk-pauza', 'gra-pauza-komunikat',
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
-    'gra-wyniki', 'gra-wyniki-tbody',
-    'gra-wynik-zwyciezca', 'gra-wynik-statystyki',
-    'gra-wynik-szczegoly', 'gra-wynik-gracze',
-    'gra-wynik-stacje', 'gra-wynik-stacje-tbody',
-    'wynik-eksport', 'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',
-    'przycisk-pobierz-obraz', 'przycisk-udostepnij-obraz',
-    'gra-wynik-tekst-detale', 'pole-wynik-tekst',
+    'gra-wyniki', 'gra-wyniki-tbody', 'gra-wynik-zwyciezca', 'przycisk-nowa-gra',
     'przycisk-pomin-stacje', 'przycisk-zakoncz-gre',
   ];
   for (const id of wymagane) assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
+  // ADR 0038 (zgłoszenie właściciela 2026-09-12, D b): ekran wyniku jest MINIMALNY.
+  // Ta lista to żelazny kontrakt — elementy usunięte z HTML-a nie mogą wrócić
+  // bokiem, bo każdy z nich ciągnął za sobą kod, który właściciel kazał wyrzucić.
+  const usuniete = [
+    'gra-wynik-statystyki', 'gra-wynik-szczegoly', 'gra-wynik-gracze',
+    'gra-wynik-stacje', 'gra-wynik-stacje-tbody',
+    'wynik-eksport', 'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',
+    'przycisk-pobierz-obraz', 'przycisk-udostepnij-obraz',
+    'gra-wynik-tekst-detale', 'pole-wynik-tekst', 'gra-wynik-factcheck',
+  ];
+  for (const id of usuniete) assert.ok(!html.includes(`id="${id}"`), `ekran wyniku nie ma już #${id} (ADR 0038)`);
   assert.match(html, /id="bledy-gra" class="bledy" role="alert"/, 'błędy faz mają role="alert" (jak inne ekrany)');
   assert.match(html, /id="gra-komunikat" class="podpowiedz" role="status"/, 'komunikat fazy ma role="status"');
   assert.match(html, /id="przycisk-pomin-stacje"[^>]*disabled/, 'pominięcie domyślnie wyłączone (tylko w drodze, ADR 0015)');
   assert.ok(!html.includes('id="przycisk-start-gry"'), 'ręcznego startu nie ma — gra rusza sama po Sprawdź (decyzja 2026-09-07)');
-  assert.match(html, /id="przycisk-udostepnij-wynik"[^>]*hidden/, 'share tylko z navigator.share (M7, decyzja 8)');
-  assert.match(html, /id="przycisk-kopiuj-wynik"[^>]*hidden/, 'kopiowanie tylko z navigator.clipboard (M7, decyzja 8)');
-  assert.match(html, /id="przycisk-udostepnij-obraz"[^>]*hidden/, 'udostępnianie obrazu tylko z navigator.canShare+File (M7/P5)');
 });
 
 test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=button', () => {

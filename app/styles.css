@@ -636,27 +636,9 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   font-variant-numeric: tabular-nums;
 }
 .karta-zwyciezcy .zwyciezca-detale { margin: 0; font-size: 14px; color: var(--tekst-slaby); }
-.statystyki-gry {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 4px 12px;
-  margin: 10px 0;
-  font-size: 14px;
-}
-.statystyki-gry dt { color: var(--tekst-slaby); }
-.statystyki-gry dd { margin: 0; font-weight: 600; font-variant-numeric: tabular-nums; }
-.gracze-szczegoly { display: flex; flex-direction: column; gap: 8px; margin-top: 8px; }
-.gracz-karta { border: 1px solid var(--linia); border-radius: 8px; padding: 8px 10px; }
-.gracz-karta p { margin: 2px 0; }
-.gracz-karta .naglowek { font-weight: 600; font-size: 15px; }
-.gracz-karta .rozbicie, .gracz-karta .odcinki { color: var(--tekst-slaby); font-size: 13px; }
-.tabela-stacje th, .tabela-stacje td { padding: 6px 4px; font-size: 13px; }
-#gra-panel-koniec details summary {
-  cursor: pointer;
-  font-weight: 600;
-  padding: 10px 0;
-  font-size: 15px;
-}
+/* Ekran wyników jest MINIMALNY (ADR 0038): zwycięzca, tabela rankingu, przycisk
+   powrotu. Style statystyk, kart graczy i tabeli stacji zniknęły razem z ich
+   elementami — martwy CSS po usuniętym ekranie myli przy następnej zmianie. */
 
 /* M7/P6: historia poprzednich gier na ekranie ustawień — zwarte skróty. */
 .lista-historii { list-style: none; padding: 0; margin: 8px 0; }

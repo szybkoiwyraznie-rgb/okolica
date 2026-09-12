@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-87';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-87';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-88';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-88';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,20 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-87';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-87';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-87';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-87';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-87';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-87';
+} from './protokol.js?v=m12-88';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-88';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-88';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-88';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-88';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-88';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-87';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-87';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-87';
+} from './zestawy.js?v=m12-88';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-88';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -62,17 +61,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-87';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-87';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-87';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-87';
-import { adresMostu, stanMostu } from './most.js?v=m12-87';
+} from './sieci.js?v=m12-88';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-88';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-88';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-88';
+import { adresMostu, stanMostu } from './most.js?v=m12-88';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-87';
+} from './oceny.js?v=m12-88';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -157,8 +156,6 @@ const STAN = {
   historiaKasowanieUzbrojone: false,
   graZakonczonaUzbrojone: false,
   graZakonczonaRecznie: false,
-  /** M7: tekst wyniku do udostępnienia (wynikTekstowy) — żyje od pokazWyniki. */
-  wynikTekst: null,
   /** M11/P4: 'hotseat' | 'multi' — wybór z setupu, utrwalany w localStorage. */
   rodzajGry: 'hotseat',
   /** M11/P4: sesja gry wieloosobowej `{rola, gra, graczId, pseudonim, urlMostu, sync, ostatniStanMs}` albo null. */
@@ -1787,7 +1784,10 @@ function renderujGre({ panele = true } = {}) {
       // Właściciel 2026-09-11 (uwagi terenowe #2): w fazie pytania ekran ma być
       // czysty — pytanie, odpowiedzi i wynik. Nagłówek „Gra", badge'y i przyciski
       // „pomiń/zakończ" nie są wtedy potrzebne. Panel multi żyje poza slotem.
-      $('gra-slot-sterowanie').hidden = r.faza === FAZY.pytanie;
+      // Zgłoszenie właściciela 2026-09-12 (D a): na ekranie wyników slot
+      // sterowania („Gra”, badge'y kolejki/dystansu, „Pomiń odcinek”,
+      // „Zakończ grę”) znika CAŁY — nad wynikami zostawały resztki stanu gry.
+      $('gra-slot-sterowanie').hidden = r.faza === FAZY.pytanie || koniec;
       $('gra-panel-oczekuje').hidden = koniec || r.faza !== FAZY.przygotowanie;
       $('gra-panel-odcinek').hidden = koniec || r.faza !== FAZY.odcinek;
       $('gra-panel-pytanie').hidden = koniec || r.faza !== FAZY.pytanie;
@@ -3154,29 +3154,25 @@ function wrocNaPoczatek() {
   status('Gotowe do nowej gry — setup i gracze zostali, wynik jest w historii.');
 }
 
-/* ------------------------------------------------- pełne podsumowanie (M7) */
-
-/** Data wyniku do tekstu: UTC z ISO — deterministyczna, bez locale. */
-function dataWynikuTekst(teraz = new Date()) {
-  const iso = teraz.toISOString();
-  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
-}
+/* ------------------------------------------------- podsumowanie gry (M7) */
 
 /**
- * Pełne podsumowanie (M7) z `podsumowanie()` — warstwa DOM nie liczy
- * własnej matematyki (plan M7, kryteria kodu). Bez czasów i tempa
- * (Partia 2: zero presji czasowej).
+ * Podsumowanie po grze: karta zwycięzcy i tabela rankingu. Nic więcej —
+ * reszta ekranu to jeden przycisk „Wróć na początek” (ADR 0038).
+ *
+ * Decyzja właściciela 2026-09-12: statystyki gry, szczegóły graczy, tabela
+ * stacji, eksporty i linia fact-checku zniknęły razem z kodem, który je
+ * wypełniał („masa błędów i niepotrzebnych informacji”).
  */
 function pokazWyniki() {
   const r = STAN.rozgrywka;
   if (!r) return;
   const wynik = podsumowanie(r);
-  const imiona = new Map(r.gracze.map((g) => [g.id, g.imie]));
 
-  // 1. karta zwycięzcy — duże liczby, czytelne w słońcu
-  const zwyciezca = wynik.gracze.find((g) => g.id === wynik.zwyciezca) ?? null;
+  // 1. karta zwycięzcy
   const kartaZw = $('gra-wynik-zwyciezca');
   kartaZw.replaceChildren();
+  const zwyciezca = wynik.gracze.find((g) => g.id === wynik.zwyciezca) ?? null;
   if (zwyciezca) {
     const imie = document.createElement('p');
     imie.className = 'zwyciezca-imie';
@@ -3194,18 +3190,7 @@ function pokazWyniki() {
     kartaZw.appendChild(p);
   }
 
-  // 1b. wariant weryfikacji pytań (ADR 0032): Q tylko dla zweryfikowanych.
-  const fcEl = $('gra-wynik-factcheck');
-  fcEl.replaceChildren();
-  if (factcheckBiezacejSesji()) {
-    const opis = document.createElement('span');
-    opis.textContent = ' Pytania zweryfikowane w sieci (fact check)';
-    fcEl.append(znaczekFactcheck(), opis);
-  } else {
-    fcEl.textContent = 'Pytania bez wymuszonego fact-checku — model nie musiał sprawdzać faktów w sieci';
-  }
-
-  // 2. ranking — tabela jak w M6 (miejsce, gracz, punkty, poprawne)
+  // 2. tabela rankingu — te same kolumny co w panelu multi
   const tbody = $('gra-wyniki-tbody');
   tbody.replaceChildren();
   for (const id of wynik.ranking) {
@@ -3219,173 +3204,7 @@ function pokazWyniki() {
     }
     tbody.appendChild(wiersz);
   }
-
-  // 4. statystyki gry (dt/dd — na 360 px dwie kolumny, liczby tabular-nums)
   stanWysylkiWyniku(''); // los wysyłki z poprzedniej gry nie zostaje na ekranie
-  const dl = $('gra-wynik-statystyki');
-  dl.replaceChildren();
-  const pary = [
-    ['zaliczone', `${wynik.zaliczoneStacje} z ${r.stacje.length}`],
-    ['pominięte', String(wynik.pominietaStacje)],
-    ['stacje bez pytań', wynik.stacjeBezPytan.length ? wynik.stacjeBezPytan.map((s) => `#${s}`).join(', ') : 'brak'],
-    ['zdarzenia w dzienniku', String(wynik.zdarzen)],
-  ];
-  for (const [etykieta, wartosc] of pary) {
-    const dt = document.createElement('dt');
-    dt.textContent = `${etykieta}:`;
-    const dd = document.createElement('dd');
-    dd.textContent = wartosc;
-    dl.append(dt, dd);
-  }
-
-  // 5. szczegóły graczy — karty z pełnymi polami podsumowanie()
-  const karty = $('gra-wynik-gracze');
-  karty.replaceChildren();
-  for (const id of wynik.ranking) {
-    const g = wynik.gracze.find((gracz) => gracz.id === id);
-    if (!g) continue;
-    const karta = document.createElement('div');
-    karta.className = 'gracz-karta';
-    const naglowek = document.createElement('p');
-    naglowek.className = 'naglowek';
-    naglowek.textContent = `${g.imie}${id === wynik.zwyciezca ? ' 🏆' : ''} · ${g.punkty} pkt`;
-    const rozbicie = document.createElement('p');
-    rozbicie.className = 'rozbicie';
-    rozbicie.textContent = `${g.punkty} pkt · poprawne ${g.poprawne}, błędne ${g.bledne}`;
-    const odcinki = document.createElement('p');
-    odcinki.className = 'odcinki';
-    odcinki.textContent = `odcinki: ${g.odcinki} · dystans ${dystansTekst(g.dystansM)} · ręczne dojścia: ${g.reczneDojscia}`;
-    karta.append(naglowek, rozbicie, odcinki);
-    karty.appendChild(karta);
-  }
-
-  // 6. stacje — zwarta tabela: kto, stan z trybem dojścia, czas, punkty
-  const tStacje = $('gra-wynik-stacje-tbody');
-  tStacje.replaceChildren();
-  for (const s of wynik.stacje) {
-    const wiersz = document.createElement('tr');
-    for (const komorka of [
-      String(s.id),
-      s.gracz != null ? (imiona.get(s.gracz) ?? `#${s.gracz}`) : '—',
-      etykietaOdcinka(s),
-      String(s.punkty),
-    ]) {
-      const td = document.createElement('td');
-      td.textContent = komorka;
-      wiersz.appendChild(td);
-    }
-    tStacje.appendChild(wiersz);
-  }
-
-  // 7. tekst wyniku i eksport (M7/P4): tekst żyje w polu readonly i w STAN;
-  //    przyciski widoczne tylko gdy ich ścieżka istnieje (plan M7, decyzja 8)
-  const tekst = wynikTekstowy({
-    podsumowanie: wynik,
-    konfig: STAN.konfig,
-    miejsce: STAN.miejsce ? STAN.miejsce : null,
-    data: dataWynikuTekst(),
-    przerwana: STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec,
-  });
-  STAN.wynikTekst = tekst;
-  $('pole-wynik-tekst').value = tekst;
-  $('przycisk-udostepnij-wynik').hidden = !(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
-  $('przycisk-kopiuj-wynik').hidden = !(typeof navigator !== 'undefined' && Boolean(navigator.clipboard?.writeText));
-  $('przycisk-udostepnij-obraz').hidden = !(typeof navigator !== 'undefined' && typeof navigator.canShare === 'function' && typeof File === 'function');
-}
-
-/** Nazwa pliku z obrazem wyniku (M7/P5) — ten sam oczyszczony kod gry. */
-function nazwaPlikuObrazuWyniku(kodGry) {
-  return `okolica-${oczyscKodGry(kodGry)}.wynik.png`;
-}
-
-/** Paleta awaryjna — wartości 1:1 z `:root` w styles.css (motyw jasny).
- *  Obraz musi mieć kolory nawet gdy `getComputedStyle` zawiedzie. */
-const PALETA_AWARYJNA = Object.freeze({
-  tlo: '#f6f2e9', karta: '#fffdf8', tekst: '#1d2321', tekstSlaby: '#5c6663',
-  akcent: '#2f6f4f', linia: '#d9d2c3', ostrzezenie: '#b4531f',
-});
-
-/** Konkretne kolory z ról planu: zmienne CSS bieżącego motywu (plan M7, ryzyko
- *  „toBlob i motywy") — ciemny motyw nie rozjeżdża się z czystym planem. */
-function paletaZCss() {
-  const paleta = { ...PALETA_AWARYJNA };
-  try {
-    const style = typeof window !== 'undefined' && window.getComputedStyle
-      ? window.getComputedStyle(document.documentElement)
-      : null;
-    if (style) {
-      for (const [rola, zmienna] of Object.entries(ROLE_PALETY)) {
-        const wartosc = String(style.getPropertyValue(zmienna) ?? '').trim();
-        if (wartosc) paleta[rola] = wartosc;
-      }
-    }
-  } catch (e) {
-    void e; // awaryjna paleta to nie wstyd — gorszy byłby brak obrazu
-  }
-  return paleta;
-}
-
-/** Cienki wykonawca planu (wzorzec mapy z M2): tylko przekazuje komendy do
- *  kontekstu 2d — zero matematyki i zero decyzji w warstwie DOM. */
-function rysujWynikNaCanvas(plan, canvas, paleta) {
-  canvas.width = plan.szerokosc;
-  canvas.height = plan.wysokosc;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('brak kontekstu 2d canvas w tej przeglądarce');
-  const kolor = (rola) => paleta[rola] ?? paleta.tekst;
-  for (const k of plan.komendy) {
-    if (k.typ === 'prostokat') {
-      ctx.fillStyle = kolor(k.kolorRola);
-      ctx.fillRect(k.x, k.y, k.w, k.h);
-    } else if (k.typ === 'tekst') {
-      ctx.fillStyle = kolor(k.kolorRola);
-      ctx.font = `${k.waga ?? 400} ${k.rozmiar}px system-ui, -apple-system, Segoe UI, sans-serif`;
-      ctx.textAlign = 'left';
-      ctx.fillText(k.tekst, k.x, k.y);
-    } else if (k.typ === 'linia') {
-      ctx.strokeStyle = kolor(k.kolorRola);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(k.x1, k.y1);
-      ctx.lineTo(k.x2, k.y2);
-      ctx.stroke();
-    }
-  }
-  return canvas;
-}
-
-/** Eksport obrazu wyniku (ADR 0010 pkt 5): plan → canvas → PNG → share albo
- *  plik. `udostepnij=true` próbuje `navigator.share({files})` i uczciwie degra
- *  do pobrania, gdy przeglądarka nie umie dzielić się plikami. */
-async function eksportujWynikObraz(udostepnij = false) {
-  const r = STAN.rozgrywka;
-  if (!r) return;
-  try {
-    const plan = planObrazuWyniku({
-      podsumowanie: podsumowanie(r),
-      konfig: STAN.konfig,
-      miejsce: STAN.miejsce ? STAN.miejsce : null,
-      data: dataWynikuTekst(),
-      przerwana: STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec,
-    });
-    const nazwa = nazwaPlikuObrazuWyniku(r.kodGry ?? STAN.konfig?.kodGry);
-    const canvas = document.createElement('canvas');
-    rysujWynikNaCanvas(plan, canvas, paletaZCss());
-    const blob = await new Promise((rozwiaz) => canvas.toBlob(rozwiaz, 'image/png'));
-    if (!blob) throw new Error('toBlob nie zwrócił obrazu');
-    const plik = typeof File === 'function' ? new File([blob], nazwa, { type: 'image/png' }) : null;
-    if (udostepnij && plik && typeof navigator.canShare === 'function' && navigator.canShare({ files: [plik] })) {
-      await navigator.share({ title: 'Tajemnicza okolica — wynik gry', files: [plik] });
-      return; // udostępnione systemowo — plik nie jest potrzebny
-    }
-    pobierzPlik(nazwa, blob, 'image/png');
-    status(udostepnij
-      ? 'Udostępnianie obrazu niedostępne w tej przeglądarce — obraz wyniku zapisany jako plik .png.'
-      : 'Obraz wyniku zapisany jako plik .png.');
-  } catch (e) {
-    if (e?.name === 'AbortError') return; // rezygnacja z udostępniania jest cicha
-    status(`Nie udało się zapisać obrazu wyniku: ${e?.message ?? e}. Eksport tekstowy (.txt) działa bez canvas.`);
-  }
 }
 
 /* ---------------------------------------------------------------- prompt */
@@ -3463,18 +3282,6 @@ async function kopiujDoSchowka(tekst, idPolaZapasowego) {
     pole.setSelectionRange(0, pole.value.length);
   } catch (e) { void e; }
   return false;
-}
-
-function pobierzPlik(nazwa, tresc, typ) {
-  const blob = new Blob([tresc], { type: typ });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nazwa;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
 }
 
 /* ------------------------------------------------------------- walidacja */
@@ -3660,10 +3467,6 @@ function renderujUsterki(usterki) {
     }
     return li;
   }));
-}
-
-function nazwaPlikuWyniku(kodGry) {
-  return `okolica-${oczyscKodGry(kodGry)}.wynik.txt`;
 }
 
 
@@ -5109,8 +4912,8 @@ function start() {
   $('prompt-factcheck').addEventListener('change', () => budujPromptEkran());
   // Przycisku „Zapisz jako plik" nie ma (właściciel, 2026-09-09): prompt i tak
   // idzie do schowka („Kopiuj prompt"), a plik .txt był dodatkową drogą, której
-  // nikt nie używał. Helper `pobierzPlik` zostaje — służą mu obraz wyniku
-  // (PNG, „Wynik .png") i eksport wyniku (tekst).
+  // nikt nie używał. Eksportów wyniku też już nie ma (ADR 0038), więc zniknął
+  // i helper `pobierzPlik` — nie ma czego pobierać.
   $('przycisk-dalej-paczka').addEventListener('click', () => pokazEkran('paczka'));
 
   $('przycisk-wstecz-prompt').addEventListener('click', () => pokazEkran('prompt'));
@@ -5183,31 +4986,6 @@ function start() {
   $('przycisk-wznow-gre').addEventListener('click', () => wznowGre());
   $('przycisk-kasuj-zapis').addEventListener('click', () => kasujZapisGry());
   $('przycisk-kasuj-historie').addEventListener('click', () => kasujHistorieGry());
-
-  // M7/P4: eksport tekstu wyniku — share (telefon) → schowek → plik (zawsze).
-  // Aplikacja nie udaje, że udostępniła: AbortError (rezygnacja) jest cichy,
-  // inny błąd dostaje jawny status ze wskazaniem pola i pliku (decyzja 8).
-  $('przycisk-udostepnij-wynik').addEventListener('click', async () => {
-    if (!STAN.wynikTekst || typeof navigator.share !== 'function') return;
-    try {
-      await navigator.share({ title: 'Tajemnicza okolica — wynik gry', text: STAN.wynikTekst });
-    } catch (e) {
-      if (e?.name !== 'AbortError') {
-        status(`Nie udało się udostępnić wyniku: ${e?.message ?? e}. Tekst jest w polu „Tekst wyniku" i w pliku .txt.`);
-      }
-    }
-  });
-  $('przycisk-kopiuj-wynik').addEventListener('click', () => {
-    if (!STAN.wynikTekst) return;
-    void kopiujTekst(STAN.wynikTekst, $('przycisk-kopiuj-wynik'), '📋 Kopiuj wynik', 'pole-wynik-tekst');
-  });
-  $('przycisk-pobierz-wynik').addEventListener('click', () => {
-    if (!STAN.wynikTekst) return;
-    pobierzPlik(nazwaPlikuWyniku(STAN.rozgrywka?.kodGry ?? STAN.konfig?.kodGry), STAN.wynikTekst, 'text/plain;charset=utf-8');
-    status('Wynik zapisany jako plik .txt.');
-  });
-  $('przycisk-pobierz-obraz').addEventListener('click', () => { void eksportujWynikObraz(false); });
-  $('przycisk-udostepnij-obraz').addEventListener('click', () => { void eksportujWynikObraz(true); });
 
   /* M11/P4+m12-74: gra na wielu urządzeniach — segmenty na setupie, lobby,
      kanał info i koniec gry z ręki hosta (bez kodów i bez źródeł paczek). */

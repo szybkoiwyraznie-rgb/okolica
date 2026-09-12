@@ -1067,8 +1067,10 @@ test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł", wyni
     domAtrapa.kliknij('przycisk-nastepna-stacja');
   }
   assert.equal(domAtrapa.pobierz('gra-panel-koniec').hidden, false, 'koniec po ostatniej stacji');
-  assert.match(domAtrapa.pobierz('gra-wynik-factcheck').textContent, /bez wymuszonego fact-checku/, 'wynik mówi: bez wymuszonej weryfikacji');
-  assert.equal([...domAtrapa.pobierz('gra-wynik-factcheck').children].length, 0, 'bez znaczka Q dla wariantu bez weryfikacji');
+  // ADR 0038 (zgłoszenie właściciela 2026-09-12, D c): ekran wyniku nie ma już
+  // linii wariantu — zdanie „Pytania bez wymuszonego fact-checku…” i jego
+  // mutacja z „fact check” zniknęły razem z elementem, którego nikt nie pytał.
+  assert.equal(domAtrapa.elementy.has('gra-wynik-factcheck'), false, 'pokazWyniki nie dotyka linii wariantu');
   const { historia } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
   assert.equal(historia.wpisy[0].factcheck, false, 'historia pamięta brak weryfikacji');
 });
@@ -1727,7 +1729,7 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
 
 /* ========== M7/P3: pełne podsumowanie (panel D) */
 
-test('M7: pełne podsumowanie — zwycięzca, statystyki, karty graczy i stacje', async () => {
+test('ADR 0038: ekran wyniku jest minimalny — karta zwycięzcy i tabela rankingu', async () => {
   const { dom } = await graGotowaDoStartu();
   zaczynijGre(dom);
   for (const i of [1, 2, 3]) {
@@ -1742,152 +1744,70 @@ test('M7: pełne podsumowanie — zwycięzca, statystyki, karty graczy i stacje'
   assert.match(zwyciezca, /0 pkt/, 'duże punkty w karcie');
   assert.match(zwyciezca, /poprawne 0\/0/, 'poprawne/razem w karcie');
 
-  // 2. statystyki gry: liczby z podsumowanie(), dziennik nie kłamie
-  const statystyki = dom.pobierz('gra-wynik-statystyki').textContent;
-  assert.equal(statystyki.includes('czas gry'), false, 'zero presji czasowej (Partia 2)');
-  assert.match(statystyki, /zaliczone:0 z 3/, 'dt+dd bez spacji w agregacji — odstęp daje siatka CSS');
-  assert.match(statystyki, /pominięte:3/);
-  assert.match(statystyki, /stacje bez pytań:brak/, 'paczka pokrywa wszystkie stacje');
-  assert.match(statystyki, /zdarzenia w dzienniku:\d+/);
+  // 2. tabela rankingu zostaje — te same kolumny co w panelu multi, wiersz per gracz
+  const wiersze = dom.pobierz('gra-wyniki-tbody').children;
+  assert.equal(wiersze.length, 3, '3 graczy, ADR 0027');
+  assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
+  assert.equal(wiersze[0].children[1].textContent, '0', 'punkty z podsumowanie()');
+  assert.equal(wiersze[0].children[2].textContent, '0/0', 'poprawne/razem');
+  assert.match(wiersze[1].children[0].textContent, /Gracz 2/);
 
-  // 3. karty graczy: dwie, z punktami, poprawnością, dystansem i ręcznymi dojściami
-  const karty = dom.pobierz('gra-wynik-gracze').children;
-  assert.equal(karty.length, 3, 'karta per gracz, w kolejności rankingu (3 graczy, ADR 0027)');
-  assert.match(karty[0].textContent, /Gracz 1 🏆 · 0 pkt/);
-  assert.match(karty[0].textContent, /0 pkt · poprawne 0, błędne 0/);
-  assert.match(karty[0].textContent, /odcinki: 1 · dystans/, 'Gracz 1 miał odcinek 1 (3 graczy × 3 stacje, ADR 0027)');
-  assert.match(karty[0].textContent, /ręczne dojścia: 0/);
-  assert.match(karty[1].textContent, /odcinki: 1/, 'Gracz 2 miał odcinek 2');
+  // 3. GÓRNY fragment ekranu gry nie może już nic dopisywać nad wynikami (D a)
+  assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, true, 'slot sterowania znika w fazie koniec');
 
-  // 4. tabela stacji: 3 wiersze, każda pominięta, bez gracza „—" (rotacja przypisana)
-  const wiersze = dom.pobierz('gra-wynik-stacje-tbody').children;
-  assert.equal(wiersze.length, 3);
-  for (const w of wiersze) {
-    assert.match(w.textContent, /pominięta/, 'stan z odcinka');
-    assert.match(w.textContent, /Gracz [123]/, 'gracz odcinka przy stacji (3 graczy, ADR 0027)');
+  // 4. nic więcej: statystyki, karty graczy, tabela stacji, eksporty i pole tekstu
+  //    zniknęły razem z kodem, który je wypełniał („masa błędów i niepotrzebnych
+  //    informacji”). Atrapa tworzy element leniwie, więc obecność w `elementy`
+  //    znaczy „kod aplikacji po to sięgnął” — i to jest właśnie ten pin.
+  for (const id of ['gra-wynik-statystyki', 'gra-wynik-szczegoly', 'gra-wynik-gracze',
+    'gra-wynik-stacje', 'gra-wynik-stacje-tbody', 'wynik-eksport',
+    'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',
+    'przycisk-pobierz-obraz', 'przycisk-udostepnij-obraz',
+    'gra-wynik-tekst-detale', 'pole-wynik-tekst', 'gra-wynik-factcheck']) {
+    assert.equal(dom.elementy.has(id), false, `pokazWyniki nie sięga już po #${id} (ADR 0038)`);
   }
-
-  // ranking M6 zostaje (te R6/R7 go czytają) — spójny z kartą zwycięzcy
-  assert.equal(dom.pobierz('gra-wyniki-tbody').children.length, 3);
-  assert.match(dom.pobierz('gra-wyniki-tbody').children[0].children[0].textContent, /Gracz 1 🏆/);
+  assert.equal(dom.pobierz('przycisk-nowa-gra').hidden, false, 'zostaje jeden przycisk: nowa gra');
 });
 
-/* ========== M7/P4: eksport tekstu wyniku (share / schowek / plik) */
+/* ========== ADR 0038: ekran wyniku bez eksportów (share / schowek / plik / PNG) */
 
-test('M7: eksport tekstu — pole readonly, clipboard, share i plik (ścieżki istnieją → przyciski widoczne)', async () => {
+test('ADR 0038: po grze nie ma eksportów — zero canvasów, linków do pliku i schowka', async () => {
   const { dom } = await graGotowaDoStartu();
   const skopiowane = [];
-  const udostepnione = [];
-  Object.assign(navigator, {
-    clipboard: { writeText: async (tekst) => { skopiowane.push(tekst); } },
-    share: async (dane) => { udostepnione.push(dane); },
-  });
+  Object.assign(navigator, { clipboard: { writeText: async (tekst) => { skopiowane.push(tekst); } } });
   zaczynijGre(dom);
   for (const i of [1, 2, 3]) {
     dom.kliknij('przycisk-start-odcinka');
     dom.kliknij('przycisk-pomin-stacje');
   }
-  const tekst = dom.pobierz('pole-wynik-tekst').value;
-  assert.match(tekst, /^TAJEMNICZA OKOLICA — WYNIK GRY/, 'tekst wyniku żyje w polu readonly');
-  assert.match(tekst, /🏆 Gracz 1 — 0 pkt/);
-  assert.match(tekst, /stacja 3 · Gracz 3 — pominięta · 0 pkt/, 'przy 3 graczach stację 3 ma Gracz 3 (rotacja, ADR 0027)');
-  assert.match(tekst, /tryb: piesza/, 'konfig gry w nagłówku');
-  assert.equal(/[#*_]/.test(tekst), false, 'zero markdowna w udostępnianym tekście');
-
-  // przyciski widoczne, bo ich ścieżki istnieją (decyzja 8)
-  assert.equal(dom.pobierz('przycisk-udostepnij-wynik').hidden, false);
-  assert.equal(dom.pobierz('przycisk-kopiuj-wynik').hidden, false);
-  assert.equal(dom.pobierz('przycisk-pobierz-wynik').hidden, false);
-
-  // kopiuj → clipboard dostaje DOKŁADNIE tekst pola, przycisk potwierdza
-  dom.kliknij('przycisk-kopiuj-wynik');
-  await czekaj(50);
-  assert.deepEqual(skopiowane, [tekst]);
-  assert.equal(dom.pobierz('przycisk-kopiuj-wynik').textContent, '✓ skopiowano');
-
-  // udostępnij → navigator.share dostaje tekst wyniku
-  dom.kliknij('przycisk-udostepnij-wynik');
-  await czekaj(50);
-  assert.equal(udostepnione.length, 1);
-  assert.equal(udostepnione[0].text, tekst);
-  assert.match(udostepnione[0].title, /Tajemnicza okolica/);
-
-  // plik → bez wyjątku, jawny status (Blob/URL/click istnieją w atrapie od M5)
-  dom.kliknij('przycisk-pobierz-wynik');
-  await czekaj(50);
-  assert.match(dom.pobierz('status').textContent, /zapisany jako plik .txt/);
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false);
+  assert.deepEqual(skopiowane, [], 'schowek nietknięty — „Kopiuj wynik” już nie istnieje');
+  const utworzone = dom.utworzone.map((el) => String(el.tagName).toLowerCase());
+  assert.equal(utworzone.includes('canvas'), false, 'żaden canvas nie powstał — eksport PNG zniknął');
+  // <a> powstają w grze legalnie (linki źródeł w wyjaśnieniu) — pinujemy samą
+  // drogę pliku: element z `download` mógł pochodzić tylko z usuniętego eksportu.
+  assert.equal(dom.utworzone.filter((el) => el.download).length, 0, 'żaden link do pliku nie powstał — eksport .txt zniknął');
+  // tekst wyniku (wynikTekstowy) stracił konsumenta w UI: pole i przyciski
+  // eksportu są tylko historią tego projektu (ADR 0038), moduł wynik.js zostaje
+  // z własnymi testami jako biblioteka do decyzji w przyszłości.
+  assert.equal(dom.elementy.has('pole-wynik-tekst'), false, 'aplikacja nie sięga po pole tekstu wyniku');
 });
 
-test('M7: brak clipboarda i share — przyciski uczciwie ukryte, plik i pole zostają', async () => {
-  const { dom } = await graGotowaDoStartu();
-  // atrapa bez clipboarda i bez navigator.share (desktop / stary telefon)
-  zaczynijGre(dom);
-  for (const i of [1, 2, 3]) {
-    dom.kliknij('przycisk-start-odcinka');
-    dom.kliknij('przycisk-pomin-stacje');
-  }
-  assert.equal(dom.pobierz('przycisk-udostepnij-wynik').hidden, true, 'bez navigator.share przycisk nie kłamie');
-  assert.equal(dom.pobierz('przycisk-kopiuj-wynik').hidden, true, 'bez navigator.clipboard przycisk nie kłamie');
-  assert.equal(dom.pobierz('przycisk-pobierz-wynik').hidden, false, 'plik jest ścieżką dla każdego');
-  assert.equal(dom.pobierz('przycisk-udostepnij-obraz').hidden, true, 'bez navigator.canShare brak udostępniania obrazu (P5)');
-  assert.equal(dom.pobierz('przycisk-pobierz-obraz').hidden, false, 'canvas jest wszędzie — obraz .png zawsze');
-  assert.match(dom.pobierz('pole-wynik-tekst').value, /WYNIK GRY/, 'tekst zawsze można zaznaczyć ręcznie');
-});
-
-test('M7: ręczne zakończenie — tekst wyniku mówi wprost, że gra przerwana (wynik wczesny)', async () => {
+test('ADR 0038: ręczne zakończenie gry pokazuje ten sam minimalny ekran wyniku', async () => {
   const { dom } = await graGotowaDoStartu();
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
   await dojdzSymulacja(dom);
   kliknijOdpowiedz(dom, 0);
   dom.kliknij('przycisk-zakoncz-gre'); // uzbrojenie
-  dom.kliknij('przycisk-zakoncz-gre'); // wykonanie → wczesny wynik
+  dom.kliknij('przycisk-zakoncz-gre'); // wykonanie → wynik wczesny
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false);
-  assert.match(dom.pobierz('pole-wynik-tekst').value, /\(gra przerwana ręcznie — wynik wczesny\)/, 'uczciwa adnotacja w udostępnianym tekście');
-});
-
-test('M7: eksport obrazu wyniku — plan przechodzi przez canvas do PNG (plik i share z File)', async () => {
-  const { dom } = await graGotowaDoStartu();
-  const udostepnione = [];
-  Object.assign(dom.navigator, {
-    canShare: (dane) => Boolean(dane?.files?.length),
-    share: async (dane) => { udostepnione.push(dane); },
-  });
-  zaczynijGre(dom);
-  for (const i of [1, 2, 3]) {
-    dom.kliknij('przycisk-start-odcinka');
-    dom.kliknij('przycisk-pomin-stacje');
-  }
-  assert.equal(dom.pobierz('przycisk-pobierz-obraz').hidden, false);
-  assert.equal(dom.pobierz('przycisk-udostepnij-obraz').hidden, false, 'canShare + File → przycisk widoczny');
-
-  // pobranie: jeden canvas, plan przerysowany co do komendy, PNG do pliku
-  const przed = dom.utworzone.length;
-  dom.kliknij('przycisk-pobierz-obraz');
-  await czekaj(80);
-  const canvasy = dom.utworzone.slice(przed).filter((el) => String(el.tagName).toLowerCase() === 'canvas');
-  assert.equal(canvasy.length, 1, 'dokładnie jeden canvas na eksport');
-  const canvas = canvasy[0];
-  assert.equal(canvas.width, 1080, 'szerokość z planu');
-  assert.ok(canvas.height > 500, 'wysokość z treści planu');
-  const teksty = canvas.komendy.filter((k) => k.op === 'fillText').map((k) => k.tekst);
-  assert.ok(teksty.includes('TAJEMNICZA OKOLICA'), 'wykonawca przekazuje teksty planu');
-  assert.ok(teksty.some((x) => x.includes('🏆 Gracz 1')), 'zwycięzca na obrazie');
-  assert.ok(teksty.some((x) => x.startsWith('1. Gracz 1 — 0 pkt')), 'ranking wspólnym formatem');
-  assert.ok(canvas.komendy.some((k) => k.op === 'fillRect'), 'tło i karta przerysowane');
-  assert.ok(canvas.komendy.some((k) => k.op === 'stroke'), 'separatory przerysowane');
-  const kolory = canvas.komendy.filter((k) => k.fillStyle).map((k) => k.fillStyle);
-  assert.ok(kolory.includes('#f6f2e9'), 'paleta z getComputedStyle motywu (atrapa :root) — nie gołe role');
-  assert.equal(teksty.some((x) => x.includes('52.2297')), false, 'zero współrzędnych na obrazie');
-  assert.match(dom.pobierz('status').textContent, /Obraz wyniku zapisany jako plik .png/);
-
-  // udostępnienie: canShare({files}) → navigator.share dostaje File o nazwie z oczyscKodGry
-  dom.kliknij('przycisk-udostepnij-obraz');
-  await czekaj(80);
-  assert.equal(udostepnione.length, 1);
-  assert.equal(udostepnione[0].files.length, 1);
-  assert.match(udostepnione[0].files[0].name, /^okolica-[a-z0-9-]+\.wynik\.png$/, 'nazwa pliku niesie auto-slug gry (jak w zapisie M6)');
-  assert.equal(udostepnione[0].files[0].type, 'image/png');
+  assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, true, 'sterowanie grą znika także przy ręcznym końcu (D a)');
+  assert.match(dom.pobierz('gra-wynik-zwyciezca').textContent, /pkt/, 'karta zwycięzcy wypełniona mimo przerwania');
+  assert.equal(dom.pobierz('gra-wyniki-tbody').children.length, 3, 'ranking liczy wszystkich graczy (3, ADR 0027)');
+  assert.equal(dom.pobierz('przycisk-nowa-gra').hidden, false, 'jeden przycisk powrotu (D b)');
+  // Adnotacja „(gra przerwana ręcznie — wynik wczesny)” zniknęła razem z tekstem
+  // wyniku (ADR 0038); przerwanie nadal pamięta historia — test M7/P6 niżej.
 });
 
 /* ========== M7/P6: historia gier w UI — zapis, lista, kasowanie, usterki */
@@ -1998,12 +1918,12 @@ test('M7: zepsuta historia — jawne kody H i oferta kasowania na setupie (nigdy
 
 /* ========== M7/P7: integracja — pełna gra z dojściem GPS → podsumowanie, eksport, historia */
 
-test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i historia (end-to-end)', async () => {
+test('M7/P7 + ADR 0038: PEŁNA GRA z dojściem GPS → minimalny wynik i historia (end-to-end)', async () => {
   const { dom, paczka, pamiec } = await graGotowaDoStartu();
   const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
   zaczynijGre(dom);
 
-  // pętla jak w R7: symulacja dojścia ×3 stacje, poprawne odpowiedzi (fixture: 20 pkt/pytanie)
+  // pętla jak w R7: symulacja dojścia ×3 stacje, poprawne odpowiedzi (fixture: 1 pkt/pytanie)
   for (const numerStacji of [1, 2, 3]) {
     const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
     dom.kliknij('przycisk-start-odcinka');
@@ -2015,59 +1935,32 @@ test('M7/P7: PEŁNA GRA z dojściem GPS → pełne podsumowanie, tekst, obraz i 
   }
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'naturalny koniec po ostatniej stacji');
 
-  // 1. PEŁNE podsumowanie z prawdziwą punktacją (nie zera z pominięć):
-  //    3 stacje × 1 pytanie dla 3 graczy (ADR 0027) — każdy odpowiada raz, więc
-  //    wszyscy mają po 1 pkt, a o kolejności decyduje remisowe kryterium z ADR 0023
-  //    (kolejność zgłoszeń), czyli Gracz 1.
+  // 1. wynik z PRAWDZIWĄ punktacją (nie zera z pominięć): 3 stacje × 1 pytanie dla
+  //    3 graczy (ADR 0027) — każdy odpowiada raz, więc wszyscy mają po 1 pkt,
+  //    a o kolejności decyduje remisowe kryterium z ADR 0023 (kolejność zgłoszeń).
   const kartaZw = dom.pobierz('gra-wynik-zwyciezca');
   assert.match(kartaZw.children[0].textContent, /^🏆 Gracz 1$/, 'przy remisie punktów wygrywa kolejność zgłoszeń (ADR 0023)');
   // punkty CZYTAMY Z ELEMENTU, nie regexem po złączonym textContent (L23:
   // 'Gracz 1' + '42 pkt' złączone dałoby '142 pkt')
   const punktyZw = Number(kartaZw.children[1].textContent.replace(' pkt', ''));
   assert.equal(punktyZw, 1, 'zwycięzca: 1 × 1 pkt (rev2), zero premii');
+  assert.match(kartaZw.children[2].textContent, /poprawne 1\/1/);
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
   assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
+  assert.equal(wiersze[0].children[1].textContent, String(punktyZw), 'ranking spójny z kartą zwycięzcy');
   assert.equal(wiersze[0].children[2].textContent, '1/1', 'Gracz 1: jedna poprawna, zero błędnych');
   assert.equal(wiersze[1].children[2].textContent, '1/1', 'Gracz 2: jedna poprawna');
-  const fcWynik = dom.pobierz('gra-wynik-factcheck');
-  assert.match(fcWynik.textContent, /fact check/, 'wynik ogłasza weryfikację (ADR 0032)');
-  assert.ok([...fcWynik.children].some((c) => c.className === 'znaczek-factcheck' && c.textContent === 'Q'), 'złoty znaczek Q na wyniku');
-  const karty = dom.pobierz('gra-wynik-gracze').children;
-  assert.match(karty[0].textContent, /1 pkt · poprawne 1, błędne 0/, 'punkty i poprawność z prawdziwej gry');
-  assert.match(karty[0].textContent, /odcinki: 1 · dystans/);
-  assert.match(karty[0].textContent, /ręczne dojścia: 0/);
-  const statystyki = dom.pobierz('gra-wynik-statystyki').textContent;
-  assert.match(statystyki, /zaliczone:3 z 3/);
-  assert.match(statystyki, /pominięte:0/);
-  const stacjeWiersze = dom.pobierz('gra-wynik-stacje-tbody').children;
-  assert.equal(stacjeWiersze.length, 3);
-  for (const w of stacjeWiersze) {
-    assert.match(w.textContent, /zaliczona \(GPS\)/, 'tryb dojścia zmierzony, nie zgadywany');
-    assert.equal(w.children.length, 4, 'kolumny: # | gracz | stan | punkty (czasu nie ma)');
-  }
+  assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, true, 'górny pasek gry znika na wynikach (D a)');
+  assert.equal(dom.pobierz('przycisk-nowa-gra').hidden, false, 'zostaje jeden przycisk powrotu (D b)');
 
-  // 2. eksport tekstowy z prawdziwej gry: ranking, stacje z GPS — i STRAŻNIK prywatności
-  const tekst = dom.pobierz('pole-wynik-tekst').value;
-  assert.match(tekst, /🏆 Gracz 1 — \d+ pkt/);
-  assert.match(tekst, /stacja 1 · Gracz 1 — zaliczona \(GPS\)/);
-  assert.match(tekst, /zaliczone 3 z 3 stacji/);
-  for (const pytanie of paczka.pytania) {
-    assert.equal(tekst.includes(pytanie.tresc), false, `treść pytania ${pytanie.id} wyciekła do eksportu`);
-    for (const odpowiedz of pytanie.odpowiedzi) {
-      if (odpowiedz.length > 4) assert.equal(tekst.includes(odpowiedz), false, `odpowiedź wyciekła do eksportu`);
-    }
-  }
-  assert.equal(tekst.includes('52.2297'), false, 'współrzędne nie wyciekają do eksportu');
+  // 2. zero eksportów (D b): gra nie tworzy canvasu ani linku do pliku, a treść
+  //    pytań i współrzędne nie mają jak wyciec — nie ma ekranu, który by je niósł.
+  const utworzone = dom.utworzone.map((el) => String(el.tagName).toLowerCase());
+  assert.equal(utworzone.includes('canvas'), false, 'brak canvasu: obrazu wyniku nie ma');
+  assert.equal(dom.utworzone.filter((el) => el.download).length, 0, 'brak linku z download: eksportu .txt nie ma');
+  assert.equal(dom.elementy.has('pole-wynik-tekst'), false, 'brak pola z tekstem wyniku');
 
-  // 3. obraz wyniku z prawdziwej gry: zwycięzca z punktami na canvas
-  dom.kliknij('przycisk-pobierz-obraz');
-  await czekaj(80);
-  const canvas = dom.utworzone.filter((el) => String(el.tagName).toLowerCase() === 'canvas').at(-1);
-  const tekstyObrazu = canvas.komendy.filter((k) => k.op === 'fillText').map((k) => k.tekst);
-  assert.ok(tekstyObrazu.some((x) => x === '🏆 Gracz 1'), 'zwycięzca na obrazie');
-  assert.ok(tekstyObrazu.some((x) => x === `${punktyZw} pkt`), 'punkty zwycięzcy spójne z panelem');
-
-  // 4. historia: jeden pełny wpis bez treści (skrót, ADR 0010 pkt 1)
+  // 3. historia: jeden pełny wpis bez treści (skrót, ADR 0010 pkt 1)
   const { historia, usterki } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
   assert.deepEqual(usterki, []);
   assert.equal(historia.wpisy.length, 1);

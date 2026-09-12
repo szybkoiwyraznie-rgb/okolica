@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-87">
-  <script type="module" src="app/app.js?v=m12-87"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-88">
+  <script type="module" src="app/app.js?v=m12-88"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -550,46 +550,24 @@
         <button id="przycisk-nastepna-stacja" class="przycisk przycisk-glowny przycisk-fazy" type="button" hidden>Następna stacja →</button>
       </div>
 
-      <!-- FAZA D: koniec — pełne podsumowanie (M7): zwycięzca, ranking, statystyki, szczegóły -->
+      <!-- FAZA D: koniec — MINIMALNE podsumowanie (decyzja właściciela 2026-09-12,
+           ADR 0038): zwycięzca, tabela rankingu i powrót do startu. Statystyki,
+           szczegóły graczy, tabela stacji, eksporty (.txt/.png/share/schowek)
+           i linia wariantu fact-checku zostały USUNIĘTE — to był ekran, na
+           którym gracz nie miał nic do zrobienia poza jednym przyciskiem. -->
       <div id="gra-panel-koniec" class="karta gra-panel" hidden>
         <p class="duzy">🏁 Koniec gry!</p>
         <div id="gra-wynik-zwyciezca" class="karta-zwyciezcy"></div>
-        <p id="gra-wynik-factcheck" class="podpowiedz"></p>
         <table id="gra-wyniki" class="tabela-wynikow">
           <thead>
             <tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th></tr>
           </thead>
           <tbody id="gra-wyniki-tbody"></tbody>
         </table>
-        <dl id="gra-wynik-statystyki" class="statystyki-gry"></dl>
         <!-- Los wysyłki wyniku na Drive ma WŁASNĄ linię: wspólny `#status` jest
              jeden, a wysyłka kończy się w nieprzewidywalnej chwili — nie może
              nadpisać tego, co gracz właśnie zrobił (ADR 0026 aneks). -->
         <p id="wynik-drive" class="podpowiedz"></p>
-        <details id="gra-wynik-szczegoly">
-          <summary>Szczegóły graczy</summary>
-          <div id="gra-wynik-gracze" class="gracze-szczegoly"></div>
-        </details>
-        <details id="gra-wynik-stacje-detale">
-          <summary>Stacje</summary>
-          <table id="gra-wynik-stacje" class="tabela-wynikow tabela-stacje">
-            <thead>
-              <tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Stan</th><th scope="col">Punkty</th></tr>
-            </thead>
-            <tbody id="gra-wynik-stacje-tbody"></tbody>
-          </table>
-        </details>
-        <div class="wiersz" id="wynik-eksport">
-          <button id="przycisk-udostepnij-wynik" class="przycisk" type="button" hidden>⤴ Udostępnij wynik</button>
-          <button id="przycisk-kopiuj-wynik" class="przycisk przycisk-maly" type="button" hidden>📋 Kopiuj wynik</button>
-          <button id="przycisk-pobierz-wynik" class="przycisk przycisk-maly" type="button">⬇ Wynik .txt</button>
-          <button id="przycisk-pobierz-obraz" class="przycisk przycisk-maly" type="button">🖼 Wynik .png</button>
-          <button id="przycisk-udostepnij-obraz" class="przycisk przycisk-maly" type="button" hidden>⤴ Udostępnij obraz</button>
-        </div>
-        <details id="gra-wynik-tekst-detale">
-          <summary>Tekst wyniku</summary>
-          <textarea id="pole-wynik-tekst" class="pole-tekstowe" rows="12" readonly aria-label="Tekst wyniku do skopiowania"></textarea>
-        </details>
         <button id="przycisk-nowa-gra" class="przycisk przycisk-glowny" type="button">🏠 Wróć na początek — nowa gra</button>
       </div>
 
