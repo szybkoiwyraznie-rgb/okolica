@@ -104,15 +104,13 @@ rozegrać symulacją trasy — gra bez GPS. Kamień czeka na kryterium terenowe
 właściciela: pełna gra na telefonie, z utratą zasięgu w trakcie i z
 zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).
 
-**M7 — podsumowanie, punkty i udostępnianie: kod i testy gotowe.** Po końcu
-gry (naturalnym albo ręcznym) panel wyniku pokazuje pełne podsumowanie:
-zwycięzca z 🏆, ranking, szczegóły graczy (odcinki, dystans), tabela stacji
-(tryb dojścia: GPS / ręczne / pominięta) i statystyki — bez czasów i tempa
-(ADR 0023: zero presji czasowej).
-Wynik da się udostępnić bez serwera: tekst w formacie przyjaznym komunikatorom
-(wiersze stacji bez `#`, żeby `#1` nie stało się nagłówkiem), obraz PNG
-1080 px rysowany z czystego planu komend (paleta z tokenów CSS), Web Share →
-schowek → plik .txt/.png. W żadnym eksporcie ani w historii nie ma treści
+**M7 — podsumowanie i punkty: kod i testy gotowe.** Po końcu gry (naturalnym
+albo ręcznym) panel wyniku pokazuje MINIMUM (ADR 0038): kto wygrał z 🏆 (imię,
+punkty, poprawne), tabelę rankingu bieżącej gry, linię wysyłki na Drive i jeden
+przycisk „Wróć na początek — nowa gra”. Statystyki, szczegóły graczy, tabela
+stacji i eksporty wyniku (.txt/.png/Web Share) są USUNIĘTE — właściciel
+uznał je za „masę błędów i niepotrzebnych informacji”, a faza `koniec` ukrywa
+także cały slot sterowania grą. W historii ani w wysyłce na Drive nie ma treści
 pytań ani współrzędnych — pilnują tego testy-strażnicy. Na setupie dochodzi
 karta „Poprzednie gry": do 50 skrótów (`okolica:historia`), najnowsza
 pierwsza, ze znacznikiem gier przerwanych ręcznie; dokończenie przerwanej gry
@@ -223,9 +221,14 @@ braku przycisku). Eksport
 - **Offline**: zdarzenia z trasy czekają w kolejce i wychodzą automatycznie po
   powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca z zapamiętanej
   sesji — zamknięte stacje nie wracają.
-- **Podsumowanie zamiast rankingów** (właściciel, 2026-09-11): gra kończy się
+- **Podsumowanie na telefonie i ranking na Drive** (właściciel): gra kończy się
   tabelą końcową na telefonie gracza, a na wspólnym Drive zostaje historia gier.
-  Rankingu graczy między grami nie ma — ani w aplikacji, ani w moście.
+  Ranking graczy między grami usunięto 2026-09-11, a 2026-09-12 wrócił w nowej,
+  wąskiej formie (ADR 0039): ikonka pucharu w belce otwiera warstwę z DWOMA
+  tabelami — „Ranking Punktowy Graczy” (suma punktów ze wszystkich rodzajów
+  gier) i „Mistrzowie Zagadek” (proporcja poprawnych odpowiedzi do zadanych,
+  od 10 pytań). Sumy liczy most (`?akcja=ranking`, `RO-ranking/2`), a wchodzą
+  do nich wyłącznie gracze z potwierdzonym profilem (imię i PIN).
 
 ## Repozytorium
 

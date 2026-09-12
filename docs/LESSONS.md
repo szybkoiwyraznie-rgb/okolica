@@ -823,3 +823,29 @@ najpierw przelicz promień z `czasGryMin`, potem nadaj id ze wzoru, na końcu
 napisz inną treść z „?”. A gdy paczka jest odrzucana, czytaj komunikaty
 z `#wynik-naglowek` („usterek: N”) i listy `#wynik-usterki` — kontener
 `#bledy-paczka` bywa pusty, a SONDA wypisująca sam status nic nie pokaże.
+
+## L55 — pin „element usunięty” blokuje powrót: gdy właściciel zmienia decyzję, pin przepisujesz na NOWĄ formę
+
+**Objaw:** (zgłoszenie F, ranking — 2026-09-12) wróciliśmy do ekranu, który
+dzień wcześniej sami usunęliśmy, a brama trzymała trzy asercje wprost przeciwne:
+`assert.equal(INDEX.includes('ekran-ranking'), false)`,
+`assert.equal(APP.includes('przycisk-ranking'), false)`,
+`assert.equal(GS.includes("akcja === 'ranking'"), false)`. Zostawienie ich =
+czerwona brama i pokusa „naprawienia” jej przez osłabienie testu; skasowanie
+ich = brak ochrony przed powrotem STAREJ formy (zakładki, kategorie, lista
+„Moje gry”), która właśnie dlatego została usunięta.
+
+**Przyczyna:** pin na usunięcie jest pinem DECYZJI, nie kodu. Reguła L31
+(„usunięty element ma zostać usunięty”) powstała jako obrona przed cichym
+powrotem, a nie jako zakaz zmiany zdania przez właściciela — a decyzja
+właściciela może się zmienić, i wtedy test pilnuje czegoś, czego już nikt nie
+chce.
+
+**Reguła:** gdy zadanie przywraca coś, co wcześniej usunęliśmy, nie kasuj pinu
+— przepisz go na nową formę i dopisz zakaz formy starej: (1) w miejscu dawnych
+`assert.equal(..., false)` postaw `assert.ok(..., 'nowy element jest')`;
+(2) dodaj listę identyfikatorów starej formy z `assert.equal(INDEX.includes(...),
+false)`, żeby nikt nie wniósł jej z powrotem „przy okazji”; (3) w ADR napisz,
+że poprzednia decyzja jest odwrócona/uzupełniona i który aneks rejestru to
+niesie; (4) numer schematu podnieś, gdy zmienia się kształt danych
+(`RO-ranking/1` → `RO-ranking/2`), i nie wracaj ze starym numerem do puli nazw.

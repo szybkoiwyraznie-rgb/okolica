@@ -11,8 +11,10 @@ OD RAZU do katalogu zaakceptowanych, bez sesji przeglądu i bez maili
 graczy (ADR 0028), a niechcianą paczkę wyłączasz z obiegu ręcznie,
 przeciągając plik do katalogu odrzuconych; (2) gry wieloosobowe na wielu
 urządzeniach — lobby, kody, Wspólna Trasa i Wyścig na Orientację, stan gry na
-Drive; (3) wspólne archiwum wyników i ocen paczek — rankingi usunięto 2026-09-11
-(ADR 0019 aneks 2026-09-11b), zostaje historia gier i łapki ocen (ADR 0028).
+Drive; (3) wspólne archiwum wyników i ocen paczek — historia gier i łapki ocen
+(ADR 0028) oraz RANKING graczy (wrócił 2026-09-12 w nowej formie: dwie tabele,
+`GET ?akcja=ranking`, ADR 0039 — **dla rankingu potrzebna jest nowa wersja
+wdrożenia**, bo starsza nie zna tej akcji).
 Aplikacja
 nie zna żadnych haseł ani kluczy — zna tylko adres web app, który poniżej
 skopiujesz i podasz w czacie: trafi do kodu aplikacji (ADR 0020), więc żadne

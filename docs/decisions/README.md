@@ -31,7 +31,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device; przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
 | [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1`, geohash5 w indeksie, CC BY-SA 4.0, moderacja właściciela | Proponowana |
 | [0018](0018-drive-backend-wielozadaniowy.md) | Drive jako backend wielozadaniowy (paczki, gry, statystyki; przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
-| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig (rankingi usunięte — aneks 2026-09-11b) | Zaakceptowana |
+| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig (rankingi usunięte — aneks 2026-09-11b; ranking wrócił w nowej formie — aneks 2026-09-12f) | Zaakceptowana |
 | [0020](0020-adres-mostu-wpisany-w-kod-aplikacji.md) | Adres mostu Drive w kodzie aplikacji, bez pola w UI (przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
 | [0021](0021-pin-prosty-profilu-pseudonimu.md) | PIN pseudonimu (4-8 cyfr, jawny tekst, RO-profil/1) + przycisk To ja w setupie | Zaakceptowana |
 | [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` (kolejne pytania rotują — aneks 2026-09-12) | Zaakceptowana |
@@ -52,6 +52,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0036](0036-pasek-podczas-drogi.md) | Pasek podczas drogi, sterowanie w Informacjach, duży panel pytania | Zaakceptowana |
 | [0037](0037-jezyk-i-podklad-zaszte-w-kodzie.md) | Język pytań i podkład mapy zaszte w kodzie (polski + OSM), pola usuwane z UI | Zaakceptowana |
 | [0038](0038-minimalny-ekran-wyniku.md) | Minimalny ekran wyniku: zwycięzca, ranking i powrót — statystyki, szczegóły, stacje i eksporty usunięte | Zaakceptowana |
+| [0039](0039-ranking-dwie-tabele.md) | Ranking wrócił w nowej formie: dwie tabele (punkty i proporcja), sumy liczy most, tylko gracze z profilem | Zaakceptowana |
 
 ## Szablon ADR
 

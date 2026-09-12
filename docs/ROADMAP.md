@@ -23,7 +23,7 @@
 | M9 — Repozytorium paczek | ✅ 2026-09-06 (M9b) | kopia lokalna + most Drive (adres w kodzie) |
 | M10 — Dopracowanie terenowe | 🟡 kod gotowy, czeka kryterium | sw.js, PROFILE_GPS, sygnały, WCAG AA 0 naruszeń; kryterium: §Kryteria |
 | M11 — Gra wieloosobowa (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | most `.gs` + UI; kryterium: §Kryteria |
-| M12 — Historia gier (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | wynik gry na wspólnym Drive; rankingi USUNIĘTE 2026-09-11 (aneks ADR 0019); kryterium: §Kryteria |
+| M12 — Historia gier (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | wynik gry na wspólnym Drive; rankingi USUNIĘTE 2026-09-11 (aneks ADR 0019), wróciły w nowej formie 2026-09-12 — dwie tabele, sumy liczy most (ADR 0039); kryterium: §Kryteria |
 
 ## Kamienie zamknięte (M0, M1, M2, M9)
 

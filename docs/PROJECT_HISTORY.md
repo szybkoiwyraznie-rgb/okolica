@@ -3390,7 +3390,80 @@ L53 (kotwicz przepisywaną funkcję po realnym tekście; nieudany skrypt
 z pojedynczym zapisem potwierdź grepem) i L54 (trzy pułapki walidatora przy
 dokładaniu pytań do paczki: promień E16, wzór id E19, treść E15).
 
-**Otwarte:** potwierdzenie terenne Buga B (≥3 paczki z Podkowy Leśnej);
+**Otwarte:** potwierdzenie terenowe Buga B (≥3 paczki z Podkowy Leśnej);
 sprawdzenie przez właściciela na telefonie C (rotacja pytań), D (ekran wyniku)
 i E (intro); kafelki M3–M8 i M10–M12. Właściciel zapowiada dalsze uwagi do
 ekranu wyników.
+
+## Sesja 2026-09-12f — ranking wrócił w nowej formie: dwie tabele, sumy liczy most (m12-90)
+
+**Gałąź:** `arena/01a095b5-okolica`, **PR #14** — jedyny otwarty PR tej sesji.
+**Handoff:** `docs/setup/HANDOFF_2026-09-12f.md`.
+**Zlecenie właściciela:** „Mam nowy pomysł na podstronę Ranking”: przywrócić
+podstronę jako warstwę togglowaną ikonką pucharu, z DOKŁADNIE dwiema tabelami —
+„Ranking Punktowy Graczy” (zarejestrowani gracze wg zdobytych punktów,
+wszystkie rodzaje gier, max 5 pozycji) i „Mistrzowie Zagadek” (wg proporcji
+odpowiedzi poprawnych do zadanych, max 5 pozycji).
+
+**Trzy decyzje właściciela (dopytane przed kodem):** źródło danych = wspólny
+Drive (nowa akcja w skrypcie mostu; po zmianie `.gs` zgłoszona potrzeba
+redeployu „Wdróż → Nowa wersja”); do tabel wchodzą WYŁĄCZNIE gracze
+z potwierdzonym profilem (imię + PIN, ADR 0021) — goście bez profilu nie;
+„Mistrzowie Zagadek” liczą się od progu **10 zadanych pytań** (suma gier).
+
+### 1. `9e1737e` — implementacja rankingu (m12-90)
+
+Rankingi usunięto 2026-09-11 (`963a86d`, m12-81) — razem z akcją mostu
+`GET ?akcja=ranking` i schematem `RO-ranking/1` (surowe wiersze per gra:
+pseudonim, punkty, data, tryb, miejsce, geohash5, wiek, tematy). Nowa forma
+odwraca tylko DECYZJĘ o braku rankingu, nie jego kształt: numer schematu rośnie
+do `RO-ranking/2`, a odpowiedź niesie gotowe SUMY per gracz
+`{ pseudonim, punkty, poprawne, pytania }` — bez wierszy gier, więc na telefon
+nie jadą daty, miejsca ani geohashy innych osób (ADR 0013/0019 pkt 3).
+
+- **Most** (`docs/setup/apps-script-repo-paczek.gs`): `rankingi()` czyta katalog
+  gier zakończonych (jedno źródło dla hot-seat i multi) i katalog profili;
+  wiersz powstaje tylko dla gracza z profilem (`idProfilu` + `czytajProfil`),
+  pseudonim wyświetlany pochodzi z PROFILU („ALA” i „ala” to jeden wiersz
+  „Ala”), rezygnacja bez ani jednej odpowiedzi nie wchodzi do sum, a uszkodzony
+  plik gry albo profilu jest pomijany po cichu. Trasa: `doGet` obsługuje
+  `akcja === 'ranking'`.
+- **Aplikacja**: nowy czysty moduł `app/ranking.js` (limit 5 pozycji, próg 10
+  zadanych pytań, sortowanie z remisami — przy równej proporcji wyżej większa
+  próba, walidacja odpowiedzi, format „18/24 · 75%”); warstwa `#ekran-ranking`
+  w `index.html` (dwie tabele, linia statusu, ✕) i przełącznik
+  `#przycisk-ranking` (puchar) w belce. Stan ikony liczy jedno miejsce
+  (`odswiezWidocznoscPaneli`, wzorzec F3), Escape zamyka, a warstwa wygasza
+  pozostałe panele (`body.ranking-otwarte`).
+- **Testy**: `test/most-ranking.test.js` (5 testów WYKONUJE tekst `.gs` na
+  atrapie Drive — LESSONS L33), `test/ranking-ui.test.js` (13: reguły modułu
+  plus warstwa na atrapie DOM, w tym awaria sieci, śmieci w odpowiedzi i stan
+  „starsze wdrożenie bez akcji”: `{ blad: 'nieznana akcja' }` pokazujemy
+  dosłownie) i kontrakt ADR 0039.
+- **Odwrócony pin**: brama trzymała trzy asercje „rankingu NIE MA” (LESSONS
+  L31). Zamiast je kasować, przepisane na pin nowej formy + zakaz powrotu
+  starej (zakładki, kategorie, `ranking-moje-gry`) — nowa lekcja **L55**.
+
+### 2. Dokumentacja
+
+**ADR 0039** (nowy) + rejestr (wiersz 0039; nota przy 0019 o powrocie rankingu
+w nowej formie), **PROTOKOL §9.7** (`GET ?akcja=ranking`, `RO-ranking/2`,
+reguły i wymóg redeployu) z korektą noty o `RO-ranking/1` w §9.3,
+`docs/ARCHITECTURE.md` (moduł `ranking.js`; opis ekranu wyniku nadrobiony po
+ADR 0038) i `docs/ROADMAP.md` (M12: rankingi wróciły w nowej formie),
+`README.md` (M7 i nota o rankingu), **LESSONS L55**, handoff
+`docs/setup/HANDOFF_2026-09-12f.md`. `docs/setup/most-drive-instrukcja.md`
+dopowiada, że bez nowej wersji wdrożenia ranking nie ma danych.
+
+### 3. Bramy i stan po sesji
+
+`npm test` — **724/724** (0 fail), `npm run check` — oba szablony promptu
+zgodne, `npm run audyt` — 0 naruszeń WCAG AA, budżet lektury startowej
+**80 984/100 000** (rezerwa 19 016 — nowy ADR 0039, sekcja protokołu, README
+i ten wpis wchodzą do lektury startowej). Wszystko wypchnięte na `arena/01a095b5-okolica`.
+
+**Otwarte:** WDROŻENIE `.gs` (właściciel: „Wdróż → Nowa wersja”) — bez niego
+warstwa rankingu pokaże „most Drive odmówił: nieznana akcja”; sprawdzenie
+przez właściciela na telefonie: C (rotacja pytań), D (ekran wyników),
+E (intro) i F (ranking: dwie tabele, ikonka pucharu); potwierdzenie terenowe
+Buga B (≥3 paczki z Podkowy Leśnej); kamienie M3–M8 i M10–M12.

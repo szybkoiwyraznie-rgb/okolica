@@ -554,9 +554,11 @@ nie ma.
   `idGry`. Wpis w UI pokazuje tylko „Host: <organizator>" — bez miejsca,
   trybu i licznika graczy.
 - **`RO-ranking/1` wycofany** (właściciel, 2026-09-11): rankingi usunięte
-  z aplikacji i z mostu (`GET ?akcja=ranking` nie istnieje). Gra kończy się
-  PODSUMOWANIEM na telefonie gracza, a na Drive zostaje historia gier
-  (`RO-gra/1` ze stanem `zakonczona`). Schemat nie wraca do puli nazw.
+  z aplikacji i z mostu. Gra kończy się PODSUMOWANIEM na telefonie gracza,
+  a na Drive zostaje historia gier (`RO-gra/1` ze stanem `zakonczona`).
+  Sam NUMER nie wraca do puli: ranking wrócił 2026-09-12 w nowej, wąskiej
+  formie jako **`RO-ranking/2`** (sumy per gracz, bez surowych wierszy gier) —
+  patrz §9.7 i ADR 0039.
 - `RO-profil/1`: `{ schemat, pseudonim, pin, utworzono }` — plik
   `profil-<id>.json` w katalogu `okolica-profile`; PIN jawnym tekstem
   (ADR 0021). Akcje mostu: `profil-ustaw` (utwórz albo potwierdź),
@@ -664,3 +666,49 @@ pod wynikiem mówi to wprost). Bez sieci
 polecenie czeka w `okolica:hotseat-kolejka` (maks. 5 gier) i jedzie przy
 następnym uruchomieniu, a odcisk gry w `okolica:hotseat-wyslane` pilnuje, żeby
 ta sama gra nie weszła do historii dwa razy (ADR 0016 pkt 5).
+
+### 9.7 `GET ?akcja=ranking` — `RO-ranking/2` (zgłoszenie właściciela 2026-09-12, ADR 0039)
+
+Ranking wrócił w wąskiej formie („dwie tabele i nic więcej”): „Ranking Punktowy
+Graczy” (suma punktów, wszystkie rodzaje gier, max 5 pozycji) i „Mistrzowie
+Zagadek” (proporcja poprawnych do zadanych, próg 10 zadanych pytań, max 5).
+Most **agreguje** liczniki graczy z katalogu gier zakończonych i oddaje gotowe
+sumy — telefon nie dostaje wyników per gra, więc daty, miejsca ani geohashy
+innych osób nie opuszczają Drive (ADR 0013/0019 pkt 3, ADR 0039 pkt 4).
+
+```json
+{
+  "schemat": "RO-ranking/2",
+  "gracze": [
+    { "pseudonim": "Ala", "punkty": 42, "poprawne": 9, "pytania": 10 },
+    { "pseudonim": "Bartek", "punkty": 12, "poprawne": 3, "pytania": 3 }
+  ]
+}
+```
+
+Reguły — wszystkie po stronie mostu (`rankingi()` w
+`docs/setup/apps-script-repo-paczek.gs`):
+
+- źródło: katalog `okolica-gry-zakonczone` (`RO-gra/1` ze stanem `zakonczona`)
+  — jedno źródło dla hot-seat (§9.6) i gier wieloosobowych (§9.1);
+- wiersz gracza powstaje TYLKO wtedy, gdy istnieje jego profil (plik
+  `profil-<id>.json`, `RO-profil/1`, ADR 0021) — filtr po `idProfilu(pseudonim)`;
+  pseudonim w odpowiedzi pochodzi z PROFILU, więc „ALA” i „ala” to jeden wiersz
+  „Ala”; gracze bez potwierdzonego profilu nie wchodzą do tabel;
+- `punkty` = suma punktów z gier (w grach wieloosobowych z premią za kolejność,
+  ADR 0027 część B; hot-seat premii nie ma);
+- `pytania` = `poprawne + bledne`; próg 10 zadanych pytań dla „Mistrzów
+  Zagadek” liczy aplikacja (`app/ranking.js`), ale z tych samych liczb — most
+  nie zna prezentacji;
+- rezygnacja bez ani jednej odpowiedzi nie wchodzi do sum (nie ma wyniku), a
+  uszkodzony plik gry albo profilu jest pomijany po cichu: jedna zła gra nie
+  psuje całego rankingu;
+- brak gier ⇒ `{ "schemat": "RO-ranking/2", "gracze": [] }` — to NIE jest błąd;
+- kody R17/R18 pozostają wycofane (§9.4): odpowiedź nie niesie wierszy per gra,
+  więc częściowej szkody nie ma jak zgłosić, a nieczytelną odpowiedź aplikacja
+  nazywa własnym komunikatem („nie udało się odczytać rankingu”).
+
+Ranking wymaga **nowej wersji wdrożenia** skryptu (`Wdróż → Nowa wersja`):
+starsze wdrożenie odpowie na `?akcja=ranking` jak na nieznaną akcję, a warstwa
+powie wprost, że nie umie odczytać odpowiedzi (LESSONS L6 — bez ciszy udającej
+pusty ranking).
