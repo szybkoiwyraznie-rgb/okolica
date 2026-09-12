@@ -786,7 +786,7 @@ udaje sieci — inaczej reguła zniknie przy pierwszym refaktorze.
 
 ## L53 — przepisujesz dużą funkcję? Kotwicz po jej REALNYM tekście, a nieudany skrypt potwierdź grepem
 
-**Objaw (Bug D, ekran wyników):** skrypt `python3` z dziewięcioma podmianami
+**Objaw:** (Bug D, ekran wyników) skrypt `python3` z dziewięcioma podmianami
 przerwał się na czwartej (`AssertionError`): regex na `pokazWyniki` zakładał
 strukturę (`// 1b.` + domknięcie `}\n}`), której funkcja nie miała — komentarze
 sekcji i kolejność bloków zmieniły się przez pół roku.
@@ -807,7 +807,7 @@ jest na końcu” to właściwość skryptu, nie założenie sesji; (4) łańcuc
 
 ## L54 — dokładasz pytania do paczki? Trzy pułapki walidatora (promień, id, treść)
 
-**Objaw (test hot-seat 2 × 2):** testowa paczka z drugim pytaniem na stację była
+**Objaw:** (test hot-seat 2 × 2) testowa paczka z drugim pytaniem na stację była
 odrzucana przez walidator („Paczka odrzucona — usterek: 7”) bez czytelnego
 komunikatu w `#bledy-paczka`.
 
