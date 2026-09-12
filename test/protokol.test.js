@@ -296,17 +296,27 @@ test('rev2: obcy kod to E06 z regułą i przykładem, jawny indeks nie przechodz
  * B2 (decyzja właściciela 2026-09-09): odwracanie liter USUNIĘTE — modele
  * przekręcały wyrazy. Zostaje wyłącznie kod pozycyjny poprawnej odpowiedzi.
  */
-test('rev4: szablon koduje poprawną, ale NIE każe odwracać tekstu (reguła 8)', () => {
+test('rev4: szablon koduje poprawną i nie zawiera żadnych poleceń kodowania tekstu', () => {
   for (const fraza of [
     '"PYT/1.0-rev4"',
     'ZAKODOWANY numer poprawnej odpowiedzi',
     '2 + 2 + 1 + 17 = 22',
-    'zapisz NORMALNIE',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
-  for (const zakazana of ['ODWRÓCONE ZNAKAMI', 'ODCZYTAJ każde odwrócone pole od końca', 'toK']) {
-    assert.ok(!SZABLON_PROMPTU.includes(zakazana), `szablon nie może już żądać odwracania: ${zakazana}`);
+  // Uwagi terenowe G.b (właściciel, 2026-09-12): zdanie „zapisz NORMALNIE…
+  // niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer…”
+  // usunięte z zasady 8 — samo jego pisanie mogło modelowi zasugerować,
+  // że cokolwiek trzeba zakodować (szablon 1.0.8).
+  for (const zakazana of [
+    'ODWRÓCONE ZNAKAMI',
+    'ODCZYTAJ każde odwrócone pole od końca',
+    'toK',
+    'zapisz NORMALNIE',
+    'niczego nie odwracaj ani nie szyfruj',
+    'Ukryty jest wyłącznie numer',
+  ]) {
+    assert.ok(!SZABLON_PROMPTU.includes(zakazana), `szablon §2 nie może zawierać: ${zakazana}`);
   }
 });
 
@@ -346,10 +356,13 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
     '"PYT/1.0-rev5"',
     'SCHEMAT ODPOWIEDZI (PYT/1.0-rev5)',
     'ZAKODOWANY numer poprawnej odpowiedzi',
-    'zapisz NORMALNIE',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
   }
+  // G.b (2026-09-12): jak w §2 — żadnego zdania o zapisie „NORMALNIE”/zakazie
+  // kodowania (szablon nofc.3).
+  assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('zapisz NORMALNIE'), 'szablon §2.2 bez zdania „zapisz NORMALNIE” (G.b)');
+  assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('niczego nie odwracaj ani nie szyfruj'), 'szablon §2.2 bez zakazu odwracania/szyfrowania (G.b)');
 
   // SEDNO zgłoszenia: żadnego zakazu ani nakazu co do sposobu zdobycia faktu.
   for (const zakaz of [
