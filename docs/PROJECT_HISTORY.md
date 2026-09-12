@@ -3507,3 +3507,58 @@ pliku; brama na HEAD: `npm test` **724/724**, 0 fail.
 **Wniosek:** zmiany zgodne z ADR 0019 (aneksy), 0022, 0027, 0038, 0039;
 PROTOKOL §9.7 spójny z `.gs` (kontrakt); nie znaleziono usterek wymagających
 poprawki w tej sesji.
+
+### 2. Bug G — cichy watcher GPS na iPhonie (m12-91, commity `f8c4d66`, `41b4b50`, dokumentacja)
+
+**Zgłoszenie:** iPhone, Chrome, Pages, zgoda na lokalizację udzielona, GPS
+telefonu sprawny (Google Maps lokalizuje). Ekran „Gdzie jesteś?” wisi na
+„Czekam na pozycję…” w nieskończoność; po wyjściu/wejściu „Szukam
+satelitów…”; w Informacjach „GPS uruchomiony” / „wznowiono śledzenie
+położenia”. Zero fixa, zero błędu — gracz nie ma jak przejść dalej.
+
+**Diagnoza (root cause):** WebKit (wszystkie przeglądarki na iOS) potrafi
+trzymać `watchPosition` w całkowitej ciszy — ani `onFix`, ani `onBlad` —
+ignorując opcję `timeout` (kwerenda: udokumentowana rodzina usterek iOS,
+obejście = watchdog z restartem). Ryzyko rośnie, gdy request poszedł bez
+gestu (nasz `start()` włącza GPS przy ładowaniu strony) i po powrocie
+z tła. Druga warstwa: aplikacja czytała `watcher.czyAktywny()` jako „GPS
+działa”, a to zdanie o własnym wrapperze, nie o dostawcach platformy.
+
+**Naprawa (m12-91):**
+- `pozycja.js` (czyste): `ZEGAR_MILCZENIA_MS = 15 000` (¾ × timeout z
+  ADR 0004 pkt 1), `czyMilczy()` (brak/NaN znaku życia = milczenie, L10),
+  `komunikatMilczenia()` → nowy kod **P10** (sekundy ciszy, numer próby,
+  wyjście awaryjne: iOS Usługi lokalizacji dla przeglądarki). P05 zostaje
+  wycofany, numer nie wraca do puli.
+- `app.js`: znak życia przy KAŻDYM callbacku (fix albo błąd); watchdog
+  co 5 s, uzbrojony TYLKO gdy czekamy na fixa (ekran pozycji albo faza
+  odcinka) — poza tym zero żywych timerów; po 15 s ciszy świeży watcher
+  + P10 z „próba N”; pauza/wznowienie i `zatrzymajGps` zdejmuje zegar.
+- Gest „Dalej”: bez żadnego fixa zakłada świeżego watchera przy każdym
+  wejściu na ekran pozycji (kotwica restartu w geście).
+- „GPS włączony” tylko przy pierwszym starcie — restarty nie nadpisują
+  statusu gry (L22).
+- Kontrakt L17: zakazane wywołania (`watchPosition`, `clearWatch`,
+  `enableHighAccuracy`) szukane w kodzie BEZ komentarzy.
+
+**Weryfikacja:** `npm test` 728/728 (4 nowe: `czyMilczy`, P10, watchdog
+end-to-end na „niemym” watcherze, gest „Dalej”), `check`/`audyt` zielone,
+`?v=m12-91` w całym grafie. Na żywo w headless Chromium (360×740,
+niemy GPS, przyspieszony zegar przez te same gałki co w testach): ekran
+pozycji nie wisi — P10 mówi „(13 s) — zakładam świeży nasłuch (próba 20)”
+i rośnie, zero `pageerror`; zrzut w sesji. **Do potwierdzenia na prawdziwym
+iPhonie** (właściciel): czy po wejściu na „Gdzie jesteś?” pozycja przychodzi
+po restarcie watchera (albo po kliknięciu „Dalej”).
+
+**Dokumentacja:** aneks m12-91 w ADR 0004, LESSONS **L56** (API „aktywne”
+≠ „dostarcza”; znak życia, limit ciszy, gest, uzbrajanie zegara na potrzebę),
+`ARCHITECTURE` (moduł pozycja.js + przepływ fixów), `README` (linia GPS),
+handoff `docs/setup/HANDOFF_2026-09-12g.md`.
+
+### 3. Bramy i stan po sesji
+
+`npm test` **728/728**, `check` OK, `audyt` OK, budżet lektury
+**82 004/100 000**. Wszystko wypchnięte na `arena/01a0967e-okolica` (PR #16).
+
+**Otwarte:** potwierdzenie terenowe bug G na iPhonie; WDROŻENIE `.gs`
+(ranking — ADR 0039); testy terenowe F/C/D/E; bug B; kamienie M3–M8, M10–M12.

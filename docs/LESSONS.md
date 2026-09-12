@@ -849,3 +849,36 @@ false)`, żeby nikt nie wniósł jej z powrotem „przy okazji”; (3) w ADR nap
 że poprzednia decyzja jest odwrócona/uzupełniona i który aneks rejestru to
 niesie; (4) numer schematu podnieś, gdy zmienia się kształt danych
 (`RO-ranking/1` → `RO-ranking/2`), i nie wracaj ze starym numerem do puli nazw.
+
+## L56 (2026-09-12) — API „aktywne” nie znaczy „dostarcza”: watcher bez znaku życia trzeba restartować
+
+**Objaw:** terenowo (iPhone, Chrome, Pages, zgoda udzielona, GPS telefonu
+sprawnie lokalizuje w Google Maps) ekran „Gdzie jesteś?” wisi na „Czekam
+na pozycję…” w nieskończoność; po wyjściu i wejściu „Szukam satelitów…”;
+w Informacjach „GPS uruchomiony” / „wznowiono śledzenie położenia”. Zero
+fixa i zero błędu — aplikacja nie ma żadnego sygnału, że coś jest nie tak.
+
+**Przyczyna:** dwie warstwy. (1) WebKit (wszystkie przeglądarki na iOS)
+ma udokumentowaną rodzinę usterek, w której `watchPosition` przestaje wołać
+OBA callbacki — ani sukces, ani błąd — ignorując opcję `timeout`; ryzyko
+rośnie, gdy request poszedł bez gestu użytkownika (GPS startował razem
+z ładowaniem strony) albo po powrocie karty z tła. (2) Nasz kod czytał
+`watcher.czyAktywny()` jako „GPS działa” — a to zdanie o WŁASNYM wrapperze
+(`aktywny` flaga w `pozycja.js`), nie o dostarczaniu pozycji przez platformę.
+Cisza bez końca była zatem niewidoczna z obu stron: platforma milczy,
+a wrapper „świeci zielonym”.
+
+**Reguła:** (1) status „aktywny” w naszym wrapperze to deklaracja intencji —
+o życiu streamu rozstrzyga wyłącznie OSTATNI CALLBACK, dobrego lub złego
+typu; dla streamów, na które czeka UI, mierz znak życia i po limicie ciszy
+zakładaj świeży zasób (watchdog). (2) Limit ciszy licz od założenia
+nasłuchu; brak danych o znaku to milczenie, nie „świeżość” (L10).
+(3) Restart nie może nadpisywać statusu gry (L22) — komunikat „GPS
+włączony” tylko na pierwszym starcie, restary mówią własnym zdaniem
+(P10 z sekundami i numerem próby). (4) Pierwszy request przed jakimkolwiek
+gestem użytkownika jest na iOS podejrzany z definicji — gdy UI czeka na
+jego efekt, gesto użytkownika (tu: „Dalej”) powinno go odświeżać, dopóki
+nie da efektu. (5) Infrastruktura testowa: zegar watchdoga uzbrajaj tylko
+gdy na niego czekasz — żywy `setInterval` po instancji atrapy wisi pętlę
+zdarzeń `node --test` (objaw: plik testowy „timeout” bez żadnej asercji).
+

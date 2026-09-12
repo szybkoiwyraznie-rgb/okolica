@@ -29,7 +29,7 @@ liter: kodowany jest wyłącznie numer poprawnej odpowiedzi (ADR 0033). Jako czy
 (`app/rozgrywka.js`: kolejka graczy i odpowiadania, odcinki, punktacja
 dotarcie-plus-poprawna, dziennik i podsumowanie) oraz
 **warstwa pozycji** (`app/pozycja.js`: walidacja współrzędnych, dojście po dwóch kolejnych fixach
-w odległości ≤50 m (bez oceny dokładności GPS), komunikaty błędów GPS, symulacja trasy dla trybu testowego).
+w odległości ≤50 m (bez oceny dokładności GPS), komunikaty błędów GPS, watchdog martwego nasłuchu GPS (WebKit potrafi milczeć bez fixa i bez błędu — po 15 s ciszy świeży nasłuch i komunikat z numerem próby), symulacja trasy dla trybu testowego).
 
 **M2 — mapa: kod i testy gotowe.** Na ekranach „pozycja" i „stacje" jest mapa
 SVG z podkładem rastrowym bez klucza API (OSM Standard, OpenTopoMap, Esri World
