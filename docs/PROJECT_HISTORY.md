@@ -3020,3 +3020,103 @@ ROADMAP M12 („Historia gier"), ASSETS §7.1, BACKLOG (§9.5 → §9.6). Treśc
 ADR-ów 0004/0020/0021/0026/0027/0029 wspominające rankingi zostają — to zapis
 historyczny, a obowiązujący kształt definiuje aneks ADR 0019 (wzorzec z ADR
 0014/0031: status, nie przepisywanie).
+
+## Sesja 2026-09-12c — kontynuacja: PR #14 i audyt PR #13 (gałąź arena/01a095b5-okolica)
+
+**Zlecenie właściciela:** „Kontynuujemy projekt." Sesja robocza bez nowego
+zakresu, więc wg `AGENTS.md` §2 i `docs/plans/2026-09-12c-sesja-robocza.md`:
+PR przed kodem (ADR 0012 reguła 1), audyt poprzedniego scalonego PR, potem
+najwyższa otwarta zaległość — a tą jest klaster dokumentacyjny z audytu PR #9
+(uwagi 2–6), otwarty także po PR #13.
+
+### 1. Blok startowy i PR #14
+
+Gałąź `arena/01a095b5-okolica` z `main` `963a86d` (stan po squash-merge
+PR #13), drzewo czyste. Bramy na starcie odtworzone: `npm test`
+**692 pass / 0 fail** (66 s), `npm run check` — oba szablony promptu zgodne
+(§2: 4 209 zn. / 61 l., §2.2: 4 457 zn. / 62 l.), `npm run audyt` —
+**0 naruszeń WCAG AA**. Cache-busting `?v=m12-81` w 42 miejscach
+(`index.html` + `app/*.js`), `WERSJA_SW = 'm12-81'` (`sw.js:21`) — spójne
+(kontrakt). Budżet lektury: `npm run budzet` — 74 064 / 100 000 tokenów.
+
+PR #14 („Sesja 2026-09-12c: audyt PR #13 + domknięcie zaległości
+dokumentacyjnych") powstał PRZED dotknięciem kodu — pierwszy commit to plan
+`docs/plans/2026-09-12c-sesja-robocza.md`.
+
+### 2. Audyt PR #13 (squash `963a86d`, 49 plików, +1962/−1333)
+
+Metoda: `git diff 963a86d^..963a86d` plik po pliku — cały `app/app.js`,
+`app/mapa.js`, `app/most.js`, `app/protokol.js`, `app/rozgrywka.js`,
+`app/stacje.js`, `app/wynik.js`, `app/zestawy.js`, `app/konfig.js`,
+`app/sieci.js`, `app/trwalosc.js`, `app/pozycja.js`, `app/wieloosobowa.js`,
+`sw.js`, `index.html`, `docs/setup/apps-script-repo-paczek.gs`, dokumenty
+i testy — plus weryfikacja grepem stanu po zmianach.
+
+**Zgodne z decyzją i zweryfikowane w kodzie:**
+
+- **Rankingi usunięte po obu stronach.** W `app/` nie ma `pokazRankingi`,
+  `pobierzRankingi`, `agregujRanking`, `kategorieRankingu`,
+  `walidujRankingSurowy`, `STAN.rankingWiersze`; w `.gs` nie ma
+  `GET ?akcja=ranking` ani `rankingi()`. Słowo „ranking" zostało wyłącznie
+  tam, gdzie znaczy tabelę końcową JEDNEJ gry (podsumowanie, `wynik.js`) —
+  to poprawne znaczenie, nie pozostałość. `test/rankingi-ui.test.js` usunięty,
+  a kontrakt odwrócony (ekranu/przycisku/akcji nie ma).
+- **Nominatim usunięty z kodem, nie z UI.** `app/sieci.js` stracił
+  `budujUrlGeokodacji`, `miejsceZOdpowiedziNominatim` i
+  `DOMYSLNY_ENDPOINT_GEOKODACJI`; `app.js` — `uzupelnijMiejsceZapasowe`,
+  `kluczMiejscaCache`, przełącznik `#geokodacja-zapasowa`. Kontrakt
+  (`test/kontrakt.test.js:358–369`, `:553–556`) grepuje brak endpointu,
+  brak funkcji i brak przełącznika.
+- **`zmienPodklad` i `wymusPierscien` nie wracają.** Pierwszej nie ma
+  w `app/` (salvage m12-75), druga zniknęła w m12-81, a kontrakt
+  (`:1259–1265`) pilnuje obu — razem z brakiem `przycisk-pierścien`
+  w `index.html` (`:318`).
+- **Cache kafelków OSM bez wersji aplikacji** — z uzasadnieniem w kodzie
+  (`sw.js:24–40`) i z testem, który NAPRAWDĘ symuluje dwie wersje: bierze
+  `WERSJA_SW` ze źródła skryptu (nie z literalu — pułapka z poprzedniej tury),
+  podmienia ją, uruchamia `activate` na tym samym magazynie i sprawdza, że
+  kafel przetrwał i nie poleciało żadne żądanie do dostawcy. Stary
+  wersjonowany cache jest sprzątany osobnym testem.
+- **Dokumentacja zgodna ze zmianą:** PROTOKOL §9.3 (`RO-ranking/1` wycofany)
+  i §9.4 (R17/R18 zajęte na stałe), nowy §9.5 `gra-opusc` (`gra-hotseat`
+  §9.6), aneks 2026-09-11b w ADR 0019, aneks 2026-09-12 w ADR 0003,
+  zaktualizowane ADR 0013/0017/0020/0031, README, ARCHITECTURE, WORKFLOW,
+  ASSETS §1 i §3, ROADMAP (M12 „Historia gier"), rejestr ADR, LESSONS L46/L47.
+  Zero rozjazdów dokument ↔ kod **poza** zaległościami z §3 poniżej.
+
+**Ustalenia nowe (nieopisane wcześniej):**
+
+1. **Martwe importy w `app/app.js` (10 nazw):** `TEMATY`, `WIEK`,
+   `przesunPunkt`, `najmniejszyOdstepM`, `STANY_ODCINKA`, `INSTANCJE_OVERPASS`,
+   `ALFABET_KODU`, `kodPoprawny`, `normalizujKod`, `ramkaGeohash` — każda
+   występuje w pliku WYŁĄCZNIE na linii importu (sprawdzone skryptem
+   liczącym użycia). Zero wpływu na zachowanie, ale to dług po usuwaniu
+   rankingów (m12-77) i porządek, który kontrakt L6 i tak lubi widzieć czysty.
+2. **„Opuść lobby" organizatora zamyka grę JEDNYM klikiem** (`opuscLobby` →
+   `gra-opusc` → most: stan `archiwum`). Gość może wrócić z listy, organizator
+   nie — a repo ma wzorzec dwustopniowych akcji nieodwracalnych (rezygnacja
+   w grze uzbraja przycisk, kasowanie zapisu i historii, ręczne zakończenie
+   gry). Jednoklikowe zamknięcie gry dla wszystkich dołączonych to
+   niespójność, nie decyzja.
+3. **`KANON_SETUPU` jest zapisywany, ale nie porównywany.** Odczyt sprawdza
+   tylko obecność markera (`if (!kanon)`), więc jego WARTOŚĆ nie bierze
+   udziału w niczym. Dziś działa to poprawnie (dopełnienie dla zapisów
+   sprzed m12-75 jest jednorazowe), ale przy kolejnej zmianie kanonu zapisy
+   z markerem nie dostaną nowych tematów domyślnych — trzeba będzie
+   rozstrzygnąć, czy dopełnienia są per-wersja kanonu. Obserwacja projektowa,
+   nie defekt bieżący.
+4. **`.gs`: osierocony docstring.** Skrót `/** POST gra-dolacz: kod ALBO
+   idGry (z lobby) + pseudonim; tylko w lobby. */` został NAD nowym, pełnym
+   opisem `gra-opusc`, więc opisywał nie tę funkcję, a `dolaczDoGry` zostało
+   bez własnego nagłówka.
+5. **`opuscGre` rozpoznaje organizatora po indeksie `0`**, nie po
+   `organizatorId`. Dziś równoważne (host jest zawsze pierwszy w `gracze`),
+   ale reguła „wyjście organizatora zamyka grę" powinna czytać pole, które
+   to definiuje.
+
+**Werdykt:** PR #13 jest spójny z decyzjami właściciela i z ADR-ami; brak
+usterek blokujących grę, prywatność ani kontrakty `RO-*`. Cztery ustalenia
+z listy powyżej to porządki (1, 3, 4, 5) i jedna niespójność UX (2).
+Wykonanie: pkt 1 i 2 naprawione w tym samym dniu (kod, `?v=m12-82`),
+pkt 4 poprawiony w `.gs` (i tak czeka na ponowne wklejenie), pkt 3 i 5
+zapisane jako obserwacje dla właściciela.
