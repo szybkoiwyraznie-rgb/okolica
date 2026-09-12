@@ -2,9 +2,9 @@
  * `wieloosobowa.js` — M11/P2: gra wieloosobowa na wielu urządzeniach (ADR 0019).
  *
  * Moduł CZYSTY: schematy `RO-gra/1`, `RO-zdarzenie/1`, `RO-lobby/1`,
- * `RO-ranking/1`, `RO-profil/1`, walidacje surowe (kody R01–R20), kody gier, sąsiedztwo
- * geohash5 (lobby „w najbliższej okolicy"), maszynka tur, przeliczanie wyników
- * i agregacje rankingów. Zero DOM, zero sieci, zero `node:` — warstwa DOM
+ * `RO-profil/1`, walidacje surowe (kody R01–R20), kody gier, sąsiedztwo
+ * geohash5 (lobby „w najbliższej okolicy") i przeliczanie wyników.
+ * Zero DOM, zero sieci, zero `node:` — warstwa DOM
  * (`app.js`) i synchronizacja (`sync.js`, P3) podają wyłącznie fakty.
  *
  * Zasada prywatności (ADR 0013/0019 pkt 3): współrzędne gracza NIGDY nie
@@ -16,7 +16,6 @@
 export const SCHEMAT_GRY = 'RO-gra/1';
 export const SCHEMAT_ZDARZENIA = 'RO-zdarzenie/1';
 export const SCHEMAT_LOBBY = 'RO-lobby/1';
-export const SCHEMAT_RANKINGU = 'RO-ranking/1';
 export const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (ADR 0021)
 
 /** Alfabet kodu gry: bez 0/O/1/I — kod dyktuje się przez telefon (ADR 0019 pkt 1). */
@@ -59,8 +58,10 @@ export const KODY_WIELOOSOBOWE = {
   R14: 'Stacja zdarzenia jest poza zakresem gry albo ma zły typ.',
   R15: `Lista lobby nie jest poprawnym JSON-em albo ma inny schemat niż „${SCHEMAT_LOBBY}".`,
   R16: 'Część wpisów lobby jest uszkodzona — zostały odfiltrowane.',
-  R17: `Ranking nie jest poprawnym JSON-em albo ma inny schemat niż „${SCHEMAT_RANKINGU}".`,
-  R18: 'Część wierszy rankingu jest uszkodzona — zostały odfiltrowane.',
+  // R17 i R18 (błędy odpowiedzi RO-ranking/1) są WYCOFANE razem z rankingami
+  // (właściciel, 2026-09-11). Numery zostają zajęte na stałe i nie dostaną
+  // nowego znaczenia — inaczej starszy klient odczytałby cudzy błąd jako swój
+  // (ten sam powód, dla którego E14 i E18 w pakietach są wycofane).
   R19: 'Nie mamy takiego pseudonimu — sprawdź pisownię albo zapisz go przyciskiem „Zapisz nowy".',
   R20: 'PIN jest niepoprawny albo nie pasuje do tego pseudonimu (4–8 cyfr).',
 };
@@ -144,7 +145,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-76';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-77';
 
 export { ramkaGeohash, sasiednieGeohash };
 
@@ -256,27 +257,6 @@ export function walidujLobbySurowe(tekst) {
   }
   const wpisy = surowe.wpisy.filter(wpisLobbyOk);
   return { wpisy, usterki: wpisy.length === surowe.wpisy.length ? [] : [usterka('R16')] };
-}
-
-function wierszRankinguOk(w) {
-  return w && typeof w.pseudonim === 'string' && w.pseudonim.length > 0
-    && Number.isFinite(w.punkty) && Number.isFinite(w.poprawne) && Number.isFinite(w.bledne)
-    && typeof w.geohash5 === 'string' && typeof w.wiek === 'string' && Array.isArray(w.tematy);
-}
-
-/** Ranking z mostu → {wiersze, usterki} (uszkodzone wiersze przefiltrowane, R18). */
-export function walidujRankingSurowy(tekst) {
-  let surowy;
-  try {
-    surowy = JSON.parse(tekst);
-  } catch {
-    return { wiersze: [], usterki: [usterka('R17')] };
-  }
-  if (!surowy || typeof surowy !== 'object' || surowy.schemat !== SCHEMAT_RANKINGU || !Array.isArray(surowy.wiersze)) {
-    return { wiersze: [], usterki: [usterka('R17')] };
-  }
-  const wiersze = surowy.wiersze.filter(wierszRankinguOk);
-  return { wiersze, usterki: wiersze.length === surowy.wiersze.length ? [] : [usterka('R18')] };
 }
 
 /* ------------------------------------------------- zdarzenia (wysyłka) */
@@ -407,48 +387,6 @@ export function przeliczWyniki(gra) {
   return wyniki;
 }
 
-/* --------------------------------------------------- rankingi (M12/P6) */
-
-/**
- * Agregacja wierszy rankingu per pseudonim z opcjonalnym filtrem kategorii:
- * `wiek`, `temat`, `geohash5` (ADR 0019 pkt 5 — „najlepsi w Podkowie Leśnej").
- * Sort: punkty malejąco → poprawne malejąco → pseudonim (stabilny remis).
- */
-export function agregujRanking(wiersze, { wiek = null, temat = null, geohash5 = null } = {}) {
-  const przefiltrowane = (Array.isArray(wiersze) ? wiersze : []).filter((w) => {
-    if (wiek && w.wiek !== wiek) return false;
-    if (temat && !(w.tematy ?? []).includes(temat)) return false;
-    if (geohash5 && w.geohash5 !== geohash5) return false;
-    return true;
-  });
-  const suma = new Map();
-  for (const w of przefiltrowane) {
-    const klucz = w.pseudonim;
-    if (!suma.has(klucz)) suma.set(klucz, { pseudonim: klucz, punkty: 0, gry: 0, poprawne: 0, bledne: 0 });
-    const s = suma.get(klucz);
-    s.punkty += Number(w.punkty) || 0;
-    s.gry += 1;
-    s.poprawne += Number(w.poprawne) || 0;
-    s.bledne += Number(w.bledne) || 0;
-  }
-  return [...suma.values()].sort((a, b) => b.punkty - a.punkty || b.poprawne - a.poprawne || a.pseudonim.localeCompare(b.pseudonim, 'pl'));
-}
-
-/** Dostępne kategorie z wierszy rankingu (do zakładek UI w P6). */
-export function kategorieRankingu(wiersze) {
-  const wieki = new Set();
-  const tematy = new Set();
-  const lokalizacje = new Map();
-  for (const w of Array.isArray(wiersze) ? wiersze : []) {
-    if (typeof w.wiek === 'string') wieki.add(w.wiek);
-    for (const t of w.tematy ?? []) tematy.add(t);
-    if (typeof w.geohash5 === 'string' && w.geohash5) {
-      if (!lokalizacje.has(w.geohash5)) lokalizacje.set(w.geohash5, { geohash5: w.geohash5, miejsce: w.miejsce ?? w.geohash5 });
-    }
-  }
-  return { wieki: [...wieki].sort(), tematy: [...tematy].sort(), lokalizacje: [...lokalizacje.values()] };
-}
-
 /* ------- hot-seat: wynik gry z jednego telefonu na Drive (ADR 0026 aneks) ---- */
 
 /**
@@ -459,7 +397,7 @@ export function kategorieRankingu(wiersze) {
  * pytań zostają na telefonie (ADR 0019 pkt 3, ADR 0013).
  *
  * Punktacja liczy się na moście tym samym `przeliczWyniki` co w multi — telefon
- * nie wysyła gotowych punktów, tylko fakty, więc rankingi obu trybów są spójne.
+ * nie wysyła gotowych punktów, tylko fakty, więc historia obu trybów jest spójna.
  */
 export function zdarzeniaHotseatu(dziennik) {
   const zdarzenia = [];
@@ -559,7 +497,7 @@ export function walidujKolejkeHotseat(surowy) {
     && g?.konfiguracja && Array.isArray(g.gracze) && Array.isArray(g.zdarzenia));
 }
 
-/** Klucze gier już wysłanych — wynik jednej gry nie może wejść do rankingu dwa razy. */
+/** Klucze gier już wysłanych — wynik jednej gry nie może wejść do historii dwa razy. */
 export function walidujWyslaneHotseat(surowy) {
   if (surowy?.schemat !== SCHEMAT_WYSLANYCH_HOTSEAT || !Array.isArray(surowy.klucze)) return [];
   return surowy.klucze.filter((k) => typeof k === 'string' && k);

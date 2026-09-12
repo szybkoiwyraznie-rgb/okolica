@@ -53,7 +53,7 @@ test('most: każda funkcja .gs daje się wywołać bez niezadeklarowanej nazwy',
 
   // Przegląd ma sens tylko, jeśli objął cały plik — inaczej po cichu maleje.
   assert.ok(funkcje.length >= 40, `przegląd objął ${funkcje.length} funkcji (oczekiwałem ≥ 40)`);
-  for (const nazwa of ['doGet', 'doPost', 'paczkaPrzezId', 'zalozGre', 'przyjmijGreHotseat', 'rankingi']) {
+  for (const nazwa of ['doGet', 'doPost', 'paczkaPrzezId', 'zalozGre', 'przyjmijGreHotseat']) {
     assert.equal(funkcje.includes(nazwa), true, `przegląd nie objął ${nazwa}`);
   }
 

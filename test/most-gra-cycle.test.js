@@ -1,7 +1,7 @@
 /**
  * Pełny cykl gry wieloosobowej WYKONANY na tekście `docs/setup/apps-script-repo-paczek.gs`
  * (LESSONS L33): założenie → dołączenie → start → zdarzenia → auto-koniec →
- * rankingi + profile. To są ścieżki, których aplikacja nie ma jak sprawdzić
+ * historia gier + profile. To są ścieżki, których aplikacja nie ma jak sprawdzić
  * sama, a jedna literówka w nazwie stałej kosztowała nas Z07 w paczkach.
  *
  * Przy okazji test pilnuje prywatności: współrzędne wysłane w `dane` zdarzenia
@@ -53,7 +53,7 @@ function graDwuosobowa() {
   return { most, pliki, kod: zalozona.gra.kod, idGry: zalozona.gra.idGry };
 }
 
-test('most: cykl gry Wspólna Trasa — dojście, odpowiedź, auto-koniec i rankingi', () => {
+test('most: cykl gry Wspólna Trasa — dojście, odpowiedź, auto-koniec i historia gry', () => {
   const { most, kod } = graDwuosobowa();
 
   // Wspólna Trasa (właściciel, 2026-09-11): obaj gracze przechodzą TE SAME
@@ -96,10 +96,12 @@ test('most: cykl gry Wspólna Trasa — dojście, odpowiedź, auto-koniec i rank
   const lobby = most.listaGier();
   assert.equal(lobby.wpisy.length, 0, 'zakończona gra znika z lobby');
 
-  const ranking = most.rankingi();
-  const pseudonimy = ranking.wiersze.map((w) => w.pseudonim).sort();
-  assert.deepEqual(pseudonimy, ['Ania', 'Bartek'], 'ranking widzi obu graczy z zakończonej gry');
-  assert.ok(ranking.wiersze.every((w) => typeof w.punkty === 'number'), 'punkty są liczbami');
+  // Historia gry to sam zapis na Drive (rankingi usunięte — właściciel
+  // 2026-09-11): sprawdzamy wynik graczy w zapisie, nie osobny GET.
+  const graZapisana = stan.gra ?? stan;
+  const pseudonimy = Object.values(graZapisana.wyniki).map((w) => w.pseudonim).sort();
+  assert.deepEqual(pseudonimy, ['Ania', 'Bartek'], 'zapis gry ma wynik obu graczy');
+  assert.ok(Object.values(graZapisana.wyniki).every((w) => typeof w.punkty === 'number'), 'punkty są liczbami');
 });
 
 test('most: współrzędne w zdarzeniu są wycinane po stronie serwera', () => {
@@ -176,9 +178,8 @@ test('most: gra hot-seat wchodzi na Drive bez paczki i bez współrzędnych', ()
   }
   assert.equal(gra.zdarzenia[0].dane.trasa, 'rynek → muzeum', 'inne pola zdarzenia zostają');
 
-  const ranking = most.rankingi();
-  const pseudonimy = ranking.wiersze.map((w) => w.pseudonim).sort();
-  assert.deepEqual(pseudonimy, ['Ania', 'Bartek'], 'gra hot-seat wchodzi do rankingu');
+  const pseudonimy = Object.values(gra.wyniki).map((w) => w.pseudonim).sort();
+  assert.deepEqual(pseudonimy, ['Ania', 'Bartek'], 'gra hot-seat ma wynik obu graczy w historii');
 });
 
 test('most: hot-seat odrzuca zdarzenia spoza listy graczy i spoza zakresu stacji', () => {

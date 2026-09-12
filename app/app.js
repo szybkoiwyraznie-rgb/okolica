@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-76';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-76';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-77';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-77';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-76';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-76';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-76';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-76';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-76';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-76';
+} from './protokol.js?v=m12-77';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-77';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-77';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-77';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-77';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-77';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-76';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-76';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-76';
+} from './zestawy.js?v=m12-77';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-77';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-77';
 import {
   INSTANCJE_OVERPASS,
   KODY_SIECI,
@@ -63,29 +63,22 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-76';
-import { utworzMape } from './mapa.js?v=m12-76';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-76';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-76';
-import { adresMostu, stanMostu } from './most.js?v=m12-76';
+} from './sieci.js?v=m12-77';
+import { utworzMape } from './mapa.js?v=m12-77';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-77';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-77';
+import { adresMostu, stanMostu } from './most.js?v=m12-77';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-76';
+} from './oceny.js?v=m12-77';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
 /** M11/P4 (ADR 0019): tożsamość i most gry wieloosobowej — osobne klucze, „kasuj dane" czyści wszystko.
  *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
-/** Ostatni potwierdzony gracz na tym telefonie — „Moje gry” w rankingach
- *  filtrują po nim (m12-74: pole pseudonimu multi zniknęło, tożsamością
- *  jest imię+PIN z bloku „Kto gra?”, decyzja właściciela 2026-09-11). */
-const KLUCZ_OSTATNIEGO_GRACZA = 'okolica:ostatni-gracz';
-/** Klucz z m11–m12-73 (pseudonim multi): tylko FALLBACK odczytu „Moich gier”
- *  — od m12-74 nic go nie zapisuje nowego (pole pseudonimu zniknęło z UI). */
-const KLUCZ_PSEUDONIMU = 'okolica:pseudonim';
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
 
@@ -126,8 +119,7 @@ const STAN = {
   /** ADR 0028: tożsamość głosującego spod panelu — ta sama przy renderze i kliku. */
   oceniajacyId: '',
   usterkiPaczki: [],
-  /** Ekran, na który wracamy z rankingu i z prywatności (oba są poza EKRANY). */
-  powrotZRankingu: 'setup',
+  /** Ekran, na który wracamy z karty prywatności (jest poza EKRANY). */
   powrotZPrywatnosci: 'setup',
   /** M6: stan gry `rozgrywka/1` — null do „▶ Zacznij grę". */
   rozgrywka: null,
@@ -169,10 +161,6 @@ const STAN = {
   ukryjStacje: false,
   /** M11/P4: dwustopniowa rezygnacja z gry wieloosobowej (jak inne destrukcyjne). */
   multiRezygnacjaUzbrojona: false,
-  /** M12/P6: surowe wiersze RO-ranking/1 z mostu + aktywna zakładka i kategoria. */
-  rankingWiersze: null,
-  rankingZakladka: 'ogolny',
-  rankingKategoria: null,
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
@@ -224,11 +212,9 @@ function odswiezStanIkonBelki() {
     const el = $(id);
     if (el) el.setAttribute('aria-pressed', String(Boolean(wlaczona)));
   };
-  const ranking = $('ekran-ranking');
-  ustaw('przycisk-ranking', ranking && ranking.hidden === false);
   // „START GRY” świeci na całej ścieżce przygotowania gry (ekrany 1–5), bo to
   // ta sama warstwa setupu — nie tylko na pierwszym jej kroku.
-  ustaw('przycisk-setup', EKRANY.includes(STAN.ekran) && (!ranking || ranking.hidden !== false));
+  ustaw('przycisk-setup', EKRANY.includes(STAN.ekran));
 }
 
 /** Próg odświeżania propozycji paczek (uwagi terenowe #2, 2026-09-11):
@@ -242,7 +228,6 @@ function pokazEkran(nazwa) {
   // Wejście na ekran pozycji = nowy pobyt na „stronie z paczkami": kontrolna
   // pozycja wraca do null, więc pierwszy fix sprawdzi propozycje od nowa.
   if (nazwa === 'pozycja') STAN.ostatniaPozycjaZestawow = null;
-  $('ekran-ranking').hidden = true;
   $('ekran-prywatnosc').hidden = true;
   STAN.ekran = nazwa;
   // ADR 0030: stan ekranu na <body>. CSS nie ma selektora rodzica, a układ
@@ -267,7 +252,7 @@ function pokazEkran(nazwa) {
 /**
  * Mapa startowa (decyzja właściciela 2026-09-09): sama mapa-tło, nagłówek
  * i stopka — bez formularza. Stan lądowania po starcie (gdy zniknie okno
- * startowe) i po „Wróć na początek". Poza EKRANY jak prywatność i rankingi:
+ * startowe) i po „Wróć na początek". Poza EKRANY jak prywatność:
  * to nie krok przygotowania gry, tylko spód, na którym gra się zaczyna.
  */
 function pokazMapeStartowa() {
@@ -309,15 +294,10 @@ function pokazPrywatnosc() {
   // ADR 0030: ekran prywatności chowa wszystkie ekrany gry, więc znacznik
   // `data-ekran` musi zniknąć razem z nimi — inaczej reguły „bez przewijania”
   // zostałyby na długim dokumencie, którego nie dałoby się przeczytać.
-  // Rankingi NIE należą do EKRANY, więc chowamy je jawnie i zapamiętujemy,
-  // że to stamtąd przyszliśmy — bez tego „wróć" zrzucało gracza na setup.
-  STAN.powrotZPrywatnosci = $('ekran-ranking').hidden
-    ? (EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup')
-    : 'ranking';
+  STAN.powrotZPrywatnosci = EKRANY.includes(STAN.ekran) ? STAN.ekran : 'setup';
   ukryjStart(); // okno startowe nie przykrywa karty prywatności
   document.body.dataset.ekran = 'prywatnosc';
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
-  $('ekran-ranking').hidden = true;
   $('ekran-prywatnosc').hidden = false;
   odswiezStanIkonBelki();
   odswiezWidocznoscPaneli(); // prywatność gasi ikony obu warstw (F3)
@@ -326,10 +306,6 @@ function pokazPrywatnosc() {
 
 function wrocZPrywatnosci() {
   $('ekran-prywatnosc').hidden = true;
-  if (STAN.powrotZPrywatnosci === 'ranking') {
-    pokazRankingi({ bezPobierania: true }); // dane już są — nie pytamy mostu drugi raz
-    return;
-  }
   if (STAN.prywatnoscZInformacji) {
     if (STAN.ekran === 'mapa') pokazMapeStartowa(); else pokazEkran(STAN.ekran);
     przelaczInformacje();
@@ -366,7 +342,15 @@ function czyscDaneWitryny() {
     : 'Nie znaleziono zapisanych danych tej gry.';
 }
 
-const PANELE = [...EKRANY, 'prywatnosc', 'ranking', 'start', 'informacje'];
+const PANELE = [...EKRANY, 'prywatnosc', 'start', 'informacje'];
+
+/** „START GRY" w nagłówku (F3): z kroku gry wraca na mapę startową, spoza niej
+ *  otwiera setup. Przełącznik, nie jednostronne przejście — gracz klika go
+ *  odruchowo drugi raz. */
+function przelaczSetup() {
+  if (EKRANY.includes(STAN.ekran)) { pokazMapeStartowa(); return; }
+  pokazEkran('setup');
+}
 
 function odswiezWidocznoscPaneli() {
   const podglad = STAN.podgladMapy === true;
@@ -700,9 +684,6 @@ function przywrocGraczy({ zListy = false } = {}) {
 }
 
 function dodajGraczaDoListy(imie, { zweryfikowany }) {
-  if (zweryfikowany && typeof localStorage !== 'undefined') {
-    localStorage.setItem(KLUCZ_OSTATNIEGO_GRACZA, imie); // „Moje gry” w rankingach
-  }
   STAN.konfig.imiona = [...(STAN.konfig.imiona ?? []), imie];
   STAN.graczeZweryfikowani = [...(STAN.graczeZweryfikowani ?? []), zweryfikowany];
   pokazBledy('bledy-profil', []);
@@ -755,7 +736,7 @@ async function dodajGracza() {
     $(pole).focus?.();
     return false;
   };
-  if (!pseudo) return odmowa('Wpisz imię gracza — trafia do historii gier i rankingów.', 'profil-pseudonim');
+  if (!pseudo) return odmowa('Wpisz imię gracza — trafia do historii gier.', 'profil-pseudonim');
   if (STAN.rodzajGry === 'multi' && (STAN.konfig.imiona ?? []).length >= 1) {
     // Właściciel, 2026-09-11: w grze na wielu urządzeniach wpisujesz na setupie
     // TYLKO siebie (imię+PIN jak w hot-seat) — pozostałych zapraszasz w lobby.
@@ -776,7 +757,7 @@ async function dodajGracza() {
   try {
     if (!url) {
       dodajGraczaDoListy(pseudo, { zweryfikowany: false });
-      $('profil-stan').textContent = 'Ta wersja aplikacji nie ma adresu mostu — gracz dodany, ale historia i rankingi nie zostaną zapisane.';
+      $('profil-stan').textContent = 'Ta wersja aplikacji nie ma adresu mostu — gracz dodany, ale historia gier nie zostanie zapisana.';
       status(`„${pseudo}" dodany bez potwierdzenia (brak adresu mostu).`);
       return true;
     }
@@ -787,7 +768,7 @@ async function dodajGracza() {
     } catch (e) {
       if (e?.odmowaMostu) return odmowa(komunikatBleduProfilu(String(e.message ?? '').trim()));
       dodajGraczaDoListy(pseudo, { zweryfikowany: false });
-      $('profil-stan').textContent = 'Drive nie odpowiada — gracz dodany bez potwierdzenia. Historia i rankingi z tej gry nie zostaną zapisane; spróbuj przy następnej grze.';
+      $('profil-stan').textContent = 'Drive nie odpowiada — gracz dodany bez potwierdzenia. Historia tej gry nie zostanie zapisana; spróbuj przy następnej grze.';
       status('Nie udało się sprawdzić imienia na Drive — gracz dodany lokalnie.');
       return true;
     }
@@ -798,7 +779,7 @@ async function dodajGracza() {
       ? `Nowy profil „${imie}" założony z tym PIN-em. Dodaj kolejnego gracza albo przejdź dalej.`
       : `„${imie}" potwierdzone PIN-em — witaj z powrotem. Dodaj kolejnego gracza albo przejdź dalej.`;
     status(wynik.nowy
-      ? `Założono profil „${imie}" — historia i rankingi tego gracza są na wspólnym Drive.`
+      ? `Założono profil „${imie}" — historia gier tego gracza jest na wspólnym Drive.`
       : `To Ty — „${imie}" potwierdzone PIN-em.`);
     return true;
   } finally {
@@ -831,7 +812,7 @@ async function bramkaTozsamosci() {
   const bezPotwierdzenia = imiona.filter((_, i) => STAN.graczeZweryfikowani?.[i] === false);
   pokazBledy('bledy-profil', []);
   if (bezPotwierdzenia.length) {
-    $('profil-stan').textContent = `Grasz lokalnie: ${bezPotwierdzenia.join(', ')} ${bezPotwierdzenia.length === 1 ? 'nie ma' : 'nie mają'} potwierdzenia z Drive — historia i rankingi z tej gry nie zostaną zapisane.`;
+    $('profil-stan').textContent = `Grasz lokalnie: ${bezPotwierdzenia.join(', ')} ${bezPotwierdzenia.length === 1 ? 'nie ma' : 'nie mają'} potwierdzenia z Drive — historia tej gry nie zostanie zapisana.`;
     status('Część graczy bez potwierdzenia z Drive — grasz lokalnie.');
   }
   return true;
@@ -877,7 +858,7 @@ function zaznaczWyslanyHotseat(klucz) {
 /**
  * Odcisk gry: kod (pusty w grze lokalnej) + chwila startu + skład. Zapis gry
  * odświeża się przy każdej tranzycji, a wynik ma trafić na Drive RAZ — bez tego
- * klucza ta sama gra weszłaby do rankingów tyle razy, ile razy się zapisała.
+ * klucza ta sama gra weszłaby do historii tyle razy, ile razy się zapisała.
  */
 function kluczGryHotseat(r) {
   return [String(r.kodGry || 'gra'), Number(r.startMs) || 0, (r.gracze ?? []).map((g) => g.imie).join(',')].join('|');
@@ -916,8 +897,8 @@ function polecenieHotseat() {
 
 /**
  * Koniec gry na tym telefonie = wynik na wspólnym Drive (decyzja właściciela
- * 2026-09-07). Punkty liczy most z przesłanych faktów, więc rankingi hot-seat
- * i gier wieloosobowych są jednymi rankingami. Awaria sieci niczego nie gubi:
+ * 2026-09-07). Punkty liczy most z przesłanych faktów, więc historia hot-seat
+ * i gier wieloosobowych jest jedną historią. Awaria sieci niczego nie gubi:
  * polecenie czeka w kolejce i leci przy następnym uruchomieniu (ADR 0016 pkt 5).
  */
 /** Komunikat o wysyłce idzie na WŁASNĄ linię wyniku, nie na wspólny `#status`. */
@@ -929,7 +910,7 @@ function stanWysylkiWyniku(tekst) {
 async function wyslijWynikHotseat() {
   if (STAN.multi) return; // gra wieloosobowa ma wyniki na moście z urzędu (ADR 0019)
   if (!czyWysylacWynikHotseat()) {
-    stanWysylkiWyniku('Wynik został na telefonie — żaden gracz nie ma potwierdzonego profilu, więc historia i rankingi z tej gry nie zostaną zapisane.');
+    stanWysylkiWyniku('Wynik został na telefonie — żaden gracz nie ma potwierdzonego profilu, więc historia tej gry nie zostanie zapisana.');
     return;
   }
   const r = STAN.rozgrywka;
@@ -949,7 +930,7 @@ async function wyslijWynikHotseat() {
   stanWysylkiWyniku('Wysyłam wynik na wspólny Drive…');
   try {
     await polecenieMostu(url, bud.polecenie);
-    stanWysylkiWyniku('☁ Wynik jest na wspólnym Drive — punkty graczy weszły do rankingów.');
+    stanWysylkiWyniku('☁ Wynik jest na wspólnym Drive — gra jest w historii.');
   } catch (e) {
     // Kolejka zostaje w obu przypadkach, ale powód musi być prawdziwy: jawna
     // odmowa mostu (np. skrypt w Apps Script bez akcji `gra-hotseat`) to nie
@@ -961,7 +942,7 @@ async function wyslijWynikHotseat() {
   }
 }
 
-/** Start aplikacji: wyniki z kolejki jadą na Drive (bez nich rankingi byłyby dziurawe). */
+/** Start aplikacji: wyniki z kolejki jadą na Drive (bez nich historia byłaby dziurawa). */
 async function oproznijKolejkeHotseat() {
   const url = adresMostu();
   if (!url) return;
@@ -980,7 +961,7 @@ async function oproznijKolejkeHotseat() {
     }
   }
   zapiszKolejkeHotseat(zostaly);
-  if (doszlo) status(`Wyniki gier z kolejki (${doszlo}) doszły na wspólny Drive — rankingi są pełne.`);
+  if (doszlo) status(`Wyniki gier z kolejki (${doszlo}) doszły na wspólny Drive — historia jest pełna.`);
   if (odmowa) {
     status(`Most Drive odmówił przyjęcia ${zostaly.length} wyników z kolejki: ${odmowa}. Zostaną ponowione przy następnym uruchomieniu — w Apps Script potrzebna jest aktualna wersja skryptu mostu.`);
   }
@@ -2007,7 +1988,7 @@ function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '', factcheck =
 /**
  * Stan mostu Drive w UI (ADR 0020): adres jest wpisany w kod aplikacji, więc
  * użytkownik go nie konfiguruje — ale MA widzieć, czy wspólne repozytorium,
- * gry sieciowe i rankingi są w tej wersji podłączone (LESSONS L6: status jawny).
+ * gry sieciowe są w tej wersji podłączone (LESSONS L6: status jawny).
  * Jeden tekst z `app/most.js` trafia do obu miejsc, żeby nie było dwóch prawd.
  */
 function pokazStanMostu() {
@@ -3710,7 +3691,7 @@ function banerStartowy() {
 
 /* ================================ M11/P4: gra na wielu urządzeniach (ADR 0019) */
 
-/** Adres mostu gier (ADR 0020): wpisany w kod aplikacji — ten sam web app co repozytorium paczek i rankingi. */
+/** Adres mostu gier (ADR 0020): wpisany w kod aplikacji — ten sam web app co repozytorium paczek. */
 function urlMostuMulti() {
   return adresMostu();
 }
@@ -4637,221 +4618,6 @@ function rezygnujZGryMulti() {
   status('Zrezygnowałeś — Twój wynik poniżej. Synchronizacja działa dalej: gdy inni skończą, zobaczysz ostateczną tabelę.');
 }
 
-/* ================================ M12/P6: rankingi i moje gry (ADR 0019 pkt 7) */
-
-const RANKING_ZAKLADKI = [
-  { klucz: 'ogolny', etykieta: 'Ogólny' },
-  { klucz: 'wiek', etykieta: 'Wiek' },
-  { klucz: 'tematy', etykieta: 'Tematy' },
-  { klucz: 'lokalizacja', etykieta: 'Lokalizacja' },
-  { klucz: 'moje', etykieta: 'Moje gry' },
-];
-
-/** Ekran rankingów nie jest krokiem gry — chowa wszystkie ekrany (jak prywatność). */
-function pokazRankingi({ bezPobierania = false } = {}) {
-  zamknijInformacje();
-  // Zapamiętujemy ekran, z którego gracz przyszedł: `STAN.ekran` nie zmienia się
-  // przy wejściu na rankingi, więc bez tego „wróć" zawsze zrzucało na setup.
-  ukryjStart(); // warstwa rankingów wchodzi nad wszystko, okno startowe znika
-  STAN.powrotZRankingu = EKRANY.includes(STAN.ekran) || STAN.ekran === 'mapa' ? STAN.ekran : 'setup';
-  for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
-  $('ekran-prywatnosc').hidden = true;
-  $('ekran-ranking').hidden = false;
-  odswiezStanIkonBelki();
-  odswiezWidocznoscPaneli();
-  window.scrollTo({ top: 0 });
-  if (!bezPobierania) void pobierzRankingi();
-}
-
-function wrocZRankingu() {
-  $('ekran-ranking').hidden = true;
-  if (STAN.powrotZRankingu === 'mapa') { pokazMapeStartowa(); return; }
-  pokazEkran(STAN.powrotZRankingu ?? 'setup');
-}
-
-/**
- * Klik w ikonę belki: otwiera warstwę albo — gdy ta już świeci — zamyka ją
- * i wraca na mapę (F3). Zamknięcie setupu wraca na mapę startową, bo to jest
- * spód aplikacji; zamknięcie rankingów wraca tam, skąd gracz przyszedł.
- */
-function przelaczSetup() {
-  if (EKRANY.includes(STAN.ekran) && $('ekran-ranking')?.hidden !== false) {
-    pokazMapeStartowa();
-    return;
-  }
-  pokazEkran('setup');
-}
-
-function przelaczRankingi() {
-  if ($('ekran-ranking')?.hidden === false) { wrocZRankingu(); return; }
-  pokazRankingi();
-}
-
-/** Adres mostu do rankingów (ADR 0020): ten sam web app co repozytorium paczek i gry. */
-function urlMostuRankingu() {
-  return adresMostu();
-}
-
-async function pobierzRankingi() {
-  const url = urlMostuRankingu();
-  if (!url) {
-    // `null`, nie `[]`: brak mostu to BRAK DANYCH, nie potwierdzone pusto —
-    // tabela musi mówić „nie pobrano", nie „nie ma gier" (właściciel, 2026-09-09).
-    STAN.rankingWiersze = null;
-    $('ranking-status').textContent = 'Brak adresu mostu Drive w tej wersji aplikacji — rankingi są niedostępne.' + ADR(' (ADR 0020)');
-    renderujRankingi();
-    return;
-  }
-  $('ranking-status').textContent = 'Pobieram wyniki zakończonych gier…';
-  try {
-    const odpowiedz = await pobierzGetMulti(urlGet(url, 'ranking'));
-    const { wiersze, usterki } = walidujRankingSurowy(JSON.stringify(odpowiedz ?? null));
-    // Nieczytelna odpowiedź bez żadnych wierszy = brak danych, nie pusty most.
-    STAN.rankingWiersze = usterki.length && !wiersze.length ? null : wiersze;
-    $('ranking-status').textContent = usterki.length && !wiersze.length
-      ? `Odpowiedź mostu jest nieczytelna (${usterki[0].komunikat}).`
-      : (wiersze.length
-        ? `Zakończone gry wieloosobowe: ${wiersze.length} wyników graczy.`
-        : 'Na moście nie ma jeszcze zakończonych gier — rankingi zapełnią się po pierwszych rozgrywkach.');
-  } catch (e) {
-    // Porażka nie nadpisuje ostatnio pobranych danych (jeśli były); gdy ich
-    // nie było, `rankingWiersze` zostaje `null` — tabela powie „nie pobrano".
-    $('ranking-status').textContent = `Nie udało się pobrać rankingów: ${e?.message ?? e}`;
-  }
-  renderujRankingi();
-}
-
-function renderujRankingi() {
-  // `null` = brak danych (pobieranie nie powiodło się, brak mostu, odpowiedź
-  // nieczytelna); `[]` = pusty most potwierdzony udanym pobraniem (właściciel,
-  // 2026-09-09: te dwa stany UI muszą być różne — błąd to nie jest „nie ma
-  // jeszcze ani jednej zakończonej gry").
-  const wiersze = STAN.rankingWiersze;
-  const zakladki = $('ranking-zakladki');
-  zakladki.replaceChildren();
-  for (const z of RANKING_ZAKLADKI) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'przycisk przycisk-maly';
-    b.textContent = z.etykieta;
-    b.setAttribute('aria-pressed', String(STAN.rankingZakladka === z.klucz));
-    b.addEventListener('click', () => {
-      STAN.rankingZakladka = z.klucz;
-      STAN.rankingKategoria = null; // nowa zakładka startuje od pierwszej kategorii
-      renderujRankingi();
-    });
-    zakladki.appendChild(b);
-  }
-  const chipy = $('ranking-kategorie');
-  chipy.replaceChildren();
-  const tbody = $('ranking-wiersze');
-  const mojeLista = $('ranking-moje-gry');
-  const tabela = $('ranking-tabela');
-
-  if (STAN.rankingZakladka === 'moje') {
-    tabela.hidden = true;
-    mojeLista.hidden = false;
-    // Tożsamość od m12-74 = imię potwierdzone w bloku „Kto gra?” — czytamy
-    // KLUCZ_OSTATNIEGO_GRACZA z fallbackiem na dawny klucz pseudonimu multi
-    // (zapisy sprzed m12-74), bo starego pola pseudonimu już nie ma w UI.
-    const pseudonim = typeof localStorage !== 'undefined'
-      ? (localStorage.getItem(KLUCZ_OSTATNIEGO_GRACZA) ?? localStorage.getItem(KLUCZ_PSEUDONIMU) ?? '')
-      : '';
-    const moje = (wiersze ?? []).filter((w) => w.pseudonim === pseudonim);
-    mojeLista.replaceChildren();
-    const komunikat = (tekst) => { const li = document.createElement('li'); li.textContent = tekst; mojeLista.appendChild(li); };
-    if (wiersze === null) komunikat('Wyniki nie zostały pobrane — komunikat w pasku stanu. To nie znaczy, że most nie ma Twoich gier.');
-    else if (!pseudonim) komunikat('Nie masz jeszcze potwierdzonego imienia — dodaj siebie w bloku „Kto gra?” na ekranie ustawień (imię + PIN).');
-    else if (!moje.length) komunikat(`Pseudonim „${pseudonim}” nie ma jeszcze zakończonych gier na moście Drive.`);
-    else {
-      for (const w of moje) {
-        const li = document.createElement('li');
-        li.textContent = `${String(w.data ?? '').slice(0, 16).replace('T', ' ')} · ${w.miejsce || 'nieznane miejsce'} · ${w.tryb === TRYBY_GRY.trasa ? 'wspólna trasa' : 'wyścig'} · ${w.punkty} pkt · ${w.poprawne} poprawne, ${w.bledne} błędne · ${w.stacjeZamkniete} stacji`;
-        mojeLista.appendChild(li);
-      }
-    }
-    return;
-  }
-  tabela.hidden = false;
-  mojeLista.hidden = true;
-
-  if (wiersze === null) {
-    // NIEudane pobranie nie może udawać pustego rankingu: pusty wiersz mówi
-    // wprost, że danych nie ma, i odsyła do paska stanu (właściciel, 2026-09-09).
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.setAttribute('colspan', '5');
-    td.textContent = 'Wyniki nie zostały pobrane — komunikat w pasku stanu nad tabelą. To nie jest potwierdzenie, że most nie ma zakończonych gier.';
-    tr.appendChild(td);
-    tbody.replaceChildren(tr);
-    return;
-  }
-
-  // kategorie (wiek/tematy/lokalizacja) — chipy z dostępnych wartości
-  const kategorie = kategorieRankingu(wiersze);
-  let filtr = {};
-  let pustoWKategorii = false;
-  const chip = (klucz, etykieta) => {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'przycisk przycisk-maly';
-    b.textContent = etykieta;
-    b.setAttribute('aria-pressed', String(STAN.rankingKategoria === klucz));
-    b.addEventListener('click', () => { STAN.rankingKategoria = klucz; renderujRankingi(); });
-    chipy.appendChild(b);
-  };
-  if (STAN.rankingZakladka === 'wiek') {
-    pustoWKategorii = kategorie.wieki.length === 0;
-    if (!pustoWKategorii) {
-      if (!kategorie.wieki.includes(STAN.rankingKategoria)) STAN.rankingKategoria = kategorie.wieki[0];
-      for (const k of kategorie.wieki) chip(k, WIEK[k]?.etykieta ?? k);
-      filtr = { wiek: STAN.rankingKategoria };
-    }
-  } else if (STAN.rankingZakladka === 'tematy') {
-    pustoWKategorii = kategorie.tematy.length === 0;
-    if (!pustoWKategorii) {
-      if (!kategorie.tematy.includes(STAN.rankingKategoria)) STAN.rankingKategoria = kategorie.tematy[0];
-      for (const k of kategorie.tematy) chip(k, TEMATY[k]?.etykieta ?? k);
-      filtr = { temat: STAN.rankingKategoria };
-    }
-  } else if (STAN.rankingZakladka === 'lokalizacja') {
-    pustoWKategorii = kategorie.lokalizacje.length === 0;
-    if (!pustoWKategorii) {
-      const klucze = kategorie.lokalizacje.map((l) => l.geohash5);
-      if (!klucze.includes(STAN.rankingKategoria)) STAN.rankingKategoria = klucze[0];
-      for (const l of kategorie.lokalizacje) chip(l.geohash5, l.miejsce || l.geohash5);
-      filtr = { geohash5: STAN.rankingKategoria };
-    }
-  }
-
-  const agregat = pustoWKategorii ? [] : agregujRanking(wiersze, filtr);
-  tbody.replaceChildren();
-  if (!agregat.length) {
-    const tr = document.createElement('tr');
-    const td = document.createElement('td');
-    td.setAttribute('colspan', '5');
-    // Zgłoszenie właściciela (2026-09-09): „puste rankingi” bez wskazówki, czy
-    // to brak gier na moście, czy filtr kategorii. Rozdzielamy oba przypadki —
-    // pusty ekran musi mówić, czego brakuje (LESSONS L6).
-    td.textContent = wiersze.length
-      ? 'Brak zakończonych gier w tej kategorii — wybierz inną albo zajrzyj do zakładki „Ogólny”.'
-      : 'Most Drive nie ma jeszcze ani jednej zakończonej gry. Wynik trafia tam po zakończeniu rozgrywki, gdy przynajmniej jeden gracz ma potwierdzony profil.';
-    tr.appendChild(td);
-    tbody.appendChild(tr);
-    return;
-  }
-  const pseudonim = (typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_PSEUDONIMU) : null) ?? '';
-  agregat.forEach((a, i) => {
-    const tr = document.createElement('tr');
-    for (const tekst of [`${i + 1}.`, `${a.pseudonim}${a.pseudonim === pseudonim ? ' (Ty)' : ''}`, String(a.punkty), String(a.gry), `${a.poprawne} ✓ / ${a.bledne} ✗`]) {
-      const td = document.createElement('td');
-      td.textContent = tekst;
-      tr.appendChild(td);
-    }
-    tbody.appendChild(tr);
-  });
-}
-
 /**
  * Tryb testowy wchodzi WYŁĄCZNIE parametrem adresu (decyzja właściciela
  * 2026-09-08 — przycisk w nagłówku usunięty). Przyjmowane formy:
@@ -4920,7 +4686,7 @@ function start() {
     // Decyzja właściciela 2026-09-08: tryb testowy NIE MA przycisku w
     // interfejsie — wchodzi się tylko parametrem adresu (`?test=true`).
     // Przełącznik w nagłówku kusił do grania bez GPS, a wyniki i tak szły
-    // na Drive i do rankingów (ADR 0029).
+    // na Drive (ADR 0029).
     STAN.trybTestowy = true;
     document.body.classList.add('tryb-testowy');
   }
@@ -4947,7 +4713,6 @@ function start() {
     if (z.key !== 'Escape') return;
     if (STAN.podgladMapy) przelaczPodgladMapy();
     else if (!$('ekran-informacje').hidden) przelaczInformacje();
-    else if (!$('ekran-ranking').hidden) wrocZRankingu();
     else ukryjStart();
     odswiezWidocznoscPaneli();
   });
@@ -4959,10 +4724,6 @@ function start() {
   // jedyny dostęp to stopka (`przycisk-prywatnosc-stopka` poniżej).
   $('przycisk-tematy-wszystkie').addEventListener('click', () => ustawWszystkieTematy(true));
   $('przycisk-tematy-zadne').addEventListener('click', () => ustawWszystkieTematy(false));
-  $('przycisk-ranking').addEventListener('click', przelaczRankingi); // M12/P6 (F3: przełącznik)
-  $('przycisk-wrocz-ranking').addEventListener('click', wrocZRankingu);
-  $('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu); // krzyżyk w rogu warstwy
-  $('przycisk-ranking-odswiez').addEventListener('click', () => { void pobierzRankingi(); });
   $('przycisk-prywatnosc-stopka').addEventListener('click', pokazPrywatnosc);
   $('przycisk-wrocz-prywatnosc').addEventListener('click', wrocZPrywatnosci);
   $('przycisk-czysc-dane').addEventListener('click', czyscDaneWitryny);

@@ -300,13 +300,12 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
   assert.equal(/test/i.test(naglowek), false, `w akcjach nagłówka nie ma trybu testowego: ${naglowek}`);
   assert.ok(APP.includes('czyTrybTestowyWUrl'), 'tryb testowy czyta się z parametru adresu');
 
-  // Rankingi są warstwą z dwoma wyjściami (decyzja właściciela 2026-09-08) —
-  // z poprzedniego układu „ekran" nie dało się na telefonie wyjść.
-  assert.match(INDEX, /<section id="ekran-ranking" class="ekran warstwa panel-centralny" hidden role="dialog" aria-modal="false"/);
-  assert.match(INDEX, /<button id="przycisk-ranking-krzyzyk"[^>]*aria-label="Zamknij rankingi">✕<\/button>/, 'krzyżyk w rogu warstwy');
-  assert.match(INDEX, /<button id="przycisk-wrocz-ranking"[^>]*>Zamknij rankingi<\/button>/, 'klawisz zamknięcia zamiast „← wróć"');
-  assert.ok(APP.includes("$('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu)"), 'krzyżyk jest podpięty');
-  assert.ok(STYLE.includes('.warstwa-krzyzyk'), 'krzyżyk ma styl');
+  // Rankingi usunięte w całości (właściciel, 2026-09-11): LESSONS L31 —
+  // usunięty element ma zostać usunięty, więc pilnujemy, że nie wrócił.
+  assert.equal(INDEX.includes('ekran-ranking'), false, 'ekranu rankingów nie ma w HTML');
+  assert.equal(APP.includes('przycisk-ranking'), false, 'przycisku 🏆 nie ma w aplikacji');
+  assert.equal(GS.includes("akcja === 'ranking'"), false, 'most nie obsługuje już akcji ranking');
+  assert.ok(STYLE.includes('.warstwa-krzyzyk'), 'krzyżyk warstwy ma styl (używa go Informacje)');
   assert.match(APP, /'true', '1', 'tak'/, 'przyjmowane formy parametru ?test=');
 
   const symulacja = INDEX.match(/<button id="przycisk-symulacja-gra"[^>]*>/)?.[0];
@@ -774,10 +773,10 @@ test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językie
   for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'gra-hotseat', 'profil-ustaw', 'profil-sprawdz']) {
     assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
   }
-  for (const a of ['gry', 'gra-stan', 'ranking']) {
+  for (const a of ['gry', 'gra-stan']) {
     assert.ok(GS.includes(`akcja === '${a}'`), `doGet mostu obsługuje ${a}`);
   }
-  for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-ranking/1', 'RO-profil/1']) {
+  for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-profil/1']) {
     assert.ok(GS.includes(s), `most zna schemat ${s}`);
   }
   assert.ok(GS.includes("'23456789ABCDEFGHJKLMNPQRSTUVWXYZ'"), 'alfabet kodu gry identyczny w moście i w module');
@@ -822,7 +821,8 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   // Zapis wyniku jest DOMYŚLNY: bez checkboxa przy każdej grze (właściciel,
   // 2026-09-07), a co i dokąd trafia — opisuje sekcja „Dane i prywatność".
   assert.ok(!INDEX.includes('id="hotseat-zgoda"'), 'zgody na zapis wyniku nie pytamy przy każdej grze');
-  assert.match(INDEX, /Wspólny Drive: historia i rankingi/, 'sekcja prywatność opisuje zapis wyniku na Drive');
+  assert.match(INDEX, /Wspólny Drive: historia gier/, 'sekcja prywatność opisuje zapis wyniku na Drive');
+  assert.equal(INDEX.includes('liczone są rankingi'), false, 'karta prywatności nie obiecuje rankingów (usunięte 2026-09-11)');
   assert.match(INDEX, /Wynik gry idzie na wspólne konto Google Drive/, 'sekcja prywatność mówi, że to domyślne');
   assert.ok(!INDEX.includes('id="setup-gracze"'), 'pola „Liczba graczy" nie ma — liczbą jest długość listy');
   assert.ok(!INDEX.includes('id="lista-imion"'), 'ręczne pola imion zastąpiła lista graczy');
@@ -944,15 +944,6 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   // pozostałości trybu developerskiego i warstwy zapasowej nie wracają do treści startowych
   assert.ok(!APP.includes('M0 — fundament'), 'dev-status informacji startowej usunięty');
   assert.match(INDEX, /Przemieszczasz się od stacji do stacji, a telefon sam rozpoznaje,\s+gdy jesteś na miejscu — wtedy odsłania pytanie\./, 'intro: brzmienie właściciela (HTML zawija wiersze)');
-});
-
-test('kontrakt M12: rankingi liczy telefon, serwer oddaje surowe wiersze', () => {
-  assert.ok(INDEX.includes('id="ekran-ranking"'), 'ekran rankingów w index.html');
-  assert.ok(INDEX.includes('id="przycisk-ranking"'), 'przycisk 🏆 w nagłówku');
-  assert.match(APP, /urlGet\(url, 'ranking'\)/, 'dane z GET akcja=ranking (RO-ranking/1)');
-  assert.match(APP, /agregujRanking\(wiersze, filtr\)/, 'agregacje po stronie telefonu (ADR 0019 pkt 7)');
-  assert.match(APP, /kategorieRankingu\(wiersze\)/, 'zakładki kategorii z dostępnych wierszy');
-  assert.ok(GS.includes("akcja === 'ranking'"), 'most obsługuje akcję ranking');
 });
 
 test('ADR 0015 pkt 6: kody usterek wejścia promptu (WE**) nie kolidują z kodami pozycji (P**)', () => {
@@ -1100,7 +1091,7 @@ test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samo
   assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*var\(--wysokosc-belki/s);
   assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*overflow-y: auto/s);
   assert.ok(APP.includes('function ustawWysokoscBelki'));
-  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra', 'ranking', 'informacje']) {
+  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra', 'informacje']) {
     const sekcja = INDEX.match(new RegExp(`<section id="ekran-${ekran}"[\\s\\S]*?</section>`))?.[0];
     assert.ok(sekcja?.includes('panel-centralny'), ekran);
     assert.ok(!/id="mapa-(pozycja|stacje|gra)"/.test(sekcja), 'mapa poza panelem: ' + ekran);

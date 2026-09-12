@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-76">
-  <script type="module" src="app/app.js?v=m12-76"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-77">
+  <script type="module" src="app/app.js?v=m12-77"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -39,7 +39,6 @@
       <button id="przycisk-motyw" class="przycisk-ikona" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny" aria-label="Przełącz motyw">☾</button>
       <button id="przycisk-sygnaly" class="przycisk-ikona" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)" aria-label="Sygnały dojścia">🔔</button>
       <button id="przycisk-informacje" class="przycisk-ikona" type="button" aria-label="Informacje" title="Informacje" aria-expanded="false" aria-pressed="false" aria-controls="ekran-informacje"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor"/></svg></button>
-      <button id="przycisk-ranking" class="przycisk-ikona" type="button" title="Rankingi graczy i moje gry (M12)" aria-label="Rankingi">🏆</button>
     </div>
   </header>
   <button id="przycisk-podejrzyj-mape" type="button" aria-label="Podejrzyj mapę" title="Podejrzyj mapę" aria-pressed="false">
@@ -626,16 +625,15 @@
       </div>
 
       <div class="karta">
-        <h3>Wspólny Drive: historia i rankingi</h3>
+        <h3>Wspólny Drive: historia gier</h3>
         <p class="podpowiedz">Wszystko, co opuszcza telefon, jest wymienione
         poniżej — i tylko to. Nie pytamy o zgodę przy każdej grze: bez tych
-        danych nie byłoby ani historii, ani rankingów, ani gry na kilku
-        telefonach.</p>
+        danych nie byłoby ani historii gier, ani gry na kilku telefonach.</p>
         <ul class="lista-privatnosc">
           <li><strong>Wynik gry idzie na wspólne konto Google Drive</strong>
-            (domyślnie, bez pytania przy każdej grze): pseudonimy graczy,
+            (domyślnie, bez pytania przy każdej grze): imiona graczy,
             punkty, liczba poprawnych i błędnych odpowiedzi, nazwa miejscowości
-            i kategoria wiekowa. Na tej podstawie liczone są rankingi.</li>
+            i kategoria wiekowa.</li>
           <li><strong>Gra na wielu telefonach</strong> — dodatkowo: Twój
             pseudonim w lobby (widzą go inni gracze), kolejne dojścia
             i odpowiedzi w trakcie gry oraz kod gry. Współrzędne gracza
@@ -674,30 +672,6 @@
 
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wrocz-prywatnosc" class="przycisk przycisk-glowny" type="button">← wróć</button>
-      </div>
-    </section>
-
-    <!-- M12/P6: rankingi graczy (dane z mostu Drive, agregacje po stronie telefonu) -->
-    <!-- Decyzja właściciela 2026-09-08: rankingi są WARSTWĄ nad aplikacją,
-         nie osobnym ekranem — z klawiszem „Zamknij rankingi" i krzyżykiem
-         w prawym górnym rogu, bo z poprzedniego układu nie dało się wyjść. -->
-    <section id="ekran-ranking" class="ekran warstwa panel-centralny" hidden role="dialog" aria-modal="false" aria-labelledby="tytul-ranking">
-      <div class="warstwa-karta">
-        <button id="przycisk-ranking-krzyzyk" class="warstwa-krzyzyk" type="button" aria-label="Zamknij rankingi">✕</button>
-        <h2 id="tytul-ranking">🏆 Rankingi</h2>
-        <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych:</p>
-        <div class="wiersz">
-          <button id="przycisk-ranking-odswiez" class="przycisk" type="button">🔄 Odśwież</button>
-          <button id="przycisk-wrocz-ranking" class="przycisk" type="button">Zamknij rankingi</button>
-        </div>
-        <p id="ranking-status" class="podpowiedz" role="status"></p>
-        <div id="ranking-zakladki" class="segment"></div>
-        <div id="ranking-kategorie" class="chipy"></div>
-        <table id="ranking-tabela" class="tabela-wynikow">
-          <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Gry</th><th scope="col">Poprawne</th></tr></thead>
-          <tbody id="ranking-wiersze"></tbody>
-        </table>
-        <ul id="ranking-moje-gry" class="lista-historii" hidden></ul>
       </div>
     </section>
 

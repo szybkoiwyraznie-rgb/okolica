@@ -82,18 +82,6 @@ test('F3: ikona START GRY świeci przy otwartym setupie i zamyka go drugim klikn
   assert.equal(pobierz('ekran-setup').hidden, false, 'setup wraca dla kolejnych testów');
 });
 
-test('F3: ikona Rankingów świeci przy otwartej warstwie i zamyka ją drugim kliknięciem', () => {
-  if (pobierz('ekran-setup').hidden) dom.kliknij('przycisk-setup');
-  dom.kliknij('przycisk-ranking');
-  assert.equal(pobierz('ekran-ranking').hidden, false, 'rankingi otwarte');
-  assert.equal(pobierz('przycisk-ranking').getAttribute('aria-pressed'), 'true', 'ikona rankingów świeci');
-  assert.equal(pobierz('przycisk-setup').getAttribute('aria-pressed'), 'false', 'druga ikona pozostaje zgaszona');
-
-  dom.kliknij('przycisk-ranking');
-  assert.equal(pobierz('ekran-ranking').hidden, true, 'drugi klik zamyka rankingi');
-  assert.equal(pobierz('przycisk-ranking').getAttribute('aria-pressed'), 'false', 'ikona gaśnie');
-});
-
 /**
  * Zgłoszenie właściciela B3: „Wróć na początek” dawało pustą stronę (sam
  * nagłówek i stopka). Mapa musi zostać widoczna — `data-ekran='mapa'` jest tym,
@@ -521,46 +509,6 @@ test('prywatność: ekran otwiera się ze stopki, a „wróć" prowadzi na wła�
   assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'wróciliśmy na mapę, nie na setup');
   assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'powrót nie wskrzesza okna');
 
-  // ze stopki, na innym ekranie: powrót ma prowadzić na ekran, z którego
-  // przyszliśmy. Bierzemy rankingi, bo przejście setup → pozycja wymaga imion
-  // z prawdziwego DOM, którego atrapa nie parsuje (przycisk trybu testowego,
-  // który kiedyś tu pomagał, został usunięty — decyzja właściciela 2026-09-08).
-  domMapy.kliknij('przycisk-ranking');
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false);
-  domMapy.kliknij('przycisk-prywatnosc-stopka');
-  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true);
-  domMapy.kliknij('przycisk-wrocz-prywatnosc');
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'powrót na rankingi, nie na setup');
-});
-
-// Decyzja właściciela 2026-09-08: rankingi są warstwą z dwoma wyjściami.
-test('rankingi: warstwa zamyka się i krzyżykiem, i klawiszem, i wraca tam, skąd przyszła', async () => {
-  const domMapy = await aplikacjaZMapa();
-  domMapy.kliknij('przycisk-ranking');
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'rankingi otwarte');
-  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'warstwa chowa okno startowe');
-
-  domMapy.kliknij('przycisk-ranking-krzyzyk'); // krzyżyk w prawym górnym rogu
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'krzyżyk zamyka warstwę');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'wróciliśmy na mapę, nie w próżnię');
-
-  domMapy.kliknij('przycisk-ranking');
-  domMapy.kliknij('przycisk-wrocz-ranking'); // klawisz „Zamknij rankingi"
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'klawisz też zamyka');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, true);
-  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'powrót nie wskrzesza okna');
-});
-
-test('rankingi: prywatność otwarta z warstwy wraca na rankingi, nie na setup', async () => {
-  const domMapy = await aplikacjaZMapa();
-  domMapy.kliknij('przycisk-ranking');
-  domMapy.kliknij('przycisk-prywatnosc-stopka');
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'prywatność chowa rankingi — wcześniej zostawały pod spodem');
-  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
-  domMapy.kliknij('przycisk-wrocz-prywatnosc');
-  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, true);
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'powrót na rankingi');
 });
 
 test('prywatność: czyszczenie jest dwustopniowe i rusza tylko klucze obolica:*', async () => {
@@ -2623,7 +2571,7 @@ test('Informacje: ikonka wskazuje otwarcie, zamknięcie i zachowuje stan podczas
   d.kliknij('przycisk-informacje');
   d.wyslijZdarzenieDokumentu('keydown', { key: 'Escape' }); sprawdz(false);
   d.kliknij('przycisk-informacje');
-  d.kliknij('przycisk-ranking'); sprawdz(false);
+  d.kliknij('przycisk-prywatnosc-stopka'); sprawdz(false); // inna warstwa też gasi Informacje
 });
 
 test('droga: pasek na mapie, sterowanie w Informacjach, po dojściu duży panel pytania', async () => {
