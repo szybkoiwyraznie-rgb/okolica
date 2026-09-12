@@ -239,3 +239,31 @@ nie ma ich po żadnej stronie.
    w `gra.gracze`, więc `liczbaGraczy` w `RO-lobby/1` obiecywało kogoś, kogo
    już nie było. Wyjście organizatora zamyka grę (stan `archiwum`) — tylko on
    może wystartować. Po starcie wyjście to nadal zdarzenie `rezygnacja`.
+
+## Aneks 2026-09-12f: ranking wrócił — ale decyzja żyje w ADR 0039
+
+Zgłoszenie właściciela (2026-09-12: „Mam nowy pomysł na podstronę Ranking”)
+odwraca pkt 2 aneksu 2026-09-11b — ranking znowu istnieje. **Kształt tej
+decyzji opisuje ADR 0039**, a ten aneks jest kotwicą w historii ADR 0019:
+cytują go rejestr (`docs/decisions/README.md`), most
+(`docs/setup/apps-script-repo-paczek.gs`) i `test/most-ranking.test.js`, więc
+bez niego trzy nośniki wskazywałyby miejsce, którego nie ma (LESSONS L31:
+zmiana zasady = przegląd wszystkich nośników w tym samym commitie).
+
+1. **Co wróciło do mostu**: `GET ?akcja=ranking` i `rankingi()` — schemat
+   `RO-ranking/2` (PROTOKOL §9.7), dwie tabele po ≤5 pozycji: suma punktów
+   oraz proporcja poprawnych do zadanych pytań (liczona od 10 zadanych).
+   Źródłem są gry ZAKOŃCZONE na Drive — hot-seat (§9.6) i wieloosobowe (§9.1)
+   naraz — a do tabel wchodzą wyłącznie profile potwierdzone na Drive.
+2. **Co NIE wróciło** (to jest treść ADR 0039, nie tego aneksu): zakładki
+   ogólny/wiek/tematy/lokalizacja, kategorie, lista „Moje gry”, agregacje
+   liczone na telefonie, `RO-ranking/1`, eksport rankingu.
+3. **Numery R17 i R18 zostają zajęte na stałe** (pkt 3 aneksu 2026-09-11b):
+   nowy ranking ma własne kody usterek w PROTOKOL §9.7, a wycofane numery nie
+   wracają do obiegu — starszy klient w terenie nie odczyta nowego błędu jako
+   swojego.
+4. **Ekran**: ranking jest warstwą z belki ikon (`#przycisk-ranking`), nie
+   krokiem flow gry wieloosobowej — nie zmienia więc ani lobby, ani tur, ani
+   Wspólnej Trasy z pkt 1–7 powyżej. Wymaga NOWEGO deploymentu web app; na
+   starym adresie warstwa mówi wprost, że nie udało się pobrać danych, a gra
+   toczy się dalej.
