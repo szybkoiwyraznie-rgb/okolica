@@ -21,18 +21,26 @@ sw.js                       — Service Worker (M10): offline skorupa + kafelki
                               aplikacji — pilnuje kontrakt)
 .nojekyll                     — Pages bez przetwarzania Jekyll (M8)
 app/
-  app.js                    — bootstrap: router ekranów, stan sesji, spinanie modułów
+  app.js                    — bootstrap i cała warstwa DOM: router ekranów, stan
+                              sesji, spinanie modułów, ekrany i komponenty
+                              (setup, pozycja, stacje, prompt, paczka, gra,
+                              wynik), komunikaty i aria-live. Osobnego `ui.js`
+                              NIE MA — UI siedzi w tym jednym pliku (plan M2
+                              przewidywał podział, implementacja go nie zrobiła)
   konfig.js                 — kanon konfiguracji: TRYBY, WIEK, TEMATY, DOMYSLNE,
                               ograniczenia, walidacja setupu (K01–K21) i przeliczenie
                               planowanego czasu gry na promień (ADR 0025)
   geo.js                    — geodezja i projekcja: haversine, bearing, Web Mercator,
                               siatka kafelków, pierścienie, dopasowanie zoomu,
-                              parsowanie współrzędnych z pól (dziesiętne, polski
-                              przecinek, DMS z Google Maps), kodowanie geohash
+                              `parsujWspolrzedne` (dziesiętne, polski przecinek,
+                              DMS z Google Maps) — biblioteka bez konsumenta
+                              w UI od ADR 0034 pkt 5: pól ręcznych współrzędnych
+                              nie ma, więc parser pilnuje własny test
                               i jego komórki (`ramkaGeohash`, `sasiednieGeohash`,
                               `odlegloscDoKomorkiM` — ADR 0024) (czyste)
-  pozycja.js                — geolokalizacja: osłona watchPozycja(), filtr
-                              dokładności (ocenFix), kryterium dojścia
+  pozycja.js                — geolokalizacja: osłona watchPozycja(), ocena fixu
+                              (`ocenFix` — waliduje WSPÓŁRZĘDNE, nie `accuracy`:
+                              ADR 0034 pkt 2), kryterium dojścia
                               (stanDojscia), komunikaty P01–P10, symulacja trasy
                               dla trybu testowego (ADR 0004, 0015); M10: profile
                               baterii PROFILE_GPS + histereza profilBaterii;
@@ -76,6 +84,14 @@ app/
                               10 zadanych pytań, sortowanie z remisami,
                               walidacja `RO-ranking/2` i format „18/24 · 75%”
                               (czyste; sumy liczy most, tu tylko prezentacja)
+  oceny.js                  — M12: oceny pytań kciukiem (ADR 0028) — schematy
+                              `RO-ocena/1` i `RO-oceny/1`, głosy lokalne
+                              (`okolica:oceny`, limit 600, jeden głos gracza na pytanie),
+                              kolejka offline (`oceny-kolejka/1`, limit 50), tożsamość
+                              głosującego (`idGlosujacego`: pseudonim potwierdzonego profilu
+                              albo id urządzenia — slug liczony identycznie jak `idProfilu()`
+                              w moście, parzystość pilnuje test) oraz teksty statystyk ocen
+                              (czyste; bez DOM, bez `fetch` — pamięć jest wstrzykiwana)
   mapa.js                   — mapa: matematyka widoku (zoom ↔ skala, środek ↔
                               przesunięcie, piksele ↔ współrzędne), adresy
                               kafelków, plan rysowania i pasek skali (czyste)
@@ -84,8 +100,6 @@ app/
                               pointerup), przyciskami ±/◎, atrybucją i trybem
                               ręcznym — przeciąganie pinezek stacji (DOM,
                               ADR 0005 pkt 8b)
-  ui.js                     — ekrany i komponenty: setup, prompt, walidacja, gra,
-                              wynik; komunikaty, aria-live (DOM)
   styles.css                — tokeny palety, motyw jasny/ciemny, cele dotykowe ≥44 px
                               (kontrasty WCAG AA pilnowane bramą: tools/audyt-kontrastu.mjs)
   sygnaly.js                — M10: plany sygnałów zdarzeń (wibracja + nuty Web
@@ -139,7 +153,7 @@ Overpass, graf i Dijkstra, wybór stacji, budowa promptu, walidacja paczki,
 ukrywanie paczki, punktacja, migracje stanu, a od M2 także **matematyka widoku
 mapy i plan rysowania** (`mapa.js`: zoom ↔ skala, adresy kafelków, pinezki,
 okręgi, pasek skali). Warstwa DOM jest cienka: w `mapa.js` to `utworzMape()`
-(SVG, gesty, przyciski), a reszta ekranów siedzi w `app.js` (docelowo `ui.js`) —
+(SVG, gesty, przyciski), a reszta ekranów siedzi w `app.js` —
 pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 (`performance.now` / `mulberry32(ziarno)`), nie czytane z globali w środku logiki.
 
@@ -164,7 +178,8 @@ commit i nowa wersja aplikacji.
 
 ### A. Przygotowanie gry
 
-1. `ui.js` zbiera konfigurację → `konfig.walidujSetup()` (limity, spójność).
+1. `app.js` (ekran setupu) zbiera konfigurację → `konfig.walidujSetup()`
+   (limity, spójność).
 2. `pozycja.js` czyta pierwszy fix GPS (albo współrzędne z trybu testowego).
    Watchdog ciszy (m12-91, bug G): WebKit potrafi trzymać `watchPosition`
    bez żadnego callbacku, ignorując `timeout`; po 15 s bez znaku życia
@@ -176,9 +191,10 @@ commit i nowa wersja aplikacji.
    dobranym do promienia gry (`geo.dopasujZoomDoPromienia`), a kolejne tylko
    przesuwają marker — potem mapę prowadzi palec gracza. W trybie testowym
    fixy zamiast z GPS płyną z `sekwencjaSymulowana(trasaProsta(...))`
-   odtwarzanej przez `setInterval` (przycisk „Symuluj dojście"); oba strumienie
-   wchodzą w stan **jednym lejem** `app.js: przyjmijFix()`, więc badge, mapa
-   i próg dojścia zachowują się identycznie z sygnałem i bez niego, a pauza
+   odtwarzanej przez `setInterval` (przycisk „▶ Symuluj dojście (tryb testowy)”
+   w ekranie gry); oba strumienie wchodzą w stan **jednym lejem**
+   `app.js: przyjmijFix()`, więc mapa i próg dojścia zachowują się identycznie
+   z sygnałem i bez niego, a pauza
    w tle (`visibilitychange`) zatrzymuje jedno i drugie.
 3. `sieci.budujZapytanieOverpass({ srodek, promienM, tryb })` składa jedno
    zapytanie dla `R × 1.15`; pobiera je `app.js` przez `window.fetch`
@@ -239,11 +255,12 @@ commit i nowa wersja aplikacji.
    zegara sesji) — przy wznowieniu wszystkie znaczniki czasu są rebazowane
    o `performance.now() − zegarMs`, więc czas zamknięcia karty nie wlicza się
    w odcinek.
-3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (filtr dokładności,
-   kody P05/P06) → `dodajFix()` (historia, maks. 40 pomiarów) → `stanDojscia()`
-   (próg 25 m na stałe, ADR 0004 aneks 2026-09-09, + dwa kolejne
-   trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`:
-   tryb dojścia i dokładność (bez kary, ADR 0023). GPS i symulacja dojścia
+3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (walidacja
+   WSPÓŁRZĘDNYCH — kod `P06`; `accuracy` nie jest oceniane, ADR 0034 pkt 2;
+   błędy samego watchera mają kody P01–P10) → `dodajFix()` (historia, maks.
+   40 pomiarów) → `stanDojscia()` (próg 50 m z `geo.progDojsciaM()` + dwa
+   kolejne trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`:
+   tryb dojścia i czas bez kary za tempo (ADR 0023). GPS i symulacja dojścia
    (tryb testowy) karmią aplikację tym samym lejem `przyjmijFix()`; symulacja
    ustępuje grze — gdy faza przestaje być `odcinek` (dojście, pauza, ręczny
    koniec), odtwarzanie staje i nie nadpisuje statusu gry.
@@ -350,12 +367,13 @@ commit i nowa wersja aplikacji.
 - **Ukrywanie paczki**: obfuskacja bez klucza — UTF-8 JSON ⊕ strumień bajtów
   z stałego ziarna → base64url → kontener `TO-paczka/2` + suma kontrolna FNV-1a
   (ADR 0007). To bariera przed przypadkowym wglądem, **nie szyfrowanie**.
-- **Kryterium dojścia**: `progDojsciaM() = 25 m` na stałe (ADR 0004 aneks
-  2026-09-09 — dokładność fixu nie rozluźnia już progu: zaliczenie ze 100 m
-  to inne miejsce) plus dwa kolejne fixy w progu — debounce przeciw odbiciom sygnału (`geo.czyDotarl`, opakowane
-  przez `pozycja.stanDojscia` zdaniem dla gracza: ile metrów zostało i dlaczego
-  stacja się nie zapala). Fix niedokładny dostaje ostrzeżenie, ale nie jest
-  odrzucany (ADR 0004 pkt 2 i 4).
+- **Kryterium dojścia**: `progDojsciaM() = 50 m` na stałe (ADR 0034 pkt 2 —
+  zastąpił 25 m z ADR 0004 aneks 2026-09-09) plus DWA kolejne fixy w progu —
+  debounce przeciw odbiciom sygnału (`geo.czyDotarl`, opakowane przez
+  `pozycja.stanDojscia` zdaniem dla gracza: ile metrów zostało i dlaczego
+  stacja się nie zapala). Pomiar poza promieniem zeruje potwierdzenie.
+  `accuracy` nie uczestniczy w decyzji: nie ma ostrzeżenia o dokładności ani
+  progu dokładności, odrzucane są wyłącznie współrzędne bez sensu (`P06`).
 - **Punktacja** (ADR 0023): punkty za poprawną odpowiedź (waga z paczki),
   zero składnika czasowego; remisy rozstrzyga kolejność zgłoszeń. Dystans
   odcinka jest **łańcuchowy** (start gry → stacja 1, potem stacja poprzednia
