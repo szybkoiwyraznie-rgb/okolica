@@ -3562,3 +3562,89 @@ handoff `docs/setup/HANDOFF_2026-09-12g.md`.
 
 **Otwarte:** potwierdzenie terenowe bug G na iPhonie; WDROŻENIE `.gs`
 (ranking — ADR 0039); testy terenowe F/C/D/E; bug B; kamienie M3–M8, M10–M12.
+
+## Sesja 2026-09-12h — audyt PR #16, uwagi terenowe: komunikat P10 i stare paczki (m12-92)
+
+> Gałąź `arena/01a096bd-okolica` z `6c15989` (main po squash-merge PR #16).
+
+### 1. Audyt PR #16 (squash `6c15989`, 23 pliki, +506/−55)
+
+Zakres: `git fetch origin main --depth=50`; `git diff a3ca791..6c15989` plik
+po pliku; brama na HEAD przed zmianami: `npm test` **728/728**.
+
+- **Bug G — watchdog martwego nasłuchu GPS (m12-91):** `pozycja.js` (znak
+  życia, `czyMilczy` z edge-case'ami L10, `komunikatMilczenia` → P10),
+  `app.js` (watchdog co 5 s uzbrojony na ekranie pozycji/odcinku, zegar
+  zdejmowany w `zatrzymajGps`, gest „Dalej” odświeża nasłuch bez fixa,
+  „GPS włączony” tylko na pierwszym starcie — L22), kontrakt L17 (zakazane
+  wywołania szukane w kodzie BEZ komentarzy). Zgodne z aneksem m12-91
+  w ADR 0004 i LESSONS L56.
+- Pozostałe moduły (`mapa`, `most`, `protokol`, `rozgrywka`, `sieci`,
+  `stacje`, `trwalosc`, `wieloosobowa`, `wynik`, `zestawy`) — wyłącznie
+  podbicia `?v=` (m12-90 → m12-91) w całym grafie; `WERSJA_SW` spójne.
+- Testy: `czyMilczy` (w tym znak „z przyszłości”), P10 z wypełnieniem
+  i placeholerami, watchdog end-to-end na „niemym” watcherze, gest „Dalej”.
+- Dokumentacja (aneks ADR 0004, L56, ARCHITECTURE, README, handoff 12g)
+  spójna z kodem.
+
+**Wniosek:** bez zastrzeżeń blokujących. Dwie obserwacje do rejestru:
+(O1) przy TRWAŁYM milczeniu cisza liczona jest od ostatniego znaku i nie
+resetuje się przy restarcie watchera — watchdog restartuje nasłuch co 5 s,
+a „próba N” rośnie co tyknięcie (sformułowanie aneksu/L56 mówi „od
+założenia nasłuchu”); bez wpływu na zgłoszony bug, odnotowane. (O2) wyjście
+awaryjne P10 (ustawienia systemu + odświeżenie strony) nie pomogło w
+terenie — treść zmieniona w tej sesji decyzją właściciela.
+
+### 2. Uwagi terenowe: P10 i stare paczki (m12-92, commity `4edfdf2` + dopełnienie `2179d98`, `a410cf4`)
+
+**P10 (uwaga właściciela 2026-09-12):** wyjście awaryjne „Ustawienia →
+Prywatność i bezpieczeństwo → Usługi lokalizacji + odśwież strony” NIE
+przywracało pozycji w terenie; przywracało ją zamknięcie aplikacji (karty
+przeglądarki) i ponowne otwarcie. Treść P10 zmieniona zgodnie
+(`app/pozycja.js`), mechanizm watchdoga bez zmian; pin komunikatu przepisany
+na nową formę (`test/pozycja.test.js`, L55); aneks m12-92 w ADR 0004;
+`?v=m12-92` w całym grafie.
+
+**Stare paczki (uwaga właściciela 2026-09-12):** „to miało być już
+naprawione, ale nie jest” — paczki sprzed 2026-09-11 odrzucane na
+„Gdzie jesteś?” (tematy spoza setupu), choć pytań z tych tematów w nich
+nie ma. Przyczyna: naprawa z 2026-09-11 objęła meta nowych wysyłek,
+migrację rejestru LOKALNEGO i regułę dopasowania, ale nie PLIKI NA DRIVE
+(indeks mostu przepisywał `meta.tematy` wprost); droga „odświeżenie
+ponowną wysyłką” była martwa (most przy duplikacie nie nadpisuje pliku,
+ADR 0028).
+- Naprawa w moście: `tematyPytanZestawu()` (dekoduje kontener — most i tak
+  go dekoduje; unikalne tematy w kolejności pierwszego wystąpienia; null
+  przy usterce) + `budujIndeks()` dopisuje `tematy` do wpisu indeksu
+  (fallback `meta.tematy`) — plik na Drive nietknięty (wzorzec B19).
+- Klient: zero zmian (ta sama reguła, ten sam kanał, inne dane); paczki
+  nowe nietknięte (idempotencja).
+- Testy: 5 nowych w `test/most-indeks.test.js` (L33), w tym regresja
+  kliencka „paczka bez pytań o tematy spoza setupu pasuje do setupu”
+  i jej kontrola „bez backfillu pada”; `zasieg-mostu` 97.8%.
+- Dokumentacja: aneks m12-92 w ADR 0017, LESSONS **L57** (zmiana sensu
+  pola wymaga inwentaryzacji wszystkich nośników danych; obietnica w ADR
+  musi być ścieżką uruchomialną).
+
+**Pułapka (L7 w praktyce):** commit `4edfdf2` nie wziął
+`test/pozycja.test.js` (`git add` z listy) — jego drzewo miało czerwoną
+bramę; dopełnienie `2179d98`. Reguła z handoffu 12g potwierdzona po raz
+drugi: przy zmianach w module dodaje się katalogi w całości i ogląda
+`git status --short` PRZED commitem.
+
+### 3. Bramy i stan po sesji
+
+`npm test` **733/733** (5 nowych), `check` OK, budżet lektury
+**83 322/100 000** (rezerwa 16 678 — aneksy ADR 0004/0017, L57 i ten
+wpis wchodzą do lektury startowej), `?v=m12-92` spójne, `zasieg-mostu`
+97.8%. Wszystko wypchnięte na `arena/01a096bd-okolica` (PR #17).
+
+**Otwarte dla właściciela:**
+1. **WDROŻENIE `.gs`** („Wdróż → Nowa wersja”) — JEDNO wdrożenie niesie
+   teraz DWA efekty: ranking (ADR 0039) i naprawę starych paczek
+   (backfill tematów w indeksie). Do tego czasu stare paczki zostają
+   odrzucane, a warstwa rankingu „nie umie odczytać odpowiedzi”.
+2. Potwierdzenie terenowe nowego P10 na iPhonie (zamknięcie i ponowne
+   otwarcie w komunikacie); jeśli cisza dalej — zgłoszenie z treścią
+   „próba N”.
+3. Kamienie M3–M8, M10–M12 (kryteria terenowe).

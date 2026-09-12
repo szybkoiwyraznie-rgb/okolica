@@ -145,3 +145,25 @@ platformy, tylko prośbą. Uzupełnienie:
 Reguła ogólna trafia do LESSONS L56: status „aktywny” w naszym wrapperze
 to deklaracja intencji; o życiu streamu rozstrzyga wyłącznie ostatni
 callback.
+
+## Aneks 2026-09-12 (m12-92) — wyjście awaryjne P10: zamknięcie i ponowne otwarcie aplikacji
+
+Test terenowy (właściciel, 2026-09-12): wyjście awaryjne z pkt 2 poprzedniego
+aneksu (Ustawienia systemu → Usługi lokalizacji dla przeglądarki + odświeżenie
+strony) **nie** przywracało pozycji. Przywracało ją **zamknięcie aplikacji
+(karty przeglądarki) i ponowne otwarcie** — zupełnie świeży request z ładowania
+strony i gestem użytkownika, nie restart `watchPosition` w już załadowanej
+karcie (dokładnie to, co obserwacja O1 audytu PR #16: restart in-place w
+ciszy WebKita nie odblokowuje nasłuchu).
+
+Treść komunikatu **P10** zmieniona zgodnie (mechanizm watchdoga z poprzedniego
+aneksu bez zmian):
+
+- było: „…sprawdź dostęp przeglądarki do lokalizacji (na iPhonie: Ustawienia →
+  Prywatność i bezpieczeństwo → Usługi lokalizacji → przeglądarka) i odśwież
+  stronę.”
+- jest: „…zamknij aplikację (kartę przeglądarki) i otwórz ją ponownie — w
+  takiej sytuacji to jedyny pewny sposób, żeby pozycja wróciła.”
+
+Pin komunikatu przepisany na nową formę (`test/pozycja.test.js`, LESSONS L55:
+decyzja właściciela się zmieniła — pin opisuje nową, nie słabnie).

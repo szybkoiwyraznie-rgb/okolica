@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-91';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-93';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -85,7 +85,7 @@ export const KODY_POZYCJI = {
   P07: 'Śledzenie położenia jest wstrzymane, bo aplikacja działa w tle — oszczędzamy baterię. Wróć na kartę, żeby je wznowić (ADR 0004 pkt 1).',
   P08: 'Nieznany błąd położenia: {message}. Wyjdź na otwartą przestrzeń, odśwież stronę albo pomiń odcinek.',
   P09: 'Wznowiono śledzenie położenia — pierwszy pomiar po powrocie potrafi trwać kilka sekund.',
-  P10: 'Telefon nie podaje położenia mimo włączonego GPS ({sekundy} s) — zakładam świeży nasłuch (próba {proba}). Jeśli po kilku próbach nadal nic: sprawdź dostęp przeglądarki do lokalizacji (na iPhonie: Ustawienia → Prywatność i bezpieczeństwo → Usługi lokalizacji → przeglądarka) i odśwież stronę.',
+  P10: 'Telefon nie podaje położenia mimo włączonego GPS ({sekundy} s) — zakładam świeży nasłuch (próba {proba}). Jeśli po kilku próbach nadal nic: zamknij aplikację (kartę przeglądarki) i otwórz ją ponownie — w takiej sytuacji to jedyny pewny sposób, żeby pozycja wróciła.',
 };
 
 /** `GeolocationPositionError.code` → nasz kod komunikatu. */

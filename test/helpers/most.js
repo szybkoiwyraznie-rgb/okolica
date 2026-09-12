@@ -173,7 +173,7 @@ import { zapakujPaczke } from '../../app/kodowanie.js';
 
 /* ----------------------------------------------------------------- fixtures */
 
-export function zestawPrzykladowy({ stacje = 3, bezKotwicy = false } = {}) {
+export function zestawPrzykladowy({ stacje = 3, bezKotwicy = false, tematyMeta = null } = {}) {
   const paczka = {
     schemat: 'PYT/1.0.6',
     pytania: Array.from({ length: stacje }, (_, i) => ({
@@ -194,7 +194,9 @@ export function zestawPrzykladowy({ stacje = 3, bezKotwicy = false } = {}) {
       geohash5: 'u3qb8',
       geohash6: 'u3qb8g',
       promienM: 1000,
-      tematy: ['historia'],
+      // `tematyMeta` odtwarza paczkę sprzed 2026-09-11: meta niosą listę
+      // tematów DOPUSZCZALNYCH w setupie (szerszą niż faktyczna zawartość).
+      tematy: tematyMeta || ['historia'],
       wiek: 'dorosli',
       liczbaStacji: stacje,
       pytaniaNaStacje: 1,

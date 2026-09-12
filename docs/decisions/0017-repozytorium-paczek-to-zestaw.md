@@ -155,3 +155,41 @@ wyłącza z obiegu, przeciągając plik do `…-odrzucone` (znika z indeksu).
 Głosy oddane przed odrzuceniem zostają zapisane, ale paczka przestaje
 przyjmować nowe. Właściwości skryptu `OWNER_EMAIL`, `REVIEW_SECRET`
 i `URL_SERWISU` są zbędne i usunięte z wdrożenia.
+
+## Aneks 2026-09-12 (m12-92) — indeks dopisuje faktyczne tematy pytań (uwagi terenowe właściciela)
+
+**Problem (właściciel, 2026-09-12):** stare paczki (opublikowane przed
+2026-09-11) mają w `meta.tematy` listę tematów *dopuszczalnych* w setupie —
+ekran „Gdzie jesteś?” odrzuca je („tematy spoza setupu”), choć pytań z tych
+tematów w paczkach nie ma. Poprzedni aneks (2026-09-11) naprawił trzy
+miejsc: wysyłkę nowych paczek (`zbierzMetaZestawu` po stronie aplikacji),
+rejestr lokalny (`ujedgajnijTematyWpisowLokalnych` przy starcie) i dane
+po stronie klienta — ale PLIKI na Drive niosą stare meta, a indeks mostu
+przepisuje `meta.tematy` z pliku bez zmian. Droga „właściciel może odświeżyć
+stare pliki ponowną wysyłką paczki” (aneks 2026-09-11) okazała się nie
+działać: most przy duplikacie (ta sama nazwa pliku z `geohash5-skrot`)
+zwraca istniejący plik **bez nadpisania** (ADR 0028 — paczka jest treścią
+niezmienną), więc ponowna wysyłka tej samej paczki nic nie zmienia.
+
+**Rozstrzyg:** most dopisuje do wpisu INDEKSU faktyczne tematy pytań —
+`tematyPytanZestawu()` dekoduje kontener (most i tak go dekoduje:
+`walidujKandydata`) i liczy unikalne tematy w kolejności pierwszego
+wystąpienia; `budujIndeks()` wpisuje je jako `tematy` (fallback do
+`meta.tematy`, gdy kontener nieczytelny — wpis nie wypada z indeksu).
+Plik na Drive pozostaje NIEtknięty — wzorzec B19 (kotwica
+`geohash6Szacowany` też jest dopisywana do indeksu z pliku, nie do pliku),
+zgodnie z ADR 0028 (paczka = treść niezmienna).
+
+**Klient bez zmian:** reguła dopasowania („tematy paczki nie szersze niż w
+setupie”, pkt 7) i kanał (`tematy` we wpisu indeksu) są te same — zmieniają
+się dane, nie reguła. Paczki nowe są nietknięte (idempotencja: ich meta
+i tak jest z faktów).
+
+**Konsekwencja wdrożeniowa:** naprawa jedzie z WDRÓŻENIEM `.gs`
+(„Wdróż → Nowa wersja”) — z tym samym, które i tak oczekuje na ranking
+(ADR 0039). Zero dodatkowej pracy właściciela; usuwanie starych paczek z
+Dysku nie jest potrzebne (indeks dopisuje fakty przy każdym odczycie).
+
+Testy: `test/most-indeks.test.js` (5 nowych — tekst `.gs` wykonywany na
+atrapie Drive, LESSONS L33; w tym regresja kliencka „paczka bez pytań o
+tematy spoza setupu pasuje do setupu”).

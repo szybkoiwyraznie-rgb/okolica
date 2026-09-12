@@ -449,6 +449,36 @@ function kotwicaZestawu(zestaw) {
   };
 }
 
+/**
+ * Faktyczne tematy pytań paczki (właściciel, 2026-09-12).
+ *
+ * Pliki opublikowane przed 2026-09-11 niosą w `meta.tematy` listę tematów
+ * DOPUSZCZALNYCH w setupie, z którego paczka powstała — lista bywa szersza
+ * niż treść (model nie zawsze pisze pytania ze wszystkich tematów), a
+ * dopasowanie po stronie klienta („tematy paczki nie szersze niż w setupie”)
+ * odrzucało paczkę, choć pytań z „obcych” tematów w niej nie było. Od
+ * 2026-09-11 aplikacja wysyła już meta z faktami, ale stare pliki zostają.
+ *
+ * Most i tak dekoduje kontener (wzorzec B19: indeks dopisuje pola z pliku,
+ * plik na Drive pozostaje nietknięty) — dlatego wpis indeksu dostaje FAKTYCZNE
+ * tematy pytań, a paczki sprzed 2026-09-11 pasują do setupów, do których
+ * faktycznie pasują. null przy jakiejkolwiek usterce (kontener uszkodzony,
+ * brak pytań) — wpis wraca do `meta.tematy`, nic się nie gubi.
+ */
+function tematyPytanZestawu(zestaw) {
+  try {
+    const paczka = odpakujKontener(zestaw.kontener);
+    const tematy = [];
+    ((paczka && paczka.pytania) || []).forEach((p) => {
+      const t = p && typeof p.temat === 'string' ? p.temat.trim() : '';
+      if (t && tematy.indexOf(t) === -1) tematy.push(t);
+    });
+    return tematy.length ? tematy : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 /** Indeks WYŁĄCZNIE z katalogu zaakceptowanych: same meta + id pliku. */
 function budujIndeks() {
   const wpisy = [];
@@ -459,6 +489,11 @@ function budujIndeks() {
       const zestaw = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
       if (zestaw.schemat !== SCHEMAT_ZESTAWU || !czyMetaOk(zestaw.meta)) continue;
       const kotwica = kotwicaZestawu(zestaw);
+      // Właściciel 2026-09-12: tematy = FAKTYCZNE tematy pytań z
+      // dekoderowanego kontenera — pliki sprzed 2026-09-11 mają w meta
+      // listę „dopuszczalnych” i paczki padały w dopasowaniu (patrz
+      // tematyPytanZestawu).
+      const tematy = tematyPytanZestawu(zestaw) || zestaw.meta.tematy;
       wpisy.push(Object.assign({}, zestaw.meta, {
         id: plik.getId(),
         skrot: zestaw.kontener && zestaw.kontener.skrot,
@@ -466,6 +501,7 @@ function budujIndeks() {
         // B19: pliki sprzed ADR 0024 dostają kotwicę geohash6 ze stacji.
         geohash6: kotwica ? kotwica.geohash6 : zestaw.meta.geohash6,
         geohash6Szacowany: kotwica ? kotwica.szacowany : false,
+        tematy,
         // ADR 0028: statystyki ocen — ekran 2 pokazuje je przy wyborze paczki.
         oceny: podsumowanieOcen(czytajOceny(plik.getId())),
       }));

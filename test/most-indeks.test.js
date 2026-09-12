@@ -16,7 +16,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 import { geohash } from '../app/geo.js';
-import { dopasujZestawy, walidujIndeksSurowy } from '../app/zestawy.js';
+import { dopasujMetaIndeksu, dopasujZestawy, walidujIndeksSurowy } from '../app/zestawy.js';
 import { uruchomMost, zestawPrzykladowy, idPoNazwie } from './helpers/most.js';
 
 const { most } = uruchomMost();
@@ -166,4 +166,84 @@ test('B19: kotwica dokładna NIE dostaje poszerzenia o promień paczki', () => {
 
   const bezZnacznika = wpis({ geohash6: geohash(daleko.lat, daleko.lon, 6) });
   assert.deepEqual(dopasujZestawy([bezZnacznika], kryteria(START)), [], 'brak znacznika = kotwica dokładna (domyślnie)');
+});
+
+/* ---- stare paczki: faktyczne tematy pytań w indeksie (właściciel 2026-09-12) ---- */
+
+test('most: indeks niesie FAKTYCZNE tematy pytań, nie listę „dopuszczalnych” z meta (paczka sprzed 2026-09-11)', () => {
+  const { most: mostSwiezy } = uruchomMost();
+  const zestaw = zestawPrzykladowy({ tematyMeta: ['historia', 'sport', 'jedzenie'] });
+  assert.deepEqual(zestaw.meta.tematy, ['historia', 'sport', 'jedzenie'], 'meta jak w paczkach sprzed 2026-09-11 — lista szersza niż treść');
+  const przyjeta = mostSwiezy.przyjmijKandydata(zestaw);
+  assert.equal(przyjeta.ok, true, `przyjęcie: ${JSON.stringify(przyjeta)}`);
+
+  const indeks = walidujIndeksSurowy(JSON.stringify(mostSwiezy.budujIndeks()));
+  assert.deepEqual(indeks.usterki, [], 'indeks bez usterek');
+  assert.equal(indeks.indeks.length, 1);
+  assert.deepEqual(
+    indeks.indeks[0].tematy,
+    ['historia'],
+    'wpis indeksu: faktyczne tematy pytań z dekoderowanego kontenera (pytań o sport/jedzenie w paczce nie ma)',
+  );
+});
+
+test('most: backfill nie rusza nowych paczek (meta i tak jest z faktami)', () => {
+  const { most: mostSwiezy } = uruchomMost();
+  const zestaw = zestawPrzykladowy(); // meta.tematy === faktyczne tematy pytań
+  assert.equal(mostSwiezy.przyjmijKandydata(zestaw).ok, true);
+  const indeks = walidujIndeksSurowy(JSON.stringify(mostSwiezy.budujIndeks())).indeks;
+  assert.equal(indeks.length, 1);
+  assert.deepEqual(indeks[0].tematy, ['historia'], 'paczka nowa: backfill idempotentny');
+});
+
+test('most: plik ręcznie popsuty na Drive (kontener nieczytelny) nie wypada z indeksu — fallback do meta.tematy', () => {
+  const { most: mostSwiezy, pliki } = uruchomMost();
+  const przyjeta = mostSwiezy.przyjmijKandydata(zestawPrzykladowy({ tematyMeta: ['historia', 'jedzenie'] }));
+  assert.equal(przyjeta.ok, true);
+  // symulacja ręcznej edycji pliku na Dysku: meta poprawna, kontener urwany
+  const plik = pliki.get(przyjeta.id);
+  const surowy = JSON.parse(plik.tresc);
+  surowy.kontener.dane = 'zz-zlamany';
+  plik.tresc = JSON.stringify(surowy);
+
+  const indeks = walidujIndeksSurowy(JSON.stringify(mostSwiezy.budujIndeks()));
+  assert.equal(indeks.indeks.length, 1, 'uszkodzony kontener nie wyrzuca wpisu z indeksu');
+  assert.deepEqual(indeks.indeks[0].tematy, ['historia', 'jedzenie'], 'fallback: meta.tematy z pliku, nic się nie gubi');
+});
+
+test('most: uszkodzony kontener nie przepuści przyjmijKandydata (dopiero budujIndeks ma fallback)', () => {
+  const { most: mostSwiezy } = uruchomMost();
+  const zestaw = zestawPrzykladowy();
+  zestaw.kontener = { schemat: 'TO-paczka/2', kodowanie: 'b64x1', skrot: '00000000', dane: 'zz' };
+  const odmowa = mostSwiezy.przyjmijKandydata(zestaw);
+  assert.equal(odmowa.ok, false, 'most nie przyjmuje paczki z nieczytelnym kontenerem');
+  assert.equal(mostSwiezy.tematyPytanZestawu({ kontener: zestaw.kontener }), null, 'funkcja: nieczytelny kontener → null, nie wyjątek');
+  assert.deepEqual(mostSwiezy.tematyPytanZestawu({ kontener: zestawPrzykladowy().kontener }), ['historia'], 'funkcja: pytania → tematy, unikalne, w kolejności');
+});
+
+test('klient: stara paczka pasuje do setupu po FAKTYCZNYCH tematach — zgłoszenie właściciela 2026-09-12', () => {
+  const { most: mostSwiezy } = uruchomMost();
+  const zestaw = zestawPrzykladowy({ tematyMeta: ['historia', 'sport', 'jedzenie'] });
+  assert.equal(mostSwiezy.przyjmijKandydata(zestaw).ok, true);
+  const indeks = walidujIndeksSurowy(JSON.stringify(mostSwiezy.budujIndeks())).indeks;
+
+  // gracz w komorce kotwicy paczki (punkt wewnątrz komórki u3qb8g)
+  const kryteria = {
+    geohash5: 'u3qb8', lat: 52.140, lon: 20.780, promienM: 1000,
+    liczbaStacji: 3, pytaniaNaStacje: 1, wiek: 'dorosli',
+  };
+  assert.equal(
+    dopasujMetaIndeksu(indeks, { ...kryteria, tematy: ['historia'] }).length,
+    1,
+    'paczka BEZ pytań o sport/jedzenie pasuje do setupu historycznego (wcześniej: „tematy spoza setupu”)',
+  );
+  assert.equal(
+    dopasujMetaIndeksu(indeks, { ...kryteria, tematy: ['sport'] }).length,
+    0,
+    'backfill nie luzuje kryterium: paczka bez pytań o sport nie pasuje do setupu sportowego',
+  );
+  // bez backfillu (stary meta) ta sama paczka pada — test ma zęby:
+  const staryWpis = { ...indeks[0], tematy: ['historia', 'sport', 'jedzenie'] };
+  assert.equal(dopasujMetaIndeksu([staryWpis], { ...kryteria, tematy: ['historia'] }).length, 0,
+    'kontroll: z listą „dopuszczalnych” z meta paczka NIE pasuje (przyczyna zgłoszenia)');
 });
