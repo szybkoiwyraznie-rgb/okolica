@@ -2651,3 +2651,79 @@ test('droga: pasek na mapie, sterowanie w Informacjach, po dojściu duży panel 
   assert.equal(dom.pobierz('informacje-gra').hidden, true);
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, false);
 });
+
+/* -------------------------------------- bug G: watchdog cichego watchera */
+
+/** Ścieżka na ekran pozycji z potwierdzonymi graczami — gest „Dalej” uzbraja GPS. */
+async function naEkranPozycji(zainstalowany, geolokalizacja, sufiks) {
+  const pamiec = pamiecKonfig3x1();
+  const konfig = JSON.parse(pamiec.get('okolica:konfig'));
+  konfig.konfig.imiona = ['Gracz 1', 'Gracz 2', 'Gracz 3'];
+  pamiec.set('okolica:konfig', JSON.stringify(konfig));
+  pamiec.set('okolica:gracze', JSON.stringify({ schemat: 'gracze-lokalni/1', gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })) }));
+  const domB = zainstalujDom({ geolocation: geolokalizacja, pamiec });
+  await import(`../app/app.js?${sufiks}=${Math.random().toString(36).slice(2)}`);
+  return domB;
+}
+
+test('bug G: cichy watcher (WebKit bez żadnego callbacku) jest restarowany, a ekran mówi o próbie', async () => {
+  // Zgłoszenie terenowe 2026-09-12 (iPhone, Chrome, Pages): watchPosition
+  // nie woła ani onFix, ani onBlad, ignorując timeout=20 s — aplikacja czekała
+  // w nieskończoność na „Czekam na pozycję…”. Watchdog ma wykrywać ciszę,
+  // zakładać świeżego watchera i mówić graczowi, która to próba.
+  const gpsCichy = atrapaGeolokalizacji();
+  globalThis.__OKOLICA_KROK_GPS_MS__ = 20; // szybki zegar TYLKO dla tego importu (czytany przy ładowaniu modułu)
+  globalThis.__OKOLICA_MILCZENIE_GPS_MS__ = 60;
+  let domCichy;
+  try {
+    domCichy = await naEkranPozycji(zainstalujDom, gpsCichy.geolocation, 'gpswatchdog');
+    assert.equal(gpsCichy.wywolania.watch, 1, 'start strony: jeden watcher');
+    domCichy.kliknij('przycisk-dalej-pozycja');
+    await czekaj(30); // handler nawigacji jest asynchroniczny (bramka tożsamości)
+    assert.equal(domCichy.pobierz('ekran-pozycja').hidden, false, 'nawigacja przeszła bramę setupu i tożsamości');
+    assert.ok(gpsCichy.wywolania.watch >= 2, 'gest „Dalej” bez fixa zakłada świeżego watchera (bug G, kotwica w geście)');
+    await czekaj(250); // kilka tyknięć watchdoga w czasie rzeczywistym (krok 20 ms < czekanie)
+    assert.ok(gpsCichy.wywolania.watch >= 4, `watchdog restaruje cichego watchera (watch=${gpsCichy.wywolania.watch})`);
+    assert.ok(gpsCichy.wywolania.clear.length >= 3, 'przed każdym restartem stary watcher dostaje clearWatch');
+    const tekstStatusu = domCichy.pobierz('pozycja-status').textContent;
+    const proba = /próba (\d+)/.exec(tekstStatusu);
+    assert.ok(proba && Number(proba[1]) >= 2, `gracz widzi, że aplikacja walczy o pozycję: „${tekstStatusu}”`);
+    // fix po restarcie: licznik prób wraca do zera, pozycja i przycisk żyją
+    gpsCichy.wyslijFix(52.2297, 21.0122, 12);
+    assert.match(domCichy.pobierz('pozycja-status').textContent, /Pozycja ustalona/);
+    assert.equal(domCichy.pobierz('przycisk-dalej-stacje').disabled, false);
+  } finally {
+    delete globalThis.__OKOLICA_KROK_GPS_MS__;
+    delete globalThis.__OKOLICA_MILCZENIE_GPS_MS__;
+    if (domCichy) {
+      domCichy.ustawHidden(true);
+      domCichy.wyslijZdarzenieDokumentu('visibilitychange'); // pauza w tle zdejmuje watchera razem z zegarem
+    }
+  }
+});
+
+test('bug G: „Dalej” odświeża cichego watchera gestem; po fixie restart nie jest potrzebny', async () => {
+  // Pierwszy watcher startuje przy ładowaniu strony, BEZ gestu — na iOS WebKit
+  // potrafi taki request trzymać zawieszony w nieskończoność. Klik „Dalej”
+  // jest gestem użytkownika: dopóki nie ma żadnego fixa, ma zakładać świeżego
+  // watchera zamiast ufać „czyAktywny()”.
+  const gpsNiemego = atrapaGeolokalizacji();
+  const domB = await naEkranPozycji(zainstalujDom, gpsNiemego.geolocation, 'gpsdalej');
+  try {
+    assert.equal(gpsNiemego.wywolania.watch, 1, 'start: jeden watcher z ładowania strony');
+    domB.kliknij('przycisk-dalej-pozycja');
+    await czekaj(30);
+    assert.equal(domB.pobierz('ekran-pozycja').hidden, false, 'nawigacja przeszła bramę setupu i tożsamości');
+    assert.equal(gpsNiemego.wywolania.watch, 2, 'bez żadnego fixa: „Dalej” zakłada świeżego watchera (gest)');
+    assert.equal(gpsNiemego.wywolania.clear.length, 1, 'stary watcher zamknięty clearWatch');
+    gpsNiemego.wyslijFix(52.2297, 21.0122, 12);
+    assert.match(domB.pobierz('pozycja-status').textContent, /Pozycja ustalona/);
+    domB.kliknij('przycisk-wstecz-setup');
+    domB.kliknij('przycisk-dalej-pozycja');
+    await czekaj(30);
+    assert.equal(gpsNiemego.wywolania.watch, 2, 'fix był: watcher nie jest restarowany przy każdym wejściu');
+  } finally {
+    domB.ustawHidden(true);
+    domB.wyslijZdarzenieDokumentu('visibilitychange');
+  }
+});

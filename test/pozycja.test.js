@@ -15,8 +15,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  BLEDY_API, GRANICE, KODY_POZYCJI, OPCJE_WATCH, PROFILE_GPS, PROG_BATERII_M, STANY_FIXA, ZRODLA_FIXA, profilBaterii,
-  bladGeolokalizacji, dodajFix, fixSymulowany, fixZPozycji, komunikatPauzy, komunikatWznowienia,
+  BLEDY_API, GRANICE, KODY_POZYCJI, OPCJE_WATCH, PROFILE_GPS, PROG_BATERII_M, STANY_FIXA, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, profilBaterii,
+  bladGeolokalizacji, czyMilczy, dodajFix, fixSymulowany, fixZPozycji, komunikatMilczenia, komunikatPauzy, komunikatWznowienia,
   ocenFix, punktNaTrasie, sekwencjaSymulowana, sprawdzTrase, stanDojscia,
   trasaProsta, watchPozycja,
 } from '../app/pozycja.js';
@@ -172,7 +172,7 @@ test('bladGeolokalizacji: kody przeglądarki na komunikaty z wyjściem awaryjnym
 
 test('KODY_POZYCJI: pełne zdania gotowe do UI, osobny przedrostek od kodów rozgrywki', () => {
   const kody = Object.entries(KODY_POZYCJI);
-  assert.equal(kody.length, 8);
+  assert.equal(kody.length, 9, 'P01–P04, P06–P10 (P05 wycofany — numer nie wraca do puli)');
   for (const [kod, tekst] of kody) {
     assert.match(kod, /^P\d{2}$/, `kod ${kod}`);
     assert.ok(tekst.length >= 40, `${kod}: za krótki — „${tekst}"`);
@@ -386,4 +386,25 @@ test('bateria: brak dystansu (null/NaN) NIE zmienia profilu; domyślny profil do
   assert.equal(profilBaterii({}), 'dokladny', 'start: profil dokładny');
   assert.equal(PROG_BATERII_M.oszczednyPowyzej, 250);
   assert.equal(PROG_BATERII_M.dokladnyPonizej, 150);
+});
+
+/* ---------------------------------------------- bug G: cichy watcher GPS */
+
+test('czyMilczy: brak znaku albo cisza dłuższa niż limit to milczenie (bug G)', () => {
+  assert.equal(czyMilczy({ ostatniZnakMs: null, terazMs: 0 }), true, 'nigdy żadnego znaku = milczy');
+  assert.equal(czyMilczy({ ostatniZnakMs: undefined, terazMs: 10_000 }), true, 'brak danych = milczy, nie „świeży”');
+  assert.equal(czyMilczy({ ostatniZnakMs: NaN, terazMs: 10_000 }), true, 'NaN = brak danych (L10)');
+  assert.equal(czyMilczy({ ostatniZnakMs: 0, terazMs: ZEGAR_MILCZENIA_MS }), true, 'równo limit = milczy');
+  assert.equal(czyMilczy({ ostatniZnakMs: 0, terazMs: ZEGAR_MILCZENIA_MS - 1 }), false, 'poniżej limitu = jeszcze żyje');
+  assert.equal(czyMilczy({ ostatniZnakMs: 500, terazMs: 400 }), false, 'znak „z przyszłości” (zegar wstecz) nie jest milczeniem');
+  assert.equal(czyMilczy({ ostatniZnakMs: 0, terazMs: 9_999, limitMs: 9_999 }), true, 'limit nadpisywalny (testy/profil)');
+});
+
+test('P10: komunikat milczenia mówi co robi aplikacja i co zrobić, gdy nie pomoże (bug G)', () => {
+  assert.equal(typeof KODY_POZYCJI.P10, 'string', 'kod P10 istnieje (P05 wycofany i nie wraca)');
+  const tekst = komunikatMilczenia({ sekundy: 15, proba: 2 });
+  assert.match(tekst, /\b15 s\b/, 'sekundy wypełnione');
+  assert.match(tekst, /próba 2/, 'numer próby wypełniony');
+  assert.doesNotMatch(tekst, /\{\w+\}/, 'placeholdery nie zostają w treści');
+  assert.match(KODY_POZYCJI.P10, /odśwież stronę/, 'wyjście awaryjne w treści (ADR 0011 pkt 8: komunikat mówi co zrobić)');
 });
