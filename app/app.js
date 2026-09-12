@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-85';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-85';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-86';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-86';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-85';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-85';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-85';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-85';
-import { FAZY, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-85';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-85';
+} from './protokol.js?v=m12-86';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-86';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-86';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-86';
+import { FAZY, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-86';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-86';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-85';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-85';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-85';
+} from './zestawy.js?v=m12-86';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-86';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-86';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -62,17 +62,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-85';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-85';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-85';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-85';
-import { adresMostu, stanMostu } from './most.js?v=m12-85';
+} from './sieci.js?v=m12-86';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-86';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-86';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-86';
+import { adresMostu, stanMostu } from './most.js?v=m12-86';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-85';
+} from './oceny.js?v=m12-86';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -2150,57 +2150,97 @@ function odswiezPropozycjeZestawow() {
 /**
  * Indeks repozytorium: jedno żądanie i JEDNA powtórka. Powtórka leczy zimny
  * start web app po wdrożeniu (najczęstszą przyczynę „Repozytorium
- * niedostępne”), a gdy most odpowiedział nieczytelnie, powtarzanie nic nie
+ * niedostępne”). Gdy most odpowiedział NIECZYTELNIE, powtarzanie nic nie
  * zmieni — wtedy od razu mówimy prawdę.
+ *
+ * Sieć i NASZE czytanie odpowiedzi są rozdzielone (zgłoszenie właściciela
+ * 2026-09-12: „most na pewno działa, to musiał być problem ze sprawdzaniem
+ * paczek”). Wcześniejszy `.catch(() => …)` obejmował cały łańcuch i każdy
+ * wyjątek — także usterkę we własnym kodzie na poprawnej odpowiedzi — meldował
+ * jako „most nie odpowiada”. Teraz awaria mostu (z powodem) i błąd aplikacji to
+ * dwa różne komunikaty, a powtórka należy się WYŁĄCZNIE pierwszemu.
  */
 async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
   const aktualne = () => pokolenie === POKOLENIE_PROPOZYCJI;
-  const gdzie = adresBezSciezki(url);
+  const gdzie = adresDoDiagnostyki(url);
   let powod = 'brak odpowiedzi';
+  let szczegol = null;
   for (let proba = 1; proba <= 2; proba += 1) {
+    let tekst;
     try {
-      const tekst = await pobierzGetTekst(url);
-      if (!aktualne()) return;
-      if (!przyjmijIndeksZRepo(tekst, kryteria, url)) { powod = 'nieczytelna odpowiedź'; break; }
-      STAN.mostOstatniBlad = null;
-      pokazStanMostu();
-      return;
+      tekst = await pobierzGetTekst(url);
     } catch (e) {
       if (!aktualne()) return;
       powod = e?.powod ?? 'brak odpowiedzi';
+      szczegol = null;
       if (proba === 1) {
         $('zestawy-status').textContent = `Most Drive nie odpowiedział (${powod}) — próbuję jeszcze raz…`;
         await new Promise((r) => setTimeout(r, PONOWNA_PROBA_INDEKSU_MS));
         if (!aktualne()) return;
       }
+      continue;
     }
+    if (!aktualne()) return;
+    let usterka;
+    try {
+      usterka = przyjmijIndeksZRepo(tekst, kryteria, url);
+    } catch (e) {
+      // Most ODPOWIEDZIAŁ — wysypało się nasze czytanie odpowiedzi. Nie wolno
+      // tego zameldować jako awarii mostu ani „leczyć” powtórką żądania.
+      STAN.mostOstatniBlad = null;
+      pokazStanMostu();
+      const opis = String(e?.message ?? e);
+      // Bez obiecywania, co gracz widzi: lista mogła się wysypać w połowie.
+      $('zestawy-status').textContent = `Repozytorium odpowiedziało, ale lista paczek się nie wczytała `
+        + `(błąd aplikacji: ${opis}) — lista może być niepełna, zgłoś ten błąd.`;
+      return;
+    }
+    if (!usterka) {
+      STAN.mostOstatniBlad = null;
+      pokazStanMostu();
+      return;
+    }
+    // Odpowiedź niezrozumiała: powodu szukamy u siebie i w adresie, nie w sieci.
+    powod = `nieczytelna odpowiedź (${usterka.kod})`;
+    szczegol = `${usterka.kod} — ${usterka.komunikat}`;
+    break;
   }
   if (!aktualne()) return;
-  STAN.mostOstatniBlad = powod;
+  // Pełny powód (z kodem usterki) trafia do stanu mostu; w zdaniu wystarcza kod.
+  STAN.mostOstatniBlad = szczegol ?? powod;
   pokazStanMostu();
   $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
     ? `Repozytorium niedostępne (${powod}${gdzie}) — zostały paczki z tego telefonu.`
     : `Repozytorium niedostępne (${powod}${gdzie}) — gramy zwykłą ścieżką (prompt i model).`;
 }
 
-/** Sam host adresu mostu do komunikatu awarii (diagnostyka, nie ozdobnik). */
-function adresBezSciezki(url) {
+/** Adres mostu do komunikatu awarii — rozpoznawalny, ale nie cały URL.
+ *  Właściciel może mieć kilka wdrożeń Apps Script o różnych adresach, więc przy
+ *  awarii pokazujemy prefiks identyfikatora wdrożenia: po nim widać, czy
+ *  aplikacja pyta o TO wdrożenie, które przed chwilą wkleił (ADR 0020: adres
+ *  wdrożenia jest publicznym punktem końcowym, nie sekretem). */
+function adresDoDiagnostyki(url) {
   try {
-    return `, ${new URL(String(url)).host}`;
+    const u = new URL(String(url));
+    const id = u.hostname === 'script.google.com' ? u.pathname.match(/\/s\/([^/]+)/)?.[1] : null;
+    return id ? `, ${u.host}/s/${id.slice(0, 10)}…/exec` : `, ${u.host}`;
   } catch {
     return '';
   }
 }
 
 /**
- * Odpowiedź indeksu → lista propozycji. `false` znaczy „most odpowiedział, ale
- * nie zrozumieliśmy odpowiedzi” (kody Z01/Z09) — to NIE jest „repozytorium
- * niedostępne” i wołający ma o tym powiedzieć prawdę, nie zlewać obu przypadków
- * w jedno (LESSONS L6: komunikat nazywa przyczynę).
+ * Odpowiedź indeksu → lista propozycji. `null` = przyjęte; obiekt usterki =
+ * „most odpowiedział, ale NIE rozumiemy odpowiedzi” (Z01/Z09, a także Z10, gdy
+ * nie dało się wczytać ANI JEDNEGO wpisu). Rozróżnienie jest istotą sprawy:
+ * poprzednia wersja zwracała `false`, a wołający meldował to jako awarię sieci
+ * (LESSONS L6/L51 — komunikat nazywa przyczynę, także gdy przyczyną jesteśmy my).
  */
 function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
   const { indeks, usterki } = walidujIndeksSurowy(tekst);
-  if (!indeks.length && usterki.some((u) => u.kod === 'Z01' || u.kod === 'Z09')) return false;
+  const nieczytelna = usterki.find((u) => u.kod === 'Z01' || u.kod === 'Z09')
+    ?? (indeks.length === 0 ? usterki.find((u) => u.kod === 'Z10') : null);
+  if (nieczytelna) return nieczytelna;
   const dopasowane = dopasujMetaIndeksu(indeks, kryteria);
   KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
     opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
@@ -2222,7 +2262,7 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
   // naprawić zmianą ustawień.
   if (dopasowane.length) {
     $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
-    return true;
+    return null;
   }
   // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
   // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat mówi
@@ -2235,7 +2275,7 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
     : (indeks.length
       ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
       : 'Repozytorium jest puste — nowe pytania przygotuje model.');
-  return true;
+  return null;
 }
 
 /** Wspólny start z gotową paczką: stacje i kontener z zestawu, pytania z pamięci. */
