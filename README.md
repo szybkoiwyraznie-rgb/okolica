@@ -63,14 +63,17 @@ zapytanie na grę dla promienia `R × 1,15`, graf z Dijkstrą, kandydaci co ~50 
 z filtrami dostępności (bez budynków, terenów prywatnych i barier), wybór
 w pierścieniu `0,7R ± 20%` z separacją kątową i sieciową oraz pasem
 wyrównującym dystanse. Lista pokazuje **dystans drogą**, nie w linii prostej,
-a miara sprawiedliwości (udział odchylenia) widnieje pod listą. Sieć jest
-zapisywana na telefonie (`okolica:sieci:<geohash6>-<R>`, 30 dni) — druga gra
-w tej samej okolicy nie woła Overpass wcale. Gdy sieci nie ma (offline, limit
-instancji), degradacja jest jawna: przycisk „◎ Tryb uproszczony" (pierścień)
-i „✋ Ustaw stacje ręcznie" (przeciąganie pinezek, dystans tylko w linii
-prostej) — aplikacja nigdy nie udaje, że punkty są osiągalne. Kamień czeka na
-kryterium terenowe: jedną prawdziwą okolicę na telefonie (`docs/WORKFLOW.md`
-§4.2).
+a wiersz trybu mówi, czy stacje **zlokalizowano na sieci** (i czy sieć przyszła
+z pamięci telefonu). Sieć jest zapisywana na telefonie
+(`okolica:sieci:<geohash6>-<R>`, 30 dni) — druga gra w tej samej okolicy nie
+woła Overpass wcale. Gdy sieci nie ma (offline, limit instancji), degradacja
+jest jawna i **automatyczna**: gra schodzi do pierścienia z komunikatem
+„osiągalność niezweryfikowana", a obok zostaje „✋ Ustaw stacje ręcznie"
+(przeciąganie pinezek, dystans tylko w linii prostej) — aplikacja nigdy nie
+udaje, że punkty są osiągalne. Przycisk wymuszający pierścień zniknął z ekranu
+(decyzja właściciela 2026-09-11), a kontrakt pilnuje jego braku.
+Kamień czeka na kryterium terenowe: jedną prawdziwą okolicę na telefonie
+(`docs/WORKFLOW.md` §4.2).
 
 **M5 — pętla pytań: kod i testy gotowe.** Ekran promptu ma instrukcję
 obrazkową (cztery kroki jako inline SVG, zero plików zewnętrznych),
@@ -181,14 +184,19 @@ starcie, ADR 0017 aneks 2026-09-11). Lista pokazuje trzy najlepsze paczki
 remisy rozstrzyga świeższa data), resztę po przycisku „Zobacz więcej paczek"
 (decyzja właściciela 2026-09-11) — wybór startuje grę bez promptu, bez wklejania, bez
 Overpassa i bez modelu. Przyjęcie paczki z AI (ekran wklejania) automatycznie
-i bez pytania wysyła ją na Drive do przeglądu właściciela (decyzja
-2026-09-07: checkbox zgody usunięty, ADR 0016 aneks). Właściciel
-akceptuje kandydatów linkiem z e-maila; adres mostu jest **wpisany w kod
-aplikacji** (`DOMYSLNY_URL_MOSTU` w `app/most.js`, ADR 0020) — żadne urządzenie
-nie konfiguruje go ręcznie, a przycisk „🔌 Sprawdź połączenie" robi jawną próbę
-CORS na żywym wdrożeniu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
-zniknął z ekranu razem z podglądem (decyzja 2026-09-07) — przegląd i wnoszenie
-zestawów dzieją się na Drive właściciela.
+i bez pytania wysyła ją na Drive — zestaw ląduje **od razu w repozytorium
+okolicy**, bo moderacja wstępna została zniesiona (decyzja właściciela
+2026-09-11: „Usuwamy całą procedurę akceptacji. O ich jakości decydują łapki
+w górę i w dół"; checkbox zgody usunięty 2026-09-07, ADR 0016 aneks). Adres
+mostu jest **wpisany w kod aplikacji** (`DOMYSLNY_URL_MOSTU` w `app/most.js`,
+ADR 0020) — żadne urządzenie nie konfiguruje go ręcznie, a jego stan widać
+wprost na ekranie pozycji (`#most-stan-repo`): „podłączony" albo
+„niepodłączony — gramy lokalnie". Diagnostyczny przycisk „🔌 Sprawdź
+połączenie" zniknął w tej samej fali uwag terenowych (m12-66) — most albo
+działa, albo aplikacja sama mówi, że nie ma go gdzie wysłać (kontrakt pilnuje
+braku przycisku). Eksport
+„⬇ Paczka do repozytorium (TO-zestaw/1)" zniknął z ekranu razem z podglądem
+(decyzja 2026-09-07) — wnoszenie zestawów dzieje się na Drive właściciela.
 
 ## Gra wieloosobowa (M11/M12)
 
