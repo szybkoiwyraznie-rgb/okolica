@@ -283,7 +283,10 @@ commit i nowa wersja aplikacji.
    z aplikacji i z mostu (właściciel, 2026-09-11; aneks ADR 0019).
 5. Wyjście z lobby: POST `gra-opusc` prostuje skład gry, więc `liczbaGraczy`
    w `RO-lobby/1` nie obiecuje gracza, który wyszedł; wyjście organizatora
-   zamyka grę (stan `archiwum`).
+   zamyka grę (stan `archiwum`) i dlatego jest **dwustopniowe** — pierwszy klik
+   uzbraja przycisk i mówi, że gra zostanie zamknięta WSZYSTKIM, drugi wykonuje
+   (`STAN.multiOpuszczenieUzbrojone`; LESSONS L48). Gość wychodzi jednym
+   kliknięciem, bo przed startem może dołączyć ponownie.
 
 ## Kluczowe algorytmy
 

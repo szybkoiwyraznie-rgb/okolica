@@ -3120,3 +3120,86 @@ z listy powyżej to porządki (1, 3, 4, 5) i jedna niespójność UX (2).
 Wykonanie: pkt 1 i 2 naprawione w tym samym dniu (kod, `?v=m12-82`),
 pkt 4 poprawiony w `.gs` (i tak czeka na ponowne wklejenie), pkt 3 i 5
 zapisane jako obserwacje dla właściciela.
+
+### 3. Domknięcie zaległości z audytu PR #9 (uwagi 2–6) i dwa doczesy tej samej klasy
+
+Uwagi otwarte po PR #13 zamknięte osobno, każda z dowodem w kodzie (wzorzec
+L31: opis idzie za grepem/kontraktem, nie za pamięcią):
+
+- **`0e78188` — uwaga 2.** Nagłówek `test/duza-paczka.test.js` mówił o „stałych
+  szacunku", których nie ma od m12-66 (`szacunekOdpowiedzi()` skasowane razem
+  z `#prompt-rozmiar`). Zamiast tego opis tego, co testy NAPRAWDĘ asertują:
+  prompt nie rośnie z liczbą pytań, odpowiedź 40 pytań przechodzi parser
+  i walidator, kontener mieści się w budżetach pamięci. Liczby pomiaru zostały
+  tam, gdzie żyją — w PROTOKOL §2.1.
+- **`304d726` — uwagi 3a/3b/3c.** `README.md` opisywał trzy nieistniejące
+  elementy: „◎ Tryb uproszczony" i „miarę sprawiedliwości pod listą" (kontrakt
+  asertuje BRAK `#przycisk-pierścien` i `#stacje-sprawiedliwosc`), wysyłkę „do
+  przeglądu właściciela" (moderacja zniesiona 2026-09-11; `.gs` zapisuje zestaw
+  OD RAZU w katalogu zaakceptowanych) oraz przycisk „🔌 Sprawdź połączenie"
+  (usunięty w m12-66; kontrakt asertuje brak `#przycisk-test-polaczenia`).
+  Przepisane na to, co ekran naprawdę pokazuje: wiersz trybu z rozróżnieniem
+  „zlokalizowano na sieci"/pierścień, cicha wysyłka Drive, stan mostu
+  w `#most-stan-repo`.
+- **`9ca9004` — uwagi 4/5 + dwa doczesy.** `docs/WORKFLOW.md` (§3: kroki 3–5
+  bez pierścienia, bez „linii pod promptem mówi, jak duża będzie odpowiedź",
+  z wariantami promptu wg ADR 0032 i z zapisem, że zestaw leci prosto do
+  repozytorium) i `docs/ARCHITECTURE.md` (lista kontraktów: tylko
+  `przycisk-reczne` + jawny ZAKAZ przycisku pierścienia). Przy okazji dwa
+  opisy tej samej klasy: wiersz M5 w `docs/ROADMAP.md` („Nominatim opt-in")
+  i akapit M5 w `README.md`, który jednocześnie twierdził, że zapasowa warstwa
+  Nominatim działa, i że została usunięta.
+- **`0b0fda2` — uwaga 6.** Aneksy „2026-09-12" w ADR 0020 (przycisk „Sprawdź
+  połączenie" usunięty; przy okazji `REVIEW_SECRET` i link przeglądu po
+  zniesieniu moderacji), ADR 0016 i ADR 0018 (wzmianki o przycisku), ADR 0031
+  (stałe szacunku wyleciały z kodu — nazwy nie występują w `app/` ani `test/`;
+  zostaje pomiar w PROTOKOL §2.1 i asercje `duza-paczka`). Rejestr ADR dostał
+  przy 0016/0018/0020/0031 wzmiankę o aneksie, tak jak mają 0003 i 0019.
+  Statusy bez zmian.
+- **`0bfee06`, `38b55d0` — doczesy znalezione przy okazji.** Instrukcja mostu
+  (`docs/setup/most-drive-instrukcja.md`) obiecywała jeszcze „rankingi
+  z zakończonych gier" (usunięte), przycisk „🔌 Sprawdź połączenie" i checkbox
+  zgody na wysyłkę (usunięty 2026-09-07) — a brakowało jej wpisu o zmianie,
+  którą właściciel i tak musi wdrożyć (`gra-opusc`). `docs/WORKFLOW.md` §4.1
+  kazał szukać przycisku „Ustaw tę pozycję", którego w kodzie nie ma: stuknięcie
+  mapy w trybie testowym ustawia pozycję od razu.
+
+### 4. Poprawki kodu z audytu PR #13 (`?v=m12-82`)
+
+- **`dc0fcda` — ustalenia 1 i 2.** (a) Dziesięć martwych importów z `app/app.js`
+  (`TEMATY`, `WIEK`, `przesunPunkt`, `najmniejszyOdstepM`, `STANY_ODCINKA`,
+  `INSTANCJE_OVERPASS`, `ALFABET_KODU`, `kodPoprawny`, `normalizujKod`,
+  `ramkaGeohash`) — każda nazwa występowała w pliku wyłącznie na linii importu
+  (skrypt liczący wystąpienia: 10/10), a moduły dalej eksportują je dla swoich
+  testów. (b) Wyjście organizatora z lobby jest dwustopniowe: pierwszy klik
+  uzbraja przycisk („⚠ Kliknij ponownie…") i mówi, że gra zostanie zamknięta
+  WSZYSTKIM, drugi wysyła `gra-opusc`. Gość wychodzi jednym klikiem — jego
+  wyjście jest odwracalne (może dołączyć ponownie z listy w okolicy). Wejście
+  do lobby rozbraja przycisk, żeby uzbrojenie nie zostało między ekranami.
+  Test UI pilnuje obu kliknięć; na kodzie sprzed zmiany celowo pada
+  (sprawdzone `git stash` na `app/app.js`: 1 fail), więc to regresja-guarda,
+  a nie ozdoba. Bump `?v=m12-81` → `m12-82` (42 miejsca) + `WERSJA_SW`.
+- **`fccea21` — ustalenia 4 i 5.** Docstring `gra-dolacz` wraca nad
+  `dolaczDoGry`; założenie „organizator = indeks 0" w `opuscGre` zostało
+  ZAPISANE w komentarzu (bez zmiany zachowania) jako obserwacja dla
+  właściciela — dziś równoważne z `organizatorId`, ale reguła powinna czytać
+  pole, które ją definiuje.
+
+### 5. Bramy, stan po sesji i pułapka tej tury
+
+`npm test` zielony po każdej zmianie (692/692; ostatnie przebiegi 66,2–66,7 s),
+`npm run check` — oba szablony zgodne, `npm run audyt` — 0 naruszeń WCAG AA,
+`git status` czysty, wszystko wypchnięte na `arena/01a095b5-okolica` (PR #14).
+
+**Otwarte dla właściciela:** ponowne wklejenie `.gs` (nadal aktualne: akcja
+`gra-opusc`, brak `ranking`, komentarze z tej sesji) i rozstrzygnięcie dwóch
+obserwacji — `KANON_SETUPU` bez porównania wartości i `opuscGre` czytający
+organizatora po indeksie. Kamienie M3–M8 i M10–M12 pozostają 🟡: czekają na
+kryteria terenowe/wdrożenie, więc agent nie ma tam czego kodować (ENVIRONMENT
+§7). ROADMAP bez zmian statusów — ta sesja nie ruszała zakresu kamieni.
+
+**Pułapka tej tury:** `edit_file` odmawia „Context not found" na tekstach
+z polskimi cudzysłowami („…"), choć w podglądzie wyglądają identycznie. Pewny
+wzorzec to skrypt w Pythonie z kotwicą `assert fragment in tekst` — dał się
+zastosować do wszystkich dokumentów, w tym ADR-ów i `.gs`, i od razu łapie
+literówkę w kotwicy zamiast cicho nic nie zmienić.

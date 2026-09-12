@@ -668,3 +668,27 @@ kafel nadal w cache i zero żądań do dostawcy.
 sprawdźmy, czy nasz kod nie generuje wzorca, który ta usługa jawnie penalizuje.
 Komunikat blokady cytował politykę — polityka była do przeczytania i wymieniała
 nasz przypadek co do słowa.
+
+## L48 — zanim akcja wejdzie do UI, ustal KOGO dotknie jej skutek
+
+**Objaw:** audyt PR #13 znalazł przycisk „Opuść lobby", który u organizatora
+zamykał grę WSZYSTKIM dołączonym — jednym kliknięciem, bez ostrzeżenia
+i bez możliwości cofnięcia (most przenosił grę do archiwum, a bez organizatora
+nie ma kto jej wystartować). W tym samym repozytorium rezygnacja z gry, ręczne
+zakończenie i kasowanie zapisu/historii mają od dawna rytuał dwustopniowy —
+nowa ścieżka multi go ominęła.
+
+**Przyczyna:** przy przepisywaniu multi (m12-73/74) wyjście z lobby powstało
+jako „przycisk w panelu" i nikt nie zapytał, kogo dotknie skutek. Sprawdzaliśmy
+stan gry w moście (lobby vs trwa), a nie to, że w lobby skutek kliknięcia jest
+WSPÓLNY. Dwie perspektywy — „akcja" i „ekran" — wystarczyły, żeby wzorzec
+potwierdzenia zniknął.
+
+**Reguła:** każdą nową akcję w UI klasyfikuj dwiema osiami: **odwracalność**
+(czy da się wrócić?) i **zasięg** (kogo dotknie: mnie, czy innych?). Nieodwracalna
+albo dotykająca innych wymaga potwierdzenia u tego, kto klika (wzorzec:
+pierwszy klik uzbraja i mówi, co się stanie, drugi wykonuje — `rezygnujZGryMulti`,
+`multiOpuszczenieUzbrojone`). Odwracalna i „moja" — jedno kliknięcie, bo
+potwierdzenie jest tam tylko hałasem. Asymetrię testuj asercjami: pierwszy klik
+organizatora NIE wysyła `gra-opusc`, drugi wysyła — na kodzie bez potwierdzenia
+ten test pada, więc pilnuje wzorca, a nie dekoracji.
