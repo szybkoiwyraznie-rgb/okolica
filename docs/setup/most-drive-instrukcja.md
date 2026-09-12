@@ -181,9 +181,18 @@ Skrót:
   wysyła nic.
   Sprzątanie: na Drive usuń zbędne pliki `gra-hotseat-*.json` — zostaw
   po jednym dla RZECZYWISTYCH rozgrywek (testowe poznasz po graczy
-  „Gracz 1, Gracz 2, Gracz 3" i miejscu „nieznane miejsce"). Rankingi
-  liczą się z plików przy każdym otwarciu, więc po usunięciu śmieci
-  wyniki same się prostują.
+  „Gracz 1, Gracz 2, Gracz 3" i miejscu „nieznane miejsce"). Pliki są dziś
+  wyłącznie historią gier — rankingi zbiorcze usunięto 2026-09-11 (ADR 0019
+  aneks 2026-09-11b), więc nic się z nich już nie przelicza.
+- **Aktualizacja do wychodzenia z lobby (m12-74/75, właściciel 2026-09-11)**:
+  wklej nową treść `docs/setup/apps-script-repo-paczek.gs` i Wdróż → Nowa
+  wersja (funkcji `setup` uruchamiać nie trzeba). Nowa akcja `gra-opusc`
+  prostuje listę gier, gdy ktoś wyjdzie z lobby przed startem, a stara akcja
+  `ranking` nie jest już przyjmowana. Test: załóż grę i wyjdź z lobby jako
+  organizator (dwa kliknięcia — bez organizatora gra nie wystartuje, więc
+  zamyka się dla wszystkich): plik gry zniknie z `okolica-gry-otwarte`
+  i pojawi się w `okolica-gry-zakonczone`. Gość wychodzi jednym kliknięciem
+  i wypada z listy graczy (jego wpis znika z `gracze` na liście w okolicy).
 - Adres wyciekł albo ktoś nadużywa mostu (fałszywe paczki, śmieciowe gry,
   zużycie limitu): **Wdróż → Nowe wdrożenie** daje NOWY adres `/exec` — podaj
   go w czacie (nowy commit ze stałą `DOMYSLNY_URL_MOSTU`), a stare wdrożenie
