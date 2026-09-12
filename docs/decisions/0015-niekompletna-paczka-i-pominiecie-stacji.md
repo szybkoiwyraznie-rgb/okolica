@@ -78,3 +78,23 @@ Pierwsza implementacja miała ciche pułapki: stacja bez pytania zostawała w fa
 0004 (kryterium dojścia, komunikaty GPS), 0006 (paczka z zewnątrz),
 0007 pkt 6 (stan bez treści pytań), 0009 (model rozgrywki), 0010 (trwałość
 i jawna odmowa przy obcym schemacie), 0023 (zero presji czasowej).
+
+## Aneks 2026-09-12 (m12-94) — akcja pomijania usunięta (zadanie H)
+
+Właściciel: „Pomiń odcinek (tylko w drodze)” to pozostałość bez sensu —
+usunąć opcję. Wycofane: pkt 3 w całości (`pominStacje()`, przycisk
+`#przycisk-pomin-stacje`, kody `G11`/`G13` — numery zajęte, nie wracają
+do puli) oraz zakres kodów z pkt 6 (rozgrywka to dziś `G01`–`G10`, `G12`,
+`G14` — 12 kodów).
+
+Zostaje bez zmian: pkt 1 (ostrzeżenie `BRAK-PYTAN`), pkt 2 (dojście zamyka
+stację bez pytania), pkt 4 (pominięty odcinek = 0 pkt — dla starych
+zapisów), pkt 5 (liczniki liczą tak samo; `pominietaStacje` w nowych grach
+to zawsze 0). Stan `pominiety`, zdarzenie `pominiecie`, strażnik `G14`
+i reguła „stare zapisy czytelne” (ADR 0010 pkt 6) obowiązują nadal —
+silnik NIC nie tworzy, ale wszystko czyta.
+
+Nowe wyjście z nieosiągalnej stacji: „■ Zakończ grę” (komunikaty P03/P04/
+P08, ADR 0004/0029 aneksy 2026-09-12). Testy: `jakoPominieta()` odtwarza
+stary zapis w `test/rozgrywka.test.js`, pętle UI idą pełną ścieżką
+(`zamknijStacje`), piny nieobecności w silniku, aplikacji i kontrakcie.

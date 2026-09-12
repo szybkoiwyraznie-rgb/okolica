@@ -29,7 +29,7 @@ import { readFileSync as czytajPlik } from 'node:fs';
 import { zainstalujDom } from './helpers/dom.js';
 import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV3 } from '../app/protokol.js';
 import { zapakujPaczke } from '../app/kodowanie.js';
-import { KLUCZ_REJESTRU, SCHEMAT_LOKALNY, kluczZestawu, nowyRejestr, zbierzMetaZestawu } from '../app/zestawy.js';
+import { zbierzMetaZestawu, zbudujPlikZestawu } from '../app/zestawy.js';
 import { czyKompletna, generujKod, przeliczWyniki, zbudujZdarzenie } from '../app/wieloosobowa.js';
 import { SCHEMAT_SIECI, kluczCacheSieci, parsujOdpowiedz, upraszczajDaneDoCache } from '../app/sieci.js';
 import { promienZCzasuGry } from '../app/konfig.js';
@@ -58,6 +58,7 @@ function atrapaMostu() {
   const most = {
     gry, ciala, adresy, profile,
     online: true,
+    repoPakiet: null, // I.b: { url, indeks, plik } — repozytorium paczek dla organizatora
     znajdz: (kod) => [...gry.values()].find((g) => g.kod === String(kod).toUpperCase()) ?? null,
     fetchImpl: async (url, opcje = {}) => {
       adresy.push(String(url));
@@ -81,6 +82,12 @@ function atrapaMostu() {
       }
       const params = new URL(String(url)).searchParams;
       const akcja = params.get('akcja');
+      // I.b: jedno wdrożenie mostu wydaje też paczki (adresMostu woli URL
+      // multi): indeks pod gołym adresem, plik przez ?akcja=paczka&id=….
+      if (most.repoPakiet && (akcja === 'paczka' || params.toString() === '')) {
+        const tekst = akcja === 'paczka' ? most.repoPakiet.plik : most.repoPakiet.indeks;
+        return { ok: true, status: 200, text: async () => tekst };
+      }
       if (akcja === 'gry') {
         // m12-74: tylko lobby (po starcie nie ma dołączania — właściciel,
         // 2026-09-11) i z geohash8 hosta (miara zasięgu ~50 m)
@@ -396,18 +403,20 @@ function paczkaTestowa(stacje, pytaniaNaStacje = 1, { factcheck = true } = {}) {
   };
 }
 
-/** Zestaw lokalny w pamięci telefonu (rejestr + wpis) — źródło „z tego telefonu". */
-function zasiejZestaw(pamiec, ileStacji, pytaniaNaStacje = 1, { factcheck = true } = {}) {
+/** Paczka w repozytorium mostu (indeks + plik) — organizator bierze ją z listy (I.b). */
+function zasiejZestaw(most, ileStacji, pytaniaNaStacje = 1, { factcheck = true } = {}) {
   const stacje = stacjeTestowe(ileStacji);
   const kontener = zapakujPaczke(paczkaTestowa(stacje, pytaniaNaStacje, { factcheck }), factcheck ? WERSJA_PROTOKOLU : WERSJA_PROTOKOLU_REV3);
   const meta = zbierzMetaZestawu({
     lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
     jezyk: 'polski', miejsce: 'Podkowa Leśna', liczbaStacji: stacje.length, pytaniaNaStacje,
+    data: '2026-09-06 09:00', factcheck,
   });
-  pamiec.set(kluczZestawu(kontener.skrot), JSON.stringify({ schemat: SCHEMAT_LOKALNY, stacje, kontener, ...meta, kodGry: 'MULTITEST' }));
-  const rejestr = nowyRejestr();
-  rejestr.wpisy = [{ skrot: kontener.skrot, ...meta, kodGry: 'MULTITEST' }];
-  pamiec.set(KLUCZ_REJESTRU, JSON.stringify(rejestr));
+  const plik = zbudujPlikZestawu({ stacje, kontener, meta });
+  most.repoPakiet = {
+    indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [{ ...meta, licencja: 'CC BY-SA 4.0', id: `repo-${kontener.skrot}` }] }),
+    plik: JSON.stringify(plik),
+  };
   return { stacje, kontener, meta };
 }
 
@@ -433,7 +442,7 @@ async function przygotujTelefon(u, pseudonim, { stacje = 2 } = {}) {
 
 /**
  * Zakłada grę przez nowy flow: setup (tryb) → „Dalej: moja pozycja” →
- * PASUJĄCA paczka z telefonu („▶ Graj z tą paczką”) → lobby.
+ * PASUJĄCA paczka z repozytorium („▶ Graj z tą paczką”) → lobby.
  */
 async function zalozGreUI(u, { tryb = 'wyscig', sekret = null } = {}) {
   przelaczNa(u);
@@ -451,8 +460,8 @@ async function zalozGreUI(u, { tryb = 'wyscig', sekret = null } = {}) {
   }
   await klik(u, 'przycisk-dalej-pozycja');
   assert.equal(el(u, 'ekran-pozycja').hidden, false, 'Dalej prowadzi na ekran pozycji');
-  // karta propozycji: lokalna paczka musi się dopasować (m12-74: paczka PRZED lobby)
-  await czekajNa(u, () => el(u, 'zestawy-lista').children.length > 0, 'lokalna paczka w propozycjach');
+  // karta propozycji: paczka z repo musi się dopasować (m12-74: paczka PRZED lobby)
+  await czekajNa(u, () => el(u, 'zestawy-lista').children.length > 0, 'paczka z repozytorium w propozycjach');
   const wiersz = el(u, 'zestawy-lista').children[0];
   const przyciskPaczki = [...wiersz.children].at(-1);
   assert.match(przyciskPaczki.textContent, /Graj z tą paczką/);
@@ -496,9 +505,9 @@ const mostWyscig = atrapaMostu();
 let kodWyscigu = null;
 
 test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy → start → droga offline z kolejką → wyniki', async () => {
-  // urządzenie A: organizator — setup multi, tryb wyścig, paczka z telefonu
+  // urządzenie A: organizator — setup multi, tryb wyścig, paczka z repozytorium
   const pamiecA = new Map();
-  zasiejZestaw(pamiecA, 3);
+  zasiejZestaw(mostWyscig, 3);
   const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostWyscig, bezGracza: true });
   await przygotujTelefon(A, 'Ala', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'wyscig' });
@@ -590,7 +599,7 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
   // A zakłada Wspólną Trasę na 4 stacje: obaj gracze przechodzą WSZYSTKIE,
   // po kolei, każde we własnym tempie (właściciel, 2026-09-11).
   const pamiecA = new Map();
-  zasiejZestaw(pamiecA, 4);
+  zasiejZestaw(mostTrasy, 4);
   const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostTrasy, bezGracza: true });
   await przygotujTelefon(A, 'Celina', { stacje: 4 });
   await zalozGreUI(A, { tryb: 'trasa' });
@@ -657,7 +666,7 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
 test('start SOLO: organizator wystartuje grę z jednym graczem i sam ją domyka', async () => {
   const most = atrapaMostu();
   const pamiec = new Map();
-  zasiejZestaw(pamiec, 3);
+  zasiejZestaw(most, 3);
   const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
   await przygotujTelefon(A, 'Ola', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'trasa' });
@@ -678,7 +687,7 @@ test('start SOLO: organizator wystartuje grę z jednym graczem i sam ją domyka'
 test('host kończy grę przyciskiem: podsumowanie u wszystkich, premia liczy się też przy przedwczesnym końcu', async () => {
   const most = atrapaMostu();
   const pamiecA = new Map();
-  zasiejZestaw(pamiecA, 3);
+  zasiejZestaw(most, 3);
   const A = await noweUrzadzenie({ pamiec: pamiecA, most });
   await przygotujTelefon(A, 'Ala', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'wyscig' });
@@ -953,7 +962,7 @@ test('SKANER prywatności: współrzędne gracza nie wychodzą w żadnej wysyłc
 test('uszkodzony stan z mostu: kod R w statusie, polling nie pada, po naprawie gra wraca', async () => {
   const most = atrapaMostu();
   const pamiec = new Map();
-  zasiejZestaw(pamiec, 3);
+  zasiejZestaw(most, 3);
   const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
   await przygotujTelefon(A, 'Ala', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'wyscig' });
@@ -1111,7 +1120,7 @@ const mostWolna = atrapaMostu();
 test('wolna kolejność: wybór stacji z listy i pytanie własne dla każdego gracza', async () => {
   // paczka 3 stacje × 2 pytania = na dwóch graczy (domyślne po ADR 0027 część A)
   const pamiecA = new Map();
-  zasiejZestaw(pamiecA, 3, 2);
+  zasiejZestaw(mostWolna, 3, 2);
   const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostWolna, bezGracza: true });
   await przygotujTelefon(A, 'Ala', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'wyscig' });
@@ -1158,7 +1167,7 @@ test('pytania mniejszej paczki są dzielone, a nie gubione (indeks się zawija)'
   // paczka z JEDNYM pytaniem na stację przy dwóch graczach: gra się nie zatrzymuje
   const most = atrapaMostu();
   const pamiecA = new Map();
-  zasiejZestaw(pamiecA, 3, 1);
+  zasiejZestaw(most, 3, 1);
   const A = await noweUrzadzenie({ pamiec: pamiecA, most });
   await przygotujTelefon(A, 'Ala', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'wyscig' });
@@ -1179,7 +1188,7 @@ test('pytania mniejszej paczki są dzielone, a nie gubione (indeks się zawija)'
 test('we Wspólnej Trasie nie ma wolnego wyboru stacji — kolejność ustala trasa', async () => {
   const most = atrapaMostu();
   const pamiecA = new Map();
-  zasiejZestaw(pamiecA, 3);
+  zasiejZestaw(most, 3);
   const A = await noweUrzadzenie({ pamiec: pamiecA, most });
   await przygotujTelefon(A, 'Ala', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'trasa' });
@@ -1193,7 +1202,7 @@ test('ADR 0032: panel multi pokazuje Q dla zweryfikowanej, notkę dla paczki bez
 
   const most = atrapaMostu();
   const pamiec = new Map();
-  zasiejZestaw(pamiec, 3); // meta z factcheck:true (domyślne)
+  zasiejZestaw(most, 3); // meta z factcheck:true (domyślne)
   const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
   await przygotujTelefon(A, 'Ala', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'wyscig' });
@@ -1206,7 +1215,7 @@ test('ADR 0032: panel multi pokazuje Q dla zweryfikowanej, notkę dla paczki bez
   // wariant bez weryfikacji: paczka w wariancie bez fact-checku (REV3)
   const most2 = atrapaMostu();
   const pamiec2 = new Map();
-  zasiejZestaw(pamiec2, 3, 1, { factcheck: false });
+  zasiejZestaw(most2, 3, 1, { factcheck: false });
   const B = await noweUrzadzenie({ pamiec: pamiec2, most: most2, bezGracza: true });
   await przygotujTelefon(B, 'Bartek', { stacje: 3 });
   await zalozGreUI(B, { tryb: 'wyscig' });

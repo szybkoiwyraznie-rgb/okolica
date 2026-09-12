@@ -3648,3 +3648,99 @@ wpis wchodzą do lektury startowej), `?v=m12-92` spójne, `zasieg-mostu`
    otwarcie w komunikacie); jeśli cisza dalej — zgłoszenie z treścią
    „próba N”.
 3. Kamienie M3–M8, M10–M12 (kryteria terenowe).
+
+## Sesja 2026-09-12H — zadanie H: usunięcie opcji „Pomiń odcinek” z gry (gałąź arena/01a0970a-okolica)
+
+### 1. Audyt PR #17 (squash 4e3c21d, 26 plików, +481/−59)
+
+Przegląd `git diff 4e3c21d^..4e3c21d` plik po pliku (logika, zgodność z ADR
+i protokołem, zieloność). Brama na drzewie PR #17 przed pracą: 734/734.
+
+- **P10** (`app/pozycja.js` + `test/pozycja.test.js`): wyłącznie zmiana treści
+  komunikatu na „zamknij aplikację i otwórz ponownie”; mechanizm watchdoga
+  nietknięty; pin przepisany na nową formę zgodnie z L55; zgodne z aneksem
+  m12-92 ADR 0004. OK.
+- **Backfill tematów** (`.gs`: `tematyPytanZestawu()` + dopisek w `budujIndeks()`;
+  5 testów w `test/most-indeks.test.js`, w tym regresja kliencka z kontrolą
+  „bez backfillu pada”): plik na Drive nietknięty (wzorzec B19), fallback do
+  `meta.tematy` przy nieczytelnym kontenerze, idempotentny dla nowych paczek.
+  Zgodne z aneksem m12-92 ADR 0017. OK.
+- **G.a** (`app/app.js`: reset `prompt-factcheck` przy wejściu z ekranu 3;
+  test w `test/aplikacja.test.js`): reset tylko dla nowej generacji, powrót
+  strzałką wyboru nie rusza — obie strony pinowane. OK.
+- **G.b** (PROTOKOL §2/§2.2 zasada 8 + `app/protokol.js` + `test/protokol.test.js`):
+  skrócenie zasady 8 w obu szablonach, sync bloków, wersje `PYT/1.0.8` /
+  `PYT/1.0-nofc.3` spójne między PROTOKOL §7 a stałymi `SZABLON_WERSJA*`;
+  kształt odpowiedzi i markery rev4/rev5 bez zmian (łatka szablonu). OK.
+- **Wersjonowanie**: `?v=m12-93` w 42 miejscach (jeden łańcuch w całym grafie),
+  `WERSJA_SW = 'm12-93'` — spójne, kontrakt zielony. OK.
+- **Dokumentacja**: L57, aneksy ADR 0004/0017, handoff 12h i wpis w historii
+  opisują dokładnie to, co robi kod. OK.
+
+**Obserwacje (dryf dokumentacyjny, bez wpływu na działanie):**
+(O1) handoff 12h i wpis sesji 12h mówią `?v=m12-92`, a drzewo PR #17 niesie
+`m12-93` — sesja podbiła wersję drugi raz po napisaniu dokumentów i ich nie
+poprawiła; (O2) dokumenty mówią o bramie 733/733, a to samo drzewo daje
+734/734 — rozjazd liczenia o 1, brama zielona w obu rachunkach.
+
+**Werdykt:** PR #17 czysty, bez usterek logicznych; do zapamiętania: wersję
+`?v=` i liczbę testów w dokumentach sesji spisywać z drzewa PO ostatnim
+commicie, nie z notatek w trakcie.
+
+### 2. Implementacja zadania H (commity 4bca46e, 9d58f7a — PR #18)
+
+Zlecenie właściciela: „Pomiń odcinek (tylko w drodze)” to pozostałość
+bez sensu — usunąć opcję. Zakres rozstrzygnięty inwentaryzacją: znika
+sama AKCJA (przycisk, `pominStacje()`, `pominStacjeGry()`, kody G11/G13 —
+numery zajęte), a MODEL ODCZYTU zostaje (stan `pominiety`, zdarzenie
+`pominiecie`, liczniki, strażnik G14, etykiety wyniku, walidacja zapisów —
+stare gry muszą być czytelne).
+
+- **H/2** (`4bca46e`, kod + testy + `?v=m12-94`): silnik (3 podmiany +
+  wycięcie funkcji), `app.js` (import, listener, `disabled`, ukrywanie
+  w multi, cała `pominStacjeGry`, komentarz D a), `pozycja.js` (P03/P04/
+  P08 + brak współrzędnych stacji → „■ Zakończ grę”), `index.html`
+  (przycisk). Testy: akcja wycięta z `rozgrywka` (licznik kodów 14→12),
+  pętle UI na pełnej ścieżce (helper `zamknijStacje`: start → GPS →
+  odpowiedź → „Następna stacja”), stare zapisy odtwarza `jakoPominieta`,
+  oczekiwania 0/0→0/1 (T5), zaliczone 0→3 (T7); piny nieobecności
+  w silniku, aplikacji i kontrakcie. `wynik.test.js` nietknięty —
+  regresja odczytu starych zapisów.
+- **H/3** (`9d58f7a`, dokumenty): aneksy 2026-09-12 ADR
+  0015/0004/0029/0036 (w 0004 i 0029 sprostowano przy okazji błędne
+  „pkt 2” na właściwy pkt 3); WORKFLOW §3 pkt 6, ARCHITECTURE (tranzycje,
+  faza 5, typy dziennika). README bez wzmianek — bez zmian; historia
+  (LESSONS, plany, ADR 0038, PROTOKOL) nietknięta.
+- **Brama na drzewie po H/3** (spisana z outputu, lekcja z O1/O2 powyżej):
+  `npm test` → **733/733** (734 z PR #17 −3 akcje +2 piny H),
+  `npm run check` OK, audyt kontrastu 0 naruszeń.
+
+## Sesja 2026-09-12I — zadania I+J: paczki tylko z repo, START GRY gaśnie w grze (gałąź arena/01a0970a-okolica)
+
+Zlecenie właściciela: (I.a) usunąć „CC BY-SA 4.0” z opisów paczek z Drive;
+(I.b) usunąć pokazywanie paczek z telefonu; (J) „⚙ START GRY” aktywna tylko
+gdy gra się NIE toczy. Zakres rozstrzygnięty inwentaryzacją: I.a to jedna
+linijka display; I.b wariant B2 (sekcja UI znika, cichy zapis przyjętej
+paczki + migracja starego klucza ZOSTAJĄ — druga gra bez modelu);
+J to `disabled` + dynamiczny `title` na ikonie belki.
+
+- **IJ/1** (kod + `?v=m12-95`): `app.js` bez `· ${meta.licencja}` w opisie
+  repo, KANDYDACI i 4 statusy repo-only, `grajZZestawemLokalnym` wycięty,
+  import bez `dopasujZestawy`, nowa `odswiezStanIkonBelki` (predykat:
+  rozgrywka && faza != koniec && !ręczny-koniec) wołana z `pokazWyniki`,
+  CSS `.przycisk-ikona[disabled]`; `most.js`: stan mostu bez „paczek
+  z tego telefonu”. Suita po IJ/1: 733/716/17 faili — sam teren I.b.
+- **IJ/2** (testy + pin kontraktu): `zestawy-ui` 18/18 (migracja bez UI,
+  sortowanie 2 wiersze), `aplikacja` 123/123 (Q z indeksu repo; J: zgaszony
+  od auto-startu po paczce, odgaszony po końcu i po `nowa-gra`), `multi`
+  17/17 (kluczowa lekcja: `adresMostu` woli URL multi — jedno wdrożenie
+  mostu wydaje indeks pod gołym adresem i plik przez `?akcja=paczka&id=…`;
+  atrapa fetch serwuje je po akcji, nie po URL-u). Kontrakt 81/81 —
+  test 81 pinuje nieobecność etykiety telefonu i licencji w UI.
+- **IJ/3** (dokumenty): aneksy 2026-09-12 ADR 0017 (repo-only, licencja
+  w formacie zostaje) i 0011 (zgaszony START jako przykład pkt 7);
+  WORKFLOW §3 pkt 6 i §4.3 pkt 1, README (klauzula J). ASSETS §4 bez zmian
+  (pola `licencja` nadal wymagane w formacie); historia nietknięta poza
+  tym wpisem.
+- **Brama na drzewie po IJ/3** (spisana z outputu): `npm test` → **734/734**,
+  `npm run check` OK, audyt kontrastu 0 naruszeń.

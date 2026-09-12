@@ -33,3 +33,10 @@ przenoszenie węzłów tak jak DOM przeglądarki.
 Chromium: 360×640, 320×568 i 844×390; pasek 37 px, jedna linia, dół viewportu,
 oko powyżej, brak przewijania strony. Pauza i symulacja kliknięte z Informacji,
 pytanie wraca do szerokości 90%. Próba z fixture, bez potwierdzenia GPS w terenie.
+
+## Aneks 2026-09-12 (m12-94) — bez pominięcia na liście kontrolek (zadanie H)
+
+Lista „pauza, pominięcie, zakończenie, symulacja, …” w decyzji traci
+środkowy element: akcja pomijania wycofana (ADR 0015 aneks 2026-09-12).
+Do Informacji w drodze trafiają: pauza, zakończenie, symulacja,
+sterowanie multi, komunikaty. Mechanika przenoszenia węzłów bez zmian.

@@ -625,7 +625,7 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
     'gra-wyniki', 'gra-wyniki-tbody', 'gra-wynik-zwyciezca', 'przycisk-nowa-gra',
-    'przycisk-pomin-stacje', 'przycisk-zakoncz-gre',
+    'przycisk-zakoncz-gre',
   ];
   for (const id of wymagane) assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
   // ADR 0038 (zgłoszenie właściciela 2026-09-12, D b): ekran wyniku jest MINIMALNY.
@@ -641,7 +641,7 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
   for (const id of usuniete) assert.ok(!html.includes(`id="${id}"`), `ekran wyniku nie ma już #${id} (ADR 0038)`);
   assert.match(html, /id="bledy-gra" class="bledy" role="alert"/, 'błędy faz mają role="alert" (jak inne ekrany)');
   assert.match(html, /id="gra-komunikat" class="podpowiedz" role="status"/, 'komunikat fazy ma role="status"');
-  assert.match(html, /id="przycisk-pomin-stacje"[^>]*disabled/, 'pominięcie domyślnie wyłączone (tylko w drodze, ADR 0015)');
+  assert.ok(!html.includes('id="przycisk-pomin-stacje"'), 'przycisk pomijania usunięty z HTML-a (zadanie H)');
   assert.ok(!html.includes('id="przycisk-start-gry"'), 'ręcznego startu nie ma — gra rusza sama po Sprawdź (decyzja 2026-09-07)');
 });
 
@@ -927,7 +927,7 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   assert.ok(!APP.includes('odswiezZrodlaMulti') && !APP.includes('zaladujZrodloMulti'), 'lista źródeł paczek multi usunięta');
   assert.ok(!APP.includes('normalizujKod($'), 'dołączanie kodem usunięte (odpowiedź 4A)');
   assert.ok(!APP.includes('biezacyGraczTury'), 'kolejki tur nie ma w aplikacji (tryb usunięty)');
-  assert.match(APP, /przycisk-pomin-stacje'\)\.hidden = true/, 'w multi nie ma pomijania stacji (serwer zna tylko dojście/odpowiedź/rezygnację)');
+  assert.ok(!APP.includes('przycisk-pomin-stacje'), 'aplikacja nie zna przycisku pomijania (zadanie H — usunięty z UI i z multi)');
   // ~50 m po geohash8 hosta (właściciel, 2026-09-11)
   assert.match(APP, /geohash8/, 'gra niesie geohash8 (zasięg ~50 m)');
   assert.match(GS, /geohash8/, 'most zna geohash8');
@@ -1336,4 +1336,15 @@ test('kontrakt ADR 0039: ranking — dwie tabele, akcja mostu i wspólny schemat
   assert.equal(MINIMUM_PYTAN_ODPOWIEDZI, 10, 'Mistrzowie Zagadek liczą się od 10 zadanych pytań');
   assert.equal(APP.includes('MINIMUM_PYTAN_ODPOWIEDZI'), false, 'progu nie ma w app.js — trzyma go app/ranking.js');
   assert.match(APP, /mistrzowieZagadek\(ranking\)/, 'aplikacja używa funkcji modułu, nie własnej kopii reguły');
+});
+
+test('I+J: paczki tylko z repo, START GRY gaśnie w trakcie gry', () => {
+  // I.b: sekcja „📱 z tego telefonu:” nie istnieje w UI ani w tekstach stanu.
+  assert.equal(APP.includes('📱 z tego telefonu'), false, 'etykieta sekcji paczek z telefonu nie wróciła (I.b)');
+  assert.equal(czytaj('app/most.js').includes('paczki z tego telefonu'), false, 'stan mostu nie obiecuje paczek z telefonu (I.b)');
+  // I.a: opis paczki z repo nie pokazuje licencji.
+  assert.equal(APP.includes('${meta.licencja}'), false, 'opis propozycji bez licencji (I.a)');
+  // J: belka ikon zna stan gry — przycisk gaśnie, CSS to pokazuje.
+  assert.match(APP, /odswiezStanIkonBelki/, 'belka odświeża stan ikon (J)');
+  assert.match(STYLE, /\.przycisk-ikona\[disabled\]/, 'zgaszony przycisk ma styl (J)');
 });

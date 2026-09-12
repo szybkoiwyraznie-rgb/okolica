@@ -64,3 +64,10 @@ przygotowuje paczkę przy biurku).
 
 0001 (zero zależności), 0003 (gesty mapy), 0006 (wklejanie promptu),
 0009 (czyja kolejka), `docs/WORKFLOW.md` §4 (test terenowy).
+
+## Aneks 2026-09-12 (m12-95) — START GRY zgaszony w trakcie gry (zadanie J)
+
+Pkt 7 (dostępność) dostaje przykład: przycisk „⚙ START GRY” w belce jest
+aktywny tylko, gdy gra się NIE toczy (`disabled` + dynamiczny `title`
+„niedostępne w trakcie gry” — strażnik przed wejściem w setup i zgubieniem
+postępu). Stan odświeża `odswiezStanIkonBelki` po każdej zmianie fazy gry.

@@ -238,6 +238,7 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .przycisk-ikona:active { transform: translateY(1px); }
 .przycisk-ikona[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
 .przycisk-ikona:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
+.przycisk-ikona[disabled] { opacity: 0.45; cursor: not-allowed; } /* J: ⚙ START GRY nieaktywne w trakcie gry */
 #przycisk-setup { font-size: 14px; letter-spacing: 0.3px; }
 .przycisk[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
 
