@@ -5094,6 +5094,15 @@ function start() {
     status('Tryb ręczny: przeciągnij pinezki na mapie. Dystans liczymy w linii prostej — osiągalności NIE weryfikujemy.' + ADR(' (ADR 0005 pkt 8)'));
   });
   $('przycisk-dalej-prompt').addEventListener('click', () => {
+    // Uwaga terenowa G.a (właściciel, 2026-09-12): każda NOWA generacja
+    // startuje z domyślnym = ODPTASZKOWANYM checkboxem (ADR 0032: domyślny
+    // jest wariant bez fact-check). Aplikacja nie przeładowuje się sama
+    // (PWA), więc stan DOM checkboxa „przeżywał” tło aplikacji i staro
+    // zaptaszkowane pole właściciel widział jako „domyślnie zaptaszkowane”.
+    // Reset jest TYLKO przy wejściu z ekranu 3: strzałka wstecz (ekran 5 → 4)
+    // celowo nie rusza checkboxa — prompt tej samej generacji nie może
+    // zmieniać się pod palcem.
+    $('prompt-factcheck').checked = false;
     pokazEkran('prompt');
     budujPromptEkran();
   });

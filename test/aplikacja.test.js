@@ -999,6 +999,27 @@ test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie rev5; zaznaczenie d
   assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev5/, 'odznaczenie wraca do rev5');
 });
 
+test('ADR 0032 + uwaga terenowa G.a (2026-09-12): nowa generacja startuje z odptaszkowanym checkboxem', async () => {
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  await import(`../app/app.js?ga1=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  // Aplikacja nie przeładowuje się (PWA): stan checkboxa „przeżywa” tło —
+  // zaptaszkowanie z poprzedniej generacji leży w DOM tak, jak na telefonie
+  // właściciela, który widział „domyślnie zaptaszkowane”.
+  przelaczCheckbox(domAtrapa, 'prompt-factcheck', true);
+  domAtrapa.kliknij('przycisk-dalej-prompt'); // nowa generacja (ekran 3 → 4)
+  assert.equal(domAtrapa.pobierz('prompt-factcheck').checked, false, 'nowa generacja = domyślnie odptaszkowane (właściciel 2026-09-12)');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev5/, 'prompt wraca do wariantu bez fact-check');
+  // Strzałka wstecz (ekran 5 → 4) celowo NIE resetuje — spójność tej samej generacji:
+  przelaczCheckbox(domAtrapa, 'prompt-factcheck', true);
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev4/, 'wybór użytkownika dla tej generacji obowiązuje');
+  domAtrapa.kliknij('przycisk-dalej-paczka');
+  domAtrapa.kliknij('przycisk-wstecz-prompt');
+  assert.equal(domAtrapa.pobierz('prompt-factcheck').checked, true, 'powrót do promptu tej samej generacji nie kasuje wyboru');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev4/, 'prompt nadal rev4 — spójny z checkboxem');
+});
+
 test('ADR 0032 end-to-end: paczka rev3 bez źródeł przyjęta, rejestr niesie factcheck:false', async () => {
   const pamiecKonfig = pamiecKonfig3x1();
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
