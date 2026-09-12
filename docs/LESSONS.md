@@ -912,3 +912,51 @@ ręczna edycja). Obietnica w ADR („X da się odświeżyć przez Y”) musi by�
 backfill w indeksie mostu (wzorzec B19: plik niezmienny, indeks dopisuje
 pole) — jedna zmiana w `.gs` naprawiła WSZYSTKIE stare paczki naraz,
 bez wchodzenia właścicielowi w Dysk.
+
+## L58 (2026-09-12) — tekst jest nośnikiem stanu: po fali usuwania grep po nośnikach ŻYWYCH i strażnik w teście
+
+**Objaw:** audyt scalonego PR #18 (sesja 2026-09-12K) znalazł siedemnaście
+miejsc, w których aplikacja albo dokumenty opisywały rzeczy usunięte kilka fal
+wcześniej — i każde z nich przechodziło przez zieloną bramę 734 testów. Ekran
+wklejania paczki mówił „leci na Drive do przeglądu właściciela” (moderacja
+zniesiona 2026-09-11, ADR 0017 aneks), status pełnej pamięci paczek odsyłał do
+„eksportu plikiem”, a awaria wysyłki proponowała „zapisz plik i wnieś ręcznie”
+(eksportu nie ma od 2026-09-07, resztę zabrał ADR 0038), karta prywatności raz
+wysyłała pytania na Drive, a w sąsiednim punkcie trzymała je na telefonie,
+`WORKFLOW` kazał w terenie mierzyć dokładność GPS i klikać przyciski, których
+nie ma (GPS, ręczne współrzędne, wczytanie z pliku, symulacja 250 m na ekranie
+pozycji), `ARCHITECTURE` opisywała moduł `ui.js`, którego nigdy nie było,
+i próg dojścia 25 m przy `progDojsciaM() = 50`, `ASSETS` trzymał sekrety mostu
+(`REVIEW_SECRET`, `OWNER_EMAIL`) i bramkę moderacyjną, a rejestr ADR-ów, most
+i test cytowały „ADR 0019 aneks 2026-09-12f”, którego w ADR 0019 nie było —
+decyzja żyła w ADR 0039. Pięć z tych miejsc to KOMENTARZE w kodzie, które
+obiecywały zachowanie celowo nieobecne („marker pozycji z kołem dokładności”,
+„pojedynczy fix zapala stację” przy `wymaganeTrafnienia = 2`).
+
+**Przyczyna:** testy czytały ZACHOWANIE (DOM, funkcje, schematy), nie tekst,
+więc brama nie miała czego zapalić. Usuwanie szło falami (H, I, J oraz ADR
+0034/0037/0038/0039), a L31 każe przy fali przejrzeć nośniki RĘCZNIE — przegląd
+ręczny jest tak dobry jak pamięć ostatniej sesji, więc każda fala zostawiała
+resztki w miejscu, którego nikt nie czytał (akapit w `index.html`, bullet
+w `ASSETS`, nagłówek procedury terenowej). Druga przyczyna jest groźniejsza:
+martwa fraza brzmi wiarygodnie. Agent, który czyta „badge dokładności żyje”,
+nie ma powodu wątpić, a właściciel w terenie idzie za instrukcją i szuka
+przycisku, którego nie ma — koszt to nie tylko myląca dokumentacja, ale
+i zmarnowany test terenowy.
+
+**Reguła:** (1) po każdej fali usuwania zrób grep po NOŚNIKACH ŻYWYCH —
+`index.html`, `app/*.js` (także komentarze), `sw.js`, `README.md`,
+`docs/{WORKFLOW,ARCHITECTURE,ASSETS,ROADMAP,PROTOKOL}.md`,
+`docs/decisions/README.md`, `docs/setup/*.gs` — nie tylko po kodzie; historia
+(`PROJECT_HISTORY`, `LESSONS`, ADR-y, handoffy) cytuje martwe frazy celowo
+i jest poza przeglądem. (2) Każdą znalezioną frazę wpisz do
+`test/dryf-dokumentow.test.js` jako `{ fraza, nosniki, powod }`, żeby powrót
+funkcji albo opisu zapalił bramę zamiast czekać na następny audyt; strażnik
+pilnuje też rzeczy strukturalnych: drzewo modułów w `ARCHITECTURE` ↔ zawartość
+`app/`, eksporty modułu ↔ jego opis, brak sekretów w moście. (3) Cytowanie
+„ADR NNNN aneks <data>” musi mieć pokrycie w pliku decyzji — strażnik to
+sprawdza, więc kotwica nie może zostać sierotą (albo dopisujesz aneks, albo
+poprawiasz cytowanie na ADR, w którym decyzja naprawdę żyje). (4) Komentarz
+w kodzie jest nośnikiem stanu tak samo jak dokument: jeśli opisuje zachowanie,
+którego kod celowo nie ma, to jest bug, nie stylistyka — poprawia się go w tym
+samym commitcie co zachowanie.

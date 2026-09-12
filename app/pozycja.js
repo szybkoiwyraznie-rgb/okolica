@@ -16,7 +16,7 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-98';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-99';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
@@ -303,7 +303,9 @@ export function punktNaTrasie(trasa, tMs) {
 /**
  * Symulowany fix w chwili `tMs` (ADR 0004 pkt 6): pozycja z `punktNaTrasie`
  * plus deterministyczny rozrzut i zmienna dokładność — tak, żeby debounce
- * i filtr dokładności miały co robić również bez GPS.
+ * dojścia (dwa kolejne pomiary w progu) miał co robić również bez GPS.
+ * Pole `accuracy` jedzie w fixie dla zgodności kształtu z `fixZPozycji`, ale
+ * od ADR 0034 pkt 2 nic go nie ocenia, nie komunikuje i nie rysuje.
  *
  * Ostatni fix (i każdy po czasie trasy) leży dokładnie w celu z rozrzutem
  * `szumM`, więc symulacja **kończy się dojściem** — to kryterium testu.

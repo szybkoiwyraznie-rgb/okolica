@@ -300,5 +300,6 @@ Uwagi techniczne (M8, 2026-09-06):
 | Nowy dostawca kafelków/danych | `app/mapa.js` albo `app/sieci.js` | wpis w `docs/ASSETS.md` (polityka, atrybucja, limity) + ADR |
 | Nowa decyzja architektoniczna | `docs/decisions/NNNN-*.md` | aktualizacja rejestru w `docs/decisions/README.md`, ten sam commit |
 | Nowa lekcja | `docs/LESSONS.md` | numeracja na końcu, format objaw→przyczyna→reguła |
+| Usunięcie funkcji (fala uwag) | kod + `index.html` | grep po nośnikach żywych (`README`, `docs/*`, `.gs`, komentarze w `app/*.js`) i wpis frazy do `test/dryf-dokumentow.test.js` — LESSONS L58 |
 | Nowy pomysł | `docs/BACKLOG.md` | nie bierz go do pracy bez zlecenia albo kamienia milowego |
 | Paczka referencyjna | `data/przyklady/zestaw-*.json` (dziś: `zestaw-podkowa-lesna.json`) | weryfikacja każdego URL przez `fetch_page` (ADR 0008 pkt 6) |

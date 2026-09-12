@@ -153,6 +153,7 @@ Reguły trwałe nie mogą mieszkać w handoffie — handoff opisuje jedną sesj�
 | Stan i kolejka jednej sesji | `docs/setup/HANDOFF_*.md` | jednorazowa |
 | Roadmapa jednego zadania | `docs/plans/PLAN_*.md` | jednorazowa |
 | Pomysł „może kiedyś" | `docs/BACKLOG.md` | trwała, niezobowiązująca |
+| Fraza tekstu albo komentarza, która nie może wrócić (funkcja usunięta) | `test/dryf-dokumentow.test.js` | trwała, pilnowana bramą |
 
 Jeśli w trakcie sesji trafisz na pułapkę, która zmarnowała czas i może się
 powtórzyć — dopisz lekcję do `docs/LESSONS.md` (format: `## LN (data) — tytuł`,
@@ -180,6 +181,10 @@ i oznacz stary *Zastąpiona*.
 - Zmianę weryfikuj **na żywo**, nie tylko testem: serwer na `0.0.0.0` + live
   preview; przy UI mobilnym 360 px i palec (drag, pinch, tap).
 - Przy zmianie kodu sprawdź, czy zaktualizować: ROADMAP, ARCHITECTURE, WORKFLOW,
-  PROTOKOL, ADR, README.
+  PROTOKOL, ADR, README. Przy USUWANIU funkcji zrób to samo w drugą stronę:
+  grep po nośnikach żywych (`index.html`, `app/*.js` z komentarzami, `sw.js`,
+  `README.md`, `docs/*`, `.gs`) po frazach tej funkcji i dopisz je do
+  `test/dryf-dokumentow.test.js` (LESSONS L58) — dokument, który obiecuje
+  usunięty przycisk, kosztuje właściciela zmarnowany test terenowy.
 - Po zmianie `app/*.js`/`app/styles.css` **podnieś `?v=`** w `index.html`
   i we wszystkich importach — identyczne wszędzie (pilnuje kontrakt).
