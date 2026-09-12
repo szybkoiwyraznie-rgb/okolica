@@ -136,7 +136,7 @@ dopasowane paczki (lokalne + repozytorium razem), resztę po przycisku
 „Zobacz więcej paczek" (toggle ze „Zobacz mniej paczek"). Sortowanie:
 najpierw paczki z **największą liczbą ocen pozytywnych** (ADR 0028,
 `oceny.plus`), przy remisie świeższa data. Paczki z tego telefonu nie mają
-ocen (życią na Drive) — startują z zerem i lądują wg daty.
+ocen (żyją na Drive) — startują z zerem i lądują wg daty.
 
 ## Aneks 2026-09-11 — koniec moderacji wstępnej (decyzja właściciela)
 

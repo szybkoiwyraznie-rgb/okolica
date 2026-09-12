@@ -616,3 +616,25 @@ z RRRR-MM-DD"): data w asercji to flaga „przeglądnij mnie przy następnej
 zmianie kanonu". Fallback pustych tematów liczony z tej samej stałej co
 domyślne zaznaczenie (jedno źródło prawdy), a regresja brzegowa (wszystkie
 tematy wypadają w filtrze) ma własny test.
+
+## L46 — wersja domyślnych wyborów też idzie do localStorage: kanon z markerem, nie „implace upgrade"
+
+**Objaw:** właściciel po aktualizacji wciąż widział odptaszkowane „Ciekawostki",
+mimo że kanon setupu (ADR 0034) i `DOMYSLNE.tematy` od dawna je zawierały
+(uwagi terenowe #3, 2026-09-11). Wycięcie tematów z setupu przeliczyło jego
+przełęczony eksponat na starym zapisie — `localStorage` przeżywa rebuildy
+w niemal czystej postaci (L28), więc ten efekt zniknął, gdy właściciel
+skonfigurował grę przed zmianą kanonu. Nowi gracze mieli inny setup niż
+właściciel — nikt tego nie zauważył, bo testy nasiałają świeże fixtures.
+
+**Przyczyna:** odczyt zapisanego setupu (`wczytajKonfiguracje`) przejmował
+listę tematów z zapisu bez rozróżnienia „świadomy wybór gracza" od „domyślne
+z wersji, która wtedy panowała". Dla pól edytowalnych (R, stacje) to dobre,
+a dla LISTY kanonicznych rozjazd jest cichym bugiem: nowe tematy domyślne
+nie dochodzą do starych zapisów.
+
+**Reguła:** listy kanoniczne w konfiguracji noszą marker wersji kanonu
+(data wejścia zmiany, np. `'2026-09-10'`). Zapis bez markera = zapis sprzed
+kanonu → jednorazowe dopełnienie tylko NOWYCH tematów domyślnych (lista
+dopełnień w kodzie, nigdy `wlasny`), zapis markera i nie więcej ruszania
+wyborów gracza. Test rytuału: stary zapis dopełniany, świeży nietknięty.

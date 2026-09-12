@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-74';
-import { TRYBY } from './konfig.js?v=m12-74';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-75';
+import { TRYBY } from './konfig.js?v=m12-75';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -298,8 +298,8 @@ export function miastoZObszarow(obszary) {
 /**
  * Nazwa miejsca do promptu (`{MIEJSCE}`, ADR 0005 pkt 1): najdrobniejszy
  * obszar z nazwą plus miasto („Śródmieście, Warszawa" — sama dzielnica
- * powtarza się w stu miastach). Format jak w warstwie zapasowej Nominatim.
- * Bez Nominatim.
+ * powtarza się w stu miastach). Warstwa zapasowa (Nominatim) usunięta na
+ * życzenie właściciela 2026-09-11 — docelowe rozwiązanie na stałe (ASSETS §3).
  */
 export function nazwaMiejsca(sparsowane) {
   const obszary = sparsowane?.obszary;
@@ -760,57 +760,4 @@ export function przycijCacheSieci(wpisy, { limitBajtow = POLITYKA.maxRozmiarCach
     suma -= w.rozmiarBajtow;
   }
   return doUsuniecia;
-}
-
-/* ======================= M5/J5: odwrotna geokodacja — warstwa zapasowa */
-
-/**
- * Domyślny endpoint Nominatim (ASSETS §3). Przełączalny BEZ aktualizacji
- * oprogramowania przez klucz `okolica:geokodacja-endpoint` — wymóg polityki
- * OSMF („gotowość do przełączenia usługi na żądanie OSMF").
- */
-export const DOMYSLNY_ENDPOINT_GEOKODACJI = 'https://nominatim.openstreetmap.org/reverse';
-
-/**
- * URL odwrotnej geokodacji (warstwa ZAPASOWA — domyślnie wyłączona,
- * ADR 0013 pkt 2/3). Minimalizacja pozycji: współrzędne zaokrąglone do
- * 5 miejsc (~1 m i tak grubiej niż potrzeba nazwie dzielnicy), jedno
- * żądanie na grę, bez identyfikatora użytkownika.
- */
-export function budujUrlGeokodacji({ lat, lon, endpoint = DOMYSLNY_ENDPOINT_GEOKODACJI } = {}) {
-  if (!czyWspolrzedneOk(lat, lon)) {
-    const blad = new Error('budujUrlGeokodacji: współrzędne poza zakresem');
-    blad.kod = 'S05';
-    throw blad;
-  }
-  if (typeof endpoint !== 'string' || !/^https:\/\//.test(endpoint)) {
-    throw new TypeError('budujUrlGeokodacji: endpoint musi być adresem https');
-  }
-  const params = new URLSearchParams({
-    format: 'jsonv2',
-    lat: lat.toFixed(5),
-    lon: lon.toFixed(5),
-    zoom: '14',
-    'accept-language': 'pl',
-    addressdetails: '1',
-  });
-  return `${endpoint}?${params.toString()}`;
-}
-
-/**
- * Nazwa miejsca z odpowiedzi Nominatim `jsonv2` (addressdetails): dzielnica
- * i miasto — jak w rozwiązaniu podstawowym z Overpass (ASSETS §3). Śmieciowa
- * odpowiedź → null (UI pokaże „brak odczytu", nie wyjątek).
- */
-export function miejsceZOdpowiedziNominatim(odpowiedz) {
-  const address = odpowiedz?.address;
-  if (!address || typeof address !== 'object') return null;
-  const dzielnica = ['suburb', 'city_district', 'district', 'quarter']
-    .map((klucz) => address[klucz])
-    .find((wartosc) => typeof wartosc === 'string' && wartosc.trim());
-  const miasto = ['city', 'town', 'village', 'municipality']
-    .map((klucz) => address[klucz])
-    .find((wartosc) => typeof wartosc === 'string' && wartosc.trim());
-  const czesci = [dzielnica, miasto].filter(Boolean).map((s) => s.trim());
-  return czesci.length > 0 ? czesci.join(', ') : null;
 }

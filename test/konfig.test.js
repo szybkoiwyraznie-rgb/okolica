@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DOMYSLNE, JEZYK_GRY, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
+import { DOMYSLNE, JEZYK_GRY, KANON_SETUPU, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_DOPELNIANE_PRZY_MIGRACJI, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
 test('TRYBY: trzy tryby z briefu właściciela, prędkości 4,5/15/40 km/h, bez własnego promienia (ADR 0025)', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
@@ -337,4 +337,36 @@ test('ADR 0034: nowe wybory setupu, alfabetyczne tematy i zgodność odczytu', (
     'fallback pustych tematów nie wraca do usuniętych sportu/jedzenia');
   assert.ok(DOMYSLNE.tematy.includes('ciekawostki'), 'nowy temat ADR 0034 jest w domyślnych');
   assert.ok(!DOMYSLNE.tematy.includes('wlasny'), '„Dopisz sam" nie jest domyślnie zaznaczone');
+});
+
+test('kanon setupu: marker daty + lista tematów domyślnych jest spójna (m12-75)', () => {
+  assert.match(KANON_SETUPU, /^\d{4}-\d{2}-\d{2}$/, 'kanon to data wejścia zmiany');
+  // „Wszystkie tematy oprócz „Dopisz sam” mają być zaznaczone” (właściciel,
+  // uwagi terenowe #3 pkt 4f): domyślne = wszystkie tematy setupu minus wlasny.
+  const wszystkieBezWlasnego = Object.keys(TEMATY_SETUP).filter((t) => t !== 'wlasny');
+  assert.deepEqual([...DOMYSLNE.tematy].sort(), wszystkieBezWlasnego.sort(),
+    'DOMYSLNE.tematy = wszystkie tematy setupu oprócz „Dopisz sam”');
+  // Lista dopełnień migracyjnych dotyczy WYŁĄCZNIE tematów, które kiedyś nie
+  // były domyślne — nie wolno jej zasnąć przy nowych tematach (regresja 4f).
+  for (const ident of TEMATY_DOPELNIANE_PRZY_MIGRACJI) {
+    assert.ok(Object.hasOwn(TEMATY_SETUP, ident), `${ident}: dopełniany temat istnieje w kanonie setupu`);
+    assert.ok(DOMYSLNE.tematy.includes(ident), `${ident}: dopełniany temat jest dziś domyślny`);
+    assert.notEqual(ident, 'wlasny', '„Dopisz sam” nigdy nie dołazi migracją (wymaga tekstu organizatora)');
+  }
+});
+
+test('dopelnijNoweTematySetupu: stary zapis dostaje „ciekawostki”, reszta nietknięta (m12-75)', () => {
+  // scenariusz z uwag właściciela: zapis sprzed Ciekawostek
+  assert.deepEqual(
+    dopelnijNoweTematySetupu(['architektura', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda']),
+    ['architektura', 'ciekawostki', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda'],
+    'dopełnienie = posortowana pełna lista domyślnych');
+  // świeży zapis nie rośnie (idempotentne przy kolejnych startach)
+  const swiezy = ['architektura', 'ciekawostki', 'przyroda'];
+  assert.deepEqual(dopelnijNoweTematySetupu(swiezy), swiezy, 'bez duplikatów i „inwentarza”');
+  // śmieciowe wejście z migracji nie przepuszcza nic z poza kanonu
+  assert.deepEqual(dopelnijNoweTematySetupu(['kosmos']),
+    ['ciekawostki', 'kosmos'], 'dopełnia tylko z listy migracyjnej — cudzy temat zostaje do oczyszczenia');
+  assert.deepEqual(dopelnijNoweTematySetupu(null), ['ciekawostki'], 'brak listy → z listy migracyjnej');
+  assert.ok(!dopelnijNoweTematySetupu([]).includes('wlasny'), '„Dopisz sam” nie dołazi nigdy');
 });

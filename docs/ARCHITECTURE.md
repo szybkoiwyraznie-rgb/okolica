@@ -143,8 +143,10 @@ siedzi w `app.js` (sekcje M11/P4 i M12/P6).
 Od ADR 0020 adres mostu nie jest elementem interfejsu, tylko **stałą
 wdrożeniową w kodzie**: `most.js` rozstrzyga, z którym adresem rozmawiamy
 (nadpisanie w pamięci telefonu → `DOMYSLNY_URL_MOSTU` z repozytorium), i daje
-całemu UI jeden tekst stanu (`pokazStanMostu()` w `app.js` → `#most-stan-repo`
-i `#multi-most-stan`). Pól wpisywania adresu nie ma — wymiana adresu to nowy
+całemu UI jeden tekst stanu (`pokazStanMostu()` w `app.js` → `#most-stan-repo`;
+dawny `#multi-most-stan` zniknął z dev-tekstami za decyzją właściciela
+2026-09-11 — ekran multi to już samo lobby, a lista gier ~50 m żyje na
+setupie). Pól wpisywania adresu nie ma — wymiana adresu to nowy
 commit i nowa wersja aplikacji.
 
 ## Przepływ danych
@@ -179,15 +181,14 @@ commit i nowa wersja aplikacji.
    (`mapa.ustawTrybReczny`), dystans tylko w linii prostej.
    Lista stacji trafia na mapę jako numerowane pinezki
    (`mapa.zaznaczStacje`), a promień gry jako przerywany okrąg.
-   Nazwa miejsca: podstawowa z obszarów administracyjnych TEGO SAMEGO
-   zapytania Overpass (`sieci.nazwaMiejsca`); zapasowa —
-   `uzupelnijMiejsceZapasowe` (Nominatim `reverse`, opt-in kluczem
-   `okolica:geokodacja-zapasowa`, domyślnie wyłączona, ADR 0013 pkt 2):
-   jedno żądanie na sesję, tylko gdy Overpass nie dał nazwy, najpierw cache
-   `okolica:miejsce:<geohash6>` (30 dni), wynik z atrybucją ODbL, endpoint
-   przełączalny kluczem `okolica:geokodacja-endpoint`. Całe nazewnictwo
-   miejsca (UI i prompt) jest bramowane `konfig.geokodacja` — przy
-   wyłączonym prompt niesie same współrzędne (ADR 0013 pkt 3).
+   Nazwa miejsca: jedyna z obszarów administracyjnych TEGO SAMEGO
+   zapytania Overpass (`sieci.nazwaMiejsca`; UI i prompt pokazują ją ZAWSZE).
+   Warstwa zapasowa (Nominatim `reverse`, opt-in, cache `okolica:miejsce:<geohash6>`)
+   działała do m12-74 i została usunięta na życzenie właściciela 2026-09-11 —
+   docelowe źródło jest na stałe, bez przełączników i bez kluczy
+   (`okolica:geokodacja-zapasowa`, `okolica:geokodacja-endpoint`) w pamięci
+   (też nie wraca dawna bramka `konfig.geokodacja`). Brak nazwy = puste
+   miejsce w promptcie i komunikat, nie żądanie uboczne.
 5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka;
    ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
    SVG w `index.html` (zero plików zewnętrznych, ADR 0001 pkt 1/ADR 0011).
@@ -400,8 +401,7 @@ ręczne zakończenie gry są dwustopniowe (ADR 0015 pkt 6).
 
 Historia gier (M7) żyje obok zapisów w `app/trwalosc.js`: klucz
 `okolica:historia`, schemat `historia/1`, wpis `historia-gra/1` — skrót BEZ
-treści pytań i BEZ współrzędnych (data, miejsce z konfiga — bramowane
-geokodacją jak w promptach, tryb, zwycięzca, punkty, poprawne, czasy,
+treści pytań i BEZ współrzędnych (data, miejsce z konfiga jak w promptach, tryb, zwycięzca, punkty, poprawne, czasy,
 znacznik `przerwana`). Limit 50 wpisów (najstarsze wypadają),
 a zastąpienie po kluczu gry jest idempotentne: dokończenie przerwanej gry
 NADPISUJE wpis, nie dokłada drugiego. Wpis powstaje w hooku `zapiszGre()` —

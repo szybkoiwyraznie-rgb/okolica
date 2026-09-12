@@ -19,9 +19,12 @@ każde zapytanie ujawnia dostawcy przybliżoną pozycję. To decyzja właścicie
 2. **Lista dostawców jest zamknięta i jawna** (`docs/ASSETS.md`): kafelki
    rastrowe (OSM Standard domyślnie, OpenTopoMap i Esri World Imagery jako
    warstwy opcjonalne — ADR 0003) oraz Overpass API (sieć drogowa **i** nazwa
-   miejsca z obszarów administracyjnych — ADR 0005). **Nominatim jest domyślnie
-   wyłączony** i dopuszczony wyłącznie jako warstwa zapasowa, na warunkach jego
-   polityki (`docs/ASSETS.md` §3). Nowy dostawca = wpis w `docs/ASSETS.md`
+   miejsca z obszarów administracyjnych — ADR 0005). ~~Nominatim jako
+   warstwa zapasowa (opt-in)~~ — **usunięty 2026-09-11** na życzenie
+   właściciela (uwagi terenowe #3): docelowe źródło nazwy miejsca (Overpass)
+   jest jedynym źródłem, bez przełącznika i bez osobnych żądań ubocznych
+   (aneks w `docs/ASSETS.md` §3; kontrakt testowy pilnuje nieobecności
+   endpointu). Nowy dostawca = wpis w `docs/ASSETS.md`
    + nowy ADR.
 3. **Minimalizacja pozycji w zapytaniach**:
    - kafelki: żądanie ujawnia tylko obszar ekranu i zoom (nie da się mniej);

@@ -884,3 +884,14 @@ body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inse
 /* „Zobacz więcej/mniej paczek" pod listą propozycji (właściciel 2026-09-11):
    pełna szerokość karty, cel dotykowy jak wiersze listy (ADR 0011). */
 .przycisk-zestawy-wiecej { width: 100%; min-height: 44px; }
+
+/* Ptaszek „widoczna tylko kolejna stacja” (właściciel, uwagi terenowe #3,
+   2026-09-11): pole i opis JEDNYM wierszem — selektor z :not([hidden]),
+   żeby globalna reguła [hidden] dalej wygrywała przy ukrywaniu. */
+#pole-trasa-sekret:not([hidden]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+#pole-trasa-sekret input[type="checkbox"] { margin: 0; width: 22px; height: 22px; flex-shrink: 0; }

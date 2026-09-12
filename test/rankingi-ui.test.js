@@ -138,7 +138,9 @@ test('puste rankingi i śmieciowa odpowiedź mostu są jawne (LESSONS L6)', asyn
   assert.match(wierszeTabeli(pusty.dom)[0], /Most Drive nie ma jeszcze ani jednej zakończonej gry/,
     'pusty most tłumaczy, skąd biorą się wyniki');
   zakladka(pusty.dom, 4);
-  assert.match(pusty.dom.pobierz('ranking-moje-gry').children[0].textContent, /Nie masz jeszcze pseudonimu/, 'bez pseudonimu lista mówi, gdzie go ustawić');
+  assert.match(pusty.dom.pobierz('ranking-moje-gry').children[0].textContent,
+    /Nie masz jeszcze potwierdzonego imienia — dodaj siebie w bloku „Kto gra\?”/,
+    'bez imienia lista mówi, gdzie potwierdzić tożsamość (m12-75: imię z bloku „Kto gra?”, nie dawne pole pseudonimu)');
 
   const smieci = await telefonZRankingiem({ odpowiedz: { schemat: 'RO-gra/1', wiersze: 'to nie ranking' } });
   assert.match(smieci.dom.pobierz('ranking-status').textContent, /nieczytelna/, 'zły schemat = jawny komunikat, nie pusty ekran');

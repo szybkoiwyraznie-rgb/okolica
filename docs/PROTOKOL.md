@@ -135,13 +135,11 @@ znaków, jedno źródło) to 4 469 znaków / ~1 118 tokenów dla 5 pytań i
 33 392 znaków / ~8 348 tokenów dla 40 pytań (5 stacji × 8 graczy) — czyli
 ~830 znaków i ~210 tokenów na pytanie. Kontener `TO-paczka/2` dla 40 pytań ma
 ~36 kB (1,8% budżetu stanu, 2,4% rejestru), więc pamięć nie jest ograniczeniem;
-ograniczeniem jest limit wyjścia modelu. Stałe szacunku żyją w
-`app/protokol.js` (`szacunekOdpowiedzi`, `PROG_ODPOWIEDZI_TOKENY = 4000`),
-a ekran promptu podaje przewidywany rozmiar odpowiedzi i ostrzega powyżej progu
-— ucięty JSON wracałby jako E01/E02 bez wskazania prawdziwej przyczyny.
-Pomiar spinają testy `test/duza-paczka.test.js`. Szacunek jest wspólny dla
-obu wariantów promptu (górne ograniczenie; paczka bez weryfikacji zwykle
-wychodzi mniejsza, bo nie niesie źródeł).
+ograniczeniem jest limit wyjścia modelu. Szacunek był pokazywany w UI
+i usunięty jako ozdobnik (właściciel, testy terenowe 2026-09-11) — pomiar
+zostaje tutaj jako prawidło protokołu, a spinają go testy
+`test/duza-paczka.test.js`. Górne ograniczenie jest wspólne dla obu wariantów
+promptu (paczka bez weryfikacji zwykle wychodzi mniejsza, bo nie niesie źródeł).
 
 ### 2.2 Wariant „Pytania (bez fact check)" (domyślny, ADR 0032)
 

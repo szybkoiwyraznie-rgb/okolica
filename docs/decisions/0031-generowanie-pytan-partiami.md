@@ -82,3 +82,11 @@ w sobie):
 - LESSONS L37 zostaje: bug, który znalazł test UI (`odpakujPaczke` zwraca paczkę
   także dla jawnego JSON-a, a formę rozróżnia dopiero pole `zrodlo`), dotyczy
   kodu, który nadal żyje.
+
+## Aneks (2026-09-11): `#prompt-rozmiar` usunięty z UI
+
+Linijkę szacunku rozmiaru odpowiedzi (`#prompt-rozmiar`) właściciel usunął
+podczas testów terenowych jako ozdobnik razem z innymi dev-tekstami (m12-63).
+Uwaga z Konsekwencji o rozpoznawaniu przyczyny E01/E02 traci więc swoje
+narzędzie w UI — sam pomiar budżetu zostaje w PROTOKOL §2.1 i w testach
+`test/duza-paczka.test.js`.

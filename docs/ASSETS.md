@@ -98,24 +98,23 @@ Zasady użycia w kodzie:
    (obszary administracyjne `is_in`/`boundary=administrative`), nie z
    Nominatim — patrz §3.
 
-## 3. Odwrotna geokodacja — domyślnie NIE używamy Nominatim
+## 3. Odwrotna geokodacja — Nominatim USUNIĘTY (2026-09-11), zostaje Overpass
 
 - **Rozwiązanie przyjęte**: nazwę miejsca (dzielnica, miasto, region, państwo)
   wyciągamy z obszarów administracyjnych zwróconych przez Overpass
   (`is_in(lat,lon)` + `area["boundary"="administrative"]`). Jeden dostawca,
   jedno zapytanie, zero dodatkowej polityki. Stacje dopisują miasto do nazwy
   („ulica, miasto") — ulice o tej samej nazwie powtarzają się między miastami.
-- **Nominatim publiczny** (`https://nominatim.openstreetmap.org/reverse`) jest
-  dopuszczony **wyłącznie jako opcjonalna warstwa zapasowa**, po spełnieniu
-  [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/):
-  maks. **1 żądanie/s**, poprawny `Referer`/UA identyfikujący aplikację,
-  widoczna atrybucja ODbL, obowiązkowy cache, zakaz zapytań systematycznych
-  i okresowych, oraz gotowość do **przełączenia usługi na żądanie OSMF bez
-  aktualizacji oprogramowania** (konfigurowalny endpoint).
-  Polityka zawiera też klauzulę dotyczącą systemów LLM i platform
-  niskokodowych — dlatego ten wpis jest jawny i widoczny w dokumentacji,
-  a decyzja o użyciu jest świadoma i należy do właściciela (ADR 0013).
-- Domyślnie warstwa jest **wyłączona** w setupie (ADR 0013 pkt 3).
+- **Warstwa zapasowa z Nominatim jest USUNIĘTA z kodu** (decyzja właściciela,
+  uwagi terenowe #3, 2026-09-11): docelowe rozwiązanie z powyższego punktu
+  działa bez fallbacku, a opt-in wraz z przełącznikiem zniknął z ekranu
+  prywatności i z `app/sieci.js` (`budujUrlGeokodacji`, `miejsceZOdpowiedziNominatim`,
+  `DOMYSLNY_ENDPOINT_GEOKODACJI`). Kontrakt `test/kontrakt.test.js` pilnuje,
+  żeby endpoint nie wrócił do żadnego modułu.
+- Historyczne uzasadnienie opt-inu (dla porządku, już nieobowiązujące):
+  [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/)
+  pozwalała warstwę zapasową pod warunkami 1 żądanie/s, atrybucji ODbL,
+  cache i gotowości do przełączenia endpointu na żądanie OSMF (ADR 0013).
 
 ## 4. Dane i licencje
 
@@ -162,8 +161,9 @@ kod ↔ ten plik oraz reweryfikacja polityk „na dziś".
 - `INSTANCJE_OVERPASS` (`app/sieci.js`) == tabela §2 co do URL-i (FOSSGIS →
   private.coffee → VK Maps → Adikso); sprawdzenie ręczne (tabela w markdown nie jest
   parsowana w testach — świadomie, §2 niesie też opisy polityk).
-- Nominatim: opt-in + komunikat w UI (`app/app.js`, „Warstwa zapasowa…")
-  == §3 i ADR 0013; endpoint konfigurowalny, cache sesyjny, jedno żądanie.
+- Nominatim: §3 — warstwa zapasowa usunięta 2026-09-11 (kontrakt pilnuje
+  nieobecności endpointu w `app/`); archiwalnie: był opt-in z komunikatem w UI
+  i cache sesyjnym.
 - Atrybucje ZAWSZE widoczne pod mapą: `#mapa-pozycja-atrybucja` i
   `#mapa-stacje-atrybucja` (`index.html`) + test bootstrapa.
 
@@ -189,8 +189,8 @@ kod ↔ ten plik oraz reweryfikacja polityk „na dziś".
   sprzeczne, prawdopodobnie zależne od profilu ruchu. Nasza odpowiedź jest
   już w kodzie: łańcuch fallbacków + jawna degradacja (komunikat zamiast
   cichego błędu) + fixture i tryb testowy offline; brak akcji, obserwować.
-- Nominatim i Esri: noty z 2026-09-05 aktualne (odpowiednio: opt-in za
-  zgodą polityki; wzorzec AME bez zmian).
+- Nominatim i Esri: noty z 2026-09-05 (odpowiednio: dawny opt-in za zgodą
+  polityki — usunięty 2026-09-11, §3; wzorzec AME bez zmian).
 
 **Wniosek:** zero rozjazdów kod ↔ dokumentacja, zero zmian wymagających
 akcji; nowy dostawca przechodzi pełną checklistę §5.

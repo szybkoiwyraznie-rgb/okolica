@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-74';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-74';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-75';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-75';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,51 +32,48 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-74';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-74';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-74';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-74';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-74';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-74';
+} from './protokol.js?v=m12-75';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-75';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-75';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-75';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-75';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-75';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-74';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-74';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-74';
+} from './zestawy.js?v=m12-75';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-75';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-75';
 import {
-  DOMYSLNY_ENDPOINT_GEOKODACJI,
   INSTANCJE_OVERPASS,
   KODY_SIECI,
   POLITYKA,
   SCHEMAT_SIECI,
   budujGraf,
-  budujUrlGeokodacji,
   budujZapytanieOverpass,
   czyPrzelaczycInstancje,
   kolejnoscInstancji,
   kandydaciNaStacje,
   kluczCacheSieci,
-  miejsceZOdpowiedziNominatim,
   nazwaMiejsca,
   parsujOdpowiedz,
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-74';
-import { utworzMape } from './mapa.js?v=m12-74';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-74';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-74';
-import { adresMostu, stanMostu } from './most.js?v=m12-74';
+} from './sieci.js?v=m12-75';
+import { utworzMape } from './mapa.js?v=m12-75';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, agregujRanking, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujRankingSurowy, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-75';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-75';
+import { adresMostu, stanMostu } from './most.js?v=m12-75';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-74';
+} from './oceny.js?v=m12-75';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -86,7 +83,8 @@ const KLUCZ_MOTYW = 'okolica:motyw';
  *  filtrują po nim (m12-74: pole pseudonimu multi zniknęło, tożsamością
  *  jest imię+PIN z bloku „Kto gra?”, decyzja właściciela 2026-09-11). */
 const KLUCZ_OSTATNIEGO_GRACZA = 'okolica:ostatni-gracz';
-/** Klucz z m11–m12-73 (pseudonim multi) czytany tylko na potrzeby „Moich gier”. */
+/** Klucz z m11–m12-73 (pseudonim multi): tylko FALLBACK odczytu „Moich gier”
+ *  — od m12-74 nic go nie zapisuje nowego (pole pseudonimu zniknęło z UI). */
 const KLUCZ_PSEUDONIMU = 'okolica:pseudonim';
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
@@ -104,6 +102,8 @@ const STAN = {
   pauzaWTle: false,
   /** M10/T3: bieżący profil watchera GPS ('dokladny' | 'oszczedny') — histereza w `profilBaterii`. */
   profilGps: 'dokladny',
+  /** Nazwa miejsca z Overpass — JEDYNA warstwa od 2026-09-11 (zapasowa
+   *  Nominatim usunięta całkowicie decyzją właściciela, ADR 0013 aneks). */
   miejsce: '',
   stacje: [],
   obrot: 0,
@@ -188,14 +188,11 @@ const STAN = {
   siec: { stan: 'brak', dane: null, klucz: null, trybGrafu: null, graf: null, kandydaci: null, zCache: false },
   /** Wynik `wybierzStacje` (macierz, sprawiedliwość sieciowa) albo null przy pierścieniu. */
   wynikSieci: null,
-  /** Wymuszony tryb uproszczony (przycisk „Tryb uproszczony", ADR 0005 pkt 8). */
+  /** Wymuszony tryb uproszczony (bez przełącznika w UI od 2026-09-11 —
+   *  ozdobnik usunięty; stan zostaje w silniku, ADR 0005 pkt 8). */
   wymusPierscien: false,
   /** Tryb ręczny (ADR 0005 pkt 8b): organizator przeciąga pinezki stacji. */
   trybReczny: false,
-  /** Skąd nazwa miejsca: 'overpass' | 'nominatim' (atrybucja ODbL) | null. */
-  zrodloMiejsca: null,
-  /** Jedna próba warstwy zapasowej na sesję (ASSETS §3: brak zapytań systematycznych). */
-  miejsceProbowane: false,
   /** Odstęp między instancjami Overpass; `?odstep=0` skraca go w testach. */
   odstepOverpassMs: POLITYKA.odstepMs,
   /** Dwustopniowe kasowanie danych: pierwszy klik uzbraja, drugi kasuje. */
@@ -322,7 +319,6 @@ function pokazPrywatnosc() {
   for (const e of EKRANY) $(`ekran-${e}`).hidden = true;
   $('ekran-ranking').hidden = true;
   $('ekran-prywatnosc').hidden = false;
-  $('geokodacja-zapasowa').checked = localStorage.getItem('okolica:geokodacja-zapasowa') === '1';
   odswiezStanIkonBelki();
   odswiezWidocznoscPaneli(); // prywatność gasi ikony obu warstw (F3)
   window.scrollTo({ top: 0 });
@@ -516,9 +512,14 @@ function renderujTematy() {
     etykieta.append(input, nazwa);
     return etykieta;
   }));
+  // Zaznaczanie przez `children` (nie querySelector po atrybucie) — jak przy
+  // odczycie w `tematyZListy`: w przeglądarce to samo, a atrapa testowa też
+  // to obsłuży (LESSONS L19), więc stan chipów daje się asertować w testach.
   for (const klucz of STAN.konfig.tematy) {
-    const box = lista.querySelector(`input[value="${klucz}"]`);
-    if (box) box.checked = true;
+    for (const etykieta of lista.children) {
+      const box = etykieta.children[0];
+      if (box && box.value === klucz) box.checked = true;
+    }
   }
   const poleWlasne = $('setup-temat-wlasny');
   poleWlasne.value = STAN.konfig.tematWlasny ?? '';
@@ -593,6 +594,11 @@ function renderujListeGraczy() {
     lista.appendChild(li);
   });
   STAN.konfig.liczbaGraczy = Math.max(1, imiona.length);
+  renderujPolaTozsamosci(); // multi: pola wpisywania znikają po dodaniu siebie
+  // Dołączającemu w multi lista gier ~50 m dopina się do ZNANEGO imienia bez
+  // osobnego klikania (funkcja sama odmawia poza ścieżką „Dołączam” i bez
+  // potwierdzonego gracza — hot-seat niczego tu nie wywoła).
+  void odswiezListeGierNaSetupie();
 }
 
 /**
@@ -715,6 +721,12 @@ async function dodajZapamietanegoGracza(zapamietany) {
     $('profil-pin').value = '';
     pokazBledy('bledy-profil', [{ komunikat: 'Ten gracz nie był jeszcze potwierdzony na tym telefonie — wpisz jego PIN.' }]);
     $('profil-pin').focus?.();
+    return false;
+  }
+  if (STAN.rodzajGry === 'multi' && (STAN.konfig.imiona ?? []).length >= 1) {
+    // Multiplayer: dokładnie jedna osoba na telefon (właściciel 2026-09-11) —
+    // ten sam limit co w `dodajGracza`, skrót zapamiętanych go nie omija.
+    pokazBledy('bledy-profil', [{ komunikat: 'W multiplayerze gra z tego telefonu tylko jedna osoba — usuń siebie z listy, żeby zmienić gracza.' }]);
     return false;
   }
   if ((STAN.konfig.imiona ?? []).length >= MAKS_GRACZY) {
@@ -1026,13 +1038,6 @@ function renderujSetup() {
   czytajLiczbe('setup-stacje', 'liczbaStacji');
   czytajLiczbe('setup-pytania', 'pytaniaNaStacje');
   $('przycisk-dodaj-gracza').addEventListener('click', () => { void dodajGracza(); });
-
-  $('geokodacja-zapasowa').addEventListener('change', (e) => {
-    localStorage.setItem('okolica:geokodacja-zapasowa', e.target.checked ? '1' : '0');
-    status(e.target.checked
-      ? 'Warstwa zapasowa nazwy miejsca (Nominatim) włączona — jedno żądanie, tylko gdy Overpass nie da nazwy. © OpenStreetMap (ODbL).'
-      : 'Warstwa zapasowa nazwy miejsca (Nominatim) wyłączona — tak jest domyślnie.');
-  });
 }
 
 function czytajSetupZDomu() {
@@ -1182,13 +1187,6 @@ function centrujNaPozycji() {
   kazdaMapa((mapa) => mapa.ustawSrodek({ lat: p.lat, lon: p.lon, zoom: zoomDlaPromienia(mapa, p.lat) }));
 }
 
-/** Podkład wybiera się w setupie; zmiana dotyczy wszystkich map (ADR 0003). */
-function zmienPodklad(klucz) {
-  if (!PODKLADY[klucz]) return;
-  STAN.konfig.podklad = klucz;
-  kazdaMapa((mapa) => mapa.ustawPodklad(klucz));
-}
-
 /**
  * Panel schowany (`hidden`) ma rozmiar 0, więc nie ma czego rysować —
  * po pokazaniu ekranu widok trzeba przeliczyć od nowa.
@@ -1316,15 +1314,13 @@ function ustawSiec(dane, { zCache, klucz }) {
   const miejsce = nazwaMiejsca(dane);
   if (miejsce) {
     STAN.miejsce = miejsce;
-    STAN.zrodloMiejsca = 'overpass';
     renderujMiejsce();
   }
 }
 
 /**
- * Wyświetlenie nazwy miejsca (zawsze pobierana — ADR 0013 pkt 3 po poprawce
- * z Partii 2) oraz atrybucją ODbL, gdy miejsce pochodzi z warstwy zapasowej
- * Nominatim (ASSETS §3).
+ * Wyświetlenie nazwy miejsca (zawsze pobierana z siecią dróg — ADR 0013 pkt 3;
+ * warstwa zapasowa Nominatim usunięta 2026-09-11 decyzją właściciela).
  */
 function renderujMiejsce() {
   const pole = $('pozycja-miejsce');
@@ -1332,81 +1328,7 @@ function renderujMiejsce() {
     pole.textContent = 'nazwa miejsca: brak — pobierana z siecią dróg na ekranie stacji';
     return;
   }
-  const atrybucja = STAN.zrodloMiejsca === 'nominatim' ? ' · © OpenStreetMap contributors (ODbL)' : '';
-  pole.textContent = `miejsce: ${STAN.miejsce}${atrybucja}`;
-}
-
-/** Klucz cache nazwy miejsca (polityka Nominatim: „obowiązkowy cache", ASSETS §3). */
-function kluczMiejscaCache() {
-  return `okolica:miejsce:${geohash(STAN.pozycja.lat, STAN.pozycja.lon, 6)}`;
-}
-
-function ustawMiejsce(miejsce, zrodlo) {
-  STAN.miejsce = miejsce;
-  STAN.zrodloMiejsca = zrodlo;
-  renderujMiejsce();
-}
-
-/**
- * Zapasowa nazwa miejsca (ADR 0013 pkt 2, ASSETS §3): Nominatim, domyślnie
- * WYŁĄCZONY; jedno żądanie na sesję i tylko gdy Overpass nie dał miejsca,
- * a pobieranie nazwy jest włączone w setupie. Bez ponawiania przy błędzie —
- * polityka zakazuje zapytań systematycznych. Endpoint przełączalny kluczem
- * `okolica:geokodacja-endpoint` (wymóg OSMF „bez aktualizacji oprogramowania").
- */
-async function uzupelnijMiejsceZapasowe() {
-  if (!STAN.pozycja || STAN.miejsce) return;
-  if (STAN.miejsceProbowane) return;
-  STAN.miejsceProbowane = true;
-  if (localStorage.getItem('okolica:geokodacja-zapasowa') !== '1') return;
-
-  const dzien = 86_400_000;
-  const klucz = kluczMiejscaCache();
-  try {
-    const wpis = JSON.parse(localStorage.getItem(klucz) ?? 'null');
-    const swiezy = wpis?.schemat === 'miejsce/1' && typeof wpis.miejsce === 'string' && wpis.miejsce
-      && Number.isFinite(wpis.zapisanoMs) && Date.now() - wpis.zapisanoMs <= 30 * dzien;
-    if (swiezy) {
-      ustawMiejsce(wpis.miejsce, 'nominatim'); // z cache — atrybucja ODbL zostaje
-      return;
-    }
-  } catch {
-    /* zepsuty wpis = brak wpisu */
-  }
-
-  const f = typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
-  if (!f) return; // offline/atrapy: warstwa zapasowa po prostu milczy
-  const endpoint = localStorage.getItem('okolica:geokodacja-endpoint') || DOMYSLNY_ENDPOINT_GEOKODACJI;
-  let url;
-  try {
-    url = budujUrlGeokodacji({ lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, endpoint });
-  } catch {
-    return;
-  }
-  try {
-    const kontroler = typeof AbortController === 'function' ? new AbortController() : null;
-    const timer = kontroler ? setTimeout(() => kontroler.abort(), POLITYKA.timeoutMs) : null;
-    const odpowiedz = await f(url, { signal: kontroler ? kontroler.signal : undefined });
-    if (timer) clearTimeout(timer);
-    if (!odpowiedz.ok) {
-      status(`Zapasowa nazwa miejsca niedostępna (Nominatim: HTTP ${odpowiedz.status}) — prompt będzie miał same współrzędne.`);
-      return;
-    }
-    const miejsce = miejsceZOdpowiedziNominatim(await odpowiedz.json());
-    if (!miejsce) {
-      status('Nominatim nie zwrócił dzielnicy ani miasta — prompt będzie miał same współrzędne.');
-      return;
-    }
-    ustawMiejsce(miejsce, 'nominatim');
-    try {
-      localStorage.setItem(klucz, JSON.stringify({ schemat: 'miejsce/1', zapisanoMs: Date.now(), miejsce }));
-    } catch {
-      /* brak miejsca na cache — nazwa i tak jest w sesji */
-    }
-    status(`Nazwa miejsca z warstwy zapasowej: ${miejsce} · © OpenStreetMap contributors (ODbL).`);
-  } catch {
-    status('Zapasowa geokodacja nie odpowiedziała — bez ponawiania (polityka OSMF, ASSETS §3). Prompt będzie miał same współrzędne.');
-  }
+  pole.textContent = `miejsce: ${STAN.miejsce}`;
 }
 
 /** Graf i kandydaci dla bieżącego trybu — przebudowa tylko przy zmianie trybu. */
@@ -1612,7 +1534,6 @@ async function przeliczStacjeZPobraniem(klucz) {
       status('Sieć drogowa niedostępna — stacje w trybie uproszczonym (pierścień): osiągalność niezweryfikowana. Sprawdź połączenie albo ustaw stacje ręcznie.');
     }
     przeliczZTegoCoJest();
-    uzupelnijMiejsceZapasowe();
   } finally {
     trwaPobieranieSieci = false;
     $('przycisk-przelicz').disabled = false;
@@ -1643,7 +1564,6 @@ function przeliczStacje() {
     }
   }
   przeliczZTegoCoJest();
-  uzupelnijMiejsceZapasowe();
 }
 
 /**
@@ -2082,7 +2002,9 @@ function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '', factcheck =
  */
 function pokazStanMostu() {
   const { tekst, podlaczony } = stanMostu(undefined, { testowy: STAN.trybTestowy });
-  for (const id of ['most-stan-repo', 'multi-most-stan']) {
+  // jedyny miejscowy pokaz stanu mostu (karta na ekranie pozycji); linijkę
+  // z karty multi na setupie właściciel usunął (uwagi terenowe #3, 2026-09-11)
+  for (const id of ['most-stan-repo']) {
     const el = $(id);
     if (!el) continue;
     el.textContent = tekst;
@@ -2881,6 +2803,12 @@ function zapiszGreDoHistorii(przerwana = false) {
  *  zapis = jawne kody H i oferta kasowania (ADR 0010 pkt 6 — nigdy cicho). */
 function renderujHistorieGier() {
   const karta = $('karta-historia');
+  // Właściciel, uwagi terenowe #3 pkt 4e (2026-09-11): „Poprzednie gry” to
+  // funkcja hot-seat — w trybie multiplayer karty nie pokazujemy wcale.
+  if (STAN.rodzajGry === 'multi') {
+    karta.hidden = true;
+    return;
+  }
   const usterkiPole = $('historia-usterki');
   const lista = $('historia-lista');
   const przycisk = $('przycisk-kasuj-historie');
@@ -3730,7 +3658,9 @@ function przelaczMotyw() {
 
 function zapiszKonfiguracje() {
   try {
-    localStorage.setItem(KLUCZ_KONFIG, JSON.stringify({ schemat: 'konfig/1', konfig: STAN.konfig }));
+    // m12-75: koperta z markerem kanonu — przy ZMIANIE tematów domyślnych
+    // stare zapisy dostaną jednorazowe dopełnienie zamiast cichej wczorajszej listy.
+    localStorage.setItem(KLUCZ_KONFIG, JSON.stringify({ schemat: 'konfig/1', kanon: KANON_SETUPU, konfig: STAN.konfig }));
   } catch (e) {
     void e; // prywatny tryb przeglądarki — gramy dalej w pamięci (ADR 0010)
   }
@@ -3740,10 +3670,16 @@ function wczytajKonfiguracje() {
   try {
     const surowe = localStorage.getItem(KLUCZ_KONFIG);
     if (!surowe) return;
-    const { schemat, konfig } = JSON.parse(surowe);
+    const { schemat, konfig, kanon } = JSON.parse(surowe);
     if (schemat !== 'konfig/1' || !konfig) return; // migracje: ADR 0010 pkt 6
     // sanitizacja: stary schemat albo ręczna edycja nie może wysypać UI
     STAN.konfig = oczyscKonfiguracje(konfig);
+    // m12-75: zapisy sprzed markera domykamy o nowe tematy domyślne (kanon idzie
+    // z wersją aplikacji — „Ciekawostki” zgubiły się w starych localStorage).
+    if (!kanon) {
+      STAN.konfig.tematy = dopelnijNoweTematySetupu(STAN.konfig.tematy);
+      zapiszKonfiguracje();
+    }
   } catch (e) {
     void e;
   }
@@ -3870,12 +3806,12 @@ function wczytajUstawieniaMulti() {
  *  siebie jak środek transportu — hot-seat albo gra na wielu urządzeniach. */
 const RODZAJE_GRY = {
   hotseat: { etykieta: '👥 Hot-seat — jeden telefon' },
-  multi: { etykieta: '📱 Wielu graczy — każdy ze swoim' },
+  multi: { etykieta: '📱 Multiplayer — każdy ma telefon' },
 };
 
 const OPISY_RODZAJOW = {
   hotseat: 'Jeden telefon podawany dalej — wszyscy gracze są na liście poniżej.',
-  multi: 'Każdy gra na swoim telefonie w okolicy, wspólny Drive spina wyniki. Na tym telefonie wpisujesz tylko siebie (imię+PIN), pozostałych graczy dołączysz w lobby.',
+  multi: 'Każdy gracz ma swój telefon. Możesz być hostem albo dołączyć do istniejącej gry.',
 };
 
 function renderujRodzajeGry() {
@@ -3898,7 +3834,7 @@ const SCIEZKI_MULTI = {
 };
 
 const OPISY_SCIEZEK = {
-  zaloz: 'Przejdziesz zwykłą ścieżkę: pozycja → stacje i pytania → wklejenie odpowiedzi modelu. Po paczce otworzy się lobby, do którego dołączą gracze z okolicy (~50 m).',
+  zaloz: 'Jesteś hostem nowej rozgrywki. Wybierz odpowiednie opcje i przejdź dalej.',
   dolacz: 'Zobaczysz gry, których host jest w zasięgu ~50 m — dołączasz jednym kliknięciem, bez kodu. Możesz opuścić grę w dowolnym momencie.',
 };
 
@@ -3907,8 +3843,37 @@ function renderujMultiSciezka() {
     STAN.multiSciezka = wybrany === 'dolacz' ? 'dolacz' : 'zaloz';
     renderujRodzajGry();
     $('multi-sciezka-opis').textContent = OPISY_SCIEZEK[STAN.multiSciezka];
+    // „Dołączam do istniejącej” (właściciel, uwagi terenowe #3 2026-09-11):
+    // lista gier w okolicy pokazuje się OD RAZU na setupie — GPS startuje
+    // sam (jeśli trzeba), status mówi, co się dzieje.
+    if (STAN.multiSciezka === 'dolacz') void odswiezListeGierNaSetupie();
   });
   $('multi-sciezka-opis').textContent = OPISY_SCIEZEK[STAN.multiSciezka];
+}
+
+/**
+ * Lista gier w zasięgu ~50 m na setupie (m12-75): dołączający widzi ją pod
+ * blokiem „Kto gra?”, bez przechodzenia na osobny ekran. GPS włącza się sam —
+ * bez pozycji lista nie ma czym filtrować (~50 m, geohash8 hosta). Wołana z
+ * kilku miejsc (klik segmentu, odśwież, zmiana graczy) — dlatego NA WEJŚCIU
+ * odmawia, gdy kontekst nie pasuje (hot-seat ani gość bez znanego imienia nie
+ * robią żadnego zapytania do mostu).
+ */
+async function odswiezListeGierNaSetupie() {
+  if (STAN.rodzajGry !== 'multi' || STAN.multiSciezka !== 'dolacz') return;
+  const panel = $('multi-panel-dolacz');
+  if (panel.hidden) return;
+  if (!STAN.pozycja && !STAN.trybTestowy && !STAN.watcher?.czyAktywny()) {
+    status('Włączam GPS — lista pokazuje gry w zasięgu ~50 m od Ciebie.');
+    wlaczGps();
+  }
+  if (!pseudonimGraczaMulti()) {
+    $('multi-lobby-lista').replaceChildren();
+    $('multi-lobby-status').textContent =
+      'Zaloguj się w bloku „Kto gra?” powyżej (imię + PIN) — lista gier pokaże się sama.';
+    return;
+  }
+  await odswiezLobby();
 }
 
 /**
@@ -3920,15 +3885,41 @@ function renderujMultiSciezka() {
 function renderujRodzajGry() {
   const multi = STAN.rodzajGry === 'multi';
   const zaloz = multi && STAN.multiSciezka === 'zaloz';
+  const dolacz = multi && STAN.multiSciezka === 'dolacz';
   $('karta-multi').hidden = !multi;
   $('pole-pytania').hidden = multi; // liczba stacji = liczba pytań
   $('pole-multi-tryb').hidden = !zaloz;
   renderujSekretTrasy();
-  $('przycisk-dalej-pozycja').textContent = multi && STAN.multiSciezka === 'dolacz'
-    ? '🔍 Pokaż gry w okolicy'
-    : '📍 Dalej: moja pozycja';
+  // Dołączanie (właściciel, uwagi terenowe #3 pkt 4d 2026-09-11): po wybraniu
+  // „Dołączam do istniejącej” z setupu zostaje tylko „Kto gra?” i lista gier
+  // w odległości ≤50 m — wszystkie opcje hosta znikają.
+  $('multi-panel-dolacz').hidden = !dolacz;
+  for (const id of ['pole-tryb', 'pole-parametry', 'pole-wiek', 'pole-tematy']) {
+    const el = $(id);
+    if (el) el.hidden = dolacz;
+  }
+  const promienInfo = $('setup-promien-info');
+  if (promienInfo) promienInfo.hidden = dolacz;
+  $('przycisk-dalej-pozycja').hidden = dolacz; // dalej wiodą przyciski „Dołącz” z listy
   $('legend-tozsamosc').textContent = multi ? '👤 Ty w tej grze' : '👤 Kto gra?';
   $('przycisk-dodaj-gracza').textContent = multi ? '✔ Potwierdź — to ja' : '➕ Dodaj gracza';
+  renderujHistorieGier(); // pkt 4e: „Poprzednie gry” tylko dla hot-seat
+  renderujPolaTozsamosci(); // pkt 4i: w multi po wpisaniu siebie pola znikają
+}
+
+/**
+ * Uwagi terenowe #3 (właściciel 2026-09-11, pkt 4i): w multiplayerze ten
+ * telefon obsługuje DOKŁADNIE jedną osobę — po dodaniu „Ty w tej grze” pola
+ * wpisywania (imię/PIN, przycisk i skróty zapamiętanych) chowają się, żeby
+ * nikt nie dodał drugiego gracza; wracają, gdy lista znów jest pusta.
+ */
+function renderujPolaTozsamosci() {
+  const ukryj = STAN.rodzajGry === 'multi' && (STAN.konfig.imiona ?? []).length >= 1;
+  const siatka = $('pole-tozsamosc-siatka');
+  if (siatka) siatka.hidden = ukryj;
+  $('przycisk-dodaj-gracza').hidden = ukryj;
+  const zapamietani = $('lista-zapamietanych');
+  if (zapamietani) zapamietani.hidden = ukryj;
 }
 
 /** Ptaszek „widoczna tylko kolejna stacja” — tylko trasa + ścieżka zakładania. */
@@ -3974,9 +3965,10 @@ function renderujWznowienieMulti() {
 /* --- ekrany i panele --- */
 
 function otworzPanelMulti(panel) {
-  // m12-74: jest tylko lista „Dołącz" i lobby — zakładanie dzieje się na
-  // setupie i we wspólnej ścieżce (pozycja → stacje → paczka → lobby).
-  for (const nazwa of ['dolacz', 'lobby']) $(`multi-panel-${nazwa}`).hidden = nazwa !== panel;
+  // m12-75: ekran multi to już TYLKO lobby — lista „Dołącz” żyje na setupie
+  // (właściciel, uwagi terenowe #3 2026-09-11). Zakładanie również na setupie.
+  if (panel !== 'lobby') return;
+  $('multi-panel-lobby').hidden = false;
   pokazBledy('bledy-multi', []);
   pokazEkran('multi');
 }
@@ -3994,7 +3986,7 @@ function renderujTrybyMulti() {
     wyscig: '🏁 Wyścig na Orientację — dowolna kolejność stacji',
   };
   const opisy = {
-    [TRYBY_GRY.trasa]: 'Wszyscy mają tę samą trasę, każdy na swoim telefonie i we własnym tempie. Stacje przechodzi się po kolei — trasa jest tajemnicą: na mapie widzisz tylko bieżącą stację, kolejne odsłaniają się po drodze.',
+    [TRYBY_GRY.trasa]: 'Wszyscy pokonują tą samą trasę, każdy na swoim telefonie i we własnym tempie. Stacje przechodzi się po kolei.',
     [TRYBY_GRY.wyscig]: 'Każdy wybiera własną trasę, a kolejność stacji jest dowolna.',
   };
   for (const klucz of [TRYBY_GRY.trasa, TRYBY_GRY.wyscig]) {
@@ -4144,13 +4136,25 @@ async function zalozGreMulti() {
     pokazBledyMulti([`Nie udało się założyć gry: ${e?.message ?? e}`]);
   }
 }
+/** Błędy dołączania lądują tam, gdzie jest gracz: na setupie (lista w karcie
+ *  multi) wracają do `bledy-setup`, na ekranie multi do `bledy-multi`. */
+function pokazBledyDolacza(usterki) {
+  if (!usterki.length) { pokazBledy('bledy-setup', []); pokazBledyMulti([]); return; }
+  if (STAN.ekran === 'multi') {
+    pokazBledyMulti(usterki);
+  } else {
+    pokazBledy('bledy-setup', usterki.map((komunikat) => ({ komunikat })));
+    status(usterki[0]);
+  }
+}
+
 async function dolaczDoGryMulti({ idGry = null } = {}) {
   // Właściciel 2026-09-11 (odpowiedź 4A): dołączanie kodem USUNIĘTE —
-  // zostaje lista gier w zasięgu ~50 m od hosta.
+  // zostaje lista gier w zasięgu ~50 m od hosta, renderowana na setupie.
   const usterki = walidujGotowoscMulti();
-  if (usterki.length) { pokazBledyMulti(usterki); otworzPanelMulti('dolacz'); return; }
+  if (usterki.length) { pokazBledyDolacza(usterki); return; }
   if (!idGry) {
-    pokazBledyMulti(['Nie wiem, do której gry dołączyć — wybierz hosta z listy gier w okolicy.']);
+    pokazBledyDolacza(['Nie wiem, do której gry dołączyć — wybierz hosta z listy gier w okolicy.']);
     return;
   }
   status('Dołączam do gry z listy…');
@@ -4164,9 +4168,10 @@ async function dolaczDoGryMulti({ idGry = null } = {}) {
     status('Jesteś w grze — czekasz w lobby, aż host wystartuje.');
   } catch (e) {
     status(`Nie udało się dołączyć: ${e?.message ?? e}`);
-    pokazBledyMulti([`Nie udało się dołączyć: ${e?.message ?? e}`]);
+    pokazBledyDolacza([`Nie udało się dołączyć: ${e?.message ?? e}`]);
   }
 }
+
 async function odswiezLobby() {
   const url = urlMostuMulti();
   const lista = $('multi-lobby-lista');
@@ -4212,15 +4217,8 @@ async function odswiezLobby() {
   }
 }
 
-/** Wejście na listę gier z setupu („Pokaż gry w okolicy”): panel + GPS + pobranie. */
-async function otworzListeGier() {
-  otworzPanelMulti('dolacz');
-  if (!STAN.pozycja && !STAN.trybTestowy && !STAN.watcher?.czyAktywny()) {
-    status('Włączam GPS — lista pokazuje gry w zasięgu ~50 m od Ciebie.');
-    wlaczGps();
-  }
-  await odswiezLobby();
-}
+// m12-75: dawny handler listy gier z ekranu multi przeniósł się na setup —
+// `odswiezListeGierNaSetupie` przy segmencie „Dołączam” i przycisku odświeżania.
 async function startLobby() {
   const m = STAN.multi;
   if (!m || m.rola !== 'organizator') return;
@@ -4743,12 +4741,17 @@ function renderujRankingi() {
   if (STAN.rankingZakladka === 'moje') {
     tabela.hidden = true;
     mojeLista.hidden = false;
-    const pseudonim = (typeof localStorage !== 'undefined' ? localStorage.getItem(KLUCZ_PSEUDONIMU) : null) ?? '';
+    // Tożsamość od m12-74 = imię potwierdzone w bloku „Kto gra?” — czytamy
+    // KLUCZ_OSTATNIEGO_GRACZA z fallbackiem na dawny klucz pseudonimu multi
+    // (zapisy sprzed m12-74), bo starego pola pseudonimu już nie ma w UI.
+    const pseudonim = typeof localStorage !== 'undefined'
+      ? (localStorage.getItem(KLUCZ_OSTATNIEGO_GRACZA) ?? localStorage.getItem(KLUCZ_PSEUDONIMU) ?? '')
+      : '';
     const moje = (wiersze ?? []).filter((w) => w.pseudonim === pseudonim);
     mojeLista.replaceChildren();
     const komunikat = (tekst) => { const li = document.createElement('li'); li.textContent = tekst; mojeLista.appendChild(li); };
     if (wiersze === null) komunikat('Wyniki nie zostały pobrane — komunikat w pasku stanu. To nie znaczy, że most nie ma Twoich gier.');
-    else if (!pseudonim) komunikat('Nie masz jeszcze pseudonimu — ustaw go w ustawieniach gry (rodzaj gry: „Gra na wielu urządzeniach").');
+    else if (!pseudonim) komunikat('Nie masz jeszcze potwierdzonego imienia — dodaj siebie w bloku „Kto gra?” na ekranie ustawień (imię + PIN).');
     else if (!moje.length) komunikat(`Pseudonim „${pseudonim}” nie ma jeszcze zakończonych gier na moście Drive.`);
     else {
       for (const w of moje) {
@@ -4957,24 +4960,8 @@ function start() {
   $('przycisk-dalej-pozycja').addEventListener('click', async () => {
     STAN.multiPoPaczce = false; // to jest zwykła ścieżka hot-seat, nie multi
     STAN.ukryjStacje = false;
-    // Multi + „Dołączam do istniejącej” (właściciel, 2026-09-11): przycisk
-    // dolny to „Pokaż gry w okolicy” — potrzebna tylko tożsamość i GPS,
-    // reszta setupu należy do hosta.
-    if (STAN.rodzajGry === 'multi' && STAN.multiSciezka === 'dolacz') {
-      if (!urlMostuMulti()) {
-        pokazBledy('bledy-setup', [{ komunikat: 'Brak adresu mostu w tej wersji aplikacji (ADR 0020) — lista gier w okolicy jest niedostępna. Wybierz rodzaj gry „Hot-seat”.' }]);
-        return;
-      }
-      // Tożsamość (imię+PIN) jest bramką także dla dołączającego — odmowa
-      // ląduje w bloku „Kto gra?”, bo kliknięcie było na setupie.
-      const przeszedlMulti = await bramkaTozsamosci();
-      if (!przeszedlMulti) {
-        status('Bez potwierdzonego imienia nie pokażę listy gier — wpisz imię i PIN.');
-        return;
-      }
-      await otworzListeGier();
-      return;
-    }
+    // „Dołączam do istniejącej” nie używa tego przycisku (m12-75): lista gier
+    // w okolicy żyje bezpośrednio na setupie, a przycisk jest wtedy Ukryty.
     const usterki = walidujSetup(czytajSetupZDomu());
     pokazBledy('bledy-setup', usterki);
     if (usterki.length) {
@@ -5224,10 +5211,9 @@ function start() {
       ? 'Trasa-sekret: w grze mapa pokazuje tylko bieżącą stację.'
       : 'Trasa jawna: mapa w grze pokazuje wszystkie stacje.');
   });
-  $('przycisk-odswiez-lobby').addEventListener('click', () => { void otworzListeGier(); });
+  $('przycisk-odswiez-lobby').addEventListener('click', () => { void odswiezListeGierNaSetupie(); });
   $('przycisk-lobby-start').addEventListener('click', () => { void startLobby(); });
   $('przycisk-lobby-opusc').addEventListener('click', opuscLobby);
-  $('przycisk-multi-wstecz-dolacz').addEventListener('click', () => pokazEkran('setup'));
   $('przycisk-multi-zakoncz').addEventListener('click', () => { void zakonczGreMulti(); });
   $('przycisk-multi-rezygnuj').addEventListener('click', rezygnujZGryMulti);
   $('przycisk-multi-wroc').addEventListener('click', () => { void przywrocGreMulti(); });
@@ -5246,7 +5232,8 @@ function start() {
   document.body.classList.add('okno-start');
 
   odswiezWidocznoscPaneli();
-  status(`M0 — fundament. Ustawienia domyślne: ${TRYBY[STAN.konfig.tryb].etykieta}, ${STAN.konfig.liczbaStacji} stacji, ${DOMYSLNE.pytaniaNaStacje} pytanie na stację, wiek ${WIEK[STAN.konfig.wiek].etykieta}.`);
+  // Brak komunikatu na starcie (właściciel 2026-09-11): dawny status „M0 —
+  // fundament. Ustawienia domyślne…” był developerskim tekstem na ekranie gry.
   if (!STAN.trybTestowy && !STAN.watcher?.czyAktywny()) wlaczGps();
 }
 

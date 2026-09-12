@@ -444,11 +444,14 @@ async function zalozGreUI(u, { tryb = 'wyscig', sekret = null } = {}) {
   await czekajNa(u, () => el(u, 'multi-panel-lobby').hidden === false, 'lobby po paczce');
 }
 
-/** Dołącza z listy gier w zasięgu ~50 m (m12-74: bez kodów, wpis „Host: X”). */
+/** Dołącza z listy gier w zasięgu ~50 m (m12-75: lista od razu na setupie). */
 async function dolaczZListyUI(u) {
   await wybierzSegment(u, 'multi-sciezka', 'dolacz');
-  assert.match(tekst(u, 'przycisk-dalej-pozycja'), /Pokaż gry w okolicy/, 'przycisk dolny zmienia etykietę');
-  await klik(u, 'przycisk-dalej-pozycja');
+  // m12-75 (właściciel, uwagi terenowe #3): bez ekranu multi — lista gier ~50 m
+  // pokazuje się od razu na setupie, pod „Kto gra?”, a opcje hosta znikają.
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'panel „Dołączam” otwarty na setupie');
+  assert.equal(el(u, 'pole-tematy').hidden, true, 'tematy schowane dla dołączającego');
+  assert.equal(el(u, 'przycisk-dalej-pozycja').hidden, true, 'dolny przycisk znika — dalej wiodą „Dołącz” z listy');
   await czekajNa(u, () => el(u, 'multi-lobby-lista').children.length > 0, 'lista gier w zasięgu ~50 m');
   const wiersz = el(u, 'multi-lobby-lista').children[0];
   assert.match(wiersz.children[0].textContent, /^Host: /, 'wpis pokazuje tylko hosta');
@@ -698,7 +701,7 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   const most = atrapaMostu();
   // konfig zgodny z fixturem paczka-ok.json (3 stacje × 1 pytanie, tematy z paczki)
   const KONFIG_AI = JSON.stringify({
-    schemat: 'konfig/1',
+    schemat: 'konfig/1', kanon: '2026-09-10',
     konfig: {
       tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
       tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
@@ -742,26 +745,28 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   assert.match(gra.konfiguracja.geohash8, /^[0-9b-z]{8}$/, 'konfiguracja niesie geohash8 (~50 m)');
 });
 
-test('bez potwierdzonego imienia NIE wysyłam niczego — jawna odmowa (setup → lista gier)', async () => {
+test('bez potwierdzonego imienia NIE wysyłam niczego — jawna odmowa (lista na setupie)', async () => {
   const most = atrapaMostu();
   const u = await noweUrzadzenie({ most, bezGracza: true });
   await wybierzSegment(u, 'lista-rodzajow', 'multi');
   await wybierzSegment(u, 'multi-sciezka', 'dolacz');
   await ustawPozycjeTestowa(u);
-  await klik(u, 'przycisk-dalej-pozycja');
-  assert.match(tekst(u, 'bledy-profil'), /co najmniej jednego gracza/, 'odmowa mówi wprost, czego brakuje');
-  assert.equal(el(u, 'multi-panel-dolacz').hidden, true, 'lista gier się NIE otwiera');
-  await klik(u, 'przycisk-dalej-pozycja');
+  // m12-75: panel „Dołączam” jest na setupie i pokazuje się każdemu (najpierw
+  // login), ale BEZ potwierdzonego imienia lista zostaje pusta — zero zapytań.
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'panel dołączania widoczny (login + miejsce na listę)');
+  await oddech();
+  assert.equal(el(u, 'multi-lobby-lista').children.length, 0, 'lista pusta bez znanego imienia');
+  assert.match(tekst(u, 'multi-lobby-status'), /Zaloguj się/, 'status mówi, czego brakuje');
   assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez potwierdzonego imienia');
   assert.deepEqual(
     most.adresy.filter((a) => /[?&]akcja=(gry|gra-stan|ranking)/.test(a)),
     [],
     'żaden GET gry wieloosobowej nie poszedł (odczyt indeksu paczek jest bez bramki — ADR 0017 pkt 6)',
   );
-  // z potwierdzonym imieniem — droga wolna (lista gier się otwiera)
+  // z potwierdzonym imieniem — droga wolna (lista odświeża się sama po dodaniu gracza)
   await dodajGraczaUI(u, 'Daria');
-  await klik(u, 'przycisk-dalej-pozycja');
-  await czekajNa(u, () => el(u, 'multi-panel-dolacz').hidden === false, 'lista gier otwarta po dodaniu gracza');
+  await czekajNa(u, () => most.adresy.some((a) => /[?&]akcja=gry/.test(a)), 'lista pyta o gry po zalogowaniu');
+  assert.equal(el(u, 'pole-tozsamosc-siatka').hidden, true, 'pola wpisywania znikają — jedna osoba na telefon');
 });
 
 test('ADR 0020: adres mostu jest w kodzie — telefon bez wpisu w pamięci gra sieciowo od razu', async () => {
@@ -771,8 +776,9 @@ test('ADR 0020: adres mostu jest w kodzie — telefon bez wpisu w pamięci gra s
   const u = await noweUrzadzenie({ pamiec, most, bezGracza: true });
   await wybierzSegment(u, 'lista-rodzajow', 'multi');
   przelaczNa(u);
-  assert.match(tekst(u, 'multi-most-stan'), /podłączony/i, 'karta gry wieloosobowej: adres z kodu działa bez wpisywania');
-  assert.match(tekst(u, 'most-stan-repo'), /podłączony/i, 'karta paczek mówi to samo (jedna prawda o stanie mostu)');
+  // m12-75: osobnego badge'a na ekranie multi już nie ma (samo lobby); jedna
+  // prawda o stanie mostu żyje przy karcie paczek na setupie.
+  assert.match(tekst(u, 'most-stan-repo'), /podłączony/i, 'karta paczek: adres z kodu działa bez wpisywania');
   await dodajGraczaUI(u, 'Iga');
   await ustawPozycjeTestowa(u);
   await klik(u, 'przycisk-dalej-pozycja');
