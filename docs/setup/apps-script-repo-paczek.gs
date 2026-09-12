@@ -684,7 +684,6 @@ function listaGier() {
   return { schemat: 'RO-lobby/1', wpisy };
 }
 
-/** POST gra-dolacz: kod ALBO idGry (z lobby) + pseudonim; tylko w lobby. */
 /**
  * POST gra-opusc: gracz wychodzi z LOBBY przed startem (właściciel 2026-09-11:
  * „dołączanie i wychodzenie w dowolnym momencie"). Bez tego wychodzący zostawał
@@ -709,6 +708,10 @@ function opuscGre(dane) {
     const graczId = String((dane && dane.graczId) || '');
     const indeks = gra.gracze.findIndex((g) => g.id === graczId);
     if (indeks < 0) return { ok: false, blad: 'nie ma takiego gracza w tej grze' };
+    // Uwaga (audyt PR #13 pkt 5, obserwacja dla właściciela): organizatora
+    // rozpoznajemy po INDEKSIE 0, a nie po `gra.organizatorId`. Dziś to to samo
+    // (zakładający grę jest pierwszym i jedynym graczem na starcie, `g-1`),
+    // ale zmiana kolejności graczy złamałaby to założenie.
     if (indeks === 0) {
       gra.stan = 'archiwum';
       zapiszGre(znaleziona.plik, gra);
@@ -721,6 +724,7 @@ function opuscGre(dane) {
   });
 }
 
+/** POST gra-dolacz: kod ALBO idGry (z lobby) + pseudonim; tylko w lobby. */
 function dolaczDoGry(dane) {
   return zBlokada(() => {
     const pseudonim = String((dane && dane.pseudonim) || '').trim().slice(0, 24);
