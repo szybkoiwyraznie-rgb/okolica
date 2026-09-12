@@ -668,3 +668,184 @@ kafel nadal w cache i zero żądań do dostawcy.
 sprawdźmy, czy nasz kod nie generuje wzorca, który ta usługa jawnie penalizuje.
 Komunikat blokady cytował politykę — polityka była do przeczytania i wymieniała
 nasz przypadek co do słowa.
+
+## L48 — zanim akcja wejdzie do UI, ustal KOGO dotknie jej skutek
+
+**Objaw:** audyt PR #13 znalazł przycisk „Opuść lobby", który u organizatora
+zamykał grę WSZYSTKIM dołączonym — jednym kliknięciem, bez ostrzeżenia
+i bez możliwości cofnięcia (most przenosił grę do archiwum, a bez organizatora
+nie ma kto jej wystartować). W tym samym repozytorium rezygnacja z gry, ręczne
+zakończenie i kasowanie zapisu/historii mają od dawna rytuał dwustopniowy —
+nowa ścieżka multi go ominęła.
+
+**Przyczyna:** przy przepisywaniu multi (m12-73/74) wyjście z lobby powstało
+jako „przycisk w panelu" i nikt nie zapytał, kogo dotknie skutek. Sprawdzaliśmy
+stan gry w moście (lobby vs trwa), a nie to, że w lobby skutek kliknięcia jest
+WSPÓLNY. Dwie perspektywy — „akcja" i „ekran" — wystarczyły, żeby wzorzec
+potwierdzenia zniknął.
+
+**Reguła:** każdą nową akcję w UI klasyfikuj dwiema osiami: **odwracalność**
+(czy da się wrócić?) i **zasięg** (kogo dotknie: mnie, czy innych?). Nieodwracalna
+albo dotykająca innych wymaga potwierdzenia u tego, kto klika (wzorzec:
+pierwszy klik uzbraja i mówi, co się stanie, drugi wykonuje — `rezygnujZGryMulti`,
+`multiOpuszczenieUzbrojone`). Odwracalna i „moja" — jedno kliknięcie, bo
+potwierdzenie jest tam tylko hałasem. Asymetrię testuj asercjami: pierwszy klik
+organizatora NIE wysyła `gra-opusc`, drugi wysyła — na kodzie bez potwierdzenia
+ten test pada, więc pilnuje wzorca, a nie dekoracji.
+
+## L49 — marker wersji: obecność to nie to samo co wartość
+
+**Objaw:** audyt PR #13 ustalił, że `KANON_SETUPU` (data kanonu domyślnych
+tematów setupu) jest zapisywany w `localStorage`, ale odczyt sprawdzał tylko
+`if (!kanon)`. Działało wyłącznie dlatego, że dopełnienie dla zapisów sprzed
+m12-75 było jednorazowe: przy kolejnej zmianie domyślnych zapis z markerem
+NIGDY nie dostałby nowego tematu, a zapis bieżący dostałby go po raz drugi —
+także wtedy, gdy organizator odptaszkował go z rozmysłem.
+
+**Przyczyna:** marker traktowaliśmy jak flagę („migrowane / nie"), a nie jak
+wersję. Flaga mówi „coś już zrobiono", wersja mówi „co dokładnie". Przy
+dopełnieniach przyrostowych (nowy temat domyślny raz na wersję) to dwie różne
+informacje.
+
+**Reguła:** każdy marker migracji porównuj WARTOŚCIĄ, nie obecnością. Zmiany
+trzymaj w dzienniku `wersja → co ta wersja dodała` i licz dopełnienia od
+wersji markera (`tematyDopelnianeOdKanou`), a nie z jednej listy „kiedykolwiek".
+Zapis z markera bieżącego albo nowszego nie jest ruszany — wybór użytkownika
+jest święty. Test pisz ogólnie, po dzienniku: „wersja, która temat wprowadziła,
+nie dostaje go ponownie" — wtedy nowy wpis w dzienniku jest sprawdzony,
+zanim trafi do graczy.
+
+## L50 — tożsamość czytaj z pola, nie z pozycji na liście
+
+**Objaw:** `opuscGre` w `.gs` rozpoznawał organizatora po indeksie `0`
+w `gracze`. Dziś było to równoważne z `gra.organizatorId`, ale po zmianie
+kolejności graczy (albo ręcznej korekcie pliku na Drive) wyjście organizatora
+usuwałoby go z listy zamiast zamknąć grę, a wyjście gościa z indeksu 0
+zamykałoby grę wszystkim dołączonym.
+
+**Przyczyna:** pole, które DEFINIUJE rolę (`organizatorId`), było zapisywane,
+ale reguła czytała jego ówczesną pozycję. Kolejność bywa niezmienna tylko
+„u nas" — jeden import gier, jeden porządek sortowania i założenie pęka.
+
+**Reguła:** reguły zależne od roli (organizator, prowadzący, pierwszy gracz) i od
+tożsamości czytają pole, które tę rolę definiuje. Pozycja w tablicy to sposób
+wyświetlania, nie kontrakt. Test regresyjny zrób w obie strony: przestaw
+kolejność w danych i sprawdź, że gość NIE zamyka gry, a organizator zamyka,
+choć stoi drugi.
+
+## L51 — limit czasu dobierz do NAJGORSZEGO przypadku, nie do swojego testu
+
+**Objaw:** zgłoszenie terenowe (Podkowa Leśna): „Gdzie jesteś?" mówiło
+„Repozytorium niedostępne", choć w okolicy były co najmniej trzy paczki, a most
+był świeżo wdrożony. W logice były trzy nakładające się przyczyny: własny limit
+6 s na indeks paczek (za krótki dla zimnej instancji web app Apps Script), brak
+jakiejkolwiek powtórki pierwszego żądania i jeden zbiorczy `catch`, który każdy
+błąd (timeout, brak sieci, HTTP 403, HTML zamiast JSON) opisywał tym samym
+zdaniem.
+
+**Przyczyna:** limit dobieraliśmy do tego, jak zachowuje się most w testach
+(ciepły, szybki), a nie do najwolniejszego realnego przypadku (pierwsze żądanie
+po wdrożeniu, telefon w terenie). Jedno zdanie obsługiwało cztery różne awarie,
+więc diagnostyka była zgadywaniem.
+
+**Reguła:** (1) limit czasu bierz z najgorszego spodziewanego przypadku i trzymaj
+JEDNĄ stałą na cały most — rozjazd limitów między ścieżkami to ukryta usterka;
+(2) pierwsze żądanie po wdrożeniu wolno powtórzyć RAZ (idempotentny GET), ale
+odpowiedzi nieczytelnej nie powtarzaj — to nie sieć, to zły adres lub zamknięte
+wdrożenie; (3) komunikat niesie POWÓD („brak odpowiedzi w 15 s", „HTTP 403 —
+sprawdź dostęp «Każdy»"), a nie wspólne „niedostępne"; (4) żądanie bez limitu
+czasu jest błędem — zawieszone połączenie zostawia użytkownika z wiecznym
+„Pobieram…".
+
+## L52 — jeden `catch` na cały łańcuch melduje NASZ błąd jako cudzą awarię
+
+**Objaw:** właściciel zgłosił, że w Podkowie Leśnej ekran „Gdzie jesteś?” mówi
+„Repozytorium niedostępne”, choć paczki na Drive są — po czym dodał decydujący
+fakt: „Sam most na pewno działa, bo przed chwilą rozegrałem grę, wygenerowałem
+nowego gracza, paczkę z AI i wszystko ładnie się zapisało. Więc to musiał być
+jakiś specyficzny problem ze sprawdzaniem paczek”. Miał rację: obsługa indeksu
+miała `.catch(() => …)` obejmujący CAŁY łańcuch — żądanie, parsowanie, walidację,
+dopasowanie i render listy. Wyjątek we własnym kodzie na poprawnej odpowiedzi
+mostu wyglądał dokładnie tak samo jak brak sieci.
+
+**Przyczyna:** jeden `catch` na wiele odpowiedzialności. Im dłuższy łańcuch
+`.then(...)`, tym więcej cudzych win mieści się w jednym zdaniu o winie mostu.
+Gdy użytkownik mówi „ta funkcja przecież działa” (most, Drive, konto), to jest
+wskazówka diagnostyczna, nie upór: awaria leży wtedy w tej ścieżce, która jest
+NASZA — czyli w czytaniu i pokazywaniu odpowiedzi.
+
+**Reguła:** dziel obsługę na warstwy o różnych sprawcach — (1) żądanie sieciowe
+(jego wolno powtórzyć, jego awaria ma powód: brak sieci, timeout, HTTP 403),
+(2) czytanie i pokazanie odpowiedzi (błąd aplikacji — nie powtarzamy, nie
+obwiniamy mostu, mówimy „błąd aplikacji: <konkret>” i prosimy o zgłoszenie).
+Do tego: gdy odpowiedź jest niezrozumiała, komunikat niesie KOD usterki
+(np. Z09), a pełny opis (z czym dokładnie się nie zgadzamy) idzie do miejsca
+diagnostycznego, nie do zdania dla gracza. Test piszesz tak, żeby wymusić
+wysypkę WŁASNEGO kodu na poprawnej odpowiedzi i sprawdzić, że komunikat nie
+udaje sieci — inaczej reguła zniknie przy pierwszym refaktorze.
+
+## L53 — przepisujesz dużą funkcję? Kotwicz po jej REALNYM tekście, a nieudany skrypt potwierdź grepem
+
+**Objaw:** (Bug D, ekran wyników) skrypt `python3` z dziewięcioma podmianami
+przerwał się na czwartej (`AssertionError`): regex na `pokazWyniki` zakładał
+strukturę (`// 1b.` + domknięcie `}\n}`), której funkcja nie miała — komentarze
+sekcji i kolejność bloków zmieniły się przez pół roku.
+
+**Przyczyna:** kotwica pisana z pamięci („tak ta funkcja wyglądała, gdy ją
+czytałem 40 minut temu”) zamiast skopiowania realnego fragmentu. Ratunkiem był
+wzorzec skryptu: wszystkie podmiany asertują `count(...) == 1`, a plik zapisuje
+się RAZ, na końcu — więc wyjątek zostawia plik źródłowy nietknięty (żadnych
+połowicznych zmian).
+
+**Reguła:** (1) przed przepisaniem funkcji wypisz jej ciało `sed -n 'X,Yp'`
+i kotwicz po fragmencie z tego wydruku; (2) wieloetapowe edycje rób skryptem
+z asercjami i POJEDYNCZYM zapisem na końcu — nieudany przebieg to „plik bez
+zmian”; (3) mimo to po nieudanym przebiegu sprawdź to grepem/diffem — „zapis
+jest na końcu” to właściwość skryptu, nie założenie sesji; (4) łańcucha
+`skrypt && npm test` nie używaj jako dowodu, jeśli skrypt mógł nie zmienić pliku
+(test przejdzie na starym kodzie i zamaskuje błąd).
+
+## L54 — dokładasz pytania do paczki? Trzy pułapki walidatora (promień, id, treść)
+
+**Objaw:** (test hot-seat 2 × 2) testowa paczka z drugim pytaniem na stację była
+odrzucana przez walidator („Paczka odrzucona — usterek: 7”) bez czytelnego
+komunikatu w `#bledy-paczka`.
+
+**Przyczyna:** trzy niezależne reguły PYT łamią się przy dokładaniu pytań:
+`E16` — promień paczki musi zgadzać się z konfiguracją, a liczba pytań zmienia
+liczony promień (3 stacje × 2 pytania: 85 min → 950 m, ale 90 min → 1000 m);
+`E19` — identyfikator pytania musi trafiać we wzór `s<stacja>p<numer>`
+(`s1p1b` jest odrzucane); `E15` — treść musi kończyć się pytajnikiem, a treści
+nie mogą się powtarzać (drugie pytanie musi mieć inną treść, nie tylko inne id).
+
+**Reguła:** nowe pytanie w fixture projektuj od tych trzech reguł do środka:
+najpierw przelicz promień z `czasGryMin`, potem nadaj id ze wzoru, na końcu
+napisz inną treść z „?”. A gdy paczka jest odrzucana, czytaj komunikaty
+z `#wynik-naglowek` („usterek: N”) i listy `#wynik-usterki` — kontener
+`#bledy-paczka` bywa pusty, a SONDA wypisująca sam status nic nie pokaże.
+
+## L55 — pin „element usunięty” blokuje powrót: gdy właściciel zmienia decyzję, pin przepisujesz na NOWĄ formę
+
+**Objaw:** (zgłoszenie F, ranking — 2026-09-12) wróciliśmy do ekranu, który
+dzień wcześniej sami usunęliśmy, a brama trzymała trzy asercje wprost przeciwne:
+`assert.equal(INDEX.includes('ekran-ranking'), false)`,
+`assert.equal(APP.includes('przycisk-ranking'), false)`,
+`assert.equal(GS.includes("akcja === 'ranking'"), false)`. Zostawienie ich =
+czerwona brama i pokusa „naprawienia” jej przez osłabienie testu; skasowanie
+ich = brak ochrony przed powrotem STAREJ formy (zakładki, kategorie, lista
+„Moje gry”), która właśnie dlatego została usunięta.
+
+**Przyczyna:** pin na usunięcie jest pinem DECYZJI, nie kodu. Reguła L31
+(„usunięty element ma zostać usunięty”) powstała jako obrona przed cichym
+powrotem, a nie jako zakaz zmiany zdania przez właściciela — a decyzja
+właściciela może się zmienić, i wtedy test pilnuje czegoś, czego już nikt nie
+chce.
+
+**Reguła:** gdy zadanie przywraca coś, co wcześniej usunęliśmy, nie kasuj pinu
+— przepisz go na nową formę i dopisz zakaz formy starej: (1) w miejscu dawnych
+`assert.equal(..., false)` postaw `assert.ok(..., 'nowy element jest')`;
+(2) dodaj listę identyfikatorów starej formy z `assert.equal(INDEX.includes(...),
+false)`, żeby nikt nie wniósł jej z powrotem „przy okazji”; (3) w ADR napisz,
+że poprzednia decyzja jest odwrócona/uzupełniona i który aneks rejestru to
+niesie; (4) numer schematu podnieś, gdy zmienia się kształt danych
+(`RO-ranking/1` → `RO-ranking/2`), i nie wracaj ze starym numerem do puli nazw.

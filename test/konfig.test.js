@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DOMYSLNE, JEZYK_GRY, KANON_SETUPU, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_DOPELNIANE_PRZY_MIGRACJI, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
+import { DOMYSLNE, JEZYK_GRY, KANON_SETUPU, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_DOPELNIANE_PRZY_MIGRACJI, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, ZMIANY_KANONU_SETUPU, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, dopelnijNoweTematySetupu, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, tematyDopelnianeOdKanou, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
 test('TRYBY: trzy tryby z briefu właściciela, prędkości 4,5/15/40 km/h, bez własnego promienia (ADR 0025)', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
@@ -369,4 +369,45 @@ test('dopelnijNoweTematySetupu: stary zapis dostaje „ciekawostki”, reszta ni
     ['ciekawostki', 'kosmos'], 'dopełnia tylko z listy migracyjnej — cudzy temat zostaje do oczyszczenia');
   assert.deepEqual(dopelnijNoweTematySetupu(null), ['ciekawostki'], 'brak listy → z listy migracyjnej');
   assert.ok(!dopelnijNoweTematySetupu([]).includes('wlasny'), '„Dopisz sam” nie dołazi nigdy');
+});
+
+test('kanon setupu: dopełnienia idą PER-WERSJA markera, nie „jak leci” (m12-84, audyt PR #13 pkt 3)', () => {
+  // Dwie reprezentacje tej samej wiedzy: jawny literał listy (czyta go kontrakt
+  // doc↔kod) i dziennik wersji (czyta go migracja). Ten test pilnuje, żeby się
+  // nie rozjechały — inaczej „nowy temat” istnieje w jednej, a nie w drugiej.
+  const zDziennika = Object.keys(ZMIANY_KANONU_SETUPU).sort().flatMap((w) => ZMIANY_KANONU_SETUPU[w]);
+  assert.deepEqual([...TEMATY_DOPELNIANE_PRZY_MIGRACJI].sort(), [...zDziennika].sort(),
+    'lista dopełnień = suma dziennika wersji');
+
+  // Brak markera i marker nieczytelny = zapis sprzed kanonu → wszystkie dopełnienia.
+  assert.deepEqual(tematyDopelnianeOdKanou(undefined), ['ciekawostki'], 'brak markera = zapis stary');
+  assert.deepEqual(tematyDopelnianeOdKanou(null), ['ciekawostki']);
+  assert.deepEqual(tematyDopelnianeOdKanou('konfig/1'), ['ciekawostki'], 'nieczytelny marker traktujemy jak brak');
+  // Wartość markera ma znaczenie: starszy dostaje dopełnienie, bieżący ani nowszy — nie.
+  assert.deepEqual(tematyDopelnianeOdKanou('2026-09-01'), ['ciekawostki'], 'zapis starszy dostaje temat dodany później');
+  assert.deepEqual(tematyDopelnianeOdKanou(KANON_SETUPU), [], 'zapis bieżący: wybory organizatora są święte');
+  assert.deepEqual(tematyDopelnianeOdKanou('2027-01-01'), [], 'marker z przyszłości (cofnięta wersja) też nie jest ruszany');
+
+  // Reguła ogólna dla KAŻDEJ wersji z dziennika: wersja, która temat wprowadziła,
+  // nie dostaje go ponownie — inaczej nie dałoby się go odptaszkować.
+  for (const [wersja, tematy] of Object.entries(ZMIANY_KANONU_SETUPU)) {
+    assert.ok(wersja <= KANON_SETUPU, `${wersja}: dziennik nie opisuje wersji z przyszłości`);
+    for (const temat of tematy) {
+      assert.ok(!tematyDopelnianeOdKanou(wersja).includes(temat), `${wersja}/${temat}: nie dopełniamy po raz drugi`);
+    }
+  }
+
+  assert.equal(kanonSprzedBiezacego(KANON_SETUPU), false, 'bieżący marker nie wymaga nadrobienia');
+  assert.equal(kanonSprzedBiezacego('2027-01-01'), false, 'nowszy marker nie wymaga nadrobienia');
+  assert.equal(kanonSprzedBiezacego('2026-09-01'), true, 'starszy marker wymaga nadrobienia');
+  assert.equal(kanonSprzedBiezacego(undefined), true, 'brak markera wymaga nadrobienia');
+  assert.equal(kanonSprzedBiezacego('konfig/1'), true, 'nieczytelny marker wymaga nadrobienia');
+
+  // Funkcja czysta: brak dopełnień = TEN SAM obiekt; dopełnienie = nowy, bez mutacji.
+  const konfig = { tematy: ['historia'], liczbaStacji: 3 };
+  assert.equal(dopelnijKonfiguracjeDoKanou(konfig, KANON_SETUPU), konfig, 'nic do zrobienia = ten sam obiekt');
+  const po = dopelnijKonfiguracjeDoKanou(konfig, undefined);
+  assert.deepEqual(po.tematy, ['ciekawostki', 'historia'], 'temat dopełniony, wybór organizatora zostaje');
+  assert.deepEqual(konfig.tematy, ['historia'], 'wejście nietknięte (bez mutacji)');
+  assert.equal(po.liczbaStacji, 3, 'pozostałe pola przechodzą bez zmian');
 });

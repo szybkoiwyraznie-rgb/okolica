@@ -100,10 +100,13 @@ test('kontrakt ADR 0032: znaczek Q ma token złota w obu motywach i klasę', () 
   assert.match(audyt, /tekst: 'zloto', tlo: 'tlo'/, 'brama pilnuje kontrastu na tle strony');
 });
 
-test('kontrakt ADR 0032: wynik i panel multi mają linię wariantu', () => {
-  assert.match(INDEX, /id="gra-wynik-factcheck"/, 'linia wariantu na ekranie wyniku');
-  assert.match(INDEX, /id="multi-factcheck"/, 'linia wariantu w panelu multi');
-  assert.match(APP, /\$\('gra-wynik-factcheck'\)/, 'pokazWyniki ją wypełnia');
+test('kontrakt ADR 0032/0038: linia wariantu została tylko w panelu multi', () => {
+  // Zgłoszenie właściciela 2026-09-12 (D c): zdanie „Pytania bez wymuszonego
+  // fact-checku — model nie musiał sprawdzać faktów w sieci” (i jego mutacja
+  // „fact check”) zniknęło z ekranu wyników razem z CAŁĄ linią wariantu.
+  assert.ok(!INDEX.includes('id="gra-wynik-factcheck"'), 'ekran wyniku bez linii wariantu (ADR 0038)');
+  assert.ok(!APP.includes('gra-wynik-factcheck'), 'pokazWyniki nie wypełnia już tej linii (ADR 0038)');
+  assert.match(INDEX, /id="multi-factcheck"/, 'linia wariantu w panelu multi zostaje (ADR 0032)');
   assert.match(APP, /\$\('multi-factcheck'\)/, 'renderujPanelMulti ją wypełnia');
 });
 
@@ -300,11 +303,12 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
   assert.equal(/test/i.test(naglowek), false, `w akcjach nagłówka nie ma trybu testowego: ${naglowek}`);
   assert.ok(APP.includes('czyTrybTestowyWUrl'), 'tryb testowy czyta się z parametru adresu');
 
-  // Rankingi usunięte w całości (właściciel, 2026-09-11): LESSONS L31 —
-  // usunięty element ma zostać usunięty, więc pilnujemy, że nie wrócił.
-  assert.equal(INDEX.includes('ekran-ranking'), false, 'ekranu rankingów nie ma w HTML');
-  assert.equal(APP.includes('przycisk-ranking'), false, 'przycisku 🏆 nie ma w aplikacji');
-  assert.equal(GS.includes("akcja === 'ranking'"), false, 'most nie obsługuje już akcji ranking');
+  // Ranking wrócił w NOWEJ formie (zgłoszenie właściciela 2026-09-12, ADR 0039):
+  // dwie tabele, ikonka pucharu, akcja mostu. STARA forma — zakładki, kategorie
+  // i lista „Moje gry" — nie ma prawa wrócić (LESSONS L31); pilnuje tego test
+  // „kontrakt ADR 0039" na końcu pliku.
+  assert.ok(INDEX.includes('id="ekran-ranking"'), 'warstwa rankingu jest w HTML (ADR 0039)');
+  assert.ok(APP.includes('przycisk-ranking'), 'ikonka pucharu jest podpięta w aplikacji');
   assert.ok(STYLE.includes('.warstwa-krzyzyk'), 'krzyżyk warstwy ma styl (używa go Informacje)');
   assert.match(APP, /'true', '1', 'tak'/, 'przyjmowane formy parametru ?test=');
 
@@ -616,23 +620,25 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'gra-dystans-odcinka', 'przycisk-pauza', 'gra-pauza-komunikat',
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
-    'gra-wyniki', 'gra-wyniki-tbody',
-    'gra-wynik-zwyciezca', 'gra-wynik-statystyki',
-    'gra-wynik-szczegoly', 'gra-wynik-gracze',
-    'gra-wynik-stacje', 'gra-wynik-stacje-tbody',
-    'wynik-eksport', 'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',
-    'przycisk-pobierz-obraz', 'przycisk-udostepnij-obraz',
-    'gra-wynik-tekst-detale', 'pole-wynik-tekst',
+    'gra-wyniki', 'gra-wyniki-tbody', 'gra-wynik-zwyciezca', 'przycisk-nowa-gra',
     'przycisk-pomin-stacje', 'przycisk-zakoncz-gre',
   ];
   for (const id of wymagane) assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
+  // ADR 0038 (zgłoszenie właściciela 2026-09-12, D b): ekran wyniku jest MINIMALNY.
+  // Ta lista to żelazny kontrakt — elementy usunięte z HTML-a nie mogą wrócić
+  // bokiem, bo każdy z nich ciągnął za sobą kod, który właściciel kazał wyrzucić.
+  const usuniete = [
+    'gra-wynik-statystyki', 'gra-wynik-szczegoly', 'gra-wynik-gracze',
+    'gra-wynik-stacje', 'gra-wynik-stacje-tbody',
+    'wynik-eksport', 'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',
+    'przycisk-pobierz-obraz', 'przycisk-udostepnij-obraz',
+    'gra-wynik-tekst-detale', 'pole-wynik-tekst', 'gra-wynik-factcheck',
+  ];
+  for (const id of usuniete) assert.ok(!html.includes(`id="${id}"`), `ekran wyniku nie ma już #${id} (ADR 0038)`);
   assert.match(html, /id="bledy-gra" class="bledy" role="alert"/, 'błędy faz mają role="alert" (jak inne ekrany)');
   assert.match(html, /id="gra-komunikat" class="podpowiedz" role="status"/, 'komunikat fazy ma role="status"');
   assert.match(html, /id="przycisk-pomin-stacje"[^>]*disabled/, 'pominięcie domyślnie wyłączone (tylko w drodze, ADR 0015)');
   assert.ok(!html.includes('id="przycisk-start-gry"'), 'ręcznego startu nie ma — gra rusza sama po Sprawdź (decyzja 2026-09-07)');
-  assert.match(html, /id="przycisk-udostepnij-wynik"[^>]*hidden/, 'share tylko z navigator.share (M7, decyzja 8)');
-  assert.match(html, /id="przycisk-kopiuj-wynik"[^>]*hidden/, 'kopiowanie tylko z navigator.clipboard (M7, decyzja 8)');
-  assert.match(html, /id="przycisk-udostepnij-obraz"[^>]*hidden/, 'udostępnianie obrazu tylko z navigator.canShare+File (M7/P5)');
 });
 
 test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=button', () => {
@@ -721,8 +727,11 @@ test('kontrakt UI 2026-09-11: usunięte ozdobniki właściciela z testów tereno
   assert.equal(INDEX.includes('id="prompt-rozmiar"'), false, 'linia „Odpowiedź modelu będzie miała około…" usunięta');
   // (6) intro: nowe brzmienia i usunięte zdania
   assert.match(INDEX, /gra terenowa gdziekolwiek jesteś/, 'podtytuł: „gra terenowa gdziekolwiek jesteś"');
-  assert.match(INDEX, /ruszasz dalej\./, 'zasada: „ruszasz dalej."');
-  assert.match(INDEX, /Grać można w pojedynkę, z rodziną i znajomymi na jednym telefonie albo każdy na swoim urządzeniu\./, 'zdanie o składzie gry (doprecyzowane 2026-09-11: też tryb hasełkowy na jednym telefonie)');
+  assert.match(INDEX, /ruszasz\s+dalej\./, 'zasada: „ruszasz dalej." (HTML zawija wiersz — zgłoszenie E)');
+  assert.match(INDEX, /Grać można w pojedynkę, w kilka osób na jednym telefonie albo każdy na swoim urządzeniu\./, 'zdanie o składzie gry (brzmienie z zgłoszenia E, 2026-09-12: „w kilka osób”)');
+  // Zgłoszenie E (2026-09-12): intro musi się zmieścić na iPhonie, więc stary,
+  // dłuższy opis okolicy („w promieniu spaceru od Twojej pozycji”) zniknął.
+  assert.equal(INDEX.includes('w promieniu spaceru'), false, 'stary, dłuższy opis okolicy usunięty z intro (zgłoszenie E)');
   assert.equal(INDEX.includes('Potrzebujesz tylko zgody na dostęp do lokalizacji.'), false, 'zdanie o zgodzie usunięte z intro');
   assert.equal(INDEX.includes('Przycisk wyżej otwiera ustawienia gry'), false, 'zdanie o przycisku/⚙ usunięte z intro');
 });
@@ -773,7 +782,7 @@ test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językie
   for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-opusc', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'gra-hotseat', 'profil-ustaw', 'profil-sprawdz']) {
     assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
   }
-  for (const a of ['gry', 'gra-stan']) {
+  for (const a of ['gry', 'gra-stan', 'ranking']) {
     assert.ok(GS.includes(`akcja === '${a}'`), `doGet mostu obsługuje ${a}`);
   }
   for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-profil/1']) {
@@ -963,9 +972,17 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   assert.match(KONFIG_JS, /TEMATY_DOPELNIANE_PRZY_MIGRACJI = \['ciekawostki'\]/, 'ciekawostki na liście dopełnień migracyjnych');
   assert.match(KONFIG_JS, /export function dopelnijNoweTematySetupu/, 'jednorazowa migracja tematów setupu');
   assert.match(APP, /kanon: KANON_SETUPU/, 'zapis konfigu niesie marker kanonu');
+  // m12-84 (audyt PR #13 pkt 3): dopełnienia są PER-WERSJA, a odczyt PORÓWNUJE
+  // marker z bieżącym kanonem (`if (!kanon)` przepuszczał zapisy ze starym markerem).
+  assert.match(KONFIG_JS, /export const ZMIANY_KANONU_SETUPU = Object\.freeze\(\{/, 'dziennik zmian kanonu (wersja → nowe tematy domyślne)');
+  assert.match(KONFIG_JS, /export function tematyDopelnianeOdKanou/, 'dopełnienia liczone od wersji markera');
+  assert.match(APP, /dopelnijKonfiguracjeDoKanou\(STAN\.konfig, kanon\)/, 'odczyt porównuje wartość markera, nie tylko jego obecność');
   // pozostałości trybu developerskiego i warstwy zapasowej nie wracają do treści startowych
   assert.ok(!APP.includes('M0 — fundament'), 'dev-status informacji startowej usunięty');
-  assert.match(INDEX, /Przemieszczasz się od stacji do stacji, a telefon sam rozpoznaje,\s+gdy jesteś na miejscu — wtedy odsłania pytanie\./, 'intro: brzmienie właściciela (HTML zawija wiersze)');
+  // Zgłoszenie właściciela E (2026-09-12): akapit przepisany („sam rozpoznaje,
+  // gdy jesteś na miejscu — wtedy odsłania pytanie” → „rozpoznaje, gdy jesteś
+  // na miejscu i odsłania pytanie”). Regex toleruje zawinięcie wiersza w HTML.
+  assert.match(INDEX, /Przemieszczasz się od stacji do stacji, a telefon rozpoznaje, gdy jesteś\s+na miejscu i odsłania pytanie\./, 'intro: brzmienie właściciela (HTML zawija wiersze)');
 });
 
 test('ADR 0015 pkt 6: kody usterek wejścia promptu (WE**) nie kolidują z kodami pozycji (P**)', () => {
@@ -1099,7 +1116,9 @@ test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da si�
  */
 test('uwaga A1: ekran startowy ma duży, wyśrodkowany tytuł i rozwinięte intro', () => {
   assert.ok(INDEX.includes('class="warstwa-start-karta"'), 'treść intro siedzi w karcie wewnątrz warstwy');
-  assert.match(STYLE, /\.warstwa-start h1 \{[^}]*font-size: clamp\(28px, 8vw, 40px\)/s, 'tytuł skaluje się z ekranem');
+  // Zgłoszenie właściciela E (2026-09-12): „treść nie mieści się na layerze na
+  // iPhonie” — tytuł jest o trochę mniejszy niż w uwadze A1 (był 28/8vw/40).
+  assert.match(STYLE, /\.warstwa-start h1 \{[^}]*font-size: clamp\(25px, 7vw, 36px\)/s, 'tytuł skaluje się z ekranem (mniejszy — zgłoszenie E)');
   assert.match(STYLE, /\.warstwa-start h1 \{[^}]*text-align: center/s, 'tytuł jest wyśrodkowany');
   assert.match(STYLE, /\.podtytul-start \{[^}]*text-align: center/s, 'podtytuł też');
   // Intro ma być dłuższe niż jedno zdanie — pinujemy liczbę akapitów, nie treść.
@@ -1107,6 +1126,17 @@ test('uwaga A1: ekran startowy ma duży, wyśrodkowany tytuł i rozwinięte intr
   // do wzmianki w podtytule („gdziekolwiek jesteś") — nie asertujemy go tu.
   const intro = INDEX.slice(INDEX.indexOf('warstwa-start-karta'), INDEX.indexOf('przycisk-start-zacznij'));
   assert.ok((intro.match(/<p[ >]/g) ?? []).length >= 4, 'intro ma co najmniej cztery akapity');
+});
+
+test('zgłoszenie E: warstwa startowa dostaje o wiersz więcej (po pół wiersza w górę i w dół)', () => {
+  // „można rozpocząć go o pół wiersza wyżej i skończyć o pół wiersza niżej
+  // (licząc czcionką, którą jest tekst na tym layerze)” — wiersz to 17 px × 1,45,
+  // a panel jest wyśrodkowany, więc wyższa `max-height` przesuwa obie krawędzie
+  // symetrycznie. Test pinuje SPOSÓB (zmienna + dodanie jej do max-height),
+  // nie konkretną liczbę pikseli.
+  assert.match(STYLE, /--wiersz-warstwy: 25px/, 'wiersz warstwy jako zmienna (17 px × 1,45)');
+  assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*max-height: calc\([^}]*\+ var\(--wiersz-warstwy/s,
+    'warstwa liczy wysokość z wierszem warstwy (zgłoszenie E)');
 });
 
 test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samodzielnie', () => {
@@ -1263,4 +1293,43 @@ test('kontrakt: martwa flaga wymusPierscien usunięta z silnika', () => {
   // więc poprawnym domknięciem było usunięcie stanu, nie dorobienie UI.
   assert.equal(APP.includes('wymusPierscien'), false, 'flaga zniknęła z app.js');
   assert.equal(MAPA.includes('wymusPierscien'), false, 'flagi nie ma też w mapa.js');
+});
+
+/**
+ * Zgłoszenie właściciela 2026-09-12 („Mam nowy pomysł na podstronę Ranking”):
+ * warstwa z DOKŁADNIE dwiema tabelami i niczym więcej. Ten test spina trzy
+ * warstwy naraz — HTML (co widzi gracz), aplikację (skąd bierze dane) i most
+ * (skąd dane przychodzą) — bo ranking jest pierwszym miejscem, w którym reguła
+ * „kto wchodzi do tabeli” mieszka w skrypcie Apps Script, a nie w telefonie.
+ */
+test('kontrakt ADR 0039: ranking — dwie tabele, akcja mostu i wspólny schemat', async () => {
+  const { LIMIT_RANKINGU, MINIMUM_PYTAN_ODPOWIEDZI, SCHEMAT_RANKINGU } = await import('../app/ranking.js');
+
+  // 1. HTML: warstwa i dwie tabele, bez śladu starej formy.
+  assert.match(INDEX, /id="przycisk-ranking"[^>]*aria-controls="ekran-ranking"/, 'puchar steruje warstwą rankingu');
+  assert.match(INDEX, /id="przycisk-ranking"[^>]*aria-expanded="false"/, 'ikona startuje zgaszona (F3: drugi klik zamyka)');
+  for (const id of ['ranking-punkty', 'ranking-punkty-wiersze', 'ranking-mistrzowie', 'ranking-mistrzowie-wiersze', 'ranking-status']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `ranking ma #${id}`);
+  }
+  assert.ok(INDEX.includes('Ranking Punktowy Graczy'), 'pierwsza tabela: Ranking Punktowy Graczy');
+  assert.ok(INDEX.includes('Mistrzowie Zagadek'), 'druga tabela: Mistrzowie Zagadek');
+  for (const obcy of ['ranking-zakladki', 'ranking-kategorie', 'ranking-tabela', 'ranking-moje-gry', 'ranking-wiersze']) {
+    assert.equal(INDEX.includes(obcy), false, `stara forma rankingu (${obcy}) nie wróciła`);
+  }
+
+  // 2. Aplikacja: warstwa i pobranie z mostu tą samą drogą co resztą (ADR 0020).
+  assert.match(APP, /urlGet\(url, 'ranking'\)/, 'adres rankingu buduje `urlGet` z sync.js');
+  assert.match(APP, /zamknijRankingi/, 'warstwę da się zamknąć (✕/Escape), jak Informacje');
+  // 3. Most: akcja i schemat. Reguła „tylko gracze z profilem” MUSI być w skrypcie.
+  assert.ok(GS.includes("akcja === 'ranking'"), 'doGet mostu obsługuje akcję ranking');
+  assert.ok(GS.includes(SCHEMAT_RANKINGU), `most oddaje schemat ${SCHEMAT_RANKINGU}`);
+  assert.match(GS, /function rankingi\(\)/, 'most ma funkcję rankingi()');
+  assert.match(GS, /zarejestrowani\[klucz\]/, 'most filtruje ranking po profilach (ADR 0021 + decyzja 2026-09-12)');
+  assert.match(GS, /FOLDERY\.gryZakonczone/, 'ranking sumuje gry zakończone — wszystkie rodzaje gier');
+
+  // 4. Liczby z decyzji właściciela są w JEDNYM miejscu: w module.
+  assert.equal(LIMIT_RANKINGU, 5, 'max 5 pozycji w każdej tabeli');
+  assert.equal(MINIMUM_PYTAN_ODPOWIEDZI, 10, 'Mistrzowie Zagadek liczą się od 10 zadanych pytań');
+  assert.equal(APP.includes('MINIMUM_PYTAN_ODPOWIEDZI'), false, 'progu nie ma w app.js — trzyma go app/ranking.js');
+  assert.match(APP, /mistrzowieZagadek\(ranking\)/, 'aplikacja używa funkcji modułu, nie własnej kopii reguły');
 });

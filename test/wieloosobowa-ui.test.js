@@ -790,6 +790,18 @@ test('wyjście z lobby jest zgłaszane mostowi — inaczej liczba graczy kłamie
   A.dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
   await czekajNa(A, () => el(A, 'multi-panel-lobby').hidden === false, 'lobby po wklejeniu paczki');
 
+  // Wyjście organizatora zamyka grę WSZYSTKIM, więc jest dwustopniowe
+  // (audyt PR #13 pkt 2): pierwszy klik uzbraja i mówi, co się stanie,
+  // dopiero drugi wysyła `gra-opusc`.
+  await klik(A, 'przycisk-lobby-opusc');
+  await new Promise((r) => setTimeout(r, 40));
+  const poJednym = most.ciala.map((c) => { try { return JSON.parse(c); } catch { return null; } })
+    .find((c) => c?.akcja === 'gra-opusc');
+  assert.equal(poJednym, undefined, 'pierwszy klik organizatora NIE zamyka gry');
+  assert.match(tekst(A, 'przycisk-lobby-opusc'), /ponownie/i, 'przycisk prosi o potwierdzenie');
+  assert.match(tekst(A, 'status'), /zamyka grę/i, 'status mówi wprost, co zrobi drugi klik');
+  assert.equal(el(A, 'ekran-setup').hidden, true, 'po pierwszym kliku gracz zostaje w lobby');
+
   await klik(A, 'przycisk-lobby-opusc');
   await new Promise((r) => setTimeout(r, 40));
   // Nie wszystkie POST-y są JSON-em (przyjęcie paczki idzie jako `data=…`),

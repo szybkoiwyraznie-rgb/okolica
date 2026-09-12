@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-81';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-81';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-90';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-90';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,23 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-81';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-81';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-81';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-81';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-81';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-81';
+} from './protokol.js?v=m12-90';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-90';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-90';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-90';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-90';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-90';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-81';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-81';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-81';
+} from './zestawy.js?v=m12-90';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-90';
 import {
-  INSTANCJE_OVERPASS,
   KODY_SIECI,
   POLITYKA,
   SCHEMAT_SIECI,
@@ -63,17 +61,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-81';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-81';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-81';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-81';
-import { adresMostu, stanMostu } from './most.js?v=m12-81';
+} from './sieci.js?v=m12-90';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-90';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-90';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-90';
+import { adresMostu, stanMostu } from './most.js?v=m12-90';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-90';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-81';
+} from './oceny.js?v=m12-90';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -81,6 +80,26 @@ const KLUCZ_MOTYW = 'okolica:motyw';
  *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
+
+/**
+ * Limit czasu odpowiedzi mostu Drive (ms) — WSPÓLNY dla indeksu paczek, listy
+ * gier i stanu gry. Zgłoszenie właściciela 2026-09-12 („problem z łączeniem
+ * z Drive po ostatnich zmianach”): panel paczek mówił „Repozytorium
+ * niedostępne”, choć paczki na Drive są. Dwie przyczyny po naszej stronie:
+ * (1) indeks miał limit 6 s, a zimny start web app Apps Script — zwłaszcza
+ * pierwsze żądanie po wdrożeniu — potrafi trwać dłużej, więc żądanie było
+ * przerywane, ZANIM most zdążył odpowiedzieć; (2) błąd był połykany
+ * (`.catch(() => …)`) i dawał jeden komunikat niezależnie od przyczyny, więc
+ * braku sieci nie dało się odróżnić od HTTP 403 (LESSONS L6).
+ */
+const LIMIT_MOSTU_MS = 15000;
+
+/**
+ * Odstęp przed ponowną próbą pobrania indeksu (ms). Jedna powtórka leczy
+ * najczęstszą awarię mostu: pierwsze żądanie po wdrożeniu trafia w zimny start.
+ * Testy skracają odstęp globalem (wzorzec `__MAKS_KAFELKI_TEST__` z `sw.js`).
+ */
+const PONOWNA_PROBA_INDEKSU_MS = Number(globalThis.__OKOLICA_PONOWNA_PROBA_MS__) || 800;
 
 const STAN = {
   konfig: domyslnaKonfiguracja(),
@@ -121,6 +140,8 @@ const STAN = {
   usterkiPaczki: [],
   /** Ekran, na który wracamy z karty prywatności (jest poza EKRANY). */
   powrotZPrywatnosci: 'setup',
+  /** ADR 0039: ostatnia odpowiedź mostu `?akcja=ranking` (RO-ranking/2) albo null. */
+  ranking: null,
   /** M6: stan gry `rozgrywka/1` — null do „▶ Zacznij grę". */
   rozgrywka: null,
   /** M6: ukryty kontener paczki na czas gry (TO-paczka/2) — nigdy plaintext (ADR 0007 pkt 4). */
@@ -138,8 +159,6 @@ const STAN = {
   historiaKasowanieUzbrojone: false,
   graZakonczonaUzbrojone: false,
   graZakonczonaRecznie: false,
-  /** M7: tekst wyniku do udostępnienia (wynikTekstowy) — żyje od pokazWyniki. */
-  wynikTekst: null,
   /** M11/P4: 'hotseat' | 'multi' — wybór z setupu, utrwalany w localStorage. */
   rodzajGry: 'hotseat',
   /** M11/P4: sesja gry wieloosobowej `{rola, gra, graczId, pseudonim, urlMostu, sync, ostatniStanMs}` albo null. */
@@ -161,9 +180,16 @@ const STAN = {
   ukryjStacje: false,
   /** M11/P4: dwustopniowa rezygnacja z gry wieloosobowej (jak inne destrukcyjne). */
   multiRezygnacjaUzbrojona: false,
+  /** Wyjście ORGANIZATORA z lobby zamyka grę WSZYSTKIM — akcja nieodwracalna,
+   *  więc też dwustopniowa (audyt PR #13; wzorzec `rezygnujZGryMulti`). */
+  multiOpuszczenieUzbrojone: false,
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
+  /** Krótki powód ostatniej nieudanej próby mostu (indeks paczek) — pokazywany
+   *  w `#most-stan-repo`, żeby „podłączony” nie było obietnicą bez pokrycia:
+   *  adres w kodzie to nie to samo co działające połączenie (LESSONS L6). */
+  mostOstatniBlad: null,
   /** Mapy z `mapa.js` (M2): `null`, gdy panelu nie ma w `index.html`. */
   mapy: { pozycja: null, stacje: null, gra: null },
   /** Który ekran gry jest pokazany (do powrotu z ekranu prywatności). */
@@ -222,6 +248,7 @@ const PROG_ODSWIEZENIA_ZESTAWOW_M = 250;
 function pokazEkran(nazwa) {
   ukryjStart(); // krok gry chowa okno startowe (poza nim okno nie ma czego przykrywać)
   zamknijInformacje();
+  zamknijRankingi({ bezFokusu: true });
   // Wejście na ekran pozycji = nowy pobyt na „stronie z paczkami": kontrolna
   // pozycja wraca do null, więc pierwszy fix sprawdzi propozycje od nowa.
   if (nazwa === 'pozycja') STAN.ostatniaPozycjaZestawow = null;
@@ -339,7 +366,7 @@ function czyscDaneWitryny() {
     : 'Nie znaleziono zapisanych danych tej gry.';
 }
 
-const PANELE = [...EKRANY, 'prywatnosc', 'start', 'informacje'];
+const PANELE = [...EKRANY, 'prywatnosc', 'ranking', 'start', 'informacje'];
 
 /** „START GRY" w nagłówku (F3): z kroku gry wraca na mapę startową, spoza niej
  *  otwiera setup. Przełącznik, nie jednostronne przejście — gracz klika go
@@ -354,6 +381,7 @@ function odswiezWidocznoscPaneli() {
   document.body.dataset.mapa = ['stacje', 'prompt', 'paczka'].includes(STAN.ekran)
     ? 'stacje' : STAN.ekran === 'gra' ? 'gra' : 'pozycja';
   const info = !$('ekran-informacje').hidden;
+  const ranking = !$('ekran-ranking').hidden;
   const droga = STAN.ekran === 'gra' && !$('gra-panel-odcinek').hidden;
   document.body.classList.toggle('gra-w-drodze', droga);
   $('informacje-gra').hidden = !droga;
@@ -361,7 +389,7 @@ function odswiezWidocznoscPaneli() {
   document.body.classList.toggle('informacje-otwarte', info);
   for (const nazwa of PANELE) {
     const panel = $(`ekran-${nazwa}`);
-    panel.inert = podglad || (info && nazwa !== 'informacje');
+    panel.inert = podglad || (info && nazwa !== 'informacje') || (ranking && nazwa !== 'ranking');
   }
   $('przygaszenie-mapy').hidden = podglad || !PANELE.some(n => !$(`ekran-${n}`).hidden && !(n === 'gra' && droga));
   $('przycisk-podejrzyj-mape').setAttribute('aria-pressed', String(podglad));
@@ -370,6 +398,11 @@ function odswiezWidocznoscPaneli() {
   $('przycisk-podejrzyj-mape').title = opis;
   $('przycisk-informacje').setAttribute('aria-expanded', String(info));
   $('przycisk-informacje').setAttribute('aria-pressed', String(info));
+  // Jedno miejsce liczy stan obu ikon-warstw (wzorzec F3 właściciela: podświetlona
+  // ikona = otwarta warstwa, drugi klik zamyka) — rozsypanie tego po handlerach
+  // gwarantowałoby ikonę świecącą nad zamkniętą warstwą.
+  $('przycisk-ranking').setAttribute('aria-expanded', String(ranking));
+  $('przycisk-ranking').setAttribute('aria-pressed', String(ranking));
 }
 
 function przelaczPodgladMapy() {
@@ -392,6 +425,113 @@ function przelaczInformacje() {
   STAN.podgladMapy = false;
   odswiezWidocznoscPaneli();
   $(otwieramy ? 'przycisk-zamknij-informacje' : 'przycisk-informacje').focus();
+}
+
+/* ---------------------------- Ranking (zgłoszenie właściciela 2026-09-12, ADR 0039) */
+
+/**
+ * Adres rankingu: ten sam most co reszta (ADR 0020), akcja `ranking`.
+ * Pusty łańcuch = ta wersja aplikacji nie ma adresu — wołający mówi to wprost.
+ */
+function urlRankingu() {
+  const url = adresMostu();
+  return url ? urlGet(url, 'ranking') : '';
+}
+
+function ustawStatusRankingu(tekst) {
+  $('ranking-status').textContent = tekst;
+}
+
+/** Wypełnia `tbody` tabeli rankingu; buduje WYŁĄCZNIE komórki tekstowe. */
+function wypelnijTabeleRankingu(idCiala, wiersze, zbudujKomorki) {
+  const cialo = $(idCiala);
+  cialo.replaceChildren();
+  for (const wiersz of wiersze) {
+    const tr = document.createElement('tr');
+    for (const wartosc of zbudujKomorki(wiersz)) {
+      const td = document.createElement('td');
+      td.textContent = String(wartosc);
+      tr.appendChild(td);
+    }
+    cialo.appendChild(tr);
+  }
+}
+
+/**
+ * Rysuje dwie tabele z danych mostu: „Ranking Punktowy Graczy” (suma punktów)
+ * i „Mistrzowie Zagadek” (proporcja poprawnych do zadanych, próg 10 pytań).
+ * Liczy je `app/ranking.js` — tu zostaje samo wstawienie wierszy i zdanie
+ * o stanie danych (pusty ranking musi umieć powiedzieć, DLACZEGO jest pusty).
+ */
+function renderujRankingi() {
+  const ranking = STAN.ranking;
+  if (!ranking) return;
+  const punktowy = rankingPunktowy(ranking);
+  const mistrzowie = mistrzowieZagadek(ranking);
+  wypelnijTabeleRankingu('ranking-punkty-wiersze', punktowy.wiersze,
+    (w) => [w.pozycja, w.pseudonim, `${w.punkty} pkt`]);
+  wypelnijTabeleRankingu('ranking-mistrzowie-wiersze', mistrzowie.wiersze,
+    (w) => [w.pozycja, w.pseudonim, formatujSkutecznosc(w)]);
+  const czesci = [punktowy.wszystkich
+    ? `Graczy z potwierdzonym profilem: ${punktowy.wszystkich} — tabele pokazują po ${LIMIT_RANKINGU} pozycji.`
+    : 'Ranking jest pusty — punkty zbiera gracz z potwierdzonym profilem (imię i PIN).'];
+  if (punktowy.wszystkich) {
+    // Próg mówimy ZAWSZE, nie tylko gdy nikt nie kwalifikuje — gracz musi
+    // wiedzieć, dlaczego nie ma go w drugiej tabeli (LESSONS L6: brak danych
+    // bez wyjaśnienia wygląda jak zgubiony wynik).
+    czesci.push(`Mistrzowie Zagadek liczą się od ${mistrzowie.prog} zadanych pytań`
+      + (mistrzowie.kwalifikowani ? '.' : ' — nikt jeszcze nie ma tyle.'));
+  }
+  ustawStatusRankingu(czesci.join(' '));
+}
+
+/** Pobiera ranking z mostu i rysuje tabele; każdą awarię nazywa po polsku (LESSONS L6). */
+async function pobierzRankingi() {
+  const url = urlRankingu();
+  if (!url) {
+    ustawStatusRankingu('Ta wersja aplikacji nie ma adresu mostu Drive — rankingu nie ma skąd pobrać (ADR 0020).');
+    return;
+  }
+  ustawStatusRankingu('Pobieram ranking ze wspólnego Drive…');
+  try {
+    const odpowiedz = walidujRankingSurowy(await pobierzGetTekst(url));
+    if (odpowiedz.usterka) {
+      ustawStatusRankingu(`Nie udało się odczytać rankingu (${odpowiedz.usterka}) — spróbuj ponownie.`);
+      return;
+    }
+    STAN.ranking = odpowiedz;
+    renderujRankingi();
+  } catch (e) {
+    ustawStatusRankingu(`Nie udało się pobrać rankingu (${e?.powod ?? 'brak odpowiedzi'}) — sprawdź połączenie i spróbuj ponownie.`);
+  }
+}
+
+function zamknijRankingi({ bezFokusu = false } = {}) {
+  if ($('ekran-ranking').hidden) return;
+  $('ekran-ranking').hidden = true;
+  document.body.classList.remove('ranking-otwarte');
+  // Stan ikony liczy `odswiezWidocznoscPaneli` — jedno miejsce dla obu warstw.
+  odswiezWidocznoscPaneli();
+  if (!bezFokusu) $('przycisk-ranking').focus();
+}
+
+/**
+ * Ikona pucharu: pierwszy klik otwiera warstwę i pobiera ranking, drugi zamyka
+ * (właściciel 2026-09-12: „Ranking jako ikonka pucharu w menu togglowana,
+ * otwierany jako layer”).
+ */
+function przelaczRankingi() {
+  if (!$('ekran-ranking').hidden) {
+    zamknijRankingi();
+    return;
+  }
+  STAN.podgladMapy = false;
+  zamknijInformacje(); // warstwy nie świecą równocześnie
+  $('ekran-ranking').hidden = false;
+  document.body.classList.add('ranking-otwarte');
+  odswiezWidocznoscPaneli();
+  $('przycisk-zamknij-ranking').focus();
+  void pobierzRankingi();
 }
 
 function status(tekst) {
@@ -1130,14 +1270,26 @@ function kazdaMapa(fn) {
   for (const mapa of Object.values(STAN.mapy)) if (mapa) fn(mapa);
 }
 
-/** Zoom, przy którym promień gry zajmuje ~40% szerokości panelu (`geo.js`). */
+/**
+ * Zoom, przy którym promień gry zajmuje ~40% szerokości panelu (`geo.js`).
+ *
+ * Sufit przybliżenia (1000 m, decyzja właściciela 2026-09-12) siedzi
+ * w `dopasujZoomDoPromienia` — dzięki temu ten sam sufit dostaje KAŻDA ścieżka,
+ * która dobiera widok do promienia: stuknięcie mapy w trybie testowym, pierwszy
+ * fix GPS i przeliczenie stacji po Overpassie (wszystkie wołają
+ * `centrujNaPozycji`).
+ */
 function zoomDlaPromienia(mapa, lat) {
   const szerokosc = Math.max(mapa.rozmiar().szerokosc, 240);
   const promienM = STAN.konfig.promienM;
   // Puste albo ręcznie zepsute pole promienia nie może wysypać widoku:
-  // wracamy do zoomu z kanonu trybu (LESSONS L10 — widełki nie chronią przed NaN,
-  // a `dopasujZoomDoPromienia` odmawia przy niedodatnim promieniu).
-  if (!(promienM > 0) || !Number.isFinite(lat)) return TRYBY[STAN.konfig.tryb]?.zoom ?? 16;
+  // wracamy do kadru sufitu, nie do najgłębszego zoomu trybu (LESSONS L10 —
+  // widełki nie chronią przed NaN, a `TRYBY.piesza.zoom` = 17 to dokładnie ten
+  // zoom, na którym kafle OSM bywają puste; brak szerokości geograficznej
+  // liczymy dla Polski, bo tylko tam gra ma sens).
+  if (!(promienM > 0) || !Number.isFinite(lat)) {
+    return dopasujZoomDoPromienia(PROMIEN_SUFITU_ZOOMU_M, szerokosc, Number.isFinite(lat) ? lat : 52);
+  }
   return dopasujZoomDoPromienia(promienM, szerokosc, lat);
 }
 
@@ -1749,7 +1901,10 @@ function renderujGre({ panele = true } = {}) {
       // Właściciel 2026-09-11 (uwagi terenowe #2): w fazie pytania ekran ma być
       // czysty — pytanie, odpowiedzi i wynik. Nagłówek „Gra", badge'y i przyciski
       // „pomiń/zakończ" nie są wtedy potrzebne. Panel multi żyje poza slotem.
-      $('gra-slot-sterowanie').hidden = r.faza === FAZY.pytanie;
+      // Zgłoszenie właściciela 2026-09-12 (D a): na ekranie wyników slot
+      // sterowania („Gra”, badge'y kolejki/dystansu, „Pomiń odcinek”,
+      // „Zakończ grę”) znika CAŁY — nad wynikami zostawały resztki stanu gry.
+      $('gra-slot-sterowanie').hidden = r.faza === FAZY.pytanie || koniec;
       $('gra-panel-oczekuje').hidden = koniec || r.faza !== FAZY.przygotowanie;
       $('gra-panel-odcinek').hidden = koniec || r.faza !== FAZY.odcinek;
       $('gra-panel-pytanie').hidden = koniec || r.faza !== FAZY.pytanie;
@@ -1990,13 +2145,18 @@ function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '', factcheck =
  */
 function pokazStanMostu() {
   const { tekst, podlaczony } = stanMostu(undefined, { testowy: STAN.trybTestowy });
+  // Sam adres w kodzie (ADR 0020) to jeszcze nie działające połączenie:
+  // po nieudanej próbie mówimy o tym wprost (zgłoszenie właściciela
+  // 2026-09-12 — panel obiecywał „podłączony”, a paczki się nie pokazywały).
+  const awaria = podlaczony ? STAN.mostOstatniBlad : null;
+  const opis = awaria ? `${tekst} Ostatnia próba nie doszła: ${awaria}.` : tekst;
   // jedyny miejscowy pokaz stanu mostu (karta na ekranie pozycji); linijkę
   // z karty multi na setupie właściciel usunął (uwagi terenowe #3, 2026-09-11)
   for (const id of ['most-stan-repo']) {
     const el = $(id);
     if (!el) continue;
-    el.textContent = tekst;
-    el.classList.toggle('bledy', !podlaczony); // brak mostu = widoczne ostrzeżenie, nie szara podpowiedź
+    el.textContent = opis;
+    el.classList.toggle('bledy', !podlaczony || Boolean(awaria)); // brak połączenia = widoczne ostrzeżenie, nie szara podpowiedź
   }
 }
 
@@ -2096,66 +2256,143 @@ function odswiezPropozycjeZestawow() {
       : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
     return;
   }
-  const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(() => kontroler?.abort(), 6000);
   // Odświeżenie jest asynchroniczne, a setup woła je przy każdej zmianie
   // (pozycja, liczba graczy, czas). Bez tego licznika dwie nakładające się
   // próby dopisałyby te same paczki drugi raz — lista musi pokazywać jedno
   // pokolenie odpowiedzi, więc starsze ignorujemy (LESSONS L32).
   const pokolenie = ++POKOLENIE_PROPOZYCJI;
-  f(url, kontroler ? { signal: kontroler.signal } : undefined)
-    .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
-    .then((tekst) => {
-      const indeks = walidujIndeksSurowy(tekst).indeks;
-      return { indeks, dopasowane: dopasujMetaIndeksu(indeks, kryteria) };
-    })
-    .then(({ indeks, dopasowane }) => {
-      if (pokolenie !== POKOLENIE_PROPOZYCJI) return; // nowsze odświeżenie wygrało
-      KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
-        opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
-        etykieta: '🌍 repozytorium:',
-        akcja: () => grajZZestawemZRepo(meta, url),
-        // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
-        // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
-        statystyki: meta.oceny === undefined
-          ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
-          : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
-        factcheck: czyWpisFactcheck(meta),
-        // Sort listy (właściciel 2026-09-11): najwięcej ocen pozytywnych pierwsza.
-        plus: walidujStatystykiOcen(meta.oceny)?.plus ?? 0,
-        data: meta.data,
-      })));
-      renderujZestawy();
-      // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
-      // które nie pasują do setupu, to dwie różne sytuacje — i tylko drugą da się
-      // naprawić zmianą ustawień.
-      if (dopasowane.length) {
-        $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
-      } else {
-        // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
-        // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat
-        // mówi WPROST, które kryterium nie pasuje — nie wymienia całego setupu.
-        const bliskie = indeks.filter((m) => czyWOkolicy(m, kryteria));
-        let komunikat;
-        if (bliskie.length) {
-          komunikat = `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale ${bliskie.length === 1 ? 'nie pasuje' : 'nie pasują'}: `
-            + bliskie.map((m) => `${m.miejsce ?? 'paczka bez nazwy'} — ${powodyNiedopasowania(m, kryteria).join('; ')}`).join(' | ')
-            + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.';
-        } else {
-          komunikat = indeks.length
-            ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
-            : 'Repozytorium jest puste — nowe pytania przygotuje model.';
-        }
-        $('zestawy-status').textContent = komunikat;
+  void pobierzIndeksZRepo(url, kryteria, pokolenie);
+}
+
+/**
+ * Indeks repozytorium: jedno żądanie i JEDNA powtórka. Powtórka leczy zimny
+ * start web app po wdrożeniu (najczęstszą przyczynę „Repozytorium
+ * niedostępne”). Gdy most odpowiedział NIECZYTELNIE, powtarzanie nic nie
+ * zmieni — wtedy od razu mówimy prawdę.
+ *
+ * Sieć i NASZE czytanie odpowiedzi są rozdzielone (zgłoszenie właściciela
+ * 2026-09-12: „most na pewno działa, to musiał być problem ze sprawdzaniem
+ * paczek”). Wcześniejszy `.catch(() => …)` obejmował cały łańcuch i każdy
+ * wyjątek — także usterkę we własnym kodzie na poprawnej odpowiedzi — meldował
+ * jako „most nie odpowiada”. Teraz awaria mostu (z powodem) i błąd aplikacji to
+ * dwa różne komunikaty, a powtórka należy się WYŁĄCZNIE pierwszemu.
+ */
+async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
+  const aktualne = () => pokolenie === POKOLENIE_PROPOZYCJI;
+  const gdzie = adresDoDiagnostyki(url);
+  let powod = 'brak odpowiedzi';
+  let szczegol = null;
+  for (let proba = 1; proba <= 2; proba += 1) {
+    let tekst;
+    try {
+      tekst = await pobierzGetTekst(url);
+    } catch (e) {
+      if (!aktualne()) return;
+      powod = e?.powod ?? 'brak odpowiedzi';
+      szczegol = null;
+      if (proba === 1) {
+        $('zestawy-status').textContent = `Most Drive nie odpowiedział (${powod}) — próbuję jeszcze raz…`;
+        await new Promise((r) => setTimeout(r, PONOWNA_PROBA_INDEKSU_MS));
+        if (!aktualne()) return;
       }
-    })
-    .catch(() => {
-      if (pokolenie !== POKOLENIE_PROPOZYCJI) return; // komunikat należy do nowszej próby
-      $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
-        ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
-        : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
-    })
-    .finally(() => clearTimeout(timer));
+      continue;
+    }
+    if (!aktualne()) return;
+    let usterka;
+    try {
+      usterka = przyjmijIndeksZRepo(tekst, kryteria, url);
+    } catch (e) {
+      // Most ODPOWIEDZIAŁ — wysypało się nasze czytanie odpowiedzi. Nie wolno
+      // tego zameldować jako awarii mostu ani „leczyć” powtórką żądania.
+      STAN.mostOstatniBlad = null;
+      pokazStanMostu();
+      const opis = String(e?.message ?? e);
+      // Bez obiecywania, co gracz widzi: lista mogła się wysypać w połowie.
+      $('zestawy-status').textContent = `Repozytorium odpowiedziało, ale lista paczek się nie wczytała `
+        + `(błąd aplikacji: ${opis}) — lista może być niepełna, zgłoś ten błąd.`;
+      return;
+    }
+    if (!usterka) {
+      STAN.mostOstatniBlad = null;
+      pokazStanMostu();
+      return;
+    }
+    // Odpowiedź niezrozumiała: powodu szukamy u siebie i w adresie, nie w sieci.
+    powod = `nieczytelna odpowiedź (${usterka.kod})`;
+    szczegol = `${usterka.kod} — ${usterka.komunikat}`;
+    break;
+  }
+  if (!aktualne()) return;
+  // Pełny powód (z kodem usterki) trafia do stanu mostu; w zdaniu wystarcza kod.
+  STAN.mostOstatniBlad = szczegol ?? powod;
+  pokazStanMostu();
+  $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
+    ? `Repozytorium niedostępne (${powod}${gdzie}) — zostały paczki z tego telefonu.`
+    : `Repozytorium niedostępne (${powod}${gdzie}) — gramy zwykłą ścieżką (prompt i model).`;
+}
+
+/** Adres mostu do komunikatu awarii — rozpoznawalny, ale nie cały URL.
+ *  Właściciel może mieć kilka wdrożeń Apps Script o różnych adresach, więc przy
+ *  awarii pokazujemy prefiks identyfikatora wdrożenia: po nim widać, czy
+ *  aplikacja pyta o TO wdrożenie, które przed chwilą wkleił (ADR 0020: adres
+ *  wdrożenia jest publicznym punktem końcowym, nie sekretem). */
+function adresDoDiagnostyki(url) {
+  try {
+    const u = new URL(String(url));
+    const id = u.hostname === 'script.google.com' ? u.pathname.match(/\/s\/([^/]+)/)?.[1] : null;
+    return id ? `, ${u.host}/s/${id.slice(0, 10)}…/exec` : `, ${u.host}`;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Odpowiedź indeksu → lista propozycji. `null` = przyjęte; obiekt usterki =
+ * „most odpowiedział, ale NIE rozumiemy odpowiedzi” (Z01/Z09, a także Z10, gdy
+ * nie dało się wczytać ANI JEDNEGO wpisu). Rozróżnienie jest istotą sprawy:
+ * poprzednia wersja zwracała `false`, a wołający meldował to jako awarię sieci
+ * (LESSONS L6/L51 — komunikat nazywa przyczynę, także gdy przyczyną jesteśmy my).
+ */
+function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
+  const { indeks, usterki } = walidujIndeksSurowy(tekst);
+  const nieczytelna = usterki.find((u) => u.kod === 'Z01' || u.kod === 'Z09')
+    ?? (indeks.length === 0 ? usterki.find((u) => u.kod === 'Z10') : null);
+  if (nieczytelna) return nieczytelna;
+  const dopasowane = dopasujMetaIndeksu(indeks, kryteria);
+  KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
+    opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
+    etykieta: '🌍 repozytorium:',
+    akcja: () => grajZZestawemZRepo(meta, urlZrodla),
+    // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
+    // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
+    statystyki: meta.oceny === undefined
+      ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
+      : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
+    factcheck: czyWpisFactcheck(meta),
+    // Sort listy (właściciel 2026-09-11): najwięcej ocen pozytywnych pierwsza.
+    plus: walidujStatystykiOcen(meta.oceny)?.plus ?? 0,
+    data: meta.data,
+  })));
+  renderujZestawy();
+  // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
+  // które nie pasują do setupu, to dwie różne sytuacje — i tylko drugą da się
+  // naprawić zmianą ustawień.
+  if (dopasowane.length) {
+    $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
+    return null;
+  }
+  // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
+  // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat mówi
+  // WPROST, które kryterium nie pasuje — nie wymienia całego setupu.
+  const bliskie = indeks.filter((m) => czyWOkolicy(m, kryteria));
+  $('zestawy-status').textContent = bliskie.length
+    ? `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale ${bliskie.length === 1 ? 'nie pasuje' : 'nie pasują'}: `
+      + bliskie.map((m) => `${m.miejsce ?? 'paczka bez nazwy'} — ${powodyNiedopasowania(m, kryteria).join('; ')}`).join(' | ')
+      + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.'
+    : (indeks.length
+      ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
+      : 'Repozytorium jest puste — nowe pytania przygotuje model.');
+  return null;
 }
 
 /** Wspólny start z gotową paczką: stacje i kontener z zestawu, pytania z pamięci. */
@@ -2203,32 +2440,35 @@ function grajZZestawemLokalnym(skrot) {
   przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: 'z tego telefonu' });
 }
 
-function grajZZestawemZRepo(wpis, urlIndeksu) {
+async function grajZZestawemZRepo(wpis, urlIndeksu) {
   // M9b/D4: adres liczy czysta funkcja urlPaczkiZRepo — wpis z `id` (most
   // Drive) jedzie przez `?akcja=paczka&id=…`, wpis z `plik` jak dotąd.
   const url = urlPaczkiZRepo(urlIndeksu, wpis);
   status(`Pobieram paczkę z repozytorium: ${wpis.miejsce}…`);
-  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
-  if (!f) { status('Nie da się pobrać: to środowisko nie ma fetch.'); return; }
-  f(url)
-    .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
-    .then((tekst) => {
-      const { zestaw, usterki } = walidujZestawPublicznySurowy(tekst);
-      if (!zestaw) {
-        status(`Paczka z repozytorium jest niekompletna (${usterki[0]?.komunikat ?? 'błąd'}) — gramy zwykłą ścieżką.`);
-        return;
-      }
-      // ADR 0028: oceny graczy dotyczą paczek z repozytorium — zapamiętujemy id
-      // pliku Drive i token tej gry, a licznik „użyta w X grach" dostaje ping.
-      STAN.paczkaRepoId = typeof wpis.id === 'string' ? wpis.id : '';
-      if (!STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
-      // Druga gra tą samą paczką idzie już z pamięci telefonu — bez tego wpisu
-      // straciłaby prawo do oceny (ADR 0028 aneks 2026-09-09).
-      zapamietajIdPaczkiDlaZestawu(zestaw.kontener?.skrot, STAN.paczkaRepoId);
-      wyslijUzycieWTle(STAN.paczkaRepoId);
-      przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
-    })
-    .catch(() => status('Nie udało się pobrać paczki z repozytorium — sprawdź połączenie albo graj zwykłą ścieżką.'));
+  let tekst;
+  try {
+    // Ten sam limit (15 s) i ten sam słownik błędów co indeks. Bez powtórki:
+    // tuż przed tym żądaniem poszedł indeks, więc instancja mostu jest już
+    // rozgrzana, a ponowić można jednym kliknięciem (powód zobaczysz w statusie).
+    tekst = await pobierzGetTekst(url);
+  } catch (e) {
+    status(`Nie udało się pobrać paczki z repozytorium (${e?.powod ?? 'brak odpowiedzi'}) — sprawdź połączenie albo graj zwykłą ścieżką.`);
+    return;
+  }
+  const { zestaw, usterki } = walidujZestawPublicznySurowy(tekst);
+  if (!zestaw) {
+    status(`Paczka z repozytorium jest niekompletna (${usterki[0]?.komunikat ?? 'błąd'}) — gramy zwykłą ścieżką.`);
+    return;
+  }
+  // ADR 0028: oceny graczy dotyczą paczek z repozytorium — zapamiętujemy id
+  // pliku Drive i token tej gry, a licznik „użyta w X grach" dostaje ping.
+  STAN.paczkaRepoId = typeof wpis.id === 'string' ? wpis.id : '';
+  if (!STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
+  // Druga gra tą samą paczką idzie już z pamięci telefonu — bez tego wpisu
+  // straciłaby prawo do oceny (ADR 0028 aneks 2026-09-09).
+  zapamietajIdPaczkiDlaZestawu(zestaw.kontener?.skrot, STAN.paczkaRepoId);
+  wyslijUzycieWTle(STAN.paczkaRepoId);
+  przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
 }
 
 /**
@@ -2551,16 +2791,16 @@ function renderujPytanie() {
     return;
   }
   const idPytan = pytaniaStacji(r, r.biezacaStacja);
-  const odpowiadaja = ktoOdpowiada(r, r.biezacaStacja);
-  // pierwsza nieobsłużona para (pytanie, gracz) — wiele pytań na stację i wielu
-  // odpowiadających (współpraca/zespoły) przechodzi przez ten sam ekran
+  // Pierwsza nieobsłużona para (pytanie, jego autor). Autorem jest KONKRETNY
+  // gracz z rotacji (zgłoszenie właściciela 2026-09-12: przy dwóch pytaniach na
+  // stacji drugie pytanie dostaje następny gracz, nie ten z kolejki) — dlatego
+  // nie ma tu pętli po wszystkich „dozwolonych”.
   let para = null;
   for (const pid of idPytan) {
-    for (const gid of odpowiadaja) {
-      const juz = r.odpowiedzi.some((o) => o.stacja === r.biezacaStacja && o.pytanieId === pid && o.gracz === gid);
-      if (!juz) { para = { pytanieId: pid, graczId: gid }; break; }
-    }
-    if (para) break;
+    const gid = graczPytania(r, r.biezacaStacja, pid);
+    if (gid == null) continue;
+    const juz = r.odpowiedzi.some((o) => o.stacja === r.biezacaStacja && o.pytanieId === pid && o.gracz === gid);
+    if (!juz) { para = { pytanieId: pid, graczId: gid }; break; }
   }
   if (!para) { renderujGre(); return; } // stacja domknięta — model przeszedł dalej
   const pytanie = paczka.pytania.find((q) => q.id === para.pytanieId);
@@ -3031,29 +3271,25 @@ function wrocNaPoczatek() {
   status('Gotowe do nowej gry — setup i gracze zostali, wynik jest w historii.');
 }
 
-/* ------------------------------------------------- pełne podsumowanie (M7) */
-
-/** Data wyniku do tekstu: UTC z ISO — deterministyczna, bez locale. */
-function dataWynikuTekst(teraz = new Date()) {
-  const iso = teraz.toISOString();
-  return `${iso.slice(0, 10)} ${iso.slice(11, 16)} UTC`;
-}
+/* ------------------------------------------------- podsumowanie gry (M7) */
 
 /**
- * Pełne podsumowanie (M7) z `podsumowanie()` — warstwa DOM nie liczy
- * własnej matematyki (plan M7, kryteria kodu). Bez czasów i tempa
- * (Partia 2: zero presji czasowej).
+ * Podsumowanie po grze: karta zwycięzcy i tabela rankingu. Nic więcej —
+ * reszta ekranu to jeden przycisk „Wróć na początek” (ADR 0038).
+ *
+ * Decyzja właściciela 2026-09-12: statystyki gry, szczegóły graczy, tabela
+ * stacji, eksporty i linia fact-checku zniknęły razem z kodem, który je
+ * wypełniał („masa błędów i niepotrzebnych informacji”).
  */
 function pokazWyniki() {
   const r = STAN.rozgrywka;
   if (!r) return;
   const wynik = podsumowanie(r);
-  const imiona = new Map(r.gracze.map((g) => [g.id, g.imie]));
 
-  // 1. karta zwycięzcy — duże liczby, czytelne w słońcu
-  const zwyciezca = wynik.gracze.find((g) => g.id === wynik.zwyciezca) ?? null;
+  // 1. karta zwycięzcy
   const kartaZw = $('gra-wynik-zwyciezca');
   kartaZw.replaceChildren();
+  const zwyciezca = wynik.gracze.find((g) => g.id === wynik.zwyciezca) ?? null;
   if (zwyciezca) {
     const imie = document.createElement('p');
     imie.className = 'zwyciezca-imie';
@@ -3071,18 +3307,7 @@ function pokazWyniki() {
     kartaZw.appendChild(p);
   }
 
-  // 1b. wariant weryfikacji pytań (ADR 0032): Q tylko dla zweryfikowanych.
-  const fcEl = $('gra-wynik-factcheck');
-  fcEl.replaceChildren();
-  if (factcheckBiezacejSesji()) {
-    const opis = document.createElement('span');
-    opis.textContent = ' Pytania zweryfikowane w sieci (fact check)';
-    fcEl.append(znaczekFactcheck(), opis);
-  } else {
-    fcEl.textContent = 'Pytania bez wymuszonego fact-checku — model nie musiał sprawdzać faktów w sieci';
-  }
-
-  // 2. ranking — tabela jak w M6 (miejsce, gracz, punkty, poprawne)
+  // 2. tabela rankingu — te same kolumny co w panelu multi
   const tbody = $('gra-wyniki-tbody');
   tbody.replaceChildren();
   for (const id of wynik.ranking) {
@@ -3096,173 +3321,7 @@ function pokazWyniki() {
     }
     tbody.appendChild(wiersz);
   }
-
-  // 4. statystyki gry (dt/dd — na 360 px dwie kolumny, liczby tabular-nums)
   stanWysylkiWyniku(''); // los wysyłki z poprzedniej gry nie zostaje na ekranie
-  const dl = $('gra-wynik-statystyki');
-  dl.replaceChildren();
-  const pary = [
-    ['zaliczone', `${wynik.zaliczoneStacje} z ${r.stacje.length}`],
-    ['pominięte', String(wynik.pominietaStacje)],
-    ['stacje bez pytań', wynik.stacjeBezPytan.length ? wynik.stacjeBezPytan.map((s) => `#${s}`).join(', ') : 'brak'],
-    ['zdarzenia w dzienniku', String(wynik.zdarzen)],
-  ];
-  for (const [etykieta, wartosc] of pary) {
-    const dt = document.createElement('dt');
-    dt.textContent = `${etykieta}:`;
-    const dd = document.createElement('dd');
-    dd.textContent = wartosc;
-    dl.append(dt, dd);
-  }
-
-  // 5. szczegóły graczy — karty z pełnymi polami podsumowanie()
-  const karty = $('gra-wynik-gracze');
-  karty.replaceChildren();
-  for (const id of wynik.ranking) {
-    const g = wynik.gracze.find((gracz) => gracz.id === id);
-    if (!g) continue;
-    const karta = document.createElement('div');
-    karta.className = 'gracz-karta';
-    const naglowek = document.createElement('p');
-    naglowek.className = 'naglowek';
-    naglowek.textContent = `${g.imie}${id === wynik.zwyciezca ? ' 🏆' : ''} · ${g.punkty} pkt`;
-    const rozbicie = document.createElement('p');
-    rozbicie.className = 'rozbicie';
-    rozbicie.textContent = `${g.punkty} pkt · poprawne ${g.poprawne}, błędne ${g.bledne}`;
-    const odcinki = document.createElement('p');
-    odcinki.className = 'odcinki';
-    odcinki.textContent = `odcinki: ${g.odcinki} · dystans ${dystansTekst(g.dystansM)} · ręczne dojścia: ${g.reczneDojscia}`;
-    karta.append(naglowek, rozbicie, odcinki);
-    karty.appendChild(karta);
-  }
-
-  // 6. stacje — zwarta tabela: kto, stan z trybem dojścia, czas, punkty
-  const tStacje = $('gra-wynik-stacje-tbody');
-  tStacje.replaceChildren();
-  for (const s of wynik.stacje) {
-    const wiersz = document.createElement('tr');
-    for (const komorka of [
-      String(s.id),
-      s.gracz != null ? (imiona.get(s.gracz) ?? `#${s.gracz}`) : '—',
-      etykietaOdcinka(s),
-      String(s.punkty),
-    ]) {
-      const td = document.createElement('td');
-      td.textContent = komorka;
-      wiersz.appendChild(td);
-    }
-    tStacje.appendChild(wiersz);
-  }
-
-  // 7. tekst wyniku i eksport (M7/P4): tekst żyje w polu readonly i w STAN;
-  //    przyciski widoczne tylko gdy ich ścieżka istnieje (plan M7, decyzja 8)
-  const tekst = wynikTekstowy({
-    podsumowanie: wynik,
-    konfig: STAN.konfig,
-    miejsce: STAN.miejsce ? STAN.miejsce : null,
-    data: dataWynikuTekst(),
-    przerwana: STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec,
-  });
-  STAN.wynikTekst = tekst;
-  $('pole-wynik-tekst').value = tekst;
-  $('przycisk-udostepnij-wynik').hidden = !(typeof navigator !== 'undefined' && typeof navigator.share === 'function');
-  $('przycisk-kopiuj-wynik').hidden = !(typeof navigator !== 'undefined' && Boolean(navigator.clipboard?.writeText));
-  $('przycisk-udostepnij-obraz').hidden = !(typeof navigator !== 'undefined' && typeof navigator.canShare === 'function' && typeof File === 'function');
-}
-
-/** Nazwa pliku z obrazem wyniku (M7/P5) — ten sam oczyszczony kod gry. */
-function nazwaPlikuObrazuWyniku(kodGry) {
-  return `okolica-${oczyscKodGry(kodGry)}.wynik.png`;
-}
-
-/** Paleta awaryjna — wartości 1:1 z `:root` w styles.css (motyw jasny).
- *  Obraz musi mieć kolory nawet gdy `getComputedStyle` zawiedzie. */
-const PALETA_AWARYJNA = Object.freeze({
-  tlo: '#f6f2e9', karta: '#fffdf8', tekst: '#1d2321', tekstSlaby: '#5c6663',
-  akcent: '#2f6f4f', linia: '#d9d2c3', ostrzezenie: '#b4531f',
-});
-
-/** Konkretne kolory z ról planu: zmienne CSS bieżącego motywu (plan M7, ryzyko
- *  „toBlob i motywy") — ciemny motyw nie rozjeżdża się z czystym planem. */
-function paletaZCss() {
-  const paleta = { ...PALETA_AWARYJNA };
-  try {
-    const style = typeof window !== 'undefined' && window.getComputedStyle
-      ? window.getComputedStyle(document.documentElement)
-      : null;
-    if (style) {
-      for (const [rola, zmienna] of Object.entries(ROLE_PALETY)) {
-        const wartosc = String(style.getPropertyValue(zmienna) ?? '').trim();
-        if (wartosc) paleta[rola] = wartosc;
-      }
-    }
-  } catch (e) {
-    void e; // awaryjna paleta to nie wstyd — gorszy byłby brak obrazu
-  }
-  return paleta;
-}
-
-/** Cienki wykonawca planu (wzorzec mapy z M2): tylko przekazuje komendy do
- *  kontekstu 2d — zero matematyki i zero decyzji w warstwie DOM. */
-function rysujWynikNaCanvas(plan, canvas, paleta) {
-  canvas.width = plan.szerokosc;
-  canvas.height = plan.wysokosc;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) throw new Error('brak kontekstu 2d canvas w tej przeglądarce');
-  const kolor = (rola) => paleta[rola] ?? paleta.tekst;
-  for (const k of plan.komendy) {
-    if (k.typ === 'prostokat') {
-      ctx.fillStyle = kolor(k.kolorRola);
-      ctx.fillRect(k.x, k.y, k.w, k.h);
-    } else if (k.typ === 'tekst') {
-      ctx.fillStyle = kolor(k.kolorRola);
-      ctx.font = `${k.waga ?? 400} ${k.rozmiar}px system-ui, -apple-system, Segoe UI, sans-serif`;
-      ctx.textAlign = 'left';
-      ctx.fillText(k.tekst, k.x, k.y);
-    } else if (k.typ === 'linia') {
-      ctx.strokeStyle = kolor(k.kolorRola);
-      ctx.lineWidth = 2;
-      ctx.beginPath();
-      ctx.moveTo(k.x1, k.y1);
-      ctx.lineTo(k.x2, k.y2);
-      ctx.stroke();
-    }
-  }
-  return canvas;
-}
-
-/** Eksport obrazu wyniku (ADR 0010 pkt 5): plan → canvas → PNG → share albo
- *  plik. `udostepnij=true` próbuje `navigator.share({files})` i uczciwie degra
- *  do pobrania, gdy przeglądarka nie umie dzielić się plikami. */
-async function eksportujWynikObraz(udostepnij = false) {
-  const r = STAN.rozgrywka;
-  if (!r) return;
-  try {
-    const plan = planObrazuWyniku({
-      podsumowanie: podsumowanie(r),
-      konfig: STAN.konfig,
-      miejsce: STAN.miejsce ? STAN.miejsce : null,
-      data: dataWynikuTekst(),
-      przerwana: STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec,
-    });
-    const nazwa = nazwaPlikuObrazuWyniku(r.kodGry ?? STAN.konfig?.kodGry);
-    const canvas = document.createElement('canvas');
-    rysujWynikNaCanvas(plan, canvas, paletaZCss());
-    const blob = await new Promise((rozwiaz) => canvas.toBlob(rozwiaz, 'image/png'));
-    if (!blob) throw new Error('toBlob nie zwrócił obrazu');
-    const plik = typeof File === 'function' ? new File([blob], nazwa, { type: 'image/png' }) : null;
-    if (udostepnij && plik && typeof navigator.canShare === 'function' && navigator.canShare({ files: [plik] })) {
-      await navigator.share({ title: 'Tajemnicza okolica — wynik gry', files: [plik] });
-      return; // udostępnione systemowo — plik nie jest potrzebny
-    }
-    pobierzPlik(nazwa, blob, 'image/png');
-    status(udostepnij
-      ? 'Udostępnianie obrazu niedostępne w tej przeglądarce — obraz wyniku zapisany jako plik .png.'
-      : 'Obraz wyniku zapisany jako plik .png.');
-  } catch (e) {
-    if (e?.name === 'AbortError') return; // rezygnacja z udostępniania jest cicha
-    status(`Nie udało się zapisać obrazu wyniku: ${e?.message ?? e}. Eksport tekstowy (.txt) działa bez canvas.`);
-  }
 }
 
 /* ---------------------------------------------------------------- prompt */
@@ -3340,18 +3399,6 @@ async function kopiujDoSchowka(tekst, idPolaZapasowego) {
     pole.setSelectionRange(0, pole.value.length);
   } catch (e) { void e; }
   return false;
-}
-
-function pobierzPlik(nazwa, tresc, typ) {
-  const blob = new Blob([tresc], { type: typ });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = nazwa;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
 }
 
 /* ------------------------------------------------------------- walidacja */
@@ -3539,10 +3586,6 @@ function renderujUsterki(usterki) {
   }));
 }
 
-function nazwaPlikuWyniku(kodGry) {
-  return `okolica-${oczyscKodGry(kodGry)}.wynik.txt`;
-}
-
 
 /* ------------------------- sygnały (M10/T4), Service Worker (M10/T2), bateria (M10/T3) */
 
@@ -3662,12 +3705,13 @@ function wczytajKonfiguracje() {
     if (schemat !== 'konfig/1' || !konfig) return; // migracje: ADR 0010 pkt 6
     // sanitizacja: stary schemat albo ręczna edycja nie może wysypać UI
     STAN.konfig = oczyscKonfiguracje(konfig);
-    // m12-75: zapisy sprzed markera domykamy o nowe tematy domyślne (kanon idzie
-    // z wersją aplikacji — „Ciekawostki” zgubiły się w starych localStorage).
-    if (!kanon) {
-      STAN.konfig.tematy = dopelnijNoweTematySetupu(STAN.konfig.tematy);
-      zapiszKonfiguracje();
-    }
+    // m12-75 / m12-84: marker kanonu jest PORÓWNYWANY, nie tylko obecny (audyt PR
+    // #13, obserwacja 3). Dopełnienia idą per-wersja: zapis z markerem starszym
+    // od KANON_SETUPU dostaje dokładnie te tematy, które doszły do domyślnych PO
+    // jego wersji — a zapis bieżący (albo z nowszej wersji aplikacji) nie jest
+    // ruszany, bo organizator mógł temat odptaszkować ZAMIERZENIE.
+    STAN.konfig = dopelnijKonfiguracjeDoKanou(STAN.konfig, kanon);
+    if (kanonSprzedBiezacego(kanon)) zapiszKonfiguracje();
   } catch (e) {
     void e;
   }
@@ -3702,33 +3746,66 @@ function fetchPrzegladarki() {
   return typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
 }
 
-/** GET do mostu z limitem 8 s i jawnym błędem — współdzielony przez lobby, indeks i wznowienie. */
 /**
- * Nasz własny limit czasu (8 s) przerywa żądanie przez `AbortController`,
- * a przeglądarka opisuje to PO ANGIELSKU i od swojej strony: Chrome daje
- * „signal is aborted without reason", Firefox „The user aborted a request.".
- * Dla gracza to bełkot, więc rozróżniamy nasze przerwanie od prawdziwej awarii
- * sieci i zawsze oddajemy komunikat po polsku (LESSONS: komunikat musi nazywać
- * przyczynę, nie wyjątek).
+ * Błąd mostu po polsku + KRÓTKI powód dla UI (`blad.powod`).
+ *
+ * Pełny komunikat idzie do `status()`, a krótki powód w nawiasie do miejsc,
+ * gdzie zdanie musi zostać zdaniem („Repozytorium niedostępne (HTTP 403)…”).
+ * Rozróżnienie przyczyn jest tu istotą sprawy: zgłoszenie właściciela
+ * 2026-09-12 pokazało, że jeden zbiorczy komunikat „niedostępne” potrafi
+ * ukryć i brak sieci, i zablokowane wdrożenie, i własną literówkę w schemacie.
  */
-function bladMostuPoPolsku(e, { przekroczonyCzas, url }) {
-  if (przekroczonyCzas) return new Error('most Drive nie odpowiedział w 8 sekund — sprawdź połączenie albo spróbuj za chwilę');
+function bladMostuPoPolsku(e, { przekroczonyCzas, url, limitMs = LIMIT_MOSTU_MS }) {
+  const sekundy = Math.max(1, Math.round(limitMs / 1000));
+  if (przekroczonyCzas) {
+    return bladZPowodem(
+      `most Drive nie odpowiedział w ${sekundy} s — pierwsze żądanie po wdrożeniu bywa wolne, spróbuj za chwilę`,
+      `brak odpowiedzi w ${sekundy} s`,
+    );
+  }
   const tekst = String(e?.message ?? e ?? '');
   if (e?.name === 'AbortError' || /abort/i.test(tekst)) {
-    return new Error('połączenie z mostem Drive zostało przerwane — spróbuj jeszcze raz');
+    return bladZPowodem('połączenie z mostem Drive zostało przerwane — spróbuj jeszcze raz', 'przerwane połączenie');
   }
   if (/failed to fetch|networkerror|load failed/i.test(tekst)) {
-    return new Error('brak połączenia z mostem Drive — telefon jest offline albo adres repozytorium nie odpowiada');
+    return bladZPowodem(
+      'brak połączenia z mostem Drive — telefon jest offline albo adres repozytorium nie odpowiada',
+      'brak połączenia',
+    );
   }
-  return new Error(`${tekst}${url ? ` (${url})` : ''}`);
+  const http = /^HTTP (\d{3})$/.exec(tekst);
+  if (http) {
+    const kod = Number(http[1]);
+    const podpowiedz = kod === 401 || kod === 403
+      ? ' — sprawdź, czy wdrożenie web app ma dostęp „Każdy”'
+      : '';
+    return bladZPowodem(`most Drive odpowiedział HTTP ${kod}${podpowiedz}`, `HTTP ${kod}`);
+  }
+  return bladZPowodem(`${tekst}${url ? ` (${url})` : ''}`, tekst.slice(0, 80) || 'nieznany błąd');
 }
 
+/** Błąd z krótkim powodem dla UI (`powod`), czytanym przez `pobierzIndeksZRepo`. */
+function bladZPowodem(wiadomosc, powod) {
+  const blad = new Error(wiadomosc);
+  blad.powod = powod;
+  return blad;
+}
+
+/**
+ * GET mostu, którego odpowiedź jest JSON-em (lobby, stan gry).
+ *
+ * Nasz własny limit czasu przerywa żądanie przez `AbortController`, a przeglądarka
+ * opisuje to PO ANGIELSKU i od swojej strony: Chrome daje „signal is aborted
+ * without reason”, Firefox „The user aborted a request.”. Dla gracza to bełkot,
+ * więc rozróżniamy nasze przerwanie od prawdziwej awarii sieci i zawsze oddajemy
+ * komunikat po polsku (LESSONS L6: komunikat musi nazywać przyczynę, nie wyjątek).
+ */
 async function pobierzGetMulti(url) {
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
   if (!f) throw new Error('to środowisko nie ma fetch — nie da się zapytać mostu');
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
   let przekroczonyCzas = false;
-  const timer = setTimeout(() => { przekroczonyCzas = true; kontroler?.abort(); }, 8000);
+  const timer = setTimeout(() => { przekroczonyCzas = true; kontroler?.abort(); }, LIMIT_MOSTU_MS);
   try {
     const odp = await f(url, kontroler ? { signal: kontroler.signal } : undefined);
     if (!odp.ok) throw new Error(`HTTP ${odp.status}`);
@@ -3740,16 +3817,23 @@ async function pobierzGetMulti(url) {
   }
 }
 
-/** GET, którego odpowiedź jest tekstem (indeks/paczka z repo — jak w M9b). */
+/**
+ * GET, którego odpowiedź jest tekstem (indeks/paczka z repozytorium — M9b).
+ * Ten sam limit i ten sam słownik błędów co `pobierzGetMulti`: panel paczek ma
+ * umieć powiedzieć, CO się nie udało (LESSONS L6).
+ */
 async function pobierzGetTekst(url) {
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
-  if (!f) throw new Error('to środowisko nie ma fetch — nie da się zapytać mostu');
+  if (!f) throw bladZPowodem('to środowisko nie ma fetch — nie da się zapytać mostu', 'brak fetch w tej przeglądarce');
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(() => kontroler?.abort(), 8000);
+  let przekroczonyCzas = false;
+  const timer = setTimeout(() => { przekroczonyCzas = true; kontroler?.abort(); }, LIMIT_MOSTU_MS);
   try {
     const odp = await f(url, kontroler ? { signal: kontroler.signal } : undefined);
     if (!odp.ok) throw new Error(`HTTP ${odp.status}`);
     return await odp.text();
+  } catch (e) {
+    throw bladMostuPoPolsku(e, { przekroczonyCzas, url });
   } finally {
     clearTimeout(timer);
   }
@@ -3980,6 +4064,10 @@ function otworzPanelMulti(panel) {
   // m12-75: ekran multi to już TYLKO lobby — lista „Dołącz” żyje na setupie
   // (właściciel, uwagi terenowe #3 2026-09-11). Zakładanie również na setupie.
   if (panel !== 'lobby') return;
+  // Wejście do lobby rozbraja potwierdzenie wyjścia: uzbrojenie z poprzedniego
+  // wejścia nie może zostać w przycisku (audyt PR #13 pkt 2).
+  STAN.multiOpuszczenieUzbrojone = false;
+  $('przycisk-lobby-opusc').textContent = 'Opuść lobby';
   $('multi-panel-lobby').hidden = false;
   pokazBledy('bledy-multi', []);
   pokazEkran('multi');
@@ -4250,6 +4338,19 @@ function opuscLobby() {
   const m = STAN.multi;
   if (!m) { pokazEkran('setup'); return; }
   const organizator = m.rola === 'organizator';
+  // Audyt PR #13 pkt 2: wyjście organizatora zamyka grę WSZYSTKIM (most
+  // przenosi ją do archiwum — bez organizatora nie ma kto wystartować), więc
+  // jest to akcja nieodwracalna i idzie dwustopniowo, jak rezygnacja w grze
+  // (`rezygnujZGryMulti`) i kasowanie danych. Gość wychodzi jednym klikiem:
+  // przed startem może dołączyć ponownie z listy gier w okolicy.
+  if (organizator && !STAN.multiOpuszczenieUzbrojone) {
+    STAN.multiOpuszczenieUzbrojone = true;
+    $('przycisk-lobby-opusc').textContent = '⚠ Kliknij ponownie, aby zamknąć grę';
+    status('Wyjście organizatora ZAMYKA grę dla wszystkich — nikt już nie wystartuje. Kliknij ponownie, aby potwierdzić.');
+    return;
+  }
+  STAN.multiOpuszczenieUzbrojone = false;
+  $('przycisk-lobby-opusc').textContent = 'Opuść lobby';
   const url = m.urlMostu ?? urlMostuMulti();
   const cialo = {
     akcja: 'gra-opusc',
@@ -4756,6 +4857,8 @@ function start() {
     STAN.odstepOverpassMs = 0;
   }
 
+  $('przycisk-ranking').addEventListener('click', przelaczRankingi); // 🏆 warstwa rankingu (ADR 0039)
+  $('przycisk-zamknij-ranking').addEventListener('click', przelaczRankingi);
   $('przycisk-informacje').addEventListener('click', przelaczInformacje);
   $('przycisk-zamknij-informacje').addEventListener('click', przelaczInformacje);
   $('przycisk-podejrzyj-mape').addEventListener('click', przelaczPodgladMapy);
@@ -4773,6 +4876,7 @@ function start() {
     if (z.key !== 'Escape') return;
     if (STAN.podgladMapy) przelaczPodgladMapy();
     else if (!$('ekran-informacje').hidden) przelaczInformacje();
+    else if (!$('ekran-ranking').hidden) przelaczRankingi();
     else ukryjStart();
     odswiezWidocznoscPaneli();
   });
@@ -4928,8 +5032,8 @@ function start() {
   $('prompt-factcheck').addEventListener('change', () => budujPromptEkran());
   // Przycisku „Zapisz jako plik" nie ma (właściciel, 2026-09-09): prompt i tak
   // idzie do schowka („Kopiuj prompt"), a plik .txt był dodatkową drogą, której
-  // nikt nie używał. Helper `pobierzPlik` zostaje — służą mu obraz wyniku
-  // (PNG, „Wynik .png") i eksport wyniku (tekst).
+  // nikt nie używał. Eksportów wyniku też już nie ma (ADR 0038), więc zniknął
+  // i helper `pobierzPlik` — nie ma czego pobierać.
   $('przycisk-dalej-paczka').addEventListener('click', () => pokazEkran('paczka'));
 
   $('przycisk-wstecz-prompt').addEventListener('click', () => pokazEkran('prompt'));
@@ -5002,31 +5106,6 @@ function start() {
   $('przycisk-wznow-gre').addEventListener('click', () => wznowGre());
   $('przycisk-kasuj-zapis').addEventListener('click', () => kasujZapisGry());
   $('przycisk-kasuj-historie').addEventListener('click', () => kasujHistorieGry());
-
-  // M7/P4: eksport tekstu wyniku — share (telefon) → schowek → plik (zawsze).
-  // Aplikacja nie udaje, że udostępniła: AbortError (rezygnacja) jest cichy,
-  // inny błąd dostaje jawny status ze wskazaniem pola i pliku (decyzja 8).
-  $('przycisk-udostepnij-wynik').addEventListener('click', async () => {
-    if (!STAN.wynikTekst || typeof navigator.share !== 'function') return;
-    try {
-      await navigator.share({ title: 'Tajemnicza okolica — wynik gry', text: STAN.wynikTekst });
-    } catch (e) {
-      if (e?.name !== 'AbortError') {
-        status(`Nie udało się udostępnić wyniku: ${e?.message ?? e}. Tekst jest w polu „Tekst wyniku" i w pliku .txt.`);
-      }
-    }
-  });
-  $('przycisk-kopiuj-wynik').addEventListener('click', () => {
-    if (!STAN.wynikTekst) return;
-    void kopiujTekst(STAN.wynikTekst, $('przycisk-kopiuj-wynik'), '📋 Kopiuj wynik', 'pole-wynik-tekst');
-  });
-  $('przycisk-pobierz-wynik').addEventListener('click', () => {
-    if (!STAN.wynikTekst) return;
-    pobierzPlik(nazwaPlikuWyniku(STAN.rozgrywka?.kodGry ?? STAN.konfig?.kodGry), STAN.wynikTekst, 'text/plain;charset=utf-8');
-    status('Wynik zapisany jako plik .txt.');
-  });
-  $('przycisk-pobierz-obraz').addEventListener('click', () => { void eksportujWynikObraz(false); });
-  $('przycisk-udostepnij-obraz').addEventListener('click', () => { void eksportujWynikObraz(true); });
 
   /* M11/P4+m12-74: gra na wielu urządzeniach — segmenty na setupie, lobby,
      kanał info i koniec gry z ręki hosta (bez kodów i bez źródeł paczek). */

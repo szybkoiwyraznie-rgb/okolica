@@ -63,14 +63,17 @@ zapytanie na grę dla promienia `R × 1,15`, graf z Dijkstrą, kandydaci co ~50 
 z filtrami dostępności (bez budynków, terenów prywatnych i barier), wybór
 w pierścieniu `0,7R ± 20%` z separacją kątową i sieciową oraz pasem
 wyrównującym dystanse. Lista pokazuje **dystans drogą**, nie w linii prostej,
-a miara sprawiedliwości (udział odchylenia) widnieje pod listą. Sieć jest
-zapisywana na telefonie (`okolica:sieci:<geohash6>-<R>`, 30 dni) — druga gra
-w tej samej okolicy nie woła Overpass wcale. Gdy sieci nie ma (offline, limit
-instancji), degradacja jest jawna: przycisk „◎ Tryb uproszczony" (pierścień)
-i „✋ Ustaw stacje ręcznie" (przeciąganie pinezek, dystans tylko w linii
-prostej) — aplikacja nigdy nie udaje, że punkty są osiągalne. Kamień czeka na
-kryterium terenowe: jedną prawdziwą okolicę na telefonie (`docs/WORKFLOW.md`
-§4.2).
+a wiersz trybu mówi, czy stacje **zlokalizowano na sieci** (i czy sieć przyszła
+z pamięci telefonu). Sieć jest zapisywana na telefonie
+(`okolica:sieci:<geohash6>-<R>`, 30 dni) — druga gra w tej samej okolicy nie
+woła Overpass wcale. Gdy sieci nie ma (offline, limit instancji), degradacja
+jest jawna i **automatyczna**: gra schodzi do pierścienia z komunikatem
+„osiągalność niezweryfikowana", a obok zostaje „✋ Ustaw stacje ręcznie"
+(przeciąganie pinezek, dystans tylko w linii prostej) — aplikacja nigdy nie
+udaje, że punkty są osiągalne. Przycisk wymuszający pierścień zniknął z ekranu
+(decyzja właściciela 2026-09-11), a kontrakt pilnuje jego braku.
+Kamień czeka na kryterium terenowe: jedną prawdziwą okolicę na telefonie
+(`docs/WORKFLOW.md` §4.2).
 
 **M5 — pętla pytań: kod i testy gotowe.** Ekran promptu ma instrukcję
 obrazkową (cztery kroki jako inline SVG, zero plików zewnętrznych),
@@ -78,12 +81,11 @@ a wklejenie odpowiedzi modelu automatycznie uruchamia walidację. Paczka z uster
 daje czytelną listę kodów E01–E20 i przycisk „skopiuj poprawkę do modelu".
 Po przyjęciu gra zaczyna się OD RAZU (decyzja 2026-09-07 — podgląd,
 ściąganie i edycja zniknęły z ekranu; to zadania właściciela na Drive,
-dokąd zestaw leci automatycznie w chwili przyjęcia). Gotowe zestawy można wybrać na ekranie propozycji paczek. Nazwa miejsca do promptu jest pobierana ZAWSZE (ADR 0013 pkt 3 —
-przełącznik usunięty w Partii 2), a zapasowa warstwa Nominatim działa tylko po
-wyraźnej zgodzie na ekranie prywatności (domyślnie wyłączona, jedno żądanie
-na grę, cache 30 dni, atrybucja ODbL — ADR 0013). Jedna poprawka z terenu
-(2026-09-11): zapasowa warstwa Nominatim okazała się zbędna — docelowe źródło
-(Overpass) jest na stałe i fallback wyleciał z kodu wraz z przełącznikiem.
+dokąd zestaw leci automatycznie w chwili przyjęcia). Gotowe zestawy można wybrać na ekranie propozycji paczek. Nazwa miejsca do
+promptu jest pobierana ZAWSZE z tego samego zapytania Overpass (`is_in`) — bez
+przełącznika (usunięty w Partii 2), bez zapasowej warstwy Nominatim (wyleciała
+z kodu wraz z przełącznikiem, poprawka z terenu 2026-09-11) i bez pytania
+o zgodę na dodatkowego dostawcę map (ADR 0013 pkt 3).
 Kamień czeka na kryterium właściciela: pełna pętla z prawdziwym modelem
 (`docs/WORKFLOW.md` §4.2).
 
@@ -102,15 +104,13 @@ rozegrać symulacją trasy — gra bez GPS. Kamień czeka na kryterium terenowe
 właściciela: pełna gra na telefonie, z utratą zasięgu w trakcie i z
 zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).
 
-**M7 — podsumowanie, punkty i udostępnianie: kod i testy gotowe.** Po końcu
-gry (naturalnym albo ręcznym) panel wyniku pokazuje pełne podsumowanie:
-zwycięzca z 🏆, ranking, szczegóły graczy (odcinki, dystans), tabela stacji
-(tryb dojścia: GPS / ręczne / pominięta) i statystyki — bez czasów i tempa
-(ADR 0023: zero presji czasowej).
-Wynik da się udostępnić bez serwera: tekst w formacie przyjaznym komunikatorom
-(wiersze stacji bez `#`, żeby `#1` nie stało się nagłówkiem), obraz PNG
-1080 px rysowany z czystego planu komend (paleta z tokenów CSS), Web Share →
-schowek → plik .txt/.png. W żadnym eksporcie ani w historii nie ma treści
+**M7 — podsumowanie i punkty: kod i testy gotowe.** Po końcu gry (naturalnym
+albo ręcznym) panel wyniku pokazuje MINIMUM (ADR 0038): kto wygrał z 🏆 (imię,
+punkty, poprawne), tabelę rankingu bieżącej gry, linię wysyłki na Drive i jeden
+przycisk „Wróć na początek — nowa gra”. Statystyki, szczegóły graczy, tabela
+stacji i eksporty wyniku (.txt/.png/Web Share) są USUNIĘTE — właściciel
+uznał je za „masę błędów i niepotrzebnych informacji”, a faza `koniec` ukrywa
+także cały slot sterowania grą. W historii ani w wysyłce na Drive nie ma treści
 pytań ani współrzędnych — pilnują tego testy-strażnicy. Na setupie dochodzi
 karta „Poprzednie gry": do 50 skrótów (`okolica:historia`), najnowsza
 pierwsza, ze znacznikiem gier przerwanych ręcznie; dokończenie przerwanej gry
@@ -181,14 +181,19 @@ starcie, ADR 0017 aneks 2026-09-11). Lista pokazuje trzy najlepsze paczki
 remisy rozstrzyga świeższa data), resztę po przycisku „Zobacz więcej paczek"
 (decyzja właściciela 2026-09-11) — wybór startuje grę bez promptu, bez wklejania, bez
 Overpassa i bez modelu. Przyjęcie paczki z AI (ekran wklejania) automatycznie
-i bez pytania wysyła ją na Drive do przeglądu właściciela (decyzja
-2026-09-07: checkbox zgody usunięty, ADR 0016 aneks). Właściciel
-akceptuje kandydatów linkiem z e-maila; adres mostu jest **wpisany w kod
-aplikacji** (`DOMYSLNY_URL_MOSTU` w `app/most.js`, ADR 0020) — żadne urządzenie
-nie konfiguruje go ręcznie, a przycisk „🔌 Sprawdź połączenie" robi jawną próbę
-CORS na żywym wdrożeniu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
-zniknął z ekranu razem z podglądem (decyzja 2026-09-07) — przegląd i wnoszenie
-zestawów dzieją się na Drive właściciela.
+i bez pytania wysyła ją na Drive — zestaw ląduje **od razu w repozytorium
+okolicy**, bo moderacja wstępna została zniesiona (decyzja właściciela
+2026-09-11: „Usuwamy całą procedurę akceptacji. O ich jakości decydują łapki
+w górę i w dół"; checkbox zgody usunięty 2026-09-07, ADR 0016 aneks). Adres
+mostu jest **wpisany w kod aplikacji** (`DOMYSLNY_URL_MOSTU` w `app/most.js`,
+ADR 0020) — żadne urządzenie nie konfiguruje go ręcznie, a jego stan widać
+wprost na ekranie pozycji (`#most-stan-repo`): „podłączony" albo
+„niepodłączony — gramy lokalnie". Diagnostyczny przycisk „🔌 Sprawdź
+połączenie" zniknął w tej samej fali uwag terenowych (m12-66) — most albo
+działa, albo aplikacja sama mówi, że nie ma go gdzie wysłać (kontrakt pilnuje
+braku przycisku). Eksport
+„⬇ Paczka do repozytorium (TO-zestaw/1)" zniknął z ekranu razem z podglądem
+(decyzja 2026-09-07) — wnoszenie zestawów dzieje się na Drive właściciela.
 
 ## Gra wieloosobowa (M11/M12)
 
@@ -216,9 +221,14 @@ zestawów dzieją się na Drive właściciela.
 - **Offline**: zdarzenia z trasy czekają w kolejce i wychodzą automatycznie po
   powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca z zapamiętanej
   sesji — zamknięte stacje nie wracają.
-- **Podsumowanie zamiast rankingów** (właściciel, 2026-09-11): gra kończy się
+- **Podsumowanie na telefonie i ranking na Drive** (właściciel): gra kończy się
   tabelą końcową na telefonie gracza, a na wspólnym Drive zostaje historia gier.
-  Rankingu graczy między grami nie ma — ani w aplikacji, ani w moście.
+  Ranking graczy między grami usunięto 2026-09-11, a 2026-09-12 wrócił w nowej,
+  wąskiej formie (ADR 0039): ikonka pucharu w belce otwiera warstwę z DWOMA
+  tabelami — „Ranking Punktowy Graczy” (suma punktów ze wszystkich rodzajów
+  gier) i „Mistrzowie Zagadek” (proporcja poprawnych odpowiedzi do zadanych,
+  od 10 pytań). Sumy liczy most (`?akcja=ranking`, `RO-ranking/2`), a wchodzą
+  do nich wyłącznie gracze z potwierdzonym profilem (imię i PIN).
 
 ## Repozytorium
 

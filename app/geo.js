@@ -121,12 +121,34 @@ export function metryNaPiksel(lat, z) {
 }
 
 /**
- * Zoom, przy którym promień gry zajmuje `udzialEkranu` szerokości widoku.
- * Czysta funkcja: `dopasujZoomDoPromienia(1000, 360, 52.23)` → 17 (±1).
+ * Sufit przybliżenia widoku (m) — decyzja właściciela 2026-09-12 po testach
+ * terenowych: „Musi być jakiś sufit przybliżenia niezależnie od promienia —
+ * np. taki przypisany do 1000 m promienia”.
+ *
+ * Powód: przy małych promieniach (`OGRANICZENIA.promienM.min` = 200 m, a przy
+ * krótkiej grze i 500 m) okrąg gry zajmował cały ekran, więc widok wjeżdżał na
+ * zoom 17–19 — a tam kafle OSM w okolicach o rzadkiej zabudowie są praktycznie
+ * puste (biała plama, brak dróg i nazw) i mapa przestaje cokolwiek pokazywać.
+ * Mniejszy promień NIE przybliża więc bardziej niż promień 1000 m: okrąg gry
+ * jest wtedy mniejszy od szerokości panelu, ale widać ulice, po których gracz
+ * naprawdę idzie. Zoom dla promieni ≥ 1000 m liczy się jak dotąd.
  */
-export function dopasujZoomDoPromienia(promienM, szerokoscPx, lat, { udzialEkranu = 0.4, min = 1, max = 19 } = {}) {
+export const PROMIEN_SUFITU_ZOOMU_M = 1000;
+
+/**
+ * Zoom, przy którym promień gry zajmuje `udzialEkranu` szerokości widoku.
+ * Czysta funkcja: `dopasujZoomDoPromienia(1000, 360, 52.23)` → 13–14 (±1).
+ *
+ * `sufitPromienM` to wspomniany wyżej sufit przybliżenia — parametr jest
+ * w opcjach, żeby dał się sprawdzić testem i żeby dało się go kiedyś zmienić
+ * w jednym miejscu.
+ */
+export function dopasujZoomDoPromienia(promienM, szerokoscPx, lat, {
+  udzialEkranu = 0.4, min = 1, max = 19, sufitPromienM = PROMIEN_SUFITU_ZOOMU_M,
+} = {}) {
   if (!(promienM > 0) || !(szerokoscPx > 0)) throw new TypeError('dopasujZoomDoPromienia: dodatnie argumenty');
-  const mppDocelowe = promienM / (udzialEkranu * szerokoscPx);
+  const promienWidoku = Math.max(promienM, sufitPromienM);
+  const mppDocelowe = promienWidoku / (udzialEkranu * szerokoscPx);
   const cosLat = Math.cos(ogranicz(lat, -GRANICA_MERCATORA, GRANICA_MERCATORA) * RAD) || 1e-6;
   const z = Math.log2((MPP_Z0 * cosLat) / mppDocelowe);
   return ogranicz(Math.round(z), min, max);

@@ -145,25 +145,84 @@ export const TEMATY_SETUP = Object.fromEntries([
 ].map(k => [k, TEMATY[k]]));
 
 /** Kanon wyborów setupu idzie z wersją aplikacji: gdy zmieniamy DOMYŚLNE
- *  zaznaczenia, dopisujemy marker daty TUTAJ, a `wczytajKonfiguracje` jednorazowo
- *  domyka zapisane konfigi (uwagi właściciela 2026-09-11: „Ciekawostki” zostały
+ *  zaznaczenia, dopisujemy wersję daty TUTAJ, a `wczytajKonfiguracje` domyka
+ *  zapisane konfigi (uwagi właściciela 2026-09-11: „Ciekawostki” zostały
  *  w kanonie, ale zgubiły się w starych zapisach localStorage). */
 export const KANON_SETUPU = '2026-09-10';
+
+/**
+ * Dziennik zmian kanonu: wersja kanonu → tematy, które TA wersja dodała do
+ * domyślnych. Wersje są datami ISO, więc porównują się jak napisy.
+ *
+ * Po co dziennik, a nie jedna lista (audyt PR #13, obserwacja 3): przy kolejnej
+ * zmianie domyślnych ważne jest, KTÓRE dopełnienia należą się zapisowi z danym
+ * markerem. Bez tego albo stary zapis nie dostanie nowego tematu, albo zapis
+ * bieżący dostanie go ponownie — po odptaszkowaniu przez organizatora.
+ */
+export const ZMIANY_KANONU_SETUPU = Object.freeze({
+  '2026-09-10': ['ciekawostki'],
+});
+
+/** Zbiorcza lista tematów dopełnianych kiedykolwiek. Trzymana JAWNIE (kontrakt
+ *  doc↔kod czyta ten literał), a test spójności pilnuje, żeby nie rozjechała się
+ *  z dziennikiem `ZMIANY_KANONU_SETUPU`. */
 export const TEMATY_DOPELNIANE_PRZY_MIGRACJI = ['ciekawostki'];
 
 /**
- * Jednorazowa migracja starych zapisów setupu: dopisuje tematy, które dziś są
- * domyślnie włączone, a kiedyś nie były (albo wypadły przy odchudzaniu setupu).
+ * Migracja starych zapisów setupu: dopisuje tematy, które dziś są domyślnie
+ * włączone, a kiedyś nie były (albo wypadły przy odchudzaniu setupu).
  * Lista zamknięta i alfabetyczna; `wlasny` („Dopisz sam”) nigdy się tu nie
  * znajdzie — wymaga tekstu organizatora i startuje wyłączony (właściciel,
  * 2026-09-11: wszystkie tematy oprócz „Dopisz sam” mają być zaznaczone).
+ *
+ * `identyfikatory` to tematy do dopisania; domyślnie cała lista migracyjna.
  */
-export function dopelnijNoweTematySetupu(tematy) {
+export function dopelnijNoweTematySetupu(tematy, identyfikatory = TEMATY_DOPELNIANE_PRZY_MIGRACJI) {
   const lista = Array.isArray(tematy) ? [...tematy] : [];
-  for (const ident of TEMATY_DOPELNIANE_PRZY_MIGRACJI) {
+  const zrodlo = Array.isArray(identyfikatory) ? identyfikatory : [];
+  for (const ident of zrodlo) {
     if (Object.hasOwn(TEMATY_SETUP, ident) && !lista.includes(ident)) lista.push(ident);
   }
   return lista.sort();
+}
+
+/** Data z markera kanonu albo `null` (brak markera / marker nieczytelny). */
+function dataMarkeraKanou(zapisanyKanon) {
+  return typeof zapisanyKanon === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(zapisanyKanon) ? zapisanyKanon : null;
+}
+
+/**
+ * Tematy do dopisania zapisowi z markerem `zapisanyKanon` — WYŁĄCZNIE te, które
+ * doszły do domyślnych PO tej wersji (dopełnienia per-wersja).
+ *
+ * Pusty wynik znaczy „nie ruszamy”: marker bieżący albo z wersji nowszej niż
+ * ta aplikacja (organizator mógł w międzyczasie odptaszkować temat — jego wybór
+ * jest święty), a także marker z przyszłości po cofnięciu wersji.
+ */
+export function tematyDopelnianeOdKanou(zapisanyKanon) {
+  const data = dataMarkeraKanou(zapisanyKanon);
+  if (data && data >= KANON_SETUPU) return [];
+  const od = data ?? '';
+  return Object.keys(ZMIANY_KANONU_SETUPU)
+    .sort()
+    .filter((wersja) => wersja > od && wersja <= KANON_SETUPU)
+    .flatMap((wersja) => ZMIANY_KANONU_SETUPU[wersja]);
+}
+
+/** Czy zapis jest starszy od bieżącego kanonu (brak markera / nieczytelny / starsza data). */
+export function kanonSprzedBiezacego(zapisanyKanon) {
+  const data = dataMarkeraKanou(zapisanyKanon);
+  return data === null || data < KANON_SETUPU;
+}
+
+/**
+ * Konfiguracja po dopełnieniach dla danego markera kanonu (funkcja czysta:
+ * brak dopełnień = ten sam obiekt, więc wołający widzi „nic nie zmieniono”).
+ */
+export function dopelnijKonfiguracjeDoKanou(konfig, zapisanyKanon) {
+  const tematy = tematyDopelnianeOdKanou(zapisanyKanon);
+  if (!tematy.length) return konfig;
+  return { ...konfig, tematy: dopelnijNoweTematySetupu(konfig.tematy, tematy) };
 }
 
 export function konfiguracjaNowegoSetupu(konfig) {

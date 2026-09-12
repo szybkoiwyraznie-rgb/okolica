@@ -21,20 +21,20 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0006](0006-pytania-przez-prompt-i-wklejenie.md) | Pytania: prompt → model AI → wklejenie (bez backendu i kluczy API) | Zaakceptowana |
 | [0007](0007-ukrywanie-paczki-obfuskacja-bez-klucza.md) | Ukrywanie paczki pytań: odwracalna obfuskacja bez klucza (nie szyfrowanie) | Zaakceptowana |
 | [0008](0008-kwerenda-i-zrodla-w-kazdym-pytaniu.md) | Obowiązkowa kwerenda internetowa i źródło URL przy każdym pytaniu | Zaakceptowana |
-| [0009](0009-jeden-telefon-hot-seat.md) | Rozgrywka wieloosobowa: jeden telefon (hot-seat) | Zaakceptowana |
+| [0009](0009-jeden-telefon-hot-seat.md) | Rozgrywka wieloosobowa: jeden telefon (hot-seat; rotacja pytań — aneks 2026-09-12) | Zaakceptowana |
 | [0010](0010-trwalosc-localstorage-i-eksport-paczki.md) | Trwałość: `localStorage` + paczka jako plik, docelowo repozytorium | Proponowana |
 | [0011](0011-mobile-first-dotyk.md) | Mobile-first: interfejs dotykowy jako podstawowy, dostępność i czytelność w słońcu | Zaakceptowana |
 | [0012](0012-model-sesji-pr-audyt-inkrementalne-commity.md) | Model sesji: PR na starcie, audyt poprzedniego PR, inkrementalne commity, bez force push | Zaakceptowana |
 | [0013](0013-prywatnosc-wspolrzedne-na-urzadzeniu.md) | Prywatność: współrzędne zostają na urządzeniu, zero analityki | Proponowana |
 | [0014](0014-punktacja-czasu-mediana-tempa.md) | Punktacja czasu: premia względem mediany tempa odcinków (doprecyzowanie ADR 0009 pkt 5) | Wycofana |
 | [0015](0015-niekompletna-paczka-i-pominiecie-stacji.md) | Niekompletna paczka: ostrzeżenie zamiast blokady; pominięcie tylko w drodze | Proponowana |
-| [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device) | Zaakceptowana |
+| [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device; przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
 | [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1`, geohash5 w indeksie, CC BY-SA 4.0, moderacja właściciela | Proponowana |
-| [0018](0018-drive-backend-wielozadaniowy.md) | Drive jako backend wielozadaniowy (paczki, gry, statystyki) | Zaakceptowana |
-| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig (rankingi usunięte — aneks 2026-09-11b) | Zaakceptowana |
-| [0020](0020-adres-mostu-wpisany-w-kod-aplikacji.md) | Adres mostu Drive w kodzie aplikacji, bez pola w UI | Zaakceptowana |
+| [0018](0018-drive-backend-wielozadaniowy.md) | Drive jako backend wielozadaniowy (paczki, gry, statystyki; przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
+| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig (rankingi usunięte — aneks 2026-09-11b; ranking wrócił w nowej formie — aneks 2026-09-12f) | Zaakceptowana |
+| [0020](0020-adres-mostu-wpisany-w-kod-aplikacji.md) | Adres mostu Drive w kodzie aplikacji, bez pola w UI (przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
 | [0021](0021-pin-prosty-profilu-pseudonimu.md) | PIN pseudonimu (4-8 cyfr, jawny tekst, RO-profil/1) + przycisk To ja w setupie | Zaakceptowana |
-| [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` | Zaakceptowana |
+| [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` (kolejne pytania rotują — aneks 2026-09-12) | Zaakceptowana |
 | [0023](0023-zero-presji-czasowej.md) | Zero presji czasowej: punktacja to dotarcie plus poprawna odpowiedź | Zaakceptowana |
 | [0024](0024-tolerancja-dopasowania-okolicy.md) | Dopasowanie okolicy z tolerancją: odległość od komórki geohash, nie „ten sam geohash" | Zaakceptowana |
 | [0025](0025-czas-gry-zamiast-promienia.md) | Czas gry zamiast promienia: promień jest wynikiem, nie polem | Zaakceptowana |
@@ -43,7 +43,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0028](0028-oceny-pytan-graczy.md) | Oceny pytań przez graczy: jeden kciuk, jeden głos na gracza i pytanie, wysyłka w tle | Zaakceptowana |
 | [0029](0029-brak-recznego-dojscia.md) | Dojście zalicza tylko GPS: ręczne zgłaszanie usunięte z interfejsu | Zaakceptowana |
 | [0030](0030-rozgrywka-pod-orientacje-telefonu.md) | Rozgrywka układa się pod orientację telefonu, a pytanie leży NA mapie | Zaakceptowana |
-| [0031](0031-generowanie-pytan-partiami.md) | Duży setup generuje pytania partiami, a aplikacja sama je scala | Wycofana |
+| [0031](0031-generowanie-pytan-partiami.md) | Duży setup generuje pytania partiami, a aplikacja sama je scala (stałe szacunku usunięte — aneks 2026-09-12) | Wycofana |
 | [0032](0032-wariant-bez-fact-check.md) | Wariant „Pytania (bez fact check)" jako domyślny | Zaakceptowana |
 | [0033](0033-koniec-odwracania-liter.md) | Koniec odwracania liter: zostaje kod poprawnej odpowiedzi | Zaakceptowana |
 
@@ -51,6 +51,8 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0035](0035-overpass-krotkie-proby.md) | Overpass: próby po 10 s, preferencje i diagnostyka w Informacjach | Zaakceptowana |
 | [0036](0036-pasek-podczas-drogi.md) | Pasek podczas drogi, sterowanie w Informacjach, duży panel pytania | Zaakceptowana |
 | [0037](0037-jezyk-i-podklad-zaszte-w-kodzie.md) | Język pytań i podkład mapy zaszte w kodzie (polski + OSM), pola usuwane z UI | Zaakceptowana |
+| [0038](0038-minimalny-ekran-wyniku.md) | Minimalny ekran wyniku: zwycięzca, ranking i powrót — statystyki, szczegóły, stacje i eksporty usunięte | Zaakceptowana |
+| [0039](0039-ranking-dwie-tabele.md) | Ranking wrócił w nowej formie: dwie tabele (punkty i proporcja), sumy liczy most, tylko gracze z profilem | Zaakceptowana |
 
 ## Szablon ADR
 

@@ -90,3 +90,11 @@ podczas testów terenowych jako ozdobnik razem z innymi dev-tekstami (m12-63).
 Uwaga z Konsekwencji o rozpoznawaniu przyczyny E01/E02 traci więc swoje
 narzędzie w UI — sam pomiar budżetu zostaje w PROTOKOL §2.1 i w testach
 `test/duza-paczka.test.js`.
+
+## Aneks (2026-09-12): stałe szacunku też wyleciały z kodu
+
+Aneks 2026-09-11 (wyżej) mówił o UI; w m12-66, tą samą decyzją właściciela,
+zniknęły również stałe szacunku z `app/protokol.js` (`szacunekOdpowiedzi()`
+i stałe budżetu BAZA/PROG/TOKENY, w tym `PROG_ODPOWIEDZI_TOKENY`). Zostaje sam
+pomiar w PROTOKOL §2.1 jako prawidło i asercje `test/duza-paczka.test.js`
+(prompt nie rośnie z liczbą pytań, kontener mieści się w budżetach pamięci).

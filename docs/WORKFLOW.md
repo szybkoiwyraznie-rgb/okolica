@@ -46,16 +46,20 @@ Koniec sesji:
    proponuje gotowe paczki z repozytorium — wybór startuje grę bez modelu.
 3. Ekran **stacji**: aplikacja pobiera sieć drogową okolicy (Overpass) i rysuje
    stacje; „🔄 Inny układ” losuje od nowa. Gdy sieć jest za uboga, gra ma tyle
-   stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci:
-   „◎ Tryb uproszczony” albo „✋ Ustaw stacje ręcznie”.
-4. Ekran **pytań**: „⧉ Kopiuj prompt” → wklej do modelu AI z włączoną kwerendą
-   internetową (Meta AI, ChatGPT, Gemini…). Linia pod promptem mówi, jak duża
-   będzie odpowiedź, zanim zmarnujesz generację.
+   stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci gra
+   schodzi do pierścienia z jawnym komunikatem („osiągalność
+   niezweryfikowana”), a do ręki zostaje „✋ Ustaw stacje ręcznie”.
+4. Ekran **pytań**: „⧉ Kopiuj prompt” → wklej do jednego z czatów AI (Meta AI,
+   ChatGPT, Gemini — linki na ekranie) i wklej odpowiedź z powrotem. Kontrakt
+   z modelem niesie sam prompt: „Pytania z fact check” (kwerenda internetowa)
+   albo domyślny wariant bez fact-checku, w którym model korzysta z własnej
+   wiedzy (ADR 0032).
 5. Ekran **paczki**: wklej odpowiedź modelu („📋 Wklej ze schowka”) albo wczytaj
    „⬆ Z pliku” → „✓ Sprawdź i przyjmij”. Usterki: lista kodów E01–E20 i gotowa
    „⧉ poprawka do modelu”. Poprawna paczka **od razu zaczyna grę** (i leci na
-   Drive do przeglądu właściciela); pytania są ukrywane (TO-paczka/2), a pole
-   wklejania czyszczone.
+   Drive prosto do repozytorium okolicy — moderacja wstępna zniesiona
+   2026-09-11); pytania są ukrywane (TO-paczka/2), a pole wklejania
+   czyszczone.
 6. **Gra**: odcinek startuje jawną akcją, dojście zalicza tylko GPS (dwa fixy
    w progu, ADR 0004/0029); stację nieosiągalną pomiń. Pytanie odsłania się
    dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Pauza (także
@@ -93,7 +97,8 @@ jest widoczne jako karta obok rozmowy.
    `21.0122`), **wklej z Google Maps** (np. `52°07'22.9"N 20°44'46.1"E` albo
    `52.123028, 20.746139` — w pierwsze pole, drugie zostaw puste; stopnie-
    -minuty-sekundy to nie dziesiętne: 52°07'22.9" = 52.12303) albo w trybie
-   testowym **stuknij mapę** → „Ustaw tę pozycję". Sprawdź: **kafelki się
+   testowym **stuknij mapę** — pozycja ustawi się od razu (status „Pozycja
+   ustawiona z mapy.", pola się wypełniają). Sprawdź: **kafelki się
    ładują**, niebieski marker stoi w środku,
    jasne koło dokładności ma rozsądny rozmiar, przerywany okrąg to promień gry.
 3. Palec (albo mysz): przeciągnij mapę — treść jedzie z palcem, bez białych

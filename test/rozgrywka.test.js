@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   FAZY, KODY_ROZGRYWKI, SCHEMAT_ROZGRYWKI, STANY_ODCINKA, TRYBY_DOJSCIA,
-  czyKoniec, dystansOdcinkaM, graczNaStacji, ktoOdpowiada, nowaRozgrywka,
+  czyKoniec, dystansOdcinkaM, graczNaStacji, graczPytania, ktoOdpowiada, nowaRozgrywka,
   podglad, podsumowanie, pominStacje, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka,
   wczytajStan, zapiszOdpowiedz, zakonczOdcinek,
 } from '../app/rozgrywka.js';
@@ -61,14 +61,15 @@ function przejdzStacje(stan, { stacjaId = stan.biezacaStacja, startMs, koniecMs,
   const poDojsciu = zakonczOdcinek(poStarcie.stan, { stacjaId, czasMs: koniecMs, trybDojscia, fix });
   assert.deepEqual(poDojsciu.usterki, [], `dojście ${stacjaId}`);
   let biezacy = poDojsciu.stan;
-  for (const graczId of ktoOdpowiada(biezacy, stacjaId)) {
-    for (const pytanieId of pytaniaStacji(biezacy, stacjaId)) {
-      const pytanie = { id: pytanieId, poprawna: stacjaId % 4 };
-      const wybrana = wybrane ? wybrane({ stacjaId, graczId, pytanieId }) : pytanie.poprawna;
-      const wynik = zapiszOdpowiedz(biezacy, { stacjaId, graczId, pytanie, wybrana, czasMs: koniecMs + 5000 });
-      assert.deepEqual(wynik.usterki, [], `odpowiedź ${pytanieId}/${graczId}`);
-      biezacy = wynik.stan;
-    }
+  // Rotacja pytań (2026-09-12): każde pytanie ma JEDNEGO autora — gracz z kolejki
+  // na pierwsze, następny w kolejce na drugie itd. (`graczPytania`).
+  for (const pytanieId of pytaniaStacji(biezacy, stacjaId)) {
+    const graczId = graczPytania(biezacy, stacjaId, pytanieId);
+    const pytanie = { id: pytanieId, poprawna: stacjaId % 4 };
+    const wybrana = wybrane ? wybrane({ stacjaId, graczId, pytanieId }) : pytanie.poprawna;
+    const wynik = zapiszOdpowiedz(biezacy, { stacjaId, graczId, pytanie, wybrana, czasMs: koniecMs + 5000 });
+    assert.deepEqual(wynik.usterki, [], `odpowiedź ${pytanieId}/${graczId}`);
+    biezacy = wynik.stan;
   }
   return biezacy;
 }
@@ -283,6 +284,7 @@ test('odpowiada zawsze gracz z kolejki (ADR 0022 — wybór trybu usunięty)', (
   assert.deepEqual(ktoOdpowiada(nowa(), 1), [1]);
   assert.deepEqual(ktoOdpowiada(nowa(), 2), [2]);
   assert.equal(graczNaStacji(nowa(), 5), 2, 'stacja 5 przy 3 graczach → gracz 2');
+  assert.equal(graczPytania(nowa(), 5, 's5p1'), 2, 'pierwsze pytanie stacji ma autora z kolejki');
   const stan = nowa();
   const poDojsciu = zakonczOdcinek(startOdcinka(stan, { czasMs: 0 }).stan, { czasMs: 300_000 }).stan;
   const pytanie = { id: 's1p1', poprawna: 1 };
@@ -290,18 +292,83 @@ test('odpowiada zawsze gracz z kolejki (ADR 0022 — wybór trybu usunięty)', (
   assert.deepEqual(obcy.usterki.map((u) => u.kod), ['G07'], 'obcy gracz odrzucony kodem G07');
 });
 
-test('pytaniaNaStacje = 2: stacja zamyka się po obu pytaniach', () => {
+test('pytaniaNaStacje = 2: stacja zamyka się po obu pytaniach — każde dla INNEGO gracza', () => {
   const stacje3 = STACJE.slice(0, 3);
   let stan = nowaRozgrywka({
     konfig: konfig({ liczbaStacji: 3 }), stacje: stacje3, paczka: paczka(stacje3, 2), srodek: START, czasMs: 0,
   });
   assert.deepEqual(pytaniaStacji(stan, 1), ['s1p1', 's1p2']);
+  // Zgłoszenie właściciela 2026-09-12: bez rotacji oba pytania stacji szły do
+  // gracza z kolejki (Gracz 1) — pytania mają iść „po jednym dla kolejnych graczy".
+  assert.equal(graczPytania(stan, 1, 's1p1'), 1, 'pierwsze pytanie stacji: gracz z kolejki');
+  assert.equal(graczPytania(stan, 1, 's1p2'), 2, 'drugie pytanie stacji: następny gracz w kolejce');
   stan = zakonczOdcinek(startOdcinka(stan, { czasMs: 0 }).stan, { czasMs: 300_000 }).stan;
   const a = zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: { id: 's1p1', poprawna: 1 }, wybrana: 1, czasMs: 1 }).stan;
   assert.equal(a.faza, FAZY.pytanie, 'pierwsze pytanie nie zamyka stacji');
+  assert.equal(a.odpowiedzi[0].gracz, 1, 'pierwsze pytanie zapisał gracz z kolejki');
   const b = zapiszOdpowiedz(a, { stacjaId: 1, pytanie: { id: 's1p2', poprawna: 2 }, wybrana: 0, czasMs: 2 }).stan;
   assert.equal(b.faza, FAZY.przygotowanie);
   assert.equal(b.odpowiedzi.length, 2);
+  assert.deepEqual(b.odpowiedzi.map((o) => o.gracz), [1, 2], 'każde pytanie stacji ma innego autora');
+});
+
+test('rotacja pytań: drugie pytanie należy do następnego gracza, nie do właściciela stacji (m12-87)', () => {
+  // Sedno zgłoszenia z terenu: dwóch graczy, 5 stacji, po 2 pytania. Gracz 1
+  // dostawał OBA pytania pierwszej stacji. Reguła: pytanie k na stacji dostaje
+  // gracz z kolejki przesunięty o k (cyklicznie po liście graczy).
+  const stacje = STACJE.slice(0, 2);
+  const gracze = [{ id: 1, imie: 'Ania' }, { id: 2, imie: 'Bartek' }];
+  let stan = nowaRozgrywka({
+    konfig: konfig({ liczbaStacji: 2, liczbaGraczy: 2 }),
+    stacje, paczka: paczka(stacje, 2), srodek: START, czasMs: 0, gracze,
+  });
+
+  // Stacja 1 (kolejka: Ania): pytanie 1 → Ania, pytanie 2 → Bartek.
+  assert.equal(graczNaStacji(stan, 1), 1, 'stacja 1 należy do gracza z kolejki');
+  assert.deepEqual(ktoOdpowiada(stan, 1), [1, 2], 'na stacji odpowiadają obaj gracze — po jednym pytaniu');
+  // Stacja 2 (kolejka: Bartek): pytanie 1 → Bartek, pytanie 2 → Ania (zawinięcie).
+  assert.equal(graczNaStacji(stan, 2), 2);
+  assert.deepEqual(ktoOdpowiada(stan, 2), [2, 1], 'na drugiej stacji kolejność autorów jest odwrotna');
+
+  // Odpowiedź „nie swojego" gracza na pytanie jest odmawiana kodem G07.
+  stan = zakonczOdcinek(startOdcinka(stan, { stacjaId: 1, czasMs: 0 }).stan, { stacjaId: 1, czasMs: 300_000 }).stan;
+  const nieSwoje = zapiszOdpowiedz(stan, { stacjaId: 1, graczId: 2, pytanie: { id: 's1p1', poprawna: 1 }, wybrana: 1, czasMs: 1 });
+  assert.deepEqual(nieSwoje.usterki.map((u) => u.kod), ['G07'], 'pytanie 1 należy do gracza z kolejki, nie do Bartka');
+
+  // Poprawny przebieg: Ania odpowiada na pytanie 1, Bartek na pytanie 2.
+  const poAni = zapiszOdpowiedz(stan, { stacjaId: 1, graczId: 1, pytanie: { id: 's1p1', poprawna: 1 }, wybrana: 1, czasMs: 1 }).stan;
+  assert.equal(poAni.faza, FAZY.pytanie, 'stacja czeka na drugie pytanie');
+  const drugieAni = zapiszOdpowiedz(poAni, { stacjaId: 1, graczId: 1, pytanie: { id: 's1p2', poprawna: 2 }, wybrana: 0, czasMs: 2 });
+  assert.deepEqual(drugieAni.usterki.map((u) => u.kod), ['G07'], 'Ania nie odpowiada na pytanie Bartka (ta sama stacja, drugie pytanie)');
+  const poBartku = zapiszOdpowiedz(poAni, { stacjaId: 1, graczId: 2, pytanie: { id: 's1p2', poprawna: 2 }, wybrana: 2, czasMs: 3 }).stan;
+  assert.equal(poBartku.faza, FAZY.przygotowanie, 'po drugim pytaniu stacja się zamyka');
+  assert.equal(poBartku.biezacaStacja, 2, 'gra idzie do następnej stacji');
+  assert.deepEqual(poBartku.odpowiedzi.map((o) => [o.pytanieId, o.gracz, o.poprawna]), [['s1p1', 1, true], ['s1p2', 2, true]]);
+
+  // Jedno pytanie na stację — zachowanie jak dotąd (autor = gracz z kolejki).
+  const jedno = nowaRozgrywka({
+    konfig: konfig({ liczbaStacji: 2, liczbaGraczy: 2 }),
+    stacje, paczka: paczka(stacje, 1), srodek: START, czasMs: 0, gracze,
+  });
+  assert.deepEqual(ktoOdpowiada(jedno, 1), [1], 'jedno pytanie = odpowiada gracz z kolejki');
+  assert.equal(graczPytania(jedno, 2, 's2p1'), 2, 'stacja 2 należy do Bartka');
+});
+
+test('rotacja pytań: trzech graczy i trzy pytania na stacji — każdy po jednym, w kolejce', () => {
+  const stacje = STACJE.slice(0, 1);
+  const stan = nowaRozgrywka({
+    konfig: konfig({ liczbaStacji: 1, liczbaGraczy: 3, pytaniaNaStacje: 3 }),
+    stacje, paczka: paczka(stacje, 3), srodek: START, czasMs: 0,
+    gracze: [{ id: 1, imie: 'Ania' }, { id: 2, imie: 'Bartek' }, { id: 3, imie: 'Celina' }],
+  });
+  assert.deepEqual(ktoOdpowiada(stan, 1), [1, 2, 3], 'cała trójka odpowiada po jednym pytaniu');
+  assert.deepEqual(
+    pytaniaStacji(stan, 1).map((pid) => graczPytania(stan, 1, pid)),
+    [1, 2, 3],
+    'pytania idą po kolei: gracz z kolejki, następny, następny',
+  );
+  // Stacja 2 (gdyby była) zaczyna od gracza 2 — rotacja jest funkcją kolejki.
+  assert.equal(graczPytania(stan, 9, 's9p1'), null, 'nieznana stacja nie ma autora pytania');
 });
 
 /* ----------------------------------------------------------------- pomijanie */

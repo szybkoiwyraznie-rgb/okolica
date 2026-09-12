@@ -43,3 +43,25 @@ odpowiedź gracza na stację). Technicznie: `ktoOdpowiada()` zwraca gracza
 z kolejki dla stanu hot-seat, a gra sieciowa buduje lokalny stan JEDNEGO gracza
 (`liczbaGraczy: 1`), więc kolejka degeneruje do „ja" — bez specjalnego przypadku
 w silniku.
+
+
+## Aneks (2026-09-12): kolejne pytania stacji rotują po liście graczy (m12-87)
+
+Zgłoszenie właściciela: „Mam dwóch graczy, 5 stacji, po 2 pytania na stację.
+Pierwsze pytanie dostaje Gracz 1. Drugie pytanie na tej stacji… dostaje znowu
+gracz 1. Powinno pytać na zmianę (kolejno następnego gracza, jeśli jest ich
+więcej), a nie, że na danej stacji wszystkie pytania dostaje ten sam gracz.”
+
+**Reguła:** pytanie o indeksie `k` na stacji należy do gracza z kolejki
+przesuniętego o `k` pozycji w liście graczy rozgrywki (cyklicznie). Pierwsze
+pytanie zostaje przy graczu z kolejki — pkt 1 niniejszego ADR obowiązuje bez
+zmian — drugie idzie do następnego gracza w liście, trzecie do kolejnego.
+`ktoOdpowiada()` zwraca autorów kolejnych pytań bez duplikatów (przy 3 pytaniach
+i 2 graczach trzeci pytanie dzieli autora z pierwszym — tak samo jak paczka
+uboższa niż liczba graczy w multi). `stacjaZamknieta` czeka na odpowiedź
+KAŻDEGO pytania od JEGO autora, a `zapiszOdpowiedz` odrzuca odpowiedź nie-autora
+kodem G07 (wcześniej wystarczyło być „w kolejce”).
+
+Przy jednym pytaniu na stację i w grze sieciowej (`tury`, `wyscig`) nic się nie
+zmienia: pierwsze pytanie ma autora z kolejki, a w wyścigu stan ma jednego
+gracza, więc rotacja degeneruje do niego.

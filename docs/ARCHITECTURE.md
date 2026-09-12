@@ -65,7 +65,12 @@ app/
   wynik.js                  — wynik: sprawiedliwość trasy, eksport tekstowy,
                               plan komend obrazu (PNG 1080 px) i nazwy plików
                               (czyste; bez DOM, bez treści pytań, bez
-                              współrzędnych)
+                              współrzędnych; od ADR 0038 bez konsumenta w UI —
+                              biblioteka pilnowana własnym testem)
+  ranking.js                — M12: ranking (ADR 0039) — limit 5 pozycji, próg
+                              10 zadanych pytań, sortowanie z remisami,
+                              walidacja `RO-ranking/2` i format „18/24 · 75%”
+                              (czyste; sumy liczy most, tu tylko prezentacja)
   mapa.js                   — mapa: matematyka widoku (zoom ↔ skala, środek ↔
                               przesunięcie, piksele ↔ współrzędne), adresy
                               kafelków, plan rysowania i pasek skali (czyste)
@@ -83,7 +88,8 @@ app/
                               odtwarzanie w app.js, brak API = cichy no-op)
   wieloosobowa.js           — M11/M12: schematy RO-* (gra, zdarzenie, lobby,
                               profil), walidacja z kodami R01–R20 (R17/R18
-                              wycofane z rankingami), kody gier (alfabet bez
+                              wycofane — ranking `RO-ranking/2` ma inne błędy,
+                              ADR 0039), kody gier (alfabet bez
                               0/O/1/I), sąsiedztwo geohash5 dla lobby (ramka
                               i sąsiedzi mieszkają w `geo.js`, tu re-eksport)
                               i wyniki (czyste; ADR 0019)
@@ -243,13 +249,12 @@ commit i nowa wersja aplikacji.
    się samym dojściem, a pominąć da się tylko odcinek w drodze (ADR 0015);
    ręczne zakończenie gry pokazuje wczesny wynik, ale NIE kasuje zapisu —
    grę można wznowić.
-6. Koniec → pełne podsumowanie w `gra-panel-koniec` z `podsumowanie()`:
-   zwycięzca, ranking, karty graczy (odcinki, dystans, ręczne dojścia),
-   tabela stacji (tryb dojścia GPS/ręczne/pominięta), statystyki.
-   Eksporty z `app/wynik.js`: tekst `wynikTekstowy()`,
-   obraz `planObrazuWyniku()` → wykonawca canvas → PNG 1080 px (kolory
-   z tokenów CSS w chwili eksportu); udostępnianie Web Share → schowek →
-   plik. Skrót gry ląduje w historii `okolica:historia` (jeden wpis na klucz
+6. Koniec → **minimalny** ekran wyniku w `gra-panel-koniec` (ADR 0038):
+   karta zwycięzcy, tabela rankingu z `podsumowanie()` i jeden przycisk
+   „Wróć na początek — nowa gra”; faza `koniec` ukrywa cały slot sterowania,
+   a statystyki, szczegóły graczy, tabela stacji i eksporty .txt/.png zostały
+   USUNIĘTE (moduł `app/wynik.js` zostaje jako biblioteka bez konsumenta).
+   Skrót gry ląduje w historii `okolica:historia` (jeden wpis na klucz
    gry; ręczne zakończenie znaczy `przerwana`, naturalny koniec zastępuje
    wpis — ADR 0010 pkt 1).
 
@@ -283,7 +288,10 @@ commit i nowa wersja aplikacji.
    z aplikacji i z mostu (właściciel, 2026-09-11; aneks ADR 0019).
 5. Wyjście z lobby: POST `gra-opusc` prostuje skład gry, więc `liczbaGraczy`
    w `RO-lobby/1` nie obiecuje gracza, który wyszedł; wyjście organizatora
-   zamyka grę (stan `archiwum`).
+   zamyka grę (stan `archiwum`) i dlatego jest **dwustopniowe** — pierwszy klik
+   uzbraja przycisk i mówi, że gra zostanie zamknięta WSZYSTKIM, drugi wykonuje
+   (`STAN.multiOpuszczenieUzbrojone`; LESSONS L48). Gość wychodzi jednym
+   kliknięciem, bo przed startem może dołączyć ponownie.
 
 ## Kluczowe algorytmy
 
@@ -445,7 +453,7 @@ nigdy cicho (ADR 0010 pkt 6).
   brak ścieżek od korzenia w `index.html` (ADR 0002 pkt 3); rejestr ADR ↔ pliki
   na dysku i status w pliku ↔ status w rejestrze; geolokalizacja w `app.js`
   wyłącznie przez `pozycja.js` (brak `watchPosition`, `clearWatch` i opcji
-  watchera w warstwie DOM — ADR 0004 pkt 1); od M2 także: kompletność obu szkieletów paneli mapy w `index.html` (svg z `role="img"` i `aria-label`, przyciski z `type="button"`), zakaz domyślnego `display: none` dla atrybucji i obowiązkowe `touch-action: none` na panelu, brak `fetch`/geolokalizacji/`alert`/`node:` w `mapa.js`, a szablony URL kafelków identyczne z `docs/ASSETS.md` §1 (po ujednoliceniu zapisu poddomen `{s}` ↔ `{a,b,c}`); od M4 także: przyciski degradacji (`przycisk-pierścien`, `przycisk-reczne`) z `aria-pressed="false"` i `hidden`, pole błędów sieci `#bledy-stacje` z `role="alert"` i zakaz `alert()` przy błędach Overpass.
+  watchera w warstwie DOM — ADR 0004 pkt 1); od M2 także: kompletność obu szkieletów paneli mapy w `index.html` (svg z `role="img"` i `aria-label`, przyciski z `type="button"`), zakaz domyślnego `display: none` dla atrybucji i obowiązkowe `touch-action: none` na panelu, brak `fetch`/geolokalizacji/`alert`/`node:` w `mapa.js`, a szablony URL kafelków identyczne z `docs/ASSETS.md` §1 (po ujednoliceniu zapisu poddomen `{s}` ↔ `{a,b,c}`); od M4 także: przycisk trybu ręcznego (`przycisk-reczne`) z `aria-pressed="false"` i `hidden`, ZAKAZ przycisku wymuszającego pierścień (`przycisk-pierścien` usunięty z UI 2026-09-11 — degradacja do pierścienia jest automatyczna; kontrakt asertuje jego brak), pole błędów sieci `#bledy-stacje` z `role="alert"` i zakaz `alert()` przy błędach Overpass.
 - Warstwa DOM: testy na atrapie `test/helpers/dom.js` — `zainstalujDom()` zakłada
   świeże globale i zwraca uchwyty (`kliknij`, `wyslijZdarzenieDokumentu`,
   `wyslijZdarzenieOkna`, `ustawHidden`, `ustawGeolokalizacje`, `ustawProstokat`),

@@ -3020,3 +3020,450 @@ ROADMAP M12 („Historia gier"), ASSETS §7.1, BACKLOG (§9.5 → §9.6). Treśc
 ADR-ów 0004/0020/0021/0026/0027/0029 wspominające rankingi zostają — to zapis
 historyczny, a obowiązujący kształt definiuje aneks ADR 0019 (wzorzec z ADR
 0014/0031: status, nie przepisywanie).
+
+## Sesja 2026-09-12c — kontynuacja: PR #14 i audyt PR #13 (gałąź arena/01a095b5-okolica)
+
+**Zlecenie właściciela:** „Kontynuujemy projekt." Sesja robocza bez nowego
+zakresu, więc wg `AGENTS.md` §2 i `docs/plans/2026-09-12c-sesja-robocza.md`:
+PR przed kodem (ADR 0012 reguła 1), audyt poprzedniego scalonego PR, potem
+najwyższa otwarta zaległość — a tą jest klaster dokumentacyjny z audytu PR #9
+(uwagi 2–6), otwarty także po PR #13.
+
+### 1. Blok startowy i PR #14
+
+Gałąź `arena/01a095b5-okolica` z `main` `963a86d` (stan po squash-merge
+PR #13), drzewo czyste. Bramy na starcie odtworzone: `npm test`
+**692 pass / 0 fail** (66 s), `npm run check` — oba szablony promptu zgodne
+(§2: 4 209 zn. / 61 l., §2.2: 4 457 zn. / 62 l.), `npm run audyt` —
+**0 naruszeń WCAG AA**. Cache-busting `?v=m12-81` w 42 miejscach
+(`index.html` + `app/*.js`), `WERSJA_SW = 'm12-81'` (`sw.js:21`) — spójne
+(kontrakt). Budżet lektury: `npm run budzet` — 74 064 / 100 000 tokenów.
+
+PR #14 („Sesja 2026-09-12c: audyt PR #13 + domknięcie zaległości
+dokumentacyjnych") powstał PRZED dotknięciem kodu — pierwszy commit to plan
+`docs/plans/2026-09-12c-sesja-robocza.md`.
+
+### 2. Audyt PR #13 (squash `963a86d`, 49 plików, +1962/−1333)
+
+Metoda: `git diff 963a86d^..963a86d` plik po pliku — cały `app/app.js`,
+`app/mapa.js`, `app/most.js`, `app/protokol.js`, `app/rozgrywka.js`,
+`app/stacje.js`, `app/wynik.js`, `app/zestawy.js`, `app/konfig.js`,
+`app/sieci.js`, `app/trwalosc.js`, `app/pozycja.js`, `app/wieloosobowa.js`,
+`sw.js`, `index.html`, `docs/setup/apps-script-repo-paczek.gs`, dokumenty
+i testy — plus weryfikacja grepem stanu po zmianach.
+
+**Zgodne z decyzją i zweryfikowane w kodzie:**
+
+- **Rankingi usunięte po obu stronach.** W `app/` nie ma `pokazRankingi`,
+  `pobierzRankingi`, `agregujRanking`, `kategorieRankingu`,
+  `walidujRankingSurowy`, `STAN.rankingWiersze`; w `.gs` nie ma
+  `GET ?akcja=ranking` ani `rankingi()`. Słowo „ranking" zostało wyłącznie
+  tam, gdzie znaczy tabelę końcową JEDNEJ gry (podsumowanie, `wynik.js`) —
+  to poprawne znaczenie, nie pozostałość. `test/rankingi-ui.test.js` usunięty,
+  a kontrakt odwrócony (ekranu/przycisku/akcji nie ma).
+- **Nominatim usunięty z kodem, nie z UI.** `app/sieci.js` stracił
+  `budujUrlGeokodacji`, `miejsceZOdpowiedziNominatim` i
+  `DOMYSLNY_ENDPOINT_GEOKODACJI`; `app.js` — `uzupelnijMiejsceZapasowe`,
+  `kluczMiejscaCache`, przełącznik `#geokodacja-zapasowa`. Kontrakt
+  (`test/kontrakt.test.js:358–369`, `:553–556`) grepuje brak endpointu,
+  brak funkcji i brak przełącznika.
+- **`zmienPodklad` i `wymusPierscien` nie wracają.** Pierwszej nie ma
+  w `app/` (salvage m12-75), druga zniknęła w m12-81, a kontrakt
+  (`:1259–1265`) pilnuje obu — razem z brakiem `przycisk-pierścien`
+  w `index.html` (`:318`).
+- **Cache kafelków OSM bez wersji aplikacji** — z uzasadnieniem w kodzie
+  (`sw.js:24–40`) i z testem, który NAPRAWDĘ symuluje dwie wersje: bierze
+  `WERSJA_SW` ze źródła skryptu (nie z literalu — pułapka z poprzedniej tury),
+  podmienia ją, uruchamia `activate` na tym samym magazynie i sprawdza, że
+  kafel przetrwał i nie poleciało żadne żądanie do dostawcy. Stary
+  wersjonowany cache jest sprzątany osobnym testem.
+- **Dokumentacja zgodna ze zmianą:** PROTOKOL §9.3 (`RO-ranking/1` wycofany)
+  i §9.4 (R17/R18 zajęte na stałe), nowy §9.5 `gra-opusc` (`gra-hotseat`
+  §9.6), aneks 2026-09-11b w ADR 0019, aneks 2026-09-12 w ADR 0003,
+  zaktualizowane ADR 0013/0017/0020/0031, README, ARCHITECTURE, WORKFLOW,
+  ASSETS §1 i §3, ROADMAP (M12 „Historia gier"), rejestr ADR, LESSONS L46/L47.
+  Zero rozjazdów dokument ↔ kod **poza** zaległościami z §3 poniżej.
+
+**Ustalenia nowe (nieopisane wcześniej):**
+
+1. **Martwe importy w `app/app.js` (10 nazw):** `TEMATY`, `WIEK`,
+   `przesunPunkt`, `najmniejszyOdstepM`, `STANY_ODCINKA`, `INSTANCJE_OVERPASS`,
+   `ALFABET_KODU`, `kodPoprawny`, `normalizujKod`, `ramkaGeohash` — każda
+   występuje w pliku WYŁĄCZNIE na linii importu (sprawdzone skryptem
+   liczącym użycia). Zero wpływu na zachowanie, ale to dług po usuwaniu
+   rankingów (m12-77) i porządek, który kontrakt L6 i tak lubi widzieć czysty.
+2. **„Opuść lobby" organizatora zamyka grę JEDNYM klikiem** (`opuscLobby` →
+   `gra-opusc` → most: stan `archiwum`). Gość może wrócić z listy, organizator
+   nie — a repo ma wzorzec dwustopniowych akcji nieodwracalnych (rezygnacja
+   w grze uzbraja przycisk, kasowanie zapisu i historii, ręczne zakończenie
+   gry). Jednoklikowe zamknięcie gry dla wszystkich dołączonych to
+   niespójność, nie decyzja.
+3. **`KANON_SETUPU` jest zapisywany, ale nie porównywany.** Odczyt sprawdza
+   tylko obecność markera (`if (!kanon)`), więc jego WARTOŚĆ nie bierze
+   udziału w niczym. Dziś działa to poprawnie (dopełnienie dla zapisów
+   sprzed m12-75 jest jednorazowe), ale przy kolejnej zmianie kanonu zapisy
+   z markerem nie dostaną nowych tematów domyślnych — trzeba będzie
+   rozstrzygnąć, czy dopełnienia są per-wersja kanonu. Obserwacja projektowa,
+   nie defekt bieżący.
+4. **`.gs`: osierocony docstring.** Skrót `/** POST gra-dolacz: kod ALBO
+   idGry (z lobby) + pseudonim; tylko w lobby. */` został NAD nowym, pełnym
+   opisem `gra-opusc`, więc opisywał nie tę funkcję, a `dolaczDoGry` zostało
+   bez własnego nagłówka.
+5. **`opuscGre` rozpoznaje organizatora po indeksie `0`**, nie po
+   `organizatorId`. Dziś równoważne (host jest zawsze pierwszy w `gracze`),
+   ale reguła „wyjście organizatora zamyka grę" powinna czytać pole, które
+   to definiuje.
+
+**Werdykt:** PR #13 jest spójny z decyzjami właściciela i z ADR-ami; brak
+usterek blokujących grę, prywatność ani kontrakty `RO-*`. Cztery ustalenia
+z listy powyżej to porządki (1, 3, 4, 5) i jedna niespójność UX (2).
+Wykonanie: pkt 1 i 2 naprawione w tym samym dniu (kod, `?v=m12-82`),
+pkt 4 poprawiony w `.gs` (i tak czeka na ponowne wklejenie), pkt 3 i 5
+zapisane jako obserwacje dla właściciela.
+
+### 3. Domknięcie zaległości z audytu PR #9 (uwagi 2–6) i dwa doczesy tej samej klasy
+
+Uwagi otwarte po PR #13 zamknięte osobno, każda z dowodem w kodzie (wzorzec
+L31: opis idzie za grepem/kontraktem, nie za pamięcią):
+
+- **`0e78188` — uwaga 2.** Nagłówek `test/duza-paczka.test.js` mówił o „stałych
+  szacunku", których nie ma od m12-66 (`szacunekOdpowiedzi()` skasowane razem
+  z `#prompt-rozmiar`). Zamiast tego opis tego, co testy NAPRAWDĘ asertują:
+  prompt nie rośnie z liczbą pytań, odpowiedź 40 pytań przechodzi parser
+  i walidator, kontener mieści się w budżetach pamięci. Liczby pomiaru zostały
+  tam, gdzie żyją — w PROTOKOL §2.1.
+- **`304d726` — uwagi 3a/3b/3c.** `README.md` opisywał trzy nieistniejące
+  elementy: „◎ Tryb uproszczony" i „miarę sprawiedliwości pod listą" (kontrakt
+  asertuje BRAK `#przycisk-pierścien` i `#stacje-sprawiedliwosc`), wysyłkę „do
+  przeglądu właściciela" (moderacja zniesiona 2026-09-11; `.gs` zapisuje zestaw
+  OD RAZU w katalogu zaakceptowanych) oraz przycisk „🔌 Sprawdź połączenie"
+  (usunięty w m12-66; kontrakt asertuje brak `#przycisk-test-polaczenia`).
+  Przepisane na to, co ekran naprawdę pokazuje: wiersz trybu z rozróżnieniem
+  „zlokalizowano na sieci"/pierścień, cicha wysyłka Drive, stan mostu
+  w `#most-stan-repo`.
+- **`9ca9004` — uwagi 4/5 + dwa doczesy.** `docs/WORKFLOW.md` (§3: kroki 3–5
+  bez pierścienia, bez „linii pod promptem mówi, jak duża będzie odpowiedź",
+  z wariantami promptu wg ADR 0032 i z zapisem, że zestaw leci prosto do
+  repozytorium) i `docs/ARCHITECTURE.md` (lista kontraktów: tylko
+  `przycisk-reczne` + jawny ZAKAZ przycisku pierścienia). Przy okazji dwa
+  opisy tej samej klasy: wiersz M5 w `docs/ROADMAP.md` („Nominatim opt-in")
+  i akapit M5 w `README.md`, który jednocześnie twierdził, że zapasowa warstwa
+  Nominatim działa, i że została usunięta.
+- **`0b0fda2` — uwaga 6.** Aneksy „2026-09-12" w ADR 0020 (przycisk „Sprawdź
+  połączenie" usunięty; przy okazji `REVIEW_SECRET` i link przeglądu po
+  zniesieniu moderacji), ADR 0016 i ADR 0018 (wzmianki o przycisku), ADR 0031
+  (stałe szacunku wyleciały z kodu — nazwy nie występują w `app/` ani `test/`;
+  zostaje pomiar w PROTOKOL §2.1 i asercje `duza-paczka`). Rejestr ADR dostał
+  przy 0016/0018/0020/0031 wzmiankę o aneksie, tak jak mają 0003 i 0019.
+  Statusy bez zmian.
+- **`0bfee06`, `38b55d0` — doczesy znalezione przy okazji.** Instrukcja mostu
+  (`docs/setup/most-drive-instrukcja.md`) obiecywała jeszcze „rankingi
+  z zakończonych gier" (usunięte), przycisk „🔌 Sprawdź połączenie" i checkbox
+  zgody na wysyłkę (usunięty 2026-09-07) — a brakowało jej wpisu o zmianie,
+  którą właściciel i tak musi wdrożyć (`gra-opusc`). `docs/WORKFLOW.md` §4.1
+  kazał szukać przycisku „Ustaw tę pozycję", którego w kodzie nie ma: stuknięcie
+  mapy w trybie testowym ustawia pozycję od razu.
+
+### 4. Poprawki kodu z audytu PR #13 (`?v=m12-82`)
+
+- **`dc0fcda` — ustalenia 1 i 2.** (a) Dziesięć martwych importów z `app/app.js`
+  (`TEMATY`, `WIEK`, `przesunPunkt`, `najmniejszyOdstepM`, `STANY_ODCINKA`,
+  `INSTANCJE_OVERPASS`, `ALFABET_KODU`, `kodPoprawny`, `normalizujKod`,
+  `ramkaGeohash`) — każda nazwa występowała w pliku wyłącznie na linii importu
+  (skrypt liczący wystąpienia: 10/10), a moduły dalej eksportują je dla swoich
+  testów. (b) Wyjście organizatora z lobby jest dwustopniowe: pierwszy klik
+  uzbraja przycisk („⚠ Kliknij ponownie…") i mówi, że gra zostanie zamknięta
+  WSZYSTKIM, drugi wysyła `gra-opusc`. Gość wychodzi jednym klikiem — jego
+  wyjście jest odwracalne (może dołączyć ponownie z listy w okolicy). Wejście
+  do lobby rozbraja przycisk, żeby uzbrojenie nie zostało między ekranami.
+  Test UI pilnuje obu kliknięć; na kodzie sprzed zmiany celowo pada
+  (sprawdzone `git stash` na `app/app.js`: 1 fail), więc to regresja-guarda,
+  a nie ozdoba. Bump `?v=m12-81` → `m12-82` (42 miejsca) + `WERSJA_SW`.
+- **`fccea21` — ustalenia 4 i 5.** Docstring `gra-dolacz` wraca nad
+  `dolaczDoGry`; założenie „organizator = indeks 0" w `opuscGre` zostało
+  ZAPISANE w komentarzu (bez zmiany zachowania) jako obserwacja dla
+  właściciela — dziś równoważne z `organizatorId`, ale reguła powinna czytać
+  pole, które ją definiuje.
+
+### 5. Bramy, stan po sesji i pułapka tej tury
+
+`npm test` zielony po każdej zmianie (692/692; ostatnie przebiegi 66,2–66,7 s),
+`npm run check` — oba szablony zgodne, `npm run audyt` — 0 naruszeń WCAG AA,
+`git status` czysty, wszystko wypchnięte na `arena/01a095b5-okolica` (PR #14).
+
+**Otwarte dla właściciela:** ponowne wklejenie `.gs` (nadal aktualne: akcja
+`gra-opusc`, brak `ranking`, komentarze z tej sesji) i rozstrzygnięcie dwóch
+obserwacji — `KANON_SETUPU` bez porównania wartości i `opuscGre` czytający
+organizatora po indeksie. Kamienie M3–M8 i M10–M12 pozostają 🟡: czekają na
+kryteria terenowe/wdrożenie, więc agent nie ma tam czego kodować (ENVIRONMENT
+§7). ROADMAP bez zmian statusów — ta sesja nie ruszała zakresu kamieni.
+
+**Pułapka tej tury:** `edit_file` odmawia „Context not found" na tekstach
+z polskimi cudzysłowami („…"), choć w podglądzie wyglądają identycznie. Pewny
+wzorzec to skrypt w Pythonie z kotwicą `assert fragment in tekst` — dał się
+zastosować do wszystkich dokumentów, w tym ADR-ów i `.gs`, i od razu łapie
+literówkę w kotwicy zamiast cicho nic nie zmienić.
+
+## Sesja 2026-09-12d — dwa zgłoszenia terenowe (bugi A i B) i domknięcie obserwacji z audytu PR #13 (m12-82 → m12-85)
+
+**Gałąź:** `arena/01a095b5-okolica`, **PR #14** — jedyny otwarty PR tej sesji.
+**Zlecenie właściciela (2026-09-12):** „Nowa treść appscript wdrożona" + „Punkt (2)
+do zrobienia zrób" (obie obserwacje z audytu PR #13) + dwa zgłoszenia z terenu:
+**(A)** oznaczanie miejsca gry i re-centrowanie po pobraniu sieci z Overpassa
+wjeżdżały na puste kafle OSM — „sufit przybliżenia niezależnie od promienia,
+np. taki przypisany do 1000 m promienia"; **(B)** na ekranie „Gdzie jesteś?"
+Podkowa Leśna pokazywała „Repozytorium niedostępne", choć w okolicy są co
+najmniej trzy paczki z Drive. Uwaga właściciela z tej tury: znalazł DWA otwarte
+PR-y agenta i zamknął wcześniejszy (#15) bez scalania — „Nie rób tak więcej!".
+
+### 1. `a985996` — Bug A: sufit przybliżenia mapy (m12-83)
+
+`app/geo.js` dostał `PROMIEN_SUFITU_ZOOMU_M = 1000` i opcję `sufitPromienM`:
+`dopasujZoomDoPromienia` bierze `Math.max(promienM, sufitPromienM)`, więc każdy
+mniejszy promień (200/250/500 m, promień kadru i promień gry) kadruje się jak
+1000 m — tak, jak zdecydował właściciel. Sonda na oknie 360 px/52,23°:
+200/250/500/1000 → z14, 1500 → z13, 3000 → z12, 10000 → z10; żadna wartość nie
+wjeżdża w puste kafle. Fallback w `app/app.js` dla promienia/`lat` bez sensu to
+kadr sufitu przy 52° (wcześniej skok do `TRYBY` z zoomem 17). Dowód regresji:
+`git stash` na `geo.js`+`app.js` → test „sufit przybliżenia" pada (`not ok 1`),
+po `stash pop` przechodzi. Dwa nowe testy: `test/geo.test.js` (czysta funkcja)
+i `test/aplikacja.test.js` (okablowanie mapy: promień gry 250 m daje ten sam
+pasek skali co `sufitPromienM: 0`).
+
+### 2. `d9d295b` — Bug B: most Drive (m12-84)
+
+Trzy przyczyny po naszej stronie, wszystkie naprawione u źródła:
+
+- **limit czasu** — indeks paczek miał własne 6 s, a web app Apps Script po
+  wdrożeniu startuje z zimnej instancji; żądanie było przerywane ZANIM most
+  zdążył odpowiedzieć. Wspólna stała `LIMIT_MOSTU_MS = 15000` obejmuje teraz
+  indeks, listę gier, stan gry i paczkę (`pobierzGetTekst`, `pobierzGetMulti`);
+- **zero powtórek** — `pobierzIndeksZRepo` robi JEDNĄ powtórkę po krótkim
+  odstępie (`PONOWNA_PROBA_INDEKSU_MS`, w testach skracany globalem
+  `__OKOLICA_PONOWNA_PROBA_MS__`). Odpowiedź nieczytelna (Z01/Z09) powtórki nie
+  dostaje — to nie awaria sieci, tylko zły adres albo wdrożenie bez dostępu
+  „Każdy";
+- **połykany powód** — `.catch(() => …)` dawał jeden komunikat na wszystko
+  (LESSONS L6). `bladMostuPoPolsku` dokłada krótki `powod`: „brak odpowiedzi
+  w 15 s", „przerwane połączenie", „brak połączenia", „HTTP 403 — sprawdź, czy
+  wdrożenie web app ma dostęp «Każdy»", „nieczytelna odpowiedź". Panel pokazuje
+  powód razem z hostem, do którego pytaliśmy, a `#most-stan-repo` po nieudanej
+  próbie dopisuje „Ostatnia próba nie doszła: …" i dostaje klasę `bledy` — samo
+  posiadanie adresu w kodzie to nie to samo co działające połączenie.
+
+**Ciąg dalszy po wdrożeniu `.gs` przez właściciela (`9e35710` + `0577244`, m12-86).**
+Właściciel potwierdził, że most działa (rozegrał grę, wygenerował gracza i paczkę
+z AI — wszystko się zapisało) i wskazał cel: „to musiał być jakiś specyficzny
+problem ze sprawdzaniem paczek”. Wskazówka odsłoniła drugi defekt tej samej
+rodziny: `.catch(() => …)` w `odswiezPropozycjeZestawow` obejmował CAŁY łańcuch,
+więc także wyjątek NASZEGO kodu (parsowanie, dopasowanie, render listy) na
+poprawnej odpowiedzi mostu meldował jako „Repozytorium niedostępne”. Teraz sieć
+i czytanie odpowiedzi są rozdzielone: powtórka należy się wyłącznie żądaniu,
+wysypka naszego kodu mówi „Repozytorium odpowiedziało, ale lista paczek się nie
+wczytała (błąd aplikacji: <konkret>) — lista może być niepełna, zgłoś ten błąd”,
+a odpowiedź niezrozumiała niesie kod usterki („nieczytelna odpowiedź (Z09)”,
+pełny opis w stanie mostu). Z10 z zerem wczytanych wpisów przestał udawać „puste
+repo”. Przy awarii widać też prefiks adresu wdrożenia
+(`, script.google.com/s/AKfycbxlSc…/exec`) — przy kilku wdrożeniach Apps Script
+pierwsze pytanie brzmi, czy aplikacja pyta o TO, które właściciel właśnie wkleił.
+Trzy testy w `test/zestawy-ui.test.js` celowo padają na kodzie sprzed zmiany
+(`git stash`: 3 fail), w tym jeden wymuszający wysypkę renderu na poprawnej
+odpowiedzi mostu.
+
+Ta sama klasa błędu w drugiej połowie ekranu: `grajZZestawemZRepo` nie miał
+limitu czasu wcale (zawieszone żądanie zostawiało „Pobieram paczkę…" na zawsze)
+i połykał powód. Cztery nowe testy w `test/zestawy-ui.test.js` (dokładnie jedna
+powtórka leczy pierwszy błąd sieci i pokazuje paczki; HTTP 403 nazywa przyczynę
+i nie udaje pustego repo; HTML to „nieczytelna odpowiedź", nie „pusto"; brak
+sieci przy paczce mówi, co się stało). Na kodzie sprzed zmiany celowo padają
+(`git stash` na `app/app.js`: 4 fail).
+
+### 3. `1ab8ff2` + `e9e2a4e` — Punkt (2): obie obserwacje z audytu PR #13 (m12-85)
+
+- **`KANON_SETUPU` był zapisywany, ale nie porównywany.** `app/konfig.js` ma
+  dziennik `ZMIANY_KANONU_SETUPU` (wersja kanonu → tematy, które TA wersja
+  dodała do domyślnych) i czyste funkcje `tematyDopelnianeOdKanou`,
+  `kanonSprzedBiezacego`, `dopelnijKonfiguracjeDoKanou`; `wczytajKonfiguracje`
+  porównuje wartość markera i domyka zapis dokładnie o dopełnienia z jego
+  wersji. Zapis bieżący (albo z nowszej wersji aplikacji) nie jest ruszany, bo
+  organizator mógł temat odptaszkować ZAMIERZENIE — to ta sama reguła, którą
+  test m12-75 broni dla zapisów świeżych. Test ogólny przechodzi po każdej
+  wersji z dziennika i sprawdza, że dopełnienie nie wraca po raz drugi.
+- **`.gs`: `opuscGre` czyta `gra.organizatorId`**, nie indeks 0 w `gracze`
+  (fallback na pierwszego gracza wyłącznie dla zapisów sprzed wprowadzenia
+  pola). Pomyłka miała dwie strony: po zmianie kolejności graczy wyjście
+  organizatora USUWAŁO go z listy zamiast zamknąć grę, a wyjście gościa
+  z indeksu 0 zamykało grę wszystkim. Test w `test/most-gra-cycle.test.js`
+  odwraca kolejność w pliku gry i sprawdza obie strony (na starym `.gs`:
+  1 fail). **`.gs` wymaga ponownego wdrożenia przez właściciela.**
+
+Kontrakt doc↔kod dostał asercje na mechanizm per-wersja (dziennik zmian,
+funkcja licząca dopełnienia, porównanie markera w odczycie).
+
+### 4. Bramy i stan po sesji
+
+`npm test`: 692 → 698 (Bug A) → 701/701 (Bug B i Punkt 2) → **703/703** (m12-86; 70,4 s),
+`npm run check` — oba szablony zgodne, `npm run audyt` — 0 naruszeń WCAG AA,
+`git status` czysty, wszystko wypchnięte na `arena/01a095b5-okolica`.
+Budżet lektury startowej (po dopisaniu tej sekcji i trzech lekcji): patrz
+`npm run budzet`.
+
+**Otwarte dla właściciela:** ponowne wdrożenie `.gs` z tej sesji (zmiana
+`opuscGre`), kafelki M3–M8 i M10–M12 (bez zmian — czekają na teren/wdrożenie),
+ocena, czy po powtórce i 15 s limitu paczki z Podkowy Leśnej pokazują się na
+„Gdzie jesteś?" w terenie. ROADMAP bez zmian statusów.
+
+## Sesja 2026-09-12e — trzy kolejne zgłoszenia właściciela: rotacja pytań (bug C), ekran wyników (bug D) i intro na iPhonie (bug E) (m12-86 → m12-89)
+
+**Gałąź:** `arena/01a095b5-okolica`, **PR #14** — jedyny otwarty PR tej sesji.
+**Zlecenie właściciela (2026-09-12):** po potwierdzeniu, że preview działa
+(„Już działa, to musiał być timeout”) przyszły dwa zgłoszenia: **(C)** „Mam
+dwóch graczy, 5 stacji, po 2 pytania na stację. Pierwsze pytanie dostaje
+Gracz 1. Drugie pytanie na tej stacji… dostaje znowu gracz 1. Powinno pytać na
+zmianę (kolejno następnego gracza, jeśli jest ich więcej), a nie, że na danej
+stacji wszystkie pytania dostaje ten sam gracz”; **(D)** „ta strona Wyniki ma
+masę błędów i niepotrzebnych informacji” + trzy konkrety (górny fragment ekranu
+gry nad wynikami, wszystko pod tabelą, zdanie o braku fact-checku). Zapowiedziane
+także zgłoszenie **(E)** — intro na iPhonie (do zrobienia po C i D).
+
+### 1. `d58d247` — Bug C: pytania padają po jednym dla kolejnych graczy (m12-87)
+
+Przyczyna: `ktoOdpowiada()` zwracało gracza z kolejki, a pętla UI szukała
+pierwszej nieobsłużonej pary (pytanie × dozwolony gracz) — każde pytanie stacji
+trafiało do tej samej osoby. Rozwiązanie: `graczPytania(stan, stacjaId,
+pytanieId)` liczy autora pytania `k` jako gracza z kolejki przesuniętego o `k`
+w liście graczy (cyklicznie). `ktoOdpowiada()` zwraca autorów kolejnych pytań
+bez duplikatów, `stacjaZamknieta` czeka na odpowiedź każdego pytania od jego
+autora, a `zapiszOdpowiedz` odrzuca nie-autora kodem G07. Adnotacja: pierwsze
+pytanie zostaje przy graczu z kolejki (ANEKS do ADR 0022, 2026-09-12).
+
+Testy: model (`test/rozgrywka.test.js` — rotacja przy 2 i 3 graczach,
+zawinięcie, G07 dla nie-autora) i UI (`test/aplikacja.test.js` — hot-seat
+2 graczy × 2 pytania: „pytanie 1 z 2 · odpowiada Gracz 1”, po odpowiedzi
+„pytanie 2 z 2 · odpowiada Gracz 2”). Dowód regresji: `git stash` na
+`app/rozgrywka.js` + `app/app.js` → 2 testy CELOWO PADAJĄ, po `stash pop`
+wszystkie przechodzą.
+
+### 2. `c227434` — Bug D: minimalny ekran wyniku (m12-88)
+
+Z ekranu „🏁 Koniec gry!” zniknęło wszystko poza kartą zwycięzcy, tabelą
+rankingu, linią wysyłki na Drive i jednym przyciskiem „🏠 Wróć na początek —
+nowa gra”. Faza `koniec` ukrywa teraz CAŁY slot sterowania (nagłówek „Gra”,
+badge'y kolejki i dystansu, liczniki, „Pomiń odcinek”, „Zakończ grę”), a z kodu
+zniknęły statystyki, szczegóły graczy, tabela stacji, eksport tekstu i obrazu
+(share/schowek/`.txt`/`.png`), pole „Tekst wyniku”, linia wariantu fact-checku
+i cała gałąź rysowania na canvasie (`PALETA_AWARYJNA`, `paletaZCss`,
+`rysujWynikNaCanvas`, `eksportujWynikObraz`, `pobierzPlik`, `dataWynikuTekst`,
+`STAN.wynikTekst`) razem z pięcioma nasłuchami. `kopiujTekst` został — używają
+go prompt i poprawka. Decyzja: **ADR 0038** (z notą o sprzeczności z ADR 0010
+pkt 5, który obiecywał eksportowalny wynik) + zawężenie kryterium kamienia M7
+w `docs/ROADMAP.md`; moduł `app/wynik.js` zostaje z własnymi testami jako
+biblioteka bez konsumenta w UI (osobna decyzja, gdyby miał zniknąć).
+
+Testy przepisane na nowy kontrakt (aplikacja: minimalny ekran, zero canvasów
+i linków z `download`, ręczne zakończenie, pełna gra GPS end-to-end; kontrakt:
+lista ID, których `index.html` nie ma już prawa mieć). Dowód regresji:
+`git stash` na `app/app.js`, `app/styles.css`, `index.html` → 7 fail.
+
+### 3. `ff9abd1` — Bug E: intro mieści się na iPhonie (m12-89)
+
+Zgłoszenie: „Ekran startowy Intro — treść nie mieści się na layerze na iPhonie.
+Naprawdę niewiele brakowało.” Trzy poprawki właściciela co do joty: tytuł
+`clamp(28px, 8vw, 40px)` → `clamp(25px, 7vw, 36px)`; warstwa o pół wiersza
+w górę i pół wiersza w dół (nowa zmienna `--wiersz-warstwy: 25px` = 17 px ×
+1,45, dodana do `max-height` wyśrodkowanego panelu — rosnąca wysokość przesuwa
+obie krawędzie symetrycznie); nowa treść intro (trzy akapity właściciela,
+krótszy opis okolicy, „w kilka osób” zamiast „z rodziną i znajomymi”).
+Razem ~29 px więcej miejsca przy krótszym tekście. Testy: pin tytułu, nowy test
+„warstwa dostaje o wiersz więcej”, pin nowego brzmienia i braku starego opisu,
+dwa piny tolerujące zawinięcie wiersza w HTML. Dowód regresji: `git stash` na
+`app/styles.css` + `index.html` → 4 fail.
+
+### 4. Bramy i stan po sesji
+
+`npm test`: 706/706 po C (m12-87) → **704/704** po D (m12-88; trzy testy
+eksportu zastąpione jednym pinem braku eksportów i jednym testem ręcznego
+końca) → **705/705** po E (m12-89), `npm run check` — oba szablony zgodne,
+`npm run audyt` — 0 naruszeń WCAG AA, budżet lektury startowej
+78 529/100 000. Wszystko wypchnięte na `arena/01a095b5-okolica`. Lekcje sesji:
+L53 (kotwicz przepisywaną funkcję po realnym tekście; nieudany skrypt
+z pojedynczym zapisem potwierdź grepem) i L54 (trzy pułapki walidatora przy
+dokładaniu pytań do paczki: promień E16, wzór id E19, treść E15).
+
+**Otwarte:** potwierdzenie terenowe Buga B (≥3 paczki z Podkowy Leśnej);
+sprawdzenie przez właściciela na telefonie C (rotacja pytań), D (ekran wyniku)
+i E (intro); kafelki M3–M8 i M10–M12. Właściciel zapowiada dalsze uwagi do
+ekranu wyników.
+
+## Sesja 2026-09-12f — ranking wrócił w nowej formie: dwie tabele, sumy liczy most (m12-90)
+
+**Gałąź:** `arena/01a095b5-okolica`, **PR #14** — jedyny otwarty PR tej sesji.
+**Handoff:** `docs/setup/HANDOFF_2026-09-12f.md`.
+**Zlecenie właściciela:** „Mam nowy pomysł na podstronę Ranking”: przywrócić
+podstronę jako warstwę togglowaną ikonką pucharu, z DOKŁADNIE dwiema tabelami —
+„Ranking Punktowy Graczy” (zarejestrowani gracze wg zdobytych punktów,
+wszystkie rodzaje gier, max 5 pozycji) i „Mistrzowie Zagadek” (wg proporcji
+odpowiedzi poprawnych do zadanych, max 5 pozycji).
+
+**Trzy decyzje właściciela (dopytane przed kodem):** źródło danych = wspólny
+Drive (nowa akcja w skrypcie mostu; po zmianie `.gs` zgłoszona potrzeba
+redeployu „Wdróż → Nowa wersja”); do tabel wchodzą WYŁĄCZNIE gracze
+z potwierdzonym profilem (imię + PIN, ADR 0021) — goście bez profilu nie;
+„Mistrzowie Zagadek” liczą się od progu **10 zadanych pytań** (suma gier).
+
+### 1. `9e1737e` — implementacja rankingu (m12-90)
+
+Rankingi usunięto 2026-09-11 (`963a86d`, m12-81) — razem z akcją mostu
+`GET ?akcja=ranking` i schematem `RO-ranking/1` (surowe wiersze per gra:
+pseudonim, punkty, data, tryb, miejsce, geohash5, wiek, tematy). Nowa forma
+odwraca tylko DECYZJĘ o braku rankingu, nie jego kształt: numer schematu rośnie
+do `RO-ranking/2`, a odpowiedź niesie gotowe SUMY per gracz
+`{ pseudonim, punkty, poprawne, pytania }` — bez wierszy gier, więc na telefon
+nie jadą daty, miejsca ani geohashy innych osób (ADR 0013/0019 pkt 3).
+
+- **Most** (`docs/setup/apps-script-repo-paczek.gs`): `rankingi()` czyta katalog
+  gier zakończonych (jedno źródło dla hot-seat i multi) i katalog profili;
+  wiersz powstaje tylko dla gracza z profilem (`idProfilu` + `czytajProfil`),
+  pseudonim wyświetlany pochodzi z PROFILU („ALA” i „ala” to jeden wiersz
+  „Ala”), rezygnacja bez ani jednej odpowiedzi nie wchodzi do sum, a uszkodzony
+  plik gry albo profilu jest pomijany po cichu. Trasa: `doGet` obsługuje
+  `akcja === 'ranking'`.
+- **Aplikacja**: nowy czysty moduł `app/ranking.js` (limit 5 pozycji, próg 10
+  zadanych pytań, sortowanie z remisami — przy równej proporcji wyżej większa
+  próba, walidacja odpowiedzi, format „18/24 · 75%”); warstwa `#ekran-ranking`
+  w `index.html` (dwie tabele, linia statusu, ✕) i przełącznik
+  `#przycisk-ranking` (puchar) w belce. Stan ikony liczy jedno miejsce
+  (`odswiezWidocznoscPaneli`, wzorzec F3), Escape zamyka, a warstwa wygasza
+  pozostałe panele (`body.ranking-otwarte`).
+- **Testy**: `test/most-ranking.test.js` (5 testów WYKONUJE tekst `.gs` na
+  atrapie Drive — LESSONS L33), `test/ranking-ui.test.js` (13: reguły modułu
+  plus warstwa na atrapie DOM, w tym awaria sieci, śmieci w odpowiedzi i stan
+  „starsze wdrożenie bez akcji”: `{ blad: 'nieznana akcja' }` pokazujemy
+  dosłownie) i kontrakt ADR 0039.
+- **Odwrócony pin**: brama trzymała trzy asercje „rankingu NIE MA” (LESSONS
+  L31). Zamiast je kasować, przepisane na pin nowej formy + zakaz powrotu
+  starej (zakładki, kategorie, `ranking-moje-gry`) — nowa lekcja **L55**.
+
+### 2. Dokumentacja
+
+**ADR 0039** (nowy) + rejestr (wiersz 0039; nota przy 0019 o powrocie rankingu
+w nowej formie), **PROTOKOL §9.7** (`GET ?akcja=ranking`, `RO-ranking/2`,
+reguły i wymóg redeployu) z korektą noty o `RO-ranking/1` w §9.3,
+`docs/ARCHITECTURE.md` (moduł `ranking.js`; opis ekranu wyniku nadrobiony po
+ADR 0038) i `docs/ROADMAP.md` (M12: rankingi wróciły w nowej formie),
+`README.md` (M7 i nota o rankingu), **LESSONS L55**, handoff
+`docs/setup/HANDOFF_2026-09-12f.md`. `docs/setup/most-drive-instrukcja.md`
+dopowiada, że bez nowej wersji wdrożenia ranking nie ma danych.
+
+### 3. Bramy i stan po sesji
+
+`npm test` — **724/724** (0 fail), `npm run check` — oba szablony promptu
+zgodne, `npm run audyt` — 0 naruszeń WCAG AA, budżet lektury startowej
+**80 984/100 000** (rezerwa 19 016 — nowy ADR 0039, sekcja protokołu, README
+i ten wpis wchodzą do lektury startowej). Wszystko wypchnięte na `arena/01a095b5-okolica`.
+
+**Otwarte:** WDROŻENIE `.gs` (właściciel: „Wdróż → Nowa wersja”) — bez niego
+warstwa rankingu pokaże „most Drive odmówił: nieznana akcja”; sprawdzenie
+przez właściciela na telefonie: C (rotacja pytań), D (ekran wyników),
+E (intro) i F (ranking: dwie tabele, ikonka pucharu); potwierdzenie terenowe
+Buga B (≥3 paczki z Podkowy Leśnej); kamienie M3–M8 i M10–M12.

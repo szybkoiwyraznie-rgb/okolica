@@ -16,14 +16,14 @@
 | M2 — Mapa | ✅ 2026-09-05 | renderer SVG + 3 podkłady |
 | M3 — Konfiguracja i geolokalizacja | 🟡 kod gotowy, czeka kryterium | ekran prywatności + symulacja w UI; kryterium: §Kryteria |
 | M4 — Stacje z sieci drogowej | 🟡 kod gotowy, czeka kryterium | pipeline Overpass + UI, 3/3 fixture'y ≤ 15%; kryterium: §Kryteria |
-| M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | auto-start gry po przyjęciu, cicha wysyłka Drive, Nominatim opt-in; kryterium: §Kryteria |
+| M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | auto-start gry po przyjęciu, cicha wysyłka Drive prosto do repozytorium (bez moderacji, bez Nominatim); kryterium: §Kryteria |
 | M6 — Rozgrywka | 🟡 kod gotowy, czeka kryterium | ekran gry, trwalosc.js, wznowienie; kryterium: §Kryteria |
-| M7 — Podsumowanie i udostępnianie | 🟡 kod gotowy, czeka kryterium | ranking, eksporty, historia; kryterium: §Kryteria |
+| M7 — Podsumowanie i udostępnianie | 🟡 kod gotowy, czeka kryterium | ranking i historia; eksporty USUNIĘTE 2026-09-12 (ADR 0038); kryterium: §Kryteria |
 | M8 — Publikacja i brama jakości | 🟡 kod gotowy, czeka właściciela | manifest, ikony, CI, ASSETS §6; publikację włącza właściciel (WORKFLOW §5) |
 | M9 — Repozytorium paczek | ✅ 2026-09-06 (M9b) | kopia lokalna + most Drive (adres w kodzie) |
 | M10 — Dopracowanie terenowe | 🟡 kod gotowy, czeka kryterium | sw.js, PROFILE_GPS, sygnały, WCAG AA 0 naruszeń; kryterium: §Kryteria |
 | M11 — Gra wieloosobowa (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | most `.gs` + UI; kryterium: §Kryteria |
-| M12 — Historia gier (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | wynik gry na wspólnym Drive; rankingi USUNIĘTE 2026-09-11 (aneks ADR 0019); kryterium: §Kryteria |
+| M12 — Historia gier (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | wynik gry na wspólnym Drive; rankingi USUNIĘTE 2026-09-11 (aneks ADR 0019), wróciły w nowej formie 2026-09-12 — dwie tabele, sumy liczy most (ADR 0039); kryterium: §Kryteria |
 
 ## Kamienie zamknięte (M0, M1, M2, M9)
 
@@ -45,7 +45,7 @@ tutaj tylko to, co zostało do sprawdzenia:
 - **M5**: pełna pętla z prawdziwym modelem AI.
 - **M6** (§4.2): pełna gra na telefonie, z utratą zasięgu i zamknięciem
   przeglądarki.
-- **M7**: czytelność w słońcu na 360 px; eksporty na Chrome Android i Safari iOS.
+- **M7**: czytelność w słońcu na 360 px (kryterium zawężone 2026-09-12 — eksporty wyniku usunięte z aplikacji, ADR 0038).
 - **M8**: włączenie publikacji — jednorazowy krok właściciela (WORKFLOW §5).
 - **M10** (§4.3): checklista terenowa; wynik do LESSONS.
 - **M11/M12** (§4.4): test dwóch telefonów (9 punktów, w tym „stan mostu").

@@ -143,6 +143,36 @@ test('most: wyjście ORGANIZATORA z lobby zamyka grę i zrzuca ją z listy', () 
   assert.equal(most.opuscGre({ kod, graczId: 'g-2' }).ok, false, 'w zamkniętej grze nie ma już lobby');
 });
 
+test('most: wyjście organizatora zamyka grę po `organizatorId`, nie po indeksie 0 (m12-84)', () => {
+  // Obserwacja audytu PR #13 pkt 5: reguła czytała indeks 0 w `gracze`.
+  // Scenariusz, w którym to przestaje być równoważne, jest realny: kolejność
+  // graczy może się zmienić (korekta pliku, stary zapis), a wtedy indeks 0
+  // wskazuje GOŚCIA. Sprawdzamy obie strony tej samej pomyłki.
+  const { most, pliki } = uruchomMost();
+  const zalozona = most.zalozGre({ tryb: 'trasa', organizator: { pseudonim: 'Ania' }, konfiguracja: konfiguracja(), zestaw: zestaw() });
+  const kod = zalozona.gra.kod;
+  most.dolaczDoGry({ kod, pseudonim: 'Bartek' });
+
+  // Odwracamy kolejność w pliku gry: gość pierwszy, organizator (g-1) drugi.
+  const rekord = pliki.get(zalozona.gra.idGry);
+  const gra = JSON.parse(rekord.tresc);
+  assert.deepEqual(gra.gracze.map((g) => g.id), ['g-1', 'g-2'], 'przed odwróceniem: organizator pierwszy');
+  gra.gracze = [gra.gracze[1], gra.gracze[0]];
+  gra.organizatorId = 'g-1';
+  rekord.tresc = JSON.stringify(gra);
+
+  const goscNaIndeksieZero = most.opuscGre({ kod, graczId: 'g-2' });
+  assert.equal(goscNaIndeksieZero.ok, true, `wyjście gościa: ${goscNaIndeksieZero.blad}`);
+  assert.equal(goscNaIndeksieZero.zamknieta, false, 'wyjście gościa NIE zamyka gry, nawet z indeksu 0');
+  assert.equal(most.listaGier().wpisy.length, 1, 'gra nadal w lobby — ma organizatora');
+
+  // Organizator jest teraz na indeksie 1 i wyjście i tak musi zamknąć grę.
+  const organizatorNaIndeksieJeden = most.opuscGre({ kod, graczId: 'g-1' });
+  assert.equal(organizatorNaIndeksieJeden.ok, true, `wyjście organizatora: ${organizatorNaIndeksieJeden.blad}`);
+  assert.equal(organizatorNaIndeksieJeden.zamknieta, true, 'gra bez organizatora nie ma ciągu dalszego');
+  assert.equal(most.listaGier().wpisy.length, 0, 'zamknięta gra znika z lobby');
+});
+
 test('most: współrzędne w zdarzeniu są wycinane po stronie serwera', () => {
   const { most, pliki, kod, idGry } = graDwuosobowa();
   const zTrasa = most.przyjmijZdarzenie({

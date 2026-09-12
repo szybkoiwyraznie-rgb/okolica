@@ -183,6 +183,17 @@ function podlaczFetch(dom) {
   dom.window.fetch = globalThis.fetch;
 }
 
+/** Czeka na warunek w atrapie (żądania mostu są asynchroniczne). */
+async function czekajNa(dom, warunek, opis, maksMs = 5000) {
+  const start = Date.now();
+  while (!warunek()) {
+    if (Date.now() - start > maksMs) {
+      throw new Error(`${opis} nie nastąpiło w ${maksMs} ms — status: ${dom.pobierz('zestawy-status').textContent}`);
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 function atrapaFetch(odpowiedzi) {
   const wywolania = [];
   const pierwotny = globalThis.fetch;
@@ -215,6 +226,161 @@ test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra be
     assert.match(dom.pobierz('status').textContent, /bez modelu i bez Overpassa/);
     assert.match(dom.pobierz('status').textContent, /repozytorium/);
     assert.ok(atrap.wywolania.some((u) => u.includes('https://repo.przyklad/indeks.json')), 'fetch poszedł do skonfigurowanego źródła');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+/* -------- awarie mostu: prawdziwy powód zamiast jednego „niedostępne” (2026-09-12) -------- */
+
+/** Atrapa fetch dla awarii: `kroki` to kolejne odpowiedzi (funkcje albo wyjątki). */
+function atrapaFetchKroki(kroki) {
+  const wywolania = [];
+  const pierwotny = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const krok = kroki[Math.min(wywolania.length, kroki.length - 1)];
+    wywolania.push(String(url));
+    return krok();
+  };
+  return { wywolania, przywroc: () => { globalThis.fetch = pierwotny; } };
+}
+
+const odpowiedzTekst = (tekst) => async () => ({ ok: true, status: 200, text: async () => tekst });
+const odpowiedzHttp = (status) => async () => ({ ok: false, status, text: async () => '' });
+const bladSieci = () => async () => { throw new TypeError('Failed to fetch'); };
+
+test('zestawy UI: pierwsze żądanie nie doszło — druga próba pokazuje paczki (zimny start mostu)', async () => {
+  // Zgłoszenie właściciela 2026-09-12: panel mówił „Repozytorium niedostępne”,
+  // choć paczki na Drive są. Najczęstszą przyczyną jest zimny start web app po
+  // wdrożeniu — jedno ponowienie ma to leczyć, a nie ukrywać.
+  globalThis.__OKOLICA_PONOWNA_PROBA_MS__ = 10; // przed importem app.js (stała modułu)
+  const atrap = atrapaFetchKroki([bladSieci(), odpowiedzTekst(JSON.stringify(indeksZPropozycja()))]);
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => /Repozytorium ma paczki/.test(dom.pobierz('zestawy-status').textContent), 'lista po powtórce');
+    assert.equal(atrap.wywolania.length, 2, 'dokładnie jedna powtórka');
+    assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'paczka z repozytorium na liście');
+    assert.equal(dom.pobierz('most-stan-repo').classList.contains('bledy'), false,
+      'udana próba nie zostawia ostrzeżenia w stanie mostu');
+  } finally {
+    atrap.przywroc();
+    delete globalThis.__OKOLICA_PONOWNA_PROBA_MS__;
+  }
+});
+
+test('zestawy UI: HTTP 403 z mostu — komunikat nazywa przyczynę i nie udaje pustego repo', async () => {
+  const atrap = atrapaFetchKroki([odpowiedzHttp(403)]);
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => /Repozytorium niedostępne/.test(dom.pobierz('zestawy-status').textContent), 'komunikat awarii');
+    const tekst = dom.pobierz('zestawy-status').textContent;
+    assert.match(tekst, /HTTP 403/, 'przyczyna wprost (403 = wdrożenie bez dostępu „Każdy”)');
+    assert.match(tekst, /repo\.przyklad/, 'w komunikacie jest host, do którego pytaliśmy — diagnostyka bez zgadywania');
+    assert.ok(!/Repozytorium jest puste|nie ma paczek/.test(tekst), 'awaria nie udaje pustego repozytorium');
+    assert.ok(dom.pobierz('most-stan-repo').textContent.includes('Ostatnia próba nie doszła'),
+      'stan mostu mówi prawdę po nieudanej próbie („podłączony” to nie to samo co działające połączenie)');
+    assert.ok(dom.pobierz('most-stan-repo').classList.contains('bledy'), 'awaria jest widoczna, nie szara');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('zestawy UI: most odpowiedział nieczytelnie (HTML) — to nie jest „puste repo”', async () => {
+  const atrap = atrapaFetchKroki([odpowiedzTekst('<html><body>Zaloguj się do konta Google</body></html>')]);
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => /nieczytelna odpowiedź/.test(dom.pobierz('zestawy-status').textContent), 'komunikat o nieczytelnej odpowiedzi');
+    const tekst = dom.pobierz('zestawy-status').textContent;
+    assert.match(tekst, /Repozytorium niedostępne \(nieczytelna odpowiedź/, 'odpowiedź bez sensu = awaria, nie „pusto”');
+    assert.match(tekst, /Z01/, 'kod usterki mówi, CZEGO nie zrozumieliśmy (to nie jest JSON)');
+    assert.ok(!/Repozytorium jest puste/.test(tekst), 'nieczytelna odpowiedź nie udaje pustego repozytorium');
+    assert.match(dom.pobierz('most-stan-repo').textContent, /Z01 — To nie jest poprawny JSON/,
+      'stan mostu niesie PEŁNY opis usterki — z nim da się coś zrobić bez zgadywania');
+    assert.equal(atrap.wywolania.length, 1, 'odpowiedź nieczytelna = nie ma czego powtarzać (to nie sieć)');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('zestawy UI: pobranie paczki z repozytorium bez sieci mówi, CO się nie udało', async () => {
+  const atrap = atrapaFetchKroki([
+    odpowiedzTekst(JSON.stringify(indeksZPropozycja())), // indeks się udaje
+    bladSieci(),                                        // plik paczki już nie
+  ]);
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length > 0, 'propozycja z repozytorium');
+    kliknijPierwszyPrzyciskZestawu(dom);
+    await czekajNa(dom, () => /Nie udało się pobrać paczki/.test(dom.pobierz('status').textContent), 'status po nieudanym pobraniu');
+    assert.match(dom.pobierz('status').textContent, /brak połączenia/, 'status nazywa przyczynę (LESSONS L6)');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('zestawy UI: wysypka NASZEGO czytania odpowiedzi nie udaje awarii mostu (m12-86)', async () => {
+  // Zgłoszenie właściciela 2026-09-12: „most na pewno działa (gra, paczka z AI),
+  // to musiał być problem ze sprawdzaniem paczek”. Poprzedni kod łapał jednym
+  // `.catch(() => …)` CAŁY łańcuch — także wyjątek we własnym renderze na
+  // poprawnej odpowiedzi — i meldował „Repozytorium niedostępne”. Ten test
+  // wymusza taką wysypkę i pilnuje, że komunikat mówi prawdę o obu stronach.
+  const wywolania = [];
+  const pierwotny = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    wywolania.push(String(url));
+    // Odpowiedź z opóźnieniem: między synchronicznym renderem lokalnych paczek
+    // (przy wejściu na pozycję) a przyjęciem indeksu mamy czas podmienić jedną
+    // metodę atrapy DOM i wymusić wysypkę NASZEGO kodu na POPRAWNEJ odpowiedzi.
+    await new Promise((r) => setTimeout(r, 40));
+    return { ok: true, status: 200, text: async () => JSON.stringify(indeksZPropozycja()) };
+  };
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    dom.pobierz('zestawy-lista').replaceChildren = () => { throw new Error('atrapa: wybuch w renderze listy'); };
+    await czekajNa(dom, () => /błąd aplikacji/.test(dom.pobierz('zestawy-status').textContent), 'komunikat o naszym błędzie');
+    const tekst = dom.pobierz('zestawy-status').textContent;
+    assert.match(tekst, /Repozytorium odpowiedziało/, 'mówimy wprost, że most ODPOWIEDZIAŁ');
+    assert.match(tekst, /atrapa: wybuch w renderze listy/, 'komunikat niesie nasz konkretny błąd, nie ogólnik');
+    assert.ok(!/Repozytorium niedostępne/.test(tekst), 'nasz błąd nie udaje awarii mostu');
+    assert.ok(!/nieczytelna odpowiedź/.test(tekst), 'nasz błąd nie udaje też nieczytelnej odpowiedzi mostu');
+    assert.equal(wywolania.length, 1, 'naszego błędu nie „leczymy” powtórką żądania');
+    assert.equal(dom.pobierz('most-stan-repo').classList.contains('bledy'), false,
+      'skoro most odpowiedział, stan mostu nie jest czerwony');
+  } finally {
+    globalThis.fetch = pierwotny;
+  }
+});
+
+test('zestawy UI: awaria mówi, KTÓRE wdrożenie pytaliśmy (diagnostyka kilku wdrożeń)', async () => {
+  // Właściciel wdraża kolejne wersje web app; przy „Edit deployment” adres
+  // zostaje, przy „New deployment” — zmienia się. Gdy paczki się nie pokazują,
+  // pierwsze pytanie brzmi: czy aplikacja pyta o TO wdrożenie? Dlatego komunikat
+  // pokazuje prefiks identyfikatora (ADR 0020: adres nie jest sekretem).
+  const url = 'https://script.google.com/macros/s/AKfycbxlScMHr8bR1DSq7cPPr9914A1ur3J9bBRpHNEKV3YFmCcYr37dAN6jpq2zVWuwECGu/exec';
+  const atrap = atrapaFetchKroki([odpowiedzHttp(404)]);
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', url]]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => /Repozytorium niedostępne/.test(dom.pobierz('zestawy-status').textContent), 'komunikat awarii');
+    assert.match(dom.pobierz('zestawy-status').textContent, /script\.google\.com\/s\/AKfycbxlSc…\/exec/,
+      'w komunikacie jest rozpoznawalny adres wdrożenia, nie tylko host');
   } finally {
     atrap.przywroc();
   }

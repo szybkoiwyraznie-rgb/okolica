@@ -25,6 +25,12 @@
  * gra-zakoncz; doGet: gry (lobby) / gra-stan. Stan gry (RO-gra/1)
  * żyje w katalogach okolica-gry-{otwarte,zakonczone}; zdarzenia NIE zawierają
  * współrzędnych graczy (ADR 0013/0019 pkt 3 — pola lat/lon są kasowane).
+ *
+ * RANKING (zgłoszenie właściciela 2026-09-12, ADR 0019 aneks 2026-09-12f):
+ * doGet: ranking — most AGREGUJE liczniki graczy ZAREJESTROWANYCH (profil
+ * w okolica-profile) z wszystkich zakończonych gier (hot-seat i wieloosobowe)
+ * i oddaje same sumy (RO-ranking/2). Telefon sortuje i ucina do 5 wierszy;
+ * surowe wiersze gier (daty, miejsca, geohashy) nie opuszczają Drive.
  */
 
 const FOLDERY = {
@@ -338,6 +344,7 @@ function doGet(e) {
     if (akcja === 'paczka') return json(paczkaPrzezId(e.parameter.id));
     if (akcja === 'gry') return json(listaGier());
     if (akcja === 'gra-stan') return json(stanGry(e.parameter.kod, e.parameter.id));
+    if (akcja === 'ranking') return json(rankingi());
     return json({ blad: 'nieznana akcja' });
   } catch (err) {
     return json({ blad: String((err && err.message) || err) });
@@ -684,7 +691,61 @@ function listaGier() {
   return { schemat: 'RO-lobby/1', wpisy };
 }
 
-/** POST gra-dolacz: kod ALBO idGry (z lobby) + pseudonim; tylko w lobby. */
+/**
+ * GET ranking: sumy po graczach ZAREJESTROWANYCH (ADR 0019 aneks 2026-09-12f).
+ *
+ * „Zarejestrowany” = ma profil na Drive (`RO-profil/1`, folder okolica-profile,
+ * utworzony przez „➕ Dodaj gracza” — ADR 0021). Gracz dodany bez potwierdzenia
+ * (Drive milczał) gra normalnie, ale nie wchodzi do rankingu — decyzja
+ * właściciela 2026-09-12.
+ *
+ * Most AGREGUJE i oddaje gotowe sumy (punkty, poprawne, pytania) zamiast
+ * surowych wierszy gier, jak robiło to wycofane `RO-ranking/1`:
+ *   1. odpowiedź jest mała i nie zależy od liczby gier,
+ *   2. telefon nie dostaje per-gra danych innych osób (daty, miejsca,
+ *      geohashy — ADR 0013/0019 pkt 3),
+ *   3. reguła „kto wchodzi do rankingu” żyje w JEDNYM miejscu (tu), więc
+ *      aplikacja i most nie mogą się rozjechać.
+ *
+ * Rezygnacja bez ani jednej odpowiedzi nie wchodzi do sum (nie ma wyniku),
+ * a uszkodzony plik gry albo profilu nie psuje rankingu — wypada po cichu.
+ */
+function rankingi() {
+  const zarejestrowani = {};   // id profilu → pseudonim Z PROFILU (kanoniczna pisownia)
+  const profileIt = folder(FOLDERY.profile).getFiles();
+  while (profileIt.hasNext()) {
+    try {
+      const profil = JSON.parse(profileIt.next().getBlob().getDataAsString('UTF-8'));
+      if (!profil || profil.schemat !== SCHEMAT_PROFILU) continue;
+      const id = idProfilu(profil.pseudonim);
+      if (id) zarejestrowani[id] = String(profil.pseudonim || '').trim();
+    } catch (err) { /* uszkodzony profil nie psuje rankingu */ }
+  }
+  const gracze = {};           // id profilu → { pseudonim, punkty, poprawne, pytania }
+  const pliki = folder(FOLDERY.gryZakonczone).getFiles();
+  while (pliki.hasNext()) {
+    const plik = pliki.next();
+    try {
+      const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+      if (gra.schemat !== SCHEMAT_GRY || gra.stan !== 'zakonczona' || !gra.wyniki) continue;
+      Object.keys(gra.wyniki).forEach((idGracza) => {
+        const w = gra.wyniki[idGracza];
+        if (!w) return;
+        const poprawne = Number(w.poprawne) || 0;
+        const bledne = Number(w.bledne) || 0;
+        if (w.zrezygnowal && !(w.stacjeZamkniete > 0)) return; // rezygnacja bez wyniku
+        const klucz = idProfilu(w.pseudonim);
+        if (!klucz || !zarejestrowani[klucz]) return;          // tylko zarejestrowani
+        if (!gracze[klucz]) gracze[klucz] = { pseudonim: zarejestrowani[klucz], punkty: 0, poprawne: 0, pytania: 0 };
+        gracze[klucz].punkty += Number(w.punkty) || 0;
+        gracze[klucz].poprawne += poprawne;
+        gracze[klucz].pytania += poprawne + bledne;
+      });
+    } catch (err) { /* uszkodzony plik nie psuje rankingu */ }
+  }
+  return { schemat: 'RO-ranking/2', gracze: Object.keys(gracze).map((k) => gracze[k]) };
+}
+
 /**
  * POST gra-opusc: gracz wychodzi z LOBBY przed startem (właściciel 2026-09-11:
  * „dołączanie i wychodzenie w dowolnym momencie"). Bez tego wychodzący zostawał
@@ -709,7 +770,15 @@ function opuscGre(dane) {
     const graczId = String((dane && dane.graczId) || '');
     const indeks = gra.gracze.findIndex((g) => g.id === graczId);
     if (indeks < 0) return { ok: false, blad: 'nie ma takiego gracza w tej grze' };
-    if (indeks === 0) {
+    // Organizatora rozpoznajemy po POLU, które go definiuje — `gra.organizatorId`
+    // (m12-84, audyt PR #13 pkt 5). Wcześniej był to indeks 0 w `gracze`, co
+    // działa tylko dopóki zakładający grę stoi pierwszy: po zmianie kolejności
+    // graczy (albo ręcznej korekcie pliku na Drive) wyjście organizatora
+    // USUWAŁO go z listy zamiast zamknąć grę, a wyjście gościa z indeksu 0
+    // zamykało grę wszystkim. Fallback na pierwszego gracza tylko dla zapisów
+    // sprzed wprowadzenia pola — dla nich zachowanie zostaje jak dawniej.
+    const organizatorId = String(gra.organizatorId || (gra.gracze[0] && gra.gracze[0].id) || '');
+    if (graczId === organizatorId) {
       gra.stan = 'archiwum';
       zapiszGre(znaleziona.plik, gra);
       przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
@@ -721,6 +790,7 @@ function opuscGre(dane) {
   });
 }
 
+/** POST gra-dolacz: kod ALBO idGry (z lobby) + pseudonim; tylko w lobby. */
 function dolaczDoGry(dane) {
   return zBlokada(() => {
     const pseudonim = String((dane && dane.pseudonim) || '').trim().slice(0, 24);
