@@ -3714,3 +3714,33 @@ stare gry muszą być czytelne).
 - **Brama na drzewie po H/3** (spisana z outputu, lekcja z O1/O2 powyżej):
   `npm test` → **733/733** (734 z PR #17 −3 akcje +2 piny H),
   `npm run check` OK, audyt kontrastu 0 naruszeń.
+
+## Sesja 2026-09-12I — zadania I+J: paczki tylko z repo, START GRY gaśnie w grze (gałąź arena/01a0970a-okolica)
+
+Zlecenie właściciela: (I.a) usunąć „CC BY-SA 4.0” z opisów paczek z Drive;
+(I.b) usunąć pokazywanie paczek z telefonu; (J) „⚙ START GRY” aktywna tylko
+gdy gra się NIE toczy. Zakres rozstrzygnięty inwentaryzacją: I.a to jedna
+linijka display; I.b wariant B2 (sekcja UI znika, cichy zapis przyjętej
+paczki + migracja starego klucza ZOSTAJĄ — druga gra bez modelu);
+J to `disabled` + dynamiczny `title` na ikonie belki.
+
+- **IJ/1** (kod + `?v=m12-95`): `app.js` bez `· ${meta.licencja}` w opisie
+  repo, KANDYDACI i 4 statusy repo-only, `grajZZestawemLokalnym` wycięty,
+  import bez `dopasujZestawy`, nowa `odswiezStanIkonBelki` (predykat:
+  rozgrywka && faza != koniec && !ręczny-koniec) wołana z `pokazWyniki`,
+  CSS `.przycisk-ikona[disabled]`; `most.js`: stan mostu bez „paczek
+  z tego telefonu”. Suita po IJ/1: 733/716/17 faili — sam teren I.b.
+- **IJ/2** (testy + pin kontraktu): `zestawy-ui` 18/18 (migracja bez UI,
+  sortowanie 2 wiersze), `aplikacja` 123/123 (Q z indeksu repo; J: zgaszony
+  od auto-startu po paczce, odgaszony po końcu i po `nowa-gra`), `multi`
+  17/17 (kluczowa lekcja: `adresMostu` woli URL multi — jedno wdrożenie
+  mostu wydaje indeks pod gołym adresem i plik przez `?akcja=paczka&id=…`;
+  atrapa fetch serwuje je po akcji, nie po URL-u). Kontrakt 81/81 —
+  test 81 pinuje nieobecność etykiety telefonu i licencji w UI.
+- **IJ/3** (dokumenty): aneksy 2026-09-12 ADR 0017 (repo-only, licencja
+  w formacie zostaje) i 0011 (zgaszony START jako przykład pkt 7);
+  WORKFLOW §3 pkt 6 i §4.3 pkt 1, README (klauzula J). ASSETS §4 bez zmian
+  (pola `licencja` nadal wymagane w formacie); historia nietknięta poza
+  tym wpisem.
+- **Brama na drzewie po IJ/3** (spisana z outputu): `npm test` → **734/734**,
+  `npm run check` OK, audyt kontrastu 0 naruszeń.

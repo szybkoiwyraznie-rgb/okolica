@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-94';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-94';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-95';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-95';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,20 +32,20 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-94';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-94';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-94';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-94';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-94';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-94';
+} from './protokol.js?v=m12-95';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-95';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-95';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-95';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-95';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-95';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
-  czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
+  czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-94';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-94';
+} from './zestawy.js?v=m12-95';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-95';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -61,18 +61,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-94';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-94';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-94';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-94';
-import { adresMostu, stanMostu } from './most.js?v=m12-94';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-94';
+} from './sieci.js?v=m12-95';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-95';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-95';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-95';
+import { adresMostu, stanMostu } from './most.js?v=m12-95';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-95';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-94';
+} from './oceny.js?v=m12-95';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -256,6 +256,17 @@ function odswiezStanIkonBelki() {
   // „START GRY” świeci na całej ścieżce przygotowania gry (ekrany 1–5), bo to
   // ta sama warstwa setupu — nie tylko na pierwszym jej kroku.
   ustaw('przycisk-setup', EKRANY.includes(STAN.ekran));
+  // Zgłoszenie J (2026-09-12): ⚙ START GRY w trakcie gry resetował ją bez
+  // ostrzeżenia (setup → startGry nadpisuje STAN.rozgrywka) — ikona jest
+  // nieaktywna, dopóki gra się toczy; wraca przed grą i po niej.
+  const setup = $('przycisk-setup');
+  if (setup) {
+    const graToczySie = STAN.rozgrywka && STAN.rozgrywka.faza !== FAZY.koniec && !STAN.graZakonczonaRecznie;
+    setup.disabled = Boolean(graToczySie);
+    setup.title = graToczySie
+      ? 'START GRY — niedostępne w trakcie gry (dokończ albo zakończ grę)'
+      : 'START GRY — ustawienia gry';
+  }
 }
 
 /** Próg odświeżania propozycji paczek (uwagi terenowe #2, 2026-09-11):
@@ -2264,9 +2275,9 @@ function renderujZestawy() {
 }
 
 /**
- * Karta propozycji na ekranie pozycja: najpierw kopie z tego telefonu, potem
- * (asynchronicznie, z timeoutem) dopasowania z repozytorium. Każda awaria
- * repo = „brak propozycji", nigdy blokada gry (ADR 0017 pkt 6).
+ * Karta propozycji na ekranie pozycja: wyłącznie dopasowania z repozytorium
+ * (asynchronicznie, z timeoutem; I.b — kopii z telefonu nie pokazujemy).
+ * Każda awaria repo = „brak propozycji", nigdy blokada gry (ADR 0017 pkt 6).
  */
 function odswiezPropozycjeZestawow() {
   const karta = $('zestawy-karta');
@@ -2294,33 +2305,22 @@ function odswiezPropozycjeZestawow() {
   lista.replaceChildren(); // standardowe czyszczenie (atrapa DOM też je umie)
   // Nowe kryteria (pozycja, setup) = nowa lista: startuje zwinięta.
   ZESTAWY_ROZWINIETE = false;
-  KANDYDACI_ZESTAWOW = dopasujZestawy(czytajRejestrZestawow(), kryteria).map((wpis) => ({
-    opis: `${wpis.miejsce} · ${wpis.data} · ${wpis.liczbaStacji} stacji × ${wpis.pytaniaNaStacje} pytań · ${wpis.tematy.join(', ')} · ${wpis.wiek}`,
-    etykieta: '📱 z tego telefonu:',
-    akcja: () => grajZZestawemLokalnym(wpis.skrot),
-    statystyki: '',
-    factcheck: czyWpisFactcheck(wpis),
-    // Oceny żyją na Drive (ADR 0028) — paczka z telefonu zaczyna bez głosów.
-    plus: 0,
-    data: wpis.data,
-  }));
+  // Zgłoszenie I.b (2026-09-12): paczek z telefonu NIE pokazujemy — wszystkie
+  // są w repozytorium, a druga lista tylko dublowała wpisy. Rejestr lokalny
+  // i jego zapis działają dalej (cichy cache, ADR 0017 pkt 7), ale propozycje
+  // pochodzą wyłącznie z repozytorium.
+  KANDYDACI_ZESTAWOW = [];
   renderujZestawy();
   const url = adresMostu(); // ADR 0020: adres z kodu aplikacji (albo nadpisany w pamięci telefonu)
   pokazStanMostu();
   if (!url) {
-    $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
-      ? 'Masz gotowe paczki z tego telefonu. Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji.'
-      : 'Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji — nowe pytania przygotuje model.';
+    $('zestawy-status').textContent = 'Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji — nowe pytania przygotuje model.';
     return;
   }
-  $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
-    ? 'Masz gotowe paczki z tego telefonu; sprawdzam też repozytorium…'
-    : 'Sprawdzam repozytorium paczek dla tej okolicy…';
+  $('zestawy-status').textContent = 'Sprawdzam repozytorium paczek dla tej okolicy…';
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
   if (!f) {
-    $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
-      ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
-      : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
+    $('zestawy-status').textContent = 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
     return;
   }
   // Odświeżenie jest asynchroniczne, a setup woła je przy każdej zmianie
@@ -2393,9 +2393,7 @@ async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
   // Pełny powód (z kodem usterki) trafia do stanu mostu; w zdaniu wystarcza kod.
   STAN.mostOstatniBlad = szczegol ?? powod;
   pokazStanMostu();
-  $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
-    ? `Repozytorium niedostępne (${powod}${gdzie}) — zostały paczki z tego telefonu.`
-    : `Repozytorium niedostępne (${powod}${gdzie}) — gramy zwykłą ścieżką (prompt i model).`;
+  $('zestawy-status').textContent = `Repozytorium niedostępne (${powod}${gdzie}) — gramy zwykłą ścieżką (prompt i model).`;
 }
 
 /** Adres mostu do komunikatu awarii — rozpoznawalny, ale nie cały URL.
@@ -2427,7 +2425,7 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
   if (nieczytelna) return nieczytelna;
   const dopasowane = dopasujMetaIndeksu(indeks, kryteria);
   KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
-    opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
+    opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek}`, // I.a: bez licencji (format TO-zestaw/1 ją niesie, opis nie)
     etykieta: '🌍 repozytorium:',
     akcja: () => grajZZestawemZRepo(meta, urlZrodla),
     // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
@@ -2486,25 +2484,6 @@ function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
     status(`Gra z gotowej paczki (${zrodlo}): ${STAN.rozgrywka.stacje.length} stacji, bez modelu i bez Overpassa.` + ADR(' (ADR 0017 pkt 7)'));
   }
   return true;
-}
-
-function grajZZestawemLokalnym(skrot) {
-  if (typeof localStorage === 'undefined') return;
-  const { zestaw, usterki } = walidujZestawLokalnySurowy(localStorage.getItem(kluczZestawu(skrot)) ?? '');
-  if (!zestaw) {
-    status(`Paczka z tego telefonu jest nieczytelna (${usterki[0]?.komunikat ?? 'błąd'}) — usuwam wpis z rejestru.`);
-    const { rejestr } = walidujRejestrSurowy(localStorage.getItem(KLUCZ_REJESTRU) ?? '');
-    localStorage.setItem(KLUCZ_REJESTRU, JSON.stringify({ schemat: nowyRejestr().schemat, wpisy: rejestr.filter((w) => w.skrot !== skrot) }));
-    localStorage.removeItem(kluczZestawu(skrot));
-    odswiezPropozycjeZestawow();
-    return;
-  }
-  // ADR 0028 aneks (właściciel 2026-09-09): paczka z pamięci telefonu też jest
-  // na Drive — jeśli znamy jej identyfikator, kciuki działają jak przy paczce
-  // wziętej z repozytorium. Nie znamy = panel zostaje schowany (jak dotąd).
-  STAN.paczkaRepoId = idPaczkiDlaZestawu(zestaw.kontener?.skrot);
-  if (STAN.paczkaRepoId && !STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
-  przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: 'z tego telefonu' });
 }
 
 async function grajZZestawemZRepo(wpis, urlIndeksu) {
@@ -3332,6 +3311,7 @@ function wrocNaPoczatek() {
 function pokazWyniki() {
   const r = STAN.rozgrywka;
   if (!r) return;
+  odswiezStanIkonBelki(); // koniec gry (naturalny, ręczny, multi) odwiesza ⚙ START GRY (zgłoszenie J)
   const wynik = podsumowanie(r);
 
   // 1. karta zwycięzcy

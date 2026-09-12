@@ -1337,3 +1337,14 @@ test('kontrakt ADR 0039: ranking — dwie tabele, akcja mostu i wspólny schemat
   assert.equal(APP.includes('MINIMUM_PYTAN_ODPOWIEDZI'), false, 'progu nie ma w app.js — trzyma go app/ranking.js');
   assert.match(APP, /mistrzowieZagadek\(ranking\)/, 'aplikacja używa funkcji modułu, nie własnej kopii reguły');
 });
+
+test('I+J: paczki tylko z repo, START GRY gaśnie w trakcie gry', () => {
+  // I.b: sekcja „📱 z tego telefonu:” nie istnieje w UI ani w tekstach stanu.
+  assert.equal(APP.includes('📱 z tego telefonu'), false, 'etykieta sekcji paczek z telefonu nie wróciła (I.b)');
+  assert.equal(czytaj('app/most.js').includes('paczki z tego telefonu'), false, 'stan mostu nie obiecuje paczek z telefonu (I.b)');
+  // I.a: opis paczki z repo nie pokazuje licencji.
+  assert.equal(APP.includes('${meta.licencja}'), false, 'opis propozycji bez licencji (I.a)');
+  // J: belka ikon zna stan gry — przycisk gaśnie, CSS to pokazuje.
+  assert.match(APP, /odswiezStanIkonBelki/, 'belka odświeża stan ikon (J)');
+  assert.match(STYLE, /\.przycisk-ikona\[disabled\]/, 'zgaszony przycisk ma styl (J)');
+});

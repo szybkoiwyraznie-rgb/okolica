@@ -1140,7 +1140,7 @@ test('ADR 0032: historia pokazuje Q dla zweryfikowanych i starszych wpisów, nie
 });
 
 test('ADR 0032: propozycje paczek pokazują Q tylko dla zweryfikowanych', async () => {
-  const { zbierzMetaZestawu, nowyRejestr } = await import('../app/zestawy.js');
+  const { zbierzMetaZestawu } = await import('../app/zestawy.js');
   const { geohash } = await import('../app/geo.js');
   const baza = { lat: 52.2297, lon: 21.0122, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1, miejsce: 'Śródmieście' };
   const metaFc = zbierzMetaZestawu({ ...baza, data: '2026-09-09 10:00' });
@@ -1153,16 +1153,23 @@ test('ADR 0032: propozycje paczek pokazują Q tylko dla zweryfikowanych', async 
   konfig.konfig.imiona = ['Gracz 1', 'Gracz 2', 'Gracz 3'];
   pamiec.set('okolica:konfig', JSON.stringify(konfig));
   pamiec.set('okolica:gracze', JSON.stringify({ schemat: 'gracze-lokalni/1', gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })) }));
-  pamiec.set('okolica:zestawy', JSON.stringify({ schemat: nowyRejestr().schemat, wpisy: [
-    { skrot: 'aaa', ...metaFc, kodGry: 'x' },
-    { skrot: 'bbb', ...metaBez, kodGry: 'x' },
-  ] }));
+  // I.b: propozycje tylko z repozytorium — wpisy z indeksu (factcheck niesie wpis)
+  const URL_REPO = 'https://repo.przyklad/indeks.json';
+  pamiec.set('okolica:repo-zestawow:url', URL_REPO);
+  const indeks = JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [
+    { skrot: 'aaa', id: 'drive-aaa', licencja: 'CC BY-SA 4.0', ...metaFc, kodGry: 'x' },
+    { skrot: 'bbb', id: 'drive-bbb', licencja: 'CC BY-SA 4.0', ...metaBez, kodGry: 'x' },
+  ] });
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?fclista=${Math.random().toString(36).slice(2)}`);
+  domAtrapa.window.fetch = async (url) => (String(url).startsWith(URL_REPO)
+    ? { ok: true, status: 200, text: async () => indeks }
+    : { ok: false, status: 404, text: async () => '' });
   domAtrapa.kliknij('przycisk-dalej-pozycja');
   await czekaj(20); // handler nawigacji jest asynchroniczny (bramka tożsamości)
   assert.equal(domAtrapa.pobierz('ekran-pozycja').hidden, false, 'nawigacja przeszła bramę setupu');
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  for (let i = 0; i < 200 && domAtrapa.pobierz('zestawy-lista').children.length < 2; i++) await czekaj(10);
   const wiersze = [...domAtrapa.pobierz('zestawy-lista').children];
   assert.equal(wiersze.length, 2, 'oba wpisy dopasowane do setupu testowego');
   const maQ = (li) => [...li.children[0].children].some((c) => c?.className === 'znaczek-factcheck');
@@ -1603,6 +1610,24 @@ test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zos
   assert.match(dom.pobierz('status').textContent, /można ją wznowić/, 'uczciwie: zapis zostaje');
   assert.ok(pamiec.has('okolica:gra:' + pamiec.get('okolica:gra-aktywna')), 'zapis NIE skasowany — można wrócić do gry');
   assert.match(zakoncz.textContent, /Zakończ grę/, 'przycisk wraca do zwykłej etykiety');
+});
+
+test('M6: ⚙ START GRY nieaktywne w trakcie gry, wraca po jej końcu (zgłoszenie J)', async () => {
+  const { dom } = await graGotowaDoStartu();
+  const setup = () => dom.pobierz('przycisk-setup');
+  // gra startuje SAMA po przyjęciu paczki — od fazy A to już „toczy się”
+  // (setup → startGry nadpisałby STAN.rozgrywka bez ostrzeżenia)
+  zaczynijGre(dom);
+  assert.equal(setup().disabled, true, 'od startu gry ikona nieaktywna');
+  dom.kliknij('przycisk-start-odcinka');
+  assert.equal(setup().disabled, true, 'w odcinku nadal nieaktywna');
+  assert.match(setup().title, /niedostępne w trakcie gry/, 'title mówi, dlaczego nieaktywna');
+  dom.kliknij('przycisk-zakoncz-gre'); // uzbrojenie
+  dom.kliknij('przycisk-zakoncz-gre'); // ręczny koniec → wynik
+  assert.equal(setup().disabled, false, 'po końcu gry ikona znowu aktywna');
+  assert.match(setup().title, /ustawienia gry/);
+  dom.kliknij('przycisk-nowa-gra'); // „Wróć na początek” — stan sprzed gry
+  assert.equal(setup().disabled, false, 'przed grą ikona aktywna');
 });
 
 /* ========== M6/R7: integracja — pełna gra z symulacją, zasięg, ADR 0015 */

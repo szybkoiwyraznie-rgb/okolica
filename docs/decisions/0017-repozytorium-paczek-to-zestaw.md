@@ -193,3 +193,16 @@ Dysku nie jest potrzebne (indeks dopisuje fakty przy każdym odczycie).
 Testy: `test/most-indeks.test.js` (5 nowych — tekst `.gs` wykonywany na
 atrapie Drive, LESSONS L33; w tym regresja kliencka „paczka bez pytań o
 tematy spoza setupu pasuje do setupu”).
+
+## Aneks 2026-09-12 (m12-95) — paczki tylko z repo, licencja poza UI (zadanie I)
+
+Ekran pozycji pokazuje odtąd wyłącznie propozycje z repozytorium: sekcja
+„📱 z tego telefonu:” wycofana z UI (decyzja I.b wariant B2 — cichy zapis
+przyjętej paczki i migracja starego klucza ZOSTAJĄ, bo karmią drugą grę
+w tej samej okolicy bez wołania modelu). Opis propozycji nie pokazuje już
+licencji (I.a), ale pole `licencja` ZOSTAJE wymagane w formacie — indeks
+bez niego nie przechodzi walidacji.
+
+Konsekwencja wdrożeniowa: `adresMostu` woli URL multi nad URL repo, więc
+organizator gry wieloosobowej bierze paczkę z TEGO SAMEGO wdrożenia mostu
+co grę (indeks pod gołym adresem, plik przez `?akcja=paczka&id=…`).

@@ -93,46 +93,36 @@ async function dojdzDoPozycji(dom, lat = POZYCJA.lat, lon = POZYCJA.lon) {
   dom.ustawPozycje(String(lat), String(lon));
 }
 
-test('zestawy UI: karta propozycji pokazuje paczkę z tego telefonu po ustawieniu pozycji', async () => {
+test('I.b: paczka z telefonu NIE jest pokazywana — propozycje tylko z repozytorium', async () => {
   const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
   const dom = await aplikacjaZZestawami({ pamiec: pamiecZZestawem(kontener) });
   assert.equal(dom.pobierz('zestawy-karta').hidden, true, 'przed pozycją karta nie straszy');
   await dojdzDoPozycji(dom);
   assert.equal(dom.pobierz('zestawy-karta').hidden, false, 'po pozycji karta jest widoczna');
-  const lista = dom.pobierz('zestawy-lista');
-  assert.equal(lista.children.length, 1, 'jedno dopasowanie: geohash5+promień+tematy+wiek');
-  assert.match(lista.children[0].children[0].textContent, /z tego telefonu: Podkowa Leśna/);
+  assert.equal(dom.pobierz('zestawy-lista').children.length, 0, 'rejestr telefonu nie wchodzi na listę (I.b)');
   // adres Drive jest w kodzie (ADR 0020); tu bez fetch próba pada — karta mówi wprost,
-  // że repozytorium jest niedostępne, a paczka z telefonu i tak działa
+  // że repozytorium jest niedostępne
   await new Promise((r) => setTimeout(r, 20));
   assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium niedostępne/);
 });
 
 test('zestawy UI: druga gra w tej samej okolicy startuje bez modelu i bez Overpassa', async () => {
-  const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
-  const pamiec = pamiecZZestawem(kontener);
-  const dom = await aplikacjaZZestawami({ pamiec });
-  await dojdzDoPozycji(dom);
-  kliknijPierwszyPrzyciskZestawu(dom);
-  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra wystartowała z gotowej paczki');
-  assert.match(dom.pobierz('status').textContent, /bez modelu i bez Overpassa/);
-  assert.match(dom.pobierz('status').textContent, /3 stacji/);
-  const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
-  assert.equal(rejestr.wpisy.length, 1, 'start gry odświeżył wpis (ta sama paczka, nie duplikat)');
-});
-
-test('zestawy UI: nieczytelny wpis jest usuwany jawnie, nie cicho (LESSONS L6)', async () => {
-  const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
-  const pamiec = pamiecZZestawem(kontener);
-  pamiec.set(kluczZestawu(kontener.skrot), '{urwany json');
-  const dom = await aplikacjaZZestawami({ pamiec });
-  await dojdzDoPozycji(dom);
-  assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'wpis w rejestrze jeszcze widoczny');
-  kliknijPierwszyPrzyciskZestawu(dom);
-  assert.match(dom.pobierz('status').textContent, /nieczytelna/);
-  const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
-  assert.deepEqual(rejestr.wpisy, [], 'rejestr po sprzątaniu jest pusty');
-  assert.equal(pamiec.has(kluczZestawu(kontener.skrot)), false, 'klucz wpisu usunięty z pamięci');
+  const atrap = atrapaFetch({ indeks: JSON.stringify(indeksZPropozycja()), plik: JSON.stringify(plikZRepo()) });
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length > 0, 'propozycja z repozytorium');
+    kliknijPierwszyPrzyciskZestawu(dom);
+    await czekajNa(dom, () => dom.pobierz('ekran-gra').hidden === false, 'gra z paczki');
+    assert.match(dom.pobierz('status').textContent, /bez modelu i bez Overpassa/);
+    assert.match(dom.pobierz('status').textContent, /3 stacji/);
+    const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
+    assert.equal(rejestr.wpisy.length, 1, 'start gry zapisał cichą kopię lokalną (cache, nie propozycja)');
+  } finally {
+    atrap.przywroc();
+  }
 });
 
 test('zestawy UI: brak pozycji albo wyczyszczony promień chowają kartę', async () => {
@@ -539,53 +529,43 @@ test('Drive: wpis z `id` na karcie, a kliknięcie pobiera paczkę przez ?akcja=p
 // setup węższy niż zapisany wpis: paczka ma pytania TYLKO z historii, ale stary
 // wpis niosł listę dopuszczalnych [historia, przyroda, architektura] — dopasowanie
 // odrzucało paczkę, choć pytań z „obcych" tematów w niej nie ma.
-test('zestawy UI: stare wpisy z szeroką listą tematów dopasowują się po faktycznej zawartości pytań', async () => {
+test('zestawy: start aplikacji ujednolica tematy lokalnych wpisów do faktycznej zawartości pytań', async () => {
+  // I.b: dopasowanie lokalne nie ma już UI (lista tylko z repo), ale migracja
+  // startowa działa dalej — ten test pilnuje samego ujednolicenia, bez pozycji.
   const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
-  const KONFIG_WASKI = JSON.stringify({
-    schemat: 'konfig/1', kanon: '2026-09-10',
-    konfig: {
-      tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
-      tematy: ['historia'], wiek: 'dorosli', jezyk: 'polski',
-      karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
-    },
-  });
   const pelny = wpisPelny(kontener);
   const pamiec = new Map([
-    ['okolica:konfig', KONFIG_WASKI],
+    ['okolica:konfig', KONFIG_TEST],
     [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot: kontener.skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'pierwsza' }] })],
     [kluczZestawu(kontener.skrot), JSON.stringify(pelny)],
   ]);
-  const dom = await aplikacjaZZestawami({ pamiec });
-  await dojdzDoPozycji(dom);
-  await new Promise((r) => setTimeout(r, 20));
-  assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'paczka pasuje: pytania decydują, nie lista dopuszczalna');
+  await aplikacjaZZestawami({ pamiec }); // sam start: migracja bez wchodzenia na pozycję
   const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
   assert.deepEqual(rejestr.wpisy[0].tematy, ['historia'], 'wpis rejestru przeszedł na faktyczne tematy');
   assert.deepEqual(JSON.parse(pamiec.get(kluczZestawu(kontener.skrot))).tematy, ['historia'], 'pełny wpis też niesie faktyczne tematy');
 });
 
 test('zestawy UI: lista pokazuje 3 najlepsze paczki, resztę po „Zobacz więcej paczek"', async () => {
-  const paczkaN = (i) => { const p = paczkaMinimalna(); p.pytania[0].id = `s1p${i}`; p.pytania[0].tresc = `Pytanie numer ${i} z tej okolicy?`; return p; };
-  const kontenery = [1, 2, 3, 4, 5].map((i) => zapakujPaczke(paczkaN(i), 'PYT/1.0'));
-  const wpisy = kontenery.map((k, i) => ({ skrot: k.skrot, bajty: 900, ...metaWpisu(), data: `2026-09-0${i + 1} 09:00`, kodGry: 'gra' }));
-  const pamiec = new Map([
-    ['okolica:konfig', KONFIG_TEST],
-    [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy })],
-    ...kontenery.map((k) => [kluczZestawu(k.skrot), JSON.stringify(wpisPelny(k))]),
-  ]);
-  const dom = await aplikacjaZZestawami({ pamiec });
-  await dojdzDoPozycji(dom);
-  await new Promise((r) => setTimeout(r, 20));
-  assert.equal(dom.pobierz('zestawy-lista').children.length, 3, 'bez rozwinięcia widać trzy paczki');
-  const wiecej = dom.pobierz('przycisk-zestawy-wiecej');
-  assert.equal(wiecej.hidden, false, 'przycisk „Zobacz więcej paczek" jest widoczny');
-  assert.equal(wiecej.textContent, 'Zobacz więcej paczek');
-  dom.kliknij('przycisk-zestawy-wiecej');
-  assert.equal(dom.pobierz('zestawy-lista').children.length, 5, 'rozwinięcie pokazuje wszystkie paczki');
-  assert.equal(dom.pobierz('przycisk-zestawy-wiecej').textContent, 'Zobacz mniej paczek');
-  dom.kliknij('przycisk-zestawy-wiecej');
-  assert.equal(dom.pobierz('zestawy-lista').children.length, 3, 'zwinięcie wraca do trzech');
-  assert.equal(dom.pobierz('przycisk-zestawy-wiecej').textContent, 'Zobacz więcej paczek');
+  const wpisy = [1, 2, 3, 4, 5].map((i) => ({ ...indeksZPropozycja().wpisy[0], skrot: `feedbe0${i}`, plik: `podkowa-${i}.zestaw.json`, data: `2026-09-0${i} 09:00` }));
+  const atrap = atrapaFetch({ indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy }), plik: null });
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length === 3, 'trzy najlepsze paczki');
+    const wiecej = dom.pobierz('przycisk-zestawy-wiecej');
+    assert.equal(wiecej.hidden, false, 'przycisk „Zobacz więcej paczek" jest widoczny');
+    assert.equal(wiecej.textContent, 'Zobacz więcej paczek');
+    dom.kliknij('przycisk-zestawy-wiecej');
+    assert.equal(dom.pobierz('zestawy-lista').children.length, 5, 'rozwinięcie pokazuje wszystkie paczki');
+    assert.equal(dom.pobierz('przycisk-zestawy-wiecej').textContent, 'Zobacz mniej paczek');
+    dom.kliknij('przycisk-zestawy-wiecej');
+    assert.equal(dom.pobierz('zestawy-lista').children.length, 3, 'zwinięcie wraca do trzech');
+    assert.equal(dom.pobierz('przycisk-zestawy-wiecej').textContent, 'Zobacz więcej paczek');
+  } finally {
+    atrap.przywroc();
+  }
 });
 
 test('zestawy UI: paczki z największą liczbą ocen pozytywnych są pierwsze (właściciel 2026-09-11)', async () => {
@@ -596,24 +576,20 @@ test('zestawy UI: paczki z największą liczbą ocen pozytywnych są pierwsze (w
   const indeks = { schemat: 'TO-indeks/1', wpisy: [wpisOceniony(7, 2, '2026-09-04 10:00'), wpisOceniony(2, 3, '2026-09-05 10:00')] };
   const atrap = atrapaFetchDrive({ indeks: JSON.stringify(indeks), plik: JSON.stringify(plikZRepo()) });
   try {
-    const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
     const pamiec = new Map([
       ['okolica:konfig', KONFIG_TEST],
       ['okolica:repo-zestawow:url', 'https://most.przyklad/exec'],
-      [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot: kontener.skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'gra' }] })],
-      [kluczZestawu(kontener.skrot), JSON.stringify(wpisPelny(kontener))],
     ]);
     const dom = await aplikacjaZZestawami({ pamiec });
     podlaczFetch(dom);
     await dojdzDoPozycji(dom);
     await new Promise((r) => setTimeout(r, 30));
     const wiersze = dom.pobierz('zestawy-lista').children;
-    assert.equal(wiersze.length, 3, 'trzy pasujące paczki: dwie z repo, jedna z telefonu');
+    assert.equal(wiersze.length, 2, 'dwie pasujące paczki z repo (I.b: telefon nie wchodzi na listę)');
     assert.match(wiersze[0].children[0].textContent, /repozytorium/, 'pierwsza paczka pochodzi z repozytorium');
     assert.ok(/78% 👍/.test(wiersze[0].textContent), 'pierwsza paczka ma 7 ocen pozytywnych na 9 głosów (78% 👍)');
     assert.ok(/40% 👍/.test(wiersze[1].textContent), 'druga paczka ma 2 oceny pozytywne na 5 głosów (40% 👍)');
-    assert.match(wiersze[2].children[0].textContent, /z tego telefonu/, 'paczka bez ocen jest ostatnia mimo najnowszej daty');
-    assert.equal(dom.pobierz('przycisk-zestawy-wiecej').hidden, true, 'przy trzech paczkach przycisk „więcej" jest schowany');
+    assert.equal(dom.pobierz('przycisk-zestawy-wiecej').hidden, true, 'przy dwóch paczkach przycisk „więcej" jest schowany');
   } finally {
     atrap.przywroc();
   }

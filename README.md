@@ -22,7 +22,7 @@ stacji.
 **M1 — geodezja i model rozgrywki: zrobione.** Działa szkielet aplikacji:
 po starcie widać ekran startowy z intro nad mapą, a przygotowanie gry to pięć
 kroków (setup → pozycja → stacje → prompt → paczka) otwieranych przyciskiem
-„⚙ START GRY” w belce. Jest walidacja konfiguracji, prompt PYT v1.0 w dwóch
+„⚙ START GRY” w belce (w trakcie gry przycisk jest zgaszony). Jest walidacja konfiguracji, prompt PYT v1.0 w dwóch
 wariantach — bez fact-check (domyślny, ADR 0032) i z fact-check — oraz walidacja
 paczki i jej ukrywanie (`TO-paczka/2`). Od 2026-09-09 model nie odwraca już
 liter: kodowany jest wyłącznie numer poprawnej odpowiedzi (ADR 0033). Jako czyste funkcje z testami istnieją też **model rozgrywki**

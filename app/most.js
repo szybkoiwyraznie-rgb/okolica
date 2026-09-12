@@ -19,7 +19,7 @@
  * czysta funkcja + atrapa, `docs/LESSONS.md`).
  */
 
-import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-94';
+import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-95';
 
 /**
  * Adres web app Apps Script (…/exec) wpisany na stałe w tej wersji aplikacji.
@@ -92,7 +92,7 @@ export function stanMostu(pamiec, { testowy = false } = {}) {
   return {
     podlaczony: false,
     tekst: testowy
-      ? 'Most Drive: niepodłączony — ta wersja aplikacji nie ma jeszcze wpisanego adresu (ADR 0020). Gramy lokalnie: paczki z tego telefonu i gra na jednym urządzeniu.'
-      : 'Most Drive: niepodłączony. Gramy lokalnie: paczki z tego telefonu i gra na jednym urządzeniu.',
+      ? 'Most Drive: niepodłączony — ta wersja aplikacji nie ma jeszcze wpisanego adresu (ADR 0020). Gramy lokalnie: gra na jednym urządzeniu.'
+      : 'Most Drive: niepodłączony. Gramy lokalnie: gra na jednym urządzeniu.',
   };
 }

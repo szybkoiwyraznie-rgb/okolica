@@ -60,7 +60,7 @@ Koniec sesji:
    Drive prosto do repozytorium okolicy — moderacja wstępna zniesiona
    2026-09-11); pytania są ukrywane (TO-paczka/2), a pole wklejania
    czyszczone.
-6. **Gra**: odcinek startuje jawną akcją, dojście zalicza tylko GPS (dwa fixy
+6. **Gra**: odcinek startuje jawną akcją („⚙ START GRY” w belce jest wtedy zgaszony — zadanie J, 2026-09-12), dojście zalicza tylko GPS (dwa fixy
    w progu, ADR 0004/0029); nieosiągalna stacja = „■ Zakończ grę” (akcji
    pomijania nie ma od zadania H, 2026-09-12). Pytanie odsłania się
    dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Pauza (także
@@ -155,8 +155,9 @@ zapisuje skorupę i kafelki „na później".
 
 1. **Offline**: po pierwszej sesji włącz tryb samolotowy i otwórz aplikację
    ponownie — skorupa musi się otworzyć, mapa pokazać kafelki ostatniej
-   okolicy, a gra z paczki „📱 z tego telefonu" działać bez sieci (zero
-   Overpassa, zero modelu). Zanotuj, ile ulic „wystaje" poza zapamiętane
+   okolicy, a zaczęta wcześniej gra działać bez sieci (zero
+   Overpassa, zero modelu; paczki są tylko z repozytorium — zadanie I,
+   2026-09-12). Zanotuj, ile ulic „wystaje" poza zapamiętane
    kafelki przy zboczeniu z trasy.
 2. **Bateria**: na odcinku >300 m wypatruj statusu „GPS w trybie oszczędnym…",
    przy stacji (<150 m) „GPS w trybie dokładnym…". Zapisz: czy przejścia nie
