@@ -406,5 +406,10 @@ test('P10: komunikat milczenia mówi co robi aplikacja i co zrobić, gdy nie pom
   assert.match(tekst, /\b15 s\b/, 'sekundy wypełnione');
   assert.match(tekst, /próba 2/, 'numer próby wypełniony');
   assert.doesNotMatch(tekst, /\{\w+\}/, 'placeholdery nie zostają w treści');
-  assert.match(KODY_POZYCJI.P10, /odśwież stronę/, 'wyjście awaryjne w treści (ADR 0011 pkt 8: komunikat mówi co zrobić)');
+  // Właściciel 2026-09-12 (test terenowy): ustawienia systemu i odświeżenie
+  // strony NIE odblokowywały lokalizacji — zamknięcie i ponowne otwarcie
+  // aplikacji tak. Wyjście awaryjne w treści to dokładnie to
+  // (L55: pin na decyzję przepisywany na NOWĄ formę).
+  assert.match(KODY_POZYCJI.P10, /zamknij aplikację/, 'wyjście awaryjne: zamknięcie aplikacji (właściciel 2026-09-12)');
+  assert.match(KODY_POZYCJI.P10, /otwórz ją ponownie/, '…i ponowne otwarcie — w terenie to odblokowało pozycję');
 });
