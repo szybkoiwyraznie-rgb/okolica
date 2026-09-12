@@ -1,5 +1,5 @@
 /**
- * MOST DRIVE (paczki + gry wieloosobowe + rankingi): Google Drive + Apps Script
+ * MOST DRIVE (paczki + gry wieloosobowe): Google Drive + Apps Script
  * (ADR 0016, 0018, 0019; plany M9b i M11/M12).
  *
  * Przepływ (decyzja właściciela 2026-09-11: koniec sesji przeglądu):
@@ -21,8 +21,8 @@
  * „każdy może być anonimowy”, URL jest jedyną zdolnością.
  *
  * M11 (ADR 0019): TEN SAM most obsługuje gry wieloosobowe na wielu
- * urządzeniach — doPost: gra-zaloz / gra-dolacz / gra-start / gra-zdarzenie /
- * gra-zakoncz; doGet: gry (lobby) / gra-stan / ranking. Stan gry (RO-gra/1)
+ * urządzeniach — doPost: gra-zaloz / gra-dolacz / gra-opusc / gra-start / gra-zdarzenie /
+ * gra-zakoncz; doGet: gry (lobby) / gra-stan. Stan gry (RO-gra/1)
  * żyje w katalogach okolica-gry-{otwarte,zakonczone}; zdarzenia NIE zawierają
  * współrzędnych graczy (ADR 0013/0019 pkt 3 — pola lat/lon są kasowane).
  */
@@ -338,7 +338,6 @@ function doGet(e) {
     if (akcja === 'paczka') return json(paczkaPrzezId(e.parameter.id));
     if (akcja === 'gry') return json(listaGier());
     if (akcja === 'gra-stan') return json(stanGry(e.parameter.kod, e.parameter.id));
-    if (akcja === 'ranking') return json(rankingi());
     return json({ blad: 'nieznana akcja' });
   } catch (err) {
     return json({ blad: String((err && err.message) || err) });
@@ -354,6 +353,7 @@ function doPost(e) {
     switch (cialo.akcja) {
       case 'gra-zaloz': return json(zalozGre(cialo));
       case 'gra-dolacz': return json(dolaczDoGry(cialo));
+      case 'gra-opusc': return json(opuscGre(cialo));
       case 'gra-start': return json(startGryMulti(cialo));
       case 'gra-zdarzenie': return json(przyjmijZdarzenie(cialo));
       case 'gra-zakoncz': return json(zakonczGre(cialo));
@@ -685,6 +685,42 @@ function listaGier() {
 }
 
 /** POST gra-dolacz: kod ALBO idGry (z lobby) + pseudonim; tylko w lobby. */
+/**
+ * POST gra-opusc: gracz wychodzi z LOBBY przed startem (właściciel 2026-09-11:
+ * „dołączanie i wychodzenie w dowolnym momencie"). Bez tego wychodzący zostawał
+ * w `liczbaGraczy` na liście gier — lobby obiecywało grę z graczem, którego już
+ * nie było, a odświeżenie listy niczego nie prostowało.
+ *
+ * Po starcie wyjście idzie zdarzeniem `rezygnacja`, nie tą akcją: gra trwa,
+ * punkty się liczą, a usunięcie gracza z rozpoczętej gry sfałszowałoby wynik.
+ *
+ * Wyjście ORGANIZATORA zamyka grę i przenosi ją do archiwum — tylko on może
+ * wystartować, więc gra bez niego nie ma ciągu dalszego (ta sama ścieżka co
+ * wygasanie lobby po 24 h).
+ */
+function opuscGre(dane) {
+  return zBlokada(() => {
+    const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);
+    if (!znaleziona) return { ok: false, blad: 'nie ma gry o takim kodzie/identyfikatorze' };
+    const gra = znaleziona.gra;
+    if (gra.stan !== 'lobby') {
+      return { ok: false, blad: 'gra już wystartowała — wyjście w trakcie gry to rezygnacja, nie opuszczenie lobby' };
+    }
+    const graczId = String((dane && dane.graczId) || '');
+    const indeks = gra.gracze.findIndex((g) => g.id === graczId);
+    if (indeks < 0) return { ok: false, blad: 'nie ma takiego gracza w tej grze' };
+    if (indeks === 0) {
+      gra.stan = 'archiwum';
+      zapiszGre(znaleziona.plik, gra);
+      przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
+      return { ok: true, zamknieta: true };
+    }
+    gra.gracze.splice(indeks, 1);
+    zapiszGre(znaleziona.plik, gra);
+    return { ok: true, zamknieta: false, gra };
+  });
+}
+
 function dolaczDoGry(dane) {
   return zBlokada(() => {
     const pseudonim = String((dane && dane.pseudonim) || '').trim().slice(0, 24);
@@ -917,12 +953,16 @@ function bledyGryHotseat(dane) {
 
 /**
  * POST gra-hotseat: telefon przysyła SKOŃCZONĄ grę z jednego urządzenia. Most
- * zapisuje ją jako grę zakończoną (RO-gra/1) w katalogu gier zakończonych, więc
- * GET ranking czyta ją bez zmian — rankingi hot-seat i gier na wielu telefonach
- * liczą się razem, bez osobnej ścieżki (ADR 0026 aneks).
+ * zapisuje ją jako grę zakończoną (RO-gra/1) w katalogu gier zakończonych —
+ * historia hot-seat i gier na wielu telefonach jest jedna, bez osobnej ścieżki
+ * (ADR 0026 aneks).
  *
  * Punkty liczy most (`przeliczWyniki`), nie telefon: klient przysyła fakty
- * (dojścia i odpowiedzi), więc ranking nie zależy od wersji aplikacji.
+ * (dojścia i odpowiedzi), więc wynik nie zależy od wersji aplikacji.
+ *
+ * Rankingi (GET ranking, RO-ranking/1) właściciel kazał usunąć 2026-09-11:
+ * gra kończy się PODSUMOWANIEM na telefonie gracza, a na Drive zostaje tylko
+ * historia gier. Zapis gry zostaje — bez niego nie byłoby czego pokazać.
  */
 function przyjmijGreHotseat(dane) {
   return zBlokada(() => {
@@ -986,7 +1026,7 @@ function przyjmijGreHotseat(dane) {
     // Idempotencja (zgłoszenie właściciela 2026-09-09): telefon wysyła kolejkę
     // przy KAŻDYM starcie aplikacji, więc ta sama gra potrafi przyjść wiele
     // razy. Plik o nazwie z odciskiem gry nadpisujemy zamiast zakładać drugi —
-    // inaczej katalog gier zakończonych puchnie, a ranking liczy grę wielokrotnie.
+    // inaczej katalog gier zakończonych puchnie, a historia liczy grę wielokrotnie.
     const katalog = folder(FOLDERY.gryZakonczone);
     const nazwa = nazwaPlikuHotseat(dane.odcisk);
     const istniejace = katalog.getFilesByName(nazwa);
@@ -997,38 +1037,6 @@ function przyjmijGreHotseat(dane) {
     zapiszGre(plik, gra);
     return { ok: true, idGry: gra.idGry, wyniki: gra.wyniki };
   });
-}
-
-/** GET ranking: surowe wiersze z gier zakończonych — agregacje liczy aplikacja (testowalne, czyste). */
-function rankingi() {
-  const wiersze = [];
-  const pliki = folder(FOLDERY.gryZakonczone).getFiles();
-  while (pliki.hasNext()) {
-    const plik = pliki.next();
-    try {
-      const gra = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
-      if (gra.schemat !== SCHEMAT_GRY || gra.stan !== 'zakonczona' || !gra.wyniki) continue;
-      Object.keys(gra.wyniki).forEach((id) => {
-        const w = gra.wyniki[id];
-        if (w.zrezygnowal && !(w.stacjeZamkniete > 0)) return; // rezygnacja bez wyniku nie idzie do rankingu
-        wiersze.push({
-          pseudonim: w.pseudonim,
-          punkty: w.punkty,
-          poprawne: w.poprawne,
-          bledne: w.bledne,
-          czasOdcinkowMs: w.czasOdcinkowMs,
-          stacjeZamkniete: w.stacjeZamkniete,
-          data: gra.utworzono,
-          tryb: gra.tryb,
-          miejsce: gra.konfiguracja.miejsce,
-          geohash5: gra.konfiguracja.geohash5,
-          wiek: gra.konfiguracja.wiek,
-          tematy: gra.konfiguracja.tematy,
-        });
-      });
-    } catch (err) { /* uszkodzony plik nie psuje rankingu */ }
-  }
-  return { schemat: 'RO-ranking/1', wiersze };
 }
 
 function stanGry(kod, idGry) {

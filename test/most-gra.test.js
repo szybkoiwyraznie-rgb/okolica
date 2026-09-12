@@ -182,7 +182,7 @@ function mostHotseat() {
   const { DriveApp, pliki } = atrapaDrive();
   const LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
   // eslint-disable-next-line no-new-func — celowo: wykonujemy tekst skryptu, nie jego kopię
-  const api = new Function('DriveApp', 'LockService', `${GS.slice(sFoldery, koniecFoldery)}\n${GS.slice(sFolder, koniecFolder)}\n${GS.slice(start, koniec)}; return { przyjmijGreHotseat, bledyGryHotseat, rankingi, przeliczWyniki, premiaZaKolejnosc, FOLDERY };`)(DriveApp, LockService);
+  const api = new Function('DriveApp', 'LockService', `${GS.slice(sFoldery, koniecFoldery)}\n${GS.slice(sFolder, koniecFolder)}\n${GS.slice(start, koniec)}; return { przyjmijGreHotseat, bledyGryHotseat, przeliczWyniki, premiaZaKolejnosc, FOLDERY };`)(DriveApp, LockService);
   return { ...api, pliki };
 }
 
@@ -204,7 +204,7 @@ function polecenieHotseat({ gracze = ['Ala', 'Jan'], stacje = 2, poprawne = true
   };
 }
 
-test('most: gra-hotseat zapisuje grę zakończoną i wchodzi do tych samych rankingów', () => {
+test('most: gra-hotseat zapisuje grę zakończoną w historii gier', () => {
   const most = mostHotseat();
   const wynik = most.przyjmijGreHotseat(polecenieHotseat({ poprawne: true }));
   assert.equal(wynik.ok, true, `zapis przyjęty (${wynik.blad ?? ''})`);
@@ -213,7 +213,7 @@ test('most: gra-hotseat zapisuje grę zakończoną i wchodzi do tych samych rank
   assert.equal(wynik.wyniki[1].premia, 0, 'hot-seat nie ma premii za kolejność (gracze idą razem)');
 
   const zapis = JSON.parse([...most.pliki.values()][0].zawartosc);
-  assert.equal(zapis.schemat, 'RO-gra/1', 'to zwykła gra — rankingi czytają ją bez zmian');
+  assert.equal(zapis.schemat, 'RO-gra/1', 'to zwykła gra — historia gier czyta ją bez zmian');
   assert.equal(zapis.stan, 'zakonczona');
   assert.equal(zapis.tryb, 'hotseat');
   assert.equal(zapis.zestaw, null, 'paczka i pytania nie wchodzą na Drive (ADR 0013)');
@@ -221,12 +221,12 @@ test('most: gra-hotseat zapisuje grę zakończoną i wchodzi do tych samych rank
   assert.equal(zapis.konfiguracja.geohash5, 'u3qb8', 'okolica jako geohash5, nie punkt');
   assert.equal(/"(lat|lon)"/.test(JSON.stringify(zapis)), false, 'zero współrzędnych w zapisie gry');
 
-  const ranking = most.rankingi();
-  assert.equal(ranking.schemat, 'RO-ranking/1');
-  assert.equal(ranking.wiersze.length, 2, 'obaj gracze są w rankingu');
-  assert.deepEqual(ranking.wiersze.map((w) => w.pseudonim).sort(), ['Ala', 'Jan']);
-  assert.equal(ranking.wiersze[0].tryb, 'hotseat', 'ranking widzi tryb gry');
-  assert.equal(ranking.wiersze[0].miejsce, 'Podkowa Leśna');
+  // Historia gry to SAM zapis na Drive (rankingi usunięte — właściciel
+  // 2026-09-11): pilnujemy, że w pliku jest wszystko, czego potrzebuje
+  // podsumowanie — imiona, wynik, tryb i miejsce.
+  assert.deepEqual(Object.values(zapis.wyniki).map((w) => w.pseudonim).sort(), ['Ala', 'Jan'], 'obaj gracze są w historii');
+  assert.ok(Object.values(zapis.wyniki).every((w) => typeof w.punkty === 'number'), 'punkty są liczbami');
+  assert.equal(zapis.konfiguracja.miejsce, 'Podkowa Leśna');
 });
 
 test('most: gra-hotseat kasuje współrzędne ze zdarzeń i odmawia śmieciom', () => {
@@ -306,8 +306,8 @@ test('most: powtórna wysyłka tej samej gry hot-seat nie tworzy drugiego pliku'
   assert.equal([...most.pliki.values()].length, poPierwszej, 'ta sama gra = ten sam plik');
   assert.equal(druga.idGry, pierwsza.idGry, 'powtórka wskazuje ten sam plik gry');
 
-  const ranking = most.rankingi();
-  assert.equal(ranking.wiersze.length, 2, 'ranking liczy grę raz, nie dwa razy');
+  const zapis = JSON.parse([...most.pliki.values()][0].zawartosc);
+  assert.equal(zapis.stan, 'zakonczona', 'historia ma tę grę raz, nie dwa razy');
 
   // Inna gra (inny odcisk) nadal zakłada własny plik.
   const inna = polecenieHotseat({ gracze: ['Ola'] });

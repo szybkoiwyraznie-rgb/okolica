@@ -25,7 +25,7 @@
 
 | Klucz | Dostawca / URL | Klucz API | maxZoom | Atrybucja | Polityka i ryzyka |
 | --- | --- | --- | --- | --- | --- |
-| `osm` | OSM Standard — `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | nie | 19 | `© OpenStreetMap contributors (ODbL)` | [Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/): zakaz masowego pobierania i ciężkiego użycia, wymagany poprawny `Referer`/UA, ograniczona liczba hostów, serwery z darowizn. Użycie „lekkie" (kilkanaście kafelków na ekran, kilka gier dziennie) jest w polityce; aplikacja nie pobiera kafelków hurtowo ani nie buduje własnego cache poza cache przeglądarki. |
+| `osm` | OSM Standard — `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | nie | 19 | `© OpenStreetMap contributors (ODbL)` | [Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/): zakaz masowego pobierania i ciężkiego użycia, wymagany poprawny `Referer`/UA, ograniczona liczba hostów, serwery z darowizn. Użycie „lekkie" (kilkanaście kafelków na ekran, kilka gier dziennie) jest w polityce; aplikacja nie pobiera kafelków hurtowo, nie ma prefetchu ani trybu offline. **Uwaga:** od M10/T2 aplikacja JEDNAK buduje własny cache kafelków w Cache Storage (`sw.js`, cache-first, limit `MAKS_KAFELKI = 600` z ewikcją najstarszych) — to wymagane przez politykę („cache tiles locally"), nie odstępstwo od niej. Cache NIE jest wersjonowany wraz z aplikacją (LESSONS L47): nazwa zależna od `WERSJA_SW` wyrzucała cały zbiór przy każdym wdrożeniu, co jest dokładnie wzorcem „No caching" karanym blokadą 403. |
 | `opentopo` | OpenTopoMap — `https://{a,b,c}.tile.opentopomap.org/{z}/{x}/{y}.png` | nie | 17 | `© OpenStreetMap contributors · © OpenTopoMap (CC-BY-SA)` | Bez klucza, CC-BY-SA. **Ryzyko trwałości usługi**: serwis rastrowy bywa przeciążony, a jego przyszłość jest dyskutowana publicznie ([issue #382 „Reviving the OpenTopoMap (Raster) tile service?", 2025-11](https://github.com/der-stefan/OpenTopoMap/issues/382)). Dlatego warstwa jest opcjonalna i przełączalna w UI, a jej zniknięcie nie może psuć gry (ADR 0003 pkt 3: „podkład wyłączony"). |
 | `esri-satelita` | Esri World Imagery — `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}` | nie | 19 | `Powered by Esri · © Esri, Maxar, Earthstar Geographics` | Używany tak samo jak w projekcie AME (wzorzec właściciela). Uwaga na kolejność `y`/`x` w URL (odwrotnie niż w schemacie XYZ). Warstwa pomocnicza: rozpoznawanie obiektu w terenie, nie nawigacja. |
 | `osm-fr` *(opcja)* | OSM France — `https://{a,b,c}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` | nie | 20 | `© OpenStreetMap contributors · © OSM France` | Kandydat na podkład zapasowy (inny rendering, wyższe zoomy). Wprowadzamy dopiero po sprawdzeniu polityki OSM France — **nie jest jeszcze zatwierdzony**. |
@@ -39,6 +39,25 @@ różnicą zapisu: rotację poddomen kod wyraża jako `{s}` z listą
 (`test/kontrakt.test.js`) porównuje szablony po ujednoliceniu zapisu
 (`{s}` → `{a,b,c}`), więc zmiana URL-a u dostawcy wymaga zmiany w obu miejscach.
 Podkład `brak` ma szablon `null`: zero żądań, zero atrybucji dostawcy.
+
+**Nadpisanie operatorskie (bez wdrażania wersji).** Polityka kafelków OSM zaleca
+wprost: *„Avoid hard-coding the tile URL; allow switching without needing a
+software update."* Serwer kafelków jest wolontariacki i bez SLA, więc klucz
+`localStorage` **`okolica:kafelki:url`** pozwala przełączyć podkład `osm`
+w terenie. Czyta go raz przy starcie `wczytajNadpisanieKafelkow()` (`app/app.js`)
+i podaje do `ustawSzablonKafelkow()` (`app/mapa.js`) — sam moduł mapy zostaje
+czysty i nie zna `localStorage`.
+
+Wartość musi przejść `walidujSzablonKafelkow()`: protokół **`https:`** (polityka
+OSM zakazuje `http://`) oraz wszystkie trzy podstawienia `{z}`, `{x}`, `{y}`.
+Wartość nieobecna albo odrzucona = adres wbudowany, więc pomyłka w kluczu nie
+zostawi gracza z pustą mapą. Nadpisanie dotyczy **wyłącznie `osm`** — pozostali
+dostawcy mają własne adresy i własne licencje. Konsola:
+
+```js
+localStorage.setItem('okolica:kafelki:url', 'https://inny-serwer.example/{z}/{x}/{y}.png');
+location.reload();          // ustawSzablonKafelkow(null) przywraca OSM
+```
 
 ### 1.1 Dostawcy sprawdzeni i ODRZUCENI
 
@@ -98,24 +117,23 @@ Zasady użycia w kodzie:
    (obszary administracyjne `is_in`/`boundary=administrative`), nie z
    Nominatim — patrz §3.
 
-## 3. Odwrotna geokodacja — domyślnie NIE używamy Nominatim
+## 3. Odwrotna geokodacja — Nominatim USUNIĘTY (2026-09-11), zostaje Overpass
 
 - **Rozwiązanie przyjęte**: nazwę miejsca (dzielnica, miasto, region, państwo)
   wyciągamy z obszarów administracyjnych zwróconych przez Overpass
   (`is_in(lat,lon)` + `area["boundary"="administrative"]`). Jeden dostawca,
   jedno zapytanie, zero dodatkowej polityki. Stacje dopisują miasto do nazwy
   („ulica, miasto") — ulice o tej samej nazwie powtarzają się między miastami.
-- **Nominatim publiczny** (`https://nominatim.openstreetmap.org/reverse`) jest
-  dopuszczony **wyłącznie jako opcjonalna warstwa zapasowa**, po spełnieniu
-  [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/):
-  maks. **1 żądanie/s**, poprawny `Referer`/UA identyfikujący aplikację,
-  widoczna atrybucja ODbL, obowiązkowy cache, zakaz zapytań systematycznych
-  i okresowych, oraz gotowość do **przełączenia usługi na żądanie OSMF bez
-  aktualizacji oprogramowania** (konfigurowalny endpoint).
-  Polityka zawiera też klauzulę dotyczącą systemów LLM i platform
-  niskokodowych — dlatego ten wpis jest jawny i widoczny w dokumentacji,
-  a decyzja o użyciu jest świadoma i należy do właściciela (ADR 0013).
-- Domyślnie warstwa jest **wyłączona** w setupie (ADR 0013 pkt 3).
+- **Warstwa zapasowa z Nominatim jest USUNIĘTA z kodu** (decyzja właściciela,
+  uwagi terenowe #3, 2026-09-11): docelowe rozwiązanie z powyższego punktu
+  działa bez fallbacku, a opt-in wraz z przełącznikiem zniknął z ekranu
+  prywatności i z `app/sieci.js` (`budujUrlGeokodacji`, `miejsceZOdpowiedziNominatim`,
+  `DOMYSLNY_ENDPOINT_GEOKODACJI`). Kontrakt `test/kontrakt.test.js` pilnuje,
+  żeby endpoint nie wrócił do żadnego modułu.
+- Historyczne uzasadnienie opt-inu (dla porządku, już nieobowiązujące):
+  [Nominatim Usage Policy](https://operations.osmfoundation.org/policies/nominatim/)
+  pozwalała warstwę zapasową pod warunkami 1 żądanie/s, atrybucji ODbL,
+  cache i gotowości do przełączenia endpointu na żądanie OSMF (ADR 0013).
 
 ## 4. Dane i licencje
 
@@ -162,8 +180,9 @@ kod ↔ ten plik oraz reweryfikacja polityk „na dziś".
 - `INSTANCJE_OVERPASS` (`app/sieci.js`) == tabela §2 co do URL-i (FOSSGIS →
   private.coffee → VK Maps → Adikso); sprawdzenie ręczne (tabela w markdown nie jest
   parsowana w testach — świadomie, §2 niesie też opisy polityk).
-- Nominatim: opt-in + komunikat w UI (`app/app.js`, „Warstwa zapasowa…")
-  == §3 i ADR 0013; endpoint konfigurowalny, cache sesyjny, jedno żądanie.
+- Nominatim: §3 — warstwa zapasowa usunięta 2026-09-11 (kontrakt pilnuje
+  nieobecności endpointu w `app/`); archiwalnie: był opt-in z komunikatem w UI
+  i cache sesyjnym.
 - Atrybucje ZAWSZE widoczne pod mapą: `#mapa-pozycja-atrybucja` i
   `#mapa-stacje-atrybucja` (`index.html`) + test bootstrapa.
 
@@ -189,8 +208,8 @@ kod ↔ ten plik oraz reweryfikacja polityk „na dziś".
   sprzeczne, prawdopodobnie zależne od profilu ruchu. Nasza odpowiedź jest
   już w kodzie: łańcuch fallbacków + jawna degradacja (komunikat zamiast
   cichego błędu) + fixture i tryb testowy offline; brak akcji, obserwować.
-- Nominatim i Esri: noty z 2026-09-05 aktualne (odpowiednio: opt-in za
-  zgodą polityki; wzorzec AME bez zmian).
+- Nominatim i Esri: noty z 2026-09-05 (odpowiednio: dawny opt-in za zgodą
+  polityki — usunięty 2026-09-11, §3; wzorzec AME bez zmian).
 
 **Wniosek:** zero rozjazdów kod ↔ dokumentacja, zero zmian wymagających
 akcji; nowy dostawca przechodzi pełną checklistę §5.
@@ -222,7 +241,7 @@ akcji; nowy dostawca przechodzi pełną checklistę §5.
 - **Docelowo (ADR 0018)**: to samo konto obsłuży parowanie gier na wielu
   urządzeniach (M11) i profil/statystyki gracza (M12) — ta sekcja będzie rosła.
 
-### 7.1 Gry i rankingi (M11/M12, ADR 0019) — ruch na tym samym moście
+### 7.1 Gry i historia gier (M11/M12, ADR 0019) — ruch na tym samym moście
 
 - **Katalogi**: `okolica-gry-otwarte` (lobby i trwające) oraz
   `okolica-gry-zakonczone` (zakończone i archiwum); jedna gra = jeden plik

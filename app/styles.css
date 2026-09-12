@@ -840,6 +840,22 @@ body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
 #przycisk-podejrzyj-mape:focus-visible { outline: 3px solid var(--tekst); outline-offset: 3px; }
 .informacje-tresc { display: grid; gap: 12px; }
 .informacje-tresc .separator { display: none; }
+/* Kontakt i zgłaszanie błędów mapy (zalecenia polityki kafelków OSM).
+   Cel dotykowy ≥ --cel (44 px) jak reszta interaktywnych elementów, a długi
+   adres łamiemy `anywhere`, żeby nie rozepchał panelu 360 px (wzorzec:
+   `.instrukcja a`). Kolor DZIEDZICZONY — link nie wprowadza nowej pary
+   kontrastu, więc audyt WCAG nie wymaga nowego wpisu; od tła odróżnia go
+   podkreślenie, nie barwa. */
+.informacje-kontakt { display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; margin: 0; }
+.informacje-link {
+  color: inherit;
+  text-decoration: underline;
+  overflow-wrap: anywhere;
+  min-height: var(--cel);
+  display: inline-flex;
+  align-items: center;
+}
+.informacje-link:focus-visible { outline: 2px solid var(--akcent); outline-offset: 2px; }
 .instrukcja a { display: block; padding: 10px 0; overflow-wrap: anywhere; }
 #prompt-instrukcja > summary { font-size: 20px; font-weight: 700; min-height: 44px; }
 .stacje-obszar, #stacje-panel { display: block; overflow: visible; }
@@ -884,3 +900,14 @@ body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inse
 /* „Zobacz więcej/mniej paczek" pod listą propozycji (właściciel 2026-09-11):
    pełna szerokość karty, cel dotykowy jak wiersze listy (ADR 0011). */
 .przycisk-zestawy-wiecej { width: 100%; min-height: 44px; }
+
+/* Ptaszek „widoczna tylko kolejna stacja” (właściciel, uwagi terenowe #3,
+   2026-09-11): pole i opis JEDNYM wierszem — selektor z :not([hidden]),
+   żeby globalna reguła [hidden] dalej wygrywała przy ukrywaniu. */
+#pole-trasa-sekret:not([hidden]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+}
+#pole-trasa-sekret input[type="checkbox"] { margin: 0; width: 22px; height: 22px; flex-shrink: 0; }

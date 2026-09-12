@@ -9,7 +9,7 @@
  * w repozytorium, żeby były trwałe").
  *
  * Ten sam web app obsługuje trzy zadania (ADR 0018): repozytorium paczek,
- * gry wieloosobowe i rankingi — dlatego adres jest JEDEN i współdzielony.
+ * gry wieloosobowe — dlatego adres jest JEDEN i współdzielony.
  *
  * Nadpisanie techniczne (BEZ interfejsu): klucze `localStorage` mają
  * pierwszeństwo przed stałą. Furtka dla testów (atrapa mostu) i dla sytuacji
@@ -19,7 +19,7 @@
  * czysta funkcja + atrapa, `docs/LESSONS.md`).
  */
 
-import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-74';
+import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-81';
 
 /**
  * Adres web app Apps Script (…/exec) wpisany na stałe w tej wersji aplikacji.
@@ -67,7 +67,7 @@ export function mostSkonfigurowany(pamiec) {
 
 /**
  * Komunikat stanu mostu po polsku — jeden dla całego UI, żeby karta paczek,
- * karta gry wieloosobowej i rankingi nie wymyślały trzech wersji prawdy.
+ * karta gry wieloosobowej nie wymyślała trzech wersji prawdy.
  * Po ludzku: skąd jest adres, mówi tylko tryb testowy (Partia 3, pkt 1).
  *
  * @param {{getItem?:Function}|Map} [pamiec] pamięć do odczytu

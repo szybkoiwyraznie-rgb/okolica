@@ -19,8 +19,7 @@ function domyslnaOdpowiedzObca() {
   return { ok: true, type: 'cors', status: 200, clone() { return this; } };
 }
 
-function atrapaOtoczenia({ maksKafelki, obcaOdpowiedz = domyslnaOdpowiedzObca } = {}) {
-  const magazyny = new Map();
+function atrapaOtoczenia({ maksKafelki, obcaOdpowiedz = domyslnaOdpowiedzObca, kod = KOD_SW, magazyny = new Map() } = {}) {
   const klucz = (req) => (typeof req === 'string' ? req : req.url);
   const cacheStub = (nazwa) => {
     if (!magazyny.has(nazwa)) magazyny.set(nazwa, { wpisy: new Map(), kolejnosc: [] });
@@ -61,7 +60,7 @@ function atrapaOtoczenia({ maksKafelki, obcaOdpowiedz = domyslnaOdpowiedzObca } 
     return obcaOdpowiedz(u);
   };
   // eslint-disable-next-line no-new-func -- harness SW bez przeglądarki (M10/T2)
-  new Function('self', 'caches', 'fetch', KOD_SW)(selfStub, cachesStub, fetchStub);
+  new Function('self', 'caches', 'fetch', kod)(selfStub, cachesStub, fetchStub);
   const tick = () => new Promise((r) => setTimeout(r, 5));
   return { nasluchy, magazyny, fetchWywolania, tick };
 }
@@ -201,6 +200,56 @@ test('SW fetch: ewikcja najstarszych kafelków powyżej limitu', async () => {
   assert.equal(wpisy.length, 3, 'limit 3 trzymany');
   assert.ok(!wpisy.some((u) => u.includes('/8001/')), 'najstarszy kafelki wyrzucony');
   assert.ok(wpisy.some((u) => u.includes('/8005/')), 'najnowszy został');
+});
+
+test('SW activate: cache kafelków przeżywa bump wersji (polityka kafelków OSM)', async () => {
+  // Polityka kafelków OSM blokuje za „powtarzające się pobrania tych samych
+  // kafelków z powodu niewłaściwego cache'owania" (osm.wiki/Blocked → General
+  // block, *No caching*). WERSJA_SW rośnie przy każdej zmianie app/*.js
+  // (LESSONS L29), więc cache kafelków nazwany od wersji wyrzucałby cały zbiór
+  // przy każdym wdrożeniu i wymuszał ponowne pobranie widoku z serwera
+  // dostawcy. Ten test symuluje dwa kolejne wdrożenia na tym samym magazynie.
+  const KAFEL = 'https://tile.openstreetmap.org/19/28861/17402.png';
+
+  const przed = atrapaOtoczenia();
+  await zdarzenieInstall(przed);
+  const z1 = zdarzenieFetch(KAFEL);
+  przed.nasluchy.fetch(z1);
+  await z1.odpowiedz;
+  await przed.tick();
+  const nazwa = [...przed.magazyny.keys()].find((k) => k.includes('kafelki'));
+  assert.equal(nazwa, 'okolica-kafelki', 'cache kafelków bez wersji w nazwie');
+  assert.equal(przed.fetchWywolania.length, 1, 'kafel pobrany raz');
+
+  // „Wdrożenie": ten sam magazyn, nowa WERSJA_SW w kodzie SW. Wersję bierzemy
+  // ZE ŹRÓDŁA, nie z literalu — zaszyty numer zestarzałby się przy pierwszym
+  // podbiciu cache-bust i test po cichu przestałby cokolwiek symulować.
+  const wersja = KOD_SW.match(/^const WERSJA_SW = '([^']+)';$/m)?.[1];
+  assert.ok(wersja, 'WERSJA_SW znaleziona w sw.js');
+  const kodPoBumpie = KOD_SW.replace(`const WERSJA_SW = '${wersja}';`, "const WERSJA_SW = 'test-bump';");
+  assert.notEqual(kodPoBumpie, KOD_SW, 'test naprawdę podmienił wersję — inaczej nic nie dowodzi');
+  const poBumpie = atrapaOtoczenia({ magazyny: przed.magazyny, kod: kodPoBumpie });
+  await zdarzenieInstall(poBumpie);
+  await poBumpie.nasluchy.activate({ waitUntil: (p) => p });
+
+  assert.ok(poBumpie.magazyny.has(nazwa), 'activate NIE usunął cache kafelków');
+  assert.equal(poBumpie.magazyny.get(nazwa).wpisy.size, 1, 'kafel przetrwał wdrożenie');
+
+  const z2 = zdarzenieFetch(KAFEL);
+  poBumpie.nasluchy.fetch(z2);
+  await z2.odpowiedz;
+  await poBumpie.tick();
+  assert.equal(poBumpie.fetchWywolania.length, 0, 'po wdrożeniu kafel z cache — zero żądań do dostawcy');
+});
+
+test('SW activate: stary cache kafelków z wersją w nazwie jest sprzątany', async () => {
+  // Migracja: wersje sprzed zmiany nazywały cache `okolica-kafelki-m12-80`.
+  // Mają zniknąć raz na zawsze, żeby nie trzymać martwych kopii.
+  const env = atrapaOtoczenia();
+  env.magazyny.set('okolica-kafelki-m12-80', { wpisy: new Map([['x', {}]]), kolejnosc: ['x'] });
+  await zdarzenieInstall(env);
+  await env.nasluchy.activate({ waitUntil: (p) => p });
+  assert.equal(env.magazyny.has('okolica-kafelki-m12-80'), false, 'stary wersjonowany cache usunięty');
 });
 
 test('SW fetch: POST i obce API (Overpass/Drive) BEZ obsługi — sieć i świeżość', () => {

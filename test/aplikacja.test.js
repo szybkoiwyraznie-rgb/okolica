@@ -82,18 +82,6 @@ test('F3: ikona START GRY świeci przy otwartym setupie i zamyka go drugim klikn
   assert.equal(pobierz('ekran-setup').hidden, false, 'setup wraca dla kolejnych testów');
 });
 
-test('F3: ikona Rankingów świeci przy otwartej warstwie i zamyka ją drugim kliknięciem', () => {
-  if (pobierz('ekran-setup').hidden) dom.kliknij('przycisk-setup');
-  dom.kliknij('przycisk-ranking');
-  assert.equal(pobierz('ekran-ranking').hidden, false, 'rankingi otwarte');
-  assert.equal(pobierz('przycisk-ranking').getAttribute('aria-pressed'), 'true', 'ikona rankingów świeci');
-  assert.equal(pobierz('przycisk-setup').getAttribute('aria-pressed'), 'false', 'druga ikona pozostaje zgaszona');
-
-  dom.kliknij('przycisk-ranking');
-  assert.equal(pobierz('ekran-ranking').hidden, true, 'drugi klik zamyka rankingi');
-  assert.equal(pobierz('przycisk-ranking').getAttribute('aria-pressed'), 'false', 'ikona gaśnie');
-});
-
 /**
  * Zgłoszenie właściciela B3: „Wróć na początek” dawało pustą stronę (sam
  * nagłówek i stopka). Mapa musi zostać widoczna — `data-ekran='mapa'` jest tym,
@@ -287,7 +275,7 @@ test('GPS: limit historii i próg dokładności są z pozycja.js, nie wpisane w 
 test('bootstrap: uszkodzona konfiguracja w localStorage nie kładzie startu', async () => {
   const pamiecSmieci = new Map();
   pamiecSmieci.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1',
+    schemat: 'konfig/1', kanon: '2026-09-10',
     konfig: { tryb: 'konny', wiek: 'nestor', podklad: 'carto', tematy: ['kosmos'], liczbaGraczy: 'dużo', imiona: null },
   }));
   const domSmieci = zainstalujDom({ pamiec: pamiecSmieci });
@@ -298,6 +286,40 @@ test('bootstrap: uszkodzona konfiguracja w localStorage nie kładzie startu', as
   assert.ok(domSmieci.pobierz('status').textContent.length > 20);
   assert.equal(domSmieci.pobierz('setup-stacje').value, String(DOMYSLNE.liczbaStacji), 'śmieciowy stan nie wchodzi do formularza');
   assert.ok(pamiec.size >= 0, 'pamięć pierwszej sesji zostaje nietknięta');
+});
+
+test('bootstrap: zapis sprzed markera kanonu dopełnia nowe tematy domyślne (m12-75, uwagi właściciela 4f)', async () => {
+  // Scenariusz z terenu: „Ciekawostki” są w kanonie od dawna, ale w starym
+  // localStorage ich nie ma → checkbox pokazuje się odptaszkowany. Jednorazowa
+  // migracja przy starcie dopisuje je i ZAPISUJE marker, żeby nie pytaniać co run.
+  const pamiecStary = new Map();
+  pamiecStary.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1', // bez `kanon` — zapis sprzed m12-75
+    konfig: { tematy: ['architektura', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda'] },
+  }));
+  const domStary = zainstalujDom({ pamiec: pamiecStary });
+  await import(`../app/app.js?migracja=${Date.now()}`);
+  const poMigracji = JSON.parse(pamiecStary.get('okolica:konfig'));
+  assert.equal(poMigracji.kanon, '2026-09-10', 'zapis dostaje marker kanonu po migracji');
+  assert.ok(poMigracji.konfig.tematy.includes('ciekawostki'), '„Ciekawostki” dopisane do starych tematów');
+  assert.ok(!poMigracji.konfig.tematy.includes('wlasny'), '„Dopisz sam” nie dołazi migracją');
+  // UI checkboxów odzwierciedla zmigrowane tematy (chip = label > input+span)
+  const chipy = [...domStary.pobierz('lista-tematow').children];
+  const zaznaczoneTematy = chipy.filter((chip) => chip.children[0]?.checked).map((chip) => chip.textContent);
+  assert.ok(zaznaczoneTematy.some((t) => /Ciekawostki/.test(t)), 'checkbox „Ciekawostki” zaznaczony po migracji');
+
+  // Zapis Z markerem (świeży) nie jest ruszany — nawet z „dziurą” w tematach,
+  // bo użytkownik mógł ją odptaszkować ZAMIERZENIE.
+  const pamiecSwiezy = new Map();
+  pamiecSwiezy.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1', kanon: '2026-09-10',
+    konfig: { tematy: ['historia'] },
+  }));
+  const domSwiezy = zainstalujDom({ pamiec: pamiecSwiezy });
+  await import(`../app/app.js?migracja2=${Date.now()}`);
+  const bezZmian = JSON.parse(pamiecSwiezy.get('okolica:konfig'));
+  assert.deepEqual(bezZmian.konfig.tematy, ['historia'], 'świeży zapis: wybory gracza są święte');
+  assert.equal(domSwiezy.pobierz('lista-tematow').children.length > 0, true, 'chipy tematów wyrenderowane');
 });
 
 /* ------------------------------------------------------------------ mapa (M2) */
@@ -331,6 +353,36 @@ test('mapa: bootstrap rysuje kafelki OSM i podpisuje dostawcę', async () => {
   assert.equal(domMapy.pobierz('mapa-pozycja-atrybucja').textContent, PODKLADY.osm.atrybucja);
   assert.ok(domMapy.pobierz('mapa-pozycja-svg').getAttribute('aria-label').length > 10);
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 0, 'bez pozycji nie ma markera');
+});
+
+test('mapa: operatorskie nadpisanie szablonu kafelków dociera do rysowanej mapy', async () => {
+  // End-to-end: klucz w localStorage → `wczytajNadpisanieKafelkow()` w `start()`
+  // → `ustawSzablonKafelkow()` → `urlKafelka()` → warstwa SVG. Testy jednostkowe
+  // w `test/mapa.test.js` pilnują samej walidacji; tu sprawdzamy okablowanie.
+  const zamiennik = 'https://zamiennik.przyklad.org/{z}/{x}/{y}.png';
+  const pamiec = new Map([['okolica:kafelki:url', zamiennik]]);
+  const domMapy = await aplikacjaZMapa({ pamiec });
+  const kafelki = domMapy.pobierz('mapa-pozycja-kafelki');
+  assert.ok(kafelki.children.length > 0, 'panel mapy pusty po starcie');
+  assert.ok(
+    kafelki.children.every((k) => String(k.getAttribute('href')).startsWith('https://zamiennik.przyklad.org/')),
+    'kafelki mają pochodzić z nadpisanego hosta',
+  );
+});
+
+test('mapa: błędne nadpisanie szablonu NIE gasi mapy — zostaje OSM', async () => {
+  // Klucz w trybie prywatnym albo z literówką nie może zostawić gracza z pustą
+  // mapą: walidacja odrzuca wartość i wracamy na adres wbudowany.
+  for (const smiec of ['http://niebezpieczny.example/{z}/{x}/{y}.png', 'to-nie-url', '']) {
+    const pamiec = new Map([['okolica:kafelki:url', smiec]]);
+    const domMapy = await aplikacjaZMapa({ pamiec });
+    const kafelki = domMapy.pobierz('mapa-pozycja-kafelki');
+    assert.ok(kafelki.children.length > 0, `mapa pusta po błędnym kluczu: ${smiec}`);
+    assert.ok(
+      kafelki.children.every((k) => String(k.getAttribute('href')).startsWith('https://tile.openstreetmap.org/')),
+      `błędny klucz (${smiec}) ma zostawić adres wbudowany`,
+    );
+  }
 });
 
 test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok na graczu', async () => {
@@ -487,51 +539,11 @@ test('prywatność: ekran otwiera się ze stopki, a „wróć" prowadzi na wła�
   assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'wróciliśmy na mapę, nie na setup');
   assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'powrót nie wskrzesza okna');
 
-  // ze stopki, na innym ekranie: powrót ma prowadzić na ekran, z którego
-  // przyszliśmy. Bierzemy rankingi, bo przejście setup → pozycja wymaga imion
-  // z prawdziwego DOM, którego atrapa nie parsuje (przycisk trybu testowego,
-  // który kiedyś tu pomagał, został usunięty — decyzja właściciela 2026-09-08).
-  domMapy.kliknij('przycisk-ranking');
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false);
-  domMapy.kliknij('przycisk-prywatnosc-stopka');
-  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true);
-  domMapy.kliknij('przycisk-wrocz-prywatnosc');
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'powrót na rankingi, nie na setup');
-});
-
-// Decyzja właściciela 2026-09-08: rankingi są warstwą z dwoma wyjściami.
-test('rankingi: warstwa zamyka się i krzyżykiem, i klawiszem, i wraca tam, skąd przyszła', async () => {
-  const domMapy = await aplikacjaZMapa();
-  domMapy.kliknij('przycisk-ranking');
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'rankingi otwarte');
-  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'warstwa chowa okno startowe');
-
-  domMapy.kliknij('przycisk-ranking-krzyzyk'); // krzyżyk w prawym górnym rogu
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'krzyżyk zamyka warstwę');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, true, 'wróciliśmy na mapę, nie w próżnię');
-
-  domMapy.kliknij('przycisk-ranking');
-  domMapy.kliknij('przycisk-wrocz-ranking'); // klawisz „Zamknij rankingi"
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'klawisz też zamyka');
-  assert.equal(domMapy.pobierz('ekran-setup').hidden, true);
-  assert.equal(domMapy.pobierz('ekran-start').hidden, true, 'powrót nie wskrzesza okna');
-});
-
-test('rankingi: prywatność otwarta z warstwy wraca na rankingi, nie na setup', async () => {
-  const domMapy = await aplikacjaZMapa();
-  domMapy.kliknij('przycisk-ranking');
-  domMapy.kliknij('przycisk-prywatnosc-stopka');
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, true, 'prywatność chowa rankingi — wcześniej zostawały pod spodem');
-  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, false);
-  domMapy.kliknij('przycisk-wrocz-prywatnosc');
-  assert.equal(domMapy.pobierz('ekran-prywatnosc').hidden, true);
-  assert.equal(domMapy.pobierz('ekran-ranking').hidden, false, 'powrót na rankingi');
 });
 
 test('prywatność: czyszczenie jest dwustopniowe i rusza tylko klucze obolica:*', async () => {
   const pamiecPriv = new Map();
-  pamiecPriv.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { liczbaGraczy: 2 } }));
+  pamiecPriv.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: { liczbaGraczy: 2 } }));
   pamiecPriv.set('okolica:motyw', 'ciemny');
   pamiecPriv.set('inna-apka:stan', 'nie ruszać');
   const domMapy = zainstalujDom({ pamiec: pamiecPriv });
@@ -593,7 +605,7 @@ function czytajFixtureOverpass(nazwa) {
  * × 1 pytanie → 1000 m), a nie promień wprost.
  */
 function konfigNa1000m(pamiec) {
-  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { czasGryMin: 110 } }));
+  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: { czasGryMin: 110 } }));
   return pamiec;
 }
 
@@ -835,7 +847,7 @@ function czytajFixturePaczka() {
 test('Q2 end-to-end: wklejona paczka odwrócona (rev1) od razu zaczyna grę', async () => {
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1',
+    schemat: 'konfig/1', kanon: '2026-09-10',
     // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
     // fixture paczki jest ułożony pod ten promień
     // 3 graczy przy 3 stacjach × 1 pytaniu: pytania dzielą się bez reszty (K22, ADR 0027)
@@ -857,7 +869,7 @@ test('Q2 end-to-end: wklejona paczka odwrócona (rev1) od razu zaczyna grę', as
 test('rev2 end-to-end: wklejona paczka z kodami od razu zaczyna grę', async () => {
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1',
+    schemat: 'konfig/1', kanon: '2026-09-10',
     // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
     // fixture paczki jest ułożony pod ten promień
     // 3 graczy przy 3 stacjach × 1 pytaniu: pytania dzielą się bez reszty (K22, ADR 0027)
@@ -890,7 +902,7 @@ function przelaczCheckbox(domAtrapa, id, wartosc) {
 function pamiecKonfig3x1() {
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1',
+    schemat: 'konfig/1', kanon: '2026-09-10',
     konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   return pamiecKonfig;
@@ -964,7 +976,7 @@ test('ADR 0032: poprawka celuje w profil wklejki — E02 w checkbox, odrzucona w
 test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł", wynik i historia bez weryfikacji', async () => {
   const pamiec = new Map();
   pamiec.set('okolica:gracze', JSON.stringify({ schemat: 'gracze-lokalni/1', gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })) }));
-  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 } }));
+  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 } }));
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?fcgame=${Math.random().toString(36).slice(2)}`);
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -1070,24 +1082,8 @@ test('ADR 0032: propozycje paczek pokazują Q tylko dla zweryfikowanych', async 
   assert.equal(maQ(wiersze.find((li) => li.textContent.includes('10:00'))), true, 'zweryfikowana: znaczek Q');
 });
 
-/* ================== M5/J5: brama geokodacji + warstwa zapasowa (Nominatim) */
-
-/** Overpass zawsze 503 (ścieżka pierścienia); na Nominatim — podana odpowiedź. */
-function fetchZNominatim(odpowiedzNominatim, wywolania) {
-  return async (adres) => {
-    wywolania.push(String(adres));
-    if (String(adres).includes('nominatim.openstreetmap.org')) return odpowiedzNominatim;
-    return { ok: false, status: 503, json: async () => ({}) };
-  };
-}
-
-async function aplikacjaZKonfigiem(pamiecCache, konfig = {}) {
-  pamiecCache.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig }));
-  // odstep=0: cykl instancji Overpass bez 30-sekundowych pauz (jak w testach M4)
-  const domAtrapa = zainstalujDom({ search: '?tryb=test&odstep=0', pamiec: pamiecCache });
-  await import(`../app/app.js?geokod=${Math.random().toString(36).slice(2)}`);
-  return domAtrapa;
-}
+/* ================== M5/J5: nazwa miejsca z Overpass (warstwa zapasowa
+     Nominatim usunięta na życzenie właściciela 2026-09-11 — jest jedno źródło) */
 
 test('nazwa miejsca ZAWSZE trafia do UI i do promptu (Partia 2: koniec opcji geokodacji)', async () => {
   const pamiecCache = new Map(); // konfig domyślny, bez żadnych przełączników
@@ -1133,77 +1129,6 @@ test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe pod
   }
 });
 
-test('warstwa zapasowa: domyślnie ZERO żądań do Nominatim (ADR 0013 pkt 2)', async () => {
-  const pamiecCache = new Map();
-  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, {});
-  const wywolania = [];
-  domAtrapa.window.fetch = fetchZNominatim({ ok: true, json: async () => ({ address: { city: 'Warszawa' } }) }, wywolania);
-  ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
-  domAtrapa.kliknij('przycisk-dalej-stacje');
-  await czekaj(150);
-  assert.ok(wywolania.length > 0, 'Overpass był próbowany (padł — ścieżka pierścienia)');
-  assert.equal(wywolania.filter((a) => a.includes('nominatim')).length, 0,
-    'bez wyraźnej zgody Nominatim nie jest wołany');
-});
-
-test('warstwa zapasowa: zgoda → JEDNO żądanie, nazwa z atrybucją ODbL i cache', async () => {
-  const pamiecCache = new Map();
-  pamiecCache.set('okolica:geokodacja-zapasowa', '1');
-  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, {});
-  const wywolania = [];
-  domAtrapa.window.fetch = fetchZNominatim(
-    { ok: true, json: async () => ({ address: { suburb: 'Śródmieście', city: 'Warszawa' } }) },
-    wywolania,
-  );
-  ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
-  domAtrapa.kliknij('przycisk-dalej-stacje');
-  await czekaj(200);
-
-  const nominatim = wywolania.filter((a) => a.includes('nominatim.openstreetmap.org'));
-  assert.equal(nominatim.length, 1, 'dokładnie jedno żądanie (polityka OSMF: brak zapytań systematycznych)');
-  const params = new URL(nominatim[0]).searchParams;
-  assert.equal(params.get('format'), 'jsonv2');
-  assert.equal(params.get('lat'), '52.23000', 'pozycja zaokrąglona (ADR 0013 pkt 3)');
-  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście, Warszawa/);
-  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /ODbL/, 'atrybucja wymagana polityką OSMF');
-  const wpis = JSON.parse(pamiecCache.get('okolica:miejsce:u3qcnh') ?? 'null');
-  assert.equal(wpis?.schemat, 'miejsce/1', 'wynik w cache pod kluczem geohash6 (obowiązkowy cache, ASSETS §3)');
-  assert.equal(wpis?.miejsce, 'Śródmieście, Warszawa');
-});
-
-test('warstwa zapasowa: druga gra bierze nazwę z cache — zero nowych żądań', async () => {
-  const pamiecCache = new Map();
-  pamiecCache.set('okolica:geokodacja-zapasowa', '1');
-  pamiecCache.set('okolica:miejsce:u3qcnh', JSON.stringify({ schemat: 'miejsce/1', zapisanoMs: Date.now(), miejsce: 'Śródmieście, Warszawa' }));
-  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, {});
-  const wywolania = [];
-  domAtrapa.window.fetch = fetchZNominatim({ ok: true, json: async () => ({}) }, wywolania);
-  ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
-  domAtrapa.kliknij('przycisk-dalej-stacje');
-  await czekaj(150);
-  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście, Warszawa/, 'nazwa z cache');
-  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /ODbL/, 'atrybucja zostaje przy danych z cache');
-  assert.equal(wywolania.filter((a) => a.includes('nominatim')).length, 0, 'cache = brak żądania');
-});
-
-test('warstwa zapasowa: HTTP 429 → komunikat, bez wyjątku i bez ponawiania w sesji', async () => {
-  const pamiecCache = new Map();
-  pamiecCache.set('okolica:geokodacja-zapasowa', '1');
-  const domAtrapa = await aplikacjaZKonfigiem(pamiecCache, {});
-  const wywolania = [];
-  domAtrapa.window.fetch = fetchZNominatim({ ok: false, status: 429, json: async () => ({}) }, wywolania);
-  ustawPozycjeTestowa(domAtrapa, '52.23', '21.01');
-  domAtrapa.kliknij('przycisk-dalej-stacje');
-  await czekaj(150);
-  assert.match(domAtrapa.pobierz('status').textContent, /HTTP 429/, 'komunikat z kodem odpowiedzi');
-  assert.match(domAtrapa.pobierz('status').textContent, /same współrzędne/, 'uczciwie: prompt będzie bez nazwy');
-  assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /nazwa miejsca: brak/, 'miejsce zostaje puste');
-  assert.equal(domAtrapa.pobierz('stacje-tryb').textContent.includes('pierścień'), true, 'gra toczy się dalej na pierścieniu');
-  domAtrapa.kliknij('przycisk-dalej-stacje');
-  await czekaj(100);
-  assert.equal(wywolania.filter((a) => a.includes('nominatim')).length, 1, 'jedna próba na sesję — zero ponawiania');
-});
-
 /* ============ M6/R4: ekran gry — fazy przygotowanie/odcinek, pauza */
 
 /** Przyjęta paczka + pozycja + stacje z pierścienia (synchronicznie, bez fetch).
@@ -1217,7 +1142,7 @@ async function graGotowaDoStartu() {
     gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })),
   }));
   pamiec.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1',
+    schemat: 'konfig/1', kanon: '2026-09-10',
     // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
     // fixture paczki jest ułożony pod ten promień
     // 3 graczy przy 3 stacjach × 1 pytaniu: pytania dzielą się bez reszty (K22, ADR 0027)
@@ -1649,7 +1574,7 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
     terazMs: Date.now(), zegarMs: 1000,
   });
   const pamiec = new Map();
-  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', konfig }));
+  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig }));
   pamiec.set(kluczStanu('adr-0015'), serializujStan(snapshot));
   pamiec.set(KLUCZ_AKTYWNEJ, 'adr-0015');
 
@@ -2114,7 +2039,7 @@ async function graZNiepewnymGraczem() {
     gracze: [{ pseudonim: 'Ala', zweryfikowany: false }],
   }));
   pamiec.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1',
+    schemat: 'konfig/1', kanon: '2026-09-10',
     konfig: { liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec });
@@ -2390,7 +2315,7 @@ test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, 
   const pamiec = new Map([
     [klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane })],
     ['okolica:konfig', JSON.stringify({
-      schemat: 'konfig/1',
+      schemat: 'konfig/1', kanon: '2026-09-10',
       konfig: { czasGryMin: 240, liczbaStacji: zamowione, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'] },
     })],
   ]);
@@ -2676,7 +2601,7 @@ test('Informacje: ikonka wskazuje otwarcie, zamknięcie i zachowuje stan podczas
   d.kliknij('przycisk-informacje');
   d.wyslijZdarzenieDokumentu('keydown', { key: 'Escape' }); sprawdz(false);
   d.kliknij('przycisk-informacje');
-  d.kliknij('przycisk-ranking'); sprawdz(false);
+  d.kliknij('przycisk-prywatnosc-stopka'); sprawdz(false); // inna warstwa też gasi Informacje
 });
 
 test('droga: pasek na mapie, sterowanie w Informacjach, po dojściu duży panel pytania', async () => {

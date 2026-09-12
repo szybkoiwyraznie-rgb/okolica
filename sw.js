@@ -18,10 +18,26 @@
  * activate. */
 'use strict';
 
-const WERSJA_SW = 'm12-74';
+const WERSJA_SW = 'm12-81';
 const PREFIKS_CACHE = 'okolica';
 const CACHE_SHELL = `${PREFIKS_CACHE}-shell-${WERSJA_SW}`;
-const CACHE_KAFELKI = `${PREFIKS_CACHE}-kafelki-${WERSJA_SW}`;
+/**
+ * Cache kafelków BEZ wersji aplikacji — i to jest celowe, nie przeoczenie.
+ *
+ * Adres kafelka to `z/x/y`, a jego treść zależy od dostawcy, nie od naszej
+ * wersji. Gdyby nazwa cache zależała od `WERSJA_SW`, każde wdrożenie (a wersja
+ * rośnie przy każdej zmianie `app/*.js`, LESSONS L29) wyrzucałoby cały zbiór
+ * kafelków i wymuszało ponowne pobranie widoku z serwera dostawcy. Dokładnie
+ * ten wzorzec — „powtarzające się pobrania tych samych kafelków z powodu
+ * niewłaściwego cache'owania odpowiedzi" — polityka kafelków OSM wymienia jako
+ * podstawę do zablokowania dostępu (osm.wiki/Blocked, „General block":
+ * *No caching*). Skorupa musi być wersjonowana, kafelki nie mogą.
+ *
+ * Stare cache'e o nazwach z wersją (`okolica-kafelki-m12-80` itd.) usuwa
+ * `activate` — przechodzą przez filtr przedrostka, bo nie równają się tej
+ * stałej. Patrz test „SW activate: cache kafelków przeżywa bump wersji".
+ */
+const CACHE_KAFELKI = `${PREFIKS_CACHE}-kafelki`;
 /** Limit kafelków w cache (~10 okolic przy ~60 kafelkach/zoom). Test wstrzykuje mniejszy. */
 const MAKS_KAFELKI = Number(self.__MAKS_KAFELKI_TEST__) || 600;
 const PLIKI_SHELL = [

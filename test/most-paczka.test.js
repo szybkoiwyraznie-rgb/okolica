@@ -67,13 +67,14 @@ test('most: paczka odrzucona ręcznie (poza katalogiem zaakceptowanych) dostaje 
 
 test('most: żadna akcja nie odpowiada błędem wykonania skryptu', () => {
   const { most } = uruchomMost();
-  const gety = ['indeks', 'paczka', 'gry', 'gra-stan', 'ranking', 'nieznana'];
+  // 'ranking' celowo poza listą: akcja usunięta z mostu (właściciel, 2026-09-11).
+  const gety = ['indeks', 'paczka', 'gry', 'gra-stan', 'nieznana'];
   for (const akcja of gety) {
     const odp = most.doGet({ parameter: { akcja, id: 'BRAK', kod: 'BRAK', token: 'BRAK' } });
     assert.equal(/is not defined/.test(odp.tekst), false, `doGet ${akcja}: ${odp.tekst}`);
   }
   const posty = ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz',
-    'gra-hotseat', 'profil-ustaw', 'profil-sprawdz', 'nieznana'];
+    'gra-hotseat', 'gra-opusc', 'profil-ustaw', 'profil-sprawdz', 'nieznana'];
   for (const akcja of posty) {
     const odp = most.doPost({ postData: { contents: JSON.stringify({ akcja }) } });
     assert.equal(/is not defined/.test(odp.tekst), false, `doPost ${akcja}: ${odp.tekst}`);

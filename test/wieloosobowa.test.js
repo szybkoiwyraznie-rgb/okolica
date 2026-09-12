@@ -1,8 +1,8 @@
 /**
  * Testy `app/wieloosobowa.js` (M11/P2) — czyste schematy gry wieloosobowej:
- * kody, sąsiedztwo geohash5 (lobby), walidacje surowe R01–R20, maszynka tur,
- * wyniki, biała lista danych zdarzenia (PRYWATNOŚĆ: zero współrzędnych) i
- * agregacje rankingów (M12). Wartości referencyjne, nie „co wyszło".
+ * kody, sąsiedztwo geohash5 (lobby), walidacje surowe R01–R20, wyniki i biała
+ * lista danych zdarzenia (PRYWATNOŚĆ: zero współrzędnych). Wartości
+ * referencyjne, nie „co wyszło". Rankingi usunięte (właściciel, 2026-09-11).
  */
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,12 +10,12 @@ import assert from 'node:assert/strict';
 import { geohash } from '../app/geo.js';
 import {
   ALFABET_KODU, DLUGOSC_KODU, KODY_WIELOOSOBOWE, MAKS_GRACZY, SCHEMAT_GRY,
-  SCHEMAT_LOBBY, SCHEMAT_PROFILU, SCHEMAT_RANKINGU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
-  agregujRanking, czyKompletna, czyPinPoprawny, filtrujLobby, generujKod,
-  kategorieRankingu, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim,
+  SCHEMAT_LOBBY, SCHEMAT_PROFILU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
+  czyKompletna, czyPinPoprawny, filtrujLobby, generujKod,
+  kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim,
   postepGracza, premiaZaKolejnosc, przeliczWyniki,
   ramkaGeohash, sasiednieGeohash, walidujGreSurowa, walidujLobbySurowe,
-  walidujRankingSurowy, walidujZdarzenieSurowe, zbudujZdarzenie,
+  walidujZdarzenieSurowe, zbudujZdarzenie,
 } from '../app/wieloosobowa.js';
 
 const PODKOWA = { lat: 52.12303, lon: 20.74614 }; // geohash5 u3qb8 (jak w reszcie testów)
@@ -48,6 +48,15 @@ function graWazna(nad = {}) {
 }
 
 /* ------------------------------------------------------- kody gier */
+
+test('kody R17/R18 wycofane razem z rankingami — numery zostają zajęte na stałe', () => {
+  // Właściciel 2026-09-11 usunął rankingi. Numery NIE wracają do puli: starszy
+  // klient w terenie mógłby dostać nowy błąd pod starym numerem i pokazać
+  // graczowi cudzy komunikat (precedens: E14 i E18 w pakietach są wycofane).
+  assert.equal('R17' in KODY_WIELOOSOBOWE, false, 'R17 nie ma już treści');
+  assert.equal('R18' in KODY_WIELOOSOBOWE, false, 'R18 nie ma już treści');
+  for (const k of ['R15', 'R16', 'R19', 'R20']) assert.ok(KODY_WIELOOSOBOWE[k], `${k} został`);
+});
 
 test('kody: alfabet bez 0/O/1/I, generator trzyma się alfabetu i długości', () => {
   assert.equal(GH5, 'u3qb8', 'kotwica geohash5 Podkowy (spójność z resztą testów)');
@@ -241,40 +250,6 @@ test('walidujLobbySurowe: wpis uszkodzony odpada z R16, obcy schemat z R15', () 
   assert.deepEqual(zSmieciem.usterki.map((u) => u.kod), ['R16']);
   assert.deepEqual(walidujLobbySurowe('{"schemat":"inne"}').usterki.map((u) => u.kod), ['R15']);
   assert.equal(MAKS_GRACZY, 8, 'limit graczy zgodny z mostem');
-});
-
-test('rankingi: agregacje ogólne i kategorie wiek/temat/lokalizacja (ADR 0019 pkt 5)', () => {
-  const wiersze = [
-    { pseudonim: 'Ala', punkty: 30, poprawne: 3, bledne: 0, data: 'd1', tryb: 'wyscig', miejsce: 'Podkowa Leśna', geohash5: GH5, wiek: 'dorosli', tematy: ['historia', 'architektura'] },
-    { pseudonim: 'Ala', punkty: 10, poprawne: 1, bledne: 1, data: 'd2', tryb: 'trasa', miejsce: 'Warszawa', geohash5: 'u3q8x', wiek: 'dorosli', tematy: ['przyroda'] },
-    { pseudonim: 'Bartek', punkty: 25, poprawne: 2, bledne: 1, data: 'd1', tryb: 'wyscig', miejsce: 'Podkowa Leśna', geohash5: GH5, wiek: '12-15', tematy: ['historia'] },
-  ];
-  const ogolny = agregujRanking(wiersze);
-  assert.deepEqual(ogolny.map((s) => s.pseudonim), ['Ala', 'Bartek'], 'Ala 40 > Bartek 25');
-  assert.equal(ogolny[0].punkty, 40);
-  assert.equal(ogolny[0].gry, 2, 'historia gier zliczona');
-  const dorosli = agregujRanking(wiersze, { wiek: 'dorosli' });
-  assert.deepEqual(dorosli.map((s) => s.pseudonim), ['Ala'], 'kategoria wiekowa filtruje');
-  const historia = agregujRanking(wiersze, { temat: 'historia' });
-  assert.deepEqual(historia.map((s) => [s.pseudonim, s.punkty]), [['Ala', 30], ['Bartek', 25]], 'tematyczna: tylko gry z tematem');
-  const podkowa = agregujRanking(wiersze, { geohash5: GH5 });
-  assert.deepEqual(podkowa.map((s) => s.pseudonim), ['Ala', 'Bartek'], '„najlepsi w Podkowie Leśnej"');
-  assert.equal(podkowa[0].punkty, 30, 'warszawska gra Ali nie wchodzi do Podkowy');
-  const kat = kategorieRankingu(wiersze);
-  assert.deepEqual(kat.wieki, ['12-15', 'dorosli']);
-  assert.deepEqual(kat.tematy, ['architektura', 'historia', 'przyroda']);
-  assert.equal(kat.lokalizacje.length, 2);
-});
-
-test('walidujRankingSurowy: R17 dla śmieci, R18 filtruje wiersze', () => {
-  const wiersz = { pseudonim: 'Ala', punkty: 5, poprawne: 1, bledne: 0, geohash5: GH5, wiek: 'dorosli', tematy: ['historia'], miejsce: 'Podkowa', data: 'd', tryb: 'wyscig' };
-  const ok = walidujRankingSurowy(JSON.stringify({ schemat: SCHEMAT_RANKINGU, wiersze: [wiersz] }));
-  assert.deepEqual(ok.usterki, []);
-  assert.equal(ok.wiersze.length, 1);
-  const zepsuty = walidujRankingSurowy(JSON.stringify({ schemat: SCHEMAT_RANKINGU, wiersze: [wiersz, { pseudonim: '', punkty: 'dużo' }] }));
-  assert.equal(zepsuty.wiersze.length, 1);
-  assert.deepEqual(zepsuty.usterki.map((u) => u.kod), ['R18']);
-  assert.deepEqual(walidujRankingSurowy('nie-json').usterki.map((u) => u.kod), ['R17']);
 });
 
 test('profil PIN (ADR 0021): normalizacja pseudonimu i reguła PIN-u', () => {

@@ -144,6 +144,28 @@ export const TEMATY_SETUP = Object.fromEntries([
   'legendy', 'ludzie', 'nauka', 'przyroda', 'wlasny',
 ].map(k => [k, TEMATY[k]]));
 
+/** Kanon wyborów setupu idzie z wersją aplikacji: gdy zmieniamy DOMYŚLNE
+ *  zaznaczenia, dopisujemy marker daty TUTAJ, a `wczytajKonfiguracje` jednorazowo
+ *  domyka zapisane konfigi (uwagi właściciela 2026-09-11: „Ciekawostki” zostały
+ *  w kanonie, ale zgubiły się w starych zapisach localStorage). */
+export const KANON_SETUPU = '2026-09-10';
+export const TEMATY_DOPELNIANE_PRZY_MIGRACJI = ['ciekawostki'];
+
+/**
+ * Jednorazowa migracja starych zapisów setupu: dopisuje tematy, które dziś są
+ * domyślnie włączone, a kiedyś nie były (albo wypadły przy odchudzaniu setupu).
+ * Lista zamknięta i alfabetyczna; `wlasny` („Dopisz sam”) nigdy się tu nie
+ * znajdzie — wymaga tekstu organizatora i startuje wyłączony (właściciel,
+ * 2026-09-11: wszystkie tematy oprócz „Dopisz sam” mają być zaznaczone).
+ */
+export function dopelnijNoweTematySetupu(tematy) {
+  const lista = Array.isArray(tematy) ? [...tematy] : [];
+  for (const ident of TEMATY_DOPELNIANE_PRZY_MIGRACJI) {
+    if (Object.hasOwn(TEMATY_SETUP, ident) && !lista.includes(ident)) lista.push(ident);
+  }
+  return lista.sort();
+}
+
 export function konfiguracjaNowegoSetupu(konfig) {
   const wiek = ({ 10: '12', 15: 'dorosli' })[konfig.wiek] ?? konfig.wiek;
   const tematy = konfig.tematy.filter(t => Object.hasOwn(TEMATY_SETUP, t));

@@ -11,7 +11,7 @@ pętlę protokołu PYT (ADR 0006, `docs/PROTOKOL.md`).
 ```
 index.html                  — powłoka UI: ekran startowy z intro nad mapą, mapa jako
                               trwałe tło, kroki gry (setup → pozycja → stacje → prompt →
-                              paczka → gra → wynik), warstwy rankingów i prywatności,
+                              paczka → gra → wynik), warstwa prywatności,
                               stopka z wersją protokołu, baner file://
 sw.js                       — Service Worker (M10): offline skorupa + kafelki
                               ostatniej okolicy (cache-first, limit i ewikcja;
@@ -82,11 +82,11 @@ app/
                               Audio) i przełącznik `okolica:sygnaly` (czyste;
                               odtwarzanie w app.js, brak API = cichy no-op)
   wieloosobowa.js           — M11/M12: schematy RO-* (gra, zdarzenie, lobby,
-                              ranking), walidacja z kodami R01–R18, kody gier
-                              (alfabet bez 0/O/1/I), sąsiedztwo geohash5 dla lobby
-                              (ramka i sąsiedzi mieszkają w `geo.js`, tu
-                              re-eksport), maszynka tur, wyniki, agregacje
-                              rankingów (czyste; ADR 0019)
+                              profil), walidacja z kodami R01–R20 (R17/R18
+                              wycofane z rankingami), kody gier (alfabet bez
+                              0/O/1/I), sąsiedztwo geohash5 dla lobby (ramka
+                              i sąsiedzi mieszkają w `geo.js`, tu re-eksport)
+                              i wyniki (czyste; ADR 0019)
   sync.js                   — M11: synchronizacja z mostem Drive — polecenieMostu
                               (POST + znacznik odmowaMostu), urlGet/urlStanGry,
                               interwały pollingu zależne od fazy gry, kolejka
@@ -133,18 +133,20 @@ pobiera stan, woła czyste funkcje, renderuje. Zegar i RNG są **wstrzykiwane**
 (`performance.now` / `mulberry32(ziarno)`), nie czytane z globali w środku logiki.
 
 Od M11 tę samą zasadę trzymają moduły wieloosobowe: `wieloosobowa.js`
-(schematy RO-*, walidacja z kodami R01–R18, kody gier, sąsiedztwo geohash5
-dla lobby — z `geo.js`, maszynka tur, wyniki, agregacje rankingów — zero DOM) i `sync.js`
+(schematy RO-*, walidacja z kodami R01–R20, kody gier, sąsiedztwo geohash5
+dla lobby — z `geo.js`, wyniki — zero DOM) i `sync.js`
 (polling mostu z interwałami zależnymi od fazy gry, kolejka zdarzeń offline
 z flusheM FIFO, rozróżnienie „odmowa mostu" vs „awaria sieci", wstrzykiwane
-`fetchImpl` i harmonogram). Orkiestracja DOM gry wieloosobowej i rankingów
-siedzi w `app.js` (sekcje M11/P4 i M12/P6).
+`fetchImpl` i harmonogram). Orkiestracja DOM gry wieloosobowej siedzi
+w `app.js` (sekcja M11/P4).
 
 Od ADR 0020 adres mostu nie jest elementem interfejsu, tylko **stałą
 wdrożeniową w kodzie**: `most.js` rozstrzyga, z którym adresem rozmawiamy
 (nadpisanie w pamięci telefonu → `DOMYSLNY_URL_MOSTU` z repozytorium), i daje
-całemu UI jeden tekst stanu (`pokazStanMostu()` w `app.js` → `#most-stan-repo`
-i `#multi-most-stan`). Pól wpisywania adresu nie ma — wymiana adresu to nowy
+całemu UI jeden tekst stanu (`pokazStanMostu()` w `app.js` → `#most-stan-repo`;
+dawny `#multi-most-stan` zniknął z dev-tekstami za decyzją właściciela
+2026-09-11 — ekran multi to już samo lobby, a lista gier ~50 m żyje na
+setupie). Pól wpisywania adresu nie ma — wymiana adresu to nowy
 commit i nowa wersja aplikacji.
 
 ## Przepływ danych
@@ -179,15 +181,14 @@ commit i nowa wersja aplikacji.
    (`mapa.ustawTrybReczny`), dystans tylko w linii prostej.
    Lista stacji trafia na mapę jako numerowane pinezki
    (`mapa.zaznaczStacje`), a promień gry jako przerywany okrąg.
-   Nazwa miejsca: podstawowa z obszarów administracyjnych TEGO SAMEGO
-   zapytania Overpass (`sieci.nazwaMiejsca`); zapasowa —
-   `uzupelnijMiejsceZapasowe` (Nominatim `reverse`, opt-in kluczem
-   `okolica:geokodacja-zapasowa`, domyślnie wyłączona, ADR 0013 pkt 2):
-   jedno żądanie na sesję, tylko gdy Overpass nie dał nazwy, najpierw cache
-   `okolica:miejsce:<geohash6>` (30 dni), wynik z atrybucją ODbL, endpoint
-   przełączalny kluczem `okolica:geokodacja-endpoint`. Całe nazewnictwo
-   miejsca (UI i prompt) jest bramowane `konfig.geokodacja` — przy
-   wyłączonym prompt niesie same współrzędne (ADR 0013 pkt 3).
+   Nazwa miejsca: jedyna z obszarów administracyjnych TEGO SAMEGO
+   zapytania Overpass (`sieci.nazwaMiejsca`; UI i prompt pokazują ją ZAWSZE).
+   Warstwa zapasowa (Nominatim `reverse`, opt-in, cache `okolica:miejsce:<geohash6>`)
+   działała do m12-74 i została usunięta na życzenie właściciela 2026-09-11 —
+   docelowe źródło jest na stałe, bez przełączników i bez kluczy
+   (`okolica:geokodacja-zapasowa`, `okolica:geokodacja-endpoint`) w pamięci
+   (też nie wraca dawna bramka `konfig.geokodacja`). Brak nazwy = puste
+   miejsce w promptcie i komunikat, nie żądanie uboczne.
 5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka;
    ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
    SVG w `index.html` (zero plików zewnętrznych, ADR 0001 pkt 1/ADR 0011).
@@ -277,8 +278,12 @@ commit i nowa wersja aplikacji.
    (`gra-zakoncz`) — premie liczą się też wtedy. Brak pozycji = środek trasy z
    pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca z
    `okolica:multi:sesja`, a zamknięte już stacje nie wracają do rozgrywki.
-4. Rankingi: GET `ranking` → surowe wiersze `RO-ranking/1` → agregacje liczy
-   telefon (`agregujRanking` / `kategorieRankingu`) — serwer tylko przechowuje.
+4. Koniec gry: podsumowanie liczy telefon (`przeliczWyniki`), a most zapisuje
+   grę w historii (`RO-gra/1`, stan `zakonczona`). Rankingów nie ma — usunięte
+   z aplikacji i z mostu (właściciel, 2026-09-11; aneks ADR 0019).
+5. Wyjście z lobby: POST `gra-opusc` prostuje skład gry, więc `liczbaGraczy`
+   w `RO-lobby/1` nie obiecuje gracza, który wyszedł; wyjście organizatora
+   zamyka grę (stan `archiwum`).
 
 ## Kluczowe algorytmy
 
@@ -368,8 +373,11 @@ nie należy do paska pięciu kroków); `STAN.historiaFixow` to ograniczona
 historia wspólna GPS-u i symulacji; `STAN.symulacja` trzyma odtwarzaną trasę
 (`{fixy, indeks, cel, timer}`); `STAN.siec` trzyma stan sieci drogowej
 (`brak`/`gotowa` + graf i kandydaci przebudowywani tylko przy zmianie trybu),
-`STAN.wynikSieci` wynik wyboru sieciowego, a `STAN.wymusPierscien` i
-`STAN.trybReczny` znaczniki degradacji (ADR 0005 pkt 8). Kasowanie danych jest **dwustopniowe**
+`STAN.wynikSieci` wynik wyboru sieciowego, a `STAN.trybReczny` znacznik trybu
+ręcznego (ADR 0005 pkt 8b). Znacznika `STAN.wymusPierscien` już nie ma:
+przycisk „Tryb uproszczony" wyleciał w m12-66, a stan został jako wiecznie
+`false` — czyli jako fałszywa gałąź decyzyjna (usunięty 2026-09-12; kontrakt
+pilnuje, żeby nie wrócił ani przycisk, ani flaga). Kasowanie danych jest **dwustopniowe**
 (pierwszy klik uzbraja, drugi wykonuje) i usuwa wyłącznie klucze `okolica:*` —
 aplikacja nie wywołuje `confirm()`/`alert()` (ADR 0015 pkt 6), komunikaty idą
 do pól z `role="status"`/`role="alert"`.
@@ -400,8 +408,7 @@ ręczne zakończenie gry są dwustopniowe (ADR 0015 pkt 6).
 
 Historia gier (M7) żyje obok zapisów w `app/trwalosc.js`: klucz
 `okolica:historia`, schemat `historia/1`, wpis `historia-gra/1` — skrót BEZ
-treści pytań i BEZ współrzędnych (data, miejsce z konfiga — bramowane
-geokodacją jak w promptach, tryb, zwycięzca, punkty, poprawne, czasy,
+treści pytań i BEZ współrzędnych (data, miejsce z konfiga jak w promptach, tryb, zwycięzca, punkty, poprawne, czasy,
 znacznik `przerwana`). Limit 50 wpisów (najstarsze wypadają),
 a zastąpienie po kluczu gry jest idempotentne: dokończenie przerwanej gry
 NADPISUJE wpis, nie dokłada drugiego. Wpis powstaje w hooku `zapiszGre()` —

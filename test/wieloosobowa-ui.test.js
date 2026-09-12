@@ -31,6 +31,8 @@ import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV3 } from '../app/protokol.js';
 import { zapakujPaczke } from '../app/kodowanie.js';
 import { KLUCZ_REJESTRU, SCHEMAT_LOKALNY, kluczZestawu, nowyRejestr, zbierzMetaZestawu } from '../app/zestawy.js';
 import { czyKompletna, generujKod, przeliczWyniki, zbudujZdarzenie } from '../app/wieloosobowa.js';
+import { SCHEMAT_SIECI, kluczCacheSieci, parsujOdpowiedz, upraszczajDaneDoCache } from '../app/sieci.js';
+import { promienZCzasuGry } from '../app/konfig.js';
 import { polecenieMostu, utworzSynchronizacje } from '../app/sync.js';
 
 const URL_MOSTU = 'https://script.google.com/macros/s/TEST/exec';
@@ -68,6 +70,7 @@ function atrapaMostu() {
         switch (dane.akcja) {
           case 'gra-zaloz': return json(zaloz(dane));
           case 'gra-dolacz': return json(dolacz(dane));
+          case 'gra-opusc': return json(opusc(dane));
           case 'gra-start': return json(start(dane));
           case 'gra-zdarzenie': return json(zdarzenie(dane));
           case 'gra-zakoncz': return json(zakoncz(dane));
@@ -159,6 +162,20 @@ function atrapaMostu() {
     };
     gry.set(gra.idGry, gra);
     return { ok: true, gra: structuredClone(gra) };
+  }
+  /** Lustro `opuscGre` z .gs: wyjście z lobby prostuje skład gry. */
+  function opusc(dane) {
+    const gra = znajdzGre(dane.kod, dane.idGry);
+    if (!gra) return { ok: false, blad: 'nie ma gry o takim kodzie/identyfikatorze' };
+    if (gra.stan !== 'lobby') return { ok: false, blad: 'gra już wystartowała — wyjście w trakcie gry to rezygnacja, nie opuszczenie lobby' };
+    const indeks = gra.gracze.findIndex((g) => g.id === String(dane.graczId ?? ''));
+    if (indeks < 0) return { ok: false, blad: 'nie ma takiego gracza w tej grze' };
+    if (indeks === 0) {
+      gra.stan = 'archiwum';
+      return { ok: true, zamknieta: true };
+    }
+    gra.gracze.splice(indeks, 1);
+    return { ok: true, zamknieta: false, gra: structuredClone(gra) };
   }
   function dolacz(dane) {
     const pseudonim = String(dane.pseudonim ?? '').trim().slice(0, 24);
@@ -444,11 +461,14 @@ async function zalozGreUI(u, { tryb = 'wyscig', sekret = null } = {}) {
   await czekajNa(u, () => el(u, 'multi-panel-lobby').hidden === false, 'lobby po paczce');
 }
 
-/** Dołącza z listy gier w zasięgu ~50 m (m12-74: bez kodów, wpis „Host: X”). */
+/** Dołącza z listy gier w zasięgu ~50 m (m12-75: lista od razu na setupie). */
 async function dolaczZListyUI(u) {
   await wybierzSegment(u, 'multi-sciezka', 'dolacz');
-  assert.match(tekst(u, 'przycisk-dalej-pozycja'), /Pokaż gry w okolicy/, 'przycisk dolny zmienia etykietę');
-  await klik(u, 'przycisk-dalej-pozycja');
+  // m12-75 (właściciel, uwagi terenowe #3): bez ekranu multi — lista gier ~50 m
+  // pokazuje się od razu na setupie, pod „Kto gra?”, a opcje hosta znikają.
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'panel „Dołączam” otwarty na setupie');
+  assert.equal(el(u, 'pole-tematy').hidden, true, 'tematy schowane dla dołączającego');
+  assert.equal(el(u, 'przycisk-dalej-pozycja').hidden, true, 'dolny przycisk znika — dalej wiodą „Dołącz” z listy');
   await czekajNa(u, () => el(u, 'multi-lobby-lista').children.length > 0, 'lista gier w zasięgu ~50 m');
   const wiersz = el(u, 'multi-lobby-lista').children[0];
   assert.match(wiersz.children[0].textContent, /^Host: /, 'wpis pokazuje tylko hosta');
@@ -698,7 +718,7 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   const most = atrapaMostu();
   // konfig zgodny z fixturem paczka-ok.json (3 stacje × 1 pytanie, tematy z paczki)
   const KONFIG_AI = JSON.stringify({
-    schemat: 'konfig/1',
+    schemat: 'konfig/1', kanon: '2026-09-10',
     konfig: {
       tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
       tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
@@ -723,7 +743,9 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   assert.equal(el(A, 'ekran-stacje').hidden, false, 'ekran stacji widoczny');
   // trasa-sekret: organizator widzi tylko STATUS, nie nazwy ani współrzędne
   assert.equal(el(A, 'lista-stacji').children.length, 1, 'lista stacji ma jeden wiersz statusu');
-  assert.match(tekst(A, 'lista-stacji'), /Stacje wygenerowano: 3/, 'status mówi tylko ile');
+  assert.match(tekst(A, 'lista-stacji'), /Wygenerowano stacji: 3/, 'status mówi tylko ile');
+  assert.match(tekst(A, 'lista-stacji'), /NIE zlokalizowano/, 'bez sieci dróg komunikat mówi wprost, że stacje nie są zlokalizowane');
+  assert.equal(el(A, 'przycisk-przelicz').hidden, true, 'w tajnej trasie nie ma opcji „Inny układ”');
   assert.match(tekst(A, 'lista-stacji'), /ukryte/i, 'ukrycie jest jawne');
   assert.doesNotMatch(tekst(A, 'lista-stacji'), /52\./, 'współrzędne stacji nie wyciekają');
   await klik(A, 'przycisk-dalej-prompt');
@@ -742,26 +764,97 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   assert.match(gra.konfiguracja.geohash8, /^[0-9b-z]{8}$/, 'konfiguracja niesie geohash8 (~50 m)');
 });
 
-test('bez potwierdzonego imienia NIE wysyłam niczego — jawna odmowa (setup → lista gier)', async () => {
+test('wyjście z lobby jest zgłaszane mostowi — inaczej liczba graczy kłamie', async () => {
+  // Właściciel 2026-09-11: „dołączanie i wychodzenie w dowolnym momencie".
+  // Samo wyjście z ekranu zostawiało gracza w `gracze` na moście, a lista gier
+  // w okolicy (liczbaGraczy = gracze.length) obiecywała kogoś, kogo nie było.
+  const most = atrapaMostu();
+  const KONFIG = JSON.stringify({
+    schemat: 'konfig/1', kanon: '2026-09-10',
+    konfig: {
+      tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
+      tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
+      karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
+    },
+  });
+  const A = await noweUrzadzenie({ pamiec: new Map([['okolica:konfig', KONFIG]]), most, bezGracza: true });
+  await wybierzSegment(A, 'lista-rodzajow', 'multi');
+  await dodajGraczaUI(A, 'Ewa');
+  await ustawPozycjeTestowa(A, { lat: 52.23178, lon: 21.01234 });
+  await klik(A, 'przycisk-dalej-pozycja');
+  await klik(A, 'przycisk-dalej-stacje');
+  await new Promise((r) => setTimeout(r, 40));
+  await klik(A, 'przycisk-dalej-prompt');
+  await klik(A, 'przycisk-dalej-paczka');
+  const paczka = JSON.parse(czytajPlik(new URL('./fixtures/paczka-ok.json', import.meta.url), 'utf8'));
+  A.dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
+  await czekajNa(A, () => el(A, 'multi-panel-lobby').hidden === false, 'lobby po wklejeniu paczki');
+
+  await klik(A, 'przycisk-lobby-opusc');
+  await new Promise((r) => setTimeout(r, 40));
+  // Nie wszystkie POST-y są JSON-em (przyjęcie paczki idzie jako `data=…`),
+  // więc czytamy defensywnie — szukamy jednego konkretnego polecenia.
+  const przeczytane = most.ciala.map((c) => { try { return JSON.parse(c); } catch { return null; } });
+  const wyjscie = przeczytane.find((c) => c?.akcja === 'gra-opusc');
+  assert.ok(wyjscie, 'telefon wysłał gra-opusc');
+  assert.equal(wyjscie.graczId, 'g-1', 'wychodzi ten gracz, który klika');
+  assert.equal([...most.gry.values()][0].stan, 'archiwum', 'wyjście organizatora zamyka grę — bez niego nie wystartuje');
+  assert.match(tekst(A, 'status'), /zamykam grę/i, 'komunikat mówi, co się stało z grą');
+  assert.equal(el(A, 'ekran-setup').hidden, false, 'gracz wraca na setup');
+});
+
+test('trasa-sekret z siecią dróg: komunikat mówi „zlokalizowano”, a „Inny układ” zostaje schowany', async () => {
+  const most = atrapaMostu();
+  const KONFIG = {
+    tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 110,
+    tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
+    podklad: 'osm', kodGry: 'test',
+  };
+  const pamiec = new Map([['okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: KONFIG })]]);
+  // Sieć z pamięci telefonu (cache) — bez internetu, a stacje są SIECIOWE,
+  // więc komunikat ma powiedzieć „zlokalizowano” (fixture centrum, 1000 m).
+  const promienM = promienZCzasuGry({ ...KONFIG, promienM: null });
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(JSON.parse(czytajPlik(new URL('./fixtures/overpass-centrum.json', import.meta.url), 'utf8'))));
+  pamiec.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM, tryb: 'piesza' }),
+    JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await wybierzSegment(A, 'lista-rodzajow', 'multi');
+  await dodajGraczaUI(A, 'Ewa');
+  await ustawPozycjeTestowa(A, { lat: 52.2297, lon: 21.0122 });
+  await klik(A, 'przycisk-dalej-pozycja');
+  await klik(A, 'przycisk-dalej-stacje');
+  await new Promise((r) => setTimeout(r, 40));
+  assert.match(tekst(A, 'lista-stacji'), /Wygenerowano i zlokalizowano stacji: 3/, 'sieć drogowa = stacje zlokalizowane');
+  assert.doesNotMatch(tekst(A, 'lista-stacji'), /NIE zlokalizowano/, 'wariant pierścieniowy nie podchodzi pod sieć');
+  assert.equal(el(A, 'przycisk-przelicz').hidden, true, '„Inny układ” schowany także przy sieci');
+  assert.doesNotMatch(tekst(A, 'lista-stacji'), /52\./, 'współrzędne stacji nie wyciekają');
+});
+
+test('bez potwierdzonego imienia NIE wysyłam niczego — jawna odmowa (lista na setupie)', async () => {
   const most = atrapaMostu();
   const u = await noweUrzadzenie({ most, bezGracza: true });
   await wybierzSegment(u, 'lista-rodzajow', 'multi');
   await wybierzSegment(u, 'multi-sciezka', 'dolacz');
   await ustawPozycjeTestowa(u);
-  await klik(u, 'przycisk-dalej-pozycja');
-  assert.match(tekst(u, 'bledy-profil'), /co najmniej jednego gracza/, 'odmowa mówi wprost, czego brakuje');
-  assert.equal(el(u, 'multi-panel-dolacz').hidden, true, 'lista gier się NIE otwiera');
-  await klik(u, 'przycisk-dalej-pozycja');
+  // Właściciel 2026-09-12: boks z listą gier jest osobną kartą i pokazuje się
+  // DOPIERO po zalogowaniu — bez imienia nie ma czym zapytać mostu, a pusty
+  // boks tylko zajmował miejsce.
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, true, 'bez zalogowania boksu z listą w ogóle nie ma');
+  assert.equal(el(u, 'pole-tozsamosc').parentNode.id, 'multi-slot-tozsamosc', '„Ty w tej grze” siedzi w karcie multi, pod opisem ścieżki');
+  await oddech();
+  assert.equal(el(u, 'multi-lobby-lista').children.length, 0, 'lista pusta bez znanego imienia');
   assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez potwierdzonego imienia');
   assert.deepEqual(
     most.adresy.filter((a) => /[?&]akcja=(gry|gra-stan|ranking)/.test(a)),
     [],
     'żaden GET gry wieloosobowej nie poszedł (odczyt indeksu paczek jest bez bramki — ADR 0017 pkt 6)',
   );
-  // z potwierdzonym imieniem — droga wolna (lista gier się otwiera)
+  // z potwierdzonym imieniem — droga wolna (lista odświeża się sama po dodaniu gracza)
   await dodajGraczaUI(u, 'Daria');
-  await klik(u, 'przycisk-dalej-pozycja');
-  await czekajNa(u, () => el(u, 'multi-panel-dolacz').hidden === false, 'lista gier otwarta po dodaniu gracza');
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'po zalogowaniu boks z listą się pokazuje');
+  await czekajNa(u, () => most.adresy.some((a) => /[?&]akcja=gry/.test(a)), 'lista pyta o gry po zalogowaniu');
+  assert.equal(el(u, 'pole-tozsamosc-siatka').hidden, true, 'pola wpisywania znikają — jedna osoba na telefon');
 });
 
 test('ADR 0020: adres mostu jest w kodzie — telefon bez wpisu w pamięci gra sieciowo od razu', async () => {
@@ -771,8 +864,9 @@ test('ADR 0020: adres mostu jest w kodzie — telefon bez wpisu w pamięci gra s
   const u = await noweUrzadzenie({ pamiec, most, bezGracza: true });
   await wybierzSegment(u, 'lista-rodzajow', 'multi');
   przelaczNa(u);
-  assert.match(tekst(u, 'multi-most-stan'), /podłączony/i, 'karta gry wieloosobowej: adres z kodu działa bez wpisywania');
-  assert.match(tekst(u, 'most-stan-repo'), /podłączony/i, 'karta paczek mówi to samo (jedna prawda o stanie mostu)');
+  // m12-75: osobnego badge'a na ekranie multi już nie ma (samo lobby); jedna
+  // prawda o stanie mostu żyje przy karcie paczek na setupie.
+  assert.match(tekst(u, 'most-stan-repo'), /podłączony/i, 'karta paczek: adres z kodu działa bez wpisywania');
   await dodajGraczaUI(u, 'Iga');
   await ustawPozycjeTestowa(u);
   await klik(u, 'przycisk-dalej-pozycja');

@@ -81,8 +81,11 @@ Po przyjęciu gra zaczyna się OD RAZU (decyzja 2026-09-07 — podgląd,
 dokąd zestaw leci automatycznie w chwili przyjęcia). Gotowe zestawy można wybrać na ekranie propozycji paczek. Nazwa miejsca do promptu jest pobierana ZAWSZE (ADR 0013 pkt 3 —
 przełącznik usunięty w Partii 2), a zapasowa warstwa Nominatim działa tylko po
 wyraźnej zgodzie na ekranie prywatności (domyślnie wyłączona, jedno żądanie
-na grę, cache 30 dni, atrybucja ODbL — ADR 0013). Kamień czeka na kryterium
-właściciela: pełna pętla z prawdziwym modelem (`docs/WORKFLOW.md` §4.2).
+na grę, cache 30 dni, atrybucja ODbL — ADR 0013). Jedna poprawka z terenu
+(2026-09-11): zapasowa warstwa Nominatim okazała się zbędna — docelowe źródło
+(Overpass) jest na stałe i fallback wyleciał z kodu wraz z przełącznikiem.
+Kamień czeka na kryterium właściciela: pełna pętla z prawdziwym modelem
+(`docs/WORKFLOW.md` §4.2).
 
 **M6 — rozgrywka: kod i testy gotowe.** Gra jest klikalna od setupu do
 wyniku: jeden ekran gry z czterema panelami faz („kto idzie" → odcinek z mapą
@@ -187,7 +190,7 @@ CORS na żywym wdrożeniu. Eksport „⬇ Paczka do repozytorium (TO-zestaw/1)"
 zniknął z ekranu razem z podglądem (decyzja 2026-09-07) — przegląd i wnoszenie
 zestawów dzieją się na Drive właściciela.
 
-## Gra wieloosobowa i rankingi (M11/M12)
+## Gra wieloosobowa (M11/M12)
 
 - **Wiele urządzeń**: każdy gracz ma swój telefon. Rodzaj gry i ścieżka
   (załóż / dołącz) wybiera się na ekranie ustawień; tożsamością jest zwykłe
@@ -213,9 +216,9 @@ zestawów dzieją się na Drive właściciela.
 - **Offline**: zdarzenia z trasy czekają w kolejce i wychodzą automatycznie po
   powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca z zapamiętanej
   sesji — zamknięte stacje nie wracają.
-- **🏆 Rankingi**: ogólny + kategorie wiek / tematy / lokalizacja (np.
-  „najlepsi w Podkowie Leśnej") oraz historia „Moje gry". Agregacje liczy
-  telefon; serwer oddaje surowe wiersze zakończonych gier.
+- **Podsumowanie zamiast rankingów** (właściciel, 2026-09-11): gra kończy się
+  tabelą końcową na telefonie gracza, a na wspólnym Drive zostaje historia gier.
+  Rankingu graczy między grami nie ma — ani w aplikacji, ani w moście.
 
 ## Repozytorium
 
@@ -237,9 +240,10 @@ zestawów dzieją się na Drive właściciela.
 ## Prywatność
 
 Współrzędne gracza nie są wysyłane nigdzie poza usługi potrzebne do rysowania
-mapy i wyznaczania stacji (kafelki, Overpass API, odwrotna geokodacja) — i to
-wprost z przeglądarki użytkownika. Zero analityki, zero ciasteczek, zero konta
-(ADR 0013).
+mapy i wyznaczania stacji (kafelki, Overpass API; odwrotna geokodacja Nominatim
+była warstwą zapasową i 2026-09-11 została usunięta na życzenie właściciela —
+zostaje jedno docelowe źródło) — i to wprost z przeglądarki użytkownika.
+Zero analityki, zero ciasteczek, zero konta (ADR 0013).
 
 ### Ograniczenie podkładu offline (audyt 2026-09-10)
 

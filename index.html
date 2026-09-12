@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-74">
-  <script type="module" src="app/app.js?v=m12-74"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-81">
+  <script type="module" src="app/app.js?v=m12-81"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -39,7 +39,6 @@
       <button id="przycisk-motyw" class="przycisk-ikona" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny" aria-label="Przełącz motyw">☾</button>
       <button id="przycisk-sygnaly" class="przycisk-ikona" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)" aria-label="Sygnały dojścia">🔔</button>
       <button id="przycisk-informacje" class="przycisk-ikona" type="button" aria-label="Informacje" title="Informacje" aria-expanded="false" aria-pressed="false" aria-controls="ekran-informacje"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor"/></svg></button>
-      <button id="przycisk-ranking" class="przycisk-ikona" type="button" title="Rankingi graczy i moje gry (M12)" aria-label="Rankingi">🏆</button>
     </div>
   </header>
   <button id="przycisk-podejrzyj-mape" type="button" aria-label="Podejrzyj mapę" title="Podejrzyj mapę" aria-pressed="false">
@@ -138,8 +137,27 @@
           <div id="multi-sciezka" class="segment"></div>
           <p id="multi-sciezka-opis" class="podpowiedz"></p>
         </fieldset>
-        <p id="multi-most-stan" class="podpowiedz">Most Drive: sprawdzam…</p>
-        <p class="podpowiedz tylko-test">Adres mostu jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja czyta listę gier w okolicy i zapisuje stan gry.</p>
+        <!-- „Ty w tej grze" jedzie TU, zaraz pod opis ścieżki (właściciel,
+             2026-09-12): w multi ten telefon obsługuje jedną osobę, więc login
+             jest pierwszym krokiem OBU ścieżek — host najpierw się loguje,
+             potem ustawia grę, a dołączający loguje się i dostaje listę.
+             Pole żyje w jednym z dwóch slotów (`umiescTozsamosc` w app.js);
+             id zostaje to samo, więc nasłuchy i testy nie wiedzą o przeprowadzce. -->
+        <div id="multi-slot-tozsamosc"></div>
+      </div>
+
+      <!-- Lista gier ~50 m to OSOBNY BOKS (właściciel, 2026-09-12) i pokazuje
+           się DOPIERO po zalogowaniu: bez imienia nie ma czym zapytać mostu,
+           a pusty boks z napisem „zaloguj się" tylko zajmował miejsce.
+           Właściciel kazał też usunąć dopisek o tym, że wpis pokazuje tylko
+           hosta — kontrakt w test/kontrakt.test.js pilnuje, żeby nie wrócił. -->
+      <div id="multi-panel-dolacz" class="karta" hidden>
+        <p class="podpowiedz">Widzisz gry, których host jest w zasięgu ~50 m.</p>
+        <ul id="multi-lobby-lista" class="lista-historii"></ul>
+        <p id="multi-lobby-status" class="podpowiedz" role="status"></p>
+        <div class="wiersz">
+          <button id="przycisk-odswiez-lobby" class="przycisk" type="button">🔄 Odśwież listę</button>
+        </div>
       </div>
 
       <!-- M6/R6: wznowienie przerwanej gry — jawne, kasowanie dwustopniowe -->
@@ -161,13 +179,13 @@
         </details>
       </div>
 
-      <fieldset class="pole">
+      <fieldset class="pole" id="pole-tryb">
         <legend>Sposób poruszania się</legend>
         <div id="lista-trybow" class="segment"></div>
         <p id="opis-trybu" class="podpowiedz"></p>
       </fieldset>
 
-      <div class="siatka">
+      <div class="siatka" id="pole-parametry">
         <label class="pole">
           <span>Planowany czas gry (min)</span>
           <input id="setup-czas" type="number" min="10" max="480" step="5" inputmode="numeric">
@@ -197,9 +215,12 @@
            z tym PIN-em, zajęte wymaga PIN-u właściciela (R20 = odmowa). Liczba
            graczy jest długością tej listy, więc osobne pole do wpisywania liczby
            zniknęło (myliło: „Gracze" i „Kim jesteś?" pytały o to samo). -->
+      <!-- Docelowe miejsce bloku tożsamości poza multi (w multi pole jedzie
+           do `#multi-slot-tozsamosc` w karcie multi — patrz `umiescTozsamosc`). -->
+      <div id="slot-tozsamosc-dom"></div>
       <fieldset class="pole" id="pole-tozsamosc">
         <legend id="legend-tozsamosc">👤 Kto gra?</legend>
-        <div class="siatka">
+        <div class="siatka" id="pole-tozsamosc-siatka">
           <label class="pole">
             <span>Imię (pseudonim)</span>
             <input id="profil-pseudonim" type="text" maxlength="20" autocomplete="off">
@@ -221,12 +242,12 @@
              opisuje sekcja „Dane i prywatność". -->
       </fieldset>
 
-      <fieldset class="pole">
+      <fieldset class="pole" id="pole-wiek">
         <legend>Kategoria wiekowa (trudność pytań)</legend>
         <div id="lista-wieku" class="segment"></div>
       </fieldset>
 
-      <fieldset class="pole">
+      <fieldset class="pole" id="pole-tematy">
         <legend>Tematy pytań</legend>
         <!-- Skróty zaznaczania (właściciel, 2026-09-09): „wszystkie"/„żadne"
              ruszają każdy temat z kanonu, poza „Dopisz sam" — to decyzja
@@ -274,17 +295,6 @@
     <section id="ekran-multi" class="ekran panel-centralny" hidden aria-labelledby="tytul-multi">
       <h2 id="tytul-multi">Gra na wielu urządzeniach</h2>
       <p id="bledy-multi" class="bledy" role="alert" hidden></p>
-
-      <div id="multi-panel-dolacz" class="karta" hidden>
-        <h3>Dołącz do gry</h3>
-        <p class="podpowiedz">Widzisz gry, których host jest w zasięgu ~50 m. Pokazujemy tylko hosta — resztę sobie opowiecie na miejscu.</p>
-        <ul id="multi-lobby-lista" class="lista-historii"></ul>
-        <p id="multi-lobby-status" class="podpowiedz" role="status"></p>
-        <div class="wiersz">
-          <button id="przycisk-odswiez-lobby" class="przycisk" type="button">🔄 Odśwież listę</button>
-          <button id="przycisk-multi-wstecz-dolacz" class="przycisk" type="button">← Ustawienia</button>
-        </div>
-      </div>
 
       <div id="multi-panel-lobby" class="karta" hidden>
         <h3>Lobby</h3>
@@ -595,22 +605,12 @@
         <h3>Co jest pobierane i od kogo</h3>
         <ul class="lista-privatnosc">
           <li><strong>Kafelki mapy</strong> — od dostawcy podkładu (domyślnie
-            OpenStreetMap, opcjonalnie OpenTopoMap albo Esri World Imagery;
-            podkład można całkiem wyłączyć). Do dostawcy trafia tylko obszar
-            widoczny na ekranie i powiększenie.</li>
+            OpenStreetMap). Do dostawcy trafia tylko obszar widoczny na
+            ekranie i powiększenie.</li>
           <li><strong>Sieć drogowa i nazwa miejsca</strong> — z Overpass API
             (FOSSGIS, private.coffee, VK Maps lub Adikso): zaokrąglony środek
             i promień Twojej okolicy, bez identyfikatora użytkownika.</li>
-          <li><strong>Nazwa miejsca — warstwa zapasowa (Nominatim, OSMF)</strong>
-            — <label class="sprawdz"><input id="geokodacja-zapasowa" type="checkbox">
-            <span>zezwól (domyślnie <strong>wyłączone</strong>)</span></label>.
-            Używana tylko, gdy Overpass nie zwrócił nazwy miejsca:
-            <strong>jedno</strong> żądanie
-            na grę z zaokrąglonymi współrzędnymi, bez identyfikatora
-            użytkownika; wynik trafia do pamięci telefonu na 30 dni. Dane:
-            © OpenStreetMap contributors (ODbL). Adres usługi można przełączyć
-            kluczem <code>okolica:geokodacja-endpoint</code> bez aktualizacji
-            aplikacji (wymóg polityki OSMF).</li>
+
           <li><strong>Nic więcej.</strong> Bez analityki, ciasteczek, konta
             i zewnętrznych skryptów.</li>
         </ul>
@@ -622,7 +622,7 @@
           <li>Fixy GPS służą wyłącznie do prowadzenia gry i <strong>nie
             opuszczają telefonu</strong> poza żądaniami mapy opisanymi wyżej.</li>
           <li>Geolokalizacja wymaga Twojej zgody i połączenia HTTPS. Bez zgody
-            zostają współrzędne ręczne i tryb testowy.</li>
+            aplikacja nie zna Twojej okolicy i nie przygotuje gry.</li>
         </ul>
       </div>
 
@@ -631,39 +631,35 @@
         <ul class="lista-privatnosc">
           <li>Ustawienia gry i motyw: <code>okolica:konfig</code>,
             <code>okolica:motyw</code>.</li>
-          <li>W kolejnych kamieniach: cache sieci drogowej, ukryta paczka pytań
-            i historia gier — wszystko pod kluczami <code>okolica:*</code>.</li>
-          <li>Pliki, które sam zapiszesz (prompt, paczka, wynik) — lądują w
-            Twoich „Pobranych", nie u nas.</li>
+          <li>Cache sieci drogowej, ukryta paczka pytań i historia gier —
+            wszystko pod kluczami <code>okolica:*</code>.</li>
           <li>Kod gry — jawny identyfikator rozgrywki w nazwach plików
             i wpisach historii; niczego nie szyfruje.</li>
         </ul>
       </div>
 
       <div class="karta">
-        <h3>Wspólny Drive: historia i rankingi</h3>
+        <h3>Wspólny Drive: historia gier</h3>
         <p class="podpowiedz">Wszystko, co opuszcza telefon, jest wymienione
         poniżej — i tylko to. Nie pytamy o zgodę przy każdej grze: bez tych
-        danych nie byłoby ani historii, ani rankingów, ani gry na kilku
-        telefonach.</p>
+        danych nie byłoby ani historii gier, ani gry na kilku telefonach.</p>
         <ul class="lista-privatnosc">
           <li><strong>Wynik gry idzie na wspólne konto Google Drive</strong>
-            (domyślnie, bez pytania przy każdej grze): pseudonimy graczy,
+            (domyślnie, bez pytania przy każdej grze): imiona graczy,
             punkty, liczba poprawnych i błędnych odpowiedzi, nazwa miejscowości
-            i kategoria wiekowa. Na tej podstawie liczone są rankingi.</li>
+            i kategoria wiekowa.</li>
           <li><strong>Gra na wielu telefonach</strong> — dodatkowo: Twój
             pseudonim w lobby (widzą go inni gracze), kolejne dojścia
             i odpowiedzi w trakcie gry oraz kod gry. Współrzędne gracza
             <strong>nigdy</strong> nie opuszczają telefonu — inni widzą tylko
-            Twój postęp, nie to, gdzie stoisz<span class="dopisek-roboczy"> (ADR 0019)</span>.</li>
+            Twój postęp, nie to, gdzie stoisz.</li>
           <li><strong>Paczki pytań, które wyślesz do wspólnego repozytorium</strong>
-            — przechodzą przez przegląd właściciela, zanim ktokolwiek je
-            pobierze; w pliku zostają pytania, stacje i nazwa miejscowości.</li>
+            — w pliku zostają pytania, stacje i nazwa miejscowości.</li>
           <li><strong>Okolica startu jako geohash5</strong> — przybliżenie
             rzędu kilku kilometrów, nie punkt GPS. Współrzędne gracza, trasa,
             pytania i paczka <strong>zostają na telefonie</strong>.</li>
           <li><strong>Profil pseudonimu</strong> (imię + PIN) leży na Drive,
-            żeby nikt inny nie zagrał pod Twoim imieniem<span class="dopisek-roboczy"> (ADR 0021)</span>.
+            żeby nikt inny nie zagrał pod Twoim imieniem.
             PIN nie jest zapisywany na telefonie.</li>
           <li>Grasz bez zasięgu albo bez potwierdzonego profilu — wynik zostaje
             na telefonie (w kolejce) i aplikacja mówi to wprost pod wynikiem.</li>
@@ -673,7 +669,7 @@
       <div class="karta">
         <h3>Paczka pytań</h3>
         <p class="podpowiedz">Paczka jest <strong>ukryta</strong> — nieczytelna
-        przy kopiowaniu — ale <strong>nie zaszyfrowana</strong><span class="dopisek-roboczy"> (ADR 0007)</span>.
+        przy kopiowaniu — ale <strong>nie zaszyfrowana</strong>.
         Nie wklejaj do pytań danych osobowych: każdy, kto ma
         dostęp do pliku paczki, może ją odczytać.</p>
       </div>
@@ -693,30 +689,6 @@
       </div>
     </section>
 
-    <!-- M12/P6: rankingi graczy (dane z mostu Drive, agregacje po stronie telefonu) -->
-    <!-- Decyzja właściciela 2026-09-08: rankingi są WARSTWĄ nad aplikacją,
-         nie osobnym ekranem — z klawiszem „Zamknij rankingi" i krzyżykiem
-         w prawym górnym rogu, bo z poprzedniego układu nie dało się wyjść. -->
-    <section id="ekran-ranking" class="ekran warstwa panel-centralny" hidden role="dialog" aria-modal="false" aria-labelledby="tytul-ranking">
-      <div class="warstwa-karta">
-        <button id="przycisk-ranking-krzyzyk" class="warstwa-krzyzyk" type="button" aria-label="Zamknij rankingi">✕</button>
-        <h2 id="tytul-ranking">🏆 Rankingi</h2>
-        <p class="podpowiedz">Wyniki zakończonych gier wieloosobowych:</p>
-        <div class="wiersz">
-          <button id="przycisk-ranking-odswiez" class="przycisk" type="button">🔄 Odśwież</button>
-          <button id="przycisk-wrocz-ranking" class="przycisk" type="button">Zamknij rankingi</button>
-        </div>
-        <p id="ranking-status" class="podpowiedz" role="status"></p>
-        <div id="ranking-zakladki" class="segment"></div>
-        <div id="ranking-kategorie" class="chipy"></div>
-        <table id="ranking-tabela" class="tabela-wynikow">
-          <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Gry</th><th scope="col">Poprawne</th></tr></thead>
-          <tbody id="ranking-wiersze"></tbody>
-        </table>
-        <ul id="ranking-moje-gry" class="lista-historii" hidden></ul>
-      </div>
-    </section>
-
     <!-- Ekran startowy (decyzja właściciela 2026-09-09): tytuł, podtytuł
          i intro nad mapą. Start aplikacji NIE otwiera już setupu — okno
          (80% ekranu) znika po kliknięciu gdziekolwiek na nie i zostaje sama
@@ -731,10 +703,9 @@
           układa pytania o to konkretne miejsce — o jego historię, architekturę,
           przyrodę i ludzi, którzy tu mieszkali.</p>
 
-        <p>Zasada jest prosta. Idziesz do stacji, a telefon sam rozpoznaje, że
-          jesteś na miejscu — wtedy odsłania pytanie. Odpowiadasz, zbierasz punkty
-          i ruszasz dalej. Nie ma pośpiechu ani odliczania: liczy się to,
-          co zauważysz po drodze.</p>
+        <p>Przemieszczasz się od stacji do stacji, a telefon sam rozpoznaje,
+          gdy jesteś na miejscu — wtedy odsłania pytanie. Odpowiadasz, zbierasz
+          punkty i ruszasz dalej.</p>
 
         <p>Grać można w pojedynkę, z rodziną i znajomymi na jednym telefonie albo każdy na swoim urządzeniu.</p>
 
@@ -759,6 +730,16 @@
     <span>wersja <span id="stopka-wersja">—</span></span>
     <span class="separator" aria-hidden="true">·</span>
     <button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">dane i prywatność</button>
+
+      <!-- Polityka kafelków OSM zaleca link „Report a map issue" i opublikowany
+           adres kontaktowy. Podkład mapy to dane OpenStreetMap (ODbL), a serwer
+           kafelków jest wolontariacki — te dwa linki domykają oba zalecenia
+           i dają OSM drogę kontaktu ZANIM cokolwiek zablokują. -->
+      <p class="informacje-kontakt">
+        <a id="link-zglos-mape" class="informacje-link" href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">Zgłoś błąd na mapie</a>
+        <span class="informacje-kropka" aria-hidden="true">·</span>
+        <a id="link-kontakt" class="informacje-link" href="mailto:szybkoiwyraznie@gmail.com">kontakt: szybkoiwyraznie@gmail.com</a>
+      </p>
 
       </div>
     </section>

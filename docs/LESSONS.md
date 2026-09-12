@@ -616,3 +616,55 @@ z RRRR-MM-DD"): data w asercji to flaga „przeglądnij mnie przy następnej
 zmianie kanonu". Fallback pustych tematów liczony z tej samej stałej co
 domyślne zaznaczenie (jedno źródło prawdy), a regresja brzegowa (wszystkie
 tematy wypadają w filtrze) ma własny test.
+
+## L46 — wersja domyślnych wyborów też idzie do localStorage: kanon z markerem, nie „implace upgrade"
+
+**Objaw:** właściciel po aktualizacji wciąż widział odptaszkowane „Ciekawostki",
+mimo że kanon setupu (ADR 0034) i `DOMYSLNE.tematy` od dawna je zawierały
+(uwagi terenowe #3, 2026-09-11). Wycięcie tematów z setupu przeliczyło jego
+przełęczony eksponat na starym zapisie — `localStorage` przeżywa rebuildy
+w niemal czystej postaci (L28), więc ten efekt zniknął, gdy właściciel
+skonfigurował grę przed zmianą kanonu. Nowi gracze mieli inny setup niż
+właściciel — nikt tego nie zauważył, bo testy nasiałają świeże fixtures.
+
+**Przyczyna:** odczyt zapisanego setupu (`wczytajKonfiguracje`) przejmował
+listę tematów z zapisu bez rozróżnienia „świadomy wybór gracza" od „domyślne
+z wersji, która wtedy panowała". Dla pól edytowalnych (R, stacje) to dobre,
+a dla LISTY kanonicznych rozjazd jest cichym bugiem: nowe tematy domyślne
+nie dochodzą do starych zapisów.
+
+**Reguła:** listy kanoniczne w konfiguracji noszą marker wersji kanonu
+(data wejścia zmiany, np. `'2026-09-10'`). Zapis bez markera = zapis sprzed
+kanonu → jednorazowe dopełnienie tylko NOWYCH tematów domyślnych (lista
+dopełnień w kodzie, nigdy `wlasny`), zapis markera i nie więcej ruszania
+wyborów gracza. Test rytuału: stary zapis dopełniany, świeży nietknięty.
+
+## L47 — cache zasobów obcego dostawcy NIE może być wersjonowany wraz z aplikacją
+
+**Objaw:** w podglądzie Areny kafelki `tile.openstreetmap.org` wracały jako
+`403 Access Blocked. App is not following the tile usage policy of
+OpenStreetMap's volunteer's-run servers: osm.wiki/Blocked`. Na GitHub Pages ten
+sam kod działał.
+
+**Przyczyna:** `CACHE_KAFELKI` był nazwany od `WERSJA_SW`
+(`okolica-kafelki-m12-80`), a `WERSJA_SW` rośnie przy każdej zmianie `app/*.js`
+(L29). Każde wdrożenie tworzyło więc nową nazwę cache, a `activate` usuwało
+starą — cały zbiór kafelków lądował w koszu i widok był pobierany od dostawcy
+od zera. W jednej sesji potrafi to być kilkanaście bumpów z rzędu, każdy z
+pełnym re-pobraniem widoku. Polityka kafelków OSM wymienia to wprost jako
+podstawę blokady (*General block* → „**No caching**: downloading the same
+tiles repeatedly, due to improper response caching"). Krótko mówiąc: to nie
+sandbox „coś robił źle" — nasz SW wytwarzał dokładnie wzorzec ruchu, za który
+OSM blokuje, a efemeryczny referer `*.e2b.app` tylko przyspieszył wyrok.
+
+**Reguła:** wersjonowanie cache służy unieważnianiu zasobów **naszej**
+aplikacji. Zasoby obcego dostawcy są adresowane treścią (kafel = `z/x/y`) i ich
+ważność określa dostawca, nie nasz numer wersji — ich cache musi mieć nazwę
+**stałą**. Skorupa wersjonowana, kafelki nie. Test rytuału: dwa kolejne
+„wdrożenia" (ten sam magazyn, inny `WERSJA_SW` w kodzie SW) — po `activate`
+kafel nadal w cache i zero żądań do dostawcy.
+
+**Szersza zasada:** zanim uznamy błąd obcej usługi za „artefakt środowiska",
+sprawdźmy, czy nasz kod nie generuje wzorca, który ta usługa jawnie penalizuje.
+Komunikat blokady cytował politykę — polityka była do przeczytania i wymieniała
+nasz przypadek co do słowa.

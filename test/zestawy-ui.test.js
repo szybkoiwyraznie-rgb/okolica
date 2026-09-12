@@ -44,7 +44,7 @@ const metaWpisu = () => ({
 // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025): wpisy
 // testowe mają promienM 1000, a dopasowanie wymaga promienia paczki ≤ setupu.
 const KONFIG_TEST = JSON.stringify({
-  schemat: 'konfig/1',
+  schemat: 'konfig/1', kanon: '2026-09-10',
   konfig: {
     tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
     tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', jezyk: 'polski',
@@ -241,7 +241,7 @@ test('zestawy UI: adres nadpisany w pamięci telefonu wygrywa ze stałą z kodu 
 import { readFileSync as czytajPlik } from 'node:fs';
 
 const KONFIG_WYSYLKA = JSON.stringify({
-  schemat: 'konfig/1',
+  schemat: 'konfig/1', kanon: '2026-09-10',
   konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
 });
 
@@ -376,7 +376,7 @@ test('Drive: wpis z `id` na karcie, a kliknięcie pobiera paczkę przez ?akcja=p
 test('zestawy UI: stare wpisy z szeroką listą tematów dopasowują się po faktycznej zawartości pytań', async () => {
   const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
   const KONFIG_WASKI = JSON.stringify({
-    schemat: 'konfig/1',
+    schemat: 'konfig/1', kanon: '2026-09-10',
     konfig: {
       tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
       tematy: ['historia'], wiek: 'dorosli', jezyk: 'polski',

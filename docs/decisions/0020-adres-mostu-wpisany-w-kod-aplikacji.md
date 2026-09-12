@@ -114,3 +114,12 @@ użytkownika i najmniej opcji w interfejsie:
 - ADR 0018 (Drive wielozadaniowy; instrukcja wdrożenia w czacie),
 - LESSONS L6 (jawny status), L28 (`localStorage` przeżywa rebuild — problemem
   jest wiele urządzeń), L29 (cache-bust `?v=` podbijamy we WSZYSTKICH modułach).
+
+## Aneks (2026-09-11): badge stanu mostu przy grze wieloosobowej usunięty
+
+Uwagi terenowe #3 właściciela: ekran multi został zredukowany do samego
+lobby, a opis „Adres mostu jest wpisany w tej wersji aplikacji…" odczytano
+jako developerski tekst. Badge `#multi-most-stan` i testowy akapit zniknęły;
+jedna prawda o stanie mostu zostaje w `#most-stan-repo` przy karcie paczek.
+Nic z tego nie zmienia zasady decyzji — adres nadal jest stałą w kodzie,
+a listę gier ~50 m pokazuje teraz setup przy ścieżce „Dołączam".

@@ -60,9 +60,10 @@ Koniec sesji:
    w progu, ADR 0004/0029); stację nieosiągalną pomiń. Pytanie odsłania się
    dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Pauza (także
    automatyczna w tle) nie wlicza czasu postoju do wyniku.
-7. **Wynik**: podsumowanie z rankingiem, udostępnianie tekstem lub obrazem PNG,
-   historia na setupie; wynik gry z jednego telefonu jedzie na wspólny Drive
-   do rankingów (ADR 0026 aneks), gdy choć jeden gracz ma potwierdzony profil.
+7. **Wynik**: podsumowanie z tabelą końcową, udostępnianie tekstem lub obrazem
+   PNG, historia na setupie; wynik gry z jednego telefonu jedzie na wspólny
+   Drive do historii gier (ADR 0026 aneks), gdy choć jeden gracz ma
+   potwierdzony profil.
 
 ## 4. Test terenowy (obowiązkowy dla M3, M4, M6, M7, M10)
 
@@ -177,23 +178,26 @@ app co repozytorium paczek — a jego adres **wpisany w kod aplikacji**
 serwuje `main`. Drugi telefon: dowolny (Chrome), ta sama albo inna sieć — gra
 jest asynchroniczna i NIE wymaga konfigurowania adresu.
 
-0. **Stan mostu**: na obu telefonach karta „📦 Paczki dla tej okolicy" i karta
-   gry wieloosobowej na setupie pokazują „Most Drive: podłączony — adres jest
-   wpisany w tej wersji aplikacji". Gdy widzisz „niepodłączony", aplikacja
+0. **Stan mostu**: na obu telefonach karta „📦 Paczki dla tej okolicy"
+   pokazuje „Most Drive: podłączony — adres jest wpisany w tej wersji
+   aplikacji" (m12-75: osobny badge przy grze wieloosobowej zniknął razem
+   z dev-tekstami). Gdy widzisz „niepodłączony", aplikacja
    jest starsza niż wdrożenie mostu — sprawdź, czy commit z adresem jest
    w `main`.
-1. **Założenie (m12-74)**: telefon A: Ustawienia → rodzaj gry „📱 Wielu
-   graczy — każdy ze swoim" → „🚀 Zakładam nową grę" → w bloku „Kto gra?"
+1. **Założenie (m12-75)**: telefon A: Ustawienia → rodzaj gry „📱 Multiplayer —
+   każdy ma telefon" → „🚀 Zakładam nową grę" → w bloku „Kto gra?"
    wpisz imię i PIN (dokładnie JEDEN gracz — to Ty) → tryb gry + przy
    Wspólnej Trasie ptaszek „widoczna tylko kolejna stacja" (domyślnie ✓) →
    „📍 Dalej: moja pozycja" → potwierdź pozycję → weź pasującą paczkę
    z karty propozycji (albo przejdź dalej i wygeneruj nowe pytania) → po
    wklejeniu odpowiedzi modelu otwiera się **lobby**. Kod gry NIE jest
    potrzebny — gracze sami się znajdą na liście.
-2. **Dołączenie z listy**: telefon B (do ~50 m od A): rodzaj gry multi →
-   „🚪 Dołączam do istniejącej" → imię+PIN → „🔍 Pokaż gry w okolicy" →
-   na liście widnieje „Host: <imię A>" (bez dodatkowych informacji) →
-   „Dołącz". Oba telefony widzą się na liście graczy w lobby (≤10 s).
+2. **Dołączenie z listy (m12-75)**: telefon B (do ~50 m od A): rodzaj gry
+   multi → „🚪 Dołączam do istniejącej" — setup chowa wszystkie opcje hosta,
+   zostaje blok „Kto gra?" (imię+PIN) i lista gier w okolicy — pokazuje się
+   sama od razu (GPS włącza się automatycznie, przycisk ⟳ odświeża). Na liście
+   widnieje „Host: <imię A>" (bez dodatkowych informacji) → „Dołącz". Oba
+   telefony widzą się na liście graczy w lobby (≤10 s).
    Po starcie dołączenie jest już niemożliwe — lista pokazuje tylko lobby.
 3. **Start i trasa (wyścig)**: A klika „▶ Start gry" (może i solo). Na obu:
    odcinek → dojście → pytanie → odpowiedź. Obserwować: tabela wyników
@@ -211,10 +215,12 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
 6. **Koniec z ręki hosta**: A klika „⏹ Zakończ grę (host)" — u obu telefonów
    podsumowanie i ranking końcowy; premie 3/2/1 za ukończenie przed końcem
    liczą się także przy takim końcu.
-7. **Koniec naturalny i rankingi**: po ostatniej odpowiedzi (wszyscy aktywni
-   domknęli stacje) oba telefony pokazują ostateczną tabelę; w nagłówku
-   „🏆 rankingi" → ogólny / wiek / tematy / lokalizacja + „Moje gry" (wpisy
-   z zakończonych gier).
+7. **Koniec naturalny**: po ostatniej odpowiedzi (wszyscy aktywni domknęli
+   stacje) oba telefony pokazują ostateczną tabelę. Rankingów między grami
+   nie ma (właściciel, 2026-09-11) — na Drive zostaje historia gier.
+7a. **Wyjście z lobby**: B klika „Opuść lobby" przed startem → na A lista
+   graczy maleje po odświeżeniu (≤ 10 s), a gdy wychodzi HOST, gra znika
+   z listy gier w okolicy (`gra-opusc`).
 8. **Obserwacje** → `docs/LESSONS.md`: dokładność GPS przy stacjach, opóźnienia
    żywej tabeli i kanału info, odmowy mostu (jawne w statusie), zużycie
    baterii przy pollingu.

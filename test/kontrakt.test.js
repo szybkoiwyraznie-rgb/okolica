@@ -300,13 +300,12 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
   assert.equal(/test/i.test(naglowek), false, `w akcjach nagłówka nie ma trybu testowego: ${naglowek}`);
   assert.ok(APP.includes('czyTrybTestowyWUrl'), 'tryb testowy czyta się z parametru adresu');
 
-  // Rankingi są warstwą z dwoma wyjściami (decyzja właściciela 2026-09-08) —
-  // z poprzedniego układu „ekran" nie dało się na telefonie wyjść.
-  assert.match(INDEX, /<section id="ekran-ranking" class="ekran warstwa panel-centralny" hidden role="dialog" aria-modal="false"/);
-  assert.match(INDEX, /<button id="przycisk-ranking-krzyzyk"[^>]*aria-label="Zamknij rankingi">✕<\/button>/, 'krzyżyk w rogu warstwy');
-  assert.match(INDEX, /<button id="przycisk-wrocz-ranking"[^>]*>Zamknij rankingi<\/button>/, 'klawisz zamknięcia zamiast „← wróć"');
-  assert.ok(APP.includes("$('przycisk-ranking-krzyzyk').addEventListener('click', wrocZRankingu)"), 'krzyżyk jest podpięty');
-  assert.ok(STYLE.includes('.warstwa-krzyzyk'), 'krzyżyk ma styl');
+  // Rankingi usunięte w całości (właściciel, 2026-09-11): LESSONS L31 —
+  // usunięty element ma zostać usunięty, więc pilnujemy, że nie wrócił.
+  assert.equal(INDEX.includes('ekran-ranking'), false, 'ekranu rankingów nie ma w HTML');
+  assert.equal(APP.includes('przycisk-ranking'), false, 'przycisku 🏆 nie ma w aplikacji');
+  assert.equal(GS.includes("akcja === 'ranking'"), false, 'most nie obsługuje już akcji ranking');
+  assert.ok(STYLE.includes('.warstwa-krzyzyk'), 'krzyżyk warstwy ma styl (używa go Informacje)');
   assert.match(APP, /'true', '1', 'tak'/, 'przyjmowane formy parametru ?test=');
 
   const symulacja = INDEX.match(/<button id="przycisk-symulacja-gra"[^>]*>/)?.[0];
@@ -356,12 +355,18 @@ test('kontrakt: CARTO nie wróciło do kodu (wymaga klucza API — ASSETS §1.1)
   }
 });
 
-test('kontrakt: Overpass ma instancje opisane w ASSETS §2, a Nominatim jest wyłączony domyślnie', () => {
+test('kontrakt: Overpass ma instancje opisane w ASSETS §2, a Nominatim jest usunięty z kodu (właściciel, 2026-09-11)', () => {
   assert.ok(ASSETS.includes('overpass-api.de/api/interpreter'));
   assert.ok(ASSETS.includes('overpass.private.coffee'));
-  assert.ok(ASSETS.includes('nominatim.openstreetmap.org') && ASSETS.includes('Nominatim Usage Policy'));
-  const konfig = czytaj('app/konfig.js');
-  assert.ok(!/nominatim/i.test(konfig), 'geokodacja Nominatim nie jest włączona w kanonie konfiguracji (ADR 0013 pkt 3)');
+  // Warstwa zapasowa (odwrotna geokodacja Nominatim) wyleciała cała — kod nie
+  // może nawet zbudować żądania do tego endpointu (docelowe rozwiązanie na
+  // stałe z ASSETS §3: nazwa miejsca tylko z Overpass).
+  for (const plik of readdirSync(join(ROOT, 'app')).filter((f) => f.endsWith('.js'))) {
+    const kod = czytaj(`app/${plik}`);
+    assert.ok(!kod.includes('nominatim.openstreetmap.org'), `app/${plik}: endpoint Nominatim nie ma prawa wrócić do kodu`);
+    assert.ok(!/budujUrlGeokodacji|DOMYSLNY_ENDPOINT_GEOKODACJI|miejsceZOdpowiedziNominatim/.test(kod), `app/${plik}: warstwa zapasowa usunięta`);
+  }
+  assert.ok(!INDEX.includes('id="geokodacja-zapasowa"'), 'przełącznika zgody na Nominatim nie ma w index.html');
 });
 
 /* --------------------------------------------- rejestr ADR i lektura §0 */
@@ -545,14 +550,13 @@ test('kontrakt: warstwa aplikacji nie pyta przez confirm()/alert() (ADR 0015 pkt
   assert.ok(!/\balert\s*\(/.test(kod), 'komunikaty idą do paska stanu i pól z role=alert/status');
 });
 
-test('kontrakt: ekran prywatności ujawnia warstwę zapasową Nominatim z przełącznikiem (ASSETS §3)', () => {
+test('kontrakt: ekran prywatności NIE wymienia Nominatim — warstwa zapasowa usunięta (właściciel, 2026-09-11)', () => {
   const html = czytaj('index.html');
-  assert.match(html, /id="geokodacja-zapasowa" type="checkbox"/, 'przełącznik zgody na Nominatim');
+  assert.ok(!html.includes('id="geokodacja-zapasowa"'), 'przełącznik zgody na Nominatim usunięty z ekranu');
+  assert.ok(!/Nominatim/.test(html), 'dostawca zapasowy zniknął z opisów (nie ma już czego ujawniać)');
   const karta = html.split('Co jest pobierane i od kogo')[1].slice(0, 3000);
-  assert.match(karta, /Nominatim/, 'dostawca nazwany jawnie');
-  assert.match(karta, /domyślnie <strong>wyłączone<\/strong>/, 'domyślnie wyłączone — jak w ADR 0013 pkt 2');
-  assert.match(karta, /okolica:geokodacja-endpoint/, 'przełączalność endpointu bez aktualizacji (wymóg OSMF)');
-  assert.match(karta, /ODbL/, 'atrybucja licencji');
+  assert.match(karta, /Overpass/, 'jedyne źródło nazw miejsc nazwane jawnie');
+  assert.match(karta, /domyślnie\s+OpenStreetMap/, 'kafelki: opis przycięty do domyślnego dostawcy');
 });
 
 test('kontrakt: instrukcja promptu to cztery kroki jako inline SVG (ADR 0001 pkt 1, ADR 0011 pkt 6)', () => {
@@ -732,11 +736,11 @@ test('kontrakt ADR 0020: adres mostu jest wpisany w kod, a UI nie ma pola do wpi
   for (const id of ['pole-url-repo', 'multi-url-mostu', 'przycisk-zapisz-url-repo', 'przycisk-multi-zapisz-url']) {
     assert.ok(!INDEX.includes(`id="${id}"`), `#${id} nie istnieje w index.html — adresu nie wpisuje się ręcznie`);
   }
-  for (const id of ['most-stan-repo', 'multi-most-stan']) {
-    assert.ok(INDEX.includes(`id="${id}"`), `stan mostu jest jawny w #${id} (LESSONS L6)`);
-  }
-  // Partia 3, pkt 1: akapity o pochodzeniu adresu i web appie żyją tylko w trybie testowym
-  assert.match(INDEX, /<p class="podpowiedz tylko-test">Adres mostu jest wpisany/, 'akapit mostu w karcie multi: tylko test');
+  assert.ok(INDEX.includes('id="most-stan-repo"'), 'stan mostu jest jawny w #most-stan-repo (LESSONS L6)');
+  // m12-75: ekran multi to samo lobby (właściciel, 2026-09-11) — status mostu
+  // pokazujemy na setupie przy zakładaniu; osobny badge zniknął razem z panelem.
+  assert.ok(!INDEX.includes('id="multi-most-stan"'), '#multi-most-stan usunięty razem z dev-tekstem (m12-75)');
+  // Partia 3, pkt 1: akapit o pochodzeniu adresu żyje tylko w trybie testowym
   assert.match(INDEX, /<p class="podpowiedz tylko-test">Adres wspólnego repozytorium jest wpisany/, 'akapit repozytorium: tylko test');
   assert.match(STYLE, /body:not\(\.tryb-testowy\) \.tylko-test\s*\{\s*display: none;/, 'CSS gasi .tylko-test poza trybem testowym');
   // komunikaty nie mogą odsyłać do pola, którego już nie ma
@@ -766,13 +770,13 @@ test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
 });
 
 test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językiem', () => {
-  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'gra-hotseat', 'profil-ustaw', 'profil-sprawdz']) {
+  for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-opusc', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'gra-hotseat', 'profil-ustaw', 'profil-sprawdz']) {
     assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
   }
-  for (const a of ['gry', 'gra-stan', 'ranking']) {
+  for (const a of ['gry', 'gra-stan']) {
     assert.ok(GS.includes(`akcja === '${a}'`), `doGet mostu obsługuje ${a}`);
   }
-  for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-ranking/1', 'RO-profil/1']) {
+  for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-profil/1']) {
     assert.ok(GS.includes(s), `most zna schemat ${s}`);
   }
   assert.ok(GS.includes("'23456789ABCDEFGHJKLMNPQRSTUVWXYZ'"), 'alfabet kodu gry identyczny w moście i w module');
@@ -817,7 +821,8 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   // Zapis wyniku jest DOMYŚLNY: bez checkboxa przy każdej grze (właściciel,
   // 2026-09-07), a co i dokąd trafia — opisuje sekcja „Dane i prywatność".
   assert.ok(!INDEX.includes('id="hotseat-zgoda"'), 'zgody na zapis wyniku nie pytamy przy każdej grze');
-  assert.match(INDEX, /Wspólny Drive: historia i rankingi/, 'sekcja prywatność opisuje zapis wyniku na Drive');
+  assert.match(INDEX, /Wspólny Drive: historia gier/, 'sekcja prywatność opisuje zapis wyniku na Drive');
+  assert.equal(INDEX.includes('liczone są rankingi'), false, 'karta prywatności nie obiecuje rankingów (usunięte 2026-09-11)');
   assert.match(INDEX, /Wynik gry idzie na wspólne konto Google Drive/, 'sekcja prywatność mówi, że to domyślne');
   assert.ok(!INDEX.includes('id="setup-gracze"'), 'pola „Liczba graczy" nie ma — liczbą jest długość listy');
   assert.ok(!INDEX.includes('id="lista-imion"'), 'ręczne pola imion zastąpiła lista graczy');
@@ -832,6 +837,12 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   assert.ok(APP.includes('graHotseatDoWysylki'), 'app.js buduje polecenie gra-hotseat');
   assert.ok(WIELOOSOBOWA.includes("akcja: 'gra-hotseat'"), 'moduł wieloosobowa buduje tę akcję');
   assert.ok(GS.includes("case 'gra-hotseat'"), 'most przyjmuje gra-hotseat');
+  // Wyjście z lobby jest jawne po stronie mostu (właściciel 2026-09-11:
+  // „dołączanie i wychodzenie w dowolnym momencie"). Bez tego wychodzący
+  // zostawał w `liczbaGraczy` i lobby obiecywało gracza, którego już nie było.
+  assert.ok(APP.includes("akcja: 'gra-opusc'"), 'app.js zgłasza mostowi wyjście z lobby');
+  assert.ok(GS.includes("case 'gra-opusc'"), 'most przyjmuje gra-opusc');
+  assert.match(GS, /gra\.stan !== 'lobby'[\s\S]{0,200}rezygnacja/, 'po starcie wyjście z lobby jest odmówione');
   assert.ok(PROTOKOL.includes('gra-hotseat'), 'PROTOKOL §9 dokumentuje gra-hotseat');
   // punkty liczy most, premia hot-seat = 0 — po obu stronach tak samo
   assert.match(WIELOOSOBOWA, /if \(gra\?\.tryb === TRYB_HOTSEAT\) return premia;/, 'aplikacja nie daje premii w hot-seat');
@@ -859,7 +870,7 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   // ekrany i panele (ADR 0019; m12-74: przepisany flow właściciela)
   for (const id of [
     'ekran-multi', 'karta-multi', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi',
-    'multi-most-stan', 'multi-wznowienie',
+    'multi-wznowienie',
     // segmenty na setupie: rodzaj gry, ścieżka multi, tryb + trasa-sekret
     'lista-rodzajow', 'rodzaj-opis', 'multi-sciezka', 'multi-sciezka-opis',
     'pole-multi-tryb', 'multi-tryby', 'multi-tryb-opis', 'pole-trasa-sekret', 'multi-trasa-sekret', 'multi-punktacja',
@@ -870,7 +881,7 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   }
   // usunięte w m12-74 (decyzje właściciela 2026-09-11): panel zakładania na
   // ekranie multi, dołączanie kodem, pole pseudonimu, źródła paczek, kod w lobby
-  for (const id of ['multi-panel-zaloz', 'multi-kod', 'przycisk-dolacz-kod', 'multi-pseudonim', 'multi-zrodlo', 'przycisk-zaloz-gre', 'przycisk-multi-zaloz', 'przycisk-multi-dolacz', 'lobby-kod', 'setup-rodzaj', 'setup-jezyk', 'setup-podklad']) {
+  for (const id of ['multi-panel-zaloz', 'multi-kod', 'przycisk-dolacz-kod', 'multi-pseudonim', 'multi-zrodlo', 'przycisk-zaloz-gre', 'przycisk-multi-zaloz', 'przycisk-multi-dolacz', 'lobby-kod', 'setup-rodzaj', 'setup-jezyk', 'setup-podklad', 'multi-most-stan', 'przycisk-multi-wstecz-dolacz']) {
     assert.ok(!INDEX.includes(`id="${id}"`), `#${id} zniknął z index.html (m12-74)`);
   }
   // Zgody na wysyłkę NIE pytamy przy każdej grze (właściciel, 2026-09-07):
@@ -907,15 +918,54 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   // ~50 m po geohash8 hosta (właściciel, 2026-09-11)
   assert.match(APP, /geohash8/, 'gra niesie geohash8 (zasięg ~50 m)');
   assert.match(GS, /geohash8/, 'most zna geohash8');
-});
-
-test('kontrakt M12: rankingi liczy telefon, serwer oddaje surowe wiersze', () => {
-  assert.ok(INDEX.includes('id="ekran-ranking"'), 'ekran rankingów w index.html');
-  assert.ok(INDEX.includes('id="przycisk-ranking"'), 'przycisk 🏆 w nagłówku');
-  assert.match(APP, /urlGet\(url, 'ranking'\)/, 'dane z GET akcja=ranking (RO-ranking/1)');
-  assert.match(APP, /agregujRanking\(wiersze, filtr\)/, 'agregacje po stronie telefonu (ADR 0019 pkt 7)');
-  assert.match(APP, /kategorieRankingu\(wiersze\)/, 'zakładki kategorii z dostępnych wierszy');
-  assert.ok(GS.includes("akcja === 'ranking'"), 'most obsługuje akcję ranking');
+  // m12-75 (właściciel, uwagi terenowe #3, 2026-09-11):
+  // opisy segmentów bez „developerskiego bełkotu”
+  assert.match(APP, /📱 Multiplayer — każdy ma telefon/, 'etykieta rodzaju multi');
+  assert.match(APP, /Każdy gracz ma swój telefon\. Możesz być hostem albo dołączyć do istniejącej gry\./, 'opis rodzaju multi');
+  assert.match(APP, /Jesteś hostem nowej rozgrywki\. Zaloguj się, wybierz odpowiednie opcje i przejdź dalej\./, 'opis ścieżki „Zakładam” mówi, że zaczyna się od logowania (właściciel 2026-09-12)');
+  assert.match(APP, /Dołączam do istniejącej/, 'etykieta ścieżki „Dołączam” (bez przepisu na kod — kody usunięte w m12-74)');
+  assert.match(APP, /Wszyscy pokonują tą samą trasę, każdy na swoim telefonie i we własnym tempie\. Stacje przechodzi się po kolei\./, 'opis Wspólnej Trasy');
+  // Układ setupu multi (właściciel, 2026-09-12):
+  //  1. „Co robisz?” + opis ścieżki,
+  //  2. „Ty w tej grze” ZARAZ POD opisem (slot w karcie multi),
+  //  3. lista gier ~50 m jako OSOBNY BOKS i dopiero po zalogowaniu.
+  const kartaMulti = INDEX.split('id="karta-multi"')[1].split('id="multi-panel-dolacz"')[0];
+  assert.match(kartaMulti, /id="multi-slot-tozsamosc"/, 'slot na „Ty w tej grze” w karcie multi, pod opisem ścieżki');
+  assert.ok(kartaMulti.indexOf('multi-sciezka-opis') < kartaMulti.indexOf('multi-slot-tozsamosc'),
+    'slot tożsamości jest PO opisie ścieżki, nie przed');
+  // Slot jest OSTATNIM elementem karty, a `</div>` po nim ją domyka — czyli boks
+  // listy zaczyna się już poza kartą (osobny boks, właściciel 2026-09-12).
+  assert.match(kartaMulti, /id="multi-slot-tozsamosc"><\/div>\s*<\/div>/,
+    'karta multi domyka się zaraz za slotem — boks z listą gier zaczyna się już poza nią');
+  assert.match(INDEX, /<div id="multi-panel-dolacz" class="karta" hidden>/, 'lista gier to osobny boks (class="karta")');
+  assert.equal(INDEX.includes('Pokazujemy tylko hosta'), false, 'zdanie „Pokazujemy tylko hosta…” usunięte');
+  assert.match(INDEX, /id="slot-tozsamosc-dom"/, 'pole tożsamości ma dokąd wrócić poza multi');
+  assert.match(APP, /function umiescTozsamosc/, 'przenoszenie bloku tożsamości jest funkcją');
+  const panelDolacz = APP.slice(APP.indexOf('function renderujPanelDolacz'), APP.indexOf('function renderujMultiSciezka'));
+  assert.match(panelDolacz, /pseudonimGraczaMulti/, 'boks listy widoczny dopiero po zalogowaniu (bramką jest potwierdzone imię)');
+  assert.match(panelDolacz, /multi-panel-dolacz'\)\.hidden = !\(dolacz &&/, 'widoczność = ścieżka „Dołączam” ORAZ zalogowany gracz');
+  assert.match(INDEX, /id="multi-lobby-lista"/, 'lista gier ~50 m na setupie');
+  assert.match(INDEX, /id="przycisk-odswiez-lobby"/, 'przycisk odświeżenia listy na setupie');
+  assert.match(APP, /odswiezListeGierNaSetupie/, 'lista odświeżana na setupie');
+  assert.ok(!APP.includes('otworzListeGier'), 'dawny flow „lista gier na ekranie multi” usunięty');
+  // przy „Dołączam” chowane są pola parametrów gry, a „Poprzednie gry” nie pokazują się w multi
+  assert.match(APP, /renderujPolaTozsamosci/, 'widoczność pól tożsamości sterowana funkcją (multi = sama karta gracza)');
+  for (const id of ['pole-tryb', 'pole-parametry', 'pole-wiek', 'pole-tematy', 'pole-tozsamosc-siatka']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `#${id} ma id do chowania przy „Dołączam”`);
+  }
+  // „Ty w tej grze” w multi: dokładnie jedna osoba na telefon, pola znikają
+  assert.match(APP, /W multiplayerze gra z tego telefonu tylko jedna osoba/, 'twardy limit multi = 1 osoba na telefon');
+  // trasa-sekret: checkbox w JEDNYM wierszu z opisem (CSS flex)
+  assert.match(STYLE, /#pole-trasa-sekret:not\(\[hidden\]\)\s*\{\s*display: flex;/, 'wiersz trasa-sekret: opis i checkbox obok siebie');
+  // tematy: kanon z markerem — „Ciekawostki” i kolejne nowe tematy nie zgubią się w zapisach
+  const KONFIG_JS = czytaj('app/konfig.js');
+  assert.match(KONFIG_JS, /export const KANON_SETUPU = '\d{4}-\d{2}-\d{2}'/, 'marker kanonu tematów w konfig.js');
+  assert.match(KONFIG_JS, /TEMATY_DOPELNIANE_PRZY_MIGRACJI = \['ciekawostki'\]/, 'ciekawostki na liście dopełnień migracyjnych');
+  assert.match(KONFIG_JS, /export function dopelnijNoweTematySetupu/, 'jednorazowa migracja tematów setupu');
+  assert.match(APP, /kanon: KANON_SETUPU/, 'zapis konfigu niesie marker kanonu');
+  // pozostałości trybu developerskiego i warstwy zapasowej nie wracają do treści startowych
+  assert.ok(!APP.includes('M0 — fundament'), 'dev-status informacji startowej usunięty');
+  assert.match(INDEX, /Przemieszczasz się od stacji do stacji, a telefon sam rozpoznaje,\s+gdy jesteś na miejscu — wtedy odsłania pytanie\./, 'intro: brzmienie właściciela (HTML zawija wiersze)');
 });
 
 test('ADR 0015 pkt 6: kody usterek wejścia promptu (WE**) nie kolidują z kodami pozycji (P**)', () => {
@@ -1063,7 +1113,7 @@ test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samo
   assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*var\(--wysokosc-belki/s);
   assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*overflow-y: auto/s);
   assert.ok(APP.includes('function ustawWysokoscBelki'));
-  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra', 'ranking', 'informacje']) {
+  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra', 'informacje']) {
     const sekcja = INDEX.match(new RegExp(`<section id="ekran-${ekran}"[\\s\\S]*?</section>`))?.[0];
     assert.ok(sekcja?.includes('panel-centralny'), ekran);
     assert.ok(!/id="mapa-(pozycja|stacje|gra)"/.test(sekcja), 'mapa poza panelem: ' + ekran);
@@ -1151,4 +1201,66 @@ test('gra: wyjaśnienie po odpowiedzi jest czytelne jak pytanie, nie jak podpowi
     `wyjaśnienie ma ten sam rozmiar co pytanie (${rozmiarPytania}px)`);
   assert.match(blok, /color: var\(--tekst\)/,
     'pełny kolor tekstu, nie przygaszony --tekst-slaby');
+});
+
+test('kontrakt: Informacje niosą kontakt i zgłaszanie błędów mapy (polityka kafelków OSM)', () => {
+  // Polityka kafelków OSM zaleca dwie rzeczy, których nam brakowało:
+  // link „Report a map issue" i opublikowany adres kontaktowy. Bez adresu OSM
+  // nie ma jak uprzedzić o blokadzie — a blokuje „bez uprzedzenia".
+  const blok = INDEX.slice(INDEX.indexOf('id="ekran-informacje"'), INDEX.indexOf('id="przygaszenie-mapy"'));
+  assert.ok(blok.includes('id="ekran-informacje"'), 'znaleziono ekran Informacje');
+
+  const zglos = blok.match(/<a[^>]*id="link-zglos-mape"[^>]*>/)?.[0];
+  assert.ok(zglos, 'link „Zgłoś błąd na mapie" jest w Informacjach');
+  assert.match(zglos, /href="https:\/\/www\.openstreetmap\.org\/fixthemap"/,
+    'prowadzi do oficjalnego formularza OSM');
+  assert.match(zglos, /rel="[^"]*noopener/, 'target=_blank z noopener');
+
+  const kontakt = blok.match(/<a[^>]*id="link-kontakt"[^>]*>/)?.[0];
+  assert.ok(kontakt, 'link kontaktowy jest w Informacjach');
+  assert.match(kontakt, /href="mailto:szybkoiwyraznie@gmail\.com"/, 'adres kontaktowy podany');
+  assert.match(blok, /szybkoiwyraznie@gmail\.com/, 'adres widoczny jako tekst, nie tylko w href');
+
+  // Kontrast: link dziedziczy kolor, więc nie wprowadza nowej pary do audytu
+  // WCAG; od tła odróżnia go podkreślenie, nie barwa.
+  assert.match(STYLE, /\.informacje-link \{[^}]*color: inherit/s, 'link dziedziczy kolor');
+  assert.match(STYLE, /\.informacje-link \{[^}]*text-decoration: underline/s, 'odróżniony podkreśleniem');
+  assert.match(STYLE, /\.informacje-link \{[^}]*min-height: var\(--cel\)/s, 'cel dotykowy ≥ 44 px');
+  assert.match(STYLE, /\.informacje-link \{[^}]*overflow-wrap: anywhere/s, 'długi adres nie rozepcha panelu 360 px');
+});
+
+test('kontrakt: szablon kafelków da się podmienić bez wdrażania wersji', () => {
+  // Zalecenie polityki OSM: „avoid hard-coding the tile URL; allow switching
+  // without needing a software update". Serwer kafelków jest wolontariacki
+  // i bez SLA — przełącznik musi istnieć w terenie.
+  assert.match(MAPA, /export const KLUCZ_URL_KAFELKOW = 'okolica:kafelki:url';/,
+    'klucz operatorski wyeksportowany z mapa.js');
+  assert.match(MAPA, /export function walidujSzablonKafelkow\(/, 'walidacja szablonu wyeksportowana');
+  assert.match(MAPA, /export function ustawSzablonKafelkow\(/, 'setter wyeksportowany');
+  // Walidacja musi wymagać https i wszystkich trzech podstawień — inaczej
+  // błędna wartość dałaby jeden adres dla całej siatki.
+  const walidacja = MAPA.slice(MAPA.indexOf('export function walidujSzablonKafelkow'),
+    MAPA.indexOf('export function ustawSzablonKafelkow'));
+  assert.match(walidacja, /url\.protocol !== 'https:'/, 'tylko https');
+  for (const z of ['{z}', '{x}', '{y}']) {
+    assert.ok(walidacja.includes(z), `walidacja wymaga ${z}`);
+  }
+  // Nadpisanie dotyczy wyłącznie OSM — pozostali dostawcy mają własne licencje.
+  assert.match(MAPA, /podklad === 'osm' && nadpisanySzablonOsm/, 'nadpisanie tylko dla osm');
+  // Odczyt localStorage siedzi w app.js, nie w czystym module mapy.
+  assert.match(APP, /function wczytajNadpisanieKafelkow\(/, 'odczyt klucza w app.js');
+  assert.match(APP, /localStorage\.getItem\(KLUCZ_URL_KAFELKOW\)/, 'czytany z localStorage');
+  // Mapa.js ma zostać modułem czystym: sprawdzamy WYWOŁANIE, nie samo słowo —
+  // w komentarzach wolno o localStorage pisać (i piszemy, dlaczego go tu nie ma).
+  assert.equal(/localStorage\s*[.[]/.test(MAPA), false,
+    'mapa.js zostaje czysty — żadnego dostępu do localStorage');
+});
+
+test('kontrakt: martwa flaga wymusPierscien usunięta z silnika', () => {
+  // Przycisk „Tryb uproszczony" wyleciał w m12-66, a stan został — zawsze
+  // `false`, więc `!STAN.wymusPierscien` było wiecznie prawdziwe i tylko
+  // udawało gałąź decyzyjną. Przycisk ma NIE wracać (patrz asercja wyżej),
+  // więc poprawnym domknięciem było usunięcie stanu, nie dorobienie UI.
+  assert.equal(APP.includes('wymusPierscien'), false, 'flaga zniknęła z app.js');
+  assert.equal(MAPA.includes('wymusPierscien'), false, 'flagi nie ma też w mapa.js');
 });
