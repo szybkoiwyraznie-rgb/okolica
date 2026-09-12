@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-99">
-  <script type="module" src="app/app.js?v=m12-99"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-100">
+  <script type="module" src="app/app.js?v=m12-100"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -707,7 +707,6 @@
     <section id="ekran-ranking" class="ekran panel-centralny" hidden role="dialog" aria-labelledby="tytul-ranking">
       <button id="przycisk-zamknij-ranking" class="warstwa-krzyzyk" type="button" aria-label="Zamknij ranking">✕</button>
       <h2 id="tytul-ranking">🏆 Ranking</h2>
-      <p id="ranking-status" class="podpowiedz" role="status">Ranking zbiera się ze wspólnego Drive.</p>
       <h3>Ranking Punktowy Graczy</h3>
       <table id="ranking-punkty" class="tabela-wynikow">
         <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th></tr></thead>
@@ -718,6 +717,12 @@
         <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Trafienia</th></tr></thead>
         <tbody id="ranking-mistrzowie-wiersze"></tbody>
       </table>
+      <!-- Wiersz wyjaśnień (ilu graczy ma potwierdzony profil, od ilu zadanych
+           pytań liczą się Mistrzowie Zagadek) jest NA KOŃCU warstwy, pod obiema
+           tabelami — uwaga właściciela z testów, 2026-09-12 (aneks ADR 0039).
+           Najpierw dane, potem zdanie o tym, jak je czytać; ten sam element
+           niesie stany przejściowe („Pobieram ranking…”) i awarie. -->
+      <p id="ranking-status" class="podpowiedz" role="status">Ranking zbiera się ze wspólnego Drive.</p>
     </section>
 
     <section id="ekran-informacje" class="ekran panel-centralny" hidden role="dialog" aria-labelledby="tytul-informacje">

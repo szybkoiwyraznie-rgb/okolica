@@ -832,6 +832,9 @@ body.ranking-otwarte .panel-centralny:not(#ekran-ranking) { visibility: hidden; 
 #ekran-ranking h3 { margin: 14px 0 2px; font-size: 17px; }
 #ekran-ranking .tabela-wynikow td, #ekran-ranking .tabela-wynikow th { padding: 8px 6px; }
 #ekran-ranking .tabela-wynikow td:first-child, #ekran-ranking .tabela-wynikow th:first-child { width: 2ch; }
+/* Wiersz wyjaśnień jest POD tabelami (uwaga właściciela z testów, 2026-09-12) —
+   potrzebuje oddechu od tabeli, nie domyślnych 6 px z `.podpowiedz`. */
+#ekran-ranking #ranking-status { margin-top: 14px; }
 body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
 #przycisk-podejrzyj-mape {
   position: fixed; z-index: 40; right: max(12px, env(safe-area-inset-right));

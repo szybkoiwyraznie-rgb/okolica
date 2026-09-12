@@ -1317,6 +1317,20 @@ test('kontrakt ADR 0039: ranking — dwie tabele, akcja mostu i wspólny schemat
   }
   assert.ok(INDEX.includes('Ranking Punktowy Graczy'), 'pierwsza tabela: Ranking Punktowy Graczy');
   assert.ok(INDEX.includes('Mistrzowie Zagadek'), 'druga tabela: Mistrzowie Zagadek');
+  // Uwaga właściciela z testów (2026-09-12, aneks ADR 0039): wiersz wyjaśnień
+  // („Graczy z potwierdzonym profilem: N…”, „Mistrzowie Zagadek liczą się od 10
+  // zadanych pytań…”) jest NA KOŃCU warstwy, pod obiema tabelami — najpierw
+  // dane, potem zdanie o tym, jak je czytać. Element niesie też stany
+  // przejściowe i awarie, więc musi zostać w warstwie i zachować role="status".
+  const kolejnosc = ['id="ranking-punkty"', 'id="ranking-mistrzowie"', 'id="ranking-status"']
+    .map((znacznik) => INDEX.indexOf(znacznik));
+  for (const [i, znacznik] of kolejnosc.entries()) {
+    assert.ok(kolejnosc[i] >= 0, `w index.html nie ma ${znacznik}`);
+  }
+  assert.ok(kolejnosc[0] < kolejnosc[1] && kolejnosc[1] < kolejnosc[2],
+    'kolejność w warstwie: tabela punktowa → Mistrzowie Zagadek → wiersz wyjaśnień');
+  assert.match(INDEX, /<p id="ranking-status" class="podpowiedz" role="status">/,
+    'wiersz wyjaśnień zachowuje role="status" (aria-live) po przeprowadzce');
   for (const obcy of ['ranking-zakladki', 'ranking-kategorie', 'ranking-tabela', 'ranking-moje-gry', 'ranking-wiersze']) {
     assert.equal(INDEX.includes(obcy), false, `stara forma rankingu (${obcy}) nie wróciła`);
   }

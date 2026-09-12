@@ -229,7 +229,9 @@ braku przycisku). Eksport
   tabelami — „Ranking Punktowy Graczy” (suma punktów ze wszystkich rodzajów
   gier) i „Mistrzowie Zagadek” (proporcja poprawnych odpowiedzi do zadanych,
   od 10 pytań). Sumy liczy most (`?akcja=ranking`, `RO-ranking/2`), a wchodzą
-  do nich wyłącznie gracze z potwierdzonym profilem (imię i PIN).
+  do nich wyłącznie gracze z potwierdzonym profilem (imię i PIN). Wiersz
+  wyjaśnień — ilu graczy ma profil i od ilu pytań liczy się druga tabela — jest
+  NA KOŃCU warstwy, pod obiema tabelami (uwaga z testów, 2026-09-12).
 
 ## Repozytorium
 

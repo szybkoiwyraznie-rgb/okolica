@@ -260,7 +260,9 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
    10 zadanych pytań). Warunek: most wdrożony w wersji z `?akcja=ranking`
    (NOWY deployment Apps Script — dopóki właściciel go nie wgra, ekran mówi
    wprost, że nie udało się pobrać rankingu, a gra działa dalej). W tabelach
-   są tylko profile potwierdzone na Drive.
+   są tylko profile potwierdzone na Drive. Wiersz wyjaśnień (ilu graczy ma
+   profil, od ilu pytań liczy się druga tabela) jest NA KOŃCU warstwy, pod
+   obiema tabelami — uwaga właściciela z testów, 2026-09-12.
 7b. **Wyjście z lobby**: B klika „Opuść lobby” przed startem → na A lista
    graczy maleje po odświeżeniu (≤ 10 s), a gdy wychodzi HOST, gra znika
    z listy gier w okolicy (`gra-opusc`).
