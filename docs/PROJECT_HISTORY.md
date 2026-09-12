@@ -3313,7 +3313,7 @@ Budżet lektury startowej (po dopisaniu tej sekcji i trzech lekcji): patrz
 ocena, czy po powtórce i 15 s limitu paczki z Podkowy Leśnej pokazują się na
 „Gdzie jesteś?" w terenie. ROADMAP bez zmian statusów.
 
-## Sesja 2026-09-12e — dwa kolejne zgłoszenia właściciela: rotacja pytań (bug C) i ekran wyników (bug D) (m12-86 → m12-88)
+## Sesja 2026-09-12e — trzy kolejne zgłoszenia właściciela: rotacja pytań (bug C), ekran wyników (bug D) i intro na iPhonie (bug E) (m12-86 → m12-89)
 
 **Gałąź:** `arena/01a095b5-okolica`, **PR #14** — jedyny otwarty PR tej sesji.
 **Zlecenie właściciela (2026-09-12):** po potwierdzeniu, że preview działa
@@ -3365,17 +3365,32 @@ i linków z `download`, ręczne zakończenie, pełna gra GPS end-to-end; kontrak
 lista ID, których `index.html` nie ma już prawa mieć). Dowód regresji:
 `git stash` na `app/app.js`, `app/styles.css`, `index.html` → 7 fail.
 
-### 3. Bramy i stan po sesji
+### 3. `ff9abd1` — Bug E: intro mieści się na iPhonie (m12-89)
+
+Zgłoszenie: „Ekran startowy Intro — treść nie mieści się na layerze na iPhonie.
+Naprawdę niewiele brakowało.” Trzy poprawki właściciela co do joty: tytuł
+`clamp(28px, 8vw, 40px)` → `clamp(25px, 7vw, 36px)`; warstwa o pół wiersza
+w górę i pół wiersza w dół (nowa zmienna `--wiersz-warstwy: 25px` = 17 px ×
+1,45, dodana do `max-height` wyśrodkowanego panelu — rosnąca wysokość przesuwa
+obie krawędzie symetrycznie); nowa treść intro (trzy akapity właściciela,
+krótszy opis okolicy, „w kilka osób” zamiast „z rodziną i znajomymi”).
+Razem ~29 px więcej miejsca przy krótszym tekście. Testy: pin tytułu, nowy test
+„warstwa dostaje o wiersz więcej”, pin nowego brzmienia i braku starego opisu,
+dwa piny tolerujące zawinięcie wiersza w HTML. Dowód regresji: `git stash` na
+`app/styles.css` + `index.html` → 4 fail.
+
+### 4. Bramy i stan po sesji
 
 `npm test`: 706/706 po C (m12-87) → **704/704** po D (m12-88; trzy testy
 eksportu zastąpione jednym pinem braku eksportów i jednym testem ręcznego
-końca), `npm run check` — oba szablony zgodne, `npm run audyt` — 0 naruszeń
-WCAG AA, budżet lektury startowej 76 456/100 000. Wszystko wypchnięte na
-`arena/01a095b5-okolica`. Lekcje sesji: L53 (kotwicz przepisywaną funkcję po
-realnym tekście; nieudany skrypt z pojedynczym zapisem potwierdź grepem) i L54
-(trzy pułapki walidatora przy dokładaniu pytań do paczki: promień E16, wzór id
-E19, treść E15).
+końca) → **705/705** po E (m12-89), `npm run check` — oba szablony zgodne,
+`npm run audyt` — 0 naruszeń WCAG AA, budżet lektury startowej
+78 529/100 000. Wszystko wypchnięte na `arena/01a095b5-okolica`. Lekcje sesji:
+L53 (kotwicz przepisywaną funkcję po realnym tekście; nieudany skrypt
+z pojedynczym zapisem potwierdź grepem) i L54 (trzy pułapki walidatora przy
+dokładaniu pytań do paczki: promień E16, wzór id E19, treść E15).
 
-**Otwarte:** zgłoszenie **(E)** — intro na iPhonie (mniejszy tytuł, layer
-o pół wiersza w górę i w dół, nowa treść) — realizowane po C i D; potwierdzenie
-terenne Buga B (≥3 paczki z Podkowy Leśnej); kafelki M3–M8 i M10–M12.
+**Otwarte:** potwierdzenie terenne Buga B (≥3 paczki z Podkowy Leśnej);
+sprawdzenie przez właściciela na telefonie C (rotacja pytań), D (ekran wyniku)
+i E (intro); kafelki M3–M8 i M10–M12. Właściciel zapowiada dalsze uwagi do
+ekranu wyników.
