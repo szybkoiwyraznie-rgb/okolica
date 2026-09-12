@@ -726,8 +726,11 @@ test('kontrakt UI 2026-09-11: usunięte ozdobniki właściciela z testów tereno
   assert.equal(INDEX.includes('id="prompt-rozmiar"'), false, 'linia „Odpowiedź modelu będzie miała około…" usunięta');
   // (6) intro: nowe brzmienia i usunięte zdania
   assert.match(INDEX, /gra terenowa gdziekolwiek jesteś/, 'podtytuł: „gra terenowa gdziekolwiek jesteś"');
-  assert.match(INDEX, /ruszasz dalej\./, 'zasada: „ruszasz dalej."');
-  assert.match(INDEX, /Grać można w pojedynkę, z rodziną i znajomymi na jednym telefonie albo każdy na swoim urządzeniu\./, 'zdanie o składzie gry (doprecyzowane 2026-09-11: też tryb hasełkowy na jednym telefonie)');
+  assert.match(INDEX, /ruszasz\s+dalej\./, 'zasada: „ruszasz dalej." (HTML zawija wiersz — zgłoszenie E)');
+  assert.match(INDEX, /Grać można w pojedynkę, w kilka osób na jednym telefonie albo każdy na swoim urządzeniu\./, 'zdanie o składzie gry (brzmienie z zgłoszenia E, 2026-09-12: „w kilka osób”)');
+  // Zgłoszenie E (2026-09-12): intro musi się zmieścić na iPhonie, więc stary,
+  // dłuższy opis okolicy („w promieniu spaceru od Twojej pozycji”) zniknął.
+  assert.equal(INDEX.includes('w promieniu spaceru'), false, 'stary, dłuższy opis okolicy usunięty z intro (zgłoszenie E)');
   assert.equal(INDEX.includes('Potrzebujesz tylko zgody na dostęp do lokalizacji.'), false, 'zdanie o zgodzie usunięte z intro');
   assert.equal(INDEX.includes('Przycisk wyżej otwiera ustawienia gry'), false, 'zdanie o przycisku/⚙ usunięte z intro');
 });
@@ -975,7 +978,10 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   assert.match(APP, /dopelnijKonfiguracjeDoKanou\(STAN\.konfig, kanon\)/, 'odczyt porównuje wartość markera, nie tylko jego obecność');
   // pozostałości trybu developerskiego i warstwy zapasowej nie wracają do treści startowych
   assert.ok(!APP.includes('M0 — fundament'), 'dev-status informacji startowej usunięty');
-  assert.match(INDEX, /Przemieszczasz się od stacji do stacji, a telefon sam rozpoznaje,\s+gdy jesteś na miejscu — wtedy odsłania pytanie\./, 'intro: brzmienie właściciela (HTML zawija wiersze)');
+  // Zgłoszenie właściciela E (2026-09-12): akapit przepisany („sam rozpoznaje,
+  // gdy jesteś na miejscu — wtedy odsłania pytanie” → „rozpoznaje, gdy jesteś
+  // na miejscu i odsłania pytanie”). Regex toleruje zawinięcie wiersza w HTML.
+  assert.match(INDEX, /Przemieszczasz się od stacji do stacji, a telefon rozpoznaje, gdy jesteś\s+na miejscu i odsłania pytanie\./, 'intro: brzmienie właściciela (HTML zawija wiersze)');
 });
 
 test('ADR 0015 pkt 6: kody usterek wejścia promptu (WE**) nie kolidują z kodami pozycji (P**)', () => {
@@ -1109,7 +1115,9 @@ test('kontrakt ADR 0029: ręcznego dojścia nie ma w interfejsie, a z gry da si�
  */
 test('uwaga A1: ekran startowy ma duży, wyśrodkowany tytuł i rozwinięte intro', () => {
   assert.ok(INDEX.includes('class="warstwa-start-karta"'), 'treść intro siedzi w karcie wewnątrz warstwy');
-  assert.match(STYLE, /\.warstwa-start h1 \{[^}]*font-size: clamp\(28px, 8vw, 40px\)/s, 'tytuł skaluje się z ekranem');
+  // Zgłoszenie właściciela E (2026-09-12): „treść nie mieści się na layerze na
+  // iPhonie” — tytuł jest o trochę mniejszy niż w uwadze A1 (był 28/8vw/40).
+  assert.match(STYLE, /\.warstwa-start h1 \{[^}]*font-size: clamp\(25px, 7vw, 36px\)/s, 'tytuł skaluje się z ekranem (mniejszy — zgłoszenie E)');
   assert.match(STYLE, /\.warstwa-start h1 \{[^}]*text-align: center/s, 'tytuł jest wyśrodkowany');
   assert.match(STYLE, /\.podtytul-start \{[^}]*text-align: center/s, 'podtytuł też');
   // Intro ma być dłuższe niż jedno zdanie — pinujemy liczbę akapitów, nie treść.
@@ -1117,6 +1125,17 @@ test('uwaga A1: ekran startowy ma duży, wyśrodkowany tytuł i rozwinięte intr
   // do wzmianki w podtytule („gdziekolwiek jesteś") — nie asertujemy go tu.
   const intro = INDEX.slice(INDEX.indexOf('warstwa-start-karta'), INDEX.indexOf('przycisk-start-zacznij'));
   assert.ok((intro.match(/<p[ >]/g) ?? []).length >= 4, 'intro ma co najmniej cztery akapity');
+});
+
+test('zgłoszenie E: warstwa startowa dostaje o wiersz więcej (po pół wiersza w górę i w dół)', () => {
+  // „można rozpocząć go o pół wiersza wyżej i skończyć o pół wiersza niżej
+  // (licząc czcionką, którą jest tekst na tym layerze)” — wiersz to 17 px × 1,45,
+  // a panel jest wyśrodkowany, więc wyższa `max-height` przesuwa obie krawędzie
+  // symetrycznie. Test pinuje SPOSÓB (zmienna + dodanie jej do max-height),
+  // nie konkretną liczbę pikseli.
+  assert.match(STYLE, /--wiersz-warstwy: 25px/, 'wiersz warstwy jako zmienna (17 px × 1,45)');
+  assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*max-height: calc\([^}]*\+ var\(--wiersz-warstwy/s,
+    'warstwa liczy wysokość z wierszem warstwy (zgłoszenie E)');
 });
 
 test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samodzielnie', () => {

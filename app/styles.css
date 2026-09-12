@@ -25,6 +25,9 @@
   --promien: 14px;
   --cel: 44px;
   --odstep: 14px;
+  /* Wiersz tekstu warstwy (17 px × 1,45) — do rozmiarów liczonych „na wiersze”,
+     np. wysokości warstwy startowej (zgłoszenie właściciela E, 2026-09-12). */
+  --wiersz-warstwy: 25px;
 }
 
 html[data-motyw='ciemny'] {
@@ -739,7 +742,11 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 
 .warstwa-start h1 {
   margin: 0;
-  font-size: clamp(28px, 8vw, 40px);
+  /* Zgłoszenie właściciela 2026-09-12 (E): treść intro nie mieściła się na
+     warstwie na iPhonie i „naprawdę niewiele brakowało” — tytuł jest o trochę
+     mniejszy niż w uwadze A1 z 2026-09-09 (28/8vw/40 → 25/7vw/36), żeby tekst
+     zmieścił się bez przewijania. */
+  font-size: clamp(25px, 7vw, 36px);
   line-height: 1.15;
   letter-spacing: 0.2px;
   text-align: center;
@@ -795,7 +802,13 @@ body[data-mapa='gra'] #mapa-gra { visibility: visible; }
   top: calc(var(--wysokosc-belki, 64px) + (100dvh - var(--wysokosc-belki, 64px)) * .45);
   left: 50%; right: auto; bottom: auto; transform: translate(-50%, -50%);
   width: 90%; max-width: 720px;
-  max-height: calc((100dvh - var(--wysokosc-belki, 64px)) * .9 - 62px);
+  /* Zgłoszenie właściciela 2026-09-12 (E): warstwa dostaje o JEDEN wiersz
+     wysokości więcej niż w ADR 0034 — po pół wiersza w górę i w dół od
+     dotychczasowych krawędzi. Panel jest wyśrodkowany (translate -50%), więc
+     rosnąca `max-height` przesuwa obie krawędzie symetrycznie: górna idzie
+     pół wiersza wyżej, dolna pół wiersza niżej. Wiersz liczony czcionką tekstu
+     warstwy (17 px × 1,45 = 25 px, zmienna `--wiersz-warstwy`). */
+  max-height: calc((100dvh - var(--wysokosc-belki, 64px)) * .9 - 62px + var(--wiersz-warstwy, 25px));
   min-height: 0; height: auto; margin: 0; padding: 16px;
   overflow-y: auto; overscroll-behavior: contain;
   background: var(--tlo-karta); color: var(--tekst);
