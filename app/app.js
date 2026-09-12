@@ -2196,12 +2196,6 @@ function adresBezSciezki(url) {
  * Odpowiedź indeksu → lista propozycji. `false` znaczy „most odpowiedział, ale
  * nie zrozumieliśmy odpowiedzi” (kody Z01/Z09) — to NIE jest „repozytorium
  * niedostępne” i wołający ma o tym powiedzieć prawdę, nie zlewać obu przypadków
- * w jedno (LESSONS L6).
- */
-/**
- * Odpowiedź indeksu → lista propozycji. `false` znaczy „most odpowiedział, ale
- * nie zrozumieliśmy odpowiedzi” (kody Z01/Z09) — to NIE jest „repozytorium
- * niedostępne” i wołający ma o tym powiedzieć prawdę, nie zlewać obu przypadków
  * w jedno (LESSONS L6: komunikat nazywa przyczynę).
  */
 function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
@@ -3792,15 +3786,6 @@ function fetchPrzegladarki() {
   return typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
 }
 
-/** GET do mostu z limitem 8 s i jawnym błędem — współdzielony przez lobby, indeks i wznowienie. */
-/**
- * Nasz własny limit czasu (8 s) przerywa żądanie przez `AbortController`,
- * a przeglądarka opisuje to PO ANGIELSKU i od swojej strony: Chrome daje
- * „signal is aborted without reason", Firefox „The user aborted a request.".
- * Dla gracza to bełkot, więc rozróżniamy nasze przerwanie od prawdziwej awarii
- * sieci i zawsze oddajemy komunikat po polsku (LESSONS: komunikat musi nazywać
- * przyczynę, nie wyjątek).
- */
 /**
  * Błąd mostu po polsku + KRÓTKI powód dla UI (`blad.powod`).
  *
@@ -3846,6 +3831,15 @@ function bladZPowodem(wiadomosc, powod) {
   return blad;
 }
 
+/**
+ * GET mostu, którego odpowiedź jest JSON-em (lobby, stan gry).
+ *
+ * Nasz własny limit czasu przerywa żądanie przez `AbortController`, a przeglądarka
+ * opisuje to PO ANGIELSKU i od swojej strony: Chrome daje „signal is aborted
+ * without reason”, Firefox „The user aborted a request.”. Dla gracza to bełkot,
+ * więc rozróżniamy nasze przerwanie od prawdziwej awarii sieci i zawsze oddajemy
+ * komunikat po polsku (LESSONS L6: komunikat musi nazywać przyczynę, nie wyjątek).
+ */
 async function pobierzGetMulti(url) {
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
   if (!f) throw new Error('to środowisko nie ma fetch — nie da się zapytać mostu');
