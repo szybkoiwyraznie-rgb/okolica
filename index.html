@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-96">
-  <script type="module" src="app/app.js?v=m12-96"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-97">
+  <script type="module" src="app/app.js?v=m12-97"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -332,7 +332,7 @@
         <ul id="zestawy-lista" class="lista-zestawow"></ul>
         <button id="przycisk-zestawy-wiecej" class="przycisk przycisk-zestawy-wiecej" type="button" hidden>Zobacz więcej paczek</button>
         <p id="most-stan-repo" class="podpowiedz">Most Drive: sprawdzam…</p>
-        <p class="podpowiedz tylko-test">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela<span class="dopisek-roboczy"> (ADR 0017 pkt 6)</span>.</p>
+        <p class="podpowiedz tylko-test">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki z katalogu zaakceptowanych<span class="dopisek-roboczy"> (ADR 0017 pkt 6; moderacja wstępna zniesiona 2026-09-11)</span>.</p>
       </div>
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">

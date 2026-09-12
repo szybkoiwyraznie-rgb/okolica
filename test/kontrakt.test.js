@@ -1377,3 +1377,17 @@ test('K: teksty UI nie odsyłają do ścieżek, których nie ma (O1/O2/O11)', ()
   assert.match(INDEX, /Zapis GRY nie niesie pytań/,
     'karta prywatności rozdziela repozytorium paczek od zapisu gry');
 });
+test('K: komentarze w kodzie nie obiecują koła dokładności (ADR 0034 pkt 2)', () => {
+  // `accuracy` nie bierze udziału w decyzji, komunikatach ani rysunku koła —
+  // mapa dostaje `{lat, lon}` bez dokładności, więc komentarz nie może twierdzić
+  // czego innego (dryf O12 z audytu PR #18: kod zgodny z ADR, opis nie).
+  assert.match(APP, /const fix = p \? \{ lat: p\.lat, lon: p\.lon \} : null;/,
+    'warstwy mapy dostają pozycję bez `accuracy`');
+  assert.equal(APP.includes('z kołem dokładności'), false, 'komentarz nie obiecuje koła dokładności');
+  assert.equal(APP.includes('badge dokładności'), false, 'badge dokładności nie istnieje w UI');
+  assert.equal(APP.includes('filtr dokładności'), false, 'ocenFix nie filtruje po dokładności');
+  assert.match(APP, /BEZ koła dokładności/, 'komentarz `odswiezWarstwy` mówi wprost, czego na mapie nie ma');
+  // Dev-tekst karty paczek nie obiecuje sesji przeglądania paczek.
+  assert.equal(INDEX.includes('zaakceptowane przez właściciela'), false,
+    'karta paczek: katalog zaakceptowanych, nie przegląd właściciela (ADR 0017 aneks 2026-09-11)');
+});
