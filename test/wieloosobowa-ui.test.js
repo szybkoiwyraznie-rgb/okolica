@@ -31,6 +31,8 @@ import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV3 } from '../app/protokol.js';
 import { zapakujPaczke } from '../app/kodowanie.js';
 import { KLUCZ_REJESTRU, SCHEMAT_LOKALNY, kluczZestawu, nowyRejestr, zbierzMetaZestawu } from '../app/zestawy.js';
 import { czyKompletna, generujKod, przeliczWyniki, zbudujZdarzenie } from '../app/wieloosobowa.js';
+import { SCHEMAT_SIECI, kluczCacheSieci, parsujOdpowiedz, upraszczajDaneDoCache } from '../app/sieci.js';
+import { promienZCzasuGry } from '../app/konfig.js';
 import { polecenieMostu, utworzSynchronizacje } from '../app/sync.js';
 
 const URL_MOSTU = 'https://script.google.com/macros/s/TEST/exec';
@@ -726,7 +728,9 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   assert.equal(el(A, 'ekran-stacje').hidden, false, 'ekran stacji widoczny');
   // trasa-sekret: organizator widzi tylko STATUS, nie nazwy ani współrzędne
   assert.equal(el(A, 'lista-stacji').children.length, 1, 'lista stacji ma jeden wiersz statusu');
-  assert.match(tekst(A, 'lista-stacji'), /Stacje wygenerowano: 3/, 'status mówi tylko ile');
+  assert.match(tekst(A, 'lista-stacji'), /Wygenerowano stacji: 3/, 'status mówi tylko ile');
+  assert.match(tekst(A, 'lista-stacji'), /NIE zlokalizowano/, 'bez sieci dróg komunikat mówi wprost, że stacje nie są zlokalizowane');
+  assert.equal(el(A, 'przycisk-przelicz').hidden, true, 'w tajnej trasie nie ma opcji „Inny układ”');
   assert.match(tekst(A, 'lista-stacji'), /ukryte/i, 'ukrycie jest jawne');
   assert.doesNotMatch(tekst(A, 'lista-stacji'), /52\./, 'współrzędne stacji nie wyciekają');
   await klik(A, 'przycisk-dalej-prompt');
@@ -743,6 +747,34 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   assert.equal(gra.trasaSekret, true, 'gra na moście ma trasaSekret');
   assert.equal(gra.konfiguracja.pytaniaNaStacje, 1, 'liczba stacji = liczba pytań (1 na stację)');
   assert.match(gra.konfiguracja.geohash8, /^[0-9b-z]{8}$/, 'konfiguracja niesie geohash8 (~50 m)');
+});
+
+test('trasa-sekret z siecią dróg: komunikat mówi „zlokalizowano”, a „Inny układ” zostaje schowany', async () => {
+  const most = atrapaMostu();
+  const KONFIG = {
+    tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 110,
+    tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
+    podklad: 'osm', kodGry: 'test',
+  };
+  const pamiec = new Map([['okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: KONFIG })]]);
+  // Sieć z pamięci telefonu (cache) — bez internetu, a stacje są SIECIOWE,
+  // więc komunikat ma powiedzieć „zlokalizowano” (fixture centrum, 1000 m).
+  const promienM = promienZCzasuGry({ ...KONFIG, promienM: null });
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(JSON.parse(czytajPlik(new URL('./fixtures/overpass-centrum.json', import.meta.url), 'utf8'))));
+  pamiec.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM, tryb: 'piesza' }),
+    JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await wybierzSegment(A, 'lista-rodzajow', 'multi');
+  await dodajGraczaUI(A, 'Ewa');
+  await ustawPozycjeTestowa(A, { lat: 52.2297, lon: 21.0122 });
+  await klik(A, 'przycisk-dalej-pozycja');
+  await klik(A, 'przycisk-dalej-stacje');
+  await new Promise((r) => setTimeout(r, 40));
+  assert.match(tekst(A, 'lista-stacji'), /Wygenerowano i zlokalizowano stacji: 3/, 'sieć drogowa = stacje zlokalizowane');
+  assert.doesNotMatch(tekst(A, 'lista-stacji'), /NIE zlokalizowano/, 'wariant pierścieniowy nie podchodzi pod sieć');
+  assert.equal(el(A, 'przycisk-przelicz').hidden, true, '„Inny układ” schowany także przy sieci');
+  assert.doesNotMatch(tekst(A, 'lista-stacji'), /52\./, 'współrzędne stacji nie wyciekają');
 });
 
 test('bez potwierdzonego imienia NIE wysyłam niczego — jawna odmowa (lista na setupie)', async () => {
