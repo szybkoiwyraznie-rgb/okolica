@@ -2749,7 +2749,7 @@ z audytu PR #9), pozostają otwarte; plan sesji trzyma je w kolejce roboczej
 **Stan:** kod nietknięty; jedyna zmiana tej sesji to plan
 `docs/plans/2026-09-12-sesja-startowa.md` oraz ten wpis. Brak handoffu
 końcowego — sesja trwa i czeka na zadanie właściciela.
-## Sesja 2026-09-12b — odzyskanie sesji #12, poprawki właściciela, audyt multi (m12-75 → m12-78)
+## Sesja 2026-09-12b — odzyskanie sesji #12, poprawki właściciela, audyt multi (m12-75 → m12-79)
 
 **Gałąź:** `arena/01a09489-okolica`, PR #13. **Zlecenie właściciela (2026-09-12):**
 (1) przenieść do repozytorium zmiany poprzedniej sesji (#12, sesja urwana — patch
