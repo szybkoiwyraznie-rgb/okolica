@@ -7,6 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import {
+  PROMIEN_SUFITU_ZOOMU_M,
   bearingStopnie, czyDotarl, czyWspolrzedneOk, dopasujZoomDoPromienia, formatujWspolrzedne,
   geohash, KOMUNIKATY_WSPOLRZEDNYCH, metryNaPiksel, odlegloscM, odwroc, ogranicz,
   parsujWspolrzedne, przesunPunkt, projektuj,
@@ -90,6 +91,26 @@ test('dopasujZoomDoPromienia: 1 km/360 px → z14, 3 km → z12, 10 km → z10',
   // większy ekran = głębszy zoom przy tym samym promieniu
   assert.ok(dopasujZoomDoPromienia(1000, 900, 52.23) > dopasujZoomDoPromienia(1000, 360, 52.23));
   assert.throws(() => dopasujZoomDoPromienia(0, 360, 52), TypeError);
+});
+
+test('dopasujZoomDoPromienia: sufit przybliżenia — mały promień kadruje się jak 1000 m (zgłoszenie 2026-09-12)', () => {
+  // Objaw z testów terenowych: stuknięcie mapy (i przeliczenie stacji po
+  // Overpassie) przy małym promieniu wjeżdżało na zoom 17–19, gdzie kafle OSM
+  // są w praktyce puste. Sufit: mniejszy promień nie przybliża głębiej niż
+  // `PROMIEN_SUFITU_ZOOMU_M` (1000 m).
+  const z1000 = dopasujZoomDoPromienia(1000, 360, 52.23);
+  for (const promien of [200, 250, 500, 750, 999]) {
+    assert.equal(dopasujZoomDoPromienia(promien, 360, 52.23), z1000,
+      `${promien} m: kadr jak dla 1000 m, nie głębiej`);
+  }
+  // większe promienie liczą się jak dotąd (sufit nie zaokrągla całego widoku)
+  assert.ok(dopasujZoomDoPromienia(1500, 360, 52.23) < z1000);
+  assert.equal(dopasujZoomDoPromienia(3000, 360, 52.23), 12);
+  // sufit jest parametrem — da się go sprawdzić i zmienić w jednym miejscu
+  assert.equal(dopasujZoomDoPromienia(250, 360, 52.23, { sufitPromienM: PROMIEN_SUFITU_ZOOMU_M }), z1000);
+  assert.ok(dopasujZoomDoPromienia(250, 360, 52.23, { sufitPromienM: 0 }) > z1000,
+    'bez sufitu mały promień faktycznie przybliża głębiej (dowód, że sufit działa)');
+  assert.equal(PROMIEN_SUFITU_ZOOMU_M, 1000, 'sufit z decyzji właściciela 2026-09-12');
 });
 
 test('wspolrzedneDoKafelka: kafelek 0/0/0 obejmuje cały świat', () => {

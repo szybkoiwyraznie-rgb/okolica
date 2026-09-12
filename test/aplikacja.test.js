@@ -29,7 +29,7 @@ import {
 } from '../app/sieci.js';
 import { DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
-import { maxZoomPodkladu, widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
+import { maxZoomPodkladu, skalaBar, widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
 import { dopasujZoomDoPromienia } from '../app/geo.js';
 import { atrapaGeolokalizacji, zainstalujDom } from './helpers/dom.js';
 
@@ -341,6 +341,49 @@ function wyslij(el, typ, zdarzenie = {}) {
   for (const fn of lista) fn({ type: typ, preventDefault() {}, ...zdarzenie });
   return lista.length;
 }
+
+test('mapa: mały promień gry kadruje się jak 1000 m — bez pustych kafli (zgłoszenie 2026-09-12)', async () => {
+  // Właściciel w testach terenowych: po stuknięciu mapy (i po pobraniu sieci
+  // z Overpassa) aplikacja przybliżała tak mocno, że kafelki OSM przestawały
+  // cokolwiek pokazywać. Sufit przybliżenia liczy `dopasujZoomDoPromienia`
+  // (`PROMIEN_SUFITU_ZOOMU_M`), a ten test sprawdza OKABLOWANIE: czy po
+  // ustawieniu pozycji mapa naprawdę stoi w kadrze sufitu, a nie w kadrze
+  // promienia 250 m.
+  const konfig = { ...domyslnaKonfiguracja(), promienM: 250 };
+  const pamiec = new Map([
+    ['okolica:profil', JSON.stringify({
+      schemat: 'profil-lokalny/1', pseudonim: 'MałyPromień', zweryfikowany: true,
+      kiedy: '2026-09-07T10:00:00.000Z',
+    })],
+    ['okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig })],
+  ]);
+  const domM = await aplikacjaZMapa({ search: '?tryb=test&odstep=0', pamiec });
+  domM.kliknij('przycisk-dalej-pozycja');
+  await czekaj(10);
+  domM.ustawPozycje('52.2297', '21.0122');
+
+  const rect = domM.pobierz('mapa-pozycja').getBoundingClientRect();
+  const zoomWidokuMapy = dopasujZoomDoPromienia(250, rect.width, 52.2297);
+  assert.equal(zoomWidokuMapy, dopasujZoomDoPromienia(1000, rect.width, 52.2297),
+    'promień 250 m daje kadr promienia 1000 m (sufit przybliżenia)');
+  const oczekiwany = widokNaSrodek({
+    lat: 52.2297, lon: 21.0122, zoom: zoomWidokuMapy,
+    rozmiar: { szerokosc: rect.width, wysokosc: rect.height },
+  });
+  assert.equal(
+    domM.pobierz('mapa-pozycja-skala').textContent,
+    skalaBar(oczekiwany, 52.2297).etykieta,
+    'pasek skali pokazuje kadr z sufitem, nie kadr promienia 250 m',
+  );
+  // Dowód, że to nie jest przypadkowa równość: kadr bez sufitu miałby inny pasek.
+  const bezSufitu = widokNaSrodek({
+    lat: 52.2297, lon: 21.0122,
+    zoom: dopasujZoomDoPromienia(250, rect.width, 52.2297, { sufitPromienM: 0 }),
+    rozmiar: { szerokosc: rect.width, wysokosc: rect.height },
+  });
+  assert.notEqual(skalaBar(bezSufitu, 52.2297).etykieta, skalaBar(oczekiwany, 52.2297).etykieta,
+    'bez sufitu pasek skali byłby inny (głębszy zoom) — sufit naprawdę zmienia widok');
+});
 
 test('mapa: bootstrap rysuje kafelki OSM i podpisuje dostawcę', async () => {
   const domMapy = await aplikacjaZMapa();
