@@ -3686,3 +3686,31 @@ poprawiła; (O2) dokumenty mówią o bramie 733/733, a to samo drzewo daje
 **Werdykt:** PR #17 czysty, bez usterek logicznych; do zapamiętania: wersję
 `?v=` i liczbę testów w dokumentach sesji spisywać z drzewa PO ostatnim
 commicie, nie z notatek w trakcie.
+
+### 2. Implementacja zadania H (commity 4bca46e, 9d58f7a — PR #18)
+
+Zlecenie właściciela: „Pomiń odcinek (tylko w drodze)” to pozostałość
+bez sensu — usunąć opcję. Zakres rozstrzygnięty inwentaryzacją: znika
+sama AKCJA (przycisk, `pominStacje()`, `pominStacjeGry()`, kody G11/G13 —
+numery zajęte), a MODEL ODCZYTU zostaje (stan `pominiety`, zdarzenie
+`pominiecie`, liczniki, strażnik G14, etykiety wyniku, walidacja zapisów —
+stare gry muszą być czytelne).
+
+- **H/2** (`4bca46e`, kod + testy + `?v=m12-94`): silnik (3 podmiany +
+  wycięcie funkcji), `app.js` (import, listener, `disabled`, ukrywanie
+  w multi, cała `pominStacjeGry`, komentarz D a), `pozycja.js` (P03/P04/
+  P08 + brak współrzędnych stacji → „■ Zakończ grę”), `index.html`
+  (przycisk). Testy: akcja wycięta z `rozgrywka` (licznik kodów 14→12),
+  pętle UI na pełnej ścieżce (helper `zamknijStacje`: start → GPS →
+  odpowiedź → „Następna stacja”), stare zapisy odtwarza `jakoPominieta`,
+  oczekiwania 0/0→0/1 (T5), zaliczone 0→3 (T7); piny nieobecności
+  w silniku, aplikacji i kontrakcie. `wynik.test.js` nietknięty —
+  regresja odczytu starych zapisów.
+- **H/3** (`9d58f7a`, dokumenty): aneksy 2026-09-12 ADR
+  0015/0004/0029/0036 (w 0004 i 0029 sprostowano przy okazji błędne
+  „pkt 2” na właściwy pkt 3); WORKFLOW §3 pkt 6, ARCHITECTURE (tranzycje,
+  faza 5, typy dziennika). README bez wzmianek — bez zmian; historia
+  (LESSONS, plany, ADR 0038, PROTOKOL) nietknięta.
+- **Brama na drzewie po H/3** (spisana z outputu, lekcja z O1/O2 powyżej):
+  `npm test` → **733/733** (734 z PR #17 −3 akcje +2 piny H),
+  `npm run check` OK, audyt kontrastu 0 naruszeń.
