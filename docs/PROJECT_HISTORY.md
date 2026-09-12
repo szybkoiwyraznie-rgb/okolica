@@ -3744,3 +3744,141 @@ J to `disabled` + dynamiczny `title` na ikonie belki.
   tym wpisem.
 - **Brama na drzewie po IJ/3** (spisana z outputu): `npm test` → **734/734**,
   `npm run check` OK, audyt kontrastu 0 naruszeń.
+## Sesja 2026-09-12K — audyt PR #18 i inwentaryzacja dryfu tekstów (gałąź `arena/01a0973d-okolica`)
+
+### 1. Audyt PR #18 (squash `4eb0985`, 32 pliki, +578/−323)
+
+Brama na drzewie `main` przed pracą: `npm test` → **734/734**, `npm run check`
+OK, budżet lektury 84 257/100 000 (rezerwa 15 743). Przegląd
+`git diff 4eb0985^..4eb0985` plik po pliku (logika, zgodność z ADR
+i protokołem, zieloność).
+
+- **Zadanie H — akcja pomijania** (`app/rozgrywka.js`, `app/app.js`,
+  `app/pozycja.js`, `index.html`): `pominStacje()` wycięta razem
+  z kodami **G11/G13** (numery zajęte — zgodne z aneksem ADR 0015
+  i precedensem E14/E18/R17/R18), stan `pominiety` i licznik `pominietaStacje`
+  zostają wyłącznie jako ścieżka ODCZYTU (`rozgrywka.js` → `podglad`/
+  `podsumowanie`, walidatory `trwalosc.js`, strażnik G14, `wynik.js`).
+  Grep potwierdza: w `app/` i `index.html` nie została ani jedna akcja
+  pomijania (`pominStacje`, `pominStacjeGry`, `przycisk-pomin-stacje` — 0
+  trafień), a komunikaty P03/P04/P08, status braku fixa i komunikat
+  „Brak poprawnych współrzędnych stacji” odsyłają do „■ Zakończ grę”
+  (ADR 0029 aneks m12-94). Żaden komunikat nie odsyła do ręcznego zaliczania
+  (ADR 0029 pkt 1). OK.
+- **Zadanie I.a** (`app.js` → `przyjmijIndeksZRepo`): opis propozycji bez
+  `· ${meta.licencja}`. Pole `licencja` pozostaje WYMAGANE w formacie —
+  sprawdzone w `app/zestawy.js` (walidacja meta L303 i wpisu L333) oraz
+  w lustrze mostu (`czyMetaOk` w `.gs` L137/L143): display ≠ format,
+  zgodnie z aneksem ADR 0017 (m12-95). OK.
+- **Zadanie I.b** (`app.js` → `odswiezPropozycjeZestawow`, `pobierzIndeksZRepo`,
+  `most.js`): sekcja „📱 z tego telefonu” wycofana z UI, `KANDYDACI_ZESTAWOW`
+  startuje pusty, cztery statusy repo uproszczone do jednej ścieżki,
+  `grajZZestawemLokalnym` wycięta, `stanMostu` nie obiecuje paczek
+  z telefonu. Cichy zapis i migracja ZOSTAŁY (wariant B2):
+  `zapiszZestawLokalnyPoStarcie()` jest wołana z `przyjmijZestawDoGry`
+  (L2540), `ujedgajnijTematyWpisowLokalnych()` przy starcie, a rejestr czyta
+  `czytajRejestrZestawow()` (3 żywe użycia). `dopasujZestawy` nie jest martwym
+  eksportem — woła ją `dopasujMetaIndeksu` (L360) i testy. OK.
+- **Zadanie J** (`odswiezStanIkonBelki` + `pokazWyniki` + CSS): predykat
+  `rozgrywka && faza !== koniec && !graZakonczonaRecznie` → `disabled`
+  i dynamiczny `title`; funkcja wołana z `pokazEkran`/`renderujGre`-ścieżek
+  (L300, L324, L355) oraz z `pokazWyniki` (L3314), więc koniec naturalny,
+  ręczny i multi odwieszają przycisk. Styl `.przycisk-ikona[disabled]`
+  nie zmienia kontrastu tokenów (audyt WCAG 0 naruszeń). OK.
+- **Wersjonowanie**: `?v=m12-95` w całym grafie (index.html + 42 importy
+  `app/*.js`) i `WERSJA_SW = 'm12-95'` — jeden łańcuch, kontrakt zielony
+  (L29). OK.
+- **Testy**: `rozgrywka` (licznik kodów 14→12, `jakoPominieta` odtwarza stary
+  zapis), `aplikacja` (pętle pełną ścieżką przez helper `zamknijStacje`,
+  Q z indeksu repo, J: zgaszony od auto-startu), `zestawy-ui` 18/18,
+  `wieloosobowa-ui` (atrapa fetch serwuje indeks i plik po akcji — jedno
+  wdrożenie mostu), `kontrakt` 81/81 (test 81 pinuje I+J; piny nieobecności
+  `przycisk-pomin-stacje` przepisane z „disabled” na „nie istnieje” — wzorzec
+  L55). OK.
+- **Dokumenty**: aneksy m12-94 (ADR 0015/0004/0029/0036) i m12-95 (ADR
+  0017/0011), WORKFLOW §3 pkt 6 + §4.3 pkt 1, ARCHITECTURE (tranzycje, faza 5,
+  typy dziennika), README (klauzula J). OK.
+
+**Werdykt:** PR #18 czysty — bez usterek logicznych, bez osieroconego kodu,
+zgodny z ADR 0015/0017/0029/0036/0038 i z protokołem. Wersję i liczbę testów
+w dokumentach spisano z drzewa po ostatnim commicie (lekcja O1/O2 z audytu
+PR #17 zastosowana).
+
+### 2. Obserwacje audytu: dryf tekstów UI i dokumentów żywych (do naprawy w tej sesji)
+
+Fala decyzji właściciela z 2026-09-09…2026-09-12 (m12-6x → m12-95) usuwała
+funkcje szybciej, niż żywe dokumenty zdążyły to odnotować — dokładnie pułapka
+**L31** („usunięcie funkcji z UI zostawia jej opis w dokumentach”), tyle że
+skumulowana. Stan zastany (wszystko poniżej NIE dotyczy kodu logiki — aplikacja
+działa zgodnie z ADR-ami; rozjeżdżają się teksty dla człowieka):
+
+**W interfejsie (widzi gracz/organizator):**
+
+- **(O1)** `index.html`, ekran „Wklej odpowiedź modelu”: „poprawna paczka
+  od razu zaczyna grę (i leci na Drive **do przeglądu właściciela**)” —
+  moderacja wstępna zniesiona 2026-09-11 (ADR 0017 aneks: paczka ląduje OD RAZU
+  w katalogu zaakceptowanych, bez maila i bez strony przeglądu). Tekst obiecuje
+  proces, którego nie ma.
+- **(O2)** `app/app.js` → `zapiszZestawLokalnyPoStarcie`: „Pamięć paczek
+  telefonu pełna — najstarsze (N) usunięte. **Eksport plikiem zabezpiecza
+  rozgrywkę.**” — eksportu pliku nie ma w UI (eksport zestawu usunięty
+  2026-09-07, eksporty wyniku w ADR 0038); komunikat wskazuje wyjście,
+  którego nie da się wykonać (ADR 0011 pkt 8, L6).
+- **(O11)** `index.html`, karta „Wspólny Drive: historia gier”: dwa sąsiednie
+  punkty mówią co innego — „**Paczki pytań**, które wyślesz do wspólnego
+  repozytorium — w pliku zostają pytania, stacje i nazwa miejscowości” oraz
+  „Współrzędne gracza, trasa, **pytania i paczka zostają na telefonie**”.
+  Oba zdania są prawdziwe w innych kontekstach (repozytorium zestawów vs zapis
+  GRY `gra-hotseat`, gdzie `zestaw` jest `null` — PROTOKOL §9.6), ale obok
+  siebie brzmią jak sprzeczność w najważniejszym miejscu o prywatności.
+
+**W dokumentach żywych:**
+
+- **(O3)** `docs/WORKFLOW.md` §3: pkt 1 — setup pyta o „język i podkład mapy”
+  (pola usunięte, ADR 0037); pkt 2 — „🛰 Włącz GPS”, „✎ Wpisz ręcznie”, badge
+  „±X m”, ostrzeżenie przy >100 m (ADR 0034 pkt 2 i 5: GPS startuje sam,
+  ręcznych pól i symulacji 250 m na ekranie pozycji nie ma, `accuracy` nie
+  uczestniczy w komunikatach ani w rysowaniu koła); pkt 5 — „⬆ Z pliku”
+  i „✓ Sprawdź i przyjmij” (ADR 0006 aneks trzeciej tury: import z pliku
+  usunięty, wklejenie JEST zatwierdzeniem); pkt 7 — „udostępnianie tekstem lub
+  obrazem PNG” (ADR 0038).
+- **(O4)** `docs/WORKFLOW.md` §4 i §4.1–§4.2: te same usunięte kontrolki
+  w procedurach terenowych (ręczne współrzędne, „koło dokładności”,
+  „Podkład mapy” w setupie, „Dane i prywatność” w stopce — stopka zniesiona
+  w ADR 0034 pkt 4, warstwa ⓘ; „▶ Symuluj dojście (250 m)” na ekranie pozycji;
+  „badge dokładności żyje”), plus mierzenie „dokładności GPS” jako kryterium
+  progów (ADR 0034 pkt 2: próg 50 m, dwa pomiary, bez `accuracy`).
+- **(O5)** `docs/WORKFLOW.md` §4.4 pkt 6–7: „Rankingów między grami nie ma
+  (właściciel, 2026-09-11)” — odwrócone przez ADR 0039 (ranking jako warstwa,
+  dwie tabele, `?akcja=ranking`); pkt 1–2 opisują kolejność kroków sprzed
+  2026-09-12 (tożsamość jest teraz PIERWSZYM krokiem obu ścieżek, a lista gier
+  ~50 m pokazuje się dopiero po zalogowaniu — komentarze w `index.html`).
+- **(O6)** `docs/ASSETS.md` §7: „sekrety mostu (`REVIEW_SECRET`,
+  `OWNER_EMAIL`) żyją wyłącznie w Script Properties” oraz „moderacja
+  właściciela (e-mail z linkiem przeglądu) jest bramą przed udostępnieniem”
+  — obie właściwości usunięte z wdrożenia (ADR 0017 aneks 2026-09-11; ADR 0020
+  aneks 2026-09-12, kontrakt asertuje brak `REVIEW_SECRET` w `.gs`).
+- **(O7)** `docs/ARCHITECTURE.md`: opis `wynik.js` („sprawiedliwość trasy,
+  eksport tekstowy, plan komend obrazu i **nazwy plików**”) nie zgadza się
+  z eksportami modułu (`dystansTekst`, `etykietaOdcinka`, `wynikTekstowy`,
+  `ROLE_PALETY`, `planObrazuWyniku`; miara sprawiedliwości wycofana z ADR 0014/
+  0023, nazw plików nie ma od ADR 0038); §Stan i trwałość — „plus plik
+  `.paczka.json` eksportowany przez użytkownika” (eksportu nie ma w UI).
+- **(O8)** `README.md`, akapit M7: kryterium terenowe „czytelność w słońcu
+  na 360 px **i eksport na Chrome Android oraz Safari iOS**” — ROADMAP
+  zawęził to kryterium 2026-09-12 (ADR 0038 pkt 7), README został przy starym.
+- **(O9)** Rejestr ADR (`docs/decisions/README.md`) i komentarze w `.gs`
+  powołują się na „ADR 0019 **aneks 2026-09-12f**” (powrót rankingu), którego
+  w pliku ADR 0019 nie ma — decyzję niesie ADR 0039, a rejestr i most cytują
+  nieistniejący aneks.
+- **(O10)** `docs/WORKFLOW.md` §5–§6 drobiazgi: „Włącz PO scaleniu **PR #2**”
+  (numer sprzed roku świetlnego), „aktualizacja rejestru w **`README.md`**
+  ADR-ów” (rejestr żyje w `docs/decisions/README.md`), „Nowa kategoria wiekowa
+  → `WIEK`” (kanon setupu to `WIEK_SETUP`), „Paczka referencyjna →
+  `data/przyklady/paczka-*.json`” (w repo jest `zestaw-podkowa-lesna.json`).
+
+**Reguła na przyszłość (trafi do LESSONS jako L58):** przy fali usunięć
+(kilka decyzji właściciela w jednej sesji) grep „żywych” nośników — UI, README,
+WORKFLOW, ARCHITECTURE, ASSETS — po KAŻDEJ decyzji, a nie po całej fali;
+i dodaj strażnika testowego na frazy, które opisują usunięte funkcje
+(L31 mówi „grep po dokumentach”, ale grepa nikt nie uruchamia automatycznie).
