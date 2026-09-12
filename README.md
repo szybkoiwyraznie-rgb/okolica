@@ -81,12 +81,11 @@ a wklejenie odpowiedzi modelu automatycznie uruchamia walidację. Paczka z uster
 daje czytelną listę kodów E01–E20 i przycisk „skopiuj poprawkę do modelu".
 Po przyjęciu gra zaczyna się OD RAZU (decyzja 2026-09-07 — podgląd,
 ściąganie i edycja zniknęły z ekranu; to zadania właściciela na Drive,
-dokąd zestaw leci automatycznie w chwili przyjęcia). Gotowe zestawy można wybrać na ekranie propozycji paczek. Nazwa miejsca do promptu jest pobierana ZAWSZE (ADR 0013 pkt 3 —
-przełącznik usunięty w Partii 2), a zapasowa warstwa Nominatim działa tylko po
-wyraźnej zgodzie na ekranie prywatności (domyślnie wyłączona, jedno żądanie
-na grę, cache 30 dni, atrybucja ODbL — ADR 0013). Jedna poprawka z terenu
-(2026-09-11): zapasowa warstwa Nominatim okazała się zbędna — docelowe źródło
-(Overpass) jest na stałe i fallback wyleciał z kodu wraz z przełącznikiem.
+dokąd zestaw leci automatycznie w chwili przyjęcia). Gotowe zestawy można wybrać na ekranie propozycji paczek. Nazwa miejsca do
+promptu jest pobierana ZAWSZE z tego samego zapytania Overpass (`is_in`) — bez
+przełącznika (usunięty w Partii 2), bez zapasowej warstwy Nominatim (wyleciała
+z kodu wraz z przełącznikiem, poprawka z terenu 2026-09-11) i bez pytania
+o zgodę na dodatkowego dostawcę map (ADR 0013 pkt 3).
 Kamień czeka na kryterium właściciela: pełna pętla z prawdziwym modelem
 (`docs/WORKFLOW.md` §4.2).
 

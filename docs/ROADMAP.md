@@ -16,7 +16,7 @@
 | M2 — Mapa | ✅ 2026-09-05 | renderer SVG + 3 podkłady |
 | M3 — Konfiguracja i geolokalizacja | 🟡 kod gotowy, czeka kryterium | ekran prywatności + symulacja w UI; kryterium: §Kryteria |
 | M4 — Stacje z sieci drogowej | 🟡 kod gotowy, czeka kryterium | pipeline Overpass + UI, 3/3 fixture'y ≤ 15%; kryterium: §Kryteria |
-| M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | auto-start gry po przyjęciu, cicha wysyłka Drive, Nominatim opt-in; kryterium: §Kryteria |
+| M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | auto-start gry po przyjęciu, cicha wysyłka Drive prosto do repozytorium (bez moderacji, bez Nominatim); kryterium: §Kryteria |
 | M6 — Rozgrywka | 🟡 kod gotowy, czeka kryterium | ekran gry, trwalosc.js, wznowienie; kryterium: §Kryteria |
 | M7 — Podsumowanie i udostępnianie | 🟡 kod gotowy, czeka kryterium | ranking, eksporty, historia; kryterium: §Kryteria |
 | M8 — Publikacja i brama jakości | 🟡 kod gotowy, czeka właściciela | manifest, ikony, CI, ASSETS §6; publikację włącza właściciel (WORKFLOW §5) |
