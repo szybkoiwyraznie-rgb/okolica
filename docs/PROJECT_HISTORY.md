@@ -3312,3 +3312,70 @@ Budżet lektury startowej (po dopisaniu tej sekcji i trzech lekcji): patrz
 `opuscGre`), kafelki M3–M8 i M10–M12 (bez zmian — czekają na teren/wdrożenie),
 ocena, czy po powtórce i 15 s limitu paczki z Podkowy Leśnej pokazują się na
 „Gdzie jesteś?" w terenie. ROADMAP bez zmian statusów.
+
+## Sesja 2026-09-12e — dwa kolejne zgłoszenia właściciela: rotacja pytań (bug C) i ekran wyników (bug D) (m12-86 → m12-88)
+
+**Gałąź:** `arena/01a095b5-okolica`, **PR #14** — jedyny otwarty PR tej sesji.
+**Zlecenie właściciela (2026-09-12):** po potwierdzeniu, że preview działa
+(„Już działa, to musiał być timeout”) przyszły dwa zgłoszenia: **(C)** „Mam
+dwóch graczy, 5 stacji, po 2 pytania na stację. Pierwsze pytanie dostaje
+Gracz 1. Drugie pytanie na tej stacji… dostaje znowu gracz 1. Powinno pytać na
+zmianę (kolejno następnego gracza, jeśli jest ich więcej), a nie, że na danej
+stacji wszystkie pytania dostaje ten sam gracz”; **(D)** „ta strona Wyniki ma
+masę błędów i niepotrzebnych informacji” + trzy konkrety (górny fragment ekranu
+gry nad wynikami, wszystko pod tabelą, zdanie o braku fact-checku). Zapowiedziane
+także zgłoszenie **(E)** — intro na iPhonie (do zrobienia po C i D).
+
+### 1. `d58d247` — Bug C: pytania padają po jednym dla kolejnych graczy (m12-87)
+
+Przyczyna: `ktoOdpowiada()` zwracało gracza z kolejki, a pętla UI szukała
+pierwszej nieobsłużonej pary (pytanie × dozwolony gracz) — każde pytanie stacji
+trafiało do tej samej osoby. Rozwiązanie: `graczPytania(stan, stacjaId,
+pytanieId)` liczy autora pytania `k` jako gracza z kolejki przesuniętego o `k`
+w liście graczy (cyklicznie). `ktoOdpowiada()` zwraca autorów kolejnych pytań
+bez duplikatów, `stacjaZamknieta` czeka na odpowiedź każdego pytania od jego
+autora, a `zapiszOdpowiedz` odrzuca nie-autora kodem G07. Adnotacja: pierwsze
+pytanie zostaje przy graczu z kolejki (ANEKS do ADR 0022, 2026-09-12).
+
+Testy: model (`test/rozgrywka.test.js` — rotacja przy 2 i 3 graczach,
+zawinięcie, G07 dla nie-autora) i UI (`test/aplikacja.test.js` — hot-seat
+2 graczy × 2 pytania: „pytanie 1 z 2 · odpowiada Gracz 1”, po odpowiedzi
+„pytanie 2 z 2 · odpowiada Gracz 2”). Dowód regresji: `git stash` na
+`app/rozgrywka.js` + `app/app.js` → 2 testy CELOWO PADAJĄ, po `stash pop`
+wszystkie przechodzą.
+
+### 2. `c227434` — Bug D: minimalny ekran wyniku (m12-88)
+
+Z ekranu „🏁 Koniec gry!” zniknęło wszystko poza kartą zwycięzcy, tabelą
+rankingu, linią wysyłki na Drive i jednym przyciskiem „🏠 Wróć na początek —
+nowa gra”. Faza `koniec` ukrywa teraz CAŁY slot sterowania (nagłówek „Gra”,
+badge'y kolejki i dystansu, liczniki, „Pomiń odcinek”, „Zakończ grę”), a z kodu
+zniknęły statystyki, szczegóły graczy, tabela stacji, eksport tekstu i obrazu
+(share/schowek/`.txt`/`.png`), pole „Tekst wyniku”, linia wariantu fact-checku
+i cała gałąź rysowania na canvasie (`PALETA_AWARYJNA`, `paletaZCss`,
+`rysujWynikNaCanvas`, `eksportujWynikObraz`, `pobierzPlik`, `dataWynikuTekst`,
+`STAN.wynikTekst`) razem z pięcioma nasłuchami. `kopiujTekst` został — używają
+go prompt i poprawka. Decyzja: **ADR 0038** (z notą o sprzeczności z ADR 0010
+pkt 5, który obiecywał eksportowalny wynik) + zawężenie kryterium kamienia M7
+w `docs/ROADMAP.md`; moduł `app/wynik.js` zostaje z własnymi testami jako
+biblioteka bez konsumenta w UI (osobna decyzja, gdyby miał zniknąć).
+
+Testy przepisane na nowy kontrakt (aplikacja: minimalny ekran, zero canvasów
+i linków z `download`, ręczne zakończenie, pełna gra GPS end-to-end; kontrakt:
+lista ID, których `index.html` nie ma już prawa mieć). Dowód regresji:
+`git stash` na `app/app.js`, `app/styles.css`, `index.html` → 7 fail.
+
+### 3. Bramy i stan po sesji
+
+`npm test`: 706/706 po C (m12-87) → **704/704** po D (m12-88; trzy testy
+eksportu zastąpione jednym pinem braku eksportów i jednym testem ręcznego
+końca), `npm run check` — oba szablony zgodne, `npm run audyt` — 0 naruszeń
+WCAG AA, budżet lektury startowej 76 456/100 000. Wszystko wypchnięte na
+`arena/01a095b5-okolica`. Lekcje sesji: L53 (kotwicz przepisywaną funkcję po
+realnym tekście; nieudany skrypt z pojedynczym zapisem potwierdź grepem) i L54
+(trzy pułapki walidatora przy dokładaniu pytań do paczki: promień E16, wzór id
+E19, treść E15).
+
+**Otwarte:** zgłoszenie **(E)** — intro na iPhonie (mniejszy tytuł, layer
+o pół wiersza w górę i w dół, nowa treść) — realizowane po C i D; potwierdzenie
+terenne Buga B (≥3 paczki z Podkowy Leśnej); kafelki M3–M8 i M10–M12.

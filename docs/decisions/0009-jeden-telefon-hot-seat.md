@@ -83,3 +83,11 @@ część B: gracz sam wybiera stację) i w turach, gdy droga należy do kogoś i
 W tych przypadkach przycisk wraca do napisu „Następna stacja →\" i zostaje panel A.
 Etykieta jest przeliczana także w `renderujGre`, więc pauza wciśnięta **w trakcie
 czytania wyjaśnienia** natychmiast cofa obietnicę startu.
+
+
+## Aneks (2026-09-12)
+
+Punkt 4 czyta się dalej jako „PIERWSZE pytanie stacji należy do gracza
+z kolejki”; kolejne pytania tej samej stacji rotują po liście graczy (pytanie
+`k` → gracz z kolejki przesunięty o `k`, cyklicznie). Szczegóły i uzasadnienie:
+aneks do ADR 0022 z 2026-09-12 (m12-87).

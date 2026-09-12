@@ -21,7 +21,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0006](0006-pytania-przez-prompt-i-wklejenie.md) | Pytania: prompt → model AI → wklejenie (bez backendu i kluczy API) | Zaakceptowana |
 | [0007](0007-ukrywanie-paczki-obfuskacja-bez-klucza.md) | Ukrywanie paczki pytań: odwracalna obfuskacja bez klucza (nie szyfrowanie) | Zaakceptowana |
 | [0008](0008-kwerenda-i-zrodla-w-kazdym-pytaniu.md) | Obowiązkowa kwerenda internetowa i źródło URL przy każdym pytaniu | Zaakceptowana |
-| [0009](0009-jeden-telefon-hot-seat.md) | Rozgrywka wieloosobowa: jeden telefon (hot-seat) | Zaakceptowana |
+| [0009](0009-jeden-telefon-hot-seat.md) | Rozgrywka wieloosobowa: jeden telefon (hot-seat; rotacja pytań — aneks 2026-09-12) | Zaakceptowana |
 | [0010](0010-trwalosc-localstorage-i-eksport-paczki.md) | Trwałość: `localStorage` + paczka jako plik, docelowo repozytorium | Proponowana |
 | [0011](0011-mobile-first-dotyk.md) | Mobile-first: interfejs dotykowy jako podstawowy, dostępność i czytelność w słońcu | Zaakceptowana |
 | [0012](0012-model-sesji-pr-audyt-inkrementalne-commity.md) | Model sesji: PR na starcie, audyt poprzedniego PR, inkrementalne commity, bez force push | Zaakceptowana |
@@ -34,7 +34,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig (rankingi usunięte — aneks 2026-09-11b) | Zaakceptowana |
 | [0020](0020-adres-mostu-wpisany-w-kod-aplikacji.md) | Adres mostu Drive w kodzie aplikacji, bez pola w UI (przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
 | [0021](0021-pin-prosty-profilu-pseudonimu.md) | PIN pseudonimu (4-8 cyfr, jawny tekst, RO-profil/1) + przycisk To ja w setupie | Zaakceptowana |
-| [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` | Zaakceptowana |
+| [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` (kolejne pytania rotują — aneks 2026-09-12) | Zaakceptowana |
 | [0023](0023-zero-presji-czasowej.md) | Zero presji czasowej: punktacja to dotarcie plus poprawna odpowiedź | Zaakceptowana |
 | [0024](0024-tolerancja-dopasowania-okolicy.md) | Dopasowanie okolicy z tolerancją: odległość od komórki geohash, nie „ten sam geohash" | Zaakceptowana |
 | [0025](0025-czas-gry-zamiast-promienia.md) | Czas gry zamiast promienia: promień jest wynikiem, nie polem | Zaakceptowana |
@@ -51,6 +51,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0035](0035-overpass-krotkie-proby.md) | Overpass: próby po 10 s, preferencje i diagnostyka w Informacjach | Zaakceptowana |
 | [0036](0036-pasek-podczas-drogi.md) | Pasek podczas drogi, sterowanie w Informacjach, duży panel pytania | Zaakceptowana |
 | [0037](0037-jezyk-i-podklad-zaszte-w-kodzie.md) | Język pytań i podkład mapy zaszte w kodzie (polski + OSM), pola usuwane z UI | Zaakceptowana |
+| [0038](0038-minimalny-ekran-wyniku.md) | Minimalny ekran wyniku: zwycięzca, ranking i powrót — statystyki, szczegóły, stacje i eksporty usunięte | Zaakceptowana |
 
 ## Szablon ADR
 

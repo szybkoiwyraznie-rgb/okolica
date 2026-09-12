@@ -783,3 +783,43 @@ Do tego: gdy odpowiedź jest niezrozumiała, komunikat niesie KOD usterki
 diagnostycznego, nie do zdania dla gracza. Test piszesz tak, żeby wymusić
 wysypkę WŁASNEGO kodu na poprawnej odpowiedzi i sprawdzić, że komunikat nie
 udaje sieci — inaczej reguła zniknie przy pierwszym refaktorze.
+
+## L53 — przepisujesz dużą funkcję? Kotwicz po jej REALNYM tekście, a nieudany skrypt potwierdź grepem
+
+**Objaw (Bug D, ekran wyników):** skrypt `python3` z dziewięcioma podmianami
+przerwał się na czwartej (`AssertionError`): regex na `pokazWyniki` zakładał
+strukturę (`// 1b.` + domknięcie `}\n}`), której funkcja nie miała — komentarze
+sekcji i kolejność bloków zmieniły się przez pół roku.
+
+**Przyczyna:** kotwica pisana z pamięci („tak ta funkcja wyglądała, gdy ją
+czytałem 40 minut temu”) zamiast skopiowania realnego fragmentu. Ratunkiem był
+wzorzec skryptu: wszystkie podmiany asertują `count(...) == 1`, a plik zapisuje
+się RAZ, na końcu — więc wyjątek zostawia plik źródłowy nietknięty (żadnych
+połowicznych zmian).
+
+**Reguła:** (1) przed przepisaniem funkcji wypisz jej ciało `sed -n 'X,Yp'`
+i kotwicz po fragmencie z tego wydruku; (2) wieloetapowe edycje rób skryptem
+z asercjami i POJEDYNCZYM zapisem na końcu — nieudany przebieg to „plik bez
+zmian”; (3) mimo to po nieudanym przebiegu sprawdź to grepem/diffem — „zapis
+jest na końcu” to właściwość skryptu, nie założenie sesji; (4) łańcucha
+`skrypt && npm test` nie używaj jako dowodu, jeśli skrypt mógł nie zmienić pliku
+(test przejdzie na starym kodzie i zamaskuje błąd).
+
+## L54 — dokładasz pytania do paczki? Trzy pułapki walidatora (promień, id, treść)
+
+**Objaw (test hot-seat 2 × 2):** testowa paczka z drugim pytaniem na stację była
+odrzucana przez walidator („Paczka odrzucona — usterek: 7”) bez czytelnego
+komunikatu w `#bledy-paczka`.
+
+**Przyczyna:** trzy niezależne reguły PYT łamią się przy dokładaniu pytań:
+`E16` — promień paczki musi zgadzać się z konfiguracją, a liczba pytań zmienia
+liczony promień (3 stacje × 2 pytania: 85 min → 950 m, ale 90 min → 1000 m);
+`E19` — identyfikator pytania musi trafiać we wzór `s<stacja>p<numer>`
+(`s1p1b` jest odrzucane); `E15` — treść musi kończyć się pytajnikiem, a treści
+nie mogą się powtarzać (drugie pytanie musi mieć inną treść, nie tylko inne id).
+
+**Reguła:** nowe pytanie w fixture projektuj od tych trzech reguł do środka:
+najpierw przelicz promień z `czasGryMin`, potem nadaj id ze wzoru, na końcu
+napisz inną treść z „?”. A gdy paczka jest odrzucana, czytaj komunikaty
+z `#wynik-naglowek` („usterek: N”) i listy `#wynik-usterki` — kontener
+`#bledy-paczka` bywa pusty, a SONDA wypisująca sam status nic nie pokaże.
