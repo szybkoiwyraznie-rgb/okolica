@@ -3648,3 +3648,41 @@ wpis wchodzą do lektury startowej), `?v=m12-92` spójne, `zasieg-mostu`
    otwarcie w komunikacie); jeśli cisza dalej — zgłoszenie z treścią
    „próba N”.
 3. Kamienie M3–M8, M10–M12 (kryteria terenowe).
+
+## Sesja 2026-09-12H — zadanie H: usunięcie opcji „Pomiń odcinek” z gry (gałąź arena/01a0970a-okolica)
+
+### 1. Audyt PR #17 (squash 4e3c21d, 26 plików, +481/−59)
+
+Przegląd `git diff 4e3c21d^..4e3c21d` plik po pliku (logika, zgodność z ADR
+i protokołem, zieloność). Brama na drzewie PR #17 przed pracą: 734/734.
+
+- **P10** (`app/pozycja.js` + `test/pozycja.test.js`): wyłącznie zmiana treści
+  komunikatu na „zamknij aplikację i otwórz ponownie”; mechanizm watchdoga
+  nietknięty; pin przepisany na nową formę zgodnie z L55; zgodne z aneksem
+  m12-92 ADR 0004. OK.
+- **Backfill tematów** (`.gs`: `tematyPytanZestawu()` + dopisek w `budujIndeks()`;
+  5 testów w `test/most-indeks.test.js`, w tym regresja kliencka z kontrolą
+  „bez backfillu pada”): plik na Drive nietknięty (wzorzec B19), fallback do
+  `meta.tematy` przy nieczytelnym kontenerze, idempotentny dla nowych paczek.
+  Zgodne z aneksem m12-92 ADR 0017. OK.
+- **G.a** (`app/app.js`: reset `prompt-factcheck` przy wejściu z ekranu 3;
+  test w `test/aplikacja.test.js`): reset tylko dla nowej generacji, powrót
+  strzałką wyboru nie rusza — obie strony pinowane. OK.
+- **G.b** (PROTOKOL §2/§2.2 zasada 8 + `app/protokol.js` + `test/protokol.test.js`):
+  skrócenie zasady 8 w obu szablonach, sync bloków, wersje `PYT/1.0.8` /
+  `PYT/1.0-nofc.3` spójne między PROTOKOL §7 a stałymi `SZABLON_WERSJA*`;
+  kształt odpowiedzi i markery rev4/rev5 bez zmian (łatka szablonu). OK.
+- **Wersjonowanie**: `?v=m12-93` w 42 miejscach (jeden łańcuch w całym grafie),
+  `WERSJA_SW = 'm12-93'` — spójne, kontrakt zielony. OK.
+- **Dokumentacja**: L57, aneksy ADR 0004/0017, handoff 12h i wpis w historii
+  opisują dokładnie to, co robi kod. OK.
+
+**Obserwacje (dryf dokumentacyjny, bez wpływu na działanie):**
+(O1) handoff 12h i wpis sesji 12h mówią `?v=m12-92`, a drzewo PR #17 niesie
+`m12-93` — sesja podbiła wersję drugi raz po napisaniu dokumentów i ich nie
+poprawiła; (O2) dokumenty mówią o bramie 733/733, a to samo drzewo daje
+734/734 — rozjazd liczenia o 1, brama zielona w obu rachunkach.
+
+**Werdykt:** PR #17 czysty, bez usterek logicznych; do zapamiętania: wersję
+`?v=` i liczbę testów w dokumentach sesji spisywać z drzewa PO ostatnim
+commicie, nie z notatek w trakcie.
