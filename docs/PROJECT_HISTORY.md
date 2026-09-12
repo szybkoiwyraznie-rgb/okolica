@@ -3467,3 +3467,43 @@ warstwa rankingu pokaże „most Drive odmówił: nieznana akcja”; sprawdzenie
 przez właściciela na telefonie: C (rotacja pytań), D (ekran wyników),
 E (intro) i F (ranking: dwie tabele, ikonka pucharu); potwierdzenie terenowe
 Buga B (≥3 paczki z Podkowy Leśnej); kamienie M3–M8 i M10–M12.
+
+## Sesja 2026-09-12g — audyt PR #14, bug terenowy G: cichy watcher GPS na iPhonie (m12-91)
+
+> Gałąź `arena/01a0967e-okolica` z `a3ca791` (main po squash-merge PR #14).
+
+### 1. Audyt PR #14 (squash `a3ca791`, 52 pliki, +3479/−768)
+
+Zakres: `git fetch origin main --depth=50`; `git diff a3ca791^..a3ca791` plik po
+pliku; brama na HEAD: `npm test` **724/724**, 0 fail.
+
+- **Bug C — rotacja pytań (m12-87)**: `graczPytania()` liczy autora pytania
+  `k` jako gracza z kolejki przesuniętego o `k` cyklicznie po liście graczy
+  (ADR 0009 aneks 2026-09-12, ADR 0022 aneks); `ktoOdpowiada()` zwraca autorów
+  KOLEJNYCH pytań bez duplikatów; `zapiszOdpowiedz` odrzuca nie-autora kodem
+  G07; `stacjaZamknieta` czeka na odpowiedź KAŻDEGO pytania od JEGO autora.
+  Zgodne z protokołem i testami `rozgrywka.test.js`. Bez zastrzeżeń.
+- **Bug D — minimalny ekran wyniku (m12-88)**: usunięcia zgodne z ADR 0038
+  (statystyki, szczegóły, eksporty, linia fact-checku); slot `#gra-slot-sterowanie`
+  schowany w fazie `koniec`; `app/wynik.js` zostaje z testami (świadoma decyzja
+  ADR 0038 pkt 5). Bez zastrzeżeń.
+- **Zgłoszenie F — ranking (m12-90)**: `app/ranking.js` czysty (limit 5, próg 10,
+  sortowanie z remisami, walidacja `RO-ranking/2`), warstwa z `textContent`
+  (L34), warstwy wzajemnie się wygaszają, status mówi, DLACZEGO ranking pusty
+  (L6), próg „Mistrzów” mówiony zawsze. Moście: `rankingi()` per profil
+  (`idProfilu`), pseudonim z profilu, rezygnacja bez odpowiedzi poza sumami,
+  uszkodzone pliki po cichu — wykonywane testem `most-ranking.test.js` (L33).
+  Bez zastrzeżeń.
+- **Sufit zoomu 1000 m** (`geo.js`): `dopasujZoomDoPromienia` z
+  `sufitPromienM` — jeden punkt prawdy, wszystkie ścieżki (tap mapy, pierwszy
+  fix, przeliczenie stacji) przechodzą przez `zoomDlaPromienia`. Testy geo.
+- **Dziennik kanonu** (`konfig.js`): `ZMIANY_KANONU_SETUPU` + `tematyDopelnianeOdKanou`
+  — domknięcie L49 (marker wersją, nie flagą); zapis z markerem ≥ bieżącego
+  nietknięty. Testy konfig.
+- **Limity mostu** (`LIMIT_MOSTU_MS = 15000`, jedna ponowna próba indeksu) —
+  realizacja L51/L52; puste `catch` usunięte, komunikat z powodem.
+- `?v=m12-90` spójne w `index.html`, `app/*.js`, `sw.js` (kontrakt).
+
+**Wniosek:** zmiany zgodne z ADR 0019 (aneksy), 0022, 0027, 0038, 0039;
+PROTOKOL §9.7 spójny z `.gs` (kontrakt); nie znaleziono usterek wymagających
+poprawki w tej sesji.
