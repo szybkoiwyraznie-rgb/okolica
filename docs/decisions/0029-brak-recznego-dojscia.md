@@ -63,3 +63,13 @@ Dwie wady, które to potwierdzają:
   gry (`M6/R7: PEŁNA GRA z symulacją dojścia`), który przechodzi; przycisk
   „Idę do stacji" jest wyszarzony tylko w pauzie, a „Pomiń odcinek" — z definicji
   tylko w drodze (ADR 0015 pkt 2).
+
+## Aneks 2026-09-12 (m12-94) — wyjście z nieosiągalnej stacji bez pomijania (zadanie H)
+
+Pominięcie odcinka (ADR 0015 pkt 3 — w tekście decyzji błędnie „pkt 2”)
+wycofane razem z opcją w UI. Pkt 2 decyzji: komunikat P03 każe wyjść na
+otwartą przestrzeń i odsyła do „■ Zakończ grę” (tak samo P04/P08
+i komunikat o braku współrzędnych stacji). Konsekwencje czytać jako
+„może poczekać na sygnał albo zakończyć grę” — koszt bez zmian (lepszy
+brak punktu niż punkt z powietrza), tylko wyjście inne. Zdanie
+o wyszarzaniu „Pomiń odcinek” nieaktualne — przycisku nie ma.
