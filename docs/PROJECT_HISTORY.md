@@ -3991,3 +3991,49 @@ dotykający `app/*.js`, także samych komentarzy: `AGENTS.md` §7, L29).
 - Otwarte po sesji: deployment `.gs` z `?akcja=ranking` (właściciel), kryteria
   terenowe M3–M7 i M10–M12, decyzja o zamknięciu M8, `BACKLOG` bez zmian.
   Handoff: `docs/setup/HANDOFF_2026-09-12k.md`.
+### 5. Uwagi z testów terenowych, punkt A: wiersz wyjaśnień rankingu pod tabelami (m12-100, commit `d207c56`)
+
+Właściciel przysłał zgłoszenie z terenu: „**A. Layer Ranking.** Cały ten wiersz
+wyjaśnień przenieś na koniec tego layera, pod obie tabele: »Graczy
+z potwierdzonym profilem: X… Mistrzowie Zagadek liczą się od… — nikt jeszcze nie
+ma tyle.«”. Wiersz (`#ranking-status`) siedział tuż pod tytułem 🏆, więc na
+wąskim ekranie wypychał obie tabele w dół.
+
+- **index.html:** `<p id="ranking-status" class="podpowiedz" role="status">`
+  przeniesiony POD tabelę `#ranking-mistrzowie`, z komentarzem o powodzie.
+  Kolejność w warstwie: tytuł → „Ranking Punktowy Graczy” + tabela → „Mistrzowie
+  Zagadek” + tabela → wiersz wyjaśnień.
+- **app/styles.css:** `#ekran-ranking #ranking-status { margin-top: 14px }` —
+  tyle, ile `h3` w tej warstwie; bez tego wiersz kleiłby się do tabeli
+  (`.podpowiedz` ma 6 px górnego odstępu).
+- **Logika bez zmian:** `renderujRankingi()` w `app/app.js` składa te same zdania
+  („Graczy z potwierdzonym profilem: N — tabele pokazują po 5 pozycji.” /
+  „Ranking jest pusty — punkty zbiera gracz z potwierdzonym profilem (imię
+  i PIN).” / „Mistrzowie Zagadek liczą się od 10 zadanych pytań[ — nikt jeszcze
+  nie ma tyle.]”). Element pozostał JEDEN, więc stany przejściowe („Pobieram
+  ranking ze wspólnego Drive…”) i awarie mostu też są na końcu warstwy — pkt 3
+  decyzji wymaga, żeby warstwa mówiła wprost, dlaczego nie ma danych.
+- **Pin:** kontrakt ADR 0039 (`test/kontrakt.test.js`) asertuje kolejność
+  znaczników w `index.html` (`ranking-punkty` < `ranking-mistrzowie` <
+  `ranking-status`) i że wiersz zachował `role="status"` (LESSONS L55: pin
+  przeniesionego układu przepisujemy na nową formę). Sprawdzony negatywnie —
+  symulowany powrót wiersza nad tabelę wywala asercję.
+- **Dokumenty:** aneks 2026-09-12 w ADR 0039 (pkt 1–4: kolejność, jeden element,
+  brak zmian reguł, pin), zdanie o wierszu wyjaśnień w README (sekcja
+  „Ranking”) i w `WORKFLOW` §4.4 pkt 7a. `ARCHITECTURE` nie opisuje wnętrza
+  warstwy — bez zmian.
+- **Wersja:** m12-99 → **m12-100** w 42 odwołaniach `?v=` (index.html + 12
+  modułów `app/*.js`, 13 plików) oraz `WERSJA_SW` — `sw.js` trzyma `./index.html`
+  w cache skorupy, więc zmiana samego HTML też wymaga podbicia.
+- **Bramy:** `npm run brama` — **741/741**, `synchronizuj-szablon --check` OK
+  (oba warianty protokołu), audyt kontrastu WCAG AA — 0 naruszeń. Weryfikacja na
+  żywo (`npm run serwer` na 0.0.0.0:8000, curl): serwowany `index.html` ma obie
+  tabele przed wierszem wyjaśnień i `?v=m12-100`, `styles.css` niesie nową
+  regułę odstępu, `sw.js` ma `WERSJA_SW = 'm12-100'`. Wzrokowo układ na telefonie
+  potwierdza właściciel (brak przeglądarki w sandboxie — ENVIRONMENT §4.1, L3).
+- **Pułapka sesji (LESSONS L59):** sandbox wrócił z plikami ze snapshotu, ale
+  `.git` był świeżym klonem bazy `4eb0985` — lokalna gałąź stała 11 commitów za
+  origin, a `git status` pokazywał całą sesję K (27 plików) jako niecommitowaną.
+  Ratunek: `git fetch origin <gałąź>` + `git reset --mixed FETCH_HEAD` (przesuwa
+  wskaźnik i indeks, NIE rusza plików) i dopiero wtedy commit zadania.
+- Punkt A domknięty; dalsze punkty zgłoszenia właściciela (B, C…) oczekiwane.

@@ -960,3 +960,31 @@ poprawiasz cytowanie na ADR, w którym decyzja naprawdę żyje). (4) Komentarz
 w kodzie jest nośnikiem stanu tak samo jak dokument: jeśli opisuje zachowanie,
 którego kod celowo nie ma, to jest bug, nie stylistyka — poprawia się go w tym
 samym commitcie co zachowanie.
+
+## L59 (2026-09-12) — wznowienie sesji: porównaj HEAD z origin ZANIM cokolwiek commitujesz
+
+**Objaw:** sesja wznowiona po kondensacji pamięci miała w drzewie całą dotychczasową
+pracę (K/1–K/11 plus nowe poprawki zadania L), ale lokalna gałąź
+`arena/01a0973d-okolica` stała na bazie `main` (`4eb0985`), a `git status`
+pokazywał 27 zmodyfikowanych plików i 2 nieśledzone. Wszystko wyglądało jak
+„jeszcze niecommitowane” — podczas gdy te same zmiany były już na origin
+i w otwartym PR #19. Commit w tym stanie zduplikowałby całą sesję na wierzchu
+bazy; `--force-push` jest zakazany (`AGENTS.md` §2), więc odkręcanie byłoby
+drogie i widoczne dla właściciela.
+
+**Przyczyna:** sandbox bywa odtwarzany między turami — pliki wracają ze
+snapshotu, a `.git` jest świeżym klonem punktu bazowego. Stan plików ≠ stan
+gita, a pamięć sesji mówi „commit d299746 wypchnięty” i ma rację: tylko nie
+o tym klonie.
+
+**Reguła:** (1) Na starcie każdej kontynuacji: `git rev-parse --abbrev-ref HEAD`,
+`git rev-parse HEAD`, `git log --oneline -3` oraz
+`git ls-remote origin refs/heads/<gałąź>` — porównaj SHA i liczbę commitów.
+(2) Gdy lokalny HEAD jest w tyle, a drzewo ma treść: `git fetch origin <gałąź>`
+i `git reset --mixed FETCH_HEAD` — przesuwa wskaźnik gałęzi i indeks, NIE rusza
+plików, więc `git status` pokazuje po chwili tylko realny przyrost tej sesji.
+(3) Przed `git add -A` przeczytaj `git diff --stat`: zakres ma się zgadzać
+z zadaniem. Dwadzieścia siedem plików przy przeprowadzce jednego wiersza HTML to
+sygnał, że problem jest z bazą, nie z zadaniem. (4) Masowe zmiany wersjonowania
+weryfikuj treścią: `git diff --unified=0 -- app/*.js | grep -v 'm12-'` ma być
+puste, jeśli commit podnosi tylko `?v=`.
