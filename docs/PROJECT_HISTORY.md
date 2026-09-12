@@ -3020,3 +3020,88 @@ ROADMAP M12 („Historia gier"), ASSETS §7.1, BACKLOG (§9.5 → §9.6). Treśc
 ADR-ów 0004/0020/0021/0026/0027/0029 wspominające rankingi zostają — to zapis
 historyczny, a obowiązujący kształt definiuje aneks ADR 0019 (wzorzec z ADR
 0014/0031: status, nie przepisywanie).
+
+## Sesja 2026-09-12c — audyt PR #13 (gałąź arena/01a095b0-okolica, PR #15)
+
+**Zlecenie właściciela:** „Kontynuujemy projekt." — bez wskazania zadania, więc
+sesja wykonała blok startowy (`AGENTS.md` §0 i §2), obowiązkowy audyt
+poprzedniego scalonego PR i wzięła klaster niezgodności dokument ↔ kod
+wykazany w audycie PR #12 (LESSONS L31).
+
+**Lektura obowiązkowa (całe pliki):** `AGENTS.md` 186 l., `PROTOKOL.md` 667 l.
+(§1–§9.6), rejestr + 37 ADR-ów, `LESSONS.md` 671 l. (L1–L47), `ENVIRONMENT.md`
+166 l., `ROADMAP.md` 61 l., `HANDOFF_2026-09-12.md`. Budżet: **74 064 / 100 000
+tok** — rezerwa 25 936.
+
+**Bramy odtworzone na `main` (`963a86d`) przed zmianami:** `npm test`
+**692 pass / 0 fail** (68 s), `npm run check` — oba szablony zgodne (§2: 4 209
+zn. / 61 l.; §2.2: 4 457 zn. / 62 l.), `npm run audyt` — **0 naruszeń** WCAG AA,
+`npm run zasieg-mostu` — **785/804 wierszy `.gs` (97,6 %)**.
+
+### Audyt PR #13 (squash `963a86d`)
+`git fetch origin main --depth=50` (klon płytki) → **49 plików, +1962/−1333**.
+Przejrzane warstwy i wniosek:
+
+1. **Usunięcie rankingów (m12-77) — kompletne po obu stronach.** Aplikacja:
+   sekcja 🏆 z `index.html`, `RANKING_ZAKLADKI`, `pokazRankingi` /
+   `wrocZRankingu` / `pobierzRankingi` / `renderujRankingi`, pola `STAN`,
+   `'ranking'` z `PANELE`, gałąź Escape, dwa klucze `localStorage`
+   (`okolica:pseudonim`, `okolica:ostatni-gracz`). Moduł: `walidujRankingSurowy`,
+   `agregujRanking`, `kategorieRankingu`, `SCHEMAT_RANKINGU`. Most:
+   `GET ?akcja=ranking` i `rankingi()`. Kody **R17/R18** zostają zajęte na
+   stałe (komentarz w `KODY_WIELOOSOBOWE`). `przelaczSetup` — wycięty razem
+   z sekcją i przywrócony obok `PANELE` — **jest na HEAD** (sprawdzone
+   grepem). Zgodne z ADR 0019 aneks 2026-11b.
+2. **`gra-opusc` (PROTOKOL §9.5) — zgodne z protokołem i obustronne.**
+   `opuscGre()` w `.gs` + `polecenieMostu` w tle z `app.js`; organizator
+   zamyka grę (`archiwum`), gość znika ze składu, po starcie odmowa z właściwą
+   drogą (`rezygnacja`). Testy mostu i UI obecne, kontrakt pinuje obie strony.
+3. **Koniec warstwy zapasowej Nominatim — czysty.** `budujUrlGeokodacji`,
+   `DOMYSLNY_ENDPOINT_GEOKODACJI`, `miejsceZOdpowiedziNominatim` zniknęły
+   z `app/sieci.js`, checkbox `geokodacja-zapasowa` z `index.html`, a kontrakt
+   zabrania powrotu endpointu w całym `app/`. Zgodne z ADR 0013 aneks
+   2026-09-11 i `ASSETS` §3.
+4. **`sw.js`: cache kafelków bez wersji (LESSONS L47).** `CACHE_KAFELKI`
+   = `okolica-kafelki`, `activate` sprząta stare nazwy z wersją.
+5. **Nadpisanie szablonu kafelków (polityka OSM).** `walidujSzablonKafelkow`
+   wymaga `https:` i `{z}/{x}/{y}`; błędna wartość zostawia adres wbudowany;
+   nadpisanie dotyczy tylko `osm`; testy jednostkowe + dwa end-to-end przez
+   `start()`. Zgodne z aneksem ADR 0003.
+
+**Weryfikacja „zębów" testów (nie tylko ich lektura).** Dwa testy
+sprawdzone na popsutym kodzie, każdy po restarcie pliku z gita:
+
+- powrót do `CACHE_KAFELKI = …-kafelki-${WERSJA_SW}` →
+  `SW activate: cache kafelków przeżywa bump wersji` **czerwony** (1 fail);
+- wycięcie `wczytajNadpisanieKafelkow()` z `start()` → `mapa: operatorskie
+  nadpisanie szablonu kafelków dociera do rysowanej mapy` **czerwony**, a test
+  „błędne nadpisanie nie gasi mapy" zostaje zielony (tak ma być — asertuje
+  fallback).
+
+**Znaleziska nieblokujące (do sprzątnięcia w tej sesji):**
+
+1. **Dokument ↔ kod (kontynuacja klastra L31 z audytu PR #12).** Na HEAD wciąż
+   żyją: `README.md` M4 („0,7R ± 20%", „miara sprawiedliwości pod listą",
+   „◎ Tryb uproszczony") oraz opis wysyłki („na Drive do przeglądu",
+   „akceptuje kandydatów linkiem z e-maila", „🔌 Sprawdź połączenie");
+   `WORKFLOW.md` §3 — kroki 1 (język i podkład, ADR 0037), 2 („✎ Wpisz
+   ręcznie", badge „±X m" — ADR 0034), 3 („◎ Tryb uproszczony"), 4 („Linia pod
+   promptem…"), 5 („⬆ Z pliku", „✓ Sprawdź i przyjmij" — ADR 0006 aneks 3,
+   oraz „do przeglądu właściciela" — koniec moderacji); `ARCHITECTURE.md`
+   (`przycisk-pierścien` w kontrakcie testów); nagłówek
+   `test/duza-paczka.test.js` („stałe szacunku", których nie ma od PR #9);
+   `BACKLOG` B21 i „co zostaje z B21" w ADR 0031 (`szacunekOdpowiedzi()`
+   i `#prompt-rozmiar` wycięte — odpowiednio PR #9 i m12-66); ADR 0020 pkt 2
+   i ADR 0016/0018 (przycisk „🔌 Sprawdź połączenie" usunięty w PR #9).
+2. **`opuscGre` rozpoznaje organizatora po indeksie 0** w `gra.gracze`
+   (`if (indeks === 0)`). Poprawne — `zalozGre` zawsze tworzy `g-1` pierwsze,
+   a `dolaczDoGry` dopisuje — ale wrażliwe na każdą zmianę kolejności.
+   Twardsza postać: porównanie `gra.gracze[indeks].id === gra.organizatorId`.
+3. **Uwagi 1, 7, 8 i 9 z audytu PR #12 są nieaktualne** (rankingi usunięte,
+   `zmienPodklad` wycięty przez salvage, `STAN.wymusPierscien` usunięty
+   w m12-81, literówka „życią" poprawiona) — zamknięte bez zmian w kodzie.
+
+**Werdykt:** PR #13 spójny z ADR 0003/0013/0019/0034/0036/0037 i PROTOKOL §9;
+usunięcia kompletne po obu stronach mostu; nowe testy mają zęby. Brak usterek
+blokujących grę, kontrakt `RO-*` i zasady prywatności (skaner współrzędnych
+w `test/wieloosobowa-ui.test.js` nadal przechodzi).
