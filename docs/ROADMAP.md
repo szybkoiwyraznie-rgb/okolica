@@ -19,7 +19,7 @@
 | M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | auto-start gry po przyjęciu, cicha wysyłka Drive prosto do repozytorium (bez moderacji, bez Nominatim); kryterium: §Kryteria |
 | M6 — Rozgrywka | 🟡 kod gotowy, czeka kryterium | ekran gry, trwalosc.js, wznowienie; kryterium: §Kryteria |
 | M7 — Podsumowanie i udostępnianie | 🟡 kod gotowy, czeka kryterium | ranking i historia; eksporty USUNIĘTE 2026-09-12 (ADR 0038); kryterium: §Kryteria |
-| M8 — Publikacja i brama jakości | 🟡 kod gotowy, czeka właściciela | manifest, ikony, CI, ASSETS §6; publikację włącza właściciel (WORKFLOW §5) |
+| M8 — Publikacja i brama jakości | 🟡 kod gotowy, publikacja działa | manifest, ikony, CI, ASSETS §6; Pages publikuje `.github/workflows/pages.yml` przy każdym pushu do `main` (2026-09-07, WORKFLOW §5) — kamień czeka na decyzję właściciela o zamknięciu |
 | M9 — Repozytorium paczek | ✅ 2026-09-06 (M9b) | kopia lokalna + most Drive (adres w kodzie) |
 | M10 — Dopracowanie terenowe | 🟡 kod gotowy, czeka kryterium | sw.js, PROFILE_GPS, sygnały, WCAG AA 0 naruszeń; kryterium: §Kryteria |
 | M11 — Gra wieloosobowa (Drive) | 🟡 kod zamknięty, czeka wdrożenie+test | most `.gs` + UI; kryterium: §Kryteria |
@@ -46,9 +46,12 @@ tutaj tylko to, co zostało do sprawdzenia:
 - **M6** (§4.2): pełna gra na telefonie, z utratą zasięgu i zamknięciem
   przeglądarki.
 - **M7**: czytelność w słońcu na 360 px (kryterium zawężone 2026-09-12 — eksporty wyniku usunięte z aplikacji, ADR 0038).
-- **M8**: włączenie publikacji — jednorazowy krok właściciela (WORKFLOW §5).
+- **M8**: publikacja włączona (Pages z GitHub Actions, 2026-09-07 — WORKFLOW §5);
+  zostało potwierdzenie właściciela, że manifest i ikony działają na telefonie
+  zainstalowanym ze strony.
 - **M10** (§4.3): checklista terenowa; wynik do LESSONS.
-- **M11/M12** (§4.4): test dwóch telefonów (9 punktów, w tym „stan mostu").
+- **M11/M12** (§4.4): test dwóch telefonów wg checklisty — w tym „stan mostu”
+  i ranking z ADR 0039 (pkt 7a; wymaga nowego deploymentu web app).
 
 ## Zasady prowadzenia roadmapy
 

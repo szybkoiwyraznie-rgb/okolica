@@ -268,29 +268,33 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
    żywej tabeli i kanału info, odmowy mostu (jawne w statusie), zużycie
    baterii przy pollingu.
 
-## 5. Publikacja na GitHub Pages (jednorazowo, właściciel)
+## 5. Publikacja na GitHub Pages (włączona — publikuje workflow)
 
-Settings → Pages → **Source: Deploy from a branch** → Branch: `main`,
-katalog `/ (root)` → Save. Adres: `https://szybkoiwyraznie-rgb.github.io/okolica/`.
+Adres: `https://szybkoiwyraznie-rgb.github.io/okolica/`.
 
-Uwagi techniczne (M8, 2026-09-06):
+Od 2026-09-07 źródłem Pages jest **GitHub Actions**, nie gałąź: Settings →
+Pages → Source: **GitHub Actions**, a publikację robi
+`.github/workflows/pages.yml` (lustro w `docs/setup/pages-workflow.yml`,
+pinowane kontraktem). Workflow przy każdym pushu do `main` uruchamia bramę
+(`npm test` + `npm run check`), usuwa `.git` z drzewa, pakuje katalog
+repozytorium (`path: ./`) i woła `deploy-pages@v4` — przebudowa trwa ~1–2 min.
+Publikacja aplikacji to więc scalenie PR, nie klikanie w ustawieniach, i nie
+przechodzi kod, który nie jest zielony.
 
-- Repozytorium MA `.nojekyll` — Pages serwuje pliki jak leżą, bez Jekylla
-  (aplikacja statyczna nie potrzebuje przetwarzania).
+Uwagi techniczne (M8):
+
+- Repozytorium MA `.nojekyll` — z czasów publikacji z gałęzi; przy Source:
+  GitHub Actions pliki i tak trafiają do artefaktu jak leżą, bez Jekylla.
 - Wszystkie ścieżki są WZGLĘDNE (ADR 0002), więc podkatalog `/okolica/`
   działa bez żadnej konfiguracji bazy; kontrakt pilnuje zakazu ścieżek
   root-absolute w `index.html`.
-- Agent NIE włączy Pages za Ciebie: `gh api …/pages -X POST` daje 403
-  („Resource not accessible by integration") — token nie ma uprawnień
-  admin do ustawień repo; sprawdzone 2026-09-06, wynik zapisany
-  w `PROJECT_HISTORY`. Ta sekcja jest jedyną drogą.
-- **Już włączone** (właściciel, 2026-09-06 — kamień M8 w `PROJECT_HISTORY`):
-  po każdym pushu do `main` Pages przebudowuje się sam (~1–2 min), więc
-  publikacja aplikacji to scalenie PR, nie klikanie w ustawieniach.
-- CI na PR-ach już działa: `.github/workflows/ci.yml` (live od 2026-09-06,
+- Agent NIE zmieni ustawień Pages: `gh api …/pages -X POST` daje 403
+  („Resource not accessible by integration”) — token nie ma uprawnień admin
+  do ustawień repo; sprawdzone 2026-09-06, wynik zapisany
+  w `PROJECT_HISTORY`. Ustawienia klika właściciel, workflow leży w repo.
+- CI na PR-ach działa osobno: `.github/workflows/ci.yml` (live od 2026-09-06,
   przyspieszone z M8; lustro receptury w `docs/setup/ci-workflow.yml`,
   kontrakt pilnuje syncu — LESSONS L4, aneks).
-
 ## 6. Dodawanie rzeczy powtarzalnych
 
 | Co dodajesz | Gdzie | Co jeszcze trzeba zrobić |
