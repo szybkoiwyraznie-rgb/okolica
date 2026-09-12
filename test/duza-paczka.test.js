@@ -7,8 +7,12 @@
  * tokenów — zmienia się tylko cyfra), a rośnie odpowiedź: 4 469 znaków / ~1 118
  * tokenów dla 5 pytań i 33 392 znaków / ~8 348 tokenów dla 40. Kontener
  * `TO-paczka/2` dla 40 pytań to ~36 kB, czyli 1,8% budżetu stanu i 2,4% rejestru
- * — pamięć nie jest wąskim gardłem, jest nim limit wyjścia modelu. Te testy
- * spinają pomiar, żeby stałe szacunku nie rozjechały się z rzeczywistością.
+ * — pamięć nie jest wąskim gardłem, rośnie wyłącznie odpowiedź modelu. Te testy
+ * spinają pomiar tam, gdzie da się go sprawdzić bez modelu: prompt NIE rośnie
+ * z liczbą pytań, odpowiedź 40 pytań przechodzi przez parser i walidator, a
+ * kontener mieści się w budżetach pamięci z zapasem. (`szacunekOdpowiedzi()`
+ * i `#prompt-rozmiar` usunięte w m12-66 — liczby odpowiedzi zostają w
+ * PROTOKOL §2.1 jako prawidło pomiaru, nie jako stała w kodzie).
  */
 
 import { test } from 'node:test';
