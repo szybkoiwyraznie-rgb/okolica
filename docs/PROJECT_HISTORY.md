@@ -3203,3 +3203,93 @@ z polskimi cudzysłowami („…"), choć w podglądzie wyglądają identycznie.
 wzorzec to skrypt w Pythonie z kotwicą `assert fragment in tekst` — dał się
 zastosować do wszystkich dokumentów, w tym ADR-ów i `.gs`, i od razu łapie
 literówkę w kotwicy zamiast cicho nic nie zmienić.
+
+## Sesja 2026-09-12d — dwa zgłoszenia terenowe (bugi A i B) i domknięcie obserwacji z audytu PR #13 (m12-82 → m12-85)
+
+**Gałąź:** `arena/01a095b5-okolica`, **PR #14** — jedyny otwarty PR tej sesji.
+**Zlecenie właściciela (2026-09-12):** „Nowa treść appscript wdrożona" + „Punkt (2)
+do zrobienia zrób" (obie obserwacje z audytu PR #13) + dwa zgłoszenia z terenu:
+**(A)** oznaczanie miejsca gry i re-centrowanie po pobraniu sieci z Overpassa
+wjeżdżały na puste kafle OSM — „sufit przybliżenia niezależnie od promienia,
+np. taki przypisany do 1000 m promienia"; **(B)** na ekranie „Gdzie jesteś?"
+Podkowa Leśna pokazywała „Repozytorium niedostępne", choć w okolicy są co
+najmniej trzy paczki z Drive. Uwaga właściciela z tej tury: znalazł DWA otwarte
+PR-y agenta i zamknął wcześniejszy (#15) bez scalania — „Nie rób tak więcej!".
+
+### 1. `a985996` — Bug A: sufit przybliżenia mapy (m12-83)
+
+`app/geo.js` dostał `PROMIEN_SUFITU_ZOOMU_M = 1000` i opcję `sufitPromienM`:
+`dopasujZoomDoPromienia` bierze `Math.max(promienM, sufitPromienM)`, więc każdy
+mniejszy promień (200/250/500 m, promień kadru i promień gry) kadruje się jak
+1000 m — tak, jak zdecydował właściciel. Sonda na oknie 360 px/52,23°:
+200/250/500/1000 → z14, 1500 → z13, 3000 → z12, 10000 → z10; żadna wartość nie
+wjeżdża w puste kafle. Fallback w `app/app.js` dla promienia/`lat` bez sensu to
+kadr sufitu przy 52° (wcześniej skok do `TRYBY` z zoomem 17). Dowód regresji:
+`git stash` na `geo.js`+`app.js` → test „sufit przybliżenia" pada (`not ok 1`),
+po `stash pop` przechodzi. Dwa nowe testy: `test/geo.test.js` (czysta funkcja)
+i `test/aplikacja.test.js` (okablowanie mapy: promień gry 250 m daje ten sam
+pasek skali co `sufitPromienM: 0`).
+
+### 2. `d9d295b` — Bug B: most Drive (m12-84)
+
+Trzy przyczyny po naszej stronie, wszystkie naprawione u źródła:
+
+- **limit czasu** — indeks paczek miał własne 6 s, a web app Apps Script po
+  wdrożeniu startuje z zimnej instancji; żądanie było przerywane ZANIM most
+  zdążył odpowiedzieć. Wspólna stała `LIMIT_MOSTU_MS = 15000` obejmuje teraz
+  indeks, listę gier, stan gry i paczkę (`pobierzGetTekst`, `pobierzGetMulti`);
+- **zero powtórek** — `pobierzIndeksZRepo` robi JEDNĄ powtórkę po krótkim
+  odstępie (`PONOWNA_PROBA_INDEKSU_MS`, w testach skracany globalem
+  `__OKOLICA_PONOWNA_PROBA_MS__`). Odpowiedź nieczytelna (Z01/Z09) powtórki nie
+  dostaje — to nie awaria sieci, tylko zły adres albo wdrożenie bez dostępu
+  „Każdy";
+- **połykany powód** — `.catch(() => …)` dawał jeden komunikat na wszystko
+  (LESSONS L6). `bladMostuPoPolsku` dokłada krótki `powod`: „brak odpowiedzi
+  w 15 s", „przerwane połączenie", „brak połączenia", „HTTP 403 — sprawdź, czy
+  wdrożenie web app ma dostęp «Każdy»", „nieczytelna odpowiedź". Panel pokazuje
+  powód razem z hostem, do którego pytaliśmy, a `#most-stan-repo` po nieudanej
+  próbie dopisuje „Ostatnia próba nie doszła: …" i dostaje klasę `bledy` — samo
+  posiadanie adresu w kodzie to nie to samo co działające połączenie.
+
+Ta sama klasa błędu w drugiej połowie ekranu: `grajZZestawemZRepo` nie miał
+limitu czasu wcale (zawieszone żądanie zostawiało „Pobieram paczkę…" na zawsze)
+i połykał powód. Cztery nowe testy w `test/zestawy-ui.test.js` (dokładnie jedna
+powtórka leczy pierwszy błąd sieci i pokazuje paczki; HTTP 403 nazywa przyczynę
+i nie udaje pustego repo; HTML to „nieczytelna odpowiedź", nie „pusto"; brak
+sieci przy paczce mówi, co się stało). Na kodzie sprzed zmiany celowo padają
+(`git stash` na `app/app.js`: 4 fail).
+
+### 3. `1ab8ff2` + `e9e2a4e` — Punkt (2): obie obserwacje z audytu PR #13 (m12-85)
+
+- **`KANON_SETUPU` był zapisywany, ale nie porównywany.** `app/konfig.js` ma
+  dziennik `ZMIANY_KANONU_SETUPU` (wersja kanonu → tematy, które TA wersja
+  dodała do domyślnych) i czyste funkcje `tematyDopelnianeOdKanou`,
+  `kanonSprzedBiezacego`, `dopelnijKonfiguracjeDoKanou`; `wczytajKonfiguracje`
+  porównuje wartość markera i domyka zapis dokładnie o dopełnienia z jego
+  wersji. Zapis bieżący (albo z nowszej wersji aplikacji) nie jest ruszany, bo
+  organizator mógł temat odptaszkować ZAMIERZENIE — to ta sama reguła, którą
+  test m12-75 broni dla zapisów świeżych. Test ogólny przechodzi po każdej
+  wersji z dziennika i sprawdza, że dopełnienie nie wraca po raz drugi.
+- **`.gs`: `opuscGre` czyta `gra.organizatorId`**, nie indeks 0 w `gracze`
+  (fallback na pierwszego gracza wyłącznie dla zapisów sprzed wprowadzenia
+  pola). Pomyłka miała dwie strony: po zmianie kolejności graczy wyjście
+  organizatora USUWAŁO go z listy zamiast zamknąć grę, a wyjście gościa
+  z indeksu 0 zamykało grę wszystkim. Test w `test/most-gra-cycle.test.js`
+  odwraca kolejność w pliku gry i sprawdza obie strony (na starym `.gs`:
+  1 fail). **`.gs` wymaga ponownego wdrożenia przez właściciela.**
+
+Kontrakt doc↔kod dostał asercje na mechanizm per-wersja (dziennik zmian,
+funkcja licząca dopełnienia, porównanie markera w odczycie).
+
+### 4. Bramy i stan po sesji
+
+`npm test`: 692 → 698 (Bug A) → **701/701** (Bug B i Punkt 2; 68,6 s),
+`npm run check` — oba szablony zgodne, `npm run audyt` — 0 naruszeń WCAG AA,
+`git status` czysty, wszystko wypchnięte na `arena/01a095b5-okolica`.
+Budżet lektury startowej (po dopisaniu tej sekcji i trzech lekcji): patrz
+`npm run budzet`.
+
+**Otwarte dla właściciela:** ponowne wdrożenie `.gs` z tej sesji (zmiana
+`opuscGre`), kafelki M3–M8 i M10–M12 (bez zmian — czekają na teren/wdrożenie),
+ocena, czy po powtórce i 15 s limitu paczki z Podkowy Leśnej pokazują się na
+„Gdzie jesteś?" w terenie. ROADMAP bez zmian statusów.

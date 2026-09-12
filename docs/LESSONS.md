@@ -692,3 +692,67 @@ pierwszy klik uzbraja i mówi, co się stanie, drugi wykonuje — `rezygnujZGryM
 potwierdzenie jest tam tylko hałasem. Asymetrię testuj asercjami: pierwszy klik
 organizatora NIE wysyła `gra-opusc`, drugi wysyła — na kodzie bez potwierdzenia
 ten test pada, więc pilnuje wzorca, a nie dekoracji.
+
+## L49 — marker wersji: obecność to nie to samo co wartość
+
+**Objaw:** audyt PR #13 ustalił, że `KANON_SETUPU` (data kanonu domyślnych
+tematów setupu) jest zapisywany w `localStorage`, ale odczyt sprawdzał tylko
+`if (!kanon)`. Działało wyłącznie dlatego, że dopełnienie dla zapisów sprzed
+m12-75 było jednorazowe: przy kolejnej zmianie domyślnych zapis z markerem
+NIGDY nie dostałby nowego tematu, a zapis bieżący dostałby go po raz drugi —
+także wtedy, gdy organizator odptaszkował go z rozmysłem.
+
+**Przyczyna:** marker traktowaliśmy jak flagę („migrowane / nie"), a nie jak
+wersję. Flaga mówi „coś już zrobiono", wersja mówi „co dokładnie". Przy
+dopełnieniach przyrostowych (nowy temat domyślny raz na wersję) to dwie różne
+informacje.
+
+**Reguła:** każdy marker migracji porównuj WARTOŚCIĄ, nie obecnością. Zmiany
+trzymaj w dzienniku `wersja → co ta wersja dodała` i licz dopełnienia od
+wersji markera (`tematyDopelnianeOdKanou`), a nie z jednej listy „kiedykolwiek".
+Zapis z markera bieżącego albo nowszego nie jest ruszany — wybór użytkownika
+jest święty. Test pisz ogólnie, po dzienniku: „wersja, która temat wprowadziła,
+nie dostaje go ponownie" — wtedy nowy wpis w dzienniku jest sprawdzony,
+zanim trafi do graczy.
+
+## L50 — tożsamość czytaj z pola, nie z pozycji na liście
+
+**Objaw:** `opuscGre` w `.gs` rozpoznawał organizatora po indeksie `0`
+w `gracze`. Dziś było to równoważne z `gra.organizatorId`, ale po zmianie
+kolejności graczy (albo ręcznej korekcie pliku na Drive) wyjście organizatora
+usuwałoby go z listy zamiast zamknąć grę, a wyjście gościa z indeksu 0
+zamykałoby grę wszystkim dołączonym.
+
+**Przyczyna:** pole, które DEFINIUJE rolę (`organizatorId`), było zapisywane,
+ale reguła czytała jego ówczesną pozycję. Kolejność bywa niezmienna tylko
+„u nas" — jeden import gier, jeden porządek sortowania i założenie pęka.
+
+**Reguła:** reguły zależne od roli (organizator, prowadzący, pierwszy gracz) i od
+tożsamości czytają pole, które tę rolę definiuje. Pozycja w tablicy to sposób
+wyświetlania, nie kontrakt. Test regresyjny zrób w obie strony: przestaw
+kolejność w danych i sprawdź, że gość NIE zamyka gry, a organizator zamyka,
+choć stoi drugi.
+
+## L51 — limit czasu dobierz do NAJGORSZEGO przypadku, nie do swojego testu
+
+**Objaw:** zgłoszenie terenowe (Podkowa Leśna): „Gdzie jesteś?" mówiło
+„Repozytorium niedostępne", choć w okolicy były co najmniej trzy paczki, a most
+był świeżo wdrożony. W logice były trzy nakładające się przyczyny: własny limit
+6 s na indeks paczek (za krótki dla zimnej instancji web app Apps Script), brak
+jakiejkolwiek powtórki pierwszego żądania i jeden zbiorczy `catch`, który każdy
+błąd (timeout, brak sieci, HTTP 403, HTML zamiast JSON) opisywał tym samym
+zdaniem.
+
+**Przyczyna:** limit dobieraliśmy do tego, jak zachowuje się most w testach
+(ciepły, szybki), a nie do najwolniejszego realnego przypadku (pierwsze żądanie
+po wdrożeniu, telefon w terenie). Jedno zdanie obsługiwało cztery różne awarie,
+więc diagnostyka była zgadywaniem.
+
+**Reguła:** (1) limit czasu bierz z najgorszego spodziewanego przypadku i trzymaj
+JEDNĄ stałą na cały most — rozjazd limitów między ścieżkami to ukryta usterka;
+(2) pierwsze żądanie po wdrożeniu wolno powtórzyć RAZ (idempotentny GET), ale
+odpowiedzi nieczytelnej nie powtarzaj — to nie sieć, to zły adres lub zamknięte
+wdrożenie; (3) komunikat niesie POWÓD („brak odpowiedzi w 15 s", „HTTP 403 —
+sprawdź dostęp «Każdy»"), a nie wspólne „niedostępne"; (4) żądanie bez limitu
+czasu jest błędem — zawieszone połączenie zostawia użytkownika z wiecznym
+„Pobieram…".
