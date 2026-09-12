@@ -1202,3 +1202,65 @@ test('gra: wyjaśnienie po odpowiedzi jest czytelne jak pytanie, nie jak podpowi
   assert.match(blok, /color: var\(--tekst\)/,
     'pełny kolor tekstu, nie przygaszony --tekst-slaby');
 });
+
+test('kontrakt: Informacje niosą kontakt i zgłaszanie błędów mapy (polityka kafelków OSM)', () => {
+  // Polityka kafelków OSM zaleca dwie rzeczy, których nam brakowało:
+  // link „Report a map issue" i opublikowany adres kontaktowy. Bez adresu OSM
+  // nie ma jak uprzedzić o blokadzie — a blokuje „bez uprzedzenia".
+  const blok = INDEX.slice(INDEX.indexOf('id="ekran-informacje"'), INDEX.indexOf('id="przygaszenie-mapy"'));
+  assert.ok(blok.includes('id="ekran-informacje"'), 'znaleziono ekran Informacje');
+
+  const zglos = blok.match(/<a[^>]*id="link-zglos-mape"[^>]*>/)?.[0];
+  assert.ok(zglos, 'link „Zgłoś błąd na mapie" jest w Informacjach');
+  assert.match(zglos, /href="https:\/\/www\.openstreetmap\.org\/fixthemap"/,
+    'prowadzi do oficjalnego formularza OSM');
+  assert.match(zglos, /rel="[^"]*noopener/, 'target=_blank z noopener');
+
+  const kontakt = blok.match(/<a[^>]*id="link-kontakt"[^>]*>/)?.[0];
+  assert.ok(kontakt, 'link kontaktowy jest w Informacjach');
+  assert.match(kontakt, /href="mailto:szybkoiwyraznie@gmail\.com"/, 'adres kontaktowy podany');
+  assert.match(blok, /szybkoiwyraznie@gmail\.com/, 'adres widoczny jako tekst, nie tylko w href');
+
+  // Kontrast: link dziedziczy kolor, więc nie wprowadza nowej pary do audytu
+  // WCAG; od tła odróżnia go podkreślenie, nie barwa.
+  assert.match(STYLE, /\.informacje-link \{[^}]*color: inherit/s, 'link dziedziczy kolor');
+  assert.match(STYLE, /\.informacje-link \{[^}]*text-decoration: underline/s, 'odróżniony podkreśleniem');
+  assert.match(STYLE, /\.informacje-link \{[^}]*min-height: var\(--cel\)/s, 'cel dotykowy ≥ 44 px');
+  assert.match(STYLE, /\.informacje-link \{[^}]*overflow-wrap: anywhere/s, 'długi adres nie rozepcha panelu 360 px');
+});
+
+test('kontrakt: szablon kafelków da się podmienić bez wdrażania wersji', () => {
+  // Zalecenie polityki OSM: „avoid hard-coding the tile URL; allow switching
+  // without needing a software update". Serwer kafelków jest wolontariacki
+  // i bez SLA — przełącznik musi istnieć w terenie.
+  assert.match(MAPA, /export const KLUCZ_URL_KAFELKOW = 'okolica:kafelki:url';/,
+    'klucz operatorski wyeksportowany z mapa.js');
+  assert.match(MAPA, /export function walidujSzablonKafelkow\(/, 'walidacja szablonu wyeksportowana');
+  assert.match(MAPA, /export function ustawSzablonKafelkow\(/, 'setter wyeksportowany');
+  // Walidacja musi wymagać https i wszystkich trzech podstawień — inaczej
+  // błędna wartość dałaby jeden adres dla całej siatki.
+  const walidacja = MAPA.slice(MAPA.indexOf('export function walidujSzablonKafelkow'),
+    MAPA.indexOf('export function ustawSzablonKafelkow'));
+  assert.match(walidacja, /url\.protocol !== 'https:'/, 'tylko https');
+  for (const z of ['{z}', '{x}', '{y}']) {
+    assert.ok(walidacja.includes(z), `walidacja wymaga ${z}`);
+  }
+  // Nadpisanie dotyczy wyłącznie OSM — pozostali dostawcy mają własne licencje.
+  assert.match(MAPA, /podklad === 'osm' && nadpisanySzablonOsm/, 'nadpisanie tylko dla osm');
+  // Odczyt localStorage siedzi w app.js, nie w czystym module mapy.
+  assert.match(APP, /function wczytajNadpisanieKafelkow\(/, 'odczyt klucza w app.js');
+  assert.match(APP, /localStorage\.getItem\(KLUCZ_URL_KAFELKOW\)/, 'czytany z localStorage');
+  // Mapa.js ma zostać modułem czystym: sprawdzamy WYWOŁANIE, nie samo słowo —
+  // w komentarzach wolno o localStorage pisać (i piszemy, dlaczego go tu nie ma).
+  assert.equal(/localStorage\s*[.[]/.test(MAPA), false,
+    'mapa.js zostaje czysty — żadnego dostępu do localStorage');
+});
+
+test('kontrakt: martwa flaga wymusPierscien usunięta z silnika', () => {
+  // Przycisk „Tryb uproszczony" wyleciał w m12-66, a stan został — zawsze
+  // `false`, więc `!STAN.wymusPierscien` było wiecznie prawdziwe i tylko
+  // udawało gałąź decyzyjną. Przycisk ma NIE wracać (patrz asercja wyżej),
+  // więc poprawnym domknięciem było usunięcie stanu, nie dorobienie UI.
+  assert.equal(APP.includes('wymusPierscien'), false, 'flaga zniknęła z app.js');
+  assert.equal(MAPA.includes('wymusPierscien'), false, 'flagi nie ma też w mapa.js');
+});

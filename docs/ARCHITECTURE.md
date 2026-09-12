@@ -373,8 +373,11 @@ nie należy do paska pięciu kroków); `STAN.historiaFixow` to ograniczona
 historia wspólna GPS-u i symulacji; `STAN.symulacja` trzyma odtwarzaną trasę
 (`{fixy, indeks, cel, timer}`); `STAN.siec` trzyma stan sieci drogowej
 (`brak`/`gotowa` + graf i kandydaci przebudowywani tylko przy zmianie trybu),
-`STAN.wynikSieci` wynik wyboru sieciowego, a `STAN.wymusPierscien` i
-`STAN.trybReczny` znaczniki degradacji (ADR 0005 pkt 8). Kasowanie danych jest **dwustopniowe**
+`STAN.wynikSieci` wynik wyboru sieciowego, a `STAN.trybReczny` znacznik trybu
+ręcznego (ADR 0005 pkt 8b). Znacznika `STAN.wymusPierscien` już nie ma:
+przycisk „Tryb uproszczony" wyleciał w m12-66, a stan został jako wiecznie
+`false` — czyli jako fałszywa gałąź decyzyjna (usunięty 2026-09-12; kontrakt
+pilnuje, żeby nie wrócił ani przycisk, ani flaga). Kasowanie danych jest **dwustopniowe**
 (pierwszy klik uzbraja, drugi wykonuje) i usuwa wyłącznie klucze `okolica:*` —
 aplikacja nie wywołuje `confirm()`/`alert()` (ADR 0015 pkt 6), komunikaty idą
 do pól z `role="status"`/`role="alert"`.

@@ -15,7 +15,11 @@ import {
   MAX_KAFELEK,
   PODDOMENY,
   PRZESTRZEN_SVG,
+  KLUCZ_URL_KAFELKOW,
   SZABLONY_KAFELKOW,
+  biezacySzablonKafelkow,
+  ustawSzablonKafelkow,
+  walidujSzablonKafelkow,
   ZOOM_MIN,
   etykietaWidoku,
   maxZoomPodkladu,
@@ -876,4 +880,87 @@ test('T2: środek zadany przy schowanym panelu ląduje na środku po pokazaniu (
   assert.ok(Math.abs(srodek.lat - PODKOWA.lat) < 0.0001, `lat środka: ${srodek.lat}`);
   assert.ok(Math.abs(srodek.lon - PODKOWA.lon) < 0.0001, `lon środka: ${srodek.lon}`);
   mapa.zniszcz();
+});
+
+/* ------------------------------------------------------------------ *
+ * Operatorskie nadpisanie szablonu kafelków (polityka kafelków OSM:
+ * „avoid hard-coding the tile URL; allow switching without needing a
+ * software update"). Serwer kafelków jest wolontariacki i bez SLA —
+ * przełącznik musi istnieć bez wdrażania nowej wersji.
+ * ------------------------------------------------------------------ */
+
+test('walidujSzablonKafelkow: przyjmuje tylko https z {z}/{x}/{y}', () => {
+  const dobry = 'https://tiles.przyklad.org/{z}/{x}/{y}.png';
+  assert.equal(walidujSzablonKafelkow(dobry), dobry, 'poprawny https przechodzi');
+  assert.equal(walidujSzablonKafelkow(`  ${dobry}  `), dobry, 'białe znaki przycinane');
+
+  // Polityka OSM wprost zakazuje wariantu http:// — i słusznie, bo strona
+  // idzie po https i mieszana treść i tak by nie przeszła.
+  assert.equal(walidujSzablonKafelkow('http://tiles.przyklad.org/{z}/{x}/{y}.png'), null,
+    'http odrzucony (polityka OSM: tylko https)');
+  assert.equal(walidujSzablonKafelkow('https://tiles.przyklad.org/{z}/{x}.png'), null,
+    'brak {y} odrzucony — jeden adres dla całej siatki');
+  assert.equal(walidujSzablonKafelkow('https://tiles.przyklad.org/tile.png'), null,
+    'brak wszystkich podstawień odrzucony');
+  assert.equal(walidujSzablonKafelkow('to nie jest url'), null, 'śmieć odrzucony');
+  assert.equal(walidujSzablonKafelkow(''), null, 'pusty odrzucony');
+  assert.equal(walidujSzablonKafelkow(null), null, 'null odrzucony');
+  assert.equal(walidujSzablonKafelkow(42), null, 'nie-napis odrzucony');
+});
+
+test('ustawSzablonKafelkow: nadpisanie działa dla osm i tylko dla osm', () => {
+  const wbudowany = SZABLONY_KAFELKOW.osm;
+  const zamiennik = 'https://zamiennik.przyklad.org/{z}/{x}/{y}.png';
+  try {
+    assert.equal(ustawSzablonKafelkow(zamiennik), zamiennik, 'setter zwraca przyjęty szablon');
+    assert.equal(biezacySzablonKafelkow('osm'), zamiennik, 'bieżący szablon = nadpisanie');
+    assert.equal(urlKafelka('osm', 19, 28861, 17402),
+      'https://zamiennik.przyklad.org/19/28861/17402.png',
+      'urlKafelka podstawia nadpisany szablon');
+
+    // Pozostali dostawcy mają własne adresy i własne zasady licencjonowania —
+    // nadpisanie OSM nie może ich po cichu przejąć.
+    assert.equal(biezacySzablonKafelkow('opentopo'), SZABLONY_KAFELKOW.opentopo,
+      'opentopo nietknięty');
+    assert.equal(biezacySzablonKafelkow('brak'), null, '„brak" nadal wyłącza kafelki');
+    assert.equal(urlKafelka('brak', 5, 1, 1), null, 'podkład wyłączony zostaje wyłączony');
+  } finally {
+    ustawSzablonKafelkow(null);
+  }
+  assert.equal(biezacySzablonKafelkow('osm'), wbudowany, 'null przywraca adres wbudowany');
+  assert.equal(urlKafelka('osm', 19, 28861, 17402),
+    'https://tile.openstreetmap.org/19/28861/17402.png', 'domyślne zachowanie wraca');
+});
+
+test('ustawSzablonKafelkow: błędna wartość NIE psuje mapy (zostaje adres wbudowany)', () => {
+  const wbudowany = SZABLONY_KAFELKOW.osm;
+  try {
+    for (const smiec of ['http://x/{z}/{x}/{y}.png', 'ftp://x/{z}/{x}/{y}.png', '???', '', null, undefined, {}]) {
+      assert.equal(ustawSzablonKafelkow(smiec), null, `odrzucone: ${String(smiec)}`);
+      assert.equal(biezacySzablonKafelkow('osm'), wbudowany,
+        `po odrzuceniu ${String(smiec)} działa adres wbudowany`);
+    }
+  } finally {
+    ustawSzablonKafelkow(null);
+  }
+});
+
+test('planMapy z nadpisanym szablonem rysuje kafelki z nowego adresu', () => {
+  const zamiennik = 'https://zamiennik.przyklad.org/{z}/{x}/{y}.png';
+  try {
+    ustawSzablonKafelkow(zamiennik);
+    const plan = planMapy({ widok: widok(17), rozmiar: PANEL, podklad: 'osm' });
+    assert.ok(plan.kafelki.length > 0, 'kafelki są');
+    assert.ok(plan.kafelki.every((k) => k.url.startsWith('https://zamiennik.przyklad.org/')),
+      'każdy kafelek z nadpisanego hosta');
+  } finally {
+    ustawSzablonKafelkow(null);
+  }
+  const po = planMapy({ widok: widok(17), rozmiar: PANEL, podklad: 'osm' });
+  assert.ok(po.kafelki.every((k) => k.url.startsWith('https://tile.openstreetmap.org/')),
+    'po wyłączeniu nadpisania wraca OSM');
+});
+
+test('KLUCZ_URL_KAFELKOW: klucz operatorski w przestrzeni nazw aplikacji', () => {
+  assert.equal(KLUCZ_URL_KAFELKOW, 'okolica:kafelki:url');
 });

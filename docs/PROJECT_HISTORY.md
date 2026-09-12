@@ -2749,7 +2749,7 @@ z audytu PR #9), pozostają otwarte; plan sesji trzyma je w kolejce roboczej
 **Stan:** kod nietknięty; jedyna zmiana tej sesji to plan
 `docs/plans/2026-09-12-sesja-startowa.md` oraz ten wpis. Brak handoffu
 końcowego — sesja trwa i czeka na zadanie właściciela.
-## Sesja 2026-09-12b — odzyskanie sesji #12, poprawki właściciela, audyt multi (m12-75 → m12-80)
+## Sesja 2026-09-12b — odzyskanie sesji #12, poprawki właściciela, audyt multi, polityka kafelków OSM (m12-75 → m12-81)
 
 **Gałąź:** `arena/01a09489-okolica`, PR #13. **Zlecenie właściciela (2026-09-12):**
 (1) przenieść do repozytorium zmiany poprzedniej sesji (#12, sesja urwana — patch
@@ -2936,6 +2936,66 @@ prefetchu — więc nie dotyczy nas „bulk downloading / offline". Zalecenia
 polityki jeszcze niespełnione (do decyzji właściciela): podmiana szablonu
 kafelków bez wdrażania wersji, link „Report a map issue"
 (`openstreetmap.org/fixthemap`) przy atrybucji, opublikowany adres kontaktowy.
+
+### 7. `m12-81` — cztery decyzje właściciela po blokadzie 403
+
+Właściciel odpowiedział na listę otwartych punktów. Wszystkie cztery wdrożone.
+
+**(1) Szablon kafelków podmienialny bez wdrażania wersji.** Właściciel: „nie wiem
+o co chodzi. Jeśli to nie zepsuje aplikacji to zrób." Chodziło o zalecenie
+polityki OSM („avoid hard-coding the tile URL; allow switching without needing
+a software update"): adres `tile.openstreetmap.org` był zakodowany na sztywno,
+więc zniknięcie albo blokada serwisu wymagałaby nowego wdrożenia — a gra toczy
+się w terenie. Doszedł klucz `localStorage` **`okolica:kafelki:url`**:
+
+- `walidujSzablonKafelkow()` wymaga `https:` i wszystkich trzech podstawień
+  `{z}/{x}/{y}`; wartość błędna jest **odrzucona, nie rzucona** — zostaje adres
+  wbudowany, więc pomyłka nie zostawi gracza z pustą mapą;
+- `ustawSzablonKafelkow()` / `biezacySzablonKafelkow()` w `app/mapa.js`,
+  a nieczysty odczyt `localStorage` w `wczytajNadpisanieKafelkow()`
+  (`app/app.js`, wołane na początku `start()`, w `try/catch` bo `localStorage`
+  bywa niedostępny) — `mapa.js` zostaje modułem czystym;
+- nadpisanie dotyczy **tylko `osm`**; `opentopo`, `esri-satelita` i `brak` mają
+  własne adresy i licencje;
+- to **nie jest** wybór gracza: klucza nie ma w UI ani w setupie, więc nie
+  dotyka paczki, dopasowania ani ADR 0037. Aneks do **ADR 0003**.
+
+**(2) i (3) „Zgłoś błąd na mapie" + adres kontaktowy** — oba zalecenia polityki
+OSM, oba w ekranie **Informacje** (decyzja właściciela). Link do
+`openstreetmap.org/fixthemap` i `mailto:` z adresem kontaktowym: bez adresu OSM
+nie ma jak uprzedzić o blokadzie, a blokuje „bez uprzedzenia". Style
+`.informacje-link` dziedziczą kolor (nie wprowadzają nowej pary do audytu WCAG —
+odróżnia je podkreślenie), cel ≥ `--cel` (44 px), `overflow-wrap: anywhere`
+żeby długi adres nie rozepchał panelu 360 px (wzorzec `.instrukcja a`).
+
+**(4) `STAN.wymusPierscien` usunięte.** Flaga była wiecznie `false` (przycisk
+„Tryb uproszczony" wyleciał w m12-66, kontrakt `test/kontrakt.test.js:318`
+pilnuje, żeby nie wrócił), więc `!STAN.wymusPierscien` udawało gałąź decyzyjną
+w trzech miejscach: `przeliczZTegoCoJest`, pobieranie sieci i `renderujStacje`.
+Skoro przycisk ma nie wracać, poprawnym domknięciem było usunięcie stanu, nie
+dorobienie UI. Zniknęły deklaracja i trzy warunki.
+
+**Przy okazji:** `docs/ASSETS.md` §1 twierdził, że aplikacja „nie buduje
+własnego cache poza cache przeglądarki" — **nieprawda od M10/T2** (`sw.js`
+cache'uje kafelki w Cache Storage). Poprawione i dopisane, że to wymóg
+polityki, nie odstępstwo.
+
+**Testy: 692 pass / 0 fail**, brama exit 0, WCAG AA 0 naruszeń. Nowe: walidacja
+i setter jednostkowo (5 w `test/mapa.test.js`), **dwa end-to-end** przez
+`start()` → warstwę SVG (klucz poprawny → kafelki z zamiennika; klucz błędny →
+zostaje OSM), trzy kontrakty (linki w Informacjach, podmienialność szablonu,
+brak `wymusPierscien`). Dwa z nich **sprawdzone na popsutym kodzie**: odcięcie
+`ustawSzablonKafelkow(...)` w `start()` barwi test end-to-end na czerwono,
+a przywrócenie wersjonowanej nazwy cache kafelków — test z LESSONS L47.
+
+**Pułapka tej tury:** test SW z poprzedniej tury miał **zaszyty literal**
+`'m12-80'`, więc po podbiciu cache-bust podmiana wersji przestała działać
+i test wyłożył się na własnym strażniku (`assert.notEqual`). Wersję bierzemy
+teraz ze źródła (`KOD_SW.match(/^const WERSJA_SW = '([^']+)';$/m)`). Reguła:
+test, który symuluje zmianę wartości, ma tę wartość **wyprowadzać**, nie wpisywać.
+Druga: kontrakt sprawdzający „moduł nie używa X" musi łapać **wywołanie**
+(`/localStorage\s*[.[]/`), nie samo słowo — inaczej wykłada się na własnym
+komentarzu wyjaśniającym, dlaczego X-a tam nie ma.
 
 ### Audyt reszty pierwotnego pomysłu — co sprawdzone i ZGODNE
 

@@ -15,7 +15,7 @@
  * `ekranPx = jednostkaSwiata * skala + przesuniecie`, a
  * `zoom = log2(skala * SZEROKOSC_SWIATA / ROZMIAR_KAFELKA)`.
  */
-import { PODKLADY } from './konfig.js?v=m12-80';
+import { PODKLADY } from './konfig.js?v=m12-81';
 import {
   ROZMIAR_KAFELKA,
   SZEROKOSC_SWIATA,
@@ -26,7 +26,7 @@ import {
   odwroc,
   projektuj,
   siatkaKafelkow,
-} from './geo.js?v=m12-80';
+} from './geo.js?v=m12-81';
 
 /** Przestrzeń nazw SVG (elementy SVG tworzy się przez `createElementNS`). */
 export const PRZESTRZEN_SVG = 'http://www.w3.org/2000/svg';
@@ -62,6 +62,73 @@ export const SZABLONY_KAFELKOW = {
 
 /** Poddomeny OpenTopoMap; wybór deterministyczny, żeby cache przeglądarki działał. */
 export const PODDOMENY = ['a', 'b', 'c'];
+
+/**
+ * Klucz `localStorage` z operatorskim nadpisaniem szablonu kafelków OSM.
+ *
+ * Polityka kafelków OSM wprost zaleca: *„Avoid hard-coding the tile URL; allow
+ * switching without needing a software update."* Serwer kafelków to usługa
+ * wolontariacka, bez SLA, i może zostać wycofana albo zablokowana bez
+ * uprzedzenia — ten klucz pozwala przełączyć podkład w terenie, bez czekania
+ * na nowe wdrożenie. Ustawia go `app/app.js` przy starcie przez
+ * `ustawSzablonKafelkow`; ten moduł zostaje czysty i nie zna `localStorage`.
+ */
+export const KLUCZ_URL_KAFELKOW = 'okolica:kafelki:url';
+
+/** @type {string|null} */
+let nadpisanySzablonOsm = null;
+
+/**
+ * Walidacja szablonu kafelków. Zwraca szablon albo `null`, gdy się nie nadaje.
+ *
+ * Wymagamy `https:` (polityka OSM zakazuje wariantu `http://`) i wszystkich
+ * trzech podstawień — szablon bez `{z}`/`{x}`/`{y}` wygenerowałby jeden adres
+ * dla całej siatki, czyli ciszę na mapie albo lawinę żądań pod ten sam URL.
+ * Błędna wartość jest odrzucana, nie rzucana: mapa ma działać dalej na
+ * adresie wbudowanym.
+ *
+ * @param {unknown} szablon
+ * @returns {string|null}
+ */
+export function walidujSzablonKafelkow(szablon) {
+  if (typeof szablon !== 'string') return null;
+  const czysty = szablon.trim();
+  if (czysty === '') return null;
+  let url;
+  try {
+    url = new URL(czysty);
+  } catch {
+    return null;
+  }
+  if (url.protocol !== 'https:') return null;
+  for (const znacznik of ['{z}', '{x}', '{y}']) {
+    if (!czysty.includes(znacznik)) return null;
+  }
+  return czysty;
+}
+
+/**
+ * Nadpisanie szablonu dla podkładu `osm`. Moduł jest czysty: wartość ustawia
+ * `app/app.js` (jeden odczyt `localStorage` przy starcie), testy wołają setter
+ * wprost. `null` przywraca adres wbudowany z `SZABLONY_KAFELKOW`.
+ * @param {unknown} szablon
+ */
+export function ustawSzablonKafelkow(szablon) {
+  nadpisanySzablonOsm = walidujSzablonKafelkow(szablon);
+  return nadpisanySzablonOsm;
+}
+
+/**
+ * Szablon faktycznie używany dla podkładu — nadpisanie wygrywa nad wbudowanym,
+ * ale TYLKO dla `osm` (pozostali dostawcy mają własne adresy i własne zasady).
+ * @param {string} podklad
+ * @returns {string|null}
+ */
+export function biezacySzablonKafelkow(podklad) {
+  sprawdzPodklad(podklad);
+  if (podklad === 'osm' && nadpisanySzablonOsm) return nadpisanySzablonOsm;
+  return SZABLONY_KAFELKOW[podklad];
+}
 
 /** Kroki paska skali — od podwórka po kontynent. */
 export const KROKI_SKALI_M = [
@@ -195,8 +262,7 @@ export function maxZoomPodkladu(podklad) {
  * @returns {string|null} URL albo `null`, gdy podkład jest wyłączony
  */
 export function urlKafelka(podklad, z, x, y) {
-  sprawdzPodklad(podklad);
-  const szablon = SZABLONY_KAFELKOW[podklad];
+  const szablon = biezacySzablonKafelkow(podklad);
   if (szablon === null) return null;
   for (const v of [z, x, y]) {
     if (!Number.isInteger(v) || v < 0) throw new TypeError('urlKafelka: z/x/y to liczby całkowite ≥ 0');

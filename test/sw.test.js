@@ -221,13 +221,14 @@ test('SW activate: cache kafelków przeżywa bump wersji (polityka kafelków OSM
   assert.equal(nazwa, 'okolica-kafelki', 'cache kafelków bez wersji w nazwie');
   assert.equal(przed.fetchWywolania.length, 1, 'kafel pobrany raz');
 
-  // „Wdrożenie": ten sam magazyn, nowa WERSJA_SW w kodzie SW.
-  const poBumpie = atrapaOtoczenia({
-    magazyny: przed.magazyny,
-    kod: KOD_SW.replace("const WERSJA_SW = 'm12-80';", "const WERSJA_SW = 'm13-00';"),
-  });
-  assert.notEqual(KOD_SW.replace("const WERSJA_SW = 'm12-80';", "const WERSJA_SW = 'm13-00';"), KOD_SW,
-    'test naprawdę podmienił wersję — inaczej nic nie dowodzi');
+  // „Wdrożenie": ten sam magazyn, nowa WERSJA_SW w kodzie SW. Wersję bierzemy
+  // ZE ŹRÓDŁA, nie z literalu — zaszyty numer zestarzałby się przy pierwszym
+  // podbiciu cache-bust i test po cichu przestałby cokolwiek symulować.
+  const wersja = KOD_SW.match(/^const WERSJA_SW = '([^']+)';$/m)?.[1];
+  assert.ok(wersja, 'WERSJA_SW znaleziona w sw.js');
+  const kodPoBumpie = KOD_SW.replace(`const WERSJA_SW = '${wersja}';`, "const WERSJA_SW = 'test-bump';");
+  assert.notEqual(kodPoBumpie, KOD_SW, 'test naprawdę podmienił wersję — inaczej nic nie dowodzi');
+  const poBumpie = atrapaOtoczenia({ magazyny: przed.magazyny, kod: kodPoBumpie });
   await zdarzenieInstall(poBumpie);
   await poBumpie.nasluchy.activate({ waitUntil: (p) => p });
 

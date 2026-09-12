@@ -15,7 +15,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | --- | --- | --- |
 | [0001](0001-vanilla-static-app-no-build.md) | Statyczna aplikacja vanilla HTML+JS (ESM) bez kroku budowania i bez zależności | Zaakceptowana |
 | [0002](0002-hosting-github-pages-sciezki-wzgledne.md) | Hosting: GitHub Pages z gałęzi `main` (katalog główny), wszystkie ścieżki względne | Zaakceptowana |
-| [0003](0003-mapa-kafelkowa-bez-bibliotek.md) | Mapa: własny renderer SVG + rastrowe kafelki Web Mercator (bez bibliotek mapowych) | Zaakceptowana |
+| [0003](0003-mapa-kafelkowa-bez-bibliotek.md) | Mapa: własny renderer SVG + rastrowe kafelki Web Mercator (bez bibliotek mapowych; szablon podmienialny kluczem operatorskim — aneks 2026-09-12) | Zaakceptowana |
 | [0004](0004-geolokalizacja-i-kryterium-dojscia.md) | Geolokalizacja `watchPosition` i kryterium dojścia do stacji | Zaakceptowana |
 | [0005](0005-stacje-z-sieci-drogowej-overpass.md) | Stacje z sieci drogowej (Overpass): kandydaci, filtry, wybór pod ziarnem | Proponowana |
 | [0006](0006-pytania-przez-prompt-i-wklejenie.md) | Pytania: prompt → model AI → wklejenie (bez backendu i kluczy API) | Zaakceptowana |

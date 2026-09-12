@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-80">
-  <script type="module" src="app/app.js?v=m12-80"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-81">
+  <script type="module" src="app/app.js?v=m12-81"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -730,6 +730,16 @@
     <span>wersja <span id="stopka-wersja">—</span></span>
     <span class="separator" aria-hidden="true">·</span>
     <button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">dane i prywatność</button>
+
+      <!-- Polityka kafelków OSM zaleca link „Report a map issue" i opublikowany
+           adres kontaktowy. Podkład mapy to dane OpenStreetMap (ODbL), a serwer
+           kafelków jest wolontariacki — te dwa linki domykają oba zalecenia
+           i dają OSM drogę kontaktu ZANIM cokolwiek zablokują. -->
+      <p class="informacje-kontakt">
+        <a id="link-zglos-mape" class="informacje-link" href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">Zgłoś błąd na mapie</a>
+        <span class="informacje-kropka" aria-hidden="true">·</span>
+        <a id="link-kontakt" class="informacje-link" href="mailto:szybkoiwyraznie@gmail.com">kontakt: szybkoiwyraznie@gmail.com</a>
+      </p>
 
       </div>
     </section>

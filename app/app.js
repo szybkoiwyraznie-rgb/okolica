@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-80';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-80';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-81';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-81';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-80';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-80';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-80';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-80';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-80';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-80';
+} from './protokol.js?v=m12-81';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-81';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-81';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-81';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-81';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-81';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-80';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-80';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-80';
+} from './zestawy.js?v=m12-81';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-81';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-81';
 import {
   INSTANCJE_OVERPASS,
   KODY_SIECI,
@@ -63,17 +63,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-80';
-import { utworzMape } from './mapa.js?v=m12-80';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-80';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-80';
-import { adresMostu, stanMostu } from './most.js?v=m12-80';
+} from './sieci.js?v=m12-81';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-81';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-81';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-81';
+import { adresMostu, stanMostu } from './most.js?v=m12-81';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-80';
+} from './oceny.js?v=m12-81';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -176,9 +176,6 @@ const STAN = {
   siec: { stan: 'brak', dane: null, klucz: null, trybGrafu: null, graf: null, kandydaci: null, zCache: false },
   /** Wynik `wybierzStacje` (macierz, sprawiedliwość sieciowa) albo null przy pierścieniu. */
   wynikSieci: null,
-  /** Wymuszony tryb uproszczony (bez przełącznika w UI od 2026-09-11 —
-   *  ozdobnik usunięty; stan zostaje w silniku, ADR 0005 pkt 8). */
-  wymusPierscien: false,
   /** Tryb ręczny (ADR 0005 pkt 8b): organizator przeciąga pinezki stacji. */
   trybReczny: false,
   /** Odstęp między instancjami Overpass; `?odstep=0` skraca go w testach. */
@@ -1444,7 +1441,7 @@ async function pobierzSiec(terazMs) {
 
 /** Wspólny koniec każdej ścieżki: wybór stacji z tego, co jest, i render. */
 function przeliczZTegoCoJest() {
-  const uzyjSieci = !STAN.wymusPierscien && STAN.siec.stan === 'gotowa' && grafDlaTrybu(STAN.konfig.tryb);
+  const uzyjSieci = STAN.siec.stan === 'gotowa' && grafDlaTrybu(STAN.konfig.tryb);
   if (uzyjSieci) {
     try {
       const wynik = wybierzStacje({
@@ -1539,7 +1536,7 @@ function przeliczStacje() {
     const zCache = odczytajCacheSieci(klucz, Date.now());
     if (zCache) {
       ustawSiec(zCache, { zCache: true, klucz });
-    } else if (typeof window !== 'undefined' && typeof window.fetch === 'function' && !STAN.wymusPierscien) {
+    } else if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
       przeliczStacjeZPobraniem(klucz);
       return;
     }
@@ -1578,7 +1575,7 @@ function wylaczTrybReczny() {
 
 function renderujStacje() {
   const lista = $('lista-stacji');
-  const sieciowe = Boolean(STAN.wynikSieci) && !STAN.wymusPierscien;
+  const sieciowe = Boolean(STAN.wynikSieci);
   if (STAN.ukryjStacje) {
     // Wspólna Trasa = trasa-sekret (właściciel, 2026-09-11): organizator
     // generujący paczkę nie widzi nazw miejsc ani współrzędnych — tylko
@@ -4688,7 +4685,31 @@ function czyTrybTestowyWUrl() {
   return ['true', '1', 'tak'].includes(String(parametr.get('test') ?? '').trim().toLowerCase());
 }
 
+/**
+ * Operatorskie nadpisanie szablonu kafelków OSM. Polityka kafelków OSM wprost
+ * zaleca: „avoid hard-coding the tile URL; allow switching without needing a
+ * software update" — serwer kafelków jest wolontariacki, bez SLA, i może zostać
+ * wycofany albo zablokowany bez uprzedzenia. Klucz pozwala przełączyć podkład
+ * w terenie, bez czekania na wdrożenie.
+ *
+ * Wartość nieobecna albo błędna = adres wbudowany (`walidujSzablonKafelkow`
+ * odrzuca wszystko, co nie jest `https:` z `{z}/{x}/{y}`), więc domyślne
+ * zachowanie jest niezmienione. `localStorage` bywa niedostępny (tryb prywatny,
+ * zablokowane ciastka) — stąd `try/catch`.
+ *
+ * @returns {string|null} szablon przyjęty, albo `null` gdy został wbudowany
+ */
+function wczytajNadpisanieKafelkow() {
+  try {
+    if (typeof localStorage === 'undefined') return null;
+    return ustawSzablonKafelkow(localStorage.getItem(KLUCZ_URL_KAFELKOW));
+  } catch {
+    return null;
+  }
+}
+
 function start() {
+  wczytajNadpisanieKafelkow();
   wczytajKonfiguracje();
   STAN.konfig = konfiguracjaNowegoSetupu(STAN.konfig);
   // Porządek rejestru paczek (właściciel 2026-09-11): stare wpisy dostają

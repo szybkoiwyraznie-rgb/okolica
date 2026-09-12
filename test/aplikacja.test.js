@@ -355,6 +355,36 @@ test('mapa: bootstrap rysuje kafelki OSM i podpisuje dostawcę', async () => {
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 0, 'bez pozycji nie ma markera');
 });
 
+test('mapa: operatorskie nadpisanie szablonu kafelków dociera do rysowanej mapy', async () => {
+  // End-to-end: klucz w localStorage → `wczytajNadpisanieKafelkow()` w `start()`
+  // → `ustawSzablonKafelkow()` → `urlKafelka()` → warstwa SVG. Testy jednostkowe
+  // w `test/mapa.test.js` pilnują samej walidacji; tu sprawdzamy okablowanie.
+  const zamiennik = 'https://zamiennik.przyklad.org/{z}/{x}/{y}.png';
+  const pamiec = new Map([['okolica:kafelki:url', zamiennik]]);
+  const domMapy = await aplikacjaZMapa({ pamiec });
+  const kafelki = domMapy.pobierz('mapa-pozycja-kafelki');
+  assert.ok(kafelki.children.length > 0, 'panel mapy pusty po starcie');
+  assert.ok(
+    kafelki.children.every((k) => String(k.getAttribute('href')).startsWith('https://zamiennik.przyklad.org/')),
+    'kafelki mają pochodzić z nadpisanego hosta',
+  );
+});
+
+test('mapa: błędne nadpisanie szablonu NIE gasi mapy — zostaje OSM', async () => {
+  // Klucz w trybie prywatnym albo z literówką nie może zostawić gracza z pustą
+  // mapą: walidacja odrzuca wartość i wracamy na adres wbudowany.
+  for (const smiec of ['http://niebezpieczny.example/{z}/{x}/{y}.png', 'to-nie-url', '']) {
+    const pamiec = new Map([['okolica:kafelki:url', smiec]]);
+    const domMapy = await aplikacjaZMapa({ pamiec });
+    const kafelki = domMapy.pobierz('mapa-pozycja-kafelki');
+    assert.ok(kafelki.children.length > 0, `mapa pusta po błędnym kluczu: ${smiec}`);
+    assert.ok(
+      kafelki.children.every((k) => String(k.getAttribute('href')).startsWith('https://tile.openstreetmap.org/')),
+      `błędny klucz (${smiec}) ma zostawić adres wbudowany`,
+    );
+  }
+});
+
 test('mapa: pierwszy fix rysuje marker z kołem dokładności i centruje widok na graczu', async () => {
   const domMapy = await aplikacjaZMapa();
   const gpsMapy = domMapy.gps;

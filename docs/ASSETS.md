@@ -25,7 +25,7 @@
 
 | Klucz | Dostawca / URL | Klucz API | maxZoom | Atrybucja | Polityka i ryzyka |
 | --- | --- | --- | --- | --- | --- |
-| `osm` | OSM Standard — `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | nie | 19 | `© OpenStreetMap contributors (ODbL)` | [Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/): zakaz masowego pobierania i ciężkiego użycia, wymagany poprawny `Referer`/UA, ograniczona liczba hostów, serwery z darowizn. Użycie „lekkie" (kilkanaście kafelków na ekran, kilka gier dziennie) jest w polityce; aplikacja nie pobiera kafelków hurtowo ani nie buduje własnego cache poza cache przeglądarki. |
+| `osm` | OSM Standard — `https://tile.openstreetmap.org/{z}/{x}/{y}.png` | nie | 19 | `© OpenStreetMap contributors (ODbL)` | [Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/): zakaz masowego pobierania i ciężkiego użycia, wymagany poprawny `Referer`/UA, ograniczona liczba hostów, serwery z darowizn. Użycie „lekkie" (kilkanaście kafelków na ekran, kilka gier dziennie) jest w polityce; aplikacja nie pobiera kafelków hurtowo, nie ma prefetchu ani trybu offline. **Uwaga:** od M10/T2 aplikacja JEDNAK buduje własny cache kafelków w Cache Storage (`sw.js`, cache-first, limit `MAKS_KAFELKI = 600` z ewikcją najstarszych) — to wymagane przez politykę („cache tiles locally"), nie odstępstwo od niej. Cache NIE jest wersjonowany wraz z aplikacją (LESSONS L47): nazwa zależna od `WERSJA_SW` wyrzucała cały zbiór przy każdym wdrożeniu, co jest dokładnie wzorcem „No caching" karanym blokadą 403. |
 | `opentopo` | OpenTopoMap — `https://{a,b,c}.tile.opentopomap.org/{z}/{x}/{y}.png` | nie | 17 | `© OpenStreetMap contributors · © OpenTopoMap (CC-BY-SA)` | Bez klucza, CC-BY-SA. **Ryzyko trwałości usługi**: serwis rastrowy bywa przeciążony, a jego przyszłość jest dyskutowana publicznie ([issue #382 „Reviving the OpenTopoMap (Raster) tile service?", 2025-11](https://github.com/der-stefan/OpenTopoMap/issues/382)). Dlatego warstwa jest opcjonalna i przełączalna w UI, a jej zniknięcie nie może psuć gry (ADR 0003 pkt 3: „podkład wyłączony"). |
 | `esri-satelita` | Esri World Imagery — `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}` | nie | 19 | `Powered by Esri · © Esri, Maxar, Earthstar Geographics` | Używany tak samo jak w projekcie AME (wzorzec właściciela). Uwaga na kolejność `y`/`x` w URL (odwrotnie niż w schemacie XYZ). Warstwa pomocnicza: rozpoznawanie obiektu w terenie, nie nawigacja. |
 | `osm-fr` *(opcja)* | OSM France — `https://{a,b,c}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png` | nie | 20 | `© OpenStreetMap contributors · © OSM France` | Kandydat na podkład zapasowy (inny rendering, wyższe zoomy). Wprowadzamy dopiero po sprawdzeniu polityki OSM France — **nie jest jeszcze zatwierdzony**. |
@@ -39,6 +39,25 @@ różnicą zapisu: rotację poddomen kod wyraża jako `{s}` z listą
 (`test/kontrakt.test.js`) porównuje szablony po ujednoliceniu zapisu
 (`{s}` → `{a,b,c}`), więc zmiana URL-a u dostawcy wymaga zmiany w obu miejscach.
 Podkład `brak` ma szablon `null`: zero żądań, zero atrybucji dostawcy.
+
+**Nadpisanie operatorskie (bez wdrażania wersji).** Polityka kafelków OSM zaleca
+wprost: *„Avoid hard-coding the tile URL; allow switching without needing a
+software update."* Serwer kafelków jest wolontariacki i bez SLA, więc klucz
+`localStorage` **`okolica:kafelki:url`** pozwala przełączyć podkład `osm`
+w terenie. Czyta go raz przy starcie `wczytajNadpisanieKafelkow()` (`app/app.js`)
+i podaje do `ustawSzablonKafelkow()` (`app/mapa.js`) — sam moduł mapy zostaje
+czysty i nie zna `localStorage`.
+
+Wartość musi przejść `walidujSzablonKafelkow()`: protokół **`https:`** (polityka
+OSM zakazuje `http://`) oraz wszystkie trzy podstawienia `{z}`, `{x}`, `{y}`.
+Wartość nieobecna albo odrzucona = adres wbudowany, więc pomyłka w kluczu nie
+zostawi gracza z pustą mapą. Nadpisanie dotyczy **wyłącznie `osm`** — pozostali
+dostawcy mają własne adresy i własne licencje. Konsola:
+
+```js
+localStorage.setItem('okolica:kafelki:url', 'https://inny-serwer.example/{z}/{x}/{y}.png');
+location.reload();          // ustawSzablonKafelkow(null) przywraca OSM
+```
 
 ### 1.1 Dostawcy sprawdzeni i ODRZUCENI
 
