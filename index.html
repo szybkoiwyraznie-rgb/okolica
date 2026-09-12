@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-89">
-  <script type="module" src="app/app.js?v=m12-89"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-90">
+  <script type="module" src="app/app.js?v=m12-90"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -38,6 +38,7 @@
       <button id="przycisk-setup" class="przycisk-ikona" type="button" title="START GRY — ustawienia gry">⚙ START GRY</button>
       <button id="przycisk-motyw" class="przycisk-ikona" type="button" aria-pressed="false" title="Przełącz motyw jasny/ciemny" aria-label="Przełącz motyw">☾</button>
       <button id="przycisk-sygnaly" class="przycisk-ikona" type="button" aria-pressed="true" title="Sygnał przy dojściu do stacji: dźwięk i wibracja (przełącznik)" aria-label="Sygnały dojścia">🔔</button>
+      <button id="przycisk-ranking" class="przycisk-ikona" type="button" aria-label="Ranking" title="Ranking graczy" aria-expanded="false" aria-pressed="false" aria-controls="ekran-ranking"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M7 4h10v5a5 5 0 0 1-10 0V4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 5H4.5v1.5A3.5 3.5 0 0 0 7.6 10M17 5h2.5v1.5A3.5 3.5 0 0 1 16.4 10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 14v3M8.5 20h7l-.8-3h-5.4l-.8 3Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg></button>
       <button id="przycisk-informacje" class="przycisk-ikona" type="button" aria-label="Informacje" title="Informacje" aria-expanded="false" aria-pressed="false" aria-controls="ekran-informacje"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 11v6" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="7.5" r="1.2" fill="currentColor"/></svg></button>
     </div>
   </header>
@@ -691,6 +692,31 @@
 
         <button id="przycisk-start-zacznij" class="przycisk przycisk-glowny" type="button">▶ Zacznij</button>
       </div>
+    </section>
+
+    <!-- Ranking (zgłoszenie właściciela 2026-09-12, „Mam nowy pomysł na
+         podstronę Ranking”): warstwa otwierana ikonką pucharu w belce, a w niej
+         DOKŁADNIE dwie tabele i nic więcej — „Ranking Punktowy Graczy” (suma
+         punktów ze wszystkich rodzajów gier, max 5 pozycji) i „Mistrzowie
+         Zagadek” (proporcja odpowiedzi poprawnych do zadanych, próg 10 pytań).
+         Wiersze przychodzą z mostu jako GOTOWE SUMY per gracz (`RO-ranking/2`,
+         `?akcja=ranking`) — telefon nie dostaje surowych wyników gier innych
+         osób (ADR 0013/0019 pkt 3), a do rankingu wchodzą tylko gracze
+         z potwierdzonym profilem (decyzja właściciela 2026-09-12). -->
+    <section id="ekran-ranking" class="ekran panel-centralny" hidden role="dialog" aria-labelledby="tytul-ranking">
+      <button id="przycisk-zamknij-ranking" class="warstwa-krzyzyk" type="button" aria-label="Zamknij ranking">✕</button>
+      <h2 id="tytul-ranking">🏆 Ranking</h2>
+      <p id="ranking-status" class="podpowiedz" role="status">Ranking zbiera się ze wspólnego Drive.</p>
+      <h3>Ranking Punktowy Graczy</h3>
+      <table id="ranking-punkty" class="tabela-wynikow">
+        <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th></tr></thead>
+        <tbody id="ranking-punkty-wiersze"></tbody>
+      </table>
+      <h3>Mistrzowie Zagadek</h3>
+      <table id="ranking-mistrzowie" class="tabela-wynikow">
+        <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Trafienia</th></tr></thead>
+        <tbody id="ranking-mistrzowie-wiersze"></tbody>
+      </table>
     </section>
 
     <section id="ekran-informacje" class="ekran panel-centralny" hidden role="dialog" aria-labelledby="tytul-informacje">

@@ -303,11 +303,12 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
   assert.equal(/test/i.test(naglowek), false, `w akcjach nagłówka nie ma trybu testowego: ${naglowek}`);
   assert.ok(APP.includes('czyTrybTestowyWUrl'), 'tryb testowy czyta się z parametru adresu');
 
-  // Rankingi usunięte w całości (właściciel, 2026-09-11): LESSONS L31 —
-  // usunięty element ma zostać usunięty, więc pilnujemy, że nie wrócił.
-  assert.equal(INDEX.includes('ekran-ranking'), false, 'ekranu rankingów nie ma w HTML');
-  assert.equal(APP.includes('przycisk-ranking'), false, 'przycisku 🏆 nie ma w aplikacji');
-  assert.equal(GS.includes("akcja === 'ranking'"), false, 'most nie obsługuje już akcji ranking');
+  // Ranking wrócił w NOWEJ formie (zgłoszenie właściciela 2026-09-12, ADR 0039):
+  // dwie tabele, ikonka pucharu, akcja mostu. STARA forma — zakładki, kategorie
+  // i lista „Moje gry" — nie ma prawa wrócić (LESSONS L31); pilnuje tego test
+  // „kontrakt ADR 0039" na końcu pliku.
+  assert.ok(INDEX.includes('id="ekran-ranking"'), 'warstwa rankingu jest w HTML (ADR 0039)');
+  assert.ok(APP.includes('przycisk-ranking'), 'ikonka pucharu jest podpięta w aplikacji');
   assert.ok(STYLE.includes('.warstwa-krzyzyk'), 'krzyżyk warstwy ma styl (używa go Informacje)');
   assert.match(APP, /'true', '1', 'tak'/, 'przyjmowane formy parametru ?test=');
 
@@ -781,7 +782,7 @@ test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językie
   for (const a of ['gra-zaloz', 'gra-dolacz', 'gra-opusc', 'gra-start', 'gra-zdarzenie', 'gra-zakoncz', 'gra-hotseat', 'profil-ustaw', 'profil-sprawdz']) {
     assert.ok(GS.includes(`case '${a}'`), `doPost mostu obsługuje ${a}`);
   }
-  for (const a of ['gry', 'gra-stan']) {
+  for (const a of ['gry', 'gra-stan', 'ranking']) {
     assert.ok(GS.includes(`akcja === '${a}'`), `doGet mostu obsługuje ${a}`);
   }
   for (const s of ['RO-gra/1', 'RO-zdarzenie/1', 'RO-lobby/1', 'RO-profil/1']) {
@@ -1292,4 +1293,43 @@ test('kontrakt: martwa flaga wymusPierscien usunięta z silnika', () => {
   // więc poprawnym domknięciem było usunięcie stanu, nie dorobienie UI.
   assert.equal(APP.includes('wymusPierscien'), false, 'flaga zniknęła z app.js');
   assert.equal(MAPA.includes('wymusPierscien'), false, 'flagi nie ma też w mapa.js');
+});
+
+/**
+ * Zgłoszenie właściciela 2026-09-12 („Mam nowy pomysł na podstronę Ranking”):
+ * warstwa z DOKŁADNIE dwiema tabelami i niczym więcej. Ten test spina trzy
+ * warstwy naraz — HTML (co widzi gracz), aplikację (skąd bierze dane) i most
+ * (skąd dane przychodzą) — bo ranking jest pierwszym miejscem, w którym reguła
+ * „kto wchodzi do tabeli” mieszka w skrypcie Apps Script, a nie w telefonie.
+ */
+test('kontrakt ADR 0039: ranking — dwie tabele, akcja mostu i wspólny schemat', async () => {
+  const { LIMIT_RANKINGU, MINIMUM_PYTAN_ODPOWIEDZI, SCHEMAT_RANKINGU } = await import('../app/ranking.js');
+
+  // 1. HTML: warstwa i dwie tabele, bez śladu starej formy.
+  assert.match(INDEX, /id="przycisk-ranking"[^>]*aria-controls="ekran-ranking"/, 'puchar steruje warstwą rankingu');
+  assert.match(INDEX, /id="przycisk-ranking"[^>]*aria-expanded="false"/, 'ikona startuje zgaszona (F3: drugi klik zamyka)');
+  for (const id of ['ranking-punkty', 'ranking-punkty-wiersze', 'ranking-mistrzowie', 'ranking-mistrzowie-wiersze', 'ranking-status']) {
+    assert.ok(INDEX.includes(`id="${id}"`), `ranking ma #${id}`);
+  }
+  assert.ok(INDEX.includes('Ranking Punktowy Graczy'), 'pierwsza tabela: Ranking Punktowy Graczy');
+  assert.ok(INDEX.includes('Mistrzowie Zagadek'), 'druga tabela: Mistrzowie Zagadek');
+  for (const obcy of ['ranking-zakladki', 'ranking-kategorie', 'ranking-tabela', 'ranking-moje-gry', 'ranking-wiersze']) {
+    assert.equal(INDEX.includes(obcy), false, `stara forma rankingu (${obcy}) nie wróciła`);
+  }
+
+  // 2. Aplikacja: warstwa i pobranie z mostu tą samą drogą co resztą (ADR 0020).
+  assert.match(APP, /urlGet\(url, 'ranking'\)/, 'adres rankingu buduje `urlGet` z sync.js');
+  assert.match(APP, /zamknijRankingi/, 'warstwę da się zamknąć (✕/Escape), jak Informacje');
+  // 3. Most: akcja i schemat. Reguła „tylko gracze z profilem” MUSI być w skrypcie.
+  assert.ok(GS.includes("akcja === 'ranking'"), 'doGet mostu obsługuje akcję ranking');
+  assert.ok(GS.includes(SCHEMAT_RANKINGU), `most oddaje schemat ${SCHEMAT_RANKINGU}`);
+  assert.match(GS, /function rankingi\(\)/, 'most ma funkcję rankingi()');
+  assert.match(GS, /zarejestrowani\[klucz\]/, 'most filtruje ranking po profilach (ADR 0021 + decyzja 2026-09-12)');
+  assert.match(GS, /FOLDERY\.gryZakonczone/, 'ranking sumuje gry zakończone — wszystkie rodzaje gier');
+
+  // 4. Liczby z decyzji właściciela są w JEDNYM miejscu: w module.
+  assert.equal(LIMIT_RANKINGU, 5, 'max 5 pozycji w każdej tabeli');
+  assert.equal(MINIMUM_PYTAN_ODPOWIEDZI, 10, 'Mistrzowie Zagadek liczą się od 10 zadanych pytań');
+  assert.equal(APP.includes('MINIMUM_PYTAN_ODPOWIEDZI'), false, 'progu nie ma w app.js — trzyma go app/ranking.js');
+  assert.match(APP, /mistrzowieZagadek\(ranking\)/, 'aplikacja używa funkcji modułu, nie własnej kopii reguły');
 });

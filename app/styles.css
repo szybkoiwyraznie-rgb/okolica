@@ -820,8 +820,17 @@ body[data-mapa='gra'] #mapa-gra { visibility: visible; }
   position: static; width: auto; max-width: none; max-height: none;
   margin: 0; padding: 0; overflow: visible; border: 0; box-shadow: none;
 }
-#ekran-informacje { z-index: 20; }
+/* Warstwy na panelach: Informacje i Ranking (zgłoszenie właściciela 2026-09-12)
+   leżą NAD resztą i wygaszają ją tak samo — inaczej dwie warstwy świeciłyby
+   równocześnie, a gracz nie wiedziałby, która jest „na wierzchu”. */
+#ekran-informacje, #ekran-ranking { z-index: 20; }
 body.informacje-otwarte .panel-centralny:not(#ekran-informacje) { visibility: hidden; }
+body.ranking-otwarte .panel-centralny:not(#ekran-ranking) { visibility: hidden; }
+/* Tabela rankingu na 360 px: nagłówek sekcji mniejszy niż tytuł warstwy, żeby
+   dwie tabele zmieściły się w jednym ekranie bez przewijania w bok. */
+#ekran-ranking h3 { margin: 14px 0 2px; font-size: 17px; }
+#ekran-ranking .tabela-wynikow td, #ekran-ranking .tabela-wynikow th { padding: 8px 6px; }
+#ekran-ranking .tabela-wynikow td:first-child, #ekran-ranking .tabela-wynikow th:first-child { width: 2ch; }
 body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
 #przycisk-podejrzyj-mape {
   position: fixed; z-index: 40; right: max(12px, env(safe-area-inset-right));
