@@ -50,7 +50,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. W polu "protokol" wpisz "PYT/1.0-rev4". Wszystkie pola tekstowe zapisz NORMALNIE, w naturalnej kolejności liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer poprawnej odpowiedzi (pole "poprawna", zasada niżej).
+8. W polu "protokol" wpisz "PYT/1.0-rev4".
 
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
@@ -164,7 +164,7 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. W polu "protokol" wpisz "PYT/1.0-rev5". Wszystkie pola tekstowe zapisz NORMALNIE, w naturalnej kolejności liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer poprawnej odpowiedzi (pole "poprawna", zasada niżej).
+8. W polu "protokol" wpisz "PYT/1.0-rev5".
 
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
@@ -432,6 +432,14 @@ zajęte, tak samo jak wycofany `E18`.
   dotychczasowe markery, a odwrócone rev1/rev2/rev3 dekoduje jak dotąd (paczki
   na Drive zostają czytelne). Szablony generują rev4 (§2) i rev5 (§2.2).
   Wersje szablonów: `PYT/1.0.7` i `PYT/1.0-nofc.2`.
+- **Wersje szablonów `PYT/1.0.8` / `PYT/1.0-nofc.3` (2026-09-12, uwagi terenowe
+  G.b)** — z zasady 8 obu szablonów (zapis „NORMALNIE, w naturalnej kolejności
+  liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer…”)
+  usunięto zdania po poleceniu wpisania markera. Właściciel: to polecenie jest
+  bezsensowne i może modelowi zasugerować dokładnie odwrotne (że cokolwiek
+  zakodować). Markery `rev4`/`rev5` i kod pozycyjny `poprawna` bez zmian;
+  dekoder rev1/rev2/rev3 bez zmian; kształt odpowiedzi bez zmian (łatka
+  szablonu, nie wersja schematu).
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 
