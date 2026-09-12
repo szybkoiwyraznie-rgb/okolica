@@ -922,14 +922,30 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   // opisy segmentów bez „developerskiego bełkotu”
   assert.match(APP, /📱 Multiplayer — każdy ma telefon/, 'etykieta rodzaju multi');
   assert.match(APP, /Każdy gracz ma swój telefon\. Możesz być hostem albo dołączyć do istniejącej gry\./, 'opis rodzaju multi');
-  assert.match(APP, /Jesteś hostem nowej rozgrywki\. Wybierz odpowiednie opcje i przejdź dalej\./, 'opis ścieżki „Zakładam”');
+  assert.match(APP, /Jesteś hostem nowej rozgrywki\. Zaloguj się, wybierz odpowiednie opcje i przejdź dalej\./, 'opis ścieżki „Zakładam” mówi, że zaczyna się od logowania (właściciel 2026-09-12)');
   assert.match(APP, /Dołączam do istniejącej/, 'etykieta ścieżki „Dołączam” (bez przepisu na kod — kody usunięte w m12-74)');
   assert.match(APP, /Wszyscy pokonują tą samą trasę, każdy na swoim telefonie i we własnym tempie\. Stacje przechodzi się po kolei\./, 'opis Wspólnej Trasy');
-  // lista gier ~50 m żyje NA SETUPIE (panel w karcie multi), a ekran multi = samo lobby
-  const kartaMulti = INDEX.split('id="karta-multi"')[1].split('id="setup-promien-info"')[0];
-  assert.match(kartaMulti, /id="multi-panel-dolacz"/, 'panel „Dołączam” wewnątrz karty multi na setupie');
-  assert.match(kartaMulti, /id="multi-lobby-lista"/, 'lista gier ~50 m na setupie');
-  assert.match(kartaMulti, /id="przycisk-odswiez-lobby"/, 'przycisk odświeżenia listy na setupie');
+  // Układ setupu multi (właściciel, 2026-09-12):
+  //  1. „Co robisz?” + opis ścieżki,
+  //  2. „Ty w tej grze” ZARAZ POD opisem (slot w karcie multi),
+  //  3. lista gier ~50 m jako OSOBNY BOKS i dopiero po zalogowaniu.
+  const kartaMulti = INDEX.split('id="karta-multi"')[1].split('id="multi-panel-dolacz"')[0];
+  assert.match(kartaMulti, /id="multi-slot-tozsamosc"/, 'slot na „Ty w tej grze” w karcie multi, pod opisem ścieżki');
+  assert.ok(kartaMulti.indexOf('multi-sciezka-opis') < kartaMulti.indexOf('multi-slot-tozsamosc'),
+    'slot tożsamości jest PO opisie ścieżki, nie przed');
+  // Slot jest OSTATNIM elementem karty, a `</div>` po nim ją domyka — czyli boks
+  // listy zaczyna się już poza kartą (osobny boks, właściciel 2026-09-12).
+  assert.match(kartaMulti, /id="multi-slot-tozsamosc"><\/div>\s*<\/div>/,
+    'karta multi domyka się zaraz za slotem — boks z listą gier zaczyna się już poza nią');
+  assert.match(INDEX, /<div id="multi-panel-dolacz" class="karta" hidden>/, 'lista gier to osobny boks (class="karta")');
+  assert.equal(INDEX.includes('Pokazujemy tylko hosta'), false, 'zdanie „Pokazujemy tylko hosta…” usunięte');
+  assert.match(INDEX, /id="slot-tozsamosc-dom"/, 'pole tożsamości ma dokąd wrócić poza multi');
+  assert.match(APP, /function umiescTozsamosc/, 'przenoszenie bloku tożsamości jest funkcją');
+  const panelDolacz = APP.slice(APP.indexOf('function renderujPanelDolacz'), APP.indexOf('function renderujMultiSciezka'));
+  assert.match(panelDolacz, /pseudonimGraczaMulti/, 'boks listy widoczny dopiero po zalogowaniu (bramką jest potwierdzone imię)');
+  assert.match(panelDolacz, /multi-panel-dolacz'\)\.hidden = !\(dolacz &&/, 'widoczność = ścieżka „Dołączam” ORAZ zalogowany gracz');
+  assert.match(INDEX, /id="multi-lobby-lista"/, 'lista gier ~50 m na setupie');
+  assert.match(INDEX, /id="przycisk-odswiez-lobby"/, 'przycisk odświeżenia listy na setupie');
   assert.match(APP, /odswiezListeGierNaSetupie/, 'lista odświeżana na setupie');
   assert.ok(!APP.includes('otworzListeGier'), 'dawny flow „lista gier na ekranie multi” usunięty');
   // przy „Dołączam” chowane są pola parametrów gry, a „Poprzednie gry” nie pokazują się w multi

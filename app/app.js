@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-79';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-79';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-80';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-80';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-79';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-79';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-79';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-79';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-79';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-79';
+} from './protokol.js?v=m12-80';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-80';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-80';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-80';
+import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-80';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-80';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-79';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-79';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-79';
+} from './zestawy.js?v=m12-80';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-80';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-80';
 import {
   INSTANCJE_OVERPASS,
   KODY_SIECI,
@@ -63,17 +63,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-79';
-import { utworzMape } from './mapa.js?v=m12-79';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-79';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-79';
-import { adresMostu, stanMostu } from './most.js?v=m12-79';
+} from './sieci.js?v=m12-80';
+import { utworzMape } from './mapa.js?v=m12-80';
+import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-80';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-80';
+import { adresMostu, stanMostu } from './most.js?v=m12-80';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-79';
+} from './oceny.js?v=m12-80';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -3825,9 +3825,33 @@ const SCIEZKI_MULTI = {
 };
 
 const OPISY_SCIEZEK = {
-  zaloz: 'Jesteś hostem nowej rozgrywki. Wybierz odpowiednie opcje i przejdź dalej.',
+  zaloz: 'Jesteś hostem nowej rozgrywki. Zaloguj się, wybierz odpowiednie opcje i przejdź dalej.',
   dolacz: 'Zobaczysz gry, których host jest w zasięgu ~50 m — dołączasz jednym kliknięciem, bez kodu. Możesz opuścić grę w dowolnym momencie.',
 };
+
+/**
+ * „Ty w tej grze" jedzie POD OPIS ŚCIEŻKI, gdy gramy w multi (właściciel,
+ * 2026-09-12) — login jest pierwszym krokiem obu ścieżek, więc nie może
+ * siedzieć pod opcjami hosta. Poza multi pole wraca na swoje miejsce w setupie.
+ * Przenosimy WĘZEŁ, nie kopię: `id` zostaje ten sam, więc nasłuchy, testy
+ * i `renderujPolaTozsamosci` nie wiedzą o przeprowadzce.
+ */
+function umiescTozsamosc(multi) {
+  const pole = $('pole-tozsamosc');
+  const slot = $(multi ? 'multi-slot-tozsamosc' : 'slot-tozsamosc-dom');
+  if (!pole || !slot || pole.parentNode === slot) return;
+  slot.appendChild(pole);
+}
+
+/**
+ * Lista gier ~50 m: OSOBNY BOKS i DOPIERO po zalogowaniu (właściciel,
+ * 2026-09-12). Bez potwierdzonego imienia most i tak odmawia zapytania
+ * (`odswiezListeGierNaSetupie`), więc pusty boks tylko zajmował miejsce.
+ */
+function renderujPanelDolacz() {
+  const dolacz = STAN.rodzajGry === 'multi' && STAN.multiSciezka === 'dolacz';
+  $('multi-panel-dolacz').hidden = !(dolacz && Boolean(pseudonimGraczaMulti()));
+}
 
 function renderujMultiSciezka() {
   renderujSegment('multi-sciezka', SCIEZKI_MULTI, STAN.multiSciezka, (wybrany) => {
@@ -3858,12 +3882,10 @@ async function odswiezListeGierNaSetupie() {
     status('Włączam GPS — lista pokazuje gry w zasięgu ~50 m od Ciebie.');
     wlaczGps();
   }
-  if (!pseudonimGraczaMulti()) {
-    $('multi-lobby-lista').replaceChildren();
-    $('multi-lobby-status').textContent =
-      'Zaloguj się w bloku „Kto gra?” powyżej (imię + PIN) — lista gier pokaże się sama.';
-    return;
-  }
+  // Bez potwierdzonego imienia nie pytamy mostu (zero wysyłek). Komunikatu
+  // „zaloguj się" tu nie ma: od 2026-09-12 cały boks jest schowany do czasu
+  // zalogowania, więc nie ma go gdzie pokazać (właściciel).
+  if (!pseudonimGraczaMulti()) return;
   await odswiezLobby();
 }
 
@@ -3882,9 +3904,10 @@ function renderujRodzajGry() {
   $('pole-multi-tryb').hidden = !zaloz;
   renderujSekretTrasy();
   // Dołączanie (właściciel, uwagi terenowe #3 pkt 4d 2026-09-11): po wybraniu
-  // „Dołączam do istniejącej” z setupu zostaje tylko „Kto gra?” i lista gier
-  // w odległości ≤50 m — wszystkie opcje hosta znikają.
-  $('multi-panel-dolacz').hidden = !dolacz;
+  // „Dołączam do istniejącej” z setupu zostaje tylko „Ty w tej grze” i lista
+  // gier w odległości ≤50 m — wszystkie opcje hosta znikają.
+  umiescTozsamosc(multi); // 2026-09-12: login zaraz pod opisem ścieżki
+  renderujPanelDolacz();  // 2026-09-12: boks listy dopiero po zalogowaniu
   for (const id of ['pole-tryb', 'pole-parametry', 'pole-wiek', 'pole-tematy']) {
     const el = $(id);
     if (el) el.hidden = dolacz;
@@ -3911,6 +3934,7 @@ function renderujPolaTozsamosci() {
   $('przycisk-dodaj-gracza').hidden = ukryj;
   const zapamietani = $('lista-zapamietanych');
   if (zapamietani) zapamietani.hidden = ukryj;
+  renderujPanelDolacz(); // zalogowany dołączający dostaje boks z listą gier
 }
 
 /** Ptaszek „widoczna tylko kolejna stacja” — tylko trasa + ścieżka zakładania. */

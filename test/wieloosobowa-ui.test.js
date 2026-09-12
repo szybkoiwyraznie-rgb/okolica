@@ -837,12 +837,13 @@ test('bez potwierdzonego imienia NIE wysyłam niczego — jawna odmowa (lista na
   await wybierzSegment(u, 'lista-rodzajow', 'multi');
   await wybierzSegment(u, 'multi-sciezka', 'dolacz');
   await ustawPozycjeTestowa(u);
-  // m12-75: panel „Dołączam” jest na setupie i pokazuje się każdemu (najpierw
-  // login), ale BEZ potwierdzonego imienia lista zostaje pusta — zero zapytań.
-  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'panel dołączania widoczny (login + miejsce na listę)');
+  // Właściciel 2026-09-12: boks z listą gier jest osobną kartą i pokazuje się
+  // DOPIERO po zalogowaniu — bez imienia nie ma czym zapytać mostu, a pusty
+  // boks tylko zajmował miejsce.
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, true, 'bez zalogowania boksu z listą w ogóle nie ma');
+  assert.equal(el(u, 'pole-tozsamosc').parentNode.id, 'multi-slot-tozsamosc', '„Ty w tej grze” siedzi w karcie multi, pod opisem ścieżki');
   await oddech();
   assert.equal(el(u, 'multi-lobby-lista').children.length, 0, 'lista pusta bez znanego imienia');
-  assert.match(tekst(u, 'multi-lobby-status'), /Zaloguj się/, 'status mówi, czego brakuje');
   assert.equal(most.ciala.length, 0, 'ZERO wysyłek (POST) na most bez potwierdzonego imienia');
   assert.deepEqual(
     most.adresy.filter((a) => /[?&]akcja=(gry|gra-stan|ranking)/.test(a)),
@@ -851,6 +852,7 @@ test('bez potwierdzonego imienia NIE wysyłam niczego — jawna odmowa (lista na
   );
   // z potwierdzonym imieniem — droga wolna (lista odświeża się sama po dodaniu gracza)
   await dodajGraczaUI(u, 'Daria');
+  assert.equal(el(u, 'multi-panel-dolacz').hidden, false, 'po zalogowaniu boks z listą się pokazuje');
   await czekajNa(u, () => most.adresy.some((a) => /[?&]akcja=gry/.test(a)), 'lista pyta o gry po zalogowaniu');
   assert.equal(el(u, 'pole-tozsamosc-siatka').hidden, true, 'pola wpisywania znikają — jedna osoba na telefon');
 });

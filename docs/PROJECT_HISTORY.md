@@ -2749,7 +2749,7 @@ z audytu PR #9), pozostają otwarte; plan sesji trzyma je w kolejce roboczej
 **Stan:** kod nietknięty; jedyna zmiana tej sesji to plan
 `docs/plans/2026-09-12-sesja-startowa.md` oraz ten wpis. Brak handoffu
 końcowego — sesja trwa i czeka na zadanie właściciela.
-## Sesja 2026-09-12b — odzyskanie sesji #12, poprawki właściciela, audyt multi (m12-75 → m12-79)
+## Sesja 2026-09-12b — odzyskanie sesji #12, poprawki właściciela, audyt multi (m12-75 → m12-80)
 
 **Gałąź:** `arena/01a09489-okolica`, PR #13. **Zlecenie właściciela (2026-09-12):**
 (1) przenieść do repozytorium zmiany poprzedniej sesji (#12, sesja urwana — patch
@@ -2859,6 +2859,39 @@ nie było, i odświeżanie listy co 10 s niczego nie prostowało.
 
 Testy: trzy testy mostu + test UI (kliknięcie „Opuść lobby" wysyła `gra-opusc`
 z właściwym `graczId`, gra kończy w archiwum) + kontrakt. Brama: **680/680**.
+
+### 5. `m12-80` — układ setupu multi wg uwag właściciela (2026-09-12, druga tura)
+
+Właściciel po obejrzeniu podglądu: blok „Ty w tej grze" ma być **zaraz pod
+opisem ścieżki**, a lista gier w okolicy — **osobnym boksem**, który pokazuje
+się **dopiero po zalogowaniu**; zdanie „Pokazujemy tylko hosta — resztę sobie
+opowiecie na miejscu" do usunięcia; opis hosta ma zaczynać się od logowania.
+
+- `#pole-tozsamosc` **jeździ między dwoma slotami** (`umiescTozsamosc`):
+  w multi ląduje w `#multi-slot-tozsamosc` w karcie multi (zaraz pod
+  `#multi-sciezka-opis`), poza multi wraca do `#slot-tozsamosc-dom` na swoje
+  miejsce w setupie. Przenosimy WĘZEŁ, nie kopię — `id` zostaje ten sam, więc
+  nasłuchy, testy i `renderujPolaTozsamosci` nie wiedzą o przeprowadzce;
+- `#multi-panel-dolacz` wyniesiony **poza** `#karta-multi` i dostał
+  `class="karta"` (osobny boks); widoczność liczy `renderujPanelDolacz()`
+  = ścieżka „Dołączam" **ORAZ** `pseudonimGraczaMulti()` — wołana zarówno
+  z `renderujRodzajGry`, jak i z `renderujPolaTozsamosci` (czyli po dodaniu
+  gracza boks wyskakuje sam);
+- komunikat „Zaloguj się w bloku „Kto gra?"…" zniknął ze statusu listy: cały
+  boks jest wtedy schowany, więc nie miałby się gdzie pokazać;
+- `OPISY_SCIEZEK.zaloz`: „Jesteś hostem nowej rozgrywki. **Zaloguj się,**
+  wybierz odpowiednie opcje i przejdź dalej."
+
+Kolejność sprawdzona w realnym DOM (atrapa `test/helpers/dom.js`, nie tylko
+czytanie HTML): `multi-sciezka → pole-tozsamosc → multi-panel-dolacz`;
+przed zalogowaniem boks ukryty, po zalogowaniu widoczny; przy powrocie do
+hot-seat pole wraca do `#slot-tozsamosc-dom` i legenda znów brzmi „Kto gra?".
+
+Testy: kontrakt przełożony na nowy układ (slot PO opisie, karta multi domyka
+się zaraz za slotem, boks ma `class="karta"`, zdanie o „tylko hoście" nie
+wraca, widoczność bramkowana imieniem) + test UI „bez potwierdzonego imienia"
+sprawdza teraz, że boksu w ogóle nie ma, a pojawia się po dodaniu gracza.
+Brama: **680 pass / 0 fail**, 0 naruszeń WCAG AA.
 
 ### Audyt reszty pierwotnego pomysłu — co sprawdzone i ZGODNE
 

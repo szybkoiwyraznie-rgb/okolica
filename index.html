@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-79">
-  <script type="module" src="app/app.js?v=m12-79"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-80">
+  <script type="module" src="app/app.js?v=m12-80"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -137,15 +137,26 @@
           <div id="multi-sciezka" class="segment"></div>
           <p id="multi-sciezka-opis" class="podpowiedz"></p>
         </fieldset>
-        <!-- Dołączanie żyje na setupie (właściciel, 2026-09-11): po wybraniu
-             „Dołączam do istniejącej” zostaje tylko „Kto gra?” i ta lista. -->
-        <div id="multi-panel-dolacz" hidden>
-          <p class="podpowiedz">Widzisz gry, których host jest w zasięgu ~50 m. Pokazujemy tylko hosta — resztę sobie opowiecie na miejscu.</p>
-          <ul id="multi-lobby-lista" class="lista-historii"></ul>
-          <p id="multi-lobby-status" class="podpowiedz" role="status"></p>
-          <div class="wiersz">
-            <button id="przycisk-odswiez-lobby" class="przycisk" type="button">🔄 Odśwież listę</button>
-          </div>
+        <!-- „Ty w tej grze" jedzie TU, zaraz pod opis ścieżki (właściciel,
+             2026-09-12): w multi ten telefon obsługuje jedną osobę, więc login
+             jest pierwszym krokiem OBU ścieżek — host najpierw się loguje,
+             potem ustawia grę, a dołączający loguje się i dostaje listę.
+             Pole żyje w jednym z dwóch slotów (`umiescTozsamosc` w app.js);
+             id zostaje to samo, więc nasłuchy i testy nie wiedzą o przeprowadzce. -->
+        <div id="multi-slot-tozsamosc"></div>
+      </div>
+
+      <!-- Lista gier ~50 m to OSOBNY BOKS (właściciel, 2026-09-12) i pokazuje
+           się DOPIERO po zalogowaniu: bez imienia nie ma czym zapytać mostu,
+           a pusty boks z napisem „zaloguj się" tylko zajmował miejsce.
+           Właściciel kazał też usunąć dopisek o tym, że wpis pokazuje tylko
+           hosta — kontrakt w test/kontrakt.test.js pilnuje, żeby nie wrócił. -->
+      <div id="multi-panel-dolacz" class="karta" hidden>
+        <p class="podpowiedz">Widzisz gry, których host jest w zasięgu ~50 m.</p>
+        <ul id="multi-lobby-lista" class="lista-historii"></ul>
+        <p id="multi-lobby-status" class="podpowiedz" role="status"></p>
+        <div class="wiersz">
+          <button id="przycisk-odswiez-lobby" class="przycisk" type="button">🔄 Odśwież listę</button>
         </div>
       </div>
 
@@ -204,6 +215,9 @@
            z tym PIN-em, zajęte wymaga PIN-u właściciela (R20 = odmowa). Liczba
            graczy jest długością tej listy, więc osobne pole do wpisywania liczby
            zniknęło (myliło: „Gracze" i „Kim jesteś?" pytały o to samo). -->
+      <!-- Docelowe miejsce bloku tożsamości poza multi (w multi pole jedzie
+           do `#multi-slot-tozsamosc` w karcie multi — patrz `umiescTozsamosc`). -->
+      <div id="slot-tozsamosc-dom"></div>
       <fieldset class="pole" id="pole-tozsamosc">
         <legend id="legend-tozsamosc">👤 Kto gra?</legend>
         <div class="siatka" id="pole-tozsamosc-siatka">
