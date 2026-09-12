@@ -1341,6 +1341,69 @@ test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z link
   assert.match(dom.pobierz('gra-postep').textContent, /stacja 2 z 3/, 'badge postępu już po zamknięciu stacji');
 });
 
+/** Hot-seat pod rotację pytań: 2 graczy i po 2 pytania na stację (zgłoszenie C).
+ *  Fixture ma jedno pytanie na stację, więc dokładamy drugie (treść INNA —
+ *  protokół odrzuca duplikaty treści: E-**). */
+async function graDwomaGraczamiDwaPytania() {
+  const pamiec = new Map();
+  pamiec.set('okolica:gracze', JSON.stringify({
+    schemat: 'gracze-lokalni/1',
+    gracze: ['Gracz 1', 'Gracz 2'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })),
+  }));
+  pamiec.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1', kanon: '2026-09-10',
+    // czasGryMin 90 → promień 1000 m dla 3 stacji × 2 pytań (ADR 0025); fixture
+    // paczki jest ułożony pod ten promień (E16 porównuje go z konfiguracją).
+    konfig: { liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 2, tematy: ['historia', 'architektura'], czasGryMin: 90 },
+  }));
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?rotacja=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje');
+  const paczka = czytajFixturePaczka();
+  // Identyfikator pytania ma wzorzec `s<stacja>p<numer>` (E19), a treść kończy
+  // się znakiem zapytania (E15) — dlatego numer pytania zmieniamy, a marker
+  // „wariant B” idzie na POCZĄTEK treści (protokół odrzuca duplikaty treści).
+  const drugie = paczka.pytania.map((p) => ({
+    ...p,
+    id: p.id.replace(/p1$/, 'p2'),
+    tresc: `Wariant B: ${p.tresc}`,
+    wyjasnienie: `Wariant B: ${p.wyjasnienie}`,
+  }));
+  dom.wklej('pole-odpowiedz', JSON.stringify({ ...paczka, pytania: [...paczka.pytania, ...drugie] }));
+  return { dom, paczka, drugie };
+}
+
+test('M6: przy 2 pytaniach na stację gracze odpowiadają NA ZMIANĘ, nie w kółko ten sam (zgłoszenie C)', async () => {
+  const { dom, drugie } = await graDwomaGraczamiDwaPytania();
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  await dojdzSymulacja(dom);
+
+  // Zgłoszenie właściciela 2026-09-12: Gracz 1 dostawał OBA pytania pierwszej
+  // stacji. Na stacji odpowiada gracz z kolejki (ADR 0022), ale każde pytanie
+  // ma innego autora — pierwsze gracz z kolejki, drugie następny gracz.
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /Stacja 1 zdobyta · pytanie 1 z 2 · odpowiada Gracz 1/);
+  const przyciski = dom.pobierz('gra-odpowiedzi').children;
+  for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] });
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'stacja nie zamknięta po pierwszym pytaniu');
+  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Następne pytanie/, 'drugie pytanie tej samej stacji');
+  dom.kliknij('przycisk-nastepna-stacja');
+
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /Stacja 1 zdobyta · pytanie 2 z 2 · odpowiada Gracz 2/,
+    'drugie pytanie stacji idzie do NASTĘPNEGO gracza');
+  assert.equal(dom.pobierz('gra-pytanie-tresc').textContent, drugie[0].tresc, 'treść drugiego pytania');
+  assert.equal(dom.pobierz('gra-odpowiedzi').hidden, false, 'Gracz 2 ma swoje cztery odpowiedzi');
+
+  // Gracz 2 odpowiada — dopiero teraz stacja się zamyka i gra idzie dalej.
+  const przyciski2 = dom.pobierz('gra-odpowiedzi').children;
+  for (const fn of przyciski2[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski2[0], currentTarget: przyciski2[0] });
+  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Gracz 2, stacja 2 — idę →/,
+    'po dwóch pytaniach stacja zamknięta, trasa idzie dalej');
+  dom.kliknij('przycisk-nastepna-stacja');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'kolejny odcinek wystartował');
+});
+
 test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-seat, ADR 0009)', async () => {
   const { dom } = await graWFaziePytania();
   // Właściciel 2026-09-11 (4a): nad boksem pytania nie ma już nagłówka „Gra",

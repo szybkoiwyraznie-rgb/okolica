@@ -17,7 +17,7 @@
  * ADR 0014 wycofany). Znaczniki czasu w dzienniku służą tylko kolejności zdarzeń.
  */
 
-import { odlegloscM } from './geo.js?v=m12-86';
+import { odlegloscM } from './geo.js?v=m12-87';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
@@ -185,12 +185,40 @@ export function graczNaStacji(stan, stacjaId = stan.biezacaStacja) {
 }
 
 /**
- * Kto odpowiada na pytanie tej stacji: ZAWSZE gracz z kolejki (ADR 0022 —
- * wybór trybu odpowiadania usunięty z setupu, zastępuje ADR 0009 pkt 4).
+ * Autor pytania na stacji — rotacja pytań (zgłoszenie właściciela 2026-09-12:
+ * „zawsze pytania powinny być zadawane po jednym dla kolejnych graczy”).
+ *
+ * Pierwsze pytanie stacji należy do gracza z kolejki (ADR 0022 bez zmian),
+ * drugie — do NASTĘPNEGO gracza w liście, trzecie do kolejnego itd., cyklicznie.
+ * Wcześniej wszystkie pytania stacji szły do jednej osoby: przy „2 pytania na
+ * stację” gracz z kolejki odpowiadał dwa razy, a drugi gracz nie odpowiadał
+ * wcale na tej stacji.
+ *
+ * Kolejność autorów bierzemy z listy graczy rozgrywki (nie alfabetycznie i nie
+ * z identyfikatorów): to ta sama lista, którą widzi gracz w tabeli, więc „kolejny
+ * gracz” znaczy dokładnie to, co widać.
+ */
+export function graczPytania(stan, stacjaId = stan.biezacaStacja, pytanieId = null) {
+  const zKolejki = graczNaStacji(stan, stacjaId);
+  if (zKolejki == null || pytanieId == null) return null;
+  const indeksPytania = pytaniaStacji(stan, stacjaId).indexOf(pytanieId);
+  if (indeksPytania < 0) return null;
+  const gracze = stan.gracze.map((g) => g.id);
+  if (gracze.length === 0) return null;
+  const start = gracze.indexOf(zKolejki);
+  return gracze[(start + indeksPytania) % gracze.length] ?? null;
+}
+
+/**
+ * Kto odpowiada na pytania tej stacji: autorzy kolejnych pytań w kolejności
+ * zadawania (ADR 0022 — wybór trybu odpowiadania usunięty z setupu). Bez
+ * duplikatów: przy 3 pytaniach i 2 graczach trzeci pytanie dzieli autora
+ * z pierwszym — tak samo jak paczka uboższa niż liczba graczy w multi.
  */
 export function ktoOdpowiada(stan, stacjaId = stan.biezacaStacja) {
-  const zKolejki = graczNaStacji(stan, stacjaId);
-  return zKolejki == null ? [] : [zKolejki];
+  const pytania = pytaniaStacji(stan, stacjaId);
+  const autorzy = pytania.map((pid) => graczPytania(stan, stacjaId, pid)).filter((id) => id != null);
+  return [...new Set(autorzy)];
 }
 
 /** Pytania przypisane do stacji (bez treści — ADR 0007 pkt 6). */
@@ -214,7 +242,10 @@ function stacjaZamknieta(stan, stacjaId) {
   if (odcinek.stan !== STANY_ODCINKA.zakonczony) return false;
   const pytania = pytaniaStacji(stan, stacjaId);
   if (pytania.length === 0) return true;
-  return ktoOdpowiada(stan, stacjaId).every((id) => pytania.every((pid) => juzOdpowiedzial(stan, stacjaId, id, pid)));
+  return pytania.every((pid) => {
+    const autor = graczPytania(stan, stacjaId, pid);
+    return autor != null && juzOdpowiedzial(stan, stacjaId, autor, pid);
+  });
 }
 
 function przejdzDalej(stan, czasMs) {
@@ -364,10 +395,13 @@ export function zapiszOdpowiedz(stan, { stacjaId = stan.biezacaStacja, graczId =
   }
   if (![0, 1, 2, 3].includes(wybrana)) return { stan: nowy, usterki: [usterka('G08')] };
 
-  const dozwoleni = ktoOdpowiada(nowy, stacjaId);
-  const gracz = graczId ?? dozwoleni[0] ?? null;
+  // Autorem pytania jest konkretny gracz (rotacja), nie „ktokolwiek z kolejki”:
+  // drugie pytanie stacji należy do następnego gracza i tylko on może na nie
+  // odpowiedzieć (wcześniej gracz z kolejki odpowiadał na wszystkie pytania).
+  const autorPytania = graczPytania(nowy, stacjaId, pytanie.id);
+  const gracz = graczId ?? autorPytania ?? null;
   if (!znajdzGracza(nowy, gracz)) return { stan: nowy, usterki: [usterka('G02')] };
-  if (!dozwoleni.includes(gracz)) return { stan: nowy, usterki: [usterka('G07')] };
+  if (gracz !== autorPytania) return { stan: nowy, usterki: [usterka('G07')] };
   if (juzOdpowiedzial(nowy, stacjaId, gracz, pytanie.id)) return { stan: nowy, usterki: [usterka('G06')] };
 
   const poprawna = wybrana === pytanie.poprawna;
