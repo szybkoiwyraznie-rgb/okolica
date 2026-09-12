@@ -2705,3 +2705,47 @@ się jako trzy fale: stabilizacja terenowa (m12-64…71), koniec moderacji
 bieżąco w aneksach i dyscypliną wersjonowania. Uwagi 1–9 przekazane
 właścicielowi do decyzji (propozycja: jeden commit docs-only + fix
 punktu 1 w kolejnej sesji roboczej).
+
+## Sesja 2026-09-12 — blok startowy i audyt PR #12 (gałąź arena/01a09489-okolica, PR #13)
+
+**Zlecenie właściciela:** „Kontynuujemy projekt. Przeczytaj obowiązkową
+lekturę, otwórz nowy PR, wypchnij plan i zatrzymaj się, przekażę ci zadanie."
+Sesja wykonała blok startowy i zatrzymała się przed pracą merytoryczną —
+zadanie ma przyjść od właściciela.
+
+**Lektura obowiązkowa (AGENTS.md §0, całe pliki):** `AGENTS.md` 186 l.,
+`docs/PROTOKOL.md` 642 l., rejestr + 37 ADR-ów 0001–0037 (3 286 l.),
+`docs/LESSONS.md` 618 l. (L1–L45), `docs/setup/ENVIRONMENT.md` 167 l.,
+`docs/ROADMAP.md` 61 l., `docs/setup/HANDOFF_2026-09-10.md` 157 l.
+Budżet (`npm run budzet`): 71 641 / 100 000 tok — rezerwa 28 359.
+
+**Bramy na mainie `b3430c5` przed zmianami:** `npm test` 692 pass / 0 fail
+(~68 s), `npm run check` — oba szablony zgodne (§2: 4 209 zn. / 61 l.,
+§2.2: 4 457 zn. / 62 l.), `npm run audyt` — 0 naruszeń WCAG AA. Cache-busting
+`?v=m12-74` w 42 miejscach, `WERSJA_SW = 'm12-74'` — spójne (kontrakt).
+
+**Audyt poprzedniego scalonego PR #12** (squash `b3430c5`) wg AGENTS §2 /
+ADR 0012: po `git fetch origin main --depth=50` (klon płytki, ENVIRONMENT §3)
+`git diff b3430c5^..b3430c5` = **1 plik, +129 linii** — wyłącznie sekcja
+„Sesja 2026-09-11l — audyt PR #9" w tym dzienniku. Zero zmian w kodzie.
+
+Weryfikacja merytoryczna faktów z tego wpisu (nie tylko jego lektura):
+
+- liczby bram odtworzone na bieżącym mainie: 692/692, 0 naruszeń kontrastu,
+  szablony zgodne — **wszystkie trzy potwierdzone**;
+- znalezisko 1 (ranking „Moje gry") **potwierdzone grepem**:
+  `KLUCZ_PSEUDONIMU` (`okolica:pseudonim`) czytany w `app/app.js:4746`
+  i `:4830`, a żadna ścieżka w `app/` go nie zapisuje (zapisuje tylko atrapa
+  `test/rankingi-ui.test.js:45`); `KLUCZ_OSTATNIEGO_GRACZA`
+  (`okolica:ostatni-gracz`) zapisywany w `app/app.js:698`, nigdy nieczytany;
+- uwaga 7 **potwierdzona**: `zmienPodklad` nadal w `app/app.js:1186`,
+  bez wywołań (martwa), mimo zapisu ADR 0037 o jej usunięciu.
+
+**Werdykt:** PR #12 zgodny z procedurą (audyt jako jedyna treść), fakty w nim
+podane trzymają się kodu. Usterki 1–9, które ten wpis OPISUJE (pochodzące
+z audytu PR #9), pozostają otwarte; plan sesji trzyma je w kolejce roboczej
+(fix rankingu + jeden commit docs-only na klaster L31) do czasu zlecenia.
+
+**Stan:** kod nietknięty; jedyna zmiana tej sesji to plan
+`docs/plans/2026-09-12-sesja-startowa.md` oraz ten wpis. Brak handoffu
+końcowego — sesja trwa i czeka na zadanie właściciela.
