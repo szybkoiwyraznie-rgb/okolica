@@ -963,6 +963,11 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   assert.match(KONFIG_JS, /TEMATY_DOPELNIANE_PRZY_MIGRACJI = \['ciekawostki'\]/, 'ciekawostki na liście dopełnień migracyjnych');
   assert.match(KONFIG_JS, /export function dopelnijNoweTematySetupu/, 'jednorazowa migracja tematów setupu');
   assert.match(APP, /kanon: KANON_SETUPU/, 'zapis konfigu niesie marker kanonu');
+  // m12-84 (audyt PR #13 pkt 3): dopełnienia są PER-WERSJA, a odczyt PORÓWNUJE
+  // marker z bieżącym kanonem (`if (!kanon)` przepuszczał zapisy ze starym markerem).
+  assert.match(KONFIG_JS, /export const ZMIANY_KANONU_SETUPU = Object\.freeze\(\{/, 'dziennik zmian kanonu (wersja → nowe tematy domyślne)');
+  assert.match(KONFIG_JS, /export function tematyDopelnianeOdKanou/, 'dopełnienia liczone od wersji markera');
+  assert.match(APP, /dopelnijKonfiguracjeDoKanou\(STAN\.konfig, kanon\)/, 'odczyt porównuje wartość markera, nie tylko jego obecność');
   // pozostałości trybu developerskiego i warstwy zapasowej nie wracają do treści startowych
   assert.ok(!APP.includes('M0 — fundament'), 'dev-status informacji startowej usunięty');
   assert.match(INDEX, /Przemieszczasz się od stacji do stacji, a telefon sam rozpoznaje,\s+gdy jesteś na miejscu — wtedy odsłania pytanie\./, 'intro: brzmienie właściciela (HTML zawija wiersze)');

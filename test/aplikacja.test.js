@@ -322,6 +322,28 @@ test('bootstrap: zapis sprzed markera kanonu dopełnia nowe tematy domyślne (m1
   assert.equal(domSwiezy.pobierz('lista-tematow').children.length > 0, true, 'chipy tematów wyrenderowane');
 });
 
+test('bootstrap: marker kanonu jest PORÓWNYWANY — stary marker dostaje dopełnienie, bieżący nie (m12-84)', async () => {
+  // Audyt PR #13 pkt 3: odczyt sprawdzał tylko OBECNOŚĆ markera (`if (!kanon)`),
+  // więc zapis z markerem starszej wersji nigdy nie dostałby nowych tematów
+  // domyślnych. Tu scenariusz z terenu: zapis z 2026-09-05 (jeszcze bez
+  // „Ciekawostek” w domyślnych) podnosi się do bieżącego kanonu RAZ.
+  const pamiecStaryMarkera = new Map();
+  pamiecStaryMarkera.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1', kanon: '2026-09-05',
+    konfig: { tematy: ['architektura', 'historia'], liczbaStacji: 4 },
+  }));
+  const domStaryMarkera = zainstalujDom({ pamiec: pamiecStaryMarkera });
+  await import(`../app/app.js?kanon=${Date.now()}`);
+  const poNadrobieniu = JSON.parse(pamiecStaryMarkera.get('okolica:konfig'));
+  assert.equal(poNadrobieniu.kanon, '2026-09-10', 'marker podniesiony do bieżącego kanonu');
+  assert.ok(poNadrobieniu.konfig.tematy.includes('ciekawostki'), '„Ciekawostki” dopisane do zapisu ze starszym markerem');
+  assert.ok(poNadrobieniu.konfig.tematy.includes('historia'), 'wybory organizatora zostają');
+  assert.equal(poNadrobieniu.konfig.liczbaStacji, 4, 'pozostałe pola nietknięte');
+  const chipy = [...domStaryMarkera.pobierz('lista-tematow').children];
+  const zaznaczone = chipy.filter((chip) => chip.children[0]?.checked).map((chip) => chip.textContent);
+  assert.ok(zaznaczone.some((t) => /Ciekawostki/.test(t)), 'checkbox odzwierciedla dopełniony temat');
+});
+
 /* ------------------------------------------------------------------ mapa (M2) */
 
 /**

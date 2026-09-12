@@ -708,11 +708,15 @@ function opuscGre(dane) {
     const graczId = String((dane && dane.graczId) || '');
     const indeks = gra.gracze.findIndex((g) => g.id === graczId);
     if (indeks < 0) return { ok: false, blad: 'nie ma takiego gracza w tej grze' };
-    // Uwaga (audyt PR #13 pkt 5, obserwacja dla właściciela): organizatora
-    // rozpoznajemy po INDEKSIE 0, a nie po `gra.organizatorId`. Dziś to to samo
-    // (zakładający grę jest pierwszym i jedynym graczem na starcie, `g-1`),
-    // ale zmiana kolejności graczy złamałaby to założenie.
-    if (indeks === 0) {
+    // Organizatora rozpoznajemy po POLU, które go definiuje — `gra.organizatorId`
+    // (m12-84, audyt PR #13 pkt 5). Wcześniej był to indeks 0 w `gracze`, co
+    // działa tylko dopóki zakładający grę stoi pierwszy: po zmianie kolejności
+    // graczy (albo ręcznej korekcie pliku na Drive) wyjście organizatora
+    // USUWAŁO go z listy zamiast zamknąć grę, a wyjście gościa z indeksu 0
+    // zamykało grę wszystkim. Fallback na pierwszego gracza tylko dla zapisów
+    // sprzed wprowadzenia pola — dla nich zachowanie zostaje jak dawniej.
+    const organizatorId = String(gra.organizatorId || (gra.gracze[0] && gra.gracze[0].id) || '');
+    if (graczId === organizatorId) {
       gra.stan = 'archiwum';
       zapiszGre(znaleziona.plik, gra);
       przenies(znaleziona.plik.getId(), FOLDERY.gryZakonczone);
