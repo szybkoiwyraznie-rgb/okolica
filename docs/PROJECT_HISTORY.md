@@ -2893,6 +2893,50 @@ wraca, widoczność bramkowana imieniem) + test UI „bez potwierdzonego imienia
 sprawdza teraz, że boksu w ogóle nie ma, a pojawia się po dodaniu gracza.
 Brama: **680 pass / 0 fail**, 0 naruszeń WCAG AA.
 
+### 6. Blokada 403 kafelków OSM w podglądzie — realny błąd w `sw.js`, nie artefakt środowiska
+
+Właściciel zgłosił, że w podglądzie Areny kafelki `tile.openstreetmap.org`
+wracają jako `403 Access Blocked. App is not following the tile usage policy of
+OpenStreetMap's volunteer's-run servers: osm.wiki/Blocked`, a na GitHub Pages
+działa. Komunikat cytuje politykę, więc polityka została przeczytana
+(`operations.osmfoundation.org/policies/tiles/` + `osm.wiki/Blocked`).
+
+To wariant **General block**, nie „Referer is required" — a wśród jego przyczyn
+polityka wymienia: *„**No caching**: downloading the same tiles repeatedly, due
+to improper response caching, can also result in blocking."*
+
+Nasz `sw.js` dokładnie to robił: `CACHE_KAFELKI` był nazwany od `WERSJA_SW`
+(`okolica-kafelki-m12-80`), a wersja rośnie przy każdej zmianie `app/*.js`
+(L29). Każde wdrożenie tworzyło nową nazwę, `activate` kasowało starą — cały
+zbiór kafelków do kosza, widok pobierany od dostawcy od zera. W tej sesji bump
+był sześć razy (m12-75 → m12-80), każdy z pełnym re-pobraniem. Efemeryczny
+referer `*.e2b.app` (nowy przy każdym sandboxie, więc niestabilna tożsamość,
+czego polityka też nie lubi) tylko przyspieszył wyrok — **wzorzec ruchu
+wytwarzał nasz kod, nie środowisko.**
+
+- `CACHE_KAFELKI` = `` `${PREFIKS_CACHE}-kafelki` `` — **bez wersji**. Kafelki
+  są adresowane treścią (`z/x/y`) i ich ważność określa dostawca, nie nasz
+  numer wersji. Skorupa zostaje wersjonowana (musi — to ona niesie `?v=`),
+  kafelki nie mogą. Stare cache'e z wersją w nazwie sprząta `activate`
+  (przechodzą przez filtr przedrostka, bo nie równają się stałej);
+- **ryzyko na Pages:** identyczny mechanizm działał tam od M10/T2 — przy małym
+  ruchu niewidoczny, przy większym to dokładnie penalizowany wzorzec. Poprawka
+  zdejmuje ryzyko u źródła, nie tylko w sandboxie.
+
+Testy (2 nowe, łącznie **682 pass / 0 fail**, brama exit 0, WCAG 0):
+„cache kafelków przeżywa bump wersji" symuluje dwa wdrożenia na **tym samym**
+magazynie (harness `new Function` dostaje ten sam `magazyny`, kod z podmienionym
+`WERSJA_SW`) i sprawdza, że po `activate` kafel jest w cache, a ponowne
+żądanie nie idzie do dostawcy; drugi pilnuje sprzątnięcia starej wersjonowanej
+nazwy. **Sprawdzone, że na starym kodzie oba są czerwone** (2 fail) — inaczej
+test nic by nie dowodził. LESSONS **L47**.
+
+Bez zmian: szablon URL, atrybucja, `MAX_KAFELEK = 120`, cache-first, brak
+prefetchu — więc nie dotyczy nas „bulk downloading / offline". Zalecenia
+polityki jeszcze niespełnione (do decyzji właściciela): podmiana szablonu
+kafelków bez wdrażania wersji, link „Report a map issue"
+(`openstreetmap.org/fixthemap`) przy atrybucji, opublikowany adres kontaktowy.
+
 ### Audyt reszty pierwotnego pomysłu — co sprawdzone i ZGODNE
 
 Czytane w kodzie, nie z dokumentów: lobby pokazuje wyłącznie tryb, notkę

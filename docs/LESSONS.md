@@ -638,3 +638,33 @@ nie dochodzą do starych zapisów.
 kanonu → jednorazowe dopełnienie tylko NOWYCH tematów domyślnych (lista
 dopełnień w kodzie, nigdy `wlasny`), zapis markera i nie więcej ruszania
 wyborów gracza. Test rytuału: stary zapis dopełniany, świeży nietknięty.
+
+## L47 — cache zasobów obcego dostawcy NIE może być wersjonowany wraz z aplikacją
+
+**Objaw:** w podglądzie Areny kafelki `tile.openstreetmap.org` wracały jako
+`403 Access Blocked. App is not following the tile usage policy of
+OpenStreetMap's volunteer's-run servers: osm.wiki/Blocked`. Na GitHub Pages ten
+sam kod działał.
+
+**Przyczyna:** `CACHE_KAFELKI` był nazwany od `WERSJA_SW`
+(`okolica-kafelki-m12-80`), a `WERSJA_SW` rośnie przy każdej zmianie `app/*.js`
+(L29). Każde wdrożenie tworzyło więc nową nazwę cache, a `activate` usuwało
+starą — cały zbiór kafelków lądował w koszu i widok był pobierany od dostawcy
+od zera. W jednej sesji potrafi to być kilkanaście bumpów z rzędu, każdy z
+pełnym re-pobraniem widoku. Polityka kafelków OSM wymienia to wprost jako
+podstawę blokady (*General block* → „**No caching**: downloading the same
+tiles repeatedly, due to improper response caching"). Krótko mówiąc: to nie
+sandbox „coś robił źle" — nasz SW wytwarzał dokładnie wzorzec ruchu, za który
+OSM blokuje, a efemeryczny referer `*.e2b.app` tylko przyspieszył wyrok.
+
+**Reguła:** wersjonowanie cache służy unieważnianiu zasobów **naszej**
+aplikacji. Zasoby obcego dostawcy są adresowane treścią (kafel = `z/x/y`) i ich
+ważność określa dostawca, nie nasz numer wersji — ich cache musi mieć nazwę
+**stałą**. Skorupa wersjonowana, kafelki nie. Test rytuału: dwa kolejne
+„wdrożenia" (ten sam magazyn, inny `WERSJA_SW` w kodzie SW) — po `activate`
+kafel nadal w cache i zero żądań do dostawcy.
+
+**Szersza zasada:** zanim uznamy błąd obcej usługi za „artefakt środowiska",
+sprawdźmy, czy nasz kod nie generuje wzorca, który ta usługa jawnie penalizuje.
+Komunikat blokady cytował politykę — polityka była do przeczytania i wymieniała
+nasz przypadek co do słowa.
