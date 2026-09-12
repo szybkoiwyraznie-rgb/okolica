@@ -123,3 +123,20 @@ jako developerski tekst. Badge `#multi-most-stan` i testowy akapit zniknęły;
 jedna prawda o stanie mostu zostaje w `#most-stan-repo` przy karcie paczek.
 Nic z tego nie zmienia zasady decyzji — adres nadal jest stałą w kodzie,
 a listę gier ~50 m pokazuje teraz setup przy ścieżce „Dołączam".
+
+## Aneks (2026-09-12): przycisk „Sprawdź połączenie" usunięty (m12-66)
+
+Uwagi terenowe #2 właściciela: zdanie o przycisku z pkt 2 przestało
+obowiązywać — „🔌 Sprawdź połączenie" zniknął z ekranu pozycji razem z wierszem
+o HTTPS. Powód zapisany w PROJECT_HISTORY przy m12-66: „most działa albo
+aplikacja sama mówi, że nie; ręczne sprawdzanie było ozdobnikiem". Jawny stan
+mostu zostaje w `#most-stan-repo` (druga połowa pkt 2 bez zmian), a druga
+kontrola stanu, `#multi-most-stan`, zniknęła aneksem 2026-09-11 wyżej.
+Kontrakt `test/kontrakt.test.js` asertuje BRAK `#przycisk-test-polaczenia`
+(L31: element usunięty ma zostać usunięty także w opisach).
+
+Zdezaktualizowały się też dwie wzmianki poza pkt 2: po zniesieniu moderacji
+wstępnej (2026-09-11) w moście nie ma `REVIEW_SECRET` ani linku przeglądu,
+o których mówi pkt 4 i „Powiązania" (kontrakt: `GS` nie zawiera
+`REVIEW_SECRET`). Pkt 1 (adres jako stała w kodzie), pkt 3 (nadpisanie
+w `localStorage`, bez UI) i pkt 5 (kolejność wdrożenia) obowiązują bez zmian.

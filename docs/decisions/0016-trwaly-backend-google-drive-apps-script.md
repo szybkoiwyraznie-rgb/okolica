@@ -148,3 +148,13 @@ aplikacja jest prywatna (właściciel plus kilku znajomych, BACKLOG B17), a jej
 odbiorcą jest wydzielone konto właściciela. Brak pola pinuje
 `test/kontrakt.test.js`. Reguła „bez adresu mostu: zero wysyłek i jawny status"
 obowiązuje bez zmian.
+
+## Aneks (2026-09-12): „🔌 Sprawdź połączenie" usunięty z interfejsu (m12-66)
+
+Zdanie o próbie CORS („Próba CORS z pkt. «Ograniczenia techniczne» zostaje
+w interfejsie jako przycisk…") opisuje stan do m12-66. Właściciel usunął
+przycisk w uwagach terenowych #2: most albo działa, albo aplikacja sama mówi,
+że nie ma go gdzie wysłać — jawny stan w `#most-stan-repo` wystarcza
+(`#multi-most-stan` zniknął wcześniej, aneksem 2026-09-11 do ADR 0020).
+Adres nadal jest stałą w kodzie (ADR 0020 pkt 1), a kontrakt
+`test/kontrakt.test.js` pilnuje braku przycisku.

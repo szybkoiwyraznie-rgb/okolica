@@ -62,3 +62,13 @@ jawny stan mostu i przycisk „🔌 Sprawdź połączenie". Pliki `docs/setup/`
 nadal są wersjami roboczymi i źródłem prawdy dla testów/kontraktów, z tym że
 `most-drive-instrukcja.md` §4 opisuje przekazanie adresu w czacie zamiast
 wklejania w UI.
+
+## Aneks (2026-09-12): przycisk „🔌 Sprawdź połączenie" usunięty (m12-66)
+
+Dwie wzmianki — w Konsekwencjach („żywa próba CORS wydarzy się przez przycisk")
+i w aneksie 2026-09-07 („zostały jawny stan mostu i przycisk") — opisują stan
+do m12-66. Przycisk zniknął z ekranu pozycji (uwagi terenowe #2 właściciela:
+ręczne sprawdzanie było ozdobnikiem), zostaje sam jawny stan mostu
+(`#most-stan-repo`); drugi badge, `#multi-most-stan`, usunął aneks 2026-09-11
+do ADR 0020. Decyzja o wielozadaniowym backendzie obowiązuje bez zmian,
+a kontrakt `test/kontrakt.test.js` asertuje brak `#przycisk-test-polaczenia`.
