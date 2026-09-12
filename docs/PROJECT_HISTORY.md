@@ -2576,3 +2576,132 @@ i podkład zaszte), rejestr ADR, PROTOKOL §9 (trasaSekret, geohash8,
 lobby-only, premia 3/2/1, 30 s), ARCHITECTURE (setup-multi, sync, info,
 koniec hosta), README, WORKFLOW §4.4 (9 punktów), instrukcja mostu §5b
 + dopisek „Awaryjnie".
+
+
+## Sesja 2026-09-11l — audyt PR #9 (gałąź arena/01a09256-okolica)
+
+Audyt scalonego PR #9 (squash `0b81d0d`, 49 plików, +2719/−1355) wg procedury
+AGENTS.md §2 / ADR 0012: `git diff 0b81d0d^..0b81d0d` plik po pliku, reguły
+z docs/PROTOKOL.md i odpowiednich ADR-ów, brama testów na mainie.
+
+**Zakres i kamienie (m12-64 → m12-74, jednolite `?v=` + `WERSJA_SW`):**
+- **m12-64** — `DOMYSLNE.tematy` na kanon nowego setupu (alfa., z Ciekawostkami,
+  bez Sportu/Jedzenia/`wlasny`) + fallback pustych tematów z tej samej stałej;
+  znaleziona w weryfikacji na żywo; regresja w `konfig.test.js`; **LESSONS
+  L45** (kanon ⇒ domyślne zaznaczenie ⇒ asercje z datą).
+- **m12-65** — meta paczki = FAKTYCZNE tematy pytań (`faktyczneTematyPytan`,
+  `zbierzMetaZestawu(pytania)` z fallbackiem), migracja rejestru
+  `ujedgajnijTematyWpisowLokalnych` (idempotentna, try/catch — L10); lista
+  „📦 Paczki dla tej okolicy" zwinięta do 3 najlepszych + toggle; sort:
+  `oceny.plus` desc → data desc. Anekse ADR 0017.
+- **m12-66 (uwagi terenowe #2)** — Intro krótsze; ekran pozycji bez wiersza
+  HTTPS i przycisku „🔌 Sprawdź połączenie"; ekran promptu bez `#prompt-rozmiar`
+  (usunięte `szacunekOdpowiedzi` + stałe BZA/PROG/TOKENY z `protokol.js`);
+  slot sterowania chowany w fazie pytania; panel multi przeniesiony PRZED
+  `#gra-slot-sterowanie`; odpowiedzi A–D chowane po kliknięciu; „Wznów grę"
+  skacze prosto w odcinek; pasek drogi z pigułką `.pasek-dystans`; usunięte
+  `przycisk-pierścien` i `#stacje-sprawiedliwosc` (stan `wymusPierscien`
+  zostaje w silniku, bez przełącznika).
+- **m12-67** — powódź `gra-hotseat-*`: hermetyczny `fetch` w `test/helpers/dom.js`
+  (Node 22 miał globalny fetch → testy krążyły po PROD. moście; CI GitHub
+  Actions ma internet) + `wznowGre` bez rebazy zegara dla gry w fazie `koniec`
+  (stabilny klucz/odcisk → most nadpisuje ten sam plik). Baner „zapis
+  ZAKOŃCZONEJ gry". Nowa hermetyka weryfikowana testem-skryptem.
+- **m12-68/69/70** — podtytuł i zdanie o składzie Intro; P02 bez wzmianki
+  o trybie testowym.
+- **m12-71** — globalne `[hidden] { display: none !important }` (`.gra-odpowiedzi
+  {display:grid}` biło atrybut); pauza (najczęściej automatyczna) nie wyprze
+  oceny: `renderujGre` nie przełącza paneli przy `pokazOceny` (wyjątek: ręczne
+  zakończenie); „Następna stacja" jednym klikiem wznawia zegar i startuje drogę.
+- **m12-72 (koniec moderacji wstępnej)** — `.gs`: paczka OD RAZU w
+  zaakceptowanych (statusy `zaakceptowana` / `juz-zaakceptowana` /
+  `juz-w-odrzuconych`); usunięte maile, strona przeglądu, tokeny OWNER_EMAIL/
+  REVIEW_SECRET/URL_SERWISU i katalog do-przegladu; kontrakt decyzji w testach.
+  Aneks ADR 0017, instrukcja mostu przerobiona, AGENTS.md (sekretów nie ma).
+- **m12-73/74 (multi po raz drugi)** — tryb „tury" usunięty (`biezacyGraczTury`,
+  kontrola tury w moście, rytmy 10/30); tryby `trasa` (Wspólna Trasa, po kolei,
+  `trasaSekret` — mapa gry tylko bieżąca stacja, przy generowaniu `ukryjStacje`)
+  i `wyscig` (Wyścig na Orientację, lista wyboru); `czyKompletna` bez gałęzi
+  (każdy aktywny zamyka wszystko); PACZKA PRZED LOBBY przez WSPÓLNĄ ścieżkę
+  (`multiPoPaczce` → `zalozGreMulti`); start solo od 1 gracza; rodzaj gry i
+  ścieżka multi jako segmenty na setupie; dokładnie JEDEN gracz na telefon
+  (imię+PIN z „Kto gra?", limit z odmową); pytań na stację w multi = 1
+  (pole schowane, promień jak w hot-seat); dołączanie TYLKO z listy:
+  most zwraca wyłącznie `stan:"lobby"`, filtr `geohash8` hosta + sąsiedzi
+  (~50 m), wpis tylko „Host: X", kody usunięte; kanał `#multi-info`
+  (dojścia/odpowiedzi/rezygnacje/koniec, ostatnie ~8, neutralne płciowo);
+  polling w grze 30 s; host kończy grę `gra-zakoncz` (tylko organizator,
+  stan „trwa", idempotencja na zakończone) — premie liczą się też przy
+  przedwczesnym końcu; premia STAŁA 3/2/1 (lustro app↔.gs pilnowane
+  `most-gra.test.js`); język polski i podkład OSM zaszyte (NOWY ADR 0037,
+  K04/K06 usunięte, `JEZYK_GRY`, `oczyscKonfiguracje` forsowane).
+
+**Zgodność z protokołem i ADR-ami:** PROTOKOL §9 zsynchronizowany z kodem
+(`trasaSekret`, `geohash8`, lobby-only z mostu, solo, premia 3/2/1, R04,
+30 s/10 s); schematy `RO-*` bez `zgoda` (SKANER trzyma); `RO-lobby/1` bez
+kodów i bez zestawów ✓. Anekse ADR 0017 (×2), 0019 (×2), 0027 (×2) i NOWY
+0037 odzwierciedlają wdrożenie 1:1 (miejsca wymienione z nazwy — lustra
+premii, hipoteze fallbacków, zgodność wsteczna starych gier: brak
+`trasaSekret` przy `trasa` = sekret, odczyt `geohash8` opcjonalny).
+`gra-zakoncz` na moście: organizator-only + bez zmian dla zakończonej/archiwum.
+`paczkaJestWRepo` = tylko katalog zaakceptowanych; duplikat w odrzuconych
+nie tworzy pliku (ręczna decyzja właściciela trwa). Migracja tematów
+idempotentna i cicha (L10). Cache-busting `?v=m12-74` jednolite
+(kontrakt); `WERSJA_SW` w parze.
+
+**Bramy (na mainie, rano dnia audytu):** `npm test` **692/692** (67 s),
+`node tools/audyt-kontrastu.mjs` **0 naruszeń** WCAG AA, szablony promptów
+PROTOKOL ↔ `app/protokol.js` zgodne (kontrakt), hermetyka sieci testów
+potwierdzona mogącym wyjść skanem. Liczba testów pokrywa historię
+(oś 687→692; +5 z m12-73/74: nowe e2e wyścig/trasa/solo, odmowa bez gracza,
+host-zakończ, 250 m propozycje, kontrakty decyzji).
+
+**Znalezisko nieblokujące → rekomendacja poprawki (cicha usterka):**
+1. **Ranking „Moje gry" filtruje po kluczu, którego nic już nie zapisuje.**
+   `renderujRankingi` czyta `localStorage 'okolica:pseudonim'`
+   (`KLUCZ_PSEUDONIMU`), a pole `multi-pseudonim` usunięto w m12-73/74 —
+   żadna ścieżka go nie zapisuje. W drugą stronę `KLUCZ_OSTATNIEGO_GRACZA`
+   (`okolica:ostatni-gracz`) jest tylko ZAPISYWANY (przy dodaniu gracza
+   w „Kto gra?"), ale NIGDY nie odczytywany — komentarz przy stałej mówi,
+   że to ON filtruje „Moje gry". Skutek: każdy, kto zagra pierwszą grę multi
+   od m12-74, ma zakładkę „Moje gry" na zawsze pustą, a komunikat odsyła go
+   do nieistniejącego pola pseudonimu. Naprawa (w przyszłej sesji roboczej,
+   decyzja właściciela): czytać najpierw `KLUCZ_OSTATNIEGO_GRACZA` z
+   fallbackiem na `KLUCZ_PSEUDONIMU` i przeredagować pusty stan (blok
+   „Kto gra?" jako miejsce gwarantujące imię).
+
+**Niespójności dokument ↔ kod (wzorzec L31, nieblokujące — do sprzątnięcia przy następnej sesji dokumentów):
+2. `docs/PROTOKOL.md` §2.1 (B21): „Stałe szacunku żyją w `app/protokol.js`…
+   a ekran promptu podaje przewidywany rozmiar odpowiedzi" — funkcję i UI
+   usunięto (m12-66, świadomie). Nagłówek `test/duza-paczka.test.js`
+   (wiersz „spinają pomiar, żeby stałe szacunku nie rozjechały się") również
+   od m12-66 opisuje nieistniejące stałe.
+3. `README.md`: (a) sekcja M4 — „przycisk ◎ Tryb uproszczony (pierścień)"
+   i „miara sprawiedliwości widnieje pod listą" (usunięte); (b) sekcja
+   wysyłki — „Właściciel akceptuje kandydatów linkiem z e-maila" / „na Drive
+   do przeglądu właściciela" (koniec moderacji) ORAZ „przycisk 🔌 Sprawdź
+   połączenie" (usunięty).
+4. `docs/WORKFLOW.md`: krok 3 „◎ Tryb uproszczony" (usunięty), krok 4 „Linia
+   pod promptem mówi, jak duża będzie odpowiedź" (usunięte), krok 5 „na Drive
+   do przeglądu" (moderacja zniesiona).
+5. `docs/ARCHITECTURE.md` (kontrakt testy): „przyciski degradacji
+   (`przycisk-pierścien`, `przycisk-reczne`)" — pierścień zniknął z DOM,
+   kontrakt asertuje teraz jego BRAK.
+6. `docs/decisions/0031.md` „co zostaje z B21" (szacunek + `#prompt-rozmiar`)
+   i `docs/decisions/0020.md` pkt 2 („przycisk 🔌 Sprawdź połączenie
+   zostaje") oraz administracyjne wzmianki ADR 0016/0018 — brak aneksów;
+   decyzje zmienione w m12-66/72 powinny dostać aneks zamiast cichego
+   obejścia.
+7. `docs/decisions/0037.md`: „`zmienPodklad` usunięte z `app.js` jako martwe"
+   — funkcja pozostała (app.js:1186), bez wywołań (martwa, ale obecna).
+8. `app/app.js`: stała `wymusPierscien: false` w STAN — bez przełącznika
+   zawsze false (podtrzymane świadomie zgodnie z historią m12-66; warto przód
+   umyć jak u `zmienPodklad` albo literalnie komentarz „bez UI").
+9. Literówka w ADR 0017 (aneks 2026-09-11): „życią na Drive" → „żyją".
+
+Brak usterek blokujących grę, kontrakt RO-* ani zasady prywatności. PR czyta
+się jako trzy fale: stabilizacja terenowa (m12-64…71), koniec moderacji
+(m12-72), przepisanie multi (m12-73/74) — z dokumentacją prowadzoną na
+bieżąco w aneksach i dyscypliną wersjonowania. Uwagi 1–9 przekazane
+właścicielowi do decyzji (propozycja: jeden commit docs-only + fix
+punktu 1 w kolejnej sesji roboczej).
