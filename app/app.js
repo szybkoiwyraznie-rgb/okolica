@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-83';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-83';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-84';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-84';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-83';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-83';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-83';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-83';
-import { FAZY, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-83';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-83';
+} from './protokol.js?v=m12-84';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-84';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-84';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-84';
+import { FAZY, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-84';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-84';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-83';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-83';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-83';
+} from './zestawy.js?v=m12-84';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-84';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-84';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -62,17 +62,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-83';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-83';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-83';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-83';
-import { adresMostu, stanMostu } from './most.js?v=m12-83';
+} from './sieci.js?v=m12-84';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-84';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-84';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-84';
+import { adresMostu, stanMostu } from './most.js?v=m12-84';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-83';
+} from './oceny.js?v=m12-84';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -80,6 +80,26 @@ const KLUCZ_MOTYW = 'okolica:motyw';
  *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
+
+/**
+ * Limit czasu odpowiedzi mostu Drive (ms) — WSPÓLNY dla indeksu paczek, listy
+ * gier i stanu gry. Zgłoszenie właściciela 2026-09-12 („problem z łączeniem
+ * z Drive po ostatnich zmianach”): panel paczek mówił „Repozytorium
+ * niedostępne”, choć paczki na Drive są. Dwie przyczyny po naszej stronie:
+ * (1) indeks miał limit 6 s, a zimny start web app Apps Script — zwłaszcza
+ * pierwsze żądanie po wdrożeniu — potrafi trwać dłużej, więc żądanie było
+ * przerywane, ZANIM most zdążył odpowiedzieć; (2) błąd był połykany
+ * (`.catch(() => …)`) i dawał jeden komunikat niezależnie od przyczyny, więc
+ * braku sieci nie dało się odróżnić od HTTP 403 (LESSONS L6).
+ */
+const LIMIT_MOSTU_MS = 15000;
+
+/**
+ * Odstęp przed ponowną próbą pobrania indeksu (ms). Jedna powtórka leczy
+ * najczęstszą awarię mostu: pierwsze żądanie po wdrożeniu trafia w zimny start.
+ * Testy skracają odstęp globalem (wzorzec `__MAKS_KAFELKI_TEST__` z `sw.js`).
+ */
+const PONOWNA_PROBA_INDEKSU_MS = Number(globalThis.__OKOLICA_PONOWNA_PROBA_MS__) || 800;
 
 const STAN = {
   konfig: domyslnaKonfiguracja(),
@@ -166,6 +186,10 @@ const STAN = {
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
+  /** Krótki powód ostatniej nieudanej próby mostu (indeks paczek) — pokazywany
+   *  w `#most-stan-repo`, żeby „podłączony” nie było obietnicą bez pokrycia:
+   *  adres w kodzie to nie to samo co działające połączenie (LESSONS L6). */
+  mostOstatniBlad: null,
   /** Mapy z `mapa.js` (M2): `null`, gdy panelu nie ma w `index.html`. */
   mapy: { pozycja: null, stacje: null, gra: null },
   /** Który ekran gry jest pokazany (do powrotu z ekranu prywatności). */
@@ -2004,13 +2028,18 @@ function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '', factcheck =
  */
 function pokazStanMostu() {
   const { tekst, podlaczony } = stanMostu(undefined, { testowy: STAN.trybTestowy });
+  // Sam adres w kodzie (ADR 0020) to jeszcze nie działające połączenie:
+  // po nieudanej próbie mówimy o tym wprost (zgłoszenie właściciela
+  // 2026-09-12 — panel obiecywał „podłączony”, a paczki się nie pokazywały).
+  const awaria = podlaczony ? STAN.mostOstatniBlad : null;
+  const opis = awaria ? `${tekst} Ostatnia próba nie doszła: ${awaria}.` : tekst;
   // jedyny miejscowy pokaz stanu mostu (karta na ekranie pozycji); linijkę
   // z karty multi na setupie właściciel usunął (uwagi terenowe #3, 2026-09-11)
   for (const id of ['most-stan-repo']) {
     const el = $(id);
     if (!el) continue;
-    el.textContent = tekst;
-    el.classList.toggle('bledy', !podlaczony); // brak mostu = widoczne ostrzeżenie, nie szara podpowiedź
+    el.textContent = opis;
+    el.classList.toggle('bledy', !podlaczony || Boolean(awaria)); // brak połączenia = widoczne ostrzeżenie, nie szara podpowiedź
   }
 }
 
@@ -2110,66 +2139,109 @@ function odswiezPropozycjeZestawow() {
       : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
     return;
   }
-  const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(() => kontroler?.abort(), 6000);
   // Odświeżenie jest asynchroniczne, a setup woła je przy każdej zmianie
   // (pozycja, liczba graczy, czas). Bez tego licznika dwie nakładające się
   // próby dopisałyby te same paczki drugi raz — lista musi pokazywać jedno
   // pokolenie odpowiedzi, więc starsze ignorujemy (LESSONS L32).
   const pokolenie = ++POKOLENIE_PROPOZYCJI;
-  f(url, kontroler ? { signal: kontroler.signal } : undefined)
-    .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
-    .then((tekst) => {
-      const indeks = walidujIndeksSurowy(tekst).indeks;
-      return { indeks, dopasowane: dopasujMetaIndeksu(indeks, kryteria) };
-    })
-    .then(({ indeks, dopasowane }) => {
-      if (pokolenie !== POKOLENIE_PROPOZYCJI) return; // nowsze odświeżenie wygrało
-      KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
-        opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
-        etykieta: '🌍 repozytorium:',
-        akcja: () => grajZZestawemZRepo(meta, url),
-        // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
-        // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
-        statystyki: meta.oceny === undefined
-          ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
-          : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
-        factcheck: czyWpisFactcheck(meta),
-        // Sort listy (właściciel 2026-09-11): najwięcej ocen pozytywnych pierwsza.
-        plus: walidujStatystykiOcen(meta.oceny)?.plus ?? 0,
-        data: meta.data,
-      })));
-      renderujZestawy();
-      // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
-      // które nie pasują do setupu, to dwie różne sytuacje — i tylko drugą da się
-      // naprawić zmianą ustawień.
-      if (dopasowane.length) {
-        $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
-      } else {
-        // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
-        // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat
-        // mówi WPROST, które kryterium nie pasuje — nie wymienia całego setupu.
-        const bliskie = indeks.filter((m) => czyWOkolicy(m, kryteria));
-        let komunikat;
-        if (bliskie.length) {
-          komunikat = `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale ${bliskie.length === 1 ? 'nie pasuje' : 'nie pasują'}: `
-            + bliskie.map((m) => `${m.miejsce ?? 'paczka bez nazwy'} — ${powodyNiedopasowania(m, kryteria).join('; ')}`).join(' | ')
-            + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.';
-        } else {
-          komunikat = indeks.length
-            ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
-            : 'Repozytorium jest puste — nowe pytania przygotuje model.';
-        }
-        $('zestawy-status').textContent = komunikat;
+  void pobierzIndeksZRepo(url, kryteria, pokolenie);
+}
+
+/**
+ * Indeks repozytorium: jedno żądanie i JEDNA powtórka. Powtórka leczy zimny
+ * start web app po wdrożeniu (najczęstszą przyczynę „Repozytorium
+ * niedostępne”), a gdy most odpowiedział nieczytelnie, powtarzanie nic nie
+ * zmieni — wtedy od razu mówimy prawdę.
+ */
+async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
+  const aktualne = () => pokolenie === POKOLENIE_PROPOZYCJI;
+  const gdzie = adresBezSciezki(url);
+  let powod = 'brak odpowiedzi';
+  for (let proba = 1; proba <= 2; proba += 1) {
+    try {
+      const tekst = await pobierzGetTekst(url);
+      if (!aktualne()) return;
+      if (!przyjmijIndeksZRepo(tekst, kryteria, url)) { powod = 'nieczytelna odpowiedź'; break; }
+      STAN.mostOstatniBlad = null;
+      pokazStanMostu();
+      return;
+    } catch (e) {
+      if (!aktualne()) return;
+      powod = e?.powod ?? 'brak odpowiedzi';
+      if (proba === 1) {
+        $('zestawy-status').textContent = `Most Drive nie odpowiedział (${powod}) — próbuję jeszcze raz…`;
+        await new Promise((r) => setTimeout(r, PONOWNA_PROBA_INDEKSU_MS));
+        if (!aktualne()) return;
       }
-    })
-    .catch(() => {
-      if (pokolenie !== POKOLENIE_PROPOZYCJI) return; // komunikat należy do nowszej próby
-      $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
-        ? 'Repozytorium niedostępne — zostały paczki z tego telefonu.'
-        : 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
-    })
-    .finally(() => clearTimeout(timer));
+    }
+  }
+  if (!aktualne()) return;
+  STAN.mostOstatniBlad = powod;
+  pokazStanMostu();
+  $('zestawy-status').textContent = KANDYDACI_ZESTAWOW.length
+    ? `Repozytorium niedostępne (${powod}${gdzie}) — zostały paczki z tego telefonu.`
+    : `Repozytorium niedostępne (${powod}${gdzie}) — gramy zwykłą ścieżką (prompt i model).`;
+}
+
+/** Sam host adresu mostu do komunikatu awarii (diagnostyka, nie ozdobnik). */
+function adresBezSciezki(url) {
+  try {
+    return `, ${new URL(String(url)).host}`;
+  } catch {
+    return '';
+  }
+}
+
+/**
+ * Odpowiedź indeksu → lista propozycji. `false` znaczy „most odpowiedział, ale
+ * nie zrozumieliśmy odpowiedzi” (kody Z01/Z09) — to NIE jest „repozytorium
+ * niedostępne” i wołający ma o tym powiedzieć prawdę, nie zlewać obu przypadków
+ * w jedno (LESSONS L6).
+ */
+/**
+ * Odpowiedź indeksu → lista propozycji. `false` znaczy „most odpowiedział, ale
+ * nie zrozumieliśmy odpowiedzi” (kody Z01/Z09) — to NIE jest „repozytorium
+ * niedostępne” i wołający ma o tym powiedzieć prawdę, nie zlewać obu przypadków
+ * w jedno (LESSONS L6: komunikat nazywa przyczynę).
+ */
+function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
+  const { indeks, usterki } = walidujIndeksSurowy(tekst);
+  if (!indeks.length && usterki.some((u) => u.kod === 'Z01' || u.kod === 'Z09')) return false;
+  const dopasowane = dopasujMetaIndeksu(indeks, kryteria);
+  KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
+    opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek} · ${meta.licencja}`,
+    etykieta: '🌍 repozytorium:',
+    akcja: () => grajZZestawemZRepo(meta, urlZrodla),
+    // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
+    // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
+    statystyki: meta.oceny === undefined
+      ? 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.'
+      : opisOcenTekst(walidujStatystykiOcen(meta.oceny)),
+    factcheck: czyWpisFactcheck(meta),
+    // Sort listy (właściciel 2026-09-11): najwięcej ocen pozytywnych pierwsza.
+    plus: walidujStatystykiOcen(meta.oceny)?.plus ?? 0,
+    data: meta.data,
+  })));
+  renderujZestawy();
+  // Komunikat mówi, CO zrobić (ADR 0011 pkt 8): puste repo i repo z paczkami,
+  // które nie pasują do setupu, to dwie różne sytuacje — i tylko drugą da się
+  // naprawić zmianą ustawień.
+  if (dopasowane.length) {
+    $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
+    return true;
+  }
+  // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
+  // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat mówi
+  // WPROST, które kryterium nie pasuje — nie wymienia całego setupu.
+  const bliskie = indeks.filter((m) => czyWOkolicy(m, kryteria));
+  $('zestawy-status').textContent = bliskie.length
+    ? `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale ${bliskie.length === 1 ? 'nie pasuje' : 'nie pasują'}: `
+      + bliskie.map((m) => `${m.miejsce ?? 'paczka bez nazwy'} — ${powodyNiedopasowania(m, kryteria).join('; ')}`).join(' | ')
+      + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.'
+    : (indeks.length
+      ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
+      : 'Repozytorium jest puste — nowe pytania przygotuje model.');
+  return true;
 }
 
 /** Wspólny start z gotową paczką: stacje i kontener z zestawu, pytania z pamięci. */
@@ -2217,32 +2289,35 @@ function grajZZestawemLokalnym(skrot) {
   przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: 'z tego telefonu' });
 }
 
-function grajZZestawemZRepo(wpis, urlIndeksu) {
+async function grajZZestawemZRepo(wpis, urlIndeksu) {
   // M9b/D4: adres liczy czysta funkcja urlPaczkiZRepo — wpis z `id` (most
   // Drive) jedzie przez `?akcja=paczka&id=…`, wpis z `plik` jak dotąd.
   const url = urlPaczkiZRepo(urlIndeksu, wpis);
   status(`Pobieram paczkę z repozytorium: ${wpis.miejsce}…`);
-  const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
-  if (!f) { status('Nie da się pobrać: to środowisko nie ma fetch.'); return; }
-  f(url)
-    .then((odp) => (odp.ok ? odp.text() : Promise.reject(new Error(`HTTP ${odp.status}`))))
-    .then((tekst) => {
-      const { zestaw, usterki } = walidujZestawPublicznySurowy(tekst);
-      if (!zestaw) {
-        status(`Paczka z repozytorium jest niekompletna (${usterki[0]?.komunikat ?? 'błąd'}) — gramy zwykłą ścieżką.`);
-        return;
-      }
-      // ADR 0028: oceny graczy dotyczą paczek z repozytorium — zapamiętujemy id
-      // pliku Drive i token tej gry, a licznik „użyta w X grach" dostaje ping.
-      STAN.paczkaRepoId = typeof wpis.id === 'string' ? wpis.id : '';
-      if (!STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
-      // Druga gra tą samą paczką idzie już z pamięci telefonu — bez tego wpisu
-      // straciłaby prawo do oceny (ADR 0028 aneks 2026-09-09).
-      zapamietajIdPaczkiDlaZestawu(zestaw.kontener?.skrot, STAN.paczkaRepoId);
-      wyslijUzycieWTle(STAN.paczkaRepoId);
-      przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
-    })
-    .catch(() => status('Nie udało się pobrać paczki z repozytorium — sprawdź połączenie albo graj zwykłą ścieżką.'));
+  let tekst;
+  try {
+    // Ten sam limit (15 s) i ten sam słownik błędów co indeks. Bez powtórki:
+    // tuż przed tym żądaniem poszedł indeks, więc instancja mostu jest już
+    // rozgrzana, a ponowić można jednym kliknięciem (powód zobaczysz w statusie).
+    tekst = await pobierzGetTekst(url);
+  } catch (e) {
+    status(`Nie udało się pobrać paczki z repozytorium (${e?.powod ?? 'brak odpowiedzi'}) — sprawdź połączenie albo graj zwykłą ścieżką.`);
+    return;
+  }
+  const { zestaw, usterki } = walidujZestawPublicznySurowy(tekst);
+  if (!zestaw) {
+    status(`Paczka z repozytorium jest niekompletna (${usterki[0]?.komunikat ?? 'błąd'}) — gramy zwykłą ścieżką.`);
+    return;
+  }
+  // ADR 0028: oceny graczy dotyczą paczek z repozytorium — zapamiętujemy id
+  // pliku Drive i token tej gry, a licznik „użyta w X grach" dostaje ping.
+  STAN.paczkaRepoId = typeof wpis.id === 'string' ? wpis.id : '';
+  if (!STAN.tokenGry) STAN.tokenGry = nowyTokenGry();
+  // Druga gra tą samą paczką idzie już z pamięci telefonu — bez tego wpisu
+  // straciłaby prawo do oceny (ADR 0028 aneks 2026-09-09).
+  zapamietajIdPaczkiDlaZestawu(zestaw.kontener?.skrot, STAN.paczkaRepoId);
+  wyslijUzycieWTle(STAN.paczkaRepoId);
+  przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
 }
 
 /**
@@ -3725,16 +3800,49 @@ function fetchPrzegladarki() {
  * sieci i zawsze oddajemy komunikat po polsku (LESSONS: komunikat musi nazywać
  * przyczynę, nie wyjątek).
  */
-function bladMostuPoPolsku(e, { przekroczonyCzas, url }) {
-  if (przekroczonyCzas) return new Error('most Drive nie odpowiedział w 8 sekund — sprawdź połączenie albo spróbuj za chwilę');
+/**
+ * Błąd mostu po polsku + KRÓTKI powód dla UI (`blad.powod`).
+ *
+ * Pełny komunikat idzie do `status()`, a krótki powód w nawiasie do miejsc,
+ * gdzie zdanie musi zostać zdaniem („Repozytorium niedostępne (HTTP 403)…”).
+ * Rozróżnienie przyczyn jest tu istotą sprawy: zgłoszenie właściciela
+ * 2026-09-12 pokazało, że jeden zbiorczy komunikat „niedostępne” potrafi
+ * ukryć i brak sieci, i zablokowane wdrożenie, i własną literówkę w schemacie.
+ */
+function bladMostuPoPolsku(e, { przekroczonyCzas, url, limitMs = LIMIT_MOSTU_MS }) {
+  const sekundy = Math.max(1, Math.round(limitMs / 1000));
+  if (przekroczonyCzas) {
+    return bladZPowodem(
+      `most Drive nie odpowiedział w ${sekundy} s — pierwsze żądanie po wdrożeniu bywa wolne, spróbuj za chwilę`,
+      `brak odpowiedzi w ${sekundy} s`,
+    );
+  }
   const tekst = String(e?.message ?? e ?? '');
   if (e?.name === 'AbortError' || /abort/i.test(tekst)) {
-    return new Error('połączenie z mostem Drive zostało przerwane — spróbuj jeszcze raz');
+    return bladZPowodem('połączenie z mostem Drive zostało przerwane — spróbuj jeszcze raz', 'przerwane połączenie');
   }
   if (/failed to fetch|networkerror|load failed/i.test(tekst)) {
-    return new Error('brak połączenia z mostem Drive — telefon jest offline albo adres repozytorium nie odpowiada');
+    return bladZPowodem(
+      'brak połączenia z mostem Drive — telefon jest offline albo adres repozytorium nie odpowiada',
+      'brak połączenia',
+    );
   }
-  return new Error(`${tekst}${url ? ` (${url})` : ''}`);
+  const http = /^HTTP (\d{3})$/.exec(tekst);
+  if (http) {
+    const kod = Number(http[1]);
+    const podpowiedz = kod === 401 || kod === 403
+      ? ' — sprawdź, czy wdrożenie web app ma dostęp „Każdy”'
+      : '';
+    return bladZPowodem(`most Drive odpowiedział HTTP ${kod}${podpowiedz}`, `HTTP ${kod}`);
+  }
+  return bladZPowodem(`${tekst}${url ? ` (${url})` : ''}`, tekst.slice(0, 80) || 'nieznany błąd');
+}
+
+/** Błąd z krótkim powodem dla UI (`powod`), czytanym przez `pobierzIndeksZRepo`. */
+function bladZPowodem(wiadomosc, powod) {
+  const blad = new Error(wiadomosc);
+  blad.powod = powod;
+  return blad;
 }
 
 async function pobierzGetMulti(url) {
@@ -3742,7 +3850,7 @@ async function pobierzGetMulti(url) {
   if (!f) throw new Error('to środowisko nie ma fetch — nie da się zapytać mostu');
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
   let przekroczonyCzas = false;
-  const timer = setTimeout(() => { przekroczonyCzas = true; kontroler?.abort(); }, 8000);
+  const timer = setTimeout(() => { przekroczonyCzas = true; kontroler?.abort(); }, LIMIT_MOSTU_MS);
   try {
     const odp = await f(url, kontroler ? { signal: kontroler.signal } : undefined);
     if (!odp.ok) throw new Error(`HTTP ${odp.status}`);
@@ -3754,16 +3862,23 @@ async function pobierzGetMulti(url) {
   }
 }
 
-/** GET, którego odpowiedź jest tekstem (indeks/paczka z repo — jak w M9b). */
+/**
+ * GET, którego odpowiedź jest tekstem (indeks/paczka z repozytorium — M9b).
+ * Ten sam limit i ten sam słownik błędów co `pobierzGetMulti`: panel paczek ma
+ * umieć powiedzieć, CO się nie udało (LESSONS L6).
+ */
 async function pobierzGetTekst(url) {
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
-  if (!f) throw new Error('to środowisko nie ma fetch — nie da się zapytać mostu');
+  if (!f) throw bladZPowodem('to środowisko nie ma fetch — nie da się zapytać mostu', 'brak fetch w tej przeglądarce');
   const kontroler = typeof AbortController !== 'undefined' ? new AbortController() : null;
-  const timer = setTimeout(() => kontroler?.abort(), 8000);
+  let przekroczonyCzas = false;
+  const timer = setTimeout(() => { przekroczonyCzas = true; kontroler?.abort(); }, LIMIT_MOSTU_MS);
   try {
     const odp = await f(url, kontroler ? { signal: kontroler.signal } : undefined);
     if (!odp.ok) throw new Error(`HTTP ${odp.status}`);
     return await odp.text();
+  } catch (e) {
+    throw bladMostuPoPolsku(e, { przekroczonyCzas, url });
   } finally {
     clearTimeout(timer);
   }

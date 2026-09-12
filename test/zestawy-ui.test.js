@@ -183,6 +183,17 @@ function podlaczFetch(dom) {
   dom.window.fetch = globalThis.fetch;
 }
 
+/** Czeka na warunek w atrapie (żądania mostu są asynchroniczne). */
+async function czekajNa(dom, warunek, opis, maksMs = 5000) {
+  const start = Date.now();
+  while (!warunek()) {
+    if (Date.now() - start > maksMs) {
+      throw new Error(`${opis} nie nastąpiło w ${maksMs} ms — status: ${dom.pobierz('zestawy-status').textContent}`);
+    }
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 function atrapaFetch(odpowiedzi) {
   const wywolania = [];
   const pierwotny = globalThis.fetch;
@@ -215,6 +226,101 @@ test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra be
     assert.match(dom.pobierz('status').textContent, /bez modelu i bez Overpassa/);
     assert.match(dom.pobierz('status').textContent, /repozytorium/);
     assert.ok(atrap.wywolania.some((u) => u.includes('https://repo.przyklad/indeks.json')), 'fetch poszedł do skonfigurowanego źródła');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+/* -------- awarie mostu: prawdziwy powód zamiast jednego „niedostępne” (2026-09-12) -------- */
+
+/** Atrapa fetch dla awarii: `kroki` to kolejne odpowiedzi (funkcje albo wyjątki). */
+function atrapaFetchKroki(kroki) {
+  const wywolania = [];
+  const pierwotny = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    const krok = kroki[Math.min(wywolania.length, kroki.length - 1)];
+    wywolania.push(String(url));
+    return krok();
+  };
+  return { wywolania, przywroc: () => { globalThis.fetch = pierwotny; } };
+}
+
+const odpowiedzTekst = (tekst) => async () => ({ ok: true, status: 200, text: async () => tekst });
+const odpowiedzHttp = (status) => async () => ({ ok: false, status, text: async () => '' });
+const bladSieci = () => async () => { throw new TypeError('Failed to fetch'); };
+
+test('zestawy UI: pierwsze żądanie nie doszło — druga próba pokazuje paczki (zimny start mostu)', async () => {
+  // Zgłoszenie właściciela 2026-09-12: panel mówił „Repozytorium niedostępne”,
+  // choć paczki na Drive są. Najczęstszą przyczyną jest zimny start web app po
+  // wdrożeniu — jedno ponowienie ma to leczyć, a nie ukrywać.
+  globalThis.__OKOLICA_PONOWNA_PROBA_MS__ = 10; // przed importem app.js (stała modułu)
+  const atrap = atrapaFetchKroki([bladSieci(), odpowiedzTekst(JSON.stringify(indeksZPropozycja()))]);
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => /Repozytorium ma paczki/.test(dom.pobierz('zestawy-status').textContent), 'lista po powtórce');
+    assert.equal(atrap.wywolania.length, 2, 'dokładnie jedna powtórka');
+    assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'paczka z repozytorium na liście');
+    assert.equal(dom.pobierz('most-stan-repo').classList.contains('bledy'), false,
+      'udana próba nie zostawia ostrzeżenia w stanie mostu');
+  } finally {
+    atrap.przywroc();
+    delete globalThis.__OKOLICA_PONOWNA_PROBA_MS__;
+  }
+});
+
+test('zestawy UI: HTTP 403 z mostu — komunikat nazywa przyczynę i nie udaje pustego repo', async () => {
+  const atrap = atrapaFetchKroki([odpowiedzHttp(403)]);
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => /Repozytorium niedostępne/.test(dom.pobierz('zestawy-status').textContent), 'komunikat awarii');
+    const tekst = dom.pobierz('zestawy-status').textContent;
+    assert.match(tekst, /HTTP 403/, 'przyczyna wprost (403 = wdrożenie bez dostępu „Każdy”)');
+    assert.match(tekst, /repo\.przyklad/, 'w komunikacie jest host, do którego pytaliśmy — diagnostyka bez zgadywania');
+    assert.ok(!/Repozytorium jest puste|nie ma paczek/.test(tekst), 'awaria nie udaje pustego repozytorium');
+    assert.ok(dom.pobierz('most-stan-repo').textContent.includes('Ostatnia próba nie doszła'),
+      'stan mostu mówi prawdę po nieudanej próbie („podłączony” to nie to samo co działające połączenie)');
+    assert.ok(dom.pobierz('most-stan-repo').classList.contains('bledy'), 'awaria jest widoczna, nie szara');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('zestawy UI: most odpowiedział nieczytelnie (HTML) — to nie jest „puste repo”', async () => {
+  const atrap = atrapaFetchKroki([odpowiedzTekst('<html><body>Zaloguj się do konta Google</body></html>')]);
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => /nieczytelna odpowiedź/.test(dom.pobierz('zestawy-status').textContent), 'komunikat o nieczytelnej odpowiedzi');
+    const tekst = dom.pobierz('zestawy-status').textContent;
+    assert.match(tekst, /Repozytorium niedostępne \(nieczytelna odpowiedź/, 'odpowiedź bez sensu = awaria, nie „pusto”');
+    assert.ok(!/Repozytorium jest puste/.test(tekst), 'nieczytelna odpowiedź nie udaje pustego repozytorium');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('zestawy UI: pobranie paczki z repozytorium bez sieci mówi, CO się nie udało', async () => {
+  const atrap = atrapaFetchKroki([
+    odpowiedzTekst(JSON.stringify(indeksZPropozycja())), // indeks się udaje
+    bladSieci(),                                        // plik paczki już nie
+  ]);
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length > 0, 'propozycja z repozytorium');
+    kliknijPierwszyPrzyciskZestawu(dom);
+    await czekajNa(dom, () => /Nie udało się pobrać paczki/.test(dom.pobierz('status').textContent), 'status po nieudanym pobraniu');
+    assert.match(dom.pobierz('status').textContent, /brak połączenia/, 'status nazywa przyczynę (LESSONS L6)');
   } finally {
     atrap.przywroc();
   }
