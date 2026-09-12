@@ -1348,3 +1348,32 @@ test('I+J: paczki tylko z repo, START GRY gaśnie w trakcie gry', () => {
   assert.match(APP, /odswiezStanIkonBelki/, 'belka odświeża stan ikon (J)');
   assert.match(STYLE, /\.przycisk-ikona\[disabled\]/, 'zgaszony przycisk ma styl (J)');
 });
+test('K: teksty UI nie odsyłają do ścieżek, których nie ma (O1/O2/O11)', () => {
+  // O1: moderacja wstępna zniesiona 2026-09-11 (ADR 0017 aneks) — przyjęta
+  // paczka ląduje OD RAZU w katalogu zaakceptowanych, bez maila i bez strony
+  // przeglądu. Tekst ekranu nie może obiecywać procesu, którego nie ma.
+  assert.equal(INDEX.includes('do przeglądu właściciela'), false,
+    'ekran wklejania nie obiecuje sesji przeglądu (ADR 0017 aneks 2026-09-11)');
+  assert.match(INDEX, /od razu do wspólnego repozytorium okolicy/,
+    'ekran wklejania mówi, dokąd naprawdę leci paczka');
+
+  // O2: eksportu pliku nie ma w UI — eksport zestawu zniknął 2026-09-07,
+  // eksporty wyniku zdjęła decyzja ADR 0038. Komunikat nie może wskazywać
+  // wyjścia, którego nie da się wykonać (ADR 0011 pkt 8, LESSONS L6).
+  assert.equal(APP.includes('Eksport plikiem'), false,
+    'status pełnej pamięci paczek nie odsyła do eksportu plikiem');
+  assert.equal(APP.includes('modelu albo pliku'), false,
+    'status braku miejsca nie odsyła do wczytania pliku');
+  assert.equal(APP.includes('zapisz plik i wnieść go ręcznie'), false,
+    'awaria wysyłki na Drive nie obiecuje ręcznego wnoszenia pliku');
+
+  // O11: karta prywatności mówiła w jednym punkcie, że pytania jadą na Drive
+  // (repozytorium zestawów), a w sąsiednim — że pytania i paczka zostają
+  // na telefonie (zapis gry). Oba fakty są prawdziwe, ale w innych kontekstach:
+  // zapis GRY ma `zestaw: null` (PROTOKOL §9.6), a zestaw w repozytorium niesie
+  // pytania (ADR 0017 pkt 1). Tekst rozdziela je jawnie.
+  assert.equal(INDEX.includes('pytania i paczka <strong>zostają na telefonie</strong>'), false,
+    'karta prywatności bez sprzeczności o pytaniach na Drive');
+  assert.match(INDEX, /Zapis GRY nie niesie pytań/,
+    'karta prywatności rozdziela repozytorium paczek od zapisu gry');
+});
