@@ -3562,3 +3562,35 @@ handoff `docs/setup/HANDOFF_2026-09-12g.md`.
 
 **Otwarte:** potwierdzenie terenowe bug G na iPhonie; WDROŻENIE `.gs`
 (ranking — ADR 0039); testy terenowe F/C/D/E; bug B; kamienie M3–M8, M10–M12.
+
+## Sesja 2026-09-12h — audyt PR #16, uwagi terenowe: komunikat P10 i stare paczki (m12-92)
+
+> Gałąź `arena/01a096bd-okolica` z `6c15989` (main po squash-merge PR #16).
+
+### 1. Audyt PR #16 (squash `6c15989`, 23 pliki, +506/−55)
+
+Zakres: `git fetch origin main --depth=50`; `git diff a3ca791..6c15989` plik
+po pliku; brama na HEAD przed zmianami: `npm test` **728/728**.
+
+- **Bug G — watchdog martwego nasłuchu GPS (m12-91):** `pozycja.js` (znak
+  życia, `czyMilczy` z edge-case'ami L10, `komunikatMilczenia` → P10),
+  `app.js` (watchdog co 5 s uzbrojony na ekranie pozycji/odcinku, zegar
+  zdejmowany w `zatrzymajGps`, gest „Dalej” odświeża nasłuch bez fixa,
+  „GPS włączony” tylko na pierwszym starcie — L22), kontrakt L17 (zakazane
+  wywołania szukane w kodzie BEZ komentarzy). Zgodne z aneksem m12-91
+  w ADR 0004 i LESSONS L56.
+- Pozostałe moduły (`mapa`, `most`, `protokol`, `rozgrywka`, `sieci`,
+  `stacje`, `trwalosc`, `wieloosobowa`, `wynik`, `zestawy`) — wyłącznie
+  podbicia `?v=` (m12-90 → m12-91) w całym grafie; `WERSJA_SW` spójne.
+- Testy: `czyMilczy` (w tym znak „z przyszłości”), P10 z wypełnieniem
+  i placeholerami, watchdog end-to-end na „niemym” watcherze, gest „Dalej”.
+- Dokumentacja (aneks ADR 0004, L56, ARCHITECTURE, README, handoff 12g)
+  spójna z kodem.
+
+**Wniosek:** bez zastrzeżeń blokujących. Dwie obserwacje do rejestru:
+(O1) przy TRWAŁYM milczeniu cisza liczona jest od ostatniego znaku i nie
+resetuje się przy restarcie watchera — watchdog restartuje nasłuch co 5 s,
+a „próba N” rośnie co tyknięcie (sformułowanie aneksu/L56 mówi „od
+założenia nasłuchu”); bez wpływu na zgłoszony bug, odnotowane. (O2) wyjście
+awaryjne P10 (ustawienia systemu + odświeżenie strony) nie pomogło w
+terenie — treść zmieniona w tej sesji decyzją właściciela.
