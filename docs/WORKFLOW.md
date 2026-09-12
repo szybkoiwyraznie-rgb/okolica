@@ -61,7 +61,8 @@ Koniec sesji:
    2026-09-11); pytania są ukrywane (TO-paczka/2), a pole wklejania
    czyszczone.
 6. **Gra**: odcinek startuje jawną akcją, dojście zalicza tylko GPS (dwa fixy
-   w progu, ADR 0004/0029); stację nieosiągalną pomiń. Pytanie odsłania się
+   w progu, ADR 0004/0029); nieosiągalna stacja = „■ Zakończ grę” (akcji
+   pomijania nie ma od zadania H, 2026-09-12). Pytanie odsłania się
    dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Pauza (także
    automatyczna w tle) nie wlicza czasu postoju do wyniku.
 7. **Wynik**: podsumowanie z tabelą końcową, udostępnianie tekstem lub obrazem

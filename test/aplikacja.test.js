@@ -1272,7 +1272,6 @@ test('M6: odcinek — start, dojście ze strumienia fixów i odmowa drugiego sta
   dom.kliknij('przycisk-start-odcinka');
   assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'panel B w fazie odcinek');
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true);
-  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, false, 'pominięcie dostępne TYLKO w drodze (ADR 0015 pkt 2)');
   assert.equal(dom.pobierz('przycisk-symulacja-gra').hidden, false, 'w trybie testowym symulacja dojścia do stacji');
   assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, false, 'slot sterowania widoczny w fazie odcinka');
 
@@ -1299,8 +1298,6 @@ test('M6: pauza — przyciski stają, wznowienie jawne (ADR 0004 pkt 1)', async 
   assert.equal(pauza.getAttribute('aria-pressed'), 'true', 'aria-pressed po pauzie');
   assert.match(pauza.textContent, /Wznów/, 'przycisk zmienia rolę');
   assert.equal(dom.pobierz('przycisk-start-odcinka').disabled, true, 'w pauzie nie ma akcji fazowych');
-  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true, 'w pauzie nie ma też pomijania odcinka');
-  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true);
   assert.equal(dom.pobierz('gra-pauza-komunikat').hidden, false, 'komunikat pauzy widoczny');
 
   dom.kliknij('przycisk-pauza');
@@ -1575,17 +1572,17 @@ test('M6: zepsuty zapis — jawne kody T i dwustopniowe kasowanie (bez confirm)'
   assert.equal(dom.pobierz('karta-wznowienie').hidden, true, 'baner znika');
 });
 
-test('M6: pominięcie odcinka w drodze — jawny skutek i gra idzie dalej (ADR 0015)', async () => {
-  const { dom, pamiec } = await graGotowaDoStartu();
+test('M6: przycisk pomijania nie istnieje — gra go nie dotyka (zadanie H)', async () => {
+  const { dom, paczka } = await graGotowaDoStartu();
   zaczynijGre(dom);
-  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true, 'w fazie A pominąć się nie da (G11)');
   dom.kliknij('przycisk-start-odcinka');
-  dom.kliknij('przycisk-pomin-stacje');
-  assert.match(dom.pobierz('status').textContent, /pominięty/, 'status mówi o pominięciu');
-  assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, false, 'następna stacja czeka w fazie A');
-  assert.match(dom.pobierz('gra-postep').textContent, /stacja 2 z 3/);
-  assert.equal(dom.pobierz('przycisk-pomin-stacje').disabled, true, 'po tranzycji znowu zablokowane');
-  assert.equal(JSON.parse(pamiec.get('okolica:gra:' + pamiec.get('okolica:gra-aktywna'))).rozgrywka.odcinki[0].stan, 'pominiety', 'zapis niesie pominięcie');
+  await dojdzSymulacja(dom);
+  const pytanie = paczka.pytania.find((q) => q.stacja === 1);
+  kliknijOdpowiedz(dom, pytanie.poprawna);
+  dom.kliknij('przycisk-nastepna-stacja');
+  // atrapa tworzy elementy leniwie: brak id w `elementy` znaczy, że żaden
+  // render ani handler po niego nie sięgnął (wcześniej sięgał każdy renderujGre)
+  assert.equal(dom.elementy.has('przycisk-pomin-stacje'), false, 'usunięty przycisk nie jest dotykany');
 });
 
 test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zostaje', async () => {
@@ -1614,6 +1611,20 @@ test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zos
 function kliknijOdpowiedz(dom, indeks) {
   const b = dom.pobierz('gra-odpowiedzi').children[indeks];
   for (const fn of b.zdarzenia.click ?? []) fn({ type: 'click', target: b, currentTarget: b });
+}
+
+/**
+ * Zadanie H: zamknięcie stacji pełną ścieżką produkcyjną
+ * (start → dojście GPS → odpowiedź → „Następna stacja”, która sama startuje
+ * kolejny odcinek). Start tylko z panelu A — po „Następnej stacji” odcinek
+ * już trwa (czyStartPoDalej). `odpowiedz: null` = poprawna z fixture.
+ */
+async function zamknijStacje(dom, { paczka, numerStacji, odpowiedz = null }) {
+  if (dom.pobierz('gra-panel-oczekuje').hidden === false) dom.kliknij('przycisk-start-odcinka');
+  await dojdzSymulacja(dom);
+  const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
+  kliknijOdpowiedz(dom, odpowiedz ?? pytanie.poprawna);
+  dom.kliknij('przycisk-nastepna-stacja');
 }
 
 test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, wynik (ścieżka GPS)', async () => {
@@ -1734,13 +1745,12 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
   assert.match(dom.pobierz('wznowienie-opis').textContent, /stacja 1 z 4/);
   dom.kliknij('przycisk-wznow-gre');
 
-  // stacje 1–3: normalna pętla z pytaniami (pominięcie wystarczy — testujemy 4.)
-  for (const i of [1, 2, 3]) {
-    dom.kliknij('przycisk-start-odcinka');
-    dom.kliknij('przycisk-pomin-stacje'); // pominięcie w drodze — bez pytań, szybko
+  // stacje 1–3: pełna pętla z pytaniami (poprawne odpowiedzi — testujemy 4.)
+  for (const numerStacji of [1, 2, 3]) {
+    await zamknijStacje(dom, { paczka, numerStacji });
   }
   assert.match(dom.pobierz('gra-postep').textContent, /stacja 4 z 4/, 'gramy o stację bez pytania');
-  dom.kliknij('przycisk-start-odcinka');
+  // odcinek 4. wystartował sam po „Następnej stacji” — od razu idziemy na dojście
   await dojdzSymulacja(dom);
   // ADR 0015: dojście zamyka stację BEZ fazy pytania — gra kończy się od razu
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, true, 'stacja bez pytania nie otwiera panelu pytania');
@@ -1751,26 +1761,27 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
 /* ========== M7/P3: pełne podsumowanie (panel D) */
 
 test('ADR 0038: ekran wyniku jest minimalny — karta zwycięzcy i tabela rankingu', async () => {
-  const { dom } = await graGotowaDoStartu();
+  const { dom, paczka } = await graGotowaDoStartu();
   zaczynijGre(dom);
-  for (const i of [1, 2, 3]) {
-    dom.kliknij('przycisk-start-odcinka');
-    dom.kliknij('przycisk-pomin-stacje'); // pominięcie ×3 = naturalny koniec gry
+  // błędne odpowiedzi — wynik też na zerach, ale z prawdziwej punktacji (0/1, nie 0/0)
+  for (const numerStacji of [1, 2, 3]) {
+    const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
+    await zamknijStacje(dom, { paczka, numerStacji, odpowiedz: (pytanie.poprawna + 1) % 4 });
   }
-  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'koniec po pominięciu wszystkich stacji');
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'koniec po domknięciu wszystkich stacji');
 
   // 1. karta zwycięzcy: nikt nie punktował — ranking otwiera pierwszy gracz (sort stabilny)
   const zwyciezca = dom.pobierz('gra-wynik-zwyciezca').textContent;
   assert.match(zwyciezca, /🏆 Gracz 1/, 'zwycięzca z rankingu podsumowanie()');
   assert.match(zwyciezca, /0 pkt/, 'duże punkty w karcie');
-  assert.match(zwyciezca, /poprawne 0\/0/, 'poprawne/razem w karcie');
+  assert.match(zwyciezca, /poprawne 0\/1/, 'poprawne/razem w karcie');
 
   // 2. tabela rankingu zostaje — te same kolumny co w panelu multi, wiersz per gracz
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
   assert.equal(wiersze.length, 3, '3 graczy, ADR 0027');
   assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
   assert.equal(wiersze[0].children[1].textContent, '0', 'punkty z podsumowanie()');
-  assert.equal(wiersze[0].children[2].textContent, '0/0', 'poprawne/razem');
+  assert.equal(wiersze[0].children[2].textContent, '0/1', 'poprawne/razem');
   assert.match(wiersze[1].children[0].textContent, /Gracz 2/);
 
   // 3. GÓRNY fragment ekranu gry nie może już nic dopisywać nad wynikami (D a)
@@ -1793,13 +1804,12 @@ test('ADR 0038: ekran wyniku jest minimalny — karta zwycięzcy i tabela rankin
 /* ========== ADR 0038: ekran wyniku bez eksportów (share / schowek / plik / PNG) */
 
 test('ADR 0038: po grze nie ma eksportów — zero canvasów, linków do pliku i schowka', async () => {
-  const { dom } = await graGotowaDoStartu();
+  const { dom, paczka } = await graGotowaDoStartu();
   const skopiowane = [];
   Object.assign(navigator, { clipboard: { writeText: async (tekst) => { skopiowane.push(tekst); } } });
   zaczynijGre(dom);
-  for (const i of [1, 2, 3]) {
-    dom.kliknij('przycisk-start-odcinka');
-    dom.kliknij('przycisk-pomin-stacje');
+  for (const numerStacji of [1, 2, 3]) {
+    await zamknijStacje(dom, { paczka, numerStacji, odpowiedz: 0 });
   }
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false);
   assert.deepEqual(skopiowane, [], 'schowek nietknięty — „Kopiuj wynik” już nie istnieje');
@@ -1834,13 +1844,12 @@ test('ADR 0038: ręczne zakończenie gry pokazuje ten sam minimalny ekran wyniku
 /* ========== M7/P6: historia gier w UI — zapis, lista, kasowanie, usterki */
 
 test('M7: koniec gry dopisuje skrót do historii — naturalny koniec = wpis pełny', async () => {
-  const { dom, pamiec } = await graGotowaDoStartu();
+  const { dom, paczka, pamiec } = await graGotowaDoStartu();
   const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
   assert.equal(pamiec.has('okolica:historia'), false, 'przed końcem historii nie ma');
   zaczynijGre(dom);
-  for (const i of [1, 2, 3]) {
-    dom.kliknij('przycisk-start-odcinka');
-    dom.kliknij('przycisk-pomin-stacje');
+  for (const numerStacji of [1, 2, 3]) {
+    await zamknijStacje(dom, { paczka, numerStacji });
   }
   const { historia, usterki } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
   assert.deepEqual(usterki, []);
@@ -1849,14 +1858,14 @@ test('M7: koniec gry dopisuje skrót do historii — naturalny koniec = wpis pe�
   assert.match(w.klucz, /^[a-z0-9-]{1,40}$/, 'auto-slug gry ląduje w historii (spójnie z KLUCZ_AKTYWNEJ z M6)');
   assert.equal(w.przerwana, false, 'naturalny koniec = wpis pełny');
   assert.equal(w.liczbaStacji, 3);
-  assert.equal(w.zwyciezca, 'Gracz 1', 'zwycięzca z rankingu (0 pkt — sort stabilny)');
-  assert.equal(w.zaliczoneStacje, 0);
-  assert.equal(w.pominietaStacje, 3);
+  assert.equal(w.zwyciezca, 'Gracz 1', 'zwycięzca z rankingu (remis 1 pkt × 3 — kolejność zgłoszeń, ADR 0023)');
+  assert.equal(w.zaliczoneStacje, 3);
+  assert.equal(w.pominietaStacje, 0);
   assert.match(w.data, /^20\d\d-/, 'data ISO z Date.now() warstwy DOM');
 });
 
 test('M7: ręczne zakończenie = wpis „przerwana", wznowienie i dokończenie ZASTĘPUJE go (bez dubla)', async () => {
-  const { dom, pamiec } = await graGotowaDoStartu();
+  const { dom, paczka, pamiec } = await graGotowaDoStartu();
   const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
@@ -1871,10 +1880,10 @@ test('M7: ręczne zakończenie = wpis „przerwana", wznowienie i dokończenie Z
   await import(`../app/app.js?hist=${Math.random().toString(36).slice(2)}`);
   assert.match(dom2.pobierz('wznowienie-opis').textContent, /niedokończoną grę/, 'ręczne zakończenie NIE kasuje zapisu (M6)');
   dom2.kliknij('przycisk-wznow-gre');
-  dom2.kliknij('przycisk-pomin-stacje'); // stacja 1 — odcinek w toku po wznowieniu
-  for (let i = 0; i < 2; i++) {
-    dom2.kliknij('przycisk-start-odcinka');
-    dom2.kliknij('przycisk-pomin-stacje');
+  // stacja 1: odcinek w toku po wznowieniu (helper sam wykryje brak panelu A);
+  // stacje 2–3: „Następna stacja” startuje kolejny odcinek automatycznie
+  for (const numerStacji of [1, 2, 3]) {
+    await zamknijStacje(dom2, { paczka, numerStacji });
   }
   ({ historia } = walidujHistorieSurowa(pamiec.get('okolica:historia')));
   assert.equal(historia.wpisy.length, 1, 'idempotencja po klucz — dokończenie nie dubluje wpisu');
@@ -1956,7 +1965,7 @@ test('M7/P7 + ADR 0038: PEŁNA GRA z dojściem GPS → minimalny wynik i histori
   }
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'naturalny koniec po ostatniej stacji');
 
-  // 1. wynik z PRAWDZIWĄ punktacją (nie zera z pominięć): 3 stacje × 1 pytanie dla
+  // 1. wynik z PRAWDZIWĄ punktacją: 3 stacje × 1 pytanie dla
   //    3 graczy (ADR 0027) — każdy odpowiada raz, więc wszyscy mają po 1 pkt,
   //    a o kolejności decyduje remisowe kryterium z ADR 0023 (kolejność zgłoszeń).
   const kartaZw = dom.pobierz('gra-wynik-zwyciezca');

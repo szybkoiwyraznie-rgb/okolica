@@ -167,3 +167,12 @@ aneksu bez zmian):
 
 Pin komunikatu przepisany na nową formę (`test/pozycja.test.js`, LESSONS L55:
 decyzja właściciela się zmieniła — pin opisuje nową, nie słabnie).
+
+## Aneks 2026-09-12 (m12-94) — wyjściem z nieosiągalnej stacji jest koniec gry (zadanie H)
+
+Pominięcie odcinka (ADR 0015 pkt 3 — w tekście aneksu 2026-09-09 błędnie
+„pkt 2”) wycofane razem z opcją w UI. Zdanie „a wyjściem jest pominięcie
+odcinka” przestaje obowiązywać; nowe wyjście to „■ Zakończ grę” —
+komunikaty P03/P04/P08, komunikat o braku współrzędnych stacji i status
+błędu GPS odsyłają do niego wprost. Ręczne zaliczenie nadal NIE wraca
+(ADR 0029); żaden komunikat nie może do niego odsyłać.

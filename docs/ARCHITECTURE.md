@@ -231,7 +231,7 @@ commit i nowa wersja aplikacji.
 2. Akcja użytkownika startuje odcinek → `rozgrywka.startOdcinka({ stacjaId,
    czasMs })`; `czasMs` podaje warstwa DOM z `performance.now()`, bo logika nie
    czyta zegara (ADR 0004 pkt 3). Po KAŻDEJ tranzycji (start gry, start/koniec
-   odcinka, odpowiedź, pauza, pominięcie) leci `trwalosc.zbierajStan()` →
+   odcinka, odpowiedź, pauza) leci `trwalosc.zbierajStan()` →
    `serializujStan()` → `localStorage`; snapshot niesie `zegarMs` (kotwicę
    zegara sesji) — przy wznowieniu wszystkie znaczniki czasu są rebazowane
    o `performance.now() − zegarMs`, więc czas zamknięcia karty nie wlicza się
@@ -254,7 +254,8 @@ commit i nowa wersja aplikacji.
    zostają na ekranie do „Następna stacja"; przyciski odpowiedzi blokują się po
    pierwszym wyborze. Następna kolejka: `graczNaStacji()` / `ktoOdpowiada()` /
    `podglad()` → ekran „kto idzie dalej". Stacja bez pytania w paczce zamyka
-   się samym dojściem, a pominąć da się tylko odcinek w drodze (ADR 0015);
+   się samym dojściem; akcji pomijania nie ma (zadanie H, ADR 0015 aneks
+   2026-09-12 — stan `pominiety` zostaje tylko w starych zapisach);
    ręczne zakończenie gry pokazuje wczesny wynik, ale NIE kasuje zapisu —
    grę można wznowić.
 6. Koniec → **minimalny** ekran wyniku w `gra-panel-koniec` (ADR 0038):
@@ -371,7 +372,8 @@ Stan rozgrywki (`schemat: 'rozgrywka/1'`, `app/rozgrywka.js`) jest
 **zdarzeniowy i niezmiennikowy**: każda funkcja zwraca nowy obiekt
 (`structuredClone`), a argument zostaje nietknięty, bo UI trzyma referencje.
 Dziennik `{ czasMs, typ, … }` (`start`, `start-odcinka`, `dojscie`, `odpowiedz`,
-`pominiecie`, `ostrzezenie`, `koniec`) pozwala przeliczyć wynik i odtworzyć
+`ostrzezenie`, `koniec` — oraz `pominiecie` tylko w zapisach sprzed zadania H)
+pozwala przeliczyć wynik i odtworzyć
 przebieg — debugging terenowy bez zgadywania. Odcinki niosą tryb dojścia,
 dokładność i dystans (`trybDojscia`, `accuracyM`, `odlegloscKoncowaM`,
 `dystansM`), a odpowiedzi — wynik punktacji (`punktyPodstawowe`,
