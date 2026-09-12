@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 4, 7).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-81';
-import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM, przesunPunkt } from './geo.js?v=m12-81';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijNoweTematySetupu, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-82';
+import { dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-82';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,23 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-81';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-81';
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-81';
-import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-81';
-import { FAZY, STANY_ODCINKA, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-81';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-81';
+} from './protokol.js?v=m12-82';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-82';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-82';
+import { GRANICE, PROFILE_GPS, ZRODLA_FIXA, dodajFix, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-82';
+import { FAZY, TRYBY_DOJSCIA, ktoOdpowiada, nowaRozgrywka, pominStacje, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-82';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-82';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-81';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-81';
-import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-81';
+} from './zestawy.js?v=m12-82';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-82';
+import { ROLE_PALETY, dystansTekst, etykietaOdcinka, planObrazuWyniku, wynikTekstowy } from './wynik.js?v=m12-82';
 import {
-  INSTANCJE_OVERPASS,
   KODY_SIECI,
   POLITYKA,
   SCHEMAT_SIECI,
@@ -63,17 +62,17 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-81';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-81';
-import { ALFABET_KODU, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim, przeliczWyniki, ramkaGeohash, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-81';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-81';
-import { adresMostu, stanMostu } from './most.js?v=m12-81';
+} from './sieci.js?v=m12-82';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-82';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-82';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-82';
+import { adresMostu, stanMostu } from './most.js?v=m12-82';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-81';
+} from './oceny.js?v=m12-82';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -161,6 +160,9 @@ const STAN = {
   ukryjStacje: false,
   /** M11/P4: dwustopniowa rezygnacja z gry wieloosobowej (jak inne destrukcyjne). */
   multiRezygnacjaUzbrojona: false,
+  /** Wyjście ORGANIZATORA z lobby zamyka grę WSZYSTKIM — akcja nieodwracalna,
+   *  więc też dwustopniowa (audyt PR #13; wzorzec `rezygnujZGryMulti`). */
+  multiOpuszczenieUzbrojone: false,
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
@@ -3980,6 +3982,10 @@ function otworzPanelMulti(panel) {
   // m12-75: ekran multi to już TYLKO lobby — lista „Dołącz” żyje na setupie
   // (właściciel, uwagi terenowe #3 2026-09-11). Zakładanie również na setupie.
   if (panel !== 'lobby') return;
+  // Wejście do lobby rozbraja potwierdzenie wyjścia: uzbrojenie z poprzedniego
+  // wejścia nie może zostać w przycisku (audyt PR #13 pkt 2).
+  STAN.multiOpuszczenieUzbrojone = false;
+  $('przycisk-lobby-opusc').textContent = 'Opuść lobby';
   $('multi-panel-lobby').hidden = false;
   pokazBledy('bledy-multi', []);
   pokazEkran('multi');
@@ -4250,6 +4256,19 @@ function opuscLobby() {
   const m = STAN.multi;
   if (!m) { pokazEkran('setup'); return; }
   const organizator = m.rola === 'organizator';
+  // Audyt PR #13 pkt 2: wyjście organizatora zamyka grę WSZYSTKIM (most
+  // przenosi ją do archiwum — bez organizatora nie ma kto wystartować), więc
+  // jest to akcja nieodwracalna i idzie dwustopniowo, jak rezygnacja w grze
+  // (`rezygnujZGryMulti`) i kasowanie danych. Gość wychodzi jednym klikiem:
+  // przed startem może dołączyć ponownie z listy gier w okolicy.
+  if (organizator && !STAN.multiOpuszczenieUzbrojone) {
+    STAN.multiOpuszczenieUzbrojone = true;
+    $('przycisk-lobby-opusc').textContent = '⚠ Kliknij ponownie, aby zamknąć grę';
+    status('Wyjście organizatora ZAMYKA grę dla wszystkich — nikt już nie wystartuje. Kliknij ponownie, aby potwierdzić.');
+    return;
+  }
+  STAN.multiOpuszczenieUzbrojone = false;
+  $('przycisk-lobby-opusc').textContent = 'Opuść lobby';
   const url = m.urlMostu ?? urlMostuMulti();
   const cialo = {
     akcja: 'gra-opusc',
