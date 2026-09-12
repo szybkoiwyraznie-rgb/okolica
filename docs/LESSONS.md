@@ -756,3 +756,30 @@ wdrożenie; (3) komunikat niesie POWÓD („brak odpowiedzi w 15 s", „HTTP 403
 sprawdź dostęp «Każdy»"), a nie wspólne „niedostępne"; (4) żądanie bez limitu
 czasu jest błędem — zawieszone połączenie zostawia użytkownika z wiecznym
 „Pobieram…".
+
+## L52 — jeden `catch` na cały łańcuch melduje NASZ błąd jako cudzą awarię
+
+**Objaw:** właściciel zgłosił, że w Podkowie Leśnej ekran „Gdzie jesteś?” mówi
+„Repozytorium niedostępne”, choć paczki na Drive są — po czym dodał decydujący
+fakt: „Sam most na pewno działa, bo przed chwilą rozegrałem grę, wygenerowałem
+nowego gracza, paczkę z AI i wszystko ładnie się zapisało. Więc to musiał być
+jakiś specyficzny problem ze sprawdzaniem paczek”. Miał rację: obsługa indeksu
+miała `.catch(() => …)` obejmujący CAŁY łańcuch — żądanie, parsowanie, walidację,
+dopasowanie i render listy. Wyjątek we własnym kodzie na poprawnej odpowiedzi
+mostu wyglądał dokładnie tak samo jak brak sieci.
+
+**Przyczyna:** jeden `catch` na wiele odpowiedzialności. Im dłuższy łańcuch
+`.then(...)`, tym więcej cudzych win mieści się w jednym zdaniu o winie mostu.
+Gdy użytkownik mówi „ta funkcja przecież działa” (most, Drive, konto), to jest
+wskazówka diagnostyczna, nie upór: awaria leży wtedy w tej ścieżce, która jest
+NASZA — czyli w czytaniu i pokazywaniu odpowiedzi.
+
+**Reguła:** dziel obsługę na warstwy o różnych sprawcach — (1) żądanie sieciowe
+(jego wolno powtórzyć, jego awaria ma powód: brak sieci, timeout, HTTP 403),
+(2) czytanie i pokazanie odpowiedzi (błąd aplikacji — nie powtarzamy, nie
+obwiniamy mostu, mówimy „błąd aplikacji: <konkret>” i prosimy o zgłoszenie).
+Do tego: gdy odpowiedź jest niezrozumiała, komunikat niesie KOD usterki
+(np. Z09), a pełny opis (z czym dokładnie się nie zgadzamy) idzie do miejsca
+diagnostycznego, nie do zdania dla gracza. Test piszesz tak, żeby wymusić
+wysypkę WŁASNEGO kodu na poprawnej odpowiedzi i sprawdzić, że komunikat nie
+udaje sieci — inaczej reguła zniknie przy pierwszym refaktorze.

@@ -3251,6 +3251,25 @@ Trzy przyczyny po naszej stronie, wszystkie naprawione u źródła:
   próbie dopisuje „Ostatnia próba nie doszła: …" i dostaje klasę `bledy` — samo
   posiadanie adresu w kodzie to nie to samo co działające połączenie.
 
+**Ciąg dalszy po wdrożeniu `.gs` przez właściciela (`9e35710` + `0577244`, m12-86).**
+Właściciel potwierdził, że most działa (rozegrał grę, wygenerował gracza i paczkę
+z AI — wszystko się zapisało) i wskazał cel: „to musiał być jakiś specyficzny
+problem ze sprawdzaniem paczek”. Wskazówka odsłoniła drugi defekt tej samej
+rodziny: `.catch(() => …)` w `odswiezPropozycjeZestawow` obejmował CAŁY łańcuch,
+więc także wyjątek NASZEGO kodu (parsowanie, dopasowanie, render listy) na
+poprawnej odpowiedzi mostu meldował jako „Repozytorium niedostępne”. Teraz sieć
+i czytanie odpowiedzi są rozdzielone: powtórka należy się wyłącznie żądaniu,
+wysypka naszego kodu mówi „Repozytorium odpowiedziało, ale lista paczek się nie
+wczytała (błąd aplikacji: <konkret>) — lista może być niepełna, zgłoś ten błąd”,
+a odpowiedź niezrozumiała niesie kod usterki („nieczytelna odpowiedź (Z09)”,
+pełny opis w stanie mostu). Z10 z zerem wczytanych wpisów przestał udawać „puste
+repo”. Przy awarii widać też prefiks adresu wdrożenia
+(`, script.google.com/s/AKfycbxlSc…/exec`) — przy kilku wdrożeniach Apps Script
+pierwsze pytanie brzmi, czy aplikacja pyta o TO, które właściciel właśnie wkleił.
+Trzy testy w `test/zestawy-ui.test.js` celowo padają na kodzie sprzed zmiany
+(`git stash`: 3 fail), w tym jeden wymuszający wysypkę renderu na poprawnej
+odpowiedzi mostu.
+
 Ta sama klasa błędu w drugiej połowie ekranu: `grajZZestawemZRepo` nie miał
 limitu czasu wcale (zawieszone żądanie zostawiało „Pobieram paczkę…" na zawsze)
 i połykał powód. Cztery nowe testy w `test/zestawy-ui.test.js` (dokładnie jedna
@@ -3283,7 +3302,7 @@ funkcja licząca dopełnienia, porównanie markera w odczycie).
 
 ### 4. Bramy i stan po sesji
 
-`npm test`: 692 → 698 (Bug A) → **701/701** (Bug B i Punkt 2; 68,6 s),
+`npm test`: 692 → 698 (Bug A) → 701/701 (Bug B i Punkt 2) → **703/703** (m12-86; 70,4 s),
 `npm run check` — oba szablony zgodne, `npm run audyt` — 0 naruszeń WCAG AA,
 `git status` czysty, wszystko wypchnięte na `arena/01a095b5-okolica`.
 Budżet lektury startowej (po dopisaniu tej sekcji i trzech lekcji): patrz
