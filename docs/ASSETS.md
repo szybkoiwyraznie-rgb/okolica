@@ -222,24 +222,39 @@ akcji; nowy dostawca przechodzi pełną checklistę §5.
   dla właściciela w czacie, ADR 0018).
 - **Co płynie**: DO Drive — kandydaci na zestawy (TO-zestaw/1: meta + stacje
   + ukryty kontener pytań) wysyłani automatycznie i bez pytania przy przyjęciu
-  paczki (decyzja 2026-09-07: checkbox zgody usunięty, ADR 0016 aneks). Z Drive — tylko
-  indeks zaakceptowanych (`?akcja=indeks`) i paczki (`?akcja=paczka&id=…`).
+  paczki (decyzja 2026-09-07: checkbox zgody usunięty, ADR 0016 aneks), a obok
+  nich gry wieloosobowe i ich zdarzenia, gry hot-seat, oceny pytań, liczniki
+  użyć paczek i profile pseudonimów (§7.1–§7.2). Z Drive — indeks katalogu
+  zaakceptowanych (`?akcja=indeks`), paczka (`?akcja=paczka&id=…`), lista
+  i stan gier (`?akcja=gry`, `?akcja=gra-stan`) oraz rankingi
+  (`?akcja=ranking`, ADR 0039).
 - **Klucze i polityka**: BRAK kluczy API w kodzie; adres web app jest zdolnością
   (capability) i od ADR 0020 jest WPISANY W KOD aplikacji (`DOMYSLNY_URL_MOSTU`
   w `app/most.js`) — publiczny jak cała aplikacja na Pages, rotacja = nowe
-  wdrożenie web app + nowy commit; sekrety mostu (`REVIEW_SECRET`, `OWNER_EMAIL`)
-  żyją wyłącznie w Script Properties konta Google. POST-y `text/plain` (bez
-  preflightu CORS); aplikacja tylko czyta — nigdy nie usuwa i nie edytuje na Drive.
+  wdrożenie web app + nowy commit. **Sekretów mostu nie ma**: `REVIEW_SECRET`
+  i `OWNER_EMAIL` zniknęły razem z moderacją wstępną (2026-09-11, ADR 0017
+  aneks), więc Script Properties nie są do niczego potrzebne — w
+  `docs/setup/apps-script-repo-paczek.gs` nie ma ani jednego odczytu właściwości
+  skryptu. POST-y `text/plain` (bez preflightu CORS); aplikacja tylko czyta —
+  nigdy nie usuwa i nie edytuje na Drive.
 - **Prywatność (ADR 0013)**: współrzędne w wysyłanym zestawie to stacje gry
-  (przestrzeń publiczna) + geohash5 okolicy, bez śledzenia gracza; moderacja
-  właściciela (e-mail z linkiem przeglądu) jest bramą przed udostępnieniem.
+  (przestrzeń publiczna) + geohash5 okolicy, bez śledzenia gracza. **Bramy
+  moderacyjnej nie ma** (2026-09-11, ADR 0017 aneks): przyjęta paczka ląduje od
+  razu w `okolica-paczki-zaakceptowane`, a o jakości decydują łapki graczy
+  (ADR 0028); ręczne odrzucenie to przeniesienie pliku do
+  `okolica-paczki-odrzucone` (most wtedy nie wydaje duplikatu).
 - **Licencje**: treści zestawów CC BY-SA 4.0 (ADR 0017); pola `licencja`
-  i `przegladZrodel` wymagane w każdym kandydacie.
-- **Awaria/rotacja**: `REVIEW_SECRET` w script properties do rotacji; odrzucanie
-  ręczne przez przeniesienie pliku w katalogu Drive; brak mostu nie blokuje gry
-  (kopia lokalna + zwykła ścieżka prompt→model).
-- **Docelowo (ADR 0018)**: to samo konto obsłuży parowanie gier na wielu
-  urządzeniach (M11) i profil/statystyki gracza (M12) — ta sekcja będzie rosła.
+  i `przegladZrodel` wymagane w każdym kandydacie (to drugie niesie dziś
+  znacznik „oczekuje przeglądu — jakość rozstrzygają łapki graczy”, nie sesję
+  przeglądu właściciela).
+- **Awaria/rotacja**: rotacja adresu = nowe wdrożenie web app + commit
+  z `DOMYSLNY_URL_MOSTU` (ADR 0020); odrzucanie ręczne przez przeniesienie pliku
+  w katalogu Drive; brak mostu nie blokuje gry — zostaje zwykła ścieżka
+  prompt→model i gra na jednym telefonie (paczek z pamięci telefonu UI nie
+  pokazuje, zadanie I z 2026-09-12).
+- **Stan (ADR 0018 zrealizowany)**: to samo konto obsługuje parowanie gier na
+  wielu urządzeniach (M11), historię i profil gracza (M12) oraz rankingi
+  (ADR 0039) — szczegóły w §7.1 i §7.2.
 
 ### 7.1 Gry i historia gier (M11/M12, ADR 0019) — ruch na tym samym moście
 
@@ -257,3 +272,23 @@ akcji; nowy dostawca przechodzi pełną checklistę §5.
 - **Prywatność**: współrzędne graczy nigdy nie trafiają na Drive (biała lista
   pól zdarzenia + kasowanie `lat/lon/...` po stronie mostu); w konfiguracji
   gry jest tylko geohash5 i nazwa miejsca.
+
+### 7.2 Oceny, profile i ranking (M12, ADR 0021/0028/0039)
+
+- **Katalogi**: `okolica-profile` (RO-profil/1: pseudonim + odcisk PIN-u, bez
+  PIN-u) i `okolica-oceny-paczek` (głosy graczy, osobno od paczek). Akcja
+  `uzycie` dopisuje token gry do licznika paczki — idempotentnie, raz na grę
+  (ADR 0028 pkt 6: „ile gier użyło tej paczki”).
+- **Ranking (`?akcja=ranking`, schemat `RO-ranking/2`)**: most liczy DWIE tabele
+  po ≤5 pozycji z gier zakończonych — „Ranking Punktowy Graczy” (suma punktów)
+  i „Mistrzowie Zagadek” (odsetek poprawnych, liczony od 10 zadanych pytań).
+  Wchodzą tylko profile potwierdzone na Drive. Aplikacja nic nie liczy, tylko
+  prezentuje (`app/ranking.js`).
+- **Deployment**: ranking wymaga NOWEGO deploymentu web app (skrypt z
+  `akcja=ranking` w `doGet`). Na starym adresie ekran rankingu mówi wprost, że
+  nie udało się pobrać danych, a reszta gry działa (ADR 0020: adres w kodzie,
+  zmiana = commit + przebudowa Pages).
+- **Quota**: jedno GET na otwarcie ekranu rankingu (nie ma pollingu) — koszt
+  pomijalny przy limitach Apps Script.
+- **Prywatność**: w tabelach są pseudonimy i liczby — bez współrzędnych i bez
+  treści pytań; PIN nie jest zapisywany ani na telefonie, ani w pliku profilu.

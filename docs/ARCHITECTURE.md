@@ -64,11 +64,14 @@ app/
                               dopasowanie okolicy z tolerancją 200 m od komórki
                               geohash — ADR 0024, indeks Drive z `id` →
                               urlPaczkiZRepo)
-  wynik.js                  — wynik: sprawiedliwość trasy, eksport tekstowy,
-                              plan komend obrazu (PNG 1080 px) i nazwy plików
-                              (czyste; bez DOM, bez treści pytań, bez
-                              współrzędnych; od ADR 0038 bez konsumenta w UI —
-                              biblioteka pilnowana własnym testem)
+  wynik.js                  — M7: SŁOWA wyniku — `dystansTekst`,
+                              `etykietaOdcinka`, `wynikTekstowy`, `ROLE_PALETY`
+                              i `planObrazuWyniku` (plan komend obrazu PNG
+                              1080 px); matematyka należy do
+                              `rozgrywka.podsumowanie()`. Czyste: bez DOM, bez
+                              treści pytań, bez współrzędnych; od ADR 0038 bez
+                              konsumenta w UI — biblioteka pilnowana własnym
+                              testem
   ranking.js                — M12: ranking (ADR 0039) — limit 5 pozycji, próg
                               10 zadanych pytań, sortowanie z remisami,
                               walidacja `RO-ranking/2` i format „18/24 · 75%”
@@ -365,8 +368,11 @@ commit i nowa wersja aplikacji.
 
 ## Stan i trwałość
 
-Jedyny trwały nośnik to `localStorage` (klucze `okolica:*`, ADR 0010 pkt 1)
-plus plik `.paczka.json` eksportowany przez użytkownika.
+Jedyny trwały nośnik to `localStorage` (klucze `okolica:*`, ADR 0010 pkt 1).
+Pliku `.paczka.json` użytkownik nie eksportuje ani nie wczytuje (eksport zestawu
+zniknął 2026-09-07, wczytywanie „⬆ Z pliku” też — ADR 0006 aneks 3; eksporty
+wyniku zabrał ADR 0038): paczka żyje w pamięci telefonu i w repozytorium
+na Drive.
 
 Stan rozgrywki (`schemat: 'rozgrywka/1'`, `app/rozgrywka.js`) jest
 **zdarzeniowy i niezmiennikowy**: każda funkcja zwraca nowy obiekt

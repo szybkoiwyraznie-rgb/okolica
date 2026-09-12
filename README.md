@@ -115,9 +115,10 @@ pytań ani współrzędnych — pilnują tego testy-strażnicy. Na setupie docho
 karta „Poprzednie gry": do 50 skrótów (`okolica:historia`), najnowsza
 pierwsza, ze znacznikiem gier przerwanych ręcznie; dokończenie przerwanej gry
 ZASTĘPUJE wpis zamiast dodawać drugi, kasowanie jest dwustopniowe, a zepsuty
-zapis odzywa się jawnie kodami `H`. Kamień czeka na kryteria terenowe
-właściciela: czytelność w słońcu na 360 px i eksport na Chrome Android oraz
-Safari iOS (`docs/WORKFLOW.md` §4.2).
+zapis odzywa się jawnie kodami `H`. Kamień czeka na JEDNO kryterium terenowe
+właściciela: czytelność w słońcu na 360 px (`docs/WORKFLOW.md` §4.2) —
+kryterium „eksport na Chrome Android i Safari iOS” odpadło razem z eksportami
+(ADR 0038; `docs/ROADMAP.md` §Kryteria zawężony 2026-09-12).
 
 ## Uruchomienie lokalne
 
