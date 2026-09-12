@@ -1,4 +1,4 @@
-# Most Drive (paczki + gry wieloosobowe + rankingi) — wdrożenie krok po kroku
+# Most Drive (paczki + gry wieloosobowe) — wdrożenie krok po kroku
 
 > Wersja robocza w repozytorium (ADR 0018 pkt 3: finalna instrukcja jest
 > wyświetlana właścicielowi w czacie — ten plik jest jej źródłem i kopią
@@ -10,8 +10,10 @@ OD RAZU do katalogu zaakceptowanych, bez sesji przeglądu i bez maili
 (decyzja właściciela 2026-09-11); o jakości paczek rozstrzygają łapki
 graczy (ADR 0028), a niechcianą paczkę wyłączasz z obiegu ręcznie,
 przeciągając plik do katalogu odrzuconych; (2) gry wieloosobowe na wielu
-urządzeniach — lobby, kody, Wspólna Trasa i Wyścig na Orientację, stan gry
-na Drive; (3) rankingi z zakończonych gier. Aplikacja
+urządzeniach — lobby, kody, Wspólna Trasa i Wyścig na Orientację, stan gry na
+Drive; (3) wspólne archiwum wyników i ocen paczek — rankingi usunięto 2026-09-11
+(ADR 0019 aneks 2026-09-11b), zostaje historia gier i łapki ocen (ADR 0028).
+Aplikacja
 nie zna żadnych haseł ani kluczy — zna tylko adres web app, który poniżej
 skopiujesz i podasz w czacie: trafi do kodu aplikacji (ADR 0020), więc żadne
 urządzenie nie będzie go wpisywać ręcznie.
@@ -60,15 +62,15 @@ Pola wpisywania adresu zostały z interfejsu usunięte decyzją właściciela.
 2. **Scal do `main`**: GitHub Pages serwuje `main` (ADR 0002), więc adres
    zacznie działać na telefonach dopiero po scaleniu i przebudowaniu strony
    (~1–2 min).
-3. **Sprawdź stan w aplikacji**: karta „📦 Paczki dla tej okolicy" i karta gry
-   wieloosobowej pokazują „Most Drive: podłączony — adres jest wpisany w tej
-   wersji aplikacji". Przycisk „🔌 Sprawdź połączenie" robi jawną próbę CORS na
-   żywym wdrożeniu (ADR 0016). Stan „niepodłączony" znaczy, że ta wersja
-   aplikacji adresu jeszcze nie ma.
-4. **Jeden adres, trzy zadania** (ADR 0018): repozytorium paczek, gry
-   wieloosobowe i rankingi. Zgoda na wysyłkę zestawu jest checkboxem na ekranie
-   wklejania odpowiedzi modelu, domyślnie zaznaczonym — bez niej aplikacja
-   niczego nie wyśle.
+3. **Sprawdź stan w aplikacji**: wiersz `#most-stan-repo` przy karcie
+   „📦 Paczki dla tej okolicy" pokazuje „Most Drive: podłączony — adres jest
+   wpisany w tej wersji aplikacji (ADR 0020)". Stan „niepodłączony" znaczy, że
+   ta wersja aplikacji adresu jeszcze nie ma (diagnostyczny przycisk „🔌 Sprawdź
+   połączenie" zniknął w m12-66 — stan mostu widać wprost, bez klikania).
+4. **Jeden adres, obsługuje wszystko** (ADR 0018): repozytorium paczek, gry
+   wieloosobowe i archiwum wyników. Zestaw leci na Drive automatycznie w chwili
+   przyjęcia paczki — bez checkboxa zgody i bez pytania (decyzja 2026-09-07,
+   ADR 0016 aneks).
 5. **Awaryjnie, bez nowej wersji aplikacji**: adres można nadpisać w pamięci
    JEDNEGO telefonu (konsola przeglądarki:
    `localStorage.setItem('okolica:multi:url-mostu', '<adres>')`). Interfejs
@@ -112,8 +114,9 @@ Skrót:
 3. A: „▶ Start gry" → oboje: odcinek → dojście → pytanie → odpowiedź; tabela
    wyników drugiego gracza i kanał „Info z gry" odświeżają się co ~30 s.
    A może w każdej chwili kliknąć „⏹ Zakończ grę (host)" — u obu podsumowanie.
-4. Po zakończeniu: nagłówek „🏆 rankingi" → ogólny / wiek / tematy /
-   lokalizacja + „Moje gry".
+4. Po zakończeniu: tabela końcowa z wynikami graczy w aplikacji. Rankingi
+   zbiorcze i zakładka „Moje gry" zostały usunięte (decyzja właściciela
+   2026-09-11, ADR 0019 aneks 2026-09-11b) — historia gier żyje na Drive.
 5. Na Drive w `okolica-gry-zakonczone` leży plik gry (kod w nazwie) — pełna
    historia zdarzeń BEZ współrzędnych graczy (możesz otworzyć i sprawdzić).
 
@@ -129,11 +132,13 @@ Skrót:
 - Aktualizacja do wyniku hot-seat (B22, ADR 0026 aneks): wklej nową treść
   `docs/setup/apps-script-repo-paczek.gs` i Wdróż → Nowa wersja (`setup` nie jest
   potrzebny — katalogi już istnieją). Nowa akcja `gra-hotseat` zapisuje grę
-  z jednego telefonu w `okolica-gry-zakonczone`, więc rankingi widzą ją od razu.
+  z jednego telefonu w `okolica-gry-zakonczone`, więc trafia wprost do archiwum
+  gier (rankingów zbiorczych już nie ma — ADR 0019 aneks 2026-09-11b).
   Test: zagraj grę na jednym telefonie z dodanym graczem (imię + PIN) → po
   zakończeniu pod wynikiem pojawi się „☁ Wynik jest na wspólnym Drive" (zapis
   jest domyślny, bez pytania o zgodę), a na Drive przybędzie plik
-  `gra-hotseat-….json`; rankingi pokażą punkty tych pseudonimów.
+  `gra-hotseat-….json` (plik jest historią gry; punktów z niego nie zobaczysz
+  już w żadnym rankingu zbiorczym).
 - Aktualizacja do listy ~50 m i premii 3/2/1 (m12-74, ADR 0019/0027 aneksy):
   wklej nową treść `docs/setup/apps-script-repo-paczek.gs` i Wdróż → Nowa
   wersja (funkcji `setup` uruchamiać nie trzeba). Zmiany: `gra-zaloz`

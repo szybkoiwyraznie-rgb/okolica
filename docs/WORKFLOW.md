@@ -97,7 +97,8 @@ jest widoczne jako karta obok rozmowy.
    `21.0122`), **wklej z Google Maps** (np. `52°07'22.9"N 20°44'46.1"E` albo
    `52.123028, 20.746139` — w pierwsze pole, drugie zostaw puste; stopnie-
    -minuty-sekundy to nie dziesiętne: 52°07'22.9" = 52.12303) albo w trybie
-   testowym **stuknij mapę** → „Ustaw tę pozycję". Sprawdź: **kafelki się
+   testowym **stuknij mapę** — pozycja ustawi się od razu (status „Pozycja
+   ustawiona z mapy.", pola się wypełniają). Sprawdź: **kafelki się
    ładują**, niebieski marker stoi w środku,
    jasne koło dokładności ma rozsądny rozmiar, przerywany okrąg to promień gry.
 3. Palec (albo mysz): przeciągnij mapę — treść jedzie z palcem, bez białych
