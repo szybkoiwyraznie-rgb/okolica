@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-109';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-109';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-110';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-110';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-109';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-109';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-109';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-109';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-109';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-109';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-109';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-109';
+} from './protokol.js?v=m12-110';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-110';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-110';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-110';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-110';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-110';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-110';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-110';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-109';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-109';
+} from './zestawy.js?v=m12-110';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-110';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-109';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-109';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-109';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-109';
-import { adresMostu, stanMostu } from './most.js?v=m12-109';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-109';
+} from './sieci.js?v=m12-110';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-110';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-110';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-110';
+import { adresMostu, stanMostu } from './most.js?v=m12-110';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-110';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-109';
+} from './oceny.js?v=m12-110';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -178,12 +178,14 @@ const STAN = {
   obrotOpoznienie: null,
   /** M6/R5: kiedy odsłonięto bieżące pytanie (czas odpowiedzi dla modelu). */
   pytaniePokazaneMs: 0,
-  /** M6/R6: snapshot `stan-gry/1` znaleziony przy starcie (kandydat do wznowienia). */
+  /** Snapshot `stan-gry/1` podniesiony przy starcie (ADR 0045: wracamy do gry
+   *  bez kliku — banera o znalezionej grze na setupie nie ma, uwaga J). */
   wznowienieKandydat: null,
-  /** M6/R6: dwustopniowość kasowania zapisu i historii. Ręcznego zakończenia
-   *  gry NIE uzbraja się klikiem — potwierdzeniem jest wpisanie TAK w warstwie
-   *  `#ekran-koniec-gry` (właściciel 2026-09-13, uwaga I; ADR 0043). */
-  czyszczenieZapisuUzbrojone: false,
+  /** M7/P6: dwustopniowość kasowania HISTORII (ADR 0015 pkt 6). Ręcznego
+   *  zakończenia gry NIE uzbraja się klikiem — potwierdzeniem jest wpisanie TAK
+   *  w warstwie `#ekran-koniec-gry` (właściciel 2026-09-13, uwaga I; ADR 0043).
+   *  Dwustopniowego kasowania ZAPISU gry nie ma: zepsuty albo zakończony zapis
+   *  start kasuje sam, bez pytania (uwagi J i K, ADR 0045). */
   historiaKasowanieUzbrojone: false,
   graZakonczonaRecznie: false,
   /** M11/P4: 'hotseat' | 'multi' — wybór z setupu, utrwalany w localStorage. */
@@ -3263,38 +3265,48 @@ function kasujHistorieGry() {
   status('Historia gier skasowana.');
 }
 
-/** Start aplikacji: szukamy zapisu gry i pokazujemy baner na setupie (decyzja 6). */
-function sprawdzZapisGry() {
+/**
+ * Start aplikacji (uwagi J i K, ADR 0045): telefon pamięta grę → WRACAMY do niej
+ * od razu, bez banera na setupie i bez kliku. Baner `#karta-wznowienie` z
+ * przyciskami „▶ Wznów grę" / „🗑 Nowa gra (kasuje zapis)" usunął właściciel
+ * (uwaga J): szukanie gry na setupie było dodatkowym krokiem między otwarciem
+ * aplikacji a grą, a odświeżenie ekranu i tak miało wracać do ostatniego zapisu.
+ *
+ * Zapis, którego nie da się podnieść, kasujemy OD RAZU i mówimy dlaczego —
+ * inaczej każde kolejne otwarcie aplikacji próbowałoby go podnosić:
+ * - zepsuty (`walidujStanSurowy` oddaje kody T**) → status z kodami usterek,
+ * - zakończony (faza `koniec`) → wynik jest w „Poprzednich grach" (M7/P6).
+ * Gra zakończona RĘCZNIE (⚙ START GRY → TAK) zostaje w zapisie i wraca — tak jak
+ * dotąd (właściciel 2026-09-11: ręczne zakończenie nie kasuje zapisu).
+ *
+ * @returns {boolean} czy aplikacja jest teraz w przywróconej grze
+ */
+function przywrocGreHotseat() {
   STAN.wznowienieKandydat = null;
-  STAN.czyszczenieZapisuUzbrojone = false;
-  const karta = $('karta-wznowienie');
-  $('przycisk-kasuj-zapis').textContent = '🗑 Nowa gra (kasuje zapis)';
+  if (typeof localStorage === 'undefined') return false;
   const aktywna = localStorage.getItem(KLUCZ_AKTYWNEJ);
-  if (!aktywna) {
-    karta.hidden = true;
-    return;
-  }
+  if (!aktywna) return false;
   const { stan, usterki } = walidujStanSurowy(localStorage.getItem(kluczStanu(aktywna)) ?? '');
   if (!stan) {
-    karta.hidden = false;
-    $('przycisk-wznow-gre').hidden = true;
-    $('wznowienie-opis').textContent = `Znaleziono zepsuty zapis gry „${aktywna}" (${usterki.map((u) => u.kod).join(', ')}). Nie da się go wznowić — usuń go, żeby zacząć nową grę.`;
-    return;
+    localStorage.removeItem(kluczStanu(aktywna));
+    localStorage.removeItem(KLUCZ_AKTYWNEJ);
+    status(`Zapamiętany zapis gry był zepsuty (${usterki.map((u) => u.kod).join(', ')}) — skasowaliśmy go. Możesz ustawić nową grę.`);
+    return false;
+  }
+  if (stan.rozgrywka?.faza === FAZY.koniec) {
+    localStorage.removeItem(kluczStanu(aktywna));
+    localStorage.removeItem(KLUCZ_AKTYWNEJ);
+    status('Zapamiętana gra była już zakończona — jej wynik jest w „Poprzednich grach". Możesz ustawić nową.');
+    return false;
   }
   STAN.wznowienieKandydat = stan;
-  karta.hidden = false;
-  $('przycisk-wznow-gre').hidden = false;
-  const r = stan.rozgrywka;
-  const indeks = r.stacje.findIndex((s) => s.id === r.biezacaStacja) + 1;
-  // Zakończona gra nie jest „niedokończona" — baner mówi prawdę: to tylko
-  // ponowne obejrzenie wyniku (wznowienie jej nie wysyła wyniku drugi raz).
-  $('wznowienie-opis').textContent = r.faza === FAZY.koniec
-    ? `Znaleziono zapis ZAKOŃCZONEJ gry „${r.kodGry || aktywna}" — możesz jeszcze raz obejrzeć wynik.`
-    : `Znaleziono niedokończoną grę „${r.kodGry || aktywna}" — faza: ${r.faza}, stacja ${indeks} z ${r.stacje.length}, zapisano ${new Date(stan.zapisanoMs).toLocaleString('pl-PL')}.`;
+  wznowGre();
+  return true;
 }
 
 /**
- * Wznowienie: rebaza zegara sesji (plan M6, ryzyko 3/4) — `performance.now()`
+ * Powrót do zapamiętanej gry (ADR 0045, uwaga K): rebaza zegara sesji (plan M6,
+ * ryzyko 3/4) — `performance.now()`
  * po restarcie przeglądarki startuje od zera, więc wszystkie znaczniki czasu
  * rozgrywki przesuwamy o różnicę między teraz a kotwicą `zegarMs` z zapisu.
  * Czas zamknięcia karty NIE wlicza się w odcinek (uczciwy pomiar).
@@ -3330,38 +3342,27 @@ function wznowGre() {
   STAN.historiaFixow = []; // dojście liczymy od nowa — fixy sprzed zamknięcia nie rozstrzygają
   STAN.wycentrowane = false; // pierwszy fix po wznowieniu centruje mapę gry
   STAN.wznowienieKandydat = null;
-  $('karta-wznowienie').hidden = true;
   renderujSetup(); // konfiguracja z zapisu wraca do pól setupu
   // Skład gry bierze się z zapisu — tu tylko przyciski zapamiętanych (ADR 0026 aneks).
   przywrocGraczy();
   pokazEkran('gra');
+  ukryjStart(); // powrót do gry pomija okno startowe (uwaga K, ADR 0045)
   if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
-  status(`Gra „${r.kodGry || 'bez kodu'}" wznowiona — faza: ${r.faza}. Czas zamknięcia przeglądarki nie wlicza się w odcinek.`);
+  status(`Wróciliśmy do zapamiętanej gry „${r.kodGry || 'bez kodu'}" — faza: ${r.faza}. Czas zamknięcia przeglądarki nie wlicza się w odcinek.`);
   renderujGre();
   if (r.faza === FAZY.pytanie) renderujPytanie();
-  // Właściciel 2026-09-11 (uwagi terenowe #2): „Wznów grę" nie może pokazywać
+  // Właściciel 2026-09-11 (uwagi terenowe #2): powrót do gry nie może pokazywać
   // międzystrony „Idzie: … ▶ Idę do stacji …" — w fazie przygotowania od razu
-  // droga i pasek na dole ekranu (faza przygotowania czeka tylko na wznawiającego).
+  // droga i pasek na dole ekranu (faza przygotowania czeka tylko na gracza).
   if (r.faza === FAZY.przygotowanie && czyStartPoDalej()) startOdcinkaGry();
   zapiszGre(); // świeża kotwica zegara
 }
 
-/** Kasowanie zapisu — dwustopniowe, bez confirm() (ADR 0015 pkt 6). */
-function kasujZapisGry() {
-  if (!STAN.czyszczenieZapisuUzbrojone) {
-    STAN.czyszczenieZapisuUzbrojone = true;
-    $('przycisk-kasuj-zapis').textContent = '⚠ Kliknij ponownie, aby skasować zapis';
-    status('Drugi klik trwale usunie zapisaną grę z telefonu.');
-    return;
-  }
-  const aktywna = localStorage.getItem(KLUCZ_AKTYWNEJ);
-  if (aktywna) localStorage.removeItem(kluczStanu(aktywna));
-  localStorage.removeItem(KLUCZ_AKTYWNEJ);
-  STAN.czyszczenieZapisuUzbrojone = false;
-  STAN.wznowienieKandydat = null;
-  $('karta-wznowienie').hidden = true;
-  status('Zapis gry skasowany. Możesz ustawić nową.');
-}
+/* `kasujZapisGry()` i przycisk „🗑 Nowa gra (kasuje zapis)" USUNIĘTE (uwaga J,
+   ADR 0045) — razem z banerem wznowienia zniknęło dwustopniowe kasowanie zapisu.
+   Zapis kasuje sam start aplikacji, gdy nie da się go podnieść (zepsuty albo gra
+   zakończona), oraz „Wróć na początek" po grze (`wrocNaPoczatek`).
+   Dwustopniowe kasowanie HISTORII gier zostaje (`kasujHistorieGry`, ADR 0015). */
 
 /**
  * „■ Zakończ grę" — dwustopniowo; pokazuje wynik WCZEŚNIEJ niż model kończy
@@ -4261,13 +4262,11 @@ function usunSesjeMulti() {
   if (typeof localStorage !== 'undefined') localStorage.removeItem(KLUCZ_SESJI_MULTI);
 }
 
-function renderujWznowienieMulti() {
-  const sesja = czytajSesjeMulti();
-  const karta = $('multi-wznowienie');
-  if (!sesja || STAN.multi) { karta.hidden = true; return; }
-  karta.hidden = false;
-  $('multi-wznowienie-opis').textContent = `Telefon pamięta grę wieloosobową ${sesja.kod} (${sesja.rola === 'organizator' ? 'zakładałeś ją' : 'dołączyłeś'}). Gra żyje na serwerze — można do niej wrócić.`;
-}
+/* `renderujWznowienieMulti()` i karta `#multi-wznowienie` („↩ Wróć do gry" /
+   „🗑 Porzuć zapamiętaną grę") USUNIĘTE (uwagi J i K, ADR 0045): telefon wraca do
+   zapamiętanej gry wieloosobowej SAM przy starcie (`przywrocGreMulti`), a sesję
+   kasuje wyjście z lobby (`opuscLobby`), zamknięcie gry przez most
+   (`onStanGryMulti`) i rezygnacja (`rezygnujZGryMulti`). */
 
 /* --- ekrany i panele --- */
 
@@ -4395,7 +4394,6 @@ function wejdzDoGryMulti(gra, graczId, rola) {
     timeout: harmonogramMulti(),
   });
   zapiszSesjeMulti();
-  renderujWznowienieMulti();
   otworzPanelMulti('lobby');
   onStanGryMulti(gra); // lobby widoczne od razu, nie po pierwszym pollingu
   STAN.multi.sync.start();
@@ -4574,7 +4572,6 @@ function opuscLobby() {
   zatrzymajSyncMulti();
   usunSesjeMulti();
   STAN.multi = null;
-  renderujWznowienieMulti();
   pokazEkran('setup');
   // Telefon jest wolny od razu — polecenie idzie w tle. Bez niego wychodzący
   // zostawał w `liczbaGraczy` na liście gier: lobby obiecywało grę z graczem,
@@ -4585,17 +4582,25 @@ function opuscLobby() {
   });
 }
 
-/** Powrót do gry po odświeżeniu telefonu: sesja z localStorage + stan z mostu. */
+/**
+ * Powrót do gry po odświeżeniu telefonu: sesja z localStorage + stan z mostu.
+ * Od ADR 0045 (uwaga K) wołamy ją SAMI przy starcie aplikacji — karty
+ * `#multi-wznowienie` z przyciskiem „↩ Wróć do gry" nie ma (uwaga J).
+ */
 async function przywrocGreMulti() {
   const sesja = czytajSesjeMulti();
-  if (!sesja) { status('Telefon nie pamięta żadnej gry wieloosobowej.'); return; }
+  if (!sesja) return;
   status(`Wracam do gry ${sesja.kod}…`);
+  // `definitywnie` = most odpowiedział i mówi „nie ma takiej gry / nie ma Cię na
+  // liście" — wtedy nie ma do czego wracać i sesja idzie w kosz. Awaria sieci to
+  // co innego: sesja zostaje, a następne otwarcie aplikacji spróbuje znowu.
+  let definitywnie = false;
   try {
     const odpowiedz = await pobierzGetMulti(urlStanGry(sesja.urlMostu, { kod: sesja.kod, idGry: sesja.idGry }));
-    if (!odpowiedz?.ok || !odpowiedz.gra) throw new Error(odpowiedz?.blad ?? 'most nie zwrócił stanu gry');
+    if (!odpowiedz?.ok || !odpowiedz.gra) { definitywnie = true; throw new Error(odpowiedz?.blad ?? 'most nie zwrócił stanu gry'); }
     const gra = odpowiedz.gra;
-    if (gra.schemat !== SCHEMAT_GRY) throw new Error(`nieznany schemat gry: ${gra.schemat}`);
-    if (!gra.gracze.some((g) => g.id === sesja.graczId)) throw new Error('nie ma Cię już na liście graczy tej gry');
+    if (gra.schemat !== SCHEMAT_GRY) { definitywnie = true; throw new Error(`nieznany schemat gry: ${gra.schemat}`); }
+    if (!gra.gracze.some((g) => g.id === sesja.graczId)) { definitywnie = true; throw new Error('nie ma Cię już na liście graczy tej gry'); }
     STAN.multi = {
       rola: sesja.rola, gra, graczId: sesja.graczId, pseudonim: sesja.pseudonim,
       urlMostu: sesja.urlMostu, ostatniStanMs: Date.now(), sync: null,
@@ -4610,8 +4615,15 @@ async function przywrocGreMulti() {
     STAN.wznawiamMulti = true; // powrót do gry NIE jest startem — bez odliczania (ADR 0044)
     onStanGryMulti(gra); // 'trwa' → lokalna rozgrywka od niezamkniętych stacji
     STAN.multi?.sync?.start();
+    ukryjStart(); // powrót do gry pomija okno startowe (uwaga K, ADR 0045)
   } catch (e) {
-    status(`Nie udało się wrócić do gry: ${e?.message ?? e}. Jeśli gra się zakończyła albo wygasła, porzuć zapamiętaną sesję.`);
+    const powod = e?.message ?? e;
+    if (definitywnie) {
+      usunSesjeMulti();
+      status(`Nie ma już tamtej gry wieloosobowej (${powod}) — telefon jej nie pamięta. Możesz ustawić nową.`);
+      return;
+    }
+    status(`Nie udało się wrócić do gry: ${powod}. Telefon ją pamięta — spróbuję przy następnym otwarciu albo gdy wróci zasięg.`);
   }
 }
 
@@ -4638,8 +4650,7 @@ function onStanGryMulti(gra) {
   if (gra.stan === 'zakonczona' || gra.stan === 'archiwum') {
     zatrzymajSyncMulti();
     usunSesjeMulti();
-    renderujWznowienieMulti();
-    if (STAN.rozgrywka && STAN.rozgrywka.faza !== FAZY.koniec && !STAN.graZakonczonaRecznie) {
+      if (STAN.rozgrywka && STAN.rozgrywka.faza !== FAZY.koniec && !STAN.graZakonczonaRecznie) {
       STAN.graZakonczonaRecznie = true;
       status(gra.stan === 'archiwum'
         ? 'Lobby wygasło (24 h bez startu) — gra trafiła do archiwum.'
@@ -4979,6 +4990,10 @@ function rezygnujZGryMulti() {
     powod: organizator ? 'organizator zakończył grę na swoim telefonie' : 'rezygnacja z telefonu',
   });
   STAN.graZakonczonaRecznie = true;
+  // Sesja znika razem z wyjściem (uwaga K, ADR 0045): po odświeżeniu telefon nie
+  // wraca do gry, z której gracz wyszedł. Widok zostaje — synchronizacja działa
+  // dalej w pamięci i pokaże wspólną tabelę, gdy most domknie grę.
+  usunSesjeMulti();
   zatrzymajSymulacje();
   pokazWyniki();
   renderujGre();
@@ -5193,6 +5208,7 @@ function start() {
   // „wstrzymaniu" i „wznowieniu": wycofane kody P07/P09 (ADR 0040 pkt 3).
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
+      zapiszGre(); // uwaga K (ADR 0045): zwinięcie karty zapisuje ostatni stan
       zatrzymajSymulacje(); // symulacja testowa nie odtwarza się w tle
       return;
     }
@@ -5207,6 +5223,15 @@ function start() {
     if (!czekamyNaFixa) return;
     if (!STAN.watcher?.czyAktywny() || !STAN.ostatniFix) wlaczGps();
   });
+
+  // Uwaga K (ADR 0045): właściciel chce, żeby zamknięcie karty albo odświeżenie
+  // zapisywało stan gry. Zapis i tak idzie po KAŻDEJ tranzycji (`zapiszGre`,
+  // plan M6 decyzja 5), bo `beforeunload` jest na telefonach zawodny — `pagehide`
+  // domyka ostatni ruch (np. odpowiedź wpisaną tuż przed zamknięciem) i jest na
+  // iOS jedynym pewnym pożegnaniem. Gra wieloosobowa nie ma lokalnego snapshotu:
+  // jej stan żyje na moście, a telefon pamięta sesję (`zapiszSesjeMulti`).
+  window.addEventListener('pagehide', () => zapiszGre());
+
   $('przycisk-wstecz-setup').addEventListener('click', () => {
     STAN.multiPoPaczce = false; // porzucono ścieżkę AI-multi
     STAN.ukryjStacje = false;
@@ -5352,8 +5377,8 @@ function start() {
   $('przycisk-zamknij-koniec-gry').addEventListener('click', () => zamknijKoniecGry());
   $('koniec-gry-potwierdzenie').addEventListener('input', () => odswiezKoniecGry());
   $('przycisk-koniec-gry').addEventListener('click', () => zakonczGreZPotwierdzenia());
-  $('przycisk-wznow-gre').addEventListener('click', () => wznowGre());
-  $('przycisk-kasuj-zapis').addEventListener('click', () => kasujZapisGry());
+  // Przycisków „▶ Wznów grę" i „🗑 Nowa gra (kasuje zapis)" NIE MA (uwaga J,
+  // ADR 0045): telefon wraca do zapamiętanej gry sam, na końcu `start()`.
   $('przycisk-kasuj-historie').addEventListener('click', () => kasujHistorieGry());
 
   /* M11/P4+m12-74: gra na wielu urządzeniach — segmenty na setupie, lobby,
@@ -5363,7 +5388,6 @@ function start() {
   renderujMultiSciezka();
   renderujTrybyMulti();
   renderujRodzajGry();
-  renderujWznowienieMulti();
   $('multi-trasa-sekret').addEventListener('change', (e) => {
     STAN.multiTrasaSekret = e.target.checked;
     status(STAN.multiTrasaSekret
@@ -5376,14 +5400,10 @@ function start() {
   // Przycisków „⏹ Zakończ grę (host)" i „🏳 Rezygnuję z gry" NIE MA (uwaga F,
   // ADR 0044): koniec gry i rezygnację obsługuje warstwa za ikoną ⚙ START GRY
   // (`zakonczGreZPotwierdzenia` → `rezygnujZGryMulti()` — uwaga G: host też).
-  $('przycisk-multi-wroc').addEventListener('click', () => { void przywrocGreMulti(); });
-  $('przycisk-multi-porzuc').addEventListener('click', () => {
-    usunSesjeMulti();
-    renderujWznowienieMulti();
-    status('Telefon nie pamięta już tamtej gry wieloosobowej.');
-  });
-
-  sprawdzZapisGry(); // M6/R6: baner wznowienia, jeśli telefon pamięta grę
+  // Przycisków „↩ Wróć do gry" i „🗑 Porzuć zapamiętaną grę" NIE MA (uwagi J
+  // i K, ADR 0045): powrót do zapamiętanej gry wieloosobowej jest automatyczny
+  // (na końcu `start()`), a sesję kasuje wyjście z lobby, zamknięcie gry przez
+  // most, rezygnacja i jawna odmowa mostu przy powrocie.
   renderujHistorieGier(); // M7/P6: lista poprzednich gier na setupie
   // Start to mapa + okno startowe, nie setup (decyzja właściciela 2026-09-09).
   pokazMapeStartowa();
@@ -5405,6 +5425,15 @@ function start() {
   document.addEventListener('keydown', zaznaczAktywnosc, true);
   STAN.zegarAktywnosci = setInterval(sprawdzBezczynnosc, SPRAWDZANIE_BEZCZYNNOSCI_MS);
   odswiezWakeLock();
+
+  // UWAGI J i K (ADR 0045): telefon pamięta grę → WRACAMY do niej od razu, bez
+  // okna startowego i bez banera na setupie. Multi ma pierwszeństwo, bo ta gra
+  // żyje na serwerze i inni gracze mogą czekać — jej stan trzeba pobrać z mostu
+  // (asynchronicznie). Zapis hotseat jest lokalny, więc wraca synchronicznie;
+  // jeśli multi nie dało się podnieść (brak zasięgu, gra wygasła), podnosimy
+  // hotseat, żeby telefon nie został na starcie z niedokończoną grą w pamięci.
+  if (czytajSesjeMulti()) void przywrocGreMulti().then(() => { if (!STAN.multi) przywrocGreHotseat(); });
+  else przywrocGreHotseat();
 }
 
 if (typeof document !== 'undefined' && document.getElementById('ekran-setup')) start();

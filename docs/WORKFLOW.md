@@ -198,7 +198,9 @@ zapisuje skorupę i kafelki „na później".
    ponownie — skorupa musi się otworzyć, mapa pokazać kafelki ostatniej
    okolicy, a zaczęta wcześniej gra działać bez sieci (zero
    Overpassa, zero modelu; paczki są tylko z repozytorium — zadanie I,
-   2026-09-12). Zanotuj, ile ulic „wystaje" poza zapamiętane
+   2026-09-12), a po odświeżeniu strony w trakcie gry aplikacja wraca do tej
+   gry SAMA, bez okna startowego i bez banera (ADR 0045). Zanotuj, ile ulic
+   „wystaje" poza zapamiętane
    kafelki przy zboczeniu z trasy.
 2. **Bateria i ekran** (ADR 0040): profilów GPS już nie ma — jeden, dokładny,
    przez całą grę; pauzy też nie ma. Zapisz: ile % baterii zjadła godzina gry
@@ -265,10 +267,10 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
    TYLKO bieżącą stację (kolejne odsłaniają się po drodze), lista wyboru
    stacji nie istnieje, a obaj gracze idą tę samą trasę po kolei, każde we
    własnym tempie (nikt na nikogo nie czeka — od razu można startować odcinek).
-5. **Odświeżenie**: w trakcie gry przeładować stronę na B → baner „Telefon
-   pamięta grę…" → „↩ Wróć do gry" → zamknięte stacje nie wracają, postęp
-   i wyniki są aktualne, a powrót NIE odlicza startu (to nie jest start,
-   ADR 0044).
+5. **Odświeżenie**: w trakcie gry przeładować stronę na B → aplikacja wraca do
+   gry SAMA, bez banera i bez kliku (ADR 0045; status „Wracam do gry …") →
+   zamknięte stacje nie wracają, postęp i wyniki są aktualne, a powrót NIE
+   odlicza startu (to nie jest start, ADR 0044).
 6. **Koniec z ręki hosta**: A klika ⚙ START GRY → warstwa „Czy na pewno chcesz
    zakończyć aktualną grę?" → wpisuje TAK → „■ ZAKOŃCZ AKTUALNĄ GRĘ" (ADR 0043;
    przycisku „⏹ Zakończ grę (host)" nie ma — ADR 0044). Obserwować: gra kończy

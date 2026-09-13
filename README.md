@@ -100,10 +100,11 @@ w ADR 0029) i ręczne zakończenie z wczesnym wynikiem. Pauzy i pomijania stacji
 NIE MA (ADR 0040, zadanie H): gra i śledzenie idą cały czas, a po powrocie z tła
 wszystko wznawia się samo. Pytania żyją w ukrytym
 kontenerze (`TO-paczka/2`) — w stanie gry i w zapisie nigdy nie ma ich treści.
-Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji (`stan-gry/1`), więc
-zamknięcie przeglądarki nie kończy gry: na setupie czeka baner „wznowienie",
-a zegar odcinka jest rebazowany tak, że czas zamknięcia karty nie wlicza się
-do wyniku (ADR 0004 pkt 3). W trybie testowym (`?test=true`) dojście można
+Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji i przy zamknięciu karty
+(`stan-gry/1`), więc zamknięcie przeglądarki nie kończy gry: otwarcie albo
+odświeżenie aplikacji wraca do ostatniego zapisu samo, bez banera i bez kliku
+(ADR 0045), a zegar odcinka jest rebazowany tak, że czas zamknięcia karty nie
+wlicza się do wyniku (ADR 0004 pkt 3). W trybie testowym (`?test=true`) dojście można
 rozegrać symulacją trasy — gra bez GPS. Kamień czeka na kryterium terenowe
 właściciela: pełna gra na telefonie, z utratą zasięgu w trakcie i z
 zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).
@@ -233,8 +234,8 @@ braku przycisku). Eksport
   wersji aplikacji (ADR 0020), więc telefon znajomego działa od razu — interfejs
   pokazuje stan mostu (podłączony / niepodłączony), nie pole do wpisywania.
 - **Offline**: zdarzenia z trasy czekają w kolejce i wychodzą automatycznie po
-  powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca z zapamiętanej
-  sesji — zamknięte stacje nie wracają.
+  powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca sama z zapamiętanej
+  sesji i stanu mostu (ADR 0045) — zamknięte stacje nie wracają.
 - **Podsumowanie na telefonie i ranking na Drive** (właściciel): gra kończy się
   tabelą końcową na telefonie gracza, a na wspólnym Drive zostaje historia gier.
   Ranking graczy między grami usunięto 2026-09-11, a 2026-09-12 wrócił w nowej,

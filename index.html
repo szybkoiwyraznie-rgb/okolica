@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-109">
-  <script type="module" src="app/app.js?v=m12-109"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-110">
+  <script type="module" src="app/app.js?v=m12-110"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -125,14 +125,10 @@
            załóż/dołącz żyje TU, na setupie; paczka i tak powstaje dalej w
            zwykłej ścieżce (pozycja → stacje → pytania), a lobby otwiera się
            po wklejeniu odpowiedzi modelu. -->
+      <!-- Karty „↩ Wróć do gry" NIE MA (właściciel 2026-09-13, uwagi J i K,
+           ADR 0045): telefon pamięta grę wieloosobową i wraca do niej SAM przy
+           starcie aplikacji (`przywrocGreMulti`), bez pytania i bez kliku. -->
       <div id="karta-multi" class="karta" hidden>
-        <div id="multi-wznowienie" class="karta karta-wznowienie" hidden>
-          <p id="multi-wznowienie-opis" class="duzy"></p>
-          <div class="wiersz">
-            <button id="przycisk-multi-wroc" class="przycisk przycisk-glowny" type="button">↩ Wróć do gry</button>
-            <button id="przycisk-multi-porzuc" class="przycisk" type="button">🗑 Porzuć zapamiętaną grę</button>
-          </div>
-        </div>
         <fieldset class="pole">
           <legend>Co robisz?</legend>
           <div id="multi-sciezka" class="segment"></div>
@@ -161,14 +157,10 @@
         </div>
       </div>
 
-      <!-- M6/R6: wznowienie przerwanej gry — jawne, kasowanie dwustopniowe -->
-      <div id="karta-wznowienie" class="karta karta-wznowienie" hidden>
-        <p id="wznowienie-opis" class="duzy"></p>
-        <div class="wiersz">
-          <button id="przycisk-wznow-gre" class="przycisk przycisk-glowny" type="button">▶ Wznów grę</button>
-          <button id="przycisk-kasuj-zapis" class="przycisk" type="button">🗑 Nowa gra (kasuje zapis)</button>
-        </div>
-      </div>
+      <!-- Baneru wznowienia gry NIE MA (właściciel 2026-09-13, uwagi J i K,
+           ADR 0045): otwarcie albo odświeżenie aplikacji wraca do ostatniego
+           zapisu samo (`przywrocGreHotseat`), a zapis, którego nie da się
+           podnieść, start kasuje i mówi dlaczego. -->
 
       <!-- M7/P6: historia gier — skróty (bez treści i współrzędnych, ADR 0010 pkt 1) -->
       <div id="karta-historia" class="karta" hidden>

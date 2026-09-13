@@ -664,12 +664,16 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
   await klik(A, 'przycisk-nastepna-stacja');
   assert.equal(tekst(A, 'gra-postep'), 'stacja 2 z 4', 'A idzie do stacji 2 — kolejność po kolei');
 
-  // RESUME: telefon B „odświeżony” (nowa instalacja DOM, TA SAMA pamięć)
+  // RESUME (uwaga K, ADR 0045): telefon B „odświeżony” (nowa instalacja DOM, TA
+  // SAMA pamięć) wraca do gry SAM — karty „↩ Wróć do gry" nie ma i nie ma kliku.
   const B2 = await noweUrzadzenie({ pamiec: pamiecB, most: mostTrasy, bezGracza: true });
-  assert.equal(el(B2, 'multi-wznowienie').hidden, false, 'baner powrotu do gry widoczny po odświeżeniu');
-  assert.match(tekst(B2, 'multi-wznowienie-opis'), /dołączyłeś/, 'baner pamięta, że B dołączył do gry');
-  await klik(B2, 'przycisk-multi-wroc');
-  assert.equal(el(B2, 'ekran-gra').hidden, false, 'powrót prosto do gry');
+  przelaczNa(B2);
+  await oddech();
+  await oddech();
+  assert.equal(el(B2, 'ekran-gra').hidden, false, 'powrót prosto do gry, bez banera i bez kliku');
+  assert.equal(el(B2, 'ekran-start').hidden, true, 'powrót do gry pomija okno startowe');
+  assert.match(tekst(B2, 'status'), /wracasz do gry w połowie drogi/,
+    'status mówi, że to powrót, a nie nowa gra');
   assert.equal(el(B2, 'odliczanie').hidden, true,
     'powrót po odświeżeniu telefonu NIE odlicza — to nie jest start gry (ADR 0044)');
   assert.equal(tekst(B2, 'gra-postep'), 'stacja 1 z 3', 'zamknięta stacja 1 nie wraca — zostały 3');
@@ -691,7 +695,8 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
     assert.equal(el(u, 'gra-wyniki-tbody').children.length, 2, 'tabela końca gry po obu stronach (ADR 0038)');
     assert.match(tekst(u, 'multi-sync-pasek'), /odświeżanie zatrzymane/, 'synchronizacja zatrzymana');
   }
-  assert.equal(el(B2, 'multi-wznowienie').hidden, true, 'po zakończeniu gry baner powrotu znika (sesja wyczyszczona)');
+  assert.equal(pamiecB.has('okolica:multi:sesja'), false,
+    'po zakończeniu gry sesja wyczyszczona — następne otwarcie nie wraca do skończonej gry (ADR 0045)');
   assert.equal(mostTrasy.znajdz(kodTrasy).zdarzenia.every((z) => !POLA_ZAKAZANE.some((pz) => pz in (z.dane ?? {}))), true, 'serwer nie przyjął współrzędnych w zdarzeniach');
 });
 
@@ -738,6 +743,8 @@ test('uwaga G: koniec gry hosta NIE kończy gry innym — gość gra dalej, a mo
   // Host kończy grę na swoim telefonie: ⚙ START GRY → TAK (ADR 0043). Telefon
   // hosta służył tylko do wystartowania gry i wybrania pytań (uwaga G).
   await potwierdzKoniecGry(A);
+  assert.equal(pamiecA.has('okolica:multi:sesja'), false,
+    'rezygnacja kasuje sesję — po odświeżeniu host nie wraca do gry, z której wyszedł (ADR 0045)');
   await czekajNa(A, () => most.znajdz(kod).zdarzenia.some((z) => z.typ === 'rezygnacja' && z.graczId === 'g-1'),
     'koniec hosta wychodzi na most jako rezygnacja');
   assert.equal(most.znajdz(kod).stan, 'trwa', 'gra NIE jest zamknięta — pozostali gracze grają dalej');

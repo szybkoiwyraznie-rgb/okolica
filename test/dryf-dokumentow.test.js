@@ -195,6 +195,46 @@ const MARTWE_FRAZY = [
     nosniki: DOKUMENTY,
     powod: 'akcji pomijania nie ma od zadania H (2026-09-12, ADR 0015 aneks) — wyjściem jest „■ Zakończ grę"',
   },
+  {
+    fraza: 'id="karta-wznowienie"',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'baner wznowienia gry usunięty 2026-09-13 (ADR 0045, uwaga J) — otwarcie aplikacji wraca do zapamiętanej gry samo',
+  },
+  {
+    fraza: 'id="multi-wznowienie"',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'karta powrotu do gry wieloosobowej usunięta 2026-09-13 (ADR 0045, uwagi J i K) — powrót jest automatyczny',
+  },
+  {
+    fraza: 'przycisk-wznow-gre',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'przycisku wznowienia gry nie ma (ADR 0045) — telefon wraca do gry bez kliku',
+  },
+  {
+    fraza: 'przycisk-kasuj-zapis',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'dwustopniowego kasowania zapisu gry nie ma (ADR 0045 pkt 3) — start kasuje zapis, którego nie da się podnieść',
+  },
+  {
+    fraza: 'przycisk-multi-wroc',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'przycisku powrotu do gry wieloosobowej nie ma (ADR 0045) — `przywrocGreMulti` woła się przy starcie',
+  },
+  {
+    fraza: 'przycisk-multi-porzuc',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'przycisku porzucenia sesji nie ma (ADR 0045 pkt 5) — sesję kasuje lobby, most, rezygnacja i jawna odmowa mostu',
+  },
+  {
+    fraza: 'Znaleziono niedokończoną grę',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'opisu banera wznowienia nie ma (ADR 0045) — aplikacja wraca do gry sama i mówi to w statusie',
+  },
+  {
+    fraza: '.karta-wznowienie {',
+    nosniki: UI,
+    powod: 'klasa CSS po obu kartach wznowienia usunięta (ADR 0045)',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {

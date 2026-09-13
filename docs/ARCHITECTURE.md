@@ -260,14 +260,15 @@ commit i nowa wersja aplikacji.
    `-odcinek` / `-pytanie` / `-koniec`) — zero żonglowania ekranami
    w terenie (ADR 0011: jeden główny przycisk na fazę); mapa z podkładem
    (ADR 0003), stacje, pozycja gracza, badge „czyja kolejka" i „ile metrów"
-   (ADR 0009/0011). Na setupie baner `#karta-wznowienie`: znaleziony zapis
-   gry → wznowienie albo dwustopniowe kasowanie.
+   (ADR 0009/0011). Banera wznowienia na setupie NIE MA (ADR 0045, uwaga J):
+   telefon pamięta grę → wraca do niej sam przy starcie, a zapis, którego nie da
+   się podnieść (zepsuty albo gra w fazie `koniec`), start kasuje i mówi dlaczego.
 2. Akcja użytkownika startuje odcinek → `rozgrywka.startOdcinka({ stacjaId,
    czasMs })`; `czasMs` podaje warstwa DOM z `performance.now()`, bo logika nie
    czyta zegara (ADR 0004 pkt 3). Po KAŻDEJ tranzycji (start gry, start/koniec
    odcinka, odpowiedź) leci `trwalosc.zbierajStan()` →
    `serializujStan()` → `localStorage`; snapshot niesie `zegarMs` (kotwicę
-   zegara sesji) — przy wznowieniu wszystkie znaczniki czasu są rebazowane
+   zegara sesji) — przy powrocie do gry wszystkie znaczniki czasu są rebazowane
    o `performance.now() − zegarMs`, więc czas zamknięcia karty nie wlicza się
    w odcinek.
 3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (walidacja
@@ -292,7 +293,7 @@ commit i nowa wersja aplikacji.
    się samym dojściem; akcji pomijania nie ma (zadanie H, ADR 0015 aneks
    2026-09-12 — stan `pominiety` zostaje tylko w starych zapisach);
    ręczne zakończenie gry pokazuje wczesny wynik, ale NIE kasuje zapisu —
-   grę można wznowić.
+   po odświeżeniu telefon wraca do tej gry i można ją dokończyć (ADR 0045).
 6. Koniec → **minimalny** ekran wyniku w `gra-panel-koniec` (ADR 0038):
    karta zwycięzcy, tabela rankingu z `podsumowanie()` i jeden przycisk
    „Wróć na początek — nowa gra”; faza `koniec` ukrywa cały slot sterowania,
@@ -331,8 +332,8 @@ commit i nowa wersja aplikacji.
    wszyscy aktywni gracze skończyli albo wyszli (rezygnacja też jest sprawdzana).
    Brak pozycji =
    środek trasy z pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca
-   z `okolica:multi:sesja` BEZ odliczania, a zamknięte już stacje nie wracają
-   do rozgrywki.
+   SAMA z `okolica:multi:sesja` i stanu mostu (`przywrocGreMulti` przy starcie,
+   ADR 0045) BEZ odliczania, a zamknięte już stacje nie wracają do rozgrywki.
 4. Koniec gry: punktację liczy most (`przeliczWyniki`), telefon rysuje ją na
    tym samym MINIMALNYM ekranie wyniku co hotseat (`wynikiMultiKonca`,
    ADR 0038/0044), a most zapisuje grę w historii (`RO-gra/1`, stan
@@ -460,15 +461,18 @@ Trwałość stanu gry (M6) żyje w `app/trwalosc.js`: snapshot `stan-gry/1`
 wczytania `walidujStanSurowy()` atomowa z kodami `T01`–`T10`, m.in. `T08` na
 zepsute znaczniki czasu `zapisanoMs`/`zegarMs`). Klucze:
 `okolica:gra:<kod>` (`kluczStanu()`, `oczyscKodGry()` — pusty kod gry staje się
-`'gra'`, bo surowy `''` jest falsy i baner wznowienia nigdy by nie wstał) oraz
+`'gra'`, bo surowy `''` jest falsy i start nigdy by nie znalazł gry do powrotu) oraz
 `okolica:gra-aktywna` (`KLUCZ_AKTYWNEJ`) ze znormalizowanym kluczem bieżącej
 gry. Snapshot niesie konfig, stacje, `kontenerPaczki` (`TO-paczka/2`) i stan
 `rozgrywka/1` — NIGDY jawnych pytań (test-strażnik w R2 i R7); `zbierajStan`
 odmawia przyjęcia `STAN.paczka` w jakiejkolwiek postaci. Zapis leci po każdej
-tranzycji synchronicznie (`beforeunload` jest na telefonach zawodny), a błędy
-zapisu nie zatrzymują gry — idą do statusu. Wznowienie rebazuje oś czasu
-(`zegarMs`), kasuje bufor trafień i centrowanie mapy; kasowanie zapisu i
-ręczne zakończenie gry są dwustopniowe (ADR 0015 pkt 6).
+tranzycji synchronicznie oraz przy pożegnaniu — `pagehide` i zwinięcie karty
+(`beforeunload` jest na telefonach zawodny, więc to domknięcie ostatniego ruchu,
+nie jedyne źródło zapisu) — a błędy zapisu nie zatrzymują gry: idą do statusu.
+Powrót do gry (`przywrocGreHotseat()` → `wznowGre()`, ADR 0045) rebazuje oś
+czasu (`zegarMs`), kasuje bufor trafień i centrowanie mapy oraz pomija okno
+startowe; dwustopniowe jest już tylko kasowanie HISTORII (ADR 0015 pkt 6), a
+ręczne zakończenie gry potwierdza wpisanie TAK (ADR 0043).
 
 Historia gier (M7) żyje obok zapisów w `app/trwalosc.js`: klucz
 `okolica:historia`, schemat `historia/1`, wpis `historia-gra/1` — skrót BEZ

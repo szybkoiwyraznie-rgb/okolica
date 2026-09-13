@@ -896,7 +896,6 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   // ekrany i panele (ADR 0019; m12-74: przepisany flow właściciela)
   for (const id of [
     'ekran-multi', 'karta-multi', 'multi-panel-dolacz', 'multi-panel-lobby',
-    'multi-wznowienie',
     // ADR 0044 (uwaga F): po starcie gra wygląda jak hotseat, a start odlicza
     'odliczanie', 'odliczanie-cyfra', 'multi-wybor-stacji', 'multi-wybor-przyciski',
     // segmenty na setupie: rodzaj gry, ścieżka multi, tryb + trasa-sekret
@@ -1823,4 +1822,55 @@ test('kontrakt ADR 0019 aneks 2026-09-13b: koniec gry hosta nie kończy gry pozo
     /aneks 2026-09-13b \(uwaga G\)/, 'ADR 0044 odsyła do aneksu, który zmienił jego pkt 8');
   assert.match(czytaj('docs/WORKFLOW.md'), /gra kończy\n   się TYLKO na telefonie A/,
     'scenariusz testu terenowego w WORKFLOW §6 jest zgodny z nowym zachowaniem');
+});
+
+test('kontrakt ADR 0045: setup nie szuka gier, a otwarcie aplikacji wraca do zapamiętanej gry (uwagi J i K)', () => {
+  // 1. J: kart wznowienia i ich przycisków nie ma w HTML ani w aplikacji.
+  for (const id of [
+    'karta-wznowienie', 'wznowienie-opis', 'przycisk-wznow-gre', 'przycisk-kasuj-zapis',
+    'multi-wznowienie', 'multi-wznowienie-opis', 'przycisk-multi-wroc', 'przycisk-multi-porzuc',
+  ]) {
+    assert.equal(INDEX.includes(`id="${id}"`), false, `index.html nie ma elementu #${id}`);
+    assert.equal(APP.includes(`$('${id}')`), false, `app.js nie dotyka #${id}`);
+  }
+  assert.equal(STYLE.includes('.karta-wznowienie {'), false, 'klasa CSS po kartach wznowienia usunięta');
+  for (const fn of ['function sprawdzZapisGry', 'function kasujZapisGry', 'function renderujWznowienieMulti']) {
+    assert.equal(APP.includes(fn), false, `${fn.replace('function ', '')}() usunięta — został nagrobek`);
+  }
+  assert.equal(APP.includes('czyszczenieZapisuUzbrojone'), false,
+    'uzbrajania kasowania zapisu nie ma (dwustopniowość została tylko przy historii)');
+  assert.match(APP, /function kasujHistorieGry\(\) \{\n {2}if \(!STAN\.historiaKasowanieUzbrojone\)/,
+    'kasowanie HISTORII gier zostaje dwustopniowe (ADR 0015 pkt 6)');
+
+  // 2. K: start wraca do zapamiętanej gry — multi z mostu, hotseat z zapisu.
+  assert.match(APP, /if \(czytajSesjeMulti\(\)\) void przywrocGreMulti\(\)\.then\(\(\) => \{ if \(!STAN\.multi\) przywrocGreHotseat\(\); \}\);\n {2}else przywrocGreHotseat\(\);/,
+    'boot wybiera grę wieloosobową, a gdy ta się nie podniosła — zapis hotseat');
+  assert.match(APP, /ukryjStart\(\); \/\/ powrót do gry pomija okno startowe/,
+    'powrót do gry nie zostawia gracza na oknie startowym');
+  assert.match(APP, /window\.addEventListener\('pagehide', \(\) => zapiszGre\(\)\);/,
+    'zamknięcie karty zapisuje stan gry (uwaga K)');
+  assert.match(APP, /if \(document\.hidden\) \{\n {6}zapiszGre\(\);/,
+    'zwinięcie telefonu też zapisuje stan');
+  assert.match(APP, /if \(stan\.rozgrywka\?\.faza === FAZY\.koniec\) \{\n {4}localStorage\.removeItem\(kluczStanu\(aktywna\)\);\n {4}localStorage\.removeItem\(KLUCZ_AKTYWNEJ\);/,
+    'zakończonej gry start nie podnosi — kasuje zapis (wynik jest w historii)');
+  assert.match(APP, /Zapamiętany zapis gry był zepsuty \(\$\{usterki\.map\(\(u\) => u\.kod\)\.join\(', '\)\}\)/,
+    'zepsuty zapis jest kasowany jawnie, z kodami usterek T**');
+
+  // 3. K: sesję multi kasują cztery drogi, a awaria sieci jej nie kasuje.
+  assert.match(APP, /      usunSesjeMulti\(\);\n {6}status\(`Nie ma już tamtej gry wieloosobowej/,
+    'jawna odmowa mostu kasuje sesję — telefon nie próbuje przy każdym starcie');
+  assert.match(APP, /status\(`Nie udało się wrócić do gry: \$\{powod\}\. Telefon ją pamięta/,
+    'awaria sieci sesji NIE kasuje (LESSONS L6: komunikat nazywa przyczynę)');
+  assert.match(APP, /  usunSesjeMulti\(\);\n {2}zatrzymajSymulacje\(\);/,
+    'rezygnacja kasuje sesję — po odświeżeniu telefon nie wraca do gry, z której wyszedł');
+
+  // 4. Dokumentacja żywa mówi to samo co kod.
+  assert.ok(existsSync(join(ROOT, 'docs/decisions/0045-telefon-wraca-do-zapamietanej-gry.md')), 'ADR 0045 istnieje');
+  assert.match(czytaj('docs/ARCHITECTURE.md'), /Banera wznowienia na setupie NIE MA \(ADR 0045/,
+    'ARCHITECTURE opisuje brak banera i automatyczny powrót');
+  assert.match(czytaj('docs/ARCHITECTURE.md'), /`przywrocGreHotseat\(\)` → `wznowGre\(\)`/,
+    'ARCHITECTURE nazywa funkcje powrotu');
+  assert.match(README, /wraca do ostatniego zapisu samo, bez banera i bez kliku/, 'README mówi o powrocie po odświeżeniu');
+  assert.match(czytaj('docs/WORKFLOW.md'), /aplikacja wraca do tej\n   gry SAMA/, 'WORKFLOW ma krok terenowy o powrocie w hotseacie');
+  assert.match(czytaj('docs/WORKFLOW.md'), /aplikacja wraca do\n   gry SAMA, bez banera i bez kliku/, 'WORKFLOW ma krok terenowy o powrocie w multi');
 });
