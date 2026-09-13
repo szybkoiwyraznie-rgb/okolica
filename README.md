@@ -34,7 +34,8 @@ w odległości ≤50 m (bez oceny dokładności GPS), komunikaty błędów GPS, 
 **M2 — mapa: kod i testy gotowe.** Na ekranach „pozycja" i „stacje" jest mapa
 SVG z podkładem rastrowym bez klucza API (OSM Standard, OpenTopoMap, Esri World
 Imagery albo podkład wyłączony), gestami palca (drag + pinch), przyciskami
-＋ − ◎, markerem pozycji bez koła dokładności, przerywanym okręgiem promienia gry,
+＋ − ◎ (po obrocie ekranu ◎ klika się samo — mapa wraca na gracza, ADR 0030
+aneks 2026-09-13; blokady orientacji nie ma), markerem pozycji bez koła dokładności, przerywanym okręgiem promienia gry,
 numerowanymi pinezkami stacji, paskiem skali i zawsze widoczną atrybucją
 dostawcy. Kamień zamknięty 2026-09-05: właściciel potwierdził w live preview,
 że podkład jest widoczny i czytelny, a atrybucja i przyciski są na miejscu
@@ -49,7 +50,9 @@ W trybie testowym pozycję wskazuje się na mapie; w grze zostaje symulacja
 dojścia do stacji. GPS i symulacja używają tej samej reguły ≤50 m.
 Setup, lista stacji i pytania są przewijanymi panelami nad przygaszoną mapą.
 Podczas drogi zostaje tylko jednowierszowy pasek na dole (gracz, dystans, stacja),
-a sterowanie jest w ⓘ Informacje; po dojściu wraca duży panel pytania (ADR 0036).
+a ⓘ Informacje nie niosą już nic z gry; po dojściu wraca duży panel pytania
+(ADR 0036). Grę kończy ikona ⚙ START GRY: w trakcie gry otwiera małą warstwę,
+w której trzeba wpisać TAK (ADR 0043).
 Oko w prawym dolnym rogu chowa je bez przerywania procesu lub gry.
 Wybory nowego setupu: 7, 12, dorośli; tematy alfabetyczne z Ciekawostkami,
 bez Sportu i Jedzenia. Stare paczki i zapisy pozostają czytelne (ADR 0034).
@@ -93,13 +96,15 @@ Kamień czeka na kryterium właściciela: pełna pętla z prawdziwym modelem
 wyniku: jeden ekran gry z czterema panelami faz („kto idzie" → odcinek z mapą
 i dystansem → pytanie odsłaniane DOPIERO w chwili dojścia → wynik), dojście
 z GPS (≤50 m, dwa kolejne fixy niezależnie od accuracy; ręczne zaliczanie usunięte
-w ADR 0029), pauza (również automatyczna po schowaniu karty), pominięcie stacji
-w drodze i ręczne zakończenie z wczesnym wynikiem. Pytania żyją w ukrytym
+w ADR 0029) i ręczne zakończenie z wczesnym wynikiem. Pauzy i pomijania stacji
+NIE MA (ADR 0040, zadanie H): gra i śledzenie idą cały czas, a po powrocie z tła
+wszystko wznawia się samo. Pytania żyją w ukrytym
 kontenerze (`TO-paczka/2`) — w stanie gry i w zapisie nigdy nie ma ich treści.
-Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji (`stan-gry/1`), więc
-zamknięcie przeglądarki nie kończy gry: na setupie czeka baner „wznowienie",
-a zegar odcinka jest rebazowany tak, że czas zamknięcia karty nie wlicza się
-do wyniku (ADR 0004 pkt 3). W trybie testowym (`?test=true`) dojście można
+Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji i przy zamknięciu karty
+(`stan-gry/1`), więc zamknięcie przeglądarki nie kończy gry: otwarcie albo
+odświeżenie aplikacji wraca do ostatniego zapisu samo, bez banera i bez kliku
+(ADR 0045), a zegar odcinka jest rebazowany tak, że czas zamknięcia karty nie
+wlicza się do wyniku (ADR 0004 pkt 3). W trybie testowym (`?test=true`) dojście można
 rozegrać symulacją trasy — gra bez GPS. Kamień czeka na kryterium terenowe
 właściciela: pełna gra na telefonie, z utratą zasięgu w trakcie i z
 zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).
@@ -115,9 +120,10 @@ pytań ani współrzędnych — pilnują tego testy-strażnicy. Na setupie docho
 karta „Poprzednie gry": do 50 skrótów (`okolica:historia`), najnowsza
 pierwsza, ze znacznikiem gier przerwanych ręcznie; dokończenie przerwanej gry
 ZASTĘPUJE wpis zamiast dodawać drugi, kasowanie jest dwustopniowe, a zepsuty
-zapis odzywa się jawnie kodami `H`. Kamień czeka na kryteria terenowe
-właściciela: czytelność w słońcu na 360 px i eksport na Chrome Android oraz
-Safari iOS (`docs/WORKFLOW.md` §4.2).
+zapis odzywa się jawnie kodami `H`. Kamień czeka na JEDNO kryterium terenowe
+właściciela: czytelność w słońcu na 360 px (`docs/WORKFLOW.md` §4.2) —
+kryterium „eksport na Chrome Android i Safari iOS” odpadło razem z eksportami
+(ADR 0038; `docs/ROADMAP.md` §Kryteria zawężony 2026-09-12).
 
 ## Uruchomienie lokalne
 
@@ -152,10 +158,11 @@ bo Pages serwuje z drzewa, a generator odtwarza je bajt w bajt.
   sesji online gra z lokalnej paczki działa w trybie samolotowym: bez sieci,
   bez Overpassa, bez modelu. POST-y i API (most Drive, Overpass) nigdy nie są
   cache'owane (świeżość i prywatność).
-- **Bateria**: „budzenie przy zbliżaniu" — w trasie (powyżej 250 m od stacji)
-  GPS pracuje oszczędnie (bez wysokiej dokładności, odświeżanie co ~20 s),
-  przy stacji (poniżej 150 m) wraca pełna dokładność; histereza zapobiega
-  oscylacji, każda zmiana ma jawny status.
+- **Zawsze włączona gra** (ADR 0040, właściciel 2026-09-13): jeden dokładny
+  profil GPS przez całą grę, żadnej pauzy — także w tle; po powrocie nasłuch
+  odświeża się sam, bez klikania i bez komunikatu. Ekran nie gaśnie w trakcie
+  gry (Wake Lock, jeśli przeglądarka go ma), a jedyna przerwa w śledzeniu
+  przychodzi po 15 minutach bez żadnego kliku i znika po pierwszym dotyku.
 - **Sygnały**: dojście do stacji, start odcinka i ocena odpowiedzi grają
   krótkie melodie (oscylator Web Audio — zero plików dźwiękowych) i wibracje;
   przełącznik „🔔 sygnały" w nagłówku, domyślnie włączone, wybór zapamiętany.
@@ -206,9 +213,17 @@ braku przycisku). Eksport
   bez kodów). Po starcie dołączyć się nie da. Dwa tryby: **Wspólna Trasa**
   (wszyscy tę samą trasę po kolei — trasa jest tajemnicą, na mapie widać
   tylko bieżącą stację) i **Wyścig na Orientację** (dowolna kolejność stacji).
-  Punktacja w obu: 1 pkt za dobrą odpowiedź + stała premia 3/2/1 za kolejność
-  ukończenia. Start gry możliwy także solo (od 1 gracza), a host może zakończyć
-  grę w dowolnym momencie — wszyscy dostają podsumowanie.
+  Punktacja w obu: 1 pkt za dobrą odpowiedź + premia za kolejność ukończenia,
+  zależna od liczby grających, którzy dograli do końca (2 grających: 1/0,
+  3: 2/1/0, 4 i więcej: 3/2/1/0 — odłączeni wcześniej nie liczą się do puli).
+  Start gry możliwy także solo (od 1 gracza): po kliknięciu „▶ Start gry"
+  u WSZYSTKICH — także u hosta — gra sygnał i odlicza się 5-4-3-2-1-START wielką
+  cyfrą na środku, nad przezroczystym tłem (mapa zostaje widoczna), a potem gra
+  wygląda dokładnie jak w hotseat: pasek na dole, panel fazy, mapa, bez
+  doklejonej karty z tabelami i czasami odświeżania (ADR 0044). Grę kończy ikona
+  ⚙ START GRY z wpisaniem TAK (ADR 0043) — i kończy ją TYLKO na tym telefonie:
+  pozostali gracze grają dalej, a punktację liczy wspólny Drive, który domyka
+  grę, gdy wszyscy aktywni gracze skończą albo wyjdą (ADR 0019 aneks, uwaga G).
 - **Wspólny stan**: Google Drive + Apps Script — ten sam most co repozytorium
   paczek (ADR 0016/0018/0019). Na serwer jadą wyłącznie pseudonimy, zdarzenia
   gry i wyniki; **współrzędne graczy nigdy nie opuszczają telefonu** (biała
@@ -219,8 +234,8 @@ braku przycisku). Eksport
   wersji aplikacji (ADR 0020), więc telefon znajomego działa od razu — interfejs
   pokazuje stan mostu (podłączony / niepodłączony), nie pole do wpisywania.
 - **Offline**: zdarzenia z trasy czekają w kolejce i wychodzą automatycznie po
-  powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca z zapamiętanej
-  sesji — zamknięte stacje nie wracają.
+  powrocie sieci (FIFO); po odświeżeniu telefonu gra wraca sama z zapamiętanej
+  sesji i stanu mostu (ADR 0045) — zamknięte stacje nie wracają.
 - **Podsumowanie na telefonie i ranking na Drive** (właściciel): gra kończy się
   tabelą końcową na telefonie gracza, a na wspólnym Drive zostaje historia gier.
   Ranking graczy między grami usunięto 2026-09-11, a 2026-09-12 wrócił w nowej,
@@ -228,7 +243,9 @@ braku przycisku). Eksport
   tabelami — „Ranking Punktowy Graczy” (suma punktów ze wszystkich rodzajów
   gier) i „Mistrzowie Zagadek” (proporcja poprawnych odpowiedzi do zadanych,
   od 10 pytań). Sumy liczy most (`?akcja=ranking`, `RO-ranking/2`), a wchodzą
-  do nich wyłącznie gracze z potwierdzonym profilem (imię i PIN).
+  do nich wyłącznie gracze z potwierdzonym profilem (imię i PIN). Wiersz
+  wyjaśnień — ilu graczy ma profil i od ilu pytań liczy się druga tabela — jest
+  NA KOŃCU warstwy, pod obiema tabelami (uwaga z testów, 2026-09-12).
 
 ## Repozytorium
 

@@ -234,7 +234,8 @@ function atrapaMostu() {
       stacjaId: z.stacjaId != null ? Number(z.stacjaId) : null, dane: daneZdarzenia,
       tSerwera: new Date().toISOString(),
     });
-    if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+    // Lustro .gs (ADR 0019 aneks 2026-09-13, uwaga G): rezygnacja też domyka grę.
+    if (z.typ !== 'koniec' && czyKompletna(gra)) {
       gra.stan = 'zakonczona'; // jak w moście: stan PRZED wynikami (premia, ADR 0027 pkt 5)
       gra.wyniki = przeliczWyniki(gra);
     }
@@ -279,6 +280,21 @@ async function noweUrzadzenie({ pamiec = new Map(), most, bezGracza = false }) {
   przelaczNa(u);
   await import(`../app/app.js?urz=${Math.random()}`); // świeży egzemplarz aplikacji = świeży STAN
   return u;
+}
+
+/**
+ * Koniec gry jak z aplikacji (ADR 0043): ikona ⚙ START GRY otwiera warstwę,
+ * wpisanie TAK odblokowuje przycisk, klik kończy grę. Przycisków „⏹ Zakończ
+ * grę (host)" i „🏳 Rezygnuję z gry" NIE MA (uwaga F, ADR 0044).
+ */
+async function potwierdzKoniecGry(u) {
+  await klik(u, 'przycisk-setup');
+  assert.equal(el(u, 'ekran-koniec-gry').hidden, false, '⚙ otwiera warstwę potwierdzenia');
+  przelaczNa(u);
+  u.dom.wpisz('koniec-gry-potwierdzenie', 'tak');
+  await oddech();
+  assert.equal(el(u, 'przycisk-koniec-gry').disabled, false, 'wpisane TAK odblokowuje przycisk');
+  await klik(u, 'przycisk-koniec-gry');
 }
 
 /** Ustawia wartość pola (bez zdarzenia) — jak wpisanie palcem. */
@@ -514,7 +530,8 @@ test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy →
   kodWyscigu = kodGry(mostWyscig);
   assert.equal(el(A, 'przycisk-lobby-start').hidden, false, 'organizator widzi przycisk startu');
   assert.match(tekst(A, 'lobby-tryb'), /Wyścig/, 'tryb widoczny w lobby');
-  assert.equal(el(A, 'przycisk-multi-zakoncz').hidden, true, 'w lobby nie ma kończenia gry');
+  assert.equal(A.dom.elementy.has('przycisk-multi-zakoncz'), false,
+    'przycisku „Zakończ grę (host)" nie ma — grę kończy ikona ⚙ START GRY (uwagi F i H1)');
 
   // urządzenie B: gość dołącza Z LISTY gier w zasięgu ~50 m (bez kodu)
   const B = await noweUrzadzenie({ most: mostWyscig, bezGracza: true });
@@ -530,10 +547,16 @@ test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy →
   // start u organizatora → A od razu w grze, B dowiaduje się pollingiem
   await klik(A, 'przycisk-lobby-start');
   assert.equal(el(A, 'ekran-gra').hidden, false, 'organizator na ekranie gry');
-  assert.equal(el(A, 'gra-panel-multi').hidden, false, 'panel wieloosobowy widoczny');
-  assert.match(tekst(A, 'gra-multi-tura'), /Wyścig/, 'wyścig: wszyscy jednocześnie');
+  // uwaga F (ADR 0044): sygnał i odliczanie na środku, nad przezroczystym tłem
+  assert.equal(el(A, 'odliczanie').hidden, false, 'host widzi odliczanie startu');
+  assert.match(tekst(A, 'odliczanie-cyfra'), /^[54321]$|^START$/, 'wielka cyfra na środku ekranu');
+  assert.ok(A.dom.wibracje.length >= 1, 'krok odliczania daje sygnał: dźwięk i wibrację (ADR 0041)');
+  assert.equal(A.dom.elementy.has('gra-panel-multi'), false,
+    'panelu multi NIE MA — po starcie gra wygląda jak hotseat');
   await przepompuj(B, 1);
   assert.equal(el(B, 'ekran-gra').hidden, false, 'gość wystartował po odświeżeniu stanu');
+  assert.equal(el(B, 'odliczanie').hidden, false, 'gość też odlicza — start jest wspólny');
+  assert.ok(B.dom.wibracje.length >= 1, 'sygnał startu także u gościa');
 
   // stacja 1: A online, B OFFLINE — zdarzenia lądują w kolejce i wychodzą po powrocie
   await przejdzStacje(A);
@@ -543,7 +566,9 @@ test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy →
   przelaczNa(B);
   kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
   await oddech();
-  assert.match(tekst(B, 'gra-multi-sync'), /2 zdarzeń czeka w kolejce/, 'pasek synchronizacji mówi o kolejce offline');
+  // Pasek synchronizacji został TYLKO w lobby (uwaga F) — w grze go nie ma,
+  // ale kolejka offline musi być widoczna w statusie gracza.
+  assert.match(tekst(B, 'multi-sync-pasek'), /2 zdarzeń czeka w kolejce/, 'pasek lobby mówi o kolejce offline');
   assert.match(tekst(B, 'status'), /kolejce/, 'gracz wie, że zdarzenia czekają');
   mostWyscig.online = true;
   await przepompuj(B, 1); // krok: stan + flush kolejki (FIFO)
@@ -551,12 +576,11 @@ test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy →
   assert.deepEqual(zdarzeniaB.map((z) => z.typ), ['dojscie', 'odpowiedz'], 'kolejka wyszła w kolejności FIFO');
   await klik(B, 'przycisk-nastepna-stacja');
 
-  // kanał info (m12-74): dojścia i odpowiedzi zamieniają się w komunikaty
+  // Kanału info NIE MA (uwaga F: „bezużyteczne informacje przyklejone pod
+  // paskiem") — zdarzenia i tak są w moście (sprawdzone wyżej po flushu kolejki),
+  // a wynik widać na ekranie końca gry i w rankingu.
   await przepompuj(A, 1);
-  const infoA = [...el(A, 'multi-info-lista').children].map((li) => li.textContent).join(' | ');
-  assert.match(infoA, /Bartek: dobra odpowiedź/, 'info: odpowiedź Bartka widoczna');
-  assert.match(infoA, /Bartek jest na stacji/, 'info: dojście Bartka widoczne');
-  assert.match(infoA, /Ala: dobra odpowiedź/, 'info: własna odpowiedź też w kanale');
+  assert.equal(A.dom.elementy.has('multi-info-lista'), false, 'kanału info nie ma (ADR 0044)');
 
   // stacje 2–3: oboje online — po ostatniej odpowiedzi serwer domyka grę
   await przejdzStacje(A);
@@ -568,27 +592,32 @@ test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy →
   await przepompuj(A, 1);
   await przepompuj(B, 1);
 
-  // wyniki po obu stronach: ta sama tabela z serwera
+  // wyniki po obu stronach: ten sam MINIMALNY ekran końca gry co w hotseat
+  // (ADR 0038), ale z liczbami z mostu — punkty wszystkich graczy z premią.
   for (const [nazwa, u] of [['A', A], ['B', B]]) {
-    const wiersze = el(u, 'gra-multi-wiersze').children;
-    assert.equal(wiersze.length, 2, `${nazwa}: tabela wyników ma dwa wiersze`);
+    const wiersze = el(u, 'gra-wyniki-tbody').children;
+    assert.equal(wiersze.length, 2, `${nazwa}: tabela końca gry ma dwa wiersze`);
     assert.match(wiersze[0].textContent, /Ala|Bartek/, `${nazwa}: pseudonimy w tabeli`);
-    assert.match(tekst(u, 'gra-multi-sync'), /odświeżanie zatrzymane/, `${nazwa}: polling staje po zakończeniu`);
+    assert.match(tekst(u, 'multi-sync-pasek'), /odświeżanie zatrzymane/, `${nazwa}: polling staje po zakończeniu`);
   }
   const wyniki = mostWyscig.znajdz(kodWyscigu).wyniki;
   assert.equal(wyniki['g-1'].stacjeZamkniete, 3, 'Ala zamknęła 3 stacje');
   assert.equal(wyniki['g-2'].stacjeZamkniete, 3, 'Bartek zamknął 3 stacje (w tym z kolejki offline)');
   assert.equal(wyniki['g-1'].poprawne, 3, 'wszystkie odpowiedzi Ali poprawne');
-  // premia za kolejność ukończenia: STAŁA 3/2/1 (właściciel, 2026-09-11)
-  assert.equal(wyniki['g-1'].premia, 3, 'Ala skończyła pierwsza: premia 3');
-  assert.equal(wyniki['g-2'].premia, 2, 'Bartek drugi: premia 2 (stała 3/2/1)');
-  assert.equal(wyniki['g-1'].punkty, 6, 'podsumowanie: 3 pkt z odpowiedzi + premia 3');
-  assert.equal(wyniki['g-2'].punkty, 5, 'Bartek: 3 pkt + premia 2');
-  // tabela na obu telefonach: kolumna premii i postęp „ile z ilu”
+  // premia za kolejność ukończenia: pula = grający − 1 (uwaga L, ADR 0027 aneks
+  // 2026-09-13) — dwóch grających gra o 1 pkt, drugi dostaje zero.
+  assert.equal(wyniki['g-1'].premia, 1, 'Ala skończyła pierwsza: premia 1 (2 grających → pula 1)');
+  assert.equal(wyniki['g-2'].premia, 0, 'Bartek drugi: premia 0');
+  assert.equal(wyniki['g-1'].punkty, 4, 'podsumowanie: 3 pkt z odpowiedzi + premia 1');
+  assert.equal(wyniki['g-2'].punkty, 3, 'Bartek: 3 pkt + premia 0');
+  // tabela na obu telefonach: trzy kolumny (gracz | punkty | poprawne) — premia
+  // jest JUŻ w punktach (4 = 3 odpowiedzi + 1), a doklejonych kolumn nie ma
   for (const [nazwa, u] of [['A', A], ['B', B]]) {
-    const wiersze = [...el(u, 'gra-multi-wiersze').children];
-    assert.match(wiersze[0].textContent, /Ala.*3\/3.*\+3/, `${nazwa}: pierwsza w tabeli ma postęp 3/3 i premię +3`);
-    assert.match(wiersze[1].textContent, /Bartek.*3\/3.*\+2/, `${nazwa}: drugi ma postęp 3/3 i premię +2`);
+    const wiersze = [...el(u, 'gra-wyniki-tbody').children];
+    assert.equal(wiersze[0].children.length, 3, `${nazwa}: gracz | punkty | poprawne (ADR 0038)`);
+    assert.match(wiersze[0].textContent, /Ala.*4.*3\/3/, `${nazwa}: Ala pierwsza — 3 odpowiedzi + premia 1 = 4 pkt`);
+    assert.match(wiersze[1].textContent, /Bartek.*3.*3\/3/, `${nazwa}: Bartek drugi — 3 pkt, premia 0`);
+    assert.match(tekst(u, 'gra-wynik-zwyciezca'), /Ala/, `${nazwa}: karta zwycięzcy z punktacji mostu`);
   }
 });
 
@@ -620,7 +649,8 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
   assert.equal(el(B, 'ekran-gra').hidden, false, 'B wystartował');
   assert.equal(tekst(B, 'gra-postep'), 'stacja 1 z 4', 'trasa: B ma przed sobą wszystkie 4 stacje');
   assert.equal(el(B, 'multi-wybor-stacji').hidden, true, 'trasa: lista wyboru schowana — kolejność narzuca trasa');
-  assert.match(tekst(B, 'gra-multi-tura'), /Wspólna Trasa/, 'panel mówi: wspólna trasa, po kolei');
+  assert.equal(B.dom.elementy.has('gra-multi-tura'), false,
+    'komunikatu trybu w grze nie ma — tryb mówi lobby, a w grze jest jak w hotseat (uwaga F)');
 
   // Nikt na nikogo nie czeka: B zamyka stację 1, a A w tym czasie dopiero RUSZA
   // swoją stację 1 (to ta sama stacja, ale w własnym tempie każdego gracza).
@@ -634,12 +664,18 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
   await klik(A, 'przycisk-nastepna-stacja');
   assert.equal(tekst(A, 'gra-postep'), 'stacja 2 z 4', 'A idzie do stacji 2 — kolejność po kolei');
 
-  // RESUME: telefon B „odświeżony” (nowa instalacja DOM, TA SAMA pamięć)
+  // RESUME (uwaga K, ADR 0045): telefon B „odświeżony” (nowa instalacja DOM, TA
+  // SAMA pamięć) wraca do gry SAM — karty „↩ Wróć do gry" nie ma i nie ma kliku.
   const B2 = await noweUrzadzenie({ pamiec: pamiecB, most: mostTrasy, bezGracza: true });
-  assert.equal(el(B2, 'multi-wznowienie').hidden, false, 'baner powrotu do gry widoczny po odświeżeniu');
-  assert.match(tekst(B2, 'multi-wznowienie-opis'), /dołączyłeś/, 'baner pamięta, że B dołączył do gry');
-  await klik(B2, 'przycisk-multi-wroc');
-  assert.equal(el(B2, 'ekran-gra').hidden, false, 'powrót prosto do gry');
+  przelaczNa(B2);
+  await oddech();
+  await oddech();
+  assert.equal(el(B2, 'ekran-gra').hidden, false, 'powrót prosto do gry, bez banera i bez kliku');
+  assert.equal(el(B2, 'ekran-start').hidden, true, 'powrót do gry pomija okno startowe');
+  assert.match(tekst(B2, 'status'), /wracasz do gry w połowie drogi/,
+    'status mówi, że to powrót, a nie nowa gra');
+  assert.equal(el(B2, 'odliczanie').hidden, true,
+    'powrót po odświeżeniu telefonu NIE odlicza — to nie jest start gry (ADR 0044)');
   assert.equal(tekst(B2, 'gra-postep'), 'stacja 1 z 3', 'zamknięta stacja 1 nie wraca — zostały 3');
   await ustawPozycjeTestowa(B2); // świeży telefon: GPS brak, więc pozycja z ekranu 2
 
@@ -656,10 +692,11 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
   const wyniki = mostTrasy.znajdz(kodTrasy).wyniki;
   assert.deepEqual([wyniki['g-1'].stacjeZamkniete, wyniki['g-2'].stacjeZamkniete], [4, 4], 'po cztery stacje na gracza');
   for (const u of [A, B2]) {
-    assert.equal(el(u, 'gra-multi-wiersze').children.length, 2, 'tabela wyników po obu stronach');
-    assert.match(tekst(u, 'gra-multi-sync'), /odświeżanie zatrzymane/, 'synchronizacja zatrzymana');
+    assert.equal(el(u, 'gra-wyniki-tbody').children.length, 2, 'tabela końca gry po obu stronach (ADR 0038)');
+    assert.match(tekst(u, 'multi-sync-pasek'), /odświeżanie zatrzymane/, 'synchronizacja zatrzymana');
   }
-  assert.equal(el(B2, 'multi-wznowienie').hidden, true, 'po zakończeniu gry baner powrotu znika (sesja wyczyszczona)');
+  assert.equal(pamiecB.has('okolica:multi:sesja'), false,
+    'po zakończeniu gry sesja wyczyszczona — następne otwarcie nie wraca do skończonej gry (ADR 0045)');
   assert.equal(mostTrasy.znajdz(kodTrasy).zdarzenia.every((z) => !POLA_ZAKAZANE.some((pz) => pz in (z.dane ?? {}))), true, 'serwer nie przyjął współrzędnych w zdarzeniach');
 });
 
@@ -684,7 +721,7 @@ test('start SOLO: organizator wystartuje grę z jednym graczem i sam ją domyka'
   assert.equal(gra.wyniki['g-1'].premia, 0, 'bez rywali nie ma premii za kolejność');
 });
 
-test('host kończy grę przyciskiem: podsumowanie u wszystkich, premia liczy się też przy przedwczesnym końcu', async () => {
+test('uwaga G: koniec gry hosta NIE kończy gry innym — gość gra dalej, a most domyka grę, gdy skończy', async () => {
   const most = atrapaMostu();
   const pamiecA = new Map();
   zasiejZestaw(most, 3);
@@ -698,29 +735,91 @@ test('host kończy grę przyciskiem: podsumowanie u wszystkich, premia liczy si�
   await klik(A, 'przycisk-lobby-start');
   await przepompuj(B, 1);
 
-  // Bartek domyka WSZYSTKIE stacje pierwszy; Ala tylko jedną — i host kończy grę
-  await przejdzStacje(B);
-  await przejdzStacje(B);
-  await przejdzStacje(B);
+  // Ala (organizator) domyka jedną stację, Bartek nie domknął jeszcze żadnej
   await przejdzStacje(A);
   await przepompuj(A, 1);
-  assert.equal(el(A, 'przycisk-multi-zakoncz').hidden, false, 'host w grze widzi „Zakończ grę”');
-  assert.equal(el(B, 'przycisk-multi-zakoncz').hidden, true, 'gość go NIE widzi');
-  await klik(A, 'przycisk-multi-zakoncz');
-  await czekajNa(A, () => most.znajdz(kodGry(most)).stan === 'zakonczona', 'most zakończył grę po kliknięciu hosta');
   const kod = kodGry(most);
+
+  // Host kończy grę na swoim telefonie: ⚙ START GRY → TAK (ADR 0043). Telefon
+  // hosta służył tylko do wystartowania gry i wybrania pytań (uwaga G).
+  await potwierdzKoniecGry(A);
+  assert.equal(pamiecA.has('okolica:multi:sesja'), false,
+    'rezygnacja kasuje sesję — po odświeżeniu host nie wraca do gry, z której wyszedł (ADR 0045)');
+  await czekajNa(A, () => most.znajdz(kod).zdarzenia.some((z) => z.typ === 'rezygnacja' && z.graczId === 'g-1'),
+    'koniec hosta wychodzi na most jako rezygnacja');
+  assert.equal(most.znajdz(kod).stan, 'trwa', 'gra NIE jest zamknięta — pozostali gracze grają dalej');
+  assert.equal(most.znajdz(kod).zdarzenia.some((z) => z.typ === 'koniec'), false,
+    'most nie dostał zdarzenia „koniec" — aplikacji nie wolno kończyć gry innym');
+  assert.equal(most.ciala.filter((c) => JSON.parse(c).akcja === 'gra-zakoncz').length, 0,
+    'aplikacja nie woła akcji gra-zakoncz — host nie kończy gry na moście (uwaga G)');
+  assert.equal(el(A, 'gra-panel-koniec').hidden, false, 'host widzi swój wynik');
+  assert.match(tekst(A, 'status'), /pozostali gracze grają dalej/, 'status mówi wprost, że inni grają dalej');
+
+  // Bartek gra dalej — cała jego trasa, bez blokady i bez utraconych informacji
+  await przepompuj(B, 1);
+  assert.equal(el(B, 'ekran-gra').hidden, false, 'gość został w grze');
+  assert.equal(el(B, 'gra-panel-koniec').hidden, true, 'u gościa gra się NIE skończyła');
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  await czekajNa(B, () => most.znajdz(kod).stan === 'zakonczona',
+    'most domknął grę, gdy ostatni aktywny gracz skończył (rezygnacja hosta też domyka — .gs)');
+
+  // Premia: pula liczy tylko tych, którzy dograli (uwaga L) — host wyszedł, więc
+  // grających jest 1 i pula premii wynosi 0.
   const wyniki = most.znajdz(kod).wyniki;
-  assert.equal(wyniki['g-2'].premia, 3, 'Bartek skończył przed końcem gry: premia 3 liczy się także przy przedwczesnym końcu');
-  assert.equal(wyniki['g-2'].punkty, 6, '3 odpowiedzi + premia 3');
-  assert.equal(wyniki['g-1'].premia, 0, 'Ala nie domknęła stacji: bez premii');
+  assert.equal(wyniki['g-1'].zrezygnowal, true, 'host jest wykreślony z gry jako rezygnujący');
+  assert.equal(wyniki['g-2'].premia, 0, 'jeden dogrywający → pula premii 0 (ADR 0027 aneks 2026-09-13)');
+  assert.equal(wyniki['g-2'].punkty, 3, 'Bartek: trzy dobre odpowiedzi');
+
+  // Gdy gra się domknie, OBA telefony pokazują wspólną tabelę (ADR 0038/0044)
+  await przepompuj(A, 1);
   await przepompuj(B, 1);
   for (const [nazwa, u] of [['A', A], ['B', B]]) {
-    await czekajNa(u, () => el(u, 'gra-multi-wiersze').children.length === 2, `${nazwa}: tabela podsumowania`);
-    assert.match(tekst(u, 'gra-multi-sync'), /odświeżanie zatrzymane/, `${nazwa}: koniec gry zatrzymuje polling`);
-    const info = [...el(u, 'multi-info-lista').children].map((li) => li.textContent).join(' | ');
-    assert.match(info, /zakończył grę|opuszcza grę|dobra odpowiedź/, `${nazwa}: kanał info żyje`);
+    await czekajNa(u, () => el(u, 'gra-wyniki-tbody').children.length === 2, `${nazwa}: wspólna tabela po domknięciu gry`);
+    assert.match(tekst(u, 'gra-wynik-zwyciezca'), /Bartek/, `${nazwa}: zwycięzca z punktacji mostu`);
+    assert.match(tekst(u, 'multi-sync-pasek'), /odświeżanie zatrzymane/, `${nazwa}: koniec gry zatrzymuje polling`);
   }
-  // kanał info: rezygnacja tez ma komunikat
+});
+
+test('uwaga F: po starcie gry sygnał i odliczanie 5-4-3-2-1-START u hosta i u gościa', async () => {
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  assert.equal(el(A, 'odliczanie').hidden, true, 'w lobby nic się nie odlicza');
+
+  A.dom.wibracje.length = 0;
+  await klik(A, 'przycisk-lobby-start');
+  // host: odliczanie jest NAD grą, nie zamiast niej — tło przezroczyste, więc
+  // mapa i panel fazy zostają widoczne (uwaga F)
+  assert.equal(el(A, 'odliczanie').hidden, false, 'host odlicza od razu po swoim kliku');
+  assert.match(tekst(A, 'odliczanie-cyfra'), /^[54321]$|^START$/, 'wielka cyfra na środku');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'gra pod odliczaniem już żyje');
+  assert.ok(A.dom.wibracje.length >= 1, 'krok odliczania daje sygnał (ADR 0041: dźwięk i wibracja)');
+
+  B.dom.wibracje.length = 0;
+  await przepompuj(B, 1);
+  assert.equal(el(B, 'odliczanie').hidden, false, 'gość odlicza, gdy dowie się o starcie z mostu');
+  assert.ok(B.dom.wibracje.length >= 1, 'sygnał startu także u gościa');
+
+  // po „START" warstwa znika i zostaje zwykła gra — wygląd hotseat, zero doklejek
+  for (const [nazwa, u] of [['A', A], ['B', B]]) {
+    await czekajNa(u, () => el(u, 'odliczanie').hidden === true, `${nazwa}: odliczanie kończy się na START`);
+    assert.equal(tekst(u, 'odliczanie-cyfra'), '', `${nazwa}: cyfra sprzątnięta`);
+    assert.equal(el(u, 'ekran-gra').hidden, false, `${nazwa}: gracz zostaje na ekranie gry`);
+    assert.equal(el(u, 'gra-postep').textContent.startsWith('stacja 1 z 3'), true, `${nazwa}: postęp jak w hotseat`);
+    for (const id of ['gra-panel-multi', 'gra-multi-tura', 'gra-multi-wiersze', 'multi-info-lista',
+      'gra-multi-sync', 'multi-factcheck', 'przycisk-multi-zakoncz', 'przycisk-multi-rezygnuj']) {
+      assert.equal(u.dom.elementy.has(id), false, `${nazwa}: po potworku nie ma śladu — #${id}`);
+    }
+  }
 });
 
 test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) → wklejenie → LOBBY', async () => {
@@ -1194,12 +1293,13 @@ test('we Wspólnej Trasie nie ma wolnego wyboru stacji — kolejność ustala tr
   await zalozGreUI(A, { tryb: 'trasa' });
   await klik(A, 'przycisk-lobby-start');
   assert.equal(el(A, 'multi-wybor-stacji').hidden, true, 'trasa: lista wyboru schowana');
-  assert.match(tekst(A, 'gra-multi-tura'), /Wspólna Trasa/, 'trasa: komunikat o wspólnej trasie');
+  assert.equal(A.dom.elementy.has('gra-multi-tura'), false,
+    'komunikatu trybu w grze nie ma (uwaga F) — tryb mówi lobby, w grze jest jak w hotseat');
+  assert.match(tekst(A, 'lobby-tryb'), /Wspólna Trasa/, 'tryb zostaje w lobby');
+  assert.equal(tekst(A, 'gra-postep'), 'stacja 1 z 3', 'kolejność narzuca trasa — postęp jak w hotseat');
 });
 
-test('ADR 0032: panel multi pokazuje Q dla zweryfikowanej, notkę dla paczki bez weryfikacji', async () => {
-  const maQ = (u) => [...el(u, 'multi-factcheck').children].some((c) => c.className === 'znaczek-factcheck' && c.textContent === 'Q');
-
+test('ADR 0032: wariant fact-check jedzie w stanie gry, a ekran gry nie dokleja swojej linii (uwaga F)', async () => {
   const most = atrapaMostu();
   const pamiec = new Map();
   zasiejZestaw(most, 3); // meta z factcheck:true (domyślne)
@@ -1208,9 +1308,11 @@ test('ADR 0032: panel multi pokazuje Q dla zweryfikowanej, notkę dla paczki bez
   await zalozGreUI(A, { tryb: 'wyscig' });
   await klik(A, 'przycisk-lobby-start');
   assert.equal(el(A, 'ekran-gra').hidden, false, 'organizator w grze');
-  assert.equal(el(A, 'multi-factcheck').hidden, false, 'linia wariantu widoczna');
-  assert.match(tekst(A, 'multi-factcheck'), /fact check/);
-  assert.equal(maQ(A), true, 'Q w panelu multi dla paczki zweryfikowanej');
+  // Linii wariantu (`#multi-factcheck`) NIE MA razem z panelem multi (ADR 0044):
+  // w grze zostaje dokładnie to, co w hotseat. Wariant nadal jedzie w stanie gry
+  // (`zestaw.meta`, RO-gra/1) i tam go sprawdzamy.
+  assert.equal(A.dom.elementy.has('multi-factcheck'), false, 'ekran gry nie dokleja linii wariantu');
+  assert.equal(most.znajdz(kodGry(most)).zestaw.meta.factcheck, true, 'meta gry niesie wariant zweryfikowany');
 
   // wariant bez weryfikacji: paczka w wariancie bez fact-checku (REV3)
   const most2 = atrapaMostu();
@@ -1220,6 +1322,6 @@ test('ADR 0032: panel multi pokazuje Q dla zweryfikowanej, notkę dla paczki bez
   await przygotujTelefon(B, 'Bartek', { stacje: 3 });
   await zalozGreUI(B, { tryb: 'wyscig' });
   await klik(B, 'przycisk-lobby-start');
-  assert.match(tekst(B, 'multi-factcheck'), /bez wymuszonego fact-checku/);
-  assert.equal(maQ(B), false, 'brak znaczka dla wariantu bez weryfikacji');
+  assert.equal(most2.znajdz(kodGry(most2)).zestaw.meta.factcheck, false, 'meta gry niesie wariant bez weryfikacji');
+  assert.equal(B.dom.elementy.has('multi-factcheck'), false, 'żaden wariant nie dokleja linii do gry');
 });

@@ -39,10 +39,10 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0024](0024-tolerancja-dopasowania-okolicy.md) | Dopasowanie okolicy z tolerancją: odległość od komórki geohash, nie „ten sam geohash" | Zaakceptowana |
 | [0025](0025-czas-gry-zamiast-promienia.md) | Czas gry zamiast promienia: promień jest wynikiem, nie polem | Zaakceptowana |
 | [0026](0026-tozsamosc-brama-ekranu-1.md) | Tożsamość jest bramą ekranu 1: imię + PIN, jedno wołanie mostu | Zaakceptowana |
-| [0027](0027-pytania-po-rowno-i-wolna-kolejnosc.md) | Pytania po równo na gracza (wdrożone) i wolna kolejność stacji w grze sieciowej (projekt) | Zaakceptowana |
+| [0027](0027-pytania-po-rowno-i-wolna-kolejnosc.md) | Pytania po równo na gracza (wdrożone) i wolna kolejność stacji w grze sieciowej (projekt; premia za kolejność: pula = grający − 1, maks. 3 — aneks 2026-09-13) | Zaakceptowana |
 | [0028](0028-oceny-pytan-graczy.md) | Oceny pytań przez graczy: jeden kciuk, jeden głos na gracza i pytanie, wysyłka w tle | Zaakceptowana |
 | [0029](0029-brak-recznego-dojscia.md) | Dojście zalicza tylko GPS: ręczne zgłaszanie usunięte z interfejsu | Zaakceptowana |
-| [0030](0030-rozgrywka-pod-orientacje-telefonu.md) | Rozgrywka układa się pod orientację telefonu, a pytanie leży NA mapie | Zaakceptowana |
+| [0030](0030-rozgrywka-pod-orientacje-telefonu.md) | Rozgrywka układa się pod orientację telefonu, a pytanie leży NA mapie (obróć ekran — mapa sama centruje się na graczu; blokady orientacji NIE MA — aneks 2026-09-13) | Zaakceptowana |
 | [0031](0031-generowanie-pytan-partiami.md) | Duży setup generuje pytania partiami, a aplikacja sama je scala (stałe szacunku usunięte — aneks 2026-09-12) | Wycofana |
 | [0032](0032-wariant-bez-fact-check.md) | Wariant „Pytania (bez fact check)" jako domyślny | Zaakceptowana |
 | [0033](0033-koniec-odwracania-liter.md) | Koniec odwracania liter: zostaje kod poprawnej odpowiedzi | Zaakceptowana |
@@ -53,6 +53,12 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0037](0037-jezyk-i-podklad-zaszte-w-kodzie.md) | Język pytań i podkład mapy zaszte w kodzie (polski + OSM), pola usuwane z UI | Zaakceptowana |
 | [0038](0038-minimalny-ekran-wyniku.md) | Minimalny ekran wyniku: zwycięzca, ranking i powrót — statystyki, szczegóły, stacje i eksporty usunięte | Zaakceptowana |
 | [0039](0039-ranking-dwie-tabele.md) | Ranking wrócił w nowej formie: dwie tabele (punkty i proporcja), sumy liczy most, tylko gracze z profilem | Zaakceptowana |
+| [0040](0040-gra-bez-pauzy-zawsze-wlaczona.md) | Gra bez pauzy: śledzenie zawsze włączone, Wake Lock na czas gry, jedyna przerwa po 15 min bezczynności | Zaakceptowana |
+| [0041](0041-sygnaly-dzwiek-i-wibracja.md) | Każdy sygnał zdarzenia ma wibrację, jeśli urządzenie ją daje (brak API = cichy no-op, gra idzie dalej) | Zaakceptowana |
+| [0042](0042-informacje-jedna-mala-czcionka.md) | Informacje: cała treść jedną, małą czcionką Courier New (13 px), cele dotykowe bez zmian | Zaakceptowana |
+| [0043](0043-koniec-gry-za-ikona-start-gry.md) | Przycisku „Zakończ grę” nie ma: grę kończy ikona ⚙ START GRY i wpisanie TAK w małej warstwie potwierdzenia | Zaakceptowana |
+| [0044](0044-odliczanie-po-starcie-gry-wieloosobowej.md) | Start gry wieloosobowej: sygnał i odliczanie 5-4-3-2-1-START nad mapą, potem gra wygląda jak hotseat (panel multi usunięty) | Zaakceptowana |
+| [0045](0045-telefon-wraca-do-zapamietanej-gry.md) | Kart wznowienia na setupie nie ma: otwarcie albo odświeżenie aplikacji wraca wprost do zapamiętanej gry (hotseat z zapisu, multi z sesji i mostu) | Zaakceptowana |
 
 ## Szablon ADR
 

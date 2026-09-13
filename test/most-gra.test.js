@@ -5,11 +5,12 @@
  * dostają wszyscy gracze) i w aplikacji (`app/wieloosobowa.js`, podgląd na żywo).
  * Rozjazd oznaczałby, że telefon pokazuje inny wynik niż Drive, więc test
  * WYKONUJE tekst funkcji ze skryptu i porównuje z implementacją aplikacji na
- * tych samych grach. Premia za kolejność (pierwszy G−1, …, ostatni 0) musi
- * wychodzić identycznie po obu stronach.
+ * tych samych grach. Premia za kolejność musi wychodzić identycznie po obu
+ * stronach.
  *
- * Premia za kolejność jest STAŁA: 3/2/1 pkt za 1./2./3. miejsce (aneks
- * właściciela 2026-09-11 do ADR 0027).
+ * Premia za kolejność: pula = min(3, grający − 1), gdzie „grający” to gracze bez
+ * rezygnacji w momencie końca gry — pierwszy dostaje pulę, drugi pulę − 1, itd.
+ * (aneks właściciela 2026-09-13, uwaga L, do ADR 0027; wcześniej stała 3/2/1).
  */
 
 import { test } from 'node:test';
@@ -100,19 +101,19 @@ test('premia w moście = premia w aplikacji (kopia pilnowana testem)', () => {
 test('wyniki mostu = wyniki aplikacji: punkty z premią, poprawne, odcinki, rezygnacje', () => {
   licznik = 0;
   const gra = graWyscig({ liczbaGraczy: 3, stan: 'trwa' });
-  zakonczWszystkie(gra, 'g-2'); // 1. miejsce → premia 3 (stała 3/2/1)
+  zakonczWszystkie(gra, 'g-2'); // 1. miejsce → premia 1 (3 grających − rezygnacja = pula 1)
   odpowiedz(gra, 'g-1', 1, { poprawna: false });
   dojście(gra, 'g-1', 2);
   rezygnacja(gra, 'g-3');
 
   // gra się toczy: premia policzona, ale poza punktami — po obu stronach tak samo
   assert.deepEqual(przeliczWynikiMost(gra), przeliczWynikiKlient(gra), 'wyniki w trakcie gry');
-  assert.equal(przeliczWynikiMost(gra)['g-2'].premia, 3, 'premia pierwszego = 3 (stała 3/2/1, właściciel 2026-09-11)');
+  assert.equal(przeliczWynikiMost(gra)['g-2'].premia, 1, 'premia pierwszego = 1: grających 3, jeden zrezygnował → pula 1 (uwaga L)');
   assert.equal(przeliczWynikiMost(gra)['g-2'].punkty, 3, 'w trakcie gry punkty bez premii');
 
   gra.stan = 'zakonczona';
   assert.deepEqual(przeliczWynikiMost(gra), przeliczWynikiKlient(gra), 'wyniki końcowe');
-  assert.equal(przeliczWynikiMost(gra)['g-2'].punkty, 6, 'podsumowanie: 3 pkt + premia 3');
+  assert.equal(przeliczWynikiMost(gra)['g-2'].punkty, 4, 'podsumowanie: 3 pkt + premia 1');
   assert.equal(przeliczWynikiMost(gra)['g-1'].punkty, 0, 'błędna odpowiedź = 0 pkt, brak premii');
   assert.equal(przeliczWynikiMost(gra)['g-1'].bledne, 1);
   assert.equal(przeliczWynikiMost(gra)['g-1'].czasOdcinkowMs, 45_000, 'czas odcinka z dojścia');

@@ -878,8 +878,10 @@ function czyKompletna(gra) {
 
 /**
  * Premia za kolejność ukończenia (ADR 0027 część B pkt 5, aneks właściciela
- * 2026-09-11): STAŁA — 3 pkt za 1. miejsce, 2 za 2., 1 za 3.; 4. i dalej: 0,
- * niezależnie od liczby graczy. Kolejność z `kolejnosc` zdarzeń (nadawana w
+ * 2026-09-13): pula = min(3, grający − 1), gdzie „grający" to gracze bez
+ * rezygnacji w momencie końca gry — 1 grający: 0 pkt, 2: 1/0, 3: 2/1/0,
+ * 4 i więcej: 3/2/1/0…; odłączeni wcześniej nie liczą się ani do puli, ani do
+ * miejsc. Kolejność z `kolejnosc` zdarzeń (nadawana w
  * `zBlokada`), NIE z zegara urządzenia. Rezygnujący i niedokończeni premii
  * nie dostają — ukończenie przed przedwczesnym końcem gry liczy się jak zwykle.
  *
@@ -905,12 +907,17 @@ function premiaZaKolejnosc(gra) {
       ostatnia[z.graczId] = Number(z.kolejnosc) || 0;
     }
   });
+  // Kopia `MAKS_PREMIA_KOLEJNOSCI` z `app/wieloosobowa.js` (uwaga L, ADR 0027
+  // aneks 2026-09-13): tyle dostaje pierwszy z grających przy 4 i więcej.
+  const maksPremia = 3;
+  const grajacy = gracze.filter((g) => !rezygnacje[g.id]).length;
+  const pula = Math.min(maksPremia, Math.max(0, grajacy - 1));
   const skonczeni = gracze
     .filter((g) => !rezygnacje[g.id] && zamkniete[g.id] && Object.keys(zamkniete[g.id]).length >= N)
     .map((g) => ({ id: g.id, koniec: ostatnia[g.id] || 0 }))
     .sort((a, b) => a.koniec - b.koniec);
   for (let i = 0; i < skonczeni.length; i += 1) {
-    const ile = [3, 2, 1][i] || 0;
+    const ile = pula - i;
     if (ile > 0) premia[skonczeni[i].id] = ile;
   }
   return premia;
@@ -980,7 +987,11 @@ function przyjmijZdarzenie(dane) {
       tSerwera: new Date().toISOString(),
     };
     gra.zdarzenia.push(zdarzenie);
-    if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+    // Rezygnacja TEŻ może domknąć grę (ADR 0019 aneks 2026-09-13, uwaga G):
+    // czyKompletna() liczy gracza, który zrezygnował, za domkniętego, więc bez
+    // tego sprawdzenia gra wisiałaby otwarta, gdy wychodzi ostatni aktywny gracz
+    // (np. organizator kończy grę u siebie, a pozostali już skończyli).
+    if (z.typ !== 'koniec' && czyKompletna(gra)) {
       gra.stan = 'zakonczona'; // stan PRZED wynikami: premia wchodzi do punktów (ADR 0027 pkt 5)
       gra.wyniki = przeliczWyniki(gra);
     }
@@ -990,7 +1001,15 @@ function przyjmijZdarzenie(dane) {
   });
 }
 
-/** POST gra-zakoncz: organizator kończy przedwcześnie (np. wszyscy rezygnują). */
+/**
+ * POST gra-zakoncz: jawne domknięcie gry przed czasem.
+ *
+ * UWAGA (ADR 0019 aneks 2026-09-13, uwaga G): aplikacja NIE woła już tej akcji —
+ * koniec gry na telefonie (także u organizatora) jest zdarzeniem `rezygnacja`,
+ * a grę domyka most sam, gdy wszyscy aktywni gracze skończyli albo wyszli.
+ * Akcja zostaje w moście dla starszych telefonów (offline'owa skorupa z SW może
+ * mieć poprzednią wersję aplikacji) i dla ręcznego porządkowania gier na Drive.
+ */
 function zakonczGre(dane) {
   return zBlokada(() => {
     const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);

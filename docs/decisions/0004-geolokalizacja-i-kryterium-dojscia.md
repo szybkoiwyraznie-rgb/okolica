@@ -176,3 +176,19 @@ odcinka” przestaje obowiązywać; nowe wyjście to „■ Zakończ grę” —
 komunikaty P03/P04/P08, komunikat o braku współrzędnych stacji i status
 błędu GPS odsyłają do niego wprost. Ręczne zaliczenie nadal NIE wraca
 (ADR 0029); żaden komunikat nie może do niego odsyłać.
+
+## Aneks 2026-09-13 (m12-102) — koniec pauzy w tle i profilu oszczędnego (uwaga B, ADR 0040)
+
+Pkt 1 traci końcówkę o zamykaniu watchera przy przejściu w tło („…zamykany
+przez `clearWatch()` na końcu gry i przy przejściu w tło — oszczędność baterii,
+z komunikatem o wznowieniu śledzenia”). Od 2026-09-13 watcher NIE jest zamykany
+w tle: aplikacja jest włączona cały czas, a po powrocie sama zakłada świeży
+nasłuch, jeśli przeglądarka go zabiła albo uciszyła (bug G) — bez komunikatu, bo
+kody P07 i P09 są wycofane i ich numery nie wracają do puli. Opcje watchera
+zostają dokładnie te z pkt 1 (`enableHighAccuracy: true, maximumAge: 2000,
+timeout: 20000`) i są teraz JEDYNYM profilem — profil oszczędny z M10/T3
+(histereza 250/150 m) wycofany, bo kryterium dojścia liczy się z metrów na
+całym odcinku. Pkt 2 i 3 bez zmian: próg dojścia, dwa kolejne trafienia,
+`accuracy` bez oceny (ADR 0034), a `czasMs` podaje warstwa DOM — teraz bez
+korekt na pauzy, bo pauz nie ma. Jedyna przerwa w śledzeniu jest automatyczna
+(15 minut bez żadnego kliku) i wznawia ją dowolny klik (ADR 0040 pkt 5).

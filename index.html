@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-95">
-  <script type="module" src="app/app.js?v=m12-95"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-110">
+  <script type="module" src="app/app.js?v=m12-110"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -125,14 +125,10 @@
            załóż/dołącz żyje TU, na setupie; paczka i tak powstaje dalej w
            zwykłej ścieżce (pozycja → stacje → pytania), a lobby otwiera się
            po wklejeniu odpowiedzi modelu. -->
+      <!-- Karty „↩ Wróć do gry" NIE MA (właściciel 2026-09-13, uwagi J i K,
+           ADR 0045): telefon pamięta grę wieloosobową i wraca do niej SAM przy
+           starcie aplikacji (`przywrocGreMulti`), bez pytania i bez kliku. -->
       <div id="karta-multi" class="karta" hidden>
-        <div id="multi-wznowienie" class="karta karta-wznowienie" hidden>
-          <p id="multi-wznowienie-opis" class="duzy"></p>
-          <div class="wiersz">
-            <button id="przycisk-multi-wroc" class="przycisk przycisk-glowny" type="button">↩ Wróć do gry</button>
-            <button id="przycisk-multi-porzuc" class="przycisk" type="button">🗑 Porzuć zapamiętaną grę</button>
-          </div>
-        </div>
         <fieldset class="pole">
           <legend>Co robisz?</legend>
           <div id="multi-sciezka" class="segment"></div>
@@ -161,14 +157,10 @@
         </div>
       </div>
 
-      <!-- M6/R6: wznowienie przerwanej gry — jawne, kasowanie dwustopniowe -->
-      <div id="karta-wznowienie" class="karta karta-wznowienie" hidden>
-        <p id="wznowienie-opis" class="duzy"></p>
-        <div class="wiersz">
-          <button id="przycisk-wznow-gre" class="przycisk przycisk-glowny" type="button">▶ Wznów grę</button>
-          <button id="przycisk-kasuj-zapis" class="przycisk" type="button">🗑 Nowa gra (kasuje zapis)</button>
-        </div>
-      </div>
+      <!-- Baneru wznowienia gry NIE MA (właściciel 2026-09-13, uwagi J i K,
+           ADR 0045): otwarcie albo odświeżenie aplikacji wraca do ostatniego
+           zapisu samo (`przywrocGreHotseat`), a zapis, którego nie da się
+           podnieść, start kasuje i mówi dlaczego. -->
 
       <!-- M7/P6: historia gier — skróty (bez treści i współrzędnych, ADR 0010 pkt 1) -->
       <div id="karta-historia" class="karta" hidden>
@@ -283,7 +275,7 @@
           <input id="multi-trasa-sekret" type="checkbox" checked>
           <span>Widoczna tylko kolejna stacja (trasa-sekret)</span>
         </label>
-        <p id="multi-punktacja" class="podpowiedz">Punktacja w obu trybach: każda dobra odpowiedź to 1 pkt, a za zaliczenie wszystkich stacji — 3 pkt za 1. miejsce, 2 pkt za 2., 1 pkt za 3.</p>
+        <p id="multi-punktacja" class="podpowiedz">Punktacja w obu trybach: każda dobra odpowiedź to 1 pkt. Premia za zaliczenie wszystkich stacji zależy od liczby grających: przy 2 grających pierwszy dostaje 1 pkt, przy 3 — kolejno 2, 1, 0, przy 4 i więcej — 3, 2, 1, 0. Gracze, którzy odłączyli się wcześniej, nie liczą się do premii.</p>
       </fieldset>
 
       <p id="bledy-setup" class="bledy" role="alert" hidden></p>
@@ -332,7 +324,7 @@
         <ul id="zestawy-lista" class="lista-zestawow"></ul>
         <button id="przycisk-zestawy-wiecej" class="przycisk przycisk-zestawy-wiecej" type="button" hidden>Zobacz więcej paczek</button>
         <p id="most-stan-repo" class="podpowiedz">Most Drive: sprawdzam…</p>
-        <p class="podpowiedz tylko-test">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki zaakceptowane przez właściciela<span class="dopisek-roboczy"> (ADR 0017 pkt 6)</span>.</p>
+        <p class="podpowiedz tylko-test">Adres wspólnego repozytorium jest wpisany w tę wersję aplikacji<span class="dopisek-roboczy"> (ADR 0020)</span> — bez konfigurowania na każdym telefonie. Z tego adresu aplikacja tylko czyta indeks i paczki z katalogu zaakceptowanych<span class="dopisek-roboczy"> (ADR 0017 pkt 6; moderacja wstępna zniesiona 2026-09-11)</span>.</p>
       </div>
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">
@@ -437,7 +429,7 @@
     <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
     <section id="ekran-paczka" class="ekran panel-centralny" hidden aria-labelledby="tytul-paczka">
       <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
-      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i <strong>nie jest zaszyfrowany</strong>. Wklej odpowiedź modelu do pola poniżej: sprawdzenie rusza samo, a poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive do przeglądu właściciela). Przy usterkach dostaniesz poprawkę do odesłania modelowi.</p>
+      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i <strong>nie jest zaszyfrowany</strong>. Wklej odpowiedź modelu do pola poniżej: sprawdzenie rusza samo, a poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive — od razu do wspólnego repozytorium okolicy). Przy usterkach dostaniesz poprawkę do odesłania modelowi.</p>
       <!-- Zgłoszenie właściciela 2026-09-09 (trzecia tura): „ma zostać pole
            i guzik »Wklej ze schowka« → po wklejeniu czegokolwiek ma się
            automatycznie zatwierdzać". Wklejenie JEST decyzją organizatora, więc
@@ -467,29 +459,16 @@
     <section id="ekran-gra" class="ekran panel-centralny" hidden aria-labelledby="tytul-gra">
       <p id="gra-pasek" hidden aria-live="polite"></p>
 
-      <!-- M11/P4: panel gry wieloosobowej — status trybu, żywe wyniki, pasek synchronizacji -->
-      <div id="gra-panel-multi" class="karta gra-panel" hidden>
-        <p id="gra-multi-tura" class="duzy" role="status"></p>
-        <p id="multi-factcheck" class="podpowiedz" hidden></p>
-        <!-- ADR 0027 część B: wolna kolejność stacji — gracz wybiera, dokąd idzie -->
-        <div id="multi-wybor-stacji" hidden>
-          <p class="podpowiedz">Kolejność jest dowolna — wybierz stację, do której idziesz:</p>
-          <div id="multi-wybor-przyciski" class="chipy" role="group" aria-label="Wybór stacji"></div>
-        </div>
-        <table id="gra-multi-tabela" class="tabela-wynikow">
-          <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Premia</th></tr></thead>
-          <tbody id="gra-multi-wiersze"></tbody>
-        </table>
-        <!-- Kanał info (właściciel, 2026-09-11): dojścia, odpowiedzi, rezygnacje
-             i koniec gry — odświeżany z pollingiem (co ~30 s). -->
-        <div id="multi-info" hidden>
-          <p class="podpowiedz">Info z gry:</p>
-          <ul id="multi-info-lista" class="lista-historii"></ul>
-        </div>
-        <p id="gra-multi-sync" class="podpowiedz" role="status"></p>
-        <button id="przycisk-multi-zakoncz" class="przycisk" type="button" hidden>⏹ Zakończ grę (host)</button>
-        <button id="przycisk-multi-rezygnuj" class="przycisk" type="button">🏳 Rezygnuję z gry</button>
-      </div>
+      <!-- Panelu gry wieloosobowej NIE MA (właściciel 2026-09-13, uwaga F;
+           ADR 0044): po starcie gra wygląda DOKŁADNIE jak hotseat — pasek na
+           dole, panel fazy, mapa. Umarły z nim: komunikat trybu („Wspólna
+           Trasa"/„Wyścig"), tabela Gracz/Punkty/Poprawne/Stacje/Premia, kanał
+           info („X wystartował grę", dojścia, odpowiedzi), pasek „Ostatni stan /
+           następne odświeżenie", „⏹ Zakończ grę (host)" i „🏳 Rezygnuję z gry".
+           Koniec gry i rezygnacja idą przez ikonę ⚙ START GRY (ADR 0043),
+           a wyniki — z tabeli końca gry i z rankingu (ADR 0038/0039).
+           Wybór stacji w Wyścigu na Orientację został PRZENIESIONY do panelu
+           fazy A (`#multi-wybor-stacji` niżej) — to mechanika gry, nie dekoracja. -->
 
       <div id="gra-slot-sterowanie">
         <div id="gra-sterowanie">
@@ -511,37 +490,61 @@
       <div id="gra-panel-oczekuje" class="karta gra-panel">
         <p id="gra-kto-idzie" class="duzy">Kto idzie: —</p>
         <p id="gra-cel-stacji" class="podpowiedz"></p>
+        <!-- ADR 0027 część B (Wyścig na Orientację): gracz wybiera stację, do
+             której idzie. Wybór mieszka w panelu fazy A — tam, gdzie hotseat ma
+             „▶ Idę do stacji" — a nie w doklejonej karcie multi (uwaga F,
+             ADR 0044). We Wspólnej Trasie blok zostaje ukryty: kolejność narzuca
+             trasa. -->
+        <div id="multi-wybor-stacji" hidden>
+          <p class="podpowiedz">Kolejność jest dowolna — wybierz stację, do której idziesz:</p>
+          <div id="multi-wybor-przyciski" class="chipy" role="group" aria-label="Wybór stacji"></div>
+        </div>
         <button id="przycisk-start-odcinka" class="przycisk przycisk-glowny przycisk-fazy" type="button">▶ Idę do stacji —</button>
       </div>
 
-      <!-- FAZA B: odcinek w drodze — dystans na żywo, ręczne zgłoszenie, pauza -->
+      <!-- FAZA B: odcinek w drodze — dystans na żywo. PAUZY NIE MA (właściciel
+           2026-09-13, uwaga B; ADR 0040): gra i śledzenie idą cały czas, a po
+           powrocie z tła wszystko wznawia się samo. Panel jest dla widoku
+           panelowego; w marszu gracz widzi pasek, a symulacja jest testowa. -->
       <div id="gra-panel-odcinek" class="karta gra-panel" hidden>
         <p id="gra-dystans-odcinka" class="duzy duzy-dystans">— m</p>
         <div class="wiersz">
-          <button id="przycisk-pauza" class="przycisk" type="button" aria-pressed="false">⏸ Pauza</button>
           <button id="przycisk-symulacja-gra" class="przycisk" type="button" hidden>▶ Symuluj dojście (tryb testowy)</button>
         </div>
-        <p id="gra-pauza-komunikat" class="podpowiedz" hidden></p>
       </div>
 
-      <div class="wiersz">
-        <button id="przycisk-zakoncz-gre" class="przycisk przycisk-maly" type="button">■ Zakończ grę</button>
-      </div>
+      <!-- Przycisku „■ Zakończ grę" NIE MA — ani tu, ani w Informacjach
+           (właściciel 2026-09-13, uwagi H1 i I; ADR 0043). Grę kończy ikona
+           ⚙ START GRY w nagłówku: w trakcie gry otwiera warstwę potwierdzenia
+           `#ekran-koniec-gry`, która wymaga wpisania TAK. -->
         </div>
       </div>
       <!-- FAZA C: pytanie — odsłaniane DOPIERO w chwili dojścia (ADR 0007 pkt 6) -->
       <div id="gra-panel-pytanie" class="karta gra-panel" hidden>
         <p id="gra-pytanie-naglowek" class="badge">Stacja zdobyta · pytanie — z —</p>
-        <p id="gra-pytanie-tresc" class="duzy"></p>
+        <!-- Uwaga właściciela z testów (2026-09-13, A; ADR 0036 aneks): treść
+             pytania i możliwe odpowiedzi siedzą w ZWIJANYM elemencie — wzorzec
+             z ekranu promptu (`<details>` + `<summary>`). W fazie odpowiedzi jest
+             OTWARTY, bo gracz musi widzieć, na co odpowiada; po odsłonięciu
+             wyniku ZWINIĘTY, żeby na wierzchu zostały łapki, poprawna odpowiedź
+             i komentarz — na telefonie bez scrollowania. -->
+        <details id="gra-pytanie-detale" open>
+          <summary id="gra-pytanie-detale-naglowek">Pytanie i możliwe odpowiedzi</summary>
+          <p id="gra-pytanie-tresc" class="duzy"></p>
+          <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
+          <!-- Właściciel 2026-09-13 (A): po odpowiedzi warianty WRACAJĄ jako
+               statyczna lista (klikalne przyciski znikają od 2026-09-11 — jedna
+               odpowiedź na pytanie, bez poprawek). -->
+          <ol id="gra-odpowiedzi-lista" class="gra-odpowiedzi-lista" hidden></ol>
+        </details>
         <!-- ADR 0028: ocena pytania — jeden kciuk, jeden głos na gracza i pytanie.
-             Panel jest PRZED odpowiedziami i zostaje w tym samym slocie po
-             odsłonięciu wyniku, więc ocenić można przed albo po odpowiedzi. -->
+             Panel zostaje NA WIERZCHU, obok zwijanego pytania (uwaga z testów
+             2026-09-13, A), więc ocenić można przed albo po odpowiedzi. -->
         <p id="gra-oceny" class="ocen-panel" hidden>
           <span id="gra-oceny-etykieta" class="podpowiedz">Oceń pytanie</span>
           <button id="gra-ocena-plus" class="przycisk przycisk-maly ocen-kciuk" type="button" aria-pressed="false" aria-label="Oceń pytanie pozytywnie">👍</button>
           <button id="gra-ocena-minus" class="przycisk przycisk-maly ocen-kciuk" type="button" aria-pressed="false" aria-label="Oceń pytanie negatywnie">👎</button>
         </p>
-        <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
         <div id="gra-wynik-odpowiedzi" class="gra-wynik-odpowiedzi" hidden>
           <p id="gra-odpowiedz-ocena" class="duzy"></p>
           <p id="gra-wyjasnienie" class="gra-wyjasnienie"></p>
@@ -634,8 +637,10 @@
           <li><strong>Paczki pytań, które wyślesz do wspólnego repozytorium</strong>
             — w pliku zostają pytania, stacje i nazwa miejscowości.</li>
           <li><strong>Okolica startu jako geohash5</strong> — przybliżenie
-            rzędu kilku kilometrów, nie punkt GPS. Współrzędne gracza, trasa,
-            pytania i paczka <strong>zostają na telefonie</strong>.</li>
+            rzędu kilku kilometrów, nie punkt GPS. Zapis GRY nie niesie pytań
+            ani paczki (pole <code>zestaw</code> jest puste — PROTOKÓŁ §9.6),
+            a współrzędne gracza i przebieg trasy
+            <strong>zostają na telefonie</strong>.</li>
           <li><strong>Profil pseudonimu</strong> (imię + PIN) leży na Drive,
             żeby nikt inny nie zagrał pod Twoim imieniem.
             PIN nie jest zapisywany na telefonie.</li>
@@ -705,7 +710,6 @@
     <section id="ekran-ranking" class="ekran panel-centralny" hidden role="dialog" aria-labelledby="tytul-ranking">
       <button id="przycisk-zamknij-ranking" class="warstwa-krzyzyk" type="button" aria-label="Zamknij ranking">✕</button>
       <h2 id="tytul-ranking">🏆 Ranking</h2>
-      <p id="ranking-status" class="podpowiedz" role="status">Ranking zbiera się ze wspólnego Drive.</p>
       <h3>Ranking Punktowy Graczy</h3>
       <table id="ranking-punkty" class="tabela-wynikow">
         <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Punkty</th></tr></thead>
@@ -716,12 +720,30 @@
         <thead><tr><th scope="col">#</th><th scope="col">Gracz</th><th scope="col">Trafienia</th></tr></thead>
         <tbody id="ranking-mistrzowie-wiersze"></tbody>
       </table>
+      <!-- Wiersz wyjaśnień (ilu graczy ma potwierdzony profil, od ilu zadanych
+           pytań liczą się Mistrzowie Zagadek) jest NA KOŃCU warstwy, pod obiema
+           tabelami — uwaga właściciela z testów, 2026-09-12 (aneks ADR 0039).
+           Najpierw dane, potem zdanie o tym, jak je czytać; ten sam element
+           niesie stany przejściowe („Pobieram ranking…”) i awarie. -->
+      <p id="ranking-status" class="podpowiedz" role="status">Ranking zbiera się ze wspólnego Drive.</p>
     </section>
 
+    <!-- Koniec gry (właściciel 2026-09-13, uwagi H1 i I; ADR 0043): MAŁA
+         warstwa na środku, otwierana ikoną ⚙ START GRY w trakcie gry. Przycisk
+         kończący odblokowuje dopiero wpisanie TAK (wielkość liter bez znaczenia). -->
+    <section id="ekran-koniec-gry" class="ekran panel-centralny" hidden role="dialog" aria-modal="false" aria-labelledby="tytul-koniec-gry">
+      <button id="przycisk-zamknij-koniec-gry" class="warstwa-krzyzyk" type="button" aria-label="Zamknij okno zakończenia gry">✕</button>
+      <h2 id="tytul-koniec-gry">Czy na pewno chcesz zakończyć aktualną grę?</h2>
+      <p id="koniec-gry-opis" class="podpowiedz">Wpisz w okienko poniżej <strong>TAK</strong>, a przycisk zakończenia gry się odblokuje.</p>
+      <input id="koniec-gry-potwierdzenie" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" aria-label="Wpisz TAK, aby zakończyć aktualną grę" aria-describedby="koniec-gry-opis">
+      <button id="przycisk-koniec-gry" class="przycisk" type="button" disabled>■ ZAKOŃCZ AKTUALNĄ GRĘ</button>
+    </section>
     <section id="ekran-informacje" class="ekran panel-centralny" hidden role="dialog" aria-labelledby="tytul-informacje">
       <button id="przycisk-zamknij-informacje" class="warstwa-krzyzyk" type="button" aria-label="Zamknij informacje">✕</button>
       <h2 id="tytul-informacje">Informacje</h2>
-      <div id="informacje-gra" hidden></div>
+      <!-- Węzła `#informacje-gra` NIE MA (właściciel 2026-09-13, uwaga H1;
+           ADR 0043): Informacje nie niosą już sterowania grą — koniec gry jest
+           za ikoną ⚙ START GRY, a w drodze nad mapą zostaje sam pasek. -->
       <div class="informacje-tresc">
       <ol id="siec-proby" class="siec-proby" aria-live="polite" aria-label="Próby pobrania sieci dróg" hidden></ol>
 
@@ -748,6 +770,11 @@
 
       </div>
     </section>
+    <!-- Odliczanie startu gry wieloosobowej (właściciel 2026-09-13, uwaga F;
+         ADR 0044): WIELKA cyfra na środku, tło PRZEZROCZYSTE — widać mapę, nie
+         kartę. Każdy krok (5-4-3-2-1-START) ma sygnał: dźwięk i wibrację, o ile
+         🔔 nie jest wyłączony (ADR 0041). Warstwa nie przechwytuje dotyku. -->
+    <div id="odliczanie" hidden role="status" aria-live="assertive" aria-atomic="true"><span id="odliczanie-cyfra"></span></div>
     <div id="przygaszenie-mapy" hidden aria-hidden="true"></div>
   </main>
 

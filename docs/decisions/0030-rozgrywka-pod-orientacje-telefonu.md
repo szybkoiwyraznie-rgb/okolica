@@ -79,3 +79,50 @@ starcie (np. `if (szerokosc < wysokosc)` w JS), rozsypałoby się przy obrocie.
   czerwony). Tło dostają tylko elementy, które go nie mają; kontrakt ADR 0030
   pinuje to wprost (LESSONS L35), bo audyt kontrastu liczy pary tokenów
   z palety i nie widzi, który selektor wygrał.
+
+## Aneks 2026-09-13 (m12-104) — ekran obraca się sam, a po obrocie ◎ klika się samo (uwaga D)
+
+Właściciel najpierw poprosił o zablokowanie ekranu w pionie z przełącznikiem
+poziomu w górnym menu (uwaga D z testów terenowych 2026-09-13), a następnie tę
+prośbę **wycofał**: „Ekran powinien się auto-przekręcać jak wcześniej bez żadnej
+dodatkowej ikonki toggle w menu. Jedyna zmiana do wersji dotychczasowej to
+prośba o 『autokliknięcie』 w opcję Centrowanie na mapie po każdym
+『przekręceniu』 ekranu."
+
+1. **Blokady orientacji nie ma i nie będzie.** Żadnego
+   `screen.orientation.lock()`, żadnego `orientation` w `manifest.json` i
+   żadnego przełącznika w menu. Punkty 1–6 decyzji działają bez zmian: CSS
+   przelicza układ na żywo, a mapa jest tłem obszaru gry.
+2. **Po obrocie aplikacja klika ◎ za gracza.** `resize` i `orientationchange`
+   idą jednym torem: `naZmianeRozmiaruOkna()` czeka `OPOZNIENIE_OBROTU_MS`
+   (250 ms), aż wymiary osiądą, potem `sprawdzObrotEkranu()` porównuje kierunek
+   (`kierunekEkranu` z czystego `app/orientacja.js`) z poprzednim i TYLKO przy
+   zmianie pion ↔ poziom woła na widocznej mapie `odswiez()` oraz
+   `centrujNaPozycji()` — dokładnie ten kod, który uruchamia przycisk ◎
+   (`mapa.js` → `naPrzycisk('centruj')`), więc przybliżenie zostaje takie, jakie
+   ustawił gracz, a kadr wraca na niego.
+3. **Zmiana rozmiaru bez obrotu widoku nie rusza.** Klawiatura, chowający się
+   pasek przeglądarki i okno na desktopie zmieniają wymiary, ale nie kierunek —
+   wtedy działa wyłącznie dotychczasowe `kazdaMapa((mapa) => mapa.odswiez())`.
+   Mapę prowadzi palec gracza (ADR 0011), więc aplikacja nie „poprawia" kadru,
+   który gracz ustawił celowo.
+4. **Jedna reguła widocznej mapy.** `nazwaWidocznejMapy()` (`stacje`/`prompt`/
+   `paczka` → mapa stacji, `gra` → mapa gry, reszta → mapa pozycji) karmi i
+   `body[data-mapa]` dla CSS (pkt 1), i wybór mapy do wycentrowania. Wcześniej
+   ta reguła była wpisana wprost w `odswiezWidocznoscPaneli()`.
+
+Dlaczego debounce i porównanie KIERUNKU, a nie pikseli: telefon podczas
+animacji obrotu melduje kilka wymiarów pośrednich (w tym niemal kwadratowe),
+iOS potrafi zgłosić obrót zdarzeniem `orientationchange` bez `resize` w tej samej
+chwili, a `resize` bywa wcześniejszy niż nowy układ. Czekamy, aż wymiary
+osiądą, i reagujemy raz — na zmianę kierunku.
+
+Brak danych to brak danych (LESSONS L10): bez wiarygodnych wymiarów nie ma
+kierunku, a bez dwóch różnych kierunków nie ma obrotu, więc nie ma kliknięcia.
+Brak `screen.orientation` (iOS Safari) niczego nie psuje — zostaje `resize`.
+
+**Wdrożenie:** `app/orientacja.js` (czysty) i `test/orientacja.test.js`; warstwa
+DOM w `app/app.js` (`rozmiarOkna`, `naZmianeRozmiaruOkna`, `sprawdzObrotEkranu`,
+`nazwaWidocznejMapy`, nasłuch `orientationchange`); piny obecności i
+nieobecności w `test/kontrakt.test.js` („kontrakt ADR 0030 aneks"); krok
+weryfikacji terenowej w `docs/WORKFLOW.md` §4.1 pkt 7.

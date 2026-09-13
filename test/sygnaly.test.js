@@ -7,8 +7,8 @@ import assert from 'node:assert/strict';
 
 import { KLUCZ_SYGNALOW, SYGNALY, czySygnalyWlaczone, planSygnalu } from '../app/sygnaly.js';
 
-test('sygnały: komplet zdarzeń gry ma plan (dotarcie, start odcinka, oceny)', () => {
-  for (const zdarzenie of ['dotarcie', 'startOdcinka', 'poprawna', 'bledna']) {
+test('sygnały: komplet zdarzeń gry ma plan (dotarcie, start odcinka, oceny, odliczanie)', () => {
+  for (const zdarzenie of ['dotarcie', 'startOdcinka', 'poprawna', 'bledna', 'odliczanie', 'startGry']) {
     const plan = planSygnalu(zdarzenie);
     assert.ok(plan, `brak planu dla ${zdarzenie}`);
     assert.ok(Array.isArray(plan.wibracjaMs) && plan.wibracjaMs.length > 0, `${zdarzenie}: wzorzec wibracji`);
@@ -18,13 +18,15 @@ test('sygnały: komplet zdarzeń gry ma plan (dotarcie, start odcinka, oceny)', 
 });
 
 test('sygnały: melodie rozróżnialne kierunkiem — dobrze w górę, źle w dół, dotarcie w górę', () => {
+  assert.ok(SYGNALY.startGry.dzwiek.at(-1).czHz > SYGNALY.startGry.dzwiek[0].czHz, 'START: melodia rosnąca (ADR 0044)');
+  assert.equal(SYGNALY.odliczanie.dzwiek.length, 1, 'tyk odliczania to jedna nuta — nie myli się z dojściem');
   assert.ok(SYGNALY.poprawna.dzwiek[0].czHz > SYGNALY.bledna.dzwiek[0].czHz, 'dobrze wyżej niż źle');
   assert.ok(SYGNALY.bledna.dzwiek.at(-1).czHz < SYGNALY.bledna.dzwiek[0].czHz, 'źle: melodia opadająca');
   assert.ok(SYGNALY.dotarcie.dzwiek.at(-1).czHz > SYGNALY.dotarcie.dzwiek[0].czHz, 'dotarcie: melodia rosnąca');
 });
 
 test('sygnały: wyłączone = null dla każdego zdarzenia; nieznane zdarzenie = null', () => {
-  for (const zdarzenie of ['dotarcie', 'poprawna', 'bledna', 'startOdcinka']) {
+  for (const zdarzenie of ['dotarcie', 'poprawna', 'bledna', 'startOdcinka', 'odliczanie', 'startGry']) {
     assert.equal(planSygnalu(zdarzenie, { wlaczone: false }), null, `${zdarzenie} bez planu po wyłączeniu`);
   }
   assert.equal(planSygnalu('nieznane'), null);

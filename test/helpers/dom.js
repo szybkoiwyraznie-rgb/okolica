@@ -12,6 +12,7 @@
  * ani jednej asercji, ani skutku ubocznego na poziomie modułu. Wszystko dzieje
  * się dopiero w `zainstalujDom()` (ARCHITECTURE „Testowanie").
  */
+import { after } from 'node:test';
 import { projektuj } from '../../app/geo.js';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -28,6 +29,53 @@ export const KATALOG = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
 const PRAWDZIWY_FETCH = typeof globalThis.fetch === 'function' ? globalThis.fetch : null;
 /** Aktywna hermetyczna sieć testów: `{ wywolania: string[] }`, eksponowana jako `dom.siec`. */
 let hermetycznaSiec = null;
+
+/**
+ * Żywe interwały instancji testowych (ADR 0040). Aplikacja ma `setInterval`
+ * (watchdog ciszy GPS, odświeżanie gry sieciowej) i od 2026-09-13 NIE zwalnia ich
+ * przy zejściu karty w tło — bez systemu pauzy nie ma naturalnego sprzątania,
+ * a żywy zegar po teście (a) zawiesza pętlę zdarzeń `node --test`, bo proces
+ * czeka na opróżnienie, i (b) strzela w atrapę geolokalizacji NASTĘPNEJ
+ * instancji, bo `navigator` jest globalny. Dlatego atrapa liczy interwały:
+ * każda instalacja sprząta poprzednie, hak `after` domyka plik testowy, a test
+ * może posprzątać sam przez `dom.posprzataj()`.
+ */
+const PRAWDZIWE_ZEGARY = {
+  setInterval: globalThis.setInterval.bind(globalThis),
+  clearInterval: globalThis.clearInterval.bind(globalThis),
+};
+let zyweIntervale = new Set();
+let zegaryPrzechwycone = false;
+
+/** Zdejmuje interwały WSZYSTKICH instancji tej atrapy (też w `finally` testu). */
+export function posprzatajInterwaly() {
+  for (const id of zyweIntervale) PRAWDZIWE_ZEGARY.clearInterval(id);
+  zyweIntervale = new Set();
+}
+
+// Hak MUSI być zarejestrowany przy ładowaniu modułu, nie przy pierwszym
+// `zainstalujDom()`: część plików (ranking-ui, zestawy-ui) woła atrapę W ŚRODKU
+// testu, a `after()` zarejestrowane wtedy nie jest hakiem korzenia i nie
+// sprząta. Skutek był taki, że żywy `setInterval` z `app.js` (watchdog
+// bezczynności, ADR 0040 pkt 5) trzymał proces po zielonych testach bez końca.
+after(posprzatajInterwaly); // koniec pliku testowego = koniec żywych zegarów
+
+function przechwycZegary() {
+  if (zegaryPrzechwycone) return;
+  zegaryPrzechwycone = true;
+  globalThis.setInterval = (...args) => {
+    const id = PRAWDZIWE_ZEGARY.setInterval(...args);
+    // Zabezpieczenie: zegar testowy nie może trzymać procesu przy życiu, nawet
+    // gdyby sprzątanie nie zdążyło. Tyka dalej, dopóki testy coś robią.
+    if (typeof id?.unref === 'function') id.unref();
+    zyweIntervale.add(id);
+    return id;
+  };
+  globalThis.clearInterval = (id) => {
+    zyweIntervale.delete(id);
+    return PRAWDZIWE_ZEGARY.clearInterval(id);
+  };
+}
 
 /**
  * Atrapa nie parsuje HTML-a, więc stan początkowy `hidden` bierzemy z pliku:
@@ -160,6 +208,8 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
  * @returns {object} uchwyty: `pobierz`, `elementy`, `pamiec`, `wyslijZdarzenie*`, `ustaw*`
  */
 export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geolocation = undefined, pamiec = new Map(), bezGracza = false } = {}) {
+  przechwycZegary();
+  posprzatajInterwaly(); // poprzednia instancja nie może strzelać w tę atrapę
   // Tożsamość jest bramą ekranu 1 (ADR 0026 aneks): bez gracza na liście nie da
   // się przejść dalej, a testy nawigacji, mapy i paczek nie są o tożsamości.
   // Telefon w teście ma więc zapamiętanego, potwierdzonego gracza — jak po
@@ -279,7 +329,17 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     clearTimeout: (...args) => clearTimeout(...args),
   };
 
-  const navigatorStub = { clipboard: undefined, geolocation, userAgent: 'node-test', language: 'pl-PL' };
+  /**
+   * Wzorce wibracji wywołane przez aplikację (ADR 0041: sygnał = dźwięk I
+   * wibracja). Dźwięku atrapa nie gra (brak AudioContext w Node), więc to
+   * wibracje są w testach dowodem, że sygnał w ogóle się odezwał — i że milczy,
+   * gdy 🔔 jest wyłączone.
+   */
+  const wibracje = [];
+  const navigatorStub = {
+    clipboard: undefined, geolocation, userAgent: 'node-test', language: 'pl-PL',
+    vibrate: (wzorzec) => { wibracje.push(wzorzec); return true; },
+  };
 
   // Hermetyczna sieć (zgłoszenie właściciela 2026-09-11): w katalogu
   // okolica-gry-zakonczone na Drive pojawiały się dziesiątki plików
@@ -325,6 +385,8 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
   return {
     html,
     gps: gpsDom,
+    /** Sprzątanie żywych zegarów tej instancji (wołać w `finally` testu z watchdogiem). */
+    posprzataj: posprzatajInterwaly,
     /** Rzeczywiste wejście: fix GPS lub tap w mapę (?test=true), bez pól ręcznych. */
     ustawPozycje(lat, lon) {
       if (!documentStub.body.classList.contains('tryb-testowy')) {
@@ -349,6 +411,8 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     document: documentStub,
     window: windowStub,
     navigator: navigatorStub,
+    /** Wzorce `navigator.vibrate` tej instancji (dowód sygnału — ADR 0041). */
+    wibracje,
     zdarzeniaDokumentu,
     zdarzeniaOkna,
     /** Odpala nasłuch dokumentu (np. `visibilitychange`). */
@@ -378,6 +442,18 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
       };
       for (const fn of el.zdarzenia.paste ?? []) fn(zdarzenie);
       return (el.zdarzenia.paste ?? []).length;
+    },
+    /**
+     * Wpisanie tekstu w pole: ustawia wartość i odpala `input` — dokładnie to,
+     * co robi klawiatura (albo wklejenie, po którym przeglądarka też wysyła
+     * `input`). Potrzebne od ADR 0043: warstwa końca gry odblokowuje przycisk
+     * dopiero po wpisaniu TAK.
+     */
+    wpisz(id, tekst) {
+      const el = pobierz(id);
+      el.value = tekst;
+      for (const fn of el.zdarzenia.input ?? []) fn({ type: 'input', target: el, currentTarget: el });
+      return (el.zdarzenia.input ?? []).length;
     },
     /** Klik w element (wszystkie nasłuchy `click`). */
     kliknij(id) {

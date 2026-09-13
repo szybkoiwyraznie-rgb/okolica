@@ -238,7 +238,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .przycisk-ikona:active { transform: translateY(1px); }
 .przycisk-ikona[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
 .przycisk-ikona:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
-.przycisk-ikona[disabled] { opacity: 0.45; cursor: not-allowed; } /* J: ⚙ START GRY nieaktywne w trakcie gry */
+/* Reguła ogólna dla ikon z belki. ⚙ START GRY NIE JEST już wyszarzana w trakcie
+   gry (zgłoszenie J odwrócone uwagą I, ADR 0043) — ikona otwiera wtedy warstwę
+   końca gry, więc `disabled` zostaje wyłącznie jako zabezpieczenie stylu. */
+.przycisk-ikona[disabled] { opacity: 0.45; cursor: not-allowed; }
 #przycisk-setup { font-size: 14px; letter-spacing: 0.3px; }
 .przycisk[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
 
@@ -554,6 +557,20 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   gap: 10px;
   margin: 12px 0;
 }
+/* Uwaga właściciela z testów (2026-09-13, A): pytanie i warianty w zwijanym
+   elemencie. Summary jest celem dotyku (≥ var(--cel)) i jedyną rzeczą z panelu
+   pytania, która zostaje na wierzchu po odsłonięciu wyniku — poza łapkami. */
+#gra-pytanie-detale > summary {
+  min-height: var(--cel);
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  cursor: pointer;
+}
+#gra-pytanie-detale > summary::marker { color: var(--tekst-slaby); }
+#gra-pytanie-detale[open] > summary { margin-bottom: 8px; }
+.gra-odpowiedzi-lista { margin: 0; padding-left: 22px; }
+.gra-odpowiedzi-lista li { margin: 6px 0; }
 .przycisk-odpowiedz {
   min-height: var(--cel);
   padding: 12px 14px;
@@ -616,11 +633,8 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   color: var(--tekst);
 }
 
-/* M6/R6: baner wznowienia gry na ekranie ustawień — wyróżniony, bo to decyzja. */
-.karta-wznowienie {
-  border-color: var(--ostrzezenie);
-  border-width: 2px;
-}
+/* `.karta-wznowienie` USUNIĘTA (uwagi J i K, ADR 0045): banera wznowienia gry
+   nie ma — otwarcie aplikacji wraca do zapamiętanej gry samo. */
 
 /* M7: pełne podsumowanie — karta zwycięzcy, medal, statystyki, szczegóły.
    Kryterium M7: czytelne w słońcu na 360 px — duże liczby, tabular-nums,
@@ -817,6 +831,24 @@ body[data-mapa='gra'] #mapa-gra { visibility: visible; }
   box-shadow: 0 12px 40px rgb(0 0 0 / .3); display: block;
 }
 .panel-centralny[hidden], #przygaszenie-mapy[hidden] { display: none; }
+
+/* Odliczanie startu gry wieloosobowej (właściciel 2026-09-13, uwaga F; ADR 0044):
+   wielka cyfra NA ŚRODKU i tło PRZEZROCZYSTE — gracz widzi mapę, a nie kartę,
+   więc warstwa nie jest `.panel-centralny` (tamten ma tło, ramkę i cień).
+   Czytelność w słońcu daje obrys cieniem, nie tło (ADR 0011), a `pointer-events:
+   none` zostawia grę pod spodem żywą. `#odliczanie[hidden]` musi gasić `display`
+   jawnie — `display: grid` z identyfikatora wygrałby z globalnym `[hidden]`. */
+#odliczanie {
+  position: fixed; inset: 0; z-index: 40;
+  display: grid; place-items: center;
+  background: transparent; pointer-events: none;
+}
+#odliczanie[hidden] { display: none; }
+#odliczanie-cyfra {
+  font-size: clamp(96px, 42vw, 220px); line-height: 1; font-weight: 700;
+  color: var(--tekst); font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+  text-shadow: 0 2px 20px rgb(0 0 0 / .6), 0 0 6px rgb(0 0 0 / .5);
+}
 .panel-centralny > .warstwa-karta, .panel-centralny > .warstwa-start-karta {
   position: static; width: auto; max-width: none; max-height: none;
   margin: 0; padding: 0; overflow: visible; border: 0; box-shadow: none;
@@ -827,11 +859,17 @@ body[data-mapa='gra'] #mapa-gra { visibility: visible; }
 #ekran-informacje, #ekran-ranking { z-index: 20; }
 body.informacje-otwarte .panel-centralny:not(#ekran-informacje) { visibility: hidden; }
 body.ranking-otwarte .panel-centralny:not(#ekran-ranking) { visibility: hidden; }
+/* Warstwa końca gry (ADR 0043) leży nad obiema — i też wygasza resztę, żeby na
+   ekranie była JEDNA karta do decyzji. */
+body.koniec-gry-otwarte .panel-centralny:not(#ekran-koniec-gry) { visibility: hidden; }
 /* Tabela rankingu na 360 px: nagłówek sekcji mniejszy niż tytuł warstwy, żeby
    dwie tabele zmieściły się w jednym ekranie bez przewijania w bok. */
 #ekran-ranking h3 { margin: 14px 0 2px; font-size: 17px; }
 #ekran-ranking .tabela-wynikow td, #ekran-ranking .tabela-wynikow th { padding: 8px 6px; }
 #ekran-ranking .tabela-wynikow td:first-child, #ekran-ranking .tabela-wynikow th:first-child { width: 2ch; }
+/* Wiersz wyjaśnień jest POD tabelami (uwaga właściciela z testów, 2026-09-12) —
+   potrzebuje oddechu od tabeli, nie domyślnych 6 px z `.podpowiedz`. */
+#ekran-ranking #ranking-status { margin-top: 14px; }
 body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
 #przycisk-podejrzyj-mape {
   position: fixed; z-index: 40; right: max(12px, env(safe-area-inset-right));
@@ -845,6 +883,25 @@ body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
 #przycisk-podejrzyj-mape:focus-visible { outline: 3px solid var(--tekst); outline-offset: 3px; }
 .informacje-tresc { display: grid; gap: 12px; }
 .informacje-tresc .separator { display: none; }
+/* Właściciel 2026-09-13 (uwaga H2, ADR 0042): CAŁA treść Informacji jedną, małą
+   czcionką Courier New — ten sam krój i ten sam rozmiar wszędzie, bez
+   wyróżniania nagłówka wielkością ani pogrubieniem. Rozmiar celowo mały
+   (13 px/1,5): to ekran techniczny (status, protokół, wersja, kontakt), nie
+   treść do czytania w słońcu. Krzyżyk zamknięcia zostaje przy swoim rozmiarze,
+   bo to cel dotykowy, nie treść (ADR 0011: ≥ --cel = 44 px zostaje z
+   `min-height`/`padding`, których ten zapis nie rusza). */
+#ekran-informacje,
+#ekran-informacje h2, #ekran-informacje h3, #ekran-informacje p,
+#ekran-informacje li, #ekran-informacje span, #ekran-informacje a,
+#ekran-informacje strong, #ekran-informacje code, #ekran-informacje .podpowiedz,
+#ekran-informacje button:not(.warstwa-krzyzyk) {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+#ekran-informacje h2 { margin: 4px 0 10px; }
 /* Kontakt i zgłaszanie błędów mapy (zalecenia polityki kafelków OSM).
    Cel dotykowy ≥ --cel (44 px) jak reszta interaktywnych elementów, a długi
    adres łamiemy `anywhere`, żeby nie rozepchał panelu 360 px (wzorzec:
@@ -899,8 +956,21 @@ body.gra-w-drodze #ekran-gra:not([hidden]) {
 body.gra-w-drodze #przycisk-podejrzyj-mape { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-atrybucja { bottom: calc(36px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-#informacje-gra { margin-bottom: 16px; }
-#informacje-gra h2 { padding-right: 48px; }
+/* Węzła `#informacje-gra` i przycisku „■ Zakończ grę" NIE MA (właściciel
+   2026-09-13, uwagi H1 i I — ADR 0043): Informacje nie niosą sterowania grą,
+   a grę kończy warstwa `#ekran-koniec-gry` za ikoną ⚙ START GRY. Umarły więc
+   reguły `#informacje-gra` i `#informacje-gra h2` (LESSONS L31: usuwanie
+   i grep w tym samym commitcie). */
+
+/* Warstwa końca gry (ADR 0043): MAŁA i na środku — nie zasłania gry bardziej,
+   niż musi, a leży NAD Informacjami i rankingiem (tamte mają z-index 20).
+   Pole i przycisk na pełną szerokość karty, cele dotykowe ≥ --cel z `.przycisk`
+   i z reguł `input` (ADR 0011). */
+#ekran-koniec-gry { z-index: 30; max-width: 340px; }
+#ekran-koniec-gry h2 { font-size: 17px; margin: 4px 0 8px; }
+#ekran-koniec-gry .podpowiedz { margin: 0 0 12px; }
+#koniec-gry-potwierdzenie { text-transform: uppercase; letter-spacing: .08em; }
+#ekran-koniec-gry .przycisk { width: 100%; }
 
 /* „Zobacz więcej/mniej paczek" pod listą propozycji (właściciel 2026-09-11):
    pełna szerokość karty, cel dotykowy jak wiersze listy (ADR 0011). */
