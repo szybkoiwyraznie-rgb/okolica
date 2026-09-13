@@ -1146,3 +1146,110 @@ właściwe urządzenie i `await oddech()`, ewentualnie helper `przepompuj`).
 Zapis przy pożegnaniu (`pagehide`, `visibilitychange → hidden`) testuje się przez
 usunięcie snapshotu z pamięci atrapy i sprawdzenie, że zdarzenie go odtworzyło —
 inaczej asercja przechodzi dzięki zapisowi po tranzycji, a nie dzięki nasłuchowi.
+
+## L64 (2026-09-13) — usuwasz przycisk: grepuj TABELE KOMUNIKATÓW w modułach, nie tylko HTML i dokumenty
+
+**Objaw:** audyt scalonego PR #19 (sesja 2026-09-13b) znalazł osiem zdań, które
+gracz czyta w stanie awaryjnym i które odsyłają do kontrolek usuniętych kilka fal
+wcześniej. Siedem z nich dotyczy fali ADR 0043 (m12-107/110): „…zakończ grę
+przyciskiem „■ Zakończ grę”” w `KODY_POZYCJI` **P03**, **P04**, **P08**,
+w komunikacie `stanDojscia` o brakujących współrzędnych stacji (**P06**) i w
+statusie `onBlad` watchera w `app.js`; do tego „Zakończ grę albo wgraj paczkę
+ponownie **z pliku**” (wczytywania plikiem nie ma od 2026-09-07, ADR 0006 aneks 3)
+i **R19** „zapisz go przyciskiem „Zapisz nowy”” (bramka tożsamości to imię + PIN
+i jedno wołanie `profil-ustaw`, ADR 0026). Brama: 760/760 zielonych.
+
+**Przyczyna:** L58 pkt 1 każe po fali usuwania grepać nośniki żywe i wymienia je
+jako pliki (`index.html`, `app/*.js`, `sw.js`, dokumenty, `.gs`) — grep szedł więc
+po etykietach i identyfikatorach węzłów, a martwe zdania siedziały w **tabelach
+komunikatów** (`KODY_POZYCJI`, `KODY_WIELOOSOBOWE`) i w gałęziach błędów
+(`status(...)`, `textContent =`). Tych tekstów nie ma w `index.html`, więc
+przegląd HTML ich nie łapie, a strażnik dryfu nie dostał ani jednej frazy z fali
+ADR 0043 (miał 30 fraz z fal H/I/J i ADR 0034–0045). Dodatkowo audyt PR #18
+(sesja 2026-09-12K) zapisał te komunikaty jako POPRAWNE — „odsyłają do
+„■ Zakończ grę” (ADR 0029 aneks m12-94). OK.” — fala, która przycisk usunęła,
+nie wróciła do zdań na niego wskazujących (L27).
+
+**Naprawa (m12-111):** wszystkie zdania przestawione na prawdziwą drogę
+(⚙ START GRY → wpisz TAK → „■ ZAKOŃCZ AKTUALNĄ GRĘ”), R19 na „wpisz imię i PIN
+jeszcze raz”, a zdanie o uszkodzonym kontenerze na repozytorium/wklejenie
+odpowiedzi modelu. Lista w aneksie 2026-09-13b do ADR 0043 (L63: lista ujść
+należy do ADR-a, nie do handoffu).
+
+**Reguła:**
+1. Nośniki TEKSTU to nie tylko węzły DOM. Przy usuwaniu przycisku albo akcji
+   przegrepuj: tabele kodów w modułach (`KODY_POZYCJI`, `KODY_WIELOOSOBOWE`,
+   `KODY_TRWALOSCI`, kody `G**`/`E**`/`T**`/`R**`), zdania `status(...)`
+   i przypisania `textContent` w gałęziach błędów, oraz lustro mostu
+   (`docs/setup/*.gs` — most też mówi do gracza kodami).
+2. Każdą martwą frazę wpisz w tym samym commitcie do
+   `test/dryf-dokumentow.test.js` jako `{ fraza, nosniki, powod }`. Fraza ma być
+   DOSŁOWNYM kawałkiem zdania dla gracza („zakończ grę przyciskiem”, „wgraj
+   paczkę ponownie z pliku”), nie samą etykietą przycisku: etykietę celowo
+   cytują nagrobki w komentarzach i w ADR-ach (L31), więc strażnik na etykiecie
+   gasiłby własny kod.
+3. Do zakazu dołóż niezmiennik POZYTYWNY: kontrakt, który czyta wiersze KODU
+   (helper `wierszeKodu(tekst)` w `test/kontrakt.test.js` wycina komentarze
+   blokowe i liniowe) i wymaga, żeby każde zdanie o danej akcji nazywało
+   kontrolkę, która istnieje — „zdania o końcu gry zawierają ⚙ START GRY”.
+4. Sprawdź zdanie w stanie, w którym gracz je czyta: komunikat awaryjny musi
+   podać drogę działającą W TYM stanie. W drodze panel gry jest schowany, więc
+   zdanie o dojściu potrzebuje drugiego nośnika (`status()` → `#status`
+   z `aria-live` w ⓘ Informacjach, ADR 0042).
+
+**Testy, które pilnują:** `test/dryf-dokumentow.test.js` (trzy nowe frazy fali
+ADR 0043 + poprawiony `powod` wpisu o pomijaniu stacji, który sam cytował martwy
+przycisk), `test/kontrakt.test.js` („zdania dla gracza o końcu gry nazywają ikonę
+⚙ START GRY” + pin drugiego nośnika), `test/pozycja.test.js` (zakaz frazy
+i niezmiennik ⚙/TAK dla kodów P i dla `stanDojscia`), `test/wieloosobowa.test.js`
+(R19 bez „Zapisz nowy”, z PIN-em).
+
+## L65 (2026-09-13) — `hidden` na przodku gasi potomków: atrapa DOM tego nie widzi, przeglądarka tak
+
+**Objaw:** audyt PR #19 (sesja 2026-09-13b): w stanie „w drodze” przycisk
+„▶ Symuluj dojście (tryb testowy)” — jedyna droga domknięcia odcinka bez GPS,
+obiecana przez WORKFLOW §3 i §4.3 pkt 3, ARCHITECTURE i ADR 0036 aneks m12-102
+pkt 2 — nie był w przeglądarce osiągalny. Pomiar headless Chromium 153
+(390×844, ENVIRONMENT §4.1): `#przycisk-symulacja-gra`, `#gra-panel-odcinek`,
+`#gra-dystans-odcinka` i `#gra-komunikat` mają `getBoundingClientRect()` **0×0**
+i `offsetParent === null`, a `#gra-pasek` (poza panelem) renderuje się normalnie.
+Brama: 763 testy zielone, w tym 20 wywołań helpera `dojdzSymulacja()`, który
+klika ten przycisk.
+
+**Przyczyna:** `odswiezPasekDrogi()` ustawia `$('gra-sterowanie').hidden = droga`,
+a panel fazy B jest POTOMKIEM `#gra-sterowanie`; `styles.css` ma twardą regułę
+`[hidden] { display: none !important; }`, więc znika całe poddrzewo. W tej samej
+tranzycji `renderujGre` odsłania przycisk (`hidden = !(STAN.trybTestowy && faza
+=== odcinek)`) — kod sam sobie przeczy, ale widać to dopiero w przeglądarce:
+atrapa DOM (`test/helpers/dom.js`) nie modeluje kaskady, dziedziczenia ani
+geometrii, a `kliknij()` woła handler bez pytania o renderowanie (rodzina L13:
+„schowany panel ma rozmiar zerowy”).
+
+**Naprawa (m12-112):** `$('gra-sterowanie').hidden = droga && !STAN.trybTestowy;`
+— w terenie bez zmian (nad mapą zostaje sam pasek, ADR 0043 pkt 1), a w trybie
+testowym panel fazy B robi to, co obiecuje ADR 0036 aneks m12-102 pkt 2. Pomiar
+po poprawce: panel 370×124, przycisk symulacji **328×45** (cel ≥ 44 px,
+ADR 0011), duży dystans 340×29, komunikat 370×41. Aneks 2026-09-13b do ADR 0036.
+
+**Reguła:**
+1. Zmiana widoczności PRZODKA (`hidden`, `display`, `visibility`, `inert`, klasy
+   na `body` typu `body.gra-w-drodze`) to zmiana widoczności całego poddrzewa.
+   Wypisz potomków, którzy są celami akcji (przyciski, pola, linki), i sprawdź,
+   czy któryś nie jest jedyną drogą do funkcji (L63) albo jedynym nośnikiem
+   komunikatu (L6).
+2. Zielony test w atrapie DOM NIE jest dowodem, że gracz to zobaczy: atrapa nie
+   ma kaskady, geometrii ani `offsetParent`. Asercja `hidden === false` mówi
+   o atrybucie, nie o renderowaniu.
+3. Taką zmianę mierz w prawdziwej przeglądarce (ENVIRONMENT §4.1 — headless
+   Chromium z npm): `getBoundingClientRect()`, `offsetParent`,
+   `document.elementFromPoint()` dla celu dotykowego. Próba kosztuje kilkanaście
+   sekund, a rozstrzyga to, czego atrapa nie widzi; wynik (tabelka wymiarów)
+   wpisz do `docs/PROJECT_HISTORY.md` i do ADR-a.
+4. Zachowanie zależne od trybu pinuj DWOMA testami: jednym w trybie testowym
+   (`?tryb=test`), drugim terenowym (atrapa `navigator.geolocation`,
+   `naEkranPozycji(...)` + `wyslijFix`). Jeden test w jednym trybie przypina
+   zachowanie, którego w drugim trybie nie ma — tak właśnie asercja „panel
+   schowany w drodze” żyła w teście chodzącym w `?tryb=test`.
+5. Kafelki i sieć w sandboxie nie działają (L3), ale do pomiaru widoczności nie
+   są potrzebne: wystarczy stan DOM ustawiony tymi samymi zdaniami, którymi
+   ustawia je aplikacja.
