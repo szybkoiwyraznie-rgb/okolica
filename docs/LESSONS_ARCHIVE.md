@@ -1318,3 +1318,78 @@ nośnikach żywych → zero trafień.
    „poprzednia gra"), a frazę wpisuje się w strażniku raz, w `MARTWE_FRAZY`,
    z listą nośników. Testy nie są nośnikiem fraz martwych (strażnik sprawdza
    `DOKUMENTY` + `UI`), więc kontrakt odwrócony może nazwać usuniętą rzecz.
+
+## L67 (2026-09-13) — utrwalona kolejka zdarzeń: wypchnięcie przed odczytem stanu, ponowienie bezpieczne dzięki mostowi, piny żądań zawężone do celu
+
+Fala: trzecia fala zgłoszeń właściciela 2026-09-13 (m12-114, PR #20, ADR 0019
+aneks 2026-09-13d, ADR 0011 aneks 2026-09-13d, ADR 0017 aneks 2026-09-13d).
+
+### Objaw 1 — odpowiedź bez zasięgu ginęła po odświeżeniu telefonu
+
+Właściciel: „napraw w tej sesji" (odrzucone: zostawienie ograniczenia
+w dokumentacji i przeniesienie do osobnej fali). Aneks 2026-09-13c ADR 0019
+kończył się znanym ograniczeniem: zdarzenie niedostarczone czekało w kolejce
+`app/sync.js` TYLKO w pamięci operacyjnej, więc reload je gubił. Most nie
+poznawał odpowiedzi, stacja zostawała otwarta i gracz przechodził ją jeszcze
+raz — a gra sieciowa nie ma lokalnego snapshotu (`zapiszGre` wychodzi przy
+`STAN.multi`), więc nie było drugiej kopii.
+
+### Objaw 2 — powrót do gry budował rozgrywkę ze stacją właśnie domkniętą
+
+Po utrwaleniu kolejki (`okolica:multi-kolejka`, schemat `zdarzenia-kolejka/1`)
+`przywrocGreMulti` pobierał stan gry ZANIM zaległe zdarzenia doszły na most:
+most zwracał grę ze stacją 1 otwartą, telefon budował z niej rozgrywkę, a chwilę
+później te same zdarzenia ją domykały — gracz widział cel, którego już nie ma
+(i przechodził stację drugi raz, tym razem z odmową mostu).
+
+### Przyczyna
+
+Stan gry na telefonie jest POCHODNĄ odpowiedzi mostu. Kolejka zdarzeń, która
+przeżyła restart aplikacji, jest częścią tego stanu — musi być wypchnięta przed
+odczytem, inaczej odczyt jest nieaktualny w chwili narodzin. Wcześniej kolejka
+żyła tylko w RAM, więc problem nie mógł się ujawnić: po restarcie nie było czego
+wypychać.
+
+### Naprawa
+
+1. `app/wieloosobowa.js`: `walidujKolejkeZdarzen(surowy, { kod })`,
+   `zapisKolejkiZdarzen(zdarzenia, { kod, idGry })`,
+   `LIMIT_KOLEJKI_ZDARZEN` = 50 (wzór: kolejka wyniku hot-seat i kolejka ocen —
+   śmieciowy albo CUDZY zapis daje pustą listę, nigdy wyjątku).
+2. `app/sync.js`: trzy wstrzyknięte uchwyty (`wczytajKolejke`, `zapiszKolejke`,
+   `limitKolejki`), startowa kolejka z pamięci, `utrwalKolejke()` przy KAŻDYM
+   ruchu (push przy awarii sieci, shift po wypchnięciu, shift po odmowie mostu),
+   jawna odmowa przy pełnej kolejce. Moduł nadal nic nie wie o `localStorage`.
+3. `app/app.js`: `dostarczZalegleZdarzeniaMulti(sesja)` wołane w
+   `przywrocGreMulti` PRZED `pobierzGetMulti`; awaria sieci zostawia resztę
+   w pamięci (`break` + `slice`), odmowa mostu kasuje zdarzenie (`continue`);
+   klucz idzie w kosz razem z sesją (`usunSesjeMulti`).
+4. Warunek bezpieczeństwa ponowienia jest po stronie MOSTU: `przyjmijZdarzenie`
+   odrzuca drugą odpowiedź tego gracza do tej stacji, więc częściowe
+   dostarczenie nie tworzy duplikatu. Zapisane w ADR jako warunek, nie zbieg
+   okoliczności — gdyby reguła zniknęła, utrwalona kolejka staje się groźna.
+
+### Objaw 3 — pin „dokładnie jedna powtórka" padł po dodaniu żądań w tle
+
+Test zimnego startu mostu (2026-09-12) liczył `atrap.wywolania.length === 2`.
+Wstępne pobieranie paczek (ADR 0017 aneks 2026-09-13d) dokłada żądanie PLIKU
+paczki, więc lista miała 3 pozycje — pin mierzył wszystko, co kiedykolwiek
+wyszło do sieci, a nie powtórki żądania indeksu.
+
+### Naprawa 3
+
+Pin zawężony do celu: `wywolania.filter((u) => u.includes('indeks.json')).length
+=== 2`. Zasada: pin liczący żądania nazywa swój cel (adres albo akcja), a przy
+dokładaniu żądań w tle trzeba przegrepać testy pod kątem `wywolania.length` —
+to jedyny sposób, żeby znaleźć piny, które mierzyły „nic więcej się nie dzieje".
+
+### Testy (767/767, +9 w tej fali)
+
+- Jednostkowe `app/sync.js`: utrwalanie przy push/shift, start nowej instancji
+  z `wczytajKolejke` (FIFO przy pierwszym kroku), limit z jawną odmową.
+- Jednostkowe `app/wieloosobowa.js`: round-trip przez JSON, cudzy `kod`, śmieci.
+- End-to-end (`test/wieloosobowa-ui.test.js`): odpowiedź bez zasięgu →
+  odświeżenie → zdarzenia na moście PRZED stanem gry, pamięć czysta, cel
+  „stacja 2 z 3" (nie powtórka stacji 1), punkt na moście; oraz odświeżenie
+  WCIĄŻ bez sieci — nic nie wychodzi, nic nie jest kasowane, a po powrocie sieci
+  zdarzenia dochodzą raz.

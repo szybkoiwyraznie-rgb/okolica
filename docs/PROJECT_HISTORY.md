@@ -4655,3 +4655,147 @@ Otwarte:
    następna duża fala dokumentowa zaczyna od mierzenia (`npm run budzet`) i ma
    gotowy mechanizm: archiwum ADR-ów wycofanych (L62) albo archiwum treści
    historycznej ADR-a żyjącego (ta sesja, L66 pkt 3–4).
+
+## Sesja 2026-09-13d — trzecia fala zgłoszeń właściciela: utrwalona kolejka zdarzeń, widoczne czekanie, paczki w tle (gałąź `arena/01a09b63-okolica`, PR #20)
+
+Wersja aplikacji **m12-113 → m12-114** (cache-busting całej fali: `?v=`
+w `index.html`, importy we wszystkich `app/*.js`, `WERSJA_SW` w `sw.js`).
+
+### 1. Zgłoszenia i decyzje
+
+Właściciel po domknięciu fali N–S zgłosił trzy rzeczy i od razu wybrał sposób
+naprawy (bez odsyłania do następnej fali):
+
+| # | Zgłoszenie | Decyzja właściciela |
+|---|---|---|
+| T1 | odpowiedź udzielona w grze sieciowej bez zasięgu ginie po odświeżeniu telefonu (kolejka `app/sync.js` żyła tylko w RAM) | „Napraw w tej sesji" — odrzucone zarówno zostawienie ograniczenia w dokumentacji, jak i przeniesienie do osobnej fali |
+| T2 | operacje sieciowe każą czekać, a ekran tego nie pokazuje | sygnał ma być widoczny, najchętniej pulsujący; wskazane dwa miejsca: „Sprawdzam repozytorium paczek dla tej okolicy…" i „Pobieram dane sieci drogowej…" |
+| T3 | klik „▶ Graj z tą paczką" czeka kilka sekund | najlepiej wstępne pobieranie paczek w trakcie wyświetlania listy; gdyby się nie dało — pulsujące „Ładowanie paczki" po kliku. Zrobione OBA |
+
+### 2. T1 — kolejka zdarzeń gry sieciowej jest utrwalona (`cef6658`)
+
+Klucz `okolica:multi-kolejka`, schemat `zdarzenia-kolejka/1`
+(`app/wieloosobowa.js`: `walidujKolejkeZdarzen`, `zapisKolejkiZdarzen`,
+`LIMIT_KOLEJKI_ZDARZEN` = 50 najstarszych; wzór: kolejka wyniku hot-seat
+i kolejka ocen). `utworzSynchronizacje` dostaje trzy WSTRZYKNIĘTE uchwyty —
+`wczytajKolejke`, `zapiszKolejke`, `limitKolejki` — więc moduł synchronizacji
+nadal nic nie wie o `localStorage`, a testy jednostkowe wstrzykują tablicę.
+Utrwalony jest każdy ruch kolejki: push przy awarii sieci, shift po wypchnięciu
+i shift po odmowie mostu. Pełna kolejka jest jawną odmową w statusie
+(„stacja zostanie do przejścia jeszcze raz"), nie cichym odrzuceniem.
+
+Kolejność powrotu do gry jest częścią poprawki: `przywrocGreMulti` woła
+`dostarczZalegleZdarzeniaMulti(sesja)` PRZED `pobierzGetMulti`, bo inaczej
+telefon zbudowałby rozgrywkę ze stacją, którą most właśnie domknął (gracz
+widziałby cel, którego już nie ma). Awaria sieci w trakcie wypychania zostawia
+resztę w pamięci — przejmuje ją pierwszy udany krok `sync.js`; odmowa mostu
+kasuje zdarzenie zamiast je ponawiać. Duplikatu nie będzie: most odrzuca drugą
+odpowiedź tego gracza do tej stacji (`przyjmijZdarzenie`
+w `docs/setup/apps-script-repo-paczek.gs`) — to dlatego utrwalenie kolejki jest
+bezpieczne bez zmiany protokołu. Klucz idzie w kosz razem z sesją
+(`usunSesjeMulti`); zapis cudzej gry albo śmieciowy daje pustą listę, nigdy
+wyjątku.
+
+### 3. T2 — czekanie na sieć pulsuje (`cef6658`)
+
+Klasa `.pulsuje` w `app/styles.css` (pierwsza animacja w projekcie):
+przezroczystość 1 → 0,7 → 1, 1,4 s, `ease-in-out`, nieskończona; przy
+`prefers-reduced-motion: reduce` wyłączona, a komunikat zostaje bez ruchu.
+Kontrast MIERZONY `tools/audyt-kontrastu.mjs` (mieszanie kanałów sRGB, nie
+średnia z luminancji) dla najniższej przezroczystości: **5,62:1** w motywie
+jasnym i **8,25:1** w ciemnym — oba powyżej AA 4,5:1 (liczby są w komentarzu
+przy regule, żeby następna fala ich nie zgadywała).
+
+Nosiciele: `status(tekst, { czeka: true })` (`#status`), nowy
+`statusZestawow(tekst, { czeka: true })` (`#zestawy-status` — jeden zapis
+tekstu i sygnału zamiast dziewięciu rozsianych po karcie propozycji) oraz
+nakładka `#stacje-ladowanie`. Pulsują: sprawdzanie repozytorium paczek,
+ponowienie po zimnym starcie mostu, „Pobieram dane sieci drogowej…",
+„Pobieram paczkę z repozytorium…", „Wysyłam zaległe zdarzenia gry…" i „Wracam
+do gry…". Każdy następny komunikat gasi sygnał, więc stan „czekam" nie zostaje
+na ekranie po zakończonej pracy.
+
+### 4. T3 — paczki widoczne na liście schodzą w tle (`cef6658`)
+
+`PAMIETNIK_PACZEK` (url → promise tekstu) + `wstepniePobierzPaczki()` na końcu
+`renderujZestawy()`: pobierane są TYLKO paczki widoczne
+(`LIMIT_ZESTAWOW_NA_LISCIE`, po rozwinięciu listy — wszystkie), a adres pliku
+jest liczony raz (`urlPaczki` kandydata), więc wstępne pobranie i klik idą pod
+ten sam URL. Klik bierze gotowy tekst albo to samo, już rozpoczęte pobranie:
+jedno żądanie na plik, nie dwa; nieudane pobranie wychodzi z pamięci, więc klik
+próbuje jeszcze raz; pamięć jest czyszczona przy każdym odświeżeniu propozycji.
+Paczka `TO-zestaw/1` jest niezmienialna, więc trafienie w pamięć nie grozi
+starymi danymi. Wstępne pobranie NIE zgłasza mostowi niczego — oceny i licznik
+„użyta w X grach" idą jak dotąd dopiero przy prawdziwym kliku (ADR 0028).
+Drugie ramię poprawki: przycisk w trakcie pobierania jest `disabled` i zmienia
+etykietę na „⏳ Ładowanie paczki…" z `.pulsuje` — sygnał i blokada podwójnego
+kliku (podwójne pobranie i podwójne „użycie" paczki) w jednym.
+
+### 5. Testy: 758 → 767 (+9)
+
+- `test/sync.test.js`: utrwalanie przy każdym push/shift, start nowej instancji
+  z `wczytajKolejke` (zdarzenia wychodzą przy pierwszym kroku, FIFO), limit
+  z jawną odmową.
+- `test/wieloosobowa.test.js`: round-trip walidatorów kolejki przez JSON,
+  cudzy `kod`, śmieci (brak listy, wpisy bez schematu/gracza), limit w zapisie.
+- `test/wieloosobowa-ui.test.js`: odpowiedź bez zasięgu → odświeżenie telefonu
+  → zdarzenia wychodzą PRZED stanem gry, pamięć jest czysta, cel to „stacja
+  2 z 3" (nie powtórka stacji 1), punkt jest na moście; oraz odświeżenie WCIĄŻ
+  bez sieci — nic nie wychodzi i nic nie jest kasowane, a po powrocie sieci
+  zdarzenia dochodzą raz.
+- `test/zestawy-ui.test.js`: wstępne pobieranie (plik paczki pobrany bez kliku;
+  klik NIE dokłada drugiego żądania), brak zgłoszeń do mostu przy pobraniu
+  w tle, sygnał czekania na przycisku i statusie mierzony w trakcie wiszącego
+  pobrania.
+- `test/aplikacja.test.js`: pulsowanie nakładki „Pobieram dane sieci drogowej…"
+  i jego zgaśnięcie po odpowiedzi.
+- Poprawiony pin „dokładnie jedna powtórka" (zimny start mostu): liczy żądania
+  INDEKSU, bo wstępne pobieranie dokłada żądanie pliku paczki — pin został tam,
+  gdzie należy.
+- Pin kontraktu „ADR 0019 ma aneks G" czyta teraz archiwum aneksów (patrz niżej)
+  i dodatkowo wymaga wskaźnika w pliku macierzystym.
+
+### 6. Dokumenty i budżet lektury
+
+Aneksy: **ADR 0019 aneks 2026-09-13d** (kolejka zdarzeń; ograniczenie z aneksu
+2026-09-13c jest w nim jawnie ZNIESIONE, żeby dokumenty sobie nie przeczyły),
+**ADR 0011 aneks 2026-09-13d** (widoczne czekanie, liczby kontrastu),
+**ADR 0017 aneks 2026-09-13d** (wstępne pobieranie i jego granice) + trzy
+wiersze rejestru. Nośniki opisowe: `docs/ARCHITECTURE.md` (nowy klucz
+w inwentarzu trwałości i kolejność powrotu do gry) i `docs/ROADMAP.md` (fala
+2026-09-13d w akapicie M11/M12).
+
+Budżet: rezerwa po fali N–S wynosiła **552 tok**, a trzy aneksy kosztowały
+~930 — próg by pękł, więc zanim cokolwiek dopisano, trzy historyczne aneksy
+ADR 0019 (2026-09-12f: ranking wrócił, decyzja w ADR 0039; 2026-09-13: koniec
+ekranu po starcie, uwaga F; 2026-09-13b: koniec gry hosta, uwaga G — razem
+**1 536 tok**) przeniesiono DOSŁOWNIE do
+`docs/decisions/archive/aneksy-0019-2026-09-12f-do-13b.md`, a w pliku
+macierzystym został wskaźnik z datami (mechanizm z LESSONS L62/L66; nazwa bez
+przedrostka `NNNN-`, bo to nie ADR). ADR 0019: 3 852 → 3 014 tok. Budżet po
+fali: **99 372 / 100 000** (rezerwa **628**).
+
+### 7. Bramy, stan końcowy i rzeczy otwarte
+
+`npm run brama` (testy + `synchronizuj-szablon --check` + audyt kontrastu):
+**767/767** testów, oba warianty protokołu zgodne, **0 naruszeń WCAG AA**;
+`npm run budzet` **99 372 / 100 000** (rezerwa 628).
+
+Commity tej sesji: `cf01550` (weryfikacja punktacji N z poprzedniej fali) →
+`cef6658` (T1+T2+T3 z testami) → następny (dokumenty, aneksy, archiwum,
+cache-busting m12-114, ten wpis i handoff).
+
+Otwarte:
+
+1. **Scalenie PR #20** (decyzja właściciela) — Pages poda `?v=m12-114`,
+   a `WERSJA_SW` wymieni cache skorupy, więc telefony podciągną falę bez
+   ręcznego czyszczenia.
+2. **Deployment web app u właściciela** — wisi od PR #19; ta fala mostu NIE
+   zmieniała (utrwalenie kolejki opiera się na ISTNIEJĄCYM odrzucaniu
+   duplikatów odpowiedzi w `przyjmijZdarzenie`).
+3. **Powtórka testu terenowego dwóch telefonów** (WORKFLOW §4.4) — warto
+   przejść scenariusz z utratą zasięgu w chwili odpowiedzi i odświeżeniem
+   telefonu: cel po powrocie to następna stacja, a status mówi o wysłaniu
+   zaległych zdarzeń.
+4. **Budżet: rezerwa 628 tok** — jedna lekcja albo mały aneks; następna fala
+   dokumentowa zaczyna od `npm run budzet` i ma gotowy mechanizm podziału.

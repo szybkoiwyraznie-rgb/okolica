@@ -228,3 +228,25 @@ wymagane przez walidację — pkt 1 i `zbudujPlikZestawu`), gra używa dokładni
 a jego „🔄 Inny układ" i „✋ Ustaw stacje ręcznie" przestawiłyby punkty, przy
 których zostałyby pytania (rozjazd trasa↔pytania). Paczka z repo startuje grę
 (hot-seat) albo lobby (multi) bez kroku pośredniego — i tak zostaje.
+
+## Aneks 2026-09-13d (m12-114, zgłoszenie właściciela): paczki widoczne na liście schodzą w tle
+
+Klik „▶ Graj z tą paczką" czekał kilka sekund na plik z Drive, choć lista
+propozycji stoi na ekranie wcześniej. Właściciel wybrał wstępne pobieranie
+zamiast samego sygnału czekania: `PAMIETNIK_PACZEK` (url → promise tekstu) plus
+`wstepniePobierzPaczki()` na końcu `renderujZestawy()` pobierają TYLKO paczki
+widoczne (`LIMIT_ZESTAWOW_NA_LISCIE`, po rozwinięciu listy — wszystkie). Klik
+bierze gotowy tekst albo to samo, już rozpoczęte pobranie: jedno żądanie na
+plik, nie dwa; nieudane pobranie wychodzi z pamięci, więc klik próbuje jeszcze
+raz. Pamięć jest czyszczona przy każdym odświeżeniu propozycji (nowe kryteria =
+nowa lista). Trafić na stary plik nie można: paczka `TO-zestaw/1` z jawnymi
+stacjami jest niezmienialna, a indeks i tak jest pobierany przy każdej
+propozycji od nowa.
+
+Granice: wstępne pobranie NIE zgłasza mostowi niczego — oceny i licznik
+„użyta w X grach" idą jak dotąd dopiero przy prawdziwym kliku (ADR 0028), bo
+pobranie w tle nie jest użyciem paczki. Bez `fetch` w przeglądarce (plik
+otwarty z dysku) wstępne pobieranie się nie uruchamia, a awaria pobrania w tle
+jest cicha: tę samą awarię pokaże klik, swoim komunikatem z hostem i kodem
+HTTP. Sygnał czekania na przycisku („⏳ Ładowanie paczki…") zostaje jako
+drugie ramię poprawki — ADR 0011 aneks 2026-09-13d.

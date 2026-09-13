@@ -1886,8 +1886,14 @@ test('kontrakt ADR 0019 aneks 2026-09-13b: koniec gry hosta nie kończy gry pozo
   assert.match(czytaj('docs/ARCHITECTURE.md'), /i host, i gość wysyłają wtedy `rezygnacja`/,
     'ARCHITECTURE nie mówi już, że organizator woła gra-zakoncz');
   assert.match(README, /kończy ją TYLKO na tym telefonie/, 'README ma regułę dla gracza');
+  // Aneks G jest od m12-114 treścią historyczną: dosłownie ten sam tekst leży
+  // w archiwum ADR 0019 (budżet lektury startowej, AGENTS.md §0; LESSONS L62),
+  // a plik macierzysty niesie wskaźnik z datami — cytowania „ADR 0019 aneks
+  // 2026-09-13b" mają pokrycie w dokumentach, tylko poza lekturą startową.
+  assert.match(czytaj('docs/decisions/archive/aneksy-0019-2026-09-12f-do-13b.md'),
+    /## Aneks 2026-09-13b \(m12-109, uwaga G\)/, 'aneks G jest udokumentowany (archiwum ADR 0019)');
   assert.match(czytaj('docs/decisions/0019-gra-wieloosobowa-multi-device.md'),
-    /## Aneks 2026-09-13b \(m12-109, uwaga G\)/, 'ADR 0019 ma aneks G');
+    /## Aneksy 2026-09-12f … 2026-09-13b są w archiwum/, 'ADR 0019 odsyła do archiwum aneksów');
   assert.match(czytaj('docs/decisions/0044-odliczanie-po-starcie-gry-wieloosobowej.md'),
     /aneks 2026-09-13b \(uwaga G\)/, 'ADR 0044 odsyła do aneksu, który zmienił jego pkt 8');
   assert.match(czytaj('docs/WORKFLOW.md'), /gra kończy\n   się TYLKO na telefonie A/,

@@ -541,3 +541,11 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Reguła:** kolejność fali dokumentowej: najpierw aneks w ADR, potem cytowanie go z datą (albo cytowanie bez daty — strażnik jej wtedy nie szuka). Zamiany w dokumentach kotwicz na unikalnych fragmentach ASCII (`s.index(start)`, `s.index(end)`, podmiana przęsła między nimi), nie na całych zdaniach z polskimi cudzysłowami. Reszta reguły — przenoszenie treści ADR do archiwum (kto cytuje z datą, co czytają asercje testów, nazwa pliku bez przedrostka `NNNN-`) — w archiwum.
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L66`.
+
+## L67 (2026-09-13) — utrwalona kolejka wychodzi PRZED pobraniem stanu, a piny liczące żądania muszą nazywać cel
+
+**Objaw:** odpowiedź udzielona bez zasięgu ginęła po odświeżeniu telefonu (kolejka `app/sync.js` żyła tylko w RAM). Po jej utrwaleniu ten sam test złapał drugą usterkę: powrót do gry budował rozgrywkę ze stacją, którą wysłane właśnie zdarzenia domknęły na moście. Osobno padł pin „dokładnie jedna powtórka" — liczył WSZYSTKIE żądania atrapy, a pobieranie paczek w tle dołożyło swoje.
+**Przyczyna:** stan gry na telefonie jest pochodną odpowiedzi mostu, więc kolejność „wypchnij zaległe zdarzenia, potem pobierz stan" jest kontraktem, nie szczegółem; a pin zapisany jako długość listy żądań mierzy wszystko, co kiedykolwiek pójdzie do sieci.
+**Reguła:** utrwalając kolejkę wysyłki, wstaw jej wypchnięcie PRZED pierwszy odczyt stanu i pinuj to liczbą widoczną dla gracza (cel = NASTĘPNA stacja, nie powtórka). Warunek bezpieczeństwa ponowienia (serwer odrzuca duplikaty) zapisz w ADR jako warunek, nie jako zbieg okoliczności. Pin liczący żądania zawężaj do jego celu (`wywolania.filter(...)` po adresie albo akcji), a dokładając żądanie w tle przegrepuj testy pod kątem `wywolania.length`.
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L67`.

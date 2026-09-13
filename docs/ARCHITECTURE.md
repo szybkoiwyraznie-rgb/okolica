@@ -334,6 +334,10 @@ commit i nowa wersja aplikacji.
    środek trasy z pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca
    SAMA z `okolica:multi:sesja` i stanu mostu (`przywrocGreMulti` przy starcie,
    ADR 0045) BEZ odliczania, a zamknięte już stacje nie wracają do rozgrywki.
+   Zdarzenia, które nie doszły na most (odpowiedź bez zasięgu), czekają
+   w utrwalonej kolejce `okolica:multi-kolejka` i wychodzą PRZED pobraniem
+   stanu gry — inaczej telefon zbudowałby trasę ze stacją, którą most właśnie
+   domknął (ADR 0019 aneks 2026-09-13d).
 4. Koniec gry: punktację liczy most (`przeliczWyniki`), telefon rysuje ją na
    tym samym MINIMALNYM ekranie wyniku co hotseat (`wynikiMultiKonca`,
    ADR 0038/0044), a most zapisuje grę w historii (`RO-gra/1`, stan
@@ -482,6 +486,17 @@ przerwanej gry jest automatyczne wczytanie zapisu (ADR 0045), a wyniki między
 grami żyją na wspólnym Drive (ADR 0026 aneks) i stamtąd bierze je ranking
 (ADR 0039) — telefon nie trzyma własnej kopii. Koniec gry (naturalny albo
 ręczny) woła więc w hooku `zapiszGre()` bezpośrednio `wyslijWynikHotseat()`.
+
+Kolejka zdarzeń gry sieciowej (ADR 0019 aneks 2026-09-13d) żyje w kluczu
+`okolica:multi-kolejka` jako `zdarzenia-kolejka/1` (`kod`, `idGry`, `zdarzenia`
+— najwyżej 50 najstarszych; walidacja `walidujKolejkeZdarzen()`, zapis
+`zapisKolejkiZdarzen()` w `app/wieloosobowa.js`). `app/sync.js` nie wie o
+`localStorage`: dostaje wstrzyknięte `wczytajKolejke`, `zapiszKolejke`
+i `limitKolejki`, a utrwala KAŻDY ruch kolejki (push przy awarii sieci, shift po
+wypchnięciu i po odmowie mostu). Zapis cudzej gry albo śmieciowy daje pustą
+listę, nigdy wyjątku; pełna kolejka jest jawną odmową w statusie; klucz idzie
+w kosz razem z sesją (`usunSesjeMulti`). Duplikatu nie będzie — most odrzuca
+drugą odpowiedź tego gracza do tej stacji.
 
 ## Testowanie
 
