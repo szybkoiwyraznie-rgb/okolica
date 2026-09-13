@@ -676,7 +676,10 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
     'status mówi, że to powrót, a nie nowa gra');
   assert.equal(el(B2, 'odliczanie').hidden, true,
     'powrót po odświeżeniu telefonu NIE odlicza — to nie jest start gry (ADR 0044)');
-  assert.equal(tekst(B2, 'gra-postep'), 'stacja 1 z 3', 'zamknięta stacja 1 nie wraca — zostały 3');
+  // Zgłoszenie terenowe N (2026-09-13): zamknięta stacja 1 nie wraca do trasy,
+  // ale numeracja zostaje — cel B2 to WCIĄŻ stacja 2, a licznik pokazuje pełną
+  // trasę (4), nie skróconą listę telefonu. Wcześniej panel mówił „stacja 1 z 3".
+  assert.equal(tekst(B2, 'gra-postep'), 'stacja 2 z 4', 'po powrocie cel ma swój numer na trasie, a licznik — pełną trasę');
   await ustawPozycjeTestowa(B2); // świeży telefon: GPS brak, więc pozycja z ekranu 2
 
   // A i B2 domykają resztę trasy (po kolei, każdy u siebie) → gra kompletna

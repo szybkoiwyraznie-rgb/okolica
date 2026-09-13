@@ -65,7 +65,7 @@ import {
   wczytajDaneZCache,
 } from './sieci.js?v=m12-112';
 import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-112';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-112';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-112';
 import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-112';
 import { adresMostu, stanMostu } from './most.js?v=m12-112';
 import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-112';
@@ -207,6 +207,11 @@ const STAN = {
   /** Wspólna Trasa = trasa-sekret: przy generowaniu stacji chowamy listę
    * i kropki na mapie — organizator nie poznaje trasy z góry. */
   ukryjStacje: false,
+  /** Pełna długość trasy do napisów „stacja X z Y" (zgłoszenie N, 2026-09-13):
+   *  powrót do gry sieciowej buduje model z NIEZAMKNIĘTYCH stacji, więc
+   *  `rozgrywka.stacje.length` nie jest już długością trasy. Zero = lista gry
+   *  jest pełna (hot-seat) i numer stacji to jej indeks. */
+  trasaDlugosc: 0,
   /** ADR 0044 (uwaga F): odliczanie startu gry wieloosobowej — jedno na start.
    *  Dwustopniowej rezygnacji z gry NIE MA: przycisk „🏳 Rezygnuję z gry" umarł
    *  razem z panelem multi, a wyjście z gry potwierdza się wpisaniem TAK
@@ -2078,6 +2083,28 @@ function aktualizujGreNaFix(fix) {
  * do warstwy za ikoną ⚙ START GRY. Panel gry chowamy, żeby pasek był jedynym
  * elementem nad mapą.
  */
+/**
+ * Numer stacji na trasie (zgłoszenia terenowe N i R, 2026-09-13).
+ *
+ * Powrót do gry sieciowej buduje rozgrywkę z NIEZAMKNIĘTYCH stacji
+ * (`uruchomGreMulti`): gracz, który zamknął stację 1 i idzie do stacji 2,
+ * dostawał po odświeżeniu telefonu numer 1 — a numer na trasie ma być stały.
+ * Numer niesie więc sama stacja (`numer`, ustawia gra sieciowa), a gdy go nie
+ * ma, zostaje zwykły indeks: hot-seat ma listę pełną, więc nic się nie zmienia.
+ */
+function numerStacjiTrasy(stan, idStacji) {
+  const naLiscie = stan.stacje.findIndex((s) => Number(s.id) === Number(idStacji));
+  const zTrasy = STAN.stacje.find((s) => Number(s.id) === Number(idStacji));
+  const numer = Number(zTrasy?.numer);
+  return Number.isFinite(numer) && numer > 0 ? numer : naLiscie + 1;
+}
+
+/** Długość trasy do napisów „stacja X z Y": pełna trasa, gdy gra sieciowa ją skróciła. */
+function liczbaStacjiTrasy(stan) {
+  const pelna = Number(STAN.trasaDlugosc);
+  return Number.isFinite(pelna) && pelna > 0 ? pelna : stan.stacje.length;
+}
+
 function odswiezPasekDrogi() {
   const r = STAN.rozgrywka;
   if (!r) return;
@@ -2094,7 +2121,7 @@ function odswiezPasekDrogi() {
   const pod = podglad(r);
   const imie = pod.gracz?.imie ?? '—';
   const dystans = STAN.pozycja && pod.stacja ? Math.round(odlegloscM(STAN.pozycja, pod.stacja)) : '—';
-  const indeks = r.stacje.findIndex(s => s.id === r.biezacaStacja) + 1;
+  const numer = numerStacjiTrasy(r, r.biezacaStacja);
   // Właściciel 2026-09-11: dystans w pasku ma być widoczny od razu (zielona
   // pigułka), nie tylko w Informacjach — dlatego pasek budujemy z węzłów,
   // a nie z jednego textContent.
@@ -2103,7 +2130,7 @@ function odswiezPasekDrogi() {
   const pigulka = document.createElement('span');
   pigulka.className = 'pasek-dystans';
   pigulka.textContent = `(odległość od stacji ${dystans} m)`;
-  pasek.append(pigulka, ` · stacja ${indeks} z ${r.stacje.length}`);
+  pasek.append(pigulka, ` · stacja ${numer} z ${liczbaStacjiTrasy(r)}`);
   // Dojście ma odsłonić pytanie także po korzystaniu ze sterowania w Informacjach.
   if (STAN.bylPasekDrogi && !droga && !$('gra-panel-pytanie').hidden) zamknijInformacje();
   STAN.bylPasekDrogi = droga;
@@ -2120,12 +2147,12 @@ function renderujGre({ panele = true } = {}) {
   const r = STAN.rozgrywka;
   if (!r) return;
   const pod = podglad(r);
-  const indeks = r.stacje.findIndex((s) => s.id === r.biezacaStacja);
+  const numer = numerStacjiTrasy(r, r.biezacaStacja);
 
   $('gra-kolejka').textContent = pod.gracz ? `Kolej: ${pod.gracz.imie}` : 'Kolej: —';
   $('gra-postep').textContent = r.faza === FAZY.koniec
     ? `zaliczone: ${pod.zaliczoneStacje} · pominięte: ${pod.pominietaStacje} · z ${r.stacje.length}`
-    : `stacja ${indeks + 1} z ${r.stacje.length}`;
+    : `stacja ${numer} z ${liczbaStacjiTrasy(r)}`;
   if (STAN.pozycja && pod.stacja) {
     $('gra-dystans').textContent = `${Math.round(odlegloscM(STAN.pozycja, pod.stacja))} m`;
   } else {
@@ -2161,9 +2188,9 @@ function renderujGre({ panele = true } = {}) {
   }
 
   if (panele && r.faza === FAZY.przygotowanie && pod.stacja) {
-    $('gra-kto-idzie').textContent = pod.gracz ? `Idzie: ${pod.gracz.imie} → stacja ${indeks + 1}` : `Stacja ${indeks + 1}`;
+    $('gra-kto-idzie').textContent = pod.gracz ? `Idzie: ${pod.gracz.imie} → stacja ${numer}` : `Stacja ${numer}`;
     $('gra-cel-stacji').textContent = `${pod.stacja.opis || 'Cel bez opisu'} · ${formatujWspolrzedne(pod.stacja.lat, pod.stacja.lon)} · ${Math.round(pod.dystansM)} m ${pod.dystansSieciowy ? 'drogą' : 'w linii prostej'} od poprzedniego punktu`;
-    $('przycisk-start-odcinka').textContent = `▶ Idę do stacji ${indeks + 1}`;
+    $('przycisk-start-odcinka').textContent = `▶ Idę do stacji ${numer}`;
   }
 
   if (panele) {
@@ -2177,9 +2204,10 @@ function renderujGre({ panele = true } = {}) {
   if (STAN.mapy.gra) {
     // Wspólna Trasa to trasa-sekret (właściciel, 2026-09-11): na mapie widać
     // TYLKO bieżącą stację — kolejne odsłaniają się po zamknięciu poprzedniej.
-    // Sekret jest własnością GRY (pole trasaSekret z mostu); brak pola w starych
-    // grach traktujemy jak sekret (zgodność wstecz z m12-73).
-    const graSekret = STAN.multi?.gra?.tryb === TRYBY_GRY.trasa && STAN.multi.gra.trasaSekret !== false;
+    // Sekret jest własnością ŻYWEJ gry sieciowej (`czyTrasaSekret`): resztkowy
+    // kontekst multi po grze zamkniętej nie chowa już trasy w hot-seacie
+    // (zgłoszenie terenowe R, 2026-09-13).
+    const graSekret = czyTrasaSekret(STAN.multi);
     const stacjeWidoczne = graSekret
       ? STAN.stacje.filter((s) => Number(s.id) === Number(r.biezacaStacja))
       : STAN.stacje;
@@ -2694,6 +2722,16 @@ async function grajZZestawemZRepo(wpis, urlIndeksu) {
  */
 function startGry() {
   if (!STAN.paczka || STAN.usterkiPaczki.length > 0) return;
+  // Hot-seat to INNA gra niż sieciowa (zgłoszenia terenowe R i N, 2026-09-13):
+  // kontekst multi odzyskany przy starcie aplikacji (albo zostawiony przez grę,
+  // którą host zamknął) włączał w hot-seacie trasę-sekret — mapa pokazywała
+  // jedną stację z numerem 1 — a przy następnym otwarciu telefonu sesja multi
+  // miała pierwszeństwo przed zapisem hot-seata. Start gry na tym telefonie
+  // kończy kontekst sieciowy: synchronizacja staje, sesja i stan idą w kosz.
+  zatrzymajSyncMulti();
+  usunSesjeMulti();
+  STAN.multi = null;
+  STAN.trasaDlugosc = 0;
   if (!STAN.stacje.length || !STAN.pozycja) {
     status('Nie da się zacząć gry: potrzebna pozycja i policzone stacje (kroki 2–3).');
     return;
@@ -3113,9 +3151,8 @@ function etykietaPrzyciskuDalej(stan) {
   if (stan.faza === FAZY.pytanie) return 'Następne pytanie →';
   if (!czyStartPoDalej()) return 'Następna stacja →';
   const pod = podglad(stan);
-  const indeks = stan.stacje.findIndex((s) => s.id === stan.biezacaStacja);
   const kto = pod.gracz ? `${pod.gracz.imie}, ` : '';
-  return `▶ ${kto}stacja ${indeks + 1} — idę →`;
+  return `▶ ${kto}stacja ${numerStacjiTrasy(stan, stan.biezacaStacja)} — idę →`;
 }
 
 /**
@@ -3342,6 +3379,7 @@ function wznowGre() {
   for (const zdarzenie of r.dziennik) zdarzenie.czasMs += przesuniecie;
   STAN.konfig = snapshot.konfig;
   STAN.stacje = snapshot.stacje;
+  STAN.trasaDlugosc = 0; // zapis hot-seata niesie pełną listę — numer = indeks
   STAN.kontenerPaczki = snapshot.kontenerPaczki;
   STAN.rozgrywka = r;
   STAN.paczka = null; // w grze nadal tylko kontener (ADR 0007 pkt 4)
@@ -4732,7 +4770,10 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
     status(`Nie da się odsłonić pytań gry ${gra.kod}: ${blad?.komunikat ?? 'uszkodzony kontener'}.`);
     return;
   }
-  const wszystkie = (gra.zestaw.stacje ?? []).map((s, i) => ({ id: s.id ?? i + 1, lat: s.lat, lon: s.lon, opis: s.opis ?? '' }));
+  // `numer` = pozycja na PEŁNEJ trasie: zamknięte stacje nie wracają do modelu
+  // (właściciel, 2026-09-11), ale numery na mapie i w panelu zostają te same —
+  // cel gracza, który zamknął stację 1, to nadal stacja 2 (zgłoszenie N).
+  const wszystkie = (gra.zestaw.stacje ?? []).map((s, i) => ({ id: s.id ?? i + 1, numer: i + 1, lat: s.lat, lon: s.lon, opis: s.opis ?? '' }));
   const N = gra.gracze.length;
   const mojIndeks = gra.gracze.findIndex((g) => g.id === m.graczId);
   const zamknietePrzezeMnie = new Set(
@@ -4751,6 +4792,7 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
   const paczkaGracza = pytaniaDlaGracza(paczka, { liczbaGraczy: N, indeksGracza: mojIndeks });
   m.indeksGracza = mojIndeks;
   STAN.stacje = moje;
+  STAN.trasaDlugosc = wszystkie.length; // „stacja X z Y" z pełnej trasy
   STAN.kontenerPaczki = gra.zestaw.kontener;
   STAN.paczka = paczka;
   STAN.usterkiPaczki = [];

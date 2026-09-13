@@ -454,7 +454,10 @@ export function planMapy({
         const ekran = punktNaEkranie(stacja.lat, stacja.lon, widok);
         return {
           id: stacja.id,
-          numer: i + 1,
+          // Numer na trasie, nie indeks na liście: powrót do gry sieciowej
+          // rysuje tylko niezamknięte stacje, a ich numery muszą zostać te same
+          // (zgłoszenie terenowe N, 2026-09-13). Brak `numer` = zwykły indeks.
+          numer: Number(stacja.numer) > 0 ? Number(stacja.numer) : i + 1,
           x: ekran.x,
           y: ekran.y,
           dystansM: stacja.dystansM ?? stacja.odlegloscM ?? null,

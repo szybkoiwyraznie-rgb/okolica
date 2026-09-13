@@ -291,6 +291,26 @@ export function zbudujZdarzenie({ kod, idGry, graczId, typ, stacjaId = null, dan
 /* ------------------------------ maszynka gry (lustra logiki mostu) */
 
 /** Czy gra domknęła się zdarzeniami (oba tryby; rezygnacje zaliczone). */
+/**
+ * Trasa-sekret (właściciel, 2026-09-11): we Wspólnej Trasie z włączonym
+ * sekretem mapa gry pokazuje TYLKO bieżącą stację — następne odsłaniają się po
+ * zamknięciu poprzednich. Sekret jest własnością ŻYWEJ gry sieciowej, nie
+ * telefonu.
+ *
+ * Zgłoszenia terenowe R i N (2026-09-13): warunek liczony z resztkowego
+ * `STAN.multi` chował trasę także wtedy, gdy gra sieciowa już się zakończyła
+ * albo gdy telefon miał kontekst multi z odzyskanej przy starcie sesji, a gracz
+ * uruchomił hot-seata. Efekt: w hot-seacie widać było jedną stację, a jej pin
+ * dostawał numer 1 zamiast numeru na trasie. Stąd twardy warunek `stan ===
+ * 'trwa'`. Brak pola `trasaSekret` w starych grach traktujemy jak sekret
+ * (zgodność wstecz z m12-73).
+ */
+export function czyTrasaSekret(multi) {
+  const gra = multi?.gra;
+  if (!gra || gra.stan !== 'trwa') return false;
+  return gra.tryb === TRYBY_GRY.trasa && gra.trasaSekret !== false;
+}
+
 export function czyKompletna(gra) {
   if (!gra) return false;
   const N = gra.konfiguracja?.liczbaStacji ?? 0;

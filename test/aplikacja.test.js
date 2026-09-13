@@ -1233,8 +1233,11 @@ test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe pod
 
 /** Przyjęta paczka + pozycja + stacje z pierścienia (synchronicznie, bez fetch).
  *  Zwraca też `pamiec` — testy trwałości (R6) czytają klucze zapisu gry. */
-async function graGotowaDoStartu() {
+async function graGotowaDoStartu(dodatkoweKlucze = {}) {
   const pamiec = new Map();
+  // Klucze, które test chce mieć w pamięci PRZED startem aplikacji (np. resztkowa
+  // sesja gry sieciowej — zgłoszenie terenowe R, 2026-09-13).
+  for (const [klucz, wartosc] of Object.entries(dodatkoweKlucze)) pamiec.set(klucz, wartosc);
   // Lista graczy nie jest polem konfigu, tylko zapamiętaną tożsamością
   // (ADR 0026 aneks): trzy potwierdzone imiona wracają na listę bez PIN-u.
   pamiec.set('okolica:gracze', JSON.stringify({
@@ -1578,6 +1581,62 @@ test('M6+K: powrót po „zamknięciu przeglądarki" — nowa instancja, ta sama
   await dojdzSymulacja(dom2);
   assert.equal(dom2.pobierz('bledy-gra').hidden, true, `brak błędu, a jest: ${dom2.pobierz('bledy-gra').textContent}`);
   assert.equal(dom2.pobierz('gra-panel-pytanie').hidden, false, 'gra toczy się dalej po wznowieniu');
+});
+
+test('R: resztkowa gra sieciowa nie chowa trasy w hot-seacie, a start gry kasuje jej sesję (zgłoszenie terenowe 2026-09-13)', async () => {
+  // Właściciel: „włączyłem grę w HotSeat, 5 stacji i widać tylko pierwszą
+  // stację, do której idę — ukrywanie trasy miało działać TYLKO w Multiplayerze
+  // z włączoną opcją". Telefon miał w pamięci sesję Wspólnej Trasy z poprzedniego
+  // testu: odzyskany przy starcie kontekst multi włączał trasę-sekret także
+  // w hot-seacie, a przy następnym otwarciu sesja multi wygrywała z zapisem gry.
+  const { dom, pamiec } = await graGotowaDoStartu({
+    'okolica:multi:sesja': JSON.stringify({
+      kod: 'ABC123', idGry: 'gra-1', graczId: 'gracz-1', pseudonim: 'Gracz 1',
+      urlMostu: 'https://script.google.com/macros/s/TEST/exec', rola: 'organizator',
+      zapisano: new Date().toISOString(),
+    }),
+  });
+  dom.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  assert.match(dom.pobierz('mapa-gra-pinezki').textContent, /123/,
+    'hot-seat rysuje CAŁĄ trasę z numerami 1, 2, 3 — sekret Wspólnej Trasy nie przecieka');
+  assert.equal(pamiec.has('okolica:multi:sesja'), false,
+    'start hot-seata kasuje resztkową sesję sieciową — następne otwarcie wróci do TEJ gry');
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra hot-seat toczy się dalej');
+});
+
+test('N: powrót po zamknięciu przeglądarki W TRASIE — cel zostaje stacją 2, a punkty nie zerują się (zgłoszenie terenowe 2026-09-13)', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  dom.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  await dojdzSymulacja(dom); // stacja 1 zdobyta → pytanie
+  const przyciski = dom.pobierz('gra-odpowiedzi').children;
+  for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] }); // poprawna = 0
+  dom.kliknij('przycisk-nastepna-stacja'); // → przygotowanie, cel: stacja 2
+  dom.kliknij('przycisk-start-odcinka'); // → odcinek do stacji 2
+  const kluczZapisu = 'okolica:gra:' + pamiec.get('okolica:gra-aktywna');
+  const przed = JSON.parse(pamiec.get(kluczZapisu));
+  assert.equal(przed.rozgrywka.biezacaStacja, 2, 'zapis niesie cel: stacja 2');
+  assert.equal(przed.rozgrywka.odpowiedzi.length, 1, 'zapis niesie odpowiedź ze stacji 1');
+
+  // „zamknięcie przeglądarki" w trakcie marszu: nowa instancja na tej samej
+  // pamięci. Panel mapy ma rozmiar PRZED powrotem, żeby warstwa stacji zdążyła
+  // się narysować (L13: schowany/zerowy panel = pusty plan mapy).
+  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
+  dom2.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  await import(`../app/app.js?trasa=${Math.random().toString(36).slice(2)}`);
+
+  const po = JSON.parse(pamiec.get(kluczZapisu));
+  assert.equal(po.rozgrywka.biezacaStacja, 2, 'cel po powrocie to WCIĄŻ stacja 2');
+  assert.equal(po.rozgrywka.odpowiedzi.length, 1, 'zdobyta odpowiedź nie znika z zapisu');
+  assert.equal(po.rozgrywka.odpowiedzi[0].poprawna, true, 'i zostaje policzona jako poprawna');
+  assert.equal(po.stacje.length, 3, 'lista stacji w zapisie jest pełna');
+  assert.match(dom2.pobierz('gra-postep').textContent, /stacja 2 z 3/, 'nagłówek gry mówi „stacja 2 z 3"');
+  // Hotseat NIE ukrywa trasy (zgłoszenie R): mapa gry rysuje wszystkie stacje i
+  // numeruje je od 1 po kolei, więc pin celu ma numer 2 — nie 1.
+  assert.match(dom2.pobierz('mapa-gra-pinezki').textContent, /123/, 'na mapie widać całą trasę z numerami 1, 2, 3');
 });
 
 test('K: zepsuty zapis — jawne kody T, start kasuje go bez pytania (ADR 0045)', async () => {

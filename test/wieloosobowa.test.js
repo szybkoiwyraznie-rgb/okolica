@@ -11,7 +11,7 @@ import { geohash } from '../app/geo.js';
 import {
   ALFABET_KODU, DLUGOSC_KODU, KODY_WIELOOSOBOWE, MAKS_GRACZY, SCHEMAT_GRY,
   SCHEMAT_LOBBY, SCHEMAT_PROFILU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
-  czyKompletna, czyPinPoprawny, filtrujLobby, generujKod,
+  czyKompletna, czyPinPoprawny, czyTrasaSekret, filtrujLobby, generujKod,
   kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim,
   MAKS_PREMIA_KOLEJNOSCI, postepGracza, premiaZaKolejnosc, przeliczWyniki,
   ramkaGeohash, sasiednieGeohash, walidujGreSurowa, walidujLobbySurowe,
@@ -381,4 +381,20 @@ test('premia: jeden gracz i gra bez konfiguracji nie dają premii', () => {
   const bezKonfiguracji = graWyscig({ liczbaGraczy: 2 });
   bezKonfiguracji.konfiguracja = { liczbaStacji: 0 };
   assert.deepEqual(premiaZaKolejnosc(bezKonfiguracji), {}, 'bez liczby stacji nie da się orzec końca');
+});
+
+/* --------- trasa-sekret: brama ŻYWEJ gry sieciowej (zgłoszenia R i N) --------- */
+
+test('czyTrasaSekret: sekret chowa trasę TYLKO w żywej Wspólnej Trasie (zgłoszenie terenowe R, 2026-09-13)', () => {
+  const kontekst = (nadpis = {}) => ({ gra: { stan: 'trwa', tryb: TRYBY_GRY.trasa, trasaSekret: true, ...nadpis } });
+  assert.equal(czyTrasaSekret(kontekst()), true, 'żywa Wspólna Trasa z sekretem — mapa gry pokazuje bieżącą stację');
+  assert.equal(czyTrasaSekret(kontekst({ trasaSekret: false })), false, 'sekret wyłączony przy zakładaniu gry — trasa widoczna');
+  assert.equal(czyTrasaSekret(kontekst({ tryb: TRYBY_GRY.wyscig })), false, 'Wyścig na Orientację nigdy nie chowa trasy');
+  assert.equal(czyTrasaSekret(kontekst({ stan: 'zakonczona' })), false, 'gra zamknięta przez hosta nie chowa już trasy');
+  assert.equal(czyTrasaSekret(kontekst({ stan: 'archiwum' })), false, 'wygasłe lobby tym bardziej');
+  assert.equal(czyTrasaSekret(kontekst({ stan: 'lobby' })), false, 'lobby to jeszcze nie gra w trasie');
+  assert.equal(czyTrasaSekret(null), false, 'brak kontekstu sieciowego (hot-seat) — cała trasa widoczna');
+  assert.equal(czyTrasaSekret({}), false, 'kontekst bez gry — też nie');
+  // zgodność wstecz z m12-73: stare gry nie mają pola `trasaSekret` = sekret
+  assert.equal(czyTrasaSekret(kontekst({ trasaSekret: undefined })), true, 'brak pola w starej grze traktujemy jak sekret');
 });
