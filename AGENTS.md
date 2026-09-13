@@ -29,7 +29,10 @@ siebie: znasz `wc -l` pliku i wiesz, że dotarłeś do ostatniej linii.
    **każdy** `NNNN-*.md` w całości. ADR-y ze statusem *Proponowana* są
    kierunkiem, nie zobowiązaniem: nie buduj na nich trwałych rozwiązań, zanim
    właściciel ich nie zaakceptuje (albo nie zaakceptujesz ich sam w trybie §2).
-4. **`docs/LESSONS.md`** — cały rejestr lekcji do ostatniej.
+4. **`docs/LESSONS.md`** — cały rejestr lekcji do ostatniej: objaw i przyczyna
+   jednym zdaniem, reguła w całości (długie reguły mają w rejestrze początek).
+   Pełne opisy przypadków: `docs/LESSONS_ARCHIVE.md` — poza budżetem, czytasz
+   punktowo, gdy wchodzisz w temat lekcji.
 5. **`docs/setup/ENVIRONMENT.md`** — stałe ograniczenia sandboxa / gita / sieci.
 6. **`docs/ROADMAP.md`** — w którym kamieniu milowym jesteśmy.
 7. **Najnowszy `docs/setup/HANDOFF_*.md`** — skrót JEDNEJ sesji: stan na koniec
@@ -38,12 +41,15 @@ siebie: znasz `wc -l` pliku i wiesz, że dotarłeś do ostatniej linii.
 Budżet lektury startowej: pozycje 1–6 mają się mieścić w **100 tys. tokenów**
 (`node tools/budzet-lektury.mjs`). Gdy próg zostanie
 przekroczony, skrócenie/rozdzielenie dokumentów staje się obowiązkowym zadaniem
-sesji, a nie opcją.
+sesji, a nie opcją. Największy składnik budżetu to ADR-y (~65 tys. z 100 tys.
+w 2026-09-13) — podział zaczynaj od nich (np. ADR-y w całości uchylone przez
+późniejsze do `docs/decisions/archive/`, z linkiem w rejestrze), nie od LESSONS,
+który już ma swoje archiwum opisów przypadków.
 
 Czego NIE czytasz na start: `docs/PROJECT_HISTORY.md` (dziennik sesji),
-`docs/plans/*` (plany pojedynczych zadań) i `docs/BACKLOG.md` — to archiwum
-i bank pomysłów; sięgasz tam punktowo i grepem, gdy potrzebny jest kontekst
-konkretnej decyzji.
+`docs/plans/*` (plany pojedynczych zadań), `docs/LESSONS_ARCHIVE.md` (pełne opisy
+przypadków lekcji) i `docs/BACKLOG.md` — to archiwum i bank pomysłów; sięgasz tam
+punktowo i grepem, gdy potrzebny jest kontekst konkretnej decyzji.
 
 ## 1. Źródło prawdy
 

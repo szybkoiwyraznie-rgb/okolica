@@ -1874,3 +1874,24 @@ test('kontrakt ADR 0045: setup nie szuka gier, a otwarcie aplikacji wraca do zap
   assert.match(czytaj('docs/WORKFLOW.md'), /aplikacja wraca do tej\n   gry SAMA/, 'WORKFLOW ma krok terenowy o powrocie w hotseacie');
   assert.match(czytaj('docs/WORKFLOW.md'), /aplikacja wraca do\n   gry SAMA, bez banera i bez kliku/, 'WORKFLOW ma krok terenowy o powrocie w multi');
 });
+
+test('kontrakt: archiwum LESSONS jest lustrem rejestru i nie wchodzi w budżet lektury', async () => {
+  const rejestr = czytaj('docs/LESSONS.md');
+  const archiwum = czytaj('docs/LESSONS_ARCHIVE.md');
+  const numeryR = [...rejestr.matchAll(/^## L(\d+) /gm)].map((m) => Number(m[1]));
+  const numeryA = [...archiwum.matchAll(/^## L(\d+) /gm)].map((m) => Number(m[1]));
+  assert.ok(numeryR.length >= 61, `rejestr ma ${numeryR.length} lekcji`);
+  assert.deepEqual(numeryA, numeryR, 'archiwum ma dokładnie te same lekcje, w tej samej kolejności');
+  // Każda lekcja w rejestrze mówi, gdzie leży jej pełny opis — inaczej podział
+  // rozjedzie się cicho (LESSONS L31/L58: nośnik, który obiecuje, musi istnieć).
+  const odsylacze = [...rejestr.matchAll(/`docs\/LESSONS_ARCHIVE\.md` → `## L(\d+)`/g)].map((m) => Number(m[1]));
+  assert.deepEqual(odsylacze, numeryR, 'każda lekcja ma odnośnik do swojego wpisu w archiwum');
+  assert.match(rejestr, /Objaw i przyczyna są tu\njednym zdaniem/, 'rejestr mówi, że jest skrótem');
+  assert.ok(AGENTS.includes('docs/LESSONS_ARCHIVE.md'),
+    'AGENTS.md §0 wymienia archiwum (pozycja 4 i lista „czego NIE czytasz na start")');
+  const { plikiLektury } = await import('../tools/budzet-lektury.mjs');
+  const pliki = plikiLektury(ROOT);
+  assert.equal(pliki.includes('docs/LESSONS_ARCHIVE.md'), false,
+    'archiwum NIE wchodzi w budżet lektury startowej — po to powstało');
+  assert.equal(pliki.includes('docs/LESSONS.md'), true, 'rejestr zostaje w budżecie');
+});
