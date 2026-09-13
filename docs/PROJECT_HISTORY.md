@@ -4339,3 +4339,108 @@ Drugi skutek: `#gra-komunikat` (P06 w odcinku) nie ma w drodze żadnego nośnika
   `docs/ARCHITECTURE.md` cytują „ADR 0014 pkt 1” (dystanse odcinków z sieci),
   a plik ADR 0014 jest od 2026-09-07 streszczeniem bez punktów — cytat prowadzi
   do treści, która żyje tylko w historii gita.
+
+### 5. Budżet lektury (`335518d`) — ADR-y wycofane w całości do archiwum
+
+Rezerwa na starcie sesji wynosiła 1 075 tok, a AGENTS.md §0 i LESSONS L62 każą
+w takiej sytuacji ciąć największego zjadacza (ADR-y ~65 tys. z 100 tys.), nie
+LESSONS, który swoje archiwum już ma. `git mv` przeniosło **ADR 0014**
+(punktacja czasu, wycofana 2026-09-07) i **ADR 0031** (generowanie partiami,
+wycofane tego samego dnia) do `docs/decisions/archive/`; `plikLektury()` filtruje
+`^\d{4}-.*\.md$` w katalogu głównym, więc podkatalog wyszedł z budżetu bez zmian
+w narzędziu. Rejestr stracił tylko ścieżkę linku — wiersze i statusy zostały,
+a pin „ADR na dysku ↔ rejestr” obejmuje obie ścieżki. Przy 0014 dopisane, co
+z dawnej decyzji obowiązuje (pkt 1: dystanse odcinków z sieci), bo cytują go
+żywe nośniki (`app/stacje.js`, `app/rozgrywka.js`, `app/app.js`, ARCHITECTURE),
+a plik był streszczeniem bez punktów — obserwacja 4 z części 1 zamknięta.
+Nowy pin pilnuje, że archiwum NIE wchodzi w `plikLektury()`, że rejestr i
+AGENTS.md §0 o nim mówią i że leżą tam wyłącznie ADR-y ze statusem *Wycofana*
+(wzorzec pinu archiwum LESSONS). Budżet: 98 925 → **97 642** tok.
+
+### 6. Naprawa U1 (m12-111, `2b57579`) — komunikaty odsyłają do prawdziwego ujścia
+
+Wszystkie zdania z tabeli w części 2 przestawione na drogę z ADR 0043
+(⚙ START GRY → wpisz TAK → „■ ZAKOŃCZ AKTUALNĄ GRĘ”): `app/pozycja.js` P03,
+P04, P08 i komunikat `stanDojscia` o braku współrzędnych stacji (P06);
+`app/app.js` status `onBlad` watchera, uszkodzony kontener paczki (traci też
+martwą drogę „wgraj paczkę ponownie z pliku” — teraz prowadzi do repozytorium
+albo do wklejenia odpowiedzi modelu), paczka rozjechana z rozgrywką i T07
+(zapis ponad 2 MB); `app/wieloosobowa.js` R19 (bez przycisku „Zapisz nowy” —
+bramka tożsamości to imię + PIN i jedno wołanie `profil-ustaw`, ADR 0026).
+
+Drugi nośnik zdania o dojściu: w drodze `#gra-komunikat` jest schowany razem
+z całym `#gra-sterowanie`, więc kod dojścia (P06) idzie też do `status()` —
+`#status` w ⓘ Informacjach ma `aria-live`, więc zdanie nie ginie i nie dokleja
+nic do paska (ADR 0042: Informacje zostają warstwą techniczną).
+
+Strażnik dryfu (L58) dostał trzy frazy tej fali — `zakończ grę przyciskiem`,
+`wgraj paczkę ponownie z pliku`, `przyciskiem „Zapisz nowy”` — i poprawiony
+`powod` wpisu o pomijaniu stacji, który sam cytował martwy przycisk. Nowy
+kontrakt czyta **wiersze kodu** `app.js` (helper `wierszeKodu()` wycina
+komentarze blokowe i liniowe, bo nagrobek L31 może cytować martwą etykietę)
+i wymaga, żeby każde zdanie o końcu gry nazywało ikonę ⚙ START GRY; do tego piny
+w `test/pozycja.test.js` (zakaz frazy + niezmiennik ⚙/TAK dla kodów P i dla
+`stanDojscia`) i w `test/wieloosobowa.test.js` (R19). Wszystkie cztery testy
+były najpierw czerwone (odtwarzały usterkę), dopiero potem poszła implementacja.
+
+### 7. Naprawa U2 (m12-112, `b9a70cf`) — panel fazy B w trybie testowym zostaje
+
+`$('gra-sterowanie').hidden = droga && !STAN.trybTestowy;` — w terenie bez zmian
+(nad mapą zostaje sam pasek, ADR 0043 pkt 1), w trybie testowym panel fazy B
+robi to, co obiecuje ADR 0036 aneks m12-102 pkt 2. Pomiar headless Chromium 153
+(390×844) po poprawce, stan „w drodze”:
+
+| Węzeł | teren | tryb testowy |
+|---|---|---|
+| `#gra-pasek` | renderowany | renderowany |
+| `#gra-panel-odcinek` | 0×0, `offsetParent: null` | **370×124, widoczny** |
+| `#przycisk-symulacja-gra` | 0×0, `offsetParent: null` | **328×45, widoczny** (cel ≥ 44 px, ADR 0011) |
+| `#gra-dystans-odcinka` | 0×0 | **340×29, widoczny** |
+| `#gra-komunikat` | 0×0 | **370×41, widoczny** |
+
+Testy: istniejący test drogi chodzi w `?tryb=test`, więc jego asercja „panel
+schowany” zamieniona na „panel zostaje, symulacja osiągalna”, a zachowanie
+terenowe dostało **osobny test prawdziwą drogą** (atrapa `navigator.geolocation`,
+`naEkranPozycji` → fix → „Dalej” → paczka z fixture → „▶ Idę do stacji”): pasek
+widoczny, panel schowany, symulacji nie ma (ADR 0029: dojście zalicza tylko GPS).
+Pin w `test/kontrakt.test.js` przepięty na nowe zdanie.
+
+### 8. Dokumenty i lekcje (`11f3415`, `68e3760`)
+
+- **ADR 0043 aneks 2026-09-13b** — lista przestawionych zdań i trwała
+  konsekwencja (przegląd nośników musi objąć tabele komunikatów); L63 każe taką
+  listę wpisać do ADR-a, nie do handoffu.
+- **ADR 0036 aneks 2026-09-13b** — pkt 2 aneksu m12-102 doprecyzowany: teren
+  schowany, tryb testowy panelowy, plus drugi nośnik zdania o dojściu.
+- **ADR 0029 aneks 2026-09-13b** — zdanie aneksu m12-94 o odsyłaniu do
+  „■ Zakończ grę” jest nieaktualne w części o przycisku; mechanika (tylko GPS,
+  stacja nieosiągalna = brak punktu) bez zmian.
+- **WORKFLOW §3 pkt 6** — wyjątek trybu testowego przy „nad mapą zostaje sam
+  pasek”; §4.3 pkt 3 (symulacja) i ARCHITECTURE L209 są znowu prawdziwe bez
+  zmian — dokumenty miały rację, kod nie.
+- **LESSONS L64** (tabele komunikatów przy usuwaniu przyciska) i **L65**
+  (`hidden` na przodku a atrapa DOM) — skrót w rejestrze, pełne opisy z
+  pomiarami i listą testów w `docs/LESSONS_ARCHIVE.md`.
+
+### 9. Bramy, stan końcowy i rzeczy otwarte
+
+`npm test` **763/763** (przybyły trzy: kontrakt zdań o końcu gry, kontrakt
+archiwum ADR-ów, droga terenowa), `npm run check` — oba szablony zgodne,
+`npm run audyt` — 0 naruszeń WCAG AA, `npm run budzet` — **99 085/100 000**
+(rezerwa 915 tok). Wersja aplikacji **m12-112** (`?v=` w `index.html` i we
+wszystkich importach + `WERSJA_SW`).
+
+- **Powtórki lekcji w tej sesji:** L27/L58/L63 (U1 — zdania po usuniętym
+  przycisku; audyt PR #18 zapisał je jako poprawne, fala ADR 0043 nie wróciła do
+  nich) i L13 (U2 — atrapa DOM nie widzi renderowania). Obie pułapki dostały
+  piny, więc następna fala ma bramę.
+- **Otwarte po stronie właściciela:** (1) deployment web app z mostu
+  `docs/setup/apps-script-repo-paczek.gs` — bez zmian w tej sesji, ale nadal
+  wisi z PR #19 (`rezygnacja` domykająca grę); (2) powtórka testów terenowych
+  dwóch telefonów (WORKFLOW §4.4) — teraz z poprawionymi komunikatami GPS, więc
+  warto sprawdzić w terenie zdanie P03/P04 i dojście przez ⚙ START GRY → TAK;
+  (3) sprawdzenie w live preview, że w `?test=true` panel fazy B z przyciskiem
+  symulacji jest widoczny w marszu (pomiar agenta: 328×45 px).
+- **Budżet:** rezerwa 915 tok — następny ADR albo lekcja przekroczy próg, więc
+  kolejna sesja zaczyna od cięcia (L62): największy pojedynczy zjadacz to
+  ADR 0019 (5 368 tok), a mechanizm archiwum dla ADR-ów wycofanych już stoi.
