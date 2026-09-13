@@ -502,14 +502,16 @@ w aplikacji. Schematy `RO-*` nigdy nie miały pola `zgoda`.
 Reguły gry: dołączenie tylko w `lobby` — **po starcie nowi gracze nie wchodzą**
 (właściciel, 2026-09-11; `listaGier` zwracza wyłącznie `stan: "lobby"`);
 start tylko przez organizatora (żeby wystartowała, gra potrzebuje tylko
-organizatora — **solo dozwolone**, właściciel 2026-09-11); **host może
-zakończyć grę przed czasem** (`gra-zakoncz`, tylko organizator) — u wszystkich
-podsumowanie z tabelą końcową, a premie za kolejność liczą się też przy takim
-końcu.
+organizatora — **solo dozwolone**, właściciel 2026-09-11); **host NIE kończy gry
+pozostałym** (właściciel 2026-09-13, uwaga G): koniec gry na jego telefonie jest
+zdarzeniem `rezygnacja` jak u każdego gracza, a aplikacja nie woła akcji
+`gra-zakoncz`. Akcja zostaje w moście dla starszych telefonów (offline'owa
+skorupa z Service Workera) i dla ręcznego porządkowania gier na Drive.
 **Wspólna Trasa** (`trasa`) i **Wyścig na Orientację** (`wyscig`): w obu KAŻDY
 gracz przechodzi wszystkie stacje (w trasie po kolei, w wyścigu w dowolnej
 kolejności), a gra domyka się, gdy wszyscy aktywni (niezrezygnowani) zamkną
-swoje stacje. Punktacja wspólna: 1 pkt za dobrą odpowiedź + premia za
+swoje stacje — rezygnacja też jest sprawdzana pod kątem domknięcia, więc gra nie
+zostaje otwarta, gdy wychodzi ostatni aktywny gracz (uwaga G). Punktacja wspólna: 1 pkt za dobrą odpowiedź + premia za
 kolejność ukończenia (ADR 0027 część B). Polling w grze co 30 s, w lobby
 co 10 s (właściciel, 2026-09-11).
 
@@ -520,8 +522,8 @@ danej stacji należy do gracza `k` (`pytaniaNaStacje = liczbaGraczy`), więc nie
 ma wyścigu o pytanie ani blokady przy braku zasięgu; paczka mniejsza niż
 liczba graczy dzieli pytanie (indeks zawija się). 1 pkt za poprawną odpowiedź,
 bez składnika czasowego (ADR 0023 pkt 1). Gra kończy się, gdy każdy
-niezrezygnowany gracz odpowiedział na wszystkich stacjach, ALBO gdy organizator
-zakończy ją przed czasem.
+niezrezygnowany gracz odpowiedział na wszystkich stacjach — wyjście gracza
+(także organizatora) wykreśla go z tego warunku (uwaga G).
 
 **Premia za kolejność ukończenia** (aneks właściciela 2026-09-13, uwaga L):
 pula = **min(3, grający − 1)**, gdzie „grający" to gracze bez rezygnacji
@@ -530,9 +532,10 @@ itd. aż do zera: **1 grający → 0 pkt, 2 → 1/0, 3 → 2/1/0, 4 i więcej �
 3/2/1/0…**. Odłączeni wcześniej nie liczą się ani do puli, ani do miejsc.
 (Wcześniej, aneksem z 2026-09-11, premia była stała 3/2/1 niezależnie od liczby
 graczy.) Kolejność bierze się z `kolejnosc` zdarzeń
-nadawanej przez most, nie z zegara urządzenia. Rezygnujący i gracze
-niedokończeni premii nie dostają — ale ukończenie wszystkich stacji PRZED
-przedwczesnym końcem gry (host, `gra-zakoncz`) premię zachowuje.
+nadawanej przez most, nie z zegara urządzenia. Rezygnujący (także organizator,
+który zakończył grę na swoim telefonie — uwaga G) i gracze niedokończeni premii
+nie dostają i nie liczą się do puli; ukończenie wszystkich stacji przed
+domknięciem gry premię zachowuje.
 Premia wchodzi do `punkty` dopiero w podsumowaniu (`stan: zakonczona`) —
 częściowy wynik jej nie pokazuje, żeby nie sugerować punktów, których jeszcze
 nie ma.

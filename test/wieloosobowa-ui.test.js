@@ -234,7 +234,8 @@ function atrapaMostu() {
       stacjaId: z.stacjaId != null ? Number(z.stacjaId) : null, dane: daneZdarzenia,
       tSerwera: new Date().toISOString(),
     });
-    if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+    // Lustro .gs (ADR 0019 aneks 2026-09-13, uwaga G): rezygnacja też domyka grę.
+    if (z.typ !== 'koniec' && czyKompletna(gra)) {
       gra.stan = 'zakonczona'; // jak w moście: stan PRZED wynikami (premia, ADR 0027 pkt 5)
       gra.wyniki = przeliczWyniki(gra);
     }
@@ -715,7 +716,7 @@ test('start SOLO: organizator wystartuje grę z jednym graczem i sam ją domyka'
   assert.equal(gra.wyniki['g-1'].premia, 0, 'bez rywali nie ma premii za kolejność');
 });
 
-test('host kończy grę ikoną ⚙ START GRY: podsumowanie u wszystkich, premia liczy się też przy przedwczesnym końcu', async () => {
+test('uwaga G: koniec gry hosta NIE kończy gry innym — gość gra dalej, a most domyka grę, gdy skończy', async () => {
   const most = atrapaMostu();
   const pamiecA = new Map();
   zasiejZestaw(most, 3);
@@ -729,29 +730,48 @@ test('host kończy grę ikoną ⚙ START GRY: podsumowanie u wszystkich, premia 
   await klik(A, 'przycisk-lobby-start');
   await przepompuj(B, 1);
 
-  // Bartek domyka WSZYSTKIE stacje pierwszy; Ala tylko jedną — i host kończy grę
-  await przejdzStacje(B);
-  await przejdzStacje(B);
-  await przejdzStacje(B);
+  // Ala (organizator) domyka jedną stację, Bartek nie domknął jeszcze żadnej
   await przejdzStacje(A);
   await przepompuj(A, 1);
-  // Przycisku „⏹ Zakończ grę (host)" NIE MA (uwaga F, ADR 0044): host kończy
-  // grę tak samo jak gracz w hotseat — ikoną ⚙ START GRY i wpisaniem TAK.
-  assert.equal(A.dom.elementy.has('przycisk-multi-zakoncz'), false, 'host nie ma osobnego przycisku');
-  assert.equal(B.dom.elementy.has('przycisk-multi-zakoncz'), false, 'gość też go nie ma');
-  await potwierdzKoniecGry(A);
-  await czekajNa(A, () => most.znajdz(kodGry(most)).stan === 'zakonczona', 'most zakończył grę po potwierdzeniu hosta');
   const kod = kodGry(most);
+
+  // Host kończy grę na swoim telefonie: ⚙ START GRY → TAK (ADR 0043). Telefon
+  // hosta służył tylko do wystartowania gry i wybrania pytań (uwaga G).
+  await potwierdzKoniecGry(A);
+  await czekajNa(A, () => most.znajdz(kod).zdarzenia.some((z) => z.typ === 'rezygnacja' && z.graczId === 'g-1'),
+    'koniec hosta wychodzi na most jako rezygnacja');
+  assert.equal(most.znajdz(kod).stan, 'trwa', 'gra NIE jest zamknięta — pozostali gracze grają dalej');
+  assert.equal(most.znajdz(kod).zdarzenia.some((z) => z.typ === 'koniec'), false,
+    'most nie dostał zdarzenia „koniec" — aplikacji nie wolno kończyć gry innym');
+  assert.equal(most.ciala.filter((c) => JSON.parse(c).akcja === 'gra-zakoncz').length, 0,
+    'aplikacja nie woła akcji gra-zakoncz — host nie kończy gry na moście (uwaga G)');
+  assert.equal(el(A, 'gra-panel-koniec').hidden, false, 'host widzi swój wynik');
+  assert.match(tekst(A, 'status'), /pozostali gracze grają dalej/, 'status mówi wprost, że inni grają dalej');
+
+  // Bartek gra dalej — cała jego trasa, bez blokady i bez utraconych informacji
+  await przepompuj(B, 1);
+  assert.equal(el(B, 'ekran-gra').hidden, false, 'gość został w grze');
+  assert.equal(el(B, 'gra-panel-koniec').hidden, true, 'u gościa gra się NIE skończyła');
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  await czekajNa(B, () => most.znajdz(kod).stan === 'zakonczona',
+    'most domknął grę, gdy ostatni aktywny gracz skończył (rezygnacja hosta też domyka — .gs)');
+
+  // Premia: pula liczy tylko tych, którzy dograli (uwaga L) — host wyszedł, więc
+  // grających jest 1 i pula premii wynosi 0.
   const wyniki = most.znajdz(kod).wyniki;
-  assert.equal(wyniki['g-2'].premia, 1, 'Bartek skończył przed końcem gry: premia liczy się także przy przedwczesnym końcu (2 grających → pula 1)');
-  assert.equal(wyniki['g-2'].punkty, 4, '3 odpowiedzi + premia 1');
-  assert.equal(wyniki['g-1'].premia, 0, 'Ala nie domknęła stacji: bez premii');
+  assert.equal(wyniki['g-1'].zrezygnowal, true, 'host jest wykreślony z gry jako rezygnujący');
+  assert.equal(wyniki['g-2'].premia, 0, 'jeden dogrywający → pula premii 0 (ADR 0027 aneks 2026-09-13)');
+  assert.equal(wyniki['g-2'].punkty, 3, 'Bartek: trzy dobre odpowiedzi');
+
+  // Gdy gra się domknie, OBA telefony pokazują wspólną tabelę (ADR 0038/0044)
+  await przepompuj(A, 1);
   await przepompuj(B, 1);
   for (const [nazwa, u] of [['A', A], ['B', B]]) {
-    await czekajNa(u, () => el(u, 'gra-wyniki-tbody').children.length === 2, `${nazwa}: tabela podsumowania`);
-    assert.match(tekst(u, 'multi-sync-pasek'), /odświeżanie zatrzymane/, `${nazwa}: koniec gry zatrzymuje polling`);
-    assert.equal(u.dom.elementy.has('multi-info-lista'), false, `${nazwa}: kanału info nie ma (ADR 0044)`);
+    await czekajNa(u, () => el(u, 'gra-wyniki-tbody').children.length === 2, `${nazwa}: wspólna tabela po domknięciu gry`);
     assert.match(tekst(u, 'gra-wynik-zwyciezca'), /Bartek/, `${nazwa}: zwycięzca z punktacji mostu`);
+    assert.match(tekst(u, 'multi-sync-pasek'), /odświeżanie zatrzymane/, `${nazwa}: koniec gry zatrzymuje polling`);
   }
 });
 

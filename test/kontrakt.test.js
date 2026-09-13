@@ -1655,9 +1655,12 @@ test('kontrakt ADR 0043: grę kończy ikona ⚙ START GRY z wpisaniem TAK (uwagi
   assert.match(APP, /\$\('koniec-gry-potwierdzenie'\)\.value = '';/,
     'pole jest czyszczone — każde otwarcie warstwy zaczyna od zera');
 
-  // 5. Potwierdzony koniec idzie tą samą ścieżką co dawny przycisk (hotseat i multi).
-  assert.match(APP, /function zakonczGreZPotwierdzenia\(\) \{\n {2}zamknijKoniecGry\(\{ bezFokusu: true \}\);\n {2}if \(STAN\.multi\) \{[\s\S]{0,400}if \(STAN\.multi\.rola === 'organizator'\) void zakonczGreMulti\(\);\n {4}else rezygnujZGryMulti\(\);\n {4}return;\n {2}\}\n {2}zakonczGreRecznie\(\);\n\}/,
-    'w multi organizator kończy grę w moście, pozostali wychodzą u siebie; hotseat kończy się lokalnie');
+  // 5. Potwierdzony koniec: hotseat kończy grę lokalnie, a w multi KAŻDY —
+  //    także organizator — tylko WYCHODZI z gry (uwaga G, ADR 0019 aneks).
+  assert.match(APP, /function zakonczGreZPotwierdzenia\(\) \{\n {2}zamknijKoniecGry\(\{ bezFokusu: true \}\);\n {2}if \(STAN\.multi\) \{[\s\S]{0,600}rezygnujZGryMulti\(\);\n {4}return;\n {2}\}\n {2}zakonczGreRecznie\(\);/,
+    'w multi potwierdzony koniec to wyjście z gry dla każdej roli; hotseat kończy się lokalnie');
+  assert.equal(/if \(STAN\.multi\.rola === 'organizator'\)[\s\S]{0,200}zakonczGreMulti\(\);/.test(APP), false,
+    'gałąź kończąca grę w moście z telefonu hosta zniknęła (uwaga G)');
   assert.match(APP, /STAN\.graZakonczonaRecznie = true;/, 'znacznik ręcznego końca zostaje (historia: „przerwana")');
 
   // 6. Warstwa zachowuje się jak każdy panel: krzyżyk, Escape, krok gry, inert.
@@ -1771,4 +1774,53 @@ test('kontrakt ADR 0027 aneks 2026-09-13: pula premii = min(3, grający − 1)',
     'most liczy tę samą pulę — kopię pilnuje test parity w most-gra.test.js');
   assert.equal(/\[3, 2, 1\]\[i\]/.test(WIELO + GS), false,
     'stała tabela 3/2/1 umarła po obu stronach (LESSONS L31: usunięcie i grep w tym samym commitcie)');
+});
+
+test('kontrakt ADR 0019 aneks 2026-09-13b: koniec gry hosta nie kończy gry pozostałym (uwaga G)', () => {
+  // 1. Aplikacja nie kończy gry w moście: koniec na telefonie = zdarzenie `rezygnacja`.
+  assert.equal(/akcja: 'gra-zakoncz'/.test(APP + czytaj('app/sync.js') + czytaj('app/wieloosobowa.js')), false,
+    'żaden moduł aplikacji nie woła akcji gra-zakoncz');
+  assert.equal(/function zakonczGreMulti/.test(APP), false,
+    'funkcja kończąca grę globalnie usunięta — w jej miejscu został nagrobek');
+  assert.match(APP, /`zakonczGreMulti\(\)` USUNIĘTA \(właściciel 2026-09-13, uwaga G/,
+    'nagrobek mówi, dlaczego funkcji nie ma (LESSONS: martwy kod kasujemy z wyjaśnieniem)');
+  assert.match(APP, /const organizator = m\.rola === 'organizator';\n {2}void wyslijZdarzenieMulti\('rezygnacja', null, \{\n {4}powod: organizator \? 'organizator zakończył grę na swoim telefonie' : 'rezygnacja z telefonu',\n {2}\}\);/,
+    'zdarzenie rezygnacji niesie powód zależny od roli');
+  assert.match(APP, /Gra zakończona na tym telefonie — pozostali gracze grają dalej/,
+    'status organizatora jest uczciwy: inni grają dalej');
+  assert.match(APP, /\$\('przycisk-koniec-gry'\)\.addEventListener\('click', \(\) => zakonczGreZPotwierdzenia\(\)\);/,
+    'ścieżka ⚙ START GRY → TAK → koniec na tym telefonie zostaje (ADR 0043)');
+
+  // 2. Most domyka grę także po rezygnacji — inaczej wisiałaby otwarta, gdy
+  //    wychodzi ostatni aktywny gracz.
+  assert.match(GS, /if \(z\.typ !== 'koniec' && czyKompletna\(gra\)\) \{/,
+    'rezygnacja może domknąć grę (czyKompletna liczy rezygnującego za domkniętego)');
+  assert.equal(/z\.typ !== 'rezygnacja' && z\.typ !== 'koniec'/.test(GS), false,
+    'stare wyłączenie rezygnacji ze sprawdzania kompletności zniknęło');
+  assert.match(GS, /gra\.stan = 'zakonczona'; \/\/ stan PRZED wynikami/,
+    'domknięcie liczy wyniki i premie tak jak dotąd');
+
+  // 3. Akcja `gra-zakoncz` ZOSTAJE w moście (starsze telefony z offline'ową
+  //    skorupą z SW, ręczne porządkowanie gier na Drive) — ale poza flow gry.
+  assert.match(GS, /case 'gra-zakoncz':/, 'most nadal obsługuje akcję gra-zakoncz');
+  assert.match(GS, /aplikacja NIE woła już tej akcji/,
+    'most pamięta, że flow gry jej nie używa (komentarz przy akcji)');
+
+  // 4. Atrapa mostu w testach UI jest lustrem reguły z .gs (wzór: parity premii).
+  assert.match(czytaj('test/wieloosobowa-ui.test.js'), /if \(z\.typ !== 'koniec' && czyKompletna\(gra\)\) \{/,
+    'atrapa w test/wieloosobowa-ui.test.js ma tę samą regułę domykania co .gs');
+
+  // 5. Dokumentacja mówi to samo co kod.
+  assert.match(PROTOKOL, /host NIE kończy gry\npozostałym/, 'PROTOKOL §9.1 ma regułę właściciela');
+  assert.match(PROTOKOL, /rezygnacja też jest sprawdzana pod kątem domknięcia/,
+    'PROTOKOL §9.1 tłumaczy, dlaczego most domyka grę po rezygnacji');
+  assert.match(czytaj('docs/ARCHITECTURE.md'), /i host, i gość wysyłają wtedy `rezygnacja`/,
+    'ARCHITECTURE nie mówi już, że organizator woła gra-zakoncz');
+  assert.match(README, /kończy ją TYLKO na tym telefonie/, 'README ma regułę dla gracza');
+  assert.match(czytaj('docs/decisions/0019-gra-wieloosobowa-multi-device.md'),
+    /## Aneks 2026-09-13b \(m12-109, uwaga G\)/, 'ADR 0019 ma aneks G');
+  assert.match(czytaj('docs/decisions/0044-odliczanie-po-starcie-gry-wieloosobowej.md'),
+    /aneks 2026-09-13b \(uwaga G\)/, 'ADR 0044 odsyła do aneksu, który zmienił jego pkt 8');
+  assert.match(czytaj('docs/WORKFLOW.md'), /gra kończy\n   się TYLKO na telefonie A/,
+    'scenariusz testu terenowego w WORKFLOW §6 jest zgodny z nowym zachowaniem');
 });

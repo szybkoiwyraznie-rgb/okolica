@@ -69,7 +69,10 @@ wystartował grę.
 8. **Koniec gry i rezygnacja idą przez ikonę ⚙ START GRY** (ADR 0043):
    organizator → `zakonczGreMulti()`, pozostali → `rezygnujZGryMulti()`
    (dwustopniowe uzbrajanie rezygnacji umarło razem z przyciskiem —
-   potwierdzeniem jest wpisane TAK).
+   potwierdzeniem jest wpisane TAK). *Zmienione tego samego dnia przez ADR 0019
+   aneks 2026-09-13b (uwaga G): także organizator wychodzi z gry zdarzeniem
+   `rezygnacja`, a `zakonczGreMulti()` została usunięta — telefon hosta nie
+   kończy gry pozostałym.*
 
 ## Konsekwencje
 

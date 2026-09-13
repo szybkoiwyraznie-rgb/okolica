@@ -271,10 +271,12 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
    ADR 0044).
 6. **Koniec z ręki hosta**: A klika ⚙ START GRY → warstwa „Czy na pewno chcesz
    zakończyć aktualną grę?" → wpisuje TAK → „■ ZAKOŃCZ AKTUALNĄ GRĘ" (ADR 0043;
-   przycisku „⏹ Zakończ grę (host)" nie ma — ADR 0044) — u obu telefonów
-   podsumowanie i ranking końcowy; premie za ukończenie przed końcem liczą się
-   także przy takim końcu, a ich pula zależy od liczby grających, którzy nie
-   odłączyli się wcześniej (2 grających: 1/0, 3: 2/1/0, 4 i więcej: 3/2/1/0).
+   przycisku „⏹ Zakończ grę (host)" nie ma — ADR 0044). Obserwować: gra kończy
+   się TYLKO na telefonie A — B gra dalej i domyka swoje stacje (właściciel
+   2026-09-13, uwaga G), a gdy skończy, most domyka grę i OBA telefony pokazują
+   wspólną tabelę. Host jest wykreślony z puli premii jak każdy rezygnujący
+   (2 grających: 1/0, 3: 2/1/0, 4 i więcej: 3/2/1/0 — pula zależy od liczby
+   grających, którzy dograli do końca).
 7. **Koniec naturalny**: po ostatniej odpowiedzi (wszyscy aktywni domknęli
    stacje) oba telefony pokazują ostateczną tabelę TEJ gry (ADR 0038: zwycięzca,
    punkty, poprawne — bez eksportów i statystyk).

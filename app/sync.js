@@ -56,7 +56,8 @@ export function urlStanGry(urlMostu, { kod = null, idGry = null } = {}) {
 
 /**
  * Jednorazowe polecenie POST do mostu (gra-zaloz / gra-dolacz / gra-start /
- * gra-zdarzenie / gra-zakoncz). Rozwiązuje wynikiem `{ok:true,…}`, rzuca
+ * gra-zdarzenie; `gra-zakoncz` żyje tylko w moście — ADR 0019 aneks 2026-09-13b).
+ * Rozwiązuje wynikiem `{ok:true,…}`, rzuca
  * Error z `odmowaMostu=true` przy jawnej odmowie serwera (nie ponawiać!)
  * albo zwykły Error przy awarii sieci (kolejkować i ponowić).
  */

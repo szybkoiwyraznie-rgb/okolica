@@ -326,8 +326,10 @@ commit i nowa wersja aplikacji.
    z sygnałem na każdym kroku (`odliczStartGry`, ADR 0044), a po nim ekran
    wygląda jak w hotseat: karty multi, kanału info i paska synchronizacji
    w grze NIE MA (pasek został w lobby). Grę kończy ikona ⚙ START GRY
-   z wpisaniem TAK (ADR 0043) — organizator woła `gra-zakoncz`, pozostali
-   `rezygnacja`; premie liczą się też przy końcu przed czasem. Brak pozycji =
+   z wpisaniem TAK (ADR 0043) — i host, i gość wysyłają wtedy `rezygnacja`, bo
+   telefon hosta NIE kończy gry pozostałym (uwaga G); grę domyka most, gdy
+   wszyscy aktywni gracze skończyli albo wyszli (rezygnacja też jest sprawdzana).
+   Brak pozycji =
    środek trasy z pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca
    z `okolica:multi:sesja` BEZ odliczania, a zamknięte już stacje nie wracają
    do rozgrywki.

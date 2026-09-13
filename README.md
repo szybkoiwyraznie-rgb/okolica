@@ -220,8 +220,9 @@ braku przycisku). Eksport
   cyfrą na środku, nad przezroczystym tłem (mapa zostaje widoczna), a potem gra
   wygląda dokładnie jak w hotseat: pasek na dole, panel fazy, mapa, bez
   doklejonej karty z tabelami i czasami odświeżania (ADR 0044). Grę kończy ikona
-  ⚙ START GRY z wpisaniem TAK (ADR 0043) — host w dowolnym momencie, a wszyscy
-  dostają podsumowanie z punktami policzonymi na wspólnym Drive.
+  ⚙ START GRY z wpisaniem TAK (ADR 0043) — i kończy ją TYLKO na tym telefonie:
+  pozostali gracze grają dalej, a punktację liczy wspólny Drive, który domyka
+  grę, gdy wszyscy aktywni gracze skończą albo wyjdą (ADR 0019 aneks, uwaga G).
 - **Wspólny stan**: Google Drive + Apps Script — ten sam most co repozytorium
   paczek (ADR 0016/0018/0019). Na serwer jadą wyłącznie pseudonimy, zdarzenia
   gry i wyniki; **współrzędne graczy nigdy nie opuszczają telefonu** (biała

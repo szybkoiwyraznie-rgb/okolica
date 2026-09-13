@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-108';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-108';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-109';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-109';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-108';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-108';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-108';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-108';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-108';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-108';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-108';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-108';
+} from './protokol.js?v=m12-109';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-109';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-109';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-109';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-109';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-109';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-109';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-109';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-108';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-108';
+} from './zestawy.js?v=m12-109';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-109';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-108';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-108';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-108';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-108';
-import { adresMostu, stanMostu } from './most.js?v=m12-108';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-108';
+} from './sieci.js?v=m12-109';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-109';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-109';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-109';
+import { adresMostu, stanMostu } from './most.js?v=m12-109';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-109';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-108';
+} from './oceny.js?v=m12-109';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -492,10 +492,11 @@ function odswiezKoniecGry() {
 function zakonczGreZPotwierdzenia() {
   zamknijKoniecGry({ bezFokusu: true });
   if (STAN.multi) {
-    // Gra wieloosobowa: organizator kończy grę w moście, pozostali wychodzą
-    // z niej u siebie — reszta gra dalej (ADR 0019 pkt 5).
-    if (STAN.multi.rola === 'organizator') void zakonczGreMulti();
-    else rezygnujZGryMulti();
+    // Gra wieloosobowa: koniec na tym telefonie = WYJŚCIE z gry — także dla
+    // ORGANIZATORA (właściciel 2026-09-13, uwaga G; ADR 0019 aneks). Jego telefon
+    // służył tylko do wystartowania gry i wybrania pytań; logika i punkty żyją
+    // na Drive i na telefonach uczestników, więc pozostali grają dalej.
+    rezygnujZGryMulti();
     return;
   }
   zakonczGreRecznie();
@@ -4890,21 +4891,11 @@ function renderujLobby() {
    (`renderujWierszeWynikow` + `#lobby-widownia-wiersze`), a ostateczna tabela
    jest na ekranie wyniku (ADR 0038) i w rankingu (ADR 0039). */
 
-/** Host kończy grę przed czasem — u wszystkich podsumowanie i ranking. */
-async function zakonczGreMulti() {
-  const m = STAN.multi;
-  if (!m || m.rola !== 'organizator') return;
-  status('Kończę grę na mostku Drive…');
-  try {
-    const wynik = await polecenieMostu(m.urlMostu, {
-      akcja: 'gra-zakoncz', kod: m.gra.kod, idGry: m.gra.idGry ?? null, graczId: m.graczId,
-    });
-    status('Gra zakończona — podsumowanie i ranking końcowy poniżej. Premie za kolejność liczą się też przy takim końcu.');
-    onStanGryMulti(wynik.gra);
-  } catch (e) {
-    status(`Nie udało się zakończyć gry: ${e?.message ?? e}`);
-  }
-}
+/* `zakonczGreMulti()` USUNIĘTA (właściciel 2026-09-13, uwaga G — ADR 0019 aneks
+   2026-09-13): host NIE kończy gry pozostałym. Aplikacja nie wysyła już akcji
+   `gra-zakoncz`; koniec gry na tym telefonie jest zdarzeniem `rezygnacja`
+   (`rezygnujZGryMulti`), a grę domyka most, gdy wszyscy aktywni gracze skończyli
+   albo wyszli. Akcja `gra-zakoncz` została w moście dla starszych telefonów. */
 
 /**
  * Wolna kolejność stacji (ADR 0027 część B pkt 2): w Wyścigu na Orientację
@@ -4970,20 +4961,30 @@ function renderujPasekSync() {
 }
 
 /**
- * Wyjście z gry wieloosobowej na tym telefonie: reszta gra dalej (ADR 0019 pkt 5).
+ * Wyjście z gry wieloosobowej na TYM telefonie: reszta gra dalej (ADR 0019 pkt 5
+ * i aneks 2026-09-13 — uwaga G: dotyczy także ORGANIZATORA, bo jego telefon
+ * służył tylko do wystartowania gry i wybrania pytań, a punktację liczy Drive).
  * Przycisku „🏳 Rezygnuję z gry" nie ma (uwaga F, ADR 0044) — potwierdzeniem jest
- * wpisanie TAK w warstwie za ikoną ⚙ START GRY (ADR 0043), więc dwustopniowego
- * uzbrajania klikiem tu nie potrzeba.
+ * wpisanie TAK w warstwie za ikoną ⚙ START GRY (ADR 0043).
+ *
+ * Zdarzenie `rezygnacja` jest potrzebne nie tylko innym graczom: most wykreśla
+ * rezygnującego z puli premii (ADR 0027 aneks 2026-09-13) i domyka grę, gdy
+ * pozostali aktywni gracze już skończyli — bez niego gra wisiałaby otwarta.
  */
 function rezygnujZGryMulti() {
   const m = STAN.multi;
   if (!m || !STAN.rozgrywka || STAN.rozgrywka.faza === FAZY.koniec) return;
-  void wyslijZdarzenieMulti('rezygnacja', null, { powod: 'rezygnacja z telefonu' });
+  const organizator = m.rola === 'organizator';
+  void wyslijZdarzenieMulti('rezygnacja', null, {
+    powod: organizator ? 'organizator zakończył grę na swoim telefonie' : 'rezygnacja z telefonu',
+  });
   STAN.graZakonczonaRecznie = true;
   zatrzymajSymulacje();
   pokazWyniki();
   renderujGre();
-  status('Zrezygnowałeś — Twój wynik poniżej. Synchronizacja działa dalej: gdy inni skończą, zobaczysz ostateczną tabelę.');
+  status(organizator
+    ? 'Gra zakończona na tym telefonie — pozostali gracze grają dalej, a ich punkty liczy wspólny Drive. Twój wynik poniżej; gdy inni skończą, zobaczysz ostateczną tabelę.'
+    : 'Zrezygnowałeś — Twój wynik poniżej. Synchronizacja działa dalej: gdy inni skończą, zobaczysz ostateczną tabelę.');
 }
 
 /**
@@ -5374,7 +5375,7 @@ function start() {
   $('przycisk-lobby-opusc').addEventListener('click', opuscLobby);
   // Przycisków „⏹ Zakończ grę (host)" i „🏳 Rezygnuję z gry" NIE MA (uwaga F,
   // ADR 0044): koniec gry i rezygnację obsługuje warstwa za ikoną ⚙ START GRY
-  // (`zakonczGreZPotwierdzenia` → `zakonczGreMulti()` / `rezygnujZGryMulti()`).
+  // (`zakonczGreZPotwierdzenia` → `rezygnujZGryMulti()` — uwaga G: host też).
   $('przycisk-multi-wroc').addEventListener('click', () => { void przywrocGreMulti(); });
   $('przycisk-multi-porzuc').addEventListener('click', () => {
     usunSesjeMulti();

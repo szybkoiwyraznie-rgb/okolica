@@ -295,3 +295,42 @@ odświeżania, bez informacji, kto wystartował (ADR 0044).
    na ekranie wyniku (ADR 0038) z punktami policzonymi przez most.
 5. **Wybór stacji w Wyścigu na Orientację** (ADR 0027 część B) zostaje, ale
    mieszka w panelu fazy A obok „▶ Idę do stacji”, nie w karcie multi.
+
+## Aneks 2026-09-13b (m12-109, uwaga G): koniec gry hosta nie kończy gry pozostałym
+
+Punkt **6** aneksu 2026-09-11 (host kończy grę przyciskiem `gra-zakoncz`, u
+wszystkich podsumowanie) oraz jego wersja z aneksu 2026-09-13 (host kończy grę
+ikoną ⚙ START GRY, `zakonczGreMulti()`) tracą ważność. Właściciel po testach
+terenowych 2026-09-13: zakończenie gry przez hosta NIE kończy gry u pozostałych —
+gracze grają dalej i mają wszystkie informacje, bo telefon hosta służył tylko do
+wystartowania gry, wybrania okolicy i wygenerowania pytań, a logika i punkty żyją
+na wspólnym Drive i na telefonach uczestników.
+
+1. **Koniec gry na telefonie = wyjście z gry**, dla KAŻDEJ roli: potwierdzenie
+   w warstwie za ikoną ⚙ START GRY (ADR 0043) wysyła zdarzenie `rezygnacja`
+   z powodem („organizator zakończył grę na swoim telefonie” / „rezygnacja
+   z telefonu”), pokazuje wynik tego gracza i NIE zmienia stanu gry w moście.
+   Funkcja `zakonczGreMulti()` została usunięta; aplikacja nie woła akcji
+   `gra-zakoncz`.
+2. **Pozostali gracze grają dalej** — ich telefony nie dostają żadnego sygnału
+   końca, a synchronizacja działa jak dotąd (polling 30 s, kolejka offline).
+   Punktacja i domknięcie gry są po stronie mostu.
+3. **Most domyka grę także po rezygnacji**: warunek `z.typ !== 'koniec'
+   && czyKompletna(gra)` zastąpił `z.typ !== 'rezygnacja' && z.typ !== 'koniec'
+   && czyKompletna(gra)`. `czyKompletna()` liczy gracza, który zrezygnował, za
+   domkniętego, więc bez tej zmiany gra wisiałaby otwarta, gdy ostatni aktywny
+   gracz wychodzi (np. host kończy u siebie, a pozostali już skończyli). Wymaga
+   NOWEGO deploymentu web app; na starym adresie gra domknie się dopiero przy
+   kolejnym zdarzeniu gracza, który jeszcze gra.
+4. **Premia za kolejność** (ADR 0027 aneks 2026-09-13, uwaga L) liczy się bez
+   zmian: pula = min(3, dograli − 1), a „dograli” to gracze bez rezygnacji —
+   host, który wyszedł, nie liczy się do puli i nie dostaje premii.
+5. **Akcja `gra-zakoncz` zostaje w moście** (obsługiwana jak dotąd: tylko
+   organizator, tylko `stan: 'trwa'`) dla starszych telefonów z offline'ową
+   skorupą z Service Workera i dla ręcznego porządkowania gier na Drive. Nie jest
+   już częścią flow gry — PROTOKOL §9.1 mówi to wprost.
+6. **Informacje, które zniknęły z ekranu gry** (kanał info i żywa tabela — aneks
+   2026-09-13, ADR 0044), są nadal dostępne tam, gdzie właściciel ich chce:
+   ostateczna tabela tej gry na ekranie wyniku (punkty z mostu,
+   `wynikiMultiKonca`), ranking między grami w warstwie pucharu (ADR 0039) i żywe
+   wyniki w lobby dla widowni (`#lobby-widownia-wiersze`).

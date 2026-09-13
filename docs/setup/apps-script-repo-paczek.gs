@@ -987,7 +987,11 @@ function przyjmijZdarzenie(dane) {
       tSerwera: new Date().toISOString(),
     };
     gra.zdarzenia.push(zdarzenie);
-    if (z.typ !== 'rezygnacja' && z.typ !== 'koniec' && czyKompletna(gra)) {
+    // Rezygnacja TEŻ może domknąć grę (ADR 0019 aneks 2026-09-13, uwaga G):
+    // czyKompletna() liczy gracza, który zrezygnował, za domkniętego, więc bez
+    // tego sprawdzenia gra wisiałaby otwarta, gdy wychodzi ostatni aktywny gracz
+    // (np. organizator kończy grę u siebie, a pozostali już skończyli).
+    if (z.typ !== 'koniec' && czyKompletna(gra)) {
       gra.stan = 'zakonczona'; // stan PRZED wynikami: premia wchodzi do punktów (ADR 0027 pkt 5)
       gra.wyniki = przeliczWyniki(gra);
     }
@@ -997,7 +1001,15 @@ function przyjmijZdarzenie(dane) {
   });
 }
 
-/** POST gra-zakoncz: organizator kończy przedwcześnie (np. wszyscy rezygnują). */
+/**
+ * POST gra-zakoncz: jawne domknięcie gry przed czasem.
+ *
+ * UWAGA (ADR 0019 aneks 2026-09-13, uwaga G): aplikacja NIE woła już tej akcji —
+ * koniec gry na telefonie (także u organizatora) jest zdarzeniem `rezygnacja`,
+ * a grę domyka most sam, gdy wszyscy aktywni gracze skończyli albo wyszli.
+ * Akcja zostaje w moście dla starszych telefonów (offline'owa skorupa z SW może
+ * mieć poprzednią wersję aplikacji) i dla ręcznego porządkowania gier na Drive.
+ */
 function zakonczGre(dane) {
   return zBlokada(() => {
     const znaleziona = znajdzGre(dane && dane.kod, dane && dane.idGry);
