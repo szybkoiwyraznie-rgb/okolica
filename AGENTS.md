@@ -26,9 +26,11 @@ siebie: znasz `wc -l` pliku i wiesz, że dotarłeś do ostatniej linii.
 2. **`docs/PROTOKOL.md`** — obowiązujący szablon promptu i schemat paczki
    pytań PYT. To zasada treściowa, nie sugestia.
 3. **Wszystkie ADR-y** w `docs/decisions/` — najpierw README rejestru, potem
-   **każdy** `NNNN-*.md` w całości. ADR-y ze statusem *Proponowana* są
-   kierunkiem, nie zobowiązaniem: nie buduj na nich trwałych rozwiązań, zanim
-   właściciel ich nie zaakceptuje (albo nie zaakceptujesz ich sam w trybie §2).
+   **każdy** `NNNN-*.md` w całości (podkatalog `archive/` jest poza tą listą —
+   leżą tam ADR-y w całości wycofane, czytasz je punktowo). ADR-y ze statusem
+   *Proponowana* są kierunkiem, nie zobowiązaniem: nie buduj na nich trwałych
+   rozwiązań, zanim właściciel ich nie zaakceptuje (albo nie zaakceptujesz ich
+   sam w trybie §2).
 4. **`docs/LESSONS.md`** — cały rejestr lekcji do ostatniej: objaw i przyczyna
    jednym zdaniem, reguła w całości (długie reguły mają w rejestrze początek).
    Pełne opisy przypadków: `docs/LESSONS_ARCHIVE.md` — poza budżetem, czytasz
@@ -42,14 +44,16 @@ Budżet lektury startowej: pozycje 1–6 mają się mieścić w **100 tys. token
 (`node tools/budzet-lektury.mjs`). Gdy próg zostanie
 przekroczony, skrócenie/rozdzielenie dokumentów staje się obowiązkowym zadaniem
 sesji, a nie opcją. Największy składnik budżetu to ADR-y (~65 tys. z 100 tys.
-w 2026-09-13) — podział zaczynaj od nich (np. ADR-y w całości uchylone przez
-późniejsze do `docs/decisions/archive/`, z linkiem w rejestrze), nie od LESSONS,
-który już ma swoje archiwum opisów przypadków.
+w 2026-09-13) — podział zaczynaj od nich (ADR-y w całości wycofane idą do
+`docs/decisions/archive/` z linkiem w rejestrze; zrobione 2026-09-13 dla 0014
+i 0031 — LESSONS L62), nie od LESSONS, który już ma swoje archiwum opisów
+przypadków.
 
 Czego NIE czytasz na start: `docs/PROJECT_HISTORY.md` (dziennik sesji),
 `docs/plans/*` (plany pojedynczych zadań), `docs/LESSONS_ARCHIVE.md` (pełne opisy
-przypadków lekcji) i `docs/BACKLOG.md` — to archiwum i bank pomysłów; sięgasz tam
-punktowo i grepem, gdy potrzebny jest kontekst konkretnej decyzji.
+przypadków lekcji), `docs/decisions/archive/*` (ADR-y w całości wycofane)
+i `docs/BACKLOG.md` — to archiwum i bank pomysłów; sięgasz tam punktowo i
+grepem, gdy potrzebny jest kontekst konkretnej decyzji.
 
 ## 1. Źródło prawdy
 

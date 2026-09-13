@@ -387,12 +387,17 @@ test('kontrakt: Overpass ma instancje opisane w ASSETS §2, a Nominatim jest usu
 
 test('kontrakt: każdy ADR z rejestru istnieje na dysku i każdy plik ADR jest w rejestrze', () => {
   const rejestr = czytaj('docs/decisions/README.md');
-  const linki = [...rejestr.matchAll(/\((\d{4}-[a-z0-9-]+\.md)\)/g)].map((m) => m[1]);
+  // Link rejestru może prowadzić do podkatalogu `archive/` — tam lądują ADR-y
+  // wycofane w całości (LESSONS L62, AGENTS.md §0). Wiersz w tabeli zostaje.
+  const linki = [...rejestr.matchAll(/\(((?:archive\/)?\d{4}-[a-z0-9-]+\.md)\)/g)].map((m) => m[1]);
   assert.ok(linki.length >= 13, `rejestr wymienia ${linki.length} ADR-ów`);
   for (const plik of linki) {
     assert.ok(existsSync(join(ROOT, 'docs/decisions', plik)), `rejestr linkuje ${plik}, którego nie ma`);
   }
-  const naDysku = readdirSync(join(ROOT, 'docs/decisions')).filter((f) => /^\d{4}-.*\.md$/.test(f));
+  const adry = (katalog, przedrostek = '') => readdirSync(join(ROOT, 'docs/decisions', katalog))
+    .filter((f) => /^\d{4}-.*\.md$/.test(f))
+    .map((f) => `${przedrostek}${f}`);
+  const naDysku = [...adry('.'), ...adry('archive', 'archive/')];
   for (const plik of naDysku) {
     assert.ok(linki.includes(plik), `ADR ${plik} istnieje, ale nie ma go w rejestrze`);
   }
@@ -1894,4 +1899,31 @@ test('kontrakt: archiwum LESSONS jest lustrem rejestru i nie wchodzi w budżet l
   assert.equal(pliki.includes('docs/LESSONS_ARCHIVE.md'), false,
     'archiwum NIE wchodzi w budżet lektury startowej — po to powstało');
   assert.equal(pliki.includes('docs/LESSONS.md'), true, 'rejestr zostaje w budżecie');
+});
+
+test('kontrakt: archiwum ADR-ów jest poza budżetem lektury, a wiersze zostają w rejestrze', async () => {
+  // L62: największym zjadaczem budżetu są ADR-y (~65 tys. z 100 tys.), więc gdy
+  // próg pęka, wycofane w całości idą do `docs/decisions/archive/`. Rejestr
+  // traci tylko ścieżkę linku, nie wiersz — inaczej pin „ADR na dysku ↔ rejestr”
+  // przestałby pilnować przeniesionych plików.
+  const archiwum = readdirSync(join(ROOT, 'docs/decisions/archive')).filter((f) => /^\d{4}-.*\.md$/.test(f));
+  assert.ok(archiwum.length >= 2, `w archiwum są ${archiwum.length} ADR-y wycofane w całości`);
+  const { plikiLektury } = await import('../tools/budzet-lektury.mjs');
+  const pliki = plikiLektury(ROOT);
+  for (const plik of archiwum) {
+    assert.equal(pliki.includes(`docs/decisions/archive/${plik}`), false,
+      `${plik} NIE może wchodzić w lekturę startową — po to jest archiwum`);
+    assert.equal(pliki.includes(`docs/decisions/${plik}`), false,
+      `${plik} wyszedł z katalogu głównego razem z przeniesieniem`);
+  }
+  assert.match(czytaj('docs/decisions/README.md'), /docs\/decisions\/archive\//,
+    'rejestr mówi, gdzie leżą ADR-y przeniesione do archiwum');
+  assert.ok(AGENTS.includes('docs/decisions/archive/*'),
+    'AGENTS.md §0 wypisuje archiwum ADR-ów wśród plików, których nie czytasz na start');
+  // Wycofanie nie kasuje śladu: przeniesiony ADR nadal ma status i tytuł, a rejestr
+  // nadal go wymienia (pin „status w rejestrze ↔ status w pliku” czyta obie ścieżki).
+  for (const plik of archiwum) {
+    const tresc = czytaj(`docs/decisions/archive/${plik}`);
+    assert.match(tresc, /^- Status: Wycofana/m, `${plik}: w archiwum leżą wyłącznie ADR-y wycofane`);
+  }
 });

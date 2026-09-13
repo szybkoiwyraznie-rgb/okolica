@@ -8,6 +8,10 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 - **Proponowana** — kierunek do dyskusji; bez akceptacji nie buduj trwałych rozwiązań.
 - **Zaakceptowana** — obowiązuje. **Odrzucona** — rozważona, nieprzyjęta.
 - **Zastąpiona** — historyczna (nowszy ADR wskazuje aktualną). **Wycofana** — nieaktualna.
+- **Archiwum** — ADR w całości wycofany przenosi się do `docs/decisions/archive/`:
+  wiersz zostaje w tej tabeli (link z `archive/`), a plik wychodzi z lektury
+  startowej (`tools/budzet-lektury.mjs`, AGENTS.md §0, LESSONS L62). Czytasz go
+  punktowo, gdy wchodzisz w temat decyzji.
 
 ## Decyzje
 
@@ -26,7 +30,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0011](0011-mobile-first-dotyk.md) | Mobile-first: interfejs dotykowy jako podstawowy, dostępność i czytelność w słońcu | Zaakceptowana |
 | [0012](0012-model-sesji-pr-audyt-inkrementalne-commity.md) | Model sesji: PR na starcie, audyt poprzedniego PR, inkrementalne commity, bez force push | Zaakceptowana |
 | [0013](0013-prywatnosc-wspolrzedne-na-urzadzeniu.md) | Prywatność: współrzędne zostają na urządzeniu, zero analityki | Proponowana |
-| [0014](0014-punktacja-czasu-mediana-tempa.md) | Punktacja czasu: premia względem mediany tempa odcinków (doprecyzowanie ADR 0009 pkt 5) | Wycofana |
+| [0014](archive/0014-punktacja-czasu-mediana-tempa.md) | Punktacja czasu: premia względem mediany tempa odcinków (doprecyzowanie ADR 0009 pkt 5) — pkt 1 (dystanse odcinków z sieci) obowiązuje | Wycofana |
 | [0015](0015-niekompletna-paczka-i-pominiecie-stacji.md) | Niekompletna paczka: ostrzeżenie zamiast blokady; pominięcie tylko w drodze | Proponowana |
 | [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device; przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
 | [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1`, geohash5 w indeksie, CC BY-SA 4.0, moderacja właściciela | Proponowana |
@@ -43,7 +47,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0028](0028-oceny-pytan-graczy.md) | Oceny pytań przez graczy: jeden kciuk, jeden głos na gracza i pytanie, wysyłka w tle | Zaakceptowana |
 | [0029](0029-brak-recznego-dojscia.md) | Dojście zalicza tylko GPS: ręczne zgłaszanie usunięte z interfejsu | Zaakceptowana |
 | [0030](0030-rozgrywka-pod-orientacje-telefonu.md) | Rozgrywka układa się pod orientację telefonu, a pytanie leży NA mapie (obróć ekran — mapa sama centruje się na graczu; blokady orientacji NIE MA — aneks 2026-09-13) | Zaakceptowana |
-| [0031](0031-generowanie-pytan-partiami.md) | Duży setup generuje pytania partiami, a aplikacja sama je scala (stałe szacunku usunięte — aneks 2026-09-12) | Wycofana |
+| [0031](archive/0031-generowanie-pytan-partiami.md) | Duży setup generuje pytania partiami, a aplikacja sama je scala (stałe szacunku usunięte — aneks 2026-09-12) | Wycofana |
 | [0032](0032-wariant-bez-fact-check.md) | Wariant „Pytania (bez fact check)" jako domyślny | Zaakceptowana |
 | [0033](0033-koniec-odwracania-liter.md) | Koniec odwracania liter: zostaje kod poprawnej odpowiedzi | Zaakceptowana |
 
