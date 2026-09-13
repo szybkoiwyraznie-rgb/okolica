@@ -1253,3 +1253,68 @@ ADR 0011), duży dystans 340×29, komunikat 370×41. Aneks 2026-09-13b do ADR 00
 5. Kafelki i sieć w sandboxie nie działają (L3), ale do pomiaru widoczności nie
    są potrzebne: wystarczy stan DOM ustawiony tymi samymi zdaniami, którymi
    ustawia je aplikacja.
+
+## L66 (2026-09-13) — dokumenty z pinami: kolejność aneks → cytowanie, kotwice ASCII przy zamianach, sprawdzanie cytowań przed przeniesieniem
+
+**Objaw:** sesja 2026-09-13c (fala zgłoszeń terenowych N–S, PR #20), dwa
+potknięcia przy pracy na dokumentach — oba bez wpływu na zachowanie aplikacji,
+oba wykryte przez bramy, nie przez czytanie:
+
+1. `node --test test/dryf-dokumentow.test.js` → test 5 („cytowane aneksy ADR
+   istnieją") czerwony z komunikatem `ADR 0010 nie ma aneksu z tą datą`.
+   WORKFLOW.md dostał zdanie z „(ADR 0010 aneks 2026-09-13)" w momencie, gdy
+   aneks jeszcze nie istniał — porządek pracy był odwrotny niż porządek, którego
+   pilnuje strażnik.
+2. Zamiana akapitu w README.md nie trafiła, choć wyszukiwany fragment wyglądał
+   identycznie: w `stare` cudzysłów zamykający był U+201D (`”`), a plik miesza
+   `„` (U+201E) z prostym `"` (ASCII). Różnica jednego znaku, niewidoczna
+   w diffie terminala i w podglądzie.
+
+**Przyczyna:** dokumenty tego repozytorium są nośnikami stanu pilnowanymi
+testami (`test/dryf-dokumentow.test.js`): strażnik zbiera cytowania
+`ADR NNNN aneks RRRR-MM-DD[x]` ze WSZYSTKICH żywych nośników — `DOKUMENTY`
+(README, AGENTS, ROADMAP, WORKFLOW, ARCHITECTURE, ASSETS, PROTOKOL, LESSONS),
+`UI` (index.html, sw.js, app/*.js), testy i lustro `.gs` — i wymaga, żeby plik
+ADR zawierał dokładnie tę datę. Cytat jest więc obietnicą składaną ZANIM treść
+powstanie, jeśli kolejność jest odwrotna. Osobno: polski tekst w plikach
+projektu nie ma jednego standardu cudzysłowów (historyczne edycje różnych
+narzędzi), więc dopasowanie literalne całych zdań jest kruche — to rodzina L2
+(mojibake/UTF-8) w wydaniu „znak poprawny, ale inny".
+
+**Naprawa:** aneksy ADR 0010/0015/0017/0019/0032 dopisane PRZED ponownym
+uruchomieniem strażnika (test 5 → zielony, 5/5); zamiany w README.md,
+WORKFLOW.md i ARCHITECTURE.md wykonane metodą przęsła: wyszukać unikalny
+fragment ASCII początku i końca (`s.index(start)`, `s.index(end)`), podmienić
+tekst pomiędzy nimi — pięć przęseł, zero nietrafionych, bez dotykania
+cudzysłowów. Weryfikacja: `grep -rn 'Poprzednie gry\|okolica:historia'` po
+nośnikach żywych → zero trafień.
+
+**Reguła:**
+1. Kolejność fali dokumentowej: (a) aneks w pliku ADR, (b) dopiero potem
+   cytowanie go z datą w żywym nośniku. Jeśli treść nie jest jeszcze gotowa,
+   cytuj BEZ daty („ADR 0010 aneks") — strażnik szuka wyłącznie wzorca
+   `ADR\s*(\d{4})\s*aneks\s*(\d{4}-\d{2}-\d{2}[a-z]?)`, więc cytat bez daty
+   niczego nie obiecuje. Format nagłówka aneksu: `## Aneks RRRR-MM-DD[x]
+   (mNN-NNN, o czym)`.
+2. Zamiany w dokumentach z polskim tekstem kotwicz na fragmentach ASCII:
+   `i = s.index(start); j = s.index(end); s = s[:i] + nowe + s[j:]`. Nigdy nie
+   buduj `stare` z całych zdań zawierających cudzysłowy, myślniki ani `„…”` —
+   a po zamianie sprawdzaj `git diff` i grepem (L2).
+3. Przed przeniesieniem treści ADR do archiwum przegrepuj żywe nośniki pod
+   kątem cytowań z datą (`grep -rn '0019 aneks 2026-09-11' README.md docs/ app/
+   test/ *.gs`) ORAZ asercji testów czytających nagłówki tego pliku
+   (`grep -rn '0019-gra-wieloosobowa' test/`) — przenoś tylko sekcje, których
+   nikt nie cytuje i których żaden test nie czyta. W tej sesji tak poszły
+   aneksy 2026-09-06 … 2026-09-11b (2 268 tok), a zostały cytowane 2026-09-12f,
+   2026-09-13, 2026-09-13b.
+4. Plik w `docs/decisions/archive/`, który NIE jest wycofanym ADR-em (np.
+   pojemnik na przeniesione aneksy), nazwij bez przedrostka `NNNN-`: kontrakt
+   „archiwum ADR-ów" wymaga od plików `^\d{4}-` wiersza `- Status: Wycofana`
+   i wiersza w rejestrze, a budżet i rejestr skanują tylko wzorzec `^\d{4}-`.
+   Nazwa `aneksy-0019-…md` jest poza oboma skanami.
+5. Komentarz-nagrobek w kodzie (L31) i wpis w strażniku martwych fraz (L58/L64)
+   nie mogą cytować DOSŁOWNYCH napisów usuniętej funkcji, jeśli ten napis jest
+   właśnie frazą martwą — nagrobek opisuje rzecz („historia lokalna",
+   „poprzednia gra"), a frazę wpisuje się w strażniku raz, w `MARTWE_FRAZY`,
+   z listą nośników. Testy nie są nośnikiem fraz martwych (strażnik sprawdza
+   `DOKUMENTY` + `UI`), więc kontrakt odwrócony może nazwać usuniętą rzecz.

@@ -4448,3 +4448,210 @@ wszystkich importach + `WERSJA_SW`).
 - **Budżet:** rezerwa 835 tok — następny ADR albo lekcja przekroczy próg, więc
   kolejna sesja zaczyna od cięcia (L62): największy pojedynczy zjadacz to
   ADR 0019 (5 368 tok), a mechanizm archiwum dla ADR-ów wycofanych już stoi.
+
+## Sesja 2026-09-13c — drugi test terenowy: zgłoszenia N–S, pięć wdrożonych i jedno wycofane (gałąź `arena/01a09b63-okolica`, PR #20)
+
+Kontynuacja sesji 2026-09-13b (audyt PR #19, naprawy U1 i U2, m12-112).
+Właściciel wrócił z drugiego testu terenowego z sześcioma zgłoszeniami (N–S):
+pięć wdrożonych, jedno (S) wycofane przez właściciela po wspólnym sprawdzeniu
+założeń. Wersja aplikacji **m12-112 → m12-113** — cache-busting całej fali
+poszedł w jednym commitcie razem z poprawką O (`180cadb`).
+
+### 1. Zgłoszenia i decyzje
+
+| # | Objaw z terenu | Decyzja | Gdzie |
+|---|---|---|---|
+| N | po zamknięciu przeglądarki i ponownym wejściu stacja nr 2 stawała się nr 1 | wdrożone: numer stacji jest częścią trasy, nie indeksem listy | `31504f8` (m12-113), ADR 0019 aneks 2026-09-13c |
+| O | na setupie stoi boks z poprzednią grą, a stać nie powinien | wdrożone: **cała funkcja usunięta** (wybór właściciela), nie przeniesiona | `180cadb`, `40cc4a0`; ADR 0010 aneks, ADR 0015 aneks |
+| P | przedrostek „repozytorium:" przed nazwą paczki nic nie wnosi | wdrożone: wiersz zaczyna się od miejsca | `e7ae8cf`; ADR 0017 aneks |
+| Q | litera „Q" przy paczce nic nie mówi | wdrożone: znaczek mówi „Fact-checked", styl bez zmian | `c3697d7`, `d1c72b6`; ADR 0032 aneks |
+| R | trasa ukryta (jedna stacja z numerem 1) poza Wspólną Trasą | wdrożone: sekret tylko w ŻYWEJ grze sieciowej z włączoną opcją | `31504f8`; ADR 0019 aneks 2026-09-13c |
+| S | nazwa paczki powinna brać się z nazwy stacji, a wybór prowadzić przez ekran stacji | **wycofane przez właściciela** — sprawdzenie pokazało, że zmiana byłaby szkodliwa | bez zmiany kodu; ADR 0017 aneks |
+
+### 2. N — cel zachowuje numer stacji po wznowieniu (`31504f8`)
+
+Objaw miał dwie przyczyny, zależne od trybu:
+
+- **hot-seat**: zapis stanu niesie całą rozgrywkę (`biezacaStacja`,
+  `odpowiedzi`, `punkty`), więc numer i punkty wracają same — nowy test
+  w `aplikacja.test.js` przechodzi trasę „stacja 1 zaliczona → marsz do
+  stacji 2 → reload" i sprawdza zarówno stan (cel = 2, odpowiedź policzona jako
+  poprawna, punkty zachowane), jak i warstwę pinezek (numery 1, 2, 3 na mapie
+  gry). Tu właściciel prosił o weryfikację punktów — punkty żyją w zapisie, nie
+  w przeliczeniu po wznowieniu.
+- **gra sieciowa**: powrót buduje rozgrywkę z NIEZAMKNIĘTYCH stacji
+  (`uruchomGreMulti`), więc indeks na liście przestawał być numerem na trasie.
+  Stacje niosą teraz pole `numer` (pozycja na pełnej trasie), `planMapy`
+  w `mapa.js` woli je przed indeksem, a napisy „stacja X z Y", „Idę do stacji X"
+  i etykieta przycisku „dalej" biorą numer z trasy (`numerStacjiTrasy`,
+  `liczbaStacjiTrasy` w `wieloosobowa.js`). Zamknięte stacje nadal nie wracają
+  do przejścia — zmienia się tylko numeracja (test trasy: „stacja 1 z 3" →
+  „stacja 2 z 4").
+
+### 3. R — trasa-sekret tylko w żywej wspólnej trasie (`31504f8`)
+
+Brama była liczona z resztkowego `STAN.multi`: kontekst gry zamkniętej przez
+hosta albo odzyskanej przy starcie aplikacji włączał trasę-sekret w hot-seacie
+(gracz widział jedną stację z pinezką numer 1 — dokładnie objaw z terenu).
+Naprawa:
+
+- `czyTrasaSekret(multi)` w `wieloosobowa.js` wymaga ŻYWEJ gry
+  (`stan === 'trwa'`) w trybie Wspólnej Trasy z niewyłączonym sekretem —
+  predykat czysty, pokryty testem tabelowym;
+- `startGry()` kończy kontekst sieciowy: synchronizacja staje, sesja multi
+  i `STAN.multi` idą w kosz, więc następne otwarcie telefonu wraca do gry
+  hot-seat, a nie do porzuconej gry sieciowej (to też warunek N: numeracja
+  hot-seatu nie dziedziczy po multi).
+
+Właściciel doprecyzował zakres: hot-seat ma pokazywać całą trasę zawsze —
+ukrywanie jest funkcją wyłącznie żywej gry sieciowej z włączoną opcją.
+
+### 4. P i Q — teksty na listach (`e7ae8cf`, `c3697d7`, `d1c72b6`)
+
+- **P**: `wierszZestawu` traci parametr `etykietaZrodla`, a wpis kandydata pole
+  `etykieta` — wiersz zaczyna się od miejsca („Podkowa Leśna · 2026-09-04 10:00 ·
+  3 stacji × 1 pytań · …"). Wszystkie paczki na karcie „Paczki dla tej okolicy"
+  i tak pochodzą ze wspólnego repozytorium (zgłoszenie I.b z 2026-09-12 zdjęło
+  z listy kopie z telefonu), więc przedrostek powtarzał źródło w każdym wierszu
+  kosztem nazwy. Źródło zostaje w diagnostyce: `zrodlo: 'repozytorium: <miejsce>'`
+  nadal nazywa paczkę w komunikacie o uszkodzonym kontenerze
+  (`przyjmijZestawDoGry`).
+- **Q**: znaczek weryfikacji pytań (ADR 0032) dostaje tekst „Fact-checked";
+  STYL bez zmian (`.znaczek-factcheck` = `color: var(--zloto);
+  font-weight: 700`), więc kontrast pilnowany bramą i oba motywy są nietknięte
+  (złoto na karcie 5,65:1 jasny / 8,27:1 ciemny). Reguła znaczkowa się nie
+  zmienia: znaczek stoi tylko przy paczkach zweryfikowanych (brak pola
+  `factcheck` w starych zapisach = zweryfikowana, ADR 0032 §4), przy wariancie
+  bez weryfikacji nie ma go wcale. `role="img"` zostaje, etykieta i podpowiedź
+  mówią to samo, co widać. Dopełnienie `d1c72b6`: opisy par kontrastu
+  w `tools/audyt-kontrastu.mjs` mówiły „znaczek Q" — mówią „znaczek
+  fact-check".
+
+### 5. S — poprawka wycofana przez właściciela (bez zmiany kodu)
+
+Zgłoszenie brzmiało: nazwa paczki powinna brać się z nazwy stacji (miejsca),
+a wybór paczki prowadzić przez ekran stacji. Sprawdzenie przed kodowaniem:
+
+- paczka niesie lokalizacje stacji OBOWIĄZKOWO — schema `TO-zestaw/1` wymaga
+  `stacje: [{ lat, lon, opis }]`, a gra używa ich dosłownie (bez własnego
+  losowania pozycji);
+- pytania są przypisane do NUMERU stacji, więc treść gry wisi na kolejności
+  stacji z paczki;
+- ekran stacji pozwala przeciągać piny i losować układ ponownie — przepuszczenie
+  paczki przez ten ekran rozsynchronizowałoby pytania z miejscami (pytanie
+  o kościół trafiłoby na stację przy dworcu).
+
+Właściciel po tym sprawdzeniu wycofał poprawkę („zbędna, a wręcz szkodliwa").
+Nazwa paczki bierze się z miejsca już po poprawce P. Zapis decyzji: ADR 0017
+aneks 2026-09-13 (pkt S) — żeby następna sesja nie wróciła do pomysłu.
+
+### 6. O — lokalna historia gier usunięta w całości (`180cadb`)
+
+Właściciel: jedyną drogą powrotu do przerwanej gry ma być automatyczne
+wczytanie zapisu (ADR 0045); boks z poprzednimi grami na setupie obiecywał
+drugą drogę i mylił. Do wyboru były trzy warianty (schować kartę, przenieść ją
+na ekran rankingu, usunąć funkcję) — przeniesienie kolidowałoby z ADR 0039
+(ranking żyje w moście, nie w aplikacji), a właściciel wybrał „cała funkcja
+precz".
+
+Usunięte:
+
+- `app/trwalosc.js` (319 → 187 linii): `KLUCZ_HISTORII`, `SCHEMAT_HISTORII`,
+  `SCHEMAT_WPISU_HISTORII`, `LIMIT_HISTORII`, `skrotGry()`,
+  `dodajWpisHistorii()`, `nowaHistoria()`, `walidujHistorieSurowa()`,
+  `pobierzHistorie()`, `zapiszGreDoHistorii()`, `usunGreZHistorii()`,
+  `wyczyscHistorie()` — czyli cały zapis i odczyt klucza `okolica:historia`;
+  przy okazji wyszedł import geohashu (ostatni konsument w tym module);
+- `app/app.js` (5501 → 5418 linii): `renderujHistorieGier()`,
+  `kasujHistorieGry()`, pomocniki odświeżania karty, pole
+  `STAN.historiaKasowanieUzbrojone` i kody usterek **H01–H04**;
+  `zapiszGre()` po wysłaniu kopii hotseat na Drive oznacza grę zamkniętą
+  i czyści zapis;
+- `index.html` (783 → 778): karta `#karta-historia` z listą, przyciskiem
+  kasowania i paskiem usterek;
+- `app/styles.css`: klasy `.lista-historii`, `.historia-wpis`, `.historia-meta`,
+  `.historia-pytania` (988 → 990 linii: listy „Moje wyniki" i „Wyniki hotseat"
+  korzystają teraz ze wspólnej `.lista-prosta`).
+
+Zostaje: zapis i wznowienie niedokończonej gry (ADR 0045), `wyslijWynikHotseat()`
+— kopia wyniku na wspólny Drive (ADR 0010 pkt 5), ranking czytany z mostu
+(ADR 0039) i „Moje wyniki" z bieżącej sesji. Kody `H` wypisane z rejestru
+(ADR 0015 aneks): historia była ostatnim żywym konsumentem prefiksu, więc
+dwuetapowe kasowanie (pin ADR 0031) straciło przedmiot — numery H01–H04 zostają
+zajęte, precedens E14/E18/R17/R18.
+
+Testy: 13 deklaracji testów historii i kodów H usunięte, w tym jeden kontrakt
+„karta historii jest" zamieniony na kontrakt ODWRÓCONY (nośniki nie mają karty,
+kod nie zapisuje historii, upload hotseat zostaje). `npm test` 763 → 757.
+
+### 7. Dokumenty: aneksy, trzy nośniki opisowe, strażnik (`40cc4a0`)
+
+- aneksy 2026-09-13: **ADR 0010** (O — co zniknęło, co zostaje, dlaczego boks
+  nie może wrócić), **ADR 0015** (prefiks `H` wypisany), **ADR 0017** (P i S),
+  **ADR 0019** aneks 2026-09-13c (N i R), **ADR 0032** (Q); **ADR 0045** —
+  powiązania bez historii lokalnej;
+- rejestr ADR: wiersze 0010/0015/0017/0019/0032 z adnotacją o aneksach (przy
+  okazji wyszła z wiersza 0017 nieaktualna „moderacja właściciela");
+- README, WORKFLOW i ARCHITECTURE przepisane z opisu usuniętej funkcji na opis
+  tego, co żyje (powrót automatyczny, wyniki na wspólnym Drive i w rankingu) —
+  zamiany metodą przęsła między kotwicami ASCII, bo dokumenty mieszają
+  cudzysłowy (LESSONS L66);
+- `test/dryf-dokumentow.test.js`: trzy nowe martwe frazy („Poprzednie gry",
+  „Kasuj historię", klucz historii) z nośnikami = dokumenty + UI; komentarze
+  i nagrobki w `app.js`, `index.html` i `styles.css` opisują rzecz, nie cytują
+  literalnych napisów;
+- LESSONS **L66** (rejestr + pełny opis w archiwum): kolejność aneks →
+  cytowanie z datą, kotwice ASCII przy zamianach, sprawdzanie cytowań i asercji
+  testów przed przeniesieniem treści ADR do archiwum, nazwa pliku w archiwum bez
+  przedrostka `NNNN-`;
+- ROADMAP M11/M12: zdanie o drugim teście terenowym i o wycofanym S.
+
+### 8. Budżet lektury: pęknięcie i podział ADR 0019 (`40cc4a0`)
+
+Po aneksach `npm run budzet` pokazał **100 795 / 100 000 tok** — przekroczenie
+795 tok, czyli obowiązkowe zadanie sesji (AGENTS.md §0, LESSONS L62). Poprzednia
+sesja zostawiła wskazówkę: największy pojedynczy zjadacz to ADR 0019 (5 368 tok).
+
+Podział: do `docs/decisions/archive/aneksy-0019-2026-09-06-do-11b.md`
+przeniesione DOSŁOWNIE pięć sekcji historycznych — aneks 2026-09-06
+(implementacja P1–P3), dopisek 2026-09-07, dwa aneksy 2026-09-11 (przepisanie
+trybów; setup zamiast ekranu multiplayera, m12-74) i aneks 2026-09-11b
+(rankingi usunięte, m12-77/m12-78) — razem 2 268 tok; w ADR został wskaźnik
+(198 tok) z wyliczeniem, co gdzie leży. ADR 0019: 5 556 → 3 486 tok.
+
+Sprawdzenia przed przeniesieniem (L66 pkt 3–4): grep po żywych nośnikach nie
+znalazł cytowań `ADR 0019 aneks 2026-09-11*` ani `… 2026-09-06` z datą; jedyny
+test czytający ten plik wymaga nagłówka aneksu 2026-09-13b, który zostaje;
+nazwa pliku w archiwum bez przedrostka `NNNN-`, bo kontrakt „archiwum ADR-ów"
+wymaga od takich plików `- Status: Wycofana` i wiersza w rejestrze, a to nie
+jest ADR, tylko ciąg dalszy historii ADR 0019. Budżet po podziale: **99 082 tok**
+(rezerwa **918**).
+
+### 9. Bramy, stan końcowy i rzeczy otwarte
+
+`npm run brama` (testy + `synchronizuj-szablon --check` + audyt kontrastu):
+**757/757** testów, oba szablony protokołu zgodne, **0 naruszeń WCAG AA**;
+`npm run budzet` **99 082 / 100 000** (rezerwa 918). Wersja **m12-113**
+(`?v=` w `index.html`, importy we wszystkich `app/*.js`, `WERSJA_SW`).
+Zakres fali N–S (od `c3697d7`): 31 plików, +450/−785.
+
+Commity tej sesji: `31504f8` (N+R) → `e7ae8cf` (P) → `c3697d7` (Q) →
+`d1c72b6` (etykiety audytu) → `180cadb` (O + cache-busting m12-113) →
+`40cc4a0` (dokumenty i podział budżetu) → `68e3760`-następny (LESSONS L66,
+ROADMAP, ten wpis i handoff).
+
+Otwarte:
+
+1. **Scalenie PR #20** (decyzja właściciela) — Pages poda `?v=m12-113`,
+   a `WERSJA_SW` wymieni cache skorupy, więc telefony podciągną falę bez
+   ręcznego czyszczenia.
+2. **Deployment web app u właściciela** — wisi od PR #19 (most
+   `docs/setup/apps-script-repo-paczek.gs`: `rezygnacja` domykająca grę, pula
+   premii). Ta sesja mostu NIE zmieniała.
+3. **Powtórka testu terenowego dwóch telefonów** (WORKFLOW §4.4) — teraz z
+   poprawkami N (numery stacji po wznowieniu), R (trasa-sekret tylko w żywej
+   grze sieciowej) i O (setup bez boksu poprzednich gier).
+4. **Budżet: rezerwa 918 tok** — wystarczy na jedną lekcję albo mały aneks;
+   następna duża fala dokumentowa zaczyna od mierzenia (`npm run budzet`) i ma
+   gotowy mechanizm: archiwum ADR-ów wycofanych (L62) albo archiwum treści
+   historycznej ADR-a żyjącego (ta sesja, L66 pkt 3–4).

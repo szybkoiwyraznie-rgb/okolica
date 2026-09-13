@@ -57,7 +57,7 @@ tutaj tylko to, co zostało do sprawdzenia:
   usterki widoczne dla gracza: komunikaty awaryjne GPS odsyłały do przycisku
   końca gry zdjętego przez ADR 0043, a panel fazy B był w przeglądarce schowany
   razem z przodkiem, więc symulacja dojścia w `?test=true` była nieosiągalna
-  (m12-111 → m12-112). Została powtórka testu i nowy deployment web app
+  (m12-111 → m12-112). Drugi test terenowy 2026-09-13c dał sześć uwag (N–S): pięć wdrożonych (m12-113, aneksy ADR 0010/0015/0017/0019/0032), a S — nazwa paczki od nazwy stacji — wycofana przez właściciela jako szkodliwa, bo paczka niesie lokalizacje stacji, a pytania wiszą na ich numerach. Została powtórka testu i nowy deployment web app
   (uwaga G: rezygnacja domyka grę).
 
 ## Zasady prowadzenia roadmapy

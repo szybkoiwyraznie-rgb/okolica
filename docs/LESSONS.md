@@ -533,3 +533,11 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Reguła:** zmieniając widoczność PRZODKA (`hidden`, `display`, `visibility`, `inert`, klasy na `body`), wypisz potomków będących celami akcji i sprawdź, czy któryś nie jest jedyną drogą do funkcji (L63) albo jedynym nośnikiem komunikatu (L6). Zielony test w atrapie NIE dowodzi widoczności — mierz ją w prawdziwej przeglądarce (ENVIRONMENT §4.1: `rect`, `offsetParent`, `elementFromPoint`), a zachowanie zależne od trybu pinuj DWOMA testami: w `?tryb=test` i terenowym (atrapa `navigator.geolocation`).
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L65`.
+
+## L66 (2026-09-13) — dokumenty z pinami: najpierw aneks, potem cytowanie z datą; kotwicz na ASCII
+
+**Objaw:** strażnik dryfu (test 5 „cytowane aneksy ADR istnieją") palił się, bo WORKFLOW cytował „ADR 0010 aneks 2026-09-13" jeszcze zanim aneks powstał; osobno zamiana akapitu w README nie trafiła, choć tekst był „na oko" ten sam.
+**Przyczyna:** strażnik czyta cytowania ze WSZYSTKICH żywych nośników (dokumenty, UI, testy, lustro `.gs`) i wymaga dosłownej daty w pliku ADR; a dokumenty mieszają cudzysłowy (`„` z `"`), więc literalne `stare`/`nowe` rozmija się o znak niewidoczny gołym okiem.
+**Reguła:** kolejność fali dokumentowej: najpierw aneks w ADR, potem cytowanie go z datą (albo cytowanie bez daty — strażnik jej wtedy nie szuka). Zamiany w dokumentach kotwicz na unikalnych fragmentach ASCII (`s.index(start)`, `s.index(end)`, podmiana przęsła między nimi), nie na całych zdaniach z polskimi cudzysłowami. Reszta reguły — przenoszenie treści ADR do archiwum (kto cytuje z datą, co czytają asercje testów, nazwa pliku bez przedrostka `NNNN-`) — w archiwum.
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L66`.
