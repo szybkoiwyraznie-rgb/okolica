@@ -1134,17 +1134,17 @@ test('ADR 0032: historia pokazuje Q dla zweryfikowanych i starszych wpisów, nie
   await import(`../app/app.js?fchist=${Math.random().toString(36).slice(2)}`);
   const pozycje = domAtrapa.pobierz('historia-lista').children;
   assert.equal(pozycje.length, 3);
-  const maQ = (li) => [...li.children].some((c) => c.className === 'znaczek-factcheck' && c.textContent === 'Q');
+  const maQ = (li) => [...li.children].some((c) => c.className === 'znaczek-factcheck' && c.textContent === 'Fact-checked');
   // najnowsza najpierw: Wola (sprzed ADR), Ochota (bez), Mokotów (zweryfikowana)
   assert.match(pozycje[0].textContent, /Wola/);
   assert.equal(maQ(pozycje[0]), true, 'wpis sprzed ADR 0032 traktowany jak zweryfikowany');
   assert.match(pozycje[1].textContent, /Ochota/);
   assert.equal(maQ(pozycje[1]), false, 'bez weryfikacji: brak znaczka');
   assert.match(pozycje[2].textContent, /Mokotów/);
-  assert.equal(maQ(pozycje[2]), true, 'zweryfikowana: znaczek Q');
+  assert.equal(maQ(pozycje[2]), true, 'zweryfikowana: znaczek „Fact-checked"');
 });
 
-test('ADR 0032: propozycje paczek pokazują Q tylko dla zweryfikowanych', async () => {
+test('ADR 0032: propozycje paczek pokazują „Fact-checked" tylko dla zweryfikowanych', async () => {
   const { zbierzMetaZestawu } = await import('../app/zestawy.js');
   const { geohash } = await import('../app/geo.js');
   const baza = { lat: 52.2297, lon: 21.0122, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1, miejsce: 'Śródmieście' };
@@ -1179,7 +1179,7 @@ test('ADR 0032: propozycje paczek pokazują Q tylko dla zweryfikowanych', async 
   assert.equal(wiersze.length, 2, 'oba wpisy dopasowane do setupu testowego');
   const maQ = (li) => [...li.children[0].children].some((c) => c?.className === 'znaczek-factcheck');
   assert.equal(maQ(wiersze.find((li) => li.textContent.includes('11:00'))), false, 'bez weryfikacji: brak znaczka');
-  assert.equal(maQ(wiersze.find((li) => li.textContent.includes('10:00'))), true, 'zweryfikowana: znaczek Q');
+  assert.equal(maQ(wiersze.find((li) => li.textContent.includes('10:00'))), true, 'zweryfikowana: znaczek „Fact-checked"');
 });
 
 /* ================== M5/J5: nazwa miejsca z Overpass (warstwa zapasowa
@@ -2073,7 +2073,7 @@ test('M7: lista poprzednich gier na setupie — najnowsza najpierw, dwustopniowe
   assert.equal(pozycje.length, 2);
   assert.match(pozycje[0].textContent, /2026-09-05 18:30 · Ochota/, 'najnowsza najpierw, data i miejsce ze skrótu');
   assert.match(pozycje[0].textContent, /🏆 Gracz 1 — 0 pkt/, 'zwycięzca i punkty, bez czasu (Partia 2)');
-  // (bez kotwicy $: od ADR 0032 za tekstem stoi jeszcze znaczek Q)
+  // (bez kotwicy $: od ADR 0032 za tekstem stoi jeszcze znaczek fact-check)
   assert.equal(pozycje[0].textContent.includes('(przerwana)'), false);
   assert.match(pozycje[1].textContent, /Mokotów/, 'starsza druga');
   assert.match(pozycje[1].textContent, /\(przerwana\)/, 'znacznik przerwanej widoczny');

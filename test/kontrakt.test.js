@@ -125,7 +125,7 @@ test('kontrakt ADR 0032: ekran promptu ma checkbox fact-check (domyślnie pusty,
   assert.match(ekran, /id="prompt-podglad-naglowek"/, 'nagłówek podglądu mówi, który wariant widać');
 });
 
-test('kontrakt ADR 0032: znaczek Q ma token złota w obu motywach i klasę', () => {
+test('kontrakt ADR 0032: znaczek fact-check ma token złota w obu motywach i klasę', () => {
   assert.match(STYLE, /--zloto: #7d6300;/, 'złoto jasne (kontrast pilnuje brama)');
   assert.match(STYLE, /--zloto: #e3b341;/, 'złoto ciemne');
   assert.match(STYLE, /\.znaczek-factcheck \{ color: var\(--zloto\); font-weight: 700; \}/, 'klasa znaczka');

@@ -2376,7 +2376,10 @@ function czyWpisFactcheck(wpis) {
 }
 
 /**
- * Znaczek Q (ADR 0032): złota litera dla paczek zweryfikowanych w sieci.
+ * Znaczek fact-checku (ADR 0032, zgłoszenie terenowe Q 2026-09-13): złote
+ * „Fact-checked" zamiast samej litery Q — właściciel: pojedyncza litera nic mu
+ * nie mówiła. Styl zostaje ten sam (`.znaczek-factcheck` = złoto + półgruby),
+ * więc zmienia się tylko tekst i etykieta dla czytnika ekranu.
  * Niesie informację (nie jest dekoracją) — stąd role="img" z etykietą.
  * Dla wariantu bez weryfikacji go NIE renderujemy (brak znaczka = brak weryfikacji).
  */
@@ -2384,9 +2387,9 @@ function znaczekFactcheck() {
   const s = document.createElement('span');
   s.className = 'znaczek-factcheck';
   s.setAttribute('role', 'img');
-  s.setAttribute('aria-label', 'pytania zweryfikowane w sieci');
-  s.title = 'Pytania zweryfikowane w sieci (fact check)';
-  s.textContent = 'Q';
+  s.setAttribute('aria-label', 'Fact-checked: pytania zweryfikowane w sieci');
+  s.title = 'Fact-checked — pytania zweryfikowane w sieci';
+  s.textContent = 'Fact-checked';
   return s;
 }
 
