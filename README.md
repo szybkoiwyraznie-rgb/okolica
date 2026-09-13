@@ -115,12 +115,11 @@ punkty, poprawne), tabelę rankingu bieżącej gry, linię wysyłki na Drive i j
 przycisk „Wróć na początek — nowa gra”. Statystyki, szczegóły graczy, tabela
 stacji i eksporty wyniku (.txt/.png/Web Share) są USUNIĘTE — właściciel
 uznał je za „masę błędów i niepotrzebnych informacji”, a faza `koniec` ukrywa
-także cały slot sterowania grą. W historii ani w wysyłce na Drive nie ma treści
-pytań ani współrzędnych — pilnują tego testy-strażnicy. Na setupie dochodzi
-karta „Poprzednie gry": do 50 skrótów (`okolica:historia`), najnowsza
-pierwsza, ze znacznikiem gier przerwanych ręcznie; dokończenie przerwanej gry
-ZASTĘPUJE wpis zamiast dodawać drugi, kasowanie jest dwustopniowe, a zepsuty
-zapis odzywa się jawnie kodami `H`. Kamień czeka na JEDNO kryterium terenowe
+także cały slot sterowania grą. W wysyłce na Drive nie ma treści pytań ani
+współrzędnych — pilnują tego testy-strażnicy. Lokalnej historii gier na
+telefonie NIE MA (zgłoszenie terenowe właściciela 2026-09-13, ADR 0010 aneks):
+wynik zakończonej gry jedzie na wspólny Drive, a jedyną drogą powrotu do
+przerwanej gry jest automatyczne wczytanie zapisu (ADR 0045). Kamień czeka na JEDNO kryterium terenowe
 właściciela: czytelność w słońcu na 360 px (`docs/WORKFLOW.md` §4.2) —
 kryterium „eksport na Chrome Android i Safari iOS” odpadło razem z eksportami
 (ADR 0038; `docs/ROADMAP.md` §Kryteria zawężony 2026-09-12).

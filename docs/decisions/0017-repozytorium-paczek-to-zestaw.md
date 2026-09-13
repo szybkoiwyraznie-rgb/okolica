@@ -206,3 +206,25 @@ bez niego nie przechodzi walidacji.
 Konsekwencja wdrożeniowa: `adresMostu` woli URL multi nad URL repo, więc
 organizator gry wieloosobowej bierze paczkę z TEGO SAMEGO wdrożenia mostu
 co grę (indeks pod gołym adresem, plik przez `?akcja=paczka&id=…`).
+
+## Aneks 2026-09-13 (m12-113, zgłoszenia terenowe P i S): nazwa od miejsca; paczka z repo NIE wchodzi na ekran stacji
+
+**P — nazwa paczki zaczyna się od miejsca.** Przedrostek „🌍 repozytorium:"
+zniknął z wiersza propozycji: od zadania I (aneks 2026-09-12, m12-95) na karcie
+„Paczki dla tej okolicy" są WYŁĄCZNIE wpisy z repozytorium, więc powtarzanie
+źródła w każdej linii nie mówiło nic, a zabierało miejsce nazwie. Wiersz czyta
+się teraz „Podkowa Leśna · 2026-09-04 10:00 · 3 stacji × 1 pytań · historia ·
+dorosli". Źródło zostaje w diagnostyce: `zrodlo: 'repozytorium: <miejsce>'`
+nazywa paczkę w komunikacie o uszkodzonym kontenerze.
+
+**S — zgłoszenie wycofane przez właściciela, kod nietknięty.** Propozycja brzmiała:
+po wybraniu paczki z repozytorium pokazać ekran „Stacje w Twojej okolicy"
+z przyciskiem „Dalej →" (zamiast natychmiastowego startu). Właściciel wycofał ją
+po sprawdzeniu, że paczka `TO-zestaw/1` niesie JAWNE stacje (`{lat, lon, opis}`,
+wymagane przez walidację — pkt 1 i `zbudujPlikZestawu`), gra używa dokładnie ich
+(`przyjmijZestawDoGry` → `STAN.stacje` → `nowaRozgrywka`, w multi
+`gra.zestaw.stacje`), a pytania są przypisane do numerów stacji
+(`pytaniaStacji(stan, stacjaId)`). Ekran stacji nie miałby więc czego dodać,
+a jego „🔄 Inny układ" i „✋ Ustaw stacje ręcznie" przestawiłyby punkty, przy
+których zostałyby pytania (rozjazd trasa↔pytania). Paczka z repo startuje grę
+(hot-seat) albo lobby (multi) bez kroku pośredniego — i tak zostaje.

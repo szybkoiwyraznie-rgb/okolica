@@ -98,3 +98,13 @@ Nowe wyjście z nieosiągalnej stacji: „■ Zakończ grę” (komunikaty P03/P
 P08, ADR 0004/0029 aneksy 2026-09-12). Testy: `jakoPominieta()` odtwarza
 stary zapis w `test/rozgrywka.test.js`, pętle UI idą pełną ścieżką
 (`zamknijStacje`), piny nieobecności w silniku, aplikacji i kontrakcie.
+
+## Aneks 2026-09-13 (m12-113): przedrostek H wycofany
+
+Kody `H01`–`H04` (historia gier) zniknęły z rejestru razem z lokalną historią
+(ADR 0010 aneks 2026-09-13c, zgłoszenie terenowe O): przedrostek H jest
+wycofany i nie wolno go użyć ponownie — jak `K17`, `K19`, `K20` w pkt 6.
+Dwustopniowe kasowanie bez `confirm()` straciło ostatniego konsumenta
+(kasowanie historii), a ręczne zakończenie gry potwierdza wpisanie TAK
+(ADR 0043). Wzorzec „drugi klik potwierdza" zostaje w tym ADR jako reguła dla
+przyszłych akcji destrukcyjnych.

@@ -255,6 +255,21 @@ const MARTWE_FRAZY = [
     nosniki: [...DOKUMENTY, ...UI],
     powod: 'bramka tożsamości to imię + PIN i jedno wołanie `profil-ustaw` (ADR 0026) — osobnego przycisku zapisu profilu nie ma',
   },
+  {
+    fraza: 'Poprzednie gry',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'lokalna historia gier usunięta 2026-09-13 (zgłoszenie terenowe O, ADR 0010 aneks): jedyną drogą powrotu do przerwanej gry jest automatyczne wczytanie zapisu (ADR 0045), a wyniki między grami żyją na wspólnym Drive (ADR 0026 aneks, ranking ADR 0039)',
+  },
+  {
+    fraza: 'Kasuj historię',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'bez lokalnej historii nie ma czego kasować — dwustopniowe kasowanie (ADR 0015 pkt 6) zniknęło razem z kartą na setupie (ADR 0010 aneks)',
+  },
+  {
+    fraza: 'okolica:historia',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'klucz localStorage lokalnej historii gier usunięty (ADR 0010 aneks) — telefon nie trzyma własnej listy gier',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {

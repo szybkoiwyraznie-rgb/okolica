@@ -2,9 +2,11 @@
 
 - Data: 2026-09-13
 - Status: Zaakceptowana (decyzje właściciela z testów terenowych — uwagi J i K)
-- Powiązania: ADR 0010 (historia gier), ADR 0015 pkt 6 (dwustopniowe kasowanie),
-  ADR 0019 (gra wieloosobowa), ADR 0043 (koniec gry za ikoną ⚙ START GRY),
-  ADR 0044 (gra wygląda jak hotseat)
+- Powiązania: ADR 0010 (zapis stanu gry; lokalnej historii gier nie ma — aneks
+  2026-09-13c), ADR 0015 pkt 6 (kody usterek; przedrostek H wycofany),
+  ADR 0019 (gra wieloosobowa; aneks 2026-09-13c: numery stacji stałe po
+  powrocie, hot-seat kasuje resztkową sesję multi), ADR 0043 (koniec gry za
+  ikoną ⚙ START GRY), ADR 0044 (gra wygląda jak hotseat)
 
 ## Kontekst
 
