@@ -1021,3 +1021,43 @@ testu (tu `ranking-ui.test.js`), a nie tylko ten z atrapą na poziomie modułu.
 (5) Przerwanie `npm run brama` po czasie nie oznacza czerwonej bramy, ale też
 nie zielonej: wynik musi być przeczytany z podsumowania `# pass/# fail` i z
 `BRAMA_EXIT`, inaczej commit idzie w świat bez dowodu.
+
+## L61 (2026-09-13) — nowa warstwa dziedziczy `visibility: hidden` z cudzej klasy: otwieraj ją razem z zamknięciem pozostałych
+
+**Objaw:** warstwa potwierdzenia końca gry (`#ekran-koniec-gry`, ADR 0043) po
+otwarciu spod ⓘ Informacji albo spod podglądu mapy byłaby NIEWIDOCZNA — karta
+zajmuje miejsce w układzie, ma `z-index: 30` i `hidden = false`, a i tak jej nie
+widać. Wszystkie 123 testy DOM zielone, brama zielona, audyt WCAG bez naruszeń.
+
+**Przyczyna:** wygaszanie warstw w `styles.css` jest robione klasami na `body`
+i selektorami „wszystko poza mną”:
+
+```css
+body.informacje-otwarte .panel-centralny:not(#ekran-informacje) { visibility: hidden; }
+body.ranking-otwarte   .panel-centralny:not(#ekran-ranking)     { visibility: hidden; }
+body.podglad-mapy      .panel-centralny                         { visibility: hidden; }
+```
+
+Nowy panel centralny automatycznie wpada w każdą z tych reguł jako „nie-mnie”,
+więc otwarcie go bez zamknięcia tamtych warstw (albo bez zdjęcia
+`STAN.podgladMapy`) daje panel ukryty cudzą klasą. Atrapa DOM w testach
+(`test/helpers/dom.js`) NIE ma silnika CSS: widzi `hidden`, `classList`
+i `inert`, ale nie `visibility` — więc takiej wady nie da się złapać testem
+zachowania, tylko pinem na regułę i invariantem w kodzie.
+
+**Reguła:** (1) Każda nowa warstwa centralna dostaje WŁASNĄ klasę na `body`
+i własną regułę `:not(#moja-warstwa)`, a jej otwieracz ZAMYKA pozostałe warstwy
+i gasi podgląd mapy w pierwszych trzech linijkach — wzorzec jest już w kodzie
+(`przelaczRankingi`: `STAN.podgladMapy = false; zamknijInformacje();`), więc
+„jak ranking” jest odpowiedzią na pytanie „jak otwierać nową warstwę”.
+(2) Symetrycznie: każdy ISTNIEJĄCY otwieracz warstw dostaje zamykacz nowej
+warstwy, bo przełączniki działają w obie strony — inaczej użytkownik może
+otworzyć drugą warstwę POD spodem i widzieć pustą kartę.
+(3) Klasę na `body` licz w JEDNYM miejscu (`odswiezWidocznoscPaneli`), a w
+otwieraczu tylko `classList.add` jako skrót — podwójne źródło prawdy rozjeżdża
+się przy pierwszym zamknięciu z innej ścieżki.
+(4) Regułę CSS i kolejność otwierania pinuj w `test/kontrakt.test.js`
+(`body.<klasa> .panel-centralny:not(#<id>) { visibility: hidden; }` dosłownie),
+bo test zachowania jej nie widzi. (5) Gdy dodajesz warstwę, przejrzyj WSZYSTKIE
+selektory z `.panel-centralny` — `grep -n "panel-centralny" app/styles.css`
+zajmuje sekundę i pokazuje, czy nowa karta nie jest gdzieś wygaszana.

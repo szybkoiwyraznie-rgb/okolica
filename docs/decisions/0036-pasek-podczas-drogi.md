@@ -93,3 +93,21 @@ jest w trybie hotseat… W Informacjach zostaje tylko opcja ZAKOŃCZ GRĘ”.
    kontrakt ADR 0040 (`test/kontrakt.test.js`) i wpisy w strażniku dryfu.
 4. Reguła `#informacje-gra h2` w `styles.css` usunięta razem z przenoszeniem
    nagłówka „Gra” (LESSONS L31: usunięcie i grep w tym samym commitcie).
+
+## Aneks 2026-09-13 (m12-107) — w Informacjach nie zostaje ŻADEN węzeł gry (uwagi H1 i I, ADR 0043)
+
+Drugi aneks tego samego dnia: punkt 1 aneksu m12-102 („w drodze do Informacji
+wędruje JEDEN węzeł `#przycisk-zakoncz-gre`”) traci ważność. Właściciel kazał
+usunąć przycisk „ZAKOŃCZ GRĘ” z Informacji i rozwiązać kończenie gry inaczej —
+przez ikonę ⚙ START GRY, która w trakcie gry otwiera małą warstwę potwierdzenia
+z wpisaniem TAK (ADR 0043).
+
+1. Przycisku, jego slotu `#przycisk-zakoncz-gre-slot` i węzła `#informacje-gra`
+   NIE MA w `index.html`; kod po nie nie sięga, a reguła `#informacje-gra`
+   w `styles.css` jest usunięta (nagrobek w komentarzu nazywa selektor celowo —
+   LESSONS L31).
+2. Mechanika przenoszenia węzła między panelem gry a Informacjami (`appendChild`
+   w `odswiezPasekDrogi`) została usunięta razem z nim — w drodze nad mapą
+   zostaje sam pasek, a panel gry (`#gra-sterowanie`) nadal jest schowany.
+3. Punkty 2 i 3 aneksu m12-102 zostają bez zmian: panel gry schowany w drodze,
+   boks z dystansem i wznawianiem nie wraca do Informacji.

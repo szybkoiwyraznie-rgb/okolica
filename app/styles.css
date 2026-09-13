@@ -238,7 +238,10 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .przycisk-ikona:active { transform: translateY(1px); }
 .przycisk-ikona[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
 .przycisk-ikona:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
-.przycisk-ikona[disabled] { opacity: 0.45; cursor: not-allowed; } /* J: ⚙ START GRY nieaktywne w trakcie gry */
+/* Reguła ogólna dla ikon z belki. ⚙ START GRY NIE JEST już wyszarzana w trakcie
+   gry (zgłoszenie J odwrócone uwagą I, ADR 0043) — ikona otwiera wtedy warstwę
+   końca gry, więc `disabled` zostaje wyłącznie jako zabezpieczenie stylu. */
+.przycisk-ikona[disabled] { opacity: 0.45; cursor: not-allowed; }
 #przycisk-setup { font-size: 14px; letter-spacing: 0.3px; }
 .przycisk[aria-pressed='true'] { background: var(--akcent-slaby); border-color: var(--akcent); }
 
@@ -841,6 +844,9 @@ body[data-mapa='gra'] #mapa-gra { visibility: visible; }
 #ekran-informacje, #ekran-ranking { z-index: 20; }
 body.informacje-otwarte .panel-centralny:not(#ekran-informacje) { visibility: hidden; }
 body.ranking-otwarte .panel-centralny:not(#ekran-ranking) { visibility: hidden; }
+/* Warstwa końca gry (ADR 0043) leży nad obiema — i też wygasza resztę, żeby na
+   ekranie była JEDNA karta do decyzji. */
+body.koniec-gry-otwarte .panel-centralny:not(#ekran-koniec-gry) { visibility: hidden; }
 /* Tabela rankingu na 360 px: nagłówek sekcji mniejszy niż tytuł warstwy, żeby
    dwie tabele zmieściły się w jednym ekranie bez przewijania w bok. */
 #ekran-ranking h3 { margin: 14px 0 2px; font-size: 17px; }
@@ -935,11 +941,21 @@ body.gra-w-drodze #ekran-gra:not([hidden]) {
 body.gra-w-drodze #przycisk-podejrzyj-mape { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-atrybucja { bottom: calc(36px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
-/* W drodze Informacje mieszczą JEDNĄ rzecz z gry: węzeł „■ Zakończ grę"
-   (właściciel 2026-09-13, uwagi E i F). Reguła `#informacje-gra h2` umarła
-   razem z przenoszeniem całego `#gra-sterowanie` (LESSONS L31: usuwanie
+/* Węzła `#informacje-gra` i przycisku „■ Zakończ grę" NIE MA (właściciel
+   2026-09-13, uwagi H1 i I — ADR 0043): Informacje nie niosą sterowania grą,
+   a grę kończy warstwa `#ekran-koniec-gry` za ikoną ⚙ START GRY. Umarły więc
+   reguły `#informacje-gra` i `#informacje-gra h2` (LESSONS L31: usuwanie
    i grep w tym samym commitcie). */
-#informacje-gra { margin-bottom: 16px; }
+
+/* Warstwa końca gry (ADR 0043): MAŁA i na środku — nie zasłania gry bardziej,
+   niż musi, a leży NAD Informacjami i rankingiem (tamte mają z-index 20).
+   Pole i przycisk na pełną szerokość karty, cele dotykowe ≥ --cel z `.przycisk`
+   i z reguł `input` (ADR 0011). */
+#ekran-koniec-gry { z-index: 30; max-width: 340px; }
+#ekran-koniec-gry h2 { font-size: 17px; margin: 4px 0 8px; }
+#ekran-koniec-gry .podpowiedz { margin: 0 0 12px; }
+#koniec-gry-potwierdzenie { text-transform: uppercase; letter-spacing: .08em; }
+#ekran-koniec-gry .przycisk { width: 100%; }
 
 /* „Zobacz więcej/mniej paczek" pod listą propozycji (właściciel 2026-09-11):
    pełna szerokość karty, cel dotykowy jak wiersze listy (ADR 0011). */

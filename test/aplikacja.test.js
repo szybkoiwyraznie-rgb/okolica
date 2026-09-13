@@ -1615,16 +1615,34 @@ test('M6: przycisk pomijania nie istnieje — gra go nie dotyka (zadanie H)', as
   assert.equal(dom.elementy.has('przycisk-pomin-stacje'), false, 'usunięty przycisk nie jest dotykany');
 });
 
-test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zostaje', async () => {
+/**
+ * Koniec gry dokładnie tak, jak robi to gracz (ADR 0043, uwagi H1 i I):
+ * ikona ⚙ START GRY otwiera warstwę potwierdzenia, wpisanie TAK odblokowuje
+ * przycisk, a klik kończy grę. Przycisku „■ Zakończ grę" w panelu NIE MA.
+ */
+function zakonczGrePrzezWarstwe(dom) {
+  dom.kliknij('przycisk-setup');
+  assert.equal(dom.pobierz('ekran-koniec-gry').hidden, false, 'w trakcie gry ⚙ otwiera warstwę końca gry');
+  dom.wpisz('koniec-gry-potwierdzenie', 'tak');
+  assert.equal(dom.pobierz('przycisk-koniec-gry').disabled, false, 'wpisane TAK odblokowuje przycisk');
+  dom.kliknij('przycisk-koniec-gry');
+  assert.equal(dom.pobierz('ekran-koniec-gry').hidden, true, 'po potwierdzeniu warstwa się zamyka');
+}
+
+test('M6: ręczne zakończenie gry — potwierdzenie wpisaniem TAK, wynik wcześniej, zapis zostaje', async () => {
   const { dom, pamiec } = await graGotowaDoStartu();
   zaczynijGre(dom);
-  const zakoncz = dom.pobierz('przycisk-zakoncz-gre');
+  // ADR 0043: koniec gry wyprowadził się z panelu do warstwy za ikoną ⚙ START GRY
+  dom.kliknij('przycisk-setup');
+  assert.equal(dom.pobierz('ekran-koniec-gry').hidden, false, 'w trakcie gry ⚙ otwiera warstwę potwierdzenia');
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, true, 'samo otwarcie warstwy NIE kończy gry');
+  assert.equal(dom.pobierz('przycisk-koniec-gry').disabled, true, 'bez TAK przycisk jest zablokowany');
 
-  dom.kliknij('przycisk-zakoncz-gre');
-  assert.match(zakoncz.textContent, /Kliknij ponownie/, 'pierwszy klik uzbraja (bez confirm — ADR 0015 pkt 6)');
-  assert.equal(dom.pobierz('gra-panel-koniec').hidden, true, 'pierwszy klik jeszcze NIE pokazuje wyniku');
-
-  dom.kliknij('przycisk-zakoncz-gre');
+  dom.wpisz('koniec-gry-potwierdzenie', ' TaK ');
+  assert.equal(dom.pobierz('przycisk-koniec-gry').disabled, false,
+    '„ TaK " odblokowuje — wielkość liter i odstępy bez znaczenia (uwaga I)');
+  dom.kliknij('przycisk-koniec-gry');
+  assert.equal(dom.pobierz('ekran-koniec-gry').hidden, true, 'potwierdzenie zamyka warstwę');
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'panel wyniku widoczny');
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true);
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
@@ -1632,23 +1650,37 @@ test('M6: ręczne zakończenie gry — dwustopniowe, wynik wcześniej, zapis zos
   assert.equal(wiersze[0].children.length, 3, 'gracz | punkty | poprawne');
   assert.match(dom.pobierz('status').textContent, /można ją wznowić/, 'uczciwie: zapis zostaje');
   assert.ok(pamiec.has('okolica:gra:' + pamiec.get('okolica:gra-aktywna')), 'zapis NIE skasowany — można wrócić do gry');
-  assert.match(zakoncz.textContent, /Zakończ grę/, 'przycisk wraca do zwykłej etykiety');
 });
 
-test('M6: ⚙ START GRY nieaktywne w trakcie gry, wraca po jej końcu (zgłoszenie J)', async () => {
+test('M6: ⚙ START GRY nigdy nie jest wyszarzone — w grze otwiera koniec gry (zgłoszenie J i uwaga I)', async () => {
   const { dom } = await graGotowaDoStartu();
   const setup = () => dom.pobierz('przycisk-setup');
   // gra startuje SAMA po przyjęciu paczki — od fazy A to już „toczy się”
-  // (setup → startGry nadpisałby STAN.rozgrywka bez ostrzeżenia)
   zaczynijGre(dom);
-  assert.equal(setup().disabled, true, 'od startu gry ikona nieaktywna');
+  assert.equal(setup().disabled, false, 'właściciel 2026-09-13: wyszarzenia ikony NIE MA');
+  assert.match(setup().title, /otwiera zakończenie aktualnej gry/, 'title mówi, co ikona robi w trakcie gry');
   dom.kliknij('przycisk-start-odcinka');
-  assert.equal(setup().disabled, true, 'w odcinku nadal nieaktywna');
-  assert.match(setup().title, /niedostępne w trakcie gry/, 'title mówi, dlaczego nieaktywna');
-  dom.kliknij('przycisk-zakoncz-gre'); // uzbrojenie
-  dom.kliknij('przycisk-zakoncz-gre'); // ręczny koniec → wynik
-  assert.equal(setup().disabled, false, 'po końcu gry ikona znowu aktywna');
-  assert.match(setup().title, /ustawienia gry/);
+  assert.equal(setup().disabled, false, 'w odcinku też aktywna');
+  dom.kliknij('przycisk-setup');
+  assert.equal(dom.pobierz('ekran-koniec-gry').hidden, false, 'klik otwiera warstwę potwierdzenia');
+  assert.equal(setup().getAttribute('aria-pressed'), 'true', 'ikona świeci, bo jej warstwa jest otwarta');
+  assert.equal(dom.pobierz('ekran-setup').hidden, true,
+    'setup NIE otwiera się nad grą — gra nie ginie bez ostrzeżenia (zgłoszenie J)');
+  dom.kliknij('przycisk-setup'); // przełącznik: drugi klik zamyka warstwę
+  assert.equal(dom.pobierz('ekran-koniec-gry').hidden, true, 'ikona jest przełącznikiem (uwaga I)');
+  // warstwy nie świecą równocześnie (ADR 0043 pkt 3): inaczej karta byłaby pusta
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false, 'Informacje otwierają się w trakcie gry');
+  dom.kliknij('przycisk-setup');
+  assert.equal(dom.pobierz('ekran-koniec-gry').hidden, false, '⚙ otwiera potwierdzenie także spod Informacji');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, true, 'Informacje gasną — na ekranie jest jedna karta');
+  assert.equal(dom.document.body.classList.contains('koniec-gry-otwarte'), true, 'klasa warstwy na body');
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('ekran-koniec-gry').hidden, true, 'otwarcie Informacji zamyka potwierdzenie');
+  zakonczGrePrzezWarstwe(dom);
+  assert.match(setup().title, /ustawienia gry/, 'po końcu gry title wraca do zwykłej roli');
+  dom.kliknij('przycisk-setup');
+  assert.equal(dom.pobierz('ekran-koniec-gry').hidden, true, 'po grze warstwy końca już się nie otwiera');
   dom.kliknij('przycisk-nowa-gra'); // „Wróć na początek” — stan sprzed gry
   assert.equal(setup().disabled, false, 'przed grą ikona aktywna');
 });
@@ -1878,8 +1910,7 @@ test('ADR 0038: ręczne zakończenie gry pokazuje ten sam minimalny ekran wyniku
   dom.kliknij('przycisk-start-odcinka');
   await dojdzSymulacja(dom);
   kliknijOdpowiedz(dom, 0);
-  dom.kliknij('przycisk-zakoncz-gre'); // uzbrojenie
-  dom.kliknij('przycisk-zakoncz-gre'); // wykonanie → wynik wczesny
+  zakonczGrePrzezWarstwe(dom); // ikona ⚙ → TAK → koniec (ADR 0043)
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false);
   assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, true, 'sterowanie grą znika także przy ręcznym końcu (D a)');
   assert.match(dom.pobierz('gra-wynik-zwyciezca').textContent, /pkt/, 'karta zwycięzcy wypełniona mimo przerwania');
@@ -1917,8 +1948,7 @@ test('M7: ręczne zakończenie = wpis „przerwana", wznowienie i dokończenie Z
   const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
-  dom.kliknij('przycisk-zakoncz-gre'); // uzbrojenie
-  dom.kliknij('przycisk-zakoncz-gre'); // ręczny koniec → wczesny wynik
+  zakonczGrePrzezWarstwe(dom); // ręczny koniec → wczesny wynik (ADR 0043)
   let { historia } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
   assert.equal(historia.wpisy.length, 1, 'ręczne zakończenie też jest grą, która się odbyła');
   assert.equal(historia.wpisy[0].przerwana, true, 'uczciwy znacznik przerwania');
@@ -2171,8 +2201,7 @@ async function grajDwieStacjeIKoncz(dom) {
     kliknijOdpowiedz(dom, 0);
     dom.kliknij('przycisk-nastepna-stacja');
   }
-  dom.kliknij('przycisk-zakoncz-gre'); // pierwszy klik tylko uzbraja
-  dom.kliknij('przycisk-zakoncz-gre'); // drugi kończy grę i pokazuje wynik
+  zakonczGrePrzezWarstwe(dom); // ikona ⚙ → wpisanie TAK → koniec (ADR 0043)
   await czekaj(20);
 }
 
@@ -2202,9 +2231,10 @@ test('hot-seat: wynik gry leci na wspólny Drive jednym poleceniem, bez współr
     assert.equal(cialo.zestaw, undefined, 'paczka zostaje na telefonie (ADR 0013)');
     assert.match(dom.pobierz('wynik-drive').textContent, /na wspólnym Drive/, 'jawne potwierdzenie wysyłki na ekranie wyniku');
     // idempotencja: kolejny zapis tej samej gry nie wysyła wyniku drugi raz
+    // (po końcu gry warstwy potwierdzenia nie da się już otworzyć — ADR 0043)
     const przed = zadania.length;
-    dom.kliknij('przycisk-zakoncz-gre');
-    dom.kliknij('przycisk-zakoncz-gre');
+    dom.kliknij('przycisk-setup');
+    assert.equal(dom.pobierz('ekran-koniec-gry').hidden, true, 'po grze ⚙ nie otwiera warstwy końca gry');
     await czekaj(20);
     assert.equal(zadania.length, przed, 'ta sama gra nie wchodzi do rankingów dwa razy');
     assert.equal(pamiec.has('okolica:hotseat-kolejka'), false, 'udana wysyłka nie zostawia kolejki');
@@ -2703,36 +2733,31 @@ test('Informacje: ikonka wskazuje otwarcie, zamknięcie i zachowuje stan podczas
   d.kliknij('przycisk-prywatnosc-stopka'); sprawdz(false); // inna warstwa też gasi Informacje
 });
 
-test('droga: pasek na mapie, w Informacjach TYLKO „Zakończ grę", po dojściu duży panel pytania', async () => {
+test('droga: pasek na mapie, Informacje bez gry, po dojściu duży panel pytania', async () => {
   const { dom } = await graGotowaDoStartu();
   zaczynijGre(dom);
-  assert.equal(dom.pobierz('przycisk-zakoncz-gre').parentNode, dom.pobierz('przycisk-zakoncz-gre-slot'),
-    'poza drogą przycisk mieszka w panelu gry');
+  // ADR 0043 (uwaga H1): przycisku końca gry NIE MA — ani w panelu, ani w Informacjach
+  assert.equal(dom.elementy.has('przycisk-zakoncz-gre'), false, 'węzła zakończenia gry nie ma w kodzie');
   dom.kliknij('przycisk-start-odcinka');
   assert.equal(dom.pobierz('gra-pasek').hidden, false);
   assert.match(dom.pobierz('gra-pasek').textContent, /^Kto: Gracz 1 \(odległość od stacji \d+ m\) · stacja 1 z 3$/);
   assert.ok(dom.pobierz('gra-pasek').querySelector('.pasek-dystans'), 'odległość jest zieloną pigułką (właściciel 2026-09-11)');
-  // Uwagi E i F (2026-09-13, ADR 0036 aneks): Informacje NIE dostają całego
-  // sterowania — wędruje tam wyłącznie węzeł „Zakończ grę", a panel gry znika,
-  // żeby nad mapą został sam pasek.
-  assert.equal(dom.pobierz('przycisk-zakoncz-gre').parentNode, dom.pobierz('informacje-gra'),
-    'w drodze Informacje mają JEDNĄ rzecz z gry: zakończenie');
-  assert.equal(dom.pobierz('informacje-gra').children.length, 1, 'bez boksu z dystansem i wznawianiem (uwaga E)');
+  // Uwagi E i F (2026-09-13, ADR 0036 aneks) zabrały z Informacji sterowanie,
+  // a uwaga H1 (ADR 0043) także węzeł zakończenia gry: w drodze nad mapą zostaje
+  // sam pasek, a grę kończy ikona ⚙ START GRY.
+  assert.equal(dom.elementy.has('informacje-gra'), false, 'Informacje nie niosą już nic z gry');
   assert.equal(dom.pobierz('gra-sterowanie').hidden, true, 'panel gry nie zasłania mapy w marszu');
   assert.equal(dom.document.body.classList.contains('gra-w-drodze'), true);
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, true, 'bez przygaszenia mapy podczas marszu');
   dom.kliknij('przycisk-informacje');
-  assert.equal(dom.pobierz('informacje-gra').hidden, false);
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false, 'Informacje otwierają się też w drodze');
   assert.equal(dom.pobierz('gra-pasek').hidden, false, 'Informacje nie zmieniają układu drogi');
   await dojdzSymulacja(dom);
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false);
   assert.equal(dom.pobierz('gra-pasek').hidden, true);
   assert.equal(dom.document.body.classList.contains('gra-w-drodze'), false);
-  assert.equal(dom.pobierz('przycisk-zakoncz-gre').parentNode, dom.pobierz('przycisk-zakoncz-gre-slot'),
-    'po dojściu przycisk wraca do panelu gry');
   assert.equal(dom.pobierz('gra-sterowanie').hidden, false, 'panel pytania znowu widoczny');
   assert.equal(dom.pobierz('ekran-informacje').hidden, true, 'pytanie pojawia się automatycznie także po użyciu Informacji');
-  assert.equal(dom.pobierz('informacje-gra').hidden, true);
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, false);
 });
 

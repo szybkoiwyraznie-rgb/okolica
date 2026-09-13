@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-106';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-106';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-107';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-107';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-106';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-106';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-106';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-106';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-106';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-106';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-106';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-106';
+} from './protokol.js?v=m12-107';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-107';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-107';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-107';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-107';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-107';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-107';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-107';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-106';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-106';
+} from './zestawy.js?v=m12-107';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-107';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-106';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-106';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-106';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-106';
-import { adresMostu, stanMostu } from './most.js?v=m12-106';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-106';
+} from './sieci.js?v=m12-107';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-107';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-107';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-107';
+import { adresMostu, stanMostu } from './most.js?v=m12-107';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-107';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-106';
+} from './oceny.js?v=m12-107';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -180,10 +180,11 @@ const STAN = {
   pytaniePokazaneMs: 0,
   /** M6/R6: snapshot `stan-gry/1` znaleziony przy starcie (kandydat do wznowienia). */
   wznowienieKandydat: null,
-  /** M6/R6: dwustopniowość — kasowanie zapisu i ręczne zakończenie gry. */
+  /** M6/R6: dwustopniowość kasowania zapisu i historii. Ręcznego zakończenia
+   *  gry NIE uzbraja się klikiem — potwierdzeniem jest wpisanie TAK w warstwie
+   *  `#ekran-koniec-gry` (właściciel 2026-09-13, uwaga I; ADR 0043). */
   czyszczenieZapisuUzbrojone: false,
   historiaKasowanieUzbrojone: false,
-  graZakonczonaUzbrojone: false,
   graZakonczonaRecznie: false,
   /** M11/P4: 'hotseat' | 'multi' — wybór z setupu, utrwalany w localStorage. */
   rodzajGry: 'hotseat',
@@ -262,23 +263,35 @@ const EKRANY = ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra'
  * „wróć”) — rozsypanie tego po nich gwarantowałoby ikonę świecącą nad
  * zamkniętą warstwą.
  */
+/**
+ * Czy gra się toczy (ADR 0043): rozgrywka istnieje, nie jest w fazie końcowej
+ * i nie została zakończona ręcznie. Jedna reguła dla ikony ⚙ i dla warstwy
+ * potwierdzenia — rozjechanie ich skończyłoby się ikoną, która w trakcie gry
+ * otwiera setup i nadpisuje `STAN.rozgrywka` (zgłoszenie J, 2026-09-12).
+ */
+function czyGraToczySie() {
+  return Boolean(STAN.rozgrywka) && STAN.rozgrywka.faza !== FAZY.koniec && !STAN.graZakonczonaRecznie;
+}
+
 function odswiezStanIkonBelki() {
   const ustaw = (id, wlaczona) => {
     const el = $(id);
     if (el) el.setAttribute('aria-pressed', String(Boolean(wlaczona)));
   };
   // „START GRY” świeci na całej ścieżce przygotowania gry (ekrany 1–5), bo to
-  // ta sama warstwa setupu — nie tylko na pierwszym jej kroku.
-  ustaw('przycisk-setup', EKRANY.includes(STAN.ekran));
-  // Zgłoszenie J (2026-09-12): ⚙ START GRY w trakcie gry resetował ją bez
-  // ostrzeżenia (setup → startGry nadpisuje STAN.rozgrywka) — ikona jest
-  // nieaktywna, dopóki gra się toczy; wraca przed grą i po niej.
+  // ta sama warstwa setupu — nie tylko na pierwszym jej kroku, oraz wtedy, gdy
+  // otwarta jest warstwa końca gry (uwaga I: ikona jest przełącznikiem).
+  const koniecOtwarty = !$('ekran-koniec-gry').hidden;
+  ustaw('przycisk-setup', EKRANY.includes(STAN.ekran) || koniecOtwarty);
+  // Właściciel 2026-09-13 (uwaga I, ADR 0043): wyszarzenia NIE MA. Zgłoszenie J
+  // (2026-09-12) chroniło przed przypadkowym resetem gry — teraz chroni przed
+  // nim warstwa potwierdzenia z wpisaniem TAK, więc ikona jest zawsze aktywna:
+  // w trakcie gry otwiera zakończenie gry, poza grą działa jak dawniej.
   const setup = $('przycisk-setup');
   if (setup) {
-    const graToczySie = STAN.rozgrywka && STAN.rozgrywka.faza !== FAZY.koniec && !STAN.graZakonczonaRecznie;
-    setup.disabled = Boolean(graToczySie);
-    setup.title = graToczySie
-      ? 'START GRY — niedostępne w trakcie gry (dokończ albo zakończ grę)'
+    setup.disabled = false;
+    setup.title = czyGraToczySie()
+      ? 'START GRY — w trakcie gry otwiera zakończenie aktualnej gry'
       : 'START GRY — ustawienia gry';
   }
 }
@@ -292,6 +305,7 @@ function pokazEkran(nazwa) {
   ukryjStart(); // krok gry chowa okno startowe (poza nim okno nie ma czego przykrywać)
   zamknijInformacje();
   zamknijRankingi({ bezFokusu: true });
+  zamknijKoniecGry({ bezFokusu: true });
   // Wejście na ekran pozycji = nowy pobyt na „stronie z paczkami": kontrolna
   // pozycja wraca do null, więc pierwszy fix sprawdzi propozycje od nowa.
   if (nazwa === 'pozycja') STAN.ostatniaPozycjaZestawow = null;
@@ -409,14 +423,77 @@ function czyscDaneWitryny() {
     : 'Nie znaleziono zapisanych danych tej gry.';
 }
 
-const PANELE = [...EKRANY, 'prywatnosc', 'ranking', 'start', 'informacje'];
+const PANELE = [...EKRANY, 'prywatnosc', 'ranking', 'start', 'informacje', 'koniec-gry'];
 
 /** „START GRY" w nagłówku (F3): z kroku gry wraca na mapę startową, spoza niej
  *  otwiera setup. Przełącznik, nie jednostronne przejście — gracz klika go
  *  odruchowo drugi raz. */
 function przelaczSetup() {
+  // Właściciel 2026-09-13 (uwaga I, ADR 0043): w trakcie gry ikona jest
+  // przełącznikiem warstwy „czy na pewno chcesz zakończyć aktualną grę?".
+  if (czyGraToczySie()) { przelaczKoniecGry(); return; }
+  zamknijKoniecGry({ bezFokusu: true });
   if (EKRANY.includes(STAN.ekran)) { pokazMapeStartowa(); return; }
   pokazEkran('setup');
+}
+
+/* ---------- ADR 0043 (uwagi H1 i I): koniec gry za ikoną ⚙, z wpisaniem TAK */
+
+/**
+ * Otwiera warstwę potwierdzenia — zawsze od pustego pola i zablokowanego
+ * przycisku. Warstwy NIE świecą równocześnie (wzorzec z `przelaczRankingi`):
+ * `body.podglad-mapy`, `body.informacje-otwarte` i `body.ranking-otwarte`
+ * ukrywają każdy inny panel centralny, więc otwarcie bez ich zamknięcia
+ * pokazałoby pustą kartę nad grą.
+ */
+function otworzKoniecGry() {
+  STAN.podgladMapy = false;
+  zamknijInformacje();
+  zamknijRankingi({ bezFokusu: true });
+  $('koniec-gry-potwierdzenie').value = '';
+  $('ekran-koniec-gry').hidden = false;
+  document.body.classList.add('koniec-gry-otwarte');
+  odswiezKoniecGry();
+  $('koniec-gry-potwierdzenie').focus();
+}
+
+function zamknijKoniecGry({ bezFokusu = false } = {}) {
+  if ($('ekran-koniec-gry').hidden) return;
+  $('ekran-koniec-gry').hidden = true;
+  $('koniec-gry-potwierdzenie').value = '';
+  document.body.classList.remove('koniec-gry-otwarte');
+  odswiezWidocznoscPaneli();
+  odswiezStanIkonBelki();
+  if (!bezFokusu) $('przycisk-setup').focus();
+}
+
+function przelaczKoniecGry() {
+  if ($('ekran-koniec-gry').hidden) otworzKoniecGry();
+  else zamknijKoniecGry();
+}
+
+/**
+ * Przycisk „■ ZAKOŃCZ AKTUALNĄ GRĘ" jest aktywny DOPIERO po wpisaniu TAK
+ * (wielkość liter i odstępy bez znaczenia — właściciel: „non-case-sensitive").
+ */
+function odswiezKoniecGry() {
+  const wpis = String($('koniec-gry-potwierdzenie').value ?? '').trim().toLowerCase();
+  $('przycisk-koniec-gry').disabled = wpis !== 'tak';
+  odswiezWidocznoscPaneli();
+  odswiezStanIkonBelki();
+}
+
+/** Potwierdzony koniec gry: ta sama ścieżka, którą dawniej szedł przycisk w panelu. */
+function zakonczGreZPotwierdzenia() {
+  zamknijKoniecGry({ bezFokusu: true });
+  if (STAN.multi) {
+    // Gra wieloosobowa: organizator kończy grę w moście, pozostali wychodzą
+    // z niej u siebie — reszta gra dalej (ADR 0019 pkt 5).
+    if (STAN.multi.rola === 'organizator') void zakonczGreMulti();
+    else rezygnujZGryMulti();
+    return;
+  }
+  zakonczGreRecznie();
 }
 
 /**
@@ -435,14 +512,18 @@ function odswiezWidocznoscPaneli() {
   document.body.dataset.mapa = nazwaWidocznejMapy();
   const info = !$('ekran-informacje').hidden;
   const ranking = !$('ekran-ranking').hidden;
+  const koniecGry = !$('ekran-koniec-gry').hidden;
   const droga = STAN.ekran === 'gra' && !$('gra-panel-odcinek').hidden;
   document.body.classList.toggle('gra-w-drodze', droga);
-  $('informacje-gra').hidden = !droga;
   document.body.classList.toggle('podglad-mapy', podglad);
   document.body.classList.toggle('informacje-otwarte', info);
+  document.body.classList.toggle('koniec-gry-otwarte', koniecGry);
   for (const nazwa of PANELE) {
     const panel = $(`ekran-${nazwa}`);
-    panel.inert = podglad || (info && nazwa !== 'informacje') || (ranking && nazwa !== 'ranking');
+    panel.inert = podglad
+      || (koniecGry && nazwa !== 'koniec-gry')
+      || (info && nazwa !== 'informacje')
+      || (ranking && nazwa !== 'ranking');
   }
   $('przygaszenie-mapy').hidden = podglad || !PANELE.some(n => !$(`ekran-${n}`).hidden && !(n === 'gra' && droga));
   $('przycisk-podejrzyj-mape').setAttribute('aria-pressed', String(podglad));
@@ -476,6 +557,7 @@ function przelaczInformacje() {
   const otwieramy = $('ekran-informacje').hidden;
   $('ekran-informacje').hidden = !otwieramy;
   STAN.podgladMapy = false;
+  zamknijKoniecGry({ bezFokusu: true }); // warstwy nie świecą równocześnie
   odswiezWidocznoscPaneli();
   $(otwieramy ? 'przycisk-zamknij-informacje' : 'przycisk-informacje').focus();
 }
@@ -580,6 +662,7 @@ function przelaczRankingi() {
   }
   STAN.podgladMapy = false;
   zamknijInformacje(); // warstwy nie świecą równocześnie
+  zamknijKoniecGry({ bezFokusu: true });
   $('ekran-ranking').hidden = false;
   document.body.classList.add('ranking-otwarte');
   odswiezWidocznoscPaneli();
@@ -1975,20 +2058,17 @@ function aktualizujGreNaFix(fix) {
 }
 
 /**
- * W drodze mapa + pojedynczy pasek. Właściciel 2026-09-13 (uwagi E i F, ADR 0036
- * aneks): Informacje NIE dostają już całego sterowania — boks z dystansem
- * i przyciskiem wznawiania zniknął razem z systemem pauzy (ADR 0040). W drodze
- * przenosimy tam WYŁĄCZNIE węzeł „■ Zakończ grę"
- * (nadal bez klonowania przycisków i nasłuchów), a panel gry chowamy, żeby pasek
- * był jedynym elementem nad mapą.
+ * W drodze mapa + pojedynczy pasek i NIC ponadto. Właściciel 2026-09-13 (uwagi
+ * E i F, ADR 0036 aneks; potem H1 i I, ADR 0043): Informacje nie dostają ani
+ * sterowania, ani węzła zakończenia gry — boks z dystansem i wznawianiem zniknął
+ * z systemem pauzy (ADR 0040), a „■ Zakończ grę" wyprowadził się z Informacji
+ * do warstwy za ikoną ⚙ START GRY. Panel gry chowamy, żeby pasek był jedynym
+ * elementem nad mapą.
  */
 function odswiezPasekDrogi() {
   const r = STAN.rozgrywka;
   if (!r) return;
   const droga = !$('gra-panel-odcinek').hidden;
-  const zakoncz = $('przycisk-zakoncz-gre');
-  const docelowy = $(droga ? 'informacje-gra' : 'przycisk-zakoncz-gre-slot');
-  if (zakoncz.parentNode !== docelowy) docelowy.appendChild(zakoncz);
   $('gra-sterowanie').hidden = droga;
   $('gra-pasek').hidden = !droga;
   const pod = podglad(r);
@@ -3284,20 +3364,14 @@ function zakonczGreRecznie() {
   const r = STAN.rozgrywka;
   if (!r) return;
   if (r.faza === FAZY.koniec) {
-    // Gra już się skończyła: klikanie „Zakończ grę" nic nie zmienia, więc mówimy
+    // Gra już się skończyła: potwierdzanie końca nic nie zmienia, więc mówimy
     // wprost, gdzie jest wyjście (właściciel, 2026-09-08).
     status('Ta gra już się zakończyła — wynik jest powyżej. Nową grę zaczniesz przyciskiem „Wróć na początek".');
     return;
   }
-  if (!STAN.graZakonczonaUzbrojone) {
-    STAN.graZakonczonaUzbrojone = true;
-    $('przycisk-zakoncz-gre').textContent = '⚠ Kliknij ponownie, aby zakończyć';
-    status('Drugi klik pokaże wynik i zakończy grę. Zapis zostaje — można wznowić od tego miejsca.');
-    return;
-  }
-  STAN.graZakonczonaUzbrojone = false;
+  // Potwierdzeniem jest wpisanie TAK w warstwie `#ekran-koniec-gry` (uwaga I,
+  // ADR 0043) — dawniej był to drugi klik w przycisk „⚠ Kliknij ponownie".
   STAN.graZakonczonaRecznie = true;
-  $('przycisk-zakoncz-gre').textContent = '■ Zakończ grę';
   // M11/P4: koniec na tym telefonie = rezygnacja w grze wieloosobowej (reszta gra dalej)
   if (STAN.multi) void wyslijZdarzenieMulti('rezygnacja', null, { powod: 'zakończenie ręczne na telefonie' });
   zatrzymajSymulacje();
@@ -3322,7 +3396,6 @@ function wrocNaPoczatek() {
   }
   STAN.rozgrywka = null;
   STAN.graZakonczonaRecznie = false;
-  STAN.graZakonczonaUzbrojone = false;
   STAN.kontenerPaczki = null;
   STAN.paczkaRepoId = '';
   STAN.tokenGry = '';
@@ -4994,7 +5067,8 @@ function start() {
   });
   document.addEventListener('keydown', (z) => {
     if (z.key !== 'Escape') return;
-    if (STAN.podgladMapy) przelaczPodgladMapy();
+    if (!$('ekran-koniec-gry').hidden) zamknijKoniecGry();
+    else if (STAN.podgladMapy) przelaczPodgladMapy();
     else if (!$('ekran-informacje').hidden) przelaczInformacje();
     else if (!$('ekran-ranking').hidden) przelaczRankingi();
     else ukryjStart();
@@ -5235,7 +5309,10 @@ function start() {
   $('gra-ocena-minus').addEventListener('click', () => kliknijOcene(OCENA_MINUS));
   zaladujOcenyLokalne();
   oproznijKolejkeOcen();
-  $('przycisk-zakoncz-gre').addEventListener('click', () => zakonczGreRecznie());
+  // ADR 0043 (uwagi H1 i I): koniec gry żyje w warstwie za ikoną ⚙ START GRY.
+  $('przycisk-zamknij-koniec-gry').addEventListener('click', () => zamknijKoniecGry());
+  $('koniec-gry-potwierdzenie').addEventListener('input', () => odswiezKoniecGry());
+  $('przycisk-koniec-gry').addEventListener('click', () => zakonczGreZPotwierdzenia());
   $('przycisk-wznow-gre').addEventListener('click', () => wznowGre());
   $('przycisk-kasuj-zapis').addEventListener('click', () => kasujZapisGry());
   $('przycisk-kasuj-historie').addEventListener('click', () => kasujHistorieGry());

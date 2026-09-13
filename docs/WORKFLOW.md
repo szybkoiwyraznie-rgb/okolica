@@ -73,16 +73,21 @@ Koniec sesji:
    Drive prosto do repozytorium okolicy — moderacja wstępna zniesiona
    2026-09-11); pytania są ukrywane (TO-paczka/2), a pole wklejania
    czyszczone.
-6. **Gra**: odcinek startuje jawną akcją („⚙ START GRY” w belce jest wtedy zgaszony — zadanie J, 2026-09-12), dojście zalicza tylko GPS (dwa fixy
-   w progu, ADR 0004/0029); nieosiągalna stacja = „■ Zakończ grę” (akcji
-   pomijania nie ma od zadania H, 2026-09-12). Pytanie odsłania się
+6. **Gra**: odcinek startuje jawną akcją, dojście zalicza tylko GPS (dwa fixy
+   w progu, ADR 0004/0029). Nieosiągalną stację i całą grę kończy ikona
+   „⚙ START GRY” w belce: NIE JEST zgaszona (odwrócenie zadania J, 2026-09-12),
+   a w trakcie gry otwiera warstwę „Czy na pewno chcesz zakończyć aktualną grę?”
+   z polem na TAK i przyciskiem „■ ZAKOŃCZ AKTUALNĄ GRĘ” zablokowanym do czasu
+   wpisania TAK (właściciel 2026-09-13, ADR 0043). Akcji pomijania nie ma od
+   zadania H, 2026-09-12, a przycisku „■ Zakończ grę” w panelu nie ma od ADR 0043. Pytanie odsłania się
    dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Po odpowiedzi
    pytanie i możliwe odpowiedzi zjeżdżają do zwijanego elementu, a na wierzchu
    zostają łapki, poprawna odpowiedź i komentarz — bez przewijania na telefonie
    (ADR 0036 aneks 2026-09-13). Pauzy NIE MA (właściciel 2026-09-13, ADR 0040):
    gra i śledzenie idą cały czas, po powrocie z tła wszystko wznawia się samo
    bez klikania, a jedyna przerwa to 15 minut bez żadnej akcji — wznawia ją
-   dowolny klik. W drodze Informacje mieszczą wyłącznie „■ Zakończ grę”.
+   dowolny klik. W drodze Informacje nie mieszczą NIC z gry (ADR 0043) — nad
+   mapą zostaje sam pasek.
 7. **Wynik**: ekran jest MINIMALNY (ADR 0038) — „🏁 Koniec gry!”, karta
    zwycięzcy, tabela tej gry (gracz / punkty / poprawne), osobna linia z losem
    wysyłki na Drive i „🏠 Wróć na początek — nowa gra”. Eksportów (.txt, PNG,

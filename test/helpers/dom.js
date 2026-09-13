@@ -431,6 +431,18 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
       for (const fn of el.zdarzenia.paste ?? []) fn(zdarzenie);
       return (el.zdarzenia.paste ?? []).length;
     },
+    /**
+     * Wpisanie tekstu w pole: ustawia wartość i odpala `input` — dokładnie to,
+     * co robi klawiatura (albo wklejenie, po którym przeglądarka też wysyła
+     * `input`). Potrzebne od ADR 0043: warstwa końca gry odblokowuje przycisk
+     * dopiero po wpisaniu TAK.
+     */
+    wpisz(id, tekst) {
+      const el = pobierz(id);
+      el.value = tekst;
+      for (const fn of el.zdarzenia.input ?? []) fn({ type: 'input', target: el, currentTarget: el });
+      return (el.zdarzenia.input ?? []).length;
+    },
     /** Klik w element (wszystkie nasłuchy `click`). */
     kliknij(id) {
       const el = pobierz(id);

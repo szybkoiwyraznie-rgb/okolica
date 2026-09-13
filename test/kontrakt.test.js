@@ -621,12 +621,13 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'mapa-gra', 'mapa-gra-svg', 'mapa-gra-kafelki', 'mapa-gra-okregi', 'mapa-gra-pinezki', 'mapa-gra-marker',
     'bledy-gra', 'gra-komunikat',
     'gra-kto-idzie', 'gra-cel-stacji', 'przycisk-start-odcinka',
-    'gra-dystans-odcinka', 'przycisk-zakoncz-gre-slot',
+    'gra-dystans-odcinka',
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-pytanie-detale', 'gra-pytanie-detale-naglowek', 'gra-odpowiedzi-lista',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
     'gra-wyniki', 'gra-wyniki-tbody', 'gra-wynik-zwyciezca', 'przycisk-nowa-gra',
-    'przycisk-zakoncz-gre',
+    'ekran-koniec-gry', 'tytul-koniec-gry', 'koniec-gry-potwierdzenie',
+    'przycisk-koniec-gry', 'przycisk-zamknij-koniec-gry',
   ];
   for (const id of wymagane) assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
   // ADR 0038 (zgłoszenie właściciela 2026-09-12, D b): ekran wyniku jest MINIMALNY.
@@ -638,6 +639,8 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'wynik-eksport', 'przycisk-udostepnij-wynik', 'przycisk-kopiuj-wynik', 'przycisk-pobierz-wynik',
     'przycisk-pobierz-obraz', 'przycisk-udostepnij-obraz',
     'gra-wynik-tekst-detale', 'pole-wynik-tekst', 'gra-wynik-factcheck',
+    // ADR 0043 (uwaga H1): koniec gry nie jest już węzłem w panelu gry.
+    'przycisk-zakoncz-gre', 'przycisk-zakoncz-gre-slot', 'informacje-gra',
   ];
   for (const id of usuniete) assert.ok(!html.includes(`id="${id}"`), `ekran wyniku nie ma już #${id} (ADR 0038)`);
   assert.match(html, /id="bledy-gra" class="bledy" role="alert"/, 'błędy faz mają role="alert" (jak inne ekrany)');
@@ -1166,7 +1169,7 @@ test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samo
   assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*var\(--wysokosc-belki/s);
   assert.match(STYLE, /\.panel-centralny:not\(\[hidden\]\) \{[^}]*overflow-y: auto/s);
   assert.ok(APP.includes('function ustawWysokoscBelki'));
-  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra', 'informacje']) {
+  for (const ekran of ['setup', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra', 'informacje', 'koniec-gry']) {
     const sekcja = INDEX.match(new RegExp(`<section id="ekran-${ekran}"[\\s\\S]*?</section>`))?.[0];
     assert.ok(sekcja?.includes('panel-centralny'), ekran);
     assert.ok(!/id="mapa-(pozycja|stacje|gra)"/.test(sekcja), 'mapa poza panelem: ' + ekran);
@@ -1430,7 +1433,8 @@ test('K: komentarze w kodzie nie obiecują koła dokładności (ADR 0034 pkt 2)'
 test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwaga B, 2026-09-13)', () => {
   const POZYCJA = czytaj('app/pozycja.js');
 
-  // 1. UI: przycisk i komunikat pauzy zniknęły, slot zakończenia został.
+  // 1. UI: przycisk i komunikat pauzy zniknęły. Slotu zakończenia gry też już
+  //     nie ma — grę kończy warstwa za ikoną ⚙ START GRY (ADR 0043, uwaga H1).
   for (const id of ['przycisk-pauza', 'gra-pauza-komunikat']) {
     assert.equal(INDEX.includes(`id="${id}"`), false, `#${id} nie może wrócić do index.html (ADR 0040 pkt 1)`);
   }
@@ -1438,8 +1442,8 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
     assert.equal(INDEX.includes(etykieta), false, `index.html nie może nieść „${etykieta}"`);
     assert.equal(APP.includes(etykieta), false, `app.js nie może wstawiać „${etykieta}"`);
   }
-  assert.ok(INDEX.includes('id="przycisk-zakoncz-gre-slot"'),
-    'slot „Zakończ grę" jest — w drodze ten węzeł wędruje do Informacji (uwagi E i F)');
+  assert.equal(INDEX.includes('id="przycisk-zakoncz-gre-slot"'), false,
+    'slotu zakończenia gry nie ma — grę kończy ikona ⚙ START GRY (ADR 0043)');
 
   // 2. Silnik: funkcje i stan pauzy wycofane. Asertujemy WYWOŁANIA, nie słowa —
   //    komentarze o wycofaniu zostają w kodzie jako pamięć decyzji (L58).
@@ -1494,15 +1498,105 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
   assert.match(APP, /if \(!STAN\.watcher\?\.czyAktywny\(\) \|\| !STAN\.ostatniFix\) wlaczGps\(\);/,
     'martwy albo niemy nasłuch jest zakładany od nowa bez kliku (bug G + ADR 0040 pkt 3)');
 
-  // 4. W drodze Informacje dostają WYŁĄCZNIE węzeł zakończenia gry.
-  assert.match(APP, /const docelowy = \$\(droga \? 'informacje-gra' : 'przycisk-zakoncz-gre-slot'\);/,
-    'w drodze do Informacji wędruje tylko „■ Zakończ grę" (ADR 0036 aneks 2026-09-13)');
+  // 4. W drodze nad mapą zostaje sam pasek — Informacje nie niosą nic z gry
+  //    (ADR 0036 aneks 2026-09-13 zawęził to do węzła zakończenia, a ADR 0043
+  //    zabrał i ten węzeł).
   assert.match(APP, /\$\('gra-sterowanie'\)\.hidden = droga;/,
     'panel gry jest w drodze schowany — nad mapą zostaje pasek');
   // Asertujemy REGUŁĘ, nie sam tekst: komentarz w styles.css celowo nazywa
   // selektor, który umarł (L31 — usunięcie i grep w tym samym commitcie).
+  assert.equal(/#informacje-gra\s*\{/.test(STYLE), false,
+    'reguła `#informacje-gra` umarła razem z węzłem (L31)');
   assert.equal(/#informacje-gra h2\s*\{/.test(STYLE), false,
     'reguła na nagłówek „Gra" w Informacjach umarła z przenoszeniem sterowania (L31)');
+});
+
+/* ------------- ADR 0043: koniec gry za ikoną ⚙ START GRY, z wpisaniem TAK */
+
+test('kontrakt ADR 0043: grę kończy ikona ⚙ START GRY z wpisaniem TAK (uwagi H1 i I)', () => {
+  // 1. Przycisku „■ Zakończ grę" i węzła gry w Informacjach NIE MA — właściciel:
+  //    „Proszę usunąć z Informacji przycisk ZAKOŃCZ GRĘ. Rozwiążemy to inaczej".
+  for (const id of ['przycisk-zakoncz-gre', 'przycisk-zakoncz-gre-slot', 'informacje-gra']) {
+    assert.equal(INDEX.includes(`id="${id}"`), false, `#${id} nie może wrócić do index.html (ADR 0043)`);
+    assert.equal(new RegExp(`\\$\\('${id}'\\)`).test(APP), false, `app.js nie sięga po #${id}`);
+  }
+  assert.equal(/STAN\.graZakonczonaUzbrojone/.test(APP), false,
+    'dwustopniowego uzbrajania klikiem nie ma — potwierdzeniem jest wpisanie TAK');
+  assert.equal(APP.includes('Kliknij ponownie, aby zakończyć'), false,
+    'etykieta „⚠ Kliknij ponownie, aby zakończyć" odeszła z uzbrajaniem');
+  assert.match(APP, /\/\/ Potwierdzeniem jest wpisanie TAK w warstwie `#ekran-koniec-gry`/,
+    'komentarz pamięta, czym zastąpiono drugi klik (L58)');
+
+  // 2. Warstwa: MAŁA, na środku, z krzyżykiem, polem na TAK i przyciskiem.
+  const warstwa = INDEX.match(/<section id="ekran-koniec-gry"[\s\S]*?<\/section>/)?.[0];
+  assert.ok(warstwa, 'warstwa końca gry jest w index.html');
+  assert.match(warstwa, /^<section id="ekran-koniec-gry" class="ekran panel-centralny" hidden role="dialog"/,
+    'to panel centralny ukryty na starcie (ADR 0034)');
+  assert.match(warstwa, /Czy na pewno chcesz zakończyć aktualną grę\?/, 'pytanie z decyzji właściciela');
+  assert.match(warstwa, /Wpisz w okienko poniżej <strong>TAK<\/strong>/, 'instrukcja wpisania TAK');
+  assert.match(warstwa, /<button id="przycisk-zamknij-koniec-gry" class="warstwa-krzyzyk"[^>]*aria-label=/,
+    'krzyżyk zamyka warstwę i ma nazwę dostępną (ADR 0011)');
+  assert.match(warstwa, /<input id="koniec-gry-potwierdzenie" type="text"[^>]*aria-label=/,
+    'pole TAK ma etykietę — bez niej audyt WCAG zgłosi pole bez nazwy');
+  assert.match(warstwa, /<button id="przycisk-koniec-gry"[^>]*disabled>/,
+    'przycisk zakończenia startuje ZABLOKOWANY');
+  assert.match(warstwa, /id="przycisk-koniec-gry" class="przycisk" type="button"/,
+    'przycisk ma type=button i klasę `.przycisk` (cel dotykowy ≥ --cel, ADR 0011)');
+  assert.match(STYLE, /#ekran-koniec-gry \{ z-index: 30; max-width: 340px; \}/,
+    'warstwa jest mała i leży NAD Informacjami oraz rankingiem (te mają z-index 20)');
+
+  // 3. Ikona ⚙ START GRY: bez wyszarzenia, w trakcie gry jest przełącznikiem.
+  assert.match(APP, /setup\.disabled = false;/, 'wyszarzenia ikony NIE MA (uwaga I odwraca zgłoszenie J)');
+  assert.equal(/niedostępne w trakcie gry/.test(APP), false,
+    'stary title o niedostępnej ikonie zniknął razem z blokadą');
+  assert.match(APP, /if \(czyGraToczySie\(\)\) \{ przelaczKoniecGry\(\); return; \}/,
+    'w trakcie gry klik ⚙ otwiera warstwę, poza grą idzie stary tor (setup → mapa)');
+  assert.match(APP, /function czyGraToczySie\(\) \{\n {2}return Boolean\(STAN\.rozgrywka\) && STAN\.rozgrywka\.faza !== FAZY\.koniec && !STAN\.graZakonczonaRecznie;\n\}/,
+    'jedna reguła „gra się toczy" dla ikony i dla warstwy — nie mogą się rozjechać');
+  assert.match(APP, /ustaw\('przycisk-setup', EKRANY\.includes\(STAN\.ekran\) \|\| koniecOtwarty\);/,
+    'otwarta warstwa też zapala ikonę (aria-pressed przełącznika)');
+
+  // 4. Przycisk odblokowuje DOPIERO wpisane TAK — bez względu na wielkość liter.
+  assert.match(APP, /const wpis = String\(\$\('koniec-gry-potwierdzenie'\)\.value \?\? ''\)\.trim\(\)\.toLowerCase\(\);\n {2}\$\('przycisk-koniec-gry'\)\.disabled = wpis !== 'tak';/,
+    '„TAK", „tak", „ Tak " odblokowują; cokolwiek innego nie');
+  assert.match(APP, /\$\('koniec-gry-potwierdzenie'\)\.addEventListener\('input', \(\) => odswiezKoniecGry\(\)\);/,
+    'blokada idzie za każdym wpisanym znakiem');
+  assert.match(APP, /\$\('przycisk-koniec-gry'\)\.addEventListener\('click', \(\) => zakonczGreZPotwierdzenia\(\)\);/,
+    'klik wykonuje koniec gry');
+  assert.match(APP, /\$\('koniec-gry-potwierdzenie'\)\.value = '';/,
+    'pole jest czyszczone — każde otwarcie warstwy zaczyna od zera');
+
+  // 5. Potwierdzony koniec idzie tą samą ścieżką co dawny przycisk (hotseat i multi).
+  assert.match(APP, /function zakonczGreZPotwierdzenia\(\) \{\n {2}zamknijKoniecGry\(\{ bezFokusu: true \}\);\n {2}if \(STAN\.multi\) \{[\s\S]{0,400}if \(STAN\.multi\.rola === 'organizator'\) void zakonczGreMulti\(\);\n {4}else rezygnujZGryMulti\(\);\n {4}return;\n {2}\}\n {2}zakonczGreRecznie\(\);\n\}/,
+    'w multi organizator kończy grę w moście, pozostali wychodzą u siebie; hotseat kończy się lokalnie');
+  assert.match(APP, /STAN\.graZakonczonaRecznie = true;/, 'znacznik ręcznego końca zostaje (historia: „przerwana")');
+
+  // 6. Warstwa zachowuje się jak każdy panel: krzyżyk, Escape, krok gry, inert.
+  assert.match(APP, /'start', 'informacje', 'koniec-gry'\];/, 'warstwa należy do PANELE');
+  assert.match(APP, /\|\| \(koniecGry && nazwa !== 'koniec-gry'\)/,
+    'otwarta warstwa usztywnia resztę paneli — jak Informacje i ranking');
+  assert.match(APP, /if \(!\$\('ekran-koniec-gry'\)\.hidden\) zamknijKoniecGry\(\);\n {4}else if \(STAN\.podgladMapy\)/,
+    'Escape zamyka najpierw warstwę końca gry');
+  assert.match(APP, /zamknijRankingi\(\{ bezFokusu: true \}\);\n {2}zamknijKoniecGry\(\{ bezFokusu: true \}\);/,
+    'każdy krok gry gasi warstwę (jak Informacje i ranking)');
+  assert.match(APP, /if \(!bezFokusu\) \$\('przycisk-setup'\)\.focus\(\);/,
+    'zamknięcie oddaje fokus na ikonę, którą warstwa została otwarta');
+
+  // 7. Warstwy NIE świecą równocześnie: otwarcie potwierdzenia gasi podgląd mapy,
+  //    Informacje i ranking — inaczej `visibility: hidden` z cudzej klasy
+  //    pokazałoby pustą kartę (reguły `body.*-otwarte` w styles.css).
+  assert.match(APP, /function otworzKoniecGry\(\) \{\n {2}STAN\.podgladMapy = false;\n {2}zamknijInformacje\(\);\n {2}zamknijRankingi\(\{ bezFokusu: true \}\);/,
+    'otwarcie warstwy końca gry gasi podgląd mapy i obie pozostałe warstwy');
+  assert.match(APP, /document\.body\.classList\.toggle\('koniec-gry-otwarte', koniecGry\);/,
+    'jedno miejsce liczy klasę warstwy (jak `informacje-otwarte`)');
+  assert.match(APP, /zamknijKoniecGry\(\{ bezFokusu: true \}\); \/\/ warstwy nie świecą równocześnie/,
+    'otwarcie Informacji zamywa potwierdzenie końca gry');
+  assert.match(APP, /zamknijInformacje\(\); \/\/ warstwy nie świecą równocześnie\n {2}zamknijKoniecGry\(\{ bezFokusu: true \}\);/,
+    'otwarcie rankingu też je zamyka');
+  assert.match(STYLE, /body\.koniec-gry-otwarte \.panel-centralny:not\(#ekran-koniec-gry\) \{ visibility: hidden; \}/,
+    'otwarta warstwa końca gry wygasza pozostałe panele');
+  assert.match(STYLE, /#ekran-informacje, #ekran-ranking \{ z-index: 20; \}/,
+    'Informacje i ranking zostają na z-index 20 — warstwa końca gry ma 30');
 });
 test('kontrakt ADR 0042: Informacje jedną, małą czcionką Courier New', () => {
   // Właściciel 2026-09-13 (uwaga H2): cała treść warstwy — ten sam krój
