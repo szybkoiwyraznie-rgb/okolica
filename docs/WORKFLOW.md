@@ -252,20 +252,26 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
    widnieje „Host: <imię A>" (bez dodatkowych informacji) → „Dołącz". Oba
    telefony widzą się na liście graczy w lobby (≤10 s).
    Po starcie dołączenie jest już niemożliwe — lista pokazuje tylko lobby.
-3. **Start i trasa (wyścig)**: A klika „▶ Start gry" (może i solo). Na obu:
-   odcinek → dojście → pytanie → odpowiedź. Obserwować: tabela wyników
-   drugiego gracza i kanał „Info z gry" (dojścia, dobre/złe odpowiedzi,
-   rezygnacje) odświeżają się co ~30 s; pasek synchronizacji pokazuje
-   „kolejka" po zgubieniu sieci (np. między blokami) i zdarzenia wychodzą
-   po powrocie.
+3. **Start i trasa (wyścig)**: A klika „▶ Start gry" (może i solo). Na OBU
+   telefonach odlicza się 5-4-3-2-1-START — wielka cyfra na środku, tło
+   przezroczyste (mapa zostaje widoczna), a każdy krok daje sygnał: dźwięk
+   i wibrację, o ile 🔔 nie jest wyciszone (właściciel 2026-09-13, ADR 0044).
+   Potem gra wygląda DOKŁADNIE jak hotseat: pasek na dole, panel fazy, mapa —
+   karty multi, kanału „Info z gry", tabeli żywych wyników i paska „Ostatni
+   stan" w grze NIE MA (pasek został w lobby). Obserwować: po zgubieniu sieci
+   status mówi o kolejce, a zdarzenia wychodzą po powrocie; odcinek → dojście →
+   pytanie → odpowiedź idą jak w hotseat.
 4. **Wspólna Trasa**: druga gra w trybie „Wspólna Trasa" — mapa pokazuje
    TYLKO bieżącą stację (kolejne odsłaniają się po drodze), lista wyboru
    stacji nie istnieje, a obaj gracze idą tę samą trasę po kolei, każde we
    własnym tempie (nikt na nikogo nie czeka — od razu można startować odcinek).
 5. **Odświeżenie**: w trakcie gry przeładować stronę na B → baner „Telefon
    pamięta grę…" → „↩ Wróć do gry" → zamknięte stacje nie wracają, postęp
-   i wyniki są aktualne.
-6. **Koniec z ręki hosta**: A klika „⏹ Zakończ grę (host)" — u obu telefonów
+   i wyniki są aktualne, a powrót NIE odlicza startu (to nie jest start,
+   ADR 0044).
+6. **Koniec z ręki hosta**: A klika ⚙ START GRY → warstwa „Czy na pewno chcesz
+   zakończyć aktualną grę?" → wpisuje TAK → „■ ZAKOŃCZ AKTUALNĄ GRĘ" (ADR 0043;
+   przycisku „⏹ Zakończ grę (host)" nie ma — ADR 0044) — u obu telefonów
    podsumowanie i ranking końcowy; premie za ukończenie przed końcem liczą się
    także przy takim końcu, a ich pula zależy od liczby grających, którzy nie
    odłączyli się wcześniej (2 grających: 1/0, 3: 2/1/0, 4 i więcej: 3/2/1/0).

@@ -329,7 +329,17 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     clearTimeout: (...args) => clearTimeout(...args),
   };
 
-  const navigatorStub = { clipboard: undefined, geolocation, userAgent: 'node-test', language: 'pl-PL' };
+  /**
+   * Wzorce wibracji wywołane przez aplikację (ADR 0041: sygnał = dźwięk I
+   * wibracja). Dźwięku atrapa nie gra (brak AudioContext w Node), więc to
+   * wibracje są w testach dowodem, że sygnał w ogóle się odezwał — i że milczy,
+   * gdy 🔔 jest wyłączone.
+   */
+  const wibracje = [];
+  const navigatorStub = {
+    clipboard: undefined, geolocation, userAgent: 'node-test', language: 'pl-PL',
+    vibrate: (wzorzec) => { wibracje.push(wzorzec); return true; },
+  };
 
   // Hermetyczna sieć (zgłoszenie właściciela 2026-09-11): w katalogu
   // okolica-gry-zakonczone na Drive pojawiały się dziesiątki plików
@@ -401,6 +411,8 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
     document: documentStub,
     window: windowStub,
     navigator: navigatorStub,
+    /** Wzorce `navigator.vibrate` tej instancji (dowód sygnału — ADR 0041). */
+    wibracje,
     zdarzeniaDokumentu,
     zdarzeniaOkna,
     /** Odpala nasłuch dokumentu (np. `visibilitychange`). */

@@ -100,14 +100,20 @@ test('kontrakt ADR 0032: znaczek Q ma token złota w obu motywach i klasę', () 
   assert.match(audyt, /tekst: 'zloto', tlo: 'tlo'/, 'brama pilnuje kontrastu na tle strony');
 });
 
-test('kontrakt ADR 0032/0038: linia wariantu została tylko w panelu multi', () => {
+test('kontrakt ADR 0032/0038/0044: linii wariantu fact-check nie ma już na żadnym ekranie gry', () => {
   // Zgłoszenie właściciela 2026-09-12 (D c): zdanie „Pytania bez wymuszonego
   // fact-checku — model nie musiał sprawdzać faktów w sieci” (i jego mutacja
   // „fact check”) zniknęło z ekranu wyników razem z CAŁĄ linią wariantu.
   assert.ok(!INDEX.includes('id="gra-wynik-factcheck"'), 'ekran wyniku bez linii wariantu (ADR 0038)');
   assert.ok(!APP.includes('gra-wynik-factcheck'), 'pokazWyniki nie wypełnia już tej linii (ADR 0038)');
-  assert.match(INDEX, /id="multi-factcheck"/, 'linia wariantu w panelu multi zostaje (ADR 0032)');
-  assert.match(APP, /\$\('multi-factcheck'\)/, 'renderujPanelMulti ją wypełnia');
+  // ADR 0044 (uwaga F): ostatni nośnik tej linii — panel multi — też umarł, więc
+  // w grze nie ma już żadnej informacji o wariancie. Wariant jedzie w stanie gry
+  // (`zestaw.meta`, RO-gra/1) i reguła odczytu `czyWpisFactcheck` zostaje w kodzie
+  // dla historii i repozytorium paczek.
+  assert.ok(!INDEX.includes('id="multi-factcheck"'), 'linia wariantu zniknęła z ekranu gry (ADR 0044)');
+  assert.ok(!APP.includes("$('multi-factcheck')"), 'kod jej nie wypełnia');
+  assert.match(APP, /function czyWpisFactcheck\(wpis\) \{\n {2}return wpis\?\.factcheck !== false;/,
+    'reguła odczytu wariantu zostaje (ADR 0032 §4: brak pola = zweryfikowana)');
 });
 
 test('kontrakt 2026-09-09: opis trybu promptu mówi teksty właściciela, słowo w słowo', () => {
@@ -656,7 +662,10 @@ test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=butt
   assert.match(kroki, /data-krok="gra">6 · gra</, 'szósty krok na końcu');
   const ekran = html.split('<section id="ekran-gra"')[1].split('</section>')[0];
   const przyciski = ekran.match(/<button[^>]*>/g) ?? [];
-  assert.ok(przyciski.length >= 8, `przycisków na ekranie gry: ${przyciski.length}`);
+  // ADR 0043 zabrał „■ Zakończ grę", ADR 0044 „⏹ Zakończ grę (host)" i
+  // „🏳 Rezygnuję z gry" — próg idzie w dół razem z nimi (L55: pin „element
+  // usunięty" przepisujemy na NOWĄ formę, nie trzymamy starej liczby).
+  assert.ok(przyciski.length >= 6, `przycisków na ekranie gry: ${przyciski.length}`);
   for (const p of przyciski) assert.match(p, /type="button"/, `przycisk bez type=button: ${p.slice(0, 60)}`);
 });
 
@@ -886,13 +895,13 @@ test('kontrakt ADR 0024 aneks: promień nie jest kryterium, a komunikat nazywa p
 test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kodów i źródeł', () => {
   // ekrany i panele (ADR 0019; m12-74: przepisany flow właściciela)
   for (const id of [
-    'ekran-multi', 'karta-multi', 'multi-panel-dolacz', 'multi-panel-lobby', 'gra-panel-multi',
+    'ekran-multi', 'karta-multi', 'multi-panel-dolacz', 'multi-panel-lobby',
     'multi-wznowienie',
+    // ADR 0044 (uwaga F): po starcie gra wygląda jak hotseat, a start odlicza
+    'odliczanie', 'odliczanie-cyfra', 'multi-wybor-stacji', 'multi-wybor-przyciski',
     // segmenty na setupie: rodzaj gry, ścieżka multi, tryb + trasa-sekret
     'lista-rodzajow', 'rodzaj-opis', 'multi-sciezka', 'multi-sciezka-opis',
     'pole-multi-tryb', 'multi-tryby', 'multi-tryb-opis', 'pole-trasa-sekret', 'multi-trasa-sekret', 'multi-punktacja',
-    // kanał info w grze + koniec gry z ręki hosta
-    'multi-info', 'multi-info-lista', 'przycisk-multi-zakoncz',
   ]) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
@@ -901,6 +910,21 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   for (const id of ['multi-panel-zaloz', 'multi-kod', 'przycisk-dolacz-kod', 'multi-pseudonim', 'multi-zrodlo', 'przycisk-zaloz-gre', 'przycisk-multi-zaloz', 'przycisk-multi-dolacz', 'lobby-kod', 'setup-rodzaj', 'setup-jezyk', 'setup-podklad', 'multi-most-stan', 'przycisk-multi-wstecz-dolacz']) {
     assert.ok(!INDEX.includes(`id="${id}"`), `#${id} zniknął z index.html (m12-74)`);
   }
+  // ADR 0044 (uwaga F, 2026-09-13): „potworek" — karta doklejona do gry po
+  // starcie. Po starcie gra wieloosobowa wygląda DOKŁADNIE jak hotseat.
+  for (const id of ['gra-panel-multi', 'gra-multi-tura', 'multi-factcheck', 'gra-multi-tabela',
+    'gra-multi-wiersze', 'multi-info', 'multi-info-lista', 'gra-multi-sync',
+    'przycisk-multi-zakoncz', 'przycisk-multi-rezygnuj']) {
+    assert.ok(!INDEX.includes(`id="${id}"`), `#${id} zniknął z index.html (ADR 0044)`);
+    assert.ok(!new RegExp(`\\$\\('${id}'\\)`).test(APP), `app.js nie sięga po #${id} (ADR 0044)`);
+  }
+  for (const nazwa of ['renderujPanelMulti', 'renderujInfoMulti', 'multiRezygnacjaUzbrojona']) {
+    assert.ok(!new RegExp(`function ${nazwa}\\s*\\(|STAN\\.${nazwa}`).test(APP),
+      `${nazwa} usunięta z app.js (ADR 0044)`);
+  }
+  // Etykiet („⏹ Zakończ grę (host)", „🏳 Rezygnuję z gry", „Info z gry") NIE
+  // asertujemy po tekście: nagrobki w komentarzach celowo je nazywają (LESSONS
+  // L31 — usunięcie i grep w tym samym commitcie). Pilnują ich piny id-ów wyżej.
   // Zgody na wysyłkę NIE pytamy przy każdej grze (właściciel, 2026-09-07):
   // gra na wielu telefonach z natury działa przez Drive, a opis jest w sekcji
   // prywatność — tak samo jak przy wyniku hot-seat.
@@ -1509,6 +1533,71 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
     'reguła `#informacje-gra` umarła razem z węzłem (L31)');
   assert.equal(/#informacje-gra h2\s*\{/.test(STYLE), false,
     'reguła na nagłówek „Gra" w Informacjach umarła z przenoszeniem sterowania (L31)');
+});
+
+/* ------- ADR 0044: odliczanie po starcie gry wieloosobowej, potem jak hotseat */
+
+test('kontrakt ADR 0044: start gry wieloosobowej odlicza 5-4-3-2-1-START, a potem gra wygląda jak hotseat', () => {
+  // 1. Warstwa odliczania: WIELKA cyfra na środku, tło PRZEZROCZYSTE, bez karty.
+  assert.match(INDEX, /<div id="odliczanie" hidden role="status" aria-live="assertive" aria-atomic="true"><span id="odliczanie-cyfra"><\/span><\/div>/,
+    'odliczanie jest warstwą statusu (screen reader czyta każdy krok)');
+  assert.match(STYLE, /#odliczanie \{[^}]*position: fixed; inset: 0; z-index: 40;[^}]*background: transparent; pointer-events: none;/s,
+    'warstwa nad wszystkim, przezroczysta i nie przechwytuje dotyku — mapa zostaje widoczna');
+  assert.match(STYLE, /#odliczanie\[hidden\] \{ display: none; \}/,
+    'jawne gaszenie `display` — `display: grid` z identyfikatora wygrałby z globalnym [hidden]');
+  assert.match(STYLE, /#odliczanie-cyfra \{[^}]*font-size: clamp\(96px, 42vw, 220px\);[^}]*font-variant-numeric: tabular-nums;/s,
+    'cyfra jest największym elementem ekranu i nie skacze (ADR 0011)');
+  assert.equal(STYLE.includes('#ekran-informacje, #ekran-ranking { z-index: 20; }'), true,
+    'warstwy Informacji i rankingu zostają pod odliczaniem (20 < 40)');
+
+  // 2. Kroki i sygnały: każdy krok ma dźwięk i wibrację (ADR 0041), o ile 🔔 gra.
+  assert.match(APP, /const ODLICZANIE_KROKI = Object\.freeze\(\[5, 4, 3, 2, 1, 'START'\]\);/,
+    'kolejność kroków z decyzji właściciela: 5, 4, 3, 2, 1, START');
+  assert.match(APP, /const ODLICZANIE_KROK_MS = 1000;\nconst ODLICZANIE_KROK_TEST_MS = 20;/,
+    'krok 1 s w terenie; krótszy w trybie testowym, żeby brama nie czekała minuty');
+  assert.match(APP, /for \(const krok of ODLICZANIE_KROKI\) \{\n {6}cyfra\.textContent = String\(krok\);\n {6}odegrajSygnal\(krok === 'START' \? 'startGry' : 'odliczanie'\);/,
+    'każdy krok gra sygnał — ostatni inny niż tykanie (plan w app/sygnaly.js)');
+  assert.match(APP, /if \(STAN\.odliczanieAktywne\) return; \/\/ jeden start = jedno odliczanie/,
+    'odliczanie się nie nakłada (polling może przynieść stan kilka razy)');
+  assert.match(APP, /\} finally \{\n {4}warstwa\.hidden = true;\n {4}cyfra\.textContent = '';\n {4}STAN\.odliczanieAktywne = false;/,
+    'warstwa znika po STARcie także wtedy, gdy krok się wywróci');
+
+  // 3. Odliczają WSZYSTCY — host od swojego kliku, goście od stanu z mostu.
+  assert.match(APP, /if \(odliczanie\) void odliczStartGry\(\);/,
+    'wejście do gry wieloosobowej uruchamia odliczanie (host i gość tą samą drogą)');
+  assert.match(APP, /function uruchomGreMulti\(gra, \{ odliczanie = true \} = \{\}\) \{/,
+    'odliczanie jest opcjonalne — powrót do gry go nie chce');
+  assert.match(APP, /STAN\.wznawiamMulti = true; \/\/ powrót do gry NIE jest startem — bez odliczania \(ADR 0044\)/,
+    '„↩ Wróć do gry" po odświeżeniu telefonu nie odlicza');
+  assert.match(APP, /uruchomGreMulti\(gra, \{ odliczanie: !STAN\.wznawiamMulti \}\);/,
+    'decyzja o odliczaniu zapada w jednym miejscu (stan z mostu)');
+
+  // 4. Wybór stacji w Wyścigu PRZEPROWADZIŁ SIĘ do panelu fazy A — tam, gdzie
+  //    hotseat ma „▶ Idę do stacji" (mechanika ADR 0027 B zostaje, karta znika).
+  // Wycinek od panelu fazy A do panelu fazy B (RegExp z `*?</div>` urwałby się
+  // na PIERWSZYM zagnieżdżonym `</div>` — czyli na bloku wyboru stacji).
+  const fazaA = INDEX.slice(INDEX.indexOf('id="gra-panel-oczekuje"'), INDEX.indexOf('id="gra-panel-odcinek"'));
+  assert.ok(fazaA.length > 0 && fazaA.includes('id="przycisk-start-odcinka"'), 'wycinek fazy A obejmuje jej przycisk');
+  assert.ok(fazaA.includes('id="multi-wybor-stacji"'), 'wybór stacji mieszka w panelu fazy A');
+  assert.ok(fazaA.indexOf('id="gra-cel-stacji"') < fazaA.indexOf('id="multi-wybor-stacji"')
+    && fazaA.indexOf('id="multi-wybor-stacji"') < fazaA.indexOf('id="przycisk-start-odcinka"'),
+    'kolejność: cel stacji → wybór stacji → „▶ Idę do stacji"');
+  assert.match(APP, /function renderujWyborStacji\(\) \{\n {2}const gra = STAN\.multi\?\.gra;/,
+    'wybór stacji czyta stan sam — nie jest już częścią panelu multi');
+  assert.match(APP, /if \(STAN\.multi\) renderujWyborStacji\(\);/,
+    'render gry odświeża wybór stacji (zamiast dawnego renderujPanelMulti)');
+
+  // 5. Pasek synchronizacji został TYLKO w lobby.
+  assert.match(APP, /\$\('multi-sync-pasek'\)\.textContent = tekst;\n\}/,
+    '„Ostatni stan / następne odświeżenie" żyje tylko w lobby — w grze go nie ma');
+
+  // 6. Koniec gry wieloosobowej pokazuje WSPÓLNE liczby na ekranie hotseat.
+  assert.match(APP, /const wynik = wynikiMultiKonca\(\) \?\? podsumowanie\(r\);/,
+    'ekran wyniku bierze punktację z mostu, gdy gra sieciowa jest zamknięta');
+  assert.match(APP, /function wynikiMultiKonca\(\) \{\n {2}const gra = STAN\.multi\?\.gra;\n {2}if \(!gra \|\| \(gra\.stan !== 'zakonczona' && gra\.stan !== 'archiwum'\)\) return null;/,
+    'poza zamkniętą grą sieciową wynik liczy się lokalnie (hotseat bez zmian)');
+  assert.match(APP, /pokazWyniki\(\);\n {4}renderujGre\(\);/,
+    'zamknięcie gry w moście odświeża ekran wyniku ZAWSZE — także u gracza, który skończył wcześniej');
 });
 
 /* ------------- ADR 0043: koniec gry za ikoną ⚙ START GRY, z wpisaniem TAK */

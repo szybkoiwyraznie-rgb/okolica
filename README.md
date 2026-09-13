@@ -214,8 +214,14 @@ braku przycisku). Eksport
   tylko bieżącą stację) i **Wyścig na Orientację** (dowolna kolejność stacji).
   Punktacja w obu: 1 pkt za dobrą odpowiedź + premia za kolejność ukończenia,
   zależna od liczby grających, którzy dograli do końca (2 grających: 1/0,
-  3: 2/1/0, 4 i więcej: 3/2/1/0 — odłączeni wcześniej nie liczą się do puli). Start gry możliwy także solo (od 1 gracza), a host może zakończyć
-  grę w dowolnym momencie — wszyscy dostają podsumowanie.
+  3: 2/1/0, 4 i więcej: 3/2/1/0 — odłączeni wcześniej nie liczą się do puli).
+  Start gry możliwy także solo (od 1 gracza): po kliknięciu „▶ Start gry"
+  u WSZYSTKICH — także u hosta — gra sygnał i odlicza się 5-4-3-2-1-START wielką
+  cyfrą na środku, nad przezroczystym tłem (mapa zostaje widoczna), a potem gra
+  wygląda dokładnie jak w hotseat: pasek na dole, panel fazy, mapa, bez
+  doklejonej karty z tabelami i czasami odświeżania (ADR 0044). Grę kończy ikona
+  ⚙ START GRY z wpisaniem TAK (ADR 0043) — host w dowolnym momencie, a wszyscy
+  dostają podsumowanie z punktami policzonymi na wspólnym Drive.
 - **Wspólny stan**: Google Drive + Apps Script — ten sam most co repozytorium
   paczek (ADR 0016/0018/0019). Na serwer jadą wyłącznie pseudonimy, zdarzenia
   gry i wyniki; **współrzędne graczy nigdy nie opuszczają telefonu** (biała

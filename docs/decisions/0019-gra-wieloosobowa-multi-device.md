@@ -267,3 +267,31 @@ zmiana zasady = przegląd wszystkich nośników w tym samym commitie).
    Wspólnej Trasy z pkt 1–7 powyżej. Wymaga NOWEGO deploymentu web app; na
    starym adresie warstwa mówi wprost, że nie udało się pobrać danych, a gra
    toczy się dalej.
+
+## Aneks 2026-09-13 (m12-108, uwaga F): koniec ekranu po starcie — gra wygląda jak hotseat
+
+Punkty **5** (kanał info `#multi-info`) i **6** (host kończy grę przyciskiem
+`#przycisk-multi-zakoncz`) aneksu 2026-09-11 tracą ważność razem z całą kartą
+`#gra-panel-multi`, która po starcie była doklejana do ekranu gry. Właściciel po
+testach terenowych 2026-09-13: po kliknięciu „Rozpocznij grę” wszyscy gracze
+dostają sygnał i odliczanie 5-4-3-2-1-START na środku ekranu nad mapą, a potem
+aplikacja ma wyglądać DOKŁADNIE tak jak w hotseat — bez tabel, bez czasów
+odświeżania, bez informacji, kto wystartował (ADR 0044).
+
+1. **Kanału info w grze NIE MA.** Zdarzenia (`start`, `dojscie`, `odpowiedz`,
+   `rezygnacja`, `koniec`) nadal idą na most i nadal są podstawą punktacji —
+   gracz widzi ich skutek w tabeli końca gry i w rankingu (ADR 0039), nie
+   w strumieniu komunikatów pod paskiem.
+2. **Przycisku hosta NIE MA**: koniec gry i rezygnacja idą przez ikonę
+   ⚙ START GRY z wpisaniem TAK (ADR 0043) — organizator woła `zakonczGreMulti()`,
+   pozostali `rezygnujZGryMulti()`. Premia za kolejność liczy się tak samo przy
+   końcu przed czasem (pkt 6 aneksu 2026-09-11 zostaje w mocy co do SKUTKU;
+   zmienia się tylko to, czym się kończy grę).
+3. **Polling w grze co 30 s zostaje** (pkt 5 aneksu 2026-09-11 co do rytmu):
+   zmienił się tylko nośnik informacji — pasek „Ostatni stan / następne
+   odświeżenie” żyje wyłącznie w lobby (`#multi-sync-pasek`).
+4. **Żywe wyniki w trakcie gry** zniknęły z ekranu gracza; tabela widowni
+   w lobby (`#lobby-widownia-wiersze`) zostaje, a ostateczna tabela tej gry jest
+   na ekranie wyniku (ADR 0038) z punktami policzonymi przez most.
+5. **Wybór stacji w Wyścigu na Orientację** (ADR 0027 część B) zostaje, ale
+   mieszka w panelu fazy A obok „▶ Idę do stacji”, nie w karcie multi.

@@ -314,22 +314,27 @@ commit i nowa wersja aplikacji.
    (`adresMostu()`, ADR 0020).
 2. `utworzSynchronizacje` prowadzi pętlę nienakładających się kroków:
    GET `gra-stan` z interwałem zależnym od fazy (lobby 10 s, gra w toku
-   30 s — kanał info i żywe wyniki nie muszą być szybsze, właściciel
+   30 s — punkty innych graczy nie muszą być szybsze, właściciel
    2026-09-11; zakończona 0 = koniec pollingu). Zdarzenia
    (`dojscie`/`odpowiedz`/`rezygnacja`) wychodzą natychmiast, a bez sieci
    czekają w kolejce (flush FIFO po powrocie); odmowa mostu nie jest ponawiana.
 3. Stan serwera (`RO-gra/1`) zasila lokalny silnik (`rozgrywka.js`):
    Wspólna Trasa i Wyścig = KAŻDY przechodzi wszystkie stacje (trasa po kolei
    i bez listy wyboru — mapa pokazuje tylko bieżącą stację, gdy `trasaSekret`
-   gry jest prawdziwa (domyślnie; brak pola = sekret), wyścig dowolnie
-   z listą wyboru). Kanał `#multi-info` tłumaczy zdarzenia na komunikaty
-   (dojścia/odpowiedzi/rezygnacje/koniec), a host może domknąć grę przyciskiem
-   (`gra-zakoncz`) — premie liczą się też wtedy. Brak pozycji = środek trasy z
-   pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca z
-   `okolica:multi:sesja`, a zamknięte już stacje nie wracają do rozgrywki.
-4. Koniec gry: podsumowanie liczy telefon (`przeliczWyniki`), a most zapisuje
-   grę w historii (`RO-gra/1`, stan `zakonczona`). Rankingów nie ma — usunięte
-   z aplikacji i z mostu (właściciel, 2026-09-11; aneks ADR 0019).
+   gry jest prawdziwa (domyślnie; brak pola = sekret), wyścig dowolnie z listą
+   wyboru w panelu fazy A). Wejście do gry uruchamia odliczanie 5-4-3-2-1-START
+   z sygnałem na każdym kroku (`odliczStartGry`, ADR 0044), a po nim ekran
+   wygląda jak w hotseat: karty multi, kanału info i paska synchronizacji
+   w grze NIE MA (pasek został w lobby). Grę kończy ikona ⚙ START GRY
+   z wpisaniem TAK (ADR 0043) — organizator woła `gra-zakoncz`, pozostali
+   `rezygnacja`; premie liczą się też przy końcu przed czasem. Brak pozycji =
+   środek trasy z pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca
+   z `okolica:multi:sesja` BEZ odliczania, a zamknięte już stacje nie wracają
+   do rozgrywki.
+4. Koniec gry: punktację liczy most (`przeliczWyniki`), telefon rysuje ją na
+   tym samym MINIMALNYM ekranie wyniku co hotseat (`wynikiMultiKonca`,
+   ADR 0038/0044), a most zapisuje grę w historii (`RO-gra/1`, stan
+   `zakonczona`). Ranking MIĘDZY grami ma własną warstwę z belki (ADR 0039).
 5. Wyjście z lobby: POST `gra-opusc` prostuje skład gry, więc `liczbaGraczy`
    w `RO-lobby/1` nie obiecuje gracza, który wyszedł; wyjście organizatora
    zamyka grę (stan `archiwum`) i dlatego jest **dwustopniowe** — pierwszy klik

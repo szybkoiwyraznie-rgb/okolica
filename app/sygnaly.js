@@ -47,6 +47,22 @@ export const SYGNALY = Object.freeze({
       Object.freeze({ czHz: 311.1, ms: 260 }),
     ]),
   }),
+  /** Krok odliczania startu gry wieloosobowej (ADR 0044): krótki tyk —
+   *  częstotliwość „dotarcia", ale pojedyncza i cichsza, żeby nie myliła się
+   *  z sygnałem stacji. */
+  odliczanie: Object.freeze({
+    wibracjaMs: Object.freeze([45]),
+    dzwiek: Object.freeze([Object.freeze({ czHz: 880, ms: 90 })]),
+  }),
+  /** „START" na końcu odliczania (ADR 0044): dwa tony w górę i dłuższa
+   *  wibracja — ten krok musi być słyszalny w hałasie ulicznym. */
+  startGry: Object.freeze({
+    wibracjaMs: Object.freeze([90, 40, 140]),
+    dzwiek: Object.freeze([
+      Object.freeze({ czHz: 784, ms: 120 }),
+      Object.freeze({ czHz: 1174.7, ms: 260 }),
+    ]),
+  }),
 });
 
 /** Plan sygnału dla zdarzenia albo `null` (wyłączone / nieznane zdarzenie). */

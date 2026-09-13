@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-107';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-107';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-108';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-108';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-107';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-107';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-107';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-107';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-107';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-107';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-107';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-107';
+} from './protokol.js?v=m12-108';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-108';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-108';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-108';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-108';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-108';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-108';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-108';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-107';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-107';
+} from './zestawy.js?v=m12-108';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-108';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-107';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-107';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-107';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-107';
-import { adresMostu, stanMostu } from './most.js?v=m12-107';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-107';
+} from './sieci.js?v=m12-108';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-108';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-108';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-108';
+import { adresMostu, stanMostu } from './most.js?v=m12-108';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-108';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-107';
+} from './oceny.js?v=m12-108';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -205,8 +205,13 @@ const STAN = {
   /** Wspólna Trasa = trasa-sekret: przy generowaniu stacji chowamy listę
    * i kropki na mapie — organizator nie poznaje trasy z góry. */
   ukryjStacje: false,
-  /** M11/P4: dwustopniowa rezygnacja z gry wieloosobowej (jak inne destrukcyjne). */
-  multiRezygnacjaUzbrojona: false,
+  /** ADR 0044 (uwaga F): odliczanie startu gry wieloosobowej — jedno na start.
+   *  Dwustopniowej rezygnacji z gry NIE MA: przycisk „🏳 Rezygnuję z gry" umarł
+   *  razem z panelem multi, a wyjście z gry potwierdza się wpisaniem TAK
+   *  w warstwie za ikoną ⚙ START GRY (ADR 0043). */
+  odliczanieAktywne: false,
+  /** Wejście do gry przez „↩ Wróć do gry" (odświeżenie telefonu) NIE odlicza. */
+  wznawiamMulti: false,
   /** Wyjście ORGANIZATORA z lobby zamyka grę WSZYSTKIM — akcja nieodwracalna,
    *  więc też dwustopniowa (audyt PR #13; wzorzec `rezygnujZGryMulti`). */
   multiOpuszczenieUzbrojone: false,
@@ -2167,7 +2172,9 @@ function renderujGre({ panele = true } = {}) {
   }
   odswiezPasekDrogi();
   odswiezWakeLock(); // ADR 0040 pkt 4: ekran nie gaśnie, dopóki gra trwa
-  if (STAN.multi) renderujPanelMulti(); // M11/P4: żywe wyniki, pasek synchronizacji
+  // ADR 0044 (uwaga F): panelu multi nie ma — gra wygląda jak hotseat. Z gry
+  // sieciowej w panelu fazy A zostaje JEDNO: wybór stacji w Wyścigu.
+  if (STAN.multi) renderujWyborStacji();
 }
 
 /* ---------------- M9/R3: repozytorium paczek (ADR 0017) ---------------- */
@@ -3420,7 +3427,12 @@ function pokazWyniki() {
   const r = STAN.rozgrywka;
   if (!r) return;
   odswiezStanIkonBelki(); // koniec gry (naturalny, ręczny, multi) odwiesza ⚙ START GRY (zgłoszenie J)
-  const wynik = podsumowanie(r);
+  // Gra wieloosobowa po zamknięciu: punkty liczy most (ADR 0019), a lokalna
+  // rozgrywka zna tylko TEGO gracza — więc bierzemy tabelę z mostu i pokazujemy
+  // ją w tym samym MINIMALNYM ekranie (ADR 0038). Dzięki temu koniec gry wygląda
+  // jak w hotseat, a gracze widzą wspólną punktację z premią za kolejność
+  // (uwaga F i L; ADR 0044).
+  const wynik = wynikiMultiKonca() ?? podsumowanie(r);
 
   // 1. karta zwycięzcy
   const kartaZw = $('gra-wynik-zwyciezca');
@@ -3443,7 +3455,7 @@ function pokazWyniki() {
     kartaZw.appendChild(p);
   }
 
-  // 2. tabela rankingu — te same kolumny co w panelu multi
+  // 2. tabela tej gry — gracz | punkty | poprawne (ADR 0038: trzy kolumny)
   const tbody = $('gra-wyniki-tbody');
   tbody.replaceChildren();
   for (const id of wynik.ranking) {
@@ -4372,7 +4384,6 @@ function wejdzDoGryMulti(gra, graczId, rola) {
     ostatniStanMs: Date.now(),
     sync: null,
   };
-  STAN.multiRezygnacjaUzbrojona = false;
   STAN.multi.sync = utworzSynchronizacje({
     urlMostu: STAN.multi.urlMostu,
     graczId,
@@ -4595,6 +4606,7 @@ async function przywrocGreMulti() {
       timeout: harmonogramMulti(),
     });
     if (gra.stan === 'lobby') otworzPanelMulti('lobby');
+    STAN.wznawiamMulti = true; // powrót do gry NIE jest startem — bez odliczania (ADR 0044)
     onStanGryMulti(gra); // 'trwa' → lokalna rozgrywka od niezamkniętych stacji
     STAN.multi?.sync?.start();
   } catch (e) {
@@ -4618,7 +4630,10 @@ function onStanGryMulti(gra) {
   }
   m.gra = czysta;
   m.ostatniStanMs = Date.now();
-  if (gra.stan === 'trwa' && !STAN.rozgrywka && STAN.ekran !== 'gra') uruchomGreMulti(gra);
+  if (gra.stan === 'trwa' && !STAN.rozgrywka && STAN.ekran !== 'gra') {
+    uruchomGreMulti(gra, { odliczanie: !STAN.wznawiamMulti });
+  }
+  STAN.wznawiamMulti = false;
   if (gra.stan === 'zakonczona' || gra.stan === 'archiwum') {
     zatrzymajSyncMulti();
     usunSesjeMulti();
@@ -4628,14 +4643,19 @@ function onStanGryMulti(gra) {
       status(gra.stan === 'archiwum'
         ? 'Lobby wygasło (24 h bez startu) — gra trafiła do archiwum.'
         : 'Gra wieloosobowa zakończona — host zamknął grę albo wszyscy aktywni gracze domknęli stacje. Wyniki poniżej.');
-      pokazWyniki();
-      renderujGre();
     } else {
       status(gra.stan === 'archiwum' ? 'Ta gra wygasła w lobby (24 h bez startu).' : 'Gra zakończona — ostateczne wyniki w tabeli.');
     }
+    // Ekran wyniku odświeżamy ZAWSZE po zamknięciu gry w moście, także wtedy, gdy
+    // ten telefon domknął swoje stacje wcześniej i pokazywał już własny wynik:
+    // dopiero teraz liczby są WSPÓLNE (punkty wszystkich graczy z premią za
+    // kolejność — ADR 0044, uwaga F i L). Bez tego gracz zostałby z tabelą,
+    // w której jest tylko on.
+    pokazWyniki();
+    renderujGre();
   }
   if (STAN.ekran === 'multi') renderujLobby();
-  renderujPanelMulti();
+  renderujWyborStacji();
   renderujPasekSync();
 }
 
@@ -4681,7 +4701,7 @@ function pytaniaDlaGracza(paczka, { liczbaGraczy, indeksGracza }) {
  * kolejności (ADR 0027 część B). Przy powrocie po odświeżeniu zamknięte
  * już stacje nie wracają — reszta rozgrywa się normalnie.
  */
-function uruchomGreMulti(gra) {
+function uruchomGreMulti(gra, { odliczanie = true } = {}) {
   const m = STAN.multi;
   const { paczka, blad } = odpakujPaczke(gra.zestaw?.kontener);
   if (!paczka) {
@@ -4723,10 +4743,50 @@ function uruchomGreMulti(gra) {
   status(`Gra ${gra.kod} (${gra.tryb === TRYBY_GRY.trasa ? 'Wspólna Trasa' : 'Wyścig na Orientację'}) rozpoczęta: przed Tobą ${moje.length} z ${wszystkie.length} stacji. Pytania odsłaniają się dopiero na stacjach.`
     + (zamknietePrzezeMnie.size ? ' Zamknięte wcześniej stacje nie wracają — wracasz do gry w połowie drogi.' : ''));
   renderujGre();
-  renderujPanelMulti();
+  // Uwaga F (ADR 0044): wszyscy — host i goście — dostają sygnał i odliczanie
+  // na środku ekranu, a po „START" widzą zwykłą grę jak w hotseat.
+  if (odliczanie) void odliczStartGry();
 }
 
-/* --- zdarzenia na serwer + żywe ekrany wyników/tur/synchronizacji --- */
+/* -------- ADR 0044 (uwaga F): odliczanie startu gry wieloosobowej -------- */
+
+/** Kroki odliczania: wielka cyfra na środku, ostatni krok to napis „START". */
+const ODLICZANIE_KROKI = Object.freeze([5, 4, 3, 2, 1, 'START']);
+/** Krok w terenie: 1 s. W trybie testowym krócej, żeby brama nie czekała minuty. */
+const ODLICZANIE_KROK_MS = 1000;
+const ODLICZANIE_KROK_TEST_MS = 20;
+
+function odstepOdliczania() {
+  return STAN.trybTestowy ? ODLICZANIE_KROK_TEST_MS : ODLICZANIE_KROK_MS;
+}
+
+/**
+ * Start gry wieloosobowej na TYM telefonie: sygnał (dźwięk i wibracja — ADR 0041,
+ * o ile 🔔 nie jest wyłączony) i odliczanie 5-4-3-2-1-START wielką cyfrą na
+ * środku, nad PRZEZROCZYSTYM tłem, więc mapa zostaje widoczna (uwaga F). Każdy
+ * krok ma własny sygnał. Po „START" warstwa znika i zostaje zwykła gra — bez
+ * panelu multi, bez tabeli, bez kanału info, bez paska synchronizacji.
+ */
+async function odliczStartGry() {
+  if (STAN.odliczanieAktywne) return; // jeden start = jedno odliczanie
+  STAN.odliczanieAktywne = true;
+  const warstwa = $('odliczanie');
+  const cyfra = $('odliczanie-cyfra');
+  warstwa.hidden = false;
+  try {
+    for (const krok of ODLICZANIE_KROKI) {
+      cyfra.textContent = String(krok);
+      odegrajSygnal(krok === 'START' ? 'startGry' : 'odliczanie');
+      await new Promise(r => setTimeout(r, odstepOdliczania()));
+    }
+  } finally {
+    warstwa.hidden = true;
+    cyfra.textContent = '';
+    STAN.odliczanieAktywne = false;
+  }
+}
+
+/* --- zdarzenia na serwer (panelu multi nie ma — ADR 0044) --- */
 
 function wyslijZdarzenieMulti(typ, stacjaId, dane) {
   const m = STAN.multi;
@@ -4736,6 +4796,31 @@ function wyslijZdarzenieMulti(typ, stacjaId, dane) {
     typ, stacjaId, dane, tUrzadzenia: Date.now(),
   });
   return m.sync.wyslijZdarzenie(zdarzenie).then((wynik) => { renderujPasekSync(); return wynik; });
+}
+
+/**
+ * Wynik zamkniętej gry wieloosobowej w kształcie, którego używa `pokazWyniki()`
+ * (`{gracze, ranking, zwyciezca}`) — z danych mostu, bo lokalna rozgrywka gracza
+ * zna tylko jego własne odpowiedzi (ADR 0044, uwaga F: ekran końca gry jest ten
+ * sam co w hotseat, ale liczby są wspólne). `null` = gra się jeszcze nie
+ * zamknęła albo nie jest sieciowa, więc `pokazWyniki` liczy wynik lokalnie.
+ */
+function wynikiMultiKonca() {
+  const gra = STAN.multi?.gra;
+  if (!gra || (gra.stan !== 'zakonczona' && gra.stan !== 'archiwum')) return null;
+  const wyniki = przeliczWyniki(gra);
+  const gracze = Object.entries(wyniki)
+    .sort((a, b) => b[1].punkty - a[1].punkty || b[1].poprawne - a[1].poprawne
+      || a[1].pseudonim.localeCompare(b[1].pseudonim, 'pl'))
+    .map(([id, w]) => ({
+      id,
+      imie: `${w.pseudonim}${id === STAN.multi.graczId ? ' (Ty)' : ''}${w.zrezygnowal ? ' — zrezygnował(a)' : ''}`,
+      punkty: w.punkty,
+      poprawne: w.poprawne,
+      bledne: w.bledne,
+    }));
+  if (!gracze.length) return null;
+  return { gracze, ranking: gracze.map((g) => g.id), zwyciezca: gracze[0].id };
 }
 
 function renderujWierszeWynikow(tbody, gra) {
@@ -4794,67 +4879,16 @@ function renderujLobby() {
   }
 }
 
-function renderujPanelMulti() {
-  const m = STAN.multi;
-  const panel = $('gra-panel-multi');
-  panel.hidden = !m;
-  if (!m) return;
-  const gra = m.gra;
-  const r = STAN.rozgrywka;
-  const tura = $('gra-multi-tura');
-  const graSieToczy = gra.stan === 'trwa' && r && r.faza !== FAZY.koniec && !STAN.graZakonczonaRecznie;
-  if (graSieToczy) {
-    const zostalo = r ? stacjeDoWyboru(r).length : 0;
-    tura.textContent = gra.tryb === TRYBY_GRY.trasa
-      ? `Wspólna Trasa — stacje po kolei, każdy we własnym tempie. Zostało Ci ${zostalo} stacji. Wyniki na żywo poniżej.`
-      : `Wyścig na Orientację — kolejność dowolna. Zostało Ci ${zostalo} stacji. Wyniki na żywo poniżej.`;
-  } else {
-    tura.textContent = gra.stan === 'zakonczona' ? 'Gra zakończona — ostateczne wyniki:' : 'Gra wieloosobowa.';
-  }
-  renderujWierszeWynikow($('gra-multi-wiersze'), gra);
-  // ADR 0032: wariant weryfikacji zestawu — meta jedzie w środku RO-gra/1.
-  const fcMulti = $('multi-factcheck');
-  fcMulti.hidden = false;
-  fcMulti.replaceChildren();
-  if (czyWpisFactcheck(gra.zestaw?.meta)) {
-    const opis = document.createElement('span');
-    opis.textContent = ' Pytania zweryfikowane w sieci (fact check)';
-    fcMulti.append(znaczekFactcheck(), opis);
-  } else {
-    fcMulti.textContent = 'Pytania bez wymuszonego fact-checku';
-  }
-  renderujWyborStacji(gra, r, graSieToczy);
-  renderujInfoMulti(gra);
-  // Host kończy grę, kiedy chce — wszyscy dostają podsumowanie (właściciel, 2026-09-11).
-  $('przycisk-multi-zakoncz').hidden = !(gra.stan === 'trwa' && m.rola === 'organizator');
-  renderujPasekSync();
-}
-
-/**
- * Kanał info z gry (właściciel, 2026-09-11): kto dołączył, kto dotarł do
- * stacji i czy dobrze odpowiedział, rezygnacje i koniec gry. Komunikaty są
- * neutralne płciowo i pojawiają się z pollingu (w grze co ~30 s).
- */
-function renderujInfoMulti(gra) {
-  const blok = $('multi-info');
-  const lista = $('multi-info-lista');
-  const pseudonimy = new Map((gra?.gracze ?? []).map((g) => [g.id, g.pseudonim]));
-  const komunikaty = [];
-  for (const z of gra?.zdarzenia ?? []) {
-    const kto = pseudonimy.get(z.graczId) ?? 'któś';
-    if (z.typ === 'start') komunikaty.push(`▶ ${kto} wystartował grę`);
-    else if (z.typ === 'dojscie') komunikaty.push(`📍 ${kto} jest na stacji ${z.stacjaId}`);
-    else if (z.typ === 'odpowiedz') komunikaty.push(`${z.dane?.poprawna ? '✅' : '❌'} ${kto}: ${z.dane?.poprawna ? 'dobra' : 'zła'} odpowiedź (stacja ${z.stacjaId})`);
-    else if (z.typ === 'rezygnacja') komunikaty.push(`🏳 ${kto} opuszcza grę`);
-    else if (z.typ === 'koniec') komunikaty.push(`⏹ ${kto} zakończył grę`);
-  }
-  blok.hidden = komunikaty.length === 0;
-  lista.replaceChildren(...komunikaty.slice(-8).reverse().map((tekst) => {
-    const li = document.createElement('li');
-    li.textContent = tekst;
-    return li;
-  }));
-}
+/* `renderujPanelMulti()` i `renderujInfoMulti()` USUNIĘTE (właściciel 2026-09-13,
+   uwaga F — ADR 0044): po starcie gra wieloosobowa wygląda DOKŁADNIE jak hotseat.
+   Umarły z nimi: komunikat trybu i „Zostało Ci N stacji", tabela żywych wyników
+   (Gracz/Punkty/Poprawne/Stacje/Premia), kanał info („X wystartował grę",
+   dojścia, odpowiedzi, rezygnacje), linia wariantu fact-check w grze, pasek
+   „Ostatni stan / następne odświeżenie" oraz przyciski „⏹ Zakończ grę (host)"
+   i „🏳 Rezygnuję z gry". Koniec gry i rezygnacja idą przez ikonę ⚙ START GRY
+   z wpisaniem TAK (ADR 0043), żywe wyniki zostały w lobby dla widowni
+   (`renderujWierszeWynikow` + `#lobby-widownia-wiersze`), a ostateczna tabela
+   jest na ekranie wyniku (ADR 0038) i w rankingu (ADR 0039). */
 
 /** Host kończy grę przed czasem — u wszystkich podsumowanie i ranking. */
 async function zakonczGreMulti() {
@@ -4877,10 +4911,16 @@ async function zakonczGreMulti() {
  * gracz wybiera dowolną stację, do której jeszcze nie doszedł. W Wspólnej
  * Trasie listy nie ma — kolejność narzuca trasa (kolejna stacja po
  * zamknięciu poprzedniej); lista znika też po zamknięciu wszystkich stacji.
+ *
+ * ADR 0044 (uwaga F): blok mieszka w panelu fazy A (`#gra-panel-oczekuje`),
+ * tam gdzie hotseat ma „▶ Idę do stacji" — nie w doklejonej karcie multi.
  */
-function renderujWyborStacji(gra, r, graSieToczy) {
+function renderujWyborStacji() {
+  const gra = STAN.multi?.gra;
+  const r = STAN.rozgrywka;
+  const graSieToczy = Boolean(gra?.stan === 'trwa' && r && r.faza !== FAZY.koniec && !STAN.graZakonczonaRecznie);
   const blok = $('multi-wybor-stacji');
-  const mozna = Boolean(graSieToczy && r && gra.tryb === TRYBY_GRY.wyscig && r.faza === FAZY.przygotowanie);
+  const mozna = Boolean(graSieToczy && gra.tryb === TRYBY_GRY.wyscig && r.faza === FAZY.przygotowanie);
   const dostepne = mozna ? stacjeDoWyboru(r) : [];
   blok.hidden = dostepne.length === 0;
   if (!dostepne.length) return;
@@ -4911,7 +4951,6 @@ function wybierzStacjeMulti(stacjaId) {
   }
   zapiszGre();
   renderujGre();
-  renderujPanelMulti();
   status(`Idziesz do stacji ${stacjaId}. Kolejność jest dowolna — po drodze możesz wybrać inną.`);
 }
 
@@ -4925,21 +4964,20 @@ function renderujPasekSync() {
       + (nastepny ? ` · następne odświeżenie za ~${Math.round(nastepny / 1000)} s` : ' · odświeżanie zatrzymane')
       + (kolejka ? ` · ${kolejka} zdarzeń czeka w kolejce (brak sieci)` : '');
   }
+  // ADR 0044 (uwaga F): pasek synchronizacji został TYLKO w lobby — w grze
+  // „Ostatni stan" i „następne odświeżenie za ~N s" nie mają czego informować.
   $('multi-sync-pasek').textContent = tekst;
-  $('gra-multi-sync').textContent = tekst;
 }
 
+/**
+ * Wyjście z gry wieloosobowej na tym telefonie: reszta gra dalej (ADR 0019 pkt 5).
+ * Przycisku „🏳 Rezygnuję z gry" nie ma (uwaga F, ADR 0044) — potwierdzeniem jest
+ * wpisanie TAK w warstwie za ikoną ⚙ START GRY (ADR 0043), więc dwustopniowego
+ * uzbrajania klikiem tu nie potrzeba.
+ */
 function rezygnujZGryMulti() {
   const m = STAN.multi;
   if (!m || !STAN.rozgrywka || STAN.rozgrywka.faza === FAZY.koniec) return;
-  if (!STAN.multiRezygnacjaUzbrojona) {
-    STAN.multiRezygnacjaUzbrojona = true;
-    $('przycisk-multi-rezygnuj').textContent = '⚠ Kliknij ponownie, aby potwierdzić rezygnację';
-    status('Rezygnacja oznacza, że Twoje pozostałe stacje zostaną pominięte — inni gracze grają dalej.');
-    return;
-  }
-  STAN.multiRezygnacjaUzbrojona = false;
-  $('przycisk-multi-rezygnuj').textContent = '🏳 Rezygnuję z gry';
   void wyslijZdarzenieMulti('rezygnacja', null, { powod: 'rezygnacja z telefonu' });
   STAN.graZakonczonaRecznie = true;
   zatrzymajSymulacje();
@@ -5334,8 +5372,9 @@ function start() {
   $('przycisk-odswiez-lobby').addEventListener('click', () => { void odswiezListeGierNaSetupie(); });
   $('przycisk-lobby-start').addEventListener('click', () => { void startLobby(); });
   $('przycisk-lobby-opusc').addEventListener('click', opuscLobby);
-  $('przycisk-multi-zakoncz').addEventListener('click', () => { void zakonczGreMulti(); });
-  $('przycisk-multi-rezygnuj').addEventListener('click', rezygnujZGryMulti);
+  // Przycisków „⏹ Zakończ grę (host)" i „🏳 Rezygnuję z gry" NIE MA (uwaga F,
+  // ADR 0044): koniec gry i rezygnację obsługuje warstwa za ikoną ⚙ START GRY
+  // (`zakonczGreZPotwierdzenia` → `zakonczGreMulti()` / `rezygnujZGryMulti()`).
   $('przycisk-multi-wroc').addEventListener('click', () => { void przywrocGreMulti(); });
   $('przycisk-multi-porzuc').addEventListener('click', () => {
     usunSesjeMulti();
