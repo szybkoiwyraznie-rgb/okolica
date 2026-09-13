@@ -2768,7 +2768,13 @@ test('droga: pasek na mapie, Informacje bez gry, po dojściu duży panel pytania
   // a uwaga H1 (ADR 0043) także węzeł zakończenia gry: w drodze nad mapą zostaje
   // sam pasek, a grę kończy ikona ⚙ START GRY.
   assert.equal(dom.elementy.has('informacje-gra'), false, 'Informacje nie niosą już nic z gry');
-  assert.equal(dom.pobierz('gra-sterowanie').hidden, true, 'panel gry nie zasłania mapy w marszu');
+  // Ten helper chodzi w trybie testowym (`?tryb=test`), a w nim panel fazy B
+  // ZOSTAJE na wierzchu: to jedyne miejsce „▶ Symuluj dojście”, którym domyka
+  // się odcinek bez GPS (ADR 0036 aneks m12-102 pkt 2). W przeglądarce `hidden`
+  // na przodku gasi potomków przez kaskadę — atrapa DOM tego nie modeluje, więc
+  // zachowanie terenowe pinuje osobny test poniżej (atrapa geolokalizacji).
+  assert.equal(dom.pobierz('gra-sterowanie').hidden, false, 'w trybie testowym panel gry zostaje — symulacja jest osiągalna');
+  assert.equal(dom.pobierz('przycisk-symulacja-gra').hidden, false, 'przycisk symulacji dojścia odsłonięty w odcinku');
   assert.equal(dom.document.body.classList.contains('gra-w-drodze'), true);
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, true, 'bez przygaszenia mapy podczas marszu');
   dom.kliknij('przycisk-informacje');
@@ -2781,6 +2787,33 @@ test('droga: pasek na mapie, Informacje bez gry, po dojściu duży panel pytania
   assert.equal(dom.pobierz('gra-sterowanie').hidden, false, 'panel pytania znowu widoczny');
   assert.equal(dom.pobierz('ekran-informacje').hidden, true, 'pytanie pojawia się automatycznie także po użyciu Informacji');
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, false);
+});
+
+test('droga w terenie (bez ?tryb=test): nad mapą zostaje sam pasek, symulacji nie ma', async () => {
+  // ADR 0036 aneks m12-102 pkt 2 i ADR 0043 pkt 1: w drodze gracz widzi pasek
+  // i mapę, a panel gry jest schowany. Test idzie DROGĄ TERENOWĄ (atrapa
+  // `navigator.geolocation`, bez trybu testowego), bo atrapa DOM nie modeluje
+  // kaskady CSS: `hidden` na przodku gasi potomków w przeglądarce (pomiar
+  // headless Chromium 153: `#gra-panel-odcinek` 0×0, `offsetParent` null),
+  // a `kliknij` w atrapie nie pyta o renderowanie (LESSONS L13).
+  const gpsTeren = atrapaGeolokalizacji();
+  const dom = await naEkranPozycji(zainstalujDom, gpsTeren.geolocation, 'drogateren');
+  dom.kliknij('przycisk-dalej-pozycja');
+  await czekaj(30); // bramka tożsamości jest asynchroniczna
+  assert.equal(dom.pobierz('ekran-pozycja').hidden, false, 'setup przeszedł na ekran pozycji');
+  gpsTeren.wyslijFix(52.2297, 21.0122, 12);
+  assert.match(dom.pobierz('pozycja-status').textContent, /Pozycja ustalona/, 'fix z GPS ustawił pozycję');
+  dom.kliknij('przycisk-dalej-stacje');
+  await czekaj(30);
+  dom.wklej('pole-odpowiedz', JSON.stringify(czytajFixturePaczka()));
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka sama zaczęła grę');
+  dom.kliknij('przycisk-start-odcinka');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'faza B: odcinek się zaczął');
+  assert.equal(dom.pobierz('gra-pasek').hidden, false, 'pasek drogi jest nad mapą');
+  assert.equal(dom.pobierz('gra-sterowanie').hidden, true, 'panel gry schowany — w drodze zostaje sam pasek');
+  assert.equal(dom.pobierz('przycisk-symulacja-gra').hidden, true,
+    'symulacji dojścia w terenie nie ma (ADR 0029: dojście zalicza tylko GPS)');
+  assert.equal(dom.document.body.classList.contains('gra-w-drodze'), true);
 });
 
 /* -------------------------------------- bug G: watchdog cichego watchera */

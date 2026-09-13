@@ -1563,8 +1563,8 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
   // 4. W drodze nad mapą zostaje sam pasek — Informacje nie niosą nic z gry
   //    (ADR 0036 aneks 2026-09-13 zawęził to do węzła zakończenia, a ADR 0043
   //    zabrał i ten węzeł).
-  assert.match(APP, /\$\('gra-sterowanie'\)\.hidden = droga;/,
-    'panel gry jest w drodze schowany — nad mapą zostaje pasek');
+  assert.match(APP, /\$\('gra-sterowanie'\)\.hidden = droga && !STAN\.trybTestowy;/,
+    'panel gry jest w drodze schowany (nad mapą zostaje pasek), a w trybie testowym zostaje — trzyma symulację dojścia (ADR 0036 aneks m12-102 pkt 2)');
   // Asertujemy REGUŁĘ, nie sam tekst: komentarz w styles.css celowo nazywa
   // selektor, który umarł (L31 — usunięcie i grep w tym samym commitcie).
   assert.equal(/#informacje-gra\s*\{/.test(STYLE), false,
