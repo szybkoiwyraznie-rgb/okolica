@@ -988,3 +988,36 @@ z zadaniem. Dwadzieścia siedem plików przy przeprowadzce jednego wiersza HTML 
 sygnał, że problem jest z bazą, nie z zadaniem. (4) Masowe zmiany wersjonowania
 weryfikuj treścią: `git diff --unified=0 -- app/*.js | grep -v 'm12-'` ma być
 puste, jeśli commit podnosi tylko `?v=`.
+
+## L60 (2026-09-13) — hak `after()` w atrapie rejestruj przy ładowaniu modułu; żywy zegar z aplikacji wiesza `node --test` PO zielonych testach
+
+**Objaw:** brama M/3 (`npm run brama`) nie kończyła się: wszystkie asercje
+przechodziły (743 ok, 0 fail), a proces trwał — dwa uruchomienia z rzędu trzeba
+było przerwać po 1500 s. W logu ostatnia linia była zwykłym `✔ ranking UI:
+Escape zamyka warstwę rankingu`, bez podsumowania `# tests`. `ps -ef | grep node`
+pokazał winowajcę wprost: jeden wiszący potomek `node test/ranking-ui.test.js`,
+którego 13 testów już dawno przeszło.
+
+**Przyczyna:** M/3 dodał w `app.js` żywy `setInterval` (watchdog bezczynności,
+ADR 0040 pkt 5), a atrapa DOM (`test/helpers/dom.js`) sprzątała zegary hakiem
+`after(posprzatajInterwaly)` zarejestrowanym WEWNĄTRZ `przechwycZegary()`, czyli
+przy PIERWSZYM `zainstalujDom()`. Pliki, które wołają atrapę w środku testu
+(`ranking-ui`, `zestawy-ui` — helper `aplikacjaZRankingiem()`), rejestrowały hak
+za późno: nie był już hakiem korzenia pliku i się nie wykonał. Interwał
+z bootstrapu aplikacji trzymał pętlę zdarzeń, więc proces nie mógł się zakończyć.
+`aplikacja.test.js` (atrapa na poziomie modułu) wychodził czysto — dlatego ta
+sama wada nie wyszła przy wprowadzaniu mechanizmu w M/2.
+
+**Reguła:** (1) Haki `before`/`after` z `node:test` rejestruj PRZY ŁADOWANIU
+modułu pomocniczego, nie w środku funkcji, którą testy wołają — nie kontrolujesz
+tego, który test wywoła ją pierwszy. (2) Przechwycony w atrapie zegar dostaje
+`unref()`: nawet niesprzątnięty nie może trzymać procesu przy życiu. (3) Gdy
+`node --test` wisi PO zielonych testach, szukaj uchwytów, nie asercji:
+`ps -ef | grep node` wskazuje plik, który nie zakończył procesu, a
+`timeout 60 node --test test/<plik>.test.js` potwierdza diagnozę w minutę.
+(4) Każdy nowy `setInterval`/`setTimeout` w kodzie aplikacji to potencjalny
+wisielec bramy — po dodaniu go uruchom PLIK, który bootuje aplikację w środku
+testu (tu `ranking-ui.test.js`), a nie tylko ten z atrapą na poziomie modułu.
+(5) Przerwanie `npm run brama` po czasie nie oznacza czerwonej bramy, ale też
+nie zielonej: wynik musi być przeczytany z podsumowania `# pass/# fail` i z
+`BRAMA_EXIT`, inaczej commit idzie w świat bez dowodu.

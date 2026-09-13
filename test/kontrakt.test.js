@@ -1453,8 +1453,36 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
   assert.equal(POZYCJA.includes('P09:'), false, 'kod P09 wycofany — numer nie wraca do puli');
 
   // 3. Zegar gry płynie cały czas; powrót z tła nie wymaga kliku.
-  assert.match(APP, /function zegarGry\(\) \{\n {2}return performance\.now\(\);\n\}/,
-    'zegar gry nie zna pauz (ADR 0040 pkt 1)');
+  assert.match(APP, /function zegarGry\(\) \{[\s\S]{0,300}return teraz - \(STAN\.przerwaSkumulowanaMs \+ wTrakciePrzerwy\);/,
+    'zegar gry nie zna PAUZ — koryguje go tylko przerwa po 15 min bezczynności (ADR 0040 pkt 1 i 5)');
+  assert.match(APP, /const wTrakciePrzerwy = STAN\.przerwaBezczynnosci && STAN\.przerwaStartMs > 0 \? teraz - STAN\.przerwaStartMs : 0;/,
+    'korekta zegara to wyłącznie bezczynność, nie pauza gracza');
+  // pkt 4: Wake Lock na czas gry (moduł `aktywnosc.js` jest czysty, DOM pilnuje app.js)
+  assert.match(APP, /from '\.\/aktywnosc\.js\?v=/, 'app.js bierze decyzje o blokadzie i przerwie z aktywnosc.js');
+  assert.match(APP, /import \{ PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran \}/,
+    'import aktywnosc.js ma pełny kształt (ADR 0040 pkt 4–5)');
+  assert.match(APP, /navigator\.wakeLock\?\.request/, 'Wake Lock tylko z `navigator.wakeLock` — bez niego cichy no-op');
+  assert.match(APP, /await navigator\.wakeLock\.request\('screen'\)/, 'żądanie blokady dotyczy ekranu');
+  assert.match(APP, /function odswiezWakeLock\(\) \{[\s\S]{0,300}fazaKoniec: FAZY\.koniec[\s\S]{0,200}\}/,
+    'blokada ekranu idzie za fazą gry — po końcu gry ekran może gasnąć');
+  assert.match(APP, /odswiezWakeLock\(\); \/\/ ADR 0040 pkt 4/, 'render gry odświeża blokadę ekranu');
+  assert.match(APP, /if \(typeof blokada\?\.addEventListener === 'function'\) \{[\s\S]{0,200}'release'/,
+    'zwolnienie blokady przez przeglądarkę (zejście w tło) zeruje uchwyt');
+  // pkt 5: przerwa po 15 minutach bezczynności, wznawiana dowolnym klikiem
+  assert.match(APP, /STAN\.zegarAktywnosci = setInterval\(sprawdzBezczynnosc, SPRAWDZANIE_BEZCZYNNOSCI_MS\);/,
+    'watchdog bezczynności tyka co 30 s (progu pilnuje test/aktywnosc.test.js)');
+  assert.match(APP, /document\.addEventListener\('click', zaznaczAktywnosc, true\);/,
+    'każdy klik znaczy aktywność — także ten, którego nikt nie obsłużył');
+  assert.match(APP, /document\.addEventListener\('keydown', zaznaczAktywnosc, true\);/,
+    'klawisz też jest akcją gracza');
+  assert.match(APP, /function zaznaczAktywnosc\(\) \{\n {2}STAN\.ostatniaAkcjaMs = performance\.now\(\);\n {2}if \(STAN\.przerwaBezczynnosci\) wznowPoBezczynnosci\(\);\n\}/,
+    'powrót po przerwie jest samoczynny — bez przycisku i bez pytania');
+  assert.match(APP, /function wznowPoBezczynnosci\(\) \{[\s\S]{0,500}STAN\.historiaFixow = \[\];[\s\S]{0,200}wlaczGps\(\);/,
+    'po przerwie nasłuch startuje od nowa, a kryterium dojścia liczy się z nowych pomiarów');
+  assert.match(APP, /function sprawdzBezczynnosc\(\) \{[\s\S]{0,500}zatrzymajSymulacje\(\);\n {2}zatrzymajGps\(\);/,
+    'przerwa po bezczynności zatrzymuje symulację i nasłuch GPS');
+  assert.match(APP, /if \(!STAN\.watcher\?\.czyAktywny\(\)\) return; \/\/ nie ma czego zatrzymywać/,
+    'watchdog nie rusza przerwy, gdy nasłuch i tak nie działa');
   assert.match(APP, /document\.addEventListener\('visibilitychange'/,
     'app.js nasłuchuje visibilitychange — powrót z tła wznawia sam');
   assert.match(APP, /const czekamyNaFixa = STAN\.ekran === 'pozycja'/,

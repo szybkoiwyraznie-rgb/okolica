@@ -61,8 +61,12 @@
 ## Wdrożenie
 
 - pkt 1–3 i 6: **m12-102** (commit M/2, 2026-09-13).
-- pkt 4–5: **m12-103** (commit M/3, ta sama sesja) — moduł `app/aktywnosc.js`,
-  Wake Lock i watchdog bezczynności w `app.js`.
+- pkt 4–5: **m12-103** (commit M/3, 2026-09-13) — czysty moduł
+  `app/aktywnosc.js` (`czyTrzymacEkran`, `czyPrzerwaBezczynnosci`, progi
+  15 min / 30 s) z testami w `test/aktywnosc.test.js`; warstwa DOM w `app.js`:
+  `przytrzymajEkran`/`zwolnijEkran`/`odswiezWakeLock` (render gry i powrót z
+  tła), nasłuch klików i klawiszy `zaznaczAktywnosc`, watchdog
+  `sprawdzBezczynnosc`, `zegarGry` bez czasu bezczynności.
 
 ## Konsekwencje
 
@@ -77,8 +81,11 @@
   („⏸ Pauza”, „Zegar gry zatrzymany”, „GPS w trybie oszczędnym”, „bateria
   odpoczywa”, komunikaty P07/P09) wpisane do strażnika dryfu
   (`test/dryf-dokumentow.test.js`, L58). Kontrakt ADR 0040 asertuje nieobecność
-  funkcji i stanu pauzy w `app.js`/`pozycja.js` oraz obecność slotu
-  `#przycisk-zakoncz-gre-slot`.
+  funkcji i stanu pauzy w `app.js`/`pozycja.js`, obecność slotu
+  `#przycisk-zakoncz-gre-slot` oraz — od m12-103 — obecność Wake Locka
+  (`navigator.wakeLock.request('screen')`, `odswiezWakeLock` na render gry i na
+  powrót z tła), nasłuchu klików i klawiszy, watchdogu bezczynności i nowej
+  postaci `zegarGry`.
 
 ## Powiązania
 

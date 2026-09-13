@@ -21,6 +21,14 @@ sw.js                       — Service Worker (M10): offline skorupa + kafelki
                               aplikacji — pilnuje kontrakt)
 .nojekyll                     — Pages bez przetwarzania Jekyll (M8)
 app/
+  aktywnosc.js              — czyste decyzje o aktywności telefonu (ADR 0040
+                              pkt 4–5): `czyTrzymacEkran` (Wake Lock na czas
+                              gry) i `czyPrzerwaBezczynnosci` (15 minut bez
+                              akcji = jedyna dozwolona przerwa w śledzeniu),
+                              plus progi `PRZERWA_BEZCZYNNOSCI_MS` i
+                              `SPRAWDZANIE_BEZCZYNNOSCI_MS`. Bez DOM i bez
+                              `navigator`: warstwę ekranu, kliki i watchdog
+                              trzyma `app.js`
   app.js                    — bootstrap i cała warstwa DOM: router ekranów, stan
                               sesji, spinanie modułów, ekrany i komponenty
                               (setup, pozycja, stacje, prompt, paczka, gra,

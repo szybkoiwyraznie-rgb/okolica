@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-102';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-102';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-103';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-103';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,20 +32,21 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-102';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-102';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-102';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-102';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-102';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-102';
+} from './protokol.js?v=m12-103';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-103';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-103';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-103';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-103';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-103';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-103';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-102';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-102';
+} from './zestawy.js?v=m12-103';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-103';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -61,18 +62,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-102';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-102';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-102';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-102';
-import { adresMostu, stanMostu } from './most.js?v=m12-102';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-102';
+} from './sieci.js?v=m12-103';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-103';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-103';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-103';
+import { adresMostu, stanMostu } from './most.js?v=m12-103';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-103';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-102';
+} from './oceny.js?v=m12-103';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -157,7 +158,17 @@ const STAN = {
   kontenerPaczki: null,
   // Pauzy gry NIE MA (właściciel 2026-09-13, uwaga B; ADR 0040): aplikacja jest
   // cały czas włączona, a jedyna przerwa jest automatyczna i wznawia ją
-  // dowolny klik (ADR 0040 pkt 5).
+  // dowolny klik (ADR 0040 pkt 5). Decyzje liczy czysty moduł `aktywnosc.js`.
+  /** Wake Lock (ADR 0040 pkt 4): uchwyt blokady ekranu albo null. */
+  wakeLock: null,
+  /** Ostatnia akcja gracza (klik albo klawisz) — `performance.now()`. */
+  ostatniaAkcjaMs: 0,
+  /** Przerwa po 15 min bezczynności: czy trwa, od kiedy i ile jej było łącznie. */
+  przerwaBezczynnosci: false,
+  przerwaStartMs: 0,
+  przerwaSkumulowanaMs: 0,
+  /** Watchdog bezczynności (`setInterval`) — żyje całą sesję aplikacji. */
+  zegarAktywnosci: null,
   /** M6/R5: kiedy odsłonięto bieżące pytanie (czas odpowiedzi dla modelu). */
   pytaniePokazaneMs: 0,
   /** M6/R6: snapshot `stan-gry/1` znaleziony przy starcie (kandydat do wznowienia). */
@@ -1878,10 +1889,14 @@ function renderujStacje() {
 /**
  * Zegar gry: `performance.now()`. Logika rozgrywki nie czyta zegara (ADR 0004
  * pkt 3) — wszystkie `czasMs` pochodzą z tej warstwy. Pauz NIE MA (właściciel
- * 2026-09-13, uwaga B; ADR 0040): czas gry płynie cały czas, także w tle.
+ * 2026-09-13, uwaga B; ADR 0040 pkt 1): czas gry płynie także w tle. Jedyna
+ * korekta to przerwa po 15 minutach bezczynności (pkt 5) — kwadrans bez
+ * żadnego kliku to nie jest granie, więc nie wlicza się w odcinek.
  */
 function zegarGry() {
-  return performance.now();
+  const teraz = performance.now();
+  const wTrakciePrzerwy = STAN.przerwaBezczynnosci && STAN.przerwaStartMs > 0 ? teraz - STAN.przerwaStartMs : 0;
+  return teraz - (STAN.przerwaSkumulowanaMs + wTrakciePrzerwy);
 }
 
 /**
@@ -2020,6 +2035,7 @@ function renderujGre({ panele = true } = {}) {
     STAN.mapy.gra.zaznaczStacje(stacjeWidoczne, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
   }
   odswiezPasekDrogi();
+  odswiezWakeLock(); // ADR 0040 pkt 4: ekran nie gaśnie, dopóki gra trwa
   if (STAN.multi) renderujPanelMulti(); // M11/P4: żywe wyniki, pasek synchronizacji
 }
 
@@ -3660,6 +3676,81 @@ function zarejestrujServiceWorker() {
 // jeden profil watchera, zawsze dokładny — oszczędzanie baterii w tej zabawie
 // nie ma sensu, a kryterium dojścia liczy się z metrów na całym odcinku.
 
+/* ------------- ADR 0040 pkt 4–5: Wake Lock i przerwa po bezczynności */
+
+/**
+ * Wake Lock (uwaga właściciela C, 2026-09-13): podczas gry ekran nie gaśnie
+ * sam. Brak API (iOS Safari, część desktopów) jest CICHYM no-opem — GPS działa
+ * niezależnie od wygaszania, więc blokada nie może zepsuć rozgrywki (LESSONS L6).
+ */
+async function przytrzymajEkran() {
+  if (STAN.wakeLock) return;
+  if (typeof navigator === 'undefined' || typeof navigator.wakeLock?.request !== 'function') return;
+  try {
+    const blokada = await navigator.wakeLock.request('screen');
+    STAN.wakeLock = blokada ?? null;
+    // Przeglądarka zwalnia blokadę przy zejściu w tło — musimy o tym wiedzieć,
+    // żeby po powrocie żądać jej ponownie zamiast trzymać martwy uchwyt.
+    if (typeof blokada?.addEventListener === 'function') {
+      blokada.addEventListener('release', () => { if (STAN.wakeLock === blokada) STAN.wakeLock = null; });
+    }
+  } catch {
+    STAN.wakeLock = null; // odmowa albo brak zgody — gramy dalej bez blokady
+  }
+}
+
+/** Zwalnia blokadę ekranu (koniec gry, albo porządek przed ponownym żądaniem). */
+function zwolnijEkran() {
+  const blokada = STAN.wakeLock;
+  STAN.wakeLock = null;
+  if (blokada && typeof blokada.release === 'function') {
+    try { void blokada.release(); } catch { /* brak API = brak skutku */ }
+  }
+}
+
+/** Stan blokady idzie za stanem gry — jedno miejsce (render gry i powrót z tła). */
+function odswiezWakeLock() {
+  const trzymaj = czyTrzymacEkran({
+    rozgrywka: STAN.rozgrywka,
+    fazaKoniec: FAZY.koniec,
+    zakonczonaRecznie: STAN.graZakonczonaRecznie,
+  });
+  if (trzymaj) void przytrzymajEkran();
+  else zwolnijEkran();
+}
+
+/**
+ * Każda akcja gracza znaczy tyle samo (ADR 0040 pkt 5): licznik bezczynności
+ * od zera, a jeśli przerwa już trwa — natychmiastowy, samoczynny powrót.
+ */
+function zaznaczAktywnosc() {
+  STAN.ostatniaAkcjaMs = performance.now();
+  if (STAN.przerwaBezczynnosci) wznowPoBezczynnosci();
+}
+
+/** Watchdog bezczynności: jedyna dozwolona przerwa w śledzeniu (15 min bez kliku). */
+function sprawdzBezczynnosc() {
+  if (STAN.przerwaBezczynnosci) return;
+  if (!STAN.watcher?.czyAktywny()) return; // nie ma czego zatrzymywać
+  if (!czyPrzerwaBezczynnosci({ ostatniaAkcjaMs: STAN.ostatniaAkcjaMs, terazMs: performance.now() })) return;
+  STAN.przerwaBezczynnosci = true;
+  STAN.przerwaStartMs = performance.now();
+  zatrzymajSymulacje();
+  zatrzymajGps();
+  status(`Po ${Math.round(PRZERWA_BEZCZYNNOSCI_MS / 60000)} minutach bez żadnego kliku śledzenie odpoczywa — pierwszy dotyk wraca do gry sam.`);
+}
+
+/** Powrót po przerwie bezczynnościowej: dowolny klik, bez przycisku i pytania. */
+function wznowPoBezczynnosci() {
+  STAN.przerwaSkumulowanaMs += performance.now() - STAN.przerwaStartMs;
+  STAN.przerwaStartMs = 0;
+  STAN.przerwaBezczynnosci = false;
+  STAN.historiaFixow = []; // pomiary sprzed przerwy nie rozstrzygają dojścia
+  if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+  odswiezWakeLock();
+  status('Śledzenie wróciło po dotknięciu ekranu — gramy dalej.');
+}
+
 /* ------------------------------------------------------- motyw i zapis */
 
 function przelaczMotyw() {
@@ -4937,6 +5028,10 @@ function start() {
       zatrzymajSymulacje(); // symulacja testowa nie odtwarza się w tle
       return;
     }
+    // Przeglądarki zwalniają Wake Lock przy `hidden` — po powrocie żądamy go
+    // od nowa, jeśli gra trwa (ADR 0040 pkt 4).
+    zwolnijEkran();
+    odswiezWakeLock();
     if (STAN.trybTestowy) return;
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
     const czekamyNaFixa = STAN.ekran === 'pozycja'
@@ -5128,6 +5223,15 @@ function start() {
   // Brak komunikatu na starcie (właściciel 2026-09-11): dawny status „M0 —
   // fundament. Ustawienia domyślne…” był developerskim tekstem na ekranie gry.
   if (!STAN.trybTestowy && !STAN.watcher?.czyAktywny()) wlaczGps();
+
+  // ADR 0040 pkt 4–5 (uwagi B i C, 2026-09-13): ekran nie gaśnie podczas gry,
+  // a JEDYNA przerwa w śledzeniu to kwadrans bez żadnej akcji gracza — wznawia
+  // ją dowolny klik, bez przycisku i bez pytania.
+  STAN.ostatniaAkcjaMs = performance.now();
+  document.addEventListener('click', zaznaczAktywnosc, true);
+  document.addEventListener('keydown', zaznaczAktywnosc, true);
+  STAN.zegarAktywnosci = setInterval(sprawdzBezczynnosc, SPRAWDZANIE_BEZCZYNNOSCI_MS);
+  odswiezWakeLock();
 }
 
 if (typeof document !== 'undefined' && document.getElementById('ekran-setup')) start();

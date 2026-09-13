@@ -53,11 +53,21 @@ export function posprzatajInterwaly() {
   zyweIntervale = new Set();
 }
 
+// Hak MUSI być zarejestrowany przy ładowaniu modułu, nie przy pierwszym
+// `zainstalujDom()`: część plików (ranking-ui, zestawy-ui) woła atrapę W ŚRODKU
+// testu, a `after()` zarejestrowane wtedy nie jest hakiem korzenia i nie
+// sprząta. Skutek był taki, że żywy `setInterval` z `app.js` (watchdog
+// bezczynności, ADR 0040 pkt 5) trzymał proces po zielonych testach bez końca.
+after(posprzatajInterwaly); // koniec pliku testowego = koniec żywych zegarów
+
 function przechwycZegary() {
   if (zegaryPrzechwycone) return;
   zegaryPrzechwycone = true;
   globalThis.setInterval = (...args) => {
     const id = PRAWDZIWE_ZEGARY.setInterval(...args);
+    // Zabezpieczenie: zegar testowy nie może trzymać procesu przy życiu, nawet
+    // gdyby sprzątanie nie zdążyło. Tyka dalej, dopóki testy coś robią.
+    if (typeof id?.unref === 'function') id.unref();
     zyweIntervale.add(id);
     return id;
   };
@@ -65,7 +75,6 @@ function przechwycZegary() {
     zyweIntervale.delete(id);
     return PRAWDZIWE_ZEGARY.clearInterval(id);
   };
-  after(posprzatajInterwaly); // koniec pliku testowego = koniec żywych zegarów
 }
 
 /**
