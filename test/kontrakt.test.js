@@ -1537,3 +1537,21 @@ test('kontrakt ADR 0030 aneks: ekran obraca się sam, a po obrocie ◎ klika si�
   assert.match(APP, /document\.body\.dataset\.mapa = nazwaWidocznejMapy\(\);/,
     'CSS (ADR 0030 pkt 1) i centrowanie czytają tę samą regułę widocznej mapy');
 });
+test('kontrakt ADR 0041: sygnał zdarzenia to dźwięk I wibracja', () => {
+  // Właściciel 2026-09-13 (uwaga M): „Sygnały dźwiękowe powinny, jeśli to
+  // możliwe dawać także sygnał wibracyjny (chyba, że się tego nie da zrobić)."
+  // Kod był dwukanałowy od M10/T4 — ten pin pilnuje, żeby żaden sygnał nie
+  // został odchudzony do samego dźwięku (ani warstwa DOM nie zgubiła wibracji).
+  const SYGN = czytaj('app/sygnaly.js');
+  const wibracje = (SYGN.match(/wibracjaMs:/g) ?? []).length;
+  const dzwieki = (SYGN.match(/dzwiek:/g) ?? []).length;
+  assert.ok(wibracje >= 4, `SYGNALY ma ${wibracje} wzorców wibracji — zdarzeń jest co najmniej cztery`);
+  assert.equal(wibracje, dzwieki, 'każdy plan ma OBA kanały: wzorzec wibracji i nuty');
+  assert.match(APP, /if \(plan\.wibracjaMs && typeof navigator !== 'undefined' && typeof navigator\.vibrate === 'function'\) navigator\.vibrate\(plan\.wibracjaMs\);/,
+    'warstwa DOM wykonuje wzorzec wibracji z planu');
+  assert.match(APP, /if \(plan\.dzwiek\?\.length\) odegrajDzwieki\(plan\.dzwiek\);/, 'ten sam plan gra nuty');
+  assert.match(APP, /function odegrajSygnal\(zdarzenie\) \{\n {2}const plan = planSygnalu\(zdarzenie, \{ wlaczone: sygnalyWlaczone\(\) \}\);\n {2}if \(!plan\) return;/,
+    'przełącznik „🔔 sygnały" wyłącza oba kanały naraz (ADR 0041 pkt 4)');
+  assert.match(APP, /catch \{ \/\* brak wibracji \(desktop, iOS\) jest normalny \*\/ \}/,
+    'brak wibracji jest cichym no-opem i nie przerywa gry (LESSONS L6)');
+});
