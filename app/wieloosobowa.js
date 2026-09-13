@@ -531,3 +531,42 @@ export function walidujWyslaneHotseat(surowy) {
   if (surowy?.schemat !== SCHEMAT_WYSLANYCH_HOTSEAT || !Array.isArray(surowy.klucze)) return [];
   return surowy.klucze.filter((k) => typeof k === 'string' && k);
 }
+
+export const SCHEMAT_KOLEJKI_ZDARZEN = 'zdarzenia-kolejka/1';
+export const LIMIT_KOLEJKI_ZDARZEN = 50;
+
+/** Czy wpis kolejki jest zdarzeniem gry, które da się wysłać jeszcze raz. */
+function czyZdarzenieKolejkiOk(z) {
+  return !!z && typeof z === 'object' && z.schemat === SCHEMAT_ZDARZENIA
+    && TYPY_ZDARZEN.includes(z.typ) && !!z.graczId && (!!z.kod || !!z.idGry)
+    && (z.dane === undefined || (z.dane !== null && typeof z.dane === 'object'));
+}
+
+/**
+ * Zdarzenia gry sieciowej, które NIE doszły na most (brak zasięgu w chwili
+ * odpowiedzi) — utrwalone w pamięci telefonu, więc przeżywają odświeżenie
+ * (ADR 0019 aneks 2026-09-13d; wzór: `walidujKolejkeHotseat` i kolejka ocen).
+ * Śmieciowy zapis albo zapis CUDZEJ gry daje pustą listę, nigdy wyjątku:
+ * kolejka jest pomocą, a nie źródłem prawdy o grze — prawdę zna most.
+ */
+export function walidujKolejkeZdarzen(surowy, { kod = null } = {}) {
+  if (!surowy || typeof surowy !== 'object' || Array.isArray(surowy)) return [];
+  if (surowy.schemat !== SCHEMAT_KOLEJKI_ZDARZEN || !Array.isArray(surowy.zdarzenia)) return [];
+  if (kod != null && surowy.kod !== String(kod)) return []; // inna gra = cudza kolejka
+  return surowy.zdarzenia.filter(czyZdarzenieKolejkiOk).slice(0, LIMIT_KOLEJKI_ZDARZEN);
+}
+
+/**
+ * Zapis kolejki: FIFO, najwyżej `LIMIT_KOLEJKI_ZDARZEN` NAJSTARSZYCH zdarzeń
+ * (nowsze ponad limitem odrzucamy przy dodawaniu, nie tu — patrz `sync.js`,
+ * który o przekroczeniu limitu mówi graczowi wprost).
+ */
+export function zapisKolejkiZdarzen(zdarzenia, { kod = '', idGry = null } = {}) {
+  const lista = (Array.isArray(zdarzenia) ? zdarzenia : []).filter(czyZdarzenieKolejkiOk);
+  return {
+    schemat: SCHEMAT_KOLEJKI_ZDARZEN,
+    kod: String(kod ?? ''),
+    idGry: idGry ?? null,
+    zdarzenia: lista.slice(0, LIMIT_KOLEJKI_ZDARZEN),
+  };
+}

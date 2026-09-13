@@ -254,7 +254,10 @@ test('zestawy UI: pierwsze żądanie nie doszło — druga próba pokazuje paczk
     podlaczFetch(dom);
     await dojdzDoPozycji(dom);
     await czekajNa(dom, () => /Repozytorium ma paczki/.test(dom.pobierz('zestawy-status').textContent), 'lista po powtórce');
-    assert.equal(atrap.wywolania.length, 2, 'dokładnie jedna powtórka');
+    // Wstępne pobieranie (właściciel 2026-09-13) dokłada żądanie PLIKU paczki, więc
+    // powtórkę liczymy wśród żądań indeksu — tam należy ten pin.
+    assert.equal(atrap.wywolania.filter((u) => u.includes('indeks.json')).length, 2,
+      'dokładnie jedna powtórka żądania indeksu');
     assert.equal(dom.pobierz('zestawy-lista').children.length, 1, 'paczka z repozytorium na liście');
     assert.equal(dom.pobierz('most-stan-repo').classList.contains('bledy'), false,
       'udana próba nie zostawia ostrzeżenia w stanie mostu');
@@ -626,5 +629,81 @@ test('zestawy UI: fixy GPS co 3 metry NIE odświeżają propozycji — dopiero 2
     assert.equal(atrap.wywolania.length, poWejsciu + 1, 'fix ≥ 250 m od ostatniego sprawdzenia: dokładnie jedno nowe zapytanie');
   } finally {
     atrap.przywroc();
+  }
+});
+
+/* -------- właściciel 2026-09-13: paczka schodzi w tle, a czekanie jest widoczne -------- */
+
+const URL_INDEKSU_TEST = 'https://repo.przyklad/indeks.json';
+const PLIK_PACZKI_TEST = 'podkowa.zestaw.json';
+const pamiecZRepo = () => new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', URL_INDEKSU_TEST]]);
+
+test('wstępne pobieranie: widoczna paczka schodzi z repozytorium, zanim gracz kliknie', async () => {
+  const atrap = atrapaFetch({ indeks: JSON.stringify(indeksZPropozycja()), plik: JSON.stringify(plikZRepo()) });
+  try {
+    const dom = await aplikacjaZZestawami({ pamiec: pamiecZRepo() });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length > 0, 'lista propozycji');
+    await czekajNa(dom, () => atrap.wywolania.some((u) => u.includes(PLIK_PACZKI_TEST)),
+      'plik paczki pobrany w tle, bez kliku');
+    kliknijPierwszyPrzyciskZestawu(dom);
+    await czekajNa(dom, () => dom.pobierz('ekran-gra').hidden === false, 'gra z paczki');
+    assert.equal(atrap.wywolania.filter((u) => u.includes(PLIK_PACZKI_TEST)).length, 1,
+      'klik NIE dokłada drugiego pobrania — bierze to samo, już rozpoczęte');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('wstępne pobieranie sięga tylko po paczki WIDOCZNE na liście i nie zgłasza mostowi użycia', async () => {
+  const atrap = atrapaFetch({ indeks: JSON.stringify(indeksZPropozycja()), plik: JSON.stringify(plikZRepo()) });
+  try {
+    const dom = await aplikacjaZZestawami({ pamiec: pamiecZRepo() });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length > 0, 'lista propozycji');
+    await czekajNa(dom, () => atrap.wywolania.some((u) => u.includes(PLIK_PACZKI_TEST)), 'paczka w tle');
+    // Oceny i licznik „użyta w X grach" idą do mostu dopiero przy prawdziwym kliku (ADR 0028).
+    assert.equal(atrap.wywolania.filter((u) => /akcja=(ocena|uzyj|zuzycie)/.test(u)).length, 0,
+      'wstępne pobranie niczego nie zgłasza mostowi');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('sygnał czekania: przycisk mówi „Ładowanie paczki…", status pulsuje i nie przyjmuje drugiego kliku', async () => {
+  // Pobranie PLIKU wisi na naszej bramie — możemy zmierzyć stan ekranu w trakcie.
+  const wywolania = [];
+  let oddajPlik = null;
+  const pierwotny = globalThis.fetch;
+  globalThis.fetch = async (url) => {
+    wywolania.push(String(url));
+    if (String(url).includes(PLIK_PACZKI_TEST)) await new Promise((r) => { oddajPlik = r; });
+    const tekst = String(url).includes('indeks.json') ? JSON.stringify(indeksZPropozycja()) : JSON.stringify(plikZRepo());
+    return { ok: true, status: 200, text: async () => tekst };
+  };
+  try {
+    const dom = await aplikacjaZZestawami({ pamiec: pamiecZRepo() });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length > 0, 'lista propozycji');
+    await czekajNa(dom, () => wywolania.some((u) => u.includes(PLIK_PACZKI_TEST)), 'paczka wisi na bramie');
+    assert.equal(dom.pobierz('zestawy-status').classList.contains('pulsuje'), false,
+      'po odpowiedzi repozytorium sygnał czekania na karcie gasi się');
+    const przycisk = kliknijPierwszyPrzyciskZestawu(dom);
+    assert.equal(przycisk.textContent, '⏳ Ładowanie paczki…', 'przycisk mówi, co się dzieje');
+    assert.equal(przycisk.disabled, true, 'drugiego kliku nie przyjmuje (podwójne pobranie i podwójne „użycie")');
+    assert.equal(przycisk.classList.contains('pulsuje'), true, 'przycisk pulsuje w trakcie pobierania');
+    assert.match(dom.pobierz('status').textContent, /Pobieram paczkę z repozytorium/, 'status nazywa pobieranie');
+    assert.equal(dom.pobierz('status').classList.contains('pulsuje'), true, 'status pulsuje, gdy aplikacja czeka na sieć');
+    oddajPlik();
+    await czekajNa(dom, () => dom.pobierz('ekran-gra').hidden === false, 'gra po pobraniu paczki');
+    assert.equal(dom.pobierz('status').classList.contains('pulsuje'), false,
+      'po starcie gry pulsowanie gaśnie — stan „czekam" nie zostaje na ekranie');
+    assert.equal(wywolania.filter((u) => u.includes(PLIK_PACZKI_TEST)).length, 1,
+      'klik dołączył do wiszącego pobrania zamiast zaczynać nowe');
+  } finally {
+    globalThis.fetch = pierwotny;
   }
 });

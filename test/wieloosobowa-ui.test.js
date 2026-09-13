@@ -1352,3 +1352,113 @@ test('ADR 0032: wariant fact-check jedzie w stanie gry, a ekran gry nie dokleja 
   assert.equal(most2.znajdz(kodGry(most2)).zestaw.meta.factcheck, false, 'meta gry niesie wariant bez weryfikacji');
   assert.equal(B.dom.elementy.has('multi-factcheck'), false, 'żaden wariant nie dokleja linii do gry');
 });
+
+/* -------- ADR 0019 aneks 2026-09-13d: odpowiedź bez zasięgu przeżywa odświeżenie telefonu -------- */
+
+test('kolejka multi: zdarzenia zapisane bez sieci wychodzą po odświeżeniu telefonu, PRZED pobraniem stanu gry', async () => {
+  // Właściciel 2026-09-13: odpowiedź udzielona bez zasięgu czekała tylko w RAM
+  // (`app/sync.js`), więc reload gubił ją — most nie poznawał odpowiedzi, a
+  // stacja zostawała do przejścia jeszcze raz. Teraz kolejka jest utrwalona.
+  const most = atrapaMostu();
+  zasiejZestaw(most, 3);
+  const pamiecA = new Map();
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most, bezGracza: true });
+  await przygotujTelefon(A, 'Celina', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  const kod = kodGry(most);
+  const pamiecB = new Map();
+  const B = await noweUrzadzenie({ pamiec: pamiecB, most, bezGracza: true });
+  await przygotujTelefon(B, 'Czarek');
+  await dolaczZListyUI(B);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+  assert.equal(el(B, 'ekran-gra').hidden, false, 'B w grze');
+
+  // B odpowiada BEZ połączenia z mostem (odcinek, dojście, poprawna odpowiedź)
+  most.online = false;
+  await klik(B, 'przycisk-start-odcinka');
+  await dojdzSymulacja(B);
+  przelaczNa(B);
+  kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
+  await oddech();
+  assert.match(tekst(B, 'status'), /czeka w kolejce/, 'B wie, że zdarzenia czekają na sieć');
+  assert.deepEqual(
+    most.znajdz(kod).zdarzenia.filter((z) => z.graczId === 'g-2').map((z) => z.typ), [],
+    'most jeszcze nic nie dostał — gra jest niepełna',
+  );
+  assert.equal(pamiecB.has('okolica:multi-kolejka'), true,
+    'kolejka jest UTRWALONA w pamięci telefonu, nie tylko w RAM');
+  const zapisana = JSON.parse(pamiecB.get('okolica:multi-kolejka'));
+  assert.equal(zapisana.kod, kod, 'zapis dotyczy TEJ gry');
+  assert.deepEqual(zapisana.zdarzenia.map((z) => z.typ), ['dojscie', 'odpowiedz'], 'oba zdarzenia B są w pamięci');
+
+  // Telefon B zostaje „zamknięty i otwarty” (nowa instancja DOM, TA SAMA pamięć),
+  // a sieć wraca.
+  most.online = true;
+  const B2 = await noweUrzadzenie({ pamiec: pamiecB, most, bezGracza: true });
+  przelaczNa(B2);
+  await oddech();
+  await oddech();
+  await oddech();
+  assert.deepEqual(
+    most.znajdz(kod).zdarzenia.filter((z) => z.graczId === 'g-2').map((z) => z.typ),
+    ['dojscie', 'odpowiedz'],
+    'zaległe zdarzenia wyszły PRZED pobraniem stanu gry — odpowiedź B nie zginęła',
+  );
+  assert.equal(pamiecB.has('okolica:multi-kolejka'), false, 'po dostarczeniu kolejka jest czysta');
+  assert.equal(el(B2, 'ekran-gra').hidden, false, 'powrót prosto do gry');
+  assert.equal(tekst(B2, 'gra-postep'), 'stacja 2 z 3',
+    'stacja 1 jest domknięta na moście, więc telefon nie każe jej przechodzić drugi raz');
+  const punktyB = most.znajdz(kod).zdarzenia.find((z) => z.typ === 'odpowiedz' && z.graczId === 'g-2');
+  assert.equal(punktyB.dane.punktyRazem, 1, 'punkt B za stację 1 jest na moście (punkty liczy most, nie telefon)');
+});
+
+test('kolejka multi: bez sieci odświeżony telefon NIC nie gubi — zdarzenia zostają w pamięci i wychodzą później', async () => {
+  const most = atrapaMostu();
+  zasiejZestaw(most, 3); // konfig wymaga min. 3 stacji (K10)
+  const A = await noweUrzadzenie({ pamiec: new Map(), most, bezGracza: true });
+  await przygotujTelefon(A, 'Celina', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const kod = kodGry(most);
+  const pamiecB = new Map();
+  const B = await noweUrzadzenie({ pamiec: pamiecB, most, bezGracza: true });
+  await przygotujTelefon(B, 'Czarek');
+  await dolaczZListyUI(B);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+
+  most.online = false;
+  await klik(B, 'przycisk-start-odcinka');
+  await dojdzSymulacja(B);
+  przelaczNa(B);
+  kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
+  await oddech();
+  const przedReloadem = JSON.parse(pamiecB.get('okolica:multi-kolejka'));
+  assert.equal(przedReloadem.zdarzenia.length, 2, 'dwa zdarzenia B w pamięci');
+
+  // Reload WCIĄŻ bez sieci: powrót do gry się nie udaje, ale kolejka zostaje.
+  const B2 = await noweUrzadzenie({ pamiec: pamiecB, most, bezGracza: true });
+  przelaczNa(B2);
+  await oddech();
+  await oddech();
+  assert.deepEqual(
+    most.znajdz(kod).zdarzenia.filter((z) => z.graczId === 'g-2').map((z) => z.typ), [],
+    'bez sieci nic nie wychodzi na most — i nic nie jest kasowane',
+  );
+  const poReloadzie = JSON.parse(pamiecB.get('okolica:multi-kolejka'));
+  assert.deepEqual(poReloadzie.zdarzenia.map((z) => z.typ), ['dojscie', 'odpowiedz'],
+    'kolejka przeżyła odświeżenie bez sieci');
+
+  // Sieć wraca: kolejny powrót do gry wypycha zdarzenia i domyka stację.
+  most.online = true;
+  const B3 = await noweUrzadzenie({ pamiec: pamiecB, most, bezGracza: true });
+  przelaczNa(B3);
+  await oddech();
+  await oddech();
+  await oddech();
+  assert.deepEqual(
+    most.znajdz(kod).zdarzenia.filter((z) => z.graczId === 'g-2').map((z) => z.typ),
+    ['dojscie', 'odpowiedz'], 'odpowiedź B w końcu doszła — raz, nie dwa razy',
+  );
+  assert.equal(pamiecB.has('okolica:multi-kolejka'), false, 'pamięć po dostarczeniu jest czysta');
+});

@@ -65,7 +65,7 @@ import {
   wczytajDaneZCache,
 } from './sieci.js?v=m12-113';
 import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-113';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-113';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-113';
 import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-113';
 import { adresMostu, stanMostu } from './most.js?v=m12-113';
 import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-113';
@@ -82,6 +82,8 @@ const KLUCZ_MOTYW = 'okolica:motyw';
  *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
+/** Zdarzenia gry sieciowej, które nie doszły na most (ADR 0019 aneks 2026-09-13d). */
+const KLUCZ_KOLEJKI_MULTI = 'okolica:multi-kolejka';
 
 /**
  * Limit czasu odpowiedzi mostu Drive (ms) — WSPÓLNY dla indeksu paczek, listy
@@ -683,8 +685,16 @@ function przelaczRankingi() {
   void pobierzRankingi();
 }
 
-function status(tekst) {
-  $('status').textContent = tekst;
+/**
+ * Komunikat w `#status`. `czeka: true` dokłada klasę `.pulsuje` — sygnał, że
+ * aplikacja właśnie coś pobiera z sieci i trzeba poczekać (właściciel
+ * 2026-09-13; ADR 0011 aneks). Każdy następny komunikat pulsowanie gasi, więc
+ * stan „czekam" nie zostaje na ekranie po zakończonej pracy.
+ */
+function status(tekst, { czeka = false } = {}) {
+  const pole = $('status');
+  pole.textContent = tekst;
+  pole.classList.toggle('pulsuje', czeka);
 }
 
 /**
@@ -1891,7 +1901,9 @@ async function przeliczStacjeZPobraniem(klucz) {
   if (trwaPobieranieSieci) return;
   trwaPobieranieSieci = true;
   $('przycisk-przelicz').disabled = true;
-  $('stacje-ladowanie').hidden = false;
+  const ladowanieSieci = $('stacje-ladowanie');
+  ladowanieSieci.hidden = false;
+  ladowanieSieci.classList.add('pulsuje'); // sygnał czekania (właściciel 2026-09-13)
   try {
     const ok = await pobierzSiec(Date.now());
     if (!ok && STAN.siec.stan !== 'gotowa') {
@@ -1902,6 +1914,7 @@ async function przeliczStacjeZPobraniem(klucz) {
     trwaPobieranieSieci = false;
     $('przycisk-przelicz').disabled = false;
     $('stacje-ladowanie').hidden = true;
+    $('stacje-ladowanie').classList.remove('pulsuje');
   }
 }
 
@@ -2409,7 +2422,22 @@ function wierszZestawu(opis, akcji, statystyki = '', factcheck = true) {
   przycisk.type = 'button';
   przycisk.className = 'przycisk';
   przycisk.textContent = '▶ Graj z tą paczką';
-  przycisk.addEventListener('click', akcji);
+  // Sygnał czekania (właściciel 2026-09-13): pobranie paczki z Drive trwa kilka
+  // sekund, więc przycisk mówi, co się dzieje, i nie przyjmuje drugiego kliku
+  // (podwójne pobranie i podwójne „użycie" paczki). Gdy wstępne pobieranie
+  // zdążyło, zmiana jest niezauważalna — gra startuje od razu.
+  przycisk.addEventListener('click', async (zdarzenie) => {
+    przycisk.disabled = true;
+    przycisk.textContent = '⏳ Ładowanie paczki…';
+    przycisk.classList.add('pulsuje');
+    try {
+      await akcji(zdarzenie);
+    } finally {
+      przycisk.disabled = false;
+      przycisk.textContent = '▶ Graj z tą paczką';
+      przycisk.classList.remove('pulsuje');
+    }
+  });
   li.append(opisEl);
   if (statystyki) {
     // ADR 0028 pkt 5: zdanie o ocenach graczy — jedno miejsce na język.
@@ -2470,6 +2498,39 @@ function sortujKandydatowZestawow(a, b) {
 }
 
 /** Rysuje listę propozycji od zera: sort, limit i stan przycisku „więcej". */
+/**
+ * Pamięć paczek pobranych z repozytorium: url → promise tekstu. Właściciel
+ * 2026-09-13: klik „▶ Graj z tą paczką" czekał kilka sekund na plik z Drive,
+ * a lista i tak stoi na ekranie — więc widoczne paczki schodzą w tle, a klik
+ * bierze gotowy tekst albo to samo, już rozpoczęte, pobranie (bez drugiego
+ * żądania). Pamięć jest czyszczona przy każdym odświeżeniu propozycji; plik
+ * paczki jest niezmienialny, więc trafienie w pamięć nie grozi starymi danymi.
+ * Oceny i licznik „użyta w X grach" idą jak dotąd DOPIERO przy prawdziwym
+ * kliku (ADR 0028) — wstępne pobranie niczego nie zgłasza mostowi.
+ */
+const PAMIETNIK_PACZEK = new Map();
+
+function pobierzPaczkeZRepo(url) {
+  if (!PAMIETNIK_PACZEK.has(url)) {
+    PAMIETNIK_PACZEK.set(url, pobierzGetTekst(url).catch((e) => {
+      PAMIETNIK_PACZEK.delete(url); // nieudane pobranie nie zostaje — klik spróbuje jeszcze raz
+      throw e;
+    }));
+  }
+  return PAMIETNIK_PACZEK.get(url);
+}
+
+/** Wstępne pobranie paczek WIDOCZNYCH na liście (tyle, ile gracz może kliknąć). */
+function wstepniePobierzPaczki() {
+  if (!fetchPrzegladarki()) return; // bez fetch nie ma czego pobierać
+  const posortowane = [...KANDYDACI_ZESTAWOW].sort(sortujKandydatowZestawow);
+  const widoczne = ZESTAWY_ROZWINIETE ? posortowane : posortowane.slice(0, LIMIT_ZESTAWOW_NA_LISCIE);
+  for (const k of widoczne) {
+    if (!k.urlPaczki) continue;
+    pobierzPaczkeZRepo(k.urlPaczki).catch(() => {}); // cisza: awarię pokaże klik (ta sama ścieżka)
+  }
+}
+
 function renderujZestawy() {
   const lista = $('zestawy-lista');
   lista.replaceChildren();
@@ -2479,6 +2540,7 @@ function renderujZestawy() {
   const wiecej = $('przycisk-zestawy-wiecej');
   wiecej.hidden = KANDYDACI_ZESTAWOW.length <= LIMIT_ZESTAWOW_NA_LISCIE;
   wiecej.textContent = ZESTAWY_ROZWINIETE ? 'Zobacz mniej paczek' : 'Zobacz więcej paczek';
+  wstepniePobierzPaczki(); // lista stoi na ekranie — paczki schodzą w tle (właściciel 2026-09-13)
 }
 
 /**
@@ -2486,6 +2548,14 @@ function renderujZestawy() {
  * (asynchronicznie, z timeoutem; I.b — kopii z telefonu nie pokazujemy).
  * Każda awaria repo = „brak propozycji", nigdy blokada gry (ADR 0017 pkt 6).
  */
+/** Stan karty propozycji paczek: tekst + sygnał czekania jednym miejscem. */
+function statusZestawow(tekst, { czeka = false } = {}) {
+  const pole = $('zestawy-status');
+  if (!pole) return;
+  pole.textContent = tekst;
+  pole.classList.toggle('pulsuje', czeka);
+}
+
 function odswiezPropozycjeZestawow() {
   const karta = $('zestawy-karta');
   if (!karta) return;
@@ -2517,17 +2587,18 @@ function odswiezPropozycjeZestawow() {
   // i jego zapis działają dalej (cichy cache, ADR 0017 pkt 7), ale propozycje
   // pochodzą wyłącznie z repozytorium.
   KANDYDACI_ZESTAWOW = [];
+  PAMIETNIK_PACZEK.clear(); // nowe kryteria = nowa lista, więc i nowa pamięć paczek
   renderujZestawy();
   const url = adresMostu(); // ADR 0020: adres z kodu aplikacji (albo nadpisany w pamięci telefonu)
   pokazStanMostu();
   if (!url) {
-    $('zestawy-status').textContent = 'Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji — nowe pytania przygotuje model.';
+    statusZestawow('Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji — nowe pytania przygotuje model.');
     return;
   }
-  $('zestawy-status').textContent = 'Sprawdzam repozytorium paczek dla tej okolicy…';
+  statusZestawow('Sprawdzam repozytorium paczek dla tej okolicy…', { czeka: true });
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
   if (!f) {
-    $('zestawy-status').textContent = 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
+    statusZestawow('Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).');
     return;
   }
   // Odświeżenie jest asynchroniczne, a setup woła je przy każdej zmianie
@@ -2565,7 +2636,7 @@ async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
       powod = e?.powod ?? 'brak odpowiedzi';
       szczegol = null;
       if (proba === 1) {
-        $('zestawy-status').textContent = `Most Drive nie odpowiedział (${powod}) — próbuję jeszcze raz…`;
+        statusZestawow(`Most Drive nie odpowiedział (${powod}) — próbuję jeszcze raz…`, { czeka: true });
         await new Promise((r) => setTimeout(r, PONOWNA_PROBA_INDEKSU_MS));
         if (!aktualne()) return;
       }
@@ -2582,8 +2653,8 @@ async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
       pokazStanMostu();
       const opis = String(e?.message ?? e);
       // Bez obiecywania, co gracz widzi: lista mogła się wysypać w połowie.
-      $('zestawy-status').textContent = `Repozytorium odpowiedziało, ale lista paczek się nie wczytała `
-        + `(błąd aplikacji: ${opis}) — lista może być niepełna, zgłoś ten błąd.`;
+      statusZestawow(`Repozytorium odpowiedziało, ale lista paczek się nie wczytała `
+        + `(błąd aplikacji: ${opis}) — lista może być niepełna, zgłoś ten błąd.`);
       return;
     }
     if (!usterka) {
@@ -2600,7 +2671,7 @@ async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
   // Pełny powód (z kodem usterki) trafia do stanu mostu; w zdaniu wystarcza kod.
   STAN.mostOstatniBlad = szczegol ?? powod;
   pokazStanMostu();
-  $('zestawy-status').textContent = `Repozytorium niedostępne (${powod}${gdzie}) — gramy zwykłą ścieżką (prompt i model).`;
+  statusZestawow(`Repozytorium niedostępne (${powod}${gdzie}) — gramy zwykłą ścieżką (prompt i model).`);
 }
 
 /** Adres mostu do komunikatu awarii — rozpoznawalny, ale nie cały URL.
@@ -2634,6 +2705,8 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
   KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
     opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek}`, // I.a: bez licencji (format TO-zestaw/1 ją niesie, opis nie)
     akcja: () => grajZZestawemZRepo(meta, urlZrodla),
+    // Adres pliku liczony raz — ten sam dla wstępnego pobrania i dla kliku.
+    urlPaczki: urlPaczkiZRepo(urlZrodla, meta),
     // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
     // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
     statystyki: meta.oceny === undefined
@@ -2649,20 +2722,20 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
   // które nie pasują do setupu, to dwie różne sytuacje — i tylko drugą da się
   // naprawić zmianą ustawień.
   if (dopasowane.length) {
-    $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
+    statusZestawow('Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.');
     return null;
   }
   // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
   // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat mówi
   // WPROST, które kryterium nie pasuje — nie wymienia całego setupu.
   const bliskie = indeks.filter((m) => czyWOkolicy(m, kryteria));
-  $('zestawy-status').textContent = bliskie.length
+  statusZestawow(bliskie.length
     ? `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale ${bliskie.length === 1 ? 'nie pasuje' : 'nie pasują'}: `
       + bliskie.map((m) => `${m.miejsce ?? 'paczka bez nazwy'} — ${powodyNiedopasowania(m, kryteria).join('; ')}`).join(' | ')
       + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.'
     : (indeks.length
       ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
-      : 'Repozytorium jest puste — nowe pytania przygotuje model.');
+      : 'Repozytorium jest puste — nowe pytania przygotuje model.'));
   return null;
 }
 
@@ -2696,13 +2769,13 @@ async function grajZZestawemZRepo(wpis, urlIndeksu) {
   // M9b/D4: adres liczy czysta funkcja urlPaczkiZRepo — wpis z `id` (most
   // Drive) jedzie przez `?akcja=paczka&id=…`, wpis z `plik` jak dotąd.
   const url = urlPaczkiZRepo(urlIndeksu, wpis);
-  status(`Pobieram paczkę z repozytorium: ${wpis.miejsce}…`);
+  status(`Pobieram paczkę z repozytorium: ${wpis.miejsce}…`, { czeka: true });
   let tekst;
   try {
     // Ten sam limit (15 s) i ten sam słownik błędów co indeks. Bez powtórki:
     // tuż przed tym żądaniem poszedł indeks, więc instancja mostu jest już
     // rozgrzana, a ponowić można jednym kliknięciem (powód zobaczysz w statusie).
-    tekst = await pobierzGetTekst(url);
+    tekst = await pobierzPaczkeZRepo(url); // z pamięci, gdy wstępne pobranie zdążyło
   } catch (e) {
     status(`Nie udało się pobrać paczki z repozytorium (${e?.powod ?? 'brak odpowiedzi'}) — sprawdź połączenie albo graj zwykłą ścieżką.`);
     return;
@@ -4236,7 +4309,12 @@ function czytajSesjeMulti() {
 }
 
 function usunSesjeMulti() {
-  if (typeof localStorage !== 'undefined') localStorage.removeItem(KLUCZ_SESJI_MULTI);
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem(KLUCZ_SESJI_MULTI);
+    // Zaległe zdarzenia gry, której telefon już nie pamięta, nie mają dokąd
+    // iść — kolejka idzie w kosz razem z sesją (ADR 0019 aneks 2026-09-13d).
+    localStorage.removeItem(KLUCZ_KOLEJKI_MULTI);
+  }
 }
 
 /* `renderujWznowienieMulti()` i karta `#multi-wznowienie` („↩ Wróć do gry" /
@@ -4369,6 +4447,11 @@ function wejdzDoGryMulti(gra, graczId, rola) {
     onStan: onStanGryMulti,
     onBlad: (komunikat) => { status(`Gra wieloosobowa: ${komunikat}`); renderujPasekSync(); },
     timeout: harmonogramMulti(),
+    // Zdarzenia, które nie doszły na most, przeżywają odświeżenie telefonu
+    // (ADR 0019 aneks 2026-09-13d): kolejka jest w pamięci, nie tylko w RAM.
+    wczytajKolejke: () => kolejkaZdarzenMulti(gra.kod),
+    zapiszKolejke: (zdarzenia) => zapiszKolejkeZdarzenMulti(zdarzenia, gra.kod),
+    limitKolejki: LIMIT_KOLEJKI_ZDARZEN,
   });
   zapiszSesjeMulti();
   otworzPanelMulti('lobby');
@@ -4564,10 +4647,75 @@ function opuscLobby() {
  * Od ADR 0045 (uwaga K) wołamy ją SAMI przy starcie aplikacji — karty
  * `#multi-wznowienie` z przyciskiem „↩ Wróć do gry" nie ma (uwaga J).
  */
+/**
+ * Zaległe zdarzenia gry sieciowej z pamięci telefonu (ADR 0019 aneks
+ * 2026-09-13d). Odpowiedź udzielona bez zasięgu czekała dotąd TYLKO w RAM
+ * (`app/sync.js`), więc odświeżenie telefonu ją gubiło: most nie poznawał
+ * odpowiedzi, a stacja zostawała do przejścia jeszcze raz. Teraz kolejka jest
+ * utrwalona i wychodzi PRZED pobraniem stanu gry — inaczej telefon zbudowałby
+ * trasę ze stacją, którą most właśnie domknął.
+ */
+function kolejkaZdarzenMulti(kod) {
+  const pamiec = pamiecOcen();
+  if (!pamiec || !kod) return [];
+  let surowy = null;
+  try {
+    surowy = JSON.parse(pamiec.getItem(KLUCZ_KOLEJKI_MULTI) ?? 'null');
+  } catch {
+    surowy = null; // zepsuty wpis = pusta kolejka, nigdy wyjątek
+  }
+  return walidujKolejkeZdarzen(surowy, { kod });
+}
+
+function zapiszKolejkeZdarzenMulti(zdarzenia, kod) {
+  const pamiec = pamiecOcen();
+  if (!pamiec) return;
+  if (!Array.isArray(zdarzenia) || zdarzenia.length === 0) {
+    pamiec.removeItem(KLUCZ_KOLEJKI_MULTI); // pusta kolejka nie zajmuje pamięci
+    return;
+  }
+  pamiec.setItem(KLUCZ_KOLEJKI_MULTI, JSON.stringify(zapisKolejkiZdarzen(zdarzenia, {
+    kod: kod ?? STAN.multi?.gra?.kod ?? '',
+    idGry: STAN.multi?.gra?.idGry ?? null,
+  })));
+}
+
+/**
+ * Wypchnięcie utrwalonych zdarzeń PRZED pobraniem stanu gry. Odmowa mostu
+ * (gra skończona albo odpowiedź już u niego jest) kasuje zdarzenie — duplikatu
+ * nie będzie, bo most odrzuca drugą odpowiedź tego gracza do tej stacji
+ * (`przyjmijZdarzenie`). Awaria sieci zostawia resztę w pamięci: przejmie ją
+ * `sync.js` przy pierwszym udanym kroku.
+ */
+async function dostarczZalegleZdarzeniaMulti(sesja) {
+  const zalegle = kolejkaZdarzenMulti(sesja?.kod);
+  if (zalegle.length === 0) return;
+  status(`Wysyłam zaległe zdarzenia gry (${zalegle.length}) — odpowiedź zapisana bez połączenia z mostem…`, { czeka: true });
+  let i = 0;
+  for (; i < zalegle.length; i += 1) {
+    try {
+      // eslint-disable-next-line no-await-in-loop — kolejność zdarzeń jest częścią kontraktu
+      await polecenieMostu(sesja.urlMostu, { akcja: 'gra-zdarzenie', zdarzenie: zalegle[i] });
+    } catch (e) {
+      if (e?.odmowaMostu) continue; // most już to zna albo gra nie trwa — nie ponawiamy
+      break; // nadal offline: to i wszystkie następne zostają w pamięci telefonu
+    }
+  }
+  const zostale = zalegle.slice(i);
+  const dostarczone = zalegle.length - zostale.length;
+  zapiszKolejkeZdarzenMulti(zostale, sesja?.kod);
+  if (dostarczone > 0) {
+    status(zostale.length === 0
+      ? `Zaległe zdarzenia gry (${dostarczone}) doszły na most — punkty są policzone.`
+      : `Zaległe zdarzenia: ${dostarczone} doszło na most, ${zostale.length} czeka na połączenie.`);
+  }
+}
+
 async function przywrocGreMulti() {
   const sesja = czytajSesjeMulti();
   if (!sesja) return;
-  status(`Wracam do gry ${sesja.kod}…`);
+  status(`Wracam do gry ${sesja.kod}…`, { czeka: true });
+  await dostarczZalegleZdarzeniaMulti(sesja);
   // `definitywnie` = most odpowiedział i mówi „nie ma takiej gry / nie ma Cię na
   // liście" — wtedy nie ma do czego wracać i sesja idzie w kosz. Awaria sieci to
   // co innego: sesja zostaje, a następne otwarcie aplikacji spróbuje znowu.
@@ -4587,6 +4735,10 @@ async function przywrocGreMulti() {
       onStan: onStanGryMulti,
       onBlad: (komunikat) => { status(`Gra wieloosobowa: ${komunikat}`); renderujPasekSync(); },
       timeout: harmonogramMulti(),
+      // Jak w `wejdzDoGryMulti`: kolejka zdarzeń przeżywa odświeżenie telefonu.
+      wczytajKolejke: () => kolejkaZdarzenMulti(gra.kod),
+      zapiszKolejke: (zdarzenia) => zapiszKolejkeZdarzenMulti(zdarzenia, gra.kod),
+      limitKolejki: LIMIT_KOLEJKI_ZDARZEN,
     });
     if (gra.stan === 'lobby') otworzPanelMulti('lobby');
     STAN.wznawiamMulti = true; // powrót do gry NIE jest startem — bez odliczania (ADR 0044)

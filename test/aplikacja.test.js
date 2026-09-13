@@ -757,6 +757,9 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(50);
   assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, false, 'nakładka Pobieram dane w trakcie fetch');
+  // Właściciel 2026-09-13: czekanie na sieć ma być WIDAĆ — nakładka pulsuje.
+  assert.equal(domAtrapa.pobierz('stacje-ladowanie').classList.contains('pulsuje'), true,
+    'nakładka pulsuje, póki Overpass nie odpowiedział');
   domAtrapa.kliknij('przycisk-podejrzyj-mape');
   assert.equal(domAtrapa.pobierz('ekran-stacje').hidden, false, 'oko nie deaktywuje ekranu');
   assert.equal(domAtrapa.pobierz('ekran-stacje').inert, true);
@@ -767,6 +770,8 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   domAtrapa.kliknij('przycisk-podejrzyj-mape');
   assert.equal(domAtrapa.pobierz('ekran-stacje').inert, false);
   assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, true, 'nakładka znika po odpowiedzi');
+  assert.equal(domAtrapa.pobierz('stacje-ladowanie').classList.contains('pulsuje'), false,
+    'po odpowiedzi pulsowanie gaśnie — stan „czekam" nie zostaje na ekranie');
   assert.match(domAtrapa.pobierz('siec-proby').textContent, /HTTP 400/, 'błąd zapytania jawny (kod S03)');
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false, 'po porażce widać ponowienie');
   domAtrapa.window.fetch = async (url) => { wywolania.push(url); return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) }; };
