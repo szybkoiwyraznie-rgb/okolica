@@ -4426,8 +4426,9 @@ Pin w `test/kontrakt.test.js` przepięty na nowe zdanie.
 
 `npm test` **763/763** (przybyły trzy: kontrakt zdań o końcu gry, kontrakt
 archiwum ADR-ów, droga terenowa), `npm run check` — oba szablony zgodne,
-`npm run audyt` — 0 naruszeń WCAG AA, `npm run budzet` — **99 085/100 000**
-(rezerwa 915 tok). Wersja aplikacji **m12-112** (`?v=` w `index.html` i we
+`npm run audyt` — 0 naruszeń WCAG AA, `npm run budzet` — **99 165/100 000**
+(rezerwa 835 tok; ostatnie 80 zjadł wpis w ROADMAP o tym audycie). Wersja
+aplikacji **m12-112** (`?v=` w `index.html` i we
 wszystkich importach + `WERSJA_SW`).
 
 - **Powtórki lekcji w tej sesji:** L27/L58/L63 (U1 — zdania po usuniętym
@@ -4441,6 +4442,9 @@ wszystkich importach + `WERSJA_SW`).
   warto sprawdzić w terenie zdanie P03/P04 i dojście przez ⚙ START GRY → TAK;
   (3) sprawdzenie w live preview, że w `?test=true` panel fazy B z przyciskiem
   symulacji jest widoczny w marszu (pomiar agenta: 328×45 px).
-- **Budżet:** rezerwa 915 tok — następny ADR albo lekcja przekroczy próg, więc
+- **ROADMAP M11/M12** (`03d7a75`): stan kamienia przed powtórką testu terenowego
+  mówi teraz o audycie fali m12-100 → m12-110 i o dwóch naprawionych usterkach —
+  żeby następna sesja nie czytała „wszystko wdrożone” jako „wszystko poprawne”.
+- **Budżet:** rezerwa 835 tok — następny ADR albo lekcja przekroczy próg, więc
   kolejna sesja zaczyna od cięcia (L62): największy pojedynczy zjadacz to
   ADR 0019 (5 368 tok), a mechanizm archiwum dla ADR-ów wycofanych już stoi.
