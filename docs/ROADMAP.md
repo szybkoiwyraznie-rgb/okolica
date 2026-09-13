@@ -53,8 +53,12 @@ tutaj tylko to, co zostało do sprawdzenia:
 - **M11/M12** (§4.4): test dwóch telefonów wg checklisty — w tym „stan mostu”
   i ranking z ADR 0039 (pkt 7a; wymaga nowego deploymentu web app). Test terenowy
   2026-09-13 dał 13 uwag (A–K, M, L) — wszystkie wdrożone (m12-100 → m12-110,
-  ADR 0040–0045); została powtórka testu i nowy deployment web app (uwaga G:
-  rezygnacja domyka grę).
+  ADR 0040–0045); audyt tej fali (2026-09-13b, PR #20) znalazł i naprawił dwie
+  usterki widoczne dla gracza: komunikaty awaryjne GPS odsyłały do przycisku
+  końca gry zdjętego przez ADR 0043, a panel fazy B był w przeglądarce schowany
+  razem z przodkiem, więc symulacja dojścia w `?test=true` była nieosiągalna
+  (m12-111 → m12-112). Została powtórka testu i nowy deployment web app
+  (uwaga G: rezygnacja domyka grę).
 
 ## Zasady prowadzenia roadmapy
 
