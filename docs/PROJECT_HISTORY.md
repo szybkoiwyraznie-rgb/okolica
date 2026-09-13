@@ -4191,3 +4191,151 @@ automatyczną). Bramy: 760/760.
   sprawdzeniem odliczania, końca gry hosta i powrotu po odświeżeniu;
   (3) budżet lektury ma 1 131 tok rezerwy — następny ADR go przekroczy, więc
   podział ADR-ów (AGENTS.md §0, L62) stanie się zadaniem obowiązkowym.
+
+## Sesja 2026-09-13b — audyt PR #19: martwe ujścia w komunikatach i panel fazy B schowany razem z przodkiem (gałąź `arena/01a09b63-okolica`)
+
+### 1. Audyt PR #19 (squash `b3433ff`, 57 plików, +5818/−1651)
+
+Brama na drzewie `main` przed pracą: `npm test` → **760/760**, `npm run check`
+OK (oba szablony), `npm run audyt` → 0 naruszeń WCAG AA, budżet lektury
+98 925/100 000 tok (rezerwa 1 075). Przegląd `git diff b3433ff^..b3433ff`
+plik po pliku: logika, zgodność z ADR 0040–0045 i z protokołem, zieloność.
+
+- **`app/aktywnosc.js` (nowy)**: dwie funkcje czyste — `czyPrzerwaBezczynnosci`
+  (próg 15 min) i `czyTrzymacEkran` (decyzja Wake Lock). Bez DOM i bez zegara
+  w środku (zegar wstrzykiwalny), komentarze cytują ADR 0040. OK.
+- **`app/orientacja.js` (nowy)**: `kierunekEkranu` i `czyObrotEkranu` — czyste,
+  bez `window` w sygnaturze, pokrywają ADR 0030 aneks 2026-09-13. OK.
+- **`app/pozycja.js`**: `PROFILE_GPS` zredukowany do jednego profilu `dokladny`,
+  `profilBaterii` usunięty, kody **P07/P09** wycofane z komentarzem, że numery
+  zostają zajęte (precedens E14/E18/R17/R18) — zgodne z ADR 0040 pkt 2–3. OK.
+- **`app/wieloosobowa.js`**: `premiaZaKolejnosc` liczy `pula = min(3, dograli − 1)`
+  z `dograli` = gracze bez `rezygnacja`; lustro w `.gs` liczy tak samo. OK (uwaga L).
+- **`app/sygnaly.js`**: dwa nowe plany — `odliczanie` (45 ms, 880 Hz) i `startGry`
+  (dwuton 784 → 1174,7 Hz). Plany są danymi, odtwarzanie zostaje w `app.js`
+  (ADR 0041/0044). OK.
+- **`app/app.js`** (największy kawałek fali): brak pauzy i wznawiania
+  (Wake Lock + watchdog bezczynności 15 min + samoczynny powrót), auto-centrowanie
+  po obrocie (`mapa.centrujNaPozycji()` istnieje, L968), koniec gry przez
+  ⚙ START GRY → TAK → `■ ZAKOŃCZ AKTUALNĄ GRĘ`, odliczanie 5-4-3-2-1-START,
+  panel multi usunięty (wybór stacji przeniesiony do fazy A). Wszystkie ścieżki
+  zgodne z ADR 0040–0045; `STAN.kierunekEkranu` inicjowany w `start()`. OK.
+- **`index.html`**: `</div></div>` stojące po komentarzu o usuniętym
+  `#przycisk-zakoncz-gre` NIE są osierocone — zamykają `#gra-sterowanie`
+  i `#gra-slot-sterowanie` dokładnie tak samo przed falą (porównanie `sed` na
+  drzewie `b3433ff^` i `b3433ff`). Struktura zachowana. OK.
+- **Wersjonowanie**: `?v=m12-110` w `index.html` i we wszystkich importach
+  `app/*.js`, `WERSJA_SW = 'm12-110'` — jeden łańcuch w całym grafie (L29). OK.
+- **`docs/setup/apps-script-repo-paczek.gs`**: `rezygnacja` może domknąć grę
+  (`czyKompletna` liczy rezygnującego za domkniętego), `gra-zakoncz` zostaje dla
+  starszych telefonów i porządków na Drive, premia bez hosta, który wyszedł.
+  **Wymaga nowego deploymentu web app** — otwarte po stronie właściciela.
+- **Reszta** (`trwalosc.js`, `sync.js`, `mapa.js`, `protokol.js`, `stacje.js`,
+  `zestawy.js`, `sieci.js`, `rozgrywka.js`, `wynik.js`, `most.js`, `sw.js`):
+  podbicia wersji, komentarze i dokumentacja — bez zmian logiki.
+- **Kosmetyka bez wpływu**: w `onStanGryMulti` jeden `if` ma 6 spacji wcięcia
+  zamiast 4.
+
+**Werdykt:** architektura PR #19 jest spójna z ADR 0040–0045 i z protokołem,
+a brama zielona. Audyt znalazł natomiast **dwie usterki widoczne dla gracza**
+(poniżej) — obie są skutkiem tej samej fali usuwania i obie przeszły przez
+760 zielonych testów, bo testy czytają zachowanie w atrapie DOM, nie rendering
+w przeglądarce ani tekst komunikatów awaryjnych.
+
+### 2. U1 (blokująca): pięć komunikatów awaryjnych odsyła do przycisku, który ta fala usunęła
+
+ADR 0043 zniósł `#przycisk-zakoncz-gre` („■ Zakończ grę”) i przeniósł koniec gry
+za ikonę ⚙ START GRY (wpisanie TAK → „■ ZAKOŃCZ AKTUALNĄ GRĘ”). Dokumenty żywe
+(README, WORKFLOW §3 pkt 6, ARCHITECTURE) i warstwa HTML zostały przestawione,
+ale **tabele komunikatów w modułach nie**:
+
+| Miejsce | Komunikat | Stan po fali |
+|---|---|---|
+| `app/pozycja.js` **P03** | „…zakończ grę przyciskiem „■ Zakończ grę” (ADR 0029…)” | przycisku nie ma |
+| `app/pozycja.js` **P04** | „…zakończ grę przyciskiem „■ Zakończ grę”.” | przycisku nie ma |
+| `app/pozycja.js` **P08** | „…odśwież stronę albo zakończ grę przyciskiem „■ Zakończ grę”.” | przycisku nie ma |
+| `app/pozycja.js` **P06** (`stanDojscia`, brak współrzędnych stacji) | „…albo zakończ grę przyciskiem „■ Zakończ grę”.” | przycisku nie ma |
+| `app/app.js` L1393 (`onBlad` watchera) | „…zakończ grę przyciskiem „■ Zakończ grę”.” | przycisku nie ma |
+
+To są dokładnie te zdania, które gracz czyta w terenie, gdy GPS nie daje fixa
+albo stacja jest nieosiągalna — czyli w jedynym stanie, w którym ujście jest
+potrzebne (L63: przycisk-ujście). W polu gracz dostaje instrukcję „naciśnij
+przycisk”, którego na ekranie nie ma (L58: utrata zaufania, zmarnowany test
+terenowy), a prawdziwe ujście (trzy ruchy: ikona → TAK → przycisk) wymaga
+wpisania TAK, więc bez poprawnej instrukcji nie jest oczywiste.
+
+Dwa dalsze martwe ujścia z tej samej rodziny (starsze niż PR #19, znalezione
+przy tym samym grep-ie — L58 pkt 1 każe grepać nośniki żywe, nie tylko kod fali):
+
+- `app/app.js` L2961 (`renderujPytanie`, uszkodzony kontener): „…Zakończ grę
+  albo wgraj paczkę ponownie **z pliku**.” — wczytywania paczki z pliku nie ma
+  od 2026-09-07 (ADR 0006 aneks 3); paczka przychodzi z repozytorium albo
+  z wklejonej odpowiedzi modelu.
+- `app/wieloosobowa.js` **R19**: „…sprawdź pisownię albo zapisz go przyciskiem
+  „Zapisz nowy”.” — takiego przycisku nie ma w `index.html` (bramka tożsamości
+  to `#profil-pseudonim` + `#profil-pin` i jedno wołanie `profil-ustaw`,
+  ADR 0026); nowe imię zakłada profil tym samym gestem.
+
+**Dlaczego brama tego nie złapała:** `test/dryf-dokumentow.test.js` (strażnik L58)
+ma 30 martwych fraz z fal H/I/J oraz ADR 0034/0037/0038/0039/0040/0045, ale
+**ani jednej** dla fali ADR 0043 — fraza „■ Zakończ grę” nie została wpisana
+przy usuwaniu przycisku. Dodatkowo audyt PR #18 (sesja 2026-09-12K) zapisał te
+komunikaty jako poprawne („komunikaty P03/P04/P08 … odsyłają do „■ Zakończ grę”
+(ADR 0029 aneks m12-94). OK.”) — fala m12-107/110 usunęła przycisk i nie
+wróciła do zdań, które na niego wskazywały (L27: zastąpiony przycisk musi być
+wymieniony we wszystkich komunikatach).
+
+### 3. U2 (blokująca dla trybu testowego): panel fazy B jest schowany razem z przodkiem
+
+`odswiezPasekDrogi()` robi dwie rzeczy naraz: `$('gra-sterowanie').hidden = droga`
+oraz `$('gra-pasek').hidden = !droga`. Panel fazy B (`#gra-panel-odcinek`) jest
+W ŚRODKU `#gra-sterowanie`, a `styles.css` ma twardą regułę
+`[hidden] { display: none !important; }` — więc w stanie „w drodze” przodek gasi
+panel B razem z dużym dystansem (`#gra-dystans-odcinka`) i z przyciskiem
+„▶ Symuluj dojście (tryb testowy)”, który `renderujGre` (L2162) w tej samej
+tranzycji jawnie odsłania: `hidden = !(STAN.trybTestowy && faza === odcinek)`.
+
+Pomiar w prawdziwej przeglądarce (headless Chromium 153, 390×844, ENVIRONMENT
+§4.1, stan „w drodze” ustawiony dokładnie tymi dwoma zdaniami z
+`odswiezPasekDrogi`):
+
+| Węzeł | `hidden` | `getBoundingClientRect()` | `offsetParent` |
+|---|---|---|---|
+| `#przycisk-symulacja-gra` | false (tryb testowy) | **0×0** | **null — nie renderowany** |
+| `#gra-dystans-odcinka` | false | **0×0** | null |
+| `#gra-komunikat` | false | **0×0** | null |
+| `#gra-panel-odcinek` | false | **0×0** | null |
+| `#gra-pasek` | false | 370×0 (pusty w próbie) | tak — żyje poza panelem |
+
+Skutek: **w przeglądarce nie da się kliknąć symulacji dojścia**, choć
+`WORKFLOW` §3 pkt (tryb testowy w domu) i §4.3 pkt 3 oraz `ARCHITECTURE`
+L209 obiecują ten przycisk, a ADR 0036 aneks 2026-09-13 (m12-102) pkt 2 mówi
+wprost: „Panel fazy B trzyma duży dystans i symulację **dla widoku panelowego
+oraz trybu testowego**”. Atrapa DOM nie modeluje kaskady ani przodków
+(`kliknij` nie pyta o renderowanie), więc 20 wywołań `dojdzSymulacja()`
+w `test/aplikacja.test.js` jest zielonych — powtórka L13 w nowej postaci.
+Drugi skutek: `#gra-komunikat` (P06 w odcinku) nie ma w drodze żadnego nośnika.
+
+### 4. Obserwacje mniejszej wagi (bez naprawy w tej sesji)
+
+- `przelaczPodgladMapy()` (oko) nie zamyka warstwy końca gry, więc przy otwartym
+  potwierdzeniu klik oka gasi wszystkie panele (`body.podglad-mapy`) i gracz
+  widzi pustą mapę; drugi klik przywraca kartę, a Escape zamyka potwierdzenie
+  (obsługa Escape sprawdza warstwę przed podglądem). L61 pkt 2 mówi o zamykaniu
+  nowej warstwy przez ISTNIEJĄCE otwieracze — oko jest przełącznikiem podglądu,
+  nie warstwą, więc zachowanie jest spójne z jego sensem („pokaż mapę”).
+  Zostawione celowo; gdyby właściciel uznał to za mylące, poprawka to jeden
+  `zamknijKoniecGry({ bezFokusu: true })` w `przelaczPodgladMapy`.
+- Komentarz w `renderujGre` (L2125) uzasadnia „panele nie przełączają się w
+  trakcie pokazu oceny” automatyczną pauzą po `visibilitychange` — mechanizmu
+  pauzy nie ma od ADR 0040 pkt 3 (zostało samo odświeżenie nasłuchu). Reguła
+  jest nadal słuszna i pinowana testami, uzasadnienie jest historyczne.
+- `docs/setup/HANDOFF_2026-09-13.md` podaje „`docs/LESSONS.md` (8 550 tok) —
+  rejestr L53-L63”. Stan rzeczywisty po podziale (L62): rejestr ma **wszystkie**
+  lekcje L1–L63 i **11 803 tok**; do archiwum wyniosły się pełne opisy
+  przypadków, nie wpisy rejestru. Handoff jest nośnikiem zamrożonym (historia),
+  więc liczba zostaje w nim bez zmian — prostuje ją ten wpis i handoff tej sesji.
+- Komentarze w `app/app.js`, `app/stacje.js`, `app/rozgrywka.js` i
+  `docs/ARCHITECTURE.md` cytują „ADR 0014 pkt 1” (dystanse odcinków z sieci),
+  a plik ADR 0014 jest od 2026-09-07 streszczeniem bez punktów — cytat prowadzi
+  do treści, która żyje tylko w historii gita.
