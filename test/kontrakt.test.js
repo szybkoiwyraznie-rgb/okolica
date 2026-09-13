@@ -621,7 +621,7 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'mapa-gra', 'mapa-gra-svg', 'mapa-gra-kafelki', 'mapa-gra-okregi', 'mapa-gra-pinezki', 'mapa-gra-marker',
     'bledy-gra', 'gra-komunikat',
     'gra-kto-idzie', 'gra-cel-stacji', 'przycisk-start-odcinka',
-    'gra-dystans-odcinka', 'przycisk-pauza', 'gra-pauza-komunikat',
+    'gra-dystans-odcinka', 'przycisk-zakoncz-gre-slot',
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
     'gra-pytanie-detale', 'gra-pytanie-detale-naglowek', 'gra-odpowiedzi-lista',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
@@ -1419,4 +1419,56 @@ test('K: komentarze w kodzie nie obiecują koła dokładności (ADR 0034 pkt 2)'
   // Dev-tekst karty paczek nie obiecuje sesji przeglądania paczek.
   assert.equal(INDEX.includes('zaakceptowane przez właściciela'), false,
     'karta paczek: katalog zaakceptowanych, nie przegląd właściciela (ADR 0017 aneks 2026-09-11)');
+});
+
+/* --------------------- ADR 0040: gra bez pauzy, zawsze włączona */
+
+test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwaga B, 2026-09-13)', () => {
+  const POZYCJA = czytaj('app/pozycja.js');
+
+  // 1. UI: przycisk i komunikat pauzy zniknęły, slot zakończenia został.
+  for (const id of ['przycisk-pauza', 'gra-pauza-komunikat']) {
+    assert.equal(INDEX.includes(`id="${id}"`), false, `#${id} nie może wrócić do index.html (ADR 0040 pkt 1)`);
+  }
+  for (const etykieta of ['⏸ Pauza', 'Zegar gry zatrzymany', 'wznowcie, gdy wszyscy gotowi']) {
+    assert.equal(INDEX.includes(etykieta), false, `index.html nie może nieść „${etykieta}"`);
+    assert.equal(APP.includes(etykieta), false, `app.js nie może wstawiać „${etykieta}"`);
+  }
+  assert.ok(INDEX.includes('id="przycisk-zakoncz-gre-slot"'),
+    'slot „Zakończ grę" jest — w drodze ten węzeł wędruje do Informacji (uwagi E i F)');
+
+  // 2. Silnik: funkcje i stan pauzy wycofane. Asertujemy WYWOŁANIA, nie słowa —
+  //    komentarze o wycofaniu zostają w kodzie jako pamięć decyzji (L58).
+  for (const wzor of [/function przelaczPauzeGry\s*\(/, /function dostosujProfilGps\s*\(/,
+    /STAN\.graPauza/, /STAN\.pauzaWTle/, /STAN\.pauzaSkumulowanaMs/, /STAN\.profilGps/]) {
+    assert.equal(wzor.test(APP), false, `app.js nie może mieć ${wzor}`);
+  }
+  for (const wzor of [/export function profilBaterii/, /export const PROG_BATERII_M/,
+    /export function komunikatPauzy/, /export function komunikatWznowienia/, /oszczedny:/]) {
+    assert.equal(wzor.test(POZYCJA), false, `pozycja.js nie może mieć ${wzor}`);
+  }
+  assert.match(POZYCJA, /export const PROFILE_GPS = Object\.freeze\(\{\n {2}dokladny:/,
+    'jeden profil watchera: zawsze dokładny (ADR 0040 pkt 2)');
+  assert.equal(POZYCJA.includes('P07:'), false, 'kod P07 wycofany — numer nie wraca do puli');
+  assert.equal(POZYCJA.includes('P09:'), false, 'kod P09 wycofany — numer nie wraca do puli');
+
+  // 3. Zegar gry płynie cały czas; powrót z tła nie wymaga kliku.
+  assert.match(APP, /function zegarGry\(\) \{\n {2}return performance\.now\(\);\n\}/,
+    'zegar gry nie zna pauz (ADR 0040 pkt 1)');
+  assert.match(APP, /document\.addEventListener\('visibilitychange'/,
+    'app.js nasłuchuje visibilitychange — powrót z tła wznawia sam');
+  assert.match(APP, /const czekamyNaFixa = STAN\.ekran === 'pozycja'/,
+    'powrót z tła odświeża nasłuch tylko tam, gdzie czekamy na fixa (ADR 0040 pkt 3)');
+  assert.match(APP, /if \(!STAN\.watcher\?\.czyAktywny\(\) \|\| !STAN\.ostatniFix\) wlaczGps\(\);/,
+    'martwy albo niemy nasłuch jest zakładany od nowa bez kliku (bug G + ADR 0040 pkt 3)');
+
+  // 4. W drodze Informacje dostają WYŁĄCZNIE węzeł zakończenia gry.
+  assert.match(APP, /const docelowy = \$\(droga \? 'informacje-gra' : 'przycisk-zakoncz-gre-slot'\);/,
+    'w drodze do Informacji wędruje tylko „■ Zakończ grę" (ADR 0036 aneks 2026-09-13)');
+  assert.match(APP, /\$\('gra-sterowanie'\)\.hidden = droga;/,
+    'panel gry jest w drodze schowany — nad mapą zostaje pasek');
+  // Asertujemy REGUŁĘ, nie sam tekst: komentarz w styles.css celowo nazywa
+  // selektor, który umarł (L31 — usunięcie i grep w tym samym commitcie).
+  assert.equal(/#informacje-gra h2\s*\{/.test(STYLE), false,
+    'reguła na nagłówek „Gra" w Informacjach umarła z przenoszeniem sterowania (L31)');
 });

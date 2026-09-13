@@ -79,8 +79,10 @@ Koniec sesji:
    dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Po odpowiedzi
    pytanie i możliwe odpowiedzi zjeżdżają do zwijanego elementu, a na wierzchu
    zostają łapki, poprawna odpowiedź i komentarz — bez przewijania na telefonie
-   (ADR 0036 aneks 2026-09-13). Pauza (także
-   automatyczna w tle) nie wlicza czasu postoju do wyniku.
+   (ADR 0036 aneks 2026-09-13). Pauzy NIE MA (właściciel 2026-09-13, ADR 0040):
+   gra i śledzenie idą cały czas, po powrocie z tła wszystko wznawia się samo
+   bez klikania, a jedyna przerwa to 15 minut bez żadnej akcji — wznawia ją
+   dowolny klik. W drodze Informacje mieszczą wyłącznie „■ Zakończ grę”.
 7. **Wynik**: ekran jest MINIMALNY (ADR 0038) — „🏁 Koniec gry!”, karta
    zwycięzcy, tabela tej gry (gracz / punkty / poprawne), osobna linia z losem
    wysyłki na Drive i „🏠 Wróć na początek — nowa gra”. Eksportów (.txt, PNG,
@@ -166,12 +168,13 @@ symulacji na żywo sprawdza właściciel (agent nie ma przeglądarki, LESSONS L3
 3. **Symulacja:** `?test=true` → stuknij mapę na ekranie pozycji → w ekranie
    gry „▶ Symuluj dojście (tryb testowy)” (`#przycisk-symulacja-gra`): marker
    mapy i pasek dystansu jadą, na końcu stacja się zapala (dwa fixy w progu
-   50 m). Drugi klik zatrzymuje strumień; **zejście karty w tło też**
-   (po powrocie nic nie „dogania”).
+   50 m). Drugi klik zatrzymuje strumień; **zejście karty w tło NIE** — od
+   2026-09-13 śledzenie idzie cały czas (ADR 0040), a symulacja testowa staje.
 4. **GPS na żywo (przy oknie/na zewnątrz):** pozycja aktualizuje się sama
    (karta pokazuje współrzędne i geohash), odmowa zgody pokazuje `P02`
-   z podpowiedzią, zejście w tło pauzuje śledzenie i po powrocie wznawia
-   z komunikatem. Badge’a dokładności nie ma i nie ma być (ADR 0034 pkt 2).
+   z podpowiedzią, a zejście w tło NIE zatrzymuje śledzenia i po powrocie
+   nasłuch odświeża się sam, bez komunikatu (ADR 0040 pkt 3). Badge’a dokładności
+   nie ma i nie ma być (ADR 0034 pkt 2).
 5. Wynik (co działa, co nie, decyzja z pkt 1) → wpis w
    `docs/PROJECT_HISTORY.md` i ewentualna lekcja; dopiero wtedy `ROADMAP`
    dostaje ✅ przy M3.
@@ -188,10 +191,12 @@ zapisuje skorupę i kafelki „na później".
    Overpassa, zero modelu; paczki są tylko z repozytorium — zadanie I,
    2026-09-12). Zanotuj, ile ulic „wystaje" poza zapamiętane
    kafelki przy zboczeniu z trasy.
-2. **Bateria**: na odcinku >300 m wypatruj statusu „GPS w trybie oszczędnym…",
-   przy stacji (<150 m) „GPS w trybie dokładnym…". Zapisz: czy przejścia nie
-   oscylują na granicy (histereza 250/150 m w `app/pozycja.js`), ile % baterii
-   zjadła godzina gry, czy dojście łapie się tak samo pewnie jak przed M10.
+2. **Bateria i ekran** (ADR 0040): profilów GPS już nie ma — jeden, dokładny,
+   przez całą grę; pauzy też nie ma. Zapisz: ile % baterii zjadła godzina gry
+   z włączonym ekranem, czy ekran sam nie zgasł w trakcie marszu (Wake Lock,
+   pkt 4 — na iOS może nie działać, wtedy notujemy zachowanie systemu), czy po
+   schowaniu telefonu i powrocie dystans w pasku odżył BEZ klikania, oraz czy
+   przerwa po 15 minutach bezczynności wznawia się pierwszym dotykiem.
 3. **Sygnały**: w hałasie ulicy — czy „dotarcie" (dwa tony w górę + wibracja)
    jest zauważalne bez patrzenia w ekran; w kieszeni — sama wibracja;
    przełącznik „🔔 sygnały" pamięta wybór po odświeżeniu i zamknięciu karty.

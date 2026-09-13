@@ -216,22 +216,25 @@ test('GPS: błąd przeglądarki daje komunikat z wyjściem awaryjnym (ADR 0004 p
   assert.match(pobierz('bledy-pozycja').textContent, /\[P08\].*dziwny błąd/);
 });
 
-test('GPS: karta w tle zamyka watcher, powrót wznawia śledzenie (ADR 0004 pkt 1)', () => {
-  assert.ok(dom.wyslijZdarzenieDokumentu('visibilitychange') >= 1, 'app.js musi nasłuchiwać visibilitychange (ADR 0004 pkt 1)');
+test('GPS: karta w tle NIE zatrzymuje śledzenia, a powrót nie zakłada watchera bez potrzeby (uwaga B, ADR 0040)', () => {
+  assert.ok(dom.wyslijZdarzenieDokumentu('visibilitychange') >= 1, 'app.js musi nasłuchiwać visibilitychange');
+  const watchPrzed = gps.wywolania.watch;
+  const clearPrzed = gps.wywolania.clear.length;
 
   dom.ustawHidden(true);
   dom.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.deepEqual(gps.wywolania.clear, [42], 'watcher zamknięty — bateria');
-  assert.match(pobierz('status').textContent, /tle|bater/i);
+  assert.equal(gps.wywolania.clear.length, clearPrzed,
+    'właściciel 2026-09-13 (B): żadnej pauzy w tle — nasłuch zostaje, bateria nie jest wymówką');
+  assert.doesNotMatch(pobierz('status').textContent, /wstrzyman/i, 'komunikat o wstrzymaniu śledzenia wycofany (P07)');
 
   dom.ustawHidden(false);
   dom.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.equal(gps.wywolania.watch, 2, 'śledzenie wznowione po powrocie na kartę');
-  assert.match(pobierz('status').textContent, /Wznowiono śledzenie/);
+  assert.equal(gps.wywolania.watch, watchPrzed, 'żywy nasłuch z fixem nie jest zakładany od nowa');
+  assert.doesNotMatch(pobierz('status').textContent, /Wznowiono śledzenie/, 'powrót z tła jest CICHY (P09 wycofany)');
 
-  // powrót bez wcześniejszej pauzy nie zakłada drugiego watchera
+  // drugi powrót też nic nie dokłada
   dom.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.equal(gps.wywolania.watch, 2);
+  assert.equal(gps.wywolania.watch, watchPrzed);
 });
 
 // Decyzja właściciela 2026-09-08: przycisku trybu testowego NIE MA — wchodzi
@@ -1297,22 +1300,24 @@ test('M6: odcinek — start, dojście ze strumienia fixów i odmowa drugiego sta
   assert.equal(dom.pobierz('bledy-gra').hidden, true, 'poprawna tranzycja czyści poprzedni błąd');
 });
 
-test('M6: pauza — przyciski stają, wznowienie jawne (ADR 0004 pkt 1)', async () => {
+test('uwaga B (2026-09-13): pauzy nie ma — gra idzie dalej także po zejściu karty w tło (ADR 0040)', async () => {
   const { dom } = await graGotowaDoStartu();
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
-  const pauza = dom.pobierz('przycisk-pauza');
+  assert.equal(dom.pobierz('przycisk-start-odcinka').disabled, false, 'żadna pauza nie blokuje akcji fazowych');
+  assert.equal(dom.pobierz('gra-pasek').hidden, false, 'w drodze jest pasek');
 
-  dom.kliknij('przycisk-pauza');
-  assert.equal(pauza.getAttribute('aria-pressed'), 'true', 'aria-pressed po pauzie');
-  assert.match(pauza.textContent, /Wznów/, 'przycisk zmienia rolę');
-  assert.equal(dom.pobierz('przycisk-start-odcinka').disabled, true, 'w pauzie nie ma akcji fazowych');
-  assert.equal(dom.pobierz('gra-pauza-komunikat').hidden, false, 'komunikat pauzy widoczny');
+  // Tło i powrót: bez przycisku, bez komunikatu i bez utraty fazy.
+  dom.ustawHidden(true);
+  dom.wyslijZdarzenieDokumentu('visibilitychange');
+  dom.ustawHidden(false);
+  dom.wyslijZdarzenieDokumentu('visibilitychange');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'po powrocie ta sama faza — nie ma czego wznawiać');
+  assert.equal(dom.pobierz('gra-pasek').hidden, false, 'pasek drogi zostaje');
+  assert.doesNotMatch(dom.pobierz('status').textContent, /wstrzyman|Wznowiono/i, 'ani słowa o pauzie');
 
-  dom.kliknij('przycisk-pauza');
-  assert.equal(pauza.getAttribute('aria-pressed'), 'false');
-  assert.match(pauza.textContent, /Pauza/);
-  assert.equal(dom.pobierz('przycisk-start-odcinka').disabled, false, 'wznowienie odblokowuje akcje');
+  await dojdzSymulacja(dom);
+  assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'dojście zalicza się bez żadnego wznawiania');
 });
 
 /* ================= M6/R5: pętla pytania — odsłonięcie, odpowiedź, źródła */
@@ -1471,23 +1476,23 @@ test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-s
   assert.match(dom.pobierz('gra-kolejka').textContent, /Gracz 2/, 'kolej przeszła na drugiego gracza');
 });
 
-test('M6: pauza w trakcie wyjaśnienia — ocena ZOSTAJE, „Następna stacja" wznawia i prowadzi (właściciel 2026-09-11, preview)', async () => {
+test('M6: zejście w tło w trakcie wyjaśnienia — ocena ZOSTAJE, „Następna stacja" prowadzi (właściciel 2026-09-11, preview; bez pauzy od 2026-09-13)', async () => {
   const { dom } = await graWFaziePytania();
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] });
-  // pauza dokładnie tak, jak łapie ją w terenie zwinięcie okna/karty — ten sam kod
-  dom.kliknij('przycisk-pauza');
+  // tło dokładnie tak, jak łapie je w terenie zwinięcie okna/karty — ten sam kod
+  dom.ustawHidden(true);
+  dom.wyslijZdarzenieDokumentu('visibilitychange');
+  dom.ustawHidden(false);
+  dom.wyslijZdarzenieDokumentu('visibilitychange');
   // NIECHCIANY LAYER: panel oczekiwania nie może wyprzeć oceny odpowiedzi
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'panel pytania z oceną zostaje na ekranie');
   assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, false, 'ocena i wyjaśnienie nadal widoczne');
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true, 'panel oczekiwania NIE wskakuje ponad oceną');
-  assert.match(dom.pobierz('gra-komunikat').textContent, /Pauza: zegar gry stoi/, 'o pauzie mówi komunikat ekranu gry (przycisk pauzy siedzi w schowanym panelu B)');
   const dalej = dom.pobierz('przycisk-nastepna-stacja');
-  assert.match(dalej.textContent, /Wznów grę i idź dalej/, 'etykieta mówi wprost: klik wznowi i poprowadzi');
-  // jeden klik = wznowienie zegara i wyjście w drogę; koniec pułapki, w której
-  // panel A z zablokowanym startem nie dawał się wznowić (przycisk pauzy ukryty)
+  assert.match(dalej.textContent, /idę →/, 'etykieta obiecuje wyjście w drogę, nie wznawianie (ADR 0040)');
+  // jeden klik = wyjście w drogę (bez pauzy nie ma drugiego stanu do odwracania)
   dom.kliknij('przycisk-nastepna-stacja');
-  assert.equal(dom.pobierz('przycisk-pauza').getAttribute('aria-pressed'), 'false', 'zegar wznowiony tym samym klikiem');
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true, 'panel A pominięty');
   assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'gracz od razu w drodze');
   assert.match(dom.pobierz('status').textContent, /Odcinek rozpoczęty/, 'odcinek wystartował bez drugiego klika');
@@ -2698,28 +2703,34 @@ test('Informacje: ikonka wskazuje otwarcie, zamknięcie i zachowuje stan podczas
   d.kliknij('przycisk-prywatnosc-stopka'); sprawdz(false); // inna warstwa też gasi Informacje
 });
 
-test('droga: pasek na mapie, sterowanie w Informacjach, po dojściu duży panel pytania', async () => {
+test('droga: pasek na mapie, w Informacjach TYLKO „Zakończ grę", po dojściu duży panel pytania', async () => {
   const { dom } = await graGotowaDoStartu();
   zaczynijGre(dom);
-  assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('gra-slot-sterowanie'));
+  assert.equal(dom.pobierz('przycisk-zakoncz-gre').parentNode, dom.pobierz('przycisk-zakoncz-gre-slot'),
+    'poza drogą przycisk mieszka w panelu gry');
   dom.kliknij('przycisk-start-odcinka');
   assert.equal(dom.pobierz('gra-pasek').hidden, false);
   assert.match(dom.pobierz('gra-pasek').textContent, /^Kto: Gracz 1 \(odległość od stacji \d+ m\) · stacja 1 z 3$/);
   assert.ok(dom.pobierz('gra-pasek').querySelector('.pasek-dystans'), 'odległość jest zieloną pigułką (właściciel 2026-09-11)');
-  assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('informacje-gra'));
+  // Uwagi E i F (2026-09-13, ADR 0036 aneks): Informacje NIE dostają całego
+  // sterowania — wędruje tam wyłącznie węzeł „Zakończ grę", a panel gry znika,
+  // żeby nad mapą został sam pasek.
+  assert.equal(dom.pobierz('przycisk-zakoncz-gre').parentNode, dom.pobierz('informacje-gra'),
+    'w drodze Informacje mają JEDNĄ rzecz z gry: zakończenie');
+  assert.equal(dom.pobierz('informacje-gra').children.length, 1, 'bez boksu z dystansem i wznawianiem (uwaga E)');
+  assert.equal(dom.pobierz('gra-sterowanie').hidden, true, 'panel gry nie zasłania mapy w marszu');
   assert.equal(dom.document.body.classList.contains('gra-w-drodze'), true);
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, true, 'bez przygaszenia mapy podczas marszu');
   dom.kliknij('przycisk-informacje');
   assert.equal(dom.pobierz('informacje-gra').hidden, false);
-  dom.kliknij('przycisk-pauza');
-  assert.equal(dom.pobierz('przycisk-pauza').getAttribute('aria-pressed'), 'true');
-  assert.equal(dom.pobierz('gra-pasek').hidden, false, 'pauza nie zmienia układu drogi');
-  dom.kliknij('przycisk-pauza');
+  assert.equal(dom.pobierz('gra-pasek').hidden, false, 'Informacje nie zmieniają układu drogi');
   await dojdzSymulacja(dom);
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false);
   assert.equal(dom.pobierz('gra-pasek').hidden, true);
   assert.equal(dom.document.body.classList.contains('gra-w-drodze'), false);
-  assert.equal(dom.pobierz('gra-sterowanie').parentNode, dom.pobierz('gra-slot-sterowanie'));
+  assert.equal(dom.pobierz('przycisk-zakoncz-gre').parentNode, dom.pobierz('przycisk-zakoncz-gre-slot'),
+    'po dojściu przycisk wraca do panelu gry');
+  assert.equal(dom.pobierz('gra-sterowanie').hidden, false, 'panel pytania znowu widoczny');
   assert.equal(dom.pobierz('ekran-informacje').hidden, true, 'pytanie pojawia się automatycznie także po użyciu Informacji');
   assert.equal(dom.pobierz('informacje-gra').hidden, true);
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, false);
@@ -2768,10 +2779,10 @@ test('bug G: cichy watcher (WebKit bez żadnego callbacku) jest restarowany, a e
   } finally {
     delete globalThis.__OKOLICA_KROK_GPS_MS__;
     delete globalThis.__OKOLICA_MILCZENIE_GPS_MS__;
-    if (domCichy) {
-      domCichy.ustawHidden(true);
-      domCichy.wyslijZdarzenieDokumentu('visibilitychange'); // pauza w tle zdejmuje watchera razem z zegarem
-    }
+    // ADR 0040: tło NIE zdejmuje watchera ani jego zegara, więc interwały
+    // sprząta atrapa — inaczej żywy watchdog strzela w atrapę GPS następnego
+    // testu i zawiesza pętlę zdarzeń `node --test`.
+    if (domCichy) domCichy.posprzataj();
   }
 });
 
@@ -2796,7 +2807,6 @@ test('bug G: „Dalej” odświeża cichego watchera gestem; po fixie restart ni
     await czekaj(30);
     assert.equal(gpsNiemego.wywolania.watch, 2, 'fix był: watcher nie jest restarowany przy każdym wejściu');
   } finally {
-    domB.ustawHidden(true);
-    domB.wyslijZdarzenieDokumentu('visibilitychange');
+    domB.posprzataj(); // ADR 0040: bez pauzy w tle zegary sprząta atrapa
   }
 });

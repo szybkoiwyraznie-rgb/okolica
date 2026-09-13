@@ -53,6 +53,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0037](0037-jezyk-i-podklad-zaszte-w-kodzie.md) | Język pytań i podkład mapy zaszte w kodzie (polski + OSM), pola usuwane z UI | Zaakceptowana |
 | [0038](0038-minimalny-ekran-wyniku.md) | Minimalny ekran wyniku: zwycięzca, ranking i powrót — statystyki, szczegóły, stacje i eksporty usunięte | Zaakceptowana |
 | [0039](0039-ranking-dwie-tabele.md) | Ranking wrócił w nowej formie: dwie tabele (punkty i proporcja), sumy liczy most, tylko gracze z profilem | Zaakceptowana |
+| [0040](0040-gra-bez-pauzy-zawsze-wlaczona.md) | Gra bez pauzy: śledzenie zawsze włączone, Wake Lock na czas gry, jedyna przerwa po 15 min bezczynności | Zaakceptowana |
 
 ## Szablon ADR
 

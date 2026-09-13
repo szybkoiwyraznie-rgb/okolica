@@ -42,12 +42,11 @@ app/
                               (`ocenFix` — waliduje WSPÓŁRZĘDNE, nie `accuracy`:
                               ADR 0034 pkt 2), kryterium dojścia
                               (stanDojscia), komunikaty P01–P10, symulacja trasy
-                              dla trybu testowego (ADR 0004, 0015); M10: profile
-                              baterii PROFILE_GPS + histereza profilBaterii;
+                              dla trybu testowego (ADR 0004, 0015); jeden profil
+                              watchera PROFILE_GPS.dokladny — profil oszczędny
+                              i histereza wycofane 2026-09-13 (ADR 0040);
                               m12-91 (bug G): watchdog ciszy — czyMilczy,
                               ZEGAR_MILCZENIA_MS, komunikatMilczenia
-                              („budzenie przy zbliżaniu": oszczędny >250 m,
-                              dokładny <150 m)
   sieci.js                  — Overpass (czyste): budowa zapytania (R × 1,15),
                               parsowanie odpowiedzi, graf sieci, Dijkstra,
                               snapowanie, kandydaci na stacje, filtry
@@ -194,8 +193,8 @@ commit i nowa wersja aplikacji.
    odtwarzanej przez `setInterval` (przycisk „▶ Symuluj dojście (tryb testowy)”
    w ekranie gry); oba strumienie wchodzą w stan **jednym lejem**
    `app.js: przyjmijFix()`, więc mapa i próg dojścia zachowują się identycznie
-   z sygnałem i bez niego, a pauza
-   w tle (`visibilitychange`) zatrzymuje jedno i drugie.
+   z sygnałem i bez niego. Zejście karty w tło zatrzymuje TYLKO symulację —
+   śledzenie GPS idzie dalej, a po powrocie nasłuch odświeża się sam (ADR 0040).
 3. `sieci.budujZapytanieOverpass({ srodek, promienM, tryb })` składa jedno
    zapytanie dla `R × 1.15`; pobiera je `app.js` przez `window.fetch`
    (łańcuch instancji z `ASSETS` §2: 1 s odstępu po 429/5xx, timeout 10 s (nagłówki i ciało, ADR 0035)
@@ -250,7 +249,7 @@ commit i nowa wersja aplikacji.
 2. Akcja użytkownika startuje odcinek → `rozgrywka.startOdcinka({ stacjaId,
    czasMs })`; `czasMs` podaje warstwa DOM z `performance.now()`, bo logika nie
    czyta zegara (ADR 0004 pkt 3). Po KAŻDEJ tranzycji (start gry, start/koniec
-   odcinka, odpowiedź, pauza) leci `trwalosc.zbierajStan()` →
+   odcinka, odpowiedź) leci `trwalosc.zbierajStan()` →
    `serializujStan()` → `localStorage`; snapshot niesie `zegarMs` (kotwicę
    zegara sesji) — przy wznowieniu wszystkie znaczniki czasu są rebazowane
    o `performance.now() − zegarMs`, więc czas zamknięcia karty nie wlicza się
@@ -262,8 +261,8 @@ commit i nowa wersja aplikacji.
    kolejne trafienia) → `rozgrywka.zakonczOdcinek({ czasMs, trybDojscia, fix })`:
    tryb dojścia i czas bez kary za tempo (ADR 0023). GPS i symulacja dojścia
    (tryb testowy) karmią aplikację tym samym lejem `przyjmijFix()`; symulacja
-   ustępuje grze — gdy faza przestaje być `odcinek` (dojście, pauza, ręczny
-   koniec), odtwarzanie staje i nie nadpisuje statusu gry.
+   ustępuje grze — gdy faza przestaje być `odcinek` (dojście, ręczny koniec),
+   odtwarzanie staje i nie nadpisuje statusu gry.
 4. `kodowanie.odpakujPaczke(kontener)` → pytanie dla stacji **odsłaniane w chwili
    dojścia**, nie na starcie (ADR 0007 pkt 6): `STAN.paczka` jest kasowany przy
    starcie gry, a warstwa DOM woła `odpakujPaczke` wyłącznie w tranzycji do fazy

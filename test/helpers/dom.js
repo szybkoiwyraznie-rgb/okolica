@@ -12,6 +12,7 @@
  * ani jednej asercji, ani skutku ubocznego na poziomie modułu. Wszystko dzieje
  * się dopiero w `zainstalujDom()` (ARCHITECTURE „Testowanie").
  */
+import { after } from 'node:test';
 import { projektuj } from '../../app/geo.js';
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
@@ -28,6 +29,44 @@ export const KATALOG = dirname(dirname(dirname(fileURLToPath(import.meta.url))))
 const PRAWDZIWY_FETCH = typeof globalThis.fetch === 'function' ? globalThis.fetch : null;
 /** Aktywna hermetyczna sieć testów: `{ wywolania: string[] }`, eksponowana jako `dom.siec`. */
 let hermetycznaSiec = null;
+
+/**
+ * Żywe interwały instancji testowych (ADR 0040). Aplikacja ma `setInterval`
+ * (watchdog ciszy GPS, odświeżanie gry sieciowej) i od 2026-09-13 NIE zwalnia ich
+ * przy zejściu karty w tło — bez systemu pauzy nie ma naturalnego sprzątania,
+ * a żywy zegar po teście (a) zawiesza pętlę zdarzeń `node --test`, bo proces
+ * czeka na opróżnienie, i (b) strzela w atrapę geolokalizacji NASTĘPNEJ
+ * instancji, bo `navigator` jest globalny. Dlatego atrapa liczy interwały:
+ * każda instalacja sprząta poprzednie, hak `after` domyka plik testowy, a test
+ * może posprzątać sam przez `dom.posprzataj()`.
+ */
+const PRAWDZIWE_ZEGARY = {
+  setInterval: globalThis.setInterval.bind(globalThis),
+  clearInterval: globalThis.clearInterval.bind(globalThis),
+};
+let zyweIntervale = new Set();
+let zegaryPrzechwycone = false;
+
+/** Zdejmuje interwały WSZYSTKICH instancji tej atrapy (też w `finally` testu). */
+export function posprzatajInterwaly() {
+  for (const id of zyweIntervale) PRAWDZIWE_ZEGARY.clearInterval(id);
+  zyweIntervale = new Set();
+}
+
+function przechwycZegary() {
+  if (zegaryPrzechwycone) return;
+  zegaryPrzechwycone = true;
+  globalThis.setInterval = (...args) => {
+    const id = PRAWDZIWE_ZEGARY.setInterval(...args);
+    zyweIntervale.add(id);
+    return id;
+  };
+  globalThis.clearInterval = (id) => {
+    zyweIntervale.delete(id);
+    return PRAWDZIWE_ZEGARY.clearInterval(id);
+  };
+  after(posprzatajInterwaly); // koniec pliku testowego = koniec żywych zegarów
+}
 
 /**
  * Atrapa nie parsuje HTML-a, więc stan początkowy `hidden` bierzemy z pliku:
@@ -160,6 +199,8 @@ export function stubElementu(id, ukryte = new Set(), { prostokat = null } = {}) 
  * @returns {object} uchwyty: `pobierz`, `elementy`, `pamiec`, `wyslijZdarzenie*`, `ustaw*`
  */
 export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geolocation = undefined, pamiec = new Map(), bezGracza = false } = {}) {
+  przechwycZegary();
+  posprzatajInterwaly(); // poprzednia instancja nie może strzelać w tę atrapę
   // Tożsamość jest bramą ekranu 1 (ADR 0026 aneks): bez gracza na liście nie da
   // się przejść dalej, a testy nawigacji, mapy i paczek nie są o tożsamości.
   // Telefon w teście ma więc zapamiętanego, potwierdzonego gracza — jak po
@@ -325,6 +366,8 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
   return {
     html,
     gps: gpsDom,
+    /** Sprzątanie żywych zegarów tej instancji (wołać w `finally` testu z watchdogiem). */
+    posprzataj: posprzatajInterwaly,
     /** Rzeczywiste wejście: fix GPS lub tap w mapę (?test=true), bez pól ręcznych. */
     ustawPozycje(lat, lon) {
       if (!documentStub.body.classList.contains('tryb-testowy')) {

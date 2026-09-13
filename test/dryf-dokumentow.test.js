@@ -157,6 +157,44 @@ const MARTWE_FRAZY = [
     nosniki: DOKUMENTY,
     powod: 'modułu `ui.js` nie ma — warstwa DOM siedzi w `app.js`',
   },
+  // Fala 2026-09-13 (uwagi właściciela z testów, ADR 0040): system pauzy i
+  // wznawiania wycofany razem z profilem oszczędnym GPS. Frazy są dosłowne —
+  // komentarze w kodzie mówią o wycofaniu innymi słowami, więc nie łapią się.
+  {
+    fraza: '⏸ Pauza',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'systemu pauzy i wznawiania nie ma (właściciel 2026-09-13, ADR 0040 pkt 1) — gra i śledzenie idą cały czas',
+  },
+  {
+    fraza: 'Zegar gry zatrzymany',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'zegar gry płynie cały czas (`zegarGry()` = `performance.now()`, ADR 0040 pkt 1)',
+  },
+  {
+    fraza: 'Śledzenie położenia jest wstrzymane',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'kod P07 wycofany 2026-09-13: śledzenia nie zatrzymujemy ani przyciskiem, ani w tle (ADR 0040 pkt 3)',
+  },
+  {
+    fraza: 'Wznowiono śledzenie',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'kod P09 wycofany 2026-09-13: powrót z tła odświeża nasłuch sam i bez komunikatu (ADR 0040 pkt 3)',
+  },
+  {
+    fraza: 'GPS w trybie oszczędnym',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'jeden profil watchera, zawsze dokładny — oszczędzanie baterii wycofane (ADR 0040 pkt 2)',
+  },
+  {
+    fraza: 'bateria odpoczywa',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: '„oszczędzanie baterii przy tego typu zabawach nie ma sensu" (właściciel 2026-09-13, ADR 0040 pkt 2)',
+  },
+  {
+    fraza: 'pominięcie stacji',
+    nosniki: DOKUMENTY,
+    powod: 'akcji pomijania nie ma od zadania H (2026-09-12, ADR 0015 aneks) — wyjściem jest „■ Zakończ grę"',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {

@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-101';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-101';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-102';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-102';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,20 +32,20 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-101';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-101';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-101';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, komunikatPauzy, komunikatWznowienia, ocenFix, fixZPozycji, profilBaterii, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-101';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-101';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-101';
+} from './protokol.js?v=m12-102';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-102';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-102';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-102';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-102';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-102';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-101';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-101';
+} from './zestawy.js?v=m12-102';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-102';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -61,18 +61,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-101';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-101';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-101';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-101';
-import { adresMostu, stanMostu } from './most.js?v=m12-101';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-101';
+} from './sieci.js?v=m12-102';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-102';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-102';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-102';
+import { adresMostu, stanMostu } from './most.js?v=m12-102';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-102';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-101';
+} from './oceny.js?v=m12-102';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -123,9 +123,6 @@ const STAN = {
    *  potem dopiero dystans ≥ 250 m od tej pozycji zezwala na kolejne żądanie. */
   ostatniaPozycjaZestawow: null,
   ocenaFixa: null,
-  pauzaWTle: false,
-  /** M10/T3: bieżący profil watchera GPS ('dokladny' | 'oszczedny') — histereza w `profilBaterii`. */
-  profilGps: 'dokladny',
   /** Nazwa miejsca z Overpass — JEDYNA warstwa od 2026-09-11 (zapasowa
    *  Nominatim usunięta całkowicie decyzją właściciela, ADR 0013 aneks). */
   miejsce: '',
@@ -158,10 +155,9 @@ const STAN = {
   rozgrywka: null,
   /** M6: ukryty kontener paczki na czas gry (TO-paczka/2) — nigdy plaintext (ADR 0007 pkt 4). */
   kontenerPaczki: null,
-  /** M6: pauza gry — zegar stoi, fixy nie płyną, przyciski faz zablokowane (ADR 0004 pkt 1). */
-  graPauza: false,
-  graPauzaStartMs: 0,
-  pauzaSkumulowanaMs: 0,
+  // Pauzy gry NIE MA (właściciel 2026-09-13, uwaga B; ADR 0040): aplikacja jest
+  // cały czas włączona, a jedyna przerwa jest automatyczna i wznawia ją
+  // dowolny klik (ADR 0040 pkt 5).
   /** M6/R5: kiedy odsłonięto bieżące pytanie (czas odpowiedzi dla modelu). */
   pytaniePokazaneMs: 0,
   /** M6/R6: snapshot `stan-gry/1` znaleziony przy starcie (kandydat do wznowienia). */
@@ -1258,14 +1254,14 @@ function zatrzymajGps() {
 function wlaczGps() {
   zatrzymajGps();
   $('pozycja-status').textContent = 'Szukam satelitów…';
-  // Bug G: o „GPS włączony” mówimy tylko na pierwszym starcie. Pauza, wznowienie,
-  // profil baterii i watchdog też przechodzą tędy — restarowi watchera w trakcie
-  // gry NIE wolno nadpisywać statusu rozgrywki (LESSONS L22).
+  // Bug G: o „GPS włączony” mówimy tylko na pierwszym starcie. Powrót z tła i
+  // watchdog też przechodzą tędy — restarowi watchera w trakcie gry NIE wolno
+  // nadpisywać statusu rozgrywki (LESSONS L22).
   if (!STAN.ostatniFix) status('GPS włączony — pierwszy fix potrafi trwać kilkanaście sekund.');
   STAN.watcher = watchPozycja({
     geolocation: navigator.geolocation,
     zegar: () => performance.now(),
-    opcje: PROFILE_GPS[STAN.profilGps] ?? PROFILE_GPS.dokladny, // M10/T3: bateria
+    opcje: PROFILE_GPS.dokladny, // zawsze dokładny: oszczędzanie baterii wycofane (uwaga B, ADR 0040)
     onFix: (fix) => {
       STAN.gpsOstatniZnakMs = performance.now(); // bug G: fix to znak życia
       STAN.gpsProba = 0;
@@ -1295,7 +1291,7 @@ function czyUzbroicWatchdogGps() {
   if (STAN.trybTestowy || !STAN.watcher?.czyAktywny()) return false;
   if (STAN.ekran === 'pozycja') return true;
   const r = STAN.rozgrywka;
-  return Boolean(r) && r.faza === FAZY.odcinek && !STAN.graPauza;
+  return Boolean(r) && r.faza === FAZY.odcinek;
 }
 
 /**
@@ -1434,13 +1430,13 @@ const SYMULACJA_KROK_MS = 120;
 /** Próba dojścia: 250 m na azymucie 45°, 12 s „marszu", fix co 2 s + postój. */
 const SYMULACJA = { czasMs: 12000, coMs: 2000, accuracyM: 12 };
 
-/** Symulacja ustępuje grze: poza odcinkiem (dojście, pauza, ręczny koniec) nie
+/** Symulacja ustępuje grze: poza odcinkiem (dojście, ręczny koniec) nie
  *  odtwarzamy dalej i NIE nadpisujemy statusu gry (M6/R7 — fix „po tranzycji"
  *  czyścił historię i zamazywał „Stacja osiągnięta"). Poza grą (setup) warunek
  *  jest przezroczysty: `STAN.rozgrywka` wtedy nie istnieje. */
 function symulacjaPrzestalaBycPotrzebna() {
   const r = STAN.rozgrywka;
-  return Boolean(r) && (r.faza !== FAZY.odcinek || STAN.graPauza || STAN.graZakonczonaRecznie);
+  return Boolean(r) && (r.faza !== FAZY.odcinek || STAN.graZakonczonaRecznie);
 }
 
 /** Jeden fix symulacji: stan, mapa i zdanie o dystansie do celu. */
@@ -1880,14 +1876,12 @@ function renderujStacje() {
 /* --------------------------------------------------------- M6: ekran gry */
 
 /**
- * Zegar gry: `performance.now()` pomniejszony o skumulowane pauzy. Logika
- * rozgrywki nie czyta zegara (ADR 0004 pkt 3) — wszystkie `czasMs` pochodzą
- * z tej warstwy, więc pauza naprawdę zatrzymuje czas odcinków.
+ * Zegar gry: `performance.now()`. Logika rozgrywki nie czyta zegara (ADR 0004
+ * pkt 3) — wszystkie `czasMs` pochodzą z tej warstwy. Pauz NIE MA (właściciel
+ * 2026-09-13, uwaga B; ADR 0040): czas gry płynie cały czas, także w tle.
  */
 function zegarGry() {
-  const teraz = performance.now();
-  const wTrakciePauzy = STAN.graPauza && STAN.graPauzaStartMs > 0 ? teraz - STAN.graPauzaStartMs : 0;
-  return teraz - (STAN.pauzaSkumulowanaMs + wTrakciePauzy);
+  return performance.now();
 }
 
 /**
@@ -1898,7 +1892,7 @@ function zegarGry() {
  */
 function aktualizujGreNaFix(fix) {
   const r = STAN.rozgrywka;
-  if (!r || r.faza === FAZY.koniec || STAN.ekran !== 'gra' || STAN.graPauza) return;
+  if (!r || r.faza === FAZY.koniec || STAN.ekran !== 'gra') return;
   const pod = podglad(r);
   if (!pod.stacja || !STAN.pozycja) return;
   const dystans = Math.round(odlegloscM(STAN.pozycja, pod.stacja));
@@ -1907,7 +1901,6 @@ function aktualizujGreNaFix(fix) {
   if (r.faza !== FAZY.odcinek) return;
   const d = stanDojscia(STAN.historiaFixow, pod.stacja);
   $('gra-dystans-odcinka').textContent = d.dystansM == null ? '— m' : `${Math.round(d.dystansM)} m do stacji ${pod.stacja.id}`;
-  dostosujProfilGps(d.dystansM); // M10/T3: „budzenie przy zbliżaniu"
   if (d.kod) {
     $('gra-komunikat').textContent = d.komunikat;
     return;
@@ -1915,14 +1908,22 @@ function aktualizujGreNaFix(fix) {
   if (d.dotarl) zakonczOdcinekGry(TRYBY_DOJSCIA.gps, fix);
 }
 
-/** W drodze mapa + pojedynczy pasek; istniejące kontrolki przenosimy bez klonowania. */
+/**
+ * W drodze mapa + pojedynczy pasek. Właściciel 2026-09-13 (uwagi E i F, ADR 0036
+ * aneks): Informacje NIE dostają już całego sterowania — boks z dystansem
+ * i przyciskiem wznawiania zniknął razem z systemem pauzy (ADR 0040). W drodze
+ * przenosimy tam WYŁĄCZNIE węzeł „■ Zakończ grę"
+ * (nadal bez klonowania przycisków i nasłuchów), a panel gry chowamy, żeby pasek
+ * był jedynym elementem nad mapą.
+ */
 function odswiezPasekDrogi() {
   const r = STAN.rozgrywka;
   if (!r) return;
   const droga = !$('gra-panel-odcinek').hidden;
-  const sterowanie = $('gra-sterowanie');
-  const docelowy = $(droga ? 'informacje-gra' : 'gra-slot-sterowanie');
-  if (sterowanie.parentNode !== docelowy) docelowy.appendChild(sterowanie);
+  const zakoncz = $('przycisk-zakoncz-gre');
+  const docelowy = $(droga ? 'informacje-gra' : 'przycisk-zakoncz-gre-slot');
+  if (zakoncz.parentNode !== docelowy) docelowy.appendChild(zakoncz);
+  $('gra-sterowanie').hidden = droga;
   $('gra-pasek').hidden = !droga;
   const pod = podglad(r);
   const imie = pod.gracz?.imie ?? '—';
@@ -2000,11 +2001,10 @@ function renderujGre({ panele = true } = {}) {
   }
 
   if (panele) {
-    // Pauza (albo cudza tura) w trakcie czytania wyjaśnienia zmienia sens
-    // przycisku „dalej" — musi przestać obiecywać start odcinka.
+    // Cudza tura w trakcie czytania wyjaśnienia zmienia sens przycisku „dalej" —
+    // musi przestać obiecywać start odcinka.
     const dalej = $('przycisk-nastepna-stacja');
     if (!dalej.hidden && r.faza !== FAZY.koniec) dalej.textContent = etykietaPrzyciskuDalej(r);
-    $('przycisk-start-odcinka').disabled = STAN.graPauza;
     $('przycisk-symulacja-gra').hidden = !(STAN.trybTestowy && r.faza === FAZY.odcinek);
   }
 
@@ -2529,9 +2529,6 @@ function startGry() {
     status('Nie da się zacząć gry: potrzebna pozycja i policzone stacje (kroki 2–3).');
     return;
   }
-  STAN.graPauza = false;
-  STAN.graPauzaStartMs = 0;
-  STAN.pauzaSkumulowanaMs = 0;
   if (!STAN.konfig.kodGry) {
     // Kod gry nie jest w setupie (Partia 2, pkt 7): identyfikator z imion,
     // miejsca i daty — do plików i kluczy, nie do ochrony pytań.
@@ -2606,39 +2603,9 @@ function zakonczOdcinekGry(trybDojscia, fix) {
   zapiszGre();
 }
 
-/** Pauza gry: zegar stoi, watcher/symulacja zatrzymane, wznowienie jawne. */
-function przelaczPauzeGry() {
-  const r = STAN.rozgrywka;
-  if (!r || r.faza === FAZY.koniec) return;
-  STAN.graPauza = !STAN.graPauza;
-  const przycisk = $('przycisk-pauza');
-  if (STAN.graPauza) {
-    STAN.graPauzaStartMs = performance.now();
-    zatrzymajSymulacje();
-    zatrzymajGps(); // oszczędność baterii — pauza zatrzymuje strumień fixów (ADR 0004 pkt 1)
-    $('gra-pauza-komunikat').textContent = `${komunikatPauzy().komunikat} Zegar gry zatrzymany — wznowcie, gdy wszyscy gotowi.`;
-    przycisk.textContent = '▶ Wznów';
-  } else {
-    STAN.pauzaSkumulowanaMs += performance.now() - STAN.graPauzaStartMs;
-    STAN.graPauzaStartMs = 0;
-    STAN.historiaFixow = []; // fixy sprzed pauzy nie rozstrzygają dojścia po wznowieniu
-    $('gra-pauza-komunikat').textContent = komunikatWznowienia().komunikat;
-    przycisk.textContent = '⏸ Pauza';
-    if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
-  }
-  przycisk.setAttribute('aria-pressed', String(STAN.graPauza));
-  $('gra-pauza-komunikat').hidden = false;
-  // Pauza w trakcie pokazu oceny odpowiedzi: panel pytania ZOSTAJE (patrz
-  // renderujGre), więc komunikat z panelu B jest niewidoczny — o pauzie
-  // mówimy w komunikacie ekranu gry i wskazujemy wyjście jednym przyciskiem.
-  if (!$('gra-panel-pytanie').hidden && !$('gra-wynik-odpowiedzi').hidden) {
-    $('gra-komunikat').textContent = STAN.graPauza
-      ? '⏸ Pauza: zegar gry stoi. „Następna stacja" wznowi grę i wyjdzie w drogę.'
-      : 'Gra wznowiona — zegar ruszył.';
-  }
-  renderujGre();
-  zapiszGre(); // świeża kotwica zegara — wznowienie nie zgubi pauz
-}
+// `przelaczPauzeGry()` WYCOFANE 2026-09-13 (uwaga właściciela B, ADR 0040):
+// systemu pauzy i wznawiania nie ma — gra i śledzenie idą cały czas, a po
+// powrocie z tła wszystko wznawia się samo, bez klikania czegokolwiek.
 
 /** Symulacja dojścia DO BIEŻĄCEJ STACJI (tryb testowy — kryterium „gra bez GPS"). */
 function przelaczSymulacjeDoStacji() {
@@ -2959,11 +2926,10 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
  * pod wyjaśnieniem od razu startuje odcinek i mówi, kto i dokąd idzie.
  *
  * Automatu NIE MA tam, gdzie odebrałby graczowi decyzję albo złamał regułę:
- * w pauzie, w wyścigu (ADR 0027 część B: gracz sam wybiera stację) i w turach,
+ * w wyścigu (ADR 0027 część B: gracz sam wybiera stację) i w turach,
  * gdy droga należy do kogoś innego. Wtedy zostaje stary panel A ze startem.
  */
 function czyStartPoDalej() {
-  if (STAN.graPauza) return false;
   const m = STAN.multi;
   if (!m) return true;
   const gra = m.gra;
@@ -2976,11 +2942,6 @@ function czyStartPoDalej() {
 function etykietaPrzyciskuDalej(stan) {
   if (stan.faza === FAZY.koniec) return '🏁 Zobacz wynik →';
   if (stan.faza === FAZY.pytanie) return 'Następne pytanie →';
-  // Pauza w trakcie czytania oceny (najczęściej automatyczna po zwinięciu
-  // karty): przycisk pauzy mieszka w panelu B i jest wtedy niewidoczny,
-  // więc to „Następna stacja" wznawia zegar i prowadzi dalej — etykieta
-  // mówi o tym wprost (zgłoszenie właściciela 2026-09-11, preview).
-  if (STAN.graPauza && !STAN.multi) return '⏸ Wznów grę i idź dalej →';
   if (!czyStartPoDalej()) return 'Następna stacja →';
   const pod = podglad(stan);
   const indeks = stan.stacje.findIndex((s) => s.id === stan.biezacaStacja);
@@ -2998,11 +2959,6 @@ function nastepnaStacja() {
   // Domknięcie pokazu oceny — od tej chwili renderujGre może przełączać
   // panele (patrz warunek „pokazOceny" w renderujGre).
   $('gra-wynik-odpowiedzi').hidden = true;
-  // Pauza nie da się w tym widoku wznowić przyciskiem pauzy (mieszka w
-  // panelu B, schowanym). Klik w „Następna stacja" to JAWNA decyzja gracza
-  // — wznawia zegar (M6: wznowienie jawne, tutaj właśnie przyciskiem)
-  // i prowadzi dalej, zamiast zostawiać panel A z zablokowanym startem.
-  if (STAN.graPauza) przelaczPauzeGry();
   renderujGre();
   if (r.faza === FAZY.pytanie) {
     renderujPytanie();
@@ -3215,16 +3171,11 @@ function wznowGre() {
     STAN.pozycja = { lat: snapshot.pozycja.lat, lon: snapshot.pozycja.lon };
     STAN.dokladnoscM = snapshot.pozycja.dokladnoscM ?? null;
   }
-  STAN.graPauza = false;
-  STAN.graPauzaStartMs = 0;
-  STAN.pauzaSkumulowanaMs = 0;
   STAN.graZakonczonaRecznie = false;
   STAN.historiaFixow = []; // dojście liczymy od nowa — fixy sprzed zamknięcia nie rozstrzygają
   STAN.wycentrowane = false; // pierwszy fix po wznowieniu centruje mapę gry
   STAN.wznowienieKandydat = null;
   $('karta-wznowienie').hidden = true;
-  $('przycisk-pauza').textContent = '⏸ Pauza';
-  $('przycisk-pauza').setAttribute('aria-pressed', 'false');
   renderujSetup(); // konfiguracja z zapisu wraca do pól setupu
   // Skład gry bierze się z zapisu — tu tylko przyciski zapamiętanych (ADR 0026 aneks).
   przywrocGraczy();
@@ -3705,22 +3656,9 @@ function zarejestrujServiceWorker() {
   } catch { /* brak SW = zwykła gra online */ }
 }
 
-/**
- * M10/T3: „budzenie przy zbliżaniu" — w trasie GPS oszczędny, przy stacji
- * dokładny. Decyduje czysta `profilBaterii` (histereza 250/150 m); zmiana
- * profilu = restart watchera z nowymi opcjami i JAWNY status (LESSONS L6).
- * Bez aktywnego watchera (tryb testowy, symulacja, pauza) nie robi nic.
- */
-function dostosujProfilGps(dystansM) {
-  if (!STAN.watcher || STAN.trybTestowy) return;
-  const nowy = profilBaterii({ poprzedni: STAN.profilGps, dystansM });
-  if (nowy === STAN.profilGps) return;
-  STAN.profilGps = nowy;
-  wlaczGps();
-  status(nowy === 'oszczedny'
-    ? 'GPS w trybie oszczędnym — do stacji daleko, bateria odpoczywa; częstsze pomiary wrócą przy stacji.'
-    : 'GPS w trybie dokładnym — jesteś blisko stacji, łapiemy dojście z metrów.');
-}
+// `dostosujProfilGps()` WYCOFANE 2026-09-13 (uwaga właściciela B, ADR 0040):
+// jeden profil watchera, zawsze dokładny — oszczędzanie baterii w tej zabawie
+// nie ma sensu, a kryterium dojścia liczy się z metrów na całym odcinku.
 
 /* ------------------------------------------------------- motyw i zapis */
 
@@ -4557,9 +4495,6 @@ function uruchomGreMulti(gra) {
   STAN.kontenerPaczki = gra.zestaw.kontener;
   STAN.paczka = paczka;
   STAN.usterkiPaczki = [];
-  STAN.graPauza = false;
-  STAN.graPauzaStartMs = 0;
-  STAN.pauzaSkumulowanaMs = 0;
   STAN.graZakonczonaRecznie = false;
   STAN.rozgrywka = nowaRozgrywka({
     konfig, stacje: moje, paczka: paczkaGracza, srodek,
@@ -4742,7 +4677,6 @@ function renderujWyborStacji(gra, r, graSieToczy) {
     b.className = 'przycisk';
     const cel = STAN.stacje?.find((s) => Number(s.id) === Number(stacjaId));
     b.textContent = `Stacja ${stacjaId}${cel?.opis ? ` · ${cel.opis}` : ''}`;
-    b.disabled = STAN.graPauza;
     b.setAttribute('aria-pressed', String(Number(r.biezacaStacja) === Number(stacjaId)));
     b.addEventListener('click', () => wybierzStacjeMulti(stacjaId));
     lista.appendChild(b);
@@ -4992,28 +4926,23 @@ function start() {
     kazdaMapa((mapa) => mapa.odswiez());
   });
 
-  // Pauza śledzenia, gdy karta schodzi w tło — oszczędność baterii i jawny
-  // komunikat po powrocie (ADR 0004 pkt 1).
+  // Właściciel 2026-09-13 (uwaga B, ADR 0040): ŻADNEJ pauzy w tle. Aplikacja ma
+  // być cały czas włączona, a po powrocie wszystko wznawia się samo — bez kliku.
+  // Przeglądarka i tak zamraża strumień fixów w tle, więc przy powrocie
+  // sprawdzamy, czy nasłuch żyje, i jeśli nie — zakładamy świeży (bug G: WebKit
+  // trzyma czasem `watchPosition` aktywny, ale niemy). Bez komunikatów o
+  // „wstrzymaniu" i „wznowieniu": wycofane kody P07/P09 (ADR 0040 pkt 3).
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-    zatrzymajSymulacje();
-      // M6: gra w tle = pełna pauza (zegar stoi, wznowienie jawne przyciskiem)
-      if (STAN.rozgrywka && STAN.rozgrywka.faza !== FAZY.koniec && STAN.ekran === 'gra' && !STAN.graPauza) {
-        przelaczPauzeGry();
-        return;
-      }
-      if (STAN.watcher?.czyAktywny()) {
-        zatrzymajGps();
-        STAN.pauzaWTle = true;
-        status(komunikatPauzy().komunikat);
-      }
+      zatrzymajSymulacje(); // symulacja testowa nie odtwarza się w tle
       return;
     }
-    if (!STAN.pauzaWTle) return;
-    STAN.pauzaWTle = false;
     if (STAN.trybTestowy) return;
-    wlaczGps();
-    status(komunikatWznowienia().komunikat);
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    const czekamyNaFixa = STAN.ekran === 'pozycja'
+      || (STAN.rozgrywka && STAN.rozgrywka.faza === FAZY.odcinek);
+    if (!czekamyNaFixa) return;
+    if (!STAN.watcher?.czyAktywny() || !STAN.ostatniFix) wlaczGps();
   });
   $('przycisk-wstecz-setup').addEventListener('click', () => {
     STAN.multiPoPaczce = false; // porzucono ścieżkę AI-multi
@@ -5149,7 +5078,6 @@ function start() {
   // testowym, która karmi aplikację tym samym `przyjmijFix`); testy idą tą samą
   // drogą, więc nie ma drugiego, produkcyjnie martwego wejścia do fazy pytania.
   $('przycisk-nowa-gra').addEventListener('click', () => wrocNaPoczatek());
-  $('przycisk-pauza').addEventListener('click', () => przelaczPauzeGry());
   $('przycisk-symulacja-gra').addEventListener('click', () => przelaczSymulacjeDoStacji());
   $('przycisk-nastepna-stacja').addEventListener('click', () => nastepnaStacja());
   // ADR 0028: oceny pytań — kliknięcie jest jednoklikowe i nie blokuje gry.

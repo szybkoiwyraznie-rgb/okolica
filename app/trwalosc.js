@@ -12,10 +12,10 @@
  *   danych z ekranu prywatności (M3) kasuje zapis gry automatycznie;
  * - zepsuty zapis = jawna odmowa z kodem T, nigdy cichy start od zera.
  */
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-101';
-import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-101';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-101';
-import { geohash } from './geo.js?v=m12-101';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-102';
+import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-102';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-102';
+import { geohash } from './geo.js?v=m12-102';
 
 export const SCHEMAT_STANU = 'stan-gry/1';
 
@@ -105,7 +105,7 @@ function czyPozycjaOk(p) {
  * `rozgrywka` — stanem `rozgrywka/1` z `nowaRozgrywka` i tranzycji;
  * `pozycja` — OSTATNIM fixem (historia fixów zostaje w pamięci pozycji,
  * do wznowienia wystarczy punkt startowy odcinka) albo null;
- * `zegarMs` — wskazaniem zegara gry (`performance.now()` minus pauzy) w chwili
+ * `zegarMs` — wskazaniem zegara gry (`performance.now()`) w chwili
  * zapisu: po restarcie przeglądarki zegar sesji startuje od zera, więc czasy
  * rozgrywki są przy wznowieniu rebazowane o różnicę — czas zamknięcia karty
  * nie wlicza się w odcinek (uczciwy pomiar, ADR 0004 pkt 3).

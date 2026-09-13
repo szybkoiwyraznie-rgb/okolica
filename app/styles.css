@@ -916,8 +916,11 @@ body.gra-w-drodze #ekran-gra:not([hidden]) {
 body.gra-w-drodze #przycisk-podejrzyj-mape { bottom: calc(48px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-atrybucja { bottom: calc(36px + env(safe-area-inset-bottom, 0px)); }
 body.gra-w-drodze #mapa-gra .mapa-skala { bottom: calc(72px + env(safe-area-inset-bottom, 0px)); }
+/* W drodze Informacje mieszczą JEDNĄ rzecz z gry: węzeł „■ Zakończ grę"
+   (właściciel 2026-09-13, uwagi E i F). Reguła `#informacje-gra h2` umarła
+   razem z przenoszeniem całego `#gra-sterowanie` (LESSONS L31: usuwanie
+   i grep w tym samym commitcie). */
 #informacje-gra { margin-bottom: 16px; }
-#informacje-gra h2 { padding-right: 48px; }
 
 /* „Zobacz więcej/mniej paczek" pod listą propozycji (właściciel 2026-09-11):
    pełna szerokość karty, cel dotykowy jak wiersze listy (ADR 0011). */

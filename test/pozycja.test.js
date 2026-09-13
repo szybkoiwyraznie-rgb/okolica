@@ -15,8 +15,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  BLEDY_API, GRANICE, KODY_POZYCJI, OPCJE_WATCH, PROFILE_GPS, PROG_BATERII_M, STANY_FIXA, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, profilBaterii,
-  bladGeolokalizacji, czyMilczy, dodajFix, fixSymulowany, fixZPozycji, komunikatMilczenia, komunikatPauzy, komunikatWznowienia,
+  BLEDY_API, GRANICE, KODY_POZYCJI, OPCJE_WATCH, PROFILE_GPS, STANY_FIXA, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA,
+  bladGeolokalizacji, czyMilczy, dodajFix, fixSymulowany, fixZPozycji, komunikatMilczenia,
   ocenFix, punktNaTrasie, sekwencjaSymulowana, sprawdzTrase, stanDojscia,
   trasaProsta, watchPozycja,
 } from '../app/pozycja.js';
@@ -172,19 +172,24 @@ test('bladGeolokalizacji: kody przeglądarki na komunikaty z wyjściem awaryjnym
 
 test('KODY_POZYCJI: pełne zdania gotowe do UI, osobny przedrostek od kodów rozgrywki', () => {
   const kody = Object.entries(KODY_POZYCJI);
-  assert.equal(kody.length, 9, 'P01–P04, P06–P10 (P05 wycofany — numer nie wraca do puli)');
+  assert.equal(kody.length, 7, 'P01–P04, P06, P08, P10 (P05, P07 i P09 wycofane — numery nie wracają do puli)');
   for (const [kod, tekst] of kody) {
     assert.match(kod, /^P\d{2}$/, `kod ${kod}`);
     assert.ok(tekst.length >= 40, `${kod}: za krótki — „${tekst}"`);
     assert.ok(tekst.endsWith('.'), `${kod}: musi kończyć się kropką`);
     assert.equal(tekst, tekst.trim());
   }
-  const pauza = komunikatPauzy();
-  assert.equal(pauza.kod, 'P07');
-  assert.match(pauza.komunikat, /tle|bater/i, 'pauza w tle ma być wyjaśniona (ADR 0004 pkt 1)');
-  const wznowienie = komunikatWznowienia();
-  assert.equal(wznowienie.kod, 'P09');
-  assert.match(wznowienie.komunikat, /Wznowiono śledzenie/, 'ADR 0004 pkt 1 wymaga komunikatu „wznowiono śledzenie"');
+  // Właściciel 2026-09-13 (uwaga B, ADR 0040): systemu pauzy nie ma, więc nie ma
+  // też jego komunikatów — P07 (wstrzymane śledzenie w tle) i P09 (wznowienie)
+  // są wycofane, a ich numery nie wracają do puli.
+  for (const kod of ['P05', 'P07', 'P09']) {
+    assert.equal(kod in KODY_POZYCJI, false, `${kod} jest wycofany i nie może wrócić`);
+  }
+  for (const fraza of ['Śledzenie położenia jest wstrzymane', 'Wznowiono śledzenie', 'oszczędzamy baterię']) {
+    for (const [, tekst] of kody) {
+      assert.equal(tekst.includes(fraza), false, `żaden kod nie może obiecywać: ${fraza}`);
+    }
+  }
 });
 
 /* --------------------------------------------------------------- tryb testowy */
@@ -324,7 +329,7 @@ test('watchPozycja: brak API to jawny komunikat, nie wyjątek (ADR 0004 pkt 7)',
   assert.throws(() => watchPozycja({ geolocation: atrapaGeolokalizacji().geolocation }), TypeError, 'onFix jest wymagany');
 });
 
-test('watchPozycja: własne opcje nadpisują domyślne (oszczędność baterii)', () => {
+test('watchPozycja: własne opcje nadpisują domyślne', () => {
   const atrapa = atrapaGeolokalizacji();
   watchPozycja({ geolocation: atrapa.geolocation, onFix: () => {}, opcje: { maximumAge: 30_000, enableHighAccuracy: false } });
   assert.deepEqual(atrapa.wywolania.opcje, { enableHighAccuracy: false, maximumAge: 30_000, timeout: 20_000 });
@@ -362,30 +367,15 @@ test('integracja: dojście z fixture’a kończy odcinek w rozgrywce', async () 
   assert.ok(po.odcinki[0].odlegloscKoncowaM <= 50, `odległość końcowa ${po.odcinki[0].odlegloscKoncowaM} m mieści się w progu`);
 });
 
-/* ------------------------------------------------- bateria (M10/T3) */
+/* --------------------- jeden profil GPS (uwaga B, ADR 0040) */
 
-test('bateria: profile GPS — oszczędny bez wysokiej dokładności i z rzadszym odświeżaniem', () => {
-  assert.equal(PROFILE_GPS.oszczedny.enableHighAccuracy, false, 'w trasie GPS bez high-accuracy');
-  assert.ok(PROFILE_GPS.oszczedny.maximumAge > PROFILE_GPS.dokladny.maximumAge, 'rzadsze odświeżanie w trasie');
-  assert.deepEqual(PROFILE_GPS.dokladny, OPCJE_WATCH, 'profil dokładny = dotychczasowe opcje (ADR 0004)');
-  assert.ok(Object.isFrozen(PROFILE_GPS) && Object.isFrozen(PROFILE_GPS.oszczedny));
-});
-
-test('bateria: histereza profilu — oszczędny >250 m, powrót do dokładnego <150 m', () => {
-  assert.equal(profilBaterii({ poprzedni: 'dokladny', dystansM: 300 }), 'oszczedny', 'daleko = oszczędzanie');
-  assert.equal(profilBaterii({ poprzedni: 'oszczedny', dystansM: 200 }), 'oszczedny', 'histereza: 200 m nie wraca jeszcze do dokładnego');
-  assert.equal(profilBaterii({ poprzedni: 'oszczedny', dystansM: 149 }), 'dokladny', 'przy stacji pełna dokładność');
-  assert.equal(profilBaterii({ poprzedni: 'dokladny', dystansM: 250 }), 'dokladny', 'próg „powyżej" jest ostry');
-  assert.equal(profilBaterii({ poprzedni: 'dokladny', dystansM: 100 }), 'dokladny');
-});
-
-test('bateria: brak dystansu (null/NaN) NIE zmienia profilu; domyślny profil dokładny', () => {
-  assert.equal(profilBaterii({ poprzedni: 'oszczedny', dystansM: null }), 'oszczedny');
-  assert.equal(profilBaterii({ poprzedni: 'dokladny', dystansM: NaN }), 'dokladny');
-  assert.equal(profilBaterii({ poprzedni: 'dokladny' }), 'dokladny');
-  assert.equal(profilBaterii({}), 'dokladny', 'start: profil dokładny');
-  assert.equal(PROG_BATERII_M.oszczednyPowyzej, 250);
-  assert.equal(PROG_BATERII_M.dokladnyPonizej, 150);
+test('GPS: jeden profil watchera — zawsze dokładny (oszczędzanie baterii wycofane 2026-09-13)', () => {
+  assert.deepEqual(Object.keys(PROFILE_GPS), ['dokladny'],
+    'profil oszczędny wycofany razem z systemem pauzy (właściciel 2026-09-13, ADR 0040)');
+  assert.deepEqual(PROFILE_GPS.dokladny, OPCJE_WATCH, 'profil dokładny = opcje z ADR 0004 pkt 1');
+  assert.equal(PROFILE_GPS.dokladny.enableHighAccuracy, true,
+    'kryterium dojścia liczy się z metrów na CAŁYM odcinku, nie tylko przy stacji');
+  assert.ok(Object.isFrozen(PROFILE_GPS) && Object.isFrozen(PROFILE_GPS.dokladny));
 });
 
 /* ---------------------------------------------- bug G: cichy watcher GPS */

@@ -93,8 +93,9 @@ Kamień czeka na kryterium właściciela: pełna pętla z prawdziwym modelem
 wyniku: jeden ekran gry z czterema panelami faz („kto idzie" → odcinek z mapą
 i dystansem → pytanie odsłaniane DOPIERO w chwili dojścia → wynik), dojście
 z GPS (≤50 m, dwa kolejne fixy niezależnie od accuracy; ręczne zaliczanie usunięte
-w ADR 0029), pauza (również automatyczna po schowaniu karty), pominięcie stacji
-w drodze i ręczne zakończenie z wczesnym wynikiem. Pytania żyją w ukrytym
+w ADR 0029) i ręczne zakończenie z wczesnym wynikiem. Pauzy i pomijania stacji
+NIE MA (ADR 0040, zadanie H): gra i śledzenie idą cały czas, a po powrocie z tła
+wszystko wznawia się samo. Pytania żyją w ukrytym
 kontenerze (`TO-paczka/2`) — w stanie gry i w zapisie nigdy nie ma ich treści.
 Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji (`stan-gry/1`), więc
 zamknięcie przeglądarki nie kończy gry: na setupie czeka baner „wznowienie",
@@ -153,10 +154,11 @@ bo Pages serwuje z drzewa, a generator odtwarza je bajt w bajt.
   sesji online gra z lokalnej paczki działa w trybie samolotowym: bez sieci,
   bez Overpassa, bez modelu. POST-y i API (most Drive, Overpass) nigdy nie są
   cache'owane (świeżość i prywatność).
-- **Bateria**: „budzenie przy zbliżaniu" — w trasie (powyżej 250 m od stacji)
-  GPS pracuje oszczędnie (bez wysokiej dokładności, odświeżanie co ~20 s),
-  przy stacji (poniżej 150 m) wraca pełna dokładność; histereza zapobiega
-  oscylacji, każda zmiana ma jawny status.
+- **Zawsze włączona gra** (ADR 0040, właściciel 2026-09-13): jeden dokładny
+  profil GPS przez całą grę, żadnej pauzy — także w tle; po powrocie nasłuch
+  odświeża się sam, bez klikania i bez komunikatu. Ekran nie gaśnie w trakcie
+  gry (Wake Lock, jeśli przeglądarka go ma), a jedyna przerwa w śledzeniu
+  przychodzi po 15 minutach bez żadnego kliku i znika po pierwszym dotyku.
 - **Sygnały**: dojście do stacji, start odcinka i ocena odpowiedzi grają
   krótkie melodie (oscylator Web Audio — zero plików dźwiękowych) i wibracje;
   przełącznik „🔔 sygnały" w nagłówku, domyślnie włączone, wybór zapamiętany.

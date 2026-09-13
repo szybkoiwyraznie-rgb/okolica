@@ -16,40 +16,22 @@
  * w środku — tak samo jak w `rozgrywka.js` (ADR 0004 pkt 3).
  */
 
-import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-101';
+import { bearingStopnie, czyDotarl, czyWspolrzedneOk, ogranicz, odlegloscM, przesunPunkt, progDojsciaM } from './geo.js?v=m12-102';
 
 /** Opcje watchera — dokładnie jak w ADR 0004 pkt 1 (jedne na całą rozgrywkę). */
 export const OPCJE_WATCH = Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 });
 
 /**
- * M10/T3: dwa profile watchera — „budzenie przy zbliżaniu" (bateria).
- * W trasie (daleko od stacji) GPS może pracować oszczędnie: bez wysokiej
- * dokładności i z rzadszym odświeżaniem (`maximumAge` 20 s); przy stacji
- * wraca profil dokładny, bo kryterium dojścia (ADR 0004 pkt 2) liczy się
- * z metrów. Profile wstrzykuje się do `watchPozycja({ opcje })`.
+ * Jeden profil watchera: ZAWSZE dokładny. Właściciel 2026-09-13 (uwaga B,
+ * ADR 0040): aplikacja ma być cały czas włączona, a oszczędzanie baterii przy
+ * tego typu zabawie nie ma sensu. Drugi profil (M10/T3 „budzenie przy
+ * zbliżaniu", histereza 250/150 m) wycofany razem z systemem pauzy — kryterium
+ * dojścia (ADR 0004 pkt 2) liczy się z metrów, więc wysoka dokładność
+ * obowiązuje na całym odcinku, nie tylko przy stacji.
  */
 export const PROFILE_GPS = Object.freeze({
   dokladny: Object.freeze({ enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }),
-  oszczedny: Object.freeze({ enableHighAccuracy: false, maximumAge: 20000, timeout: 45000 }),
 });
-
-/** Progi histerezy [m]: oszczędny POWYŻEJ 250, powrót do dokładnego PONIŻEJ 150. */
-export const PROG_BATERII_M = Object.freeze({ oszczednyPowyzej: 250, dokladnyPonizej: 150 });
-
-/**
- * Czysta decyzja profilu GPS na podstawie dystansu do bieżącej stacji.
- * Histereza zapobiega oscylacji na granicy progów; brak dystansu (null/NaN —
- * np. fix jeszcze nie policzony) NIE zmienia profilu.
- *
- * @param {{poprzedni?: string, dystansM?: number|null}} args
- * @returns {'dokladny'|'oszczedny'}
- */
-export function profilBaterii({ poprzedni = 'dokladny', dystansM = null } = {}) {
-  const baza = poprzedni === 'oszczedny' ? 'oszczedny' : 'dokladny';
-  if (!Number.isFinite(dystansM)) return baza;
-  if (baza === 'oszczedny') return dystansM < PROG_BATERII_M.dokladnyPonizej ? 'dokladny' : 'oszczedny';
-  return dystansM > PROG_BATERII_M.oszczednyPowyzej ? 'oszczedny' : 'dokladny';
-}
 
 /** Granice reguł pozycji. Zmiana = zmiana kodu i testu, nie decyzja sesji. */
 export const GRANICE = Object.freeze({
@@ -82,9 +64,11 @@ export const KODY_POZYCJI = {
   P03: 'Położenie jest teraz niedostępne (brak sygnału GPS, tryb samolotowy, głębokie wnętrze budynku). Wyjdź na otwartą przestrzeń — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, zakończ grę przyciskiem „■ Zakończ grę” (ADR 0029: dojście zalicza tylko GPS).',
   P04: 'Telefon nie ustalił położenia w ciągu 20 sekund. Poczekaj chwilę z ekranem włączonym na otwartej przestrzeni — gra czeka na sygnał. Jeśli stacja jest nieosiągalna, zakończ grę przyciskiem „■ Zakończ grę”.',
   P06: 'Otrzymano współrzędne spoza zakresu — pomiar odrzucony. Poczekaj na następną pozycję albo odśwież stronę.',
-  P07: 'Śledzenie położenia jest wstrzymane, bo aplikacja działa w tle — oszczędzamy baterię. Wróć na kartę, żeby je wznowić (ADR 0004 pkt 1).',
+  // P07 (komunikat o wstrzymaniu śledzenia w tle) WYCOFANY 2026-09-13 razem
+  // z systemem pauzy (uwaga właściciela B, ADR 0040).
   P08: 'Nieznany błąd położenia: {message}. Wyjdź na otwartą przestrzeń, odśwież stronę albo zakończ grę przyciskiem „■ Zakończ grę”.',
-  P09: 'Wznowiono śledzenie położenia — pierwszy pomiar po powrocie potrafi trwać kilka sekund.',
+  // P09 (komunikat o wznowieniu śledzenia) WYCOFANY 2026-09-13: po powrocie
+  // z tła wszystko wznawia się samo i bez komunikatu (ADR 0040 pkt 3).
   P10: 'Telefon nie podaje położenia mimo włączonego GPS ({sekundy} s) — zakładam świeży nasłuch (próba {proba}). Jeśli po kilku próbach nadal nic: zamknij aplikację (kartę przeglądarki) i otwórz ją ponownie — w takiej sytuacji to jedyny pewny sposób, żeby pozycja wróciła.',
 };
 
@@ -394,12 +378,7 @@ export function watchPozycja({ geolocation, onFix, onBlad = null, opcje = OPCJE_
   };
 }
 
-/** Komunikat pauzy w tle (ADR 0004 pkt 1: oszczędność baterii). */
-export function komunikatPauzy() {
-  return { kod: 'P07', komunikat: komunikat('P07'), trybAwaryjny: null };
-}
-
-/** Komunikat wznowienia śledzenia po powrocie na kartę (ADR 0004 pkt 1). */
-export function komunikatWznowienia() {
-  return { kod: 'P09', komunikat: komunikat('P09'), trybAwaryjny: null };
-}
+// Funkcje komunikatów pauzy (P07) i wznowienia (P09) WYCOFANE 2026-09-13
+// razem z całym systemem pauzy i wznawiania (uwaga właściciela B, ADR 0040):
+// aplikacja jest cały czas włączona, a po powrocie z tła wznawia się sama.
+// Numery P05, P07 i P09 nie wracają do puli (jak E14/E18, R17/R18, G11/G13).
