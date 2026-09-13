@@ -1340,6 +1340,10 @@ test('M6: pytanie odsłania się DOPIERO na stacji i ma cztery odpowiedzi (ADR 0
   });
   assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, true, 'ocena i wyjaśnienie dopiero po odpowiedzi');
   assert.equal(dom.pobierz('przycisk-nastepna-stacja').hidden, true);
+  // Uwaga właściciela z testów (2026-09-13, A): w fazie ODPOWIEDZI pytanie i
+  // warianty są na wierzchu (details otwarty), statyczna lista jeszcze schowana.
+  assert.equal(dom.pobierz('gra-pytanie-detale').open, true, 'w fazie odpowiedzi pytanie i warianty NA WIERZCHU');
+  assert.equal(dom.pobierz('gra-odpowiedzi-lista').hidden, true, 'statyczna lista wariantów należy do pokazu wyniku');
   // przed dojściem treści pytania nie było NICZYM w UI — strażnik: ekran paczki schowany, pole wklejenia puste
   assert.equal(dom.pobierz('ekran-paczka').hidden, true);
   assert.equal(dom.pobierz('pole-odpowiedz').value, '');
@@ -1354,6 +1358,15 @@ test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z link
 
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze! \+1 pkt/, 'ocena: 1 pkt za poprawną (rev2)');
   assert.equal(dom.pobierz('gra-odpowiedzi').hidden, true, 'właściciel 2026-09-11: po odpowiedzi przyciski A–D znikają (jedna odpowiedź, bez poprawek)');
+  // Uwaga właściciela z testów (2026-09-13, A; ADR 0036 aneks): pytanie i możliwe
+  // odpowiedzi zjeżdżają do ZWINIĘTEGO elementu, a warianty wracają jako lista.
+  assert.equal(dom.pobierz('gra-pytanie-detale').open, false, 'po odpowiedzi pytanie i warianty zwinięte — na wierzchu łapki, wynik i komentarz (bez scrollowania)');
+  const wariantyPo = dom.pobierz('gra-odpowiedzi-lista');
+  assert.equal(wariantyPo.hidden, false, 'warianty WRACAJĄ jako statyczna lista („te przywróć”)');
+  assert.equal(wariantyPo.children.length, 4, 'cztery możliwe odpowiedzi w liście');
+  wariantyPo.children.forEach((li, i) => {
+    assert.equal(li.textContent, `${'ABCD'[i]}. ${pierwsze.odpowiedzi[i]}`, 'lista niesie te same warianty co przyciski');
+  });
   assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie z paczki');
   const zrodla = dom.pobierz('gra-zrodla').children;
   assert.equal(zrodla.length, pierwsze.zrodla.length, 'wszystkie źródła pytania (ADR 0008)');
@@ -1423,6 +1436,8 @@ test('M6: przy 2 pytaniach na stację gracze odpowiadają NA ZMIANĘ, nie w kó�
     'drugie pytanie stacji idzie do NASTĘPNEGO gracza');
   assert.equal(dom.pobierz('gra-pytanie-tresc').textContent, drugie[0].tresc, 'treść drugiego pytania');
   assert.equal(dom.pobierz('gra-odpowiedzi').hidden, false, 'Gracz 2 ma swoje cztery odpowiedzi');
+  assert.equal(dom.pobierz('gra-pytanie-detale').open, true, 'nowe pytanie = details znowu otwarty (uwaga z testów A)');
+  assert.equal(dom.pobierz('gra-odpowiedzi-lista').hidden, true, 'lista wariantów poprzedniego pytania nie zostaje na wierzchu');
 
   // Gracz 2 odpowiada — dopiero teraz stacja się zamyka i gra idzie dalej.
   const przyciski2 = dom.pobierz('gra-odpowiedzi').children;

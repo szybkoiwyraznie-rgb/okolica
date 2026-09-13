@@ -40,3 +40,34 @@ Lista „pauza, pominięcie, zakończenie, symulacja, …” w decyzji traci
 środkowy element: akcja pomijania wycofana (ADR 0015 aneks 2026-09-12).
 Do Informacji w drodze trafiają: pauza, zakończenie, symulacja,
 sterowanie multi, komunikaty. Mechanika przenoszenia węzłów bez zmian.
+
+## Aneks 2026-09-13 (m12-101) — pytanie i możliwe odpowiedzi w zwijanym elemencie (uwaga z testów A)
+
+Właściciel po grze w terenie: **„Ekran z pytaniami podczas gry. Gracz odpowiada.
+Musimy zaoszczędzić trochę miejsca, żeby nie było scrollowania. Wyświetlając
+poprawną odpowiedź i komentarz do niej ukryj treść pytania i możliwe odpowiedzi
+(te przywróć, bo jakiś czas temu je usunęliśmy), ale umieść pytanie i możliwe
+odpowiedzi w zwijalnym elemencie (analogicznym np. do instrukcji generowania
+pytań czy do promptu — domyślnie zwiniętym). Zostaw na wierzchu łapki do
+oceniania i oczywiście poprawną odpowiedź z komentarzem.”**
+
+1. **Panel pytania (faza C) ma teraz `<details id="gra-pytanie-detale">`** —
+   ten sam wzorzec co ekran promptu (`#prompt-zwiniety`). W środku: treść
+   pytania (`#gra-pytanie-tresc`), klikalne warianty (`#gra-odpowiedzi`)
+   i statyczna lista wariantów (`#gra-odpowiedzi-lista`).
+2. **Faza odpowiedzi: details OTWARTY** (`open` w HTML i w `renderujPytanie()`) —
+   gracz musi widzieć pytanie i warianty, na które odpowiada. Statyczna lista
+   jest wtedy schowana.
+3. **Pokaz wyniku: details ZWINIĘTY** (`odpowiedzNaPytanie()` zdejmuje `open`),
+   klikalne warianty znikają (jak od 2026-09-11 — jedna odpowiedź na pytanie,
+   bez poprawek), a w ich miejsce WRACA statyczna lista wariantów w środku
+   zwiniętego elementu. Na wierzchu zostają: badge nagłówka, summary, łapki
+   (ADR 0028), ocena z poprawną odpowiedzią, wyjaśnienie, źródła (ADR 0008)
+   i przycisk „dalej” — na 360×640 bez przewijania.
+4. **Łapki nie wchodzą do zwijanego elementu** — ocenić pytanie można przed
+   odpowiedzią i po niej (ADR 0028 bez zmian), więc panel oceny siedzi w DOM-ie
+   ZA `</details>`, a PRZED wynikiem odpowiedzi. Stary pin „panel przed
+   odpowiedziami” przepisał się na nową kolejność (LESSONS L55).
+5. **Mechanika bez zmian:** pytanie dalej odsłania się DOPIERO przy dojściu
+   (ADR 0007 pkt 6), `pytanie.odpowiedzi` dalej są jedynym źródłem wariantów,
+   a wynik i wyjaśnienie biorą się z paczki.

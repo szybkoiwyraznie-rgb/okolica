@@ -623,6 +623,7 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
     'gra-kto-idzie', 'gra-cel-stacji', 'przycisk-start-odcinka',
     'gra-dystans-odcinka', 'przycisk-pauza', 'gra-pauza-komunikat',
     'gra-pytanie-naglowek', 'gra-pytanie-tresc', 'gra-odpowiedzi',
+    'gra-pytanie-detale', 'gra-pytanie-detale-naglowek', 'gra-odpowiedzi-lista',
     'gra-wynik-odpowiedzi', 'gra-odpowiedz-ocena', 'gra-wyjasnienie', 'gra-zrodla', 'przycisk-nastepna-stacja',
     'gra-wyniki', 'gra-wyniki-tbody', 'gra-wynik-zwyciezca', 'przycisk-nowa-gra',
     'przycisk-zakoncz-gre',
@@ -1047,7 +1048,21 @@ test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', ()
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
   assert.match(INDEX, /Oceń pytanie/, 'panel jest nazwany po ludzku');
-  assert.ok(INDEX.indexOf('id="gra-oceny"') < INDEX.indexOf('id="gra-odpowiedzi"'), 'panel stoi przy pytaniu, przed odpowiedziami');
+  // Uwaga właściciela z testów (2026-09-13, A; ADR 0036 aneks): pytanie i
+  // warianty siedzą w <details>, a łapki zostają NA WIERZCHU — tuż przed wynikiem
+  // odpowiedzi. Stary pin („panel przed odpowiedziami”) przepisał się na nową
+  // kolejność (LESSONS L55), bo odpowiedzi zjechały do zwijanego elementu.
+  const detale = INDEX.indexOf('id="gra-pytanie-detale"');
+  const odpowiedzi = INDEX.indexOf('id="gra-odpowiedzi"');
+  const listaWariantow = INDEX.indexOf('id="gra-odpowiedzi-lista"');
+  const oceny = INDEX.indexOf('id="gra-oceny"');
+  const wynik = INDEX.indexOf('id="gra-wynik-odpowiedzi"');
+  for (const para of [['details pytania', detale], ['odpowiedzi', odpowiedzi], ['listy wariantów', listaWariantow], ['panelu łapek', oceny], ['wyniku odpowiedzi', wynik]]) {
+    assert.ok(para[1] >= 0, `w index.html nie ma: ${para[0]}`);
+  }
+  assert.ok(detale < odpowiedzi && odpowiedzi < listaWariantow, 'pytanie, warianty-klikalne i warianty-statyczne są WEWNĄTRZ <details>, w tej kolejności');
+  assert.ok(listaWariantow < oceny && oceny < wynik, 'łapki zostają na wierzchu: po <details>, przed wynikiem odpowiedzi');
+  assert.match(INDEX, /<details id="gra-pytanie-detale" open>/, 'element w fazie odpowiedzi startuje OTWARTY (gracz musi widzieć pytanie)');
   assert.ok(APP.includes('kliknijOcene(OCENA_PLUS)') && APP.includes('kliknijOcene(OCENA_MINUS)'), 'oba kciuki są podpięte');
   assert.ok(APP.includes('wyslijOceneWTle'), 'głos jedzie w tle, nie blokuje gry');
   assert.ok(APP.includes('oproznijKolejkeOcen()'), 'kolejka głosów jest opróżniana przy starcie');

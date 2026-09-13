@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-100">
-  <script type="module" src="app/app.js?v=m12-100"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-101">
+  <script type="module" src="app/app.js?v=m12-101"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -532,16 +532,29 @@
       <!-- FAZA C: pytanie — odsłaniane DOPIERO w chwili dojścia (ADR 0007 pkt 6) -->
       <div id="gra-panel-pytanie" class="karta gra-panel" hidden>
         <p id="gra-pytanie-naglowek" class="badge">Stacja zdobyta · pytanie — z —</p>
-        <p id="gra-pytanie-tresc" class="duzy"></p>
+        <!-- Uwaga właściciela z testów (2026-09-13, A; ADR 0036 aneks): treść
+             pytania i możliwe odpowiedzi siedzą w ZWIJANYM elemencie — wzorzec
+             z ekranu promptu (`<details>` + `<summary>`). W fazie odpowiedzi jest
+             OTWARTY, bo gracz musi widzieć, na co odpowiada; po odsłonięciu
+             wyniku ZWINIĘTY, żeby na wierzchu zostały łapki, poprawna odpowiedź
+             i komentarz — na telefonie bez scrollowania. -->
+        <details id="gra-pytanie-detale" open>
+          <summary id="gra-pytanie-detale-naglowek">Pytanie i możliwe odpowiedzi</summary>
+          <p id="gra-pytanie-tresc" class="duzy"></p>
+          <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
+          <!-- Właściciel 2026-09-13 (A): po odpowiedzi warianty WRACAJĄ jako
+               statyczna lista (klikalne przyciski znikają od 2026-09-11 — jedna
+               odpowiedź na pytanie, bez poprawek). -->
+          <ol id="gra-odpowiedzi-lista" class="gra-odpowiedzi-lista" hidden></ol>
+        </details>
         <!-- ADR 0028: ocena pytania — jeden kciuk, jeden głos na gracza i pytanie.
-             Panel jest PRZED odpowiedziami i zostaje w tym samym slocie po
-             odsłonięciu wyniku, więc ocenić można przed albo po odpowiedzi. -->
+             Panel zostaje NA WIERZCHU, obok zwijanego pytania (uwaga z testów
+             2026-09-13, A), więc ocenić można przed albo po odpowiedzi. -->
         <p id="gra-oceny" class="ocen-panel" hidden>
           <span id="gra-oceny-etykieta" class="podpowiedz">Oceń pytanie</span>
           <button id="gra-ocena-plus" class="przycisk przycisk-maly ocen-kciuk" type="button" aria-pressed="false" aria-label="Oceń pytanie pozytywnie">👍</button>
           <button id="gra-ocena-minus" class="przycisk przycisk-maly ocen-kciuk" type="button" aria-pressed="false" aria-label="Oceń pytanie negatywnie">👎</button>
         </p>
-        <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
         <div id="gra-wynik-odpowiedzi" class="gra-wynik-odpowiedzi" hidden>
           <p id="gra-odpowiedz-ocena" class="duzy"></p>
           <p id="gra-wyjasnienie" class="gra-wyjasnienie"></p>

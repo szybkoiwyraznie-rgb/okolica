@@ -76,7 +76,10 @@ Koniec sesji:
 6. **Gra**: odcinek startuje jawną akcją („⚙ START GRY” w belce jest wtedy zgaszony — zadanie J, 2026-09-12), dojście zalicza tylko GPS (dwa fixy
    w progu, ADR 0004/0029); nieosiągalna stacja = „■ Zakończ grę” (akcji
    pomijania nie ma od zadania H, 2026-09-12). Pytanie odsłania się
-   dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Pauza (także
+   dopiero przy dojściu; każde da się ocenić kciukiem (ADR 0028). Po odpowiedzi
+   pytanie i możliwe odpowiedzi zjeżdżają do zwijanego elementu, a na wierzchu
+   zostają łapki, poprawna odpowiedź i komentarz — bez przewijania na telefonie
+   (ADR 0036 aneks 2026-09-13). Pauza (także
    automatyczna w tle) nie wlicza czasu postoju do wyniku.
 7. **Wynik**: ekran jest MINIMALNY (ADR 0038) — „🏁 Koniec gry!”, karta
    zwycięzcy, tabela tej gry (gracz / punkty / poprawne), osobna linia z losem

@@ -554,6 +554,20 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
   gap: 10px;
   margin: 12px 0;
 }
+/* Uwaga właściciela z testów (2026-09-13, A): pytanie i warianty w zwijanym
+   elemencie. Summary jest celem dotyku (≥ var(--cel)) i jedyną rzeczą z panelu
+   pytania, która zostaje na wierzchu po odsłonięciu wyniku — poza łapkami. */
+#gra-pytanie-detale > summary {
+  min-height: var(--cel);
+  display: flex;
+  align-items: center;
+  font-weight: 700;
+  cursor: pointer;
+}
+#gra-pytanie-detale > summary::marker { color: var(--tekst-slaby); }
+#gra-pytanie-detale[open] > summary { margin-bottom: 8px; }
+.gra-odpowiedzi-lista { margin: 0; padding-left: 22px; }
+.gra-odpowiedzi-lista li { margin: 6px 0; }
 .przycisk-odpowiedz {
   min-height: var(--cel);
   padding: 12px 14px;
