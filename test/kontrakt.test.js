@@ -718,14 +718,26 @@ test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (AD
   assert.match(css, /\.badge-dystans \{[^}]*background: var\(--akcent\)/s, 'badge dystansu na akcencie (kontrast)');
 });
 
-test('kontrakt: karta historii gier na setupie (M7/P6)', () => {
-  const html = czytaj('index.html');
+test('kontrakt: lokalnej historii gier NIE MA (zgłoszenie terenowe O, 2026-09-13; ADR 0010 aneks)', () => {
+  // Właściciel: jedyną drogą powrotu do przerwanej gry jest automatyczne
+  // wczytanie zapisu (ADR 0045), a wyniki między grami żyją na wspólnym Drive
+  // (ADR 0026 aneks) i stamtąd bierze je ranking (ADR 0039). Karta „Poprzednie
+  // gry" na setupie obiecywała drugą drogę — dlatego zniknęła razem z kluczem
+  // `okolica:historia`, pomocnikami w `trwalosc.js` i kodami H01–H04.
   for (const id of ['karta-historia', 'historia-detale', 'historia-naglowek', 'historia-usterki', 'historia-lista', 'przycisk-kasuj-historie']) {
-    assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
+    assert.equal(INDEX.includes(`id="${id}"`), false, `index.html nie ma elementu #${id}`);
+    assert.equal(APP.includes(`$('${id}')`), false, `app.js nie dotyka #${id}`);
   }
-  assert.match(html, /id="karta-historia" class="karta" hidden/, 'karta historii domyślnie ukryta — staje tylko z zapisem');
-  assert.match(html, /id="historia-usterki" class="bledy" role="alert" hidden/, 'usterki historii mają role="alert" (jak inne ekrany)');
-  assert.match(html, /id="przycisk-kasuj-historie"[^>]*type="button"/, 'kasowanie historii to type=button');
+  for (const fn of ['function zapiszGreDoHistorii', 'function renderujHistorieGier', 'function kasujHistorieGry']) {
+    assert.equal(APP.includes(fn), false, `${fn.replace('function ', '')}() usunięta — został nagrobek`);
+  }
+  assert.equal(STYLE.includes('.lista-historii'), false, 'klasa CSS po karcie przemianowana na .lista-prosta');
+  const trwalosc = czytaj('app/trwalosc.js');
+  for (const symbol of ['KLUCZ_HISTORII', 'SCHEMAT_HISTORII', 'SCHEMAT_WPISU_HISTORII', 'LIMIT_HISTORII', 'skrotGry', 'dodajWpisHistorii', 'nowaHistoria', 'walidujHistorieSurowa', 'H01', 'H04']) {
+    assert.equal(trwalosc.includes(symbol), false, `trwalosc.js nie ma ${symbol}`);
+  }
+  assert.match(APP, /if \(r\.faza === FAZY\.koniec \|\| STAN\.graZakonczonaRecznie\) \{\n {6}void wyslijWynikHotseat\(\);/,
+    'koniec gry wysyła wynik na wspólny Drive — bez pośrednictwa lokalnej historii');
 });
 
 
@@ -1699,7 +1711,7 @@ test('kontrakt ADR 0043: grę kończy ikona ⚙ START GRY z wpisaniem TAK (uwagi
     'w multi potwierdzony koniec to wyjście z gry dla każdej roli; hotseat kończy się lokalnie');
   assert.equal(/if \(STAN\.multi\.rola === 'organizator'\)[\s\S]{0,200}zakonczGreMulti\(\);/.test(APP), false,
     'gałąź kończąca grę w moście z telefonu hosta zniknęła (uwaga G)');
-  assert.match(APP, /STAN\.graZakonczonaRecznie = true;/, 'znacznik ręcznego końca zostaje (historia: „przerwana")');
+  assert.match(APP, /STAN\.graZakonczonaRecznie = true;/, 'znacznik ręcznego końca zostaje (zapis gry i wysyłka wyniku na Drive)');
 
   // 6. Warstwa zachowuje się jak każdy panel: krzyżyk, Escape, krok gry, inert.
   assert.match(APP, /'start', 'informacje', 'koniec-gry'\];/, 'warstwa należy do PANELE');
@@ -1896,9 +1908,9 @@ test('kontrakt ADR 0045: setup nie szuka gier, a otwarcie aplikacji wraca do zap
     assert.equal(APP.includes(fn), false, `${fn.replace('function ', '')}() usunięta — został nagrobek`);
   }
   assert.equal(APP.includes('czyszczenieZapisuUzbrojone'), false,
-    'uzbrajania kasowania zapisu nie ma (dwustopniowość została tylko przy historii)');
-  assert.match(APP, /function kasujHistorieGry\(\) \{\n {2}if \(!STAN\.historiaKasowanieUzbrojone\)/,
-    'kasowanie HISTORII gier zostaje dwustopniowe (ADR 0015 pkt 6)');
+    'uzbrajania kasowania zapisu nie ma');
+  assert.equal(APP.includes('historiaKasowanieUzbrojone'), false,
+    'dwustopniowego kasowania historii też nie ma — lokalna historia gier zniknęła (zgłoszenie O, ADR 0010 aneks)');
 
   // 2. K: start wraca do zapamiętanej gry — multi z mostu, hotseat z zapisu.
   assert.match(APP, /if \(czytajSesjeMulti\(\)\) void przywrocGreMulti\(\)\.then\(\(\) => \{ if \(!STAN\.multi\) przywrocGreHotseat\(\); \}\);\n {2}else przywrocGreHotseat\(\);/,
@@ -1910,7 +1922,7 @@ test('kontrakt ADR 0045: setup nie szuka gier, a otwarcie aplikacji wraca do zap
   assert.match(APP, /if \(document\.hidden\) \{\n {6}zapiszGre\(\);/,
     'zwinięcie telefonu też zapisuje stan');
   assert.match(APP, /if \(stan\.rozgrywka\?\.faza === FAZY\.koniec\) \{\n {4}localStorage\.removeItem\(kluczStanu\(aktywna\)\);\n {4}localStorage\.removeItem\(KLUCZ_AKTYWNEJ\);/,
-    'zakończonej gry start nie podnosi — kasuje zapis (wynik jest w historii)');
+    'zakończonej gry start nie podnosi — kasuje zapis (wynik jest na wspólnym Drive)');
   assert.match(APP, /Zapamiętany zapis gry był zepsuty \(\$\{usterki\.map\(\(u\) => u\.kod\)\.join\(', '\)\}\)/,
     'zepsuty zapis jest kasowany jawnie, z kodami usterek T**');
 

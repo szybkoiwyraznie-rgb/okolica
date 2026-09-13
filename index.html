@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-112">
-  <script type="module" src="app/app.js?v=m12-112"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-113">
+  <script type="module" src="app/app.js?v=m12-113"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -150,7 +150,7 @@
            hosta — kontrakt w test/kontrakt.test.js pilnuje, żeby nie wrócił. -->
       <div id="multi-panel-dolacz" class="karta" hidden>
         <p class="podpowiedz">Widzisz gry, których host jest w zasięgu ~50 m.</p>
-        <ul id="multi-lobby-lista" class="lista-historii"></ul>
+        <ul id="multi-lobby-lista" class="lista-prosta"></ul>
         <p id="multi-lobby-status" class="podpowiedz" role="status"></p>
         <div class="wiersz">
           <button id="przycisk-odswiez-lobby" class="przycisk" type="button">🔄 Odśwież listę</button>
@@ -162,15 +162,10 @@
            zapisu samo (`przywrocGreHotseat`), a zapis, którego nie da się
            podnieść, start kasuje i mówi dlaczego. -->
 
-      <!-- M7/P6: historia gier — skróty (bez treści i współrzędnych, ADR 0010 pkt 1) -->
-      <div id="karta-historia" class="karta" hidden>
-        <details id="historia-detale">
-          <summary id="historia-naglowek">Poprzednie gry</summary>
-          <p id="historia-usterki" class="bledy" role="alert" hidden></p>
-          <ul id="historia-lista" class="lista-historii"></ul>
-          <button id="przycisk-kasuj-historie" class="przycisk przycisk-maly" type="button">🗑 Kasuj historię</button>
-        </details>
-      </div>
+      <!-- Karty z listą poprzednich gier NIE MA (właściciel, zgłoszenie terenowe O
+           2026-09-13; ADR 0010 aneks): jedyną drogą powrotu do przerwanej gry
+           jest automatyczne wczytanie zapisu, a wyniki między grami żyją na
+           wspólnym Drive (ranking, ADR 0039). Telefon nie trzyma własnej listy. -->
 
       <fieldset class="pole" id="pole-tryb">
         <legend>Sposób poruszania się</legend>
@@ -227,7 +222,7 @@
           <button id="przycisk-dodaj-gracza" class="przycisk przycisk-glowny" type="button">➕ Dodaj gracza</button>
         </div>
         <div id="lista-zapamietanych" class="chipy" role="group" aria-label="Zapamiętani na tym telefonie"></div>
-        <ul id="lista-graczy" class="lista-historii"></ul>
+        <ul id="lista-graczy" class="lista-prosta"></ul>
         <p id="profil-stan" class="podpowiedz">Nowe imię = nowy profil i PIN. Kogoś już znasz? Wpisz imię i jego PIN.</p>
         <ul id="bledy-profil"></ul>
         <!-- Zgody na zapis wyniku NIE pytamy przy każdej grze (właściciel,
@@ -293,7 +288,7 @@
         <h3>Lobby</h3>
         <p class="podpowiedz">Gracze dołączają z listy w zasięgu ~50 m — kod gry nie jest potrzebny.</p>
         <p id="lobby-tryb" class="podpowiedz"></p>
-        <ul id="lobby-gracze" class="lista-historii"></ul>
+        <ul id="lobby-gracze" class="lista-prosta"></ul>
         <p id="lobby-status" class="podpowiedz" role="status"></p>
         <div id="lobby-widownia" hidden>
           <table class="tabela-wynikow">

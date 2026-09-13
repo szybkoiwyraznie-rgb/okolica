@@ -658,18 +658,20 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
    powrotu. Style statystyk, kart graczy i tabeli stacji zniknęły razem z ich
    elementami — martwy CSS po usuniętym ekranie myli przy następnej zmianie. */
 
-/* M7/P6: historia poprzednich gier na ekranie ustawień — zwarte skróty. */
-.lista-historii { list-style: none; padding: 0; margin: 8px 0; }
-.lista-historii li {
+/* Zwarta lista bez punktorów: lobby, lista graczy, lista gier w lobby. Styl
+   został po usuniętej karcie z listą poprzednich gier (zgłoszenie terenowe O,
+   2026-09-13; ADR 0010 aneks) — klasa nazywa się teraz neutralnie. */
+.lista-prosta { list-style: none; padding: 0; margin: 8px 0; }
+.lista-prosta li {
   padding: 8px 0;
   border-bottom: 1px solid var(--linia);
   font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
-.lista-historii li:last-child { border-bottom: none; }
+.lista-prosta li:last-child { border-bottom: none; }
 /* Lista graczy (ADR 0026 aneks): imię z lewej, „✕ Usuń" z prawej — na 360 px
    przycisk ma zostać w zasięgu kciuka, a nie pod nazwą (WORKFLOW §4.2).
-   Właściciel 2026-09-07: imię większe niż w historii gier, a odstęp między
+   Właściciel 2026-09-07: imię większe niż w zwartej liście, a odstęp między
    imieniem i przyciskiem na tyle duży, żeby nie wyglądały na sklejone. */
 #lista-graczy li {
   display: flex;
