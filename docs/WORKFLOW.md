@@ -87,7 +87,9 @@ Koniec sesji:
    gra i śledzenie idą cały czas, po powrocie z tła wszystko wznawia się samo
    bez klikania, a jedyna przerwa to 15 minut bez żadnej akcji — wznawia ją
    dowolny klik. W drodze Informacje nie mieszczą NIC z gry (ADR 0043) — nad
-   mapą zostaje sam pasek.
+   mapą zostaje sam pasek. Wyjątek: w trybie testowym (`?test=true`) panel gry
+   zostaje na wierzchu, bo w nim jest „▶ Symuluj dojście” i duży dystans
+   (ADR 0036 aneks 2026-09-13b).
 7. **Wynik**: ekran jest MINIMALNY (ADR 0038) — „🏁 Koniec gry!”, karta
    zwycięzcy, tabela tej gry (gracz / punkty / poprawne), osobna linia z losem
    wysyłki na Drive i „🏠 Wróć na początek — nowa gra”. Eksportów (.txt, PNG,

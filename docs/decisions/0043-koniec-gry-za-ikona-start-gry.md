@@ -96,3 +96,30 @@ gry w Informacjach), ADR 0038 (minimalny ekran wyniku — niezmieniony),
 ADR 0040 (gra bez pauzy: w drodze zostaje pasek), ADR 0011 (cele dotykowe
 i dostępność), ADR 0015 pkt 6 (brak `confirm()`), ADR 0019 (koniec gry w multi),
 ADR 0042 (Informacje jedną czcionką), ADR 0034 (wspólny panel centralny).
+
+## Aneks 2026-09-13b (m12-111) — zdania, które wskazywały usunięty przycisk
+
+Decyzja zdjęła przycisk, ale zdania odsyłające do niego zostały w **tabelach
+komunikatów w modułach**: gracz w terenie czytał „zakończ grę przyciskiem
+„■ Zakończ grę””, choć jedynym ujściem była już ikona ⚙ START GRY z wpisaniem
+TAK. Strażnik dryfu (LESSONS L58) nie miał frazy z tej fali, a przegląd nośników
+szedł po `index.html` i dokumentach, nie po `KODY_*` — brama 760 testów była
+zielona (L27, L63).
+
+Przestawione na prawdziwą drogę (⚙ START GRY → wpisz TAK → „■ ZAKOŃCZ
+AKTUALNĄ GRĘ”): `app/pozycja.js` — P03, P04, P08 i komunikat `stanDojscia`
+o braku współrzędnych stacji (P06); `app/app.js` — status `onBlad` watchera,
+uszkodzony kontener paczki (to zdanie traci też drugą martwą drogę, „wgraj
+paczkę ponownie z pliku” — ADR 0006 aneks 3: paczka jest z repozytorium albo
+z wklejonej odpowiedzi modelu), paczka rozjechana z rozgrywką i T07 (zapis
+ponad 2 MB); `app/wieloosobowa.js` — R19 (przycisku „Zapisz nowy” nie ma:
+bramka tożsamości to imię + PIN i jedno wołanie `profil-ustaw`, ADR 0026).
+
+**Konsekwencja trwała:** przegląd nośników po usunięciu przycisku-ujścia musi
+objąć tabele komunikatów w modułach (`KODY_POZYCJI`, `KODY_WIELOOSOBOWE`,
+`KODY_TRWALOSCI`, zdania `status()` w `app.js`), nie tylko HTML i dokumenty —
+to tekst, za którym gracz idzie w stanie awaryjnym, i w HTML go nie ma. Pilnują:
+wpis `zakończ grę przyciskiem` w `test/dryf-dokumentow.test.js`, kontrakt
+„zdania dla gracza o końcu gry nazywają ikonę ⚙ START GRY” (czyta wiersze KODU —
+komentarz-nagrobek L31 może cytować martwą etykietę) oraz piny w
+`test/pozycja.test.js` i `test/wieloosobowa.test.js`.

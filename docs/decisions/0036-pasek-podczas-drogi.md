@@ -111,3 +111,24 @@ z wpisaniem TAK (ADR 0043).
    zostaje sam pasek, a panel gry (`#gra-sterowanie`) nadal jest schowany.
 3. Punkty 2 i 3 aneksu m12-102 zostają bez zmian: panel gry schowany w drodze,
    boks z dystansem i wznawianiem nie wraca do Informacji.
+
+## Aneks 2026-09-13b (m12-112) — panel fazy B w trybie testowym zostaje na wierzchu
+
+Punkt 2 aneksu m12-102 był w kodzie sprzeczny sam z sobą: `hidden` na przodku
+(`#gra-sterowanie`) gasi potomków przez kaskadę CSS, więc panel fazy B — a z nim
+duży dystans i „▶ Symuluj dojście (tryb testowy)”, jedyne ujście odcinka bez
+GPS — nie był w przeglądarce osiągalny nigdy (pomiar headless Chromium 153:
+`0×0`, `offsetParent: null`). Atrapa DOM kaskady nie modeluje, a `kliknij` nie
+pyta o renderowanie, więc brama była zielona (LESSONS L13).
+
+1. **W terenie bez zmian:** `$('gra-sterowanie').hidden = droga` — nad mapą
+   zostaje sam pasek (pkt 2 aneksu m12-102, ADR 0043 pkt 1).
+2. **W trybie testowym panel gry zostaje:** `hidden = droga && !STAN.trybTestowy`.
+   To jest „widok panelowy oraz tryb testowy” z pkt 2 aneksu m12-102: duży
+   dystans i symulacja dojścia, które w terenie zastępują pasek i GPS. Pomiar
+   przycisku symulacji w tym widoku: 328×45 px, więc cel dotykowy ≥ 44 px jest
+   spełniony (ADR 0011).
+3. **Zdanie o dojściu ma drugi nośnik:** w terenie `#gra-komunikat` (kod P06,
+   brak współrzędnych stacji) jest schowany razem z panelem, więc idzie też do
+   `status()` — `#status` w ⓘ Informacjach ma `aria-live` i jest warstwą
+   techniczną (ADR 0042), więc do paska nic nie jest doklejane.
