@@ -4037,3 +4037,157 @@ wąskim ekranie wypychał obie tabele w dół.
   Ratunek: `git fetch origin <gałąź>` + `git reset --mixed FETCH_HEAD` (przesuwa
   wskaźnik i indeks, NIE rusza plików) i dopiero wtedy commit zadania.
 - Punkt A domknięty; dalsze punkty zgłoszenia właściciela (B, C…) oczekiwane.
+
+## Sesja 2026-09-13 — uwagi terenowe właściciela A–K i M: 13 commitów, m12-100 → m12-110 (gałąź `arena/01a0973d-okolica`, PR #19)
+
+Zakres: pełna partia zgłoszeń z testów terenowych właściciela (punkty A, B, C,
+D — wycofane i poprawione, E, F, G, H1, H2, I, J, K, L, M). Każdy punkt = decyzja
+właściciela → ADR (nowy albo aneks) → kod → pin w `test/kontrakt.test.js` →
+dokumenty żywe → podbicie wersji → osobny zielony commit wypchnięty od razu
+(AGENTS.md §2). Bilans: 53 pliki, +4 586 / −1 557 (od `d207c56`), brama na końcu
+sesji **760/760** testów, szablon zgodny, audyt WCAG AA 0 naruszeń.
+
+### 1. Uwaga A (m12-101, `8ef27c5`) — pytanie i odpowiedzi w zwijanym elemencie
+
+Pytanie na stacji i możliwe odpowiedzi chowają się w `<details>` (właściciel:
+w słońcu i w ruchu treść ma być dostępna na żądanie, nie zawsze rozwinięta).
+Zwinięcie jest stanem domyślnym w grze, a otwarcie nie resetuje odcinka ani
+nie pauzuje śledzenia (ADR 0040: pauzy nie ma).
+
+### 2. Uwagi B i E (m12-102, `fac0441`) — koniec systemu pauzy: **ADR 0040**
+
+Właściciel: gra i śledzenie GPS idą CAŁY czas, po powrocie z tła wszystko
+wznawia się samo, bez kliku i bez komunikatu. Usunięte: profile GPS, pauza
+w tle (`pauzaWTle`), kody `P07`/`P09` i etykieta „⏸ Wznów grę i idź dalej →”.
+Po powrocie z tła aplikacja sprawdza, czy nasłuch żyje, i zakłada świeży (bug G
+z 2026-09-12: WebKit trzyma czasem `watchPosition` aktywny, ale niemy — LESSONS
+L56).
+
+### 3. Uwagi B i C (m12-103, `423aae9`) — Wake Lock i jedyna przerwa: **ADR 0040 pkt 4–5**
+
+Ekran nie gaśnie podczas gry (Wake Lock żądany na nowo po każdym powrocie
+z tła, bo przeglądarki zwalniają go przy `hidden`), a JEDYNA przerwa w grze to
+kwadrans bez żadnej akcji gracza — wznawia ją dowolny klik, bez przycisku
+i bez pytania (`sprawdzBezczynnosc`, `zaznaczAktywnosc`).
+
+### 4. Uwaga D po wycofaniu (m12-104, `0c527b4`) — obrót ekranu bez blokady
+
+Właściciel wycofał swój pomysł: NIE ma blokady portretowej ani ikony przełączania
+orientacji (propozycja odrzucona 2026-09-13). Zostało tylko jedno: po każdej
+zmianie orientacji automatycznie woła się ◎ (centrowanie na graczu) na widocznej
+mapie — `naZmianeRozmiaruOkna` z uspokojeniem po `resize`.
+
+### 5. Uwaga M (`db4d619`) — sygnał zdarzenia to dźwięk I wibracja: **ADR 0041**
+
+Decyzja i pin: sygnały (`odegrajSygnal`) mają plan dźwiękowy i wzorzec wibracji
+dla każdego zdarzenia (m.in. dojście, start odcinka, odliczanie, start gry).
+W testach `odegrajSygnal` jest niemy w Node, więc dowodem sygnału jest rejestrator
+`navigator.vibrate` w atrapie DOM (`dom.wibracje`) — i celowo NIE asertujemy
+dokładnej liczby wibracji, bo `przelaczNa()` podmienia globalny `navigator`.
+
+### 6. Uwaga L (m12-105, `81e8576`) — pula premii za kolejność
+
+Premia za kolejność ukończenia: pula = **min(3, grający − 1)**, gdzie „grający”
+to gracze bez rezygnacji w momencie zakończenia gry (1 grający → 0 pkt, 2 → 1/0,
+3 → 2/1/0, 4+ → 3/2/1/0). Wcześniej stała tabela 3/2/1 niezależnie od liczby
+graczy (aneks ADR 0027 z 2026-09-11). Zmiana PO OBU stronach: `przeliczWyniki`
+w `app/wieloosobowa.js` i kopia w `docs/setup/apps-script-repo-paczek.gs`
+(`most-gra.test.js` wykonuje wycinek `.gs`, więc stałe żyją w wycinku, a parity
+pilnuje test). Stała `[3, 2, 1][i]` nie istnieje po żadnej stronie (LESSONS L31).
+
+### 7. Uwaga H2 (m12-106, `88b93a7`) — Informacje jedną, małą czcionką: **ADR 0042**
+
+Cała treść warstwy Informacje jedną małą czcionką (`Courier New`), bez wyróżnień
+typograficznych — właściciel chce jednego kroju dla całej instrukcji.
+
+### 8. Uwagi H1 i I (m12-107, `c0aedb8`) — koniec gry za ikoną ⚙ START GRY: **ADR 0043**
+
+H1 unieważniło część F: przycisk „Zakończ grę” NIE zostaje w Informacjach.
+Koniec gry i rezygnacja przeniosły się do ikony ⚙ START GRY w nagłówku: mała
+warstwa potwierdzenia (`#ekran-koniec-gry`) z wpisaniem **TAK** odblokowuje
+przycisk „■ ZAKOŃCZ AKTUALNĄ GRĘ”. Warstwa zachowuje się jak każdy panel
+(krzyżyk, Escape, `inert` na resztę, klasa na `body`), a każdy krok gry ją gasi.
+Pułapka sesji (LESSONS L61): reguły widoczności z klasą na `body` chowają każdy
+panel niewymieniony w `:not()` — atrapa DOM nie ma silnika CSS, więc kolejność
+otwierania i regułę CSS pinuje kontrakt, nie test zachowania.
+
+### 9. Uwaga F (m12-108, `ec5eff6`) — odliczanie po starcie gry wieloosobowej: **ADR 0044**
+
+Po „▶ Start gry” u WSZYSTKICH (także u hosta) gra sygnał i odlicza
+5-4-3-2-1-START wielką cyfrą na środku, nad przezroczystym tłem (mapa zostaje
+widoczna — `#odliczanie`, `z-40`, sygnał na każdy krok). Potem gra wygląda
+DOKŁADNIE jak hotseat: usunięty panel multi z kanałem „Info z gry”, żywą tabelą
+wyników i paskiem „Ostatni stan” (pasek został w lobby), a karty
+„⏹ Zakończ grę (host)” i „🏳 Rezygnuję z gry” zniknęły (obsługuje je ⚙ + TAK).
+Informacje nie zniknęły z produktu: ostateczna tabela tej gry jest na ekranie
+wyniku (`wynikiMultiKonca`), ranking między grami w warstwie pucharu (ADR 0039),
+a żywe wyniki w lobby dla widowni (`#lobby-widownia-wiersze`). Odliczanie w
+testach ma 20 ms na krok, żeby cały przebieg nie spowalniał bramy. Aneks „uwaga F”
+w ADR 0019. Bramy: 756/756.
+
+### 10. Uwaga G (m12-109, `6339d32`) — koniec gry hosta nie kończy gry pozostałym
+
+Właściciel: zakończenie gry przez hosta NIE kończy gry u pozostałych — grają
+dalej i mają wszystkie informacje, bo telefon hosta służył tylko do
+wystartowania gry, wybrania okolicy i wygenerowania pytań, a logika i punkty żyją
+na wspólnym Drive i na telefonach uczestników. Wdrożenie (aneks **2026-09-13b**
+w ADR 0019): potwierdzony koniec (⚙ → TAK) wysyła zdarzenie `rezygnacja` dla
+KAŻDEJ roli, `zakonczGreMulti()` usunięta, aplikacja nie woła akcji
+`gra-zakoncz`. W moście `if (z.typ !== 'koniec' && czyKompletna(gra))` —
+rezygnacja TEŻ może domknąć grę, bo `czyKompletna()` liczy rezygnującego za
+domkniętego; bez tego gra wisiałaby otwarta, gdy ostatni aktywny gracz wychodzi.
+**To wymaga nowego deploymentu web app u właściciela.** Akcja `gra-zakoncz`
+została w moście dla starszych telefonów (offline'owa skorupa z SW) i ręcznego
+porządkowania gier na Drive. Premia liczy się bez zmian: host, który wyszedł, nie
+wchodzi do puli (uwaga L). Bramy: 757/757.
+
+### 11. Uwagi J i K (m12-110, `a041c64`) — setup nie szuka gier, telefon wraca sam: **ADR 0045**
+
+J: szukanie rozpoczętych/przerwanych gier w `localStorage` i pokazywanie ich jako
+opcji na setupie — usunięte w całości (karty `#karta-wznowienie` i
+`#multi-wznowienie` z ich przyciskami, klasa `.karta-wznowienie`, funkcje
+`sprawdzZapisGry()`, `kasujZapisGry()`, `renderujWznowienieMulti()`).
+K: zamknięcie przeglądarki/karty i odświeżenie zapisują stan (zapis po każdej
+tranzycji + `pagehide` + `visibilitychange → hidden`), a otwarcie aplikacji wraca
+wprost do ostatniego zapisu: multi z sesji i stanu mostu (`przywrocGreMulti`,
+pierwszeństwo, bez odliczania), hotseat z `stan-gry/1` (`przywrocGreHotseat` →
+`wznowGre`), z pominięciem okna startowego (`ukryjStart`). Zapis, którego nie da
+się podnieść (zepsuty — kody `T**`, albo gra w fazie `koniec`), start kasuje sam
+i mówi dlaczego. Sesję multi kasują cztery drogi: wyjście z lobby, zamknięcie gry
+przez most, rezygnacja (także hosta — uwaga G) i jawna odmowa mostu; awaria sieci
+sesji NIE kasuje. Dwustopniowe kasowanie zostało tylko przy historii gier
+(ADR 0015 pkt 6). Bramy: 759/759.
+
+### 12. Budżet lektury startowej (`3d6ae93`) — LESSONS rozdzielony
+
+`npm run budzet` doszedł do 99 281 / 100 000 tok (rezerwa 719), więc AGENTS.md §0
+uczynił skrócenie/rozdzielenie dokumentów obowiązkowym zadaniem sesji. Rejestr
+`docs/LESSONS.md` został skrótem (objaw i przyczyna jednym zdaniem, reguła w
+całości, osiem najdłuższych reguł z początkiem), a pełne opisy przypadków
+przeniesiono do `docs/LESSONS_ARCHIVE.md` — poza `plikLektury()`, z odnośnikiem
+`## LN` przy każdej lekcji i pinem, że archiwum jest lustrem rejestru.
+Diagnoza w AGENTS.md §0 i LESSONS L62: największy zjadacz budżetu to ADR-y
+(~65 tys. z 100 tys.), więc następny podział idzie w `docs/decisions/archive/`.
+Nowe lekcje: **L62** (budżet: tnij największego zjadacza) i **L63** (usuwasz
+przycisk-ujście → wypisz stany, które obsługiwał, i każdemu daj drogę
+automatyczną). Bramy: 760/760.
+
+### 13. Pułapki i stan końcowy
+
+- **Powtórka L59 w trakcie sesji:** sandbox odtworzył `.git` ze świeżego klona
+  bazy, przez co `git add -A` stagedował całą sesję, a push był odrzucony
+  (non-fast-forward). Rutyna, która zadziałała i jest teraz w L59/L62: przed
+  każdym committem `git log --oneline -2` + `git ls-remote origin <gałąź>`; gdy
+  HEAD ≠ origin, `git fetch` + `git reset --mixed FETCH_HEAD` (przesuwa wskaźnik
+  i indeks, nie rusza plików) i `git diff --cached --stat` przed committem.
+- **Kotwiczenie edycji dokumentów:** WORKFLOW i README mają własne łamanie wierszy
+  i cudzysłowy `„…”` zamykane prosto — kotwice bloków muszą być KRÓTKIE i bez
+  znaków cudzysłowu, a przed podmianą warto `sed -n`/`cat -A` pokazać dokładne
+  wiersze (dwa nieudane podejścia do README w tej sesji).
+- **Otwarte po stronie właściciela:** (1) NOWY deployment web app z mostu
+  `docs/setup/apps-script-repo-paczek.gs` — bez niego uwaga G domknie grę dopiero
+  przy kolejnym zdarzeniu gracza, który jeszcze gra; (2) powtórka testów
+  terenowych dwóch telefonów (kryterium M11/M12, WORKFLOW §4.4) ze szczególnym
+  sprawdzeniem odliczania, końca gry hosta i powrotu po odświeżeniu;
+  (3) budżet lektury ma 1 131 tok rezerwy — następny ADR go przekroczy, więc
+  podział ADR-ów (AGENTS.md §0, L62) stanie się zadaniem obowiązkowym.

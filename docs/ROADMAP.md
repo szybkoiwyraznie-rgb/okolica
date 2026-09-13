@@ -17,7 +17,7 @@
 | M3 — Konfiguracja i geolokalizacja | 🟡 kod gotowy, czeka kryterium | ekran prywatności + symulacja w UI; kryterium: §Kryteria |
 | M4 — Stacje z sieci drogowej | 🟡 kod gotowy, czeka kryterium | pipeline Overpass + UI, 3/3 fixture'y ≤ 15%; kryterium: §Kryteria |
 | M5 — Pętla pytań | 🟡 kod gotowy, czeka kryterium | auto-start gry po przyjęciu, cicha wysyłka Drive prosto do repozytorium (bez moderacji, bez Nominatim); kryterium: §Kryteria |
-| M6 — Rozgrywka | 🟡 kod gotowy, czeka kryterium | ekran gry, trwalosc.js, wznowienie; kryterium: §Kryteria |
+| M6 — Rozgrywka | 🟡 kod gotowy, czeka kryterium | ekran gry, trwalosc.js, autopowrót do zapamiętanej gry (ADR 0045); kryterium: §Kryteria |
 | M7 — Podsumowanie i udostępnianie | 🟡 kod gotowy, czeka kryterium | ranking i historia; eksporty USUNIĘTE 2026-09-12 (ADR 0038); kryterium: §Kryteria |
 | M8 — Publikacja i brama jakości | 🟡 kod gotowy, publikacja działa | manifest, ikony, CI, ASSETS §6; Pages publikuje `.github/workflows/pages.yml` przy każdym pushu do `main` (2026-09-07, WORKFLOW §5) — kamień czeka na decyzję właściciela o zamknięciu |
 | M9 — Repozytorium paczek | ✅ 2026-09-06 (M9b) | kopia lokalna + most Drive (adres w kodzie) |
@@ -51,7 +51,10 @@ tutaj tylko to, co zostało do sprawdzenia:
   zainstalowanym ze strony.
 - **M10** (§4.3): checklista terenowa; wynik do LESSONS.
 - **M11/M12** (§4.4): test dwóch telefonów wg checklisty — w tym „stan mostu”
-  i ranking z ADR 0039 (pkt 7a; wymaga nowego deploymentu web app).
+  i ranking z ADR 0039 (pkt 7a; wymaga nowego deploymentu web app). Test terenowy
+  2026-09-13 dał 13 uwag (A–K, M, L) — wszystkie wdrożone (m12-100 → m12-110,
+  ADR 0040–0045); została powtórka testu i nowy deployment web app (uwaga G:
+  rezygnacja domyka grę).
 
 ## Zasady prowadzenia roadmapy
 
