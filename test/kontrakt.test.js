@@ -21,6 +21,40 @@ import { KODY_WIELOOSOBOWE } from '../app/wieloosobowa.js';
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const czytaj = (sciezka) => readFileSync(join(ROOT, sciezka), 'utf8');
 
+/**
+ * Wiersze KODU ze źródła jako `{ n, l }` — z wyciętymi komentarzami blokowymi
+ * i liniowymi. Strażnikom tekstów pozwala odróżnić zdanie, które czyta gracz,
+ * od nagrobka w komentarzu (LESSONS L31: komentarz celowo nazywa to, co umarło).
+ * Ucięcie komentarza liniowego w środku napisu (np. adresu URL) jest świadome:
+ * taki wiersz po prostu nie trafi do sprawdzenia — to tańsze niż liczyć
+ * komentarz jako kod.
+ */
+function wierszeKodu(tekst) {
+  let wBloku = false;
+  const wynik = [];
+  tekst.split('\n').forEach((surowy, i) => {
+    let l = surowy;
+    if (wBloku) {
+      const koniecBloku = l.indexOf('*' + '/');
+      if (koniecBloku < 0) return; // cały wiersz siedzi w komentarzu blokowym
+      l = l.slice(koniecBloku + 2);
+      wBloku = false;
+    }
+    const startBloku = l.indexOf('/' + '*');
+    if (startBloku >= 0) {
+      const koniecBloku = l.indexOf('*' + '/', startBloku + 2);
+      if (koniecBloku < 0) { l = l.slice(0, startBloku); wBloku = true; } else {
+        l = l.slice(0, startBloku) + l.slice(koniecBloku + 2);
+      }
+    }
+    const liniowy = l.indexOf('//');
+    if (liniowy >= 0) l = l.slice(0, liniowy);
+    l = l.trim();
+    if (l) wynik.push({ n: i + 1, l });
+  });
+  return wynik;
+}
+
 const PROTOKOL = czytaj('docs/PROTOKOL.md');
 const INDEX = czytaj('index.html');
 const APP = czytaj('app/app.js');
@@ -1694,6 +1728,25 @@ test('kontrakt ADR 0043: grę kończy ikona ⚙ START GRY z wpisaniem TAK (uwagi
   assert.match(STYLE, /#ekran-informacje, #ekran-ranking \{ z-index: 20; \}/,
     'Informacje i ranking zostają na z-index 20 — warstwa końca gry ma 30');
 });
+
+test('kontrakt ADR 0043: zdania dla gracza o końcu gry nazywają ikonę ⚙ START GRY', () => {
+  // L27/L58/L63: usunięcie przycisku-ujścia musi w TEJ samej fali przestawić
+  // zdania, które na niego wskazywały. Sprawdzamy WIERSZE KODU, nie komentarze —
+  // komentarz może cytować martwą etykietę jako nagrobek (L31), zdanie dla gracza
+  // nie może, bo gracz idzie za nim w terenie.
+  const zdania = wierszeKodu(APP).filter(({ l }) => /zakończ grę/i.test(l));
+  assert.ok(zdania.length >= 4, `app.js ma ${zdania.length} zdań dla gracza o kończeniu gry`);
+  for (const { l, n } of zdania) {
+    assert.ok(l.includes('⚙ START GRY'),
+      `app.js:${n} odsyła gracza do końca gry, nie nazywając ikony ⚙ START GRY (ADR 0043 pkt 2)`);
+  }
+  // W drodze panel gry jest schowany (ADR 0036 aneks m12-102 pkt 2), więc zdanie
+  // o niedającym się rozstrzygnąć dojściu musi mieć DRUGI nośnik: `status()`
+  // trafia do `#status` w Informacjach i jest czytane przez `aria-live`.
+  assert.match(APP, /if \(d\.kod\) \{\n {4}\$\('gra-komunikat'\)\.textContent = d\.komunikat;[\s\S]{0,500}?status\(d\.komunikat\);/,
+    'kod dojścia ląduje też w statusie — w drodze `#gra-komunikat` jest schowany z całym panelem');
+});
+
 test('kontrakt ADR 0042: Informacje jedną, małą czcionką Courier New', () => {
   // Właściciel 2026-09-13 (uwaga H2): cała treść warstwy — ten sam krój
   // i ten sam rozmiar, bez wyróżniania nagłówka.

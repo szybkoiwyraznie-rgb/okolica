@@ -267,6 +267,12 @@ test('profil PIN (ADR 0021): normalizacja pseudonimu i reguła PIN-u', () => {
 
 test('profil PIN: kody R19/R20 z komunikatami dla gracza', () => {
   assert.ok(KODY_WIELOOSOBOWE.R19.includes('pseudonimu'));
+  // Bramka tożsamości to imię + PIN i jedno wołanie `profil-ustaw` (ADR 0026) —
+  // przycisku „Zapisz nowy” nie ma w `index.html`, więc R19 nie może go obiecywać
+  // (L58: tekst jest nośnikiem stanu; L27: zastąpiony przycisk znika ze zdań).
+  assert.equal(KODY_WIELOOSOBOWE.R19.includes('Zapisz nowy'), false,
+    'R19 nie odsyła do przycisku, którego nie ma');
+  assert.match(KODY_WIELOOSOBOWE.R19, /PIN/, 'R19 mówi, jak naprawdę założyć profil (imię + PIN)');
   assert.ok(KODY_WIELOOSOBOWE.R20.includes('PIN'));
   assert.equal(komunikatBleduProfilu('R19'), KODY_WIELOOSOBOWE.R19);
   assert.equal(komunikatBleduProfilu('R20'), KODY_WIELOOSOBOWE.R20);

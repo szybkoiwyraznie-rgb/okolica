@@ -139,6 +139,9 @@ test('stanDojscia: zepsuta stacja albo zepsuta historia nie wywracają gry', () 
   assert.equal(s.dotarl, false);
   assert.equal(s.kod, 'P06');
   assert.match(s.komunikat, /współrzędnych stacji/);
+  // Ujście musi istnieć na ekranie: przycisku „■ Zakończ grę” nie ma od ADR 0043.
+  assert.match(s.komunikat, /⚙ START GRY/, 'P06 odsyła do ikony ⚙ START GRY (ADR 0043)');
+  assert.match(s.komunikat, /TAK/, 'P06 mówi, że potwierdzeniem jest wpisanie TAK');
 
   const zeSmieciem = stanDojscia([{ lat: 91, lon: 21, accuracy: 5 }, { lat: NaN, lon: NaN }], STACJA);
   assert.equal(zeSmieciem.dotarl, false);
@@ -189,6 +192,18 @@ test('KODY_POZYCJI: pełne zdania gotowe do UI, osobny przedrostek od kodów roz
     for (const [, tekst] of kody) {
       assert.equal(tekst.includes(fraza), false, `żaden kod nie może obiecywać: ${fraza}`);
     }
+  }
+  // ADR 0043: końca gry nie załatwia jeden przycisk — jest ikona ⚙ START GRY
+  // i wpisanie TAK. Zdanie awaryjne musi nazywać DROGĘ, która istnieje (L27/L58).
+  for (const fraza of ['przyciskiem „■ Zakończ grę”', 'przyciskiem „Zakończ grę”']) {
+    for (const [, tekst] of kody) {
+      assert.equal(tekst.includes(fraza), false, `żaden kod nie może obiecywać: ${fraza}`);
+    }
+  }
+  for (const [kod, tekst] of kody) {
+    if (!/zakończ grę/i.test(tekst)) continue;
+    assert.match(tekst, /⚙ START GRY/, `${kod}: ujście końca gry nazywa ikonę ⚙ START GRY (ADR 0043 pkt 2)`);
+    assert.match(tekst, /TAK/, `${kod}: mówi, że potwierdzeniem jest wpisanie TAK (ADR 0043 pkt 4)`);
   }
 });
 

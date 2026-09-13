@@ -62,7 +62,7 @@ export const KODY_WIELOOSOBOWE = {
   // (właściciel, 2026-09-11). Numery zostają zajęte na stałe i nie dostaną
   // nowego znaczenia — inaczej starszy klient odczytałby cudzy błąd jako swój
   // (ten sam powód, dla którego E14 i E18 w pakietach są wycofane).
-  R19: 'Nie mamy takiego pseudonimu — sprawdź pisownię albo zapisz go przyciskiem „Zapisz nowy".',
+  R19: 'Nie mamy takiego pseudonimu — sprawdź pisownię; nowe imię zakłada profil razem z PIN-em, więc wpisz imię i PIN jeszcze raz.',
   R20: 'PIN jest niepoprawny albo nie pasuje do tego pseudonimu (4–8 cyfr).',
 };
 
@@ -145,7 +145,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-110';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-111';
 
 export { ramkaGeohash, sasiednieGeohash };
 
