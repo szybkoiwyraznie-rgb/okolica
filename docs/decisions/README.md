@@ -55,6 +55,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0039](0039-ranking-dwie-tabele.md) | Ranking wrócił w nowej formie: dwie tabele (punkty i proporcja), sumy liczy most, tylko gracze z profilem | Zaakceptowana |
 | [0040](0040-gra-bez-pauzy-zawsze-wlaczona.md) | Gra bez pauzy: śledzenie zawsze włączone, Wake Lock na czas gry, jedyna przerwa po 15 min bezczynności | Zaakceptowana |
 | [0041](0041-sygnaly-dzwiek-i-wibracja.md) | Każdy sygnał zdarzenia ma wibrację, jeśli urządzenie ją daje (brak API = cichy no-op, gra idzie dalej) | Zaakceptowana |
+| [0042](0042-informacje-jedna-mala-czcionka.md) | Informacje: cała treść jedną, małą czcionką Courier New (13 px), cele dotykowe bez zmian | Zaakceptowana |
 
 ## Szablon ADR
 

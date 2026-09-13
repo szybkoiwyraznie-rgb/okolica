@@ -862,6 +862,25 @@ body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
 #przycisk-podejrzyj-mape:focus-visible { outline: 3px solid var(--tekst); outline-offset: 3px; }
 .informacje-tresc { display: grid; gap: 12px; }
 .informacje-tresc .separator { display: none; }
+/* Właściciel 2026-09-13 (uwaga H2, ADR 0042): CAŁA treść Informacji jedną, małą
+   czcionką Courier New — ten sam krój i ten sam rozmiar wszędzie, bez
+   wyróżniania nagłówka wielkością ani pogrubieniem. Rozmiar celowo mały
+   (13 px/1,5): to ekran techniczny (status, protokół, wersja, kontakt), nie
+   treść do czytania w słońcu. Krzyżyk zamknięcia zostaje przy swoim rozmiarze,
+   bo to cel dotykowy, nie treść (ADR 0011: ≥ --cel = 44 px zostaje z
+   `min-height`/`padding`, których ten zapis nie rusza). */
+#ekran-informacje,
+#ekran-informacje h2, #ekran-informacje h3, #ekran-informacje p,
+#ekran-informacje li, #ekran-informacje span, #ekran-informacje a,
+#ekran-informacje strong, #ekran-informacje code, #ekran-informacje .podpowiedz,
+#ekran-informacje button:not(.warstwa-krzyzyk) {
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  font-weight: 400;
+  letter-spacing: 0;
+}
+#ekran-informacje h2 { margin: 4px 0 10px; }
 /* Kontakt i zgłaszanie błędów mapy (zalecenia polityki kafelków OSM).
    Cel dotykowy ≥ --cel (44 px) jak reszta interaktywnych elementów, a długi
    adres łamiemy `anywhere`, żeby nie rozepchał panelu 360 px (wzorzec:

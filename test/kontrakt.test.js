@@ -1504,6 +1504,19 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
   assert.equal(/#informacje-gra h2\s*\{/.test(STYLE), false,
     'reguła na nagłówek „Gra" w Informacjach umarła z przenoszeniem sterowania (L31)');
 });
+test('kontrakt ADR 0042: Informacje jedną, małą czcionką Courier New', () => {
+  // Właściciel 2026-09-13 (uwaga H2): cała treść warstwy — ten sam krój
+  // i ten sam rozmiar, bez wyróżniania nagłówka.
+  assert.match(STYLE, /#ekran-informacje,\n#ekran-informacje h2[^{]*\{[^}]*font-family: 'Courier New', Courier, monospace;[^}]*font-size: 13px;[^}]*font-weight: 400;[^}]*\}/s,
+    'zapis ADR 0042 obejmuje warstwę i jej elementy tekstowe');
+  assert.match(STYLE, /#ekran-informacje button:not\(\.warstwa-krzyzyk\)/,
+    'przyciski w treści mają ten sam krój, a krzyżyk zamknięcia zostaje ikoną-celem');
+  assert.match(STYLE, /#ekran-informacje h2 \{ margin: 4px 0 10px; \}/,
+    'nagłówek nie jest już większy od reszty — wyróżnia go miejsce, nie rozmiar');
+  assert.equal(/#ekran-informacje[^{]*\{[^}]*font-size: 2\dpx/.test(STYLE), false,
+    'żaden zapis nie wraca do dużego nagłówka w Informacjach');
+});
+
 test('kontrakt ADR 0030 aneks: ekran obraca się sam, a po obrocie ◎ klika się samo', () => {
   // Właściciel 2026-09-13 (uwaga D z testów terenowych): najpierw prośba
   // o zablokowanie ekranu w pionie z przełącznikiem poziomu w górnym menu,
