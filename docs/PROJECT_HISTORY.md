@@ -4799,3 +4799,137 @@ Otwarte:
    zaległych zdarzeń.
 4. **Budżet: rezerwa 628 tok** — jedna lekcja albo mały aneks; następna fala
    dokumentowa zaczyna od `npm run budzet` i ma gotowy mechanizm podziału.
+
+
+## Sesja 2026-09-13e — audyt PR #20 i weryfikacja na żywo (gałąź `arena/01a09c54-okolica`)
+
+### 1. Start sesji
+
+Właściciel: „Kontynuujemy projekt.” — bez zlecenia konkretnego zadania, więc
+sesja idzie wg protokołu (ADR 0012): lektura, PR sesji, audyt poprzedniego
+scalonego PR, potem najwyższy otwarty kamień z ROADMAP.
+
+- Gałąź `arena/01a09c54-okolica`, baza `f7a201c` (= `main` po PR #20,
+  aplikacja **m12-114**).
+- Bramy przed zmianami: `npm test` **767/767**, `npm run check` OK (oba
+  warianty protokołu), `npm run audyt` 0 naruszeń WCAG AA, budżet lektury
+  **99 793/100 000** tok (rezerwa 207).
+- Lektura startowa wg AGENTS.md §0 wykonana w całości (ADR-y z rejestrem
+  i aneksami, LESSONS L1–L67, PROTOKOL, ENVIRONMENT, ROADMAP,
+  HANDOFF_2026-09-13d).
+
+### 2. Audyt PR #20 (squash `f7a201c`, 53 pliki, +3007/−960; m12-110 → m12-114)
+
+PR scala trzy podsesje: 13b (audyt PR #19: naprawy U1/U2), 13c (uwagi
+terrenowe N–S) i 13d (T1–T3). Przegląd `git diff f7a201c^..f7a201c`
+plik po pliku: logika, zgodność z ADR i protokołem, zieloność.
+
+- **`app/app.js`** (+303/−172, największy kawałek fali):
+  - **T1 — utrwalona kolejka**: klucz `okolica:multi-kolejka`, uchwyt
+    `zapisKolejkeZdarzen`/`walidujKolejkeZdarzen`/`LIMIT_KOLEJKI_ZDARZEN`
+    wstrzyknięte do `utworzSynchronizacje` w obu miejscach (`wejdzDoGryMulti`,
+    `przywrocGreMulti`), więc `app/sync.js` nadal nic nie wie o
+    `localStorage`. `dostarczZalegleZdarzeniaMulti` jest wołana w
+    `przywrocGreMulti` PRZED `pobierzGetMulti` — kontraktem, nie szczegółem
+    (inaczej telefon zbudowałby trasę ze stacją, którą most właśnie domknął;
+    ADR 0019 aneks 2026-09-13d, L67). Odmowa mostu kasuje zdarzenie,
+    awaria sieci zostawia resztę w pamięci; kolejka idzie w kosz razem
+    z sesją (`usunSesjeMulti`). **OK.**
+  - **T2 — widoczne czekanie**: `status(tekst, { czeka })` i
+    `statusZestawow(tekst, { czeka })` dokładają/gaszą `.pulsuje` jednym
+    miejscem; nakładka `#stacje-ladowanie` dostaje klasę przy starcie pobrania
+    i gubi ją w `finally` (także przy błędzie). **OK.**
+  - **T3 — paczki w tle**: `PAMIETNIK_PACZEK` (url → promise tekstu),
+    `wstepniePobierzPaczki()` po `renderujZestawy()` pobiera TYLKO widoczne
+    (`LIMIT_ZESTAWOW_NA_LISCIE`, po rozwinięciu wszystkie), nieudane pobranie
+    wychodzi z pamięci (klik spróbuje jeszcze raz), pamięć czyszczona w
+    `odswiezPropozycjeZestawow`. Klik „▶ Graj z tą paczką” bierze gotowy
+    tekst albo to samo rozpoczęte pobranie (`pobierzPaczkeZRepo` — jedno
+    żądanie na plik), przycisk `disabled` + „⏳ Ładowanie paczki…” z `finally`.
+    Wstępne pobranie NIE zgłasza mostowi użycia paczki — ścieżka fetchu
+    czysta, oceny i „użyta w X grach” idą dopiero przy kliku (ADR 0028). **OK.**
+  - **13c**: N — `numerStacjiTrasy`/`liczbaStacjiTrasy` + `STAN.trasaDlugosc`
+    (powrót buduje model z NIEZAMKNIĘTYCH stacji, więc numer bierze stacja,
+    a licznik pełną trasę; w `wznowGre` hot-seat `trasaDlugosc = 0` — lista
+    pełna, numer = indeks). O — cała lokalna historia usunięta (`zapiszGre`
+    woła `wyslijWynikHotseat()` bezpośrednio; strażnik `if (STAN.multi)
+    return;` w `zapiszGre` sprawdzony — gra sieciowa nie wysyła hot-seat
+    podwójnie). P — wiersz paczki zaczyna się od miejsca (parametr
+    `etykietaZrodla` usunięty ze wszystkich miejsc). Q — znaczek „Fact-checked”
+    (styl `.znaczek-factcheck` nietknięty, `role="img"` + etykieta). R —
+    `czyTrasaSekret(STAN.multi)` wymaga ŻYWEJ gry, a `startGry()` kończy
+    kontekst sieciowy (`zatrzymajSyncMulti` null-safe, `usunSesjeMulti`,
+    `STAN.multi = null`, `trasaDlugosc = 0`). S — wycofane przez właściciela,
+    bez zmiany kodu. **OK.**
+  - **13b (U1)**: zdania awaryjne P03/P04/P08/P06 (`pozycja.js`), `onBlad`
+    watchera, uszkodzony kontener, paczka rozjechana z rozgrywką, T07 i R19
+    nazywają ikonę ⚙ START GRY i wpisanie TAK — martwego „■ Zakończ grę”
+    i „Zapisz nowy” nie ma w żadnym zdaniu dla gracza. **OK.**
+  - **13b (U2)**: `$('gra-sterowanie').hidden = droga && !STAN.trybTestowy`
+    — w trybie testowym panel fazy B (duży dystans + „▶ Symuluj dojście”,
+    jedyne ujście odcinka bez GPS) zostaje na wierzchu; w terenie nad mapą
+    sam pasek. **OK.**
+- **`app/wieloosobowa.js`**: `czyTrasaSekret` (twarde `stan === 'trwa'`;
+  brak pola `trasaSekret` = sekret — zgodność wstecz z m12-73),
+  `walidujKolejkeZdarzen` (cudzy `kod`/śmieci → pusta lista, limit 50),
+  `zapisKolejkiZdarzen`, R19 bez martwego przycisku. **OK.**
+- **`app/sync.js`**: start kolejki z `wczytajKolejke` (slice do limitu),
+  `utrwalKolejke` przy KAŻDYM ruchu (push/shift/odmowa), jawna odmowa przy
+  przekroczonym limicie. **OK.**
+- **`app/trwalosc.js`** (−148): sekcja historii usunięta w całości (klucz,
+  oba schematy, H01–H04, cztery pomocniki, import `geohash`) — spójnie z
+  ADR 0010 aneksem. **OK.**
+- **`app/mapa.js`**: `planMapy` woli `numer` przed indeksem (hot-seat bez
+  pola `numer` numeruje od 1 — test pinuje oba przypadki). **OK.**
+  **`pozycja.js`**: komunikaty z pkt wyżej. Pozostałe moduły
+  (`most`, `protokol`, `rozgrywka`, `sieci`, `stacje`, `wynik`, `zestawy`):
+  wyłącznie podbicia `?v=`. **OK.**
+- **`index.html` / `app/styles.css` / `sw.js`**: `#karta-historia` usunięte
+  z nagrobkiem, `.lista-historii` przemianowane na `.lista-prosta` (trzy
+  miejsca: lobby, lista graczy, lobby-gracze — CSS i HTML spójnie),
+  `.pulsuje` + `@keyframes` + `prefers-reduced-motion`, `WERSJA_SW`
+  `m12-114`. **OK.**
+- **Łańcuch wersji**: jeden `m12-114` w `index.html`, wszystkich importach
+  `app/*.js` i `sw.js` (grep: zero rozjazdów, L29). **OK.**
+- **Testy (767/767)**: kontrakty pinują usunięcia (id, funkcje, symbole,
+  klasa CSS, `historiaKasowanieUzbrojone`) I dodatki (`void
+  wyslijWynikHotseat()` w hooku końca gry, wstrzyknięte uchwyty kolejki,
+  wyjątek testowy w `odswiezPasekDrogi`); nowy strażnik `wierszeKodu`
+  (komentarze wycięte — nagrobek L31 może cytować martwą etykietę, zdanie
+  dla gracza nie może) każe KAŻDEJ linijce kodu o „zakończ grę” nazwać ikonę
+  ⚙ START GRY (L64). End-to-end: R (resztkowa sesja nie chowa trasy w
+  hot-seacie, start hot-seata kasuje sesję), N (cel zostaje „stacja 2 z 3”
+  po odświeżeniu; punkty per gracz: `[[1,1],[2,0]]` przed zamknięciem →
+  to samo po powrocie → `[[1,1],[2,0],[3,1]]` w tabeli końca gry — zero
+  zostaje zerem, remis 1:1 rozstrzyga stabilny sort), T1 (odpowiedź bez
+  zasięgu → odświeżenie → `dojscie`+`odpowiedz` na moście PRZED stanem gry,
+  celem jest następna stacja; oraz odświeżenie WCIĄŻ bez sieci — nic nie
+  wychodzi i nic nie jest kasowane), T3 (plik pobrany bez kliku, klik nie
+  dokłada drugiego żądania, zero zgłoszeń do mostu, sygnał czekania
+  mierzony w trakcie wiszącego pobrania), droga w terenie (bez `?test=true`
+  panel gry schowany i symulacji nie ma — pin podwójny z trybem testowym,
+  L65). Strażnik dryfu: sześć nowych martwych fraz. **OK.**
+- **Dokumenty**: aneksy ADR 0010/0011/0015/0017/0019/0029/0032/0036/0043/0045
+  + rejestr (spójne z kodem — przeczytane w całości na starcie sesji),
+  ARCHITECTURE (inwentarz trwałości: nowy klucz `okolica:multi-kolejka`,
+  kolejność powrotu do gry; historia przeniesiona na Drive), WORKFLOW §4.2
+  (wyjątek testowy w drodze), README, ROADMAP, LESSONS L64–L67 + archiwum,
+  AGENTS §0 (archiwum ADR-ów poza lekturą startową), drugie archiwum aneksów
+  ADR 0019 (wskaźnik z datami; kontrakt czyta archiwum — L62/L66). **OK.**
+- **Most** (`apps-script-repo-paczek.gs`): NIE zmieniany w tej fali —
+  utrwalona kolejka opiera się na ISTNIEJĄCYM odrzucaniu duplikatów
+  odpowiedzi w `przyjmijZdarzenie`; warunek zapisany w ADR jako warunek,
+  nie zbieg okoliczności. **OK.**
+
+**Werdykt:** PR #20 jest spójny z ADR 0010/0011/0015/0017/0019/0029/0032/
+0036/0043/0045 i z protokołem, łańcuch wersji pojedynczy, brama zielona
+(767/767, `npm run check` OK, 0 naruszeń WCAG AA — mierzone na tym drzewie).
+**Brak usterek wymagających naprawy.** Dwa rozpoznania (nie usterki):
+
+1. `sync.js` → `utrwalKolejke()` połyka błąd utrwalenia (pamięć pełna
+   albo niedostępna) — kolejka działa dalej w RAM, a gracz widzi jawny
+   status z `onBlad`; prawdę o grze zna most, kolejka jest pomocą
+   (uzasadnienie w komentarzu przy funkcji). Dopuszczalna degradacja.
+2. `PAMIETNIK_PACZEK.clear()` przy odświeżeniu propozycji porzuca wynik
+   pobrania w toku — następny klik pobiera plik od nowa (plik
+   `TO-zestaw/1` jest niezmienialny, więc nie ma ryzyka starych danych).
