@@ -225,3 +225,25 @@ zostaje — zmienia się tylko numeracja. W hot-seacie lista jest pełna, więc
 `numer` nie występuje i wszystko liczy się jak dotąd; pilnuje tego test
 end-to-end z reloadem w trasie (zgłoszenie N: cel zostaje stacją 2, a odpowiedź
 i punkty wracają z zapisu — ADR 0045).
+
+**Punktacja per gracz przez reload — sprawdzona liczbami** (dopytanie
+właściciela 2026-09-13: „czy punktacja się przenosi? punkty zachowane przy
+graczach?"). Hot-seat: punktów nie ma w stanie jako pola — liczy je
+`podsumowanie()` z `rozgrywka.odpowiedzi` (wpis niesie `gracz` i `punktyRazem`),
+a odpowiedzi jadą w zapisie, więc test trzech graczy pinuje układ `[[1,1],[2,0]]`
+przed zamknięciem przeglądarki, ten sam układ po powrocie i tabelę końca gry po
+dokończeniu: 1 pkt Gracza 1 (zdobyty PRZED reloadem), 1 pkt Gracza 3 (po
+wznowieniu), 0 pkt Gracza 2 z `0/1` — zero zostaje zerem, nie brakiem wpisu.
+Gra sieciowa: punkty liczy MOST z dziennika zdarzeń (`przeliczWyniki`),
+a lokalnego snapshotu gry multi nie ma wcale (`zapiszGre` wychodzi przy
+`STAN.multi`), więc odświeżenie telefonu nie ma czego zgubić — test trasy
+z resume pinuje odpowiedź gościa obecną na moście PRZED odświeżeniem
+i `punkty − premia` = 4 i 4 na koniec gry.
+
+Znane ograniczenie (stan na m12-113, bez decyzji właściciela): zdarzenie
+NIEDOSTARCZONE — brak zasięgu albo odmowa sieci w chwili odpowiedzi — czeka
+w kolejce `app/sync.js` tylko w pamięci, więc reload je gubi. Most nie zna wtedy
+odpowiedzi, stacja zostaje otwarta i gracz przechodzi ją jeszcze raz; podwójnego
+policzenia nie ma, bo most odrzuca drugą odpowiedź tego gracza do tej stacji.
+Utrwalenie kolejki (wzór: `oceny-kolejka/1` i kolejka wyniku hotseat) jest
+możliwe i bezpieczne właśnie dzięki temu odrzucaniu duplikatów.

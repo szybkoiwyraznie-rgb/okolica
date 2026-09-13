@@ -680,6 +680,15 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
   // ale numeracja zostaje — cel B2 to WCIĄŻ stacja 2, a licznik pokazuje pełną
   // trasę (4), nie skróconą listę telefonu. Wcześniej panel mówił „stacja 1 z 3".
   assert.equal(tekst(B2, 'gra-postep'), 'stacja 2 z 4', 'po powrocie cel ma swój numer na trasie, a licznik — pełną trasę');
+  // Pytanie właściciela do zgłoszenia N (2026-09-13): „punkty zachowane przy
+  // graczach?”. W grze sieciowej punkty liczy MOST z dziennika zdarzeń
+  // (ADR 0019 pkt 6, `przeliczWyniki`), a lokalnego snapshotu gry multi nie ma
+  // wcale (`zapiszGre` wychodzi przy `STAN.multi`) — więc odświeżenie telefonu
+  // nie ma czego zgubić: odpowiedź B ze stacji 1 jest już na moście.
+  const odpowiedziB = mostTrasy.znajdz(kodTrasy).zdarzenia
+    .filter((z) => z.typ === 'odpowiedz' && z.graczId === 'g-2');
+  assert.equal(odpowiedziB.length, 1, 'odpowiedź B ze stacji 1 doszła na most PRZED odświeżeniem');
+  assert.equal(odpowiedziB[0].dane.punktyRazem, 1, 'most zapisał punkt B (nie telefon)');
   await ustawPozycjeTestowa(B2); // świeży telefon: GPS brak, więc pozycja z ekranu 2
 
   // A i B2 domykają resztę trasy (po kolei, każdy u siebie) → gra kompletna
@@ -694,10 +703,25 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
   await przepompuj(B2, 1);
   const wyniki = mostTrasy.znajdz(kodTrasy).wyniki;
   assert.deepEqual([wyniki['g-1'].stacjeZamkniete, wyniki['g-2'].stacjeZamkniete], [4, 4], 'po cztery stacje na gracza');
+  // Punktacja per gracz z mostu: `punkty` zawierają premię za kolejność
+  // (ADR 0044), więc porównujemy punkty z odpowiedzi (`punkty − premia`)
+  // i liczbę poprawnych — w tym punkt B zdobyty PRZED odświeżeniem telefonu.
+  assert.deepEqual(
+    [wyniki['g-1'].punkty - wyniki['g-1'].premia, wyniki['g-2'].punkty - wyniki['g-2'].premia],
+    [4, 4], 'po cztery punkty z odpowiedzi na gracza — punkt B sprzed reloadu nie zginął');
+  assert.deepEqual([wyniki['g-1'].poprawne, wyniki['g-2'].poprawne], [4, 4],
+    'cztery poprawne odpowiedzi na gracza, w tym ta sprzed odświeżenia');
   for (const u of [A, B2]) {
     assert.equal(el(u, 'gra-wyniki-tbody').children.length, 2, 'tabela końca gry po obu stronach (ADR 0038)');
     assert.match(tekst(u, 'multi-sync-pasek'), /odświeżanie zatrzymane/, 'synchronizacja zatrzymana');
   }
+  // Telefon B widzi w tabeli WŁASNE punkty z mostu — razem z tym sprzed reloadu.
+  const wierszB = [...el(B2, 'gra-wyniki-tbody').children]
+    .find((w) => /Czarek \(Ty\)/.test(w.children[0].textContent));
+  assert.ok(wierszB, 'B ma swój wiersz w tabeli końca gry');
+  assert.equal(Number(wierszB.children[1].textContent), wyniki['g-2'].punkty,
+    'punkty B w tabeli = punkty z mostu (z premią za kolejność)');
+
   assert.equal(pamiecB.has('okolica:multi:sesja'), false,
     'po zakończeniu gry sesja wyczyszczona — następne otwarcie nie wraca do skończonej gry (ADR 0045)');
   assert.equal(mostTrasy.znajdz(kodTrasy).zdarzenia.every((z) => !POLA_ZAKAZANE.some((pz) => pz in (z.dane ?? {}))), true, 'serwer nie przyjął współrzędnych w zdarzeniach');

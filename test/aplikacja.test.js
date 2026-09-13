@@ -1607,6 +1607,86 @@ test('N: powrót po zamknięciu przeglądarki W TRASIE — cel zostaje stacją 2
   assert.match(dom2.pobierz('mapa-gra-pinezki').textContent, /123/, 'na mapie widać całą trasę z numerami 1, 2, 3');
 });
 
+/* Pytanie właściciela do zgłoszenia N (2026-09-13): „czy punktacja się przenosi
+ * przy reloadzie? Punkty zachowane przy graczach?”. Punkty NIE są polem stanu —
+ * liczy je `podsumowanie()` z `rozgrywka.odpowiedzi` (wpis niesie `gracz`
+ * i `punktyRazem`), a odpowiedzi jadą w zapisie stanu. Test sprawdza LICZBY:
+ * per gracz przed zamknięciem przeglądarki, w zapisie po powrocie i w tabeli
+ * końca gry dokończonej JUŻ po wznowieniu. Fixture ma po jednym pytaniu na
+ * stację, więc przy trzech graczach stacja 1 należy do Gracza 1, stacja 2 do
+ * Gracza 2, a stacja 3 do Gracza 3 (ADR 0027): Gracz 1 punktuje PRZED reloadem,
+ * Gracz 2 odpowiada źle (zero zostaje zerem, nie brakiem wpisu), a Gracz 3
+ * punktuje PO wznowieniu. */
+test('N (punktacja): punkty per gracz przechodzą przez reload — zapis, wznowienie i tabela końca gry', async () => {
+  const { dom, paczka, pamiec } = await graGotowaDoStartu();
+  dom.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  zaczynijGre(dom);
+  const kluczZapisu = () => 'okolica:gra:' + pamiec.get('okolica:gra-aktywna');
+  const zapis = () => JSON.parse(pamiec.get(kluczZapisu())).rozgrywka;
+  const punktyZapisu = () => zapis().odpowiedzi.map((o) => [o.gracz, o.punktyRazem]);
+  const poprawna = (stacja) => paczka.pytania.find((q) => q.stacja === stacja).poprawna;
+
+  // Stacja 1 — pytanie Gracza 1, odpowiedź DOBRA (+1 pkt).
+  dom.kliknij('przycisk-start-odcinka');
+  await dojdzSymulacja(dom);
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /odpowiada Gracz 1/, 'stacja 1 należy do Gracza 1');
+  kliknijOdpowiedz(dom, poprawna(1));
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /\+1 pkt/, 'punkt przyznany');
+  dom.kliknij('przycisk-nastepna-stacja');
+
+  // Stacja 2 — pytanie Gracza 2, odpowiedź ZŁA (0 pkt).
+  dom.kliknij('przycisk-start-odcinka');
+  await dojdzSymulacja(dom);
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /odpowiada Gracz 2/, 'stacja 2 należy do Gracza 2');
+  kliknijOdpowiedz(dom, (poprawna(2) + 1) % 4);
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /Źle \(0 pkt\)/, 'zero punktów');
+  dom.kliknij('przycisk-nastepna-stacja');
+  dom.kliknij('przycisk-start-odcinka'); // marsz do stacji 3 — tu „zamykamy przeglądarkę”
+
+  const przed = punktyZapisu();
+  assert.deepEqual(przed, [[1, 1], [2, 0]], 'przed zamknięciem: Gracz 1 ma 1 pkt, Gracz 2 ma 0');
+  assert.equal(zapis().faza, 'odcinek', 'zapis jest w fazie marszu');
+
+  // „Zamknięcie przeglądarki” w marszu: nowa instancja aplikacji na tej samej pamięci.
+  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
+  dom2.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  await import(`../app/app.js?punkty=${Math.random().toString(36).slice(2)}`);
+
+  const po = zapis();
+  assert.deepEqual(po.odpowiedzi.map((o) => [o.gracz, o.punktyRazem]), przed,
+    'zapis po powrocie niesie TE SAME punkty przy TYCH SAMYCH graczach');
+  assert.deepEqual(po.gracze.map((g) => g.imie), ['Gracz 1', 'Gracz 2', 'Gracz 3'],
+    'lista graczy wraca cała — punkty mają do kogo być przypisane');
+  assert.match(dom2.pobierz('gra-postep').textContent, /stacja 3 z 3/, 'gra wróciła w marszu do stacji 3');
+
+  // Dokończenie gry JUŻ po wznowieniu: stacja 3, pytanie Gracza 3, odpowiedź dobra.
+  await zamknijStacje(dom2, { paczka, numerStacji: 3, odpowiedz: poprawna(3) });
+
+  assert.equal(zapis().faza, 'koniec', 'gra domknięta po wznowieniu');
+  assert.deepEqual(punktyZapisu(), [[1, 1], [2, 0], [3, 1]],
+    'wpis Gracza 3 dołączył do wpisów sprzed reloadu — nic się nie wyzerowało');
+
+  // Tabela końca gry (ADR 0038: gracz | punkty | poprawne) — liczby z
+  // `podsumowanie()` policzonego na rozgrywce złożonej z zapisu PRZED i PO.
+  assert.equal(dom2.pobierz('gra-panel-koniec').hidden, false, 'panel wyniku widoczny');
+  assert.match(dom2.pobierz('gra-wynik-zwyciezca').textContent, /🏆 Gracz 1/,
+    'ranking otwiera Gracz 1 (remis 1:1 z Graczem 3 rozstrzyga stabilny sort)');
+  const wiersze = dom2.pobierz('gra-wyniki-tbody').children;
+  assert.equal(wiersze.length, 3, 'tabela ma wszystkich trzech graczy');
+  // Wiersze idą w kolejności RANKINGU (`wynik.ranking`, ADR 0038), nie listy
+  // graczy: 1 pkt Gracza 1 (zdobyty PRZED reloadem), 1 pkt Gracza 3 (zdobyty PO
+  // wznowieniu), 0 pkt Gracza 2. Remis 1:1 rozstrzyga stabilny sort.
+  assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/, 'wiersz 1: Gracz 1 ze znacznikiem zwycięzcy');
+  assert.equal(wiersze[0].children[1].textContent, '1', 'punkt Gracza 1 zdobyty PRZED reloadem jest w tabeli');
+  assert.equal(wiersze[0].children[2].textContent, '1/1', 'poprawne/razem Gracza 1');
+  assert.match(wiersze[1].children[0].textContent, /Gracz 3/, 'wiersz 2: Gracz 3');
+  assert.equal(wiersze[1].children[1].textContent, '1', 'punkt Gracza 3 zdobyty PO wznowieniu');
+  assert.equal(wiersze[1].children[2].textContent, '1/1', 'poprawne/razem Gracza 3');
+  assert.match(wiersze[2].children[0].textContent, /Gracz 2/, 'wiersz 3: Gracz 2');
+  assert.equal(wiersze[2].children[1].textContent, '0', 'zero Gracza 2 zostaje zerem, nie brakiem wpisu');
+  assert.equal(wiersze[2].children[2].textContent, '0/1', 'odpowiedział, tylko źle');
+});
+
 test('K: zepsuty zapis — jawne kody T, start kasuje go bez pytania (ADR 0045)', async () => {
   const pamiec = new Map();
   pamiec.set('okolica:gra-aktywna', 'zepsuta');
