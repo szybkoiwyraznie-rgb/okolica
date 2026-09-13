@@ -152,11 +152,12 @@ test('ranking: rezygnacja bez odpowiedzi nie wchodzi, uszkodzony plik nie psuje 
   const ranking = most.rankingi();
   const poPseudo = Object.fromEntries(ranking.gracze.map((g) => [g.pseudonim, g]));
   assert.deepEqual(Object.keys(poPseudo), ['Ala'], 'Bartek zrezygnował bez odpowiedzi — nie ma wiersza');
-  // Punkty to punkty GRY: 2 z odpowiedzi + 3 premii za 1. miejsce (ADR 0027
-  // część B pkt 5) — ranking sumuje to, co gra naprawdę przyznała, a nie same
-  // odpowiedzi. Hot-seat premii nie ma (gracze idą razem), dlatego w innych
-  // testach tego pliku widać same punkty z odpowiedzi.
-  assert.deepEqual(poPseudo.Ala, { pseudonim: 'Ala', punkty: 5, poprawne: 1, pytania: 1 });
+  // Punkty to punkty GRY (ADR 0027 część B pkt 5, aneks 2026-09-13): ranking
+  // sumuje to, co gra naprawdę przyznała, a nie same odpowiedzi. Tu Bartek
+  // zrezygnował, więc grających został JEDEN, a pula premii wynosi
+  // min(3, 1 − 1) = 0 — zostają 2 pkt z odpowiedzi. Hot-seat premii nie ma
+  // (gracze idą razem), dlatego w innych testach tego pliku widać same punkty.
+  assert.deepEqual(poPseudo.Ala, { pseudonim: 'Ala', punkty: 2, poprawne: 1, pytania: 1 });
 
   // Uszkodzony plik w katalogu gier zakończonych nie może wywrócić rankingu.
   const uszkodzony = [...pliki.values()].find((p) => p.nazwa.startsWith('gra-') && p.tresc.includes('"zakonczona"'));

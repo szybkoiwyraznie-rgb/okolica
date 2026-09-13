@@ -210,8 +210,9 @@ braku przycisku). Eksport
   bez kodów). Po starcie dołączyć się nie da. Dwa tryby: **Wspólna Trasa**
   (wszyscy tę samą trasę po kolei — trasa jest tajemnicą, na mapie widać
   tylko bieżącą stację) i **Wyścig na Orientację** (dowolna kolejność stacji).
-  Punktacja w obu: 1 pkt za dobrą odpowiedź + stała premia 3/2/1 za kolejność
-  ukończenia. Start gry możliwy także solo (od 1 gracza), a host może zakończyć
+  Punktacja w obu: 1 pkt za dobrą odpowiedź + premia za kolejność ukończenia,
+  zależna od liczby grających, którzy dograli do końca (2 grających: 1/0,
+  3: 2/1/0, 4 i więcej: 3/2/1/0 — odłączeni wcześniej nie liczą się do puli). Start gry możliwy także solo (od 1 gracza), a host może zakończyć
   grę w dowolnym momencie — wszyscy dostają podsumowanie.
 - **Wspólny stan**: Google Drive + Apps Script — ten sam most co repozytorium
   paczek (ADR 0016/0018/0019). Na serwer jadą wyłącznie pseudonimy, zdarzenia

@@ -13,7 +13,7 @@ import {
   SCHEMAT_LOBBY, SCHEMAT_PROFILU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
   czyKompletna, czyPinPoprawny, filtrujLobby, generujKod,
   kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim,
-  postepGracza, premiaZaKolejnosc, przeliczWyniki,
+  MAKS_PREMIA_KOLEJNOSCI, postepGracza, premiaZaKolejnosc, przeliczWyniki,
   ramkaGeohash, sasiednieGeohash, walidujGreSurowa, walidujLobbySurowe,
   walidujZdarzenieSurowe, zbudujZdarzenie,
 } from '../app/wieloosobowa.js';
@@ -307,7 +307,7 @@ test('premia za kolejność: pierwszy G−1, drugi G−2, …, ostatni 0 (ADR 00
   const gra = graWyscig({ liczbaGraczy: 4 });
   // kolejność kończenia: g-2, g-4, g-1, g-3 (g-3 kończy ostatni)
   for (const graczId of ['g-2', 'g-4', 'g-1', 'g-3']) zakonczWszystkieStacje(gra, graczId);
-  assert.deepEqual(premiaZaKolejnosc(gra), { 'g-2': 3, 'g-4': 2, 'g-1': 1 }, '3/2/1, ostatni zero (klucza brak)');
+  assert.deepEqual(premiaZaKolejnosc(gra), { 'g-2': 3, 'g-4': 2, 'g-1': 1 }, '4 grających: 3/2/1, ostatni zero (klucza brak)');
 });
 
 test('premia bierze kolejność z `kolejnosc` mostu, nie z zegara urządzenia', () => {
@@ -316,17 +316,17 @@ test('premia bierze kolejność z `kolejnosc` mostu, nie z zegara urządzenia', 
   zakonczWszystkieStacje(gra, 'g-2');
   // zegary urządzeń kłamią w drugą stronę — kolejność i tak z mostu
   for (const z of gra.zdarzenia) z.tSerwera = z.graczId === 'g-1' ? '2099-01-01T00:00:00.000Z' : '2000-01-01T00:00:00.000Z';
-  assert.deepEqual(premiaZaKolejnosc(gra), { 'g-1': 3, 'g-2': 2 }, 'kolejność z numerów zdarzeń: 3 pkt za 1. miejsce, 2 za 2. (właściciel, 2026-09-11)');
+  assert.deepEqual(premiaZaKolejnosc(gra), { 'g-1': 1 }, 'kolejność z numerów zdarzeń; 2 grających → pula 1: pierwszy 1 pkt, drugi 0 (uwaga L)');
 });
 
 test('premia nie wchodzi do punktów, dopóki gra się toczy (ADR 0027 pkt 5)', () => {
   const gra = graWyscig({ liczbaGraczy: 2, stan: 'trwa' });
   zakonczWszystkieStacje(gra, 'g-1');
-  assert.equal(przeliczWyniki(gra)['g-1'].premia, 3, 'premia jest policzona…');
+  assert.equal(przeliczWyniki(gra)['g-1'].premia, 1, 'premia jest policzona (2 grających → pula 1)…');
   assert.equal(przeliczWyniki(gra)['g-1'].punkty, 3, '…ale częściowy wynik jej nie zawiera (3 × 1 pkt)');
 
   gra.stan = 'zakonczona';
-  assert.equal(przeliczWyniki(gra)['g-1'].punkty, 6, 'podsumowanie dodaje premię (3 + 3)');
+  assert.equal(przeliczWyniki(gra)['g-1'].punkty, 4, 'podsumowanie dodaje premię (3 + 1)');
   assert.equal(przeliczWyniki(gra)['g-2'].punkty, 0, 'gracz, który nie skończył, premii nie ma');
 });
 
@@ -336,8 +336,37 @@ test('premia: rezygnacja i gra zakończona przez gospodarza', () => {
   gra.zdarzenia.push({ kolejnosc: 99, graczId: 'g-3', typ: 'rezygnacja', dane: { powod: 'test' }, tSerwera: 't99' });
   // g-1 nie skończył — gospodarz zakończył grę
   const premia = premiaZaKolejnosc(gra);
-  assert.deepEqual(premia, { 'g-2': 3 }, 'tylko g-2 skończył: stała premia 3 za 1. miejsce; rezygnujący i niedokończony bez premii');
+  assert.deepEqual(premia, { 'g-2': 1 }, 'rezygnacja zabiera miejsce w puli: 3 − 1 = 2 grających → pula 1 (uwaga L)');
   assert.equal(przeliczWyniki(gra)['g-3'].zrezygnowal, true, 'rezygnacja widoczna w wynikach');
+});
+
+test('premia: pula = min(3, grający − 1) — 1/2/3/4/5 grających (uwaga L, ADR 0027 aneks 2026-09-13)', () => {
+  assert.equal(MAKS_PREMIA_KOLEJNOSCI, 3, 'sufit premii zostaje: 3 pkt za 1. miejsce');
+
+  const jeden = graWyscig({ liczbaGraczy: 1 });
+  zakonczWszystkieStacje(jeden, 'g-1');
+  assert.deepEqual(premiaZaKolejnosc(jeden), {}, '1 grający: dotarcie daje 0 pkt');
+
+  const trzech = graWyscig({ liczbaGraczy: 3 });
+  for (const id of ['g-3', 'g-1', 'g-2']) zakonczWszystkieStacje(trzech, id);
+  assert.deepEqual(premiaZaKolejnosc(trzech), { 'g-3': 2, 'g-1': 1 }, '3 grających: 2, 1, 0');
+
+  const czterech = graWyscig({ liczbaGraczy: 4 });
+  for (const id of ['g-4', 'g-3', 'g-2', 'g-1']) zakonczWszystkieStacje(czterech, id);
+  assert.deepEqual(premiaZaKolejnosc(czterech), { 'g-4': 3, 'g-3': 2, 'g-2': 1 }, '4 grających: 3, 2, 1, 0');
+
+  const pieciu = graWyscig({ liczbaGraczy: 5 });
+  for (const id of ['g-5', 'g-4', 'g-3', 'g-2', 'g-1']) zakonczWszystkieStacje(pieciu, id);
+  assert.deepEqual(premiaZaKolejnosc(pieciu), { 'g-5': 3, 'g-4': 2, 'g-3': 1 }, '5 grających: 3, 2, 1, 0, 0 — sufit');
+
+  // Odłączeni wcześniej nie liczą się do puli: czterech zarejestrowanych,
+  // dwóch rezygnuje → gramy o 1 pkt, nie o 3.
+  const zRezygnacjami = graWyscig({ liczbaGraczy: 4 });
+  zRezygnacjami.zdarzenia.push({ kolejnosc: 900, graczId: 'g-3', typ: 'rezygnacja', dane: { powod: 'test' }, tSerwera: 't900' });
+  zRezygnacjami.zdarzenia.push({ kolejnosc: 901, graczId: 'g-4', typ: 'rezygnacja', dane: { powod: 'test' }, tSerwera: 't901' });
+  zakonczWszystkieStacje(zRezygnacjami, 'g-2');
+  zakonczWszystkieStacje(zRezygnacjami, 'g-1');
+  assert.deepEqual(premiaZaKolejnosc(zRezygnacjami), { 'g-2': 1 }, 'dwóch odłączonych: pula 1, nie 3');
 });
 
 test('premia: jeden gracz i gra bez konfiguracji nie dają premii', () => {

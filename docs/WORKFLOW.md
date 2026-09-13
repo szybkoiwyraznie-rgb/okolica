@@ -261,8 +261,9 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
    pamięta grę…" → „↩ Wróć do gry" → zamknięte stacje nie wracają, postęp
    i wyniki są aktualne.
 6. **Koniec z ręki hosta**: A klika „⏹ Zakończ grę (host)" — u obu telefonów
-   podsumowanie i ranking końcowy; premie 3/2/1 za ukończenie przed końcem
-   liczą się także przy takim końcu.
+   podsumowanie i ranking końcowy; premie za ukończenie przed końcem liczą się
+   także przy takim końcu, a ich pula zależy od liczby grających, którzy nie
+   odłączyli się wcześniej (2 grających: 1/0, 3: 2/1/0, 4 i więcej: 3/2/1/0).
 7. **Koniec naturalny**: po ostatniej odpowiedzi (wszyscy aktywni domknęli
    stacje) oba telefony pokazują ostateczną tabelę TEJ gry (ADR 0038: zwycięzca,
    punkty, poprawne — bez eksportów i statystyk).

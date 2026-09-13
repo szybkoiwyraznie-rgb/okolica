@@ -579,16 +579,17 @@ test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy →
   assert.equal(wyniki['g-1'].stacjeZamkniete, 3, 'Ala zamknęła 3 stacje');
   assert.equal(wyniki['g-2'].stacjeZamkniete, 3, 'Bartek zamknął 3 stacje (w tym z kolejki offline)');
   assert.equal(wyniki['g-1'].poprawne, 3, 'wszystkie odpowiedzi Ali poprawne');
-  // premia za kolejność ukończenia: STAŁA 3/2/1 (właściciel, 2026-09-11)
-  assert.equal(wyniki['g-1'].premia, 3, 'Ala skończyła pierwsza: premia 3');
-  assert.equal(wyniki['g-2'].premia, 2, 'Bartek drugi: premia 2 (stała 3/2/1)');
-  assert.equal(wyniki['g-1'].punkty, 6, 'podsumowanie: 3 pkt z odpowiedzi + premia 3');
-  assert.equal(wyniki['g-2'].punkty, 5, 'Bartek: 3 pkt + premia 2');
+  // premia za kolejność ukończenia: pula = grający − 1 (uwaga L, ADR 0027 aneks
+  // 2026-09-13) — dwóch grających gra o 1 pkt, drugi dostaje zero.
+  assert.equal(wyniki['g-1'].premia, 1, 'Ala skończyła pierwsza: premia 1 (2 grających → pula 1)');
+  assert.equal(wyniki['g-2'].premia, 0, 'Bartek drugi: premia 0');
+  assert.equal(wyniki['g-1'].punkty, 4, 'podsumowanie: 3 pkt z odpowiedzi + premia 1');
+  assert.equal(wyniki['g-2'].punkty, 3, 'Bartek: 3 pkt + premia 0');
   // tabela na obu telefonach: kolumna premii i postęp „ile z ilu”
   for (const [nazwa, u] of [['A', A], ['B', B]]) {
     const wiersze = [...el(u, 'gra-multi-wiersze').children];
-    assert.match(wiersze[0].textContent, /Ala.*3\/3.*\+3/, `${nazwa}: pierwsza w tabeli ma postęp 3/3 i premię +3`);
-    assert.match(wiersze[1].textContent, /Bartek.*3\/3.*\+2/, `${nazwa}: drugi ma postęp 3/3 i premię +2`);
+    assert.match(wiersze[0].textContent, /Ala.*3\/3.*\+1/, `${nazwa}: pierwsza w tabeli ma postęp 3/3 i premię +1`);
+    assert.match(wiersze[1].textContent, /Bartek.*3\/3.*—/, `${nazwa}: drugi ma postęp 3/3 i kreskę zamiast premii`);
   }
 });
 
@@ -710,8 +711,8 @@ test('host kończy grę przyciskiem: podsumowanie u wszystkich, premia liczy si�
   await czekajNa(A, () => most.znajdz(kodGry(most)).stan === 'zakonczona', 'most zakończył grę po kliknięciu hosta');
   const kod = kodGry(most);
   const wyniki = most.znajdz(kod).wyniki;
-  assert.equal(wyniki['g-2'].premia, 3, 'Bartek skończył przed końcem gry: premia 3 liczy się także przy przedwczesnym końcu');
-  assert.equal(wyniki['g-2'].punkty, 6, '3 odpowiedzi + premia 3');
+  assert.equal(wyniki['g-2'].premia, 1, 'Bartek skończył przed końcem gry: premia liczy się także przy przedwczesnym końcu (2 grających → pula 1)');
+  assert.equal(wyniki['g-2'].punkty, 4, '3 odpowiedzi + premia 1');
   assert.equal(wyniki['g-1'].premia, 0, 'Ala nie domknęła stacji: bez premii');
   await przepompuj(B, 1);
   for (const [nazwa, u] of [['A', A], ['B', B]]) {

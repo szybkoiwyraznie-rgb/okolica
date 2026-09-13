@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-104">
-  <script type="module" src="app/app.js?v=m12-104"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-105">
+  <script type="module" src="app/app.js?v=m12-105"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -283,7 +283,7 @@
           <input id="multi-trasa-sekret" type="checkbox" checked>
           <span>Widoczna tylko kolejna stacja (trasa-sekret)</span>
         </label>
-        <p id="multi-punktacja" class="podpowiedz">Punktacja w obu trybach: każda dobra odpowiedź to 1 pkt, a za zaliczenie wszystkich stacji — 3 pkt za 1. miejsce, 2 pkt za 2., 1 pkt za 3.</p>
+        <p id="multi-punktacja" class="podpowiedz">Punktacja w obu trybach: każda dobra odpowiedź to 1 pkt. Premia za zaliczenie wszystkich stacji zależy od liczby grających: przy 2 grających pierwszy dostaje 1 pkt, przy 3 — kolejno 2, 1, 0, przy 4 i więcej — 3, 2, 1, 0. Gracze, którzy odłączyli się wcześniej, nie liczą się do premii.</p>
       </fieldset>
 
       <p id="bledy-setup" class="bledy" role="alert" hidden></p>

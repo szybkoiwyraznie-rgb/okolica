@@ -523,9 +523,13 @@ bez składnika czasowego (ADR 0023 pkt 1). Gra kończy się, gdy każdy
 niezrezygnowany gracz odpowiedział na wszystkich stacjach, ALBO gdy organizator
 zakończy ją przed czasem.
 
-**Premia za kolejność ukończenia** (aneks właściciela 2026-09-11): STAŁA —
-**3 pkt za 1. miejsce, 2 pkt za 2., 1 pkt za 3.**; 4. i dalsi: 0,
-niezależnie od liczby graczy. Kolejność bierze się z `kolejnosc` zdarzeń
+**Premia za kolejność ukończenia** (aneks właściciela 2026-09-13, uwaga L):
+pula = **min(3, grający − 1)**, gdzie „grający" to gracze bez rezygnacji
+w momencie zakończenia gry — pierwszy z nich dostaje `pula`, drugi `pula − 1`,
+itd. aż do zera: **1 grający → 0 pkt, 2 → 1/0, 3 → 2/1/0, 4 i więcej →
+3/2/1/0…**. Odłączeni wcześniej nie liczą się ani do puli, ani do miejsc.
+(Wcześniej, aneksem z 2026-09-11, premia była stała 3/2/1 niezależnie od liczby
+graczy.) Kolejność bierze się z `kolejnosc` zdarzeń
 nadawanej przez most, nie z zegara urządzenia. Rezygnujący i gracze
 niedokończeni premii nie dostają — ale ukończenie wszystkich stacji PRZED
 przedwczesnym końcem gry (host, `gra-zakoncz`) premię zachowuje.

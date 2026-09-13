@@ -145,7 +145,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-104';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-105';
 
 export { ramkaGeohash, sasiednieGeohash };
 
@@ -324,17 +324,23 @@ export function postepGracza(gra, graczId) {
   return postep;
 }
 
+/** Najwyższa premia za 1. miejsce — tyle jest przy 4 grających i więcej. */
+export const MAKS_PREMIA_KOLEJNOSCI = 3;
+
 /**
- * Premia za kolejność ukończenia (ADR 0027 część B pkt 5): pierwszy gracz, który
- * zamknął wszystkie stacje, dostaje (G − 1) punktów, drugi (G − 2), …, ostatni 0.
+ * Premia za kolejność ukończenia (ADR 0027 część B pkt 5, aneks 2026-09-13):
+ * pula zależy od liczby graczy, którzy DOGRALI do końca — pierwszy z nich
+ * dostaje `pula`, drugi `pula − 1`, …, aż do zera.
  *
+ * - **pula = min(3, grający − 1)**, gdzie „grający" to gracze bez rezygnacji
+ *   w momencie zakończenia gry (właściciel 2026-09-13, uwaga L): 1 grający →
+ *   0 pkt, 2 → 1/0, 3 → 2/1/0, 4 i więcej → 3/2/1/0…; odłączeni wcześniej nie
+ *   wliczają się ani do puli, ani do miejsc;
  * - kolejność bierze się z `kolejnosc` zdarzeń nadawanej przez most, NIE z zegara
  *   urządzenia (ADR 0027 pkt 4) — dwa telefony nie mają wspólnego czasu;
  * - gracz, który zrezygnował albo nie zamknął wszystkich stacji (host
  *   zakończył grę wcześniej), premii nie dostaje — choć ukończenie przed
  *   końcem gry liczy się jak zwykle (właściciel, 2026-09-11);
- * - premia jest STAŁA: 3/2/1 pkt za 1./2./3. miejsce (4. i dalej: 0),
- *   niezależnie od liczby graczy (właściciel, 2026-09-11 — aneks ADR 0027);
  * - remis kolejności jest niemożliwy: `kolejnosc` jest nadawana sekwencyjnie
  *   w blokadzie zapisu mostu (`zBlokada`), więc każdy ma inną.
  *
@@ -348,19 +354,22 @@ export function premiaZaKolejnosc(gra) {
   // Hot-seat (jedna gra na jednym telefonie, ADR 0026 aneks): gracze idą razem,
   // więc „kto pierwszy skończył" jest artefaktem kolejności klikania — premii 0.
   if (gra?.tryb === TRYB_HOTSEAT) return premia;
-  const rezygnacje = new Set((gra.zdarzenia ?? []).filter((z) => z.typ === 'rezygnacja').map((z) => z.graczId));
   const ostatnia = new Map();
   for (const z of gra.zdarzenia ?? []) {
     if (z.typ === 'odpowiedz' && z.stacjaId != null) ostatnia.set(z.graczId, Number(z.kolejnosc) || 0);
   }
-  const skonczeni = gracze
-    .map((g) => ({ id: g.id, postep: postepGracza(gra, g.id), koniec: ostatnia.get(g.id) ?? 0 }))
-    .filter((w) => !w.postep.zrezygnowal && !rezygnacje.has(w.id) && w.postep.stacjeZamkniete >= N)
-    .sort((a, b) => a.koniec - b.koniec);
-  skonczeni.forEach((w, i) => {
-    const ile = [3, 2, 1][i] ?? 0;
-    if (ile > 0) premia[w.id] = ile;
-  });
+  const postepy = gracze.map((g) => ({ id: g.id, postep: postepGracza(gra, g.id), koniec: ostatnia.get(g.id) ?? 0 }));
+  // `postepGracza` ustawia `zrezygnowal` ze zdarzeń 'rezygnacja' — to jedyne
+  // źródło odłączenia, więc tyle wystarczy do policzenia grających (uwaga L).
+  const dograli = postepy.filter((w) => !w.postep.zrezygnowal);
+  const pula = Math.min(MAKS_PREMIA_KOLEJNOSCI, Math.max(0, dograli.length - 1));
+  dograli
+    .filter((w) => w.postep.stacjeZamkniete >= N)
+    .sort((a, b) => a.koniec - b.koniec)
+    .forEach((w, i) => {
+      const ile = pula - i;
+      if (ile > 0) premia[w.id] = ile;
+    });
   return premia;
 }
 

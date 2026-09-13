@@ -920,7 +920,11 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   assert.match(APP, /Wspólna Trasa/, 'UI nazywa tryb Wspólna Trasa');
   assert.match(APP, /Wyścig na Orientację/, 'UI nazywa tryb Wyścig na Orientację');
   assert.match(INDEX, /Punktacja w obu trybach/, 'wspólne zdanie o punktacji w index.html');
-  assert.match(INDEX, /3 pkt za 1\. miejsce, 2 pkt za 2\., 1 pkt za 3\./, 'premia 3/2/1 w zdaniu o punktacji');
+  // Premia za kolejność (ADR 0027 aneks 2026-09-13, uwaga L): pula zależy od
+  // liczby grających, którzy dograli — zdanie w UI musi to mówić wprost.
+  assert.match(INDEX, /Premia za zaliczenie wszystkich stacji zależy od liczby grających/, 'zdanie o punktacji mówi o zależności premii od liczby grających');
+  assert.match(INDEX, /przy 4 i więcej — 3, 2, 1, 0/, 'zdanie podaje sufit 3/2/1/0 dla 4 i więcej grających');
+  assert.match(INDEX, /którzy odłączyli się wcześniej, nie liczą się do premii/, 'zdanie mówi, że odłączeni nie wchodzą do puli');
   assert.ok(!INDEX.includes('Na serwer jadą wyłącznie pseudonimy'), 'zdanie o tym, co jedzie na serwer, usunięte (właściciel, 2026-09-11)');
   // m12-74: po wklejeniu paczki otwiera się LOBBY (nie panel „Załóż grę”)
   assert.match(APP, /multiPoPaczce/, 'fork multi po paczce: lobby, nie gra hot-seat');
@@ -1554,4 +1558,21 @@ test('kontrakt ADR 0041: sygnał zdarzenia to dźwięk I wibracja', () => {
     'przełącznik „🔔 sygnały" wyłącza oba kanały naraz (ADR 0041 pkt 4)');
   assert.match(APP, /catch \{ \/\* brak wibracji \(desktop, iOS\) jest normalny \*\/ \}/,
     'brak wibracji jest cichym no-opem i nie przerywa gry (LESSONS L6)');
+});
+test('kontrakt ADR 0027 aneks 2026-09-13: pula premii = min(3, grający − 1)', () => {
+  // Właściciel 2026-09-13 (uwaga L): punktacja zależy od liczby grających
+  // w momencie zakończenia gry, a odłączeni wcześniej nie liczą się do puli.
+  const WIELO = czytaj('app/wieloosobowa.js');
+  assert.match(WIELO, /export const MAKS_PREMIA_KOLEJNOSCI = 3;/, 'sufit premii jest nazwaną stałą');
+  assert.match(WIELO, /const dograli = postepy\.filter\(\(w\) => !w\.postep\.zrezygnowal\);/,
+    'do puli wchodzą tylko gracze bez rezygnacji');
+  assert.match(WIELO, /const pula = Math\.min\(MAKS_PREMIA_KOLEJNOSCI, Math\.max\(0, dograli\.length - 1\)\);/,
+    'aplikacja liczy pulę z grających, którzy dograli (1 grający → 0 pkt)');
+  assert.match(WIELO, /const ile = pula - i;/, 'miejsca schodzą od puli w dół, nie od stałej 3/2/1');
+  assert.match(GS, /const grajacy = gracze\.filter\(\(g\) => !rezygnacje\[g\.id\]\)\.length;/,
+    'most liczy grających tak samo (bez zrezygnowanych)');
+  assert.match(GS, /const pula = Math\.min\(maksPremia, Math\.max\(0, grajacy - 1\)\);/,
+    'most liczy tę samą pulę — kopię pilnuje test parity w most-gra.test.js');
+  assert.equal(/\[3, 2, 1\]\[i\]/.test(WIELO + GS), false,
+    'stała tabela 3/2/1 umarła po obu stronach (LESSONS L31: usunięcie i grep w tym samym commitcie)');
 });
