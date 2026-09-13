@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-103';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-103';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-104';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-104';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,21 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-103';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-103';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-103';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-103';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-103';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-103';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-103';
+} from './protokol.js?v=m12-104';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-104';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-104';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-104';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-104';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-104';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-104';
+import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-104';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-103';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-103';
+} from './zestawy.js?v=m12-104';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-104';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -62,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-103';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-103';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-103';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-103';
-import { adresMostu, stanMostu } from './most.js?v=m12-103';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-103';
+} from './sieci.js?v=m12-104';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-104';
+import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-104';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-104';
+import { adresMostu, stanMostu } from './most.js?v=m12-104';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-104';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-103';
+} from './oceny.js?v=m12-104';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -169,6 +170,12 @@ const STAN = {
   przerwaSkumulowanaMs: 0,
   /** Watchdog bezczynności (`setInterval`) — żyje całą sesję aplikacji. */
   zegarAktywnosci: null,
+  // ADR 0030 aneks 2026-09-13 (uwaga D po wycofaniu blokady): ekran obraca się
+  // sam, a po obrocie aplikacja klika za gracza ◎ Centrowanie na mapie.
+  /** Ostatni zmierzony kierunek ekranu: 'pion', 'poziom' albo '' (brak pomiaru). */
+  kierunekEkranu: '',
+  /** Uchwyt opóźnienia, które czeka na uspokojenie wymiarów po `resize`. */
+  obrotOpoznienie: null,
   /** M6/R5: kiedy odsłonięto bieżące pytanie (czas odpowiedzi dla modelu). */
   pytaniePokazaneMs: 0,
   /** M6/R6: snapshot `stan-gry/1` znaleziony przy starcie (kandydat do wznowienia). */
@@ -412,10 +419,20 @@ function przelaczSetup() {
   pokazEkran('setup');
 }
 
+/**
+ * Która z trzech map jest teraz na ekranie: `stacje`, `prompt` i `paczka` dzielą
+ * mapę stacji, gra ma swoją, reszta patrzy na mapę pozycji. Reguła żyje w jednym
+ * miejscu, bo czytają ją dwie rzeczy: `body[data-mapa]` dla CSS (ADR 0030 pkt 1)
+ * i „autokliknięcie" ◎ po obrocie ekranu (aneks 2026-09-13).
+ */
+function nazwaWidocznejMapy() {
+  if (['stacje', 'prompt', 'paczka'].includes(STAN.ekran)) return 'stacje';
+  return STAN.ekran === 'gra' ? 'gra' : 'pozycja';
+}
+
 function odswiezWidocznoscPaneli() {
   const podglad = STAN.podgladMapy === true;
-  document.body.dataset.mapa = ['stacje', 'prompt', 'paczka'].includes(STAN.ekran)
-    ? 'stacje' : STAN.ekran === 'gra' ? 'gra' : 'pozycja';
+  document.body.dataset.mapa = nazwaWidocznejMapy();
   const info = !$('ekran-informacje').hidden;
   const ranking = !$('ekran-ranking').hidden;
   const droga = STAN.ekran === 'gra' && !$('gra-panel-odcinek').hidden;
@@ -1402,6 +1419,40 @@ function centrujNaPozycji() {
   const p = STAN.pozycja;
   if (!p) return;
   kazdaMapa((mapa) => mapa.ustawSrodek({ lat: p.lat, lon: p.lon, zoom: zoomDlaPromienia(mapa, p.lat) }));
+}
+
+/** Wymiary okna; zera, gdy okna nie ma (testy czystych modułów). */
+function rozmiarOkna() {
+  if (typeof window === 'undefined') return { szerokosc: 0, wysokosc: 0 };
+  return { szerokosc: window.innerWidth ?? 0, wysokosc: window.innerHeight ?? 0 };
+}
+
+/**
+ * Zdarzenie rozmiaru albo obrotu (ADR 0030 aneks 2026-09-13): nie działamy od
+ * razu — telefon w trakcie animacji obrotu melduje kilka wymiarów pośrednich,
+ * a `resize` bywa wcześniejszy niż nowy układ CSS.
+ */
+function naZmianeRozmiaruOkna() {
+  clearTimeout(STAN.obrotOpoznienie);
+  STAN.obrotOpoznienie = setTimeout(sprawdzObrotEkranu, OPOZNIENIE_OBROTU_MS);
+}
+
+/**
+ * Obrót ekranu = „autokliknięcie" ◎ Centrowanie na widocznej mapie: dokładnie
+ * ten kod, który uruchamia przycisk (`mapa.js` → `naPrzycisk('centruj')`), więc
+ * kadr wraca na gracza w bieżącym przybliżeniu, na panelu o nowych wymiarach.
+ * Zmiana rozmiaru BEZ obrotu (klawiatura, pasek przeglądarki, okno na desktopie)
+ * widoku nie rusza — mapę prowadzi palec gracza (ADR 0011).
+ */
+function sprawdzObrotEkranu() {
+  STAN.obrotOpoznienie = null;
+  const po = kierunekEkranu(rozmiarOkna());
+  if (!czyObrotEkranu({ przed: STAN.kierunekEkranu, po })) return;
+  STAN.kierunekEkranu = po;
+  const mapa = STAN.mapy[nazwaWidocznejMapy()];
+  if (!mapa) return;
+  mapa.odswiez(); // panel ma już nowe wymiary
+  mapa.centrujNaPozycji(); // ◎ bez klikania: widok na gracza
 }
 
 /**
@@ -5015,7 +5066,11 @@ function start() {
   window.addEventListener('resize', () => {
     ustawWysokoscBelki(); // belka mogła urosnąć/zmaleć (`.akcje` się zawija)
     kazdaMapa((mapa) => mapa.odswiez());
+    naZmianeRozmiaruOkna(); // ADR 0030 aneks: po obrocie ◎ klika się samo
   });
+  // iOS potrafi zgłosić obrót osobnym zdarzeniem (i inaczej ustawić kolejność
+  // względem nowego układu) — idzie tym samym torem co `resize`.
+  window.addEventListener('orientationchange', naZmianeRozmiaruOkna);
 
   // Właściciel 2026-09-13 (uwaga B, ADR 0040): ŻADNEJ pauzy w tle. Aplikacja ma
   // być cały czas włączona, a po powrocie wszystko wznawia się samo — bez kliku.
@@ -5228,6 +5283,7 @@ function start() {
   // a JEDYNA przerwa w śledzeniu to kwadrans bez żadnej akcji gracza — wznawia
   // ją dowolny klik, bez przycisku i bez pytania.
   STAN.ostatniaAkcjaMs = performance.now();
+  STAN.kierunekEkranu = kierunekEkranu(rozmiarOkna()); // punkt odniesienia obrotu
   document.addEventListener('click', zaznaczAktywnosc, true);
   document.addEventListener('keydown', zaznaczAktywnosc, true);
   STAN.zegarAktywnosci = setInterval(sprawdzBezczynnosc, SPRAWDZANIE_BEZCZYNNOSCI_MS);

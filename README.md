@@ -34,7 +34,8 @@ w odległości ≤50 m (bez oceny dokładności GPS), komunikaty błędów GPS, 
 **M2 — mapa: kod i testy gotowe.** Na ekranach „pozycja" i „stacje" jest mapa
 SVG z podkładem rastrowym bez klucza API (OSM Standard, OpenTopoMap, Esri World
 Imagery albo podkład wyłączony), gestami palca (drag + pinch), przyciskami
-＋ − ◎, markerem pozycji bez koła dokładności, przerywanym okręgiem promienia gry,
+＋ − ◎ (po obrocie ekranu ◎ klika się samo — mapa wraca na gracza, ADR 0030
+aneks 2026-09-13; blokady orientacji nie ma), markerem pozycji bez koła dokładności, przerywanym okręgiem promienia gry,
 numerowanymi pinezkami stacji, paskiem skali i zawsze widoczną atrybucją
 dostawcy. Kamień zamknięty 2026-09-05: właściciel potwierdził w live preview,
 że podkład jest widoczny i czytelny, a atrybucja i przyciski są na miejscu

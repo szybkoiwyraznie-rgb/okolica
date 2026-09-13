@@ -107,6 +107,14 @@ app/
                               pointerup), przyciskami ±/◎, atrybucją i trybem
                               ręcznym — przeciąganie pinezek stacji (DOM,
                               ADR 0005 pkt 8b)
+  orientacja.js             — czyste decyzje o obrocie ekranu (ADR 0030 aneks
+                              2026-09-13): `kierunekEkranu` (pion/poziom z
+                              wymiarów okna, brak danych = '') i `czyObrotEkranu`
+                              (tylko zmiana kierunku jest obrotem), plus
+                              `OPOZNIENIE_OBROTU_MS`. Bez DOM i bez `window`:
+                              nasłuch `resize`/`orientationchange`, debounce
+                              i „autokliknięcie" ◎ Centrowanie na widocznej
+                              mapie trzyma `app.js`. Blokady orientacji NIE MA
   styles.css                — tokeny palety, motyw jasny/ciemny, cele dotykowe ≥44 px
                               (kontrasty WCAG AA pilnowane bramą: tools/audyt-kontrastu.mjs)
   sygnaly.js                — M10: plany sygnałów zdarzeń (wibracja + nuty Web

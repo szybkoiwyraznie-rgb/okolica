@@ -1500,3 +1500,40 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
   assert.equal(/#informacje-gra h2\s*\{/.test(STYLE), false,
     'reguła na nagłówek „Gra" w Informacjach umarła z przenoszeniem sterowania (L31)');
 });
+test('kontrakt ADR 0030 aneks: ekran obraca się sam, a po obrocie ◎ klika się samo', () => {
+  // Właściciel 2026-09-13 (uwaga D z testów terenowych): najpierw prośba
+  // o zablokowanie ekranu w pionie z przełącznikiem poziomu w górnym menu,
+  // potem WYCOFANA — zostaje autoobrót jak dotąd i jedno „autokliknięcie" ◎.
+
+  // 1. NIE MA blokady orientacji ani przełącznika w menu.
+  assert.equal(/orientation\.lock|lockOrientation/.test(APP), false,
+    'aplikacja nie blokuje orientacji ekranu (uwaga D wycofana)');
+  assert.equal(/id="(przycisk|przelacznik)-orientacja/.test(INDEX), false,
+    'w górnym menu nie ma przełącznika pion/poziom');
+  const manifest = JSON.parse(czytaj('assets/manifest.json'));
+  assert.equal('orientation' in manifest, false,
+    'manifest nie zamyka aplikacji w jednej orientacji');
+
+  // 2. Decyzje bierze czysty moduł, a warstwa DOM nasłuchuje obu zdarzeń.
+  assert.match(APP, /from '\.\/orientacja\.js\?v=/, 'app.js bierze decyzje o obrocie z orientacja.js');
+  assert.match(APP, /import \{ OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu \}/,
+    'import orientacja.js ma pełny kształt (ADR 0030 aneks)');
+  assert.match(APP, /naZmianeRozmiaruOkna\(\); \/\/ ADR 0030 aneks: po obrocie ◎ klika się samo/,
+    'resize uruchamia sprawdzenie obrotu');
+  assert.match(APP, /window\.addEventListener\('orientationchange', naZmianeRozmiaruOkna\);/,
+    'obrót zgłoszony osobnym zdarzeniem (iOS) idzie tym samym torem');
+  assert.match(APP, /STAN\.obrotOpoznienie = setTimeout\(sprawdzObrotEkranu, OPOZNIENIE_OBROTU_MS\);/,
+    'czekamy, aż wymiary osiądą — animacja obrotu melduje wartości pośrednie');
+  assert.match(APP, /STAN\.kierunekEkranu = kierunekEkranu\(rozmiarOkna\(\)\);/,
+    'start mierzy punkt odniesienia, żeby pierwszy obrót był obrotem');
+
+  // 3. Skutek: tylko zmiana KIERUNKU i tylko na widocznej mapie.
+  assert.match(APP, /const po = kierunekEkranu\(rozmiarOkna\(\)\);\n {2}if \(!czyObrotEkranu\(\{ przed: STAN\.kierunekEkranu, po \}\)\) return;/,
+    'zmiana rozmiaru bez obrotu widoku nie rusza — mapę prowadzi palec gracza (ADR 0011)');
+  assert.match(APP, /const mapa = STAN\.mapy\[nazwaWidocznejMapy\(\)\];\n {2}if \(!mapa\) return;\n {2}mapa\.odswiez\(\);[^\n]*\n {2}mapa\.centrujNaPozycji\(\);/,
+    'po obrocie widoczna mapa jest przeliczana i centrowana na graczu');
+  assert.match(MAPA, /centrujNaPozycji: \(\) => naPrzycisk\('centruj'\)/,
+    '„autokliknięcie" idzie tym samym kodem, który uruchamia przycisk ◎');
+  assert.match(APP, /document\.body\.dataset\.mapa = nazwaWidocznejMapy\(\);/,
+    'CSS (ADR 0030 pkt 1) i centrowanie czytają tę samą regułę widocznej mapy');
+});

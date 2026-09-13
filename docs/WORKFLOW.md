@@ -144,7 +144,11 @@ jest widoczne jako karta obok rozmowy.
 6. Wejdź na ekran stacji: pięć numerowanych pinezek w pierścieniu, a „Inny
    układ" przestawia je i przerysowuje mapę.
 7. Obróć telefon (albo zmień rozmiar okna) — mapa ma się przeliczyć, nie zostać
-   ucięta.
+   ucięta, a po obrocie ma **sama wrócić na Twoją pozycję**: aplikacja klika ◎
+   za gracza (ADR 0030 aneks 2026-09-13), przybliżenie zostaje Twoje. Zwykła
+   zmiana rozmiaru bez obrotu (klawiatura, pasek przeglądarki, okno na
+   desktopie) kadru NIE rusza — mapę prowadzi palec. Przełącznika orientacji
+   w menu nie ma i być nie musi: ekran obraca się sam.
 8. Wynik (co działa, co nie, zrzut albo opis) → wpis w `docs/PROJECT_HISTORY.md`
    i ewentualna lekcja w `docs/LESSONS.md`; dopiero wtedy kamień M2 jest
    ukończony (`ROADMAP`: „zmiana sprawdzona na żywo").
