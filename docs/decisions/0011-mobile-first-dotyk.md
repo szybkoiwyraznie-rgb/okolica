@@ -71,3 +71,26 @@ Pkt 7 (dostępność) dostaje przykład: przycisk „⚙ START GRY” w belce je
 aktywny tylko, gdy gra się NIE toczy (`disabled` + dynamiczny `title`
 „niedostępne w trakcie gry” — strażnik przed wejściem w setup i zgubieniem
 postępu). Stan odświeża `odswiezStanIkonBelki` po każdej zmianie fazy gry.
+
+## Aneks 2026-09-13d (m12-114, zgłoszenie właściciela): czekanie na sieć jest widoczne — komunikaty pulsują
+
+Właściciel 2026-09-13: operacje sieciowe, które każą czekać, muszą być WIDAĆ —
+inaczej ekran wygląda na zepsuty, a gracz klika drugi raz. Sygnałem jest klasa
+`.pulsuje`: spokojna animacja przezroczystości 1 → 0,7 → 1 (1,4 s,
+`ease-in-out`, nieskończona), dokładana do komunikatu na czas czekania
+i gaszona razem z nim. Niosą ją `status(tekst, { czeka: true })` (`#status`),
+nowy `statusZestawow(tekst, { czeka: true })` (`#zestawy-status`, jeden zapis
+tekstu i sygnału zamiast dziewięciu) oraz nakładka `#stacje-ladowanie`.
+Pulsują: „Sprawdzam repozytorium paczek dla tej okolicy…", ponowienie po
+zimnym starcie mostu, „Pobieram dane sieci drogowej…", „Pobieram paczkę
+z repozytorium…" i „Wysyłam zaległe zdarzenia gry…".
+
+Dostępność (pkt 3 tego ADR): animacja jest DODATKIEM do zdania, nie jego
+zamiennikiem — tekst zostaje czytelny w każdej klatce, a najniższa
+przezroczystość 0,7 trzyma kontrast mierzony `tools/audyt-kontrastu.mjs`
+(`--tekst` na `--tlo`): 5,62:1 w motywie jasnym i 8,25:1 w ciemnym, oba
+powyżej AA 4,5:1. Przy `prefers-reduced-motion: reduce` animacja jest
+wyłączona, a komunikat zostaje na ekranie bez ruchu. Przycisk paczki
+w trakcie pobierania jest dodatkowo `disabled` i zmienia etykietę na
+„⏳ Ładowanie paczki…" — sygnał i blokada drugiego kliku (podwójne pobranie
+i podwójne „użycie" paczki) w jednym; dotyk ma 44 px jak dotąd.

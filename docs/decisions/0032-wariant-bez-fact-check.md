@@ -117,3 +117,14 @@ może się zdarzyć, po prostu jej nie żądamy. Test w `test/protokol.test.js` 
 **zakazuje** fraz `NIE wykonuj kwerendy`, `WYŁĄCZNIE z własnej wiedzy`,
 `pamięci treningowej` i `bez kwerendy w internecie` w szablonie §2.2 — regresja
 w stronę przymusu upadnie.
+
+## Aneks 2026-09-13 (m12-113, zgłoszenie terenowe Q): znaczek mówi „Fact-checked"
+
+Złota litera Q była dla właściciela nieczytelna — ten sam znaczek dostaje tekst
+„Fact-checked". Styl zostaje (`.znaczek-factcheck` = `color: var(--zloto)`
++ `font-weight: 700`), więc kontrast pilnowany bramą i oba motywy są nietknięte.
+Reguły z §4 bez zmian: znaczek stoi tylko przy paczkach zweryfikowanych, brak
+pola `factcheck` w starych zapisach czytamy jak `true`, a przy wariancie bez
+weryfikacji znaczka nie ma wcale. `role="img"` zostaje, a etykieta dla czytnika
+ekranu i `title` mówią to samo, co widać: „Fact-checked: pytania zweryfikowane
+w sieci".

@@ -517,3 +517,35 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Reguła:** przed usunięciem przycisku wypisz WSZYSTKIE stany, które obsługuje, i dla każdego wskaż nową drogę — automatyczną albo inny istniejący przycisk. Dla zapisu gry: zepsuty snapshot i gra w fazie `koniec` kasuje start aplikacji z jawnym statusem (kody `T**`), grę ręcznie zakończoną kasuje „Wróć na początek", a niedokończoną — ⚙ START GRY → TAK. Dla sesji multi: kasują ją cztery drogi (`opuscLobby`, `onStanGryMulti` przy `zakonczona`/`archiwum`, `rezygnujZGryMulti` i jawna odmowa mostu w `przywrocGreMulti`), a awaria sieci NIE kasuje, żeby tunel nie wyrzucił gracza z gry. Wpisz tę listę do ADR-a (pkt „konsekwencje") — to najtańsze miejsce, w którym następny agent zobaczy, że ujścia nie zniknęły, tylko zmieniły postać. Druga połowa lekcji: przywracanie stanu na starcie testuj dwoma ścieżkami — synchroniczną (localStorage: asercja od razu po `await import(app.js)`) i asynchroniczną (sieć: trzeba przepompować mikrozadania, `await oddech()` albo helper `przepompuj`), bo inaczej test zielony z powodu kolejności, nie zachowania.
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L63`.
+
+## L64 (2026-09-13) — usuwasz przycisk: grepuj TABELE KOMUNIKATÓW, nie tylko HTML
+
+**Objaw:** audyt PR #19 znalazł osiem zdań dla gracza odsyłających do kontrolek usuniętych wcześniej (pięć razy „zakończ grę przyciskiem „■ Zakończ grę””, „wgraj paczkę ponownie z pliku”, R19 „przyciskiem „Zapisz nowy””) — przy 760 zielonych testach.
+**Przyczyna:** przegląd nośników (L58) idzie po węzłach i dokumentach, a te zdania siedzą w tabelach kodów (`KODY_*`) i w gałęziach błędów `status(...)`, których w HTML nie ma; strażnik dryfu nie miał frazy z tej fali.
+**Reguła:** usuwając przycisk albo akcję, przegrepuj nośniki TEKSTU — tabele kodów w modułach, `status(...)` i `textContent =` w gałęziach błędów, lustro w `.gs`; martwą frazę wpisz w tym samym commitcie do `test/dryf-dokumentow.test.js` jako kawałek ZDANIA, nie etykietę (etykietę cytują nagrobki, L31), i dołóż niezmiennik pozytywny: kontrakt czytający wiersze KODU (`wierszeKodu` wycina komentarze), który każe zdaniu nazwać kontrolkę istniejącą w `index.html`.
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L64`.
+
+## L65 (2026-09-13) — `hidden` na przodku gasi potomków: atrapa DOM tego nie widzi
+
+**Objaw:** w drodze przycisk „▶ Symuluj dojście (tryb testowy)” był w przeglądarce nieosiągalny (Chromium: rect 0×0, `offsetParent: null`), choć `renderujGre` go odsłaniał, a 20 wywołań `dojdzSymulacja()` przechodziło.
+**Przyczyna:** `odswiezPasekDrogi()` chowa `#gra-sterowanie`, a panel fazy B jest jego potomkiem (`[hidden] { display: none !important; }` gasi poddrzewo); atrapa DOM nie modeluje kaskady ani geometrii, więc `kliknij()` działa na węźle niewidocznym.
+**Reguła:** zmieniając widoczność PRZODKA (`hidden`, `display`, `visibility`, `inert`, klasy na `body`), wypisz potomków będących celami akcji i sprawdź, czy któryś nie jest jedyną drogą do funkcji (L63) albo jedynym nośnikiem komunikatu (L6). Zielony test w atrapie NIE dowodzi widoczności — mierz ją w prawdziwej przeglądarce (ENVIRONMENT §4.1: `rect`, `offsetParent`, `elementFromPoint`), a zachowanie zależne od trybu pinuj DWOMA testami: w `?tryb=test` i terenowym (atrapa `navigator.geolocation`).
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L65`.
+
+## L66 (2026-09-13) — dokumenty z pinami: najpierw aneks, potem cytowanie z datą; kotwicz na ASCII
+
+**Objaw:** strażnik dryfu (test 5 „cytowane aneksy ADR istnieją") palił się, bo WORKFLOW cytował „ADR 0010 aneks 2026-09-13" jeszcze zanim aneks powstał; osobno zamiana akapitu w README nie trafiła, choć tekst był „na oko" ten sam.
+**Przyczyna:** strażnik czyta cytowania ze WSZYSTKICH żywych nośników (dokumenty, UI, testy, lustro `.gs`) i wymaga dosłownej daty w pliku ADR; a dokumenty mieszają cudzysłowy (`„` z `"`), więc literalne `stare`/`nowe` rozmija się o znak niewidoczny gołym okiem.
+**Reguła:** kolejność fali dokumentowej: najpierw aneks w ADR, potem cytowanie go z datą (albo cytowanie bez daty — strażnik jej wtedy nie szuka). Zamiany w dokumentach kotwicz na unikalnych fragmentach ASCII (`s.index(start)`, `s.index(end)`, podmiana przęsła między nimi), nie na całych zdaniach z polskimi cudzysłowami. Reszta reguły — przenoszenie treści ADR do archiwum (kto cytuje z datą, co czytają asercje testów, nazwa pliku bez przedrostka `NNNN-`) — w archiwum.
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L66`.
+
+## L67 (2026-09-13) — utrwalona kolejka wychodzi PRZED pobraniem stanu, a piny liczące żądania muszą nazywać cel
+
+**Objaw:** odpowiedź udzielona bez zasięgu ginęła po odświeżeniu telefonu (kolejka `app/sync.js` żyła tylko w RAM). Po jej utrwaleniu ten sam test złapał drugą usterkę: powrót do gry budował rozgrywkę ze stacją, którą wysłane właśnie zdarzenia domknęły na moście. Osobno padł pin „dokładnie jedna powtórka" — liczył WSZYSTKIE żądania atrapy, a pobieranie paczek w tle dołożyło swoje.
+**Przyczyna:** stan gry na telefonie jest pochodną odpowiedzi mostu, więc kolejność „wypchnij zaległe zdarzenia, potem pobierz stan" jest kontraktem, nie szczegółem; a pin zapisany jako długość listy żądań mierzy wszystko, co kiedykolwiek pójdzie do sieci.
+**Reguła:** utrwalając kolejkę wysyłki, wstaw jej wypchnięcie PRZED pierwszy odczyt stanu i pinuj to liczbą widoczną dla gracza (cel = NASTĘPNA stacja, nie powtórka). Warunek bezpieczeństwa ponowienia (serwer odrzuca duplikaty) zapisz w ADR jako warunek, nie jako zbieg okoliczności. Pin liczący żądania zawężaj do jego celu (`wywolania.filter(...)` po adresie albo akcji), a dokładając żądanie w tle przegrepuj testy pod kątem `wywolania.length`.
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L67`.

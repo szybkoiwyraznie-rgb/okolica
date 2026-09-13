@@ -1,6 +1,6 @@
 /**
- * Trwałość (M6/M7) — czyste funkcje: snapshot stanu gry, walidacja, klucze,
- * historia gier. Bez DOM i bez zegara: `terazMs` podaje warstwa DOM
+ * Trwałość (M6) — czyste funkcje: snapshot stanu gry, walidacja, klucze.
+ * Bez DOM i bez zegara: `terazMs` podaje warstwa DOM
  * (ADR 0004 pkt 3).
  *
  * Zasady twarde:
@@ -10,12 +10,14 @@
  * - budżet 2 MB na zapis (jak cache sieci) — przekroczenie to jawny kod T07;
  * - wszystkie klucze mają przedrostek `okolica:` — dwustopniowe czyszczenie
  *   danych z ekranu prywatności (M3) kasuje zapis gry automatycznie;
+ * - historii gier na telefonie NIE MA (zgłoszenie terenowe O, 2026-09-13;
+ *   ADR 0010 aneks): wynik zakończonej gry jedzie na wspólny Drive, a jedyną
+ *   drogą powrotu do przerwanej gry jest ten zapis;
  * - zepsuty zapis = jawna odmowa z kodem T, nigdy cichy start od zera.
  */
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-110';
-import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-110';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-110';
-import { geohash } from './geo.js?v=m12-110';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-114';
+import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-114';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-114';
 
 export const SCHEMAT_STANU = 'stan-gry/1';
 
@@ -37,10 +39,6 @@ export const KODY_TRWALOSCI = {
   T09: 'Lista stacji w zapisie jest uszkodzona.',
   T10: 'Pozycja w zapisie jest uszkodzona (oczekiwano null albo {lat, lon}).',
   T11: 'Zapis nie zawiera nazwy ekranu (oczekiwano niepustego tekstu).',
-  H01: 'To nie jest poprawny JSON historii gier.',
-  H02: 'Historia ma inny schemat niż „historia/1" — pochodzi z innej wersji aplikacji.',
-  H03: 'Lista wpisów historii jest uszkodzona (oczekiwano tablicy maks. 50 wpisów).',
-  H04: 'Wpis historii jest uszkodzony albo niekompletny.',
 };
 
 function usterka(kod) {
@@ -186,134 +184,4 @@ export function walidujStanSurowy(tekst) {
   if (typeof surowy.ekran !== 'string' || surowy.ekran.length === 0) usterki.push(usterka('T11'));
 
   return { stan: usterki.length === 0 ? surowy : null, usterki };
-}
-
-/* ------------------------------------------------------------ historia gier */
-
-/**
- * Historia gier (M7, ADR 0010 pkt 1): lista SKRÓTÓW ukończonych gier —
- * „skrót, nie treść". Wpis nie niesie pytań ani współrzędnych (ADR 0013):
- * miejsce jako nazwa (jeśli była pobrana) i `geohash6` środka (ten sam rząd
- * wielkości co klucz cache sieci — lokalny). Idempotencja po `klucz`:
- * wznowienie i dokończenie przerwanej gry ZASTĘPUJE wpis, nie duplikuje go.
- */
-export const KLUCZ_HISTORII = 'okolica:historia';
-export const SCHEMAT_HISTORII = 'historia/1';
-export const SCHEMAT_WPISU_HISTORII = 'historia-gra/1';
-
-/** Jawny limit listy: najstarsze wpisy wypadają (LRU jak w cache sieci). */
-export const LIMIT_HISTORII = 50;
-
-/** Pusta historia — punkt startu i kształt zapisu w `localStorage`. */
-export function nowaHistoria() {
-  return { schemat: SCHEMAT_HISTORII, wpisy: [] };
-}
-
-function czyPodsumowanieOk(p) {
-  return !!p && typeof p === 'object'
-    && Array.isArray(p.ranking)
-    && Number.isFinite(p.punktyRazem)
-    && Number.isFinite(p.zaliczoneStacje)
-    && Number.isFinite(p.pominietaStacje);
-}
-
-function czyWpisHistoriiOk(w) {
-  return !!w && typeof w === 'object'
-    && w.schemat === SCHEMAT_WPISU_HISTORII
-    && typeof w.klucz === 'string' && w.klucz.length > 0
-    && typeof w.data === 'string' && !Number.isNaN(Date.parse(w.data))
-    && (w.miejsce === null || typeof w.miejsce === 'string')
-    && (w.geohash6 === null || typeof w.geohash6 === 'string')
-    && typeof w.tryb === 'string' && w.tryb.length > 0
-    && (w.wiek === null || typeof w.wiek === 'string')
-    && Array.isArray(w.tematy)
-    && Number.isFinite(w.liczbaGraczy) && Number.isFinite(w.liczbaStacji)
-    && (w.zwyciezca === null || typeof w.zwyciezca === 'string')
-    && Number.isFinite(w.punktyRazem)
-    && Number.isFinite(w.zaliczoneStacje) && Number.isFinite(w.pominietaStacje)
-    && typeof w.przerwana === 'boolean';
-}
-
-/**
- * Skrót gry do historii. `podsumowanie` — wynikiem z `rozgrywka.podsumowanie()`
- * (M7 nie liczy własnej matematyki); `terazMs` podaje warstwa DOM (zegar
- * wstrzykiwany, ADR 0004 pkt 3); `przerwana: true` dla ręcznego zakończenia —
- * dokończenie gry zastąpi wpis pełnym (ta sama `klucz`).
- */
-export function skrotGry({ rozgrywka, konfig, stacje, podsumowanie, miejsce = null, terazMs, przerwana = false, factcheck = true } = {}) {
-  wymaganie(czyRozgrywkaOk(rozgrywka), `skrotGry: rozgrywka musi być stanem ${SCHEMAT_ROZGRYWKI}`);
-  wymaganie(czyKonfigOk(konfig), 'skrotGry: konfig z tryb i kodGry jest wymagany');
-  wymaganie(Array.isArray(stacje) && stacje.length > 0 && stacje.every(czyStacjaOk),
-    'skrotGry: stacje muszą być niepustą listą punktów {id, lat, lon}');
-  wymaganie(czyPodsumowanieOk(podsumowanie), 'skrotGry: podsumowanie musi być wynikiem rozgrywka.podsumowanie()');
-  wymaganie(miejsce === null || typeof miejsce === 'string', 'skrotGry: miejsce to nazwa albo null');
-  wymaganie(Number.isFinite(terazMs), 'skrotGry: terazMs musi być liczbą (czas podaje warstwa DOM)');
-
-  const zwyciezca = rozgrywka.gracze.find((g) => g.id === podsumowanie.zwyciezca)?.imie ?? null;
-  const srodek = Number.isFinite(rozgrywka.start?.lat) && Number.isFinite(rozgrywka.start?.lon)
-    ? rozgrywka.start
-    : null;
-  return {
-    schemat: SCHEMAT_WPISU_HISTORII,
-    klucz: oczyscKodGry(konfig.kodGry),
-    data: new Date(terazMs).toISOString(),
-    miejsce: miejsce && miejsce.trim() ? miejsce.trim().slice(0, 80) : null,
-    geohash6: srodek ? geohash(srodek.lat, srodek.lon, 6) : null,
-    tryb: konfig.tryb,
-    wiek: typeof konfig.wiek === 'string' && konfig.wiek ? konfig.wiek : null,
-    tematy: Array.isArray(konfig.tematy) ? [...konfig.tematy] : [],
-    liczbaGraczy: rozgrywka.gracze.length,
-    liczbaStacji: stacje.length,
-    zwyciezca,
-    punktyRazem: podsumowanie.punktyRazem,
-    zaliczoneStacje: podsumowanie.zaliczoneStacje,
-    pominietaStacje: podsumowanie.pominietaStacje,
-    przerwana: Boolean(przerwana),
-    // ADR 0032: false = gra na pytaniach z pamięci modelu; brak pola
-    // w starych wpisach czytamy jak true (reguła `!== false`).
-    factcheck: Boolean(factcheck),
-  };
-}
-
-/**
- * Dołożenie wpisu: niezmiennikowo (zwraca nową historię), ZASTĘPUJE wpis
- * o tym samym `klucz` (idempotencja — dokończenie przerwanej gry nie robi
- * dubla), dokłada na koniec (najnowszy ostatni) i trzyma limit `LIMIT_HISTORII`
- * (najstarsze wypadają).
- */
-export function dodajWpisHistorii(historia, wpis) {
-  wymaganie(historia && typeof historia === 'object' && historia.schemat === SCHEMAT_HISTORII && Array.isArray(historia.wpisy),
-    `dodajWpisHistorii: oczekiwano historii ${SCHEMAT_HISTORII}`);
-  wymaganie(czyWpisHistoriiOk(wpis), `dodajWpisHistorii: wpis musi być skrótem ${SCHEMAT_WPISU_HISTORII}`);
-  const wpisy = [...historia.wpisy.filter((w) => w?.klucz !== wpis.klucz), wpis];
-  const przyciete = wpisy.length > LIMIT_HISTORII ? wpisy.slice(wpisy.length - LIMIT_HISTORII) : wpisy;
-  return { schemat: SCHEMAT_HISTORII, wpisy: przyciete };
-}
-
-/**
- * Walidacja surowego tekstu historii z `localStorage`: `{ historia, usterki }`
- * — atomowa jak `walidujStanSurowy`: całość przechodzi ALBO null z kodami H
- * (nigdy częściowo oczyszczona lista po cichu — ADR 0010 pkt 6: zepsuty zapis
- * to jawny komunikat z ofertą kasowania, nie ciche odrzucenie).
- */
-export function walidujHistorieSurowa(tekst) {
-  if (typeof tekst !== 'string' || tekst.length === 0) return { historia: null, usterki: [usterka('H01')] };
-  let surowy;
-  try {
-    surowy = JSON.parse(tekst);
-  } catch {
-    return { historia: null, usterki: [usterka('H01')] };
-  }
-  if (!surowy || typeof surowy !== 'object' || Array.isArray(surowy)) {
-    return { historia: null, usterki: [usterka('H01')] };
-  }
-  if (surowy.schemat !== SCHEMAT_HISTORII) return { historia: null, usterki: [usterka('H02')] };
-
-  const usterki = [];
-  if (!Array.isArray(surowy.wpisy) || surowy.wpisy.length > LIMIT_HISTORII) {
-    usterki.push(usterka('H03'));
-  } else if (!surowy.wpisy.every(czyWpisHistoriiOk)) {
-    usterki.push(usterka('H04'));
-  }
-  return { historia: usterki.length === 0 ? surowy : null, usterki };
 }

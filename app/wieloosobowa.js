@@ -62,7 +62,7 @@ export const KODY_WIELOOSOBOWE = {
   // (właściciel, 2026-09-11). Numery zostają zajęte na stałe i nie dostaną
   // nowego znaczenia — inaczej starszy klient odczytałby cudzy błąd jako swój
   // (ten sam powód, dla którego E14 i E18 w pakietach są wycofane).
-  R19: 'Nie mamy takiego pseudonimu — sprawdź pisownię albo zapisz go przyciskiem „Zapisz nowy".',
+  R19: 'Nie mamy takiego pseudonimu — sprawdź pisownię; nowe imię zakłada profil razem z PIN-em, więc wpisz imię i PIN jeszcze raz.',
   R20: 'PIN jest niepoprawny albo nie pasuje do tego pseudonimu (4–8 cyfr).',
 };
 
@@ -145,7 +145,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-110';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-114';
 
 export { ramkaGeohash, sasiednieGeohash };
 
@@ -291,6 +291,26 @@ export function zbudujZdarzenie({ kod, idGry, graczId, typ, stacjaId = null, dan
 /* ------------------------------ maszynka gry (lustra logiki mostu) */
 
 /** Czy gra domknęła się zdarzeniami (oba tryby; rezygnacje zaliczone). */
+/**
+ * Trasa-sekret (właściciel, 2026-09-11): we Wspólnej Trasie z włączonym
+ * sekretem mapa gry pokazuje TYLKO bieżącą stację — następne odsłaniają się po
+ * zamknięciu poprzednich. Sekret jest własnością ŻYWEJ gry sieciowej, nie
+ * telefonu.
+ *
+ * Zgłoszenia terenowe R i N (2026-09-13): warunek liczony z resztkowego
+ * `STAN.multi` chował trasę także wtedy, gdy gra sieciowa już się zakończyła
+ * albo gdy telefon miał kontekst multi z odzyskanej przy starcie sesji, a gracz
+ * uruchomił hot-seata. Efekt: w hot-seacie widać było jedną stację, a jej pin
+ * dostawał numer 1 zamiast numeru na trasie. Stąd twardy warunek `stan ===
+ * 'trwa'`. Brak pola `trasaSekret` w starych grach traktujemy jak sekret
+ * (zgodność wstecz z m12-73).
+ */
+export function czyTrasaSekret(multi) {
+  const gra = multi?.gra;
+  if (!gra || gra.stan !== 'trwa') return false;
+  return gra.tryb === TRYBY_GRY.trasa && gra.trasaSekret !== false;
+}
+
 export function czyKompletna(gra) {
   if (!gra) return false;
   const N = gra.konfiguracja?.liczbaStacji ?? 0;
@@ -510,4 +530,43 @@ export function walidujKolejkeHotseat(surowy) {
 export function walidujWyslaneHotseat(surowy) {
   if (surowy?.schemat !== SCHEMAT_WYSLANYCH_HOTSEAT || !Array.isArray(surowy.klucze)) return [];
   return surowy.klucze.filter((k) => typeof k === 'string' && k);
+}
+
+export const SCHEMAT_KOLEJKI_ZDARZEN = 'zdarzenia-kolejka/1';
+export const LIMIT_KOLEJKI_ZDARZEN = 50;
+
+/** Czy wpis kolejki jest zdarzeniem gry, które da się wysłać jeszcze raz. */
+function czyZdarzenieKolejkiOk(z) {
+  return !!z && typeof z === 'object' && z.schemat === SCHEMAT_ZDARZENIA
+    && TYPY_ZDARZEN.includes(z.typ) && !!z.graczId && (!!z.kod || !!z.idGry)
+    && (z.dane === undefined || (z.dane !== null && typeof z.dane === 'object'));
+}
+
+/**
+ * Zdarzenia gry sieciowej, które NIE doszły na most (brak zasięgu w chwili
+ * odpowiedzi) — utrwalone w pamięci telefonu, więc przeżywają odświeżenie
+ * (ADR 0019 aneks 2026-09-13d; wzór: `walidujKolejkeHotseat` i kolejka ocen).
+ * Śmieciowy zapis albo zapis CUDZEJ gry daje pustą listę, nigdy wyjątku:
+ * kolejka jest pomocą, a nie źródłem prawdy o grze — prawdę zna most.
+ */
+export function walidujKolejkeZdarzen(surowy, { kod = null } = {}) {
+  if (!surowy || typeof surowy !== 'object' || Array.isArray(surowy)) return [];
+  if (surowy.schemat !== SCHEMAT_KOLEJKI_ZDARZEN || !Array.isArray(surowy.zdarzenia)) return [];
+  if (kod != null && surowy.kod !== String(kod)) return []; // inna gra = cudza kolejka
+  return surowy.zdarzenia.filter(czyZdarzenieKolejkiOk).slice(0, LIMIT_KOLEJKI_ZDARZEN);
+}
+
+/**
+ * Zapis kolejki: FIFO, najwyżej `LIMIT_KOLEJKI_ZDARZEN` NAJSTARSZYCH zdarzeń
+ * (nowsze ponad limitem odrzucamy przy dodawaniu, nie tu — patrz `sync.js`,
+ * który o przekroczeniu limitu mówi graczowi wprost).
+ */
+export function zapisKolejkiZdarzen(zdarzenia, { kod = '', idGry = null } = {}) {
+  const lista = (Array.isArray(zdarzenia) ? zdarzenia : []).filter(czyZdarzenieKolejkiOk);
+  return {
+    schemat: SCHEMAT_KOLEJKI_ZDARZEN,
+    kod: String(kod ?? ''),
+    idGry: idGry ?? null,
+    zdarzenia: lista.slice(0, LIMIT_KOLEJKI_ZDARZEN),
+  };
 }

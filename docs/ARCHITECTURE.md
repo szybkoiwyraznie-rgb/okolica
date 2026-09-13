@@ -72,9 +72,9 @@ app/
                               i czasy, odpowiedzi, punktacja (ADR 0014), dziennik,
                               podsumowanie, kody G01–G13 (czyste, zegar wstrzykiwany)
   trwalosc.js               — trwałość stanu gry: snapshot `stan-gry/1`, klucze
-                              `okolica:gra:*`, walidacja T01–T10, budżet 2 MB;
-                              historia gier `okolica:historia` (`historia/1`,
-                              kody H01–H04, limit 50) (czyste; ADR 0010)
+                              `okolica:gra:*`, walidacja T01–T10, budżet 2 MB
+                              (czyste; ADR 0010 — lokalnej historii gier nie ma
+                              od 2026-09-13, aneks)
   zestawy.js                — M9/M9b: repozytorium paczek (TO-zestaw/1, LRU,
                               dopasowanie okolicy z tolerancją 200 m od komórki
                               geohash — ADR 0024, indeks Drive z `id` →
@@ -299,9 +299,9 @@ commit i nowa wersja aplikacji.
    „Wróć na początek — nowa gra”; faza `koniec` ukrywa cały slot sterowania,
    a statystyki, szczegóły graczy, tabela stacji i eksporty .txt/.png zostały
    USUNIĘTE (moduł `app/wynik.js` zostaje jako biblioteka bez konsumenta).
-   Skrót gry ląduje w historii `okolica:historia` (jeden wpis na klucz
-   gry; ręczne zakończenie znaczy `przerwana`, naturalny koniec zastępuje
-   wpis — ADR 0010 pkt 1).
+   Wynik zakończonej gry jedzie na wspólny Drive — idempotentnie po odcisku gry
+   (ADR 0026 aneks); lokalnej historii na telefonie nie ma (ADR 0010 aneks
+   2026-09-13, zgłoszenie terenowe O).
 
 ### Gra wieloosobowa i synchronizacja (M11/M12)
 
@@ -334,6 +334,10 @@ commit i nowa wersja aplikacji.
    środek trasy z pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca
    SAMA z `okolica:multi:sesja` i stanu mostu (`przywrocGreMulti` przy starcie,
    ADR 0045) BEZ odliczania, a zamknięte już stacje nie wracają do rozgrywki.
+   Zdarzenia, które nie doszły na most (odpowiedź bez zasięgu), czekają
+   w utrwalonej kolejce `okolica:multi-kolejka` i wychodzą PRZED pobraniem
+   stanu gry — inaczej telefon zbudowałby trasę ze stacją, którą most właśnie
+   domknął (ADR 0019 aneks 2026-09-13d).
 4. Koniec gry: punktację liczy most (`przeliczWyniki`), telefon rysuje ją na
    tym samym MINIMALNYM ekranie wyniku co hotseat (`wynikiMultiKonca`,
    ADR 0038/0044), a most zapisuje grę w historii (`RO-gra/1`, stan
@@ -471,20 +475,28 @@ tranzycji synchronicznie oraz przy pożegnaniu — `pagehide` i zwinięcie karty
 nie jedyne źródło zapisu) — a błędy zapisu nie zatrzymują gry: idą do statusu.
 Powrót do gry (`przywrocGreHotseat()` → `wznowGre()`, ADR 0045) rebazuje oś
 czasu (`zegarMs`), kasuje bufor trafień i centrowanie mapy oraz pomija okno
-startowe; dwustopniowe jest już tylko kasowanie HISTORII (ADR 0015 pkt 6), a
-ręczne zakończenie gry potwierdza wpisanie TAK (ADR 0043).
+startowe; dwustopniowego kasowania nie ma już nigdzie, a ręczne zakończenie gry
+potwierdza wpisanie TAK (ADR 0043).
 
-Historia gier (M7) żyje obok zapisów w `app/trwalosc.js`: klucz
-`okolica:historia`, schemat `historia/1`, wpis `historia-gra/1` — skrót BEZ
-treści pytań i BEZ współrzędnych (data, miejsce z konfiga jak w promptach, tryb, zwycięzca, punkty, poprawne, czasy,
-znacznik `przerwana`). Limit 50 wpisów (najstarsze wypadają),
-a zastąpienie po kluczu gry jest idempotentne: dokończenie przerwanej gry
-NADPISUJE wpis, nie dokłada drugiego. Wpis powstaje w hooku `zapiszGre()` —
-po każdej tranzycji, która zostawia grę w fazie `koniec` albo z
-`graZakonczonaRecznie` (obejmuje więc też wznowienie gry już zakończonej).
-Wczytanie waliduje `walidujHistorieSurowa()` (kody `H01`–`H04`), a zepsuty
-zapis odzywa się w UI jawnie tymi kodami i oferuje dwustopniowe kasowanie —
-nigdy cicho (ADR 0010 pkt 6).
+Lokalnej historii gier NIE MA (zgłoszenie terenowe O, 2026-09-13; ADR 0010
+aneks): karta z listą poprzednich gier na setupie, klucz w `localStorage`,
+skróty `historia-gra/1`, kody `H01`–`H04` i dwustopniowe kasowanie zniknęły
+razem z pomocnikami w `app/trwalosc.js`. Właściciel: jedyną drogą powrotu do
+przerwanej gry jest automatyczne wczytanie zapisu (ADR 0045), a wyniki między
+grami żyją na wspólnym Drive (ADR 0026 aneks) i stamtąd bierze je ranking
+(ADR 0039) — telefon nie trzyma własnej kopii. Koniec gry (naturalny albo
+ręczny) woła więc w hooku `zapiszGre()` bezpośrednio `wyslijWynikHotseat()`.
+
+Kolejka zdarzeń gry sieciowej (ADR 0019 aneks 2026-09-13d) żyje w kluczu
+`okolica:multi-kolejka` jako `zdarzenia-kolejka/1` (`kod`, `idGry`, `zdarzenia`
+— najwyżej 50 najstarszych; walidacja `walidujKolejkeZdarzen()`, zapis
+`zapisKolejkiZdarzen()` w `app/wieloosobowa.js`). `app/sync.js` nie wie o
+`localStorage`: dostaje wstrzyknięte `wczytajKolejke`, `zapiszKolejke`
+i `limitKolejki`, a utrwala KAŻDY ruch kolejki (push przy awarii sieci, shift po
+wypchnięciu i po odmowie mostu). Zapis cudzej gry albo śmieciowy daje pustą
+listę, nigdy wyjątku; pełna kolejka jest jawną odmową w statusie; klucz idzie
+w kosz razem z sesją (`usunSesjeMulti`). Duplikatu nie będzie — most odrzuca
+drugą odpowiedź tego gracza do tej stacji.
 
 ## Testowanie
 

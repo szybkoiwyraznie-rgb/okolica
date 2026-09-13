@@ -416,6 +416,19 @@ test('planMapy numeruje pinezki od 1 i oznacza tylko aktywną stację', () => {
   }
 });
 
+test('planMapy: `numer` stacji ma pierwszeństwo przed indeksem (zgłoszenie terenowe N, 2026-09-13)', () => {
+  // Powrót do gry sieciowej rysuje tylko NIEZAMKNIĘTE stacje: bez własnego
+  // numeru cel gracza, który zamknął stację 1 i idzie do stacji 2, dostałby
+  // pinezkę „1". Właściciel wymaga, żeby numer na trasie był stały.
+  const skrocona = stacje(4, 300).slice(1).map((s, i) => ({ ...s, numer: i + 2 }));
+  const plan = planMapy({ widok: widok(15), rozmiar: PANEL, stacje: skrocona, aktywnaStacja: skrocona[0].id });
+  assert.deepEqual(plan.pinezki.map((p) => p.numer), [2, 3, 4], 'numery z trasy, nie z indeksów skróconej listy');
+  assert.deepEqual(plan.pinezki.filter((p) => p.aktywna).map((p) => p.numer), [2], 'aktywna stacja też ma swój numer');
+  // brak pola `numer` = zwykła numeracja od 1 (hot-seat nic nie traci)
+  const bezNumeru = planMapy({ widok: widok(15), rozmiar: PANEL, stacje: stacje(3, 300) });
+  assert.deepEqual(bezNumeru.pinezki.map((p) => p.numer), [1, 2, 3]);
+});
+
 test('planMapy dla schowanego panelu jest pusty (display:none → rozmiar 0)', () => {
   const plan = planMapy({
     widok: widok(17),

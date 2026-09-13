@@ -73,3 +73,12 @@ i komunikat o braku współrzędnych stacji). Konsekwencje czytać jako
 „może poczekać na sygnał albo zakończyć grę” — koszt bez zmian (lepszy
 brak punktu niż punkt z powietrza), tylko wyjście inne. Zdanie
 o wyszarzaniu „Pomiń odcinek” nieaktualne — przycisku nie ma.
+
+## Aneks 2026-09-13b (m12-111) — wyjście z aneksu m12-94 ma dziś inną postać
+
+Zdanie aneksu m12-94 „komunikat P03 każe wyjść na otwartą przestrzeń i odsyła
+do „■ Zakończ grę” (tak samo P04/P08 i komunikat o braku współrzędnych stacji)”
+jest nieaktualne w części o przycisku: ADR 0043 zdjął go, a te same komunikaty
+odsyłają teraz do ikony ⚙ START GRY z wpisaniem TAK (aneks 2026-09-13b
+do ADR 0043). Mechanika bez zmian: dojście zalicza wyłącznie GPS, a stacja
+nieosiągalna kosztuje brak punktu, nie punkt z powietrza.

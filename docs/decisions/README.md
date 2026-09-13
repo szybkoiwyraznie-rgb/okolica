@@ -8,6 +8,10 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 - **Proponowana** — kierunek do dyskusji; bez akceptacji nie buduj trwałych rozwiązań.
 - **Zaakceptowana** — obowiązuje. **Odrzucona** — rozważona, nieprzyjęta.
 - **Zastąpiona** — historyczna (nowszy ADR wskazuje aktualną). **Wycofana** — nieaktualna.
+- **Archiwum** — ADR w całości wycofany przenosi się do `docs/decisions/archive/`:
+  wiersz zostaje w tej tabeli (link z `archive/`), a plik wychodzi z lektury
+  startowej (`tools/budzet-lektury.mjs`, AGENTS.md §0, LESSONS L62). Czytasz go
+  punktowo, gdy wchodzisz w temat decyzji.
 
 ## Decyzje
 
@@ -22,16 +26,16 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0007](0007-ukrywanie-paczki-obfuskacja-bez-klucza.md) | Ukrywanie paczki pytań: odwracalna obfuskacja bez klucza (nie szyfrowanie) | Zaakceptowana |
 | [0008](0008-kwerenda-i-zrodla-w-kazdym-pytaniu.md) | Obowiązkowa kwerenda internetowa i źródło URL przy każdym pytaniu | Zaakceptowana |
 | [0009](0009-jeden-telefon-hot-seat.md) | Rozgrywka wieloosobowa: jeden telefon (hot-seat; rotacja pytań — aneks 2026-09-12) | Zaakceptowana |
-| [0010](0010-trwalosc-localstorage-i-eksport-paczki.md) | Trwałość: `localStorage` + paczka jako plik, docelowo repozytorium | Proponowana |
-| [0011](0011-mobile-first-dotyk.md) | Mobile-first: interfejs dotykowy jako podstawowy, dostępność i czytelność w słońcu | Zaakceptowana |
+| [0010](0010-trwalosc-localstorage-i-eksport-paczki.md) | Trwałość: `localStorage` + paczka jako plik, docelowo repozytorium (lokalnej historii gier nie ma — aneks 2026-09-13c) | Proponowana |
+| [0011](0011-mobile-first-dotyk.md) | Mobile-first: interfejs dotykowy jako podstawowy, dostępność i czytelność w słońcu (czekanie na sieć jest widoczne — komunikaty pulsują, aneks 2026-09-13d) | Zaakceptowana |
 | [0012](0012-model-sesji-pr-audyt-inkrementalne-commity.md) | Model sesji: PR na starcie, audyt poprzedniego PR, inkrementalne commity, bez force push | Zaakceptowana |
 | [0013](0013-prywatnosc-wspolrzedne-na-urzadzeniu.md) | Prywatność: współrzędne zostają na urządzeniu, zero analityki | Proponowana |
-| [0014](0014-punktacja-czasu-mediana-tempa.md) | Punktacja czasu: premia względem mediany tempa odcinków (doprecyzowanie ADR 0009 pkt 5) | Wycofana |
-| [0015](0015-niekompletna-paczka-i-pominiecie-stacji.md) | Niekompletna paczka: ostrzeżenie zamiast blokady; pominięcie tylko w drodze | Proponowana |
+| [0014](archive/0014-punktacja-czasu-mediana-tempa.md) | Punktacja czasu: premia względem mediany tempa odcinków (doprecyzowanie ADR 0009 pkt 5) — pkt 1 (dystanse odcinków z sieci) obowiązuje | Wycofana |
+| [0015](0015-niekompletna-paczka-i-pominiecie-stacji.md) | Niekompletna paczka: ostrzeżenie zamiast blokady; pominięcie tylko w drodze (przedrostek kodów H wycofany — aneks 2026-09-13) | Proponowana |
 | [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device; przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
-| [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1`, geohash5 w indeksie, CC BY-SA 4.0, moderacja właściciela | Proponowana |
+| [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1` z jawnymi stacjami, geohash5 w indeksie, CC BY-SA 4.0 (moderacja wstępna zniesiona — aneks 2026-09-11; nazwa paczki od miejsca, bez kroku ekranu stacji — aneks 2026-09-13; widoczne paczki schodzą w tle — aneks 2026-09-13d) | Proponowana |
 | [0018](0018-drive-backend-wielozadaniowy.md) | Drive jako backend wielozadaniowy (paczki, gry, statystyki; przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
-| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig (rankingi usunięte — aneks 2026-09-11b; ranking wrócił w nowej formie — aneks 2026-09-12f) | Zaakceptowana |
+| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig (rankingi usunięte — aneks 2026-09-11b; ranking wrócił w nowej formie — aneks 2026-09-12f; sekret tylko w żywej grze, numery stacji stałe po powrocie — aneks 2026-09-13c; kolejka zdarzeń utrwalona, reload nie gubi odpowiedzi — aneks 2026-09-13d) | Zaakceptowana |
 | [0020](0020-adres-mostu-wpisany-w-kod-aplikacji.md) | Adres mostu Drive w kodzie aplikacji, bez pola w UI (przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
 | [0021](0021-pin-prosty-profilu-pseudonimu.md) | PIN pseudonimu (4-8 cyfr, jawny tekst, RO-profil/1) + przycisk To ja w setupie | Zaakceptowana |
 | [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` (kolejne pytania rotują — aneks 2026-09-12) | Zaakceptowana |
@@ -43,8 +47,8 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0028](0028-oceny-pytan-graczy.md) | Oceny pytań przez graczy: jeden kciuk, jeden głos na gracza i pytanie, wysyłka w tle | Zaakceptowana |
 | [0029](0029-brak-recznego-dojscia.md) | Dojście zalicza tylko GPS: ręczne zgłaszanie usunięte z interfejsu | Zaakceptowana |
 | [0030](0030-rozgrywka-pod-orientacje-telefonu.md) | Rozgrywka układa się pod orientację telefonu, a pytanie leży NA mapie (obróć ekran — mapa sama centruje się na graczu; blokady orientacji NIE MA — aneks 2026-09-13) | Zaakceptowana |
-| [0031](0031-generowanie-pytan-partiami.md) | Duży setup generuje pytania partiami, a aplikacja sama je scala (stałe szacunku usunięte — aneks 2026-09-12) | Wycofana |
-| [0032](0032-wariant-bez-fact-check.md) | Wariant „Pytania (bez fact check)" jako domyślny | Zaakceptowana |
+| [0031](archive/0031-generowanie-pytan-partiami.md) | Duży setup generuje pytania partiami, a aplikacja sama je scala (stałe szacunku usunięte — aneks 2026-09-12) | Wycofana |
+| [0032](0032-wariant-bez-fact-check.md) | Wariant „Pytania (bez fact check)" jako domyślny (znaczek weryfikacji mówi „Fact-checked" — aneks 2026-09-13) | Zaakceptowana |
 | [0033](0033-koniec-odwracania-liter.md) | Koniec odwracania liter: zostaje kod poprawnej odpowiedzi | Zaakceptowana |
 
 | [0034](0034-uproszczenie-terenowe-i-warstwy.md) | Uproszczenie terenowe: setup, warstwy, dojście 50 m | Zaakceptowana |

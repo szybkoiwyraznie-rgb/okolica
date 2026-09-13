@@ -15,7 +15,7 @@
  * `ekranPx = jednostkaSwiata * skala + przesuniecie`, a
  * `zoom = log2(skala * SZEROKOSC_SWIATA / ROZMIAR_KAFELKA)`.
  */
-import { PODKLADY } from './konfig.js?v=m12-110';
+import { PODKLADY } from './konfig.js?v=m12-114';
 import {
   ROZMIAR_KAFELKA,
   SZEROKOSC_SWIATA,
@@ -26,7 +26,7 @@ import {
   odwroc,
   projektuj,
   siatkaKafelkow,
-} from './geo.js?v=m12-110';
+} from './geo.js?v=m12-114';
 
 /** Przestrzeń nazw SVG (elementy SVG tworzy się przez `createElementNS`). */
 export const PRZESTRZEN_SVG = 'http://www.w3.org/2000/svg';
@@ -454,7 +454,10 @@ export function planMapy({
         const ekran = punktNaEkranie(stacja.lat, stacja.lon, widok);
         return {
           id: stacja.id,
-          numer: i + 1,
+          // Numer na trasie, nie indeks na liście: powrót do gry sieciowej
+          // rysuje tylko niezamknięte stacje, a ich numery muszą zostać te same
+          // (zgłoszenie terenowe N, 2026-09-13). Brak `numer` = zwykły indeks.
+          numer: Number(stacja.numer) > 0 ? Number(stacja.numer) : i + 1,
           x: ekran.x,
           y: ekran.y,
           dystansM: stacja.dystansM ?? stacja.odlegloscM ?? null,

@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-110';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-110';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-114';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-114';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-110';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-110';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-110';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-110';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-110';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-110';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-110';
-import { KLUCZ_AKTYWNEJ, KLUCZ_HISTORII, dodajWpisHistorii, kluczStanu, nowaHistoria, oczyscKodGry, serializujStan, skrotGry, walidujHistorieSurowa, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-110';
+} from './protokol.js?v=m12-114';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-114';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-114';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-114';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-114';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-114';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-114';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-114';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-110';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-110';
+} from './zestawy.js?v=m12-114';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-114';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-110';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-110';
-import { MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujWyslaneHotseat, zbudujZdarzenie } from './wieloosobowa.js?v=m12-110';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-110';
-import { adresMostu, stanMostu } from './most.js?v=m12-110';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-110';
+} from './sieci.js?v=m12-114';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-114';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-114';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-114';
+import { adresMostu, stanMostu } from './most.js?v=m12-114';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-114';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-110';
+} from './oceny.js?v=m12-114';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -82,6 +82,8 @@ const KLUCZ_MOTYW = 'okolica:motyw';
  *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
+/** Zdarzenia gry sieciowej, które nie doszły na most (ADR 0019 aneks 2026-09-13d). */
+const KLUCZ_KOLEJKI_MULTI = 'okolica:multi-kolejka';
 
 /**
  * Limit czasu odpowiedzi mostu Drive (ms) — WSPÓLNY dla indeksu paczek, listy
@@ -181,12 +183,12 @@ const STAN = {
   /** Snapshot `stan-gry/1` podniesiony przy starcie (ADR 0045: wracamy do gry
    *  bez kliku — banera o znalezionej grze na setupie nie ma, uwaga J). */
   wznowienieKandydat: null,
-  /** M7/P6: dwustopniowość kasowania HISTORII (ADR 0015 pkt 6). Ręcznego
-   *  zakończenia gry NIE uzbraja się klikiem — potwierdzeniem jest wpisanie TAK
-   *  w warstwie `#ekran-koniec-gry` (właściciel 2026-09-13, uwaga I; ADR 0043).
-   *  Dwustopniowego kasowania ZAPISU gry nie ma: zepsuty albo zakończony zapis
-   *  start kasuje sam, bez pytania (uwagi J i K, ADR 0045). */
-  historiaKasowanieUzbrojone: false,
+  /** Ręcznego zakończenia gry NIE uzbraja się klikiem — potwierdzeniem jest
+   *  wpisanie TAK w warstwie `#ekran-koniec-gry` (właściciel 2026-09-13, uwaga I;
+   *  ADR 0043). Dwustopniowego kasowania ZAPISU gry nie ma: zepsuty albo
+   *  zakończony zapis start kasuje sam, bez pytania (uwagi J i K, ADR 0045).
+   *  Dwustopniowego kasowania HISTORII gier też już nie ma — lokalnej historii
+   *  nie ma wcale (zgłoszenie terenowe O, 2026-09-13; ADR 0010 aneks). */
   graZakonczonaRecznie: false,
   /** M11/P4: 'hotseat' | 'multi' — wybór z setupu, utrwalany w localStorage. */
   rodzajGry: 'hotseat',
@@ -207,6 +209,11 @@ const STAN = {
   /** Wspólna Trasa = trasa-sekret: przy generowaniu stacji chowamy listę
    * i kropki na mapie — organizator nie poznaje trasy z góry. */
   ukryjStacje: false,
+  /** Pełna długość trasy do napisów „stacja X z Y" (zgłoszenie N, 2026-09-13):
+   *  powrót do gry sieciowej buduje model z NIEZAMKNIĘTYCH stacji, więc
+   *  `rozgrywka.stacje.length` nie jest już długością trasy. Zero = lista gry
+   *  jest pełna (hot-seat) i numer stacji to jej indeks. */
+  trasaDlugosc: 0,
   /** ADR 0044 (uwaga F): odliczanie startu gry wieloosobowej — jedno na start.
    *  Dwustopniowej rezygnacji z gry NIE MA: przycisk „🏳 Rezygnuję z gry" umarł
    *  razem z panelem multi, a wyjście z gry potwierdza się wpisaniem TAK
@@ -678,8 +685,16 @@ function przelaczRankingi() {
   void pobierzRankingi();
 }
 
-function status(tekst) {
-  $('status').textContent = tekst;
+/**
+ * Komunikat w `#status`. `czeka: true` dokłada klasę `.pulsuje` — sygnał, że
+ * aplikacja właśnie coś pobiera z sieci i trzeba poczekać (właściciel
+ * 2026-09-13; ADR 0011 aneks). Każdy następny komunikat pulsowanie gasi, więc
+ * stan „czekam" nie zostaje na ekranie po zakończonej pracy.
+ */
+function status(tekst, { czeka = false } = {}) {
+  const pole = $('status');
+  pole.textContent = tekst;
+  pole.classList.toggle('pulsuje', czeka);
 }
 
 /**
@@ -1390,7 +1405,7 @@ function wlaczGps() {
       STAN.gpsOstatniZnakMs = performance.now(); // bug G: błąd to też znak życia — pipe odpowiada
       pokazBledy('bledy-pozycja', [{ kod: blad.kod, pole: 'geolocation', komunikat: blad.komunikat }]);
       $('pozycja-status').textContent = 'Brak pozycji';
-      status('Położenie niedostępne — gra czeka na sygnał. Wyjdź na otwartą przestrzeń, a jeśli stacja jest nieosiągalna, zakończ grę przyciskiem „■ Zakończ grę”.' + ADR(' (ADR 0029)'));
+      status('Położenie niedostępne — gra czeka na sygnał. Wyjdź na otwartą przestrzeń, a jeśli stacja jest nieosiągalna, zakończ grę ikoną „⚙ START GRY” i wpisz TAK.' + ADR(' (ADR 0029)'));
     },
   });
   if (STAN.watcher?.czyAktywny() && !STAN.gpsTimer && czyUzbroicWatchdogGps()) {
@@ -1886,7 +1901,9 @@ async function przeliczStacjeZPobraniem(klucz) {
   if (trwaPobieranieSieci) return;
   trwaPobieranieSieci = true;
   $('przycisk-przelicz').disabled = true;
-  $('stacje-ladowanie').hidden = false;
+  const ladowanieSieci = $('stacje-ladowanie');
+  ladowanieSieci.hidden = false;
+  ladowanieSieci.classList.add('pulsuje'); // sygnał czekania (właściciel 2026-09-13)
   try {
     const ok = await pobierzSiec(Date.now());
     if (!ok && STAN.siec.stan !== 'gotowa') {
@@ -1897,6 +1914,7 @@ async function przeliczStacjeZPobraniem(klucz) {
     trwaPobieranieSieci = false;
     $('przycisk-przelicz').disabled = false;
     $('stacje-ladowanie').hidden = true;
+    $('stacje-ladowanie').classList.remove('pulsuje');
   }
 }
 
@@ -2060,6 +2078,11 @@ function aktualizujGreNaFix(fix) {
   $('gra-dystans-odcinka').textContent = d.dystansM == null ? '— m' : `${Math.round(d.dystansM)} m do stacji ${pod.stacja.id}`;
   if (d.kod) {
     $('gra-komunikat').textContent = d.komunikat;
+    // W drodze `#gra-komunikat` jest schowany razem z całym panelem gry
+    // (ADR 0036 aneks m12-102 pkt 2), więc zdanie idzie też do `#status`
+    // w ⓘ Informacjach (`aria-live` czyta je także przy zamkniętej warstwie).
+    // Bez tego gracz widzi tylko pasek z „— m” i nie wie, co się stało (L6).
+    status(d.komunikat);
     return;
   }
   if (d.dotarl) zakonczOdcinekGry(TRYBY_DOJSCIA.gps, fix);
@@ -2073,16 +2096,45 @@ function aktualizujGreNaFix(fix) {
  * do warstwy za ikoną ⚙ START GRY. Panel gry chowamy, żeby pasek był jedynym
  * elementem nad mapą.
  */
+/**
+ * Numer stacji na trasie (zgłoszenia terenowe N i R, 2026-09-13).
+ *
+ * Powrót do gry sieciowej buduje rozgrywkę z NIEZAMKNIĘTYCH stacji
+ * (`uruchomGreMulti`): gracz, który zamknął stację 1 i idzie do stacji 2,
+ * dostawał po odświeżeniu telefonu numer 1 — a numer na trasie ma być stały.
+ * Numer niesie więc sama stacja (`numer`, ustawia gra sieciowa), a gdy go nie
+ * ma, zostaje zwykły indeks: hot-seat ma listę pełną, więc nic się nie zmienia.
+ */
+function numerStacjiTrasy(stan, idStacji) {
+  const naLiscie = stan.stacje.findIndex((s) => Number(s.id) === Number(idStacji));
+  const zTrasy = STAN.stacje.find((s) => Number(s.id) === Number(idStacji));
+  const numer = Number(zTrasy?.numer);
+  return Number.isFinite(numer) && numer > 0 ? numer : naLiscie + 1;
+}
+
+/** Długość trasy do napisów „stacja X z Y": pełna trasa, gdy gra sieciowa ją skróciła. */
+function liczbaStacjiTrasy(stan) {
+  const pelna = Number(STAN.trasaDlugosc);
+  return Number.isFinite(pelna) && pelna > 0 ? pelna : stan.stacje.length;
+}
+
 function odswiezPasekDrogi() {
   const r = STAN.rozgrywka;
   if (!r) return;
   const droga = !$('gra-panel-odcinek').hidden;
-  $('gra-sterowanie').hidden = droga;
+  // W terenie w drodze nad mapą zostaje sam pasek. W trybie testowym panel fazy B
+  // ZOSTAJE na wierzchu (ADR 0036 aneks 2026-09-13, m12-102 pkt 2: „Panel fazy B
+  // trzyma duży dystans i symulację dla widoku panelowego oraz trybu
+  // testowego"): `hidden` na przodku gasi potomków przez kaskadę CSS, więc bez
+  // tego wyjątku „▶ Symuluj dojście” — jedyna droga domknięcia odcinka bez GPS —
+  // jest w przeglądarce nieosiągalny, choć `renderujGre` go odsłania (L13:
+  // atrapa DOM nie modeluje renderowania, więc testy tego nie widzą).
+  $('gra-sterowanie').hidden = droga && !STAN.trybTestowy;
   $('gra-pasek').hidden = !droga;
   const pod = podglad(r);
   const imie = pod.gracz?.imie ?? '—';
   const dystans = STAN.pozycja && pod.stacja ? Math.round(odlegloscM(STAN.pozycja, pod.stacja)) : '—';
-  const indeks = r.stacje.findIndex(s => s.id === r.biezacaStacja) + 1;
+  const numer = numerStacjiTrasy(r, r.biezacaStacja);
   // Właściciel 2026-09-11: dystans w pasku ma być widoczny od razu (zielona
   // pigułka), nie tylko w Informacjach — dlatego pasek budujemy z węzłów,
   // a nie z jednego textContent.
@@ -2091,7 +2143,7 @@ function odswiezPasekDrogi() {
   const pigulka = document.createElement('span');
   pigulka.className = 'pasek-dystans';
   pigulka.textContent = `(odległość od stacji ${dystans} m)`;
-  pasek.append(pigulka, ` · stacja ${indeks} z ${r.stacje.length}`);
+  pasek.append(pigulka, ` · stacja ${numer} z ${liczbaStacjiTrasy(r)}`);
   // Dojście ma odsłonić pytanie także po korzystaniu ze sterowania w Informacjach.
   if (STAN.bylPasekDrogi && !droga && !$('gra-panel-pytanie').hidden) zamknijInformacje();
   STAN.bylPasekDrogi = droga;
@@ -2108,12 +2160,12 @@ function renderujGre({ panele = true } = {}) {
   const r = STAN.rozgrywka;
   if (!r) return;
   const pod = podglad(r);
-  const indeks = r.stacje.findIndex((s) => s.id === r.biezacaStacja);
+  const numer = numerStacjiTrasy(r, r.biezacaStacja);
 
   $('gra-kolejka').textContent = pod.gracz ? `Kolej: ${pod.gracz.imie}` : 'Kolej: —';
   $('gra-postep').textContent = r.faza === FAZY.koniec
     ? `zaliczone: ${pod.zaliczoneStacje} · pominięte: ${pod.pominietaStacje} · z ${r.stacje.length}`
-    : `stacja ${indeks + 1} z ${r.stacje.length}`;
+    : `stacja ${numer} z ${liczbaStacjiTrasy(r)}`;
   if (STAN.pozycja && pod.stacja) {
     $('gra-dystans').textContent = `${Math.round(odlegloscM(STAN.pozycja, pod.stacja))} m`;
   } else {
@@ -2149,9 +2201,9 @@ function renderujGre({ panele = true } = {}) {
   }
 
   if (panele && r.faza === FAZY.przygotowanie && pod.stacja) {
-    $('gra-kto-idzie').textContent = pod.gracz ? `Idzie: ${pod.gracz.imie} → stacja ${indeks + 1}` : `Stacja ${indeks + 1}`;
+    $('gra-kto-idzie').textContent = pod.gracz ? `Idzie: ${pod.gracz.imie} → stacja ${numer}` : `Stacja ${numer}`;
     $('gra-cel-stacji').textContent = `${pod.stacja.opis || 'Cel bez opisu'} · ${formatujWspolrzedne(pod.stacja.lat, pod.stacja.lon)} · ${Math.round(pod.dystansM)} m ${pod.dystansSieciowy ? 'drogą' : 'w linii prostej'} od poprzedniego punktu`;
-    $('przycisk-start-odcinka').textContent = `▶ Idę do stacji ${indeks + 1}`;
+    $('przycisk-start-odcinka').textContent = `▶ Idę do stacji ${numer}`;
   }
 
   if (panele) {
@@ -2165,9 +2217,10 @@ function renderujGre({ panele = true } = {}) {
   if (STAN.mapy.gra) {
     // Wspólna Trasa to trasa-sekret (właściciel, 2026-09-11): na mapie widać
     // TYLKO bieżącą stację — kolejne odsłaniają się po zamknięciu poprzedniej.
-    // Sekret jest własnością GRY (pole trasaSekret z mostu); brak pola w starych
-    // grach traktujemy jak sekret (zgodność wstecz z m12-73).
-    const graSekret = STAN.multi?.gra?.tryb === TRYBY_GRY.trasa && STAN.multi.gra.trasaSekret !== false;
+    // Sekret jest własnością ŻYWEJ gry sieciowej (`czyTrasaSekret`): resztkowy
+    // kontekst multi po grze zamkniętej nie chowa już trasy w hot-seacie
+    // (zgłoszenie terenowe R, 2026-09-13).
+    const graSekret = czyTrasaSekret(STAN.multi);
     const stacjeWidoczne = graSekret
       ? STAN.stacje.filter((s) => Number(s.id) === Number(r.biezacaStacja))
       : STAN.stacje;
@@ -2336,7 +2389,10 @@ function czyWpisFactcheck(wpis) {
 }
 
 /**
- * Znaczek Q (ADR 0032): złota litera dla paczek zweryfikowanych w sieci.
+ * Znaczek fact-checku (ADR 0032, zgłoszenie terenowe Q 2026-09-13): złote
+ * „Fact-checked" zamiast samej litery Q — właściciel: pojedyncza litera nic mu
+ * nie mówiła. Styl zostaje ten sam (`.znaczek-factcheck` = złoto + półgruby),
+ * więc zmienia się tylko tekst i etykieta dla czytnika ekranu.
  * Niesie informację (nie jest dekoracją) — stąd role="img" z etykietą.
  * Dla wariantu bez weryfikacji go NIE renderujemy (brak znaczka = brak weryfikacji).
  */
@@ -2344,23 +2400,44 @@ function znaczekFactcheck() {
   const s = document.createElement('span');
   s.className = 'znaczek-factcheck';
   s.setAttribute('role', 'img');
-  s.setAttribute('aria-label', 'pytania zweryfikowane w sieci');
-  s.title = 'Pytania zweryfikowane w sieci (fact check)';
-  s.textContent = 'Q';
+  s.setAttribute('aria-label', 'Fact-checked: pytania zweryfikowane w sieci');
+  s.title = 'Fact-checked — pytania zweryfikowane w sieci';
+  s.textContent = 'Fact-checked';
   return s;
 }
 
-function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '', factcheck = true) {
+/**
+ * Wiersz propozycji paczki. Nazwa zaczyna się OD MIEJSCA (zgłoszenie terenowe P,
+ * 2026-09-13): przedrostek „🌍 repozytorium:" nie mówił nic — wszystkie paczki
+ * na tej karcie są z repozytorium, więc powtarzanie źródła w każdej linii
+ * zabierało miejsce nazwie („Podkowa Leśna · …").
+ */
+function wierszZestawu(opis, akcji, statystyki = '', factcheck = true) {
   const li = document.createElement('li');
   const opisEl = document.createElement('span');
   opisEl.className = 'opis-zestawu';
-  opisEl.textContent = `${etykietaZrodla} ${opis}`;
+  opisEl.textContent = opis;
   if (factcheck) opisEl.append(' ', znaczekFactcheck());
   const przycisk = document.createElement('button');
   przycisk.type = 'button';
   przycisk.className = 'przycisk';
   przycisk.textContent = '▶ Graj z tą paczką';
-  przycisk.addEventListener('click', akcji);
+  // Sygnał czekania (właściciel 2026-09-13): pobranie paczki z Drive trwa kilka
+  // sekund, więc przycisk mówi, co się dzieje, i nie przyjmuje drugiego kliku
+  // (podwójne pobranie i podwójne „użycie" paczki). Gdy wstępne pobieranie
+  // zdążyło, zmiana jest niezauważalna — gra startuje od razu.
+  przycisk.addEventListener('click', async (zdarzenie) => {
+    przycisk.disabled = true;
+    przycisk.textContent = '⏳ Ładowanie paczki…';
+    przycisk.classList.add('pulsuje');
+    try {
+      await akcji(zdarzenie);
+    } finally {
+      przycisk.disabled = false;
+      przycisk.textContent = '▶ Graj z tą paczką';
+      przycisk.classList.remove('pulsuje');
+    }
+  });
   li.append(opisEl);
   if (statystyki) {
     // ADR 0028 pkt 5: zdanie o ocenach graczy — jedno miejsce na język.
@@ -2421,15 +2498,49 @@ function sortujKandydatowZestawow(a, b) {
 }
 
 /** Rysuje listę propozycji od zera: sort, limit i stan przycisku „więcej". */
+/**
+ * Pamięć paczek pobranych z repozytorium: url → promise tekstu. Właściciel
+ * 2026-09-13: klik „▶ Graj z tą paczką" czekał kilka sekund na plik z Drive,
+ * a lista i tak stoi na ekranie — więc widoczne paczki schodzą w tle, a klik
+ * bierze gotowy tekst albo to samo, już rozpoczęte, pobranie (bez drugiego
+ * żądania). Pamięć jest czyszczona przy każdym odświeżeniu propozycji; plik
+ * paczki jest niezmienialny, więc trafienie w pamięć nie grozi starymi danymi.
+ * Oceny i licznik „użyta w X grach" idą jak dotąd DOPIERO przy prawdziwym
+ * kliku (ADR 0028) — wstępne pobranie niczego nie zgłasza mostowi.
+ */
+const PAMIETNIK_PACZEK = new Map();
+
+function pobierzPaczkeZRepo(url) {
+  if (!PAMIETNIK_PACZEK.has(url)) {
+    PAMIETNIK_PACZEK.set(url, pobierzGetTekst(url).catch((e) => {
+      PAMIETNIK_PACZEK.delete(url); // nieudane pobranie nie zostaje — klik spróbuje jeszcze raz
+      throw e;
+    }));
+  }
+  return PAMIETNIK_PACZEK.get(url);
+}
+
+/** Wstępne pobranie paczek WIDOCZNYCH na liście (tyle, ile gracz może kliknąć). */
+function wstepniePobierzPaczki() {
+  if (!fetchPrzegladarki()) return; // bez fetch nie ma czego pobierać
+  const posortowane = [...KANDYDACI_ZESTAWOW].sort(sortujKandydatowZestawow);
+  const widoczne = ZESTAWY_ROZWINIETE ? posortowane : posortowane.slice(0, LIMIT_ZESTAWOW_NA_LISCIE);
+  for (const k of widoczne) {
+    if (!k.urlPaczki) continue;
+    pobierzPaczkeZRepo(k.urlPaczki).catch(() => {}); // cisza: awarię pokaże klik (ta sama ścieżka)
+  }
+}
+
 function renderujZestawy() {
   const lista = $('zestawy-lista');
   lista.replaceChildren();
   const posortowane = [...KANDYDACI_ZESTAWOW].sort(sortujKandydatowZestawow);
   const widoczne = ZESTAWY_ROZWINIETE ? posortowane : posortowane.slice(0, LIMIT_ZESTAWOW_NA_LISCIE);
-  for (const k of widoczne) lista.append(wierszZestawu(k.opis, k.etykieta, k.akcja, k.statystyki, k.factcheck));
+  for (const k of widoczne) lista.append(wierszZestawu(k.opis, k.akcja, k.statystyki, k.factcheck));
   const wiecej = $('przycisk-zestawy-wiecej');
   wiecej.hidden = KANDYDACI_ZESTAWOW.length <= LIMIT_ZESTAWOW_NA_LISCIE;
   wiecej.textContent = ZESTAWY_ROZWINIETE ? 'Zobacz mniej paczek' : 'Zobacz więcej paczek';
+  wstepniePobierzPaczki(); // lista stoi na ekranie — paczki schodzą w tle (właściciel 2026-09-13)
 }
 
 /**
@@ -2437,6 +2548,14 @@ function renderujZestawy() {
  * (asynchronicznie, z timeoutem; I.b — kopii z telefonu nie pokazujemy).
  * Każda awaria repo = „brak propozycji", nigdy blokada gry (ADR 0017 pkt 6).
  */
+/** Stan karty propozycji paczek: tekst + sygnał czekania jednym miejscem. */
+function statusZestawow(tekst, { czeka = false } = {}) {
+  const pole = $('zestawy-status');
+  if (!pole) return;
+  pole.textContent = tekst;
+  pole.classList.toggle('pulsuje', czeka);
+}
+
 function odswiezPropozycjeZestawow() {
   const karta = $('zestawy-karta');
   if (!karta) return;
@@ -2468,17 +2587,18 @@ function odswiezPropozycjeZestawow() {
   // i jego zapis działają dalej (cichy cache, ADR 0017 pkt 7), ale propozycje
   // pochodzą wyłącznie z repozytorium.
   KANDYDACI_ZESTAWOW = [];
+  PAMIETNIK_PACZEK.clear(); // nowe kryteria = nowa lista, więc i nowa pamięć paczek
   renderujZestawy();
   const url = adresMostu(); // ADR 0020: adres z kodu aplikacji (albo nadpisany w pamięci telefonu)
   pokazStanMostu();
   if (!url) {
-    $('zestawy-status').textContent = 'Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji — nowe pytania przygotuje model.';
+    statusZestawow('Wspólne repozytorium (Drive) nie jest podłączone w tej wersji aplikacji — nowe pytania przygotuje model.');
     return;
   }
-  $('zestawy-status').textContent = 'Sprawdzam repozytorium paczek dla tej okolicy…';
+  statusZestawow('Sprawdzam repozytorium paczek dla tej okolicy…', { czeka: true });
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
   if (!f) {
-    $('zestawy-status').textContent = 'Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).';
+    statusZestawow('Repozytorium niedostępne — gramy zwykłą ścieżką (prompt i model).');
     return;
   }
   // Odświeżenie jest asynchroniczne, a setup woła je przy każdej zmianie
@@ -2516,7 +2636,7 @@ async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
       powod = e?.powod ?? 'brak odpowiedzi';
       szczegol = null;
       if (proba === 1) {
-        $('zestawy-status').textContent = `Most Drive nie odpowiedział (${powod}) — próbuję jeszcze raz…`;
+        statusZestawow(`Most Drive nie odpowiedział (${powod}) — próbuję jeszcze raz…`, { czeka: true });
         await new Promise((r) => setTimeout(r, PONOWNA_PROBA_INDEKSU_MS));
         if (!aktualne()) return;
       }
@@ -2533,8 +2653,8 @@ async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
       pokazStanMostu();
       const opis = String(e?.message ?? e);
       // Bez obiecywania, co gracz widzi: lista mogła się wysypać w połowie.
-      $('zestawy-status').textContent = `Repozytorium odpowiedziało, ale lista paczek się nie wczytała `
-        + `(błąd aplikacji: ${opis}) — lista może być niepełna, zgłoś ten błąd.`;
+      statusZestawow(`Repozytorium odpowiedziało, ale lista paczek się nie wczytała `
+        + `(błąd aplikacji: ${opis}) — lista może być niepełna, zgłoś ten błąd.`);
       return;
     }
     if (!usterka) {
@@ -2551,7 +2671,7 @@ async function pobierzIndeksZRepo(url, kryteria, pokolenie) {
   // Pełny powód (z kodem usterki) trafia do stanu mostu; w zdaniu wystarcza kod.
   STAN.mostOstatniBlad = szczegol ?? powod;
   pokazStanMostu();
-  $('zestawy-status').textContent = `Repozytorium niedostępne (${powod}${gdzie}) — gramy zwykłą ścieżką (prompt i model).`;
+  statusZestawow(`Repozytorium niedostępne (${powod}${gdzie}) — gramy zwykłą ścieżką (prompt i model).`);
 }
 
 /** Adres mostu do komunikatu awarii — rozpoznawalny, ale nie cały URL.
@@ -2584,8 +2704,9 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
   const dopasowane = dopasujMetaIndeksu(indeks, kryteria);
   KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
     opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek}`, // I.a: bez licencji (format TO-zestaw/1 ją niesie, opis nie)
-    etykieta: '🌍 repozytorium:',
     akcja: () => grajZZestawemZRepo(meta, urlZrodla),
+    // Adres pliku liczony raz — ten sam dla wstępnego pobrania i dla kliku.
+    urlPaczki: urlPaczkiZRepo(urlZrodla, meta),
     // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
     // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.
     statystyki: meta.oceny === undefined
@@ -2601,20 +2722,20 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
   // które nie pasują do setupu, to dwie różne sytuacje — i tylko drugą da się
   // naprawić zmianą ustawień.
   if (dopasowane.length) {
-    $('zestawy-status').textContent = 'Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.';
+    statusZestawow('Repozytorium ma paczki dla tej okolicy — wybór należy do Ciebie.');
     return null;
   }
   // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
   // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat mówi
   // WPROST, które kryterium nie pasuje — nie wymienia całego setupu.
   const bliskie = indeks.filter((m) => czyWOkolicy(m, kryteria));
-  $('zestawy-status').textContent = bliskie.length
+  statusZestawow(bliskie.length
     ? `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale ${bliskie.length === 1 ? 'nie pasuje' : 'nie pasują'}: `
       + bliskie.map((m) => `${m.miejsce ?? 'paczka bez nazwy'} — ${powodyNiedopasowania(m, kryteria).join('; ')}`).join(' | ')
       + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.'
     : (indeks.length
       ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
-      : 'Repozytorium jest puste — nowe pytania przygotuje model.');
+      : 'Repozytorium jest puste — nowe pytania przygotuje model.'));
   return null;
 }
 
@@ -2648,13 +2769,13 @@ async function grajZZestawemZRepo(wpis, urlIndeksu) {
   // M9b/D4: adres liczy czysta funkcja urlPaczkiZRepo — wpis z `id` (most
   // Drive) jedzie przez `?akcja=paczka&id=…`, wpis z `plik` jak dotąd.
   const url = urlPaczkiZRepo(urlIndeksu, wpis);
-  status(`Pobieram paczkę z repozytorium: ${wpis.miejsce}…`);
+  status(`Pobieram paczkę z repozytorium: ${wpis.miejsce}…`, { czeka: true });
   let tekst;
   try {
     // Ten sam limit (15 s) i ten sam słownik błędów co indeks. Bez powtórki:
     // tuż przed tym żądaniem poszedł indeks, więc instancja mostu jest już
     // rozgrzana, a ponowić można jednym kliknięciem (powód zobaczysz w statusie).
-    tekst = await pobierzGetTekst(url);
+    tekst = await pobierzPaczkeZRepo(url); // z pamięci, gdy wstępne pobranie zdążyło
   } catch (e) {
     status(`Nie udało się pobrać paczki z repozytorium (${e?.powod ?? 'brak odpowiedzi'}) — sprawdź połączenie albo graj zwykłą ścieżką.`);
     return;
@@ -2682,6 +2803,16 @@ async function grajZZestawemZRepo(wpis, urlIndeksu) {
  */
 function startGry() {
   if (!STAN.paczka || STAN.usterkiPaczki.length > 0) return;
+  // Hot-seat to INNA gra niż sieciowa (zgłoszenia terenowe R i N, 2026-09-13):
+  // kontekst multi odzyskany przy starcie aplikacji (albo zostawiony przez grę,
+  // którą host zamknął) włączał w hot-seacie trasę-sekret — mapa pokazywała
+  // jedną stację z numerem 1 — a przy następnym otwarciu telefonu sesja multi
+  // miała pierwszeństwo przed zapisem hot-seata. Start gry na tym telefonie
+  // kończy kontekst sieciowy: synchronizacja staje, sesja i stan idą w kosz.
+  zatrzymajSyncMulti();
+  usunSesjeMulti();
+  STAN.multi = null;
+  STAN.trasaDlugosc = 0;
   if (!STAN.stacje.length || !STAN.pozycja) {
     status('Nie da się zacząć gry: potrzebna pozycja i policzone stacje (kroki 2–3).');
     return;
@@ -2958,7 +3089,7 @@ function renderujPytanie() {
   const { paczka, blad } = odpakujPaczke(STAN.kontenerPaczki);
   if (!paczka) {
     $('gra-pytanie-tresc').textContent = '';
-    $('gra-komunikat').textContent = `Nie da się odsłonić pytania: ${blad ?? 'uszkodzony kontener'}. Zakończ grę albo wgraj paczkę ponownie z pliku.`;
+    $('gra-komunikat').textContent = `Nie da się odsłonić pytania: ${blad ?? 'uszkodzony kontener'}. Zakończ grę ikoną „⚙ START GRY” (wpisz TAK), a potem wybierz paczkę z repozytorium albo wklej odpowiedź modelu jeszcze raz.`;
     return;
   }
   const idPytan = pytaniaStacji(r, r.biezacaStacja);
@@ -2977,7 +3108,7 @@ function renderujPytanie() {
   const pytanie = paczka.pytania.find((q) => q.id === para.pytanieId);
   const gracz = r.gracze.find((g) => g.id === para.graczId);
   if (!pytanie) {
-    $('gra-komunikat').textContent = `Kontener nie zawiera pytania ${para.pytanieId} — paczka rozjechała się z rozgrywką. Zakończ grę albo wgraj paczkę ponownie.`;
+    $('gra-komunikat').textContent = `Kontener nie zawiera pytania ${para.pytanieId} — paczka rozjechała się z rozgrywką. Zakończ grę ikoną „⚙ START GRY” (wpisz TAK) i wybierz paczkę jeszcze raz.`;
     return;
   }
   $('gra-komunikat').textContent = '';
@@ -3101,9 +3232,8 @@ function etykietaPrzyciskuDalej(stan) {
   if (stan.faza === FAZY.pytanie) return 'Następne pytanie →';
   if (!czyStartPoDalej()) return 'Następna stacja →';
   const pod = podglad(stan);
-  const indeks = stan.stacje.findIndex((s) => s.id === stan.biezacaStacja);
   const kto = pod.gracz ? `${pod.gracz.imie}, ` : '';
-  return `▶ ${kto}stacja ${indeks + 1} — idę →`;
+  return `▶ ${kto}stacja ${numerStacjiTrasy(stan, stan.biezacaStacja)} — idę →`;
 }
 
 /**
@@ -3156,114 +3286,33 @@ function zapiszGre() {
     // wskaźnik = klucz oczyszczony (pusty kodGry → 'gra'); goły '' byłby falsy
     // i baner wznowienia nigdy by się nie pokazał dla gry bez kodu
     localStorage.setItem(KLUCZ_AKTYWNEJ, oczyscKodGry(r.kodGry));
-    // M7/P6: gra zakończona (naturalnie albo ręcznie) ląduje w historii —
-    // dodajWpisHistorii jest idempotentna po klucz, więc powtórki zastępują,
-    // nie dublują (dokończenie przerwanej gry po wznowieniu = wpis pełny)
+    // Gra zakończona (naturalnie albo ręcznie) wysyła wynik na wspólny Drive
+    // (ADR 0026 aneks) — idempotentnie po odcisku gry, więc powtórki zapisu nie
+    // dublują wpisu. LOKALNEJ historii gier na telefonie nie ma (zgłoszenie
+    // terenowe O, 2026-09-13; ADR 0010 aneks): karta z listą poprzednich gier
+    // na setupie sugerowała drugi sposób powrotu do przerwanej gry, a jedynym jest
+    // automatyczne wczytanie zapisu; wyniki między grami żyją na Drive
+    // (ranking, ADR 0039).
     if (r.faza === FAZY.koniec || STAN.graZakonczonaRecznie) {
-      zapiszGreDoHistorii(STAN.graZakonczonaRecznie && r.faza !== FAZY.koniec);
+      void wyslijWynikHotseat();
     }
   } catch (blad) {
     status(blad?.kod === 'T07'
-      ? 'Zapis gry przekroczył budżet 2 MB (T07) — gramy dalej bez wznowienia po zamknięciu. Zakończ grę, żeby zobaczyć wynik.'
+      ? 'Zapis gry przekroczył budżet 2 MB (T07) — gramy dalej bez wznowienia po zamknięciu. Zakończ grę ikoną „⚙ START GRY” (wpisz TAK), żeby zobaczyć wynik.'
       : `Zapis gry nie udał się: ${blad?.message ?? blad}. Gramy dalej — ale bez wznowienia po zamknięciu przeglądarki.`);
   }
 }
 
-/** Skrót zakończonej gry do `okolica:historia` (M7/P6, ADR 0010 pkt 1).
- *  Błąd zapisu historii NIGDY nie dotyka wyniku ani zapisu gry — jawny status. */
-function zapiszGreDoHistorii(przerwana = false) {
-  const r = STAN.rozgrywka;
-  if (!r) return;
-  try {
-    const wpis = skrotGry({
-      rozgrywka: r,
-      konfig: { ...STAN.konfig, kodGry: String(STAN.konfig.kodGry ?? '') },
-      stacje: STAN.stacje,
-      podsumowanie: podsumowanie(r),
-      miejsce: STAN.miejsce ? STAN.miejsce : null,
-      terazMs: Date.now(),
-      przerwana,
-      factcheck: factcheckBiezacejSesji(),
-    });
-    const surowy = localStorage.getItem(KLUCZ_HISTORII);
-    let { historia, usterki } = walidujHistorieSurowa(surowy);
-    if (!historia) {
-      if (surowy != null) {
-        status(`Historia gier była uszkodzona (${usterki.map((u) => u.kod).join(', ')}) — zaczynam nową listę. Stare wpisy były nieczytelne; resztkę usuniesz „Kasuj historię" na ekranie ustawień.`);
-      }
-      historia = nowaHistoria();
-    }
-    localStorage.setItem(KLUCZ_HISTORII, JSON.stringify(dodajWpisHistorii(historia, wpis)));
-    renderujHistorieGier();
-    // ADR 0026 aneks: ten sam koniec gry, który trafia do historii telefonu,
-    // wysyła wynik na wspólny Drive (idempotentnie po odcisku gry).
-    void wyslijWynikHotseat();
-  } catch (blad) {
-    status(`Nie udało się dopisać gry do historii: ${blad?.message ?? blad}. Wynik gry i zapis nie są tym dotknięte.`);
-  }
-}
-
-/** Lista poprzednich gier na setupie: skróty, najnowsza najpierw; zepsuty
- *  zapis = jawne kody H i oferta kasowania (ADR 0010 pkt 6 — nigdy cicho). */
-function renderujHistorieGier() {
-  const karta = $('karta-historia');
-  // Właściciel, uwagi terenowe #3 pkt 4e (2026-09-11): „Poprzednie gry” to
-  // funkcja hot-seat — w trybie multiplayer karty nie pokazujemy wcale.
-  if (STAN.rodzajGry === 'multi') {
-    karta.hidden = true;
-    return;
-  }
-  const usterkiPole = $('historia-usterki');
-  const lista = $('historia-lista');
-  const przycisk = $('przycisk-kasuj-historie');
-  STAN.historiaKasowanieUzbrojone = false;
-  przycisk.textContent = '🗑 Kasuj historię';
-  const surowy = localStorage.getItem(KLUCZ_HISTORII);
-  if (surowy == null) {
-    karta.hidden = true;
-    return;
-  }
-  karta.hidden = false;
-  const { historia, usterki } = walidujHistorieSurowa(surowy);
-  if (!historia) {
-    $('historia-naglowek').textContent = 'Poprzednie gry';
-    usterkiPole.hidden = false;
-    usterkiPole.textContent = `Historia gier jest uszkodzona (${usterki.map((u) => u.kod).join(', ')}) — wpisy są nieczytelne. Skasuj ją przyciskiem poniżej; nowa gra zacznie czystą listę.`;
-    lista.replaceChildren();
-    return;
-  }
-  usterkiPole.hidden = true;
-  usterkiPole.textContent = '';
-  const wpisy = [...historia.wpisy].reverse(); // najnowsza najpierw
-  $('historia-naglowek').textContent = `Poprzednie gry (${wpisy.length})`;
-  lista.replaceChildren(...wpisy.map((w) => {
-    const li = document.createElement('li');
-    const kiedy = w.data.slice(0, 16).replace('T', ' ');
-    const czesci = [
-      kiedy,
-      w.miejsce,
-      TRYBY[w.tryb]?.etykieta ?? w.tryb,
-      w.zwyciezca ? `🏆 ${w.zwyciezca} — ${w.punktyRazem} pkt` : 'brak zwycięzcy',
-    ];
-    li.textContent = czesci.filter(Boolean).join(' · ') + (w.przerwana ? ' · (przerwana)' : '');
-    if (czyWpisFactcheck(w)) li.append(' ', znaczekFactcheck());
-    return li;
-  }));
-}
-
-/** Kasowanie historii — dwustopniowo, bez confirm() (ADR 0015 pkt 6). */
-function kasujHistorieGry() {
-  if (!STAN.historiaKasowanieUzbrojone) {
-    STAN.historiaKasowanieUzbrojone = true;
-    $('przycisk-kasuj-historie').textContent = '⚠ Kliknij ponownie, aby skasować historię';
-    status('Drugi klik trwale usunie listę poprzednich gier z telefonu.');
-    return;
-  }
-  localStorage.removeItem(KLUCZ_HISTORII);
-  STAN.historiaKasowanieUzbrojone = false;
-  renderujHistorieGier(); // bez klucza karta się chowa
-  status('Historia gier skasowana.');
-}
+/* `zapiszGreDoHistorii()`, `renderujHistorieGier()`, `kasujHistorieGry()`, karta
+   `#karta-historia` z listą `#historia-lista` i przyciskiem dwustopniowego
+   kasowania oraz klucz localStorage lokalnej historii z pomocnikami
+   w `trwalosc.js` (`skrotGry`, `dodajWpisHistorii`, `nowaHistoria`,
+   `walidujHistorieSurowa`, kody H01–H04) USUNIĘTE (zgłoszenie terenowe O,
+   2026-09-13; ADR 0010 aneks). Właściciel: jedyną drogą powrotu do przerwanej
+   gry jest automatyczne wczytanie zapisu, a lista poprzednich gier na setupie
+   obiecywała drugą. Wynik zakończonej gry jedzie na wspólny Drive
+   (`wyslijWynikHotseat`, ADR 0026 aneks) i stamtąd bierze go ranking
+   (ADR 0039) — telefon nie trzyma własnej kopii. */
 
 /**
  * Start aplikacji (uwagi J i K, ADR 0045): telefon pamięta grę → WRACAMY do niej
@@ -3275,7 +3324,7 @@ function kasujHistorieGry() {
  * Zapis, którego nie da się podnieść, kasujemy OD RAZU i mówimy dlaczego —
  * inaczej każde kolejne otwarcie aplikacji próbowałoby go podnosić:
  * - zepsuty (`walidujStanSurowy` oddaje kody T**) → status z kodami usterek,
- * - zakończony (faza `koniec`) → wynik jest w „Poprzednich grach" (M7/P6).
+ * - zakończony (faza `koniec`) → wynik jest na wspólnym Drive (ADR 0026 aneks).
  * Gra zakończona RĘCZNIE (⚙ START GRY → TAK) zostaje w zapisie i wraca — tak jak
  * dotąd (właściciel 2026-09-11: ręczne zakończenie nie kasuje zapisu).
  *
@@ -3330,6 +3379,7 @@ function wznowGre() {
   for (const zdarzenie of r.dziennik) zdarzenie.czasMs += przesuniecie;
   STAN.konfig = snapshot.konfig;
   STAN.stacje = snapshot.stacje;
+  STAN.trasaDlugosc = 0; // zapis hot-seata niesie pełną listę — numer = indeks
   STAN.kontenerPaczki = snapshot.kontenerPaczki;
   STAN.rozgrywka = r;
   STAN.paczka = null; // w grze nadal tylko kontener (ADR 0007 pkt 4)
@@ -3362,7 +3412,8 @@ function wznowGre() {
    ADR 0045) — razem z banerem wznowienia zniknęło dwustopniowe kasowanie zapisu.
    Zapis kasuje sam start aplikacji, gdy nie da się go podnieść (zepsuty albo gra
    zakończona), oraz „Wróć na początek" po grze (`wrocNaPoczatek`).
-   Dwustopniowe kasowanie HISTORII gier zostaje (`kasujHistorieGry`, ADR 0015). */
+   Dwustopniowego kasowania nie ma już nigdzie: lokalna historia gier zniknęła
+   razem z nim (zgłoszenie terenowe O, 2026-09-13; ADR 0010 aneks). */
 
 /**
  * „■ Zakończ grę" — dwustopniowo; pokazuje wynik WCZEŚNIEJ niż model kończy
@@ -4210,7 +4261,6 @@ function renderujRodzajGry() {
   $('przycisk-dalej-pozycja').hidden = dolacz; // dalej wiodą przyciski „Dołącz” z listy
   $('legend-tozsamosc').textContent = multi ? '👤 Ty w tej grze' : '👤 Kto gra?';
   $('przycisk-dodaj-gracza').textContent = multi ? '✔ Potwierdź — to ja' : '➕ Dodaj gracza';
-  renderujHistorieGier(); // pkt 4e: „Poprzednie gry” tylko dla hot-seat
   renderujPolaTozsamosci(); // pkt 4i: w multi po wpisaniu siebie pola znikają
 }
 
@@ -4259,7 +4309,12 @@ function czytajSesjeMulti() {
 }
 
 function usunSesjeMulti() {
-  if (typeof localStorage !== 'undefined') localStorage.removeItem(KLUCZ_SESJI_MULTI);
+  if (typeof localStorage !== 'undefined') {
+    localStorage.removeItem(KLUCZ_SESJI_MULTI);
+    // Zaległe zdarzenia gry, której telefon już nie pamięta, nie mają dokąd
+    // iść — kolejka idzie w kosz razem z sesją (ADR 0019 aneks 2026-09-13d).
+    localStorage.removeItem(KLUCZ_KOLEJKI_MULTI);
+  }
 }
 
 /* `renderujWznowienieMulti()` i karta `#multi-wznowienie` („↩ Wróć do gry" /
@@ -4392,6 +4447,11 @@ function wejdzDoGryMulti(gra, graczId, rola) {
     onStan: onStanGryMulti,
     onBlad: (komunikat) => { status(`Gra wieloosobowa: ${komunikat}`); renderujPasekSync(); },
     timeout: harmonogramMulti(),
+    // Zdarzenia, które nie doszły na most, przeżywają odświeżenie telefonu
+    // (ADR 0019 aneks 2026-09-13d): kolejka jest w pamięci, nie tylko w RAM.
+    wczytajKolejke: () => kolejkaZdarzenMulti(gra.kod),
+    zapiszKolejke: (zdarzenia) => zapiszKolejkeZdarzenMulti(zdarzenia, gra.kod),
+    limitKolejki: LIMIT_KOLEJKI_ZDARZEN,
   });
   zapiszSesjeMulti();
   otworzPanelMulti('lobby');
@@ -4587,10 +4647,75 @@ function opuscLobby() {
  * Od ADR 0045 (uwaga K) wołamy ją SAMI przy starcie aplikacji — karty
  * `#multi-wznowienie` z przyciskiem „↩ Wróć do gry" nie ma (uwaga J).
  */
+/**
+ * Zaległe zdarzenia gry sieciowej z pamięci telefonu (ADR 0019 aneks
+ * 2026-09-13d). Odpowiedź udzielona bez zasięgu czekała dotąd TYLKO w RAM
+ * (`app/sync.js`), więc odświeżenie telefonu ją gubiło: most nie poznawał
+ * odpowiedzi, a stacja zostawała do przejścia jeszcze raz. Teraz kolejka jest
+ * utrwalona i wychodzi PRZED pobraniem stanu gry — inaczej telefon zbudowałby
+ * trasę ze stacją, którą most właśnie domknął.
+ */
+function kolejkaZdarzenMulti(kod) {
+  const pamiec = pamiecOcen();
+  if (!pamiec || !kod) return [];
+  let surowy = null;
+  try {
+    surowy = JSON.parse(pamiec.getItem(KLUCZ_KOLEJKI_MULTI) ?? 'null');
+  } catch {
+    surowy = null; // zepsuty wpis = pusta kolejka, nigdy wyjątek
+  }
+  return walidujKolejkeZdarzen(surowy, { kod });
+}
+
+function zapiszKolejkeZdarzenMulti(zdarzenia, kod) {
+  const pamiec = pamiecOcen();
+  if (!pamiec) return;
+  if (!Array.isArray(zdarzenia) || zdarzenia.length === 0) {
+    pamiec.removeItem(KLUCZ_KOLEJKI_MULTI); // pusta kolejka nie zajmuje pamięci
+    return;
+  }
+  pamiec.setItem(KLUCZ_KOLEJKI_MULTI, JSON.stringify(zapisKolejkiZdarzen(zdarzenia, {
+    kod: kod ?? STAN.multi?.gra?.kod ?? '',
+    idGry: STAN.multi?.gra?.idGry ?? null,
+  })));
+}
+
+/**
+ * Wypchnięcie utrwalonych zdarzeń PRZED pobraniem stanu gry. Odmowa mostu
+ * (gra skończona albo odpowiedź już u niego jest) kasuje zdarzenie — duplikatu
+ * nie będzie, bo most odrzuca drugą odpowiedź tego gracza do tej stacji
+ * (`przyjmijZdarzenie`). Awaria sieci zostawia resztę w pamięci: przejmie ją
+ * `sync.js` przy pierwszym udanym kroku.
+ */
+async function dostarczZalegleZdarzeniaMulti(sesja) {
+  const zalegle = kolejkaZdarzenMulti(sesja?.kod);
+  if (zalegle.length === 0) return;
+  status(`Wysyłam zaległe zdarzenia gry (${zalegle.length}) — odpowiedź zapisana bez połączenia z mostem…`, { czeka: true });
+  let i = 0;
+  for (; i < zalegle.length; i += 1) {
+    try {
+      // eslint-disable-next-line no-await-in-loop — kolejność zdarzeń jest częścią kontraktu
+      await polecenieMostu(sesja.urlMostu, { akcja: 'gra-zdarzenie', zdarzenie: zalegle[i] });
+    } catch (e) {
+      if (e?.odmowaMostu) continue; // most już to zna albo gra nie trwa — nie ponawiamy
+      break; // nadal offline: to i wszystkie następne zostają w pamięci telefonu
+    }
+  }
+  const zostale = zalegle.slice(i);
+  const dostarczone = zalegle.length - zostale.length;
+  zapiszKolejkeZdarzenMulti(zostale, sesja?.kod);
+  if (dostarczone > 0) {
+    status(zostale.length === 0
+      ? `Zaległe zdarzenia gry (${dostarczone}) doszły na most — punkty są policzone.`
+      : `Zaległe zdarzenia: ${dostarczone} doszło na most, ${zostale.length} czeka na połączenie.`);
+  }
+}
+
 async function przywrocGreMulti() {
   const sesja = czytajSesjeMulti();
   if (!sesja) return;
-  status(`Wracam do gry ${sesja.kod}…`);
+  status(`Wracam do gry ${sesja.kod}…`, { czeka: true });
+  await dostarczZalegleZdarzeniaMulti(sesja);
   // `definitywnie` = most odpowiedział i mówi „nie ma takiej gry / nie ma Cię na
   // liście" — wtedy nie ma do czego wracać i sesja idzie w kosz. Awaria sieci to
   // co innego: sesja zostaje, a następne otwarcie aplikacji spróbuje znowu.
@@ -4610,6 +4735,10 @@ async function przywrocGreMulti() {
       onStan: onStanGryMulti,
       onBlad: (komunikat) => { status(`Gra wieloosobowa: ${komunikat}`); renderujPasekSync(); },
       timeout: harmonogramMulti(),
+      // Jak w `wejdzDoGryMulti`: kolejka zdarzeń przeżywa odświeżenie telefonu.
+      wczytajKolejke: () => kolejkaZdarzenMulti(gra.kod),
+      zapiszKolejke: (zdarzenia) => zapiszKolejkeZdarzenMulti(zdarzenia, gra.kod),
+      limitKolejki: LIMIT_KOLEJKI_ZDARZEN,
     });
     if (gra.stan === 'lobby') otworzPanelMulti('lobby');
     STAN.wznawiamMulti = true; // powrót do gry NIE jest startem — bez odliczania (ADR 0044)
@@ -4720,7 +4849,10 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
     status(`Nie da się odsłonić pytań gry ${gra.kod}: ${blad?.komunikat ?? 'uszkodzony kontener'}.`);
     return;
   }
-  const wszystkie = (gra.zestaw.stacje ?? []).map((s, i) => ({ id: s.id ?? i + 1, lat: s.lat, lon: s.lon, opis: s.opis ?? '' }));
+  // `numer` = pozycja na PEŁNEJ trasie: zamknięte stacje nie wracają do modelu
+  // (właściciel, 2026-09-11), ale numery na mapie i w panelu zostają te same —
+  // cel gracza, który zamknął stację 1, to nadal stacja 2 (zgłoszenie N).
+  const wszystkie = (gra.zestaw.stacje ?? []).map((s, i) => ({ id: s.id ?? i + 1, numer: i + 1, lat: s.lat, lon: s.lon, opis: s.opis ?? '' }));
   const N = gra.gracze.length;
   const mojIndeks = gra.gracze.findIndex((g) => g.id === m.graczId);
   const zamknietePrzezeMnie = new Set(
@@ -4739,6 +4871,7 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
   const paczkaGracza = pytaniaDlaGracza(paczka, { liczbaGraczy: N, indeksGracza: mojIndeks });
   m.indeksGracza = mojIndeks;
   STAN.stacje = moje;
+  STAN.trasaDlugosc = wszystkie.length; // „stacja X z Y" z pełnej trasy
   STAN.kontenerPaczki = gra.zestaw.kontener;
   STAN.paczka = paczka;
   STAN.usterkiPaczki = [];
@@ -5379,7 +5512,6 @@ function start() {
   $('przycisk-koniec-gry').addEventListener('click', () => zakonczGreZPotwierdzenia());
   // Przycisków „▶ Wznów grę" i „🗑 Nowa gra (kasuje zapis)" NIE MA (uwaga J,
   // ADR 0045): telefon wraca do zapamiętanej gry sam, na końcu `start()`.
-  $('przycisk-kasuj-historie').addEventListener('click', () => kasujHistorieGry());
 
   /* M11/P4+m12-74: gra na wielu urządzeniach — segmenty na setupie, lobby,
      kanał info i koniec gry z ręki hosta (bez kodów i bez źródeł paczek). */
@@ -5404,7 +5536,6 @@ function start() {
   // i K, ADR 0045): powrót do zapamiętanej gry wieloosobowej jest automatyczny
   // (na końcu `start()`), a sesję kasuje wyjście z lobby, zamknięcie gry przez
   // most, rezygnacja i jawna odmowa mostu przy powrocie.
-  renderujHistorieGier(); // M7/P6: lista poprzednich gier na setupie
   // Start to mapa + okno startowe, nie setup (decyzja właściciela 2026-09-09).
   pokazMapeStartowa();
   const start = $('ekran-start');

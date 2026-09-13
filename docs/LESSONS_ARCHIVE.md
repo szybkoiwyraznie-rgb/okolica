@@ -1146,3 +1146,250 @@ właściwe urządzenie i `await oddech()`, ewentualnie helper `przepompuj`).
 Zapis przy pożegnaniu (`pagehide`, `visibilitychange → hidden`) testuje się przez
 usunięcie snapshotu z pamięci atrapy i sprawdzenie, że zdarzenie go odtworzyło —
 inaczej asercja przechodzi dzięki zapisowi po tranzycji, a nie dzięki nasłuchowi.
+
+## L64 (2026-09-13) — usuwasz przycisk: grepuj TABELE KOMUNIKATÓW w modułach, nie tylko HTML i dokumenty
+
+**Objaw:** audyt scalonego PR #19 (sesja 2026-09-13b) znalazł osiem zdań, które
+gracz czyta w stanie awaryjnym i które odsyłają do kontrolek usuniętych kilka fal
+wcześniej. Siedem z nich dotyczy fali ADR 0043 (m12-107/110): „…zakończ grę
+przyciskiem „■ Zakończ grę”” w `KODY_POZYCJI` **P03**, **P04**, **P08**,
+w komunikacie `stanDojscia` o brakujących współrzędnych stacji (**P06**) i w
+statusie `onBlad` watchera w `app.js`; do tego „Zakończ grę albo wgraj paczkę
+ponownie **z pliku**” (wczytywania plikiem nie ma od 2026-09-07, ADR 0006 aneks 3)
+i **R19** „zapisz go przyciskiem „Zapisz nowy”” (bramka tożsamości to imię + PIN
+i jedno wołanie `profil-ustaw`, ADR 0026). Brama: 760/760 zielonych.
+
+**Przyczyna:** L58 pkt 1 każe po fali usuwania grepać nośniki żywe i wymienia je
+jako pliki (`index.html`, `app/*.js`, `sw.js`, dokumenty, `.gs`) — grep szedł więc
+po etykietach i identyfikatorach węzłów, a martwe zdania siedziały w **tabelach
+komunikatów** (`KODY_POZYCJI`, `KODY_WIELOOSOBOWE`) i w gałęziach błędów
+(`status(...)`, `textContent =`). Tych tekstów nie ma w `index.html`, więc
+przegląd HTML ich nie łapie, a strażnik dryfu nie dostał ani jednej frazy z fali
+ADR 0043 (miał 30 fraz z fal H/I/J i ADR 0034–0045). Dodatkowo audyt PR #18
+(sesja 2026-09-12K) zapisał te komunikaty jako POPRAWNE — „odsyłają do
+„■ Zakończ grę” (ADR 0029 aneks m12-94). OK.” — fala, która przycisk usunęła,
+nie wróciła do zdań na niego wskazujących (L27).
+
+**Naprawa (m12-111):** wszystkie zdania przestawione na prawdziwą drogę
+(⚙ START GRY → wpisz TAK → „■ ZAKOŃCZ AKTUALNĄ GRĘ”), R19 na „wpisz imię i PIN
+jeszcze raz”, a zdanie o uszkodzonym kontenerze na repozytorium/wklejenie
+odpowiedzi modelu. Lista w aneksie 2026-09-13b do ADR 0043 (L63: lista ujść
+należy do ADR-a, nie do handoffu).
+
+**Reguła:**
+1. Nośniki TEKSTU to nie tylko węzły DOM. Przy usuwaniu przycisku albo akcji
+   przegrepuj: tabele kodów w modułach (`KODY_POZYCJI`, `KODY_WIELOOSOBOWE`,
+   `KODY_TRWALOSCI`, kody `G**`/`E**`/`T**`/`R**`), zdania `status(...)`
+   i przypisania `textContent` w gałęziach błędów, oraz lustro mostu
+   (`docs/setup/*.gs` — most też mówi do gracza kodami).
+2. Każdą martwą frazę wpisz w tym samym commitcie do
+   `test/dryf-dokumentow.test.js` jako `{ fraza, nosniki, powod }`. Fraza ma być
+   DOSŁOWNYM kawałkiem zdania dla gracza („zakończ grę przyciskiem”, „wgraj
+   paczkę ponownie z pliku”), nie samą etykietą przycisku: etykietę celowo
+   cytują nagrobki w komentarzach i w ADR-ach (L31), więc strażnik na etykiecie
+   gasiłby własny kod.
+3. Do zakazu dołóż niezmiennik POZYTYWNY: kontrakt, który czyta wiersze KODU
+   (helper `wierszeKodu(tekst)` w `test/kontrakt.test.js` wycina komentarze
+   blokowe i liniowe) i wymaga, żeby każde zdanie o danej akcji nazywało
+   kontrolkę, która istnieje — „zdania o końcu gry zawierają ⚙ START GRY”.
+4. Sprawdź zdanie w stanie, w którym gracz je czyta: komunikat awaryjny musi
+   podać drogę działającą W TYM stanie. W drodze panel gry jest schowany, więc
+   zdanie o dojściu potrzebuje drugiego nośnika (`status()` → `#status`
+   z `aria-live` w ⓘ Informacjach, ADR 0042).
+
+**Testy, które pilnują:** `test/dryf-dokumentow.test.js` (trzy nowe frazy fali
+ADR 0043 + poprawiony `powod` wpisu o pomijaniu stacji, który sam cytował martwy
+przycisk), `test/kontrakt.test.js` („zdania dla gracza o końcu gry nazywają ikonę
+⚙ START GRY” + pin drugiego nośnika), `test/pozycja.test.js` (zakaz frazy
+i niezmiennik ⚙/TAK dla kodów P i dla `stanDojscia`), `test/wieloosobowa.test.js`
+(R19 bez „Zapisz nowy”, z PIN-em).
+
+## L65 (2026-09-13) — `hidden` na przodku gasi potomków: atrapa DOM tego nie widzi, przeglądarka tak
+
+**Objaw:** audyt PR #19 (sesja 2026-09-13b): w stanie „w drodze” przycisk
+„▶ Symuluj dojście (tryb testowy)” — jedyna droga domknięcia odcinka bez GPS,
+obiecana przez WORKFLOW §3 i §4.3 pkt 3, ARCHITECTURE i ADR 0036 aneks m12-102
+pkt 2 — nie był w przeglądarce osiągalny. Pomiar headless Chromium 153
+(390×844, ENVIRONMENT §4.1): `#przycisk-symulacja-gra`, `#gra-panel-odcinek`,
+`#gra-dystans-odcinka` i `#gra-komunikat` mają `getBoundingClientRect()` **0×0**
+i `offsetParent === null`, a `#gra-pasek` (poza panelem) renderuje się normalnie.
+Brama: 763 testy zielone, w tym 20 wywołań helpera `dojdzSymulacja()`, który
+klika ten przycisk.
+
+**Przyczyna:** `odswiezPasekDrogi()` ustawia `$('gra-sterowanie').hidden = droga`,
+a panel fazy B jest POTOMKIEM `#gra-sterowanie`; `styles.css` ma twardą regułę
+`[hidden] { display: none !important; }`, więc znika całe poddrzewo. W tej samej
+tranzycji `renderujGre` odsłania przycisk (`hidden = !(STAN.trybTestowy && faza
+=== odcinek)`) — kod sam sobie przeczy, ale widać to dopiero w przeglądarce:
+atrapa DOM (`test/helpers/dom.js`) nie modeluje kaskady, dziedziczenia ani
+geometrii, a `kliknij()` woła handler bez pytania o renderowanie (rodzina L13:
+„schowany panel ma rozmiar zerowy”).
+
+**Naprawa (m12-112):** `$('gra-sterowanie').hidden = droga && !STAN.trybTestowy;`
+— w terenie bez zmian (nad mapą zostaje sam pasek, ADR 0043 pkt 1), a w trybie
+testowym panel fazy B robi to, co obiecuje ADR 0036 aneks m12-102 pkt 2. Pomiar
+po poprawce: panel 370×124, przycisk symulacji **328×45** (cel ≥ 44 px,
+ADR 0011), duży dystans 340×29, komunikat 370×41. Aneks 2026-09-13b do ADR 0036.
+
+**Reguła:**
+1. Zmiana widoczności PRZODKA (`hidden`, `display`, `visibility`, `inert`, klasy
+   na `body` typu `body.gra-w-drodze`) to zmiana widoczności całego poddrzewa.
+   Wypisz potomków, którzy są celami akcji (przyciski, pola, linki), i sprawdź,
+   czy któryś nie jest jedyną drogą do funkcji (L63) albo jedynym nośnikiem
+   komunikatu (L6).
+2. Zielony test w atrapie DOM NIE jest dowodem, że gracz to zobaczy: atrapa nie
+   ma kaskady, geometrii ani `offsetParent`. Asercja `hidden === false` mówi
+   o atrybucie, nie o renderowaniu.
+3. Taką zmianę mierz w prawdziwej przeglądarce (ENVIRONMENT §4.1 — headless
+   Chromium z npm): `getBoundingClientRect()`, `offsetParent`,
+   `document.elementFromPoint()` dla celu dotykowego. Próba kosztuje kilkanaście
+   sekund, a rozstrzyga to, czego atrapa nie widzi; wynik (tabelka wymiarów)
+   wpisz do `docs/PROJECT_HISTORY.md` i do ADR-a.
+4. Zachowanie zależne od trybu pinuj DWOMA testami: jednym w trybie testowym
+   (`?tryb=test`), drugim terenowym (atrapa `navigator.geolocation`,
+   `naEkranPozycji(...)` + `wyslijFix`). Jeden test w jednym trybie przypina
+   zachowanie, którego w drugim trybie nie ma — tak właśnie asercja „panel
+   schowany w drodze” żyła w teście chodzącym w `?tryb=test`.
+5. Kafelki i sieć w sandboxie nie działają (L3), ale do pomiaru widoczności nie
+   są potrzebne: wystarczy stan DOM ustawiony tymi samymi zdaniami, którymi
+   ustawia je aplikacja.
+
+## L66 (2026-09-13) — dokumenty z pinami: kolejność aneks → cytowanie, kotwice ASCII przy zamianach, sprawdzanie cytowań przed przeniesieniem
+
+**Objaw:** sesja 2026-09-13c (fala zgłoszeń terenowych N–S, PR #20), dwa
+potknięcia przy pracy na dokumentach — oba bez wpływu na zachowanie aplikacji,
+oba wykryte przez bramy, nie przez czytanie:
+
+1. `node --test test/dryf-dokumentow.test.js` → test 5 („cytowane aneksy ADR
+   istnieją") czerwony z komunikatem `ADR 0010 nie ma aneksu z tą datą`.
+   WORKFLOW.md dostał zdanie z „(ADR 0010 aneks 2026-09-13)" w momencie, gdy
+   aneks jeszcze nie istniał — porządek pracy był odwrotny niż porządek, którego
+   pilnuje strażnik.
+2. Zamiana akapitu w README.md nie trafiła, choć wyszukiwany fragment wyglądał
+   identycznie: w `stare` cudzysłów zamykający był U+201D (`”`), a plik miesza
+   `„` (U+201E) z prostym `"` (ASCII). Różnica jednego znaku, niewidoczna
+   w diffie terminala i w podglądzie.
+
+**Przyczyna:** dokumenty tego repozytorium są nośnikami stanu pilnowanymi
+testami (`test/dryf-dokumentow.test.js`): strażnik zbiera cytowania
+`ADR NNNN aneks RRRR-MM-DD[x]` ze WSZYSTKICH żywych nośników — `DOKUMENTY`
+(README, AGENTS, ROADMAP, WORKFLOW, ARCHITECTURE, ASSETS, PROTOKOL, LESSONS),
+`UI` (index.html, sw.js, app/*.js), testy i lustro `.gs` — i wymaga, żeby plik
+ADR zawierał dokładnie tę datę. Cytat jest więc obietnicą składaną ZANIM treść
+powstanie, jeśli kolejność jest odwrotna. Osobno: polski tekst w plikach
+projektu nie ma jednego standardu cudzysłowów (historyczne edycje różnych
+narzędzi), więc dopasowanie literalne całych zdań jest kruche — to rodzina L2
+(mojibake/UTF-8) w wydaniu „znak poprawny, ale inny".
+
+**Naprawa:** aneksy ADR 0010/0015/0017/0019/0032 dopisane PRZED ponownym
+uruchomieniem strażnika (test 5 → zielony, 5/5); zamiany w README.md,
+WORKFLOW.md i ARCHITECTURE.md wykonane metodą przęsła: wyszukać unikalny
+fragment ASCII początku i końca (`s.index(start)`, `s.index(end)`), podmienić
+tekst pomiędzy nimi — pięć przęseł, zero nietrafionych, bez dotykania
+cudzysłowów. Weryfikacja: `grep -rn 'Poprzednie gry\|okolica:historia'` po
+nośnikach żywych → zero trafień.
+
+**Reguła:**
+1. Kolejność fali dokumentowej: (a) aneks w pliku ADR, (b) dopiero potem
+   cytowanie go z datą w żywym nośniku. Jeśli treść nie jest jeszcze gotowa,
+   cytuj BEZ daty („ADR 0010 aneks") — strażnik szuka wyłącznie wzorca
+   `ADR\s*(\d{4})\s*aneks\s*(\d{4}-\d{2}-\d{2}[a-z]?)`, więc cytat bez daty
+   niczego nie obiecuje. Format nagłówka aneksu: `## Aneks RRRR-MM-DD[x]
+   (mNN-NNN, o czym)`.
+2. Zamiany w dokumentach z polskim tekstem kotwicz na fragmentach ASCII:
+   `i = s.index(start); j = s.index(end); s = s[:i] + nowe + s[j:]`. Nigdy nie
+   buduj `stare` z całych zdań zawierających cudzysłowy, myślniki ani `„…”` —
+   a po zamianie sprawdzaj `git diff` i grepem (L2).
+3. Przed przeniesieniem treści ADR do archiwum przegrepuj żywe nośniki pod
+   kątem cytowań z datą (`grep -rn '0019 aneks 2026-09-11' README.md docs/ app/
+   test/ *.gs`) ORAZ asercji testów czytających nagłówki tego pliku
+   (`grep -rn '0019-gra-wieloosobowa' test/`) — przenoś tylko sekcje, których
+   nikt nie cytuje i których żaden test nie czyta. W tej sesji tak poszły
+   aneksy 2026-09-06 … 2026-09-11b (2 268 tok), a zostały cytowane 2026-09-12f,
+   2026-09-13, 2026-09-13b.
+4. Plik w `docs/decisions/archive/`, który NIE jest wycofanym ADR-em (np.
+   pojemnik na przeniesione aneksy), nazwij bez przedrostka `NNNN-`: kontrakt
+   „archiwum ADR-ów" wymaga od plików `^\d{4}-` wiersza `- Status: Wycofana`
+   i wiersza w rejestrze, a budżet i rejestr skanują tylko wzorzec `^\d{4}-`.
+   Nazwa `aneksy-0019-…md` jest poza oboma skanami.
+5. Komentarz-nagrobek w kodzie (L31) i wpis w strażniku martwych fraz (L58/L64)
+   nie mogą cytować DOSŁOWNYCH napisów usuniętej funkcji, jeśli ten napis jest
+   właśnie frazą martwą — nagrobek opisuje rzecz („historia lokalna",
+   „poprzednia gra"), a frazę wpisuje się w strażniku raz, w `MARTWE_FRAZY`,
+   z listą nośników. Testy nie są nośnikiem fraz martwych (strażnik sprawdza
+   `DOKUMENTY` + `UI`), więc kontrakt odwrócony może nazwać usuniętą rzecz.
+
+## L67 (2026-09-13) — utrwalona kolejka zdarzeń: wypchnięcie przed odczytem stanu, ponowienie bezpieczne dzięki mostowi, piny żądań zawężone do celu
+
+Fala: trzecia fala zgłoszeń właściciela 2026-09-13 (m12-114, PR #20, ADR 0019
+aneks 2026-09-13d, ADR 0011 aneks 2026-09-13d, ADR 0017 aneks 2026-09-13d).
+
+### Objaw 1 — odpowiedź bez zasięgu ginęła po odświeżeniu telefonu
+
+Właściciel: „napraw w tej sesji" (odrzucone: zostawienie ograniczenia
+w dokumentacji i przeniesienie do osobnej fali). Aneks 2026-09-13c ADR 0019
+kończył się znanym ograniczeniem: zdarzenie niedostarczone czekało w kolejce
+`app/sync.js` TYLKO w pamięci operacyjnej, więc reload je gubił. Most nie
+poznawał odpowiedzi, stacja zostawała otwarta i gracz przechodził ją jeszcze
+raz — a gra sieciowa nie ma lokalnego snapshotu (`zapiszGre` wychodzi przy
+`STAN.multi`), więc nie było drugiej kopii.
+
+### Objaw 2 — powrót do gry budował rozgrywkę ze stacją właśnie domkniętą
+
+Po utrwaleniu kolejki (`okolica:multi-kolejka`, schemat `zdarzenia-kolejka/1`)
+`przywrocGreMulti` pobierał stan gry ZANIM zaległe zdarzenia doszły na most:
+most zwracał grę ze stacją 1 otwartą, telefon budował z niej rozgrywkę, a chwilę
+później te same zdarzenia ją domykały — gracz widział cel, którego już nie ma
+(i przechodził stację drugi raz, tym razem z odmową mostu).
+
+### Przyczyna
+
+Stan gry na telefonie jest POCHODNĄ odpowiedzi mostu. Kolejka zdarzeń, która
+przeżyła restart aplikacji, jest częścią tego stanu — musi być wypchnięta przed
+odczytem, inaczej odczyt jest nieaktualny w chwili narodzin. Wcześniej kolejka
+żyła tylko w RAM, więc problem nie mógł się ujawnić: po restarcie nie było czego
+wypychać.
+
+### Naprawa
+
+1. `app/wieloosobowa.js`: `walidujKolejkeZdarzen(surowy, { kod })`,
+   `zapisKolejkiZdarzen(zdarzenia, { kod, idGry })`,
+   `LIMIT_KOLEJKI_ZDARZEN` = 50 (wzór: kolejka wyniku hot-seat i kolejka ocen —
+   śmieciowy albo CUDZY zapis daje pustą listę, nigdy wyjątku).
+2. `app/sync.js`: trzy wstrzyknięte uchwyty (`wczytajKolejke`, `zapiszKolejke`,
+   `limitKolejki`), startowa kolejka z pamięci, `utrwalKolejke()` przy KAŻDYM
+   ruchu (push przy awarii sieci, shift po wypchnięciu, shift po odmowie mostu),
+   jawna odmowa przy pełnej kolejce. Moduł nadal nic nie wie o `localStorage`.
+3. `app/app.js`: `dostarczZalegleZdarzeniaMulti(sesja)` wołane w
+   `przywrocGreMulti` PRZED `pobierzGetMulti`; awaria sieci zostawia resztę
+   w pamięci (`break` + `slice`), odmowa mostu kasuje zdarzenie (`continue`);
+   klucz idzie w kosz razem z sesją (`usunSesjeMulti`).
+4. Warunek bezpieczeństwa ponowienia jest po stronie MOSTU: `przyjmijZdarzenie`
+   odrzuca drugą odpowiedź tego gracza do tej stacji, więc częściowe
+   dostarczenie nie tworzy duplikatu. Zapisane w ADR jako warunek, nie zbieg
+   okoliczności — gdyby reguła zniknęła, utrwalona kolejka staje się groźna.
+
+### Objaw 3 — pin „dokładnie jedna powtórka" padł po dodaniu żądań w tle
+
+Test zimnego startu mostu (2026-09-12) liczył `atrap.wywolania.length === 2`.
+Wstępne pobieranie paczek (ADR 0017 aneks 2026-09-13d) dokłada żądanie PLIKU
+paczki, więc lista miała 3 pozycje — pin mierzył wszystko, co kiedykolwiek
+wyszło do sieci, a nie powtórki żądania indeksu.
+
+### Naprawa 3
+
+Pin zawężony do celu: `wywolania.filter((u) => u.includes('indeks.json')).length
+=== 2`. Zasada: pin liczący żądania nazywa swój cel (adres albo akcja), a przy
+dokładaniu żądań w tle trzeba przegrepać testy pod kątem `wywolania.length` —
+to jedyny sposób, żeby znaleźć piny, które mierzyły „nic więcej się nie dzieje".
+
+### Testy (767/767, +9 w tej fali)
+
+- Jednostkowe `app/sync.js`: utrwalanie przy push/shift, start nowej instancji
+  z `wczytajKolejke` (FIFO przy pierwszym kroku), limit z jawną odmową.
+- Jednostkowe `app/wieloosobowa.js`: round-trip przez JSON, cudzy `kod`, śmieci.
+- End-to-end (`test/wieloosobowa-ui.test.js`): odpowiedź bez zasięgu →
+  odświeżenie → zdarzenia na moście PRZED stanem gry, pamięć czysta, cel
+  „stacja 2 z 3" (nie powtórka stacji 1), punkt na moście; oraz odświeżenie
+  WCIĄŻ bez sieci — nic nie wychodzi, nic nie jest kasowane, a po powrocie sieci
+  zdarzenia dochodzą raz.

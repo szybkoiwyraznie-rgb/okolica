@@ -53,8 +53,17 @@ tutaj tylko to, co zostało do sprawdzenia:
 - **M11/M12** (§4.4): test dwóch telefonów wg checklisty — w tym „stan mostu”
   i ranking z ADR 0039 (pkt 7a; wymaga nowego deploymentu web app). Test terenowy
   2026-09-13 dał 13 uwag (A–K, M, L) — wszystkie wdrożone (m12-100 → m12-110,
-  ADR 0040–0045); została powtórka testu i nowy deployment web app (uwaga G:
-  rezygnacja domyka grę).
+  ADR 0040–0045); audyt tej fali (2026-09-13b, PR #20) znalazł i naprawił dwie
+  usterki widoczne dla gracza: komunikaty awaryjne GPS odsyłały do przycisku
+  końca gry zdjętego przez ADR 0043, a panel fazy B był w przeglądarce schowany
+  razem z przodkiem, więc symulacja dojścia w `?test=true` była nieosiągalna
+  (m12-111 → m12-112). Drugi test terenowy 2026-09-13c dał sześć uwag (N–S): pięć wdrożonych (m12-113, aneksy ADR 0010/0015/0017/0019/0032), a S — nazwa paczki od nazwy stacji — wycofana przez właściciela jako szkodliwa, bo paczka niesie lokalizacje stacji, a pytania wiszą na ich numerach. Trzecia fala 2026-09-13d (m12-114) domknęła trzy zgłoszenia właściciela:
+  kolejka zdarzeń gry sieciowej jest utrwalona, więc odpowiedź bez zasięgu
+  przeżywa odświeżenie telefonu (ADR 0019 aneks 2026-09-13d), czekanie na sieć
+  pulsuje (ADR 0011 aneks 2026-09-13d), a widoczne paczki schodzą w tle — klik
+  „▶ Graj z tą paczką" nie czeka już na plik (ADR 0017 aneks 2026-09-13d).
+  Została powtórka testu i nowy deployment web app
+  (uwaga G: rezygnacja domyka grę).
 
 ## Zasady prowadzenia roadmapy
 

@@ -757,6 +757,9 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(50);
   assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, false, 'nakładka Pobieram dane w trakcie fetch');
+  // Właściciel 2026-09-13: czekanie na sieć ma być WIDAĆ — nakładka pulsuje.
+  assert.equal(domAtrapa.pobierz('stacje-ladowanie').classList.contains('pulsuje'), true,
+    'nakładka pulsuje, póki Overpass nie odpowiedział');
   domAtrapa.kliknij('przycisk-podejrzyj-mape');
   assert.equal(domAtrapa.pobierz('ekran-stacje').hidden, false, 'oko nie deaktywuje ekranu');
   assert.equal(domAtrapa.pobierz('ekran-stacje').inert, true);
@@ -767,6 +770,8 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   domAtrapa.kliknij('przycisk-podejrzyj-mape');
   assert.equal(domAtrapa.pobierz('ekran-stacje').inert, false);
   assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, true, 'nakładka znika po odpowiedzi');
+  assert.equal(domAtrapa.pobierz('stacje-ladowanie').classList.contains('pulsuje'), false,
+    'po odpowiedzi pulsowanie gaśnie — stan „czekam" nie zostaje na ekranie');
   assert.match(domAtrapa.pobierz('siec-proby').textContent, /HTTP 400/, 'błąd zapytania jawny (kod S03)');
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false, 'po porażce widać ponowienie');
   domAtrapa.window.fetch = async (url) => { wywolania.push(url); return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) }; };
@@ -1064,7 +1069,7 @@ test('ADR 0032: poprawka celuje w profil wklejki — E02 w checkbox, odrzucona w
   assert.match(domAtrapa.pobierz('pole-odpowiedz').value, /kwerenda internetowa dla każdego faktu/, 'odrzucona rev2: korekta żąda kwerendy');
 });
 
-test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł", wynik i historia bez weryfikacji', async () => {
+test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł" i bez linii wariantu', async () => {
   const pamiec = new Map();
   pamiec.set('okolica:gracze', JSON.stringify({ schemat: 'gracze-lokalni/1', gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })) }));
   pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 } }));
@@ -1077,7 +1082,6 @@ test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł", wyni
   rev3.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.zrodla; delete p.punkty; });
   domAtrapa.wklej('pole-odpowiedz', JSON.stringify(rev3));
   assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'rev3 zaczyna grę');
-  const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
   for (const numerStacji of [1, 2, 3]) {
     const pytanie = jawna.pytania.find((q) => q.stacja === numerStacji);
     domAtrapa.kliknij('przycisk-start-odcinka');
@@ -1097,8 +1101,8 @@ test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł", wyni
   // linii wariantu — zdanie „Pytania bez wymuszonego fact-checku…” i jego
   // mutacja z „fact check” zniknęły razem z elementem, którego nikt nie pytał.
   assert.equal(domAtrapa.elementy.has('gra-wynik-factcheck'), false, 'pokazWyniki nie dotyka linii wariantu');
-  const { historia } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
-  assert.equal(historia.wpisy[0].factcheck, false, 'historia pamięta brak weryfikacji');
+  // Wariant paczki (ADR 0032) niesie rejestr zestawów (`factcheck: false`) —
+  // lokalnej historii gier nie ma (zgłoszenie terenowe O, 2026-09-13).
 });
 
 test('ADR 0032: zła odpowiedź przy paczce ze źródłami — status mówi o źródłach, linki są', async () => {
@@ -1113,38 +1117,7 @@ test('ADR 0032: zła odpowiedź przy paczce ze źródłami — status mówi o ź
   assert.ok(dom.pobierz('gra-zrodla').children.length > 0, 'linki do źródeł pod wyjaśnieniem');
 });
 
-test('ADR 0032: historia pokazuje Q dla zweryfikowanych i starszych wpisów, nie dla bez weryfikacji', async () => {
-  const { nowaHistoria, dodajWpisHistorii, skrotGry } = await import('../app/trwalosc.js');
-  const { nowaRozgrywka, podsumowanie } = await import('../app/rozgrywka.js');
-  const { domyslnaKonfiguracja } = await import('../app/konfig.js');
-  const { stacjeProste } = await import('../app/stacje.js');
-  const srodek = { lat: 52.2297, lon: 21.0122 };
-  const paczka = czytajFixturePaczka();
-  const konfig = { ...domyslnaKonfiguracja(2), kodGry: 'w-fc', promienM: 1000, liczbaStacji: 3 };
-  const stacje = stacjeProste({ srodek, liczbaStacji: 3, promienM: 1000, ziarno: 'z' });
-  const rozgrywka = nowaRozgrywka({ konfig, stacje, paczka, srodek, czasMs: 0, ziarno: 'z' });
-  const wspolne = { rozgrywka, stacje, podsumowanie: podsumowanie(rozgrywka) };
-  const wFc = skrotGry({ ...wspolne, konfig, miejsce: 'Mokotów', terazMs: 1 });
-  const wBez = skrotGry({ ...wspolne, konfig: { ...konfig, kodGry: 'w-bez' }, miejsce: 'Ochota', terazMs: 2, factcheck: false });
-  const wStary = skrotGry({ ...wspolne, konfig: { ...konfig, kodGry: 'w-stary' }, miejsce: 'Wola', terazMs: 3 });
-  delete wStary.factcheck; // wpis sprzed ADR 0032
-  const pamiec = new Map();
-  pamiec.set('okolica:historia', JSON.stringify(dodajWpisHistorii(dodajWpisHistorii(dodajWpisHistorii(nowaHistoria(), wFc), wBez), wStary)));
-  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec });
-  await import(`../app/app.js?fchist=${Math.random().toString(36).slice(2)}`);
-  const pozycje = domAtrapa.pobierz('historia-lista').children;
-  assert.equal(pozycje.length, 3);
-  const maQ = (li) => [...li.children].some((c) => c.className === 'znaczek-factcheck' && c.textContent === 'Q');
-  // najnowsza najpierw: Wola (sprzed ADR), Ochota (bez), Mokotów (zweryfikowana)
-  assert.match(pozycje[0].textContent, /Wola/);
-  assert.equal(maQ(pozycje[0]), true, 'wpis sprzed ADR 0032 traktowany jak zweryfikowany');
-  assert.match(pozycje[1].textContent, /Ochota/);
-  assert.equal(maQ(pozycje[1]), false, 'bez weryfikacji: brak znaczka');
-  assert.match(pozycje[2].textContent, /Mokotów/);
-  assert.equal(maQ(pozycje[2]), true, 'zweryfikowana: znaczek Q');
-});
-
-test('ADR 0032: propozycje paczek pokazują Q tylko dla zweryfikowanych', async () => {
+test('ADR 0032: propozycje paczek pokazują „Fact-checked" tylko dla zweryfikowanych', async () => {
   const { zbierzMetaZestawu } = await import('../app/zestawy.js');
   const { geohash } = await import('../app/geo.js');
   const baza = { lat: 52.2297, lon: 21.0122, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1, miejsce: 'Śródmieście' };
@@ -1179,7 +1152,7 @@ test('ADR 0032: propozycje paczek pokazują Q tylko dla zweryfikowanych', async 
   assert.equal(wiersze.length, 2, 'oba wpisy dopasowane do setupu testowego');
   const maQ = (li) => [...li.children[0].children].some((c) => c?.className === 'znaczek-factcheck');
   assert.equal(maQ(wiersze.find((li) => li.textContent.includes('11:00'))), false, 'bez weryfikacji: brak znaczka');
-  assert.equal(maQ(wiersze.find((li) => li.textContent.includes('10:00'))), true, 'zweryfikowana: znaczek Q');
+  assert.equal(maQ(wiersze.find((li) => li.textContent.includes('10:00'))), true, 'zweryfikowana: znaczek „Fact-checked"');
 });
 
 /* ================== M5/J5: nazwa miejsca z Overpass (warstwa zapasowa
@@ -1233,8 +1206,11 @@ test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe pod
 
 /** Przyjęta paczka + pozycja + stacje z pierścienia (synchronicznie, bez fetch).
  *  Zwraca też `pamiec` — testy trwałości (R6) czytają klucze zapisu gry. */
-async function graGotowaDoStartu() {
+async function graGotowaDoStartu(dodatkoweKlucze = {}) {
   const pamiec = new Map();
+  // Klucze, które test chce mieć w pamięci PRZED startem aplikacji (np. resztkowa
+  // sesja gry sieciowej — zgłoszenie terenowe R, 2026-09-13).
+  for (const [klucz, wartosc] of Object.entries(dodatkoweKlucze)) pamiec.set(klucz, wartosc);
   // Lista graczy nie jest polem konfigu, tylko zapamiętaną tożsamością
   // (ADR 0026 aneks): trzy potwierdzone imiona wracają na listę bez PIN-u.
   pamiec.set('okolica:gracze', JSON.stringify({
@@ -1578,6 +1554,142 @@ test('M6+K: powrót po „zamknięciu przeglądarki" — nowa instancja, ta sama
   await dojdzSymulacja(dom2);
   assert.equal(dom2.pobierz('bledy-gra').hidden, true, `brak błędu, a jest: ${dom2.pobierz('bledy-gra').textContent}`);
   assert.equal(dom2.pobierz('gra-panel-pytanie').hidden, false, 'gra toczy się dalej po wznowieniu');
+});
+
+test('R: resztkowa gra sieciowa nie chowa trasy w hot-seacie, a start gry kasuje jej sesję (zgłoszenie terenowe 2026-09-13)', async () => {
+  // Właściciel: „włączyłem grę w HotSeat, 5 stacji i widać tylko pierwszą
+  // stację, do której idę — ukrywanie trasy miało działać TYLKO w Multiplayerze
+  // z włączoną opcją". Telefon miał w pamięci sesję Wspólnej Trasy z poprzedniego
+  // testu: odzyskany przy starcie kontekst multi włączał trasę-sekret także
+  // w hot-seacie, a przy następnym otwarciu sesja multi wygrywała z zapisem gry.
+  const { dom, pamiec } = await graGotowaDoStartu({
+    'okolica:multi:sesja': JSON.stringify({
+      kod: 'ABC123', idGry: 'gra-1', graczId: 'gracz-1', pseudonim: 'Gracz 1',
+      urlMostu: 'https://script.google.com/macros/s/TEST/exec', rola: 'organizator',
+      zapisano: new Date().toISOString(),
+    }),
+  });
+  dom.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  assert.match(dom.pobierz('mapa-gra-pinezki').textContent, /123/,
+    'hot-seat rysuje CAŁĄ trasę z numerami 1, 2, 3 — sekret Wspólnej Trasy nie przecieka');
+  assert.equal(pamiec.has('okolica:multi:sesja'), false,
+    'start hot-seata kasuje resztkową sesję sieciową — następne otwarcie wróci do TEJ gry');
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'gra hot-seat toczy się dalej');
+});
+
+test('N: powrót po zamknięciu przeglądarki W TRASIE — cel zostaje stacją 2, a punkty nie zerują się (zgłoszenie terenowe 2026-09-13)', async () => {
+  const { dom, pamiec } = await graGotowaDoStartu();
+  dom.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  zaczynijGre(dom);
+  dom.kliknij('przycisk-start-odcinka');
+  await dojdzSymulacja(dom); // stacja 1 zdobyta → pytanie
+  const przyciski = dom.pobierz('gra-odpowiedzi').children;
+  for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] }); // poprawna = 0
+  dom.kliknij('przycisk-nastepna-stacja'); // → przygotowanie, cel: stacja 2
+  dom.kliknij('przycisk-start-odcinka'); // → odcinek do stacji 2
+  const kluczZapisu = 'okolica:gra:' + pamiec.get('okolica:gra-aktywna');
+  const przed = JSON.parse(pamiec.get(kluczZapisu));
+  assert.equal(przed.rozgrywka.biezacaStacja, 2, 'zapis niesie cel: stacja 2');
+  assert.equal(przed.rozgrywka.odpowiedzi.length, 1, 'zapis niesie odpowiedź ze stacji 1');
+
+  // „zamknięcie przeglądarki" w trakcie marszu: nowa instancja na tej samej
+  // pamięci. Panel mapy ma rozmiar PRZED powrotem, żeby warstwa stacji zdążyła
+  // się narysować (L13: schowany/zerowy panel = pusty plan mapy).
+  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
+  dom2.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  await import(`../app/app.js?trasa=${Math.random().toString(36).slice(2)}`);
+
+  const po = JSON.parse(pamiec.get(kluczZapisu));
+  assert.equal(po.rozgrywka.biezacaStacja, 2, 'cel po powrocie to WCIĄŻ stacja 2');
+  assert.equal(po.rozgrywka.odpowiedzi.length, 1, 'zdobyta odpowiedź nie znika z zapisu');
+  assert.equal(po.rozgrywka.odpowiedzi[0].poprawna, true, 'i zostaje policzona jako poprawna');
+  assert.equal(po.stacje.length, 3, 'lista stacji w zapisie jest pełna');
+  assert.match(dom2.pobierz('gra-postep').textContent, /stacja 2 z 3/, 'nagłówek gry mówi „stacja 2 z 3"');
+  // Hotseat NIE ukrywa trasy (zgłoszenie R): mapa gry rysuje wszystkie stacje i
+  // numeruje je od 1 po kolei, więc pin celu ma numer 2 — nie 1.
+  assert.match(dom2.pobierz('mapa-gra-pinezki').textContent, /123/, 'na mapie widać całą trasę z numerami 1, 2, 3');
+});
+
+/* Pytanie właściciela do zgłoszenia N (2026-09-13): „czy punktacja się przenosi
+ * przy reloadzie? Punkty zachowane przy graczach?”. Punkty NIE są polem stanu —
+ * liczy je `podsumowanie()` z `rozgrywka.odpowiedzi` (wpis niesie `gracz`
+ * i `punktyRazem`), a odpowiedzi jadą w zapisie stanu. Test sprawdza LICZBY:
+ * per gracz przed zamknięciem przeglądarki, w zapisie po powrocie i w tabeli
+ * końca gry dokończonej JUŻ po wznowieniu. Fixture ma po jednym pytaniu na
+ * stację, więc przy trzech graczach stacja 1 należy do Gracza 1, stacja 2 do
+ * Gracza 2, a stacja 3 do Gracza 3 (ADR 0027): Gracz 1 punktuje PRZED reloadem,
+ * Gracz 2 odpowiada źle (zero zostaje zerem, nie brakiem wpisu), a Gracz 3
+ * punktuje PO wznowieniu. */
+test('N (punktacja): punkty per gracz przechodzą przez reload — zapis, wznowienie i tabela końca gry', async () => {
+  const { dom, paczka, pamiec } = await graGotowaDoStartu();
+  dom.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  zaczynijGre(dom);
+  const kluczZapisu = () => 'okolica:gra:' + pamiec.get('okolica:gra-aktywna');
+  const zapis = () => JSON.parse(pamiec.get(kluczZapisu())).rozgrywka;
+  const punktyZapisu = () => zapis().odpowiedzi.map((o) => [o.gracz, o.punktyRazem]);
+  const poprawna = (stacja) => paczka.pytania.find((q) => q.stacja === stacja).poprawna;
+
+  // Stacja 1 — pytanie Gracza 1, odpowiedź DOBRA (+1 pkt).
+  dom.kliknij('przycisk-start-odcinka');
+  await dojdzSymulacja(dom);
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /odpowiada Gracz 1/, 'stacja 1 należy do Gracza 1');
+  kliknijOdpowiedz(dom, poprawna(1));
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /\+1 pkt/, 'punkt przyznany');
+  dom.kliknij('przycisk-nastepna-stacja');
+
+  // Stacja 2 — pytanie Gracza 2, odpowiedź ZŁA (0 pkt).
+  dom.kliknij('przycisk-start-odcinka');
+  await dojdzSymulacja(dom);
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /odpowiada Gracz 2/, 'stacja 2 należy do Gracza 2');
+  kliknijOdpowiedz(dom, (poprawna(2) + 1) % 4);
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /Źle \(0 pkt\)/, 'zero punktów');
+  dom.kliknij('przycisk-nastepna-stacja');
+  dom.kliknij('przycisk-start-odcinka'); // marsz do stacji 3 — tu „zamykamy przeglądarkę”
+
+  const przed = punktyZapisu();
+  assert.deepEqual(przed, [[1, 1], [2, 0]], 'przed zamknięciem: Gracz 1 ma 1 pkt, Gracz 2 ma 0');
+  assert.equal(zapis().faza, 'odcinek', 'zapis jest w fazie marszu');
+
+  // „Zamknięcie przeglądarki” w marszu: nowa instancja aplikacji na tej samej pamięci.
+  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
+  dom2.ustawProstokat('mapa-gra', { width: 360, height: 320 });
+  await import(`../app/app.js?punkty=${Math.random().toString(36).slice(2)}`);
+
+  const po = zapis();
+  assert.deepEqual(po.odpowiedzi.map((o) => [o.gracz, o.punktyRazem]), przed,
+    'zapis po powrocie niesie TE SAME punkty przy TYCH SAMYCH graczach');
+  assert.deepEqual(po.gracze.map((g) => g.imie), ['Gracz 1', 'Gracz 2', 'Gracz 3'],
+    'lista graczy wraca cała — punkty mają do kogo być przypisane');
+  assert.match(dom2.pobierz('gra-postep').textContent, /stacja 3 z 3/, 'gra wróciła w marszu do stacji 3');
+
+  // Dokończenie gry JUŻ po wznowieniu: stacja 3, pytanie Gracza 3, odpowiedź dobra.
+  await zamknijStacje(dom2, { paczka, numerStacji: 3, odpowiedz: poprawna(3) });
+
+  assert.equal(zapis().faza, 'koniec', 'gra domknięta po wznowieniu');
+  assert.deepEqual(punktyZapisu(), [[1, 1], [2, 0], [3, 1]],
+    'wpis Gracza 3 dołączył do wpisów sprzed reloadu — nic się nie wyzerowało');
+
+  // Tabela końca gry (ADR 0038: gracz | punkty | poprawne) — liczby z
+  // `podsumowanie()` policzonego na rozgrywce złożonej z zapisu PRZED i PO.
+  assert.equal(dom2.pobierz('gra-panel-koniec').hidden, false, 'panel wyniku widoczny');
+  assert.match(dom2.pobierz('gra-wynik-zwyciezca').textContent, /🏆 Gracz 1/,
+    'ranking otwiera Gracz 1 (remis 1:1 z Graczem 3 rozstrzyga stabilny sort)');
+  const wiersze = dom2.pobierz('gra-wyniki-tbody').children;
+  assert.equal(wiersze.length, 3, 'tabela ma wszystkich trzech graczy');
+  // Wiersze idą w kolejności RANKINGU (`wynik.ranking`, ADR 0038), nie listy
+  // graczy: 1 pkt Gracza 1 (zdobyty PRZED reloadem), 1 pkt Gracza 3 (zdobyty PO
+  // wznowieniu), 0 pkt Gracza 2. Remis 1:1 rozstrzyga stabilny sort.
+  assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/, 'wiersz 1: Gracz 1 ze znacznikiem zwycięzcy');
+  assert.equal(wiersze[0].children[1].textContent, '1', 'punkt Gracza 1 zdobyty PRZED reloadem jest w tabeli');
+  assert.equal(wiersze[0].children[2].textContent, '1/1', 'poprawne/razem Gracza 1');
+  assert.match(wiersze[1].children[0].textContent, /Gracz 3/, 'wiersz 2: Gracz 3');
+  assert.equal(wiersze[1].children[1].textContent, '1', 'punkt Gracza 3 zdobyty PO wznowieniu');
+  assert.equal(wiersze[1].children[2].textContent, '1/1', 'poprawne/razem Gracza 3');
+  assert.match(wiersze[2].children[0].textContent, /Gracz 2/, 'wiersz 3: Gracz 2');
+  assert.equal(wiersze[2].children[1].textContent, '0', 'zero Gracza 2 zostaje zerem, nie brakiem wpisu');
+  assert.equal(wiersze[2].children[2].textContent, '0/1', 'odpowiedział, tylko źle');
 });
 
 test('K: zepsuty zapis — jawne kody T, start kasuje go bez pytania (ADR 0045)', async () => {
@@ -1941,115 +2053,10 @@ test('ADR 0038: ręczne zakończenie gry pokazuje ten sam minimalny ekran wyniku
 
 /* ========== M7/P6: historia gier w UI — zapis, lista, kasowanie, usterki */
 
-test('M7: koniec gry dopisuje skrót do historii — naturalny koniec = wpis pełny', async () => {
-  const { dom, paczka, pamiec } = await graGotowaDoStartu();
-  const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
-  assert.equal(pamiec.has('okolica:historia'), false, 'przed końcem historii nie ma');
-  zaczynijGre(dom);
-  for (const numerStacji of [1, 2, 3]) {
-    await zamknijStacje(dom, { paczka, numerStacji });
-  }
-  const { historia, usterki } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
-  assert.deepEqual(usterki, []);
-  assert.equal(historia.wpisy.length, 1, 'dokładnie jeden wpis po jednej grze');
-  const w = historia.wpisy[0];
-  assert.match(w.klucz, /^[a-z0-9-]{1,40}$/, 'auto-slug gry ląduje w historii (spójnie z KLUCZ_AKTYWNEJ z M6)');
-  assert.equal(w.przerwana, false, 'naturalny koniec = wpis pełny');
-  assert.equal(w.liczbaStacji, 3);
-  assert.equal(w.zwyciezca, 'Gracz 1', 'zwycięzca z rankingu (remis 1 pkt × 3 — kolejność zgłoszeń, ADR 0023)');
-  assert.equal(w.zaliczoneStacje, 3);
-  assert.equal(w.pominietaStacje, 0);
-  assert.match(w.data, /^20\d\d-/, 'data ISO z Date.now() warstwy DOM');
-});
-
-test('M7: ręczne zakończenie = wpis „przerwana", wznowienie i dokończenie ZASTĘPUJE go (bez dubla)', async () => {
-  const { dom, paczka, pamiec } = await graGotowaDoStartu();
-  const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
-  zaczynijGre(dom);
-  dom.kliknij('przycisk-start-odcinka');
-  zakonczGrePrzezWarstwe(dom); // ręczny koniec → wczesny wynik (ADR 0043)
-  let { historia } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
-  assert.equal(historia.wpisy.length, 1, 'ręczne zakończenie też jest grą, która się odbyła');
-  assert.equal(historia.wpisy[0].przerwana, true, 'uczciwy znacznik przerwania');
-
-  // nowa instancja aplikacji na tej samej pamięci (jak zamknięcie i otwarcie telefonu)
-  const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
-  await import(`../app/app.js?hist=${Math.random().toString(36).slice(2)}`);
-  // Ręczne zakończenie NIE kasuje zapisu (właściciel 2026-09-11), więc nowa
-  // instancja wraca do tej gry sama (uwaga K, ADR 0045) i da się ją dokończyć.
-  assert.equal(dom2.pobierz('ekran-gra').hidden, false, 'ręcznie zakończona gra wraca — zapis został (M6)');
-  assert.match(dom2.pobierz('status').textContent, /Wróciliśmy do zapamiętanej gry/);
-  // stacja 1: odcinek w toku po powrocie (helper sam wykryje brak panelu A);
-  // stacje 2–3: „Następna stacja” startuje kolejny odcinek automatycznie
-  for (const numerStacji of [1, 2, 3]) {
-    await zamknijStacje(dom2, { paczka, numerStacji });
-  }
-  ({ historia } = walidujHistorieSurowa(pamiec.get('okolica:historia')));
-  assert.equal(historia.wpisy.length, 1, 'idempotencja po klucz — dokończenie nie dubluje wpisu');
-  assert.equal(historia.wpisy[0].przerwana, false, 'dokończona gra zastępuje przerwaną pełnym wpisem');
-});
-
-test('M7: lista poprzednich gier na setupie — najnowsza najpierw, dwustopniowe kasowanie', async () => {
-  const { nowaHistoria, dodajWpisHistorii, skrotGry } = await import('../app/trwalosc.js');
-  const { nowaRozgrywka, podsumowanie } = await import('../app/rozgrywka.js');
-  const { domyslnaKonfiguracja } = await import('../app/konfig.js');
-  const { stacjeProste } = await import('../app/stacje.js');
-  const srodek = { lat: 52.2297, lon: 21.0122 };
-  const paczka = czytajFixturePaczka();
-  const konfig = { ...domyslnaKonfiguracja(2), kodGry: 'stara-gra', promienM: 1000, liczbaStacji: 3 };
-  const stacje = stacjeProste({ srodek, liczbaStacji: 3, promienM: 1000, ziarno: 'z' });
-  const rozgrywka = nowaRozgrywka({ konfig, stacje, paczka, srodek, czasMs: 0, ziarno: 'z' });
-  const wspolne = { rozgrywka, stacje, podsumowanie: podsumowanie(rozgrywka) };
-  const w1 = skrotGry({ ...wspolne, konfig, miejsce: 'Mokotów', terazMs: Date.parse('2026-09-01T10:00:00Z'), przerwana: true });
-  const w2 = skrotGry({ ...wspolne, konfig: { ...konfig, kodGry: 'nowa-gra' }, miejsce: 'Ochota', terazMs: Date.parse('2026-09-05T18:30:00Z') });
-  const pamiec = new Map();
-  pamiec.set('okolica:historia', JSON.stringify(dodajWpisHistorii(dodajWpisHistorii(nowaHistoria(), w1), w2)));
-
-  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
-  await import(`../app/app.js?histl=${Math.random().toString(36).slice(2)}`);
-  assert.equal(dom.pobierz('karta-historia').hidden, false, 'karta staje, gdy telefon pamięta gry');
-  assert.equal(dom.pobierz('historia-naglowek').textContent, 'Poprzednie gry (2)');
-  assert.equal(dom.pobierz('historia-usterki').hidden, true);
-  const pozycje = dom.pobierz('historia-lista').children;
-  assert.equal(pozycje.length, 2);
-  assert.match(pozycje[0].textContent, /2026-09-05 18:30 · Ochota/, 'najnowsza najpierw, data i miejsce ze skrótu');
-  assert.match(pozycje[0].textContent, /🏆 Gracz 1 — 0 pkt/, 'zwycięzca i punkty, bez czasu (Partia 2)');
-  // (bez kotwicy $: od ADR 0032 za tekstem stoi jeszcze znaczek Q)
-  assert.equal(pozycje[0].textContent.includes('(przerwana)'), false);
-  assert.match(pozycje[1].textContent, /Mokotów/, 'starsza druga');
-  assert.match(pozycje[1].textContent, /\(przerwana\)/, 'znacznik przerwanej widoczny');
-
-  // kasowanie DWUSTOPOWIOWE bez confirm() (ADR 0015 pkt 6)
-  dom.kliknij('przycisk-kasuj-historie');
-  assert.match(dom.pobierz('przycisk-kasuj-historie').textContent, /Kliknij ponownie/, 'pierwszy klik uzbraja');
-  assert.equal(pamiec.has('okolica:historia'), true, 'pierwszy klik NICZEGO nie kasuje');
-  dom.kliknij('przycisk-kasuj-historie');
-  assert.equal(pamiec.has('okolica:historia'), false, 'drugi klik kasuje klucz');
-  assert.equal(dom.pobierz('karta-historia').hidden, true, 'bez klucza karta się chowa');
-  assert.match(dom.pobierz('status').textContent, /Historia gier skasowana/);
-});
-
-test('M7: zepsuta historia — jawne kody H i oferta kasowania na setupie (nigdy cicho)', async () => {
-  const pamiec = new Map();
-  pamiec.set('okolica:historia', '{"schemat":"historia/1"'); // urwany JSON
-  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
-  await import(`../app/app.js?histz=${Math.random().toString(36).slice(2)}`);
-  assert.equal(dom.pobierz('karta-historia').hidden, false, 'karta widoczna także z usterką');
-  assert.equal(dom.pobierz('historia-usterki').hidden, false);
-  assert.match(dom.pobierz('historia-usterki').textContent, /H01/, 'kod usterki jest jawny');
-  assert.match(dom.pobierz('historia-usterki').textContent, /Skasuj/, 'usterka ma wyjście — kasowanie');
-  assert.equal(dom.pobierz('historia-lista').children.length, 0, 'zepsute wpisy nie udają listy');
-  dom.kliknij('przycisk-kasuj-historie');
-  dom.kliknij('przycisk-kasuj-historie');
-  assert.equal(pamiec.has('okolica:historia'), false, 'kasowanie działa też na zepsutym zapisie');
-  assert.equal(dom.pobierz('karta-historia').hidden, true);
-});
-
 /* ========== M7/P7: integracja — pełna gra z dojściem GPS → podsumowanie, eksport, historia */
 
-test('M7/P7 + ADR 0038: PEŁNA GRA z dojściem GPS → minimalny wynik i historia (end-to-end)', async () => {
-  const { dom, paczka, pamiec } = await graGotowaDoStartu();
-  const { walidujHistorieSurowa } = await import('../app/trwalosc.js');
+test('M7/P7 + ADR 0038: PEŁNA GRA z dojściem GPS → minimalny wynik (end-to-end)', async () => {
+  const { dom, paczka } = await graGotowaDoStartu();
   zaczynijGre(dom);
 
   // pętla jak w R7: symulacja dojścia ×3 stacje, poprawne odpowiedzi (fixture: 1 pkt/pytanie)
@@ -2089,22 +2096,12 @@ test('M7/P7 + ADR 0038: PEŁNA GRA z dojściem GPS → minimalny wynik i histori
   assert.equal(dom.utworzone.filter((el) => el.download).length, 0, 'brak linku z download: eksportu .txt nie ma');
   assert.equal(dom.elementy.has('pole-wynik-tekst'), false, 'brak pola z tekstem wyniku');
 
-  // 3. historia: jeden pełny wpis bez treści (skrót, ADR 0010 pkt 1)
-  const { historia, usterki } = walidujHistorieSurowa(pamiec.get('okolica:historia'));
-  assert.deepEqual(usterki, []);
-  assert.equal(historia.wpisy.length, 1);
-  const w = historia.wpisy[0];
-  assert.equal(w.przerwana, false);
-  assert.equal(w.zwyciezca, 'Gracz 1');
-  assert.equal(w.zaliczoneStacje, 3);
-  assert.equal(w.punktyRazem, 3, 'suma punktów: 3 × 1 (rev2), zero premii');
-  assert.equal(w.factcheck, true, 'gra na paczce ze źródłami = zweryfikowana (ADR 0032)');
-  const jsonHistorii = JSON.stringify(historia);
-  for (const pytanie of paczka.pytania) {
-    assert.equal(jsonHistorii.includes(pytanie.tresc), false, 'treść pytania wyciekła do historii');
-  }
-  assert.equal(jsonHistorii.includes('52.2297'), false, 'współrzędne wyciekły do historii');
+  // 3. lokalnej historii gier NIE MA (zgłoszenie terenowe O, 2026-09-13;
+  //    ADR 0010 aneks): wynik kończy się wysyłką na wspólny Drive, a telefon
+  //    nie trzyma własnej listy — więc nie ma też nośnika, z którego mogłyby
+  //    wyciec treść pytań albo współrzędne.
 });
+
 
 /* ---------- tap w mapę pozycji (zadanie D3) — na końcu, bo tworzy ŚWIEŻĄ
    instancję aplikacji i zastępuje globalne atrapy (porządek jak testy map M2) */
@@ -2768,7 +2765,13 @@ test('droga: pasek na mapie, Informacje bez gry, po dojściu duży panel pytania
   // a uwaga H1 (ADR 0043) także węzeł zakończenia gry: w drodze nad mapą zostaje
   // sam pasek, a grę kończy ikona ⚙ START GRY.
   assert.equal(dom.elementy.has('informacje-gra'), false, 'Informacje nie niosą już nic z gry');
-  assert.equal(dom.pobierz('gra-sterowanie').hidden, true, 'panel gry nie zasłania mapy w marszu');
+  // Ten helper chodzi w trybie testowym (`?tryb=test`), a w nim panel fazy B
+  // ZOSTAJE na wierzchu: to jedyne miejsce „▶ Symuluj dojście”, którym domyka
+  // się odcinek bez GPS (ADR 0036 aneks m12-102 pkt 2). W przeglądarce `hidden`
+  // na przodku gasi potomków przez kaskadę — atrapa DOM tego nie modeluje, więc
+  // zachowanie terenowe pinuje osobny test poniżej (atrapa geolokalizacji).
+  assert.equal(dom.pobierz('gra-sterowanie').hidden, false, 'w trybie testowym panel gry zostaje — symulacja jest osiągalna');
+  assert.equal(dom.pobierz('przycisk-symulacja-gra').hidden, false, 'przycisk symulacji dojścia odsłonięty w odcinku');
   assert.equal(dom.document.body.classList.contains('gra-w-drodze'), true);
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, true, 'bez przygaszenia mapy podczas marszu');
   dom.kliknij('przycisk-informacje');
@@ -2781,6 +2784,33 @@ test('droga: pasek na mapie, Informacje bez gry, po dojściu duży panel pytania
   assert.equal(dom.pobierz('gra-sterowanie').hidden, false, 'panel pytania znowu widoczny');
   assert.equal(dom.pobierz('ekran-informacje').hidden, true, 'pytanie pojawia się automatycznie także po użyciu Informacji');
   assert.equal(dom.pobierz('przygaszenie-mapy').hidden, false);
+});
+
+test('droga w terenie (bez ?tryb=test): nad mapą zostaje sam pasek, symulacji nie ma', async () => {
+  // ADR 0036 aneks m12-102 pkt 2 i ADR 0043 pkt 1: w drodze gracz widzi pasek
+  // i mapę, a panel gry jest schowany. Test idzie DROGĄ TERENOWĄ (atrapa
+  // `navigator.geolocation`, bez trybu testowego), bo atrapa DOM nie modeluje
+  // kaskady CSS: `hidden` na przodku gasi potomków w przeglądarce (pomiar
+  // headless Chromium 153: `#gra-panel-odcinek` 0×0, `offsetParent` null),
+  // a `kliknij` w atrapie nie pyta o renderowanie (LESSONS L13).
+  const gpsTeren = atrapaGeolokalizacji();
+  const dom = await naEkranPozycji(zainstalujDom, gpsTeren.geolocation, 'drogateren');
+  dom.kliknij('przycisk-dalej-pozycja');
+  await czekaj(30); // bramka tożsamości jest asynchroniczna
+  assert.equal(dom.pobierz('ekran-pozycja').hidden, false, 'setup przeszedł na ekran pozycji');
+  gpsTeren.wyslijFix(52.2297, 21.0122, 12);
+  assert.match(dom.pobierz('pozycja-status').textContent, /Pozycja ustalona/, 'fix z GPS ustawił pozycję');
+  dom.kliknij('przycisk-dalej-stacje');
+  await czekaj(30);
+  dom.wklej('pole-odpowiedz', JSON.stringify(czytajFixturePaczka()));
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka sama zaczęła grę');
+  dom.kliknij('przycisk-start-odcinka');
+  assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'faza B: odcinek się zaczął');
+  assert.equal(dom.pobierz('gra-pasek').hidden, false, 'pasek drogi jest nad mapą');
+  assert.equal(dom.pobierz('gra-sterowanie').hidden, true, 'panel gry schowany — w drodze zostaje sam pasek');
+  assert.equal(dom.pobierz('przycisk-symulacja-gra').hidden, true,
+    'symulacji dojścia w terenie nie ma (ADR 0029: dojście zalicza tylko GPS)');
+  assert.equal(dom.document.body.classList.contains('gra-w-drodze'), true);
 });
 
 /* -------------------------------------- bug G: watchdog cichego watchera */

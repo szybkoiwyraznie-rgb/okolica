@@ -11,11 +11,12 @@ import { geohash } from '../app/geo.js';
 import {
   ALFABET_KODU, DLUGOSC_KODU, KODY_WIELOOSOBOWE, MAKS_GRACZY, SCHEMAT_GRY,
   SCHEMAT_LOBBY, SCHEMAT_PROFILU, SCHEMAT_ZDARZENIA, TRYBY_GRY,
-  czyKompletna, czyPinPoprawny, filtrujLobby, generujKod,
+  czyKompletna, czyPinPoprawny, czyTrasaSekret, filtrujLobby, generujKod,
   kodPoprawny, komunikatBleduProfilu, normalizujKod, normalizujPseudonim,
   MAKS_PREMIA_KOLEJNOSCI, postepGracza, premiaZaKolejnosc, przeliczWyniki,
   ramkaGeohash, sasiednieGeohash, walidujGreSurowa, walidujLobbySurowe,
   walidujZdarzenieSurowe, zbudujZdarzenie,
+  LIMIT_KOLEJKI_ZDARZEN, SCHEMAT_KOLEJKI_ZDARZEN, walidujKolejkeZdarzen, zapisKolejkiZdarzen,
 } from '../app/wieloosobowa.js';
 
 const PODKOWA = { lat: 52.12303, lon: 20.74614 }; // geohash5 u3qb8 (jak w reszcie testów)
@@ -267,6 +268,12 @@ test('profil PIN (ADR 0021): normalizacja pseudonimu i reguła PIN-u', () => {
 
 test('profil PIN: kody R19/R20 z komunikatami dla gracza', () => {
   assert.ok(KODY_WIELOOSOBOWE.R19.includes('pseudonimu'));
+  // Bramka tożsamości to imię + PIN i jedno wołanie `profil-ustaw` (ADR 0026) —
+  // przycisku „Zapisz nowy” nie ma w `index.html`, więc R19 nie może go obiecywać
+  // (L58: tekst jest nośnikiem stanu; L27: zastąpiony przycisk znika ze zdań).
+  assert.equal(KODY_WIELOOSOBOWE.R19.includes('Zapisz nowy'), false,
+    'R19 nie odsyła do przycisku, którego nie ma');
+  assert.match(KODY_WIELOOSOBOWE.R19, /PIN/, 'R19 mówi, jak naprawdę założyć profil (imię + PIN)');
   assert.ok(KODY_WIELOOSOBOWE.R20.includes('PIN'));
   assert.equal(komunikatBleduProfilu('R19'), KODY_WIELOOSOBOWE.R19);
   assert.equal(komunikatBleduProfilu('R20'), KODY_WIELOOSOBOWE.R20);
@@ -375,4 +382,49 @@ test('premia: jeden gracz i gra bez konfiguracji nie dają premii', () => {
   const bezKonfiguracji = graWyscig({ liczbaGraczy: 2 });
   bezKonfiguracji.konfiguracja = { liczbaStacji: 0 };
   assert.deepEqual(premiaZaKolejnosc(bezKonfiguracji), {}, 'bez liczby stacji nie da się orzec końca');
+});
+
+/* --------- trasa-sekret: brama ŻYWEJ gry sieciowej (zgłoszenia R i N) --------- */
+
+test('czyTrasaSekret: sekret chowa trasę TYLKO w żywej Wspólnej Trasie (zgłoszenie terenowe R, 2026-09-13)', () => {
+  const kontekst = (nadpis = {}) => ({ gra: { stan: 'trwa', tryb: TRYBY_GRY.trasa, trasaSekret: true, ...nadpis } });
+  assert.equal(czyTrasaSekret(kontekst()), true, 'żywa Wspólna Trasa z sekretem — mapa gry pokazuje bieżącą stację');
+  assert.equal(czyTrasaSekret(kontekst({ trasaSekret: false })), false, 'sekret wyłączony przy zakładaniu gry — trasa widoczna');
+  assert.equal(czyTrasaSekret(kontekst({ tryb: TRYBY_GRY.wyscig })), false, 'Wyścig na Orientację nigdy nie chowa trasy');
+  assert.equal(czyTrasaSekret(kontekst({ stan: 'zakonczona' })), false, 'gra zamknięta przez hosta nie chowa już trasy');
+  assert.equal(czyTrasaSekret(kontekst({ stan: 'archiwum' })), false, 'wygasłe lobby tym bardziej');
+  assert.equal(czyTrasaSekret(kontekst({ stan: 'lobby' })), false, 'lobby to jeszcze nie gra w trasie');
+  assert.equal(czyTrasaSekret(null), false, 'brak kontekstu sieciowego (hot-seat) — cała trasa widoczna');
+  assert.equal(czyTrasaSekret({}), false, 'kontekst bez gry — też nie');
+  // zgodność wstecz z m12-73: stare gry nie mają pola `trasaSekret` = sekret
+  assert.equal(czyTrasaSekret(kontekst({ trasaSekret: undefined })), true, 'brak pola w starej grze traktujemy jak sekret');
+});
+
+/* --- ADR 0019 aneks 2026-09-13d: kolejka zdarzeń, która przeżywa odświeżenie telefonu --- */
+
+test('kolejka zdarzeń multi: round-trip 1:1, cudza gra i śmieci dają pustą listę, limit trzymany', () => {
+  const z = (typ, stacjaId) => zbudujZdarzenie({
+    kod: 'K2H7QM', graczId: 'g-2', typ, stacjaId,
+    dane: typ === 'odpowiedz' ? { poprawna: true, punktyRazem: 1 } : {},
+  });
+  const zapis = zapisKolejkiZdarzen([z('dojscie', 1), z('odpowiedz', 1)], { kod: 'K2H7QM', idGry: 'id-1' });
+  assert.equal(zapis.schemat, SCHEMAT_KOLEJKI_ZDARZEN);
+  assert.equal(zapis.kod, 'K2H7QM');
+  assert.equal(zapis.idGry, 'id-1');
+  assert.deepEqual(
+    walidujKolejkeZdarzen(JSON.parse(JSON.stringify(zapis)), { kod: 'K2H7QM' }).map((e) => e.typ),
+    ['dojscie', 'odpowiedz'], 'po przejściu przez pamięć (JSON) kolejka wraca 1:1, w kolejności FIFO',
+  );
+  assert.deepEqual(walidujKolejkeZdarzen(zapis, { kod: 'INNY11' }), [], 'kolejka CUDZEJ gry nie wchodzi');
+  assert.deepEqual(walidujKolejkeZdarzen(null), [], 'brak zapisu = pusta kolejka');
+  assert.deepEqual(walidujKolejkeZdarzen('śmieć'), []);
+  assert.deepEqual(walidujKolejkeZdarzen({ schemat: 'co-innego/9', zdarzenia: [] }), []);
+  assert.deepEqual(walidujKolejkeZdarzen({ schemat: SCHEMAT_KOLEJKI_ZDARZEN, kod: 'K2H7QM', zdarzenia: 'nie lista' }, { kod: 'K2H7QM' }), []);
+  assert.deepEqual(
+    walidujKolejkeZdarzen({ schemat: SCHEMAT_KOLEJKI_ZDARZEN, kod: 'K2H7QM', zdarzenia: [{ typ: 'dojscie' }, null, 42, { ...z('dojscie', 1), schemat: 'zly' }] }, { kod: 'K2H7QM' }),
+    [], 'wpis bez schematu/gracza nie jest zdarzeniem — nic po cichu nie wychodzi na most',
+  );
+  const duzo = Array.from({ length: LIMIT_KOLEJKI_ZDARZEN + 5 }, (_, i) => z('dojscie', (i % 3) + 1));
+  assert.equal(zapisKolejkiZdarzen(duzo, { kod: 'K2H7QM' }).zdarzenia.length, LIMIT_KOLEJKI_ZDARZEN,
+    'zapis trzyma limit najstarszych zdarzeń');
 });

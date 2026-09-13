@@ -21,6 +21,40 @@ import { KODY_WIELOOSOBOWE } from '../app/wieloosobowa.js';
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const czytaj = (sciezka) => readFileSync(join(ROOT, sciezka), 'utf8');
 
+/**
+ * Wiersze KODU ze źródła jako `{ n, l }` — z wyciętymi komentarzami blokowymi
+ * i liniowymi. Strażnikom tekstów pozwala odróżnić zdanie, które czyta gracz,
+ * od nagrobka w komentarzu (LESSONS L31: komentarz celowo nazywa to, co umarło).
+ * Ucięcie komentarza liniowego w środku napisu (np. adresu URL) jest świadome:
+ * taki wiersz po prostu nie trafi do sprawdzenia — to tańsze niż liczyć
+ * komentarz jako kod.
+ */
+function wierszeKodu(tekst) {
+  let wBloku = false;
+  const wynik = [];
+  tekst.split('\n').forEach((surowy, i) => {
+    let l = surowy;
+    if (wBloku) {
+      const koniecBloku = l.indexOf('*' + '/');
+      if (koniecBloku < 0) return; // cały wiersz siedzi w komentarzu blokowym
+      l = l.slice(koniecBloku + 2);
+      wBloku = false;
+    }
+    const startBloku = l.indexOf('/' + '*');
+    if (startBloku >= 0) {
+      const koniecBloku = l.indexOf('*' + '/', startBloku + 2);
+      if (koniecBloku < 0) { l = l.slice(0, startBloku); wBloku = true; } else {
+        l = l.slice(0, startBloku) + l.slice(koniecBloku + 2);
+      }
+    }
+    const liniowy = l.indexOf('//');
+    if (liniowy >= 0) l = l.slice(0, liniowy);
+    l = l.trim();
+    if (l) wynik.push({ n: i + 1, l });
+  });
+  return wynik;
+}
+
 const PROTOKOL = czytaj('docs/PROTOKOL.md');
 const INDEX = czytaj('index.html');
 const APP = czytaj('app/app.js');
@@ -91,7 +125,7 @@ test('kontrakt ADR 0032: ekran promptu ma checkbox fact-check (domyślnie pusty,
   assert.match(ekran, /id="prompt-podglad-naglowek"/, 'nagłówek podglądu mówi, który wariant widać');
 });
 
-test('kontrakt ADR 0032: znaczek Q ma token złota w obu motywach i klasę', () => {
+test('kontrakt ADR 0032: znaczek fact-check ma token złota w obu motywach i klasę', () => {
   assert.match(STYLE, /--zloto: #7d6300;/, 'złoto jasne (kontrast pilnuje brama)');
   assert.match(STYLE, /--zloto: #e3b341;/, 'złoto ciemne');
   assert.match(STYLE, /\.znaczek-factcheck \{ color: var\(--zloto\); font-weight: 700; \}/, 'klasa znaczka');
@@ -387,12 +421,17 @@ test('kontrakt: Overpass ma instancje opisane w ASSETS §2, a Nominatim jest usu
 
 test('kontrakt: każdy ADR z rejestru istnieje na dysku i każdy plik ADR jest w rejestrze', () => {
   const rejestr = czytaj('docs/decisions/README.md');
-  const linki = [...rejestr.matchAll(/\((\d{4}-[a-z0-9-]+\.md)\)/g)].map((m) => m[1]);
+  // Link rejestru może prowadzić do podkatalogu `archive/` — tam lądują ADR-y
+  // wycofane w całości (LESSONS L62, AGENTS.md §0). Wiersz w tabeli zostaje.
+  const linki = [...rejestr.matchAll(/\(((?:archive\/)?\d{4}-[a-z0-9-]+\.md)\)/g)].map((m) => m[1]);
   assert.ok(linki.length >= 13, `rejestr wymienia ${linki.length} ADR-ów`);
   for (const plik of linki) {
     assert.ok(existsSync(join(ROOT, 'docs/decisions', plik)), `rejestr linkuje ${plik}, którego nie ma`);
   }
-  const naDysku = readdirSync(join(ROOT, 'docs/decisions')).filter((f) => /^\d{4}-.*\.md$/.test(f));
+  const adry = (katalog, przedrostek = '') => readdirSync(join(ROOT, 'docs/decisions', katalog))
+    .filter((f) => /^\d{4}-.*\.md$/.test(f))
+    .map((f) => `${przedrostek}${f}`);
+  const naDysku = [...adry('.'), ...adry('archive', 'archive/')];
   for (const plik of naDysku) {
     assert.ok(linki.includes(plik), `ADR ${plik} istnieje, ale nie ma go w rejestrze`);
   }
@@ -679,14 +718,26 @@ test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (AD
   assert.match(css, /\.badge-dystans \{[^}]*background: var\(--akcent\)/s, 'badge dystansu na akcencie (kontrast)');
 });
 
-test('kontrakt: karta historii gier na setupie (M7/P6)', () => {
-  const html = czytaj('index.html');
+test('kontrakt: lokalnej historii gier NIE MA (zgłoszenie terenowe O, 2026-09-13; ADR 0010 aneks)', () => {
+  // Właściciel: jedyną drogą powrotu do przerwanej gry jest automatyczne
+  // wczytanie zapisu (ADR 0045), a wyniki między grami żyją na wspólnym Drive
+  // (ADR 0026 aneks) i stamtąd bierze je ranking (ADR 0039). Karta „Poprzednie
+  // gry" na setupie obiecywała drugą drogę — dlatego zniknęła razem z kluczem
+  // `okolica:historia`, pomocnikami w `trwalosc.js` i kodami H01–H04.
   for (const id of ['karta-historia', 'historia-detale', 'historia-naglowek', 'historia-usterki', 'historia-lista', 'przycisk-kasuj-historie']) {
-    assert.ok(html.includes(`id="${id}"`), `brak elementu #${id}`);
+    assert.equal(INDEX.includes(`id="${id}"`), false, `index.html nie ma elementu #${id}`);
+    assert.equal(APP.includes(`$('${id}')`), false, `app.js nie dotyka #${id}`);
   }
-  assert.match(html, /id="karta-historia" class="karta" hidden/, 'karta historii domyślnie ukryta — staje tylko z zapisem');
-  assert.match(html, /id="historia-usterki" class="bledy" role="alert" hidden/, 'usterki historii mają role="alert" (jak inne ekrany)');
-  assert.match(html, /id="przycisk-kasuj-historie"[^>]*type="button"/, 'kasowanie historii to type=button');
+  for (const fn of ['function zapiszGreDoHistorii', 'function renderujHistorieGier', 'function kasujHistorieGry']) {
+    assert.equal(APP.includes(fn), false, `${fn.replace('function ', '')}() usunięta — został nagrobek`);
+  }
+  assert.equal(STYLE.includes('.lista-historii'), false, 'klasa CSS po karcie przemianowana na .lista-prosta');
+  const trwalosc = czytaj('app/trwalosc.js');
+  for (const symbol of ['KLUCZ_HISTORII', 'SCHEMAT_HISTORII', 'SCHEMAT_WPISU_HISTORII', 'LIMIT_HISTORII', 'skrotGry', 'dodajWpisHistorii', 'nowaHistoria', 'walidujHistorieSurowa', 'H01', 'H04']) {
+    assert.equal(trwalosc.includes(symbol), false, `trwalosc.js nie ma ${symbol}`);
+  }
+  assert.match(APP, /if \(r\.faza === FAZY\.koniec \|\| STAN\.graZakonczonaRecznie\) \{\n {6}void wyslijWynikHotseat\(\);/,
+    'koniec gry wysyła wynik na wspólny Drive — bez pośrednictwa lokalnej historii');
 });
 
 
@@ -1524,8 +1575,8 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
   // 4. W drodze nad mapą zostaje sam pasek — Informacje nie niosą nic z gry
   //    (ADR 0036 aneks 2026-09-13 zawęził to do węzła zakończenia, a ADR 0043
   //    zabrał i ten węzeł).
-  assert.match(APP, /\$\('gra-sterowanie'\)\.hidden = droga;/,
-    'panel gry jest w drodze schowany — nad mapą zostaje pasek');
+  assert.match(APP, /\$\('gra-sterowanie'\)\.hidden = droga && !STAN\.trybTestowy;/,
+    'panel gry jest w drodze schowany (nad mapą zostaje pasek), a w trybie testowym zostaje — trzyma symulację dojścia (ADR 0036 aneks m12-102 pkt 2)');
   // Asertujemy REGUŁĘ, nie sam tekst: komentarz w styles.css celowo nazywa
   // selektor, który umarł (L31 — usunięcie i grep w tym samym commitcie).
   assert.equal(/#informacje-gra\s*\{/.test(STYLE), false,
@@ -1660,7 +1711,7 @@ test('kontrakt ADR 0043: grę kończy ikona ⚙ START GRY z wpisaniem TAK (uwagi
     'w multi potwierdzony koniec to wyjście z gry dla każdej roli; hotseat kończy się lokalnie');
   assert.equal(/if \(STAN\.multi\.rola === 'organizator'\)[\s\S]{0,200}zakonczGreMulti\(\);/.test(APP), false,
     'gałąź kończąca grę w moście z telefonu hosta zniknęła (uwaga G)');
-  assert.match(APP, /STAN\.graZakonczonaRecznie = true;/, 'znacznik ręcznego końca zostaje (historia: „przerwana")');
+  assert.match(APP, /STAN\.graZakonczonaRecznie = true;/, 'znacznik ręcznego końca zostaje (zapis gry i wysyłka wyniku na Drive)');
 
   // 6. Warstwa zachowuje się jak każdy panel: krzyżyk, Escape, krok gry, inert.
   assert.match(APP, /'start', 'informacje', 'koniec-gry'\];/, 'warstwa należy do PANELE');
@@ -1689,6 +1740,25 @@ test('kontrakt ADR 0043: grę kończy ikona ⚙ START GRY z wpisaniem TAK (uwagi
   assert.match(STYLE, /#ekran-informacje, #ekran-ranking \{ z-index: 20; \}/,
     'Informacje i ranking zostają na z-index 20 — warstwa końca gry ma 30');
 });
+
+test('kontrakt ADR 0043: zdania dla gracza o końcu gry nazywają ikonę ⚙ START GRY', () => {
+  // L27/L58/L63: usunięcie przycisku-ujścia musi w TEJ samej fali przestawić
+  // zdania, które na niego wskazywały. Sprawdzamy WIERSZE KODU, nie komentarze —
+  // komentarz może cytować martwą etykietę jako nagrobek (L31), zdanie dla gracza
+  // nie może, bo gracz idzie za nim w terenie.
+  const zdania = wierszeKodu(APP).filter(({ l }) => /zakończ grę/i.test(l));
+  assert.ok(zdania.length >= 4, `app.js ma ${zdania.length} zdań dla gracza o kończeniu gry`);
+  for (const { l, n } of zdania) {
+    assert.ok(l.includes('⚙ START GRY'),
+      `app.js:${n} odsyła gracza do końca gry, nie nazywając ikony ⚙ START GRY (ADR 0043 pkt 2)`);
+  }
+  // W drodze panel gry jest schowany (ADR 0036 aneks m12-102 pkt 2), więc zdanie
+  // o niedającym się rozstrzygnąć dojściu musi mieć DRUGI nośnik: `status()`
+  // trafia do `#status` w Informacjach i jest czytane przez `aria-live`.
+  assert.match(APP, /if \(d\.kod\) \{\n {4}\$\('gra-komunikat'\)\.textContent = d\.komunikat;[\s\S]{0,500}?status\(d\.komunikat\);/,
+    'kod dojścia ląduje też w statusie — w drodze `#gra-komunikat` jest schowany z całym panelem');
+});
+
 test('kontrakt ADR 0042: Informacje jedną, małą czcionką Courier New', () => {
   // Właściciel 2026-09-13 (uwaga H2): cała treść warstwy — ten sam krój
   // i ten sam rozmiar, bez wyróżniania nagłówka.
@@ -1816,8 +1886,14 @@ test('kontrakt ADR 0019 aneks 2026-09-13b: koniec gry hosta nie kończy gry pozo
   assert.match(czytaj('docs/ARCHITECTURE.md'), /i host, i gość wysyłają wtedy `rezygnacja`/,
     'ARCHITECTURE nie mówi już, że organizator woła gra-zakoncz');
   assert.match(README, /kończy ją TYLKO na tym telefonie/, 'README ma regułę dla gracza');
+  // Aneks G jest od m12-114 treścią historyczną: dosłownie ten sam tekst leży
+  // w archiwum ADR 0019 (budżet lektury startowej, AGENTS.md §0; LESSONS L62),
+  // a plik macierzysty niesie wskaźnik z datami — cytowania „ADR 0019 aneks
+  // 2026-09-13b" mają pokrycie w dokumentach, tylko poza lekturą startową.
+  assert.match(czytaj('docs/decisions/archive/aneksy-0019-2026-09-12f-do-13b.md'),
+    /## Aneks 2026-09-13b \(m12-109, uwaga G\)/, 'aneks G jest udokumentowany (archiwum ADR 0019)');
   assert.match(czytaj('docs/decisions/0019-gra-wieloosobowa-multi-device.md'),
-    /## Aneks 2026-09-13b \(m12-109, uwaga G\)/, 'ADR 0019 ma aneks G');
+    /## Aneksy 2026-09-12f … 2026-09-13b są w archiwum/, 'ADR 0019 odsyła do archiwum aneksów');
   assert.match(czytaj('docs/decisions/0044-odliczanie-po-starcie-gry-wieloosobowej.md'),
     /aneks 2026-09-13b \(uwaga G\)/, 'ADR 0044 odsyła do aneksu, który zmienił jego pkt 8');
   assert.match(czytaj('docs/WORKFLOW.md'), /gra kończy\n   się TYLKO na telefonie A/,
@@ -1838,9 +1914,9 @@ test('kontrakt ADR 0045: setup nie szuka gier, a otwarcie aplikacji wraca do zap
     assert.equal(APP.includes(fn), false, `${fn.replace('function ', '')}() usunięta — został nagrobek`);
   }
   assert.equal(APP.includes('czyszczenieZapisuUzbrojone'), false,
-    'uzbrajania kasowania zapisu nie ma (dwustopniowość została tylko przy historii)');
-  assert.match(APP, /function kasujHistorieGry\(\) \{\n {2}if \(!STAN\.historiaKasowanieUzbrojone\)/,
-    'kasowanie HISTORII gier zostaje dwustopniowe (ADR 0015 pkt 6)');
+    'uzbrajania kasowania zapisu nie ma');
+  assert.equal(APP.includes('historiaKasowanieUzbrojone'), false,
+    'dwustopniowego kasowania historii też nie ma — lokalna historia gier zniknęła (zgłoszenie O, ADR 0010 aneks)');
 
   // 2. K: start wraca do zapamiętanej gry — multi z mostu, hotseat z zapisu.
   assert.match(APP, /if \(czytajSesjeMulti\(\)\) void przywrocGreMulti\(\)\.then\(\(\) => \{ if \(!STAN\.multi\) przywrocGreHotseat\(\); \}\);\n {2}else przywrocGreHotseat\(\);/,
@@ -1852,7 +1928,7 @@ test('kontrakt ADR 0045: setup nie szuka gier, a otwarcie aplikacji wraca do zap
   assert.match(APP, /if \(document\.hidden\) \{\n {6}zapiszGre\(\);/,
     'zwinięcie telefonu też zapisuje stan');
   assert.match(APP, /if \(stan\.rozgrywka\?\.faza === FAZY\.koniec\) \{\n {4}localStorage\.removeItem\(kluczStanu\(aktywna\)\);\n {4}localStorage\.removeItem\(KLUCZ_AKTYWNEJ\);/,
-    'zakończonej gry start nie podnosi — kasuje zapis (wynik jest w historii)');
+    'zakończonej gry start nie podnosi — kasuje zapis (wynik jest na wspólnym Drive)');
   assert.match(APP, /Zapamiętany zapis gry był zepsuty \(\$\{usterki\.map\(\(u\) => u\.kod\)\.join\(', '\)\}\)/,
     'zepsuty zapis jest kasowany jawnie, z kodami usterek T**');
 
@@ -1894,4 +1970,31 @@ test('kontrakt: archiwum LESSONS jest lustrem rejestru i nie wchodzi w budżet l
   assert.equal(pliki.includes('docs/LESSONS_ARCHIVE.md'), false,
     'archiwum NIE wchodzi w budżet lektury startowej — po to powstało');
   assert.equal(pliki.includes('docs/LESSONS.md'), true, 'rejestr zostaje w budżecie');
+});
+
+test('kontrakt: archiwum ADR-ów jest poza budżetem lektury, a wiersze zostają w rejestrze', async () => {
+  // L62: największym zjadaczem budżetu są ADR-y (~65 tys. z 100 tys.), więc gdy
+  // próg pęka, wycofane w całości idą do `docs/decisions/archive/`. Rejestr
+  // traci tylko ścieżkę linku, nie wiersz — inaczej pin „ADR na dysku ↔ rejestr”
+  // przestałby pilnować przeniesionych plików.
+  const archiwum = readdirSync(join(ROOT, 'docs/decisions/archive')).filter((f) => /^\d{4}-.*\.md$/.test(f));
+  assert.ok(archiwum.length >= 2, `w archiwum są ${archiwum.length} ADR-y wycofane w całości`);
+  const { plikiLektury } = await import('../tools/budzet-lektury.mjs');
+  const pliki = plikiLektury(ROOT);
+  for (const plik of archiwum) {
+    assert.equal(pliki.includes(`docs/decisions/archive/${plik}`), false,
+      `${plik} NIE może wchodzić w lekturę startową — po to jest archiwum`);
+    assert.equal(pliki.includes(`docs/decisions/${plik}`), false,
+      `${plik} wyszedł z katalogu głównego razem z przeniesieniem`);
+  }
+  assert.match(czytaj('docs/decisions/README.md'), /docs\/decisions\/archive\//,
+    'rejestr mówi, gdzie leżą ADR-y przeniesione do archiwum');
+  assert.ok(AGENTS.includes('docs/decisions/archive/*'),
+    'AGENTS.md §0 wypisuje archiwum ADR-ów wśród plików, których nie czytasz na start');
+  // Wycofanie nie kasuje śladu: przeniesiony ADR nadal ma status i tytuł, a rejestr
+  // nadal go wymienia (pin „status w rejestrze ↔ status w pliku” czyta obie ścieżki).
+  for (const plik of archiwum) {
+    const tresc = czytaj(`docs/decisions/archive/${plik}`);
+    assert.match(tresc, /^- Status: Wycofana/m, `${plik}: w archiwum leżą wyłącznie ADR-y wycofane`);
+  }
 });

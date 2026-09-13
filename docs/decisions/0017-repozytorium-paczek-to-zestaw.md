@@ -206,3 +206,47 @@ bez niego nie przechodzi walidacji.
 Konsekwencja wdrożeniowa: `adresMostu` woli URL multi nad URL repo, więc
 organizator gry wieloosobowej bierze paczkę z TEGO SAMEGO wdrożenia mostu
 co grę (indeks pod gołym adresem, plik przez `?akcja=paczka&id=…`).
+
+## Aneks 2026-09-13 (m12-113, zgłoszenia terenowe P i S): nazwa od miejsca; paczka z repo NIE wchodzi na ekran stacji
+
+**P — nazwa paczki zaczyna się od miejsca.** Przedrostek „🌍 repozytorium:"
+zniknął z wiersza propozycji: od zadania I (aneks 2026-09-12, m12-95) na karcie
+„Paczki dla tej okolicy" są WYŁĄCZNIE wpisy z repozytorium, więc powtarzanie
+źródła w każdej linii nie mówiło nic, a zabierało miejsce nazwie. Wiersz czyta
+się teraz „Podkowa Leśna · 2026-09-04 10:00 · 3 stacji × 1 pytań · historia ·
+dorosli". Źródło zostaje w diagnostyce: `zrodlo: 'repozytorium: <miejsce>'`
+nazywa paczkę w komunikacie o uszkodzonym kontenerze.
+
+**S — zgłoszenie wycofane przez właściciela, kod nietknięty.** Propozycja brzmiała:
+po wybraniu paczki z repozytorium pokazać ekran „Stacje w Twojej okolicy"
+z przyciskiem „Dalej →" (zamiast natychmiastowego startu). Właściciel wycofał ją
+po sprawdzeniu, że paczka `TO-zestaw/1` niesie JAWNE stacje (`{lat, lon, opis}`,
+wymagane przez walidację — pkt 1 i `zbudujPlikZestawu`), gra używa dokładnie ich
+(`przyjmijZestawDoGry` → `STAN.stacje` → `nowaRozgrywka`, w multi
+`gra.zestaw.stacje`), a pytania są przypisane do numerów stacji
+(`pytaniaStacji(stan, stacjaId)`). Ekran stacji nie miałby więc czego dodać,
+a jego „🔄 Inny układ" i „✋ Ustaw stacje ręcznie" przestawiłyby punkty, przy
+których zostałyby pytania (rozjazd trasa↔pytania). Paczka z repo startuje grę
+(hot-seat) albo lobby (multi) bez kroku pośredniego — i tak zostaje.
+
+## Aneks 2026-09-13d (m12-114, zgłoszenie właściciela): paczki widoczne na liście schodzą w tle
+
+Klik „▶ Graj z tą paczką" czekał kilka sekund na plik z Drive, choć lista
+propozycji stoi na ekranie wcześniej. Właściciel wybrał wstępne pobieranie
+zamiast samego sygnału czekania: `PAMIETNIK_PACZEK` (url → promise tekstu) plus
+`wstepniePobierzPaczki()` na końcu `renderujZestawy()` pobierają TYLKO paczki
+widoczne (`LIMIT_ZESTAWOW_NA_LISCIE`, po rozwinięciu listy — wszystkie). Klik
+bierze gotowy tekst albo to samo, już rozpoczęte pobranie: jedno żądanie na
+plik, nie dwa; nieudane pobranie wychodzi z pamięci, więc klik próbuje jeszcze
+raz. Pamięć jest czyszczona przy każdym odświeżeniu propozycji (nowe kryteria =
+nowa lista). Trafić na stary plik nie można: paczka `TO-zestaw/1` z jawnymi
+stacjami jest niezmienialna, a indeks i tak jest pobierany przy każdej
+propozycji od nowa.
+
+Granice: wstępne pobranie NIE zgłasza mostowi niczego — oceny i licznik
+„użyta w X grach" idą jak dotąd dopiero przy prawdziwym kliku (ADR 0028), bo
+pobranie w tle nie jest użyciem paczki. Bez `fetch` w przeglądarce (plik
+otwarty z dysku) wstępne pobieranie się nie uruchamia, a awaria pobrania w tle
+jest cicha: tę samą awarię pokaże klik, swoim komunikatem z hostem i kodem
+HTTP. Sygnał czekania na przycisku („⏳ Ładowanie paczki…") zostaje jako
+drugie ramię poprawki — ADR 0011 aneks 2026-09-13d.

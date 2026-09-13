@@ -364,6 +364,20 @@ body:not(.tryb-testowy) .tylko-test {
 .bledy { margin: 10px 0; padding: 12px; border-radius: 10px; background: var(--blad-tlo); color: var(--blad); font-size: 15px; }
 .nakladka-ladowanie { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 16px; font-weight: 700; background: color-mix(in srgb, var(--tlo-karta) 80%, transparent); }
 .nakladka-ladowanie[hidden] { display: none; }
+
+/* Sygnał „aplikacja teraz pobiera z sieci" (właściciel 2026-09-13): tekst
+   pulsuje, żeby czekanie było widać od pierwszej sekundy. Kontrast zostaje nad
+   progiem AA w NAJGŁĘBSZYM punkcie animacji — zmierzone `kontrast()`
+   z `tools/audyt-kontrastu.mjs` dla --tekst zmieszanego z --tlo przy 70%
+   krycia: 5,62:1 (motyw jasny) i 8,25:1 (ciemny), próg 4,5:1 (ADR 0011).
+   Dlatego klasa ustawia barwę --tekst, a nie --tekst-slaby (ten ma 5,32:1
+   i przy 70% krycia zszedłby pod próg). Ruch gaśnie przy
+   prefers-reduced-motion: reduce — komunikat zostaje, tylko nie pulsuje. */
+.pulsuje { color: var(--tekst); animation: puls-czekania 1.4s ease-in-out infinite; }
+@keyframes puls-czekania { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+@media (prefers-reduced-motion: reduce) {
+  .pulsuje { animation: none; }
+}
 .usterki { margin: 8px 0; padding-left: 20px; }
 .usterki li { margin: 6px 0; font-size: 15px; }
 .usterki li code { background: var(--blad-tlo); color: var(--blad); padding: 1px 5px; border-radius: 5px; }
@@ -658,18 +672,20 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
    powrotu. Style statystyk, kart graczy i tabeli stacji zniknęły razem z ich
    elementami — martwy CSS po usuniętym ekranie myli przy następnej zmianie. */
 
-/* M7/P6: historia poprzednich gier na ekranie ustawień — zwarte skróty. */
-.lista-historii { list-style: none; padding: 0; margin: 8px 0; }
-.lista-historii li {
+/* Zwarta lista bez punktorów: lobby, lista graczy, lista gier w lobby. Styl
+   został po usuniętej karcie z listą poprzednich gier (zgłoszenie terenowe O,
+   2026-09-13; ADR 0010 aneks) — klasa nazywa się teraz neutralnie. */
+.lista-prosta { list-style: none; padding: 0; margin: 8px 0; }
+.lista-prosta li {
   padding: 8px 0;
   border-bottom: 1px solid var(--linia);
   font-size: 14px;
   font-variant-numeric: tabular-nums;
 }
-.lista-historii li:last-child { border-bottom: none; }
+.lista-prosta li:last-child { border-bottom: none; }
 /* Lista graczy (ADR 0026 aneks): imię z lewej, „✕ Usuń" z prawej — na 360 px
    przycisk ma zostać w zasięgu kciuka, a nie pod nazwą (WORKFLOW §4.2).
-   Właściciel 2026-09-07: imię większe niż w historii gier, a odstęp między
+   Właściciel 2026-09-07: imię większe niż w zwartej liście, a odstęp między
    imieniem i przyciskiem na tyle duży, żeby nie wyglądały na sklejone. */
 #lista-graczy li {
   display: flex;

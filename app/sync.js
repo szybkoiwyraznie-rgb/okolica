@@ -97,6 +97,12 @@ export function utworzSynchronizacje({
   onBlad = null,
   fetchImpl = null,
   timeout = null,
+  // Utrwalenie kolejki (ADR 0019 aneks 2026-09-13d): zdarzenie, które nie
+  // doszło na most, ma przeżyć odświeżenie telefonu. Obie funkcje są
+  // wstrzykiwane, więc moduł zostaje czysty i testowalny bez localStorage.
+  wczytajKolejke = null,
+  zapiszKolejke = null,
+  limitKolejki = 50,
 } = {}) {
   const fetcher = fetchImpl ?? globalThis.fetch;
   const harmonogram = timeout ?? {
@@ -106,7 +112,29 @@ export function utworzSynchronizacje({
   let timer = null;
   let pracuje = false;
   let ostatniaGra = null;
-  const kolejka = [];
+  const kolejka = startowaKolejka();
+
+  /** Zdarzenia z pamięci telefonu (odświeżenie w trakcie gry) — tylko tej gry. */
+  function startowaKolejka() {
+    if (typeof wczytajKolejke !== 'function') return [];
+    try {
+      const zalegle = wczytajKolejke();
+      return Array.isArray(zalegle) ? zalegle.slice(0, limitKolejki) : [];
+    } catch {
+      return []; // zepsuty zapis kolejki nie może zablokować powrotu do gry
+    }
+  }
+
+  /** Każdy ruch w kolejce jest utrwalany — inaczej reload gubi zdarzenia. */
+  function utrwalKolejke() {
+    if (typeof zapiszKolejke !== 'function') return;
+    try {
+      zapiszKolejke([...kolejka]);
+    } catch {
+      // Pamięć pełna albo niedostępna: kolejka działa dalej w RAM, a gracz
+      // i tak widzi jawny status (onBlad) — nic nie ginie po cichu.
+    }
+  }
 
   async function pobierzStan() {
     const odp = await fetcher(urlStanGry(urlMostu, { kod, idGry }));
@@ -122,9 +150,11 @@ export function utworzSynchronizacje({
         // eslint-disable-next-line no-await-in-loop — kolejność zdarzeń jest częścią kontraktu
         await polecenieMostu(urlMostu, { akcja: 'gra-zdarzenie', zdarzenie: kolejka[0] }, { fetchImpl: fetcher });
         kolejka.shift();
+        utrwalKolejke();
       } catch (e) {
         if (e.odmowaMostu) {
           kolejka.shift(); // odmowa serwera nie jest ponawiana (np. „nie Twoja tura")
+          utrwalKolejke();
           onBlad?.(e.message);
         } else {
           break; // nadal offline — reszta kolejki czeka na następny krok
@@ -172,7 +202,14 @@ export function utworzSynchronizacje({
           onBlad?.(e.message);
           return null;
         }
+        if (kolejka.length >= limitKolejki) {
+          // Kolejka pełna = jawna odmowa (LESSONS L6): gracz wie, że most nie
+          // pozna tej odpowiedzi, więc stacja zostanie do przejścia jeszcze raz.
+          onBlad?.(`Kolejka zdarzeń jest pełna (${limitKolejki}) — to zdarzenie nie wyjdzie automatycznie. Most go nie zna, więc stacja zostanie do przejścia jeszcze raz.`);
+          return null;
+        }
         kolejka.push(zdarzenie);
+        utrwalKolejke();
         onBlad?.('Brak połączenia z mostem — zdarzenie czeka w kolejce i wyjdzie automatycznie, gdy sieć wróci.');
         return null;
       }

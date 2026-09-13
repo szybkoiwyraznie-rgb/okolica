@@ -185,3 +185,68 @@ test('sync: odmowa mostu nie jest ponawiana i trafia do onBlad (np. „nie Twoja
   assert.match(bledy[0], /nie Twoja tura|tura gracza g-1/);
   assert.equal(stub.wywolania.length, 1, 'dokładnie jedna próba');
 });
+
+/* --- ADR 0019 aneks 2026-09-13d: kolejka zdarzeń przeżywa odświeżenie telefonu --- */
+
+const zdarzenieTest = (typ, stacjaId, extra = {}) => ({
+  schemat: 'RO-zdarzenie/1', typ, stacjaId, graczId: 'g-1', kod: 'K2H7QM', t: 1, ...extra,
+});
+
+test('sync: każdy ruch kolejki jest utrwalany — push przy awarii sieci i shift po wypchnięciu', async () => {
+  let online = false;
+  const stub = stubFetch((url, opcje) => {
+    if (opcje?.method === 'POST') {
+      if (!online) throw new TypeError('offline');
+      return jsonOdp({ ok: true, stan: 'trwa' });
+    }
+    if (!online) throw new TypeError('offline');
+    return jsonOdp({ ok: true, gra: graWyscig });
+  });
+  const zapisy = [];
+  const sync = utworzSynchronizacje({
+    urlMostu: URL_MOSTU, graczId: 'g-1', kod: 'K2H7QM',
+    fetchImpl: stub.fetchImpl, timeout: fakeHarmonogram().setup,
+    zapiszKolejke: (zdarzenia) => zapisy.push(zdarzenia.map((z) => z.typ)),
+  });
+  await sync.wyslijZdarzenie(zdarzenieTest('dojscie', 1));
+  await sync.wyslijZdarzenie(zdarzenieTest('odpowiedz', 1));
+  assert.deepEqual(zapisy, [['dojscie'], ['dojscie', 'odpowiedz']],
+    'kolejka jest utrwalana przy każdym zdarzeniu, nie dopiero przy wyjściu z aplikacji');
+  online = true;
+  sync.start();
+  await new Promise((r) => setTimeout(r, 5));
+  assert.deepEqual(zapisy.at(-1), [], 'po wypchnięciu utrwalony jest stan pusty — nic nie zostaje na wieczność');
+  assert.equal(sync.kolejkaLength, 0);
+});
+
+test('sync: zdarzenia z wczytajKolejke (nowa instancja po odświeżeniu) wychodzą przy pierwszym kroku', async () => {
+  const posty = [];
+  const stub = stubFetch((url, opcje) => {
+    if (opcje?.method === 'POST') { posty.push(JSON.parse(opcje.body)); return jsonOdp({ ok: true, stan: 'trwa' }); }
+    return jsonOdp({ ok: true, gra: graWyscig });
+  });
+  const sync = utworzSynchronizacje({
+    urlMostu: URL_MOSTU, graczId: 'g-1', kod: 'K2H7QM',
+    fetchImpl: stub.fetchImpl, timeout: fakeHarmonogram().setup,
+    wczytajKolejke: () => [zdarzenieTest('dojscie', 1), zdarzenieTest('odpowiedz', 1)],
+  });
+  assert.equal(sync.kolejkaLength, 2, 'zaległe zdarzenia są w kolejce od razu, zanim pierwszy krok ruszy');
+  sync.start();
+  await new Promise((r) => setTimeout(r, 5));
+  assert.deepEqual(posty.map((p) => p.zdarzenie.typ), ['dojscie', 'odpowiedz'], 'kolejność FIFO zachowana');
+  assert.equal(sync.kolejkaLength, 0, 'kolejka pusta — odpowiedź jest na moście');
+});
+
+test('sync: pełna kolejka jest jawnie odmówiona, a zdarzenie nie ginie po cichu', async () => {
+  const bledy = [];
+  const stub = stubFetch(() => { throw new TypeError('offline'); });
+  const sync = utworzSynchronizacje({
+    urlMostu: URL_MOSTU, graczId: 'g-1', kod: 'K2H7QM',
+    fetchImpl: stub.fetchImpl, timeout: fakeHarmonogram().setup,
+    onBlad: (m) => bledy.push(m), limitKolejki: 3,
+  });
+  for (let i = 0; i < 4; i += 1) await sync.wyslijZdarzenie(zdarzenieTest('dojscie', i + 1));
+  assert.equal(sync.kolejkaLength, 3, 'limit jest trzymany — czwarte zdarzenie nie weszło');
+  assert.match(bledy.at(-1), /pełna \(3\)/, 'gracz wie, że kolejka jest pełna');
+  assert.match(bledy.at(-1), /jeszcze raz/, 'komunikat mówi, co to znaczy dla gry');
+});

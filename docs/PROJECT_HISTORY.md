@@ -4191,3 +4191,611 @@ automatyczną). Bramy: 760/760.
   sprawdzeniem odliczania, końca gry hosta i powrotu po odświeżeniu;
   (3) budżet lektury ma 1 131 tok rezerwy — następny ADR go przekroczy, więc
   podział ADR-ów (AGENTS.md §0, L62) stanie się zadaniem obowiązkowym.
+
+## Sesja 2026-09-13b — audyt PR #19: martwe ujścia w komunikatach i panel fazy B schowany razem z przodkiem (gałąź `arena/01a09b63-okolica`)
+
+### 1. Audyt PR #19 (squash `b3433ff`, 57 plików, +5818/−1651)
+
+Brama na drzewie `main` przed pracą: `npm test` → **760/760**, `npm run check`
+OK (oba szablony), `npm run audyt` → 0 naruszeń WCAG AA, budżet lektury
+98 925/100 000 tok (rezerwa 1 075). Przegląd `git diff b3433ff^..b3433ff`
+plik po pliku: logika, zgodność z ADR 0040–0045 i z protokołem, zieloność.
+
+- **`app/aktywnosc.js` (nowy)**: dwie funkcje czyste — `czyPrzerwaBezczynnosci`
+  (próg 15 min) i `czyTrzymacEkran` (decyzja Wake Lock). Bez DOM i bez zegara
+  w środku (zegar wstrzykiwalny), komentarze cytują ADR 0040. OK.
+- **`app/orientacja.js` (nowy)**: `kierunekEkranu` i `czyObrotEkranu` — czyste,
+  bez `window` w sygnaturze, pokrywają ADR 0030 aneks 2026-09-13. OK.
+- **`app/pozycja.js`**: `PROFILE_GPS` zredukowany do jednego profilu `dokladny`,
+  `profilBaterii` usunięty, kody **P07/P09** wycofane z komentarzem, że numery
+  zostają zajęte (precedens E14/E18/R17/R18) — zgodne z ADR 0040 pkt 2–3. OK.
+- **`app/wieloosobowa.js`**: `premiaZaKolejnosc` liczy `pula = min(3, dograli − 1)`
+  z `dograli` = gracze bez `rezygnacja`; lustro w `.gs` liczy tak samo. OK (uwaga L).
+- **`app/sygnaly.js`**: dwa nowe plany — `odliczanie` (45 ms, 880 Hz) i `startGry`
+  (dwuton 784 → 1174,7 Hz). Plany są danymi, odtwarzanie zostaje w `app.js`
+  (ADR 0041/0044). OK.
+- **`app/app.js`** (największy kawałek fali): brak pauzy i wznawiania
+  (Wake Lock + watchdog bezczynności 15 min + samoczynny powrót), auto-centrowanie
+  po obrocie (`mapa.centrujNaPozycji()` istnieje, L968), koniec gry przez
+  ⚙ START GRY → TAK → `■ ZAKOŃCZ AKTUALNĄ GRĘ`, odliczanie 5-4-3-2-1-START,
+  panel multi usunięty (wybór stacji przeniesiony do fazy A). Wszystkie ścieżki
+  zgodne z ADR 0040–0045; `STAN.kierunekEkranu` inicjowany w `start()`. OK.
+- **`index.html`**: `</div></div>` stojące po komentarzu o usuniętym
+  `#przycisk-zakoncz-gre` NIE są osierocone — zamykają `#gra-sterowanie`
+  i `#gra-slot-sterowanie` dokładnie tak samo przed falą (porównanie `sed` na
+  drzewie `b3433ff^` i `b3433ff`). Struktura zachowana. OK.
+- **Wersjonowanie**: `?v=m12-110` w `index.html` i we wszystkich importach
+  `app/*.js`, `WERSJA_SW = 'm12-110'` — jeden łańcuch w całym grafie (L29). OK.
+- **`docs/setup/apps-script-repo-paczek.gs`**: `rezygnacja` może domknąć grę
+  (`czyKompletna` liczy rezygnującego za domkniętego), `gra-zakoncz` zostaje dla
+  starszych telefonów i porządków na Drive, premia bez hosta, który wyszedł.
+  **Wymaga nowego deploymentu web app** — otwarte po stronie właściciela.
+- **Reszta** (`trwalosc.js`, `sync.js`, `mapa.js`, `protokol.js`, `stacje.js`,
+  `zestawy.js`, `sieci.js`, `rozgrywka.js`, `wynik.js`, `most.js`, `sw.js`):
+  podbicia wersji, komentarze i dokumentacja — bez zmian logiki.
+- **Kosmetyka bez wpływu**: w `onStanGryMulti` jeden `if` ma 6 spacji wcięcia
+  zamiast 4.
+
+**Werdykt:** architektura PR #19 jest spójna z ADR 0040–0045 i z protokołem,
+a brama zielona. Audyt znalazł natomiast **dwie usterki widoczne dla gracza**
+(poniżej) — obie są skutkiem tej samej fali usuwania i obie przeszły przez
+760 zielonych testów, bo testy czytają zachowanie w atrapie DOM, nie rendering
+w przeglądarce ani tekst komunikatów awaryjnych.
+
+### 2. U1 (blokująca): pięć komunikatów awaryjnych odsyła do przycisku, który ta fala usunęła
+
+ADR 0043 zniósł `#przycisk-zakoncz-gre` („■ Zakończ grę”) i przeniósł koniec gry
+za ikonę ⚙ START GRY (wpisanie TAK → „■ ZAKOŃCZ AKTUALNĄ GRĘ”). Dokumenty żywe
+(README, WORKFLOW §3 pkt 6, ARCHITECTURE) i warstwa HTML zostały przestawione,
+ale **tabele komunikatów w modułach nie**:
+
+| Miejsce | Komunikat | Stan po fali |
+|---|---|---|
+| `app/pozycja.js` **P03** | „…zakończ grę przyciskiem „■ Zakończ grę” (ADR 0029…)” | przycisku nie ma |
+| `app/pozycja.js` **P04** | „…zakończ grę przyciskiem „■ Zakończ grę”.” | przycisku nie ma |
+| `app/pozycja.js` **P08** | „…odśwież stronę albo zakończ grę przyciskiem „■ Zakończ grę”.” | przycisku nie ma |
+| `app/pozycja.js` **P06** (`stanDojscia`, brak współrzędnych stacji) | „…albo zakończ grę przyciskiem „■ Zakończ grę”.” | przycisku nie ma |
+| `app/app.js` L1393 (`onBlad` watchera) | „…zakończ grę przyciskiem „■ Zakończ grę”.” | przycisku nie ma |
+
+To są dokładnie te zdania, które gracz czyta w terenie, gdy GPS nie daje fixa
+albo stacja jest nieosiągalna — czyli w jedynym stanie, w którym ujście jest
+potrzebne (L63: przycisk-ujście). W polu gracz dostaje instrukcję „naciśnij
+przycisk”, którego na ekranie nie ma (L58: utrata zaufania, zmarnowany test
+terenowy), a prawdziwe ujście (trzy ruchy: ikona → TAK → przycisk) wymaga
+wpisania TAK, więc bez poprawnej instrukcji nie jest oczywiste.
+
+Dwa dalsze martwe ujścia z tej samej rodziny (starsze niż PR #19, znalezione
+przy tym samym grep-ie — L58 pkt 1 każe grepać nośniki żywe, nie tylko kod fali):
+
+- `app/app.js` L2961 (`renderujPytanie`, uszkodzony kontener): „…Zakończ grę
+  albo wgraj paczkę ponownie **z pliku**.” — wczytywania paczki z pliku nie ma
+  od 2026-09-07 (ADR 0006 aneks 3); paczka przychodzi z repozytorium albo
+  z wklejonej odpowiedzi modelu.
+- `app/wieloosobowa.js` **R19**: „…sprawdź pisownię albo zapisz go przyciskiem
+  „Zapisz nowy”.” — takiego przycisku nie ma w `index.html` (bramka tożsamości
+  to `#profil-pseudonim` + `#profil-pin` i jedno wołanie `profil-ustaw`,
+  ADR 0026); nowe imię zakłada profil tym samym gestem.
+
+**Dlaczego brama tego nie złapała:** `test/dryf-dokumentow.test.js` (strażnik L58)
+ma 30 martwych fraz z fal H/I/J oraz ADR 0034/0037/0038/0039/0040/0045, ale
+**ani jednej** dla fali ADR 0043 — fraza „■ Zakończ grę” nie została wpisana
+przy usuwaniu przycisku. Dodatkowo audyt PR #18 (sesja 2026-09-12K) zapisał te
+komunikaty jako poprawne („komunikaty P03/P04/P08 … odsyłają do „■ Zakończ grę”
+(ADR 0029 aneks m12-94). OK.”) — fala m12-107/110 usunęła przycisk i nie
+wróciła do zdań, które na niego wskazywały (L27: zastąpiony przycisk musi być
+wymieniony we wszystkich komunikatach).
+
+### 3. U2 (blokująca dla trybu testowego): panel fazy B jest schowany razem z przodkiem
+
+`odswiezPasekDrogi()` robi dwie rzeczy naraz: `$('gra-sterowanie').hidden = droga`
+oraz `$('gra-pasek').hidden = !droga`. Panel fazy B (`#gra-panel-odcinek`) jest
+W ŚRODKU `#gra-sterowanie`, a `styles.css` ma twardą regułę
+`[hidden] { display: none !important; }` — więc w stanie „w drodze” przodek gasi
+panel B razem z dużym dystansem (`#gra-dystans-odcinka`) i z przyciskiem
+„▶ Symuluj dojście (tryb testowy)”, który `renderujGre` (L2162) w tej samej
+tranzycji jawnie odsłania: `hidden = !(STAN.trybTestowy && faza === odcinek)`.
+
+Pomiar w prawdziwej przeglądarce (headless Chromium 153, 390×844, ENVIRONMENT
+§4.1, stan „w drodze” ustawiony dokładnie tymi dwoma zdaniami z
+`odswiezPasekDrogi`):
+
+| Węzeł | `hidden` | `getBoundingClientRect()` | `offsetParent` |
+|---|---|---|---|
+| `#przycisk-symulacja-gra` | false (tryb testowy) | **0×0** | **null — nie renderowany** |
+| `#gra-dystans-odcinka` | false | **0×0** | null |
+| `#gra-komunikat` | false | **0×0** | null |
+| `#gra-panel-odcinek` | false | **0×0** | null |
+| `#gra-pasek` | false | 370×0 (pusty w próbie) | tak — żyje poza panelem |
+
+Skutek: **w przeglądarce nie da się kliknąć symulacji dojścia**, choć
+`WORKFLOW` §3 pkt (tryb testowy w domu) i §4.3 pkt 3 oraz `ARCHITECTURE`
+L209 obiecują ten przycisk, a ADR 0036 aneks 2026-09-13 (m12-102) pkt 2 mówi
+wprost: „Panel fazy B trzyma duży dystans i symulację **dla widoku panelowego
+oraz trybu testowego**”. Atrapa DOM nie modeluje kaskady ani przodków
+(`kliknij` nie pyta o renderowanie), więc 20 wywołań `dojdzSymulacja()`
+w `test/aplikacja.test.js` jest zielonych — powtórka L13 w nowej postaci.
+Drugi skutek: `#gra-komunikat` (P06 w odcinku) nie ma w drodze żadnego nośnika.
+
+### 4. Obserwacje mniejszej wagi (bez naprawy w tej sesji)
+
+- `przelaczPodgladMapy()` (oko) nie zamyka warstwy końca gry, więc przy otwartym
+  potwierdzeniu klik oka gasi wszystkie panele (`body.podglad-mapy`) i gracz
+  widzi pustą mapę; drugi klik przywraca kartę, a Escape zamyka potwierdzenie
+  (obsługa Escape sprawdza warstwę przed podglądem). L61 pkt 2 mówi o zamykaniu
+  nowej warstwy przez ISTNIEJĄCE otwieracze — oko jest przełącznikiem podglądu,
+  nie warstwą, więc zachowanie jest spójne z jego sensem („pokaż mapę”).
+  Zostawione celowo; gdyby właściciel uznał to za mylące, poprawka to jeden
+  `zamknijKoniecGry({ bezFokusu: true })` w `przelaczPodgladMapy`.
+- Komentarz w `renderujGre` (L2125) uzasadnia „panele nie przełączają się w
+  trakcie pokazu oceny” automatyczną pauzą po `visibilitychange` — mechanizmu
+  pauzy nie ma od ADR 0040 pkt 3 (zostało samo odświeżenie nasłuchu). Reguła
+  jest nadal słuszna i pinowana testami, uzasadnienie jest historyczne.
+- `docs/setup/HANDOFF_2026-09-13.md` podaje „`docs/LESSONS.md` (8 550 tok) —
+  rejestr L53-L63”. Stan rzeczywisty po podziale (L62): rejestr ma **wszystkie**
+  lekcje L1–L63 i **11 803 tok**; do archiwum wyniosły się pełne opisy
+  przypadków, nie wpisy rejestru. Handoff jest nośnikiem zamrożonym (historia),
+  więc liczba zostaje w nim bez zmian — prostuje ją ten wpis i handoff tej sesji.
+- Komentarze w `app/app.js`, `app/stacje.js`, `app/rozgrywka.js` i
+  `docs/ARCHITECTURE.md` cytują „ADR 0014 pkt 1” (dystanse odcinków z sieci),
+  a plik ADR 0014 jest od 2026-09-07 streszczeniem bez punktów — cytat prowadzi
+  do treści, która żyje tylko w historii gita.
+
+### 5. Budżet lektury (`335518d`) — ADR-y wycofane w całości do archiwum
+
+Rezerwa na starcie sesji wynosiła 1 075 tok, a AGENTS.md §0 i LESSONS L62 każą
+w takiej sytuacji ciąć największego zjadacza (ADR-y ~65 tys. z 100 tys.), nie
+LESSONS, który swoje archiwum już ma. `git mv` przeniosło **ADR 0014**
+(punktacja czasu, wycofana 2026-09-07) i **ADR 0031** (generowanie partiami,
+wycofane tego samego dnia) do `docs/decisions/archive/`; `plikLektury()` filtruje
+`^\d{4}-.*\.md$` w katalogu głównym, więc podkatalog wyszedł z budżetu bez zmian
+w narzędziu. Rejestr stracił tylko ścieżkę linku — wiersze i statusy zostały,
+a pin „ADR na dysku ↔ rejestr” obejmuje obie ścieżki. Przy 0014 dopisane, co
+z dawnej decyzji obowiązuje (pkt 1: dystanse odcinków z sieci), bo cytują go
+żywe nośniki (`app/stacje.js`, `app/rozgrywka.js`, `app/app.js`, ARCHITECTURE),
+a plik był streszczeniem bez punktów — obserwacja 4 z części 1 zamknięta.
+Nowy pin pilnuje, że archiwum NIE wchodzi w `plikLektury()`, że rejestr i
+AGENTS.md §0 o nim mówią i że leżą tam wyłącznie ADR-y ze statusem *Wycofana*
+(wzorzec pinu archiwum LESSONS). Budżet: 98 925 → **97 642** tok.
+
+### 6. Naprawa U1 (m12-111, `2b57579`) — komunikaty odsyłają do prawdziwego ujścia
+
+Wszystkie zdania z tabeli w części 2 przestawione na drogę z ADR 0043
+(⚙ START GRY → wpisz TAK → „■ ZAKOŃCZ AKTUALNĄ GRĘ”): `app/pozycja.js` P03,
+P04, P08 i komunikat `stanDojscia` o braku współrzędnych stacji (P06);
+`app/app.js` status `onBlad` watchera, uszkodzony kontener paczki (traci też
+martwą drogę „wgraj paczkę ponownie z pliku” — teraz prowadzi do repozytorium
+albo do wklejenia odpowiedzi modelu), paczka rozjechana z rozgrywką i T07
+(zapis ponad 2 MB); `app/wieloosobowa.js` R19 (bez przycisku „Zapisz nowy” —
+bramka tożsamości to imię + PIN i jedno wołanie `profil-ustaw`, ADR 0026).
+
+Drugi nośnik zdania o dojściu: w drodze `#gra-komunikat` jest schowany razem
+z całym `#gra-sterowanie`, więc kod dojścia (P06) idzie też do `status()` —
+`#status` w ⓘ Informacjach ma `aria-live`, więc zdanie nie ginie i nie dokleja
+nic do paska (ADR 0042: Informacje zostają warstwą techniczną).
+
+Strażnik dryfu (L58) dostał trzy frazy tej fali — `zakończ grę przyciskiem`,
+`wgraj paczkę ponownie z pliku`, `przyciskiem „Zapisz nowy”` — i poprawiony
+`powod` wpisu o pomijaniu stacji, który sam cytował martwy przycisk. Nowy
+kontrakt czyta **wiersze kodu** `app.js` (helper `wierszeKodu()` wycina
+komentarze blokowe i liniowe, bo nagrobek L31 może cytować martwą etykietę)
+i wymaga, żeby każde zdanie o końcu gry nazywało ikonę ⚙ START GRY; do tego piny
+w `test/pozycja.test.js` (zakaz frazy + niezmiennik ⚙/TAK dla kodów P i dla
+`stanDojscia`) i w `test/wieloosobowa.test.js` (R19). Wszystkie cztery testy
+były najpierw czerwone (odtwarzały usterkę), dopiero potem poszła implementacja.
+
+### 7. Naprawa U2 (m12-112, `b9a70cf`) — panel fazy B w trybie testowym zostaje
+
+`$('gra-sterowanie').hidden = droga && !STAN.trybTestowy;` — w terenie bez zmian
+(nad mapą zostaje sam pasek, ADR 0043 pkt 1), w trybie testowym panel fazy B
+robi to, co obiecuje ADR 0036 aneks m12-102 pkt 2. Pomiar headless Chromium 153
+(390×844) po poprawce, stan „w drodze”:
+
+| Węzeł | teren | tryb testowy |
+|---|---|---|
+| `#gra-pasek` | renderowany | renderowany |
+| `#gra-panel-odcinek` | 0×0, `offsetParent: null` | **370×124, widoczny** |
+| `#przycisk-symulacja-gra` | 0×0, `offsetParent: null` | **328×45, widoczny** (cel ≥ 44 px, ADR 0011) |
+| `#gra-dystans-odcinka` | 0×0 | **340×29, widoczny** |
+| `#gra-komunikat` | 0×0 | **370×41, widoczny** |
+
+Testy: istniejący test drogi chodzi w `?tryb=test`, więc jego asercja „panel
+schowany” zamieniona na „panel zostaje, symulacja osiągalna”, a zachowanie
+terenowe dostało **osobny test prawdziwą drogą** (atrapa `navigator.geolocation`,
+`naEkranPozycji` → fix → „Dalej” → paczka z fixture → „▶ Idę do stacji”): pasek
+widoczny, panel schowany, symulacji nie ma (ADR 0029: dojście zalicza tylko GPS).
+Pin w `test/kontrakt.test.js` przepięty na nowe zdanie.
+
+### 8. Dokumenty i lekcje (`11f3415`, `68e3760`)
+
+- **ADR 0043 aneks 2026-09-13b** — lista przestawionych zdań i trwała
+  konsekwencja (przegląd nośników musi objąć tabele komunikatów); L63 każe taką
+  listę wpisać do ADR-a, nie do handoffu.
+- **ADR 0036 aneks 2026-09-13b** — pkt 2 aneksu m12-102 doprecyzowany: teren
+  schowany, tryb testowy panelowy, plus drugi nośnik zdania o dojściu.
+- **ADR 0029 aneks 2026-09-13b** — zdanie aneksu m12-94 o odsyłaniu do
+  „■ Zakończ grę” jest nieaktualne w części o przycisku; mechanika (tylko GPS,
+  stacja nieosiągalna = brak punktu) bez zmian.
+- **WORKFLOW §3 pkt 6** — wyjątek trybu testowego przy „nad mapą zostaje sam
+  pasek”; §4.3 pkt 3 (symulacja) i ARCHITECTURE L209 są znowu prawdziwe bez
+  zmian — dokumenty miały rację, kod nie.
+- **LESSONS L64** (tabele komunikatów przy usuwaniu przyciska) i **L65**
+  (`hidden` na przodku a atrapa DOM) — skrót w rejestrze, pełne opisy z
+  pomiarami i listą testów w `docs/LESSONS_ARCHIVE.md`.
+
+### 9. Bramy, stan końcowy i rzeczy otwarte
+
+`npm test` **763/763** (przybyły trzy: kontrakt zdań o końcu gry, kontrakt
+archiwum ADR-ów, droga terenowa), `npm run check` — oba szablony zgodne,
+`npm run audyt` — 0 naruszeń WCAG AA, `npm run budzet` — **99 165/100 000**
+(rezerwa 835 tok; ostatnie 80 zjadł wpis w ROADMAP o tym audycie). Wersja
+aplikacji **m12-112** (`?v=` w `index.html` i we
+wszystkich importach + `WERSJA_SW`).
+
+- **Powtórki lekcji w tej sesji:** L27/L58/L63 (U1 — zdania po usuniętym
+  przycisku; audyt PR #18 zapisał je jako poprawne, fala ADR 0043 nie wróciła do
+  nich) i L13 (U2 — atrapa DOM nie widzi renderowania). Obie pułapki dostały
+  piny, więc następna fala ma bramę.
+- **Otwarte po stronie właściciela:** (1) deployment web app z mostu
+  `docs/setup/apps-script-repo-paczek.gs` — bez zmian w tej sesji, ale nadal
+  wisi z PR #19 (`rezygnacja` domykająca grę); (2) powtórka testów terenowych
+  dwóch telefonów (WORKFLOW §4.4) — teraz z poprawionymi komunikatami GPS, więc
+  warto sprawdzić w terenie zdanie P03/P04 i dojście przez ⚙ START GRY → TAK;
+  (3) sprawdzenie w live preview, że w `?test=true` panel fazy B z przyciskiem
+  symulacji jest widoczny w marszu (pomiar agenta: 328×45 px).
+- **ROADMAP M11/M12** (`03d7a75`): stan kamienia przed powtórką testu terenowego
+  mówi teraz o audycie fali m12-100 → m12-110 i o dwóch naprawionych usterkach —
+  żeby następna sesja nie czytała „wszystko wdrożone” jako „wszystko poprawne”.
+- **Budżet:** rezerwa 835 tok — następny ADR albo lekcja przekroczy próg, więc
+  kolejna sesja zaczyna od cięcia (L62): największy pojedynczy zjadacz to
+  ADR 0019 (5 368 tok), a mechanizm archiwum dla ADR-ów wycofanych już stoi.
+
+## Sesja 2026-09-13c — drugi test terenowy: zgłoszenia N–S, pięć wdrożonych i jedno wycofane (gałąź `arena/01a09b63-okolica`, PR #20)
+
+Kontynuacja sesji 2026-09-13b (audyt PR #19, naprawy U1 i U2, m12-112).
+Właściciel wrócił z drugiego testu terenowego z sześcioma zgłoszeniami (N–S):
+pięć wdrożonych, jedno (S) wycofane przez właściciela po wspólnym sprawdzeniu
+założeń. Wersja aplikacji **m12-112 → m12-113** — cache-busting całej fali
+poszedł w jednym commitcie razem z poprawką O (`180cadb`).
+
+### 1. Zgłoszenia i decyzje
+
+| # | Objaw z terenu | Decyzja | Gdzie |
+|---|---|---|---|
+| N | po zamknięciu przeglądarki i ponownym wejściu stacja nr 2 stawała się nr 1 | wdrożone: numer stacji jest częścią trasy, nie indeksem listy | `31504f8` (m12-113), ADR 0019 aneks 2026-09-13c |
+| O | na setupie stoi boks z poprzednią grą, a stać nie powinien | wdrożone: **cała funkcja usunięta** (wybór właściciela), nie przeniesiona | `180cadb`, `40cc4a0`; ADR 0010 aneks, ADR 0015 aneks |
+| P | przedrostek „repozytorium:" przed nazwą paczki nic nie wnosi | wdrożone: wiersz zaczyna się od miejsca | `e7ae8cf`; ADR 0017 aneks |
+| Q | litera „Q" przy paczce nic nie mówi | wdrożone: znaczek mówi „Fact-checked", styl bez zmian | `c3697d7`, `d1c72b6`; ADR 0032 aneks |
+| R | trasa ukryta (jedna stacja z numerem 1) poza Wspólną Trasą | wdrożone: sekret tylko w ŻYWEJ grze sieciowej z włączoną opcją | `31504f8`; ADR 0019 aneks 2026-09-13c |
+| S | nazwa paczki powinna brać się z nazwy stacji, a wybór prowadzić przez ekran stacji | **wycofane przez właściciela** — sprawdzenie pokazało, że zmiana byłaby szkodliwa | bez zmiany kodu; ADR 0017 aneks |
+
+### 2. N — cel zachowuje numer stacji po wznowieniu (`31504f8`)
+
+Objaw miał dwie przyczyny, zależne od trybu:
+
+- **hot-seat**: zapis stanu niesie całą rozgrywkę (`biezacaStacja`,
+  `odpowiedzi`, `punkty`), więc numer i punkty wracają same — nowy test
+  w `aplikacja.test.js` przechodzi trasę „stacja 1 zaliczona → marsz do
+  stacji 2 → reload" i sprawdza zarówno stan (cel = 2, odpowiedź policzona jako
+  poprawna, punkty zachowane), jak i warstwę pinezek (numery 1, 2, 3 na mapie
+  gry). Tu właściciel prosił o weryfikację punktów — punkty żyją w zapisie, nie
+  w przeliczeniu po wznowieniu.
+- **gra sieciowa**: powrót buduje rozgrywkę z NIEZAMKNIĘTYCH stacji
+  (`uruchomGreMulti`), więc indeks na liście przestawał być numerem na trasie.
+  Stacje niosą teraz pole `numer` (pozycja na pełnej trasie), `planMapy`
+  w `mapa.js` woli je przed indeksem, a napisy „stacja X z Y", „Idę do stacji X"
+  i etykieta przycisku „dalej" biorą numer z trasy (`numerStacjiTrasy`,
+  `liczbaStacjiTrasy` w `wieloosobowa.js`). Zamknięte stacje nadal nie wracają
+  do przejścia — zmienia się tylko numeracja (test trasy: „stacja 1 z 3" →
+  „stacja 2 z 4").
+
+### 3. R — trasa-sekret tylko w żywej wspólnej trasie (`31504f8`)
+
+Brama była liczona z resztkowego `STAN.multi`: kontekst gry zamkniętej przez
+hosta albo odzyskanej przy starcie aplikacji włączał trasę-sekret w hot-seacie
+(gracz widział jedną stację z pinezką numer 1 — dokładnie objaw z terenu).
+Naprawa:
+
+- `czyTrasaSekret(multi)` w `wieloosobowa.js` wymaga ŻYWEJ gry
+  (`stan === 'trwa'`) w trybie Wspólnej Trasy z niewyłączonym sekretem —
+  predykat czysty, pokryty testem tabelowym;
+- `startGry()` kończy kontekst sieciowy: synchronizacja staje, sesja multi
+  i `STAN.multi` idą w kosz, więc następne otwarcie telefonu wraca do gry
+  hot-seat, a nie do porzuconej gry sieciowej (to też warunek N: numeracja
+  hot-seatu nie dziedziczy po multi).
+
+Właściciel doprecyzował zakres: hot-seat ma pokazywać całą trasę zawsze —
+ukrywanie jest funkcją wyłącznie żywej gry sieciowej z włączoną opcją.
+
+### 4. P i Q — teksty na listach (`e7ae8cf`, `c3697d7`, `d1c72b6`)
+
+- **P**: `wierszZestawu` traci parametr `etykietaZrodla`, a wpis kandydata pole
+  `etykieta` — wiersz zaczyna się od miejsca („Podkowa Leśna · 2026-09-04 10:00 ·
+  3 stacji × 1 pytań · …"). Wszystkie paczki na karcie „Paczki dla tej okolicy"
+  i tak pochodzą ze wspólnego repozytorium (zgłoszenie I.b z 2026-09-12 zdjęło
+  z listy kopie z telefonu), więc przedrostek powtarzał źródło w każdym wierszu
+  kosztem nazwy. Źródło zostaje w diagnostyce: `zrodlo: 'repozytorium: <miejsce>'`
+  nadal nazywa paczkę w komunikacie o uszkodzonym kontenerze
+  (`przyjmijZestawDoGry`).
+- **Q**: znaczek weryfikacji pytań (ADR 0032) dostaje tekst „Fact-checked";
+  STYL bez zmian (`.znaczek-factcheck` = `color: var(--zloto);
+  font-weight: 700`), więc kontrast pilnowany bramą i oba motywy są nietknięte
+  (złoto na karcie 5,65:1 jasny / 8,27:1 ciemny). Reguła znaczkowa się nie
+  zmienia: znaczek stoi tylko przy paczkach zweryfikowanych (brak pola
+  `factcheck` w starych zapisach = zweryfikowana, ADR 0032 §4), przy wariancie
+  bez weryfikacji nie ma go wcale. `role="img"` zostaje, etykieta i podpowiedź
+  mówią to samo, co widać. Dopełnienie `d1c72b6`: opisy par kontrastu
+  w `tools/audyt-kontrastu.mjs` mówiły „znaczek Q" — mówią „znaczek
+  fact-check".
+
+### 5. S — poprawka wycofana przez właściciela (bez zmiany kodu)
+
+Zgłoszenie brzmiało: nazwa paczki powinna brać się z nazwy stacji (miejsca),
+a wybór paczki prowadzić przez ekran stacji. Sprawdzenie przed kodowaniem:
+
+- paczka niesie lokalizacje stacji OBOWIĄZKOWO — schema `TO-zestaw/1` wymaga
+  `stacje: [{ lat, lon, opis }]`, a gra używa ich dosłownie (bez własnego
+  losowania pozycji);
+- pytania są przypisane do NUMERU stacji, więc treść gry wisi na kolejności
+  stacji z paczki;
+- ekran stacji pozwala przeciągać piny i losować układ ponownie — przepuszczenie
+  paczki przez ten ekran rozsynchronizowałoby pytania z miejscami (pytanie
+  o kościół trafiłoby na stację przy dworcu).
+
+Właściciel po tym sprawdzeniu wycofał poprawkę („zbędna, a wręcz szkodliwa").
+Nazwa paczki bierze się z miejsca już po poprawce P. Zapis decyzji: ADR 0017
+aneks 2026-09-13 (pkt S) — żeby następna sesja nie wróciła do pomysłu.
+
+### 6. O — lokalna historia gier usunięta w całości (`180cadb`)
+
+Właściciel: jedyną drogą powrotu do przerwanej gry ma być automatyczne
+wczytanie zapisu (ADR 0045); boks z poprzednimi grami na setupie obiecywał
+drugą drogę i mylił. Do wyboru były trzy warianty (schować kartę, przenieść ją
+na ekran rankingu, usunąć funkcję) — przeniesienie kolidowałoby z ADR 0039
+(ranking żyje w moście, nie w aplikacji), a właściciel wybrał „cała funkcja
+precz".
+
+Usunięte:
+
+- `app/trwalosc.js` (319 → 187 linii): `KLUCZ_HISTORII`, `SCHEMAT_HISTORII`,
+  `SCHEMAT_WPISU_HISTORII`, `LIMIT_HISTORII`, `skrotGry()`,
+  `dodajWpisHistorii()`, `nowaHistoria()`, `walidujHistorieSurowa()`,
+  `pobierzHistorie()`, `zapiszGreDoHistorii()`, `usunGreZHistorii()`,
+  `wyczyscHistorie()` — czyli cały zapis i odczyt klucza `okolica:historia`;
+  przy okazji wyszedł import geohashu (ostatni konsument w tym module);
+- `app/app.js` (5501 → 5418 linii): `renderujHistorieGier()`,
+  `kasujHistorieGry()`, pomocniki odświeżania karty, pole
+  `STAN.historiaKasowanieUzbrojone` i kody usterek **H01–H04**;
+  `zapiszGre()` po wysłaniu kopii hotseat na Drive oznacza grę zamkniętą
+  i czyści zapis;
+- `index.html` (783 → 778): karta `#karta-historia` z listą, przyciskiem
+  kasowania i paskiem usterek;
+- `app/styles.css`: klasy `.lista-historii`, `.historia-wpis`, `.historia-meta`,
+  `.historia-pytania` (988 → 990 linii: listy „Moje wyniki" i „Wyniki hotseat"
+  korzystają teraz ze wspólnej `.lista-prosta`).
+
+Zostaje: zapis i wznowienie niedokończonej gry (ADR 0045), `wyslijWynikHotseat()`
+— kopia wyniku na wspólny Drive (ADR 0010 pkt 5), ranking czytany z mostu
+(ADR 0039) i „Moje wyniki" z bieżącej sesji. Kody `H` wypisane z rejestru
+(ADR 0015 aneks): historia była ostatnim żywym konsumentem prefiksu, więc
+dwuetapowe kasowanie (pin ADR 0031) straciło przedmiot — numery H01–H04 zostają
+zajęte, precedens E14/E18/R17/R18.
+
+Testy: 13 deklaracji testów historii i kodów H usunięte, w tym jeden kontrakt
+„karta historii jest" zamieniony na kontrakt ODWRÓCONY (nośniki nie mają karty,
+kod nie zapisuje historii, upload hotseat zostaje). `npm test` 763 → 757.
+
+### 7. Dokumenty: aneksy, trzy nośniki opisowe, strażnik (`40cc4a0`)
+
+- aneksy 2026-09-13: **ADR 0010** (O — co zniknęło, co zostaje, dlaczego boks
+  nie może wrócić), **ADR 0015** (prefiks `H` wypisany), **ADR 0017** (P i S),
+  **ADR 0019** aneks 2026-09-13c (N i R), **ADR 0032** (Q); **ADR 0045** —
+  powiązania bez historii lokalnej;
+- rejestr ADR: wiersze 0010/0015/0017/0019/0032 z adnotacją o aneksach (przy
+  okazji wyszła z wiersza 0017 nieaktualna „moderacja właściciela");
+- README, WORKFLOW i ARCHITECTURE przepisane z opisu usuniętej funkcji na opis
+  tego, co żyje (powrót automatyczny, wyniki na wspólnym Drive i w rankingu) —
+  zamiany metodą przęsła między kotwicami ASCII, bo dokumenty mieszają
+  cudzysłowy (LESSONS L66);
+- `test/dryf-dokumentow.test.js`: trzy nowe martwe frazy („Poprzednie gry",
+  „Kasuj historię", klucz historii) z nośnikami = dokumenty + UI; komentarze
+  i nagrobki w `app.js`, `index.html` i `styles.css` opisują rzecz, nie cytują
+  literalnych napisów;
+- LESSONS **L66** (rejestr + pełny opis w archiwum): kolejność aneks →
+  cytowanie z datą, kotwice ASCII przy zamianach, sprawdzanie cytowań i asercji
+  testów przed przeniesieniem treści ADR do archiwum, nazwa pliku w archiwum bez
+  przedrostka `NNNN-`;
+- ROADMAP M11/M12: zdanie o drugim teście terenowym i o wycofanym S.
+
+### 8. Budżet lektury: pęknięcie i podział ADR 0019 (`40cc4a0`)
+
+Po aneksach `npm run budzet` pokazał **100 795 / 100 000 tok** — przekroczenie
+795 tok, czyli obowiązkowe zadanie sesji (AGENTS.md §0, LESSONS L62). Poprzednia
+sesja zostawiła wskazówkę: największy pojedynczy zjadacz to ADR 0019 (5 368 tok).
+
+Podział: do `docs/decisions/archive/aneksy-0019-2026-09-06-do-11b.md`
+przeniesione DOSŁOWNIE pięć sekcji historycznych — aneks 2026-09-06
+(implementacja P1–P3), dopisek 2026-09-07, dwa aneksy 2026-09-11 (przepisanie
+trybów; setup zamiast ekranu multiplayera, m12-74) i aneks 2026-09-11b
+(rankingi usunięte, m12-77/m12-78) — razem 2 268 tok; w ADR został wskaźnik
+(198 tok) z wyliczeniem, co gdzie leży. ADR 0019: 5 556 → 3 486 tok.
+
+Sprawdzenia przed przeniesieniem (L66 pkt 3–4): grep po żywych nośnikach nie
+znalazł cytowań `ADR 0019 aneks 2026-09-11*` ani `… 2026-09-06` z datą; jedyny
+test czytający ten plik wymaga nagłówka aneksu 2026-09-13b, który zostaje;
+nazwa pliku w archiwum bez przedrostka `NNNN-`, bo kontrakt „archiwum ADR-ów"
+wymaga od takich plików `- Status: Wycofana` i wiersza w rejestrze, a to nie
+jest ADR, tylko ciąg dalszy historii ADR 0019. Budżet po podziale: **99 082 tok**
+(rezerwa **918**).
+
+### 9. Bramy, stan końcowy i rzeczy otwarte
+
+`npm run brama` (testy + `synchronizuj-szablon --check` + audyt kontrastu):
+**757/757** testów, oba szablony protokołu zgodne, **0 naruszeń WCAG AA**;
+`npm run budzet` **99 082 / 100 000** (rezerwa 918). Wersja **m12-113**
+(`?v=` w `index.html`, importy we wszystkich `app/*.js`, `WERSJA_SW`).
+Zakres fali N–S (od `c3697d7`): 31 plików, +450/−785.
+
+Commity tej sesji: `31504f8` (N+R) → `e7ae8cf` (P) → `c3697d7` (Q) →
+`d1c72b6` (etykiety audytu) → `180cadb` (O + cache-busting m12-113) →
+`40cc4a0` (dokumenty i podział budżetu) → `68e3760`-następny (LESSONS L66,
+ROADMAP, ten wpis i handoff).
+
+Otwarte:
+
+1. **Scalenie PR #20** (decyzja właściciela) — Pages poda `?v=m12-113`,
+   a `WERSJA_SW` wymieni cache skorupy, więc telefony podciągną falę bez
+   ręcznego czyszczenia.
+2. **Deployment web app u właściciela** — wisi od PR #19 (most
+   `docs/setup/apps-script-repo-paczek.gs`: `rezygnacja` domykająca grę, pula
+   premii). Ta sesja mostu NIE zmieniała.
+3. **Powtórka testu terenowego dwóch telefonów** (WORKFLOW §4.4) — teraz z
+   poprawkami N (numery stacji po wznowieniu), R (trasa-sekret tylko w żywej
+   grze sieciowej) i O (setup bez boksu poprzednich gier).
+4. **Budżet: rezerwa 918 tok** — wystarczy na jedną lekcję albo mały aneks;
+   następna duża fala dokumentowa zaczyna od mierzenia (`npm run budzet`) i ma
+   gotowy mechanizm: archiwum ADR-ów wycofanych (L62) albo archiwum treści
+   historycznej ADR-a żyjącego (ta sesja, L66 pkt 3–4).
+
+## Sesja 2026-09-13d — trzecia fala zgłoszeń właściciela: utrwalona kolejka zdarzeń, widoczne czekanie, paczki w tle (gałąź `arena/01a09b63-okolica`, PR #20)
+
+Wersja aplikacji **m12-113 → m12-114** (cache-busting całej fali: `?v=`
+w `index.html`, importy we wszystkich `app/*.js`, `WERSJA_SW` w `sw.js`).
+
+### 1. Zgłoszenia i decyzje
+
+Właściciel po domknięciu fali N–S zgłosił trzy rzeczy i od razu wybrał sposób
+naprawy (bez odsyłania do następnej fali):
+
+| # | Zgłoszenie | Decyzja właściciela |
+|---|---|---|
+| T1 | odpowiedź udzielona w grze sieciowej bez zasięgu ginie po odświeżeniu telefonu (kolejka `app/sync.js` żyła tylko w RAM) | „Napraw w tej sesji" — odrzucone zarówno zostawienie ograniczenia w dokumentacji, jak i przeniesienie do osobnej fali |
+| T2 | operacje sieciowe każą czekać, a ekran tego nie pokazuje | sygnał ma być widoczny, najchętniej pulsujący; wskazane dwa miejsca: „Sprawdzam repozytorium paczek dla tej okolicy…" i „Pobieram dane sieci drogowej…" |
+| T3 | klik „▶ Graj z tą paczką" czeka kilka sekund | najlepiej wstępne pobieranie paczek w trakcie wyświetlania listy; gdyby się nie dało — pulsujące „Ładowanie paczki" po kliku. Zrobione OBA |
+
+### 2. T1 — kolejka zdarzeń gry sieciowej jest utrwalona (`cef6658`)
+
+Klucz `okolica:multi-kolejka`, schemat `zdarzenia-kolejka/1`
+(`app/wieloosobowa.js`: `walidujKolejkeZdarzen`, `zapisKolejkiZdarzen`,
+`LIMIT_KOLEJKI_ZDARZEN` = 50 najstarszych; wzór: kolejka wyniku hot-seat
+i kolejka ocen). `utworzSynchronizacje` dostaje trzy WSTRZYKNIĘTE uchwyty —
+`wczytajKolejke`, `zapiszKolejke`, `limitKolejki` — więc moduł synchronizacji
+nadal nic nie wie o `localStorage`, a testy jednostkowe wstrzykują tablicę.
+Utrwalony jest każdy ruch kolejki: push przy awarii sieci, shift po wypchnięciu
+i shift po odmowie mostu. Pełna kolejka jest jawną odmową w statusie
+(„stacja zostanie do przejścia jeszcze raz"), nie cichym odrzuceniem.
+
+Kolejność powrotu do gry jest częścią poprawki: `przywrocGreMulti` woła
+`dostarczZalegleZdarzeniaMulti(sesja)` PRZED `pobierzGetMulti`, bo inaczej
+telefon zbudowałby rozgrywkę ze stacją, którą most właśnie domknął (gracz
+widziałby cel, którego już nie ma). Awaria sieci w trakcie wypychania zostawia
+resztę w pamięci — przejmuje ją pierwszy udany krok `sync.js`; odmowa mostu
+kasuje zdarzenie zamiast je ponawiać. Duplikatu nie będzie: most odrzuca drugą
+odpowiedź tego gracza do tej stacji (`przyjmijZdarzenie`
+w `docs/setup/apps-script-repo-paczek.gs`) — to dlatego utrwalenie kolejki jest
+bezpieczne bez zmiany protokołu. Klucz idzie w kosz razem z sesją
+(`usunSesjeMulti`); zapis cudzej gry albo śmieciowy daje pustą listę, nigdy
+wyjątku.
+
+### 3. T2 — czekanie na sieć pulsuje (`cef6658`)
+
+Klasa `.pulsuje` w `app/styles.css` (pierwsza animacja w projekcie):
+przezroczystość 1 → 0,7 → 1, 1,4 s, `ease-in-out`, nieskończona; przy
+`prefers-reduced-motion: reduce` wyłączona, a komunikat zostaje bez ruchu.
+Kontrast MIERZONY `tools/audyt-kontrastu.mjs` (mieszanie kanałów sRGB, nie
+średnia z luminancji) dla najniższej przezroczystości: **5,62:1** w motywie
+jasnym i **8,25:1** w ciemnym — oba powyżej AA 4,5:1 (liczby są w komentarzu
+przy regule, żeby następna fala ich nie zgadywała).
+
+Nosiciele: `status(tekst, { czeka: true })` (`#status`), nowy
+`statusZestawow(tekst, { czeka: true })` (`#zestawy-status` — jeden zapis
+tekstu i sygnału zamiast dziewięciu rozsianych po karcie propozycji) oraz
+nakładka `#stacje-ladowanie`. Pulsują: sprawdzanie repozytorium paczek,
+ponowienie po zimnym starcie mostu, „Pobieram dane sieci drogowej…",
+„Pobieram paczkę z repozytorium…", „Wysyłam zaległe zdarzenia gry…" i „Wracam
+do gry…". Każdy następny komunikat gasi sygnał, więc stan „czekam" nie zostaje
+na ekranie po zakończonej pracy.
+
+### 4. T3 — paczki widoczne na liście schodzą w tle (`cef6658`)
+
+`PAMIETNIK_PACZEK` (url → promise tekstu) + `wstepniePobierzPaczki()` na końcu
+`renderujZestawy()`: pobierane są TYLKO paczki widoczne
+(`LIMIT_ZESTAWOW_NA_LISCIE`, po rozwinięciu listy — wszystkie), a adres pliku
+jest liczony raz (`urlPaczki` kandydata), więc wstępne pobranie i klik idą pod
+ten sam URL. Klik bierze gotowy tekst albo to samo, już rozpoczęte pobranie:
+jedno żądanie na plik, nie dwa; nieudane pobranie wychodzi z pamięci, więc klik
+próbuje jeszcze raz; pamięć jest czyszczona przy każdym odświeżeniu propozycji.
+Paczka `TO-zestaw/1` jest niezmienialna, więc trafienie w pamięć nie grozi
+starymi danymi. Wstępne pobranie NIE zgłasza mostowi niczego — oceny i licznik
+„użyta w X grach" idą jak dotąd dopiero przy prawdziwym kliku (ADR 0028).
+Drugie ramię poprawki: przycisk w trakcie pobierania jest `disabled` i zmienia
+etykietę na „⏳ Ładowanie paczki…" z `.pulsuje` — sygnał i blokada podwójnego
+kliku (podwójne pobranie i podwójne „użycie" paczki) w jednym.
+
+### 5. Testy: 758 → 767 (+9)
+
+- `test/sync.test.js`: utrwalanie przy każdym push/shift, start nowej instancji
+  z `wczytajKolejke` (zdarzenia wychodzą przy pierwszym kroku, FIFO), limit
+  z jawną odmową.
+- `test/wieloosobowa.test.js`: round-trip walidatorów kolejki przez JSON,
+  cudzy `kod`, śmieci (brak listy, wpisy bez schematu/gracza), limit w zapisie.
+- `test/wieloosobowa-ui.test.js`: odpowiedź bez zasięgu → odświeżenie telefonu
+  → zdarzenia wychodzą PRZED stanem gry, pamięć jest czysta, cel to „stacja
+  2 z 3" (nie powtórka stacji 1), punkt jest na moście; oraz odświeżenie WCIĄŻ
+  bez sieci — nic nie wychodzi i nic nie jest kasowane, a po powrocie sieci
+  zdarzenia dochodzą raz.
+- `test/zestawy-ui.test.js`: wstępne pobieranie (plik paczki pobrany bez kliku;
+  klik NIE dokłada drugiego żądania), brak zgłoszeń do mostu przy pobraniu
+  w tle, sygnał czekania na przycisku i statusie mierzony w trakcie wiszącego
+  pobrania.
+- `test/aplikacja.test.js`: pulsowanie nakładki „Pobieram dane sieci drogowej…"
+  i jego zgaśnięcie po odpowiedzi.
+- Poprawiony pin „dokładnie jedna powtórka" (zimny start mostu): liczy żądania
+  INDEKSU, bo wstępne pobieranie dokłada żądanie pliku paczki — pin został tam,
+  gdzie należy.
+- Pin kontraktu „ADR 0019 ma aneks G" czyta teraz archiwum aneksów (patrz niżej)
+  i dodatkowo wymaga wskaźnika w pliku macierzystym.
+
+### 6. Dokumenty i budżet lektury
+
+Aneksy: **ADR 0019 aneks 2026-09-13d** (kolejka zdarzeń; ograniczenie z aneksu
+2026-09-13c jest w nim jawnie ZNIESIONE, żeby dokumenty sobie nie przeczyły),
+**ADR 0011 aneks 2026-09-13d** (widoczne czekanie, liczby kontrastu),
+**ADR 0017 aneks 2026-09-13d** (wstępne pobieranie i jego granice) + trzy
+wiersze rejestru. Nośniki opisowe: `docs/ARCHITECTURE.md` (nowy klucz
+w inwentarzu trwałości i kolejność powrotu do gry) i `docs/ROADMAP.md` (fala
+2026-09-13d w akapicie M11/M12).
+
+Budżet: rezerwa po fali N–S wynosiła **552 tok**, a trzy aneksy kosztowały
+~930 — próg by pękł, więc zanim cokolwiek dopisano, trzy historyczne aneksy
+ADR 0019 (2026-09-12f: ranking wrócił, decyzja w ADR 0039; 2026-09-13: koniec
+ekranu po starcie, uwaga F; 2026-09-13b: koniec gry hosta, uwaga G — razem
+**1 536 tok**) przeniesiono DOSŁOWNIE do
+`docs/decisions/archive/aneksy-0019-2026-09-12f-do-13b.md`, a w pliku
+macierzystym został wskaźnik z datami (mechanizm z LESSONS L62/L66; nazwa bez
+przedrostka `NNNN-`, bo to nie ADR). ADR 0019: 3 852 → 3 014 tok. Budżet po
+fali: **99 372 / 100 000** (rezerwa **628**).
+
+### 7. Bramy, stan końcowy i rzeczy otwarte
+
+`npm run brama` (testy + `synchronizuj-szablon --check` + audyt kontrastu):
+**767/767** testów, oba warianty protokołu zgodne, **0 naruszeń WCAG AA**;
+`npm run budzet` **99 372 / 100 000** (rezerwa 628).
+
+Commity tej sesji: `cf01550` (weryfikacja punktacji N z poprzedniej fali) →
+`cef6658` (T1+T2+T3 z testami) → następny (dokumenty, aneksy, archiwum,
+cache-busting m12-114, ten wpis i handoff).
+
+Otwarte:
+
+1. **Scalenie PR #20** (decyzja właściciela) — Pages poda `?v=m12-114`,
+   a `WERSJA_SW` wymieni cache skorupy, więc telefony podciągną falę bez
+   ręcznego czyszczenia.
+2. **Deployment web app u właściciela** — wisi od PR #19; ta fala mostu NIE
+   zmieniała (utrwalenie kolejki opiera się na ISTNIEJĄCYM odrzucaniu
+   duplikatów odpowiedzi w `przyjmijZdarzenie`).
+3. **Powtórka testu terenowego dwóch telefonów** (WORKFLOW §4.4) — warto
+   przejść scenariusz z utratą zasięgu w chwili odpowiedzi i odświeżeniem
+   telefonu: cel po powrocie to następna stacja, a status mówi o wysłaniu
+   zaległych zdarzeń.
+4. **Budżet: rezerwa 628 tok** — jedna lekcja albo mały aneks; następna fala
+   dokumentowa zaczyna od `npm run budzet` i ma gotowy mechanizm podziału.

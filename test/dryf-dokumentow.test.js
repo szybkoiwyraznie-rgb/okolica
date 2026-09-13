@@ -193,7 +193,7 @@ const MARTWE_FRAZY = [
   {
     fraza: 'pominięcie stacji',
     nosniki: DOKUMENTY,
-    powod: 'akcji pomijania nie ma od zadania H (2026-09-12, ADR 0015 aneks) — wyjściem jest „■ Zakończ grę"',
+    powod: 'akcji pomijania nie ma od zadania H (2026-09-12, ADR 0015 aneks) — wyjściem jest ikona ⚙ START GRY z wpisaniem TAK (ADR 0043)',
   },
   {
     fraza: 'id="karta-wznowienie"',
@@ -234,6 +234,41 @@ const MARTWE_FRAZY = [
     fraza: '.karta-wznowienie {',
     nosniki: UI,
     powod: 'klasa CSS po obu kartach wznowienia usunięta (ADR 0045)',
+  },
+  // Fala 2026-09-13 (uwagi H1 i I, ADR 0043): przycisk „■ Zakończ grę” zniknął
+  // z panelu gry i z Informacji, a koniec gry przeszedł za ikonę ⚙ START GRY
+  // z wpisaniem TAK. Zdania, które wskazywały tamten przycisk, zostały w
+  // tabelach komunikatów (`KODY_POZYCJI`, `stanDojscia`, `onBlad` watchera) i
+  // przeszły przez zieloną bramę — strażnik L58 nie miał frazy z tej fali.
+  {
+    fraza: 'zakończ grę przyciskiem',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'przycisku kończenia gry nie ma od ADR 0043 — grę kończy ikona ⚙ START GRY i wpisanie TAK',
+  },
+  {
+    fraza: 'wgraj paczkę ponownie z pliku',
+    nosniki: UI,
+    powod: 'wczytywania paczki z pliku nie ma od 2026-09-07 (ADR 0006 aneks 3) — paczka przychodzi z repozytorium albo z wklejonej odpowiedzi modelu',
+  },
+  {
+    fraza: 'przyciskiem „Zapisz nowy”',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'bramka tożsamości to imię + PIN i jedno wołanie `profil-ustaw` (ADR 0026) — osobnego przycisku zapisu profilu nie ma',
+  },
+  {
+    fraza: 'Poprzednie gry',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'lokalna historia gier usunięta 2026-09-13 (zgłoszenie terenowe O, ADR 0010 aneks): jedyną drogą powrotu do przerwanej gry jest automatyczne wczytanie zapisu (ADR 0045), a wyniki między grami żyją na wspólnym Drive (ADR 0026 aneks, ranking ADR 0039)',
+  },
+  {
+    fraza: 'Kasuj historię',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'bez lokalnej historii nie ma czego kasować — dwustopniowe kasowanie (ADR 0015 pkt 6) zniknęło razem z kartą na setupie (ADR 0010 aneks)',
+  },
+  {
+    fraza: 'okolica:historia',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'klucz localStorage lokalnej historii gier usunięty (ADR 0010 aneks) — telefon nie trzyma własnej listy gier',
   },
 ];
 
