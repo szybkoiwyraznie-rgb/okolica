@@ -2390,11 +2390,17 @@ function znaczekFactcheck() {
   return s;
 }
 
-function wierszZestawu(opis, etykietaZrodla, akcji, statystyki = '', factcheck = true) {
+/**
+ * Wiersz propozycji paczki. Nazwa zaczyna się OD MIEJSCA (zgłoszenie terenowe P,
+ * 2026-09-13): przedrostek „🌍 repozytorium:" nie mówił nic — wszystkie paczki
+ * na tej karcie są z repozytorium, więc powtarzanie źródła w każdej linii
+ * zabierało miejsce nazwie („Podkowa Leśna · …").
+ */
+function wierszZestawu(opis, akcji, statystyki = '', factcheck = true) {
   const li = document.createElement('li');
   const opisEl = document.createElement('span');
   opisEl.className = 'opis-zestawu';
-  opisEl.textContent = `${etykietaZrodla} ${opis}`;
+  opisEl.textContent = opis;
   if (factcheck) opisEl.append(' ', znaczekFactcheck());
   const przycisk = document.createElement('button');
   przycisk.type = 'button';
@@ -2466,7 +2472,7 @@ function renderujZestawy() {
   lista.replaceChildren();
   const posortowane = [...KANDYDACI_ZESTAWOW].sort(sortujKandydatowZestawow);
   const widoczne = ZESTAWY_ROZWINIETE ? posortowane : posortowane.slice(0, LIMIT_ZESTAWOW_NA_LISCIE);
-  for (const k of widoczne) lista.append(wierszZestawu(k.opis, k.etykieta, k.akcja, k.statystyki, k.factcheck));
+  for (const k of widoczne) lista.append(wierszZestawu(k.opis, k.akcja, k.statystyki, k.factcheck));
   const wiecej = $('przycisk-zestawy-wiecej');
   wiecej.hidden = KANDYDACI_ZESTAWOW.length <= LIMIT_ZESTAWOW_NA_LISCIE;
   wiecej.textContent = ZESTAWY_ROZWINIETE ? 'Zobacz mniej paczek' : 'Zobacz więcej paczek';
@@ -2624,7 +2630,6 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
   const dopasowane = dopasujMetaIndeksu(indeks, kryteria);
   KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
     opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek}`, // I.a: bez licencji (format TO-zestaw/1 ją niesie, opis nie)
-    etykieta: '🌍 repozytorium:',
     akcja: () => grajZZestawemZRepo(meta, urlZrodla),
     // Brak pola `oceny` w indeksie = most sprzed ADR 0028 (nowy zwraca je
     // zawsze, nawet jako zera) — mówimy to wprost, bez obwiniania sieci.

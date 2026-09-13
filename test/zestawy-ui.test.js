@@ -208,7 +208,10 @@ test('zestawy UI: indeks repozytorium dokłada propozycję, a kliknięcie gra be
     const lista = dom.pobierz('zestawy-lista');
     assert.equal(lista.children.length, 1, 'propozycja z repozytorium widoczna na karcie');
     assert.match(lista.children[0].children[0].textContent, /3 stacji × 1 pytań/);
-    assert.match(lista.children[0].children[0].textContent, /repozytorium: Podkowa Leśna/);
+    // Zgłoszenie terenowe P (2026-09-13): nazwa paczki zaczyna się od miejsca,
+    // bez przedrostka „🌍 repozytorium:" (wszystkie paczki na karcie są z repo).
+    assert.match(lista.children[0].children[0].textContent, /^Podkowa Leśna ·/, 'nazwa od miejsca');
+    assert.doesNotMatch(lista.children[0].children[0].textContent, /repozytorium:/, 'przedrostek źródła zniknął');
     assert.match(dom.pobierz('zestawy-status').textContent, /Repozytorium ma paczki/);
     kliknijPierwszyPrzyciskZestawu(dom);
     await new Promise((r) => setTimeout(r, 30));
@@ -586,7 +589,10 @@ test('zestawy UI: paczki z największą liczbą ocen pozytywnych są pierwsze (w
     await new Promise((r) => setTimeout(r, 30));
     const wiersze = dom.pobierz('zestawy-lista').children;
     assert.equal(wiersze.length, 2, 'dwie pasujące paczki z repo (I.b: telefon nie wchodzi na listę)');
-    assert.match(wiersze[0].children[0].textContent, /repozytorium/, 'pierwsza paczka pochodzi z repozytorium');
+    // Zgłoszenie terenowe P (2026-09-13): wiersz zaczyna się OD MIEJSCA —
+    // przedrostka „🌍 repozytorium:" nie ma (źródło paczek na tej karcie jest
+    // jedno, a I.b pilnuje `wiersze.length`: kopie z telefonu nie wchodzą).
+    assert.match(wiersze[0].children[0].textContent, /^Podkowa Leśna ·/, 'nazwa pierwszej paczki zaczyna się od miejsca');
     assert.ok(/78% 👍/.test(wiersze[0].textContent), 'pierwsza paczka ma 7 ocen pozytywnych na 9 głosów (78% 👍)');
     assert.ok(/40% 👍/.test(wiersze[1].textContent), 'druga paczka ma 2 oceny pozytywne na 5 głosów (40% 👍)');
     assert.equal(dom.pobierz('przycisk-zestawy-wiecej').hidden, true, 'przy dwóch paczkach przycisk „więcej" jest schowany');
