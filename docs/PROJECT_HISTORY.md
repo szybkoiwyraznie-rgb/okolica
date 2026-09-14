@@ -5174,3 +5174,43 @@ commitem, od razu wypchniętym.
 Brama na koniec: `npm test` 781/781, `check` OK, `audyt` 0 naruszeń.
 Rzeczy otwarte: uwagi z terenu (pętla z ROADMAP); deployment `.gs`
 u właściciela przy scaleniu PR (most bez zmian od PR #19).
+
+## Sesja 2026-09-14c — uwaga B (dogrywka): twarde wejście w pętlę (gałąź `arena/01a09f7d-okolica`, PR #24, m12-116)
+
+Zlecenie właściciela (teren, zastępuje „czekanie na uwagi”): wejście w pętlę
+dalej złe — gra kazała minąć stację nr 2 (~100 m od startu), żeby dojść do
+nr 1 (~300 m), i wracać tą samą drogą. Żądanie: d(S,2) ≥ d(S,1)+d(1,2).
+
+Diagnoza (sondy, nie zgadywanie): wolne TSP minimalizuje SUMĘ, a nie wejście —
+w 3000 losowych układów pierwsza stacja wolnego TSP w 61% NIE była najbliższa
+startu (przy starcie w środku i stacjach na pierścieniu o remisie rozstrzygają
+mikroróżnice sumy i tie-breaki indeksowe, nie dystans wejścia). Paczka
+z repozytorium w ogóle niosła kolejność autora bez porządkowania
+(`przyjmijZestawDoGry` brał ją wprost). Dodatkowo: literalna nierówność
+z nierówności trójkąta zachodzi TYLKO współliniowo — nie da się jej spełnić
+ogólnie; komentarz w `stacje.js` obiecujący ją jako własność TSP był fałszywy
+(usunięty, fraza `≥ start-1 + 1-2` w martwych w dryfie).
+
+Naprawa (ADR 0005 aneks m12-116): `kolejnoscTrasy` — stacja 1 to ZAWSZE
+najbliższa startu w metryce porządkowania (drogowa, gdy dostępna, inaczej
+kreska), reszta optymalna od niej. Wpięta na WSZYSTKICH ścieżkach: pierścień,
+sieć, wklejka (przed wysyłką na Drive — paczka rodzi się uporządkowana),
+paczka z repo (przy starcie, od bieżącej pozycji). Pytania przepina
+`uporzadkujGre` — tylko pole `stacja`, `id` i `poprawna` nietknięte (głosy
+wiszą na `id`; paczki w grze są już odkodowane, więc rekodowanie zbędne).
+Przestawienie jawne w statusie. Świadomy koszt: trasa bywa o kilka % dłuższa
+od wolnego TSP. Przy okazji: start z paczki kasuje `STAN.wynikSieci` (nieaktualne
+dystanse poprzedniej gry) + O3 z sesji b (martwe zdanie o panelu multi).
+
+Testy: 9 w `stacje.test.js` (przypadek właściciela 100/300/200 z równością
+nierówności, bateria 500 układów „pierwsza zawsze najbliższa”, asymetria
+drogowa, remap/idempotentność), E2E paczki wspak w `zestawy-ui.test.js`
+(gra startuje trasą, pytania za numerami, poprawne działają), pin promptu
+w `aplikacja.test.js` (stacja 1 najbliższa), pin wpięcia w `kontrakt.test.js`,
+martwa fraza w dryfie. Stary test „stacjeProste oddaje kolejność TSP”
+przepisany na nową regułę (pinował zachowanie błędne).
+
+Brama na koniec: `node --test` 793/793, `check` OK, `audyt` 0 naruszeń,
+budżet 97 388/100 000 (rezerwa 2 612). Handoff: `HANDOFF_2026-09-14c.md`.
+Rzeczy otwarte: uwagi z terenu (pętla z ROADMAP); deployment `.gs`
+u właściciela przy scaleniu PR (most bez zmian).
