@@ -5360,4 +5360,4 @@ S14 i komunikat w UI. Zasięg zmierzony: 0/100 centrum, 0/104 przedmieście,
 2/94 las (tam stary układ miał pin w zasięgu trasy). Aneks m12-118 do
 ADR 0005, L70 (+ pełny przypadek w archiwum), testy jednostkowe, regresyjne
 (syntetyczna sieć z chodnikiem wpiętym na 600 m) i własnościowe; wersja
-`?v=m12-118` w 44 miejscach.
+`?v=m12-118` w 43 miejscach (2 w `index.html`, 41 w importach) + `WERSJA_SW`.
