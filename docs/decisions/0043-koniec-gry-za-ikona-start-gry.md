@@ -123,3 +123,42 @@ wpis `zakończ grę przyciskiem` w `test/dryf-dokumentow.test.js`, kontrakt
 „zdania dla gracza o końcu gry nazywają ikonę ⚙ START GRY” (czyta wiersze KODU —
 komentarz-nagrobek L31 może cytować martwą etykietę) oraz piny w
 `test/pozycja.test.js` i `test/wieloosobowa.test.js`.
+
+## Aneks 2026-09-14 (m12-124, uwaga terenowa A) — w setupie ikona ⚙ działa jak oko
+
+Pkt 2 decyzji mówił: „poza grą zachowanie zostaje dawne: z kroku gry wraca na
+mapę startową, spoza niej otwarta setup (F3)". Część „z kroku gry wraca na
+mapę startową" jest ZASTĄPIONA dla ekranów setupu (kroki 1–5: `setup`,
+`multi`, `pozycja`, `stacje`, `prompt`, `paczka`).
+
+**Zgłoszenie z terenu (właściciel, telefon, 2026-09-14):** podczas setupu, na
+ekranie wyznaczania stacji w okolicy, klik ⚙ START GRY w górnej belce wracał
+na mapę startową i zerwał pasek kroki — cała procedura setupu przerywała się,
+ponowny klik nie dawał widocznego efektu, a powrót (ikoną oka) lądował na
+pierwszym ekranie setupu, nie w miejscu, w którym gracz był.
+
+**Decyzja właściciela:** podczas setupu guzik ⚙ START GRY „powinien działać
+dokładnie tak samo jak oko na dole strony — chować layer, przywracać layer
+w tym miejscu setupu w którym jesteśmy".
+
+1. `przelaczSetup()` na ekranach setupu woła
+   `przelaczPodgladMapy({ fokus: 'przycisk-setup' })` — ten sam stan co oko
+   (`STAN.podgladMapy`), ten sam kod: `STAN.ekran` zostaje nietknięty (pasek
+   kroki nie jest zerowany, nie ma powrotu na mapę startową), warstwa jest
+   chowana przez `inert` + `body.podglad-mapy`, a drugi klik ⚙ przywraca ją
+   dokładnie tam, gdzie była (ten sam ekran, ten sam scroll). Jeden stan,
+   dwa wejścia: oko i ⚙ świecą się synchronicznie (`aria-pressed`).
+2. `przelaczPodgladMapy` dostał opcjonalny parametr `fokus` (domyślnie
+   przycisk oka) — ⚙ trzyma fokus na ikonie, w którą gracz kliknął.
+3. **Bez zmian:** w trakcie gry — warstwa końca gry (pkt 1 decyzji); po
+   zakończeniu gry (ekran `gra`, faza `koniec`) — ⚙ wraca na mapę startową
+   jak dawniej; z mapy startowej — otwiera setup.
+4. Tytuł ikony na ekranach setupu mówi „chowa i przywraca warstwę setupu
+   (jak oko)".
+
+**Wdrożenie:** `app/app.js` (`EKRANY_SETUPU`, `przelaczSetup`,
+`przelaczPodgladMapy({ fokus })`, `odswiezStanIkonBelki`) — ?v=m12-124.
+Testy: przepisany F3 w `test/aplikacja.test.js` (stary tor „setup → mapa
+startowa" zakazany asercją — L55) i nowy test uwagi A na ekranie pozycji
+(`STAN.ekran` i kroki nietknięte, powrót na ten sam ekran, nie na pierwszy
+ekran setupu); piny w kontrakcie „ADR 0043".

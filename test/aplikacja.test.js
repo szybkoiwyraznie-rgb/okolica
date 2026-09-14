@@ -67,20 +67,28 @@ test('start: klik w okno je zamyka, a START GRY otwiera setup', () => {
 /**
  * Zgłoszenie właściciela F3 (2026-09-09): ikony ⚙ START GRY i 🏆 Rankingi mają
  * pokazywać stan otwartej warstwy (jak 🔔 Sygnały), a klik w podświetloną ikonę
- * ma tę warstwę zamykać.
+ * ma tę warstwę zamykać. Uwaga terenowa A (2026-09-14, aneks ADR 0043):
+ * na ekranach setupu „zamykanie" oznacza ukrycie warstwy JAK PRZEZ OKO —
+ * bez wyjścia na mapę startową i bez resetu paska kroki (stary tor
+ * „setup → mapa startowa" jest zakazany asercją niżej — L55).
  */
-test('F3: ikona START GRY świeci przy otwartym setupie i zamyka go drugim kliknięciem', () => {
+test('F3 + uwaga A: w setupie ⚙ START GRY chowa warstwę jak oko i przywraca ją w tym samym miejscu', () => {
   // Testy dzielą jedną atrapę DOM, więc ustawiamy stan wyjściowy jawnie
   // i przywracamy go na końcu — kolejne testy zastają otwarty setup.
   if (pobierz('ekran-setup').hidden) dom.kliknij('przycisk-setup');
   assert.equal(pobierz('przycisk-setup').getAttribute('aria-pressed'), 'true', 'ikona świeci nad otwartym setupem');
 
   dom.kliknij('przycisk-setup');
-  assert.equal(pobierz('ekran-setup').hidden, true, 'drugi klik zamyka setup');
-  assert.equal(pobierz('przycisk-setup').getAttribute('aria-pressed'), 'false', 'ikona gaśnie razem z warstwą');
+  assert.equal(pobierz('ekran-setup').hidden, false, 'drugi klik NIE opuszcza ekranu setupu (stary tor „setup → mapa" nie wraca)');
+  assert.equal(pobierz('ekran-setup').inert, true, 'warstwa chowana jest stanem podglądu, dokładnie jak przez oko');
+  assert.equal(dom.document.body.dataset.ekran, 'setup', 'ekran setupu nietknięty — powrót prowadzi do tego samego miejsca');
+  assert.equal(pobierz('przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'true', 'jeden stan podglądu, dwa wejścia: oko i ⚙');
 
-  dom.kliknij('przycisk-setup'); // stan jak przed testem
-  assert.equal(pobierz('ekran-setup').hidden, false, 'setup wraca dla kolejnych testów');
+  dom.kliknij('przycisk-setup'); // trzeci klik — to samo co drugi klik oka
+  assert.equal(pobierz('ekran-setup').hidden, false, 'trzeci klik przywraca warstwę');
+  assert.equal(pobierz('ekran-setup').inert, false, 'warstwa użyteczna po przywróceniu');
+  assert.equal(pobierz('przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'false');
+  assert.equal(pobierz('przycisk-setup').getAttribute('aria-pressed'), 'true', 'ikona świeci nadal — setup jest aktywnym ekranem');
 });
 
 /**
@@ -2872,6 +2880,35 @@ async function naEkranPozycji(zainstalowany, geolokalizacja, sufiks) {
   await import(`../app/app.js?${sufiks}=${Math.random().toString(36).slice(2)}`);
   return domB;
 }
+
+test('uwaga A (2026-09-14): na ekranie „Stacje w Twojej okolicy" ⚙ chowa warstwę jak oko i przywraca ją na tym samym ekranie', async () => {
+  // Zgłoszenie właściciela (telefon): klik ⚙ na ekranie pozycji wracał na mapę
+  // startową i zerwał pasek kroki — procedura setupu była przerwana, ponowny
+  // klik nie dawał efektu, a powrót (ikoną oka) lądował na PIERWSZYM ekranie
+  // setupu. Decyzja: w setupie ⚙ działa dokładnie jak oko — chowa layer i
+  // przywraca layer w tym miejscu setupu, w którym jesteśmy.
+  const gps = atrapaGeolokalizacji();
+  const domP = await naEkranPozycji(zainstalujDom, gps.geolocation, 'uwagaA');
+  domP.kliknij('przycisk-dalej-pozycja');
+  await czekaj(30); // nawigacja jest asynchroniczna (bramka tożsamości)
+  assert.equal(domP.pobierz('ekran-pozycja').hidden, false, 'start: jesteśmy na ekranie pozycji („Stacje w Twojej okolicy")');
+  // Paska kroki nie asertujemy: atrapa nie parsuje HTML (LESSONS L16), więc li
+  // bez id są tu nieosiągalne — reset kroki żył w starym torze (pokazMapeStartowa)
+  // i jest zakazany w kontrakcie źródłowo; zachowanie pinuje `dataset.ekran`.
+
+  domP.kliknij('przycisk-setup');
+  assert.equal(domP.pobierz('ekran-pozycja').hidden, false, 'chowanie warstwy nie opuszcza ekranu (stary tor zerwał procedurę)');
+  assert.equal(domP.pobierz('ekran-pozycja').inert, true, 'warstwa chowana stanem podglądu (jeden stan z okiem)');
+  assert.equal(domP.document.body.dataset.ekran, 'pozycja', 'STAN.ekran nietknięty — procedura nie jest przerywana (stary tor dawał „mapa")');
+  assert.equal(domP.pobierz('przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'true', 'jeden stan podglądu, dwa wejścia: oko i ⚙');
+
+  domP.kliknij('przycisk-setup');
+  assert.equal(domP.pobierz('ekran-pozycja').hidden, false, 'drugi ⚙ wraca na POZYCJĘ — nie na pierwszy ekran setupu');
+  assert.equal(domP.pobierz('ekran-setup').hidden, true, 'setup (ekran 1) nie jest otwierany „przy okazji"');
+  assert.equal(domP.pobierz('ekran-pozycja').inert, false, 'warstwa użyteczna po powrocie');
+  assert.equal(domP.pobierz('przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'false');
+  assert.equal(domP.document.body.dataset.ekran, 'pozycja');
+});
 
 test('bug G: cichy watcher (WebKit bez żadnego callbacku) jest restarowany, a ekran mówi o próbie', async () => {
   // Zgłoszenie terenowe 2026-09-12 (iPhone, Chrome, Pages): watchPosition
