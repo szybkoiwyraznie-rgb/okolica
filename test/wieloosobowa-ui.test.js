@@ -563,6 +563,12 @@ test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy →
   assert.ok(A.dom.wibracje.length >= 1, 'krok odliczania daje sygnał: dźwięk i wibrację (ADR 0041)');
   assert.equal(A.dom.elementy.has('gra-panel-multi'), false,
     'panelu multi NIE MA — po starcie gra wygląda jak hotseat');
+  // uwaga D (2026-09-14): w wyścigu KAŻDA stacja jest dobra, więc żadna nie
+  // jest „bieżącą” — inny kolor mają TYLKO stacje zamknięte przez gracza.
+  const pinezkiWyscig = A.dom.pobierz('mapa-gra-pinezki');
+  assert.ok(pinezkiWyscig.children.length >= 3, 'wyścig: wszystkie stacje widoczne');
+  assert.equal(pinezkiWyscig.children.some((g) => String(g.getAttribute('class')).includes('pinezka-aktywna')), false,
+    'wyścig: żadna pinezka nie jest „aktywna” (uwaga D)');
   await przepompuj(B, 1);
   assert.equal(el(B, 'ekran-gra').hidden, false, 'gość wystartował po odświeżeniu stanu');
   assert.equal(el(B, 'odliczanie').hidden, false, 'gość też odlicza — start jest wspólny');
@@ -1384,6 +1390,11 @@ test('we Wspólnej Trasie nie ma wolnego wyboru stacji — kolejność ustala tr
     'komunikatu trybu w grze nie ma (uwaga F) — tryb mówi lobby, w grze jest jak w hotseat');
   assert.match(tekst(A, 'lobby-tryb'), /Wspólna Trasa/, 'tryb zostaje w lobby');
   assert.equal(tekst(A, 'gra-postep'), 'stacja 1 z 3', 'kolejność narzuca trasa — postęp jak w hotseat');
+  // W trasie (kolejność narzucona) bieżąca stacja MA być wyróżniona —
+  // wyłączenie podświetlenia dotyczy tylko wyścigu (uwaga D).
+  const pinezkiTrasa = A.dom.pobierz('mapa-gra-pinezki');
+  assert.equal(pinezkiTrasa.children.filter((g) => String(g.getAttribute('class')).includes('pinezka-aktywna')).length, 1,
+    'trasa: dokładnie jedna (bieżąca) pinezka jest „aktywna”');
 });
 
 test('ADR 0032: wariant fact-check jedzie w stanie gry, a ekran gry nie dokleja swojej linii (uwaga F)', async () => {

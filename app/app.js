@@ -2312,7 +2312,14 @@ function renderujGre({ panele = true } = {}) {
       ...s,
       zaliczona: zamkniete.has(Number(s.id)),
     }));
-    STAN.mapy.gra.zaznaczStacje(stacjeZFlagami, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
+    // Uwaga D (2026-09-14): w Wyścigu NA Orientację gracz sam wybiera stacje,
+    // więc żadna nie jest „bieżącą” — a jednak mapa podświetlała stację nr 1
+    // (`biezacaStacja` po starcie = pierwsza z listy). Inny kolor mają TYLKO
+    // stacje zamknięte przez TEGO gracza (`pinezka-zaliczona` wyżej). W
+    // Wspólnej Trasie kolejność narzuca trasa, więc wyróżnienie bieżącej
+    // stacji zostaje.
+    const trybWyscigu = STAN.multi?.gra?.tryb === TRYBY_GRY.wyscig;
+    STAN.mapy.gra.zaznaczStacje(stacjeZFlagami, { promienM: STAN.konfig.promienM, aktywna: trybWyscigu ? null : r.biezacaStacja });
   }
   odswiezPasekDrogi();
   odswiezWakeLock(); // ADR 0040 pkt 4: ekran nie gaśnie, dopóki gra trwa
