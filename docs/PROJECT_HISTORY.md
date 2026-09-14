@@ -5506,3 +5506,15 @@ A. **Pytanie właściciela (bez kodu)**: „czy dałoby się nie zoomować htmla
 E e2e; odwrócone dwa piny starej reguły promienia). Bump `?v=m12-121`
 (15 plików + `WERSJA_SW`). Commity: 4197106 (jpg), e88d958 (B), baaf4fc (C),
 1388d0e (D), 2ddbf01 (E), 3a03a94 (?v=), c245fe7 (archiwum).
+
+**Dogrywka A (m12-122), decyzja właściciela „zablokuj":** pytanie o zoom
+zadane z opcjami (zostaw jak jest / blokuj poza mapą) — właściciel wybrał
+blokadę. **ADR 0047**: strona nie jest szczypalna poza mapą — nasłuch
+`gesturestart`/`gesturechange` na dokumencie, `preventDefault` dla celów
+poza `.mapa`; nad mapą gest przechodzi (mapa ma własne sterowanie i
+`touch-action: none`). Powód: Safari iOS wznawia kartę czasem przybliżoną
+i zoomuje wtedy STRONĘ, a meta `user-scalable=no` jest od iOS 10 ignorowane.
+Dostępność: powiększanie UI przez powiększenie systemowe; ADR 0011 dostaje
+znacznik (fragment zastąpiony, reszta w mocy). Budżet: ADR 0047 dopiął
+limit → archiwum ADR 0005 rozszerzone do m12-115–119 (rezerwa 1039 tok).
+811→**812** testów. Bump `?v=m12-122`. Commit 85caf3f.
