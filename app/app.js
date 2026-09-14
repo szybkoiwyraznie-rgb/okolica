@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-114';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-114';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-115';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-115';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-114';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-114';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-114';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-114';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-114';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-114';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-114';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-114';
+} from './protokol.js?v=m12-115';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-115';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-115';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-115';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-115';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-115';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-115';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-115';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-114';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-114';
+} from './zestawy.js?v=m12-115';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-115';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-114';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-114';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-114';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-114';
-import { adresMostu, stanMostu } from './most.js?v=m12-114';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-114';
+} from './sieci.js?v=m12-115';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-115';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-115';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-115';
+import { adresMostu, stanMostu } from './most.js?v=m12-115';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-115';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-114';
+} from './oceny.js?v=m12-115';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -363,10 +363,8 @@ function pokazMapeStartowa() {
     }
   }
   // C: reset scrolla warstwy startowej — po zakończeniu gry warstwa ma otwierać się od początku
-  try {
-    const startEl = document.getElementById('ekran-start');
-    if (startEl) startEl.scrollTop = 0;
-  } catch {}
+  const startEl = document.getElementById('ekran-start');
+  if (startEl) startEl.scrollTop = 0;
   odswiezMapeEkranu('pozycja'); // mapa na spodzie to instancja pozycji
   odswiezStanIkonBelki();
   odswiezWidocznoscPaneli();
@@ -378,7 +376,7 @@ function ukryjStart() {
   const w = $('ekran-start');
   if (w) {
     // C: po zakończeniu gry i ponownym wejściu w Start layer był przewinięty na dół
-    try { w.scrollTop = 0; } catch {}
+    w.scrollTop = 0;
     w.hidden = true;
   }
   document.body.classList.remove('okno-start');
@@ -2272,11 +2270,9 @@ function renderujGre({ panele = true } = {}) {
     // (zgłoszenie terenowe R, 2026-09-13).
     // 2026-09-14 G: zaliczone stacje inny kolor — oznaczamy na podstawie odcinków
     const graSekret = czyTrasaSekret(STAN.multi);
-    const zamkniete = new Set(
-      Object.entries(r.odcinki || {})
-        .filter(([, o]) => o?.stan === 'zakonczony')
-        .map(([sid]) => Number(sid)),
-    );
+    // `odcinki` jest tablicą — ids bierzemy z `o.stacja`, nie z indeksu
+    // (uwaga G, 2026-09-14: Object.entries dawał 0,1,2… zamiast id stacji).
+    const zamkniete = new Set(zaliczoneStacjeIds(r).map(Number));
     let stacjeWidoczne = graSekret
       ? STAN.stacje.filter((s) => Number(s.id) === Number(r.biezacaStacja))
       : STAN.stacje;
@@ -3276,22 +3272,6 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
   zapiszGre();
 }
 
-/**
- * Zgłoszenie właściciela 2026-09-09: między odpowiedzią a wyjściem w drogę były
- * DWA kliknięcia — „Następna stacja →", a po nim jeszcze „▶ Idę do stacji X" na
- * panelu oczekiwania. Na telefonie w marszu to jeden klik za dużo, więc przycisk
- * pod wyjaśnieniem od razu startuje odcinek i mówi, kto i dokąd idzie.
- *
- * Automatu NIE MA tam, gdzie odebrałby graczowi decyzję albo złamał regułę:
- * w wyścigu (ADR 0027 część B: gracz sam wybiera stację) i w turach,
- * gdy droga należy do kogoś innego. Wtedy zostaje stary panel A ze startem.
- */
-function czyStartPoDalej() {
-  // 2026-09-14 F: Wyścig bez wyboru stacji — po pytaniu od razu mapa („Idź dalej ->”)
-  // więc kolejny odcinek też rusza od razu (detekcja dowolnej stacji)
-  return true;
-}
-
 /** Napis na przycisku pod wyjaśnieniem — zależny od fazy PO zapisaniu odpowiedzi. */
 function etykietaPrzyciskuDalej(stan) {
   if (stan.faza === FAZY.koniec) return '🏁 Zobacz wynik →';
@@ -3304,8 +3284,13 @@ function etykietaPrzyciskuDalej(stan) {
 }
 
 /**
- * „Następna stacja/pytanie": domyka pokaz wyjaśnienia, przełącza fazę i — jeśli
- * wolno (patrz `czyStartPoDalej`) — od razu otwiera odcinek, bez drugiego klika.
+ * Zgłoszenie właściciela 2026-09-09: między odpowiedzią a wyjściem w drogę były
+ * DWA kliknięcia — „Następna stacja →", a po nim jeszcze „▶ Idę do stacji X" na
+ * panelu oczekiwania. Na telefonie w marszu to jeden klik za dużo, więc przycisk
+ * pod wyjaśnieniem od razu startuje odcinek.
+ *
+ * Od 2026-09-14 F wyścig też wraca na mapę od razu (detekcja dowolnej stacji,
+ * bez warstwy wyboru) — drugi klik w „▶ Idę do stacji” umarł wszędzie.
  */
 function nastepnaStacja() {
   const r = STAN.rozgrywka;
@@ -3318,14 +3303,10 @@ function nastepnaStacja() {
     return;
   }
   if (świeży.faza === FAZY.odcinek) {
-    // 2026-09-14 F: wyścig — po zamknięciu stacji wracamy do odcinka, który już trwa (wiele w-trakcie)
+    // 2026-09-14 F: wyścig — po zamknięciu stacji wracamy do odcinka, który już trwa
     return;
   }
-  if (świeży.faza === FAZY.przygotowanie) {
-    startOdcinkaGry();
-    return;
-  }
-  if (r.faza === FAZY.przygotowanie && czyStartPoDalej()) startOdcinkaGry();
+  if (świeży.faza === FAZY.przygotowanie) startOdcinkaGry();
 }
 
 /* ----------------------------------------- M6/R6: trwałość i wznowienie gry */
@@ -3478,7 +3459,7 @@ function wznowGre() {
   // Właściciel 2026-09-11 (uwagi terenowe #2): powrót do gry nie może pokazywać
   // międzystrony „Idzie: … ▶ Idę do stacji …" — w fazie przygotowania od razu
   // droga i pasek na dole ekranu (faza przygotowania czeka tylko na gracza).
-  if (r.faza === FAZY.przygotowanie && czyStartPoDalej()) startOdcinkaGry();
+  if (r.faza === FAZY.przygotowanie) startOdcinkaGry();
   zapiszGre(); // świeża kotwica zegara
 }
 
@@ -5095,10 +5076,7 @@ function renderujLobby() {
   lista.replaceChildren();
   for (const g of gra.gracze ?? []) {
     const li = document.createElement('li');
-    // 2026-09-14 E: powiększyć imiona graczy w lobby
-    li.style.fontSize = '22px';
-    li.style.fontWeight = '700';
-    li.style.padding = '10px 0';
+    // 2026-09-14 E: imiona w lobby powiększa CSS (`#lobby-gracze li`), nie inline
     li.textContent = `${g.pseudonim}${g.id === gra.organizatorId ? ' — organizator' : ''}${g.id === m.graczId ? ' (Ty)' : ''}`;
     lista.appendChild(li);
   }
@@ -5602,7 +5580,7 @@ function start() {
   pokazMapeStartowa();
   const start = $('ekran-start');
   if (start) {
-    try { start.scrollTop = 0; } catch {}
+    start.scrollTop = 0;
     start.hidden = false;
   }
   document.body.classList.add('okno-start');

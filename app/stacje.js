@@ -9,8 +9,8 @@
  * Moduł czysty: bez DOM, bez sieci, bez `Math.random()` (losowość z ziarna).
  */
 
-import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js?v=m12-114';
-import { rngZZiarna } from './konfig.js?v=m12-114';
+import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js?v=m12-115';
+import { rngZZiarna } from './konfig.js?v=m12-115';
 
 /** Źródło układu stacji — pokazywane w UI i zapisywane w paczce rozgrywki. */
 export const ZRODLA_STACJI = {
@@ -36,18 +36,18 @@ export const ZRODLA_STACJI = {
  * ≥ start-1 + 1-2 (płynny spacer bez wracania). Optymalna trasa realizuje to
  * jako przypadek szczególny — wybiera kolejność o minimalnej sumie.
  */
-function optymalnaKolejnosc({ srodek, stacje, dystansStart = null, macierz = null }) {
+export function optymalnaKolejnosc({ srodek, stacje, dystansStart = null, macierz = null }) {
   const N = stacje.length;
   if (N <= 1) return [...Array(N).keys()];
   // dystanse
   const dStart = dystansStart ?? stacje.map((s) => odlegloscM(srodek, s));
-  const dMiędzy = [];
+  const dMiedzy = [];
   for (let i = 0; i < N; i++) {
-    dMiędzy[i] = [];
+    dMiedzy[i] = [];
     for (let j = 0; j < N; j++) {
-      if (i === j) { dMiędzy[i][j] = 0; continue; }
+      if (i === j) { dMiedzy[i][j] = 0; continue; }
       const sieciowy = macierz?.[i]?.[j];
-      dMiędzy[i][j] = Number.isFinite(sieciowy) && sieciowy >= 0
+      dMiedzy[i][j] = Number.isFinite(sieciowy) && sieciowy >= 0
         ? sieciowy
         : odlegloscM(stacje[i], stacje[j]);
     }
@@ -62,7 +62,7 @@ function optymalnaKolejnosc({ srodek, stacje, dystansStart = null, macierz = nul
       let najlepszyD = Infinity;
       for (let i = 0; i < N; i++) {
         if (odwiedzone.has(i)) continue;
-        const d = ostatni === -1 ? dStart[i] : dMiędzy[ostatni][i];
+        const d = ostatni === -1 ? dStart[i] : dMiedzy[ostatni][i];
         if (d < najlepszyD - 1e-9 || (Math.abs(d - najlepszyD) < 1e-9 && i < najlepszy)) {
           najlepszyD = d;
           najlepszy = i;
@@ -88,7 +88,7 @@ function optymalnaKolejnosc({ srodek, stacje, dystansStart = null, macierz = nul
       for (let nxt = 0; nxt < N; nxt++) {
         if (mask & (1 << nxt)) continue;
         const nMask = mask | (1 << nxt);
-        const nd = cur + dMiędzy[last][nxt];
+        const nd = cur + dMiedzy[last][nxt];
         if (nd < dp[nMask][nxt] - 1e-9) {
           dp[nMask][nxt] = nd;
           parent[nMask][nxt] = last;
@@ -182,7 +182,7 @@ export function najmniejszyOdstepM(stacje) {
 
 /* =========================== M4: stacje z sieci drogowej (ADR 0005 pkt 5) */
 
-import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js?v=m12-114';
+import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js?v=m12-115';
 
 /** Stałe pierścienia i separacji z ADR 0005 pkt 5 — wszystkie konfigurowalne. */
 export const PIERSCIEN_WYBORU = {

@@ -17,7 +17,7 @@
  * ADR 0014 wycofany). Znaczniki czasu w dzienniku służą tylko kolejności zdarzeń.
  */
 
-import { odlegloscM } from './geo.js?v=m12-114';
+import { odlegloscM } from './geo.js?v=m12-115';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
@@ -292,6 +292,20 @@ export function skierujDoStacji(stan, { stacjaId, czasMs } = {}) {
 export function stacjeDoWyboru(stan) {
   return stan.odcinki
     .filter((o) => o.stan === STANY_ODCINKA.oczekuje)
+    .map((o) => o.stacja);
+}
+
+/**
+ * Identyfikatory stacji z odcinkiem `zakonczony`.
+ *
+ * `odcinki` jest TABLICĄ (`nowaRozgrywka`: `stacje.map(...)`), więc klucz
+ * Object.entries to indeks 0,1,2…, nie `stacja.id`. Pinezki na mapie (uwaga G,
+ * 2026-09-14) muszą czytać `o.stacja` — inaczej stacja 1 nigdy nie dostanie
+ * szarości (id=1 ≠ indeks 0).
+ */
+export function zaliczoneStacjeIds(stan) {
+  return (stan?.odcinki ?? [])
+    .filter((o) => o && o.stan === STANY_ODCINKA.zakonczony)
     .map((o) => o.stacja);
 }
 

@@ -19,6 +19,10 @@ stacji.
 
 ## Status
 
+Kamienie M0–M12 są zamknięte jako zakres kodu (`docs/ROADMAP.md`). Gra jest
+w teście terenowym u właściciela; kolejna praca idzie z uwag, nie z otwierania
+kamieni.
+
 **M1 — geodezja i model rozgrywki: zrobione.** Działa szkielet aplikacji:
 po starcie widać ekran startowy z intro nad mapą, a przygotowanie gry to pięć
 kroków (setup → pozycja → stacje → prompt → paczka) otwieranych przyciskiem
@@ -57,8 +61,6 @@ Oko w prawym dolnym rogu chowa je bez przerywania procesu lub gry.
 Wybory nowego setupu: 7, 12, dorośli; tematy alfabetyczne z Ciekawostkami,
 bez Sportu i Jedzenia. Stare paczki i zapisy pozostają czytelne (ADR 0034).
 Instrukcję promptu rozwija się nagłówkiem; zawiera linki do trzech czatów AI.
-Kamień czeka na weryfikację właściciela: kryterium „pełna
-konfiguracja bez przewijania na 360 px" (`docs/WORKFLOW.md` §4.2).
 
 **M4 — stacje z sieci drogowej: kod i testy gotowe.** Ekran „stacje" liczy
 punkty z prawdziwej sieci dróg, placów i szlaków (Overpass, ADR 0005): jedno
@@ -75,8 +77,6 @@ jest jawna i **automatyczna**: gra schodzi do pierścienia z komunikatem
 (przeciąganie pinezek, dystans tylko w linii prostej) — aplikacja nigdy nie
 udaje, że punkty są osiągalne. Przycisk wymuszający pierścień zniknął z ekranu
 (decyzja właściciela 2026-09-11), a kontrakt pilnuje jego braku.
-Kamień czeka na kryterium terenowe: jedną prawdziwą okolicę na telefonie
-(`docs/WORKFLOW.md` §4.2).
 
 **M5 — pętla pytań: kod i testy gotowe.** Ekran promptu ma instrukcję
 obrazkową (cztery kroki jako inline SVG, zero plików zewnętrznych),
@@ -89,8 +89,6 @@ promptu jest pobierana ZAWSZE z tego samego zapytania Overpass (`is_in`) — bez
 przełącznika (usunięty w Partii 2), bez zapasowej warstwy Nominatim (wyleciała
 z kodu wraz z przełącznikiem, poprawka z terenu 2026-09-11) i bez pytania
 o zgodę na dodatkowego dostawcę map (ADR 0013 pkt 3).
-Kamień czeka na kryterium właściciela: pełna pętla z prawdziwym modelem
-(`docs/WORKFLOW.md` §4.2).
 
 **M6 — rozgrywka: kod i testy gotowe.** Gra jest klikalna od setupu do
 wyniku: jeden ekran gry z czterema panelami faz („kto idzie" → odcinek z mapą
@@ -105,9 +103,7 @@ Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji i przy zamknięciu kart
 odświeżenie aplikacji wraca do ostatniego zapisu samo, bez banera i bez kliku
 (ADR 0045), a zegar odcinka jest rebazowany tak, że czas zamknięcia karty nie
 wlicza się do wyniku (ADR 0004 pkt 3). W trybie testowym (`?test=true`) dojście można
-rozegrać symulacją trasy — gra bez GPS. Kamień czeka na kryterium terenowe
-właściciela: pełna gra na telefonie, z utratą zasięgu w trakcie i z
-zamknięciem przeglądarki (`docs/WORKFLOW.md` §4.2).
+rozegrać symulacją trasy — gra bez GPS.
 
 **M7 — podsumowanie i punkty: kod i testy gotowe.** Po końcu gry (naturalnym
 albo ręcznym) panel wyniku pokazuje MINIMUM (ADR 0038): kto wygrał z 🏆 (imię,
@@ -119,10 +115,8 @@ także cały slot sterowania grą. W wysyłce na Drive nie ma treści pytań ani
 współrzędnych — pilnują tego testy-strażnicy. Lokalnej historii gier na
 telefonie NIE MA (zgłoszenie terenowe właściciela 2026-09-13, ADR 0010 aneks):
 wynik zakończonej gry jedzie na wspólny Drive, a jedyną drogą powrotu do
-przerwanej gry jest automatyczne wczytanie zapisu (ADR 0045). Kamień czeka na JEDNO kryterium terenowe
-właściciela: czytelność w słońcu na 360 px (`docs/WORKFLOW.md` §4.2) —
-kryterium „eksport na Chrome Android i Safari iOS” odpadło razem z eksportami
-(ADR 0038; `docs/ROADMAP.md` §Kryteria zawężony 2026-09-12).
+przerwanej gry jest automatyczne wczytanie zapisu (ADR 0045). Kryterium „eksport na Chrome Android i Safari iOS” odpadło
+razem z eksportami (ADR 0038).
 
 ## Uruchomienie lokalne
 

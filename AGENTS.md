@@ -36,7 +36,7 @@ siebie: znasz `wc -l` pliku i wiesz, że dotarłeś do ostatniej linii.
    Pełne opisy przypadków: `docs/LESSONS_ARCHIVE.md` — poza budżetem, czytasz
    punktowo, gdy wchodzisz w temat lekcji.
 5. **`docs/setup/ENVIRONMENT.md`** — stałe ograniczenia sandboxa / gita / sieci.
-6. **`docs/ROADMAP.md`** — w którym kamieniu milowym jesteśmy.
+6. **`docs/ROADMAP.md`** — zakres M0–M12 jest zamknięty; otwarta jest pętla uwag z terenu.
 7. **Najnowszy `docs/setup/HANDOFF_*.md`** — skrót JEDNEJ sesji: stan na koniec
    i rzeczy otwarte. Nie jest źródłem zasad.
 
@@ -96,8 +96,9 @@ Ponadto:
 - **Pytanie do właściciela tylko gdy praca jest zablokowana** decyzją spoza
   kompetencji agenta (architektura, sprzeczność ADR, nowa granica §4, wydatek/
   klucz API, prywatność użytkowników). **Nie pytaj „co robimy?"** — bez zaległości
-  i zlecenia bierzesz najwyższy nieukończony kamień z `docs/ROADMAP.md` (pomysły
-  spoza roadmapy najpierw do `docs/BACKLOG.md`).
+  i zlecenia **czekasz na uwagi z terenu**. Kamienie M0–M12 są zamknięte jako
+  zakres kodu (`docs/ROADMAP.md`). Nie bierz M3 „bo jest najwyższy". Pomysły
+  spoza zakresu najpierw do `docs/BACKLOG.md`.
 - **Praca istnieje dopiero po `git push`** (dlaczego: ENVIRONMENT §1).
   Commituj i pushuj po każdym zielonym kroku.
 - **Obowiązkowy blok na koniec sesji:** instrukcja przekazania w czacie + trwała
@@ -189,7 +190,8 @@ i oznacz stary *Zastąpiona*.
 - Dane i build są deterministyczne: bez `Date.now()` w treści generowanych
   plików, sortowanie jawne.
 - Zmianę weryfikuj **na żywo**, nie tylko testem: serwer na `0.0.0.0` + live
-  preview; przy UI mobilnym 360 px i palec (drag, pinch, tap).
+  preview; przy UI mobilnym palec (drag, pinch, tap). Właściciel gra na iPhonie
+  — nie zamykaj kamienia checklistą 360 px.
 - Przy zmianie kodu sprawdź, czy zaktualizować: ROADMAP, ARCHITECTURE, WORKFLOW,
   PROTOKOL, ADR, README. Przy USUWANIU funkcji zrób to samo w drugą stronę:
   grep po nośnikach żywych (`index.html`, `app/*.js` z komentarzami, `sw.js`,

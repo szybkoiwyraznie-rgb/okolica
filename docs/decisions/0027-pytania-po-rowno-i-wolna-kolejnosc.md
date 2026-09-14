@@ -152,3 +152,15 @@ Reguła nadal żyje w dwóch miejscach (`app/wieloosobowa.js` i
 oraz `test/wieloosobowa.test.js` (pule dla 1/2/3/4/5 grających i rezygnacja
 w trakcie). Zdanie o punktacji w UI (`#multi-punktacja`) mówi wprost
 o zależności od liczby grających — pin w `test/kontrakt.test.js`.
+
+## Aneks 2026-09-14 (m12-115, uwaga F) — Wyścig bez warstwy wyboru stacji
+
+Pkt 2 części B („gracz wybiera dowolną niezaliczoną stację”) zostaje jako
+**reguła silnika**: telefon wykrywa dojście do dowolnej stacji, której ten
+gracz jeszcze nie zaliczył. Warstwa `#multi-wybor-stacji` i drugi klik
+„▶ Idę do stacji” umarły — po pytaniu przycisk „Idź dalej ->” wraca od razu
+na mapę, a kolejny odcinek rusza sam (`nastepnaStacja` / `wznowGre` bez
+bramki). Pasek dolny w wyścigu mówi „Jacek. Stacja 3/5” zamiast dystansu.
+`renderujWyborStacji()` to no-op. Punktacja, premia i pytanie per indeks
+gracza bez zmian.
+

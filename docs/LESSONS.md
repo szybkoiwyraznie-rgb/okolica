@@ -549,3 +549,11 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Reguła:** utrwalając kolejkę wysyłki, wstaw jej wypchnięcie PRZED pierwszy odczyt stanu i pinuj to liczbą widoczną dla gracza (cel = NASTĘPNA stacja, nie powtórka). Warunek bezpieczeństwa ponowienia (serwer odrzuca duplikaty) zapisz w ADR jako warunek, nie jako zbieg okoliczności. Pin liczący żądania zawężaj do jego celu (`wywolania.filter(...)` po adresie albo akcji), a dokładając żądanie w tle przegrepuj testy pod kątem `wywolania.length`.
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L67`.
+
+## L68 (2026-09-14) — kamienie M0–M12 nie czekają na 360 px ani na pierwsze wdrożenie mostu
+
+**Objaw:** każdy kolejny agent powtarzał „M3–M12 czekają na kryteria terenowe / 360 px / nowy deployment web app” i brał M3 z ROADMAP, choć gra była od wielu PR w teście u właściciela.
+**Przyczyna:** żywe dokumenty (ROADMAP 🟡, AGENTS §2 „najwyższy nieukończony kamień”, WORKFLOW §4.2 jako bramka) nigdy nie zdjęły statusu czekania, mimo fal testów A–H, N–S, T1–T3.
+**Reguła:** kamienie M0–M12 są zamknięte jako zakres kodu. Brak zlecenia po audycie = czekaj na uwagi z terenu. Nie przypominaj o 360 px ani o „pierwszym wdrożeniu” mostu (właściciel wgrywa `.gs` przy PR). Nie bierz M3 z ROADMAP.
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L68`.

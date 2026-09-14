@@ -416,6 +416,18 @@ test('planMapy numeruje pinezki od 1 i oznacza tylko aktywną stację', () => {
   }
 });
 
+test('planMapy: zaliczona stacja dostaje flagę (uwaga G, 2026-09-14)', () => {
+  const lista = stacje(3, 300).map((s, i) => ({ ...s, zaliczona: i === 0 }));
+  const plan = planMapy({
+    widok: widok(15),
+    rozmiar: PANEL,
+    stacje: lista,
+    aktywnaStacja: lista[1].id,
+  });
+  assert.deepEqual(plan.pinezki.map((p) => p.zaliczona), [true, false, false]);
+  assert.equal(plan.pinezki[1].aktywna, true, 'aktywna nie gubi się przy zaliczonej sąsiadce');
+});
+
 test('planMapy: `numer` stacji ma pierwszeństwo przed indeksem (zgłoszenie terenowe N, 2026-09-13)', () => {
   // Powrót do gry sieciowej rysuje tylko NIEZAMKNIĘTE stacje: bez własnego
   // numeru cel gracza, który zamknął stację 1 i idzie do stacji 2, dostałby
@@ -677,6 +689,20 @@ test('zaznaczStacje rysuje numerowane pinezki z identyfikatorem i klasą aktywne
   const okregi = dom.pobierz(`${ID}-okregi`);
   assert.deepEqual(okregi.children.map((c) => c.getAttribute('class')), ['okrag-dokladnosc', 'okrag-promien']);
   assert.ok(Number(okregi.children[1].getAttribute('r')) > Number(okregi.children[0].getAttribute('r')));
+  mapa.zniszcz();
+});
+
+test('zaznaczStacje: zaliczona pinezka ma klasę pinezka-zaliczona (uwaga G, 2026-09-14)', () => {
+  const dom = zainstalujDom();
+  const mapa = utworzMape({ id: ID, srodek: WARSZAWA, zoom: 15, doc: dom.document });
+  const pinezki = dom.pobierz(`${ID}-pinezki`);
+  const lista = stacje(3, 300).map((s, i) => ({ ...s, zaliczona: i === 0 }));
+  mapa.zaznaczStacje(lista, { promienM: 800, aktywna: 'stacja-2' });
+  assert.match(pinezki.children[0].getAttribute('class'), /pinezka-zaliczona/, 'zaliczona jest szara');
+  assert.equal(pinezki.children[0].getAttribute('class').includes('pinezka-aktywna'), false);
+  assert.match(pinezki.children[1].getAttribute('class'), /pinezka-aktywna/);
+  assert.equal(pinezki.children[1].getAttribute('class').includes('pinezka-zaliczona'), false);
+  assert.equal(pinezki.children[2].getAttribute('class'), 'pinezka');
   mapa.zniszcz();
 });
 
