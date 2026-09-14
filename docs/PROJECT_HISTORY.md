@@ -5564,8 +5564,12 @@ wersja m12-122 w 43 miejscach + `WERSJA_SW`.
    historycznych w `app/konfig.js` (3) i `app/app.js` (3) opisujących pracę
    **m12-120 (PR #27)** zostało przepisanych na m12-122. Testy nietknięte
    (słusznie dalej m12-120). **Naprawione w tej sesji** (commit 989edcf:
-   etykiety przywrócone; `?v=m12-123` w 43 miejscach + `WERSJA_SW` — reguła
-   „każda zmiana app/*.js"; 812/812 zielonych).
+   etykiety przywrócone; `?v=m12-123` + `WERSJA_SW` — reguła „każda zmiana
+   app/*.js"). Po drodze własna usterka: 989edcf objął `git add`em tylko 4 z
+   15 plików podbicia (lista plików z pamięci — dokładnie sytuacja L29);
+   uzupełnienie w commicie 45a87d5 (11 modułów, wyłącznie ?v=). Po
+   uzupełnieniu: jedna wersja m12-123 w 43 miejscach + WERSJA_SW; brama
+   812/812 przeszła na tym drzewie.
 8. Dokumenty (c245fe7, fa5498c, db80266, 4eaa9db): archiwum aneksów ADR 0005
    poszerzone o m12-119 (`aneksy-0005-2026-09-14-m12-115-do-119.md`),
    wskaźnik w ADR 0005, kontrakty przepisane na czytanie archiwum (L62/L66);
