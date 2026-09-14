@@ -5448,3 +5448,61 @@ w handoffie 2026-09-14f (6, 8, 9, 7) — kosmetyka dokumentu jednorazowego.
 
 Po audycie brak zlecenia — kolejka pracy to uwagi z terenu (ROADMAP „Co jest
 otwarte", LESSONS L68).
+
+## Sesja 2026-09-14h — uwagi terenowe A–E, m12-121 (gałąź `arena/01a0a155-okolica`, PR #28)
+
+Właściciel potwierdził w terenie fix m12-119/120 („Na razie fix działa!!!")
+i przysłał falę uwag A–E + zlecenie usunięcia starego zrzutu. Brama na
+wejściu **809/809**. Budżet lektury: po dopisaniu ADR 0046 przekroczony
+(100 634) → archiwizacja wg L62/L66: aneksy ADR 0005 m12-115–117 do
+`docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-117.md`
+(wskaźnik w ADR 0005, testy kontraktowe czytają archiwum) → **99 839/100 000**.
+
+0. **W1 domknięte przez usunięcie**: `mapa stacje.jpg` skasowany (commit
+   4197106); wzmianki w historii/handoffach zostają (zapis zmiany).
+B. **Czekanie ma puls (B1+B2)**: klik „▶ Graj z tą paczką" przy grze
+   sieciowej gasł po pobraniu pliku, a POST `gra-zaloz` na zimnym moście
+   trwał 5–10 s w ciszy. Teraz `przyjmijZestawDoGry` OCZEKAWA na
+   `zalozGreMulti` — przycisk przez całe zakładanie mówi „⏳ Ładuję paczkę…"
+   (brzmienie właściciela), pulsuje i nie przyjmuje drugiego kliku aż do
+   lobby. Statusy „Zakładam grę…/Dołączam do gry…/Startuję grę…" pulsują
+   (`czeka:true`). Lobby: „Pobieram listę gier…" — bez „z mostu Drive",
+   pulsowanie jak każde oczekiwanie; fraza w strażniku dryfu.
+C. **Promień jest kryterium dopasowania (ADR 0046)** — odwrócenie fragmentu
+   aneksu ADR 0024 (2026-09-07): przy promieniu 1000 m repozytorium
+   oferowało paczkę urodzoną w 500 m i jej stacje „nadpisywały" ustawienia.
+   Równość paczka↔setup bez tolerancji; niepasujące renderują się jak inne
+   niepasujące (poza listą, powód nazwany wprost). `powodyNiedopasowania`
+   porównuje `promienM` gdy obie strony mają liczbę; fixtura `zasiejZestaw`
+   liczy promień tak samo jak setup telefonu.
+D. **Wyścig: żadna pinezka nie jest „aktywna"** — `biezacaStacja` po starcie
+   wskazuje pierwszą stację z listy i mapa podświetlała ją innym kolorem,
+   choć w wyścigu gracz sam wybiera cel. W wyścigu podświetlenie wyłączone
+   (`aktywna: null`); inny kolor mają TYLKO stacje zamknięte przez TEGO
+   gracza (`pinezka-zaliczona`). Wspólna Trasa bez zmian (kontrtest: dokładnie
+   jedna aktywna).
+E. **Poważny bug: stara gra sieciowa odradzała się z pollingu.** Po grze
+   sieciowej i „🏠 Wróć na początek" w trakcie wyboru następnej gry sam
+   włączało się odliczanie i wracała poprzednia gra (3×, gasił dopiero
+   restart Chrome). Mechanizm: rezygnacja (⚙+TAK → `rezygnujZGryMulti`)
+   zostawia synchronizację żywą celowo (wspólna tabela), a „Wróć na początek"
+   czyścił rozgrywkę BEZ kończenia synchronizacji → najbliższy krok pollingu
+   widział „trwa + brak rozgrywki" i wpychał starą grę z odliczaniem
+   (`onStanGryMulti` → `uruchomGreMulti` → `odliczStartGry`); gra na moście
+   faktycznie jeszcze trwała (inni grają dalej, uwaga G). Naprawa u źródła,
+   dwie warstwy: znak `m.zrezygnowano` + strażnik w `onStanGryMulti`
+   (niezmiennik: gra, z której ten telefon wyszedł, nigdy nie odradza się
+   z pollingu) oraz „Wróć na początek" kończy kontekst sieciowy
+   (`zatrzymajSyncMulti` + `STAN.multi = null` + ostatnie wypchnięcie
+   zaległych zdarzeń). Wspólna tabela w trakcie oglądania wyników działa
+   jak dotąd. Test e2e czerwony bez obu warstw, zielony z każdą z osobna.
+A. **Pytanie właściciela (bez kodu)**: „czy dałoby się nie zoomować htmla
+   poza mapą?" — konflikt z ADR 0011 (aplikacja celowo szczypalna,
+   dostępność; mapa ma `touch-action:none`). Opcje przedstawione właścicielowi
+   na końcu sesji (iOS ignoruje `user-scalable=no` — realna droga to blokada
+   gestów poza `.mapa` albo pozostawienie jak jest).
+
+809→**811** testów zielonych (nowe: B1+B2 e2e, asercje D w wyścigu i trasie,
+E e2e; odwrócone dwa piny starej reguły promienia). Bump `?v=m12-121`
+(15 plików + `WERSJA_SW`). Commity: 4197106 (jpg), e88d958 (B), baaf4fc (C),
+1388d0e (D), 2ddbf01 (E), 3a03a94 (?v=), c245fe7 (archiwum).
