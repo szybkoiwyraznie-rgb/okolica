@@ -948,7 +948,8 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   for (const id of [
     'ekran-multi', 'karta-multi', 'multi-panel-dolacz', 'multi-panel-lobby',
     // ADR 0044 (uwaga F): po starcie gra wygląda jak hotseat, a start odlicza
-    'odliczanie', 'odliczanie-cyfra', 'multi-wybor-stacji', 'multi-wybor-przyciski',
+    // 2026-09-14 F: wybór stacji usunięty — wyścig wykrywa dotarcie do dowolnej
+    'odliczanie', 'odliczanie-cyfra',
     // segmenty na setupie: rodzaj gry, ścieżka multi, tryb + trasa-sekret
     'lista-rodzajow', 'rodzaj-opis', 'multi-sciezka', 'multi-sciezka-opis',
     'pole-multi-tryb', 'multi-tryby', 'multi-tryb-opis', 'pole-trasa-sekret', 'multi-trasa-sekret', 'multi-punktacja',
@@ -1609,7 +1610,7 @@ test('kontrakt ADR 0044: start gry wieloosobowej odlicza 5-4-3-2-1-START, a pote
     'każdy krok gra sygnał — ostatni inny niż tykanie (plan w app/sygnaly.js)');
   assert.match(APP, /if \(STAN\.odliczanieAktywne\) return; \/\/ jeden start = jedno odliczanie/,
     'odliczanie się nie nakłada (polling może przynieść stan kilka razy)');
-  assert.match(APP, /\} finally \{\n {4}warstwa\.hidden = true;\n {4}cyfra\.textContent = '';\n {4}STAN\.odliczanieAktywne = false;/,
+  assert.match(APP, /\} finally \{\n {4}warstwa\.hidden = true;\n {4}cyfra\.textContent = '';/,
     'warstwa znika po STARcie także wtedy, gdy krok się wywróci');
 
   // 3. Odliczają WSZYSTCY — host od swojego kliku, goście od stanu z mostu.
@@ -1622,20 +1623,15 @@ test('kontrakt ADR 0044: start gry wieloosobowej odlicza 5-4-3-2-1-START, a pote
   assert.match(APP, /uruchomGreMulti\(gra, \{ odliczanie: !STAN\.wznawiamMulti \}\);/,
     'decyzja o odliczaniu zapada w jednym miejscu (stan z mostu)');
 
-  // 4. Wybór stacji w Wyścigu PRZEPROWADZIŁ SIĘ do panelu fazy A — tam, gdzie
-  //    hotseat ma „▶ Idę do stacji" (mechanika ADR 0027 B zostaje, karta znika).
-  // Wycinek od panelu fazy A do panelu fazy B (RegExp z `*?</div>` urwałby się
-  // na PIERWSZYM zagnieżdżonym `</div>` — czyli na bloku wyboru stacji).
-  const fazaA = INDEX.slice(INDEX.indexOf('id="gra-panel-oczekuje"'), INDEX.indexOf('id="gra-panel-odcinek"'));
-  assert.ok(fazaA.length > 0 && fazaA.includes('id="przycisk-start-odcinka"'), 'wycinek fazy A obejmuje jej przycisk');
-  assert.ok(fazaA.includes('id="multi-wybor-stacji"'), 'wybór stacji mieszka w panelu fazy A');
-  assert.ok(fazaA.indexOf('id="gra-cel-stacji"') < fazaA.indexOf('id="multi-wybor-stacji"')
-    && fazaA.indexOf('id="multi-wybor-stacji"') < fazaA.indexOf('id="przycisk-start-odcinka"'),
-    'kolejność: cel stacji → wybór stacji → „▶ Idę do stacji"');
-  assert.match(APP, /function renderujWyborStacji\(\) \{\n {2}const gra = STAN\.multi\?\.gra;/,
-    'wybór stacji czyta stan sam — nie jest już częścią panelu multi');
-  assert.match(APP, /if \(STAN\.multi\) renderujWyborStacji\(\);/,
-    'render gry odświeża wybór stacji (zamiast dawnego renderujPanelMulti)');
+  // 4. Wybór stacji w Wyścigu USUNIĘTY (2026-09-14 F): gracz sam decyduje,
+  //    app wykrywa dotarcie do dowolnej niezaliczonej — warstwa #multi-wybor-stacji
+  //    nie istnieje, a pasek dolny pokazuje „Jacek. Stacja 3/5".
+  assert.ok(!INDEX.includes('id="multi-wybor-stacji"'), 'warstwa wyboru stacji usunięta (F)');
+  assert.ok(!INDEX.includes('id="multi-wybor-przyciski"'), 'przyciski wyboru stacji usunięte (F)');
+  assert.match(APP, /function renderujWyborStacji\(\) \{\n {2}\/\/ no-op — wybór stacji usunięty/,
+    'renderujWyborStacji to no-op po usunięciu warstwy');
+  assert.match(APP, /Jacek\. Stacja 3\/5/,
+    'pasek dolny w wyścigu: „Jacek. Stacja 3/5" zamiast dystansu (F)');
 
   // 5. Pasek synchronizacji został TYLKO w lobby.
   assert.match(APP, /\$\('multi-sync-pasek'\)\.textContent = tekst;\n\}/,

@@ -72,6 +72,12 @@ w OSM nie ma historii, legend ani kultury.
 0001 (bez zależności/backendu), 0007 (ukrywanie paczki), 0008 (kwerenda
 i źródła), 0010 (trwałość paczki), 0011 (mobile-first).
 
+## Aneksy 2026-09-09 … 2026-09-09 (druga tura) są w archiwum (poza budżetem lektury)
+
+Historia tego ADR — wklejenie jednym przyciskiem (2026-09-09) oraz odwrót pola (2026-09-09, druga tura) — leży w
+`docs/decisions/archive/aneksy-0006-2026-09-09.md`, poza budżetem lektury startowej (AGENTS.md §0; LESSONS L62). Zawiera aneksy z dat: 2026-09-09, 2026-09-09. Obowiązujące aneksy są niżej: 2026-09-07 (koniec edycji) i 2026-09-09 (trzecia tura, wklejenie jest zatwierdzeniem).
+
+
 ## Aneks (2026-09-07): pkt 8 bez ścieżki w interfejsie
 
 Decyzja właściciela: poprawna paczka OD RAZU zaczyna grę, a z ekranu zniknęły
@@ -80,69 +86,6 @@ podgląd „tylko dla organizatora" i edycja — przegląd treści odbywa się n
 `app/protokol.js`; pole `modyfikacje[]` zostaje w schemacie (PROTOKOL §3.1)
 jako miejsce na poprawki wniesione poza aplikacją.
 
-## Aneks 2026-09-09 — wklejenie jednym przyciskiem, treść poza ekranem
-
-Właściciel: „Pole do wklejenia treści z AI jest za duże i zachęca do
-podglądania — im mniej będzie widać tym lepiej — najlepiej jakby był sam guzik
-→ [Prześlij skopiowaną odpowiedź ze schowka] który by zawartość schowka od razu
-wklejał i przesyłał, bez pokazywania na tym ekranie. Da się?"
-
-Da się i to jest lepsze rozwiązanie niż dotychczasowe. Ekran 5 obsługuje
-organizator, często przy graczach — `<textarea rows="10"> `z pytaniami
-i odpowiedziami była największym oknem podglądu w całej aplikacji, a przy tym
-zbędnym: treść i tak leci prosto do walidatora.
-
-**Decyzja.**
-
-1. Główna droga to jeden przycisk pełnej szerokości. `wklejZeSchowkaISprawdz()`
-   czyta `navigator.clipboard.readText()` i przekazuje tekst **bezpośrednio** do
-   `sprawdzOdpowiedz(tekst)`. Treść nie trafia do `#pole-odpowiedz` ani na
-   moment — nie da się jej podejrzeć przez ramię ani odzyskać z DOM.
-2. Pole tekstowe i import z pliku **zostają** (pkt 6 powyżej to nie kaprys:
-   schowek bywa zablokowany), ale są zwinięte w `<details>` z ostrzeżeniem, że
-   tędy treść JEST widoczna. Odmowa schowka otwiera tę sekcję automatycznie
-   i mówi, co zrobić (L6: zero cichych porażek).
-3. Ostrzeżenie „tekst jest jawny i nie jest zaszyfrowany" (ADR 0007 pkt 5,
-   pinowane testem kontraktu) przeniesione do sekcji zapasowej — na głównej
-   drodze nic się nie wyświetla, więc ostrzeżenie o widoczności byłoby tam
-   nieprawdziwe.
-
-**Czego to NIE zmienia:** walidacja, kody usterek, poprawka dla modelu
-i automatyczny start gry po przyjęciu paczki działają identycznie — zmieniła się
-wyłącznie droga, którą tekst dociera do `sprawdzOdpowiedz`.
-
-## Aneks 2026-09-09 (druga tura) — odwrót: pole wraca, schowek schodzi do roli pomocnika
-
-Poprzedni aneks nie przetrwał kontaktu z telefonem właściciela: „ta zmiana z
-wklejaniem pytań od AI jednym przyciskiem chyba nie zadziała, bo przeglądarka to
-blokuje — mam napis: Przeglądarka nie dała dostępu do schowka\".
-
-To nie jest usterka do naprawienia, tylko granica platformy. `navigator.clipboard
-.readText()` wymaga bezpiecznego kontekstu, aktywnego gestu i zgody — a część
-przeglądarek mobilnych odmawia niezależnie od tego wszystkiego (pkt 6 tego ADR
-przewidywał to od początku; błędem było oparcie na tej ścieżce **jedynej** akcji
-ekranu). Droga awaryjna ukryta w `<details>` okazała się drogą główną, tyle że
-schowaną przed użytkownikiem, który jej właśnie potrzebował.
-
-**Decyzja (zastępuje pkt 1–3 poprzedniego aneksu):**
-
-1. Wklejanie wraca do pola tekstowego `#pole-odpowiedz` + przycisk „✓ Sprawdź
-   i przyjmij\" — droga, która działa **zawsze**, bo wklejenie palcem jest gestem
-   użytkownika, nie żądaniem API.
-2. Prywatności pilnuje **wysokość pola: `rows="3"` plus `resize: none`**.
-   Właściciel: „możesz je zmniejszyć tylko do trzech wierszy, wtedy i tak nic nie
-   widać poza uwagami\". Trzy wiersze monospace mieszczą nagłówek JSON-a; treści
-   pytań nikt przez ramię nie przeczyta, a organizator widzi, że coś wkleił.
-3. „📋 Wklej ze schowka\" zostaje jako **wygoda**: wypełnia pole, nie waliduje
-   samo z siebie. Odmowa schowka nie blokuje niczego — status mówi „wklej treść
-   palcem (przytrzymaj pole powyżej) albo wczytaj z pliku\", a pole jest tuż obok.
-4. Ostrzeżenie „nie jest zaszyfrowany\" (ADR 0007 pkt 5, pin w teście kontraktu)
-   wraca na główny opis ekranu, bo znowu jest prawdziwe.
-
-**Reguła na przyszłość:** funkcja przeglądarki, której użytkownik nie może
-wymusić (schowek, powiadomienia, orientacja, pełny ekran), może **ulepszać**
-ścieżkę, ale nigdy nie może być jedyną drogą do celu. Test „ekran 5: zablokowany
-schowek NIE zatrzymuje ekranu\" pilnuje, że droga główna działa mimo odmowy.
 
 
 ## Aneks 2026-09-09 (trzecia tura) — wklejenie JEST zatwierdzeniem; koniec importu z pliku
@@ -177,3 +120,4 @@ z telefonem w jednej ręce.
 **Czego to NIE zmienia:** kody usterek, poprawka dla modelu, automatyczny start
 gry po przyjęciu i czyszczenie pola po walidacji (ADR 0007 pkt 4) bez zmian.
 Prywatności ekranu nadal pilnuje wysokość pola (`rows="3"`, `resize: none`).
+

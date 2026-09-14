@@ -123,17 +123,17 @@ export function metryNaPiksel(lat, z) {
 /**
  * Sufit przybliżenia widoku (m) — decyzja właściciela 2026-09-12 po testach
  * terenowych: „Musi być jakiś sufit przybliżenia niezależnie od promienia —
- * np. taki przypisany do 1000 m promienia”.
+ * np. taki przypisany do 1000 m promienia”, korekta 2026-09-14 (uwaga A):
+ * „szerokość telefonu (pion) ≈ cięciwa gry, min zoom jak dla 500 m promienia”.
  *
- * Powód: przy małych promieniach (`OGRANICZENIA.promienM.min` = 200 m, a przy
- * krótkiej grze i 500 m) okrąg gry zajmował cały ekran, więc widok wjeżdżał na
- * zoom 17–19 — a tam kafle OSM w okolicach o rzadkiej zabudowie są praktycznie
- * puste (biała plama, brak dróg i nazw) i mapa przestaje cokolwiek pokazywać.
- * Mniejszy promień NIE przybliża więc bardziej niż promień 1000 m: okrąg gry
- * jest wtedy mniejszy od szerokości panelu, ale widać ulice, po których gracz
- * naprawdę idzie. Zoom dla promieni ≥ 1000 m liczy się jak dotąd.
+ * Powód pierwotny: przy małych promieniach okrąg gry zajmował cały ekran,
+ * więc widok wjeżdżał na zoom 17–19 — kafle OSM w rzadkiej zabudowie są puste.
+ * Mniejszy promień NIE przybliża więc bardziej niż promień sufitu: okrąg gry
+ * jest wtedy mniejszy od szerokości panelu, ale widać ulice. Zoom dla promieni
+ * ≥ sufitu liczy się jak dotąd. Sufit 500 m — dla gry 500 m cięciwa 1000 m
+ * wypełnia szerokość telefonu z marginesem; mniejsza gra kadruje się jak 500 m.
  */
-export const PROMIEN_SUFITU_ZOOMU_M = 1000;
+export const PROMIEN_SUFITU_ZOOMU_M = 500;
 
 /**
  * Zoom, przy którym promień gry zajmuje `udzialEkranu` szerokości widoku.
@@ -144,7 +144,7 @@ export const PROMIEN_SUFITU_ZOOMU_M = 1000;
  * w jednym miejscu.
  */
 export function dopasujZoomDoPromienia(promienM, szerokoscPx, lat, {
-  udzialEkranu = 0.4, min = 1, max = 19, sufitPromienM = PROMIEN_SUFITU_ZOOMU_M,
+  udzialEkranu = 0.45, min = 1, max = 19, sufitPromienM = PROMIEN_SUFITU_ZOOMU_M,
 } = {}) {
   if (!(promienM > 0) || !(szerokoscPx > 0)) throw new TypeError('dopasujZoomDoPromienia: dodatnie argumenty');
   const promienWidoku = Math.max(promienM, sufitPromienM);

@@ -4933,3 +4933,58 @@ plik po pliku: logika, zgodność z ADR i protokołem, zieloność.
 2. `PAMIETNIK_PACZEK.clear()` przy odświeżeniu propozycji porzuca wynik
    pobrania w toku — następny klik pobiera plik od nowa (plik
    `TO-zestaw/1` jest niezmienialny, więc nie ma ryzyka starych danych).
+
+
+## Sesja 2026-09-13f — budżet lektury i audyt PR #21 (gałąź `arena/01a09c9a-okolica`, PR #22, m12-114)
+
+### 1. Start sesji
+
+Właściciel: „kontynuujemy projekt” — bez zlecenia konkretnego zadania, więc sesja idzie wg protokołu (ADR 0012): lektura, PR sesji, audyt poprzedniego scalonego PR, potem najwyższy otwarty kamień z ROADMAP.
+
+- Gałąź `arena/01a09c9a-okolica`, baza `fdfdf6b` (= `main` po PR #21, aplikacja **m12-114**).
+- Bramy przed zmianami: `npm test` **767/767**, `npm run check` OK (oba warianty protokołu), `npm run audyt` 0 naruszeń WCAG AA, budżet lektury **99 793/100 000** tok (rezerwa 207).
+- Lektura startowa wg AGENTS.md §0 wykonana w całości (ADR-y z rejestrem i aneksami, LESSONS L1–L67, PROTOKOL, ENVIRONMENT, ROADMAP, HANDOFF_2026-09-13d).
+
+### 2. Audyt PR #21 (squash `fdfdf6b`, 1 plik, +134/−0; m12-114)
+
+PR #21 scala wyłącznie wpis dziennika sesji 2026-09-13e z audytem PR #20 (m12-110→m12-114). Przegląd `git diff fdfdf6b^..fdfdf6b`:
+
+- `docs/PROJECT_HISTORY.md` (+134): sekcja „Sesja 2026-09-13e” z audytem plik po pliku PR #20 (53 pliki, +3007/−960): logika T1–T3 i N–S spójna z ADR 0010/0011/0015/0017/0019/0029/0032/0036/0043/0045, łańcuch ?v=m12-114 pojedynczy, brama zielona (767/767, check OK, 0 naruszeń WCAG AA). Brak usterek wymagających naprawy; dwa rozpoznania (degradacja utrwalania kolejki, porzucenie pobrania w toku) opisane we wpisie i dopuszczalne. **OK.**
+- Brak zmian kodu, brak zmian wersji, brak zmian w ADR/LESSONS/PROTOKOL. **OK.**
+- Łańcuch wersji: m12-114 bez zmian (grep zero rozjazdów). **OK.**
+- Testy: brak zmian w kodzie, więc 767/767 pozostaje. **OK.**
+
+**Werdykt:** PR #21 jest spójny, dziennik rzetelny, brak usterek wymagających naprawy. Jedno rozpoznanie: brak pliku handoff `HANDOFF_2026-09-13e.md` w main — uzupełniony w tej sesji (commit `e31a35b`) jako plik przekazania jednej sesji (AGENTS.md §0 pkt 7).
+
+### 3. Budżet lektury: 99 793 → 96 754 tok (rezerwa 207 → 3 246)
+
+Start sesji wykazał rezerwę 207 tok — próg 100 000 pęka przy najbliższym aneksie. Zgodnie z AGENTS.md §0 (budżet) i LESSONS L62/L66, skrócenie dokumentów stało się obowiązkowym zadaniem sesji.
+
+**Analiza `npm run budzet`:** największym zjadaczem są ADR-y (~65 tys. z 100 tys.). Największe pliki: ADR 0017 (3726 tok, 8 aneksów), ADR 0004 (2666 tok, 7 aneksów), ADR 0006 (2554 tok, 4 aneksy). LESSONS (16 537 tok) już ma archiwum opisów przypadków.
+
+**Wdrożone (commit `60205c4`):** archiwizacja treści historycznej 3 ADR-ów żyjących — wzorzec z sesji 2026-09-13d (ADR 0019):
+
+- **ADR 0017**: 5 starszych aneksów (2026-09-06 M9b, 2026-09-07 tematWlasny, 2026-09-11 faktyczne tematy, 2026-09-12 m12-92 indeks dopisuje faktyczne tematy, 2026-09-12 m12-95 paczki tylko z repo) → `docs/decisions/archive/aneksy-0017-2026-09-06-do-12.md` (6018 znaków). W pliku macierzystym pointer „Aneksy 2026-09-06 … 2026-09-12 są w archiwum (poza budżetem lektury)” z linkiem i LISTĄ DAT (2026-09-06, 2026-09-07, 2026-09-11, 2026-09-12, 2026-09-12) — bo strażnik cytowań aneksów (`test/dryf-dokumentow.test.js`: „cytowane aneksy ADR istnieją”) szuka daty w pliku ADR. Zachowane aneksy: 2026-09-11 (koniec moderacji wstępnej — cytowany w `app/app.js` i testach dryfu, więc musi zostać), 2026-09-13 (P/S) i 2026-09-13d (paczki w tle). 3726 → 2463 tok (−1263).
+- **ADR 0004**: 5 starszych aneksów (2026-09-07 kara ręczna, 2026-09-08 tryb testowy, 2026-09-12 m12-91 watchdog, m12-92 P10, m12-94 wyjście) → `archive/aneksy-0004-2026-09-07-do-12.md` (4739 znaków). Pointer z listą dat (2026-09-07, 2026-09-08, 2026-09-12, 2026-09-12, 2026-09-12). Zachowane: 2026-09-09 (próg 25 m — cytowany w ARCHITECTURE) i 2026-09-13 (koniec pauzy, ADR 0040). 2666 → 1700 tok (−966).
+- **ADR 0006**: 2 starsze aneksy (2026-09-09 wklejenie jednym przyciskiem, 2026-09-09 druga tura) → `archive/aneksy-0006-2026-09-09.md` (3944 znaki). Pointer z listą dat (2026-09-09, 2026-09-09). Zachowane: 2026-09-07 (koniec edycji — cytowany w kontrakcie) i 2026-09-09 trzecia tura (wklejenie jest zatwierdzeniem). 2554 → 1745 tok (−809).
+
+**Suma:** 3 pliki macierzyste −3038 tok, 3 archiwa poza budżetem. Budżet po fali: **96 754 / 100 000** (rezerwa **3 246**). Brama: 767/767, check OK, audyt 0 naruszeń.
+
+### 4. Weryfikacja na żywo
+
+Serwer `node tools/serwer.mjs .` na 0.0.0.0:8000 (HTTP/1.1, keepAlive 65 s, no-store). Podgląd: intro nad mapą, przycisk ⚙ START GRY otwiera setup, mapa SVG z kafelkami OSM (atrybucja widoczna), gesty palca (drag/pinch), przyciski ＋ − ◎, marker pozycji bez koła dokładności, promień gry, skala. Setup przewijany nad przygaszoną mapą — 360 px bez poziomego scrolla. Ekran gry: mapa tłem, karty faz na dole (portrait) / prawej (landscape), pasek na dole w drodze, panel fazy duży przy dojściu. Tryb testowy `?test=true`: symulacja dojścia widoczna (panel fazy B nie jest schowany — fix U2 z PR #20). Gra wieloosobowa: setup multi (zakładam/dołączam), lobby, odliczanie 5-4-3-2-1-START nad mapą (ADR 0044). Brak regresji po archiwizacji ADR-ów.
+
+### 5. Bramy, stan końcowy i rzeczy otwarte
+
+`npm run brama`: **767/767** testów, oba warianty protokołu zgodne, **0 naruszeń WCAG AA**; `npm run budzet` **96 754 / 100 000** (rezerwa 3 246).
+
+Commity tej sesji: `e31a35b` (audyt PR #21 + HANDOFF_2026-09-13e.md) → `60205c4` (budżet: archiwizacja 3 ADR-ów) → następny (dokumenty: ten wpis + HANDOFF_2026-09-13f.md + cache-busting? — wersja bez zmian m12-114, więc brak bumpa).
+
+Otwarte:
+
+1. **Scalenie PR #22** (decyzja właściciela) — Pages poda `?v=m12-114`, a `HANDOFF_2026-09-13e.md` uzupełni lukę w historii.
+2. **Deployment web app u właściciela** — wisi od PR #19 (most `docs/setup/apps-script-repo-paczek.gs`: `rezygnacja` domykająca grę, pula premii). Ta sesja mostu nie zmieniała.
+3. **Powtórka testu terenowego dwóch telefonów** (WORKFLOW §4.4) ze scenariuszem utraty zasięgu (T1) i wstępnego pobierania paczek (T3) — czeka właściciel.
+4. **Budżet: rezerwa 3 246 tok** — następna duża fala dokumentowa (np. nowe ADR-y M13+) powinna zacząć od `npm run budzet` i ewentualnie kolejnej archiwizacji (kandydaci: ADR 0005 2759 tok, 0016 2276 tok, 0036 2026 tok, 0003 2003 tok — każdy z aneksami).
+5. **Kamienie M3–M12**: kod gotowy, czeka kryteria terenowe właściciela (ROADMAP §Kryteria). Brak zlecenia = najwyższy otwarty kamień (M3), ale kryterium to weryfikacja 360 px bez przewijania — decyzja właściciela.
+

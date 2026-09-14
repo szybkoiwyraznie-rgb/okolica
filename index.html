@@ -286,8 +286,7 @@
 
       <div id="multi-panel-lobby" class="karta" hidden>
         <h3>Lobby</h3>
-        <p class="podpowiedz">Gracze dołączają z listy w zasięgu ~50 m — kod gry nie jest potrzebny.</p>
-        <p id="lobby-tryb" class="podpowiedz"></p>
+                <p id="lobby-tryb" class="podpowiedz"></p>
         <ul id="lobby-gracze" class="lista-prosta"></ul>
         <p id="lobby-status" class="podpowiedz" role="status"></p>
         <div id="lobby-widownia" hidden>
@@ -485,15 +484,6 @@
       <div id="gra-panel-oczekuje" class="karta gra-panel">
         <p id="gra-kto-idzie" class="duzy">Kto idzie: —</p>
         <p id="gra-cel-stacji" class="podpowiedz"></p>
-        <!-- ADR 0027 część B (Wyścig na Orientację): gracz wybiera stację, do
-             której idzie. Wybór mieszka w panelu fazy A — tam, gdzie hotseat ma
-             „▶ Idę do stacji" — a nie w doklejonej karcie multi (uwaga F,
-             ADR 0044). We Wspólnej Trasie blok zostaje ukryty: kolejność narzuca
-             trasa. -->
-        <div id="multi-wybor-stacji" hidden>
-          <p class="podpowiedz">Kolejność jest dowolna — wybierz stację, do której idziesz:</p>
-          <div id="multi-wybor-przyciski" class="chipy" role="group" aria-label="Wybór stacji"></div>
-        </div>
         <button id="przycisk-start-odcinka" class="przycisk przycisk-glowny przycisk-fazy" type="button">▶ Idę do stacji —</button>
       </div>
 

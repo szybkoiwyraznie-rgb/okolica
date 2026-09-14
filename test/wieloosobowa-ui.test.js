@@ -504,7 +504,11 @@ async function dolaczZListyUI(u) {
 
 /** Odcinek od startu do „następna stacja": droga + dojście z fixów (ADR 0029) + poprawna odpowiedź. */
 async function przejdzStacje(u) {
-  await klik(u, 'przycisk-start-odcinka');
+  // 2026-09-14 F: wyścig auto-startuje odcinek, więc panel oczekiwania może być już schowany
+  const panelOczekuje = u.dom.elementy.get('gra-panel-oczekuje');
+  if (panelOczekuje && !panelOczekuje.hidden) {
+    await klik(u, 'przycisk-start-odcinka');
+  }
   assert.equal(el(u, 'gra-panel-odcinek').hidden, false, 'panel drogi widoczny');
   await dojdzSymulacja(u); // POST dojscie (trybDojscia: gps)
   przelaczNa(u);
@@ -648,7 +652,7 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
   await przepompuj(B, 1);
   assert.equal(el(B, 'ekran-gra').hidden, false, 'B wystartował');
   assert.equal(tekst(B, 'gra-postep'), 'stacja 1 z 4', 'trasa: B ma przed sobą wszystkie 4 stacje');
-  assert.equal(el(B, 'multi-wybor-stacji').hidden, true, 'trasa: lista wyboru schowana — kolejność narzuca trasa');
+  assert.equal(B.dom.elementy.has('multi-wybor-stacji'), false, 'trasa: warstwa wyboru usunięta (F) — kolejność narzuca trasa');
   assert.equal(B.dom.elementy.has('gra-multi-tura'), false,
     'komunikatu trybu w grze nie ma — tryb mówi lobby, a w grze jest jak w hotseat (uwaga F)');
 
@@ -735,7 +739,7 @@ test('start SOLO: organizator wystartuje grę z jednym graczem i sam ją domyka'
   await przygotujTelefon(A, 'Ola', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'trasa' });
   const kod = kodGry(most);
-  assert.match(tekst(A, 'lobby-status'), /solo/, 'lobby mówi wprost: można wystartować solo');
+  assert.match(tekst(A, 'lobby-status'), /Po starcie dołączenie nie jest już możliwe/, 'lobby status po zmianach E');
   await klik(A, 'przycisk-lobby-start');
   assert.equal(el(A, 'ekran-gra').hidden, false, 'gra ruszyła z jednym graczem');
   await przejdzStacje(A);
@@ -1243,8 +1247,8 @@ test('lista graczy = tożsamość (ADR 0026 aneks): dodaj, odmowa PIN-u, zapami�
 
 const mostWolna = atrapaMostu();
 
-test('wolna kolejność: wybór stacji z listy i pytanie własne dla każdego gracza', async () => {
-  // paczka 3 stacje × 2 pytania = na dwóch graczy (domyślne po ADR 0027 część A)
+test('wolna kolejność: wyścig bez wyboru stacji — dowolna kolejność i pytanie własne dla każdego gracza', async () => {
+  // 2026-09-14 F: warstwa wyboru stacji usunięta — gracz sam decyduje, app wykrywa dotarcie do dowolnej
   const pamiecA = new Map();
   zasiejZestaw(mostWolna, 3, 2);
   const A = await noweUrzadzenie({ pamiec: pamiecA, most: mostWolna, bezGracza: true });
@@ -1258,35 +1262,27 @@ test('wolna kolejność: wybór stacji z listy i pytanie własne dla każdego gr
   await klik(A, 'przycisk-lobby-start');
   await przepompuj(B, 1);
 
-  // lista wyboru: trzy stacje do wzięcia w dowolnej kolejności
-  assert.equal(el(A, 'multi-wybor-stacji').hidden, false, 'wyścig pokazuje wybór stacji');
-  const przyciski = [...el(A, 'multi-wybor-przyciski').children];
-  assert.deepEqual(przyciski.map((b) => b.textContent.split(' ·')[0]), ['Stacja 1', 'Stacja 2', 'Stacja 3'], 'trzy stacje do wyboru');
+  // brak warstwy wyboru — od razu odcinek i pasek „Jacek. Stacja X/Y"
+  assert.equal(A.dom.elementy.has('multi-wybor-stacji'), false, 'wyścig: warstwa wyboru usunięta (F)');
+  assert.equal(el(A, 'gra-panel-odcinek').hidden, false, 'wyścig: od razu odcinek, bez klikania „Idę”');
+  assert.match(tekst(A, 'gra-pasek'), /Stacja 1\/3/, 'pasek dolny „Stacja X/Y” (F)');
 
-  // Ala wybiera stację 3 — gra idzie tam, nie „po kolei”
-  kliknijEl(przyciski[2]);
-  await oddech();
-  assert.match(tekst(A, 'przycisk-start-odcinka'), /stacji 3/, 'przycisk drogi wskazuje wybraną stację');
-
-  await klik(A, 'przycisk-start-odcinka');
+  // symulacja dojścia do dowolnej stacji — w teście idziemy do najbliższej
   await dojdzSymulacja(A);
-  assert.match(tekst(A, 'gra-pytanie-tresc'), /stacji 3\? \(wariant 1\)/, 'organizator (indeks 0) ma pierwsze pytanie stacji');
+  assert.match(tekst(A, 'gra-pytanie-tresc'), /stacji \d+\? \(wariant 1\)/, 'organizator (indeks 0) ma pierwsze pytanie stacji');
 
   // Bartek gra u siebie, bez uzgadniania: ta sama stacja 1, ale DRUGIE pytanie
-  await klik(B, 'przycisk-start-odcinka');
+  // W wyścigu start odcinka jest auto, więc od razu symulacja dojścia
   await dojdzSymulacja(B);
-  assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji 1\? \(wariant 2\)/, 'gość (indeks 1) ma drugie pytanie tej stacji');
+  assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji \d+\? \(wariant 2\)/, 'gość (indeks 1) ma drugie pytanie tej stacji');
 
-  // po zamknięciu stacji lista wyboru maleje
+  // po pierwszym pytaniu — stacja zamknięta (2 graczy × 2 pytania = 1 pytanie na gracza na stację)
   przelaczNa(A);
   kliknijEl(A.dom.pobierz('gra-odpowiedzi').children[0]);
   await oddech();
+  assert.match(tekst(A, 'przycisk-nastepna-stacja'), /Idź dalej/, 'przycisk „Idź dalej ->" w wyścigu (F)');
   await klik(A, 'przycisk-nastepna-stacja');
-  assert.deepEqual(
-    [...el(A, 'multi-wybor-przyciski').children].map((b) => b.textContent.split(' ·')[0]),
-    ['Stacja 1', 'Stacja 2'],
-    'zamknięta stacja znika z wyboru',
-  );
+  assert.equal(el(A, 'gra-panel-odcinek').hidden, false, 'po zamknięciu stacji od razu mapa w wyścigu');
 });
 
 test('pytania mniejszej paczki są dzielone, a nie gubione (indeks się zawija)', async () => {
@@ -1304,9 +1300,9 @@ test('pytania mniejszej paczki są dzielone, a nie gubione (indeks się zawija)'
   await klik(A, 'przycisk-lobby-start');
   await przepompuj(B, 1);
 
-  await klik(B, 'przycisk-start-odcinka');
+  // w wyścigu start odcinka auto — od razu symulacja
   await dojdzSymulacja(B);
-  assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji 1\?/, 'gość ma pytanie mimo paczki mniejszej niż liczba graczy');
+  assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji \d+\?/, 'gość ma pytanie mimo paczki mniejszej niż liczba graczy');
   przelaczNa(B);
   assert.equal(B.dom.pobierz('gra-odpowiedzi').children.length, 4, 'cztery odpowiedzi do wyboru');
 });
@@ -1319,7 +1315,7 @@ test('we Wspólnej Trasie nie ma wolnego wyboru stacji — kolejność ustala tr
   await przygotujTelefon(A, 'Ala', { stacje: 3 });
   await zalozGreUI(A, { tryb: 'trasa' });
   await klik(A, 'przycisk-lobby-start');
-  assert.equal(el(A, 'multi-wybor-stacji').hidden, true, 'trasa: lista wyboru schowana');
+  assert.equal(A.dom.elementy.has('multi-wybor-stacji'), false, 'trasa: warstwa wyboru usunięta (F)');
   assert.equal(A.dom.elementy.has('gra-multi-tura'), false,
     'komunikatu trybu w grze nie ma (uwaga F) — tryb mówi lobby, w grze jest jak w hotseat');
   assert.match(tekst(A, 'lobby-tryb'), /Wspólna Trasa/, 'tryb zostaje w lobby');
