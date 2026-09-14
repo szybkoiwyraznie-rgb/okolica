@@ -2072,6 +2072,9 @@ test('kontrakt uwagi B (dogrywka): porządkowanie trasą jest wpięte w każdą 
   assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
     /Aneks 2026-09-14 \(m12-116\) — twarde wejście w pętlę na wszystkich ścieżkach/,
     'ADR 0005 dokumentuje regułę wejścia');
+  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+    /Aneks 2026-09-14 \(m12-117\) — metryka porządkowania jest jedna/,
+    'ADR 0005 dokumentuje metrykę porządkowania (audyt PR #24, defekt D1)');
   const STACJE = czytaj('app/stacje.js');
   assert.ok(STACJE.includes('const kolejnosc = kolejnoscTrasy({ srodek, stacje });'),
     'pierścień numeruje trasą z twardym wejściem');
@@ -2079,8 +2082,15 @@ test('kontrakt uwagi B (dogrywka): porządkowanie trasą jest wpięte w każdą 
     'sieć drogowa numeruje trasą z twardym wejściem');
   assert.ok(APP.includes('uporzadkujGre({ srodek: STAN.pozycja, stacje: stacjeGry, pytania: paczka.pytania'),
     'start z paczki przestawia grę w kolejność trasy od bieżącej pozycji');
-  assert.ok(APP.includes('uporzadkujGre({ srodek: STAN.pozycja, stacje: STAN.stacje, pytania: STAN.paczka.pytania'),
+  assert.ok(APP.includes('uporzadkujGre({'),
     'wklejka przestawia grę w kolejność trasy (pinezki po dragach też)');
+  assert.ok(APP.includes('dystansStart: drogi ? STAN.stacje.map((s) => (Number.isFinite(s.dystansSieciowyM)'),
+    'wklejka porządkuje metryką DROGOWĄ, gdy stacje są z sieci (audyt PR #24, D1)');
+  assert.ok(APP.includes('macierz: drogi ? drogi.macierz : null,'),
+    'wklejka bierze tę samą macierz dijkstr, którą wybrano stacje');
   assert.ok(APP.includes('STAN.wynikSieci = null; // dystanse drogowe poprzedniej gry nie dotyczą tych stacji'),
     'start z paczki nie niesie dystansów drogowych poprzedniej gry');
+  const wklejka = APP.slice(APP.indexOf('let przestawionoWklejke'), APP.indexOf('wyslijZestawNaDrive();'));
+  assert.ok(wklejka.includes('STAN.wynikSieci = null;'),
+    'przestawienie wklejki gubi macierz wiszącą na starej kolejności');
 });
