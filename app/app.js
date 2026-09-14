@@ -38,7 +38,7 @@ import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uzupelnijOdleglosci, wy
 import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-114';
 import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-114';
 import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-114';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-114';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-114';
 import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-114';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
@@ -2272,11 +2272,9 @@ function renderujGre({ panele = true } = {}) {
     // (zgłoszenie terenowe R, 2026-09-13).
     // 2026-09-14 G: zaliczone stacje inny kolor — oznaczamy na podstawie odcinków
     const graSekret = czyTrasaSekret(STAN.multi);
-    const zamkniete = new Set(
-      Object.entries(r.odcinki || {})
-        .filter(([, o]) => o?.stan === 'zakonczony')
-        .map(([sid]) => Number(sid)),
-    );
+    // `odcinki` jest tablicą — ids bierzemy z `o.stacja`, nie z indeksu
+    // (uwaga G, 2026-09-14: Object.entries dawał 0,1,2… zamiast id stacji).
+    const zamkniete = new Set(zaliczoneStacjeIds(r).map(Number));
     let stacjeWidoczne = graSekret
       ? STAN.stacje.filter((s) => Number(s.id) === Number(r.biezacaStacja))
       : STAN.stacje;

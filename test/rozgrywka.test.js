@@ -17,7 +17,7 @@ import {
   FAZY, KODY_ROZGRYWKI, SCHEMAT_ROZGRYWKI, STANY_ODCINKA, TRYBY_DOJSCIA,
   czyKoniec, dystansOdcinkaM, graczNaStacji, graczPytania, ktoOdpowiada, nowaRozgrywka,
   podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka,
-  wczytajStan, zapiszOdpowiedz, zakonczOdcinek,
+  wczytajStan, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek,
 } from '../app/rozgrywka.js';
 import { domyslnaKonfiguracja } from '../app/konfig.js';
 import { stacjeProste } from '../app/stacje.js';
@@ -165,6 +165,27 @@ test('startOdcinka: odmowa przy obcej stacji, ponownym starcie i po końcu gry',
   const poStarcie = startOdcinka(stan, { czasMs: 0 }).stan;
   assert.deepEqual(startOdcinka(poStarcie, { czasMs: 10 }).usterki.map((u) => u.kod), ['G03']);
   assert.ok(KODY_ROZGRYWKI.G03.length > 10, 'komunikat musi być pełnym zdaniem dla UI');
+});
+
+test('zaliczoneStacjeIds: id stacji, nie indeks tablicy (uwaga G, 2026-09-14)', () => {
+  // `odcinki` jest tablicą: stacja 1 siedzi pod indeksem 0. Object.entries
+  // dawałoby klucz „0” i pinezka stacji 1 nigdy nie dostałaby szarości.
+  const pusta = nowa();
+  assert.deepEqual(zaliczoneStacjeIds(pusta), [], 'przed dojściem pusto');
+  assert.equal(pusta.odcinki[0].stacja, STACJE[0].id, 'indeks 0 ≠ id stacji, gdy id=1');
+  assert.notEqual(pusta.odcinki[0].stacja, 0);
+
+  const po = zakonczOdcinek(startOdcinka(pusta, { czasMs: 0 }).stan, { czasMs: 1000 }).stan;
+  assert.equal(po.odcinki[0].stan, STANY_ODCINKA.zakonczony);
+  assert.deepEqual(zaliczoneStacjeIds(po), [STACJE[0].id], 'id z pola stacja, nie z indeksu');
+  assert.ok(!zaliczoneStacjeIds(po).includes(0), 'indeks tablicy nie udaje id stacji');
+
+  // druga stacja (id=2, indeks 1) — gdyby brać Object.entries, Set miałby 1
+  const druga = zakonczOdcinek(
+    startOdcinka(po, { stacjaId: STACJE[1].id, czasMs: 2000 }).stan,
+    { stacjaId: STACJE[1].id, czasMs: 3000 },
+  ).stan;
+  assert.deepEqual(zaliczoneStacjeIds(druga), [STACJE[0].id, STACJE[1].id]);
 });
 
 test('zakonczOdcinek: znaczniki kolejności, dokładność i odległość końcowa', () => {

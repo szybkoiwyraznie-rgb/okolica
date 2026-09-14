@@ -296,6 +296,20 @@ export function stacjeDoWyboru(stan) {
 }
 
 /**
+ * Identyfikatory stacji z odcinkiem `zakonczony`.
+ *
+ * `odcinki` jest TABLICĄ (`nowaRozgrywka`: `stacje.map(...)`), więc klucz
+ * Object.entries to indeks 0,1,2…, nie `stacja.id`. Pinezki na mapie (uwaga G,
+ * 2026-09-14) muszą czytać `o.stacja` — inaczej stacja 1 nigdy nie dostanie
+ * szarości (id=1 ≠ indeks 0).
+ */
+export function zaliczoneStacjeIds(stan) {
+  return (stan?.odcinki ?? [])
+    .filter((o) => o && o.stan === STANY_ODCINKA.zakonczony)
+    .map((o) => o.stacja);
+}
+
+/**
  * Start odcinka — **na jawnej akcji użytkownika**, nie automatycznie
  * (ADR 0004 pkt 3). `czasMs` pochodzi z `performance.now()` w warstwie UI.
  */

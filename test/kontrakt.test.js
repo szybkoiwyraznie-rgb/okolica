@@ -1994,3 +1994,14 @@ test('kontrakt: archiwum ADR-ów jest poza budżetem lektury, a wiersze zostają
     assert.match(tresc, /^- Status: Wycofana/m, `${plik}: w archiwum leżą wyłącznie ADR-y wycofane`);
   }
 });
+
+test('kontrakt: pinezki zaliczone biorą id stacji, nie indeks tablicy odcinków (uwaga G)', () => {
+  // `odcinki` jest tablicą (`nowaRozgrywka`: stacje.map). Object.entries dawał
+  // klucze 0,1,2… i stacja 1 nigdy nie dostawała szarości.
+  assert.match(APP, /zaliczoneStacjeIds/, 'app.js liczy zaliczone przez helper z rozgrywki');
+  assert.equal(APP.includes('Object.entries(r.odcinki'), false,
+    'app.js nie może brać Object.entries z tablicy odcinków — to indeks, nie id');
+  const roz = czytaj('app/rozgrywka.js');
+  assert.match(roz, /export function zaliczoneStacjeIds/, 'helper jest eksportowany');
+  assert.match(roz, /o\.stacja/, 'helper czyta pole stacja');
+});
