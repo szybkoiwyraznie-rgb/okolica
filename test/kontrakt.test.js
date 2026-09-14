@@ -863,8 +863,8 @@ test('kontrakt M11: most Apps Script i `wieloosobowa.js` mówią jednym językie
 });
 
 test('kontrakt Partia 1 (3): PIN-profil — UI, kody R19/R20, dokumentacja §9', () => {
-  // bez osobnego przycisku sprawdzania: brama siedzi w „Dalej" (mniej klikania,
-  // a setup ma się mieścić na 360 px — WORKFLOW §4.2)
+  // bez osobnego przycisku sprawdzania: brama siedzi w „Dalej" (mniej klikania
+  // na wąskim telefonie — overflow pinuje CSS, nie ROADMAP)
   for (const id of ['pole-tozsamosc', 'profil-pseudonim', 'profil-pin', 'profil-stan', 'bledy-profil']) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }

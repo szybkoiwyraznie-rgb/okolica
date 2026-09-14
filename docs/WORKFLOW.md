@@ -14,8 +14,8 @@ Dwa rozdziały: **praca agenta** (§1–§2, §5–§6) i **praca organizatora g
 5. Audyt poprzedniego scalonego PR:
    `git fetch origin main --depth=50` → `git diff <sha>^..<sha>` plik po pliku;
    wynik do opisu PR i `docs/PROJECT_HISTORY.md` (stan, nie lista plików).
-6. Brak zlecenia właściciela → najwyższy otwarty kamień milowy
-   z `docs/ROADMAP.md` i jego plan z `docs/plans/`.
+6. Brak zlecenia właściciela → czekaj na uwagi z terenu. Kamienie M0–M12
+   są zamknięte jako zakres kodu. Nie bierz M3 z ROADMAP.
 
 ## 2. Pętla pracy i koniec sesji
 
@@ -98,10 +98,12 @@ Koniec sesji:
    grami ma własny ekran z belki ikon (ADR 0039). Wynik gry z jednego telefonu jedzie na wspólny Drive do historii
    gier (ADR 0026 aneks), gdy choć jeden gracz ma potwierdzony profil.
 
-## 4. Test terenowy (obowiązkowy dla M3, M4, M6, M7, M10)
+## 4. Test terenowy (ciągły — uwagi przychodzą jako zgłoszenia)
 
-Agent nie ma GPS ani terenu (ENVIRONMENT §4.1, §5) — część kryteriów da się
-sprawdzić tylko na zewnątrz. Procedura dla właściciela:
+Agent nie ma GPS ani terenu (ENVIRONMENT §4.1, §5). Gra jest od wielu PR
+w teście u właściciela (iPhone). Poniższe listy to pomoc przy teście, nie
+otwarte kamienie i nie bramka 360 px. Most Apps Script wdraża właściciel
+przy scaleniu PR — agent nie czeka na „pierwsze wdrożenie”.
 
 1. Tryb testowy w domu (`?test=true`): na ekranie pozycji **stuknij mapę**,
    żeby ustawić swoją okolicę (pól współrzędnych nie ma), a w ekranie gry użyj
@@ -157,19 +159,16 @@ jest widoczne jako karta obok rozmowy.
    desktopie) kadru NIE rusza — mapę prowadzi palec. Przełącznika orientacji
    w menu nie ma i być nie musi: ekran obraca się sam.
 8. Wynik (co działa, co nie, zrzut albo opis) → wpis w `docs/PROJECT_HISTORY.md`
-   i ewentualna lekcja w `docs/LESSONS.md`; dopiero wtedy kamień M2 jest
-   ukończony (`ROADMAP`: „zmiana sprawdzona na żywo").
+   i ewentualna lekcja w `docs/LESSONS.md`. Kamień M2 jest zamknięty od 2026-09-05.
 
-### 4.2 Weryfikacja M3 na telefonie (robi właściciel)
+### 4.2 Pomoc przy teście na telefonie (nie otwarty kamień)
 
-Kryterium M3 „pełna konfiguracja na telefonie bez przewijania" i zachowanie
-symulacji na żywo sprawdza właściciel (agent nie ma przeglądarki, LESSONS L3):
+Układ na wąskim telefonie i zachowanie GPS/symulacji sprawdza właściciel
+(agent nie ma przeglądarki, LESSONS L3). To nie zamyka kamienia M3.
 
-1. **360 px:** otwórz aplikację na telefonie w pionie (albo w DevTools:
-   360 × 640). Ekran setupu: oceń, czy cała konfiguracja mieści się **bez
-   przewijania**; jeśli nie — ile trzeba przewinąć i które karty są poniżej
-   fałdy. Wynik → decyzja: akceptujemy przewijanie (adnotacja w `ROADMAP`)
-   albo składamy rzadkie pola w `<details>` (nowe zadanie agenta).
+1. **Telefon właściciela:** otwórz aplikację w pionie na iPhonie (gra jest
+   w teście terenowym; nie ma bramki „360 px bez przewijania”). Jeśli coś
+   nie mieści się albo wymaga przewijania — zgłoś, to zadanie agenta.
 2. **Prywatność:** przycisk „Dane i prywatność" w setupie i w stopce otwiera
    ekran; „Wróć" prowadzi na ekran, z którego przyszliśmy (setup → setup,
    pozycja → pozycja). Przycisk kasowania: pierwszy klik **uzbraja** i mówi,
@@ -186,9 +185,8 @@ symulacji na żywo sprawdza właściciel (agent nie ma przeglądarki, LESSONS L3
    z podpowiedzią, a zejście w tło NIE zatrzymuje śledzenia i po powrocie
    nasłuch odświeża się sam, bez komunikatu (ADR 0040 pkt 3). Badge’a dokładności
    nie ma i nie ma być (ADR 0034 pkt 2).
-5. Wynik (co działa, co nie, decyzja z pkt 1) → wpis w
-   `docs/PROJECT_HISTORY.md` i ewentualna lekcja; dopiero wtedy `ROADMAP`
-   dostaje ✅ przy M3.
+5. Wynik (co działa, co nie) → wpis w `docs/PROJECT_HISTORY.md` i ewentualna
+   lekcja. Nie otwieraj kamienia na ROADMAP.
 
 ### 4.3 Weryfikacja M10 na telefonie (robi właściciel)
 
@@ -227,7 +225,8 @@ zapisuje skorupę i kafelki „na później".
 
 ### 4.4 Weryfikacja M11/M12 na dwóch telefonach (robi właściciel)
 
-Warunek: most wdrożony według instrukcji z czatu (P8, ADR 0018) — ten sam web
+Warunek: most wdrożony (właściciel wkleja `.gs` przy scaleniu PR — kolejne
+wersje web app, nie „pierwsze wdrożenie”; P8, ADR 0018) — ten sam web
 app co repozytorium paczek — a jego adres **wpisany w kod aplikacji**
 (`DOMYSLNY_URL_MOSTU` w `app/most.js`, ADR 0020) i scalony do `main`, bo Pages
 serwuje `main`. Drugi telefon: dowolny (Chrome), ta sama albo inna sieć — gra
@@ -288,8 +287,8 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
    z DWIEMA tabelami po ≤5 pozycji — „Ranking Punktowy Graczy” (suma punktów
    z gier zakończonych) i „Mistrzowie Zagadek” (odsetek poprawnych, liczony od
    10 zadanych pytań). Warunek: most wdrożony w wersji z `?akcja=ranking`
-   (NOWY deployment Apps Script — dopóki właściciel go nie wgra, ekran mówi
-   wprost, że nie udało się pobrać rankingu, a gra działa dalej). W tabelach
+   (właściciel wgrywa `.gs` przy PR; gdy most jest starszy, ekran mówi wprost,
+   że nie udało się pobrać rankingu, a gra działa dalej). W tabelach
    są tylko profile potwierdzone na Drive. Wiersz wyjaśnień (ilu graczy ma
    profil, od ilu pytań liczy się druga tabela) jest NA KOŃCU warstwy, pod
    obiema tabelami — uwaga właściciela z testów, 2026-09-12.
@@ -337,5 +336,5 @@ Uwagi techniczne (M8):
 | Nowa decyzja architektoniczna | `docs/decisions/NNNN-*.md` | aktualizacja rejestru w `docs/decisions/README.md`, ten sam commit |
 | Nowa lekcja | `docs/LESSONS.md` | numeracja na końcu, format objaw→przyczyna→reguła |
 | Usunięcie funkcji (fala uwag) | kod + `index.html` | grep po nośnikach żywych (`README`, `docs/*`, `.gs`, komentarze w `app/*.js`) i wpis frazy do `test/dryf-dokumentow.test.js` — LESSONS L58 |
-| Nowy pomysł | `docs/BACKLOG.md` | nie bierz go do pracy bez zlecenia albo kamienia milowego |
+| Nowy pomysł | `docs/BACKLOG.md` | nie bierz go do pracy bez zlecenia właściciela |
 | Paczka referencyjna | `data/przyklady/zestaw-*.json` (dziś: `zestaw-podkowa-lesna.json`) | weryfikacja każdego URL przez `fetch_page` (ADR 0008 pkt 6) |

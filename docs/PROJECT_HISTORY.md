@@ -5099,3 +5099,11 @@ sesji, bez pytania właściciela (to błędy implementacji, nie nowe decyzje).
 Brama po naprawach: `npm test` **781/781** (767 + testy G1/B1/C1/E1/F2/D1/B2/ADR). Most `.gs` nietknięty.
 
 M3–M12 nadal czekają na kryteria terenowe właściciela.
+
+### 4. Status kamieni (właściciel 2026-09-14)
+
+Mantra „M3–M12 czekają na kryteria terenowe / 360 px / nowy deployment web app”
+jest nieaktualna (właściciel: „bzdury sprzed 20 PRów”). Gra jest w teście
+terenowym na iPhonie (1334×750). Most wdrażany przy scaleniu PR. Brak zlecenia
+po audycie = czekaj na uwagi, nie bierz M3. Żywe dokumenty i strażnik dryfu
+przestawione w tej sesji (L68).

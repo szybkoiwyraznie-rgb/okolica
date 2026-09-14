@@ -1393,3 +1393,16 @@ to jedyny sposób, żeby znaleźć piny, które mierzyły „nic więcej się ni
   „stacja 2 z 3" (nie powtórka stacji 1), punkt na moście; oraz odświeżenie
   WCIĄŻ bez sieci — nic nie wychodzi, nic nie jest kasowane, a po powrocie sieci
   zdarzenia dochodzą raz.
+
+## L68 (2026-09-14) — kamienie M0–M12 nie czekają na 360 px ani na pierwsze wdrożenie mostu
+
+**Objaw:** po audycie PR #22 (sesja 2026-09-14) agent, nie mając nowych uwag z terenu, streszczał właścicielowi, że M3–M12 „czekają na kryteria terenowe / 360 px / nowy deployment web app”. Właściciel: to bzdury sprzed 20 PR-ów. Gra jest w teście na iPhonie (1334×750). Most Apps Script wdrażany przy niemal każdym PR (~wersja 15). Agent nie ma brać M3 z ROADMAP.
+
+**Przyczyna:** status 🟡 i zdania „kamień czeka…” przeżyły fale testów (A–H, N–S, T1–T3). AGENTS §2 kazał bez zlecenia brać najwyższy nieukończony kamień; WORKFLOW §1.6 i §4.2–4.4 brzmiały jak otwarte bramki (360 px bez przewijania, ROADMAP dostaje ✅, NOWY deployment). Strażnik dryfu pinował usunięte przyciski, nie mantrę czekania.
+
+**Naprawa:** ROADMAP — wszystkie M0–M12 ✅, otwarta pętla uwag z terenu. AGENTS §2 — bez zlecenia czekaj. WORKFLOW §4 — pomoc przy teście, nie kamień. README bez zdań „Kamień czeka…”. BACKLOG bez „albo kamień milowy”. Pin w `test/dryf-dokumentow.test.js`.
+
+**Reguła:** jak w rejestrze. CSS/kontrakt nadal mogą pinować overflow na wąskim telefonie — to nie jest bramka ROADMAP.
+
+**Testy:** `test/dryf-dokumentow.test.js` (frazy „Kamień czeka na”, „najwyższy nieukończony kamień”, „najwyższy otwarty kamień milowy”, „pełna konfiguracja bez przewijania na 360”); kontrakt numeracji LESSONS.
+

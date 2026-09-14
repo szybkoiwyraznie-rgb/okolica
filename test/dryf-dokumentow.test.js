@@ -270,6 +270,28 @@ const MARTWE_FRAZY = [
     nosniki: [...DOKUMENTY, ...UI],
     powod: 'klucz localStorage lokalnej historii gier usunięty (ADR 0010 aneks) — telefon nie trzyma własnej listy gier',
   },
+  // Fala 2026-09-14 (właściciel): mantra „M3–M12 czekają na 360 px / teren /
+  // pierwsze wdrożenie mostu” jest nieaktualna. LESSONS L68.
+  {
+    fraza: 'Kamień czeka na',
+    nosniki: DOKUMENTY,
+    powod: 'kamienie M0–M12 są zamknięte jako zakres kodu — brak zlecenia = czekaj na uwagi z terenu (L68)',
+  },
+  {
+    fraza: 'najwyższy nieukończony kamień',
+    nosniki: DOKUMENTY,
+    powod: 'AGENTS §2: bez zlecenia czekasz na uwagi z terenu, nie bierzesz M3 z ROADMAP (L68)',
+  },
+  {
+    fraza: 'najwyższy otwarty kamień milowy',
+    nosniki: DOKUMENTY,
+    powod: 'WORKFLOW §1.6: brak zlecenia = czekaj, nie bierz kamienia (L68)',
+  },
+  {
+    fraza: 'pełna konfiguracja bez przewijania na 360',
+    nosniki: DOKUMENTY,
+    powod: 'bramki 360 px na ROADMAP nie ma — właściciel gra na iPhonie (L68)',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {

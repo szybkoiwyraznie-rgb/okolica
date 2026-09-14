@@ -1,9 +1,9 @@
 # BACKLOG — bank pomysłów i rozpoznania
 
 > **Rozpoznanie do wykorzystania, nie kolejka zadań** (AGENTS.md §4). Zadania
-> przydziela właściciel w czacie albo kamień milowy z `docs/ROADMAP.md`; wpis
-> w backlogu nie upoważnia do wzięcia się za temat. Format: `## Bn — tytuł`,
-> potem: pomysł → dlaczego → czego wymaga → ryzyka.
+> przydziela właściciel w czacie (uwagi z terenu). Kamienie M0–M12 są zamknięte
+> jako zakres kodu; wpis w backlogu nie upoważnia do wzięcia się za temat.
+> Format: `## Bn — tytuł`, potem: pomysł → dlaczego → czego wymaga → ryzyka.
 
 ## B1 — Gra na wielu telefonach (multi-device)
 
