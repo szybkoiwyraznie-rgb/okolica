@@ -4988,3 +4988,97 @@ Otwarte:
 4. **Budżet: rezerwa 3 246 tok** — następna duża fala dokumentowa (np. nowe ADR-y M13+) powinna zacząć od `npm run budzet` i ewentualnie kolejnej archiwizacji (kandydaci: ADR 0005 2759 tok, 0016 2276 tok, 0036 2026 tok, 0003 2003 tok — każdy z aneksami).
 5. **Kamienie M3–M12**: kod gotowy, czeka kryteria terenowe właściciela (ROADMAP §Kryteria). Brak zlecenia = najwyższy otwarty kamień (M3), ale kryterium to weryfikacja 360 px bez przewijania — decyzja właściciela.
 
+## Sesja 2026-09-14 — audyt PR #22 i naprawy A-H (gałąź `arena/01a09f42-okolica`)
+
+### 1. Start sesji
+
+Właściciel: „kontynuujemy projekt” — bez zlecenia konkretnego zadania, więc
+sesja idzie wg protokołu (ADR 0012): lektura, PR sesji, audyt poprzedniego
+scalonego PR, potem usterki z audytu (wyższe niż kamień M3, który czeka na
+kryterium właściciela).
+
+- Gałąź `arena/01a09f42-okolica`, baza `5163ed9` (= `main` po PR #22,
+  aplikacja **m12-114**).
+- Bramy przed zmianami: `npm test` **767/767**, budżet lektury
+  **96 754/100 000** tok (rezerwa 3 246).
+- Lektura startowa wg AGENTS.md §0 wykonana w całości (ADR-y z rejestrem
+  i aneksami, LESSONS L1–L67, PROTOKOL, ENVIRONMENT, ROADMAP,
+  HANDOFF_2026-09-13f).
+
+### 2. Audyt PR #22 (squash `5163ed9`, 20 plików, +804/−414)
+
+PR #22 scala **dwie warstwy**, a dziennik sesji 13f opisuje tylko pierwszą:
+
+1. **Budżet lektury** (sesja 2026-09-13f): archiwizacja aneksów ADR 0004/0006/0017
+   + HANDOFF_2026-09-13e/f + wpis dziennika. Wersja aplikacji bez zmian.
+2. **Uwagi terenowe A-H** (2026-09-14): zmiany w `app/*.js`, `styles.css`,
+   `index.html` i testach. Tytuł PR („audyt PR #21 i budżet”) i wpis
+   PROJECT_HISTORY **nie wspominają A-H**; jedyny commit w PR i komunikat
+   squash-merge niosą A-H. A-H nie ma handoffu ani aneksów ADR.
+
+Przegląd `git diff fdfdf6b..5163ed9` plik po pliku.
+
+#### Warstwa 1 — budżet (zgodna z dziennikiem 13f)
+
+- **ADR 0004/0006/0017**: treść historyczna w `archive/aneksy-*` (nazwy BEZ
+  przedrostka `NNNN-`, L66), pointer z listą dat w pliku macierzystym.
+  Aneksy cytowane w żywych nośnikach zostają (0004: 2026-09-09; 0017:
+  2026-09-11). **OK.**
+- **HANDOFF_2026-09-13e.md** (luka z PR #21) i **HANDOFF_2026-09-13f.md**. **OK.**
+
+#### Warstwa 2 — uwagi A-H (nieopisane w dzienniku)
+
+- **A (`app/geo.js`)**: `PROMIEN_SUFITU_ZOOMU_M` 1000 → 500, `udzialEkranu`
+  0.4 → 0.45. Testy geo/aplikacja przepisane. Intencja: cięciwa gry 500 m
+  wypełnia szerokość telefonu. **OK** (zgodne z decyzją właściciela).
+- **B (`app/stacje.js`)**: nowa `optymalnaKolejnosc` (Held-Karp O(N²·2^N),
+  N>10 greedy NN), użyta w `stacjeProste` i `wybierzStacje` zamiast sortu
+  po kącie. Eliminuje wracanie. **Usterka B1:** funkcja nieeksportowana
+  i **bez testu** — brama nie pilnuje ani optymalności, ani determinizmu
+  tie-breaku, ani fallbacku N>10. **Usterka B2:** ADR 0005 („stacje w
+  kolejności kąta od północy”) i ARCHITECTURE nie dostały aneksu.
+- **C (`app/app.js`)**: `scrollTop = 0` w `pokazMapeStartowa` / `ukryjStart`
+  / `start()`. **Usterka C1:** trzy puste `try { … } catch {}` — AGENTS.md §4
+  zakazuje try/catch maskującego objaw; `scrollTop` na elemencie DOM nie rzuca.
+- **D (`app/styles.css`)**: `.pulsuje` to teraz negatyw `#000`/`#fff`,
+  opacity 0.55. **Usterka D1:** ADR 0011 aneks 2026-09-13d pinuje opacity 0.7
+  i kontrast `--tekst` na `--tlo` (5,62:1 / 8,25:1); CSS i ADR się rozjechały.
+  Hardcode `#000`/`#fff` omija tokeny motywu.
+- **E (`app/app.js`, `styles.css`, `index.html`)**: większe imiona w lobby
+  (CSS + duplikat inline), skrócony status, pasek sync bez „Ostatni stan UTC”.
+  **Usterka E1:** `li.style.fontSize/fontWeight/padding` dubluje regułę
+  `#lobby-gracze li` — dwa źródła prawdy (L35/L40).
+- **F (`index.html`, `app.js`, `rozgrywka.js`)**: usunięty `#multi-wybor-stacji`;
+  wyścig wykrywa dowolną niezaliczoną; auto-start odcinka; pasek „Jacek.
+  Stacja 3/5”; `przejdzDalej` obsługuje `w-trakcie`. Testy wieloosobowa-ui
+  i kontrakt ADR 0044 przepisane. **OK w intencji.** **Usterka F1:** ADR 0044
+  pkt 5 i ADR 0027 nadal obiecują `#multi-wybor-stacji` w panelu fazy A
+  (L31/L58). **Usterka F2:** `czyStartPoDalej()` zawsze `return true`, a
+  `nastepnaStacja` ma martwą gałąź na `r.faza` po obsłudze `świeży.faza`.
+- **G (`app.js`, `mapa.js`, `styles.css`)**: flaga `zaliczona` w `planMapy`,
+  klasa `.pinezka-zaliczona`. **Usterka G1 (widoczna dla gracza):**
+  `renderujGre` buduje zbiór zaliczonych przez `Object.entries(r.odcinki)`
+  — `odcinki` jest **tablicą** (`stacje.map(...)` w `nowaRozgrywka`,
+  `znajdzOdcinek` = `.find`), więc klucz to indeks `0,1,2…`, nie `stacja`.
+  Pinezka stacji 1 nigdy nie dostanie szarości (id=1 ≠ indeks 0); pinezka
+  stacji 2 dostanie ją, gdy zamknięty jest odcinek o indeksie 2 (stacja 3).
+  Detekcja wyścigu w `aktualizujGreNaFix` używa `.filter` poprawnie — rozjazd
+  w tym samym PR. Brak testu.
+- **H (`app.js`, `styles.css`)**: klasa `.odliczanie-start` + clamp na START.
+  **OK.**
+- **`?v=` / `WERSJA_SW`:** A-H zmieniło `app/*.js` i `styles.css`, a wersja
+  została **m12-114**. AGENTS.md §7 i L29: podbicie we wszystkich importach.
+  Telefony z cache'em SW nie dostaną A-H. **Usterka V1.**
+
+#### Testy, łańcuch, most
+
+- Testy 767/767 zielone **na tym drzewie** — bo nie ma asercji na G1, B1, V1.
+- Łańcuch `?v=m12-114` pojedynczy (grep: zero rozjazdów) — spójny, ale
+  niepodbity po zmianie kodu.
+- Most `.gs` nietknięty. **OK.**
+
+**Werdykt:** warstwa budżetu spójna z L62/L66. Warstwa A-H wnosi decyzje
+właściciela, ale zostawia usterkę widoczną (G1), brak bumpa cache (V1),
+brak testów algorytmu trasy (B1) i dryf ADR (B2, D1, F1). Naprawy w tej
+sesji, bez pytania właściciela (to błędy implementacji, nie nowe decyzje).
+
