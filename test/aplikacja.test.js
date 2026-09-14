@@ -28,7 +28,7 @@ import {
   parsujOdpowiedz,
   upraszczajDaneDoCache,
 } from '../app/sieci.js';
-import { DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja } from '../app/konfig.js';
+import { DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja, przeliczenieCzasu } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
 import { maxZoomPodkladu, skalaBar, widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
 import { dopasujZoomDoPromienia } from '../app/geo.js';
@@ -2905,4 +2905,69 @@ test('uwaga B (dogrywka): prompt numeruje stacje trasą — stacja 1 najbliższa
   assert.deepEqual(Object.keys(dystanse).map(Number).sort((a, b) => a - b), [1, 2, 3], 'prompt listuje 3 stacje z dystansami');
   assert.equal(dystanse[1], Math.min(dystanse[1], dystanse[2], dystanse[3]),
     `stacja 1 ma być najbliższa pozycji (dystanse: 1=${dystanse[1]} m, 2=${dystanse[2]} m, 3=${dystanse[3]} m)`);
+});
+
+/* ---- audyt PR #24, defekt D1: wklejka porządkuje metryką DROGOWĄ, gdy sieć ją dała ---- */
+
+/**
+ * Fixture `overpass-centrum` przy 52.22570, 21.00770 i 3 stacjach × 1 pytaniu
+ * (60 min → promień 700 m) daje układ, w którym metryki się rozjeżdżają:
+ * najbliższa DROGĄ jest stacja z `dystansSieciowyM` 485 m (kreską 466 m),
+ * a najbliższa KRESKĄ — inna stacja (273 m kreską, 527 m drogą). Sieć numeruje
+ * trasę metryką drogową (ADR 0005 aneks m12-116), więc wklejka — która
+ * porządkuje grę jeszcze raz — musi użyć TEJ SAMEJ metryki, inaczej przestawia
+ * trasę i zostawia macierz drogową w starej kolejności (dystanse odcinków
+ * lądują na cudzych odcinkach, a UI mówi „drogą”).
+ */
+const SRODEK_D1 = { lat: 52.2257, lon: 21.0077 };
+const CZAS_MIN_D1 = 60;
+const WZOR_WSPOLRZEDNYCH = /\d{2}\.\d{5}, \d{2}\.\d{5}/;
+
+test('uwaga B (dogrywka): wklejka nie przestawia stacji z sieci — metryka drogowa, nie kreska', async () => {
+  const promienM = przeliczenieCzasu({
+    czasGryMin: CZAS_MIN_D1, tryb: 'piesza', liczbaStacji: 3, pytaniaNaStacje: 1,
+  }).promienM;
+  const pamiec = new Map();
+  pamiec.set(kluczCacheSieci({ ...SRODEK_D1, promienM, tryb: 'piesza' }), JSON.stringify({
+    schemat: SCHEMAT_SIECI,
+    zapisanoMs: Date.now(),
+    dane: upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum'))),
+  }));
+  pamiec.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1', kanon: '2026-09-10',
+    konfig: {
+      liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1,
+      tematy: ['historia', 'architektura'], czasGryMin: CZAS_MIN_D1,
+    },
+  }));
+
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec });
+  ustawPozycjeTestowa(domAtrapa, '52.22570', '21.00770');
+  domAtrapa.kliknij('przycisk-dalej-stacje'); // sieć z pamięci telefonu — bez internetu
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/,
+    'stacje są z sieci drogowej (cache), nie z pierścienia');
+
+  const wiersze = [...domAtrapa.pobierz('lista-stacji').children];
+  assert.equal(wiersze.length, 3, 'sieć dała dokładnie 3 stacje');
+  assert.match(wiersze[0].textContent, /(\d+) m drogi/, 'lista pokazuje dystans sieciowy stacji 1');
+  const drogaStacji1 = Number(wiersze[0].textContent.match(/(\d+) m drogi/)[1]);
+  const wspolrzedneStacji1 = wiersze[0].textContent.match(WZOR_WSPOLRZEDNYCH)[0];
+  const wspolrzedneStacji2 = wiersze[1].textContent.match(WZOR_WSPOLRZEDNYCH)[0];
+  assert.notEqual(wspolrzedneStacji1, wspolrzedneStacji2, 'dwie różne stacje — jest co przestawić');
+
+  const paczka = {
+    ...czytajFixturePaczka(),
+    okolica: { lat: SRODEK_D1.lat, lon: SRODEK_D1.lon, promienM, miejsce: 'Śródmieście, Warszawa' },
+  };
+  domAtrapa.wklej('pole-odpowiedz', JSON.stringify(paczka));
+
+  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę');
+  const cel = domAtrapa.pobierz('gra-cel-stacji').textContent;
+  assert.ok(cel.includes(wspolrzedneStacji1),
+    `stacja 1 gry to stacja 1 z sieci (metryka drogowa); cel: „${cel}”`);
+  assert.ok(!cel.includes(wspolrzedneStacji2), 'kreska nie wygrała z drogą');
+  assert.doesNotMatch(domAtrapa.pobierz('status').textContent, /uporządkowano trasą/,
+    'kolejność sieciowa jest punktem stałym w metryce drogowej — nie ma czego przestawiać');
+  assert.match(cel, new RegExp(`${drogaStacji1} m drogą od poprzedniego punktu`),
+    'pierwszy odcinek niesie WŁASNY dystans sieciowy, nie cudzy');
 });

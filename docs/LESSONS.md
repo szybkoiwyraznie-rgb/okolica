@@ -557,3 +557,11 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Reguła:** kamienie M0–M12 są zamknięte jako zakres kodu. Brak zlecenia po audycie = czekaj na uwagi z terenu. Nie przypominaj o 360 px ani o „pierwszym wdrożeniu” mostu (właściciel wgrywa `.gs` przy PR). Nie bierz M3 z ROADMAP.
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L68`.
+
+## L69 (2026-09-14) — dwie metryki odległości w jednej grze
+
+**Objaw:** po wklejeniu paczki gra przestawiała stacje inaczej, niż pokazywał ekran stacji i numerował prompt, a odcinek dostawał cudzy dystans z etykietą „drogą".
+**Przyczyna:** funkcja porządkująca (`uporzadkujGre`) domyślnie liczy kreską — nowe miejsce wywołania nie podało `dystansStart`/`macierz`, więc porządkowało inną metryką niż ta, którą wybrano stacje, a macierz drogowa została w starej kolejności.
+**Reguła:** metryka porządkowania jest JEDNA na całą grę: ta, którą wybrano stacje. Każde nowe miejsce porządkowania bierze `dystansStart` i `macierz` ze źródła stacji, a gdy kolejność faktycznie się zmienia, wynik sieci (`wynikSieci`) kasuje się razem z nią — niezmiennik „kolejność stacji = kolejność macierzy" jest warunkiem czytania macierzy. Test reprodukcyjny pinuje TOŻSAMOŚĆ stacji 1 (współrzędne z ekranu stacji vs cel gry), nie tylko długości.
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L69`.

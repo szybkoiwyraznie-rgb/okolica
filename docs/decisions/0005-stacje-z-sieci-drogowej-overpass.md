@@ -219,3 +219,25 @@ zachodzi z równością (test pinuje ten przypadek). Świadomy koszt: trasa
 bywa o kilka procent dłuższa od wolnego TSP — gwarancja wejścia jest
 ważniejsza niż minimalna suma. Przy okazji: start z paczki kasuje
 `STAN.wynikSieci` (dystanse drogowe poprzedniej gry nie dotyczą tych stacji).
+
+## Aneks 2026-09-14 (m12-117) — metryka porządkowania jest jedna
+
+Audyt PR #24 (defekt D1): `sprawdzOdpowiedz` wołał `uporzadkujGre` bez
+`dystansStart` i `macierz`, więc wklejka porządkowała KRESKĄ nawet wtedy, gdy
+stacje wybrała sieć drogowa. Dwa skutki naraz: stacja 1 inna niż na ekranie
+stacji i niż w numeracji promptu (twarde wejście złamane w metryce gracza)
+oraz `STAN.wynikSieci` zostawiony w STAREJ kolejności — `dystanseOdcinkowM`
+przypisywał macierz przestawionym stacjom, więc odcinki dostawały cudze
+dystanse, a UI mówił przy nich „drogą".
+
+Decyzja: metryka porządkowania jest JEDNA na całą grę — ta, którą wybrano
+stacje. Wklejka podaje `dystansStart` = `dystansSieciowyM` stacji i `macierz`
+= `wynikSieci.macierz`; `wybierzStacje` oddaje obie tablice w tej samej
+kolejności, więc kolejność sieciowa jest punktem stałym i w zwykłej grze nic
+się nie przestawia. Brak albo NaN dystansu sieciowego jednej stacji cofa ją
+na kreskę — ta sama reguła co dla pary nieosiągalnej w `kolejnoscTrasy`.
+Gdy kolejność jednak się zmieni (piny po dragach, pierścień), `wynikSieci`
+kasuje się razem z nią: „kolejność `STAN.stacje` = kolejność `wynikSieci`"
+jest warunkiem czytania macierzy, nie zbiegiem okoliczności. Start z paczki
+repozytorium zostaje na kresce — plik zestawu niesie `{lat, lon, opis}` bez
+danych drogowych, więc metryki drogowej po prostu nie ma (ADR 0017 pkt 7).

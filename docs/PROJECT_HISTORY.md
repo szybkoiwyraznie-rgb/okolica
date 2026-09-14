@@ -5214,3 +5214,113 @@ Brama na koniec: `node --test` 793/793, `check` OK, `audyt` 0 naruszeń,
 budżet 97 388/100 000 (rezerwa 2 612). Handoff: `HANDOFF_2026-09-14c.md`.
 Rzeczy otwarte: uwagi z terenu (pętla z ROADMAP); deployment `.gs`
 u właściciela przy scaleniu PR (most bez zmian).
+
+## Sesja 2026-09-14d — audyt PR #24 (gałąź `arena/01a09fc9-okolica`)
+
+### 1. Start sesji
+
+Właściciel: „Kontynuujemy projekt” — bez zlecenia, więc sesja wg protokołu
+(ADR 0012): lektura §0 w całości (AGENTS, PROTOKOL, ADR-y 0001–0045 bez
+archiwum, LESSONS L1–L68, ENVIRONMENT, ROADMAP, HANDOFF_2026-09-14c), PR sesji,
+audyt poprzedniego scalonego PR (#24). Kamienie M0–M12 zamknięte (L68).
+
+- Gałąź `arena/01a09fc9-okolica`, baza `ea3cf8f` (= `main` po PR #24,
+  aplikacja **m12-116**). Klon płytki — `git fetch origin main --depth=50`
+  przed audytem (ENVIRONMENT §3).
+- Bramy przed zmianami: `npm test` **793/793**, `npm run check` OK (oba
+  szablony: §2 4015 znaków, §2.2 4263), `npm run audyt` **0 naruszeń**,
+  budżet lektury **97 388/100 000** tok (rezerwa 2 612).
+
+### 2. Audyt PR #24 (squash `ea3cf8f`, 24 pliki, +620/−62)
+
+Przegląd `git diff ea3cf8f^..ea3cf8f` plik po pliku: logika, zgodność
+z ADR 0005 (aneks m12-116) i protokołem, zieloność testów, łańcuch wersji,
+most.
+
+**Zweryfikowane jako poprawne:**
+
+- **`kolejnoscTrasy`** — wybór pierwszej stacji przez `dStart[i] < dStart[pierwsza] - 1e-9`,
+  więc remis rozstrzyga mniejszy indeks (determinizm, pin w teście);
+  wiersz `macierz[pierwsza]` czytany po indeksach ORYGINALNYCH (macierz jest
+  N×N przed redukcją), podmacierz `reszta × reszta` zbudowany poprawnie,
+  brak wpisu w macierzy albo wartość ujemna/`NaN` spada na kreskę.
+- **`uporzadkujGre`** — mapowanie pytań idzie po STARYM `id` stacji
+  (`noweNumery`), nie po pozycji; `id` i `poprawna` nietknięte, więc głosy
+  graczy (ADR 0028) i odkodowane indeksy przeżywają przestawienie. Pytania
+  do nieistniejących stacji przechodzą bez zmian (ADR 0015).
+- **`przyjmijZestawDoGry`** — `STAN.wynikSieci = null` jest prawidłowe:
+  stacje z `TO-zestaw/1` nie mają danych sieciowych, a `dystanseOdcinkowM(null)`
+  zwraca `null` (straż `wynik?.stacje`), więc `nowaRozgrywka` liczy odcinki
+  kreską. Przestawienie dzieje się PRZED `zalozGreMulti()` i przed `startGry()`,
+  więc gra na Drive i na telefonie ma tę samą kolejność.
+- **Ścieżka wklejki a protokół** — przestawienie po walidacji nie łamie PYT:
+  `stacja` zostaje w `1..N` z tym samym rozkładem (E04/E05), `id` spełnia
+  `^s[0-9]+p[0-9]+$` (E19), a `poprawna` w `STAN.paczka` jest już odkodowanym
+  indeksem 0–3 (dekoder rev1/rev2/rev3 działa przed `normalizujTematyPaczki`),
+  więc `zapakujPaczke(..., WERSJA_PROTOKOLU)` z markerem `PYT/1.0` i ponowne
+  `odpakujPaczke` są spójne — rekodowanie pozycyjne nie jest potrzebne
+  i nie jest wykonywane.
+- **Łańcuch wersji** — `?v=m12-116` ×43 (jeden łańcuch, `grep -rho` po
+  `index.html` + `app/*.js`), `WERSJA_SW = 'm12-116'`.
+- **Most `.gs` nietknięty** — w `docs/setup/` doszły wyłącznie dwa handoffy.
+- **Aneksy i piny** — ADR 0005 aneks m12-116 i ADR 0009 aneks m12-115 istnieją
+  i są przypięte w `test/kontrakt.test.js`; martwa fraza `≥ start-1 + 1-2`
+  wpisana do strażnika dryfu (L58); O3 z sesji b (martwe zdanie „Panel multi
+  żyje poza slotem”) domknięte.
+- **Testy z PR #24** — 9 nowych w `stacje.test.js` (przypadek właściciela
+  100/300/200 z równością nierówności, bateria 500 układów, tie-break,
+  metryka drogowa, N≤1 i N>10, trzy testy `uporzadkujGre`), E2E paczki wspak
+  w `zestawy-ui.test.js` (gra startuje trasą, pytania za numerami, `poprawna`
+  i treść nietknięte), pin promptu w `aplikacja.test.js`.
+
+**Defekt D1 (wprowadzony przez PR #24 — naprawa w tej sesji, m12-117):**
+w ścieżce wklejki (`sprawdzOdpowiedz`) `uporzadkujGre` jest wołane bez
+`dystansStart`/`macierz`, więc porządkuje ZAWSZE kreską — także wtedy, gdy
+stacje pochodzą z sieci drogowej i metryka drogowa JEST dostępna
+w `STAN.wynikSieci` (`stacje[].dystansSieciowyM` + `macierz`). Dwa skutki:
+
+1. **Sprzeczność z ADR 0005 aneks m12-116** („stacja 1 to ZAWSZE najbliższa
+   startu w metryce porządkowania — drogowa, gdy dostępna, inaczej kreska”):
+   gra bywa przestawiona inaczej, niż pokazywał ekran stacji i niż numerował
+   prompt, choć nikt nie ruszał pinów.
+2. **Stara macierz po przestawieniu**: `STAN.wynikSieci` nie jest kasowany,
+   więc `dystanseOdcinkowM(STAN.wynikSieci)` w `startGry()` przypisuje macierz
+   w STAREJ kolejności do stacji w NOWEJ — odcinki dostają cudze dystanse
+   i `dystansSieciowy: true`, a UI (`#gra-cel-stacji`) mówi „… m drogą
+   od poprzedniego punktu” liczbą z innego odcinka. Do PR #24 niezmiennik
+   „kolejność `STAN.stacje` = kolejność `STAN.wynikSieci`” trzymał (ręczne
+   przesunięcie pinu kasuje `wynikSieci`, pierścień go nie ma); przestawienie
+   we wklejce go złamało.
+
+Osiągalność zmierzona, nie zgadywana: sonda na fixture `overpass-centrum`
+(przegląd siatki pozycji, `wybierzStacje` + `kolejnoscTrasy` w obu metrykach)
+— przy `52.22570, 21.00820` i 3 stacjach kolejność drogowa to `0,1,2`,
+a prosta `0,2,1`; w samym tym fixture **177** pozycji daje rozjazd metryk
+(dystanse od startu: kreska 190/662/610 m, droga 445/705/711 m).
+
+**Werdykt:** PR #24 zielony (793/793) i zgodny z intencją zgłoszenia B w części
+dotyczącej wejścia w pętlę; jeden defekt spójności metryki i dystansów
+odcinków w ścieżce wklejki — naprawiony w tej sesji.
+
+**Naprawa D1 (`b41dfe0`, m12-117).** Najpierw test reprodukujący
+(`test/aplikacja.test.js` — „uwaga B (dogrywka): wklejka nie przestawia
+stacji z sieci"): w pamięci atrapy cache sieci pod kluczem
+`okolica:sieci:u3qcn5-700-piesza` (fixture `centrum`, `52.22570, 21.00770`,
+3 stacje × 1 pytanie, 60 min → promień 700 m), potem wklejka paczki z
+`paczka-ok.json` ze środkiem i promieniem z konfiguracji (E16). Przed
+naprawą test padał na tożsamości stacji 1: celem gry zostawała
+`52.22700, 21.01110` (kreska 273 m) z liczbą „485 m drogą", czyli dystansem
+stacji 1 z sieci. Po naprawie stacja 1 zostaje `52.22935, 21.01107`, status
+nie mówi „uporządkowano trasą" (kolejność sieciowa jest punktem stałym
+metryki drogowej), a pierwszy odcinek niesie własne 485 m.
+
+Naprawa: `sprawdzOdpowiedz` podaje `uporzadkujGre` metrykę źródła stacji —
+`dystansStart` = `dystansSieciowyM` (fallback na kreskę przy braku/NaN) i
+`macierz` = `STAN.wynikSieci.macierz` — a przy faktycznym przestawieniu
+kasuje `STAN.wynikSieci`. Pin w `test/kontrakt.test.js` przepisany z
+jednowierszowego wywołania na kontrakt metryki (plus pin aneksu); ADR 0005
+dostał aneks m12-117 „metryka porządkowania jest jedna"; rejestr lekcji —
+L69 (pełny opis w archiwum). Wersja `?v=m12-117` w 43 miejscach
++ `WERSJA_SW`. Brama po naprawie: **794/794** testów, `npm run check` OK
+(4015 / 4263 znaki), `npm run audyt` 0 naruszeń, budżet lektury
+**97 990 / 100 000 tok**.

@@ -1406,3 +1406,43 @@ to jedyny sposób, żeby znaleźć piny, które mierzyły „nic więcej się ni
 
 **Testy:** `test/dryf-dokumentow.test.js` (frazy „Kamień czeka na”, „najwyższy nieukończony kamień”, „najwyższy otwarty kamień milowy”, „pełna konfiguracja bez przewijania na 360”); kontrakt numeracji LESSONS.
 
+## L69 — dwie metryki odległości w jednej grze (2026-09-14, audyt PR #24 → m12-117)
+
+**Objaw (zmierzony, nie zgłoszony):** fixture `overpass-centrum`, pozycja
+`52.22570, 21.00770`, 3 stacje × 1 pytanie, 60 min → promień 700 m, klucz
+cache `okolica:sieci:u3qcn5-700-piesza`. Sieć wybiera stacje i numeruje je
+drogą: 485 / 527 / 524 m (kreską 466 / 273 / 670 m). Wklejka poprawnej paczki
+przestawiała grę na `2, 1, 3` — stacją 1 zostawała `52.22700, 21.01110`
+(273 m kreską, 527 m drogą) — i pokazywała na niej „485 m drogą od
+poprzedniego punktu", czyli dystans CUDZEGO odcinka z etykietą sieciową.
+Sonda na tym samym fixture: 4 740 pozycji z rozjazdem metryk (3 253 bez
+usterki S12) — nie jest to przypadek brzegowy.
+
+**Przyczyna:** `kolejnoscTrasy`/`uporzadkujGre` mają `dystansStart` i
+`macierz` jako OPCJE z domyślną kreską. PR #24 wpiął porządkowanie w dwie
+ścieżki; przy wklejce (`sprawdzOdpowiedz`) wywołanie powstało bez metryki,
+bo w miejscu wywołania nie było widać, że stacje przyszły z dijkstr. Druga
+połowa: przestawienie nie kasowało `STAN.wynikSieci`, a `dystanseOdcinkowM`
+czyta macierz POZYCJAMI, więc po zmianie kolejności przypisuje dystanse
+innym odcinkom i stempluje je `dystansSieciowy: true`.
+
+**Naprawa:** wklejka podaje `dystansStart` = `dystansSieciowyM` stacji
+(z fallbackiem na kreskę przy braku/NaN) i `macierz` = `wynikSieci.macierz`;
+przy faktycznym przestawieniu `STAN.wynikSieci = null`. Kolejność sieciowa
+jest wtedy punktem stałym — status nie mówi „uporządkowano trasą", a UI
+pokazuje własny dystans odcinka.
+
+**Testy:** `test/aplikacja.test.js` — „uwaga B (dogrywka): wklejka nie
+przestawia stacji z sieci": cache sieci w pamięci atrapy, wklejka z
+`paczka-ok.json` (środek i promień z konfiguracji, E16), asercja na
+TOŻSAMOŚĆ stacji 1 (współrzędne z `#lista-stacji` vs `#gra-cel-stacji`),
+brak „uporządkowano trasą" w statusie i własny dystans pierwszego odcinka.
+`test/kontrakt.test.js` — pin przepisany z jednowierszowego wywołania na
+kontrakt metryki (`dystansStart: drogi ? …`, `macierz: drogi ? …`, kasowanie
+`wynikSieci` w bloku wklejki) + pin aneksu m12-117.
+
+**Reguła:** patrz rejestr. Ogólniej: gdy funkcja ma metrykę jako parametr
+opcjonalny, każde NOWE miejsce wywołania musi odpowiedzieć na pytanie „jaką
+metryką powstały te dane?" — a test porównawczy ma pinować tożsamość
+elementu, nie tylko jego miarę (485 m było „poprawną" liczbą z cudzego
+odcinka).
