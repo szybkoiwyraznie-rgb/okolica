@@ -5410,5 +5410,5 @@ Testy: nowe — graf ignoruje korytarze nawet z cache, metryka punktu przy
 głównej ulicy ≈100 m, karta S12+S14, odmiana, strażnicy D1 i martwej
 frazy „pin(y)"; przepisane — brama m12-118 na równoległą ULICĘ
 (chodników już nie ma w grafie), rzeka-bez-mostu przez `path`, klasy i
-kwerenda Overpass; 800→805 testów zielonych. Aneks m12-119 do ADR 0005,
+kwerenda Overpass; 800→806 testów zielonych. Aneks m12-119 do ADR 0005,
 L71 (+ archiwum). Wersja `?v=m12-119` w 43 miejscach + `WERSJA_SW`.
