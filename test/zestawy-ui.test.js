@@ -7,7 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { zainstalujDom } from './helpers/dom.js';
-import { zapakujPaczke } from '../app/kodowanie.js';
+import { odpakujPaczke, zapakujPaczke } from '../app/kodowanie.js';
 import { KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY, kluczZestawu } from '../app/zestawy.js';
 import { DOMYSLNY_URL_MOSTU } from '../app/most.js';
 import { geohash } from '../app/geo.js';
@@ -705,5 +705,58 @@ test('sygnał czekania: przycisk mówi „Ładowanie paczki…", status pulsuje 
       'klik dołączył do wiszącego pobrania zamiast zaczynać nowe');
   } finally {
     globalThis.fetch = pierwotny;
+  }
+});
+
+/* -------- uwaga B 2026-09-14 (dogrywka): paczka w papierowej kolejności startuje trasą -------- */
+
+// POZYCJA = (52.12303, 20.74614): bliski ~68 m, środkowy ~188 m, daleki ~340 m.
+const ST_BLISKI = { lat: 52.1235, lon: 20.7455, opis: 'bliski' };
+const ST_SRODEK = { lat: 52.1245, lon: 20.7475, opis: 'środek' };
+const ST_DALEKI = { lat: 52.1255, lon: 20.7495, opis: 'daleki' };
+
+const paczkaTrojka = () => ({
+  ...paczkaMinimalna(),
+  pytania: [1, 2, 3].map((n) => ({
+    id: `s${n}p1`, stacja: n, temat: 'historia', tresc: `Pytanie stacji ${n}?`,
+    odpowiedzi: ['pierwsza', 'druga', 'trzecia', 'czwarta'], poprawna: (n - 1) % 4,
+    wyjasnienie: 'Bo tak mówią źródła.',
+    zrodla: [{ url: 'https://przyklad.org/haslo', tytul: 'Hasło', sprawdzono: '2026-09-06' }],
+    punkty: 10,
+  })),
+});
+
+/** Paczka „sprzed poprawki": stacje od dalekiej, pytania przypięte do numerów autora. */
+const plikZRepoWspak = () => {
+  const plik = plikZRepo();
+  plik.stacje = [ST_DALEKI, ST_SRODEK, ST_BLISKI];
+  plik.kontener = zapakujPaczke(paczkaTrojka(), 'PYT/1.0');
+  return plik;
+};
+
+test('uwaga B (dogrywka): gra z paczki wspak startuje trasą od pozycji, pytania idą za numerami', async () => {
+  const atrap = atrapaFetch({ indeks: JSON.stringify(indeksZPropozycja()), plik: JSON.stringify(plikZRepoWspak()) });
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://repo.przyklad/indeks.json']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length > 0, 'propozycja z repozytorium');
+    kliknijPierwszyPrzyciskZestawu(dom);
+    await czekajNa(dom, () => dom.pobierz('ekran-gra').hidden === false, 'gra z paczki');
+    assert.match(dom.pobierz('status').textContent, /bez modelu i bez Overpassa/);
+    assert.match(dom.pobierz('status').textContent, /uporządkowano trasą/, 'gra mówi wprost, że przestawiła stacje');
+    // Cicha kopia lokalna niesie grę JUŻ uporządkowaną: stacje i pytania.
+    const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
+    const zapis = JSON.parse(pamiec.get(kluczZestawu(rejestr.wpisy[0].skrot)));
+    assert.deepEqual(zapis.stacje.map((s) => s.opis), ['bliski', 'środek', 'daleki'], 'stacja 1 to fizycznie najbliższa pozycji');
+    assert.deepEqual(zapis.stacje.map((s) => s.id), [1, 2, 3]);
+    const { paczka } = odpakujPaczke(zapis.kontener);
+    assert.equal(paczka.pytania.find((p) => p.id === 's3p1').stacja, 1, 'pytanie bliskiej stacji wisi na numerze 1');
+    assert.equal(paczka.pytania.find((p) => p.id === 's1p1').stacja, 3, 'pytanie dalekiej stacji wisi na numerze 3');
+    assert.equal(paczka.pytania.find((p) => p.id === 's3p1').poprawna, 2, 'indeks poprawnej nietknięty — sprawdzanie działa');
+    assert.equal(paczka.pytania.find((p) => p.id === 's3p1').tresc, 'Pytanie stacji 3?', 'treść pytania nietknięta');
+  } finally {
+    atrap.przywroc();
   }
 });

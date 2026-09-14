@@ -292,6 +292,11 @@ const MARTWE_FRAZY = [
     nosniki: DOKUMENTY,
     powod: 'bramki 360 px na ROADMAP nie ma — właściciel gra na iPhonie (L68)',
   },
+  {
+    fraza: '≥ start-1 + 1-2',
+    nosniki: UI,
+    powod: 'fałszywa obietnica w komentarzu (do 2026-09-14): wolne TSP NIE realizuje nierówności właściciela — wejście wpina twardo kolejnoscTrasy (ADR 0005 aneks m12-116)',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {
