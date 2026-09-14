@@ -5082,3 +5082,20 @@ właściciela, ale zostawia usterkę widoczną (G1), brak bumpa cache (V1),
 brak testów algorytmu trasy (B1) i dryf ADR (B2, D1, F1). Naprawy w tej
 sesji, bez pytania właściciela (to błędy implementacji, nie nowe decyzje).
 
+### 3. Naprawy usterki z audytu (m12-114 → m12-115)
+
+| Id | Commit | Co |
+|---|---|---|
+| G1 | `2d98672` | `zaliczoneStacjeIds(stan)` w `rozgrywka.js` — pinezki biorą `o.stacja`, nie indeks tablicy |
+| B1 | `43f4fd4` | eksport `optymalnaKolejnosc`; testy N≤1, kolinearne, kąt vs dystans, macierz niesymetryczna, N=11 greedy |
+| C1 | `46b116c` | trzy puste `try/catch` wokół `scrollTop` usunięte; strażnik `if (el)` zostaje |
+| E1 | `46b116c` | inline `li.style.fontSize/fontWeight/padding` w lobby usunięte — prawda w CSS `#lobby-gracze li` |
+| F2 | `46b116c` | `czyStartPoDalej` usunięta; `nastepnaStacja` / `wznowGre` startują odcinek z fazy przygotowania wprost |
+| B2 | `46b116c` | aneks ADR 0005 — Held-Karp, eksport, `dMiedzy` ASCII |
+| D1 | `46b116c` | aneks ADR 0011 — puls jako negatyw `#000`/`#fff` (21:1), wyjątek od tokenów |
+| F1 | `46b116c` | aneksy ADR 0027 i 0044 — warstwy `#multi-wybor-stacji` nie ma |
+| V1 | `8aba208` | cache-bust `?v=m12-114` → `m12-115` w `index.html`, `app/*.js`, `WERSJA_SW` |
+
+Brama po naprawach: `npm test` **781/781** (767 + testy G1/B1/C1/E1/F2/D1/B2/ADR). Most `.gs` nietknięty.
+
+M3–M12 nadal czekają na kryteria terenowe właściciela.
