@@ -114,3 +114,12 @@ ADR 0041 (sygnał = dźwięk i wibracja), ADR 0043 (koniec gry za ikoną ⚙ STA
 ADR 0038 (minimalny ekran wyniku), ADR 0039 (ranking między grami),
 ADR 0011 (mobile-first: czytelność i cele dotykowe), ADR 0034 (panel centralny —
 warstwa odliczania celowo nim NIE jest).
+
+## Aneks 2026-09-14 (m12-115, uwaga F) — wybór stacji usunięty, nie przeprowadzony
+
+Pkt 5 („Wybór stacji w Wyścigu na Orientację PRZEPROWADZIŁ SIĘ do panelu fazy A”,
+`#multi-wybor-stacji`) jest nieaktualny. Warstwy wyboru nie ma; wyścig wykrywa
+dotarcie do dowolnej niezaliczonej stacji (ADR 0027 aneks 2026-09-14). Reszta
+tego ADR — odliczanie 5-4-3-2-1-START, brak karty `#gra-panel-multi`, pasek
+sync tylko w lobby, wspólny wynik na ekranie hotseat — bez zmian.
+

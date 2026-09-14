@@ -183,3 +183,13 @@ na serwer, który odpowiada. Decyzja: `POLITYKA.odstepMs = 1_000` — krótka
 pauza grzecznościowa po `429`/`406`/5xx; przełączenie po martwej instancji
 zostaje OD RAZU, jak dotąd. `?odstep=0` (skrót testowy) nietknięte. Zmienia
 pkt 1 Decyzji („pauza 30 s między próbami”) i `ASSETS` §2 pkt 3.
+
+## Aneks 2026-09-14 (m12-115) — kolejność trasy: Held-Karp, eksport `optymalnaKolejnosc`
+
+Kolejność stacji na pętli liczy `optymalnaKolejnosc` w `app/stacje.js`:
+programowanie dynamiczne Held-Karp O(N²·2^N) dla N≤10, zachłanność
+najbliższego sąsiada dla N>10. Funkcja jest **eksportowana**, żeby testy
+(`test/stacje.test.js`) mogły pinować: N≤1, kolinearne, kąt vs dystans,
+macierz niesymetryczną i N=11 (greedy). Macierz odległości to `dMiedzy`
+(ASCII, bez ogonka) — identyfikator nie zależy od NFC/NFD.
+

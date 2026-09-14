@@ -2005,3 +2005,61 @@ test('kontrakt: pinezki zaliczone biorą id stacji, nie indeks tablicy odcinków
   assert.match(roz, /export function zaliczoneStacjeIds/, 'helper jest eksportowany');
   assert.match(roz, /o\.stacja/, 'helper czyta pole stacja');
 });
+
+
+test('kontrakt 2026-09-14 C1/E1/F2: scroll bez pustego catch, lobby w CSS, martwy start-po-dalej', () => {
+  // C1: `scrollTop` na warstwie startowej nie może chować się w pustym try/catch —
+  // jeśli elementu nie ma, strażnik `if (el)` wystarcza, a pusty catch ukrywałby
+  // prawdziwy błąd (LESSONS L6).
+  assert.equal(/try \{[^}]*scrollTop[^}]*\} catch \{\}/.test(APP), false,
+    'scrollTop warstwy startowej bez pustego catch {}');
+  assert.match(APP, /if \(startEl\) startEl\.scrollTop = 0;/,
+    'pokazMapeStartowa zeruje scroll z jawnym strażnikiem');
+
+  // E1: imiona w lobby powiększa CSS, nie trzy `li.style.*` w pętli.
+  assert.equal(APP.includes('li.style.fontSize'), false, 'app.js nie ustawia fontSize inline');
+  assert.equal(APP.includes('li.style.fontWeight'), false, 'app.js nie ustawia fontWeight inline');
+  assert.match(STYLE, /#lobby-gracze li \{\n  font-size: 22px;\n  font-weight: 700;/,
+    'CSS `#lobby-gracze li` niesie 22px/700');
+
+  // F2: bramka zawsze-true umarła; odcinek rusza z fazy przygotowania wprost.
+  assert.equal(APP.includes('czyStartPoDalej'), false,
+    'martwa funkcja nie wraca (LESSONS L31)');
+  assert.match(APP, /if \(świeży\.faza === FAZY\.przygotowanie\) startOdcinkaGry\(\);/,
+    'nastepnaStacja startuje odcinek bez bramki');
+  assert.match(APP, /if \(r\.faza === FAZY\.przygotowanie\) startOdcinkaGry\(\);/,
+    'wznowGre też startuje odcinek bez bramki');
+});
+
+test('kontrakt 2026-09-14 D1: puls czekania to negatyw (czarne tło, biały tekst)', () => {
+  // Wyjątek od tokenów palety (ADR 0011 pkt 4): w słońcu przezroczystość
+  // `--tekst` na `--tlo` była niewidoczna. Kontrast #000/#fff = 21:1 (AAA).
+  assert.match(STYLE, /\.pulsuje \{\n  background: #000;\n  color: #fff;/,
+    '.pulsuje jest negatywem — nie tokenami karty');
+  assert.match(STYLE, /@media \(prefers-reduced-motion: reduce\) \{\n  \.pulsuje \{ animation: none; \}/,
+    'reduced-motion gasi ruch, czarny boks zostaje');
+});
+
+test('kontrakt 2026-09-14 B2: optymalnaKolejnosc jest eksportowana (Held-Karp)', () => {
+  const stacje = czytaj('app/stacje.js');
+  assert.match(stacje, /export function optymalnaKolejnosc/,
+    'Held-Karp jest eksportowany — testy pinują kolejność trasy');
+  assert.match(stacje, /const dMiedzy = \[\];/,
+    'macierz odległości bez ogonka (ASCII)');
+});
+
+
+test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => {
+  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+    /Aneks 2026-09-14 \(m12-115\) — kolejność trasy: Held-Karp/,
+    'ADR 0005 dokumentuje eksport Held-Karp');
+  assert.match(czytaj('docs/decisions/0011-mobile-first-dotyk.md'),
+    /Aneks 2026-09-14 \(m12-115, zgłoszenie D\) — puls czekania jest NEGATYWEM/,
+    'ADR 0011 dokumentuje wyjątek negatywu');
+  assert.match(czytaj('docs/decisions/0027-pytania-po-rowno-i-wolna-kolejnosc.md'),
+    /Aneks 2026-09-14 \(m12-115, uwaga F\) — Wyścig bez warstwy wyboru stacji/,
+    'ADR 0027 dokumentuje brak warstwy wyboru');
+  assert.match(czytaj('docs/decisions/0044-odliczanie-po-starcie-gry-wieloosobowej.md'),
+    /Aneks 2026-09-14 \(m12-115, uwaga F\) — wybór stacji usunięty, nie przeprowadzony/,
+    'ADR 0044 unieważnia pkt 5 o przeprowadzce wyboru');
+});

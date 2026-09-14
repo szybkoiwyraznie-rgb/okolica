@@ -1827,7 +1827,7 @@ function kliknijOdpowiedz(dom, indeks) {
  * Zadanie H: zamknięcie stacji pełną ścieżką produkcyjną
  * (start → dojście GPS → odpowiedź → „Następna stacja”, która sama startuje
  * kolejny odcinek). Start tylko z panelu A — po „Następnej stacji” odcinek
- * już trwa (czyStartPoDalej). `odpowiedz: null` = poprawna z fixture.
+ * już trwa. `odpowiedz: null` = poprawna z fixture.
  */
 async function zamknijStacje(dom, { paczka, numerStacji, odpowiedz = null }) {
   if (dom.pobierz('gra-panel-oczekuje').hidden === false) dom.kliknij('przycisk-start-odcinka');

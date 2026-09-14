@@ -94,3 +94,18 @@ wyłączona, a komunikat zostaje na ekranie bez ruchu. Przycisk paczki
 w trakcie pobierania jest dodatkowo `disabled` i zmienia etykietę na
 „⏳ Ładowanie paczki…" — sygnał i blokada drugiego kliku (podwójne pobranie
 i podwójne „użycie" paczki) w jednym; dotyk ma 44 px jak dotąd.
+
+## Aneks 2026-09-14 (m12-115, zgłoszenie D) — puls czekania jest NEGATYWEM
+
+Aneks 2026-09-13d zakładał, że `.pulsuje` tylko zmienia przezroczystość
+tekstu na tle karty (`--tekst` na `--tlo`). W terenie, w słońcu, na jasnym
+motywie to było niewidoczne. Klasa dostaje **negatyw**: `background: #000;
+color: #fff` (kontrast 21:1, powyżej AAA 7:1). To wyjątek od tokenów palety
+(pkt 4 tego ADR) — celowo nie `--tekst`/`--tlo`, bo te pary w motywie jasnym
+są za blisko, żeby sygnał „czekam” przebił się przez kartę.
+
+Animacja przezroczystości 1 → 0,55 zostaje (było 0,7 — za subtelne na czarnym
+boksie). Przy `prefers-reduced-motion: reduce` ruch gaśnie, a czarny boks
+z białym zdaniem zostaje na ekranie. Tekst nadal jest nośnikiem informacji
+(pkt 3): animacja jest dodatkiem, nie zamiennikiem. Pin w `test/kontrakt.test.js`.
+
