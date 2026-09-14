@@ -825,6 +825,51 @@ test('uwaga G: koniec gry hosta NIE kończy gry innym — gość gra dalej, a mo
   }
 });
 
+test('uwaga E (2026-09-14): „Wróć na początek” po grze sieciowej zamyka synchronizację — stara gra się NIE odradza', async () => {
+  // Zgłoszenie właściciela (poważne): po zakończeniu gry sieciowej i powrocie
+  // „🏠 Wróć na początek” podczas wybierania NASTĘPNEJ gry (hotseat albo multi)
+  // nagle startowało odliczanie i WRACAŁA poprzednia gra sieciowa — bez
+  // wybrania czegokolwiek. Mechanizm: rezygnacja zostawia polling żywy (celowo
+  // — wspólna tabela), a „Wróć na początek” czyścił rozgrywkę BEZ kończenia
+  // synchronizacji, więc najbliższy krok pollingu widział „trwa + brak gry na
+  // ekranie” i odradzał starą grę z odliczaniem (onStanGryMulti).
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+
+  // Host kończy grę na swoim telefonie (⚙ START GRY → TAK), gość gra dalej —
+  // gra na moście NADAL ma stan „trwa” (uwaga G).
+  await przejdzStacje(A);
+  await przepompuj(A, 1);
+  const kod = kodGry(most);
+  await potwierdzKoniecGry(A);
+  assert.equal(most.znajdz(kod).stan, 'trwa', 'gość gra dalej — gra trwa na moście');
+
+  // „🏠 Wróć na początek”: mapa startowa (właściciel, 2026-09-08) — stąd ikoną
+  // ⚙ otwiera się setup NASTĘPNEJ gry…
+  await klik(A, 'przycisk-nowa-gra');
+  assert.equal(el(A, 'ekran-gra').hidden, true, 'ekran gry zamknięty po powrocie');
+  await klik(A, 'przycisk-setup');
+  assert.equal(el(A, 'ekran-setup').hidden, false, 'Ala wybiera nową grę na setupie');
+
+  // …i NASTĘPNE KROKI synchronizacji niczego nie odradzają: dawniej polling
+  // widział „trwa + brak rozgrywki” i wpychał starą grę z odliczaniem.
+  await przepompuj(A, 2);
+  assert.equal(el(A, 'ekran-gra').hidden, true, 'stara gra NIE wraca podczas wyboru nowej (uwaga E)');
+  assert.equal(el(A, 'odliczanie').hidden, true, 'żadnego odliczania w trakcie wyboru nowej gry');
+  assert.equal(el(A, 'ekran-setup').hidden, false, 'Ala zostaje na setupie');
+  assert.equal(most.znajdz(kod).stan, 'trwa', 'gra na moście niezmieniona — to telefon wyszedł, nie most');
+});
+
 test('uwaga F: po starcie gry sygnał i odliczanie 5-4-3-2-1-START u hosta i u gościa', async () => {
   const most = atrapaMostu();
   const pamiecA = new Map();

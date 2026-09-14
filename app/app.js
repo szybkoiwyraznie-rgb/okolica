@@ -3559,6 +3559,21 @@ function zakonczGreRecznie() {
  */
 function wrocNaPoczatek() {
   const r = STAN.rozgrywka;
+  // Uwaga E (2026-09-14): wyjście z ekranu wyników KONCZY kontekst sieciowy.
+  // Rezygnacja zostawia synchronizację żywą celowo (wspólna tabela w trakcie
+  // oglądania wyników), ale jeśli nic jej nie zamknie, polling odradza dawną
+  // grę w środku wyboru nowej (poważne zgłoszenie właściciela). Gdy gracz
+  // opuszcza wyniki, tabeli już nie ogląda — polling nie ma po co żyć.
+  const m = STAN.multi;
+  if (m) {
+    const sesja = { kod: m.gra?.kod, idGry: m.gra?.idGry ?? null, urlMostu: m.urlMostu };
+    zatrzymajSyncMulti(); // koniec pollingu i kolizji wysyłek
+    STAN.multi = null;
+    STAN.trasaDlugosc = 0;
+    // Ostatnie wypchnięcie zaległych zdarzeń (np. rezygnacji, która nie
+    // wyszła bez zasięgu) — w tle, z pamięci telefonu (ADR 0019 aneks).
+    void dostarczZalegleZdarzeniaMulti(sesja);
+  }
   zatrzymajSymulacje();
   if (typeof localStorage !== 'undefined') {
     const kod = r ? oczyscKodGry(r.kodGry) : '';
@@ -4931,7 +4946,12 @@ function onStanGryMulti(gra) {
   }
   m.gra = czysta;
   m.ostatniStanMs = Date.now();
-  if (gra.stan === 'trwa' && !STAN.rozgrywka && STAN.ekran !== 'gra') {
+  // Uwaga E (2026-09-14): gra, z której TEN telefon wyszedł (rezygnacja),
+  // nigdy nie odradza się z pollingu — nawet gdy na moście wciąż „trwa”, bo
+  // grają inni. To była przyczyna poważnego buga: po „Wróć na początek”
+  // najbliższy krok synchronizacji widział „trwa + brak rozgrywki” i wpychał
+  // starą grę z odliczaniem w środku wyboru nowej.
+  if (gra.stan === 'trwa' && !STAN.rozgrywka && STAN.ekran !== 'gra' && !m.zrezygnowano) {
     uruchomGreMulti(gra, { odliczanie: !STAN.wznawiamMulti });
   }
   STAN.wznawiamMulti = false;
@@ -5267,6 +5287,10 @@ function rezygnujZGryMulti() {
     powod: organizator ? 'organizator zakończył grę na swoim telefonie' : 'rezygnacja z telefonu',
   });
   STAN.graZakonczonaRecznie = true;
+  // Uwaga E (2026-09-14): znak „ten telefon wyszedł z tej gry”. Blokuje
+  // odradzanie gry w `onStanGryMulti` i sygnalizuje `wrocNaPoczatek`, że
+  // razem z ekranem wyników ma się skończyć synchronizacja.
+  m.zrezygnowano = true;
   // Sesja znika razem z wyjściem (uwaga K, ADR 0045): po odświeżeniu telefon nie
   // wraca do gry, z której gracz wyszedł. Widok zostaje — synchronizacja działa
   // dalej w pamięci i pokaże wspólną tabelę, gdy most domknie grę.
