@@ -5584,3 +5584,44 @@ Po audycie brak zlecenia — kolejka pracy to uwagi z terenu (ROADMAP „Co jest
 otwarte", LESSONS L68). Otwarta weryfikacja terenowa po stronie właściciela:
 ADR 0047 — po wznowieniu przybliżonej karty strona ma nie być „ściśnięta"
 palcami, a mapa ma szczypać normalnie.
+
+## Sesja 2026-09-14i, dogrywka — uwagi z terenu (A), m12-124
+
+Właściciel (test na telefonie): klik ⚙ na ekranie „Stacje w Twojej okolicy"
+(pozycja) wracał na mapę startową, zerwał pasek kroki i przerywał procedurę
+setupu; ponowny klik nie dawał widocznego efektu, a powrót (ikoną oka)
+lądował na pierwszym ekranie setupu. **Decyzja (cytat):** „podczas setupu ten
+guzik (start gry) powinien działać dokładnie tak samo jak oko na dole strony
+- chować layer, przywracać layer w tym miejscu setupu w którym jesteśmy".
+
+Diagnoza: `przelaczSetup()` na każdym kroku setupu (EKRANY) wołał
+`pokazMapeStartowa()` — `STAN.ekran = 'mapa'` + zerowanie znaczników
+`aktywny`/`zrobione` paska kroki; z mapy `pokazEkran('setup')` lądował na
+pierwszym ekranie, nie tam, gdzie gracz był.
+
+Wdrożenie (commit 8f85a80):
+
+- `EKRANY_SETUPU` (EKRANY bez `gra`); `przelaczSetup` na ekranach setupu woła
+  `przelaczPodgladMapy({ fokus: 'przycisk-setup' })` — ten sam stan co oko
+  (`STAN.podgladMapy`), `STAN.ekran` nietknięty: zero resetu kroki, zero
+  powrotu na mapę startową; drugi klik ⚙ przywraca ten sam ekran i scroll.
+  Jeden stan, dwa wejścia: oko i ⚙ świecą się synchronicznie (`aria-pressed`).
+- `przelaczPodgladMapy({ fokus })` — opcjonalny parametr fokusu (domyślnie
+  oko); ⚙ trzyma fokus na ikonie, w którą gracz kliknął.
+- Tytuł ikony na ekranach setupu: „chowa i przywraca warstwę setupu (jak
+  oko)"; tytuły w trakcie gry i na mapie startowej bez zmian.
+- Bez zmian: w trakcie gry — warstwa końca gry (ADR 0043 pkt 1); po jej
+  zakończeniu (ekran `gra`, faza `koniec`) — mapa startowa; z mapy startowej
+  — otwiera setup.
+- Aneks ADR 0043 z 2026-09-14 (m12-124, uwaga A) zastępuje część pkt 2
+  decyzji („z kroku gry wraca na mapę startową") dla ekranów setupu; stary
+  tor zakazany w kontrakcie źródłowo (L55).
+- Testy: F3 przepisany na nową formę (drugi klik nie opuszcza ekranu setupu,
+  stan podglądu, powrót); nowy test uwagi A na ekranie pozycji (`dataset.ekran`
+  nietknięty, powrót na ten sam ekran — paska kroki nie asertuje się w
+  atrapie, bo li bez id są w niej nieosiągalne, L16); piny w kontrakcie ADR
+  0043 (nowa gałąź + zakaz starego toru).
+- Bump `?v=m12-124` (43 miejsca) + `WERSJA_SW` (pozostałe moduły: wyłącznie
+  `?v=`). 812→**813** testów zielonych.
+
+Budżet lektury po aneksie: 99 521/100 000.
