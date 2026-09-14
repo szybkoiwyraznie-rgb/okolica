@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ZRODLA_STACJI, dystanseOdcinkowM, kolejnoscTrasy, najmniejszyOdstepM, optymalnaKolejnosc, stacjeProste, uporzadkujGre, uzupelnijOdleglosci } from '../app/stacje.js';
+import { ZRODLA_STACJI, dystanseOdcinkowM, kolejnoscTrasy, najmniejszyOdstepM, optymalnaKolejnosc, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, zlozKarteUsterekStacji } from '../app/stacje.js';
 import { odlegloscM, przesunPunkt } from '../app/geo.js';
 
 const WARSZAWA = { lat: 52.2297, lon: 21.0122 };
@@ -348,23 +348,25 @@ test('mijaneStacje: pin w zasięgu którejkolwiek trasy, pozycja 0 nigdy nie jes
 });
 
 /**
- * Sieć z ręki, która odtwarza zgłoszenie terenowe (gra „m117”): ulica na
- * północ z chodnikiem mapowanym OSOBNO (wpięty do ulicy dopiero na 600 m).
- * Pin na chodniku 380 m od startu wygląda na 381 m (kreska), ale drogą jest
- * 845 m — i leży 25 m od trasy do stacji 1 (ulicą), więc gracz idący do
- * jedynki mija go i musi wrócić. To dokładnie układ właściciela: „od startu do
- * nr 2 mam 100 m, do nr 1 — 300 m obok nr 2, i wracam tą samą drogą”.
+ * Sieć z ręki, która odtwarza kształt zgłoszenia terenowego po m12-119:
+ * główna ulica na północ i równoległa uliczka 25 m obok, wpięta do głównej
+ * dopiero na 600 m. Od m12-119 osobno mapowane CHODNIKI (footway) nie wchodzą
+ * do grafu trasowania (uwaga B, gra „m118”), więc geometrię patologii
+ * odtwarzamy równoległą ulicą — tak w terenie wyglądają dwie ulice osiedla
+ * połączone tylko na jednym końcu. Pin przy bocznej 380 m od startu wygląda
+ * na 381 m (kreska), ale drogą jest 845 m — i leży 25 m od trasy do stacji 1
+ * (główną), więc gracz idący do jedynki mija go i musi wrócić.
  */
-function siecZChodnikiem() {
+function siecZRownoleglaUlica() {
   const ulica = { id: 1, punkty: linia(WARSZAWA, 0, 50, 18), tags: { highway: 'residential', name: 'Główna' } };
   const przyUlicy = przesunPunkt(WARSZAWA, 0, 600);
-  const chodnik = {
+  const boczna = {
     id: 2,
     punkty: linia(przesunPunkt(przyUlicy, 90, 25), 180, 20, 14),
-    tags: { highway: 'footway', name: 'chodnik' },
+    tags: { highway: 'residential', name: 'Spokojna' },
   };
-  const laczik = { id: 3, punkty: [przyUlicy, przesunPunkt(przyUlicy, 90, 25)], tags: { highway: 'footway' } };
-  const graf = budujGraf({ drogi: [ulica, chodnik, laczik] }, { tryb: 'piesza' });
+  const laczik = { id: 3, punkty: [przyUlicy, przesunPunkt(przyUlicy, 90, 25)], tags: { highway: 'residential' } };
+  const graf = budujGraf({ drogi: [ulica, boczna, laczik] }, { tryb: 'piesza' });
   const kandydaci = [
     przesunPunkt(WARSZAWA, 0, 400),
     przesunPunkt(WARSZAWA, 0, 800),
@@ -381,7 +383,7 @@ function trasyWejscia(srodek, stacja1) {
 }
 
 test('brama wejścia: stary wybór prowadzi trasą obok innego pinu (defekt z pola)', () => {
-  const { graf, kandydaci } = siecZChodnikiem();
+  const { graf, kandydaci } = siecZRownoleglaUlica();
   const wynik = wybierzStacje({
     graf,
     kandydaci,
@@ -402,7 +404,7 @@ test('brama wejścia: stary wybór prowadzi trasą obok innego pinu (defekt z po
 });
 
 test('brama wejścia: pin mijany wypada z układu, stacja 1 zostaje najbliższa DROGĄ', () => {
-  const { graf, kandydaci } = siecZChodnikiem();
+  const { graf, kandydaci } = siecZRownoleglaUlica();
   const wynik = wybierzStacje({
     graf,
     kandydaci,
@@ -447,4 +449,32 @@ test('brama wejścia: na fixture’ach nie mija i nie psuje twardego wejścia (w
       assert.equal(Math.min(...dystanse), dystanse[0], `${scenariusz.nazwa}: węzeł ${i} — stacja 1 najbliższa drogą`);
     }
   }
+});
+
+test('D3 (m12-119): karta błędów niekompletu nie ukrywa S14 bramy wejścia', () => {
+  const rada = 'bogaty syntetyczny S12 z poradą UI';
+  const s12 = { kod: 'S12', komunikat: 'Wybrano 2 z 3 stacji.' };
+  const s14 = { kod: 'S14', komunikat: 'Trasa do stacji 1 mija stację 2.' };
+  // komplet bez usterek: karta pusta
+  assert.deepEqual(
+    zlozKarteUsterekStacji({ stacje: [{}, {}, {}], usterki: [] }, { zamowione: 3, komunikatS12: rada }),
+    [],
+  );
+  // komplet z mijaniem: karta mówi tylko o S14
+  assert.deepEqual(
+    zlozKarteUsterekStacji({ stacje: [{}, {}, {}], usterki: [s14] }, { zamowione: 3, komunikatS12: rada }),
+    [s14],
+  );
+  // niekomplet bez mijania: jeden, bogaty S12 (zdawkowy z wyboru wypada)
+  assert.deepEqual(
+    zlozKarteUsterekStacji({ stacje: [{}, {}], usterki: [s12] }, { zamowione: 3, komunikatS12: rada }),
+    [{ kod: 'S12', komunikat: rada }],
+  );
+  // sedno D3: niekomplet + mijanie — karta musi pokazać OBA kody
+  const karta = zlozKarteUsterekStacji(
+    { stacje: [{}, {}], usterki: [s12, s14] },
+    { zamowione: 3, komunikatS12: rada },
+  );
+  assert.deepEqual(karta.map((u) => u.kod), ['S12', 'S14'], 'S14 nie znika pod syntetycznym S12');
+  assert.equal(karta[0].komunikat, rada, 'na pierwszym miejscu bogaty komunikat z poradą');
 });

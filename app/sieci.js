@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-118';
-import { TRYBY } from './konfig.js?v=m12-118';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-120';
+import { TRYBY } from './konfig.js?v=m12-120';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -611,7 +611,8 @@ function dopiszMiasto(nazwa, miasto) {
  *
  * Deterministyczne: kolejność = kolejność węzłów grafu, potem POI z parsera.
  * Ten sam węzeł zajęty przez POI dostaje typ `poi` (POI wygrywa z gołym
- * fragmentem chodnika — ciekawsza stacja).
+ * fragmentem ulicy — ciekawsza stacja; od m12-119 graf trasowania pieszego
+ * nie zawiera już osobno mapowanych chodników, ADR 0005 aneks m12-119).
  */
 export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}) {
   const konfigTrybu = TRYBY[tryb];

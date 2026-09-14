@@ -19,25 +19,52 @@ export const TRYBY = {
   piesza: {
     etykieta: 'piesza',
     ikona: '🚶',
-    opis: 'Pieszo — stacje w zasięgu spaceru, chodniki, ścieżki i place',
+    opis: 'Pieszo — stacje przy ulicach, ścieżkach i placach w zasięgu spaceru',
     zoom: 17,
     predkoscKmh: 4.5,
+    // m12-119 (uwaga B, właściciel 2026-09-14): TRASOWANIE PO UKŁADZIE
+    // ULIC, BEZ KORYTARZY. Chodniki (footway), schody (steps) i drogi dla
+    // rowerów (cycleway) bywają w OSM mapowane jako osobne korytarze
+    // wzdłuż jezdni, wpięte do niej dopiero na skrzyżowaniach — punkt przy
+    // głównej ulicy dostawał wtedy dystans drogowy mierzony objazdem
+    // (100 m fizycznie → 512 m w grafie: węzeł na chodniku nie ma
+    // skrótu przez jezdnię) i numery stacji odwracały się względem tego,
+    // co gracz widzi. UWAGA: „dodać ulice i zatrzymać chodniki" NIE
+    // działa — pomiar m12-120 pokazał, że najbliższy węzeł i tak ląduje
+    // na chodniku (snapuje się po najbliższej odległości), a krawędzi
+    // chodnik↔jezdnia w środku kwartału nie ma.
+    //
+    // m12-120 (pytanie właściciela: „zamiast ujmować, dodać ulice?"):
+    // tak — pełny układ ulic jak dla samochodów: wcześniej pieszy nie miał
+    // tertiary/secondary/primary/unclassified, a typowa wieś zabudowana
+    // wzdłuż drogi wojewódzkiej (primary) bez chodników w OSM nie miała
+    // w ogóle korytarza. Pomiar na fixture: kompletność układów w centrum
+    // 95/96 → 96/96, 188 → 211 węzłów. Jedynymi „ulicami do obejścia"
+    // zostają motorway i trunk. Zostają też: deptaki (pedestrian — to
+    // ulice bez aut), woonerfy, service oraz path/track — one bywają
+    // JEDYNĄ siecią w lesie i parku.
     klasyDrog: [
-      'footway', 'path', 'pedestrian', 'steps', 'living_street', 'residential',
-      'service', 'track', 'cycleway',
+      'path', 'pedestrian', 'living_street', 'residential',
+      'service', 'track', 'tertiary', 'unclassified', 'secondary', 'primary',
     ],
+    wykluczoneKlasy: ['motorway', 'trunk', 'footway', 'steps', 'cycleway'],
   },
   rower: {
     etykieta: 'rowerowa',
     ikona: '🚴',
-    opis: 'Rowerem — drogi rowerowe i spokojne ulice, bez schodów',
+    opis: 'Rowerem — spokojne ulice i ścieżki, bez schodów',
     zoom: 15,
     predkoscKmh: 15,
+    // m12-119: bez cycleway — DDR wzdłuż jezdni ma tę samą wadę co chodnik:
+    // wpięcia tylko na skrzyżowaniach zawyżają dystanse. m12-120: pełny
+    // układ ulic (doszły secondary/primary) — w małej miejscowości rower
+    // jedzie każdą zwykłą ulicą; autostrady/ekspresówki wykluczone.
+    // path/track zostają na leśne ścieżki i drogi gruntowe.
     klasyDrog: [
-      'cycleway', 'path', 'pedestrian', 'living_street', 'residential',
-      'service', 'track', 'tertiary', 'unclassified',
+      'path', 'pedestrian', 'living_street', 'residential',
+      'service', 'track', 'tertiary', 'unclassified', 'secondary', 'primary',
     ],
-    wykluczoneKlasy: ['steps', 'motorway', 'trunk'],
+    wykluczoneKlasy: ['steps', 'motorway', 'trunk', 'footway', 'cycleway'],
   },
   samochodowa: {
     etykieta: 'samochodowa',

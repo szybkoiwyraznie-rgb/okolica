@@ -13,7 +13,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU } from '../app/protokol.js';
-import { PODKLADY, TEMATY, WIEK } from '../app/konfig.js';
+import { PODKLADY, TEMATY, TRYBY, WIEK } from '../app/konfig.js';
 import { KODOWANIE, SCHEMAT_KONTENERA } from '../app/kodowanie.js';
 import { KODY_POZYCJI } from '../app/pozycja.js';
 import { KODY_WIELOOSOBOWE } from '../app/wieloosobowa.js';
@@ -2118,4 +2118,65 @@ test('kontrakt bramy wejścia: pin mijany wypada z układu, próg z ADR 0034', (
     'sieć melduje nieusuwalne mijanie kodem S14');
   assert.ok(APP.includes('Trasa od startu do stacji 1 mija inną stację (kod S14)'),
     'UI mówi o mijaniu wprost, bez udawania czystej trasy');
+});
+
+/**
+ * m12-119 (uwaga B, gra „m118”): trasowanie piesze i rowerowe biegnie po
+ * UKŁADZIE ULIC. Osobno mapowane korytarze wzdłuż jezdni (chodnik, schody,
+ * DDR) bywają wpięte do niej tylko na dalekich skrzyżowaniach i zatruwają
+ * dystans sieciowy punktu przy głównej ulicy (100 m fizycznie → 424 m
+ * drogą). Decyzja właściciela: liczyć pieszych tak jak samochody.
+ */
+test('kontrakt m12-119: korytarze wzdłuż jezdni nie trasują; path/track zostają; D1–D3 spięte w UI', () => {
+  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+    /Aneks 2026-09-14 \(m12-119\) — trasowanie piesze i rowerowe wyłącznie po układzie ulic/,
+    'ADR 0005 dokumentuje decyzję o trasowaniu po ulicach');
+  for (const klasa of ['footway', 'steps', 'cycleway']) {
+    assert.ok(!TRYBY.piesza.klasyDrog.includes(klasa), `pieszy nie trasuje po ${klasa}`);
+  }
+  assert.ok(!TRYBY.rower.klasyDrog.includes('cycleway'), 'rower nie trasuje po DDR wzdłuż jezdni');
+  for (const klasa of ['path', 'track', 'pedestrian']) {
+    assert.ok(TRYBY.piesza.klasyDrog.includes(klasa), `${klasa} zostaje — bywa jedyną siecią w lesie/deptaku`);
+  }
+  // D1: stan jednego przebiegu wyboru nie może istnieć poza zbudujUklad
+  assert.ok(!/^\s{2}let wybrane = \[\];/m.test(czytaj('app/stacje.js')),
+    'brak martwego stanu wyboru na zewnątrz zbudujUklad (audyt D1)');
+  // D2: komunikat bramy odmienia się po polsku
+  assert.ok(APP.includes('odmianaRzeczownika(odrzuconeWejscia'), 'liczba odrzuconych pinów jest odmieniana (D2)');
+  // D3: karta błędów składana jedną funkcją także w gałęzi niekompletu
+  assert.ok(czytaj('app/stacje.js').includes('export function zlozKarteUsterekStacji'),
+    'składanie karty usterek jest czystą funkcją (D3)');
+  assert.ok(APP.includes('pokazBledy(\'bledy-stacje\', zlozKarteUsterekStacji(wynik,'),
+    'gałąź niekompletu nie składa już własnej karty gubiącej S14 (D3)');
+});
+
+test('kontrakt m12-120: pełny układ ulic dla pieszego i roweru, bez autostrad; one-way nie blokuje; reset przewijania warstwy', () => {
+  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+    /Aneks 2026-09-14 \(m12-120\) — pełny układ ulic dla pieszego i roweru/,
+    'ADR 0005 dokumentuje domknięcie „dodać ulice"');
+  // ulice tranzytowe wchodzą do obu niemotoryzowanych trybów (wieś przy wojewódzkiej)
+  for (const tryb of ['piesza', 'rower']) {
+    for (const klasa of ['tertiary', 'secondary', 'primary', 'unclassified']) {
+      assert.ok(TRYBY[tryb].klasyDrog.includes(klasa), `${tryb}: ${klasa} trasuje (m12-120)`);
+    }
+    assert.ok(!TRYBY[tryb].klasyDrog.includes('motorway') && TRYBY[tryb].wykluczoneKlasy.includes('trunk'),
+      `${tryb}: autostrada/ekspresówka pozostaje jedynym obejściem`);
+  }
+  // korytarze nadal poza trasowaniem (m12-119)
+  for (const klasa of ['footway', 'steps', 'cycleway']) {
+    assert.ok(!TRYBY.piesza.klasyDrog.includes(klasa));
+  }
+  // krawędzie grafu są DWUKIERUNKOWE i tag oneway nie jest nigdy czytany —
+  // pieszy (i samochód w modelu) może iść „pod prąd" jednokierunkowej ulicy
+  const SIECI = czytaj('app/sieci.js');
+  assert.ok(!/oneway/.test(SIECI), 'graf nie zna pojęcia jednokierunkowości — krawędzie symetryczne');
+  assert.ok(SIECI.includes('sasiedztwo[a].push({ do: b, metry });') &&
+    SIECI.includes('sasiedztwo[b].push({ do: a, metry });'), 'krawędzie dodawane w obie strony');
+  // UX właściciela: opcje pod listą wracają widokiem na górę warstwy
+  assert.ok(APP.includes('function przewinWarstweStacjiNaGore()'), 'jest helper resetu przewijania');
+  for (const przycisk of ['przycisk-przelicz', 'przycisk-siec-ponow']) {
+    const tresc = APP.slice(APP.indexOf(`$('${przycisk}').addEventListener`));
+    assert.ok(tresc.slice(0, 400).includes('przewinWarstweStacjiNaGore()'),
+      `${przycisk} resetuje przewijanie warstwy (UX m12-120)`);
+  }
 });

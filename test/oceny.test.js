@@ -32,6 +32,7 @@ import {
   walidujStatystykiOcen,
   liczbaGierTekst,
   liczbaOcenTekst,
+  odmianaRzeczownika,
   opisOcenTekst,
 } from '../app/oceny.js';
 import { uruchomMost } from './helpers/most.js';
@@ -243,6 +244,22 @@ test('oceny: język statystyk na ekran 2', () => {
   assert.equal(liczbaOcenTekst(12), 'ocen');
   assert.equal(liczbaOcenTekst(14), 'ocen');
   assert.equal(liczbaOcenTekst(22), 'oceny');
+});
+
+test('odmiana rzeczownika: pin/piny/pinów z nastkami 12–14 (D2, m12-119)', () => {
+  // Komunikat bramy wejścia nie może pokazywać surowego „pin(y)".
+  const pin = (n) => odmianaRzeczownika(n, ['pin', 'piny', 'pinów']);
+  assert.equal(pin(0), 'pinów');
+  assert.equal(pin(1), 'pin');
+  assert.equal(pin(2), 'piny');
+  assert.equal(pin(4), 'piny');
+  assert.equal(pin(5), 'pinów');
+  assert.equal(pin(12), 'pinów', 'nastek 12 — forma dopełniacza, nie „piny"');
+  assert.equal(pin(14), 'pinów');
+  assert.equal(pin(22), 'piny');
+  assert.equal(pin(-3), 'piny', 'liczba ujemna odmienia się jak bezwzględna');
+  // stara funkcja ocen jest teraz cienkim warstwą nad helperem — bez zmiany form
+  assert.equal(liczbaOcenTekst(13), 'ocen');
 });
 
 test('oceny: głosy przeżywają restart aplikacji (pamięć → stan → pamięć)', () => {

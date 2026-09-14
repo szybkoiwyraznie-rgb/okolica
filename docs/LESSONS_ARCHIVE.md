@@ -1505,3 +1505,59 @@ w zasięgu trasy).
 **Reguła (skrót dla rejestru).** Metryka poprawna nie wystarcza, gdy gracz
 planuje po mapie: brama wejścia mierzy mijanie w OBU trasach — tej, którą
 idzie model, i tej, którą widzi gracz.
+
+## L71 (2026-09-14) — osobno mapowany chodnik wzdłuż jezdni zatruwa dystans sieciowy; lecz graf, nie objaw (zgłoszenie „m118" → m12-119)
+
+**Objaw.** Po bramie z m12-118 (L70) właściciel zgłosił to samo po raz
+kolejny: najbliższy fizycznie pin, ok. 100 m od startu przy głównej ulicy,
+dostawał niemal zawsze numer 2, czasem 5 — i gracz musiał go minąć w drodze
+do stacji 1. Brama 50 m nie łapała go w terenie właściciela, choć na
+fixture'ach łapała patologie lasu. Trzech agentów kolejno proponowało
+detektory (próg stosunku kreska/droga, mijanie kreską, mijanie drogą);
+żaden nie trafił w przyczynę.
+
+**Diagnoza (sondy na sieci odtworzonej ze zgłoszenia, nie zgadywanie).**
+Chodnik wzdłuż głównej ulicy był w OSM osobnym wayem `highway=footway`,
+ułożonym równolegle do jezdni i wpiętym do niej dopiero na dalekich
+skrzyżowaniach (w skonstruowanej sieci — po 700 m). Węzeł na chodniku
+100 m fizycznie od startu miał `dystansSieciowyM` = 424 m (w innym układzie
+662 m): najkrótsza trasa grafu szła chodnikiem do dalekiego wpięcia,
+łącznikiem i jezdnią z powrotem. Każdy detektor na poziomie WYBORU STACJI
+mógł tylko ukryć, że graf kłamie o geometrii — brama 50 m z L70 była bezradna,
+bo liczyła sąsiedztwo trasy po chodniku, a kreska start→stacja 1 biegła
+jezdnią.
+
+**Przyczyna procesowa.** Założenie „pieszy chodzi po chodnikach, ścieżkach
+i schodach" było słuszne dla centrum wielkiego miasta, a trujące w małym
+mieście: tam OSM mapuje korytarze wzdłuż jezdni jako osobne klasy, wpięcia
+są rzadkie, a gracz i tak chodzi po układzie ulic (brak wydzielonych
+przejść, brak autostrad do obchodzenia). Próby kolejnych agentów leczyły
+objaw, bo nikt nie porównał klasy drogi pinu z klasą drogi trasy.
+
+**Naprawa (m12-119), decyzja właściciela:** „brać pod uwagę tylko układ
+ulic, bez korytarzy pieszych". Z klas trasowania pieszego wypadają
+`footway`, `steps`, `cycleway`; z rowerowego `cycleway`. Zostają
+`pedestrian` (deptak = ulica bez aut), `living_street`, `residential`,
+`service` oraz `path` i `track` — one bywają jedyną siecią w lesie
+(fixture las: bez `path` 139→88 węzłów, kompletność 24/44→22/44; dlatego
+„wyrzucić wszystko poza jezdniami" też było błędem i zostało mierzalnie
+odrzucone). Jedno miejsce filtrowania (`czyDrogaDostepna`) czyści zarówno
+świeże pobranie, jak i STARY cache, którym grał właściciel; kwerenda
+Overpass klas już nie pobiera.
+
+**Testy.** Graf nie tworzy węzłów z równoległych korytarzy nawet gdy
+przyjdą w danych (stary cache); punkt fizycznie 100 m od startu przy
+głównej ulicy snapuje się do jezdni z dystansem ≈ 100 m (było ≈1,2 km);
+test bramy z L70 przepisany na równoległą ULICĘ — geometria patologii
+(boczna ulica wpięta daleko) pozostaje testowalna, bo nie zależy od
+chodnika. Pomiary 1056 układów na trzech fixture'ach: pozostałe rozjazdy
+kreska/droga mają podejrzany pin ≥89 m od trasy do stacji 1 — gracz go nie
+mija; to naturalna geometria osiedli, nie korytarz.
+
+**Reguła (skrót dla rejestru).** Gdy metryka sieciowa kłamie o punkcie przy
+głównej ulicy, sprawdź KLASĘ DROGI w danych: osobno mapowany korytarz
+wzdłuż jezdni, wpięty daleko, zawyża dystans objazdem. Lecz graf w jednym
+miejscu filtrowania (działa też na cache), nie dopisuj detektorów do
+wyboru. Zanim usuniesz klasę trasowania, zmierz skutek na KAŻDYM terenie
+fixture (miasto/przedmieście/las) — klasy „zbędne w mieście" bywają jedyną
+siecią w lesie.

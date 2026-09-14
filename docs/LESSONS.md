@@ -573,3 +573,12 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Reguła:** każdy pin w promieniu progu dojścia (50 m, ADR 0034) od KTÓREJKOLWIEK trasy do stacji 1 — drogi z modelu i prostej kreski na mapie — jest mijany i nie może być stacją; brama wejścia odrzuca go i przelicza układ (do 3 rund), a gdy sieć nie da inaczej, melduje to wprost usterką S14. Dowód w testach: syntetyczna sieć z chodnikiem wpiętym na 600 m reprodukuje defekt przy `mijanieProgM: 0` i pokazuje naprawę przy 50 m; pomiar na fixture'ach (ile układów brama realnie zmienia) jest w aneksie m12-118.
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L70`.
+
+## L71 (2026-09-14) — osobno mapowany chodnik wzdłuż jezdni zatruwa dystans sieciowy
+
+**Objaw:** po trzech falach napraw bramy wejścia najbliższy fizycznie pin (100 m przy głównej ulicy) wciąż dostawał numer 2 w terenie właściciela; brama 50 m go nie łapała.
+**Przyczyna:** chodnik w OSM bywa osobnym wayem `footway` wzdłuż jezdni, wpiętym do niej dopiero na dalekich skrzyżowaniach — węzeł 100 m fizycznie dostawał dystans drogowy mierzony objazdem (424–662 m). Detektory w wyborze stacji mogły tylko maskować kłamstwo grafu; nikt nie porównał klasy drogi pinu z klasą drogi trasy.
+**Reguła:** gdy metryka sieciowa kłamie o punkcie przy głównej ulicy, sprawdź klasę drogi w danych i lecz GRAF w jednym miejscu filtrowania (czyści też stary cache), nie dopisuj detektorów do wyboru. Decyzja właściciela (m12-119): pieszy i rower trasują po układzie ulic — bez `footway`/`steps`/`cycleway`; `path`/`track` zostają, bo bywają jedyną siecią w lesie (odrzucenie szerszego wariantu było mierzone, nie zgadywane).
+**Dopisek m12-120 (pytanie „zostawić korytarze i dodać ulice"):** zmierzone i odrzucone — punkt snapuje się do NAJBLIŻSZEGO węzła (na chodniku), a skrótu chodnik↔jezdnia w środku kwartału graf nie ma; Dijkstra wybiera najkrótszą trasę, ale nie przenosi punktu między równoległymi sieciami (dG 100 m → 512 m). Trafna połowa pytania: pieszy nie miał klas ulic tranzytowych (tertiary/secondary/primary/unclassified) — wieś przy wojewódzkiej bez chodników nie miała korytarza; od m12-120 klasy te wchodzą do pieszego i roweru, poza motorway/trunk. Graf nie czyta `oneway` — krawędzie są zawsze dwukierunkowe, więc jednokierunkowa nie blokuje pieszego.
+
+Pełny przypadek, pomiary i testy: `docs/LESSONS_ARCHIVE.md` → `## L71`.

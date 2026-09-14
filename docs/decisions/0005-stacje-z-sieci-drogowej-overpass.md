@@ -101,88 +101,14 @@ nie ma backendu (ADR 0001/0006), więc dane pobiera przeglądarka użytkownika.
 dojścia), 0009 (przypisanie stacji do graczy), 0010 (cache), 0013 (wysyłamy
 tylko przybliżoną pozycję do Overpass).
 
-## Aneks 2026-09-09 — zakres od startu i drabinka kątowa
+## Aneksy 2026-09-09 są w archiwum (poza budżetem lektury)
 
-Właściciel po próbie ułożenia gry w terenie: „na danym terenie nie dało się
-wcisnąć więcej niż 4 stacje". Diagnoza na fixture `overpass-przedmiescie`
-(R = 1000 m, 104 kandydatów) potwierdziła objaw co do jednego: przy N ≥ 5
-algorytm oddawał 4 stacje i usterkę S12. Poluzowanie pojedynczych progów
-pokazało winnego — separację kątową (bez niej: komplet).
+Trzy aneksy z 2026-09-09 (zakres od startu i drabinka kątowa; separacja w obu
+metrykach i układ zamiast zachłanności; pauza limitowa 30 s → 1 s) są
+przeniesione do  (L62/L66,
+archiwizacja 2026-09-14, m12-119). Daty aneksów: 2026-09-09, 2026-09-09,
+2026-09-09.
 
-**Zmiana 1 — dystans od startu to zakres `[0.35 × R, R]`, nie pasmo `r ±20%`.**
-Właściciel: „skoro R=1000m to wyobrażam sobie stacje oddalone od 350m do 1000m
-od miejsca startu (skoro promień to 1000m to czemu zatrzymujemy się na 840m?)".
-Pasmo 0.8r–1.2r odrzucało kandydatów, choć promień gry jawnie na nich pozwalał.
-Pasmo zostaje jako **preferencja**: sort nadal ciągnie stacje do `r`, więc układ
-pozostaje pierścieniem, ale kandydat 950 m przy R = 1000 m jest dziś legalny.
-Dolna granica `0.35 × R` to nie nowa liczba: `0.5 × r = 0.5 × 0.7 × R`, czyli
-dokładnie separacja sieciowa — „nie bliżej niż 350 m" znaczy to samo od startu
-i między stacjami (spójność, o którą prosił właściciel w pkt 2b).
-
-**Zmiana 2 — drabinka ustępstw kątowych `[0.7, 0.5, 0.35, 0.2, 0]`.**
-Właściciel: „w ogóle nie widzę sensu w tej separacji kątowej (…) jeśli
-koniecznie chcesz to utrzymać to możesz zrobić jakąś drabinkę priorytetów — od
-dzisiejszego kąta stopniowo aż do braku wymaganego kąta".
-
-Zachowujemy kąt jako preferencję, bo pełni realną funkcję: rozkłada stacje
-wokół startu, dzięki czemu trasa jest pętlą, a nie marszem tam i z powrotem tą
-samą ulicą. Ale przestaje być wetem. Algorytm próbuje kolejnych szczebli i
-schodzi niżej **tylko** gdy nie zebrał kompletu N; przy gęstej sieci zostaje na
-0.7 (pinowane testem). Każdy szczebel liczy się od zera na tej samej
-posortowanej liście kandydatów, więc wynik nie zależy od kolejności prób.
-
-**Co NIE ustępuje nigdy:** separacja sieciowa `0.5 × r` i zakres dystansu od
-startu. To one gwarantują, że stacje nie stoją jedna na drugiej — kąt tylko je
-rozkłada. Wynik zwraca `separacje: { katMinStopnie, szczebelKatowy, ustapiono,
-siecMinM }`, więc UI i diagnoza wiedzą, czy i jak bardzo ustąpiono.
-
-**Efekt na fixture'ach** (N = 8): przedmieście 4 → 8 stacji, centrum 8 → 8
-(bez ustępstwa), las 6 → 6 (sieć realnie nie ma więcej miejsc). Usterka S12
-nadal istnieje i nadal jest uczciwa — pojawia się dopiero wtedy, gdy sieć
-naprawdę nie ma gdzie postawić kolejnej stacji.
-
-## Aneks 2026-09-09 — rozrzut stacji: separacja w obu metrykach, układ zamiast zachłanności
-
-Właściciel: stacje wychodzą skupione — „widzę pinezki obok siebie i całą grę po
-jednej stronie startu\". Diagnoza wskazała **dwie niezależne przyczyny**.
-
-**1. Separacja liczona wyłącznie po sieci.** Próg `0.5 × r` sprawdzaliśmy na
-odległości drogowej, więc dwa punkty rozdzielone rzeką albo torami spełniały go
-przy 103 m w linii prostej (krętość do 3,2×). Gracz widzi mapę, nie graf, więc
-próg musi obowiązywać **w obu metrykach naraz**: doszedł `separacjaProstaUdzial
-= 0.5` sprawdzany na `odlegloscM`. Efekt na fixture'ach (minimalna para na
-mapie): przedmieście N=10 121 → 398 m, centrum N=10 103 → 212 m, las N=6
-427 → 833 m. Ceną są 1–2 stacje mniej tam, gdzie sieć jest uboga — uczciwiej niż
-dwie pinezki w jednym kwartale.
-
-**2. Zbieranie „pierwszy pasujący\".** Kandydaci szli posortowani po `score`, a
-kąt był tylko wetem, więc komplet N wypełniał się z jednego łuku i zostawiał
-pustą lukę 119° przy ideale 72°. Zamiast tego `zbierzUkladem` robi **farthest-
-point sampling po kącie**: pierwsza stacja wg `score`, każda kolejna maksymalizuje
-kąt do już wybranych. Kąt jest **kubełkowany** (`KUBELEK_KATA = 20°`) — bez tego
-sampling gonił dziesiąte części stopnia i rozwalał równość promieni pierścienia
-(rozrzut 65,6% przy limicie 35%); po kubełkowaniu remisy rozstrzyga `score`,
-więc oba kryteria żyją obok siebie (rozrzut 0,6–10,2%).
-
-**Pass wyrównujący musiał się o tym dowiedzieć.** Optymalizował samo odchylenie
-dystansów, więc cofał rozrzut wypracowany przy zbieraniu. `kosztUkladu` ma teraz
-trzeci składnik — karę za pustą lukę kątową (`WAGA_LUKI_M_NA_STOPIEN = 2`).
-Największa luka: centrum N=8 64° → 50°, przedmieście N=5 119° → 91°.
-
-Trzy testy w `test/sieci.test.js` pilnują obu metryk separacji, luki kątowej
-(≤ 2,5× ideału) i rozrzutu pierścienia (≤ 35%). Próg w teście liczy się z
-**promienia gry**, nie ze stałej konfiguracji — inaczej wyzerowanie stałej
-zerowałoby też oczekiwanie i asercja byłaby pozorna (LESSONS).
-
-## Aneks 2026-09-09 — pauza limitowa 30 s → 1 s
-
-Właściciel po rozgrywkach z przełączaniem instancji: odstęp 30 s między
-serwerami Overpass jest za długi — limit publiczny i tak nie resetuje się
-w sekundy, a łańcuch (FOSSGIS → private.coffee → VK Maps) i tak przełącza
-na serwer, który odpowiada. Decyzja: `POLITYKA.odstepMs = 1_000` — krótka
-pauza grzecznościowa po `429`/`406`/5xx; przełączenie po martwej instancji
-zostaje OD RAZU, jak dotąd. `?odstep=0` (skrót testowy) nietknięte. Zmienia
-pkt 1 Decyzji („pauza 30 s między próbami”) i `ASSETS` §2 pkt 3.
 
 ## Aneks 2026-09-14 (m12-115) — kolejność trasy: Held-Karp, eksport `optymalnaKolejnosc`
 
@@ -289,3 +215,102 @@ zgłoszenie: ulica na północ + chodnik 25 m obok, wpięty do ulicy dopiero na
 „Główna 800" (800 m drogi) + pin na chodniku (845 m drogi, ale 381 m kreską,
 25 m od trasy do stacji 1) — czyli dokładnie układ z pola; przy domyślnych
 50 m pin wypada i zostaje para {400 m, 800 m} z czystym wejściem.
+
+## Aneks 2026-09-14 (m12-119) — trasowanie piesze i rowerowe wyłącznie po układzie ulic
+
+Trzecie i piąte zgłoszenie terenowe do uwagi B (gra **m118**): najbliższy
+fizycznie pin, ok. 100 m od startu przy głównej ulicy, dostawał niemal zawsze
+numer 2 (czasem 5), choć gracz idący do stacji 1 mijał go w pierwszej setce
+metrów i musiał zawracać. Brama z aneksu m12-118 była w tej sieci bezradna:
+kreska start→stacja 1 biegła główną ulicą, a pin wisiał na korytarzu, który
+nie był dla bramy tą samą trasą.
+
+**Przyczyna (sondy, nie zgadywanie).** Chodnik wzdłuż głównej ulicy bywa w
+OSM mapowany jako OSOBNY sposób (`highway=footway`), wpięty do jezdni tylko
+na dalekich skrzyżowaniach. Węzeł na takim chodniku, 100 m fizycznie od
+startu, dostawał `dystansSieciowyM` mierzony objazdem: w sieci odtworzonej ze
+zgłoszenia — 424 m (w innym układzie 662 m). Najkrótsza trasa grafu do
+stacji 1 biegła inną ulicą, więc najbliższy fizycznie punkt wyglądał dla
+modelu na daleki i lądował pod numerem 2. To nie był błąd wyboru stacji — to
+było kłamstwo samego grafu, a brama mogła tylko leczyć jego skutki.
+
+**Decyzja właściciela (jaśniejsza niż każdy detektor):** „Czy możemy brać
+pod uwagę tylko układ ulic, bez korytarzy pieszych?" W małych miejscowościach
+nie ma wydzielonych przejść dla pieszych, każdy przechodzi gdzie chce, nie ma
+też autostrad do obchodzenia — pieszych liczymy trasowaniem po UKŁADZIE ULIC,
+analogicznie jak samochody.
+
+Zmiana w `TRYBY` (`app/konfig.js`, jedyne źródło prawdy o klasach):
+
+- piesza: z listy klas wypadają `footway`, `steps`, `cycleway`;
+- rower: wypada `cycleway` (DDR wzdłuż jezdni ma tę samą wadę — wpięcia tylko
+  na skrzyżowaniach zawyżają dystanse) i trafia jawnie do `wykluczoneKlasy`
+  razem z `footway`;
+- zostają `pedestrian` (deptak/ plac to ulica bez aut), `living_street`,
+  `residential`, `service` oraz `path` i `track` — te ostatnie bywają JEDYNĄ
+  siecią w lesie i parku: na fixture las wyrzucenie samego `path` obniża
+  liczbę węzłów 139→88 i kompletność układów 24/44→22/44.
+
+Filtrowanie ma jedno miejsce (`czyDrogaDostepna`), więc działa i dla danych
+świeżo pobranych, i dla STAREGO cache (właściciel grał na cache sprzed
+zmiany): kwerenda Overpass klas już nawet nie pobiera, a `budujGraf`
+odrzuciłby je przy budowie grafu.
+
+Dowody w testach: graf nie tworzy węzłów z równoległych `footway`/`cycleway`
+nawet gdy przyjdą w danych; punkt fizycznie 100 m od startu przy głównej
+ulicy snapuje się do jezdni z `dystansSieciowyM` ≈ 100 m (przed zmianą
+≈1,2 km). Test bramy z aneksu m12-118 przepisany na równoległą ULICĘ —
+geometria patologii (boczna ulica wpięta daleko) pozostaje testowalna, bo
+chodnik nie jest już trasowalny. Pomiary 384+320+352 układów na trzech
+fixture'ach: tam, gdzie rozjazd kreska/droga zostaje, podejrzany pin leży
+≥89 m od trasy do stacji 1 (najczęściej 150–500 m) — gracz go nie mija;
+to naturalna geometria osiedli w kształcie litery V, nie korytarz wzdłuż
+jezdni.
+
+Brama wejścia (aneks m12-118) ZOSTAJE: nie wszystkie rozjazdy biorą się z
+chodników — boczna ulica wpięta daleko do głównej daje tę samą fizykę
+mijania i brama jest dla niej siatką. Twarde minimum właściciela (stacja 2
+musi być dalej od startu ULICAMI niż stacja 1) jest teraz spełnione również
+w jego terenie: stacja 1 pozostaje minimum `dystansSieciowyM`, a najbliższy
+punkt przy głównej ulicy nie może już dostać zawyżonego dystansu przez
+osobno mapowany chodnik. Pełna zasada
+d(start,2) ≥ d(start,1) + d(1,2) nie jest i nie była gwarantowana przez
+model (w terenie siatkowym wykluczałaby większość układów) — pozostaje
+intencją, którą brama realizuje tam, gdzie fizycznie dochodzi do mijania.
+
+Przy okazji ten sam mileston porządkuje komunikaty wokół bramy (audyt
+D1–D3): martwy stan wyboru poza `zbudujUklad` usunięty; komunikat
+„odrzucono N pin(y)" odmienia się po polsku; karta błędów w gałęzi
+niekompletu składa funkcja `zlozKarteUsterekStacji` i nie ukrywa już S14
+pod syntetycznym S12.
+
+## Aneks 2026-09-14 (m12-120) — pełny układ ulic dla pieszego i roweru; pytanie „dodać ulice zamiast odejmować korytarze"
+
+Właściciel zapytał, czy zamiast usuwać korytarze (m12-119) nie dodać ulic i
+nie zostawić wszystkiego — „gdy jest i ścieżka, i ulica, czy nie wybierze
+najkrótszej?". Pomiar na sieci z chodnikiem wzdłuż jezdni, spiętym z nią co
+300 m: **nie działa**. Punkt fizycznie 100 m od startu snapuje się do
+NAJBLIŻSZEGO węzła, czyli na chodnik (0 m), a nie do jezdni 12 m obok;
+krawędzi chodnik↔jezdnia w środku kwartału w grafie nie ma, więc jego
+dystans to 512 m objazdem do najbliższego skrzyżowania. Dijkstra wybiera
+najkrótszą trasę MIĘDZY WĘZŁAMI, ale nie przenosi punktu z korytarza na
+równoległą ulicę — pozostawienie korytarzy zachowuje kłamstwo, a brama
+wejścia bywa ślepa, gdy stacja 1 leży na bocznej ulicy. Decyzja z m12-119
+zostaje utrzymana pomiarowo.
+
+Pytanie miało jednak drugą, trafną połowę: pieszy NIE MIAŁ klas
+tertiary/secondary/primary/unclassified, choć „liczymy jak dla samochodów".
+Typowa wieś zabudowana wzdłuż drogi wojewódzkiej bez chodników w OSM nie
+miała więc w ogóle korytarza. Od m12-120 klasy te wchodzą do trybu pieszego
+i roweru (rower dostaje dodatkowo secondary/primary); jedynymi „ulicami do
+obejścia" zostają motorway i trunk (jawna lista `wykluczoneKlasy` także u
+pieszego). Pomiar centrum: 188 → 211 węzłów, kompletność układów
+95/96 → 96/96; przedmieście i las bez zmiany.
+
+Jednokierunkowe: graf buduje krawędzie zawsze w obie strony
+(`sasiedztwo[a]` i `sasiedztwo[b]`), tagu `oneway` nigdzie nie czyta —
+pieszy może iść „pod prąd" każdej ulicy (oneway dotyczy pojazdów; dla
+samochodu model też nie jest nawigacją zakazów, tylko miernikiem odległości).
+
+Przy okazji UX właściciela: „Inny układ" i „Pobierz sieć ponownie"
+resetują przewijanie karty `#ekran-stacje` (`przewinWarstweStacjiNaGore`).

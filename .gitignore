@@ -14,3 +14,6 @@ Thumbs.db
 *.paczka.json
 *.paczka.txt
 data/paczki-lokalne/
+
+# Robocze sondy pomiarowe sesji (skrypty .mjs poza bramą, nie do repo)
+.sonda/
