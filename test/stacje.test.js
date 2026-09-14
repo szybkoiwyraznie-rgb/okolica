@@ -6,8 +6,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, stacjeProste, uzupelnijOdleglosci } from '../app/stacje.js';
-import { odlegloscM } from '../app/geo.js';
+import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, optymalnaKolejnosc, stacjeProste, uzupelnijOdleglosci } from '../app/stacje.js';
+import { odlegloscM, przesunPunkt } from '../app/geo.js';
 
 const WARSZAWA = { lat: 52.2297, lon: 21.0122 };
 const ZIARNO = 'okolica:52.22970:21.01220:1000:5:2026-09-05';
@@ -89,4 +89,68 @@ test('dystanseOdcinkowM: start→s1 z pola stacji, reszta z macierzy (ADR 0014 p
     dystanseOdcinkowM({ stacje: [{ id: 1 }], macierz: [[0]] }),
     [null], 'stacja bez pola sieciowego to fallback, nie NaN',
   );
+});
+
+/* ------------------------------------------------------------------ trasa (uwaga B) */
+
+test('optymalnaKolejnosc: N≤1 to tożsamość', () => {
+  assert.deepEqual(optymalnaKolejnosc({ srodek: WARSZAWA, stacje: [] }), []);
+  assert.deepEqual(optymalnaKolejnosc({ srodek: WARSZAWA, stacje: [{ lat: 52.23, lon: 21.01 }] }), [0]);
+});
+
+test('optymalnaKolejnosc: na jednej drodze bliższa stacja pierwsza (uwaga B, 2026-09-14)', () => {
+  // Trzy punkty na wschód: 100 m, 250 m, 400 m. Sort po kącie (wszystkie ~90°)
+  // zostawiłby kolejność wejścia — tu celowo podajemy najdalszą jako pierwszą.
+  const stacje = [
+    przesunPunkt(WARSZAWA, 90, 400),
+    przesunPunkt(WARSZAWA, 90, 100),
+    przesunPunkt(WARSZAWA, 90, 250),
+  ];
+  assert.deepEqual(optymalnaKolejnosc({ srodek: WARSZAWA, stacje }), [1, 2, 0],
+    'blisko → środek → daleko; bez wracania obok miniętej stacji');
+});
+
+test('optymalnaKolejnosc: bliższa w tym samym kierunku przed dalszą (kąt nie wygrywa)', () => {
+  // Klasyczny fail sortu po kącie: dalsza bardziej na północ (10°) niż bliższa (20°).
+  const dalsza = przesunPunkt(WARSZAWA, 10, 700);
+  const blizsza = przesunPunkt(WARSZAWA, 20, 350);
+  assert.deepEqual(optymalnaKolejnosc({ srodek: WARSZAWA, stacje: [dalsza, blizsza] }), [1, 0]);
+});
+
+test('optymalnaKolejnosc: determinizm i macierz sieciowa', () => {
+  const stacje = [
+    przesunPunkt(WARSZAWA, 0, 300),
+    przesunPunkt(WARSZAWA, 120, 300),
+    przesunPunkt(WARSZAWA, 240, 300),
+  ];
+  const a = optymalnaKolejnosc({ srodek: WARSZAWA, stacje });
+  const b = optymalnaKolejnosc({ srodek: WARSZAWA, stacje });
+  assert.deepEqual(a, b, 'to samo wejście = ta sama kolejność');
+  assert.equal(a.length, 3);
+  assert.deepEqual([...a].sort((x, y) => x - y), [0, 1, 2], 'permutacja wszystkich indeksów');
+
+  // Macierz niesymetryczna: ze startu tanio do 2, z 2 tanio do 0, z 0 tanio do 1.
+  const macierz = [
+    [0, 10, 999],
+    [999, 0, 999],
+    [5, 999, 0],
+  ];
+  const dStart = [999, 999, 1];
+  assert.deepEqual(optymalnaKolejnosc({ srodek: WARSZAWA, stacje, dystansStart: dStart, macierz }), [2, 0, 1]);
+});
+
+test('optymalnaKolejnosc: N>10 idzie zachłannie, nadal bez wracania na linii', () => {
+  const stacje = Array.from({ length: 11 }, (_, i) => przesunPunkt(WARSZAWA, 90, 100 * (11 - i)));
+  // indeks 0 = 1100 m, indeks 10 = 100 m
+  const kolejnosc = optymalnaKolejnosc({ srodek: WARSZAWA, stacje });
+  assert.deepEqual(kolejnosc, [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0],
+    'greedy NN na linii: od najbliższej do najdalszej');
+  assert.deepEqual(optymalnaKolejnosc({ srodek: WARSZAWA, stacje }), kolejnosc, 'determinizm N>10');
+});
+
+test('stacjeProste: kolejność to trasa od startu, nie sort po kącie', () => {
+  const stacje = stacjeProste({ srodek: WARSZAWA, liczbaStacji: 5, promienM: 1000, ziarno: ZIARNO });
+  assert.deepEqual(stacje.map((s) => s.id), [1, 2, 3, 4, 5], 'id po przestawieniu zostają 1…N');
+  const kolejnosc = optymalnaKolejnosc({ srodek: WARSZAWA, stacje });
+  assert.deepEqual(kolejnosc, [0, 1, 2, 3, 4], 'stacjeProste już oddaje kolejność TSP');
 });
