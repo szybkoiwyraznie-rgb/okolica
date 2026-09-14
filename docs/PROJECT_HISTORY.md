@@ -5414,3 +5414,37 @@ kwerenda Overpass; 800→806 testów zielonych. Aneks m12-119 do ADR 0005,
 L71 (+ archiwum). Wersja `?v=m12-119` w 43 miejscach + `WERSJA_SW`.
 
 **Dogrywka f (m12-120), pytanie właściciela „dodać ulice zamiast odejmować korytarze":** pomiar odrzucił wariant „zostawić wszystko + dodać ulice" — punkt snapuje się do najbliższego węzła (na chodniku), a krawędzi chodnik↔jezdnia w środku kwartału nie ma, więc dG zostaje 512 m; Dijkstra nie przenosi punktu na równoległą ulicę. Trafna połowa pytania: pieszy nie miał klas tertiary/secondary/primary/unclassified — wieś przy wojewódzkiej bez chodników nie miała korytarza; od m12-120 klasy te są w trybie pieszym (i rower dostaje secondary/primary), jedynym obejściem zostają motorway/trunk. Centrum: 188→211 węzłów, kompletność 95/96→96/96. Potwierdzone: graf nigdy nie czyta `oneway`, krawędzie zawsze dwukierunkowe — jednokierunkowa nie blokuje pieszego. UX: „Inny układ"/„Pobierz ponownie" resetują przewijanie karty stacji. 806→808 testów, bump m12-120.
+
+## Sesja 2026-09-14g — audyt PR #27 (gałąź `arena/01a0a155-okolica`, PR #28)
+
+Sesja otwarta „Kontynuujemy projekt". Lektura startowa (AGENTS §0, 1–7) w
+całości, budżet 99 742/100 000 tok (rezerwa 258). Brama na wejściu:
+**809/809** testów, `npm run check` OK (oba szablony), `npm run audyt` —
+0 naruszeń WCAG AA, `?v=` — jedna wersja m12-120 w 43 miejscach + `WERSJA_SW`.
+
+**Audyt PR #27 (m12-119 + m12-120, squash jako `9c4a40c`; 30 plików,
++869/−191)** — metoda: `git diff 3adc650..9c4a40c` plik po pliku, twierdzenia
+weryfikowane w kodzie (import `TRYBY` na żywo, `grep czyDrogaDostepna`) i
+powtórzonymi bramami. Wyniki:
+
+1. Rdzeń zmiany zgodny z aneksem m12-119/m12-120 do ADR 0005 i L71: pieszy
+   i rower po pełnym układzie ulic (tertiary/unclassified/secondary/primary),
+   korytarze (`footway`/`steps`/`cycleway`) poza klasami i jawnie
+   w `wykluczoneKlasy`; `path`/`track`/`pedestrian` zostają — jedno źródło
+   prawdy w `app/konfig.js`.
+2. Jedno miejsce filtrowania (`czyDrogaDostepna` wołane z `budujGraf`) —
+   potwierdzone, że czyści też STARY cache.
+3. D1 (martwy stan wyboru usunięty + strażnik), D2 (`odmianaRzeczownika`
+   jako czysta generalizacja `liczbaOcenTekst`, nastki 12–14, `Math.abs`),
+   D3 (`zlozKarteUsterekStacji` — karta niekompletu nie gubi S14) — wszystkie
+   poprawnie, z pinami kontraktowymi i testami na realnych sceneriach.
+4. UX m12-120 (reset przewijania warstwy stacji) z testem UI `scrollTop=0`.
+
+**Werdykt: bez defektów.** Dwie uwagi nieblokujące: (W1) `mapa stacje.jpg`
+(257 KB, screenshot ze zgłoszenia) wszedł do `main` commitami właściciela
+(„Add files via upload") — poniżej limitu binarnego 2 MB, decyzja o
+pozostawieniu/usunięciu należy do właściciela; (W2) numeracja punktów
+w handoffie 2026-09-14f (6, 8, 9, 7) — kosmetyka dokumentu jednorazowego.
+
+Po audycie brak zlecenia — kolejka pracy to uwagi z terenu (ROADMAP „Co jest
+otwarte", LESSONS L68).
