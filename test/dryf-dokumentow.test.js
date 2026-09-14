@@ -297,6 +297,11 @@ const MARTWE_FRAZY = [
     nosniki: UI,
     powod: 'fałszywa obietnica w komentarzu (do 2026-09-14): wolne TSP NIE realizuje nierówności właściciela — wejście wpina twardo kolejnoscTrasy (ADR 0005 aneks m12-116)',
   },
+  {
+    fraza: 'pin(y)',
+    nosniki: UI,
+    powod: 'komunikat bramy wejścia odmienia rzeczownik po polsku przez odmianaRzeczownika: 1 pin, 2 piny, 5 pinów (audyt D2, m12-119)',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {
@@ -394,4 +399,15 @@ test('strażnik dryfu: cytowane aneksy ADR istnieją w plikach decyzji', () => {
     }
   }
   assert.ok(sprawdzone >= 5, `strażnik sprawdził ${sprawdzone} cytowań aneksów — za mało, żeby coś pilnować`);
+});
+
+test('strażnik D1 (m12-119): stan przebiegu wyboru żyje wyłącznie w zbudujUklad', () => {
+  // Po wydzieleniu zbudujUklad (m12-118) w wybierzStacje zostały martwe
+  // zewnętrzne deklaracje stanu (wybrane/zajete/katMin/szczebelKatowy);
+  // każdy przebieg (także przeliczenia bramy wejścia) ma własny stan.
+  const tekst = czytaj('app/stacje.js');
+  for (const deklaracja of ['let wybrane = [];', 'let zajete = new Set();', 'let katMin = 0;', 'let szczebelKatowy = 0;']) {
+    const ile = tekst.split(deklaracja).length - 1;
+    assert.equal(ile, 1, `„${deklaracja}” ma istnieć dokładnie raz — wewnątrz zbudujUklad (jest ${ile})`);
+  }
 });

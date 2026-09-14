@@ -373,17 +373,28 @@ export function liczbaGierTekst(liczba) {
 }
 
 /**
- * Polska odmiana rzeczownika przy liczbie ocen: 1 ocena, 2–4 oceny, 5+ ocen.
- * Nastki 12–14 idą z formą „ocen" (12 ocen, nie „12 oceny") — bez tego
- * reguła „ostatnia cyfra 2–4" daje „12 oceny".
+ * Polska odmiana rzeczownika przy liczbie: 1 ocena/pin, 2–4 oceny/piny,
+ * 5+ ocen/pinów. Nastki 12–14 idą z formą mnogą dopełniacza (12 ocen,
+ * 12 pinów — nie „12 oceny/piny"): bez tego reguła „ostatnia cyfra 2–4"
+ * myli się dla nastków.
+ *
+ * @param {number} liczba
+ * @param {[string,string,string]} formy kolejno: 1 („pin"), 2–4 („piny"), 5+ („pinów")
+ * @returns {string} jedna z form
  */
-export function liczbaOcenTekst(liczba) {
+export function odmianaRzeczownika(liczba, formy) {
+  const [pojedyncza, mnoga234, mnogaDopelniacz] = formy;
   const n = Math.abs(Math.round(Number(liczba)));
   const ostatnie = n % 10;
   const nastek = n % 100;
-  if (n === 1) return 'ocena';
-  if (ostatnie >= 2 && ostatnie <= 4 && (nastek < 12 || nastek > 14)) return 'oceny';
-  return 'ocen';
+  if (n === 1) return pojedyncza;
+  if (ostatnie >= 2 && ostatnie <= 4 && (nastek < 12 || nastek > 14)) return mnoga234;
+  return mnogaDopelniacz;
+}
+
+/** Polska odmiana przy liczbie ocen (1 ocena, 2–4 oceny, 5+ ocen). */
+export function liczbaOcenTekst(liczba) {
+  return odmianaRzeczownika(liczba, ['ocena', 'oceny', 'ocen']);
 }
 
 /**

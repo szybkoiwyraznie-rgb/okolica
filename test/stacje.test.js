@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ZRODLA_STACJI, dystanseOdcinkowM, kolejnoscTrasy, najmniejszyOdstepM, optymalnaKolejnosc, stacjeProste, uporzadkujGre, uzupelnijOdleglosci } from '../app/stacje.js';
+import { ZRODLA_STACJI, dystanseOdcinkowM, kolejnoscTrasy, najmniejszyOdstepM, optymalnaKolejnosc, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, zlozKarteUsterekStacji } from '../app/stacje.js';
 import { odlegloscM, przesunPunkt } from '../app/geo.js';
 
 const WARSZAWA = { lat: 52.2297, lon: 21.0122 };
@@ -449,4 +449,32 @@ test('brama wejścia: na fixture’ach nie mija i nie psuje twardego wejścia (w
       assert.equal(Math.min(...dystanse), dystanse[0], `${scenariusz.nazwa}: węzeł ${i} — stacja 1 najbliższa drogą`);
     }
   }
+});
+
+test('D3 (m12-119): karta błędów niekompletu nie ukrywa S14 bramy wejścia', () => {
+  const rada = 'bogaty syntetyczny S12 z poradą UI';
+  const s12 = { kod: 'S12', komunikat: 'Wybrano 2 z 3 stacji.' };
+  const s14 = { kod: 'S14', komunikat: 'Trasa do stacji 1 mija stację 2.' };
+  // komplet bez usterek: karta pusta
+  assert.deepEqual(
+    zlozKarteUsterekStacji({ stacje: [{}, {}, {}], usterki: [] }, { zamowione: 3, komunikatS12: rada }),
+    [],
+  );
+  // komplet z mijaniem: karta mówi tylko o S14
+  assert.deepEqual(
+    zlozKarteUsterekStacji({ stacje: [{}, {}, {}], usterki: [s14] }, { zamowione: 3, komunikatS12: rada }),
+    [s14],
+  );
+  // niekomplet bez mijania: jeden, bogaty S12 (zdawkowy z wyboru wypada)
+  assert.deepEqual(
+    zlozKarteUsterekStacji({ stacje: [{}, {}], usterki: [s12] }, { zamowione: 3, komunikatS12: rada }),
+    [{ kod: 'S12', komunikat: rada }],
+  );
+  // sedno D3: niekomplet + mijanie — karta musi pokazać OBA kody
+  const karta = zlozKarteUsterekStacji(
+    { stacje: [{}, {}], usterki: [s12, s14] },
+    { zamowione: 3, komunikatS12: rada },
+  );
+  assert.deepEqual(karta.map((u) => u.kod), ['S12', 'S14'], 'S14 nie znika pod syntetycznym S12');
+  assert.equal(karta[0].komunikat, rada, 'na pierwszym miejscu bogaty komunikat z poradą');
 });

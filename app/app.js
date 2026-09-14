@@ -34,7 +34,7 @@ import {
   WERSJA_PROTOKOLU_REV5,
 } from './protokol.js?v=m12-119';
 import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-119';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-119';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-119';
 import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-119';
 import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-119';
 import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-119';
@@ -73,7 +73,7 @@ import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
-  opisOcenTekst,
+  opisOcenTekst, odmianaRzeczownika,
 } from './oceny.js?v=m12-119';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
@@ -1865,14 +1865,14 @@ function przeliczZTegoCoJest() {
         STAN.konfig.liczbaStacji = wynik.stacje.length;
         $('setup-stacje').value = String(wynik.stacje.length);
         przeliczPromienZCzasu(); // mniej stacji = dłuższy odcinek na ten sam czas (ADR 0025)
-        pokazBledy('bledy-stacje', [{
-          kod: 'S12',
-          pole: 'siec',
-          komunikat: `Sieć drogowa w tej okolicy nie dała ${zamowione} stacji w wymaganych odstępach — jest ich ${wynik.stacje.length} i tyle będzie w grze (setup zmieniony na ${wynik.stacje.length}). Chcesz ${zamowione}? Zwiększ czas gry, żeby powiększyć promień, albo zmień okolicę.`,
-        }]);
-      } else {
-        pokazBledy('bledy-stacje', wynik.usterki);
       }
+      // m12-119 (audyt D3): jedna funkcja składa kartę w obu gałęziach —
+      // niekomplet dokłada bogaty S12 z poradą, ale nie ukrywa S14 bramy
+      // wejścia (wcześniej gałąź niekompletu pokazywała wyłącznie S12).
+      pokazBledy('bledy-stacje', zlozKarteUsterekStacji(wynik, {
+        zamowione,
+        komunikatS12: `Sieć drogowa w tej okolicy nie dała ${zamowione} stacji w wymaganych odstępach — jest ich ${wynik.stacje.length} i tyle będzie w grze (setup zmieniony na ${wynik.stacje.length}). Chcesz ${zamowione}? Zwiększ czas gry, żeby powiększyć promień, albo zmień okolicę.`,
+      }));
       renderujStacje();
       odswiezWarstwy();
       centrujNaPozycji();
@@ -1888,7 +1888,8 @@ function przeliczZTegoCoJest() {
           ? `Sieć jest za uboga na ${zamowione} stacji — w grze będzie ${wynik.stacje.length} (kod S12). Zwiększ czas gry albo zmień okolicę, jeśli chcesz komplet.`
           : `Stacje z sieci drogowej: ${wynik.stacje.length} punktów osiągalnych w promieniu ${STAN.konfig.promienM} m.`
             + (odrzuconeWejscia
-              ? ` Wejście bez mijania: odrzucono ${odrzuconeWejscia} pin(y), obok których prowadziła trasa do stacji 1.`
+              ? ` Wejście bez mijania: odrzucono ${odrzuconeWejscia} ${odmianaRzeczownika(odrzuconeWejscia, ['pin', 'piny', 'pinów'])},`
+                + ` obok ${odrzuconeWejscia === 1 ? 'którego' : 'których'} prowadziła trasa do stacji 1.`
               : '')));
       return;
     } catch (blad) {

@@ -531,11 +531,10 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
   // Każdy szczebel liczymy od zera na tej samej liście `ocenieni` (jest już
   // posortowana deterministycznie), więc wynik nie zależy od kolejności prób.
   // Schodzimy niżej TYLKO gdy nie udało się zebrać kompletu N.
-  let wybrane = []; // { k, d, kat, wynik }
-  let zajete = new Set();
-  let katMin = 0;
-  let szczebelKatowy = 0;
-
+  //
+  // m12-119 (audyt D1): stan każdego przebiegu (wybrane/zajete/katMin/
+  // szczebelKatowy) żyje wyłącznie wewnątrz zbudujUklad — brama wejścia
+  // przelicza układy wielokrotnie i każda pula musi dostać stan od zera.
   const drabinka = Array.isArray(stale.drabinkaKatowa) && stale.drabinkaKatowa.length
     ? stale.drabinkaKatowa
     : [stale.separacjaKatowaUdzial];
@@ -785,4 +784,27 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
     liczniki: { kandydatow: kandydaci.length, ocenionych: ocenieni.length, dijkstr: pamiecDijkstra.size },
     usterki,
   };
+}
+
+/**
+ * Składanie karty błędów ekranu stacji (audyt D3, m12-119).
+ *
+ * Do m12-119 aplikacja w gałęzi NIEKOMPLETU pokazywała wyłącznie swój
+ * syntetyczny, bogatszy S12 (z poradą i informacją o zmianie setupu) i
+ * GUBIŁA pozostałe usterki z wyniku — w szczególności S14 (brama wejścia
+ * nie znalazła układu bez mijania), choć status pod spodem o nim mówił.
+ * Teraz karta zawiera:
+ * - komplet: wszystkie usterki z wyniku (puste = brak karty);
+ * - niekomplet: jeden syntetyczny S12 z poradą UI + WSZYSTKIE pozostałe
+ *   usterki wyniku (zdawkowy S12 wyboru wypada — byłby duplikatem).
+ *
+ * @param {{stacje: Array, usterki: Array<{kod:string, komunikat:string}>}} wynik wynik wybierzStacje
+ * @param {{zamowione: number, komunikatS12: string}} opcje
+ * @returns {Array<{kod:string, komunikat:string}>}
+ */
+export function zlozKarteUsterekStacji(wynik, { zamowione, komunikatS12 }) {
+  const komplet = wynik.stacje.length === zamowione;
+  if (komplet) return wynik.usterki.slice();
+  const pozostale = wynik.usterki.filter((u) => u.kod !== 'S12');
+  return [{ kod: 'S12', komunikat: komunikatS12 }, ...pozostale];
 }
