@@ -5301,3 +5301,26 @@ a prosta `0,2,1`; w samym tym fixture **177** pozycji daje rozjazd metryk
 **Werdykt:** PR #24 zielony (793/793) i zgodny z intencją zgłoszenia B w części
 dotyczącej wejścia w pętlę; jeden defekt spójności metryki i dystansów
 odcinków w ścieżce wklejki — naprawiony w tej sesji.
+
+**Naprawa D1 (`b41dfe0`, m12-117).** Najpierw test reprodukujący
+(`test/aplikacja.test.js` — „uwaga B (dogrywka): wklejka nie przestawia
+stacji z sieci"): w pamięci atrapy cache sieci pod kluczem
+`okolica:sieci:u3qcn5-700-piesza` (fixture `centrum`, `52.22570, 21.00770`,
+3 stacje × 1 pytanie, 60 min → promień 700 m), potem wklejka paczki z
+`paczka-ok.json` ze środkiem i promieniem z konfiguracji (E16). Przed
+naprawą test padał na tożsamości stacji 1: celem gry zostawała
+`52.22700, 21.01110` (kreska 273 m) z liczbą „485 m drogą", czyli dystansem
+stacji 1 z sieci. Po naprawie stacja 1 zostaje `52.22935, 21.01107`, status
+nie mówi „uporządkowano trasą" (kolejność sieciowa jest punktem stałym
+metryki drogowej), a pierwszy odcinek niesie własne 485 m.
+
+Naprawa: `sprawdzOdpowiedz` podaje `uporzadkujGre` metrykę źródła stacji —
+`dystansStart` = `dystansSieciowyM` (fallback na kreskę przy braku/NaN) i
+`macierz` = `STAN.wynikSieci.macierz` — a przy faktycznym przestawieniu
+kasuje `STAN.wynikSieci`. Pin w `test/kontrakt.test.js` przepisany z
+jednowierszowego wywołania na kontrakt metryki (plus pin aneksu); ADR 0005
+dostał aneks m12-117 „metryka porządkowania jest jedna"; rejestr lekcji —
+L69 (pełny opis w archiwum). Wersja `?v=m12-117` w 43 miejscach
++ `WERSJA_SW`. Brama po naprawie: **794/794** testów, `npm run check` OK
+(4015 / 4263 znaki), `npm run audyt` 0 naruszeń, budżet lektury
+**97 990 / 100 000 tok**.
