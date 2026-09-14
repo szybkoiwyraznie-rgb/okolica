@@ -3,6 +3,12 @@
 - Status: Zaakceptowana
 - Data: 2026-09-05
 
+> **Uwaga (2026-09-14, ADR 0047):** fragment „cała aplikacja pozostaje
+> przybliżalna palcami” został ZASTĄPIONY — strona nie jest szczypalna poza
+> mapą (blokada `gesturestart`/`gesturechange` poza `.mapa`). Mapa i jej
+> sterowanie bez zmian; reszta ADR (mobile-first, cele dotykowe, układ,
+> wklejanie) w mocy.
+
 ## Kontekst
 
 Gra dzieje się **na zewnątrz, na telefonie** (Chrome mobilny; sterowanie

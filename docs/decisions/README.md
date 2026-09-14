@@ -64,6 +64,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0044](0044-odliczanie-po-starcie-gry-wieloosobowej.md) | Start gry wieloosobowej: sygnał i odliczanie 5-4-3-2-1-START nad mapą, potem gra wygląda jak hotseat (panel multi usunięty) | Zaakceptowana |
 | [0045](0045-telefon-wraca-do-zapamietanej-gry.md) | Kart wznowienia na setupie nie ma: otwarcie albo odświeżenie aplikacji wraca wprost do zapamiętanej gry (hotseat z zapisu, multi z sesji i mostu) | Zaakceptowana |
 | [0046](0046-promien-jest-kryterium-dopasowania-paczek.md) | Promień gry jest kryterium dopasowania paczek (równość paczka↔setup) — odwrócenie fragmentu aneksu ADR 0024 | Zaakceptowana |
+| [0047](0047-strona-nie-jest-szczypalna-poza-mapa.md) | Strona nie jest szczypalna poza mapą (blokada gestów iOS poza `.mapa`) — zastępuje fragment ADR 0011 | Zaakceptowana |
 
 ## Szablon ADR
 

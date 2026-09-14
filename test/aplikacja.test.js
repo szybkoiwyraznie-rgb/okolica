@@ -216,6 +216,30 @@ test('GPS: błąd przeglądarki daje komunikat z wyjściem awaryjnym (ADR 0004 p
   assert.match(pobierz('bledy-pozycja').textContent, /\[P08\].*dziwny błąd/);
 });
 
+test('uwaga A (ADR 0047): szczypanie strony poza mapą jest zablokowane, mapa szczypie jak dotąd', () => {
+  // Decyzja właściciela 2026-09-14 (uwaga A): Safari iOS wznawia kartę czasem
+  // przybliżoną, a potem palce zoomują STRONĘ, nie mapę (belka i marginesy
+  // ucięte). iOS ignoruje user-scalable=no, więc blokada idzie przez gesty:
+  // gesturestart/gesturechange poza .mapa dostają preventDefault, nad mapą
+  // przechodzą bez zmian (mapa ma własne sterowanie, touch-action: none).
+  let zablokowane = 0;
+  const gest = (pozaMapa) => ({
+    preventDefault() { zablokowane += 1; },
+    target: pozaMapa
+      ? { closest: () => null } // przycisk, karta, tekst — cokolwiek poza mapą
+      : { closest: (selektor) => (selektor === '.mapa' ? {} : null) },
+  });
+  assert.ok(dom.wyslijZdarzenieDokumentu('gesturestart', gest(true)) >= 1,
+    'app.js musi nasłuchiwać gesturestart na dokumencie');
+  assert.equal(zablokowane, 1, 'szczypanie POZA mapą jest zablokowane');
+  dom.wyslijZdarzenieDokumentu('gesturestart', gest(false));
+  assert.equal(zablokowane, 1, 'szczypanie NAD mapą przechodzi bez blokady (mapa żyje jak dotąd)');
+  dom.wyslijZdarzenieDokumentu('gesturechange', gest(true));
+  assert.equal(zablokowane, 2, 'gesturechange poza mapą też jest blokowany');
+  dom.wyslijZdarzenieDokumentu('gesturechange', gest(false));
+  assert.equal(zablokowane, 2, 'gesturechange nad mapą przechodzi');
+});
+
 test('GPS: karta w tle NIE zatrzymuje śledzenia, a powrót nie zakłada watchera bez potrzeby (uwaga B, ADR 0040)', () => {
   assert.ok(dom.wyslijZdarzenieDokumentu('visibilitychange') >= 1, 'app.js musi nasłuchiwać visibilitychange');
   const watchPrzed = gps.wywolania.watch;

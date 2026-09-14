@@ -2052,12 +2052,12 @@ test('kontrakt 2026-09-14 B2: optymalnaKolejnosc jest eksportowana (Held-Karp)',
 test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => {
   // Aneks m12-115 jest w archiwum (L62/L66, budżet lektury) — treść pinuje
   // plik archiwalny (jak przy aneksach 0019 z 2026-09-12f).
-  assert.match(czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-117.md'),
+  assert.match(czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-119.md'),
     /Aneks 2026-09-14 \(m12-115\) — kolejność trasy: Held-Karp/,
     'aneks ADR 0005 o eksportcie Held-Karp żyje w archiwum');
   assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
-    /m12-115 \(Held-Karp, `optymalnaKolejnosc`\)/,
-    'ADR 0005 wskazuje archiwum aneksów m12-115–117');
+    /m12-115 – m12-119 \(Held-Karp/,
+    'ADR 0005 wskazuje archiwum aneksów m12-115–119');
   assert.match(czytaj('docs/decisions/0011-mobile-first-dotyk.md'),
     /Aneks 2026-09-14 \(m12-115, zgłoszenie D\) — puls czekania jest NEGATYWEM/,
     'ADR 0011 dokumentuje wyjątek negatywu');
@@ -2075,7 +2075,7 @@ test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => 
  */
 test('kontrakt uwagi B (dogrywka): porządkowanie trasą jest wpięte w każdą ścieżkę startu', () => {
   // Aneksy m12-116/m12-117 są w archiwum (L62/L66, budżet lektury).
-  const ANEKSY_0005 = czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-117.md');
+  const ANEKSY_0005 = czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-119.md');
   assert.match(ANEKSY_0005,
     /Aneks 2026-09-14 \(m12-116\) — twarde wejście w pętlę na wszystkich ścieżkach/,
     'aneks o regule wejścia żyje w archiwum');
@@ -2108,9 +2108,10 @@ test('kontrakt uwagi B (dogrywka): porządkowanie trasą jest wpięte w każdą 
  * kreski, po której gracz czyta mapę. Próg to próg dojścia (50 m, ADR 0034).
  */
 test('kontrakt bramy wejścia: pin mijany wypada z układu, próg z ADR 0034', () => {
-  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+  // Aneks m12-118 jest w archiwum (L62/L66, budżet lektury).
+  assert.match(czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-119.md'),
     /Aneks 2026-09-14 \(m12-118\) — brama wejścia: pin mijany na trasie do stacji 1/,
-    'ADR 0005 dokumentuje bramę wejścia');
+    'aneks o bramie wejścia żyje w archiwum');
   const STACJE = czytaj('app/stacje.js');
   assert.ok(STACJE.includes('mijanieProgM: 50,'), 'próg mijania = próg dojścia (50 m, ADR 0034)');
   assert.ok(STACJE.includes('mijanieMaxRund: 3,'), 'brama ma ograniczoną liczbę rund');
@@ -2135,9 +2136,9 @@ test('kontrakt bramy wejścia: pin mijany wypada z układu, próg z ADR 0034', (
  * drogą). Decyzja właściciela: liczyć pieszych tak jak samochody.
  */
 test('kontrakt m12-119: korytarze wzdłuż jezdni nie trasują; path/track zostają; D1–D3 spięte w UI', () => {
-  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+  assert.match(czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-119.md'),
     /Aneks 2026-09-14 \(m12-119\) — trasowanie piesze i rowerowe wyłącznie po układzie ulic/,
-    'ADR 0005 dokumentuje decyzję o trasowaniu po ulicach');
+    'aneks o trasowaniu po ulicach żyje w archiwum');
   for (const klasa of ['footway', 'steps', 'cycleway']) {
     assert.ok(!TRYBY.piesza.klasyDrog.includes(klasa), `pieszy nie trasuje po ${klasa}`);
   }

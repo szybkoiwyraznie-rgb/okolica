@@ -30,11 +30,11 @@ export const TRYBY = {
     // (100 m fizycznie → 512 m w grafie: węzeł na chodniku nie ma
     // skrótu przez jezdnię) i numery stacji odwracały się względem tego,
     // co gracz widzi. UWAGA: „dodać ulice i zatrzymać chodniki" NIE
-    // działa — pomiar m12-121 pokazał, że najbliższy węzeł i tak ląduje
+    // działa — pomiar m12-122 pokazał, że najbliższy węzeł i tak ląduje
     // na chodniku (snapuje się po najbliższej odległości), a krawędzi
     // chodnik↔jezdnia w środku kwartału nie ma.
     //
-    // m12-121 (pytanie właściciela: „zamiast ujmować, dodać ulice?"):
+    // m12-122 (pytanie właściciela: „zamiast ujmować, dodać ulice?"):
     // tak — pełny układ ulic jak dla samochodów: wcześniej pieszy nie miał
     // tertiary/secondary/primary/unclassified, a typowa wieś zabudowana
     // wzdłuż drogi wojewódzkiej (primary) bez chodników w OSM nie miała
@@ -56,7 +56,7 @@ export const TRYBY = {
     zoom: 15,
     predkoscKmh: 15,
     // m12-119: bez cycleway — DDR wzdłuż jezdni ma tę samą wadę co chodnik:
-    // wpięcia tylko na skrzyżowaniach zawyżają dystanse. m12-121: pełny
+    // wpięcia tylko na skrzyżowaniach zawyżają dystanse. m12-122: pełny
     // układ ulic (doszły secondary/primary) — w małej miejscowości rower
     // jedzie każdą zwykłą ulicą; autostrady/ekspresówki wykluczone.
     // path/track zostają na leśne ścieżki i drogi gruntowe.
