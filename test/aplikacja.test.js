@@ -717,6 +717,28 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
   assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście/, '{MIEJSCE} z obszaru administracyjnego (bez Nominatim)');
 });
 
+test('stacje: „Inny układ" i „Pobierz ponownie" wracają widokiem na górę warstwy (UX m12-120)', async () => {
+  // Właściciel: przyciski opcji stoją pod długą listą stacji; po kliknięciu
+  // panel (.panel-centralny, overflow-y: auto) zostawał przewinięty w dół.
+  const pamiecCache = new Map();
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  const warstwa = domAtrapa.pobierz('ekran-stacje');
+  assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3, 'warstwa stacji otwarta z listą');
+
+  warstwa.scrollTop = 412; // właściciel przewinął listę na dół
+  domAtrapa.kliknij('przycisk-przelicz');
+  assert.equal(warstwa.scrollTop, 0, '„Inny układ" wraca na górę warstwy');
+
+  warstwa.scrollTop = 412;
+  domAtrapa.kliknij('przycisk-siec-ponow');
+  assert.equal(warstwa.scrollTop, 0, '„Pobierz sieć ponownie" wraca na górę warstwy');
+});
+
 test('stacje: udane pobranie z pierwszej instancji zapisuje cache i rysuje sieć', async () => {
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(new Map()) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');

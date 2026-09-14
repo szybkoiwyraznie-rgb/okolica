@@ -2149,3 +2149,34 @@ test('kontrakt m12-119: korytarze wzdłuż jezdni nie trasują; path/track zosta
   assert.ok(APP.includes('pokazBledy(\'bledy-stacje\', zlozKarteUsterekStacji(wynik,'),
     'gałąź niekompletu nie składa już własnej karty gubiącej S14 (D3)');
 });
+
+test('kontrakt m12-120: pełny układ ulic dla pieszego i roweru, bez autostrad; one-way nie blokuje; reset przewijania warstwy', () => {
+  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+    /Aneks 2026-09-14 \(m12-120\) — pełny układ ulic dla pieszego i roweru/,
+    'ADR 0005 dokumentuje domknięcie „dodać ulice"');
+  // ulice tranzytowe wchodzą do obu niemotoryzowanych trybów (wieś przy wojewódzkiej)
+  for (const tryb of ['piesza', 'rower']) {
+    for (const klasa of ['tertiary', 'secondary', 'primary', 'unclassified']) {
+      assert.ok(TRYBY[tryb].klasyDrog.includes(klasa), `${tryb}: ${klasa} trasuje (m12-120)`);
+    }
+    assert.ok(!TRYBY[tryb].klasyDrog.includes('motorway') && TRYBY[tryb].wykluczoneKlasy.includes('trunk'),
+      `${tryb}: autostrada/ekspresówka pozostaje jedynym obejściem`);
+  }
+  // korytarze nadal poza trasowaniem (m12-119)
+  for (const klasa of ['footway', 'steps', 'cycleway']) {
+    assert.ok(!TRYBY.piesza.klasyDrog.includes(klasa));
+  }
+  // krawędzie grafu są DWUKIERUNKOWE i tag oneway nie jest nigdy czytany —
+  // pieszy (i samochód w modelu) może iść „pod prąd" jednokierunkowej ulicy
+  const SIECI = czytaj('app/sieci.js');
+  assert.ok(!/oneway/.test(SIECI), 'graf nie zna pojęcia jednokierunkowości — krawędzie symetryczne');
+  assert.ok(SIECI.includes('sasiedztwo[a].push({ do: b, metry });') &&
+    SIECI.includes('sasiedztwo[b].push({ do: a, metry });'), 'krawędzie dodawane w obie strony');
+  // UX właściciela: opcje pod listą wracają widokiem na górę warstwy
+  assert.ok(APP.includes('function przewinWarstweStacjiNaGore()'), 'jest helper resetu przewijania');
+  for (const przycisk of ['przycisk-przelicz', 'przycisk-siec-ponow']) {
+    const tresc = APP.slice(APP.indexOf(`$('${przycisk}').addEventListener`));
+    assert.ok(tresc.slice(0, 400).includes('przewinWarstweStacjiNaGore()'),
+      `${przycisk} resetuje przewijanie warstwy (UX m12-120)`);
+  }
+});
