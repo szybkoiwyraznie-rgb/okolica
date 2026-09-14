@@ -19,25 +19,39 @@ export const TRYBY = {
   piesza: {
     etykieta: 'piesza',
     ikona: '🚶',
-    opis: 'Pieszo — stacje w zasięgu spaceru, chodniki, ścieżki i place',
+    opis: 'Pieszo — stacje przy ulicach, ścieżkach i placach w zasięgu spaceru',
     zoom: 17,
     predkoscKmh: 4.5,
+    // m12-119 (uwaga B, właściciel 2026-09-14): TRASOWANIE TYLKO PO UKŁADZIE
+    // ULIC. Chodniki (footway), schody (steps) i drogi dla rowerów
+    // (cycleway) bywają w OSM mapowane jako osobne korytarze wzdłuż jezdni,
+    // wpięte do niej dopiero na skrzyżowaniach — punkt przy głównej ulicy
+    // dostawał wtedy dystans drogowy mierzony objazdem (100 m fizycznie →
+    // 424 m w grafie) i numery stacji odwracały się względem tego, co gracz
+    // widzi. W małych miejscowościach nie ma przejść dla pieszych ani
+    // autostrad — gracz chodzi po ulicach (decyzja właściciela: „liczyć tak
+    // jak dla samochodów, bez korytarzy pieszych”). Zostają: deptaki
+    // (pedestrian — to ulice bez aut), woonerfy, service oraz path/track —
+    // one bywają JEDYNĄ siecią w lesie i parku.
     klasyDrog: [
-      'footway', 'path', 'pedestrian', 'steps', 'living_street', 'residential',
-      'service', 'track', 'cycleway',
+      'path', 'pedestrian', 'living_street', 'residential',
+      'service', 'track',
     ],
   },
   rower: {
     etykieta: 'rowerowa',
     ikona: '🚴',
-    opis: 'Rowerem — drogi rowerowe i spokojne ulice, bez schodów',
+    opis: 'Rowerem — spokojne ulice i ścieżki, bez schodów',
     zoom: 15,
     predkoscKmh: 15,
+    // m12-119: bez cycleway — DDR wzdłuż jezdni ma tę samą wadę co chodnik:
+    // wpięcia tylko na skrzyżowaniach zawyżają dystanse. Rower trasuje po
+    // ulicach; path/track zostają na leśne ścieżki i drogi gruntowe.
     klasyDrog: [
-      'cycleway', 'path', 'pedestrian', 'living_street', 'residential',
+      'path', 'pedestrian', 'living_street', 'residential',
       'service', 'track', 'tertiary', 'unclassified',
     ],
-    wykluczoneKlasy: ['steps', 'motorway', 'trunk'],
+    wykluczoneKlasy: ['steps', 'motorway', 'trunk', 'footway', 'cycleway'],
   },
   samochodowa: {
     etykieta: 'samochodowa',
