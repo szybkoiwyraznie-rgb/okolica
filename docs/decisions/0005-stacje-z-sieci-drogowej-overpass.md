@@ -193,3 +193,29 @@ najbliższego sąsiada dla N>10. Funkcja jest **eksportowana**, żeby testy
 macierz niesymetryczną i N=11 (greedy). Macierz odległości to `dMiedzy`
 (ASCII, bez ogonka) — identyfikator nie zależy od NFC/NFD.
 
+
+## Aneks 2026-09-14 (m12-116) — twarde wejście w pętlę na wszystkich ścieżkach
+
+Zgłoszenie terenowe (uwaga B, dogrywka): gra kazała minąć stację nr 2
+(~100 m od startu), żeby dojść do stacji nr 1 (~300 m), i wracać tą samą
+drogą. Diagnoza: wolne TSP minimalizuje SUMĘ, a nie wejście — sonda
+(3000 losowych układów) pokazała, że pierwsza stacja wolnego TSP w 61%
+nie jest najbliższa startu; paczka z repozytorium w ogóle niosła
+kolejność autora bez porządkowania.
+
+Decyzja: `kolejnoscTrasy` (`app/stacje.js`) — stacja 1 to ZAWSZE najbliższa
+startu w metryce porządkowania (drogowa, gdy dostępna, inaczej kreska),
+reszta optymalna od niej. Obowiązuje na WSZYSTKICH ścieżkach: pierścień,
+sieć, wklejka (przed wysyłką na Drive — paczka rodzi się uporządkowana),
+paczka z repozytorium (przy starcie, od bieżącej pozycji). Pytania przepina
+`uporzadkujGre`: zmienia się tylko pole `stacja`, `id` i `poprawna`
+nietknięte (głosy graczy wiszą na `id`). Przestawienie jest jawne w statusie.
+
+Uczciwość: literalna nierówność właściciela d(S,2) ≥ d(S,1)+d(1,2) wynika
+z nierówności trójkąta TYLKO współliniowo — nie da się jej spełnić ogólnie.
+Reguła wejścia daje jej intencję (na pierwszym odcinku nie mija się stacji
+o niższym numerze), a w układzie współliniowym jak zgłoszony nierówność
+zachodzi z równością (test pinuje ten przypadek). Świadomy koszt: trasa
+bywa o kilka procent dłuższa od wolnego TSP — gwarancja wejścia jest
+ważniejsza niż minimalna suma. Przy okazji: start z paczki kasuje
+`STAN.wynikSieci` (dystanse drogowe poprzedniej gry nie dotyczą tych stacji).

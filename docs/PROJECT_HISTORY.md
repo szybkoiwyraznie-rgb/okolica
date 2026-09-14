@@ -5107,3 +5107,110 @@ jest nieaktualna (właściciel: „bzdury sprzed 20 PRów”). Gra jest w teści
 terenowym na iPhonie (1334×750). Most wdrażany przy scaleniu PR. Brak zlecenia
 po audycie = czekaj na uwagi, nie bierz M3. Żywe dokumenty i strażnik dryfu
 przestawione w tej sesji (L68).
+
+## Sesja 2026-09-14b — audyt PR #23 (gałąź `arena/01a09f7d-okolica`)
+
+### 1. Start sesji
+
+Właściciel: „kontynuujemy projekt” — bez zlecenia, więc sesja wg protokołu
+(ADR 0012): lektura §0 w całości (AGENTS, PROTOKOL, ADR-y 0001–0045,
+LESSONS L1–L68, ENVIRONMENT, ROADMAP, HANDOFF_2026-09-13f), PR sesji,
+audyt poprzedniego scalonego PR (#23). Kamienie M0–M12 zamknięte (L68) —
+po audycie sesja czeka na uwagi z terenu, nie bierze M3.
+
+- Gałąź `arena/01a09f7d-okolica`, baza `325b759` (= `main` po PR #23,
+  aplikacja **m12-115**).
+- Bramy przed zmianami: `npm test` **781/781**, `npm run check` OK (oba
+  szablony), `npm run audyt` 0 naruszeń, budżet lektury **96 841/100 000**
+  tok (rezerwa 3 159).
+
+### 2. Audyt PR #23 (squash `325b759`, 32 pliki, +557/−209)
+
+Przegląd `git diff 325b759^..325b759` plik po pliku: logika, zgodność
+z ADR i protokołem, zieloność testów, łańcuch wersji, most.
+
+**Naprawy G1/B1/C1/E1/F2/V1 — OK.** `zaliczoneStacjeIds` czyta `o.stacja`
+(`odcinki` jest tablicą — indeks 0 ≠ id 1); `optymalnaKolejnosc`
+eksportowana + 6 testów (N≤1, kolinearne, kąt vs dystans, determinizm
+i macierz niesymetryczna, N=11 greedy, TSP w `stacjeProste`);
+trzy puste `try/catch` wokół `scrollTop` usunięte (strażnik `if` zostaje);
+inline `li.style.*` w lobby przeniesione do CSS `#lobby-gracze li`
+(22 px/700 — potwierdzone w serwowanym CSS); `czyStartPoDalej` usunięta,
+a martwa gałąź na `r.faza` po obsłudze `świeży.faza` zweryfikowana jako
+martwa (`r` i `świeży` to ten sam obiekt `STAN.rozgrywka`).
+`?v=m12-115` ×43 + `WERSJA_SW` — łańcuch pojedynczy; jedyne „m12-114”
+w drzewie to komentarz historyczny w `test/kontrakt.test.js`. Aneksy
+m12-115 w ADR 0005/0011/0027/0044 + piny w kontrakcie. Most `.gs`
+nietknięty. Fala L68 (ROADMAP/AGENTS/WORKFLOW/README/BACKLOG/LESSONS +
+4 martwe frazy) spójna. Weryfikacja na żywo: serwer 200, `?v=m12-115`
+w HTML, stopka `PYT/1.0`, `.pulsuje` negatyw i `#lobby-gracze li`
+w serwowanym CSS.
+
+**Usterek brak. Obserwacje:**
+
+- **O1 (proces):** sesja PR #23 nie zostawiła pliku
+  `HANDOFF_2026-09-14*.md` (AGENTS §2 wymaga trwałego handoffu) — jest
+  tylko wpis dziennika. Nic nie przepadło (wpis szczegółowy), ale łańcuch
+  handoffów ma lukę; handoff tej sesji to `HANDOFF_2026-09-14b.md`.
+- **O2 (dryf dok., naprawione w tej sesji):** aneks 2026-09-09 do ADR 0009
+  cytował usuniętą w F2 `czyStartPoDalej()` i martwą logikę (pauza, tury,
+  wybór stacji w wyścigu). Nieaktualne od PR #22 (funkcja już wtedy
+  `return true`); dopisano aneks 2026-09-14 (start po „dalej”
+  bezwarunkowy).
+- **O3 (odłożone, sprzed PR #23):** nieaktualny komentarz w `app/app.js`
+  („Panel multi żyje poza slotem” — panel zdjęty w m12-108, ADR 0044).
+  Zmiana `app/*.js` wymusiłaby podbicie `?v=` — do najbliższej fali kodowej.
+
+**Werdykt:** PR #23 zielony i spójny; trzy obserwacje bez wpływu na grę
+(O1 procesowa, O2 naprawiona w tej sesji, O3 odłożona).
+
+### 3. Ta sesja (m12-115, bez zmian kodu)
+
+Kroki: (1) audyt PR #23 → ten wpis dziennika; (2) O2: aneks 2026-09-14
+do ADR 0009 (koniec `czyStartPoDalej`); (3) handoff
+`HANDOFF_2026-09-14b.md` (z tabelą commitów). Każdy krok osobnym
+commitem, od razu wypchniętym.
+
+Brama na koniec: `npm test` 781/781, `check` OK, `audyt` 0 naruszeń.
+Rzeczy otwarte: uwagi z terenu (pętla z ROADMAP); deployment `.gs`
+u właściciela przy scaleniu PR (most bez zmian od PR #19).
+
+## Sesja 2026-09-14c — uwaga B (dogrywka): twarde wejście w pętlę (gałąź `arena/01a09f7d-okolica`, PR #24, m12-116)
+
+Zlecenie właściciela (teren, zastępuje „czekanie na uwagi”): wejście w pętlę
+dalej złe — gra kazała minąć stację nr 2 (~100 m od startu), żeby dojść do
+nr 1 (~300 m), i wracać tą samą drogą. Żądanie: d(S,2) ≥ d(S,1)+d(1,2).
+
+Diagnoza (sondy, nie zgadywanie): wolne TSP minimalizuje SUMĘ, a nie wejście —
+w 3000 losowych układów pierwsza stacja wolnego TSP w 61% NIE była najbliższa
+startu (przy starcie w środku i stacjach na pierścieniu o remisie rozstrzygają
+mikroróżnice sumy i tie-breaki indeksowe, nie dystans wejścia). Paczka
+z repozytorium w ogóle niosła kolejność autora bez porządkowania
+(`przyjmijZestawDoGry` brał ją wprost). Dodatkowo: literalna nierówność
+z nierówności trójkąta zachodzi TYLKO współliniowo — nie da się jej spełnić
+ogólnie; komentarz w `stacje.js` obiecujący ją jako własność TSP był fałszywy
+(usunięty, fraza `≥ start-1 + 1-2` w martwych w dryfie).
+
+Naprawa (ADR 0005 aneks m12-116): `kolejnoscTrasy` — stacja 1 to ZAWSZE
+najbliższa startu w metryce porządkowania (drogowa, gdy dostępna, inaczej
+kreska), reszta optymalna od niej. Wpięta na WSZYSTKICH ścieżkach: pierścień,
+sieć, wklejka (przed wysyłką na Drive — paczka rodzi się uporządkowana),
+paczka z repo (przy starcie, od bieżącej pozycji). Pytania przepina
+`uporzadkujGre` — tylko pole `stacja`, `id` i `poprawna` nietknięte (głosy
+wiszą na `id`; paczki w grze są już odkodowane, więc rekodowanie zbędne).
+Przestawienie jawne w statusie. Świadomy koszt: trasa bywa o kilka % dłuższa
+od wolnego TSP. Przy okazji: start z paczki kasuje `STAN.wynikSieci` (nieaktualne
+dystanse poprzedniej gry) + O3 z sesji b (martwe zdanie o panelu multi).
+
+Testy: 9 w `stacje.test.js` (przypadek właściciela 100/300/200 z równością
+nierówności, bateria 500 układów „pierwsza zawsze najbliższa”, asymetria
+drogowa, remap/idempotentność), E2E paczki wspak w `zestawy-ui.test.js`
+(gra startuje trasą, pytania za numerami, poprawne działają), pin promptu
+w `aplikacja.test.js` (stacja 1 najbliższa), pin wpięcia w `kontrakt.test.js`,
+martwa fraza w dryfie. Stary test „stacjeProste oddaje kolejność TSP”
+przepisany na nową regułę (pinował zachowanie błędne).
+
+Brama na koniec: `node --test` 793/793, `check` OK, `audyt` 0 naruszeń,
+budżet 97 388/100 000 (rezerwa 2 612). Handoff: `HANDOFF_2026-09-14c.md`.
+Rzeczy otwarte: uwagi z terenu (pętla z ROADMAP); deployment `.gs`
+u właściciela przy scaleniu PR (most bez zmian).

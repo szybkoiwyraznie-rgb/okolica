@@ -2887,3 +2887,22 @@ test('bug G: „Dalej” odświeża cichego watchera gestem; po fixie restart ni
     domB.posprzataj(); // ADR 0040: bez pauzy w tle zegary sprząta atrapa
   }
 });
+
+/* ---- uwaga B 2026-09-14 (dogrywka): świeża gra numeruje trasą z twardym wejściem ---- */
+
+test('uwaga B (dogrywka): prompt numeruje stacje trasą — stacja 1 najbliższa pozycji', async () => {
+  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
+  await import(`../app/app.js?wejscie=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  const prompt = domAtrapa.pobierz('pole-prompt').value;
+  const dystanse = {};
+  for (const linia of prompt.split('\n')) {
+    const m = linia.match(/^- stacja (\d+): .* \((\d+) m od środka gry\)$/);
+    if (m) dystanse[Number(m[1])] = Number(m[2]);
+  }
+  assert.deepEqual(Object.keys(dystanse).map(Number).sort((a, b) => a - b), [1, 2, 3], 'prompt listuje 3 stacje z dystansami');
+  assert.equal(dystanse[1], Math.min(dystanse[1], dystanse[2], dystanse[3]),
+    `stacja 1 ma być najbliższa pozycji (dystanse: 1=${dystanse[1]} m, 2=${dystanse[2]} m, 3=${dystanse[3]} m)`);
+});

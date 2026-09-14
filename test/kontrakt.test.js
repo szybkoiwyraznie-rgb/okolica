@@ -2063,3 +2063,24 @@ test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => 
     /Aneks 2026-09-14 \(m12-115, uwaga F\) — wybór stacji usunięty, nie przeprowadzony/,
     'ADR 0044 unieważnia pkt 5 o przeprowadzce wyboru');
 });
+
+/**
+ * Uwaga B 2026-09-14 (dogrywka): twarde wejście w pętlę na WSZYSTKICH
+ * ścieżkach — stacja 1 to zawsze najbliższa startu (ADR 0005 aneks m12-116).
+ */
+test('kontrakt uwagi B (dogrywka): porządkowanie trasą jest wpięte w każdą ścieżkę startu', () => {
+  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+    /Aneks 2026-09-14 \(m12-116\) — twarde wejście w pętlę na wszystkich ścieżkach/,
+    'ADR 0005 dokumentuje regułę wejścia');
+  const STACJE = czytaj('app/stacje.js');
+  assert.ok(STACJE.includes('const kolejnosc = kolejnoscTrasy({ srodek, stacje });'),
+    'pierścień numeruje trasą z twardym wejściem');
+  assert.ok(STACJE.includes('const kolejnoscOpt = kolejnoscTrasy({'),
+    'sieć drogowa numeruje trasą z twardym wejściem');
+  assert.ok(APP.includes('uporzadkujGre({ srodek: STAN.pozycja, stacje: stacjeGry, pytania: paczka.pytania'),
+    'start z paczki przestawia grę w kolejność trasy od bieżącej pozycji');
+  assert.ok(APP.includes('uporzadkujGre({ srodek: STAN.pozycja, stacje: STAN.stacje, pytania: STAN.paczka.pytania'),
+    'wklejka przestawia grę w kolejność trasy (pinezki po dragach też)');
+  assert.ok(APP.includes('STAN.wynikSieci = null; // dystanse drogowe poprzedniej gry nie dotyczą tych stacji'),
+    'start z paczki nie niesie dystansów drogowych poprzedniej gry');
+});

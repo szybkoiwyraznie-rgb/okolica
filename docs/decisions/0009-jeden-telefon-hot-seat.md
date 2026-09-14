@@ -91,3 +91,15 @@ Punkt 4 czyta się dalej jako „PIERWSZE pytanie stacji należy do gracza
 z kolejki”; kolejne pytania tej samej stacji rotują po liście graczy (pytanie
 `k` → gracz z kolejki przesunięty o `k`, cyklicznie). Szczegóły i uzasadnienie:
 aneks do ADR 0022 z 2026-09-12 (m12-87).
+
+
+## Aneks 2026-09-14 (m12-115) — start odcinka po „dalej” jest bezwarunkowy (F2)
+
+Akapit aneksu 2026-09-09 o `czyStartPoDalej()` („Automatu NIE MA tam, gdzie
+odebrałby graczowi decyzję…”) jest nieaktualny: pauzy nie ma (ADR 0040), tur
+nie ma (ADR 0019 aneks 2026-09-11), a wyścig wraca na mapę od razu, bez
+warstwy wyboru stacji (ADR 0027 aneks 2026-09-14). Funkcja sprowadziła się
+do `return true` (PR #22, fala F) i została usunięta (PR #23, naprawa F2):
+`nastepnaStacja()` i `wznowGre()` startują odcinek z fazy przygotowania
+wprost. Zachowanie z aneksu 2026-09-09 (jeden przycisk zamiast dwóch)
+obowiązuje bez zmian.
