@@ -2510,13 +2510,16 @@ function wierszZestawu(opis, akcji, statystyki = '', factcheck = true) {
   przycisk.type = 'button';
   przycisk.className = 'przycisk';
   przycisk.textContent = '▶ Graj z tą paczką';
-  // Sygnał czekania (właściciel 2026-09-13): pobranie paczki z Drive trwa kilka
-  // sekund, więc przycisk mówi, co się dzieje, i nie przyjmuje drugiego kliku
-  // (podwójne pobranie i podwójne „użycie" paczki). Gdy wstępne pobieranie
-  // zdążyło, zmiana jest niezauważalna — gra startuje od razu.
+  // Sygnał czekania (właściciel 2026-09-13, dograne 2026-09-14 — uwaga B1):
+  // pobranie paczki z Drive trwa kilka sekund, a przy grze sieciowej jeszcze
+  // zakładanie gry na moście — przycisk mówi „Ładuję paczkę" i pulsuje przez
+  // CAŁY ten czas, nie przyjmuje drugiego kliku (podwójne pobranie i podwójne
+  // „użycie" paczki). Gdy wstępne pobieranie zdążyło, zmiana jest krótka —
+  // gra albo lobby startuje od razu. Słowo „przycisku" pilnuje test w
+  // zestawy-ui; brzmienie dał właściciel (uwagi terenowe 2026-09-14, B1).
   przycisk.addEventListener('click', async (zdarzenie) => {
     przycisk.disabled = true;
-    przycisk.textContent = '⏳ Ładowanie paczki…';
+    przycisk.textContent = '⏳ Ładuję paczkę…';
     przycisk.classList.add('pulsuje');
     try {
       await akcji(zdarzenie);
@@ -2828,7 +2831,7 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
 }
 
 /** Wspólny start z gotową paczką: stacje i kontener z zestawu, pytania z pamięci. */
-function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
+async function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
   const { paczka, blad } = odpakujPaczke(kontener);
   if (blad || !paczka) {
     status(`Paczka (${zrodlo}) jest uszkodzona: ${blad?.komunikat ?? 'nie da się jej odczytać'} — wracamy do zwykłej ścieżki.`);
@@ -2855,11 +2858,15 @@ function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
   STAN.usterkiPaczki = [];
   if (STAN.multiPoPaczce) {
     // Wspólny setup (właściciel, 2026-09-11): w multi po wybraniu paczki z
-    // ekranu pozycji też otwiera się lobby, nie gra hot-seat.
+    // ekranu pozycji też otwiera się lobby, nie gra hot-seat. Zakładanie gry
+    // jest OCZEKIWANE (uwaga B1, 2026-09-14): POST „gra-zaloz" na zimnym
+    // moście trwa 5–10 s, a przycisk „▶ Graj z tą paczką" pulsuje dopóty,
+    // dopóki ta funkcja nie wróci — bez await lobby otwierało się po długiej
+    // ciszy z odświeżonym, martwym przyciskiem.
     STAN.multiPoPaczce = false;
     STAN.ukryjStacje = false;
     STAN.kontenerPaczki = kontener;
-    void zalozGreMulti();
+    await zalozGreMulti();
     return true;
   }
   startGry();
@@ -2898,7 +2905,9 @@ async function grajZZestawemZRepo(wpis, urlIndeksu) {
   // straciłaby prawo do oceny (ADR 0028 aneks 2026-09-09).
   zapamietajIdPaczkiDlaZestawu(zestaw.kontener?.skrot, STAN.paczkaRepoId);
   wyslijUzycieWTle(STAN.paczkaRepoId);
-  przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
+  // `await` załatwia obie ścieżki (uwaga B1): hotseat zwraca bool od razu,
+  // multi oczekuje na założenie gry — przycisk paczki pulsuje do lobby.
+  return przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
 }
 
 /**
@@ -4610,7 +4619,7 @@ async function zalozGreMulti() {
     return;
   }
   const sekret = STAN.multiTryb === TRYBY_GRY.trasa && STAN.multiTrasaSekret;
-  status('Zakładam grę na mostku Drive…');
+  status('Zakładam grę na mostku Drive…', { czeka: true }); // zimny start web app bywa długi (uwaga B1)
   try {
     const wynik = await polecenieMostu(urlMostuMulti(), {
       akcja: 'gra-zaloz',
@@ -4657,7 +4666,7 @@ async function dolaczDoGryMulti({ idGry = null } = {}) {
     pokazBledyDolacza(['Nie wiem, do której gry dołączyć — wybierz hosta z listy gier w okolicy.']);
     return;
   }
-  status('Dołączam do gry z listy…');
+  status('Dołączam do gry z listy…', { czeka: true });
   try {
     const wynik = await polecenieMostu(urlMostuMulti(), {
       akcja: 'gra-dolacz',
@@ -4672,19 +4681,30 @@ async function dolaczDoGryMulti({ idGry = null } = {}) {
   }
 }
 
+/** Status lobby w `#multi-lobby-status` — ten sam zwyczaj co `status()`:
+ *  `czeka: true` pulsuje w negatywie, każdy kolejny tekst gasi pulsowanie
+ *  (uwaga B2, 2026-09-14: czekanie na listę gier ma być widoczne tak samo jak
+ *  inne oczekiwania, a komunikat nie wymienia „mostu Drive"). */
+function statusLobby(tekst, { czeka = false } = {}) {
+  const pole = $('multi-lobby-status');
+  if (!pole) return;
+  pole.textContent = tekst;
+  pole.classList.toggle('pulsuje', czeka);
+}
+
 async function odswiezLobby() {
   const url = urlMostuMulti();
   const lista = $('multi-lobby-lista');
   if (!url) {
-    $('multi-lobby-status').textContent = 'Brak adresu mostu w tej wersji aplikacji — lista gier w okolicy jest niedostępna.' + ADR(' (ADR 0020)');
+    statusLobby('Brak adresu mostu w tej wersji aplikacji — lista gier w okolicy jest niedostępna.' + ADR(' (ADR 0020)'));
     return;
   }
   if (!STAN.pozycja) {
     lista.replaceChildren();
-    $('multi-lobby-status').textContent = 'Czekam na Twoją pozycję — lista pokazuje gry w zasięgu ~50 m od hosta.';
+    statusLobby('Czekam na Twoją pozycję — lista pokazuje gry w zasięgu ~50 m od hosta.');
     return;
   }
-  $('multi-lobby-status').textContent = 'Pobieram listę gier z mostu Drive…';
+  statusLobby('Pobieram listę gier…', { czeka: true });
   try {
     const odpowiedz = await pobierzGetMulti(urlGet(url, 'gry'));
     const { wpisy, usterki } = walidujLobbySurowe(JSON.stringify(odpowiedz ?? null));
@@ -4709,11 +4729,11 @@ async function odswiezLobby() {
       li.append(opis, b);
       lista.appendChild(li);
     }
-    $('multi-lobby-status').textContent = bliskie.length
+    statusLobby(bliskie.length
       ? `Gry w zasięgu ~50 m: ${bliskie.length}.`
-      : 'Brak gier w zasięgu ~50 m — załóż własną albo odśwież za chwilę.';
+      : 'Brak gier w zasięgu ~50 m — załóż własną albo odśwież za chwilę.');
   } catch (e) {
-    $('multi-lobby-status').textContent = `Nie udało się pobrać listy gier: ${e?.message ?? e}`;
+    statusLobby(`Nie udało się pobrać listy gier: ${e?.message ?? e}`);
   }
 }
 
@@ -4722,7 +4742,7 @@ async function odswiezLobby() {
 async function startLobby() {
   const m = STAN.multi;
   if (!m || m.rola !== 'organizator') return;
-  status(`Startuję grę ${m.gra.kod}…`);
+  status(`Startuję grę ${m.gra.kod}…`, { czeka: true });
   try {
     const wynik = await polecenieMostu(m.urlMostu, {
       akcja: 'gra-start', kod: m.gra.kod, idGry: m.gra.idGry ?? null, organizatorId: m.graczId,

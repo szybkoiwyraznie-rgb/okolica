@@ -672,7 +672,7 @@ test('wstępne pobieranie sięga tylko po paczki WIDOCZNE na liście i nie zgła
   }
 });
 
-test('sygnał czekania: przycisk mówi „Ładowanie paczki…", status pulsuje i nie przyjmuje drugiego kliku', async () => {
+test('sygnał czekania: przycisk mówi „Ładuję paczkę…", status pulsuje i nie przyjmuje drugiego kliku', async () => {
   // Pobranie PLIKU wisi na naszej bramie — możemy zmierzyć stan ekranu w trakcie.
   const wywolania = [];
   let oddajPlik = null;
@@ -692,7 +692,7 @@ test('sygnał czekania: przycisk mówi „Ładowanie paczki…", status pulsuje 
     assert.equal(dom.pobierz('zestawy-status').classList.contains('pulsuje'), false,
       'po odpowiedzi repozytorium sygnał czekania na karcie gasi się');
     const przycisk = kliknijPierwszyPrzyciskZestawu(dom);
-    assert.equal(przycisk.textContent, '⏳ Ładowanie paczki…', 'przycisk mówi, co się dzieje');
+    assert.equal(przycisk.textContent, '⏳ Ładuję paczkę…', 'przycisk mówi, co się dzieje (brzmienie z uwagi B1, 2026-09-14)');
     assert.equal(przycisk.disabled, true, 'drugiego kliku nie przyjmuje (podwójne pobranie i podwójne „użycie")');
     assert.equal(przycisk.classList.contains('pulsuje'), true, 'przycisk pulsuje w trakcie pobierania');
     assert.match(dom.pobierz('status').textContent, /Pobieram paczkę z repozytorium/, 'status nazywa pobieranie');

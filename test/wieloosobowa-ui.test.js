@@ -954,6 +954,64 @@ test('wyjście z lobby jest zgłaszane mostowi — inaczej liczba graczy kłamie
   assert.equal(el(A, 'ekran-setup').hidden, false, 'gracz wraca na setup');
 });
 
+test('uwagi B1+B2 (2026-09-14): czekanie ma puls — paczka „Ładuję paczkę” aż do lobby, lobby „Pobieram listę gier” bez Drive', async () => {
+  // B1: klik „▶ Graj z tą paczką” przy zakładaniu gry sieciowej trwa 5–10 s
+  // (zimny web app). Przycisk musi cały czas mówić „⏳ Ładuję paczkę…” i
+  // pulsować — nie gasnąć po szybkim pobraniu pliku. B2: czekanie na listę
+  // gier pulsuje jak każde oczekiwanie i nie wymienia „mostu Drive”.
+  const most = atrapaMostu();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+
+  // Atrapa zwłoki: asercje „w trakcie” robimy DOKŁADNIE w chwili żądania.
+  const pierwotnyFetch = A.dom.window.fetch;
+  let przyciskPaczki = null;
+  const fetchZZwloka = async (url, opcje) => {
+    const adres = String(url);
+    if (adres.includes('akcja=gry')) {
+      const pole = el(A, 'multi-lobby-status');
+      assert.match(pole.textContent, /^Pobieram listę gier/, 'status mówi, że lista jest pobierana');
+      assert.equal(pole.classList.contains('pulsuje'), true, 'czekanie na listę pulsuje (B2)');
+      assert.equal(pole.textContent.includes('Drive'), false, 'komunikat nie mówi o Drive (B2)');
+    }
+    if (adres.includes('akcja=gra-zaloz') && przyciskPaczki) {
+      assert.equal(przyciskPaczki.disabled, true, 'przycisk paczki nie przyjmuje drugiego kliku w trakcie zakładania gry (B1)');
+      assert.equal(przyciskPaczki.classList.contains('pulsuje'), true, 'przycisk pulsuje przez CAŁE zakładanie gry (B1)');
+      assert.equal(przyciskPaczki.textContent, '⏳ Ładuję paczkę…', 'etykieta czekania jest ta sama co przy pobieraniu pliku (B1)');
+    }
+    return pierwotnyFetch(url, opcje);
+  };
+  A.dom.window.fetch = fetchZZwloka;
+  globalThis.fetch = fetchZZwloka;
+  try {
+    // B2: wejście na ścieżkę „Dołączam” odpytuje most o listę gier.
+    await wybierzSegment(A, 'multi-sciezka', 'dolacz');
+    await czekajNa(A, () => /Brak gier|Gry w zasięgu/.test(tekst(A, 'multi-lobby-status')), 'lista gier przestała pulsować');
+    assert.equal(el(A, 'multi-lobby-status').classList.contains('pulsuje'), false, 'po odpowiedzi pulsowanie gaśnie');
+    assert.equal(tekst(A, 'multi-lobby-status').includes('Drive'), false, 'status końcowy też bez Drive');
+
+    // B1: ścieżka „Zakładam” — paczka z repo, klik, POST gra-zaloz pod lupą.
+    await wybierzSegment(A, 'multi-sciezka', 'zaloz');
+    przelaczNa(A);
+    const przyciskTrybu = [...A.dom.pobierz('multi-tryby').children].find((b) => b.textContent.includes('Wyścig'));
+    kliknijEl(przyciskTrybu);
+    await oddech();
+    await klik(A, 'przycisk-dalej-pozycja');
+    await czekajNa(A, () => el(A, 'zestawy-lista').children.length > 0, 'paczka z repozytorium w propozycjach');
+    przyciskPaczki = [...el(A, 'zestawy-lista').children[0].children].at(-1);
+    przelaczNa(A);
+    kliknijEl(przyciskPaczki);
+    await czekajNa(A, () => el(A, 'multi-panel-lobby').hidden === false, 'lobby po zakładzeniu gry');
+    assert.equal(przyciskPaczki.disabled, false, 'po lobby przycisk wraca do życia');
+    assert.equal(przyciskPaczki.textContent, '▶ Graj z tą paczką', 'etykieta wraca po zakończeniu czekania');
+    assert.equal(przyciskPaczki.classList.contains('pulsuje'), false, 'pulsowanie gaśnie po otwarciu lobby');
+  } finally {
+    A.dom.window.fetch = pierwotnyFetch;
+    globalThis.fetch = pierwotnyFetch;
+  }
+});
+
 test('trasa-sekret z siecią dróg: komunikat mówi „zlokalizowano”, a „Inny układ” zostaje schowany', async () => {
   const most = atrapaMostu();
   const KONFIG = {

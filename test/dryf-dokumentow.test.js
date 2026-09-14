@@ -78,6 +78,11 @@ const MARTWE_FRAZY = [
     powod: 'status nie może odsyłać do pliku — paczki są tylko z repozytorium albo z modelu (zadanie I, 2026-09-12)',
   },
   {
+    fraza: 'Pobieram listę gier z mostu Drive',
+    nosniki: UI,
+    powod: 'czekanie w lobby mówi „Pobieram listę gier…” — gracz nie zna i nie musi znać Drive (uwaga B2, 2026-09-14)',
+  },
+  {
     fraza: 'zapisz plik i wnieść go ręcznie',
     nosniki: UI,
     powod: 'ręcznego wnoszenia pliku nie ma (ADR 0006 aneks 3, ADR 0038)',
