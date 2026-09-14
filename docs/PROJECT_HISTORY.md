@@ -5361,3 +5361,54 @@ S14 i komunikat w UI. Zasięg zmierzony: 0/100 centrum, 0/104 przedmieście,
 ADR 0005, L70 (+ pełny przypadek w archiwum), testy jednostkowe, regresyjne
 (syntetyczna sieć z chodnikiem wpiętym na 600 m) i własnościowe; wersja
 `?v=m12-118` w 43 miejscach (2 w `index.html`, 41 w importach) + `WERSJA_SW`.
+
+## Sesja 2026-09-14f — uwaga B dogrywka 2: pieszy po układzie ulic (gałąź `arena/01a0a06e-okolica`, PR #27, m12-119)
+
+Sesja otwarta „Kontynuujemy projekt": brama 800/800, PR #27 otwarty PRZED
+kodem (ADR 0012), w korzeniu drzewa screenshot właściciela `mapa stacje.jpg`.
+W trakcie sesji nadeszły dwa kolejne zgłoszenia terenowe do uwagi B
+(czwarta i piąta fala; gra na Pages **m118**): najbliższy fizycznie pin
+(~100 m przy głównej ulicy) nadal dostaje niemal zawsze numer 2, czasem 5;
+twarda reguła minimum — stacja 2 musi być dalej od startu ULICAMI niż
+stacja 1; sugestia kierunkowa właściciela: „liczyć tylko układ ulic, bez
+korytarzy pieszych" (w małych miejscowościach nie ma wydzielonych przejść
+ani autostrad do obchodzenia).
+
+**Diagnoza (sondy, nie zgadywanie).** Trzy wcześniejsze propozycje
+(detektor stosunku kreska/droga, mijanie kreską, mijanie drogą) leczyły
+objaw. Na sieci odtworzonej ze zgłoszenia: chodnik wzdłuż głównej ulicy
+jest w OSM osobnym wayem `highway=footway`, wpiętym do jezdni dopiero na
+dalekich skrzyżowaniach — węzeł 100 m fizycznie od startu ma
+`dystansSieciowyM` 424 m (w innym układzie 662 m), bo najkrótsza trasa
+grafu biegnie chodnikiem do wpięcia i jezdnią z powrotem. Najbliższy
+fizycznie punkt nie mógł zostać stacją 1, choć gracz stoi przy nim na
+głównej ulicy. Po odfiltrowaniu klas korytarzowych ten sam syntetyczny pin
+daje dG = 100 m — problem znika u źródła.
+
+**Naprawa (decyzja właściciela), `app/konfig.js` (jedyne źródło klas):**
+piesza bez `footway`/`steps`/`cycleway`, rower bez `cycleway` (jawnie
+wykluczony razem z `footway`). Zostają `pedestrian`, `living_street`,
+`residential`, `service` oraz `path`/`track` — wariant wyrzucenia także
+`path` został zmierzony i odrzucony (fixture las: 139→88 węzłów,
+kompletność 24/44→22/44). Filtrowanie w jednym miejscu (`czyDrogaDostepna`)
+czyści też STARY cache, którym grał właściciel; kwerenda Overpass klas już
+nie pobiera. Brama wejścia z m12-118 zostaje bez zmian (łapie boczne
+ulice wpięte daleko). Pomiary 1056 układów na trzech fixture'ach:
+pozostałe rozjazdy kreska/droga mają podejrzany pin ≥89 m od trasy do
+stacji 1 — gracz ich nie mija.
+
+**Audyt D1–D3 (ten PR):** D1 — usunięty martwy stan wyboru
+(`wybrane/zajete/katMin/szczebelKatowy`) sprzed wydzielenia
+`zbudujUklad`, strzeżony testem statycznym; D2 — komunikat „odrzucono N
+pin(y)" odmienia się nowym helperem `odmianaRzeczownika`
+(pin/piny/pinów, nastki 12–14); D3 — karta błędów w gałęzi niekompletu
+składa nowa czysta funkcja `zlozKarteUsterekStacji` i nie ukrywa już S14
+pod syntetycznym S12 (wcześniej gałąź niekompletu pokazywała wyłącznie
+S12, choć status mówił o S14).
+
+Testy: nowe — graf ignoruje korytarze nawet z cache, metryka punktu przy
+głównej ulicy ≈100 m, karta S12+S14, odmiana, strażnicy D1 i martwej
+frazy „pin(y)"; przepisane — brama m12-118 na równoległą ULICĘ
+(chodników już nie ma w grafie), rzeka-bez-mostu przez `path`, klasy i
+kwerenda Overpass; 800→805 testów zielonych. Aneks m12-119 do ADR 0005,
+L71 (+ archiwum). Wersja `?v=m12-119` w 43 miejscach + `WERSJA_SW`.
