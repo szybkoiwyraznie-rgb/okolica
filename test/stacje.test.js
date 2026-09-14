@@ -6,7 +6,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { ZRODLA_STACJI, dystanseOdcinkowM, najmniejszyOdstepM, optymalnaKolejnosc, stacjeProste, uzupelnijOdleglosci } from '../app/stacje.js';
+import { ZRODLA_STACJI, dystanseOdcinkowM, kolejnoscTrasy, najmniejszyOdstepM, optymalnaKolejnosc, stacjeProste, uporzadkujGre, uzupelnijOdleglosci } from '../app/stacje.js';
 import { odlegloscM, przesunPunkt } from '../app/geo.js';
 
 const WARSZAWA = { lat: 52.2297, lon: 21.0122 };
@@ -148,9 +148,155 @@ test('optymalnaKolejnosc: N>10 idzie zachłannie, nadal bez wracania na linii', 
   assert.deepEqual(optymalnaKolejnosc({ srodek: WARSZAWA, stacje }), kolejnosc, 'determinizm N>10');
 });
 
-test('stacjeProste: kolejność to trasa od startu, nie sort po kącie', () => {
+test('stacjeProste: kolejność to trasa z twardym wejściem, nie sort po kącie', () => {
   const stacje = stacjeProste({ srodek: WARSZAWA, liczbaStacji: 5, promienM: 1000, ziarno: ZIARNO });
   assert.deepEqual(stacje.map((s) => s.id), [1, 2, 3, 4, 5], 'id po przestawieniu zostają 1…N');
-  const kolejnosc = optymalnaKolejnosc({ srodek: WARSZAWA, stacje });
-  assert.deepEqual(kolejnosc, [0, 1, 2, 3, 4], 'stacjeProste już oddaje kolejność TSP');
+  const dystanse = stacje.map((s) => odlegloscM(WARSZAWA, s));
+  assert.equal(dystanse.indexOf(Math.min(...dystanse)), 0, 'stacja 1 to najbliższa startu (uwaga B, dogrywka)');
+  assert.deepEqual(kolejnoscTrasy({ srodek: WARSZAWA, stacje }), [0, 1, 2, 3, 4], 'stacjeProste oddaje punkt stały reguły wejścia');
+});
+
+/* ---- uwaga B 2026-09-14 (dogrywka): twarde wejście w pętlę (ADR 0005 aneks) ---- */
+
+/** Deterministyczny generator (mulberry32) do baterii własności — ziarno stałe. */
+function losujZZiarna(ziarno) {
+  let z = ziarno | 0;
+  return () => {
+    z = (z + 0x6D2B79F5) | 0;
+    return (((Math.imul(z ^ (z >>> 15), 1 | z) + 0x9E3779B9) | 0) >>> 0) / 2 ** 32;
+  };
+}
+
+test('kolejnoscTrasy: przypadek właściciela — stacja 1 to ta mijana (100 m), nie daleka (300 m)', () => {
+  // Gra terenowa: start → nr 2 ≈ 100 m, start → nr 1 ≈ 300 m, 1 → 2 ≈ 200 m
+  // (współliniowo). Wejście w pętlę nie może kazać mijać bliższej stacji.
+  const daleka = { ...przesunPunkt(WARSZAWA, 0, 300), id: 1, opis: 'daleka' };
+  const bliska = { ...przesunPunkt(WARSZAWA, 0, 100), id: 2, opis: 'bliska' };
+  const reszta = [90, 180, 270].map((kat, i) => ({ ...przesunPunkt(WARSZAWA, kat, 500), id: i + 3, opis: '' }));
+  const stacje = [daleka, bliska, ...reszta]; // wejście celowo w złej kolejności
+  const kolejnosc = kolejnoscTrasy({ srodek: WARSZAWA, stacje });
+  assert.equal(kolejnosc[0], 1, 'pierwsza idzie stacja ze 100 m, choć w danych jest druga');
+  assert.deepEqual([...kolejnosc].sort((a, b) => a - b), [0, 1, 2, 3, 4], 'reszta to permutacja wszystkich stacji');
+  // W tym współliniowym układzie nierówność właściciela zachodzi z równością.
+  const s1 = stacje[kolejnosc[0]];
+  const s2 = stacje[kolejnosc[1]];
+  assert.equal(kolejnosc[1], 0, 'druga idzie stacja z 300 m — wprost za pierwszą');
+  const lewa = odlegloscM(WARSZAWA, s2);
+  const prawa = odlegloscM(WARSZAWA, s1) + odlegloscM(s1, s2);
+  assert.ok(lewa >= prawa - 1e-6, `d(S,2)=${lewa} < d(S,1)+d(1,2)=${prawa}`);
+});
+
+test('kolejnoscTrasy: pierwsza jest ZAWSZE najbliższa startu (bateria 500 układów)', () => {
+  const losuj = losujZZiarna(20260914);
+  for (let proba = 0; proba < 500; proba++) {
+    const n = 3 + Math.floor(losuj() * 6); // 3–8 stacji
+    const R = 300 + losuj() * 1200;
+    const stacje = [];
+    for (let i = 0; i < n; i++) {
+      stacje.push(przesunPunkt(WARSZAWA, losuj() * 360, R * (0.55 + losuj() * 0.45)));
+    }
+    const kolejnosc = kolejnoscTrasy({ srodek: WARSZAWA, stacje });
+    const dystanse = stacje.map((s) => odlegloscM(WARSZAWA, s));
+    const najblizsza = dystanse.indexOf(Math.min(...dystanse));
+    assert.equal(kolejnosc[0], najblizsza, `próba ${proba}: pierwsza ${kolejnosc[0]}, najbliższa ${najblizsza}`);
+  }
+});
+
+test('kolejnoscTrasy: remis co do metra rozstrzyga mniejszy indeks (determinizm)', () => {
+  const a = przesunPunkt(WARSZAWA, 90, 200);
+  const b = przesunPunkt(WARSZAWA, 270, 200);
+  const c = przesunPunkt(WARSZAWA, 0, 500);
+  assert.deepEqual(kolejnoscTrasy({ srodek: WARSZAWA, stacje: [a, b, c] })[0], 0);
+  assert.deepEqual(kolejnoscTrasy({ srodek: WARSZAWA, stacje: [b, a, c] })[0], 0, 'remis: wygrywa pozycja, nie treść');
+});
+
+test('kolejnoscTrasy: w metryce drogowej liczy się droga, nie kreska', () => {
+  // A blisko w linii prostej (100 m), ale drogą daleko (2 km objazdu);
+  // B dalej kreską (500 m), ale drogą blisko (500 m). Gra idzie drogą.
+  const a = przesunPunkt(WARSZAWA, 90, 100);
+  const b = przesunPunkt(WARSZAWA, 270, 500);
+  const c = przesunPunkt(WARSZAWA, 0, 900);
+  const kolejnosc = kolejnoscTrasy({
+    srodek: WARSZAWA,
+    stacje: [a, b, c],
+    dystansStart: [2000, 500, 900],
+    macierz: [[0, 2400, 1500], [2400, 0, 600], [1500, 600, 0]],
+  });
+  assert.equal(kolejnosc[0], 1, 'pierwsza idzie stacja bliższa DROGĄ (500 m), choć kreską dalsza');
+});
+
+test('kolejnoscTrasy: reszta jest optymalna od stacji 1, całość deterministyczna', () => {
+  const stacje = [0, 120, 240].map((kat) => przesunPunkt(WARSZAWA, kat, 300));
+  const a = kolejnoscTrasy({ srodek: WARSZAWA, stacje });
+  const b = kolejnoscTrasy({ srodek: WARSZAWA, stacje });
+  assert.deepEqual(a, b, 'to samo wejście = ta sama kolejność');
+  assert.deepEqual([...a].sort((x, y) => x - y), [0, 1, 2]);
+  // Punkt stały: uporządkowany układ jest własnym wynikiem.
+  const uporzadkowane = a.map((idx) => stacje[idx]);
+  assert.deepEqual(kolejnoscTrasy({ srodek: WARSZAWA, stacje: uporzadkowane }), [0, 1, 2]);
+});
+
+test('kolejnoscTrasy: N≤1 i N>10 nie gubią stacji', () => {
+  assert.deepEqual(kolejnoscTrasy({ srodek: WARSZAWA, stacje: [] }), []);
+  assert.deepEqual(kolejnoscTrasy({ srodek: WARSZAWA, stacje: [przesunPunkt(WARSZAWA, 0, 100)] }), [0]);
+  const duzo = Array.from({ length: 11 }, (_, i) => przesunPunkt(WARSZAWA, 90, 100 * (11 - i)));
+  const kolejnosc = kolejnoscTrasy({ srodek: WARSZAWA, stacje: duzo });
+  assert.equal(kolejnosc[0], 10, 'najbliższa pierwsza także na ścieżce zachłannej');
+  assert.deepEqual([...kolejnosc].sort((x, y) => x - y), duzo.map((_, i) => i));
+});
+
+test('uporzadkujGre: stacje dostają numery trasy, pytania idą za nimi, id nietknięte', () => {
+  const stacje = [
+    { id: 1, ...przesunPunkt(WARSZAWA, 0, 300), opis: 'daleka' },
+    { id: 2, ...przesunPunkt(WARSZAWA, 0, 100), opis: 'bliska' },
+  ];
+  const pytania = [
+    { id: 's1p1', stacja: 1, temat: 'historia', tresc: 'Dalekie?', odpowiedzi: ['a', 'b', 'c', 'd'], poprawna: 2 },
+    { id: 's2p1', stacja: 2, temat: 'historia', tresc: 'Bliskie?', odpowiedzi: ['a', 'b', 'c', 'd'], poprawna: 0 },
+  ];
+  const wynik = uporzadkujGre({ srodek: WARSZAWA, stacje, pytania });
+  assert.equal(wynik.zmieniono, true);
+  assert.deepEqual(wynik.kolejnosc, [1, 0]);
+  assert.deepEqual(wynik.stacje.map((s) => s.id), [1, 2], 'numery zawsze 1…N po przestawieniu');
+  assert.equal(wynik.stacje[0].opis, 'bliska', 'stacja 1 to fizycznie ta ze 100 m');
+  // Pytania: `stacja` za nowym numerem, reszta (w tym id głosów) nietknięta.
+  const bliskie = wynik.pytania.find((p) => p.id === 's2p1');
+  const dalekie = wynik.pytania.find((p) => p.id === 's1p1');
+  assert.equal(bliskie.stacja, 1);
+  assert.equal(dalekie.stacja, 2);
+  assert.equal(bliskie.tresc, 'Bliskie?');
+  assert.equal(bliskie.poprawna, 0, 'indeks poprawnej nie zależy od numeru stacji (paczki w kontenerze są odkodowane)');
+  assert.equal(pytania[0].stacja, 1, 'wejście niemutowane — gra dostaje kopię');
+});
+
+test('uporzadkujGre: dobry porządek jest punktem stałym, obce pytania zostają', () => {
+  const stacje = [
+    { id: 1, ...przesunPunkt(WARSZAWA, 0, 100), opis: '' },
+    { id: 2, ...przesunPunkt(WARSZAWA, 0, 300), opis: '' },
+  ];
+  const pytania = [
+    { id: 's1p1', stacja: 1, poprawna: 0 },
+    { id: 's9p1', stacja: 9, poprawna: 1 },
+  ];
+  const wynik = uporzadkujGre({ srodek: WARSZAWA, stacje, pytania });
+  assert.equal(wynik.zmieniono, false, 'nic do roboty — gra startuje bez komunikatu o porządkowaniu');
+  assert.deepEqual(wynik.stacje.map((s) => s.id), [1, 2]);
+  assert.equal(wynik.pytania.find((p) => p.id === 's9p1').stacja, 9, 'pytania do nieistniejącej stacji nie niszczymy');
+  const drugi = uporzadkujGre({ srodek: WARSZAWA, stacje: wynik.stacje, pytania: wynik.pytania });
+  assert.equal(drugi.zmieniono, false, 'idempotentność: drugi przebieg nic nie zmienia');
+});
+
+test('uporzadkujGre: mapowanie pytań idzie po starych id, nie po pozycjach', () => {
+  const stacje = [
+    { id: 2, ...przesunPunkt(WARSZAWA, 0, 100), opis: 'bliska' },
+    { id: 1, ...przesunPunkt(WARSZAWA, 0, 300), opis: 'daleka' },
+  ];
+  const pytania = [
+    { id: 's2p1', stacja: 2, poprawna: 0 },
+    { id: 's1p1', stacja: 1, poprawna: 1 },
+  ];
+  const wynik = uporzadkujGre({ srodek: WARSZAWA, stacje, pytania });
+  assert.equal(wynik.stacje[0].opis, 'bliska');
+  assert.equal(wynik.pytania.find((p) => p.id === 's2p1').stacja, 1);
+  assert.equal(wynik.pytania.find((p) => p.id === 's1p1').stacja, 2);
 });

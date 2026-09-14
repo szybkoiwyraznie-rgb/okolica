@@ -31,10 +31,10 @@ export const ZRODLA_STACJI = {
  *
  * Zwraca tablicę indeksów w kolejności optymalnej.
  *
- * Uwaga B 2026-09-14: układ w okrąg sortowany po kącie wymagał przejścia obok
- * stacji 1 do stacji 2 i powrotu. Warunek właściciela: odległość do stacji 2
- * ≥ start-1 + 1-2 (płynny spacer bez wracania). Optymalna trasa realizuje to
- * jako przypadek szczególny — wybiera kolejność o minimalnej sumie.
+ * Uwaga: samo TSP NIE daje sensownego wejścia — trasa o minimalnej sumie
+ * na pierwszym odcinku bywa prowadzona obok bliższej stacji (pierwsza stacja
+ * wolnego TSP często nie jest najbliższa startu). Gry używają
+ * `kolejnoscTrasy`, która wejście wpina twardo (ADR 0005 aneks).
  */
 export function optymalnaKolejnosc({ srodek, stacje, dystansStart = null, macierz = null }) {
   const N = stacje.length;
@@ -123,13 +123,74 @@ export function optymalnaKolejnosc({ srodek, stacje, dystansStart = null, macier
 }
 
 /**
+ * Kolejność trasy z TWARDYM WEJŚCIEM (uwaga B 2026-09-14, dogrywka):
+ * stacja 1 to ZAWSZE najbliższa startu w metryce porządkowania (drogowa, gdy
+ * podana, inaczej prosta kreska), a reszta jest optymalna od niej. Na
+ * pierwszym odcinku nie da się minąć stacji o niższym numerze — nie ma
+ * stacji bliższej startu niż stacja 1 (ADR 0005 aneks). Remis co do 1e-9 m
+ * rozstrzyga mniejszy indeks (determinizm).
+ */
+export function kolejnoscTrasy({ srodek, stacje, dystansStart = null, macierz = null }) {
+  const N = stacje.length;
+  if (N <= 1) return [...Array(N).keys()];
+  const dStart = dystansStart ?? stacje.map((s) => odlegloscM(srodek, s));
+  let pierwsza = 0;
+  for (let i = 1; i < N; i++) {
+    if (dStart[i] < dStart[pierwsza] - 1e-9) pierwsza = i;
+  }
+  const reszta = [];
+  for (let i = 0; i < N; i++) if (i !== pierwsza) reszta.push(i);
+  // Podproblem od stacji 1: dystanse startowe to wiersz `pierwsza` macierzy
+  // (kierunek ma znaczenie przy asymetrii), z fallbackiem na prostą kreskę
+  // jak w `optymalnaKolejnosc`; macierz to podmacierz reszty.
+  const startReszty = macierz
+    ? reszta.map((j) => {
+      const d = macierz[pierwsza]?.[j];
+      return Number.isFinite(d) && d >= 0 ? d : odlegloscM(stacje[pierwsza], stacje[j]);
+    })
+    : null;
+  const pod = optymalnaKolejnosc({
+    srodek: stacje[pierwsza],
+    stacje: reszta.map((i) => stacje[i]),
+    dystansStart: startReszty,
+    macierz: macierz ? reszta.map((i) => reszta.map((j) => macierz[i]?.[j])) : null,
+  });
+  return [pierwsza, ...pod.map((k) => reszta[k])];
+}
+
+/**
+ * Wspólne porządkowanie gry: stacje w kolejności trasy z twardym wejściem
+ * (zobacz `kolejnoscTrasy`), przenumerowane 1…N, pytania przepięte za nowymi
+ * numerami. Czysta — ta sama funkcja dla paczki z repozytorium i wklejki.
+ *
+ * `pytania` wracają jako NOWA tablica: zmienia się tylko pole `stacja`.
+ * Identyfikatory (`id`) i indeksy poprawnych (`poprawna`) są NIETKNIĘTE —
+ * paczki w grze są już odkodowane, a głosy graczy wiszą na `id`
+ * (przenumerowanie id zerwałoby oceny). Pytania do nieistniejących stacji
+ * zostają bez zmian (obsługuje je ADR 0015).
+ */
+export function uporzadkujGre({ srodek, stacje, pytania = [], dystansStart = null, macierz = null }) {
+  const kolejnosc = kolejnoscTrasy({ srodek, stacje, dystansStart, macierz });
+  const zmieniono = kolejnosc.some((idx, pozycja) => idx !== pozycja);
+  const noweNumery = new Map();
+  kolejnosc.forEach((staryIdx, pozycja) => noweNumery.set(stacje[staryIdx]?.id, pozycja + 1));
+  return {
+    stacje: kolejnosc.map((idx, pozycja) => ({ ...stacje[idx], id: pozycja + 1 })),
+    pytania: pytania.map((p) => (p && noweNumery.has(p.stacja) ? { ...p, stacja: noweNumery.get(p.stacja) } : p)),
+    kolejnosc,
+    zmieniono,
+  };
+}
+
+/**
  * Stacje na pierścieniu: `liczbaStacji` punktów wokół `srodek`, w odległości
  * ~`promienM × 0.65–0.85`, z kątowym rozrzutem ±25% kroku. Deterministyczne
  * dla danego ziarna — ta sama gra daje ten sam układ.
  *
- * Od 2026-09-14 (uwaga B): kolejność stacji to optymalna trasa od startu,
- * nie sort po kącie — eliminuje wracanie (warunek właściciela
- * d(start,2) ≥ d(start,1)+d(1,2)).
+ * Od 2026-09-14 (uwaga B, dogrywka): kolejność stacji to trasa z twardym
+ * wejściem — stacja 1 jest najbliższa startu, reszta optymalna od niej
+ * (ADR 0005 aneks). Samo TSP nie wystarczało: minimalna suma bywa trasą,
+ * która na pierwszym odcinku mija bliższą stację.
  */
 export function stacjeProste({ srodek, liczbaStacji, promienM, ziarno, offsetObrotu = 0 }) {
   if (!srodek || !Number.isFinite(srodek.lat) || !Number.isFinite(srodek.lon)) {
@@ -154,7 +215,7 @@ export function stacjeProste({ srodek, liczbaStacji, promienM, ziarno, offsetObr
       zrodlo: 'pierscien',
     });
   }
-  const kolejnosc = optymalnaKolejnosc({ srodek, stacje });
+  const kolejnosc = kolejnoscTrasy({ srodek, stacje });
   const przestawione = kolejnosc.map((idx, nowy) => ({ ...stacje[idx], id: nowy + 1 }));
   return uzupelnijOdleglosci(przestawione, srodek);
 }
@@ -508,7 +569,7 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
   const dStartRoboczy = wybrane.map((w) => w.d);
   // tymczasowe stacje do liczenia kolejności (lat/lon wystarczą)
   const stacjeRobocze = wybrane.map((w) => ({ lat: w.k.lat, lon: w.k.lon, kat: w.kat }));
-  const kolejnoscOpt = optymalnaKolejnosc({
+  const kolejnoscOpt = kolejnoscTrasy({
     srodek,
     stacje: stacjeRobocze,
     dystansStart: dStartRoboczy,
