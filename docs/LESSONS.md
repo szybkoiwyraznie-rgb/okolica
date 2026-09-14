@@ -565,3 +565,11 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Reguła:** metryka porządkowania jest JEDNA na całą grę: ta, którą wybrano stacje. Każde nowe miejsce porządkowania bierze `dystansStart` i `macierz` ze źródła stacji, a gdy kolejność faktycznie się zmienia, wynik sieci (`wynikSieci`) kasuje się razem z nią — niezmiennik „kolejność stacji = kolejność macierzy" jest warunkiem czytania macierzy. Test reprodukcyjny pinuje TOŻSAMOŚĆ stacji 1 (współrzędne z ekranu stacji vs cel gry), nie tylko długości.
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L69`.
+
+## L70 (2026-09-14) — metryka poprawna nie wystarcza, gdy gracz planuje po mapie
+
+**Objaw:** po dwóch naprawach metryki (m12-116, m12-117) właściciel dalej szedł do stacji 1, mijając stację 2: pin wyglądał na 100 m, a nosił numer 2, bo jego dystans DROGOWY (inny, dłuższy) wypadał dalej niż dystans stacji 1.
+**Przyczyna:** dwie poprawne metryki mówiły różne rzeczy o TYM SAMYM pinie (kreska 100 m, droga 845 m — osobno mapowany chodnik wpięty do ulicy dopiero za skrzyżowaniem), a numeracja szła tylko za drogą. Aplikacja nie rysuje trasy, więc gracz planuje po kresce start→stacja 1 i idzie prosto przez pin — reguła „stacja 1 = najbliższa drogą" tego nie widzi, bo jest prawdziwa w swojej metryce.
+**Reguła:** każdy pin w promieniu progu dojścia (50 m, ADR 0034) od KTÓREJKOLWIEK trasy do stacji 1 — drogi z modelu i prostej kreski na mapie — jest mijany i nie może być stacją; brama wejścia odrzuca go i przelicza układ (do 3 rund), a gdy sieć nie da inaczej, melduje to wprost usterką S14. Dowód w testach: syntetyczna sieć z chodnikiem wpiętym na 600 m reprodukuje defekt przy `mijanieProgM: 0` i pokazuje naprawę przy 50 m; pomiar na fixture'ach (ile układów brama realnie zmienia) jest w aneksie m12-118.
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L70`.

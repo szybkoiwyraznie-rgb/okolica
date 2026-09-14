@@ -1446,3 +1446,62 @@ opcjonalny, każde NOWE miejsce wywołania musi odpowiedzieć na pytanie „jak�
 metryką powstały te dane?" — a test porównawczy ma pinować tożsamość
 elementu, nie tylko jego miarę (485 m było „poprawną" liczbą z cudzego
 odcinka).
+
+## L70 (2026-09-14) — metryka poprawna nie wystarcza, gdy gracz planuje po mapie (zgłoszenie „m117" → m12-118)
+
+**Objaw (teren, gra „m117" po PR #25).** Właściciel: „najbliższa stacja jest
+jakieś 100 m główną ulicą od startu — najczęściej ląduje tam Stacja 2, czasem
+stacja 5, sporadycznie stacja 1. Jak najbliższą jest stacja 2, to zawsze do
+stacji 1 muszę przejść obok niej i wrócić". Dane z terenu: start → nr 2 ≈100 m
+i drogą, i kreską (ta sama ulica), start → nr 1 ≈300 m drogą (obok nr 2),
+≈200 m kreską, z alternatywnym obejściem ≈400 m.
+
+**Dwie naprawy, które nie wystarczyły.** m12-116 wprowadził twarde wejście
+(stacja 1 = najbliższa startu w metryce porządkowania) na wszystkich ścieżkach;
+m12-117 ujednolicił metrykę porządkowania (wklejka nie przestawia już stacji
+z sieci; audyt PR #24, defekt D1). Obie naprawy są poprawne i obie dotyczą
+metryki DROGOWEJ — a zgłoszenie wróciło.
+
+**Diagnoza (sondy, nie zgadywanie).** Na `test/fixtures/overpass-centrum`
+(N = 4, R = 700, 198 pozycji): stacja 1 = najmniejszy `dystansSieciowyM`
+w 198/198 układów, a trasa do stacji 1 nie przechodzi bliżej niż 50 m od
+innego pinu w 198/198 (minimum zmierzone: 150 m). Natomiast **44/198 (22%)**
+układów ma stację, która w LINII PROSTEJ jest bliżej startu niż stacja 1 —
+przykład: stacja 1 = 297 m drogą / 214 m kreską, inna stacja = 315 m drogą /
+**150 m kreską**. To jest zgłoszony objaw: pin „obok", ale z numerem wyżej.
+
+**Przyczyna.** Pin, który gracz mija, nie jest „najbliższy" w żadnej
+z metryk modelu — jest najbliższy OCZAMI. Jego dostęp drogowy biegnie inną
+siecią (osobno mapowany chodnik, przejście dopiero za skrzyżowaniem), więc
+`dystansSieciowyM` rośnie, a numeracja — słusznie w swojej metryce — stawia
+go za stacją 1. Gracz nie chodzi po grafie, a aplikacja nie rysuje trasy:
+planuje po kresce start→stacja 1 i idzie prosto przez pin. Poprzednie naprawy
+pilnowały spójności metryk między modułami; nikt nie pilnował, czy TA SAMA
+trasa nie mija pinu w geometrii, którą gracz widzi.
+
+**Naprawa (m12-118).** Brama wejścia w `wybierzStacje`: po wyborze układu
+i policzeniu kolejności piny w promieniu `mijanieProgM = 50 m` (próg dojścia
+z ADR 0034) od DWÓCH tras — `sciezkaPunkty` stacji 1 (droga z modelu) i prostej
+kreski start→stacja 1 (czytanie mapy) — wypadają z puli kandydatów, a układ
+jest liczony od nowa (`mijanieMaxRund = 3`). Twarde wejście po drodze zostaje;
+gdy sieć nie da układu bez mijania, wynik niesie usterkę S14 i UI mówi to
+wprost. Pomocnicze funkcje czyste i eksportowane: `odlegloscOdTrasyM`,
+`mijaneStacje({ trasy, stacje, progM })`.
+
+**Testy.** `test/stacje.test.js`: (1) jednostkowe `odlegloscOdTrasyM`
+i `mijaneStacje` (pin 25 m od trasy, pin poza zasięgiem, `progM: 0` wyłącza,
+pozycja 0 nigdy nie jest mijana); (2) regresja na sieci z ręki — ulica na
+północ + chodnik 25 m obok wpięty dopiero na 600 m: przy `mijanieProgM: 0`
+układ to „Główna 800" (800 m drogi) i pin na chodniku (845 m drogi / 381 m
+kreską / 25 m od trasy do stacji 1) — defekt jak z pola; przy domyślnych 50 m
+pin wypada, zostaje {400 m, 800 m}, `wejscie.odrzucone = 1`, `rundy = 2`,
+usterki puste, stacja 1 nadal najbliższa drogą; (3) własność na trzech
+fixture'ach (centrum, przedmieście, las, po 12 pozycji): po bramie żaden pin
+nie leży w promieniu 50 m od tras do stacji 1, a stacja 1 pozostaje
+najbliższa drogą. Pomiar zasięgu reguły na fixture'ach: 0/100 centrum,
+0/104 przedmieście, 2/94 las (w obu przypadkach lasu stary układ miał pin
+w zasięgu trasy).
+
+**Reguła (skrót dla rejestru).** Metryka poprawna nie wystarcza, gdy gracz
+planuje po mapie: brama wejścia mierzy mijanie w OBU trasach — tej, którą
+idzie model, i tej, którą widzi gracz.

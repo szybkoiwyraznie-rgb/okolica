@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-117';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-117';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-118';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-118';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-117';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-117';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-117';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-117';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-117';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-117';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-117';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-117';
+} from './protokol.js?v=m12-118';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-118';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje } from './stacje.js?v=m12-118';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-118';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-118';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-118';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-118';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-118';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-117';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-117';
+} from './zestawy.js?v=m12-118';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-118';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-117';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-117';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-117';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-117';
-import { adresMostu, stanMostu } from './most.js?v=m12-117';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-117';
+} from './sieci.js?v=m12-118';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-118';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-118';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-118';
+import { adresMostu, stanMostu } from './most.js?v=m12-118';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-118';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst,
-} from './oceny.js?v=m12-117';
+} from './oceny.js?v=m12-118';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1871,14 +1871,25 @@ function przeliczZTegoCoJest() {
           komunikat: `Sieć drogowa w tej okolicy nie dała ${zamowione} stacji w wymaganych odstępach — jest ich ${wynik.stacje.length} i tyle będzie w grze (setup zmieniony na ${wynik.stacje.length}). Chcesz ${zamowione}? Zwiększ czas gry, żeby powiększyć promień, albo zmień okolicę.`,
         }]);
       } else {
-        pokazBledy('bledy-stacje', []);
+        pokazBledy('bledy-stacje', wynik.usterki);
       }
       renderujStacje();
       odswiezWarstwy();
       centrujNaPozycji();
-      status(wynik.usterki.length
-        ? `Sieć jest za uboga na ${zamowione} stacji — w grze będzie ${wynik.stacje.length} (kod S12). Zwiększ czas gry albo zmień okolicę, jeśli chcesz komplet.`
-        : `Stacje z sieci drogowej: ${wynik.stacje.length} punktów osiągalnych w promieniu ${STAN.konfig.promienM} m.`);
+      // Brama wejścia (zgłoszenie właściciela 2026-09-14, „m117"): gdy sieć nie
+      // dała układu bez mijania, mówimy o tym wprost (S14) — bez udawania, że
+      // trasa jest czysta. Gdy dała, a brama coś odrzuciła, mówimy ile.
+      const mijaneWejscia = wynik.wejscie?.mijane?.length ?? 0;
+      const odrzuconeWejscia = wynik.wejscie?.odrzucone?.length ?? 0;
+      status(mijaneWejscia
+        ? 'Trasa od startu do stacji 1 mija inną stację (kod S14) — w tej okolicy sieć dróg nie dała układu bez mijania.'
+          + ' Możesz przesunąć piny ręcznie albo zwiększyć promień gry.'
+        : (wynik.usterki.length
+          ? `Sieć jest za uboga na ${zamowione} stacji — w grze będzie ${wynik.stacje.length} (kod S12). Zwiększ czas gry albo zmień okolicę, jeśli chcesz komplet.`
+          : `Stacje z sieci drogowej: ${wynik.stacje.length} punktów osiągalnych w promieniu ${STAN.konfig.promienM} m.`
+            + (odrzuconeWejscia
+              ? ` Wejście bez mijania: odrzucono ${odrzuconeWejscia} pin(y), obok których prowadziła trasa do stacji 1.`
+              : '')));
       return;
     } catch (blad) {
       pokazBledy('bledy-stacje', [{

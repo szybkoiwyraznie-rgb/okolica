@@ -300,3 +300,151 @@ test('uporzadkujGre: mapowanie pytań idzie po starych id, nie po pozycjach', ()
   assert.equal(wynik.pytania.find((p) => p.id === 's2p1').stacja, 1);
   assert.equal(wynik.pytania.find((p) => p.id === 's1p1').stacja, 2);
 });
+
+/* ---- brama wejścia (zgłoszenie właściciela 2026-09-14, gra „m117") ---- */
+
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { PIERSCIEN_WYBORU, mijaneStacje, odlegloscOdTrasyM, wybierzStacje } from '../app/stacje.js';
+import { budujGraf, kandydaciNaStacje, parsujOdpowiedz, snapujPunkt } from '../app/sieci.js';
+
+const KATALOG = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+function czytajFixture(nazwa) {
+  return JSON.parse(readFileSync(join(KATALOG, 'test', 'fixtures', `overpass-${nazwa}.json`), 'utf8'));
+}
+
+/** Punkty co `coM` metrów wzdłuż azymutu (jak w test/sieci.test.js). */
+function linia(start, azymut, coM, ile) {
+  const punkty = [start];
+  for (let i = 1; i < ile; i++) punkty.push(przesunPunkt(start, azymut, coM * i));
+  return punkty;
+}
+
+test('odlegloscOdTrasyM: pin obok trasy, pin na końcu trasy, trasa bez geometrii', () => {
+  const trasa = linia(WARSZAWA, 0, 50, 5); // 200 m na północ
+  assert.ok(Math.abs(odlegloscOdTrasyM(przesunPunkt(WARSZAWA, 90, 25), trasa) - 25) < 1,
+    'punkt 25 m na wschód od trasy ma ~25 m');
+  assert.ok(odlegloscOdTrasyM(przesunPunkt(trasa[4], 0, 500), trasa) > 400, 'pin daleko za końcem trasy');
+  assert.ok(Math.abs(odlegloscOdTrasyM({ lat: trasa[3].lat, lon: trasa[3].lon }, trasa)) < 0.5,
+    'punkt na trasie = zero');
+  assert.equal(odlegloscOdTrasyM(WARSZAWA, []), Infinity, 'pusta trasa nie ma geometrii');
+  assert.equal(odlegloscOdTrasyM(WARSZAWA, [WARSZAWA]), Infinity, 'jeden punkt to nie trasa');
+});
+
+test('mijaneStacje: pin w zasięgu którejkolwiek trasy, pozycja 0 nigdy nie jest mijana', () => {
+  const stacje = [
+    { id: 1, ...przesunPunkt(WARSZAWA, 0, 400) },
+    { id: 2, ...przesunPunkt(przesunPunkt(WARSZAWA, 0, 200), 90, 25) }, // na trasie
+    { id: 3, ...przesunPunkt(przesunPunkt(WARSZAWA, 90, 300), 0, 30) }, // poza trasą
+  ];
+  const trasy = [linia(WARSZAWA, 0, 50, 9), [WARSZAWA, stacje[0]]];
+  assert.deepEqual(mijaneStacje({ trasy, stacje, progM: 50 }), [1], 'mijana jest stacja 2 (indeks 1)');
+  assert.deepEqual(mijaneStacje({ trasy, stacje, progM: 50 }), mijaneStacje({ trasy, stacje }), 'domyślny próg = 50 m');
+  assert.deepEqual(mijaneStacje({ trasy, stacje, progM: 0 }), [], 'próg 0 wyłącza bramę');
+  assert.deepEqual(mijaneStacje({ trasy: [], stacje, progM: 50 }), [], 'brak tras = brak mijania');
+});
+
+/**
+ * Sieć z ręki, która odtwarza zgłoszenie terenowe (gra „m117”): ulica na
+ * północ z chodnikiem mapowanym OSOBNO (wpięty do ulicy dopiero na 600 m).
+ * Pin na chodniku 380 m od startu wygląda na 381 m (kreska), ale drogą jest
+ * 845 m — i leży 25 m od trasy do stacji 1 (ulicą), więc gracz idący do
+ * jedynki mija go i musi wrócić. To dokładnie układ właściciela: „od startu do
+ * nr 2 mam 100 m, do nr 1 — 300 m obok nr 2, i wracam tą samą drogą”.
+ */
+function siecZChodnikiem() {
+  const ulica = { id: 1, punkty: linia(WARSZAWA, 0, 50, 18), tags: { highway: 'residential', name: 'Główna' } };
+  const przyUlicy = przesunPunkt(WARSZAWA, 0, 600);
+  const chodnik = {
+    id: 2,
+    punkty: linia(przesunPunkt(przyUlicy, 90, 25), 180, 20, 14),
+    tags: { highway: 'footway', name: 'chodnik' },
+  };
+  const laczik = { id: 3, punkty: [przyUlicy, przesunPunkt(przyUlicy, 90, 25)], tags: { highway: 'footway' } };
+  const graf = budujGraf({ drogi: [ulica, chodnik, laczik] }, { tryb: 'piesza' });
+  const kandydaci = [
+    przesunPunkt(WARSZAWA, 0, 400),
+    przesunPunkt(WARSZAWA, 0, 800),
+    przesunPunkt(przesunPunkt(WARSZAWA, 0, 380), 90, 25),
+  ].map((punkt) => {
+    const wezel = snapujPunkt(graf, punkt, { maxM: 5 });
+    return { wezel, lat: graf.wezly[wezel].lat, lon: graf.wezly[wezel].lon, typ: 'siec', nazwa: 'punkt' };
+  });
+  return { graf, kandydaci };
+}
+
+function trasyWejscia(srodek, stacja1) {
+  return [stacja1.sciezkaPunkty ?? [], [srodek, { lat: stacja1.lat, lon: stacja1.lon }]];
+}
+
+test('brama wejścia: stary wybór prowadzi trasą obok innego pinu (defekt z pola)', () => {
+  const { graf, kandydaci } = siecZChodnikiem();
+  const wynik = wybierzStacje({
+    graf,
+    kandydaci,
+    srodek: WARSZAWA,
+    konfig: { liczbaStacji: 2, promienM: 1000 },
+    ziarno: 0,
+    stale: { ...PIERSCIEN_WYBORU, mijanieProgM: 0 }, // brama wyłączona = zachowanie sprzed naprawy
+  });
+  assert.equal(wynik.stacje.length, 2);
+  const mijane = mijaneStacje({ trasy: trasyWejscia(WARSZAWA, wynik.stacje[0]), stacje: wynik.stacje, progM: 50 });
+  assert.deepEqual(mijane, [1], 'stacja 2 leży w promieniu progu dojścia od trasy do stacji 1');
+  const pin = wynik.stacje[1];
+  assert.ok(odlegloscM(WARSZAWA, pin) < odlegloscM(WARSZAWA, wynik.stacje[0]),
+    'pin mijany wygląda na bliższy niż stacja 1 — i to jest cała zgłoszona pułapka');
+  assert.ok(pin.dystansSieciowyM > wynik.stacje[0].dystansSieciowyM,
+    'a drogą wypada dalej niż stacja 1 (osobno mapowany chodnik)');
+  assert.deepEqual(wynik.usterki.map((u) => u.kod), [], 'bez bramy nie ma o czym meldować');
+});
+
+test('brama wejścia: pin mijany wypada z układu, stacja 1 zostaje najbliższa DROGĄ', () => {
+  const { graf, kandydaci } = siecZChodnikiem();
+  const wynik = wybierzStacje({
+    graf,
+    kandydaci,
+    srodek: WARSZAWA,
+    konfig: { liczbaStacji: 2, promienM: 1000 },
+    ziarno: 0,
+  });
+  assert.equal(wynik.stacje.length, 2, 'komplet stacji mimo odrzucenia pinu');
+  assert.deepEqual(mijaneStacje({ trasy: trasyWejscia(WARSZAWA, wynik.stacje[0]), stacje: wynik.stacje, progM: 50 }), [],
+    'trasa do stacji 1 nie mija już żadnej stacji');
+  assert.equal(wynik.wejscie.odrzucone.length, 1, 'brama odrzuciła pin mijany');
+  assert.equal(wynik.wejscie.rundy, 2, 'układ był przeliczony raz po odrzuceniu');
+  assert.deepEqual(wynik.wejscie.mijane, [], 'ostatni układ jest czysty');
+  assert.deepEqual(wynik.usterki.map((u) => u.kod), [], 'sieć dała układ bez mijania');
+  const dystanse = wynik.stacje.map((s) => s.dystansSieciowyM);
+  assert.equal(Math.min(...dystanse), dystanse[0], 'stacja 1 nadal najbliższa drogą (twarde wejście)');
+  assert.deepEqual(wybierzStacje({
+    graf, kandydaci, srodek: WARSZAWA, konfig: { liczbaStacji: 2, promienM: 1000 }, ziarno: 0,
+  }).stacje, wynik.stacje, 'brama jest deterministyczna');
+});
+
+test('brama wejścia: na fixture’ach nie mija i nie psuje twardego wejścia (własność)', () => {
+  const scenariusze = [
+    { nazwa: 'centrum', srodek: { lat: 52.2297, lon: 21.0122 }, R: 600, N: 5 },
+    { nazwa: 'przedmiescie', srodek: { lat: 52.1893, lon: 21.1635 }, R: 1000, N: 4 },
+    { nazwa: 'las', srodek: { lat: 52.3124, lon: 21.0437 }, R: 1500, N: 4 },
+  ];
+  for (const scenariusz of scenariusze) {
+    const dane = parsujOdpowiedz(czytajFixture(scenariusz.nazwa));
+    const graf = budujGraf(dane, { tryb: 'piesza' });
+    const { kandydaci } = kandydaciNaStacje(dane, graf, { tryb: 'piesza' });
+    const krok = Math.max(1, Math.ceil(graf.wezly.length / 12));
+    for (let i = 0; i < graf.wezly.length; i += krok) {
+      const srodek = { lat: graf.wezly[i].lat, lon: graf.wezly[i].lon };
+      const wynik = wybierzStacje({
+        graf, kandydaci, srodek, konfig: { liczbaStacji: scenariusz.N, promienM: scenariusz.R }, ziarno: 0,
+      });
+      if (wynik.stacje.length === 0) continue;
+      const mijane = mijaneStacje({ trasy: trasyWejscia(srodek, wynik.stacje[0]), stacje: wynik.stacje, progM: 50 });
+      assert.deepEqual(mijane, [], `${scenariusz.nazwa}: węzeł ${i} ma czyste wejście`);
+      const dystanse = wynik.stacje.map((s) => s.dystansSieciowyM);
+      assert.equal(Math.min(...dystanse), dystanse[0], `${scenariusz.nazwa}: węzeł ${i} — stacja 1 najbliższa drogą`);
+    }
+  }
+});
