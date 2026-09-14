@@ -5412,3 +5412,5 @@ frazy „pin(y)"; przepisane — brama m12-118 na równoległą ULICĘ
 (chodników już nie ma w grafie), rzeka-bez-mostu przez `path`, klasy i
 kwerenda Overpass; 800→806 testów zielonych. Aneks m12-119 do ADR 0005,
 L71 (+ archiwum). Wersja `?v=m12-119` w 43 miejscach + `WERSJA_SW`.
+
+**Dogrywka f (m12-120), pytanie właściciela „dodać ulice zamiast odejmować korytarze":** pomiar odrzucił wariant „zostawić wszystko + dodać ulice" — punkt snapuje się do najbliższego węzła (na chodniku), a krawędzi chodnik↔jezdnia w środku kwartału nie ma, więc dG zostaje 512 m; Dijkstra nie przenosi punktu na równoległą ulicę. Trafna połowa pytania: pieszy nie miał klas tertiary/secondary/primary/unclassified — wieś przy wojewódzkiej bez chodników nie miała korytarza; od m12-120 klasy te są w trybie pieszym (i rower dostaje secondary/primary), jedynym obejściem zostają motorway/trunk. Centrum: 188→211 węzłów, kompletność 95/96→96/96. Potwierdzone: graf nigdy nie czyta `oneway`, krawędzie zawsze dwukierunkowe — jednokierunkowa nie blokuje pieszego. UX: „Inny układ"/„Pobierz ponownie" resetują przewijanie karty stacji. 806→808 testów, bump m12-120.
