@@ -101,73 +101,16 @@ nie ma backendu (ADR 0001/0006), więc dane pobiera przeglądarka użytkownika.
 dojścia), 0009 (przypisanie stacji do graczy), 0010 (cache), 0013 (wysyłamy
 tylko przybliżoną pozycję do Overpass).
 
-## Aneksy 2026-09-09 są w archiwum (poza budżetem lektury)
+## Aneksy starsze są w archiwum (poza budżetem lektury)
 
-Trzy aneksy z 2026-09-09 (zakres od startu i drabinka kątowa; separacja w obu
-metrykach i układ zamiast zachłanności; pauza limitowa 30 s → 1 s) są
-przeniesione do  (L62/L66,
-archiwizacja 2026-09-14, m12-119). Daty aneksów: 2026-09-09, 2026-09-09,
-2026-09-09.
-
-
-## Aneks 2026-09-14 (m12-115) — kolejność trasy: Held-Karp, eksport `optymalnaKolejnosc`
-
-Kolejność stacji na pętli liczy `optymalnaKolejnosc` w `app/stacje.js`:
-programowanie dynamiczne Held-Karp O(N²·2^N) dla N≤10, zachłanność
-najbliższego sąsiada dla N>10. Funkcja jest **eksportowana**, żeby testy
-(`test/stacje.test.js`) mogły pinować: N≤1, kolinearne, kąt vs dystans,
-macierz niesymetryczną i N=11 (greedy). Macierz odległości to `dMiedzy`
-(ASCII, bez ogonka) — identyfikator nie zależy od NFC/NFD.
-
-
-## Aneks 2026-09-14 (m12-116) — twarde wejście w pętlę na wszystkich ścieżkach
-
-Zgłoszenie terenowe (uwaga B, dogrywka): gra kazała minąć stację nr 2
-(~100 m od startu), żeby dojść do stacji nr 1 (~300 m), i wracać tą samą
-drogą. Diagnoza: wolne TSP minimalizuje SUMĘ, a nie wejście — sonda
-(3000 losowych układów) pokazała, że pierwsza stacja wolnego TSP w 61%
-nie jest najbliższa startu; paczka z repozytorium w ogóle niosła
-kolejność autora bez porządkowania.
-
-Decyzja: `kolejnoscTrasy` (`app/stacje.js`) — stacja 1 to ZAWSZE najbliższa
-startu w metryce porządkowania (drogowa, gdy dostępna, inaczej kreska),
-reszta optymalna od niej. Obowiązuje na WSZYSTKICH ścieżkach: pierścień,
-sieć, wklejka (przed wysyłką na Drive — paczka rodzi się uporządkowana),
-paczka z repozytorium (przy starcie, od bieżącej pozycji). Pytania przepina
-`uporzadkujGre`: zmienia się tylko pole `stacja`, `id` i `poprawna`
-nietknięte (głosy graczy wiszą na `id`). Przestawienie jest jawne w statusie.
-
-Uczciwość: literalna nierówność właściciela d(S,2) ≥ d(S,1)+d(1,2) wynika
-z nierówności trójkąta TYLKO współliniowo — nie da się jej spełnić ogólnie.
-Reguła wejścia daje jej intencję (na pierwszym odcinku nie mija się stacji
-o niższym numerze), a w układzie współliniowym jak zgłoszony nierówność
-zachodzi z równością (test pinuje ten przypadek). Świadomy koszt: trasa
-bywa o kilka procent dłuższa od wolnego TSP — gwarancja wejścia jest
-ważniejsza niż minimalna suma. Przy okazji: start z paczki kasuje
-`STAN.wynikSieci` (dystanse drogowe poprzedniej gry nie dotyczą tych stacji).
-
-## Aneks 2026-09-14 (m12-117) — metryka porządkowania jest jedna
-
-Audyt PR #24 (defekt D1): `sprawdzOdpowiedz` wołał `uporzadkujGre` bez
-`dystansStart` i `macierz`, więc wklejka porządkowała KRESKĄ nawet wtedy, gdy
-stacje wybrała sieć drogowa. Dwa skutki naraz: stacja 1 inna niż na ekranie
-stacji i niż w numeracji promptu (twarde wejście złamane w metryce gracza)
-oraz `STAN.wynikSieci` zostawiony w STAREJ kolejności — `dystanseOdcinkowM`
-przypisywał macierz przestawionym stacjom, więc odcinki dostawały cudze
-dystanse, a UI mówił przy nich „drogą".
-
-Decyzja: metryka porządkowania jest JEDNA na całą grę — ta, którą wybrano
-stacje. Wklejka podaje `dystansStart` = `dystansSieciowyM` stacji i `macierz`
-= `wynikSieci.macierz`; `wybierzStacje` oddaje obie tablice w tej samej
-kolejności, więc kolejność sieciowa jest punktem stałym i w zwykłej grze nic
-się nie przestawia. Brak albo NaN dystansu sieciowego jednej stacji cofa ją
-na kreskę — ta sama reguła co dla pary nieosiągalnej w `kolejnoscTrasy`.
-Gdy kolejność jednak się zmieni (piny po dragach, pierścień), `wynikSieci`
-kasuje się razem z nią: „kolejność `STAN.stacje` = kolejność `wynikSieci`"
-jest warunkiem czytania macierzy, nie zbiegiem okoliczności. Start z paczki
-repozytorium zostaje na kresce — plik zestawu niesie `{lat, lon, opis}` bez
-danych drogowych, więc metryki drogowej po prostu nie ma (ADR 0017 pkt 7).
-
+- Trzy aneksy z 2026-09-09 (zakres od startu i drabinka kątowa; separacja w obu
+  metrykach i układ zamiast zachłanności; pauza limitowa 30 s → 1 s) są
+  przeniesione do `docs/decisions/archive/aneksy-0005-2026-09-09.md`
+  (L62/L66, archiwizacja 2026-09-14, m12-119).
+- Aneksy 2026-09-14 m12-115 (Held-Karp, `optymalnaKolejnosc`), m12-116 (twarde
+  wejście w pętlę) i m12-117 (metryka porządkowania jest jedna) są przeniesione
+  do `docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-117.md`
+  (L62/L66, archiwizacja 2026-09-14, m12-121).
 ## Aneks 2026-09-14 (m12-118) — brama wejścia: pin mijany na trasie do stacji 1
 
 Drugie zgłoszenie terenowe do uwagi B (gra **m117**, po PR #25): „żeby wejść

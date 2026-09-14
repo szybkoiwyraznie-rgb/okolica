@@ -2050,9 +2050,14 @@ test('kontrakt 2026-09-14 B2: optymalnaKolejnosc jest eksportowana (Held-Karp)',
 
 
 test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => {
-  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+  // Aneks m12-115 jest w archiwum (L62/L66, budżet lektury) — treść pinuje
+  // plik archiwalny (jak przy aneksach 0019 z 2026-09-12f).
+  assert.match(czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-117.md'),
     /Aneks 2026-09-14 \(m12-115\) — kolejność trasy: Held-Karp/,
-    'ADR 0005 dokumentuje eksport Held-Karp');
+    'aneks ADR 0005 o eksportcie Held-Karp żyje w archiwum');
+  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+    /m12-115 \(Held-Karp, `optymalnaKolejnosc`\)/,
+    'ADR 0005 wskazuje archiwum aneksów m12-115–117');
   assert.match(czytaj('docs/decisions/0011-mobile-first-dotyk.md'),
     /Aneks 2026-09-14 \(m12-115, zgłoszenie D\) — puls czekania jest NEGATYWEM/,
     'ADR 0011 dokumentuje wyjątek negatywu');
@@ -2069,12 +2074,14 @@ test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => 
  * ścieżkach — stacja 1 to zawsze najbliższa startu (ADR 0005 aneks m12-116).
  */
 test('kontrakt uwagi B (dogrywka): porządkowanie trasą jest wpięte w każdą ścieżkę startu', () => {
-  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+  // Aneksy m12-116/m12-117 są w archiwum (L62/L66, budżet lektury).
+  const ANEKSY_0005 = czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-117.md');
+  assert.match(ANEKSY_0005,
     /Aneks 2026-09-14 \(m12-116\) — twarde wejście w pętlę na wszystkich ścieżkach/,
-    'ADR 0005 dokumentuje regułę wejścia');
-  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+    'aneks o regule wejścia żyje w archiwum');
+  assert.match(ANEKSY_0005,
     /Aneks 2026-09-14 \(m12-117\) — metryka porządkowania jest jedna/,
-    'ADR 0005 dokumentuje metrykę porządkowania (audyt PR #24, defekt D1)');
+    'aneks o metryce porządkowania żyje w archiwum (audyt PR #24, defekt D1)');
   const STACJE = czytaj('app/stacje.js');
   assert.ok(STACJE.includes('const kolejnosc = kolejnoscTrasy({ srodek, stacje });'),
     'pierścień numeruje trasą z twardym wejściem');
