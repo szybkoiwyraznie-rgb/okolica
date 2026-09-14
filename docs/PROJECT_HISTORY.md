@@ -5414,3 +5414,107 @@ kwerenda Overpass; 800→806 testów zielonych. Aneks m12-119 do ADR 0005,
 L71 (+ archiwum). Wersja `?v=m12-119` w 43 miejscach + `WERSJA_SW`.
 
 **Dogrywka f (m12-120), pytanie właściciela „dodać ulice zamiast odejmować korytarze":** pomiar odrzucił wariant „zostawić wszystko + dodać ulice" — punkt snapuje się do najbliższego węzła (na chodniku), a krawędzi chodnik↔jezdnia w środku kwartału nie ma, więc dG zostaje 512 m; Dijkstra nie przenosi punktu na równoległą ulicę. Trafna połowa pytania: pieszy nie miał klas tertiary/secondary/primary/unclassified — wieś przy wojewódzkiej bez chodników nie miała korytarza; od m12-120 klasy te są w trybie pieszym (i rower dostaje secondary/primary), jedynym obejściem zostają motorway/trunk. Centrum: 188→211 węzłów, kompletność 95/96→96/96. Potwierdzone: graf nigdy nie czyta `oneway`, krawędzie zawsze dwukierunkowe — jednokierunkowa nie blokuje pieszego. UX: „Inny układ"/„Pobierz ponownie" resetują przewijanie karty stacji. 806→808 testów, bump m12-120.
+
+## Sesja 2026-09-14g — audyt PR #27 (gałąź `arena/01a0a155-okolica`, PR #28)
+
+Sesja otwarta „Kontynuujemy projekt". Lektura startowa (AGENTS §0, 1–7) w
+całości, budżet 99 742/100 000 tok (rezerwa 258). Brama na wejściu:
+**809/809** testów, `npm run check` OK (oba szablony), `npm run audyt` —
+0 naruszeń WCAG AA, `?v=` — jedna wersja m12-120 w 43 miejscach + `WERSJA_SW`.
+
+**Audyt PR #27 (m12-119 + m12-120, squash jako `9c4a40c`; 30 plików,
++869/−191)** — metoda: `git diff 3adc650..9c4a40c` plik po pliku, twierdzenia
+weryfikowane w kodzie (import `TRYBY` na żywo, `grep czyDrogaDostepna`) i
+powtórzonymi bramami. Wyniki:
+
+1. Rdzeń zmiany zgodny z aneksem m12-119/m12-120 do ADR 0005 i L71: pieszy
+   i rower po pełnym układzie ulic (tertiary/unclassified/secondary/primary),
+   korytarze (`footway`/`steps`/`cycleway`) poza klasami i jawnie
+   w `wykluczoneKlasy`; `path`/`track`/`pedestrian` zostają — jedno źródło
+   prawdy w `app/konfig.js`.
+2. Jedno miejsce filtrowania (`czyDrogaDostepna` wołane z `budujGraf`) —
+   potwierdzone, że czyści też STARY cache.
+3. D1 (martwy stan wyboru usunięty + strażnik), D2 (`odmianaRzeczownika`
+   jako czysta generalizacja `liczbaOcenTekst`, nastki 12–14, `Math.abs`),
+   D3 (`zlozKarteUsterekStacji` — karta niekompletu nie gubi S14) — wszystkie
+   poprawnie, z pinami kontraktowymi i testami na realnych sceneriach.
+4. UX m12-120 (reset przewijania warstwy stacji) z testem UI `scrollTop=0`.
+
+**Werdykt: bez defektów.** Dwie uwagi nieblokujące: (W1) `mapa stacje.jpg`
+(257 KB, screenshot ze zgłoszenia) wszedł do `main` commitami właściciela
+(„Add files via upload") — poniżej limitu binarnego 2 MB, decyzja o
+pozostawieniu/usunięciu należy do właściciela; (W2) numeracja punktów
+w handoffie 2026-09-14f (6, 8, 9, 7) — kosmetyka dokumentu jednorazowego.
+
+Po audycie brak zlecenia — kolejka pracy to uwagi z terenu (ROADMAP „Co jest
+otwarte", LESSONS L68).
+
+## Sesja 2026-09-14h — uwagi terenowe A–E, m12-121 (gałąź `arena/01a0a155-okolica`, PR #28)
+
+Właściciel potwierdził w terenie fix m12-119/120 („Na razie fix działa!!!")
+i przysłał falę uwag A–E + zlecenie usunięcia starego zrzutu. Brama na
+wejściu **809/809**. Budżet lektury: po dopisaniu ADR 0046 przekroczony
+(100 634) → archiwizacja wg L62/L66: aneksy ADR 0005 m12-115–117 do
+`docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-117.md`
+(wskaźnik w ADR 0005, testy kontraktowe czytają archiwum) → **99 839/100 000**.
+
+0. **W1 domknięte przez usunięcie**: `mapa stacje.jpg` skasowany (commit
+   4197106); wzmianki w historii/handoffach zostają (zapis zmiany).
+B. **Czekanie ma puls (B1+B2)**: klik „▶ Graj z tą paczką" przy grze
+   sieciowej gasł po pobraniu pliku, a POST `gra-zaloz` na zimnym moście
+   trwał 5–10 s w ciszy. Teraz `przyjmijZestawDoGry` OCZEKAWA na
+   `zalozGreMulti` — przycisk przez całe zakładanie mówi „⏳ Ładuję paczkę…"
+   (brzmienie właściciela), pulsuje i nie przyjmuje drugiego kliku aż do
+   lobby. Statusy „Zakładam grę…/Dołączam do gry…/Startuję grę…" pulsują
+   (`czeka:true`). Lobby: „Pobieram listę gier…" — bez „z mostu Drive",
+   pulsowanie jak każde oczekiwanie; fraza w strażniku dryfu.
+C. **Promień jest kryterium dopasowania (ADR 0046)** — odwrócenie fragmentu
+   aneksu ADR 0024 (2026-09-07): przy promieniu 1000 m repozytorium
+   oferowało paczkę urodzoną w 500 m i jej stacje „nadpisywały" ustawienia.
+   Równość paczka↔setup bez tolerancji; niepasujące renderują się jak inne
+   niepasujące (poza listą, powód nazwany wprost). `powodyNiedopasowania`
+   porównuje `promienM` gdy obie strony mają liczbę; fixtura `zasiejZestaw`
+   liczy promień tak samo jak setup telefonu.
+D. **Wyścig: żadna pinezka nie jest „aktywna"** — `biezacaStacja` po starcie
+   wskazuje pierwszą stację z listy i mapa podświetlała ją innym kolorem,
+   choć w wyścigu gracz sam wybiera cel. W wyścigu podświetlenie wyłączone
+   (`aktywna: null`); inny kolor mają TYLKO stacje zamknięte przez TEGO
+   gracza (`pinezka-zaliczona`). Wspólna Trasa bez zmian (kontrtest: dokładnie
+   jedna aktywna).
+E. **Poważny bug: stara gra sieciowa odradzała się z pollingu.** Po grze
+   sieciowej i „🏠 Wróć na początek" w trakcie wyboru następnej gry sam
+   włączało się odliczanie i wracała poprzednia gra (3×, gasił dopiero
+   restart Chrome). Mechanizm: rezygnacja (⚙+TAK → `rezygnujZGryMulti`)
+   zostawia synchronizację żywą celowo (wspólna tabela), a „Wróć na początek"
+   czyścił rozgrywkę BEZ kończenia synchronizacji → najbliższy krok pollingu
+   widział „trwa + brak rozgrywki" i wpychał starą grę z odliczaniem
+   (`onStanGryMulti` → `uruchomGreMulti` → `odliczStartGry`); gra na moście
+   faktycznie jeszcze trwała (inni grają dalej, uwaga G). Naprawa u źródła,
+   dwie warstwy: znak `m.zrezygnowano` + strażnik w `onStanGryMulti`
+   (niezmiennik: gra, z której ten telefon wyszedł, nigdy nie odradza się
+   z pollingu) oraz „Wróć na początek" kończy kontekst sieciowy
+   (`zatrzymajSyncMulti` + `STAN.multi = null` + ostatnie wypchnięcie
+   zaległych zdarzeń). Wspólna tabela w trakcie oglądania wyników działa
+   jak dotąd. Test e2e czerwony bez obu warstw, zielony z każdą z osobna.
+A. **Pytanie właściciela (bez kodu)**: „czy dałoby się nie zoomować htmla
+   poza mapą?" — konflikt z ADR 0011 (aplikacja celowo szczypalna,
+   dostępność; mapa ma `touch-action:none`). Opcje przedstawione właścicielowi
+   na końcu sesji (iOS ignoruje `user-scalable=no` — realna droga to blokada
+   gestów poza `.mapa` albo pozostawienie jak jest).
+
+809→**811** testów zielonych (nowe: B1+B2 e2e, asercje D w wyścigu i trasie,
+E e2e; odwrócone dwa piny starej reguły promienia). Bump `?v=m12-121`
+(15 plików + `WERSJA_SW`). Commity: 4197106 (jpg), e88d958 (B), baaf4fc (C),
+1388d0e (D), 2ddbf01 (E), 3a03a94 (?v=), c245fe7 (archiwum).
+
+**Dogrywka A (m12-122), decyzja właściciela „zablokuj":** pytanie o zoom
+zadane z opcjami (zostaw jak jest / blokuj poza mapą) — właściciel wybrał
+blokadę. **ADR 0047**: strona nie jest szczypalna poza mapą — nasłuch
+`gesturestart`/`gesturechange` na dokumencie, `preventDefault` dla celów
+poza `.mapa`; nad mapą gest przechodzi (mapa ma własne sterowanie i
+`touch-action: none`). Powód: Safari iOS wznawia kartę czasem przybliżoną
+i zoomuje wtedy STRONĘ, a meta `user-scalable=no` jest od iOS 10 ignorowane.
+Dostępność: powiększanie UI przez powiększenie systemowe; ADR 0011 dostaje
+znacznik (fragment zastąpiony, reszta w mocy). Budżet: ADR 0047 dopiął
+limit → archiwum ADR 0005 rozszerzone do m12-115–119 (rezerwa 1039 tok).
+811→**812** testów. Bump `?v=m12-122`. Commit 85caf3f.

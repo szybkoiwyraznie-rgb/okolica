@@ -424,7 +424,13 @@ function zasiejZestaw(most, ileStacji, pytaniaNaStacje = 1, { factcheck = true }
   const stacje = stacjeTestowe(ileStacji);
   const kontener = zapakujPaczke(paczkaTestowa(stacje, pytaniaNaStacje, { factcheck }), factcheck ? WERSJA_PROTOKOLU : WERSJA_PROTOKOLU_REV3);
   const meta = zbierzMetaZestawu({
-    lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
+    lat: PODKOWA.lat, lon: PODKOWA.lon,
+    // ADR 0046: promień jest kryterium dopasowania (równość), więc fixtura
+    // liczy promień TAK SAMO jak setup telefonu (multi: pytaniaNaStacje=1,
+    // 60 min, piesza). Pole meta `pytaniaNaStacje` zostaje z parametru zasiewu
+    // — paczka może mieć WIĘCEJ pytań niż setup (nadmiar nie przeszkadza).
+    promienM: promienZCzasuGry({ czasGryMin: 60, tryb: 'piesza', liczbaStacji: stacje.length, pytaniaNaStacje: 1 }),
+    tematy: ['historia'], wiek: 'dorosli',
     jezyk: 'polski', miejsce: 'Podkowa Leśna', liczbaStacji: stacje.length, pytaniaNaStacje,
     data: '2026-09-06 09:00', factcheck,
   });
@@ -557,6 +563,12 @@ test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy →
   assert.ok(A.dom.wibracje.length >= 1, 'krok odliczania daje sygnał: dźwięk i wibrację (ADR 0041)');
   assert.equal(A.dom.elementy.has('gra-panel-multi'), false,
     'panelu multi NIE MA — po starcie gra wygląda jak hotseat');
+  // uwaga D (2026-09-14): w wyścigu KAŻDA stacja jest dobra, więc żadna nie
+  // jest „bieżącą” — inny kolor mają TYLKO stacje zamknięte przez gracza.
+  const pinezkiWyscig = A.dom.pobierz('mapa-gra-pinezki');
+  assert.ok(pinezkiWyscig.children.length >= 3, 'wyścig: wszystkie stacje widoczne');
+  assert.equal(pinezkiWyscig.children.some((g) => String(g.getAttribute('class')).includes('pinezka-aktywna')), false,
+    'wyścig: żadna pinezka nie jest „aktywna” (uwaga D)');
   await przepompuj(B, 1);
   assert.equal(el(B, 'ekran-gra').hidden, false, 'gość wystartował po odświeżeniu stanu');
   assert.equal(el(B, 'odliczanie').hidden, false, 'gość też odlicza — start jest wspólny');
@@ -813,6 +825,51 @@ test('uwaga G: koniec gry hosta NIE kończy gry innym — gość gra dalej, a mo
   }
 });
 
+test('uwaga E (2026-09-14): „Wróć na początek” po grze sieciowej zamyka synchronizację — stara gra się NIE odradza', async () => {
+  // Zgłoszenie właściciela (poważne): po zakończeniu gry sieciowej i powrocie
+  // „🏠 Wróć na początek” podczas wybierania NASTĘPNEJ gry (hotseat albo multi)
+  // nagle startowało odliczanie i WRACAŁA poprzednia gra sieciowa — bez
+  // wybrania czegokolwiek. Mechanizm: rezygnacja zostawia polling żywy (celowo
+  // — wspólna tabela), a „Wróć na początek” czyścił rozgrywkę BEZ kończenia
+  // synchronizacji, więc najbliższy krok pollingu widział „trwa + brak gry na
+  // ekranie” i odradzał starą grę z odliczaniem (onStanGryMulti).
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+
+  // Host kończy grę na swoim telefonie (⚙ START GRY → TAK), gość gra dalej —
+  // gra na moście NADAL ma stan „trwa” (uwaga G).
+  await przejdzStacje(A);
+  await przepompuj(A, 1);
+  const kod = kodGry(most);
+  await potwierdzKoniecGry(A);
+  assert.equal(most.znajdz(kod).stan, 'trwa', 'gość gra dalej — gra trwa na moście');
+
+  // „🏠 Wróć na początek”: mapa startowa (właściciel, 2026-09-08) — stąd ikoną
+  // ⚙ otwiera się setup NASTĘPNEJ gry…
+  await klik(A, 'przycisk-nowa-gra');
+  assert.equal(el(A, 'ekran-gra').hidden, true, 'ekran gry zamknięty po powrocie');
+  await klik(A, 'przycisk-setup');
+  assert.equal(el(A, 'ekran-setup').hidden, false, 'Ala wybiera nową grę na setupie');
+
+  // …i NASTĘPNE KROKI synchronizacji niczego nie odradzają: dawniej polling
+  // widział „trwa + brak rozgrywki” i wpychał starą grę z odliczaniem.
+  await przepompuj(A, 2);
+  assert.equal(el(A, 'ekran-gra').hidden, true, 'stara gra NIE wraca podczas wyboru nowej (uwaga E)');
+  assert.equal(el(A, 'odliczanie').hidden, true, 'żadnego odliczania w trakcie wyboru nowej gry');
+  assert.equal(el(A, 'ekran-setup').hidden, false, 'Ala zostaje na setupie');
+  assert.equal(most.znajdz(kod).stan, 'trwa', 'gra na moście niezmieniona — to telefon wyszedł, nie most');
+});
+
 test('uwaga F: po starcie gry sygnał i odliczanie 5-4-3-2-1-START u hosta i u gościa', async () => {
   const most = atrapaMostu();
   const pamiecA = new Map();
@@ -952,6 +1009,64 @@ test('wyjście z lobby jest zgłaszane mostowi — inaczej liczba graczy kłamie
   assert.equal([...most.gry.values()][0].stan, 'archiwum', 'wyjście organizatora zamyka grę — bez niego nie wystartuje');
   assert.match(tekst(A, 'status'), /zamykam grę/i, 'komunikat mówi, co się stało z grą');
   assert.equal(el(A, 'ekran-setup').hidden, false, 'gracz wraca na setup');
+});
+
+test('uwagi B1+B2 (2026-09-14): czekanie ma puls — paczka „Ładuję paczkę” aż do lobby, lobby „Pobieram listę gier” bez Drive', async () => {
+  // B1: klik „▶ Graj z tą paczką” przy zakładaniu gry sieciowej trwa 5–10 s
+  // (zimny web app). Przycisk musi cały czas mówić „⏳ Ładuję paczkę…” i
+  // pulsować — nie gasnąć po szybkim pobraniu pliku. B2: czekanie na listę
+  // gier pulsuje jak każde oczekiwanie i nie wymienia „mostu Drive”.
+  const most = atrapaMostu();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+
+  // Atrapa zwłoki: asercje „w trakcie” robimy DOKŁADNIE w chwili żądania.
+  const pierwotnyFetch = A.dom.window.fetch;
+  let przyciskPaczki = null;
+  const fetchZZwloka = async (url, opcje) => {
+    const adres = String(url);
+    if (adres.includes('akcja=gry')) {
+      const pole = el(A, 'multi-lobby-status');
+      assert.match(pole.textContent, /^Pobieram listę gier/, 'status mówi, że lista jest pobierana');
+      assert.equal(pole.classList.contains('pulsuje'), true, 'czekanie na listę pulsuje (B2)');
+      assert.equal(pole.textContent.includes('Drive'), false, 'komunikat nie mówi o Drive (B2)');
+    }
+    if (adres.includes('akcja=gra-zaloz') && przyciskPaczki) {
+      assert.equal(przyciskPaczki.disabled, true, 'przycisk paczki nie przyjmuje drugiego kliku w trakcie zakładania gry (B1)');
+      assert.equal(przyciskPaczki.classList.contains('pulsuje'), true, 'przycisk pulsuje przez CAŁE zakładanie gry (B1)');
+      assert.equal(przyciskPaczki.textContent, '⏳ Ładuję paczkę…', 'etykieta czekania jest ta sama co przy pobieraniu pliku (B1)');
+    }
+    return pierwotnyFetch(url, opcje);
+  };
+  A.dom.window.fetch = fetchZZwloka;
+  globalThis.fetch = fetchZZwloka;
+  try {
+    // B2: wejście na ścieżkę „Dołączam” odpytuje most o listę gier.
+    await wybierzSegment(A, 'multi-sciezka', 'dolacz');
+    await czekajNa(A, () => /Brak gier|Gry w zasięgu/.test(tekst(A, 'multi-lobby-status')), 'lista gier przestała pulsować');
+    assert.equal(el(A, 'multi-lobby-status').classList.contains('pulsuje'), false, 'po odpowiedzi pulsowanie gaśnie');
+    assert.equal(tekst(A, 'multi-lobby-status').includes('Drive'), false, 'status końcowy też bez Drive');
+
+    // B1: ścieżka „Zakładam” — paczka z repo, klik, POST gra-zaloz pod lupą.
+    await wybierzSegment(A, 'multi-sciezka', 'zaloz');
+    przelaczNa(A);
+    const przyciskTrybu = [...A.dom.pobierz('multi-tryby').children].find((b) => b.textContent.includes('Wyścig'));
+    kliknijEl(przyciskTrybu);
+    await oddech();
+    await klik(A, 'przycisk-dalej-pozycja');
+    await czekajNa(A, () => el(A, 'zestawy-lista').children.length > 0, 'paczka z repozytorium w propozycjach');
+    przyciskPaczki = [...el(A, 'zestawy-lista').children[0].children].at(-1);
+    przelaczNa(A);
+    kliknijEl(przyciskPaczki);
+    await czekajNa(A, () => el(A, 'multi-panel-lobby').hidden === false, 'lobby po zakładzeniu gry');
+    assert.equal(przyciskPaczki.disabled, false, 'po lobby przycisk wraca do życia');
+    assert.equal(przyciskPaczki.textContent, '▶ Graj z tą paczką', 'etykieta wraca po zakończeniu czekania');
+    assert.equal(przyciskPaczki.classList.contains('pulsuje'), false, 'pulsowanie gaśnie po otwarciu lobby');
+  } finally {
+    A.dom.window.fetch = pierwotnyFetch;
+    globalThis.fetch = pierwotnyFetch;
+  }
 });
 
 test('trasa-sekret z siecią dróg: komunikat mówi „zlokalizowano”, a „Inny układ” zostaje schowany', async () => {
@@ -1320,6 +1435,11 @@ test('we Wspólnej Trasie nie ma wolnego wyboru stacji — kolejność ustala tr
     'komunikatu trybu w grze nie ma (uwaga F) — tryb mówi lobby, w grze jest jak w hotseat');
   assert.match(tekst(A, 'lobby-tryb'), /Wspólna Trasa/, 'tryb zostaje w lobby');
   assert.equal(tekst(A, 'gra-postep'), 'stacja 1 z 3', 'kolejność narzuca trasa — postęp jak w hotseat');
+  // W trasie (kolejność narzucona) bieżąca stacja MA być wyróżniona —
+  // wyłączenie podświetlenia dotyczy tylko wyścigu (uwaga D).
+  const pinezkiTrasa = A.dom.pobierz('mapa-gra-pinezki');
+  assert.equal(pinezkiTrasa.children.filter((g) => String(g.getAttribute('class')).includes('pinezka-aktywna')).length, 1,
+    'trasa: dokładnie jedna (bieżąca) pinezka jest „aktywna”');
 });
 
 test('ADR 0032: wariant fact-check jedzie w stanie gry, a ekran gry nie dokleja swojej linii (uwaga F)', async () => {

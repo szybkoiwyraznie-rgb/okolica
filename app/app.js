@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-120';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-120';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-122';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-122';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-120';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-120';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-120';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-120';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-120';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-120';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-120';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-120';
+} from './protokol.js?v=m12-122';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-122';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-122';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-122';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-122';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-122';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-122';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-122';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-120';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-120';
+} from './zestawy.js?v=m12-122';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-122';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-120';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-120';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-120';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-120';
-import { adresMostu, stanMostu } from './most.js?v=m12-120';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-120';
+} from './sieci.js?v=m12-122';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-122';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-122';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-122';
+import { adresMostu, stanMostu } from './most.js?v=m12-122';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-122';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-120';
+} from './oceny.js?v=m12-122';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1938,7 +1938,7 @@ async function przeliczStacjeZPobraniem(klucz) {
 }
 
 /**
- * Reset przewijania warstwy stacji (UX właściciela, m12-120): przyciski
+ * Reset przewijania warstwy stacji (UX właściciela, m12-122): przyciski
  * „Inny układ" i „Pobierz sieć ponownie" stoją pod długą listą, więc po
  * kliknięciu warstwa ma wrócić na górę. Przewija się sama karta
  * `.panel-centralny` (overflow-y: auto), nie strona.
@@ -2312,7 +2312,14 @@ function renderujGre({ panele = true } = {}) {
       ...s,
       zaliczona: zamkniete.has(Number(s.id)),
     }));
-    STAN.mapy.gra.zaznaczStacje(stacjeZFlagami, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
+    // Uwaga D (2026-09-14): w Wyścigu NA Orientację gracz sam wybiera stacje,
+    // więc żadna nie jest „bieżącą” — a jednak mapa podświetlała stację nr 1
+    // (`biezacaStacja` po starcie = pierwsza z listy). Inny kolor mają TYLKO
+    // stacje zamknięte przez TEGO gracza (`pinezka-zaliczona` wyżej). W
+    // Wspólnej Trasie kolejność narzuca trasa, więc wyróżnienie bieżącej
+    // stacji zostaje.
+    const trybWyscigu = STAN.multi?.gra?.tryb === TRYBY_GRY.wyscig;
+    STAN.mapy.gra.zaznaczStacje(stacjeZFlagami, { promienM: STAN.konfig.promienM, aktywna: trybWyscigu ? null : r.biezacaStacja });
   }
   odswiezPasekDrogi();
   odswiezWakeLock(); // ADR 0040 pkt 4: ekran nie gaśnie, dopóki gra trwa
@@ -2510,13 +2517,16 @@ function wierszZestawu(opis, akcji, statystyki = '', factcheck = true) {
   przycisk.type = 'button';
   przycisk.className = 'przycisk';
   przycisk.textContent = '▶ Graj z tą paczką';
-  // Sygnał czekania (właściciel 2026-09-13): pobranie paczki z Drive trwa kilka
-  // sekund, więc przycisk mówi, co się dzieje, i nie przyjmuje drugiego kliku
-  // (podwójne pobranie i podwójne „użycie" paczki). Gdy wstępne pobieranie
-  // zdążyło, zmiana jest niezauważalna — gra startuje od razu.
+  // Sygnał czekania (właściciel 2026-09-13, dograne 2026-09-14 — uwaga B1):
+  // pobranie paczki z Drive trwa kilka sekund, a przy grze sieciowej jeszcze
+  // zakładanie gry na moście — przycisk mówi „Ładuję paczkę" i pulsuje przez
+  // CAŁY ten czas, nie przyjmuje drugiego kliku (podwójne pobranie i podwójne
+  // „użycie" paczki). Gdy wstępne pobieranie zdążyło, zmiana jest krótka —
+  // gra albo lobby startuje od razu. Słowo „przycisku" pilnuje test w
+  // zestawy-ui; brzmienie dał właściciel (uwagi terenowe 2026-09-14, B1).
   przycisk.addEventListener('click', async (zdarzenie) => {
     przycisk.disabled = true;
-    przycisk.textContent = '⏳ Ładowanie paczki…';
+    przycisk.textContent = '⏳ Ładuję paczkę…';
     przycisk.classList.add('pulsuje');
     try {
       await akcji(zdarzenie);
@@ -2828,7 +2838,7 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
 }
 
 /** Wspólny start z gotową paczką: stacje i kontener z zestawu, pytania z pamięci. */
-function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
+async function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
   const { paczka, blad } = odpakujPaczke(kontener);
   if (blad || !paczka) {
     status(`Paczka (${zrodlo}) jest uszkodzona: ${blad?.komunikat ?? 'nie da się jej odczytać'} — wracamy do zwykłej ścieżki.`);
@@ -2855,11 +2865,15 @@ function przyjmijZestawDoGry({ stacje, kontener, zrodlo }) {
   STAN.usterkiPaczki = [];
   if (STAN.multiPoPaczce) {
     // Wspólny setup (właściciel, 2026-09-11): w multi po wybraniu paczki z
-    // ekranu pozycji też otwiera się lobby, nie gra hot-seat.
+    // ekranu pozycji też otwiera się lobby, nie gra hot-seat. Zakładanie gry
+    // jest OCZEKIWANE (uwaga B1, 2026-09-14): POST „gra-zaloz" na zimnym
+    // moście trwa 5–10 s, a przycisk „▶ Graj z tą paczką" pulsuje dopóty,
+    // dopóki ta funkcja nie wróci — bez await lobby otwierało się po długiej
+    // ciszy z odświeżonym, martwym przyciskiem.
     STAN.multiPoPaczce = false;
     STAN.ukryjStacje = false;
     STAN.kontenerPaczki = kontener;
-    void zalozGreMulti();
+    await zalozGreMulti();
     return true;
   }
   startGry();
@@ -2898,7 +2912,9 @@ async function grajZZestawemZRepo(wpis, urlIndeksu) {
   // straciłaby prawo do oceny (ADR 0028 aneks 2026-09-09).
   zapamietajIdPaczkiDlaZestawu(zestaw.kontener?.skrot, STAN.paczkaRepoId);
   wyslijUzycieWTle(STAN.paczkaRepoId);
-  przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
+  // `await` załatwia obie ścieżki (uwaga B1): hotseat zwraca bool od razu,
+  // multi oczekuje na założenie gry — przycisk paczki pulsuje do lobby.
+  return przyjmijZestawDoGry({ stacje: zestaw.stacje, kontener: zestaw.kontener, zrodlo: `repozytorium: ${zestaw.meta.miejsce}` });
 }
 
 /**
@@ -3543,6 +3559,21 @@ function zakonczGreRecznie() {
  */
 function wrocNaPoczatek() {
   const r = STAN.rozgrywka;
+  // Uwaga E (2026-09-14): wyjście z ekranu wyników KONCZY kontekst sieciowy.
+  // Rezygnacja zostawia synchronizację żywą celowo (wspólna tabela w trakcie
+  // oglądania wyników), ale jeśli nic jej nie zamknie, polling odradza dawną
+  // grę w środku wyboru nowej (poważne zgłoszenie właściciela). Gdy gracz
+  // opuszcza wyniki, tabeli już nie ogląda — polling nie ma po co żyć.
+  const m = STAN.multi;
+  if (m) {
+    const sesja = { kod: m.gra?.kod, idGry: m.gra?.idGry ?? null, urlMostu: m.urlMostu };
+    zatrzymajSyncMulti(); // koniec pollingu i kolizji wysyłek
+    STAN.multi = null;
+    STAN.trasaDlugosc = 0;
+    // Ostatnie wypchnięcie zaległych zdarzeń (np. rezygnacji, która nie
+    // wyszła bez zasięgu) — w tle, z pamięci telefonu (ADR 0019 aneks).
+    void dostarczZalegleZdarzeniaMulti(sesja);
+  }
   zatrzymajSymulacje();
   if (typeof localStorage !== 'undefined') {
     const kod = r ? oczyscKodGry(r.kodGry) : '';
@@ -4610,7 +4641,7 @@ async function zalozGreMulti() {
     return;
   }
   const sekret = STAN.multiTryb === TRYBY_GRY.trasa && STAN.multiTrasaSekret;
-  status('Zakładam grę na mostku Drive…');
+  status('Zakładam grę na mostku Drive…', { czeka: true }); // zimny start web app bywa długi (uwaga B1)
   try {
     const wynik = await polecenieMostu(urlMostuMulti(), {
       akcja: 'gra-zaloz',
@@ -4657,7 +4688,7 @@ async function dolaczDoGryMulti({ idGry = null } = {}) {
     pokazBledyDolacza(['Nie wiem, do której gry dołączyć — wybierz hosta z listy gier w okolicy.']);
     return;
   }
-  status('Dołączam do gry z listy…');
+  status('Dołączam do gry z listy…', { czeka: true });
   try {
     const wynik = await polecenieMostu(urlMostuMulti(), {
       akcja: 'gra-dolacz',
@@ -4672,19 +4703,30 @@ async function dolaczDoGryMulti({ idGry = null } = {}) {
   }
 }
 
+/** Status lobby w `#multi-lobby-status` — ten sam zwyczaj co `status()`:
+ *  `czeka: true` pulsuje w negatywie, każdy kolejny tekst gasi pulsowanie
+ *  (uwaga B2, 2026-09-14: czekanie na listę gier ma być widoczne tak samo jak
+ *  inne oczekiwania, a komunikat nie wymienia „mostu Drive"). */
+function statusLobby(tekst, { czeka = false } = {}) {
+  const pole = $('multi-lobby-status');
+  if (!pole) return;
+  pole.textContent = tekst;
+  pole.classList.toggle('pulsuje', czeka);
+}
+
 async function odswiezLobby() {
   const url = urlMostuMulti();
   const lista = $('multi-lobby-lista');
   if (!url) {
-    $('multi-lobby-status').textContent = 'Brak adresu mostu w tej wersji aplikacji — lista gier w okolicy jest niedostępna.' + ADR(' (ADR 0020)');
+    statusLobby('Brak adresu mostu w tej wersji aplikacji — lista gier w okolicy jest niedostępna.' + ADR(' (ADR 0020)'));
     return;
   }
   if (!STAN.pozycja) {
     lista.replaceChildren();
-    $('multi-lobby-status').textContent = 'Czekam na Twoją pozycję — lista pokazuje gry w zasięgu ~50 m od hosta.';
+    statusLobby('Czekam na Twoją pozycję — lista pokazuje gry w zasięgu ~50 m od hosta.');
     return;
   }
-  $('multi-lobby-status').textContent = 'Pobieram listę gier z mostu Drive…';
+  statusLobby('Pobieram listę gier…', { czeka: true });
   try {
     const odpowiedz = await pobierzGetMulti(urlGet(url, 'gry'));
     const { wpisy, usterki } = walidujLobbySurowe(JSON.stringify(odpowiedz ?? null));
@@ -4709,11 +4751,11 @@ async function odswiezLobby() {
       li.append(opis, b);
       lista.appendChild(li);
     }
-    $('multi-lobby-status').textContent = bliskie.length
+    statusLobby(bliskie.length
       ? `Gry w zasięgu ~50 m: ${bliskie.length}.`
-      : 'Brak gier w zasięgu ~50 m — załóż własną albo odśwież za chwilę.';
+      : 'Brak gier w zasięgu ~50 m — załóż własną albo odśwież za chwilę.');
   } catch (e) {
-    $('multi-lobby-status').textContent = `Nie udało się pobrać listy gier: ${e?.message ?? e}`;
+    statusLobby(`Nie udało się pobrać listy gier: ${e?.message ?? e}`);
   }
 }
 
@@ -4722,7 +4764,7 @@ async function odswiezLobby() {
 async function startLobby() {
   const m = STAN.multi;
   if (!m || m.rola !== 'organizator') return;
-  status(`Startuję grę ${m.gra.kod}…`);
+  status(`Startuję grę ${m.gra.kod}…`, { czeka: true });
   try {
     const wynik = await polecenieMostu(m.urlMostu, {
       akcja: 'gra-start', kod: m.gra.kod, idGry: m.gra.idGry ?? null, organizatorId: m.graczId,
@@ -4904,7 +4946,12 @@ function onStanGryMulti(gra) {
   }
   m.gra = czysta;
   m.ostatniStanMs = Date.now();
-  if (gra.stan === 'trwa' && !STAN.rozgrywka && STAN.ekran !== 'gra') {
+  // Uwaga E (2026-09-14): gra, z której TEN telefon wyszedł (rezygnacja),
+  // nigdy nie odradza się z pollingu — nawet gdy na moście wciąż „trwa”, bo
+  // grają inni. To była przyczyna poważnego buga: po „Wróć na początek”
+  // najbliższy krok synchronizacji widział „trwa + brak rozgrywki” i wpychał
+  // starą grę z odliczaniem w środku wyboru nowej.
+  if (gra.stan === 'trwa' && !STAN.rozgrywka && STAN.ekran !== 'gra' && !m.zrezygnowano) {
     uruchomGreMulti(gra, { odliczanie: !STAN.wznawiamMulti });
   }
   STAN.wznawiamMulti = false;
@@ -5240,6 +5287,10 @@ function rezygnujZGryMulti() {
     powod: organizator ? 'organizator zakończył grę na swoim telefonie' : 'rezygnacja z telefonu',
   });
   STAN.graZakonczonaRecznie = true;
+  // Uwaga E (2026-09-14): znak „ten telefon wyszedł z tej gry”. Blokuje
+  // odradzanie gry w `onStanGryMulti` i sygnalizuje `wrocNaPoczatek`, że
+  // razem z ekranem wyników ma się skończyć synchronizacja.
+  m.zrezygnowano = true;
   // Sesja znika razem z wyjściem (uwaga K, ADR 0045): po odświeżeniu telefon nie
   // wraca do gry, z której gracz wyszedł. Widok zostaje — synchronizacja działa
   // dalej w pamięci i pokaże wspólną tabelę, gdy most domknie grę.
@@ -5474,6 +5525,22 @@ function start() {
     if (!STAN.watcher?.czyAktywny() || !STAN.ostatniFix) wlaczGps();
   });
 
+  // Uwaga A (ADR 0047, decyzja właściciela 2026-09-14): strona NIE jest
+  // szczypalna poza mapą. Safari iOS potrafi wznowić kartę przybliżoną (belka
+  // i marginesy ucięte), a potem palce zoomują stronę zamiast mapy — i to
+  // powiększenie zostaje. iOS ignoruje `user-scalable=no`, więc jedyna pewna
+  // droga to preventDefault na gestach systemowych iOS (`gesturestart` /
+  // `gesturechange`) dla celów POZA `.mapa`; nad mapą gest przechodzi bez
+  // zmian (mapa ma własne sterowanie i `touch-action: none`). Pozostałe gesty
+  // (przewijanie, stuknięcia) nie są dotykane — dostępność czytania dużego
+  // UI przenosi się na powiększenie systemowe (ADR 0047 pkt 3).
+  const gestStrony = (zdarzenie) => {
+    if (zdarzenie.target?.closest?.('.mapa')) return; // nad mapą: jak dotąd
+    zdarzenie.preventDefault();
+  };
+  document.addEventListener('gesturestart', gestStrony, { passive: false });
+  document.addEventListener('gesturechange', gestStrony, { passive: false });
+
   // Uwaga K (ADR 0045): właściciel chce, żeby zamknięcie karty albo odświeżenie
   // zapisywało stan gry. Zapis i tak idzie po KAŻDEJ tranzycji (`zapiszGre`,
   // plan M6 decyzja 5), bo `beforeunload` jest na telefonach zawodny — `pagehide`
@@ -5507,7 +5574,7 @@ function start() {
 
   $('przycisk-wstecz-pozycja').addEventListener('click', () => pokazEkran('pozycja'));
   $('przycisk-siec-ponow').addEventListener('click', () => {
-    // Prośba UX właściciela (m12-120): kliknięcie opcji pod długą listą ma
+    // Prośba UX właściciela (m12-122): kliknięcie opcji pod długą listą ma
     // wracać widok na górę warstwy — lista jest długa, panel przewija się
     // wewnątrz .panel-centralny (overflow-y: auto).
     przewinWarstweStacjiNaGore();
@@ -5516,7 +5583,7 @@ function start() {
     void przeliczStacjeZPobraniem(kluczSieci());
   });
   $('przycisk-przelicz').addEventListener('click', () => {
-    przewinWarstweStacjiNaGore(); // UX właściciela m12-120, jw.
+    przewinWarstweStacjiNaGore(); // UX właściciela m12-122, jw.
     STAN.ziarnoOffset += 1;
     STAN.obrot = (STAN.obrot + 360 / (STAN.konfig.liczbaStacji * 2)) % 360;
     przeliczStacje();

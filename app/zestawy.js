@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-120';
-import { kanonicznyTemat } from './konfig.js?v=m12-120';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-120';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-120';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-122';
+import { kanonicznyTemat } from './konfig.js?v=m12-122';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-122';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-122';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -229,13 +229,24 @@ export function sumaPytanWpisu(w) {
  * musi być paczka, która ma 20 pytań — nieważne, czy 5 stacji po 4, czy 2 po 10")
  * oraz środek transportu (właściciel wycofał: „olej, nie bierz pod uwagę").
  */
-export function powodyNiedopasowania(w, { geohash5, lat, lon, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny = '' } = {}) {
+export function powodyNiedopasowania(w, { geohash5, lat, lon, promienM, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny = '' } = {}) {
   const powody = [];
   if (!czyWOkolicy(w, { geohash5, lat, lon })) {
     const d = odlegloscWpisuM(w, { lat, lon });
     powody.push(d == null
       ? 'inna okolica'
       : `inna okolica — paczka powstała ${d >= 1000 ? `${Math.round(d / 100) / 10} km` : `${Math.round(d)} m`} stąd`);
+  }
+  // ADR 0046 (2026-09-14): promień jest kryterium dopasowania — paczka
+  // urodzona w innym promieniu niż setup zawsze rozjeżdża się z ustawieniami
+  // gry (terenowe zgłoszenie: paczka 500 m zaoferowana przy promieniu 1000 m
+  // „nadpisała" ustawienia). Równość, bez tolerancji: promień to jawnie
+  // wybrany zakres gry. Porównanie tylko gdy OBIE strony mają liczbę — brak
+  // promienia w kryteriach (czyste funkcje, stare wołania) nie dokłada
+  // powodu, którego nie da się spełnić.
+  const fmtPromienia = (m) => (m >= 1000 ? `${Math.round(m / 100) / 10} km` : `${Math.round(m)} m`);
+  if (Number.isFinite(promienM) && Number.isFinite(w?.promienM) && w.promienM !== promienM) {
+    powody.push(`promień: paczka „${fmtPromienia(w.promienM)}”, setup „${fmtPromienia(promienM)}”`);
   }
   if (w?.wiek !== wiek) powody.push(`wiek: paczka „${w?.wiek ?? 'brak'}", setup „${wiek}"`);
   const chce = Number(liczbaStacji) * Number(pytaniaNaStacje);
@@ -265,11 +276,12 @@ export function dopasujZestawy(rejestr, { geohash5, lat, lon, promienM, liczbaSt
   // tolerujemy obie konwencje: surowa lista wpisów (walidacje surowe) i obiekt
   // rejestru `{ schemat, wpisy }` (zapis) — jedno wejście, zero niespodzianek
   const lista = Array.isArray(rejestr) ? rejestr : (rejestr?.wpisy ?? []);
-  // Kryteria (właściciel, 2026-09-07): ta sama okolica (±200 m od miejsca
-  // wygenerowania), wiek, ŁĄCZNA liczba pytań (paczka może mieć więcej) oraz
-  // tematy paczki NIE SZERSZE niż w setupie. Promień, liczba stacji i środek
-  // transportu NIE są kryteriami (aneks ADR 0024).
-  const kryteria = { geohash5, lat, lon, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny };
+  // Kryteria (właściciel, 2026-09-07 aneks ADR 0024 + odwrócenie 2026-09-14,
+  // ADR 0046): ta sama okolica (±200 m od miejsca wygenerowania), RÓWNY
+  // promień, wiek, ŁĄCZNA liczba pytań (paczka może mieć więcej) oraz tematy
+  // paczki NIE SZERSZE niż w setupie. Liczba stacji i środek transportu NIE
+  // są kryteriami (aneks ADR 0024 — ten fragment pozostaje w mocy).
+  const kryteria = { geohash5, lat, lon, promienM, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny };
   return lista
     .filter((w) => !powodyNiedopasowania(w, kryteria).length)
     .sort((a, b) => String(b.data).localeCompare(String(a.data)));
