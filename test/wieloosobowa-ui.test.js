@@ -424,7 +424,13 @@ function zasiejZestaw(most, ileStacji, pytaniaNaStacje = 1, { factcheck = true }
   const stacje = stacjeTestowe(ileStacji);
   const kontener = zapakujPaczke(paczkaTestowa(stacje, pytaniaNaStacje, { factcheck }), factcheck ? WERSJA_PROTOKOLU : WERSJA_PROTOKOLU_REV3);
   const meta = zbierzMetaZestawu({
-    lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
+    lat: PODKOWA.lat, lon: PODKOWA.lon,
+    // ADR 0046: promień jest kryterium dopasowania (równość), więc fixtura
+    // liczy promień TAK SAMO jak setup telefonu (multi: pytaniaNaStacje=1,
+    // 60 min, piesza). Pole meta `pytaniaNaStacje` zostaje z parametru zasiewu
+    // — paczka może mieć WIĘCEJ pytań niż setup (nadmiar nie przeszkadza).
+    promienM: promienZCzasuGry({ czasGryMin: 60, tryb: 'piesza', liczbaStacji: stacje.length, pytaniaNaStacje: 1 }),
+    tematy: ['historia'], wiek: 'dorosli',
     jezyk: 'polski', miejsce: 'Podkowa Leśna', liczbaStacji: stacje.length, pytaniaNaStacje,
     data: '2026-09-06 09:00', factcheck,
   });

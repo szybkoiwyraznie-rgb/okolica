@@ -96,6 +96,11 @@ wpis (addytywne — stary klient je ignoruje).
 
 ## Aneks (2026-09-07): promień nie jest kryterium, a komunikat nazywa powód
 
+> **Uwaga (2026-09-14, ADR 0046):** decyzja „promienM wypadł z kryteriów
+> dopasowania” została ODWRÓCONA — promień jest znowu kryterium (równość
+> paczka↔setup). Reszta aneksu (komunikat nazywa powód, suma pytań, paczki
+> z innych okolic niewspomniane) pozostaje w mocy.
+
 Po wdrożeniu B19 właściciel obejrzał ekran 2 i zgłosił dwie rzeczy:
 
 1. „Przestawiam miejsce z Podkowy Leśnej na Łódź i dalej znajduje tę paczkę" —

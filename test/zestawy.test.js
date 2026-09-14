@@ -89,7 +89,7 @@ test('zestawy: ponowny zapis tego samego skrotu wymienia wpis, nie duplikuje', (
   assert.equal(rejestr.wpisy[0].data, '2026-09-06');
 });
 
-test('zestawy: dopasowanie jest ścisłe (okolica, wiek, stacje, pytania, tematy) — promień NIE jest kryterium', () => {
+test('zestawy: dopasowanie jest ścisłe (okolica, promień, wiek, stacje, pytania, tematy) — ADR 0046', () => {
   const rejestr = {
     schemat: SCHEMAT_INDEKSU,
     wpisy: [
@@ -108,13 +108,15 @@ test('zestawy: dopasowanie jest ścisłe (okolica, wiek, stacje, pytania, tematy
     ],
   };
   const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], wiek: 'dorosli' });
-  // Kryteria (właściciel, 2026-09-07 — aneks ADR 0024): okolica, wiek, ŁĄCZNA
-  // liczba pytań (paczka może mieć więcej) i tematy⊆. Promień, liczba stacji
-  // i pytania na stację z osobna NIE są kryteriami.
+  // Kryteria (właściciel 2026-09-07 aneks ADR 0024 + odwrócenie 2026-09-14,
+  // ADR 0046): okolica (±200 m), RÓWNY promień, wiek, ŁĄCZNA liczba pytań
+  // (paczka może mieć więcej) i tematy⊆. Liczba stacji i pytania na stację
+  // z osobna NIE są kryteriami. Terenowe uzasadnienie ADR 0046: paczka 500 m
+  // przy promieniu 1000 m rozjeżdżała się z ustawieniami gry właściciela.
   assert.deepEqual(
     trafione.map((w) => w.skrot),
-    ['pasuje', 'inny-promien', 'tematy-kolejnosc', 'podzbior', 'wiecej-stacji', 'wiecej-pytan', 'wiekszy-promien', 'mniejszy-promien'],
-    '6 i 10 pytań przy setupie 5 × 1 = 5 pytań: więcej pytań nie przeszkadza',
+    ['pasuje', 'tematy-kolejnosc', 'podzbior', 'wiecej-stacji', 'wiecej-pytan'],
+    'paczki o promieniu innym niż setup (3000, 500 vs 1000) są niepasujące — nie da się ich wybrać',
   );
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33', promienM: 1, liczbaStacji: 1, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
   assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1, liczbaStacji: 0, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
@@ -346,10 +348,14 @@ test('zestawy: powodyNiedopasowania mówi wprost, które kryterium nie zagrało'
     '4 pytania przy 5 wymaganych: za mało',
   );
   assert.match(powodyNiedopasowania(wpis({ liczbaStacji: undefined }), kryteria(PODKOWA))[0], /brak danych o liczbie pytań/, 'wpis bez danych o pytaniach = jawny powód');
-  assert.equal(
-    powodyNiedopasowania(wpis({ promienM: 5000 }), kryteria(PODKOWA, { promienM: 500 })).length, 0,
-    'promień setupu i paczki nie są kryterium — zero powodów',
+  // ADR 0046 (2026-09-14): promień jest kryterium — inny zakres = niepasująca,
+  // z powodem nazwanym wprost; równy promień nie dokłada powodu.
+  assert.match(
+    powodyNiedopasowania(wpis({ promienM: 5000 }), kryteria(PODKOWA, { promienM: 500 }))[0],
+    /promień: paczka „5 km”, setup „500 m”/,
+    'paczka o innym promieniu niż setup dostaje jawny powód',
   );
+  assert.deepEqual(powodyNiedopasowania(wpis({ promienM: 500 }), kryteria(PODKOWA, { promienM: 500 })), [], 'równy promień = zero powodów');
   const kilka = powodyNiedopasowania(wpis({ wiek: 'wiek-12', liczbaStacji: 1, pytaniaNaStacje: 1 }), kryteria(PODKOWA));
   assert.equal(kilka.length, 2, 'kilka niezgodności = kilka powodów, każdy nazwany');
 });
