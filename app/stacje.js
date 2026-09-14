@@ -20,9 +20,116 @@ export const ZRODLA_STACJI = {
 };
 
 /**
+ * Optymalna kolejność odwiedzenia stacji — minimalna suma trasy od startu.
+ *
+ * Problem: start → permutacja stacji minimalizująca
+ *   suma = d(start, pierwsza) + Σ d(i, i+1)
+ * gdzie d to dystans sieciowy (jeśli podany) lub prosta kreska.
+ *
+ * Rozwiązanie: DP Held-Karp O(N²·2^N), N≤10 w grach terenowych. Dla N>10
+ * greedy nearest-neighbour (bezpieczny fallback, deterministyczny).
+ *
+ * Zwraca tablicę indeksów w kolejności optymalnej.
+ *
+ * Uwaga B 2026-09-14: układ w okrąg sortowany po kącie wymagał przejścia obok
+ * stacji 1 do stacji 2 i powrotu. Warunek właściciela: odległość do stacji 2
+ * ≥ start-1 + 1-2 (płynny spacer bez wracania). Optymalna trasa realizuje to
+ * jako przypadek szczególny — wybiera kolejność o minimalnej sumie.
+ */
+function optymalnaKolejnosc({ srodek, stacje, dystansStart = null, macierz = null }) {
+  const N = stacje.length;
+  if (N <= 1) return [...Array(N).keys()];
+  // dystanse
+  const dStart = dystansStart ?? stacje.map((s) => odlegloscM(srodek, s));
+  const dMiędzy = [];
+  for (let i = 0; i < N; i++) {
+    dMiędzy[i] = [];
+    for (let j = 0; j < N; j++) {
+      if (i === j) { dMiędzy[i][j] = 0; continue; }
+      const sieciowy = macierz?.[i]?.[j];
+      dMiędzy[i][j] = Number.isFinite(sieciowy) && sieciowy >= 0
+        ? sieciowy
+        : odlegloscM(stacje[i], stacje[j]);
+    }
+  }
+  // N>10 — greedy NN (deterministyczny, bez losowości)
+  if (N > 10) {
+    const odwiedzone = new Set();
+    const kolejnosc = [];
+    let ostatni = -1;
+    for (let krok = 0; krok < N; krok++) {
+      let najlepszy = -1;
+      let najlepszyD = Infinity;
+      for (let i = 0; i < N; i++) {
+        if (odwiedzone.has(i)) continue;
+        const d = ostatni === -1 ? dStart[i] : dMiędzy[ostatni][i];
+        if (d < najlepszyD - 1e-9 || (Math.abs(d - najlepszyD) < 1e-9 && i < najlepszy)) {
+          najlepszyD = d;
+          najlepszy = i;
+        }
+      }
+      odwiedzone.add(najlepszy);
+      kolejnosc.push(najlepszy);
+      ostatni = najlepszy;
+    }
+    return kolejnosc;
+  }
+  const FULL = (1 << N) - 1;
+  const dp = Array(1 << N).fill(null).map(() => Array(N).fill(Infinity));
+  const parent = Array(1 << N).fill(null).map(() => Array(N).fill(-1));
+  for (let i = 0; i < N; i++) {
+    dp[1 << i][i] = dStart[i];
+  }
+  for (let mask = 1; mask <= FULL; mask++) {
+    for (let last = 0; last < N; last++) {
+      if (!(mask & (1 << last))) continue;
+      const cur = dp[mask][last];
+      if (!Number.isFinite(cur)) continue;
+      for (let nxt = 0; nxt < N; nxt++) {
+        if (mask & (1 << nxt)) continue;
+        const nMask = mask | (1 << nxt);
+        const nd = cur + dMiędzy[last][nxt];
+        if (nd < dp[nMask][nxt] - 1e-9) {
+          dp[nMask][nxt] = nd;
+          parent[nMask][nxt] = last;
+        } else if (Math.abs(nd - dp[nMask][nxt]) < 1e-9) {
+          // deterministyczny tie-break: mniejszy poprzednik wygrywa
+          if (last < parent[nMask][nxt]) parent[nMask][nxt] = last;
+        }
+      }
+    }
+  }
+  // najlepszy koniec
+  let bestLast = 0;
+  let bestDist = dp[FULL][0];
+  for (let i = 1; i < N; i++) {
+    if (dp[FULL][i] < bestDist - 1e-9 || (Math.abs(dp[FULL][i] - bestDist) < 1e-9 && i < bestLast)) {
+      bestDist = dp[FULL][i];
+      bestLast = i;
+    }
+  }
+  // rekonstrukcja
+  const rev = [];
+  let mask = FULL;
+  let last = bestLast;
+  while (last !== -1) {
+    rev.push(last);
+    const prev = parent[mask][last];
+    mask ^= (1 << last);
+    last = prev;
+  }
+  rev.reverse();
+  return rev;
+}
+
+/**
  * Stacje na pierścieniu: `liczbaStacji` punktów wokół `srodek`, w odległości
  * ~`promienM × 0.65–0.85`, z kątowym rozrzutem ±25% kroku. Deterministyczne
  * dla danego ziarna — ta sama gra daje ten sam układ.
+ *
+ * Od 2026-09-14 (uwaga B): kolejność stacji to optymalna trasa od startu,
+ * nie sort po kącie — eliminuje wracanie (warunek właściciela
+ * d(start,2) ≥ d(start,1)+d(1,2)).
  */
 export function stacjeProste({ srodek, liczbaStacji, promienM, ziarno, offsetObrotu = 0 }) {
   if (!srodek || !Number.isFinite(srodek.lat) || !Number.isFinite(srodek.lon)) {
@@ -47,7 +154,9 @@ export function stacjeProste({ srodek, liczbaStacji, promienM, ziarno, offsetObr
       zrodlo: 'pierscien',
     });
   }
-  return uzupelnijOdleglosci(stacje, srodek);
+  const kolejnosc = optymalnaKolejnosc({ srodek, stacje });
+  const przestawione = kolejnosc.map((idx, nowy) => ({ ...stacje[idx], id: nowy + 1 }));
+  return uzupelnijOdleglosci(przestawione, srodek);
 }
 
 /** Dopisuje `odlegloscM` i `bearing` od środka — używane w UI i w miarach. */
@@ -388,9 +497,26 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
     if (!poprawa) break;
   }
 
-  // 4) wynik: stacje w kolejności kąta od północy (czytelna mapa i paczka)
-  wybrane.sort((a, b) => a.kat - b.kat);
-  const stacje = wybrane.map((w, idx) => ({
+  // 4) wynik: stacje w kolejności OPTYMALNEJ TRASY od startu (uwaga B 2026-09-14)
+  //    zamiast sortowania po kącie — eliminuje wracanie. Dla sieci używamy
+  //    dystansów sieciowych z dijkstr, z fallbackiem na prostą kreskę.
+  const macierzRobocza = wybrane.map((w) => wybrane.map((v) => {
+    if (w === v) return 0;
+    const d = w.wynik.dystanse[v.k.wezel];
+    return Number.isFinite(d) ? d : odlegloscM(w.k, v.k);
+  }));
+  const dStartRoboczy = wybrane.map((w) => w.d);
+  // tymczasowe stacje do liczenia kolejności (lat/lon wystarczą)
+  const stacjeRobocze = wybrane.map((w) => ({ lat: w.k.lat, lon: w.k.lon, kat: w.kat }));
+  const kolejnoscOpt = optymalnaKolejnosc({
+    srodek,
+    stacje: stacjeRobocze,
+    dystansStart: dStartRoboczy,
+    macierz: macierzRobocza,
+  });
+  const wybraneOpt = kolejnoscOpt.map((idx) => wybrane[idx]);
+
+  const stacje = wybraneOpt.map((w, idx) => ({
     id: idx + 1,
     lat: w.k.lat,
     lon: w.k.lon,
@@ -403,7 +529,7 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
     sciezkaPunkty: (sciezkaDo(dStart, w.k.wezel) ?? []).map((i) => ({ lat: graf.wezly[i].lat, lon: graf.wezly[i].lon })),
   }));
   const zOdleglosciami = uzupelnijOdleglosci(stacje, srodek);
-  const macierz = wybrane.map((w) => wybrane.map((v) => {
+  const macierz = wybraneOpt.map((w) => wybraneOpt.map((v) => {
     if (w === v) return 0;
     const d = w.wynik.dystanse[v.k.wezel];
     return Number.isFinite(d) ? Math.round(d) : null; // null = para nieosiągalna

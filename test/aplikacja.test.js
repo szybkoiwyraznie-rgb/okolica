@@ -369,13 +369,13 @@ function wyslij(el, typ, zdarzenie = {}) {
   return lista.length;
 }
 
-test('mapa: mały promień gry kadruje się jak 1000 m — bez pustych kafli (zgłoszenie 2026-09-12)', async () => {
+test('mapa: mały promień gry kadruje się jak 500 m — bez pustych kafli (zgłoszenie 2026-09-12 + uwaga A 2026-09-14)', async () => {
   // Właściciel w testach terenowych: po stuknięciu mapy (i po pobraniu sieci
   // z Overpassa) aplikacja przybliżała tak mocno, że kafelki OSM przestawały
   // cokolwiek pokazywać. Sufit przybliżenia liczy `dopasujZoomDoPromienia`
   // (`PROMIEN_SUFITU_ZOOMU_M`), a ten test sprawdza OKABLOWANIE: czy po
   // ustawieniu pozycji mapa naprawdę stoi w kadrze sufitu, a nie w kadrze
-  // promienia 250 m.
+  // promienia 250 m. Od 2026-09-14 sufit to 500 m, a nie 1000 m.
   const konfig = { ...domyslnaKonfiguracja(), promienM: 250 };
   const pamiec = new Map([
     ['okolica:profil', JSON.stringify({
@@ -391,8 +391,8 @@ test('mapa: mały promień gry kadruje się jak 1000 m — bez pustych kafli (zg
 
   const rect = domM.pobierz('mapa-pozycja').getBoundingClientRect();
   const zoomWidokuMapy = dopasujZoomDoPromienia(250, rect.width, 52.2297);
-  assert.equal(zoomWidokuMapy, dopasujZoomDoPromienia(1000, rect.width, 52.2297),
-    'promień 250 m daje kadr promienia 1000 m (sufit przybliżenia)');
+  assert.equal(zoomWidokuMapy, dopasujZoomDoPromienia(500, rect.width, 52.2297),
+    'promień 250 m daje kadr promienia 500 m (sufit przybliżenia 500 m od 2026-09-14)');
   const oczekiwany = widokNaSrodek({
     lat: 52.2297, lon: 21.0122, zoom: zoomWidokuMapy,
     rozmiar: { szerokosc: rect.width, wysokosc: rect.height },

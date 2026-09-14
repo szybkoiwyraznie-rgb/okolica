@@ -64,20 +64,11 @@ na sesję; ciągły GPS je baterię.
 0003 (marker pozycji), 0005 (stacje muszą być osiągalne), 0009 (kolejność
 graczy), 0013 (prywatność).
 
-## Aneks (2026-09-07): kara ręczna stała, bez pola w setupie — ZNIESIONA w Partii 2
+## Aneksy 2026-09-07 … 2026-09-12 są w archiwum (poza budżetem lektury)
 
-Decyzja właściciela (Partia 1): pole „Kara za „jestem na miejscu"" zniknęło
-z setupu (myliło), kara działała jako stałe +60 s. Decyzja właściciela
-(Partia 2, ADR 0023): kara zniesiona w całości — ręczne dojście bez kary.
+Historia tego ADR do aneksu 2026-09-12 włącznie — kara ręczna (2026-09-07), tryb testowy (2026-09-08), watchdog martwego nasłuchu (2026-09-12, m12-91), wyjście awaryjne P10 (2026-09-12, m12-92) oraz wyjście z nieosiągalnej stacji (2026-09-12, m12-94) — leży w
+`docs/decisions/archive/aneksy-0004-2026-09-07-do-12.md`, poza budżetem lektury startowej (AGENTS.md §0; LESSONS L62). Zawiera aneksy z dat: 2026-09-07, 2026-09-08, 2026-09-12, 2026-09-12, 2026-09-12. Obowiązujące aneksy są niżej: 2026-09-09 (próg 25 m) i 2026-09-13 (koniec pauzy, ADR 0040).
 
-## Aneks (2026-09-08): tryb testowy wchodzi tylko parametrem adresu
-
-Decyzja właściciela: przycisk „⚙ tryb testowy" zniknął z nagłówka (kusił do
-grania bez GPS, a wyniki i tak szły na Drive i do rankingów — ADR 0029).
-Kanoniczne wejście to **`?test=true`** (przyjmowane też `?test=1`, `?test=tak`
-oraz historyczne `?tryb=test` z pkt 6, którego używają testy). Tryb odsłania
-ręczne współrzędne i symulację trasy; GPS nie startuje. Formy wejścia pinuje
-test w `test/aplikacja.test.js`.
 
 ## Aneks 2026-09-09 — próg dojścia to stałe 25 m
 
@@ -110,72 +101,7 @@ może do niego odsyłać.
 zostaje jako granica „pomiar bezużyteczny", ale nie ma już związku z progiem
 dojścia — to dwie niezależne liczby.
 
-## Aneks 2026-09-12 (m12-91) — watchdog martwego nasłuchu: „aktywny” wrapper ≠ działający strumień
 
-Zgłoszenie terenowe (iPhone, Chrome, Pages, zgoda na lokalizację udzielona,
-GPS telefonu sprawny): ekran „Gdzie jesteś?” wisi na „Czekam na pozycję…”
-bez końca; po wyjściu i wejściu „Szukam satelitów…”, w Informacjach „GPS
-uruchomiony” / „wznowiono śledzenie” — a fixa i błędu brak. WebKit ma
-udokumentowaną rodzinę usterek, w której `watchPosition` przestaje wołać
-OBA callbacki (ani sukces, ani błąd), ignorując opcję `timeout`; ryzyko
-rośnie, gdy pierwszy request poszedł bez gestu użytkownika (nasz `start()`
-włącza GPS przy ładowaniu strony) i po powrocie karty z tła.
-
-Pkt 1 (opcje watchera) pozostaje — ale `timeout` nie jest gwarancją
-platformy, tylko prośbą. Uzupełnienie:
-
-1. **Znak życia**: każdy callback (fix ALBO błąd) odświeża znacznik czasu;
-   cisza liczona jest od założenia nasłuchu. Brak danych o znaku jest
-   milczeniem (L10), nie „świeżością”.
-2. **Watchdog**: 15 s bez JAKIEGOKOLWIEK callbacku (≈ ¾ z `timeout: 20000`)
-   = martwy nasłuch → świeży watcher (`watchPozycja` z tą samą osłoną)
-   i komunikat **P10** z sekundami ciszy i numerem próby plus wyjściem
-   awaryjnym (iOS: Usługi lokalizacji dla przeglądarki; potem odśwież
-   stronę). P05 pozostaje wycofany — P10 to nowy numer.
-3. **Gest**: dopóki nie ma żadnego fixa, klik „Dalej” zakłada świeżego
-   watchera przy każdym wejściu na ekran pozycji — dawniej chroniło to
-   tylko `czyAktywny()`, który mówi o NASZYM wrapperze, nie o WebKit.
-4. **Zegar uzbrojony na potrzebę**: watchdog tyka wyłącznie, gdy czekamy
-   na fixa (ekran pozycji albo odcinek gry); pauza/wznowienie i
-   `zatrzymajGps` zdejmują go razem z watcherem. Restart NIE nadpisuje
-   statusu gry (L22), a „GPS włączony” mówi tylko pierwszy start.
-5. **Prywatność bez zmian** (ADR 0013): watchdog nie wysyła nic — to
-   mechanizm wyłącznie lokalny.
-
-Reguła ogólna trafia do LESSONS L56: status „aktywny” w naszym wrapperze
-to deklaracja intencji; o życiu streamu rozstrzyga wyłącznie ostatni
-callback.
-
-## Aneks 2026-09-12 (m12-92) — wyjście awaryjne P10: zamknięcie i ponowne otwarcie aplikacji
-
-Test terenowy (właściciel, 2026-09-12): wyjście awaryjne z pkt 2 poprzedniego
-aneksu (Ustawienia systemu → Usługi lokalizacji dla przeglądarki + odświeżenie
-strony) **nie** przywracało pozycji. Przywracało ją **zamknięcie aplikacji
-(karty przeglądarki) i ponowne otwarcie** — zupełnie świeży request z ładowania
-strony i gestem użytkownika, nie restart `watchPosition` w już załadowanej
-karcie (dokładnie to, co obserwacja O1 audytu PR #16: restart in-place w
-ciszy WebKita nie odblokowuje nasłuchu).
-
-Treść komunikatu **P10** zmieniona zgodnie (mechanizm watchdoga z poprzedniego
-aneksu bez zmian):
-
-- było: „…sprawdź dostęp przeglądarki do lokalizacji (na iPhonie: Ustawienia →
-  Prywatność i bezpieczeństwo → Usługi lokalizacji → przeglądarka) i odśwież
-  stronę.”
-- jest: „…zamknij aplikację (kartę przeglądarki) i otwórz ją ponownie — w
-  takiej sytuacji to jedyny pewny sposób, żeby pozycja wróciła.”
-
-Pin komunikatu przepisany na nową formę (`test/pozycja.test.js`, LESSONS L55:
-decyzja właściciela się zmieniła — pin opisuje nową, nie słabnie).
-
-## Aneks 2026-09-12 (m12-94) — wyjściem z nieosiągalnej stacji jest koniec gry (zadanie H)
-
-Pominięcie odcinka (ADR 0015 pkt 3 — w tekście aneksu 2026-09-09 błędnie
-„pkt 2”) wycofane razem z opcją w UI. Zdanie „a wyjściem jest pominięcie
-odcinka” przestaje obowiązywać; nowe wyjście to „■ Zakończ grę” —
-komunikaty P03/P04/P08, komunikat o braku współrzędnych stacji i status
-błędu GPS odsyłają do niego wprost. Ręczne zaliczenie nadal NIE wraca
-(ADR 0029); żaden komunikat nie może do niego odsyłać.
 
 ## Aneks 2026-09-13 (m12-102) — koniec pauzy w tle i profilu oszczędnego (uwaga B, ADR 0040)
 
@@ -192,3 +118,4 @@ całym odcinku. Pkt 2 i 3 bez zmian: próg dojścia, dwa kolejne trafienia,
 `accuracy` bez oceny (ADR 0034), a `czasMs` podaje warstwa DOM — teraz bez
 korekt na pauzy, bo pauz nie ma. Jedyna przerwa w śledzeniu jest automatyczna
 (15 minut bez żadnego kliku) i wznawia ją dowolny klik (ADR 0040 pkt 5).
+

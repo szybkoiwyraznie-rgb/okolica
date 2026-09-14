@@ -454,14 +454,13 @@ export function planMapy({
         const ekran = punktNaEkranie(stacja.lat, stacja.lon, widok);
         return {
           id: stacja.id,
-          // Numer na trasie, nie indeks na liście: powrót do gry sieciowej
-          // rysuje tylko niezamknięte stacje, a ich numery muszą zostać te same
-          // (zgłoszenie terenowe N, 2026-09-13). Brak `numer` = zwykły indeks.
           numer: Number(stacja.numer) > 0 ? Number(stacja.numer) : i + 1,
           x: ekran.x,
           y: ekran.y,
           dystansM: stacja.dystansM ?? stacja.odlegloscM ?? null,
           aktywna: aktywnaStacja !== null && stacja.id === aktywnaStacja,
+          // 2026-09-14 G: zaliczone stacje inny kolor na mapie
+          zaliczona: Boolean(stacja.zaliczona),
         };
       });
 
@@ -624,6 +623,7 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
       ...plan.pinezki.map((p, i) => {
         const klasy = ['pinezka'];
         if (p.aktywna) klasy.push('pinezka-aktywna');
+        if (p.zaliczona) klasy.push('pinezka-zaliczona');
         if (stan.trybReczny) klasy.push('pinezka-reczna');
         const grupa = doc.createElementNS(PRZESTRZEN_SVG, 'g');
         grupa.setAttribute('class', klasy.join(' '));

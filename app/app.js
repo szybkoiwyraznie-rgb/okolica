@@ -362,6 +362,11 @@ function pokazMapeStartowa() {
       krok.classList.remove('zrobione');
     }
   }
+  // C: reset scrolla warstwy startowej — po zakończeniu gry warstwa ma otwierać się od początku
+  try {
+    const startEl = document.getElementById('ekran-start');
+    if (startEl) startEl.scrollTop = 0;
+  } catch {}
   odswiezMapeEkranu('pozycja'); // mapa na spodzie to instancja pozycji
   odswiezStanIkonBelki();
   odswiezWidocznoscPaneli();
@@ -371,7 +376,11 @@ function pokazMapeStartowa() {
 /** Okno startowe znika po kliknięciu gdziekolwiek na nie (jw.). */
 function ukryjStart() {
   const w = $('ekran-start');
-  if (w) w.hidden = true;
+  if (w) {
+    // C: po zakończeniu gry i ponownym wejściu w Start layer był przewinięty na dół
+    try { w.scrollTop = 0; } catch {}
+    w.hidden = true;
+  }
   document.body.classList.remove('okno-start');
   const mp = document.querySelector('#mapa-pozycja .mapa-przyciski');
   if (mp) mp.hidden = false;
@@ -2068,8 +2077,52 @@ function zegarGry() {
 function aktualizujGreNaFix(fix) {
   const r = STAN.rozgrywka;
   if (!r || r.faza === FAZY.koniec || STAN.ekran !== 'gra') return;
+  if (!STAN.pozycja) return;
+  // 2026-09-14 F: Wyścig — wykrywa dotarcie do DOWOLNEJ niezaliczonej stacji, bez wyboru
+  const jestWyscig = STAN.multi?.gra?.tryb === TRYBY_GRY.wyscig;
+  if (jestWyscig) {
+    odswiezPasekDrogi();
+    if (r.faza !== FAZY.odcinek) return;
+    // 2026-09-14 F fix: w wyścigu biezaca jest w-trakcie, a stacjeDoWyboru zwraca tylko oczekuje
+    // — do detekcji dowolnej niezaliczonej bierzemy wszystkie nie-zakonczone
+    const nieZaliczoneIds = r.odcinki
+      ? r.odcinki.filter(o => o.stan !== 'zakonczony').map(o => o.stacja)
+      : stacjeDoWyboru(r);
+    for (const sid of nieZaliczoneIds) {
+      const st = r.stacje.find(s => Number(s.id) === Number(sid));
+      if (!st) continue;
+      const d = stanDojscia(STAN.historiaFixow, st);
+      if (d.dotarl) {
+        if (r.biezacaStacja !== sid) {
+          const skier = skierujDoStacji(r, { stacjaId: sid, czasMs: zegarGry() });
+          if (skier.usterki.length === 0) {
+            STAN.rozgrywka = skier.stan;
+            const start = startOdcinka(STAN.rozgrywka, { stacjaId: sid, czasMs: zegarGry() });
+            if (start.usterki.length === 0) STAN.rozgrywka = start.stan;
+          }
+        }
+        zakonczOdcinekGry(TRYBY_DOJSCIA.gps, fix);
+        return;
+      }
+    }
+    if (nieZaliczoneIds.length) {
+      let naj = null; let minD = Infinity;
+      for (const sid of nieZaliczoneIds) {
+        const st = r.stacje.find(s => Number(s.id) === Number(sid));
+        if (!st) continue;
+        const d = Math.round(odlegloscM(STAN.pozycja, st));
+        if (d < minD) { minD = d; naj = st; }
+      }
+      if (naj) {
+        $('gra-dystans').textContent = `${minD} m`;
+        $('gra-dystans-odcinka').textContent = `${minD} m do stacji ${naj.id}`;
+      }
+    }
+    return;
+  }
+  // tryb trasa / hotseat — dotychczasowa logika (jedna bieżąca stacja)
   const pod = podglad(r);
-  if (!pod.stacja || !STAN.pozycja) return;
+  if (!pod.stacja) return;
   const dystans = Math.round(odlegloscM(STAN.pozycja, pod.stacja));
   $('gra-dystans').textContent = `${dystans} m`;
   odswiezPasekDrogi();
@@ -2078,10 +2131,6 @@ function aktualizujGreNaFix(fix) {
   $('gra-dystans-odcinka').textContent = d.dystansM == null ? '— m' : `${Math.round(d.dystansM)} m do stacji ${pod.stacja.id}`;
   if (d.kod) {
     $('gra-komunikat').textContent = d.komunikat;
-    // W drodze `#gra-komunikat` jest schowany razem z całym panelem gry
-    // (ADR 0036 aneks m12-102 pkt 2), więc zdanie idzie też do `#status`
-    // w ⓘ Informacjach (`aria-live` czyta je także przy zamkniętej warstwie).
-    // Bez tego gracz widzi tylko pasek z „— m” i nie wie, co się stało (L6).
     status(d.komunikat);
     return;
   }
@@ -2122,29 +2171,30 @@ function odswiezPasekDrogi() {
   const r = STAN.rozgrywka;
   if (!r) return;
   const droga = !$('gra-panel-odcinek').hidden;
-  // W terenie w drodze nad mapą zostaje sam pasek. W trybie testowym panel fazy B
-  // ZOSTAJE na wierzchu (ADR 0036 aneks 2026-09-13, m12-102 pkt 2: „Panel fazy B
-  // trzyma duży dystans i symulację dla widoku panelowego oraz trybu
-  // testowego"): `hidden` na przodku gasi potomków przez kaskadę CSS, więc bez
-  // tego wyjątku „▶ Symuluj dojście” — jedyna droga domknięcia odcinka bez GPS —
-  // jest w przeglądarce nieosiągalny, choć `renderujGre` go odsłania (L13:
-  // atrapa DOM nie modeluje renderowania, więc testy tego nie widzą).
   $('gra-sterowanie').hidden = droga && !STAN.trybTestowy;
   $('gra-pasek').hidden = !droga;
   const pod = podglad(r);
   const imie = pod.gracz?.imie ?? '—';
+  const pasek = $('gra-pasek');
+  // 2026-09-14 F: Wyścig — pasek dolny „Jacek. Stacja 3/5” zamiast dystansu
+  const jestWyscig = STAN.multi?.gra?.tryb === TRYBY_GRY.wyscig;
+  if (jestWyscig) {
+    const zaliczone = pod.zaliczoneStacje;
+    const total = liczbaStacjiTrasy(r);
+    const biezacyNumer = Math.min(total, zaliczone + 1);
+    pasek.textContent = `${imie}. Stacja ${biezacyNumer}/${total}`;
+    if (STAN.bylPasekDrogi && !droga && !$('gra-panel-pytanie').hidden) zamknijInformacje();
+    STAN.bylPasekDrogi = droga;
+    odswiezWidocznoscPaneli();
+    return;
+  }
   const dystans = STAN.pozycja && pod.stacja ? Math.round(odlegloscM(STAN.pozycja, pod.stacja)) : '—';
   const numer = numerStacjiTrasy(r, r.biezacaStacja);
-  // Właściciel 2026-09-11: dystans w pasku ma być widoczny od razu (zielona
-  // pigułka), nie tylko w Informacjach — dlatego pasek budujemy z węzłów,
-  // a nie z jednego textContent.
-  const pasek = $('gra-pasek');
   pasek.replaceChildren(`Kto: ${imie} `);
   const pigulka = document.createElement('span');
   pigulka.className = 'pasek-dystans';
   pigulka.textContent = `(odległość od stacji ${dystans} m)`;
   pasek.append(pigulka, ` · stacja ${numer} z ${liczbaStacjiTrasy(r)}`);
-  // Dojście ma odsłonić pytanie także po korzystaniu ze sterowania w Informacjach.
   if (STAN.bylPasekDrogi && !droga && !$('gra-panel-pytanie').hidden) zamknijInformacje();
   STAN.bylPasekDrogi = droga;
   odswiezWidocznoscPaneli();
@@ -2220,11 +2270,30 @@ function renderujGre({ panele = true } = {}) {
     // Sekret jest własnością ŻYWEJ gry sieciowej (`czyTrasaSekret`): resztkowy
     // kontekst multi po grze zamkniętej nie chowa już trasy w hot-seacie
     // (zgłoszenie terenowe R, 2026-09-13).
+    // 2026-09-14 G: zaliczone stacje inny kolor — oznaczamy na podstawie odcinków
     const graSekret = czyTrasaSekret(STAN.multi);
-    const stacjeWidoczne = graSekret
+    const zamkniete = new Set(
+      Object.entries(r.odcinki || {})
+        .filter(([, o]) => o?.stan === 'zakonczony')
+        .map(([sid]) => Number(sid)),
+    );
+    let stacjeWidoczne = graSekret
       ? STAN.stacje.filter((s) => Number(s.id) === Number(r.biezacaStacja))
       : STAN.stacje;
-    STAN.mapy.gra.zaznaczStacje(stacjeWidoczne, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
+    // Dla G: w wyścigu pokazujemy wszystkie, w trasie-sekret też pokazujemy zaliczone + bieżącą
+    if (graSekret) {
+      const zaliczoneWidoczne = STAN.stacje.filter((s) => zamkniete.has(Number(s.id)));
+      // połącz bez duplikatów: zaliczone + bieżąca
+      const mapaIds = new Map();
+      for (const s of zaliczoneWidoczne) mapaIds.set(Number(s.id), s);
+      for (const s of stacjeWidoczne) mapaIds.set(Number(s.id), s);
+      stacjeWidoczne = [...mapaIds.values()];
+    }
+    const stacjeZFlagami = stacjeWidoczne.map((s) => ({
+      ...s,
+      zaliczona: zamkniete.has(Number(s.id)),
+    }));
+    STAN.mapy.gra.zaznaczStacje(stacjeZFlagami, { promienM: STAN.konfig.promienM, aktywna: r.biezacaStacja });
   }
   odswiezPasekDrogi();
   odswiezWakeLock(); // ADR 0040 pkt 4: ekran nie gaśnie, dopóki gra trwa
@@ -2854,9 +2923,9 @@ function startOdcinkaGry() {
   STAN.rozgrywka = wynik.stan;
   pokazBledy('bledy-gra', wynik.usterki);
   if (wynik.usterki.length === 0) {
-    STAN.historiaFixow = []; // nowy odcinek liczy dojście od zera (plan M6, ryzyko 4)
+    STAN.historiaFixow = [];
     status('Odcinek rozpoczęty — idźcie. Pytanie otworzy się po dwóch kolejnych pomiarach nie dalej niż 50 m od stacji.' + ADR(' (ADR 0004 pkt 2)'));
-    odegrajSygnal('startOdcinka'); // M10/T4
+    odegrajSygnal('startOdcinka');
     if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   } else {
     status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
@@ -3218,19 +3287,17 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
  * gdy droga należy do kogoś innego. Wtedy zostaje stary panel A ze startem.
  */
 function czyStartPoDalej() {
-  const m = STAN.multi;
-  if (!m) return true;
-  const gra = m.gra;
-  if (!gra || gra.stan !== 'trwa') return true;
-  if (gra.tryb === TRYBY_GRY.wyscig) return false; // wolna kolejność — wybór należy do gracza
-  return true; // Wspólna Trasa: stacje po kolei — kolejny odcinek rusza od razu
+  // 2026-09-14 F: Wyścig bez wyboru stacji — po pytaniu od razu mapa („Idź dalej ->”)
+  // więc kolejny odcinek też rusza od razu (detekcja dowolnej stacji)
+  return true;
 }
 
 /** Napis na przycisku pod wyjaśnieniem — zależny od fazy PO zapisaniu odpowiedzi. */
 function etykietaPrzyciskuDalej(stan) {
   if (stan.faza === FAZY.koniec) return '🏁 Zobacz wynik →';
   if (stan.faza === FAZY.pytanie) return 'Następne pytanie →';
-  if (!czyStartPoDalej()) return 'Następna stacja →';
+  const jestWyscig = STAN.multi?.gra?.tryb === TRYBY_GRY.wyscig;
+  if (jestWyscig) return 'Idź dalej ->';
   const pod = podglad(stan);
   const kto = pod.gracz ? `${pod.gracz.imie}, ` : '';
   return `▶ ${kto}stacja ${numerStacjiTrasy(stan, stan.biezacaStacja)} — idę →`;
@@ -3243,12 +3310,19 @@ function etykietaPrzyciskuDalej(stan) {
 function nastepnaStacja() {
   const r = STAN.rozgrywka;
   if (!r) return;
-  // Domknięcie pokazu oceny — od tej chwili renderujGre może przełączać
-  // panele (patrz warunek „pokazOceny" w renderujGre).
   $('gra-wynik-odpowiedzi').hidden = true;
   renderujGre();
-  if (r.faza === FAZY.pytanie) {
+  const świeży = STAN.rozgrywka;
+  if (świeży.faza === FAZY.pytanie) {
     renderujPytanie();
+    return;
+  }
+  if (świeży.faza === FAZY.odcinek) {
+    // 2026-09-14 F: wyścig — po zamknięciu stacji wracamy do odcinka, który już trwa (wiele w-trakcie)
+    return;
+  }
+  if (świeży.faza === FAZY.przygotowanie) {
+    startOdcinkaGry();
     return;
   }
   if (r.faza === FAZY.przygotowanie && czyStartPoDalej()) startOdcinkaGry();
@@ -4888,6 +4962,18 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
   status(`Gra ${gra.kod} (${gra.tryb === TRYBY_GRY.trasa ? 'Wspólna Trasa' : 'Wyścig na Orientację'}) rozpoczęta: przed Tobą ${moje.length} z ${wszystkie.length} stacji. Pytania odsłaniają się dopiero na stacjach.`
     + (zamknietePrzezeMnie.size ? ' Zamknięte wcześniej stacje nie wracają — wracasz do gry w połowie drogi.' : ''));
   renderujGre();
+  // 2026-09-14 F: Wyścig — bez warstwy wyboru stacji, od razu odcinek i tylko mapa
+  if (gra.tryb === TRYBY_GRY.wyscig) {
+    const r = STAN.rozgrywka;
+    if (r && r.faza === FAZY.przygotowanie) {
+      const wynik = startOdcinka(r, { czasMs: zegarGry() });
+      if (wynik.usterki.length === 0) {
+        STAN.rozgrywka = wynik.stan;
+        STAN.historiaFixow = [];
+        renderujGre();
+      }
+    }
+  }
   // Uwaga F (ADR 0044): wszyscy — host i goście — dostają sygnał i odliczanie
   // na środku ekranu, a po „START" widzą zwykłą grę jak w hotseat.
   if (odliczanie) void odliczStartGry();
@@ -4922,11 +5008,14 @@ async function odliczStartGry() {
     for (const krok of ODLICZANIE_KROKI) {
       cyfra.textContent = String(krok);
       odegrajSygnal(krok === 'START' ? 'startGry' : 'odliczanie');
+      // 2026-09-14 H: START za duże — clamp osobno, mniejsza czcionka
+      cyfra.classList.toggle('odliczanie-start', krok === 'START');
       await new Promise(r => setTimeout(r, odstepOdliczania()));
     }
   } finally {
     warstwa.hidden = true;
     cyfra.textContent = '';
+    cyfra.classList.remove('odliczanie-start');
     STAN.odliczanieAktywne = false;
   }
 }
@@ -5006,6 +5095,10 @@ function renderujLobby() {
   lista.replaceChildren();
   for (const g of gra.gracze ?? []) {
     const li = document.createElement('li');
+    // 2026-09-14 E: powiększyć imiona graczy w lobby
+    li.style.fontSize = '22px';
+    li.style.fontWeight = '700';
+    li.style.padding = '10px 0';
     li.textContent = `${g.pseudonim}${g.id === gra.organizatorId ? ' — organizator' : ''}${g.id === m.graczId ? ' (Ty)' : ''}`;
     lista.appendChild(li);
   }
@@ -5013,8 +5106,9 @@ function renderujLobby() {
   $('przycisk-lobby-start').hidden = !(wLobby && m.rola === 'organizator');
   $('przycisk-lobby-opusc').hidden = !wLobby;
   if (wLobby) {
+    // 2026-09-14 E: usunięto teksty „Czekasz na graczy tej samej okolicy (maks. 8)” i „Możesz wystartować od razu - także solo”
     $('lobby-status').textContent = m.rola === 'organizator'
-      ? `Czekasz na graczy z tej samej okolicy (maks. ${MAKS_GRACZY}). Możesz wystartować od razu — także solo, jednym graczem. Po starcie dołączenie nie jest już możliwe.`
+      ? 'Po starcie dołączenie nie jest już możliwe.'
       : 'Czekasz, aż organizator wystartuje grę…';
     $('lobby-widownia').hidden = true;
   } else if (STAN.ekran !== 'gra') {
@@ -5042,65 +5136,33 @@ function renderujLobby() {
    albo wyszli. Akcja `gra-zakoncz` została w moście dla starszych telefonów. */
 
 /**
- * Wolna kolejność stacji (ADR 0027 część B pkt 2): w Wyścigu na Orientację
- * gracz wybiera dowolną stację, do której jeszcze nie doszedł. W Wspólnej
- * Trasie listy nie ma — kolejność narzuca trasa (kolejna stacja po
- * zamknięciu poprzedniej); lista znika też po zamknięciu wszystkich stacji.
- *
- * ADR 0044 (uwaga F): blok mieszka w panelu fazy A (`#gra-panel-oczekuje`),
- * tam gdzie hotseat ma „▶ Idę do stacji" — nie w doklejonej karcie multi.
+ * 2026-09-14 F: Wyścig — cały layer wyboru stacji usunięty (index.html #multi-wybor-stacji).
+ * Gracz sam decyduje, app wykrywa dotarcie do dowolnej niezaliczonej.
+ * Funkcje zostają jako no-op dla kompatybilności testów.
  */
 function renderujWyborStacji() {
-  const gra = STAN.multi?.gra;
-  const r = STAN.rozgrywka;
-  const graSieToczy = Boolean(gra?.stan === 'trwa' && r && r.faza !== FAZY.koniec && !STAN.graZakonczonaRecznie);
-  const blok = $('multi-wybor-stacji');
-  const mozna = Boolean(graSieToczy && gra.tryb === TRYBY_GRY.wyscig && r.faza === FAZY.przygotowanie);
-  const dostepne = mozna ? stacjeDoWyboru(r) : [];
-  blok.hidden = dostepne.length === 0;
-  if (!dostepne.length) return;
-  const lista = $('multi-wybor-przyciski');
-  lista.replaceChildren();
-  for (const stacjaId of dostepne) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'przycisk';
-    const cel = STAN.stacje?.find((s) => Number(s.id) === Number(stacjaId));
-    b.textContent = `Stacja ${stacjaId}${cel?.opis ? ` · ${cel.opis}` : ''}`;
-    b.setAttribute('aria-pressed', String(Number(r.biezacaStacja) === Number(stacjaId)));
-    b.addEventListener('click', () => wybierzStacjeMulti(stacjaId));
-    lista.appendChild(b);
-  }
+  // no-op — wybór stacji usunięty
+  return;
 }
 
-/** Klik w stację z listy: bieżąca stacja idzie za wyborem (silnik waliduje G14/G10). */
 function wybierzStacjeMulti(stacjaId) {
-  const r = STAN.rozgrywka;
-  if (!r || r.faza !== FAZY.przygotowanie) return;
-  const wynik = skierujDoStacji(r, { stacjaId, czasMs: zegarGry() });
-  STAN.rozgrywka = wynik.stan;
-  pokazBledy('bledy-gra', wynik.usterki);
-  if (wynik.usterki.length > 0) {
-    status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
-    return;
-  }
-  zapiszGre();
-  renderujGre();
-  status(`Idziesz do stacji ${stacjaId}. Kolejność jest dowolna — po drodze możesz wybrać inną.`);
+  // no-op — wybór stacji usunięty, detekcja dowolnej w aktualizujGreNaFix
+  return;
 }
 
 function renderujPasekSync() {
+  // 2026-09-14 E: usunięto „Ostatni stan .... UTC - ” (owner) — zostaje kolejka i status odświeżania
   const m = STAN.multi;
   let tekst = '';
   if (m) {
     const nastepny = interwalPollingu({ gra: m.gra, graczId: m.graczId });
     const kolejka = m.sync?.kolejkaLength ?? 0;
-    tekst = `Ostatni stan: ${new Date(m.ostatniStanMs).toISOString().slice(11, 19)} UTC`
-      + (nastepny ? ` · następne odświeżenie za ~${Math.round(nastepny / 1000)} s` : ' · odświeżanie zatrzymane')
-      + (kolejka ? ` · ${kolejka} zdarzeń czeka w kolejce (brak sieci)` : '');
+    const czesci = [];
+    if (nastepny) czesci.push(`następne odświeżenie za ~${Math.round(nastepny / 1000)} s`);
+    else czesci.push('odświeżanie zatrzymane');
+    if (kolejka) czesci.push(`${kolejka} zdarzeń czeka w kolejce (brak sieci)`);
+    tekst = czesci.join(' · ');
   }
-  // ADR 0044 (uwaga F): pasek synchronizacji został TYLKO w lobby — w grze
-  // „Ostatni stan" i „następne odświeżenie za ~N s" nie mają czego informować.
   $('multi-sync-pasek').textContent = tekst;
 }
 
@@ -5539,7 +5601,10 @@ function start() {
   // Start to mapa + okno startowe, nie setup (decyzja właściciela 2026-09-09).
   pokazMapeStartowa();
   const start = $('ekran-start');
-  if (start) start.hidden = false;
+  if (start) {
+    try { start.scrollTop = 0; } catch {}
+    start.hidden = false;
+  }
   document.body.classList.add('okno-start');
 
   odswiezWidocznoscPaneli();

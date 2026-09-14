@@ -84,33 +84,35 @@ test('metryNaPiksel: maleje z zoomem i z szerokością geograficzną', () => {
   assert.ok(metryNaPiksel(60, 10) < metryNaPiksel(0, 10));
 });
 
-test('dopasujZoomDoPromienia: 1 km/360 px → z14, 3 km → z12, 10 km → z10', () => {
+test('dopasujZoomDoPromienia: 1 km/360 px → z14, 3 km → z12, 10 km → z11 (0.45 szerokości)', () => {
   assert.equal(dopasujZoomDoPromienia(1000, 360, 52.23), 14);
   assert.equal(dopasujZoomDoPromienia(3000, 360, 52.23), 12);
-  assert.equal(dopasujZoomDoPromienia(10000, 360, 52.23), 10);
+  assert.equal(dopasujZoomDoPromienia(10000, 360, 52.23), 11);
   // większy ekran = głębszy zoom przy tym samym promieniu
   assert.ok(dopasujZoomDoPromienia(1000, 900, 52.23) > dopasujZoomDoPromienia(1000, 360, 52.23));
   assert.throws(() => dopasujZoomDoPromienia(0, 360, 52), TypeError);
 });
 
-test('dopasujZoomDoPromienia: sufit przybliżenia — mały promień kadruje się jak 1000 m (zgłoszenie 2026-09-12)', () => {
+test('dopasujZoomDoPromienia: sufit przybliżenia — mały promień kadruje się jak 500 m (zgłoszenie 2026-09-12 + uwaga A 2026-09-14)', () => {
   // Objaw z testów terenowych: stuknięcie mapy (i przeliczenie stacji po
   // Overpassie) przy małym promieniu wjeżdżało na zoom 17–19, gdzie kafle OSM
   // są w praktyce puste. Sufit: mniejszy promień nie przybliża głębiej niż
-  // `PROMIEN_SUFITU_ZOOMU_M` (1000 m).
-  const z1000 = dopasujZoomDoPromienia(1000, 360, 52.23);
-  for (const promien of [200, 250, 500, 750, 999]) {
-    assert.equal(dopasujZoomDoPromienia(promien, 360, 52.23), z1000,
-      `${promien} m: kadr jak dla 1000 m, nie głębiej`);
+  // `PROMIEN_SUFITU_ZOOMU_M` (500 m od 2026-09-14, wcześniej 1000 m).
+  // Dla 500 m cięciwa 1000 m wypełnia ~90% szerokości telefonu (udział 0.45).
+  const z500 = dopasujZoomDoPromienia(500, 360, 52.23);
+  for (const promien of [200, 250, 500]) {
+    assert.equal(dopasujZoomDoPromienia(promien, 360, 52.23), z500,
+      `${promien} m: kadr jak dla 500 m, nie głębiej`);
   }
   // większe promienie liczą się jak dotąd (sufit nie zaokrągla całego widoku)
-  assert.ok(dopasujZoomDoPromienia(1500, 360, 52.23) < z1000);
+  assert.ok(dopasujZoomDoPromienia(1000, 360, 52.23) < z500);
+  assert.ok(dopasujZoomDoPromienia(1500, 360, 52.23) < z500);
   assert.equal(dopasujZoomDoPromienia(3000, 360, 52.23), 12);
   // sufit jest parametrem — da się go sprawdzić i zmienić w jednym miejscu
-  assert.equal(dopasujZoomDoPromienia(250, 360, 52.23, { sufitPromienM: PROMIEN_SUFITU_ZOOMU_M }), z1000);
-  assert.ok(dopasujZoomDoPromienia(250, 360, 52.23, { sufitPromienM: 0 }) > z1000,
+  assert.equal(dopasujZoomDoPromienia(250, 360, 52.23, { sufitPromienM: PROMIEN_SUFITU_ZOOMU_M }), z500);
+  assert.ok(dopasujZoomDoPromienia(250, 360, 52.23, { sufitPromienM: 0 }) > z500,
     'bez sufitu mały promień faktycznie przybliża głębiej (dowód, że sufit działa)');
-  assert.equal(PROMIEN_SUFITU_ZOOMU_M, 1000, 'sufit z decyzji właściciela 2026-09-12');
+  assert.equal(PROMIEN_SUFITU_ZOOMU_M, 500, 'sufit z korekty właściciela 2026-09-14 (wcześniej 1000 m z 2026-09-12)');
 });
 
 test('wspolrzedneDoKafelka: kafelek 0/0/0 obejmuje cały świat', () => {

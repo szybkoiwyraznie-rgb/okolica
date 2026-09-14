@@ -366,15 +366,18 @@ body:not(.tryb-testowy) .tylko-test {
 .nakladka-ladowanie[hidden] { display: none; }
 
 /* Sygnał „aplikacja teraz pobiera z sieci" (właściciel 2026-09-13): tekst
-   pulsuje, żeby czekanie było widać od pierwszej sekundy. Kontrast zostaje nad
-   progiem AA w NAJGŁĘBSZYM punkcie animacji — zmierzone `kontrast()`
-   z `tools/audyt-kontrastu.mjs` dla --tekst zmieszanego z --tlo przy 70%
-   krycia: 5,62:1 (motyw jasny) i 8,25:1 (ciemny), próg 4,5:1 (ADR 0011).
-   Dlatego klasa ustawia barwę --tekst, a nie --tekst-slaby (ten ma 5,32:1
-   i przy 70% krycia zszedłby pod próg). Ruch gaśnie przy
-   prefers-reduced-motion: reduce — komunikat zostaje, tylko nie pulsuje. */
-.pulsuje { color: var(--tekst); animation: puls-czekania 1.4s ease-in-out infinite; }
-@keyframes puls-czekania { 0%, 100% { opacity: 1; } 50% { opacity: 0.7; } }
+   pulsuje, żeby czekanie było widać od pierwszej sekundy.
+   2026-09-14 uwaga D: negatyw (białe na czarnym) by pulsowanie tła było
+   widoczne — kontrast 21:1, pulsuje całe tło. Ruch gaśnie przy
+   prefers-reduced-motion. */
+.pulsuje {
+  background: #000;
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 6px;
+  animation: puls-czekania 1.4s ease-in-out infinite;
+}
+@keyframes puls-czekania { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
 @media (prefers-reduced-motion: reduce) {
   .pulsuje { animation: none; }
 }
@@ -427,6 +430,10 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 .pinezka circle { fill: var(--akcent); stroke: #fff; stroke-width: 2; }
 .pinezka text { fill: #fff; font-size: 13px; font-weight: 700; }
 .pinezka-aktywna circle { fill: var(--ostrzezenie); }
+/* 2026-09-14 G: zaliczone stacje inny kolor na mapie — szary/zgaszony zielony */
+.pinezka-zaliczona circle { fill: #6b7280; }
+.pinezka-zaliczona.pinezka-aktywna circle { fill: #6b7280; }
+.pinezka-zaliczona text { fill: #e5e7eb; }
 /* tryb ręczny (ADR 0005 pkt 8b): pinezka do przeciągania + niewidoczny cel dotykowy 48 px */
 .pinezka-reczna { cursor: grab; touch-action: none; }
 .pinezka-reczna:active { cursor: grabbing; }
@@ -697,6 +704,12 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 }
 #lista-graczy li span { flex: 1 1 auto; min-width: 0; }
 #lista-graczy .przycisk-maly { flex: 0 0 auto; font-size: 15px; white-space: nowrap; }
+/* 2026-09-14 E: lobby multi — powiększyć imiona graczy */
+#lobby-gracze li {
+  font-size: 22px;
+  font-weight: 700;
+  padding: 12px 0;
+}
 
 /* M9/R3: karta propozycji paczek — wiersze dotykowe jak reszta list (ADR 0011). */
 .lista-zestawow {
@@ -864,6 +877,12 @@ body[data-mapa='gra'] #mapa-gra { visibility: visible; }
   font-size: clamp(96px, 42vw, 220px); line-height: 1; font-weight: 700;
   color: var(--tekst); font-variant-numeric: tabular-nums; letter-spacing: -.02em;
   text-shadow: 0 2px 20px rgb(0 0 0 / .6), 0 0 6px rgb(0 0 0 / .5);
+  max-width: 90vw; text-align: center; overflow-wrap: break-word;
+}
+/* 2026-09-14 H: START nie mieści się — mniejsza czcionka */
+#odliczanie-cyfra.odliczanie-start {
+  font-size: clamp(48px, 18vw, 110px);
+  letter-spacing: 0.06em;
 }
 .panel-centralny > .warstwa-karta, .panel-centralny > .warstwa-start-karta {
   position: static; width: auto; max-width: none; max-height: none;

@@ -258,7 +258,11 @@ function przejdzDalej(stan, czasMs) {
   }
   stan.biezacaStacja = nastepna.id;
   const odcinek = znajdzOdcinek(stan, nastepna.id);
-  stan.faza = odcinek && odcinek.stan === STANY_ODCINKA.zakonczony ? FAZY.pytanie : FAZY.przygotowanie;
+  // 2026-09-14 F: wyścig może mieć wiele odcinków w-trakcie (gracz zmienił cel w drodze)
+  // — jeśli następna stacja jest już w-trakcie, wracamy do fazy odcinka, nie przygotowania
+  if (odcinek?.stan === STANY_ODCINKA.zakonczony) stan.faza = FAZY.pytanie;
+  else if (odcinek?.stan === STANY_ODCINKA.wTrakcie) stan.faza = FAZY.odcinek;
+  else stan.faza = FAZY.przygotowanie;
 }
 
 /**
