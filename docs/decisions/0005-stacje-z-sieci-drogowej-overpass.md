@@ -241,3 +241,51 @@ kasuje się razem z nią: „kolejność `STAN.stacje` = kolejność `wynikSieci
 jest warunkiem czytania macierzy, nie zbiegiem okoliczności. Start z paczki
 repozytorium zostaje na kresce — plik zestawu niesie `{lat, lon, opis}` bez
 danych drogowych, więc metryki drogowej po prostu nie ma (ADR 0017 pkt 7).
+
+## Aneks 2026-09-14 (m12-118) — brama wejścia: pin mijany na trasie do stacji 1
+
+Drugie zgłoszenie terenowe do uwagi B (gra **m117**, po PR #25): „żeby wejść
+na pętlę, muszę minąć stację nr 2, żeby dojść do nr 1, i potem wracam tą samą
+drogą. Miało być tak, że od startu do nr 2 idzie się obok nr 1". Właściciel
+doprecyzował dane z terenu: pin najbliższy (≈100 m tą samą ulicą) nosi numer 2,
+stacja 1 jest ≈300 m dalej tą samą ulicą, mijanie jest fizyczne.
+
+Diagnoza (sondy na `test/fixtures/overpass-centrum`, nie zgadywanie):
+numeracja PO METRYCE DROGOWEJ była poprawna — stacja 1 = najmniejszy
+`dystansSieciowyM` w 198/198 układów, a przejście trasy obok innego pinu
+(≤50 m) nie zdarzało się ani razu. Rozjazd jest w drugą stronę: **22% układów
+(44/198) ma stację, która w LINII PROSTEJ wygląda na bliższą niż stacja 1**,
+a drogą wypada dalej — bo jej dostęp drogowy biegnie inną siecią (osobno
+mapowany chodnik, przejście dopiero za skrzyżowaniem; w zgłoszeniu: pin 100 m
+na tej samej ulicy, a `dystansSieciowyM` liczony objazdem). Gracz nie chodzi
+po grafie i aplikacja **nie rysuje trasy** — planuje po kresce start→stacja 1,
+więc idzie prosto przez pin i mija stację, do której nie idzie.
+
+Decyzja: **brama wejścia** po wyborze układu i policzeniu kolejności.
+Sprawdzamy, czy pin innej stacji leży w promieniu `mijanieProgM = 50 m`
+(próg dojścia, ADR 0034 — w tym zasięgu gra sama uznałaby dojście) od
+KTÓREJKOLWIEK z dwóch tras do stacji 1:
+
+1. **drogi z modelu** — `sciezkaPunkty` stacji 1 (tak idzie Dijkstra),
+2. **prostej kreski start→stacja 1** — tak trasę czyta gracz na mapie.
+
+Pin w zasięgu którejkolwiek jest mijany (nogami albo oczami): wypada z puli
+kandydatów, a układ jest liczony od nowa, do `mijanieMaxRund = 3` razy.
+Twarde wejście po drodze zostaje bez zmian — stacja 1 to nadal najbliższa
+DROGĄ; brama tylko odejmuje kandydatów, nie zmienia metryki ani nie
+przestawia kolejności. Gdy sieć nie da układu bez mijania (za mało
+kandydatów), wynik niesie usterkę **S14**, a UI mówi to wprost — bez
+udawania, że trasa jest czysta (wzorzec L6/L51: komunikat nazywa przyczynę).
+
+Zasięg reguły zmierzony na fixture'ach (N = 4, R = 700 i 1000 m, siatka
+pozycji): odrzucenie pinu zdarza się w **0/100** układów centrum,
+**0/104** przedmieścia i **2/94** lasu — dokładnie tam, gdzie stary układ
+miał pin w zasięgu trasy do stacji 1. Reguła jest więc siatką na geometrię
+patologiczną, a nie zmianą układów, które były dobre.
+
+Test regresyjny (`test/stacje.test.js`) buduje sieć z ręki, która odtwarza
+zgłoszenie: ulica na północ + chodnik 25 m obok, wpięty do ulicy dopiero na
+600 m. Przy `mijanieProgM: 0` (zachowanie sprzed naprawy) układ to
+„Główna 800" (800 m drogi) + pin na chodniku (845 m drogi, ale 381 m kreską,
+25 m od trasy do stacji 1) — czyli dokładnie układ z pola; przy domyślnych
+50 m pin wypada i zostaje para {400 m, 800 m} z czystym wejściem.

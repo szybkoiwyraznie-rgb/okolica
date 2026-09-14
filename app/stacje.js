@@ -9,8 +9,8 @@
  * Moduł czysty: bez DOM, bez sieci, bez `Math.random()` (losowość z ziarna).
  */
 
-import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js?v=m12-117';
-import { rngZZiarna } from './konfig.js?v=m12-117';
+import { bearingStopnie, odlegloscM, przesunPunkt } from './geo.js?v=m12-118';
+import { rngZZiarna } from './konfig.js?v=m12-118';
 
 /** Źródło układu stacji — pokazywane w UI i zapisywane w paczce rozgrywki. */
 export const ZRODLA_STACJI = {
@@ -243,7 +243,7 @@ export function najmniejszyOdstepM(stacje) {
 
 /* =========================== M4: stacje z sieci drogowej (ADR 0005 pkt 5) */
 
-import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js?v=m12-117';
+import { dijkstra, sciezkaDo, snapujPunkt, usterka } from './sieci.js?v=m12-118';
 
 /** Stałe pierścienia i separacji z ADR 0005 pkt 5 — wszystkie konfigurowalne. */
 export const PIERSCIEN_WYBORU = {
@@ -297,6 +297,32 @@ export const PIERSCIEN_WYBORU = {
   maxRundWyrownania: 3,
   /** Ile alternatyw na stację bierze pass (budżet dijkstr na telefonie). */
   alternatywNaStacje: 8,
+  /**
+   * Brama wejścia (zgłoszenie właściciela 2026-09-14, gra „m117"): trasa od
+   * startu do stacji 1 nie może przejść bliżej niż tyle metrów od innego pinu.
+   *
+   * 50 m to próg dojścia z ADR 0034 — jeśli trasa prowadzi w zasięgu progu
+   * dojścia innej stacji, gracz NAPRAWDĘ ją mija (a przy dwóch pomiarach GPS
+   * gra sama uznałaby to za przyjście). Właściciel: „żeby wejść na pętlę muszę
+   * minąć stację nr 2, żeby dojść do nr 1 i potem wracam tą samą drogą. Tak
+   * miało nie być."
+   *
+   * Sama metryka drogowa tego nie łapie: numeracja była poprawna (stacja 1 =
+   * najbliższa DROGĄ), ale pin, który wyglądał na 100 m, miał dostęp drogowy
+   * inną siecią (osobno mapowany chodnik, przejście dopiero za skrzyżowaniem)
+   * i drogą wypadał dalej niż stacja 1. Gracz nie chodzi po grafie.
+   *
+   * Brama sprawdza DWIE trasy: drogę z modelu (`sciezkaPunkty` stacji 1) oraz
+   * prostą kreskę start→stacja 1 — aplikacja nie rysuje trasy, więc gracz
+   * planuje po kresce na mapie.
+   */
+  mijanieProgM: 50,
+  /**
+   * Ile razy brama wejścia przelicza układ, odrzucając za każdym razem piny
+   * mijane na trasie do stacji 1. Trzy rundy to zapas na układ, w którym dwie
+   * mijane stacje odpadają pojedynczo (każda runda liczy komplet od nowa).
+   */
+  mijanieMaxRund: 3,
 };
 
 function roznicaKatow(a, b) {
@@ -385,6 +411,60 @@ export function dystanseOdcinkowM(wynik) {
   if (!Array.isArray(stacje) || stacje.length === 0 || !Array.isArray(macierz)) return null;
   const liczba = (v) => (Number.isFinite(v) && v >= 0 ? Math.round(v) : null);
   return stacje.map((s, i) => (i === 0 ? liczba(s?.dystansSieciowyM) : liczba(macierz[i - 1]?.[i])));
+}
+
+/**
+ * Odległość punktu od trasy (łamanej) w metrach — metryka płaska z poprawką
+ * cos(lat), ta sama co w `snapujPunkt`. Trasa z jednym punktem albo pusta nie
+ * ma geometrii, więc wynikiem jest `Infinity` (nie ma czego mijać).
+ */
+export function odlegloscOdTrasyM(punkt, trasaPunkty) {
+  if (!Array.isArray(trasaPunkty) || trasaPunkty.length < 2) return Infinity;
+  if (!Number.isFinite(punkt?.lat) || !Number.isFinite(punkt?.lon)) return Infinity;
+  const cosLat = Math.cos((punkt.lat * Math.PI) / 180) || 1;
+  const skala = 111320;
+  let najblizej = Infinity;
+  for (let i = 1; i < trasaPunkty.length; i++) {
+    const a = trasaPunkty[i - 1];
+    const b = trasaPunkty[i];
+    const ax = (a.lon - punkt.lon) * cosLat * skala;
+    const ay = (a.lat - punkt.lat) * skala;
+    const bx = (b.lon - punkt.lon) * cosLat * skala;
+    const by = (b.lat - punkt.lat) * skala;
+    const dx = bx - ax;
+    const dy = by - ay;
+    const dlugosc2 = dx * dx + dy * dy;
+    const t = dlugosc2 === 0 ? 0 : Math.max(0, Math.min(1, -(ax * dx + ay * dy) / dlugosc2));
+    najblizej = Math.min(najblizej, Math.hypot(ax + t * dx, ay + t * dy));
+  }
+  return najblizej;
+}
+
+/**
+ * Stacje, które trasa MIJA: leżą w promieniu `progM` od którejkolwiek z tras.
+ * Zwraca indeksy pozycji w `stacje` — bez pozycji 0 (trasa kończy się na
+ * stacji 1, więc jej własny pin zawsze „leży na trasie"). `progM <= 0`
+ * wyłącza bramę (do testów i porównań).
+ *
+ * Tras jest zwykle DWIE: droga do stacji 1 (to, jak idzie model) i prosta
+ * kreska start→stacja 1 (to, jak trasę czyta gracz na mapie — aplikacja nie
+ * rysuje trasy, więc gracz planuje po kresce). Pin w zasięgu którejkolwiek
+ * jest mijany: przez nogi albo przez oczy.
+ */
+export function mijaneStacje({ trasy, stacje, progM = PIERSCIEN_WYBORU.mijanieProgM }) {
+  if (!(progM > 0) || !Array.isArray(stacje) || stacje.length < 2) return [];
+  const lista = (Array.isArray(trasy) ? trasy : [trasy]).filter((t) => Array.isArray(t) && t.length >= 2);
+  if (lista.length === 0) return [];
+  const mijane = [];
+  for (let i = 1; i < stacje.length; i++) {
+    for (const trasa of lista) {
+      if (odlegloscOdTrasyM(stacje[i], trasa) <= progM) {
+        mijane.push(i);
+        break;
+      }
+    }
+  }
+  return mijane;
 }
 
 export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, stale = PIERSCIEN_WYBORU }) {
@@ -484,124 +564,199 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
   // w puste kierunki. Teraz pierwszą stację bierzemy najlepszą wg score,
   // a każdą kolejną tę, która MAKSYMALIZUJE minimalny kąt do już wybranych
   // (remis → lepszy score, potem indeks: determinizm pod ziarnem zachowany).
-  function zbierzUkladem(prog) {
-    const proba = [];
-    const uzyte = new Set();
-    while (proba.length < N) {
-      let najlepszy = null;
-      for (const x of ocenieni) {
-        if (uzyte.has(x.i)) continue;
-        if (!spelniaSeparacje(x, proba, prog)) continue;
-        // Minimalny dystans kątowy do już wybranych — im większy, tym lepiej.
-        // KUBEŁKOWANY co `KUBELEK_KATA`: bez tego kąt zdominowałby wybór
-        // i układ przestałby przypominać pierścień (kandydat 5° dalej, ale
-        // 200 m od docelowego r, wygrywałby z niemal równie dobrym kątowo,
-        // a leżącym dokładnie na pierścieniu). Wewnątrz kubełka rozstrzyga
-        // `score`, czyli bliskość `r` — tak obie cechy dostają swój głos.
-        let minKat = Infinity;
-        for (const w of proba) minKat = Math.min(minKat, roznicaKatow(x.kat, w.kat));
-        const klucz = proba.length === 0 ? 0 : -Math.floor(minKat / KUBELEK_KATA);
-        if (najlepszy === null
-          || klucz < najlepszy.klucz
-          || (klucz === najlepszy.klucz && x.score < najlepszy.x.score)
-          || (klucz === najlepszy.klucz && x.score === najlepszy.x.score && x.i < najlepszy.x.i)) {
-          najlepszy = { x, klucz };
+
+  /**
+   * Jeden przebieg wyboru na danej puli kandydatów: drabinka kątowa → pass
+   * wyrównujący → kolejność trasy z twardym wejściem. Wydzielone, bo brama
+   * wejścia (pkt 5) przelicza układ po odrzuceniu pinu, który trasa do stacji 1
+   * mija — każda pula liczona jest od zera, na tych samych dijkstrach z pamięci.
+   */
+  function zbudujUklad(pula) {
+    let wybrane = []; // { k, d, kat, wynik, i }
+    let zajete = new Set();
+    let katMin = 0;
+    let szczebelKatowy = 0;
+
+    function zbierzUkladem(prog) {
+      const proba = [];
+      const uzyte = new Set();
+      while (proba.length < N) {
+        let najlepszy = null;
+        for (const x of pula) {
+          if (uzyte.has(x.i)) continue;
+          if (!spelniaSeparacje(x, proba, prog)) continue;
+          // Minimalny dystans kątowy do już wybranych — im większy, tym lepiej.
+          // KUBEŁKOWANY co `KUBELEK_KATA`: bez tego kąt zdominowałby wybór
+          // i układ przestałby przypominać pierścień (kandydat 5° dalej, ale
+          // 200 m od docelowego r, wygrywałby z niemal równie dobrym kątowo,
+          // a leżącym dokładnie na pierścieniu). Wewnątrz kubełka rozstrzyga
+          // `score`, czyli bliskość `r` — tak obie cechy dostają swój głos.
+          let minKat = Infinity;
+          for (const w of proba) minKat = Math.min(minKat, roznicaKatow(x.kat, w.kat));
+          const klucz = proba.length === 0 ? 0 : -Math.floor(minKat / KUBELEK_KATA);
+          if (najlepszy === null
+            || klucz < najlepszy.klucz
+            || (klucz === najlepszy.klucz && x.score < najlepszy.x.score)
+            || (klucz === najlepszy.klucz && x.score === najlepszy.x.score && x.i < najlepszy.x.i)) {
+            najlepszy = { x, klucz };
+          }
         }
+        if (najlepszy === null) break; // nic już nie przechodzi progów
+        proba.push({ ...najlepszy.x, wynik: wynikZWezla(najlepszy.x.k.wezel) });
+        uzyte.add(najlepszy.x.i);
       }
-      if (najlepszy === null) break; // nic już nie przechodzi progów
-      proba.push({ ...najlepszy.x, wynik: wynikZWezla(najlepszy.x.k.wezel) });
-      uzyte.add(najlepszy.x.i);
+      return { proba, zajeteProby: uzyte };
     }
-    return { proba, zajeteProby: uzyte };
-  }
 
-  for (let szczebel = 0; szczebel < drabinka.length; szczebel++) {
-    const prog = N > 1 ? drabinka[szczebel] * (360 / N) : 0;
-    const { proba, zajeteProby } = zbierzUkladem(prog);
-    // Zapamiętujemy najlepszą próbę: niższy szczebel nigdy nie daje mniej
-    // stacji (progi tylko maleją), ale zapis wprost jest odporny na zmianę
-    // drabinki na nieposortowaną.
-    if (proba.length > wybrane.length) {
-      wybrane = proba;
-      zajete = zajeteProby;
-      katMin = prog;
-      szczebelKatowy = szczebel;
+    for (let szczebel = 0; szczebel < drabinka.length; szczebel++) {
+      const prog = N > 1 ? drabinka[szczebel] * (360 / N) : 0;
+      const { proba, zajeteProby } = zbierzUkladem(prog);
+      // Zapamiętujemy najlepszą próbę: niższy szczebel nigdy nie daje mniej
+      // stacji (progi tylko maleją), ale zapis wprost jest odporny na zmianę
+      // drabinki na nieposortowaną.
+      if (proba.length > wybrane.length) {
+        wybrane = proba;
+        zajete = zajeteProby;
+        katMin = prog;
+        szczebelKatowy = szczebel;
+      }
+      if (wybrane.length >= N) break; // komplet — nie schodzimy niżej bez potrzeby
     }
-    if (wybrane.length >= N) break; // komplet — nie schodzimy niżej bez potrzeby
-  }
 
-  // 3) pass wyrównujący: zamiana stacji na lepszą alternatywę
-  const alternatywy = ocenieni.filter((x) => !zajete.has(x.i)).slice(0, N * stale.alternatywNaStacje);
-  function macierzZ(wybr) {
-    return wybr.map((w) => wybr.map((v) => (w === v ? 0 : w.wynik.dystanse[v.k.wezel])));
-  }
-  let koszt = kosztUkladu(wybrane.map((w) => w.d), macierzZ(wybrane), karaParaM, wybrane.map((w) => w.kat));
-  for (let runda = 0; runda < stale.maxRundWyrownania && wybrane.length === N; runda++) {
-    let poprawa = false;
-    for (let s = 0; s < wybrane.length; s++) {
-      for (const alt of alternatywy) {
-        if (zajete.has(alt.i)) continue;
-        if (!spelniaSeparacje(alt, wybrane, katMin, s)) continue; // ten sam szczebel drabinki, co greedy
-        const proba = wybrane.map((w, idx) => (idx === s ? { ...alt, wynik: wynikZWezla(alt.k.wezel) } : w));
-        const nowyKoszt = kosztUkladu(proba.map((w) => w.d), macierzZ(proba), karaParaM, proba.map((w) => w.kat));
-        if (nowyKoszt < koszt - 1) { // ściśle lepiej o ponad metr — koniec dryfu
-          zajete.delete(wybrane[s].i);
-          zajete.add(alt.i);
-          wybrane[s] = proba[s];
-          koszt = nowyKoszt;
-          poprawa = true;
-          break; // od nowa dla tej stacji, z aktualnym układem
+    // 3) pass wyrównujący: zamiana stacji na lepszą alternatywę
+    const alternatywy = pula.filter((x) => !zajete.has(x.i)).slice(0, N * stale.alternatywNaStacje);
+    function macierzZ(wybr) {
+      return wybr.map((w) => wybr.map((v) => (w === v ? 0 : w.wynik.dystanse[v.k.wezel])));
+    }
+    let koszt = kosztUkladu(wybrane.map((w) => w.d), macierzZ(wybrane), karaParaM, wybrane.map((w) => w.kat));
+    for (let runda = 0; runda < stale.maxRundWyrownania && wybrane.length === N; runda++) {
+      let poprawa = false;
+      for (let s = 0; s < wybrane.length; s++) {
+        for (const alt of alternatywy) {
+          if (zajete.has(alt.i)) continue;
+          if (!spelniaSeparacje(alt, wybrane, katMin, s)) continue; // ten sam szczebel drabinki, co greedy
+          const proba = wybrane.map((w, idx) => (idx === s ? { ...alt, wynik: wynikZWezla(alt.k.wezel) } : w));
+          const nowyKoszt = kosztUkladu(proba.map((w) => w.d), macierzZ(proba), karaParaM, proba.map((w) => w.kat));
+          if (nowyKoszt < koszt - 1) { // ściśle lepiej o ponad metr — koniec dryfu
+            zajete.delete(wybrane[s].i);
+            zajete.add(alt.i);
+            wybrane[s] = proba[s];
+            koszt = nowyKoszt;
+            poprawa = true;
+            break; // od nowa dla tej stacji, z aktualnym układem
+          }
         }
+        if (poprawa) break;
       }
-      if (poprawa) break;
+      if (!poprawa) break;
     }
-    if (!poprawa) break;
+
+    // 4) wynik: stacje w kolejności OPTYMALNEJ TRASY od startu (uwaga B 2026-09-14)
+    //    zamiast sortowania po kącie — eliminuje wracanie. Dla sieci używamy
+    //    dystansów sieciowych z dijkstr, z fallbackiem na prostą kreskę.
+    const macierzRobocza = wybrane.map((w) => wybrane.map((v) => {
+      if (w === v) return 0;
+      const d = w.wynik.dystanse[v.k.wezel];
+      return Number.isFinite(d) ? d : odlegloscM(w.k, v.k);
+    }));
+    const dStartRoboczy = wybrane.map((w) => w.d);
+    // tymczasowe stacje do liczenia kolejności (lat/lon wystarczą)
+    const stacjeRobocze = wybrane.map((w) => ({ lat: w.k.lat, lon: w.k.lon, kat: w.kat }));
+    const kolejnoscOpt = kolejnoscTrasy({
+      srodek,
+      stacje: stacjeRobocze,
+      dystansStart: dStartRoboczy,
+      macierz: macierzRobocza,
+    });
+    const wybraneOpt = kolejnoscOpt.map((idx) => wybrane[idx]);
+
+    const stacje = wybraneOpt.map((w, idx) => ({
+      id: idx + 1,
+      lat: w.k.lat,
+      lon: w.k.lon,
+      opis: w.k.nazwa ?? '',
+      kat: w.kat,
+      zrodlo: 'siec',
+      typKandydata: w.k.typ,
+      dystansSieciowyM: Math.round(w.d),
+      wezel: w.k.wezel,
+      sciezkaPunkty: (sciezkaDo(dStart, w.k.wezel) ?? []).map((i) => ({ lat: graf.wezly[i].lat, lon: graf.wezly[i].lon })),
+    }));
+    const macierz = wybraneOpt.map((w) => wybraneOpt.map((v) => {
+      if (w === v) return 0;
+      const d = w.wynik.dystanse[v.k.wezel];
+      return Number.isFinite(d) ? Math.round(d) : null; // null = para nieosiągalna
+    }));
+
+    return {
+      stacje: uzupelnijOdleglosci(stacje, srodek),
+      macierz,
+      /** Indeks kandydata (`kandydaci[i]`) każdej stacji w kolejności gry — do bramy wejścia. */
+      pochodzenie: wybraneOpt.map((w) => w.i),
+      szczebelKatowy,
+      katMin,
+    };
   }
 
-  // 4) wynik: stacje w kolejności OPTYMALNEJ TRASY od startu (uwaga B 2026-09-14)
-  //    zamiast sortowania po kącie — eliminuje wracanie. Dla sieci używamy
-  //    dystansów sieciowych z dijkstr, z fallbackiem na prostą kreskę.
-  const macierzRobocza = wybrane.map((w) => wybrane.map((v) => {
-    if (w === v) return 0;
-    const d = w.wynik.dystanse[v.k.wezel];
-    return Number.isFinite(d) ? d : odlegloscM(w.k, v.k);
-  }));
-  const dStartRoboczy = wybrane.map((w) => w.d);
-  // tymczasowe stacje do liczenia kolejności (lat/lon wystarczą)
-  const stacjeRobocze = wybrane.map((w) => ({ lat: w.k.lat, lon: w.k.lon, kat: w.kat }));
-  const kolejnoscOpt = kolejnoscTrasy({
-    srodek,
-    stacje: stacjeRobocze,
-    dystansStart: dStartRoboczy,
-    macierz: macierzRobocza,
+  // 5) BRAMA WEJŚCIA (zgłoszenie właściciela 2026-09-14, „m117"): trasa od startu
+  //    do stacji 1 nie może przejść obok innego pinu. Numery po metryce drogowej
+  //    były poprawne (stacja 1 = najbliższa DROGĄ), a mimo to gracz szedł do
+  //    jedynki, mijając dwójkę: pin wyglądał na 100 m, ale jego dostęp drogowy
+  //    biegł inną siecią (osobno mapowany chodnik, przejście dopiero za
+  //    skrzyżowaniem) i drogą wypadał dalej niż stacja 1. Gracz nie chodzi po
+  //    grafie — chodzi po okolicy, więc pin w zasięgu progu dojścia (50 m,
+  //    ADR 0034) jest ZALICZONY po drodze, choćby model twierdził inaczej.
+  //
+  //    Sprawdzamy OBIE trasy: drogę z modelu (`sciezkaPunkty` stacji 1) i prostą
+  //    kreskę start→stacja 1, bo aplikacja nie rysuje trasy — gracz planuje po
+  //    mapie i to kreska mówi mu, że pin leży „po drodze". Odrzucamy taki pin
+  //    i przeliczamy układ od nowa, do `mijanieMaxRund` razy; gdy sieć nie da
+  //    układu bez mijania, mówimy o tym wprost (usterka S14).
+  let pula = ocenieni;
+  let uklad = null;
+  let rundy = 0;
+  const odrzucone = [];
+  const maxRund = stale.mijanieProgM > 0 ? Math.max(1, stale.mijanieMaxRund ?? 1) : 1;
+  function trasyWejscia(ukladTeraz) {
+    const cel = ukladTeraz.stacje[0];
+    return [
+      ukladTeraz.stacje[0].sciezkaPunkty ?? [],
+      [srodek, { lat: cel.lat, lon: cel.lon }],
+    ];
+  }
+  for (let runda = 0; runda < maxRund; runda++) {
+    rundy++;
+    uklad = zbudujUklad(pula);
+    const mijaneTeraz = mijaneStacje({
+      trasy: trasyWejscia(uklad),
+      stacje: uklad.stacje,
+      progM: stale.mijanieProgM,
+    });
+    if (mijaneTeraz.length === 0) break;
+    const doOdrzucenia = new Set(mijaneTeraz.map((idx) => uklad.pochodzenie[idx]));
+    for (const i of doOdrzucenia) if (!odrzucone.includes(i)) odrzucone.push(i);
+    if (pula.length - doOdrzucenia.size < N) break; // za mało kandydatów na komplet
+    pula = pula.filter((x) => !doOdrzucenia.has(x.i));
+  }
+  const mijane = mijaneStacje({
+    trasy: trasyWejscia(uklad),
+    stacje: uklad.stacje,
+    progM: stale.mijanieProgM,
   });
-  const wybraneOpt = kolejnoscOpt.map((idx) => wybrane[idx]);
-
-  const stacje = wybraneOpt.map((w, idx) => ({
-    id: idx + 1,
-    lat: w.k.lat,
-    lon: w.k.lon,
-    opis: w.k.nazwa ?? '',
-    kat: w.kat,
-    zrodlo: 'siec',
-    typKandydata: w.k.typ,
-    dystansSieciowyM: Math.round(w.d),
-    wezel: w.k.wezel,
-    sciezkaPunkty: (sciezkaDo(dStart, w.k.wezel) ?? []).map((i) => ({ lat: graf.wezly[i].lat, lon: graf.wezly[i].lon })),
-  }));
-  const zOdleglosciami = uzupelnijOdleglosci(stacje, srodek);
-  const macierz = wybraneOpt.map((w) => wybraneOpt.map((v) => {
-    if (w === v) return 0;
-    const d = w.wynik.dystanse[v.k.wezel];
-    return Number.isFinite(d) ? Math.round(d) : null; // null = para nieosiągalna
-  }));
 
   const usterki = [];
-  if (zOdleglosciami.length < N) usterki.push({ kod: 'S12', komunikat: `Wybrano ${zOdleglosciami.length} z ${N} stacji.` });
+  if (uklad.stacje.length < N) usterki.push({ kod: 'S12', komunikat: `Wybrano ${uklad.stacje.length} z ${N} stacji.` });
+  if (mijane.length) {
+    usterki.push({
+      kod: 'S14',
+      komunikat: `Trasa od startu do stacji 1 mija stację ${mijane.map((idx) => uklad.stacje[idx].id).join(', ')} `
+        + `w promieniu ${stale.mijanieProgM} m — sieć w tej okolicy nie dała układu bez mijania.`,
+    });
+  }
 
   return {
-    stacje: zOdleglosciami,
-    macierz,
+    stacje: uklad.stacje,
+    macierz: uklad.macierz,
     pierscien: {
       r: Math.round(r),
       pasmo: [Math.round(pasmo[0]), Math.round(pasmo[1])],
@@ -610,10 +765,22 @@ export function wybierzStacje({ graf, kandydaci, srodek, konfig, ziarno = 0, sta
     },
     /** Na którym szczeblu drabinki stanął układ (0 = pełny kąt) — do diagnozy i UI. */
     separacje: {
-      katMinStopnie: Math.round(katMin * 10) / 10,
-      szczebelKatowy,
-      ustapiono: szczebelKatowy > 0,
+      katMinStopnie: Math.round(uklad.katMin * 10) / 10,
+      szczebelKatowy: uklad.szczebelKatowy,
+      ustapiono: uklad.szczebelKatowy > 0,
       siecMinM: Math.round(siecMin),
+    },
+    /**
+     * Brama wejścia: czym się skończyła (do UI i testów). `odrzucone` to indeksy
+     * kandydatów, którzy wypadli, bo trasa do stacji 1 ich mijała; `mijane` —
+     * stacje mijane w układzie OSTATECZNYM (puste = wejście czyste; niepuste
+     * znaczy, że sieć nie dała inaczej i usterka S14 mówi to graczowi).
+     */
+    wejscie: {
+      progM: stale.mijanieProgM,
+      odrzucone,
+      rundy,
+      mijane,
     },
     liczniki: { kandydatow: kandydaci.length, ocenionych: ocenieni.length, dijkstr: pamiecDijkstra.size },
     usterki,

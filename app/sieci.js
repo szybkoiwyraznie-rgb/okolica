@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-117';
-import { TRYBY } from './konfig.js?v=m12-117';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-118';
+import { TRYBY } from './konfig.js?v=m12-118';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -72,6 +72,7 @@ export const KODY_SIECI = {
   S11: 'Graf zbudowano dla innego trybu niż wybór kandydatów — pieszy nie oceni sieci samochodowej.',
   S12: 'Sieć jest za uboga: udało się wybrać mniej stacji, niż prosi konfiguracja.',
   S13: 'Pozycja startowa jest za daleko od dostępnej sieci dróg — zmień pozycję albo ustaw stacje ręcznie.',
+  S14: 'Trasa do pierwszej stacji mija inną stację — w tej okolicy sieć dróg nie dała układu bez mijania.',
 };
 
 /** Błąd warstwy sieci: `Error` z polami `kod` i `komunikat` (jak w pozycja.js). */

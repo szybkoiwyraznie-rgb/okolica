@@ -2094,3 +2094,28 @@ test('kontrakt uwagi B (dogrywka): porządkowanie trasą jest wpięte w każdą 
   assert.ok(wklejka.includes('STAN.wynikSieci = null;'),
     'przestawienie wklejki gubi macierz wiszącą na starej kolejności');
 });
+
+/**
+ * Brama wejścia 2026-09-14 (m12-118, zgłoszenie „m117"): trasa od startu do
+ * stacji 1 nie może przejść obok pinu innej stacji — ani drogi z modelu, ani
+ * kreski, po której gracz czyta mapę. Próg to próg dojścia (50 m, ADR 0034).
+ */
+test('kontrakt bramy wejścia: pin mijany wypada z układu, próg z ADR 0034', () => {
+  assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
+    /Aneks 2026-09-14 \(m12-118\) — brama wejścia: pin mijany na trasie do stacji 1/,
+    'ADR 0005 dokumentuje bramę wejścia');
+  const STACJE = czytaj('app/stacje.js');
+  assert.ok(STACJE.includes('mijanieProgM: 50,'), 'próg mijania = próg dojścia (50 m, ADR 0034)');
+  assert.ok(STACJE.includes('mijanieMaxRund: 3,'), 'brama ma ograniczoną liczbę rund');
+  assert.ok(STACJE.includes('export function mijaneStacje({ trasy, stacje, progM = PIERSCIEN_WYBORU.mijanieProgM })'),
+    'mijanie liczy się z listy tras (droga + kreska)');
+  assert.ok(STACJE.includes('trasy: trasyWejscia(uklad),'), 'brama sprawdza obie trasy wejścia');
+  assert.ok(STACJE.includes('[srodek, { lat: cel.lat, lon: cel.lon }],'),
+    'drugą trasą jest prosta kreska start→stacja 1 — tak gracz czyta mapę');
+  assert.ok(STACJE.includes('pula = pula.filter((x) => !doOdrzucenia.has(x.i));'),
+    'pin mijany wypada z puli i układ liczy się od nowa');
+  assert.ok(czytaj('app/sieci.js').includes("S14: 'Trasa do pierwszej stacji mija inną stację"),
+    'sieć melduje nieusuwalne mijanie kodem S14');
+  assert.ok(APP.includes('Trasa od startu do stacji 1 mija inną stację (kod S14)'),
+    'UI mówi o mijaniu wprost, bez udawania czystej trasy');
+});

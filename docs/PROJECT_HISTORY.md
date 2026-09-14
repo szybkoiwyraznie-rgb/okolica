@@ -5324,3 +5324,40 @@ L69 (pełny opis w archiwum). Wersja `?v=m12-117` w 43 miejscach
 + `WERSJA_SW`. Brama po naprawie: **794/794** testów, `npm run check` OK
 (4015 / 4263 znaki), `npm run audyt` 0 naruszeń, budżet lektury
 **97 990 / 100 000 tok**.
+
+## Sesja 2026-09-14e — audyt PR #25 i brama wejścia (m12-118)
+
+Sesja otwarta bez zlecenia („Kontynuujemy projekt"): brama startowa 794/794,
+PR #26 otwarty przed jakimkolwiek kodem (ADR 0012 reguła 1), audyt scalonego
+PR #25 (m12-117) i — w trakcie — zgłoszenie terenowe z gry na Pages.
+
+**Audyt PR #25.** 21 plików, +361/−47. Zweryfikowane bez uwag: naprawa D1
+w `sprawdzOdpowiedz` (metryka drogowa wklejki: `dystansStart` +
+`macierz` ze źródła stacji, kasowanie `wynikSieci` przy przestawieniu), nowy
+test regresyjny tożsamości stacji 1, piny kontraktu, aneks m12-117 i L69.
+Grafy z cache są równoważne świeżym (`upraszczanie` zachowuje `drogi[].tags`),
+`grafDlaTrybu` przebudowuje graf RAZEM z kandydatami (brak rozjazdu indeksów
+węzłów), `kolejnoscTrasy` jest punktem stałym dla kolejności sieciowej.
+Defektów nie znaleziono; PR #25 uznany za zgodny z intencją zgłoszenia B.
+
+**Zgłoszenie terenowe (gra „m117").** Właściciel: „żeby wejść na pętlę, muszę
+minąć stację nr 2, żeby dojść do nr 1 i potem wracam tą samą drogą" —
+najbliższy pin (≈100 m tą samą ulicą) nosi numer 2, stacja 1 jest ≈300 m dalej
+tą samą ulicą. Sondy na fixture `centrum` (198 układów): numeracja po metryce
+drogowej jest poprawna w 198/198 (stacja 1 = najmniejszy `dystansSieciowyM`),
+a trasa do stacji 1 nie mija pinu (≤50 m) ani razu — za to w 44/198 (22%)
+układów istnieje pin, który w LINII PROSTEJ wygląda na bliższy niż stacja 1.
+Przyczyna: pin mijany jest najbliższy OCZAMI, nie metryką — jego dostęp
+drogowy biegnie inną siecią (osobno mapowany chodnik), a aplikacja nie rysuje
+trasy, więc gracz planuje po kresce start→stacja 1.
+
+**Naprawa (m12-118).** Brama wejścia w `wybierzStacje`: pin innej stacji
+w promieniu `mijanieProgM = 50 m` (próg dojścia, ADR 0034) od DWÓCH tras —
+`sciezkaPunkty` stacji 1 i prostej kreski start→stacja 1 — wypada z puli
+kandydatów, a układ liczy się od nowa (do `mijanieMaxRund = 3`). Twarde
+wejście po drodze bez zmian; gdy sieć nie da układu bez mijania — usterka
+S14 i komunikat w UI. Zasięg zmierzony: 0/100 centrum, 0/104 przedmieście,
+2/94 las (tam stary układ miał pin w zasięgu trasy). Aneks m12-118 do
+ADR 0005, L70 (+ pełny przypadek w archiwum), testy jednostkowe, regresyjne
+(syntetyczna sieć z chodnikiem wpiętym na 600 m) i własnościowe; wersja
+`?v=m12-118` w 43 miejscach (2 w `index.html`, 41 w importach) + `WERSJA_SW`.
