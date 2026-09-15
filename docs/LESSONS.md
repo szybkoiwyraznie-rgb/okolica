@@ -632,3 +632,5 @@ i po parzystości dokument ↔ kod; (2) w tym samym commicie dopisz dawną fraz�
 opisującym stan bieżący to nośnik opisu, nie archiwum — dryfuje tak samo jak
 PROTOKOL; archiwalne aneksy (`docs/decisions/archive/`) można zostawić, tam
 stary zwrot jest dowodem zmiany.
+
+Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L76`.
