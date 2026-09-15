@@ -39,7 +39,8 @@ function graWazna(nad = {}) {
         { id: 2, lat: 52.1245, lon: 20.7475, opis: 'park' },
         { id: 3, lat: 52.1255, lon: 20.7495, opis: 'skwer' },
       ],
-      kontener: { schemat: 'TO-paczka/2', protokol: 'PYT/1.0', kodowanie: 'b64x1', skrot: 'ab12cd34', dane: 'e30' },
+      // ADR 0050: zestaw gry niesie jawną paczkę pytań, nie kontener.
+      paczka: { okolica: { lat: 52.1235, lon: 20.7455 }, pytania: [{ id: 's1p1', stacja: 1 }] },
       meta: { miejsce: 'Podkowa Leśna', geohash5: GH5 },
     },
     zdarzenia: [],
@@ -139,7 +140,7 @@ test('walidujGreSurowa: każda kolumna stanu daje własny kod R01–R09', () => 
     [{ ...graWazna(), stan: 'w-trakcie' }, 'R05'],
     [{ ...graWazna(), gracze: [] }, 'R06'],
     [{ ...graWazna(), konfiguracja: { liczbaStacji: 3 } }, 'R07'],
-    [{ ...graWazna(), zestaw: { stacje: [], kontener: null, meta: null } }, 'R08'],
+    [{ ...graWazna(), zestaw: { stacje: [], paczka: null, meta: null } }, 'R08'],
     [{ ...graWazna(), zdarzenia: [{ typ: 'nie-typ' }] }, 'R09'],
   ];
   for (const [gra, kod] of przypadki) {

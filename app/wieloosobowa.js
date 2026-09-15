@@ -49,7 +49,7 @@ export const KODY_WIELOOSOBOWE = {
   R05: 'Stan gry jest nieznany (oczekiwano lobby, trwa, zakonczona albo archiwum).',
   R06: 'Gra nie ma graczy — stan jest uszkodzony.',
   R07: 'Konfiguracja gry jest niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5).',
-  R08: 'Zestaw gry jest uszkodzony (stacje, kontener TO-paczka/2, meta).',
+  R08: 'Zestaw gry jest uszkodzony (stacje, jawna paczka pytań, meta).',
   R09: 'Zdarzenia gry są uszkodzone (kolejność, gracz, typ, czas serwera).',
   R10: 'Zdarzenie nie jest poprawnym JSON-em.',
   R11: `To nie jest zdarzenie schematu „${SCHEMAT_ZDARZENIA}".`,
@@ -145,7 +145,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-137';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-138';
 
 export { ramkaGeohash, sasiednieGeohash };
 
@@ -181,7 +181,7 @@ function konfiguracjaOk(k) {
 function zestawGryOk(z, liczbaStacji) {
   return z && Array.isArray(z.stacje) && z.stacje.length === liczbaStacji
     && z.stacje.every((s) => s && Number.isFinite(s.lat) && Number.isFinite(s.lon))
-    && z.kontener && z.kontener.schemat === 'TO-paczka/2'
+    && z.paczka && Array.isArray(z.paczka.pytania) && z.paczka.pytania.length > 0
     && z.meta && typeof z.meta === 'object';
 }
 

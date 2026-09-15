@@ -10,7 +10,7 @@
  * — pamięć nie jest wąskim gardłem, rośnie wyłącznie odpowiedź modelu. Te testy
  * spinają pomiar tam, gdzie da się go sprawdzić bez modelu: prompt NIE rośnie
  * z liczbą pytań, odpowiedź 40 pytań przechodzi przez parser i walidator, a
- * kontener mieści się w budżetach pamięci z zapasem. (`szacunekOdpowiedzi()`
+ * jawna paczka mieści się w budżetach pamięci z zapasem. (`szacunekOdpowiedzi()`
  * i `#prompt-rozmiar` usunięte w m12-66 — liczby odpowiedzi zostają w
  * PROTOKOL §2.1 jako prawidło pomiaru, nie jako stała w kodzie).
  */
@@ -18,11 +18,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  parsujOdpowiedzModela, walidujPaczke,
-  zbudujPrompt, SZABLON_WERSJA,
-} from '../app/protokol.js';
-import { zapakujPaczke } from '../app/kodowanie.js';
+import { parsujOdpowiedzModela, walidujPaczke, zbudujPrompt } from '../app/protokol.js';
 import { BUDZET_STANU_BAJTY } from '../app/trwalosc.js';
 import { BUDZET_ZESTAWOW_BAJTY } from '../app/zestawy.js';
 import { liczTokeny } from '../tools/budzet-lektury.mjs';
@@ -109,11 +105,12 @@ test('B21: odpowiedź na 40 pytań przechodzi przez parser i walidator bez uster
   assert.deepEqual(usterki, [], 'walidacja E** bez usterek dla 40 pytań');
 });
 
-test('B21: kontener 40 pytań mieści się w budżetach pamięci z ogromnym zapasem', () => {
+test('B21: jawna paczka 40 pytań mieści się w budżetach pamięci z ogromnym zapasem', () => {
+  // ADR 0050: paczka leży jawnym JSON-em — mierzymy dokładnie to, co wyląduje
+  // w `localStorage`, w snapshocie gry i na Drive. Kontenera już nie ma.
   const { paczka: wczytana } = parsujOdpowiedzModela(odpowiedzModelu(5, 8));
-  const kontener = zapakujPaczke(wczytana, SZABLON_WERSJA);
-  const bajty = new TextEncoder().encode(JSON.stringify(kontener)).length;
-  assert.ok(bajty < 60_000, `kontener urósł: ${bajty} bajtów`);
+  const bajty = new TextEncoder().encode(JSON.stringify(wczytana)).length;
+  assert.ok(bajty < 60_000, `paczka urosła: ${bajty} bajtów`);
   assert.ok(bajty < BUDZET_STANU_BAJTY * 0.05, `budżet stanu ${BUDZET_STANU_BAJTY}: ${bajty}`);
   assert.ok(bajty < BUDZET_ZESTAWOW_BAJTY * 0.05, `budżet rejestru ${BUDZET_ZESTAWOW_BAJTY}: ${bajty}`);
 });

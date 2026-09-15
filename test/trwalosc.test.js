@@ -24,7 +24,6 @@ import {
   zbierajStan,
 } from '../app/trwalosc.js';
 import { WERSJA_PROTOKOLU } from '../app/protokol.js';
-import { SCHEMAT_KONTENERA, zapakujPaczke } from '../app/kodowanie.js';
 import { FAZY, SCHEMAT_ROZGRYWKI, nowaRozgrywka } from '../app/rozgrywka.js';
 import { domyslnaKonfiguracja } from '../app/konfig.js';
 import { stacjeProste } from '../app/stacje.js';
@@ -37,12 +36,12 @@ const SRODEK = { lat: 52.2297, lon: 21.0122 };
 function snapshotReferencyjny(terazMs = 1_757_000_000_000) {
   const konfig = { ...domyslnaKonfiguracja(2), kodGry: 'waw-srodmiescie', promienM: 1000, liczbaStacji: 3 };
   const stacje = stacjeProste({ srodek: SRODEK, liczbaStacji: 3, promienM: 1000, ziarno: 'ziarno-testu' });
-  const kontenerPaczki = zapakujPaczke(PACZKA, WERSJA_PROTOKOLU);
+  const paczka = PACZKA;
   const rozgrywka = nowaRozgrywka({ konfig, stacje, paczka: PACZKA, srodek: SRODEK, czasMs: terazMs, ziarno: 'ziarno-testu' });
-  return { konfig, stacje, kontenerPaczki, rozgrywka };
+  return { konfig, stacje, paczka, rozgrywka };
 }
 
-test('trwałość: snapshot stan-gry/1 jest kompletny i niesie referencje, nie treści', () => {
+test('trwałość: snapshot stan-gry/2 jest kompletny (paczka jawna, ADR 0050)', () => {
   const czesci = snapshotReferencyjny();
   const snapshot = zbierajStan({ ...czesci, pozycja: { lat: SRODEK.lat, lon: SRODEK.lon, dokladnoscM: 12, zrodlo: 'gps' }, terazMs: 1_757_000_000_000, zegarMs: 12_345 });
   assert.equal(snapshot.schemat, SCHEMAT_STANU);
@@ -51,21 +50,20 @@ test('trwałość: snapshot stan-gry/1 jest kompletny i niesie referencje, nie t
   assert.equal(snapshot.ekran, 'gra', 'domyślny ekran snapshotu');
   assert.equal(snapshot.rozgrywka.schemat, SCHEMAT_ROZGRYWKI);
   assert.equal(snapshot.rozgrywka.faza, FAZY.przygotowanie);
-  assert.equal(snapshot.kontenerPaczki.schemat, SCHEMAT_KONTENERA);
+  assert.equal(snapshot.paczka.pytania.length, PACZKA.pytania.length, 'snapshot niesie pytania paczki');
   assert.deepEqual(Object.keys(snapshot.pozycja).sort(), ['dokladnoscM', 'lat', 'lon', 'zrodlo'], 'pozycja zwężona do pól potrzebnych do wznowienia');
 });
 
-test('trwałość: STRAŻNIK — w zapisie nie ma ani słowa z plaintextu paczki (ADR 0007 pkt 4)', () => {
+test('trwałość: zapis gry niesie paczkę jawnym tekstem — tak, celowo (ADR 0050)', () => {
+  // Właściciel 2026-09-15: ukrywanie paczek jest zbędne i szkodliwe — snapshot
+  // ma nieść pytania wprost. Test pilnuje dwóch rzeczy naraz: treść JEST
+  // czytelna, a żaden kontener (b64x1 / TO-paczka) nie wraca bokiem.
   const snapshot = zbierajStan({ ...snapshotReferencyjny(), terazMs: 1_757_000_000_000, zegarMs: 12_345 });
   const tekst = serializujStan(snapshot);
-  for (const pytanie of PACZKA.pytania) {
-    assert.equal(tekst.includes(pytanie.tresc), false, `treść pytania ${pytanie.id} wyciekła do zapisu`);
-    assert.equal(tekst.includes(pytanie.wyjasnienie), false, `wyjaśnienie ${pytanie.id} wyciekło do zapisu`);
-    for (const odpowiedz of pytanie.odpowiedzi) {
-      if (odpowiedz.length > 4) assert.equal(tekst.includes(odpowiedz), false, `odpowiedź „${odpowiedz}" wyciekła do zapisu`);
-    }
-  }
-  assert.ok(tekst.includes(SCHEMAT_KONTENERA), 'zapis niesie kontener, nie paczkę');
+  assert.ok(tekst.includes(PACZKA.pytania[0].tresc), 'treść pierwszego pytania jest w zapisie');
+  assert.ok(tekst.includes(PACZKA.pytania[0].odpowiedzi[0]), 'odpowiedzi też — gracz jest wśród swoich');
+  assert.equal(tekst.includes('TO-paczka'), false, 'kontener nie wraca do zapisu');
+  assert.equal(tekst.includes('b64x1'), false, 'obfuskacja nie wraca do zapisu');
 });
 
 test('trwałość: round-trip serializacja → walidacja odtwarza snapshot 1:1', () => {
@@ -81,7 +79,7 @@ test('trwałość: zbierajStan odmawia jawnie (TypeError) na brakach i śmieciac
   assert.throws(() => zbierajStan({ ...czesci, terazMs: 1 }), TypeError, 'brak zegarMs = odmowa (kotwica rebazy jest obowiązkowa)');
   assert.throws(() => zbierajStan({ ...czesci, ...terazZ, konfig: null }), TypeError);
   assert.throws(() => zbierajStan({ ...czesci, ...terazZ, stacje: [] }), TypeError);
-  assert.throws(() => zbierajStan({ ...czesci, ...terazZ, kontenerPaczki: PACZKA }), TypeError, 'PLAINTEXT paczki musi być odrzucony — przyjmujemy tylko kontener');
+  assert.throws(() => zbierajStan({ ...czesci, ...terazZ, paczka: { okolica: { lat: 1, lon: 1 } } }), TypeError, 'paczka bez pytań to śmieć — zapis odmawia');
   assert.throws(() => zbierajStan({ ...czesci, ...terazZ, rozgrywka: { schemat: 'rozgrywka/1' } }), TypeError);
   assert.throws(() => zbierajStan({ ...czesci, terazMs: NaN }), TypeError);
   assert.throws(() => zbierajStan({ ...czesci, ...terazZ, pozycja: { lat: 'x', lon: 1 } }), TypeError);
@@ -102,7 +100,7 @@ test('trwałość: walidujStanSurowy — każdy rodzaj uszkodzenia ma własny ko
     ['zepsuty zegar sesji', { ...baza, zegarMs: null }, ['T08']],
     ['zepsuty konfig', { ...baza, konfig: { tryb: 42 } }, ['T06']],
     ['zepsute stacje', { ...baza, stacje: [{ id: 1 }] }, ['T09']],
-    ['zepsuty kontener', { ...baza, kontenerPaczki: { schemat: SCHEMAT_KONTENERA, dane: '' } }, ['T05']],
+    ['zepsuta paczka', { ...baza, paczka: { okolica: {}, pytania: [] } }, ['T05']],
     ['zepsuta rozgrywka', { ...baza, rozgrywka: { ...baza.rozgrywka, faza: 'kosmos' } }, ['T04']],
     ['zepsuta pozycja', { ...baza, pozycja: { lat: 'tu', lon: 'tam' } }, ['T10']],
     ['pusty ekran', { ...baza, ekran: '' }, ['T11']],

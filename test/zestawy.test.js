@@ -15,13 +15,19 @@ import {
   ulicaZeStacji, zbierzMetaZestawu,
 } from '../app/zestawy.js';
 
-const kontener = () => ({ schemat: 'TO-paczka/2', protokol: 'PYT/1.0', kodowanie: 'b64x1', skrot: 'ab12cd34', dane: 'e30' });
+/** Minimalna jawna paczka PYT (ADR 0050): paczki nie ukrywamy — tak leży na Drive. */
+const paczka = () => ({
+  okolica: { lat: 52.12, lon: 20.75, promienM: 1000, miejsce: 'Podkowa Leśna' },
+  wiek: 'dorosli', tematy: ['historia'], jezyk: 'polski', utworzono: '2026-09-06 10:00',
+  pytania: [{ id: 's1p1', stacja: 1, temat: 'historia', tresc: 'Co tu było?', odpowiedzi: ['a', 'b', 'c', 'd'], poprawna: 1, wyjasnienie: 'Bo tak.', zrodla: [] }],
+  uwagi: '',
+});
 const meta = (nad = {}) => ({ geohash5: 'u33dc', promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, ...nad });
 const wpis = (skrot, data, nad = {}) => ({ skrot, data, ...meta(nad) });
 const lokalny = (nad = {}) => ({
   schemat: SCHEMAT_LOKALNY,
   stacje: [{ id: 1, lat: 52.12, lon: 20.75 }, { id: 2, lat: 52.13, lon: 20.76 }],
-  kontener: kontener(),
+  paczka: paczka(),
   ...meta(),
   data: '2026-09-06 10:00',
   kodGry: 'abc',
@@ -32,7 +38,7 @@ const publiczny = (nad = {}) => ({
   protokol: 'PYT/1.0',
   meta: { ...meta(), miejsce: 'Podkowa Leśna', data: '2026-09-06', autor: 'właściciel', licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel', ...nad.meta },
   stacje: [{ lat: 52.12, lon: 20.75, opis: 'plac' }],
-  kontener: kontener(),
+  paczka: paczka(),
   ...nad,
 });
 
@@ -42,7 +48,7 @@ test('zestawy: walidacja wpisu lokalnego odrzuca śmieć z kodami, nie wyjątkam
   assert.equal(walidujZestawLokalnySurowy(JSON.stringify({ schemat: 'inny' })).usterki[0].kod, 'Z02');
   assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ stacje: [] }))).usterki[0].kod, 'Z03');
   assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ stacje: [{ id: 1, lat: 999, lon: 0 }] }))).usterki[0].kod, 'Z03');
-  assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ kontener: { schemat: 'TO-paczka/1' } }))).usterki[0].kod, 'Z04');
+  assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ paczka: { okolica: {} } }))).usterki[0].kod, 'Z04');
   assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ geohash5: 'u33' }))).usterki[0].kod, 'Z05');
   assert.equal(walidujZestawLokalnySurowy(JSON.stringify(lokalny({ liczbaStacji: 2.5 }))).usterki[0].kod, 'Z05');
 });
@@ -153,7 +159,7 @@ test('zestawy: plik publiczny wymaga licencji i przeglądu źródeł (ADR 0017 p
   const bezPrzegladu = publiczny(); delete bezPrzegladu.meta.przegladZrodel;
   assert.equal(walidujZestawPublicznySurowy(JSON.stringify(bezPrzegladu)).usterki[0].kod, 'Z08');
   assert.equal(walidujZestawPublicznySurowy(JSON.stringify(publiczny({ stacje: [] }))).usterki[0].kod, 'Z08');
-  assert.equal(walidujZestawPublicznySurowy(JSON.stringify(publiczny({ kontener: null }))).usterki[0].kod, 'Z04');
+  assert.equal(walidujZestawPublicznySurowy(JSON.stringify(publiczny({ paczka: null }))).usterki[0].kod, 'Z04');
 });
 
 test('zestawy: indeks publiczny niesie tylko meta i toleruje braki', () => {
@@ -417,7 +423,7 @@ test('zbierzMetaZestawu: meta niesie `ulica` przy starcie (ADR 0048, additive ja
     schemat: SCHEMAT_ZESTAWU, protokol: 'PYT/1.0',
     meta: { ...meta, miejsce: 'Podkowa Leśna', licencja: 'CC BY-SA 4.0', przegladZrodel: 'x', ulica: undefined },
     stacje: [{ lat: 52.1141, lon: 20.6622, opis: '' }],
-    kontener: kontener(),
+    paczka: paczka(),
   }));
   assert.deepEqual(usterki.filter((u) => u.kod === 'Z08'), [], '`ulica` nie jest wymagana w meta');
   assert.ok(zestaw, 'zestaw czytany dalej, mimo braku ulicy');

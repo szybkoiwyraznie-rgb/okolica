@@ -120,14 +120,14 @@ test('ranking: rezygnacja bez odpowiedzi nie wchodzi, uszkodzony plik nie psuje 
     tryb: 'trasa',
     organizator: { pseudonim: 'Ala' },
     // Konfiguracja i zestaw wieloosobowy mają własne wymagania (geohash8 hosta,
-    // kontener TO-paczka/2 + metadane) — kształt jak w `most-gra-cycle.test.js`.
+    // jawna paczka pytań + metadane) — kształt jak w `most-gra-cycle.test.js`.
     konfiguracja: {
       liczbaStacji: 1, pytaniaNaStacje: 2, wiek: 'dorosli', tematy: ['historia'],
       miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', geohash8: 'u3qb8g0m',
     },
     zestaw: {
       stacje: [{ id: 1, opis: 'stacja 1', punkt: { lat: 52.23, lon: 21.01 }, pytania: [1, 2] }],
-      kontener: { schemat: 'TO-paczka/2', stacje: [] },
+      paczka: { okolica: { lat: 52.23, lon: 21.01 }, pytania: [{ id: 's1p1', stacja: 1 }] },
       meta: { utworzono: '2026-09-07 12:00', autor: 'test' },
     },
   });

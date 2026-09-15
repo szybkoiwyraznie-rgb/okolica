@@ -12,8 +12,8 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-137';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-137';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-138';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-138';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.1';
@@ -31,10 +31,12 @@ export const SZABLON_WERSJA = 'PYT/1.1.0'; // 1.1.0: poprawna = numer 1..4, bez 
 /** Wersja szablonu bez weryfikacji (§2.2) — wersjonowana niezależnie od §2. */
 export const SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.1-nofc.0'; // jak 1.1.0 — poprawna: numer odpowiedzi, bez markera
 
-/** Schemat kontenera z obfuskowanymi pytaniami (ADR 0007 pkt 3 i 5: maskowanie, nie szyfrowanie). */
-// Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
-// protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
-export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-137';
+/**
+ * Ukrytego kontenera `TO-paczka/2` NIE MA (właściciel 2026-09-15, ADR 0050):
+ * paczka jedzie przez telefon i na Drive jawnym JSON-em, a plik `app/kodowanie.js`
+ * został usunięty. Wszystko, co czytało `skrot` kontenera, liczy odtąd
+ * `skrotPaczki()` z `app/zestawy.js` — odcisk treści paczki, nie obfuskacja.
+ */
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.

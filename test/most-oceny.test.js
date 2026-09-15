@@ -134,7 +134,7 @@ test('most: pobranie paczki nie zabiera głosów na telefon gracza', () => {
   const { most, idPaczki } = paczkaWRepo();
   most.przyjmijOcene(glos({ paczkaId: idPaczki, gracz: 'Ania' }));
   const pobrana = most.paczkaPrzezId(idPaczki);
-  assert.equal(pobrana.schemat, 'TO-zestaw/1', 'paczka się pobiera');
+  assert.equal(pobrana.schemat, 'TO-zestaw/2', 'paczka się pobiera');
   assert.equal(pobrana.oceny, undefined, 'głosy nie jadą razem z paczką (ADR 0028 pkt 4)');
   assert.equal(JSON.stringify(pobrana).includes('"gracz"'), false, 'w paczce nie ma pól głosu');
 });

@@ -171,7 +171,12 @@ export function uruchomMost({ urlSerwisu = 'https://most.invalid/exec' } = {}) {
     ScriptApp: { getService: () => ({ getUrl: () => urlSerwisu }) },
     Utilities: {
       base64Decode: (s) => Uint8Array.from(Buffer.from(s, 'base64')),
-      newBlob: (bajty) => ({ getDataAsString: () => Buffer.from(bajty).toString('utf8') }),
+      newBlob: (bajty) => ({
+        getDataAsString: () => Buffer.from(bajty).toString('utf8'),
+        // `skrotPaczki` w moście liczy FNV z BAJTÓW UTF-8 (ADR 0050) — atrapa
+        // musi umieć to samo, inaczej most rzuca „getBytes is not a function".
+        getBytes: () => Array.from(Buffer.from(bajty, 'utf8')),
+      }),
     },
   };
 
@@ -188,28 +193,40 @@ export function uruchomMost({ urlSerwisu = 'https://most.invalid/exec' } = {}) {
   return { most: api, pliki, funkcje, wlasnosci, wyslaneMaile };
 }
 
-/* --------------------------------------------------- fixtures paczek (wspólne) */
-
-import { zapakujPaczke } from '../../app/kodowanie.js';
-
 /* ----------------------------------------------------------------- fixtures */
 
-export function zestawPrzykladowy({ stacje = 3, bezKotwicy = false, tematyMeta = null } = {}) {
-  const paczka = {
-    schemat: 'PYT/1.0.6',
+import { WERSJA_PROTOKOLU } from '../../app/protokol.js';
+
+/**
+ * Paczka jawna (ADR 0050): bez schematu w środku, bez markerów, z numerem
+ * poprawnej odpowiedzi 1..4 — dokładnie to, co pisze model wg PROTOKOL §2.
+ */
+export function paczkaPrzykladowa({ stacje = 3, bezZrodel = false } = {}) {
+  return {
+    okolica: { lat: 52.12, lon: 20.74, promienM: 1000, miejsce: 'Podkowa Leśna' },
+    wiek: 'dorosli',
+    tematy: ['historia'],
+    jezyk: 'polski',
+    utworzono: '2026-09-01 10:00',
     pytania: Array.from({ length: stacje }, (_, i) => ({
       id: `s${i + 1}p1`,
       stacja: i + 1,
       temat: 'historia',
       tresc: `Pytanie ${i + 1}?`,
       odpowiedzi: ['a', 'b', 'c', 'd'],
-      poprawna: 17 + (i + 1) + (i + 1) + 1,
+      poprawna: ((i + 1) % 4) + 1,
       wyjasnienie: 'bo tak',
-      zrodla: [{ tytul: 'Źródło', url: 'https://przyklad.invalid/x' }],
+      ...(bezZrodel ? {} : { zrodla: [{ tytul: 'Źródło', url: 'https://przyklad.invalid/x' }] }),
     })),
+    uwagi: '',
   };
+}
+
+export function zestawPrzykladowy({ stacje = 3, bezKotwicy = false, tematyMeta = null } = {}) {
+  const paczka = paczkaPrzykladowa({ stacje });
   const wynik = {
-    schemat: 'TO-zestaw/1',
+    schemat: 'TO-zestaw/2',
+    protokol: WERSJA_PROTOKOLU,
     meta: {
       miejsce: 'Podkowa Leśna',
       geohash5: 'u3qb8',
@@ -232,7 +249,7 @@ export function zestawPrzykladowy({ stacje = 3, bezKotwicy = false, tematyMeta =
       lon: 20.74 + i * 0.002,
       opis: `stacja ${i + 1}`,
     })),
-    kontener: zapakujPaczke(paczka, 'PYT/1.0.6'),
+    paczka,
   };
   if (bezKotwicy) delete wynik.meta.geohash6; // paczka sprzed B19 — kotwicę trzeba oszacować
   return wynik;

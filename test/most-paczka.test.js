@@ -13,7 +13,6 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { zapakujPaczke } from '../app/kodowanie.js';
 import { walidujZestawPublicznySurowy, walidujIndeksSurowy } from '../app/zestawy.js';
 
 import { uruchomMost, zestawPrzykladowy, tekstOdpowiedzi, idPoNazwie } from './helpers/most.js';
@@ -42,8 +41,8 @@ test('most: paczka z repozytorium przechodzi całą drogę i aplikacja ją przyj
   // Dokładnie to robi aplikacja po kliknięciu „Graj z tą paczką".
   const pobrane = walidujZestawPublicznySurowy(tekstOdpowiedzi(most.paczkaPrzezId(wpis.id)));
   assert.deepEqual(pobrane.usterki, [], 'pobrana paczka jest kompletna (regresja po literówce w paczkaPrzezId)');
-  assert.equal(pobrane.zestaw.schemat, 'TO-zestaw/1');
-  assert.deepEqual(pobrane.zestaw.kontener, zestaw.kontener, 'kontener pytań dojechał bez zmian');
+  assert.equal(pobrane.zestaw.schemat, 'TO-zestaw/2');
+  assert.deepEqual(pobrane.zestaw.paczka, zestaw.paczka, 'jawna paczka pytań dojechała bez zmian');
   assert.equal(pobrane.zestaw.stacje.length, 3);
 });
 

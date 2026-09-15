@@ -14,7 +14,6 @@ import { fileURLToPath } from 'node:url';
 
 import { SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU } from '../app/protokol.js';
 import { PODKLADY, TEMATY, TRYBY, WIEK } from '../app/konfig.js';
-import { KODOWANIE, SCHEMAT_KONTENERA } from '../app/kodowanie.js';
 import { KODY_POZYCJI } from '../app/pozycja.js';
 import { KODY_WIELOOSOBOWE } from '../app/wieloosobowa.js';
 
@@ -508,14 +507,16 @@ test('kontrakt: status w rejestrze ADR jest zgodny ze statusem w pliku ADR', () 
   }
 });
 
-test('kontrakt: kontener paczki jest opisany w PROTOKOL §3.3 tak jak w app/kodowanie.js', () => {
-  assert.ok(PROTOKOL.includes(`"${SCHEMAT_KONTENERA}"`), 'w protokole nie ma schematu kontenera z kodu');
-  assert.ok(PROTOKOL.includes(`"${KODOWANIE}"`), 'w protokole nie ma nazwy kodowania z kodu');
-  const sekcja = PROTOKOL.slice(PROTOKOL.indexOf('### 3.3'), PROTOKOL.indexOf('## 4.'));
-  for (const pole of ['schemat', 'protokol', 'kodowanie', 'skrot', 'dane']) {
-    assert.ok(sekcja.includes(pole), `§3.3 nie opisuje pola „${pole}"`);
-  }
-  assert.ok(sekcja.includes('To nie jest szyfrowanie'), '§3.3 musi mówić wprost, że to nie szyfrowanie (ADR 0007 pkt 5)');
+test('kontrakt: jawny zapis paczki jest opisany w PROTOKOL §3.3 tak jak w app/zestawy.js', () => {
+  // ADR 0050: kontenera i obfuskacji nie ma — §3.3 opisuje jawny JSON i odcisk
+  // treści `skrotPaczki()`. Test pilnuje, żeby ukrywanie nie wróciło bokiem.
+  assert.equal(existsSync(join(ROOT, 'app/kodowanie.js')), false, 'app/kodowanie.js usunięty (ADR 0050)');
+  const sekcja = PROTOKOL.slice(PROTOKOL.indexOf('### 3.3'), PROTOKOL.indexOf('### 3.4'));
+  assert.ok(sekcja.includes('jawny JSON'), '§3.3 musi mówić, że paczka leży jawnym JSON-em');
+  assert.ok(sekcja.includes('skrotPaczki()'), '§3.3 opisuje odcisk treści liczony w app/zestawy.js');
+  assert.equal(/TO-paczka/.test(sekcja), false, '§3.3 nie wspomina już kontenera');
+  assert.equal(/b64x1/.test(sekcja), false, '§3.3 nie wspomina już obfuskacji');
+  assert.match(sekcja, /danych osobowych/, '§3.3 zostawia zakaz danych osobowych w jawnej paczce (ADR 0013)');
   for (const poleZSzyfrowania of ['"sol"', '"iv"', '"iteracje"']) {
     assert.ok(!sekcja.includes(poleZSzyfrowania), `§3.3 wciąż opisuje pole ${poleZSzyfrowania} z odrzuconego wariantu AES-GCM`);
   }
@@ -1271,7 +1272,7 @@ test('kontrakt ADR 0028 aneks: ocenić można każdą paczkę, bo każda jest na
   assert.ok(!APP.includes("STAN.paczkaRepoId = ''; // ADR 0028: paczka z telefonu nie zbiera ocen"),
     'paczka z telefonu nie jest już wykluczona z oceniania');
   assert.ok(APP.includes('idPaczkiDlaZestawu('), 'aplikacja odzyskuje identyfikator paczki z pamięci telefonu');
-  assert.ok(APP.includes('zapamietajIdPaczkiDlaZestawu('), 'identyfikator jest zapamiętywany przy skrócie kontenera');
+  assert.ok(APP.includes('zapamietajIdPaczkiDlaZestawu('), 'identyfikator jest zapamiętywany przy odcisku paczki');
   assert.ok(APP.includes('okolica:paczki-drive'), 'mapa skrót → id paczki ma własny klucz w localStorage');
   assert.match(GS, /return nazwa === FOLDERY\.zaakceptowane;/,
     'most przyjmuje głosy dla paczek w zaakceptowanych (od 2026-09-11 bez katalogu przeglądu)');

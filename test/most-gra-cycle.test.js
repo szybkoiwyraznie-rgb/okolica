@@ -30,7 +30,11 @@ function zestaw() {
       { id: 1, opis: 'stacja 1', punkt: { lat: 52.23, lon: 21.01 }, pytania: [1, 2] },
       { id: 2, opis: 'stacja 2', punkt: { lat: 52.24, lon: 21.02 }, pytania: [3, 4] },
     ],
-    kontener: { schemat: 'TO-paczka/2', stacje: [] },
+    // ADR 0050: zestaw gry niesie JAWNĄ paczkę pytań (kontenera nie ma).
+    paczka: {
+      okolica: { lat: 52.23, lon: 21.01, promienM: 1000, miejsce: 'Podkowa Leśna' },
+      pytania: [{ id: 's1p1', stacja: 1 }, { id: 's2p1', stacja: 2 }],
+    },
     meta: { utworzono: '2026-09-07 12:00', autor: 'test' },
   };
 }

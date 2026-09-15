@@ -1653,18 +1653,19 @@ test('M6: błędna odpowiedź — zero punktów, poprawna ujawniona w ocenie, gr
 
 /* ============ M6/R6: trwałość — zapis po tranzycjach, wznowienie, koniec */
 
-test('M6: zapis gry ląduje w pamięci po każdym ruchu i nie niesie plaintextu', async () => {
+test('M6: zapis gry ląduje w pamięci po każdym ruchu i niesie jawną paczkę (ADR 0050)', async () => {
   const { dom, paczka, pamiec } = await graGotowaDoStartu();
   zaczynijGre(dom);
   assert.match(pamiec.get('okolica:gra-aktywna'), /^[a-z0-9-]{1,40}$/, 'wskaźnik aktywnej gry = auto-slug (Partia 2: koniec ręcznego kodu)');
   const kluczZapisu = 'okolica:gra:' + pamiec.get('okolica:gra-aktywna');
   assert.ok(pamiec.has(kluczZapisu), 'zapis pod kluczem okolica:gra:<kod> — czyszczenie danych go obejmuje');
   let snapshot = JSON.parse(pamiec.get(kluczZapisu));
-  assert.equal(snapshot.schemat, 'stan-gry/1');
+  assert.equal(snapshot.schemat, 'stan-gry/2');
   assert.equal(snapshot.rozgrywka.faza, 'przygotowanie');
   assert.ok(Number.isFinite(snapshot.zegarMs), 'kotwica zegara sesji zapisana (rebase przy wznowieniu)');
-  assert.equal(snapshot.kontenerPaczki.schemat, 'TO-paczka/2');
-  assert.equal(pamiec.get(kluczZapisu).includes(paczka.pytania[0].tresc), false, 'STRAŻNIK: treść pytania nie istnieje w zapisie');
+  assert.equal(snapshot.paczka.pytania.length, paczka.pytania.length, 'zapis niesie pytania paczki');
+  assert.ok(pamiec.get(kluczZapisu).includes(paczka.pytania[0].tresc), 'paczka w zapisie jest jawna (ADR 0050)');
+  assert.equal(pamiec.get(kluczZapisu).includes('TO-paczka'), false, 'kontener nie wraca do zapisu gry');
 
   dom.kliknij('przycisk-start-odcinka');
   snapshot = JSON.parse(pamiec.get(kluczZapisu));
@@ -2147,8 +2148,6 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
   // (przez UI taka paczka nie przejdzie — E05; ADR 0015 żyje w modelu i w zapisie)
   const { SCHEMAT_STANU, kluczStanu, KLUCZ_AKTYWNEJ, serializujStan, zbierajStan } = await import('../app/trwalosc.js');
   const { nowaRozgrywka } = await import('../app/rozgrywka.js');
-  const { zapakujPaczke } = await import('../app/kodowanie.js');
-  const { WERSJA_PROTOKOLU } = await import('../app/protokol.js');
   const { stacjeProste } = await import('../app/stacje.js');
   const { domyslnaKonfiguracja } = await import('../app/konfig.js');
   const paczka = czytajFixturePaczka();
@@ -2157,7 +2156,7 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
   const rozgrywka = nowaRozgrywka({ konfig, stacje, paczka, srodek: { lat: 52.2297, lon: 21.0122 }, czasMs: 0, ziarno: 'z' });
   assert.deepEqual(rozgrywka.brakPytan, [4], 'model widzi stację bez pytania (M1)');
   const snapshot = zbierajStan({
-    konfig, stacje, kontenerPaczki: zapakujPaczke(paczka, WERSJA_PROTOKOLU), rozgrywka,
+    konfig, stacje, paczka, rozgrywka,
     pozycja: { lat: 52.2297, lon: 21.0122, dokladnoscM: 10, zrodlo: 'reczne' },
     terazMs: Date.now(), zegarMs: 1000,
   });

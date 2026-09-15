@@ -13,13 +13,12 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  SCHEMAT_KONTENERA, SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU,
+  SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU,
   normalizujTekst, normalizujTematyPaczki, parsujOdpowiedzModela, podsumowaniePaczki,
   walidujPaczke, zbudujPrompt,
 } from '../app/protokol.js';
 import { domyslnaKonfiguracja, liczbaPytan } from '../app/konfig.js';
 import { przesunPunkt } from '../app/geo.js';
-import { odpakujPaczke, zapakujPaczke } from '../app/kodowanie.js';
 
 const KATALOG = dirname(dirname(fileURLToPath(import.meta.url)));
 const OK = JSON.parse(readFileSync(join(KATALOG, 'test', 'fixtures', 'paczka-ok.json'), 'utf8'));
@@ -476,9 +475,8 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
   assert.deepEqual(podsumowaniePaczki(null), { liczbaPytan: 0, stacje: [], tematy: [], liczbaZrodel: 0, punktyRazem: 0, uwagi: '' });
 });
 
-test('stałe protokołu: wersja i schemat kontenera', () => {
+test('stałe protokołu: wersja PYT/1.1', () => {
   assert.equal(WERSJA_PROTOKOLU, 'PYT/1.1', 'wersja po zmianie numeracji na 1..4 (ADR 0050)');
-  assert.equal(SCHEMAT_KONTENERA, 'TO-paczka/2', 'kontener po decyzji z ADR 0007 (obfuskacja bez klucza)');
 });
 
 /* --------- ADR 0050: jedna postać paczki, numer odpowiedzi 1..4, bez ukrywania --------- */
@@ -494,24 +492,27 @@ test('ADR 0050: paczka ma jedną postać — żadnych markerów, kodów ani odwr
   }
 });
 
-test('ADR 0050: round-trip przez kontener zachowuje numer odpowiedzi i pieczątkę fact-checku', () => {
+test('ADR 0050: paczka jedzie jawnym JSON-em — pytania widać bez żadnego narzędzia', () => {
+  // Tak paczka leży w pamięci telefonu i na Drive: czysty JSON (właściciel
+  // 2026-09-15: „żadne ukrywanie nie jest potrzebne"). Ten test pilnuje, że
+  // nikt nie przywróci kodowania po cichu — ani w zapisie, ani w odczycie.
   const zPieczatka = { ...structuredClone(OK), factcheck: true };
-  const kontener = zapakujPaczke(zPieczatka, WERSJA_PROTOKOLU);
-  const { paczka, blad } = odpakujPaczke(kontener);
-  assert.equal(blad, null);
+  const tekst = JSON.stringify(zPieczatka);
+  assert.ok(tekst.includes(OK.pytania[0].tresc), 'treść pytania jest czytelna w zapisie');
+  assert.ok(tekst.includes(OK.pytania[0].odpowiedzi[0]), 'odpowiedzi też');
+  const paczka = JSON.parse(tekst);
   assert.deepEqual(paczka.pytania.map((p) => p.poprawna), OK.pytania.map((p) => p.poprawna),
-    'ukrycie i odsłonięcie nie rusza numeru poprawnej odpowiedzi');
+    'zapis i odczyt nie ruszają numeru poprawnej odpowiedzi');
   assert.equal(paczka.factcheck, true, 'pieczątka fact-checku (nadana przez aplikację) przeżywa zapis');
-  assert.deepEqual(walidujPaczke(paczka, oczekiwane()), [], 'odsłonięta paczka waliduje się czysto');
+  assert.deepEqual(walidujPaczke(paczka, oczekiwane()), [], 'odczytana paczka waliduje się czysto');
 });
 
 test('ADR 0050: paczka bez źródeł z pieczątką „bez fact-checku” nie budzi E09 po zapisie i odczycie', () => {
   const bezZrodel = { ...structuredClone(OK), factcheck: false };
   for (const pyt of bezZrodel.pytania) delete pyt.zrodla;
   assert.deepEqual(walidujPaczke(bezZrodel, oczekiwane({ factcheck: false })), []);
-  const kontener = zapakujPaczke(bezZrodel, WERSJA_PROTOKOLU);
-  const { paczka } = odpakujPaczke(kontener);
+  const paczka = JSON.parse(JSON.stringify(bezZrodel)); // tak wraca z pamięci telefonu
   assert.equal(paczka.factcheck, false, 'pieczątka przeżyła zapis');
   assert.deepEqual(walidujPaczke(paczka, oczekiwane({ factcheck: paczka.factcheck })), [],
-    're-wklejenie ukrytej paczki bez fact-checku nie budzi E09');
+    're-wklejenie paczki bez fact-checku nie budzi E09');
 });

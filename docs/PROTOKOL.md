@@ -21,8 +21,8 @@ konfiguracja + pozycja gracza + stacje
    odpowiedź modelu = blok JSON ze schematem §3
         ↓ (3) organizator wkleja odpowiedź do aplikacji
    walidacja §6 → lista usterek albo przyjęcie
-        ↓ (4) ukrycie paczki: obfuskacja bez klucza, kontener TO-paczka/2
-            (ADR 0007) → localStorage / eksport pliku
+        ↓ (4) paczka jawnym JSON-em (ADR 0050) → localStorage / plik na Drive
+            (żadnego ukrywania: gra dla właściciela i jego rodziny)
    paczka PYT
         ↓ (5) rozgrywka: pytanie odsłaniane przy dojściu do stacji
 ```
@@ -130,8 +130,8 @@ z szablonu zmienia się tylko cyfra w `{LICZBA_PYTAN}`. Rośnie **odpowiedź**:
 realistyczna paczka rev2 (treść ~140 znaków, 4 odpowiedzi, wyjaśnienie ~200
 znaków, jedno źródło) to 4 469 znaków / ~1 118 tokenów dla 5 pytań i
 33 392 znaków / ~8 348 tokenów dla 40 pytań (5 stacji × 8 graczy) — czyli
-~830 znaków i ~210 tokenów na pytanie. Kontener `TO-paczka/2` dla 40 pytań ma
-~36 kB (1,8% budżetu stanu, 2,4% rejestru), więc pamięć nie jest ograniczeniem;
+~830 znaków i ~210 tokenów na pytanie. Jawna paczka 40 pytań to ~36 kB (1,8%
+budżetu stanu, 2,4% rejestru), więc pamięć nie jest ograniczeniem;
 ograniczeniem jest limit wyjścia modelu. Szacunek był pokazywany w UI
 i usunięty jako ozdobnik (właściciel, testy terenowe 2026-09-11) — pomiar
 zostaje tutaj jako prawidło protokołu, a spinają go testy
@@ -251,33 +251,24 @@ WYMAGANIA DODATKOWE:
 | `zrodla[].tytul` | tekst | niepusty |
 | `zrodla[].sprawdzono` | tekst | `RRRR-MM-DD`, nie w przyszłości |
 
-### 3.3 Kontener ukrytej paczki (ADR 0007 pkt 2)
+### 3.3 Zapis paczki — jawny JSON (ADR 0050)
 
-```json
-{
-  "schemat": "TO-paczka/2",
-  "protokol": "PYT/1.1",
-  "kodowanie": "b64x1",
-  "skrot": "FNV-1a 32 z bajtów plaintextu (8 znaków hex)",
-  "dane": "base64url (UTF-8 JSON ⊕ strumień maski)"
-}
-```
+Paczka **nie jest ukrywana**. Leży w `localStorage`, w zapisie gry na czas
+przerwy i w pliku na Drive dokładnie w kształcie §3.1/§3.2 — jawny JSON, ten
+sam, który model napisał. Ukrywanie paczek (kontener i kodowanie z §3.4)
+zniknęło razem z plikiem `app/kodowanie.js` (właściciel 2026-09-15: „to jest
+gra dla mnie i mojej rodziny więc żadne zabezpieczenia nie są potrzebne”).
 
-| Pole | Zasady |
-| --- | --- |
-| `schemat` | dokładnie `"TO-paczka/2"`; inna wartość = odmowa odczytu z komunikatem |
-| `protokol` | wersja protokołu paczki, którą ukryto (`PYT/1.1`) |
-| `kodowanie` | `"b64x1"` — hak migracyjny: przyszłe warianty (np. `aes-gcm`) dochodzą tu, nie w nowym polu |
-| `skrot` | suma kontrolna FNV-1a 32 — wykrywa **urwanie przy kopiowaniu**, nie podmianę; to nie jest funkcja kryptograficzna |
-| `dane` | base64url bez dopełnienia `=` |
+Tożsamość paczki (klucz wpisu lokalnego, dopasowanie pliku na Drive) niesie
+odcisk treści `skrotPaczki()` z `app/zestawy.js`: FNV-1a 32 z bajtów
+`JSON.stringify(paczka)`, 8 znaków hex. Wykrywa podmianę treści pliku; nie jest
+funkcją kryptograficzną i nie jest zapisywany w samej paczce.
 
-**To nie jest szyfrowanie.** Przekształcenie jest odwracalne bez klucza przez
-każdego, kto przeczyta `app/kodowanie.js`; chroni przed przypadkowym wglądem
-(zerknięcie na ekran, przewinięcie wklejonego tekstu, paczka znaleziona
-w schowku albo w pliku), nie przed zdeterminowanym graczem. Dlatego w paczce nie
-wolno trzymać danych osobowych ani niczego, co nie może zostać upublicznione
-(ADR 0013). Aplikacja przyjmuje też **jawny JSON** paczki (§3.1) — odpowiedź
-modelu jest jawna, ukrywa ją dopiero aplikacja po walidacji.
+Z jawności wynika jedno ograniczenie, które zostaje: w paczce nie wolno trzymać
+**danych osobowych** ani niczego, co nie może zostać upublicznione (ADR 0013) —
+plik na Drive jest czytelny dla każdego, kto ma do niego dostęp, a teksty pytań
+i tak widzi organizator w oknie czatu z modelem, którego żadne kodowanie nie
+zasłania.
 
 ### 3.4 Historia zapisu paczki (warianty zniesione)
 
@@ -297,7 +288,9 @@ Wszystko to jest **zniesione**:
   zgłaszania.
 
 Paczka ma więc **jedną postać** (§3.1/§3.2), a pole `protokol` — jeśli model je
-mimo wszystko dopisze — jest ignorowane. Starych paczek nie ma (właściciel ich
+mimo wszystko dopisze — jest ignorowane. Do tego samego worka historii idzie
+kontener `TO-paczka/2` (§3.3): ukrywanie paczek zniknęło 2026-09-15e (ADR 0050).
+Starych paczek nie ma (właściciel ich
 nie trzyma), więc konwersji nie ma i nie będzie.
 
 ## 4. Kategorie wiekowe i wymagania trudności
@@ -405,21 +398,12 @@ zajęte, tak samo jak wycofany `E18`.
   Paczka użytkownika w `localStorage` nie może przestać działać (ADR 0010 pkt 6).
 - Zmiana kosmetyczna szablonu promptu (bez zmiany schematu) = podbicie łatki
   (`PYT/1.0.1`) w `SZABLON_WERSJA` i wpis w `docs/PROJECT_HISTORY.md`.
-- **Kontener ≠ paczka.** Zmiana kontenera (`TO-paczka/1` → `TO-paczka/2`,
-  2026-09-05, ADR 0007) nie podbija wersji PYT, bo schemat paczki (§3.1/§3.2)
-  się nie zmienił, a aplikacja nie była opublikowana — nie istnieje paczka
-  użytkownika do zmigrowania. Po pierwszej publikacji Pages (M8) każda zmiana
-  kontenera wymaga migratora (`app/migracje.js`) i wpisu tutaj.
-- **Wariant odwrócony `PYT/1.0-rev1` (Partia 2)** — zapis pól tekstowych
-  od końca (§3.4). Nie podbija wersji schematu (kształt pól ten sam, jak
-  kontener ≠ paczka); walidator akceptuje oba markery, szablon generuje
-  odwrócony.
-- **Wariant `PYT/1.0-rev2`** — `poprawna` kodem pozycyjnym, koniec pola
-  `punkty` (§3.4). Jak rev1: zapis, nie nowa wersja; walidator przyjmuje
-  `PYT/1.0`, `-rev1` i `-rev2`, szablon generuje rev2. Dawne paczki działają
-  bez migratora (M8 nieopublikowany, a reguły i tak łagodnieją).
-- **Warianty `PYT/1.0-rev4` / `PYT/1.0-rev5` (2026-09-09, zgłoszenie B2)** —
-  koniec odwracania liter. Szablony generują rev4 (§2) i rev5 (§2.2).
+- **Zapis paczki (nie schemat) zmienia się bez podbijania PYT.** Tak było
+  z kontenerem `TO-paczka/1` → `TO-paczka/2` (2026-09-05, ADR 0007) i tak jest
+  z jego likwidacją (2026-09-15e, ADR 0050): kształt pól §3.1/§3.2 się nie
+  zmienił. Po pierwszej publikacji Pages (M8) każda zmiana **schematu** wymaga
+  migratora (`app/migracje.js`) i wpisu tutaj; zmian zapisu paczek sprzed
+  publikacji nie migrujemy, bo nie istnieje żadna paczka użytkownika.
 - **Wersje szablonów `PYT/1.0.8` / `PYT/1.0-nofc.3` (2026-09-12, uwagi terenowe
   G.b)** — z zasady 8 usunięto zdania o „NORMALNIE / nie odwracaj”.
 - **Koniec kodu pozycyjnego `poprawna` (2026-09-15, ADR 0049)** — numer poprawnej
@@ -487,7 +471,7 @@ w aplikacji. Schematy `RO-*` nigdy nie miały pola `zgoda`.
 | `organizatorId` | `"g-1"` | założyciel; tylko on startuje i kończy przedwcześnie |
 | `gracze` | `[{id: "g-N", pseudonim, dolaczyl}]` | maks. 8, pseudonim ≤24 znaków, unikalny w grze |
 | `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5, geohash8}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza); `geohash8` (~40 m, pozycja hosta z chwili założenia) = miara zasięgu ~50 m listy „Dołącz" (m12-74); przy zakładaniu wymagany, przy odczycie opcjonalny (stare gry) |
-| `zestaw` | `{stacje, kontener TO-paczka/2, meta TO-zestaw/1}` | mapa gry + ukryte pytania (ADR 0007) |
+| `zestaw` | `{stacje, paczka PYT/1.1, meta TO-zestaw/2}` | mapa gry + pytania jawnym JSON-em (ADR 0050) |
 | `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
 | `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal, premia}}` | liczone przez most przy zamknięciu gry; `punkty` zawierają `premia` (ADR 0027 część B) |
 
@@ -588,7 +572,7 @@ znaczenia — inaczej starszy klient w terenie odczytałby cudzy błąd jako sw�
 | R05 | Stan gry nieznany (lobby / trwa / zakonczona / archiwum). |
 | R06 | Gra nie ma graczy — stan uszkodzony. |
 | R07 | Konfiguracja gry niekompletna. |
-| R08 | Zestaw gry uszkodzony (stacje / kontener TO-paczka/2 / meta). |
+| R08 | Zestaw gry uszkodzony (stacje / jawna paczka pytań / meta). |
 | R09 | Zdarzenia gry uszkodzone (kolejność, gracz, typ, czas serwera). |
 | R10 | Zdarzenie nie jest poprawnym JSON-em. |
 | R11 | To nie jest zdarzenie schematu `RO-zdarzenie/1`. |

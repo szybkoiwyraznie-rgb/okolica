@@ -4,7 +4,7 @@
  * (ADR 0004 pkt 3).
  *
  * Zasady twarde:
- * - snapshot niesie UKRYTY kontener paczki (`TO-paczka/2`) i stan
+ * - snapshot niesie JAWNĄ paczkę pytań (ADR 0050) i stan
  *   `rozgrywka/1` (referencje pytań `{stacja, pytanieId}`) — NIGDY treści
  *   pytań (ADR 0007 pkt 4, ADR 0010 pkt 3); strzeże tego test-strażnik;
  * - budżet 2 MB na zapis (jak cache sieci) — przekroczenie to jawny kod T07;
@@ -15,11 +15,11 @@
  *   drogą powrotu do przerwanej gry jest ten zapis;
  * - zepsuty zapis = jawna odmowa z kodem T, nigdy cichy start od zera.
  */
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-137';
-import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-137';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-137';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-138';
+import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-138';
+// `skrot`/`paczka` liczy gra — zapis gry trzyma paczkę taką, jaka przyszła z modelu.
 
-export const SCHEMAT_STANU = 'stan-gry/1';
+export const SCHEMAT_STANU = 'stan-gry/2';
 
 /** Wskaźnik aktywnej gry — po niego sięga start aplikacji (baner wznowienia). */
 export const KLUCZ_AKTYWNEJ = 'okolica:gra-aktywna';
@@ -32,7 +32,7 @@ export const KODY_TRWALOSCI = {
   T02: `Zapis ma inny schemat niż „${SCHEMAT_STANU}" — pochodzi z innej wersji aplikacji.`,
   T03: 'Zapis dotyczy innej wersji protokołu pytań — nie da się go bezpiecznie wznowić.',
   T04: 'Stan rozgrywki w zapisie jest uszkodzony albo niekompletny.',
-  T05: `Ukryta paczka w zapisie jest uszkodzona (oczekiwano kontenera ${SCHEMAT_KONTENERA}).`,
+  T05: 'Paczka w zapisie gry jest uszkodzona albo pusta — nie ma z czego odsłonić pytań.',
   T06: 'Konfiguracja gry w zapisie jest uszkodzona.',
   T07: 'Zapis gry przekracza budżet 2 MB — zakończ grę i zacznij nową.',
   T08: 'Zapis nie ma poprawnych czasów (zapisanoMs ścienne albo zegarMs sesji).',
@@ -77,13 +77,10 @@ function czyRozgrywkaOk(r) {
     && Array.isArray(r.pytania) && Array.isArray(r.odpowiedzi) && Array.isArray(r.dziennik);
 }
 
-function czyKontenerOk(k) {
-  return !!k && typeof k === 'object'
-    && k.schemat === SCHEMAT_KONTENERA
-    && k.protokol === WERSJA_PROTOKOLU
-    && typeof k.kodowanie === 'string' && k.kodowanie.length > 0
-    && typeof k.skrot === 'string' && k.skrot.length > 0
-    && typeof k.dane === 'string' && k.dane.length > 0;
+function czyPaczkaOk(p) {
+  return !!p && typeof p === 'object'
+    && Array.isArray(p.pytania) && p.pytania.length > 0
+    && !!p.okolica && typeof p.okolica === 'object';
 }
 
 function czyKonfigOk(k) {
@@ -98,7 +95,7 @@ function czyPozycjaOk(p) {
 }
 
 /**
- * Snapshot stanu gry. `kontenerPaczki` MUSI być kontenerem `TO-paczka/2`
+ * Snapshot stanu gry. `paczka` MUSI być jawną paczką pytań (ADR 0050)
  * (plaintext paczki nie ma prawa wejść do zapisu — ADR 0007 pkt 4);
  * `rozgrywka` — stanem `rozgrywka/1` z `nowaRozgrywka` i tranzycji;
  * `pozycja` — OSTATNIM fixem (historia fixów zostaje w pamięci pozycji,
@@ -108,11 +105,11 @@ function czyPozycjaOk(p) {
  * rozgrywki są przy wznowieniu rebazowane o różnicę, aby znaczniki w dzienniku
  * nie skoczyły o noc z zamkniętą kartą (ADR 0004 pkt 3).
  */
-export function zbierajStan({ konfig, stacje, kontenerPaczki, rozgrywka, pozycja = null, ekran = 'gra', terazMs, zegarMs } = {}) {
+export function zbierajStan({ konfig, stacje, paczka, rozgrywka, pozycja = null, ekran = 'gra', terazMs, zegarMs } = {}) {
   wymaganie(czyKonfigOk(konfig), 'zbierajStan: konfig z tryb i kodGry jest wymagany');
   wymaganie(Array.isArray(stacje) && stacje.length > 0 && stacje.every(czyStacjaOk),
     'zbierajStan: stacje muszą być niepustą listą punktów {id, lat, lon}');
-  wymaganie(czyKontenerOk(kontenerPaczki), `zbierajStan: kontenerPaczki musi być kontenerem ${SCHEMAT_KONTENERA}`);
+  wymaganie(czyPaczkaOk(paczka), 'zbierajStan: paczka musi nieść niepustą listę pytań');
   wymaganie(czyRozgrywkaOk(rozgrywka), `zbierajStan: rozgrywka musi być stanem ${SCHEMAT_ROZGRYWKI}`);
   wymaganie(czyPozycjaOk(pozycja), 'zbierajStan: pozycja to null albo {lat, lon}');
   wymaganie(typeof ekran === 'string' && ekran.length > 0, 'zbierajStan: ekran musi być nazwą');
@@ -126,7 +123,7 @@ export function zbierajStan({ konfig, stacje, kontenerPaczki, rozgrywka, pozycja
     zegarMs,
     konfig,
     stacje,
-    kontenerPaczki,
+    paczka,
     rozgrywka,
     pozycja: pozycja
       ? { lat: pozycja.lat, lon: pozycja.lon, dokladnoscM: Number.isFinite(pozycja.dokladnoscM) ? pozycja.dokladnoscM : null, zrodlo: typeof pozycja.zrodlo === 'string' ? pozycja.zrodlo : null }
@@ -178,7 +175,7 @@ export function walidujStanSurowy(tekst) {
   if (!Array.isArray(surowy.stacje) || surowy.stacje.length === 0 || !surowy.stacje.every(czyStacjaOk)) {
     usterki.push(usterka('T09'));
   }
-  if (!czyKontenerOk(surowy.kontenerPaczki)) usterki.push(usterka('T05'));
+  if (!czyPaczkaOk(surowy.paczka)) usterki.push(usterka('T05'));
   if (!czyRozgrywkaOk(surowy.rozgrywka)) usterki.push(usterka('T04'));
   if (!czyPozycjaOk(surowy.pozycja)) usterki.push(usterka('T10'));
   if (typeof surowy.ekran !== 'string' || surowy.ekran.length === 0) usterki.push(usterka('T11'));
