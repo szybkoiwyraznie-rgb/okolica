@@ -238,3 +238,32 @@ następnym starcie, a odcisk gry pilnuje idempotencji.
 Testy: 3 w `test/aplikacja.test.js` (wysyłka, kolejka offline, brak zgody),
 3 w `test/most-gra.test.js` na atrapie Drive (zapis + rankingi, kasowanie
 współrzędnych i odmowy, parity premii).
+## B23 — Pusta lista usterek `#wynik-usterki` i `renderujUsterki` (rozpoznanie 2026-09-15d)
+
+**Rozpoznanie:** po usunięciu przycisku „Kopiuj poprawkę do modelu"
+(2026-09-15d) na ekranie paczki został drugi nośnik w tym samym stanie.
+`renderujUsterki()` ma dwa wywołania i OBA z pustą tablicą
+(`app/app.js:3870` i `3966`), a `#wynik-usterki` jest dodatkowo czyszczony
+na starcie walidacji (`app/app.js:3799`) — więc `<ul>` z `index.html:449`
+nie ma dzieci nigdy, a reguły `.usterki li` i `.usterki li code`
+(`app/styles.css:396-398`) nie mają czego stylować. Testy pilnują tego stanu
+(`test/aplikacja.test.js:1224` i `1234`: `children.length === 0`, „bez listy
+kodów E**"), czyli pusta lista jest dziś asertowaną niezmienniczką, nie
+przypadkiem.
+
+**Dlaczego to wisi:** od decyzji 2026-09-15 (PR #31) organizator przy błędnej
+paczce widzi JEDEN stały komunikat, bez kodów E01–E20 — lista straciła
+zawartość, ale nie nośnik. Kody E** żyją dalej w walidatorze i testach
+(`docs/PROTOKOL.md` §6), więc usunięcie listy niczego nie zabiera graczowi.
+
+**Czego wymaga:** decyzji właściciela — (a) usunąć `<ul>`, `renderujUsterki`
+i reguły `.usterki`, a piny w testach przepisać na „nie ma takiego elementu"
+(L55), albo (b) zostawić jako miejsce na powrót listy kodów i dopisać
+komentarz, że pustość jest celowa. Wersja (a) to ~30 linii mniej i jeden
+nośnik mniej do pilnowania; wersja (b) kosztuje tylko komentarz.
+
+**Ryzyka:** przy (a) trzeba pamiętać o `docs/LESSONS.md:445`, który każe
+czytać „listę `#wynik-usterki`" przy debugowaniu paczek — wskazówka stanie się
+martwa i musi być przepisana (L58). Bez decyzji właściciela nic nie ruszam:
+M0–M12 są zamknięte jako zakres kodu, a to nie jest uwaga z terenu.
+
