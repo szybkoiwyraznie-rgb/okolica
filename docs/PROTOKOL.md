@@ -46,10 +46,10 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu, i oprzyj ten fakt na wyniku kwerendy.
 2. Każde pytanie ma pole "zrodla" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Używaj faktów potwierdzonych takim źródłem.
 3. Nazwy, daty, liczby, cytaty, autorów i adresy podawaj dokładnie w postaci potwierdzonej źródłem. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
-4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
+4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
-7. Formułuj treść pytania tak, żeby odpowiedź pozostawała do wyboru — fakty rozstrzygające (na przykład rok) umieść dopiero w polu "wyjasnienie".
+7. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
@@ -92,7 +92,7 @@ SCHEMAT ODPOWIEDZI — dokładnie te pola:
 
 WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
-- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
+- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tę samą liczbę pytań.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
 - "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
@@ -158,10 +158,10 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Przy braku pewności upraszczaj pytanie, a pominięte tematy opisuj w polu "uwagi".
 2. Pole "zrodla" jest OPCJONALNE: podaj adres potwierdzający fakt, a przy braku pewności zostaw pole puste albo je pomiń.
 3. Nazwy, daty, liczby, cytaty i autorów podawaj w postaci, której jesteś pewien; przy braku takiej pewności wybierz łatwiejszy fakt z tego samego tematu. Jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
-4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
+4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
-7. Formułuj treść pytania tak, żeby odpowiedź pozostawała do wyboru — fakty rozstrzygające (na przykład rok) umieść dopiero w polu "wyjasnienie".
+7. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
@@ -204,7 +204,7 @@ SCHEMAT ODPOWIEDZI — dokładnie te pola:
 
 WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
-- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
+- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tę samą liczbę pytań.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
 - "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
@@ -355,7 +355,7 @@ i aneks 2026-09-15d: przycisk „skopiuj poprawkę do modelu" usunięty).
 | `E02` | JSON nieparsowalny (w tym wiele bloków, tekst poza blokiem) |
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
 | `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
-| `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
+| `E05` | stacja bez żadnego pytania (rozkładu między stacje nie sprawdzamy od 2026-09-15f: liczba pytań na stację wynika z setupu — hot-seat `stacje × gracze`, multi jedno na stację — a sumę pilnuje `E03`) |
 | `E06` | `poprawna` nie jest numerem odpowiedzi `1..4` |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
@@ -417,6 +417,19 @@ zajęte, tak samo jak wycofany `E18`.
   (gra jest w fazie testów terenowych), więc nie ma czego migrować — decyzja
   właściciela z 2026-09-15. Zapis gry z poprzedniej wersji zostanie odrzucony
   jawnie (kod `T`), a nie po cichu zinterpretowany.
+- **Szablony `PYT/1.1.1` / `PYT/1.1-nofc.1` (2026-09-15f, uwagi właściciela A)** —
+  kosmetyka trzech zdań, schemat bez zmian (więc wersja protokołu zostaje
+  `PYT/1.1`, §7 pkt 3): (1) z zasady 4 znika „i podawaj wtedy nazwę miejsca
+  w treści pytania" — o kotwicy mówi już pierwsza część zdania, a o braku
+  lokalnego zaczepienia zdanie następne; (2) zasada 7 mówi wprost „żeby
+  odpowiedź nie zawierała się w pytaniu" zamiast przepisu o faktach
+  rozstrzygających w `wyjasnienie`; (3) wymaganie dla pola `stacja` żąda tej
+  samej liczby pytań na każdej stacji zamiast rozkładu „równego albo
+  różniącego się o jedno". Łatka **`PYT/1.1.2` / `PYT/1.1-nofc.2`** (ten sam
+  dzień): forma „tę samą liczbę pytań" zamiast podyktowanej „tą samą" — sama
+  gramatyka, sens bez zmian. Razem z tą zmianą tolerancja rozkładu zniknęła
+  z walidatora: `E05` pilnuje odtąd wyłącznie stacji bez pytania (decyzja
+  właściciela, `docs/BACKLOG.md` B25).
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 

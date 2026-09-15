@@ -13,7 +13,7 @@
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { walidujZestawPublicznySurowy, walidujIndeksSurowy } from '../app/zestawy.js';
+import { walidujZestawPublicznySurowy, walidujIndeksSurowy, skrotPaczki } from '../app/zestawy.js';
 
 import { uruchomMost, zestawPrzykladowy, tekstOdpowiedzi, idPoNazwie } from './helpers/most.js';
 
@@ -80,4 +80,30 @@ test('most: żadna akcja nie odpowiada błędem wykonania skryptu', () => {
   }
 });
 
-/** Id pliku po nazwie — tak właściciel dostaje je w linku z e-maila. */
+/**
+ * Odcisk treści paczki istnieje w DWÓCH implementacjach: `app/zestawy.js`
+ * (klucz rejestru lokalnego i mapowanie paczka → id pliku Drive) oraz
+ * `docs/setup/apps-script-repo-paczek.gs` (wpis indeksu publicznego i rozjazd
+ * nazw plików na Drive). ADR 0050 pkt 2: „obie strony liczą ten sam skrót”.
+ * Bez tego testu literówka albo „poprawka” po jednej stronie przejdzie cicho,
+ * a paczka rozdzieli się na dwie tożsamości (LESSONS L33: lustro mostu ma test
+ * wykonujący, nie tylko opis). Paczka przykładowa niesie polskie znaki
+ * (`Podkowa Leśna`, `Źródło`) — porównanie sprawdza też zgodność UTF-8.
+ */
+test('most: odcisk paczki z mostu jest TEN SAM, który liczy aplikacja (ADR 0050 pkt 2)', () => {
+  const { most } = uruchomMost();
+  const zestaw = zestawPrzykladowy();
+
+  // Ta sama paczka, dwie implementacje FNV-1a 32 — wynik musi być identyczny.
+  assert.equal(most.skrotPaczki(zestaw.paczka), skrotPaczki(zestaw.paczka),
+    'lustro `skrotPaczki` w .gs liczy ten sam odcisk co app/zestawy.js');
+
+  // I ta sama wartość musi dojechać do aplikacji w indeksie publicznym: wpis
+  // niesie skrót, którym aplikacja kluczuje swoją pamięć paczek.
+  const przyjeta = most.przyjmijKandydata(zestaw);
+  assert.equal(przyjeta.ok, true, `przyjęcie: ${JSON.stringify(przyjeta)}`);
+  const indeks = walidujIndeksSurowy(tekstOdpowiedzi(most.budujIndeks()));
+  assert.equal(indeks.usterki.length, 0, 'indeks bez usterek');
+  assert.equal(indeks.indeks[0].skrot, skrotPaczki(zestaw.paczka),
+    'skrót we wpisie indeksu = skrót, który aplikacja liczy dla tej samej paczki');
+});

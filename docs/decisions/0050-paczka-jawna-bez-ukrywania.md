@@ -75,3 +75,13 @@ cały protokół, bo na dysku nie ma żadnych paczek".
   waliduje jawną paczkę i liczy ten sam `skrotPaczki`).
 - Zmiana jest nieodwracalna w praktyce: powrót do ukrywania wymagałby nowego
   ADR-u i migratora dla paczek, które już leżą jawnie.
+
+**Aneks 2026-09-15f (audyt PR #33):** przeliczenie z pkt 3 żyło w kodzie
+DWUKROTNIE — w silniku (`zapiszOdpowiedz`, `app/rozgrywka.js`) i w UI
+(`odpowiedzNaPytanie`, `app/app.js`), choć pkt 3 obiecuje JEDNO. Zostaje jedno:
+rozstrzyga silnik, a UI bierze werdykt z wpisu dziennika (`wpis.poprawna`) —
+ocena na ekranie, punkt w dzienniku i zdarzenie wysłane na most nie mogą się już
+rozjechać. Pokazywanie litery i tekstu poprawnej odpowiedzi
+(`'ABCD'[pytanie.poprawna - 1]`) to czysty rendering, nie werdykt — pkt 3 go nie
+dotyczy. Strażnik w `test/kontrakt.test.js` pilnuje, że porównanie istnieje
+wyłącznie w `app/rozgrywka.js`.

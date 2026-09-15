@@ -522,6 +522,21 @@ test('kontrakt: jawny zapis paczki jest opisany w PROTOKOL §3.3 tak jak w app/z
   }
 });
 
+test('kontrakt ADR 0050 aneks 2026-09-15f: werdykt odpowiedzi przelicza TYLKO silnik', () => {
+  // `poprawna` to numer odpowiedzi 1..4, a `wybrana` to indeks przycisku 0..3.
+  // Audyt PR #33 znalazł to przeliczenie DWA RAZY (silnik `zapiszOdpowiedz`
+  // i `app/app.js`) — czyli dokładnie wzorzec z LESSONS L74: dwie kopie reguły
+  // mogą się rozjechać, a wtedy ekran mówi „Dobrze!", dziennik liczy 0 pkt,
+  // a most w trybie wieloosobowym dostaje trzecią wersję prawdy.
+  const rozgrywka = czytaj('app/rozgrywka.js');
+  assert.ok(rozgrywka.includes('wybrana + 1 === pytanie.poprawna'),
+    'zapiszOdpowiedz rozstrzyga odpowiedź — jedyne przeliczenie numeru 1..4 na indeks 0..3');
+  assert.equal(APP.includes('wybrana + 1 === pytanie.poprawna'), false,
+    'app.js nie liczy werdyktu drugi raz — bierze go z wpisu dziennika');
+  assert.match(APP, /const dobrze = wpis\.poprawna;/,
+    'UI czyta werdykt silnika (`wpis.poprawna`), zamiast przeliczać samemu');
+});
+
 test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
   assert.ok(!existsSync(join(ROOT, 'app/krypto.js')), 'moduł krypto.js nie istnieje po decyzji z ADR 0007');
   for (const plik of ['docs/ARCHITECTURE.md', 'docs/ROADMAP.md', 'docs/setup/ENVIRONMENT.md', 'AGENTS.md', 'README.md']) {

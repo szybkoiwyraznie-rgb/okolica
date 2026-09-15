@@ -6196,3 +6196,153 @@ w pytaniu, zwinięty po odpowiedzi).
 `paczka` zamiast `kontener`, `skrotPaczki`), weryfikuje na iPhonie pasek A,
 ocenę odpowiedzi i czytelność pliku paczki na Drive; ADR 0047 (blokada
 szczypania poza mapą) nadal czeka na potwierdzenie.
+
+## Sesja 2026-09-15f (PR #34) — audyt PR #33: jedno przeliczenie werdyktu, parity odcisku paczki (m12-141)
+
+**Zlecenie właściciela:** „kontynuujemy projekt". Uwag z terenu nie było, więc
+sesja domknęła audyt PR #33 (AGENTS.md §2 pkt 2: przegląd poprzedniego PR-a
+przed nową pracą) i poprawiła to, co audyt znalazł. Nowych funkcji nie ma.
+
+**Audyt PR #33 (f086fd3, 54 pliki, +1253/−1436):**
+
+- **Spójne:** `poprawna` = numer `1..4` wszędzie (`app/`, `index.html`, `sw.js`,
+  most `.gs`, `data/przyklady/zestaw-podkowa-lesna.json` — 6/6 pytań w konwencji
+  modelu); schematy `TO-zestaw/2`, `TO-zestaw-lokalny/2`, `stan-gry/2`;
+  cache-bust jednolity (`m12-140`); kontener `TO-paczka/2` i `app/kodowanie.js`
+  wycięte także z mostu — `skrotPaczki`, `walidujKandydata`, `zalozGre`,
+  `budujIndeks` i `skrotIstniejacegoPliku` pracują na jawnej paczce; atrapa
+  `Utilities.newBlob(...).getBytes()` w `test/helpers/most.js` oddaje bajty
+  UTF-8 tak samo jak `TextEncoder` w aplikacji, więc odcisk liczony w teście
+  jest odciskiem z terenu.
+- **Usterka 1 (poprawiona, commit 1):** przeliczenie z ADR 0050 pkt 3
+  (`wybrana + 1 === pytanie.poprawna`) istniało w kodzie DWUKROTNIE —
+  w silniku (`zapiszOdpowiedz`, `app/rozgrywka.js`) i w UI
+  (`odpowiedzNaPytanie`, `app/app.js`), a dokumentacja sesji 2026-09-15e
+  obiecywała „aplikacja przelicza raz, na granicy UI". Dwie kopie tej samej
+  reguły to wzorzec z LESSONS L74: przy rozjeździe ekran mówi „Dobrze!",
+  dziennik liczy 0 pkt, a most w multi dostaje trzecią wersję prawdy.
+- **Usterka 2 (poprawiona, commit 2):** odcisk treści paczki ma dwie
+  implementacje (aplikacja i most) i ŻADNEGO testu, który je porównuje —
+  ADR 0050 pkt 2 mówi „obie strony liczą ten sam skrót", a LESSONS L33 wymaga,
+  żeby lustro mostu miało test WYKONUJĄCY. Literówka albo „poprawka" po jednej
+  stronie rozdzieliłaby paczkę na dwie tożsamości cicho.
+- **Obserwacja (bez zmian w kodzie → BACKLOG B24):** profil źródeł
+  (`paczka.factcheck`) jest stemplowany ze stanu ptaszka `#prompt-factcheck`,
+  nie z treści paczki; przy powrocie do aplikacji przez ⚙ START GRY ptaszek jest
+  kasowany (uwaga G.a, 2026-09-12), więc paczka ze źródłami może zostać
+  oznaczona jako niezweryfikowana (znaczek i nazwa pliku na Drive kłamią).
+  Rozstrzygnięcie wymaga decyzji właściciela (ADR 0032 / ADR 0050 pkt 5).
+- **Kosmetyka (poprawiona, commit 2):** na końcu `test/most-paczka.test.js`
+  został wiszący komentarz JSDoc po funkcji przeniesionej do
+  `test/helpers/most.js` — martwy nośnik (LESSONS L31/L55).
+
+**Commit 1 (m12-141, „Werdykt odpowiedzi liczy tylko silnik"):**
+`odpowiedzNaPytanie` bierze werdykt z wpisu dziennika (`wpis.poprawna`) zamiast
+przeliczać numer odpowiedzi drugi raz; ocena na ekranie, punkt w dzienniku i
+zdarzenie `odpowiedz` wysyłane na most mają odtąd jedno źródło. Pokazywanie
+litery i tekstu poprawnej odpowiedzi (`'ABCD'[pytanie.poprawna - 1]`) zostaje —
+to rendering, nie werdykt. Aneks 2026-09-15f do ADR 0050 zapisuje, gdzie żyje
+przeliczenie; strażnik w `test/kontrakt.test.js` pilnuje, że porównanie istnieje
+wyłącznie w `app/rozgrywka.js`. Cache-bust podbity we wszystkich miejscach naraz
+(`index.html`, 12 modułów `app/*.js`, `sw.js`).
+
+**Commit 2 (test parity odcisku):** `test/most-paczka.test.js` wykonuje
+`skrotPaczki` z tekstu `.gs` na atrapie Drive i porównuje z `app/zestawy.js` —
+najpierw na tej samej paczce (polskie znaki: `Podkowa Leśna`, `Źródło`, czyli
+także zgodność UTF-8), potem na skrócie, który naprawdę dojeżdża do aplikacji
+we wpisie indeksu publicznego.
+
+**Commit 3 (dokumentacja):** ten wpis, `docs/BACKLOG.md` B24 (profil źródeł
+z ptaszka vs z treści), `docs/setup/HANDOFF_2026-09-15f.md`, aneks do ADR 0050.
+
+**Brama na koniec:** `npm test` **805/805**, `npm run check` OK (szablon §2 —
+3 743 znaki, §2.2 — 3 878), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%**
+(850/870 wierszy), `npm run budzet` **99 011 / 100 000** (rezerwa 989), m12-141.
+
+**Otwarte po sesji:** właściciel wgrywa ponownie most Drive (`.gs` zmieniony
+w PR #33 — bez tego jawne paczki nie przejdą), potwierdza ADR 0047 (blokada
+szczypania poza mapą na iPhonie), weryfikuje w terenie ocenę odpowiedzi `1..4`
+i rozstrzyga BACKLOG B24.
+
+**Odpowiedzi właściciela (2026-09-15f, po audycie):** (1) **most Drive wgrany** —
+zaległość z PR #33 zamknięta; (2) **ADR 0047 działa** — blokada szczypania poza
+mapą potwierdzona na iPhonie; (3) ocena odpowiedzi `1..4`, pasek „Stacja 1 -
+Jacek" i czytelny plik paczki na Drive — „wygląda ok"; (4) **B24 rozstrzygnięte:
+wariant (a), bez zmian w kodzie** — domyślnie bez ptaszka, a wtedy fact-check
+jest niewymuszony („model może sobie sprawdzić ale nie musi"). Stempel
+`paczka.factcheck` mówi o PROFILU (czy aplikacja źródeł ZAŻĄDAŁA), nie o tym, co
+model dopisał z własnej woli; szablon §2.2 już to mówi modelowi („Sposób ich
+ustalenia zostawiamy Tobie", pole `zrodla` OPCJONALNE).
+
+**Uwaga A (prompt dla AI) — commit 4 (m12-142, szablony `PYT/1.1.1` /
+`PYT/1.1-nofc.1`):** trzy zdania podyktowane przez właściciela, zastosowane
+w OBU szablonach (§2 i §2.2 są lustrem; w §2.2 odpowiednikiem „potwierdzony
+fakt" jest „pewny fakt"):
+
+1. Zasada 4: „Schodź na najniższy poziom, na którym masz sensowny potwierdzony
+   fakt, **i podawaj wtedy nazwę miejsca w treści pytania**." → bez wyróżnionego
+   ogona. O kotwicy mówi pierwsza część zdania, a o braku lokalnego zaczepienia
+   zdanie następne — przepis o nazwie miejsca był trzecim głosem w tej sprawie.
+2. Zasada 7: „Formułuj treść pytania tak, żeby odpowiedź pozostawała do wyboru —
+   fakty rozstrzygające (na przykład rok) umieść dopiero w polu `wyjasnienie`."
+   → „Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu."
+3. Wymaganie dla pola `stacja`: „KAŻDA stacja ma co najmniej jedno pytanie,
+   a rozkład pytań między stacje jest równy albo różni się o jedno." → „KAŻDA
+   stacja ma co najmniej jedno pytanie, wszystkie stacje mają tą samą liczbę
+   pytań." (forma właściciela dosłownie — patrz „Otwarte").
+
+Schemat paczki się nie zmienił, więc wersja protokołu zostaje **PYT/1.1** —
+podbite są łatki szablonów (PROTOKOL §7 pkt 3), z wpisem w §7. Stałe w
+`app/protokol.js` przepisane narzędziem (`npm run build`): dokument jest jedynym
+źródłem prawdy. Szablony schudły po 140 znaków (§2: **3603**, §2.2: **3738**).
+
+**Rozjazd prompt ↔ walidator (commit 4, BACKLOG B25, bez zmian w kodzie):**
+zmiana 3 żąda równej liczby pytań na każdej stacji, a `E05` odrzuca paczkę
+dopiero przy rozkładzie różnym o WIĘCEJ niż jedno (`E03` pilnuje tylko sumy
+`liczbaStacji × pytaniaNaStacje`). Paczka 3 stacje × 2 graczy rozdzielona 3/2/1
+przechodzi więc bez słowa, choć prompt ją wyklucza — a w grze oznacza to, że na
+jednej stacji gracz odpowiada dwa razy, na innej wcale (ADR 0027 aneks:
+`pytaniaNaStacje` = liczba graczy właśnie po to, żeby każdy miał swoje pytanie).
+Zaostrzenie `E05` to odrzucanie paczek w terenie, a ręcznej edycji paczki nie ma
+(ADR 0006 aneks 2026-09-07) — decyzja właściciela, warianty a/b/c w B25.
+
+**Commit 5 (piny i dokumentacja):** test w `test/protokol.test.js` pilnuje nowych
+zdań DOSŁOWNIE w obu szablonach i tego, że stare brzmienie nie wróci przy
+kolejnej synchronizacji z dokumentem; B24 zamknięty decyzją właściciela, B25
+dopisany; ten wpis i aktualizacja `docs/setup/HANDOFF_2026-09-15f.md`.
+
+**Brama po commitach 1–5:** `npm test` **806/806**, `npm run check` OK (szablon
+§2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%**
+(850/870 wierszy), `npm run budzet` **99 122 / 100 000** (rezerwa 878), m12-142.
+
+**Decyzje właściciela po pushu (commit 6 — kod, commit 7 — dokumentacja):**
+
+- **B25: `E05` bez tolerancji ±1.** Właściciel: „nie ma możliwości rozkładu +-1
+  bo nie ma już w setupie pola z ilością pytań - w hotseat ilość pytań to ilość
+  stacji * ilość graczy, w multi ilość pytań to ilość stacji. Możesz wywalić to
+  z E05 bo to nie występuje w przyrodzie". Żaden z wariantów a/b/c z BACKLOG-u:
+  gałąź `max − min > 1` usunięta z `app/protokol.js`, więc `E05` pilnuje już
+  tylko stacji bez żadnego pytania. Kod potwierdza uzasadnienie właściciela:
+  `pytaniaNaStacjeDla()` zwraca liczbę graczy w hot-seat i **1** przy
+  `rodzajGry === 'multi'`, a sumę `liczbaStacji × pytaniaNaStacje` pilnuje `E03`
+  — organizator nie ma pola, którym mógłby wymusić nierówny podział (tak samo
+  jak przy wycofanym `K22`). Zaktualizowane: opis `E05` w PROTOKOL §6, zdanie
+  w §7, testy — na każdą pustą stację JEDNA usterka plus nowy test, że nierówna
+  paczka BEZ pustej stacji (3 stacje, pytania 3/1/1, suma zgodna z setupem)
+  przechodzi bez usterek.
+- **Forma zdania dla pola `stacja`:** podyktowane „tą samą" → normatywne **„tę
+  samą liczbę pytań"** w obu szablonach; łatki **`PYT/1.1.2` /
+  `PYT/1.1-nofc.2`**, wpis w §7, pin w `test/protokol.test.js` zaktualizowany,
+  stałe przepisane `npm run build`. Cache-bust m12-143.
+
+**Brama na koniec sesji:** `npm test` **807/807**, `npm run check` OK (szablon
+§2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%**
+(850/870 wierszy), `npm run budzet` **99 206 / 100 000** (rezerwa 794), m12-143,
+szablony `PYT/1.1.2` / `PYT/1.1-nofc.2`.
+
+**Otwarte po sesji:** kolejka pusta — zaległości z PR #33 zamknięte (most Drive
+wgrany, ADR 0047 działa, weryfikacja terenowa „wygląda ok"), B24 i B25
+rozstrzygnięte decyzjami właściciela. Do sprawdzenia w terenie: paczka
+z promptu `PYT/1.1.2` — czy pytania nie zawierają odpowiedzi, czy model trzyma
+równą liczbę pytań na stację i czy kotwiczenie bez przepisu o nazwie miejsca
+dalej daje pytania zakotwiczone.
