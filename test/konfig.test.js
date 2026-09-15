@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DOMYSLNE, JEZYK_GRY, KANON_SETUPU, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_DOPELNIANE_PRZY_MIGRACJI, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, ZMIANY_KANONU_SETUPU, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, dopelnijNoweTematySetupu, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, rngZZiarna, tematyDopelnianeOdKanou, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
+import { DOMYSLNE, JEZYK_GRY, KANON_SETUPU, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_DOPELNIANE_PRZY_MIGRACJI, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, ZMIANY_KANONU_SETUPU, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, dopelnijNoweTematySetupu, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, pytaniaNaStacjeDla, rngZZiarna, tematyDopelnianeOdKanou, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
 test('TRYBY: trzy tryby z briefu właściciela, prędkości 4,5/15/40 km/h, bez własnego promienia (ADR 0025)', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
@@ -127,7 +127,12 @@ test('walidujSetup: przyjmuje poprawną i odrzuca każdą klasę błędu', () =>
   assert.ok(kody({ ...baza, imiona: ['', 'Ala'] }).includes('K08'));
   assert.ok(kody({ ...baza, liczbaStacji: 2 }).includes('K10'));
   assert.ok(kody({ ...baza, liczbaStacji: 13 }).includes('K10'));
-  assert.ok(kody({ ...baza, pytaniaNaStacje: 9 }).includes('K11'), 'widełki pytań sięgają MAKS_GRACZY (ADR 0027)');
+  // K11 (widełki pytań na stację) i K22 (równy podział) usunięte 2026-09-15
+  // (uwaga właściciela B): organizator nie podaje już liczby pytań, więc nie ma
+  // czego odrzucać — plan liczy `pytaniaNaStacjeDla` i z definicji mieści się w
+  // widełkach oraz dzieli się bez reszty.
+  assert.ok(!kody({ ...baza, pytaniaNaStacje: 9 }).includes('K11'), 'K11 już nie istnieje');
+  assert.ok(!kody({ ...baza, pytaniaNaStacje: 0 }).includes('K11'), 'K11 już nie istnieje');
   assert.ok(kody({ ...baza, promienM: 50 }).includes('K12'));
   assert.ok(kody({ ...baza, promienM: 99999 }).includes('K12'));
   assert.ok(kody({ ...baza, tematy: [] }).includes('K14'));
@@ -286,18 +291,34 @@ test('oczyscKonfiguracje: promień zawsze wynika z czasu, trybu i liczby pytań 
 
 /* ---- ADR 0027: pytania po równo na gracza (hot-seat) ---- */
 
-test('pytania dzielą się równo między graczy: K22 dla reszty, cisza dla pełnego podziału', () => {
+test('plan pytań jest liczony, nie pytany: hot-seat stacje × gracze, multi jedno na stację (uwaga B, 2026-09-15)', () => {
   const kody = (k) => walidujSetup(k).map((u) => u.kod);
-  const baza = domyslnaKonfiguracja(2); // 5 stacji × 2 pytania = 10 → 10 % 2 = 0
+  const baza = domyslnaKonfiguracja(2); // 5 stacji × 2 pytania = 10, czyli po 5 na gracza
   assert.equal(baza.pytaniaNaStacje, 2, 'domyślnie każdy gracz odpowiada raz przy każdej stacji');
+  assert.equal(liczbaPytan(baza), 2 * baza.liczbaStacji, 'hot-seat: pytań jest tyle, ile stacji × graczy');
+
+  // K22 już nie istnieje: reszta z podziału nie jest możliwa, bo liczba pytań
+  // na stację JEST liczbą graczy (ADR 0027 część A weszła do liczenia, nie do
+  // walidacji).
+  assert.ok(!kody({ ...baza, liczbaStacji: 5, pytaniaNaStacje: 1 }).includes('K22'), 'K22 już nie istnieje');
   assert.ok(!kody(baza).includes('K22'), 'domyślny setup 2 graczy jest poprawny');
 
-  assert.ok(kody({ ...baza, liczbaStacji: 3, pytaniaNaStacje: 1 }).includes('K22'), '3 × 1 = 3 pytania dla 2 graczy — nie dzieli się');
-  assert.ok(kody({ ...baza, liczbaStacji: 5, pytaniaNaStacje: 1 }).includes('K22'), '5 pytań dla 2 graczy — nie dzieli się');
-  assert.ok(!kody({ ...baza, liczbaStacji: 4, pytaniaNaStacje: 1 }).includes('K22'), '4 × 1 = 4 dla 2 graczy — po 2 pytania');
-  assert.ok(!kody({ ...baza, liczbaStacji: 3, pytaniaNaStacje: 2 }).includes('K22'), '3 × 2 = 6 dla 2 graczy — po 3 pytania');
-  assert.ok(!kody(domyslnaKonfiguracja(1)).includes('K22'), 'jeden gracz bierze wszystko');
-  assert.ok(!kody(domyslnaKonfiguracja(8)).includes('K22'), '8 graczy: 8 pytań na stację (widełki do MAKS_GRACZY)');
+  for (const graczy of [1, 2, 3, 5, 8, 12]) {
+    assert.equal(
+      pytaniaNaStacjeDla({ liczbaGraczy: graczy }),
+      Math.min(graczy, OGRANICZENIA.pytaniaNaStacje.max),
+      `${graczy} graczy → pytań na stację tyle, ile graczy (nadwyżka za MAKS_GRACZY)`,
+    );
+    const k = domyslnaKonfiguracja(Math.min(graczy, OGRANICZENIA.liczbaGraczy.max));
+    assert.equal(liczbaPytan(k) % k.liczbaGraczy, 0, `${k.liczbaGraczy} graczy dzieli ${liczbaPytan(k)} pytań bez reszty`);
+  }
+
+  // Multi (właściciel 2026-09-15: „w multiplayerze nic nie zmieniamy"): jedno
+  // pytanie na stację, wszyscy odpowiadają na nie samo.
+  assert.equal(pytaniaNaStacjeDla({ liczbaGraczy: 4, rodzajGry: 'multi' }), 1, 'multi: jedno pytanie na stację dla wszystkich');
+  // Śmiecie w liczbie graczy nie wchodzą do planu (por. `domyslnaKonfiguracja`).
+  assert.equal(pytaniaNaStacjeDla({}), DOMYSLNE.pytaniaNaStacje, 'brak danych = plan z briefu');
+  assert.equal(pytaniaNaStacjeDla({ liczbaGraczy: 'dużo' }), DOMYSLNE.pytaniaNaStacje, 'tekst zamiast liczby nie wchodzi do planu');
 });
 
 test('hot-seat: pytań jest co najmniej tyle co stacji, a widełki pytań sięgają MAKS_GRACZY', () => {
@@ -311,9 +332,11 @@ test('hot-seat: pytań jest co najmniej tyle co stacji, a widełki pytań sięga
   }
 });
 
-test('oczyscKonfiguracje: pytania na stację zaciskają się do widełek, ale nie psują podziału domyślnego', () => {
-  assert.equal(oczyscKonfiguracje({ pytaniaNaStacje: 99 }).pytaniaNaStacje, OGRANICZENIA.pytaniaNaStacje.max);
-  assert.equal(oczyscKonfiguracje({ liczbaGraczy: 4 }).pytaniaNaStacje, 4, 'zmiana liczby graczy ciągnie domyślne pytania');
+test('oczyscKonfiguracje: pytań na stację nie bierze ze zapisu — plan liczy z liczby graczy (uwaga B, 2026-09-15)', () => {
+  assert.equal(oczyscKonfiguracje({ liczbaGraczy: 2, pytaniaNaStacje: 99 }).pytaniaNaStacje, 2, 'stare pole z zapisu nie ma pierwszeństwa');
+  assert.equal(oczyscKonfiguracje({ liczbaGraczy: 2, pytaniaNaStacje: 1 }).pytaniaNaStacje, 2, 'ręczne „1 pytanie na stację" też przepada — inaczej podział się sypie');
+  assert.equal(oczyscKonfiguracje({ liczbaGraczy: 4 }).pytaniaNaStacje, 4, 'zmiana liczby graczy ciągnie plan pytań');
+  assert.equal(oczyscKonfiguracje({ liczbaGraczy: 12 }).pytaniaNaStacje, OGRANICZENIA.pytaniaNaStacje.max, 'plan mieści się w widełkach bez walidacji');
 });
 
 

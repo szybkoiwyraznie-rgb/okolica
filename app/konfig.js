@@ -296,8 +296,9 @@ export const PODKLADY = {
 export const OGRANICZENIA = {
   liczbaGraczy: { min: 1, max: 8 },
   liczbaStacji: { min: 3, max: 12 },
-  // max = maks. liczba graczy: w hot-seacie każdy gracz może odpowiadać przy
-  // każdej stacji (ADR 0027), a pytania mają się dzielić równo między graczy.
+  // nie jest polem setupu (uwaga właściciela B, 2026-09-15): liczy ją
+  // `pytaniaNaStacjeDla`. max = maks. liczba graczy, bo w hot-seacie każdy
+  // gracz odpowiada przy każdej stacji (ADR 0027).
   pytaniaNaStacje: { min: 1, max: 8 },
   promienM: { min: 200, max: 50000 },
   czasGryMin: { min: 10, max: 480 },
@@ -310,7 +311,7 @@ export const DOMYSLNE = {
   tryb: 'piesza',
   liczbaGraczy: 1,
   liczbaStacji: 5,
-  pytaniaNaStacje: 1,
+  pytaniaNaStacje: 1, // przy jednym graczu; resztę liczy `pytaniaNaStacjeDla`
   czasGryMin: 60, // planowany czas gry; promień jest z niego liczony (ADR 0025)
   // Domyślne zaznaczenie = wszystkie tematy NOWEGO setupu, alfabetycznie
   // (ADR 0034, 2026-09-10): z Ciekawostkami, bez usuniętych Sportu/Jedzenia
@@ -390,10 +391,9 @@ export function domyslnaKonfiguracja(liczbaGraczy = DOMYSLNE.liczbaGraczy) {
   const n = Number.isFinite(surowe)
     ? Math.min(Math.max(1, Math.round(surowe)), OGRANICZENIA.liczbaGraczy.max)
     : DOMYSLNE.liczbaGraczy;
-  // Hot-seat (ADR 0027): domyślnie każdy gracz odpowiada raz przy każdej
-  // stacji, więc pytań na stację jest tyle, ilu jest graczy — wtedy łączna
-  // liczba pytań (stacje × gracze) dzieli się między nich bez reszty.
-  const pytania = Math.min(n, OGRANICZENIA.pytaniaNaStacje.max);
+  // Hot-seat (ADR 0027 + uwaga B 2026-09-15): pytań na stację jest tyle, ilu
+  // graczy — liczby nie podaje organizator, patrzy na nią tylko `liczbaPytan`.
+  const pytania = pytaniaNaStacjeDla({ liczbaGraczy: n });
   return {
     ...DOMYSLNE,
     liczbaGraczy: n,
@@ -412,6 +412,26 @@ export function domyslnaKonfiguracja(liczbaGraczy = DOMYSLNE.liczbaGraczy) {
 /** Liczba pytań w paczce = stacje × pytania na stację (protokół §3.1). */
 export function liczbaPytan(konfig) {
   return konfig.liczbaStacji * konfig.pytaniaNaStacje;
+}
+
+/**
+ * Plan pytań na stację jest LICZONY, nie pytany (uwaga terenowa właściciela B,
+ * 2026-09-15; ADR 0027 część A weszła przez to do liczenia zamiast do
+ * walidacji):
+ * - hot-seat: przy każdej stacji każdy gracz dostaje jedno pytanie, więc
+ *   pytań jest `stacje × gracze` i dzielą się bez reszty (dawniej pilnował
+ *   tego kod błędu K22 — jest zbędny, gdy reszta nie może powstać);
+ * - multi: jedno pytanie na stację, a wszyscy odpowiadają na nie samo
+ *   (właściciel: „w multiplayerze nic nie zmieniamy").
+ * Sufit to `OGRANICZENIA.pytaniaNaStacje.max` = MAKS_GRACZY.
+ */
+export function pytaniaNaStacjeDla({ liczbaGraczy, rodzajGry } = {}) {
+  if (rodzajGry === 'multi') return 1;
+  const surowe = liczbaGraczy == null || liczbaGraczy === '' ? NaN : Number(liczbaGraczy);
+  const graczy = Number.isFinite(surowe)
+    ? Math.max(1, Math.round(surowe))
+    : DOMYSLNE.liczbaGraczy;
+  return Math.min(graczy, OGRANICZENIA.pytaniaNaStacje.max);
 }
 
 /**
@@ -500,7 +520,6 @@ export function oczyscKonfiguracje(surowa) {
   const liczby = {
     liczbaGraczy: OGRANICZENIA.liczbaGraczy,
     liczbaStacji: OGRANICZENIA.liczbaStacji,
-    pytaniaNaStacje: OGRANICZENIA.pytaniaNaStacje,
     czasGryMin: OGRANICZENIA.czasGryMin,
   };
   for (const [pole, zakres] of Object.entries(liczby)) {
@@ -508,22 +527,10 @@ export function oczyscKonfiguracje(surowa) {
     if (!Number.isFinite(v)) continue;
     konfig[pole] = Math.min(Math.max(Math.round(v), zakres.min), zakres.max);
   }
-  // Liczba graczy bez podanych pytań na stację: domyślnie każdy gracz
-  // odpowiada raz przy każdej stacji (ADR 0027). Jawne `pytaniaNaStacje`
-  // w źródle ma pierwszeństwo — nawet gdy nie dzieli się równo (to zgłosi K22).
-  if (zrodlo.pytaniaNaStacje === undefined) {
-    konfig.pytaniaNaStacje = Math.min(konfig.liczbaGraczy, OGRANICZENIA.pytaniaNaStacje.max);
-  }
-
-  // Promień jest WYNIKIEM, nie wejściem (ADR 0025): liczy się z czasu, trybu
-  // i liczby pytań — także dla starych zapisów, które niosły własny `promienM`
-  // (migracja: brak `czasGryMin` = domyślne 60 min).
-  konfig.promienM = promienZCzasuGry({
-    czasGryMin: konfig.czasGryMin,
-    tryb: konfig.tryb,
-    liczbaStacji: konfig.liczbaStacji,
-    pytaniaNaStacje: konfig.pytaniaNaStacje,
-  });
+  // Pytań na stację NIE czytamy ze zapisu (uwaga właściciela B, 2026-09-15):
+  // plan jest liczony z listy graczy. Stare zapisy z własną liczbą (było pole
+  // setupu) są przepisane — inna wartość nie miałaby już czym naprawić błędu
+  // równego podziału, którego ta zmiana właśnie dotyczyła.
 
   // listy i teksty
   konfig.tematy = Array.isArray(zrodlo.tematy) ? [...new Set(zrodlo.tematy.map(kanonicznyTemat))].filter((t) => Object.hasOwn(TEMATY, t)) : [];
@@ -533,6 +540,18 @@ export function oczyscKonfiguracje(surowa) {
     ? zrodlo.imiona.slice(0, konfig.liczbaGraczy).map((imie, i) => (typeof imie === 'string' && imie.trim() ? imie.trim().slice(0, OGRANICZENIA.dlugoscImienia.max) : `Gracz ${i + 1}`))
     : [...domyslne.imiona];
   while (konfig.imiona.length < konfig.liczbaGraczy) konfig.imiona.push(`Gracz ${konfig.imiona.length + 1}`);
+  konfig.pytaniaNaStacje = pytaniaNaStacjeDla({ liczbaGraczy: konfig.imiona.length });
+  // Promień jest WYNIKIEM, nie wejściem (ADR 0025): liczy się z czasu, trybu
+  // i liczby pytań — także dla starych zapisów, które niosły własny `promienM`
+  // (migracja: brak `czasGryMin` = domyślne 60 min). Liczy się PO planie pytań,
+  // bo tymczasem plan wynika z listy graczy (uwaga B, 2026-09-15): przy trzech
+  // graczy trzy pytania jedzą czas marszu, a nie jedno z domyślnej konfiguracji.
+  konfig.promienM = promienZCzasuGry({
+    czasGryMin: konfig.czasGryMin,
+    tryb: konfig.tryb,
+    liczbaStacji: konfig.liczbaStacji,
+    pytaniaNaStacje: konfig.pytaniaNaStacje,
+  });
   if (typeof zrodlo.kodGry === 'string') {
     konfig.kodGry = zrodlo.kodGry.trim().slice(0, OGRANICZENIA.dlugoscKoduGry.max);
   }
@@ -577,19 +596,12 @@ export function walidujSetup(konfig) {
   if (!Number.isInteger(konfig.liczbaStacji) || konfig.liczbaStacji < minS || konfig.liczbaStacji > maxS) {
     dodaj('K10', 'liczbaStacji', `Liczba stacji musi być liczbą całkowitą od ${minS} do ${maxS}.`);
   }
-  const { min: minP, max: maxP } = OGRANICZENIA.pytaniaNaStacje;
-  if (!Number.isInteger(konfig.pytaniaNaStacje) || konfig.pytaniaNaStacje < minP || konfig.pytaniaNaStacje > maxP) {
-    dodaj('K11', 'pytaniaNaStacje', `Liczba pytań na stację musi być liczbą od ${minP} do ${maxP}.`);
-  }
-
-  // Hot-seat: pytania po równo na gracza (ADR 0027). Minimum „tyle pytań co
-  // stacji" wynika z K11 (pytaniaNaStacje ≥ 1); tu chodzi o równy podział.
-  if (Number.isInteger(konfig.liczbaGraczy) && konfig.liczbaGraczy > 1
-    && Number.isInteger(konfig.liczbaStacji) && Number.isInteger(konfig.pytaniaNaStacje)
-    && (konfig.liczbaStacji * konfig.pytaniaNaStacje) % konfig.liczbaGraczy !== 0) {
-    dodaj('K22', 'pytaniaNaStacje',
-      `Pytania muszą dzielić się równo między graczy: ${konfig.liczbaStacji} stacji × ${konfig.pytaniaNaStacje} pytania = ${konfig.liczbaStacji * konfig.pytaniaNaStacje} pytań dla ${konfig.liczbaGraczy} graczy. Zmień liczbę graczy, stacji albo pytań na stację.`);
-  }
+  // K11 (widełki pytań na stację) i K22 (równy podział między graczy) usunięte
+  // 2026-09-15 (uwaga właściciela B): pola „pytań na stację" nie ma, więc
+  // organizator nie może podać złej liczby — plan liczy `pytaniaNaStacjeDla`,
+  // który z konstrukcji mieści się w widełkach i dzieli pytania bez reszty.
+  // Zostawienie tych kodów dałoby komunikat odsyłający do kontrolki, której nie
+  // ma (LESSONS L64) i którą i tak nic by nie naprawił (ślepa uliczka).
 
   const { min: minC, max: maxC } = OGRANICZENIA.czasGryMin;
   if (!Number.isFinite(konfig.czasGryMin) || konfig.czasGryMin < minC || konfig.czasGryMin > maxC) {

@@ -64,35 +64,20 @@ pytań) nie działało w miejscu, gdzie miało działać.
 
 ## Aneks (2026-09-07): kotwica szacowana dla starych paczek (B19)
 
-**Kontekst.** Pliki opublikowane przed tym ADR-em mają tylko `geohash5`
-(≈3,0 × 4,9 km), więc reguła „odległość od komórki ≤ 200 m" łapała też paczkę
-zakotwiczoną 3 km dalej — nadmiarowe dopasowanie.
+Uzasadnienie i pełne brzmienie decyzji 6–8:
+`docs/decisions/archive/aneksy-0024-2026-09-07a.md` (przeniesione dla budżetu
+lektury startowej, AGENTS.md §0 + LESSONS L62). Reguły, które obowiązują:
 
-**Decyzja 6 — kotwica szacowana ze środka ciężkości stacji.** `budujIndeks`
-w moście Drive czyta cały plik paczki, więc dla wpisu bez `meta.geohash6`
-liczy geohash6 ze **średniej współrzędnych stacji** i oznacza wpis
-`geohash6Szacowany: true`. Nie z pierwszej stacji (jak szkicował BACKLOG):
-start gry leży w środku obszaru stacji, a pierwsza stacja bywa na jego skraju.
-
-**Decyzja 7 — tolerancja szacowanej kotwicy to `200 m + promienM` paczki.**
-Pozycja startowa starej paczki jest nieznana, ale każda jej stacja leży
-w promieniu `meta.promienM` od niej — więc start oddalony od środka ciężkości
-o cały promień nadal się dopasuje. To dowód braku regresji: gracz, który
-wcześniej widział paczkę, widzi ją nadal, a nadmiarowe dopasowanie maleje
-z ~4 km do ~`promienM` (domyślnie 500 m). Kotwica dokładna (`meta.geohash6`)
-zostaje przy 200 m — poszerzenie dotyczy wyłącznie wpisów ze znacznikiem.
-
-**Decyzja 8 — koder geohash w Apps Script jest testowany w tym repozytorium.**
-`geohashPunkt()` w `.gs` to kopia `geohash()` z `app/geo.js` (Apps Script nie
-importuje modułów ESM). `test/most-indeks.test.js` wycina ten fragment tekstu
-skryptu, wykonuje go i porównuje z `app/geo.js` na siatce >500 punktów — kopia
-nie rozjedzie się po cichu. BACKLOG zapowiadał „bez testów"; test okazał się
-tańszy niż ryzyko.
-
-**Konsekwencje.** Zmiana wymaga **wklejenia nowej wersji skryptu** przez
-właściciela (Apps Script → wklej → wdróż); do tego czasu stare paczki zachowują
-zgrubne dopasowanie, a nowe działają dokładnie. Indeks rośnie o dwa pola na
-wpis (addytywne — stary klient je ignoruje).
+6. Wpis bez `meta.geohash6` (paczkę opublikowano przed tym ADR-em) dostaje
+   kotwicę **szacowaną ze środka ciężkości stacji** (`budujIndeks` w moście
+   Drive) i znacznik `geohash6Szacowany: true` — nie z pierwszej stacji.
+7. Tolerancja takiej kotwicy to `200 m + meta.promienM` paczki; kotwica dokładna
+   zostaje przy 200 m. Chodzi o brak regresji: kto widział paczkę wcześniej,
+   widzi ją nadal, a nadmiarowe dopasowanie spada z ~4 km do ~`promienM`.
+8. `geohashPunkt()` w `.gs` to kopia `geohash()` z `app/geo.js`; trzyma ją
+   `test/most-indeks.test.js` (wycina tekst skryptu, wykonuje i porównuje na
+   siatce >500 punktów). Zmiana wymaga wklejenia nowej wersji skryptu Apps
+   Script — do tego czasu stare paczki dopasowują się zgrubnie.
 
 ## Aneks (2026-09-07): promień nie jest kryterium, a komunikat nazywa powód
 

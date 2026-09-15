@@ -960,7 +960,10 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
   // setup: rodzaj gry multi (tryb trasa + sekret to domyślne), dokładnie jeden gracz
   await wybierzSegment(A, 'lista-rodzajow', 'multi');
-  assert.equal(el(A, 'pole-pytania').hidden, true, 'w multi nie ma pola „pytań na stację”');
+  // Uwaga właściciela B (2026-09-15): pola „pytań na stację" nie ma w żadnym
+  // trybie, a w multi plan pozostaje jeden pytanie na stację bez względu na to,
+  // ilu graczy jest na liście.
+  assert.match(tekst(A, 'setup-promien-info'), /: 3 pytań ≈/, 'multi: 3 stacje × 1 pytanie, nie 3 × gracze');
   assert.equal(el(A, 'pole-multi-tryb').hidden, false, 'segment trybu multi widoczny');
   assert.equal(el(A, 'pole-trasa-sekret').hidden, false, 'ptaszek trasa-sekret widoczny przy trasie');
   assert.equal(el(A, 'multi-trasa-sekret').checked, true, 'sekret domyślnie zaznaczony');
@@ -1277,7 +1280,9 @@ test('lista graczy = tożsamość (ADR 0026 aneks): dodaj, odmowa PIN-u, zapami�
   assert.match(tekst(A, 'status'), /Założono profil/, 'jawne potwierdzenie założenia profilu');
   assert.equal(el(A, 'profil-pin').value, '', 'PIN nie zostaje w polu (ADR 0013)');
   assert.equal(el(A, 'profil-pseudonim').value, '', 'pole imienia jest gotowe na kolejnego gracza');
-  assert.equal(el(A, 'setup-pytania').value, '1', 'pytania na stację idą za liczbą graczy (K22)');
+  // Hot-seat bez pola (uwaga właściciela B, 2026-09-15): pytań na stację jest
+  // tyle, ilu graczy, a widać to w uzasadnieniu promienia (5 stacji × 1 gracz).
+  assert.match(tekst(A, 'setup-promien-info'), /: 5 pytań ≈/, 'jeden gracz ⇒ 5 stacji × 1 pytanie');
 
   // 2) to samo imię drugi raz → odmowa lokalna, bez wołania mostu
   const przed = most.adresy.length;
@@ -1295,13 +1300,13 @@ test('lista graczy = tożsamość (ADR 0026 aneks): dodaj, odmowa PIN-u, zapami�
   await klik(A, 'przycisk-dodaj-gracza');
   await oddech();
   assert.deepEqual(lista(A), ['1. Ewa', '2. Jan'], 'kolejność dodawania to kolejność gry');
-  assert.equal(el(A, 'setup-pytania').value, '2', 'dwa pytania na stację przy dwóch graczach');
+  assert.match(tekst(A, 'setup-promien-info'), /: 10 pytań ≈/, 'dwóch graczy ⇒ 5 stacji × 2 pytania = 10');
 
   // 4) „✕ Usuń" zdejmuje gracza z listy
   const przyciskUsun = el(A, 'lista-graczy').children[0].children[1];
   przelaczNa(A); kliknijEl(przyciskUsun); await oddech();
   assert.deepEqual(lista(A), ['1. Jan'], 'usunięty gracz znika z listy');
-  assert.equal(el(A, 'setup-pytania').value, '1', 'pytania wracają do jednego gracza');
+  assert.match(tekst(A, 'setup-promien-info'), /: 5 pytań ≈/, 'usunięcie gracza cofa plan pytań (5 × 1)');
 
   // 5) zajęte imię + POPRAWNY PIN → przechodzi, profil bez zmian
   const B = await noweUrzadzenie({ most, bezGracza: true });

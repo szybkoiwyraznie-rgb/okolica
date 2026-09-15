@@ -164,3 +164,28 @@ bramki). Pasek dolny w wyścigu mówi „Jacek. Stacja 3/5” zamiast dystansu.
 `renderujWyborStacji()` to no-op. Punktacja, premia i pytanie per indeks
 gracza bez zmian.
 
+## Aneks 2026-09-15 (m12-126, uwaga B) — liczby pytań nie wybiera organizator
+
+Właściciel po teście terenowym: „w setupie hot-seat znika pytanie o liczbę pytań
+na stację — przy każdej stacji odpowiada każdy gracz, więc pytań jest
+`liczba stacji × liczba osób grających`”.
+
+Część A pkt 3 („domyślnie `pytaniaNaStacje = liczbaGraczy`”) przestaje być
+domyślną wartością, a staje się **jedyną regułą**: wylicza ją
+`pytaniaNaStacjeDla({ liczbaGraczy, rodzajGry })` w `app/konfig.js` (hot-seat =
+liczba graczy z listy, multi = 1), a `oczyscKonfiguracje` nadpisuje ją po
+dopelnieniu listy graczy. Pole setupu oraz widełki i równy podział (pkt 1, 2 i 4)
+znikają razem z kodami K11 i K22 — przy jednozdaniowej regule nie ma układu,
+który łamałby podział, więc nie ma czego pilnować. Gra sieciowa bez zmian:
+jedno pytanie na stację i wszyscy odpowiadają na to samo (pkt części B zostaje).
+
+- Liczbę mnoży nadal jedno miejsce, `liczbaPytan(konfig)`, więc prompt
+  (`{LICZBA_PYTAN}`) i walidator (E03) zmieniły źródło liczby, nie kształt.
+- Sufitem jest `OGRANICZENIA.pytaniaNaStacje.max` (8) — tyle samo, co maks.
+  liczba graczy (pkt 4), więc ani jeden, ani drugi próg się nie zmienił.
+- `WORKFLOW.md` §3 i legenda `{LICZBA_PYTAN}` w `PROTOKOL.md` opisują ekran bez
+  pola pytań; powrót pola łapie `test/dryf-dokumentow.test.js` (martwa fraza) i
+  pinezka nieobecności w `test/kontrakt.test.js`.
+- Fixture'y testów składają paczkę `stacje × graczy` pytań i prowadzą gracza po
+  całej stacji (`odpowiedzNaStacje` w `test/aplikacja.test.js`) — przy trzech
+  graczach stacja to trzy pytania, więc „jedno kliknięcie i dalej” już nie wystarcza.

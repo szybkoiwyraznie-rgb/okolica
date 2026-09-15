@@ -903,6 +903,12 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   assert.match(INDEX, /Wynik gry idzie na wspólne konto Google Drive/, 'sekcja prywatność mówi, że to domyślne');
   assert.ok(!INDEX.includes('id="setup-gracze"'), 'pola „Liczba graczy" nie ma — liczbą jest długość listy');
   assert.ok(!INDEX.includes('id="lista-imion"'), 'ręczne pola imion zastąpiła lista graczy');
+  // Uwaga terenowa właściciela B (2026-09-15): pola „pytań na stację\" nie ma w
+  // ŻADNYM trybie — hot-seat liczy stacje × graczy, multi jedno pytanie na
+  // stację. Kontrolki nie ma, więc nie ma też stanu do ukrycia (por. L64).
+  assert.ok(!INDEX.includes('id="setup-pytania"'), 'pola „Pytań na stację\" nie ma — liczba jest liczona');
+  assert.ok(!INDEX.includes('id="pole-pytania"'), 'kontenera pola pytań nie ma (był ukrywany w multi, 2026-09-11)');
+  assert.ok(!APP.includes("'setup-pytania'"), 'app.js nie sięga po pole, którego nie ma w HTML');
   assert.match(INDEX, /Kto gra\?/, 'blok tożsamości pyta „Kto gra?"');
   assert.ok(APP.includes("'okolica:gracze'"), 'lista graczy utrwalana pod ustalonym kluczem');
   assert.ok(APP.includes('gracze-lokalni/1'), 'schemat zapamiętanej listy graczy');

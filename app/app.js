@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-125';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-125';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-126';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-126';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-125';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-125';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-125';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-125';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-125';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-125';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-125';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-125';
+} from './protokol.js?v=m12-126';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-126';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-126';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-126';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-126';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-126';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-126';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-126';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-125';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-125';
+} from './zestawy.js?v=m12-126';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-126';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-125';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-125';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-125';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-125';
-import { adresMostu, stanMostu } from './most.js?v=m12-125';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-125';
+} from './sieci.js?v=m12-126';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-126';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-126';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-126';
+import { adresMostu, stanMostu } from './most.js?v=m12-126';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-126';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-125';
+} from './oceny.js?v=m12-126';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -907,7 +907,13 @@ function renderujListeGraczy() {
     li.appendChild(usun);
     lista.appendChild(li);
   });
+  // Tu, a nie w `dodajGracza`/`usunGracza`, bo `renderujListeGraczy()` jest
+  // wołana po KAŻDEJ zmianie listy — także przy starcie (zapamiętani wracają na
+  // listę) i przy wznowieniu. Liczba graczy jest długością tej listy (decyzja
+  // właściciela 2026-09-07), a plan pytań liczy się z tej liczby (uwaga B,
+  // 2026-09-15) — jedno miejsce, więc żaden tor nie zostawia rozjazdu.
   STAN.konfig.liczbaGraczy = Math.max(1, imiona.length);
+  synchronizujPytaniaZTrybem();
   renderujPolaTozsamosci(); // multi: pola wpisywania znikają po dodaniu siebie
   // Dołączającemu w multi lista gier ~50 m dopina się do ZNANEGO imienia bez
   // osobnego klikania (funkcja sama odmawia poza ścieżką „Dołączam” i bez
@@ -916,16 +922,19 @@ function renderujListeGraczy() {
 }
 
 /**
- * Pytania na stację idą za liczbą graczy (ADR 0027 część A): każdy gracz
- * odpowiada raz przy każdej stacji, więc pytania muszą dzielić się równo (K22).
+ * Plan pytań na stację liczy `pytaniaNaStacjeDla` (ADR 0027 część A + uwaga
+ * terenowa właściciela B, 2026-09-15): w hot-seacie każdy gracz odpowiada raz
+ * przy każdej stacji, w multi wszyscy odpowiadają na to samo pytanie. Pola do
+ * wpisywania tej liczby nie ma — jest tego świadomym efektem: nie ma czym
+ * popsuć równego podziału, więc nie ma też kodu błędu, który go pilnował (K22).
+ * Wołane przy każdej zmianie listy graczy, rodzaju gry i przy renderze setupu.
  */
-function synchronizujPytaniaZGraczami() {
-  const graczy = Math.max(1, STAN.konfig.imiona?.length ?? 1);
-  const ile = Math.min(graczy, OGRANICZENIA.pytaniaNaStacje.max);
-  if (STAN.konfig.pytaniaNaStacje !== ile) {
-    STAN.konfig.pytaniaNaStacje = ile;
-    $('setup-pytania').value = ile;
-  }
+function synchronizujPytaniaZTrybem() {
+  const ile = pytaniaNaStacjeDla({
+    liczbaGraczy: Math.max(1, STAN.konfig.imiona?.length ?? 1),
+    rodzajGry: STAN.rodzajGry,
+  });
+  if (STAN.konfig.pytaniaNaStacje !== ile) STAN.konfig.pytaniaNaStacje = ile;
 }
 
 function usunGracza(indeks) {
@@ -933,8 +942,7 @@ function usunGracza(indeks) {
   const [usuniete] = imiona.splice(indeks, 1);
   STAN.konfig.imiona = imiona;
   STAN.graczeZweryfikowani = [...(STAN.graczeZweryfikowani ?? [])].filter((_, i) => i !== indeks);
-  renderujListeGraczy();
-  synchronizujPytaniaZGraczami();
+  renderujListeGraczy(); // liczba graczy i plan pytań liczą się tu (uwaga B)
   przeliczPromienZCzasu(); // pytania wchodzą do wzoru na promień (ADR 0025)
   przywrocGraczy();
   status(usuniete ? `„${usuniete}" usunięte z listy graczy.` : 'Lista graczy bez zmian.');
@@ -1020,7 +1028,7 @@ function dodajGraczaDoListy(imie, { zweryfikowany }) {
   $('profil-pseudonim').value = '';
   $('profil-pin').value = ''; // PIN nie zostaje w polu (ADR 0013)
   renderujListeGraczy();
-  synchronizujPytaniaZGraczami();
+  synchronizujPytaniaZTrybem();
   przeliczPromienZCzasu(); // liczba pytań wchodzi do wzoru na promień (ADR 0025)
   przywrocGraczy();
 }
@@ -1331,7 +1339,7 @@ function renderujSetup() {
   const k = STAN.konfig;
   $('setup-czas').value = k.czasGryMin;
   $('setup-stacje').value = k.liczbaStacji;
-  $('setup-pytania').value = k.pytaniaNaStacje;
+  synchronizujPytaniaZTrybem(); // plan pytań jest liczony, nie wpisywany (uwaga B)
   $('setup-czas').min = OGRANICZENIA.czasGryMin.min;
   $('setup-czas').max = OGRANICZENIA.czasGryMin.max;
   przeliczPromienZCzasu();
@@ -1347,7 +1355,6 @@ function renderujSetup() {
   });
   czytajLiczbe('setup-czas', 'czasGryMin');
   czytajLiczbe('setup-stacje', 'liczbaStacji');
-  czytajLiczbe('setup-pytania', 'pytaniaNaStacje');
   $('przycisk-dodaj-gracza').addEventListener('click', () => { void dodajGracza(); });
 }
 
@@ -4434,7 +4441,11 @@ function renderujRodzajGry() {
   const zaloz = multi && STAN.multiSciezka === 'zaloz';
   const dolacz = multi && STAN.multiSciezka === 'dolacz';
   $('karta-multi').hidden = !multi;
-  $('pole-pytania').hidden = multi; // liczba stacji = liczba pytań
+  // Pola „pytań na stację" nie ma w żadnym trybie (uwaga B, 2026-09-15) —
+  // zostaje po nim tylko przeliczenie planu: multi daje jedno pytanie na
+  // stację, hot-seat po jednym na gracza.
+  synchronizujPytaniaZTrybem();
+  przeliczPromienZCzasu(); // pytania wchodzą do wzoru na promień (ADR 0025)
   $('pole-multi-tryb').hidden = !zaloz;
   renderujSekretTrasy();
   // Dołączanie (właściciel, uwagi terenowe #3 pkt 4d 2026-09-11): po wybraniu
@@ -5497,7 +5508,7 @@ function start() {
     // BRAK — liczba stacji = liczba pytań (po 1 na stację), promień liczy
     // się jak w hot-seat. Po wklejeniu paczki otworzy się lobby.
     if (STAN.rodzajGry === 'multi') {
-      STAN.konfig.pytaniaNaStacje = 1;
+      synchronizujPytaniaZTrybem(); // multi = jedno pytanie na stację (uwaga B)
       przeliczPromienZCzasu(); // promień zależy od liczby pytań (ADR 0025)
       STAN.multiPoPaczce = true;
       STAN.ukryjStacje = STAN.multiTryb === TRYBY_GRY.trasa && STAN.multiTrasaSekret;

@@ -302,6 +302,18 @@ const MARTWE_FRAZY = [
     nosniki: UI,
     powod: 'fałszywa obietnica w komentarzu (do 2026-09-14): wolne TSP NIE realizuje nierówności właściciela — wejście wpina twardo kolejnoscTrasy (ADR 0005 aneks m12-116)',
   },
+  // Fala 2026-09-15 (uwaga B właściciela, PR #30): setup hot-seat nie pyta o liczbę
+  // pytań na stację — wynika z listy graczy (ADR 0027 aneks).
+  {
+    fraza: 'Pytania na stację',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'pola w setupie nie ma — hot-seat pyta przy stacji każdego gracza raz, multi ma jedno pytanie na stację (konfig.pytaniaNaStacjeDla, ADR 0027 aneks 2026-09-15)',
+  },
+  {
+    fraza: 'pytań na stację (łączna',
+    nosniki: DOKUMENTY,
+    powod: 'równy podział pilnował K22, a K22 zniknął razem z polem setupu — liczby nie da się już zepsuć (ADR 0027 aneks 2026-09-15)',
+  },
   {
     fraza: 'pin(y)',
     nosniki: UI,
