@@ -1617,7 +1617,7 @@ przełącznik
 — o zmianie ekranu decyduje też kod bez palca. Atrapa nie liczy kaskady, więc
 pinuj `inert` + klasę na `body`, a widoczność mierz w przeglądarce.
 
-## L73
+## L73 (2026-09-15) — atrapa obcego API musi rzucać tak jak platforma (paczka AI nie lądowała na Drive)
 
 **Data:** 2026-09-15. **Miejsce:** `docs/setup/apps-script-repo-paczek.gs` (`przyjmijKandydata`), `test/helpers/most.js`.
 

@@ -121,3 +121,16 @@ z telefonem w jednej ręce.
 gry po przyjęciu i czyszczenie pola po walidacji (ADR 0007 pkt 4) bez zmian.
 Prywatności ekranu nadal pilnuje wysokość pola (`rows="3"`, `resize: none`).
 
+## Aneks 2026-09-15 — nasłuch `paste` blokuje domyślną akcję (uwaga 4)
+
+Zgłoszenie właściciela: przy błędnej paczce pole wklejenia NIE było puste, choć
+kod je czyści — poprawioną paczkę trzeba było najpierw ręcznie zaznaczyć i
+skasować. Przyczyna: przeglądarka wstawia tekst PO powrocie z nasłuchu `paste`,
+czyli już po walidacji i czyszczeniu pola.
+
+Decyzja: nasłuch `paste` na `#pole-odpowiedz` woła `e.preventDefault()` i
+wstawia treść sam. Zachowanie na ekranie bez zmian (pole pokazuje treść podczas
+walidacji), a po walidacji zostaje puste — tak po przyjęciu (pkt 4 ADR 0007),
+jak i po odmowie. Atrapa `wklej()` odtwarza tę kolejność: nasłuchy, potem
+domyślna akcja, chyba że zablokowana.
+

@@ -748,6 +748,25 @@ test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (AD
   assert.match(css, /\.badge-dystans \{[^}]*background: var\(--akcent\)/s, 'badge dystansu na akcencie (kontrast)');
 });
 
+test('kontrakt: pole z fokusem ma ≥ 16 px — iOS nie przybliża strony (uwaga 3, 2026-09-15; ADR 0047)', () => {
+  // iOS Safari przybliża stronę na fokusu pola, którego font-size < 16 px,
+  // a pinch poza mapą jest zablokowany celowo (ADR 0047) — przybliżenia nie
+  // da się wtedy cofnąć. Reguła dotyczy KAŻDEGO pola tekstowego: selektor
+  // wymienia element formularza albo klasę pola, a w ciele jest font-size.
+  // Komentarze wycinamy: w nich „14 px" bywa opisem usterki, nie regułą.
+  const css = czytaj('app/styles.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const zaMale = [];
+  for (const [, selektor, cialo] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!/input|textarea|select|pole-tekstowe/.test(selektor)) continue;
+    for (const [, px] of cialo.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)) {
+      if (Number(px) < 16) zaMale.push(`${selektor.trim()} → ${px}px`);
+    }
+  }
+  assert.deepEqual(zaMale, [], 'pole z fokusem < 16 px = iOS przybliża HTML bez możliwości oddalenia');
+  // Pin na pole wklejenia odpowiedzi AI: to ono było zgłoszone z terenu.
+  assert.match(css, /\.pole-tekstowe \{[^}]*font-size: 16px/, 'pole promptu i odpowiedzi ma 16 px');
+});
+
 test('kontrakt: lokalnej historii gier NIE MA (zgłoszenie terenowe O, 2026-09-13; ADR 0010 aneks)', () => {
   // Właściciel: jedyną drogą powrotu do przerwanej gry jest automatyczne
   // wczytanie zapisu (ADR 0045), a wyniki między grami żyją na wspólnym Drive
