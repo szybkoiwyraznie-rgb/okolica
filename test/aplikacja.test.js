@@ -1125,7 +1125,7 @@ test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie bez kwerendy; zazna
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
   domAtrapa.kliknij('przycisk-dalej-prompt');
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /numer poprawnej odpowiedzi/, 'domyślny prompt uczy podawać numer odpowiedzi');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /numer poprawnej odpowiedzi od 1 do 4/, 'domyślny prompt uczy numeracji 1..4');
   assert.doesNotMatch(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev/, 'prompt nie każe modelowi pisać markera (ADR 0050)');
   assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
   // B2: nowe warianty nie każą odwracać tekstu.

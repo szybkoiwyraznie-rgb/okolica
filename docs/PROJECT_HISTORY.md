@@ -6127,7 +6127,7 @@ samego dnia scalone w jeden (ta sama decyzja). Brama: 827/827, budżet
 przekroczy próg), m12-136. Headless Chromium 360 px i 1334×750: listy
 i przycisku nie ma, karta w stanie `blad` z samym nagłówkiem, 0 błędów konsoli.
 
-## Sesja 2026-09-15e (PR #33) — uwagi terenowe A/B, jawna paczka bez ukrywania, prompt i pytanie po doprecyzowaniu (m12-137…m12-139)
+## Sesja 2026-09-15e (PR #33) — uwagi terenowe A/B, jawna paczka bez ukrywania, prompt i pytanie po doprecyzowaniu (m12-137…m12-140)
 
 **Zlecenie właściciela:** trzy uwagi z gry w terenie (2026-09-15) — (A) pasek
 pytania „Stacja 1 zdobyta · pytanie 1 z 1 · odpowiada Jacek" do skrócenia,
@@ -6174,11 +6174,13 @@ ARCHITECTURE nie obiecują obfuskacji.
 **Commit 3 — doprecyzowania właściciela (prompt i ekran pytania):** prompt
 mówi teraz wyłącznie, CO model ma robić. Zniknęły zdania o protokołach
 (prompt nie wspomina ani markera, ani indeksu), a pole `poprawna` opisuje
-jedna linia: „numer poprawnej odpowiedzi". Zdania-zakazy („Nie opieraj się na
+jedna linia: „numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na
+liście \"odpowiedzi\")" — właściciel doprecyzował po pushu, że to dobre,
+pozytywne dopowiedzenie (chroni przed 0…3). Zdania-zakazy („Nie opieraj się na
 pamięci modelu", „Nie wymyślaj nazw, dat…", „Bez komentarzy, bez wstępu…")
 przepisane na polecenia dodatnie, w §2 i §2.2 — zaktualizowane strażniki
 `test/protokol.test.js` (m.in. zakaz słowa „indeks" i dokładna linia
-`"poprawna": numer poprawnej odpowiedzi.`). Na ekranie pytania zwijana sekcja
+`"poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").`). Na ekranie pytania zwijana sekcja
 nazywa się „Rozwiń pytanie", a w fazie odpowiedzi summary jest schowane
 (`display: none`), więc treść pytania i warianty podnoszą się o cały wiersz;
 po werdykcie sekcja zjeżdża pod tę etykietę. Pilnuje tego kontrakt
@@ -6186,9 +6188,9 @@ po werdykcie sekcja zjeżdża pod tę etykietę. Pilnuje tego kontrakt
 w pytaniu, zwinięty po odpowiedzi).
 
 **Brama na koniec:** `npm test` **803/803**, `npm run check` OK (szablon §2 —
-3 685 znaków, §2.2 — 3 820), `npm run budzet` **98 824 / 100 000**
-(rezerwa 1 176 — odzyskana archiwizacją trzech wycofanych ADR-ów: 0007, 0033,
-0049, oraz skróceniem szablonu promptu), m12-139.
+3 743 znaki, §2.2 — 3 878), `npm run budzet` **98 853 / 100 000**
+(rezerwa 1 147 — odzyskana archiwizacją trzech wycofanych ADR-ów: 0007, 0033,
+0049, oraz skróceniem szablonu promptu), m12-140.
 
 **Otwarte po sesji:** właściciel wgrywa ponownie most Drive (`.gs` zmieniony:
 `paczka` zamiast `kontener`, `skrotPaczki`), weryfikuje na iPhonie pasek A,

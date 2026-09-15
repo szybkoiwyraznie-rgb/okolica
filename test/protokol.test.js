@@ -85,7 +85,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'GRACZE I TRUDNOŚĆ:',
     'SCHEMAT ODPOWIEDZI — dokładnie te pola',
     'WYMAGANIA DODATKOWE:',
-    '"poprawna": numer poprawnej odpowiedzi',
+    '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
@@ -207,7 +207,7 @@ test('walidujPaczke: paczka bez markera protokołu przechodzi, a dopisany marker
 
 test('szablon §2: numer odpowiedzi 1..4, zero markerów i kodowania', () => {
   for (const fraza of [
-    '"poprawna": numer poprawnej odpowiedzi',
+    '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
     '"poprawna": 2',
     'SCHEMAT ODPOWIEDZI — dokładnie te pola',
   ]) {
@@ -220,8 +220,8 @@ test('szablon §2: numer odpowiedzi 1..4, zero markerów i kodowania', () => {
   // Właściciel 2026-09-15 (b): prompt mówi, CO model ma robić — o indeksie
   // 0..3 nie ma w nim ani słowa, a pole `poprawna` opisuje jedna linia.
   assert.ok(!SZABLON_PROMPTU.includes('indeks'), 'szablon §2 nie wspomina indeksu');
-  assert.ok(SZABLON_PROMPTU.includes('- "poprawna": numer poprawnej odpowiedzi.'),
-    'szablon §2 opisuje `poprawna` jednym zdaniem: numer poprawnej odpowiedzi');
+  assert.ok(SZABLON_PROMPTU.includes('- "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").'),
+    'szablon §2 mówi wprost: numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza na liście)');
   assert.ok(!SZABLON_PROMPTU.includes('bez kodowania'), 'żadnej negacji o kodowaniu');
   assert.ok(!SZABLON_PROMPTU.includes('2 + 2 + 1 + 17'), 'przykładu kodu pozycyjnego nie ma');
   // Uwagi terenowe G.b (właściciel, 2026-09-12): zdanie „zapisz NORMALNIE… niczego
@@ -263,7 +263,7 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
     'OPCJONALNE',
     'przy braku pewności zostaw pole puste',
     'SCHEMAT ODPOWIEDZI — dokładnie te pola',
-    '"poprawna": numer poprawnej odpowiedzi',
+    '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
   }
@@ -291,8 +291,8 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('wykonaj kwerendę w internecie'),
     'twarda kwerenda z §2 nie przecieka do §2.2');
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('indeks'), 'szablon §2.2 nie wspomina indeksu');
-  assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('- "poprawna": numer poprawnej odpowiedzi.'),
-    'szablon §2.2 opisuje `poprawna` jednym zdaniem: numer poprawnej odpowiedzi');
+  assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('- "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").'),
+    'szablon §2.2 mówi wprost: numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza na liście)');
   for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{LICZBA_GRACZY}', '{WIEK}', '{OPIS_TRUDNOSCI}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(token), `brak placeholdera ${token} w §2.2`);
   }
@@ -303,7 +303,7 @@ test('zbudujPrompt: domyślnie bez weryfikacji (§2.2), fact-check na życzenie 
   const domyslny = zbudujPrompt(wejscieBudowy());
   assert.deepEqual(domyslny.usterki, []);
   assert.ok(!domyslny.prompt.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
-  assert.ok(domyslny.prompt.includes('numer poprawnej odpowiedzi'), 'domyślny prompt uczy podawać numer odpowiedzi');
+  assert.ok(domyslny.prompt.includes('numer poprawnej odpowiedzi od 1 do 4'), 'domyślny prompt uczy numeracji 1..4');
   const jawnyBez = zbudujPrompt(wejscieBudowy({ factcheck: false }));
   assert.equal(jawnyBez.prompt, domyslny.prompt, 'jawne factcheck:false = domyślne');
   const fc = zbudujPrompt(wejscieBudowy({ factcheck: true }));
