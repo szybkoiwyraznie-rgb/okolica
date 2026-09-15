@@ -20,7 +20,7 @@ export const GS = readFileSync(join(ROOT, 'docs/setup/apps-script-repo-paczek.gs
  * Iterator jak w Apps Script: `hasNext()` mówi, czy `next()` coś odda, a `next()`
  * na PUSTEJ kolekcji RZUCA wyjątek — dokładnie jak `FileIterator`/`FolderIterator`
  * (dokumentacja Drive: „Throws an exception if no items remain in this
-collection"). Atrapa, która zwraca `undefined`, pozwala niepilnowanemu
+ * collection"). Atrapa, która zwraca `undefined`, pozwala niepilnowanemu
  * `.next()` przejść w testach i paść w terenie (zgłoszenie właściciela
  * 2026-09-15: paczka nie lądowała na Drive).
  */
