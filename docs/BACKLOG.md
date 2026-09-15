@@ -269,3 +269,35 @@ brakujący element na żądanie, więc asercja na stubie nic by nie pilnowała),
 wskazówka w LESSONS L54 przepisana na czytanie kodów z `walidujPaczke()`,
 martwe frazy w `test/dryf-dokumentow.test.js`, ADR 0006 aneks.
 
+
+## B24 — Profil źródeł stemplowany z ptaszka, nie z treści paczki
+
+**Rozpoznanie (audyt PR #33):** o tym, czy paczka jest „fact-checked”, decyduje
+stan checkboxa `#prompt-factcheck` w chwili wklejenia (`app/app.js:3829`:
+`{ ...robocza, factcheck: STAN.promptFactcheck === true }`), a nie zawartość
+paczki. Ptaszek jest celowo kasowany przy każdym wejściu na ekran promptu
+(uwaga terenowa G.a, 2026-09-12), więc możliwa jest ścieżka: właściciel buduje
+prompt Z fact check → model oddaje paczkę ze źródłami przy każdym pytaniu →
+właściciel wraca do aplikacji przez ⚙ START GRY (ptaszek skasowany) → wkleja →
+paczka dostaje `factcheck: false`. Walidacja przechodzi (E09 nie wymaga wtedy
+źródeł), ale znaczek „Fact-checked” znika z listy zestawów, a nazwa pliku na
+Drive mówi „bez weryfikacji” (ADR 0048) o paczce, która źródła MA. Odwrotna
+pomyłka (ptaszek zostaje zaptaszkowany, model oddaje paczkę bez źródeł) jest
+złapana twardo: E09 odrzuca.
+
+**Dlaczego to wisi:** ADR 0032 i ADR 0050 pkt 5 stanowią, że profil źródeł zna
+APLIKACJA, nie paczka — model nie deklaruje, czy weryfikował. Wnioskowanie
+profilu z treści (`wszystkie pytania mają ≥1 źródło`) byłoby odejściem od tej
+zasady: paczka bez fact-check może przecież nieść źródła, bo model je dopisał.
+
+**Czego wymaga:** decyzji właściciela, który wariant jest prawdziwszy —
+(a) zostaje ptaszek jak dziś (zero zmian, ryzyko tylko przy pomyłce
+organizatora), (b) `factcheck = ptaszek LUB wszystkie pytania mają źródło`
+(znaczek i nazwa pliku nie kłamią, ale paczka „z pamięci” ze źródłami od modelu
+zostanie oznaczona jako zweryfikowana), albo (c) pytać organizatora wprost przy
+wklejeniu, gdy treść i ptaszek się nie zgadzają. Wariant (b) to ~5 linii
+w `app/app.js` i jeden test; (c) to nowy ekran/komunikat i aneks do ADR 0032.
+
+**Ryzyko:** przy (b) Drive dostaje nazwy plików obiecujące weryfikację, której
+nikt nie przeprowadził — a nazwa jest dziś jedynym miejscem, gdzie właściciel
+widzi profil bez otwierania pliku (ADR 0048).

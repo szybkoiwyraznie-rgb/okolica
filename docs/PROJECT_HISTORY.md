@@ -6196,3 +6196,70 @@ w pytaniu, zwinięty po odpowiedzi).
 `paczka` zamiast `kontener`, `skrotPaczki`), weryfikuje na iPhonie pasek A,
 ocenę odpowiedzi i czytelność pliku paczki na Drive; ADR 0047 (blokada
 szczypania poza mapą) nadal czeka na potwierdzenie.
+
+## Sesja 2026-09-15f (PR #34) — audyt PR #33: jedno przeliczenie werdyktu, parity odcisku paczki (m12-141)
+
+**Zlecenie właściciela:** „kontynuujemy projekt". Uwag z terenu nie było, więc
+sesja domknęła audyt PR #33 (AGENTS.md §2 pkt 2: przegląd poprzedniego PR-a
+przed nową pracą) i poprawiła to, co audyt znalazł. Nowych funkcji nie ma.
+
+**Audyt PR #33 (f086fd3, 54 pliki, +1253/−1436):**
+
+- **Spójne:** `poprawna` = numer `1..4` wszędzie (`app/`, `index.html`, `sw.js`,
+  most `.gs`, `data/przyklady/zestaw-podkowa-lesna.json` — 6/6 pytań w konwencji
+  modelu); schematy `TO-zestaw/2`, `TO-zestaw-lokalny/2`, `stan-gry/2`;
+  cache-bust jednolity (`m12-140`); kontener `TO-paczka/2` i `app/kodowanie.js`
+  wycięte także z mostu — `skrotPaczki`, `walidujKandydata`, `zalozGre`,
+  `budujIndeks` i `skrotIstniejacegoPliku` pracują na jawnej paczce; atrapa
+  `Utilities.newBlob(...).getBytes()` w `test/helpers/most.js` oddaje bajty
+  UTF-8 tak samo jak `TextEncoder` w aplikacji, więc odcisk liczony w teście
+  jest odciskiem z terenu.
+- **Usterka 1 (poprawiona, commit 1):** przeliczenie z ADR 0050 pkt 3
+  (`wybrana + 1 === pytanie.poprawna`) istniało w kodzie DWUKROTNIE —
+  w silniku (`zapiszOdpowiedz`, `app/rozgrywka.js`) i w UI
+  (`odpowiedzNaPytanie`, `app/app.js`), a dokumentacja sesji 2026-09-15e
+  obiecywała „aplikacja przelicza raz, na granicy UI". Dwie kopie tej samej
+  reguły to wzorzec z LESSONS L74: przy rozjeździe ekran mówi „Dobrze!",
+  dziennik liczy 0 pkt, a most w multi dostaje trzecią wersję prawdy.
+- **Usterka 2 (poprawiona, commit 2):** odcisk treści paczki ma dwie
+  implementacje (aplikacja i most) i ŻADNEGO testu, który je porównuje —
+  ADR 0050 pkt 2 mówi „obie strony liczą ten sam skrót", a LESSONS L33 wymaga,
+  żeby lustro mostu miało test WYKONUJĄCY. Literówka albo „poprawka" po jednej
+  stronie rozdzieliłaby paczkę na dwie tożsamości cicho.
+- **Obserwacja (bez zmian w kodzie → BACKLOG B24):** profil źródeł
+  (`paczka.factcheck`) jest stemplowany ze stanu ptaszka `#prompt-factcheck`,
+  nie z treści paczki; przy powrocie do aplikacji przez ⚙ START GRY ptaszek jest
+  kasowany (uwaga G.a, 2026-09-12), więc paczka ze źródłami może zostać
+  oznaczona jako niezweryfikowana (znaczek i nazwa pliku na Drive kłamią).
+  Rozstrzygnięcie wymaga decyzji właściciela (ADR 0032 / ADR 0050 pkt 5).
+- **Kosmetyka (poprawiona, commit 2):** na końcu `test/most-paczka.test.js`
+  został wiszący komentarz JSDoc po funkcji przeniesionej do
+  `test/helpers/most.js` — martwy nośnik (LESSONS L31/L55).
+
+**Commit 1 (m12-141, „Werdykt odpowiedzi liczy tylko silnik"):**
+`odpowiedzNaPytanie` bierze werdykt z wpisu dziennika (`wpis.poprawna`) zamiast
+przeliczać numer odpowiedzi drugi raz; ocena na ekranie, punkt w dzienniku i
+zdarzenie `odpowiedz` wysyłane na most mają odtąd jedno źródło. Pokazywanie
+litery i tekstu poprawnej odpowiedzi (`'ABCD'[pytanie.poprawna - 1]`) zostaje —
+to rendering, nie werdykt. Aneks 2026-09-15f do ADR 0050 zapisuje, gdzie żyje
+przeliczenie; strażnik w `test/kontrakt.test.js` pilnuje, że porównanie istnieje
+wyłącznie w `app/rozgrywka.js`. Cache-bust podbity we wszystkich miejscach naraz
+(`index.html`, 12 modułów `app/*.js`, `sw.js`).
+
+**Commit 2 (test parity odcisku):** `test/most-paczka.test.js` wykonuje
+`skrotPaczki` z tekstu `.gs` na atrapie Drive i porównuje z `app/zestawy.js` —
+najpierw na tej samej paczce (polskie znaki: `Podkowa Leśna`, `Źródło`, czyli
+także zgodność UTF-8), potem na skrócie, który naprawdę dojeżdża do aplikacji
+we wpisie indeksu publicznego.
+
+**Commit 3 (dokumentacja):** ten wpis, `docs/BACKLOG.md` B24 (profil źródeł
+z ptaszka vs z treści), `docs/setup/HANDOFF_2026-09-15f.md`, aneks do ADR 0050.
+
+**Brama na koniec:** `npm test` **805/805**, `npm run check` OK (szablon §2 —
+3 743 znaki, §2.2 — 3 878), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%**
+(850/870 wierszy), `npm run budzet` **99 011 / 100 000** (rezerwa 989), m12-141.
+
+**Otwarte po sesji:** właściciel wgrywa ponownie most Drive (`.gs` zmieniony
+w PR #33 — bez tego jawne paczki nie przejdą), potwierdza ADR 0047 (blokada
+szczypania poza mapą na iPhonie), weryfikuje w terenie ocenę odpowiedzi `1..4`
+i rozstrzyga BACKLOG B24.
