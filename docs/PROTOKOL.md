@@ -85,7 +85,7 @@ SCHEMAT ODPOWIEDZI (PYT/1.0-rev4) — dokładnie te pola:
       "temat": "historia",
       "tresc": "Treść pytania zakończona znakiem zapytania?",
       "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
-      "poprawna": 20,
+      "poprawna": 2,
       "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
       "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }]
     }
@@ -97,7 +97,7 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola "id" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).
+- "poprawna": czysty indeks poprawnej odpowiedzi (0–3), bez kodowania — 0 to pierwsza pozycja na liście "odpowiedzi", 3 to czwarta. Host jest uczciwy: numer w JSON jest tym, którego używa gra.
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "uwagi": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.
@@ -199,7 +199,7 @@ SCHEMAT ODPOWIEDZI (PYT/1.0-rev5) — dokładnie te pola:
       "temat": "historia",
       "tresc": "Treść pytania zakończona znakiem zapytania?",
       "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
-      "poprawna": 20,
+      "poprawna": 2,
       "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
       "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }]
     }
@@ -211,7 +211,7 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": ZAKODOWANY numer poprawnej odpowiedzi: indeks (0–3) + numer stacji + numer pytania z pola "id" + 17 (s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22).
+- "poprawna": czysty indeks poprawnej odpowiedzi (0–3), bez kodowania — 0 to pierwsza pozycja na liście "odpowiedzi", 3 to czwarta. Host jest uczciwy: numer w JSON jest tym, którego używa gra.
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "zrodla": pusta lista ALBO lista źródeł w kształcie jak w schemacie; podawaj tylko adresy, co do których masz pewność (pełny adres https://, prawdziwy i działający), każdy z tytułem i datą sprawdzenia RRRR-MM-DD; adres przykładowy albo zmyślony unieważnia pytanie.
@@ -249,7 +249,7 @@ WYMAGANIA DODATKOWE:
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
-| `poprawna` | liczba całkowita | jawna i rev1: `0..3`; rev2/rev3/rev4/rev5: indeks + stacja + numer pytania + 17 (kod pozycyjny) |
+| `poprawna` | liczba całkowita | `0..3` (indeks na liście `odpowiedzi`). Warianty historyczne rev2/rev3 niosły kod pozycyjny; bieżące rev4/rev5 — czysty numer (ADR 0049) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
 | `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
@@ -295,19 +295,18 @@ przyjmuje oba warianty.
 
 **Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to kod pozycyjny (indeks + stacja + numer pytania + 17, np. s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22 — inny dla każdego pytania, a +17 sprawia, że goły indeks nigdy nie przejdzie za kod), a pola `punkty` nie ma (każde pytanie daje 1 pkt).
 
-**Warianty `PYT/1.0-rev4` i `PYT/1.0-rev5` (bieżące, decyzja właściciela 2026-09-09).**
-Odwracanie tekstu **zniesione**: pola tekstowe zapisuje się normalnie. Zostaje
-wyłącznie kod pozycyjny `poprawna` (jak w rev2). Powód: modele przekręcały
-wyrazy przy odwracaniu, więc bariera przypadkowego wglądu kosztowała jakość
-pytań — a to właśnie kod poprawnej odpowiedzi robi całą robotę, dla której
-odwracanie powstało (ADR 0007: maskowanie, nie szyfrowanie). Różnica między
-nimi to wyłącznie profil źródeł: **rev4** z fact-check (źródła twarde, E09
+**Warianty `PYT/1.0-rev4` i `PYT/1.0-rev5` (bieżące).**
+Odwracanie tekstu zniesione 2026-09-09 (ADR 0033). Kod pozycyjny `poprawna`
+zniesiony 2026-09-15 (ADR 0049): pole to czysty indeks `0..3`. Host jest
+uczciwy — numer w JSON jest tym, którego używa gra. Różnica między markerami
+to wyłącznie profil źródeł: **rev4** z fact-check (źródła twarde, E09
 obowiązuje, szablon §2), **rev5** bez fact-check (źródła opcjonalne, szablon
 §2.2, domyślny — ADR 0032).
 
 Walidator przyjmuje **wszystkie** markery: `PYT/1.0`, `-rev1`, `-rev2`, `-rev3`,
-`-rev4`, `-rev5`. Odwracanie jest dekodowane tylko dla rev1/rev2/rev3, bo paczki
-w tych wariantach leżą już na Drive i muszą dać się otworzyć.
+`-rev4`, `-rev5`. Odwracanie i kod pozycyjny dekoduje tylko dla rev1/rev2/rev3
+(zapis historyczny). Właściciel kasuje stare paczki — konwersja nie jest
+wymagana przy nowej generacji.
 
 
 ## 4. Kategorie wiekowe i wymagania trudności
@@ -372,7 +371,7 @@ i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
 | `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
 | `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
-| `E06` | `poprawna` poza zakresem albo (warianty z kodem) kod nie do odczytania |
+| `E06` | `poprawna` poza zakresem `0..3` (w rev2/rev3 także: kod pozycyjny nie do odczytania) |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
 | `E09` | pytanie bez `zrodla` albo lista pusta (nie dotyczy rev3 i rev5 — źródła opcjonalne) |
@@ -428,19 +427,13 @@ zajęte, tak samo jak wycofany `E18`.
   `PYT/1.0`, `-rev1` i `-rev2`, szablon generuje rev2. Dawne paczki działają
   bez migratora (M8 nieopublikowany, a reguły i tak łagodnieją).
 - **Warianty `PYT/1.0-rev4` / `PYT/1.0-rev5` (2026-09-09, zgłoszenie B2)** —
-  koniec odwracania liter; zostaje kod pozycyjny `poprawna`. Znów zapis, nie
-  nowa wersja schematu: kształt pól bez zmian, walidator przyjmuje wszystkie
-  dotychczasowe markery, a odwrócone rev1/rev2/rev3 dekoduje jak dotąd (paczki
-  na Drive zostają czytelne). Szablony generują rev4 (§2) i rev5 (§2.2).
-  Wersje szablonów: `PYT/1.0.7` i `PYT/1.0-nofc.2`.
+  koniec odwracania liter. Szablony generują rev4 (§2) i rev5 (§2.2).
 - **Wersje szablonów `PYT/1.0.8` / `PYT/1.0-nofc.3` (2026-09-12, uwagi terenowe
-  G.b)** — z zasady 8 obu szablonów (zapis „NORMALNIE, w naturalnej kolejności
-  liter — niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer…”)
-  usunięto zdania po poleceniu wpisania markera. Właściciel: to polecenie jest
-  bezsensowne i może modelowi zasugerować dokładnie odwrotne (że cokolwiek
-  zakodować). Markery `rev4`/`rev5` i kod pozycyjny `poprawna` bez zmian;
-  dekoder rev1/rev2/rev3 bez zmian; kształt odpowiedzi bez zmian (łatka
-  szablonu, nie wersja schematu).
+  G.b)** — z zasady 8 usunięto zdania o „NORMALNIE / nie odwracaj”.
+- **Koniec kodu pozycyjnego `poprawna` (2026-09-15, ADR 0049)** — bieżące
+  rev4/rev5 niosą czysty indeks `0..3`. Szablony `PYT/1.0.9` / `PYT/1.0-nofc.4`.
+  Właściciel kasuje stare paczki; dekoder rev2/rev3 zostaje dla testów zapisu
+  historycznego, bez migratora.
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 

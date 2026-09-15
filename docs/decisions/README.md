@@ -66,6 +66,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0046](0046-promien-jest-kryterium-dopasowania-paczek.md) | Promień gry jest kryterium dopasowania paczek (równość paczka↔setup) — odwrócenie fragmentu aneksu ADR 0024 | Zaakceptowana |
 | [0047](0047-strona-nie-jest-szczypalna-poza-mapa.md) | Strona nie jest szczypalna poza mapą (blokada gestów iOS poza `.mapa`) — zastępuje fragment ADR 0011 | Zaakceptowana |
 | [0048](0048-nazwa-paczki-na-drive-koduje-fakty.md) | Nazwa pliku paczki na Drive koduje fakty z `meta`, nie geohash | Zaakceptowana |
+| [0049](0049-poprawna-czysty-indeks.md) | Numer poprawnej odpowiedzi jest czystym indeksem 0–3 (koniec kodu pozycyjnego) | Zaakceptowana |
 
 ## Szablon ADR
 
