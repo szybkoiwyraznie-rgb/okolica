@@ -6346,3 +6346,37 @@ rozstrzygnięte decyzjami właściciela. Do sprawdzenia w terenie: paczka
 z promptu `PYT/1.1.2` — czy pytania nie zawierają odpowiedzi, czy model trzyma
 równą liczbę pytań na stację i czy kotwiczenie bez przepisu o nazwie miejsca
 dalej daje pytania zakotwiczone.
+## Sesja 2026-09-15g (PR #35) — otwarcie sesji, audyt PR #34: dryf dokumentacji „rozkład równy ±1"
+
+**Zlecenie:** „Kontynuujemy projekt". Uwag z terenu nie było, więc sesja domyka
+audyt poprzedniego scalonego PR-a (AGENTS.md §2 pkt 2) i poprawia to, co audyt
+znalazł. Kamienie M0–M12 zamknięte jako zakres kodu (L68).
+
+**Audyt PR #34 (squash `c1a90e8` na `f086fd3`):** 22 pliki, +515/−62.
+
+**Spójne — nie ruszane:**
+
+- `E05` bez tolerancji ±1 (`app/protokol.js`): walidator pilnuje już tylko stacji
+  bez żadnego pytania; `pytaniaNaStacjeDla()` = liczba graczy (hot-seat) / 1
+  (multi), sumę `liczbaStacji × pytaniaNaStacje` pilnuje `E03` (B25, decyzja
+  właściciela).
+- Werdykt liczy tylko silnik: `app/app.js` czyta `wpis.poprawna` (zamiast
+  `wybrana + 1 === pytanie.poprawna`) — ADR 0050 aneks 2026-09-15f, strażnik
+  w `test/kontrakt.test.js`.
+- `docs/PROTOKOL.md`: trzy zdania promptu zastosowane w obu szablonach (§2/§2.2
+  zasady 4 i 7, wymaganie `stacja`), stałe `SZABLON_WERSJA = 'PYT/1.1.2'` /
+  `SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.1-nofc.2'`, wpisy w §7.
+- Nowe testy: single-werdykt (`kontrakt`), parity `skrotPaczki` aplikacja ↔ `.gs`
+  (`most-paczka`), pin zdań promptu (`protokol`).
+- Pozostałe pliki `app/*.js` — wyłącznie podbicie `?v=m12-140 → m12-143`.
+
+**Znalezione — 1 usterka (dryf dokumentacji):** `docs/PROTOKOL.md` §3.2 (tabela
+pól paczki, wiersz `stacja`) nadal mówi „rozkład równy ±1", choć §6 `E05`, §7,
+prompt i `app/protokol.js` już tej tolerancji nie mają (B25, owner 2026-09-15f:
+„Możesz wywalić to z E05 bo to nie występuje w przyrodzie"). Ten sam zwrot został
+w `docs/decisions/0015` (Kontekst, zdanie o spójności wewnętrznej walidatora)
+i w komentarzu `app/rozgrywka.js` (`stacjaZamknieta`). Strażnik dryfu
+(`test/dryf-dokumentow.test.js`) nie miał pinu na tę frazę, więc nic nie złapało.
+Archiwalny aneks `docs/decisions/archive/aneksy-0024-2026-09-07b.md` zostaje bez
+zmian (historia). Naprawa w kolejnym commicie.
+
