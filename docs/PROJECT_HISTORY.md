@@ -5960,3 +5960,33 @@ i pomoce), a ta zmiana nie dotyka DOM-u ani CSS — to, co w pasku, weryfikuje
 `test/most-indeks.test.js`, który WYKONUJE cały skrypt `.gs` na atrapie Drive
 (L33): nazwa, retry, `-2`, odrzucona paczka, `meta` bez `ulica` i bez godziny,
 znaki zakazane.
+
+
+## 2026-09-15c — otwarcie sesji `arena/01a0a4ff-okolica` (PR w tym commicie)
+
+**Zlecenie:** „Kontynuujemy projekt”. Kamienie M0–M12 zamknięte (L68); bez uwag
+z terenu kolejka jest pusta.
+
+**Audyt poprzedniego scalonego PR (#30, squash `fa8d9d8` na `9aed8be`).**
+46 plików, +1844/−459. Zakres: D1 (podgląd mapy gaśnie przy zmianie ekranu,
+m12-125), uwagi terenowe A/B (czas gry przyciskami, pytania liczone z trybu,
+m12-126/m12-127), redakcja intro, ADR 0048 (nazwa pliku paczki), aneksy
+ADR 0025/0027/0042/0043, most `.gs`.
+
+Werdykt: **bez defektów w treści scalenia.** Sprawdzone:
+
+- D1: `STAN.podgladMapy = false` w `pokazEkran`, `pokazMapeStartowa`,
+  `pokazPrywatnosc` — zgodnie z niezmiennikiem ADR 0043 dopisek 2026-09-15
+  i L72; nie w `renderujGre`.
+- `pytaniaNaStacjeDla` wołane z `renderujListeGraczy` (jeden tor, nie tylko
+  dodaj/usuń).
+- Segment `CZASY_GRY` bez pola `#setup-czas`; stary zapis poza zbiorem nie
+  auto-zaznacza (ADR 0025 aneks).
+- Jedna wersja `?v=m12-129` w grafie (L29).
+- ADR 0048: nazwa z `meta`, retry po `kontener.skrot`, pole `ulica` addytywne.
+
+Nie są defektami: `aria-pressed` ⚙ przy schowanej warstwie (uwaga I / F3);
+etykieta „kroki 1–5” obejmująca też lobby `multi`.
+
+**Otwarte z handoffu 15a/15b:** rezerwa budżetu lektury jest cienka; uwagi
+z terenu po m12-129. ADR 0047 nadal czeka na weryfikację na iPhonie.

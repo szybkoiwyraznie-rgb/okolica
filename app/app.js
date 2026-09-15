@@ -15,38 +15,40 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-129';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-129';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-132';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-132';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
   normalizujTematyPaczki,
   odkodujPaczkeRev1,
   odkodujPaczkeRev2,
+  odkodujPaczkeBiezaca,
   parsujOdpowiedzModela,
   poprawkaDlaModelu,
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
   WARIANTY_Z_KODEM,
+  WARIANTY_BIEZACE,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-129';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-129';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-129';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-129';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-129';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-129';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-129';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-129';
+} from './protokol.js?v=m12-132';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-132';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-132';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-132';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-132';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-132';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-132';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-132';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-129';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-129';
+} from './zestawy.js?v=m12-132';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-132';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -62,18 +64,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-129';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-129';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-129';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-129';
-import { adresMostu, stanMostu } from './most.js?v=m12-129';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-129';
+} from './sieci.js?v=m12-132';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-132';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-132';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-132';
+import { adresMostu, stanMostu } from './most.js?v=m12-132';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-132';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-129';
+} from './oceny.js?v=m12-132';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -3821,17 +3823,10 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
   listaUsterek.replaceChildren();
 
   if (!paczka) {
-    wynik.dataset.stan = 'blad';
-    $('wynik-naglowek').textContent = 'Nie da się odczytać odpowiedzi';
-    // E02: znacznika nie ma (nieparsowalne) — korekta celuje w wariant,
-    // który organizator właśnie zbudował (stan checkboxa z ekranu promptu).
     STAN.poprawkaFactcheck = STAN.promptFactcheck;
     STAN.usterkiPaczki = [blad];
     STAN.paczka = null;
-    renderujUsterki([blad]);
-    $('przycisk-poprawka').hidden = false;
-    $('wklejka-status').textContent = 'Nie udało się odczytać tej treści — szczegóły niżej.';
-    status('Odpowiedź odrzucona na etapie odczytu (parsowanie JSON albo kontener).');
+    pokazOdrzuconaPaczkeAi();
     return;
   }
 
@@ -3844,7 +3839,9 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
   const wariant = String(paczka.protokol ?? '').replace('PYT/1.0-', '') || 'rev1';
   const robocza = WARIANTY_Z_KODEM.includes(paczka.protokol)
     ? odkodujPaczkeRev2(paczka)
-    : odkodujPaczkeRev1(paczka);
+    : WARIANTY_BIEZACE.includes(paczka.protokol)
+      ? odkodujPaczkeBiezaca(paczka)
+      : odkodujPaczkeRev1(paczka);
   const usterki = walidujPaczke(robocza, oczekiwane());
   STAN.usterkiPaczki = usterki;
   // Korekta celuje w profil walidacji wklejki (znacznik), nie w checkbox —
@@ -3852,13 +3849,8 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
   // gdy checkbox jest akurat pusty.
   STAN.poprawkaFactcheck = czyWariantFactcheck(paczka);
   if (usterki.length) {
-    wynik.dataset.stan = 'blad';
     STAN.paczka = null;
-    $('wynik-naglowek').textContent = `Paczka odrzucona — usterek: ${usterki.length}`;
-    renderujUsterki(usterki);
-    $('przycisk-poprawka').hidden = false;
-    $('wklejka-status').textContent = `Paczka ma ${usterki.length} usterek — szczegóły i poprawka niżej.`;
-    status('Paczka odrzucona przez walidator (protokół PYT §6).');
+    pokazOdrzuconaPaczkeAi();
     return;
   }
 
@@ -3985,6 +3977,25 @@ function wyslijZestawNaDrive() {
       }
     })
     .catch(() => status('Paczka przyjęta, ale wysyłka na Drive nie udała się (sieć albo most) — gra toczy się dalej; ta paczka nie trafiła do wspólnego repozytorium.'));
+}
+
+
+/** Komunikat odrzucenia paczki AI (właściciel 2026-09-15): bez listy kodów
+ *  E01–E20 i bez poprawki do modelu — organizator ma ponowić generowanie.
+ *  Pole wklejenia czyścimy od razu: stara, zła wklejka nie może zostać
+ *  pod palcem (ADR 0007 pkt 4 i tak czyści po przyjęciu; tu to samo po odmowie). */
+const KOMUNIKAT_BLEDNEJ_PACZKI_AI = 'Wygenerowana paczka pytań AI jest błędna. Ponów generowanie i wklej poprawne dane.';
+
+function pokazOdrzuconaPaczkeAi() {
+  const wynik = $('wynik-walidacji');
+  wynik.hidden = false;
+  wynik.dataset.stan = 'blad';
+  $('wynik-naglowek').textContent = KOMUNIKAT_BLEDNEJ_PACZKI_AI;
+  renderujUsterki([]);
+  $('przycisk-poprawka').hidden = true;
+  $('pole-odpowiedz').value = '';
+  $('wklejka-status').textContent = KOMUNIKAT_BLEDNEJ_PACZKI_AI;
+  status(KOMUNIKAT_BLEDNEJ_PACZKI_AI);
 }
 
 function renderujUsterki(usterki) {

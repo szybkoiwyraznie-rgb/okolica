@@ -16,7 +16,7 @@ import {
   SCHEMAT_KONTENERA, SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU,
   WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3,
   czyPaczkaOdwrocona, czyWariantFactcheck, normalizujTekst, normalizujTematyPaczki, numerPytaniaZId,
-  odkodujPaczkeRev1, odkodujPaczkeRev2,
+  odkodujPaczkeRev1, odkodujPaczkeRev2, odkodujPaczkeBiezaca,
   odkodujPoprawnaRev2, zakodujPoprawnaRev2,
   odwrocPolaPaczki, odwrocTekst, parsujOdpowiedzModela, podsumowaniePaczki,
   poprawkaDlaModelu, walidujPaczke, zbudujPrompt,
@@ -90,7 +90,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'GRACZE I TRUDNOŚĆ:',
     'SCHEMAT ODPOWIEDZI (PYT/1.0-rev4)',
     'WYMAGANIA DODATKOWE:',
-    '"poprawna": ZAKODOWANY numer',
+    '"poprawna": numer poprawnej odpowiedzi',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
@@ -294,16 +294,19 @@ test('rev2: obcy kod to E06 z regułą i przykładem, jawny indeks nie przechodz
 
 /**
  * B2 (decyzja właściciela 2026-09-09): odwracanie liter USUNIĘTE — modele
- * przekręcały wyrazy. Zostaje wyłącznie kod pozycyjny poprawnej odpowiedzi.
+ * przekręcały wyrazy. Kod pozycyjny `poprawna` zniesiony ADR 0049.
  */
-test('rev4: szablon koduje poprawną i nie zawiera żadnych poleceń kodowania tekstu', () => {
+test('rev4: szablon każe czysty indeks 0–3 i nie zawiera poleceń kodowania', () => {
   for (const fraza of [
     '"PYT/1.0-rev4"',
-    'ZAKODOWANY numer poprawnej odpowiedzi',
-    '2 + 2 + 1 + 17 = 22',
+    '"poprawna": numer poprawnej odpowiedzi',
+    '"poprawna": 2',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
+  assert.ok(!SZABLON_PROMPTU.includes('ZAKODOWANY'));
+  assert.ok(!SZABLON_PROMPTU.includes('bez kodowania'), 'żadnej negacji o kodowaniu');
+  assert.ok(!SZABLON_PROMPTU.includes('2 + 2 + 1 + 17'));
   // Uwagi terenowe G.b (właściciel, 2026-09-12): zdanie „zapisz NORMALNIE…
   // niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer…”
   // usunięte z zasady 8 — samo jego pisanie mogło modelowi zasugerować,
@@ -355,7 +358,7 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
     'Nigdy nie zmyślaj adresu',
     '"PYT/1.0-rev5"',
     'SCHEMAT ODPOWIEDZI (PYT/1.0-rev5)',
-    'ZAKODOWANY numer poprawnej odpowiedzi',
+    '"poprawna": numer poprawnej odpowiedzi',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
   }
@@ -634,29 +637,28 @@ test('stałe protokołu: wersja i schemat kontenera', () => {
 
 /* ---- B2 (2026-09-09): koniec odwracania liter, zostaje kod poprawnej ---- */
 
-/** Paczka rev4/rev5: tekst NORMALNY, zakodowana tylko `poprawna`. */
+/** Paczka rev4/rev5: tekst NORMALNY, `poprawna` czystym indeksem 0–3 (ADR 0049). */
 function paczkaBezOdwracania(marker, bezZrodel = false) {
   const paczka = structuredClone(OK);
   paczka.protokol = marker;
   paczka.pytania.forEach((p) => {
-    p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p);
     if (bezZrodel) delete p.zrodla;
   });
   return paczka;
 }
 
-test('B2: rev4 waliduje się bez odwracania, a dekoder odzyskuje indeks poprawnej', () => {
+test('B2 + ADR 0049: rev4 waliduje się bez odwracania i bez kodu pozycyjnego', () => {
   const rev4 = paczkaBezOdwracania('PYT/1.0-rev4');
   assert.equal(czyPaczkaOdwrocona(rev4), false, 'rev4 nie jest wariantem odwróconym');
   assert.deepEqual(walidujPaczke(rev4, oczekiwane()), [], 'rev4 przechodzi walidację');
 
-  const robocza = odkodujPaczkeRev2(rev4);
+  const robocza = odkodujPaczkeBiezaca(rev4);
   assert.equal(robocza.protokol, 'PYT/1.0', 'marker znormalizowany');
   assert.equal(robocza.wariantWejsciowy, 'PYT/1.0-rev4', 'wariant wejściowy zapamiętany');
   for (const pyt of robocza.pytania) {
     const wzorzec = OK.pytania.find((q) => q.id === pyt.id);
     assert.equal(pyt.tresc, wzorzec.tresc, 'treść czytelna bez odwracania');
-    assert.equal(pyt.poprawna, wzorzec.poprawna, 'kod poprawnej rozkodowany do indeksu');
+    assert.equal(pyt.poprawna, wzorzec.poprawna, 'poprawna zostaje czystym indeksem');
   }
   assert.equal(czyWariantFactcheck(robocza), true, 'rev4 to wariant z fact-check');
 });
@@ -664,7 +666,7 @@ test('B2: rev4 waliduje się bez odwracania, a dekoder odzyskuje indeks poprawne
 test('B2: rev5 to rev4 bez wymogu źródeł (ADR 0032 zachowane)', () => {
   const rev5 = paczkaBezOdwracania('PYT/1.0-rev5', true);
   assert.deepEqual(walidujPaczke(rev5, oczekiwane()), [], 'rev5 bez źródeł waliduje się czysto');
-  assert.equal(czyWariantFactcheck(odkodujPaczkeRev2(rev5)), false, 'rev5 to wariant bez fact-check');
+  assert.equal(czyWariantFactcheck(odkodujPaczkeBiezaca(rev5)), false, 'rev5 to wariant bez fact-check');
 
   // Ten sam brak źródeł w rev4 musi być błędem — profile się nie zlały.
   const rev4bezZrodel = paczkaBezOdwracania('PYT/1.0-rev4', true);

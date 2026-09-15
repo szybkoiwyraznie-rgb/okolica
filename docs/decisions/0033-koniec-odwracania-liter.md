@@ -1,6 +1,6 @@
 # 0033 — Koniec odwracania liter: zostaje kod poprawnej odpowiedzi
 
-- Status: Zaakceptowana (decyzja właściciela 2026-09-09, zgłoszenie B2)
+- Status: Zaakceptowana (pkt 1 — koniec odwracania; pkt 2 zastąpiony ADR 0049)
 - Data: 2026-09-09
 - Dotyczy: PROTOKOL §2, §2.2, §3.4, §7, ADR 0007 (maskowanie paczki),
   ADR 0032 (wariant bez fact-check), `app/protokol.js`, ekran 4 i 5
@@ -56,9 +56,9 @@ wyrazy w gotowej grze) przewyższył zysk (utrudnienie zerknięcia w JSON).
 - **Maskowanie po stronie aplikacji zamiast modelu** — treść i tak przechodzi
   przez schowek gracza w drodze z czatu, więc maskowanie dopiero w aplikacji
   niczego nie chroni na najbardziej odsłoniętym odcinku.
-- **Rezygnacja także z kodu `poprawna`** — właściciel wprost prosił o jego
-  zachowanie; to jedyny element maskowania o realnej wartości i zerowym koszcie
-  jakościowym.
+- **Rezygnacja także z kodu `poprawna`** — 2026-09-09 właściciel prosił o
+  zachowanie; 2026-09-15 odwołał (ADR 0049): liczenie kodu też okazało się
+  za trudne dla modelu.
 
 ## Konsekwencje
 

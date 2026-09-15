@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-129">
-  <script type="module" src="app/app.js?v=m12-129"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-132">
+  <script type="module" src="app/app.js?v=m12-132"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -428,7 +428,7 @@
     <!-- KROK 5: wklejenie i walidacja odpowiedzi -->
     <section id="ekran-paczka" class="ekran panel-centralny" hidden aria-labelledby="tytul-paczka">
       <h2 id="tytul-paczka">Wklej odpowiedź modelu</h2>
-      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i <strong>nie jest zaszyfrowany</strong>. Wklej odpowiedź modelu do pola poniżej: sprawdzenie rusza samo, a poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive — od razu do wspólnego repozytorium okolicy). Przy usterkach dostaniesz poprawkę do odesłania modelowi.</p>
+      <p class="podpowiedz">Nie pokazuj tego ekranu graczom — wklejony tekst jest jawny i <strong>nie jest zaszyfrowany</strong>. Wklej odpowiedź modelu do pola poniżej: sprawdzenie rusza samo, a poprawna paczka <strong>od razu zaczyna grę</strong> (i leci na Drive — od razu do wspólnego repozytorium okolicy). Błędna paczka jest odrzucana bez szczegółów — wygeneruj pytania jeszcze raz i wklej poprawne dane.</p>
       <!-- Zgłoszenie właściciela 2026-09-09 (trzecia tura): „ma zostać pole
            i guzik »Wklej ze schowka« → po wklejeniu czegokolwiek ma się
            automatycznie zatwierdzać". Wklejenie JEST decyzją organizatora, więc
