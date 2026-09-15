@@ -184,7 +184,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   outline-offset: 1px;
 }
 
-.pole-tekstowe { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 14px; line-height: 1.4; resize: vertical; }
+/* 16 px to PRÓG przeglądarki, nie gust (właściciel 2026-09-15, uwaga 3):
+   iOS Safari przybliża CAŁĄ stronę, gdy pole z fokusem ma mniej niż 16 px,
+   a oddalić się potem nie da — pinch poza mapą jest zablokowany celowo
+   (ADR 0047), a pinch na mapie rusza kafelkami. Wklejenie odpowiedzi AI
+   (pole obok, 14 px) kończyło się więc zablokowanym przybliżeniem HTML.
+   Każde pole tekstowe, do którego wchodzi palec, ma ≥ 16 px; strażnikiem
+   reguły jest kontrakt w `test/kontrakt.test.js`. */
+.pole-tekstowe { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 16px; line-height: 1.4; resize: vertical; }
 
 .sprawdz { display: flex; gap: 10px; align-items: flex-start; }
 .sprawdz input { width: 24px; height: 24px; min-height: 24px; margin-top: 2px; flex: 0 0 auto; }
@@ -361,20 +368,10 @@ body:not(.tryb-testowy) .tylko-test {
 .lista-imion { display: grid; gap: 8px; }
 .lista-imion input { min-height: 40px; }
 
-.lista-stacji { list-style: none; margin: 10px 0; padding: 0; display: grid; gap: 8px; }
-.lista-stacji li {
-  display: flex;
-  gap: 10px;
-  align-items: baseline;
-  background: var(--tlo-karta);
-  border: 1px solid var(--linia);
-  border-left: 5px solid var(--akcent);
-  border-radius: 10px;
-  padding: 10px 12px;
-}
-.lista-stacji .numer { font-size: 28px; font-weight: 700; color: var(--akcent); min-width: 34px; }
-.lista-stacji .opis { font-size: 15px; }
-.lista-stacji .dystans { margin-left: auto; font-size: 14px; color: var(--tekst-slaby); white-space: nowrap; }
+/* Właściciel 2026-09-15 (uwaga 5): spisu stacji nie ma, zostaje jedno zdanie.
+   Kreska akcentu po lewej to ta sama, którą miał wiersz stacji — zdanie jest
+   teraz jedyną treścią panelu i musi być widoczne w słońcu. */
+.stacje-podsumowanie { margin: 10px 0; padding: 10px 12px; border-left: 5px solid var(--akcent); border-radius: 10px; font-size: 17px; font-weight: 600; }
 
 .bledy { margin: 10px 0; padding: 12px; border-radius: 10px; background: var(--blad-tlo); color: var(--blad); font-size: 15px; }
 .nakladka-ladowanie { position: absolute; inset: 0; z-index: 5; display: flex; align-items: center; justify-content: center; text-align: center; padding: 0 16px; font-weight: 700; background: color-mix(in srgb, var(--tlo-karta) 80%, transparent); }
@@ -396,9 +393,6 @@ body:not(.tryb-testowy) .tylko-test {
 @media (prefers-reduced-motion: reduce) {
   .pulsuje { animation: none; }
 }
-.usterki { margin: 8px 0; padding-left: 20px; }
-.usterki li { margin: 6px 0; font-size: 15px; }
-.usterki li code { background: var(--blad-tlo); color: var(--blad); padding: 1px 5px; border-radius: 5px; }
 
 #wynik-walidacji[data-stan='ok'] { border-color: var(--ok); background: var(--ok-tlo); }
 #wynik-walidacji[data-stan='blad'] { border-color: var(--blad); background: var(--blad-tlo); }

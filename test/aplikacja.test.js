@@ -204,7 +204,7 @@ test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', 
 });
 
 test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
-  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-wklej', 'przycisk-poprawka', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-informacje', 'przycisk-podejrzyj-mape']) {
+  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-wklej', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-informacje', 'przycisk-podejrzyj-mape']) {
     assert.ok(pobierz(id).zdarzenia.click?.length >= 1, `#${id} nie ma nasłuchu click — przycisk byłby martwy`);
   }
   // Ekran 5 nie ma już przycisku zatwierdzania: walidację odpala samo wklejenie,
@@ -567,7 +567,9 @@ test('mapa: przejście do stacji rysuje numerowane pinezki i okrąg promienia', 
   assert.equal(domMapy.pobierz('ekran-stacje').hidden, false);
   const pinezki = domMapy.pobierz('mapa-stacje-pinezki');
   assert.equal(pinezki.children.length, DOMYSLNE.liczbaStacji, 'tyle pinezek, ile stacji z listy');
-  assert.equal(pinezki.children.length, domMapy.pobierz('lista-stacji').children.length);
+  assert.match(domMapy.pobierz('stacje-podsumowanie').textContent,
+    new RegExp(`Wygenerowano ${DOMYSLNE.liczbaStacji} stacji\\.`),
+    'zdanie podsumowania mówi, ile stacji powstało (uwaga 5: spisu nie ma)');
   assert.deepEqual(pinezki.children.map((g) => g.children[1].textContent), ['1', '2', '3', '4', '5']);
   const idPinezek = pinezki.children.map((g) => String(g.getAttribute('data-stacja')));
   assert.equal(new Set(idPinezek).size, DOMYSLNE.liczbaStacji, 'pinezki mają różne identyfikatory stacji');
@@ -793,7 +795,8 @@ test('stacje: bez window.fetch degradacja do pierścienia jest synchroniczna i j
   assert.equal(domAtrapa.window.fetch, undefined, 'atrapa NIE wystawia window.fetch (Node ma globalny — aplikacja czyta window)');
   domAtrapa.kliknij('przycisk-dalej-stacje');
   // BEZ await — bez fetch cała ścieżka jest synchroniczna (testy nie czekają na sieć)
-  assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3, 'pierścień rozstawiony od razu');
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /^Wygenerowano \d+ stacji\.$/,
+    'pierścień rozstawiony od razu — bez „zlokalizowano", bo sieci dróg nie ma (LESSONS L6)');
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /Overpass/, 'komunikat mówi, skąd będą prawdziwe stacje');
 });
@@ -811,7 +814,8 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
   // też synchronicznie: cache zastępuje sieć
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa \(Overpass\) — punkty osiągalne/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /z pamięci telefonu/, 'druga gra w tej okolicy nie woła Overpass');
-  assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3);
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /^Wygenerowano i zlokalizowano \d+ stacji\.$/,
+    'stacje z sieci dróg są zlokalizowane');
   assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście/, '{MIEJSCE} z obszaru administracyjnego (bez Nominatim)');
 });
 
@@ -826,7 +830,7 @@ test('stacje: „Inny układ" i „Pobierz ponownie" wracają widokiem na górę
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
   const warstwa = domAtrapa.pobierz('ekran-stacje');
-  assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3, 'warstwa stacji otwarta z listą');
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /stacji\.$/, 'warstwa stacji otwarta z podsumowaniem');
 
   warstwa.scrollTop = 412; // właściciel przewinął listę na dół
   domAtrapa.kliknij('przycisk-przelicz');
@@ -988,7 +992,8 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
   assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, false);
   assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /\[S03\]/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
-  assert.ok(domAtrapa.pobierz('lista-stacji').children.length >= 3, 'degradacja rozstawia pierścień (ADR 0005 pkt 8)');
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /^Wygenerowano \d+ stacji\.$/,
+    'degradacja rozstawia pierścień (ADR 0005 pkt 8)');
 });
 
 test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia prosta', async () => {
@@ -1012,15 +1017,16 @@ test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia
   const pinezki = domAtrapa.pobierz('mapa-stacje-pinezki');
   const svg = domAtrapa.pobierz('mapa-stacje-svg');
   assert.ok(pinezki.children.length >= 3, 'pierścień rozstawiony na mapie');
-  // textContent, nie innerHTML: wiersz jest zbudowany z węzłów (LESSONS L19),
-  // a atrapa DOM nie parsuje innerHTML — pole zostałoby puste.
-  const dystansPrzed = domAtrapa.pobierz('lista-stacji').children[0].textContent;
+  // Spisu stacji nie ma (właściciel 2026-09-15, uwaga 5): skutkiem
+  // przeciągnięcia jest nowe miejsce pinezki na mapie, nie wiersz listy.
+  const miejscePrzed = pinezki.children[0].getAttribute('transform');
   wyslijNa(pinezki.children[0], 'pointerdown', { pointerId: 11, clientX: 0, clientY: 0, stopPropagation() {} });
   wyslijNa(svg, 'pointermove', { pointerId: 11, clientX: 100, clientY: 100 });
   wyslijNa(svg, 'pointerup', { pointerId: 11 });
-  const dystansPo = domAtrapa.pobierz('lista-stacji').children[0].textContent;
-  assert.notEqual(dystansPo, dystansPrzed, 'lista odświeżona po przeciągnięciu');
-  assert.match(dystansPo, /ustawiona ręcznie \(linia prosta — osiągalność niezweryfikowana\)/);
+  const miejscePo = pinezki.children[0].getAttribute('transform');
+  assert.notEqual(miejscePo, miejscePrzed, 'pinezka stoi w nowym miejscu');
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /^Wygenerowano \d+ stacji\.$/,
+    'podsumowanie mówi tylko, ile stacji — bez dystansów i opisów');
 
   domAtrapa.kliknij('przycisk-reczne'); // stop
   assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'false');
@@ -1030,7 +1036,8 @@ test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia
   domAtrapa.kliknij('przycisk-przelicz');
   assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'false');
   assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('ręcznie'), 'nowy układ nie udaje ręcznego');
-  assert.ok(!domAtrapa.pobierz('lista-stacji').children[0].textContent.includes('ręcznie'));
+  assert.ok(!domAtrapa.pobierz('stacje-podsumowanie').textContent.includes('ręcznie'),
+    'podsumowanie nie zależy od trybu ręcznego');
 });
 
 /* --------------------------------------- M5/J3: podgląd i edycja organizatora */
@@ -1214,8 +1221,13 @@ test('ekran 5: błędna paczka AI — jeden komunikat, bez kodów i bez poprawki
   domAtrapa.wklej('pole-odpowiedz', 'to nie jest JSON ani kontener {{{');
   assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, KOMUNIKAT, 'UI nie wypisuje E02 ani „Nie da się odczytać”');
   assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '', 'zła wklejka znika z pola');
-  assert.equal(domAtrapa.pobierz('przycisk-poprawka').hidden, true, 'przycisku poprawki do modelu nie pokazujemy');
-  assert.equal(domAtrapa.pobierz('wynik-usterki').children.length, 0, 'bez listy kodów E**');
+  // Listy kodów E** NIE MA (właściciel 2026-09-15d, BACKLOG B23): sprawdzamy
+  // HTML, nie stub — atrapa DOM tworzy brakujący element na żądanie, więc
+  // asercja `children.length === 0` przeszłaby nawet po powrocie listy.
+  assert.equal(readFileSync(join(KATALOG_APP, 'index.html'), 'utf8').includes('wynik-usterki'), false,
+    'listy kodów E** nie ma w HTML');
+  assert.equal(domAtrapa.pobierz('wynik-walidacji').dataset.stan, 'blad',
+    'karta walidacji jest w stanie błędu (czerwona ramka)');
   assert.doesNotMatch(domAtrapa.pobierz('wynik-naglowek').textContent, /E0|E1/);
   // odrzucona rev2 (za mało pytań) — ten sam komunikat, bez szczegółów
   const jawna = czytajFixturePaczka();
@@ -1225,8 +1237,6 @@ test('ekran 5: błędna paczka AI — jeden komunikat, bez kodów i bez poprawki
   domAtrapa.wklej('pole-odpowiedz', JSON.stringify(rev2));
   assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, KOMUNIKAT);
   assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '');
-  assert.equal(domAtrapa.pobierz('przycisk-poprawka').hidden, true);
-  assert.equal(domAtrapa.pobierz('wynik-usterki').children.length, 0);
   assert.doesNotMatch(domAtrapa.pobierz('wklejka-status').textContent, /usterk|E03|poprawk/i);
 });
 
@@ -2660,22 +2670,25 @@ test('stacje: nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem', as
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
 
-  const wiersze = domAtrapa.pobierz('lista-stacji').children;
-  assert.ok(wiersze.length >= 3, 'stacje są wyrenderowane');
-  const zNazwa = wiersze.filter((li) => li.textContent.includes(wroga));
-  assert.ok(zNazwa.length > 0, 'wroga nazwa trafiła na listę (jako tekst)');
-  for (const li of zNazwa) {
-    const znaczniki = [];
-    const zbierz = (wezel) => {
-      for (const dziecko of wezel.children ?? []) {
-        znaczniki.push(String(dziecko.tagName ?? '').toUpperCase());
-        zbierz(dziecko);
-      }
-    };
-    zbierz(li);
-    assert.equal(znaczniki.includes('IMG'), false, `w wierszu powstał element IMG: ${znaczniki.join(',')}`);
-    assert.ok(li.children.every((d) => String(d.tagName).toUpperCase() !== 'SCRIPT'), 'bez SCRIPT');
-  }
+  // Spisu stacji nie ma (właściciel 2026-09-15, uwaga 5), więc wroga nazwa
+  // z OSM nie ma na tym ekranie nośnika: zdanie podsumowania jest zbudowane
+  // z LICZBY stacji. Sprawdzenie zostało zaostrzone — przed zmianą nazwa
+  // musiała być tekstem w wierszu, teraz nie może pojawić się wcale.
+  const podsumowanie = domAtrapa.pobierz('stacje-podsumowanie');
+  assert.match(podsumowanie.textContent, /^Wygenerowano i zlokalizowano \d+ stacji\.$/,
+    'zdanie jest z liczby, nie z danych OSM');
+  assert.equal(podsumowanie.textContent.includes(wroga), false, 'wroga nazwa nie wchodzi na ekran stacji');
+  assert.equal(podsumowanie.children.length, 0, 'zdanie nie ma węzłów-dzieci — nie ma gdzie wstrzyknąć znacznika');
+  const znaczniki = [];
+  const zbierz = (wezel) => {
+    for (const dziecko of wezel.children ?? []) {
+      znaczniki.push(String(dziecko.tagName ?? '').toUpperCase());
+      zbierz(dziecko);
+    }
+  };
+  zbierz(domAtrapa.pobierz('ekran-stacje'));
+  assert.equal(znaczniki.includes('IMG'), false, `na ekranie stacji powstał IMG: ${znaczniki.join(',')}`);
+  assert.equal(znaczniki.includes('SCRIPT'), false, 'na ekranie stacji powstał SCRIPT');
 });
 
 test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, a prompt się buduje (S12)', async () => {
@@ -2697,7 +2710,7 @@ test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, 
   ustawPozycjeTestowa(dom, '52.2297', '21.0122');
   dom.kliknij('przycisk-dalej-stacje');
 
-  const ile = dom.pobierz('lista-stacji').children.length;
+  const ile = Number(dom.pobierz('stacje-podsumowanie').textContent.match(/(\d+) stacji/)[1]);
   assert.ok(ile >= 1 && ile < zamowione, `sieć dała mniej niż zamówione ${zamowione} (jest ${ile})`);
   assert.match(dom.pobierz('bledy-stacje').textContent, /S12/, 'kod usterki widoczny na ekranie stacji');
   assert.match(dom.pobierz('bledy-stacje').textContent, new RegExp(`nie dała ${zamowione} stacji`), 'komunikat mówi, dlaczego jest ich mniej');
@@ -3199,13 +3212,8 @@ test('uwaga B (dogrywka): wklejka nie przestawia stacji z sieci — metryka drog
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/,
     'stacje są z sieci drogowej (cache), nie z pierścienia');
 
-  const wiersze = [...domAtrapa.pobierz('lista-stacji').children];
-  assert.equal(wiersze.length, 3, 'sieć dała dokładnie 3 stacje');
-  assert.match(wiersze[0].textContent, /(\d+) m drogi/, 'lista pokazuje dystans sieciowy stacji 1');
-  const drogaStacji1 = Number(wiersze[0].textContent.match(/(\d+) m drogi/)[1]);
-  const wspolrzedneStacji1 = wiersze[0].textContent.match(WZOR_WSPOLRZEDNYCH)[0];
-  const wspolrzedneStacji2 = wiersze[1].textContent.match(WZOR_WSPOLRZEDNYCH)[0];
-  assert.notEqual(wspolrzedneStacji1, wspolrzedneStacji2, 'dwie różne stacje — jest co przestawić');
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent,
+    /Wygenerowano i zlokalizowano 3 stacji\./, 'sieć dała dokładnie 3 stacje');
 
   const paczka = {
     ...czytajFixturePaczka(),
@@ -3214,13 +3222,24 @@ test('uwaga B (dogrywka): wklejka nie przestawia stacji z sieci — metryka drog
   domAtrapa.wklej('pole-odpowiedz', JSON.stringify(paczka));
 
   assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę');
-  const cel = domAtrapa.pobierz('gra-cel-stacji').textContent;
-  assert.ok(cel.includes(wspolrzedneStacji1),
-    `stacja 1 gry to stacja 1 z sieci (metryka drogowa); cel: „${cel}”`);
-  assert.ok(!cel.includes(wspolrzedneStacji2), 'kreska nie wygrała z drogą');
+  // Spisu stacji nie ma (uwaga 5), więc metrykę drogową mierzymy na celach
+  // odcinków: stacja 1 i stacja 2 muszą nieść WŁASNE współrzędne i WŁASNY
+  // dystans (D1: przed naprawą każdy odcinek pokazywał dystans stacji 1).
+  const cel1 = domAtrapa.pobierz('gra-cel-stacji').textContent;
+  const wspolrzedneStacji1 = cel1.match(WZOR_WSPOLRZEDNYCH)[0];
+  assert.match(cel1, /(\d+) m drogą od poprzedniego punktu/, 'odcinek liczony drogą, nie kreską');
+  const drogaStacji1 = Number(cel1.match(/(\d+) m drogą od poprzedniego punktu/)[1]);
   assert.doesNotMatch(domAtrapa.pobierz('status').textContent, /uporządkowano trasą/,
     'kolejność sieciowa jest punktem stałym w metryce drogowej — nie ma czego przestawiać');
-  assert.match(cel, new RegExp(`${drogaStacji1} m drogą od poprzedniego punktu`),
-    'pierwszy odcinek niesie WŁASNY dystans sieciowy, nie cudzy');
+  await zamknijStacje(domAtrapa, { paczka, numerStacji: 1 });
+  const cel2 = domAtrapa.pobierz('gra-cel-stacji').textContent;
+  assert.notEqual(cel2.match(WZOR_WSPOLRZEDNYCH)[0], wspolrzedneStacji1,
+    'stacja 2 to inny punkt niż stacja 1 — kreska nie wygrała z drogą');
+  assert.match(cel2, /(\d+) m drogą od poprzedniego punktu/, 'drugi odcinek też liczony drogą');
+  const drogaStacji2 = Number(cel2.match(/(\d+) m drogą od poprzedniego punktu/)[1]);
+  // Bez tej linijki brak dopasowania dałby NaN po obu stronach, a
+  // `assert.notEqual(NaN, NaN)` przechodzi — asercja byłaby pusta.
+  assert.ok(Number.isFinite(drogaStacji1) && Number.isFinite(drogaStacji2), 'oba dystanse są liczbami');
+  assert.notEqual(drogaStacji2, drogaStacji1, 'każdy odcinek niesie WŁASNY dystans sieciowy, nie cudzy');
 });
 

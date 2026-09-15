@@ -68,9 +68,11 @@ idempotencji cicho zaakceptowałby błąd modelu) oraz wariant przez
 - Wpis historii (`RO-historia/1` przez `skrotGry`): to samo pole, ta sama
   reguła. Bez podbicia schematu — walidatory sprawdzają tylko pola
   wymagane, obce/addytywne przechodzą.
-- Korekta dla modelu (`poprawkaDlaModelu`) dostaje parametr `factcheck`
-  (domyślnie `true`); w wariancie bez weryfikacji NIE przypomina
+- Korekta dla modelu (`poprawkaDlaModelu`) dostawała parametr `factcheck`
+  (domyślnie `true`); w wariancie bez weryfikacji NIE przypominała
   o kwerendzie ani URL-ach, bo narzuciłaby fact-check na odpowiedź.
+  *2026-09-15d:* funkcja i jej przycisk usunięte (ADR 0006 aneks) — regułę
+  niesie teraz sam szablon `PYT/1.0-nofc.5` (PROTOKOL §2.2).
 
 ## §5 Most Apps Script
 

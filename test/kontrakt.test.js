@@ -748,6 +748,25 @@ test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (AD
   assert.match(css, /\.badge-dystans \{[^}]*background: var\(--akcent\)/s, 'badge dystansu na akcencie (kontrast)');
 });
 
+test('kontrakt: pole z fokusem ma ≥ 16 px — iOS nie przybliża strony (uwaga 3, 2026-09-15; ADR 0047)', () => {
+  // iOS Safari przybliża stronę na fokusu pola, którego font-size < 16 px,
+  // a pinch poza mapą jest zablokowany celowo (ADR 0047) — przybliżenia nie
+  // da się wtedy cofnąć. Reguła dotyczy KAŻDEGO pola tekstowego: selektor
+  // wymienia element formularza albo klasę pola, a w ciele jest font-size.
+  // Komentarze wycinamy: w nich „14 px" bywa opisem usterki, nie regułą.
+  const css = czytaj('app/styles.css').replace(/\/\*[\s\S]*?\*\//g, '');
+  const zaMale = [];
+  for (const [, selektor, cialo] of css.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+    if (!/input|textarea|select|pole-tekstowe/.test(selektor)) continue;
+    for (const [, px] of cialo.matchAll(/font-size:\s*(\d+(?:\.\d+)?)px/g)) {
+      if (Number(px) < 16) zaMale.push(`${selektor.trim()} → ${px}px`);
+    }
+  }
+  assert.deepEqual(zaMale, [], 'pole z fokusem < 16 px = iOS przybliża HTML bez możliwości oddalenia');
+  // Pin na pole wklejenia odpowiedzi AI: to ono było zgłoszone z terenu.
+  assert.match(css, /\.pole-tekstowe \{[^}]*font-size: 16px/, 'pole promptu i odpowiedzi ma 16 px');
+});
+
 test('kontrakt: lokalnej historii gier NIE MA (zgłoszenie terenowe O, 2026-09-13; ADR 0010 aneks)', () => {
   // Właściciel: jedyną drogą powrotu do przerwanej gry jest automatyczne
   // wczytanie zapisu (ADR 0045), a wyniki między grami żyją na wspólnym Drive
@@ -1146,7 +1165,15 @@ test('kontrakt: ręczna edycja paczki nie istnieje w kodzie (ADR 0006 aneks 2026
   assert.ok(!protokol.includes('zastosujEdycjePaczki'), 'martwa funkcja edycji usunięta z app/protokol.js');
   assert.ok(!protokol.includes('EDYTOWALNE_POLA'), 'lista pól edytowalnych usunięta razem z funkcją');
   assert.ok(!INDEX.includes('podglad-pytania'), 'ekran paczki nie ma podglądu pytania');
-  assert.match(czytaj('app/protokol.js'), /export function poprawkaDlaModelu/, 'ścieżka usterek (poprawka do modelu) zostaje');
+  // 2026-09-15d (właściciel): przycisk „Kopiuj poprawkę do modelu" był chowany
+  // w obu ścieżkach błędu i nigdy nie pokazywany — usunięty razem z funkcją,
+  // która budowała jego tekst (L31/L55: martwy nośnik nie zostaje w kodzie).
+  assert.equal(INDEX.includes('id="przycisk-poprawka"'), false, 'przycisku poprawki nie ma w HTML');
+  assert.equal(APP.includes('przycisk-poprawka'), false, 'app.js nie dotyka usuniętego przycisku');
+  assert.equal(czytaj('app/protokol.js').includes('poprawkaDlaModelu'), false,
+    'funkcja poprawki dla modelu usunięta razem z przyciskiem');
+  assert.equal(czytaj('app/protokol.js').includes('gotowa do skopiowania'), false,
+    'komunikat E02 nie obiecuje przycisku, którego nie ma');
 });
 
 test('kontrakt: łatkę szablonu widać w dokumencie, nie w panelu gracza (PROTOKOL §7)', () => {
@@ -2276,9 +2303,15 @@ test('kontrakt m12-119: korytarze wzdłuż jezdni nie trasują; path/track zosta
 });
 
 test('kontrakt m12-120: pełny układ ulic dla pieszego i roweru, bez autostrad; one-way nie blokuje; reset przewijania warstwy', () => {
+  // m12-120: aneks wyszedł do archiwum przy skracaniu lektury (L62, 2026-09-15d)
+  // — reguła zostaje obowiązująca, a jej streszczenie niesie LESSONS L71.
+  assert.match(czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-120.md'),
+    /## Aneks 2026-09-14 \(m12-120\) — pełny układ ulic dla pieszego i roweru/,
+    'aneks m12-120 żyje w archiwum ADR 0005');
   assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
-    /Aneks 2026-09-14 \(m12-120\) — pełny układ ulic dla pieszego i roweru/,
-    'ADR 0005 dokumentuje domknięcie „dodać ulice"');
+    /Aneks 2026-09-14 \(m12-120\) jest w archiwum/,
+    'ADR 0005 odsyła do archiwum aneksu m12-120');
+  assert.match(czytaj('docs/LESSONS.md'), /## L71 /, 'reguła klas ulic zostaje w lekturze startowej (L71)');
   // ulice tranzytowe wchodzą do obu niemotoryzowanych trybów (wieś przy wojewódzkiej)
   for (const tryb of ['piesza', 'rower']) {
     for (const klasa of ['tertiary', 'secondary', 'primary', 'unclassified']) {

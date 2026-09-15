@@ -70,8 +70,9 @@ Koniec sesji:
 5. Ekran **paczki**: wklej odpowiedź modelu (ręcznie albo „📋 Wklej
    ze schowka”) — sprawdzanie rusza SAMO przy każdej zmianie tekstu, przycisku
    „przyjmij” nie ma, a wczytywania „⬆ Z pliku” nie ma od 2026-09-07 (ADR 0006
-   aneks 3). Usterki: lista kodów E01–E20 i gotowa
-   „⧉ poprawka do modelu”. Poprawna paczka **od razu zaczyna grę** (i leci na
+   aneks 3). Usterki: jeden stały komunikat „ponów generowanie i wklej
+   poprawne dane” — bez listy kodów E01–E20 i bez poprawki dla modelu
+   (2026-09-15), a pole wklejenia zostaje puste. Poprawna paczka **od razu zaczyna grę** (i leci na
    Drive prosto do repozytorium okolicy — moderacja wstępna zniesiona
    2026-09-11); pytania są ukrywane (TO-paczka/2), a pole wklejania
    czyszczone.

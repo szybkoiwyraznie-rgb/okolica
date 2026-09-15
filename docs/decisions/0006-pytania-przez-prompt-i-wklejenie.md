@@ -121,3 +121,40 @@ z telefonem w jednej ręce.
 gry po przyjęciu i czyszczenie pola po walidacji (ADR 0007 pkt 4) bez zmian.
 Prywatności ekranu nadal pilnuje wysokość pola (`rows="3"`, `resize: none`).
 
+## Aneks 2026-09-15 — nasłuch `paste` blokuje domyślną akcję (uwaga 4)
+
+Zgłoszenie właściciela: przy błędnej paczce pole wklejenia NIE było puste, choć
+kod je czyści — poprawioną paczkę trzeba było najpierw ręcznie zaznaczyć i
+skasować. Przyczyna: przeglądarka wstawia tekst PO powrocie z nasłuchu `paste`,
+czyli już po walidacji i czyszczeniu pola.
+
+Decyzja: nasłuch `paste` na `#pole-odpowiedz` woła `e.preventDefault()` i
+wstawia treść sam. Zachowanie na ekranie bez zmian (pole pokazuje treść podczas
+walidacji), a po walidacji zostaje puste — tak po przyjęciu (pkt 4 ADR 0007),
+jak i po odmowie. Atrapa `wklej()` odtwarza tę kolejność: nasłuchy, potem
+domyślna akcja, chyba że zablokowana.
+
+## Aneks 2026-09-15d — przy błędnej paczce nie ma ani poprawki dla modelu, ani listy kodów
+
+Punkt 5 tego ADR obiecywał przy usterkach poprawkę gotową do wklejenia modelowi.
+Od 2026-09-15 organizator widzi JEDEN stały komunikat („Wygenerowana paczka
+pytań AI jest błędna. Ponów generowanie i wklej poprawne dane.") — bez kodów
+i bez szczegółów, bo ścieżką naprawy jest ponowne generowanie, nie ręczna
+korekta bloku JSON.
+
+Właściciel (2026-09-15d, BACKLOG B23: „tak, usuń") kazał zdjąć oba nośniki,
+które po tej zmianie nie miały zawartości:
+
+- `przycisk-poprawka` był chowany w obu ścieżkach błędu i nigdy nie pokazywany
+  — zniknął z `index.html`, a z `app/app.js` nasłuch, `STAN.poprawkaFactcheck`
+  i chowanie, z `app/protokol.js` funkcja `poprawkaDlaModelu`; komunikaty E02
+  nie obiecują już „poprawki gotowej do skopiowania".
+- `#wynik-usterki` nie miał dzieci nigdy: `renderujUsterki()` miała dwa
+  wywołania i oba z pustą tablicą, a lista była czyszczona także na starcie
+  walidacji — zniknęły `<ul>`, funkcja, zmienna `listaUsterek` i reguły
+  `.usterki`. Karta `#wynik-walidacji` z nagłówkiem i `data-stan='blad'`
+  zostaje: to ona niesie komunikat.
+
+Kody E01–E20 żyją dalej w `walidujPaczke()` i testach; przy debugowaniu
+odrzuconej paczki czyta się je z walidatora, nie z DOM (LESSONS L54). Piny
+przepisane na nową formę, martwe frazy w `test/dryf-dokumentow.test.js` (L55).

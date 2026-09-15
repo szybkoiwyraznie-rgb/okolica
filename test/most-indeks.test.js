@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 import { geohash } from '../app/geo.js';
 import { dopasujMetaIndeksu, dopasujZestawy, walidujIndeksSurowy } from '../app/zestawy.js';
 import { odpakujPaczke, zapakujPaczke } from '../app/kodowanie.js';
-import { uruchomMost, zestawPrzykladowy, idPoNazwie } from './helpers/most.js';
+import { uruchomMost, zestawPrzykladowy, idPoNazwie, iteratorAtrapyDrive } from './helpers/most.js';
 
 const { most } = uruchomMost();
 const { geohashPunkt, kotwicaZestawu } = most;
@@ -319,3 +319,40 @@ test('most: nazwa nie rodzi znaków zakazanych w Drive ani ogonów (ADR 0048)', 
   assert.ok(wynik.nazwa.includes('Nowy-Dwór-Maz'), wynik.nazwa);
   assert.match(wynik.nazwa, /wiek-10/, 'wiek z „+" zamienia się w czytelne 10');
 });
+
+/* ---- zgłoszenie właściciela 2026-09-15: paczka nie lądowała na Drive ---- */
+
+test('atrapa Drive: next() na pustej kolekcji RZUCA jak Apps Script (LESSONS L73)', () => {
+  const it = iteratorAtrapyDrive([]);
+  assert.equal(it.hasNext(), false);
+  // Dokumentacja Drive: „next() … Throws an exception if no items remain in this
+  // collection". Atrapa, która oddawałaby `undefined`, przepuściłaby niepilnowane
+  // `.next()` — a to właśnie ono zgubiło paczkę właściciela.
+  assert.throws(() => it.next(), /pusty iterator/);
+  const jeden = iteratorAtrapyDrive(['a']);
+  assert.equal(jeden.next(), 'a', 'pierwszy element jest oddawany');
+  assert.throws(() => jeden.next(), /pusty iterator/, 'drugi raz na wyczerpanej kolekcji też rzuca');
+});
+
+test('most: NOWA paczka (wolna nazwa) ląduje w katalogu zaakceptowanych — przez doPost, jak woła aplikacja', () => {
+  const { most: m, pliki } = uruchomMost();
+  const zestaw = nazwaZestawu();
+  // `doPost` łapie KAŻDY wyjątek i zamienia go na `{ ok:false, blad }` — dlatego
+  // test idzie tą samą drogą co telefon, a nie woła `przyjmijKandydata` wprost:
+  // wyjątek z niepilnowanego `.next()` na pustym iteratorze (Apps Script rzuca,
+  // dokumentacja Drive) wyglądał wtedy jak „most odrzucił paczkę".
+  const odp = JSON.parse(m.doPost({ postData: { contents: JSON.stringify(zestaw) } }).tekst);
+  assert.equal(odp.ok, true, `odpowiedź mostu: ${JSON.stringify(odp)}`);
+  assert.equal(odp.status, 'zaakceptowana');
+  const id = idPoNazwie(pliki, odp.nazwa);
+  assert.ok(id, `plik powstał na Drive pod nazwą „${odp.nazwa}”`);
+  assert.equal(odp.id, id, 'telefon dostaje identyfikator tego pliku (łapki, ADR 0028)');
+  const plik = pliki.get(id);
+  assert.equal(plik.rodzice.size, 1, 'plik ma dokładnie jednego rodzica (katalog zaakceptowanych)');
+  assert.equal([...plik.rodzice][0].nazwa, 'okolica-paczki-zaakceptowane');
+  // i jest widoczny w indeksie, czyli w ekranie „Paczki dla tej okolicy"
+  const indeks = walidujIndeksSurowy(JSON.stringify(m.budujIndeks()));
+  assert.deepEqual(indeks.usterki, []);
+  assert.equal(indeks.indeks.length, 1, 'przyjęta paczka jest w indeksie');
+});
+

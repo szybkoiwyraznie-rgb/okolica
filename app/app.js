@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-132';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-132';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-136';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-136';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -25,7 +25,6 @@ import {
   odkodujPaczkeRev2,
   odkodujPaczkeBiezaca,
   parsujOdpowiedzModela,
-  poprawkaDlaModelu,
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
@@ -33,22 +32,22 @@ import {
   WARIANTY_BIEZACE,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-132';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-132';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-132';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-132';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-132';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-132';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-132';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-132';
+} from './protokol.js?v=m12-136';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-136';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-136';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-136';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-136';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-136';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-136';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-136';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-132';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-132';
+} from './zestawy.js?v=m12-136';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-136';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -64,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-132';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-132';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-132';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-132';
-import { adresMostu, stanMostu } from './most.js?v=m12-132';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-132';
+} from './sieci.js?v=m12-136';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-136';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-136';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-136';
+import { adresMostu, stanMostu } from './most.js?v=m12-136';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-136';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-132';
+} from './oceny.js?v=m12-136';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -138,7 +137,6 @@ const STAN = {
   /** ADR 0032: wariant promptu z ekranu 4 (checkbox „Pytania z fact check") — false = domyślny bez weryfikacji. */
   promptFactcheck: false,
   /** ADR 0032: wariant korekty dla modelu — ze znacznika wklejki, a dla E02 z checkboxa. */
-  poprawkaFactcheck: true,
   paczka: null,
   /** ADR 0028: id paczki z repozytorium Drive — tylko takie paczki zbierają oceny. */
   paczkaRepoId: '',
@@ -2060,21 +2058,18 @@ function wylaczTrybReczny() {
 }
 
 function renderujStacje() {
-  const lista = $('lista-stacji');
   const sieciowe = Boolean(STAN.wynikSieci);
   if (STAN.ukryjStacje) {
     // Wspólna Trasa = trasa-sekret (właściciel, 2026-09-11): organizator
     // generujący paczkę nie widzi nazw miejsc ani współrzędnych — tylko
     // status, że stacje powstały (kropki na mapie chowa `odswiezWarstwy`).
-    const li = document.createElement('li');
     // Komunikat mówi, czy stacje ZLOKALIZOWANO na sieci dróg (właściciel,
     // pierwotny pomysł multi: „wygenerowano i zlokalizowano/nie zlokalizowano
     // X stacji"). Pierścień jest układem zastępczym — jego osiągalność nie
     // jest zweryfikowana, więc organizator ma to wiedzieć ZANIM wyjdzie.
-    li.textContent = sieciowe
+    $('stacje-podsumowanie').textContent = sieciowe
       ? `Wygenerowano i zlokalizowano stacji: ${STAN.stacje.length}. Nazwy i położenie są ukryte — trasa odsłania się w czasie gry, po jednej stacji.`
       : `Wygenerowano stacji: ${STAN.stacje.length}, ale NIE zlokalizowano ich na sieci dróg (układ pierścieniowy, osiągalność niezweryfikowana). Nazwy i położenie są ukryte — trasa odsłania się w czasie gry, po jednej stacji.`;
-    lista.replaceChildren(li);
     $('stacje-tryb').textContent = 'Tryb tajnej trasy: mapa i lista nie pokazują stacji.';
     $('przycisk-reczne').hidden = true; // przeciąganie pinezek pokazałoby stacje
     // „Inny układ" też odsłania stacje (nowy układ = inne punkty do zgadnięcia),
@@ -2083,33 +2078,16 @@ function renderujStacje() {
     $('przycisk-siec-ponow').hidden = STAN.siec.stan === 'gotowa';
     return;
   }
-  // replaceChildren, nie innerHTML='': jedna operacja, bez migotania (i atrapa
-  // DOM w testach odwzorowuje replaceChildren, a innerHTML jest tam inertne)
-  lista.replaceChildren(...STAN.stacje.map((s) => {
-    const li = document.createElement('li');
-    const dystans = sieciowe ? `${s.dystansSieciowyM} m drogi` : `${s.odlegloscM} m`;
-    const opis = s.zrodlo === 'reczne'
-      ? 'ustawiona ręcznie (linia prosta — osiągalność niezweryfikowana)'
-      : s.opis || (sieciowe ? 'punkt przy sieci dróg' : 'punkt w terenie (osiągalność niezweryfikowana)');
-    // Opis stacji bywa nazwą z OSM (`tags.name` przez `dopiszMiasto`), czyli
-    // tekstem z zewnątrz — do DOM idzie przez textContent, nigdy przez
-    // innerHTML (wstrzyknięty znacznik wykonałby się w aplikacji).
-    const numer = document.createElement('span');
-    numer.classList.add('numer');
-    numer.textContent = String(s.id);
-    const kod = document.createElement('span');
-    kod.classList.add('kod');
-    kod.textContent = `${formatujWspolrzedne(s.lat, s.lon)} · ${s.bearing}°`;
-    const opisEl = document.createElement('span');
-    opisEl.classList.add('opis');
-    opisEl.textContent = opis;
-    opisEl.append(document.createElement('br'), kod);
-    const dystansEl = document.createElement('span');
-    dystansEl.classList.add('dystans');
-    dystansEl.textContent = dystans;
-    li.append(numer, opisEl, dystansEl);
-    return li;
-  }));
+  // Właściciel 2026-09-15 (uwaga 5): spisu stacji NIE MA. Organizator widzi
+  // jedno zdanie, a położenie pokazują pinezki na mapie. Nazwy z OSM i
+  // współrzędne nie wchodzą tu wcale do DOM — nie ma nośnika wstrzyknięcia
+  // (LESSONS L19), bo zdanie jest budowane z liczby stacji.
+  // Przy układzie pierścieniowym zdanie NIE mówi „zlokalizowano", bo przy
+  // braku sieci dróg byłoby to nieprawdą (LESSONS L6); dlaczego stacje są
+  // tylko w pierścieniu, mówi `#stacje-tryb` tuż pod spodem.
+  $('stacje-podsumowanie').textContent = sieciowe
+    ? `Wygenerowano i zlokalizowano ${STAN.stacje.length} stacji.`
+    : `Wygenerowano ${STAN.stacje.length} stacji.`;
   if (sieciowe) {
     const miejsce = STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
     const cache = STAN.siec.zCache ? ' (z pamięci telefonu — Overpass nie został wywołany)' : '';
@@ -3818,12 +3796,8 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
     ? { paczka: zKontenera.paczka, blad: null }
     : parsujOdpowiedzModela(tekst);
   const wynik = $('wynik-walidacji');
-  const listaUsterek = $('wynik-usterki');
-  wynik.hidden = false;
-  listaUsterek.replaceChildren();
 
   if (!paczka) {
-    STAN.poprawkaFactcheck = STAN.promptFactcheck;
     STAN.usterkiPaczki = [blad];
     STAN.paczka = null;
     pokazOdrzuconaPaczkeAi();
@@ -3844,10 +3818,6 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
       : odkodujPaczkeRev1(paczka);
   const usterki = walidujPaczke(robocza, oczekiwane());
   STAN.usterkiPaczki = usterki;
-  // Korekta celuje w profil walidacji wklejki (znacznik), nie w checkbox —
-  // wklejona paczka rev2 ma dostać przypomnienie o kwerendzie także wtedy,
-  // gdy checkbox jest akurat pusty.
-  STAN.poprawkaFactcheck = czyWariantFactcheck(paczka);
   if (usterki.length) {
     STAN.paczka = null;
     pokazOdrzuconaPaczkeAi();
@@ -3894,8 +3864,6 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
   $('wynik-naglowek').textContent = bylaOdwrocona
     ? `Paczka przyjęta (odwrócona, ${wariant} — odkodowana; ${weryfikacja})`
     : `Paczka przyjęta (${wariant === 'rev1' ? '' : `${wariant}, `}${weryfikacja})`;
-  $('przycisk-poprawka').hidden = true;
-  renderujUsterki([]);
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
@@ -3991,37 +3959,11 @@ function pokazOdrzuconaPaczkeAi() {
   wynik.hidden = false;
   wynik.dataset.stan = 'blad';
   $('wynik-naglowek').textContent = KOMUNIKAT_BLEDNEJ_PACZKI_AI;
-  renderujUsterki([]);
-  $('przycisk-poprawka').hidden = true;
   $('pole-odpowiedz').value = '';
   $('wklejka-status').textContent = KOMUNIKAT_BLEDNEJ_PACZKI_AI;
   status(KOMUNIKAT_BLEDNEJ_PACZKI_AI);
 }
 
-function renderujUsterki(usterki) {
-  // replaceChildren, nie innerHTML='' (LESSONS L19): atrapa i przeglądarka
-  // zachowują się wtedy identycznie, a stare wiersze nie zalegają w DOM
-  $('wynik-usterki').replaceChildren(...usterki.map((u) => {
-    const li = document.createElement('li');
-    const kod = document.createElement('code');
-    kod.textContent = u.kod ?? '';
-    li.append(kod);
-    // Komunikaty cytują dane z zewnątrz (meta paczki, odpowiedź mostu), więc
-    // tekst idzie przez textContent — innerHTML wykonałby znacznik z paczki.
-    if (u.pole) {
-      const pole = document.createElement('strong');
-      pole.textContent = ` ${u.pole}`;
-      const reszta = document.createElement('span');
-      reszta.textContent = ` — ${u.komunikat ?? ''}`;
-      li.append(pole, reszta);
-    } else {
-      const reszta = document.createElement('span');
-      reszta.textContent = ` ${u.komunikat ?? ''}`;
-      li.append(reszta);
-    }
-    return li;
-  }));
-}
 
 
 /* ------------------------- sygnały (M10/T4), Service Worker (M10/T2), bateria (M10/T3) */
@@ -5736,19 +5678,22 @@ function start() {
    *
    * Treść bierzemy z `clipboardData`, NIE z pola: `paste` leci PRZED wstawieniem
    * tekstu, więc `pole.value` jest w tej chwili jeszcze puste (albo ma poprzednią
-   * zawartość). Domyślnej akcji nie blokujemy — pole ma pokazać, że coś w nim
-   * jest, a `sprawdzOdpowiedz` i tak je wyczyści po przyjęciu paczki.
+   * zawartość).
+   *
+   * Domyślną akcję BLOKUJEMY (właściciel 2026-09-15, uwaga 4): przeglądarka
+   * wstawia tekst PO powrocie z nasłuchu, czyli już po tym, jak `sprawdzOdpowiedz`
+   * oczyściła pole — błąd wklejonej paczki wracał pod palec i poprawioną paczkę
+   * trzeba było najpierw ręcznie zaznaczyć i skasować. Wstawienie robimy sami
+   * (linia niżej), więc na ekranie nic się nie zmienia: pole pokazuje treść
+   * podczas walidacji, a po niej zostaje puste — tak przy przyjęciu, jak i po
+   * odmowie (ADR 0006 pkt 3 i ADR 0007 pkt 4).
    */
   $('pole-odpowiedz').addEventListener('paste', (e) => {
     const tekst = e.clipboardData?.getData('text') ?? '';
     if (!tekst.trim()) return; // wklejenie obrazka albo pustki nie udaje paczki
+    e.preventDefault();
     $('pole-odpowiedz').value = tekst;
     sprawdzOdpowiedz(tekst);
-  });
-  $('przycisk-poprawka').addEventListener('click', (e) => {
-    const tekst = poprawkaDlaModelu(STAN.usterkiPaczki, { liczbaPytan: liczbaPytan(STAN.konfig), factcheck: STAN.poprawkaFactcheck });
-    kopiujTekst(tekst, e.currentTarget, '⧉ Kopiuj poprawkę do modelu');
-    $('pole-odpowiedz').value = tekst;
   });
 
   // „Zobacz więcej/mniej paczek" (właściciel 2026-09-11): lista startuje

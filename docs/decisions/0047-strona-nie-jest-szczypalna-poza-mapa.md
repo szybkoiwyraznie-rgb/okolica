@@ -49,3 +49,20 @@ blokować poza mapą).
   blokowane. To pożądane: odliczanie ma być tylko oglądane (ADR 0044).
 - Testy: nasłuch istnieje, blokuje poza mapą, nie dotyka mapy (atrapa DOM,
   `wyslijZdarzenieDokumentu`).
+
+## Aneks 2026-09-15 — strona nie przybliża się też na fokusu pola (uwaga 3)
+
+Zgłoszenie właściciela: wklejenie odpowiedzi AI w pole „Odpowiedź modelu AI"
+wyśrodkowywało stronę na tym polu i **przybliżało HTML**, a oddalić się nie
+dało — pinch poza mapą jest zablokowany (ta decyzja), a pinch na mapie rusza
+kafelkami. Przyczyną nie był gest, tylko pole: iOS Safari przybliża stronę,
+gdy element z fokusem ma `font-size` poniżej 16 px, a `.pole-tekstowe` miało
+14 px (nadpisywało 17 px z reguły pól formularza).
+
+Decyzja: **każde pole tekstowe, do którego wchodzi palec, ma ≥ 16 px.**
+Nie dotykamy przy tym `maximum-scale`/`user-scalable` w meta (odrzucone wyżej:
+odbiera powiększenie tym, którzy go potrzebują) ani `touch-action` na `html`
+(zabiłoby przewijanie). Strażnikiem jest kontrakt CSS w `test/kontrakt.test.js`:
+żadna reguła dotykająca `input`/`textarea`/`select`/`.pole-tekstowe` nie może
+ustawić `font-size` poniżej 16 px.
+

@@ -361,8 +361,9 @@ w `app/konfig.js`) — paczki zapisane przed zmianą działają dalej.
 
 Walidator `walidujPaczke(paczka, oczekiwane)` zwraca listę usterek
 `{ kod, pole, komunikat }`; pusta lista = przyjęcie. Komunikat jest po polsku
-i mówi, **co zrobić** (ADR 0011 pkt 8). Kody są stałe — używa ich test, UI
-i przycisk „skopiuj poprawkę do modelu" (ADR 0006 pkt 5).
+i mówi, **co zrobić** (ADR 0011 pkt 8). Kody są stałe — używa ich test
+i diagnostyka; UI pokazuje jeden komunikat bez kodów (ADR 0006 pkt 5
+i aneks 2026-09-15d: przycisk „skopiuj poprawkę do modelu" usunięty).
 
 | Kod | Usterka |
 | --- | --- |

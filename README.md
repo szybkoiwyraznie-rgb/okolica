@@ -52,7 +52,7 @@ trafia pozycja, co zostaje na telefonie, jak to skasować; paczka opisana jako
 danych jest dwustopniowe i rusza tylko klucze `okolica:*`. GPS startuje automatycznie. Nie ma ręcznych pól pozycji ani symulacji 250 m.
 W trybie testowym pozycję wskazuje się na mapie; w grze zostaje symulacja
 dojścia do stacji. GPS i symulacja używają tej samej reguły ≤50 m.
-Setup, lista stacji i pytania są przewijanymi panelami nad przygaszoną mapą.
+Setup, stacje i pytania są przewijanymi panelami nad przygaszoną mapą; ekran stacji mówi jednym zdaniem, ile ich powstało (spisu nie ma).
 Podczas drogi zostaje tylko jednowierszowy pasek na dole (gracz, dystans, stacja),
 a ⓘ Informacje nie niosą już nic z gry; po dojściu wraca duży panel pytania
 (ADR 0036). Grę kończy ikona ⚙ START GRY: w trakcie gry otwiera małą warstwę,
@@ -81,7 +81,8 @@ udaje, że punkty są osiągalne. Przycisk wymuszający pierścień zniknął z 
 **M5 — pętla pytań: kod i testy gotowe.** Ekran promptu ma instrukcję
 obrazkową (cztery kroki jako inline SVG, zero plików zewnętrznych),
 a wklejenie odpowiedzi modelu automatycznie uruchamia walidację. Paczka z usterkami
-daje czytelną listę kodów E01–E20 i przycisk „skopiuj poprawkę do modelu".
+daje jeden komunikat: ponów generowanie i wklej poprawne dane — bez listy kodów
+E01–E20 i bez poprawki dla modelu (2026-09-15); pole wklejenia jest wtedy puste.
 Po przyjęciu gra zaczyna się OD RAZU (decyzja 2026-09-07 — podgląd,
 ściąganie i edycja zniknęły z ekranu; to zadania właściciela na Drive,
 dokąd zestaw leci automatycznie w chwili przyjęcia). Gotowe zestawy można wybrać na ekranie propozycji paczek. Nazwa miejsca do
