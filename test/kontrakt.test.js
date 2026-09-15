@@ -1685,7 +1685,11 @@ test('kontrakt ADR 0043: grę kończy ikona ⚙ START GRY z wpisaniem TAK (uwagi
   assert.equal(/niedostępne w trakcie gry/.test(APP), false,
     'stary title o niedostępnej ikonie zniknął razem z blokadą');
   assert.match(APP, /if \(czyGraToczySie\(\)\) \{ przelaczKoniecGry\(\); return; \}/,
-    'w trakcie gry klik ⚙ otwiera warstwę, poza grą idzie stary tor (setup → mapa)');
+    'w trakcie gry klik ⚙ otwiera warstwę (ADR 0043)');
+  assert.match(APP, /if \(EKRANY_SETUPU\.includes\(STAN\.ekran\)\) \{ przelaczPodgladMapy\(\{ fokus: 'przycisk-setup' \}\); return; \}/,
+    'w setupie klik ⚙ chowa i przywraca warstwę jak oko (uwaga A, aneks ADR 0043 z 2026-09-14)');
+  assert.equal(APP.includes('if (EKRANY.includes(STAN.ekran)) { pokazMapeStartowa(); return; }'), false,
+    'stary tor „setup → mapa startowa” nie wraca (uwaga A go odwraca — L55)');
   assert.match(APP, /function czyGraToczySie\(\) \{\n {2}return Boolean\(STAN\.rozgrywka\) && STAN\.rozgrywka\.faza !== FAZY\.koniec && !STAN\.graZakonczonaRecznie;\n\}/,
     'jedna reguła „gra się toczy" dla ikony i dla warstwy — nie mogą się rozjechać');
   assert.match(APP, /ustaw\('przycisk-setup', EKRANY\.includes\(STAN\.ekran\) \|\| koniecOtwarty\);/,

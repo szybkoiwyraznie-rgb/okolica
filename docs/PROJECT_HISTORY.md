@@ -5518,3 +5518,110 @@ Dostępność: powiększanie UI przez powiększenie systemowe; ADR 0011 dostaje
 znacznik (fragment zastąpiony, reszta w mocy). Budżet: ADR 0047 dopiął
 limit → archiwum ADR 0005 rozszerzone do m12-115–119 (rezerwa 1039 tok).
 811→**812** testów. Bump `?v=m12-122`. Commit 85caf3f.
+
+## Sesja 2026-09-14i — audyt PR #28 (m12-121/m12-122) (gałąź `arena/01a0a1c2-okolica`, PR #29)
+
+Sesja otwarta „Kontynuujemy projekt". Lektura startowa (AGENTS §0) w całości,
+budżet 98 961/100 000 tok. Brama na wejściu: **812/812** testów, `?v=` — jedna
+wersja m12-122 w 43 miejscach + `WERSJA_SW`.
+
+**Audyt PR #28 (m12-121 + m12-122, squash jako `36527f7`, baza `9c4a40c`;
+31 plików, +810/−281; sesje 2026-09-14g/h)** — metoda: `git diff
+9c4a40c..36527f7` plik po pliku + weryfikacja na osobnych commitych sesji
+(fetch gałęzi `arena/01a0a155-okolica`) + powtórzone bramy. Wyniki:
+
+1. B1+B2 — `przyjmijZestawDoGry` OCZEKUJE na `zalozGreMulti` (jedyne wołanie,
+   `grajZZestawemZRepo`, oddaje promise kliknięciu — przycisk pulsuje
+   i jest `disabled` aż do lobby); `statusLobby` „Pobieram listę gier…"
+   (bez „mostu Drive"), puls gaśnie przy każdej następnej treści; martwa
+   fraza w strażniku dryfu. Test e2e obserwuje przycisk i status DOKŁADNIE
+   w chwili żądań `gra-zaloz`/`gry` (atrapa fetch).
+2. C/ADR 0046 — `powodyNiedopasowania` porównuje `promienM` RÓWNOŚCIĄ i tylko
+   gdy obie strony mają liczbę (stare wołania bez promienia zachowują się jak
+   dotąd — pkt 3 ADR); `dopasujZestawy` przekazuje `promienM` do kryteriów;
+   fixtura `zasiejZestaw` liczy promień przez `promienZCzasuGry` (60 min,
+   piesza, pytaniaNaStacje=1); dwa piny starej reguły przepięte na nową formę
+   (L55); ADR 0024 z oznaczeniem odwrócenia, ADR 0046 + wpis w rejestrze.
+3. D — `aktywna: null` wyłącznie w wyścigu (`STAN.multi?.gra?.tryb ===
+   TRYBY_GRY.wyscig`); pin w wyścigu (żadna `pinezka-aktywna`) + kontrtest
+   w trasie (dokładnie jedna aktywna).
+4. E — dwie warstwy sprawdzone w kodzie: `m.zrezygnowano` (stawiane w
+   `rezygnujZGryMulti`) + strażnik w `onStanGryMulti`, oraz `wrocNaPoczatek`
+   kończy kontekst sieciowy (`zatrzymajSyncMulti`, `STAN.multi = null`,
+   `trasaDlugosc = 0`, ostatnie wypchnięcie zaległych zdarzeń w tle —
+   sygnatura `dostarczZalegleZdarzeniaMulti(sesja)` zgadza się z wywołaniem,
+   brak podwójnego sprzątania). Test e2e asertuje, że gra na moście jest
+   NIEZMIENIONA („trwa" — uwaga G), a kolejne kroki synchronizacji niczego
+   nie odradzają (ekran gry i odliczanie zamknięte, Ala na setupie).
+5. A/ADR 0047 — `gesturestart`/`gesturechange` na dokumencie
+   (`passive: false`), `preventDefault` tylko dla celów POZA `.mapa`
+   (`closest`); mechanizm jeden (bez meta, bez CSS na `html` — pkt 4);
+   znacznik w ADR 0011, ADR 0047, wpis w rejestrze; test: oba zdarzenia ×
+   obie strony.
+6. W1 domknięte: `mapa stacje.jpg` (257 KB) usunięty z `main`.
+7. **Uwaga W3 (nieblokująca)**: podbicia wersji (3a03a94, 85caf3f) przeszły
+   gołym `sed` po nazwie wersji, nie kotwicą `?v=` (L29) — 6 komentarzy
+   historycznych w `app/konfig.js` (3) i `app/app.js` (3) opisujących pracę
+   **m12-120 (PR #27)** zostało przepisanych na m12-122. Testy nietknięte
+   (słusznie dalej m12-120). **Naprawione w tej sesji** (commit 989edcf:
+   etykiety przywrócone; `?v=m12-123` + `WERSJA_SW` — reguła „każda zmiana
+   app/*.js"). Po drodze własna usterka: 989edcf objął `git add`em tylko 4 z
+   15 plików podbicia (lista plików z pamięci — dokładnie sytuacja L29);
+   uzupełnienie w commicie 45a87d5 (11 modułów, wyłącznie ?v=). Po
+   uzupełnieniu: jedna wersja m12-123 w 43 miejscach + WERSJA_SW; brama
+   812/812 przeszła na tym drzewie.
+8. Dokumenty (c245fe7, fa5498c, db80266, 4eaa9db): archiwum aneksów ADR 0005
+   poszerzone o m12-119 (`aneksy-0005-2026-09-14-m12-115-do-119.md`),
+   wskaźnik w ADR 0005, kontrakty przepisane na czytanie archiwum (L62/L66);
+   aneks m12-120 w ADR; dziennik i handoff 2026-09-14h kompletne. Jedyna
+   pozostała wzmianka o dawnej nazwie pliku archiwum (`…-do-117.md`) jest
+   w historii — tam cytowanie stanu sprzed rozszerzenia jest celowe (L58).
+
+**Werdykt: bez defektów** w logice, zgodności z ADR/protokołem i zieloności
+testów (812/812). Jedna uwaga nieblokująca (W3) — naprawiona (989edcf).
+
+Po audycie brak zlecenia — kolejka pracy to uwagi z terenu (ROADMAP „Co jest
+otwarte", LESSONS L68). Otwarta weryfikacja terenowa po stronie właściciela:
+ADR 0047 — po wznowieniu przybliżonej karty strona ma nie być „ściśnięta"
+palcami, a mapa ma szczypać normalnie.
+
+## Sesja 2026-09-14i, dogrywka — uwagi z terenu (A), m12-124
+
+Właściciel (test na telefonie): klik ⚙ na ekranie „Stacje w Twojej okolicy"
+(pozycja) wracał na mapę startową, zerwał pasek kroki i przerywał procedurę
+setupu; ponowny klik nie dawał widocznego efektu, a powrót (ikoną oka)
+lądował na pierwszym ekranie setupu. **Decyzja (cytat):** „podczas setupu ten
+guzik (start gry) powinien działać dokładnie tak samo jak oko na dole strony
+- chować layer, przywracać layer w tym miejscu setupu w którym jesteśmy".
+
+Diagnoza: `przelaczSetup()` na każdym kroku setupu (EKRANY) wołał
+`pokazMapeStartowa()` — `STAN.ekran = 'mapa'` + zerowanie znaczników
+`aktywny`/`zrobione` paska kroki; z mapy `pokazEkran('setup')` lądował na
+pierwszym ekranie, nie tam, gdzie gracz był.
+
+Wdrożenie (commit 8f85a80):
+
+- `EKRANY_SETUPU` (EKRANY bez `gra`); `przelaczSetup` na ekranach setupu woła
+  `przelaczPodgladMapy({ fokus: 'przycisk-setup' })` — ten sam stan co oko
+  (`STAN.podgladMapy`), `STAN.ekran` nietknięty: zero resetu kroki, zero
+  powrotu na mapę startową; drugi klik ⚙ przywraca ten sam ekran i scroll.
+  Jeden stan, dwa wejścia: oko i ⚙ świecą się synchronicznie (`aria-pressed`).
+- `przelaczPodgladMapy({ fokus })` — opcjonalny parametr fokusu (domyślnie
+  oko); ⚙ trzyma fokus na ikonie, w którą gracz kliknął.
+- Tytuł ikony na ekranach setupu: „chowa i przywraca warstwę setupu (jak
+  oko)"; tytuły w trakcie gry i na mapie startowej bez zmian.
+- Bez zmian: w trakcie gry — warstwa końca gry (ADR 0043 pkt 1); po jej
+  zakończeniu (ekran `gra`, faza `koniec`) — mapa startowa; z mapy startowej
+  — otwiera setup.
+- Aneks ADR 0043 z 2026-09-14 (m12-124, uwaga A) zastępuje część pkt 2
+  decyzji („z kroku gry wraca na mapę startową") dla ekranów setupu; stary
+  tor zakazany w kontrakcie źródłowo (L55).
+- Testy: F3 przepisany na nową formę (drugi klik nie opuszcza ekranu setupu,
+  stan podglądu, powrót); nowy test uwagi A na ekranie pozycji (`dataset.ekran`
+  nietknięty, powrót na ten sam ekran — paska kroki nie asertuje się w
+  atrapie, bo li bez id są w niej nieosiągalne, L16); piny w kontrakcie ADR
+  0043 (nowa gałąź + zakaz starego toru).
+- Bump `?v=m12-124` (43 miejsca) + `WERSJA_SW` (pozostałe moduły: wyłącznie
+  `?v=`). 812→**813** testów zielonych.
+
+Budżet lektury po aneksie: 99 521/100 000.

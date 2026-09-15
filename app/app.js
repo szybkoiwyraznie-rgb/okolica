@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-122';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-122';
+import { DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-124';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-124';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -32,22 +32,22 @@ import {
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-122';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-122';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-122';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-122';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-122';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-122';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-122';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-122';
+} from './protokol.js?v=m12-124';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-124';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-124';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-124';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-124';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-124';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-124';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-124';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-122';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-122';
+} from './zestawy.js?v=m12-124';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-124';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +63,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-122';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-122';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-122';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-122';
-import { adresMostu, stanMostu } from './most.js?v=m12-122';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-122';
+} from './sieci.js?v=m12-124';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-124';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-124';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-124';
+import { adresMostu, stanMostu } from './most.js?v=m12-124';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-124';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-122';
+} from './oceny.js?v=m12-124';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -266,6 +266,9 @@ function $(id) {
 }
 
 const EKRANY = ['setup', 'multi', 'pozycja', 'stacje', 'prompt', 'paczka', 'gra'];
+/** Ekrany setupu (kroki 1–5) — EKRANY bez `gra`. Właściciel 2026-09-14, uwaga A
+ *  (aneks ADR 0043): na nich ikona ⚙ START GRY działa jak oko na dole ekranu. */
+const EKRANY_SETUPU = EKRANY.slice(0, -1);
 
 /**
  * Stan ikon w belce (zgłoszenie właściciela F3, 2026-09-09).
@@ -306,7 +309,9 @@ function odswiezStanIkonBelki() {
     setup.disabled = false;
     setup.title = czyGraToczySie()
       ? 'START GRY — w trakcie gry otwiera zakończenie aktualnej gry'
-      : 'START GRY — ustawienia gry';
+      : EKRANY_SETUPU.includes(STAN.ekran)
+        ? 'START GRY — chowa i przywraca warstwę setupu (jak oko)'
+        : 'START GRY — ustawienia gry';
   }
 }
 
@@ -446,15 +451,27 @@ function czyscDaneWitryny() {
 
 const PANELE = [...EKRANY, 'prywatnosc', 'ranking', 'start', 'informacje', 'koniec-gry'];
 
-/** „START GRY" w nagłówku (F3): z kroku gry wraca na mapę startową, spoza niej
- *  otwiera setup. Przełącznik, nie jednostronne przejście — gracz klika go
- *  odruchowo drugi raz. */
+/** „START GRY" w nagłówku (F3, uwaga A i aneks ADR 0043 z 2026-09-14):
+ *  w trakcie gry — warstwa końca gry; na ekranach setupu (1–5) — chowa i
+ *  przywraca warstwę setupu tak jak oko; po zakończeniu gry — mapa startowa;
+ *  z mapy startowej — otwiera setup. Przełącznik, nie jednostronne przejście
+ *  — gracz klika go odruchowo drugi raz. */
 function przelaczSetup() {
   // Właściciel 2026-09-13 (uwaga I, ADR 0043): w trakcie gry ikona jest
   // przełącznikiem warstwy „czy na pewno chcesz zakończyć aktualną grę?".
   if (czyGraToczySie()) { przelaczKoniecGry(); return; }
   zamknijKoniecGry({ bezFokusu: true });
-  if (EKRANY.includes(STAN.ekran)) { pokazMapeStartowa(); return; }
+  // Uwaga terenowa A (2026-09-14, aneks ADR 0043): podczas setupu (ekrany 1–5)
+  // ⚙ działa DOKŁADNIE jak oko na dole ekranu — chowa warstwę i przywraca ją
+  // w tym miejscu setupu, w którym jesteśmy. Stary tor (setup → mapa startowa)
+  // zerował pasek kroki, przerywał procedurę, a powrót lądował na pierwszym
+  // ekranie setupu. `STAN.ekran` zostaje nietknięty, więc „przywracanie" to
+  // ten sam ekran i ten sam scroll.
+  if (EKRANY_SETUPU.includes(STAN.ekran)) { przelaczPodgladMapy({ fokus: 'przycisk-setup' }); return; }
+  // Po zakończeniu gry (ekran `gra`, faza `koniec`): z powrotem na mapę
+  // startową — gra się skończyła, nie ma tu warstwy do przywracania.
+  if (STAN.ekran === 'gra') { pokazMapeStartowa(); return; }
+  // Mapa startowa (albo spoza kroku): otwiera setup.
   pokazEkran('setup');
 }
 
@@ -561,11 +578,14 @@ function odswiezWidocznoscPaneli() {
   $('przycisk-ranking').setAttribute('aria-pressed', String(ranking));
 }
 
-function przelaczPodgladMapy() {
+/** Przełącza podgląd mapy. `fokus` — która ikona dostaje fokus po przełączeniu
+ *  (domyślnie oko; ⚙ START GRY przekazuje siebie — na ekranach setupu ikony
+ *  dzielą ten sam stan, uwaga A, 2026-09-14). */
+function przelaczPodgladMapy({ fokus = 'przycisk-podejrzyj-mape' } = {}) {
   STAN.podgladMapy = !STAN.podgladMapy;
   odswiezWidocznoscPaneli();
   kazdaMapa(m => m.odswiez());
-  $('przycisk-podejrzyj-mape').focus();
+  $(fokus).focus();
 }
 
 function zamknijInformacje() {
@@ -1938,7 +1958,7 @@ async function przeliczStacjeZPobraniem(klucz) {
 }
 
 /**
- * Reset przewijania warstwy stacji (UX właściciela, m12-122): przyciski
+ * Reset przewijania warstwy stacji (UX właściciela, m12-120): przyciski
  * „Inny układ" i „Pobierz sieć ponownie" stoją pod długą listą, więc po
  * kliknięciu warstwa ma wrócić na górę. Przewija się sama karta
  * `.panel-centralny` (overflow-y: auto), nie strona.
@@ -5574,7 +5594,7 @@ function start() {
 
   $('przycisk-wstecz-pozycja').addEventListener('click', () => pokazEkran('pozycja'));
   $('przycisk-siec-ponow').addEventListener('click', () => {
-    // Prośba UX właściciela (m12-122): kliknięcie opcji pod długą listą ma
+    // Prośba UX właściciela (m12-120): kliknięcie opcji pod długą listą ma
     // wracać widok na górę warstwy — lista jest długa, panel przewija się
     // wewnątrz .panel-centralny (overflow-y: auto).
     przewinWarstweStacjiNaGore();
@@ -5583,7 +5603,7 @@ function start() {
     void przeliczStacjeZPobraniem(kluczSieci());
   });
   $('przycisk-przelicz').addEventListener('click', () => {
-    przewinWarstweStacjiNaGore(); // UX właściciela m12-122, jw.
+    przewinWarstweStacjiNaGore(); // UX właściciela m12-120, jw.
     STAN.ziarnoOffset += 1;
     STAN.obrot = (STAN.obrot + 360 / (STAN.konfig.liczbaStacji * 2)) % 360;
     przeliczStacje();
