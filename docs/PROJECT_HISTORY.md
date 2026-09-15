@@ -6080,9 +6080,12 @@ wpisach sesji 101 275. Do archiwum wyszły aneksy ADR 0019 (2026-09-13c), ADR
 tym kroku: 99 411 / 100 000; po wszystkich wpisach sesji (aneksy ADR, L73,
 B23) — 99 692 / 100 000, rezerwa 308.
 
-**Weryfikacja.** Na tym etapie `npm test` 829/829; stan KOŃCOWY sesji po
-usunięciu martwego przycisku (niżej) to `npm run brama` **827/827** i budżet
-99 692/100 000. `npm run check` (oba szablony), audyt WCAG 0 naruszeń,
+**Weryfikacja.** Na tym etapie `npm test` 829/829; po usunięciu martwego
+przycisku (niżej) `npm run brama` **827/827** i budżet 99 692/100 000. Stan
+KOŃCOWY sesji — po usunięciu listy usterek B23, które było ostatnim krokiem —
+to **827/827** i budżet **99 817/100 000** (rezerwa 183), m12-136; szczegóły
+w ostatnim akapicie tego wpisu. `npm run check` (oba szablony), audyt WCAG
+0 naruszeń,
 `npm run zasieg-mostu` 883/903 (97,8%). Headless Chromium (360×740 i 1334×750,
 `?tryb=test`, pozycja z mapy): ekran stacji bez `#lista-stacji`, zdanie
 „Wygenerowano 5 stacji.", 5 pinezek, brak poziomego przewijania, 0 błędów
