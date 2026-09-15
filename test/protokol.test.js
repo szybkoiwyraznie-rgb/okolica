@@ -341,9 +341,35 @@ test('walidujPaczke: E03 — liczba pytań niezgodna z setupem', () => {
 test('walidujPaczke: E04/E05 — stacja poza zakresem i stacja bez pytania', () => {
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].stacja = 9; })).includes('E04'));
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].stacja = 0; })).includes('E04'));
-  // wszystkie pytania na jednej stacji → dwie stacje puste (E05) + nierówny rozkład
+  // wszystkie pytania na jednej stacji → dwie stacje puste, czyli E05
   const u = kody(klonyPaczki((p) => { p.pytania.forEach((q) => { q.stacja = 1; }); }));
   assert.ok(u.includes('E05'));
+  assert.equal(u.filter((k) => k === 'E05').length, 2,
+    'po jednej usterce na pustą stację — rozkładu pytań walidator już nie liczy (B25)');
+});
+
+/**
+ * Właściciel 2026-09-15f (BACKLOG B25): liczba pytań na stację nie jest polem
+ * setupu, tylko wynika z rodzaju gry (hot-seat `stacje × gracze`, multi jedno
+ * na stację — `pytaniaNaStacjeDla`), a sumę pilnuje `E03`. Tolerancja „rozkład
+ * różny o więcej niż jedno" była lustrem zdania z promptu, którego już nie ma,
+ * więc pilnowała przypadku, który nie występuje — gałąź usunięta.
+ */
+test('walidujPaczke: nierówny rozkład bez pustej stacji przechodzi (E05 bez tolerancji ±1)', () => {
+  const nierowna = klonyPaczki((p) => {
+    const wzor = p.pytania[0];
+    for (const [id, tresc] of [
+      ['s1p2', 'Który budynek przy rynku przetrwał pożar z 1801 roku?'],
+      ['s1p3', 'Jak nazywał się cech rzemieślników skupiony przy rynku?'],
+    ]) {
+      p.pytania.push({ ...wzor, id, tresc, poprawna: 2 });
+    }
+  });
+  assert.deepEqual(nierowna.pytania.map((q) => q.stacja), [1, 2, 3, 1, 1],
+    'stacja 1 ma trzy pytania, stacje 2 i 3 po jednym — suma zgodna z setupem');
+  const u = walidujPaczke(nierowna, oczekiwane({ liczbaPytan: 5 }));
+  assert.deepEqual(u.map((x) => x.kod), [],
+    `nierówny rozkład bez pustej stacji jest przyjęty: ${JSON.stringify(u)}`);
 });
 
 test('walidujPaczke: E06/E07/E08 — odpowiedzi', () => {
@@ -492,10 +518,10 @@ test('prompt: trzy zdania właściciela z 2026-09-15f (uwaga A) są w obu szablo
       `${nazwa}: zasada 7 dosłownie (uwaga A2)`);
     assert.ok(!szablon.includes('odpowiedź pozostawała do wyboru'),
       `${nazwa}: stary przepis o faktach rozstrzygających w „wyjasnienie" nie wrócił (uwaga A2)`);
-    assert.ok(szablon.includes('KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tą samą liczbę pytań.'),
-      `${nazwa}: wymaganie dla pola „stacja" dosłownie (uwaga A3)`);
+    assert.ok(szablon.includes('KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tę samą liczbę pytań.'),
+      `${nazwa}: wymaganie dla pola „stacja" dosłownie (uwaga A3, forma „tę samą" potwierdzona przez właściciela)`);
     assert.ok(!szablon.includes('różni się o jedno'),
-      `${nazwa}: stary rozkład „równy albo różni się o jedno" nie wrócił do promptu (uwaga A3; walidator E05 — BACKLOG B25)`);
+      `${nazwa}: stary rozkład „równy albo różni się o jedno" nie wrócił do promptu (uwaga A3; walidator E05 bez tej tolerancji — B25)`);
   }
 });
 

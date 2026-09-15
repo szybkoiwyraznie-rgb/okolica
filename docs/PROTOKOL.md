@@ -92,7 +92,7 @@ SCHEMAT ODPOWIEDZI — dokładnie te pola:
 
 WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
-- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tą samą liczbę pytań.
+- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tę samą liczbę pytań.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
 - "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
@@ -204,7 +204,7 @@ SCHEMAT ODPOWIEDZI — dokładnie te pola:
 
 WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
-- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tą samą liczbę pytań.
+- "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tę samą liczbę pytań.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
 - "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
@@ -355,7 +355,7 @@ i aneks 2026-09-15d: przycisk „skopiuj poprawkę do modelu" usunięty).
 | `E02` | JSON nieparsowalny (w tym wiele bloków, tekst poza blokiem) |
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
 | `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
-| `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
+| `E05` | stacja bez żadnego pytania (rozkładu między stacje nie sprawdzamy od 2026-09-15f: liczba pytań na stację wynika z setupu — hot-seat `stacje × gracze`, multi jedno na stację — a sumę pilnuje `E03`) |
 | `E06` | `poprawna` nie jest numerem odpowiedzi `1..4` |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
@@ -425,8 +425,11 @@ zajęte, tak samo jak wycofany `E18`.
   odpowiedź nie zawierała się w pytaniu" zamiast przepisu o faktach
   rozstrzygających w `wyjasnienie`; (3) wymaganie dla pola `stacja` żąda tej
   samej liczby pytań na każdej stacji zamiast rozkładu „równego albo
-  różniącego się o jedno". Uwaga: walidator (`E05`) wciąż dopuszcza rozkład
-  różniący się o jedno — patrz `docs/BACKLOG.md` B25.
+  różniącego się o jedno". Łatka **`PYT/1.1.2` / `PYT/1.1-nofc.2`** (ten sam
+  dzień): forma „tę samą liczbę pytań" zamiast podyktowanej „tą samą" — sama
+  gramatyka, sens bez zmian. Razem z tą zmianą tolerancja rozkładu zniknęła
+  z walidatora: `E05` pilnuje odtąd wyłącznie stacji bez pytania (decyzja
+  właściciela, `docs/BACKLOG.md` B25).
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 
