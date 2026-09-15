@@ -6263,3 +6263,60 @@ z ptaszka vs z treści), `docs/setup/HANDOFF_2026-09-15f.md`, aneks do ADR 0050.
 w PR #33 — bez tego jawne paczki nie przejdą), potwierdza ADR 0047 (blokada
 szczypania poza mapą na iPhonie), weryfikuje w terenie ocenę odpowiedzi `1..4`
 i rozstrzyga BACKLOG B24.
+
+**Odpowiedzi właściciela (2026-09-15f, po audycie):** (1) **most Drive wgrany** —
+zaległość z PR #33 zamknięta; (2) **ADR 0047 działa** — blokada szczypania poza
+mapą potwierdzona na iPhonie; (3) ocena odpowiedzi `1..4`, pasek „Stacja 1 -
+Jacek" i czytelny plik paczki na Drive — „wygląda ok"; (4) **B24 rozstrzygnięte:
+wariant (a), bez zmian w kodzie** — domyślnie bez ptaszka, a wtedy fact-check
+jest niewymuszony („model może sobie sprawdzić ale nie musi"). Stempel
+`paczka.factcheck` mówi o PROFILU (czy aplikacja źródeł ZAŻĄDAŁA), nie o tym, co
+model dopisał z własnej woli; szablon §2.2 już to mówi modelowi („Sposób ich
+ustalenia zostawiamy Tobie", pole `zrodla` OPCJONALNE).
+
+**Uwaga A (prompt dla AI) — commit 4 (m12-142, szablony `PYT/1.1.1` /
+`PYT/1.1-nofc.1`):** trzy zdania podyktowane przez właściciela, zastosowane
+w OBU szablonach (§2 i §2.2 są lustrem; w §2.2 odpowiednikiem „potwierdzony
+fakt" jest „pewny fakt"):
+
+1. Zasada 4: „Schodź na najniższy poziom, na którym masz sensowny potwierdzony
+   fakt, **i podawaj wtedy nazwę miejsca w treści pytania**." → bez wyróżnionego
+   ogona. O kotwicy mówi pierwsza część zdania, a o braku lokalnego zaczepienia
+   zdanie następne — przepis o nazwie miejsca był trzecim głosem w tej sprawie.
+2. Zasada 7: „Formułuj treść pytania tak, żeby odpowiedź pozostawała do wyboru —
+   fakty rozstrzygające (na przykład rok) umieść dopiero w polu `wyjasnienie`."
+   → „Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu."
+3. Wymaganie dla pola `stacja`: „KAŻDA stacja ma co najmniej jedno pytanie,
+   a rozkład pytań między stacje jest równy albo różni się o jedno." → „KAŻDA
+   stacja ma co najmniej jedno pytanie, wszystkie stacje mają tą samą liczbę
+   pytań." (forma właściciela dosłownie — patrz „Otwarte").
+
+Schemat paczki się nie zmienił, więc wersja protokołu zostaje **PYT/1.1** —
+podbite są łatki szablonów (PROTOKOL §7 pkt 3), z wpisem w §7. Stałe w
+`app/protokol.js` przepisane narzędziem (`npm run build`): dokument jest jedynym
+źródłem prawdy. Szablony schudły po 140 znaków (§2: **3603**, §2.2: **3738**).
+
+**Rozjazd prompt ↔ walidator (commit 4, BACKLOG B25, bez zmian w kodzie):**
+zmiana 3 żąda równej liczby pytań na każdej stacji, a `E05` odrzuca paczkę
+dopiero przy rozkładzie różnym o WIĘCEJ niż jedno (`E03` pilnuje tylko sumy
+`liczbaStacji × pytaniaNaStacje`). Paczka 3 stacje × 2 graczy rozdzielona 3/2/1
+przechodzi więc bez słowa, choć prompt ją wyklucza — a w grze oznacza to, że na
+jednej stacji gracz odpowiada dwa razy, na innej wcale (ADR 0027 aneks:
+`pytaniaNaStacje` = liczba graczy właśnie po to, żeby każdy miał swoje pytanie).
+Zaostrzenie `E05` to odrzucanie paczek w terenie, a ręcznej edycji paczki nie ma
+(ADR 0006 aneks 2026-09-07) — decyzja właściciela, warianty a/b/c w B25.
+
+**Commit 5 (piny i dokumentacja):** test w `test/protokol.test.js` pilnuje nowych
+zdań DOSŁOWNIE w obu szablonach i tego, że stare brzmienie nie wróci przy
+kolejnej synchronizacji z dokumentem; B24 zamknięty decyzją właściciela, B25
+dopisany; ten wpis i aktualizacja `docs/setup/HANDOFF_2026-09-15f.md`.
+
+**Brama na koniec sesji:** `npm test` **806/806**, `npm run check` OK (szablon
+§2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%**
+(850/870 wierszy), `npm run budzet` **99 122 / 100 000** (rezerwa 878), m12-142.
+
+**Otwarte po sesji:** **B25** (zaostrzać `E05` do równej liczby pytań czy
+zostawić tolerancję ±1) oraz forma zdania dla pola `stacja` — właściciel podyktował
+„tą samą liczbę pytań", normatywnie byłoby „tę samą"; obie decyzje czekają na
+potwierdzenie, na razie w kodzie jest tekst właściciela dosłownie. Zaległości
+z PR #33 (most Drive, ADR 0047, weryfikacja terenowa) zamknięte.

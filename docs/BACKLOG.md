@@ -270,7 +270,7 @@ wskazówka w LESSONS L54 przepisana na czytanie kodów z `walidujPaczke()`,
 martwe frazy w `test/dryf-dokumentow.test.js`, ADR 0006 aneks.
 
 
-## B24 — Profil źródeł stemplowany z ptaszka, nie z treści paczki
+## B24 — Profil źródeł stemplowany z ptaszka, nie z treści paczki ✅ ZAMKNIĘTE (2026-09-15f, wariant a)
 
 **Rozpoznanie (audyt PR #33):** o tym, czy paczka jest „fact-checked”, decyduje
 stan checkboxa `#prompt-factcheck` w chwili wklejenia (`app/app.js:3829`:
@@ -301,3 +301,47 @@ w `app/app.js` i jeden test; (c) to nowy ekran/komunikat i aneks do ADR 0032.
 **Ryzyko:** przy (b) Drive dostaje nazwy plików obiecujące weryfikację, której
 nikt nie przeprowadził — a nazwa jest dziś jedynym miejscem, gdzie właściciel
 widzi profil bez otwierania pliku (ADR 0048).
+
+**Rozstrzygnięcie (właściciel, 2026-09-15f: „Domyślnie ma być bez ptaszka.
+Wtedy jest niewymuszony fact-check (model może sobie sprawdzić ale nie musi)"):**
+wariant (a) — bez zmian w kodzie. Znaczek i nazwa pliku mówią o PROFILU, czyli
+o tym, czy aplikacja faktów ZE ŹRÓDŁEM zażądała, a nie o tym, co model z własnej
+woli dopisał. Ptaszek domyślnie odptaszkowany (uwaga terenowa G.a, 2026-09-12),
+a szablon §2.2 już dziś mówi modelowi dokładnie to: „Podawaj wyłącznie fakty,
+których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie" i „Pole `zrodla`
+jest OPCJONALNE". Paczka bez ptaszka ze źródłami jest więc poprawna i zostaje
+oznaczona jako niezweryfikowana — to nie jest błąd stempla, tylko uczciwy zapis
+„nikt tego nie wymusił".
+
+## B25 — Prompt żąda równej liczby pytań na stację, walidator E05 wciąż dopuszcza ±1
+
+**Rozpoznanie (uwaga właściciela A3, 2026-09-15f):** zdanie dla pola `stacja`
+w obu szablonach mówi od teraz „KAŻDA stacja ma co najmniej jedno pytanie,
+wszystkie stacje mają tą samą liczbę pytań", a walidator zatrzymuje się na
+starej granicy: `app/protokol.js` dokłada `E05` dopiero przy
+`max − min > 1` (komunikat „Rozkład pytań między stacje różni się o więcej niż
+jedno"), a `docs/PROTOKOL.md` §6 opisuje `E05` jako „stacja bez żadnego pytania
+albo rozkład pytań różny o więcej niż jedno". Paczka 3 stacje × 2 graczy
+(łącznie 6 pytań — `E03` pilnuje sumy `liczbaStacji × pytaniaNaStacje`)
+rozdzielona 3/2/1 przechodzi więc dziś bez słowa, choć prompt ją wyklucza.
+Skutek w grze: na jednej stacji gracz odpowiada dwa razy, na innej wcale —
+a `pytaniaNaStacje` = liczba graczy właśnie po to, żeby każdy miał swoje
+pytanie na każdej stacji (ADR 0027 aneks 2026-09-15, rotacja `graczPytania`).
+
+**Dlaczego to wisi:** zaostrzenie `E05` zmienia zachowanie w terenie — paczka,
+którą aplikacja wcześniej przyjmowała, zostanie odrzucona, a ręcznej edycji
+paczki nie ma (ADR 0006 aneks 2026-09-07), więc właściciel musiałby puścić
+model jeszcze raz. To decyzja właściciela, nie porządek w kodzie.
+
+**Czego wymaga:** decyzji, który wariant — (a) zostaje jak dziś: prompt prosi
+o równość, walidator pilnuje tylko sumy i „co najmniej jedno" (nierówna paczka
+jest grywalna, gracz widzi „pytanie 2 z 3" tam, gdzie model dał więcej),
+(b) `E05` żąda dokładnie `liczbaPytan / liczbaStacji` pytań na stację
+(jedna linia w `app/protokol.js`: próg `> 0` zamiast `> 1`, komunikat „Stacja N
+ma X pytań, oczekiwano Y"), opis w §6 i przebazowanie testu
+`test/protokol.test.js:344` (scenariusz „wszystkie pytania na jednej stacji"),
+albo (c) nierówność nie odrzuca paczki, tylko daje jawne ostrzeżenie na ekranie
+paczki (nowy nośnik komunikatu — najdroższe).
+
+**Ryzyko:** przy (b) każda nierówna odpowiedź modelu kończy grę przed startem —
+warto wtedy wiedzieć, jak często model się myli (właściciel ma to w terenie).
