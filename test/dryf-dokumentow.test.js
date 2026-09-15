@@ -386,6 +386,13 @@ const MARTWE_FRAZY = [
     nosniki: UI,
     powod: 'komunikat bramy wejścia odmienia rzeczownik po polsku przez odmianaRzeczownika: 1 pin, 2 piny, 5 pinów (audyt D2, m12-119)',
   },
+  // Fala 2026-09-15f (decyzja właściciela, BACKLOG B25): walidator E05 nie
+  // pilnuje już rozkładu pytań między stacje — tylko stację bez pytania.
+  {
+    fraza: 'rozkład równy ±1',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'E05 bez tolerancji ±1 (decyzja właściciela 2026-09-15f, BACKLOG B25): liczba pytań na stację wynika z setupu (pytaniaNaStacjeDla), a walidator sprawdza tylko stację bez pytania — dawny opis zmieniony w PROTOKOL §3.2',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {

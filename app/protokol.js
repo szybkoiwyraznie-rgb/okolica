@@ -12,8 +12,8 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-143';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-143';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-144';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-144';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.1';
