@@ -81,7 +81,8 @@ udaje, że punkty są osiągalne. Przycisk wymuszający pierścień zniknął z 
 **M5 — pętla pytań: kod i testy gotowe.** Ekran promptu ma instrukcję
 obrazkową (cztery kroki jako inline SVG, zero plików zewnętrznych),
 a wklejenie odpowiedzi modelu automatycznie uruchamia walidację. Paczka z usterkami
-daje czytelną listę kodów E01–E20 i przycisk „skopiuj poprawkę do modelu".
+daje jeden komunikat: ponów generowanie i wklej poprawne dane — bez listy kodów
+E01–E20 i bez poprawki dla modelu (2026-09-15); pole wklejenia jest wtedy puste.
 Po przyjęciu gra zaczyna się OD RAZU (decyzja 2026-09-07 — podgląd,
 ściąganie i edycja zniknęły z ekranu; to zadania właściciela na Drive,
 dokąd zestaw leci automatycznie w chwili przyjęcia). Gotowe zestawy można wybrać na ekranie propozycji paczek. Nazwa miejsca do

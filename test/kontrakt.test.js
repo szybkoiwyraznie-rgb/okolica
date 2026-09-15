@@ -1165,7 +1165,15 @@ test('kontrakt: ręczna edycja paczki nie istnieje w kodzie (ADR 0006 aneks 2026
   assert.ok(!protokol.includes('zastosujEdycjePaczki'), 'martwa funkcja edycji usunięta z app/protokol.js');
   assert.ok(!protokol.includes('EDYTOWALNE_POLA'), 'lista pól edytowalnych usunięta razem z funkcją');
   assert.ok(!INDEX.includes('podglad-pytania'), 'ekran paczki nie ma podglądu pytania');
-  assert.match(czytaj('app/protokol.js'), /export function poprawkaDlaModelu/, 'ścieżka usterek (poprawka do modelu) zostaje');
+  // 2026-09-15d (właściciel): przycisk „Kopiuj poprawkę do modelu" był chowany
+  // w obu ścieżkach błędu i nigdy nie pokazywany — usunięty razem z funkcją,
+  // która budowała jego tekst (L31/L55: martwy nośnik nie zostaje w kodzie).
+  assert.equal(INDEX.includes('id="przycisk-poprawka"'), false, 'przycisku poprawki nie ma w HTML');
+  assert.equal(APP.includes('przycisk-poprawka'), false, 'app.js nie dotyka usuniętego przycisku');
+  assert.equal(czytaj('app/protokol.js').includes('poprawkaDlaModelu'), false,
+    'funkcja poprawki dla modelu usunięta razem z przyciskiem');
+  assert.equal(czytaj('app/protokol.js').includes('gotowa do skopiowania'), false,
+    'komunikat E02 nie obiecuje przycisku, którego nie ma');
 });
 
 test('kontrakt: łatkę szablonu widać w dokumencie, nie w panelu gracza (PROTOKOL §7)', () => {

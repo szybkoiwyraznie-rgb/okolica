@@ -19,7 +19,7 @@ import {
   odkodujPaczkeRev1, odkodujPaczkeRev2, odkodujPaczkeBiezaca,
   odkodujPoprawnaRev2, zakodujPoprawnaRev2,
   odwrocPolaPaczki, odwrocTekst, parsujOdpowiedzModela, podsumowaniePaczki,
-  poprawkaDlaModelu, walidujPaczke, zbudujPrompt,
+  walidujPaczke, zbudujPrompt,
 } from '../app/protokol.js';
 import { domyslnaKonfiguracja, liczbaPytan } from '../app/konfig.js';
 import { przesunPunkt } from '../app/geo.js';
@@ -449,19 +449,6 @@ test('rev3: dekoder jest autorytetem wariantu — dopisane wariantWejsciowy nie 
   assert.ok(kody(rev2).includes('E09'), 'znacznik rev2 wygrywa z dopisanym polem');
 });
 
-test('poprawkaDlaModelu: wariantowa — domyślnie fact-check, bez weryfikacji bez kwerendy', () => {
-  const usterki = [{ kod: 'E03', pole: 'pytania', komunikat: 'za mało pytań' }];
-  const fc = poprawkaDlaModelu(usterki, { liczbaPytan: 3 });
-  assert.ok(fc.includes('kwerenda internetowa dla każdego faktu'), 'domyślna korekta jak dziś');
-  assert.ok(poprawkaDlaModelu(usterki).includes('kwerenda internetowa dla każdego faktu'), 'stara sygnatura działa');
-  const bez = poprawkaDlaModelu(usterki, { liczbaPytan: 3, factcheck: false });
-  assert.ok(bez.includes('sposób ich ustalenia zostawiamy Tobie'),
-    'korekta bez weryfikacji nie narzuca sposobu zdobycia faktu (zgłoszenie 2026-09-09)');
-  assert.ok(!bez.includes('bez kwerendy w internecie'), 'i nie zakazuje kwerendy');
-  assert.ok(bez.includes('źródła opcjonalne'), 'korekta bez weryfikacji mówi o opcjonalnych źródłach');
-  assert.ok(!bez.includes('kwerenda internetowa dla każdego faktu'), 'twarda kwerenda nie przecieka');
-  assert.ok(bez.includes('[E03]') && bez.includes('PYT/1.0'), 'nagłówek i lista usterek wspólne');
-});
 
 test('czyWariantFactcheck: marker i pole wejściowe, brak obu = zweryfikowana', () => {
   assert.equal(czyWariantFactcheck({ protokol: 'PYT/1.0-rev3' }), false);
@@ -605,18 +592,6 @@ test('prompt: zakotwiczenie zostaje PROŚBĄ — oba warianty dopuszczają pytan
     assert.match(szablon, /Kotwicz pytanie możliwie blisko okolicy/,
       `${nazwa}: prośba o kotwicę zostaje — to nadal gra terenowa`);
   }
-});
-
-/* ------------------------------------------------------- poprawka i wynik */
-
-test('poprawkaDlaModelu: wymienia kody usterek i przypomina zasady twarde', () => {
-  const usterki = walidujPaczke(klonyPaczki((p) => { p.pytania[0].zrodla = []; p.pytania[1].temat = 'kosmos'; }), oczekiwane());
-  assert.ok(usterki.length >= 2);
-  const tekst = poprawkaDlaModelu(usterki, { liczbaPytan: liczbaPytan(konfiguracja()) });
-  assert.ok(tekst.includes('[E09]') && tekst.includes('[E12]'));
-  assert.ok(tekst.includes('PYT/1.0'));
-  assert.ok(tekst.includes('kwerenda internetowa'));
-  assert.ok(tekst.includes('wymagana liczba pytań: 3'));
 });
 
 test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {

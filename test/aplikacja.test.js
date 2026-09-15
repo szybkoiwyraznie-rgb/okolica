@@ -204,7 +204,7 @@ test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', 
 });
 
 test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
-  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-wklej', 'przycisk-poprawka', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-informacje', 'przycisk-podejrzyj-mape']) {
+  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-wklej', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-informacje', 'przycisk-podejrzyj-mape']) {
     assert.ok(pobierz(id).zdarzenia.click?.length >= 1, `#${id} nie ma nasłuchu click — przycisk byłby martwy`);
   }
   // Ekran 5 nie ma już przycisku zatwierdzania: walidację odpala samo wklejenie,
@@ -1221,7 +1221,6 @@ test('ekran 5: błędna paczka AI — jeden komunikat, bez kodów i bez poprawki
   domAtrapa.wklej('pole-odpowiedz', 'to nie jest JSON ani kontener {{{');
   assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, KOMUNIKAT, 'UI nie wypisuje E02 ani „Nie da się odczytać”');
   assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '', 'zła wklejka znika z pola');
-  assert.equal(domAtrapa.pobierz('przycisk-poprawka').hidden, true, 'przycisku poprawki do modelu nie pokazujemy');
   assert.equal(domAtrapa.pobierz('wynik-usterki').children.length, 0, 'bez listy kodów E**');
   assert.doesNotMatch(domAtrapa.pobierz('wynik-naglowek').textContent, /E0|E1/);
   // odrzucona rev2 (za mało pytań) — ten sam komunikat, bez szczegółów
@@ -1232,7 +1231,6 @@ test('ekran 5: błędna paczka AI — jeden komunikat, bez kodów i bez poprawki
   domAtrapa.wklej('pole-odpowiedz', JSON.stringify(rev2));
   assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, KOMUNIKAT);
   assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '');
-  assert.equal(domAtrapa.pobierz('przycisk-poprawka').hidden, true);
   assert.equal(domAtrapa.pobierz('wynik-usterki').children.length, 0);
   assert.doesNotMatch(domAtrapa.pobierz('wklejka-status').textContent, /usterk|E03|poprawk/i);
 });

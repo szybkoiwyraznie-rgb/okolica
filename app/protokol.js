@@ -12,8 +12,8 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-134';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-134';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-135';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-135';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.0';
@@ -67,7 +67,7 @@ export const SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.0-nofc.5'; // .5: jak 1.0.1
 /** Schemat kontenera z obfuskowanymi pytaniami (ADR 0007 pkt 3 i 5: maskowanie, nie szyfrowanie). */
 // Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
 // protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
-export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-134';
+export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-135';
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.
@@ -206,7 +206,7 @@ export function parsujOdpowiedzModela(tekst) {
 
   const bloki = [...zrodlo.matchAll(/```(?:json|JSON)?\s*([\s\S]*?)```/g)].map((m) => m[1].trim());
   if (bloki.length > 1) {
-    return { paczka: null, blad: { kod: 'E02', pole: 'json', komunikat: `Odpowiedź zawiera ${bloki.length} bloki kodu — poproś model o JEDEN blok JSON (poprawka jest gotowa do skopiowania).` } };
+    return { paczka: null, blad: { kod: 'E02', pole: 'json', komunikat: `Odpowiedź zawiera ${bloki.length} bloki kodu — poproś model o JEDEN blok JSON (napisz modelowi, czego brakuje, i poproś o cały blok jeszcze raz).` } };
   }
   const kandydaci = bloki.length ? [bloki[0]] : [zrodlo];
   if (!bloki.length) {
@@ -222,7 +222,7 @@ export function parsujOdpowiedzModela(tekst) {
       void e;
     }
   }
-  return { paczka: null, blad: { kod: 'E02', pole: 'json', komunikat: 'Nie udało się odczytać JSON-a z odpowiedzi. Poproś model o sam blok JSON, bez komentarzy (poprawka gotowa do skopiowania).' } };
+  return { paczka: null, blad: { kod: 'E02', pole: 'json', komunikat: 'Nie udało się odczytać JSON-a z odpowiedzi. Poproś model o sam blok JSON, bez komentarzy (poproś model o sam blok JSON jeszcze raz).' } };
 }
 
 function czyLiczbaCalkowita(v) {
@@ -555,26 +555,6 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   }
 
   return u;
-}
-
-/**
- * Tekst poprawki do wklejenia modelowi (ADR 0006 pkt 5): lista usterek
- * w języku protokołu, gotowa jako następny prompt.
- */
-export function poprawkaDlaModelu(usterki, { liczbaPytan, factcheck = true } = {}) {
-  const linie = [
-    'Twoja poprzednia odpowiedź została odrzucona przez walidator protokołu PYT/1.0.',
-    'Popraw WYŁĄCZNIE poniższe usterki i zwróć cały blok JSON jeszcze raz — bez komentarzy poza blokiem.',
-    '',
-    'USTERKI:',
-  ];
-  for (const u of usterki) linie.push(`- [${u.kod}] ${u.pole ? `${u.pole}: ` : ''}${u.komunikat}`);
-  if (Number.isFinite(liczbaPytan)) linie.push(`- wymagana liczba pytań: ${liczbaPytan}`);
-  // Korekta nie może narzucać kwerendy odpowiedzi bez weryfikacji (ADR 0032).
-  linie.push('', factcheck
-    ? 'Przypomnienie zasad twardych: kwerenda internetowa dla każdego faktu, prawdziwy URL w "zrodla" przy każdym pytaniu, brak zmyślonych nazw i dat, wszystkie pytania o tę samą okolicę.'
-    : 'Przypomnienie zasad twardych: tylko fakty pewne (sposób ich ustalenia zostawiamy Tobie), źródła opcjonalne (tylko pewne adresy albo pusta lista), brak zmyślonych nazw i dat, wszystkie pytania o tę samą okolicę.');
-  return linie.join('\n');
 }
 
 /** Zwięzłe podsumowanie przyjętej paczki — dla ekranu organizatora. */

@@ -352,6 +352,21 @@ const MARTWE_FRAZY = [
     powod: 'łatka szablonu zszedła z UI (właściciel 2026-09-15); jest cytowana w docs/PROTOKOL.md, bo tam powstaje',
   },
   {
+    fraza: 'przycisk-poprawka',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'przycisk „Kopiuj poprawkę do modelu" usunięty 2026-09-15d (właściciel): był chowany w obu ścieżkach błędu i nigdy nie pokazywany — ADR 0006 aneks',
+  },
+  {
+    fraza: 'poprawkaDlaModelu',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'funkcja budująca tekst poprawki dla modelu usunięta razem z przyciskiem (2026-09-15d) — jedynym wywołującym był ten przycisk',
+  },
+  {
+    fraza: 'Kopiuj poprawkę do modelu',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'etykieta usuniętego przycisku (2026-09-15d) — przy błędnej paczce jest jeden stały komunikat, bez korekty bloku JSON',
+  },
+  {
     fraza: 'lista-stacji',
     nosniki: [...DOKUMENTY, ...UI],
     powod: 'spisu stacji nie ma (właściciel 2026-09-15, uwaga 5): ekran stacji pokazuje jedno zdanie w #stacje-podsumowanie — „Wygenerowano i zlokalizowano X stacji."',

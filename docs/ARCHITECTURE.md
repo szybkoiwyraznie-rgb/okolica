@@ -245,8 +245,8 @@ commit i nowa wersja aplikacji.
    palcem do `#pole-odpowiedz` albo przyciskiem „📋 Wklej ze schowka".
    Import z pliku usunięty 2026-09-09 (ADR 0006, aneks trzeciej tury).
 7. Wklejenie samo odpala `protokol.walidujPaczke()` (nasłuch `paste`, bez
-   osobnego „Sprawdź") → usterki (z przyciskiem „skopiuj poprawkę") albo
-   przyjęcie. Przyjęta paczka OD RAZU zaczyna grę
+   osobnego „Sprawdź") → usterki (jeden stały komunikat, bez listy kodów
+   i bez poprawki dla modelu — 2026-09-15) albo przyjęcie. Przyjęta paczka OD RAZU zaczyna grę
    (decyzja 2026-09-07): podgląd, ściąganie i edycja zniknęły z ekranu —
    to zadania właściciela na Drive, dokąd zestaw leci automatycznie
    w chwili przyjęcia (wysyłka domyślna, bez pytania o zgodę).

@@ -134,3 +134,17 @@ walidacji), a po walidacji zostaje puste — tak po przyjęciu (pkt 4 ADR 0007),
 jak i po odmowie. Atrapa `wklej()` odtwarza tę kolejność: nasłuchy, potem
 domyślna akcja, chyba że zablokowana.
 
+## Aneks 2026-09-15d — przycisku „Kopiuj poprawkę do modelu" nie ma
+
+Punkt 5 tego ADR obiecywał przy usterkach poprawkę gotową do wklejenia modelowi.
+Od 2026-09-15 organizator przy błędnej paczce widzi JEDEN stały komunikat
+(„Wygenerowana paczka pytań AI jest błędna. Ponów generowanie i wklej poprawne
+dane.") — bez listy kodów i bez szczegółów, bo ścieżką naprawy jest ponowne
+generowanie, nie ręczna korekta bloku JSON. Przycisk `przycisk-poprawka` był
+w obu ścieżkach błędu chowany i nigdy nie pokazywany, więc właściciel kazał go
+usunąć (2026-09-15d): z `index.html` zniknął element, z `app/app.js` nasłuch,
+`STAN.poprawkaFactcheck` i chowanie przycisku, z `app/protokol.js` funkcja
+`poprawkaDlaModelu`, a komunikaty E02 nie obiecują już „poprawki gotowej do
+skopiowania". Kody E01–E20 zostają w walidatorze i testach (L55: pin
+przepisany na nową formę, martwa fraza w `test/dryf-dokumentow.test.js`).
+
