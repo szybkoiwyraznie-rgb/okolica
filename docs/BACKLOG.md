@@ -313,7 +313,7 @@ jest OPCJONALNE". Paczka bez ptaszka ze źródłami jest więc poprawna i zostaj
 oznaczona jako niezweryfikowana — to nie jest błąd stempla, tylko uczciwy zapis
 „nikt tego nie wymusił".
 
-## B25 — Prompt żąda równej liczby pytań na stację, walidator E05 wciąż dopuszcza ±1
+## B25 — Prompt żąda równej liczby pytań na stację, walidator E05 wciąż dopuszcza ±1 ✅ ZAMKNIĘTE (2026-09-15f, gałąź usunięta)
 
 **Rozpoznanie (uwaga właściciela A3, 2026-09-15f):** zdanie dla pola `stacja`
 w obu szablonach mówi od teraz „KAŻDA stacja ma co najmniej jedno pytanie,
@@ -345,3 +345,17 @@ paczki (nowy nośnik komunikatu — najdroższe).
 
 **Ryzyko:** przy (b) każda nierówna odpowiedź modelu kończy grę przed startem —
 warto wtedy wiedzieć, jak często model się myli (właściciel ma to w terenie).
+
+**Rozstrzygnięcie (właściciel, 2026-09-15f: „nie ma możliwości rozkładu +-1 bo
+nie ma już w setupie pola z ilością pytań - w hotseat ilość pytań to ilość stacji
+* ilość graczy, w multi ilość pytań to ilość stacji. Możesz wywalić to z E05 bo
+to nie występuje w przyrodzie"):** żadnego z trzech wariantów powyżej — gałąź
+tolerancji `max − min > 1` usunięta z `app/protokol.js`, więc `E05` pilnuje już
+tylko stacji bez żadnego pytania. Uzasadnienie właściciela jest spójne z kodem:
+`pytaniaNaStacjeDla()` zwraca liczbę graczy w hot-seat i **1** w multi
+(`rodzajGry === 'multi'`), a sumę `liczbaStacji × pytaniaNaStacje` pilnuje `E03`
+— organizator nie ma pola, którym mógłby wymusić nierówny podział, tak jak nie
+miał go przy wycofanym `K22` (LESSONS: martwa reguła nie zostaje w kodzie).
+Zaktualizowane: opis `E05` w `docs/PROTOKOL.md` §6, wpis w §7, testy
+(`test/protokol.test.js`: jedna usterka na pustą stację + nowy test, że nierówny
+rozkład BEZ pustej stacji przechodzi).

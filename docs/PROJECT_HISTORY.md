@@ -6311,12 +6311,38 @@ zdań DOSŁOWNIE w obu szablonach i tego, że stare brzmienie nie wróci przy
 kolejnej synchronizacji z dokumentem; B24 zamknięty decyzją właściciela, B25
 dopisany; ten wpis i aktualizacja `docs/setup/HANDOFF_2026-09-15f.md`.
 
-**Brama na koniec sesji:** `npm test` **806/806**, `npm run check` OK (szablon
+**Brama po commitach 1–5:** `npm test` **806/806**, `npm run check` OK (szablon
 §2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%**
 (850/870 wierszy), `npm run budzet` **99 122 / 100 000** (rezerwa 878), m12-142.
 
-**Otwarte po sesji:** **B25** (zaostrzać `E05` do równej liczby pytań czy
-zostawić tolerancję ±1) oraz forma zdania dla pola `stacja` — właściciel podyktował
-„tą samą liczbę pytań", normatywnie byłoby „tę samą"; obie decyzje czekają na
-potwierdzenie, na razie w kodzie jest tekst właściciela dosłownie. Zaległości
-z PR #33 (most Drive, ADR 0047, weryfikacja terenowa) zamknięte.
+**Decyzje właściciela po pushu (commit 6 — kod, commit 7 — dokumentacja):**
+
+- **B25: `E05` bez tolerancji ±1.** Właściciel: „nie ma możliwości rozkładu +-1
+  bo nie ma już w setupie pola z ilością pytań - w hotseat ilość pytań to ilość
+  stacji * ilość graczy, w multi ilość pytań to ilość stacji. Możesz wywalić to
+  z E05 bo to nie występuje w przyrodzie". Żaden z wariantów a/b/c z BACKLOG-u:
+  gałąź `max − min > 1` usunięta z `app/protokol.js`, więc `E05` pilnuje już
+  tylko stacji bez żadnego pytania. Kod potwierdza uzasadnienie właściciela:
+  `pytaniaNaStacjeDla()` zwraca liczbę graczy w hot-seat i **1** przy
+  `rodzajGry === 'multi'`, a sumę `liczbaStacji × pytaniaNaStacje` pilnuje `E03`
+  — organizator nie ma pola, którym mógłby wymusić nierówny podział (tak samo
+  jak przy wycofanym `K22`). Zaktualizowane: opis `E05` w PROTOKOL §6, zdanie
+  w §7, testy — na każdą pustą stację JEDNA usterka plus nowy test, że nierówna
+  paczka BEZ pustej stacji (3 stacje, pytania 3/1/1, suma zgodna z setupem)
+  przechodzi bez usterek.
+- **Forma zdania dla pola `stacja`:** podyktowane „tą samą" → normatywne **„tę
+  samą liczbę pytań"** w obu szablonach; łatki **`PYT/1.1.2` /
+  `PYT/1.1-nofc.2`**, wpis w §7, pin w `test/protokol.test.js` zaktualizowany,
+  stałe przepisane `npm run build`. Cache-bust m12-143.
+
+**Brama na koniec sesji:** `npm test` **807/807**, `npm run check` OK (szablon
+§2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%**
+(850/870 wierszy), `npm run budzet` **99 206 / 100 000** (rezerwa 794), m12-143,
+szablony `PYT/1.1.2` / `PYT/1.1-nofc.2`.
+
+**Otwarte po sesji:** kolejka pusta — zaległości z PR #33 zamknięte (most Drive
+wgrany, ADR 0047 działa, weryfikacja terenowa „wygląda ok"), B24 i B25
+rozstrzygnięte decyzjami właściciela. Do sprawdzenia w terenie: paczka
+z promptu `PYT/1.1.2` — czy pytania nie zawierają odpowiedzi, czy model trzyma
+równą liczbę pytań na stację i czy kotwiczenie bez przepisu o nazwie miejsca
+dalej daje pytania zakotwiczone.
