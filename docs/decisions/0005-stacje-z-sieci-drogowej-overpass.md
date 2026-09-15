@@ -112,36 +112,11 @@ tylko przybliżoną pozycję do Overpass).
   pin mijany; trasowanie po układzie ulic, bez korytarzy) są przeniesione do
   `docs/decisions/archive/aneksy-0005-2026-09-14-m12-115-do-119.md`
   (L62/L66, archiwizacja 2026-09-14: m12-121 i m12-122).
-## Aneks 2026-09-14 (m12-120) — pełny układ ulic dla pieszego i roweru; pytanie „dodać ulice zamiast odejmować korytarze"
+## Aneks 2026-09-14 (m12-120) jest w archiwum (poza budżetem lektury)
 
-Właściciel zapytał, czy zamiast usuwać korytarze (m12-119) nie dodać ulic i
-nie zostawić wszystkiego — „gdy jest i ścieżka, i ulica, czy nie wybierze
-najkrótszej?". Pomiar na sieci z chodnikiem wzdłuż jezdni, spiętym z nią co
-300 m: **nie działa**. Punkt fizycznie 100 m od startu snapuje się do
-NAJBLIŻSZEGO węzła, czyli na chodnik (0 m), a nie do jezdni 12 m obok;
-krawędzi chodnik↔jezdnia w środku kwartału w grafie nie ma, więc jego
-dystans to 512 m objazdem do najbliższego skrzyżowania. Dijkstra wybiera
-najkrótszą trasę MIĘDZY WĘZŁAMI, ale nie przenosi punktu z korytarza na
-równoległą ulicę — pozostawienie korytarzy zachowuje kłamstwo, a brama
-wejścia bywa ślepa, gdy stacja 1 leży na bocznej ulicy. Decyzja z m12-119
-zostaje utrzymana pomiarowo.
-
-Pytanie miało jednak drugą, trafną połowę: pieszy NIE MIAŁ klas
-tertiary/secondary/primary/unclassified, choć „liczymy jak dla samochodów".
-Typowa wieś zabudowana wzdłuż drogi wojewódzkiej bez chodników w OSM nie
-miała więc w ogóle korytarza. Od m12-120 klasy te wchodzą do trybu pieszego
-i roweru (rower dostaje dodatkowo secondary/primary); jedynymi „ulicami do
-obejścia" zostają motorway i trunk (jawna lista `wykluczoneKlasy` także u
-pieszego). Pomiar centrum: 188 → 211 węzłów, kompletność układów
-95/96 → 96/96; przedmieście i las bez zmiany.
-
-Jednokierunkowe: graf buduje krawędzie zawsze w obie strony
-(`sasiedztwo[a]` i `sasiedztwo[b]`), tagu `oneway` nigdzie nie czyta —
-pieszy może iść „pod prąd" każdej ulicy (oneway dotyczy pojazdów; dla
-samochodu model też nie jest nawigacją zakazów, tylko miernikiem odległości).
-
-Przy okazji UX właściciela: „Inny układ" i „Pobierz sieć ponownie"
-resetują przewijanie karty `#ekran-stacje` (`przewinWarstweStacjiNaGore`).
+Pełny układ ulic dla pieszego i roweru (klasy tranzytowe poza motorway/trunk)
+— `docs/decisions/archive/aneksy-0005-2026-09-14-m12-120.md`. Reguła obowiązuje
+i jest streszczona w LESSONS L71; pomiary i odrzucony wariant leżą w archiwum.
 
 ## Aneks 2026-09-15 — ekran stacji bez spisu (uwaga 5)
 

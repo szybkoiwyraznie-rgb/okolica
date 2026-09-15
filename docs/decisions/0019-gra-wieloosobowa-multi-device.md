@@ -112,51 +112,12 @@ Obowiązujące aneksy są niżej:
 2026-09-13c (zgłoszenia terenowe N i R) i 2026-09-13d (utrwalona kolejka
 zdarzeń).
 
-## Aneks 2026-09-13c (m12-113, zgłoszenia terenowe N i R): sekret tylko w żywej grze, numery stacji stałe po powrocie
+## Aneks 2026-09-13c jest w archiwum (poza budżetem lektury)
 
-**R — trasa-sekret nie przecieka do hot-seata.** Brama była liczona
-z resztkowego `STAN.multi`: kontekst gry zamkniętej przez hosta albo odzyskanej
-przy starcie z `okolica:multi:sesja` chował trasę także w hot-seacie (widać było
-jedną stację, z numerem 1). Teraz decyduje czysta funkcja
-`czyTrasaSekret(multi)` w `app/wieloosobowa.js`: gra musi TRWAĆ
-(`stan === 'trwa'`), być Wspólną Trasą i nie mieć jawnie wyłączonego sekretu
-(brak pola `trasaSekret` = sekret, zgodność wstecz z m12-73). Dodatkowo
-`startGry()` (hot-seat) kończy kontekst sieciowy: synchronizacja staje, sesja
-i `STAN.multi` idą w kosz — inaczej przy następnym otwarciu telefonu sesja multi
-wygrywała z zapisem hot-seata (boot: `czytajSesjeMulti()` ma pierwszeństwo,
-ADR 0045), a gracz wracał do innej gry, niż zostawił.
-
-**N — numer stacji jest stały po powrocie.** Powrót do gry sieciowej buduje
-rozgrywkę z NIEZAMKNIĘTYCH stacji (aneks 2026-09-11: zamknięte stacje nie
-wracają), więc indeks na liście telefonu przestawał być numerem na trasie: gracz
-idący do stacji 2 widział po odświeżeniu „stacja 1 z 3" i pin z numerem 1.
-Stacje niosą teraz `numer` (pozycja na PEŁNEJ trasie): `planMapy` woli go przed
-indeksem, a napisy „stacja X z Y", „Idę do stacji X" i etykieta przycisku
-„dalej" biorą go z `numerStacjiTrasy()`; licznik pokazuje pełną trasę
-(`STAN.trasaDlugosc`). Zasada „zamknięte stacje nie wracają do przejścia"
-zostaje — zmienia się tylko numeracja. W hot-seacie lista jest pełna, więc
-`numer` nie występuje i wszystko liczy się jak dotąd; pilnuje tego test
-end-to-end z reloadem w trasie (zgłoszenie N: cel zostaje stacją 2, a odpowiedź
-i punkty wracają z zapisu — ADR 0045).
-
-**Punktacja per gracz przez reload — sprawdzona liczbami** (dopytanie
-właściciela 2026-09-13: „czy punktacja się przenosi? punkty zachowane przy
-graczach?"). Hot-seat: punktów nie ma w stanie jako pola — liczy je
-`podsumowanie()` z `rozgrywka.odpowiedzi` (wpis niesie `gracz` i `punktyRazem`),
-a odpowiedzi jadą w zapisie, więc test trzech graczy pinuje układ `[[1,1],[2,0]]`
-przed zamknięciem przeglądarki, ten sam układ po powrocie i tabelę końca gry po
-dokończeniu: 1 pkt Gracza 1 (zdobyty PRZED reloadem), 1 pkt Gracza 3 (po
-wznowieniu), 0 pkt Gracza 2 z `0/1` — zero zostaje zerem, nie brakiem wpisu.
-Gra sieciowa: punkty liczy MOST z dziennika zdarzeń (`przeliczWyniki`),
-a lokalnego snapshotu gry multi nie ma wcale (`zapiszGre` wychodzi przy
-`STAN.multi`), więc odświeżenie telefonu nie ma czego zgubić — test trasy
-z resume pinuje odpowiedź gościa obecną na moście PRZED odświeżeniem
-i `punkty − premia` = 4 i 4 na koniec gry.
-
-Ograniczenie zapisane tu w m12-113 — zdarzenie NIEDOSTARCZONE czekało
-w kolejce `app/sync.js` tylko w pamięci, więc reload je gubił i stacja zostawała
-do przejścia jeszcze raz — jest ZNIESIONE aneksem 2026-09-13d (kolejka jest
-utrwalona w pamięci telefonu).
+Sekret tylko w żywej grze i stałe numery stacji po powrocie (m12-113,
+zgłoszenia terenowe N i R) — `docs/decisions/archive/aneksy-0019-2026-09-13c.md`,
+poza budżetem lektury startowej (AGENTS.md §0; LESSONS L62). Obowiązujący
+aneks jest niżej.
 
 ## Aneks 2026-09-13d (m12-114, zgłoszenie właściciela): kolejka zdarzeń jest utrwalona — reload nie gubi odpowiedzi
 

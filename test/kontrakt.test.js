@@ -2295,9 +2295,15 @@ test('kontrakt m12-119: korytarze wzdłuż jezdni nie trasują; path/track zosta
 });
 
 test('kontrakt m12-120: pełny układ ulic dla pieszego i roweru, bez autostrad; one-way nie blokuje; reset przewijania warstwy', () => {
+  // m12-120: aneks wyszedł do archiwum przy skracaniu lektury (L62, 2026-09-15d)
+  // — reguła zostaje obowiązująca, a jej streszczenie niesie LESSONS L71.
+  assert.match(czytaj('docs/decisions/archive/aneksy-0005-2026-09-14-m12-120.md'),
+    /## Aneks 2026-09-14 \(m12-120\) — pełny układ ulic dla pieszego i roweru/,
+    'aneks m12-120 żyje w archiwum ADR 0005');
   assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
-    /Aneks 2026-09-14 \(m12-120\) — pełny układ ulic dla pieszego i roweru/,
-    'ADR 0005 dokumentuje domknięcie „dodać ulice"');
+    /Aneks 2026-09-14 \(m12-120\) jest w archiwum/,
+    'ADR 0005 odsyła do archiwum aneksu m12-120');
+  assert.match(czytaj('docs/LESSONS.md'), /## L71 /, 'reguła klas ulic zostaje w lekturze startowej (L71)');
   // ulice tranzytowe wchodzą do obu niemotoryzowanych trybów (wieś przy wojewódzkiej)
   for (const tryb of ['piesza', 'rower']) {
     for (const klasa of ['tertiary', 'secondary', 'primary', 'unclassified']) {
