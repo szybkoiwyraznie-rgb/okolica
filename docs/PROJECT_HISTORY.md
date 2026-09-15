@@ -6021,3 +6021,72 @@ a nie oddaje `null` — więc dla każdej NOWEJ nazwy (czyli zwykłego przypadku
 na Drive (zgłoszenie właściciela 2026-09-15, usterka D2). Atrapa w
 `test/helpers/most.js` zwracała `undefined` zamiast rzucać, więc 826 testów było
 zielonych. Naprawa i lekcja: L73; aneks ADR 0048.
+
+## Sesja 2026-09-15d (PR #32) — paczka AI nie lądowała na Drive (D2), fokus pola na iOS, puste pole po błędzie, ekran stacji bez spisu (m12-133/m12-134)
+
+Gałąź `arena/01a0a569-okolica`. Cztery uwagi terenowe właściciela z 2026-09-15;
+pierwsza z nich krytyczna. (Uwaga: inny wątek pracy tego samego dnia nosi
+nagłówek „Sesja 2026-09-15d — czytelne nazwy paczek na Drive (m12-129)" — ten
+wpis dotyczy PR #32.)
+
+**D2 — paczka AI nie lądowała na Drive (commit `24a46a7`).** Właściciel: nowa
+gra, wygenerowane pytania, wejście w grę — a w katalogu zaakceptowanych na Drive
+brak nowego pliku. Przyczyna w moście: `przyjmijKandydata` szukał pliku przez
+`getFilesByName(nazwa).next()` bez `hasNext()`, a Apps Script na pustej
+kolekcji **rzuca** (`FileIterator.next()` — „Throws an exception if no items
+remain"), więc każda NOWA nazwa kończyła się wyjątkiem w `doPost` i odpowiedzią
+`{ ok:false, blad }`. Aplikacja mówiła wtedy „Paczka przyjęta, ale Drive
+odrzucił wysyłkę" i grała dalej — stąd wrażenie, że Drive odrzuca paczki.
+Wprowadził to PR #30 (ADR 0048); PR #31 mostu nie dotykał. Naprawa:
+`pierwszyPlikNazwa(katalog, nazwa)` = `hasNext() ? next() : null`. Most wymaga
+ponownego wdrożenia na Apps Script.
+
+**Dlaczego brama tego nie złapała (L73).** Atrapa Drive w `test/helpers/most.js`
+oddawała `undefined` zamiast rzucać — kontrakt platformy był w testach
+łagodniejszy niż w rzeczywistości. Atrapa rzuca teraz tak jak Drive, a
+`iteratorAtrapyDrive` jest eksportowany, żeby test mógł to przypiąć. Zęby:
+z ciałem PR #30 przywróconym na próbę 10 z 18 testów w `most-indeks` czerwonych.
+To jest też korekta audytu z poprzedniej sesji („2026-09-15c": most bez
+defektów) — przegląd diff-a, który nie konfrontuje wywołań obcego API z jego
+udokumentowaną semantyką, przepuszcza całą tę klasę usterek.
+
+**(4) Puste pole po błędnej paczce (commit `80112f3`).** Przeglądarka wstawia
+tekst PO powrocie z nasłuchu `paste`, więc czyszczenie pola w
+`pokazOdrzuconaPaczkeAi()` było natychmiast nadpisywane złą wklejką. Nasłuch
+woł `e.preventDefault()` i wstawia treść sam. Atrapa `wklej()` odtwarza
+kolejność przeglądarki (nasłuchy, potem domyślna akcja, chyba że zablokowana) —
+bez `preventDefault` 5 testów czerwonych.
+
+**(3) Brak przybliżenia HTML na fokusu (commity `80112f3`, `21be8ec`).** iOS
+Safari przybliża stronę, gdy pole z fokusem ma mniej niż 16 px, a
+`.pole-tekstowe` miało 14 px; oddalić się nie dało, bo pinch poza mapą jest
+zablokowany celowo (ADR 0047), a pinch na mapie rusza kafelkami. Właściciel
+miał rację, wskazując na fokus, nie na gest. Teraz 16 px, a kontrakt CSS
+pilnuje, żeby żadna reguła dotykająca `input`/`textarea`/`select`/
+`.pole-tekstowe` nie schodziła poniżej 16 px.
+
+**(5) Ekran stacji bez spisu (commit `47ff461`).** `#lista-stacji` zniknął
+z HTML, CSS i `renderujStacje()`; jest jedno zdanie w `#stacje-podsumowanie`:
+„Wygenerowano i zlokalizowano N stacji." przy sieci dróg, „Wygenerowano N
+stacji." przy pierścieniu (bez „zlokalizowano" — L6; powód mówi niezmienione
+`#stacje-tryb`). Tryb tajnej trasy (ADR 0034) przy swoim zdaniu — właściciel
+wyłączył go z tej zmiany. Testy przepisane na nową formę (L55), test
+wstrzyknięcia nazwy z OSM zaostrzony (wrogi tekst nie ma gdzie wejść), martwa
+fraza `lista-stacji` w `dryf-dokumentow`, README poprawiony.
+
+**Budżet lektury (commit `63b69d3`).** Start: 100 189 tok (przekroczenie), po
+wpisach sesji 101 275. Do archiwum wyszły aneksy ADR 0019 (2026-09-13c), ADR
+0024 (oba z 2026-09-07) i ADR 0005 (m12-120 — reguła zostaje w L71). Stan:
+99 411 / 100 000.
+
+**Weryfikacja.** `npm test` 829/829, `npm run check`, audyt WCAG 0 naruszeń,
+`npm run zasieg-mostu` 883/903 (97,8%). Headless Chromium (360×740 i 1334×750,
+`?tryb=test`, pozycja z mapy): ekran stacji bez `#lista-stacji`, zdanie
+„Wygenerowano 5 stacji.", 5 pinezek, brak poziomego przewijania, 0 błędów
+konsoli, pola tekstowe 16 px; wklejenie śmiecia w pole paczki daje
+`defaultPrevented=true` i puste pole.
+
+**Znalezisko audytowe bez zmian w kodzie:** `przycisk-poprawka` jest chowany w
+obu ścieżkach błędu i nigdy nie pokazywany — martwy UI (L31/L64: usunąć albo
+nagrobek), decyzja właściciela.
+
