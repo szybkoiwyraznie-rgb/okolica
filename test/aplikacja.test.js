@@ -1221,7 +1221,13 @@ test('ekran 5: błędna paczka AI — jeden komunikat, bez kodów i bez poprawki
   domAtrapa.wklej('pole-odpowiedz', 'to nie jest JSON ani kontener {{{');
   assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, KOMUNIKAT, 'UI nie wypisuje E02 ani „Nie da się odczytać”');
   assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '', 'zła wklejka znika z pola');
-  assert.equal(domAtrapa.pobierz('wynik-usterki').children.length, 0, 'bez listy kodów E**');
+  // Listy kodów E** NIE MA (właściciel 2026-09-15d, BACKLOG B23): sprawdzamy
+  // HTML, nie stub — atrapa DOM tworzy brakujący element na żądanie, więc
+  // asercja `children.length === 0` przeszłaby nawet po powrocie listy.
+  assert.equal(readFileSync(join(KATALOG_APP, 'index.html'), 'utf8').includes('wynik-usterki'), false,
+    'listy kodów E** nie ma w HTML');
+  assert.equal(domAtrapa.pobierz('wynik-walidacji').dataset.stan, 'blad',
+    'karta walidacji jest w stanie błędu (czerwona ramka)');
   assert.doesNotMatch(domAtrapa.pobierz('wynik-naglowek').textContent, /E0|E1/);
   // odrzucona rev2 (za mało pytań) — ten sam komunikat, bez szczegółów
   const jawna = czytajFixturePaczka();
@@ -1231,7 +1237,6 @@ test('ekran 5: błędna paczka AI — jeden komunikat, bez kodów i bez poprawki
   domAtrapa.wklej('pole-odpowiedz', JSON.stringify(rev2));
   assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, KOMUNIKAT);
   assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '');
-  assert.equal(domAtrapa.pobierz('wynik-usterki').children.length, 0);
   assert.doesNotMatch(domAtrapa.pobierz('wklejka-status').textContent, /usterk|E03|poprawk/i);
 });
 

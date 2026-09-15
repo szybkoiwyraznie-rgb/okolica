@@ -393,9 +393,6 @@ body:not(.tryb-testowy) .tylko-test {
 @media (prefers-reduced-motion: reduce) {
   .pulsuje { animation: none; }
 }
-.usterki { margin: 8px 0; padding-left: 20px; }
-.usterki li { margin: 6px 0; font-size: 15px; }
-.usterki li code { background: var(--blad-tlo); color: var(--blad); padding: 1px 5px; border-radius: 5px; }
 
 #wynik-walidacji[data-stan='ok'] { border-color: var(--ok); background: var(--ok-tlo); }
 #wynik-walidacji[data-stan='blad'] { border-color: var(--blad); background: var(--blad-tlo); }

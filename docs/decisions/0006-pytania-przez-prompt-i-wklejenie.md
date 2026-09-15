@@ -134,17 +134,27 @@ walidacji), a po walidacji zostaje puste — tak po przyjęciu (pkt 4 ADR 0007),
 jak i po odmowie. Atrapa `wklej()` odtwarza tę kolejność: nasłuchy, potem
 domyślna akcja, chyba że zablokowana.
 
-## Aneks 2026-09-15d — przycisku „Kopiuj poprawkę do modelu" nie ma
+## Aneks 2026-09-15d — przy błędnej paczce nie ma ani poprawki dla modelu, ani listy kodów
 
 Punkt 5 tego ADR obiecywał przy usterkach poprawkę gotową do wklejenia modelowi.
-Od 2026-09-15 organizator przy błędnej paczce widzi JEDEN stały komunikat
-(„Wygenerowana paczka pytań AI jest błędna. Ponów generowanie i wklej poprawne
-dane.") — bez listy kodów i bez szczegółów, bo ścieżką naprawy jest ponowne
-generowanie, nie ręczna korekta bloku JSON. Przycisk `przycisk-poprawka` był
-w obu ścieżkach błędu chowany i nigdy nie pokazywany, więc właściciel kazał go
-usunąć (2026-09-15d): z `index.html` zniknął element, z `app/app.js` nasłuch,
-`STAN.poprawkaFactcheck` i chowanie przycisku, z `app/protokol.js` funkcja
-`poprawkaDlaModelu`, a komunikaty E02 nie obiecują już „poprawki gotowej do
-skopiowania". Kody E01–E20 zostają w walidatorze i testach (L55: pin
-przepisany na nową formę, martwa fraza w `test/dryf-dokumentow.test.js`).
+Od 2026-09-15 organizator widzi JEDEN stały komunikat („Wygenerowana paczka
+pytań AI jest błędna. Ponów generowanie i wklej poprawne dane.") — bez kodów
+i bez szczegółów, bo ścieżką naprawy jest ponowne generowanie, nie ręczna
+korekta bloku JSON.
 
+Właściciel (2026-09-15d, BACKLOG B23: „tak, usuń") kazał zdjąć oba nośniki,
+które po tej zmianie nie miały zawartości:
+
+- `przycisk-poprawka` był chowany w obu ścieżkach błędu i nigdy nie pokazywany
+  — zniknął z `index.html`, a z `app/app.js` nasłuch, `STAN.poprawkaFactcheck`
+  i chowanie, z `app/protokol.js` funkcja `poprawkaDlaModelu`; komunikaty E02
+  nie obiecują już „poprawki gotowej do skopiowania".
+- `#wynik-usterki` nie miał dzieci nigdy: `renderujUsterki()` miała dwa
+  wywołania i oba z pustą tablicą, a lista była czyszczona także na starcie
+  walidacji — zniknęły `<ul>`, funkcja, zmienna `listaUsterek` i reguły
+  `.usterki`. Karta `#wynik-walidacji` z nagłówkiem i `data-stan='blad'`
+  zostaje: to ona niesie komunikat.
+
+Kody E01–E20 żyją dalej w `walidujPaczke()` i testach; przy debugowaniu
+odrzuconej paczki czyta się je z walidatora, nie z DOM (LESSONS L54). Piny
+przepisane na nową formę, martwe frazy w `test/dryf-dokumentow.test.js` (L55).

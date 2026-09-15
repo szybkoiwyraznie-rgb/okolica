@@ -352,6 +352,16 @@ const MARTWE_FRAZY = [
     powod: 'łatka szablonu zszedła z UI (właściciel 2026-09-15); jest cytowana w docs/PROTOKOL.md, bo tam powstaje',
   },
   {
+    fraza: 'wynik-usterki',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'pusta lista kodów E** usunięta 2026-09-15d (BACKLOG B23, decyzja właściciela) — przy błędnej paczce jest jeden stały komunikat, ADR 0006 aneks',
+  },
+  {
+    fraza: 'renderujUsterki',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'funkcja miała dwa wywołania i oba z pustą tablicą — usunięta razem z listą (B23, 2026-09-15d)',
+  },
+  {
     fraza: 'przycisk-poprawka',
     nosniki: [...DOKUMENTY, ...UI],
     powod: 'przycisk „Kopiuj poprawkę do modelu" usunięty 2026-09-15d (właściciel): był chowany w obu ścieżkach błędu i nigdy nie pokazywany — ADR 0006 aneks',

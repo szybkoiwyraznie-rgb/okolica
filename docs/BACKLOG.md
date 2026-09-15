@@ -238,7 +238,7 @@ następnym starcie, a odcisk gry pilnuje idempotencji.
 Testy: 3 w `test/aplikacja.test.js` (wysyłka, kolejka offline, brak zgody),
 3 w `test/most-gra.test.js` na atrapie Drive (zapis + rankingi, kasowanie
 współrzędnych i odmowy, parity premii).
-## B23 — Pusta lista usterek `#wynik-usterki` i `renderujUsterki` (rozpoznanie 2026-09-15d)
+## B23 — Pusta lista usterek `#wynik-usterki` i `renderujUsterki` ✅ ZROBIONE (2026-09-15d, wariant a)
 
 **Rozpoznanie:** po usunięciu przycisku „Kopiuj poprawkę do modelu"
 (2026-09-15d) na ekranie paczki został drugi nośnik w tym samym stanie.
@@ -262,8 +262,10 @@ i reguły `.usterki`, a piny w testach przepisać na „nie ma takiego elementu"
 komentarz, że pustość jest celowa. Wersja (a) to ~30 linii mniej i jeden
 nośnik mniej do pilnowania; wersja (b) kosztuje tylko komentarz.
 
-**Ryzyka:** przy (a) trzeba pamiętać o `docs/LESSONS.md:445`, który każe
-czytać „listę `#wynik-usterki`" przy debugowaniu paczek — wskazówka stanie się
-martwa i musi być przepisana (L58). Bez decyzji właściciela nic nie ruszam:
-M0–M12 są zamknięte jako zakres kodu, a to nie jest uwaga z terenu.
+**Rozstrzygnięcie (właściciel, 2026-09-15d: „tak, usuń"):** wariant (a)
+wykonany — `<ul>`, `renderujUsterki`, `listaUsterek` i reguły `.usterki`
+usunięte, piny w testach przepisane na sprawdzanie HTML (atrapa DOM tworzy
+brakujący element na żądanie, więc asercja na stubie nic by nie pilnowała),
+wskazówka w LESSONS L54 przepisana na czytanie kodów z `walidujPaczke()`,
+martwe frazy w `test/dryf-dokumentow.test.js`, ADR 0006 aneks.
 

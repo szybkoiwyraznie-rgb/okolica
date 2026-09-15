@@ -442,7 +442,7 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 
 **Objaw:** (test hot-seat 2 × 2) testowa paczka z drugim pytaniem na stację była odrzucana przez walidator („Paczka odrzucona — usterek: 7”) bez czytelnego komunikatu w `#bledy-paczka`.
 **Przyczyna:** trzy niezależne reguły PYT łamią się przy dokładaniu pytań: `E16` — promień paczki musi zgadzać się z konfiguracją, a liczba pytań zmienia liczony promień (3 stacje × 2 pytania: 85 min → 950 m, ale 90 min → 1000 m); `E19` — identyfikator pytania musi trafiać we wzór…
-**Reguła:** nowe pytanie w fixture projektuj od tych trzech reguł do środka: najpierw przelicz promień z `czasGryMin`, potem nadaj id ze wzoru, na końcu napisz inną treść z „?”. A gdy paczka jest odrzucana, czytaj komunikaty z `#wynik-naglowek` („usterek: N”) i listy `#wynik-usterki` — kontener `#bledy-paczka` bywa pusty, a SONDA wypisująca sam status nic nie pokaże.
+**Reguła:** nowe pytanie w fixture projektuj od tych trzech reguł do środka: najpierw przelicz promień z `czasGryMin`, potem nadaj id ze wzoru, na końcu napisz inną treść z „?”. A gdy paczka jest odrzucana, czytaj kody w teście wprost z `walidujPaczke()` — UI od 2026-09-15d pokazuje jeden stały komunikat bez kodów (`#wynik-naglowek`), więc ani lista, ani `#bledy-paczka` nic nie wypiszą.
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L54`.
 
