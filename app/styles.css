@@ -959,6 +959,9 @@ body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
    kontrastu, więc audyt WCAG nie wymaga nowego wpisu; od tła odróżnia go
    podkreślenie, nie barwa. */
 .informacje-kontakt { display: flex; flex-wrap: wrap; gap: 0 8px; align-items: baseline; margin: 0; }
+/* Grupa „kropka + pozycja" — łamanie wiersza nie może postawić kropki na
+   końcu linii, więc trzymają się razem (nagłówek panelu jest gridem). */
+.informacje-pozycja { display: inline-flex; align-items: baseline; gap: 0 8px; }
 .informacje-link {
   color: inherit;
   text-decoration: underline;

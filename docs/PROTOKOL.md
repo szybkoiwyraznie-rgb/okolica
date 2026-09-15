@@ -6,7 +6,7 @@
 > (ADR 0010 pkt 6).
 
 - Status: **obowiązujący** (wersja wyprowadzana z tego nagłówka; test
-  kontraktowy porównuje go ze stopką aplikacji i z `README.md`)
+  kontraktowy porównuje ją z `app/protokol.js` i z `README.md`)
 - Data: 2026-09-05
 - Powiązania: ADR 0006 (pętla treści), ADR 0007 (ukrywanie paczki),
   ADR 0008 (kwerenda i źródła), `app/protokol.js` (kod), `test/protokol.test.js`
@@ -405,9 +405,10 @@ zajęte, tak samo jak wycofany `E18`.
 ## 7. Wersjonowanie i migracje
 
 - Wersja protokołu jest **wyprowadzana** ze statusu tego pliku (pierwsza linia
-  nagłówka „Status") i porównywana przez test kontraktowy ze stopką aplikacji
-  (`index.html` → `#stopka-protokol`) oraz z `README.md`. Nie wpisuje się jej
-  ręcznie w trzech miejscach.
+  nagłówka „Status") i porównywana przez test kontraktowy z `WERSJA_PROTOKOLU`
+  w `app/protokol.js` oraz z `README.md`. Nie wpisuje się jej ręcznie w trzech
+  miejscach. Panel gracza jej nie pokazuje (właściciel 2026-09-15): gracz nie
+  ma co zrobić z numerem dokumentu, którego nie czyta.
 - Zmiana schematu paczki = podbicie wersji (`PYT/1.1`, `PYT/2.0`) + nowy ADR +
   migrator w `app/migracje.js` + test migracji na fixture'ach starej wersji.
   Paczka użytkownika w `localStorage` nie może przestać działać (ADR 0010 pkt 6).

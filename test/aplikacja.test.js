@@ -20,7 +20,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SZABLON_WERSJA, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
+import { WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -135,10 +135,11 @@ test('B3: „Wróć na początek” zostawia mapę, nie pustą stronę', () => {
   assert.equal(pobierz('ekran-setup').hidden, false, 'setup wraca dla kolejnych testów');
 });
 
-test('bootstrap: stopka pokazuje obowiązującą wersję protokołu i łatki szablonu', () => {
-  assert.equal(pobierz('stopka-protokol').textContent, WERSJA_PROTOKOLU);
-  assert.equal(pobierz('stopka-szablon').textContent, SZABLON_WERSJA, 'łatka szablonu widoczna (PROTOKOL §7)');
-});
+// Numery protokołu PYT i łatki szablonu NIE są już treścią panelu Informacje
+// (właściciel 2026-09-15): gracz nie ma co z nimi zrobić. To, że `WERSJA_PROTOKOLU`
+// i `SZABLON_WERSJA` nie rozjadą się z dokumentem, pilnuje `test/kontrakt.test.js`
+// — na dokumencie i kodzie, nie na echu w UI. Tu zostaje to, co gracz widzi:
+// numer budowy (test niżej).
 
 test('bootstrap: start() wpisuje numer budowy do stopki, nie zostawia placeholdera', () => {
   // Właściciel dwa razy oceniał starą wersję z cache i nie miał jak tego
@@ -1717,6 +1718,11 @@ test('M6+K: powrót po „zamknięciu przeglądarki" — nowa instancja, ta sama
   assert.equal(dom2.pobierz('gra-panel-odcinek').hidden, false, 'faza odcinka odtworzona');
   assert.match(dom2.pobierz('status').textContent, /Wróciliśmy do zapamiętanej gry/, 'status mówi, co się stało');
   assert.match(dom2.pobierz('status').textContent, /faza: odcinek/);
+  // Właściciel 2026-09-15: „przecież czas nigdzie się nie wlicza — po co taki
+  // tekst". Status wznowienia mówi, CO się stało, a nie tłumaczy mechanizmu,
+  // którego gracz nie widzi i na który nie ma wpływu (ADR 0023 pkt 1).
+  assert.doesNotMatch(dom2.pobierz('status').textContent, /wlicza|czasu zamknięcia/i,
+    'żadnego zdania o „wliczaniu" czasu w UI');
 
   // rebaza zegara działa: zakończenie odcinka NIE daje G09 (czas końca < startu)
   await dojdzSymulacja(dom2);

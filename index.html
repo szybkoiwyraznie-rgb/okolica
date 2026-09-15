@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-127">
-  <script type="module" src="app/app.js?v=m12-127"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-128">
+  <script type="module" src="app/app.js?v=m12-128"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -740,23 +740,25 @@
 
 
     <span id="status" role="status" aria-live="polite">M2 — mapa i model rozgrywki: setup, pozycja, stacje, prompt, paczka</span>
-    <span class="separator" aria-hidden="true">·</span>
-    <span>protokół <span id="stopka-protokol">PYT/1.0</span></span>
-    <span class="separator" aria-hidden="true">·</span>
-    <span>szablon <span id="stopka-szablon">PYT/1.0.7</span></span>
-    <span class="separator" aria-hidden="true">·</span>
-    <span>wersja <span id="stopka-wersja">—</span></span>
-    <span class="separator" aria-hidden="true">·</span>
-    <button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">dane i prywatność</button>
 
-      <!-- Polityka kafelków OSM zaleca link „Report a map issue" i opublikowany
-           adres kontaktowy. Podkład mapy to dane OpenStreetMap (ODbL), a serwer
-           kafelków jest wolontariacki — te dwa linki domykają oba zalecenia
-           i dają OSM drogę kontaktu ZANIM cokolwiek zablokują. -->
+      <!-- Jeden wiersz na wszystko, co gracz ma pod ręką (właściciel
+           2026-09-15): numer budowy — bo dwa razy oceniał starą wersję z cache
+           i nie miał jak tego stwierdzić — obok trzech wyjść. Wiersz WOLNO
+           złamać, gdy brakuje miejsca (`.informacje-kontakt` ma flex-wrap).
+           Liczb „którym protokołem gram" tu nie ma: dla gracza nie znaczą nic,
+           a ich parostność pilnuje `test/kontrakt.test.js`. -->
+      <!-- Kropka jest ZAWSZE w tej samej grupie co pozycja po niej
+           (`.informacje-pozycja`): wiersz łamie się na 390 px, a samotna
+           kropka na końcu linii wyglądałaby jak urwane zdanie. Złapane
+           przeglądarką, nie atrapą DOM (LESSONS L13). -->
       <p class="informacje-kontakt">
-        <a id="link-zglos-mape" class="informacje-link" href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">Zgłoś błąd na mapie</a>
-        <span class="informacje-kropka" aria-hidden="true">·</span>
-        <a id="link-kontakt" class="informacje-link" href="mailto:szybkoiwyraznie@gmail.com">kontakt: szybkoiwyraznie@gmail.com</a>
+        <span>Wersja <span id="stopka-wersja">—</span></span>
+        <span class="informacje-pozycja"><span class="informacje-kropka" aria-hidden="true">·</span><button id="przycisk-prywatnosc-stopka" class="przycisk-stopka" type="button">Dane i prywatność</button></span>
+        <span class="informacje-pozycja"><span class="informacje-kropka" aria-hidden="true">·</span><!-- Polityka kafelków OSM zaleca ten link i opublikowany
+             adres kontaktowy. Podkład mapy to dane OpenStreetMap (ODbL), a serwer
+             kafelków jest wolontariacki — te dwa linki domykają oba zalecenia
+             i dają OSM drogę kontaktu ZANIM cokolwiek zablokują. --><a id="link-zglos-mape" class="informacje-link" href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">Zgłoś błąd na mapie</a></span>
+        <span class="informacje-pozycja"><span class="informacje-kropka" aria-hidden="true">·</span><a id="link-kontakt" class="informacje-link" href="mailto:szybkoiwyraznie@gmail.com">kontakt: szybkoiwyraznie@gmail.com</a></span>
       </p>
 
       </div>

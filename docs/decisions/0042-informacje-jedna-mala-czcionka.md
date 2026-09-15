@@ -59,3 +59,18 @@ ADR 0011 (mobile-first: cele dotykowe i czytelność), ADR 0035 (diagnostyka
 Overpass w Informacjach), ADR 0036 (sterowanie w Informacjach — aneks
 2026-09-13), ADR 0001 (zero zależności: font systemowy), ADR 0040 (gra bez
 pauzy: Informacje w drodze).
+
+## Aneks 2026-09-15 (m12-128, uwaga A właściciela) — jeden wiersz zamiast listy liczb
+
+Po teście terenowym (PR #30): „»protokół PYT/1.0« i »szablon PYT/1.0.x« w Panelu
+Informacje uważam za bezużyteczne. Zostaw tylko wersję — i to obok »Dane i
+prywatność« oraz »Zgłoś błąd na mapie«, ewentualnie łamanego, jeśli zabraknie
+miejsca".
+
+1. Obie liczby zeszły z panelu; `Wersja …` stanęła w jednym wierszu
+   (`.informacje-kontakt`) z przyciskiem prywatności, linkiem OSM i adresem.
+2. Spójności wersji protokołu pilnują odtąd trzy nośniki i wystarczą trzy:
+   `docs/PROTOKOL.md` ↔ `app/protokol.js` ↔ `README.md` (`test/kontrakt.test.js`),
+   a łatka szablonu jest cytowana w §7 PROTOKOLU, bo tam powstaje.
+3. Zasada ADR 0042 zostaje (drobny tekst, zero sterowania grą) i dostaje drugą
+   nogę: w panelu nie ma liczby, której gracz nie umie na nic przetłumaczyć.

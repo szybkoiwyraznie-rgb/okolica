@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-127';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-127';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-128';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-128';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -28,26 +28,25 @@ import {
   walidujPaczke,
   zbudujPrompt,
   WERSJA_PROTOKOLU,
-  SZABLON_WERSJA,
   WARIANTY_Z_KODEM,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-127';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-127';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-127';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-127';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-127';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-127';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-127';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-127';
+} from './protokol.js?v=m12-128';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-128';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-128';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-128';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-128';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-128';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-128';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-128';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-127';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-127';
+} from './zestawy.js?v=m12-128';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-128';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -63,18 +62,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-127';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-127';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-127';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-127';
-import { adresMostu, stanMostu } from './most.js?v=m12-127';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-127';
+} from './sieci.js?v=m12-128';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-128';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-128';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-128';
+import { adresMostu, stanMostu } from './most.js?v=m12-128';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-128';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-127';
+} from './oceny.js?v=m12-128';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -2135,9 +2134,9 @@ function renderujStacje() {
 /**
  * Zegar gry: `performance.now()`. Logika rozgrywki nie czyta zegara (ADR 0004
  * pkt 3) — wszystkie `czasMs` pochodzą z tej warstwy. Pauz NIE MA (właściciel
- * 2026-09-13, uwaga B; ADR 0040 pkt 1): czas gry płynie także w tle. Jedyna
- * korekta to przerwa po 15 minutach bezczynności (pkt 5) — kwadrans bez
- * żadnego kliku to nie jest granie, więc nie wlicza się w odcinek.
+ * 2026-09-13, uwaga B; ADR 0040 pkt 1): zegar tyka także w tle. Jedyna korekta
+ * to przerwa po 15 minutach bezczynności (pkt 5) — kwadrans bez żadnego kliku
+ * nie jest graniem, więc zdejmujemy ją ze wskazań. Zegar NIE punktuje.
  */
 function zegarGry() {
   const teraz = performance.now();
@@ -3525,7 +3524,8 @@ function przywrocGreHotseat() {
  * ryzyko 3/4) — `performance.now()`
  * po restarcie przeglądarki startuje od zera, więc wszystkie znaczniki czasu
  * rozgrywki przesuwamy o różnicę między teraz a kotwicą `zegarMs` z zapisu.
- * Czas zamknięcia karty NIE wlicza się w odcinek (uczciwy pomiar).
+ * Rebaza tyczy ZNACZNIKÓW w dzienniku: punkty ich nie czytają (ADR 0023 pkt 1),
+ * więc gracz nie ma o czym dostawać komunikatu — patrz status niżej.
  */
 function wznowGre() {
   const snapshot = STAN.wznowienieKandydat;
@@ -3565,7 +3565,7 @@ function wznowGre() {
   pokazEkran('gra');
   ukryjStart(); // powrót do gry pomija okno startowe (uwaga K, ADR 0045)
   if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
-  status(`Wróciliśmy do zapamiętanej gry „${r.kodGry || 'bez kodu'}" — faza: ${r.faza}. Czas zamknięcia przeglądarki nie wlicza się w odcinek.`);
+  status(`Wróciliśmy do zapamiętanej gry „${r.kodGry || 'bez kodu'}" — faza: ${r.faza}.`);
   renderujGre();
   if (r.faza === FAZY.pytanie) renderujPytanie();
   // Właściciel 2026-09-11 (uwagi terenowe #2): powrót do gry nie może pokazywać
@@ -5426,16 +5426,13 @@ function start() {
   // dopuszczalne w starym setupie, których w pytaniach nie ma.
   ujedgajnijTematyWpisowLokalnych();
   banerStartowy();
-  $('stopka-protokol').textContent = WERSJA_PROTOKOLU;
-  // Numer budowy w stopce: właściciel dwa razy oceniał starą wersję z cache i
+  // Numer budowy w panelu Informacje: właściciel dwa razy oceniał starą wersję z cache i
   // nie miał jak tego stwierdzić. Bierzemy go z `?v=` w adresie TEGO modułu,
   // więc nie ma drugiej stałej do pamiętania przy podbijaniu cache-bust.
   if ($('stopka-wersja')) {
     $('stopka-wersja').textContent = new URL(import.meta.url).searchParams.get('v') || 'dev';
   }
   ustawWysokoscBelki();
-  // Łatka szablonu (PROTOKOL §7): organizator widzi, którą wersją promptu gra.
-  $('stopka-szablon').textContent = SZABLON_WERSJA;
 
   renderujTryby();
   renderujSegment('lista-wieku', WIEK_SETUP, STAN.konfig.wiek, (wiek) => { STAN.konfig.wiek = wiek; });

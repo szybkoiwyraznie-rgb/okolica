@@ -192,16 +192,18 @@ test('kontrakt: każdy temat z kodu ma wiersz w protokole (i odwrotnie)', () => 
 
 /* ------------------------------------------------------------- wersjonowanie */
 
-test('kontrakt: wersja protokołu jest jedna w dokumencie, w kodzie, w stopce i w README', () => {
+test('kontrakt: wersja protokołu jest jedna w dokumencie, w kodzie i w README', () => {
   const tytul = PROTOKOL.split('\n')[0];
   const m = tytul.match(/PYT v(\d+)\.(\d+)/);
   assert.ok(m, `tytuł protokołu nie deklaruje wersji („${tytul}")`);
   const wersja = `PYT/${m[1]}.${m[2]}`;
   assert.equal(WERSJA_PROTOKOLU, wersja, 'WERSJA_PROTOKOLU w app/protokol.js');
-  const stopka = INDEX.match(/<span id="stopka-protokol">([^<]+)<\/span>/);
-  assert.ok(stopka, 'w index.html brakuje <span id="stopka-protokol">');
-  assert.equal(stopka[1], wersja, 'stopka aplikacji pokazuje inną wersję protokołu');
   assert.ok(README.includes(`protokół PYT v${m[1]}.${m[2]}`), 'README nie podaje obowiązującej wersji protokołu');
+  // Trzeci nośnik (stopka aplikacji) spadł 2026-09-15 na żądanie właściciela:
+  // gracz nie ma co zrobić z numerem protokołu. Spójność jest więc teraz
+  // dokument ↔ kod ↔ README i ten test jest jej jedynym strażnikiem, a panel
+  // gracza NIE ma prawa z powrotem pokazywać tych liczb.
+  assert.equal(INDEX.includes('stopka-protokol'), false, 'numery protokołu zniknęły z UI — nie z dokumentu ani z kodu');
 });
 
 /* ------------------------------------------------------------ cache-busting */
@@ -1119,16 +1121,60 @@ test('kontrakt: ręczna edycja paczki nie istnieje w kodzie (ADR 0006 aneks 2026
   assert.match(czytaj('app/protokol.js'), /export function poprawkaDlaModelu/, 'ścieżka usterek (poprawka do modelu) zostaje');
 });
 
-test('kontrakt: SZABLON_WERSJA ma konsumenta w UI (PROTOKOL §7 — łatka szablonu)', () => {
-  // Audyt PR #3: PROTOKOL §7 każe podbijać łatkę szablonu w `SZABLON_WERSJA`,
-  // a stałej nie czytał ani kod, ani test — podbicie byłoby niewidoczne.
-  assert.match(INDEX, /<span id="stopka-szablon">PYT\/1\.0\.\d+<\/span>/, 'stopka ma miejsce na wersję szablonu');
+test('kontrakt: łatkę szablonu widać w dokumencie, nie w panelu gracza (PROTOKOL §7)', () => {
+  // Audyt PR #3: PROTOKOL §7 każe podbijać łatkę szablonu w `SZABLON_WERSJA`, a
+  // stałej nie czytał ani kod, ani test — podbicie byłoby niewidoczne. Przez
+  // 2026-09-15 pilnowała tego stopka; właściciel zdjął z panelu numery
+  // protokołu, więc strażnika przenieśliśmy tam, gdzie łatka powstaje: obie
+  // stałe muszą być cytowane w `docs/PROTOKOL.md`. Echo w UI byłoby
+  // najsłabszym z możliwych konsumentów — gracz nie ma co z nim zrobić.
+  const protokolTekst = PROTOKOL;
+  for (const nazwa of ['SZABLON_WERSJA', 'SZABLON_WERSJA_BEZ_WERYFIKACJI']) {
+    const stala = czytaj('app/protokol.js').match(new RegExp(`export const ${nazwa} = '([^']+)'`));
+    assert.ok(stala, `${nazwa} jest eksportowana z app/protokol.js`);
+    assert.match(stala[1], /^PYT\/1\.0(-nofc)?\.\d+$/, `${nazwa} ma kształt PYT/1.0.N (albo PYT/1.0-nofc.N)`);
+    assert.ok(protokolTekst.includes(stala[1]), `docs/PROTOKOL.md nie cytuje ${nazwa} = ${stala[1]} — podbicie bez wpisu w dokumencie`);
+  }
   const app = czytaj('app/app.js');
-  assert.match(app, /SZABLON_WERSJA/, 'app.js importuje stałą');
-  assert.match(app, /\$\('stopka-szablon'\)\.textContent = SZABLON_WERSJA/, 'app.js ją renderuje');
-  const stala = czytaj('app/protokol.js').match(/export const SZABLON_WERSJA = '([^']+)'/);
-  assert.ok(stala, 'stała jest eksportowana z app/protokol.js');
-  assert.match(stala[1], /^PYT\/1\.0\.\d+$/, 'łatka protokołu ma kształt PYT/1.0.N');
+  assert.equal(INDEX.includes('stopka-szablon'), false, 'łatka szablonu nie wraca do UI');
+  assert.equal(app.includes('SZABLON_WERSJA'), false, 'app.js nie importuje stałej, której nie renderuje');
+});
+
+/**
+ * Uwaga właściciela (2026-09-15): panel Informacje ma JEDEN wiersz porządku
+ * dziennego — numer budowy obok wyjść, które gracz naprawdę może użyć.
+ */
+test('kontrakt: Informacje — jeden wiersz: wersja · Dane i prywatność · Zgłoś błąd na mapie · kontakt', () => {
+  const blokCaly = INDEX.slice(INDEX.indexOf('id="ekran-informacje"'), INDEX.indexOf('id="przygaszenie-mapy"'));
+  assert.ok(blokCaly.length > 100, 'ekran Informacje znaleziony');
+  const blok = blokCaly.replace(/<!--[\s\S]*?-->/g, '');
+  const wiersz = blok.match(/<p class="informacje-kontakt[^"]*">([\s\S]*?)<\/p>/);
+  assert.ok(wiersz, 'wiersz kontaktowy istnieje w panelu Informacje');
+  const kolejnosc = ['Wersja <span id="stopka-wersja">', 'id="przycisk-prywatnosc-stopka"', 'id="link-zglos-mape"', 'id="link-kontakt"'];
+  let ostatni = -1;
+  for (const fragment of kolejnosc) {
+    const i = wiersz[1].indexOf(fragment);
+    assert.ok(i > ostatni, `w wierszu jest ${fragment} — w tej kolejności i dokładnie raz`);
+    ostatni = i;
+  }
+  // Kropki rozdzielają POPRZEDZAJAC pozycje — po złamaniu wiersza nie zostaje
+  // na końcu linii (to był pierwszy efekt uboczny tej zmiany, złapany w
+  // przeglądarce, nie w atrapie: LESSONS L13).
+  assert.doesNotMatch(wiersz[1].trimEnd(), /informacje-kropka[^>]*>·<\/span>\s*$/,
+    'żadna kropka nie wisi na końcu wiersza');
+  assert.equal((wiersz[1].match(/informacje-kropka/g) || []).length, 3, 'trzy separatory między czterema pozycjami');
+  // Kropka jest PIERWSZYM dzieckiem grupy `.informacje-pozycja`, a grupa trzyma
+  // kropkę i pozycję w jednym inline-flexie — luzniejszy zapis (np. sam span)
+  // dozwala łamanie między kropką a pozycją, czyli wraca wisząca kropka, którą
+  // złapaliśmy w przeglądarce, a nie w atrapie (LESSONS L13).
+  const bezKomentarzy = wiersz[1].replace(/<!--[\s\S]*?-->/g, '');
+  for (const [id, znacznik] of [['przycisk-prywatnosc-stopka', 'button'], ['link-zglos-mape', 'a'], ['link-kontakt', 'a']]) {
+    assert.ok(new RegExp(`<span class="informacje-pozycja">\\s*<span class="informacje-kropka"[^>]*>·</span>\\s*<${znacznik} id="${id}"`).test(bezKomentarzy),
+      `kropka trzyma się swojej pozycji (${id}) — nie może zostać sama na końcu linii`);
+  }
+
+  // łamanie wiersza jest dozwolone, ale tylko w tym wierszu i z odstępami
+  assert.match(STYLE, /\.informacje-kontakt \{[^}]*flex-wrap: wrap/s, 'wiersz łamie się, gdy brakuje miejsca');
 });
 
 test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', () => {

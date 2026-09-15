@@ -326,6 +326,23 @@ const MARTWE_FRAZY = [
     nosniki: DOKUMENTY,
     powod: 'równy podział pilnował K22, a K22 zniknął razem z polem setupu — liczby nie da się już zepsuć (ADR 0027 aneks 2026-09-15)',
   },
+  // Fala 2026-09-15 (uwaga A właściciela): panel Informacje pokazuje numer
+  // budowy i wyjścia, a nie numery protokołu PYT ani łATKI szablonu.
+  {
+    fraza: 'nie wlicza się w odcinek',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'UI nie może tłumaczyć czegoś, czego nie ma: od ADR 0023 pkt 1 punktacja nie ma składnika czasowego, a gracz nigdzie nie widzi stopera (właściciel 2026-09-15 zdjęł zdanie ze statusu wznowienia)',
+  },
+  {
+    fraza: 'stopka-protokol',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'numer protokołu zszedł z UI (właściciel 2026-09-15); spójności dokument ↔ kod ↔ README pilnuje `test/kontrakt.test.js`',
+  },
+  {
+    fraza: 'stopka-szablon',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'łatka szablonu zszedła z UI (właściciel 2026-09-15); jest cytowana w docs/PROTOKOL.md, bo tam powstaje',
+  },
   {
     fraza: 'pin(y)',
     nosniki: UI,

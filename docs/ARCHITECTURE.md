@@ -12,7 +12,7 @@ pętlę protokołu PYT (ADR 0006, `docs/PROTOKOL.md`).
 index.html                  — powłoka UI: ekran startowy z intro nad mapą, mapa jako
                               trwałe tło, kroki gry (setup → pozycja → stacje → prompt →
                               paczka → gra → wynik), warstwa prywatności,
-                              stopka z wersją protokołu, baner file://
+                              panel Informacje z numerem budowy, baner file://
 sw.js                       — Service Worker (M10): offline skorupa + kafelki
                               ostatniej okolicy (cache-first, limit i ewikcja;
                               cache wyłącznie sukcesów basic/cors; opaque
@@ -269,8 +269,9 @@ commit i nowa wersja aplikacji.
    odcinka, odpowiedź) leci `trwalosc.zbierajStan()` →
    `serializujStan()` → `localStorage`; snapshot niesie `zegarMs` (kotwicę
    zegara sesji) — przy powrocie do gry wszystkie znaczniki czasu są rebazowane
-   o `performance.now() − zegarMs`, więc czas zamknięcia karty nie wlicza się
-   w odcinek.
+   o `performance.now() − zegarMs`, więc noc z zamkniętą kartą nie fałszuje
+   znaczników w dzienniku. Znaczniki nie punktują (ADR 0023 pkt 1) i nie są
+   pokazywane graczowi.
 3. `pozycja.watchPozycja()` strumieniuje fixy → `ocenFix()` (walidacja
    WSPÓŁRZĘDNYCH — kod `P06`; `accuracy` nie jest oceniane, ADR 0034 pkt 2;
    błędy samego watchera mają kody P01–P10) → `dodajFix()` (historia, maks.
@@ -437,7 +438,7 @@ a z odpowiedzi poprawność i punkty (ADR 0007 pkt 6). Dlatego może leżeć w
 w chwili dojścia.
 
 Stan sesji (pamięć, `app/app.js`): `STAN.ekran` zapamiętuje, na który ekran
-wraca pomocniczy ekran „dane i prywatność" (otwierany z setupu i ze stopki,
+wraca pomocniczy ekran „dane i prywatność" (otwierany z panelu Informacje,
 nie należy do paska pięciu kroków); `STAN.historiaFixow` to ograniczona
 historia wspólna GPS-u i symulacji; `STAN.symulacja` trzyma odtwarzaną trasę
 (`{fixy, indeks, cel, timer}`); `STAN.siec` trzyma stan sieci drogowej
@@ -520,7 +521,7 @@ drugą odpowiedź tego gracza do tej stacji.
   kafelki naprawdę widoczne na ekranie — potwierdza właściciel w live preview,
   bo w sandboxie nie ma ani przeglądarki, ani sieci do kafelków (LESSONS L3).
 - Testy kontraktowe: szablon promptu w `docs/PROTOKOL.md` ↔ `SZABLON_PROMPTU`;
-  kanon tematów w protokole ↔ `TEMATY`; wersja protokołu ↔ stopka ↔ README;
+  kanon tematów w protokole ↔ `TEMATY`; wersja protokołu ↔ `protokol.js` ↔ README;
   wersja cache-bustingu w `index.html` ↔ importy; brak `node:`/`require(` w `app/`;
   brak ścieżek od korzenia w `index.html` (ADR 0002 pkt 3); rejestr ADR ↔ pliki
   na dysku i status w pliku ↔ status w rejestrze; geolokalizacja w `app.js`

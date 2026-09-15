@@ -171,7 +171,7 @@ Układ na wąskim telefonie i zachowanie GPS/symulacji sprawdza właściciel
 1. **Telefon właściciela:** otwórz aplikację w pionie na iPhonie (gra jest
    w teście terenowym; nie ma bramki „360 px bez przewijania”). Jeśli coś
    nie mieści się albo wymaga przewijania — zgłoś, to zadanie agenta.
-2. **Prywatność:** przycisk „Dane i prywatność" w setupie i w stopce otwiera
+2. **Prywatność:** przycisk „Dane i prywatność" w panelu Informacje otwiera
    ekran; „Wróć" prowadzi na ekran, z którego przyszliśmy (setup → setup,
    pozycja → pozycja). Przycisk kasowania: pierwszy klik **uzbraja** i mówi,
    co się stanie, drugi kasuje; komunikat w polu pod przyciskiem liczy

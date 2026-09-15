@@ -5848,3 +5848,59 @@ valid") — po reconnectcie właściciela poszło bez `--force`.
 **Nie ruszone (kolejka na teren):** decyzja o pinch-zoomie z ADR 0047 (czy
 przywrócona karta nie zostawia „ściśniętej" strony i czy mapa nadal się
 szczypie), uwaga A z PR #29 i D1 na iOS Safari.
+
+## Sesja 2026-09-15c — uwagi A z terenu: panel Informacje i zdanie o czasie (m12-128)
+
+**Zlecenie właściciela (PR #30, po grze w terenie):** „»protokół PYT/1.0« i
+»szablon PYT/1.0.x« w Panelu Informacje uważam za bezużyteczne. Zostaw tylko
+wersję, w jednej linii: „Wersja m12-12x - Dane i prywatność - Zgłoś błąd na
+mapie - kontakt:…", ewentualnie łamanego, jeśli zabraknie miejsca. Usunąłbym
+też taki tekst: „Czas zamknięcia przeglądarki nie wlicza się w odcinek." —
+przecież czas nigdzie się nie wlicza??? Po co takie teksty. Poszukaj, czy w
+innych miejscach nie ma takich pozostałości odnoszących się do czasu."
+
+**Panel Informacje (m12-128).** Stopka panelu była gridem `.informacje-tresc`:
+każdy span to osobny wiersz, więc gracz dostawał status, protokół, szablon,
+wersję i prywatność — pięć linii, z których trzech nie umie na nic
+przetłumaczyć. Został jeden wiersz (`.informacje-kontakt`, flex + `flex-wrap`)
+z kolejnością dokładnie jak w poleceniu; `#status` zachował swój wiersz nad
+nim. Prywatność zyskała wielką literę, bo etykieta = tytuł ekranu
+(`#tytul-prywatnosc`). Kropki-dzielniki są teraz PIERWSZYM dzieckiem grupy
+`.informacje-pozycja` — przy łamaniu wiersza (390 px: trzy linie) samotna
+kropka na końcu linii wyglądała jak urwane zdanie; złapał to pomiar
+headless Chromium, a nie atrapa DOM, więc asert o tym siedzi w `kontrakt`
+(L13 po raz któryś z rzędu).
+
+**Skoro z panelu zszedł numer protokołu, zniknął i jego trzeci nośnik.**
+`test/kontrakt.test.js` pilnuje teraz parzystości `docs/PROTOKOL.md` ↔
+`app/protokol.js` ↔ `README.md` (bez UI), a `SZABLON_WERSJA` i
+`SZABLON_WERSJA_BEZ_WERYFIKACJI` muszą być cytowane w §7 PROTOKOLU — tam łatka
+powstaje, echo w stopce było najsłabszym konsumentem z możliwych. `app.js` nie
+importuje już `SZABLON_WERSJA`. Martwe frazy: `stopka-protokol`,
+`stopka-szablon` (strażnik + DOKUMENTY + UI), więc zdokumentowana w ADR-ach
+atrybucja „patrz stopka" nie wróci.
+
+**Zdanie o czasie.** Audyt (`grep` po wszystkich tekstach trafiających do UI):
+jedno zdanie, `status()` wznowienia gry (było: „… Czas zamknięcia przeglądarki
+nie wlicza się w odcinek."). Zostało skreślone, a obok niego przeformułowane
+trzy komentarze (`zegarGry`, `wznowGre`, docblock `zbierajStan`) i jeden
+akapit ARCHITECTURY — wszystkie tłumaczyły „uczciwy pomiar" czegoś, co nie
+punktuje (ADR 0023 pkt 1: punktacja nie ma składnika czasowego; znaczniki
+`czasMs` żyją w dzienniku i tyle). Nic więcej czasowego w UI nie ma:
+zostały plan (`Promień gry: … (z 60 min: …)`), `Zwiększ czas gry` w S12,
+`za ~N s` przy odświeżaniu mostu i `pierwszy fix potrafi trwać kilkanaście
+sekund` — wszystkie mówią, co gracz ma zrobić, a nie co mu się wlicza.
+Asert ujemny w `aplikacja.test.js` + martwa fraza `nie wlicza się w odcinek`.
+
+**Budżet lektury:** sam aneks do ADR 0042 przekroczył próg o 168 tokenów (rezerwa była 82),
+więc do `docs/decisions/archive/aneksy-0036-2026-09-13-do-13b.md` pojechały
+dwa historyczne aneksy ADR 0036 (m12-107 i m12-112 — oba przesądza żywy ADR 0043, a ich
+regułę techniczną niosą LESSONS L13 i `kontrakt`). Zostało w ADR-ze wskazówka
+trzech zdań. Finisz: 99 659/100 000, rezerwa 341.
+
+**Brama:** 818/818, `npm run check` OK, audyt WCAG 0 naruszeń, `node
+tools/budzet-lektury.mjs` OK. Live (Chromium 390×844, `?tryb=test`,
+sprawdz-informacje.mjs): 12/12 — panel bez słów „protokół"/„szablon"/„PYT/",
+`#stopka-wersja` = m12-128, cztery pozycje w kolejności z polecenia,
+`scrollWidth == clientWidth`, brak przepełnienia na 390 px, klik z wiersza
+otwiera prywatność i „Wróć" wraca do Informacji.
