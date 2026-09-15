@@ -6106,3 +6106,21 @@ Apps Script — zapis paczek do katalogu zaakceptowanych działa znowu. Z sandbo
 nie da się tego sprawdzić (egress zablokowany, LESSONS L3), więc potwierdzeniem
 jest komunikat właściciela i testy atrapy Drive.
 
+**Pusta lista usterek usunięta (BACKLOG B23, commit `308f550`).** Przy
+usuwaniu przycisku poprawki wyszło na jaw, że `#wynik-usterki` jest nośnikiem
+bez zawartości: `renderujUsterki()` miała dwa wywołania i oba z pustą tablicą,
+a lista była czyszczona także na starcie walidacji, więc `<ul>` nie miał dzieci
+nigdy. Właściciel: „tak, usuń" — wariant (a) z B23. Zniknęły `<ul>`
+z `index.html`, `renderujUsterki` i `listaUsterek` z `app/app.js`, reguły
+`.usterki` z `app/styles.css`; karta `#wynik-walidacji` z nagłówkiem
+i `data-stan='blad'` została, bo to ona niesie komunikat.
+
+Pin przepisany na sprawdzanie HTML zamiast stuba: atrapa DOM tworzy brakujący
+element na żądanie, więc `children.length === 0` przeszłoby także po powrocie
+listy. Wskazówka debugowania w LESSONS L54 kieruje teraz do `walidujPaczke()`,
+nie do DOM; dwie martwe frazy w `dryf-dokumentow`, dwa aneksy ADR 0006 z tego
+samego dnia scalone w jeden (ta sama decyzja). Brama: 827/827, budżet
+99 817/100 000 (rezerwa 183 — pierwszy większy aneks w następnej sesji
+przekroczy próg), m12-136. Headless Chromium 360 px i 1334×750: listy
+i przycisku nie ma, karta w stanie `blad` z samym nagłówkiem, 0 błędów konsoli.
+
