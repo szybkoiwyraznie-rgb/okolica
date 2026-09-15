@@ -5736,3 +5736,96 @@ literę w pierwszym zdaniu („odąd" zamiast „odtąd" — litera zginęła w 
 robionej `sed`em już po `git commit -F`). Treść komunikatu jest zgodna z tym, co
 w drzewie; commit jest wypchnięty, a ADR 0012 reg. 4 zabrania poprawiania
 historii, więc zostaje jak jest, z tym zapisem.
+
+## Sesja 2026-09-15b — uwagi A i B z terenu: przyciski czasu i plan pytań (gałąź `arena/01a0a39c-okolica`, PR #30, m12-126/m12-127)
+
+**Zlecenie właściciela (dwie uwagi, 2026-09-15):** (A) „w setupie — hot-seat i
+multiplayer — pole »Czas gry« zamień na przyciski wyboru: 30, 60, 90, 120 minut;
+stukasz jeden, poprzedni odpuszcza”; (B) „w hot-seacie znika pytanie o liczbę
+pytań na stację — przy każdej stacji odpowiada każdy gracz, więc pytań jest
+liczba stacji × liczba osób grających”. Multi przy B bez zmian (jedno pytanie na
+stację, wszyscy odpowiadają na to samo). Lektura startowa: continuity sesji
+2026-09-15a (AGENTS §0 przeczytany w całości tamtej sesji, ADR-y punktowo),
+brama na wejściu 815/815, PR #30 otwarty wcześniej (ADR 0012 reg. 1).
+
+**Kolejność: B przed A**, bo B zmienia kształt setupu i legalność fixture'ów, a
+A dokłada w to samo miejsce kontrolkę. Dwa osobne commity (§2 reg. 3):
+`a2df21b` (B, m12-126), `15fc956` (A, m12-127).
+
+**B — reguła, nie kosmetyka UI.** `pytaniaNaStacje` przestaje być wejściem:
+`pytaniaNaStacjeDla({ liczbaGraczy, rodzajGry })` w `app/konfig.js` liczy plan
+(hot-seat = liczba graczy z listy z sufitem 8, multi = 1), `domyslnaKonfiguracja`
+i `oczyscKonfiguracje` nadpisują go po dopełnieniu listy imion, a K11 (widełki) i
+K22 (równy podział) znikają razem z polem — nie ma kontrolki, którą dałoby się
+popsuć podział, więc zostałby komunikat odsyłający do czegoś, czego nie ma (L64).
+Dwa uboczne defekty wyszły przy okazji i są naprawione w tym samym commicie:
+(1) `promienM` w `oczyscKonfiguracje` liczył się PRZED wyprowadzeniem planu
+pytań, więc stary zapis z trzema graczami dostawał promień dla jednego pytania
+(0,5 pytania na gracza mniej czasu na odpowiedzi) — liczy się PO planie;
+(2) `synchronizujPytaniaZTrybem()` wisi na końcu `renderujListeGraczy()`, bo ta
+funkcja jest jedynym miejscem, które zna realną liczbę graczy (start,
+wznowienie, dodanie, usunięcie) — dawniej dwa osobne tory (`dodajGracza`,
+`usunGracza`) rozjeżdżały się z listą.
+
+**A — `CZASY_GRY = [30, 60, 90, 120]`.** Segment radia (`#lista-czasow` w
+`#pole-czas`) zamiast `input[type=number]`: wzajemne wyłączanie i rozmiar
+trafienia są w markupie, nie w kodzie (ADR 0011). Widełek NIE zacieśniam —
+`OGRANICZENIA.czasGryMin` 10–480 i K19 zostają, bo zamknięty zbiór jest regułą
+UI, nie walidatora; stary zapis z 240 min działa, tylko żaden przycisk nie jest
+wciśnięty (auto-zaznaczenie pierwszego byłoby cichą zmianą planu gry). Segment
+buduje się i podpina RAZ w strażniku `setupNasluchyPodpiete`, a `zaznaczCzasGry()`
+odświeża wciśnięty przycisk przy każdym renderze (L14). `.segment-czas label`
+dostał `flex: 1 1 20%` + `white-space: nowrap`, bo baza 30% liczy trzy tryby i
+„120 min” zjeżdżało do drugiej linii.
+
+**Fixture'y przepisane, nie obejśe (L55):** konfiguracja „3 graczy × 1 pytanie”
+opisywała stan, którego nie da się już stworzyć. `graGotowaDoStartu({}, { graczy: N })`
+daje N zapamiętanych graczy, czas z `CZASY_DLA_GRACZY` (85/90/95 min — wszystkie
+dają promień 1000 m dla 3 stacji, czyli fixture paczki nie zmienia kształtu) i
+paczkę `3 × N` pytań (`pytaniaDlaGraczy`: oryginalne `sNp1` plus warianty
+„Wariant B:/C:” przy `sNp2…`, bo E-** odrzuca powtórzoną treść). Marsz po stacji
+prowadzi teraz `odpowiedzNaStacje`/`zamknijStacje` — przycisk
+`przycisk-nastepna-stacja` jest WIDOCZNY także między pytaniami tej samej
+stacji („Następne pytanie →”), więc dotychczasowe „klikaj, aż przycisk się
+pojawi” odpowiadało na jedno pytanie z trzech i zielona brama mijała się z
+logiką gry. Test punktacji N reloaduje w środku stacji (faza `pytanie`, nie
+`odcinek`), a pełne gry M6/R7 i M7/P7 liczą 3 pkt na gracza.
+
+**Testy red→green:** `test/kontrakt.test.js` (nieobecność `#pole-pytania` i
+`#setup-czas`, segment w `index.html`, `pole-czas` na liście chowania przy
+„Dołączam”, `nowrap` w CSS), `test/konfig.test.js` (K11/K22 usunięte,
+`pytaniaNaStacjeDla`, `CZASY_GRY` + fakt, że 240 min to nie błąd),
+`test/aplikacja.test.js` (129 → 130 testów, w tym „stuknięcie zaznacza jedno i
+odznacza poprzednie”), `test/wieloosobowa-ui.test.js` (uzasadnienie promienia
+mówi „: N pytań ≈”), `test/dryf-dokumentow.test.js` (martwe frazy: „Pytania na
+stację”, „pytań na stację (łączna”, „Planowany czas gry (min)”, „Wpisz planowany
+czas”). **Brama: 818/818**, `npm run check` OK (oba szablony promptu znak w znak).
+
+**Weryfikacja żywa (Chromium 390×844, `python3 -m http.server` + LD_LIBRARY_PATH
+z `.narzedzia/libs/lib`):** `#pole-czas` 82 px, cztery chipy w jednym rzędzie na
+tej samej współrzędnej (618), 44 px wysokości (= `--cel`), `scrollWidth 390 vs
+390` (zero poziomego scrolla), na starcie wciśnięty dokładnie „60 min”; stuknięcie
+w „90 min” → wciśnięty tylko 90 i `Promień gry: 800 m (z 90 min: 5 pytań ≈ 7,5
+min, droga ≈ 33 min…)`; stuknięcie w „30 min” → odznaczyło 90. Dla B: po dodaniu
+Ala/Ola/Beniamin uzasadnienie mówi `z 60 min: 15 pytań ≈ 22,5 min` (5 stacji ×
+3 graczy) i promień spada 500 → 350 m, a `#setup-pytania` nie istnieje. Przy
+„Dołączam” chowają się czas, tryb i liczba stacji; u hosta wybór zostaje
+zachowany.
+
+**Porządek po zmianach:** ADR 0027 aneks 2026-09-15 (reguła B), ADR 0025 aneks
+2026-09-15 (reguła A), `WORKFLOW` §3 bez pola pytań i z czterema przyciskami,
+legenda `{LICZBA_PYTAN}` w `PROTOKOL` wskazuje źródło liczby, komunikat E03 nie
+obiecuje mnożnika wpisywanego przez gracza. Budżet lektury startowej po aneksach
+pękał (100 138), więc do `docs/decisions/archive/` powędrowały: aneks ADR 0024
+(2026-09-07, decyzje 6–8/B19 — reguły zostały w skrócie w ADR-ze) i dwa aneksy
+ADR 0027 z 2026-09-11 (jeden w całości zastąpiony przez aneks 2026-09-13); oba
+pliki macierzyste mają wskaźnik. **Budżet na wyjściu: 99 918/100 000 (rezerwa
+82; liczy `node tools/budzet-lektury.mjs`).** LESSONS L66 dostało zdanie o asercji `start < end` przy cięciu przęsła +
+`node --check` po każdej edycji skryptem (ta sesja dopuściła się 57 KB
+duplikatu w `test/aplikacja.test.js`).
+
+**Czego nie zrobiono:** `git push` i aktualizacja opisu PR #30 — token GitHub w
+`sandbox`ie wygasł (`gh auth status`: „The github.com token in GH_TOKEN is no
+longer valid”); commity `a2df21b` i `15fc956` czekają na reconnect właściciela.
+Nie ruszone: decyzja o pinch-zoomie z ADR 0047 (do sprawdzenia w terenie), uwaga
+A z PR #29 i D1 na iOS Safari — poza zakresem tych dwóch uwag.
