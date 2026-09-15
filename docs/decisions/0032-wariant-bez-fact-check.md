@@ -83,6 +83,14 @@ idempotencji cicho zaakceptowałby błąd modelu) oraz wariant przez
   wariant (dla paczki bez weryfikacji owner sprawdza przede wszystkim
   stacje i sens pytań, nie źródła).
 
+## Aneks 2026-09-15e (ADR 0050)
+
+Punkt 2 („Znacznik odpowiedzi: `PYT/1.0-rev3`") jest **zniesiony**: model nie
+pisze już żadnego markera. O profilu źródeł wie aplikacja — ptaszek na ekranie
+promptu stempluje `paczka.factcheck` przy przyjęciu, a zestawy z repozytorium
+niosą to samo w `meta.factcheck`. Reszta decyzji obowiązuje bez zmian
+(domyślnie wariant bez weryfikacji, E09 zgaszona dla paczek bez źródeł).
+
 ## Konsekwencje
 
 - PROTOKOL: nowa §2.2 (szablon bez weryfikacji — blok literalny),

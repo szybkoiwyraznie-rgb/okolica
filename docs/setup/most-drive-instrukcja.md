@@ -49,7 +49,7 @@ Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_15pyt_wiek-12_600m_Q.zestaw.json
   zerwanej sieci) trafia w TĘ SAMĄ nazwę i most odpowiada
   `juz-zaakceptowana` z identyfikatorem pliku, a dwie *różne* paczki z tej samej
   minuty w tym samym miejscu dostają przyrostek `-2`, `-3`… — przed decyzją most
-  porównuje `kontener.skrot` leżącego już pliku, więc nazwa nie potrafi zdławić
+  porównuje odcisk treści (`skrotPaczki`) leżącego już pliku, więc nazwa nie potrafi zdławić
   nowej pracy organizatora.
 - Chcesz, żeby paczka zniknęła z indeksu: przeciągnij plik do
   `okolica-paczki-odrzucone`. Nazwa nie ma znaczenia dla indeksu (ten liczy

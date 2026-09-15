@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-138">
-  <script type="module" src="app/app.js?v=m12-138"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-139">
+  <script type="module" src="app/app.js?v=m12-139"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -518,12 +518,11 @@
              wyniku ZWINIĘTY, żeby na wierzchu zostały łapki, poprawna odpowiedź
              i komentarz — na telefonie bez scrollowania. -->
         <details id="gra-pytanie-detale" open>
-          <!-- Napisu „Pytanie i możliwe odpowiedzi" nie ma (właściciel 2026-09-15,
-               uwaga A): treść pytania i odpowiedzi widać pod spodem, więc etykieta
-               była szumem. Zwijanie zostaje — po odpowiedzi sekcja zjeżdża, żeby na
-               wierzchu został wynik z wyjaśnieniem. Etykieta dla czytnika ekranu
-               opisuje, co się rozwija. -->
-          <summary id="gra-pytanie-detale-naglowek" aria-label="Pytanie i możliwe odpowiedzi"></summary>
+          <!-- Właściciel 2026-09-15 (uwaga A): w fazie odpowiedzi pytanie i warianty
+               są na wierzchu bez żadnej etykiety (style chowają wtedy summary —
+               treść pytania podnosi się o cały wiersz), a po odpowiedzi sekcja
+               zjeżdża i zostaje po niej jedno dotykowe „Rozwiń pytanie". -->
+          <summary id="gra-pytanie-detale-naglowek">Rozwiń pytanie</summary>
           <p id="gra-pytanie-tresc" class="duzy"></p>
           <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
           <!-- Właściciel 2026-09-13 (A): po odpowiedzi warianty WRACAJĄ jako
@@ -606,7 +605,7 @@
         <ul class="lista-privatnosc">
           <li>Ustawienia gry i motyw: <code>okolica:konfig</code>,
             <code>okolica:motyw</code>.</li>
-          <li>Cache sieci drogowej, ukryta paczka pytań i historia gier —
+          <li>Cache sieci drogowej, paczka pytań i historia gier —
             wszystko pod kluczami <code>okolica:*</code>.</li>
           <li>Kod gry — jawny identyfikator rozgrywki w nazwach plików
             i wpisach historii; niczego nie szyfruje.</li>
@@ -645,9 +644,9 @@
 
       <div class="karta">
         <h3>Paczka pytań</h3>
-        <p class="podpowiedz">Paczka jest <strong>ukryta</strong> — nieczytelna
-        przy kopiowaniu — ale <strong>nie zaszyfrowana</strong>.
-        Nie wklejaj do pytań danych osobowych: każdy, kto ma
+        <p class="podpowiedz">Paczka jest <strong>jawna</strong> — zapisujemy ją
+        bez ukrywania, żebyś mógł ją przejrzeć choćby na Drive (<strong>nie jest
+        zaszyfrowana</strong>). Nie wklejaj do pytań danych osobowych: każdy, kto ma
         dostęp do pliku paczki, może ją odczytać.</p>
       </div>
 

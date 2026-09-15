@@ -529,7 +529,10 @@ test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
     assert.ok(!/app\/krypto\.js|krypto\.zaszyfruj|krypto\.odszyfruj/.test(tresc), `${plik}: odniesienie do nieistniejącego modułu krypto.js`);
     assert.ok(!/PBKDF2|AES-GCM/.test(tresc), `${plik}: obiecuje szyfrowanie, którego w kodzie nie ma (BACKLOG B16)`);
   }
-  assert.ok(README.includes('nie\nzaszyfrowana') || README.includes('nie zaszyfrowana'), 'README musi mówić wprost, że paczka nie jest zaszyfrowana');
+  assert.ok(README.includes('jawnym\nJSON-em') || README.includes('jawnym JSON-em'), 'README musi mówić wprost, że paczka jedzie jawnym JSON-em (ADR 0050)');
+  for (const plik of ['README.md', 'AGENTS.md', 'docs/ARCHITECTURE.md']) {
+    assert.equal(/obfuskacj/i.test(czytaj(plik)), false, `${plik}: obiecuje ukrywanie paczek, którego nie ma (ADR 0050)`);
+  }
   assert.ok(INDEX.includes('nie jest zaszyfrowany'), 'ekran wklejania musi mówić wprost, że tekst nie jest zaszyfrowany');
   assert.ok(INDEX.includes('identyfikator rozgrywki'), 'kod gry musi być opisany jako identyfikator, nie klucz (ADR 0007 pkt 4)');
 });
@@ -622,7 +625,8 @@ test('kontrakt: ekran „dane i prywatność" ma cztery karty z ADR 0013 pkt 7 i
   for (const temat of ['Co jest pobierane', 'Dokąd trafia Twoja pozycja', 'Co zostaje na telefonie', 'Jak to skasować']) {
     assert.ok(sekcja.includes(temat), `ekran prywatności nie mówi: ${temat} (ADR 0013 pkt 7)`);
   }
-  assert.match(sekcja, /nie\s+zaszyfrowana/, 'paczka opisana uczciwie: ukryta, nie zaszyfrowana (ADR 0007)');
+  assert.match(sekcja, /jawna/, 'paczka opisana uczciwie: jawna, bez ukrywania (ADR 0050)');
+  assert.match(sekcja, /nie\s+(jest\s+)?zaszyfrowana/, 'paczka opisana uczciwie: nie jest zaszyfrowana');
   assert.ok(!/jest zaszyfrowana/.test(sekcja), 'ekran nie może obiecywać szyfrowania');
 });
 
@@ -1256,6 +1260,13 @@ test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', ()
   assert.ok(detale < odpowiedzi && odpowiedzi < listaWariantow, 'pytanie, warianty-klikalne i warianty-statyczne są WEWNĄTRZ <details>, w tej kolejności');
   assert.ok(listaWariantow < oceny && oceny < wynik, 'łapki zostają na wierzchu: po <details>, przed wynikiem odpowiedzi');
   assert.match(INDEX, /<details id="gra-pytanie-detale" open>/, 'element w fazie odpowiedzi startuje OTWARTY (gracz musi widzieć pytanie)');
+  // Uwaga właściciela z terenu (2026-09-15, a): gdy pytanie jest na wierzchu,
+  // wiersza etykiety nie ma (treść rośnie o jego wysokość), a po werdykcie
+  // sekcja zwija się pod widocznym „Rozwiń pytanie".
+  assert.match(INDEX, /<summary id="gra-pytanie-detale-naglowek">Rozwiń pytanie<\/summary>/,
+    'zwinięte pytanie ma widoczną etykietę „Rozwiń pytanie”');
+  assert.match(STYLE, /#gra-pytanie-detale\[open\] > summary \{ display: none; \}/,
+    'w fazie odpowiedzi summary jest schowane — treść pytania podnosi się do góry');
   assert.ok(APP.includes('kliknijOcene(OCENA_PLUS)') && APP.includes('kliknijOcene(OCENA_MINUS)'), 'oba kciuki są podpięte');
   assert.ok(APP.includes('wyslijOceneWTle'), 'głos jedzie w tle, nie blokuje gry');
   assert.ok(APP.includes('oproznijKolejkeOcen()'), 'kolejka głosów jest opróżniana przy starcie');

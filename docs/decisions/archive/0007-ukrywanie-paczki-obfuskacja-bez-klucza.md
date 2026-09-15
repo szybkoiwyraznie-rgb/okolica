@@ -1,8 +1,8 @@
 # 0007 — Ukrywanie paczki pytań: odwracalna obfuskacja bez klucza (nie szyfrowanie)
 
-- Status: Zaakceptowana (decyzja właściciela 2026-09-05; zastępuje propozycję
-  AES-GCM z kluczem z `kod gry` przez PBKDF2 — ADR poprawiony przed akceptacją,
-  zgodnie z `LESSONS` L8)
+- Status: Wycofana (2026-09-15, ADR 0050 — ukrywanie paczek zniesione na decyzję
+  właściciela: „żadne zabezpieczenia nie są potrzebne"; treść zostaje jako
+  historia decyzji i uzasadnień)
 - Data: 2026-09-05
 
 ## Kontekst

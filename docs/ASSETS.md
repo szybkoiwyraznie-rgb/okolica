@@ -220,8 +220,8 @@ akcji; nowy dostawca przechodzi pełną checklistę §5.
   Script (`docs/setup/apps-script-repo-paczek.gs`, wdrożenie:
   `docs/setup/most-drive-instrukcja.md` — wersja robocza; finalna instrukcja
   dla właściciela w czacie, ADR 0018).
-- **Co płynie**: DO Drive — kandydaci na zestawy (TO-zestaw/1: meta + stacje
-  + ukryty kontener pytań) wysyłani automatycznie i bez pytania przy przyjęciu
+- **Co płynie**: DO Drive — kandydaci na zestawy (TO-zestaw/2: meta + stacje
+  + jawna paczka pytań) wysyłani automatycznie i bez pytania przy przyjęciu
   paczki (decyzja 2026-09-07: checkbox zgody usunięty, ADR 0016 aneks), a obok
   nich gry wieloosobowe i ich zdarzenia, gry hot-seat, oceny pytań, liczniki
   użyć paczek i profile pseudonimów (§7.1–§7.2). Z Drive — indeks katalogu
@@ -266,7 +266,7 @@ akcji; nowy dostawca przechodzi pełną checklistę §5.
   ≈ 20 GET/min w szczycie; POST-y tylko przy zdarzeniach — gra 5-stacyjna to
   ≈ 10–12 POST-ów na gracza. Zapisy szereguje `LockService` (20 s), lista
   zdarzeń jest append-only, a aplikacja jest idempotentna wobec powtórek.
-- **Licencje**: plik gry niesie kontener pytań `TO-paczka/2` (treści CC BY-SA
+- **Licencje**: plik gry niesie jawną paczkę pytań (ADR 0050; treści CC BY-SA
   4.0 jak paczki) — dostęp tylko dla graczy tej gry (kod albo `idGry` z lobby;
   lobby NIE pokazuje kodów ani zestawów).
 - **Prywatność**: współrzędne graczy nigdy nie trafiają na Drive (biała lista

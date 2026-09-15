@@ -1,6 +1,7 @@
 # 0049 — Numer poprawnej odpowiedzi jest czystym indeksem
 
-- Status: Zaakceptowana (decyzja właściciela 2026-09-15)
+- Status: Wycofana (2026-09-15, ADR 0050 — numeracja przeszła na `1..4`;
+  intencja „czysty numer, nie kod" obowiązuje dalej, tylko liczymy od 1)
 - Data: 2026-09-15
 - Dotyczy: PROTOKOL §2, §2.2, §3.2, §3.4, §7, ADR 0033 pkt 2, `app/protokol.js`
 

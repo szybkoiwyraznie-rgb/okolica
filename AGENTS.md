@@ -114,9 +114,9 @@ Ponadto:
   w promptcie. **Schemat wersjonowany** (`PYT/1.0`): zmiana = ADR + podbicie
   + migrator (użytkownik nie traci gry). **Tematy z kanonu** (`TEMATY`):
   nowy temat = kanon + protokół w tym samym commicie.
-- **Paczka po walidacji jest ukrywana** (obfuskacja bez klucza, `TO-paczka/2`,
-  ADR 0007) — plaintext nigdzie, pole wklejania czyszczone natychmiast.
-  **„Ukryte", nie „zaszyfrowane"** (ADR 0007 pkt 5).
+- **Paczka po walidacji leży jawnie** — jawny JSON w pamięci, w zapisie gry
+  i na Drive (ADR 0050; żadnego ukrywania ani szyfrowania), pole wklejania
+  czyszczone natychmiast. Dlatego w paczce NIE MA danych osobowych (ADR 0013).
 - **Język: polski** (inne języki pytań przez parametr `jezyk`, ADR 0011).
   **Współrzędne prawdziwe**, dziesiętne; stacja poza promieniem/niedostępna
   = błąd walidacji.

@@ -1,6 +1,7 @@
 # 0033 — Koniec odwracania liter: zostaje kod poprawnej odpowiedzi
 
-- Status: Zaakceptowana (pkt 1 — koniec odwracania; pkt 2 zastąpiony ADR 0049)
+- Status: Wycofana (2026-09-15, ADR 0050 — warianty `revN` zniesione w całości:
+  paczka ma jedną postać, bez odwracania i bez kodu pozycyjnego)
 - Data: 2026-09-09
 - Dotyczy: PROTOKOL §2, §2.2, §3.4, §7, ADR 0007 (maskowanie paczki),
   ADR 0032 (wariant bez fact-check), `app/protokol.js`, ekran 4 i 5

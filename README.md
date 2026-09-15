@@ -7,10 +7,9 @@ stacji, mierząc czas i zadając pytania o **tę konkretną okolicę**.
 
 Pytania nie są wbudowane w aplikację: generuje je model AI (Meta AI, ChatGPT,
 dowolny inny) na podstawie promptu, który aplikacja sama układa, a odpowiedź
-wkleja się z powrotem. Aplikacja waliduje schemat i **ukrywa** paczkę (obfuskacja
-bez klucza, kontener `TO-paczka/2` — nieczytelna przy kopiowaniu, ale **nie
-zaszyfrowana**; ADR 0007), żeby gracze nie podejrzeli pytań przed dojściem do
-stacji.
+wkleja się z powrotem. Aplikacja waliduje schemat i zapisuje paczkę **jawnym
+JSON-em** — bez ukrywania i bez szyfrowania (ADR 0050: gra jest dla właściciela
+i rodziny, a teksty pytań i tak przechodzą przez okno czatu z modelem).
 
 - **Zero zależności i zero builda** — vanilla HTML + JS (ESM) + CSS (ADR 0001).
 - **Mobile-first** — gra się na telefonie, w Chrome, palcem (ADR 0011).
@@ -28,8 +27,8 @@ po starcie widać ekran startowy z intro nad mapą, a przygotowanie gry to pię�
 kroków (setup → pozycja → stacje → prompt → paczka) otwieranych przyciskiem
 „⚙ START GRY” w belce (w trakcie gry przycisk jest zgaszony). Jest walidacja konfiguracji, prompt PYT v1.1 w dwóch
 wariantach — bez fact-check (domyślny, ADR 0032) i z fact-check — oraz walidacja
-paczki i jej ukrywanie (`TO-paczka/2`). Od 2026-09-09 model nie odwraca już
-liter: kodowany jest wyłącznie numer poprawnej odpowiedzi (ADR 0033). Jako czyste funkcje z testami istnieją też **model rozgrywki**
+paczki: numer poprawnej odpowiedzi jest numerem `1..4`, bez markerów i bez
+kodowania (ADR 0050). Jako czyste funkcje z testami istnieją też **model rozgrywki**
 (`app/rozgrywka.js`: kolejka graczy i odpowiadania, odcinki, punktacja
 dotarcie-plus-poprawna, dziennik i podsumowanie) oraz
 **warstwa pozycji** (`app/pozycja.js`: walidacja współrzędnych, dojście po dwóch kolejnych fixach
@@ -48,7 +47,7 @@ dostawcy. Kamień zamknięty 2026-09-05: właściciel potwierdził w live previe
 **M3 — konfiguracja i prywatność: kod i testy gotowe.** Ekran „dane
 i prywatność" (cztery karty z ADR 0013: co jest pobierane i od kogo, dokąd
 trafia pozycja, co zostaje na telefonie, jak to skasować; paczka opisana jako
-**ukryta, nie zaszyfrowana**) otwiera się z panelu ⓘ Informacje, a kasowanie
+**jawna, nie zaszyfrowana**) otwiera się z panelu ⓘ Informacje, a kasowanie
 danych jest dwustopniowe i rusza tylko klucze `okolica:*`. GPS startuje automatycznie. Nie ma ręcznych pól pozycji ani symulacji 250 m.
 W trybie testowym pozycję wskazuje się na mapie; w grze zostaje symulacja
 dojścia do stacji. GPS i symulacja używają tej samej reguły ≤50 m.
@@ -97,8 +96,8 @@ i dystansem → pytanie odsłaniane DOPIERO w chwili dojścia → wynik), dojśc
 z GPS (≤50 m, dwa kolejne fixy niezależnie od accuracy; ręczne zaliczanie usunięte
 w ADR 0029) i ręczne zakończenie z wczesnym wynikiem. Pauzy i pomijania stacji
 NIE MA (ADR 0040, zadanie H): gra i śledzenie idą cały czas, a po powrocie z tła
-wszystko wznawia się samo. Pytania żyją w ukrytym
-kontenerze (`TO-paczka/2`) — w stanie gry i w zapisie nigdy nie ma ich treści.
+wszystko wznawia się samo. Pytania jadą jawnie w zapisie gry (ADR 0050) — na
+ekranie pokazują się jednak dopiero po dojściu do stacji.
 Gra zapisuje się do `localStorage` po KAŻDEJ tranzycji i przy zamknięciu karty
 (`stan-gry/1`), więc zamknięcie przeglądarki nie kończy gry: otwarcie albo
 odświeżenie aplikacji wraca do ostatniego zapisu samo, bez banera i bez kliku

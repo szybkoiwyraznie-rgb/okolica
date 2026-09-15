@@ -76,16 +76,16 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'Jesteś autorem pytań do terenowej gry quizowej',
     'ZASADY TWARDE',
     'wykonaj kwerendę w internecie',
-    'Nie opieraj się na pamięci modelu',
+    'oprzyj ten fakt na wyniku kwerendy',
     '"zrodla"',
-    'Nie wymyślaj nazw, dat, liczb, cytatów',
-    'WYŁĄCZNIE jako jeden blok kodu json',
+    'Nazwy, daty, liczby, cytaty, autorów i adresy podawaj dokładnie w postaci potwierdzonej źródłem',
+    'Cała odpowiedź to jeden blok kodu json',
     'OKOLICA GRY:',
     'STACJE (kolejność = kolejność w grze',
     'GRACZE I TRUDNOŚĆ:',
     'SCHEMAT ODPOWIEDZI — dokładnie te pola',
     'WYMAGANIA DODATKOWE:',
-    '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
+    '"poprawna": numer poprawnej odpowiedzi',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
@@ -207,7 +207,7 @@ test('walidujPaczke: paczka bez markera protokołu przechodzi, a dopisany marker
 
 test('szablon §2: numer odpowiedzi 1..4, zero markerów i kodowania', () => {
   for (const fraza of [
-    '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
+    '"poprawna": numer poprawnej odpowiedzi',
     '"poprawna": 2',
     'SCHEMAT ODPOWIEDZI — dokładnie te pola',
   ]) {
@@ -217,6 +217,11 @@ test('szablon §2: numer odpowiedzi 1..4, zero markerów i kodowania', () => {
   assert.ok(!SZABLON_PROMPTU.includes('protokol'), 'szablon §2 nie wspomina pola `protokol`');
   assert.ok(!SZABLON_PROMPTU.includes('rev4') && !SZABLON_PROMPTU.includes('rev5'), 'markerów wariantów nie ma');
   assert.ok(!SZABLON_PROMPTU.includes('ZAKODOWANY'));
+  // Właściciel 2026-09-15 (b): prompt mówi, CO model ma robić — o indeksie
+  // 0..3 nie ma w nim ani słowa, a pole `poprawna` opisuje jedna linia.
+  assert.ok(!SZABLON_PROMPTU.includes('indeks'), 'szablon §2 nie wspomina indeksu');
+  assert.ok(SZABLON_PROMPTU.includes('- "poprawna": numer poprawnej odpowiedzi.'),
+    'szablon §2 opisuje `poprawna` jednym zdaniem: numer poprawnej odpowiedzi');
   assert.ok(!SZABLON_PROMPTU.includes('bez kodowania'), 'żadnej negacji o kodowaniu');
   assert.ok(!SZABLON_PROMPTU.includes('2 + 2 + 1 + 17'), 'przykładu kodu pozycyjnego nie ma');
   // Uwagi terenowe G.b (właściciel, 2026-09-12): zdanie „zapisz NORMALNIE… niczego
@@ -256,9 +261,9 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
     'Podawaj wyłącznie fakty, których jesteś pewien',
     'Sposób ich ustalenia zostawiamy Tobie',
     'OPCJONALNE',
-    'Nigdy nie zmyślaj adresu',
+    'przy braku pewności zostaw pole puste',
     'SCHEMAT ODPOWIEDZI — dokładnie te pola',
-    '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
+    '"poprawna": numer poprawnej odpowiedzi',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
   }
@@ -285,6 +290,9 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
     'szablon §2.2 nie wspomina pola `protokol` (ADR 0050)');
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('wykonaj kwerendę w internecie'),
     'twarda kwerenda z §2 nie przecieka do §2.2');
+  assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('indeks'), 'szablon §2.2 nie wspomina indeksu');
+  assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('- "poprawna": numer poprawnej odpowiedzi.'),
+    'szablon §2.2 opisuje `poprawna` jednym zdaniem: numer poprawnej odpowiedzi');
   for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{LICZBA_GRACZY}', '{WIEK}', '{OPIS_TRUDNOSCI}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(token), `brak placeholdera ${token} w §2.2`);
   }
@@ -295,7 +303,7 @@ test('zbudujPrompt: domyślnie bez weryfikacji (§2.2), fact-check na życzenie 
   const domyslny = zbudujPrompt(wejscieBudowy());
   assert.deepEqual(domyslny.usterki, []);
   assert.ok(!domyslny.prompt.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
-  assert.ok(domyslny.prompt.includes('numer poprawnej odpowiedzi od 1 do 4'), 'domyślny prompt uczy numeracji 1..4');
+  assert.ok(domyslny.prompt.includes('numer poprawnej odpowiedzi'), 'domyślny prompt uczy podawać numer odpowiedzi');
   const jawnyBez = zbudujPrompt(wejscieBudowy({ factcheck: false }));
   assert.equal(jawnyBez.prompt, domyslny.prompt, 'jawne factcheck:false = domyślne');
   const fc = zbudujPrompt(wejscieBudowy({ factcheck: true }));

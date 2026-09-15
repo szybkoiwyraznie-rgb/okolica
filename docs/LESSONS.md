@@ -597,3 +597,18 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Reguła:** atrapa obcego API ma odtwarzać także ścieżki błędu (wyjątek, `null` vs `undefined`, pusta kolekcja) — test, który przechodzi na łagodnej atrapie, nie chroni kodu. Przy zmianie sposobu wyszukiwania pliku: `hasNext()` przed `next()`, a w atrapie `next()` rzuca.
 
 Pełny przypadek, ślad dochodzenia i testy: `docs/LESSONS_ARCHIVE.md` → `## L73`.
+## L74 (2026-09-15) — format wymiany z AI licz w numeracji, którą widzi AI i człowiek
+
+**Objaw:** paczka niosła `"poprawna": 3`, właściciel kliknął trzecią odpowiedź, a aplikacja pokazała „Źle (0 pkt). Poprawna odpowiedź: D. 1969" — przy pełnym, zielonym zestawie testów.
+**Przyczyna:** protokół opisywał `poprawna` jako indeks `0..3` (ADR 0049), a model i człowiek liczą odpowiedzi od 1; aplikacja porównywała indeks przycisku z indeksem z paczki, więc trzecia odpowiedź wypadała jako czwarta. Testy przechodziły, bo fixture'y pisaliśmy TĄ SAMĄ, aplikacyjną konwencją — kontrakt „jak pisze model" nie miał ani jednego przypadku.
+**Reguła:** pole, które pisze AI i czyta aplikacja, opisuj w numeracji widocznej dla człowieka w JSON-ie (tu `1..4`), a przeliczenie trzymaj wyłącznie na granicy UI, w jednym miejscu i z komentarzem. Fixture'y pisz w konwencji modelu, nie aplikacji — inaczej brama sprawdza nasze założenie, a nie wymianę.
+
+Pełny opis przypadku (objaw, ślad, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L74`.
+
+## L75 (2026-09-15) — zabezpieczenie, które nie zamyka żadnej ścieżki wycieku, jest kosztem
+
+**Objaw:** po dwóch miesiącach obfuskacji paczek właściciel nie mógł podejrzeć własnego pliku na Drive i uznał ukrywanie za szkodliwe; sesja „jawnej paczki" usunęła moduł kodowania, dekoder w moście Drive i tożsamość paczki liczoną z kontenera.
+**Przyczyna:** obfuskacja nie zamykała żadnej realnej ścieżki — teksty pytań i tak stoją w oknie czatu z modelem, a jedynym „przeciwnikiem" był organizator. Kosztowała dwa moduły, duplikat algorytmu w Apps Script i utrudniała diagnozę („nie da się odsłonić pytania" zamiast „brak paczki").
+**Reguła:** przed budową zabezpieczenia zapisz, przed kim i w której ścieżce ma chronić; jeśli odpowiedź brzmi „przed nikim, na wszelki wypadek", usuń je, a ograniczenie przenieś na treść (brak danych osobowych w paczce, ADR 0013). Ukrywanie stanu przed właścicielm to nie bezpieczeństwo, tylko koszt utrzymania.
+
+Pełny opis przypadku i przebieg usuwania: `docs/LESSONS_ARCHIVE.md` → `## L75`.
