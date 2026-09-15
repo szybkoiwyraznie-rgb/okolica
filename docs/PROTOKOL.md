@@ -97,7 +97,7 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": czysty indeks poprawnej odpowiedzi (0–3), bez kodowania — 0 to pierwsza pozycja na liście "odpowiedzi", 3 to czwarta. Host jest uczciwy: numer w JSON jest tym, którego używa gra.
+- "poprawna": numer poprawnej odpowiedzi.
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "uwagi": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.
@@ -211,7 +211,7 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": czysty indeks poprawnej odpowiedzi (0–3), bez kodowania — 0 to pierwsza pozycja na liście "odpowiedzi", 3 to czwarta. Host jest uczciwy: numer w JSON jest tym, którego używa gra.
+- "poprawna": numer poprawnej odpowiedzi.
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "zrodla": pusta lista ALBO lista źródeł w kształcie jak w schemacie; podawaj tylko adresy, co do których masz pewność (pełny adres https://, prawdziwy i działający), każdy z tytułem i datą sprawdzenia RRRR-MM-DD; adres przykładowy albo zmyślony unieważnia pytanie.
@@ -431,7 +431,7 @@ zajęte, tak samo jak wycofany `E18`.
 - **Wersje szablonów `PYT/1.0.8` / `PYT/1.0-nofc.3` (2026-09-12, uwagi terenowe
   G.b)** — z zasady 8 usunięto zdania o „NORMALNIE / nie odwracaj”.
 - **Koniec kodu pozycyjnego `poprawna` (2026-09-15, ADR 0049)** — bieżące
-  rev4/rev5 niosą czysty indeks `0..3`. Szablony `PYT/1.0.9` / `PYT/1.0-nofc.4`.
+  rev4/rev5 niosą czysty indeks `0..3`. Szablony `PYT/1.0.10` / `PYT/1.0-nofc.5`.
   Właściciel kasuje stare paczki; dekoder rev2/rev3 zostaje dla testów zapisu
   historycznego, bez migratora.
 

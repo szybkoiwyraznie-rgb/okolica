@@ -90,7 +90,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'GRACZE I TRUDNOŚĆ:',
     'SCHEMAT ODPOWIEDZI (PYT/1.0-rev4)',
     'WYMAGANIA DODATKOWE:',
-    '"poprawna": czysty indeks poprawnej odpowiedzi',
+    '"poprawna": numer poprawnej odpowiedzi',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
@@ -299,13 +299,14 @@ test('rev2: obcy kod to E06 z regułą i przykładem, jawny indeks nie przechodz
 test('rev4: szablon każe czysty indeks 0–3 i nie zawiera poleceń kodowania', () => {
   for (const fraza of [
     '"PYT/1.0-rev4"',
-    'czysty indeks poprawnej odpowiedzi',
+    '"poprawna": numer poprawnej odpowiedzi',
     '"poprawna": 2',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
-  assert.ok(!SZABLON_PROMPTU.includes('ZAKODOWANY'), 'szablon nie każe kodować poprawnej');
-  assert.ok(!SZABLON_PROMPTU.includes('2 + 2 + 1 + 17'), 'reguła kodu pozycyjnego usunięta z promptu');
+  assert.ok(!SZABLON_PROMPTU.includes('ZAKODOWANY'));
+  assert.ok(!SZABLON_PROMPTU.includes('bez kodowania'), 'żadnej negacji o kodowaniu');
+  assert.ok(!SZABLON_PROMPTU.includes('2 + 2 + 1 + 17'));
   // Uwagi terenowe G.b (właściciel, 2026-09-12): zdanie „zapisz NORMALNIE…
   // niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer…”
   // usunięte z zasady 8 — samo jego pisanie mogło modelowi zasugerować,
@@ -357,7 +358,7 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
     'Nigdy nie zmyślaj adresu',
     '"PYT/1.0-rev5"',
     'SCHEMAT ODPOWIEDZI (PYT/1.0-rev5)',
-    'czysty indeks poprawnej odpowiedzi',
+    '"poprawna": numer poprawnej odpowiedzi',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
   }
