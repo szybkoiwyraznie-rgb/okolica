@@ -1203,26 +1203,31 @@ test('ADR 0032 end-to-end: paczka rev3 bez źródeł przyjęta, rejestr niesie f
   assert.equal(rejestr.wpisy[0].factcheck, false, 'meta w rejestrze mówi: bez weryfikacji');
 });
 
-test('ADR 0032: poprawka celuje w profil wklejki — E02 w checkbox, odrzucona w znacznik', async () => {
+test('ekran 5: błędna paczka AI — jeden komunikat, bez kodów i bez poprawki, pole wyczyszczone', async () => {
+  const KOMUNIKAT = 'Wygenerowana paczka pytań AI jest błędna. Ponów generowanie i wklej poprawne dane.';
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
   await import(`../app/app.js?fc3=${Math.random().toString(36).slice(2)}`);
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
-  domAtrapa.kliknij('przycisk-dalej-prompt'); // STAN.promptFactcheck = false (pusty checkbox)
-  // E02: śmieć nieparsowalny → korekta za checkboxem (tu: bez weryfikacji)
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  // śmieć nieparsowalny
   domAtrapa.wklej('pole-odpowiedz', 'to nie jest JSON ani kontener {{{');
-  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Nie da się odczytać/);
-  domAtrapa.kliknij('przycisk-poprawka');
-  assert.match(domAtrapa.pobierz('pole-odpowiedz').value, /sposób ich ustalenia zostawiamy Tobie/, 'E02 przy pustym checkboxie: korekta nie narzuca sposobu zdobycia faktu');
-  // odrzucona rev2 (za mało pytań) → korekta za znacznikiem, mimo pustego checkboxa
+  assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, KOMUNIKAT, 'UI nie wypisuje E02 ani „Nie da się odczytać”');
+  assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '', 'zła wklejka znika z pola');
+  assert.equal(domAtrapa.pobierz('przycisk-poprawka').hidden, true, 'przycisku poprawki do modelu nie pokazujemy');
+  assert.equal(domAtrapa.pobierz('wynik-usterki').children.length, 0, 'bez listy kodów E**');
+  assert.doesNotMatch(domAtrapa.pobierz('wynik-naglowek').textContent, /E0|E1/);
+  // odrzucona rev2 (za mało pytań) — ten sam komunikat, bez szczegółów
   const jawna = czytajFixturePaczka();
   const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
   rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.punkty; });
   rev2.pytania = rev2.pytania.slice(0, 2); // E03: oczekiwane 3 pytania
   domAtrapa.wklej('pole-odpowiedz', JSON.stringify(rev2));
-  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Paczka odrzucona/);
-  domAtrapa.kliknij('przycisk-poprawka');
-  assert.match(domAtrapa.pobierz('pole-odpowiedz').value, /kwerenda internetowa dla każdego faktu/, 'odrzucona rev2: korekta żąda kwerendy');
+  assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, KOMUNIKAT);
+  assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '');
+  assert.equal(domAtrapa.pobierz('przycisk-poprawka').hidden, true);
+  assert.equal(domAtrapa.pobierz('wynik-usterki').children.length, 0);
+  assert.doesNotMatch(domAtrapa.pobierz('wklejka-status').textContent, /usterk|E03|poprawk/i);
 });
 
 test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł" i bez linii wariantu', async () => {
@@ -2769,7 +2774,8 @@ test('ekran 5: wklejona treść śmieciowa też jest sprawdzana od razu (bez kli
   domAtrapa.wklej('pole-odpowiedz', 'to nie jest JSON ani kontener {{{');
 
   assert.equal(domAtrapa.pobierz('wynik-walidacji').hidden, false, 'walidator wypowiedział się sam');
-  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Nie da się odczytać/, 'usterka nazwana wprost');
+  assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, 'Wygenerowana paczka pytań AI jest błędna. Ponów generowanie i wklej poprawne dane.', 'jeden stały komunikat — bez szczegółów');
+  assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '', 'zła wklejka znika z pola');
   assert.equal(domAtrapa.pobierz('ekran-gra').hidden, true, 'gra NIE ruszyła na śmieciu');
 });
 
