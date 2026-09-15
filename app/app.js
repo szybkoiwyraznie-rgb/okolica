@@ -15,8 +15,8 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-133';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-133';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-134';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-134';
 import {
   czyPaczkaOdwrocona,
   czyWariantFactcheck,
@@ -33,22 +33,22 @@ import {
   WARIANTY_BIEZACE,
   WERSJA_PROTOKOLU_REV4,
   WERSJA_PROTOKOLU_REV5,
-} from './protokol.js?v=m12-133';
-import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-133';
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-133';
-import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-133';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-133';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-133';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-133';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-133';
+} from './protokol.js?v=m12-134';
+import { odpakujPaczke, zapakujPaczke } from './kodowanie.js?v=m12-134';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-134';
+import { GRANICE, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-134';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-134';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-134';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-134';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-134';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-133';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-133';
+} from './zestawy.js?v=m12-134';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-134';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -64,18 +64,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-133';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-133';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-133';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-133';
-import { adresMostu, stanMostu } from './most.js?v=m12-133';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-133';
+} from './sieci.js?v=m12-134';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-134';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-134';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-134';
+import { adresMostu, stanMostu } from './most.js?v=m12-134';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-134';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-133';
+} from './oceny.js?v=m12-134';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -2060,21 +2060,18 @@ function wylaczTrybReczny() {
 }
 
 function renderujStacje() {
-  const lista = $('lista-stacji');
   const sieciowe = Boolean(STAN.wynikSieci);
   if (STAN.ukryjStacje) {
     // Wspólna Trasa = trasa-sekret (właściciel, 2026-09-11): organizator
     // generujący paczkę nie widzi nazw miejsc ani współrzędnych — tylko
     // status, że stacje powstały (kropki na mapie chowa `odswiezWarstwy`).
-    const li = document.createElement('li');
     // Komunikat mówi, czy stacje ZLOKALIZOWANO na sieci dróg (właściciel,
     // pierwotny pomysł multi: „wygenerowano i zlokalizowano/nie zlokalizowano
     // X stacji"). Pierścień jest układem zastępczym — jego osiągalność nie
     // jest zweryfikowana, więc organizator ma to wiedzieć ZANIM wyjdzie.
-    li.textContent = sieciowe
+    $('stacje-podsumowanie').textContent = sieciowe
       ? `Wygenerowano i zlokalizowano stacji: ${STAN.stacje.length}. Nazwy i położenie są ukryte — trasa odsłania się w czasie gry, po jednej stacji.`
       : `Wygenerowano stacji: ${STAN.stacje.length}, ale NIE zlokalizowano ich na sieci dróg (układ pierścieniowy, osiągalność niezweryfikowana). Nazwy i położenie są ukryte — trasa odsłania się w czasie gry, po jednej stacji.`;
-    lista.replaceChildren(li);
     $('stacje-tryb').textContent = 'Tryb tajnej trasy: mapa i lista nie pokazują stacji.';
     $('przycisk-reczne').hidden = true; // przeciąganie pinezek pokazałoby stacje
     // „Inny układ" też odsłania stacje (nowy układ = inne punkty do zgadnięcia),
@@ -2083,33 +2080,16 @@ function renderujStacje() {
     $('przycisk-siec-ponow').hidden = STAN.siec.stan === 'gotowa';
     return;
   }
-  // replaceChildren, nie innerHTML='': jedna operacja, bez migotania (i atrapa
-  // DOM w testach odwzorowuje replaceChildren, a innerHTML jest tam inertne)
-  lista.replaceChildren(...STAN.stacje.map((s) => {
-    const li = document.createElement('li');
-    const dystans = sieciowe ? `${s.dystansSieciowyM} m drogi` : `${s.odlegloscM} m`;
-    const opis = s.zrodlo === 'reczne'
-      ? 'ustawiona ręcznie (linia prosta — osiągalność niezweryfikowana)'
-      : s.opis || (sieciowe ? 'punkt przy sieci dróg' : 'punkt w terenie (osiągalność niezweryfikowana)');
-    // Opis stacji bywa nazwą z OSM (`tags.name` przez `dopiszMiasto`), czyli
-    // tekstem z zewnątrz — do DOM idzie przez textContent, nigdy przez
-    // innerHTML (wstrzyknięty znacznik wykonałby się w aplikacji).
-    const numer = document.createElement('span');
-    numer.classList.add('numer');
-    numer.textContent = String(s.id);
-    const kod = document.createElement('span');
-    kod.classList.add('kod');
-    kod.textContent = `${formatujWspolrzedne(s.lat, s.lon)} · ${s.bearing}°`;
-    const opisEl = document.createElement('span');
-    opisEl.classList.add('opis');
-    opisEl.textContent = opis;
-    opisEl.append(document.createElement('br'), kod);
-    const dystansEl = document.createElement('span');
-    dystansEl.classList.add('dystans');
-    dystansEl.textContent = dystans;
-    li.append(numer, opisEl, dystansEl);
-    return li;
-  }));
+  // Właściciel 2026-09-15 (uwaga 5): spisu stacji NIE MA. Organizator widzi
+  // jedno zdanie, a położenie pokazują pinezki na mapie. Nazwy z OSM i
+  // współrzędne nie wchodzą tu wcale do DOM — nie ma nośnika wstrzyknięcia
+  // (LESSONS L19), bo zdanie jest budowane z liczby stacji.
+  // Przy układzie pierścieniowym zdanie NIE mówi „zlokalizowano", bo przy
+  // braku sieci dróg byłoby to nieprawdą (LESSONS L6); dlaczego stacje są
+  // tylko w pierścieniu, mówi `#stacje-tryb` tuż pod spodem.
+  $('stacje-podsumowanie').textContent = sieciowe
+    ? `Wygenerowano i zlokalizowano ${STAN.stacje.length} stacji.`
+    : `Wygenerowano ${STAN.stacje.length} stacji.`;
   if (sieciowe) {
     const miejsce = STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
     const cache = STAN.siec.zCache ? ' (z pamięci telefonu — Overpass nie został wywołany)' : '';

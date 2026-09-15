@@ -352,6 +352,11 @@ const MARTWE_FRAZY = [
     powod: 'łatka szablonu zszedła z UI (właściciel 2026-09-15); jest cytowana w docs/PROTOKOL.md, bo tam powstaje',
   },
   {
+    fraza: 'lista-stacji',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'spisu stacji nie ma (właściciel 2026-09-15, uwaga 5): ekran stacji pokazuje jedno zdanie w #stacje-podsumowanie — „Wygenerowano i zlokalizowano X stacji."',
+  },
+  {
     fraza: 'pin(y)',
     nosniki: UI,
     powod: 'komunikat bramy wejścia odmienia rzeczownik po polsku przez odmianaRzeczownika: 1 pin, 2 piny, 5 pinów (audyt D2, m12-119)',

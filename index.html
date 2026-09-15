@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-133">
-  <script type="module" src="app/app.js?v=m12-133"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-134">
+  <script type="module" src="app/app.js?v=m12-134"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -340,12 +340,13 @@
       <p id="bledy-stacje" class="bledy" role="alert" hidden></p>
       <div class="stacje-obszar">
 
-        <!-- Decyzja właściciela 2026-09-08: stacje odnoszą się do mapy, więc lista
-             NIE może jej zasłaniać. Mapa zostaje na wierzchu, a lista z
-             przyciskami jedzie obok (poziom) albo pod (pion) i przewija się
-             WEWNĄTRZ siebie — strona się nie przewija. -->
+        <!-- Właściciel 2026-09-15 (uwaga 5): spisu stacji NIE MA. Organizator
+             widzi jedno zdanie — ile stacji powstało i czy są zlokalizowane;
+             położenie pokazują pinezki na mapie. Panel dalej stoi obok mapy
+             (poziom) albo pod nią (pion) i przewija się WEWNĄTRZ siebie —
+             strona się nie przewija (decyzja właściciela 2026-09-08). -->
         <div id="stacje-panel" class="stacje-panel">
-          <ol id="lista-stacji" class="lista-stacji"></ol>
+          <p id="stacje-podsumowanie" class="stacje-podsumowanie"></p>
           <div class="wiersz">
             <button id="przycisk-przelicz" class="przycisk" type="button">🔄 Inny układ</button>
             <button id="przycisk-siec-ponow" class="przycisk" type="button" hidden>↻ Pobierz sieć ponownie</button>

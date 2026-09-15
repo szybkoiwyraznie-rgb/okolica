@@ -142,3 +142,22 @@ samochodu model też nie jest nawigacją zakazów, tylko miernikiem odległości
 
 Przy okazji UX właściciela: „Inny układ" i „Pobierz sieć ponownie"
 resetują przewijanie karty `#ekran-stacje` (`przewinWarstweStacjiNaGore`).
+
+## Aneks 2026-09-15 — ekran stacji bez spisu (uwaga 5)
+
+Właściciel: „Na tej stronie w ogóle nie potrzebuję spisu tych stacji. Najlepiej
+dawaj zawsze informację: «Wygenerowano i zlokalizowano X stacji.» Reszta bez
+zmian."
+
+Od teraz `#ekran-stacje` pokazuje jedno zdanie w `#stacje-podsumowanie`:
+
+- sieć dróg: `Wygenerowano i zlokalizowano <N> stacji.`
+- układ pierścieniowy (degradacja, brak Overpass): `Wygenerowano <N> stacji.`
+  — bez słowa „zlokalizowano", bo przy braku sieci dróg byłoby to nieprawdą
+  (LESSONS L6); powód stoi w `#stacje-tryb` tuż obok i się nie zmienił.
+
+Tryb tajnej trasy (ADR 0034) zostaje przy swoim zdaniu („…Nazwy i położenie są
+ukryte…") — właściciel wyłączył go z tej zmiany. Mapa, pinezki, przyciski
+„Inny układ"/„Pobierz sieć ponownie"/„Ustaw stacje ręcznie" i przewijanie panelu
+są bez zmian; przeciąganie pinezki w trybie ręcznym widać na mapie, nie w spisie.
+

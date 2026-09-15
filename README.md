@@ -52,7 +52,7 @@ trafia pozycja, co zostaje na telefonie, jak to skasować; paczka opisana jako
 danych jest dwustopniowe i rusza tylko klucze `okolica:*`. GPS startuje automatycznie. Nie ma ręcznych pól pozycji ani symulacji 250 m.
 W trybie testowym pozycję wskazuje się na mapie; w grze zostaje symulacja
 dojścia do stacji. GPS i symulacja używają tej samej reguły ≤50 m.
-Setup, lista stacji i pytania są przewijanymi panelami nad przygaszoną mapą.
+Setup, stacje i pytania są przewijanymi panelami nad przygaszoną mapą; ekran stacji mówi jednym zdaniem, ile ich powstało (spisu nie ma).
 Podczas drogi zostaje tylko jednowierszowy pasek na dole (gracz, dystans, stacja),
 a ⓘ Informacje nie niosą już nic z gry; po dojściu wraca duży panel pytania
 (ADR 0036). Grę kończy ikona ⚙ START GRY: w trakcie gry otwiera małą warstwę,

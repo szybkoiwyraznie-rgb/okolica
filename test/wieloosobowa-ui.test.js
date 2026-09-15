@@ -983,12 +983,14 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   await new Promise((r) => setTimeout(r, 40)); // stacje liczą się asynchronicznie (pierścień po 404)
   assert.equal(el(A, 'ekran-stacje').hidden, false, 'ekran stacji widoczny');
   // trasa-sekret: organizator widzi tylko STATUS, nie nazwy ani współrzędne
-  assert.equal(el(A, 'lista-stacji').children.length, 1, 'lista stacji ma jeden wiersz statusu');
-  assert.match(tekst(A, 'lista-stacji'), /Wygenerowano stacji: 3/, 'status mówi tylko ile');
-  assert.match(tekst(A, 'lista-stacji'), /NIE zlokalizowano/, 'bez sieci dróg komunikat mówi wprost, że stacje nie są zlokalizowane');
+  // Spisu stacji nie ma w żadnym trybie (uwaga 5, 2026-09-15); w tajnej
+  // trasie zdanie podsumowania mówi dodatkowo, że nazwy i położenie są ukryte.
+  assert.equal(el(A, 'stacje-podsumowanie').children.length, 0, 'podsumowanie to jedno zdanie, nie lista');
+  assert.match(tekst(A, 'stacje-podsumowanie'), /Wygenerowano stacji: 3/, 'status mówi tylko ile');
+  assert.match(tekst(A, 'stacje-podsumowanie'), /NIE zlokalizowano/, 'bez sieci dróg komunikat mówi wprost, że stacje nie są zlokalizowane');
   assert.equal(el(A, 'przycisk-przelicz').hidden, true, 'w tajnej trasie nie ma opcji „Inny układ”');
-  assert.match(tekst(A, 'lista-stacji'), /ukryte/i, 'ukrycie jest jawne');
-  assert.doesNotMatch(tekst(A, 'lista-stacji'), /52\./, 'współrzędne stacji nie wyciekają');
+  assert.match(tekst(A, 'stacje-podsumowanie'), /ukryte/i, 'ukrycie jest jawne');
+  assert.doesNotMatch(tekst(A, 'stacje-podsumowanie'), /52\./, 'współrzędne stacji nie wyciekają');
   await klik(A, 'przycisk-dalej-prompt');
   await klik(A, 'przycisk-dalej-paczka');
   assert.equal(el(A, 'ekran-paczka').hidden, false, 'ekran wklejania widoczny');
@@ -1136,10 +1138,10 @@ test('trasa-sekret z siecią dróg: komunikat mówi „zlokalizowano”, a „In
   await klik(A, 'przycisk-dalej-pozycja');
   await klik(A, 'przycisk-dalej-stacje');
   await new Promise((r) => setTimeout(r, 40));
-  assert.match(tekst(A, 'lista-stacji'), /Wygenerowano i zlokalizowano stacji: 3/, 'sieć drogowa = stacje zlokalizowane');
-  assert.doesNotMatch(tekst(A, 'lista-stacji'), /NIE zlokalizowano/, 'wariant pierścieniowy nie podchodzi pod sieć');
+  assert.match(tekst(A, 'stacje-podsumowanie'), /Wygenerowano i zlokalizowano stacji: 3/, 'sieć drogowa = stacje zlokalizowane');
+  assert.doesNotMatch(tekst(A, 'stacje-podsumowanie'), /NIE zlokalizowano/, 'wariant pierścieniowy nie podchodzi pod sieć');
   assert.equal(el(A, 'przycisk-przelicz').hidden, true, '„Inny układ” schowany także przy sieci');
-  assert.doesNotMatch(tekst(A, 'lista-stacji'), /52\./, 'współrzędne stacji nie wyciekają');
+  assert.doesNotMatch(tekst(A, 'stacje-podsumowanie'), /52\./, 'współrzędne stacji nie wyciekają');
 });
 
 test('bez potwierdzonego imienia NIE wysyłam niczego — jawna odmowa (lista na setupie)', async () => {
