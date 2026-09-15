@@ -76,6 +76,7 @@ app/
                               (czyste; ADR 0010 — lokalnej historii gier nie ma
                               od 2026-09-13, aneks)
   zestawy.js                — M9/M9b: repozytorium paczek (TO-zestaw/1, LRU,
+                                             (nazwy plików na Drive z meta — ADR 0048),
                               dopasowanie okolicy z tolerancją 200 m od komórki
                               geohash — ADR 0024, indeks Drive z `id` →
                               urlPaczkiZRepo)

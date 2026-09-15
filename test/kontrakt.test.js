@@ -192,6 +192,34 @@ test('kontrakt: każdy temat z kodu ma wiersz w protokole (i odwrotnie)', () => 
 
 /* ------------------------------------------------------------- wersjonowanie */
 
+/**
+ * ADR 0048 (właściciel 2026-09-15): plik paczki na Drive ma być poznawalny z
+ * listy katalogu. Nazwę buduje MOST z `meta` — nie aplikacja i nie skrót
+ * zawartości — więc pin jest po obu stronach: skrypt musi czytać pola, a UI
+ * musi podać to, czego sam nie wyliczy (ulica) i pokazać efekt (nazwę pliku).
+ */
+test('kontrakt ADR 0048: nazwa pliku paczki na Drive pochodzi z meta, nie z geohashu', () => {
+  assert.match(GS, /function nazwaPaczkiZMeta\(meta, liczbaPytan\)/, 'most ma jedno miejsce, gdzie powstaje nazwa');
+  for (const pole of ['m.miejsce', 'm.ulica', 'm.data', 'm.wiek', 'm.promienM', 'm.factcheck']) {
+    assert.ok(GS.includes(pole), `nazwa nie czyta meta.${pole.slice(2)} — ADR 0048 wymaga wszystkich pól`);
+  }
+  assert.equal(GS.includes("geohash5 + '-' + skrot"), false, 'stary wzór `geohash5-skrot` nie wraca do mostu');
+  // Kolizja nazwy nie może zdławić paczki — most rozstrzyga po skrócie treści.
+  assert.match(GS, /function skrotIstniejacegoPliku/, 'most sprawdza, czy pod nazwą leży TA SAMA paczka');
+  assert.match(GS, /licznik <= 12/, 'druga paczka z tej samej minuty dostaje przyrostek -2…-12');
+  assert.match(GS, /function slug\(/, 'znaki zakazane w nazwach Drive są zamieniane centralnie');
+
+  const appTekst = czytaj('app/app.js');
+  assert.equal((appTekst.match(/opisStacjiStartu:/g) || []).length, 2,
+    'meta hot-seat i meta sesji multi podają ulicę startu — przy jednej stracie nazwa byłaby półgłówkiem');
+  assert.match(appTekst, /wynik\.nazwa/, 'potwierdzenie wysyłki cytuje nazwę pliku, bo po niej właściciel szuka paczki na Drive');
+  const zest = czytaj('app/zestawy.js');
+  assert.match(zest, /export function ulicaZeStacji/, 'ulicę liczy warstwa czysta, nie DOM (ADR 0017 pkt 3)');
+  assert.match(zest, /ulica: ulicaZeStacji\(/, 'meta niesie pole `ulica`');
+  const walidator = zest.slice(zest.indexOf('function czyMetaDopasowaniaOk'), zest.indexOf('/** Rozmiar wpisu'));
+  assert.equal(walidator.includes('m.ulica'), false,
+    '`ulica` jest addytywna jak geohash6 z ADR 0024 — walidator nie może jej wymagać, bo stare paczki przestałyby się czytać');
+});
 test('kontrakt: wersja protokołu jest jedna w dokumencie, w kodzie i w README', () => {
   const tytul = PROTOKOL.split('\n')[0];
   const m = tytul.match(/PYT v(\d+)\.(\d+)/);

@@ -524,29 +524,86 @@ function paczkaPrzezId(id) {
 }
 
 /**
+ * Nazwa pliku paczki na Drive (właściciel 2026-09-15, ADR 0048): plik ma być
+ * poznawalny z SAMEJ listy katalogu, więc w nazwie stoją fakty z `meta` —
+ * miejsce startu, ulica, data, godzina, liczba pytań, wiek, promień i wariant
+ * fact-checku (`Q` / `bez`). Dawniej w tym miejscu stały komórkowa kotwica
+ * i skrót treści — ciąg, który nic nie mówił, a porządek na dysku wymagał
+ * zaglądania do środka pliku (ADR 0048).
+ * Godzina trzyma unikalność zamiast skrótu: ta sama paczka wysłana ponownie
+ * daje TĘ SAMĄ nazwę (retry po zerwanej sieci jest idempotentny), a dwie różne
+ * paczki z tej samej minuty rozdziela przyrostek `-2` (`szukajPaczki`).
+ */
+function slug(tekst, maks) {
+  return String(tekst == null ? '' : tekst)
+    .normalize('NFC')
+    .replace(/[\/:*?"<>|\u0000-\u001F]+/g, ' ') // znaki zakazane w nazwach Drive
+    .replace(/\s+/g, ' ')
+    .replace(/[ ,.]+/g, '-')
+    .replace(/-+/g, '-')
+    .slice(0, maks || 44)
+    .replace(/^[-.]+|[-.]+$/g, '');
+}
+
+/** `data` z meta to ISO „YYYY-MM-DD HH:MM"; bez godziny i z daty zostaje dzień. */
+function czesciDaty(data) {
+  const m = String(data || '').match(/(\d{4}-\d{2}-\d{2})(?:[T ](\d{2}):(\d{2}))?/);
+  return m ? { dzien: m[1], godzina: m[2] && m[3] ? m[2] + m[3] : '' } : { dzien: '', godzina: '' };
+}
+
+function nazwaPaczkiZMeta(meta, liczbaPytan) {
+  const m = meta || {};
+  const kiedy = czesciDaty(m.data);
+  const czesci = [
+    slug(m.miejsce || '', 44),
+    slug(m.ulica || '', 40),
+    kiedy.dzien,
+    kiedy.godzina,
+    (Number.isInteger(liczbaPytan) && liczbaPytan > 0 ? liczbaPytan : (m.liczbaStacji || 0) * (m.pytaniaNaStacje || 0)) + 'pyt',
+    slug('wiek-' + (m.wiek || ''), 24),
+    (Number.isFinite(m.promienM) ? Math.round(m.promienM) : m.promienM) + 'm',
+    m.factcheck === false ? 'bez' : 'Q',
+  ];
+  return czesci.filter((c) => c !== '' && c !== null && c !== undefined && c !== 'NaN').join('_') + '.zestaw.json';
+}
+
+/** Skrót zawartości istniejącego pliku — rozstrzyga, czy nazwa trafiła w TĘ SAMĄ paczkę. */
+function skrotIstniejacegoPliku(plik) {
+  try {
+    return String(JSON.parse(plik.getBlob().getDataAsString('UTF-8')).kontener.skrot || '');
+  } catch (e) {
+    return ''; // plik do przeczytania nie jest — traktujemy go jak inną paczkę
+  }
+}
+
+/**
  * Przyjmuje zestaw z aplikacji — OD RAZU do katalogu zaakceptowanych.
  * Decyzja właściciela 2026-09-11: koniec sesji przeglądu i maili; o jakości
  * rozstrzygają łapki graczy (ADR 0028), a ręczne odrzucenie to przeciągnięcie
  * pliku do katalogu odrzuconych na Drive (paczka znika z indeksu).
  */
 function przyjmijKandydata(plik) {
-  const { bledy } = walidujKandydata(plik);
+  const { bledy, paczka } = walidujKandydata(plik);
   if (bledy.length) return { ok: false, blad: bledy.join('; ') };
   const skrot = plik.kontener.skrot;
-  const nazwa = plik.meta.geohash5 + '-' + skrot + '.zestaw.json';
-  const wszedzie = [FOLDERY.zaakceptowane, FOLDERY.odrzucone];
-  for (const nazwaFolderu of wszedzie) {
-    const it = folder(nazwaFolderu).getFilesByName(nazwa);
-    if (it.hasNext()) {
-      // `id` wraca także przy duplikacie: telefon, który gra tą paczką, musi
-      // znać jej identyfikator, żeby dało się ją ocenić (ADR 0028, aneks 2026-09-09).
-      // Duplikat w odrzuconych = wcześniejsza RĘCZNA decyzja właściciela —
-      // nowy plik nie powstaje, odrzucenie obowiązuje dalej.
-      return { ok: true, status: nazwaFolderu === FOLDERY.zaakceptowane ? 'juz-zaakceptowana' : 'juz-w-odrzuconych', nazwa, id: it.next().getId() };
+  const bazowa = nazwaPaczkiZMeta(plik.meta, paczka && Array.isArray(paczka.pytania) ? paczka.pytania.length : null);
+  for (let licznik = 1; licznik <= 12; licznik++) {
+    const nazwa = licznik === 1 ? bazowa : bazowa.replace(/\.zestaw\.json$/, '-' + licznik + '.zestaw.json');
+    const trafiony = folder(FOLDERY.zaakceptowane).getFilesByName(nazwa).next()
+      || folder(FOLDERY.odrzucone).getFilesByName(nazwa).next();
+    if (!trafiony) {
+      const utworzony = folder(FOLDERY.zaakceptowane).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
+      return { ok: true, status: 'zaakceptowana', nazwa, id: utworzony.getId() };
     }
+    if (skrotIstniejacegoPliku(trafiony) !== skrot) continue;
+    // Ten sam skrót pod tą samą nazwą: `id` wraca także przy duplikacie, bo
+    // telefon, który gra tą paczką, musi znać jej identyfikator, żeby dało się
+    // ją ocenić (ADR 0028, aneks 2026-09-09). W odrzuconych odrzucenie
+    // obowiązuje — nowy plik nie powstaje (ręczna decyzja właściciela).
+    const odrzucona = !folder(FOLDERY.zaakceptowane).getFilesByName(nazwa).hasNext();
+    return { ok: true, status: odrzucona ? 'juz-w-odrzuconych' : 'juz-zaakceptowana', nazwa, id: trafiony.getId() };
   }
-  const utworzony = folder(FOLDERY.zaakceptowane).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
-  return { ok: true, status: 'zaakceptowana', nazwa, id: utworzony.getId() };
+  return { ok: false, blad: 'brak wolnej nazwy pliku — ponad dwanaście paczek z tego samego miejsca w tej samej minucie?' };
 }
 
 function przenies(id, nazwaFolderu) {

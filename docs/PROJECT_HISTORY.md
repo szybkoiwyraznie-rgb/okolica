@@ -5904,3 +5904,59 @@ sprawdz-informacje.mjs): 12/12 — panel bez słów „protokół"/„szablon"/�
 `#stopka-wersja` = m12-128, cztery pozycje w kolejności z polecenia,
 `scrollWidth == clientWidth`, brak przepełnienia na 390 px, klik z wiersza
 otwiera prywatność i „Wróć" wraca do Informacji.
+
+## Sesja 2026-09-15d — uwaga 3 z terenu: czytelne nazwy paczek na Drive (m12-129)
+
+**Zlecenie właściciela:** „Chciałbym zmienić konwencję nazewnictwa paczek
+z pytaniami na Drive. Zamiast nic nie mówiącego ciągu liter chciałbym kodować
+w nazwie: miejsce startu (miejscowość, ulica), datę, ilość pytań, wiek, promień,
+fact-check lub bez (może być Q albo bez). Dzięki temu będę w stanie kontrolować
+i porządkować pliki na dysku (teraz jest to bardzo trudne)."
+
+**Nazwa** (ADR 0048):
+`Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_15pyt_wiek-12_600m_Q.zestaw.json`.
+Pola po `_`, w polu po `-`; diakietyki i wielkie litery zostają (właściciel tak
+widzi je w OSM — odpowiadał na pytanie w ankiecie), a kropki, przecinki i znaki
+zakazane przez Drive (`\ / : * ? " < > |`) są zamieniane na myślniki przez
+`slug()` w moście. Nazwę buduje SKRYPT (`nazwaPaczkiZMeta`), nie aplikacja —
+jedno źródło prawdy; UI tylko cytuje `wynik.nazwa` w potwierdzeniu wysyłki.
+
+**Rozstrzygnięcia właściciela (pytałem o cztery rzeczy, trzy odpowiedział wprost):** kolejność
+pól = jego wyliczenie (miejsce → data → reszta, bo to sortuje katalog po
+miejscach, a w obrębie miejsca chronologicznie); stare pliki „pokasuję, jest ich
+raptem ze 3 testowe", więc NIE ma funkcji porządkującej ani migracji; skrót
+zawartości wypada z nazwy, bo „do daty dodaj godzinę, będzie zawsze unikalna".
+
+**Godzina zamiast skrótu ma konsekwencję, którą trzeba było obsłużyć:** most
+od lat rozpoznawał duplikat PO NAZWIE (w nazwie siedział `skrot`, więc nazwa =
+treść). Teraz nazwa to opis, więc `przyjmijKandydata` porównuje
+`kontener.skrot` leżącego już pliku: ten sam skrót → `juz-zaakceptowana` z `id`
+(retry po zerwanej sieci jest idempotentny i łapki ADR 0028 mają co oceniać),
+inny skrót → przyrostek `-2`…`-12`, bo cisza pod hasłem „już jest" oznaczałaby
+skasowanie pracy organizatora; ten sam skrót w `odrzucone` → `juz-w-odrzuconych`
+(ręczna decyzja właściciela wciąż obowiązuje).
+
+**Ulica.** W `meta` nie było ulicy, a `stacje[].opis` bywa „ul. Bukowa, Podkowa
+Leśna" — dodane addytywne pole `meta.ulica` liczone przez `ulicaZeStacji()`
+w `app/zestawy.js` (odcina OGON miasta tylko gdy to samo miasto stoi w
+`meta.miejsce`; obcego ogona, np. nazwy POI w innej gminie, nie tyka).
+Walidator NIE wymaga pola (wzorzec `geohash6` z ADR 0024), więc wszystkie stare
+paczki i wpisy z `localStorage` czytają się dalej, a most po prostu nie wstawia
+segmentu z ulicą. Liczba pytań w nazwie to liczba PRAWDZIWISTA (`paczka.pytania`
+z rozpakowanego kontenera), nie plan ze setupu — paczki niekompletne (S12) są
+wtedy opisane uczciwie.
+
+**Budżet lektury:** ADR 0048 plus wiersz rejestru dały +574 tok, próg 100 000
+pękł. Skrócone: wiersz rejestru, pkt 4 (strażnicy) w ADR 0048, aneks dzisiejszy
+w ADR 0042 i drugi akapit wskazówki archiwum w ADR 0019. Finisz: rezerwa 33
+tok — sesja, która dopisze ADR, musi najpierw coś przenieść do archiwum.
+
+**Brama:** 826/826 (dwa piny `/WYSŁANA na Drive/` przepisane na nową treść
+komunikatu, nie obejść), `npm run check` OK, audyt WCAG 0 naruszeń, budżet OK.
+Live-check odpuszczony: reset sandboxu zmiótł `/home/user/.narzedzia` (Chromium
+i pomoce), a ta zmiana nie dotyka DOM-u ani CSS — to, co w pasku, weryfikuje
+`test/zestawy-ui.test.js` z atrapą fetcha mostu (cytuje nazwę z mostu; most bez
+`nazwa` nie dostaje w UI zdania o „nieznanym" pliku). Nazwy plików sprawdza
+`test/most-indeks.test.js`, który WYKONUJE cały skrypt `.gs` na atrapie Drive
+(L33): nazwa, retry, `-2`, odrzucona paczka, `meta` bez `ulica` i bez godziny,
+znaki zakazane.

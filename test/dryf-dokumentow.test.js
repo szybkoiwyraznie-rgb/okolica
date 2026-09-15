@@ -333,6 +333,14 @@ const MARTWE_FRAZY = [
     nosniki: [...DOKUMENTY, ...UI],
     powod: 'UI nie może tłumaczyć czegoś, czego nie ma: od ADR 0023 pkt 1 punktacja nie ma składnika czasowego, a gracz nigdzie nie widzi stopera (właściciel 2026-09-15 zdjęł zdanie ze statusu wznowienia)',
   },
+  // Fala 2026-09-15 (uwaga 3 właściciela): nazwy plików paczek na Drive kodują
+  // fakty z `meta` (ADR 0048). Starego wzoru nie wolno przywracać ani w docsach,
+  // ani w moście — to on czynił katalog nieporządkowanym.
+  {
+    fraza: 'geohash5-skrot',
+    nosniki: [...DOKUMENTY, ...UI, MOST],
+    powod: 'konwencja `geohash5-skrot.zestaw.json` nie żyje od ADR 0048 (2026-09-15): nazwa bierze się z meta; historia została w archiwum aneksów ADR 0017',
+  },
   {
     fraza: 'stopka-protokol',
     nosniki: [...DOKUMENTY, ...UI],

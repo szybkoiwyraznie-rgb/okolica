@@ -31,6 +31,31 @@ i przeglądarka z dostępem do aplikacji (może być telefon).
    oraz `okolica-gry-otwarte`, `okolica-gry-zakonczone`) skrypt założy sam przy
    pierwszym uruchomieniu — nic nie klikaj w Drive.
 
+## 1b. Jak nazywają się pliki paczek (ADR 0048)
+
+Plik wpada do `okolica-paczki-zaakceptowane` pod nazwą złożoną z faktów, żeby
+listę katalogu dało się czytać bez otwierania paczek:
+
+```
+<miejsce>[_<ulica>]_<data>[_<godzina>]_<liczba>pyt_wiek-<wiek>_<promień>m_<Q|bez>.zestaw.json
+Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_15pyt_wiek-12_600m_Q.zestaw.json
+```
+
+- `Q` = paczka z fact-checkiem, `bez` = wariant bez weryfikacji (ADR 0032).
+- Nazwę buduje **skrypt** z `meta` paczki, nie aplikacja — `meta.ulica` jest
+  polem addytywnym, więc stare pliki (i stare wypisy z `localStorage`) są przez
+  most przyjmowane bez zmian: po prostu nie mają segmentu z ulicą.
+- Godzina w nazwie robi unikalność: ta sama paczka wysłana powtórnie (retry po
+  zerwanej sieci) trafia w TĘ SAMĄ nazwę i most odpowiada
+  `juz-zaakceptowana` z identyfikatorem pliku, a dwie *różne* paczki z tej samej
+  minuty w tym samym miejscu dostają przyrostek `-2`, `-3`… — przed decyzją most
+  porównuje `kontener.skrot` leżącego już pliku, więc nazwa nie potrafi zdławić
+  nowej pracy organizatora.
+- Chcesz, żeby paczka zniknęła z indeksu: przeciągnij plik do
+  `okolica-paczki-odrzucone`. Nazwa nie ma znaczenia dla indeksu (ten liczy
+  identyfikatory plików), więc pliki można bezpłatnie przepisywać — zmiana
+  nazwy nie psuje ocen ani gier, które już z niej korzystają.
+
 ## 2. Skrypt
 
 1. Wejdź na [script.google.com](https://script.google.com) → **Nowy projekt**.
@@ -82,10 +107,10 @@ Pola wpisywania adresu zostały z interfejsu usunięte decyzją właściciela.
 ## 5. Test końcowy paczek (kryterium M9b)
 
 1. Zagraj jedną grę z modelem (albo wklej gotową paczkę) — paczka przyjmuje
-   się sama po wklejeniu; pasek stanu powie „WYSŁANA na Drive: dostępna od
-   razu w zestawach" (albo dlaczego nie).
-2. Na Drive plik pojawi się OD RAZU w `okolica-paczki-zaakceptowane` —
-   żadnego maila i żadnego klikania akceptacji (decyzja 2026-09-11).
+   się sama po wklejeniu; pasek stanu powie „Paczka przyjęta i wysłana na Drive
+   jako „<nazwa pliku>”: dostępna od razu w zestawach" (albo dlaczego nie).
+2. Na Drive plik pojawi się OD RAZU w `okolica-paczki-zaakceptowane` pod nazwą
+   z §1b — żadnego maila i żadnego klikania akceptacji (decyzja 2026-09-11).
    Chcesz podejrzeć pytania? Otwórz plik na Drive — pytania, odpowiedzi,
    wyjaśnienia i źródła są w środku (kontrola należy do Ciebie, ale na
    Twoich zasadach i w Twoim czasie).

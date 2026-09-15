@@ -17,6 +17,7 @@ import assert from 'node:assert/strict';
 
 import { geohash } from '../app/geo.js';
 import { dopasujMetaIndeksu, dopasujZestawy, walidujIndeksSurowy } from '../app/zestawy.js';
+import { odpakujPaczke, zapakujPaczke } from '../app/kodowanie.js';
 import { uruchomMost, zestawPrzykladowy, idPoNazwie } from './helpers/most.js';
 
 const { most } = uruchomMost();
@@ -246,4 +247,75 @@ test('klient: stara paczka pasuje do setupu po FAKTYCZNYCH tematach — zgłosze
   const staryWpis = { ...indeks[0], tematy: ['historia', 'sport', 'jedzenie'] };
   assert.equal(dopasujMetaIndeksu([staryWpis], { ...kryteria, tematy: ['historia'] }).length, 0,
     'kontroll: z listą „dopuszczalnych” z meta paczka NIE pasuje (przyczyna zgłoszenia)');
+});
+
+/* ------------------------------- ADR 0048: czytelne nazwy plików na Drive */
+
+const nazwaZestawu = (nad = {}) => {
+  const zestaw = zestawPrzykladowy();
+  Object.assign(zestaw.meta, { miejsce: 'Podkowa Leśna', ulica: 'ul. Bukowa', data: '2026-09-15 09:41' }, nad);
+  return zestaw;
+};
+
+test('most: plik paczki nazywa się po faktach z meta, nie po geohashu (ADR 0048)', () => {
+  const { most: m, pliki } = uruchomMost();
+  const wynik = m.przyjmijKandydata(nazwaZestawu());
+  assert.equal(wynik.ok, true, wynik.blad ?? '');
+  assert.equal(wynik.nazwa, 'Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_3pyt_wiek-dorosli_1000m_Q.zestaw.json');
+  assert.ok(idPoNazwie(pliki, wynik.nazwa), 'plik leży na Drive dokładnie pod tą nazwą');
+});
+
+test('most: powtórka tej samej paczki nie mnoży plików, a inna w tej samej minucie dostaje -2 (ADR 0048)', () => {
+  const { most: m, pliki } = uruchomMost();
+  const pierwsza = m.przyjmijKandydata(nazwaZestawu());
+  const powtorka = m.przyjmijKandydata(nazwaZestawu());
+  assert.equal(powtorka.status, 'juz-zaakceptowana', 'retry po zerwanym połączeniu jest idempotentny');
+  assert.equal(powtorka.id, pierwsza.id, 'ten sam identyfikator — łapki (ADR 0028) wiedzą, co oceniają');
+  assert.equal([...pliki.values()].filter((p) => p.nazwa === pierwsza.nazwa).length, 1, 'jeden plik');
+
+  // Inna treść, te same parametry i ta sama minuta: paczkę trzeba PRZEPAKOWAĆ,
+  // bo kontener ma kontrolę treści (sam `skrot` do podmiany nie wystarcza).
+  const inna = nazwaZestawu();
+  const { paczka } = odpakujPaczke(inna.kontener); // `{ paczka, blad }`, nie goła paczka
+  paczka.pytania[0].tresc = 'Inne pytanie?';
+  inna.kontener = zapakujPaczke(paczka, 'PYT/1.0.6');
+  const druga = m.przyjmijKandydata(inna);
+  assert.equal(druga.ok, true, 'nowa paczka NIE może przepaść dlatego, że nazwa już pada');
+  assert.equal(druga.nazwa, 'Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_3pyt_wiek-dorosli_1000m_Q-2.zestaw.json');
+  assert.ok(druga.id !== pierwsza.id);
+});
+
+test('most: odrzucona paczka zatrzymuje nazwę; nowe pola opcjonalne dla starych plików (ADR 0048)', () => {
+  const { most: m, pliki } = uruchomMost();
+  const pierwsza = m.przyjmijKandydata(nazwaZestawu());
+  m.przenies(pierwsza.id, 'okolica-paczki-odrzucone');
+  const powtorzona = m.przyjmijKandydata(nazwaZestawu());
+  assert.equal(powtorzona.status, 'juz-w-odrzuconych', 'ręczna decyzja właściciela na Drive obowiązuje');
+  assert.equal([...pliki.values()].length, 1, 'odrzucona paczka nie doczekała się bliźniaka');
+
+  // Paczka przed ADR 0048: bez `ulica`, z samą datą (bez godziny) — most musi
+  // nadal umieć ją przyjąć i nazwać, tylko krócej.
+  const stara = nazwaZestawu();
+  delete stara.meta.ulica;
+  stara.meta.data = '2026-09-01';
+  const wynik = m.przyjmijKandydata(stara);
+  assert.equal(wynik.ok, true, wynik.blad ?? '');
+  assert.equal(wynik.nazwa, 'Podkowa-Leśna_2026-09-01_3pyt_wiek-dorosli_1000m_Q.zestaw.json');
+});
+
+test('most: nazwa nie rodzi znaków zakazanych w Drive ani ogonów (ADR 0048)', () => {
+  const { most: m } = uruchomMost();
+  const brud = nazwaZestawu({
+    miejsce: 'Nowy Dwór Maz.,  ul. Zakładowa / Boczna  ',
+    ulica: 'ul. Zakładowa / Boczna: etap II',
+    data: '2026-13-45 99:99', // i tak ma zostać czytelną datą, nie wyjątkiem
+  });
+  brud.meta.wiek = '10+';
+  const wynik = m.przyjmijKandydata(brud);
+  assert.equal(wynik.ok, true, wynik.blad ?? '');
+  assert.equal(/[\\/:*?"<>|]/.test(wynik.nazwa), false, `zakazane znaki: ${wynik.nazwa}`);
+  assert.equal(/(\.|_|-)\.zestaw/.test(wynik.nazwa), false, `nazwa nie kończy się kropką/myślnikiem: ${wynik.nazwa}`);
+  assert.equal(wynik.nazwa.includes('  '), false, 'bez podwójnych odstępów');
+  assert.ok(wynik.nazwa.includes('Nowy-Dwór-Maz'), wynik.nazwa);
+  assert.match(wynik.nazwa, /wiek-10/, 'wiek z „+" zamienia się w czytelne 10');
 });

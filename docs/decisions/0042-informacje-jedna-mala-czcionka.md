@@ -69,8 +69,7 @@ miejsca".
 
 1. Obie liczby zeszły z panelu; `Wersja …` stanęła w jednym wierszu
    (`.informacje-kontakt`) z przyciskiem prywatności, linkiem OSM i adresem.
-2. Spójności wersji protokołu pilnują odtąd trzy nośniki i wystarczą trzy:
-   `docs/PROTOKOL.md` ↔ `app/protokol.js` ↔ `README.md` (`test/kontrakt.test.js`),
-   a łatka szablonu jest cytowana w §7 PROTOKOLU, bo tam powstaje.
+2. Spójności wersji protokołu pilnują trzy nośniki: `docs/PROTOKOL.md` ↔
+   `app/protokol.js` ↔ `README.md`, a łatkę widać w §7 PROTOKOLU.
 3. Zasada ADR 0042 zostaje (drobny tekst, zero sterowania grą) i dostaje drugą
    nogę: w panelu nie ma liczby, której gracz nie umie na nic przetłumaczyć.
