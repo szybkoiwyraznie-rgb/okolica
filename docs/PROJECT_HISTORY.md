@@ -6086,7 +6086,20 @@ wpisach sesji 101 275. Do archiwum wyszły aneksy ADR 0019 (2026-09-13c), ADR
 konsoli, pola tekstowe 16 px; wklejenie śmiecia w pole paczki daje
 `defaultPrevented=true` i puste pole.
 
-**Znalezisko audytowe bez zmian w kodzie:** `przycisk-poprawka` jest chowany w
-obu ścieżkach błędu i nigdy nie pokazywany — martwy UI (L31/L64: usunąć albo
-nagrobek), decyzja właściciela.
+**Znalezisko audytowe → decyzja właściciela (commit `8048302`).**
+`przycisk-poprawka` był chowany w obu ścieżkach błędu i nigdy nie pokazywany.
+Właściciel: „skoro przycisk nigdy nie jest używany to usuń go". Usunięte:
+element w `index.html`, nasłuch i chowanie w `app/app.js`,
+`STAN.poprawkaFactcheck` (czytany tylko przez ten nasłuch) i
+`poprawkaDlaModelu` w `app/protokol.js` (jedynym wywołującym był przycisk);
+komunikaty E02 nie obiecują już „poprawki gotowej do skopiowania".
+`STAN.usterkiPaczki` zostaje — brama wysyłki czyta jej długość. Nośniki
+przepisane (README, WORKFLOW §5, ARCHITECTURE §7, PROTOKOL §6), pin kontraktu
+odwrócony, trzy martwe frazy w `dryf-dokumentow`, ADR 0006 aneks. Brama po
+zmianie: 827/827 (dwa testy funkcji odeszły razem z nią), m12-135.
+
+**Most wdrożony.** Właściciel potwierdził wdrożenie naprawionego skryptu na
+Apps Script — zapis paczek do katalogu zaakceptowanych działa znowu. Z sandboxa
+nie da się tego sprawdzić (egress zablokowany, LESSONS L3), więc potwierdzeniem
+jest komunikat właściciela i testy atrapy Drive.
 
