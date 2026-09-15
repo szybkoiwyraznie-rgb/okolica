@@ -13,8 +13,10 @@ nie opisuje, a które w terenie zdarzają się naprawdę:
    aplikacją (ADR 0006), więc organizator może wrócić z paczką na 3 stacje,
    mając w konfiguracji 5 — albo z paczką, w której jedno pytanie przepadło
    przy kopiowaniu. Walidator paczki (`walidujPaczke`) sprawdza spójność
-   wewnętrzną (protokół §3.2: każde pytanie ma stację, rozkład równy ±1), ale
-   nie zna liczby stacji bieżącej gry.
+   wewnętrzną (protokół §3.2: każde pytanie ma stację w zakresie, żadna stacja
+   nie zostaje bez pytania — `E04`/`E05`; rozkładu „równy ±1" walidator nie
+   pilnuje od 2026-09-15f, liczba pytań na stację wynika z setupu,
+   `app/konfig.js` `pytaniaNaStacjeDla`), ale nie zna liczby stacji bieżącej gry.
 2. **Gracz doszedł do stacji i nie może albo nie chce odpowiedzieć.** Pytanie
    bywa zepsute (model zwrócił treść niezwiązaną z miejscem), a w trybie
    hot-seat organizator może chcieć iść dalej.

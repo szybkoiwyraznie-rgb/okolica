@@ -1659,3 +1659,29 @@ pinuj `inert` + klasę na `body`, a widoczność mierz w przeglądarce.
 **Przebieg usunięcia (PR #33, commit „jawna paczka"):** `app/kodowanie.js` skasowany (zapakuj/odpakuj/blob/skrot, ~203 linie); paczka leży jawnym JSON-em w pamięci, w `localStorage`, w snapshocie gry (`stan-gry/2`) i w pliku na Drive (`TO-zestaw/2`); tożsamość wpisu i pliku liczy `skrotPaczki()` (FNV-1a 32 z `JSON.stringify(paczka)`); most waliduje jawną paczkę i liczy ten sam odcisk (bez dekodera); kody usterek T05/Z04/R08 mówią o braku pytań. Zakaz danych osobowych w paczce (ADR 0013) został — plik na Drive jest czytelny.
 
 **Reguła:** przed budową zabezpieczenia zapisz w ADR-ze, przed kim i w której ścieżce ma chronić. Jeśli nie zamyka żadnej realnej ścieżki, usuń je zamiast utrzymywać: koszt (dwa moduły, duplikat algorytmu, mylące komunikaty) ponosi każda kolejna sesja.
+## L76 (2026-09-15) — przy zmianie reguły walidatora przeglądaj WSZYSTKIE zdania o starej regule i od razu wstaw pin
+
+**Tło:** PR #34 (decyzja B25) usunął z walidatora `E05` tolerancję ±1 — od teraz
+sprawdza on tylko stację bez żadnego pytania, bo liczba pytań na stację wynika
+z setupu (`pytaniaNaStacjeDla()` = liczba graczy w hot-seat, 1 w multi; sumę
+pilnuje `E03`). Przepisano kod + PROTOKOL §6/§7 + prompt, ale trzy inne miejsca
+dalej opisywały starą regułę: PROTOKOL **§3.2** (tabela pól paczki, wiersz
+`stacja` — „rozkład równy ±1"), komentarz **`app/rozgrywka.js`**
+(`stacjaZamknieta`) i **ADR 0015** (Kontekst, opis spójności wewnętrznej
+walidatora). Wszystkie przeszły przez zieloną bramę, bo strażnik dryfu (L58)
+nie miał tej frazy, a aktywne ADR-y są poza listą nośników.
+
+**Naprawa (2026-09-15g, PR #35):** §3.2 przepisany („każda stacja ≥ 1 pytanie;
+rozkładu między stacje walidator nie sprawdza od 2026-09-15f — liczba pytań na
+stację wynika z setupu, patrz §6 `E05`"), komentarz i ADR 0015 pozbawione „±1",
+fraza „rozkład równy ±1" dodana do `MARTWE_FRAZY` w `test/dryf-dokumentow.test.js`
+(`nosniki: [...DOKUMENTY, ...UI]`), archiwalny aneks `aneksy-0024-2026-09-07b.md`
+zostawiony (historia). Cache-bust m12-143 → m12-144.
+
+**Reguła:** (1) zmieniając/albo usuwając regułę walidatora, grepnij jej stare
+brzmienie po żywych nośnikach (PROTOKOL, aktywne ADR-y, komentarze `app/`) i po
+parzystości dokument ↔ kod — komentarz w silniku i opis schematu dryfują tak
+samo jak prompt; (2) w tym samym commicie dopisz dawną frazę do `MARTWE_FRAZY`;
+(3) aktywny ADR z „Kontekst" opisującym stan bieżący to nośnik opisu, nie
+archiwum; archiwum (`docs/decisions/archive/`) zostaw, tam stary zwrot jest
+dowodem zmiany.

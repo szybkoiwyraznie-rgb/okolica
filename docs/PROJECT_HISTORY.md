@@ -6346,3 +6346,59 @@ rozstrzygnięte decyzjami właściciela. Do sprawdzenia w terenie: paczka
 z promptu `PYT/1.1.2` — czy pytania nie zawierają odpowiedzi, czy model trzyma
 równą liczbę pytań na stację i czy kotwiczenie bez przepisu o nazwie miejsca
 dalej daje pytania zakotwiczone.
+## Sesja 2026-09-15g (PR #35) — otwarcie sesji, audyt PR #34: dryf dokumentacji „rozkład równy ±1"
+
+**Zlecenie:** „Kontynuujemy projekt". Uwag z terenu nie było, więc sesja domyka
+audyt poprzedniego scalonego PR-a (AGENTS.md §2 pkt 2) i poprawia to, co audyt
+znalazł. Kamienie M0–M12 zamknięte jako zakres kodu (L68).
+
+**Audyt PR #34 (squash `c1a90e8` na `f086fd3`):** 22 pliki, +515/−62.
+
+**Spójne — nie ruszane:**
+
+- `E05` bez tolerancji ±1 (`app/protokol.js`): walidator pilnuje już tylko stacji
+  bez żadnego pytania; `pytaniaNaStacjeDla()` = liczba graczy (hot-seat) / 1
+  (multi), sumę `liczbaStacji × pytaniaNaStacje` pilnuje `E03` (B25, decyzja
+  właściciela).
+- Werdykt liczy tylko silnik: `app/app.js` czyta `wpis.poprawna` (zamiast
+  `wybrana + 1 === pytanie.poprawna`) — ADR 0050 aneks 2026-09-15f, strażnik
+  w `test/kontrakt.test.js`.
+- `docs/PROTOKOL.md`: trzy zdania promptu zastosowane w obu szablonach (§2/§2.2
+  zasady 4 i 7, wymaganie `stacja`), stałe `SZABLON_WERSJA = 'PYT/1.1.2'` /
+  `SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.1-nofc.2'`, wpisy w §7.
+- Nowe testy: single-werdykt (`kontrakt`), parity `skrotPaczki` aplikacja ↔ `.gs`
+  (`most-paczka`), pin zdań promptu (`protokol`).
+- Pozostałe pliki `app/*.js` — wyłącznie podbicie `?v=m12-140 → m12-143`.
+
+**Znalezione — 1 usterka (dryf dokumentacji):** `docs/PROTOKOL.md` §3.2 (tabela
+pól paczki, wiersz `stacja`) nadal mówi „rozkład równy ±1", choć §6 `E05`, §7,
+prompt i `app/protokol.js` już tej tolerancji nie mają (B25, owner 2026-09-15f:
+„Możesz wywalić to z E05 bo to nie występuje w przyrodzie"). Ten sam zwrot został
+w `docs/decisions/0015` (Kontekst, zdanie o spójności wewnętrznej walidatora)
+i w komentarzu `app/rozgrywka.js` (`stacjaZamknieta`). Strażnik dryfu
+(`test/dryf-dokumentow.test.js`) nie miał pinu na tę frazę, więc nic nie złapało.
+Archiwalny aneks `docs/decisions/archive/aneksy-0024-2026-09-07b.md` zostaje bez
+zmian (historia).
+
+**Naprawa:** PROTOKOL §3.2 (wiersz `stacja`) opisuje stan faktyczny — „każda
+stacja ≥ 1 pytanie; rozkładu między stacje walidator nie sprawdza od
+2026-09-15f, liczba pytań na stację wynika z setupu, patrz §6 `E05`”;
+komentarz `app/rozgrywka.js` (`stacjaZamknieta`) i ADR 0015 (Kontekst)
+przepisane bez „±1” (po `E04`/`E05`). Pin frazy „rozkład równy ±1”
+w `MARTWE_FRAZY` (`test/dryf-dokumentow.test.js`) + LESSONS **L76** (grepa
+starego brzmienia po żywych dokumentach i pin od razu, w tym samym commicie;
+aktywny ADR z opisem stanu bieżącego dryfuje jak PROTOKOL). Dopisek do
+zamkniętego B25 w `docs/BACKLOG.md`. Cache-bust **m12-143 → m12-144**
+(L29/L37: zmiana `app/*.js` podbija wersję).
+
+**Brama na koniec sesji:** `npm test` **807/807**, `npm run check` OK
+(szablon §2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**, zasięg
+mostu **97,7%** (850/870 wierszy), `npm run budzet` **99 639 / 100 000**
+(rezerwa 361), cache-bust **m12-144**, protokół **PYT/1.1**, szablony
+**`PYT/1.1.2` / `PYT/1.1-nofc.2`**.
+
+**Otwarte po sesji:** kolejka pusta — PR czeka na scalenie właściciela.
+Bez uwag z terenu dalsze sesje tylko audytują i czekają. W terenie nadal do
+sprawdzenia paczka z promptu `PYT/1.1.2` (zasada 7, równa liczba pytań na
+stację, kotwiczenie bez przepisu o nazwie miejsca) — jak w handoffie 15f.
+
