@@ -6393,8 +6393,8 @@ zamkniętego B25 w `docs/BACKLOG.md`. Cache-bust **m12-143 → m12-144**
 
 **Brama na koniec sesji:** `npm test` **807/807**, `npm run check` OK
 (szablon §2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**, zasięg
-mostu **97,7%** (850/870 wierszy), `npm run budzet` **99 279 / 100 000**
-(rezerwa 721), cache-bust **m12-144**, protokół **PYT/1.1**, szablony
+mostu **97,7%** (850/870 wierszy), `npm run budzet` **99 639 / 100 000**
+(rezerwa 361), cache-bust **m12-144**, protokół **PYT/1.1**, szablony
 **`PYT/1.1.2` / `PYT/1.1-nofc.2`**.
 
 **Otwarte po sesji:** kolejka pusta — PR czeka na scalenie właściciela.
