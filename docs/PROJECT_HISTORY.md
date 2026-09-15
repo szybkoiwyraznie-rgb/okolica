@@ -6378,5 +6378,27 @@ w `docs/decisions/0015` (Kontekst, zdanie o spójności wewnętrznej walidatora)
 i w komentarzu `app/rozgrywka.js` (`stacjaZamknieta`). Strażnik dryfu
 (`test/dryf-dokumentow.test.js`) nie miał pinu na tę frazę, więc nic nie złapało.
 Archiwalny aneks `docs/decisions/archive/aneksy-0024-2026-09-07b.md` zostaje bez
-zmian (historia). Naprawa w kolejnym commicie.
+zmian (historia).
+
+**Naprawa:** PROTOKOL §3.2 (wiersz `stacja`) opisuje stan faktyczny — „każda
+stacja ≥ 1 pytanie; rozkładu między stacje walidator nie sprawdza od
+2026-09-15f, liczba pytań na stację wynika z setupu, patrz §6 `E05`”;
+komentarz `app/rozgrywka.js` (`stacjaZamknieta`) i ADR 0015 (Kontekst)
+przepisane bez „±1” (po `E04`/`E05`). Pin frazy „rozkład równy ±1”
+w `MARTWE_FRAZY` (`test/dryf-dokumentow.test.js`) + LESSONS **L76** (grepa
+starego brzmienia po żywych dokumentach i pin od razu, w tym samym commicie;
+aktywny ADR z opisem stanu bieżącego dryfuje jak PROTOKOL). Dopisek do
+zamkniętego B25 w `docs/BACKLOG.md`. Cache-bust **m12-143 → m12-144**
+(L29/L37: zmiana `app/*.js` podbija wersję).
+
+**Brama na koniec sesji:** `npm test` **807/807**, `npm run check` OK
+(szablon §2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**, zasięg
+mostu **97,7%** (850/870 wierszy), `npm run budzet` **99 279 / 100 000**
+(rezerwa 721), cache-bust **m12-144**, protokół **PYT/1.1**, szablony
+**`PYT/1.1.2` / `PYT/1.1-nofc.2`**.
+
+**Otwarte po sesji:** kolejka pusta — PR czeka na scalenie właściciela.
+Bez uwag z terenu dalsze sesje tylko audytują i czekają. W terenie nadal do
+sprawdzenia paczka z promptu `PYT/1.1.2` (zasada 7, równa liczba pytań na
+stację, kotwiczenie bez przepisu o nazwie miejsca) — jak w handoffie 15f.
 

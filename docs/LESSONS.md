@@ -612,3 +612,23 @@ Pełny opis przypadku (objaw, ślad, naprawa i testy): `docs/LESSONS_ARCHIVE.md`
 **Reguła:** przed budową zabezpieczenia zapisz, przed kim i w której ścieżce ma chronić; jeśli odpowiedź brzmi „przed nikim, na wszelki wypadek", usuń je, a ograniczenie przenieś na treść (brak danych osobowych w paczce, ADR 0013). Ukrywanie stanu przed właścicielm to nie bezpieczeństwo, tylko koszt utrzymania.
 
 Pełny opis przypadku i przebieg usuwania: `docs/LESSONS_ARCHIVE.md` → `## L75`.
+
+## L76 (2026-09-15) — przy zmianie reguły walidatora przeglądaj WSZYSTKIE zdania o starej regule i od razu wstaw pin
+
+**Objaw:** PR #34 zmienił `E05` (bez tolerancji ±1, decyzja B25) i zaktualizował
+PROTOKOL §6, §7 i prompt, ale trzy miejsca dalej opisywały starą regułę:
+§3.2 (tabela pól paczki, wiersz `stacja` — „rozkład równy ±1"), komentarz
+`app/rozgrywka.js` (`stacjaZamknieta`) i ADR 0015 (Kontekst, opis spójności
+wewnętrznej walidatora). Wszystkie przeszły przez zieloną bramę — strażnik
+dryfu (L58) nie miał tej frazy na liście, a ADR-y są poza listą nośników.
+**Przyczyna:** zmiana reguły została przeprowadzona tam, gdzie regułę WYKONUJE
+się (walidator) i tam, gdzie DYKTUJE się ją modelowi (prompt), ale nie tam,
+gdzie się ją OPISUJE (schemat, komentarz silnika, Kontekst ADR). L58 pilnuje
+zwrotów, które już raz zdryfowały — świeżo zmienionej reguły nikt nie dopisał.
+**Reguła:** (1) zmieniając albo usuwając regułę walidatora, `grep` jej starego
+brzmienia po żywych dokumentach (PROTOKOL, aktywne ADR-y, komentarze `app/`)
+i po parzystości dokument ↔ kod; (2) w tym samym commicie dopisz dawną frazę do
+`MARTWE_FRAZY` w `test/dryf-dokumentow.test.js`; (3) żywy ADR z „Kontekst"
+opisującym stan bieżący to nośnik opisu, nie archiwum — dryfuje tak samo jak
+PROTOKOL; archiwalne aneksy (`docs/decisions/archive/`) można zostawić, tam
+stary zwrot jest dowodem zmiany.

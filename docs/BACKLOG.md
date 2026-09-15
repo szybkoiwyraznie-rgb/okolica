@@ -359,3 +359,9 @@ miał go przy wycofanym `K22` (LESSONS: martwa reguła nie zostaje w kodzie).
 Zaktualizowane: opis `E05` w `docs/PROTOKOL.md` §6, wpis w §7, testy
 (`test/protokol.test.js`: jedna usterka na pustą stację + nowy test, że nierówny
 rozkład BEZ pustej stacji przechodzi).
+
+**Dopisek 2026-09-15g (audyt PR #34):** po tej decyzji dryf został w trzech
+miejscach opisów: PROTOKOL §3.2 (wiersz `stacja`), komentarz `app/rozgrywka.js`
+(`stacjaZamknieta`) i ADR 0015 (Kontekst) nadal mówiły „rozkład równy ±1".
+Naprawione razem z pinem `MARTWE_FRAZY` w `test/dryf-dokumentow.test.js`
+(LESSONS L76).
