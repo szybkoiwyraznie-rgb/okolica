@@ -19,7 +19,7 @@
  * czysta funkcja + atrapa, `docs/LESSONS.md`).
  */
 
-import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-141';
+import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-142';
 
 /**
  * Adres web app Apps Script (…/exec) wpisany na stałe w tej wersji aplikacji.

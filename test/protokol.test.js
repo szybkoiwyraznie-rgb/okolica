@@ -472,6 +472,33 @@ test('prompt: zakotwiczenie zostaje PROŚBĄ — oba warianty dopuszczają pytan
   }
 });
 
+/**
+ * Uwaga A właściciela (2026-09-15f): trzy zdania promptu podyktowane dosłownie.
+ * Szablony §2 i §2.2 są lustrem, więc piny są wspólne — różni je tylko słowo
+ * o fakcie („potwierdzony" przy fact-check, „pewny" bez weryfikacji). Pilnujemy
+ * zarówno nowego brzmienia, jak i tego, że stare nie wróci przy kolejnej
+ * synchronizacji z dokumentem (`npm run build`).
+ */
+test('prompt: trzy zdania właściciela z 2026-09-15f (uwaga A) są w obu szablonach dosłownie', () => {
+  for (const [nazwa, szablon, fakt] of [
+    ['§2', SZABLON_PROMPTU, 'potwierdzony'],
+    ['§2.2', SZABLON_PROMPTU_BEZ_WERYFIKACJI, 'pewny'],
+  ]) {
+    assert.ok(szablon.includes(`Schodź na najniższy poziom, na którym masz sensowny ${fakt} fakt.`),
+      `${nazwa}: zasada 4 kończy się na fakcie (uwaga A1)`);
+    assert.ok(!szablon.includes('i podawaj wtedy nazwę miejsca w treści pytania'),
+      `${nazwa}: przepis o nazwie miejsca w treści pytania usunięty (uwaga A1)`);
+    assert.ok(szablon.includes('Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.'),
+      `${nazwa}: zasada 7 dosłownie (uwaga A2)`);
+    assert.ok(!szablon.includes('odpowiedź pozostawała do wyboru'),
+      `${nazwa}: stary przepis o faktach rozstrzygających w „wyjasnienie" nie wrócił (uwaga A2)`);
+    assert.ok(szablon.includes('KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tą samą liczbę pytań.'),
+      `${nazwa}: wymaganie dla pola „stacja" dosłownie (uwaga A3)`);
+    assert.ok(!szablon.includes('różni się o jedno'),
+      `${nazwa}: stary rozkład „równy albo różni się o jedno" nie wrócił do promptu (uwaga A3; walidator E05 — BACKLOG B25)`);
+  }
+});
+
 test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
   const s = podsumowaniePaczki(OK);
   assert.equal(s.liczbaPytan, 3);

@@ -18,7 +18,7 @@
  * activate. */
 'use strict';
 
-const WERSJA_SW = 'm12-141';
+const WERSJA_SW = 'm12-142';
 const PREFIKS_CACHE = 'okolica';
 const CACHE_SHELL = `${PREFIKS_CACHE}-shell-${WERSJA_SW}`;
 /**
