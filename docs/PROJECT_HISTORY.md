@@ -5824,6 +5824,16 @@ pliki macierzyste mają wskaźnik. **Budżet na wyjściu: 99 918/100 000 (rezerw
 `node --check` po każdej edycji skryptem (ta sesja dopuściła się 57 KB
 duplikatu w `test/aplikacja.test.js`).
 
+**Trzecia uwaga tej samej doby (ekran intro):** właściciel
+poprawił zdanie na ekranie startowym na „Aplikacja wyznacza kilka stacji, a model
+AI układa pytania związane z tym miejscem - jego historią, architekturą, przyrodą
+czy ludźmi, którzy tu mieszkali”. Zmiana tylko w `index.html` (jedyny nośnik
+zdania, żaden test ani dokument go nie cytuje), więc bez podbicia `?v=` i
+`WERSJA_SW`: skorupa ciągnie `index.html` przez sieć (`sw.js` network-first dla
+nawigacji), a `kontrakt` pilnuje, że `WERSJA_SW` = `?v=` aplikacji — podbicie
+samego SW rozerwałoby tę równość. Myślnik przy wyliczeniu postawiony długi („—”),
+bo taki jest typograficzny standard w aplikacji; poza tym treść 1:1.
+
 **Czego nie zrobiono:** `git push` i aktualizacja opisu PR #30 — token GitHub w
 `sandbox`ie wygasł (`gh auth status`: „The github.com token in GH_TOKEN is no
 longer valid”); commity `a2df21b` i `15fc956` czekają na reconnect właściciela.
