@@ -1,6 +1,6 @@
 /**
  * Testy protokołu PYT (app/protokol.js): budowa promptu, parsowanie odpowiedzi
- * modelu i walidacja paczki z kodami usterek E01–E20.
+ * modelu i walidacja paczki z kodami usterek E02–E20 (E01 wycofany 2026-09-15e).
  *
  * Fixture `test/fixtures/paczka-ok.json` jest SYNTETYCZNY: miejsce, fakty i
  * adresy źródeł są zmyślone, żeby test nie powtarzał niezweryfikowanych twierdzeń
@@ -14,11 +14,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   SCHEMAT_KONTENERA, SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU,
-  WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3,
-  czyPaczkaOdwrocona, czyWariantFactcheck, normalizujTekst, normalizujTematyPaczki, numerPytaniaZId,
-  odkodujPaczkeRev1, odkodujPaczkeRev2, odkodujPaczkeBiezaca,
-  odkodujPoprawnaRev2, zakodujPoprawnaRev2,
-  odwrocPolaPaczki, odwrocTekst, parsujOdpowiedzModela, podsumowaniePaczki,
+  normalizujTekst, normalizujTematyPaczki, parsujOdpowiedzModela, podsumowaniePaczki,
   walidujPaczke, zbudujPrompt,
 } from '../app/protokol.js';
 import { domyslnaKonfiguracja, liczbaPytan } from '../app/konfig.js';
@@ -88,9 +84,9 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'OKOLICA GRY:',
     'STACJE (kolejność = kolejność w grze',
     'GRACZE I TRUDNOŚĆ:',
-    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev4)',
+    'SCHEMAT ODPOWIEDZI — dokładnie te pola',
     'WYMAGANIA DODATKOWE:',
-    '"poprawna": numer poprawnej odpowiedzi',
+    '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
@@ -164,7 +160,7 @@ test('zbudujPrompt: odmawia bez pozycji, bez stacji i przy rozjeździe liczb', (
 test('parsujOdpowiedzModela: przyjmuje blok json, blok bez języka i surowy JSON', () => {
   const zOgrodzeniem = parsujOdpowiedzModela(`Oto paczka:\n\`\`\`json\n${JSON.stringify(OK)}\n\`\`\`\nMam nadzieję, że się przyda.`);
   assert.equal(zOgrodzeniem.blad, null);
-  assert.equal(zOgrodzeniem.paczka.protokol, WERSJA_PROTOKOLU);
+  assert.equal(zOgrodzeniem.paczka.pytania.length, 3, 'paczka przyszła w całości');
 
   const bezJezyka = parsujOdpowiedzModela(`\`\`\`\n${JSON.stringify(OK)}\n\`\`\``);
   assert.equal(bezJezyka.blad, null);
@@ -175,7 +171,7 @@ test('parsujOdpowiedzModela: przyjmuje blok json, blok bez języka i surowy JSON
 
   const zSzumem = parsujOdpowiedzModela(`Wstęp.\n${JSON.stringify(OK)}\nPodsumowanie.`);
   assert.equal(zSzumem.blad, null);
-  assert.equal(zSzumem.paczka.protokol, WERSJA_PROTOKOLU);
+  assert.equal(zSzumem.paczka.pytania.length, 3);
 });
 
 test('parsujOdpowiedzModela: dwa bloki, śmieci i puste pole dają E02', () => {
@@ -195,122 +191,38 @@ test('walidujPaczke: fixture OK przechodzi bez usterek', () => {
   assert.deepEqual(walidujPaczke(OK, oczekiwane()), []);
 });
 
-test('walidujPaczke: E01 — zła albo brakująca wersja protokołu', () => {
-  assert.ok(kody(klonyPaczki((p) => { p.protokol = 'PYT/2.0'; })).includes('E01'));
-  assert.ok(kody(klonyPaczki((p) => { delete p.protokol; })).includes('E01'));
+test('walidujPaczke: paczka bez markera protokołu przechodzi, a dopisany marker jest ignorowany (ADR 0050)', () => {
+  // Błąd, który to wywołał: model NIE pisze już markera („to tylko obciążenie
+  // dla AI”), więc brak pola `protokol` nie jest usterką. Stary nawyk modelu
+  // albo paczka sprzed zmiany — pole jest po prostu ignorowane.
+  const bezMarkera = structuredClone(OK);
+  delete bezMarkera.protokol;
+  assert.deepEqual(kody(bezMarkera), [], 'brak `protokol` nie budzi żadnej usterki');
+  const zMarkerem = structuredClone(OK);
+  zMarkerem.protokol = 'PYT/1.0-rev4';
+  assert.deepEqual(kody(zMarkerem), [], 'dopisany marker jest ignorowany, nie odrzuca paczki');
+  zMarkerem.protokol = 'PYT/2.0';
+  assert.deepEqual(kody(zMarkerem), [], 'obcy marker też jest ignorowany — liczy się zawartość, nie etykieta');
+  assert.ok(!kody(bezMarkera).includes('E01'), 'E01 wycofany (ADR 0050)');
 });
 
-/* -------------------------------- Q2: wariant odwrócony PYT/1.0-rev1 (PROTOKOL §3.4) */
-
-test('rev1: odwrocTekst działa po punktach kodowych (ogonki i emoji przeżywają)', () => {
-  assert.equal(odwrocTekst('Kot'), 'toK');
-  assert.equal(odwrocTekst('zażółć gęślą jaźń'), 'ńźaj ąlśęg ćłóżaz');
-  assert.equal(odwrocTekst('A🏅B'), 'B🏅A', 'emoji to jeden punkt kodowy, nie para surrogate');
-  assert.equal(odwrocTekst(odwrocTekst('Grabowice 1342?')), 'Grabowice 1342?', 'symetria');
-});
-
-test('rev1: round-trip — odwrocPolaPaczki ×2 wraca do oryginału, struktura nietknięta', () => {
-  const raz = odwrocPolaPaczki(OK);
-  assert.equal(raz.protokol, OK.protokol, 'marker nietknięty — odwraca tylko pola tekstowe');
-  assert.equal(raz.pytania[0].tresc, odwrocTekst(OK.pytania[0].tresc));
-  assert.deepEqual(raz.pytania[0].odpowiedzi, OK.pytania[0].odpowiedzi.map(odwrocTekst));
-  assert.equal(raz.pytania[0].wyjasnienie, odwrocTekst(OK.pytania[0].wyjasnienie));
-  assert.equal(raz.pytania[0].zrodla[0].tytul, odwrocTekst(OK.pytania[0].zrodla[0].tytul));
-  assert.equal(raz.uwagi, odwrocTekst(OK.uwagi));
-  // struktura nietknięta
-  assert.equal(raz.pytania[0].id, OK.pytania[0].id);
-  assert.equal(raz.pytania[0].poprawna, OK.pytania[0].poprawna);
-  assert.equal(raz.pytania[0].punkty, OK.pytania[0].punkty);
-  assert.equal(raz.pytania[0].zrodla[0].url, OK.pytania[0].zrodla[0].url);
-  assert.deepEqual(odwrocPolaPaczki(raz), OK, 'dwukrotne odwrócenie = oryginał');
-  assert.deepEqual(OK.protokol, 'PYT/1.0', 'fixture nie zmutowany');
-});
-
-test('rev1: paczka odwrócona przechodzi walidację jak jawna (E01 akceptuje marker)', () => {
-  const rev1 = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV1 };
-  assert.equal(czyPaczkaOdwrocona(rev1), true);
-  assert.equal(czyPaczkaOdwrocona(OK), false);
-  assert.deepEqual(walidujPaczke(rev1, oczekiwane()), [], 'reguły tekstowe działają na odkodowanej treści');
-  // a BEZ dekodera ta sama paczka by poległa: '?' jest na początku, nie na końcu
-  assert.ok(!rev1.pytania[0].tresc.trim().endsWith('?'), 'sanity: odwrócona treść kończy się początkiem zdania');
-});
-
-test('rev1: odkodujPaczkeRev1 normalizuje marker, jawną przepuszcza bez zmian', () => {
-  const rev1 = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV1 };
-  const robocza = odkodujPaczkeRev1(rev1);
-  assert.equal(robocza.wariantWejsciowy, WERSJA_PROTOKOLU_REV1, 'dekoder stawia nośnik wariantu (ADR 0032 §3)');
-  const { wariantWejsciowy, ...bezWariantu } = robocza;
-  assert.ok(wariantWejsciowy, 'pole istnieje');
-  assert.deepEqual(bezWariantu, OK, 'odkodowana = jawny oryginał z markerem PYT/1.0');
-  assert.equal(odkodujPaczkeRev1(OK), OK, 'jawna paczka wraca tą samą referencją (zero kopiowania)');
-});
-
-/* ---------------- rev2: poprawna słownie od końca, koniec punktów (PROTOKOL §3.4) */
-
-test('rev2: kod pozycyjny — indeks + stacja + numer pytania + 17, w obie strony', () => {
-  assert.equal(numerPytaniaZId('s2p1'), 1);
-  assert.equal(numerPytaniaZId('s12p10'), 10);
-  assert.equal(numerPytaniaZId('pyt1'), null);
-  assert.equal(zakodujPoprawnaRev2(2, { id: 's2p1', stacja: 2 }), 22, 'przykład z szablonu: 2 + 2 + 1 + 17');
-  assert.equal(odkodujPoprawnaRev2(22, { id: 's2p1', stacja: 2 }), 2);
-  assert.equal(odkodujPoprawnaRev2(20, { id: 's1p1', stacja: 1 }), 1);
-  assert.equal(odkodujPoprawnaRev2(99, { id: 's1p1', stacja: 1 }), null, 'spoza zakresu indeksów');
-  for (let i = 0; i <= 3; i++) {
-    assert.equal(odkodujPoprawnaRev2(i, { id: 's1p1', stacja: 1 }), null, `goły indeks ${i} nigdy nie jest kodem (+10 rozłącza zakresy)`);
-  }
-  assert.equal(odkodujPoprawnaRev2(5, { id: 'pyt1', stacja: 2 }), null, 'bez id nie dekodujemy');
-  assert.equal(odkodujPoprawnaRev2('awd', { id: 's2p1', stacja: 2 }), null, 'słowa nie wracają');
-  assert.equal(zakodujPoprawnaRev2(9, { id: 's1p1', stacja: 1 }), null);
-  // ten sam indeks w różnych pytaniach daje różne kody (niepowtarzalność)
-  assert.notEqual(zakodujPoprawnaRev2(1, { id: 's1p1', stacja: 1 }), zakodujPoprawnaRev2(1, { id: 's1p2', stacja: 1 }));
-});
-
-test('rev2: paczka z kodami przechodzi, kod ląduje indeksem w roboczej', () => {
-  const rev2 = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
-  rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p); });
-  assert.equal(czyPaczkaOdwrocona(rev2), true);
-  assert.deepEqual(walidujPaczke(rev2, oczekiwane()), [], 'rev2 waliduje się jak jawna');
-  const robocza = odkodujPaczkeRev2(rev2);
-  assert.equal(robocza.protokol, WERSJA_PROTOKOLU);
-  assert.deepEqual(robocza.pytania.map((p) => p.poprawna), OK.pytania.map((p) => p.poprawna));
-  assert.equal(odkodujPaczkeRev2(OK), OK, 'jawna wraca referencją');
-});
-
-test('rev2: obcy kod to E06 z regułą i przykładem, jawny indeks nie przechodzi', () => {
-  const koduj = (paczka) => paczka.pytania.forEach((p) => {
-    p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p);
-  });
-  const obca = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
-  koduj(obca);
-  obca.pytania[0].poprawna = 99;
-  const usterki = walidujPaczke(obca, oczekiwane());
-  assert.ok(usterki.some((u) => u.kod === 'E06' && /indeks \+ stacja \+ numer pytania \+ 17/.test(u.komunikat)
-    && /2 \+ 2 \+ 1 \+ 17 = 22/.test(u.komunikat)), 'E06 uczy reguły z przykładem');
-  // jawny indeks 0–3 jako „kod" dekoduje się poza zakres (albo w inny indeks) —
-  // model musi liczyć, nie przepisywać
-  const jawnaJakoKod = { ...odwrocPolaPaczki(OK), protokol: WERSJA_PROTOKOLU_REV2 };
-  assert.ok(kody(jawnaJakoKod).includes('E06'), 'gołe indeksy w rev2 nie przechodzą po cichu');
-});
-
-/**
- * B2 (decyzja właściciela 2026-09-09): odwracanie liter USUNIĘTE — modele
- * przekręcały wyrazy. Kod pozycyjny `poprawna` zniesiony ADR 0049.
- */
-test('rev4: szablon każe czysty indeks 0–3 i nie zawiera poleceń kodowania', () => {
+test('szablon §2: numer odpowiedzi 1..4, zero markerów i kodowania', () => {
   for (const fraza of [
-    '"PYT/1.0-rev4"',
-    '"poprawna": numer poprawnej odpowiedzi',
+    '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
     '"poprawna": 2',
+    'SCHEMAT ODPOWIEDZI — dokładnie te pola',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
+  // ADR 0050: model nie pisze markera protokołu ani nie liczy żadnego kodu.
+  assert.ok(!SZABLON_PROMPTU.includes('protokol'), 'szablon §2 nie wspomina pola `protokol`');
+  assert.ok(!SZABLON_PROMPTU.includes('rev4') && !SZABLON_PROMPTU.includes('rev5'), 'markerów wariantów nie ma');
   assert.ok(!SZABLON_PROMPTU.includes('ZAKODOWANY'));
   assert.ok(!SZABLON_PROMPTU.includes('bez kodowania'), 'żadnej negacji o kodowaniu');
-  assert.ok(!SZABLON_PROMPTU.includes('2 + 2 + 1 + 17'));
-  // Uwagi terenowe G.b (właściciel, 2026-09-12): zdanie „zapisz NORMALNIE…
-  // niczego nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer…”
-  // usunięte z zasady 8 — samo jego pisanie mogło modelowi zasugerować,
-  // że cokolwiek trzeba zakodować (szablon 1.0.8).
+  assert.ok(!SZABLON_PROMPTU.includes('2 + 2 + 1 + 17'), 'przykładu kodu pozycyjnego nie ma');
+  // Uwagi terenowe G.b (właściciel, 2026-09-12): zdanie „zapisz NORMALNIE… niczego
+  // nie odwracaj ani nie szyfruj. Ukryty jest wyłącznie numer…” usunięte z zasady 8
+  // — samo jego pisanie mogło modelowi zasugerować, że cokolwiek trzeba zakodować.
   for (const zakazana of [
     'ODWRÓCONE ZNAKAMI',
     'ODCZYTAJ każde odwrócone pole od końca',
@@ -335,16 +247,6 @@ function wejscieBudowy(nadpisanie = {}) {
   };
 }
 
-/** Paczka wejściowa rev2/rev3: odwrócona + kody pozycyjne jak od modelu. */
-function paczkaOdwrocona(marker, bezZrodel = false) {
-  const paczka = { ...odwrocPolaPaczki(OK), protokol: marker };
-  paczka.pytania.forEach((p) => {
-    p.poprawna = zakodujPoprawnaRev2(OK.pytania.find((q) => q.id === p.id).poprawna, p);
-    if (bezZrodel) delete p.zrodla;
-  });
-  return paczka;
-}
-
 test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktów', () => {
   // Właściciel 2026-09-09: „W prompcie wprost zakazujesz szukania źródeł
   // w internecie i nakazujesz używania pamięci treningowej. Po co? Po prostu
@@ -356,9 +258,8 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
     'Sposób ich ustalenia zostawiamy Tobie',
     'OPCJONALNE',
     'Nigdy nie zmyślaj adresu',
-    '"PYT/1.0-rev5"',
-    'SCHEMAT ODPOWIEDZI (PYT/1.0-rev5)',
-    '"poprawna": numer poprawnej odpowiedzi',
+    'SCHEMAT ODPOWIEDZI — dokładnie te pola',
+    '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
   }
@@ -378,9 +279,11 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
     assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(zakaz),
       `szablon §2.2 nadal wymusza sposób zdobycia faktu: „${zakaz}"`);
   }
-  // B2: odwracanie liter usunięte także z wariantu bez fact-check.
+  // B2 + ADR 0050: ani odwracania, ani markera protokołu w wariancie bez fact-check.
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('ODWRÓCONE ZNAKAMI'),
     'szablon §2.2 nie żąda już odwracania');
+  assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('protokol'),
+    'szablon §2.2 nie wspomina pola `protokol` (ADR 0050)');
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('wykonaj kwerendę w internecie'),
     'twarda kwerenda z §2 nie przecieka do §2.2');
   for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{LICZBA_GRACZY}', '{WIEK}', '{OPIS_TRUDNOSCI}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
@@ -389,80 +292,39 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
 });
 
-test('zbudujPrompt: domyślnie bez weryfikacji (rev5), fact-check na życzenie (rev4)', () => {
+test('zbudujPrompt: domyślnie bez weryfikacji (§2.2), fact-check na życzenie (§2), bez markerów', () => {
   const domyslny = zbudujPrompt(wejscieBudowy());
   assert.deepEqual(domyslny.usterki, []);
-  assert.ok(domyslny.prompt.includes('PYT/1.0-rev5'), 'domyślny prompt generuje rev5');
   assert.ok(!domyslny.prompt.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
+  assert.ok(domyslny.prompt.includes('numer poprawnej odpowiedzi od 1 do 4'), 'domyślny prompt uczy numeracji 1..4');
   const jawnyBez = zbudujPrompt(wejscieBudowy({ factcheck: false }));
   assert.equal(jawnyBez.prompt, domyslny.prompt, 'jawne factcheck:false = domyślne');
   const fc = zbudujPrompt(wejscieBudowy({ factcheck: true }));
   assert.deepEqual(fc.usterki, []);
-  assert.ok(fc.prompt.includes('PYT/1.0-rev4'), 'prompt z fact-check generuje rev4');
   assert.ok(fc.prompt.includes('wykonaj kwerendę w internecie'), 'prompt z fact-check żąda kwerendy');
+  for (const prompt of [domyslny.prompt, fc.prompt]) {
+    assert.ok(!prompt.includes('PYT/1.0-rev') && !prompt.includes('"protokol"'),
+      'żaden prompt nie każe modelowi pisać markera protokołu (ADR 0050)');
+  }
 });
 
-test('rev3: paczka bez źródeł przechodzi, dekoder stawia wariantWejsciowy', () => {
-  const rev3 = paczkaOdwrocona(WERSJA_PROTOKOLU_REV3, true);
-  assert.equal(czyPaczkaOdwrocona(rev3), true);
-  assert.deepEqual(walidujPaczke(rev3, oczekiwane()), [], 'rev3 bez źródeł waliduje się czysto (E09 zgaszona)');
-  const robocza = odkodujPaczkeRev2(rev3);
-  assert.equal(robocza.protokol, WERSJA_PROTOKOLU);
-  assert.equal(robocza.wariantWejsciowy, WERSJA_PROTOKOLU_REV3);
-  assert.deepEqual(robocza.pytania.map((p) => p.poprawna), OK.pytania.map((p) => p.poprawna));
-  assert.equal(czyWariantFactcheck(robocza), false);
-});
+test('E09: źródła wymagane przy fact-checku, opcjonalne bez niego — decyduje aplikacja, nie marker', () => {
+  // ADR 0032 + ADR 0050: profil źródeł wynika z ptaszka w setupie. Ten sam brak
+  // źródeł jest usterką przy `factcheck: true` i jest w porządku przy
+  // `factcheck: false` — model nie zgłasza niczego w JSON-ie.
+  const bezZrodel = structuredClone(OK);
+  for (const pyt of bezZrodel.pytania) delete pyt.zrodla;
+  assert.ok(kody(bezZrodel).includes('E09'), 'domyślnie (fact-check) brak źródeł to E09');
+  assert.deepEqual(kody(bezZrodel, oczekiwane({ factcheck: false })), [], 'bez fact-checku brak źródeł przechodzi');
 
-test('rev3: podane źródła sprawdzane kształtem (E10/E11), nie obecnością', () => {
-  const rev3 = paczkaOdwrocona(WERSJA_PROTOKOLU_REV3);
-  rev3.pytania[0].zrodla = [{ url: 'https://przyklad.org/haslo', tytul: odwrocTekst('Tytuł źródła'), sprawdzono: '2026-09-05' }];
-  const usterki = walidujPaczke(rev3, oczekiwane());
-  const e10 = usterki.find((u) => u.kod === 'E10');
-  assert.ok(e10, 'przykładowy adres w rev3 też jest usterką');
-  assert.match(e10.komunikat, /opcjonalne/, 'E10 w rev3 podpowiada usunięcie, nie kwerendę');
-  assert.ok(!usterki.some((u) => u.kod === 'E09'), 'brak E09 mimo uszkodzonego źródła');
-});
-
-test('rev2: brak źródeł to E09 jak dawniej, E10 przypomina o kwerendzie', () => {
-  assert.ok(kody(paczkaOdwrocona(WERSJA_PROTOKOLU_REV2, true)).includes('E09'), 'bramka E09 nie zgasiła rev2');
-  const rev2 = paczkaOdwrocona(WERSJA_PROTOKOLU_REV2);
-  rev2.pytania[1].zrodla = [{ url: 'https://przyklad.org/haslo', tytul: odwrocTekst('Tytuł źródła'), sprawdzono: '2026-09-05' }];
-  const e10 = walidujPaczke(rev2, oczekiwane()).find((u) => u.kod === 'E10');
-  assert.ok(e10, 'przykładowy adres w rev2 jest usterką');
-  assert.match(e10.komunikat, /z kwerendy/, 'E10 w rev2 przypomina o kwerendzie');
-});
-
-test('rev3: round-trip przez kontener zachowuje wariant i waliduje się czysto', () => {
-  const rev3 = paczkaOdwrocona(WERSJA_PROTOKOLU_REV3, true);
-  assert.deepEqual(walidujPaczke(rev3, oczekiwane()), []);
-  const robocza = normalizujTematyPaczki(odkodujPaczkeRev2(rev3));
-  const kontener = zapakujPaczke(robocza, WERSJA_PROTOKOLU);
-  const { paczka, blad } = odpakujPaczke(kontener);
-  assert.equal(blad, null);
-  assert.equal(czyWariantFactcheck(paczka), false, 'wariant przeżył ukrycie (pole w środku kontenera)');
-  assert.deepEqual(walidujPaczke(paczka, oczekiwane()), [], 're-wklejenie ukrytej paczki rev3 nie budzi E09');
-});
-
-test('rev3: dekoder jest autorytetem wariantu — dopisane wariantWejsciowy nie gasi E09 w rev2', () => {
-  const rev2 = paczkaOdwrocona(WERSJA_PROTOKOLU_REV2, true);
-  rev2.wariantWejsciowy = WERSJA_PROTOKOLU_REV3;
-  assert.ok(kody(rev2).includes('E09'), 'znacznik rev2 wygrywa z dopisanym polem');
-});
-
-
-test('czyWariantFactcheck: marker i pole wejściowe, brak obu = zweryfikowana', () => {
-  assert.equal(czyWariantFactcheck({ protokol: 'PYT/1.0-rev3' }), false);
-  assert.equal(czyWariantFactcheck({ protokol: 'PYT/1.0', wariantWejsciowy: 'PYT/1.0-rev3' }), false);
-  assert.equal(czyWariantFactcheck({ protokol: 'PYT/1.0' }), true);
-  assert.equal(czyWariantFactcheck({ protokol: 'PYT/1.0-rev2' }), true);
-  assert.equal(czyWariantFactcheck({ protokol: 'PYT/1.0-rev1' }), true);
-  assert.equal(czyWariantFactcheck(null), true, 'nieznana paczka traktowana jak zweryfikowana');
-});
-
-test('walidujPaczke: E01 zna cztery markery', () => {
-  const e01 = walidujPaczke(klonyPaczki((p) => { p.protokol = 'PYT/2.0'; }), oczekiwane()).find((u) => u.kod === 'E01');
-  assert.ok(e01, 'obcy marker dalej odrzucany');
-  assert.ok(e01.komunikat.includes('PYT/1.0-rev3'), 'komunikat wymienia rev3');
+  // Kształt podanego źródła sprawdzany jest zawsze; komunikat E10 mówi, co zrobić.
+  const przyklad = structuredClone(OK);
+  przyklad.pytania[0].zrodla = [{ url: 'https://przyklad.org/haslo', tytul: 'Tytuł źródła', sprawdzono: '2026-09-05' }];
+  const e10 = walidujPaczke(przyklad, oczekiwane({ factcheck: false })).find((u) => u.kod === 'E10');
+  assert.ok(e10, 'przykładowy adres to usterka także bez fact-checku');
+  assert.match(e10.komunikat, /opcjonalne/, 'bez fact-checku E10 podpowiada usunięcie, nie kwerendę');
+  const e10fc = walidujPaczke(przyklad, oczekiwane()).find((u) => u.kod === 'E10');
+  assert.match(e10fc.komunikat, /z kwerendy/, 'z fact-checkiem E10 przypomina o kwerendzie');
 });
 
 test('walidujPaczke: E03 — liczba pytań niezgodna z setupem', () => {
@@ -478,8 +340,17 @@ test('walidujPaczke: E04/E05 — stacja poza zakresem i stacja bez pytania', () 
 });
 
 test('walidujPaczke: E06/E07/E08 — odpowiedzi', () => {
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].poprawna = 4; })).includes('E06'));
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].poprawna = -1; })).includes('E06'));
+  // ADR 0050: `poprawna` to NUMER odpowiedzi 1..4. Zero i piątka to usterki,
+  // a czwórka jest pełnoprawną odpowiedzią (w numeracji 0..3 była błędem —
+  // to właśnie ta różnica oceniała trzecią odpowiedź jako czwartą).
+  assert.deepEqual(kody(klonyPaczki((p) => { p.pytania[0].poprawna = 4; })), [], 'czwarta odpowiedź jest poprawna');
+  assert.deepEqual(kody(klonyPaczki((p) => { p.pytania[0].poprawna = 1; })), [], 'pierwsza odpowiedź jest poprawna');
+  for (const zla of [0, -1, 5, 3.5]) {
+    assert.ok(kody(klonyPaczki((p) => { p.pytania[0].poprawna = zla; })).includes('E06'), `${zla} to nie numer 1..4`);
+  }
+  const e06 = walidujPaczke(klonyPaczki((p) => { p.pytania[0].poprawna = 0; }), oczekiwane()).find((u) => u.kod === 'E06');
+  assert.match(e06.komunikat, /Numer poprawnej odpowiedzi/, 'komunikat mówi wprost: to numer, nie indeks');
+  assert.match(e06.komunikat, /1\.\.4/, 'komunikat podaje zakres 1..4');
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].odpowiedzi.pop(); })).includes('E07'));
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].odpowiedzi.push('piąta'); })).includes('E07'));
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].odpowiedzi[1] = ''; })).includes('E07'));
@@ -606,56 +477,41 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
 });
 
 test('stałe protokołu: wersja i schemat kontenera', () => {
-  assert.equal(WERSJA_PROTOKOLU, 'PYT/1.0');
+  assert.equal(WERSJA_PROTOKOLU, 'PYT/1.1', 'wersja po zmianie numeracji na 1..4 (ADR 0050)');
   assert.equal(SCHEMAT_KONTENERA, 'TO-paczka/2', 'kontener po decyzji z ADR 0007 (obfuskacja bez klucza)');
 });
 
-/* ---- B2 (2026-09-09): koniec odwracania liter, zostaje kod poprawnej ---- */
+/* --------- ADR 0050: jedna postać paczki, numer odpowiedzi 1..4, bez ukrywania --------- */
 
-/** Paczka rev4/rev5: tekst NORMALNY, `poprawna` czystym indeksem 0–3 (ADR 0049). */
-function paczkaBezOdwracania(marker, bezZrodel = false) {
-  const paczka = structuredClone(OK);
-  paczka.protokol = marker;
-  paczka.pytania.forEach((p) => {
-    if (bezZrodel) delete p.zrodla;
-  });
-  return paczka;
-}
-
-test('B2 + ADR 0049: rev4 waliduje się bez odwracania i bez kodu pozycyjnego', () => {
-  const rev4 = paczkaBezOdwracania('PYT/1.0-rev4');
-  assert.equal(czyPaczkaOdwrocona(rev4), false, 'rev4 nie jest wariantem odwróconym');
-  assert.deepEqual(walidujPaczke(rev4, oczekiwane()), [], 'rev4 przechodzi walidację');
-
-  const robocza = odkodujPaczkeBiezaca(rev4);
-  assert.equal(robocza.protokol, 'PYT/1.0', 'marker znormalizowany');
-  assert.equal(robocza.wariantWejsciowy, 'PYT/1.0-rev4', 'wariant wejściowy zapamiętany');
-  for (const pyt of robocza.pytania) {
-    const wzorzec = OK.pytania.find((q) => q.id === pyt.id);
-    assert.equal(pyt.tresc, wzorzec.tresc, 'treść czytelna bez odwracania');
-    assert.equal(pyt.poprawna, wzorzec.poprawna, 'poprawna zostaje czystym indeksem');
+test('ADR 0050: paczka ma jedną postać — żadnych markerów, kodów ani odwracania', () => {
+  // Paczka z fixture jest w postaci, którą pisze model: bez `protokol`,
+  // z numerem poprawnej odpowiedzi i jawnym tekstem.
+  assert.equal('protokol' in OK, false, 'fixture nie ma markera (model go nie pisze)');
+  assert.deepEqual(walidujPaczke(structuredClone(OK), oczekiwane()), [], 'jedna postać przechodzi walidację');
+  for (const pyt of OK.pytania) {
+    assert.ok(Number.isInteger(pyt.poprawna) && pyt.poprawna >= 1 && pyt.poprawna <= 4,
+      `numer poprawnej odpowiedzi w zakresie 1..4 (jest ${pyt.poprawna})`);
   }
-  assert.equal(czyWariantFactcheck(robocza), true, 'rev4 to wariant z fact-check');
 });
 
-test('B2: rev5 to rev4 bez wymogu źródeł (ADR 0032 zachowane)', () => {
-  const rev5 = paczkaBezOdwracania('PYT/1.0-rev5', true);
-  assert.deepEqual(walidujPaczke(rev5, oczekiwane()), [], 'rev5 bez źródeł waliduje się czysto');
-  assert.equal(czyWariantFactcheck(odkodujPaczkeBiezaca(rev5)), false, 'rev5 to wariant bez fact-check');
-
-  // Ten sam brak źródeł w rev4 musi być błędem — profile się nie zlały.
-  const rev4bezZrodel = paczkaBezOdwracania('PYT/1.0-rev4', true);
-  const usterki = walidujPaczke(rev4bezZrodel, oczekiwane());
-  assert.ok(usterki.some((u) => u.kod === 'E09'), 'rev4 nadal wymaga źródeł (E09)');
+test('ADR 0050: round-trip przez kontener zachowuje numer odpowiedzi i pieczątkę fact-checku', () => {
+  const zPieczatka = { ...structuredClone(OK), factcheck: true };
+  const kontener = zapakujPaczke(zPieczatka, WERSJA_PROTOKOLU);
+  const { paczka, blad } = odpakujPaczke(kontener);
+  assert.equal(blad, null);
+  assert.deepEqual(paczka.pytania.map((p) => p.poprawna), OK.pytania.map((p) => p.poprawna),
+    'ukrycie i odsłonięcie nie rusza numeru poprawnej odpowiedzi');
+  assert.equal(paczka.factcheck, true, 'pieczątka fact-checku (nadana przez aplikację) przeżywa zapis');
+  assert.deepEqual(walidujPaczke(paczka, oczekiwane()), [], 'odsłonięta paczka waliduje się czysto');
 });
 
-test('B2: stare paczki rev2/rev3 (odwrócone) dają się odczytać — leżą na Drive', () => {
-  for (const marker of ['PYT/1.0-rev2', 'PYT/1.0-rev3']) {
-    const stara = paczkaOdwrocona(marker, marker === 'PYT/1.0-rev3');
-    assert.equal(czyPaczkaOdwrocona(stara), true, `${marker} to wariant odwrócony`);
-    assert.deepEqual(walidujPaczke(stara, oczekiwane()), [], `${marker} nadal się waliduje`);
-    const robocza = odkodujPaczkeRev2(stara);
-    assert.equal(robocza.pytania[0].tresc, OK.pytania[0].tresc, `${marker}: tekst odwrócony z powrotem`);
-    assert.equal(robocza.pytania[0].poprawna, OK.pytania[0].poprawna, `${marker}: kod rozkodowany`);
-  }
+test('ADR 0050: paczka bez źródeł z pieczątką „bez fact-checku” nie budzi E09 po zapisie i odczycie', () => {
+  const bezZrodel = { ...structuredClone(OK), factcheck: false };
+  for (const pyt of bezZrodel.pytania) delete pyt.zrodla;
+  assert.deepEqual(walidujPaczke(bezZrodel, oczekiwane({ factcheck: false })), []);
+  const kontener = zapakujPaczke(bezZrodel, WERSJA_PROTOKOLU);
+  const { paczka } = odpakujPaczke(kontener);
+  assert.equal(paczka.factcheck, false, 'pieczątka przeżyła zapis');
+  assert.deepEqual(walidujPaczke(paczka, oczekiwane({ factcheck: paczka.factcheck })), [],
+    're-wklejenie ukrytej paczki bez fact-checku nie budzi E09');
 });

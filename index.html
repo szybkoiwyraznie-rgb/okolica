@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-136">
-  <script type="module" src="app/app.js?v=m12-136"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-137">
+  <script type="module" src="app/app.js?v=m12-137"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -510,7 +510,7 @@
       </div>
       <!-- FAZA C: pytanie — odsłaniane DOPIERO w chwili dojścia (ADR 0007 pkt 6) -->
       <div id="gra-panel-pytanie" class="karta gra-panel" hidden>
-        <p id="gra-pytanie-naglowek" class="badge">Stacja zdobyta · pytanie — z —</p>
+        <p id="gra-pytanie-naglowek" class="badge">Stacja — - —</p>
         <!-- Uwaga właściciela z testów (2026-09-13, A; ADR 0036 aneks): treść
              pytania i możliwe odpowiedzi siedzą w ZWIJANYM elemencie — wzorzec
              z ekranu promptu (`<details>` + `<summary>`). W fazie odpowiedzi jest
@@ -518,7 +518,12 @@
              wyniku ZWINIĘTY, żeby na wierzchu zostały łapki, poprawna odpowiedź
              i komentarz — na telefonie bez scrollowania. -->
         <details id="gra-pytanie-detale" open>
-          <summary id="gra-pytanie-detale-naglowek">Pytanie i możliwe odpowiedzi</summary>
+          <!-- Napisu „Pytanie i możliwe odpowiedzi" nie ma (właściciel 2026-09-15,
+               uwaga A): treść pytania i odpowiedzi widać pod spodem, więc etykieta
+               była szumem. Zwijanie zostaje — po odpowiedzi sekcja zjeżdża, żeby na
+               wierzchu został wynik z wyjaśnieniem. Etykieta dla czytnika ekranu
+               opisuje, co się rozwija. -->
+          <summary id="gra-pytanie-detale-naglowek" aria-label="Pytanie i możliwe odpowiedzi"></summary>
           <p id="gra-pytanie-tresc" class="duzy"></p>
           <div id="gra-odpowiedzi" class="gra-odpowiedzi" role="group" aria-label="Wybierz odpowiedź"></div>
           <!-- Właściciel 2026-09-13 (A): po odpowiedzi warianty WRACAJĄ jako

@@ -12,75 +12,42 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-136';
-import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-136';
+import { TEMATY, WIEK, TRYBY, kanonicznyTemat, liczbaPytan } from './konfig.js?v=m12-137';
+import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-137';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
-export const WERSJA_PROTOKOLU = 'PYT/1.0';
-
-/** Wariant odwrócony: pola tekstowe od końca, marker `-rev1` (PROTOKOL §3.4). */
-export const WERSJA_PROTOKOLU_REV1 = 'PYT/1.0-rev1';
-
-/** Wariant rev2: jak rev1, a `poprawna` to kod pozycyjny i brak `punkty` (§3.4). */
-export const WERSJA_PROTOKOLU_REV2 = 'PYT/1.0-rev2';
+export const WERSJA_PROTOKOLU = 'PYT/1.1';
 
 /**
- * Wariant rev3 (ADR 0032): zapis jak rev2 (odwrócenie tekstu, kod pozycyjny),
- * profil walidacji BEZ twardych źródeł (E09 nie dotyczy rev3).
+ * Wersje historyczne (REV1..REV5) i cała ich obsługa zostały USUNIĘTE
+ * 2026-09-15e (ADR 0050). Powód właściciela: „to tylko obciążenie dla AI” —
+ * model nie pisze żadnego markera, bo o profilu źródeł wie aplikacja
+ * z ptaszka w setupie, a nie z pola w JSON-ie. Kod czyta JEDNĄ postać paczki.
  */
-export const WERSJA_PROTOKOLU_REV3 = 'PYT/1.0-rev3';
-
-/**
- * Warianty rev4/rev5: tekst wprost, `poprawna` czystym indeksem 0–3 (ADR 0049).
- * Dwa markery, bo profil źródeł nadal się różni (ADR 0032):
- * rev4 = z fact-check, rev5 = bez fact-check.
- * rev1/rev2/rev3 to zapis historyczny (odwracanie i/lub kod pozycyjny).
- */
-export const WERSJA_PROTOKOLU_REV4 = 'PYT/1.0-rev4';
-export const WERSJA_PROTOKOLU_REV5 = 'PYT/1.0-rev5';
-
-/** Warianty historyczne, w których `poprawna` jest kodem pozycyjnym (§3.4). */
-export const WARIANTY_Z_KODEM = Object.freeze([
-  WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3,
-]);
-
-/** Bieżące markery generacji: tekst wprost, `poprawna` = 0..3 (ADR 0049). */
-export const WARIANTY_BIEZACE = Object.freeze([
-  WERSJA_PROTOKOLU_REV4, WERSJA_PROTOKOLU_REV5,
-]);
-
-/** Warianty BEZ wymogu twardych źródeł (ADR 0032). */
-export const WARIANTY_BEZ_FACTCHECK = Object.freeze([WERSJA_PROTOKOLU_REV3, WERSJA_PROTOKOLU_REV5]);
-
-/** Wszystkie markery, które walidator przyjmuje na wejściu. */
-export const WARIANTY_PRZYJMOWANE = Object.freeze([
-  WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2,
-  WERSJA_PROTOKOLU_REV3, WERSJA_PROTOKOLU_REV4, WERSJA_PROTOKOLU_REV5,
-]);
 
 /** Wersja łatki szablonu promptu (kosmetyka szablonu bez zmiany schematu). */
-export const SZABLON_WERSJA = 'PYT/1.0.10'; // 1.0.10: poprawna = numer odpowiedzi, bez negacji w prompcie
+export const SZABLON_WERSJA = 'PYT/1.1.0'; // 1.1.0: poprawna = numer 1..4, bez markera protokołu w paczce
 
 /** Wersja szablonu bez weryfikacji (§2.2) — wersjonowana niezależnie od §2. */
-export const SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.0-nofc.5'; // .5: jak 1.0.10 — poprawna: numer odpowiedzi
+export const SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.1-nofc.0'; // jak 1.1.0 — poprawna: numer odpowiedzi, bez markera
 
 /** Schemat kontenera z obfuskowanymi pytaniami (ADR 0007 pkt 3 i 5: maskowanie, nie szyfrowanie). */
 // Schemat kontenera mieszka w `app/kodowanie.js` (jedna definicja, bez kopii);
 // protokół go tylko reeksportuje, bo to format zapisany w PROTOKOL §3.3.
-export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-136';
+export { SCHEMAT_KONTENERA, KODOWANIE } from './kodowanie.js?v=m12-137';
 
 /* SZABLON-START
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.
  * NIE EDYTUJ RĘCZNIE — zmień dokument i uruchom `npm run build`.
  */
-export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. W polu \"protokol\" wpisz \"PYT/1.0-rev4\".\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev4) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev4\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 2,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": numer poprawnej odpowiedzi.\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
+export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.\n3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI — dokładnie te pola:\n{\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 2,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście \"odpowiedzi\").\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"uwagi\": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.";
 /* SZABLON-KONIEC */
 
 /* SZABLON-BEZ-START
  * Treść generowana z docs/PROTOKOL.md §2.2 przez tools/synchronizuj-szablon.mjs.
  * NIE EDYTUJ RĘCZNIE — zmień dokument i uruchom `npm run build`.
  */
-export const SZABLON_PROMPTU_BEZ_WERYFIKACJI = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Gdy czegoś nie jesteś pewien, uprość pytanie albo pomiń temat i opisz to w polu \"uwagi\".\n2. Pole \"zrodla\" jest OPCJONALNE: jeśli masz adres potwierdzający fakt, podaj go; jeśli nie — pomiń pole albo zostaw pustą listę. Nigdy nie zmyślaj adresu: niepewny URL jest gorszy niż jego brak.\n3. Nie wymyślaj nazw, dat, liczb, cytatów ani autorów. Nie zgaduj. Gdy nie masz pewności co do faktu, wybierz łatwiejszy fakt z tego samego tematu; jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\n8. W polu \"protokol\" wpisz \"PYT/1.0-rev5\".\n\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI (PYT/1.0-rev5) — dokładnie te pola:\n{\n  \"protokol\": \"PYT/1.0-rev5\",\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 2,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": numer poprawnej odpowiedzi.\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"zrodla\": pusta lista ALBO lista źródeł w kształcie jak w schemacie; podawaj tylko adresy, co do których masz pewność (pełny adres https://, prawdziwy i działający), każdy z tytułem i datą sprawdzenia RRRR-MM-DD; adres przykładowy albo zmyślony unieważnia pytanie.\n- \"uwagi\": czego nie udało się ustalić z własnej wiedzy, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko pewne.";
+export const SZABLON_PROMPTU_BEZ_WERYFIKACJI = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Gdy czegoś nie jesteś pewien, uprość pytanie albo pomiń temat i opisz to w polu \"uwagi\".\n2. Pole \"zrodla\" jest OPCJONALNE: jeśli masz adres potwierdzający fakt, podaj go; jeśli nie — pomiń pole albo zostaw pustą listę. Nigdy nie zmyślaj adresu: niepewny URL jest gorszy niż jego brak.\n3. Nie wymyślaj nazw, dat, liczb, cytatów ani autorów. Nie zgaduj. Gdy nie masz pewności co do faktu, wybierz łatwiejszy fakt z tego samego tematu; jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.\n6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.\n7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE I TRUDNOŚĆ:\n- liczba graczy: {LICZBA_GRACZY}\n- kategoria wiekowa: {WIEK}\n- wymagania trudności: {OPIS_TRUDNOSCI}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI — dokładnie te pola:\n{\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"wiek\": \"{WIEK}\",\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 2,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe\" albo „żadna z powyższych\"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście \"odpowiedzi\").\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"wyjasnienie\": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.\n- \"zrodla\": pusta lista ALBO lista źródeł w kształcie jak w schemacie; podawaj tylko adresy, co do których masz pewność (pełny adres https://, prawdziwy i działający), każdy z tytułem i datą sprawdzenia RRRR-MM-DD; adres przykładowy albo zmyślony unieważnia pytanie.\n- \"uwagi\": czego nie udało się ustalić z własnej wiedzy, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko pewne.";
 /* SZABLON-BEZ-KONIEC */
 
 /**
@@ -250,117 +217,12 @@ export function normalizujTematyPaczki(paczka) {
  * `oczekiwane`: `{ liczbaStacji, liczbaPytan, wiek, tematy, promienM, lat, lon, jezyk, teraz, stacje }`.
  */
 /**
- * Odwrócenie tekstu znakami (po punktach kodowych, nie po jednostkach UTF-16 —
- * emoji i ogonki przeżywają). Symetryczne: dwukrotne odwrócenie wraca do
- * oryginału. Służy wariantowi `PYT/1.0-rev1` (PROTOKOL §3.4).
+ * Uwaga o historii zapisu (2026-09-15e, ADR 0050): ten plik miał kiedyś trzy
+ * dekodery — odwracanie znaków (`rev1`), kod pozycyjny numeru poprawnej
+ * odpowiedzi (`rev2`/`rev3`) i normalizację markerów (`rev4`/`rev5`). Wszystkie
+ * zostały usunięte razem z wariantami: paczka ma jedną postać, a numer poprawnej
+ * odpowiedzi jest tym numerem, który widzi człowiek i model (`1..4`).
  */
-export function odwrocTekst(tekst) {
-  return [...String(tekst ?? '')].reverse().join('');
-}
-
-/** Czy paczka jest w wariancie odwróconym (marker `-rev1`, `-rev2` albo `-rev3`). */
-export function czyPaczkaOdwrocona(paczka) {
-  return !!paczka && typeof paczka === 'object'
-    && (paczka.protokol === WERSJA_PROTOKOLU_REV1 || paczka.protokol === WERSJA_PROTOKOLU_REV2
-      || paczka.protokol === WERSJA_PROTOKOLU_REV3);
-}
-
-/**
- * Czy paczka przeszła weryfikację w sieci (ADR 0032). Dekoder normalizuje
- * marker do `PYT/1.0`, więc wariant niesie pole `wariantWejsciowy` stawiane
- * przy dekodowaniu; dla paczek nigdy niedekodowanych (jawnych) decyduje sam
- * marker. Brak obu = paczka sprzed rev3 = zweryfikowana.
- */
-export function czyWariantFactcheck(paczka) {
-  return !WARIANTY_BEZ_FACTCHECK.includes(paczka?.wariantWejsciowy ?? paczka?.protokol);
-}
-
-/**
- * Kod pozycyjny rev2 (PROTOKOL §3.4): `poprawna` to NIE indeks, tylko
- * indeks + stacja + numer pytania z `id` + 17 (s2p1 z poprawną trzecią:
- * 2+2+1+17=22). Inny dla każdego pytania, nieczytelny na pierwszy rzut
- * oka — a +17 rozłącza zakresy, więc goły indeks 0–3 NIGDY nie przejdzie
- * za kod (E06 zamiast cichego złego klucza). Model dodaje cztery małe
- * liczby, więc się nie myli. Bariera przypadkowego wglądu (ADR 0007).
- */
-export const PRZESUNIECIE_KODU_REV2 = 17;
-
-/** Numer pytania z id (s2p1 → 1); null gdy id obce. */
-export function numerPytaniaZId(id) {
-  const m = /^s\d+p(\d+)$/.exec(typeof id === 'string' ? id.trim() : '');
-  return m ? Number(m[1]) : null;
-}
-
-/** Indeks 0–3 z kodu rev2; null gdy kod, id albo stacja obce. */
-export function odkodujPoprawnaRev2(kod, { id, stacja } = {}) {
-  const nr = numerPytaniaZId(id);
-  if (!czyLiczbaCalkowita(kod) || !czyLiczbaCalkowita(stacja) || nr === null) return null;
-  const indeks = kod - stacja - nr - PRZESUNIECIE_KODU_REV2;
-  return indeks >= 0 && indeks <= 3 ? indeks : null;
-}
-
-/** Indeks 0–3 → kod rev2 (testy, podpowiedzi); null gdy dane obce. */
-export function zakodujPoprawnaRev2(indeks, { id, stacja } = {}) {
-  const nr = numerPytaniaZId(id);
-  if (!czyLiczbaCalkowita(indeks) || indeks < 0 || indeks > 3 || !czyLiczbaCalkowita(stacja) || nr === null) return null;
-  return indeks + stacja + nr + PRZESUNIECIE_KODU_REV2;
-}
-
-/**
- * Odwrócenie pól tekstowych paczki: `tresc`, `odpowiedzi[]`, `wyjasnienie`,
- * `uwagi`, `zrodla[].tytul` (PROTOKOL §3.4). Zwraca NOWY obiekt; pola
- * strukturalne (`id`, `stacja`, `poprawna`, `url`, `sprawdzono`,
- * `protokol`…) nietknięte — w tym `poprawna` (kod z rev2 dekoduje osobny
- * krok, nie odwrócenie). Symetryczna: `odwroc(odwroc(p))` = `p`.
- */
-export function odwrocPolaPaczki(paczka) {
-  const kopia = structuredClone(paczka);
-  if (typeof kopia.uwagi === 'string') kopia.uwagi = odwrocTekst(kopia.uwagi);
-  for (const pyt of Array.isArray(kopia.pytania) ? kopia.pytania : []) {
-    if (!pyt || typeof pyt !== 'object') continue;
-    if (typeof pyt.tresc === 'string') pyt.tresc = odwrocTekst(pyt.tresc);
-    if (Array.isArray(pyt.odpowiedzi)) {
-      pyt.odpowiedzi = pyt.odpowiedzi.map((o) => (typeof o === 'string' ? odwrocTekst(o) : o));
-    }
-    if (typeof pyt.wyjasnienie === 'string') pyt.wyjasnienie = odwrocTekst(pyt.wyjasnienie);
-    for (const z of Array.isArray(pyt.zrodla) ? pyt.zrodla : []) {
-      if (z && typeof z === 'object' && typeof z.tytul === 'string') z.tytul = odwrocTekst(z.tytul);
-    }
-  }
-  return kopia;
-}
-
-/**
- * Odkodowanie paczki odwróconej do postaci roboczej: pola z powrotem czytelne,
- * marker znormalizowany do `PYT/1.0`. Nieodwrócona przechodzi bez zmian.
- */
-export function odkodujPaczkeRev1(paczka) {
-  if (!paczka || typeof paczka !== 'object' || paczka.protokol !== WERSJA_PROTOKOLU_REV1) return paczka;
-  return { ...odwrocPolaPaczki(paczka), protokol: WERSJA_PROTOKOLU, wariantWejsciowy: WERSJA_PROTOKOLU_REV1 };
-}
-
-/**
- * Odkodowanie paczki rev2 do postaci roboczej: pola z powrotem czytelne,
- * kody `poprawna` → indeksy 0–3, marker znormalizowany do `PYT/1.0`.
- * Nieodczytywalny kod staje się znacznikiem `~kod:…` — zgłasza go E06
- * w walidacji (nie wyjątek), z oryginalną wartością w komunikacie.
- */
-export function odkodujPaczkeRev2(paczka) {
-  if (!paczka || typeof paczka !== 'object' || !WARIANTY_Z_KODEM.includes(paczka.protokol)) return paczka;
-  const robocza = odwrocPolaPaczki(paczka);
-  for (const pyt of Array.isArray(robocza.pytania) ? robocza.pytania : []) {
-    if (!pyt || typeof pyt !== 'object') continue;
-    const indeks = odkodujPoprawnaRev2(pyt.poprawna, pyt);
-    pyt.poprawna = indeks === null ? `~kod:${String(pyt.poprawna)}` : indeks;
-  }
-  return { ...robocza, protokol: WERSJA_PROTOKOLU, wariantWejsciowy: paczka.protokol };
-}
-
-/** Normalizacja rev4/rev5: marker PYT/1.0, `poprawna` nietknięta (już 0..3). */
-export function odkodujPaczkeBiezaca(paczka) {
-  if (!paczka || typeof paczka !== 'object' || !WARIANTY_BIEZACE.includes(paczka.protokol)) return paczka;
-  return { ...structuredClone(paczka), protokol: WERSJA_PROTOKOLU, wariantWejsciowy: paczka.protokol };
-}
 
 export function walidujPaczke(paczka, oczekiwane = {}) {
   const u = [];
@@ -373,24 +235,11 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   }
 
   // --- nagłówek paczki ---
-  const listaMarkerow = WARIANTY_PRZYJMOWANE.map((w) => `"${w}"`).join(', ');
-  if (!('protokol' in paczka)) dodaj('E01', 'protokol', `Brak pola "protokol". Oczekiwano jednego z: ${listaMarkerow}.`);
-  else if (!WARIANTY_PRZYJMOWANE.includes(paczka.protokol)) {
-    dodaj('E01', 'protokol', `Wersja "${paczka.protokol}" nie jest obsługiwana — oczekiwano jednego z: ${listaMarkerow}.`);
-  }
-  // Wariant odwrócony walidujemy po odkodowaniu: reguły tekstowe (§3.2, §6)
-  // działają na odczytanej treści (PROTOKOL §3.4). rev3 dekoduje się jak
-  // rev2 (ten sam zapis), ale niesie inny profil walidacji (ADR 0032).
-  const wariant = paczka.protokol;
-  paczka = WARIANTY_Z_KODEM.includes(wariant)
-    ? odkodujPaczkeRev2(paczka)
-    : WARIANTY_BIEZACE.includes(wariant)
-      ? odkodujPaczkeBiezaca(paczka)
-      : odkodujPaczkeRev1(paczka);
-  // Bramka E09: źródła twarde dla jawnej/rev1/rev2, opcjonalne dla rev3.
-  // Po dekodowaniu marker jest znormalizowany, więc decyduje pole
-  // `wariantWejsciowy` (dekoder) z awaryjnie markerem wejściowym.
-  const wymagaZrodel = !WARIANTY_BEZ_FACTCHECK.includes(paczka.wariantWejsciowy ?? wariant);
+  // Pola `protokol` NIE ma: marker zniknął z paczki (ADR 0050), a gdyby model je
+  // mimo wszystko dopisał (stary nawyk), jest ignorowane — walidacja go nie
+  // dotyczy. O profilu źródeł decyduje ptaszek „fact check” w setupie, nie
+  // marker w JSON-ie: aplikacja wie, który prompt wysłała.
+  const wymagaZrodel = oczekiwane.factcheck !== false;
 
   const okolica = paczka.okolica;
   if (!okolica || typeof okolica !== 'object') {
@@ -500,10 +349,9 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
       if (new Set(normalizowane.filter((n) => n)).size !== normalizowane.filter((n) => n).length) {
         dodaj('E08', `${pole}.odpowiedzi`, 'Odpowiedzi powtarzają się (po normalizacji wielkości liter i interpunkcji).');
       }
-      if (typeof p.poprawna === 'string' && p.poprawna.startsWith('~kod:')) {
-        dodaj('E06', `${pole}.poprawna`, `Nieprawidłowy kod poprawnej (${p.poprawna.slice(5)}): ma być indeks + stacja + numer pytania + 17, np. s2p1 z poprawną trzecią to 2 + 2 + 1 + 17 = 22.`);
-      } else if (!czyLiczbaCalkowita(p.poprawna) || p.poprawna < 0 || p.poprawna > p.odpowiedzi.length - 1) {
-        dodaj('E06', `${pole}.poprawna`, `Indeks poprawnej odpowiedzi (${p.poprawna}) jest poza zakresem 0..${p.odpowiedzi.length - 1}.`);
+      // Numer odpowiedzi, nie indeks (ADR 0050): 1 = pierwsza odpowiedź.
+      if (!czyLiczbaCalkowita(p.poprawna) || p.poprawna < 1 || p.poprawna > p.odpowiedzi.length) {
+        dodaj('E06', `${pole}.poprawna`, `Numer poprawnej odpowiedzi (${p.poprawna}) jest poza zakresem 1..${p.odpowiedzi.length} — podaj numer odpowiedzi, nie indeks.`);
       }
     }
 

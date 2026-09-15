@@ -1,9 +1,9 @@
-# PROTOKÓŁ PYT v1.0 — protokół pytań terenowych
+# PROTOKÓŁ PYT v1.1 — protokół pytań terenowych
 
 > **To jest zasada treściowa, nie sugestia** (AGENTS.md §3). Obowiązuje każdy
 > prompt, każdą wklejoną odpowiedź modelu i każdą paczkę pytań zapisaną przez
-> aplikację. Zmiana protokołu = nowy ADR + podbicie wersji + migrator paczek
-> (ADR 0010 pkt 6).
+> aplikację. Zmiana protokołu = nowy ADR + podbicie wersji, a migrator tylko
+> wtedy, gdy istnieją paczki do zmigrowania (§7).
 
 - Status: **obowiązujący** (wersja wyprowadzana z tego nagłówka; test
   kontraktowy porównuje ją z `app/protokol.js` i z `README.md`)
@@ -50,8 +50,6 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. W polu "protokol" wpisz "PYT/1.0-rev4".
-
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
@@ -70,9 +68,8 @@ GRACZE I TRUDNOŚĆ:
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
-SCHEMAT ODPOWIEDZI (PYT/1.0-rev4) — dokładnie te pola:
+SCHEMAT ODPOWIEDZI — dokładnie te pola:
 {
-  "protokol": "PYT/1.0-rev4",
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "wiek": "{WIEK}",
   "tematy": [{TEMATY_JSON}],
@@ -97,7 +94,7 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": numer poprawnej odpowiedzi.
+- "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "uwagi": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.
@@ -145,7 +142,8 @@ promptu (paczka bez weryfikacji zwykle wychodzi mniejsza, bo nie niesie źróde�
 
 Ten sam kształt odpowiedzi co §2, inny kontrakt z modelem: **nie narzucamy
 sposobu zdobycia faktu** — model sam decyduje, czy sięgnie do sieci, czy do
-własnej wiedzy — a źródła są opcjonalne. Znacznik odpowiedzi: `PYT/1.0-rev5`.
+własnej wiedzy — a źródła są opcjonalne. Model nie wpisuje żadnego markera:
+czy paczka jest z fact-checkiem, wie aplikacja z ptaszka w setupie (§3.4).
 
 Decyzja właściciela 2026-09-09: wcześniejsza wersja wprost ZAKAZYWAŁA kwerendy
 i nakazywała pamięć treningową. To było wymuszanie bez powodu — jeśli model nie
@@ -164,8 +162,6 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
 6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
 7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. W polu "protokol" wpisz "PYT/1.0-rev5".
-
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
@@ -184,9 +180,8 @@ GRACZE I TRUDNOŚĆ:
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
-SCHEMAT ODPOWIEDZI (PYT/1.0-rev5) — dokładnie te pola:
+SCHEMAT ODPOWIEDZI — dokładnie te pola:
 {
-  "protokol": "PYT/1.0-rev5",
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "wiek": "{WIEK}",
   "tematy": [{TEMATY_JSON}],
@@ -211,7 +206,7 @@ WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": numer poprawnej odpowiedzi.
+- "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
 - "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
 - "zrodla": pusta lista ALBO lista źródeł w kształcie jak w schemacie; podawaj tylko adresy, co do których masz pewność (pełny adres https://, prawdziwy i działający), każdy z tytułem i datą sprawdzenia RRRR-MM-DD; adres przykładowy albo zmyślony unieważnia pytanie.
@@ -219,13 +214,13 @@ WYMAGANIA DODATKOWE:
 ```
 <!-- szablon-promptu-bez:koniec -->
 
-## 3. Schemat paczki PYT/1.0
+## 3. Schemat paczki PYT/1.1
 
 ### 3.1 Poziom paczki
 
 | Pole | Typ | Wymagane | Zasady |
 | --- | --- | --- | --- |
-| `protokol` | tekst | tak | `"PYT/1.0"`, `"-rev1"`, `"-rev2"`, `"-rev3"` (odwrócone, §3.4) albo bieżące `"-rev4"` / `"-rev5"` (bez odwracania) |
+| `protokol` | tekst | nie | pole historyczne: model go NIE pisze, a aplikacja je IGNORUJE (§3.4). Profil źródeł wynika z ptaszka „fact check” w setupie, nie z markera |
 | `okolica.lat` | liczba | tak | `-90 ≤ lat ≤ 90` |
 | `okolica.lon` | liczba | tak | `-180 ≤ lon ≤ 180` |
 | `okolica.promienM` | liczba | tak | `100–50000`, zgodna z konfiguracją gry |
@@ -249,7 +244,7 @@ WYMAGANIA DODATKOWE:
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
-| `poprawna` | liczba całkowita | `0..3` (indeks na liście `odpowiedzi`). Warianty historyczne rev2/rev3 niosły kod pozycyjny; bieżące rev4/rev5 — czysty numer (ADR 0049) |
+| `poprawna` | liczba całkowita | `1..4` — **numer** odpowiedzi na liście `odpowiedzi` (1 = pierwsza). Tak liczy człowiek i tak pisze model; żadnego przeliczania po drodze (ADR 0050) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
 | `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
@@ -261,7 +256,7 @@ WYMAGANIA DODATKOWE:
 ```json
 {
   "schemat": "TO-paczka/2",
-  "protokol": "PYT/1.0",
+  "protokol": "PYT/1.1",
   "kodowanie": "b64x1",
   "skrot": "FNV-1a 32 z bajtów plaintextu (8 znaków hex)",
   "dane": "base64url (UTF-8 JSON ⊕ strumień maski)"
@@ -271,7 +266,7 @@ WYMAGANIA DODATKOWE:
 | Pole | Zasady |
 | --- | --- |
 | `schemat` | dokładnie `"TO-paczka/2"`; inna wartość = odmowa odczytu z komunikatem |
-| `protokol` | wersja protokołu paczki, którą ukryto (`PYT/1.0`) |
+| `protokol` | wersja protokołu paczki, którą ukryto (`PYT/1.1`) |
 | `kodowanie` | `"b64x1"` — hak migracyjny: przyszłe warianty (np. `aes-gcm`) dochodzą tu, nie w nowym polu |
 | `skrot` | suma kontrolna FNV-1a 32 — wykrywa **urwanie przy kopiowaniu**, nie podmianę; to nie jest funkcja kryptograficzna |
 | `dane` | base64url bez dopełnienia `=` |
@@ -284,30 +279,26 @@ wolno trzymać danych osobowych ani niczego, co nie może zostać upublicznione
 (ADR 0013). Aplikacja przyjmuje też **jawny JSON** paczki (§3.1) — odpowiedź
 modelu jest jawna, ukrywa ją dopiero aplikacja po walidacji.
 
-### 3.4 Paczka odwrócona (`PYT/1.0-rev1`)
+### 3.4 Historia zapisu paczki (warianty zniesione)
 
-Wariant zapisu, nie nowa wersja schematu: model odwraca znakami pola tekstowe
-(`tresc`, `odpowiedzi`, `wyjasnienie`, `uwagi`, `zrodla[].tytul`) i wpisuje
-`"protokol": "PYT/1.0-rev1"`. Walidator odkodowuje paczkę PRZED walidacją, więc
-reguły §3.2 i §6 działają na odczytanej treści. Cel jak w §3.3: ochrona przed
-przypadkowym wglądem (ekran organizatora, schowek), nie szyfrowanie. Walidator
-przyjmuje oba warianty.
+Do 2026-09-15 paczka niosła marker `"protokol": "PYT/1.0-revN"`, a kolejne
+warianty zmieniały zapis: `rev1` odwracał znakami pola tekstowe, `rev2`/`rev3`
+kodowały numer poprawnej odpowiedzi kodem pozycyjnym (indeks + stacja + numer
+pytania + 17), a `rev4`/`rev5` różniły się wyłącznie profilem źródeł.
 
-**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to kod pozycyjny (indeks + stacja + numer pytania + 17, np. s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22 — inny dla każdego pytania, a +17 sprawia, że goły indeks nigdy nie przejdzie za kod), a pola `punkty` nie ma (każde pytanie daje 1 pkt).
+Wszystko to jest **zniesione**:
 
-**Warianty `PYT/1.0-rev4` i `PYT/1.0-rev5` (bieżące).**
-Odwracanie tekstu zniesione 2026-09-09 (ADR 0033). Kod pozycyjny `poprawna`
-zniesiony 2026-09-15 (ADR 0049): pole to czysty indeks `0..3`. Host jest
-uczciwy — numer w JSON jest tym, którego używa gra. Różnica między markerami
-to wyłącznie profil źródeł: **rev4** z fact-check (źródła twarde, E09
-obowiązuje, szablon §2), **rev5** bez fact-check (źródła opcjonalne, szablon
-§2.2, domyślny — ADR 0032).
+- odwracanie tekstu — 2026-09-09 (ADR 0033),
+- kod pozycyjny `poprawna` — 2026-09-15 (ADR 0049), a numeracja przeszła na
+  `1..4` (ADR 0050),
+- markery i profile źródeł w paczce — 2026-09-15e (ADR 0050): „to tylko obciążenie
+  dla AI”. O tym, czy pytania były z fact-checkiem, wie aplikacja (ptaszek na
+  ekranie promptu) i zapisuje to w `meta.factcheck` zestawu; model nie ma nic do
+  zgłaszania.
 
-Walidator przyjmuje **wszystkie** markery: `PYT/1.0`, `-rev1`, `-rev2`, `-rev3`,
-`-rev4`, `-rev5`. Odwracanie i kod pozycyjny dekoduje tylko dla rev1/rev2/rev3
-(zapis historyczny). Właściciel kasuje stare paczki — konwersja nie jest
-wymagana przy nowej generacji.
-
+Paczka ma więc **jedną postać** (§3.1/§3.2), a pole `protokol` — jeśli model je
+mimo wszystko dopisze — jest ignorowane. Starych paczek nie ma (właściciel ich
+nie trzyma), więc konwersji nie ma i nie będzie.
 
 ## 4. Kategorie wiekowe i wymagania trudności
 
@@ -367,15 +358,15 @@ i aneks 2026-09-15d: przycisk „skopiuj poprawkę do modelu" usunięty).
 
 | Kod | Usterka |
 | --- | --- |
-| `E01` | brak pola `protokol` albo inna wersja niż `PYT/1.0` |
+| `E01` | wycofany 2026-09-15e (ADR 0050): paczka nie ma markera protokołu, a pole `protokol` jest ignorowane |
 | `E02` | JSON nieparsowalny (w tym wiele bloków, tekst poza blokiem) |
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
 | `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
 | `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
-| `E06` | `poprawna` poza zakresem `0..3` (w rev2/rev3 także: kod pozycyjny nie do odczytania) |
+| `E06` | `poprawna` nie jest numerem odpowiedzi `1..4` |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
-| `E09` | pytanie bez `zrodla` albo lista pusta (nie dotyczy rev3 i rev5 — źródła opcjonalne) |
+| `E09` | pytanie bez `zrodla` albo lista pusta — tylko gdy fact-check jest włączony w setupie |
 | `E10` | `zrodla[].url` nie jest adresem `http(s)` albo jest adresem zabronionym: domena przykładowa (`example.com`, `przyklad.org`, `twojastrona.pl`) albo zarezerwowane TLD (`.invalid`, `.test`, `.localhost`, `.example`, `.local`) |
 | `E11` | data (`utworzono`, `sprawdzono`) w przyszłości albo w złym formacie |
 | `E12` | `temat` spoza kanonu §5 |
@@ -431,16 +422,22 @@ zajęte, tak samo jak wycofany `E18`.
   koniec odwracania liter. Szablony generują rev4 (§2) i rev5 (§2.2).
 - **Wersje szablonów `PYT/1.0.8` / `PYT/1.0-nofc.3` (2026-09-12, uwagi terenowe
   G.b)** — z zasady 8 usunięto zdania o „NORMALNIE / nie odwracaj”.
-- **Koniec kodu pozycyjnego `poprawna` (2026-09-15, ADR 0049)** — bieżące
-  rev4/rev5 niosą czysty indeks `0..3`. Szablony `PYT/1.0.10` / `PYT/1.0-nofc.5`.
-  Właściciel kasuje stare paczki; dekoder rev2/rev3 zostaje dla testów zapisu
-  historycznego, bez migratora.
+- **Koniec kodu pozycyjnego `poprawna` (2026-09-15, ADR 0049)** — numer poprawnej
+  odpowiedzi przestał być kodem pozycyjnym. Szablony `PYT/1.0.10` / `PYT/1.0-nofc.5`.
+- **PYT/1.1: numer odpowiedzi `1..4`, jedna postać paczki (2026-09-15e, ADR 0050)** —
+  schemat zmienił się w dwóch miejscach: `poprawna` to **numer** `1..4` (klasa
+  błędu: model i człowiek liczą od 1, a aplikacja liczyła od 0 — trzecia odpowiedź
+  była oceniana jako czwarta), a marker `protokol` i warianty zapisu zniknęły.
+  Szablony `PYT/1.1.0` / `PYT/1.1-nofc.0`. **Bez migratora** (wyjątek od reguły
+  z §7 pkt 2): na dysku właściciela nie ma ANI JEDNEJ paczki tego protokołu
+  (gra jest w fazie testów terenowych), więc nie ma czego migrować — decyzja
+  właściciela z 2026-09-15. Zapis gry z poprzedniej wersji zostanie odrzucony
+  jawnie (kod `T`), a nie po cichu zinterpretowany.
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 
 ```json
 {
-  "protokol": "PYT/1.0",
   "okolica": { "lat": 52.23178, "lon": 21.01234, "promienM": 1000, "miejsce": "Śródmieście, Warszawa" },
   "wiek": "dorosli",
   "tematy": ["historia"],
@@ -453,7 +450,7 @@ zajęte, tak samo jak wycofany `E18`.
       "temat": "historia",
       "tresc": "Przy jakiej ulicy stała pierwsza siedziba Polskiej Agencji Telegraficznej (1918)?",
       "odpowiedzi": ["Bracka", "Mazowiecka", "Zgoda", "Jasna"],
-      "poprawna": 2,
+      "poprawna": 3,
       "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda (X 1918).",
       "zrodla": [{ "url": "https://pl.wikipedia.org/wiki/Polska_Agencja_Telegraficzna", "tytul": "Polska Agencja Telegraficzna — Wikipedia", "sprawdzono": "2026-09-05" }]
     }

@@ -20,7 +20,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
+// ADR 0050: warianty zapisu (rev1–rev5) i ich dekodery usunięte — paczka ma jedną postać.
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -1046,52 +1046,24 @@ function czytajFixturePaczka() {
   return JSON.parse(readFileSync(join(KATALOG_APP, 'test', 'fixtures', 'paczka-ok.json'), 'utf8'));
 }
 
-test('Q2 end-to-end: wklejona paczka odwrócona (rev1) od razu zaczyna grę', async () => {
-  const pamiecKonfig = new Map();
-  pamiecKonfig.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1', kanon: '2026-09-10',
-    // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
-    // fixture paczki jest ułożony pod ten promień. Jeden gracz: hot-seat liczy
-    // pytania z listy graczy (3 pytania = 3 stacje × 1, ADR 0027 aneks 2026-09-15),
-    // więc zapis z trzema graczami żądałby teraz dziewięciu pytań.
-    konfig: { liczbaGraczy: 1, liczbaStacji: 3, tematy: ['historia', 'architektura'], czasGryMin: 85 },
-  }));
+test('ADR 0050 end-to-end: dopisany marker protokołu nie przewraca przyjęcia paczki', async () => {
+  // Model miał kiedyś wpisywać `"protokol": "PYT/1.0-revN"`. Dziś nie ma czego
+  // wpisywać, ale stary nawyk (albo podpowiedź z innego wątku) nie może
+  // kosztować organizatora całej rundy: pole jest ignorowane.
+  const pamiecKonfig = pamiecKonfig3x1();
   const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
-  await import(`../app/app.js?rev1=${Math.random().toString(36).slice(2)}`);
+  await import(`../app/app.js?m050=${Math.random().toString(36).slice(2)}`);
   ustawPozycjeTestowa(dom, '52.2297', '21.0122');
-  dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
+  dom.kliknij('przycisk-dalej-stacje');
+  dom.kliknij('przycisk-dalej-prompt');
+  przelaczCheckbox(dom, 'prompt-factcheck', true);
   const jawna = czytajFixturePaczka();
-  const rev1 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV1 };
-  dom.wklej('pole-odpowiedz', JSON.stringify(rev1));
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev1/, 'nagłówek mówi, co się stało');
-  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę (decyzja 2026-09-07)');
+  const zMarkerem = { ...jawna, protokol: 'PYT/1.0-rev4' };
+  dom.wklej('pole-odpowiedz', JSON.stringify(zMarkerem));
+  assert.equal(dom.pobierz('wynik-naglowek').textContent, 'Paczka przyjęta (fact check)', 'nagłówek bez wariantów i bez kodów');
+  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'paczka od razu zaczyna grę (decyzja 2026-09-07)');
   assert.equal(dom.pobierz('ekran-paczka').hidden, true);
   assert.equal(dom.pobierz('pole-odpowiedz').value, '', 'plaintext nie zostaje w polu wklejenia');
-});
-
-test('rev2 end-to-end: wklejona paczka z kodami od razu zaczyna grę', async () => {
-  const pamiecKonfig = new Map();
-  pamiecKonfig.set('okolica:konfig', JSON.stringify({
-    schemat: 'konfig/1', kanon: '2026-09-10',
-    // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
-    // fixture paczki jest ułożony pod ten promień. Jeden gracz: hot-seat liczy
-    // pytania z listy graczy (3 pytania = 3 stacje × 1, ADR 0027 aneks 2026-09-15),
-    // więc zapis z trzema graczami żądałby teraz dziewięciu pytań.
-    konfig: { liczbaGraczy: 1, liczbaStacji: 3, tematy: ['historia', 'architektura'], czasGryMin: 85 },
-  }));
-  const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
-  await import(`../app/app.js?rev2=${Math.random().toString(36).slice(2)}`);
-  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
-  dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
-  const jawna = czytajFixturePaczka();
-  const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
-  rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.punkty; });
-  dom.wklej('pole-odpowiedz', JSON.stringify(rev2));
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev2/, 'nagłówek mówi, co się stało');
-  assert.match(dom.pobierz('wynik-naglowek').textContent, /; fact check\)$/, 'nagłówek ogłasza weryfikację (ADR 0032)');
-  assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka od razu zaczyna grę (decyzja 2026-09-07)');
-  const rejestr = JSON.parse(pamiecKonfig.get('okolica:zestawy'));
-  assert.equal(rejestr.wpisy[0].factcheck, true, 'meta w rejestrze mówi: zweryfikowana');
 });
 
 /* --------------------------------------- ADR 0032: wariant bez fact-check */
@@ -1146,14 +1118,15 @@ function pytaniaDlaGraczy(baza, graczy) {
 /** Planowany czas gry dający promień 1000 m dla 3 stacji (fixture paczki). */
 const CZAS_DLA_GRACZY = { 1: 85, 2: 90, 3: 95 };
 
-test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie rev5; zaznaczenie daje rev4', async () => {
+test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie bez kwerendy; zaznaczenie daje fact-check', async () => {
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
   await import(`../app/app.js?fc1=${Math.random().toString(36).slice(2)}`);
   assert.equal(domAtrapa.pobierz('prompt-factcheck').checked, false, 'checkbox startuje pusty (atrapa czyta prawdziwy index.html)');
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
   domAtrapa.kliknij('przycisk-dalej-prompt');
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev5/, 'domyślny prompt generuje rev5');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /numer poprawnej odpowiedzi od 1 do 4/, 'domyślny prompt uczy numeracji 1..4');
+  assert.doesNotMatch(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev/, 'prompt nie każe modelowi pisać markera (ADR 0050)');
   assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('wykonaj kwerendę w internecie'), 'domyślny prompt nie żąda kwerendy');
   // B2: nowe warianty nie każą odwracać tekstu.
   assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('ODWRÓCONE ZNAKAMI'), 'prompt nie żąda odwracania liter');
@@ -1161,15 +1134,16 @@ test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie rev5; zaznaczenie d
     /Tryb: pytania bez fact-check — model AI korzysta z własnej wiedzy, generowanie pytań trwa krócej\./,
     'opis mówi tekstem właściciela (2026-09-09), słowo w słowo');
   assert.match(domAtrapa.pobierz('prompt-podglad-naglowek').textContent, /bez fact-check/);
-  assert.match(domAtrapa.pobierz('prompt-licznik').textContent, /PYT\/1\.0-rev5/);
+  assert.doesNotMatch(domAtrapa.pobierz('prompt-licznik').textContent, /PYT\/1\.0-rev/,
+    'licznik promptu nie pokazuje już numeru protokołu (ADR 0050)');
   przelaczCheckbox(domAtrapa, 'prompt-factcheck', true);
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev4/, 'zaznaczony checkbox generuje rev4');
+  assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('"protokol"'), 'zaznaczony checkbox nadal bez markera w schemacie');
   assert.match(domAtrapa.pobierz('pole-prompt').value, /wykonaj kwerendę w internecie/);
   assert.match(domAtrapa.pobierz('prompt-tryb-opis').textContent,
     /Tryb: pytania z fact check — model sprawdza każdy fakt w sieci ale generowanie pytań trwa dłużej\./,
     'opis mówi tekstem właściciela (2026-09-09), słowo w słowo');
   przelaczCheckbox(domAtrapa, 'prompt-factcheck', false);
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev5/, 'odznaczenie wraca do rev5');
+  assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('wykonaj kwerendę w internecie'), 'odznaczenie wraca do trybu bez kwerendy');
 });
 
 test('ADR 0032 + uwaga terenowa G.a (2026-09-12): nowa generacja startuje z odptaszkowanym checkboxem', async () => {
@@ -1183,28 +1157,32 @@ test('ADR 0032 + uwaga terenowa G.a (2026-09-12): nowa generacja startuje z odpt
   przelaczCheckbox(domAtrapa, 'prompt-factcheck', true);
   domAtrapa.kliknij('przycisk-dalej-prompt'); // nowa generacja (ekran 3 → 4)
   assert.equal(domAtrapa.pobierz('prompt-factcheck').checked, false, 'nowa generacja = domyślnie odptaszkowane (właściciel 2026-09-12)');
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev5/, 'prompt wraca do wariantu bez fact-check');
+  assert.ok(!domAtrapa.pobierz('pole-prompt').value.includes('wykonaj kwerendę w internecie'), 'prompt wraca do wariantu bez fact-check');
   // Strzałka wstecz (ekran 5 → 4) celowo NIE resetuje — spójność tej samej generacji:
   przelaczCheckbox(domAtrapa, 'prompt-factcheck', true);
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev4/, 'wybór użytkownika dla tej generacji obowiązuje');
+  assert.ok(domAtrapa.pobierz('pole-prompt').value.includes('wykonaj kwerendę w internecie'), 'wybór użytkownika dla tej generacji obowiązuje');
   domAtrapa.kliknij('przycisk-dalej-paczka');
   domAtrapa.kliknij('przycisk-wstecz-prompt');
   assert.equal(domAtrapa.pobierz('prompt-factcheck').checked, true, 'powrót do promptu tej samej generacji nie kasuje wyboru');
-  assert.match(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev4/, 'prompt nadal rev4 — spójny z checkboxem');
+  assert.match(domAtrapa.pobierz('pole-prompt').value, /wykonaj kwerendę w internecie/, 'prompt nadal z fact-checkiem — spójny z checkboxem');
+  assert.doesNotMatch(domAtrapa.pobierz('pole-prompt').value, /PYT\/1\.0-rev/, 'markerów protokołu nie ma w prompcie (ADR 0050)');
 });
 
-test('ADR 0032 end-to-end: paczka rev3 bez źródeł przyjęta, rejestr niesie factcheck:false', async () => {
+test('ADR 0032 end-to-end: bez ptaszka fact-check paczka bez źródeł jest przyjęta, a rejestr niesie factcheck:false', async () => {
+  // Profil źródeł jest teraz decyzją APLIKACJI (ADR 0050), nie markera w JSON-ie:
+  // wyłączony ptaszek = źródła opcjonalne, więc paczka bez nich przechodzi.
   const pamiecKonfig = pamiecKonfig3x1();
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?fc2=${Math.random().toString(36).slice(2)}`);
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
+  domAtrapa.kliknij('przycisk-dalej-prompt');
   const jawna = czytajFixturePaczka();
-  const rev3 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV3 };
-  rev3.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.zrodla; delete p.punkty; });
-  domAtrapa.wklej('pole-odpowiedz', JSON.stringify(rev3));
-  assert.match(domAtrapa.pobierz('wynik-naglowek').textContent, /Paczka przyjęta \(odwrócona, rev3 — odkodowana; bez fact-check\)/);
-  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'rev3 bez źródeł zaczyna grę');
+  const bezZrodel = structuredClone(jawna);
+  for (const pyt of bezZrodel.pytania) delete pyt.zrodla;
+  domAtrapa.wklej('pole-odpowiedz', JSON.stringify(bezZrodel));
+  assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, 'Paczka przyjęta (bez fact-check)');
+  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'paczka bez źródeł zaczyna grę przy wyłączonym fact-checku');
   const rejestr = JSON.parse(pamiecKonfig.get('okolica:zestawy'));
   assert.equal(rejestr.wpisy.length, 1);
   assert.equal(rejestr.wpisy[0].factcheck, false, 'meta w rejestrze mówi: bez weryfikacji');
@@ -1229,18 +1207,17 @@ test('ekran 5: błędna paczka AI — jeden komunikat, bez kodów i bez poprawki
   assert.equal(domAtrapa.pobierz('wynik-walidacji').dataset.stan, 'blad',
     'karta walidacji jest w stanie błędu (czerwona ramka)');
   assert.doesNotMatch(domAtrapa.pobierz('wynik-naglowek').textContent, /E0|E1/);
-  // odrzucona rev2 (za mało pytań) — ten sam komunikat, bez szczegółów
+  // za mało pytań (E03) — ten sam komunikat, bez szczegółów
   const jawna = czytajFixturePaczka();
-  const rev2 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV2 };
-  rev2.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.punkty; });
-  rev2.pytania = rev2.pytania.slice(0, 2); // E03: oczekiwane 3 pytania
-  domAtrapa.wklej('pole-odpowiedz', JSON.stringify(rev2));
+  const zaMalo = structuredClone(jawna);
+  zaMalo.pytania = zaMalo.pytania.slice(0, 2); // E03: oczekiwane 3 pytania
+  domAtrapa.wklej('pole-odpowiedz', JSON.stringify(zaMalo));
   assert.equal(domAtrapa.pobierz('wynik-naglowek').textContent, KOMUNIKAT);
   assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '');
   assert.doesNotMatch(domAtrapa.pobierz('wklejka-status').textContent, /usterk|E03|poprawk/i);
 });
 
-test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł" i bez linii wariantu', async () => {
+test('ADR 0032: pełna gra bez źródeł — status bez „źródeł" i bez linii wariantu', async () => {
   //-setup na jednym graczu: hot-seat liczy pytania z listy (uwaga B), a fixture
   // niesie jedno pytanie na stację, więc graczy musi być jedna osoba.
   const pamiec = pamiecKonfig3x1();
@@ -1249,17 +1226,17 @@ test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł" i bez
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
   const jawna = czytajFixturePaczka();
-  const rev3 = { ...odwrocPolaPaczki(jawna), protokol: WERSJA_PROTOKOLU_REV3 };
-  rev3.pytania.forEach((p) => { p.poprawna = zakodujPoprawnaRev2(jawna.pytania.find((q) => q.id === p.id).poprawna, p); delete p.zrodla; delete p.punkty; });
-  domAtrapa.wklej('pole-odpowiedz', JSON.stringify(rev3));
-  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'rev3 zaczyna grę');
+  const bezZrodel = structuredClone(jawna);
+  for (const pyt of bezZrodel.pytania) delete pyt.zrodla;
+  domAtrapa.wklej('pole-odpowiedz', JSON.stringify(bezZrodel));
+  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'paczka bez źródeł zaczyna grę');
   for (const numerStacji of [1, 2, 3]) {
     const pytanie = jawna.pytania.find((q) => q.stacja === numerStacji);
     domAtrapa.kliknij('przycisk-start-odcinka');
     domAtrapa.kliknij('przycisk-symulacja-gra');
     await czekaj(9 * 120 + 600);
     assert.equal(domAtrapa.pobierz('gra-panel-pytanie').hidden, false, `stacja ${numerStacji}: pytanie po dojściu GPS`);
-    kliknijOdpowiedz(domAtrapa, numerStacji === 1 ? (pytanie.poprawna + 1) % 4 : pytanie.poprawna);
+    kliknijOdpowiedz(domAtrapa, numerStacji === 1 ? indeksBlednej(pytanie) : indeksPoprawnej(pytanie));
     if (numerStacji === 1) {
       assert.match(domAtrapa.pobierz('status').textContent, /wyjaśnienie poniżej/, 'status nie obiecuje źródeł, których nie ma');
       assert.equal(domAtrapa.pobierz('status').textContent.includes('źródła'), false, 'słowo „źródła" nie pada przy paczce bez źródeł');
@@ -1282,8 +1259,8 @@ test('ADR 0032: zła odpowiedź przy paczce ze źródłami — status mówi o ź
   dom.kliknij('przycisk-symulacja-gra');
   await czekaj(9 * 120 + 600);
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'pytanie po dojściu GPS');
-  const poprawna = paczka.pytania.find((q) => q.stacja === 1).poprawna;
-  kliknijOdpowiedz(dom, (poprawna + 1) % 4);
+  const pytanieStacji1 = paczka.pytania.find((q) => q.stacja === 1);
+  kliknijOdpowiedz(dom, indeksBlednej(pytanieStacji1));
   assert.match(dom.pobierz('status').textContent, /wyjaśnienie i źródła poniżej/, 'status jak dawniej, gdy źródła są');
   assert.ok(dom.pobierz('gra-zrodla').children.length > 0, 'linki do źródeł pod wyjaśnieniem');
 });
@@ -1485,7 +1462,8 @@ test('M6: pytanie odsłania się DOPIERO na stacji i ma cztery odpowiedzi (ADR 0
   const { dom, paczka } = await graWFaziePytania();
   const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'panel C w fazie pytania');
-  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /Stacja 1 zdobyta · pytanie 1 z 1 · odpowiada Gracz 1/);
+  assert.equal(dom.pobierz('gra-pytanie-naglowek').textContent, 'Stacja 1 - Gracz 1',
+    'przy jednym pytaniu pasek mówi tylko, kto odpowiada (uwaga A 2026-09-15)');
   assert.equal(dom.pobierz('gra-pytanie-tresc').textContent, pierwsze.tresc, 'treść z odsłoniętego kontenera');
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   assert.equal(przyciski.length, 4, 'cztery odpowiedzi');
@@ -1510,7 +1488,7 @@ test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z link
   const { dom, paczka } = await graWFaziePytania({ graczy: 2 });
   const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
-  const dobry = przyciski[pierwsze.poprawna];
+  const dobry = przyciski[indeksPoprawnej(pierwsze)];
   for (const fn of dobry.zdarzenia.click ?? []) fn({ type: 'click', target: dobry, currentTarget: dobry });
 
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze! \+1 pkt/, 'ocena: 1 pkt za poprawną (rev2)');
@@ -1535,7 +1513,7 @@ test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z link
   assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, false);
   assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Następne pytanie/, 'drugie pytanie stacji czeka — to jeszcze nie „dalej”');
   dom.kliknij('przycisk-nastepna-stacja');
-  kliknijOdpowiedz(dom, paczka.pytania.filter((q) => q.stacja === 1)[1].poprawna);
+  kliknijOdpowiedz(dom, indeksPoprawnej(paczka.pytania.filter((q) => q.stacja === 1)[1]));
   assert.equal(dom.pobierz('przycisk-nastepna-stacja').hidden, false);
   assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Gracz 2, stacja 2 — idę →/, 'jeden przycisk niesie i gracza, i cel — bez drugiego klika (zgłoszenie 2026-09-09)');
   // panele TRZYMAJĄ wyjaśnienie: model jest już w fazie przygotowanie, ale C widoczny
@@ -1585,14 +1563,15 @@ test('M6: przy 2 pytaniach na stację gracze odpowiadają NA ZMIANĘ, nie w kó�
   // Zgłoszenie właściciela 2026-09-12: Gracz 1 dostawał OBA pytania pierwszej
   // stacji. Na stacji odpowiada gracz z kolejki (ADR 0022), ale każde pytanie
   // ma innego autora — pierwsze gracz z kolejki, drugie następny gracz.
-  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /Stacja 1 zdobyta · pytanie 1 z 2 · odpowiada Gracz 1/);
+  assert.equal(dom.pobierz('gra-pytanie-naglowek').textContent, 'Stacja 1 - pytanie 1 z 2 - Gracz 1',
+    'licznik pytań wraca, gdy stacja ma ich więcej');
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   for (const fn of przyciski[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski[0], currentTarget: przyciski[0] });
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'stacja nie zamknięta po pierwszym pytaniu');
   assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Następne pytanie/, 'drugie pytanie tej samej stacji');
   dom.kliknij('przycisk-nastepna-stacja');
 
-  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /Stacja 1 zdobyta · pytanie 2 z 2 · odpowiada Gracz 2/,
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /Stacja 1 - pytanie 2 z 2 - Gracz 2/,
     'drugie pytanie stacji idzie do NASTĘPNEGO gracza');
   assert.equal(dom.pobierz('gra-pytanie-tresc').textContent, drugie[0].tresc, 'treść drugiego pytania');
   assert.equal(dom.pobierz('gra-odpowiedzi').hidden, false, 'Gracz 2 ma swoje cztery odpowiedzi');
@@ -1621,8 +1600,8 @@ test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-s
   assert.equal(dom.pobierz('gra-odpowiedzi').hidden, true, 'przyciski odpowiedzi schowane po odpowiedzi');
   // drugie pytanie stacji należy do Gracza 2 — po nim stacja się domyka
   dom.kliknij('przycisk-nastepna-stacja');
-  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /pytanie 2 z 2 · odpowiada Gracz 2/, 'stacja domyka się dopiero po pytaniu drugiego gracza');
-  kliknijOdpowiedz(dom, paczka.pytania.filter((q) => q.stacja === 1)[1].poprawna);
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /pytanie 2 z 2 - Gracz 2/, 'stacja domyka się dopiero po pytaniu drugiego gracza');
+  kliknijOdpowiedz(dom, indeksPoprawnej(paczka.pytania.filter((q) => q.stacja === 1)[1]));
   dom.kliknij('przycisk-nastepna-stacja');
   assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, false, 'slot sterowania wraca po wyjściu w drogę');
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, true, 'panel C zamknięty');
@@ -1660,12 +1639,12 @@ test('M6: zejście w tło w trakcie wyjaśnienia — ocena ZOSTAJE, „Następna
 test('M6: błędna odpowiedź — zero punktów, poprawna ujawniona w ocenie, gra idzie dalej', async () => {
   const { dom, paczka } = await graWFaziePytania();
   const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
-  const zlyIndex = (pierwsze.poprawna + 1) % 4;
+  const zlyIndex = indeksBlednej(pierwsze);
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   const zly = przyciski[zlyIndex];
   for (const fn of zly.zdarzenia.click ?? []) fn({ type: 'click', target: zly, currentTarget: zly });
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✗ Źle \(0 pkt\)/);
-  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, new RegExp(`Poprawna odpowiedź: ${'ABCD'[pierwsze.poprawna]}\\.`), 'poprawna odpowiedź ujawniona po błędzie');
+  assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, new RegExp(`Poprawna odpowiedź: ${'ABCD'[indeksPoprawnej(pierwsze)]}\\.`), 'poprawna odpowiedź ujawniona po błędzie');
   assert.equal(dom.pobierz('gra-odpowiedzi').hidden, true, 'właściciel 2026-09-11: przyciski A–D znikają po odpowiedzi');
   assert.equal(dom.pobierz('gra-wyjasnienie').textContent, pierwsze.wyjasnienie, 'wyjaśnienie także po błędzie — tu jest najwięcej nauki');
   dom.kliknij('przycisk-nastepna-stacja');
@@ -1824,16 +1803,16 @@ test('N (punktacja): punkty per gracz przechodzą przez reload — zapis, wznowi
   // Stacja 1 — pytanie 1: Gracz 1, odpowiedź DOBRA (+1 pkt).
   dom.kliknij('przycisk-start-odcinka');
   await dojdzSymulacja(dom);
-  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /pytanie 1 z 3 · odpowiada Gracz 1/,
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /pytanie 1 z 3 - Gracz 1/,
     'trzech graczy ⇒ trzy pytania na stacji, pierwsze do Gracza 1 (ADR 0027)');
-  kliknijOdpowiedz(dom, pytaniaStacji(1)[0].poprawna);
+  kliknijOdpowiedz(dom, indeksPoprawnej(pytaniaStacji(1)[0]));
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /\+1 pkt/, 'punkt przyznany');
   dom.kliknij('przycisk-nastepna-stacja'); // „Następne pytanie” — stacja jeszcze otwarta
 
   // Pytanie 2: Gracz 2, odpowiedź ZŁA (0 pkt).
-  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /pytanie 2 z 3 · odpowiada Gracz 2/,
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /pytanie 2 z 3 - Gracz 2/,
     'drugie pytanie stacji idzie do następnego gracza');
-  kliknijOdpowiedz(dom, (pytaniaStacji(1)[1].poprawna + 1) % 4);
+  kliknijOdpowiedz(dom, indeksBlednej(pytaniaStacji(1)[1]));
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /Źle \(0 pkt\)/, 'zero punktów');
   dom.kliknij('przycisk-nastepna-stacja');
 
@@ -1852,7 +1831,7 @@ test('N (punktacja): punkty per gracz przechodzą przez reload — zapis, wznowi
   assert.deepEqual(po.gracze.map((g) => g.imie), ['Gracz 1', 'Gracz 2', 'Gracz 3'],
     'lista graczy wraca cała — punkty mają do kogo być przypisane');
   assert.match(dom2.pobierz('gra-postep').textContent, /stacja 1 z 3/, 'gra wróciła do niedomkniętej stacji 1');
-  assert.match(dom2.pobierz('gra-pytanie-naglowek').textContent, /pytanie 3 z 3 · odpowiada Gracz 3/,
+  assert.match(dom2.pobierz('gra-pytanie-naglowek').textContent, /pytanie 3 z 3 - Gracz 3/,
     'po wznowieniu widać pytanie, na które nikt jeszcze nie odpowiedział');
 
   // Dokończenie JUŻ po wznowieniu: pytanie 3 (Gracz 3, dobrze) i dwie dalsze
@@ -1860,7 +1839,7 @@ test('N (punktacja): punkty per gracz przechodzą przez reload — zapis, wznowi
   // są poprawne.
   // Tu nie ma marszu: aplikacja wróciła w ŚRODEK stacji 1, więc najpierw
   // odpowiadamy na zaległe pytanie i domykamy stację, a potem idziemy dalej.
-  odpowiedzNaStacje(dom2, paczka, 1, { odpowiedz: pytaniaStacji(1)[2].poprawna, domknij: true });
+  odpowiedzNaStacje(dom2, paczka, 1, { odpowiedz: indeksPoprawnej(pytaniaStacji(1)[2]), domknij: true });
   for (const stacja of [2, 3]) await zamknijStacje(dom2, { paczka, numerStacji: stacja });
 
   assert.equal(zapis().faza, 'koniec', 'gra domknięta po wznowieniu');
@@ -1933,7 +1912,7 @@ test('M6: przycisk pomijania nie istnieje — gra go nie dotyka (zadanie H)', as
   dom.kliknij('przycisk-start-odcinka');
   await dojdzSymulacja(dom);
   const pytanie = paczka.pytania.find((q) => q.stacja === 1);
-  kliknijOdpowiedz(dom, pytanie.poprawna);
+  kliknijOdpowiedz(dom, indeksPoprawnej(pytanie));
   dom.kliknij('przycisk-nastepna-stacja');
   // atrapa tworzy elementy leniwie: brak id w `elementy` znaczy, że żaden
   // render ani handler po niego nie sięgnął (wcześniej sięgał każdy renderujGre)
@@ -2013,6 +1992,20 @@ test('M6: ⚙ START GRY nigdy nie jest wyszarzone — w grze otwiera koniec gry 
 /* ========== M6/R7: integracja — pełna gra z symulacją, zasięg, ADR 0015 */
 
 /** Klik w konkretny przycisk odpowiedzi (elementy tworzone dynamicznie). */
+/**
+ * Indeks przycisku poprawnej odpowiedzi. `poprawna` to NUMER odpowiedzi 1..4
+ * (ADR 0050), a atrapa klika przyciski po indeksie 0..3 — przeliczenie w jednym
+ * miejscu testów pilnuje, że kod produkcyjny robi to samo.
+ */
+function indeksPoprawnej(pytanie) {
+  return pytanie.poprawna - 1;
+}
+
+/** Indeks odpowiedzi błędnej: dowolna inna niż poprawna (cyklicznie +1). */
+function indeksBlednej(pytanie) {
+  return pytanie.poprawna % 4;
+}
+
 function kliknijOdpowiedz(dom, indeks) {
   const b = dom.pobierz('gra-odpowiedzi').children[indeks];
   for (const fn of b.zdarzenia.click ?? []) fn({ type: 'click', target: b, currentTarget: b });
@@ -2040,7 +2033,7 @@ function odpowiedzNaStacje(dom, paczka, numerStacji, { odpowiedz = null, domknij
   const naStacji = paczka.pytania.filter((q) => q.stacja === numerStacji);
   for (let guard = 0; guard < 24; guard += 1) {
     if (dom.pobierz('gra-odpowiedzi').hidden === false) {
-      kliknijOdpowiedz(dom, odpowiedz ?? naStacji[numerAktualnegoPytania(dom)].poprawna);
+      kliknijOdpowiedz(dom, odpowiedz ?? indeksPoprawnej(naStacji[numerAktualnegoPytania(dom)]));
       continue;
     }
     if (dom.pobierz('przycisk-nastepna-stacja').hidden === true) break;
@@ -2074,7 +2067,7 @@ test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, w
     assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, `stacja ${numerStacji}: pytanie po dojściu GPS`);
     assert.match(dom.pobierz('status').textContent, /Stacja osiągnięta — próg dojścia zadziałał z GPS/, 'komunikat dojścia z GPS, nie ręcznego');
     assert.equal(dom.pobierz('gra-pytanie-tresc').textContent, pytanie.tresc, `stacja ${numerStacji}: treść z kontenera`);
-    kliknijOdpowiedz(dom, pytanie.poprawna);
+    kliknijOdpowiedz(dom, indeksPoprawnej(pytanie));
     assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze!/, `stacja ${numerStacji}: poprawna odpowiedź punktuje`);
     // remaining questions of the station (hot-seat: każdy gracz ma swoje)
     odpowiedzNaStacje(dom, paczka, numerStacji); // reszta pytań stacji (po jednym na gracza)
@@ -2113,7 +2106,7 @@ test('zgłoszenie 4: pełna gra → „Wróć na początek" — mapa narysowana 
     if (numerStacji === 1) dom.kliknij('przycisk-start-odcinka');
     await dojdzSymulacja(dom);
     assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, `stacja ${numerStacji}: pytanie po dojściu`);
-    kliknijOdpowiedz(dom, pytanie.poprawna);
+    kliknijOdpowiedz(dom, indeksPoprawnej(pytanie));
     dom.kliknij('przycisk-nastepna-stacja');
   }
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'panel końca');
@@ -2201,7 +2194,7 @@ test('ADR 0038: ekran wyniku jest minimalny — karta zwycięzcy i tabela rankin
   // nie 0/0): trzech graczy ⇒ trzy pytania na stację (uwaga B)
   for (const numerStacji of [1, 2, 3]) {
     const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
-    await zamknijStacje(dom, { paczka, numerStacji, odpowiedz: (pytanie.poprawna + 1) % 4 });
+    await zamknijStacje(dom, { paczka, numerStacji, odpowiedz: indeksBlednej(pytanie) });
   }
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'koniec po domknięciu wszystkich stacji');
 
@@ -2292,7 +2285,7 @@ test('M7/P7 + ADR 0038: PEŁNA GRA z dojściem GPS → minimalny wynik (end-to-e
     dom.kliknij('przycisk-symulacja-gra');
     await czekaj(9 * 120 + 600);
     assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, `stacja ${numerStacji}: pytanie po dojściu GPS`);
-    kliknijOdpowiedz(dom, pytanie.poprawna);
+    kliknijOdpowiedz(dom, indeksPoprawnej(pytanie));
     odpowiedzNaStacje(dom, paczka, numerStacji);
     dom.kliknij('przycisk-nastepna-stacja');
   }

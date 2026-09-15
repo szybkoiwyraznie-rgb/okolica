@@ -17,7 +17,7 @@
  * ADR 0014 wycofany). Znaczniki czasu w dzienniku służą tylko kolejności zdarzeń.
  */
 
-import { odlegloscM } from './geo.js?v=m12-136';
+import { odlegloscM } from './geo.js?v=m12-137';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
@@ -373,7 +373,7 @@ export function zakonczOdcinek(stan, { stacjaId = stan.biezacaStacja, czasMs, tr
  * Zapis odpowiedzi. Treść pytania NIE wchodzi do stanu (ADR 0007 pkt 6) —
  * wywołujący podaje `{ id, poprawna, punkty }` z odsłoniętej paczki.
  *
- * @param {object} args.pytanie `{ id, poprawna, punkty }`
+ * @param {object} args.pytanie `{ id, poprawna }` — `poprawna` to numer odpowiedzi 1..4
  * @param {number} args.wybrana indeks odpowiedzi 0–3
  * @param {number} [args.graczId] domyślnie gracz z kolejki (albo pierwszy z listy przy `wszyscy`)
  */
@@ -398,8 +398,11 @@ export function zapiszOdpowiedz(stan, { stacjaId = stan.biezacaStacja, graczId =
   if (gracz !== autorPytania) return { stan: nowy, usterki: [usterka('G07')] };
   if (juzOdpowiedzial(nowy, stacjaId, gracz, pytanie.id)) return { stan: nowy, usterki: [usterka('G06')] };
 
-  const poprawna = wybrana === pytanie.poprawna;
-  const punktyPodstawowe = poprawna ? 1 : 0; // rev2: każde pytanie daje 1 pkt, bez wagi z paczki
+  // `wybrana` to indeks przycisku (0..3), a `pytanie.poprawna` to NUMER
+  // odpowiedzi (1..4) — numeracja protokołu jest ta sama, którą widzi model
+  // i gracz (ADR 0050); to jedyne miejsce przeliczenia.
+  const poprawna = wybrana + 1 === pytanie.poprawna;
+  const punktyPodstawowe = poprawna ? 1 : 0; // każde pytanie daje 1 pkt, bez wagi z paczki
   const wpis = {
     stacja: stacjaId,
     gracz,

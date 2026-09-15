@@ -1161,7 +1161,7 @@ test('kontrakt: ręczna edycja paczki nie istnieje w kodzie (ADR 0006 aneks 2026
   const protokol = czytaj('app/protokol.js');
   // Podgląd i edycja organizatora zniknęły z ekranu decyzją właściciela
   // (2026-09-07), więc funkcja je obsługująca była martwa — a przy tym
-  // walidowała `poprawna` jako 0..3, czyli sprzed rev2 (kod pozycyjny).
+  // walidowała `poprawna` jako indeks 0..3, czyli w numeracji sprzed ADR 0050.
   assert.ok(!protokol.includes('zastosujEdycjePaczki'), 'martwa funkcja edycji usunięta z app/protokol.js');
   assert.ok(!protokol.includes('EDYTOWALNE_POLA'), 'lista pól edytowalnych usunięta razem z funkcją');
   assert.ok(!INDEX.includes('podglad-pytania'), 'ekran paczki nie ma podglądu pytania');
@@ -1187,7 +1187,10 @@ test('kontrakt: łatkę szablonu widać w dokumencie, nie w panelu gracza (PROTO
   for (const nazwa of ['SZABLON_WERSJA', 'SZABLON_WERSJA_BEZ_WERYFIKACJI']) {
     const stala = czytaj('app/protokol.js').match(new RegExp(`export const ${nazwa} = '([^']+)'`));
     assert.ok(stala, `${nazwa} jest eksportowana z app/protokol.js`);
-    assert.match(stala[1], /^PYT\/1\.0(-nofc)?\.\d+$/, `${nazwa} ma kształt PYT/1.0.N (albo PYT/1.0-nofc.N)`);
+    // Kształt bierzemy z obowiązującej wersji protokołu: podbicie schematu
+    // (ADR 0050 → PYT/1.1) nie może zostawić tego strażnika w tyle.
+    const wzorLatki = new RegExp(`^${WERSJA_PROTOKOLU.replace('/', '\\/')}(-nofc)?\\.\\d+$`);
+    assert.match(stala[1], wzorLatki, `${nazwa} ma kształt ${WERSJA_PROTOKOLU}.N (albo ${WERSJA_PROTOKOLU}-nofc.N)`);
     assert.ok(protokolTekst.includes(stala[1]), `docs/PROTOKOL.md nie cytuje ${nazwa} = ${stala[1]} — podbicie bez wpisu w dokumencie`);
   }
   const app = czytaj('app/app.js');

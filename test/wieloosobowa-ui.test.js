@@ -27,7 +27,7 @@ import assert from 'node:assert/strict';
 import { readFileSync as czytajPlik } from 'node:fs';
 
 import { zainstalujDom } from './helpers/dom.js';
-import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV3 } from '../app/protokol.js';
+import { WERSJA_PROTOKOLU } from '../app/protokol.js';
 import { zapakujPaczke } from '../app/kodowanie.js';
 import { zbierzMetaZestawu, zbudujPlikZestawu } from '../app/zestawy.js';
 import { czyKompletna, generujKod, przeliczWyniki, zbudujZdarzenie } from '../app/wieloosobowa.js';
@@ -412,13 +412,12 @@ function stacjeTestowe(ile) {
 
 function paczkaTestowa(stacje, pytaniaNaStacje = 1, { factcheck = true } = {}) {
   return {
-    protokol: factcheck ? WERSJA_PROTOKOLU : WERSJA_PROTOKOLU_REV3,
     okolica: { lat: stacje[0].lat, lon: stacje[0].lon, promienM: 1000, miejsce: 'Podkowa Leśna' },
     wiek: 'dorosli', tematy: ['historia'], jezyk: 'polski', utworzono: '2026-09-06 10:00',
     pytania: stacje.flatMap((s) => Array.from({ length: pytaniaNaStacje }, (_, k) => ({
       id: `s${s.id}p${k + 1}`, stacja: s.id, temat: 'historia',
       tresc: `Co wydarzyło się przy stacji ${s.id}? (wariant ${k + 1})`,
-      odpowiedzi: ['to', 'tamto', 'owo', 'nic'], poprawna: 0,
+      odpowiedzi: ['to', 'tamto', 'owo', 'nic'], poprawna: 1, // numer odpowiedzi 1..4 (ADR 0050)
       wyjasnienie: 'Bo tak wynika ze źródeł.',
       zrodla: [{ url: 'https://pl.wikipedia.org/wiki/Podkowa_Le%C5%9Bna', tytul: 'Podkowa Leśna — Wikipedia', sprawdzono: '2026-09-06' }],
       punkty: 20,
@@ -429,7 +428,7 @@ function paczkaTestowa(stacje, pytaniaNaStacje = 1, { factcheck = true } = {}) {
 /** Paczka w repozytorium mostu (indeks + plik) — organizator bierze ją z listy (I.b). */
 function zasiejZestaw(most, ileStacji, pytaniaNaStacje = 1, { factcheck = true } = {}) {
   const stacje = stacjeTestowe(ileStacji);
-  const kontener = zapakujPaczke(paczkaTestowa(stacje, pytaniaNaStacje, { factcheck }), factcheck ? WERSJA_PROTOKOLU : WERSJA_PROTOKOLU_REV3);
+  const kontener = zapakujPaczke(paczkaTestowa(stacje, pytaniaNaStacje, { factcheck }), WERSJA_PROTOKOLU);
   const meta = zbierzMetaZestawu({
     lat: PODKOWA.lat, lon: PODKOWA.lon,
     // ADR 0046: promień jest kryterium dopasowania (równość), więc fixtura
@@ -527,7 +526,7 @@ async function przejdzStacje(u) {
   przelaczNa(u);
   const odpowiedzi = u.dom.pobierz('gra-odpowiedzi').children;
   assert.ok(odpowiedzi.length === 4, 'pytanie odsłonięte z czterema odpowiedziami');
-  kliknijEl(odpowiedzi[0]); // poprawna (fixture: poprawna === 0) → POST odpowiedz
+  kliknijEl(odpowiedzi[0]); // poprawna (fixture: poprawna === 1, czyli przycisk A) → POST odpowiedz
   await oddech();
   await klik(u, 'przycisk-nastepna-stacja');
 }
