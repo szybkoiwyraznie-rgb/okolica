@@ -184,7 +184,14 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   outline-offset: 1px;
 }
 
-.pole-tekstowe { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 14px; line-height: 1.4; resize: vertical; }
+/* 16 px to PRÓG przeglądarki, nie gust (właściciel 2026-09-15, uwaga 3):
+   iOS Safari przybliża CAŁĄ stronę, gdy pole z fokusem ma mniej niż 16 px,
+   a oddalić się potem nie da — pinch poza mapą jest zablokowany celowo
+   (ADR 0047), a pinch na mapie rusza kafelkami. Wklejenie odpowiedzi AI
+   (pole obok, 14 px) kończyło się więc zablokowanym przybliżeniem HTML.
+   Każde pole tekstowe, do którego wchodzi palec, ma ≥ 16 px; strażnikiem
+   reguły jest kontrakt w `test/kontrakt.test.js`. */
+.pole-tekstowe { font-family: ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace; font-size: 16px; line-height: 1.4; resize: vertical; }
 
 .sprawdz { display: flex; gap: 10px; align-items: flex-start; }
 .sprawdz input { width: 24px; height: 24px; min-height: 24px; margin-top: 2px; flex: 0 0 auto; }

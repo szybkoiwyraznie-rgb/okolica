@@ -426,21 +426,34 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
       return (zdarzeniaOkna[typ] ?? []).length;
     },
     /**
-     * Wklejenie tekstu do pola: ustawia wartość i odpala `paste`, tak jak
-     * przeglądarka po Ctrl+V albo „Wklej" z menu dotykowego. `clipboardData`
-     * jest obecne, bo prawdziwe zdarzenie je niesie — kod produkcyjny czyta
-     * treść stamtąd, nie z pola (w chwili `paste` pole jest jeszcze puste).
+     * Wklejenie tekstu do pola: odpala `paste`, a PO powrocie z nasłuchów robi
+     * to, co robi przeglądarka — wstawia treść do pola, chyba że nasłuch
+     * zablokował domyślną akcję (`preventDefault`).
+     *
+     * Kolejność jest istotna (właściciel 2026-09-15, uwaga 4): wstawienie
+     * dzieje się PO walidacji, więc bez `preventDefault` zła wklejka wracała
+     * do pola, które kod zdążył wyczyścić. Atrapa wstawiała treść PRZED
+     * nasłuchami i bez `preventDefault`, więc przy zepsutym kodzie pokazywała
+     * „pole puste" — ta sama klasa pomyłki co L73 (atrapa łagodniejsza niż
+     * platforma, którą udaje).
+     *
+     * `clipboardData` jest obecne, bo prawdziwe zdarzenie je niesie — kod
+     * produkcyjny czyta treść stamtąd, nie z pola (w chwili `paste` pole jest
+     * jeszcze puste). Semantyki zaznaczenia nie odtwarzamy: wstawiana treść
+     * zastępuje zawartość pola.
      */
     wklej(id, tekst) {
       const el = pobierz(id);
-      el.value = tekst;
+      let zablokowane = false;
       const zdarzenie = {
         type: 'paste',
         target: el,
         currentTarget: el,
         clipboardData: { getData: () => tekst },
+        preventDefault() { zablokowane = true; },
       };
       for (const fn of el.zdarzenia.paste ?? []) fn(zdarzenie);
+      if (!zablokowane) el.value = tekst; // domyślna akcja przeglądarki: PO nasłuchach
       return (el.zdarzenia.paste ?? []).length;
     },
     /**
