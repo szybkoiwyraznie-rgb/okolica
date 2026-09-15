@@ -5840,8 +5840,11 @@ raz spaliły zieloną wcześniej bramę czasem, nie logiką — w izolacji plik 
 23/23. Budżet poszedł na 15 s, bo timeout ma mierzyć postępy, nie wydajność
 maszyny (asert czekający dłużej wciąż łapie realny brak).
 
-**Czego nie zrobiono:** `git push` i aktualizacja opisu PR #30 — token GitHub w
-`sandbox`ie wygasł (`gh auth status`: „The github.com token in GH_TOKEN is no
-longer valid”); commity `a2df21b` i `15fc956` czekają na reconnect właściciela.
-Nie ruszone: decyzja o pinch-zoomie z ADR 0047 (do sprawdzenia w terenie), uwaga
-A z PR #29 i D1 na iOS Safari — poza zakresem tych dwóch uwag.
+**Wypchnięte:** gałąź `arena/01a0a39c-okolica` ma `52e2469..1812265` (commity
+`a2df21b`, `15fc956`, `c2a29b9`, `e918cf4`, `1812265`), opis PR #30 zaktualizowany
+`gh api -X PATCH`. Pierwsza próba pusha w tej sesji spaliła się na wygasłym
+tokenie (`gh auth status`: „The github.com token in GH_TOKEN is no longer
+valid") — po reconnectcie właściciela poszło bez `--force`.
+**Nie ruszone (kolejka na teren):** decyzja o pinch-zoomie z ADR 0047 (czy
+przywrócona karta nie zostawia „ściśniętej" strony i czy mapa nadal się
+szczypie), uwaga A z PR #29 i D1 na iOS Safari.
