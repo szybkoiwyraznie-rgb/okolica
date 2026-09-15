@@ -6076,10 +6076,13 @@ fraza `lista-stacji` w `dryf-dokumentow`, README poprawiony.
 
 **Budżet lektury (commit `63b69d3`).** Start: 100 189 tok (przekroczenie), po
 wpisach sesji 101 275. Do archiwum wyszły aneksy ADR 0019 (2026-09-13c), ADR
-0024 (oba z 2026-09-07) i ADR 0005 (m12-120 — reguła zostaje w L71). Stan:
-99 411 / 100 000.
+0024 (oba z 2026-09-07) i ADR 0005 (m12-120 — reguła zostaje w L71). Stan po
+tym kroku: 99 411 / 100 000; po wszystkich wpisach sesji (aneksy ADR, L73,
+B23) — 99 692 / 100 000, rezerwa 308.
 
-**Weryfikacja.** `npm test` 829/829, `npm run check`, audyt WCAG 0 naruszeń,
+**Weryfikacja.** Na tym etapie `npm test` 829/829; stan KOŃCOWY sesji po
+usunięciu martwego przycisku (niżej) to `npm run brama` **827/827** i budżet
+99 692/100 000. `npm run check` (oba szablony), audyt WCAG 0 naruszeń,
 `npm run zasieg-mostu` 883/903 (97,8%). Headless Chromium (360×740 i 1334×750,
 `?tryb=test`, pozycja z mapy): ekran stacji bez `#lista-stacji`, zdanie
 „Wygenerowano 5 stacji.", 5 pinezek, brak poziomego przewijania, 0 błędów
