@@ -5625,3 +5625,105 @@ Wdrożenie (commit 8f85a80):
   `?v=`). 812→**813** testów zielonych.
 
 Budżet lektury po aneksie: 99 521/100 000.
+
+## Sesja 2026-09-15a — audyt PR #29 + usterka D1 (gałąź `arena/01a0a39c-okolica`, PR #30, m12-125)
+
+Sesja otwarta „Kontynuujemy projekt", bez nowej uwagi z terenu. Lektura
+startowa (AGENTS §0): AGENTS, `PROTOKOL` §1–2 z oboma szablonami promptu, rejestr
+ADR + ADR 0043/0046/0047 w całości, `LESSONS` L1–L71 w całości (rejestr +
+reguły), `ENVIRONMENT`, `ROADMAP`, najnowszy handoff (2026-09-14h). Budżet na
+wejściu: 99 521/100 000 (rezerwa 479). Brama na wejściu: **813/813** zielonych
+przed jakąkolwiek zmianą. PR sesji otwarty PRZED kodowaniem (ADR 0012 reg. 1):
+#30, pierwszy commit porządkowy `1d9dddb`.
+
+**Audyt PR #29** (squash `9aed8be`, baza `36527f7`; 19 plików, +271/−64; treść:
+m12-123 = naprawa uwagi W3, m12-124 = uwaga terenowa A, właściciel) — metoda:
+`git diff 9aed8be^..9aed8be` plik po pliku, lektura ADR 0043 z aneksem 2026-09-14,
+powtórzone bramy na drzewie `main`. Wyniki:
+
+1. **m12-124 (⚙ w setupie = oko)** — `EKRANY_SETUPU = EKRANY.slice(0, -1)`;
+   `przelaczSetup()` ma cztery gałęzie w dobrej kolejności: gra → warstwa końca
+   gry (ADR 0043 pkt 1), ekrany setupu → `przelaczPodgladMapy({ fokus:
+   'przycisk-setup' })`, `gra` po zakończeniu → mapa startowa, reszta → setup.
+   `STAN.ekran` nietknięty, więc pasek kroki i scroll zostają. `przelaczPodgladMapy`
+   przyjmuje `{ fokus = 'przycisk-podejrzyj-mape' } = {}` — nasłuch
+   `addEventListener('click', przelaczPodgladMapy)` podaje mu `MouseEvent`, który
+   nie ma pola `fokus`, więc default działa (sprawdzone w kodzie, nie z pamięci);
+   `$('przycisk-setup')` istnieje w `index.html`, a `$` rzuca przy braku id,
+   więc brak literówki jest wymuszony startem aplikacji w testach.
+2. **W3 (etykiety m12-120 przywrócone)** — dokładnie 6 linii komentarzy
+   (`app/konfig.js` 3, `app/app.js` 3), ani jednego znaku kodu więcej; grep po
+   `m12-123` w nośnikach żywych daje zero, więc fala, która była tylko podbiciem
+   wersji, nie podpisała żadnej decyzji.
+3. **Podbicie wersji** — jedna wersja w 43 miejscach `?v=` w 13 plikach +
+   `WERSJA_SW`; reguła L29 (`git add index.html app/ sw.js`) zastosowana
+   poprawnie, w przeciwieństwie do pierwszej próby tej sesji w PR #29 (45a87d5).
+4. **Pozostałe 11 modułów `app/*.js`** — `git diff` pokazuje wyłącznie linie
+   z `?v=` (polityka liczenia: 0 linii innych niż `?v=` w każdym z plików).
+5. **Testy i piny** — F3 przepisany na nową formę zamiast skasowany (L55), nowy
+   test uwagi A na ekranie pozycji, w kontrakcie ADR 0043: nowa gałąź wymagana,
+   stary tor `setup → mapa startowa` zakazany, reguła `czyGraToczySie()` nietknięta.
+6. **Dwie sprawy, które nie są defektami, a mogą być mylnie wzięte za defekt:**
+   (a) `aria-pressed` ikony ⚙ **nie gaśnie**, gdy ⚙ chowa warstwę — ikona świeci
+   na całej ścieżce przygotowania (uwaga I, ADR 0043) i tak jest to asercją F3;
+   (b) aneks mówi „ekrany setupu (kroki 1–5)", a `EKRANY_SETUPU` obejmuje też
+   lobby `multi` — wyliczenie nazw w tym samym zdaniu jest pełne, więc to
+   nieścisłość etykiety, nie zachowania.
+
+**Werdykt: bez defektów w treści PR #29.** Jedna usterka w modelu stanu, który
+ta zmiana poszerzyła — oznaczona **D1**, naprawiona w tej sesji.
+
+## Usterka D1 — podgląd mapy przeżywał zmianę ekranu (m12-125, commit `cee2792`)
+
+**Zgłoszenie:** nie z terenu; z audytu toru, który otworzyła uwaga A.
+**Objaw:** (1) gość, który w lobby zajrzał na mapę (⚙ chowa warstwę jak oko),
+wchodził w grę NIEWIDOCZNĄ — start gry wieloosobowej przychodzi do niego
+z pollingu (`onStanGryMulti` → `uruchomGreMulti` → `pokazEkran('gra')`), a panel
+gry rodził się z `visibility: hidden` i `inert`; ⚙ w trakcie gry otwiera warstwę
+końca gry, więc jedynym powrotem było oko w stopce. (2) Przy włączonym podglądzie
+„dane i prywatność" ze stopki otwierało kartę, której nie było widać.
+**Przyczyna:** `STAN.podgladMapy` gasiły tylko otwieracze warstw (wzorzec L61:
+`przelaczInformacje`, `przelaczRankingi`, `otworzKoniecGry`), a funkle zmiany
+ekranu nie — bo ich autor zakładał, że do zmiany ekranu dochodzi kliknięciem
+w panelu, którego w podglądzie nie da się nacisnąć. Założenie pęka, gdy ekran
+zmienia kod bez udziału palca.
+**Naprawa u przyczyny:** `STAN.podgladMapy = false` w każdym z trzech funklów
+zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`); bez
+wyjątków na `gra`, bez `try`/`catch`. `STAN.ekran` w `pokazPrywatnosc` zostaje
+nietknięty, bo nim wracamy.
+**Testy:** `test/aplikacja.test.js` (karta ze stopki: `inert: false`, klasa
+zgaszona) i pełna ścieżka multi w `test/wieloosobowa-ui.test.js` (lobby +
+podgląd + start z pollingu ⇒ `#ekran-gra` nieinercyjny, oko mówi „Podejrzyj
+mapę", `gra-postep` = „stacja 1 z 3"); zęby sprawdzone stashem naprawy —
+bez fixu testmulti pada na `true !== false`. Pin 3b w kontrakcie ADR 0043
+żąda `STAN.podgladMapy = false` w ciele każdego z trzech funklów (wycinki kodu
+bez komentarzy, L17).
+**Pomiar na żywo (L65: atrapa DOM nie liczy kaskady):** headless Chromium 153,
+390×844, `?tryb=test`, obok pracującego podglądu Areny na `0.0.0.0:8000`; drzewo
+`main` (`9aed8be`) wyłożone osobno na porcie 8100 przez `tools/serwer.mjs`.
+PRZED: `visibility: hidden`, `inert: true`, `elementFromPoint` nie trafia w kartę
+prywatności. PO (m12-125): `visible`, `inert: false`, palec trafia, klasa
+`podglad-mapy` nieobecna. Sama uwaga A działa w przeglądarce bez zmian: ⚙ na
+ekranie setupu chowa warstwę (`body.podglad-mapy`, `visibility: hidden` warstwy).
+**Dokumentacja:** niezmiennik wpisany do ADR 0043 jako dopisek 2026-09-15 przy
+aneksie 2026-09-14 (bez zmiany treści decyzji), przypadek i reguła jako
+`docs/LESSONS.md` L72 (+ pełny opis w archiwum).
+
+## Budżet lektury i porządek w dokumentach
+
+Rezerwa na wejściu (479 tok) nie pozwalała dopisać L72 ani dopisku ADR —
+`skrócenie/rozdzielenie dokumentów` (AGENTS §0) zrobione w tej samej fali:
+aneks 2026-09-13b (m12-111) ADR 0043 — treść w całości historyczna, lista zdań
+wysłanych do korekty, a jego reguła operacyjna żyje w `LESSONS` L64 i w strażniku
+dryfu — przeniesiony dosłownie do
+`docs/decisions/archive/aneksy-0043-2026-09-13b.md` ze wskaźnikiem w ADR
+(wzorzec L62/L66; nazwa bez przedrostka `NNNN-`, więc plik nie wchodzi w skan
+archiwum ADR-ów ani w lekturę). Po dopisaniu L72 i dopisku: **99 690/100 000**
+(rezerwa 310). Brama po sesji: **815/815** (było 813), `synchronizuj-szablon
+--check` i audyt kontrastu bez naruszeń.
+
+**Drobny dług tej sesji, do odnotowania (L7):** komunikat commitu `cee2792` ma
+literę w pierwszym zdaniu („odąd" zamiast „odtąd" — litera zginęła w poprawce
+robionej `sed`em już po `git commit -F`). Treść komunikatu jest zgodna z tym, co
+w drzewie; commit jest wypchnięty, a ADR 0012 reg. 4 zabrania poprawiania
+historii, więc zostaje jak jest, z tym zapisem.

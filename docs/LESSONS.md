@@ -582,3 +582,11 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Dopisek m12-120 (pytanie „zostawić korytarze i dodać ulice"):** zmierzone i odrzucone — punkt snapuje się do NAJBLIŻSZEGO węzła (na chodniku), a skrótu chodnik↔jezdnia w środku kwartału graf nie ma; Dijkstra wybiera najkrótszą trasę, ale nie przenosi punktu między równoległymi sieciami (dG 100 m → 512 m). Trafna połowa pytania: pieszy nie miał klas ulic tranzytowych (tertiary/secondary/primary/unclassified) — wieś przy wojewódzkiej bez chodników nie miała korytarza; od m12-120 klasy te wchodzą do pieszego i roweru, poza motorway/trunk. Graf nie czyta `oneway` — krawędzie są zawsze dwukierunkowe, więc jednokierunkowa nie blokuje pieszego.
 
 Pełny przypadek, pomiary i testy: `docs/LESSONS_ARCHIVE.md` → `## L71`.
+
+## L72 (2026-09-15) — tryb widoku BIEŻĄCEGO ekranu musi gasnąć przy każdej zmianie ekranu
+
+**Objaw:** gość, który w lobby zajrzał na mapę (⚙ START GRY chowa warstwę jak oko — uwaga A), wszedł w grę NIEWIDOCZNĄ, a „dane i prywatność" ze stopki otwierało kartę, której nie było widać — przy zielonej bramie.
+**Przyczyna:** `STAN.podgladMapy` przeżywał zmianę ekranu, a `body.podglad-mapy` w CSS znaczy `visibility: hidden; pointer-events: none` na każdej `.panel-centralny`; stan gasiły tylko otwieracze warstw (klik), a przejścia, które przychodzą z kodu (start gry multi z pollingu), sprzątać go nie musiały.
+**Reguła:** każdy stan opisujący, jak wyświetlony jest BIEŻĄCY ekran (podgląd mapy, pasek drogi, otwarta warstwa), gasi KAŻDY funkel zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`), nie tylko klikalny przełącznik — bo o zmianie ekranu decyduje też kod bez udziału palca. Atrapa DOM nie liczy kaskady (L65), więc pin idzie na `inert` i klasę na `body`, a samą widoczność mierzy się w przeglądarce (ENVIRONMENT §4.1).
+
+Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L72`.
