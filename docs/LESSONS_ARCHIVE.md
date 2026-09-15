@@ -1561,3 +1561,58 @@ miejscu filtrowania (działa też na cache), nie dopisuj detektorów do
 wyboru. Zanim usuniesz klasę trasowania, zmierz skutek na KAŻDYM terenie
 fixture (miasto/przedmieście/las) — klasy „zbędne w mieście" bywają jedyną
 siecią w lesie.
+
+## L72 (2026-09-15) — tryb widoku BIEŻĄCEGO ekranu musi gasnąć przy każdej zmianie ekranu
+
+**Objaw (zgłoszenie z audytu PR #29, sesja 2026-09-15a).** Dwa objawy z tego
+samego stanu, oba znalezione w kodzie, nie w terenie:
+
+1. Gra wieloosobowa: gość czeka w lobby, klika ⚙ START GRY, żeby zajrzeć na
+   mapę (od m12-124 ⚙ na ekranach setupu chowa warstwę DOKŁADNIE jak oko —
+   uwaga A właściciela). Organizator startuje grę; most donosi start
+   z pollingu; aplikacja woła `pokazEkran('gra')`. Panel gry jest otwarty
+   (`hidden === false`), a gracz widzi samą mapę: nic nie da się kliknąć.
+   Ponowny klik ⚙ otwiera warstwę końca gry (gra się toczy), więc jedynym
+   powrotem jest oko w stopce — a jedno palnięcie za dużo kończy grę.
+2. Hot-seat: przy włączonym podglądzie klik „dane i prywatność" w stopce
+   otwiera `#ekran-prywatnosc`, którego nie widać (stopka leży POZA
+   panelami, więc jest osiągalna).
+
+**Przyczyna.** `STAN.podgladMapy` jest stanem *sposobu wyświetlenia bieżącego
+ekranu*, a gasiły go wyłącznie otwieracze warstw (`przelaczInformacje`,
+`przelaczRankingi`, `otworzKoniecGry` — wzorzec z L61). Funkcje zmieniające
+ekran (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`) zostawiały go
+włączonego. W CSS `body.podglad-mapy .panel-centralny { visibility: hidden;
+pointer-events: none }`, a w JS każdy panel dostaje `inert` — czyli każdy nowy
+ekran rodził się już schowany. Z `EKRANY_SETUPU` (m12-124) do tego stanu doszło
+drugie, znacznie bardzie dostępne wejście (ikona w belce, świecąca przez cały
+setup), i defekt przestał być teoretyczny.
+
+**Naprawa (m12-125, u root cause, bez maskowania).** Stan gaszą WSZYSTKIE
+funkcje zmiany ekranu:
+`STAN.podgladMapy = false;` w `pokazEkran()`, w `pokazMapeStartowa()` (mapa
+startowa nie ma warstwy, do której podgląd wraca) i w `pokazPrywatnosc()`
+(tam `STAN.ekran` zostaje nietknięty, bo nim wracamy). Żadnego `try`/`catch`,
+żadnego „jeśli ekran to gra" — reguła jest jedna: zmiana ekranu kończy tryb
+widoku starego ekranu.
+
+**Testy i pomiar.**
+- `test/aplikacja.test.js` — D1: ⚙ w setupie włącza podgląd, klik w stopce
+  otwiera kartę prywatności `inert: false`, klasa `podglad-mapy` zgaszona.
+- `test/wieloosobowa-ui.test.js` — pełna ścieżka (L36: test nie może iść
+  skrótem): lobby gościa + podgląd + start organizatora z pollingu ⇒
+  `#ekran-gra` nieinercyjny, oko „Podejrzyj mapę", `gra-postep` = „stacja 1 z 3".
+  Zęby sprawdzone stashem fixu: bez naprawy pada na `true !== false`.
+- `test/kontrakt.test.js` — pin 3b w kontrakcie ADR 0043: KAŻDA z trzech
+  funkcji ma w ciele `STAN.podgladMapy = false;` (wycięty komentarz, ciało
+  funkcji wycięte wzorcem do `\n\}`).
+- Pomiar w headless Chromium (ENVIRONMENT §4.1, 390×844): PRZED —
+  `visibility: hidden`, `inert: true`, `elementFromPoint` nie trafia w kartę;
+  PO — `visibility: visible`, `inert: false`, palec trafia. Bez tego pomiaru
+  nie mielibyśmy dowodu, bo atrapa DOM nie liczy kaskady (L65).
+
+**Reguła (skrót dla rejestru).** Każdy stan opisujący, jak wyświetlony jest
+BIEŻĄCY ekran, musi gasić KAŻDA funkcja zmiany ekranu, a nie tylko klikalny
+przełącznik
+— o zmianie ekranu decyduje też kod bez palca. Atrapa nie liczy kaskady, więc
+pinuj `inert` + klasę na `body`, a widoczność mierz w przeglądarce.

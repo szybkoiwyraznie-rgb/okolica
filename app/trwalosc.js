@@ -15,9 +15,9 @@
  *   drogą powrotu do przerwanej gry jest ten zapis;
  * - zepsuty zapis = jawna odmowa z kodem T, nigdy cichy start od zera.
  */
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-124';
-import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-124';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-124';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-129';
+import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-129';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-129';
 
 export const SCHEMAT_STANU = 'stan-gry/1';
 
@@ -105,8 +105,8 @@ function czyPozycjaOk(p) {
  * do wznowienia wystarczy punkt startowy odcinka) albo null;
  * `zegarMs` — wskazaniem zegara gry (`performance.now()`) w chwili
  * zapisu: po restarcie przeglądarki zegar sesji startuje od zera, więc czasy
- * rozgrywki są przy wznowieniu rebazowane o różnicę — czas zamknięcia karty
- * nie wlicza się w odcinek (uczciwy pomiar, ADR 0004 pkt 3).
+ * rozgrywki są przy wznowieniu rebazowane o różnicę, aby znaczniki w dzienniku
+ * nie skoczyły o noc z zamkniętą kartą (ADR 0004 pkt 3).
  */
 export function zbierajStan({ konfig, stacje, kontenerPaczki, rozgrywka, pozycja = null, ekran = 'gra', terazMs, zegarMs } = {}) {
   wymaganie(czyKonfigOk(konfig), 'zbierajStan: konfig z tryb i kodGry jest wymagany');

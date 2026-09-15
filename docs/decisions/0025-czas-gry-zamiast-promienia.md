@@ -66,3 +66,18 @@ z czasu, sposobu poruszania i liczby pytań. Punkt kalibracyjny właściciela:
   są ułożone pod 1000 m, a przy 500 m sieć jest słusznie „za uboga".
 - `{PROMIEN_M}` w prompcie znaczy teraz „promień wyliczony z planowanego
   czasu", nie „promień wpisany przez organizatora" (`docs/PROTOKOL.md` §2.1).
+
+## Aneks 2026-09-15 (m12-127, uwaga A) — czas gry z czterech przycisków
+
+Właściciel po teście terenowym (PR #30): „pole z liczbą minut na przyciski
+wyboru: 30, 60, 90, 120 — stukasz jeden, poprzedni odpuszcza”. Hot-seat i multi.
+
+1. `CZASY_GRY = [30, 60, 90, 120]` w `app/konfig.js` jest jedyną listą: setup
+   renderuje z niej segment radia (`#lista-czasow`), więc wzajemne wyłączanie i
+   rozmiar trafienia są w markupie, nie w kodzie (ADR 0011).
+2. Zamknięty zbiór jest regułą UI, nie walidatora: `OGRANICZENIA.czasGryMin`
+   zostaje 10–480, K19 pilnuje widełek, a stary zapis z 240 minutami działa —
+   żaden przycisk nie jest wtedy wciśnięty i pierwsza zmiana wchodzi do zbioru.
+   Auto-zaznaczenie czegokolwiek byłoby cichą zmianą planu gry.
+3. Promień liczy się jak dotąd (decyzje 1–4 bez zmian); pola `#setup-czas` nie
+   ma, więc nie ma i komunikatu, który kazałby w nim pisać (LESSONS L64).

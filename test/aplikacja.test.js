@@ -20,7 +20,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { SZABLON_WERSJA, WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
+import { WERSJA_PROTOKOLU_REV1, WERSJA_PROTOKOLU_REV2, WERSJA_PROTOKOLU_REV3, odwrocPolaPaczki, zakodujPoprawnaRev2 } from '../app/protokol.js';
 import {
   INSTANCJE_OVERPASS,
   SCHEMAT_SIECI,
@@ -28,7 +28,7 @@ import {
   parsujOdpowiedz,
   upraszczajDaneDoCache,
 } from '../app/sieci.js';
-import { DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja, przeliczenieCzasu } from '../app/konfig.js';
+import { CZASY_GRY, DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja, przeliczenieCzasu } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
 import { maxZoomPodkladu, skalaBar, widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
 import { dopasujZoomDoPromienia } from '../app/geo.js';
@@ -92,6 +92,31 @@ test('F3 + uwaga A: w setupie ⚙ START GRY chowa warstwę jak oko i przywraca j
 });
 
 /**
+ * Usterka D1 (audyt PR #29, sesja 2026-09-15a): podgląd mapy jest trybem
+ * BIEŻĄCEGO ekranu, nie stanu strony. Dopóki przeżywał zmianę ekranu, każdy
+ * panel otwarty spoza tego ekranu — kartą „dane i prywatność" ze stopki albo
+ * przejściem, które przychodzi z kodu (start gry wieloosobowej u gościa:
+ * `pokazEkran('gra')`) — dziedziczył `body.podglad-mapy`, a to w CSS znaczy
+ * `visibility: hidden; pointer-events: none`. Gracz klikał i widział pustą
+ * mapę. Atrapa DOM nie modeluje kaskady (LESSONS L65), więc pin idzie na
+ * `inert` (JS) i na klasę na `body`, a nie na widoczność.
+ */
+test('D1: zmiana ekranu gasi podgląd mapy — karta ze stopki jest użyteczna, nie przygaszona', () => {
+  if (pobierz('ekran-setup').hidden) dom.kliknij('przycisk-setup');
+  dom.kliknij('przycisk-setup'); // uwaga A: w setupie ⚙ chowa warstwę jak oko
+  assert.equal(dom.document.body.classList.contains('podglad-mapy'), true, 'warunek wstępny: podgląd mapy włączony');
+  assert.equal(pobierz('ekran-setup').inert, true, 'warunek wstępny: warstwa setupu schowana podglądem');
+
+  dom.kliknij('przycisk-prywatnosc-stopka'); // stopka leży POZA panelami — stąd gracz woła prywatność
+  assert.equal(pobierz('ekran-prywatnosc').hidden, false, 'karta prywatności otwarta');
+  assert.equal(pobierz('ekran-prywatnosc').inert, false, 'karta nie jest zablokowana stanem podglądu');
+  assert.equal(dom.document.body.classList.contains('podglad-mapy'), false, 'zmiana ekranu gasi podgląd mapy');
+
+  dom.kliknij('przycisk-wrocz-prywatnosc');
+  assert.equal(pobierz('ekran-setup').hidden, false, 'powrót z prywatności zostawia setup — stan jak przed testem');
+});
+
+/**
  * Zgłoszenie właściciela B3: „Wróć na początek” dawało pustą stronę (sam
  * nagłówek i stopka). Mapa musi zostać widoczna — `data-ekran='mapa'` jest tym,
  * co CSS trzyma jako widoczny spód aplikacji.
@@ -110,10 +135,11 @@ test('B3: „Wróć na początek” zostawia mapę, nie pustą stronę', () => {
   assert.equal(pobierz('ekran-setup').hidden, false, 'setup wraca dla kolejnych testów');
 });
 
-test('bootstrap: stopka pokazuje obowiązującą wersję protokołu i łatki szablonu', () => {
-  assert.equal(pobierz('stopka-protokol').textContent, WERSJA_PROTOKOLU);
-  assert.equal(pobierz('stopka-szablon').textContent, SZABLON_WERSJA, 'łatka szablonu widoczna (PROTOKOL §7)');
-});
+// Numery protokołu PYT i łatki szablonu NIE są już treścią panelu Informacje
+// (właściciel 2026-09-15): gracz nie ma co z nimi zrobić. To, że `WERSJA_PROTOKOLU`
+// i `SZABLON_WERSJA` nie rozjadą się z dokumentem, pilnuje `test/kontrakt.test.js`
+// — na dokumencie i kodzie, nie na echu w UI. Tu zostaje to, co gracz widzi:
+// numer budowy (test niżej).
 
 test('bootstrap: start() wpisuje numer budowy do stopki, nie zostawia placeholdera', () => {
   // Właściciel dwa razy oceniał starą wersję z cache i nie miał jak tego
@@ -130,11 +156,17 @@ test('bootstrap: lista trybów i tematów jest wyrenderowana z kanonu', () => {
 });
 
 test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
-  assert.equal(pobierz('setup-czas').value, String(DOMYSLNE.czasGryMin), 'czas gry jest polem, promień nie (ADR 0025)');
+  // Czas gry nie jest polem (uwaga A, 2026-09-15): wybiera się go z czterech
+  // przycisków, a wciśnięty jest dokładnie ten od wartości domyślnej.
+  assert.equal(pobierz('lista-czasow').children.length, CZASY_GRY.length, 'cztery przyciski czasu gry');
+  assert.deepEqual(wcisnieteCzasy(dom), [String(DOMYSLNE.czasGryMin)], 'dokładnie jeden przycisk wciśnięty (ADR 0025: czas jest wybierany, promień liczony)');
   assert.match(pobierz('setup-promien-info').textContent, /Promień gry: 500 m/, 'promień policzony i pokazany z uzasadnieniem');
   assert.match(pobierz('setup-promien-info').textContent, /5 pytań/, 'składowe są jawne');
   assert.equal(pobierz('setup-stacje').value, String(DOMYSLNE.liczbaStacji));
-  assert.equal(pobierz('setup-pytania').value, String(DOMYSLNE.pytaniaNaStacje));
+  // Pola „Pytań na stację" nie ma (uwaga właściciela B, 2026-09-15): plan liczy
+  // się z listy graczy, a jego skutek widać w uzasadnieniu promienia — przy
+  // jednym zapamiętanym graczu to 5 stacji × 1 pytanie.
+  assert.match(pobierz('setup-promien-info').textContent, /: 5 pytań ≈/, 'jeden gracz ⇒ jedno pytanie na stację ⇒ 5 pytań');
   // pola „Liczba graczy" nie ma: graczy dodaje się w bloku tożsamości
   // (ADR 0026 aneks), a zapamiętany gracz wraca na listę bez PIN-u
   assert.equal(pobierz('lista-graczy').children.length, 1, 'zapamiętany gracz jest na liście');
@@ -401,6 +433,26 @@ function wyslij(el, typ, zdarzenie = {}) {
   return lista.length;
 }
 
+/**
+ * Stuknięcie w przycisk czasu gry (uwaga A, 2026-09-15). Atrapa DOM nie ma
+ * semantyki radia, więc test zaznacza wybrany `input`, odznacza pozostałe i
+ * wysyła `change` na kontenerze — tyle samo robi przeglądarka po kliknięciu
+ * etykiety segmentu.
+ */
+function stuknijCzas(dom, minuty) {
+  const lista = dom.pobierz('lista-czasow');
+  for (const i of lista.children.flatMap((etykieta) => etykieta.children)) i.checked = String(i.value) === String(minuty);
+  return wyslij(lista, 'change');
+}
+
+/** Które przyciski czasu gry są wciśnięte (ma być dokładnie jeden). */
+function wcisnieteCzasy(dom) {
+  return dom.pobierz('lista-czasow').children
+    .flatMap((etykieta) => etykieta.children)
+    .filter((i) => i.checked)
+    .map((i) => i.value);
+}
+
 test('mapa: mały promień gry kadruje się jak 500 m — bez pustych kafli (zgłoszenie 2026-09-12 + uwaga A 2026-09-14)', async () => {
   // Właściciel w testach terenowych: po stuknięciu mapy (i po pobraniu sieci
   // z Overpassa) aplikacja przybliżała tak mocno, że kafelki OSM przestawały
@@ -580,25 +632,25 @@ test('mapa: obrót telefonu (resize) przelicza widok na nowy rozmiar panelu', as
   assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
 });
 
-test('mapa: wyczyszczony czas gry nie wysypuje przejścia — jest jawna odmowa z kodem K19', async () => {
+test('mapa: wyczyszczone pole stacji nie wysypuje przejścia — jest jawna odmowa z kodem K10', async () => {
   const domMapy = await aplikacjaZMapa();
   const gpsMapy = domMapy.gps;
-  // gracz czyści pole czasu gry → `Number('') = 0`, czyli wartość skończona,
-  // która przechodzi przez hartowanie liczb w setupie (promień zjeżdża wtedy
-  // na minimum 200 m, więc odmowa musi przyjść z walidacji czasu — K19)
-  wyslij(domMapy.pobierz('setup-czas'), 'input', { target: { value: '' } });
+  // Czas gry nie jest już polem (uwaga A, 2026-09-15) — nie ma czym wpisać
+  // zera, więc ten sam tor sprawdza pole, które zostało: gracz czyści liczbę
+  // stacji → `Number('') = 0`, czyli wartość skończona, która przechodzi przez
+  // hartowanie liczb w setupie. Odmowa musi przyjść z walidacji (K10).
+  wyslij(domMapy.pobierz('setup-stacje'), 'input', { target: { value: '' } });
   gpsMapy.wyslijFix(52.235, 21.015, 15);
 
-  // `stacjeProste` odmawia przy niedodatnim promieniu — przejście ma odmówić,
-  // a nie urwać się wyjątkiem w nasłuchu (LESSONS L10)
+  // przejście ma odmówić, a nie urwać się wyjątkiem w nasłuchu (LESSONS L10)
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.equal(domMapy.pobierz('ekran-stacje').hidden, true, 'przejście jest odmówione, nie urwane');
-  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /\[K19\]/, 'kod z konfig.js, komunikat dla człowieka');
-  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /Planowany czas gry/);
+  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /\[K10\]/, 'kod z konfig.js, komunikat dla człowieka');
+  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /Liczba stacji/);
   assert.match(domMapy.pobierz('status').textContent, /Wróć do ustawień gry/);
 
-  // mapa pozycji działa dalej; promień zjeżdża na minimum (200 m), więc okrąg
-  // promienia JEST — zniknąłby dopiero, gdyby promień nie był liczbą (ADR 0025)
+  // mapa pozycji działa dalej; promień liczy się z czasu gry, więc okrąg jest
+  // niezależnie od tego, ile stacji wpisano (ADR 0025)
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1);
   assert.deepEqual(
     domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
@@ -606,12 +658,26 @@ test('mapa: wyczyszczony czas gry nie wysypuje przejścia — jest jawna odmowa 
   );
   assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
 
-  // po wpisaniu czasu gry przejście działa (promień liczy się sam — ADR 0025)
-  wyslij(domMapy.pobierz('setup-czas'), 'input', { target: { value: '90' } });
+  // po wpisaniu liczby stacji przejście działa (promień liczy się sam — ADR 0025)
+  wyslij(domMapy.pobierz('setup-stacje'), 'input', { target: { value: '4' } });
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.equal(domMapy.pobierz('ekran-stacje').hidden, false);
-  assert.equal(domMapy.pobierz('mapa-stacje-pinezki').children.length, DOMYSLNE.liczbaStacji);
+  assert.equal(domMapy.pobierz('mapa-stacje-pinezki').children.length, 4);
   assert.ok(domMapy.pobierz('mapa-stacje-kafelki').children.length > 0);
+});
+
+// Osobna instancja aplikacji (nie ta z bootstrapu pliku): `zainstalujDom` przekłada
+// globalny dokument, a testy przed nim czytają stan wspólny (LESSONS L14).
+test('setup: stuknięcie przycisku czasu zaznacza go, a poprzedni odznacza (uwaga A, 2026-09-15)', async () => {
+  const domCzasu = await aplikacjaZMapa();
+  assert.match(domCzasu.pobierz('setup-promien-info').textContent, new RegExp(`z ${DOMYSLNE.czasGryMin} min`), 'na starcie plan to wartość domyślna');
+  stuknijCzas(domCzasu, 90);
+  assert.deepEqual(wcisnieteCzasy(domCzasu), ['90'], 'wciśnięty jest nowy przycisk');
+  assert.match(domCzasu.pobierz('setup-promien-info').textContent, /z 90 min/, 'uzasadnienie promienia idzie za wyborem (ADR 0025)');
+  stuknijCzas(domCzasu, 30);
+  assert.deepEqual(wcisnieteCzasy(domCzasu), ['30'], 'poprzedni odpuszcza — segment nie pozwala na dwa razy „wybrane”');
+  const r = przeliczenieCzasu({ czasGryMin: 30, tryb: DOMYSLNE.tryb, liczbaStacji: DOMYSLNE.liczbaStacji, pytaniaNaStacje: DOMYSLNE.pytaniaNaStacje });
+  assert.ok(domCzasu.pobierz('setup-promien-info').textContent.includes(String(r.promienM)), 'promień zgadza się z przeliczeniem z konfigu');
 });
 
 test('mapa: gest palcem na panelu zmienia widok (drag działa z aplikacji)', async () => {
@@ -978,9 +1044,10 @@ test('Q2 end-to-end: wklejona paczka odwrócona (rev1) od razu zaczyna grę', as
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1', kanon: '2026-09-10',
     // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
-    // fixture paczki jest ułożony pod ten promień
-    // 3 graczy przy 3 stacjach × 1 pytaniu: pytania dzielą się bez reszty (K22, ADR 0027)
-    konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+    // fixture paczki jest ułożony pod ten promień. Jeden gracz: hot-seat liczy
+    // pytania z listy graczy (3 pytania = 3 stacje × 1, ADR 0027 aneks 2026-09-15),
+    // więc zapis z trzema graczami żądałby teraz dziewięciu pytań.
+    konfig: { liczbaGraczy: 1, liczbaStacji: 3, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?rev1=${Math.random().toString(36).slice(2)}`);
@@ -1000,9 +1067,10 @@ test('rev2 end-to-end: wklejona paczka z kodami od razu zaczyna grę', async () 
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1', kanon: '2026-09-10',
     // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
-    // fixture paczki jest ułożony pod ten promień
-    // 3 graczy przy 3 stacjach × 1 pytaniu: pytania dzielą się bez reszty (K22, ADR 0027)
-    konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+    // fixture paczki jest ułożony pod ten promień. Jeden gracz: hot-seat liczy
+    // pytania z listy graczy (3 pytania = 3 stacje × 1, ADR 0027 aneks 2026-09-15),
+    // więc zapis z trzema graczami żądałby teraz dziewięciu pytań.
+    konfig: { liczbaGraczy: 1, liczbaStacji: 3, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig });
   await import(`../app/app.js?rev2=${Math.random().toString(36).slice(2)}`);
@@ -1028,14 +1096,48 @@ function przelaczCheckbox(domAtrapa, id, wartosc) {
   for (const fn of el.zdarzenia.change ?? []) fn({ type: 'change', target: el, currentTarget: el });
 }
 
+/**
+ * Konfig „3 stacje × 1 pytanie na stację" — czyli setup JEDNEGO gracza:
+ * od uwagi terenowej właściciela B (2026-09-15) pytań na stację się nie pyta,
+ * hot-seat liczy je z listy graczy (stacje × gracze). Telefon z atrapy ma
+ * zapamiętaną Alę, więc lista ma jedną osobę i plan wynosi 3 × 1 = 3 pytania —
+ * dokładnie tyle, ile niesie fixture `paczka-ok.json`.
+ */
 function pamiecKonfig3x1() {
   const pamiecKonfig = new Map();
   pamiecKonfig.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1', kanon: '2026-09-10',
-    konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+    konfig: { liczbaGraczy: 1, liczbaStacji: 3, tematy: ['historia', 'architektura'], czasGryMin: 85 },
   }));
   return pamiecKonfig;
 }
+
+/** Kopia pytań dla kolejnych graczy (id `s<n>p<k>`, treść inna — E-** pilnuje
+ *  unikalności treści, a `pytaniaNaStacje = liczbaGraczy` to reguła hot-seat). */
+function pytaniaDlaGraczy(baza, graczy) {
+  if (graczy <= 1) return [...baza.pytania];
+  const WARIANTY = ['Wariant B: ', 'Wariant C: ', 'Wariant D: ', 'Wariant E: ', 'Wariant F: ', 'Wariant G: ', 'Wariant H: '];
+  const pytania = [];
+  const stacje = [...new Set(baza.pytania.map((p) => p.stacja))].sort((a, b) => a - b);
+  for (const stacja of stacje) {
+    const naStacji = baza.pytania.filter((p) => p.stacja === stacja);
+    pytania.push(...naStacji);
+    for (let k = 1; k < graczy; k += 1) {
+      for (const pytanie of naStacji) {
+        pytania.push({
+          ...pytanie,
+          id: pytanie.id.replace(/p1$/, `p${k + 1}`),
+          tresc: `${WARIANTY[k - 1]}${pytanie.tresc}`,
+          wyjasnienie: `${WARIANTY[k - 1]}${pytanie.wyjasnienie}`,
+        });
+      }
+    }
+  }
+  return pytania;
+}
+
+/** Planowany czas gry dający promień 1000 m dla 3 stacji (fixture paczki). */
+const CZAS_DLA_GRACZY = { 1: 85, 2: 90, 3: 95 };
 
 test('ADR 0032: checkbox domyślnie pusty, prompt domyślnie rev5; zaznaczenie daje rev4', async () => {
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
@@ -1124,9 +1226,9 @@ test('ADR 0032: poprawka celuje w profil wklejki — E02 w checkbox, odrzucona w
 });
 
 test('ADR 0032: pełna gra rev3 bez źródeł — status bez „źródeł" i bez linii wariantu', async () => {
-  const pamiec = new Map();
-  pamiec.set('okolica:gracze', JSON.stringify({ schemat: 'gracze-lokalni/1', gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })) }));
-  pamiec.set('okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 } }));
+  //-setup na jednym graczu: hot-seat liczy pytania z listy (uwaga B), a fixture
+  // niesie jedno pytanie na stację, więc graczy musi być jedna osoba.
+  const pamiec = pamiecKonfig3x1();
   const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?fcgame=${Math.random().toString(36).slice(2)}`);
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -1178,13 +1280,9 @@ test('ADR 0032: propozycje paczek pokazują „Fact-checked" tylko dla zweryfiko
   const metaFc = zbierzMetaZestawu({ ...baza, data: '2026-09-09 10:00' });
   const metaBez = zbierzMetaZestawu({ ...baza, data: '2026-09-09 11:00', factcheck: false });
   assert.equal(metaFc.geohash5, geohash(52.2297, 21.0122, 5), 'sanity: wpis w komórce pozycji testowej');
+  // Brama tożsamości (K08) przechodzi na zapamiętanej Ali z atrapy: lista i
+  // `liczbaGraczy` to jedno (ADR 0026 aneks), a plan pytań liczy się z listy.
   const pamiec = pamiecKonfig3x1();
-  // nawigacja na ekran pozycji przechodzi przez bramę setupu (K08) i bramę
-  // tożsamości — jak w prawdziwym użyciu: imiona w konfigu i na liście
-  const konfig = JSON.parse(pamiec.get('okolica:konfig'));
-  konfig.konfig.imiona = ['Gracz 1', 'Gracz 2', 'Gracz 3'];
-  pamiec.set('okolica:konfig', JSON.stringify(konfig));
-  pamiec.set('okolica:gracze', JSON.stringify({ schemat: 'gracze-lokalni/1', gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })) }));
   // I.b: propozycje tylko z repozytorium — wpisy z indeksu (factcheck niesie wpis)
   const URL_REPO = 'https://repo.przyklad/indeks.json';
   pamiec.set('okolica:repo-zestawow:url', URL_REPO);
@@ -1260,31 +1358,38 @@ test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe pod
 
 /** Przyjęta paczka + pozycja + stacje z pierścienia (synchronicznie, bez fetch).
  *  Zwraca też `pamiec` — testy trwałości (R6) czytają klucze zapisu gry. */
-async function graGotowaDoStartu(dodatkoweKlucze = {}) {
+/**
+ * fixture gry hot-seat: `graczy` osób na liście, a paczka ma TYLE pytań na
+ * stację, ile graczy — od uwagi terenowej właściciela B (2026-09-15) nie da się
+ * już ustawić innej liczby (pola „pytań na stację" nie ma; hot-seat: każdy
+ * gracz odpowiada raz przy każdej stacji). Dlatego testy potrzebujące rotacji
+ * pytają tu o `graczy: 2/3`, a nie o własną liczbę pytań.
+ * Czas gry jest liczony tak, by promień wyszedł 1000 m (fixture paczki, E16).
+ */
+async function graGotowaDoStartu(dodatkoweKlucze = {}, { graczy = 1 } = {}) {
   const pamiec = new Map();
   // Klucze, które test chce mieć w pamięci PRZED startem aplikacji (np. resztkowa
   // sesja gry sieciowej — zgłoszenie terenowe R, 2026-09-13).
   for (const [klucz, wartosc] of Object.entries(dodatkoweKlucze)) pamiec.set(klucz, wartosc);
   // Lista graczy nie jest polem konfigu, tylko zapamiętaną tożsamością
-  // (ADR 0026 aneks): trzy potwierdzone imiona wracają na listę bez PIN-u.
+  // (ADR 0026 aneks): potwierdzone imiona wracają na listę bez PIN-u.
   pamiec.set('okolica:gracze', JSON.stringify({
     schemat: 'gracze-lokalni/1',
-    gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })),
+    gracze: Array.from({ length: graczy }, (_, i) => `Gracz ${i + 1}`)
+      .map((pseudonim) => ({ pseudonim, zweryfikowany: true })),
   }));
   pamiec.set('okolica:konfig', JSON.stringify({
     schemat: 'konfig/1', kanon: '2026-09-10',
-    // czasGryMin 85 → promień 1000 m dla 3 stacji × 1 pytania (ADR 0025);
-    // fixture paczki jest ułożony pod ten promień
-    // 3 graczy przy 3 stacjach × 1 pytaniu: pytania dzielą się bez reszty (K22, ADR 0027)
-    konfig: { liczbaGraczy: 3, liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+    konfig: { liczbaGraczy: graczy, liczbaStacji: 3, tematy: ['historia', 'architektura'], czasGryMin: CZAS_DLA_GRACZY[graczy] ?? 85 },
   }));
   const dom = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?gra=${Math.random().toString(36).slice(2)}`);
   ustawPozycjeTestowa(dom, '52.2297', '21.0122');
   dom.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
-  const paczka = czytajFixturePaczka();
+  const baza = czytajFixturePaczka();
+  const paczka = { ...baza, pytania: pytaniaDlaGraczy(baza, graczy) };
   dom.wklej('pole-odpowiedz', JSON.stringify(paczka)); // poprawna paczka SAMA zaczyna grę (decyzja 2026-09-07)
-  return { dom, paczka, pamiec };
+  return { dom, paczka, pamiec, graczy };
 }
 
 function zaczynijGre(dom) {
@@ -1353,8 +1458,8 @@ test('uwaga B (2026-09-13): pauzy nie ma — gra idzie dalej także po zejściu 
 /* ================= M6/R5: pętla pytania — odsłonięcie, odpowiedź, źródła */
 
 /** Pełna ścieżka do fazy pytania: start gry → odcinek → dojście z fixów (ADR 0029). */
-async function graWFaziePytania() {
-  const { dom, paczka } = await graGotowaDoStartu();
+async function graWFaziePytania({ graczy = 1 } = {}) {
+  const { dom, paczka } = await graGotowaDoStartu({}, { graczy });
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
   await dojdzSymulacja(dom);
@@ -1385,7 +1490,9 @@ test('M6: pytanie odsłania się DOPIERO na stacji i ma cztery odpowiedzi (ADR 0
 });
 
 test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z linkami', async () => {
-  const { dom, paczka } = await graWFaziePytania();
+  // dwóch graczy ⇒ dwa pytania na stację (hot-seat liczy je z listy, uwaga B),
+  // więc po pierwszej odpowiedzi czeka przycisk „Następne pytanie”
+  const { dom, paczka } = await graWFaziePytania({ graczy: 2 });
   const pierwsze = paczka.pytania.find((q) => q.stacja === 1);
   const przyciski = dom.pobierz('gra-odpowiedzi').children;
   const dobry = przyciski[pierwsze.poprawna];
@@ -1411,6 +1518,9 @@ test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z link
   assert.equal(a.rel, 'noopener noreferrer');
   assert.match(a.textContent, /sprawdzono/, 'data sprawdzenia źródła widoczna');
   assert.equal(dom.pobierz('gra-wynik-odpowiedzi').hidden, false);
+  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Następne pytanie/, 'drugie pytanie stacji czeka — to jeszcze nie „dalej”');
+  dom.kliknij('przycisk-nastepna-stacja');
+  kliknijOdpowiedz(dom, paczka.pytania.filter((q) => q.stacja === 1)[1].poprawna);
   assert.equal(dom.pobierz('przycisk-nastepna-stacja').hidden, false);
   assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Gracz 2, stacja 2 — idę →/, 'jeden przycisk niesie i gracza, i cel — bez drugiego klika (zgłoszenie 2026-09-09)');
   // panele TRZYMAJĄ wyjaśnienie: model jest już w fazie przygotowanie, ale C widoczny
@@ -1484,7 +1594,7 @@ test('M6: przy 2 pytaniach na stację gracze odpowiadają NA ZMIANĘ, nie w kó�
 });
 
 test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-seat, ADR 0009)', async () => {
-  const { dom } = await graWFaziePytania();
+  const { dom, paczka } = await graWFaziePytania({ graczy: 2 });
   // Właściciel 2026-09-11 (4a): nad boksem pytania nie ma już nagłówka „Gra",
   // badge'ów ani przycisków sterowania odcinkiem — schowane w całej fazie pytania
   // (przycisku „pomiń” nie ma wcale od zadania H, 2026-09-12).
@@ -1494,6 +1604,10 @@ test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-s
   // Właściciel 2026-09-11 (4b): po odpowiedzi przyciski A–D znikają — werdykt
   // i wyjaśnienie unoszą się w górę na zaoszczędzonym miejscu.
   assert.equal(dom.pobierz('gra-odpowiedzi').hidden, true, 'przyciski odpowiedzi schowane po odpowiedzi');
+  // drugie pytanie stacji należy do Gracza 2 — po nim stacja się domyka
+  dom.kliknij('przycisk-nastepna-stacja');
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /pytanie 2 z 2 · odpowiada Gracz 2/, 'stacja domyka się dopiero po pytaniu drugiego gracza');
+  kliknijOdpowiedz(dom, paczka.pytania.filter((q) => q.stacja === 1)[1].poprawna);
   dom.kliknij('przycisk-nastepna-stacja');
   assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, false, 'slot sterowania wraca po wyjściu w drogę');
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, true, 'panel C zamknięty');
@@ -1598,11 +1712,17 @@ test('M6+K: powrót po „zamknięciu przeglądarki" — nowa instancja, ta sama
   // pamięci — uwaga K (ADR 0045): wraca do gry sama, bez banera i bez kliku.
   const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?wznow=${Math.random().toString(36).slice(2)}`);
-  assert.equal(dom2.pobierz('setup-czas').zdarzenia.input.length, 1, 'L14: powrót do gry nie dokleja drugiego nasłuchu pól setupu');
+  assert.equal(dom2.pobierz('setup-stacje').zdarzenia.input.length, 1, 'L14: powrót do gry nie dokleja drugiego nasłuchu pól setupu');
+  assert.equal(dom2.pobierz('lista-czasow').zdarzenia.change.length, 1, 'L14: segment czasu też podpięty raz — dwa `change` to dwa przeliczenia promienia');
   assert.equal(dom2.pobierz('ekran-gra').hidden, false, 'aplikacja wróciła na ekran gry');
   assert.equal(dom2.pobierz('gra-panel-odcinek').hidden, false, 'faza odcinka odtworzona');
   assert.match(dom2.pobierz('status').textContent, /Wróciliśmy do zapamiętanej gry/, 'status mówi, co się stało');
   assert.match(dom2.pobierz('status').textContent, /faza: odcinek/);
+  // Właściciel 2026-09-15: „przecież czas nigdzie się nie wlicza — po co taki
+  // tekst". Status wznowienia mówi, CO się stało, a nie tłumaczy mechanizmu,
+  // którego gracz nie widzi i na który nie ma wpływu (ADR 0023 pkt 1).
+  assert.doesNotMatch(dom2.pobierz('status').textContent, /wlicza|czasu zamknięcia/i,
+    'żadnego zdania o „wliczaniu" czasu w UI');
 
   // rebaza zegara działa: zakończenie odcinka NIE daje G09 (czas końca < startu)
   await dojdzSymulacja(dom2);
@@ -1671,42 +1791,42 @@ test('N: powrót po zamknięciu przeglądarki W TRASIE — cel zostaje stacją 2
  * liczy je `podsumowanie()` z `rozgrywka.odpowiedzi` (wpis niesie `gracz`
  * i `punktyRazem`), a odpowiedzi jadą w zapisie stanu. Test sprawdza LICZBY:
  * per gracz przed zamknięciem przeglądarki, w zapisie po powrocie i w tabeli
- * końca gry dokończonej JUŻ po wznowieniu. Fixture ma po jednym pytaniu na
- * stację, więc przy trzech graczach stacja 1 należy do Gracza 1, stacja 2 do
- * Gracza 2, a stacja 3 do Gracza 3 (ADR 0027): Gracz 1 punktuje PRZED reloadem,
- * Gracz 2 odpowiada źle (zero zostaje zerem, nie brakiem wpisu), a Gracz 3
- * punktuje PO wznowieniu. */
+ * końca gry dokończonej JUŻ po wznowieniu. Hot-seat liczy pytania z listy graczy
+ * (uwaga B, 2026-09-15): przy trzech graczach stacja MA trzy pytania — więc
+ * wszyscy trafiają się NA TEJ SAMEJ stacji (kolejność: autor każdego pytania to
+ * następny gracz w kolejce, ADR 0027). Gracz 1 punktuje PRZED reloadem, Gracz 2
+ * odpowiada źle (zero zostaje zerem, nie brakiem wpisu), a reload wypada
+ * w środku stacji — przed pytaniem Gracza 3. */
 test('N (punktacja): punkty per gracz przechodzą przez reload — zapis, wznowienie i tabela końca gry', async () => {
-  const { dom, paczka, pamiec } = await graGotowaDoStartu();
+  const { dom, paczka, pamiec } = await graGotowaDoStartu({}, { graczy: 3 });
   dom.ustawProstokat('mapa-gra', { width: 360, height: 320 });
   zaczynijGre(dom);
   const kluczZapisu = () => 'okolica:gra:' + pamiec.get('okolica:gra-aktywna');
   const zapis = () => JSON.parse(pamiec.get(kluczZapisu())).rozgrywka;
   const punktyZapisu = () => zapis().odpowiedzi.map((o) => [o.gracz, o.punktyRazem]);
-  const poprawna = (stacja) => paczka.pytania.find((q) => q.stacja === stacja).poprawna;
+  const pytaniaStacji = (stacja) => paczka.pytania.filter((q) => q.stacja === stacja);
 
-  // Stacja 1 — pytanie Gracza 1, odpowiedź DOBRA (+1 pkt).
+  // Stacja 1 — pytanie 1: Gracz 1, odpowiedź DOBRA (+1 pkt).
   dom.kliknij('przycisk-start-odcinka');
   await dojdzSymulacja(dom);
-  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /odpowiada Gracz 1/, 'stacja 1 należy do Gracza 1');
-  kliknijOdpowiedz(dom, poprawna(1));
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /pytanie 1 z 3 · odpowiada Gracz 1/,
+    'trzech graczy ⇒ trzy pytania na stacji, pierwsze do Gracza 1 (ADR 0027)');
+  kliknijOdpowiedz(dom, pytaniaStacji(1)[0].poprawna);
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /\+1 pkt/, 'punkt przyznany');
-  dom.kliknij('przycisk-nastepna-stacja');
+  dom.kliknij('przycisk-nastepna-stacja'); // „Następne pytanie” — stacja jeszcze otwarta
 
-  // Stacja 2 — pytanie Gracza 2, odpowiedź ZŁA (0 pkt).
-  dom.kliknij('przycisk-start-odcinka');
-  await dojdzSymulacja(dom);
-  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /odpowiada Gracz 2/, 'stacja 2 należy do Gracza 2');
-  kliknijOdpowiedz(dom, (poprawna(2) + 1) % 4);
+  // Pytanie 2: Gracz 2, odpowiedź ZŁA (0 pkt).
+  assert.match(dom.pobierz('gra-pytanie-naglowek').textContent, /pytanie 2 z 3 · odpowiada Gracz 2/,
+    'drugie pytanie stacji idzie do następnego gracza');
+  kliknijOdpowiedz(dom, (pytaniaStacji(1)[1].poprawna + 1) % 4);
   assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /Źle \(0 pkt\)/, 'zero punktów');
   dom.kliknij('przycisk-nastepna-stacja');
-  dom.kliknij('przycisk-start-odcinka'); // marsz do stacji 3 — tu „zamykamy przeglądarkę”
 
   const przed = punktyZapisu();
   assert.deepEqual(przed, [[1, 1], [2, 0]], 'przed zamknięciem: Gracz 1 ma 1 pkt, Gracz 2 ma 0');
-  assert.equal(zapis().faza, 'odcinek', 'zapis jest w fazie marszu');
+  assert.equal(zapis().faza, 'pytanie', 'zapis jest w fazie pytania — trzecie pytanie tej samej stacji');
 
-  // „Zamknięcie przeglądarki” w marszu: nowa instancja aplikacji na tej samej pamięci.
+  // „Zamknięcie przeglądarki” w środku stacji: nowa instancja na tej samej pamięci.
   const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
   dom2.ustawProstokat('mapa-gra', { width: 360, height: 320 });
   await import(`../app/app.js?punkty=${Math.random().toString(36).slice(2)}`);
@@ -1716,34 +1836,40 @@ test('N (punktacja): punkty per gracz przechodzą przez reload — zapis, wznowi
     'zapis po powrocie niesie TE SAME punkty przy TYCH SAMYCH graczach');
   assert.deepEqual(po.gracze.map((g) => g.imie), ['Gracz 1', 'Gracz 2', 'Gracz 3'],
     'lista graczy wraca cała — punkty mają do kogo być przypisane');
-  assert.match(dom2.pobierz('gra-postep').textContent, /stacja 3 z 3/, 'gra wróciła w marszu do stacji 3');
+  assert.match(dom2.pobierz('gra-postep').textContent, /stacja 1 z 3/, 'gra wróciła do niedomkniętej stacji 1');
+  assert.match(dom2.pobierz('gra-pytanie-naglowek').textContent, /pytanie 3 z 3 · odpowiada Gracz 3/,
+    'po wznowieniu widać pytanie, na które nikt jeszcze nie odpowiedział');
 
-  // Dokończenie gry JUŻ po wznowieniu: stacja 3, pytanie Gracza 3, odpowiedź dobra.
-  await zamknijStacje(dom2, { paczka, numerStacji: 3, odpowiedz: poprawna(3) });
+  // Dokończenie JUŻ po wznowieniu: pytanie 3 (Gracz 3, dobrze) i dwie dalsze
+  // stacje — tam też każdy gracz ma swoje pytanie, więc wszystkie odpowiedzi
+  // są poprawne.
+  // Tu nie ma marszu: aplikacja wróciła w ŚRODEK stacji 1, więc najpierw
+  // odpowiadamy na zaległe pytanie i domykamy stację, a potem idziemy dalej.
+  odpowiedzNaStacje(dom2, paczka, 1, { odpowiedz: pytaniaStacji(1)[2].poprawna, domknij: true });
+  for (const stacja of [2, 3]) await zamknijStacje(dom2, { paczka, numerStacji: stacja });
 
   assert.equal(zapis().faza, 'koniec', 'gra domknięta po wznowieniu');
-  assert.deepEqual(punktyZapisu(), [[1, 1], [2, 0], [3, 1]],
-    'wpis Gracza 3 dołączył do wpisów sprzed reloadu — nic się nie wyzerowało');
+  assert.equal(zapis().odpowiedzi.length, 9, 'wszystkie dziewięć pytań ma odpowiedź (3 stacje × 3 graczy)');
 
   // Tabela końca gry (ADR 0038: gracz | punkty | poprawne) — liczby z
   // `podsumowanie()` policzonego na rozgrywce złożonej z zapisu PRZED i PO.
   assert.equal(dom2.pobierz('gra-panel-koniec').hidden, false, 'panel wyniku widoczny');
   assert.match(dom2.pobierz('gra-wynik-zwyciezca').textContent, /🏆 Gracz 1/,
-    'ranking otwiera Gracz 1 (remis 1:1 z Graczem 3 rozstrzyga stabilny sort)');
+    'ranking otwiera Gracz 1 (remis 3:3 z Graczem 3 rozstrzyga stabilny sort)');
   const wiersze = dom2.pobierz('gra-wyniki-tbody').children;
   assert.equal(wiersze.length, 3, 'tabela ma wszystkich trzech graczy');
   // Wiersze idą w kolejności RANKINGU (`wynik.ranking`, ADR 0038), nie listy
-  // graczy: 1 pkt Gracza 1 (zdobyty PRZED reloadem), 1 pkt Gracza 3 (zdobyty PO
-  // wznowieniu), 0 pkt Gracza 2. Remis 1:1 rozstrzyga stabilny sort.
+  // graczy: 3 pkt Gracza 1 (jeden zdobyty PRZED reloadem) i 3 pkt Gracza 3
+  // (zdobyty PO wznowieniu), 2 pkt Gracza 2 — bo jego pytanie na stacji 1 było złe.
   assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/, 'wiersz 1: Gracz 1 ze znacznikiem zwycięzcy');
-  assert.equal(wiersze[0].children[1].textContent, '1', 'punkt Gracza 1 zdobyty PRZED reloadem jest w tabeli');
-  assert.equal(wiersze[0].children[2].textContent, '1/1', 'poprawne/razem Gracza 1');
+  assert.equal(wiersze[0].children[1].textContent, '3', 'punkt Gracza 1 zdobyty PRZED reloadem jest w tabeli');
+  assert.equal(wiersze[0].children[2].textContent, '3/3', 'poprawne/razem Gracza 1');
   assert.match(wiersze[1].children[0].textContent, /Gracz 3/, 'wiersz 2: Gracz 3');
-  assert.equal(wiersze[1].children[1].textContent, '1', 'punkt Gracza 3 zdobyty PO wznowieniu');
-  assert.equal(wiersze[1].children[2].textContent, '1/1', 'poprawne/razem Gracza 3');
+  assert.equal(wiersze[1].children[1].textContent, '3', 'punkt Gracza 3 zdobyty PO wznowieniu');
+  assert.equal(wiersze[1].children[2].textContent, '3/3', 'poprawne/razem Gracza 3');
   assert.match(wiersze[2].children[0].textContent, /Gracz 2/, 'wiersz 3: Gracz 2');
-  assert.equal(wiersze[2].children[1].textContent, '0', 'zero Gracza 2 zostaje zerem, nie brakiem wpisu');
-  assert.equal(wiersze[2].children[2].textContent, '0/1', 'odpowiedział, tylko źle');
+  assert.equal(wiersze[2].children[1].textContent, '2', 'zero z stacji 1 zostaje zerem, nie brakiem wpisu');
+  assert.equal(wiersze[2].children[2].textContent, '2/3', 'odpowiedział źle raz, dwa razy dobrze');
 });
 
 test('K: zepsuty zapis — jawne kody T, start kasuje go bez pytania (ADR 0045)', async () => {
@@ -1814,7 +1940,7 @@ function zakonczGrePrzezWarstwe(dom) {
 }
 
 test('M6: ręczne zakończenie gry — potwierdzenie wpisaniem TAK, wynik wcześniej, zapis zostaje', async () => {
-  const { dom, pamiec } = await graGotowaDoStartu();
+  const { dom, pamiec } = await graGotowaDoStartu({}, { graczy: 3 });
   zaczynijGre(dom);
   // ADR 0043: koniec gry wyprowadził się z panelu do warstwy za ikoną ⚙ START GRY
   dom.kliknij('przycisk-setup');
@@ -1830,7 +1956,7 @@ test('M6: ręczne zakończenie gry — potwierdzenie wpisaniem TAK, wynik wcześ
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'panel wyniku widoczny');
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true);
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
-  assert.equal(wiersze.length, 3, 'wynik per gracz (3 graczy z konfiguracji — 3 stacje × 1 pytanie dzieli się bez reszty, ADR 0027)');
+  assert.equal(wiersze.length, 3, 'wynik per gracz (3 graczy z listy — hot-seat liczy 3 stacje × 3 graczy pytań, ADR 0027 + uwaga B)');
   assert.equal(wiersze[0].children.length, 3, 'gracz | punkty | poprawne');
   assert.match(dom.pobierz('status').textContent, /można ją wznowić/, 'uczciwie: zapis zostaje');
   assert.ok(pamiec.has('okolica:gra:' + pamiec.get('okolica:gra-aktywna')), 'zapis NIE skasowany — można wrócić do gry');
@@ -1883,16 +2009,42 @@ function kliknijOdpowiedz(dom, indeks) {
  * kolejny odcinek). Start tylko z panelu A — po „Następnej stacji” odcinek
  * już trwa. `odpowiedz: null` = poprawna z fixture.
  */
+/**
+ * Domyka stację odpowiedziami. Hot-seat zadaje przy stacji PO JEDNYM pytaniu
+ * każdemu graczowi (uwaga terenowa właściciela B, 2026-09-15: pola „pytań na
+ * stację" nie ma, liczbę daje lista graczy), więc po odpowiedzi bywa przycisk
+ * „Następne pytanie” — dopiero jego brak przy ostatnim pytaniu zamyka stację.
+ * `odpowiedz`: stały indeks wariantu (dla testów błędnych odpowiedzi), bez niego
+ * klikamy poprawną odpowiedź aktualnie wyświetlanego pytania.
+ */
+function numerAktualnegoPytania(dom) {
+  return Number((dom.pobierz('gra-pytanie-naglowek').textContent.match(/pytanie (\d+) z/) ?? [])[1] ?? 1) - 1;
+}
+
+function odpowiedzNaStacje(dom, paczka, numerStacji, { odpowiedz = null, domknij = false } = {}) {
+  const naStacji = paczka.pytania.filter((q) => q.stacja === numerStacji);
+  for (let guard = 0; guard < 24; guard += 1) {
+    if (dom.pobierz('gra-odpowiedzi').hidden === false) {
+      kliknijOdpowiedz(dom, odpowiedz ?? naStacji[numerAktualnegoPytania(dom)].poprawna);
+      continue;
+    }
+    if (dom.pobierz('przycisk-nastepna-stacja').hidden === true) break;
+    const tekst = dom.pobierz('przycisk-nastepna-stacja').textContent;
+    if (!domknij && !/Następne pytanie/.test(tekst)) break;
+    dom.kliknij('przycisk-nastepna-stacja');
+    if (!/Następne pytanie/.test(tekst)) break;
+  }
+}
+
 async function zamknijStacje(dom, { paczka, numerStacji, odpowiedz = null }) {
   if (dom.pobierz('gra-panel-oczekuje').hidden === false) dom.kliknij('przycisk-start-odcinka');
   await dojdzSymulacja(dom);
-  const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
-  kliknijOdpowiedz(dom, odpowiedz ?? pytanie.poprawna);
-  dom.kliknij('przycisk-nastepna-stacja');
+  odpowiedzNaStacje(dom, paczka, numerStacji, { odpowiedz, domknij: true });
 }
 
+
 test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, wynik (ścieżka GPS)', async () => {
-  const { dom, paczka, pamiec } = await graGotowaDoStartu();
+  const { dom, paczka, pamiec } = await graGotowaDoStartu({}, { graczy: 3 });
   zaczynijGre(dom);
   for (const numerStacji of [1, 2, 3]) {
     const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
@@ -1909,6 +2061,8 @@ test('M6/R7: PEŁNA GRA z symulacją dojścia — 3 stacje, pytania NA stacji, w
     assert.equal(dom.pobierz('gra-pytanie-tresc').textContent, pytanie.tresc, `stacja ${numerStacji}: treść z kontenera`);
     kliknijOdpowiedz(dom, pytanie.poprawna);
     assert.match(dom.pobierz('gra-odpowiedz-ocena').textContent, /✓ Dobrze!/, `stacja ${numerStacji}: poprawna odpowiedź punktuje`);
+    // remaining questions of the station (hot-seat: każdy gracz ma swoje)
+    odpowiedzNaStacje(dom, paczka, numerStacji); // reszta pytań stacji (po jednym na gracza)
     const dalej = dom.pobierz('przycisk-nastepna-stacja');
     if (numerStacji < 3) {
       assert.match(dalej.textContent, new RegExp(`stacja ${numerStacji + 1} — idę →`), 'przycisk zapowiada następną stację i startuje odcinek');
@@ -2026,9 +2180,10 @@ test('M6/R7: stacja bez pytania zamyka się samym dojściem (ADR 0015) — gra w
 /* ========== M7/P3: pełne podsumowanie (panel D) */
 
 test('ADR 0038: ekran wyniku jest minimalny — karta zwycięzcy i tabela rankingu', async () => {
-  const { dom, paczka } = await graGotowaDoStartu();
+  const { dom, paczka } = await graGotowaDoStartu({}, { graczy: 3 });
   zaczynijGre(dom);
-  // błędne odpowiedzi — wynik też na zerach, ale z prawdziwej punktacji (0/1, nie 0/0)
+  // błędne odpowiedzi — wynik też na zerach, ale z prawdziwej punktacji (0/3,
+  // nie 0/0): trzech graczy ⇒ trzy pytania na stację (uwaga B)
   for (const numerStacji of [1, 2, 3]) {
     const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
     await zamknijStacje(dom, { paczka, numerStacji, odpowiedz: (pytanie.poprawna + 1) % 4 });
@@ -2039,14 +2194,14 @@ test('ADR 0038: ekran wyniku jest minimalny — karta zwycięzcy i tabela rankin
   const zwyciezca = dom.pobierz('gra-wynik-zwyciezca').textContent;
   assert.match(zwyciezca, /🏆 Gracz 1/, 'zwycięzca z rankingu podsumowanie()');
   assert.match(zwyciezca, /0 pkt/, 'duże punkty w karcie');
-  assert.match(zwyciezca, /poprawne 0\/1/, 'poprawne/razem w karcie');
+  assert.match(zwyciezca, /poprawne 0\/3/, 'poprawne/razem w karcie (3 pytania na gracza)');
 
   // 2. tabela rankingu zostaje — te same kolumny co w panelu multi, wiersz per gracz
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
   assert.equal(wiersze.length, 3, '3 graczy, ADR 0027');
   assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
   assert.equal(wiersze[0].children[1].textContent, '0', 'punkty z podsumowanie()');
-  assert.equal(wiersze[0].children[2].textContent, '0/1', 'poprawne/razem');
+  assert.equal(wiersze[0].children[2].textContent, '0/3', 'poprawne/razem — każdy z trzech graczy odpowiadał trzy razy');
   assert.match(wiersze[1].children[0].textContent, /Gracz 2/);
 
   // 3. GÓRNY fragment ekranu gry nie może już nic dopisywać nad wynikami (D a)
@@ -2090,11 +2245,11 @@ test('ADR 0038: po grze nie ma eksportów — zero canvasów, linków do pliku i
 });
 
 test('ADR 0038: ręczne zakończenie gry pokazuje ten sam minimalny ekran wyniku', async () => {
-  const { dom } = await graGotowaDoStartu();
+  const { dom, paczka } = await graGotowaDoStartu({}, { graczy: 3 });
   zaczynijGre(dom);
   dom.kliknij('przycisk-start-odcinka');
   await dojdzSymulacja(dom);
-  kliknijOdpowiedz(dom, 0);
+  odpowiedzNaStacje(dom, paczka, 1, { odpowiedz: 0 }); // każdy gracz ma swoje pytanie
   zakonczGrePrzezWarstwe(dom); // ikona ⚙ → TAK → koniec (ADR 0043)
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false);
   assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, true, 'sterowanie grą znika także przy ręcznym końcu (D a)');
@@ -2110,10 +2265,12 @@ test('ADR 0038: ręczne zakończenie gry pokazuje ten sam minimalny ekran wyniku
 /* ========== M7/P7: integracja — pełna gra z dojściem GPS → podsumowanie, eksport, historia */
 
 test('M7/P7 + ADR 0038: PEŁNA GRA z dojściem GPS → minimalny wynik (end-to-end)', async () => {
-  const { dom, paczka } = await graGotowaDoStartu();
+  const { dom, paczka } = await graGotowaDoStartu({}, { graczy: 3 });
   zaczynijGre(dom);
 
-  // pętla jak w R7: symulacja dojścia ×3 stacje, poprawne odpowiedzi (fixture: 1 pkt/pytanie)
+  // pętla jak w R7: symulacja dojścia ×3 stacje, poprawne odpowiedzi. Hot-seat
+  // pyta przy stacji KAŻDEGO gracza (3 graczy ⇒ 3 pytania, uwaga B), więc
+  // „Następne pytanie” klika się tyle razy, ile pytań zostało na stacji.
   for (const numerStacji of [1, 2, 3]) {
     const pytanie = paczka.pytania.find((q) => q.stacja === numerStacji);
     dom.kliknij('przycisk-start-odcinka');
@@ -2121,25 +2278,27 @@ test('M7/P7 + ADR 0038: PEŁNA GRA z dojściem GPS → minimalny wynik (end-to-e
     await czekaj(9 * 120 + 600);
     assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, `stacja ${numerStacji}: pytanie po dojściu GPS`);
     kliknijOdpowiedz(dom, pytanie.poprawna);
+    odpowiedzNaStacje(dom, paczka, numerStacji);
     dom.kliknij('przycisk-nastepna-stacja');
   }
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'naturalny koniec po ostatniej stacji');
 
-  // 1. wynik z PRAWDZIWĄ punktacją: 3 stacje × 1 pytanie dla
-  //    3 graczy (ADR 0027) — każdy odpowiada raz, więc wszyscy mają po 1 pkt,
-  //    a o kolejności decyduje remisowe kryterium z ADR 0023 (kolejność zgłoszeń).
+  // 1. wynik z PRAWDZIWĄ punktacją: 3 stacje × 3 graczy (ADR 0027 + uwaga B
+  //    2026-09-15 — hot-seat liczy pytania z listy graczy) — każdy odpowiada
+  //    trzy razy, więc wszyscy mają po 3 pkt, a o kolejności decyduje remisowe
+  //    kryterium z ADR 0023 (kolejność zgłoszeń).
   const kartaZw = dom.pobierz('gra-wynik-zwyciezca');
   assert.match(kartaZw.children[0].textContent, /^🏆 Gracz 1$/, 'przy remisie punktów wygrywa kolejność zgłoszeń (ADR 0023)');
   // punkty CZYTAMY Z ELEMENTU, nie regexem po złączonym textContent (L23:
   // 'Gracz 1' + '42 pkt' złączone dałoby '142 pkt')
   const punktyZw = Number(kartaZw.children[1].textContent.replace(' pkt', ''));
-  assert.equal(punktyZw, 1, 'zwycięzca: 1 × 1 pkt (rev2), zero premii');
-  assert.match(kartaZw.children[2].textContent, /poprawne 1\/1/);
+  assert.equal(punktyZw, 3, 'zwycięzca: 3 × 1 pkt (rev2), zero premii');
+  assert.match(kartaZw.children[2].textContent, /poprawne 3\/3/);
   const wiersze = dom.pobierz('gra-wyniki-tbody').children;
   assert.match(wiersze[0].children[0].textContent, /Gracz 1 🏆/);
   assert.equal(wiersze[0].children[1].textContent, String(punktyZw), 'ranking spójny z kartą zwycięzcy');
-  assert.equal(wiersze[0].children[2].textContent, '1/1', 'Gracz 1: jedna poprawna, zero błędnych');
-  assert.equal(wiersze[1].children[2].textContent, '1/1', 'Gracz 2: jedna poprawna');
+  assert.equal(wiersze[0].children[2].textContent, '3/3', 'Gracz 1: trzy poprawne, zero błędnych');
+  assert.equal(wiersze[1].children[2].textContent, '3/3', 'Gracz 2: trzy poprawne');
   assert.equal(dom.pobierz('gra-slot-sterowanie').hidden, true, 'górny pasek gry znika na wynikach (D a)');
   assert.equal(dom.pobierz('przycisk-nowa-gra').hidden, false, 'zostaje jeden przycisk powrotu (D b)');
 
@@ -2265,11 +2424,19 @@ async function graZNiepewnymGraczem() {
 }
 
 /** Krótka gra: dwa dojścia z fixów (ADR 0029), dwie odpowiedzi, ręczne zakończenie. */
-async function grajDwieStacjeIKoncz(dom) {
+async function grajDwieStacjeIKoncz(dom, paczka = null) {
   zaczynijGre(dom);
-  for (let i = 0; i < 2; i += 1) {
+  for (let stacja = 1; stacja <= 2; stacja += 1) {
     dom.kliknij('przycisk-start-odcinka');
     await dojdzSymulacja(dom);
+    // hot-seat: przy stacji odpowiada KAŻDY gracz (uwaga B, 2026-09-15) —
+    // domykamy całą stację, nie tylko pierwsze pytanie
+    if (paczka) {
+      odpowiedzNaStacje(dom, paczka, stacja, { odpowiedz: 0, domknij: true });
+      continue;
+    }
+    // bez paczki (testy, które nie czytają treści) zostaje stara ścieżka:
+    // wariant A i „dalej" — przy jednym graczu to cała stacja
     kliknijOdpowiedz(dom, 0);
     dom.kliknij('przycisk-nastepna-stacja');
   }
@@ -2278,7 +2445,7 @@ async function grajDwieStacjeIKoncz(dom) {
 }
 
 test('hot-seat: wynik gry leci na wspólny Drive jednym poleceniem, bez współrzędnych', async () => {
-  const { dom, pamiec } = await graGotowaDoStartu();
+  const { dom, pamiec, paczka } = await graGotowaDoStartu({}, { graczy: 3 });
   dom.pobierz('hotseat-zgoda').checked = true;
   const zadania = [];
   const staryFetch = globalThis.fetch;
@@ -2287,7 +2454,7 @@ test('hot-seat: wynik gry leci na wspólny Drive jednym poleceniem, bez współr
     return { ok: true, status: 200, json: async () => ({ ok: true, idGry: 'h-1', wyniki: {} }) };
   };
   try {
-    await grajDwieStacjeIKoncz(dom);
+    await grajDwieStacjeIKoncz(dom, paczka);
     const hotseat = zadania.filter((z) => z.cialo.akcja === 'gra-hotseat');
     assert.equal(hotseat.length, 1, 'dokładnie jedno polecenie gra-hotseat na koniec gry');
     const { cialo } = hotseat[0];
@@ -2297,7 +2464,7 @@ test('hot-seat: wynik gry leci na wspólny Drive jednym poleceniem, bez współr
     assert.equal(cialo.konfiguracja.liczbaStacji, 3, 'liczba stacji z rozgrywki, nie z pola setupu');
     const typy = cialo.zdarzenia.map((z) => z.typ);
     assert.equal(typy.filter((t) => t === 'dojscie').length, 2, 'dwa dojścia z dziennika gry');
-    assert.equal(typy.filter((t) => t === 'odpowiedz').length, 2, 'dwie odpowiedzi z dziennika gry');
+    assert.equal(typy.filter((t) => t === 'odpowiedz').length, 6, 'sześć odpowiedzi z dziennika (dwie stacje × trzech graczy, uwaga B)');
     // prywatność: ani współrzędnych, ani pytań, ani paczki
     assert.equal(/"(lat|lon|szerokosc|dlugosc|accuracyM|pytanieId)"/.test(JSON.stringify(cialo)), false, 'zero współrzędnych i id pytań w poleceniu');
     assert.equal(cialo.zestaw, undefined, 'paczka zostaje na telefonie (ADR 0013)');
@@ -2671,7 +2838,7 @@ test('teren: oko podczas dojścia nie pauzuje gry; wraca aktualne pytanie i jego
 test('teren: informacje przełączają się nad setupem; oko, prywatność i powrót zachowują stan', async () => {
   const dom = await aplikacjaZMapa({ search: '?test=true' });
   dom.kliknij('przycisk-start-zacznij');
-  dom.pobierz('setup-czas').value = '123';
+  stuknijCzas(dom, 90);
   dom.kliknij('przycisk-informacje');
   assert.equal(dom.pobierz('ekran-informacje').hidden, false);
   assert.equal(dom.pobierz('ekran-setup').hidden, false);
@@ -2687,7 +2854,7 @@ test('teren: informacje przełączają się nad setupem; oko, prywatność i pow
   dom.kliknij('przycisk-informacje');
   assert.equal(dom.pobierz('ekran-informacje').hidden, true);
   assert.equal(dom.pobierz('ekran-setup').inert, false);
-  assert.equal(dom.pobierz('setup-czas').value, '123');
+  assert.deepEqual(wcisnieteCzasy(dom), ['90'], 'wybór czasu przeżywa skakanie po ekranach (brak przebudowy bez potrzeby)');
 });
 
 
@@ -2872,10 +3039,6 @@ test('droga w terenie (bez ?tryb=test): nad mapą zostaje sam pasek, symulacji n
 /** Ścieżka na ekran pozycji z potwierdzonymi graczami — gest „Dalej” uzbraja GPS. */
 async function naEkranPozycji(zainstalowany, geolokalizacja, sufiks) {
   const pamiec = pamiecKonfig3x1();
-  const konfig = JSON.parse(pamiec.get('okolica:konfig'));
-  konfig.konfig.imiona = ['Gracz 1', 'Gracz 2', 'Gracz 3'];
-  pamiec.set('okolica:konfig', JSON.stringify(konfig));
-  pamiec.set('okolica:gracze', JSON.stringify({ schemat: 'gracze-lokalni/1', gracze: ['Gracz 1', 'Gracz 2', 'Gracz 3'].map((pseudonim) => ({ pseudonim, zweryfikowany: true })) }));
   const domB = zainstalujDom({ geolocation: geolokalizacja, pamiec });
   await import(`../app/app.js?${sufiks}=${Math.random().toString(36).slice(2)}`);
   return domB;
@@ -3054,3 +3217,4 @@ test('uwaga B (dogrywka): wklejka nie przestawia stacji z sieci — metryka drog
   assert.match(cel, new RegExp(`${drogaStacji1} m drogą od poprzedniego punktu`),
     'pierwszy odcinek niesie WŁASNY dystans sieciowy, nie cudzy');
 });
+

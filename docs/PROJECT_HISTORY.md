@@ -5625,3 +5625,338 @@ Wdrożenie (commit 8f85a80):
   `?v=`). 812→**813** testów zielonych.
 
 Budżet lektury po aneksie: 99 521/100 000.
+
+## Sesja 2026-09-15a — audyt PR #29 + usterka D1 (gałąź `arena/01a0a39c-okolica`, PR #30, m12-125)
+
+Sesja otwarta „Kontynuujemy projekt", bez nowej uwagi z terenu. Lektura
+startowa (AGENTS §0): AGENTS, `PROTOKOL` §1–2 z oboma szablonami promptu, rejestr
+ADR + ADR 0043/0046/0047 w całości, `LESSONS` L1–L71 w całości (rejestr +
+reguły), `ENVIRONMENT`, `ROADMAP`, najnowszy handoff (2026-09-14h). Budżet na
+wejściu: 99 521/100 000 (rezerwa 479).
+
+**Czego NIE czytałem w całości — zapisane wprost, żeby następna sesja nie brała
+tego za fakt (§1: nie ukrywaj sprzeczności):** ADR-ów 0001–0042. Szedłem po
+rejestrze (tytuł + status + aneksy w jednym wierszu) i grepem po tematach audytu
+(0005, 0011, 0019, 0020, 0024, 0025, 0043, do tego archiwum aneksów 0005 i 0019
+oraz L62/L66 jako reguły porządkowe). Budżet §0 (45 ADR-ów to ~65 tys. z 100 tys.
+tokenów) nie pozwala w jednej sesji przeczytać wszystkich 46 w całości I zrobić
+roboty; przy tej rezerwie (479 → dziś 308) każdy kolejny odczyt ADR-ów to
+osobna sesja albo archiwizacja. Brama na wejściu: **813/813** zielonych
+przed jakąkolwiek zmianą. PR sesji otwarty PRZED kodowaniem (ADR 0012 reg. 1):
+#30, pierwszy commit porządkowy `1d9dddb`.
+
+**Audyt PR #29** (squash `9aed8be`, baza `36527f7`; 19 plików, +271/−64; treść:
+m12-123 = naprawa uwagi W3, m12-124 = uwaga terenowa A, właściciel) — metoda:
+`git diff 9aed8be^..9aed8be` plik po pliku, lektura ADR 0043 z aneksem 2026-09-14,
+powtórzone bramy na drzewie `main`. Wyniki:
+
+1. **m12-124 (⚙ w setupie = oko)** — `EKRANY_SETUPU = EKRANY.slice(0, -1)`;
+   `przelaczSetup()` ma cztery gałęzie w dobrej kolejności: gra → warstwa końca
+   gry (ADR 0043 pkt 1), ekrany setupu → `przelaczPodgladMapy({ fokus:
+   'przycisk-setup' })`, `gra` po zakończeniu → mapa startowa, reszta → setup.
+   `STAN.ekran` nietknięty, więc pasek kroki i scroll zostają. `przelaczPodgladMapy`
+   przyjmuje `{ fokus = 'przycisk-podejrzyj-mape' } = {}` — nasłuch
+   `addEventListener('click', przelaczPodgladMapy)` podaje mu `MouseEvent`, który
+   nie ma pola `fokus`, więc default działa (sprawdzone w kodzie, nie z pamięci);
+   `$('przycisk-setup')` istnieje w `index.html`, a `$` rzuca przy braku id,
+   więc brak literówki jest wymuszony startem aplikacji w testach.
+2. **W3 (etykiety m12-120 przywrócone)** — dokładnie 6 linii komentarzy
+   (`app/konfig.js` 3, `app/app.js` 3), ani jednego znaku kodu więcej; grep po
+   `m12-123` w nośnikach żywych daje zero, więc fala, która była tylko podbiciem
+   wersji, nie podpisała żadnej decyzji.
+3. **Podbicie wersji** — jedna wersja w 43 miejscach `?v=` w 13 plikach +
+   `WERSJA_SW`; reguła L29 (`git add index.html app/ sw.js`) zastosowana
+   poprawnie, w przeciwieństwie do pierwszej próby tej sesji w PR #29 (45a87d5).
+4. **Pozostałe 11 modułów `app/*.js`** — `git diff` pokazuje wyłącznie linie
+   z `?v=` (polityka liczenia: 0 linii innych niż `?v=` w każdym z plików).
+5. **Testy i piny** — F3 przepisany na nową formę zamiast skasowany (L55), nowy
+   test uwagi A na ekranie pozycji, w kontrakcie ADR 0043: nowa gałąź wymagana,
+   stary tor `setup → mapa startowa` zakazany, reguła `czyGraToczySie()` nietknięta.
+6. **Dwie sprawy, które nie są defektami, a mogą być mylnie wzięte za defekt:**
+   (a) `aria-pressed` ikony ⚙ **nie gaśnie**, gdy ⚙ chowa warstwę — ikona świeci
+   na całej ścieżce przygotowania (uwaga I, ADR 0043) i tak jest to asercją F3;
+   (b) aneks mówi „ekrany setupu (kroki 1–5)", a `EKRANY_SETUPU` obejmuje też
+   lobby `multi` — wyliczenie nazw w tym samym zdaniu jest pełne, więc to
+   nieścisłość etykiety, nie zachowania.
+
+**Werdykt: bez defektów w treści PR #29.** Jedna usterka w modelu stanu, który
+ta zmiana poszerzyła — oznaczona **D1**, naprawiona w tej sesji.
+
+## Usterka D1 — podgląd mapy przeżywał zmianę ekranu (m12-125, commit `cee2792`)
+
+**Zgłoszenie:** nie z terenu; z audytu toru, który otworzyła uwaga A.
+**Objaw:** (1) gość, który w lobby zajrzał na mapę (⚙ chowa warstwę jak oko),
+wchodził w grę NIEWIDOCZNĄ — start gry wieloosobowej przychodzi do niego
+z pollingu (`onStanGryMulti` → `uruchomGreMulti` → `pokazEkran('gra')`), a panel
+gry rodził się z `visibility: hidden` i `inert`; ⚙ w trakcie gry otwiera warstwę
+końca gry, więc jedynym powrotem było oko w stopce. (2) Przy włączonym podglądzie
+„dane i prywatność" ze stopki otwierało kartę, której nie było widać.
+**Przyczyna:** `STAN.podgladMapy` gasiły tylko otwieracze warstw (wzorzec L61:
+`przelaczInformacje`, `przelaczRankingi`, `otworzKoniecGry`), a funkcje zmiany
+ekranu nie — bo ich autor zakładał, że do zmiany ekranu dochodzi kliknięciem
+w panelu, którego w podglądzie nie da się nacisnąć. Założenie pęka, gdy ekran
+zmienia kod bez udziału palca.
+**Naprawa u przyczyny:** `STAN.podgladMapy = false` w każdej z trzech funkcji
+zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`); bez
+wyjątków na `gra`, bez `try`/`catch`. `STAN.ekran` w `pokazPrywatnosc` zostaje
+nietknięty, bo nim wracamy.
+**Testy:** `test/aplikacja.test.js` (karta ze stopki: `inert: false`, klasa
+zgaszona) i pełna ścieżka multi w `test/wieloosobowa-ui.test.js` (lobby +
+podgląd + start z pollingu ⇒ `#ekran-gra` nieinercyjny, oko mówi „Podejrzyj
+mapę", `gra-postep` = „stacja 1 z 3"); zęby sprawdzone stashem naprawy —
+bez fixu testmulti pada na `true !== false`. Pin 3b w kontrakcie ADR 0043
+żąda `STAN.podgladMapy = false` w ciele każdej z trzech funkcji (wycinki kodu
+bez komentarzy, L17).
+**Pomiar na żywo (L65: atrapa DOM nie liczy kaskady):** headless Chromium 153,
+390×844, `?tryb=test`, obok pracującego podglądu Areny na `0.0.0.0:8000`; drzewo
+`main` (`9aed8be`) wyłożone osobno na porcie 8100 przez `tools/serwer.mjs`.
+PRZED: `visibility: hidden`, `inert: true`, `elementFromPoint` nie trafia w kartę
+prywatności. PO (m12-125): `visible`, `inert: false`, palec trafia, klasa
+`podglad-mapy` nieobecna. Sama uwaga A działa w przeglądarce bez zmian: ⚙ na
+ekranie setupu chowa warstwę (`body.podglad-mapy`, `visibility: hidden` warstwy).
+**Dokumentacja:** niezmiennik wpisany do ADR 0043 jako dopisek 2026-09-15 przy
+aneksie 2026-09-14 (bez zmiany treści decyzji), przypadek i reguła jako
+`docs/LESSONS.md` L72 (+ pełny opis w archiwum).
+
+## Budżet lektury i porządek w dokumentach
+
+Rezerwa na wejściu (479 tok) nie pozwalała dopisać L72 ani dopisku ADR —
+`skrócenie/rozdzielenie dokumentów` (AGENTS §0) zrobione w tej samej fali:
+aneks 2026-09-13b (m12-111) ADR 0043 — treść w całości historyczna, lista zdań
+wysłanych do korekty, a jego reguła operacyjna żyje w `LESSONS` L64 i w strażniku
+dryfu — przeniesiony dosłownie do
+`docs/decisions/archive/aneksy-0043-2026-09-13b.md` ze wskaźnikiem w ADR
+(wzorzec L62/L66; nazwa bez przedrostka `NNNN-`, więc plik nie wchodzi w skan
+archiwum ADR-ów ani w lekturę). Po dopisaniu L72 i dopisku: **99 690/100 000**
+(rezerwa 310). Brama po sesji: **815/815** (było 813), `synchronizuj-szablon
+--check` i audyt kontrastu bez naruszeń.
+
+**Drobny dług tej sesji, do odnotowania (L7):** komunikat commitu `cee2792` ma
+literę w pierwszym zdaniu („odąd" zamiast „odtąd" — litera zginęła w poprawce
+robionej `sed`em już po `git commit -F`). Treść komunikatu jest zgodna z tym, co
+w drzewie; commit jest wypchnięty, a ADR 0012 reg. 4 zabrania poprawiania
+historii, więc zostaje jak jest, z tym zapisem.
+
+## Sesja 2026-09-15b — uwagi A i B z terenu: przyciski czasu i plan pytań (gałąź `arena/01a0a39c-okolica`, PR #30, m12-126/m12-127)
+
+**Zlecenie właściciela (dwie uwagi, 2026-09-15):** (A) „w setupie — hot-seat i
+multiplayer — pole »Czas gry« zamień na przyciski wyboru: 30, 60, 90, 120 minut;
+stukasz jeden, poprzedni odpuszcza”; (B) „w hot-seacie znika pytanie o liczbę
+pytań na stację — przy każdej stacji odpowiada każdy gracz, więc pytań jest
+liczba stacji × liczba osób grających”. Multi przy B bez zmian (jedno pytanie na
+stację, wszyscy odpowiadają na to samo). Lektura startowa: continuity sesji
+2026-09-15a (AGENTS §0 przeczytany w całości tamtej sesji, ADR-y punktowo),
+brama na wejściu 815/815, PR #30 otwarty wcześniej (ADR 0012 reg. 1).
+
+**Kolejność: B przed A**, bo B zmienia kształt setupu i legalność fixture'ów, a
+A dokłada w to samo miejsce kontrolkę. Dwa osobne commity (§2 reg. 3):
+`a2df21b` (B, m12-126), `15fc956` (A, m12-127).
+
+**B — reguła, nie kosmetyka UI.** `pytaniaNaStacje` przestaje być wejściem:
+`pytaniaNaStacjeDla({ liczbaGraczy, rodzajGry })` w `app/konfig.js` liczy plan
+(hot-seat = liczba graczy z listy z sufitem 8, multi = 1), `domyslnaKonfiguracja`
+i `oczyscKonfiguracje` nadpisują go po dopełnieniu listy imion, a K11 (widełki) i
+K22 (równy podział) znikają razem z polem — nie ma kontrolki, którą dałoby się
+popsuć podział, więc zostałby komunikat odsyłający do czegoś, czego nie ma (L64).
+Dwa uboczne defekty wyszły przy okazji i są naprawione w tym samym commicie:
+(1) `promienM` w `oczyscKonfiguracje` liczył się PRZED wyprowadzeniem planu
+pytań, więc stary zapis z trzema graczami dostawał promień dla jednego pytania
+(0,5 pytania na gracza mniej czasu na odpowiedzi) — liczy się PO planie;
+(2) `synchronizujPytaniaZTrybem()` wisi na końcu `renderujListeGraczy()`, bo ta
+funkcja jest jedynym miejscem, które zna realną liczbę graczy (start,
+wznowienie, dodanie, usunięcie) — dawniej dwa osobne tory (`dodajGracza`,
+`usunGracza`) rozjeżdżały się z listą.
+
+**A — `CZASY_GRY = [30, 60, 90, 120]`.** Segment radia (`#lista-czasow` w
+`#pole-czas`) zamiast `input[type=number]`: wzajemne wyłączanie i rozmiar
+trafienia są w markupie, nie w kodzie (ADR 0011). Widełek NIE zacieśniam —
+`OGRANICZENIA.czasGryMin` 10–480 i K19 zostają, bo zamknięty zbiór jest regułą
+UI, nie walidatora; stary zapis z 240 min działa, tylko żaden przycisk nie jest
+wciśnięty (auto-zaznaczenie pierwszego byłoby cichą zmianą planu gry). Segment
+buduje się i podpina RAZ w strażniku `setupNasluchyPodpiete`, a `zaznaczCzasGry()`
+odświeża wciśnięty przycisk przy każdym renderze (L14). `.segment-czas label`
+dostał `flex: 1 1 20%` + `white-space: nowrap`, bo baza 30% liczy trzy tryby i
+„120 min” zjeżdżało do drugiej linii.
+
+**Fixture'y przepisane, nie obejśe (L55):** konfiguracja „3 graczy × 1 pytanie”
+opisywała stan, którego nie da się już stworzyć. `graGotowaDoStartu({}, { graczy: N })`
+daje N zapamiętanych graczy, czas z `CZASY_DLA_GRACZY` (85/90/95 min — wszystkie
+dają promień 1000 m dla 3 stacji, czyli fixture paczki nie zmienia kształtu) i
+paczkę `3 × N` pytań (`pytaniaDlaGraczy`: oryginalne `sNp1` plus warianty
+„Wariant B:/C:” przy `sNp2…`, bo E-** odrzuca powtórzoną treść). Marsz po stacji
+prowadzi teraz `odpowiedzNaStacje`/`zamknijStacje` — przycisk
+`przycisk-nastepna-stacja` jest WIDOCZNY także między pytaniami tej samej
+stacji („Następne pytanie →”), więc dotychczasowe „klikaj, aż przycisk się
+pojawi” odpowiadało na jedno pytanie z trzech i zielona brama mijała się z
+logiką gry. Test punktacji N reloaduje w środku stacji (faza `pytanie`, nie
+`odcinek`), a pełne gry M6/R7 i M7/P7 liczą 3 pkt na gracza.
+
+**Testy red→green:** `test/kontrakt.test.js` (nieobecność `#pole-pytania` i
+`#setup-czas`, segment w `index.html`, `pole-czas` na liście chowania przy
+„Dołączam”, `nowrap` w CSS), `test/konfig.test.js` (K11/K22 usunięte,
+`pytaniaNaStacjeDla`, `CZASY_GRY` + fakt, że 240 min to nie błąd),
+`test/aplikacja.test.js` (129 → 130 testów, w tym „stuknięcie zaznacza jedno i
+odznacza poprzednie”), `test/wieloosobowa-ui.test.js` (uzasadnienie promienia
+mówi „: N pytań ≈”), `test/dryf-dokumentow.test.js` (martwe frazy: „Pytania na
+stację”, „pytań na stację (łączna”, „Planowany czas gry (min)”, „Wpisz planowany
+czas”). **Brama: 818/818**, `npm run check` OK (oba szablony promptu znak w znak).
+
+**Weryfikacja żywa (Chromium 390×844, `python3 -m http.server` + LD_LIBRARY_PATH
+z `.narzedzia/libs/lib`):** `#pole-czas` 82 px, cztery chipy w jednym rzędzie na
+tej samej współrzędnej (618), 44 px wysokości (= `--cel`), `scrollWidth 390 vs
+390` (zero poziomego scrolla), na starcie wciśnięty dokładnie „60 min”; stuknięcie
+w „90 min” → wciśnięty tylko 90 i `Promień gry: 800 m (z 90 min: 5 pytań ≈ 7,5
+min, droga ≈ 33 min…)`; stuknięcie w „30 min” → odznaczyło 90. Dla B: po dodaniu
+Ala/Ola/Beniamin uzasadnienie mówi `z 60 min: 15 pytań ≈ 22,5 min` (5 stacji ×
+3 graczy) i promień spada 500 → 350 m, a `#setup-pytania` nie istnieje. Przy
+„Dołączam” chowają się czas, tryb i liczba stacji; u hosta wybór zostaje
+zachowany.
+
+**Porządek po zmianach:** ADR 0027 aneks 2026-09-15 (reguła B), ADR 0025 aneks
+2026-09-15 (reguła A), `WORKFLOW` §3 bez pola pytań i z czterema przyciskami,
+legenda `{LICZBA_PYTAN}` w `PROTOKOL` wskazuje źródło liczby, komunikat E03 nie
+obiecuje mnożnika wpisywanego przez gracza. Budżet lektury startowej po aneksach
+pękał (100 138), więc do `docs/decisions/archive/` powędrowały: aneks ADR 0024
+(2026-09-07, decyzje 6–8/B19 — reguły zostały w skrócie w ADR-ze) i dwa aneksy
+ADR 0027 z 2026-09-11 (jeden w całości zastąpiony przez aneks 2026-09-13); oba
+pliki macierzyste mają wskaźnik. **Budżet na wyjściu: 99 918/100 000 (rezerwa
+82; liczy `node tools/budzet-lektury.mjs`).** LESSONS L66 dostało zdanie o asercji `start < end` przy cięciu przęsła +
+`node --check` po każdej edycji skryptem (ta sesja dopuściła się 57 KB
+duplikatu w `test/aplikacja.test.js`).
+
+**Trzecia uwaga tej samej doby (ekran intro):** właściciel
+poprawił zdanie na ekranie startowym na „Aplikacja wyznacza kilka stacji, a model
+AI układa pytania związane z tym miejscem - jego historią, architekturą, przyrodą
+czy ludźmi, którzy tu mieszkali”. Zmiana tylko w `index.html` (jedyny nośnik
+zdania, żaden test ani dokument go nie cytuje), więc bez podbicia `?v=` i
+`WERSJA_SW`: skorupa ciągnie `index.html` przez sieć (`sw.js` network-first dla
+nawigacji), a `kontrakt` pilnuje, że `WERSJA_SW` = `?v=` aplikacji — podbicie
+samego SW rozerwałoby tę równość. Myślnik przy wyliczeniu postawiony długi („—”),
+bo taki jest typograficzny standard w aplikacji; poza tym treść 1:1.
+
+**Flaka bramy złapana przy tej okazji:** `czekajNa` w `test/wieloosobowa-ui.test.js`
+miało budżet 5 s i pod pełną bramą (818 testów równolegle) helpy wieloosobowe
+raz spaliły zieloną wcześniej bramę czasem, nie logiką — w izolacji plik daje
+23/23. Budżet poszedł na 15 s, bo timeout ma mierzyć postępy, nie wydajność
+maszyny (asert czekający dłużej wciąż łapie realny brak).
+
+**Wypchnięte:** gałąź `arena/01a0a39c-okolica` ma `52e2469..1812265` (commity
+`a2df21b`, `15fc956`, `c2a29b9`, `e918cf4`, `1812265`), opis PR #30 zaktualizowany
+`gh api -X PATCH`. Pierwsza próba pusha w tej sesji spaliła się na wygasłym
+tokenie (`gh auth status`: „The github.com token in GH_TOKEN is no longer
+valid") — po reconnectcie właściciela poszło bez `--force`.
+**Nie ruszone (kolejka na teren):** decyzja o pinch-zoomie z ADR 0047 (czy
+przywrócona karta nie zostawia „ściśniętej" strony i czy mapa nadal się
+szczypie), uwaga A z PR #29 i D1 na iOS Safari.
+
+## Sesja 2026-09-15c — uwagi A z terenu: panel Informacje i zdanie o czasie (m12-128)
+
+**Zlecenie właściciela (PR #30, po grze w terenie):** „»protokół PYT/1.0« i
+»szablon PYT/1.0.x« w Panelu Informacje uważam za bezużyteczne. Zostaw tylko
+wersję, w jednej linii: „Wersja m12-12x - Dane i prywatność - Zgłoś błąd na
+mapie - kontakt:…", ewentualnie łamanego, jeśli zabraknie miejsca. Usunąłbym
+też taki tekst: „Czas zamknięcia przeglądarki nie wlicza się w odcinek." —
+przecież czas nigdzie się nie wlicza??? Po co takie teksty. Poszukaj, czy w
+innych miejscach nie ma takich pozostałości odnoszących się do czasu."
+
+**Panel Informacje (m12-128).** Stopka panelu była gridem `.informacje-tresc`:
+każdy span to osobny wiersz, więc gracz dostawał status, protokół, szablon,
+wersję i prywatność — pięć linii, z których trzech nie umie na nic
+przetłumaczyć. Został jeden wiersz (`.informacje-kontakt`, flex + `flex-wrap`)
+z kolejnością dokładnie jak w poleceniu; `#status` zachował swój wiersz nad
+nim. Prywatność zyskała wielką literę, bo etykieta = tytuł ekranu
+(`#tytul-prywatnosc`). Kropki-dzielniki są teraz PIERWSZYM dzieckiem grupy
+`.informacje-pozycja` — przy łamaniu wiersza (390 px: trzy linie) samotna
+kropka na końcu linii wyglądała jak urwane zdanie; złapał to pomiar
+headless Chromium, a nie atrapa DOM, więc asert o tym siedzi w `kontrakt`
+(L13 po raz któryś z rzędu).
+
+**Skoro z panelu zszedł numer protokołu, zniknął i jego trzeci nośnik.**
+`test/kontrakt.test.js` pilnuje teraz parzystości `docs/PROTOKOL.md` ↔
+`app/protokol.js` ↔ `README.md` (bez UI), a `SZABLON_WERSJA` i
+`SZABLON_WERSJA_BEZ_WERYFIKACJI` muszą być cytowane w §7 PROTOKOLU — tam łatka
+powstaje, echo w stopce było najsłabszym konsumentem z możliwych. `app.js` nie
+importuje już `SZABLON_WERSJA`. Martwe frazy: `stopka-protokol`,
+`stopka-szablon` (strażnik + DOKUMENTY + UI), więc zdokumentowana w ADR-ach
+atrybucja „patrz stopka" nie wróci.
+
+**Zdanie o czasie.** Audyt (`grep` po wszystkich tekstach trafiających do UI):
+jedno zdanie, `status()` wznowienia gry (było: „… Czas zamknięcia przeglądarki
+nie wlicza się w odcinek."). Zostało skreślone, a obok niego przeformułowane
+trzy komentarze (`zegarGry`, `wznowGre`, docblock `zbierajStan`) i jeden
+akapit ARCHITECTURY — wszystkie tłumaczyły „uczciwy pomiar" czegoś, co nie
+punktuje (ADR 0023 pkt 1: punktacja nie ma składnika czasowego; znaczniki
+`czasMs` żyją w dzienniku i tyle). Nic więcej czasowego w UI nie ma:
+zostały plan (`Promień gry: … (z 60 min: …)`), `Zwiększ czas gry` w S12,
+`za ~N s` przy odświeżaniu mostu i `pierwszy fix potrafi trwać kilkanaście
+sekund` — wszystkie mówią, co gracz ma zrobić, a nie co mu się wlicza.
+Asert ujemny w `aplikacja.test.js` + martwa fraza `nie wlicza się w odcinek`.
+
+**Budżet lektury:** sam aneks do ADR 0042 przekroczył próg o 168 tokenów (rezerwa była 82),
+więc do `docs/decisions/archive/aneksy-0036-2026-09-13-do-13b.md` pojechały
+dwa historyczne aneksy ADR 0036 (m12-107 i m12-112 — oba przesądza żywy ADR 0043, a ich
+regułę techniczną niosą LESSONS L13 i `kontrakt`). Zostało w ADR-ze wskazówka
+trzech zdań. Finisz: 99 659/100 000, rezerwa 341.
+
+**Brama:** 818/818, `npm run check` OK, audyt WCAG 0 naruszeń, `node
+tools/budzet-lektury.mjs` OK. Live (Chromium 390×844, `?tryb=test`,
+sprawdz-informacje.mjs): 12/12 — panel bez słów „protokół"/„szablon"/„PYT/",
+`#stopka-wersja` = m12-128, cztery pozycje w kolejności z polecenia,
+`scrollWidth == clientWidth`, brak przepełnienia na 390 px, klik z wiersza
+otwiera prywatność i „Wróć" wraca do Informacji.
+
+## Sesja 2026-09-15d — uwaga 3 z terenu: czytelne nazwy paczek na Drive (m12-129)
+
+**Zlecenie właściciela:** „Chciałbym zmienić konwencję nazewnictwa paczek
+z pytaniami na Drive. Zamiast nic nie mówiącego ciągu liter chciałbym kodować
+w nazwie: miejsce startu (miejscowość, ulica), datę, ilość pytań, wiek, promień,
+fact-check lub bez (może być Q albo bez). Dzięki temu będę w stanie kontrolować
+i porządkować pliki na dysku (teraz jest to bardzo trudne)."
+
+**Nazwa** (ADR 0048):
+`Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_15pyt_wiek-12_600m_Q.zestaw.json`.
+Pola po `_`, w polu po `-`; diakietyki i wielkie litery zostają (właściciel tak
+widzi je w OSM — odpowiadał na pytanie w ankiecie), a kropki, przecinki i znaki
+zakazane przez Drive (`\ / : * ? " < > |`) są zamieniane na myślniki przez
+`slug()` w moście. Nazwę buduje SKRYPT (`nazwaPaczkiZMeta`), nie aplikacja —
+jedno źródło prawdy; UI tylko cytuje `wynik.nazwa` w potwierdzeniu wysyłki.
+
+**Rozstrzygnięcia właściciela (pytałem o cztery rzeczy, trzy odpowiedział wprost):** kolejność
+pól = jego wyliczenie (miejsce → data → reszta, bo to sortuje katalog po
+miejscach, a w obrębie miejsca chronologicznie); stare pliki „pokasuję, jest ich
+raptem ze 3 testowe", więc NIE ma funkcji porządkującej ani migracji; skrót
+zawartości wypada z nazwy, bo „do daty dodaj godzinę, będzie zawsze unikalna".
+
+**Godzina zamiast skrótu ma konsekwencję, którą trzeba było obsłużyć:** most
+od lat rozpoznawał duplikat PO NAZWIE (w nazwie siedział `skrot`, więc nazwa =
+treść). Teraz nazwa to opis, więc `przyjmijKandydata` porównuje
+`kontener.skrot` leżącego już pliku: ten sam skrót → `juz-zaakceptowana` z `id`
+(retry po zerwanej sieci jest idempotentny i łapki ADR 0028 mają co oceniać),
+inny skrót → przyrostek `-2`…`-12`, bo cisza pod hasłem „już jest" oznaczałaby
+skasowanie pracy organizatora; ten sam skrót w `odrzucone` → `juz-w-odrzuconych`
+(ręczna decyzja właściciela wciąż obowiązuje).
+
+**Ulica.** W `meta` nie było ulicy, a `stacje[].opis` bywa „ul. Bukowa, Podkowa
+Leśna" — dodane addytywne pole `meta.ulica` liczone przez `ulicaZeStacji()`
+w `app/zestawy.js` (odcina OGON miasta tylko gdy to samo miasto stoi w
+`meta.miejsce`; obcego ogona, np. nazwy POI w innej gminie, nie tyka).
+Walidator NIE wymaga pola (wzorzec `geohash6` z ADR 0024), więc wszystkie stare
+paczki i wpisy z `localStorage` czytają się dalej, a most po prostu nie wstawia
+segmentu z ulicą. Liczba pytań w nazwie to liczba PRAWDZIWISTA (`paczka.pytania`
+z rozpakowanego kontenera), nie plan ze setupu — paczki niekompletne (S12) są
+wtedy opisane uczciwie.
+
+**Budżet lektury:** ADR 0048 plus wiersz rejestru dały +574 tok, próg 100 000
+pękł. Skrócone: wiersz rejestru, pkt 4 (strażnicy) w ADR 0048, aneks dzisiejszy
+w ADR 0042 i drugi akapit wskazówki archiwum w ADR 0019. Finisz: rezerwa 33
+tok — sesja, która dopisze ADR, musi najpierw coś przenieść do archiwum.
+
+**Brama:** 826/826 (dwa piny `/WYSŁANA na Drive/` przepisane na nową treść
+komunikatu, nie obejść), `npm run check` OK, audyt WCAG 0 naruszeń, budżet OK.
+Live-check odpuszczony: reset sandboxu zmiótł `/home/user/.narzedzia` (Chromium
+i pomoce), a ta zmiana nie dotyka DOM-u ani CSS — to, co w pasku, weryfikuje
+`test/zestawy-ui.test.js` z atrapą fetcha mostu (cytuje nazwę z mostu; most bez
+`nazwa` nie dostaje w UI zdania o „nieznanym" pliku). Nazwy plików sprawdza
+`test/most-indeks.test.js`, który WYKONUJE cały skrypt `.gs` na atrapie Drive
+(L33): nazwa, retry, `-2`, odrzucona paczka, `meta` bez `ulica` i bez godziny,
+znaki zakazane.

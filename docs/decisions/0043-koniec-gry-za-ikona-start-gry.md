@@ -97,32 +97,16 @@ ADR 0040 (gra bez pauzy: w drodze zostaje pasek), ADR 0011 (cele dotykowe
 i dostępność), ADR 0015 pkt 6 (brak `confirm()`), ADR 0019 (koniec gry w multi),
 ADR 0042 (Informacje jedną czcionką), ADR 0034 (wspólny panel centralny).
 
-## Aneks 2026-09-13b (m12-111) — zdania, które wskazywały usunięty przycisk
+## Aneks starszy jest w archiwum (poza budżetem lektury)
 
-Decyzja zdjęła przycisk, ale zdania odsyłające do niego zostały w **tabelach
-komunikatów w modułach**: gracz w terenie czytał „zakończ grę przyciskiem
-„■ Zakończ grę””, choć jedynym ujściem była już ikona ⚙ START GRY z wpisaniem
-TAK. Strażnik dryfu (LESSONS L58) nie miał frazy z tej fali, a przegląd nośników
-szedł po `index.html` i dokumentach, nie po `KODY_*` — brama 760 testów była
-zielona (L27, L63).
-
-Przestawione na prawdziwą drogę (⚙ START GRY → wpisz TAK → „■ ZAKOŃCZ
-AKTUALNĄ GRĘ”): `app/pozycja.js` — P03, P04, P08 i komunikat `stanDojscia`
-o braku współrzędnych stacji (P06); `app/app.js` — status `onBlad` watchera,
-uszkodzony kontener paczki (to zdanie traci też drugą martwą drogę, „wgraj
-paczkę ponownie z pliku” — ADR 0006 aneks 3: paczka jest z repozytorium albo
-z wklejonej odpowiedzi modelu), paczka rozjechana z rozgrywką i T07 (zapis
-ponad 2 MB); `app/wieloosobowa.js` — R19 (przycisku „Zapisz nowy” nie ma:
-bramka tożsamości to imię + PIN i jedno wołanie `profil-ustaw`, ADR 0026).
-
-**Konsekwencja trwała:** przegląd nośników po usunięciu przycisku-ujścia musi
-objąć tabele komunikatów w modułach (`KODY_POZYCJI`, `KODY_WIELOOSOBOWE`,
-`KODY_TRWALOSCI`, zdania `status()` w `app.js`), nie tylko HTML i dokumenty —
-to tekst, za którym gracz idzie w stanie awaryjnym, i w HTML go nie ma. Pilnują:
-wpis `zakończ grę przyciskiem` w `test/dryf-dokumentow.test.js`, kontrakt
-„zdania dla gracza o końcu gry nazywają ikonę ⚙ START GRY” (czyta wiersze KODU —
-komentarz-nagrobek L31 może cytować martwą etykietę) oraz piny w
-`test/pozycja.test.js` i `test/wieloosobowa.test.js`.
+Aneks 2026-09-13b (m12-111) — zdania, które po usunięciu przycisku
+„■ Zakończ grę" wciąż do niego odsyłały, i reguła, że przegląd nośników musi
+wtedy objąć tabele komunikatów w modułach — leży w
+`docs/decisions/archive/aneksy-0043-2026-09-13b.md` (archiwizacja 2026-09-15,
+m12-125; AGENTS.md §0, LESSONS L62/L66). Reguła nie jest tu potrzebna do
+czytania: jej treścią operacyjną jest `docs/LESSONS.md` L64, a pilnuje jej
+strażnik dryfu i kontrakt „zdania dla gracza o końcu gry nazywają ikonę
+⚙ START GRY". Aneks 2026-09-14 (uwaga A) zostaje niżej, bo jest obowiązujący.
 
 ## Aneks 2026-09-14 (m12-124, uwaga terenowa A) — w setupie ikona ⚙ działa jak oko
 
@@ -155,6 +139,15 @@ w tym miejscu setupu w którym jesteśmy".
    jak dawniej; z mapy startowej — otwiera setup.
 4. Tytuł ikony na ekranach setupu mówi „chowa i przywraca warstwę setupu
    (jak oko)".
+
+5. **Dopisek 2026-09-15 (m12-125, usterka D1 z audytu PR #29):** pkt 1 dał
+   stanowi `STAN.podgladMapy` drugie wejście (ikona w belce), a stan nie gasł
+   przy zmianie ekranu — panel odziedziczał `body.podglad-mapy`, czyli
+   `visibility: hidden` + `inert`. **Niezmiennik tej decyzji:** podgląd mapy
+   jest trybem BIEŻĄCEGO ekranu i gasi go KAŻDA funkcja zmiany ekranu
+   (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`); `STAN.ekran` zostaje
+   nietknięty, bo nim wracamy z prywatności. Przypadek i testy: `docs/LESSONS.md`
+   L72; pin 3b w kontrakcie ADR 0043.
 
 **Wdrożenie:** `app/app.js` (`EKRANY_SETUPU`, `przelaczSetup`,
 `przelaczPodgladMapy({ fokus })`, `odswiezStanIkonBelki`) — ?v=m12-124.

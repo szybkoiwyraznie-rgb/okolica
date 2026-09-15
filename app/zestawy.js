@@ -16,10 +16,10 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-124';
-import { kanonicznyTemat } from './konfig.js?v=m12-124';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-124';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-124';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-129';
+import { kanonicznyTemat } from './konfig.js?v=m12-129';
+import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-129';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-129';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
@@ -391,10 +391,32 @@ export function faktyczneTematyPytan(pytania) {
 }
 
 /**
+ * Ulica startu z opisu pierwszej stacji (właściciel 2026-09-15, ADR 0048).
+ * `stacje[].opis` bywa zbudowany przez `dopiszMiasto` jako „ul. Bukowa, Podkowa
+ * Leśna", a `meta.miejsce` niesie już „drobny, miasto" — miasto w nazwie pliku
+ * powtarzałoby się, więc odcinamy JE od końca opisu. Odcinamy tylko to miasto,
+ * które rzeczywiście stoi w `miejsce`: obcy ogon (nazwa POI w innej gminie)
+ * zostaje, bo to treść, a nie dubel. Miejscowość bez dzielnicy w `miejsce`
+ * („Podkowa Leśna") jest tym miastem w całości.
+ */
+export function ulicaZeStacji(opisStacji, miejsce) {
+  const opis = typeof opisStacji === 'string' ? opisStacji.trim() : '';
+  if (!opis) return '';
+  // Miasto = ostatni człon `miejsce` („drobny, miasto" z `nazwaMiejsca`), a gdy
+  // `miejsce` jest jednoczłonowe (sama miejscowość) — samo `miejsce`.
+  const m = typeof miejsce === 'string' ? miejsce.trim() : '';
+  const miasto = m.includes(', ') ? m.slice(m.lastIndexOf(', ') + 2).trim() : m;
+  if (miasto && opis.endsWith(`, ${miasto}`)) return opis.slice(0, -(miasto.length + 2)).trim();
+  return opis;
+}
+
+/**
  * Meta dopasowania z bieżącej konfiguracji i pozycji (geohash5 z `geo.js`).
  * Czysta funkcja: warstwa DOM podaje wyłącznie fakty (ADR 0017 pkt 3).
+ * `ulica` (ADR 0048) jest addytywna jak `geohash6` z ADR 0024: stare paczki bez
+ * niej czytają się dalej, a most po prostu nie wstawia tego pola do nazwy pliku.
  */
-export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '', factcheck = true, pytania } = {}) {
+export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '', factcheck = true, pytania, opisStacjiStartu = '' } = {}) {
   wymaganie(Number.isFinite(lat) && Number.isFinite(lon), 'zbierzMetaZestawu: pozycja musi być liczbami');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'zbierzMetaZestawu: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'zbierzMetaZestawu: liczbaStacji musi być dodatnią liczbą całkowitą');
@@ -423,6 +445,9 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
     liczbaStacji,
     pytaniaNaStacje,
     tematWlasny: typeof tematWlasny === 'string' ? tematWlasny.trim().slice(0, 40) : '',
+    // Ulica startu — wyłącznie do czytelnego nazewnictwa plików na Drive
+    // (ADR 0048); dopasowanie gier jej nie używa, więc jej brak nic nie psuje.
+    ulica: ulicaZeStacji(opisStacjiStartu, typeof miejsce === 'string' ? miejsce : ''),
     // ADR 0032: false = pytania z pamięci modelu; brak pola w starych
     // zapisach czytamy jak true (reguła `!== false`, jak geohash6 z ADR 0024).
     factcheck: Boolean(factcheck),

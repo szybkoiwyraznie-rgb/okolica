@@ -105,12 +105,10 @@ wychodzi z rejestru, a ślad zostaje). Obowiązujące aneksy są niżej.
 
 ## Aneksy 2026-09-12f … 2026-09-13b są w archiwum (poza budżetem lektury)
 
-Dalsza historia tego ADR — powrót rankingu w nowej formie, z decyzją
-przeniesioną do ADR 0039 (2026-09-12f), koniec ekranu po starcie gry sieciowej
-(2026-09-13, m12-108, uwaga F) oraz koniec gry hosta, który nie kończy gry
-pozostałym (2026-09-13b, m12-109, uwaga G) — leży w
-`docs/decisions/archive/aneksy-0019-2026-09-12f-do-13b.md`, poza budżetem
-lektury startowej (AGENTS.md §0; LESSONS L62). Obowiązujące aneksy są niżej:
+Powrót rankingu (decyzja przeniesiona do ADR 0039), koniec ekranu po starcie
+gry sieciowej (uwaga F) i koniec gry hosta, który nie kończy gry pozostałym
+(uwaga G) — `docs/decisions/archive/aneksy-0019-2026-09-12f-do-13b.md`.
+Obowiązujące aneksy są niżej:
 2026-09-13c (zgłoszenia terenowe N i R) i 2026-09-13d (utrwalona kolejka
 zdarzeń).
 

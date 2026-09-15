@@ -94,41 +94,9 @@ jest w trybie hotseat… W Informacjach zostaje tylko opcja ZAKOŃCZ GRĘ”.
 4. Reguła `#informacje-gra h2` w `styles.css` usunięta razem z przenoszeniem
    nagłówka „Gra” (LESSONS L31: usunięcie i grep w tym samym commitcie).
 
-## Aneks 2026-09-13 (m12-107) — w Informacjach nie zostaje ŻADEN węzeł gry (uwagi H1 i I, ADR 0043)
+## Aneksy 2026-09-13 (m12-107) i 2026-09-13b (m12-112) są w archiwum
 
-Drugi aneks tego samego dnia: punkt 1 aneksu m12-102 („w drodze do Informacji
-wędruje JEDEN węzeł `#przycisk-zakoncz-gre`”) traci ważność. Właściciel kazał
-usunąć przycisk „ZAKOŃCZ GRĘ” z Informacji i rozwiązać kończenie gry inaczej —
-przez ikonę ⚙ START GRY, która w trakcie gry otwiera małą warstwę potwierdzenia
-z wpisaniem TAK (ADR 0043).
-
-1. Przycisku, jego slotu `#przycisk-zakoncz-gre-slot` i węzła `#informacje-gra`
-   NIE MA w `index.html`; kod po nie nie sięga, a reguła `#informacje-gra`
-   w `styles.css` jest usunięta (nagrobek w komentarzu nazywa selektor celowo —
-   LESSONS L31).
-2. Mechanika przenoszenia węzła między panelem gry a Informacjami (`appendChild`
-   w `odswiezPasekDrogi`) została usunięta razem z nim — w drodze nad mapą
-   zostaje sam pasek, a panel gry (`#gra-sterowanie`) nadal jest schowany.
-3. Punkty 2 i 3 aneksu m12-102 zostają bez zmian: panel gry schowany w drodze,
-   boks z dystansem i wznawianiem nie wraca do Informacji.
-
-## Aneks 2026-09-13b (m12-112) — panel fazy B w trybie testowym zostaje na wierzchu
-
-Punkt 2 aneksu m12-102 był w kodzie sprzeczny sam z sobą: `hidden` na przodku
-(`#gra-sterowanie`) gasi potomków przez kaskadę CSS, więc panel fazy B — a z nim
-duży dystans i „▶ Symuluj dojście (tryb testowy)”, jedyne ujście odcinka bez
-GPS — nie był w przeglądarce osiągalny nigdy (pomiar headless Chromium 153:
-`0×0`, `offsetParent: null`). Atrapa DOM kaskady nie modeluje, a `kliknij` nie
-pyta o renderowanie, więc brama była zielona (LESSONS L13).
-
-1. **W terenie bez zmian:** `$('gra-sterowanie').hidden = droga` — nad mapą
-   zostaje sam pasek (pkt 2 aneksu m12-102, ADR 0043 pkt 1).
-2. **W trybie testowym panel gry zostaje:** `hidden = droga && !STAN.trybTestowy`.
-   To jest „widok panelowy oraz tryb testowy” z pkt 2 aneksu m12-102: duży
-   dystans i symulacja dojścia, które w terenie zastępują pasek i GPS. Pomiar
-   przycisku symulacji w tym widoku: 328×45 px, więc cel dotykowy ≥ 44 px jest
-   spełniony (ADR 0011).
-3. **Zdanie o dojściu ma drugi nośnik:** w terenie `#gra-komunikat` (kod P06,
-   brak współrzędnych stacji) jest schowany razem z panelem, więc idzie też do
-   `status()` — `#status` w ⓘ Informacjach ma `aria-live` i jest warstwą
-   techniczną (ADR 0042), więc do paska nic nie jest doklejane.
+Oba przesądza żywy ADR 0043: z Informacji zszedł ostatni węzeł gry (przycisk
+kończenia), w drodze nad mapą zostaje sam pasek, a `hidden` na panelu gry gaśnie
+w trybie testowym, żeby „▶ Symuluj dojście" było osiągalne. Dosłowne brzmienie
+aneksów: `docs/decisions/archive/aneksy-0036-2026-09-13-do-13b.md`.

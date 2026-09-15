@@ -37,16 +37,18 @@ Koniec sesji:
 1. Ekran **Setup** (kolejność jak na ekranie): „Rodzaj gry” — „👥 Hot-seat —
    jeden telefon” albo „📱 Multiplayer — każdy ma telefon” (ADR 0019);
    „Sposób poruszania się” (piesza / rowerowa / samochodowa); **planowany czas
-   gry** — promień liczy aplikacja i pokazuje go z uzasadnieniem (ADR 0025);
-   liczba stacji i pytań na stację (łączna liczba pytań musi dzielić się równo
-   między graczy — K22, ADR 0027); „👤 Kto gra?” — imię + PIN każdego gracza,
+   gry** — cztery przyciski (30/60/90/120 min), a promień liczy aplikacja i
+   pokazuje go z uzasadnieniem (ADR 0025 + aneks 2026-09-15);
+   liczba stacji — **pytań się nie wybiera**: hot-seat pyta przy każdej stacji
+   KAŻDEGO gracza raz, więc ich liczba to stacje × graczy (ADR 0027 aneks
+   2026-09-15); „👤 Kto gra?” — imię + PIN każdego gracza,
    bez co najmniej jednego nie ma przejścia dalej (ADR 0026); kategoria wiekowa
    (7 lat / 12 lat / dorośli) i tematy. **Języka i podkładu mapy się nie
    wybiera** — są zaszyte w kodzie (polski + OSM Standard, ADR 0037).
    W multi tożsamość jedzie NA GÓRĘ, zaraz pod „Co robisz?” („🚀 Zakładam nową
    grę” / „🚪 Dołączam do istniejącej”), bo jeden telefon obsługuje jedną osobę
-   (właściciel 2026-09-12); znika pole pytań na stację (jedna stacja = jedno
-   pytanie), a na dole pojawia się „Tryb gry” — wyścig albo Wspólna Trasa.
+   (właściciel 2026-09-12); multi zostaje przy jednym pytaniu na stację (wszyscy
+   odpowiadają na to samo), a na dole pojawia się „Tryb gry”.
 2. Ekran **pozycji**: GPS rusza SAM (ADR 0034 pkt 5) — status idzie
    „Czekam na pozycję…” → „Szukam satelitów…” → „Pozycja ustalona”, a karta
    pokazuje współrzędne i geohash. Przycisku włączania GPS, pól ręcznych
@@ -169,7 +171,7 @@ Układ na wąskim telefonie i zachowanie GPS/symulacji sprawdza właściciel
 1. **Telefon właściciela:** otwórz aplikację w pionie na iPhonie (gra jest
    w teście terenowym; nie ma bramki „360 px bez przewijania”). Jeśli coś
    nie mieści się albo wymaga przewijania — zgłoś, to zadanie agenta.
-2. **Prywatność:** przycisk „Dane i prywatność" w setupie i w stopce otwiera
+2. **Prywatność:** przycisk „Dane i prywatność" w panelu Informacje otwiera
    ekran; „Wróć" prowadzi na ekran, z którego przyszliśmy (setup → setup,
    pozycja → pozycja). Przycisk kasowania: pierwszy klik **uzbraja** i mówi,
    co się stanie, drugi kasuje; komunikat w polu pod przyciskiem liczy

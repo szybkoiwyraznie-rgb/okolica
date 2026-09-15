@@ -339,8 +339,15 @@ async function zmien(u, id) {
 function tekst(u, id) { przelaczNa(u); return u.dom.pobierz(id).textContent; }
 function el(u, id) { przelaczNa(u); return u.dom.pobierz(id); }
 
-/** Czeka (aktywnie, z timeoutem) na warunek — jak dojdzSymulacja, ale ogólnie. */
-async function czekajNa(u, warunek, opis, maksMs = 5000) {
+/**
+ * Czeka (aktywnie, z timeoutem) na warunek — jak dojdzSymulacja, ale ogólnie.
+ * Budżet 15 s, nie 5: pod pełną bramą (818 testów równolegle) ścieżka
+ * „paczka z repozytorium w propozycjach" (fetch + indeks) nie wyrabiała w 5 s
+ * i zapalała zieloną wcześniej bramę na losowo (pomiar 2026-09-15: ten sam plik
+ * w izolacji 23/23, w pełnej bramie raz fail). Timeout ma mierzyć POSTĘP, nie
+ * wydajność maszyny — a asert, który czeka dłużej, wciąż łapie realny brak.
+ */
+async function czekajNa(u, warunek, opis, maksMs = 15000) {
   const start = Date.now();
   while (!warunek()) {
     if (Date.now() - start > maksMs) throw new Error(`${opis} nie nastąpiło w ${maksMs} ms — status: ${tekst(u, 'status')}`);
@@ -910,6 +917,41 @@ test('uwaga F: po starcie gry sygnał i odliczanie 5-4-3-2-1-START u hosta i u g
   }
 });
 
+/**
+ * Usterka D1 (audyt PR #29, sesja 2026-09-15a): podgląd mapy był trybem, który
+ * przeżywał zmianę ekranu. W lobby ⚙ START GRY chowa warstwę jak oko (uwaga A,
+ * aneks ADR 0043), a start gry przychodzi do gościa z pollingu — `pokazEkran('gra')`.
+ * Bez zgaszenia podglądu panel gry odziedziczyłby `body.podglad-mapy`
+ * (`visibility: hidden`, `inert`) i gość patrzyłby na pustą mapę w trakcie gry.
+ * Test idzie CAŁĄ ścieżką (L36: bez skrótu), więc łapie też stan oka i przygaszenie.
+ */
+test('D1: gość patrzący w lobby na mapę wchodzi w grę widoczną, nie przygaszoną', async () => {
+  const most = atrapaMostu();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: new Map(), most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+
+  // Bartek czeka w lobby i zerka na mapę — ⚙ zachowuje się jak oko (uwaga A)
+  await klik(B, 'przycisk-setup');
+  assert.equal(el(B, 'ekran-multi').inert, true, 'wojownik: podgląd w lobby chowa warstwę');
+  assert.equal(B.dom.document.body.classList.contains('podglad-mapy'), true, 'podgląd włączony');
+
+  // Ala startuje; Bartek dowiaduje się o tym z pollingu, bez jednego kliknięcia
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+  await czekajNa(B, () => el(B, 'ekran-multi').hidden === true, 'B: przeszedł z lobby na grę');
+
+  assert.equal(el(B, 'ekran-gra').hidden, false, 'gra otwarta u gościa');
+  assert.equal(el(B, 'ekran-gra').inert, false, 'panel gry nie jest zablokowany stanem podglądu');
+  assert.equal(B.dom.document.body.classList.contains('podglad-mapy'), false, 'start gry gasi podgląd mapy');
+  assert.equal(el(B, 'przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'false', 'oko mówi „Podejrzyj mapę”, nie „Wróć do panelu”');
+  assert.match(tekst(B, 'gra-postep'), /stacja 1 z 3/, 'gra pod ręką jest prawdziwa, nie pusta');
+});
 test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) → wklejenie → LOBBY', async () => {
   const most = atrapaMostu();
   // konfig zgodny z fixturem paczka-ok.json (3 stacje × 1 pytanie, tematy z paczki)
@@ -925,7 +967,10 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
   const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
   // setup: rodzaj gry multi (tryb trasa + sekret to domyślne), dokładnie jeden gracz
   await wybierzSegment(A, 'lista-rodzajow', 'multi');
-  assert.equal(el(A, 'pole-pytania').hidden, true, 'w multi nie ma pola „pytań na stację”');
+  // Uwaga właściciela B (2026-09-15): pola „pytań na stację" nie ma w żadnym
+  // trybie, a w multi plan pozostaje jeden pytanie na stację bez względu na to,
+  // ilu graczy jest na liście.
+  assert.match(tekst(A, 'setup-promien-info'), /: 3 pytań ≈/, 'multi: 3 stacje × 1 pytanie, nie 3 × gracze');
   assert.equal(el(A, 'pole-multi-tryb').hidden, false, 'segment trybu multi widoczny');
   assert.equal(el(A, 'pole-trasa-sekret').hidden, false, 'ptaszek trasa-sekret widoczny przy trasie');
   assert.equal(el(A, 'multi-trasa-sekret').checked, true, 'sekret domyślnie zaznaczony');
@@ -1242,7 +1287,9 @@ test('lista graczy = tożsamość (ADR 0026 aneks): dodaj, odmowa PIN-u, zapami�
   assert.match(tekst(A, 'status'), /Założono profil/, 'jawne potwierdzenie założenia profilu');
   assert.equal(el(A, 'profil-pin').value, '', 'PIN nie zostaje w polu (ADR 0013)');
   assert.equal(el(A, 'profil-pseudonim').value, '', 'pole imienia jest gotowe na kolejnego gracza');
-  assert.equal(el(A, 'setup-pytania').value, '1', 'pytania na stację idą za liczbą graczy (K22)');
+  // Hot-seat bez pola (uwaga właściciela B, 2026-09-15): pytań na stację jest
+  // tyle, ilu graczy, a widać to w uzasadnieniu promienia (5 stacji × 1 gracz).
+  assert.match(tekst(A, 'setup-promien-info'), /: 5 pytań ≈/, 'jeden gracz ⇒ 5 stacji × 1 pytanie');
 
   // 2) to samo imię drugi raz → odmowa lokalna, bez wołania mostu
   const przed = most.adresy.length;
@@ -1260,13 +1307,13 @@ test('lista graczy = tożsamość (ADR 0026 aneks): dodaj, odmowa PIN-u, zapami�
   await klik(A, 'przycisk-dodaj-gracza');
   await oddech();
   assert.deepEqual(lista(A), ['1. Ewa', '2. Jan'], 'kolejność dodawania to kolejność gry');
-  assert.equal(el(A, 'setup-pytania').value, '2', 'dwa pytania na stację przy dwóch graczach');
+  assert.match(tekst(A, 'setup-promien-info'), /: 10 pytań ≈/, 'dwóch graczy ⇒ 5 stacji × 2 pytania = 10');
 
   // 4) „✕ Usuń" zdejmuje gracza z listy
   const przyciskUsun = el(A, 'lista-graczy').children[0].children[1];
   przelaczNa(A); kliknijEl(przyciskUsun); await oddech();
   assert.deepEqual(lista(A), ['1. Jan'], 'usunięty gracz znika z listy');
-  assert.equal(el(A, 'setup-pytania').value, '1', 'pytania wracają do jednego gracza');
+  assert.match(tekst(A, 'setup-promien-info'), /: 5 pytań ≈/, 'usunięcie gracza cofa plan pytań (5 × 1)');
 
   // 5) zajęte imię + POPRAWNY PIN → przechodzi, profil bez zmian
   const B = await noweUrzadzenie({ most, bezGracza: true });

@@ -99,27 +99,13 @@ Model docelowy, spójny z częścią A i z istniejącym protokołem RO-*:
   × 5 stacji = 40 pytań) — limit znaków wklejenia i budżet promptu trzeba
   sprawdzić przy wdrożeniu części B (BACKLOG B20).
 
-## Aneks (2026-09-11): tryb „tury" usunięty — kolejność bez kolejki
+## Aneksy (2026-09-11): przeniesione poza budżet lektury
 
-Część B mówiła o „turach bez listy wyboru" jako trzecim trybie. Właściciel
-przepisał tryby (ADR 0019 aneks 2026-09-11): „tury" zniknęły, a ich miejsce
-zajęła **Wspólna Trasa** (`trasa`) — też bez listy wyboru, ale bez
-przypisywania stacji do graczy: KAŻDY przechodzi WSZYSTKIE stacje PO KOLEI
-we własnym tempie. Punktacja i premia za kolejność ukończenia — bez zmian
-(premia jest trybo-agnostyczna od początku). Wyścig na Orientację
-(dawny `wyscig`) zostaje: dowolna kolejność, lista wyboru, per-gracz pytanie.
-
-## Aneks (2026-09-11, m12-74): stała premia 3/2/1 za kolejność ukończenia
-
-Część B pkt 5 mówiła o premii zależnej od liczby graczy (pierwszy G−1, …,
-ostatni 0). Właściciel zastąpił ją **stałą**: **3 pkt za 1. miejsce, 2 pkt
-za 2., 1 pkt za 3.** — 4. i dalsi: 0, niezależnie od liczby graczy.
-Zasady bez zmian: kolejność z `kolejnosc` zdarzeń mostu (nie z zegara
-urządzeń), rezygnujący i niedokończeni bez premii, a **ukończenie wszystkich
-stacji PRZED przedwczesnym końcem gry liczy się jak zwykle** — host kończący
-grę przyciskiem nie odbija premii tym, którzy zdążyli. Reguła jest w dwóch
-miejscach (`app/wieloosobowa.js` i `.gs`) i pilnuje jej `test/most-gra.test.js`
-(wykonuje tekst mostu) oraz `test/wieloosobowa.test.js`.
+Dwa aneksy z 2026-09-11 („tryb tury usunięty — Wspólna Trasa w jego miejsce”
+oraz „stała premia 3/2/1 za kolejność ukończenia”) leżą w
+`docs/decisions/archive/aneksy-0027-2026-09-11.md`. Reguły, które po nich
+zostały, są żywe gdzie indziej: tryby gry opisuje ADR 0019 (aneks 2026-09-11),
+a pulę premii — aneks 2026-09-13 poniżej (ten z 2026-09-11 zastąpił).
 
 ## Aneks 2026-09-13 (m12-105) — pula premii zależy od grających, którzy dograli (uwaga L)
 
@@ -164,3 +150,28 @@ bramki). Pasek dolny w wyścigu mówi „Jacek. Stacja 3/5” zamiast dystansu.
 `renderujWyborStacji()` to no-op. Punktacja, premia i pytanie per indeks
 gracza bez zmian.
 
+## Aneks 2026-09-15 (m12-126, uwaga B) — liczby pytań nie wybiera organizator
+
+Właściciel po teście terenowym: „w setupie hot-seat znika pytanie o liczbę pytań
+na stację — przy każdej stacji odpowiada każdy gracz, więc pytań jest
+`liczba stacji × liczba osób grających`”.
+
+Część A pkt 3 („domyślnie `pytaniaNaStacje = liczbaGraczy`”) przestaje być
+domyślną wartością, a staje się **jedyną regułą**: wylicza ją
+`pytaniaNaStacjeDla({ liczbaGraczy, rodzajGry })` w `app/konfig.js` (hot-seat =
+liczba graczy z listy, multi = 1), a `oczyscKonfiguracje` nadpisuje ją po
+dopelnieniu listy graczy. Pole setupu oraz widełki i równy podział (pkt 1, 2 i 4)
+znikają razem z kodami K11 i K22 — przy jednozdaniowej regule nie ma układu,
+który łamałby podział, więc nie ma czego pilnować. Gra sieciowa bez zmian:
+jedno pytanie na stację i wszyscy odpowiadają na to samo (pkt części B zostaje).
+
+- Liczbę mnoży nadal jedno miejsce, `liczbaPytan(konfig)`, więc prompt
+  (`{LICZBA_PYTAN}`) i walidator (E03) zmieniły źródło liczby, nie kształt.
+- Sufitem jest `OGRANICZENIA.pytaniaNaStacje.max` (8) — tyle samo, co maks.
+  liczba graczy (pkt 4), więc ani jeden, ani drugi próg się nie zmienił.
+- `WORKFLOW.md` §3 i legenda `{LICZBA_PYTAN}` w `PROTOKOL.md` opisują ekran bez
+  pola pytań; powrót pola łapie `test/dryf-dokumentow.test.js` (martwa fraza) i
+  pinezka nieobecności w `test/kontrakt.test.js`.
+- Fixture'y testów składają paczkę `stacje × graczy` pytań i prowadzą gracza po
+  całej stacji (`odpowiedzNaStacje` w `test/aplikacja.test.js`) — przy trzech
+  graczach stacja to trzy pytania, więc „jedno kliknięcie i dalej” już nie wystarcza.

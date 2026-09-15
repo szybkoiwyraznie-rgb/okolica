@@ -302,6 +302,55 @@ const MARTWE_FRAZY = [
     nosniki: UI,
     powod: 'fałszywa obietnica w komentarzu (do 2026-09-14): wolne TSP NIE realizuje nierówności właściciela — wejście wpina twardo kolejnoscTrasy (ADR 0005 aneks m12-116)',
   },
+  // Fala 2026-09-15 (uwagi właściciela A i B, PR #30): w setupie nie ma już ani
+  // pola liczby pytań (B — plan wynika z listy graczy, ADR 0027 aneks), ani pola
+  // do wpisania minut (A — są cztery przyciski, ADR 0025 aneks).
+  {
+    fraza: 'Planowany czas gry (min)',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'minut się nie wpisuje — wybiera z CZASY_GRY (30/60/90/120), ADR 0025 aneks 2026-09-15',
+  },
+  {
+    fraza: 'Wpisz planowany czas',
+    nosniki: UI,
+    powod: 'nie ma pola do wpisywania czasu, więc komunikat awaryjny nie może kazać wpisywać (ADR 0025 aneks 2026-09-15)',
+  },  // Fala 2026-09-15 (uwaga B właściciela, PR #30): setup hot-seat nie pyta o liczbę
+  // pytań na stację — wynika z listy graczy (ADR 0027 aneks).
+  {
+    fraza: 'Pytania na stację',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'pola w setupie nie ma — hot-seat pyta przy stacji każdego gracza raz, multi ma jedno pytanie na stację (konfig.pytaniaNaStacjeDla, ADR 0027 aneks 2026-09-15)',
+  },
+  {
+    fraza: 'pytań na stację (łączna',
+    nosniki: DOKUMENTY,
+    powod: 'równy podział pilnował K22, a K22 zniknął razem z polem setupu — liczby nie da się już zepsuć (ADR 0027 aneks 2026-09-15)',
+  },
+  // Fala 2026-09-15 (uwaga A właściciela): panel Informacje pokazuje numer
+  // budowy i wyjścia, a nie numery protokołu PYT ani łATKI szablonu.
+  {
+    fraza: 'nie wlicza się w odcinek',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'UI nie może tłumaczyć czegoś, czego nie ma: od ADR 0023 pkt 1 punktacja nie ma składnika czasowego, a gracz nigdzie nie widzi stopera (właściciel 2026-09-15 zdjęł zdanie ze statusu wznowienia)',
+  },
+  // Fala 2026-09-15 (uwaga 3 właściciela): nazwy plików paczek na Drive kodują
+  // fakty z `meta` (ADR 0048). Starego wzoru nie wolno przywracać ani w docsach,
+  // ani w moście — to on czynił katalog nieporządkowanym.
+  {
+    fraza: 'geohash5-skrot',
+    nosniki: [...DOKUMENTY, ...UI, MOST],
+    powod: 'konwencja `geohash5-skrot.zestaw.json` nie żyje od ADR 0048 (2026-09-15): nazwa bierze się z meta; historia została w archiwum aneksów ADR 0017',
+  },
+  {
+    fraza: 'stopka-protokol',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'numer protokołu zszedł z UI (właściciel 2026-09-15); spójności dokument ↔ kod ↔ README pilnuje `test/kontrakt.test.js`',
+  },
+  {
+    fraza: 'stopka-szablon',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'łatka szablonu zszedła z UI (właściciel 2026-09-15); jest cytowana w docs/PROTOKOL.md, bo tam powstaje',
+  },
   {
     fraza: 'pin(y)',
     nosniki: UI,

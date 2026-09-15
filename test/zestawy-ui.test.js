@@ -407,7 +407,7 @@ const KONFIG_WYSYLKA = JSON.stringify({
   konfig: { liczbaStacji: 3, pytaniaNaStacje: 1, tematy: ['historia', 'architektura'], czasGryMin: 85 },
 });
 
-function atrapaPost() {
+function atrapaPost({ odpowiedz = { ok: true, status: 'zaakceptowana' } } = {}) {
   const posty = [];
   const pierwotny = globalThis.fetch;
   globalThis.fetch = async (url, opcje = {}) => {
@@ -416,7 +416,7 @@ function atrapaPost() {
     // degradowal się po cichu, a goły fetch łapał tylko wysyłkę.
     if (opcje.method === 'POST' && String(opcje.headers?.['Content-Type'] ?? '').startsWith('text/plain')) {
       posty.push({ url: String(url), opcje });
-      return { ok: true, status: 200, json: async () => ({ ok: true, status: 'zaakceptowana' }), text: async () => '' };
+      return { ok: true, status: 200, json: async () => odpowiedz, text: async () => '' };
     }
     return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
   };
@@ -461,7 +461,31 @@ test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain',
     assert.equal(cialo.meta.pytaniaNaStacje, 1);
     assert.match(cialo.meta.przegladZrodel, /oczekuje przeglądu — jakość rozstrzygają łapki/, 'kandydat wychodzi ze znacznikiem (bez sesji przeglądu właściciela, 2026-09-11)');
     assert.equal(cialo.kontener.schemat, 'TO-paczka/2');
-    assert.match(dom.pobierz('status').textContent, /WYSŁANA na Drive/);
+    assert.match(dom.pobierz('status').textContent, /Paczka przyjęta i wysłana na Drive:/);
+    assert.doesNotMatch(dom.pobierz('status').textContent, /nieznana/,
+      'most bez pola `nazwa` (stara wersja skryptu) nie wpycha w UI zdania o „nieznanym" pliku');
+    assert.equal(typeof cialo.meta.ulica, 'string', 'meta kandydata niesie `ulica` (ADR 0048) — nazwę pliku robi most');
+  } finally {
+    atrap.przywroc();
+  }
+});
+
+test('wysyłka Drive: potwierdzenie cytuje nazwę pliku zwróconą przez most (ADR 0048)', async () => {
+  const nazwa = 'Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_3pyt_wiek-12_600m_Q.zestaw.json';
+  const atrap = atrapaPost({ odpowiedz: { ok: true, status: 'zaakceptowana', nazwa, id: 'ID9' } });
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
+    const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
+    dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
+    await new Promise((r) => setTimeout(r, 30));
+    // Aplikacja NIE liczy nazwy po swojemu — cytuje tę z mostu: jedno źródło
+    // prawdy, czyli rozjazd widać, zamiast go ukryć (LESSONS L58).
+    const wyjety = nazwa.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    assert.match(dom.pobierz('status').textContent, new RegExp(`wysłana na Drive jako „${wyjety}\"`),
+      `status: ${dom.pobierz('status').textContent}`);
   } finally {
     atrap.przywroc();
   }
@@ -480,7 +504,7 @@ test('wysyłka Drive: adres z kodu — przyjęcie paczki wysyła bez wpisu w pam
     assert.equal(atrap.posty.length, 1, 'przyjęcie paczki wysyła na adres z kodu');
     assert.equal(atrap.posty[0].url, DOMYSLNY_URL_MOSTU, 'cel wysyłki to stała wdrożeniowa');
     assert.equal(JSON.parse(atrap.posty[0].opcje.body).schemat, 'TO-zestaw/1');
-    assert.match(dom.pobierz('status').textContent, /WYSŁANA na Drive/);
+    assert.match(dom.pobierz('status').textContent, /Paczka przyjęta i wysłana na Drive:/);
   } finally {
     atrap.przywroc();
   }

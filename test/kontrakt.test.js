@@ -192,16 +192,46 @@ test('kontrakt: każdy temat z kodu ma wiersz w protokole (i odwrotnie)', () => 
 
 /* ------------------------------------------------------------- wersjonowanie */
 
-test('kontrakt: wersja protokołu jest jedna w dokumencie, w kodzie, w stopce i w README', () => {
+/**
+ * ADR 0048 (właściciel 2026-09-15): plik paczki na Drive ma być poznawalny z
+ * listy katalogu. Nazwę buduje MOST z `meta` — nie aplikacja i nie skrót
+ * zawartości — więc pin jest po obu stronach: skrypt musi czytać pola, a UI
+ * musi podać to, czego sam nie wyliczy (ulica) i pokazać efekt (nazwę pliku).
+ */
+test('kontrakt ADR 0048: nazwa pliku paczki na Drive pochodzi z meta, nie z geohashu', () => {
+  assert.match(GS, /function nazwaPaczkiZMeta\(meta, liczbaPytan\)/, 'most ma jedno miejsce, gdzie powstaje nazwa');
+  for (const pole of ['m.miejsce', 'm.ulica', 'm.data', 'm.wiek', 'm.promienM', 'm.factcheck']) {
+    assert.ok(GS.includes(pole), `nazwa nie czyta meta.${pole.slice(2)} — ADR 0048 wymaga wszystkich pól`);
+  }
+  assert.equal(GS.includes("geohash5 + '-' + skrot"), false, 'stary wzór `geohash5-skrot` nie wraca do mostu');
+  // Kolizja nazwy nie może zdławić paczki — most rozstrzyga po skrócie treści.
+  assert.match(GS, /function skrotIstniejacegoPliku/, 'most sprawdza, czy pod nazwą leży TA SAMA paczka');
+  assert.match(GS, /licznik <= 12/, 'druga paczka z tej samej minuty dostaje przyrostek -2…-12');
+  assert.match(GS, /function slug\(/, 'znaki zakazane w nazwach Drive są zamieniane centralnie');
+
+  const appTekst = czytaj('app/app.js');
+  assert.equal((appTekst.match(/opisStacjiStartu:/g) || []).length, 2,
+    'meta hot-seat i meta sesji multi podają ulicę startu — przy jednej stracie nazwa byłaby półgłówkiem');
+  assert.match(appTekst, /wynik\.nazwa/, 'potwierdzenie wysyłki cytuje nazwę pliku, bo po niej właściciel szuka paczki na Drive');
+  const zest = czytaj('app/zestawy.js');
+  assert.match(zest, /export function ulicaZeStacji/, 'ulicę liczy warstwa czysta, nie DOM (ADR 0017 pkt 3)');
+  assert.match(zest, /ulica: ulicaZeStacji\(/, 'meta niesie pole `ulica`');
+  const walidator = zest.slice(zest.indexOf('function czyMetaDopasowaniaOk'), zest.indexOf('/** Rozmiar wpisu'));
+  assert.equal(walidator.includes('m.ulica'), false,
+    '`ulica` jest addytywna jak geohash6 z ADR 0024 — walidator nie może jej wymagać, bo stare paczki przestałyby się czytać');
+});
+test('kontrakt: wersja protokołu jest jedna w dokumencie, w kodzie i w README', () => {
   const tytul = PROTOKOL.split('\n')[0];
   const m = tytul.match(/PYT v(\d+)\.(\d+)/);
   assert.ok(m, `tytuł protokołu nie deklaruje wersji („${tytul}")`);
   const wersja = `PYT/${m[1]}.${m[2]}`;
   assert.equal(WERSJA_PROTOKOLU, wersja, 'WERSJA_PROTOKOLU w app/protokol.js');
-  const stopka = INDEX.match(/<span id="stopka-protokol">([^<]+)<\/span>/);
-  assert.ok(stopka, 'w index.html brakuje <span id="stopka-protokol">');
-  assert.equal(stopka[1], wersja, 'stopka aplikacji pokazuje inną wersję protokołu');
   assert.ok(README.includes(`protokół PYT v${m[1]}.${m[2]}`), 'README nie podaje obowiązującej wersji protokołu');
+  // Trzeci nośnik (stopka aplikacji) spadł 2026-09-15 na żądanie właściciela:
+  // gracz nie ma co zrobić z numerem protokołu. Spójność jest więc teraz
+  // dokument ↔ kod ↔ README i ten test jest jej jedynym strażnikiem, a panel
+  // gracza NIE ma prawa z powrotem pokazywać tych liczb.
+  assert.equal(INDEX.includes('stopka-protokol'), false, 'numery protokołu zniknęły z UI — nie z dokumentu ani z kodu');
 });
 
 /* ------------------------------------------------------------ cache-busting */
@@ -903,6 +933,12 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   assert.match(INDEX, /Wynik gry idzie na wspólne konto Google Drive/, 'sekcja prywatność mówi, że to domyślne');
   assert.ok(!INDEX.includes('id="setup-gracze"'), 'pola „Liczba graczy" nie ma — liczbą jest długość listy');
   assert.ok(!INDEX.includes('id="lista-imion"'), 'ręczne pola imion zastąpiła lista graczy');
+  // Uwaga terenowa właściciela B (2026-09-15): pola „pytań na stację\" nie ma w
+  // ŻADNYM trybie — hot-seat liczy stacje × graczy, multi jedno pytanie na
+  // stację. Kontrolki nie ma, więc nie ma też stanu do ukrycia (por. L64).
+  assert.ok(!INDEX.includes('id="setup-pytania"'), 'pola „Pytań na stację\" nie ma — liczba jest liczona');
+  assert.ok(!INDEX.includes('id="pole-pytania"'), 'kontenera pola pytań nie ma (był ukrywany w multi, 2026-09-11)');
+  assert.ok(!APP.includes("'setup-pytania'"), 'app.js nie sięga po pole, którego nie ma w HTML');
   assert.match(INDEX, /Kto gra\?/, 'blok tożsamości pyta „Kto gra?"');
   assert.ok(APP.includes("'okolica:gracze'"), 'lista graczy utrwalana pod ustalonym kluczem');
   assert.ok(APP.includes('gracze-lokalni/1'), 'schemat zapamiętanej listy graczy');
@@ -1046,7 +1082,7 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   assert.ok(!APP.includes('otworzListeGier'), 'dawny flow „lista gier na ekranie multi” usunięty');
   // przy „Dołączam” chowane są pola parametrów gry, a „Poprzednie gry” nie pokazują się w multi
   assert.match(APP, /renderujPolaTozsamosci/, 'widoczność pól tożsamości sterowana funkcją (multi = sama karta gracza)');
-  for (const id of ['pole-tryb', 'pole-parametry', 'pole-wiek', 'pole-tematy', 'pole-tozsamosc-siatka']) {
+  for (const id of ['pole-tryb', 'pole-czas', 'pole-parametry', 'pole-wiek', 'pole-tematy', 'pole-tozsamosc-siatka']) {
     assert.ok(INDEX.includes(`id="${id}"`), `#${id} ma id do chowania przy „Dołączam”`);
   }
   // „Ty w tej grze” w multi: dokładnie jedna osoba na telefon, pola znikają
@@ -1113,16 +1149,60 @@ test('kontrakt: ręczna edycja paczki nie istnieje w kodzie (ADR 0006 aneks 2026
   assert.match(czytaj('app/protokol.js'), /export function poprawkaDlaModelu/, 'ścieżka usterek (poprawka do modelu) zostaje');
 });
 
-test('kontrakt: SZABLON_WERSJA ma konsumenta w UI (PROTOKOL §7 — łatka szablonu)', () => {
-  // Audyt PR #3: PROTOKOL §7 każe podbijać łatkę szablonu w `SZABLON_WERSJA`,
-  // a stałej nie czytał ani kod, ani test — podbicie byłoby niewidoczne.
-  assert.match(INDEX, /<span id="stopka-szablon">PYT\/1\.0\.\d+<\/span>/, 'stopka ma miejsce na wersję szablonu');
+test('kontrakt: łatkę szablonu widać w dokumencie, nie w panelu gracza (PROTOKOL §7)', () => {
+  // Audyt PR #3: PROTOKOL §7 każe podbijać łatkę szablonu w `SZABLON_WERSJA`, a
+  // stałej nie czytał ani kod, ani test — podbicie byłoby niewidoczne. Przez
+  // 2026-09-15 pilnowała tego stopka; właściciel zdjął z panelu numery
+  // protokołu, więc strażnika przenieśliśmy tam, gdzie łatka powstaje: obie
+  // stałe muszą być cytowane w `docs/PROTOKOL.md`. Echo w UI byłoby
+  // najsłabszym z możliwych konsumentów — gracz nie ma co z nim zrobić.
+  const protokolTekst = PROTOKOL;
+  for (const nazwa of ['SZABLON_WERSJA', 'SZABLON_WERSJA_BEZ_WERYFIKACJI']) {
+    const stala = czytaj('app/protokol.js').match(new RegExp(`export const ${nazwa} = '([^']+)'`));
+    assert.ok(stala, `${nazwa} jest eksportowana z app/protokol.js`);
+    assert.match(stala[1], /^PYT\/1\.0(-nofc)?\.\d+$/, `${nazwa} ma kształt PYT/1.0.N (albo PYT/1.0-nofc.N)`);
+    assert.ok(protokolTekst.includes(stala[1]), `docs/PROTOKOL.md nie cytuje ${nazwa} = ${stala[1]} — podbicie bez wpisu w dokumencie`);
+  }
   const app = czytaj('app/app.js');
-  assert.match(app, /SZABLON_WERSJA/, 'app.js importuje stałą');
-  assert.match(app, /\$\('stopka-szablon'\)\.textContent = SZABLON_WERSJA/, 'app.js ją renderuje');
-  const stala = czytaj('app/protokol.js').match(/export const SZABLON_WERSJA = '([^']+)'/);
-  assert.ok(stala, 'stała jest eksportowana z app/protokol.js');
-  assert.match(stala[1], /^PYT\/1\.0\.\d+$/, 'łatka protokołu ma kształt PYT/1.0.N');
+  assert.equal(INDEX.includes('stopka-szablon'), false, 'łatka szablonu nie wraca do UI');
+  assert.equal(app.includes('SZABLON_WERSJA'), false, 'app.js nie importuje stałej, której nie renderuje');
+});
+
+/**
+ * Uwaga właściciela (2026-09-15): panel Informacje ma JEDEN wiersz porządku
+ * dziennego — numer budowy obok wyjść, które gracz naprawdę może użyć.
+ */
+test('kontrakt: Informacje — jeden wiersz: wersja · Dane i prywatność · Zgłoś błąd na mapie · kontakt', () => {
+  const blokCaly = INDEX.slice(INDEX.indexOf('id="ekran-informacje"'), INDEX.indexOf('id="przygaszenie-mapy"'));
+  assert.ok(blokCaly.length > 100, 'ekran Informacje znaleziony');
+  const blok = blokCaly.replace(/<!--[\s\S]*?-->/g, '');
+  const wiersz = blok.match(/<p class="informacje-kontakt[^"]*">([\s\S]*?)<\/p>/);
+  assert.ok(wiersz, 'wiersz kontaktowy istnieje w panelu Informacje');
+  const kolejnosc = ['Wersja <span id="stopka-wersja">', 'id="przycisk-prywatnosc-stopka"', 'id="link-zglos-mape"', 'id="link-kontakt"'];
+  let ostatni = -1;
+  for (const fragment of kolejnosc) {
+    const i = wiersz[1].indexOf(fragment);
+    assert.ok(i > ostatni, `w wierszu jest ${fragment} — w tej kolejności i dokładnie raz`);
+    ostatni = i;
+  }
+  // Kropki rozdzielają POPRZEDZAJAC pozycje — po złamaniu wiersza nie zostaje
+  // na końcu linii (to był pierwszy efekt uboczny tej zmiany, złapany w
+  // przeglądarce, nie w atrapie: LESSONS L13).
+  assert.doesNotMatch(wiersz[1].trimEnd(), /informacje-kropka[^>]*>·<\/span>\s*$/,
+    'żadna kropka nie wisi na końcu wiersza');
+  assert.equal((wiersz[1].match(/informacje-kropka/g) || []).length, 3, 'trzy separatory między czterema pozycjami');
+  // Kropka jest PIERWSZYM dzieckiem grupy `.informacje-pozycja`, a grupa trzyma
+  // kropkę i pozycję w jednym inline-flexie — luzniejszy zapis (np. sam span)
+  // dozwala łamanie między kropką a pozycją, czyli wraca wisząca kropka, którą
+  // złapaliśmy w przeglądarce, a nie w atrapie (LESSONS L13).
+  const bezKomentarzy = wiersz[1].replace(/<!--[\s\S]*?-->/g, '');
+  for (const [id, znacznik] of [['przycisk-prywatnosc-stopka', 'button'], ['link-zglos-mape', 'a'], ['link-kontakt', 'a']]) {
+    assert.ok(new RegExp(`<span class="informacje-pozycja">\\s*<span class="informacje-kropka"[^>]*>·</span>\\s*<${znacznik} id="${id}"`).test(bezKomentarzy),
+      `kropka trzyma się swojej pozycji (${id}) — nie może zostać sama na końcu linii`);
+  }
+
+  // łamanie wiersza jest dozwolone, ale tylko w tym wierszu i z odstępami
+  assert.match(STYLE, /\.informacje-kontakt \{[^}]*flex-wrap: wrap/s, 'wiersz łamie się, gdy brakuje miejsca');
 });
 
 test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', () => {
@@ -1254,6 +1334,28 @@ test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samo
 });
 
 
+
+/**
+ * Uwaga A właściciela (2026-09-15, PR #30): „Czas gry ma być wybierany
+ * przyciskami — 30, 60, 90, 120 minut; stukasz jeden, poprzedni odpuszcza”.
+ * Czyli: nie ma pola do wpisywania liczby, jest segment radia (wykluczanie
+ * natywne, ADR 0011 — te same pola trafień co przy „Sposobie poruszania się”).
+ */
+test('setup: czas gry to segment z czterech przycisków, nie pole liczby', () => {
+  assert.match(INDEX, /<fieldset class="pole" id="pole-czas">\s*<legend>Planowany czas gry<\/legend>\s*<div id="lista-czasow" class="segment segment-czas"><\/div>\s*<\/fieldset>/,
+    'blok czasu gry ma legendę i pusty segment, który wypełnia aplikacja (jak #pole-tryb)');
+  assert.equal(INDEX.includes('id="setup-czas"'), false, 'pola number na czas gry nie ma — nie ma czym wpisać 47 minut');
+  assert.equal(INDEX.includes('Planowany czas gry (min)'), false, 'etykieta z „(min)” zniknęła razem z polem');
+  assert.match(APP, /CZASY_GRY/, 'aplikacja nie trzyma listy minut w sobie — biera ją z konfigu');
+  assert.match(APP, /'pole-tryb', 'pole-czas'/, 'przy „Dołączam do istniejącej” czas gry chowa się razem z resztą setupu');
+  // przyciski segmentu dostają rozmiar trafienia ze zmiennej (ADR 0011) —
+  // bez tego czteroelementowy segment kusiłby 30-pikselowymi polami
+  const blok = STYLE.slice(STYLE.indexOf('.segment label {'), STYLE.indexOf('}', STYLE.indexOf('.segment label {')));
+  assert.match(blok, /min-height:\s*var\(--cel\)/, 'segment trzyma --cel także dla czasu gry');
+  const czasBlok = STYLE.slice(STYLE.indexOf('.segment-czas label {'), STYLE.indexOf('}', STYLE.indexOf('.segment-czas label {')));
+  assert.match(czasBlok, /white-space:\s*nowrap/, 'cztery chipy w jednym wierszu — „120 min" nie może zjechać do drugiej linii');
+  assert.match(czasBlok, /flex:\s*1 1 20%/, 'baza segmentu to 30% (trzy tryby) — cztery przyciski potrzebują własnego');
+});
 
 /**
  * Zgłoszenie właściciela (2026-09-09): etykieta „Planowany czas gry (min)”
@@ -1695,6 +1797,17 @@ test('kontrakt ADR 0043: grę kończy ikona ⚙ START GRY z wpisaniem TAK (uwagi
   assert.match(APP, /ustaw\('przycisk-setup', EKRANY\.includes\(STAN\.ekran\) \|\| koniecOtwarty\);/,
     'otwarta warstwa też zapala ikonę (aria-pressed przełącznika)');
 
+
+  // 3b. Usterka D1 (audyt PR #29, 2026-09-15): podgląd mapy jest trybem
+  //     BIEŻĄCEGO ekranu — gasi ją KAŻDA funkcja zmiany ekranu, inaczej nowy
+  //     panel dziedziczy `body.podglad-mapy` (`visibility: hidden` + `inert`)
+  //     i gracz patrzy na pustą mapę (karta ze stopki, start multi u gościa).
+  for (const funkcja of ['pokazEkran', 'pokazMapeStartowa', 'pokazPrywatnosc']) {
+    const cialo = APP.match(new RegExp(`function ${funkcja}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`));
+    assert.ok(cialo, `funkcja zmiany ekranu istnieje: ${funkcja}()`);
+    assert.ok(cialo[0].includes('STAN.podgladMapy = false;'),
+      `${funkcja}() gasi podgląd mapy — bez tego nowy ekran jest przygaszony (D1)`);
+  }
   // 4. Przycisk odblokowuje DOPIERO wpisane TAK — bez względu na wielkość liter.
   assert.match(APP, /const wpis = String\(\$\('koniec-gry-potwierdzenie'\)\.value \?\? ''\)\.trim\(\)\.toLowerCase\(\);\n {2}\$\('przycisk-koniec-gry'\)\.disabled = wpis !== 'tak';/,
     '„TAK", „tak", „ Tak " odblokowują; cokolwiek innego nie');

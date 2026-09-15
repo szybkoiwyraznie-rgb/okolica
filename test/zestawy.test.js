@@ -12,6 +12,7 @@ import {
   dolozWpisRejestru, dopasujMetaIndeksu, dopasujZestawy, kluczZestawu,
   nowyRejestr, rozmiarBajty, urlPaczkiZRepo, walidujIndeksSurowy, walidujRejestrSurowy,
   walidujZestawLokalnySurowy, walidujZestawPublicznySurowy,
+  ulicaZeStacji, zbierzMetaZestawu,
 } from '../app/zestawy.js';
 
 const kontener = () => ({ schemat: 'TO-paczka/2', protokol: 'PYT/1.0', kodowanie: 'b64x1', skrot: 'ab12cd34', dane: 'e30' });
@@ -386,4 +387,38 @@ test('zbierzMetaZestawu: tematy z FAKTYCZNEJ zawartości pytań, nie z listy dop
   assert.deepEqual(bezPytan.tematy, ['historia', 'przyroda'], 'bez pytań zostaje lista z argumentu (eksport meta bez paczki)');
   const pytaniaBezTematow = zbierzMetaZestawu({ ...wspolne, tematy: ['historia', 'przyroda'], pytania: [{ tresc: 'x?' }, { temat: '' }] });
   assert.deepEqual(pytaniaBezTematow.tematy, ['historia', 'przyroda'], 'pytania bez czytelnych tematów = fallback na listę argumentu');
+});
+
+/* ------------------------- ADR 0048: czytelny opis paczki (nazwa na Drive) */
+
+test('ulicaZeStacji: ulica startu odarta z miasta, które i tak jest w `miejsce`', () => {
+  assert.equal(ulicaZeStacji('ul. Bukowa, Podkowa Leśna', 'Podkowa Leśna'), 'ul. Bukowa');
+  assert.equal(ulicaZeStacji('ul. Bukowa, Podkowa Leśna', 'Błonie, Podkowa Leśna'), 'ul. Bukowa',
+    'miasto = ostatni człon „drobny, miasto" z `nazwaMiejsca`');
+  assert.equal(ulicaZeStacji('ul. Bukowa', 'Podkowa Leśna'), 'ul. Bukowa', 'opis bez miasta zostaje w całości');
+  assert.equal(ulicaZeStacji('Biedronka, Błonie', 'Podkowa Leśna'), 'Biedronka, Błonie',
+    'obcego miasta nie odcinamy — to nazwa POI, nie ogon');
+  assert.equal(ulicaZeStacji('', 'Podkowa Leśna'), '', 'ścieżka zapasowa bez sieci nie ma ulicy');
+  assert.equal(ulicaZeStacji(undefined, undefined), '', 'śmieć nie rzuca');
+  assert.equal(ulicaZeStacji('  ', ''), '', 'samy odstęp to brak ulicy');
+});
+
+test('zbierzMetaZestawu: meta niesie `ulica` przy starcie (ADR 0048, additive jak geohash6 z ADR 0024)', () => {
+  const meta = zbierzMetaZestawu({
+    lat: 52.1141, lon: 20.6622, promienM: 1000, tematy: ['historia'], wiek: '12', jezyk: 'polski',
+    miejsce: 'Podkowa Leśna', data: '2026-09-15 09:41', liczbaStacji: 5, pytaniaNaStacje: 3,
+    opisStacjiStartu: 'ul. Bukowa, Podkowa Leśna',
+  });
+  assert.equal(meta.ulica, 'ul. Bukowa');
+  assert.equal(meta.miejsce, 'Podkowa Leśna');
+  assert.equal(meta.data, '2026-09-15 09:41', 'data zostaje w meta w pełnym brzmieniu — skrót robi most');
+  // Walidator jest otwarty: paczka BEZ `ulica` (wszystkie stare pliki) jest dobra.
+  const { zestaw, usterki } = walidujZestawPublicznySurowy(JSON.stringify({
+    schemat: SCHEMAT_ZESTAWU, protokol: 'PYT/1.0',
+    meta: { ...meta, miejsce: 'Podkowa Leśna', licencja: 'CC BY-SA 4.0', przegladZrodel: 'x', ulica: undefined },
+    stacje: [{ lat: 52.1141, lon: 20.6622, opis: '' }],
+    kontener: kontener(),
+  }));
+  assert.deepEqual(usterki.filter((u) => u.kod === 'Z08'), [], '`ulica` nie jest wymagana w meta');
+  assert.ok(zestaw, 'zestaw czytany dalej, mimo braku ulicy');
 });

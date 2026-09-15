@@ -6,7 +6,7 @@
 > (ADR 0010 pkt 6).
 
 - Status: **obowiązujący** (wersja wyprowadzana z tego nagłówka; test
-  kontraktowy porównuje go ze stopką aplikacji i z `README.md`)
+  kontraktowy porównuje ją z `app/protokol.js` i z `README.md`)
 - Data: 2026-09-05
 - Powiązania: ADR 0006 (pętla treści), ADR 0007 (ukrywanie paczki),
   ADR 0008 (kwerenda i źródła), `app/protokol.js` (kod), `test/protokol.test.js`
@@ -118,7 +118,7 @@ WYMAGANIA DODATKOWE:
 | `{OPIS_TRUDNOSCI}` | tekst z §4 dla danej kategorii | protokół §4 |
 | `{TEMATY}` | lista tematów z opisami, np. `historia (dzieje miejsca, daty, wydarzenia, postaci)` | protokół §5 |
 | `{TEMATY_JSON}` | te same klucze jako elementy listy JSON, np. `"historia", "przyroda"` | protokół §5 |
-| `{LICZBA_PYTAN}` | liczba pytań = `LICZBA_STACJI × pytaniaNaStacje` | setup |
+| `{LICZBA_PYTAN}` | liczba pytań = `LICZBA_STACJI × pytaniaNaStacje`; organizator jej nie wpisuje — `pytaniaNaStacje` liczy `konfig.pytaniaNaStacjeDla` (hot-seat: liczba graczy, multi: 1; ADR 0027 aneks 2026-09-15) | konfiguracja |
 | `{JEZYK}` | `polski` (domyślnie) albo inny z setupu | setup |
 | `{DATA}` | `RRRR-MM-DD GG:MM` czasu lokalnego urządzenia | aplikacja |
 | `{DATA_KROTKA}` | `RRRR-MM-DD` | aplikacja |
@@ -405,9 +405,10 @@ zajęte, tak samo jak wycofany `E18`.
 ## 7. Wersjonowanie i migracje
 
 - Wersja protokołu jest **wyprowadzana** ze statusu tego pliku (pierwsza linia
-  nagłówka „Status") i porównywana przez test kontraktowy ze stopką aplikacji
-  (`index.html` → `#stopka-protokol`) oraz z `README.md`. Nie wpisuje się jej
-  ręcznie w trzech miejscach.
+  nagłówka „Status") i porównywana przez test kontraktowy z `WERSJA_PROTOKOLU`
+  w `app/protokol.js` oraz z `README.md`. Nie wpisuje się jej ręcznie w trzech
+  miejscach. Panel gracza jej nie pokazuje (właściciel 2026-09-15): gracz nie
+  ma co zrobić z numerem dokumentu, którego nie czyta.
 - Zmiana schematu paczki = podbicie wersji (`PYT/1.1`, `PYT/2.0`) + nowy ADR +
   migrator w `app/migracje.js` + test migracji na fixture'ach starej wersji.
   Paczka użytkownika w `localStorage` nie może przestać działać (ADR 0010 pkt 6).
