@@ -339,8 +339,15 @@ async function zmien(u, id) {
 function tekst(u, id) { przelaczNa(u); return u.dom.pobierz(id).textContent; }
 function el(u, id) { przelaczNa(u); return u.dom.pobierz(id); }
 
-/** Czeka (aktywnie, z timeoutem) na warunek — jak dojdzSymulacja, ale ogólnie. */
-async function czekajNa(u, warunek, opis, maksMs = 5000) {
+/**
+ * Czeka (aktywnie, z timeoutem) na warunek — jak dojdzSymulacja, ale ogólnie.
+ * Budżet 15 s, nie 5: pod pełną bramą (818 testów równolegle) ścieżka
+ * „paczka z repozytorium w propozycjach" (fetch + indeks) nie wyrabiała w 5 s
+ * i zapalała zieloną wcześniej bramę na losowo (pomiar 2026-09-15: ten sam plik
+ * w izolacji 23/23, w pełnej bramie raz fail). Timeout ma mierzyć POSTĘP, nie
+ * wydajność maszyny — a asert, który czeka dłużej, wciąż łapie realny brak.
+ */
+async function czekajNa(u, warunek, opis, maksMs = 15000) {
   const start = Date.now();
   while (!warunek()) {
     if (Date.now() - start > maksMs) throw new Error(`${opis} nie nastąpiło w ${maksMs} ms — status: ${tekst(u, 'status')}`);

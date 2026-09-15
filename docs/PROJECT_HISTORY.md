@@ -5834,6 +5834,12 @@ nawigacji), a `kontrakt` pilnuje, że `WERSJA_SW` = `?v=` aplikacji — podbicie
 samego SW rozerwałoby tę równość. Myślnik przy wyliczeniu postawiony długi („—”),
 bo taki jest typograficzny standard w aplikacji; poza tym treść 1:1.
 
+**Flaka bramy złapana przy tej okazji:** `czekajNa` w `test/wieloosobowa-ui.test.js`
+miało budżet 5 s i pod pełną bramą (818 testów równolegle) helpy wieloosobowe
+raz spaliły zieloną wcześniej bramę czasem, nie logiką — w izolacji plik daje
+23/23. Budżet poszedł na 15 s, bo timeout ma mierzyć postępy, nie wydajność
+maszyny (asert czekający dłużej wciąż łapie realny brak).
+
 **Czego nie zrobiono:** `git push` i aktualizacja opisu PR #30 — token GitHub w
 `sandbox`ie wygasł (`gh auth status`: „The github.com token in GH_TOKEN is no
 longer valid”); commity `a2df21b` i `15fc956` czekają na reconnect właściciela.
