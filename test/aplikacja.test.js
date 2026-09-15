@@ -92,6 +92,31 @@ test('F3 + uwaga A: w setupie ⚙ START GRY chowa warstwę jak oko i przywraca j
 });
 
 /**
+ * Usterka D1 (audyt PR #29, sesja 2026-09-15a): podgląd mapy jest trybem
+ * BIEŻĄCEGO ekranu, nie stanu strony. Dopóki przeżywał zmianę ekranu, każdy
+ * panel otwarty spoza tego ekranu — kartą „dane i prywatność" ze stopki albo
+ * przejściem, które przychodzi z kodu (start gry wieloosobowej u gościa:
+ * `pokazEkran('gra')`) — dziedziczył `body.podglad-mapy`, a to w CSS znaczy
+ * `visibility: hidden; pointer-events: none`. Gracz klikał i widział pustą
+ * mapę. Atrapa DOM nie modeluje kaskady (LESSONS L65), więc pin idzie na
+ * `inert` (JS) i na klasę na `body`, a nie na widoczność.
+ */
+test('D1: zmiana ekranu gasi podgląd mapy — karta ze stopki jest użyteczna, nie przygaszona', () => {
+  if (pobierz('ekran-setup').hidden) dom.kliknij('przycisk-setup');
+  dom.kliknij('przycisk-setup'); // uwaga A: w setupie ⚙ chowa warstwę jak oko
+  assert.equal(dom.document.body.classList.contains('podglad-mapy'), true, 'warunek wstępny: podgląd mapy włączony');
+  assert.equal(pobierz('ekran-setup').inert, true, 'warunek wstępny: warstwa setupu schowana podglądem');
+
+  dom.kliknij('przycisk-prywatnosc-stopka'); // stopka leży POZA panelami — stąd gracz woła prywatność
+  assert.equal(pobierz('ekran-prywatnosc').hidden, false, 'karta prywatności otwarta');
+  assert.equal(pobierz('ekran-prywatnosc').inert, false, 'karta nie jest zablokowana stanem podglądu');
+  assert.equal(dom.document.body.classList.contains('podglad-mapy'), false, 'zmiana ekranu gasi podgląd mapy');
+
+  dom.kliknij('przycisk-wrocz-prywatnosc');
+  assert.equal(pobierz('ekran-setup').hidden, false, 'powrót z prywatności zostawia setup — stan jak przed testem');
+});
+
+/**
  * Zgłoszenie właściciela B3: „Wróć na początek” dawało pustą stronę (sam
  * nagłówek i stopka). Mapa musi zostać widoczna — `data-ekran='mapa'` jest tym,
  * co CSS trzyma jako widoczny spód aplikacji.

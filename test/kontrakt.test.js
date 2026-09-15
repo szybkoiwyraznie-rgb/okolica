@@ -1695,6 +1695,17 @@ test('kontrakt ADR 0043: grę kończy ikona ⚙ START GRY z wpisaniem TAK (uwagi
   assert.match(APP, /ustaw\('przycisk-setup', EKRANY\.includes\(STAN\.ekran\) \|\| koniecOtwarty\);/,
     'otwarta warstwa też zapala ikonę (aria-pressed przełącznika)');
 
+
+  // 3b. Usterka D1 (audyt PR #29, 2026-09-15): podgląd mapy jest trybem
+  //     BIEŻĄCEGO ekranu — KAŻDY funkel zmiany ekranu go gasi, inaczej nowy
+  //     panel dziedziczy `body.podglad-mapy` (`visibility: hidden` + `inert`)
+  //     i gracz patrzy na pustą mapę (karta ze stopki, start multi u gościa).
+  for (const funkel of ['pokazEkran', 'pokazMapeStartowa', 'pokazPrywatnosc']) {
+    const cialo = APP.match(new RegExp(`function ${funkel}\\([^)]*\\) \\{[\\s\\S]*?\\n\\}`));
+    assert.ok(cialo, `funkel zmiany ekranu istnieje: ${funkel}()`);
+    assert.ok(cialo[0].includes('STAN.podgladMapy = false;'),
+      `${funkel}() gasi podgląd mapy — bez tego nowy ekran jest przygaszony (D1)`);
+  }
   // 4. Przycisk odblokowuje DOPIERO wpisane TAK — bez względu na wielkość liter.
   assert.match(APP, /const wpis = String\(\$\('koniec-gry-potwierdzenie'\)\.value \?\? ''\)\.trim\(\)\.toLowerCase\(\);\n {2}\$\('przycisk-koniec-gry'\)\.disabled = wpis !== 'tak';/,
     '„TAK", „tak", „ Tak " odblokowują; cokolwiek innego nie');

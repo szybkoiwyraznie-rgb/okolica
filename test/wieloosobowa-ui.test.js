@@ -910,6 +910,41 @@ test('uwaga F: po starcie gry sygnał i odliczanie 5-4-3-2-1-START u hosta i u g
   }
 });
 
+/**
+ * Usterka D1 (audyt PR #29, sesja 2026-09-15a): podgląd mapy był trybem, który
+ * przeżywał zmianę ekranu. W lobby ⚙ START GRY chowa warstwę jak oko (uwaga A,
+ * aneks ADR 0043), a start gry przychodzi do gościa z pollingu — `pokazEkran('gra')`.
+ * Bez zgaszenia podglądu panel gry odziedziczyłby `body.podglad-mapy`
+ * (`visibility: hidden`, `inert`) i gość patrzyłby na pustą mapę w trakcie gry.
+ * Test idzie CAŁĄ ścieżką (L36: bez skrótu), więc łapie też stan oka i przygaszenie.
+ */
+test('D1: gość patrzący w lobby na mapę wchodzi w grę widoczną, nie przygaszoną', async () => {
+  const most = atrapaMostu();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: new Map(), most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+
+  // Bartek czeka w lobby i zerka na mapę — ⚙ zachowuje się jak oko (uwaga A)
+  await klik(B, 'przycisk-setup');
+  assert.equal(el(B, 'ekran-multi').inert, true, 'wojownik: podgląd w lobby chowa warstwę');
+  assert.equal(B.dom.document.body.classList.contains('podglad-mapy'), true, 'podgląd włączony');
+
+  // Ala startuje; Bartek dowiaduje się o tym z pollingu, bez jednego kliknięcia
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+  await czekajNa(B, () => el(B, 'ekran-multi').hidden === true, 'B: przeszedł z lobby na grę');
+
+  assert.equal(el(B, 'ekran-gra').hidden, false, 'gra otwarta u gościa');
+  assert.equal(el(B, 'ekran-gra').inert, false, 'panel gry nie jest zablokowany stanem podglądu');
+  assert.equal(B.dom.document.body.classList.contains('podglad-mapy'), false, 'start gry gasi podgląd mapy');
+  assert.equal(el(B, 'przycisk-podejrzyj-mape').getAttribute('aria-pressed'), 'false', 'oko mówi „Podejrzyj mapę”, nie „Wróć do panelu”');
+  assert.match(tekst(B, 'gra-postep'), /stacja 1 z 3/, 'gra pod ręką jest prawdziwa, nie pusta');
+});
 test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) → wklejenie → LOBBY', async () => {
   const most = atrapaMostu();
   // konfig zgodny z fixturem paczka-ok.json (3 stacje × 1 pytanie, tematy z paczki)
