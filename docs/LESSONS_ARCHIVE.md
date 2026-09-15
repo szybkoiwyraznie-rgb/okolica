@@ -1616,3 +1616,24 @@ BIEŻĄCY ekran, musi gasić KAŻDA funkcja zmiany ekranu, a nie tylko klikalny
 przełącznik
 — o zmianie ekranu decyduje też kod bez palca. Atrapa nie liczy kaskady, więc
 pinuj `inert` + klasę na `body`, a widoczność mierz w przeglądarce.
+
+## L73
+
+**Data:** 2026-09-15. **Miejsce:** `docs/setup/apps-script-repo-paczek.gs` (`przyjmijKandydata`), `test/helpers/most.js`.
+
+**Objaw (zgłoszenie właściciela z terenu):** organizator wystartował grę, wygenerował pytania, wszedł w grę — a w katalogu „okolica-paczki-zaakceptowane" na Drive nie pojawił się żaden nowy plik. Właściciel podejrzewał zmianę konwencji nazwy pliku (ADR 0048).
+
+**Dochodzenie:**
+
+1. `git diff fa8d9d8..1c0e7d7` — PR #31 wcale nie dotykał mostu; zmiana nazwy to PR #30 (`fa8d9d8`).
+2. `git diff 9aed8be..fa8d9d8 -- docs/setup/apps-script-repo-paczek.gs` — stara wersja szukała pliku pętlą `while (it.hasNext())`, nowa: `katalog.getFilesByName(nazwa).next() || katalog2.getFilesByName(nazwa).next()`.
+3. Dokumentacja Drive (`FileIterator`): *„next() — Gets the next item in the collection of files or folders. Throws an exception if no items remain in this collection."* Czyli dla NOWEJ nazwy (brak pliku = pusty iterator) rzucany jest wyjątek, a nie zwracany `null`.
+4. Skutek: wyjątek wychodzi z `przyjmijKandydata` do `catch` w `doPost`, który odpowiada `{ ok:false, blad }`. Aplikacja (`wyslijZestawNaDrive`) pokazuje „Paczka przyjęta, ale Drive odrzucił wysyłkę: …" i gra toczy się dalej — dlatego usterka wyglądała jak „Drive odrzuca paczkę", a nie jak awaria mostu.
+5. Dlaczego brama była zielona: atrapa `iterator()` w `test/helpers/most.js` kończyła się `return { next: () => undefined }` — łagodniej niż prawdziwy Drive. Testy ADR 0048 (`test/most-indeks.test.js`) sprawdzały nazwę przez `idPoNazwie(pliki, nazwa)`, więc nie przechodziły przez ścieżkę `przyjmijKandydata` z pustym iteratorem.
+
+**Naprawa:** helper `pierwszyPlikNazwa(katalog, nazwa)` = `it.hasNext() ? it.next() : null`, użyty w obu wyszukiwaniach i w sprawdzeniu katalogu odrzuconych; atrapa rzuca `No next element` po wyczerpaniu.
+
+**Test:** `node --test test/most-indeks.test.js` — z ciałem PR #30 przywróconym na próbę: 10 z 18 czerwonych; z naprawą 18/18. Pełna brama 828/828.
+
+**Reguła:** atrapa obcego API odtwarza także ścieżki błędu. Łagodna atrapa zamienia kontrakt platformy („rzuca") w pozorny „zwraca pusto" i brama tego nie widzi. Przy okazji: przegląd diff-a, który nie konfrontuje wywołań API z jego udokumentowaną semantyką, przepuszcza całą tę klasę usterek — dwa poprzednie audyty (PR #30 i #31) uznały most za czysty.
+

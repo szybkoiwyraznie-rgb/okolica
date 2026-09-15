@@ -567,6 +567,22 @@ function nazwaPaczkiZMeta(meta, liczbaPytan) {
   return czesci.filter((c) => c !== '' && c !== null && c !== undefined && c !== 'NaN').join('_') + '.zestaw.json';
 }
 
+/**
+ * Pierwszy plik o tej nazwie w katalogu albo `null`.
+ *
+ * `FileIterator.next()` w Apps Script RZUCA wyjątek, gdy kolekcja jest pusta
+ * („Throws an exception if no items remain in this collection"), a nie zwraca
+ * `null` — niepilnowane `.next()` przy NOWEJ nazwie (czyli w zwykłym przypadku:
+ * paczka jeszcze nie leży na Drive) przerywało `przyjmijKandydata`, a `doPost`
+ * zamieniało wyjątek na `{ ok:false, blad }` i plik w ogóle nie powstawał
+ * (zgłoszenie właściciela 2026-09-15). Każde `.next()` w tym skrypcie musi być
+ * poprzedzone `hasNext()`.
+ */
+function pierwszyPlikNazwa(katalog, nazwa) {
+  const it = katalog.getFilesByName(nazwa);
+  return it.hasNext() ? it.next() : null;
+}
+
 /** Skrót zawartości istniejącego pliku — rozstrzyga, czy nazwa trafiła w TĘ SAMĄ paczkę. */
 function skrotIstniejacegoPliku(plik) {
   try {
@@ -589,8 +605,8 @@ function przyjmijKandydata(plik) {
   const bazowa = nazwaPaczkiZMeta(plik.meta, paczka && Array.isArray(paczka.pytania) ? paczka.pytania.length : null);
   for (let licznik = 1; licznik <= 12; licznik++) {
     const nazwa = licznik === 1 ? bazowa : bazowa.replace(/\.zestaw\.json$/, '-' + licznik + '.zestaw.json');
-    const trafiony = folder(FOLDERY.zaakceptowane).getFilesByName(nazwa).next()
-      || folder(FOLDERY.odrzucone).getFilesByName(nazwa).next();
+    const trafiony = pierwszyPlikNazwa(folder(FOLDERY.zaakceptowane), nazwa)
+      || pierwszyPlikNazwa(folder(FOLDERY.odrzucone), nazwa);
     if (!trafiony) {
       const utworzony = folder(FOLDERY.zaakceptowane).createFile(nazwa, JSON.stringify(plik, null, 2), 'application/json');
       return { ok: true, status: 'zaakceptowana', nazwa, id: utworzony.getId() };
@@ -600,7 +616,7 @@ function przyjmijKandydata(plik) {
     // telefon, który gra tą paczką, musi znać jej identyfikator, żeby dało się
     // ją ocenić (ADR 0028, aneks 2026-09-09). W odrzuconych odrzucenie
     // obowiązuje — nowy plik nie powstaje (ręczna decyzja właściciela).
-    const odrzucona = !folder(FOLDERY.zaakceptowane).getFilesByName(nazwa).hasNext();
+    const odrzucona = pierwszyPlikNazwa(folder(FOLDERY.zaakceptowane), nazwa) === null;
     return { ok: true, status: odrzucona ? 'juz-w-odrzuconych' : 'juz-zaakceptowana', nazwa, id: trafiony.getId() };
   }
   return { ok: false, blad: 'brak wolnej nazwy pliku — ponad dwanaście paczek z tego samego miejsca w tej samej minucie?' };

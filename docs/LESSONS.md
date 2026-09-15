@@ -590,3 +590,10 @@ Pełny przypadek, pomiary i testy: `docs/LESSONS_ARCHIVE.md` → `## L71`.
 **Reguła:** każdy stan opisujący, jak wyświetlony jest BIEŻĄCY ekran (podgląd mapy, pasek drogi, otwarta warstwa), musi gasić KAŻDA funkcja zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`), a nie tylko klikalny przełącznik — bo o zmianie ekranu decyduje też kod bez udziału palca. Atrapa DOM nie liczy kaskady (L65), więc pin idzie na `inert` i klasę na `body`, a samą widoczność mierzy się w przeglądarce (ENVIRONMENT §4.1).
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L72`.
+## L73 (2026-09-15) — atrapa musi rzucać tak jak platforma, której udaje API
+
+**Objaw:** paczka wygenerowana z AI nie lądowała na Drive w katalogu zaakceptowanych; organizator widział „Paczka przyjęta, ale Drive odrzucił wysyłkę" — przy 826 zielonych testach.
+**Przyczyna:** `przyjmijKandydata` szukał pliku przez `getFilesByName(nazwa).next()` bez `hasNext()` (PR #30, ADR 0048). Apps Script na pustej kolekcji RZUCA, a atrapa w `test/helpers/most.js` oddawała `undefined` — kontrakt platformy był w testach łagodniejszy niż w rzeczywistości, więc wyjątek wyglądał jak „brak pliku".
+**Reguła:** atrapa obcego API ma odtwarzać także ścieżki błędu (wyjątek, `null` vs `undefined`, pusta kolekcja) — test, który przechodzi na łagodnej atrapie, nie chroni kodu. Przy zmianie sposobu wyszukiwania pliku: `hasNext()` przed `next()`, a w atrapie `next()` rzuca.
+
+Pełny przypadek, ślad dochodzenia i testy: `docs/LESSONS_ARCHIVE.md` → `## L73`.

@@ -16,9 +16,30 @@ export const GS = readFileSync(join(ROOT, 'docs/setup/apps-script-repo-paczek.gs
 
 /* ------------------------------------------------------------------ atrapa */
 
+/**
+ * Iterator jak w Apps Script: `hasNext()` mówi, czy `next()` coś odda, a `next()`
+ * na PUSTEJ kolekcji RZUCA wyjątek — dokładnie jak `FileIterator`/`FolderIterator`
+ * (dokumentacja Drive: „Throws an exception if no items remain in this
+collection"). Atrapa, która zwraca `undefined`, pozwala niepilnowanemu
+ * `.next()` przejść w testach i paść w terenie (zgłoszenie właściciela
+ * 2026-09-15: paczka nie lądowała na Drive).
+ */
+export function iteratorAtrapyDrive(tab) {
+  return iterator(tab);
+}
+
 function iterator(tab) {
   let i = 0;
-  return { hasNext: () => i < tab.length, next: () => tab[i++] };
+  return {
+    hasNext: () => i < tab.length,
+    // Apps Script: „next() throws an exception if no items remain in this
+    // collection" — atrapa musi rzucać jak platforma, inaczej niepilnowane
+    // `.next()` w moście przechodzi w testach i pada w terenie (LESSONS L73).
+    next: () => {
+      if (i >= tab.length) throw new Error('No next element (Apps Script: pusty iterator)');
+      return tab[i++];
+    },
+  };
 }
 
 /** Nazwy funkcji zadeklarowane w tekście skryptu (kolejność jak w pliku). */

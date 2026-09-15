@@ -22,3 +22,20 @@
    aplikacji cytuje nazwę pliku — po niej właściciel szuka paczki na Drive.
 4. Strażnicy: `test/most-indeks.test.js` (atrapa Drive), `test/zestawy.test.js`,
    `test/kontrakt.test.js`.
+
+## Aneks 2026-09-15 — sprawdzenie istnienia pliku idzie przez `hasNext()`
+
+Pierwsza wersja (PR #30) szukała pliku po nazwie przez
+`katalog.getFilesByName(nazwa).next() || …`. W Apps Script `FileIterator.next()`
+na PUSTEJ kolekcji **rzuca wyjątek**, a nie oddaje `null` — więc dla każdej
+nowej nazwy, czyli zwykłego przypadku, `przyjmijKandydata` przerywał się
+wyjątkiem, `doPost` odpowiadał `{ ok:false, blad }` i paczka nie lądowała na
+Drive (zgłoszenie właściciela 2026-09-15). Atrapa Drive w `test/helpers/most.js`
+zwracała `undefined` zamiast rzucać, więc brama była zielona przy zepsutym
+kontrakcie.
+
+Od teraz: wspólne `pierwszyPlikNazwa(katalog, nazwa)` =
+`it.hasNext() ? it.next() : null`, a atrapa iteratora rzuca tak jak prawdziwy
+Drive. Reguła: sprawdzenie istnienia pliku NIGDY nie polega na `next()` bez
+`hasNext()`. Pełny opis: `docs/LESSONS_ARCHIVE.md` → `## L73`.
+
