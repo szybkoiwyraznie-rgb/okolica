@@ -144,7 +144,7 @@ w tym miejscu setupu w którym jesteśmy".
    stanowi `STAN.podgladMapy` drugie wejście (ikona w belce), a stan nie gasł
    przy zmianie ekranu — panel odziedziczał `body.podglad-mapy`, czyli
    `visibility: hidden` + `inert`. **Niezmiennik tej decyzji:** podgląd mapy
-   jest trybem BIEŻĄCEGO ekranu i KAŻDY funkel zmiany ekranu go gasi
+   jest trybem BIEŻĄCEGO ekranu i gasi go KAŻDA funkcja zmiany ekranu
    (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`); `STAN.ekran` zostaje
    nietknięty, bo nim wracamy z prywatności. Przypadek i testy: `docs/LESSONS.md`
    L72; pin 3b w kontrakcie ADR 0043.

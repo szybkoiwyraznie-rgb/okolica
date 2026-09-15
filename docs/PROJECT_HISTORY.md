@@ -5683,11 +5683,11 @@ gry rodził się z `visibility: hidden` i `inert`; ⚙ w trakcie gry otwiera war
 końca gry, więc jedynym powrotem było oko w stopce. (2) Przy włączonym podglądzie
 „dane i prywatność" ze stopki otwierało kartę, której nie było widać.
 **Przyczyna:** `STAN.podgladMapy` gasiły tylko otwieracze warstw (wzorzec L61:
-`przelaczInformacje`, `przelaczRankingi`, `otworzKoniecGry`), a funkle zmiany
+`przelaczInformacje`, `przelaczRankingi`, `otworzKoniecGry`), a funkcje zmiany
 ekranu nie — bo ich autor zakładał, że do zmiany ekranu dochodzi kliknięciem
 w panelu, którego w podglądzie nie da się nacisnąć. Założenie pęka, gdy ekran
 zmienia kod bez udziału palca.
-**Naprawa u przyczyny:** `STAN.podgladMapy = false` w każdym z trzech funklów
+**Naprawa u przyczyny:** `STAN.podgladMapy = false` w każdej z trzech funkcji
 zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`); bez
 wyjątków na `gra`, bez `try`/`catch`. `STAN.ekran` w `pokazPrywatnosc` zostaje
 nietknięty, bo nim wracamy.
@@ -5696,7 +5696,7 @@ zgaszona) i pełna ścieżka multi w `test/wieloosobowa-ui.test.js` (lobby +
 podgląd + start z pollingu ⇒ `#ekran-gra` nieinercyjny, oko mówi „Podejrzyj
 mapę", `gra-postep` = „stacja 1 z 3"); zęby sprawdzone stashem naprawy —
 bez fixu testmulti pada na `true !== false`. Pin 3b w kontrakcie ADR 0043
-żąda `STAN.podgladMapy = false` w ciele każdego z trzech funklów (wycinki kodu
+żąda `STAN.podgladMapy = false` w ciele każdej z trzech funkcji (wycinki kodu
 bez komentarzy, L17).
 **Pomiar na żywo (L65: atrapa DOM nie liczy kaskady):** headless Chromium 153,
 390×844, `?tryb=test`, obok pracującego podglądu Areny na `0.0.0.0:8000`; drzewo

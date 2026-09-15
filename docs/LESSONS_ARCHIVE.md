@@ -1588,8 +1588,8 @@ ekran rodził się już schowany. Z `EKRANY_SETUPU` (m12-124) do tego stanu dosz
 drugie, znacznie bardzie dostępne wejście (ikona w belce, świecąca przez cały
 setup), i defekt przestał być teoretyczny.
 
-**Naprawa (m12-125, u root cause, bez maskowania).** Gasi każdy funkel zmiany
-ekranu:
+**Naprawa (m12-125, u root cause, bez maskowania).** Stan gaszą WSZYSTKIE
+funkcje zmiany ekranu:
 `STAN.podgladMapy = false;` w `pokazEkran()`, w `pokazMapeStartowa()` (mapa
 startowa nie ma warstwy, do której podgląd wraca) i w `pokazPrywatnosc()`
 (tam `STAN.ekran` zostaje nietknięty, bo nim wracamy). Żadnego `try`/`catch`,
@@ -1603,16 +1603,16 @@ widoku starego ekranu.
   skrótem): lobby gościa + podgląd + start organizatora z pollingu ⇒
   `#ekran-gra` nieinercyjny, oko „Podejrzyj mapę", `gra-postep` = „stacja 1 z 3".
   Zęby sprawdzone stashem fixu: bez naprawy pada na `true !== false`.
-- `test/kontrakt.test.js` — pin 3b w kontrakcie ADR 0043: KAŻDY z trzech
-  funklów ma w ciele `STAN.podgladMapy = false;` (wycięty komentarz, ciało
-  funkcji wycięte wzorcem do `
-\}`).
+- `test/kontrakt.test.js` — pin 3b w kontrakcie ADR 0043: KAŻDA z trzech
+  funkcji ma w ciele `STAN.podgladMapy = false;` (wycięty komentarz, ciało
+  funkcji wycięte wzorcem do `\n\}`).
 - Pomiar w headless Chromium (ENVIRONMENT §4.1, 390×844): PRZED —
   `visibility: hidden`, `inert: true`, `elementFromPoint` nie trafia w kartę;
   PO — `visibility: visible`, `inert: false`, palec trafia. Bez tego pomiaru
   nie mielibyśmy dowodu, bo atrapa DOM nie liczy kaskady (L65).
 
 **Reguła (skrót dla rejestru).** Każdy stan opisujący, jak wyświetlony jest
-BIEŻĄCY ekran, gasi KAŻDY funkel zmiany ekranu, nie tylko klikalny przełącznik
+BIEŻĄCY ekran, musi gasić KAŻDA funkcja zmiany ekranu, a nie tylko klikalny
+przełącznik
 — o zmianie ekranu decyduje też kod bez palca. Atrapa nie liczy kaskady, więc
 pinuj `inert` + klasę na `body`, a widoczność mierz w przeglądarce.

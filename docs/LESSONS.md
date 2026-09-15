@@ -587,6 +587,6 @@ Pełny przypadek, pomiary i testy: `docs/LESSONS_ARCHIVE.md` → `## L71`.
 
 **Objaw:** gość, który w lobby zajrzał na mapę (⚙ START GRY chowa warstwę jak oko — uwaga A), wszedł w grę NIEWIDOCZNĄ, a „dane i prywatność" ze stopki otwierało kartę, której nie było widać — przy zielonej bramie.
 **Przyczyna:** `STAN.podgladMapy` przeżywał zmianę ekranu, a `body.podglad-mapy` w CSS znaczy `visibility: hidden; pointer-events: none` na każdej `.panel-centralny`; stan gasiły tylko otwieracze warstw (klik), a przejścia, które przychodzą z kodu (start gry multi z pollingu), sprzątać go nie musiały.
-**Reguła:** każdy stan opisujący, jak wyświetlony jest BIEŻĄCY ekran (podgląd mapy, pasek drogi, otwarta warstwa), gasi KAŻDY funkel zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`), nie tylko klikalny przełącznik — bo o zmianie ekranu decyduje też kod bez udziału palca. Atrapa DOM nie liczy kaskady (L65), więc pin idzie na `inert` i klasę na `body`, a samą widoczność mierzy się w przeglądarce (ENVIRONMENT §4.1).
+**Reguła:** każdy stan opisujący, jak wyświetlony jest BIEŻĄCY ekran (podgląd mapy, pasek drogi, otwarta warstwa), musi gasić KAŻDA funkcja zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`), a nie tylko klikalny przełącznik — bo o zmianie ekranu decyduje też kod bez udziału palca. Atrapa DOM nie liczy kaskady (L65), więc pin idzie na `inert` i klasę na `body`, a samą widoczność mierzy się w przeglądarce (ENVIRONMENT §4.1).
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L72`.
