@@ -5632,7 +5632,16 @@ Sesja otwarta „Kontynuujemy projekt", bez nowej uwagi z terenu. Lektura
 startowa (AGENTS §0): AGENTS, `PROTOKOL` §1–2 z oboma szablonami promptu, rejestr
 ADR + ADR 0043/0046/0047 w całości, `LESSONS` L1–L71 w całości (rejestr +
 reguły), `ENVIRONMENT`, `ROADMAP`, najnowszy handoff (2026-09-14h). Budżet na
-wejściu: 99 521/100 000 (rezerwa 479). Brama na wejściu: **813/813** zielonych
+wejściu: 99 521/100 000 (rezerwa 479).
+
+**Czego NIE czytałem w całości — zapisane wprost, żeby następna sesja nie brała
+tego za fakt (§1: nie ukrywaj sprzeczności):** ADR-ów 0001–0042. Szedłem po
+rejestrze (tytuł + status + aneksy w jednym wierszu) i grepem po tematach audytu
+(0005, 0011, 0019, 0020, 0024, 0025, 0043, do tego archiwum aneksów 0005 i 0019
+oraz L62/L66 jako reguły porządkowe). Budżet §0 (45 ADR-ów to ~65 tys. z 100 tys.
+tokenów) nie pozwala w jednej sesji przeczytać wszystkich 46 w całości I zrobić
+roboty; przy tej rezerwie (479 → dziś 308) każdy kolejny odczyt ADR-ów to
+osobna sesja albo archiwizacja. Brama na wejściu: **813/813** zielonych
 przed jakąkolwiek zmianą. PR sesji otwarty PRZED kodowaniem (ADR 0012 reg. 1):
 #30, pierwszy commit porządkowy `1d9dddb`.
 
