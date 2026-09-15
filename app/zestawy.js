@@ -8,21 +8,20 @@
  * wstrzykuje warstwa DOM (`app/app.js`, M9/R3 i R6), dzięki czemu całość
  * testuje się bez przeglądarki (LESSONS: czysta funkcja + atrapa).
  *
- * Schematy:
- * - `TO-zestaw-lokalny/1` — wpis w `localStorage`: stacje + kontener
- *   TO-paczka/2 + metadane dopasowania (geohash5, promienM, tematy, wiek);
- * - `TO-zestaw/1` — plik publiczny: meta (w tym licencja i przegląd źródeł)
- *   + jawne stacje + kontener TO-paczka/2 (ADR 0017 pkt 1);
+ * Schematy (2026-09-15: koniec ukrywania paczek — ADR 0050):
+ * - `TO-zestaw-lokalny/2` — wpis w `localStorage`: stacje + JAWNA paczka pytań
+ *   + metadane dopasowania (geohash5, promienM, tematy, wiek);
+ * - `TO-zestaw/2` — plik publiczny: meta (w tym licencja i przegląd źródeł)
+ *   + jawne stacje + jawna paczka (ADR 0017 pkt 1; pytania czytelne na Drive);
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-136';
-import { kanonicznyTemat } from './konfig.js?v=m12-136';
-import { SCHEMAT_KONTENERA } from './kodowanie.js?v=m12-136';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-136';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-140';
+import { kanonicznyTemat } from './konfig.js?v=m12-140';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-140';
 
-export const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
-export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/1';
+export const SCHEMAT_ZESTAWU = 'TO-zestaw/2';
+export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/2';
 export const SCHEMAT_INDEKSU = 'TO-indeks/1';
 
 export const KLUCZ_REJESTRU = 'okolica:zestawy';
@@ -37,7 +36,7 @@ export const KODY_ZESTAWOW = {
   Z01: 'To nie jest poprawny JSON zestawu.',
   Z02: `Zapis ma inny schemat niż „${SCHEMAT_LOKALNY}” — pochodzi z innej wersji aplikacji.`,
   Z03: 'Zestaw lokalny nie ma listy stacji ({id, lat, lon}) — nie da się odtworzyć trasy.',
-  Z04: `Ukryta paczka zestawu jest uszkodzona (oczekiwano kontenera ${SCHEMAT_KONTENERA}).`,
+  Z04: 'Paczka zestawu jest uszkodzona albo pusta (brak listy pytań) — plik do odrzucenia.',
   Z05: 'Metadane dopasowania zestawu są niekompletne (geohash5, promienM, tematy, wiek).',
   Z06: 'Rejestr zestawów ma inny schemat niż oczekiwany — zaczynamy pustą listę.',
   Z07: `Plik publiczny ma inny schemat niż „${SCHEMAT_ZESTAWU}”.`,
@@ -67,10 +66,26 @@ function czyStacjaOk(s) {
     && Number.isFinite(s.lon) && Math.abs(s.lon) <= 180;
 }
 
-function czyKontenerOk(k) {
-  return !!k && typeof k === 'object' && k.schemat === SCHEMAT_KONTENERA
-    && typeof k.dane === 'string' && k.dane.length > 0
-    && typeof k.skrot === 'string' && k.skrot.length > 0;
+/**
+ * Minimalny kształt paczki w zestawie: obiekt z niepustą listą pytań. Pełną
+ * walidację (kody E**) robi `walidujPaczke` — tutaj tylko odsiewamy śmieci,
+ * zanim paczka trafi do gry (ADR 0017 pkt 4).
+ */
+function czyPaczkaOk(p) {
+  return !!p && typeof p === 'object' && !Array.isArray(p)
+    && Array.isArray(p.pytania) && p.pytania.length > 0
+    && !!p.okolica && typeof p.okolica === 'object';
+}
+
+/** Odcisk treści paczki (FNV-1a 32 z bajtów JSON) — klucz wpisu i id na Drive. */
+export function skrotPaczki(paczka) {
+  const bajty = new TextEncoder().encode(JSON.stringify(paczka ?? null));
+  let h = 0x811c9dc5;
+  for (const b of bajty) {
+    h ^= b;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, '0');
 }
 
 function czyMetaDopasowaniaOk(m) {
@@ -106,7 +121,7 @@ export function walidujZestawLokalnySurowy(tekst) {
   if (!Array.isArray(surowy.stacje) || surowy.stacje.length === 0 || !surowy.stacje.every(czyStacjaOk)) {
     usterki.push(usterka('Z03'));
   }
-  if (!czyKontenerOk(surowy.kontener)) usterki.push(usterka('Z04'));
+  if (!czyPaczkaOk(surowy.paczka)) usterki.push(usterka('Z04'));
   if (!czyMetaDopasowaniaOk(surowy)) usterki.push(usterka('Z05'));
   return { zestaw: usterki.length ? null : surowy, usterki };
 }
@@ -288,7 +303,7 @@ export function dopasujZestawy(rejestr, { geohash5, lat, lon, promienM, liczbaSt
 }
 
 /**
- * Walidacja surowego tekstu pliku publicznego TO-zestaw/1: `{ zestaw, usterki }`.
+ * Walidacja surowego tekstu pliku publicznego TO-zestaw/2: `{ zestaw, usterki }`.
  * Meta musi nieść licencję i przegląd źródeł (ADR 0017 pkt 4) — bez nich plik
  * nie jest paczką publiczną, tylko śmieciem do odrzucenia z komunikatem.
  */
@@ -319,7 +334,7 @@ export function walidujZestawPublicznySurowy(tekst) {
   if (!Array.isArray(surowy.stacje) || surowy.stacje.length === 0 || !surowy.stacje.every(czyStacjaOk)) {
     usterki.push(usterka('Z08'));
   }
-  if (!czyKontenerOk(surowy.kontener)) usterki.push(usterka('Z04'));
+  if (!czyPaczkaOk(surowy.paczka)) usterki.push(usterka('Z04'));
   return { zestaw: usterki.length ? null : surowy, usterki };
 }
 
@@ -455,16 +470,16 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
 }
 
 /**
- * Plik publiczny TO-zestaw/1: meta + jawne stacje + kontener (ADR 0017 pkt 1).
+ * Plik publiczny TO-zestaw/2: meta + jawne stacje + jawna paczka pytań (ADR 0017 pkt 1).
  * `przegladZrodel` mówi „oczekuje przeglądu" — źródła przy każdym pytaniu
  * (ADR 0008 pkt 5) może przejrzeć każdy (właściciel na Drive albo gracz),
  * a o jakości paczki rozstrzygają łapki (ADR 0028; sesja przeglądu
  * właściciela zniesiona 2026-09-11).
  */
-export function zbudujPlikZestawu({ stacje, kontener, meta, autor = 'organizator' } = {}) {
+export function zbudujPlikZestawu({ stacje, paczka, meta, autor = 'organizator' } = {}) {
   wymaganie(Array.isArray(stacje) && stacje.length > 0 && stacje.every(czyStacjaOk),
     'zbudujPlikZestawu: stacje muszą być niepustą listą punktów {lat, lon}');
-  wymaganie(czyKontenerOk(kontener), `zbudujPlikZestawu: kontener musi być ${SCHEMAT_KONTENERA}`);
+  wymaganie(czyPaczkaOk(paczka), 'zbudujPlikZestawu: paczka musi nieść niepustą listę pytań');
   wymaganie(czyMetaDopasowaniaOk(meta) && typeof meta.miejsce === 'string',
     'zbudujPlikZestawu: meta musi być kompletna (zbierzMetaZestawu)');
   return {
@@ -477,6 +492,7 @@ export function zbudujPlikZestawu({ stacje, kontener, meta, autor = 'organizator
       przegladZrodel: 'oczekuje przeglądu — jakość rozstrzygają łapki graczy (ADR 0008 pkt 5, ADR 0028)',
     },
     stacje: stacje.map((s) => ({ lat: s.lat, lon: s.lon, opis: typeof s.opis === 'string' ? s.opis : '' })),
-    kontener,
+    // Jawna paczka (ADR 0050): plik na Drive ma być czytelny — bez obfuskacji.
+    paczka,
   };
 }

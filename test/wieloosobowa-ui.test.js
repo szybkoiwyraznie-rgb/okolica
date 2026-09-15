@@ -27,9 +27,8 @@ import assert from 'node:assert/strict';
 import { readFileSync as czytajPlik } from 'node:fs';
 
 import { zainstalujDom } from './helpers/dom.js';
-import { WERSJA_PROTOKOLU, WERSJA_PROTOKOLU_REV3 } from '../app/protokol.js';
-import { zapakujPaczke } from '../app/kodowanie.js';
-import { zbierzMetaZestawu, zbudujPlikZestawu } from '../app/zestawy.js';
+import { WERSJA_PROTOKOLU } from '../app/protokol.js';
+import { skrotPaczki, zbierzMetaZestawu, zbudujPlikZestawu } from '../app/zestawy.js';
 import { czyKompletna, generujKod, przeliczWyniki, zbudujZdarzenie } from '../app/wieloosobowa.js';
 import { SCHEMAT_SIECI, kluczCacheSieci, parsujOdpowiedz, upraszczajDaneDoCache } from '../app/sieci.js';
 import { promienZCzasuGry } from '../app/konfig.js';
@@ -154,8 +153,8 @@ function atrapaMostu() {
       return { ok: false, blad: 'trasaSekret musi być true/false' };
     }
     const z = dane.zestaw ?? {};
-    if (!Array.isArray(z.stacje) || !z.stacje.length || z.kontener?.schemat !== 'TO-paczka/2' || !z.meta) {
-      return { ok: false, blad: 'zestaw gry wymaga stacji, kontenera TO-paczka/2 i metadanych' };
+    if (!Array.isArray(z.stacje) || !z.stacje.length || !z.paczka?.pytania?.length || !z.meta) {
+      return { ok: false, blad: 'zestaw gry wymaga stacji, jawnej paczki pytań i metadanych' };
     }
     if (z.stacje.length !== k.liczbaStacji) return { ok: false, blad: 'liczba stacji zestawu nie zgadza się z konfiguracją' };
     const teraz = new Date().toISOString();
@@ -164,7 +163,7 @@ function atrapaMostu() {
       trasaSekret: dane.trasaSekret === true,
       stan: 'lobby', utworzono: teraz, organizatorId: 'g-1',
       gracze: [{ id: 'g-1', pseudonim, dolaczyl: teraz }],
-      konfiguracja: k, zestaw: { stacje: z.stacje, kontener: z.kontener, meta: z.meta },
+      konfiguracja: k, zestaw: { stacje: z.stacje, paczka: z.paczka, meta: z.meta },
       zdarzenia: [], wyniki: {},
     };
     gry.set(gra.idGry, gra);
@@ -412,13 +411,12 @@ function stacjeTestowe(ile) {
 
 function paczkaTestowa(stacje, pytaniaNaStacje = 1, { factcheck = true } = {}) {
   return {
-    protokol: factcheck ? WERSJA_PROTOKOLU : WERSJA_PROTOKOLU_REV3,
     okolica: { lat: stacje[0].lat, lon: stacje[0].lon, promienM: 1000, miejsce: 'Podkowa Leśna' },
     wiek: 'dorosli', tematy: ['historia'], jezyk: 'polski', utworzono: '2026-09-06 10:00',
     pytania: stacje.flatMap((s) => Array.from({ length: pytaniaNaStacje }, (_, k) => ({
       id: `s${s.id}p${k + 1}`, stacja: s.id, temat: 'historia',
       tresc: `Co wydarzyło się przy stacji ${s.id}? (wariant ${k + 1})`,
-      odpowiedzi: ['to', 'tamto', 'owo', 'nic'], poprawna: 0,
+      odpowiedzi: ['to', 'tamto', 'owo', 'nic'], poprawna: 1, // numer odpowiedzi 1..4 (ADR 0050)
       wyjasnienie: 'Bo tak wynika ze źródeł.',
       zrodla: [{ url: 'https://pl.wikipedia.org/wiki/Podkowa_Le%C5%9Bna', tytul: 'Podkowa Leśna — Wikipedia', sprawdzono: '2026-09-06' }],
       punkty: 20,
@@ -429,7 +427,7 @@ function paczkaTestowa(stacje, pytaniaNaStacje = 1, { factcheck = true } = {}) {
 /** Paczka w repozytorium mostu (indeks + plik) — organizator bierze ją z listy (I.b). */
 function zasiejZestaw(most, ileStacji, pytaniaNaStacje = 1, { factcheck = true } = {}) {
   const stacje = stacjeTestowe(ileStacji);
-  const kontener = zapakujPaczke(paczkaTestowa(stacje, pytaniaNaStacje, { factcheck }), factcheck ? WERSJA_PROTOKOLU : WERSJA_PROTOKOLU_REV3);
+  const paczka = paczkaTestowa(stacje, pytaniaNaStacje, { factcheck });
   const meta = zbierzMetaZestawu({
     lat: PODKOWA.lat, lon: PODKOWA.lon,
     // ADR 0046: promień jest kryterium dopasowania (równość), więc fixtura
@@ -441,12 +439,12 @@ function zasiejZestaw(most, ileStacji, pytaniaNaStacje = 1, { factcheck = true }
     jezyk: 'polski', miejsce: 'Podkowa Leśna', liczbaStacji: stacje.length, pytaniaNaStacje,
     data: '2026-09-06 09:00', factcheck,
   });
-  const plik = zbudujPlikZestawu({ stacje, kontener, meta });
+  const plik = zbudujPlikZestawu({ stacje, paczka, meta });
   most.repoPakiet = {
-    indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [{ ...meta, licencja: 'CC BY-SA 4.0', id: `repo-${kontener.skrot}` }] }),
+    indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [{ ...meta, licencja: 'CC BY-SA 4.0', id: `repo-${skrotPaczki(paczka)}` }] }),
     plik: JSON.stringify(plik),
   };
-  return { stacje, kontener, meta };
+  return { stacje, paczka, meta };
 }
 
 /** Kod jedynej gry na moście (lobby nie pokazuje już kodu — m12-74). */
@@ -527,7 +525,7 @@ async function przejdzStacje(u) {
   przelaczNa(u);
   const odpowiedzi = u.dom.pobierz('gra-odpowiedzi').children;
   assert.ok(odpowiedzi.length === 4, 'pytanie odsłonięte z czterema odpowiedziami');
-  kliknijEl(odpowiedzi[0]); // poprawna (fixture: poprawna === 0) → POST odpowiedz
+  kliknijEl(odpowiedzi[0]); // poprawna (fixture: poprawna === 1, czyli przycisk A) → POST odpowiedz
   await oddech();
   await klik(u, 'przycisk-nastepna-stacja');
 }
@@ -1193,7 +1191,7 @@ test('serwer odrzuca odpowiedź bez dojścia (R08) — klient NIE ponawia i mów
   const zalozenie = await polecenieMostu(URL_MOSTU, {
     akcja: 'gra-zaloz', tryb: 'trasa', trasaSekret: true, organizator: { pseudonim: 'Ewa' },
     konfiguracja: { liczbaStacji: 2, pytaniaNaStacje: 1, wiek: 'dorosli', tematy: ['historia'], promienM: 1000, miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', geohash8: 'u3qb8xyz' },
-    zestaw: { stacje: stacjeTestowe(2), kontener: zapakujPaczke(paczkaTestowa(stacjeTestowe(2)), WERSJA_PROTOKOLU), meta: { miejsce: 'Podkowa Leśna' } },
+    zestaw: { stacje: stacjeTestowe(2), paczka: paczkaTestowa(stacjeTestowe(2)), meta: { miejsce: 'Podkowa Leśna' } },
   }, { fetchImpl: most.fetchImpl });
   const kod = zalozenie.gra.kod;
   await polecenieMostu(URL_MOSTU, { akcja: 'gra-dolacz', kod, pseudonim: 'Filip' }, { fetchImpl: most.fetchImpl });
@@ -1225,10 +1223,10 @@ test('SKANER prywatności: współrzędne gracza nie wychodzą w żadnej wysyłc
       const dane = JSON.parse(tekstCiala);
       const kopia = structuredClone(dane);
       if (kopia.akcja === 'gra-zaloz') {
-        // mapa gry (stacje) i ukryty kontener jadą celowo — jak paczka w repo
+        // mapa gry (stacje) i jawna paczka jadą celowo — jak paczka w repo
         // (ADR 0016/0017). Cała RESZTA ciała musi być czysta od współrzędnych.
         delete kopia.zestaw.stacje;
-        delete kopia.zestaw.kontener;
+        delete kopia.zestaw.paczka;
       }
       assert.ok(!WZOR_POL.test(JSON.stringify(kopia)), `${nazwa}/${dane.akcja}: współrzędne w ciele POST`);
       zbadane += 1;

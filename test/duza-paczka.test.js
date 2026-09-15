@@ -5,12 +5,12 @@
  * = 40 pytań. Niezmierzone było, czy prompt i odpowiedź mieszczą się w limitach.
  * Pomiar (2026-09-07, realistyczny fikstur rev2): prompt jest STAŁY (~1,4 tys.
  * tokenów — zmienia się tylko cyfra), a rośnie odpowiedź: 4 469 znaków / ~1 118
- * tokenów dla 5 pytań i 33 392 znaków / ~8 348 tokenów dla 40. Kontener
- * `TO-paczka/2` dla 40 pytań to ~36 kB, czyli 1,8% budżetu stanu i 2,4% rejestru
+ * tokenów dla 5 pytań i 33 392 znaków / ~8 348 tokenów dla 40. Paczka
+ * dla 40 pytań to ~36 kB, czyli 1,8% budżetu stanu i 2,4% rejestru
  * — pamięć nie jest wąskim gardłem, rośnie wyłącznie odpowiedź modelu. Te testy
  * spinają pomiar tam, gdzie da się go sprawdzić bez modelu: prompt NIE rośnie
  * z liczbą pytań, odpowiedź 40 pytań przechodzi przez parser i walidator, a
- * kontener mieści się w budżetach pamięci z zapasem. (`szacunekOdpowiedzi()`
+ * jawna paczka mieści się w budżetach pamięci z zapasem. (`szacunekOdpowiedzi()`
  * i `#prompt-rozmiar` usunięte w m12-66 — liczby odpowiedzi zostają w
  * PROTOKOL §2.1 jako prawidło pomiaru, nie jako stała w kodzie).
  */
@@ -18,11 +18,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-import {
-  odwrocPolaPaczki, parsujOdpowiedzModela, walidujPaczke,
-  zbudujPrompt, SZABLON_WERSJA,
-} from '../app/protokol.js';
-import { zapakujPaczke } from '../app/kodowanie.js';
+import { parsujOdpowiedzModela, walidujPaczke, zbudujPrompt } from '../app/protokol.js';
 import { BUDZET_STANU_BAJTY } from '../app/trwalosc.js';
 import { BUDZET_ZESTAWOW_BAJTY } from '../app/zestawy.js';
 import { liczTokeny } from '../tools/budzet-lektury.mjs';
@@ -47,7 +43,7 @@ function konfig(graczy) {
   };
 }
 
-/** Realistyczna paczka rev2: unikalne treści, ~140 znaków pytania, jedno źródło. */
+/** Realistyczna paczka: unikalne treści, ~140 znaków pytania, jedno źródło. */
 function paczka(liczbaStacji, naStacje) {
   const pytania = [];
   for (let s = 1; s <= liczbaStacji; s += 1) {
@@ -58,7 +54,7 @@ function paczka(liczbaStacji, naStacje) {
         temat: TEMATY[(s + p) % 3],
         tresc: `Który rok określa powstanie obiektu numer ${s} przy ulicy Modrzewiowej w Podkowie Leśnej, według karty ${p} gminnej ewidencji zabytków?`,
         odpowiedzi: [`rok 19${20 + s} albo 19${21 + s}`, `rok 19${30 + p} albo 19${31 + p}`, 'rok 1948 albo 1949', 'rok 1961 albo 1962'],
-        poprawna: 17 + s + p + ((s + p) % 4),
+        poprawna: ((s + p) % 4) + 1, // numer odpowiedzi 1..4 (ADR 0050)
         wyjasnienie: `Obiekt numer ${s} wpisano do gminnej ewidencji zabytków w roku 19${20 + s}, a karta ${p} wiąże go z pierwszym planem regulacyjnym miasta-ogrodu, więc data wynika z dokumentu, nie z tradycji ustnej.`,
         zrodla: [{
           url: `https://www.podkowalesna.pl/zabytki/modrzewiowa-${s}-${p}`,
@@ -69,7 +65,6 @@ function paczka(liczbaStacji, naStacje) {
     }
   }
   return {
-    protokol: 'PYT/1.0-rev2',
     okolica: OKOLICA,
     wiek: 'dorosli',
     tematy: TEMATY,
@@ -80,10 +75,9 @@ function paczka(liczbaStacji, naStacje) {
   };
 }
 
-/** Odpowiedź modelu tak, jak ją wkleja właściciel: blok ```json z polami rev2. */
+/** Odpowiedź modelu tak, jak ją wkleja właściciel: blok ```json z jawną paczką. */
 function odpowiedzModelu(liczbaStacji, naStacje) {
-  const odwr = odwrocPolaPaczki(paczka(liczbaStacji, naStacje));
-  return '```json\n' + JSON.stringify(odwr, null, 2) + '\n```';
+  return '```json\n' + JSON.stringify(paczka(liczbaStacji, naStacje), null, 2) + '\n```';
 }
 
 test('B21: prompt NIE rośnie z liczbą pytań — 5 i 40 pytań to ten sam rozmiar', () => {
@@ -111,11 +105,12 @@ test('B21: odpowiedź na 40 pytań przechodzi przez parser i walidator bez uster
   assert.deepEqual(usterki, [], 'walidacja E** bez usterek dla 40 pytań');
 });
 
-test('B21: kontener 40 pytań mieści się w budżetach pamięci z ogromnym zapasem', () => {
+test('B21: jawna paczka 40 pytań mieści się w budżetach pamięci z ogromnym zapasem', () => {
+  // ADR 0050: paczka leży jawnym JSON-em — mierzymy dokładnie to, co wyląduje
+  // w `localStorage`, w snapshocie gry i na Drive. Kontenera już nie ma.
   const { paczka: wczytana } = parsujOdpowiedzModela(odpowiedzModelu(5, 8));
-  const kontener = zapakujPaczke(wczytana, SZABLON_WERSJA);
-  const bajty = new TextEncoder().encode(JSON.stringify(kontener)).length;
-  assert.ok(bajty < 60_000, `kontener urósł: ${bajty} bajtów`);
+  const bajty = new TextEncoder().encode(JSON.stringify(wczytana)).length;
+  assert.ok(bajty < 60_000, `paczka urosła: ${bajty} bajtów`);
   assert.ok(bajty < BUDZET_STANU_BAJTY * 0.05, `budżet stanu ${BUDZET_STANU_BAJTY}: ${bajty}`);
   assert.ok(bajty < BUDZET_ZESTAWOW_BAJTY * 0.05, `budżet rejestru ${BUDZET_ZESTAWOW_BAJTY}: ${bajty}`);
 });

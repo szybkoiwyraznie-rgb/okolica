@@ -17,7 +17,6 @@ import assert from 'node:assert/strict';
 
 import { geohash } from '../app/geo.js';
 import { dopasujMetaIndeksu, dopasujZestawy, walidujIndeksSurowy } from '../app/zestawy.js';
-import { odpakujPaczke, zapakujPaczke } from '../app/kodowanie.js';
 import { uruchomMost, zestawPrzykladowy, idPoNazwie, iteratorAtrapyDrive } from './helpers/most.js';
 
 const { most } = uruchomMost();
@@ -184,7 +183,7 @@ test('most: indeks niesie FAKTYCZNE tematy pytań, nie listę „dopuszczalnych�
   assert.deepEqual(
     indeks.indeks[0].tematy,
     ['historia'],
-    'wpis indeksu: faktyczne tematy pytań z dekoderowanego kontenera (pytań o sport/jedzenie w paczce nie ma)',
+    'wpis indeksu: faktyczne tematy pytań z pliku (pytań o sport/jedzenie w paczce nie ma)',
   );
 });
 
@@ -197,29 +196,29 @@ test('most: backfill nie rusza nowych paczek (meta i tak jest z faktami)', () =>
   assert.deepEqual(indeks[0].tematy, ['historia'], 'paczka nowa: backfill idempotentny');
 });
 
-test('most: plik ręcznie popsuty na Drive (kontener nieczytelny) nie wypada z indeksu — fallback do meta.tematy', () => {
+test('most: plik ręcznie popsuty na Drive (paczka bez pytań) nie wypada z indeksu — fallback do meta.tematy', () => {
   const { most: mostSwiezy, pliki } = uruchomMost();
   const przyjeta = mostSwiezy.przyjmijKandydata(zestawPrzykladowy({ tematyMeta: ['historia', 'jedzenie'] }));
   assert.equal(przyjeta.ok, true);
-  // symulacja ręcznej edycji pliku na Dysku: meta poprawna, kontener urwany
+  // symulacja ręcznej edycji pliku na Dysku: meta poprawna, pytania zniknęły
   const plik = pliki.get(przyjeta.id);
   const surowy = JSON.parse(plik.tresc);
-  surowy.kontener.dane = 'zz-zlamany';
+  surowy.paczka = { okolica: surowy.paczka.okolica, pytania: [] };
   plik.tresc = JSON.stringify(surowy);
 
   const indeks = walidujIndeksSurowy(JSON.stringify(mostSwiezy.budujIndeks()));
-  assert.equal(indeks.indeks.length, 1, 'uszkodzony kontener nie wyrzuca wpisu z indeksu');
+  assert.equal(indeks.indeks.length, 1, 'paczka bez pytań nie wyrzuca wpisu z indeksu');
   assert.deepEqual(indeks.indeks[0].tematy, ['historia', 'jedzenie'], 'fallback: meta.tematy z pliku, nic się nie gubi');
 });
 
-test('most: uszkodzony kontener nie przepuści przyjmijKandydata (dopiero budujIndeks ma fallback)', () => {
+test('most: paczka bez pytań nie przejdzie przyjmijKandydata (dopiero budujIndeks ma fallback)', () => {
   const { most: mostSwiezy } = uruchomMost();
   const zestaw = zestawPrzykladowy();
-  zestaw.kontener = { schemat: 'TO-paczka/2', kodowanie: 'b64x1', skrot: '00000000', dane: 'zz' };
+  zestaw.paczka = { okolica: zestaw.paczka.okolica, pytania: [] };
   const odmowa = mostSwiezy.przyjmijKandydata(zestaw);
-  assert.equal(odmowa.ok, false, 'most nie przyjmuje paczki z nieczytelnym kontenerem');
-  assert.equal(mostSwiezy.tematyPytanZestawu({ kontener: zestaw.kontener }), null, 'funkcja: nieczytelny kontener → null, nie wyjątek');
-  assert.deepEqual(mostSwiezy.tematyPytanZestawu({ kontener: zestawPrzykladowy().kontener }), ['historia'], 'funkcja: pytania → tematy, unikalne, w kolejności');
+  assert.equal(odmowa.ok, false, 'most nie przyjmuje zestawu bez jawnych pytań (ADR 0050)');
+  assert.equal(mostSwiezy.tematyPytanZestawu({ paczka: zestaw.paczka }), null, 'funkcja: brak pytań → null, nie wyjątek');
+  assert.deepEqual(mostSwiezy.tematyPytanZestawu({ paczka: zestawPrzykladowy().paczka }), ['historia'], 'funkcja: pytania → tematy, unikalne, w kolejności');
 });
 
 test('klient: stara paczka pasuje do setupu po FAKTYCZNYCH tematach — zgłoszenie właściciela 2026-09-12', () => {
@@ -273,12 +272,11 @@ test('most: powtórka tej samej paczki nie mnoży plików, a inna w tej samej mi
   assert.equal(powtorka.id, pierwsza.id, 'ten sam identyfikator — łapki (ADR 0028) wiedzą, co oceniają');
   assert.equal([...pliki.values()].filter((p) => p.nazwa === pierwsza.nazwa).length, 1, 'jeden plik');
 
-  // Inna treść, te same parametry i ta sama minuta: paczkę trzeba PRZEPAKOWAĆ,
-  // bo kontener ma kontrolę treści (sam `skrot` do podmiany nie wystarcza).
+  // Inna treść, te same parametry i ta sama minuta: odcisk paczki liczy się
+  // z TREŚCI, więc podmiana pytania wystarcza (ADR 0050 — nie ma kontenera,
+  // który trzeba by przepakowywać).
   const inna = nazwaZestawu();
-  const { paczka } = odpakujPaczke(inna.kontener); // `{ paczka, blad }`, nie goła paczka
-  paczka.pytania[0].tresc = 'Inne pytanie?';
-  inna.kontener = zapakujPaczke(paczka, 'PYT/1.0.6');
+  inna.paczka.pytania[0].tresc = 'Inne pytanie?';
   const druga = m.przyjmijKandydata(inna);
   assert.equal(druga.ok, true, 'nowa paczka NIE może przepaść dlatego, że nazwa już pada');
   assert.equal(druga.nazwa, 'Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_3pyt_wiek-dorosli_1000m_Q-2.zestaw.json');

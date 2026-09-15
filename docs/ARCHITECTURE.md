@@ -65,8 +65,6 @@ app/
                               wyrównujący, ziarno i RNG deterministyczny (czyste)
   protokol.js               — SZABLON_PROMPTU, zbudujPrompt(), walidujPaczke(),
                               TOKENY_MIEJSCA, kody usterek E01–E20 (czyste)
-  kodowanie.js              — ukrywanie paczki: XOR ze strumieniem z stałego ziarna
-                              + base64url, kontener TO-paczka/2, suma FNV-1a
                               (czyste, synchroniczne, bez WebCrypto — ADR 0007)
   rozgrywka.js              — stan gry `rozgrywka/1`: kolejki graczy, odcinki
                               i czasy, odpowiedzi, punktacja (ADR 0014), dziennik,
@@ -75,7 +73,7 @@ app/
                               `okolica:gra:*`, walidacja T01–T10, budżet 2 MB
                               (czyste; ADR 0010 — lokalnej historii gier nie ma
                               od 2026-09-13, aneks)
-  zestawy.js                — M9/M9b: repozytorium paczek (TO-zestaw/1, LRU,
+  zestawy.js                — M9/M9b: repozytorium paczek (TO-zestaw/2, LRU,
                                              (nazwy plików na Drive z meta — ADR 0048),
                               dopasowanie okolicy z tolerancją 200 m od komórki
                               geohash — ADR 0024, indeks Drive z `id` →
@@ -139,7 +137,7 @@ app/
                               stanMostu() z jednym komunikatem dla całego UI
                               (czyste; bez DOM, bez fetch)
 data/
-  przyklady/zestaw-*.json   — zestawy referencyjne TO-zestaw/1 (zweryfikowane
+  przyklady/zestaw-*.json   — zestawy referencyjne TO-zestaw/2 (zweryfikowane
                               źródła, ADR 0008; NIE publikowane automatycznie)
   kanon-tematow.json        — (opcjonalnie) kanon tematów, gdy wyjdzie poza kod
   UWAGA (decyzja właściciela 2026-09-06): repozytorium plikowe `data/paczki/`
@@ -166,7 +164,7 @@ docs/                       — protokół, ADR, plany, handoffy (patrz AGENTS.m
 Wszystko, co da się policzyć, jest **czystą funkcją** w module bez DOM i bez
 `node:*` (LESSONS L6): geodezja, projekcja, siatka kafelków, budowa zapytania
 Overpass, graf i Dijkstra, wybór stacji, budowa promptu, walidacja paczki,
-ukrywanie paczki, punktacja, migracje stanu, a od M2 także **matematyka widoku
+odcisk treści paczki, punktacja, migracje stanu, a od M2 także **matematyka widoku
 mapy i plan rysowania** (`mapa.js`: zoom ↔ skala, adresy kafelków, pinezki,
 okręgi, pasek skali). Warstwa DOM jest cienka: w `mapa.js` to `utworzMape()`
 (SVG, gesty, przyciski), a reszta ekranów siedzi w `app.js` —
@@ -250,10 +248,10 @@ commit i nowa wersja aplikacji.
    (decyzja 2026-09-07): podgląd, ściąganie i edycja zniknęły z ekranu —
    to zadania właściciela na Drive, dokąd zestaw leci automatycznie
    w chwili przyjęcia (wysyłka domyślna, bez pytania o zgodę).
-8. `kodowanie.zapakujPaczke(paczka, WERSJA_PROTOKOLU)` → kontener `TO-paczka/2`
-   → `trwalosc.zapiszPaczke()`; gra czyta pytania z kontenera i odsłania je
-   dopiero na stacjach. Wcześniej ukrytą paczkę (kontener) można wkleić do tego
-   samego pola — `sprawdzOdpowiedz` próbuje najpierw `odpakujPaczke` (M9).
+8. `zestawy.skrotPaczki(paczka)` → klucz wpisu w `localStorage` i nazwa pliku na
+   Drive; wpis (i snapshot gry) niosą JAWNY JSON paczki (ADR 0050). Pytania mają
+   sens dopiero na stacji, więc gra bierze je z pamięci w chwili dojścia —
+   żadnego ukrywania nie ma — paczka leży jawnym JSON-em (ADR 0050).
 
 ### B. Rozgrywka
 
@@ -282,7 +280,7 @@ commit i nowa wersja aplikacji.
    (tryb testowy) karmią aplikację tym samym lejem `przyjmijFix()`; symulacja
    ustępuje grze — gdy faza przestaje być `odcinek` (dojście, ręczny koniec),
    odtwarzanie staje i nie nadpisuje statusu gry.
-4. `kodowanie.odpakujPaczke(kontener)` → pytanie dla stacji **odsłaniane w chwili
+4. `zestawy.skrotPaczki(paczka)` → pytanie dla stacji **odsłaniane w chwili
    dojścia**, nie na starcie (ADR 0007 pkt 6): `STAN.paczka` jest kasowany przy
    starcie gry, a warstwa DOM woła `odpakujPaczke` wyłącznie w tranzycji do fazy
    `pytanie` i w `renderujPytanie()`.
@@ -393,9 +391,10 @@ commit i nowa wersja aplikacji.
 - **Wybór stacji**: greedy po `|d_sieci − r|` z separacją kątową ≥ `0.7×360/N`
   i sieciową ≥ `0.5×r`, potem pass zamian parami minimalizujący odchylenie
   standardowe `d_sieci` (ADR 0005 pkt 5). Deterministyczny pod ziarnem.
-- **Ukrywanie paczki**: obfuskacja bez klucza — UTF-8 JSON ⊕ strumień bajtów
-  z stałego ziarna → base64url → kontener `TO-paczka/2` + suma kontrolna FNV-1a
-  (ADR 0007). To bariera przed przypadkowym wglądem, **nie szyfrowanie**.
+- **Paczka jawna**: brak ukrywania i szyfrowania (ADR 0050 — „ukrycie paczki"
+  usunięte 2026-09-15e razem z `app/kodowanie.js`). Tożsamość pliku niesie
+  `skrotPaczki()` (FNV-1a 32 z treści); paczka nie może nieść danych osobowych
+  (ADR 0013).
 - **Kryterium dojścia**: `progDojsciaM() = 50 m` na stałe (ADR 0034 pkt 2 —
   zastąpił 25 m z ADR 0004 aneks 2026-09-09) plus DWA kolejne fixy w progu —
   debounce przeciw odbiciom sygnału (`geo.czyDotarl`, opakowane przez
@@ -469,7 +468,7 @@ zepsute znaczniki czasu `zapisanoMs`/`zegarMs`). Klucze:
 `okolica:gra:<kod>` (`kluczStanu()`, `oczyscKodGry()` — pusty kod gry staje się
 `'gra'`, bo surowy `''` jest falsy i start nigdy by nie znalazł gry do powrotu) oraz
 `okolica:gra-aktywna` (`KLUCZ_AKTYWNEJ`) ze znormalizowanym kluczem bieżącej
-gry. Snapshot niesie konfig, stacje, `kontenerPaczki` (`TO-paczka/2`) i stan
+gry. Snapshot niesie konfig, stacje, jawną paczkę (`paczka`) i stan
 `rozgrywka/1` — NIGDY jawnych pytań (test-strażnik w R2 i R7); `zbierajStan`
 odmawia przyjęcia `STAN.paczka` w jakiejkolwiek postaci. Zapis leci po każdej
 tranzycji synchronicznie oraz przy pożegnaniu — `pagehide` i zwinięcie karty

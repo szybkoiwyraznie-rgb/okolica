@@ -43,9 +43,8 @@ const FOLDERY = {
   profile: 'okolica-profile',
   oceny: 'okolica-oceny-paczek', // ADR 0028: głosy graczy, osobno od paczek
 };
-const SCHEMAT_ZESTAWU = 'TO-zestaw/1';
+const SCHEMAT_ZESTAWU = 'TO-zestaw/2'; // 2026-09-15e: pytania jawnym JSON-em (ADR 0050)
 const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (ADR 0021)
-const SCHEMAT_KONTENERA = 'TO-paczka/2';
 const SCHEMAT_OCENY = 'RO-oceny/1';  // ADR 0028: plik ocen jednej paczki
 const SCHEMAT_OCENA = 'RO-ocena/1';  // ADR 0028: pojedynczy głos (kciuk w górę/dół)
 
@@ -72,35 +71,11 @@ function json(obiekt) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-/* ------------------------------------------- kontener TO-paczka/2 (odczyt) */
-/* Ten sam algorytm co app/kodowanie.js: xmur3+mulberry32 → XOR → base64url. */
-
-const ZIARNO_MASKI = 'okolica:maska:b64x1:v2';
-
-function strumienMaski(dlugosc) {
-  let h = 1779033703 ^ ZIARNO_MASKI.length;
-  for (let i = 0; i < ZIARNO_MASKI.length; i++) {
-    h = Math.imul(h ^ ZIARNO_MASKI.charCodeAt(i), 3432918353);
-    h = (h << 13) | (h >>> 19);
-  }
-  let a = h >>> 0;
-  const bajty = new Uint8Array(dlugosc);
-  for (let i = 0; i < dlugosc; i++) {
-    a |= 0;
-    a = (a + 0x6d2b79f5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    bajty[i] = ((t ^ (t >>> 14)) >>> 0) % 256;
-  }
-  return bajty;
-}
-
-function zBase64url(tekst) {
-  const b64 = String(tekst).replace(/-/g, '+').replace(/_/g, '/');
-  const dop = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
-  const bajty = Utilities.base64Decode(dop);
-  return new Uint8Array(bajty);
-}
+/* ------------------------------------------- odcisk treści paczki (ADR 0050) */
+/* Paczka leży jawnym JSON-em — kontenera i obfuskacji już nie ma. Most liczy
+ * tym samym wzorem co `skrotPaczki()` z app/zestawy.js: FNV-1a 32 z bajtów
+ * `JSON.stringify(paczka)`. Odcisk jest kluczem tożsamości pliku (nazwa, id),
+ * nie zabezpieczeniem: wykrywa podmianę treści, nie ukrywa niczego. */
 
 function skrotFnv1a(bajty) {
   let h = 0x811c9dc5;
@@ -111,16 +86,8 @@ function skrotFnv1a(bajty) {
   return h.toString(16).padStart(8, '0');
 }
 
-/** Kontener → plaintext PYT; rzuca Error przy uszkodzeniu (jak odpakujPaczke). */
-function odpakujKontener(kontener) {
-  if (!kontener || kontener.schemat !== SCHEMAT_KONTENERA) throw new Error('to nie jest kontener ' + SCHEMAT_KONTENERA);
-  const bajty = zBase64url(kontener.dane);
-  const maska = strumienMaski(bajty.length);
-  const czyste = new Uint8Array(bajty.length);
-  for (let i = 0; i < bajty.length; i++) czyste[i] = bajty[i] ^ maska[i];
-  const tekst = Utilities.newBlob(czyste).getDataAsString('UTF-8');
-  if (skrotFnv1a(czyste) !== kontener.skrot) throw new Error('suma kontrolna się nie zgadza (urwanie lub podmiana)');
-  return JSON.parse(tekst);
+function skrotPaczki(paczka) {
+  return skrotFnv1a(Utilities.newBlob(JSON.stringify(paczka)).getBytes());
 }
 
 /* ------------------------------------------------------------- walidacja */
@@ -142,11 +109,9 @@ function walidujKandydata(plik) {
   if (!plik || typeof plik !== 'object' || plik.schemat !== SCHEMAT_ZESTAWU) bledy.push('schemat musi brzmieć ' + SCHEMAT_ZESTAWU);
   if (!czyMetaOk(plik.meta)) bledy.push('meta niekompletna (geohash5, promienM, tematy, wiek, liczby, licencja, przegladZrodel)');
   if (!Array.isArray(plik.stacje) || plik.stacje.length === 0) bledy.push('brak stacji');
-  let paczka = null;
-  try {
-    paczka = odpakujKontener(plik.kontener);
-  } catch (e) {
-    bledy.push('kontener: ' + e.message);
+  const paczka = plik.paczka;
+  if (!paczka || typeof paczka !== 'object' || !Array.isArray(paczka.pytania) || !paczka.pytania.length) {
+    bledy.push('paczka: brak jawnych pytań (oczekiwano listy `pytania`, ADR 0050)');
   }
   if (paczka) {
     const liczby = {};
@@ -459,15 +424,15 @@ function kotwicaZestawu(zestaw) {
  * odrzucało paczkę, choć pytań z „obcych” tematów w niej nie było. Od
  * 2026-09-11 aplikacja wysyła już meta z faktami, ale stare pliki zostają.
  *
- * Most i tak dekoduje kontener (wzorzec B19: indeks dopisuje pola z pliku,
- * plik na Drive pozostaje nietknięty) — dlatego wpis indeksu dostaje FAKTYCZNE
- * tematy pytań, a paczki sprzed 2026-09-11 pasują do setupów, do których
- * faktycznie pasują. null przy jakiejkolwiek usterce (kontener uszkodzony,
- * brak pytań) — wpis wraca do `meta.tematy`, nic się nie gubi.
+ * Most czyta pytania wprost z pliku (ADR 0050: jawny JSON; wzorzec B19 —
+ * indeks dopisuje pola z pliku, plik na Drive pozostaje nietknięty) — dlatego
+ * wpis indeksu dostaje FAKTYCZNE tematy pytań, a paczki sprzed 2026-09-11
+ * pasują do setupów, do których faktycznie pasują. null przy jakiejkolwiek
+ * usterce (brak pytań) — wpis wraca do `meta.tematy`, nic się nie gubi.
  */
 function tematyPytanZestawu(zestaw) {
   try {
-    const paczka = odpakujKontener(zestaw.kontener);
+    const paczka = zestaw.paczka;
     const tematy = [];
     ((paczka && paczka.pytania) || []).forEach((p) => {
       const t = p && typeof p.temat === 'string' ? p.temat.trim() : '';
@@ -489,14 +454,13 @@ function budujIndeks() {
       const zestaw = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
       if (zestaw.schemat !== SCHEMAT_ZESTAWU || !czyMetaOk(zestaw.meta)) continue;
       const kotwica = kotwicaZestawu(zestaw);
-      // Właściciel 2026-09-12: tematy = FAKTYCZNE tematy pytań z
-      // dekoderowanego kontenera — pliki sprzed 2026-09-11 mają w meta
-      // listę „dopuszczalnych” i paczki padały w dopasowaniu (patrz
-      // tematyPytanZestawu).
+      // Właściciel 2026-09-12: tematy = FAKTYCZNE tematy pytań z pliku —
+      // pliki sprzed 2026-09-11 mają w meta listę „dopuszczalnych” i paczki
+      // padały w dopasowaniu (patrz tematyPytanZestawu).
       const tematy = tematyPytanZestawu(zestaw) || zestaw.meta.tematy;
       wpisy.push(Object.assign({}, zestaw.meta, {
         id: plik.getId(),
-        skrot: zestaw.kontener && zestaw.kontener.skrot,
+        skrot: zestaw.paczka ? skrotPaczki(zestaw.paczka) : '',
         stacji: zestaw.stacje.length,
         // B19: pliki sprzed ADR 0024 dostają kotwicę geohash6 ze stacji.
         geohash6: kotwica ? kotwica.geohash6 : zestaw.meta.geohash6,
@@ -586,7 +550,8 @@ function pierwszyPlikNazwa(katalog, nazwa) {
 /** Skrót zawartości istniejącego pliku — rozstrzyga, czy nazwa trafiła w TĘ SAMĄ paczkę. */
 function skrotIstniejacegoPliku(plik) {
   try {
-    return String(JSON.parse(plik.getBlob().getDataAsString('UTF-8')).kontener.skrot || '');
+    const zestaw = JSON.parse(plik.getBlob().getDataAsString('UTF-8'));
+    return zestaw.paczka ? skrotPaczki(zestaw.paczka) : '';
   } catch (e) {
     return ''; // plik do przeczytania nie jest — traktujemy go jak inną paczkę
   }
@@ -601,7 +566,7 @@ function skrotIstniejacegoPliku(plik) {
 function przyjmijKandydata(plik) {
   const { bledy, paczka } = walidujKandydata(plik);
   if (bledy.length) return { ok: false, blad: bledy.join('; ') };
-  const skrot = plik.kontener.skrot;
+  const skrot = skrotPaczki(paczka);
   const bazowa = nazwaPaczkiZMeta(plik.meta, paczka && Array.isArray(paczka.pytania) ? paczka.pytania.length : null);
   for (let licznik = 1; licznik <= 12; licznik++) {
     const nazwa = licznik === 1 ? bazowa : bazowa.replace(/\.zestaw\.json$/, '-' + licznik + '.zestaw.json');
@@ -714,9 +679,9 @@ function bledyGryKandydata(dane) {
     bledy.push('trasaSekret musi być true/false (jeśli jest)');
   }
   const z = dane && dane.zestaw;
-  if (!z || !Array.isArray(z.stacje) || !z.stacje.length || !z.kontener
-    || z.kontener.schemat !== SCHEMAT_KONTENERA || !z.meta) {
-    bledy.push('zestaw gry wymaga stacji, kontenera ' + SCHEMAT_KONTENERA + ' i metadanych');
+  if (!z || !Array.isArray(z.stacje) || !z.stacje.length || !z.meta
+    || !z.paczka || !Array.isArray(z.paczka.pytania) || !z.paczka.pytania.length) {
+    bledy.push('zestaw gry wymaga stacji, jawnej paczki pytań (ADR 0050) i metadanych');
   } else if (k && z.stacje.length !== k.liczbaStacji) {
     bledy.push('liczba stacji zestawu nie zgadza się z konfiguracją');
   }
@@ -742,7 +707,7 @@ function zalozGre(dane) {
       organizatorId: 'g-1',
       gracze: [{ id: 'g-1', pseudonim: String(dane.organizator.pseudonim).trim().slice(0, 24), dolaczyl: teraz }],
       konfiguracja: dane.konfiguracja,
-      zestaw: { stacje: dane.zestaw.stacje, kontener: dane.zestaw.kontener, meta: dane.zestaw.meta },
+      zestaw: { stacje: dane.zestaw.stacje, paczka: dane.zestaw.paczka, meta: dane.zestaw.meta },
       zdarzenia: [],
       wyniki: {},
     };

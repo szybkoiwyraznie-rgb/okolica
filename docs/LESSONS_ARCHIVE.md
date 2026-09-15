@@ -1637,3 +1637,25 @@ pinuj `inert` + klasę na `body`, a widoczność mierz w przeglądarce.
 
 **Reguła:** atrapa obcego API odtwarza także ścieżki błędu. Łagodna atrapa zamienia kontrakt platformy („rzuca") w pozorny „zwraca pusto" i brama tego nie widzi. Przy okazji: przegląd diff-a, który nie konfrontuje wywołań API z jego udokumentowaną semantyką, przepuszcza całą tę klasę usterek — dwa poprzednie audyty (PR #30 i #31) uznały most za czysty.
 
+
+## L74 (2026-09-15) — format wymiany z AI licz w numeracji, którą widzi AI i człowiek
+
+**Objaw (teren, 2026-09-15):** właściciel grał paczką z jednym błędem w ocenie: pytanie o rok 1969 miało `"poprawna": 3`, odpowiedź „1969" stała trzecia na liście, a aplikacja po kliknięciu pokazała „✗ Źle (0 pkt). Poprawna odpowiedź: D. 1969" — czyli wskazała czwarty wariant jako dobry, choć dobry był trzeci.
+
+**Ślad:** `odpowiedzNaPytanie()` liczyła `wybrana === pytanie.poprawna`, gdzie `wybrana` to indeks przycisku `0..3`, a `pytanie.poprawna` — też indeks, zapisany przez model, który liczy od 1. Trzecia odpowiedź (indeks 2) nie równała się `3`, więc ocena wypadała źle, a komunikat pokazywał odpowiedź pod indeksem 3.
+
+**Dlaczego brama była zielona:** wszystkie fixture'y i helpery testowe budowały `poprawna` w konwencji aplikacji (0, 1, 2, 3), a walidator pilnował zakresu `0..3`; żaden test nie zawierał paczki w konwencji, którą widzi model i człowiek. Kontrakt „co pisze AI" istniał tylko w prozie PROTOKOL.
+
+**Naprawa:** `poprawna` to numer `1..4` w całym protokole (schemat paczki, szablony promptu, walidacja E06), aplikacja przelicza dokładnie raz — `wybrana + 1 === pytanie.poprawna` / `'ABCD'[poprawna - 1]` — z komentarzem w tym miejscu. Fixture'y przepisane na konwencję modelu, plus test pilnujący zakresu `1..4` w fiksturze referencyjnej. DECYZJA właściciela: „normalnie 1-4, a nie 0...3. Przeliczanie to zaproszenie do błędu AI" (ADR 0050).
+
+**Reguła:** pole wymiany z AI opisuj w numeracji WIDOCZNEJ w JSON-ie; przeliczenia trzymaj na granicy UI i tylko tam. Testy pisz w konwencji producenta danych, nie konsumenta.
+
+## L75 (2026-09-15) — zabezpieczenie, które nie zamyka żadnej ścieżki wycieku, jest kosztem
+
+**Tło:** ADR 0007 (2026-09-05) wprowadził obfuskację paczek — XOR ze strumieniem z stałego ziarna + base64url, kontener `TO-paczka/2`, suma kontrolna FNV-1a — żeby „zerknięcie przez ramię" albo zajrzenie w schowek nie zdradzało pytań. Aplikacja tasowała paczkę do kontenera przy przyjęciu, gra odsłaniała pytanie dopiero na stacji, a most Drive dekodował kontener własną kopią algorytmu.
+
+**Decyzja właściciela (2026-09-15):** „To jest gra dla mnie i mojej rodziny, więc żadne zabezpieczenia nie są potrzebne. (…) ukrywanie w telefonie jest wręcz szkodliwe." Argument rozstrzygający: jedyny moment, w którym treść pytań jest realnie widoczna, to okno czatu z modelem — żadne kodowanie tego nie zasłania, więc obfuskacja chroniła nie przed graczem, a przed organizatorem.
+
+**Przebieg usunięcia (PR #33, commit „jawna paczka"):** `app/kodowanie.js` skasowany (zapakuj/odpakuj/blob/skrot, ~203 linie); paczka leży jawnym JSON-em w pamięci, w `localStorage`, w snapshocie gry (`stan-gry/2`) i w pliku na Drive (`TO-zestaw/2`); tożsamość wpisu i pliku liczy `skrotPaczki()` (FNV-1a 32 z `JSON.stringify(paczka)`); most waliduje jawną paczkę i liczy ten sam odcisk (bez dekodera); kody usterek T05/Z04/R08 mówią o braku pytań. Zakaz danych osobowych w paczce (ADR 0013) został — plik na Drive jest czytelny.
+
+**Reguła:** przed budową zabezpieczenia zapisz w ADR-ze, przed kim i w której ścieżce ma chronić. Jeśli nie zamyka żadnej realnej ścieżki, usuń je zamiast utrzymywać: koszt (dwa moduły, duplikat algorytmu, mylące komunikaty) ponosi każda kolejna sesja.

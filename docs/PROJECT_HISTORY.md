@@ -6127,3 +6127,72 @@ samego dnia scalone w jeden (ta sama decyzja). Brama: 827/827, budżet
 przekroczy próg), m12-136. Headless Chromium 360 px i 1334×750: listy
 i przycisku nie ma, karta w stanie `blad` z samym nagłówkiem, 0 błędów konsoli.
 
+## Sesja 2026-09-15e (PR #33) — uwagi terenowe A/B, jawna paczka bez ukrywania, prompt i pytanie po doprecyzowaniu (m12-137…m12-140)
+
+**Zlecenie właściciela:** trzy uwagi z gry w terenie (2026-09-15) — (A) pasek
+pytania „Stacja 1 zdobyta · pytanie 1 z 1 · odpowiada Jacek" do skrócenia,
+(B) KRYTYCZNA: poprawna odpowiedź oceniana źle, bo aplikacja liczyła indeks od
+zera, a model i człowiek liczą od 1, (D) koniec ukrywania paczek: „to jest gra
+dla mnie i mojej rodziny, więc żadne zabezpieczenia nie są potrzebne".
+Właściciel upoważnił do zmiany całego protokołu („na dysku nie ma żadnych
+paczek") i wskazał, że marker `protokol` w odpowiedzi modelu jest czystym
+obciążeniem AI.
+
+**Audyt PR #32:** bez usterek — jedna kosmetyczna poprawka wcięcia komentarza
+(`app/trwalosc.js`).
+
+**Commit 1 (m12-137, „Numer odpowiedzi 1–4, jedna postać paczki, koniec
+markerów protokołu"):** pasek pytania mówi „Stacja 1 - Jacek", a licznik wraca
+tylko przy stacjach z więcej niż jednym pytaniem; `poprawna` to numer `1..4`
+w schemacie, szablonach i walidatorze (E06), a aplikacja przelicza raz, na
+granicy UI; zniknęły znaczniki `PYT/1.0-revN`, odwracanie tekstu i kod
+pozycyjny — protokół to **PYT/1.1** (szablony `PYT/1.1.0` / `PYT/1.1-nofc.0`),
+a profil źródeł stempluje aplikacja (`paczka.factcheck`, `meta.factcheck`).
+Testy przebazowane na konwencję modelu (fixture'y pisane jak w JSON-ie od AI),
+`npm test` 813/813, pakiet lektury 99 858/100 000.
+
+**Commit 2 (m12-138, „Jawna paczka"):** `app/kodowanie.js` usunięty (XOR
++ base64url, kontener `TO-paczka/2`), a paczka jedzie jawnym JSON-em przez
+pamięć, `localStorage`, snapshot gry (`stan-gry/2`), zestaw publiczny
+(`TO-zestaw/2`), wpis lokalny (`TO-zestaw-lokalny/2`) i plik na Drive.
+Tożsamość wpisu i pliku liczy `skrotPaczki()` (FNV-1a 32 z treści paczki),
+most Drive waliduje jawną paczkę i liczy ten sam odcisk bez dekodera, a kody
+T05/Z04/R08 mówią o braku pytań. Usunięty `test/kodowanie.test.js`; testy
+przebazowane (803/803), `data/przyklady/zestaw-podkowa-lesna.json` rozkodowany
+do jawnej postaci i przepisany na numerację `1..4`.
+
+**Commit 3 (dokumentacja i decyzja):** ADR **0050** (paczka jawna, numer
+`1..4`, jedna postać paczki, odcisk treści zamiast kontenera, bez migratora);
+ADR 0007, 0033 i 0049 → `docs/decisions/archive/` (statusy Wycofana), aneks do
+ADR 0032 (marker `rev3` zniesiony, reszta obowiązuje); LESSONS **L74** (format
+wymiany licz tak, jak widzi AI i człowiek — fixture'y w konwencji modelu)
+i **L75** (zabezpieczenie bez realnej ścieżki wycieku jest kosztem); README,
+AGENTS, ASSETS, WORKFLOW, ARCHITECTURE i karta prywatności mówią „paczka
+jawna, nie zaszyfrowana"; strażnik kontraktu pilnuje, że README/AGENTS/
+ARCHITECTURE nie obiecują obfuskacji.
+
+**Commit 3 — doprecyzowania właściciela (prompt i ekran pytania):** prompt
+mówi teraz wyłącznie, CO model ma robić. Zniknęły zdania o protokołach
+(prompt nie wspomina ani markera, ani indeksu), a pole `poprawna` opisuje
+jedna linia: „numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na
+liście \"odpowiedzi\")" — właściciel doprecyzował po pushu, że to dobre,
+pozytywne dopowiedzenie (chroni przed 0…3). Zdania-zakazy („Nie opieraj się na
+pamięci modelu", „Nie wymyślaj nazw, dat…", „Bez komentarzy, bez wstępu…")
+przepisane na polecenia dodatnie, w §2 i §2.2 — zaktualizowane strażniki
+`test/protokol.test.js` (m.in. zakaz słowa „indeks" i dokładna linia
+`"poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").`). Na ekranie pytania zwijana sekcja
+nazywa się „Rozwiń pytanie", a w fazie odpowiedzi summary jest schowane
+(`display: none`), więc treść pytania i warianty podnoszą się o cały wiersz;
+po werdykcie sekcja zjeżdża pod tę etykietę. Pilnuje tego kontrakt
+(etykieta + reguła CSS) i test w `test/aplikacja.test.js` (details otwarty
+w pytaniu, zwinięty po odpowiedzi).
+
+**Brama na koniec:** `npm test` **803/803**, `npm run check` OK (szablon §2 —
+3 743 znaki, §2.2 — 3 878), `npm run budzet` **98 853 / 100 000**
+(rezerwa 1 147 — odzyskana archiwizacją trzech wycofanych ADR-ów: 0007, 0033,
+0049, oraz skróceniem szablonu promptu), m12-140.
+
+**Otwarte po sesji:** właściciel wgrywa ponownie most Drive (`.gs` zmieniony:
+`paczka` zamiast `kontener`, `skrotPaczki`), weryfikuje na iPhonie pasek A,
+ocenę odpowiedzi i czytelność pliku paczki na Drive; ADR 0047 (blokada
+szczypania poza mapą) nadal czeka na potwierdzenie.

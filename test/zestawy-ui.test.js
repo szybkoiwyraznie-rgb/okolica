@@ -7,8 +7,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 import { zainstalujDom } from './helpers/dom.js';
-import { odpakujPaczke, zapakujPaczke } from '../app/kodowanie.js';
-import { KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY, kluczZestawu } from '../app/zestawy.js';
+import { KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY, kluczZestawu, skrotPaczki } from '../app/zestawy.js';
 import { DOMYSLNY_URL_MOSTU } from '../app/most.js';
 import { geohash } from '../app/geo.js';
 
@@ -16,7 +15,7 @@ const POZYCJA = { lat: 52.12303, lon: 20.74614 }; // Podkowa Leśna (geohash5 u3
 const GEOHASH5 = 'u3qb8'; // policzone z geo.js dla (52.12303, 20.74614)
 
 const paczkaMinimalna = () => ({
-  protokol: 'PYT/1.0',
+  protokol: 'PYT/1.1',
   okolica: { lat: POZYCJA.lat, lon: POZYCJA.lon, promienM: 1000, miejsce: 'Podkowa Leśna' },
   wiek: 'dorosli',
   tematy: ['historia'],
@@ -24,7 +23,7 @@ const paczkaMinimalna = () => ({
   utworzono: '2026-09-06 10:00',
   pytania: [{
     id: 's1p1', stacja: 1, temat: 'historia', tresc: 'Co powstało pierwsze?',
-    odpowiedzi: ['kościół', 'szkoła', 'park', 'stacja'], poprawna: 0,
+    odpowiedzi: ['kościół', 'szkoła', 'park', 'stacja'], poprawna: 1,
     wyjasnienie: 'Kościół poprzedza pozostałe obiekty.',
     zrodla: [{ url: 'https://przyklad.org/haslo', tytul: 'Hasło', sprawdzono: '2026-09-06' }],
     punkty: 10,
@@ -52,23 +51,24 @@ const KONFIG_TEST = JSON.stringify({
   },
 });
 
-function wpisPelny(kontener) {
+function wpisPelny(paczka) {
   return {
     schemat: SCHEMAT_LOKALNY,
     stacje: [{ id: 1, lat: 52.1235, lon: 20.7455 }, { id: 2, lat: 52.1245, lon: 20.7475 }, { id: 3, lat: 52.1255, lon: 20.7495 }],
-    kontener,
+    paczka,
     ...metaWpisu(),
     data: '2026-09-06 09:00',
     kodGry: 'pierwsza',
   };
 }
 
-function pamiecZZestawem(kontener) {
-  const pelny = wpisPelny(kontener);
+function pamiecZZestawem(paczka) {
+  const skrot = skrotPaczki(paczka);
+  const pelny = wpisPelny(paczka);
   return new Map([
     ['okolica:konfig', KONFIG_TEST],
-    [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot: kontener.skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'pierwsza' }] })],
-    [kluczZestawu(kontener.skrot), JSON.stringify(pelny)],
+    [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'pierwsza' }] })],
+    [kluczZestawu(skrot), JSON.stringify(pelny)],
   ]);
 }
 
@@ -94,8 +94,8 @@ async function dojdzDoPozycji(dom, lat = POZYCJA.lat, lon = POZYCJA.lon) {
 }
 
 test('I.b: paczka z telefonu NIE jest pokazywana — propozycje tylko z repozytorium', async () => {
-  const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
-  const dom = await aplikacjaZZestawami({ pamiec: pamiecZZestawem(kontener) });
+  const paczka = paczkaMinimalna();
+  const dom = await aplikacjaZZestawami({ pamiec: pamiecZZestawem(paczka) });
   assert.equal(dom.pobierz('zestawy-karta').hidden, true, 'przed pozycją karta nie straszy');
   await dojdzDoPozycji(dom);
   assert.equal(dom.pobierz('zestawy-karta').hidden, false, 'po pozycji karta jest widoczna');
@@ -157,11 +157,11 @@ const plikZRepo = () => {
     autor: 'kurator', licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel',
   };
   return {
-    schemat: 'TO-zestaw/1',
-    protokol: 'PYT/1.0',
+    schemat: 'TO-zestaw/2',
+    protokol: 'PYT/1.1',
     meta,
     stacje: [{ lat: 52.1235, lon: 20.7455, opis: 'plac' }, { lat: 52.1245, lon: 20.7475, opis: 'park' }, { lat: 52.1255, lon: 20.7495, opis: 'skwer' }],
-    kontener: zapakujPaczke(paczkaMinimalna(), 'PYT/1.0'),
+    paczka: paczkaMinimalna(),
   };
 };
 
@@ -439,7 +439,7 @@ async function dojdzDoWklejenia(dom, pozycja = POZYCJA) {
   assert.equal(dom.pobierz('ekran-paczka').hidden, false, 'ekran wklejania widoczny');
 }
 
-test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain', async () => {
+test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/2 POST-em text/plain', async () => {
   const atrap = atrapaPost();
   try {
     const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
@@ -455,12 +455,12 @@ test('wysyłka Drive: przyjęcie paczki wysyła TO-zestaw/1 POST-em text/plain',
     assert.equal(opcje.method, 'POST');
     assert.equal(opcje.headers['Content-Type'], 'text/plain;charset=utf-8', 'bez preflightu CORS');
     const cialo = JSON.parse(opcje.body);
-    assert.equal(cialo.schemat, 'TO-zestaw/1');
+    assert.equal(cialo.schemat, 'TO-zestaw/2');
     assert.equal(cialo.stacje.length, 3, 'stacje z bieżącej sesji');
     assert.equal(cialo.meta.liczbaStacji, 3);
     assert.equal(cialo.meta.pytaniaNaStacje, 1);
     assert.match(cialo.meta.przegladZrodel, /oczekuje przeglądu — jakość rozstrzygają łapki/, 'kandydat wychodzi ze znacznikiem (bez sesji przeglądu właściciela, 2026-09-11)');
-    assert.equal(cialo.kontener.schemat, 'TO-paczka/2');
+    assert.equal(cialo.paczka.pytania.length, 3, 'ciało POST niesie jawną paczkę pytań (ADR 0050)');
     assert.match(dom.pobierz('status').textContent, /Paczka przyjęta i wysłana na Drive:/);
     assert.doesNotMatch(dom.pobierz('status').textContent, /nieznana/,
       'most bez pola `nazwa` (stara wersja skryptu) nie wpycha w UI zdania o „nieznanym" pliku');
@@ -503,7 +503,7 @@ test('wysyłka Drive: adres z kodu — przyjęcie paczki wysyła bez wpisu w pam
     await new Promise((r) => setTimeout(r, 30));
     assert.equal(atrap.posty.length, 1, 'przyjęcie paczki wysyła na adres z kodu');
     assert.equal(atrap.posty[0].url, DOMYSLNY_URL_MOSTU, 'cel wysyłki to stała wdrożeniowa');
-    assert.equal(JSON.parse(atrap.posty[0].opcje.body).schemat, 'TO-zestaw/1');
+    assert.equal(JSON.parse(atrap.posty[0].opcje.body).schemat, 'TO-zestaw/2');
     assert.match(dom.pobierz('status').textContent, /Paczka przyjęta i wysłana na Drive:/);
   } finally {
     atrap.przywroc();
@@ -562,17 +562,18 @@ test('Drive: wpis z `id` na karcie, a kliknięcie pobiera paczkę przez ?akcja=p
 test('zestawy: start aplikacji ujednolica tematy lokalnych wpisów do faktycznej zawartości pytań', async () => {
   // I.b: dopasowanie lokalne nie ma już UI (lista tylko z repo), ale migracja
   // startowa działa dalej — ten test pilnuje samego ujednolicenia, bez pozycji.
-  const kontener = zapakujPaczke(paczkaMinimalna(), 'PYT/1.0');
-  const pelny = wpisPelny(kontener);
+  const paczka = paczkaMinimalna();
+  const skrot = skrotPaczki(paczka);
+  const pelny = wpisPelny(paczka);
   const pamiec = new Map([
     ['okolica:konfig', KONFIG_TEST],
-    [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot: kontener.skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'pierwsza' }] })],
-    [kluczZestawu(kontener.skrot), JSON.stringify(pelny)],
+    [KLUCZ_REJESTRU, JSON.stringify({ schemat: SCHEMAT_INDEKSU, wpisy: [{ skrot, bajty: 900, ...metaWpisu(), data: '2026-09-06 09:00', kodGry: 'pierwsza' }] })],
+    [kluczZestawu(skrot), JSON.stringify(pelny)],
   ]);
   await aplikacjaZZestawami({ pamiec }); // sam start: migracja bez wchodzenia na pozycję
   const rejestr = JSON.parse(pamiec.get(KLUCZ_REJESTRU));
   assert.deepEqual(rejestr.wpisy[0].tematy, ['historia'], 'wpis rejestru przeszedł na faktyczne tematy');
-  assert.deepEqual(JSON.parse(pamiec.get(kluczZestawu(kontener.skrot))).tematy, ['historia'], 'pełny wpis też niesie faktyczne tematy');
+  assert.deepEqual(JSON.parse(pamiec.get(kluczZestawu(skrot))).tematy, ['historia'], 'pełny wpis też niesie faktyczne tematy');
 });
 
 test('zestawy UI: lista pokazuje 3 najlepsze paczki, resztę po „Zobacz więcej paczek"', async () => {
@@ -743,7 +744,7 @@ const paczkaTrojka = () => ({
   ...paczkaMinimalna(),
   pytania: [1, 2, 3].map((n) => ({
     id: `s${n}p1`, stacja: n, temat: 'historia', tresc: `Pytanie stacji ${n}?`,
-    odpowiedzi: ['pierwsza', 'druga', 'trzecia', 'czwarta'], poprawna: (n - 1) % 4,
+    odpowiedzi: ['pierwsza', 'druga', 'trzecia', 'czwarta'], poprawna: ((n - 1) % 4) + 1,
     wyjasnienie: 'Bo tak mówią źródła.',
     zrodla: [{ url: 'https://przyklad.org/haslo', tytul: 'Hasło', sprawdzono: '2026-09-06' }],
     punkty: 10,
@@ -754,7 +755,7 @@ const paczkaTrojka = () => ({
 const plikZRepoWspak = () => {
   const plik = plikZRepo();
   plik.stacje = [ST_DALEKI, ST_SRODEK, ST_BLISKI];
-  plik.kontener = zapakujPaczke(paczkaTrojka(), 'PYT/1.0');
+  plik.paczka = paczkaTrojka();
   return plik;
 };
 
@@ -775,10 +776,10 @@ test('uwaga B (dogrywka): gra z paczki wspak startuje trasą od pozycji, pytania
     const zapis = JSON.parse(pamiec.get(kluczZestawu(rejestr.wpisy[0].skrot)));
     assert.deepEqual(zapis.stacje.map((s) => s.opis), ['bliski', 'środek', 'daleki'], 'stacja 1 to fizycznie najbliższa pozycji');
     assert.deepEqual(zapis.stacje.map((s) => s.id), [1, 2, 3]);
-    const { paczka } = odpakujPaczke(zapis.kontener);
+    const paczka = zapis.paczka;
     assert.equal(paczka.pytania.find((p) => p.id === 's3p1').stacja, 1, 'pytanie bliskiej stacji wisi na numerze 1');
     assert.equal(paczka.pytania.find((p) => p.id === 's1p1').stacja, 3, 'pytanie dalekiej stacji wisi na numerze 3');
-    assert.equal(paczka.pytania.find((p) => p.id === 's3p1').poprawna, 2, 'indeks poprawnej nietknięty — sprawdzanie działa');
+    assert.equal(paczka.pytania.find((p) => p.id === 's3p1').poprawna, 3, 'numer poprawnej nietknięty — sprawdzanie działa');
     assert.equal(paczka.pytania.find((p) => p.id === 's3p1').tresc, 'Pytanie stacji 3?', 'treść pytania nietknięta');
   } finally {
     atrap.przywroc();

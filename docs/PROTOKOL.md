@@ -1,9 +1,9 @@
-# PROTOKÓŁ PYT v1.0 — protokół pytań terenowych
+# PROTOKÓŁ PYT v1.1 — protokół pytań terenowych
 
 > **To jest zasada treściowa, nie sugestia** (AGENTS.md §3). Obowiązuje każdy
 > prompt, każdą wklejoną odpowiedź modelu i każdą paczkę pytań zapisaną przez
-> aplikację. Zmiana protokołu = nowy ADR + podbicie wersji + migrator paczek
-> (ADR 0010 pkt 6).
+> aplikację. Zmiana protokołu = nowy ADR + podbicie wersji, a migrator tylko
+> wtedy, gdy istnieją paczki do zmigrowania (§7).
 
 - Status: **obowiązujący** (wersja wyprowadzana z tego nagłówka; test
   kontraktowy porównuje ją z `app/protokol.js` i z `README.md`)
@@ -21,8 +21,8 @@ konfiguracja + pozycja gracza + stacje
    odpowiedź modelu = blok JSON ze schematem §3
         ↓ (3) organizator wkleja odpowiedź do aplikacji
    walidacja §6 → lista usterek albo przyjęcie
-        ↓ (4) ukrycie paczki: obfuskacja bez klucza, kontener TO-paczka/2
-            (ADR 0007) → localStorage / eksport pliku
+        ↓ (4) paczka jawnym JSON-em (ADR 0050) → localStorage / plik na Drive
+            (żadnego ukrywania: gra dla właściciela i jego rodziny)
    paczka PYT
         ↓ (5) rozgrywka: pytanie odsłaniane przy dojściu do stacji
 ```
@@ -43,15 +43,13 @@ podstawia `zbudujPrompt()`; nic innego nie wolno w szablonach zmieniać ręcznie
 Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.
 
 ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
-1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu. Nie opieraj się na pamięci modelu.
-2. Każde pytanie ma pole "zrodla" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Faktu, którego nie potrafisz potwierdzić źródłem, NIE UŻYWASZ.
-3. Nie wymyślaj nazw, dat, liczb, cytatów, autorów ani adresów. Nie zgaduj i nie uogólniaj. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
+1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu, i oprzyj ten fakt na wyniku kwerendy.
+2. Każde pytanie ma pole "zrodla" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Używaj faktów potwierdzonych takim źródłem.
+3. Nazwy, daty, liczby, cytaty, autorów i adresy podawaj dokładnie w postaci potwierdzonej źródłem. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
 4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
-6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
-7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. W polu "protokol" wpisz "PYT/1.0-rev4".
-
+6. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
+7. Formułuj treść pytania tak, żeby odpowiedź pozostawała do wyboru — fakty rozstrzygające (na przykład rok) umieść dopiero w polu "wyjasnienie".
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
@@ -70,9 +68,8 @@ GRACZE I TRUDNOŚĆ:
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
-SCHEMAT ODPOWIEDZI (PYT/1.0-rev4) — dokładnie te pola:
+SCHEMAT ODPOWIEDZI — dokładnie te pola:
 {
-  "protokol": "PYT/1.0-rev4",
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "wiek": "{WIEK}",
   "tematy": [{TEMATY_JSON}],
@@ -96,11 +93,11 @@ SCHEMAT ODPOWIEDZI (PYT/1.0-rev4) — dokładnie te pola:
 WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
-- "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": numer poprawnej odpowiedzi.
+- "odpowiedzi": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
+- "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
-- "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
-- "uwagi": czego nie udało się potwierdzić źródłem, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko potwierdzone.
+- "wyjasnienie": dwa albo trzy zdania o tym, dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.
+- "uwagi": tematy pominięte i powód pominięcia; pusty tekst, gdy wszystkie fakty są potwierdzone.
 ```
 <!-- szablon-promptu:koniec -->
 
@@ -133,8 +130,8 @@ z szablonu zmienia się tylko cyfra w `{LICZBA_PYTAN}`. Rośnie **odpowiedź**:
 realistyczna paczka rev2 (treść ~140 znaków, 4 odpowiedzi, wyjaśnienie ~200
 znaków, jedno źródło) to 4 469 znaków / ~1 118 tokenów dla 5 pytań i
 33 392 znaków / ~8 348 tokenów dla 40 pytań (5 stacji × 8 graczy) — czyli
-~830 znaków i ~210 tokenów na pytanie. Kontener `TO-paczka/2` dla 40 pytań ma
-~36 kB (1,8% budżetu stanu, 2,4% rejestru), więc pamięć nie jest ograniczeniem;
+~830 znaków i ~210 tokenów na pytanie. Jawna paczka 40 pytań to ~36 kB (1,8%
+budżetu stanu, 2,4% rejestru), więc pamięć nie jest ograniczeniem;
 ograniczeniem jest limit wyjścia modelu. Szacunek był pokazywany w UI
 i usunięty jako ozdobnik (właściciel, testy terenowe 2026-09-11) — pomiar
 zostaje tutaj jako prawidło protokołu, a spinają go testy
@@ -145,7 +142,8 @@ promptu (paczka bez weryfikacji zwykle wychodzi mniejsza, bo nie niesie źróde�
 
 Ten sam kształt odpowiedzi co §2, inny kontrakt z modelem: **nie narzucamy
 sposobu zdobycia faktu** — model sam decyduje, czy sięgnie do sieci, czy do
-własnej wiedzy — a źródła są opcjonalne. Znacznik odpowiedzi: `PYT/1.0-rev5`.
+własnej wiedzy — a źródła są opcjonalne. Model nie wpisuje żadnego markera:
+czy paczka jest z fact-checkiem, wie aplikacja z ptaszka w setupie (§3.4).
 
 Decyzja właściciela 2026-09-09: wcześniejsza wersja wprost ZAKAZYWAŁA kwerendy
 i nakazywała pamięć treningową. To było wymuszanie bez powodu — jeśli model nie
@@ -157,15 +155,13 @@ zostaje wyłącznie w §2 w drugą stronę (tam kwerenda jest OBOWIĄZKOWA).
 Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.
 
 ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
-1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Gdy czegoś nie jesteś pewien, uprość pytanie albo pomiń temat i opisz to w polu "uwagi".
-2. Pole "zrodla" jest OPCJONALNE: jeśli masz adres potwierdzający fakt, podaj go; jeśli nie — pomiń pole albo zostaw pustą listę. Nigdy nie zmyślaj adresu: niepewny URL jest gorszy niż jego brak.
-3. Nie wymyślaj nazw, dat, liczb, cytatów ani autorów. Nie zgaduj. Gdy nie masz pewności co do faktu, wybierz łatwiejszy fakt z tego samego tematu; jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
+1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Przy braku pewności upraszczaj pytanie, a pominięte tematy opisuj w polu "uwagi".
+2. Pole "zrodla" jest OPCJONALNE: podaj adres potwierdzający fakt, a przy braku pewności zostaw pole puste albo je pomiń.
+3. Nazwy, daty, liczby, cytaty i autorów podawaj w postaci, której jesteś pewien; przy braku takiej pewności wybierz łatwiejszy fakt z tego samego tematu. Jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
 4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt, i podawaj wtedy nazwę miejsca w treści pytania. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
 5. Trudność pytań dostosuj ściśle do kategorii wiekowej i wymagań trudności podanych niżej.
-6. Odpowiedź zwróć WYŁĄCZNIE jako jeden blok kodu json ze schematem podanym niżej. Bez komentarzy, bez wstępu, bez podsumowania, bez drugiego bloku.
-7. Treść pytania nie może zdradzać odpowiedzi (na przykład roku w pytaniu o rok).
-8. W polu "protokol" wpisz "PYT/1.0-rev5".
-
+6. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
+7. Formułuj treść pytania tak, żeby odpowiedź pozostawała do wyboru — fakty rozstrzygające (na przykład rok) umieść dopiero w polu "wyjasnienie".
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
@@ -184,9 +180,8 @@ GRACZE I TRUDNOŚĆ:
 - język pytań: {JEZYK}
 - data przygotowania: {DATA}
 
-SCHEMAT ODPOWIEDZI (PYT/1.0-rev5) — dokładnie te pola:
+SCHEMAT ODPOWIEDZI — dokładnie te pola:
 {
-  "protokol": "PYT/1.0-rev5",
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "wiek": "{WIEK}",
   "tematy": [{TEMATY_JSON}],
@@ -210,22 +205,22 @@ SCHEMAT ODPOWIEDZI (PYT/1.0-rev5) — dokładnie te pola:
 WYMAGANIA DODATKOWE:
 - "id": "s<numer stacji>p<kolejny numer>", na przykład "s2p1"; identyfikatory unikalne w całej paczce.
 - "stacja": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, a rozkład pytań między stacje jest równy albo różni się o jedno.
-- "odpowiedzi": dokładnie 4, każda od 1 do 8 słów, bez powtórzeń, bez odpowiedzi w rodzaju „wszystkie powyższe" albo „żadna z powyższych"; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
-- "poprawna": numer poprawnej odpowiedzi.
+- "odpowiedzi": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
+- "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
-- "wyjasnienie": napisane tak, żeby gracz po odpowiedzi dowiedział się czegoś o okolicy; bez powtarzania treści pytania.
-- "zrodla": pusta lista ALBO lista źródeł w kształcie jak w schemacie; podawaj tylko adresy, co do których masz pewność (pełny adres https://, prawdziwy i działający), każdy z tytułem i datą sprawdzenia RRRR-MM-DD; adres przykładowy albo zmyślony unieważnia pytanie.
-- "uwagi": czego nie udało się ustalić z własnej wiedzy, które tematy zostały pominięte i dlaczego; pusty tekst, jeśli wszystko pewne.
+- "wyjasnienie": dwa albo trzy zdania o tym, dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.
+- "zrodla": pusta lista ALBO lista źródeł w kształcie jak w schemacie; każdy adres w pełnej, prawdziwej i działającej postaci (https://), z tytułem i datą sprawdzenia RRRR-MM-DD; pytanie z adresem przykładowym traci ważność.
+- "uwagi": tematy pominięte i powód pominięcia; pusty tekst, gdy wszystkie fakty są pewne.
 ```
 <!-- szablon-promptu-bez:koniec -->
 
-## 3. Schemat paczki PYT/1.0
+## 3. Schemat paczki PYT/1.1
 
 ### 3.1 Poziom paczki
 
 | Pole | Typ | Wymagane | Zasady |
 | --- | --- | --- | --- |
-| `protokol` | tekst | tak | `"PYT/1.0"`, `"-rev1"`, `"-rev2"`, `"-rev3"` (odwrócone, §3.4) albo bieżące `"-rev4"` / `"-rev5"` (bez odwracania) |
+| `protokol` | tekst | nie | pole historyczne: model go NIE pisze, a aplikacja je IGNORUJE (§3.4). Profil źródeł wynika z ptaszka „fact check” w setupie, nie z markera |
 | `okolica.lat` | liczba | tak | `-90 ≤ lat ≤ 90` |
 | `okolica.lon` | liczba | tak | `-180 ≤ lon ≤ 180` |
 | `okolica.promienM` | liczba | tak | `100–50000`, zgodna z konfiguracją gry |
@@ -249,65 +244,54 @@ WYMAGANIA DODATKOWE:
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
-| `poprawna` | liczba całkowita | `0..3` (indeks na liście `odpowiedzi`). Warianty historyczne rev2/rev3 niosły kod pozycyjny; bieżące rev4/rev5 — czysty numer (ADR 0049) |
+| `poprawna` | liczba całkowita | `1..4` — **numer** odpowiedzi na liście `odpowiedzi` (1 = pierwsza). Tak liczy człowiek i tak pisze model; żadnego przeliczania po drodze (ADR 0050) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
 | `zrodla` | lista | ≥ 1 wpis |
 | `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
 | `zrodla[].tytul` | tekst | niepusty |
 | `zrodla[].sprawdzono` | tekst | `RRRR-MM-DD`, nie w przyszłości |
 
-### 3.3 Kontener ukrytej paczki (ADR 0007 pkt 2)
+### 3.3 Zapis paczki — jawny JSON (ADR 0050)
 
-```json
-{
-  "schemat": "TO-paczka/2",
-  "protokol": "PYT/1.0",
-  "kodowanie": "b64x1",
-  "skrot": "FNV-1a 32 z bajtów plaintextu (8 znaków hex)",
-  "dane": "base64url (UTF-8 JSON ⊕ strumień maski)"
-}
-```
+Paczka **nie jest ukrywana**. Leży w `localStorage`, w zapisie gry na czas
+przerwy i w pliku na Drive dokładnie w kształcie §3.1/§3.2 — jawny JSON, ten
+sam, który model napisał. Ukrywanie paczek (kontener i kodowanie z §3.4)
+zniknęło razem z plikiem `app/kodowanie.js` (właściciel 2026-09-15: „to jest
+gra dla mnie i mojej rodziny więc żadne zabezpieczenia nie są potrzebne”).
 
-| Pole | Zasady |
-| --- | --- |
-| `schemat` | dokładnie `"TO-paczka/2"`; inna wartość = odmowa odczytu z komunikatem |
-| `protokol` | wersja protokołu paczki, którą ukryto (`PYT/1.0`) |
-| `kodowanie` | `"b64x1"` — hak migracyjny: przyszłe warianty (np. `aes-gcm`) dochodzą tu, nie w nowym polu |
-| `skrot` | suma kontrolna FNV-1a 32 — wykrywa **urwanie przy kopiowaniu**, nie podmianę; to nie jest funkcja kryptograficzna |
-| `dane` | base64url bez dopełnienia `=` |
+Tożsamość paczki (klucz wpisu lokalnego, dopasowanie pliku na Drive) niesie
+odcisk treści `skrotPaczki()` z `app/zestawy.js`: FNV-1a 32 z bajtów
+`JSON.stringify(paczka)`, 8 znaków hex. Wykrywa podmianę treści pliku; nie jest
+funkcją kryptograficzną i nie jest zapisywany w samej paczce.
 
-**To nie jest szyfrowanie.** Przekształcenie jest odwracalne bez klucza przez
-każdego, kto przeczyta `app/kodowanie.js`; chroni przed przypadkowym wglądem
-(zerknięcie na ekran, przewinięcie wklejonego tekstu, paczka znaleziona
-w schowku albo w pliku), nie przed zdeterminowanym graczem. Dlatego w paczce nie
-wolno trzymać danych osobowych ani niczego, co nie może zostać upublicznione
-(ADR 0013). Aplikacja przyjmuje też **jawny JSON** paczki (§3.1) — odpowiedź
-modelu jest jawna, ukrywa ją dopiero aplikacja po walidacji.
+Z jawności wynika jedno ograniczenie, które zostaje: w paczce nie wolno trzymać
+**danych osobowych** ani niczego, co nie może zostać upublicznione (ADR 0013) —
+plik na Drive jest czytelny dla każdego, kto ma do niego dostęp, a teksty pytań
+i tak widzi organizator w oknie czatu z modelem, którego żadne kodowanie nie
+zasłania.
 
-### 3.4 Paczka odwrócona (`PYT/1.0-rev1`)
+### 3.4 Historia zapisu paczki (warianty zniesione)
 
-Wariant zapisu, nie nowa wersja schematu: model odwraca znakami pola tekstowe
-(`tresc`, `odpowiedzi`, `wyjasnienie`, `uwagi`, `zrodla[].tytul`) i wpisuje
-`"protokol": "PYT/1.0-rev1"`. Walidator odkodowuje paczkę PRZED walidacją, więc
-reguły §3.2 i §6 działają na odczytanej treści. Cel jak w §3.3: ochrona przed
-przypadkowym wglądem (ekran organizatora, schowek), nie szyfrowanie. Walidator
-przyjmuje oba warianty.
+Do 2026-09-15 paczka niosła marker `"protokol": "PYT/1.0-revN"`, a kolejne
+warianty zmieniały zapis: `rev1` odwracał znakami pola tekstowe, `rev2`/`rev3`
+kodowały numer poprawnej odpowiedzi kodem pozycyjnym (indeks + stacja + numer
+pytania + 17), a `rev4`/`rev5` różniły się wyłącznie profilem źródeł.
 
-**Wariant `PYT/1.0-rev2`.** Jak rev1, a ponadto: `poprawna` to kod pozycyjny (indeks + stacja + numer pytania + 17, np. s2p1 z poprawną trzecią: 2 + 2 + 1 + 17 = 22 — inny dla każdego pytania, a +17 sprawia, że goły indeks nigdy nie przejdzie za kod), a pola `punkty` nie ma (każde pytanie daje 1 pkt).
+Wszystko to jest **zniesione**:
 
-**Warianty `PYT/1.0-rev4` i `PYT/1.0-rev5` (bieżące).**
-Odwracanie tekstu zniesione 2026-09-09 (ADR 0033). Kod pozycyjny `poprawna`
-zniesiony 2026-09-15 (ADR 0049): pole to czysty indeks `0..3`. Host jest
-uczciwy — numer w JSON jest tym, którego używa gra. Różnica między markerami
-to wyłącznie profil źródeł: **rev4** z fact-check (źródła twarde, E09
-obowiązuje, szablon §2), **rev5** bez fact-check (źródła opcjonalne, szablon
-§2.2, domyślny — ADR 0032).
+- odwracanie tekstu — 2026-09-09 (ADR 0033),
+- kod pozycyjny `poprawna` — 2026-09-15 (ADR 0049), a numeracja przeszła na
+  `1..4` (ADR 0050),
+- markery i profile źródeł w paczce — 2026-09-15e (ADR 0050): „to tylko obciążenie
+  dla AI”. O tym, czy pytania były z fact-checkiem, wie aplikacja (ptaszek na
+  ekranie promptu) i zapisuje to w `meta.factcheck` zestawu; model nie ma nic do
+  zgłaszania.
 
-Walidator przyjmuje **wszystkie** markery: `PYT/1.0`, `-rev1`, `-rev2`, `-rev3`,
-`-rev4`, `-rev5`. Odwracanie i kod pozycyjny dekoduje tylko dla rev1/rev2/rev3
-(zapis historyczny). Właściciel kasuje stare paczki — konwersja nie jest
-wymagana przy nowej generacji.
-
+Paczka ma więc **jedną postać** (§3.1/§3.2), a pole `protokol` — jeśli model je
+mimo wszystko dopisze — jest ignorowane. Do tego samego worka historii idzie
+kontener `TO-paczka/2` (§3.3): ukrywanie paczek zniknęło 2026-09-15e (ADR 0050).
+Starych paczek nie ma (właściciel ich
+nie trzyma), więc konwersji nie ma i nie będzie.
 
 ## 4. Kategorie wiekowe i wymagania trudności
 
@@ -367,15 +351,15 @@ i aneks 2026-09-15d: przycisk „skopiuj poprawkę do modelu" usunięty).
 
 | Kod | Usterka |
 | --- | --- |
-| `E01` | brak pola `protokol` albo inna wersja niż `PYT/1.0` |
+| `E01` | wycofany 2026-09-15e (ADR 0050): paczka nie ma markera protokołu, a pole `protokol` jest ignorowane |
 | `E02` | JSON nieparsowalny (w tym wiele bloków, tekst poza blokiem) |
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
 | `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
 | `E05` | stacja bez żadnego pytania albo rozkład pytań różny o więcej niż jedno |
-| `E06` | `poprawna` poza zakresem `0..3` (w rev2/rev3 także: kod pozycyjny nie do odczytania) |
+| `E06` | `poprawna` nie jest numerem odpowiedzi `1..4` |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
-| `E09` | pytanie bez `zrodla` albo lista pusta (nie dotyczy rev3 i rev5 — źródła opcjonalne) |
+| `E09` | pytanie bez `zrodla` albo lista pusta — tylko gdy fact-check jest włączony w setupie |
 | `E10` | `zrodla[].url` nie jest adresem `http(s)` albo jest adresem zabronionym: domena przykładowa (`example.com`, `przyklad.org`, `twojastrona.pl`) albo zarezerwowane TLD (`.invalid`, `.test`, `.localhost`, `.example`, `.local`) |
 | `E11` | data (`utworzono`, `sprawdzono`) w przyszłości albo w złym formacie |
 | `E12` | `temat` spoza kanonu §5 |
@@ -414,33 +398,30 @@ zajęte, tak samo jak wycofany `E18`.
   Paczka użytkownika w `localStorage` nie może przestać działać (ADR 0010 pkt 6).
 - Zmiana kosmetyczna szablonu promptu (bez zmiany schematu) = podbicie łatki
   (`PYT/1.0.1`) w `SZABLON_WERSJA` i wpis w `docs/PROJECT_HISTORY.md`.
-- **Kontener ≠ paczka.** Zmiana kontenera (`TO-paczka/1` → `TO-paczka/2`,
-  2026-09-05, ADR 0007) nie podbija wersji PYT, bo schemat paczki (§3.1/§3.2)
-  się nie zmienił, a aplikacja nie była opublikowana — nie istnieje paczka
-  użytkownika do zmigrowania. Po pierwszej publikacji Pages (M8) każda zmiana
-  kontenera wymaga migratora (`app/migracje.js`) i wpisu tutaj.
-- **Wariant odwrócony `PYT/1.0-rev1` (Partia 2)** — zapis pól tekstowych
-  od końca (§3.4). Nie podbija wersji schematu (kształt pól ten sam, jak
-  kontener ≠ paczka); walidator akceptuje oba markery, szablon generuje
-  odwrócony.
-- **Wariant `PYT/1.0-rev2`** — `poprawna` kodem pozycyjnym, koniec pola
-  `punkty` (§3.4). Jak rev1: zapis, nie nowa wersja; walidator przyjmuje
-  `PYT/1.0`, `-rev1` i `-rev2`, szablon generuje rev2. Dawne paczki działają
-  bez migratora (M8 nieopublikowany, a reguły i tak łagodnieją).
-- **Warianty `PYT/1.0-rev4` / `PYT/1.0-rev5` (2026-09-09, zgłoszenie B2)** —
-  koniec odwracania liter. Szablony generują rev4 (§2) i rev5 (§2.2).
+- **Zapis paczki (nie schemat) zmienia się bez podbijania PYT.** Tak było
+  z kontenerem `TO-paczka/1` → `TO-paczka/2` (2026-09-05, ADR 0007) i tak jest
+  z jego likwidacją (2026-09-15e, ADR 0050): kształt pól §3.1/§3.2 się nie
+  zmienił. Po pierwszej publikacji Pages (M8) każda zmiana **schematu** wymaga
+  migratora (`app/migracje.js`) i wpisu tutaj; zmian zapisu paczek sprzed
+  publikacji nie migrujemy, bo nie istnieje żadna paczka użytkownika.
 - **Wersje szablonów `PYT/1.0.8` / `PYT/1.0-nofc.3` (2026-09-12, uwagi terenowe
   G.b)** — z zasady 8 usunięto zdania o „NORMALNIE / nie odwracaj”.
-- **Koniec kodu pozycyjnego `poprawna` (2026-09-15, ADR 0049)** — bieżące
-  rev4/rev5 niosą czysty indeks `0..3`. Szablony `PYT/1.0.10` / `PYT/1.0-nofc.5`.
-  Właściciel kasuje stare paczki; dekoder rev2/rev3 zostaje dla testów zapisu
-  historycznego, bez migratora.
+- **Koniec kodu pozycyjnego `poprawna` (2026-09-15, ADR 0049)** — numer poprawnej
+  odpowiedzi przestał być kodem pozycyjnym. Szablony `PYT/1.0.10` / `PYT/1.0-nofc.5`.
+- **PYT/1.1: numer odpowiedzi `1..4`, jedna postać paczki (2026-09-15e, ADR 0050)** —
+  schemat zmienił się w dwóch miejscach: `poprawna` to **numer** `1..4` (klasa
+  błędu: model i człowiek liczą od 1, a aplikacja liczyła od 0 — trzecia odpowiedź
+  była oceniana jako czwarta), a marker `protokol` i warianty zapisu zniknęły.
+  Szablony `PYT/1.1.0` / `PYT/1.1-nofc.0`. **Bez migratora** (wyjątek od reguły
+  z §7 pkt 2): na dysku właściciela nie ma ANI JEDNEJ paczki tego protokołu
+  (gra jest w fazie testów terenowych), więc nie ma czego migrować — decyzja
+  właściciela z 2026-09-15. Zapis gry z poprzedniej wersji zostanie odrzucony
+  jawnie (kod `T`), a nie po cichu zinterpretowany.
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 
 ```json
 {
-  "protokol": "PYT/1.0",
   "okolica": { "lat": 52.23178, "lon": 21.01234, "promienM": 1000, "miejsce": "Śródmieście, Warszawa" },
   "wiek": "dorosli",
   "tematy": ["historia"],
@@ -453,7 +434,7 @@ zajęte, tak samo jak wycofany `E18`.
       "temat": "historia",
       "tresc": "Przy jakiej ulicy stała pierwsza siedziba Polskiej Agencji Telegraficznej (1918)?",
       "odpowiedzi": ["Bracka", "Mazowiecka", "Zgoda", "Jasna"],
-      "poprawna": 2,
+      "poprawna": 3,
       "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda (X 1918).",
       "zrodla": [{ "url": "https://pl.wikipedia.org/wiki/Polska_Agencja_Telegraficzna", "tytul": "Polska Agencja Telegraficzna — Wikipedia", "sprawdzono": "2026-09-05" }]
     }
@@ -490,7 +471,7 @@ w aplikacji. Schematy `RO-*` nigdy nie miały pola `zgoda`.
 | `organizatorId` | `"g-1"` | założyciel; tylko on startuje i kończy przedwcześnie |
 | `gracze` | `[{id: "g-N", pseudonim, dolaczyl}]` | maks. 8, pseudonim ≤24 znaków, unikalny w grze |
 | `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5, geohash8}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza); `geohash8` (~40 m, pozycja hosta z chwili założenia) = miara zasięgu ~50 m listy „Dołącz" (m12-74); przy zakładaniu wymagany, przy odczycie opcjonalny (stare gry) |
-| `zestaw` | `{stacje, kontener TO-paczka/2, meta TO-zestaw/1}` | mapa gry + ukryte pytania (ADR 0007) |
+| `zestaw` | `{stacje, paczka PYT/1.1, meta TO-zestaw/2}` | mapa gry + pytania jawnym JSON-em (ADR 0050) |
 | `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
 | `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal, premia}}` | liczone przez most przy zamknięciu gry; `punkty` zawierają `premia` (ADR 0027 część B) |
 
@@ -591,7 +572,7 @@ znaczenia — inaczej starszy klient w terenie odczytałby cudzy błąd jako sw�
 | R05 | Stan gry nieznany (lobby / trwa / zakonczona / archiwum). |
 | R06 | Gra nie ma graczy — stan uszkodzony. |
 | R07 | Konfiguracja gry niekompletna. |
-| R08 | Zestaw gry uszkodzony (stacje / kontener TO-paczka/2 / meta). |
+| R08 | Zestaw gry uszkodzony (stacje / jawna paczka pytań / meta). |
 | R09 | Zdarzenia gry uszkodzone (kolejność, gracz, typ, czas serwera). |
 | R10 | Zdarzenie nie jest poprawnym JSON-em. |
 | R11 | To nie jest zdarzenie schematu `RO-zdarzenie/1`. |

@@ -29,14 +29,13 @@ const START = { lat: 52.23178, lon: 21.01234 };
 const ZIARNO = 'okolica:52.23178:21.01234:1000:5:2026-09-05';
 const STACJE = stacjeProste({ srodek: START, liczbaStacji: 5, promienM: 1000, ziarno: ZIARNO });
 
-/** Paczka syntetyczna: 1 pytanie na stację, `poprawna` jawna w teście. */
+/** Paczka syntetyczna: 1 pytanie na stację, `poprawna` jako NUMER 1..4 (ADR 0050). */
 function paczka(stacje = STACJE, pytaniaNaStacje = 1) {
   return {
-    protokol: 'PYT/1.0',
     pytania: stacje.flatMap((s) => Array.from({ length: pytaniaNaStacje }, (_, k) => ({
       id: `s${s.id}p${k + 1}`,
       stacja: s.id,
-      poprawna: s.id % 4,
+      poprawna: (s.id % 4) + 1,
     }))),
   };
 }
@@ -65,8 +64,9 @@ function przejdzStacje(stan, { stacjaId = stan.biezacaStacja, startMs, koniecMs,
   // na pierwsze, następny w kolejce na drugie itd. (`graczPytania`).
   for (const pytanieId of pytaniaStacji(biezacy, stacjaId)) {
     const graczId = graczPytania(biezacy, stacjaId, pytanieId);
-    const pytanie = { id: pytanieId, poprawna: stacjaId % 4 };
-    const wybrana = wybrane ? wybrane({ stacjaId, graczId, pytanieId }) : pytanie.poprawna;
+    const pytanie = { id: pytanieId, poprawna: (stacjaId % 4) + 1 };
+    // `wybrana` to indeks przycisku 0..3, `poprawna` numer 1..4 — stąd „- 1”.
+    const wybrana = wybrane ? wybrane({ stacjaId, graczId, pytanieId }) : pytanie.poprawna - 1;
     const wynik = zapiszOdpowiedz(biezacy, { stacjaId, graczId, pytanie, wybrana, czasMs: koniecMs + 5000 });
     assert.deepEqual(wynik.usterki, [], `odpowiedź ${pytanieId}/${graczId}`);
     biezacy = wynik.stan;
@@ -235,7 +235,8 @@ test('zapiszOdpowiedz: 1 pkt za poprawną, zero śladu czasowego (rev2, Partia 2
 });
 
 test('zapiszOdpowiedz: błędna odpowiedź daje zero punktów', () => {
-  const stan = przejdzStacje(nowa(), { stacjaId: 1, startMs: 0, koniecMs: 120_000, wybrane: ({ pytanieId }) => (Number(pytanieId.slice(1, 2)) % 4) + 1 > 3 ? 0 : ((STACJE[0].id % 4) + 1) % 4 });
+  // Stacja 1 → poprawna = 2 (B); odpowiedź A (indeks 0) jest błędna.
+  const stan = przejdzStacje(nowa(), { stacjaId: 1, startMs: 0, koniecMs: 120_000, wybrane: () => 0 });
   const odpowiedz = stan.odpowiedzi[0];
   assert.equal(odpowiedz.poprawna, false);
   assert.equal(odpowiedz.punktyPodstawowe, 0);
@@ -249,7 +250,7 @@ test('zapiszOdpowiedz: kody usterek G01/G02/G05/G06/G07/G08/G10', () => {
   assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 99, pytanie: ok, wybrana: 1, czasMs: 1 }).usterki.map((u) => u.kod), ['G01']);
   assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, graczId: 42, pytanie: ok, wybrana: 1, czasMs: 1 }).usterki.map((u) => u.kod), ['G02'], 'gracza 42 nie ma w rozgrywce');
   assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, graczId: 2, pytanie: ok, wybrana: 1, czasMs: 1 }).usterki.map((u) => u.kod), ['G07'], 'gracz spoza kolejki w trybie „zespół"');
-  assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: { id: 's9p9', poprawna: 0 }, wybrana: 0, czasMs: 1 }).usterki.map((u) => u.kod), ['G05']);
+  assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: { id: 's9p9', poprawna: 1 }, wybrana: 0, czasMs: 1 }).usterki.map((u) => u.kod), ['G05']);
   assert.deepEqual(zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: ok, wybrana: 7, czasMs: 1 }).usterki.map((u) => u.kod), ['G08']);
 
   const po = zapiszOdpowiedz(stan, { stacjaId: 1, pytanie: ok, wybrana: 1, czasMs: 1 }).stan;
@@ -296,7 +297,7 @@ test('stacja bez pytania: dojście zamyka ją bez punktów i gra idzie dalej', (
   assert.equal(poDojsciu.biezacaStacja, 5, 'stacja bez pytania zamyka się samym dojściem');
   assert.equal(poDojsciu.odpowiedzi.length, 3, 'odpowiedzi tylko z stacji 1–3');
   assert.deepEqual(podsumowanie(poDojsciu).stacjeBezPytan, [4, 5]);
-  assert.deepEqual(zapiszOdpowiedz(poDojsciu, { stacjaId: 4, pytanie: { id: 's4p1', poprawna: 0 }, wybrana: 0, czasMs: 1 }).usterki.map((u) => u.kod), ['G05'], 'nie da się odpowiedzieć na pytanie, którego nie ma');
+  assert.deepEqual(zapiszOdpowiedz(poDojsciu, { stacjaId: 4, pytanie: { id: 's4p1', poprawna: 1 }, wybrana: 0, czasMs: 1 }).usterki.map((u) => u.kod), ['G05'], 'nie da się odpowiedzieć na pytanie, którego nie ma');
 });
 
 /* ---------------------------------------------------------- kolejka odpowiadania */
@@ -357,11 +358,11 @@ test('rotacja pytań: drugie pytanie należy do następnego gracza, nie do wła�
   assert.deepEqual(nieSwoje.usterki.map((u) => u.kod), ['G07'], 'pytanie 1 należy do gracza z kolejki, nie do Bartka');
 
   // Poprawny przebieg: Ania odpowiada na pytanie 1, Bartek na pytanie 2.
-  const poAni = zapiszOdpowiedz(stan, { stacjaId: 1, graczId: 1, pytanie: { id: 's1p1', poprawna: 1 }, wybrana: 1, czasMs: 1 }).stan;
+  const poAni = zapiszOdpowiedz(stan, { stacjaId: 1, graczId: 1, pytanie: { id: 's1p1', poprawna: 1 }, wybrana: 0, czasMs: 1 }).stan;
   assert.equal(poAni.faza, FAZY.pytanie, 'stacja czeka na drugie pytanie');
   const drugieAni = zapiszOdpowiedz(poAni, { stacjaId: 1, graczId: 1, pytanie: { id: 's1p2', poprawna: 2 }, wybrana: 0, czasMs: 2 });
   assert.deepEqual(drugieAni.usterki.map((u) => u.kod), ['G07'], 'Ania nie odpowiada na pytanie Bartka (ta sama stacja, drugie pytanie)');
-  const poBartku = zapiszOdpowiedz(poAni, { stacjaId: 1, graczId: 2, pytanie: { id: 's1p2', poprawna: 2 }, wybrana: 2, czasMs: 3 }).stan;
+  const poBartku = zapiszOdpowiedz(poAni, { stacjaId: 1, graczId: 2, pytanie: { id: 's1p2', poprawna: 2 }, wybrana: 1, czasMs: 3 }).stan;
   assert.equal(poBartku.faza, FAZY.przygotowanie, 'po drugim pytaniu stacja się zamyka');
   assert.equal(poBartku.biezacaStacja, 2, 'gra idzie do następnej stacji');
   assert.deepEqual(poBartku.odpowiedzi.map((o) => [o.pytanieId, o.gracz, o.poprawna]), [['s1p1', 1, true], ['s1p2', 2, true]]);
@@ -492,7 +493,7 @@ test('pełna gra 3 graczy × 5 stacji: od startu do podsumowania', () => {
 
 test('pełna gra z błędnymi odpowiedziami i ręcznym dojściem: punkty i tryb dojścia widoczne', () => {
   let stan = nowa();
-  stan = przejdzStacje(stan, { stacjaId: 1, startMs: 0, koniecMs: 200_000, wybrane: () => 0 }); // poprawna = 1, więc 0 to błąd
+  stan = przejdzStacje(stan, { stacjaId: 1, startMs: 0, koniecMs: 200_000, wybrane: () => 0 }); // poprawna = 2 (B), więc 0 to błąd
   stan = przejdzStacje(stan, { stacjaId: 2, startMs: 300_000, koniecMs: 700_000, trybDojscia: TRYBY_DOJSCIA.reczne });
   const s = podsumowanie(stan);
   const gracz1 = s.gracze.find((g) => g.id === 1);

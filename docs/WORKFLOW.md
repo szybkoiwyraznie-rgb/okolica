@@ -74,8 +74,7 @@ Koniec sesji:
    poprawne dane” — bez listy kodów E01–E20 i bez poprawki dla modelu
    (2026-09-15), a pole wklejenia zostaje puste. Poprawna paczka **od razu zaczyna grę** (i leci na
    Drive prosto do repozytorium okolicy — moderacja wstępna zniesiona
-   2026-09-11); pytania są ukrywane (TO-paczka/2), a pole wklejania
-   czyszczone.
+   2026-09-11); pytania leżą jawnie (ADR 0050), a pole wklejania czyszczone.
 6. **Gra**: odcinek startuje jawną akcją, dojście zalicza tylko GPS (dwa fixy
    w progu, ADR 0004/0029). Nieosiągalną stację i całą grę kończy ikona
    „⚙ START GRY” w belce: NIE JEST zgaszona (odwrócenie zadania J, 2026-09-12),

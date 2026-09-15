@@ -34,7 +34,7 @@ const SZABLONY = [
     kodKoniec: 'SZABLON-KONIEC */',
     stala: 'SZABLON_PROMPTU',
     sekcja: '§2',
-    wymagane: ['{LAT}', '{LON}', '{LISTA_STACJI}', '{OPIS_TRUDNOSCI}', 'ZASADY TWARDE', 'PYT/1.0-rev4'],
+    wymagane: ['{LAT}', '{LON}', '{LISTA_STACJI}', '{OPIS_TRUDNOSCI}', 'ZASADY TWARDE', 'numer poprawnej odpowiedzi od 1 do 4'],
   },
   {
     dokStart: '<!-- szablon-promptu-bez:start -->',
@@ -43,7 +43,7 @@ const SZABLONY = [
     kodKoniec: 'SZABLON-BEZ-KONIEC */',
     stala: 'SZABLON_PROMPTU_BEZ_WERYFIKACJI',
     sekcja: '§2.2',
-    wymagane: ['{LAT}', '{LON}', '{LISTA_STACJI}', '{OPIS_TRUDNOSCI}', 'ZASADY TWARDE', 'PYT/1.0-rev5', 'OPCJONALNE'],
+    wymagane: ['{LAT}', '{LON}', '{LISTA_STACJI}', '{OPIS_TRUDNOSCI}', 'ZASADY TWARDE', 'numer poprawnej odpowiedzi od 1 do 4', 'OPCJONALNE'],
   },
 ];
 

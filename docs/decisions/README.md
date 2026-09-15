@@ -23,7 +23,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0004](0004-geolokalizacja-i-kryterium-dojscia.md) | Geolokalizacja `watchPosition` i kryterium dojścia do stacji | Zaakceptowana |
 | [0005](0005-stacje-z-sieci-drogowej-overpass.md) | Stacje z sieci drogowej (Overpass): kandydaci, filtry, wybór pod ziarnem | Proponowana |
 | [0006](0006-pytania-przez-prompt-i-wklejenie.md) | Pytania: prompt → model AI → wklejenie (bez backendu i kluczy API) | Zaakceptowana |
-| [0007](0007-ukrywanie-paczki-obfuskacja-bez-klucza.md) | Ukrywanie paczki pytań: odwracalna obfuskacja bez klucza (nie szyfrowanie) | Zaakceptowana |
+| [0007](archive/0007-ukrywanie-paczki-obfuskacja-bez-klucza.md) | Ukrywanie paczki pytań: odwracalna obfuskacja bez klucza (nie szyfrowanie) | Wycofana |
 | [0008](0008-kwerenda-i-zrodla-w-kazdym-pytaniu.md) | Obowiązkowa kwerenda internetowa i źródło URL przy każdym pytaniu | Zaakceptowana |
 | [0009](0009-jeden-telefon-hot-seat.md) | Rozgrywka wieloosobowa: jeden telefon (hot-seat; rotacja pytań — aneks 2026-09-12) | Zaakceptowana |
 | [0010](0010-trwalosc-localstorage-i-eksport-paczki.md) | Trwałość: `localStorage` + paczka jako plik, docelowo repozytorium (lokalnej historii gier nie ma — aneks 2026-09-13c) | Proponowana |
@@ -49,7 +49,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0030](0030-rozgrywka-pod-orientacje-telefonu.md) | Rozgrywka układa się pod orientację telefonu, a pytanie leży NA mapie (obróć ekran — mapa sama centruje się na graczu; blokady orientacji NIE MA — aneks 2026-09-13) | Zaakceptowana |
 | [0031](archive/0031-generowanie-pytan-partiami.md) | Duży setup generuje pytania partiami, a aplikacja sama je scala (stałe szacunku usunięte — aneks 2026-09-12) | Wycofana |
 | [0032](0032-wariant-bez-fact-check.md) | Wariant „Pytania (bez fact check)" jako domyślny (znaczek weryfikacji mówi „Fact-checked" — aneks 2026-09-13) | Zaakceptowana |
-| [0033](0033-koniec-odwracania-liter.md) | Koniec odwracania liter: zostaje kod poprawnej odpowiedzi | Zaakceptowana |
+| [0033](archive/0033-koniec-odwracania-liter.md) | Koniec odwracania liter: zostaje kod poprawnej odpowiedzi | Wycofana |
 
 | [0034](0034-uproszczenie-terenowe-i-warstwy.md) | Uproszczenie terenowe: setup, warstwy, dojście 50 m | Zaakceptowana |
 | [0035](0035-overpass-krotkie-proby.md) | Overpass: próby po 10 s, preferencje i diagnostyka w Informacjach | Zaakceptowana |
@@ -66,7 +66,8 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0046](0046-promien-jest-kryterium-dopasowania-paczek.md) | Promień gry jest kryterium dopasowania paczek (równość paczka↔setup) — odwrócenie fragmentu aneksu ADR 0024 | Zaakceptowana |
 | [0047](0047-strona-nie-jest-szczypalna-poza-mapa.md) | Strona nie jest szczypalna poza mapą (blokada gestów iOS poza `.mapa`) — zastępuje fragment ADR 0011 | Zaakceptowana |
 | [0048](0048-nazwa-paczki-na-drive-koduje-fakty.md) | Nazwa pliku paczki na Drive koduje fakty z `meta`, nie geohash | Zaakceptowana |
-| [0049](0049-poprawna-czysty-indeks.md) | Numer poprawnej odpowiedzi jest czystym indeksem 0–3 (koniec kodu pozycyjnego) | Zaakceptowana |
+| [0049](archive/0049-poprawna-czysty-indeks.md) | Numer poprawnej odpowiedzi jest czystym indeksem 0–3 (koniec kodu pozycyjnego) | Wycofana |
+| [0050](0050-paczka-jawna-bez-ukrywania.md) | Paczka jawna: koniec ukrywania pytań (kontener usunięty) i numer odpowiedzi `1..4` | Zaakceptowana |
 
 ## Szablon ADR
 

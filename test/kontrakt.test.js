@@ -14,7 +14,6 @@ import { fileURLToPath } from 'node:url';
 
 import { SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU } from '../app/protokol.js';
 import { PODKLADY, TEMATY, TRYBY, WIEK } from '../app/konfig.js';
-import { KODOWANIE, SCHEMAT_KONTENERA } from '../app/kodowanie.js';
 import { KODY_POZYCJI } from '../app/pozycja.js';
 import { KODY_WIELOOSOBOWE } from '../app/wieloosobowa.js';
 
@@ -508,14 +507,16 @@ test('kontrakt: status w rejestrze ADR jest zgodny ze statusem w pliku ADR', () 
   }
 });
 
-test('kontrakt: kontener paczki jest opisany w PROTOKOL §3.3 tak jak w app/kodowanie.js', () => {
-  assert.ok(PROTOKOL.includes(`"${SCHEMAT_KONTENERA}"`), 'w protokole nie ma schematu kontenera z kodu');
-  assert.ok(PROTOKOL.includes(`"${KODOWANIE}"`), 'w protokole nie ma nazwy kodowania z kodu');
-  const sekcja = PROTOKOL.slice(PROTOKOL.indexOf('### 3.3'), PROTOKOL.indexOf('## 4.'));
-  for (const pole of ['schemat', 'protokol', 'kodowanie', 'skrot', 'dane']) {
-    assert.ok(sekcja.includes(pole), `§3.3 nie opisuje pola „${pole}"`);
-  }
-  assert.ok(sekcja.includes('To nie jest szyfrowanie'), '§3.3 musi mówić wprost, że to nie szyfrowanie (ADR 0007 pkt 5)');
+test('kontrakt: jawny zapis paczki jest opisany w PROTOKOL §3.3 tak jak w app/zestawy.js', () => {
+  // ADR 0050: kontenera i obfuskacji nie ma — §3.3 opisuje jawny JSON i odcisk
+  // treści `skrotPaczki()`. Test pilnuje, żeby ukrywanie nie wróciło bokiem.
+  assert.equal(existsSync(join(ROOT, 'app/kodowanie.js')), false, 'app/kodowanie.js usunięty (ADR 0050)');
+  const sekcja = PROTOKOL.slice(PROTOKOL.indexOf('### 3.3'), PROTOKOL.indexOf('### 3.4'));
+  assert.ok(sekcja.includes('jawny JSON'), '§3.3 musi mówić, że paczka leży jawnym JSON-em');
+  assert.ok(sekcja.includes('skrotPaczki()'), '§3.3 opisuje odcisk treści liczony w app/zestawy.js');
+  assert.equal(/TO-paczka/.test(sekcja), false, '§3.3 nie wspomina już kontenera');
+  assert.equal(/b64x1/.test(sekcja), false, '§3.3 nie wspomina już obfuskacji');
+  assert.match(sekcja, /danych osobowych/, '§3.3 zostawia zakaz danych osobowych w jawnej paczce (ADR 0013)');
   for (const poleZSzyfrowania of ['"sol"', '"iv"', '"iteracje"']) {
     assert.ok(!sekcja.includes(poleZSzyfrowania), `§3.3 wciąż opisuje pole ${poleZSzyfrowania} z odrzuconego wariantu AES-GCM`);
   }
@@ -528,7 +529,10 @@ test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
     assert.ok(!/app\/krypto\.js|krypto\.zaszyfruj|krypto\.odszyfruj/.test(tresc), `${plik}: odniesienie do nieistniejącego modułu krypto.js`);
     assert.ok(!/PBKDF2|AES-GCM/.test(tresc), `${plik}: obiecuje szyfrowanie, którego w kodzie nie ma (BACKLOG B16)`);
   }
-  assert.ok(README.includes('nie\nzaszyfrowana') || README.includes('nie zaszyfrowana'), 'README musi mówić wprost, że paczka nie jest zaszyfrowana');
+  assert.ok(README.includes('jawnym\nJSON-em') || README.includes('jawnym JSON-em'), 'README musi mówić wprost, że paczka jedzie jawnym JSON-em (ADR 0050)');
+  for (const plik of ['README.md', 'AGENTS.md', 'docs/ARCHITECTURE.md']) {
+    assert.equal(/obfuskacj/i.test(czytaj(plik)), false, `${plik}: obiecuje ukrywanie paczek, którego nie ma (ADR 0050)`);
+  }
   assert.ok(INDEX.includes('nie jest zaszyfrowany'), 'ekran wklejania musi mówić wprost, że tekst nie jest zaszyfrowany');
   assert.ok(INDEX.includes('identyfikator rozgrywki'), 'kod gry musi być opisany jako identyfikator, nie klucz (ADR 0007 pkt 4)');
 });
@@ -621,7 +625,8 @@ test('kontrakt: ekran „dane i prywatność" ma cztery karty z ADR 0013 pkt 7 i
   for (const temat of ['Co jest pobierane', 'Dokąd trafia Twoja pozycja', 'Co zostaje na telefonie', 'Jak to skasować']) {
     assert.ok(sekcja.includes(temat), `ekran prywatności nie mówi: ${temat} (ADR 0013 pkt 7)`);
   }
-  assert.match(sekcja, /nie\s+zaszyfrowana/, 'paczka opisana uczciwie: ukryta, nie zaszyfrowana (ADR 0007)');
+  assert.match(sekcja, /jawna/, 'paczka opisana uczciwie: jawna, bez ukrywania (ADR 0050)');
+  assert.match(sekcja, /nie\s+(jest\s+)?zaszyfrowana/, 'paczka opisana uczciwie: nie jest zaszyfrowana');
   assert.ok(!/jest zaszyfrowana/.test(sekcja), 'ekran nie może obiecywać szyfrowania');
 });
 
@@ -1161,7 +1166,7 @@ test('kontrakt: ręczna edycja paczki nie istnieje w kodzie (ADR 0006 aneks 2026
   const protokol = czytaj('app/protokol.js');
   // Podgląd i edycja organizatora zniknęły z ekranu decyzją właściciela
   // (2026-09-07), więc funkcja je obsługująca była martwa — a przy tym
-  // walidowała `poprawna` jako 0..3, czyli sprzed rev2 (kod pozycyjny).
+  // walidowała `poprawna` jako indeks 0..3, czyli w numeracji sprzed ADR 0050.
   assert.ok(!protokol.includes('zastosujEdycjePaczki'), 'martwa funkcja edycji usunięta z app/protokol.js');
   assert.ok(!protokol.includes('EDYTOWALNE_POLA'), 'lista pól edytowalnych usunięta razem z funkcją');
   assert.ok(!INDEX.includes('podglad-pytania'), 'ekran paczki nie ma podglądu pytania');
@@ -1187,7 +1192,10 @@ test('kontrakt: łatkę szablonu widać w dokumencie, nie w panelu gracza (PROTO
   for (const nazwa of ['SZABLON_WERSJA', 'SZABLON_WERSJA_BEZ_WERYFIKACJI']) {
     const stala = czytaj('app/protokol.js').match(new RegExp(`export const ${nazwa} = '([^']+)'`));
     assert.ok(stala, `${nazwa} jest eksportowana z app/protokol.js`);
-    assert.match(stala[1], /^PYT\/1\.0(-nofc)?\.\d+$/, `${nazwa} ma kształt PYT/1.0.N (albo PYT/1.0-nofc.N)`);
+    // Kształt bierzemy z obowiązującej wersji protokołu: podbicie schematu
+    // (ADR 0050 → PYT/1.1) nie może zostawić tego strażnika w tyle.
+    const wzorLatki = new RegExp(`^${WERSJA_PROTOKOLU.replace('/', '\\/')}(-nofc)?\\.\\d+$`);
+    assert.match(stala[1], wzorLatki, `${nazwa} ma kształt ${WERSJA_PROTOKOLU}.N (albo ${WERSJA_PROTOKOLU}-nofc.N)`);
     assert.ok(protokolTekst.includes(stala[1]), `docs/PROTOKOL.md nie cytuje ${nazwa} = ${stala[1]} — podbicie bez wpisu w dokumencie`);
   }
   const app = czytaj('app/app.js');
@@ -1252,6 +1260,13 @@ test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', ()
   assert.ok(detale < odpowiedzi && odpowiedzi < listaWariantow, 'pytanie, warianty-klikalne i warianty-statyczne są WEWNĄTRZ <details>, w tej kolejności');
   assert.ok(listaWariantow < oceny && oceny < wynik, 'łapki zostają na wierzchu: po <details>, przed wynikiem odpowiedzi');
   assert.match(INDEX, /<details id="gra-pytanie-detale" open>/, 'element w fazie odpowiedzi startuje OTWARTY (gracz musi widzieć pytanie)');
+  // Uwaga właściciela z terenu (2026-09-15, a): gdy pytanie jest na wierzchu,
+  // wiersza etykiety nie ma (treść rośnie o jego wysokość), a po werdykcie
+  // sekcja zwija się pod widocznym „Rozwiń pytanie".
+  assert.match(INDEX, /<summary id="gra-pytanie-detale-naglowek">Rozwiń pytanie<\/summary>/,
+    'zwinięte pytanie ma widoczną etykietę „Rozwiń pytanie”');
+  assert.match(STYLE, /#gra-pytanie-detale\[open\] > summary \{ display: none; \}/,
+    'w fazie odpowiedzi summary jest schowane — treść pytania podnosi się do góry');
   assert.ok(APP.includes('kliknijOcene(OCENA_PLUS)') && APP.includes('kliknijOcene(OCENA_MINUS)'), 'oba kciuki są podpięte');
   assert.ok(APP.includes('wyslijOceneWTle'), 'głos jedzie w tle, nie blokuje gry');
   assert.ok(APP.includes('oproznijKolejkeOcen()'), 'kolejka głosów jest opróżniana przy starcie');
@@ -1268,7 +1283,7 @@ test('kontrakt ADR 0028 aneks: ocenić można każdą paczkę, bo każda jest na
   assert.ok(!APP.includes("STAN.paczkaRepoId = ''; // ADR 0028: paczka z telefonu nie zbiera ocen"),
     'paczka z telefonu nie jest już wykluczona z oceniania');
   assert.ok(APP.includes('idPaczkiDlaZestawu('), 'aplikacja odzyskuje identyfikator paczki z pamięci telefonu');
-  assert.ok(APP.includes('zapamietajIdPaczkiDlaZestawu('), 'identyfikator jest zapamiętywany przy skrócie kontenera');
+  assert.ok(APP.includes('zapamietajIdPaczkiDlaZestawu('), 'identyfikator jest zapamiętywany przy odcisku paczki');
   assert.ok(APP.includes('okolica:paczki-drive'), 'mapa skrót → id paczki ma własny klucz w localStorage');
   assert.match(GS, /return nazwa === FOLDERY\.zaakceptowane;/,
     'most przyjmuje głosy dla paczek w zaakceptowanych (od 2026-09-11 bez katalogu przeglądu)');
