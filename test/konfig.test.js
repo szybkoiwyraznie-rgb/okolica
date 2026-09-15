@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DOMYSLNE, JEZYK_GRY, KANON_SETUPU, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_DOPELNIANE_PRZY_MIGRACJI, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, ZMIANY_KANONU_SETUPU, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, dopelnijNoweTematySetupu, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, pytaniaNaStacjeDla, rngZZiarna, tematyDopelnianeOdKanou, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
+import { DOMYSLNE, JEZYK_GRY, KANON_SETUPU, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_DOPELNIANE_PRZY_MIGRACJI, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, ZMIANY_KANONU_SETUPU, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, CZASY_GRY, dopelnijKonfiguracjeDoKanou, dopelnijNoweTematySetupu, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, pytaniaNaStacjeDla, rngZZiarna, tematyDopelnianeOdKanou, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
 test('TRYBY: trzy tryby z briefu właściciela, prędkości 4,5/15/40 km/h, bez własnego promienia (ADR 0025)', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
@@ -143,6 +143,21 @@ test('walidujSetup: przyjmuje poprawną i odrzuca każdą klasę błędu', () =>
   assert.ok(kody({ ...baza, tematy: ['historia', 'wlasny'], tematWlasny: '' }).includes('K21'), 'wlasny bez tekstu to K21');
   assert.ok(!kody({ ...baza, tematy: ['historia', 'wlasny'], tematWlasny: 'kinematografia' }).includes('K21'), 'wlasny z tekstem przechodzi');
   assert.ok(kody(null).includes('K01'));
+});
+
+test('CZASY_GRY: plan gry wybiera się z czterech przycisków (uwaga A, 2026-09-15)', () => {
+  // Lista jest w konfigu, bo czytają ją dwa miejsca: segment w setupie i
+  // uzasadnienie promienia. Zamknięty zbiór NIE jest regułą walidatora —
+  // widełki zostają szerokie (10–480), bo stary zapis z 240 minut ma prawo
+  // działać; tylko nowy wybór pochodzi z przycisków.
+  assert.deepEqual(CZASY_GRY, [30, 60, 90, 120], 'minuty właściciela: pół, godzina, półtorej, dwie');
+  assert.ok(CZASY_GRY.includes(DOMYSLNE.czasGryMin), 'domyślny czas ma swój przycisk — setup nie startuje bez zaznaczenia');
+  assert.equal(OGRANICZENIA.czasGryMin.min, 10, 'widełek nie zacieśniamy (pilnuje ich K19)');
+  assert.equal(OGRANICZENIA.czasGryMin.max, 480, 'widełek nie zacieśniamy (pilnuje ich K19)');
+  const kody = (k) => walidujSetup(k).map((u) => u.kod);
+  assert.ok(!kody(oczyscKonfiguracje({ czasGryMin: 240 })).includes('K19'),
+    '240 min ze starego zapisu jest w widełkach — bez odmowy, żaden przycisk nie jest wtedy wciśnięty');
+  assert.ok(kody(domyslnaKonfiguracja(2)).length === 0, 'domyślny setup (60 min = przycisk) jest poprawny');
 });
 
 test('walidujSetup: pieszo z promieniem 30 km dostaje ostrzeżenie K13', () => {

@@ -113,11 +113,12 @@ body {
 .ekran { max-width: 720px; margin: 0 auto; }
 .ekran h2 { margin: 4px 0 12px; font-size: 22px; }
 
-/* Zgłoszenie właściciela (2026-09-09): „Planowany czas gry (min)" łamał się na
+/* Zgłoszenie właściciela (2026-09-09): najdłuższa etykieta setupu łamała się na
    dwa wiersze przy pustej czwartej kolumnie. `repeat(4, 1fr)` na szerokim
    ekranie było sztywne — dzieliło rząd na cztery części niezależnie od tego,
-   ile pól faktycznie w nim stoi, a rzędy mają ich trzy (czas/stacje/pytania)
-   albo dwa (język/podkład, lat/lon). Do tego karta setupu ma `max-width: 640px`,
+   ile pól faktycznie w nim stoi. Dziś w siatce stoi jedno pole (liczba stacji):
+   czas gry ma segment nad siatką, a liczby pytań się nie wybiera (ADR 0025 i
+   ADR 0027, aneksy 2026-09-15). Do tego karta setupu ma `max-width: 640px`,
    więc „szeroki ekran" nie znaczy szeroki kontener: kolumny wychodziły po ~145 px
    i najdłuższa etykieta się nie mieściła.
    `auto-fit` + `minmax` liczy kolumny z DOSTĘPNEGO miejsca i faktycznej liczby
@@ -265,6 +266,20 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .segment input { position: absolute; opacity: 0; pointer-events: none; }
 .segment label:has(input:checked) { border-color: var(--akcent); background: var(--akcent-slaby); font-weight: 600; }
 .segment label:has(input:focus-visible) { outline: 3px solid var(--akcent); outline-offset: 1px; }
+
+/* Czas gry (uwaga A właściciela, 2026-09-15): cztery przyciski w jednym
+   rzędzie. Bazowe `flex-basis: 30%` liczy trzy (tyle ma „Sposób poruszania
+   się”), a czwarty zjeżdżałby sam do drugiej linii i wyglądał jak odrzut. */
+.segment-czas label {
+  flex: 1 1 20%;
+  min-width: 0;
+  padding: 8px 2px;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;   /* „120 min" w dwóch liniach wygląda jak odrzut (zgłoszenie 2026-09-09 dotyczyło tego samego zjawiska) */
+  font-size: 14px;
+}
 
 .chipy { display: flex; flex-wrap: wrap; gap: 8px; }
 .chipy label {

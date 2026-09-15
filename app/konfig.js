@@ -296,15 +296,29 @@ export const PODKLADY = {
 export const OGRANICZENIA = {
   liczbaGraczy: { min: 1, max: 8 },
   liczbaStacji: { min: 3, max: 12 },
-  // nie jest polem setupu (uwaga właściciela B, 2026-09-15): liczy ją
-  // `pytaniaNaStacjeDla`. max = maks. liczba graczy, bo w hot-seacie każdy
-  // gracz odpowiada przy każdej stacji (ADR 0027).
+  // Liczby pytań na stację nie wybiera organizator (uwaga właściciela B,
+  // 2026-09-15): liczy ją `pytaniaNaStacjeDla`. max = maks. liczba graczy, bo
+  // w hot-seacie każdy gracz odpowiada przy każdej stacji (ADR 0027).
   pytaniaNaStacje: { min: 1, max: 8 },
   promienM: { min: 200, max: 50000 },
   czasGryMin: { min: 10, max: 480 },
   dlugoscKoduGry: { min: 4, max: 40 },
   dlugoscImienia: { min: 1, max: 20 },
 };
+
+/**
+ * Planowany czas gry wybiera się z czterech przycisków (uwaga terenowa właściciela
+ * A, 2026-09-15): „niech to będą przyciski wyboru — stukasz jeden, poprzedni
+ * odpuszcza; wartości 30, 60, 90, 120 minut". Lista żyje w konfigu, bo czytają
+ * ją dwa miejsca: segment setupu i uzasadnienie promienia.
+ *
+ * To NIE jest zamknięty zbiór walidatora: `OGRANICZENIA.czasGryMin` zostaje
+ * 10–480, więc stary zapis (albo import) z 240 minutami nadal działa —
+ * po prostu żaden przycisk nie jest wtedy wciśnięty, a pierwsza zmiana
+ * wyboru wchodzi do zbioru. Walidator bez wartości poza przyciskami
+ * wysyłałby gracza po pomoc do kontrolki, która nie umie jej udzielić (L64).
+ */
+export const CZASY_GRY = [30, 60, 90, 120];
 
 /** Wartości domyślne ekranu setup (brief właściciela z 2026-09-05; liczba graczy: decyzja z 2026-09-07 — hot-seat startuje od 1). */
 export const DOMYSLNE = {

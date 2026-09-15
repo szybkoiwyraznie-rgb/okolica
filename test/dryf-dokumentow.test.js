@@ -302,7 +302,19 @@ const MARTWE_FRAZY = [
     nosniki: UI,
     powod: 'fałszywa obietnica w komentarzu (do 2026-09-14): wolne TSP NIE realizuje nierówności właściciela — wejście wpina twardo kolejnoscTrasy (ADR 0005 aneks m12-116)',
   },
-  // Fala 2026-09-15 (uwaga B właściciela, PR #30): setup hot-seat nie pyta o liczbę
+  // Fala 2026-09-15 (uwagi właściciela A i B, PR #30): w setupie nie ma już ani
+  // pola liczby pytań (B — plan wynika z listy graczy, ADR 0027 aneks), ani pola
+  // do wpisania minut (A — są cztery przyciski, ADR 0025 aneks).
+  {
+    fraza: 'Planowany czas gry (min)',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'minut się nie wpisuje — wybiera z CZASY_GRY (30/60/90/120), ADR 0025 aneks 2026-09-15',
+  },
+  {
+    fraza: 'Wpisz planowany czas',
+    nosniki: UI,
+    powod: 'nie ma pola do wpisywania czasu, więc komunikat awaryjny nie może kazać wpisywać (ADR 0025 aneks 2026-09-15)',
+  },  // Fala 2026-09-15 (uwaga B właściciela, PR #30): setup hot-seat nie pyta o liczbę
   // pytań na stację — wynika z listy graczy (ADR 0027 aneks).
   {
     fraza: 'Pytania na stację',

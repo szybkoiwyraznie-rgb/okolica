@@ -1052,7 +1052,7 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   assert.ok(!APP.includes('otworzListeGier'), 'dawny flow „lista gier na ekranie multi” usunięty');
   // przy „Dołączam” chowane są pola parametrów gry, a „Poprzednie gry” nie pokazują się w multi
   assert.match(APP, /renderujPolaTozsamosci/, 'widoczność pól tożsamości sterowana funkcją (multi = sama karta gracza)');
-  for (const id of ['pole-tryb', 'pole-parametry', 'pole-wiek', 'pole-tematy', 'pole-tozsamosc-siatka']) {
+  for (const id of ['pole-tryb', 'pole-czas', 'pole-parametry', 'pole-wiek', 'pole-tematy', 'pole-tozsamosc-siatka']) {
     assert.ok(INDEX.includes(`id="${id}"`), `#${id} ma id do chowania przy „Dołączam”`);
   }
   // „Ty w tej grze” w multi: dokładnie jedna osoba na telefon, pola znikają
@@ -1260,6 +1260,28 @@ test('ADR 0034: wspólny panel mieści się pod mierzoną belką i przewija samo
 });
 
 
+
+/**
+ * Uwaga A właściciela (2026-09-15, PR #30): „Czas gry ma być wybierany
+ * przyciskami — 30, 60, 90, 120 minut; stukasz jeden, poprzedni odpuszcza”.
+ * Czyli: nie ma pola do wpisywania liczby, jest segment radia (wykluczanie
+ * natywne, ADR 0011 — te same pola trafień co przy „Sposobie poruszania się”).
+ */
+test('setup: czas gry to segment z czterech przycisków, nie pole liczby', () => {
+  assert.match(INDEX, /<fieldset class="pole" id="pole-czas">\s*<legend>Planowany czas gry<\/legend>\s*<div id="lista-czasow" class="segment segment-czas"><\/div>\s*<\/fieldset>/,
+    'blok czasu gry ma legendę i pusty segment, który wypełnia aplikacja (jak #pole-tryb)');
+  assert.equal(INDEX.includes('id="setup-czas"'), false, 'pola number na czas gry nie ma — nie ma czym wpisać 47 minut');
+  assert.equal(INDEX.includes('Planowany czas gry (min)'), false, 'etykieta z „(min)” zniknęła razem z polem');
+  assert.match(APP, /CZASY_GRY/, 'aplikacja nie trzyma listy minut w sobie — biera ją z konfigu');
+  assert.match(APP, /'pole-tryb', 'pole-czas'/, 'przy „Dołączam do istniejącej” czas gry chowa się razem z resztą setupu');
+  // przyciski segmentu dostają rozmiar trafienia ze zmiennej (ADR 0011) —
+  // bez tego czteroelementowy segment kusiłby 30-pikselowymi polami
+  const blok = STYLE.slice(STYLE.indexOf('.segment label {'), STYLE.indexOf('}', STYLE.indexOf('.segment label {')));
+  assert.match(blok, /min-height:\s*var\(--cel\)/, 'segment trzyma --cel także dla czasu gry');
+  const czasBlok = STYLE.slice(STYLE.indexOf('.segment-czas label {'), STYLE.indexOf('}', STYLE.indexOf('.segment-czas label {')));
+  assert.match(czasBlok, /white-space:\s*nowrap/, 'cztery chipy w jednym wierszu — „120 min" nie może zjechać do drugiej linii');
+  assert.match(czasBlok, /flex:\s*1 1 20%/, 'baza segmentu to 30% (trzy tryby) — cztery przyciski potrzebują własnego');
+});
 
 /**
  * Zgłoszenie właściciela (2026-09-09): etykieta „Planowany czas gry (min)”

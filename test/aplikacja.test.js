@@ -28,7 +28,7 @@ import {
   parsujOdpowiedz,
   upraszczajDaneDoCache,
 } from '../app/sieci.js';
-import { DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja, przeliczenieCzasu } from '../app/konfig.js';
+import { CZASY_GRY, DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja, przeliczenieCzasu } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
 import { maxZoomPodkladu, skalaBar, widokNaSrodek, wspolrzedneZEkranu } from '../app/mapa.js';
 import { dopasujZoomDoPromienia } from '../app/geo.js';
@@ -155,7 +155,10 @@ test('bootstrap: lista trybów i tematów jest wyrenderowana z kanonu', () => {
 });
 
 test('bootstrap: pola setupu mają wartości domyślne z kanonu', () => {
-  assert.equal(pobierz('setup-czas').value, String(DOMYSLNE.czasGryMin), 'czas gry jest polem, promień nie (ADR 0025)');
+  // Czas gry nie jest polem (uwaga A, 2026-09-15): wybiera się go z czterech
+  // przycisków, a wciśnięty jest dokładnie ten od wartości domyślnej.
+  assert.equal(pobierz('lista-czasow').children.length, CZASY_GRY.length, 'cztery przyciski czasu gry');
+  assert.deepEqual(wcisnieteCzasy(dom), [String(DOMYSLNE.czasGryMin)], 'dokładnie jeden przycisk wciśnięty (ADR 0025: czas jest wybierany, promień liczony)');
   assert.match(pobierz('setup-promien-info').textContent, /Promień gry: 500 m/, 'promień policzony i pokazany z uzasadnieniem');
   assert.match(pobierz('setup-promien-info').textContent, /5 pytań/, 'składowe są jawne');
   assert.equal(pobierz('setup-stacje').value, String(DOMYSLNE.liczbaStacji));
@@ -429,6 +432,26 @@ function wyslij(el, typ, zdarzenie = {}) {
   return lista.length;
 }
 
+/**
+ * Stuknięcie w przycisk czasu gry (uwaga A, 2026-09-15). Atrapa DOM nie ma
+ * semantyki radia, więc test zaznacza wybrany `input`, odznacza pozostałe i
+ * wysyła `change` na kontenerze — tyle samo robi przeglądarka po kliknięciu
+ * etykiety segmentu.
+ */
+function stuknijCzas(dom, minuty) {
+  const lista = dom.pobierz('lista-czasow');
+  for (const i of lista.children.flatMap((etykieta) => etykieta.children)) i.checked = String(i.value) === String(minuty);
+  return wyslij(lista, 'change');
+}
+
+/** Które przyciski czasu gry są wciśnięte (ma być dokładnie jeden). */
+function wcisnieteCzasy(dom) {
+  return dom.pobierz('lista-czasow').children
+    .flatMap((etykieta) => etykieta.children)
+    .filter((i) => i.checked)
+    .map((i) => i.value);
+}
+
 test('mapa: mały promień gry kadruje się jak 500 m — bez pustych kafli (zgłoszenie 2026-09-12 + uwaga A 2026-09-14)', async () => {
   // Właściciel w testach terenowych: po stuknięciu mapy (i po pobraniu sieci
   // z Overpassa) aplikacja przybliżała tak mocno, że kafelki OSM przestawały
@@ -608,25 +631,25 @@ test('mapa: obrót telefonu (resize) przelicza widok na nowy rozmiar panelu', as
   assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
 });
 
-test('mapa: wyczyszczony czas gry nie wysypuje przejścia — jest jawna odmowa z kodem K19', async () => {
+test('mapa: wyczyszczone pole stacji nie wysypuje przejścia — jest jawna odmowa z kodem K10', async () => {
   const domMapy = await aplikacjaZMapa();
   const gpsMapy = domMapy.gps;
-  // gracz czyści pole czasu gry → `Number('') = 0`, czyli wartość skończona,
-  // która przechodzi przez hartowanie liczb w setupie (promień zjeżdża wtedy
-  // na minimum 200 m, więc odmowa musi przyjść z walidacji czasu — K19)
-  wyslij(domMapy.pobierz('setup-czas'), 'input', { target: { value: '' } });
+  // Czas gry nie jest już polem (uwaga A, 2026-09-15) — nie ma czym wpisać
+  // zera, więc ten sam tor sprawdza pole, które zostało: gracz czyści liczbę
+  // stacji → `Number('') = 0`, czyli wartość skończona, która przechodzi przez
+  // hartowanie liczb w setupie. Odmowa musi przyjść z walidacji (K10).
+  wyslij(domMapy.pobierz('setup-stacje'), 'input', { target: { value: '' } });
   gpsMapy.wyslijFix(52.235, 21.015, 15);
 
-  // `stacjeProste` odmawia przy niedodatnim promieniu — przejście ma odmówić,
-  // a nie urwać się wyjątkiem w nasłuchu (LESSONS L10)
+  // przejście ma odmówić, a nie urwać się wyjątkiem w nasłuchu (LESSONS L10)
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.equal(domMapy.pobierz('ekran-stacje').hidden, true, 'przejście jest odmówione, nie urwane');
-  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /\[K19\]/, 'kod z konfig.js, komunikat dla człowieka');
-  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /Planowany czas gry/);
+  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /\[K10\]/, 'kod z konfig.js, komunikat dla człowieka');
+  assert.match(domMapy.pobierz('bledy-pozycja').textContent, /Liczba stacji/);
   assert.match(domMapy.pobierz('status').textContent, /Wróć do ustawień gry/);
 
-  // mapa pozycji działa dalej; promień zjeżdża na minimum (200 m), więc okrąg
-  // promienia JEST — zniknąłby dopiero, gdyby promień nie był liczbą (ADR 0025)
+  // mapa pozycji działa dalej; promień liczy się z czasu gry, więc okrąg jest
+  // niezależnie od tego, ile stacji wpisano (ADR 0025)
   assert.equal(domMapy.pobierz('mapa-pozycja-marker').children.length, 1);
   assert.deepEqual(
     domMapy.pobierz('mapa-pozycja-okregi').children.map((c) => c.getAttribute('class')),
@@ -634,12 +657,26 @@ test('mapa: wyczyszczony czas gry nie wysypuje przejścia — jest jawna odmowa 
   );
   assert.ok(domMapy.pobierz('mapa-pozycja-kafelki').children.length > 0);
 
-  // po wpisaniu czasu gry przejście działa (promień liczy się sam — ADR 0025)
-  wyslij(domMapy.pobierz('setup-czas'), 'input', { target: { value: '90' } });
+  // po wpisaniu liczby stacji przejście działa (promień liczy się sam — ADR 0025)
+  wyslij(domMapy.pobierz('setup-stacje'), 'input', { target: { value: '4' } });
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.equal(domMapy.pobierz('ekran-stacje').hidden, false);
-  assert.equal(domMapy.pobierz('mapa-stacje-pinezki').children.length, DOMYSLNE.liczbaStacji);
+  assert.equal(domMapy.pobierz('mapa-stacje-pinezki').children.length, 4);
   assert.ok(domMapy.pobierz('mapa-stacje-kafelki').children.length > 0);
+});
+
+// Osobna instancja aplikacji (nie ta z bootstrapu pliku): `zainstalujDom` przekłada
+// globalny dokument, a testy przed nim czytają stan wspólny (LESSONS L14).
+test('setup: stuknięcie przycisku czasu zaznacza go, a poprzedni odznacza (uwaga A, 2026-09-15)', async () => {
+  const domCzasu = await aplikacjaZMapa();
+  assert.match(domCzasu.pobierz('setup-promien-info').textContent, new RegExp(`z ${DOMYSLNE.czasGryMin} min`), 'na starcie plan to wartość domyślna');
+  stuknijCzas(domCzasu, 90);
+  assert.deepEqual(wcisnieteCzasy(domCzasu), ['90'], 'wciśnięty jest nowy przycisk');
+  assert.match(domCzasu.pobierz('setup-promien-info').textContent, /z 90 min/, 'uzasadnienie promienia idzie za wyborem (ADR 0025)');
+  stuknijCzas(domCzasu, 30);
+  assert.deepEqual(wcisnieteCzasy(domCzasu), ['30'], 'poprzedni odpuszcza — segment nie pozwala na dwa razy „wybrane”');
+  const r = przeliczenieCzasu({ czasGryMin: 30, tryb: DOMYSLNE.tryb, liczbaStacji: DOMYSLNE.liczbaStacji, pytaniaNaStacje: DOMYSLNE.pytaniaNaStacje });
+  assert.ok(domCzasu.pobierz('setup-promien-info').textContent.includes(String(r.promienM)), 'promień zgadza się z przeliczeniem z konfigu');
 });
 
 test('mapa: gest palcem na panelu zmienia widok (drag działa z aplikacji)', async () => {
@@ -1674,7 +1711,8 @@ test('M6+K: powrót po „zamknięciu przeglądarki" — nowa instancja, ta sama
   // pamięci — uwaga K (ADR 0045): wraca do gry sama, bez banera i bez kliku.
   const dom2 = zainstalujDom({ search: '?tryb=test', pamiec });
   await import(`../app/app.js?wznow=${Math.random().toString(36).slice(2)}`);
-  assert.equal(dom2.pobierz('setup-czas').zdarzenia.input.length, 1, 'L14: powrót do gry nie dokleja drugiego nasłuchu pól setupu');
+  assert.equal(dom2.pobierz('setup-stacje').zdarzenia.input.length, 1, 'L14: powrót do gry nie dokleja drugiego nasłuchu pól setupu');
+  assert.equal(dom2.pobierz('lista-czasow').zdarzenia.change.length, 1, 'L14: segment czasu też podpięty raz — dwa `change` to dwa przeliczenia promienia');
   assert.equal(dom2.pobierz('ekran-gra').hidden, false, 'aplikacja wróciła na ekran gry');
   assert.equal(dom2.pobierz('gra-panel-odcinek').hidden, false, 'faza odcinka odtworzona');
   assert.match(dom2.pobierz('status').textContent, /Wróciliśmy do zapamiętanej gry/, 'status mówi, co się stało');
@@ -2794,7 +2832,7 @@ test('teren: oko podczas dojścia nie pauzuje gry; wraca aktualne pytanie i jego
 test('teren: informacje przełączają się nad setupem; oko, prywatność i powrót zachowują stan', async () => {
   const dom = await aplikacjaZMapa({ search: '?test=true' });
   dom.kliknij('przycisk-start-zacznij');
-  dom.pobierz('setup-czas').value = '123';
+  stuknijCzas(dom, 90);
   dom.kliknij('przycisk-informacje');
   assert.equal(dom.pobierz('ekran-informacje').hidden, false);
   assert.equal(dom.pobierz('ekran-setup').hidden, false);
@@ -2810,7 +2848,7 @@ test('teren: informacje przełączają się nad setupem; oko, prywatność i pow
   dom.kliknij('przycisk-informacje');
   assert.equal(dom.pobierz('ekran-informacje').hidden, true);
   assert.equal(dom.pobierz('ekran-setup').inert, false);
-  assert.equal(dom.pobierz('setup-czas').value, '123');
+  assert.deepEqual(wcisnieteCzasy(dom), ['90'], 'wybór czasu przeżywa skakanie po ekranach (brak przebudowy bez potrzeby)');
 });
 
 

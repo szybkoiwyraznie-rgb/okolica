@@ -37,7 +37,8 @@ Koniec sesji:
 1. Ekran **Setup** (kolejność jak na ekranie): „Rodzaj gry” — „👥 Hot-seat —
    jeden telefon” albo „📱 Multiplayer — każdy ma telefon” (ADR 0019);
    „Sposób poruszania się” (piesza / rowerowa / samochodowa); **planowany czas
-   gry** — promień liczy aplikacja i pokazuje go z uzasadnieniem (ADR 0025);
+   gry** — cztery przyciski (30/60/90/120 min), a promień liczy aplikacja i
+   pokazuje go z uzasadnieniem (ADR 0025 + aneks 2026-09-15);
    liczba stacji — **pytań się nie wybiera**: hot-seat pyta przy każdej stacji
    KAŻDEGO gracza raz, więc ich liczba to stacje × graczy (ADR 0027 aneks
    2026-09-15); „👤 Kto gra?” — imię + PIN każdego gracza,
