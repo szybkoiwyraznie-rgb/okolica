@@ -5990,3 +5990,34 @@ etykieta „kroki 1–5” obejmująca też lobby `multi`.
 
 **Otwarte z handoffu 15a/15b:** rezerwa budżetu lektury jest cienka; uwagi
 z terenu po m12-129. ADR 0047 nadal czeka na weryfikację na iPhonie.
+
+## 2026-09-15d — otwarcie sesji `arena/01a0a569-okolica` (PR #32 w tym commicie)
+
+**Zlecenie:** uwagi terenowe właściciela (3) przybliżanie HTML przy fokusu pola,
+(4) czyszczenie pola po błędnej paczce, (5) ekran stacji bez spisu, a w trakcie
+sesji doszła (6) — paczka wklejona z AI nie lądowała na Drive.
+
+**Audyt poprzedniego scalonego PR (#31, squash `1c0e7d7` na `fa8d9d8`).**
+21 plików, +219/−137. Zakres: ADR 0049 (`poprawna` czystym indeksem 0–3),
+szablony `PYT/1.0.10` / `PYT/1.0-nofc.5`, jeden komunikat odrzucenia paczki AI
+(m12-130), cache-bust m12-132.
+
+Werdykt: **treść PR #31 bez defektów.** Sprawdzone:
+
+- `WARIANTY_Z_KODEM` zawężone do rev2/rev3, `WARIANTY_BIEZACE` = rev4/rev5,
+  a `sprawdzOdpowiedz` wybiera dekoder po markerze (`odkodujPaczkeBiezaca`);
+  szablon §2 niesie `"poprawna": 2` i wymaganie „numer poprawnej odpowiedzi".
+- `npm run check`: oba bloki szablonu zgodne z `app/protokol.js`
+  (3894 / 4142 znaków); jedna wersja `?v=m12-132` w 43 miejscach grafu (L29).
+- Odrzucenie paczki idzie jedną funkcją `pokazOdrzuconaPaczkeAi()`: stały tekst,
+  pusta lista usterek, `przycisk-poprawka` schowany, pole wklejenia czyszczone.
+
+**Ale audyt sięgnął głębiej i znalazł usterkę, którą przepuściły dwa poprzednie
+przeglądy (PR #30 i #31).** `przyjmijKandydata` w moście Drive po zmianie nazwy
+pliku (ADR 0048, PR #30) wołał `getFilesByName(nazwa).next()` BEZ `hasNext()`.
+W Apps Script `next()` na pustej kolekcji **rzuca wyjątek** (dokumentacja Drive),
+a nie oddaje `null` — więc dla każdej NOWEJ nazwy (czyli zwykłego przypadku)
+`doPost` łapał wyjątek i odpowiadał `{ ok:false, blad }`: paczka nie powstawała
+na Drive (zgłoszenie właściciela 2026-09-15, usterka D2). Atrapa w
+`test/helpers/most.js` zwracała `undefined` zamiast rzucać, więc 826 testów było
+zielonych. Naprawa i lekcja: L73; aneks ADR 0048.
