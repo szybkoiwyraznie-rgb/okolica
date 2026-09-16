@@ -53,7 +53,10 @@ Koniec sesji:
    „Czekam na pozycję…” → „Szukam satelitów…” → „Pozycja ustalona”, a karta
    pokazuje współrzędne i geohash. Przycisku włączania GPS, pól ręcznych
    współrzędnych i badge’a dokładności NIE MA (ADR 0034 pkt 2 i 5); w trybie
-   testowym pozycję ustawia krótkie stuknięcie mapy. Karta „📦 Paczki dla tej
+   testowym pozycję ustawia **krótkie stuknięcie mapy** albo przycisk
+   **„🎯 Zlokalizuj mnie”** (jeden `getCurrentPosition` z opcjami watchera —
+   uwaga terenowa 2026-09-16); przycisk żyje TYLKO w trybie testowym i znika
+   po ustaleniu pozycji. Karta „📦 Paczki dla tej
    okolicy” proponuje gotowe paczki z repozytorium — wybór startuje grę bez
    modelu (paczek z pamięci tego telefonu UI nie pokazuje — zadanie I,
    2026-09-12).

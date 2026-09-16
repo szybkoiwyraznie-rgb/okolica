@@ -204,6 +204,10 @@ commit i nowa wersja aplikacji.
    Pierwszy fix centruje widok mapy (`app.js: centrujNaPozycji`) w zoomie
    dobranym do promienia gry (`geo.dopasujZoomDoPromienia`), a kolejne tylko
    przesuwają marker — potem mapę prowadzi palec gracza. W trybie testowym
+   pozycję startową daje stuknięcie mapy (D3) ALBO przycisk „🎯 Zlokalizuj
+   mnie” — jednorazowy `getCurrentPosition(OPCJE_WATCH)`, którego fix wchodzi
+   tym samym `przyjmijFix()` (uwaga terenowa 2026-09-16; poza trybem testowym
+   przycisku nie ma, bo pozycja idzie wyłącznie watcherem). W drodze
    fixy zamiast z GPS płyną z `sekwencjaSymulowana(trasaProsta(...))`
    odtwarzanej przez `setInterval` (przycisk „▶ Symuluj dojście (tryb testowy)”
    w ekranie gry); oba strumienie wchodzą w stan **jednym lejem**

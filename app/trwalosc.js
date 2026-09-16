@@ -15,8 +15,8 @@
  *   drogą powrotu do przerwanej gry jest ten zapis;
  * - zepsuty zapis = jawna odmowa z kodem T, nigdy cichy start od zera.
  */
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-144';
-import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-144';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-145';
+import { FAZY, SCHEMAT_ROZGRYWKI } from './rozgrywka.js?v=m12-145';
 // `skrot`/`paczka` liczy gra — zapis gry trzyma paczkę taką, jaka przyszła z modelu.
 
 export const SCHEMAT_STANU = 'stan-gry/2';

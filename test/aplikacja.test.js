@@ -2372,6 +2372,109 @@ test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie
   assert.equal(domT.pobierz('pozycja-wspolrzedne').textContent, przedPanem, 'pan nie przestawia pozycji gracza');
 });
 
+/* ---------- przycisk „Zlokalizuj mnie” (uwaga terenowa 2026-09-16) ---------- */
+
+test('Zlokalizuj mnie: przycisk stoi w dolnym rzędzie ekranu pozycji, między „← ustawienia” a „Dalej: stacje →”', () => {
+  // Właściciel: przycisk ma być TYLKO na ekranie „Gdzie jesteś?”, w rzędzie
+  // przycisków obok wstecz/dalej — nie w karcie statusu i nigdzie indziej.
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const rzad = html.replace(/\n\s*/g, '').match(/<div class="wiersz przyciski-dolu">\s*<button id="przycisk-wstecz-setup"[\s\S]*?<\/div>/);
+  assert.ok(rzad, 'dolny rząd ekranu pozycji znaleziony w HTML');
+  const kolej = [...rzad[0].matchAll(/<button id="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(kolej, ['przycisk-wstecz-setup', 'przycisk-zlokalizuj', 'przycisk-dalej-stacje'],
+    'kolejność w rzędzie: wstecz → zlokalizuj → dalej (przycisk nie żyje w karcie statusu)');
+  assert.match(rzad[0], /<button id="przycisk-zlokalizuj" class="przycisk tylko-test"/,
+    'przycisk ma klasę `tylko-test` — poza trybem testowym CSS go chowa');
+});
+
+test('Zlokalizuj mnie: widoczny tylko w trybie testowym, do czasu ustawienia pozycji', async () => {
+  // Bez pozycji testowej przycisk jest widoczny (status = instrukcja oka);
+  // po ustawieniu pozycji (tap w mapę) przycisk znika, bo nie ma już czego szukać.
+  const domT = await aplikacjaZMapa({ search: '?tryb=test&odstep=0' });
+  domT.kliknij('przycisk-dalej-pozycja');
+  await czekaj(10);
+  assert.equal(domT.pobierz('ekran-pozycja').hidden, false, 'warunek wstępny: ekran pozycji otwarty');
+  assert.equal(domT.pobierz('przycisk-zlokalizuj').hidden, false, 'przed fixem przycisk lokalizacji jest widoczny');
+  assert.equal(domT.pobierz('pozycja-status').textContent, 'Tryb testowy: użyj oka i wskaż miejsce na mapie.',
+    'komunikat ekranu zostaje przy instrukcji oka (nie wspomina o przycisku)');
+
+  domT.ustawPozycje('52.2297', '21.0122');
+  assert.equal(domT.pobierz('przycisk-zlokalizuj').hidden, true, 'po ustawieniu pozycji przycisk lokalizacji znika');
+  assert.match(domT.pobierz('pozycja-status').textContent, /Pozycja ustawiona z mapy/);
+});
+
+test('Zlokalizuj mnie: poza trybem testowym nie ma go ani jako przycisku, ani jako ścieżki GPS', async () => {
+  // Jedyny egzemplarz przycisku ma klasę `tylko-test`, a w zwykłym trybie
+  // pozycja idzie WYŁĄCZNIE przez watcher GPS — żaden element poza
+  // #przycisk-zlokalizuj nie podpina getCurrentPosition.
+  const gps = atrapaGeolokalizacji();
+  const domG = zainstalujDom({ geolocation: gps.geolocation });
+  await import(`../app/app.js?brakzlokal=${Math.random().toString(36).slice(2)}`);
+  assert.equal(gps.wywolania.watch, 1, 'start zwykłego trybu: jeden watcher GPS');
+  assert.equal(gps.wywolania.ostatnie, 'watch', 'start jedzie watcherem, nie sondażem');
+  assert.deepEqual(gps.wywolania.zapytania, [], 'poza trybem testowym zero jednorazowych sondaży');
+
+  domG.kliknij('przycisk-dalej-pozycja');
+  await czekaj(10); // brama tożsamości jest asynchroniczna
+  assert.equal(domG.pobierz('ekran-pozycja').hidden, false, 'warunek wstępny: ekran pozycji otwarty');
+  assert.equal(domG.pobierz('przycisk-zlokalizuj').hidden, true, 'na ekranie pozycji przycisk lokalizacji jest ukryty poza trybem testowym');
+  assert.doesNotMatch(domG.pobierz('pozycja-status').textContent, /użyj oka/, 'poza trybem testowym nie ma instrukcji oka');
+  assert.deepEqual(gps.wywolania.zapytania, [], 'nawet na ekranie pozycji poza trybem testowym sondaż się nie odpala');
+});
+
+test('Zlokalizuj mnie: jednorazowy sondaż GPS ustawia pozycję i chowa przycisk', async () => {
+  const pamiecLocale = new Map([['okolica:profil', JSON.stringify({
+    schemat: 'profil-lokalny/1', pseudonim: 'Lokator', zweryfikowany: true, kiedy: '2026-09-07T10:00:00.000Z',
+  })]]);
+  const domL = await aplikacjaZMapa({ search: '?tryb=test&odstep=0', pamiec: pamiecLocale });
+  domL.kliknij('przycisk-dalej-pozycja');
+  await czekaj(10);
+  assert.equal(domL.pobierz('ekran-pozycja').hidden, false, 'warunek wstępny: ekran pozycji otwarty');
+
+  const gpsLok = atrapaGeolokalizacji({ idWatcha: 99 });
+  domL.ustawGeolokalizacje(gpsLok.geolocation);
+
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, false, 'przed kliknięciem przycisk jest widoczny');
+  domL.kliknij('przycisk-zlokalizuj');
+  assert.deepEqual(gpsLok.wywolania.zapytania, [OPCJE_WATCH],
+    'przycisk odpala jeden getCurrentPosition z opcjami watchera (ADR 0004 pkt 1)');
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, true, 'w trakcie sondażu przycisk jest schowany');
+  assert.equal(domL.pobierz('pozycja-status').textContent, 'Szukam satelitów…');
+
+  gpsLok.wyslijFix(52.22, 21.01, 10, 2000);
+  assert.match(domL.pobierz('pozycja-status').textContent, /Pozycja ustawiona/,
+    'poprawny fix wchodzi wspólnym lejem (status trybu testowego: „Pozycja ustawiona z mapy / symulacji”)');
+  assert.equal(domL.pobierz('przycisk-dalej-stacje').disabled, false, 'pozycja z sondażu odblokowuje przejście dalej');
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, true, 'po poprawnym sondażu przycisk zostaje schowany');
+});
+
+test('Zlokalizuj mnie: po błędzie GPS przycisk wraca i zostaje opcja stuknięcia w mapę', async () => {
+  const pamiecLocale = new Map([['okolica:profil', JSON.stringify({
+    schemat: 'profil-lokalny/1', pseudonim: 'Lokator', zweryfikowany: true, kiedy: '2026-09-07T10:00:00.000Z',
+  })]]);
+  const domL = await aplikacjaZMapa({ search: '?tryb=test&odstep=0', pamiec: pamiecLocale });
+  domL.kliknij('przycisk-dalej-pozycja');
+  await czekaj(10);
+
+  const gpsBlad = atrapaGeolokalizacji({ idWatcha: 88 });
+  domL.ustawGeolokalizacje(gpsBlad.geolocation);
+
+  domL.kliknij('przycisk-zlokalizuj');
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, true, 'w trakcie sondażu przycisk schowany');
+  gpsBlad.wyslijBlad(1, 'User denied Geolocation');
+
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, false, 'po błędzie przycisk wraca — można spróbować ponownie');
+  assert.equal(domL.pobierz('pozycja-status').textContent, 'Tryb testowy: użyj oka i wskaż miejsce na mapie.',
+    'błąd nie zmienia instrukcji ekranu');
+  assert.match(domL.pobierz('bledy-pozycja').textContent, /\[P02\]/, 'błąd pokazany jawnie kodem z pozycja.js');
+
+  // Awarii nie ma jak obejść GPS-em — z pomocą przychodzi stuknięcie w mapę (D3).
+  domL.ustawPozycje('52.2297', '21.0122');
+  assert.match(domL.pobierz('pozycja-status').textContent, /Pozycja ustawiona z mapy/,
+    'po błędzie sondażu pozycję ustawia mapa (D3), nie kolejny sondaż');
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, true, 'pozycja ustawiona — przycisk schowany');
+});
+
 /* ------------------------------------------------- sygnały (M10/T4) */
 
 test('sygnały: „🔔 sygnały" startuje włączone, a klik przełącza i zapisuje wybór', async () => {

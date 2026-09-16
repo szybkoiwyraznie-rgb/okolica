@@ -498,7 +498,7 @@ export function zainstalujDom({ sciezkaHtml = 'index.html', search = '', geoloca
  * a fixy i błędy wysyła się z testu.
  */
 export function atrapaGeolokalizacji({ idWatcha = 42 } = {}) {
-  const wywolania = { watch: 0, clear: [], opcje: null };
+  const wywolania = { watch: 0, clear: [], opcje: null, uzytkownik: 0, zapytania: [], ostatnie: null };
   let ostatniOk = null;
   let ostatniBlad = null;
   return {
@@ -507,20 +507,30 @@ export function atrapaGeolokalizacji({ idWatcha = 42 } = {}) {
       watchPosition(ok, blad, opcje) {
         wywolania.watch += 1;
         wywolania.opcje = opcje;
+        wywolania.ostatnie = 'watch';
         ostatniOk = ok;
         ostatniBlad = blad;
         return idWatcha;
       },
       clearWatch(id) { wywolania.clear.push(id); },
+      // Jednorazowy sondaż (przycisk „Zlokalizuj mnie”, uwaga terenowa 2026-09-16):
+      // rejestrujemy opcje i odbieramy ten sam fix, co watcher (wspólny lej).
+      getCurrentPosition(ok, blad, opcje) {
+        wywolania.uzytkownik += 1;
+        wywolania.zapytania.push(opcje);
+        wywolania.ostatnie = 'uzytkownik';
+        ostatniOk = ok;
+        ostatniBlad = blad;
+      },
     },
     /** Udaje fix z przeglądarki. */
     wyslijFix(lat, lon, accuracy = 12, timestamp = 1000) {
-      if (!ostatniOk) throw new Error('watchPosition nie został jeszcze wywołany');
+      if (!ostatniOk) throw new Error('watchPosition/getCurrentPosition nie został jeszcze wywołany');
       ostatniOk({ coords: { latitude: lat, longitude: lon, accuracy }, timestamp });
     },
     /** Udaje błąd z przeglądarki (kody 1/2/3 z `GeolocationPositionError`). */
     wyslijBlad(code = 1, message = 'atrapa błędu') {
-      if (!ostatniBlad) throw new Error('watchPosition nie został jeszcze wywołany');
+      if (!ostatniBlad) throw new Error('watchPosition/getCurrentPosition nie został jeszcze wywołany');
       ostatniBlad({ code, message });
     },
   };

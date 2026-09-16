@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-144">
-  <script type="module" src="app/app.js?v=m12-144"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-145">
+  <script type="module" src="app/app.js?v=m12-145"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -328,6 +328,7 @@
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wstecz-setup" class="przycisk" type="button">← ustawienia</button>
+        <button id="przycisk-zlokalizuj" class="przycisk tylko-test" type="button">🎯 Zlokalizuj mnie</button>
         <button id="przycisk-dalej-stacje" class="przycisk przycisk-glowny" type="button" disabled>Dalej: stacje →</button>
       </div>
     </section>
