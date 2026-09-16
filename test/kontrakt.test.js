@@ -548,7 +548,14 @@ test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
   for (const plik of ['README.md', 'AGENTS.md', 'docs/ARCHITECTURE.md']) {
     assert.equal(/obfuskacj/i.test(czytaj(plik)), false, `${plik}: obiecuje ukrywanie paczek, którego nie ma (ADR 0050)`);
   }
-  assert.ok(INDEX.includes('nie jest zaszyfrowany'), 'ekran wklejania musi mówić wprost, że tekst nie jest zaszyfrowany');
+  // Uwaga terenowa A (właściciel, 2026-09-16): z ekranu wklejania zniknął
+  // akapit instrukcji — między nagłówkiem a polem nie ma ŻADNEGO tekstu.
+  // Uczciwość „paczka jest jawna, nie zaszyfrowana" niesie ekran prywatności
+  // (pin wyżej) i README; pin tutaj pilnuje PUSTKI, nie treści ostrzeżenia.
+  const ekranPaczki = INDEX.slice(INDEX.indexOf('id="ekran-paczka"'),
+    INDEX.indexOf('</section>', INDEX.indexOf('id="ekran-paczka"'))).replace(/<!--[\s\S]*?-->/g, '');
+  assert.match(ekranPaczki, /id="tytul-paczka">Wklej odpowiedź modelu<\/h2>\s*<textarea id="pole-odpowiedz"/,
+    'ekran wklejania: między nagłówkiem a polem nie ma ŻADNEGO tekstu (uwaga terenowa A, 2026-09-16)');
   assert.ok(INDEX.includes('identyfikator rozgrywki'), 'kod gry musi być opisany jako identyfikator, nie klucz (ADR 0007 pkt 4)');
 });
 
@@ -902,7 +909,12 @@ test('kontrakt M9b: wysyłka Drive jest domyślna — ekran wklejania nie pyta o
   // Drive zawsze, bez checkboxa i bez przypominajki (checkbox z 2026-09-06
   // usunięty z ekranu i z kodu).
   assert.ok(!INDEX.includes('id="zgoda-drive"'), 'checkbox zgody Drive usunięty z ekranu wklejania');
-  assert.match(INDEX, /od razu zaczyna grę/, 'ekran mówi wprost: poprawna paczka = natychmiastowy start');
+  // Uwaga terenowa A (2026-09-16): ekran wklejania nie niesie już ŻADNEGO zdania
+  // (właściciel kazał usunąć instrukcję), więc „poprawna paczka = natychmiastowy
+  // start" pilnują nośniki, które tę obietnicę WYKONUJĄ: ścieżka przyjęcia
+  // woła `startGry()`, a komunikat przyjęcia mówi, dokąd paczka poleciała.
+  assert.match(APP, /\n  startGry\(\);/, 'przyjęcie paczki OD RAZU startuje grę (decyzja 2026-09-07)');
+  assert.match(APP, /Paczka przyjęta i wysłana na Drive/, 'komunikat przyjęcia mówi wprost, dokąd paczka poleciała');
 });
 
 test('kontrakt UI 2026-09-11: usunięte ozdobniki właściciela z testów terenowych', () => {
@@ -1682,8 +1694,10 @@ test('K: teksty UI nie odsyłają do ścieżek, których nie ma (O1/O2/O11)', ()
   // przeglądu. Tekst ekranu nie może obiecywać procesu, którego nie ma.
   assert.equal(INDEX.includes('do przeglądu właściciela'), false,
     'ekran wklejania nie obiecuje sesji przeglądu (ADR 0017 aneks 2026-09-11)');
-  assert.match(INDEX, /od razu do wspólnego repozytorium okolicy/,
-    'ekran wklejania mówi, dokąd naprawdę leci paczka');
+  // Uwaga terenowa A (2026-09-16): ekran wklejania nie ma już instrukcji, więc
+  // „dokąd naprawdę leci paczka" mówi karta prywatności — i tylko ona.
+  assert.match(INDEX, /Paczki pytań, które wyślesz do wspólnego repozytorium/,
+    'karta prywatności mówi, dokąd naprawdę leci paczka (ekran wklejania bez tekstów)');
 
   // O2: eksportu pliku nie ma w UI — eksport zestawu zniknął 2026-09-07,
   // eksporty wyniku zdjęła decyzja ADR 0038. Komunikat nie może wskazywać

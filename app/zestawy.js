@@ -16,9 +16,9 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-149';
-import { kanonicznyTemat } from './konfig.js?v=m12-149';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-149';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-150';
+import { kanonicznyTemat } from './konfig.js?v=m12-150';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-150';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/2';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/2';
