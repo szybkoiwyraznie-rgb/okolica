@@ -68,6 +68,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0048](0048-nazwa-paczki-na-drive-koduje-fakty.md) | Nazwa pliku paczki na Drive koduje fakty z `meta`, nie geohash | Zaakceptowana |
 | [0049](archive/0049-poprawna-czysty-indeks.md) | Numer poprawnej odpowiedzi jest czystym indeksem 0–3 (koniec kodu pozycyjnego) | Wycofana |
 | [0050](0050-paczka-jawna-bez-ukrywania.md) | Paczka jawna: koniec ukrywania pytań (kontener usunięty) i numer odpowiedzi `1..4` | Zaakceptowana |
+| [0051](0051-status-multi-w-informacjach-i-pod-wynikiem.md) | Status multi w Informacjach i pod wynikiem | Zaakceptowana |
 
 ## Szablon ADR
 

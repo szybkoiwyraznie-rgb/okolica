@@ -4121,7 +4121,8 @@ wyników i paskiem „Ostatni stan” (pasek został w lobby), a karty
 „⏹ Zakończ grę (host)” i „🏳 Rezygnuję z gry” zniknęły (obsługuje je ⚙ + TAK).
 Informacje nie zniknęły z produktu: ostateczna tabela tej gry jest na ekranie
 wyniku (`wynikiMultiKonca`), ranking między grami w warstwie pucharu (ADR 0039),
-a żywe wyniki w lobby dla widowni (`#lobby-widownia-wiersze`). Odliczanie w
+a żywe wyniki w lobby dla widowni (`#lobby-widownia-wiersze` — warstwa ta została
+później usunięta w całości, uwaga terenowa 2026-09-16 pkt 1). Odliczanie w
 testach ma 20 ms na krok, żeby cały przebieg nie spowalniał bramy. Aneks „uwaga F”
 w ADR 0019. Bramy: 756/756.
 
@@ -6346,3 +6347,246 @@ rozstrzygnięte decyzjami właściciela. Do sprawdzenia w terenie: paczka
 z promptu `PYT/1.1.2` — czy pytania nie zawierają odpowiedzi, czy model trzyma
 równą liczbę pytań na stację i czy kotwiczenie bez przepisu o nazwie miejsca
 dalej daje pytania zakotwiczone.
+## Sesja 2026-09-15g (PR #35) — otwarcie sesji, audyt PR #34: dryf dokumentacji „rozkład równy ±1"
+
+**Zlecenie:** „Kontynuujemy projekt". Uwag z terenu nie było, więc sesja domyka
+audyt poprzedniego scalonego PR-a (AGENTS.md §2 pkt 2) i poprawia to, co audyt
+znalazł. Kamienie M0–M12 zamknięte jako zakres kodu (L68).
+
+**Audyt PR #34 (squash `c1a90e8` na `f086fd3`):** 22 pliki, +515/−62.
+
+**Spójne — nie ruszane:**
+
+- `E05` bez tolerancji ±1 (`app/protokol.js`): walidator pilnuje już tylko stacji
+  bez żadnego pytania; `pytaniaNaStacjeDla()` = liczba graczy (hot-seat) / 1
+  (multi), sumę `liczbaStacji × pytaniaNaStacje` pilnuje `E03` (B25, decyzja
+  właściciela).
+- Werdykt liczy tylko silnik: `app/app.js` czyta `wpis.poprawna` (zamiast
+  `wybrana + 1 === pytanie.poprawna`) — ADR 0050 aneks 2026-09-15f, strażnik
+  w `test/kontrakt.test.js`.
+- `docs/PROTOKOL.md`: trzy zdania promptu zastosowane w obu szablonach (§2/§2.2
+  zasady 4 i 7, wymaganie `stacja`), stałe `SZABLON_WERSJA = 'PYT/1.1.2'` /
+  `SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.1-nofc.2'`, wpisy w §7.
+- Nowe testy: single-werdykt (`kontrakt`), parity `skrotPaczki` aplikacja ↔ `.gs`
+  (`most-paczka`), pin zdań promptu (`protokol`).
+- Pozostałe pliki `app/*.js` — wyłącznie podbicie `?v=m12-140 → m12-143`.
+
+**Znalezione — 1 usterka (dryf dokumentacji):** `docs/PROTOKOL.md` §3.2 (tabela
+pól paczki, wiersz `stacja`) nadal mówi „rozkład równy ±1", choć §6 `E05`, §7,
+prompt i `app/protokol.js` już tej tolerancji nie mają (B25, owner 2026-09-15f:
+„Możesz wywalić to z E05 bo to nie występuje w przyrodzie"). Ten sam zwrot został
+w `docs/decisions/0015` (Kontekst, zdanie o spójności wewnętrznej walidatora)
+i w komentarzu `app/rozgrywka.js` (`stacjaZamknieta`). Strażnik dryfu
+(`test/dryf-dokumentow.test.js`) nie miał pinu na tę frazę, więc nic nie złapało.
+Archiwalny aneks `docs/decisions/archive/aneksy-0024-2026-09-07b.md` zostaje bez
+zmian (historia).
+
+**Naprawa:** PROTOKOL §3.2 (wiersz `stacja`) opisuje stan faktyczny — „każda
+stacja ≥ 1 pytanie; rozkładu między stacje walidator nie sprawdza od
+2026-09-15f, liczba pytań na stację wynika z setupu, patrz §6 `E05`”;
+komentarz `app/rozgrywka.js` (`stacjaZamknieta`) i ADR 0015 (Kontekst)
+przepisane bez „±1” (po `E04`/`E05`). Pin frazy „rozkład równy ±1”
+w `MARTWE_FRAZY` (`test/dryf-dokumentow.test.js`) + LESSONS **L76** (grepa
+starego brzmienia po żywych dokumentach i pin od razu, w tym samym commicie;
+aktywny ADR z opisem stanu bieżącego dryfuje jak PROTOKOL). Dopisek do
+zamkniętego B25 w `docs/BACKLOG.md`. Cache-bust **m12-143 → m12-144**
+(L29/L37: zmiana `app/*.js` podbija wersję).
+
+**Brama na koniec sesji:** `npm test` **807/807**, `npm run check` OK
+(szablon §2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**, zasięg
+mostu **97,7%** (850/870 wierszy), `npm run budzet` **99 639 / 100 000**
+(rezerwa 361), cache-bust **m12-144**, protokół **PYT/1.1**, szablony
+**`PYT/1.1.2` / `PYT/1.1-nofc.2`**.
+
+**Otwarte po sesji:** kolejka pusta — PR czeka na scalenie właściciela.
+Bez uwag z terenu dalsze sesje tylko audytują i czekają. W terenie nadal do
+sprawdzenia paczka z promptu `PYT/1.1.2` (zasada 7, równa liczba pytań na
+stację, kotwiczenie bez przepisu o nazwie miejsca) — jak w handoffie 15f.
+
+## Sesja 2026-09-16 (PR #35) — uwagi terenowe: przycisk „Zlokalizuj mnie” i auto-przejście „Kopiuj prompt”
+
+**Zlecenie:** „Dalsze uwagi z testów terenowych” — (1) ekran „Gdzie jesteś?”
+w trybie testowym ma pozwalać na lokalizację (np. przycisk „zlokalizuj mnie”);
+(2) „Kopiuj prompt” ma po skopiowaniu do schowka samo przejść na „Wklej
+odpowiedź modelu”. Brak innych kryteriów. Sesja — ta sama gałąź i PR #35,
+niezacommitowane zmiany po resecie sandboxa odtworzone na czystym `11fd505`.
+
+**Implementacja (2 przyrostowe commity po audycie PR #34 z 15g):**
+
+- `641767c` — przycisk „Zlokalizuj mnie”: element `#przycisk-zlokalizuj` TYLKO
+  w dolnym rzędzie ekranu pozycji (między „← ustawienia” a „Dalej: stacje →”),
+  klasa `tylko-test` = widoczny tylko w trybie testowym i tylko tam; poza trybem
+  nie ma go ani w DOM-ie, ani jako ścieżki — w zwykłym trybie pozycja idzie
+  wyłącznie watcherem (test pinuje zero `getCurrentPosition` poza testem).
+  `wyznaczPozycje()` odpala JEDEN `getCurrentPosition(OPCJE_WATCH)` i karmi
+  wspólny `przyjmijFix()`; błąd jawny kodem P02/P03/P04, przycisk wraca,
+  a pozycję dalej da się ustawić stuknięciem mapy (D3). Komunikat ekranu zostaje
+  bez zmian: „Tryb testowy: użyj oka i wskaż miejsce na mapie.”.
+- `2addb58` — „Kopiuj prompt” auto-przechodzi: `kopiujTekst()` zwraca boolean
+  `kopiujDoSchowka()`, handler po `true` woła `pokazEkran('paczka')`; przy
+  fallbacku „⚠ zaznaczone — skopiuj ręcznie” ZOSTAJE na ekranie (tekst nie
+  dotarł do schowka bez palca właściciela).
+- Testy: `test/helpers/dom.js` atrapa geolokalizacji zyskuje `getCurrentPosition`
+  (rejestr `zapytania` + `ostatnie`); `test/aplikacja.test.js` +8 testów
+  (pozycja przycisku w HTML i tryb widoczności, sondaż ustawia pozycję, błąd
+  przywraca przycisk, poza testem zero sondowań nawet po kliku, kopia przechodzi
+  na ekran 5, fallback nie przechodzi) i `test/kontrakt.test.js` +1 pin
+  (dokładnie jeden egzemplarz, tylko w dolnym rzędzie `#ekran-pozycja`
+  z klasą `tylko-test`). Dokumenty: WORKFLOW + ARCHITECTURE opisują obie drogi
+  pozycji testowej i degradację kopiowania.
+- Cache-bust **m12-144 → m12-146** (index.html, wszystkie `app/*.js`, `WERSJA_SW`).
+
+**Dogrywka twardości (po pierwszej prośbie właściciela o przycisk tylko**
+**w trybie testowym):** `wyznaczPozycje()` dostał bramkę `if (!STAN.trybTestowy)
+return;` — poza trybem testowym klik w przycisk (nawet wywołany z pominięciem
+klasy `tylko-test`) nie robi nic: zero `getCurrentPosition`, status bez zmian.
+Test nietestowego kliku pinuje to zachowanie; podbicie wersji m12-145 → m12-146.
+
+**Brama na koniec sesji:** `npm test` **815/815** (+8 względem 15g), `npm run
+check` OK (szablon §2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**,
+zasięg mostu **97,7%** (850/870), budżet **99 639 / 100 000** (rezerwa 361),
+cache **m12-146**, protokół **PYT/1.1**, szablony **`PYT/1.1.2` /
+`PYT/1.1-nofc.2`**.
+
+**Otwarte po sesji:** PR #35 nadal czeka na scalenie właściciela — teraz zawiera
+audyt 15g + obie uwagi terenowe 2026-09-16. Kolejka pracy pusta.
+
+
+## Sesja 2026-09-16 (PR #35), dogrywka 2 — uwagi terenowe: usunięcie żywych wyników multi, czyszczenie plików tymczasowych, puls „Łączę z siecią”
+
+**Zlecenie (trzy uwagi terenowe 2026-09-16):**
+
+- (1, KRYTYCZNA) Usunąć przestarzałą warstwę żywych wyników multiplayer.
+  Po starcie gry (także solo u hosta) KAŻDY gracz widzi tylko mini-pasek dolny
+  (np. „Jacek - stacja 1/5”) i kolejną stację na mapie (trasa-sekret) albo
+  wszystkie stacje (trasa jawna / wyścig). Bez warstwy żywych wyników, bez
+  ekranu lobby po starcie, bez LIMBO.
+- (2) W trybie testowym przycisk „wyczyść pliki tymczasowe aplikacji” — najlepiej
+  w panelu Informacje obok stopki wersji — do czyszczenia localStorage.
+- (3) W lobby hosta „Rozpocznij grę” po kliknięciu ma zgasnąć i zamienić się
+  w pulsujący „Łączę z siecią”, póki aplikacja łączy się z Drive.
+
+**Implementacja:**
+
+- **Usunięcie warstwy żywych wyników (pkt 1):** `renderujLobby()` nie odsłania
+  już `#lobby-widownia` ani nie wypełnia `#lobby-widownia-wiersze` poza lobby;
+  branch czyści tylko `#lobby-status`. Funkcja `renderujWierszeWynikow()`
+  i znacznik `#lobby-widownia` w `index.html` usunięte W CAŁOŚCI (L31: nagrobek
+  w komentarzu nad `renderujLobby()` + wpis martwych fraz w
+  `test/dryf-dokumentow.test.js`, żeby warstwa nie wróciła).
+  `uruchomGreMulti()` buduje lokalny silnik z PEŁNEJ trasy (`stacje: wszystkie`)
+  zamiast „stacji bez zamkniętych” — numeracja „stacja X z Y” zgadza się z trasą.
+  Gracz, który domknął wszystkie swoje stacje: gdy most zamknął grę (np. solo) —
+  `m.gra = gra`, status „Gra wieloosobowa zakończona — wspólne wyniki poniżej.”,
+  `pokazWyniki(); renderujGre();`; w pozostałych wypadkach — status „…wszystkie
+  Twoje stacje są już zamknięte…”, własny ekran wyniku i czekanie na wspólny.
+  Zero powrotów do lobby, zero LIMBO. Powrót po odświeżeniu telefonu odtwarza
+  postęp z własnych zdarzeń mostu (`odtworzPostepMulti`: `dojscie` —
+  `skierujDoStacji`→`startOdcinka`→`zakonczOdcinek`, `odpowiedz` — `zapiszOdpowiedz`
+  z mapą `poprawna` na indeks 0..3) — te same pure-funkcje co na żywo.
+- **Czyszczenie plików tymczasowych (pkt 2):** `#przycisk-czysc-tymczasowe`
+  (wiersz `tylko-test`, obok `#stopka-wersja`) + `czyscPlikiTymczasowe()`
+  z bramką `if (!STAN.trybTestowy) return;` — iteruje po całym `localStorage`,
+  status z liczbą kluczy, potem `location.reload()` (stan wraca do czystego).
+  Cudze klucze (`inna-apka:*`) też schodzą — to narzędzie testowe właściciela.
+- **Puls „Łączę z siecią” (pkt 3):** `startLobby()` zapamiętuje etykietę w
+  `dataset.etykieta`, ustawia `disabled` + `textContent = 'Łączę z siecią'` +
+  `.pulsuje` PRZED `polecenieMostu('gra-start')`; w `catch` przywraca etykietę,
+  odblokowuje i gasi puls. Po sukcesie lobby znika (gra się otwiera), więc
+  wychodząc nic nie trzeba przywracać.
+- **Testy (+6, razem 821):** `test/wieloosobowa-ui.test.js` +4 (puls przy
+  zamrożonym `gra-start`, powrót etykiety po awarii i retry, host po starcie
+  bez lobby/żywych wyników z ekranem `#gra-panel-koniec`, gracz z domkniętymi
+  stacjami trafia na wejściu na wynik nie do lobby); `test/aplikacja.test.js` +2
+  (czyszczenie czyści CAŁY localStorage w trybie testowym i jest martwe poza
+  nim — bramka trybu). `test/kontrakt.test.js`: stopka Informacje ma teraz
+  PIĄTĄ pozycję `tylko-test` (kolejność i kropki), a `test/dryf-dokumentow.test.js`
+  dostał frazy `lobby-widownia-wiersze` i `renderujWierszeWynikow`.
+- **Dokumenty:** `docs/decisions/0044-…` (aneks 2026-09-16: żywe wyniki widowni
+  usunięte; poprawiona „Konkluzja” z 2026-09-13), koperta uwagi w
+  `docs/decisions/archive/aneksy-0019-…` (treść historyczna), `docs/WORKFLOW.md`
+  (obserwacje bez żywej tabeli), `docs/ARCHITECTURE.md` (model z pełnej trasy
+  + `odtworzPostepMulti`), komentarze `app/sync.js` (powód 30 s) i
+  `app/wieloosobowa.js` (`postepGracza` bez „żywej tabeli”).
+- Cache-bust **m12-146 → m12-147** (index.html, wszystkie `app/*.js`, `WERSJA_SW`).
+
+**Brama na koniec sesji:** `npm test` **821/821** (+6), `npm run check` OK
+(szablon §2, §2.2), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%** (850/870),
+budżet **99 933 / 100 000** (rezerwa 67), cache **m12-147**.
+
+**Otwarte po sesji:** PR #35 (scalenie właściciela, squash).
+
+## Sesja 2026-09-16 (PR #35), dogrywka 3 — status graczy multi: panel Informacje i blok pod wynikiem
+
+**Zlecenie:** w grze multi (NIE hot-seat!), w obu trybach (trasa i wyścig), dla
+każdego gracza z hostem włącznie, panel Informacje ma pokazywać status gry
+multi — tabelę (Imię, zaliczone stacje, poprawne odpowiedzi, status
+Aktywny / Opuścił grę / Zakończył trasę). Aktualizacja co ~30 s, jeśli ktoś
+jest w panelu. Ta sama tabela może trafić pod wynik gracza kończącego grę.
+
+**Odpowiedzi właściciela (doprecyzowanie):**
+- zaliczone = liczba ODPOWIEDZI na stacje (nie samo dojście; `dojscie` bez
+  odpowiedzi nie domyka stacji — spójnie z tym, jak most kończy grę);
+- „Poprawne” z mianownikiem ROSNĄCYM — liczba udzielonych dotąd odpowiedzi;
+- odświeżanie z OSTATNIEGO znanego stanu (zwykły polling 30 s), bez dodatkowego
+  żądania do mostu przy otwarciu;
+- blok zostaje w Informacjach do momentu, aż gracz wejdzie w setup nowej gry
+  (`STAN.multi` gaśnie) — wtedy znika.
+
+**Implementacja:**
+- `app/app.js`: `STATUS_GRACZA_MULTI` (Aktywny / Opuścił grę / Zakończył
+  trasę), `tabelaPrzebieguMulti()` — jedno źródło wierszy dla `gra.gracze`
+  (uczestnicy z momentu startu), stacje `min(odpowiedzi, N)/N`, poprawne
+  `p.poprawne/(poprawne+bledne)` z `postepGracza` (nowy import); `jestGraMulti()`,
+  `renderujInformacjeMulti()` (#informacje-multi) i `renderujWynikiMulti()`
+  (#gra-wyniki-multi). Render wołany przy otwarciu panelu (`przelaczInformacje`),
+  na każde zdarzenie gry (`renderujGre`) i na każdy krok pollingu
+  (`onStanGryMulti`) — zero dodatkowych żądań.
+- `index.html`: blok `#informacje-multi` (tabela + podpis) w panelu Informacje
+  i `#gra-wyniki-multi` (tabela) POD wspólną tabelą `#gra-wyniki` w panelu
+  końca — ten drugi z `hidden` (hot-seat: ekran bez zmian).
+- `app/styles.css`: osobny, czytelny zapis 14 px dla tabel statusu (wyjątek
+  od ADR 0042) + kolory wierszy `wiersz-ukonczyl`/`wiersz-opuscil`.
+- ADR **0051** (status multi — pełnia decyzji) i aneks do ADR 0038
+  („Przebieg gry” pod tabelą nie odwraca minimalizmu); rejestr ADR uzupełniony.
+- Testy +5 (826): `wieloosobowa-ui.test.js` +3 (panel w grze + aktualizacja,
+  „Opuścił grę” po rezygnacji, przebieg pod wynikiem „Zakończył trasę”),
+  `aplikacja.test.js` +1 (hot-seat bez obu bloków), `kontrakt.test.js` +1
+  (węzły + kolejność pod tabelą wyniku).
+- Cache-bust **m12-147 → m12-148**.
+
+**Brama na koniec:** `npm test` **826/826**, `npm run check` OK, WCAG **0**,
+zasięg mostu **97,7%** (850/870), budżet **99 933 / 100 000** (rezerwa 67),
+cache **m12-148**.
+
+**Otwarte po sesji:** PR #35 (scalenie właściciela, squash).
+
+## Sesja 2026-09-16 (PR #35), dogrywka 4 — hot-seat: odpowiedzi graczy w panelu Informacje
+
+**Zlecenie (dopełnienie dogrywki 3):** analogicznie do multi, w grach HOTSEAT
+panel Informacje dostaje tabelę każdego gracza biorącego udział: „Gracz” +
+„Ilość odpowiedzi poprawnych” (np. 1/3). Tylko w layerze Informacje i TYLKO
+podczas gry; po zamknięciu/zakończeniu gry nic nie doklejamy do panelu.
+
+**Doprecyzowanie właściciela:** mianownik ROSNĄCY (jak w multi) — udzielone
+dotąd odpowiedzi (`1/1`, `1/2`…), nie stała liczba pytań gracza.
+
+**Implementacja:**
+- `index.html`: `#informacje-hotseat` (nagłówek „Gra lokalna — odpowiedzi
+  graczy” + tabela 2 kolumn + `#informacje-hotseat-wiersze`), `hidden`
+  domyślnie, w panelu Informacje pod blokiem multi.
+- `app/app.js`: `tabelaInformacjeHotseat()` (z `podsumowanie(rozgrywka).gracze`
+  → `poprawne/(poprawne+bledne)`) i `renderujInformacjeHotseat()` — bramka
+  `czyGraToczySie() && !STAN.multi`; render przy otwarciu panelu i na końcu
+  `renderujGre()` (znika przy końcu gry). Hot-seat NIGDY nie dokleja bloku po
+  zakończeniu — warunek fazy `koniec` / ręcznego końca go wygasza.
+- `app/styles.css`: spójne 14 px jak w tabeli multi.
+- Testy +2 (`test/aplikacja.test.js`: tabela 2 graczy z rosnącym mianownikiem
+  + brak bloku po zakończeniu; `test/kontrakt.test.js`: węzły + dokładnie dwie
+  kolumny).
+- **Budżet lektury:** nadwyżka z poprzedniej dogrywki (ADR 0051 + aneksy przy
+  rezerwie 67) przekroczyła 100 000 — wpisy ADR skrócone do szkieletu decyzji
+  (pełnia w historii). Rezerwa domknięta na 8 tokenach.
+
+**Brama na koniec:** `npm test` **828/828**, `npm run check` OK, WCAG **0**,
+zasięg mostu **97,7%**, budżet **99 992 / 100 000** (rezerwa 8), cache `m12-148`.

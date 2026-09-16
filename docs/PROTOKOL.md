@@ -240,7 +240,7 @@ WYMAGANIA DODATKOWE:
 | Pole | Typ | Zasady |
 | --- | --- | --- |
 | `id` | tekst | `^s[0-9]+p[0-9]+$`, unikalne w paczce |
-| `stacja` | liczba całkowita | `1..LICZBA_STACJI`; każda stacja ≥ 1 pytanie; rozkład równy ±1 |
+| `stacja` | liczba całkowita | `1..LICZBA_STACJI`; każda stacja ≥ 1 pytanie (rozkładu między stacje walidator nie sprawdza od 2026-09-15f — liczba pytań na stację wynika z setupu, patrz §6 `E05`) |
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |

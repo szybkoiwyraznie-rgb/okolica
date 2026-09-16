@@ -204,6 +204,10 @@ commit i nowa wersja aplikacji.
    Pierwszy fix centruje widok mapy (`app.js: centrujNaPozycji`) w zoomie
    dobranym do promienia gry (`geo.dopasujZoomDoPromienia`), a kolejne tylko
    przesuwają marker — potem mapę prowadzi palec gracza. W trybie testowym
+   pozycję startową daje stuknięcie mapy (D3) ALBO przycisk „🎯 Zlokalizuj
+   mnie” — jednorazowy `getCurrentPosition(OPCJE_WATCH)`, którego fix wchodzi
+   tym samym `przyjmijFix()` (uwaga terenowa 2026-09-16; poza trybem testowym
+   przycisku nie ma, bo pozycja idzie wyłącznie watcherem). W drodze
    fixy zamiast z GPS płyną z `sekwencjaSymulowana(trasaProsta(...))`
    odtwarzanej przez `setInterval` (przycisk „▶ Symuluj dojście (tryb testowy)”
    w ekranie gry); oba strumienie wchodzą w stan **jednym lejem**
@@ -237,7 +241,10 @@ commit i nowa wersja aplikacji.
    (też nie wraca dawna bramka `konfig.geokodacja`). Brak nazwy = puste
    miejsce w promptcie i komunikat, nie żądanie uboczne.
 5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka;
-   ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
+   „⧉ Kopiuj prompt” po udanej kopii samo przechodzi na ekran 5 (uwaga
+   terenowa 2026-09-16; przy odmowie schowka tekst zostaje zaznaczony i
+   aplikacja czeka na ręczną kopię, zamiast gubić właściciela na ekranie).
+   Ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
    SVG w `index.html` (zero plików zewnętrznych, ADR 0001 pkt 1/ADR 0011).
 6. Organizator ↔ model AI (poza systemem); odpowiedź wraca **wklejeniem** —
    palcem do `#pole-odpowiedz` albo przyciskiem „📋 Wklej ze schowka".
@@ -333,15 +340,32 @@ commit i nowa wersja aplikacji.
    Brak pozycji =
    środek trasy z pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca
    SAMA z `okolica:multi:sesja` i stanu mostu (`przywrocGreMulti` przy starcie,
-   ADR 0045) BEZ odliczania, a zamknięte już stacje nie wracają do rozgrywki.
+   ADR 0045) BEZ odliczania. Model budujemy z PEŁNEJ trasy, a postęp gracza
+   (zamknięte stacje) przywraca odtworzenie jego zdarzeń `dojscie`/`odpowiedz`
+   z mostu (`odtworzPostepMulti`, uwaga terenowa 2026-09-16 pkt 1) — numery
+   i „stacja X z Y” zgadzają się wtedy z trasą. Gracz, który domknął wszystkie
+   swoje stacje, widzi wynik (wspólny, gdy most zamknął grę — np. solo; własny
+   do czasu domknięcia) i NIE wraca do lobby: tabela żywych wyników widowni nie
+   istnieje. Podgląd tego, co robią INNI, daje odtąd panel Informacje: w grze
+   multi (`STAN.multi?.gra` + ekran `gra`) jest w nim blok `#informacje-multi`
+   (`tabelaPrzebieguMulti`) — imię, zaliczone stacje, poprawne, status —
+   renderowany przy otwarciu panelu, na zdarzenia gry i na każdym kroku
+   pollingu bez dodatkowego żądania (ADR 0051). Analogiczny blok dostaje
+   HOT-SEAT (`#informacje-hotseat`, `tabelaInformacjeHotseat`) w tym samym
+   panelu: gracz + poprawne/udzielone z `podsumowanie(rozgrywki)`, TYLKO
+   w trakcie gry (`czyGraToczySie()`), po zakończeniu nic się nie dokleja.
    Zdarzenia, które nie doszły na most (odpowiedź bez zasięgu), czekają
    w utrwalonej kolejce `okolica:multi-kolejka` i wychodzą PRZED pobraniem
    stanu gry — inaczej telefon zbudowałby trasę ze stacją, którą most właśnie
    domknął (ADR 0019 aneks 2026-09-13d).
 4. Koniec gry: punktację liczy most (`przeliczWyniki`), telefon rysuje ją na
    tym samym MINIMALNYM ekranie wyniku co hotseat (`wynikiMultiKonca`,
-   ADR 0038/0044), a most zapisuje grę w historii (`RO-gra/1`, stan
-   `zakonczona`). Ranking MIĘDZY grami ma własną warstwę z belki (ADR 0039).
+   ADR 0038/0044), a — w multi — POD wspólną tabelą dokłada blok „Przebieg
+   gry” (`#gra-wyniki-multi`): imię, zaliczone stacje (`odpowiedzi / N`),
+   poprawne (`poprawne / udzielone`), status Aktywny / Opuścił grę /
+   Zakończył trasę (`tabelaPrzebieguMulti`, ADR 0051). Most zapisuje grę
+   w historii (`RO-gra/1`, stan `zakonczona`). Ranking MIĘDZY grami ma własną
+   warstwę z belki (ADR 0039).
 5. Wyjście z lobby: POST `gra-opusc` prostuje skład gry, więc `liczbaGraczy`
    w `RO-lobby/1` nie obiecuje gracza, który wyszedł; wyjście organizatora
    zamyka grę (stan `archiwum`) i dlatego jest **dwustopniowe** — pierwszy klik

@@ -744,6 +744,39 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
   assert.ok(!html.includes('id="przycisk-start-gry"'), 'ręcznego startu nie ma — gra rusza sama po Sprawdź (decyzja 2026-09-07)');
 });
 
+test('kontrakt: status graczy multi — węzły są w HTML, a blok wyniku żyje POD wspólną tabelą', () => {
+  const html = czytaj('index.html');
+  // Panel Informacje: blok statusu gry wieloosobowej (uwaga terenowa 2026-09-16)
+  // jest W PAKIEcie z wierszami i podpisem. Jego znikniecie łamie całą funkcję.
+  assert.match(html, /id="informacje-multi"[\s\S]{0,400}id="informacje-multi-wiersze"[\s\S]{0,300}id="informacje-multi-status"/s,
+    'Informacje: blok statusu multi, wiersze i podpis w kolejności');
+  // Ekran wyniku: przebieg multi jest WE wnętrzu #gra-panel-koniec, po wspólnej
+  // tabeli `#gra-wyniki` — nie jako osobny panel fazy.
+  const panel = html.split('id="gra-panel-koniec"')[1].split('</section>')[0];
+  const iWyniki = panel.indexOf('id="gra-wyniki"');
+  const iMulti = panel.indexOf('id="gra-wyniki-multi"');
+  assert.ok(iWyniki >= 0 && iMulti > iWyniki, 'blok przebiegu multi jest pod tabelą wyniku, w panelu końca');
+  assert.match(panel, /id="gra-wyniki-multi" hidden/, 'dla hot-seata blok jest domyślnie ukryty (jawny atrybut)');
+  // Kolumny: Gracz | Stacje | Poprawne | Status — w obu tabelach.
+  assert.match(html, /id="informacje-multi-wiersze">/, 'tbody wierszy statusu multi');
+  assert.match(html, /id="gra-wyniki-multi-wiersze">/, 'tbody przebiegu pod wynikiem');
+});
+
+test('kontrakt: tabela hot-seat w Informacjach — dwie kolumny (Gracz + poprawne), domyślnie ukryta', () => {
+  const html = czytaj('index.html');
+  // Zgłoszenie 2026-09-16: hot-seat dostaje w panelu Informacje TYLKO tabelę
+  // graczy z liczbą poprawnych odpowiedzi — węzeł z nagłówkiem i tbody,
+  // domyślnie ukryty (JS odsłania go wyłącznie w trakcie gry).
+  const ekran = html.split('id="ekran-informacje"')[1].split('id="siec-proby"')[0];
+  assert.match(ekran, /id="informacje-hotseat" hidden/, 'blok hot-seat jest domyślnie ukryty');
+  assert.match(ekran, /id="informacje-hotseat-wiersze">/, 'tbody wierszy hot-seat');
+  // Dwie kolumny: Gracz, Ilość odpowiedzi poprawnych (żadnych stacji/statusu).
+  const blok = ekran.split('id="informacje-hotseat"')[1].split('</div>')[0];
+  assert.match(blok, /<th scope="col">Gracz<\/th>/, 'pierwsza kolumna: Gracz');
+  assert.match(blok, /<th scope="col">Ilość odpowiedzi poprawnych<\/th>/, 'druga kolumna: poprawne');
+  assert.equal((blok.match(/<th /g) ?? []).length, 2, 'w tabeli hot-seat są dokładnie dwie kolumny');
+});
+
 test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=button', () => {
   const html = czytaj('index.html');
   const kroki = html.split('<nav id="kroki"')[1].split('</nav>')[0];
@@ -756,6 +789,25 @@ test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=butt
   // usunięty" przepisujemy na NOWĄ formę, nie trzymamy starej liczby).
   assert.ok(przyciski.length >= 6, `przycisków na ekranie gry: ${przyciski.length}`);
   for (const p of przyciski) assert.match(p, /type="button"/, `przycisk bez type=button: ${p.slice(0, 60)}`);
+});
+
+test('kontrakt: „Zlokalizuj mnie” jest JEDEN, tylko w dolnym rzędzie ekranu pozycji (uwaga terenowa 2026-09-16)', () => {
+  const html = czytaj('index.html');
+  // Właściciel (twardo): przycisk TYLKO na ekranie „Gdzie jesteś?", obok
+  // „← ustawienia" i „Dalej: stacje →", nigdzie indziej i nigdy poza trybem
+  // testowym. Liczność 1 = nie ma drugiej kopii ani w karcie statusu, ani
+  // gdziekolwiek indziej; klasa `tylko-test` = poza trybem testowym CSS go chowa.
+  assert.equal((html.match(/id="przycisk-zlokalizuj"/g) ?? []).length, 1,
+    'przycisk lokalizacji ma DOKŁADNIE JEDEN egzemplarz w całym index.html');
+  const ekran = html.split('<section id="ekran-pozycja"')[1].split('</section>')[0];
+  assert.ok(ekran.includes('id="przycisk-zlokalizuj"'), 'przycisk żyje wewnątrz #ekran-pozycja');
+  const rzad = ekran.replace(/\n\s*/g, '').match(/<div class="wiersz przyciski-dolu">\s*<button id="przycisk-wstecz-setup"[\s\S]*?<\/div>/);
+  assert.ok(rzad, 'dolny rząd przycisków ekranu pozycji znaleziony');
+  const kolej = [...rzad[0].matchAll(/<button id="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(kolej, ['przycisk-wstecz-setup', 'przycisk-zlokalizuj', 'przycisk-dalej-stacje'],
+    'kolejność w dolnym rzędzie: „← ustawienia" → „Zlokalizuj mnie" → „Dalej: stacje →"');
+  assert.ok(/<button id="przycisk-zlokalizuj" class="przycisk tylko-test"/.test(rzad[0]),
+    'przycisk niesie klasę `tylko-test` — poza trybem testowym nie ma go na ekranie (CSS)');
 });
 
 test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (ADR 0011)', () => {
@@ -1228,26 +1280,32 @@ test('kontrakt: Informacje — jeden wiersz: wersja · Dane i prywatność · Zg
   const blok = blokCaly.replace(/<!--[\s\S]*?-->/g, '');
   const wiersz = blok.match(/<p class="informacje-kontakt[^"]*">([\s\S]*?)<\/p>/);
   assert.ok(wiersz, 'wiersz kontaktowy istnieje w panelu Informacje');
-  const kolejnosc = ['Wersja <span id="stopka-wersja">', 'id="przycisk-prywatnosc-stopka"', 'id="link-zglos-mape"', 'id="link-kontakt"'];
+  // Uwaga terenowa 2026-09-16 (pkt 2): piąta pozycja „wyczyść pliki tymczasowe
+  // aplikacji” jest TYLKO w trybie testowym (klasa `tylko-test`, ostatnia w wierszu).
+  const kolejnosc = ['Wersja <span id="stopka-wersja">', 'id="przycisk-prywatnosc-stopka"', 'id="link-zglos-mape"', 'id="link-kontakt"', 'id="przycisk-czysc-tymczasowe"'];
   let ostatni = -1;
   for (const fragment of kolejnosc) {
     const i = wiersz[1].indexOf(fragment);
     assert.ok(i > ostatni, `w wierszu jest ${fragment} — w tej kolejności i dokładnie raz`);
     ostatni = i;
   }
+  assert.ok(/<span class="informacje-pozycja tylko-test">[\s\S]*?<button id="przycisk-czysc-tymczasowe" class="przycisk-stopka"/.test(wiersz[1]),
+    'przycisk czyszczenia niesie klasę `tylko-test` (cała grupa) — poza trybem testowym nie ma go na ekranie (CSS)');
   // Kropki rozdzielają POPRZEDZAJAC pozycje — po złamaniu wiersza nie zostaje
   // na końcu linii (to był pierwszy efekt uboczny tej zmiany, złapany w
   // przeglądarce, nie w atrapie: LESSONS L13).
   assert.doesNotMatch(wiersz[1].trimEnd(), /informacje-kropka[^>]*>·<\/span>\s*$/,
     'żadna kropka nie wisi na końcu wiersza');
-  assert.equal((wiersz[1].match(/informacje-kropka/g) || []).length, 3, 'trzy separatory między czterema pozycjami');
+  assert.equal((wiersz[1].match(/informacje-kropka/g) || []).length, 4, 'cztery separatory między pięcioma pozycjami');
   // Kropka jest PIERWSZYM dzieckiem grupy `.informacje-pozycja`, a grupa trzyma
   // kropkę i pozycję w jednym inline-flexie — luzniejszy zapis (np. sam span)
   // dozwala łamanie między kropką a pozycją, czyli wraca wisząca kropka, którą
   // złapaliśmy w przeglądarce, a nie w atrapie (LESSONS L13).
   const bezKomentarzy = wiersz[1].replace(/<!--[\s\S]*?-->/g, '');
-  for (const [id, znacznik] of [['przycisk-prywatnosc-stopka', 'button'], ['link-zglos-mape', 'a'], ['link-kontakt', 'a']]) {
-    assert.ok(new RegExp(`<span class="informacje-pozycja">\\s*<span class="informacje-kropka"[^>]*>·</span>\\s*<${znacznik} id="${id}"`).test(bezKomentarzy),
+  for (const [id, znacznik] of [['przycisk-prywatnosc-stopka', 'button'], ['link-zglos-mape', 'a'], ['link-kontakt', 'a'], ['przycisk-czysc-tymczasowe', 'button']]) {
+    // `przycisk-czysc-tymczasowe` jest w grupie z klasą `tylko-test` (chowany
+    // poza trybem testowym razem z kropką) — regex dopuszcza ten przyrostek.
+    assert.ok(new RegExp(`<span class="informacje-pozycja(?: tylko-test)?">\\s*<span class="informacje-kropka"[^>]*>·</span>\\s*<${znacznik} id="${id}"`).test(bezKomentarzy),
       `kropka trzyma się swojej pozycji (${id}) — nie może zostać sama na końcu linii`);
   }
 

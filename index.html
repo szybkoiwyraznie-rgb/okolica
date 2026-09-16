@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-143">
-  <script type="module" src="app/app.js?v=m12-143"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-148">
+  <script type="module" src="app/app.js?v=m12-148"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -294,12 +294,6 @@
                 <p id="lobby-tryb" class="podpowiedz"></p>
         <ul id="lobby-gracze" class="lista-prosta"></ul>
         <p id="lobby-status" class="podpowiedz" role="status"></p>
-        <div id="lobby-widownia" hidden>
-          <table class="tabela-wynikow">
-            <thead><tr><th scope="col">Gracz</th><th scope="col">Punkty</th><th scope="col">Poprawne</th><th scope="col">Stacje</th><th scope="col">Premia</th></tr></thead>
-            <tbody id="lobby-widownia-wiersze"></tbody>
-          </table>
-        </div>
         <div class="wiersz">
           <button id="przycisk-lobby-start" class="przycisk przycisk-glowny" type="button" hidden>▶ Start gry</button>
           <button id="przycisk-lobby-opusc" class="przycisk" type="button">Opuść lobby</button>
@@ -328,6 +322,7 @@
       <p id="bledy-pozycja" class="bledy" role="alert" hidden></p>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wstecz-setup" class="przycisk" type="button">← ustawienia</button>
+        <button id="przycisk-zlokalizuj" class="przycisk tylko-test" type="button">🎯 Zlokalizuj mnie</button>
         <button id="przycisk-dalej-stacje" class="przycisk przycisk-glowny" type="button" disabled>Dalej: stacje →</button>
       </div>
     </section>
@@ -560,6 +555,18 @@
           </thead>
           <tbody id="gra-wyniki-tbody"></tbody>
         </table>
+        <!-- Status gry wieloosobowej pod wynikiem (uwaga terenowa 2026-09-16):
+             w grze multi pod wspólną tabelą pokazujemy też przebieg wszystkich
+             uczestników — zaliczone stacje, poprawne odpowiedzi i status
+             końcowy. W hot-seacie ten sam węzeł idzie do MARKUPU z `hidden`,
+             więc na ekranie zostaje dokładnie to, co było (ADR 0038). -->
+        <div id="gra-wyniki-multi" hidden>
+          <h4>Przebieg gry</h4>
+          <table class="tabela-wynikow">
+            <thead><tr><th scope="col">Gracz</th><th scope="col">Stacje</th><th scope="col">Poprawne</th><th scope="col">Status</th></tr></thead>
+            <tbody id="gra-wyniki-multi-wiersze"></tbody>
+          </table>
+        </div>
         <!-- Los wysyłki wyniku na Drive ma WŁASNĄ linię: wspólny `#status` jest
              jeden, a wysyłka kończy się w nieprzewidywalnej chwili — nie może
              nadpisać tego, co gracz właśnie zrobił (ADR 0026 aneks). -->
@@ -739,6 +746,31 @@
            ADR 0043): Informacje nie niosą już sterowania grą — koniec gry jest
            za ikoną ⚙ START GRY, a w drodze nad mapą zostaje sam pasek. -->
       <div class="informacje-tresc">
+      <!-- Status gry wieloosobowej (uwaga terenowa 2026-09-16): TYLKO w grze
+           multi (nigdy w hot-seacie). Tabela wszystkich uczestników z momentu
+           startu: imię, zaliczone stacje, poprawne odpowiedzi i status
+           (Aktywny / Opuścił grę / Zakończył trasę). Odświeża się z ostatniego
+           znanego stanu mostu (polling 30 s) — sam panel nie wysyła niczego.
+           Węzeł znika, gdy gracz wejdzie w setup nowej gry (STAN.multi gaśnie). -->
+      <div id="informacje-multi" hidden>
+        <h3>Gra wieloosobowa — status graczy</h3>
+        <table class="tabela-wynikow">
+          <thead><tr><th scope="col">Gracz</th><th scope="col">Stacje</th><th scope="col">Poprawne</th><th scope="col">Status</th></tr></thead>
+          <tbody id="informacje-multi-wiersze"></tbody>
+        </table>
+        <p id="informacje-multi-status" class="podpowiedz" role="status">Status z ostatniego odświeżenia (do ~30 s).</p>
+      </div>
+      <!-- Hot-seat (zgłoszenie 2026-09-16): TYLKO w panelu Informacje i TYLKO
+           w trakcie gry — po zamknięciu / zakończeniu gry nic nie doklejamy
+           do panelu (węzeł chowa `czyGraToczySie()`). Gracz + liczba
+           poprawnych odpowiedzi z mianownikiem ROSNĄCYM (jak w multi). -->
+      <div id="informacje-hotseat" hidden>
+        <h3>Gra lokalna — odpowiedzi graczy</h3>
+        <table class="tabela-wynikow">
+          <thead><tr><th scope="col">Gracz</th><th scope="col">Ilość odpowiedzi poprawnych</th></tr></thead>
+          <tbody id="informacje-hotseat-wiersze"></tbody>
+        </table>
+      </div>
       <ol id="siec-proby" class="siec-proby" aria-live="polite" aria-label="Próby pobrania sieci dróg" hidden></ol>
 
 
@@ -762,6 +794,7 @@
              kafelków jest wolontariacki — te dwa linki domykają oba zalecenia
              i dają OSM drogę kontaktu ZANIM cokolwiek zablokują. --><a id="link-zglos-mape" class="informacje-link" href="https://www.openstreetmap.org/fixthemap" target="_blank" rel="noopener noreferrer">Zgłoś błąd na mapie</a></span>
         <span class="informacje-pozycja"><span class="informacje-kropka" aria-hidden="true">·</span><a id="link-kontakt" class="informacje-link" href="mailto:szybkoiwyraznie@gmail.com">kontakt: szybkoiwyraznie@gmail.com</a></span>
+        <span class="informacje-pozycja tylko-test"><span class="informacje-kropka" aria-hidden="true">·</span><button id="przycisk-czysc-tymczasowe" class="przycisk-stopka" type="button">wyczyść pliki tymczasowe aplikacji</button></span>
       </p>
 
       </div>

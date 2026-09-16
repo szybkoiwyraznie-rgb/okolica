@@ -17,7 +17,7 @@
  * ADR 0014 wycofany). Znaczniki czasu w dzienniku służą tylko kolejności zdarzeń.
  */
 
-import { odlegloscM } from './geo.js?v=m12-143';
+import { odlegloscM } from './geo.js?v=m12-148';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
@@ -233,8 +233,8 @@ function juzOdpowiedzial(stan, stacjaId, graczId, pytanieId) {
 
 /**
  * Czy stacja jest zamknięta: każdy, kto miał odpowiadać, odpowiedział na każde
- * pytanie przypisane do stacji (protokół §3.2: stacja ma ≥ 1 pytanie, rozkład
- * równy ±1).
+ * pytanie przypisane do stacji (protokół §3.2: każda stacja ma przynajmniej jedno
+ * pytanie; ile ich jest, wynika z setupu — patrz `pytaniaNaStacjeDla`).
  */
 function stacjaZamknieta(stan, stacjaId) {
   const odcinek = znajdzOdcinek(stan, stacjaId);

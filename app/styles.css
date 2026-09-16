@@ -929,6 +929,28 @@ body.podglad-mapy .panel-centralny { visibility: hidden; pointer-events: none; }
 #przycisk-podejrzyj-mape:focus-visible { outline: 3px solid var(--tekst); outline-offset: 3px; }
 .informacje-tresc { display: grid; gap: 12px; }
 .informacje-tresc .separator { display: none; }
+
+/* Status gry wieloosobowej w panelu Informacje (uwaga terenowa 2026-09-16):
+   tabela uczestników NIE jest treścią techniczną, więc przywracamy jej
+   czytelne rozmiary; statusy końcowe dostają delikatny kolor. */
+#informacje-multi:not([hidden]) h3 { margin: 4px 0 2px; }
+#informacje-multi .tabela-wynikow { margin: 6px 0 2px; }
+#informacje-multi .tabela-wynikow th,
+#informacje-multi .tabela-wynikow td {
+  font-size: 14px;
+  padding: 8px 6px;
+}
+#informacje-hotseat:not([hidden]) h3 { margin: 4px 0 2px; }
+#informacje-hotseat .tabela-wynikow { margin: 6px 0 2px; }
+#informacje-hotseat .tabela-wynikow th,
+#informacje-hotseat .tabela-wynikow td {
+  font-size: 14px;
+  padding: 8px 6px;
+}
+.wiersz-ukonczyl td { color: var(--ok-tekst, var(--tekst)); }
+.wiersz-opuscil td { color: var(--tekst-slaby); }
+#gra-wyniki-multi h4 { margin: 12px 0 2px; font-size: 15px; }
+#gra-wyniki-multi .tabela-wynikow { margin: 6px 0 0; }
 /* Właściciel 2026-09-13 (uwaga H2, ADR 0042): CAŁA treść Informacji jedną, małą
    czcionką Courier New — ten sam krój i ten sam rozmiar wszędzie, bez
    wyróżniania nagłówka wielkością ani pogrubieniem. Rozmiar celowo mały

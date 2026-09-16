@@ -1346,6 +1346,54 @@ test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe pod
   }
 });
 
+/** Wejście na ekran promptu w trybie testowym: pozycja → stacje → prompt. */
+async function wejdzNaPrompt() {
+  const domAtrapa = await aplikacjaZSiecia();
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  return domAtrapa;
+}
+
+test('prompt: udane „Kopiuj prompt” OD RAZU przechodzi na ekran „Wklej odpowiedź” (uwaga terenowa 2026-09-16)', async () => {
+  // Zgłoszenie terenowe: jeden dotyk mniej — kopiowanie ma iść do schowka
+  // TYLKO przy sukcesie; ręczny fallback zostawia właściciela na ekranie.
+  const domAtrapa = await wejdzNaPrompt();
+  assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, false, 'warunek wstępny: jesteśmy na ekranie promptu');
+  const prompt = domAtrapa.pobierz('pole-prompt').value;
+  assert.ok(prompt.length > 100, 'prompt zbudowany przed kopiowaniem');
+  const wSchowku = [];
+  domAtrapa.navigator.clipboard = { writeText: async (tekst) => { wSchowku.push(tekst); } };
+  try {
+    domAtrapa.kliknij('przycisk-kopiuj-prompt');
+    await czekaj(50);
+    assert.deepEqual(wSchowku, [prompt], 'cały prompt trafił do schowka');
+    assert.equal(domAtrapa.pobierz('ekran-paczka').hidden, false, 'po udanej kopii ekran sam przechodzi na „Wklej odpowiedź modelu”');
+    assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, true, 'ekran promptu schowany po auto-przejściu');
+  } finally {
+    delete domAtrapa.navigator.clipboard;
+  }
+});
+
+test('prompt: fallback „skopiuj ręcznie” NIE przechodzi dalej — użytkownik sam dokańcza kopię', async () => {
+  // Schowka nie ma ani asynchronicznie, ani przez execCommand: ostatnia deska
+  // zaznacza tekst w polu. Auto-przejście nie może wtedy uciec z ekranu, bo
+  // tekst wcale nie trafił do schowka — użytkownik musi go skopiować ręcznie.
+  const domAtrapa = await wejdzNaPrompt();
+  Object.assign(domAtrapa.navigator, { clipboard: { writeText: async () => { throw new Error('NotAllowedError'); } } });
+  document.execCommand = () => false;
+  try {
+    domAtrapa.kliknij('przycisk-kopiuj-prompt');
+    await czekaj(50);
+    assert.equal(domAtrapa.pobierz('przycisk-kopiuj-prompt').textContent, '⚠ zaznaczone — skopiuj ręcznie',
+      'przycisk mówi wprost, że tekst został tylko zaznaczony');
+    assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, false, 'bez schowka aplikacja NIE ucieka z ekranu promptu');
+    assert.equal(domAtrapa.pobierz('ekran-paczka').hidden, true, 'ekran „Wklej odpowiedź” zostaje zamknięty');
+  } finally {
+    delete document.execCommand;
+  }
+});
+
 /* ============ M6/R4: ekran gry — fazy przygotowanie/odcinek, pauza */
 
 /** Przyjęta paczka + pozycja + stacje z pierścienia (synchronicznie, bez fetch).
@@ -2372,6 +2420,119 @@ test('D3: stuknięcie mapy pozycji ustawia pozycję testową, a przeciągnięcie
   assert.equal(domT.pobierz('pozycja-wspolrzedne').textContent, przedPanem, 'pan nie przestawia pozycji gracza');
 });
 
+/* ---------- przycisk „Zlokalizuj mnie” (uwaga terenowa 2026-09-16) ---------- */
+
+test('Zlokalizuj mnie: przycisk stoi w dolnym rzędzie ekranu pozycji, między „← ustawienia” a „Dalej: stacje →”', () => {
+  // Właściciel: przycisk ma być TYLKO na ekranie „Gdzie jesteś?”, w rzędzie
+  // przycisków obok wstecz/dalej — nie w karcie statusu i nigdzie indziej.
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const rzad = html.replace(/\n\s*/g, '').match(/<div class="wiersz przyciski-dolu">\s*<button id="przycisk-wstecz-setup"[\s\S]*?<\/div>/);
+  assert.ok(rzad, 'dolny rząd ekranu pozycji znaleziony w HTML');
+  const kolej = [...rzad[0].matchAll(/<button id="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(kolej, ['przycisk-wstecz-setup', 'przycisk-zlokalizuj', 'przycisk-dalej-stacje'],
+    'kolejność w rzędzie: wstecz → zlokalizuj → dalej (przycisk nie żyje w karcie statusu)');
+  assert.match(rzad[0], /<button id="przycisk-zlokalizuj" class="przycisk tylko-test"/,
+    'przycisk ma klasę `tylko-test` — poza trybem testowym CSS go chowa');
+});
+
+test('Zlokalizuj mnie: widoczny tylko w trybie testowym, do czasu ustawienia pozycji', async () => {
+  // Bez pozycji testowej przycisk jest widoczny (status = instrukcja oka);
+  // po ustawieniu pozycji (tap w mapę) przycisk znika, bo nie ma już czego szukać.
+  const domT = await aplikacjaZMapa({ search: '?tryb=test&odstep=0' });
+  domT.kliknij('przycisk-dalej-pozycja');
+  await czekaj(10);
+  assert.equal(domT.pobierz('ekran-pozycja').hidden, false, 'warunek wstępny: ekran pozycji otwarty');
+  assert.equal(domT.pobierz('przycisk-zlokalizuj').hidden, false, 'przed fixem przycisk lokalizacji jest widoczny');
+  assert.equal(domT.pobierz('pozycja-status').textContent, 'Tryb testowy: użyj oka i wskaż miejsce na mapie.',
+    'komunikat ekranu zostaje przy instrukcji oka (nie wspomina o przycisku)');
+
+  domT.ustawPozycje('52.2297', '21.0122');
+  assert.equal(domT.pobierz('przycisk-zlokalizuj').hidden, true, 'po ustawieniu pozycji przycisk lokalizacji znika');
+  assert.match(domT.pobierz('pozycja-status').textContent, /Pozycja ustawiona z mapy/);
+});
+
+test('Zlokalizuj mnie: poza trybem testowym nie ma go ani jako przycisku, ani jako ścieżki GPS', async () => {
+  // Jedyny egzemplarz przycisku ma klasę `tylko-test`, a w zwykłym trybie
+  // pozycja idzie WYŁĄCZNIE przez watcher GPS — żaden element poza
+  // #przycisk-zlokalizuj nie podpina getCurrentPosition.
+  const gps = atrapaGeolokalizacji();
+  const domG = zainstalujDom({ geolocation: gps.geolocation });
+  await import(`../app/app.js?brakzlokal=${Math.random().toString(36).slice(2)}`);
+  assert.equal(gps.wywolania.watch, 1, 'start zwykłego trybu: jeden watcher GPS');
+  assert.equal(gps.wywolania.ostatnie, 'watch', 'start jedzie watcherem, nie sondażem');
+  assert.deepEqual(gps.wywolania.zapytania, [], 'poza trybem testowym zero jednorazowych sondaży');
+
+  domG.kliknij('przycisk-dalej-pozycja');
+  await czekaj(10); // brama tożsamości jest asynchroniczna
+  assert.equal(domG.pobierz('ekran-pozycja').hidden, false, 'warunek wstępny: ekran pozycji otwarty');
+  assert.equal(domG.pobierz('przycisk-zlokalizuj').hidden, true, 'na ekranie pozycji przycisk lokalizacji jest ukryty poza trybem testowym');
+  assert.doesNotMatch(domG.pobierz('pozycja-status').textContent, /użyj oka/, 'poza trybem testowym nie ma instrukcji oka');
+  assert.deepEqual(gps.wywolania.zapytania, [], 'nawet na ekranie pozycji poza trybem testowym sondaż się nie odpala');
+
+  // Klik w przycisk (nawet potraktowany bez klasy `tylko-test`) NIE robi nic:
+  // bramka trybu testowego w `wyznaczPozycje()` ucina go u źródła — zero
+  // sondowań, zero „Szukam satelitów…”, przycisk zostaje ukryty.
+  const statusPrzed = domG.pobierz('pozycja-status').textContent;
+  domG.kliknij('przycisk-zlokalizuj');
+  await czekaj(10);
+  assert.deepEqual(gps.wywolania.zapytania, [], 'klik poza trybem testowym nie woła getCurrentPosition');
+  assert.equal(domG.pobierz('pozycja-status').textContent, statusPrzed, 'klik nie zmienia statusu ekranu');
+  assert.equal(domG.pobierz('przycisk-zlokalizuj').hidden, true, 'przycisk zostaje ukryty poza trybem testowym');
+});
+
+test('Zlokalizuj mnie: jednorazowy sondaż GPS ustawia pozycję i chowa przycisk', async () => {
+  const pamiecLocale = new Map([['okolica:profil', JSON.stringify({
+    schemat: 'profil-lokalny/1', pseudonim: 'Lokator', zweryfikowany: true, kiedy: '2026-09-07T10:00:00.000Z',
+  })]]);
+  const domL = await aplikacjaZMapa({ search: '?tryb=test&odstep=0', pamiec: pamiecLocale });
+  domL.kliknij('przycisk-dalej-pozycja');
+  await czekaj(10);
+  assert.equal(domL.pobierz('ekran-pozycja').hidden, false, 'warunek wstępny: ekran pozycji otwarty');
+
+  const gpsLok = atrapaGeolokalizacji({ idWatcha: 99 });
+  domL.ustawGeolokalizacje(gpsLok.geolocation);
+
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, false, 'przed kliknięciem przycisk jest widoczny');
+  domL.kliknij('przycisk-zlokalizuj');
+  assert.deepEqual(gpsLok.wywolania.zapytania, [OPCJE_WATCH],
+    'przycisk odpala jeden getCurrentPosition z opcjami watchera (ADR 0004 pkt 1)');
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, true, 'w trakcie sondażu przycisk jest schowany');
+  assert.equal(domL.pobierz('pozycja-status').textContent, 'Szukam satelitów…');
+
+  gpsLok.wyslijFix(52.22, 21.01, 10, 2000);
+  assert.match(domL.pobierz('pozycja-status').textContent, /Pozycja ustawiona/,
+    'poprawny fix wchodzi wspólnym lejem (status trybu testowego: „Pozycja ustawiona z mapy / symulacji”)');
+  assert.equal(domL.pobierz('przycisk-dalej-stacje').disabled, false, 'pozycja z sondażu odblokowuje przejście dalej');
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, true, 'po poprawnym sondażu przycisk zostaje schowany');
+});
+
+test('Zlokalizuj mnie: po błędzie GPS przycisk wraca i zostaje opcja stuknięcia w mapę', async () => {
+  const pamiecLocale = new Map([['okolica:profil', JSON.stringify({
+    schemat: 'profil-lokalny/1', pseudonim: 'Lokator', zweryfikowany: true, kiedy: '2026-09-07T10:00:00.000Z',
+  })]]);
+  const domL = await aplikacjaZMapa({ search: '?tryb=test&odstep=0', pamiec: pamiecLocale });
+  domL.kliknij('przycisk-dalej-pozycja');
+  await czekaj(10);
+
+  const gpsBlad = atrapaGeolokalizacji({ idWatcha: 88 });
+  domL.ustawGeolokalizacje(gpsBlad.geolocation);
+
+  domL.kliknij('przycisk-zlokalizuj');
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, true, 'w trakcie sondażu przycisk schowany');
+  gpsBlad.wyslijBlad(1, 'User denied Geolocation');
+
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, false, 'po błędzie przycisk wraca — można spróbować ponownie');
+  assert.equal(domL.pobierz('pozycja-status').textContent, 'Tryb testowy: użyj oka i wskaż miejsce na mapie.',
+    'błąd nie zmienia instrukcji ekranu');
+  assert.match(domL.pobierz('bledy-pozycja').textContent, /\[P02\]/, 'błąd pokazany jawnie kodem z pozycja.js');
+
+  // Awarii nie ma jak obejść GPS-em — z pomocą przychodzi stuknięcie w mapę (D3).
+  domL.ustawPozycje('52.2297', '21.0122');
+  assert.match(domL.pobierz('pozycja-status').textContent, /Pozycja ustawiona z mapy/,
+    'po błędzie sondażu pozycję ustawia mapa (D3), nie kolejny sondaż');
+  assert.equal(domL.pobierz('przycisk-zlokalizuj').hidden, true, 'pozycja ustawiona — przycisk schowany');
+});
+
 /* ------------------------------------------------- sygnały (M10/T4) */
 
 test('sygnały: „🔔 sygnały" startuje włączone, a klik przełącza i zapisuje wybór', async () => {
@@ -3235,3 +3396,101 @@ test('uwaga B (dogrywka): wklejka nie przestawia stacji z sieci — metryka drog
   assert.notEqual(drogaStacji2, drogaStacji1, 'każdy odcinek niesie WŁASNY dystans sieciowy, nie cudzy');
 });
 
+/* ----------------- uwaga terenowa 2026-09-16 pkt 2: czyszczenie plików tymczasowych */
+
+for (const [adres, czyTest] of [['?tryb=test', true], ['', false]]) {
+  test(`czyszczenie plików tymczasowych ${czyTest ? 'w trybie testowym czyści pamięć z panelu Informacje' : 'poza trybem testowym jest martwe (bramka trybu)'}`, async () => {
+    const pamiecT = new Map([
+      ['okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: { liczbaGraczy: 1 } })],
+      ['okolica:multi:sesja', JSON.stringify({ kod: 'XYZ', graczId: 'g-1' })],
+      ['okolica:motyw', 'ciemny'],
+      ['inna-apka:stan', 'nie ruszać'],
+    ]);
+    const domT = zainstalujDom({ search: adres, pamiec: pamiecT });
+    await import(`../app/app.js?tmp=${Math.random().toString(36).slice(2)}`);
+
+    // Przycisk żyje wyłącznie w panelu Informacje (uwaga terenowa, pkt 2),
+    // obok stopki wersji. Klasę `tylko-test` (chowaną przez CSS) pinuje
+    // kontrakt; tu sprawdzamy STEROWANIE: bramka trybu testowego w
+    // `czyscPlikiTymczasowe()` ścina przycisk u źródła — tak jak `wyznaczPozycje()`.
+    domT.kliknij('przycisk-informacje');
+    assert.equal(domT.pobierz('ekran-informacje').hidden, false, 'Informacje otwarte');
+    if (czyTest) {
+      domT.kliknij('przycisk-czysc-tymczasowe');
+      assert.equal(pamiecT.size, 0, 'wyczyściło CAŁY localStorage — okolica:* i cudze klucze');
+      assert.match(domT.pobierz('status').textContent, /Usunięto \d+ kluczy pamięci przeglądarki/,
+        'status mówi, ile kluczy usunięto');
+    } else {
+      const przed = [...pamiecT.keys()];
+      const statusPrzed = domT.pobierz('status').textContent;
+      domT.kliknij('przycisk-czysc-tymczasowe');
+      assert.deepEqual([...pamiecT.keys()], przed, 'klik poza trybem testowym NIC nie czyści');
+      assert.equal(domT.pobierz('status').textContent, statusPrzed,
+        'poza trybem testowym przycisk nie dokleił żadnego komunikatu');
+    }
+  });
+}
+
+
+/* ----------------- uwaga terenowa 2026-09-16: status multi NIE dotyczy hot-seata */
+
+test('hot-seat: panel Informacje i ekran wyniku NIE pokazują przebiegu multi', async () => {
+  const { dom, paczka } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+
+  // W hot-seacie blok statusu multi w Informacjach zostaje schowany.
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false, 'Informacje otwarte w grze');
+  assert.equal(dom.pobierz('informacje-multi').hidden, true, 'hot-seat nie dostaje tabeli statusu multi');
+  dom.kliknij('przycisk-zamknij-informacje');
+
+  // Domykamy grę i sprawdzamy, że pod zwykłym wynikiem nie ma bloku przebiegu.
+  for (const numer of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-symulacja-gra');
+    await czekaj(9 * 120 + 600);
+    kliknijOdpowiedz(dom, indeksPoprawnej(paczka.pytania.find((q) => q.stacja === numer)));
+    dom.kliknij('przycisk-nastepna-stacja');
+  }
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'koniec gry');
+  assert.equal(dom.pobierz('gra-wyniki-multi').hidden, true, 'ekran wyniku hot-seata bez przebiegu multi');
+  // Zgłoszenie 2026-09-16: blok hot-seat w Informacjach istnieje TYLKO w trakcie
+  // gry — po zakończeniu panel nie dokleja nic do Informacji.
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('informacje-hotseat').hidden, true, 'po zakończeniu gry tabela hot-seat nie wraca');
+  dom.kliknij('przycisk-zamknij-informacje');
+});
+
+test('hot-seat: w trakcie gry Informacje pokazują liczbę poprawnych odpowiedzi każdego gracza (mianownik rośnie)', async () => {
+  const { dom, paczka } = await graWFaziePytania({ graczy: 2 });
+  const naStacji1 = paczka.pytania.filter((q) => q.stacja === 1); // dwa pytania: Gracz 1, potem Gracz 2
+  const komorki = (tr) => tr.children.map((td) => td.textContent);
+
+  // Nazwany sprawdzacz — tabela jest warstwą, więc oglądamy ją w otwartym panelu.
+  const wierszeWInformacjach = (domU) => [...domU.pobierz('informacje-hotseat-wiersze').children];
+
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('informacje-hotseat').hidden, false, 'w trakcie gry blok hot-seat widoczny');
+  let wiersze = wierszeWInformacjach(dom);
+  assert.equal(wiersze.length, 2, 'dwóch graczy hot-seat');
+  assert.deepEqual(komorki(wiersze[0]), ['Gracz 1', '0/0'], 'przed odpowiedziami: Gracz 1 0/0');
+  assert.deepEqual(komorki(wiersze[1]), ['Gracz 2', '0/0'], 'przed odpowiedziami: Gracz 2 0/0');
+  dom.kliknij('przycisk-zamknij-informacje');
+
+  // Gracz 1 odpowiada poprawnie — mianownik rośnie do 1.
+  kliknijOdpowiedz(dom, indeksPoprawnej(naStacji1[0]));
+  dom.kliknij('przycisk-informacje');
+  wiersze = wierszeWInformacjach(dom);
+  assert.deepEqual(komorki(wiersze[0]), ['Gracz 1', '1/1'], 'po poprawnej: Gracz 1 1/1');
+  assert.deepEqual(komorki(wiersze[1]), ['Gracz 2', '0/0'], 'Gracz 2 jeszcze nie odpowiadał');
+  dom.kliknij('przycisk-zamknij-informacje');
+
+  // Gracz 2 odpowiada BŁĘDNIE — mianownik rośnie, ale licznik poprawnych nie.
+  dom.kliknij('przycisk-nastepna-stacja');
+  kliknijOdpowiedz(dom, indeksBlednej(naStacji1[1]));
+  dom.kliknij('przycisk-informacje');
+  wiersze = wierszeWInformacjach(dom);
+  assert.deepEqual(komorki(wiersze[0]), ['Gracz 1', '1/1'], 'Gracz 1 bez zmian');
+  assert.deepEqual(komorki(wiersze[1]), ['Gracz 2', '0/1'], 'błędna odpowiedź: 0 poprawnych z 1 udzielonej');
+  dom.kliknij('przycisk-zamknij-informacje');
+});

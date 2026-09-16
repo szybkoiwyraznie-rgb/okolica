@@ -53,7 +53,10 @@ Koniec sesji:
    „Czekam na pozycję…” → „Szukam satelitów…” → „Pozycja ustalona”, a karta
    pokazuje współrzędne i geohash. Przycisku włączania GPS, pól ręcznych
    współrzędnych i badge’a dokładności NIE MA (ADR 0034 pkt 2 i 5); w trybie
-   testowym pozycję ustawia krótkie stuknięcie mapy. Karta „📦 Paczki dla tej
+   testowym pozycję ustawia **krótkie stuknięcie mapy** albo przycisk
+   **„🎯 Zlokalizuj mnie”** (jeden `getCurrentPosition` z opcjami watchera —
+   uwaga terenowa 2026-09-16); przycisk żyje TYLKO w trybie testowym i znika
+   po ustaleniu pozycji. Karta „📦 Paczki dla tej
    okolicy” proponuje gotowe paczki z repozytorium — wybór startuje grę bez
    modelu (paczek z pamięci tego telefonu UI nie pokazuje — zadanie I,
    2026-09-12).
@@ -62,11 +65,14 @@ Koniec sesji:
    stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci gra
    schodzi do pierścienia z jawnym komunikatem („osiągalność
    niezweryfikowana”), a do ręki zostaje „✋ Ustaw stacje ręcznie”.
-4. Ekran **pytań**: „⧉ Kopiuj prompt” → wklej do jednego z czatów AI (Meta AI,
-   ChatGPT, Gemini — linki na ekranie) i wklej odpowiedź z powrotem. Kontrakt
-   z modelem niesie sam prompt: „Pytania z fact check” (kwerenda internetowa)
-   albo domyślny wariant bez fact-checku, w którym model korzysta z własnej
-   wiedzy (ADR 0032).
+4. Ekran **pytań**: „⧉ Kopiuj prompt” kopiuje do schowka i **od razu
+   przechodzi** na ekran 5 (uwaga terenowa 2026-09-16) — chyba że schowek
+   odmówił, wtedy tekst zostaje zaznaczony i aplikacja zostaje na miejscu,
+   żeby dokończyć kopię ręcznie. Prompt wklejasz do jednego z czatów AI
+   (Meta AI, ChatGPT, Gemini — linki na ekranie), a odpowiedź wklejasz
+   z powrotem. Kontrakt z modelem niesie sam prompt: „Pytania z fact check”
+   (kwerenda internetowa) albo domyślny wariant bez fact-checku, w którym
+   model korzysta z własnej wiedzy (ADR 0032).
 5. Ekran **paczki**: wklej odpowiedź modelu (ręcznie albo „📋 Wklej
    ze schowka”) — sprawdzanie rusza SAMO przy każdej zmianie tekstu, przycisku
    „przyjmij” nie ma, a wczytywania „⬆ Z pliku” nie ma od 2026-09-07 (ADR 0006
@@ -297,9 +303,10 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
 7b. **Wyjście z lobby**: B klika „Opuść lobby” przed startem → na A lista
    graczy maleje po odświeżeniu (≤ 10 s), a gdy wychodzi HOST, gra znika
    z listy gier w okolicy (`gra-opusc`).
-8. **Obserwacje** → `docs/LESSONS.md`: pewność dojścia przy stacjach, opóźnienia
-   żywej tabeli i kanału info, odmowy mostu (jawne w statusie), zużycie
-   baterii przy pollingu.
+8. **Obserwacje** → `docs/LESSONS.md`: pewność dojścia przy stacjach, odmowy
+   mostu (jawne w statusie), zużycie baterii przy pollingu. Żywej tabeli wyników
+   ani kanału info w grze NIE MA (uwaga terenowa 2026-09-16, pkt 1) — pasek
+   synchronizacji widać tylko w lobby, a wspólny wynik na ekranie końca gry.
 
 ## 5. Publikacja na GitHub Pages (włączona — publikuje workflow)
 

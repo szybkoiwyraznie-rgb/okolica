@@ -84,9 +84,12 @@ wystartował grę.
   lobby i do statusu.
 - Utrata kanału info jest celowa: zdarzenia i tak są w moście, a gracz widzi ich
   skutek w punktacji na końcu gry i w rankingu między grami (ADR 0039).
-- Żywe wyniki w trakcie gry zniknęły z ekranu gracza; zostały w lobby
+- Żywe wyniki w trakcie gry zniknęły z ekranu gracza; został im lobby
   (`#lobby-widownia-wiersze`) dla widowni i dla telefonu, który nie ma już
-  swoich stacji.
+  swoich stacji. **Uchylone 2026-09-16 (uwaga terenowa, pkt 1):** warstwa
+  żywych wyników jest OBSOLETOWA i usunięta w całości — telefon bez stacji nie
+  wraca do lobby, tylko stoi na własnym ekranie wyniku (wspólny, gdy most
+  domknął grę) i czeka na wspólną tabelę (patrz aneks niżej).
 - Piny: „kontrakt ADR 0044” w `test/kontrakt.test.js` (kształt i z-index warstwy,
   kroki i sygnały, brak odliczania przy wznowieniu, przeprowadzka wyboru stacji,
   pasek sync tylko w lobby, wspólna tabela na końcu) oraz brak usuniętych id-ów
@@ -122,4 +125,10 @@ Pkt 5 („Wybór stacji w Wyścigu na Orientację PRZEPROWADZIŁ SIĘ do panelu 
 dotarcie do dowolnej niezaliczonej stacji (ADR 0027 aneks 2026-09-14). Reszta
 tego ADR — odliczanie 5-4-3-2-1-START, brak karty `#gra-panel-multi`, pasek
 sync tylko w lobby, wspólny wynik na ekranie hotseat — bez zmian.
+
+## Aneks 2026-09-16 (uwaga terenowa, pkt 1) — żywe wyniki widowni usunięte
+
+Żywe wyniki widowni, lobby po starcie, żywa tabela `Gracz/Punkty` i LIMBO
+usunięte: po starcie każdy widzi grę jak w hotseacie. Postęp sprzed odświeżenia
+odtwarza `odtworzPostepMulti`.
 

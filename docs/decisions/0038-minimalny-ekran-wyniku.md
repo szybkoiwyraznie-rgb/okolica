@@ -72,3 +72,8 @@ się zepsuć i wymagać uwagi.
 wysyłki `#wynik-drive` zostaje), 0032 (linia wariantu w panelu multi zostaje),
 0011 (mobile-first: mniej treści na 360 px), LESSONS L23 (czytanie liczb
 z elementu, nie z `textContent`).
+
+## Aneks 2026-09-16 — multi: „Przebieg gry” pod wspólną tabelą
+
+W grze multi pod wspólną tabelą rankingu pojawia się blok `#gra-wyniki-multi`
+(hot-seat: `hidden`); nic usuniętego NIE wraca. Pełnia: ADR 0051.

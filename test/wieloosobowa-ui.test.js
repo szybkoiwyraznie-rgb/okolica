@@ -769,6 +769,234 @@ test('start SOLO: organizator wystartuje grę z jednym graczem i sam ją domyka'
   assert.equal(gra.wyniki['g-1'].premia, 0, 'bez rywali nie ma premii za kolejność');
 });
 
+test('uwaga terenowa 2026-09-16 pkt 3: „▶ Start gry” wisi w pulsującym „Łączę z siecią”, póki most nie odpisze', async () => {
+  const most = atrapaMostu();
+  const pamiec = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await przygotujTelefon(A, 'Ula', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+
+  // Zamrażamy WŁAŚNIE `gra-start` (nie całą sieć): atrapa mostu trzyma tę
+  // odpowiedź, dopóki test nie odda obietnicy. Tak odtwarzamy długie, zimne
+  // łączenie z Drive, przy którym stary przycisk wyglądał na zawieszony.
+  let oddajStart = null;
+  const prawdziwyFetch = most.fetchImpl;
+  most.fetchImpl = (url, opcje = {}) => {
+    const tekst = String(opcje?.body ?? '');
+    if ((opcje.method ?? 'GET') === 'POST' && tekst.includes('gra-start')) {
+      return new Promise((rozwiaz) => { oddajStart = () => rozwiaz(prawdziwyFetch(url, opcje)); });
+    }
+    return prawdziwyFetch(url, opcje);
+  };
+  globalThis.fetch = most.fetchImpl;
+  A.dom.window.fetch = most.fetchImpl;
+
+  await klik(A, 'przycisk-lobby-start');
+  const przycisk = el(A, 'przycisk-lobby-start');
+  assert.equal(przycisk.disabled, true, 'przycisk zablokowany na czas połączenia');
+  assert.equal(przycisk.textContent, 'Łączę z siecią', 'etykieta zmienia się w „Łączę z siecią”');
+  assert.equal(przycisk.classList.contains('pulsuje'), true, 'przycisk pulsuje — czekanie wygląda na zamierzone');
+  assert.match(tekst(A, 'status'), /Łączę z siecią/, 'status mówi to samo, co przycisk');
+  assert.equal(el(A, 'ekran-gra').hidden, true, 'gra jeszcze nie ruszyła — most nie odpisal');
+
+  // Po odpowiedzi mostu gra startuje, a lobby znika (pkt 1: zero ekranu lobby
+  // po starcie — nie ma do czego przywracać etykiety).
+  assert.equal(typeof oddajStart, 'function', 'atrapa trzyma odpowiedź gra-start');
+  oddajStart();
+  await czekajNa(A, () => el(A, 'ekran-gra').hidden === false, 'start po odpowiedzi mostu');
+  assert.equal(el(A, 'ekran-multi').hidden, true, 'ekran lobby/status schowany po starcie');
+});
+
+test('uwaga terenowa 2026-09-16 pkt 3: po awarii połączenia przycisk wraca na „▶ Start gry” i można próbować dalej', async () => {
+  const most = atrapaMostu();
+  const pamiec = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await przygotujTelefon(A, 'Ula', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+
+  most.online = false;
+  await klik(A, 'przycisk-lobby-start');
+  const przycisk = el(A, 'przycisk-lobby-start');
+  assert.equal(przycisk.textContent, '▶ Start gry', 'po awarii etykieta wraca na „▶ Start gry”');
+  assert.equal(przycisk.disabled, false, 'po awarii przycisk odblokowany');
+  assert.equal(przycisk.classList.contains('pulsuje'), false, 'pulsowanie gaśnie po awarii');
+  assert.match(tekst(A, 'status'), /Nie udało się wystartować gry/, 'awaria jest jawna w statusie');
+  assert.equal(el(A, 'ekran-gra').hidden, true, 'bez mostu gra NIE ruszyła');
+
+  // Drugi klik po powrocie sieci prowadzi normalnie do gry.
+  most.online = true;
+  await klik(A, 'przycisk-lobby-start');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'po powrocie sieci start prowadzi do gry');
+  assert.equal(el(A, 'ekran-multi').hidden, true, 'po sukcesie ekran lobby/status schowany');
+});
+
+test('uwaga terenowa 2026-09-16 pkt 1: host po starcie widzi grę jak hotseat, bez lobby, bez żywych wyników', async () => {
+  const most = atrapaMostu();
+  const pamiec = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await przygotujTelefon(A, 'Host', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  const kod = kodGry(most);
+  await klik(A, 'przycisk-lobby-start');
+
+  // Właściciel: po starcie host widzi grę (ekran-gra), a NIE lobby ani żadną
+  // tabelę „Gracz/Punkty” — to była przyczyna LIMBO, gdy host grał sam.
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'host natychmiast w grze');
+  assert.equal(el(A, 'ekran-multi').hidden, true, 'ekran lobby/status schowany');
+  assert.ok(!A.dom.html.includes('lobby-widownia'), 'żywej warstwy wyników widowni NIE ma w markupie (element nie istnieje)');
+  assert.match(tekst(A, 'status'), /przed Tobą 3 z 3 stacji/, 'host stoi na zwykłej trasie 3/3, nie w tabeli');
+
+  // Host solo domyka wszystkie stacje; następny krok synchronizacji domyka grę
+  // w moście i przynosi wspólny wynik — zero LIMBO, zero czekania bez ekranu.
+  await przejdzStacje(A);
+  await przejdzStacje(A);
+  await przejdzStacje(A);
+  assert.equal(most.znajdz(kod).stan, 'zakonczona', 'wszystkie stacje domknięte — most kończy grę');
+  assert.equal(el(A, 'gra-panel-koniec').hidden, false, 'host od razu na ekranie wyniku');
+  await przepompuj(A, 1);
+  assert.match(tekst(A, 'status'), /zakończona/, 'zamknięcie gry w moście jest dla hosta jawne');
+  assert.match(tekst(A, 'multi-sync-pasek'), /odświeżanie zatrzymane/, 'polling staje po zakończeniu');
+});
+
+test('uwaga terenowa 2026-09-16 pkt 1: gracz, który domknął wszystkie stacje, na wejściu dostaje wynik, nie lobby (zero LIMBO)', async () => {
+  const most = atrapaMostu();
+  const pamiec = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await przygotujTelefon(A, 'Janek', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  const kod = kodGry(most);
+
+  // Inscenizacja stanu, w którym stary flow zostawiał gracza w lobby z żywą
+  // tabelą: gra toczy się na moście, a TEN gracz ma już wszystkie stacje
+  // domknięte (dojście + odpowiedź dla każdej). Po starcie musi trafić od razu
+  // na własny ekran wyniku z jasnym statusem — nigdy do lobby. Zdarzenia
+  // dokładamy JESZCZE w lobby: `gra-start` zwróci ich klon i dopiero wtedy
+  // `uruchomGreMulti` odtworzy postęp. (Stan zostaje 'lobby' — inaczej atrapa
+  // `gra-start` odmówiłaby „gra nie jest już w lobby”.)
+  const gra = most.znajdz(kod);
+  for (const n of [1, 2, 3]) {
+    gra.zdarzenia.push(
+      { kolejnosc: gra.zdarzenia.length + 1, graczId: 'g-1', typ: 'dojscie', stacjaId: n, dane: { trybDojscia: 'gps' }, tSerwera: new Date().toISOString() },
+      { kolejnosc: gra.zdarzenia.length + 1, graczId: 'g-1', typ: 'odpowiedz', stacjaId: n, dane: { poprawna: true, punktyRazem: 1 }, tSerwera: new Date().toISOString() },
+    );
+  }
+
+  await klik(A, 'przycisk-lobby-start');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'gracz w grze, nie w lobby');
+  assert.equal(el(A, 'gra-panel-koniec').hidden, false, 'wszystkie stacje zamknięte — od razu ekran wyniku');
+  assert.match(tekst(A, 'status'), /wszystkie Twoje stacje są już zamknięte/i,
+    'gracz wie, że gra się toczy i czeka na wspólną tabelę — jawny status zamiast LIMBO');
+  assert.equal(el(A, 'ekran-multi').hidden, true, 'ekran lobby schowany');
+  assert.equal(el(A, 'odliczanie').hidden, true, 'bez stacji do przejścia nie ma odliczania');
+});
+
+test('uwaga terenowa 2026-09-16: panel Informacje w grze multi pokazuje status wszystkich uczestników i aktualizuje się z postępem', async () => {
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+  const komorki = (tr) => tr.children.map((td) => td.textContent);
+
+  // W trakcie gry panel Informacje pokazuje tabelę wszystkich uczestników
+  // z momentu startu — z hostem włącznie.
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'host w grze');
+  await klik(A, 'przycisk-informacje');
+  assert.equal(el(A, 'ekran-informacje').hidden, false, 'Informacje otwarte');
+  assert.equal(el(A, 'informacje-multi').hidden, false, 'blok statusu multi widoczny');
+  let wiersze = [...el(A, 'informacje-multi-wiersze').children];
+  assert.equal(wiersze.length, 2, 'dwóch uczestników z momentu startu');
+  assert.deepEqual(komorki(wiersze[0]), ['Ala (Ty)', '0/3', '0/0', 'Aktywny'], 'host: imię, stacje 0/3, poprawne 0/0, Aktywny');
+  assert.deepEqual(komorki(wiersze[1]), ['Bartek', '0/3', '0/0', 'Aktywny'], 'gość');
+  await klik(A, 'przycisk-zamknij-informacje');
+
+  // Postęp Ali: dojście + poprawna odpowiedź na stacji 1 → tabela nadąża.
+  await przejdzStacje(A);
+  await przepompuj(A, 1); // krok pollingu: świeży stan mostu trafia do panelu
+  await klik(A, 'przycisk-informacje');
+  wiersze = [...el(A, 'informacje-multi-wiersze').children];
+  assert.deepEqual(komorki(wiersze[0]), ['Ala (Ty)', '1/3', '1/1', 'Aktywny'], 'po stacji Ali: 1/3 stacji, 1/1 poprawnych');
+  assert.deepEqual(komorki(wiersze[1]), ['Bartek', '0/3', '0/0', 'Aktywny'], 'Bartek bez zmian');
+  await klik(A, 'przycisk-zamknij-informacje');
+});
+
+test('uwaga terenowa 2026-09-16: status „Opuścił grę” u gracza, który zrezygnował w trakcie gry', async () => {
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+  const kod = kodGry(most);
+  const komorki = (tr) => tr.children.map((td) => td.textContent);
+
+  // Host kończy grę na swoim telefonie (⚙ + TAK) → rezygnacja na moście.
+  await potwierdzKoniecGry(A);
+  await czekajNa(B, () => most.znajdz(kod).zdarzenia.some((z) => z.typ === 'rezygnacja' && z.graczId === 'g-1'),
+    'rezygnacja Ali doszła na most');
+
+  // Gość widzi w Informacjach Ali jako „Opuścił grę”, siebie jako Aktywnego.
+  await przepompuj(B, 1);
+  await klik(B, 'przycisk-informacje');
+  assert.equal(el(B, 'informacje-multi').hidden, false, 'blok statusu widoczny u gracza, który dalej gra');
+  const wiersze = [...el(B, 'informacje-multi-wiersze').children];
+  assert.equal(wiersze.length, 2, 'uczestnicy z momentu startu zostają na liście');
+  assert.deepEqual(komorki(wiersze[0]), ['Ala', '0/3', '0/0', 'Opuścił grę'], 'rezygnacja = Opuścił grę, nie usunięcie z listy');
+  assert.deepEqual(komorki(wiersze[1]), ['Bartek (Ty)', '0/3', '0/0', 'Aktywny']);
+  await klik(B, 'przycisk-zamknij-informacje');
+});
+
+test('uwaga terenowa 2026-09-16: pod wspólnym wynikiem multi jest przebieg uczestników (Zakończył trasę)', async () => {
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+  const kod = kodGry(most);
+  const komorki = (tr) => tr.children.map((td) => td.textContent);
+
+  // Oboje domykają całą trasę → most zamyka grę, Ala dostaje wspólny wynik.
+  await przejdzStacje(A);
+  await przejdzStacje(A);
+  await przejdzStacje(A);
+  await przepompuj(A, 1);
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  assert.equal(most.znajdz(kod).stan, 'zakonczona', 'most zamknął grę po wszystkich stacjach');
+  await przepompuj(A, 1);
+  assert.equal(el(A, 'gra-panel-koniec').hidden, false, 'ekran wyniku');
+  assert.equal(el(A, 'gra-wyniki-multi').hidden, false, 'blok przebiegu pod wspólnym wynikiem (multi)');
+  const wiersze = [...el(A, 'gra-wyniki-multi-wiersze').children];
+  assert.equal(wiersze.length, 2, 'przebieg wszystkich uczestników');
+  assert.deepEqual(komorki(wiersze[0]), ['Ala (Ty)', '3/3', '3/3', 'Zakończył trasę']);
+  assert.deepEqual(komorki(wiersze[1]), ['Bartek', '3/3', '3/3', 'Zakończył trasę']);
+});
+
 test('uwaga G: koniec gry hosta NIE kończy gry innym — gość gra dalej, a most domyka grę, gdy skończy', async () => {
   const most = atrapaMostu();
   const pamiecA = new Map();
