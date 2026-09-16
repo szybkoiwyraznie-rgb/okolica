@@ -6760,6 +6760,11 @@ w Chromium przy 360 × 740), a ADR 0011 pkt 2 i ADR 0042 pkt 3 obiecują ≥ 44 
 — linki obok trzymają `min-height: var(--cel)`. Opis, warianty naprawy i pytanie
 do decyzji: `docs/BACKLOG.md` → **B26** (ten PR nie rusza kodu).
 
+**Brama końcowa (po zmianach dokumentacyjnych):** `npm run brama` EXIT=0 —
+testy 829/829, check OK, WCAG AA 0 naruszeń; budżet 99 963 / 100 000
+(rezerwa 37); cache `m12-149`; CI na PR #38 zielone (job `test`, run
+`35116124937`).
+
 **Otwarte po sesji:** PR #38 (scalenie właściciela, squash). Most Apps Script
 bez zmian. Czekamy na uwagi z testów terenowych (m.in. paczka z promptu
 `PYT/1.1.2` i polecenia z PR #35).
