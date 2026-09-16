@@ -238,7 +238,7 @@ const STAN = {
   /** Historia fixów (limit z `pozycja.js`) — wspólna dla GPS i symulacji. */
   historiaFixow: [],
   /** Stan sieci drogowej (M4): 'brak' → 'gotowa' po pobraniu albo cache. */
-  siec: { stan: 'brak', dane: null, klucz: null, trybGrafu: null, graf: null, kandydaci: null, zCache: false },
+  siec: { stan: 'brak', dane: null, klucz: null, trybGrafu: null, graf: null, kandydaci: null, zCache: false, zrodlo: null },
   /** Wynik `wybierzStacje` (macierz, sprawiedliwość sieciowa) albo null przy pierścieniu. */
   wynikSieci: null,
   /** Odstęp między instancjami Overpass; `?odstep=0` skraca go w testach. */
@@ -1855,8 +1855,8 @@ function zapiszCacheSieci(klucz, dane, terazMs) {
   }
 }
 
-function ustawSiec(dane, { zCache, klucz }) {
-  STAN.siec = { stan: 'gotowa', dane, klucz, trybGrafu: null, graf: null, kandydaci: null, zCache };
+function ustawSiec(dane, { zCache, zrodlo = null, klucz }) {
+  STAN.siec = { stan: 'gotowa', dane, klucz, trybGrafu: null, graf: null, kandydaci: null, zCache, zrodlo };
   const miejsce = nazwaMiejsca(dane);
   if (miejsce) {
     STAN.miejsce = miejsce;
@@ -1952,6 +1952,64 @@ async function pobierzTekstSieci(f, url, zapytanie) {
   }
 }
 
+/**
+ * Cache L2: wspólna sieć z Drive (teren 2026-09-16 — telefon nie zawsze
+ * pamięta okolicę, a Overpass nie musi wołać dwa razy o to samo). Zwraca dane
+ * albo null (brak mostu, brak wpisu, awaria — po cichu, bo L2 jest
+ * przyspieszeniem, nie obietnicą; ostateczna jest ścieżka Overpass).
+ * Trafienie dokarmia też L1, żeby następna gra nie pytała nawet mostu.
+ */
+async function sprobujPobracSiecZDysku() {
+  const url = adresMostu();
+  if (!url) return null;
+  const terazMs = Date.now();
+  let odpowiedz;
+  try {
+    odpowiedz = await pobierzGetMulti(urlGet(url, 'siec', {
+      lat: STAN.pozycja.lat,
+      lon: STAN.pozycja.lon,
+      promienM: STAN.konfig.promienM,
+      tryb: STAN.konfig.tryb,
+    }));
+  } catch {
+    return null; // most nie odpowiada — gra jedzie do Overpass
+  }
+  const wpis = odpowiedz?.wpis;
+  if (odpowiedz?.ok !== true || !wczytajDaneZCache(wpis, { terazMs })) return null;
+  if (wpis.tryb !== STAN.konfig.tryb) return null;
+  if (!czyWpisPokrywa(wpis, { srodek: STAN.pozycja, promienM: STAN.konfig.promienM })) return null;
+  ustawSiec(wpis.dane, { zCache: true, zrodlo: 'dysk', klucz: kluczSieci() });
+  zapiszCacheSieci(kluczSieci(), wpis.dane, terazMs);
+  return wpis.dane;
+}
+
+/**
+ * Świeże pobranie Overpass trafia też na wspólny Drive (cache L2) — w tle,
+ * bez czekania gry. Niepowodzenie nie boli: L1 już zapisany, a L2 dojedzie
+ * przy następnym świeżym pobraniu.
+ */
+async function zapiszSiecNaDysk() {
+  const url = adresMostu();
+  const f = fetchPrzegladarki();
+  if (!url || !f || !STAN.siec.dane) return;
+  const wpis = zlozWpisSieci({
+    dane: STAN.siec.dane,
+    srodek: STAN.pozycja,
+    promienM: STAN.konfig.promienM,
+    tryb: STAN.konfig.tryb,
+    terazMs: Date.now(),
+  });
+  if (JSON.stringify(wpis).length > 6_000_000) return; // most by odmówił — szkoda radia
+  try {
+    await Promise.race([
+      polecenieMostu(url, { akcja: 'siec-zapisz', wpis }, { fetchImpl: f }),
+      new Promise((_, odrzuc) => setTimeout(() => odrzuc(new Error('limit wysyłki L2')), LIMIT_MOSTU_MS)),
+    ]);
+  } catch {
+    /* cache L2 jest przyspieszeniem — jego awaria nie jest błędem gry */
+  }
+}
+
 /** Sekwencyjnie: ostatnia sprawna najpierw, 10 s na próbę; wyniki w Informacjach. */
 async function pobierzSiec(terazMs) {
   const f = typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
@@ -1974,9 +2032,12 @@ async function pobierzSiec(terazMs) {
       const tekst = await pobierzTekstSieci(f, instancja.url, zapytanie);
       const sparsowane = parsujOdpowiedz(JSON.parse(tekst));
       const dane = upraszczajDaneDoCache(sparsowane);
-      if (tekst.length <= 8_000_000) zapiszCacheSieci(kluczSieci(), dane, terazMs);
+      const miesciSie = tekst.length <= 8_000_000;
+      if (miesciSie) zapiszCacheSieci(kluczSieci(), dane, terazMs);
       else status(KODY_SIECI.S04);
       ustawSiec(dane, { zCache: false, klucz: kluczSieci() });
+      // PO ustawSiec: wysyłka czyta STAN.siec.dane (w tle, bez czekania gry)
+      if (miesciSie) void zapiszSiecNaDysk();
       zapiszSprawnaInstancje(instancja.url);
       wpis.textContent = `${prefiks} — pobrano sieć dróg.`;
       return true;
@@ -2089,7 +2150,8 @@ async function przeliczStacjeZPobraniem(klucz) {
   ladowanieSieci.hidden = false;
   ladowanieSieci.classList.add('pulsuje'); // sygnał czekania (właściciel 2026-09-13)
   try {
-    const ok = await pobierzSiec(Date.now());
+    const zDysku = await sprobujPobracSiecZDysku();
+    const ok = zDysku !== null || await pobierzSiec(Date.now());
     if (!ok && STAN.siec.stan !== 'gotowa') {
       status('Sieć drogowa niedostępna — stacje w trybie uproszczonym (pierścień): osiągalność niezweryfikowana. Sprawdź połączenie z internetem.');
     }
@@ -2134,7 +2196,7 @@ function przeliczStacje() {
       terazMs: Date.now(),
     });
     if (zCache) {
-      ustawSiec(zCache, { zCache: true, klucz });
+      ustawSiec(zCache, { zCache: true, zrodlo: 'telefon', klucz });
     } else if (typeof window !== 'undefined' && typeof window.fetch === 'function') {
       przeliczStacjeZPobraniem(klucz);
       return;
@@ -2175,7 +2237,9 @@ function renderujStacje() {
     : `Wygenerowano ${STAN.stacje.length} stacji.`;
   if (sieciowe) {
     const miejsce = STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
-    const cache = STAN.siec.zCache ? ' (z pamięci telefonu — Overpass nie został wywołany)' : '';
+    const cache = !STAN.siec.zCache ? ''
+      : STAN.siec.zrodlo === 'dysk' ? ' (ze wspólnego dysku — Overpass nie został wywołany)'
+      : ' (z pamięci telefonu — Overpass nie został wywołany)';
     $('stacje-tryb').textContent = `${ZRODLA_STACJI.siec}${cache}${miejsce}.`;
     // Sieć z cache (telefon pamięta okolicę) daje ponowienie — świeże pobranie
     // omija cache; przy danych sprzed chwili przycisk nie ma sensu.

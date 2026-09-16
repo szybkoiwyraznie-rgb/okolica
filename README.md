@@ -70,7 +70,7 @@ wyrównującym dystanse. Lista pokazuje **dystans drogą**, nie w linii prostej,
 a wiersz trybu mówi, czy stacje **zlokalizowano na sieci** (i czy sieć przyszła
 z pamięci telefonu). Sieć jest zapisywana na telefonie
 (`okolica:sieci:<geohash6>-<R>-<tryb>`, 30 dni) — druga gra w tej samej okolicy nie
-woła Overpass wcale, a wpis z szerszego pobrania działa też dla węższego setupu. Gdy sieci nie ma (offline, limit instancji), degradacja
+woła Overpass wcale, a wpis z szerszego pobrania działa też dla węższego setupu. Świeże pobranie ląduje też na wspólnym Drive (cache L2) — drugi telefon w tej okolicy nie woła Overpass. Gdy sieci nie ma (offline, limit instancji), degradacja
 jest jawna i **automatyczna**: gra schodzi do pierścienia z komunikatem
 „osiągalność niezweryfikowana" — aplikacja nigdy nie udaje, że punkty są
 osiągalne. Przycisk wymuszający pierścień zniknął z ekranu (decyzja

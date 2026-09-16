@@ -42,11 +42,18 @@ const FOLDERY = {
   gryZakonczone: 'okolica-gry-zakonczone',
   profile: 'okolica-profile',
   oceny: 'okolica-oceny-paczek', // ADR 0028: głosy graczy, osobno od paczek
+  sieci: 'okolica-sieci-cache', // cache L2 sieci drogowej (teren 2026-09-16)
 };
 const SCHEMAT_ZESTAWU = 'TO-zestaw/2'; // 2026-09-15e: pytania jawnym JSON-em (ADR 0050)
 const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (ADR 0021)
 const SCHEMAT_OCENY = 'RO-oceny/1';  // ADR 0028: plik ocen jednej paczki
 const SCHEMAT_OCENA = 'RO-ocena/1';  // ADR 0028: pojedynczy głos (kciuk w górę/dół)
+// Cache L2 sieci (teren 2026-09-16): parytet z aplikacją pilnuje test/most-sieci.test.js.
+const SCHEMAT_SIECI_CACHE = 'sieci/1'; // = SCHEMAT_SIECI w app/sieci.js
+const TTL_SIECI_DNI = 30; // = POLITYKA.ttlCacheDni
+const MNOZNIK_SIECI = 1.15; // = POLITYKA.mnoznikPromienia
+const TRYBY_SIECI = ['piesza', 'rower', 'samochodowa']; // = klucze TRYBY w app/konfig.js
+const MAX_SIECI_BAJTOW = 6000000; // wpis powyżej nie wchodzi (oszczędzamy limity mostu)
 
 /* ---------------------------------------------------------- infrastruktura */
 
@@ -310,6 +317,7 @@ function doGet(e) {
     if (akcja === 'gry') return json(listaGier());
     if (akcja === 'gra-stan') return json(stanGry(e.parameter.kod, e.parameter.id));
     if (akcja === 'ranking') return json(rankingi());
+    if (akcja === 'siec') return json(czytajSiecWpisu(e.parameter));
     return json({ blad: 'nieznana akcja' });
   } catch (err) {
     return json({ blad: String((err && err.message) || err) });
@@ -334,6 +342,7 @@ function doPost(e) {
       case 'uzycie': return json(przyjmijUzycie(cialo));
       case 'profil-ustaw': return json(ustawProfil(cialo));
       case 'profil-sprawdz': return json(sprawdzProfil(cialo));
+      case 'siec-zapisz': return json(zapiszSiecWpisu(cialo.wpis));
       default: return json({ ok: false, blad: 'nieznana akcja albo schemat ciała' });
     }
   } catch (err) {
@@ -1206,4 +1215,108 @@ function stanGry(kod, idGry) {
   const znaleziona = znajdzGre(kod, idGry);
   if (!znaleziona) return { ok: false, blad: 'nie ma takiej gry' };
   return { ok: true, gra: znaleziona.gra };
+}
+
+/* --------------------------------- cache L2 sieci drogowej (teren 2026-09-16)
+ * Telefon nie zawsze pamięta okolicę (wyczyszczona pamięć, drugi telefon),
+ * a Overpass nie musi wołać dwa razy o to samo. Po świeżym pobraniu aplikacja
+ * wysyła uproszczoną sieć na Drive (`siec-zapisz`), a przed łańcuchem Overpass
+ * pyta o nią (`akcja=siec`). Wpis jest jawny (publiczne dane OSM + środek
+ * zapytania) — jak paczki, chroni go tylko adres mostu (ADR 0020).
+ */
+
+/**
+ * Haversine w metrach — kopia `odlegloscM` z app/geo.js (ten sam promień
+ * Ziemi). Parytet na siatce pilnuje test/most-sieci.test.js (LESSONS L33).
+ */
+function odlegloscMSiec(a, b) {
+  const RAD = Math.PI / 180;
+  const dLat = (b.lat - a.lat) * RAD;
+  const dLon = (b.lon - a.lon) * RAD;
+  const s = Math.sin(dLat / 2) * Math.sin(dLat / 2)
+    + Math.cos(a.lat * RAD) * Math.cos(b.lat * RAD) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return 2 * 6371008.8 * Math.asin(Math.min(1, Math.sqrt(s)));
+}
+
+/** Dysk zapytania (środek + R×1.15) w dysku wpisu — jak `czyWpisPokrywa`. */
+function czyWpisSieciPokrywa(wpis, srodek, promienM) {
+  const c = wpis && wpis.srodek;
+  if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lon)) return false;
+  if (!Number.isFinite(wpis.promienM) || !(wpis.promienM > 0)) return false;
+  return odlegloscMSiec(c, srodek) + promienM * MNOZNIK_SIECI <= wpis.promienM * MNOZNIK_SIECI;
+}
+
+/** Najświeższy pokrywający wpis z katalogu sieci: `{ok, wpis?}`. */
+function czytajSiecWpisu(parametry) {
+  const lat = Number(parametry && parametry.lat);
+  const lon = Number(parametry && parametry.lon);
+  const promienM = Number(parametry && parametry.promienM);
+  const tryb = parametry && parametry.tryb;
+  if (!Number.isFinite(lat) || lat < -90 || lat > 90
+      || !Number.isFinite(lon) || lon < -180 || lon > 180
+      || !(promienM > 0) || TRYBY_SIECI.indexOf(tryb) < 0) {
+    return { ok: false, blad: 'złe parametry (lat, lon, promienM, tryb)' };
+  }
+  const terazMs = Date.now();
+  const srodek = { lat, lon };
+  let najlepszy = null;
+  const pliki = folder(FOLDERY.sieci).getFiles();
+  while (pliki.hasNext()) {
+    const plik = pliki.next();
+    let wpis = null;
+    try {
+      wpis = JSON.parse(plik.getBlob().getDataAsString());
+    } catch (e) {
+      continue; // śmieć albo obcy plik — nie nasz wpis, nie ruszamy
+    }
+    if (!wpis || wpis.schemat !== SCHEMAT_SIECI_CACHE || !Number.isFinite(wpis.zapisanoMs)) continue;
+    const wiekDni = (terazMs - wpis.zapisanoMs) / 86400000;
+    if (wiekDni > TTL_SIECI_DNI || wiekDni < -1) continue; // przeterminowany (upsert nazwą ogranicza liczbę)
+    if (!wpis.dane || !Array.isArray(wpis.dane.drogi) || wpis.dane.drogi.length === 0) continue;
+    if (wpis.tryb !== tryb) continue;
+    if (!czyWpisSieciPokrywa(wpis, srodek, promienM)) continue;
+    if (!najlepszy || wpis.zapisanoMs > najlepszy.zapisanoMs) najlepszy = wpis;
+  }
+  return najlepszy ? { ok: true, wpis: najlepszy } : { ok: false };
+}
+
+/** Usterka wpisu do zapisu (string) albo null, gdy wpis jest dobry. */
+function walidujWpisSieci(wpis) {
+  if (!wpis || typeof wpis !== 'object') return 'brak wpisu';
+  if (wpis.schemat !== SCHEMAT_SIECI_CACHE) return 'schemat musi brzmieć ' + SCHEMAT_SIECI_CACHE;
+  if (!Number.isFinite(wpis.zapisanoMs)) return 'brak zapisanoMs';
+  const wiekDni = (Date.now() - wpis.zapisanoMs) / 86400000;
+  if (wiekDni > TTL_SIECI_DNI || wiekDni < -1) return 'wpis przeterminowany albo z przyszłości';
+  const c = wpis.srodek;
+  if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lon)) return 'brak środka pobrania';
+  if (!Number.isFinite(wpis.promienM) || !(wpis.promienM > 0)) return 'zły promień pobrania';
+  if (TRYBY_SIECI.indexOf(wpis.tryb) < 0) return 'nieznany tryb';
+  if (!wpis.dane || !Array.isArray(wpis.dane.drogi) || wpis.dane.drogi.length === 0) return 'wpis bez dróg';
+  return null;
+}
+
+/**
+ * Nazwa pliku wpisu: geohash-6 + R + tryb + środek. Deterministyczna, więc
+ * powtórna wysyłka z tego samego miejsca NADPISUJE plik (upsert), a nie mnoży.
+ */
+function nazwaPlikuSieci(wpis) {
+  return 'siec-' + geohashPunkt(wpis.srodek.lat, wpis.srodek.lon, 6)
+    + '-' + Math.round(wpis.promienM) + '-' + wpis.tryb
+    + '-' + wpis.srodek.lat.toFixed(6) + '-' + wpis.srodek.lon.toFixed(6) + '.json';
+}
+
+/** Zapis wpisu z telefonu (upsert nazwą) — przez doPost, jak woła aplikacja. */
+function zapiszSiecWpisu(wpis) {
+  return zBlokada(() => {
+    const usterka = walidujWpisSieci(wpis);
+    if (usterka) return { ok: false, blad: usterka };
+    const tekst = JSON.stringify(wpis);
+    if (tekst.length > MAX_SIECI_BAJTOW) return { ok: false, blad: 'wpis za duży (limit 6 MB)' };
+    const nazwa = nazwaPlikuSieci(wpis);
+    const katalog = folder(FOLDERY.sieci);
+    const istniejacy = pierwszyPlikNazwa(katalog, nazwa);
+    if (istniejacy) istniejacy.setContent(tekst);
+    else katalog.createFile(nazwa, tekst);
+    return { ok: true, nazwa };
+  });
 }

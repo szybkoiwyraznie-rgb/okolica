@@ -69,6 +69,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0049](archive/0049-poprawna-czysty-indeks.md) | Numer poprawnej odpowiedzi jest czystym indeksem 0–3 (koniec kodu pozycyjnego) | Wycofana |
 | [0050](0050-paczka-jawna-bez-ukrywania.md) | Paczka jawna: koniec ukrywania pytań (kontener usunięty) i numer odpowiedzi `1..4` | Zaakceptowana |
 | [0051](0051-status-multi-w-informacjach-i-pod-wynikiem.md) | Status multi w Informacjach i pod wynikiem | Zaakceptowana |
+| [0052](0052-wspolny-cache-sieci-na-drive-l2.md) | Wspólny cache sieci drogowej na Drive (L2) | Zaakceptowana |
 
 ## Szablon ADR
 

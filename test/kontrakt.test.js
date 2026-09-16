@@ -2476,3 +2476,16 @@ test('kontrakt m12-120: pełny układ ulic dla pieszego i roweru, bez autostrad;
       `${przycisk} resetuje przewijanie warstwy (UX m12-120)`);
   }
 });
+
+test('kontrakt ADR 0052: aplikacja i most mówią cache L2 tym samym protokołem', () => {
+  // odczyt: telefon pyta GET akcja=siec, most odpowiada wpisem albo {ok:false}
+  assert.ok(APP.includes("urlGet(url, 'siec'"), 'aplikacja pyta most o sieć (GET akcja=siec)');
+  assert.ok(GS.includes("akcja === 'siec'"), 'most obsługuje akcję siec');
+  // zapis: telefon wysyła POST siec-zapisz z wpisem, most robi upsert nazwą
+  assert.ok(APP.includes("akcja: 'siec-zapisz'"), 'aplikacja wysyła wpis na dysk (POST siec-zapisz)');
+  assert.ok(GS.includes("case 'siec-zapisz'"), 'most obsługuje zapis wpisu sieci');
+  // kształt wpisu jest jeden, z aplikacji (most nie wymyśla własnego)
+  assert.ok(APP.includes('zlozWpisSieci({') && GS.includes('SCHEMAT_SIECI_CACHE'), 'wpis ma schemat sieci po obu stronach');
+  // UI nazywa źródło trafienia (telefon albo wspólny dysk)
+  assert.ok(APP.includes('ze wspólnego dysku'), 'trafienie L2 jest nazwane w UI');
+});
