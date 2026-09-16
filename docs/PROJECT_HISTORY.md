@@ -6752,6 +6752,14 @@ poprawiony na „13:28 UTC”; poza tym zapis 16c zgodny z rzeczywistością.
 godziną scalenia — poprawione; PR #36 nadal bez defektów. Kamienie M0–M12
 zamknięte, kolejka pusta.
 
+**Znalezione przy weryfikacji live (poza zakresem audytu, do decyzji
+właściciela):** przyciski `.przycisk-stopka` w stopce ekranu ⓘ Informacje mają
+**24 px wysokości** (`#przycisk-prywatnosc-stopka` 141 × 24,
+`#przycisk-czysc-tymczasowe` 274 × 24; pomiar `getBoundingClientRect`
+w Chromium przy 360 × 740), a ADR 0011 pkt 2 i ADR 0042 pkt 3 obiecują ≥ 44 px
+— linki obok trzymają `min-height: var(--cel)`. Opis, warianty naprawy i pytanie
+do decyzji: `docs/BACKLOG.md` → **B26** (ten PR nie rusza kodu).
+
 **Otwarte po sesji:** PR #38 (scalenie właściciela, squash). Most Apps Script
 bez zmian. Czekamy na uwagi z testów terenowych (m.in. paczka z promptu
 `PYT/1.1.2` i polecenia z PR #35).

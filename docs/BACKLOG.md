@@ -365,3 +365,29 @@ miejscach opisów: PROTOKOL §3.2 (wiersz `stacja`), komentarz `app/rozgrywka.js
 (`stacjaZamknieta`) i ADR 0015 (Kontekst) nadal mówiły „rozkład równy ±1".
 Naprawione razem z pinem `MARTWE_FRAZY` w `test/dryf-dokumentow.test.js`
 (LESSONS L76).
+
+
+## B26 — Stopka Informacji: przyciski poniżej 44 px (ADR 0011 pkt 2 / ADR 0042 pkt 3)
+
+Znalezione przy weryfikacji live sesji 2026-09-16d (pomiar `getBoundingClientRect`
+w Chromium, viewport 360 × 740, panel ⓘ otwarty): przyciski `.przycisk-stopka`
+w wierszu `.informacje-kontakt` mają **24 px wysokości** —
+`#przycisk-prywatnosc-stopka` („Dane i prywatność”, 141 × 24) i
+`#przycisk-czysc-tymczasowe` („wyczyść pliki tymczasowe aplikacji”, 274 × 24).
+Linki obok trzymają `min-height: var(--cel)` (149 × 44 i 266 × 44) i tylko one
+są zapinowane w `test/kontrakt.test.js`; reguła `.przycisk-stopka`
+(`app/styles.css`) nie ma `min-height` ani `display: inline-flex`.
+
+To sprzeczność z ADR 0011 pkt 2 (cele dotykowe ≥ 44 × 44 px; wyjątki: przyciski
+mapy ≥ 40 px i — wg ADR 0042 pkt 3 — `.warstwa-krzyzyk`) oraz z ADR 0042 pkt 3,
+który wprost mówi, że po zmianie typografii `min-height`/`padding` przycisków
+i linków w Informacjach są nienaruszone.
+
+**Warianty:** (a) `min-height: var(--cel)` + `display: inline-flex;
+align-items: center` w `.przycisk-stopka` (albo w `#ekran-informacje button`)
++ pin w `test/kontrakt.test.js` + podbicie cache — zgodne z ADR;
+(b) aneks do ADR 0042, który uznaje małe przyciski-stopki za świadomy wyjątek
+(wymaga uzasadnienia przed progiem WCAG/Apple).
+
+**Do decyzji właściciela** — sesja 16d zapisała objaw i pomiar, kodu nie ruszała
+(zakres sesji: audyt PR #37 i oczekiwanie na uwagi z terenu).
