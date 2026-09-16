@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-148';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-148';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-149';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-149';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-148';
+} from './protokol.js?v=m12-149';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-148';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-148';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-148';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-148';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-148';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-148';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-149';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-149';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-149';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-149';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-149';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-149';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-148';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-148';
+} from './zestawy.js?v=m12-149';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-149';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -53,18 +53,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-148';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-148';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-148';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-148';
-import { adresMostu, stanMostu } from './most.js?v=m12-148';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-148';
+} from './sieci.js?v=m12-149';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-149';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-149';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-149';
+import { adresMostu, stanMostu } from './most.js?v=m12-149';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-149';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-148';
+} from './oceny.js?v=m12-149';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -448,13 +448,13 @@ function czyscDaneWitryny() {
 /**
  * „wyczyść pliki tymczasowe aplikacji” (uwaga terenowa 2026-09-16, pkt 2):
  * przycisk TYLKO w trybie testowym (`#ekran-informacje`, obok numeru budowy).
- * Czyści CAŁY `localStorage` tej witryny — testy właściciela oceniają tę samą
- * aplikację w kółko, a przyklejona sesja/pamięć potrafi udawać błąd. Komunikat
- * do `#status` (status widoczny nad stopką), a strona odświeża się sama, żeby
- * stan wrócił do czystego: bez reloadu pętla zdarzeń trzymałaby to, co właśnie
- * skasowano. Zwykły serwer statyczny nie gubi Request.Storage — cache-backend
- * domyślnie trzyma je w RAM, ale po wyczyszczeniu witryny skorupa i kafelki
- * i tak ściągną się świeżo, a limity quota nie są naliczane ponownie.
+ * Czyści CAŁY `localStorage` tej witryny oraz cache PWA (`caches` ze `sw.js`) —
+ * testy właściciela oceniają tę samą aplikację w kółko, a przyklejona
+ * sesja/pamięć potrafi udawać błąd. Komunikat idzie do `#status` (widoczny nad
+ * stopką), a strona przeładowuje się sama, żeby stan wrócił do czystego: bez
+ * reloadu pętla zdarzeń trzymałaby w pamięci to, co właśnie skasowano.
+ * Service worker zostaje zarejestrowany — pusty cache odbuduje się przy
+ * pierwszym żądaniu, tak samo jak po podbiciu `WERSJA_SW`.
  */
 function czyscPlikiTymczasowe() {
   if (!STAN.trybTestowy) return;
@@ -4882,7 +4882,12 @@ async function startLobby() {
     onStanGryMulti(wynik.gra);
   } catch (e) {
     status(`Nie udało się wystartować gry: ${e?.message ?? e}`);
-    zalaczLaczenie(false); // przycisk wraca na „▶ Start gry” — można spróbować raz jeszcze
+  } finally {
+    // Etykieta i blokada wracają ZAWSZE — także po sukcesie (audyt PR #35,
+    // LESSONS L77). Lobby po starcie znika, ale węzeł przycisku żyje dłużej niż
+    // jedna gra: stan „w locie” nie może przeciec do NASTĘPNEGO lobby, bo host
+    // nie wystartowałby drugiej gry bez odświeżenia strony.
+    zalaczLaczenie(false);
   }
 }
 
@@ -5435,10 +5440,9 @@ function renderujInformacjeMulti() {
     }
     tbody.appendChild(tr);
   }
-  // Status widoczny nad tabelą — podaje tylko, z jakiego momentu są dane.
-  const podSuma = $('informacje-multi-status');
-  const teraz = new Date();
-  podSuma.textContent = `Gra ${STAN.multi.gra.kod} (${STAN.multi.gra.stan === 'trwa' ? 'trwa' : 'zakończona'}) — stan z ostatniego odświeżenia, do ~30 s.`;
+  // Podpis pod tabelą — mówi tylko, z jakiego momentu są dane (bez godziny:
+  // liczy się rytm pollingu, nie zegar telefonu).
+  $('informacje-multi-status').textContent = `Gra ${STAN.multi.gra.kod} (${STAN.multi.gra.stan === 'trwa' ? 'trwa' : 'zakończona'}) — stan z ostatniego odświeżenia, do ~30 s.`;
 }
 
 /** Wiersze tabeli hot-seat (Gracz + poprawne/udzielone) — `null`, gdy nic nie pokazywać. */
