@@ -6690,7 +6690,7 @@ kodu (L68); bez uwag z terenu kolejka jest pusta, więc sesja robi to, co każe
 
 **Brama startowa:** `npm test` **829 / 829**, `npm run budzet` **99 963 /
 100 000** (rezerwa 37), `main` = `7227617` (squash PR #36, scalony 2026-09-16
-13:10 UTC), cache-bust w `main` = `m12-149`.
+13:28 UTC), cache-bust w `main` = `m12-149`.
 
 **Audyt PR #36** (squash `7227617` na `7974981`, 19 plików, +330/−77; testy
 w `main` 828 → 829). Zakres scalenia: naprawa przycisku „▶ Start gry” w lobby
@@ -6718,3 +6718,109 @@ i zgodne z ADR oraz protokołem.
 **Werdykt:** scalenie w pełni poprawne. Kamienie M0–M12 zamknięte; brak
 uwag z terenu w kolejce — sesja gotowa i oczekuje na uwagi z testów
 terenowych właściciela.
+
+## 2026-09-16d — otwarcie sesji `arena/01a0aac7-okolica` (PR #38 w tym commicie)
+
+**Zlecenie:** „kontynuujemy projekt”. Kamienie M0–M12 zamknięte jako zakres
+kodu (L68); kolejka pracy pusta, więc sesja robi to, co każe `AGENTS.md` §2
+pkt 2: audyt poprzedniego scalonego PR (#37), a potem czeka na uwagi z terenu.
+
+**Brama startowa:** `npm test` **829 / 829**, `npm run budzet` **99 963 /
+100 000** (rezerwa 37), `main` = `31dbbf4` (squash PR #37, scalony 2026-09-16
+15:13 UTC), cache-bust w `main` = `m12-149`.
+
+**Audyt PR #37** (`7227617..31dbbf4`, docs-only: 2 pliki, +93 —
+`docs/PROJECT_HISTORY.md` +37, nowy `docs/setup/HANDOFF_2026-09-16c.md`).
+Sprawdzone wobec repozytorium i `gh`:
+- Brama z handoffu 16c (829/829; check OK — §2 3 603 znaki, §2.2 3 738; WCAG AA
+  0 naruszeń; zasięg mostu 97,7%); powtórzona w tej sesji, zgodna w całości.
+- Naprawa `startLobby()` z PR #36 stoi na miejscu (`finally` przywraca
+  `disabled`, etykietę i `pulsuje`); test dwóch gier w jednej sesji strony żyje
+  (`test/wieloosobowa-ui.test.js`); L77 jest w rejestrze i w archiwum.
+- Porządki z PR #36 potwierdzone w kodzie: brak martwej zmiennej w
+  `renderujInformacjeMulti()`, brak importu `OGRANICZENIA` w `app/app.js`,
+  komentarz `czyscPlikiTymczasowe()` opisuje wyłącznie to, co kod robi.
+- Statystyki scalenia PR #36 (`7974981 → 7227617`): 19 plików, +330/−77; brak
+  resztek `m12-148` i fraz „czeka na scalenie” w nośnikach żywych.
+
+**Znalezione defekty:** jedna nieścisłość zapisu — wpis 16c podawał godzinę
+scalenia PR #36 jako 13:10 UTC, a źródła mówią **13:28:55Z** (`gh pr view 36`,
+`mergedAt`) i 15:28:54+02:00 (committer date commita `7227617`). Wiersz
+poprawiony na „13:28 UTC”; poza tym zapis 16c zgodny z rzeczywistością.
+
+**Werdykt:** PR #37 (dokumentacyjny) bez zastrzeżeń merytorycznych poza
+godziną scalenia — poprawione; PR #36 nadal bez defektów. Kamienie M0–M12
+zamknięte, kolejka pusta.
+
+**Znalezione przy weryfikacji live (poza zakresem audytu, do decyzji
+właściciela):** przyciski `.przycisk-stopka` w stopce ekranu ⓘ Informacje mają
+**24 px wysokości** (`#przycisk-prywatnosc-stopka` 141 × 24,
+`#przycisk-czysc-tymczasowe` 274 × 24; pomiar `getBoundingClientRect`
+w Chromium przy 360 × 740), a ADR 0011 pkt 2 i ADR 0042 pkt 3 obiecują ≥ 44 px
+— linki obok trzymają `min-height: var(--cel)`. Opis, warianty naprawy i pytanie
+do decyzji: `docs/BACKLOG.md` → **B26** (ten PR nie rusza kodu).
+
+**Brama końcowa (po zmianach dokumentacyjnych):** `npm run brama` EXIT=0 —
+testy 829/829, check OK, WCAG AA 0 naruszeń; budżet 99 963 / 100 000
+(rezerwa 37); cache `m12-149`; CI na PR #38 zielone (job `test`, run
+`35116124937`).
+
+### Uwagi terenowe A (ten sam dzień, po audycie) — ekran „Wklej odpowiedź modelu”
+
+Właściciel przysłał trzy uwagi z testów na telefonie (iPhone + Chrome); wszystkie
+dotyczyły kroku 5:
+
+- **A(a)** „Usuń cały tekst przed polem do wklejenia (…) MIĘDZY nagłówkiem
+  »Wklej odpowiedź modelu«, a polem do wklejenia MA NIE BYĆ ŻADNYCH TEKSTÓW!!!”
+  — akapit instrukcji zniknął z `index.html`; pin kontraktu pilnuje teraz PUSTKI
+  między `</h2>` a `<textarea>` (po wycięciu komentarzy HTML), a uczciwość
+  o jawnej paczce niosą karta prywatności (pin) i README. Cache **m12-150**.
+- **A(b)** „Guzik »Wklej ze schowka« w ogóle nie działa. Nic nie wkleja. Usuń go
+  jeśli nie potrafisz go naprawić.” — przycisk USUNIĘTY: na iPhonie
+  `navigator.clipboard.readText()` nie oddaje treści, a drugiej drogi CZYTANIA
+  schowka przeglądarka nie daje. Zostaje wklejenie palcem, które waliduje samo
+  (nasłuch `paste`). Piny w kontrakcie, dwie martwe frazy w strażniku dryfu,
+  ADR 0006 → **aneks 2026-09-16d**, krok 5 w `docs/WORKFLOW.md` i punkt 6
+  `docs/ARCHITECTURE.md` przepisane. Cache **m12-151**.
+- **A(c)** „Na dole tej strony wyświetla się jakiś artefakt z poprzedniej gry —
+  komunikat: »Paczka przyjęta (bez fact-checku)«, a ja jeszcze nic nie wklejałem.”
+  — kartę `#wynik-walidacji` odsłania odrzucona paczka i nikt jej potem nie
+  chował; nowy `wyczyscEkranPaczki()` gasi ją (z nagłówkiem i `#wklejka-status`)
+  przy WEJŚCIU na krok 5 oraz na końcu gry, a `#status` startuje tam pusty.
+  Test odtwarzający: dwie gry w jednej sesji strony, w pierwszej ODRZUCONA
+  paczka (karta realnie odsłonięta) — przed naprawą pada na `hidden`, po
+  naprawie przechodzi; weryfikacja live w Chromium 5/5 (A(a), A(b), A(c) + oba
+  powroty). Cache **m12-152**.
+
+**Budżet lektury:** fala A przekroczyła próg (100 328 / 100 000), więc zgodnie
+z `AGENTS.md` §0 aneksy ADR 0006 z 2026-09-09 (trzecia tura), 2026-09-15
+i 2026-09-15d przeniesione do `docs/decisions/archive/` (pliki żywe niosą
+wskaźnik z datami — cytowania w testach dalej trafiają), a wiedza o defekcie
+zapisana jako **L78** (+ pełny opis w `docs/LESSONS_ARCHIVE.md`). Budżet po
+zmianach: **99 807 / 100 000** (rezerwa 193).
+
+**Brama fali A:** `npm test` **829 / 829** (829 przed falą: −2 testy usuniętego
+schowka, +1 pin kontraktu, +1 test A(c)), `npm run check` OK (§2 3 603 znaki,
+§2.2 3 738), WCAG AA 0 naruszeń, CI na PR #38 zielone.
+
+### B26 rozstrzygnięte (decyzja właściciela, ten sam dzień)
+
+Właściciel: „**zmień obietnice, wielkość 24 jest ok**” → wariant (b), czyli
+zawężenie obietnicy, a nie zmiana UI: przyciski `.przycisk-stopka` w stopce ⓘ
+Informacje zostają 24 px jako świadomy wyjątek od progu ≥ 44 px.
+
+- ADR 0042 → aneks 2026-09-16d (pomiar, wyjątek, co zostaje); ADR 0011 pkt 2 →
+  aneks 2026-09-16d z jawną listą wyjątków (przyciski mapy ≥ 40 px,
+  `.warstwa-krzyzyk`, `.przycisk-stopka`).
+- Notki w wierszach rejestru ADR (0011, 0042); pin kontraktu trzyma obie strony
+  decyzji — linki `.informacje-link` ≥ 44 px i małe `padding` przycisków-stopek
+  (LESSONS L76 — reguła zmieniona, stare obietnice przepisane i zapinowane).
+- `app/styles.css` bez zmian; cache zostaje **m12-152**.
+- Budżet lektury: dwa warianty aneksów przekroczyły próg (100 243 / 100 000),
+  więc aneksy ADR 0011 (2026-09-12, 2026-09-14) i ADR 0042 (2026-09-15) poszły
+  do `docs/decisions/archive/` (pliki żywe niosą wskaźniki z datami), a nowe
+  aneksy są skrócone do sedna. **Budżet: 99 928 / 100 000 (rezerwa 72).**
+
+**Otwarte po sesji:** PR #38 (scalenie właściciela, squash). Most Apps Script
+bez zmian. Czekamy na uwagi z testów terenowych (m.in. paczka z promptu
+`PYT/1.1.2` i polecenia z PR #35).

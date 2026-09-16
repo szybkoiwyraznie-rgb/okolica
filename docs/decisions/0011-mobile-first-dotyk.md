@@ -71,13 +71,6 @@ przygotowuje paczkę przy biurku).
 0001 (zero zależności), 0003 (gesty mapy), 0006 (wklejanie promptu),
 0009 (czyja kolejka), `docs/WORKFLOW.md` §4 (test terenowy).
 
-## Aneks 2026-09-12 (m12-95) — START GRY zgaszony w trakcie gry (zadanie J)
-
-Pkt 7 (dostępność) dostaje przykład: przycisk „⚙ START GRY” w belce jest
-aktywny tylko, gdy gra się NIE toczy (`disabled` + dynamiczny `title`
-„niedostępne w trakcie gry” — strażnik przed wejściem w setup i zgubieniem
-postępu). Stan odświeża `odswiezStanIkonBelki` po każdej zmianie fazy gry.
-
 ## Aneks 2026-09-13d (m12-114, zgłoszenie właściciela): czekanie na sieć jest widoczne — komunikaty pulsują
 
 Właściciel 2026-09-13: operacje sieciowe, które każą czekać, muszą być WIDAĆ —
@@ -101,17 +94,21 @@ w trakcie pobierania jest dodatkowo `disabled` i zmienia etykietę na
 „⏳ Ładowanie paczki…" — sygnał i blokada drugiego kliku (podwójne pobranie
 i podwójne „użycie" paczki) w jednym; dotyk ma 44 px jak dotąd.
 
-## Aneks 2026-09-14 (m12-115, zgłoszenie D) — puls czekania jest NEGATYWEM
+## Aneksy 2026-09-12 (m12-95) i 2026-09-14 (m12-115) są w archiwum (poza budżetem lektury)
 
-Aneks 2026-09-13d zakładał, że `.pulsuje` tylko zmienia przezroczystość
-tekstu na tle karty (`--tekst` na `--tlo`). W terenie, w słońcu, na jasnym
-motywie to było niewidoczne. Klasa dostaje **negatyw**: `background: #000;
-color: #fff` (kontrast 21:1, powyżej AAA 7:1). To wyjątek od tokenów palety
-(pkt 4 tego ADR) — celowo nie `--tekst`/`--tlo`, bo te pary w motywie jasnym
-są za blisko, żeby sygnał „czekam” przebił się przez kartę.
+„START GRY” zgaszony w trakcie gry i negatywowe `.pulsuje` (czarny boks,
+kontrast 21:1) opisują `docs/decisions/archive/aneksy-0011-2026-09-12.md`
+i `...-2026-09-14.md`; poza budżetem lektury startowej (AGENTS.md §0; L62).
+Obowiązują: przycisk zgaszony, gdy gra toczy się na tym urządzeniu, a przy
+`prefers-reduced-motion` ruch gaśnie, tekst zostaje.
 
-Animacja przezroczystości 1 → 0,55 zostaje (było 0,7 — za subtelne na czarnym
-boksie). Przy `prefers-reduced-motion: reduce` ruch gaśnie, a czarny boks
-z białym zdaniem zostaje na ekranie. Tekst nadal jest nośnikiem informacji
-(pkt 3): animacja jest dodatkiem, nie zamiennikiem. Pin w `test/kontrakt.test.js`.
 
+## Aneks 2026-09-16d (B26) — jawna lista wyjątków od pkt 2 (cele dotykowe)
+
+Pomiar live w stopce ⓘ Informacje: przyciski `.przycisk-stopka` („Dane
+i prywatność”, „wyczyść pliki tymczasowe aplikacji”) mają 24 px. Właściciel
+(2026-09-16): „**zmień obietnice, wielkość 24 jest ok**” — stąd jawny wyjątek
+zamiast zmiany CSS. Wyjątki od pkt 2 (uzasadnienia: ADR 0042 → aneks
+2026-09-16d): przyciski mapy (minimum 40 px, jak w pkt 2), `.warstwa-krzyzyk`
+oraz `.przycisk-stopka` w stopce Informacji. Wszystkie pozostałe cele
+dotykowe — ≥ 44 px; pin kontraktu trzyma obie strony decyzji.

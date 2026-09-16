@@ -548,8 +548,33 @@ test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
   for (const plik of ['README.md', 'AGENTS.md', 'docs/ARCHITECTURE.md']) {
     assert.equal(/obfuskacj/i.test(czytaj(plik)), false, `${plik}: obiecuje ukrywanie paczek, którego nie ma (ADR 0050)`);
   }
-  assert.ok(INDEX.includes('nie jest zaszyfrowany'), 'ekran wklejania musi mówić wprost, że tekst nie jest zaszyfrowany');
+  // Uwaga terenowa A (właściciel, 2026-09-16): z ekranu wklejania zniknął
+  // akapit instrukcji — między nagłówkiem a polem nie ma ŻADNEGO tekstu.
+  // Uczciwość „paczka jest jawna, nie zaszyfrowana" niesie ekran prywatności
+  // (pin wyżej) i README; pin tutaj pilnuje PUSTKI, nie treści ostrzeżenia.
+  const ekranPaczki = INDEX.slice(INDEX.indexOf('id="ekran-paczka"'),
+    INDEX.indexOf('</section>', INDEX.indexOf('id="ekran-paczka"'))).replace(/<!--[\s\S]*?-->/g, '');
+  assert.match(ekranPaczki, /id="tytul-paczka">Wklej odpowiedź modelu<\/h2>\s*<textarea id="pole-odpowiedz"/,
+    'ekran wklejania: między nagłówkiem a polem nie ma ŻADNEGO tekstu (uwaga terenowa A, 2026-09-16)');
   assert.ok(INDEX.includes('identyfikator rozgrywki'), 'kod gry musi być opisany jako identyfikator, nie klucz (ADR 0007 pkt 4)');
+});
+
+test('kontrakt: ekran wklejania bez przycisku czytającego schowek (uwaga terenowa A, 2026-09-16)', () => {
+  // Właściciel w terenie (iPhone + Chrome): „Guzik »Wklej ze schowka« w ogóle
+  // nie działa. Nic nie wkleja. Usuń go jeśli nie potrafisz go naprawić."
+  // Nie da się: `readText()` w tej przeglądarce nie oddaje treści, a drugiej
+  // drogi czytania schowka nie ma — więc droga znika w całości (LESSONS L31).
+  assert.ok(!INDEX.includes('id="przycisk-wklej"'), 'przycisku czytającego schowek nie ma w index.html');
+  assert.ok(!APP.includes('przycisk-wklej'), 'app.js nie sięga po usunięty przycisk');
+  assert.match(APP, /\$\('pole-odpowiedz'\)\.addEventListener\('paste'/,
+    'droga, która zostaje: wklejenie palcem waliduje samo (nasłuch paste)');
+  // A(c): krok 5 nie dziedziczy niczego z poprzedniej gry — jedno miejsce
+  // czyszczenia, wołane przy WEJŚCIU na ekran i przy końcu gry (LESSONS L77/L78).
+  assert.match(APP, /function wyczyscEkranPaczki\(\)/, 'krok 5 ma jedno miejsce czyszczenia');
+  assert.match(APP, /if \(nazwa === 'paczka'\) \{\s*wyczyscEkranPaczki\(\);\s*status\(''\);/,
+    'wejście na krok 5 czyści kartę wyniku i pasek stanu');
+  assert.match(APP, /wyczyscEkranPaczki\(\);\s*pokazMapeStartowa\(\);/,
+    'koniec gry czyści krok 5 razem z resztą stanu');
 });
 
 test('kontrakt: AME-main.zip nie wrócił do korzenia (decyzja właściciela 2026-09-05)', () => {
@@ -902,7 +927,12 @@ test('kontrakt M9b: wysyłka Drive jest domyślna — ekran wklejania nie pyta o
   // Drive zawsze, bez checkboxa i bez przypominajki (checkbox z 2026-09-06
   // usunięty z ekranu i z kodu).
   assert.ok(!INDEX.includes('id="zgoda-drive"'), 'checkbox zgody Drive usunięty z ekranu wklejania');
-  assert.match(INDEX, /od razu zaczyna grę/, 'ekran mówi wprost: poprawna paczka = natychmiastowy start');
+  // Uwaga terenowa A (2026-09-16): ekran wklejania nie niesie już ŻADNEGO zdania
+  // (właściciel kazał usunąć instrukcję), więc „poprawna paczka = natychmiastowy
+  // start" pilnują nośniki, które tę obietnicę WYKONUJĄ: ścieżka przyjęcia
+  // woła `startGry()`, a komunikat przyjęcia mówi, dokąd paczka poleciała.
+  assert.match(APP, /\n  startGry\(\);/, 'przyjęcie paczki OD RAZU startuje grę (decyzja 2026-09-07)');
+  assert.match(APP, /Paczka przyjęta i wysłana na Drive/, 'komunikat przyjęcia mówi wprost, dokąd paczka poleciała');
 });
 
 test('kontrakt UI 2026-09-11: usunięte ozdobniki właściciela z testów terenowych', () => {
@@ -1574,6 +1604,18 @@ test('kontrakt: Informacje niosą kontakt i zgłaszanie błędów mapy (polityka
   assert.match(STYLE, /\.informacje-link \{[^}]*color: inherit/s, 'link dziedziczy kolor');
   assert.match(STYLE, /\.informacje-link \{[^}]*text-decoration: underline/s, 'odróżniony podkreśleniem');
   assert.match(STYLE, /\.informacje-link \{[^}]*min-height: var\(--cel\)/s, 'cel dotykowy ≥ 44 px');
+  // B26 (decyzja właściciela 2026-09-16: „zmień obietnice, wielkość 24 jest ok”):
+  // przyciski-stopki w stopce Informacji są ŚWIADOMYM wyjątkiem od progu 44 px.
+  // Pin trzyma obie strony decyzji — linki ≥ 44 px (wyżej) i małe przyciski —
+  // żeby „poprawianie” ich przy okazji typografii nie wróciło jako zadanie
+  // (LESSONS L76; ADR 0042 → aneks 2026-09-16d).
+  const adr0042 = czytaj('docs/decisions/0042-informacje-jedna-mala-czcionka.md');
+  assert.match(adr0042, /Aneks 2026-09-16d/, 'ADR 0042 niesie aneks z wyjątkiem (B26)');
+  assert.match(adr0042, /przycisk-stopka/, 'wyjątek nazywa klasę przycisków-stopek');
+  const regulaStopki = STYLE.slice(STYLE.indexOf('.przycisk-stopka {')).split('}')[0];
+  assert.match(regulaStopki, /padding: 2px 4px/, 'przyciski-stopki zostają małe (B26: 24 px jest ok)');
+  assert.equal(/min-height/.test(regulaStopki), false,
+    'przyciski-stopki celowo NIE trzymają progu 44 px (ADR 0042 aneks 2026-09-16d)');
   assert.match(STYLE, /\.informacje-link \{[^}]*overflow-wrap: anywhere/s, 'długi adres nie rozepcha panelu 360 px');
 });
 
@@ -1682,8 +1724,10 @@ test('K: teksty UI nie odsyłają do ścieżek, których nie ma (O1/O2/O11)', ()
   // przeglądu. Tekst ekranu nie może obiecywać procesu, którego nie ma.
   assert.equal(INDEX.includes('do przeglądu właściciela'), false,
     'ekran wklejania nie obiecuje sesji przeglądu (ADR 0017 aneks 2026-09-11)');
-  assert.match(INDEX, /od razu do wspólnego repozytorium okolicy/,
-    'ekran wklejania mówi, dokąd naprawdę leci paczka');
+  // Uwaga terenowa A (2026-09-16): ekran wklejania nie ma już instrukcji, więc
+  // „dokąd naprawdę leci paczka" mówi karta prywatności — i tylko ona.
+  assert.match(INDEX, /Paczki pytań, które wyślesz do wspólnego repozytorium/,
+    'karta prywatności mówi, dokąd naprawdę leci paczka (ekran wklejania bez tekstów)');
 
   // O2: eksportu pliku nie ma w UI — eksport zestawu zniknął 2026-09-07,
   // eksporty wyniku zdjęła decyzja ADR 0038. Komunikat nie może wskazywać
@@ -2290,9 +2334,12 @@ test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => 
   assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
     /m12-115 – m12-119 \(Held-Karp/,
     'ADR 0005 wskazuje archiwum aneksów m12-115–119');
-  assert.match(czytaj('docs/decisions/0011-mobile-first-dotyk.md'),
+  assert.match(czytaj('docs/decisions/archive/aneksy-0011-2026-09-14.md'),
     /Aneks 2026-09-14 \(m12-115, zgłoszenie D\) — puls czekania jest NEGATYWEM/,
-    'ADR 0011 dokumentuje wyjątek negatywu');
+    'aneks ADR 0011 o negatywie pulsu żyje w archiwum (budżet lektury)');
+  assert.match(czytaj('docs/decisions/0011-mobile-first-dotyk.md'),
+    /Aneksy 2026-09-12 \(m12-95\) i 2026-09-14 \(m12-115\) są w archiwum/,
+    'ADR 0011 wskazuje archiwum obu aneksów');
   assert.match(czytaj('docs/decisions/0027-pytania-po-rowno-i-wolna-kolejnosc.md'),
     /Aneks 2026-09-14 \(m12-115, uwaga F\) — Wyścig bez warstwy wyboru stacji/,
     'ADR 0027 dokumentuje brak warstwy wyboru');

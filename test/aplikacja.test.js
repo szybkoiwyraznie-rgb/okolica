@@ -204,7 +204,7 @@ test('bootstrap: pasek stanu ma komunikat, a wynik walidacji zostaje schowany', 
 });
 
 test('bootstrap: przyciski nawigacji mają nasłuch zdarzeń', () => {
-  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-wklej', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-informacje', 'przycisk-podejrzyj-mape']) {
+  for (const id of ['przycisk-dalej-pozycja', 'przycisk-kopiuj-prompt', 'przycisk-motyw', 'przycisk-sygnaly', 'przycisk-przelicz', 'przycisk-informacje', 'przycisk-podejrzyj-mape']) {
     assert.ok(pobierz(id).zdarzenia.click?.length >= 1, `#${id} nie ma nasłuchu click — przycisk byłby martwy`);
   }
   // Ekran 5 nie ma już przycisku zatwierdzania: walidację odpala samo wklejenie,
@@ -2896,12 +2896,12 @@ test('start: „▶ Zacznij” otwiera setup, nie tylko zamyka intro', async () 
 });
 
 /**
- * Zgłoszenie właściciela (2026-09-09, trzecia tura): „ma zostać pole i guzik
- * »Wklej ze schowka« → po wklejeniu czegokolwiek ma się automatycznie
- * zatwierdzać". Wcześniejsze tury: jeden przycisk czytający schowek (odpadł —
- * przeglądarka mobilna go blokuje) i pole + osobne „Sprawdź i przyjmij"
- * (odpadło — zbędny klik, skoro wklejenie już jest decyzją organizatora).
- * Import z pliku usunięty: nikt tą drogą nie chodził.
+ * Zgłoszenie właściciela (2026-09-09, trzecia tura): po wklejeniu czegokolwiek
+ * ma się automatycznie zatwierdzać. Wcześniejsze tury: przycisk czytający
+ * schowek (ostatecznie USUNIĘTY — uwaga terenowa A(b), 2026-09-16: na iPhonie
+ * w Chrome nie oddaje treści) i pole + osobne „Sprawdź i przyjmij" (odpadło —
+ * zbędny klik, skoro wklejenie już jest decyzją organizatora). Import z pliku
+ * usunięty: nikt tą drogą nie chodził.
  */
 test('ekran 5: samo wklejenie palcem waliduje i zaczyna grę — bez przycisku zatwierdzania', async () => {
   const paczka = czytajFixturePaczka();
@@ -2915,20 +2915,6 @@ test('ekran 5: samo wklejenie palcem waliduje i zaczyna grę — bez przycisku z
   assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'gra ruszyła samym wklejeniem');
   assert.equal(domAtrapa.pobierz('pole-odpowiedz').value, '',
     'pole wyczyszczone po przyjęciu — plaintext nie zostaje w DOM (ADR 0007 pkt 4)');
-});
-
-test('ekran 5: wklejenie ze schowka też zatwierdza samo', async () => {
-  const paczka = czytajFixturePaczka();
-  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
-  Object.assign(navigator, { clipboard: { readText: async () => JSON.stringify(paczka) } });
-  await import(`../app/app.js?schowek=${Math.random().toString(36).slice(2)}`);
-  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
-  domAtrapa.kliknij('przycisk-dalej-stacje');
-
-  domAtrapa.kliknij('przycisk-wklej');
-  await new Promise((r) => setTimeout(r, 0)); // handler jest async (readText)
-
-  assert.equal(domAtrapa.pobierz('ekran-gra').hidden, false, 'obie drogi kończą się tak samo — grą');
 });
 
 test('ekran 5: wklejona treść śmieciowa też jest sprawdzana od razu (bez klikania)', async () => {
@@ -2957,22 +2943,62 @@ test('ekran 5: puste wklejenie nie udaje paczki', async () => {
     'wklejenie pustki (albo obrazka) nie uruchamia walidacji — inaczej ekran krzyczałby bez powodu');
 });
 
-test('ekran 5: zablokowany schowek NIE zatrzymuje ekranu — kieruje do wklejenia palcem (L6)', async () => {
-  const domAtrapa = zainstalujDom({ search: '?tryb=test', pamiec: pamiecKonfig3x1() });
-  Object.assign(navigator, {
-    clipboard: { readText: async () => { throw new Error('NotAllowedError'); } },
-  });
-  await import(`../app/app.js?schowek2=${Math.random().toString(36).slice(2)}`);
-  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
-  domAtrapa.kliknij('przycisk-dalej-stacje');
+test('uwaga terenowa 2026-09-16 A(c): druga gra w tej samej sesji NIE dziedziczy komunikatu o paczce', async () => {
+  // Właściciel: „Rozegrałem jedną grę, zakończyłem, rozpocząłem kolejną (…)
+  // Na dole tej strony wyświetla się jakiś artefakt z poprzedniej gry —
+  // »Paczka przyjęta (bez fact-checku)«, a ja jeszcze nic nie wklejałem."
+  // Karta `#wynik-walidacji`, jej nagłówek i pasek stanu to JEDNE węzły
+  // `index.html` na kolejne gry — nikt ich nie czyścił przy wejściu na krok 5
+  // (LESSONS L77: węzeł żyje dłużej niż jedna gra).
+  // Konfig własny (nie `graGotowaDoStartu`): w pierwszej grze MUSI najpierw paść
+  // ODRZUCONA paczka — dopiero ona odsłania kartę wyniku (`hidden = false`),
+  // a odsłoniętej karty nikt już nie chował (to jest właśnie zgłoszony artefakt).
+  const pamiec = new Map();
+  pamiec.set('okolica:gracze', JSON.stringify({
+    schemat: 'gracze-lokalni/1',
+    gracze: [{ pseudonim: 'Gracz 1', zweryfikowany: true }],
+  }));
+  pamiec.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1', kanon: '2026-09-10',
+    konfig: { liczbaGraczy: 1, liczbaStacji: 3, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+  }));
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?druga-gra=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje');
+  dom.wklej('pole-odpowiedz', 'to nie jest JSON ani kontener {{{');
+  assert.equal(dom.pobierz('wynik-walidacji').hidden, false,
+    'warunek wstępny: odrzucona paczka odsłania kartę wyniku (i tak już zostaje)');
+  const baza = czytajFixturePaczka();
+  const paczka = { ...baza, pytania: pytaniaDlaGraczy(baza, 1) };
+  dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
+  zaczynijGre(dom);
+  for (const numer of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-symulacja-gra');
+    await czekaj(9 * 120 + 600);
+    kliknijOdpowiedz(dom, indeksPoprawnej(paczka.pytania.find((q) => q.stacja === numer)));
+    dom.kliknij('przycisk-nastepna-stacja');
+  }
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'pierwsza gra skończona');
 
-  domAtrapa.kliknij('przycisk-wklej');
-  await new Promise((r) => setTimeout(r, 0));
+  // Droga właściciela: 🏠 Wróć na początek → ⚙ START GRY → pozycja → stacje →
+  // pytania → wklejanie (ta sama sesja strony, zero przeładowania).
+  dom.kliknij('przycisk-nowa-gra');
+  dom.kliknij('przycisk-setup');
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje');
+  dom.kliknij('przycisk-dalej-prompt');
+  dom.kliknij('przycisk-dalej-paczka');
+  assert.equal(dom.pobierz('ekran-paczka').hidden, false, 'ekran wklejania otwarty w drugiej grze');
 
-  const status = domAtrapa.pobierz('wklejka-status').textContent;
-  assert.match(status, /schowk/i, 'status nazywa przyczynę — to ten komunikat, który zobaczył właściciel');
-  assert.match(status, /palcem/, 'kieruje do jedynej pozostałej drogi: wklejenia do pola');
-  assert.doesNotMatch(status, /pliku/, 'żadnego wczytywania z pliku — właściciel: „jakiego znowu pliku?"');
+  assert.equal(dom.pobierz('wynik-walidacji').hidden, true,
+    'karta wyniku z POPRZEDNIEJ gry jest schowana, zanim cokolwiek wkleję');
+  assert.equal(dom.pobierz('wynik-naglowek').textContent, '',
+    'nagłówka »Paczka przyjęta (…)« z poprzedniej gry nie ma na ekranie');
+  assert.equal(dom.pobierz('pole-odpowiedz').value, '', 'pole wklejenia startuje puste');
+  assert.doesNotMatch(dom.pobierz('status').textContent, /Paczka przyjęta|Gotowe do nowej gry/,
+    'pasek stanu nie niesie komunikatu z poprzedniej gry');
 });
 
 test('ekran 5: pole ma trzy wiersze, a ekran nie ma już importu z pliku ani „Sprawdź"', () => {
