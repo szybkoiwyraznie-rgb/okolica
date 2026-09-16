@@ -2468,6 +2468,16 @@ test('Zlokalizuj mnie: poza trybem testowym nie ma go ani jako przycisku, ani ja
   assert.equal(domG.pobierz('przycisk-zlokalizuj').hidden, true, 'na ekranie pozycji przycisk lokalizacji jest ukryty poza trybem testowym');
   assert.doesNotMatch(domG.pobierz('pozycja-status').textContent, /użyj oka/, 'poza trybem testowym nie ma instrukcji oka');
   assert.deepEqual(gps.wywolania.zapytania, [], 'nawet na ekranie pozycji poza trybem testowym sondaż się nie odpala');
+
+  // Klik w przycisk (nawet potraktowany bez klasy `tylko-test`) NIE robi nic:
+  // bramka trybu testowego w `wyznaczPozycje()` ucina go u źródła — zero
+  // sondowań, zero „Szukam satelitów…”, przycisk zostaje ukryty.
+  const statusPrzed = domG.pobierz('pozycja-status').textContent;
+  domG.kliknij('przycisk-zlokalizuj');
+  await czekaj(10);
+  assert.deepEqual(gps.wywolania.zapytania, [], 'klik poza trybem testowym nie woła getCurrentPosition');
+  assert.equal(domG.pobierz('pozycja-status').textContent, statusPrzed, 'klik nie zmienia statusu ekranu');
+  assert.equal(domG.pobierz('przycisk-zlokalizuj').hidden, true, 'przycisk zostaje ukryty poza trybem testowym');
 });
 
 test('Zlokalizuj mnie: jednorazowy sondaż GPS ustawia pozycję i chowa przycisk', async () => {

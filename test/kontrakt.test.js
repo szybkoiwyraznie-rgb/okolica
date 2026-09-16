@@ -758,6 +758,25 @@ test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=butt
   for (const p of przyciski) assert.match(p, /type="button"/, `przycisk bez type=button: ${p.slice(0, 60)}`);
 });
 
+test('kontrakt: „Zlokalizuj mnie” jest JEDEN, tylko w dolnym rzędzie ekranu pozycji (uwaga terenowa 2026-09-16)', () => {
+  const html = czytaj('index.html');
+  // Właściciel (twardo): przycisk TYLKO na ekranie „Gdzie jesteś?", obok
+  // „← ustawienia" i „Dalej: stacje →", nigdzie indziej i nigdy poza trybem
+  // testowym. Liczność 1 = nie ma drugiej kopii ani w karcie statusu, ani
+  // gdziekolwiek indziej; klasa `tylko-test` = poza trybem testowym CSS go chowa.
+  assert.equal((html.match(/id="przycisk-zlokalizuj"/g) ?? []).length, 1,
+    'przycisk lokalizacji ma DOKŁADNIE JEDEN egzemplarz w całym index.html');
+  const ekran = html.split('<section id="ekran-pozycja"')[1].split('</section>')[0];
+  assert.ok(ekran.includes('id="przycisk-zlokalizuj"'), 'przycisk żyje wewnątrz #ekran-pozycja');
+  const rzad = ekran.replace(/\n\s*/g, '').match(/<div class="wiersz przyciski-dolu">\s*<button id="przycisk-wstecz-setup"[\s\S]*?<\/div>/);
+  assert.ok(rzad, 'dolny rząd przycisków ekranu pozycji znaleziony');
+  const kolej = [...rzad[0].matchAll(/<button id="([^"]+)"/g)].map((m) => m[1]);
+  assert.deepEqual(kolej, ['przycisk-wstecz-setup', 'przycisk-zlokalizuj', 'przycisk-dalej-stacje'],
+    'kolejność w dolnym rzędzie: „← ustawienia" → „Zlokalizuj mnie" → „Dalej: stacje →"');
+  assert.ok(/<button id="przycisk-zlokalizuj" class="przycisk tylko-test"/.test(rzad[0]),
+    'przycisk niesie klasę `tylko-test` — poza trybem testowym nie ma go na ekranie (CSS)');
+});
+
 test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (ADR 0011)', () => {
   const css = czytaj('app/styles.css');
   assert.match(css, /\.przycisk-odpowiedz \{[^}]*min-height: var\(--cel\)/s, 'odpowiedzi ≥ 44 px (--cel)');
