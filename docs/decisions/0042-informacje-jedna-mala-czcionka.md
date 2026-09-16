@@ -60,16 +60,26 @@ Overpass w Informacjach), ADR 0036 (sterowanie w Informacjach — aneks
 2026-09-13), ADR 0001 (zero zależności: font systemowy), ADR 0040 (gra bez
 pauzy: Informacje w drodze).
 
-## Aneks 2026-09-15 (m12-128, uwaga A właściciela) — jeden wiersz zamiast listy liczb
+## Aneks 2026-09-15 (m12-128) jest w archiwum (poza budżetem lektury)
 
-Po teście terenowym (PR #30): „»protokół PYT/1.0« i »szablon PYT/1.0.x« w Panelu
-Informacje uważam za bezużyteczne. Zostaw tylko wersję — i to obok »Dane i
-prywatność« oraz »Zgłoś błąd na mapie«, ewentualnie łamanego, jeśli zabraknie
-miejsca".
+Uwaga A właściciela z testów terenowych (jeden wiersz „Wersja …” zamiast listy
+liczb) leży w `docs/decisions/archive/aneksy-0042-2026-09-15.md`, poza budżetem
+lektury startowej (AGENTS.md §0; LESSONS L62). Obowiązuje dalej zasada
+z tamtego aneksu: w panelu nie ma liczby, której gracz nie umie na nic
+przetłumaczyć.
 
-1. Obie liczby zeszły z panelu; `Wersja …` stanęła w jednym wierszu
-   (`.informacje-kontakt`) z przyciskiem prywatności, linkiem OSM i adresem.
-2. Spójności wersji protokołu pilnują trzy nośniki: `docs/PROTOKOL.md` ↔
-   `app/protokol.js` ↔ `README.md`, a łatkę widać w §7 PROTOKOLU.
-3. Zasada ADR 0042 zostaje (drobny tekst, zero sterowania grą) i dostaje drugą
-   nogę: w panelu nie ma liczby, której gracz nie umie na nic przetłumaczyć.
+## Aneks 2026-09-16d (B26) — przyciski-stopki w stopce Informacji zostają małe; obietnica zawężona
+
+Pomiar live (Chromium, 360 × 740) pokazał, że w stopce Informacji linki trzymają
+`min-height: var(--cel)` (44 px), ale `#przycisk-prywatnosc-stopka` („Dane
+i prywatność”) i `#przycisk-czysc-tymczasowe` („wyczyść pliki tymczasowe
+aplikacji”, tylko tryb testowy) mają 24 px — przy pkt 3 tego ADR i ADR 0011
+pkt 2. Właściciel (2026-09-16, BACKLOG **B26**, tam pomiar i uzasadnienie):
+„**zmień obietnice, wielkość 24 jest ok**”.
+
+1. **Wyjątek:** `.przycisk-stopka` w stopce ⓘ Informacje zostają 24 px, a pkt 3
+   tego ADR czyta się razem z tym aneksem; lista wyjątków od progu ≥ 44 px żyje
+   w ADR 0011 → aneks 2026-09-16d.
+2. **Reszta bez zmian:** `.informacje-link` trzyma `min-height: var(--cel)`,
+   pozostałe cele dotykowe — ≥ 44 px; kontrakt pinuje obie strony decyzji
+   (LESSONS L76), żeby „poprawianie” tych przycisków nie wróciło jako zadanie.

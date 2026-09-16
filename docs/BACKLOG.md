@@ -367,7 +367,7 @@ Naprawione razem z pinem `MARTWE_FRAZY` w `test/dryf-dokumentow.test.js`
 (LESSONS L76).
 
 
-## B26 — Stopka Informacji: przyciski poniżej 44 px (ADR 0011 pkt 2 / ADR 0042 pkt 3)
+## B26 — Stopka Informacji: przyciski poniżej 44 px ✅ ROZSTRZYGNIĘTE (2026-09-16d, wariant b: obietnica zawężona)
 
 Znalezione przy weryfikacji live sesji 2026-09-16d (pomiar `getBoundingClientRect`
 w Chromium, viewport 360 × 740, panel ⓘ otwarty): przyciski `.przycisk-stopka`
@@ -389,5 +389,14 @@ align-items: center` w `.przycisk-stopka` (albo w `#ekran-informacje button`)
 (b) aneks do ADR 0042, który uznaje małe przyciski-stopki za świadomy wyjątek
 (wymaga uzasadnienia przed progiem WCAG/Apple).
 
-**Do decyzji właściciela** — sesja 16d zapisała objaw i pomiar, kodu nie ruszała
-(zakres sesji: audyt PR #37 i oczekiwanie na uwagi z terenu).
+**Rozstrzygnięcie (właściciel, 2026-09-16): „zmień obietnice, wielkość 24 jest
+ok”** — wariant (b), obietnica, nie UI. Przyciski-stopki zostają 24 px jako
+świadomy wyjątek: to akcje poboczne (prywatność, porządki trybu testowego)
+w jednym wierszu z linkami o pełnych 44 px.
+
+- ADR 0042 → **aneks 2026-09-16d** (wyjątek + pomiar + to, co zostaje),
+- ADR 0011 pkt 2 → **aneks 2026-09-16d** z jawną listą wyjątków (przyciski mapy
+  ≥ 40 px, `.warstwa-krzyzyk`, `.przycisk-stopka`),
+- notki w wierszach rejestru ADR (0011, 0042) i pin kontraktu na obie strony
+  decyzji: `.informacje-link` ≥ 44 px **i** małe `padding` przycisków-stopek,
+- `app/styles.css` **bez zmian** (cache zostaje `m12-152`).

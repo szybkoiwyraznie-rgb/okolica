@@ -6803,6 +6803,24 @@ zmianach: **99 807 / 100 000** (rezerwa 193).
 schowka, +1 pin kontraktu, +1 test A(c)), `npm run check` OK (§2 3 603 znaki,
 §2.2 3 738), WCAG AA 0 naruszeń, CI na PR #38 zielone.
 
+### B26 rozstrzygnięte (decyzja właściciela, ten sam dzień)
+
+Właściciel: „**zmień obietnice, wielkość 24 jest ok**” → wariant (b), czyli
+zawężenie obietnicy, a nie zmiana UI: przyciski `.przycisk-stopka` w stopce ⓘ
+Informacje zostają 24 px jako świadomy wyjątek od progu ≥ 44 px.
+
+- ADR 0042 → aneks 2026-09-16d (pomiar, wyjątek, co zostaje); ADR 0011 pkt 2 →
+  aneks 2026-09-16d z jawną listą wyjątków (przyciski mapy ≥ 40 px,
+  `.warstwa-krzyzyk`, `.przycisk-stopka`).
+- Notki w wierszach rejestru ADR (0011, 0042); pin kontraktu trzyma obie strony
+  decyzji — linki `.informacje-link` ≥ 44 px i małe `padding` przycisków-stopek
+  (LESSONS L76 — reguła zmieniona, stare obietnice przepisane i zapinowane).
+- `app/styles.css` bez zmian; cache zostaje **m12-152**.
+- Budżet lektury: dwa warianty aneksów przekroczyły próg (100 243 / 100 000),
+  więc aneksy ADR 0011 (2026-09-12, 2026-09-14) i ADR 0042 (2026-09-15) poszły
+  do `docs/decisions/archive/` (pliki żywe niosą wskaźniki z datami), a nowe
+  aneksy są skrócone do sedna. **Budżet: 99 928 / 100 000 (rezerwa 72).**
+
 **Otwarte po sesji:** PR #38 (scalenie właściciela, squash). Most Apps Script
 bez zmian. Czekamy na uwagi z testów terenowych (m.in. paczka z promptu
 `PYT/1.1.2` i polecenia z PR #35).

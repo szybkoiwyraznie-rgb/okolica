@@ -1604,6 +1604,18 @@ test('kontrakt: Informacje niosą kontakt i zgłaszanie błędów mapy (polityka
   assert.match(STYLE, /\.informacje-link \{[^}]*color: inherit/s, 'link dziedziczy kolor');
   assert.match(STYLE, /\.informacje-link \{[^}]*text-decoration: underline/s, 'odróżniony podkreśleniem');
   assert.match(STYLE, /\.informacje-link \{[^}]*min-height: var\(--cel\)/s, 'cel dotykowy ≥ 44 px');
+  // B26 (decyzja właściciela 2026-09-16: „zmień obietnice, wielkość 24 jest ok”):
+  // przyciski-stopki w stopce Informacji są ŚWIADOMYM wyjątkiem od progu 44 px.
+  // Pin trzyma obie strony decyzji — linki ≥ 44 px (wyżej) i małe przyciski —
+  // żeby „poprawianie” ich przy okazji typografii nie wróciło jako zadanie
+  // (LESSONS L76; ADR 0042 → aneks 2026-09-16d).
+  const adr0042 = czytaj('docs/decisions/0042-informacje-jedna-mala-czcionka.md');
+  assert.match(adr0042, /Aneks 2026-09-16d/, 'ADR 0042 niesie aneks z wyjątkiem (B26)');
+  assert.match(adr0042, /przycisk-stopka/, 'wyjątek nazywa klasę przycisków-stopek');
+  const regulaStopki = STYLE.slice(STYLE.indexOf('.przycisk-stopka {')).split('}')[0];
+  assert.match(regulaStopki, /padding: 2px 4px/, 'przyciski-stopki zostają małe (B26: 24 px jest ok)');
+  assert.equal(/min-height/.test(regulaStopki), false,
+    'przyciski-stopki celowo NIE trzymają progu 44 px (ADR 0042 aneks 2026-09-16d)');
   assert.match(STYLE, /\.informacje-link \{[^}]*overflow-wrap: anywhere/s, 'długi adres nie rozepcha panelu 360 px');
 });
 
@@ -2322,9 +2334,12 @@ test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => 
   assert.match(czytaj('docs/decisions/0005-stacje-z-sieci-drogowej-overpass.md'),
     /m12-115 – m12-119 \(Held-Karp/,
     'ADR 0005 wskazuje archiwum aneksów m12-115–119');
-  assert.match(czytaj('docs/decisions/0011-mobile-first-dotyk.md'),
+  assert.match(czytaj('docs/decisions/archive/aneksy-0011-2026-09-14.md'),
     /Aneks 2026-09-14 \(m12-115, zgłoszenie D\) — puls czekania jest NEGATYWEM/,
-    'ADR 0011 dokumentuje wyjątek negatywu');
+    'aneks ADR 0011 o negatywie pulsu żyje w archiwum (budżet lektury)');
+  assert.match(czytaj('docs/decisions/0011-mobile-first-dotyk.md'),
+    /Aneksy 2026-09-12 \(m12-95\) i 2026-09-14 \(m12-115\) są w archiwum/,
+    'ADR 0011 wskazuje archiwum obu aneksów');
   assert.match(czytaj('docs/decisions/0027-pytania-po-rowno-i-wolna-kolejnosc.md'),
     /Aneks 2026-09-14 \(m12-115, uwaga F\) — Wyścig bez warstwy wyboru stacji/,
     'ADR 0027 dokumentuje brak warstwy wyboru');
