@@ -1085,18 +1085,18 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   assert.ok(APP.includes('okolica:hotseat-kolejka') && APP.includes('oproznijKolejkeHotseat()'), 'wynik czeka w kolejce i dojeżdża później (ADR 0016 pkt 5)');
 });
 
-test('kontrakt ADR 0024 aneks: promień nie jest kryterium, a komunikat nazywa powód', () => {
+test('kontrakt ADR 0046 + aneks 2026-09-16: promień jest kryterium równości, a komunikat to jedna linijka', () => {
   const ZESTAWY = czytaj('app/zestawy.js');
-  assert.match(ZESTAWY, /export function powodyNiedopasowania/, 'zestawy.js umie nazwać powód niedopasowania');
+  assert.match(ZESTAWY, /export function powodyNiedopasowania/, 'zestawy.js rozstrzyga dopasowanie w jednym miejscu');
   assert.match(ZESTAWY, /export function czyWOkolicy/, 'okolica jest osobnym, jawnym kryterium');
-  assert.equal(/w\.promienM <= promienM/.test(ZESTAWY), false, 'promień paczki nie jest już kryterium dopasowania');
-  assert.match(ZESTAWY, /NIE są kryteriami: promień/, 'reguła jest zapisana przy kodzie, nie tylko w ADR');
+  assert.match(ZESTAWY, /w\.promienM !== promienM/, 'promień paczki jest kryterium RÓWNOŚCI (ADR 0046 pkt 1)');
+  assert.equal(/NIE są kryteriami: promień/.test(ZESTAWY), false, 'stara reguła „promień nie jest kryterium” zniknęła z komentarza');
   assert.match(ZESTAWY, /export function sumaPytanWpisu/, 'kryterium jest ŁĄCZNA liczba pytań, nie stacje × pytania');
   assert.match(ZESTAWY, /środek transportu \(właściciel wycofał/, 'środek transportu jawnie NIE jest kryterium');
-  assert.match(ZESTAWY, /za mało pytań: paczka ma/, 'komunikat podaje liczby: ile ma paczka, ile chce setup');
-  // komunikat karty paczek cytuje powody, a nie cały setup
-  assert.match(APP, /powodyNiedopasowania\(m, kryteria\)/, 'app.js cytuje powody wprost w komunikacie');
-  assert.equal(/ale żadna nie pasuje do tego setupu/.test(APP), false, 'stary komunikat z całym setupem zniknął');
+  assert.match(ZESTAWY, /za mało pytań: paczka ma/, 'powody podają liczby: ile ma paczka, ile chce setup');
+  // karta paczek: jedna linijka bez cytowania powodów (teren 2026-09-16)
+  assert.match(APP, /żadna z nich nie pasuje/, 'komunikat mówi jedną linijkę, że paczki nie pasują');
+  assert.equal(/powodyNiedopasowania\(m, kryteria\)/.test(APP), false, 'karta nie cytuje już powodów wprost');
   assert.match(APP, /czyWOkolicy\(m, kryteria\)/, 'paczki z innych okolic nie są nawet liczone');
 });
 

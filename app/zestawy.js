@@ -231,18 +231,19 @@ export function sumaPytanWpisu(w) {
 
 /**
  * Powody, dla których wpis NIE pasuje do setupu — pusta lista znaczy „pasuje".
- * JEDNO źródło prawdy: `dopasujZestawy` filtruje po tym, a UI cytuje powody
- * wprost (decyzja właściciela 2026-09-07: komunikat ma mówić, CO nie pasuje,
- * a nie wymieniać cały setup).
+ * JEDNO źródło prawdy dla `dopasujZestawy`. UI od 2026-09-16 NIE cytuje
+ * powodów (teren: ściana tekstu; ADR 0046 aneks 2026-09-16) — karta mówi
+ * jedną linijkę bez wyliczania, co nie pasuje.
  *
- * Kryteria (właściciel, 2026-09-07): okolica ±`TOLERANCJA_OKOLICY_M`, wiek,
- * ŁĄCZNA liczba pytań (paczka może mieć więcej — nadmiar nie przeszkadza)
- * i tematy nie szersze niż w setupie.
+ * Kryteria (właściciel, 2026-09-07 + ADR 0046 z 2026-09-14): okolica
+ * ±`TOLERANCJA_OKOLICY_M`, RÓWNY promień, wiek, ŁĄCZNA liczba pytań
+ * (paczka może mieć więcej — nadmiar nie przeszkadza) i tematy nie szersze
+ * niż w setupie.
  *
- * NIE są kryteriami: promień (nie wpływa na pytania, trasę wyznaczają stacje),
- * liczba stacji i pytania na stację z osobna („jak gra ma mieć 20 pytań, to
- * musi być paczka, która ma 20 pytań — nieważne, czy 5 stacji po 4, czy 2 po 10")
- * oraz środek transportu (właściciel wycofał: „olej, nie bierz pod uwagę").
+ * NIE są kryteriami: liczba stacji i pytania na stację z osobna („jak gra
+ * ma mieć 20 pytań, to musi być paczka, która ma 20 pytań — nieważne, czy
+ * 5 stacji po 4, czy 2 po 10") oraz środek transportu (właściciel wycofał:
+ * „olej, nie bierz pod uwagę").
  */
 export function powodyNiedopasowania(w, { geohash5, lat, lon, promienM, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny = '' } = {}) {
   const powody = [];

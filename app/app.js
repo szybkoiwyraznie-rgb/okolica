@@ -32,7 +32,7 @@ import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad
 import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-152';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
-  czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
+  czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
@@ -2939,13 +2939,14 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
     return null;
   }
   // Paczki z innych okolic w ogóle nie wchodzą do komunikatu (właściciel,
-  // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd, a komunikat mówi
-  // WPROST, które kryterium nie pasuje — nie wymienia całego setupu.
+  // 2026-09-07): liczy się tylko to, co powstało ±200 m stąd. Od 2026-09-16
+  // komunikat NIE wymienia powodów (teren: ściana tekstu) — jedna linijka
+  // (ADR 0046 aneks 2026-09-16; `powodyNiedopasowania` dalej filtruje).
   const bliskie = indeks.filter((m) => czyWOkolicy(m, kryteria));
   statusZestawow(bliskie.length
-    ? `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale ${bliskie.length === 1 ? 'nie pasuje' : 'nie pasują'}: `
-      + bliskie.map((m) => `${m.miejsce ?? 'paczka bez nazwy'} — ${powodyNiedopasowania(m, kryteria).join('; ')}`).join(' | ')
-      + '. Zmień te ustawienia albo przygotuj nowe pytania modelem.'
+    ? `W tej okolicy ${opisLiczbyPaczek(bliskie.length)}, ale `
+      + (bliskie.length === 1 ? 'nie pasuje ona' : 'żadna z nich nie pasuje')
+      + ' do aktualnego setupu. Zmień te ustawienia albo przygotuj nowe pytania modelem.'
     : (indeks.length
       ? 'Repozytorium nie ma paczek dla tej okolicy — nowe pytania przygotuje model.'
       : 'Repozytorium jest puste — nowe pytania przygotuje model.'));
