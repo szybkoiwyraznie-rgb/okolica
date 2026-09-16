@@ -45,6 +45,7 @@ import {
   budujGraf,
   budujZapytanieOverpass,
   czyPrzelaczycInstancje,
+  czyWpisPokrywa,
   kolejnoscInstancji,
   kandydaciNaStacje,
   kluczCacheSieci,
@@ -53,6 +54,8 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
+  wybierzWpisSieci,
+  zlozWpisSieci,
 } from './sieci.js?v=m12-152';
 import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-152';
 import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-152';
@@ -1789,19 +1792,53 @@ function kluczSieci() {
   return kluczCacheSieci({ lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, tryb: STAN.konfig.tryb });
 }
 
-function odczytajCacheSieci(klucz, terazMs) {
+/**
+ * Sieć z pamięci telefonu: najpierw klucz dokładny (`geohash6-R-tryb`),
+ * a po pudle — skan tej samej komórki po wpis pokrywający (teren 2026-09-16:
+ * inny setup w tej samej okolicy nie woła Overpass od nowa). Wpis dokładny
+ * sprzed kotwic (bez `srodek`) działa jak dotąd — ufamy kluczowi.
+ */
+function odczytajCacheSieci({ klucz, srodek, promienM, tryb, terazMs }) {
   try {
     const surowy = localStorage.getItem(klucz);
-    if (!surowy) return null;
-    return wczytajDaneZCache(JSON.parse(surowy), { terazMs });
+    if (surowy) {
+      const wpis = JSON.parse(surowy);
+      const dane = wczytajDaneZCache(wpis, { terazMs });
+      if (dane && (wpis.srodek === undefined || czyWpisPokrywa(wpis, { srodek, promienM }))) return dane;
+    }
   } catch {
-    return null; // zepsuty wpis = brak wpisu; naprawi go następne pobranie
+    /* zepsuty wpis dokładny — próbujemy jeszcze skanu */
   }
+  const prefiks = `${klucz.split('-').slice(0, -2).join('-')}-`;
+  const przyrostek = `-${tryb}`;
+  const kandydaci = [];
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (!k || k === klucz || !k.startsWith(prefiks) || !k.endsWith(przyrostek)) continue;
+      let wpis = null;
+      try {
+        wpis = JSON.parse(localStorage.getItem(k));
+      } catch {
+        /* śmieć w cache — pomiń, naprawi go następne pobranie */
+      }
+      kandydaci.push({ klucz: k, wpis });
+    }
+  } catch {
+    return null; // pamięć niedostępna — gra pobierze sieć
+  }
+  return wybierzWpisSieci(kandydaci, { srodek, promienM, tryb, terazMs })?.dane ?? null;
 }
 
 function zapiszCacheSieci(klucz, dane, terazMs) {
   try {
-    localStorage.setItem(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: terazMs, dane }));
+    localStorage.setItem(klucz, JSON.stringify(zlozWpisSieci({
+      dane,
+      srodek: STAN.pozycja,
+      promienM: STAN.konfig.promienM,
+      tryb: STAN.konfig.tryb,
+      terazMs,
+    })));
     // LRU: ponad 2 MB cache sieci → najstarsze wpisy wypadają (ADR 0010 pkt 1)
     const wpisy = [];
     for (let i = 0; i < localStorage.length; i++) {
@@ -2089,7 +2126,13 @@ function przeliczStacje() {
   pokazBledy('bledy-stacje', []); // błędy POPRZEDNIEJ próby gasną; nowa próba pokaże własne
   const klucz = kluczSieci();
   if (STAN.siec.stan !== 'gotowa' || STAN.siec.klucz !== klucz) {
-    const zCache = odczytajCacheSieci(klucz, Date.now());
+    const zCache = odczytajCacheSieci({
+      klucz,
+      srodek: STAN.pozycja,
+      promienM: STAN.konfig.promienM,
+      tryb: STAN.konfig.tryb,
+      terazMs: Date.now(),
+    });
     if (zCache) {
       ustawSiec(zCache, { zCache: true, klucz });
     } else if (typeof window !== 'undefined' && typeof window.fetch === 'function') {

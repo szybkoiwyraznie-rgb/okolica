@@ -743,6 +743,61 @@ export function wczytajDaneZCache(wpis, { terazMs }) {
 }
 
 /**
+ * Wpis cache do zapisu: dane + kotwica pobrania (środek i promień zapytania,
+ * tryb). Kotwica pozwala ODCZYTOWI użyć wpisu z SZERSZEGO pobrania dla
+ * węższego setupu (teren 2026-09-16: ten sam telefon, ta sama okolica,
+ * a inny setup wołał Overpass od nowa, bo klucz `geohash6-R-tryb` już
+ * nie pasował). Ten sam kształt czyta most Drive (cache L2).
+ */
+export function zlozWpisSieci({ dane, srodek, promienM, tryb, terazMs }) {
+  return {
+    schemat: SCHEMAT_SIECI,
+    zapisanoMs: terazMs,
+    srodek: { lat: srodek.lat, lon: srodek.lon },
+    promienM,
+    tryb,
+    dane,
+  };
+}
+
+/**
+ * Czy wpis pokrywa zapytanie o sieć: dysk zapytania (środek + R×1.15 — ten
+ * sam margines co świeże pobranie, `POLITYKA.mnoznikPromienia`) mieści się
+ * w dysku wpisu. Bez kotwicy (wpisy sprzed 2026-09-16) — false; te obsługuje
+ * tylko klucz dokładny. Stacje i tak filtruje `wybierzStacje` (dystans
+ * sieciowy od startu ≤ R), więc nadmiar dróg spoza R jest nieszkodliwy.
+ */
+export function czyWpisPokrywa(wpis, { srodek, promienM }) {
+  const c = wpis?.srodek;
+  const promienWpisu = wpis?.promienM;
+  if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lon)) return false;
+  if (!Number.isFinite(promienWpisu) || promienWpisu <= 0) return false;
+  if (!srodek || !Number.isFinite(srodek.lat) || !Number.isFinite(srodek.lon)) return false;
+  if (!Number.isFinite(promienM) || promienM <= 0) return false;
+  const m = POLITYKA.mnoznikPromienia;
+  return odlegloscM(c, srodek) + promienM * m <= promienWpisu * m;
+}
+
+/**
+ * Najświeższy wpis pokrywający zapytanie (albo null). `wpisy`: pary
+ * `{ klucz, wpis }` (`wpis` po `JSON.parse`, `null` po błędzie parsowania) —
+ * skanowanie `localStorage` zostaje w warstwie aplikacji (I7). Każdy kandydat
+ * przechodzi pełną walidację (schemat, TTL, drogi), zgodność trybu i pokrycie.
+ */
+export function wybierzWpisSieci(wpisy, { srodek, promienM, tryb, terazMs }) {
+  let najlepszy = null;
+  for (const { klucz, wpis } of Array.isArray(wpisy) ? wpisy : []) {
+    if (!wczytajDaneZCache(wpis, { terazMs })) continue;
+    if (wpis.tryb !== tryb) continue;
+    if (!czyWpisPokrywa(wpis, { srodek, promienM })) continue;
+    if (!najlepszy || wpis.zapisanoMs > najlepszy.zapisanoMs) {
+      najlepszy = { dane: wpis.dane, zapisanoMs: wpis.zapisanoMs, klucz };
+    }
+  }
+  return najlepszy;
+}
+
+/**
  * LRU dla cache sieci (ADR 0010 pkt 1: próg 2 MB): zwraca klucze do usunięcia,
  * najstarsze pierwsze, aż suma rozmiarów zmieści się w limicie. `wpisy`:
  * `[{ klucz, rozmiarBajtow, zapisanoMs }]`. Czyste — `localStorage` dotyka

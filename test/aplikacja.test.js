@@ -27,6 +27,7 @@ import {
   kluczCacheSieci,
   parsujOdpowiedz,
   upraszczajDaneDoCache,
+  zlozWpisSieci,
 } from '../app/sieci.js';
 import { CZASY_GRY, DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja, przeliczenieCzasu } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
@@ -817,6 +818,23 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
   assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /^Wygenerowano i zlokalizowano \d+ stacji\.$/,
     'stacje z sieci dróg są zlokalizowane');
   assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście/, '{MIEJSCE} z obszaru administracyjnego (bez Nominatim)');
+});
+
+test('stacje: wpis z szerszego pobrania (R=2000) obsługuje grę R=1000 bez Overpass', async () => {
+  const pamiecCache = new Map();
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  const srodek = { lat: 52.2297, lon: 21.0122 };
+  pamiecCache.set(kluczCacheSieci({ ...srodek, promienM: 2000, tryb: 'piesza' }),
+    JSON.stringify(zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: Date.now() })));
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(pamiecCache) });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  let ileProb = 0;
+  domAtrapa.window.fetch = async () => { ileProb++; return { ok: false, status: 504 }; };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(150);
+  assert.equal(ileProb, 0, 'skan cache znalazł wpis pokrywający — zero wołań sieci');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa \(Overpass\) — punkty osiągalne/);
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /z pamięci telefonu/);
 });
 
 test('stacje: „Inny układ" i „Pobierz ponownie" wracają widokiem na górę warstwy (UX m12-120)', async () => {
