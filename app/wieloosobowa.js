@@ -145,7 +145,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-146';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-147';
 
 export { ramkaGeohash, sasiednieGeohash };
 
@@ -325,8 +325,9 @@ export function czyKompletna(gra) {
 }
 
 /**
- * Postęp jednego gracza (żywa tabela w obu trybach). Pola i reguły
- * są IDENTYCZNE z `przeliczWyniki` w moście Drive — pilnuje tego
+ * Postęp jednego gracza (do premii za kolejność ukończenia — żywa tabela
+ * zniknęła z UI, uwaga terenowa 2026-09-16 pkt 1). Pola i reguły są
+ * IDENTYCZNE z `przeliczWyniki` w moście Drive — pilnuje tego
  * `test/most-gra.test.js`, więc telefon pokazuje to samo co Drive.
  */
 export function postepGracza(gra, graczId) {

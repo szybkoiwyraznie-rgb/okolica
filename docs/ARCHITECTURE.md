@@ -340,8 +340,13 @@ commit i nowa wersja aplikacji.
    Brak pozycji =
    środek trasy z pierwszej własnej stacji. Po odświeżeniu telefonu gra wraca
    SAMA z `okolica:multi:sesja` i stanu mostu (`przywrocGreMulti` przy starcie,
-   ADR 0045) BEZ odliczania, a zamknięte już stacje nie wracają do rozgrywki.
-   Zdarzenia, które nie doszły na most (odpowiedź bez zasięgu), czekają
+   ADR 0045) BEZ odliczania. Model budujemy z PEŁNEJ trasy, a postęp gracza
+   (zamknięte stacje) przywraca odtworzenie jego zdarzeń `dojscie`/`odpowiedz`
+   z mostu (`odtworzPostepMulti`, uwaga terenowa 2026-09-16 pkt 1) — numery
+   i „stacja X z Y” zgadzają się wtedy z trasą. Gracz, który domknął wszystkie
+   swoje stacje, widzi wynik (wspólny, gdy most zamknął grę — np. solo; własny
+   do czasu domknięcia) i NIE wraca do lobby: tabela żywych wyników widowni nie
+   istnieje. Zdarzenia, które nie doszły na most (odpowiedź bez zasięgu), czekają
    w utrwalonej kolejce `okolica:multi-kolejka` i wychodzą PRZED pobraniem
    stanu gry — inaczej telefon zbudowałby trasę ze stacją, którą most właśnie
    domknął (ADR 0019 aneks 2026-09-13d).

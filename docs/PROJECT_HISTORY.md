@@ -4121,7 +4121,8 @@ wyników i paskiem „Ostatni stan” (pasek został w lobby), a karty
 „⏹ Zakończ grę (host)” i „🏳 Rezygnuję z gry” zniknęły (obsługuje je ⚙ + TAK).
 Informacje nie zniknęły z produktu: ostateczna tabela tej gry jest na ekranie
 wyniku (`wynikiMultiKonca`), ranking między grami w warstwie pucharu (ADR 0039),
-a żywe wyniki w lobby dla widowni (`#lobby-widownia-wiersze`). Odliczanie w
+a żywe wyniki w lobby dla widowni (`#lobby-widownia-wiersze` — warstwa ta została
+później usunięta w całości, uwaga terenowa 2026-09-16 pkt 1). Odliczanie w
 testach ma 20 ms na krok, żeby cały przebieg nie spowalniał bramy. Aneks „uwaga F”
 w ADR 0019. Bramy: 756/756.
 
@@ -6450,3 +6451,67 @@ cache **m12-146**, protokół **PYT/1.1**, szablony **`PYT/1.1.2` /
 **Otwarte po sesji:** PR #35 nadal czeka na scalenie właściciela — teraz zawiera
 audyt 15g + obie uwagi terenowe 2026-09-16. Kolejka pracy pusta.
 
+
+## Sesja 2026-09-16 (PR #35), dogrywka 2 — uwagi terenowe: usunięcie żywych wyników multi, czyszczenie plików tymczasowych, puls „Łączę z siecią”
+
+**Zlecenie (trzy uwagi terenowe 2026-09-16):**
+
+- (1, KRYTYCZNA) Usunąć przestarzałą warstwę żywych wyników multiplayer.
+  Po starcie gry (także solo u hosta) KAŻDY gracz widzi tylko mini-pasek dolny
+  (np. „Jacek - stacja 1/5”) i kolejną stację na mapie (trasa-sekret) albo
+  wszystkie stacje (trasa jawna / wyścig). Bez warstwy żywych wyników, bez
+  ekranu lobby po starcie, bez LIMBO.
+- (2) W trybie testowym przycisk „wyczyść pliki tymczasowe aplikacji” — najlepiej
+  w panelu Informacje obok stopki wersji — do czyszczenia localStorage.
+- (3) W lobby hosta „Rozpocznij grę” po kliknięciu ma zgasnąć i zamienić się
+  w pulsujący „Łączę z siecią”, póki aplikacja łączy się z Drive.
+
+**Implementacja:**
+
+- **Usunięcie warstwy żywych wyników (pkt 1):** `renderujLobby()` nie odsłania
+  już `#lobby-widownia` ani nie wypełnia `#lobby-widownia-wiersze` poza lobby;
+  branch czyści tylko `#lobby-status`. Funkcja `renderujWierszeWynikow()`
+  i znacznik `#lobby-widownia` w `index.html` usunięte W CAŁOŚCI (L31: nagrobek
+  w komentarzu nad `renderujLobby()` + wpis martwych fraz w
+  `test/dryf-dokumentow.test.js`, żeby warstwa nie wróciła).
+  `uruchomGreMulti()` buduje lokalny silnik z PEŁNEJ trasy (`stacje: wszystkie`)
+  zamiast „stacji bez zamkniętych” — numeracja „stacja X z Y” zgadza się z trasą.
+  Gracz, który domknął wszystkie swoje stacje: gdy most zamknął grę (np. solo) —
+  `m.gra = gra`, status „Gra wieloosobowa zakończona — wspólne wyniki poniżej.”,
+  `pokazWyniki(); renderujGre();`; w pozostałych wypadkach — status „…wszystkie
+  Twoje stacje są już zamknięte…”, własny ekran wyniku i czekanie na wspólny.
+  Zero powrotów do lobby, zero LIMBO. Powrót po odświeżeniu telefonu odtwarza
+  postęp z własnych zdarzeń mostu (`odtworzPostepMulti`: `dojscie` —
+  `skierujDoStacji`→`startOdcinka`→`zakonczOdcinek`, `odpowiedz` — `zapiszOdpowiedz`
+  z mapą `poprawna` na indeks 0..3) — te same pure-funkcje co na żywo.
+- **Czyszczenie plików tymczasowych (pkt 2):** `#przycisk-czysc-tymczasowe`
+  (wiersz `tylko-test`, obok `#stopka-wersja`) + `czyscPlikiTymczasowe()`
+  z bramką `if (!STAN.trybTestowy) return;` — iteruje po całym `localStorage`,
+  status z liczbą kluczy, potem `location.reload()` (stan wraca do czystego).
+  Cudze klucze (`inna-apka:*`) też schodzą — to narzędzie testowe właściciela.
+- **Puls „Łączę z siecią” (pkt 3):** `startLobby()` zapamiętuje etykietę w
+  `dataset.etykieta`, ustawia `disabled` + `textContent = 'Łączę z siecią'` +
+  `.pulsuje` PRZED `polecenieMostu('gra-start')`; w `catch` przywraca etykietę,
+  odblokowuje i gasi puls. Po sukcesie lobby znika (gra się otwiera), więc
+  wychodząc nic nie trzeba przywracać.
+- **Testy (+6, razem 821):** `test/wieloosobowa-ui.test.js` +4 (puls przy
+  zamrożonym `gra-start`, powrót etykiety po awarii i retry, host po starcie
+  bez lobby/żywych wyników z ekranem `#gra-panel-koniec`, gracz z domkniętymi
+  stacjami trafia na wejściu na wynik nie do lobby); `test/aplikacja.test.js` +2
+  (czyszczenie czyści CAŁY localStorage w trybie testowym i jest martwe poza
+  nim — bramka trybu). `test/kontrakt.test.js`: stopka Informacje ma teraz
+  PIĄTĄ pozycję `tylko-test` (kolejność i kropki), a `test/dryf-dokumentow.test.js`
+  dostał frazy `lobby-widownia-wiersze` i `renderujWierszeWynikow`.
+- **Dokumenty:** `docs/decisions/0044-…` (aneks 2026-09-16: żywe wyniki widowni
+  usunięte; poprawiona „Konkluzja” z 2026-09-13), koperta uwagi w
+  `docs/decisions/archive/aneksy-0019-…` (treść historyczna), `docs/WORKFLOW.md`
+  (obserwacje bez żywej tabeli), `docs/ARCHITECTURE.md` (model z pełnej trasy
+  + `odtworzPostepMulti`), komentarze `app/sync.js` (powód 30 s) i
+  `app/wieloosobowa.js` (`postepGracza` bez „żywej tabeli”).
+- Cache-bust **m12-146 → m12-147** (index.html, wszystkie `app/*.js`, `WERSJA_SW`).
+
+**Brama na koniec sesji:** `npm test` **821/821** (+6), `npm run check` OK
+(szablon §2, §2.2), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%** (850/870),
+budżet **99 933 / 100 000** (rezerwa 67), cache **m12-147**.
+
+**Otwarte po sesji:** PR #35 (scalenie właściciela, squash).

@@ -393,6 +393,19 @@ const MARTWE_FRAZY = [
     nosniki: [...DOKUMENTY, ...UI],
     powod: 'E05 bez tolerancji ±1 (decyzja właściciela 2026-09-15f, BACKLOG B25): liczba pytań na stację wynika z setupu (pytaniaNaStacjeDla), a walidator sprawdza tylko stację bez pytania — dawny opis zmieniony w PROTOKOL §3.2',
   },
+  // Fala 2026-09-16 (uwaga terenowa, pkt 1): usunięta warstwa żywych wyników
+  // widowni. Identyfikatory i zdania są dosłowne — nagrobki w komentarzach
+  // („żywe wyniki widowni usunięte”) używają innych słów, więc nie łapią się.
+  {
+    fraza: 'lobby-widownia-wiersze',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'warstwa żywych wyników widowni usunięta (uwaga terenowa 2026-09-16 pkt 1): po starcie gry nikt — nawet host solo — nie widzi lobby ani tabeli, tylko grę jak w hotseacie',
+  },
+  {
+    fraza: 'renderujWierszeWynikow',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'funkcja rysująca żywą tabelę widowni usunięta razem z warstwą (uwaga terenowa 2026-09-16 pkt 1)',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {

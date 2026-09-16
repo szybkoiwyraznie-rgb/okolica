@@ -303,9 +303,10 @@ jest asynchroniczna i NIE wymaga konfigurowania adresu.
 7b. **Wyjście z lobby**: B klika „Opuść lobby” przed startem → na A lista
    graczy maleje po odświeżeniu (≤ 10 s), a gdy wychodzi HOST, gra znika
    z listy gier w okolicy (`gra-opusc`).
-8. **Obserwacje** → `docs/LESSONS.md`: pewność dojścia przy stacjach, opóźnienia
-   żywej tabeli i kanału info, odmowy mostu (jawne w statusie), zużycie
-   baterii przy pollingu.
+8. **Obserwacje** → `docs/LESSONS.md`: pewność dojścia przy stacjach, odmowy
+   mostu (jawne w statusie), zużycie baterii przy pollingu. Żywej tabeli wyników
+   ani kanału info w grze NIE MA (uwaga terenowa 2026-09-16, pkt 1) — pasek
+   synchronizacji widać tylko w lobby, a wspólny wynik na ekranie końca gry.
 
 ## 5. Publikacja na GitHub Pages (włączona — publikuje workflow)
 

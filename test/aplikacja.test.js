@@ -3396,3 +3396,38 @@ test('uwaga B (dogrywka): wklejka nie przestawia stacji z sieci — metryka drog
   assert.notEqual(drogaStacji2, drogaStacji1, 'każdy odcinek niesie WŁASNY dystans sieciowy, nie cudzy');
 });
 
+/* ----------------- uwaga terenowa 2026-09-16 pkt 2: czyszczenie plików tymczasowych */
+
+for (const [adres, czyTest] of [['?tryb=test', true], ['', false]]) {
+  test(`czyszczenie plików tymczasowych ${czyTest ? 'w trybie testowym czyści pamięć z panelu Informacje' : 'poza trybem testowym jest martwe (bramka trybu)'}`, async () => {
+    const pamiecT = new Map([
+      ['okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: { liczbaGraczy: 1 } })],
+      ['okolica:multi:sesja', JSON.stringify({ kod: 'XYZ', graczId: 'g-1' })],
+      ['okolica:motyw', 'ciemny'],
+      ['inna-apka:stan', 'nie ruszać'],
+    ]);
+    const domT = zainstalujDom({ search: adres, pamiec: pamiecT });
+    await import(`../app/app.js?tmp=${Math.random().toString(36).slice(2)}`);
+
+    // Przycisk żyje wyłącznie w panelu Informacje (uwaga terenowa, pkt 2),
+    // obok stopki wersji. Klasę `tylko-test` (chowaną przez CSS) pinuje
+    // kontrakt; tu sprawdzamy STEROWANIE: bramka trybu testowego w
+    // `czyscPlikiTymczasowe()` ścina przycisk u źródła — tak jak `wyznaczPozycje()`.
+    domT.kliknij('przycisk-informacje');
+    assert.equal(domT.pobierz('ekran-informacje').hidden, false, 'Informacje otwarte');
+    if (czyTest) {
+      domT.kliknij('przycisk-czysc-tymczasowe');
+      assert.equal(pamiecT.size, 0, 'wyczyściło CAŁY localStorage — okolica:* i cudze klucze');
+      assert.match(domT.pobierz('status').textContent, /Usunięto \d+ kluczy pamięci przeglądarki/,
+        'status mówi, ile kluczy usunięto');
+    } else {
+      const przed = [...pamiecT.keys()];
+      const statusPrzed = domT.pobierz('status').textContent;
+      domT.kliknij('przycisk-czysc-tymczasowe');
+      assert.deepEqual([...pamiecT.keys()], przed, 'klik poza trybem testowym NIC nie czyści');
+      assert.equal(domT.pobierz('status').textContent, statusPrzed,
+        'poza trybem testowym przycisk nie dokleił żadnego komunikatu');
+    }
+  });
+}
+

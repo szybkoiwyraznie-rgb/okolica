@@ -1247,26 +1247,32 @@ test('kontrakt: Informacje — jeden wiersz: wersja · Dane i prywatność · Zg
   const blok = blokCaly.replace(/<!--[\s\S]*?-->/g, '');
   const wiersz = blok.match(/<p class="informacje-kontakt[^"]*">([\s\S]*?)<\/p>/);
   assert.ok(wiersz, 'wiersz kontaktowy istnieje w panelu Informacje');
-  const kolejnosc = ['Wersja <span id="stopka-wersja">', 'id="przycisk-prywatnosc-stopka"', 'id="link-zglos-mape"', 'id="link-kontakt"'];
+  // Uwaga terenowa 2026-09-16 (pkt 2): piąta pozycja „wyczyść pliki tymczasowe
+  // aplikacji” jest TYLKO w trybie testowym (klasa `tylko-test`, ostatnia w wierszu).
+  const kolejnosc = ['Wersja <span id="stopka-wersja">', 'id="przycisk-prywatnosc-stopka"', 'id="link-zglos-mape"', 'id="link-kontakt"', 'id="przycisk-czysc-tymczasowe"'];
   let ostatni = -1;
   for (const fragment of kolejnosc) {
     const i = wiersz[1].indexOf(fragment);
     assert.ok(i > ostatni, `w wierszu jest ${fragment} — w tej kolejności i dokładnie raz`);
     ostatni = i;
   }
+  assert.ok(/<span class="informacje-pozycja tylko-test">[\s\S]*?<button id="przycisk-czysc-tymczasowe" class="przycisk-stopka"/.test(wiersz[1]),
+    'przycisk czyszczenia niesie klasę `tylko-test` (cała grupa) — poza trybem testowym nie ma go na ekranie (CSS)');
   // Kropki rozdzielają POPRZEDZAJAC pozycje — po złamaniu wiersza nie zostaje
   // na końcu linii (to był pierwszy efekt uboczny tej zmiany, złapany w
   // przeglądarce, nie w atrapie: LESSONS L13).
   assert.doesNotMatch(wiersz[1].trimEnd(), /informacje-kropka[^>]*>·<\/span>\s*$/,
     'żadna kropka nie wisi na końcu wiersza');
-  assert.equal((wiersz[1].match(/informacje-kropka/g) || []).length, 3, 'trzy separatory między czterema pozycjami');
+  assert.equal((wiersz[1].match(/informacje-kropka/g) || []).length, 4, 'cztery separatory między pięcioma pozycjami');
   // Kropka jest PIERWSZYM dzieckiem grupy `.informacje-pozycja`, a grupa trzyma
   // kropkę i pozycję w jednym inline-flexie — luzniejszy zapis (np. sam span)
   // dozwala łamanie między kropką a pozycją, czyli wraca wisząca kropka, którą
   // złapaliśmy w przeglądarce, a nie w atrapie (LESSONS L13).
   const bezKomentarzy = wiersz[1].replace(/<!--[\s\S]*?-->/g, '');
-  for (const [id, znacznik] of [['przycisk-prywatnosc-stopka', 'button'], ['link-zglos-mape', 'a'], ['link-kontakt', 'a']]) {
-    assert.ok(new RegExp(`<span class="informacje-pozycja">\\s*<span class="informacje-kropka"[^>]*>·</span>\\s*<${znacznik} id="${id}"`).test(bezKomentarzy),
+  for (const [id, znacznik] of [['przycisk-prywatnosc-stopka', 'button'], ['link-zglos-mape', 'a'], ['link-kontakt', 'a'], ['przycisk-czysc-tymczasowe', 'button']]) {
+    // `przycisk-czysc-tymczasowe` jest w grupie z klasą `tylko-test` (chowany
+    // poza trybem testowym razem z kropką) — regex dopuszcza ten przyrostek.
+    assert.ok(new RegExp(`<span class="informacje-pozycja(?: tylko-test)?">\\s*<span class="informacje-kropka"[^>]*>·</span>\\s*<${znacznik} id="${id}"`).test(bezKomentarzy),
       `kropka trzyma się swojej pozycji (${id}) — nie może zostać sama na końcu linii`);
   }
 
