@@ -1853,3 +1853,51 @@ test('kolejka multi: bez sieci odświeżony telefon NIC nie gubi — zdarzenia z
   );
   assert.equal(pamiecB.has('okolica:multi-kolejka'), false, 'pamięć po dostarczeniu jest czysta');
 });
+
+test('audyt PR #35 (L77): po udanym starcie „▶ Start gry” wraca do stanu wyjściowego — druga gra startuje bez odświeżania', async () => {
+  // Audyt PR #35: `startLobby()` przywracał etykietę i blokadę TYLKO w `catch`.
+  // Po sukcesie lobby znika, ale WĘZEŁ przycisku zostaje w `index.html` na
+  // kolejne lobby tej samej sesji strony — host, który po zakończeniu gry
+  // zakładał następną, widział zablokowane „Łączę z siecią” i nie mógł jej
+  // wystartować bez odświeżenia. Pozostałe asynchroniczne przyciski aplikacji
+  // (bramkaTozsamosci, „▶ Graj z tą paczką”, „Dalej: moja pozycja”) przywracają
+  // stan w `finally` — ten jeden nie.
+  const most = atrapaMostu();
+  const pamiec = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+
+  // Gra 1: start kończy się SUKCESEM (most odpowiada) — stan „w locie” musi
+  // wrócić, zanim przycisk zobaczy następne lobby.
+  await klik(A, 'przycisk-lobby-start');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'pierwsza gra wystartowała');
+  const przycisk = el(A, 'przycisk-lobby-start');
+  assert.equal(przycisk.textContent, '▶ Start gry', 'po sukcesie etykieta wraca na „▶ Start gry”');
+  assert.equal(przycisk.disabled, false, 'po sukcesie przycisk odblokowany');
+  assert.equal(przycisk.classList.contains('pulsuje'), false, 'po sukcesie pulsowanie zgasło');
+
+  // Koniec gry 1 i droga właściciela na setup: ⚙ START GRY → TAK →
+  // „🏠 Wróć na początek” → ⚙ → setup (ta sama sesja strony, zero reloadu).
+  await przejdzStacje(A);
+  await przepompuj(A, 1);
+  await potwierdzKoniecGry(A);
+  await klik(A, 'przycisk-nowa-gra');
+  await klik(A, 'przycisk-setup');
+  assert.equal(el(A, 'ekran-setup').hidden, false, 'przed drugą grą jesteśmy na setupie');
+
+  // Gra 2: to samo lobby i ten sam węzeł przycisku — musi dać się wystartować.
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  // Atrapa DOM nie liczy kaskady (L65), a panel lobby był odsłonięty już w grze 1
+  // — `hidden` potomka bywa nieświeży, więc czekamy na FAKT w moście: druga gra
+  // istnieje, a aplikacja zdążyła ją obsłużyć (dwa oddechy, jak w innych testach).
+  await czekajNa(A, () => most.gry.size === 2, 'druga gra założona w moście');
+  await oddech();
+  await oddech();
+  assert.equal(el(A, 'przycisk-lobby-start').disabled, false, 'drugie lobby: przycisk startu odblokowany');
+  assert.equal(el(A, 'przycisk-lobby-start').textContent, '▶ Start gry', 'drugie lobby: etykieta startowa');
+  await klik(A, 'przycisk-lobby-start');
+  await czekajNa(A, () => el(A, 'ekran-gra').hidden === false, 'druga gra startuje bez odświeżania strony');
+  assert.equal(el(A, 'ekran-multi').hidden, true, 'po starcie drugiej gry lobby schowane');
+});

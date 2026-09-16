@@ -6590,3 +6590,94 @@ dotąd odpowiedzi (`1/1`, `1/2`…), nie stała liczba pytań gracza.
 
 **Brama na koniec:** `npm test` **828/828**, `npm run check` OK, WCAG **0**,
 zasięg mostu **97,7%**, budżet **99 992 / 100 000** (rezerwa 8), cache `m12-148`.
+
+## 2026-09-16b — otwarcie sesji `arena/01a0aa50-okolica` (PR w tym commicie)
+
+**Zlecenie:** „kontynuujemy projekt". Kamienie M0–M12 zamknięte jako zakres
+kodu (L68); bez uwag z terenu kolejka jest pusta, więc sesja robi to, co każe
+`AGENTS.md` §2 pkt 2: audyt poprzedniego scalonego PR, a potem czeka na uwagi.
+
+**Brama startowa:** `npm test` **828 / 828**, `npm run budzet` **99 992 /
+100 000** (rezerwa 8), `main` = `7974981` (squash PR #35, scalony 2026-09-16
+12:52 UTC), cache-bust w `main` = `m12-148`.
+
+**Audyt PR #35** (squash `7974981` na `c1a90e8`, 36 plików, +1617/−129; testy
+w `main` 807 → 828). Zakres scalenia: audyt PR #34 z pinem „rozkład równy ±1"
+(L76), pięć uwag terenowych 2026-09-16 („Zlokalizuj mnie" w trybie testowym,
+auto-przejście po „Kopiuj prompt", usunięcie żywych wyników widowni, czyszczenie
+plików tymczasowych, puls „Łączę z siecią") oraz dogrywki 3 i 4 (status graczy
+multi w Informacjach i pod wspólnym wynikiem — ADR 0051; tabela hot-seat
+w Informacjach).
+
+**Sprawdzone i zgodne (nie ruszane):**
+
+- Usunięcie warstwy widowni jest KOMPLETNE: `renderujWierszeWynikow()`
+  i `#lobby-widownia` zniknęły z kodu i markupu, a obie frazy mają pin
+  w `MARTWE_FRAZY` (`test/dryf-dokumentow.test.js`) razem z „rozkład równy ±1"
+  (L76); `renderujLobby()` poza lobby tylko czyści `#lobby-status`.
+- `odtworzPostepMulti()` odtwarza postęp gracza przez te same pure-funkcje co
+  gra na żywo (`skierujDoStacji` → `startOdcinka` → `zakonczOdcinek`,
+  `zapiszOdpowiedz`), werdykt nadal liczy silnik (ADR 0050 aneks), a `wybrana`
+  w odtworzeniu jest wyłącznie wejściem do `zapiszOdpowiedz`.
+- Status multi (`tabelaPrzebieguMulti`) czyta ostatni stan mostu: zero
+  dodatkowych żądań, `stacje = min(odpowiedzi, N)/N` (odpowiedź właściciela),
+  poprawne z mianownikiem rosnącym, `hidden` u hot-seatu
+  (`#gra-wyniki-multi`, `#informacje-hotseat`).
+- „Zlokalizuj mnie": jeden egzemplarz w `#ekran-pozycja`, klasa `tylko-test`
+  ORAZ twarda bramka `if (!STAN.trybTestowy) return;` — poza trybem testowym
+  zero sondaży GPS (pin w `test/aplikacja.test.js`).
+- Auto-przejście „Kopiuj prompt" jest bramkowane REALNYM wynikiem schowka
+  (`kopiujTekst` zwraca boolean), fallback zostawia właściciela na ekranie.
+- Cache-bust `m12-143 → m12-148` spójny w `index.html`, wszystkich `app/*.js`
+  i `WERSJA_SW` (L29); `konfiguracja.liczbaStacji` z mostu faktycznie istnieje
+  w schemacie gry (R07/`SCHEMAT_GRY`), więc tabela statusu ma z czego liczyć N.
+
+**Znalezione — do naprawy w kolejnych commitach tej sesji:**
+
+1. **DEFEKT: `startLobby()` przywracał przycisk tylko na błędzie.** Po udanym
+   starcie „▶ Start gry" zostawał `disabled` z etykietą „Łączę z siecią"
+   i pulsem; ekran lobby znika, ale WĘZEŁ przycisku żyje dalej niż gra, więc
+   host, który po zakończeniu gry zakładał kolejną, nie mógł jej wystartować
+   bez odświeżenia strony. Pozostałe asynchroniczne przyciski aplikacji
+   (`bramkaTozsamosci`, „▶ Graj z tą paczką", „Dalej: moja pozycja") przywracają
+   stan w `finally` — ten jeden nie.
+2. `renderujInformacjeMulti()`: martwa zmienna `const teraz = new Date();`
+   (została po nieużytym pomyśle na godzinę odświeżenia).
+3. `czyscPlikiTymczasowe()`: komentarz objaśniający z niezrozumiałym zdaniem
+   („Zwykły serwer statyczny nie gubi Request.Storage… limity quota…") —
+   opis nie mówi nic sprawdzalnego o cache PWA.
+
+**Poza zakresem PR #35 (dług sprzed scalenia):** martwy import `OGRANICZENIA`
+w `app/app.js` (nieużywany już przed `7974981`) — schodzi przy okazji.
+
+**Werdykt:** treść scalenia zgodna z ADR i protokołem; jeden defekt w stanie
+przycisku lobby (pole widzenia testów: każdy test dostaje świeży DOM, więc
+przejście „druga gra w tej samej sesji strony" nie miało pokrycia) i dwa
+porządkowe długi w tym samym pliku.
+
+**Naprawa (commit `69a50f2`, cache m12-148 → m12-149):**
+
+- `startLobby()`: przywrócenie etykiety i blokady przeniesione do `finally`
+  (wzorzec z reszty aplikacji: `bramkaTozsamosci`, „▶ Graj z tą paczką”,
+  „Dalej: moja pozycja”) — stan „w locie” nie przecieka do następnego lobby.
+- `test/wieloosobowa-ui.test.js`: test odtwarzający — DWIE gry w jednej sesji
+  strony (gra 1 → ⚙ START GRY → TAK → „🏠 Wróć na początek” → setup → gra 2);
+  bez naprawy pada na etykiecie, z naprawą przechodzi (+1 test, 829).
+- Porządki z audytu: martwa zmienna `const teraz` w `renderujInformacjeMulti()`,
+  martwy import `OGRANICZENIA` (dług sprzed PR #35), komentarz
+  `czyscPlikiTymczasowe()` przepisany na sprawdzalny opis (localStorage +
+  cache PWA, service worker zostaje zarejestrowany).
+- `docs/LESSONS.md` → **L77** (+ lustro w `docs/LESSONS_ARCHIVE.md`): stan
+  ustawiany na czas operacji asynchronicznej wraca na KAŻDEJ ścieżce, a test
+  takiej ścieżki to DWIE operacje w jednej sesji strony. Budżet lektury
+  domknięty: L77 w rejestrze (szkielet), L71/L72/L74/L76 skrócone — pełnia
+  opisów została w archiwum.
+
+**Brama na koniec:** `npm test` **829/829**, `npm run check` OK (szablon §2 —
+3 603 znaki, §2.2 — 3 738), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%**
+(850/870), budżet **99 963 / 100 000** (rezerwa **37**), cache **m12-149**,
+szablony `PYT/1.1.2` / `PYT/1.1-nofc.2`, protokół `PYT/1.1`.
+
+**Otwarte po sesji:** PR #36 (scalenie właściciela, squash). W terenie bez
+zmian: paczka z promptu `PYT/1.1.2` (zasada 7, równa liczba pytań na stację,
+kotwiczenie) oraz polecenia z PR #35.
