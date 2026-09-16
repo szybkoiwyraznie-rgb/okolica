@@ -59,7 +59,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0039](0039-ranking-dwie-tabele.md) | Ranking wrócił w nowej formie: dwie tabele (punkty i proporcja), sumy liczy most, tylko gracze z profilem | Zaakceptowana |
 | [0040](0040-gra-bez-pauzy-zawsze-wlaczona.md) | Gra bez pauzy: śledzenie zawsze włączone, Wake Lock na czas gry, jedyna przerwa po 15 min bezczynności | Zaakceptowana |
 | [0041](0041-sygnaly-dzwiek-i-wibracja.md) | Każdy sygnał zdarzenia ma wibrację, jeśli urządzenie ją daje (brak API = cichy no-op, gra idzie dalej) | Zaakceptowana |
-| [0042](0042-informacje-jedna-mala-czcionka.md) | Informacje: cała treść jedną, małą czcionką Courier New (13 px), przyciski-stopki stopki poza progiem 44 px — aneks 2026-09-16d) | Zaakceptowana |
+| [0042](0042-informacje-jedna-mala-czcionka.md) | Informacje: cała treść jedną, małą czcionką Courier New (13 px; przyciski-stopki poza progiem 44 px — aneks 2026-09-16d) | Zaakceptowana |
 | [0043](0043-koniec-gry-za-ikona-start-gry.md) | Przycisku „Zakończ grę” nie ma: grę kończy ikona ⚙ START GRY i wpisanie TAK w małej warstwie potwierdzenia | Zaakceptowana |
 | [0044](0044-odliczanie-po-starcie-gry-wieloosobowej.md) | Start gry wieloosobowej: sygnał i odliczanie 5-4-3-2-1-START nad mapą, potem gra wygląda jak hotseat (panel multi usunięty) | Zaakceptowana |
 | [0045](0045-telefon-wraca-do-zapamietanej-gry.md) | Kart wznowienia na setupie nie ma: otwarcie albo odświeżenie aplikacji wraca wprost do zapamiętanej gry (hotseat z zapisu, multi z sesji i mostu) | Zaakceptowana |
