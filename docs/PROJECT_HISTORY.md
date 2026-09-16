@@ -6426,17 +6426,25 @@ niezacommitowane zmiany po resecie sandboxa odtworzone na czystym `11fd505`.
   fallbacku „⚠ zaznaczone — skopiuj ręcznie” ZOSTAJE na ekranie (tekst nie
   dotarł do schowka bez palca właściciela).
 - Testy: `test/helpers/dom.js` atrapa geolokalizacji zyskuje `getCurrentPosition`
-  (rejestr `zapytania` + `ostatnie`); `test/aplikacja.test.js` +7 testów
+  (rejestr `zapytania` + `ostatnie`); `test/aplikacja.test.js` +8 testów
   (pozycja przycisku w HTML i tryb widoczności, sondaż ustawia pozycję, błąd
-  przywraca przycisk, poza testem zero sondowań, kopia przechodzi na ekran 5,
-  fallback nie przechodzi). Dokumenty: WORKFLOW + ARCHITECTURE opisują obie drogi
+  przywraca przycisk, poza testem zero sondowań nawet po kliku, kopia przechodzi
+  na ekran 5, fallback nie przechodzi) i `test/kontrakt.test.js` +1 pin
+  (dokładnie jeden egzemplarz, tylko w dolnym rzędzie `#ekran-pozycja`
+  z klasą `tylko-test`). Dokumenty: WORKFLOW + ARCHITECTURE opisują obie drogi
   pozycji testowej i degradację kopiowania.
-- Cache-bust **m12-144 → m12-145** (index.html, wszystkie `app/*.js`, `WERSJA_SW`).
+- Cache-bust **m12-144 → m12-146** (index.html, wszystkie `app/*.js`, `WERSJA_SW`).
 
-**Brama na koniec sesji:** `npm test` **814/814** (+7 względem 15g), `npm run
+**Dogrywka twardości (po pierwszej prośbie właściciela o przycisk tylko**
+**w trybie testowym):** `wyznaczPozycje()` dostał bramkę `if (!STAN.trybTestowy)
+return;` — poza trybem testowym klik w przycisk (nawet wywołany z pominięciem
+klasy `tylko-test`) nie robi nic: zero `getCurrentPosition`, status bez zmian.
+Test nietestowego kliku pinuje to zachowanie; podbicie wersji m12-145 → m12-146.
+
+**Brama na koniec sesji:** `npm test` **815/815** (+8 względem 15g), `npm run
 check` OK (szablon §2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**,
 zasięg mostu **97,7%** (850/870), budżet **99 639 / 100 000** (rezerwa 361),
-cache **m12-145**, protokół **PYT/1.1**, szablony **`PYT/1.1.2` /
+cache **m12-146**, protokół **PYT/1.1**, szablony **`PYT/1.1.2` /
 `PYT/1.1-nofc.2`**.
 
 **Otwarte po sesji:** PR #35 nadal czeka na scalenie właściciela — teraz zawiera
