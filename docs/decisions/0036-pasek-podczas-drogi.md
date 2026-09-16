@@ -34,12 +34,12 @@ Chromium: 360×640, 320×568 i 844×390; pasek 37 px, jedna linia, dół viewpor
 oko powyżej, brak przewijania strony. Pauza i symulacja kliknięte z Informacji,
 pytanie wraca do szerokości 90%. Próba z fixture, bez potwierdzenia GPS w terenie.
 
-## Aneks 2026-09-12 (m12-94) — bez pominięcia na liście kontrolek (zadanie H)
+## Aneks 2026-09-12 (m12-94) jest w archiwum (poza budżetem lektury)
 
-Lista „pauza, pominięcie, zakończenie, symulacja, …” w decyzji traci
-środkowy element: akcja pomijania wycofana (ADR 0015 aneks 2026-09-12).
-Do Informacji w drodze trafiają: pauza, zakończenie, symulacja,
-sterowanie multi, komunikaty. Mechanika przenoszenia węzłów bez zmian.
+Notka o wycofaniu pomijania — dosłownie w
+`docs/decisions/archive/aneksy-0036-2026-09-12-m12-94.md` (L62/L66,
+2026-09-16; AGENTS.md §0). Wycofanie opisuje ADR 0015, zawartość Informacji
+— ADR 0043.
 
 ## Aneks 2026-09-13 (m12-101) — pytanie i możliwe odpowiedzi w zwijanym elemencie (uwaga z testów A)
 

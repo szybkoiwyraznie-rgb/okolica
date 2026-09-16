@@ -59,11 +59,8 @@ się jako niepasujące (jak inne niepasujące), żeby nie dało się ich wybrać
 ## Aneks 2026-09-16 — karta nie wymienia powodów (uwaga terenowa)
 
 Pkt 2 („komunikat nazywa powód wprost”) WYCOFANY: przy kilku paczkach karta
-robiła się ścianą tekstu. Nowa treść: jedna linijka („W tej okolicy jest N
-paczek, ale żadna z nich nie pasuje do aktualnego setupu”) + zdanie, co
-zrobić. `powodyNiedopasowania` zostaje — filtruje jak dotąd, tylko UI go nie
-cytuje. Kryteria (pkt 1, 3, 4) bez zmian.
+robiła się ścianą tekstu. Nowa treść: jedna linijka o N paczkach + zdanie,
+co zrobić. `powodyNiedopasowania` filtruje jak dotąd, UI go nie cytuje. Kryteria (pkt 1, 3, 4) bez zmian.
 
 Właściciel, 2026-09-16: „Nie widzę potrzeby listowania które paczki i dlaczego
-nie pasują. Wystarczyłby komunikat w stylu: «Istnieje X paczek dla tej okolicy
-ale żadna z nich nie pasuje do aktualnego setupu.»”
+nie pasują.”

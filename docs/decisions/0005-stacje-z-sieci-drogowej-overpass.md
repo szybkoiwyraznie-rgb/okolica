@@ -132,17 +132,16 @@ Od teraz `#ekran-stacje` pokazuje jedno zdanie w `#stacje-podsumowanie`:
 
 Tryb tajnej trasy (ADR 0034) zostaje przy swoim zdaniu („…Nazwy i położenie są
 ukryte…") — właściciel wyłączył go z tej zmiany. Mapa, pinezki, przyciski
-„Inny układ"/„Pobierz sieć ponownie"/„Ustaw stacje ręcznie" i przewijanie panelu
-są bez zmian; przeciąganie pinezki w trybie ręcznym widać na mapie, nie w spisie.
+„Inny układ"/„Pobierz sieć ponownie" i przewijanie panelu są bez zmian (tryb
+ręczny: aneks niżej).
 
 
 ## Aneks 2026-09-16 — tryb ręczny usunięty (uwaga terenowa)
 
 Pkt 8b („ręczne ustawienie stacji przeciąganiem pinezek") WYCOFANY decyzją
-właściciela: drag pinezek nie nadawał się do użytku na iPhonie. Usunięte:
-przycisk „✋ Ustaw stacje ręcznie", `ustawTrybReczny` w `mapa.js`, gałęzie
-w `renderujStacje`, wzmianki w tekstach S02/S03/S09/S13/S14 i style
-`.pinezka-reczna`. Degradacja to odtąd: cache (8a) albo jawny pierścień (8c).
+właściciela: drag nie działał na iPhonie. Usunięte:
+przycisk, `ustawTrybReczny`, gałęzie, wzmianki i style (S02/S03/S09/S13/S14,
+`.pinezka-reczna`). Degradacja to odtąd: cache (8a) albo pierścień (8c).
 
 Właściciel, 2026-09-16: „Ustawianie stacji ręcznie — ta funkcja do wywalenia
-w całości. Przeciąganie nie działa na iPhonie i jest bardzo nieporęczne."
+w całości."

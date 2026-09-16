@@ -113,48 +113,10 @@ w setupie oraz promień paczki ≤ promienia z setupu (stacje bliżej = uczciwie
 dalej = nie). Kryteria obowiązują każde źródło propozycji: pamięć telefonu,
 Drive i indeks offline w repo.
 
-## Aneks (2026-09-06): zgoda na wysyłkę — korekta właściciela
+## Aneksy są w archiwum (poza budżetem lektury)
 
-Zgoda żyje na ekranie wklejania odpowiedzi AI jako checkbox
-`<input id="zgoda-drive" type="checkbox" checked>` — DOMYŚLNIE ZAZNACZONY
-(opt-out): właściciel (jedyny użytkownik) chce wysyłki bez dodatkowego kroku,
-ale z możliwością odhaczenia, gdy zestaw ma zostać tylko na telefonie.
-Wcześniejszy pomysł jednorazowej zgody opt-in w karcie prywatności — odrzucony.
-Bez zgody albo bez adresu mostu: zero wysyłek i jawny status (LESSONS L6).
-
-## Aneks (2026-09-07): adres mostu jest w kodzie aplikacji, nie w UI (ADR 0020)
-
-Właściciel zdecydował, że adres web app nie jest konfigurowany przez
-użytkownika: trafia do repozytorium jako stała `DOMYSLNY_URL_MOSTU`
-w `app/most.js`, a pola „Źródło repozytorium (zaawansowane)" i „Adres mostu
-(Apps Script)" znikają z interfejsu. Powód: w grze wieloosobowej (ADR 0019)
-każdy telefon uczestnika rozmawia z mostem sam, więc adres musiałby być
-wklejony na każdym urządzeniu z osobna. Konsekwencja dla ryzyk tego ADR-u:
-adres jest publiczny jak cały kod aplikacji (repo publiczne — wymóg Pages),
-więc „zdolność" (capability) może trafić w obce ręce; reakcją jest nowe
-wdrożenie web app (nowy adres `/exec`) i nowy commit ze stałą, a nie zmiana
-logiki mostu. Próba CORS z pkt. „Ograniczenia techniczne" zostaje
-w interfejsie jako przycisk „🔌 Sprawdź połączenie" i jawny stan mostu
-(`#most-stan-repo`, `#multi-most-stan`). Reguła „bez zgody albo bez adresu
-mostu: zero wysyłek i jawny status" obowiązuje bez zmian — „brak adresu"
-oznacza teraz pustą stałą w tej wersji aplikacji.
-
-## Aneks (2026-09-07): koniec checkboxa zgody — wysyłka domyślna i cicha
-
-Aneks z 2026-09-06 (opt-out przez `#zgoda-drive`) przestaje obowiązywać.
-Decyzja właściciela: przyjęcie poprawnej paczki od razu zaczyna grę, a ekran
-traci checkbox — wysyłka zestawu na Drive jest domyślna i bez pytania, bo
-aplikacja jest prywatna (właściciel plus kilku znajomych, BACKLOG B17), a jej
-odbiorcą jest wydzielone konto właściciela. Brak pola pinuje
-`test/kontrakt.test.js`. Reguła „bez adresu mostu: zero wysyłek i jawny status"
-obowiązuje bez zmian.
-
-## Aneks (2026-09-12): „🔌 Sprawdź połączenie" usunięty z interfejsu (m12-66)
-
-Zdanie o próbie CORS („Próba CORS z pkt. «Ograniczenia techniczne» zostaje
-w interfejsie jako przycisk…") opisuje stan do m12-66. Właściciel usunął
-przycisk w uwagach terenowych #2: most albo działa, albo aplikacja sama mówi,
-że nie ma go gdzie wysłać — jawny stan w `#most-stan-repo` wystarcza
-(`#multi-most-stan` zniknął wcześniej, aneksem 2026-09-11 do ADR 0020).
-Adres nadal jest stałą w kodzie (ADR 0020 pkt 1), a kontrakt
-`test/kontrakt.test.js` pilnuje braku przycisku.
+Cztery aneksy z 2026-09-06…2026-09-12 (zgoda, adres w kodzie, koniec
+checkboxa, przycisk) leżą w
+`docs/decisions/archive/aneksy-0016-2026-09-06-do-12.md` (L62/L66, 2026-09-16;
+AGENTS.md §0). Zgoda jest martwa, adres opisuje ADR 0020, a brak pola zgody
+i przycisku pilnuje `test/kontrakt.test.js`.
