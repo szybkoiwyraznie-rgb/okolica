@@ -6690,7 +6690,7 @@ kodu (L68); bez uwag z terenu kolejka jest pusta, więc sesja robi to, co każe
 
 **Brama startowa:** `npm test` **829 / 829**, `npm run budzet` **99 963 /
 100 000** (rezerwa 37), `main` = `7227617` (squash PR #36, scalony 2026-09-16
-13:10 UTC), cache-bust w `main` = `m12-149`.
+13:28 UTC), cache-bust w `main` = `m12-149`.
 
 **Audyt PR #36** (squash `7227617` na `7974981`, 19 plików, +330/−77; testy
 w `main` 828 → 829). Zakres scalenia: naprawa przycisku „▶ Start gry” w lobby
@@ -6718,3 +6718,40 @@ i zgodne z ADR oraz protokołem.
 **Werdykt:** scalenie w pełni poprawne. Kamienie M0–M12 zamknięte; brak
 uwag z terenu w kolejce — sesja gotowa i oczekuje na uwagi z testów
 terenowych właściciela.
+
+## 2026-09-16d — otwarcie sesji `arena/01a0aac7-okolica` (PR #38 w tym commicie)
+
+**Zlecenie:** „kontynuujemy projekt”. Kamienie M0–M12 zamknięte jako zakres
+kodu (L68); kolejka pracy pusta, więc sesja robi to, co każe `AGENTS.md` §2
+pkt 2: audyt poprzedniego scalonego PR (#37), a potem czeka na uwagi z terenu.
+
+**Brama startowa:** `npm test` **829 / 829**, `npm run budzet` **99 963 /
+100 000** (rezerwa 37), `main` = `31dbbf4` (squash PR #37, scalony 2026-09-16
+15:13 UTC), cache-bust w `main` = `m12-149`.
+
+**Audyt PR #37** (`7227617..31dbbf4`, docs-only: 2 pliki, +93 —
+`docs/PROJECT_HISTORY.md` +37, nowy `docs/setup/HANDOFF_2026-09-16c.md`).
+Sprawdzone wobec repozytorium i `gh`:
+- Brama z handoffu 16c (829/829; check OK — §2 3 603 znaki, §2.2 3 738; WCAG AA
+  0 naruszeń; zasięg mostu 97,7%); powtórzona w tej sesji, zgodna w całości.
+- Naprawa `startLobby()` z PR #36 stoi na miejscu (`finally` przywraca
+  `disabled`, etykietę i `pulsuje`); test dwóch gier w jednej sesji strony żyje
+  (`test/wieloosobowa-ui.test.js`); L77 jest w rejestrze i w archiwum.
+- Porządki z PR #36 potwierdzone w kodzie: brak martwej zmiennej w
+  `renderujInformacjeMulti()`, brak importu `OGRANICZENIA` w `app/app.js`,
+  komentarz `czyscPlikiTymczasowe()` opisuje wyłącznie to, co kod robi.
+- Statystyki scalenia PR #36 (`7974981 → 7227617`): 19 plików, +330/−77; brak
+  resztek `m12-148` i fraz „czeka na scalenie” w nośnikach żywych.
+
+**Znalezione defekty:** jedna nieścisłość zapisu — wpis 16c podawał godzinę
+scalenia PR #36 jako 13:10 UTC, a źródła mówią **13:28:55Z** (`gh pr view 36`,
+`mergedAt`) i 15:28:54+02:00 (committer date commita `7227617`). Wiersz
+poprawiony na „13:28 UTC”; poza tym zapis 16c zgodny z rzeczywistością.
+
+**Werdykt:** PR #37 (dokumentacyjny) bez zastrzeżeń merytorycznych poza
+godziną scalenia — poprawione; PR #36 nadal bez defektów. Kamienie M0–M12
+zamknięte, kolejka pusta.
+
+**Otwarte po sesji:** PR #38 (scalenie właściciela, squash). Most Apps Script
+bez zmian. Czekamy na uwagi z testów terenowych (m.in. paczka z promptu
+`PYT/1.1.2` i polecenia z PR #35).
