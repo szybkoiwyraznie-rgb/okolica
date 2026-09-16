@@ -1685,3 +1685,39 @@ samo jak prompt; (2) w tym samym commicie dopisz dawną frazę do `MARTWE_FRAZY`
 (3) aktywny ADR z „Kontekst" opisującym stan bieżący to nośnik opisu, nie
 archiwum; archiwum (`docs/decisions/archive/`) zostaw, tam stary zwrot jest
 dowodem zmiany.
+
+## L77 (2026-09-16) — stan „na czas operacji” wracaj na KAŻDEJ ścieżce: węzeł żyje dłużej niż jedna gra
+
+**Tło:** audyt scalonego PR #35 (uwagi terenowe 2026-09-16, dogrywka 3) — uwaga
+o pulsie „Łączę z siecią” na przycisku „▶ Start gry” w lobby gry wieloosobowej.
+
+**Objaw:** po UDANYM starcie gry przycisk zostawał zablokowany (`disabled`)
+z etykietą „Łączę z siecią” i klasą `pulsuje`. Ekran lobby po starcie znika, więc
+w pierwszej chwili nic nie było widać — ale host, który po zakończeniu gry
+(⚙ START GRY → TAK → „🏠 Wróć na początek” → setup) zakładał KOLEJNĄ grę,
+wracał do tego samego, zablokowanego przycisku i nie mógł jej wystartować bez
+odświeżenia strony. Zablokowany `<button>` nie emituje `click`, więc żaden
+komunikat nie tłumaczył, co się dzieje.
+
+**Ślad:** `startLobby()` (`app/app.js`) przywracał etykietę i blokadę wyłącznie
+w `catch`. Poprzedni sessionowy komentarz tłumaczył to wprost („Po sukcesie
+lobby znika, więc przywrócenie etykiety należy się tylko ścieżce błędu”) —
+prawdziwe było tylko pierwsze pół zdania: ekran znika, ale WĘZEŁ przycisku
+zostaje w `index.html` i obsługuje wszystkie kolejne lobby. Reszta
+asynchronicznych przycisków aplikacji (`bramkaTozsamosci`, „▶ Graj z tą
+paczką”, „Dalej: moja pozycja”) przywraca stan w `finally` — ten jeden nie.
+
+**Naprawa (PR #36):** `zalaczLaczenie(false)` przeniesione do `finally`
+(komentarz cytuje powód: węzeł żyje dłużej niż jedna gra); test odtwarzający
+w `test/wieloosobowa-ui.test.js` prowadzi DWIE gry w jednej sesji strony
+(gra 1 → koniec z ręki → setup → gra 2) i bez naprawy pada na etykiecie.
+Przy okazji audytu z `app/app.js` zniknęły: martwa zmienna `const teraz =
+new Date();` w `renderujInformacjeMulti()`, martwy import `OGRANICZENIA`
+(dług sprzed PR #35) i komentarz `czyscPlikiTymczasowe()` przepisany na
+sprawdzalny opis (localStorage + cache PWA). Cache-bust m12-148 → m12-149.
+
+**Reguła:** stan wizualny ustawiany „na czas operacji asynchronicznej”
+(blokada, etykieta, puls) przywracaj w `finally`, nigdy tylko na ścieżce
+błędu — bo ekran może zniknąć, a węzeł DOM zostaje i obsłuży następną grę.
+Test takiej ścieżki pisz jako DWIE operacje w jednej sesji strony: świeży DOM
+per test (nowe „wejście na stronę”) nie widzi przecieku stanu między grami.

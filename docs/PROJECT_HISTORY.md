@@ -6654,3 +6654,30 @@ w `app/app.js` (nieużywany już przed `7974981`) — schodzi przy okazji.
 przycisku lobby (pole widzenia testów: każdy test dostaje świeży DOM, więc
 przejście „druga gra w tej samej sesji strony" nie miało pokrycia) i dwa
 porządkowe długi w tym samym pliku.
+
+**Naprawa (commit `69a50f2`, cache m12-148 → m12-149):**
+
+- `startLobby()`: przywrócenie etykiety i blokady przeniesione do `finally`
+  (wzorzec z reszty aplikacji: `bramkaTozsamosci`, „▶ Graj z tą paczką”,
+  „Dalej: moja pozycja”) — stan „w locie” nie przecieka do następnego lobby.
+- `test/wieloosobowa-ui.test.js`: test odtwarzający — DWIE gry w jednej sesji
+  strony (gra 1 → ⚙ START GRY → TAK → „🏠 Wróć na początek” → setup → gra 2);
+  bez naprawy pada na etykiecie, z naprawą przechodzi (+1 test, 829).
+- Porządki z audytu: martwa zmienna `const teraz` w `renderujInformacjeMulti()`,
+  martwy import `OGRANICZENIA` (dług sprzed PR #35), komentarz
+  `czyscPlikiTymczasowe()` przepisany na sprawdzalny opis (localStorage +
+  cache PWA, service worker zostaje zarejestrowany).
+- `docs/LESSONS.md` → **L77** (+ lustro w `docs/LESSONS_ARCHIVE.md`): stan
+  ustawiany na czas operacji asynchronicznej wraca na KAŻDEJ ścieżce, a test
+  takiej ścieżki to DWIE operacje w jednej sesji strony. Budżet lektury
+  domknięty: L77 w rejestrze (szkielet), L71/L72/L74/L76 skrócone — pełnia
+  opisów została w archiwum.
+
+**Brama na koniec:** `npm test` **829/829**, `npm run check` OK (szablon §2 —
+3 603 znaki, §2.2 — 3 738), audyt WCAG **0 naruszeń**, zasięg mostu **97,7%**
+(850/870), budżet **99 963 / 100 000** (rezerwa **37**), cache **m12-149**,
+szablony `PYT/1.1.2` / `PYT/1.1-nofc.2`, protokół `PYT/1.1`.
+
+**Otwarte po sesji:** PR #36 (scalenie właściciela, squash). W terenie bez
+zmian: paczka z promptu `PYT/1.1.2` (zasada 7, równa liczba pytań na stację,
+kotwiczenie) oraz polecenia z PR #35.

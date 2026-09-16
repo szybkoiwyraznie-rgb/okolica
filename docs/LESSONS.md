@@ -579,15 +579,15 @@ Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE
 **Objaw:** po trzech falach napraw bramy wejścia najbliższy fizycznie pin (100 m przy głównej ulicy) wciąż dostawał numer 2 w terenie właściciela; brama 50 m go nie łapała.
 **Przyczyna:** chodnik w OSM bywa osobnym wayem `footway` wzdłuż jezdni, wpiętym do niej dopiero na dalekich skrzyżowaniach — węzeł 100 m fizycznie dostawał dystans drogowy mierzony objazdem (424–662 m). Detektory w wyborze stacji mogły tylko maskować kłamstwo grafu; nikt nie porównał klasy drogi pinu z klasą drogi trasy.
 **Reguła:** gdy metryka sieciowa kłamie o punkcie przy głównej ulicy, sprawdź klasę drogi w danych i lecz GRAF w jednym miejscu filtrowania (czyści też stary cache), nie dopisuj detektorów do wyboru. Decyzja właściciela (m12-119): pieszy i rower trasują po układzie ulic — bez `footway`/`steps`/`cycleway`; `path`/`track` zostają, bo bywają jedyną siecią w lesie (odrzucenie szerszego wariantu było mierzone, nie zgadywane).
-**Dopisek m12-120 (pytanie „zostawić korytarze i dodać ulice"):** zmierzone i odrzucone — punkt snapuje się do NAJBLIŻSZEGO węzła (na chodniku), a skrótu chodnik↔jezdnia w środku kwartału graf nie ma; Dijkstra wybiera najkrótszą trasę, ale nie przenosi punktu między równoległymi sieciami (dG 100 m → 512 m). Trafna połowa pytania: pieszy nie miał klas ulic tranzytowych (tertiary/secondary/primary/unclassified) — wieś przy wojewódzkiej bez chodników nie miała korytarza; od m12-120 klasy te wchodzą do pieszego i roweru, poza motorway/trunk. Graf nie czyta `oneway` — krawędzie są zawsze dwukierunkowe, więc jednokierunkowa nie blokuje pieszego.
+**Dopisek m12-120 (pytanie „zostawić korytarze i dodać ulice?"):** zmierzone i odrzucone — punkt snapuje się do NAJBLIŻSZEGO węzła (na chodniku), a skrótu chodnik↔jezdnia w środku kwartału graf nie ma, więc Dijkstra nie przenosi punktu między równoległymi sieciami (dG 100 m → 512 m). Trafna połowa pytania: pieszy nie miał klas ulic tranzytowych — od m12-120 wchodzą one do pieszego i roweru poza motorway/trunk. Graf nie czyta `oneway` — krawędzie są dwukierunkowe.
 
 Pełny przypadek, pomiary i testy: `docs/LESSONS_ARCHIVE.md` → `## L71`.
 
 ## L72 (2026-09-15) — tryb widoku BIEŻĄCEGO ekranu musi gasnąć przy każdej zmianie ekranu
 
-**Objaw:** gość, który w lobby zajrzał na mapę (⚙ START GRY chowa warstwę jak oko — uwaga A), wszedł w grę NIEWIDOCZNĄ, a „dane i prywatność" ze stopki otwierało kartę, której nie było widać — przy zielonej bramie.
-**Przyczyna:** `STAN.podgladMapy` przeżywał zmianę ekranu, a `body.podglad-mapy` w CSS znaczy `visibility: hidden; pointer-events: none` na każdej `.panel-centralny`; stan gasiły tylko otwieracze warstw (klik), a przejścia, które przychodzą z kodu (start gry multi z pollingu), sprzątać go nie musiały.
-**Reguła:** każdy stan opisujący, jak wyświetlony jest BIEŻĄCY ekran (podgląd mapy, pasek drogi, otwarta warstwa), musi gasić KAŻDA funkcja zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`), a nie tylko klikalny przełącznik — bo o zmianie ekranu decyduje też kod bez udziału palca. Atrapa DOM nie liczy kaskady (L65), więc pin idzie na `inert` i klasę na `body`, a samą widoczność mierzy się w przeglądarce (ENVIRONMENT §4.1).
+**Objaw:** gość, który w lobby zajrzał na mapę (⚙ START GRY chowa warstwę jak oko — uwaga A), wszedł w grę NIEWIDOCZNĄ, a „dane i prywatność" ze stopki otwierało kartę, której nie było widać.
+**Przyczyna:** `STAN.podgladMapy` przeżywał zmianę ekranu, a `body.podglad-mapy` znaczy w CSS `visibility: hidden; pointer-events: none` na panelach; stan gasiły tylko klikalne otwieracze warstw, a przejścia z kodu (start gry multi z pollingu) — nie.
+**Reguła:** każdy stan opisujący, jak wyświetlony jest BIEŻĄCY ekran (podgląd mapy, pasek drogi, otwarta warstwa), musi gasić KAŻDA funkcja zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`) — bo o zmianie ekranu decyduje też kod bez udziału palca. Atrapa DOM nie liczy kaskady (L65), więc pin idzie na `inert` i klasę `body`, a widoczność mierzy się w przeglądarce (ENVIRONMENT §4.1).
 
 Pełny opis przypadku (objaw, przyczyna, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L72`.
 ## L73 (2026-09-15) — atrapa musi rzucać tak jak platforma, której udaje API
@@ -600,8 +600,8 @@ Pełny przypadek, ślad dochodzenia i testy: `docs/LESSONS_ARCHIVE.md` → `## L
 ## L74 (2026-09-15) — format wymiany z AI licz w numeracji, którą widzi AI i człowiek
 
 **Objaw:** paczka niosła `"poprawna": 3`, właściciel kliknął trzecią odpowiedź, a aplikacja pokazała „Źle (0 pkt). Poprawna odpowiedź: D. 1969" — przy pełnym, zielonym zestawie testów.
-**Przyczyna:** protokół opisywał `poprawna` jako indeks `0..3` (ADR 0049), a model i człowiek liczą odpowiedzi od 1; aplikacja porównywała indeks przycisku z indeksem z paczki, więc trzecia odpowiedź wypadała jako czwarta. Testy przechodziły, bo fixture'y pisaliśmy TĄ SAMĄ, aplikacyjną konwencją — kontrakt „jak pisze model" nie miał ani jednego przypadku.
-**Reguła:** pole, które pisze AI i czyta aplikacja, opisuj w numeracji widocznej dla człowieka w JSON-ie (tu `1..4`), a przeliczenie trzymaj wyłącznie na granicy UI, w jednym miejscu i z komentarzem. Fixture'y pisz w konwencji modelu, nie aplikacji — inaczej brama sprawdza nasze założenie, a nie wymianę.
+**Przyczyna:** protokół opisywał `poprawna` jako indeks `0..3` (ADR 0049), a model i człowiek liczą odpowiedzi od 1; aplikacja porównywała indeks przycisku z indeksem z paczki, więc trzecia odpowiedź wypadała jako czwarta. Testy przechodziły, bo fixture'y pisaliśmy TĄ SAMĄ, aplikacyjną konwencją.
+**Reguła:** pole, które pisze AI i czyta aplikacja, opisuj w numeracji widocznej dla człowieka w JSON-ie (tu `1..4`), a przeliczenie trzymaj wyłącznie na granicy UI, w jednym miejscu. Fixture'y pisz w konwencji modelu — inaczej brama sprawdza nasze założenie, a nie wymianę.
 
 Pełny opis przypadku (objaw, ślad, naprawa i testy): `docs/LESSONS_ARCHIVE.md` → `## L74`.
 
@@ -613,24 +613,17 @@ Pełny opis przypadku (objaw, ślad, naprawa i testy): `docs/LESSONS_ARCHIVE.md`
 
 Pełny opis przypadku i przebieg usuwania: `docs/LESSONS_ARCHIVE.md` → `## L75`.
 
-## L76 (2026-09-15) — przy zmianie reguły walidatora przeglądaj WSZYSTKIE zdania o starej regule i od razu wstaw pin
+## L76 (2026-09-15) — przy zmianie reguły walidatora przejrzyj WSZYSTKIE zdania o starej regule i od razu wstaw pin
 
-**Objaw:** PR #34 zmienił `E05` (bez tolerancji ±1, decyzja B25) i zaktualizował
-PROTOKOL §6, §7 i prompt, ale trzy miejsca dalej opisywały starą regułę:
-§3.2 (tabela pól paczki, wiersz `stacja` — „rozkład równy ±1"), komentarz
-`app/rozgrywka.js` (`stacjaZamknieta`) i ADR 0015 (Kontekst, opis spójności
-wewnętrznej walidatora). Wszystkie przeszły przez zieloną bramę — strażnik
-dryfu (L58) nie miał tej frazy na liście, a ADR-y są poza listą nośników.
-**Przyczyna:** zmiana reguły została przeprowadzona tam, gdzie regułę WYKONUJE
-się (walidator) i tam, gdzie DYKTUJE się ją modelowi (prompt), ale nie tam,
-gdzie się ją OPISUJE (schemat, komentarz silnika, Kontekst ADR). L58 pilnuje
-zwrotów, które już raz zdryfowały — świeżo zmienionej reguły nikt nie dopisał.
-**Reguła:** (1) zmieniając albo usuwając regułę walidatora, `grep` jej starego
-brzmienia po żywych dokumentach (PROTOKOL, aktywne ADR-y, komentarze `app/`)
-i po parzystości dokument ↔ kod; (2) w tym samym commicie dopisz dawną frazę do
-`MARTWE_FRAZY` w `test/dryf-dokumentow.test.js`; (3) żywy ADR z „Kontekst"
-opisującym stan bieżący to nośnik opisu, nie archiwum — dryfuje tak samo jak
-PROTOKOL; archiwalne aneksy (`docs/decisions/archive/`) można zostawić, tam
-stary zwrot jest dowodem zmiany.
+**Objaw:** PR #34 zmienił `E05` (koniec tolerancji ±1, B25), ale PROTOKOL §3.2 (wiersz `stacja`), komentarz `app/rozgrywka.js` (`stacjaZamknieta`) i Kontekst ADR 0015 dalej opisywały starą regułę — przy zielonej bramie.
+**Przyczyna:** regułę zmieniono tam, gdzie się ją WYKONUJE (walidator) i DYKTUJE modelowi (prompt), ale nie tam, gdzie się ją OPISUJE; strażnik dryfu (L58) nie znał tej frazy, a aktywne ADR-y są poza listą nośników.
+**Reguła:** zmieniając regułę walidatora, `grep` starego brzmienia po żywych nośnikach (PROTOKOL, aktywne ADR-y, komentarze `app/`), dopisz dawną frazę do `MARTWE_FRAZY` w tym samym commicie, a archiwa (`docs/decisions/archive/`) zostaw — tam stary zwrot jest dowodem zmiany.
 
 Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L76`.
+## L77 (2026-09-16) — stan „na czas operacji” wracaj na KAŻDEJ ścieżce: węzeł żyje dłużej niż jedna gra
+
+**Objaw:** po udanym starcie gry multi przycisk „▶ Start gry” zostawał zablokowany z etykietą „Łączę z siecią”; host, który po zakończeniu gry zakładał kolejną, nie mógł jej wystartować bez odświeżenia strony (audyt PR #35).
+**Przyczyna:** `startLobby()` przywracał etykietę i `disabled` tylko w `catch`, a panel lobby to JEDEN węzeł `index.html` obsługujący kolejne gry — stan „w locie” przeciekał do następnego lobby; testy tego nie łapały, bo każdy dostaje świeży DOM (nowe „wejście na stronę”).
+**Reguła:** blokadę, etykietę i puls z czasu operacji asynchronicznej przywracaj w `finally`, a test tej ścieżki pisz jako DWIE gry w jednej sesji strony.
+
+Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L77`.
