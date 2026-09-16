@@ -6402,3 +6402,43 @@ Bez uwag z terenu dalsze sesje tylko audytują i czekają. W terenie nadal do
 sprawdzenia paczka z promptu `PYT/1.1.2` (zasada 7, równa liczba pytań na
 stację, kotwiczenie bez przepisu o nazwie miejsca) — jak w handoffie 15f.
 
+## Sesja 2026-09-16 (PR #35) — uwagi terenowe: przycisk „Zlokalizuj mnie” i auto-przejście „Kopiuj prompt”
+
+**Zlecenie:** „Dalsze uwagi z testów terenowych” — (1) ekran „Gdzie jesteś?”
+w trybie testowym ma pozwalać na lokalizację (np. przycisk „zlokalizuj mnie”);
+(2) „Kopiuj prompt” ma po skopiowaniu do schowka samo przejść na „Wklej
+odpowiedź modelu”. Brak innych kryteriów. Sesja — ta sama gałąź i PR #35,
+niezacommitowane zmiany po resecie sandboxa odtworzone na czystym `11fd505`.
+
+**Implementacja (2 przyrostowe commity po audycie PR #34 z 15g):**
+
+- `641767c` — przycisk „Zlokalizuj mnie”: element `#przycisk-zlokalizuj` TYLKO
+  w dolnym rzędzie ekranu pozycji (między „← ustawienia” a „Dalej: stacje →”),
+  klasa `tylko-test` = widoczny tylko w trybie testowym i tylko tam; poza trybem
+  nie ma go ani w DOM-ie, ani jako ścieżki — w zwykłym trybie pozycja idzie
+  wyłącznie watcherem (test pinuje zero `getCurrentPosition` poza testem).
+  `wyznaczPozycje()` odpala JEDEN `getCurrentPosition(OPCJE_WATCH)` i karmi
+  wspólny `przyjmijFix()`; błąd jawny kodem P02/P03/P04, przycisk wraca,
+  a pozycję dalej da się ustawić stuknięciem mapy (D3). Komunikat ekranu zostaje
+  bez zmian: „Tryb testowy: użyj oka i wskaż miejsce na mapie.”.
+- `2addb58` — „Kopiuj prompt” auto-przechodzi: `kopiujTekst()` zwraca boolean
+  `kopiujDoSchowka()`, handler po `true` woła `pokazEkran('paczka')`; przy
+  fallbacku „⚠ zaznaczone — skopiuj ręcznie” ZOSTAJE na ekranie (tekst nie
+  dotarł do schowka bez palca właściciela).
+- Testy: `test/helpers/dom.js` atrapa geolokalizacji zyskuje `getCurrentPosition`
+  (rejestr `zapytania` + `ostatnie`); `test/aplikacja.test.js` +7 testów
+  (pozycja przycisku w HTML i tryb widoczności, sondaż ustawia pozycję, błąd
+  przywraca przycisk, poza testem zero sondowań, kopia przechodzi na ekran 5,
+  fallback nie przechodzi). Dokumenty: WORKFLOW + ARCHITECTURE opisują obie drogi
+  pozycji testowej i degradację kopiowania.
+- Cache-bust **m12-144 → m12-145** (index.html, wszystkie `app/*.js`, `WERSJA_SW`).
+
+**Brama na koniec sesji:** `npm test` **814/814** (+7 względem 15g), `npm run
+check` OK (szablon §2 — 3603 znaki, §2.2 — 3738), audyt WCAG **0 naruszeń**,
+zasięg mostu **97,7%** (850/870), budżet **99 639 / 100 000** (rezerwa 361),
+cache **m12-145**, protokół **PYT/1.1**, szablony **`PYT/1.1.2` /
+`PYT/1.1-nofc.2`**.
+
+**Otwarte po sesji:** PR #35 nadal czeka na scalenie właściciela — teraz zawiera
+audyt 15g + obie uwagi terenowe 2026-09-16. Kolejka pracy pusta.
+
