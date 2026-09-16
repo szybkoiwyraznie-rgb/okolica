@@ -72,3 +72,15 @@ się zepsuć i wymagać uwagi.
 wysyłki `#wynik-drive` zostaje), 0032 (linia wariantu w panelu multi zostaje),
 0011 (mobile-first: mniej treści na 360 px), LESSONS L23 (czytanie liczb
 z elementu, nie z `textContent`).
+
+## Aneks 2026-09-16 — multi: „Przebieg gry” pod wspólną tabelą (nie odwrócenie)
+
+Uwaga terenowa 2026-09-16 doprecyzowuje pkt 1, ale NIE odwraca minimalizmu:
+w grze wieloosobowej POD wspólną tabelą rankingu (gracz | punkty | poprawne)
+pojawia się drugi, zwijalny wizualnie blok `#gra-wyniki-multi` — „Przebieg gry”
+z kolumnami imię, zaliczone stacje, poprawne odpowiedzi i status
+(Aktywny / Opuścił grę / Zakończył trasę). Dokładnie wtedy, gdy gra jest
+multi i ma zakończony/trwający przebieg na moście; w hot-seacie blok zostaje
+ukryty (`hidden` w markupie). Nie wracają statystyki, szczegóły graczy, tabela
+stacji ani eksporty — żaden identyfikator z listy „usunięte” (pin kontraktu)
+nie odżywa. Pełnia decyzji: ADR 0051.

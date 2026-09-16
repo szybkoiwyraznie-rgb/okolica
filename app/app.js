@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-147';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-147';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, OGRANICZENIA, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-148';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-148';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-147';
+} from './protokol.js?v=m12-148';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-147';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-147';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-147';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-147';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-147';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-147';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-148';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-148';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-148';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-148';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-148';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-148';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr, powodyNiedopasowania,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-147';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-147';
+} from './zestawy.js?v=m12-148';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-148';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -53,18 +53,18 @@ import {
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
-} from './sieci.js?v=m12-147';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-147';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-147';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-147';
-import { adresMostu, stanMostu } from './most.js?v=m12-147';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-147';
+} from './sieci.js?v=m12-148';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-148';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-148';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-148';
+import { adresMostu, stanMostu } from './most.js?v=m12-148';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-148';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-147';
+} from './oceny.js?v=m12-148';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -634,6 +634,7 @@ function przelaczInformacje() {
   $('ekran-informacje').hidden = !otwieramy;
   STAN.podgladMapy = false;
   zamknijKoniecGry({ bezFokusu: true }); // warstwy nie świecą równocześnie
+  if (otwieramy) renderujInformacjeMulti(); // status multi z ostatniego stanu (uwaga terenowa 2026-09-16)
   odswiezWidocznoscPaneli();
   $(otwieramy ? 'przycisk-zamknij-informacje' : 'przycisk-informacje').focus();
 }
@@ -2426,6 +2427,7 @@ function renderujGre({ panele = true } = {}) {
   // ADR 0044 (uwaga F): panelu multi nie ma — gra wygląda jak hotseat. Z gry
   // sieciowej w panelu fazy A zostaje JEDNO: wybór stacji w Wyścigu.
   if (STAN.multi) renderujWyborStacji();
+  renderujInformacjeMulti(); // panel Informacje żyje z każdym zdarzeniem gry
 }
 
 /* ---------------- M9/R3: repozytorium paczek (ADR 0017) ---------------- */
@@ -3760,6 +3762,10 @@ function pokazWyniki() {
     tbody.appendChild(wiersz);
   }
   stanWysylkiWyniku(''); // los wysyłki z poprzedniej gry nie zostaje na ekranie
+  // Multi: pod wspólnym wynikiem dorzucamy przebieg uczestników (stacje,
+  // poprawne, status). W hot-seacie blok `#gra-wyniki-multi` zostaje ukryty
+  // (ekran wyników bez zmian, ADR 0038).
+  renderujWynikiMulti();
 }
 
 /* ---------------------------------------------------------------- prompt */
@@ -5077,6 +5083,10 @@ function onStanGryMulti(gra) {
   if (STAN.ekran === 'multi') renderujLobby();
   renderujWyborStacji();
   renderujPasekSync();
+  // Status multi w panelu Informacje żyje z każdym krokiem pollingu (co 30 s
+  // w grze): gracz, który ma panel OTWARTY, widzi świeży przebieg pozostałych
+  // bez dodatkowego żądania — wystarczy ten, który i tak przychodzi.
+  renderujInformacjeMulti();
 }
 
 /**
@@ -5319,6 +5329,112 @@ function wynikiMultiKonca() {
     }));
   if (!gracze.length) return null;
   return { gracze, ranking: gracze.map((g) => g.id), zwyciezca: gracze[0].id };
+}
+
+/* --- status gry wieloosobowej w panelu Informacje i pod wynikiem (uwaga terenowa 2026-09-16) --- */
+
+/**
+ * Etykiety statusu uczestnika (odpowiedź właściciela 2026-09-16):
+ * - `Aktywny` (nie zamknął wszystkich stacji, nie wyszedł — gra toczy się dalej),
+ * - `Opuścił grę` (zdarzenie `rezygnacja` od TEGO gracza),
+ * - `Zakończył trasę` (odpowiedział na pytania WSZYSTKICH `N` stacji).
+ */
+const STATUS_GRACZA_MULTI = Object.freeze({
+  opuscil: 'Opuścił grę',
+  ukonczyl: 'Zakończył trasę',
+  aktywny: 'Aktywny',
+});
+
+/**
+ * Wiersze przebiegu gry wieloosobowej — identyczne dla panelu Informacje
+ * i dla ekranu wyniku. Zwraca `null`, gdy nie ma co pokazać (brak kontekstu
+ * multi, brak graczy albo gra nie ma pełnego zestawu pytań). Ta sama tabela
+ * idzie do `#informacje-multi-wiersze` i `#gra-wyniki-multi-wiersze`.
+ */
+function tabelaPrzebieguMulti() {
+  const m = STAN.multi;
+  const gra = m?.gra;
+  if (!gra?.gracze?.length) return null;
+  const N = Number(gra.konfiguracja?.liczbaStacji) || 0;
+  if (!N) return null;
+  return gra.gracze.map((g) => {
+    // „uczestnicy w momencie startu gry”: `gra.gracze` już według mostu nie
+    // zmienia się po starcie (dołączanie tylko w lobby, wyjście w trakcie gry
+    // to rezygnacja-zdarzenie, a nie usunięcie z listy).
+    const p = postepGracza(gra, g.id); // `stacjeZamkniete` = liczba zdarzeń `odpowiedz`
+    const zamkniete = Math.min(p.stacjeZamkniete, N); // bezpieczny sufit N
+    const status = p.zrezygnowal
+      ? STATUS_GRACZA_MULTI.opuscil
+      : zamkniete >= N
+        ? STATUS_GRACZA_MULTI.ukonczyl
+        : STATUS_GRACZA_MULTI.aktywny;
+    return {
+      id: g.id,
+      imie: `${g.pseudonim}${g.id === m.graczId ? ' (Ty)' : ''}`,
+      stacje: `${zamkniete}/${N}`,
+      poprawne: `${p.poprawne}/${p.poprawne + p.bledne}`,
+      status,
+    };
+  });
+}
+
+/** Czy ten telefon w ogóle gra w sieci (hot-seat nigdy nie dostaje tej tabeli). */
+function jestGraMulti() {
+  return Boolean(STAN.multi?.gra && STAN.ekran === 'gra');
+}
+
+/** Wypełnia dolny blok ekranu wyniku (`#gra-wyniki-multi`). */
+function renderujWynikiMulti() {
+  const blok = $('gra-wyniki-multi');
+  if (!blok) return; // atrapa DOM nie parsuje HTML-a — węzły spoza szablonu są niewidzialne
+  const wiersze = jestGraMulti() ? tabelaPrzebieguMulti() : null;
+  blok.hidden = !wiersze;
+  if (!wiersze) return;
+  const tbody = $('gra-wyniki-multi-wiersze');
+  tbody.replaceChildren();
+  for (const w of wiersze) {
+    const tr = document.createElement('tr');
+    tr.className = w.status === STATUS_GRACZA_MULTI.ukonczyl
+      ? 'wiersz-ukonczyl'
+      : w.status === STATUS_GRACZA_MULTI.opuscil
+        ? 'wiersz-opuscil'
+        : '';
+    for (const tekst of [w.imie, w.stacje, w.poprawne, w.status]) {
+      const td = document.createElement('td');
+      td.textContent = tekst;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+}
+
+/** Wypełnia blok statusu w panelu Informacje (`#informacje-multi`). */
+function renderujInformacjeMulti() {
+  const blok = $('informacje-multi');
+  if (!blok) return;
+  const wiersze = jestGraMulti() ? tabelaPrzebieguMulti() : null;
+  blok.hidden = !wiersze;
+  if (!wiersze) return;
+  const tbody = $('informacje-multi-wiersze');
+  tbody.replaceChildren();
+  for (const w of wiersze) {
+    const tr = document.createElement('tr');
+    tr.className = w.status === STATUS_GRACZA_MULTI.ukonczyl
+      ? 'wiersz-ukonczyl'
+      : w.status === STATUS_GRACZA_MULTI.opuscil
+        ? 'wiersz-opuscil'
+        : '';
+    for (const tekst of [w.imie, w.stacje, w.poprawne, w.status]) {
+      const td = document.createElement('td');
+      td.textContent = tekst;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
+  // Status widoczny nad tabelą — podaje tylko, z jakiego momentu są dane.
+  const podSuma = $('informacje-multi-status');
+  const teraz = new Date();
+  podSuma.textContent = `Gra ${STAN.multi.gra.kod} (${STAN.multi.gra.stan === 'trwa' ? 'trwa' : 'zakończona'}) — stan z ostatniego odświeżenia, do ~30 s.`;
 }
 
 function renderujLobby() {

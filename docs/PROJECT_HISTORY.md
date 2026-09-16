@@ -6515,3 +6515,48 @@ audyt 15g + obie uwagi terenowe 2026-09-16. Kolejka pracy pusta.
 budżet **99 933 / 100 000** (rezerwa 67), cache **m12-147**.
 
 **Otwarte po sesji:** PR #35 (scalenie właściciela, squash).
+
+## Sesja 2026-09-16 (PR #35), dogrywka 3 — status graczy multi: panel Informacje i blok pod wynikiem
+
+**Zlecenie:** w grze multi (NIE hot-seat!), w obu trybach (trasa i wyścig), dla
+każdego gracza z hostem włącznie, panel Informacje ma pokazywać status gry
+multi — tabelę (Imię, zaliczone stacje, poprawne odpowiedzi, status
+Aktywny / Opuścił grę / Zakończył trasę). Aktualizacja co ~30 s, jeśli ktoś
+jest w panelu. Ta sama tabela może trafić pod wynik gracza kończącego grę.
+
+**Odpowiedzi właściciela (doprecyzowanie):**
+- zaliczone = liczba ODPOWIEDZI na stacje (nie samo dojście; `dojscie` bez
+  odpowiedzi nie domyka stacji — spójnie z tym, jak most kończy grę);
+- „Poprawne” z mianownikiem ROSNĄCYM — liczba udzielonych dotąd odpowiedzi;
+- odświeżanie z OSTATNIEGO znanego stanu (zwykły polling 30 s), bez dodatkowego
+  żądania do mostu przy otwarciu;
+- blok zostaje w Informacjach do momentu, aż gracz wejdzie w setup nowej gry
+  (`STAN.multi` gaśnie) — wtedy znika.
+
+**Implementacja:**
+- `app/app.js`: `STATUS_GRACZA_MULTI` (Aktywny / Opuścił grę / Zakończył
+  trasę), `tabelaPrzebieguMulti()` — jedno źródło wierszy dla `gra.gracze`
+  (uczestnicy z momentu startu), stacje `min(odpowiedzi, N)/N`, poprawne
+  `p.poprawne/(poprawne+bledne)` z `postepGracza` (nowy import); `jestGraMulti()`,
+  `renderujInformacjeMulti()` (#informacje-multi) i `renderujWynikiMulti()`
+  (#gra-wyniki-multi). Render wołany przy otwarciu panelu (`przelaczInformacje`),
+  na każde zdarzenie gry (`renderujGre`) i na każdy krok pollingu
+  (`onStanGryMulti`) — zero dodatkowych żądań.
+- `index.html`: blok `#informacje-multi` (tabela + podpis) w panelu Informacje
+  i `#gra-wyniki-multi` (tabela) POD wspólną tabelą `#gra-wyniki` w panelu
+  końca — ten drugi z `hidden` (hot-seat: ekran bez zmian).
+- `app/styles.css`: osobny, czytelny zapis 14 px dla tabel statusu (wyjątek
+  od ADR 0042) + kolory wierszy `wiersz-ukonczyl`/`wiersz-opuscil`.
+- ADR **0051** (status multi — pełnia decyzji) i aneks do ADR 0038
+  („Przebieg gry” pod tabelą nie odwraca minimalizmu); rejestr ADR uzupełniony.
+- Testy +5 (826): `wieloosobowa-ui.test.js` +3 (panel w grze + aktualizacja,
+  „Opuścił grę” po rezygnacji, przebieg pod wynikiem „Zakończył trasę”),
+  `aplikacja.test.js` +1 (hot-seat bez obu bloków), `kontrakt.test.js` +1
+  (węzły + kolejność pod tabelą wyniku).
+- Cache-bust **m12-147 → m12-148**.
+
+**Brama na koniec:** `npm test` **826/826**, `npm run check` OK, WCAG **0**,
+zasięg mostu **97,7%** (850/870), budżet **99 933 / 100 000** (rezerwa 67),
+cache **m12-148**.
+
+**Otwarte po sesji:** PR #35 (scalenie właściciela, squash).

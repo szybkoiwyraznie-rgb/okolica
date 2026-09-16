@@ -744,6 +744,24 @@ test('kontrakt: ekran gry — pełna lista id-ów potrzebnych wiringowi R4–R6 
   assert.ok(!html.includes('id="przycisk-start-gry"'), 'ręcznego startu nie ma — gra rusza sama po Sprawdź (decyzja 2026-09-07)');
 });
 
+test('kontrakt: status graczy multi — węzły są w HTML, a blok wyniku żyje POD wspólną tabelą', () => {
+  const html = czytaj('index.html');
+  // Panel Informacje: blok statusu gry wieloosobowej (uwaga terenowa 2026-09-16)
+  // jest W PAKIEcie z wierszami i podpisem. Jego znikniecie łamie całą funkcję.
+  assert.match(html, /id="informacje-multi"[\s\S]{0,400}id="informacje-multi-wiersze"[\s\S]{0,300}id="informacje-multi-status"/s,
+    'Informacje: blok statusu multi, wiersze i podpis w kolejności');
+  // Ekran wyniku: przebieg multi jest WE wnętrzu #gra-panel-koniec, po wspólnej
+  // tabeli `#gra-wyniki` — nie jako osobny panel fazy.
+  const panel = html.split('id="gra-panel-koniec"')[1].split('</section>')[0];
+  const iWyniki = panel.indexOf('id="gra-wyniki"');
+  const iMulti = panel.indexOf('id="gra-wyniki-multi"');
+  assert.ok(iWyniki >= 0 && iMulti > iWyniki, 'blok przebiegu multi jest pod tabelą wyniku, w panelu końca');
+  assert.match(panel, /id="gra-wyniki-multi" hidden/, 'dla hot-seata blok jest domyślnie ukryty (jawny atrybut)');
+  // Kolumny: Gracz | Stacje | Poprawne | Status — w obu tabelach.
+  assert.match(html, /id="informacje-multi-wiersze">/, 'tbody wierszy statusu multi');
+  assert.match(html, /id="gra-wyniki-multi-wiersze">/, 'tbody przebiegu pod wynikiem');
+});
+
 test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=button', () => {
   const html = czytaj('index.html');
   const kroki = html.split('<nav id="kroki"')[1].split('</nav>')[0];

@@ -3431,3 +3431,27 @@ for (const [adres, czyTest] of [['?tryb=test', true], ['', false]]) {
   });
 }
 
+
+/* ----------------- uwaga terenowa 2026-09-16: status multi NIE dotyczy hot-seata */
+
+test('hot-seat: panel Informacje i ekran wyniku NIE pokazują przebiegu multi', async () => {
+  const { dom, paczka } = await graGotowaDoStartu();
+  zaczynijGre(dom);
+
+  // W hot-seacie blok statusu multi w Informacjach zostaje schowany.
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('ekran-informacje').hidden, false, 'Informacje otwarte w grze');
+  assert.equal(dom.pobierz('informacje-multi').hidden, true, 'hot-seat nie dostaje tabeli statusu multi');
+
+  // Domykamy grę i sprawdzamy, że pod zwykłym wynikiem nie ma bloku przebiegu.
+  dom.kliknij('przycisk-zamknij-informacje');
+  for (const numer of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-symulacja-gra');
+    await czekaj(9 * 120 + 600);
+    kliknijOdpowiedz(dom, indeksPoprawnej(paczka.pytania.find((q) => q.stacja === numer)));
+    dom.kliknij('przycisk-nastepna-stacja');
+  }
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'koniec gry');
+  assert.equal(dom.pobierz('gra-wyniki-multi').hidden, true, 'ekran wyniku hot-seata bez przebiegu multi');
+});

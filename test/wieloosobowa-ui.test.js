@@ -894,6 +894,109 @@ test('uwaga terenowa 2026-09-16 pkt 1: gracz, który domknął wszystkie stacje,
   assert.equal(el(A, 'odliczanie').hidden, true, 'bez stacji do przejścia nie ma odliczania');
 });
 
+test('uwaga terenowa 2026-09-16: panel Informacje w grze multi pokazuje status wszystkich uczestników i aktualizuje się z postępem', async () => {
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+  const komorki = (tr) => tr.children.map((td) => td.textContent);
+
+  // W trakcie gry panel Informacje pokazuje tabelę wszystkich uczestników
+  // z momentu startu — z hostem włącznie.
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'host w grze');
+  await klik(A, 'przycisk-informacje');
+  assert.equal(el(A, 'ekran-informacje').hidden, false, 'Informacje otwarte');
+  assert.equal(el(A, 'informacje-multi').hidden, false, 'blok statusu multi widoczny');
+  let wiersze = [...el(A, 'informacje-multi-wiersze').children];
+  assert.equal(wiersze.length, 2, 'dwóch uczestników z momentu startu');
+  assert.deepEqual(komorki(wiersze[0]), ['Ala (Ty)', '0/3', '0/0', 'Aktywny'], 'host: imię, stacje 0/3, poprawne 0/0, Aktywny');
+  assert.deepEqual(komorki(wiersze[1]), ['Bartek', '0/3', '0/0', 'Aktywny'], 'gość');
+  await klik(A, 'przycisk-zamknij-informacje');
+
+  // Postęp Ali: dojście + poprawna odpowiedź na stacji 1 → tabela nadąża.
+  await przejdzStacje(A);
+  await przepompuj(A, 1); // krok pollingu: świeży stan mostu trafia do panelu
+  await klik(A, 'przycisk-informacje');
+  wiersze = [...el(A, 'informacje-multi-wiersze').children];
+  assert.deepEqual(komorki(wiersze[0]), ['Ala (Ty)', '1/3', '1/1', 'Aktywny'], 'po stacji Ali: 1/3 stacji, 1/1 poprawnych');
+  assert.deepEqual(komorki(wiersze[1]), ['Bartek', '0/3', '0/0', 'Aktywny'], 'Bartek bez zmian');
+  await klik(A, 'przycisk-zamknij-informacje');
+});
+
+test('uwaga terenowa 2026-09-16: status „Opuścił grę” u gracza, który zrezygnował w trakcie gry', async () => {
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+  const kod = kodGry(most);
+  const komorki = (tr) => tr.children.map((td) => td.textContent);
+
+  // Host kończy grę na swoim telefonie (⚙ + TAK) → rezygnacja na moście.
+  await potwierdzKoniecGry(A);
+  await czekajNa(B, () => most.znajdz(kod).zdarzenia.some((z) => z.typ === 'rezygnacja' && z.graczId === 'g-1'),
+    'rezygnacja Ali doszła na most');
+
+  // Gość widzi w Informacjach Ali jako „Opuścił grę”, siebie jako Aktywnego.
+  await przepompuj(B, 1);
+  await klik(B, 'przycisk-informacje');
+  assert.equal(el(B, 'informacje-multi').hidden, false, 'blok statusu widoczny u gracza, który dalej gra');
+  const wiersze = [...el(B, 'informacje-multi-wiersze').children];
+  assert.equal(wiersze.length, 2, 'uczestnicy z momentu startu zostają na liście');
+  assert.deepEqual(komorki(wiersze[0]), ['Ala', '0/3', '0/0', 'Opuścił grę'], 'rezygnacja = Opuścił grę, nie usunięcie z listy');
+  assert.deepEqual(komorki(wiersze[1]), ['Bartek (Ty)', '0/3', '0/0', 'Aktywny']);
+  await klik(B, 'przycisk-zamknij-informacje');
+});
+
+test('uwaga terenowa 2026-09-16: pod wspólnym wynikiem multi jest przebieg uczestników (Zakończył trasę)', async () => {
+  const most = atrapaMostu();
+  const pamiecA = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: pamiecA, most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+  await klik(A, 'przycisk-lobby-start');
+  await przepompuj(B, 1);
+  const kod = kodGry(most);
+  const komorki = (tr) => tr.children.map((td) => td.textContent);
+
+  // Oboje domykają całą trasę → most zamyka grę, Ala dostaje wspólny wynik.
+  await przejdzStacje(A);
+  await przejdzStacje(A);
+  await przejdzStacje(A);
+  await przepompuj(A, 1);
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  await przejdzStacje(B);
+  assert.equal(most.znajdz(kod).stan, 'zakonczona', 'most zamknął grę po wszystkich stacjach');
+  await przepompuj(A, 1);
+  assert.equal(el(A, 'gra-panel-koniec').hidden, false, 'ekran wyniku');
+  assert.equal(el(A, 'gra-wyniki-multi').hidden, false, 'blok przebiegu pod wspólnym wynikiem (multi)');
+  const wiersze = [...el(A, 'gra-wyniki-multi-wiersze').children];
+  assert.equal(wiersze.length, 2, 'przebieg wszystkich uczestników');
+  assert.deepEqual(komorki(wiersze[0]), ['Ala (Ty)', '3/3', '3/3', 'Zakończył trasę']);
+  assert.deepEqual(komorki(wiersze[1]), ['Bartek', '3/3', '3/3', 'Zakończył trasę']);
+});
+
 test('uwaga G: koniec gry hosta NIE kończy gry innym — gość gra dalej, a most domyka grę, gdy skończy', async () => {
   const most = atrapaMostu();
   const pamiecA = new Map();

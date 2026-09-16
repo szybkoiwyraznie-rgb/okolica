@@ -346,14 +346,23 @@ commit i nowa wersja aplikacji.
    i „stacja X z Y” zgadzają się wtedy z trasą. Gracz, który domknął wszystkie
    swoje stacje, widzi wynik (wspólny, gdy most zamknął grę — np. solo; własny
    do czasu domknięcia) i NIE wraca do lobby: tabela żywych wyników widowni nie
-   istnieje. Zdarzenia, które nie doszły na most (odpowiedź bez zasięgu), czekają
+   istnieje. Podgląd tego, co robią INNI, daje odtąd panel Informacje: w grze
+   multi (`STAN.multi?.gra` + ekran `gra`) jest w nim blok `#informacje-multi`
+   (`tabelaPrzebieguMulti`) — imię, zaliczone stacje, poprawne, status —
+   renderowany przy otwarciu panelu, na zdarzenia gry i na każdym kroku
+   pollingu bez dodatkowego żądania (ADR 0051). Zdarzenia, które nie doszły na
+   most (odpowiedź bez zasięgu), czekają
    w utrwalonej kolejce `okolica:multi-kolejka` i wychodzą PRZED pobraniem
    stanu gry — inaczej telefon zbudowałby trasę ze stacją, którą most właśnie
    domknął (ADR 0019 aneks 2026-09-13d).
 4. Koniec gry: punktację liczy most (`przeliczWyniki`), telefon rysuje ją na
    tym samym MINIMALNYM ekranie wyniku co hotseat (`wynikiMultiKonca`,
-   ADR 0038/0044), a most zapisuje grę w historii (`RO-gra/1`, stan
-   `zakonczona`). Ranking MIĘDZY grami ma własną warstwę z belki (ADR 0039).
+   ADR 0038/0044), a — w multi — POD wspólną tabelą dokłada blok „Przebieg
+   gry” (`#gra-wyniki-multi`): imię, zaliczone stacje (`odpowiedzi / N`),
+   poprawne (`poprawne / udzielone`), status Aktywny / Opuścił grę /
+   Zakończył trasę (`tabelaPrzebieguMulti`, ADR 0051). Most zapisuje grę
+   w historii (`RO-gra/1`, stan `zakonczona`). Ranking MIĘDZY grami ma własną
+   warstwę z belki (ADR 0039).
 5. Wyjście z lobby: POST `gra-opusc` prostuje skład gry, więc `liczbaGraczy`
    w `RO-lobby/1` nie obiecuje gracza, który wyszedł; wyjście organizatora
    zamyka grę (stan `archiwum`) i dlatego jest **dwustopniowe** — pierwszy klik
