@@ -6681,3 +6681,40 @@ szablony `PYT/1.1.2` / `PYT/1.1-nofc.2`, protokół `PYT/1.1`.
 **Otwarte po sesji:** PR #36 (scalenie właściciela, squash). W terenie bez
 zmian: paczka z promptu `PYT/1.1.2` (zasada 7, równa liczba pytań na stację,
 kotwiczenie) oraz polecenia z PR #35.
+
+## 2026-09-16c — otwarcie sesji `arena/01a0aa68-okolica` (PR w tym commicie)
+
+**Zlecenie:** „kontynuujemy projekt". Kamienie M0–M12 zamknięte jako zakres
+kodu (L68); bez uwag z terenu kolejka jest pusta, więc sesja robi to, co każe
+`AGENTS.md` §2 pkt 2: audyt poprzedniego scalonego PR (#36), a potem czeka na uwagi.
+
+**Brama startowa:** `npm test` **829 / 829**, `npm run budzet` **99 963 /
+100 000** (rezerwa 37), `main` = `7227617` (squash PR #36, scalony 2026-09-16
+13:10 UTC), cache-bust w `main` = `m12-149`.
+
+**Audyt PR #36** (squash `7227617` na `7974981`, 19 plików, +330/−77; testy
+w `main` 828 → 829). Zakres scalenia: naprawa przycisku „▶ Start gry” w lobby
+(`startLobby` przywraca stan w `finally` zamiast tylko w `catch`), test
+odtwarzający w `test/wieloosobowa-ui.test.js` (dwie gry w jednej sesji strony),
+porządki w `app/app.js` (usunięcie martwej zmiennej `const teraz`, usunięcie
+martwego importu `OGRANICZENIA`, uściślenie komentarza `czyscPlikiTymczasowe`),
+cache-bust `m12-148 → m12-149`, oraz LESSONS L77 z lustrem w archiwum i
+skróceniem szkieletów L71/L72/L74/L76 dla zachowania budżetu lektury.
+
+**Sprawdzone i zgodne (nie ruszane):**
+- Przywrócenie stanu przycisku `startLobby()` w bloku `finally`: stan `disabled`,
+  etykieta i klasa `pulsuje` wracają na każdej ścieżce (sukces i błąd).
+- Test odtwarzający w `test/wieloosobowa-ui.test.js`: testuje dokładnie scenariusz
+  dwóch gier bez przeładowania strony, przechodzi stabilnie.
+- Spójność podbicia `m12-149`: `index.html`, wszystkie `app/*.js`, `sw.js`
+  i testy kontraktowe — brak jakichkolwiek resztek `m12-148`.
+- Budżet lektury startowej: 99 963 / 100 000 tokenów (rezerwa 37).
+- Brama jakości: `npm test` 829/829, `npm run check` (szablony promptu zgodne),
+  `npm run audyt` (WCAG AA 0 naruszeń), `npm run zasieg-mostu` (97,7%).
+
+**Znalezione defekty:** brak. Wszystkie zmiany w PR #36 są czyste, logiczne
+i zgodne z ADR oraz protokołem.
+
+**Werdykt:** scalenie w pełni poprawne. Kamienie M0–M12 zamknięte; brak
+uwag z terenu w kolejce — sesja gotowa i oczekuje na uwagi z testów
+terenowych właściciela.
