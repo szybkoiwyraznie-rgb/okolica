@@ -228,8 +228,7 @@ commit i nowa wersja aplikacji.
    (odchylenie standardowe); sieć za uboga → wynik częściowy z kodem `S12`.
    Degradacja (ADR 0005 pkt 8, nigdy cicha): brak sieci → `stacjeProste`
    (pierścień, dystans w linii prostej) + ostrzeżenie w UI; start za daleko
-   od sieci → `S13`; tryb ręczny (pkt 8b) → organizator przeciąga pinezki
-   (`mapa.ustawTrybReczny`), dystans tylko w linii prostej.
+   od sieci → `S13` (tryb ręczny z pkt 8b usunięty 2026-09-16 — teren).
    Lista stacji trafia na mapę jako numerowane pinezki
    (`mapa.zaznaczStacje`), a promień gry jako przerywany okrąg.
    Nazwa miejsca: jedyna z obszarów administracyjnych TEGO SAMEGO
@@ -551,7 +550,7 @@ drugą odpowiedź tego gracza do tej stacji.
   brak ścieżek od korzenia w `index.html` (ADR 0002 pkt 3); rejestr ADR ↔ pliki
   na dysku i status w pliku ↔ status w rejestrze; geolokalizacja w `app.js`
   wyłącznie przez `pozycja.js` (brak `watchPosition`, `clearWatch` i opcji
-  watchera w warstwie DOM — ADR 0004 pkt 1); od M2 także: kompletność obu szkieletów paneli mapy w `index.html` (svg z `role="img"` i `aria-label`, przyciski z `type="button"`), zakaz domyślnego `display: none` dla atrybucji i obowiązkowe `touch-action: none` na panelu, brak `fetch`/geolokalizacji/`alert`/`node:` w `mapa.js`, a szablony URL kafelków identyczne z `docs/ASSETS.md` §1 (po ujednoliceniu zapisu poddomen `{s}` ↔ `{a,b,c}`); od M4 także: przycisk trybu ręcznego (`przycisk-reczne`) z `aria-pressed="false"` i `hidden`, ZAKAZ przycisku wymuszającego pierścień (`przycisk-pierścien` usunięty z UI 2026-09-11 — degradacja do pierścienia jest automatyczna; kontrakt asertuje jego brak), pole błędów sieci `#bledy-stacje` z `role="alert"` i zakaz `alert()` przy błędach Overpass.
+  watchera w warstwie DOM — ADR 0004 pkt 1); od M2 także: kompletność obu szkieletów paneli mapy w `index.html` (svg z `role="img"` i `aria-label`, przyciski z `type="button"`), zakaz domyślnego `display: none` dla atrybucji i obowiązkowe `touch-action: none` na panelu, brak `fetch`/geolokalizacji/`alert`/`node:` w `mapa.js`, a szablony URL kafelków identyczne z `docs/ASSETS.md` §1 (po ujednoliceniu zapisu poddomen `{s}` ↔ `{a,b,c}`); od M4 także: ZAKAZ przycisku trybu ręcznego (`przycisk-reczne` usunięty z UI 2026-09-16 — drag pinezek nie działał na iPhonie; kontrakt asertuje jego brak), ZAKAZ przycisku wymuszającego pierścień (`przycisk-pierścien` usunięty z UI 2026-09-11 — degradacja do pierścienia jest automatyczna; kontrakt asertuje jego brak), pole błędów sieci `#bledy-stacje` z `role="alert"` i zakaz `alert()` przy błędach Overpass.
 - Warstwa DOM: testy na atrapie `test/helpers/dom.js` — `zainstalujDom()` zakłada
   świeże globale i zwraca uchwyty (`kliknij`, `wyslijZdarzenieDokumentu`,
   `wyslijZdarzenieOkna`, `ustawHidden`, `ustawGeolokalizacje`, `ustawProstokat`),

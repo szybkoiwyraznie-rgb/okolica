@@ -24,7 +24,7 @@ import {
   zbudujPrompt,
 } from './protokol.js?v=m12-152';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, uzupelnijOdleglosci, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-152';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-152';
 import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-152';
 import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-152';
 import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-152';
@@ -238,8 +238,6 @@ const STAN = {
   siec: { stan: 'brak', dane: null, klucz: null, trybGrafu: null, graf: null, kandydaci: null, zCache: false },
   /** Wynik `wybierzStacje` (macierz, sprawiedliwość sieciowa) albo null przy pierścieniu. */
   wynikSieci: null,
-  /** Tryb ręczny (ADR 0005 pkt 8b): organizator przeciąga pinezki stacji. */
-  trybReczny: false,
   /** Odstęp między instancjami Overpass; `?odstep=0` skraca go w testach. */
   odstepOverpassMs: POLITYKA.odstepMs,
   /** Dwustopniowe kasowanie danych: pierwszy klik uzbraja, drugi kasuje. */
@@ -2013,7 +2011,7 @@ function przeliczZTegoCoJest() {
       const odrzuconeWejscia = wynik.wejscie?.odrzucone?.length ?? 0;
       status(mijaneWejscia
         ? 'Trasa od startu do stacji 1 mija inną stację (kod S14) — w tej okolicy sieć dróg nie dała układu bez mijania.'
-          + ' Możesz przesunąć piny ręcznie albo zwiększyć promień gry.'
+          + ' Zwiększ czas gry albo zmień okolicę.'
         : (wynik.usterki.length
           ? `Sieć jest za uboga na ${zamowione} stacji — w grze będzie ${wynik.stacje.length} (kod S12). Zwiększ czas gry albo zmień okolicę, jeśli chcesz komplet.`
           : `Stacje z sieci drogowej: ${wynik.stacje.length} punktów osiągalnych w promieniu ${STAN.konfig.promienM} m.`
@@ -2056,7 +2054,7 @@ async function przeliczStacjeZPobraniem(klucz) {
   try {
     const ok = await pobierzSiec(Date.now());
     if (!ok && STAN.siec.stan !== 'gotowa') {
-      status('Sieć drogowa niedostępna — stacje w trybie uproszczonym (pierścień): osiągalność niezweryfikowana. Sprawdź połączenie albo ustaw stacje ręcznie.');
+      status('Sieć drogowa niedostępna — stacje w trybie uproszczonym (pierścień): osiągalność niezweryfikowana. Sprawdź połączenie z internetem.');
     }
     przeliczZTegoCoJest();
   } finally {
@@ -2089,7 +2087,6 @@ function przeliczStacje() {
   $('siec-proby').textContent = '';
   $('siec-proby').hidden = true;
   pokazBledy('bledy-stacje', []); // błędy POPRZEDNIEJ próby gasną; nowa próba pokaże własne
-  wylaczTrybReczny(); // nowy układ zastępuje ręcznie przesunięte pinezki
   const klucz = kluczSieci();
   if (STAN.siec.stan !== 'gotowa' || STAN.siec.klucz !== klucz) {
     const zCache = odczytajCacheSieci(klucz, Date.now());
@@ -2101,35 +2098,6 @@ function przeliczStacje() {
     }
   }
   przeliczZTegoCoJest();
-}
-
-/**
- * Tryb ręczny (ADR 0005 pkt 8b): przeciąganie pinezek na mapie stacji.
- * Dystans liczemy TYLKO w linii prostej i mówimy o tym wprost (pkt 8c).
- */
-function przestawStacjeRecznie(index, punkt) {
-  const stara = STAN.stacje[index];
-  if (!stara) return;
-  const przeniesiona = { ...stara, lat: punkt.lat, lon: punkt.lon, zrodlo: 'reczne' };
-  // pola sieciowe tracą sens po przesunięciu poza wyznaczoną ścieżkę
-  delete przeniesiona.sciezkaPunkty;
-  delete przeniesiona.dystansSieciowyM;
-  delete przeniesiona.wezel;
-  delete przeniesiona.typKandydata;
-  STAN.stacje = uzupelnijOdleglosci(
-    STAN.stacje.map((s, i) => (i === index ? przeniesiona : s)),
-    STAN.pozycja,
-  );
-  STAN.wynikSieci = null; // układ nie jest już wynikiem wyboru z sieci
-  renderujStacje();
-  odswiezWarstwy();
-}
-
-function wylaczTrybReczny() {
-  if (!STAN.trybReczny) return;
-  STAN.trybReczny = false;
-  $('przycisk-reczne').setAttribute('aria-pressed', 'false');
-  if (STAN.mapy.stacje) STAN.mapy.stacje.ustawTrybReczny(false);
 }
 
 function renderujStacje() {
@@ -2146,7 +2114,6 @@ function renderujStacje() {
       ? `Wygenerowano i zlokalizowano stacji: ${STAN.stacje.length}. Nazwy i położenie są ukryte — trasa odsłania się w czasie gry, po jednej stacji.`
       : `Wygenerowano stacji: ${STAN.stacje.length}, ale NIE zlokalizowano ich na sieci dróg (układ pierścieniowy, osiągalność niezweryfikowana). Nazwy i położenie są ukryte — trasa odsłania się w czasie gry, po jednej stacji.`;
     $('stacje-tryb').textContent = 'Tryb tajnej trasy: mapa i lista nie pokazują stacji.';
-    $('przycisk-reczne').hidden = true; // przeciąganie pinezek pokazałoby stacje
     // „Inny układ" też odsłania stacje (nowy układ = inne punkty do zgadnięcia),
     // a właściciel w tajnej trasie tej opcji nie chce wcale.
     $('przycisk-przelicz').hidden = true;
@@ -2167,18 +2134,11 @@ function renderujStacje() {
     const miejsce = STAN.miejsce ? ` · miejsce: ${STAN.miejsce}` : '';
     const cache = STAN.siec.zCache ? ' (z pamięci telefonu — Overpass nie został wywołany)' : '';
     $('stacje-tryb').textContent = `${ZRODLA_STACJI.siec}${cache}${miejsce}.`;
-    $('przycisk-reczne').hidden = true;
     // Sieć z cache (telefon pamięta okolicę) daje ponowienie — świeże pobranie
     // omija cache; przy danych sprzed chwili przycisk nie ma sensu.
     $('przycisk-siec-ponow').hidden = !STAN.siec.zCache;
   } else {
     $('stacje-tryb').textContent = `${ZRODLA_STACJI.pierscien}. Stacje z sieci dróg, placów i szlaków pojawią się po pobraniu danych Overpass — wymaga połączenia z internetem.` + ADR(' (ADR 0005)');
-    if (STAN.trybReczny) {
-      $('stacje-tryb').textContent += ' Tryb ręczny WŁĄCZONY: przeciągnij pinezki na mapie. Dystans pokazujemy tylko w linii prostej — osiągalność niezweryfikowana.';
-    } else if (STAN.stacje.some((s) => s.zrodlo === 'reczne')) {
-      $('stacje-tryb').textContent += ` Część stacji ${ZRODLA_STACJI.reczne} — dystans w linii prostej.`;
-    }
-    $('przycisk-reczne').hidden = false;
     $('przycisk-przelicz').hidden = false; // poza tajną trasą „Inny układ" jest dostępny
     $('przycisk-siec-ponow').hidden = STAN.siec.stan === 'gotowa';
   }
@@ -2960,9 +2920,9 @@ async function przyjmijZestawDoGry({ stacje, paczka, zrodlo, factcheck = true })
     return false;
   }
   // Uwaga B 2026-09-14 (dogrywka): paczka niesie KOLEJNOŚĆ AUTORA (papierową —
-  // sprzed twardego wejścia albo po ręcznych przesunięciach pinów). Grę
-  // stawiamy w kolejności trasy od BIEŻĄCEJ pozycji; pytania przepinają się
-  // za nowymi numerami, id i poprawne zostają (ADR 0005 aneks).
+  // sprzed twardego wejścia). Grę stawiamy w kolejności trasy od BIEŻĄCEJ
+  // pozycji; pytania przepinają się za nowymi numerami, id i poprawne
+  // zostają (ADR 0005 aneks).
   let stacjeGry = stacje.map((s, i) => ({ id: s.id ?? i + 1, lat: s.lat, lon: s.lon, opis: s.opis ?? '' }));
   // Profil źródeł zestawu: pieczątka w paczce, a dla zestawów bez niej —
   // `meta.factcheck` z pliku (brak pola = paczka zweryfikowana).
@@ -3068,7 +3028,7 @@ function startGry() {
     czasMs: zegarGry(),
     ziarno: ziarno(),
     // ADR 0014 pkt 1: układ z sieci niesie dystanse drogowe (STAN.wynikSieci
-    // istnieje tylko wtedy — pierścień i ręczne przesunięcia go kasują).
+    // istnieje tylko wtedy — pierścień go kasuje).
     dystanseOdcinkowM: dystanseOdcinkowM(STAN.wynikSieci),
   });
   STAN.historiaFixow = [];
@@ -3928,9 +3888,9 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
   // Pieczątka profilu źródeł: wie o nim aplikacja (ptaszek na ekranie promptu),
   // więc zapisuje je w paczce — model nie ma nic do zgłaszania (ADR 0050).
   STAN.paczka = normalizujTematyPaczki({ ...robocza, factcheck: STAN.promptFactcheck === true });
-  // Uwaga B 2026-09-14 (dogrywka): ręczne przesunięcia pinów mogły rozjechać
-  // kolejność stacji — przed wysyłką na Drive i startem stawiamy grę w
-  // kolejności trasy od bieżącej pozycji (paczka rodzi się uporządkowana).
+  // Uwaga B 2026-09-14 (dogrywka): kolejność stacji mogła rozjechać się
+  // z trasą — przed wysyłką na Drive i startem stawiamy grę w kolejności
+  // trasy od bieżącej pozycji (paczka rodzi się uporządkowana).
   let przestawionoWklejke = false;
   if (STAN.pozycja && STAN.stacje.length > 1) {
     // Metryka porządkowania musi być TA, którą stacje wybrano. Sieć drogowa
@@ -5920,25 +5880,6 @@ function start() {
     STAN.obrot = (STAN.obrot + 360 / (STAN.konfig.liczbaStacji * 2)) % 360;
     przeliczStacje();
     status('Przeliczono układ stacji (inne ziarno).');
-  });
-  $('przycisk-reczne').addEventListener('click', () => {
-    if (STAN.trybReczny) {
-      wylaczTrybReczny();
-      renderujStacje();
-      status('Tryb ręczny wyłączony — pinezki zostają tam, gdzie je postawiłeś.');
-      return;
-    }
-    if (STAN.stacje.length === 0) {
-      status('Najpierw rozstaw stacje (pierścień albo sieć drogowa), potem poprawiaj je ręcznie.');
-      return;
-    }
-    STAN.trybReczny = true;
-    $('przycisk-reczne').setAttribute('aria-pressed', 'true');
-    if (STAN.mapy.stacje) {
-      STAN.mapy.stacje.ustawTrybReczny(true, przestawStacjeRecznie);
-    }
-    renderujStacje();
-    status('Tryb ręczny: przeciągnij pinezki na mapie. Dystans liczymy w linii prostej — osiągalności NIE weryfikujemy.' + ADR(' (ADR 0005 pkt 8)'));
   });
   $('przycisk-dalej-prompt').addEventListener('click', () => {
     // Uwaga terenowa G.a (właściciel, 2026-09-12): każda NOWA generacja

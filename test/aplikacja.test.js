@@ -996,48 +996,19 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
     'degradacja rozstawia pierścień (ADR 0005 pkt 8)');
 });
 
-test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia prosta', async () => {
+test('stacje: degradacja bez sieci = sam pierścień, bez trybu ręcznego (teren 2026-09-16)', async () => {
   const domAtrapa = await aplikacjaZSiecia(); // bez window.fetch → pierścień
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
-  assert.equal(domAtrapa.pobierz('przycisk-reczne').hidden, false, 'przy degradacji organizator może poprawić stacje ręcznie');
-  // stan początkowy aria-pressed="false" pilnuje kontrakt HTML (atrapa nie parsuje atrybutów)
-
-  const wyslijNa = (el, typ, zdarzenie) => {
-    for (const fn of el.zdarzenia[typ] ?? []) fn({ type: typ, preventDefault() {}, ...zdarzenie });
-  };
-
-  domAtrapa.kliknij('przycisk-reczne');
-  assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'true');
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /Tryb ręczny WŁĄCZONY/);
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /linii prostej/);
-  assert.match(domAtrapa.pobierz('status').textContent, /Tryb ręczny/);
-
-  // przeciągnij pierwszą pinezkę na mapie stacji (gest: pinezka → SVG capture)
-  const pinezki = domAtrapa.pobierz('mapa-stacje-pinezki');
-  const svg = domAtrapa.pobierz('mapa-stacje-svg');
-  assert.ok(pinezki.children.length >= 3, 'pierścień rozstawiony na mapie');
-  // Spisu stacji nie ma (właściciel 2026-09-15, uwaga 5): skutkiem
-  // przeciągnięcia jest nowe miejsce pinezki na mapie, nie wiersz listy.
-  const miejscePrzed = pinezki.children[0].getAttribute('transform');
-  wyslijNa(pinezki.children[0], 'pointerdown', { pointerId: 11, clientX: 0, clientY: 0, stopPropagation() {} });
-  wyslijNa(svg, 'pointermove', { pointerId: 11, clientX: 100, clientY: 100 });
-  wyslijNa(svg, 'pointerup', { pointerId: 11 });
-  const miejscePo = pinezki.children[0].getAttribute('transform');
-  assert.notEqual(miejscePo, miejscePrzed, 'pinezka stoi w nowym miejscu');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
   assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /^Wygenerowano \d+ stacji\.$/,
-    'podsumowanie mówi tylko, ile stacji — bez dystansów i opisów');
-
-  domAtrapa.kliknij('przycisk-reczne'); // stop
-  assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'false');
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /ustawione ręcznie przez organizatora/, 'po wyłączeniu UI nadal mówi, że stacja jest ręczna');
-
-  // „Inny układ" gasi tryb ręczny i przywraca czysty pierścień
-  domAtrapa.kliknij('przycisk-przelicz');
-  assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'false');
-  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('ręcznie'), 'nowy układ nie udaje ręcznego');
-  assert.ok(!domAtrapa.pobierz('stacje-podsumowanie').textContent.includes('ręcznie'),
-    'podsumowanie nie zależy od trybu ręcznego');
+    'degradacja rozstawia pierścień (ADR 0005 pkt 8)');
+  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('ręcznie'), 'żadnej wzmianki o ręcznym ustawianiu');
+  // przycisk zniknął z index.html (kontrakt pilnuje braku); tu: żaden klik nie jest podpięty
+  assert.equal(domAtrapa.pobierz('przycisk-reczne').zdarzenia.click, undefined, 'nie ma czego klikać');
+  const pinezki = domAtrapa.pobierz('mapa-stacje-pinezki');
+  assert.ok(pinezki.children.length >= 3, 'pierścień rozstawiony na mapie');
+  assert.equal(pinezki.children[0].zdarzenia.pointerdown, undefined, 'pinezki nie dają się przeciągać');
 });
 
 /* --------------------------------------- M5/J3: podgląd i edycja organizatora */

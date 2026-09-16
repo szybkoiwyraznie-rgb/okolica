@@ -192,7 +192,7 @@ export function punktNaEkranie(lat, lon, widok) {
 
 /**
  * Piksele ekranu → współrzędne geograficzne (odwrotność `punktNaEkranie`).
- * Podstawa przeciągania pinezek w trybie ręcznym (ADR 0005 pkt 8b).
+ * Podstawa stuknięcia w mapę (nasłuch D3, `ustawNasluchStukniecia`).
  */
 export function wspolrzedneZEkranu(xPx, yPx, widok) {
   sprawdzWidok(widok);
@@ -550,14 +550,8 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
     sygnaturaKafelkow: '',
     /** Środek zadany przy schowanym panelu — do zastosowania przy pierwszym rysowaniu (T2). */
     oczekujacySrodek: null,
-    /** Tryb ręczny (ADR 0005 pkt 8b): pinezki-stacje można przeciągać. */
-    trybReczny: false,
-    onStacjaPrzesunieta: null,
     onStukniecie: null,
   };
-
-  /** Pinezka trzymana palcem: `{ index, pointerId, lat, lon }` albo null. */
-  let przeciegana = null;
 
   // start bez środka: Warszawa (jak w `domyslnaKonfiguracja`), a zoom nigdy
   // ponad to, co podkład naprawdę ma — inaczej prosilibyśmy o nieistniejące kafelki
@@ -624,19 +618,10 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
         const klasy = ['pinezka'];
         if (p.aktywna) klasy.push('pinezka-aktywna');
         if (p.zaliczona) klasy.push('pinezka-zaliczona');
-        if (stan.trybReczny) klasy.push('pinezka-reczna');
         const grupa = doc.createElementNS(PRZESTRZEN_SVG, 'g');
         grupa.setAttribute('class', klasy.join(' '));
         grupa.setAttribute('transform', `translate(${p.x} ${p.y})`);
         grupa.setAttribute('data-stacja', p.id);
-        if (stan.trybReczny) {
-          // cel dotykowy ≥ 44 px (ADR 0011): przezroczyste koło pod pinezką
-          const dotyk = doc.createElementNS(PRZESTRZEN_SVG, 'circle');
-          dotyk.setAttribute('r', 24);
-          dotyk.setAttribute('class', 'pinezka-dotyk');
-          grupa.appendChild(dotyk);
-          grupa.addEventListener('pointerdown', (z) => naPinezkaDown(z, i));
-        }
         const kolo = doc.createElementNS(PRZESTRZEN_SVG, 'circle');
         kolo.setAttribute('r', 13);
         const numer = doc.createElementNS(PRZESTRZEN_SVG, 'text');
@@ -648,22 +633,6 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
         return grupa;
       }),
     );
-  }
-
-  /** Palec na pinezce w trybie ręcznym: przechwytujemy gest — pan nie startuje. */
-  function naPinezkaDown(zdarzenie, index) {
-    if (!stan.trybReczny || zdarzenie.pointerId === undefined) return;
-    if (typeof zdarzenie.stopPropagation === 'function') zdarzenie.stopPropagation();
-    przeciegana = { index, pointerId: zdarzenie.pointerId, lat: null, lon: null };
-    // capture na SVG, nie na pinezce: ruch i puszczenie obsłużą istniejące
-    // nasłuchy warstwy (jedno miejsce logiki gestów)
-    if (typeof svg.setPointerCapture === 'function') {
-      try {
-        svg.setPointerCapture(zdarzenie.pointerId);
-      } catch {
-        /* wskaźnik poza elementem — przeciąganie i tak działa do puszczenia */
-      }
-    }
   }
 
   function rysujMarker(plan) {
@@ -742,7 +711,6 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
 
   function naPointerDown(zdarzenie) {
     if (zdarzenie.pointerId === undefined) return;
-    if (przeciegana) return; // palec trzyma pinezkę — widok stoi w miejscu
     aktywne.set(zdarzenie.pointerId, { x: zdarzenie.clientX, y: zdarzenie.clientY });
     if (typeof svg.setPointerCapture === 'function') {
       try {
@@ -766,22 +734,6 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
   }
 
   function naPointerMove(zdarzenie) {
-    if (przeciegana && zdarzenie.pointerId === przeciegana.pointerId) {
-      const rect = rozmiarPanelu(kontener);
-      const geo = wspolrzedneZEkranu(
-        zdarzenie.clientX - (rect.lewa ?? 0),
-        zdarzenie.clientY - (rect.gorna ?? 0),
-        stan.widok,
-      );
-      // siatka ~0.1 m: bez drżenia liczb na liście stacji
-      przeciegana.lat = Math.round(geo.lat * 1e6) / 1e6;
-      przeciegana.lon = Math.round(geo.lon * 1e6) / 1e6;
-      stan.stacje = stan.stacje.map((s, i) => (
-        i === przeciegana.index ? { ...s, lat: przeciegana.lat, lon: przeciegana.lon } : s
-      ));
-      rysuj();
-      return;
-    }
     const punkt = aktywne.get(zdarzenie.pointerId);
     if (!punkt) return;
     const poprzedni = { x: punkt.x, y: punkt.y };
@@ -808,20 +760,6 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
   }
 
   function naPointerUp(zdarzenie) {
-    if (przeciegana && zdarzenie.pointerId === przeciegana.pointerId) {
-      const { index, lat, lon } = przeciegana;
-      przeciegana = null;
-      if (typeof svg.releasePointerCapture === 'function') {
-        try {
-          svg.releasePointerCapture(zdarzenie.pointerId);
-        } catch {
-          /* już zwolniony */
-        }
-      }
-      // bez ruchu palca lat/lon są null — pinezka zostaje, gdzie była
-      if (lat !== null && stan.onStacjaPrzesunieta) stan.onStacjaPrzesunieta(index, { lat, lon });
-      return;
-    }
     aktywne.delete(zdarzenie.pointerId);
     if (aktywne.size < 2) ostatniaOdleglosc = null;
     if (typeof svg.releasePointerCapture === 'function') {
@@ -839,7 +777,7 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
         && zdarzenie.type === 'pointerup' && typeof stan.onStukniecie === 'function') {
         const rect = rozmiarPanelu(kontener);
         const geo = wspolrzedneZEkranu(gest.x - (rect.lewa ?? 0), gest.y - (rect.gorna ?? 0), stan.widok);
-        // siatka ~0.1 m jak przy przeciąganiu pinezek — bez drżenia liczb
+        // siatka ~0.1 m — bez drżenia liczb
         stan.onStukniecie({
           lat: Math.round(geo.lat * 1e6) / 1e6,
           lon: Math.round(geo.lon * 1e6) / 1e6,
@@ -949,16 +887,6 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
       return rysuj();
     },
     /**
-     * Tryb ręczny (ADR 0005 pkt 8b): pinezki-stacje można przeciągać.
-     * `onZmiana(indexStacji, {lat, lon})` wołane raz, po puszczeniu palca.
-     */
-    ustawTrybReczny(aktywny, onZmiana = null) {
-      stan.trybReczny = Boolean(aktywny);
-      stan.onStacjaPrzesunieta = typeof onZmiana === 'function' ? onZmiana : null;
-      if (!stan.trybReczny) przeciegana = null;
-      return rysuj();
-    },
-    /**
      * Nasłuch krótkiego stuknięcia (zadanie właściciela D3): `fn({lat, lon})`
      * wołane po czystym tap-ie (jeden palec, ruch < 10 px, bez pinch-a).
      * Bramkowanie sensu (tryb testowy, ekran) zostaje po stronie aplikacji.
@@ -978,7 +906,6 @@ export function utworzMape({ id = 'mapa', podklad = 'osm', zoom = 16, srodek = n
       nasluchy.length = 0;
       for (const warstwa of Object.values(warstwy)) if (warstwa) warstwa.replaceChildren();
       aktywne.clear();
-      przeciegana = null;
       stan.plan = null;
     },
   };

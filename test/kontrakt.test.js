@@ -394,10 +394,13 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
   // wymuszanie z nikim się nie konsultowało w terenie.
   assert.equal(INDEX.includes('id="przycisk-pierścien"'), false, 'przycisk „Tryb uproszczony" usunięty z ekranu stacji');
 
-  const reczne = INDEX.match(/<button id="przycisk-reczne"[^>]*>/)?.[0];
-  assert.ok(reczne, 'brak przycisku trybu ręcznego (ADR 0005 pkt 8b)');
-  assert.match(reczne, /aria-pressed="false"/, 'tryb ręczny startuje wyłączony');
-  assert.match(reczne, /\bhidden\b/, 'widoczny dopiero na ekranie stacji bez sieci');
+  // Właściciel 2026-09-16 (teren): tryb ręczny usunięty w całości —
+  // przeciąganie pinezek nie działało na iPhonie. Jak przycisk-pierścien:
+  // kontrakt asertuje BRAK przycisku, kodu i styli.
+  assert.equal(INDEX.includes('id="przycisk-reczne"'), false, 'przycisk „Ustaw stacje ręcznie" usunięty z ekranu stacji');
+  assert.equal(/ustawTrybReczny|przestawStacjeRecznie|przycisk-reczne/.test(APP), false, 'app.js nie zna trybu ręcznego');
+  assert.equal(/ustawTrybReczny|przeciegana|pinezka-reczna/.test(czytaj('app/mapa.js')), false, 'mapa.js nie ma drag pinezek');
+  assert.equal(/pinezka-reczna|pinezka-dotyk/.test(czytaj('app/styles.css')), false, 'style drag pinezek usunięte');
 
   assert.match(INDEX, /id="bledy-stacje"[^>]*role="alert"/, 'błędy sieci drogowej w polu role=alert (nie alert())');
 

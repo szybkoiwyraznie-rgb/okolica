@@ -64,7 +64,7 @@ Koniec sesji:
    stacje; „🔄 Inny układ” losuje od nowa. Gdy sieć jest za uboga, gra ma tyle
    stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci gra
    schodzi do pierścienia z jawnym komunikatem („osiągalność
-   niezweryfikowana”), a do ręki zostaje „✋ Ustaw stacje ręcznie”.
+   niezweryfikowana”).
 4. Ekran **pytań**: „⧉ Kopiuj prompt” kopiuje do schowka i **od razu
    przechodzi** na ekran 5 (uwaga terenowa 2026-09-16) — chyba że schowek
    odmówił, wtedy tekst zostaje zaznaczony i aplikacja zostaje na miejscu,

@@ -60,18 +60,18 @@ export const POLITYKA = {
 /** Kody usterek warstwy sieci — rodzina „S" (jak K/P/G/E w pozostałych). */
 export const KODY_SIECI = {
   S01: 'Odpowiedź Overpass nie jest obiektem z listą `elements` — instancja zwróciła coś, czego nie rozumiemy.',
-  S02: 'Brak danych sieci drogowej w tej okolicy — Overpass nie zwrócił żadnych dróg. Ustaw stacje ręcznie albo zmień okolicę.',
-  S03: 'Wszystkie instancje Overpass odmówiły albo są przeciążone. Spróbuj później albo ustaw stacje ręcznie.',
+  S02: 'Brak danych sieci drogowej w tej okolicy — Overpass nie zwrócił żadnych dróg. Zmień okolicę albo tryb.',
+  S03: 'Wszystkie instancje Overpass odmówiły albo są przeciążone. Spróbuj później przyciskiem „Pobierz sieć ponownie”.',
   S04: 'Dane sieci są za duże na pamięć przeglądarki — gramy bez cache (następna gra w tej okolicy znów pobierze sieć).',
   S05: 'Brak poprawnego środka zapytania (współrzędne pozycji startowej).',
   S06: 'Promień zapytania musi być dodatnią liczbą metrów.',
   S07: 'Nieznany tryb poruszania — zapytanie budujemy tylko dla piesza/rower/samochód.',
   S08: 'Część dróg przyszła bez geometrii (tylko numery węzłów) — zostały pominięte.',
-  S09: 'W tej okolicy nie ma ANI JEDNEJ drogi dostępnej dla wybranego trybu — ustaw stacje ręcznie albo zmień tryb/okolicę.',
+  S09: 'W tej okolicy nie ma ANI JEDNEJ drogi dostępnej dla wybranego trybu — zmień tryb albo okolicę.',
   S10: 'Dijkstra dostała węzeł startowy spoza grafu.',
   S11: 'Graf zbudowano dla innego trybu niż wybór kandydatów — pieszy nie oceni sieci samochodowej.',
   S12: 'Sieć jest za uboga: udało się wybrać mniej stacji, niż prosi konfiguracja.',
-  S13: 'Pozycja startowa jest za daleko od dostępnej sieci dróg — zmień pozycję albo ustaw stacje ręcznie.',
+  S13: 'Pozycja startowa jest za daleko od dostępnej sieci dróg — zmień pozycję albo okolicę.',
   S14: 'Trasa do pierwszej stacji mija inną stację — w tej okolicy sieć dróg nie dała układu bez mijania.',
 };
 

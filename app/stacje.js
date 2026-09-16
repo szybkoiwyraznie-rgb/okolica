@@ -3,7 +3,7 @@
  *
  * Docelowo stacje pochodzą z sieci drogowej pobranej z Overpass API (ADR 0005,
  * kamień M4). W M0 działa **tryb uproszczony**: punkty na pierścieniu wokół
- * pozycji startowej, z deterministycznym rozrzutem pod ziarnem (ADR 0005 pkt 8b).
+ * pozycji startowej, z deterministycznym rozrzutem pod ziarnem (ADR 0005 pkt 8).
  * Tryb uproszczony NIE gwarantuje osiągalności — UI musi to mówić wprost.
  *
  * Moduł czysty: bez DOM, bez sieci, bez `Math.random()` (losowość z ziarna).
@@ -16,7 +16,6 @@ import { rngZZiarna } from './konfig.js?v=m12-152';
 export const ZRODLA_STACJI = {
   pierscien: 'tryb uproszczony (pierścień) — osiągalność niezweryfikowana',
   siec: 'sieć drogowa (Overpass) — punkty osiągalne',
-  reczne: 'ustawione ręcznie przez organizatora',
 };
 
 /**
