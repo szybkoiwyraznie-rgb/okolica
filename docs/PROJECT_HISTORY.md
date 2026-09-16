@@ -6560,3 +6560,33 @@ zasięg mostu **97,7%** (850/870), budżet **99 933 / 100 000** (rezerwa 67),
 cache **m12-148**.
 
 **Otwarte po sesji:** PR #35 (scalenie właściciela, squash).
+
+## Sesja 2026-09-16 (PR #35), dogrywka 4 — hot-seat: odpowiedzi graczy w panelu Informacje
+
+**Zlecenie (dopełnienie dogrywki 3):** analogicznie do multi, w grach HOTSEAT
+panel Informacje dostaje tabelę każdego gracza biorącego udział: „Gracz” +
+„Ilość odpowiedzi poprawnych” (np. 1/3). Tylko w layerze Informacje i TYLKO
+podczas gry; po zamknięciu/zakończeniu gry nic nie doklejamy do panelu.
+
+**Doprecyzowanie właściciela:** mianownik ROSNĄCY (jak w multi) — udzielone
+dotąd odpowiedzi (`1/1`, `1/2`…), nie stała liczba pytań gracza.
+
+**Implementacja:**
+- `index.html`: `#informacje-hotseat` (nagłówek „Gra lokalna — odpowiedzi
+  graczy” + tabela 2 kolumn + `#informacje-hotseat-wiersze`), `hidden`
+  domyślnie, w panelu Informacje pod blokiem multi.
+- `app/app.js`: `tabelaInformacjeHotseat()` (z `podsumowanie(rozgrywka).gracze`
+  → `poprawne/(poprawne+bledne)`) i `renderujInformacjeHotseat()` — bramka
+  `czyGraToczySie() && !STAN.multi`; render przy otwarciu panelu i na końcu
+  `renderujGre()` (znika przy końcu gry). Hot-seat NIGDY nie dokleja bloku po
+  zakończeniu — warunek fazy `koniec` / ręcznego końca go wygasza.
+- `app/styles.css`: spójne 14 px jak w tabeli multi.
+- Testy +2 (`test/aplikacja.test.js`: tabela 2 graczy z rosnącym mianownikiem
+  + brak bloku po zakończeniu; `test/kontrakt.test.js`: węzły + dokładnie dwie
+  kolumny).
+- **Budżet lektury:** nadwyżka z poprzedniej dogrywki (ADR 0051 + aneksy przy
+  rezerwie 67) przekroczyła 100 000 — wpisy ADR skrócone do szkieletu decyzji
+  (pełnia w historii). Rezerwa domknięta na 8 tokenach.
+
+**Brama na koniec:** `npm test` **828/828**, `npm run check` OK, WCAG **0**,
+zasięg mostu **97,7%**, budżet **99 992 / 100 000** (rezerwa 8), cache `m12-148`.

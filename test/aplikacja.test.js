@@ -3442,9 +3442,9 @@ test('hot-seat: panel Informacje i ekran wyniku NIE pokazują przebiegu multi', 
   dom.kliknij('przycisk-informacje');
   assert.equal(dom.pobierz('ekran-informacje').hidden, false, 'Informacje otwarte w grze');
   assert.equal(dom.pobierz('informacje-multi').hidden, true, 'hot-seat nie dostaje tabeli statusu multi');
+  dom.kliknij('przycisk-zamknij-informacje');
 
   // Domykamy grę i sprawdzamy, że pod zwykłym wynikiem nie ma bloku przebiegu.
-  dom.kliknij('przycisk-zamknij-informacje');
   for (const numer of [1, 2, 3]) {
     dom.kliknij('przycisk-start-odcinka');
     dom.kliknij('przycisk-symulacja-gra');
@@ -3454,4 +3454,43 @@ test('hot-seat: panel Informacje i ekran wyniku NIE pokazują przebiegu multi', 
   }
   assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'koniec gry');
   assert.equal(dom.pobierz('gra-wyniki-multi').hidden, true, 'ekran wyniku hot-seata bez przebiegu multi');
+  // Zgłoszenie 2026-09-16: blok hot-seat w Informacjach istnieje TYLKO w trakcie
+  // gry — po zakończeniu panel nie dokleja nic do Informacji.
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('informacje-hotseat').hidden, true, 'po zakończeniu gry tabela hot-seat nie wraca');
+  dom.kliknij('przycisk-zamknij-informacje');
+});
+
+test('hot-seat: w trakcie gry Informacje pokazują liczbę poprawnych odpowiedzi każdego gracza (mianownik rośnie)', async () => {
+  const { dom, paczka } = await graWFaziePytania({ graczy: 2 });
+  const naStacji1 = paczka.pytania.filter((q) => q.stacja === 1); // dwa pytania: Gracz 1, potem Gracz 2
+  const komorki = (tr) => tr.children.map((td) => td.textContent);
+
+  // Nazwany sprawdzacz — tabela jest warstwą, więc oglądamy ją w otwartym panelu.
+  const wierszeWInformacjach = (domU) => [...domU.pobierz('informacje-hotseat-wiersze').children];
+
+  dom.kliknij('przycisk-informacje');
+  assert.equal(dom.pobierz('informacje-hotseat').hidden, false, 'w trakcie gry blok hot-seat widoczny');
+  let wiersze = wierszeWInformacjach(dom);
+  assert.equal(wiersze.length, 2, 'dwóch graczy hot-seat');
+  assert.deepEqual(komorki(wiersze[0]), ['Gracz 1', '0/0'], 'przed odpowiedziami: Gracz 1 0/0');
+  assert.deepEqual(komorki(wiersze[1]), ['Gracz 2', '0/0'], 'przed odpowiedziami: Gracz 2 0/0');
+  dom.kliknij('przycisk-zamknij-informacje');
+
+  // Gracz 1 odpowiada poprawnie — mianownik rośnie do 1.
+  kliknijOdpowiedz(dom, indeksPoprawnej(naStacji1[0]));
+  dom.kliknij('przycisk-informacje');
+  wiersze = wierszeWInformacjach(dom);
+  assert.deepEqual(komorki(wiersze[0]), ['Gracz 1', '1/1'], 'po poprawnej: Gracz 1 1/1');
+  assert.deepEqual(komorki(wiersze[1]), ['Gracz 2', '0/0'], 'Gracz 2 jeszcze nie odpowiadał');
+  dom.kliknij('przycisk-zamknij-informacje');
+
+  // Gracz 2 odpowiada BŁĘDNIE — mianownik rośnie, ale licznik poprawnych nie.
+  dom.kliknij('przycisk-nastepna-stacja');
+  kliknijOdpowiedz(dom, indeksBlednej(naStacji1[1]));
+  dom.kliknij('przycisk-informacje');
+  wiersze = wierszeWInformacjach(dom);
+  assert.deepEqual(komorki(wiersze[0]), ['Gracz 1', '1/1'], 'Gracz 1 bez zmian');
+  assert.deepEqual(komorki(wiersze[1]), ['Gracz 2', '0/1'], 'błędna odpowiedź: 0 poprawnych z 1 udzielonej');
+  dom.kliknij('przycisk-zamknij-informacje');
 });

@@ -762,6 +762,21 @@ test('kontrakt: status graczy multi — węzły są w HTML, a blok wyniku żyje 
   assert.match(html, /id="gra-wyniki-multi-wiersze">/, 'tbody przebiegu pod wynikiem');
 });
 
+test('kontrakt: tabela hot-seat w Informacjach — dwie kolumny (Gracz + poprawne), domyślnie ukryta', () => {
+  const html = czytaj('index.html');
+  // Zgłoszenie 2026-09-16: hot-seat dostaje w panelu Informacje TYLKO tabelę
+  // graczy z liczbą poprawnych odpowiedzi — węzeł z nagłówkiem i tbody,
+  // domyślnie ukryty (JS odsłania go wyłącznie w trakcie gry).
+  const ekran = html.split('id="ekran-informacje"')[1].split('id="siec-proby"')[0];
+  assert.match(ekran, /id="informacje-hotseat" hidden/, 'blok hot-seat jest domyślnie ukryty');
+  assert.match(ekran, /id="informacje-hotseat-wiersze">/, 'tbody wierszy hot-seat');
+  // Dwie kolumny: Gracz, Ilość odpowiedzi poprawnych (żadnych stacji/statusu).
+  const blok = ekran.split('id="informacje-hotseat"')[1].split('</div>')[0];
+  assert.match(blok, /<th scope="col">Gracz<\/th>/, 'pierwsza kolumna: Gracz');
+  assert.match(blok, /<th scope="col">Ilość odpowiedzi poprawnych<\/th>/, 'druga kolumna: poprawne');
+  assert.equal((blok.match(/<th /g) ?? []).length, 2, 'w tabeli hot-seat są dokładnie dwie kolumny');
+});
+
 test('kontrakt: pasek kroków ma 6 kroków, przyciski ekranu gry mają type=button', () => {
   const html = czytaj('index.html');
   const kroki = html.split('<nav id="kroki"')[1].split('</nav>')[0];

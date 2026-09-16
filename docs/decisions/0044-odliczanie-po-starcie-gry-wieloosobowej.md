@@ -128,15 +128,7 @@ sync tylko w lobby, wspólny wynik na ekranie hotseat — bez zmian.
 
 ## Aneks 2026-09-16 (uwaga terenowa, pkt 1) — żywe wyniki widowni usunięte
 
-Żywe wyniki dla widowni (`#lobby-widownia-wiersze`) są OBSOLETOWE — usunięte
-razem z tabelą w lobby i funkcją `renderujWierszeWynikow`. Po starcie KAŻDY
-gracz (także host grający solo) widzi wyłącznie grę jak w hotseacie: mini-pasek
-dolny (`Jacek. Stacja 3/5`) i mapę — kolejna stacja przy trasie-sekret,
-wszystkie stacje przy trasie jawnej i w wyścigu. Nie ma ekranu lobby po
-starcie, nie ma żywej tabeli `Gracz/Punkty`, nie ma paska „następne odświeżenie
-za 30 s” w grze, nie ma LIMBO: telefon, który domknął wszystkie swoje stacje,
-stoi na własnym ekranie wyniku (wspólna tabela, gdy most zamknął grę — np.
-solo) i czeka na domknięcie gry przez most. Model gracza budujemy z PEŁNEJ
-trasy, a postęp sprzed odświeżenia odtwarzamy z jego zdarzeń na moście
-(`odtworzPostepMulti`). Odliczanie i pozostałe punkty ADR bez zmian.
+Żywe wyniki widowni, lobby po starcie, żywa tabela `Gracz/Punkty` i LIMBO
+usunięte: po starcie każdy widzi grę jak w hotseacie. Postęp sprzed odświeżenia
+odtwarza `odtworzPostepMulti`.
 

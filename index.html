@@ -760,6 +760,17 @@
         </table>
         <p id="informacje-multi-status" class="podpowiedz" role="status">Status z ostatniego odświeżenia (do ~30 s).</p>
       </div>
+      <!-- Hot-seat (zgłoszenie 2026-09-16): TYLKO w panelu Informacje i TYLKO
+           w trakcie gry — po zamknięciu / zakończeniu gry nic nie doklejamy
+           do panelu (węzeł chowa `czyGraToczySie()`). Gracz + liczba
+           poprawnych odpowiedzi z mianownikiem ROSNĄCYM (jak w multi). -->
+      <div id="informacje-hotseat" hidden>
+        <h3>Gra lokalna — odpowiedzi graczy</h3>
+        <table class="tabela-wynikow">
+          <thead><tr><th scope="col">Gracz</th><th scope="col">Ilość odpowiedzi poprawnych</th></tr></thead>
+          <tbody id="informacje-hotseat-wiersze"></tbody>
+        </table>
+      </div>
       <ol id="siec-proby" class="siec-proby" aria-live="polite" aria-label="Próby pobrania sieci dróg" hidden></ol>
 
 

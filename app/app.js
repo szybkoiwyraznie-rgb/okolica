@@ -634,7 +634,10 @@ function przelaczInformacje() {
   $('ekran-informacje').hidden = !otwieramy;
   STAN.podgladMapy = false;
   zamknijKoniecGry({ bezFokusu: true }); // warstwy nie świecą równocześnie
-  if (otwieramy) renderujInformacjeMulti(); // status multi z ostatniego stanu (uwaga terenowa 2026-09-16)
+  if (otwieramy) {
+    renderujInformacjeMulti(); // status multi z ostatniego stanu (uwaga terenowa 2026-09-16)
+    renderujInformacjeHotseat();
+  }
   odswiezWidocznoscPaneli();
   $(otwieramy ? 'przycisk-zamknij-informacje' : 'przycisk-informacje').focus();
 }
@@ -2428,6 +2431,7 @@ function renderujGre({ panele = true } = {}) {
   // sieciowej w panelu fazy A zostaje JEDNO: wybór stacji w Wyścigu.
   if (STAN.multi) renderujWyborStacji();
   renderujInformacjeMulti(); // panel Informacje żyje z każdym zdarzeniem gry
+  renderujInformacjeHotseat(); // blok hot-seat tylko w trakcie gry — znika przy końcu
 }
 
 /* ---------------- M9/R3: repozytorium paczek (ADR 0017) ---------------- */
@@ -5435,6 +5439,39 @@ function renderujInformacjeMulti() {
   const podSuma = $('informacje-multi-status');
   const teraz = new Date();
   podSuma.textContent = `Gra ${STAN.multi.gra.kod} (${STAN.multi.gra.stan === 'trwa' ? 'trwa' : 'zakończona'}) — stan z ostatniego odświeżenia, do ~30 s.`;
+}
+
+/** Wiersze tabeli hot-seat (Gracz + poprawne/udzielone) — `null`, gdy nic nie pokazywać. */
+function tabelaInformacjeHotseat() {
+  const r = STAN.rozgrywka;
+  if (!r?.gracze?.length) return null;
+  return podsumowanie(r).gracze.map((g) => ({
+    id: g.id,
+    imie: g.imie,
+    poprawne: `${g.poprawne}/${g.poprawne + g.bledne}`,
+  }));
+}
+
+/** Wypełnia blok hot-seat w panelu Informacje (`#informacje-hotseat`). */
+function renderujInformacjeHotseat() {
+  const blok = $('informacje-hotseat');
+  if (!blok) return;
+  // Hot-seat pokazuje tabelę TYLKO w trakcie gry i TYLKO w panelu Informacje
+  // (zgłoszenie 2026-09-16): po zamknięciu/zakończeniu gry nic nie doklejamy.
+  const wiersze = czyGraToczySie() && !STAN.multi ? tabelaInformacjeHotseat() : null;
+  blok.hidden = !wiersze;
+  if (!wiersze) return;
+  const tbody = $('informacje-hotseat-wiersze');
+  tbody.replaceChildren();
+  for (const w of wiersze) {
+    const tr = document.createElement('tr');
+    for (const tekst of [w.imie, w.poprawne]) {
+      const td = document.createElement('td');
+      td.textContent = tekst;
+      tr.appendChild(td);
+    }
+    tbody.appendChild(tr);
+  }
 }
 
 function renderujLobby() {

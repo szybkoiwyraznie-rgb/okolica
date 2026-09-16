@@ -350,8 +350,11 @@ commit i nowa wersja aplikacji.
    multi (`STAN.multi?.gra` + ekran `gra`) jest w nim blok `#informacje-multi`
    (`tabelaPrzebieguMulti`) — imię, zaliczone stacje, poprawne, status —
    renderowany przy otwarciu panelu, na zdarzenia gry i na każdym kroku
-   pollingu bez dodatkowego żądania (ADR 0051). Zdarzenia, które nie doszły na
-   most (odpowiedź bez zasięgu), czekają
+   pollingu bez dodatkowego żądania (ADR 0051). Analogiczny blok dostaje
+   HOT-SEAT (`#informacje-hotseat`, `tabelaInformacjeHotseat`) w tym samym
+   panelu: gracz + poprawne/udzielone z `podsumowanie(rozgrywki)`, TYLKO
+   w trakcie gry (`czyGraToczySie()`), po zakończeniu nic się nie dokleja.
+   Zdarzenia, które nie doszły na most (odpowiedź bez zasięgu), czekają
    w utrwalonej kolejce `okolica:multi-kolejka` i wychodzą PRZED pobraniem
    stanu gry — inaczej telefon zbudowałby trasę ze stacją, którą most właśnie
    domknął (ADR 0019 aneks 2026-09-13d).
