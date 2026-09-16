@@ -72,10 +72,16 @@ w OSM nie ma historii, legend ani kultury.
 0001 (bez zależności/backendu), 0007 (ukrywanie paczki), 0008 (kwerenda
 i źródła), 0010 (trwałość paczki), 0011 (mobile-first).
 
-## Aneksy 2026-09-09 … 2026-09-09 (druga tura) są w archiwum (poza budżetem lektury)
+## Aneksy 2026-09-09 (obie tury) i 2026-09-15 są w archiwum (poza budżetem lektury)
 
-Historia tego ADR — wklejenie jednym przyciskiem (2026-09-09) oraz odwrót pola (2026-09-09, druga tura) — leży w
-`docs/decisions/archive/aneksy-0006-2026-09-09.md`, poza budżetem lektury startowej (AGENTS.md §0; LESSONS L62). Zawiera aneksy z dat: 2026-09-09, 2026-09-09. Obowiązujące aneksy są niżej: 2026-09-07 (koniec edycji) i 2026-09-09 (trzecia tura, wklejenie jest zatwierdzeniem).
+Historia tego ADR — wklejenie jednym przyciskiem (2026-09-09), odwrót pola
+(2026-09-09, druga tura), wklejenie jako zatwierdzenie bez importu z pliku
+(2026-09-09, trzecia tura) oraz blokada domyślnej akcji `paste` (2026-09-15) —
+leży w `docs/decisions/archive/aneksy-0006-2026-09-09.md` i
+`docs/decisions/archive/aneksy-0006-2026-09-15.md`, poza budżetem lektury
+startowej (AGENTS.md §0; LESSONS L62). Obowiązujące aneksy są niżej:
+2026-09-07 (koniec edycji), 2026-09-15d (jeden komunikat błędu) i
+2026-09-16d (ekran bez instrukcji i bez przycisku czytającego schowek).
 
 
 ## Aneks (2026-09-07): pkt 8 bez ścieżki w interfejsie
@@ -87,52 +93,6 @@ podgląd „tylko dla organizatora" i edycja — przegląd treści odbywa się n
 jako miejsce na poprawki wniesione poza aplikacją.
 
 
-
-## Aneks 2026-09-09 (trzecia tura) — wklejenie JEST zatwierdzeniem; koniec importu z pliku
-
-Właściciel: „może dałoby się zrobić tak, żeby wklejenie paste w okno było
-ręczne, ale po wklejeniu »Sprawdź i przyjmij« nie było konieczne i engine sam
-się akceptował (…) żadne wczytywanie z pliku nie jest potrzebne, jakiego znowu
-pliku?".
-
-Trafna obserwacja: organizator, który właśnie wkleił blok JSON, **już podjął
-decyzję**. Przycisk „✓ Sprawdź i przyjmij" nie dokładał żadnej informacji ani
-możliwości cofnięcia — walidacja i tak nic nie psuje (zła paczka daje usterki
-i poprawkę, dobra zaczyna grę). Był to czysty koszt: drugi dotyk na ulicy,
-z telefonem w jednej ręce.
-
-**Decyzja (zastępuje pkt 1 poprzedniego aneksu):**
-
-1. Nasłuch `paste` na `#pole-odpowiedz` odpala `sprawdzOdpowiedz(tekst)`
-   natychmiast. Treść czytamy z `event.clipboardData`, **nie** z pola: zdarzenie
-   `paste` leci PRZED wstawieniem tekstu, więc `pole.value` jest w tej chwili
-   jeszcze puste — klasyczna pułapka, przez którą walidacja sprawdzałaby
-   poprzednią zawartość.
-2. „📋 Wklej ze schowka" robi to samo jednym klikiem (czyta schowek → waliduje).
-   Odmowa schowka nie blokuje niczego: status kieruje do wklejenia palcem.
-3. Puste wklejenie (spacje, obrazek — `clipboardData` bez tekstu) **nie**
-   uruchamia walidacji. Inaczej ekran krzyczałby usterkami bez powodu.
-4. Import z pliku (`#plik-odpowiedz`, `.przycisk-plik`) **usunięty** wraz z CSS.
-   Paczka zawsze przychodzi z czatu przez schowek; plik był ścieżką wymyśloną
-   przy projektowaniu, nigdy używaną. Wczytanie ukrytej paczki z repozytorium
-   zestawów działa dalej — to osobny ekran.
-
-**Czego to NIE zmienia:** kody usterek, poprawka dla modelu, automatyczny start
-gry po przyjęciu i czyszczenie pola po walidacji (ADR 0007 pkt 4) bez zmian.
-Prywatności ekranu nadal pilnuje wysokość pola (`rows="3"`, `resize: none`).
-
-## Aneks 2026-09-15 — nasłuch `paste` blokuje domyślną akcję (uwaga 4)
-
-Zgłoszenie właściciela: przy błędnej paczce pole wklejenia NIE było puste, choć
-kod je czyści — poprawioną paczkę trzeba było najpierw ręcznie zaznaczyć i
-skasować. Przyczyna: przeglądarka wstawia tekst PO powrocie z nasłuchu `paste`,
-czyli już po walidacji i czyszczeniu pola.
-
-Decyzja: nasłuch `paste` na `#pole-odpowiedz` woła `e.preventDefault()` i
-wstawia treść sam. Zachowanie na ekranie bez zmian (pole pokazuje treść podczas
-walidacji), a po walidacji zostaje puste — tak po przyjęciu (pkt 4 ADR 0007),
-jak i po odmowie. Atrapa `wklej()` odtwarza tę kolejność: nasłuchy, potem
-domyślna akcja, chyba że zablokowana.
 
 ## Aneks 2026-09-15d — przy błędnej paczce nie ma ani poprawki dla modelu, ani listy kodów
 
@@ -158,3 +118,26 @@ które po tej zmianie nie miały zawartości:
 Kody E01–E20 żyją dalej w `walidujPaczke()` i testach; przy debugowaniu
 odrzuconej paczki czyta się je z walidatora, nie z DOM (LESSONS L54). Piny
 przepisane na nową formę, martwe frazy w `test/dryf-dokumentow.test.js` (L55).
+
+## Aneks 2026-09-16d — ekran wklejania bez instrukcji i bez przycisku czytającego schowek
+
+Testy terenowe właściciela (iPhone + Chrome), uwaga A:
+
+1. **Między nagłówkiem a polem wklejenia nie ma ŻADNEGO tekstu.** Akapit
+   `.podpowiedz` („Nie pokazuj tego ekranu graczom … wklej poprawne dane.”)
+   zniknął z `index.html`: organizator zna tę drogę, a na telefonie instrukcja
+   zajmowała pół ekranu. Uczciwość o jawnej paczce (dawny ADR 0007 pkt 5)
+   niosą dalej karta „Paczka pytań” na ekranie prywatności i README, a pin
+   kontraktu pilnuje teraz PUSTKI między `</h2>` a `<textarea>`.
+2. **Przycisk czytający schowek usunięty.** `navigator.clipboard.readText()`
+   na iPhonie w Chrome nie oddaje treści (organizator: „w ogóle nie działa.
+   Nic nie wkleja”), a w przeglądarce nie ma drugiej drogi CZYTANIA schowka.
+   Zostaje wklejenie palcem do pola — ono i tak waliduje samo (aneks
+   2026-09-09, trzecia tura), więc guzik był wyłącznie kosztem: zniknął
+   z `index.html` i jego nasłuch z `app/app.js`, a identyfikator i etykieta są
+   zapinowane w testach (LESSONS L31). Kopiowanie w drugą stronę
+   („⧉ Kopiuj prompt”) zostaje bez zmian — `writeText()` działa.
+
+Nie zmienia się: nasłuch `paste` (walidacja przy wklejeniu), czyszczenie pola
+(dawny ADR 0007 pkt 4), jeden komunikat przy złej paczce (aneks 2026-09-15d)
+i automatyczny start gry po przyjęciu paczki.

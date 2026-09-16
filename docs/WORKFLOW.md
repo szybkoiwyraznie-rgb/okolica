@@ -73,10 +73,12 @@ Koniec sesji:
    z powrotem. Kontrakt z modelem niesie sam prompt: „Pytania z fact check”
    (kwerenda internetowa) albo domyślny wariant bez fact-checku, w którym
    model korzysta z własnej wiedzy (ADR 0032).
-5. Ekran **paczki**: wklej odpowiedź modelu (ręcznie albo „📋 Wklej
-   ze schowka”) — sprawdzanie rusza SAMO przy każdej zmianie tekstu, przycisku
+5. Ekran **paczki**: wklej odpowiedź modelu **palcem** (przytrzymaj pole →
+   „Wklej”) — sprawdzanie rusza SAMO przy każdej zmianie tekstu, przycisku
    „przyjmij” nie ma, a wczytywania „⬆ Z pliku” nie ma od 2026-09-07 (ADR 0006
-   aneks 3). Usterki: jeden stały komunikat „ponów generowanie i wklej
+   aneks 3). Między nagłówkiem a polem nie ma żadnego tekstu, a przycisk
+   czytający schowek zniknął 2026-09-16 (w telefonie nie oddawał treści —
+   uwaga terenowa A; ADR 0006 aneks 2026-09-16d). Usterki: jeden stały komunikat „ponów generowanie i wklej
    poprawne dane” — bez listy kodów E01–E20 i bez poprawki dla modelu
    (2026-09-15), a pole wklejenia zostaje puste. Poprawna paczka **od razu zaczyna grę** (i leci na
    Drive prosto do repozytorium okolicy — moderacja wstępna zniesiona

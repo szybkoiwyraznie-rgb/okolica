@@ -559,6 +559,17 @@ test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
   assert.ok(INDEX.includes('identyfikator rozgrywki'), 'kod gry musi być opisany jako identyfikator, nie klucz (ADR 0007 pkt 4)');
 });
 
+test('kontrakt: ekran wklejania bez przycisku czytającego schowek (uwaga terenowa A, 2026-09-16)', () => {
+  // Właściciel w terenie (iPhone + Chrome): „Guzik »Wklej ze schowka« w ogóle
+  // nie działa. Nic nie wkleja. Usuń go jeśli nie potrafisz go naprawić."
+  // Nie da się: `readText()` w tej przeglądarce nie oddaje treści, a drugiej
+  // drogi czytania schowka nie ma — więc droga znika w całości (LESSONS L31).
+  assert.ok(!INDEX.includes('id="przycisk-wklej"'), 'przycisku czytającego schowek nie ma w index.html');
+  assert.ok(!APP.includes('przycisk-wklej'), 'app.js nie sięga po usunięty przycisk');
+  assert.match(APP, /\$\('pole-odpowiedz'\)\.addEventListener\('paste'/,
+    'droga, która zostaje: wklejenie palcem waliduje samo (nasłuch paste)');
+});
+
 test('kontrakt: AME-main.zip nie wrócił do korzenia (decyzja właściciela 2026-09-05)', () => {
   assert.ok(!existsSync(join(ROOT, 'AME-main.zip')), 'wzorce organizacyjne są przeniesione — archiwum AME zostaje w historii git');
 });

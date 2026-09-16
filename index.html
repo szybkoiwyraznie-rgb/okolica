@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-150">
-  <script type="module" src="app/app.js?v=m12-150"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-151">
+  <script type="module" src="app/app.js?v=m12-151"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -427,17 +427,16 @@
       <!-- Uwaga terenowa A (właściciel, 2026-09-16): MIĘDZY nagłówkiem a polem
            wklejenia nie ma ŻADNEGO tekstu — instrukcja dla organizatora tylko
            zajmowała ekran; zasady ekranu opisuje ADR 0006 (aneks 2026-09-16d). -->
-      <!-- Zgłoszenie właściciela 2026-09-09 (trzecia tura): „ma zostać pole
-           i guzik »Wklej ze schowka« → po wklejeniu czegokolwiek ma się
-           automatycznie zatwierdzać". Wklejenie JEST decyzją organizatora, więc
-           osobne „Sprawdź i przyjmij" tylko dokładało klik. Import z pliku
-           usunięty — nie było takiej ścieżki w życiu gry.
+      <!-- Zgłoszenie właściciela 2026-09-09 (trzecia tura): po wklejeniu
+           czegokolwiek sprawdzanie rusza SAMO — wklejenie JEST decyzją
+           organizatora, więc osobne „Sprawdź i przyjmij" tylko dokładało klik.
+           Import z pliku usunięty — nie było takiej ścieżki w życiu gry.
+           Przycisku czytającego schowek NIE MA (uwaga terenowa A(b), 2026-09-16):
+           na iPhonie (Chrome) `navigator.clipboard.readText()` nie oddaje treści,
+           a wklejenie palcem i tak waliduje samo — patrz ADR 0006 (aneks 2026-09-16d).
            Pole zostaje niskie (3 wiersze), żeby nie dało się czytać pytań. -->
       <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="3" placeholder="Wklej tutaj odpowiedź modelu (blok JSON) — sprawdzi się sama" aria-label="Odpowiedź modelu AI"></textarea>
       <p id="wklejka-status" class="podpowiedz" role="status" aria-live="polite"></p>
-      <div class="wiersz">
-        <button id="przycisk-wklej" class="przycisk przycisk-glowny" type="button">📋 Wklej ze schowka</button>
-      </div>
       <div class="wiersz przyciski-dolu">
         <button id="przycisk-wstecz-prompt" class="przycisk" type="button">← prompt</button>
       </div>

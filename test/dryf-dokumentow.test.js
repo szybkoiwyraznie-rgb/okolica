@@ -406,6 +406,18 @@ const MARTWE_FRAZY = [
     nosniki: [...DOKUMENTY, ...UI],
     powod: 'funkcja rysująca żywą tabelę widowni usunięta razem z warstwą (uwaga terenowa 2026-09-16 pkt 1)',
   },
+  // Fala uwag terenowych A (właściciel, 2026-09-16): ekran wklejania bez
+  // instrukcji i bez przycisku czytającego schowek.
+  {
+    fraza: 'Nie pokazuj tego ekranu graczom',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'instrukcja z ekranu wklejania usunięta (uwaga terenowa A, 2026-09-16): między nagłówkiem a polem nie ma żadnego tekstu',
+  },
+  {
+    fraza: '📋 Wklej ze schowka',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'przycisk czytający schowek usunięty (uwaga terenowa A, 2026-09-16): na iPhonie w Chrome nie oddawał treści, a wklejenie palcem waliduje samo (ADR 0006 aneks 2026-09-16d)',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {

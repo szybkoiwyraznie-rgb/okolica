@@ -247,8 +247,9 @@ commit i nowa wersja aplikacji.
    Ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
    SVG w `index.html` (zero plików zewnętrznych, ADR 0001 pkt 1/ADR 0011).
 6. Organizator ↔ model AI (poza systemem); odpowiedź wraca **wklejeniem** —
-   palcem do `#pole-odpowiedz` albo przyciskiem „📋 Wklej ze schowka".
-   Import z pliku usunięty 2026-09-09 (ADR 0006, aneks trzeciej tury).
+   palcem do `#pole-odpowiedz` (przytrzymanie pola → „Wklej”). Przycisk
+   czytający schowek zniknął 2026-09-16 (uwaga terenowa A: w telefonie nie
+   oddawał treści), import z pliku 2026-09-09 — ADR 0006, aneksy.
 7. Wklejenie samo odpala `protokol.walidujPaczke()` (nasłuch `paste`, bez
    osobnego „Sprawdź") → usterki (jeden stały komunikat, bez listy kodów
    i bez poprawki dla modelu — 2026-09-15) albo przyjęcie. Przyjęta paczka OD RAZU zaczyna grę
