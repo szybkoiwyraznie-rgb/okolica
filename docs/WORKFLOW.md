@@ -65,11 +65,14 @@ Koniec sesji:
    stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci gra
    schodzi do pierścienia z jawnym komunikatem („osiągalność
    niezweryfikowana”), a do ręki zostaje „✋ Ustaw stacje ręcznie”.
-4. Ekran **pytań**: „⧉ Kopiuj prompt” → wklej do jednego z czatów AI (Meta AI,
-   ChatGPT, Gemini — linki na ekranie) i wklej odpowiedź z powrotem. Kontrakt
-   z modelem niesie sam prompt: „Pytania z fact check” (kwerenda internetowa)
-   albo domyślny wariant bez fact-checku, w którym model korzysta z własnej
-   wiedzy (ADR 0032).
+4. Ekran **pytań**: „⧉ Kopiuj prompt” kopiuje do schowka i **od razu
+   przechodzi** na ekran 5 (uwaga terenowa 2026-09-16) — chyba że schowek
+   odmówił, wtedy tekst zostaje zaznaczony i aplikacja zostaje na miejscu,
+   żeby dokończyć kopię ręcznie. Prompt wklejasz do jednego z czatów AI
+   (Meta AI, ChatGPT, Gemini — linki na ekranie), a odpowiedź wklejasz
+   z powrotem. Kontrakt z modelem niesie sam prompt: „Pytania z fact check”
+   (kwerenda internetowa) albo domyślny wariant bez fact-checku, w którym
+   model korzysta z własnej wiedzy (ADR 0032).
 5. Ekran **paczki**: wklej odpowiedź modelu (ręcznie albo „📋 Wklej
    ze schowka”) — sprawdzanie rusza SAMO przy każdej zmianie tekstu, przycisku
    „przyjmij” nie ma, a wczytywania „⬆ Z pliku” nie ma od 2026-09-07 (ADR 0006

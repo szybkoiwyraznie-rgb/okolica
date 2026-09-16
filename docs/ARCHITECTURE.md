@@ -241,7 +241,10 @@ commit i nowa wersja aplikacji.
    (też nie wraca dawna bramka `konfig.geokodacja`). Brak nazwy = puste
    miejsce w promptcie i komunikat, nie żądanie uboczne.
 5. `protokol.zbudujPrompt(konfig, okolica, stacje)` → tekst do schowka;
-   ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
+   „⧉ Kopiuj prompt” po udanej kopii samo przechodzi na ekran 5 (uwaga
+   terenowa 2026-09-16; przy odmowie schowka tekst zostaje zaznaczony i
+   aplikacja czeka na ręczną kopię, zamiast gubić właściciela na ekranie).
+   Ekran promptu prowadzi instrukcja obrazkowa — cztery kroki jako inline
    SVG w `index.html` (zero plików zewnętrznych, ADR 0001 pkt 1/ADR 0011).
 6. Organizator ↔ model AI (poza systemem); odpowiedź wraca **wklejeniem** —
    palcem do `#pole-odpowiedz` albo przyciskiem „📋 Wklej ze schowka".

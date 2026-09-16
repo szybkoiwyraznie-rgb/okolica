@@ -1346,6 +1346,54 @@ test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe pod
   }
 });
 
+/** Wejście na ekran promptu w trybie testowym: pozycja → stacje → prompt. */
+async function wejdzNaPrompt() {
+  const domAtrapa = await aplikacjaZSiecia();
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  domAtrapa.kliknij('przycisk-dalej-stacje'); // pierścień — atrapa nie ma window.fetch
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  return domAtrapa;
+}
+
+test('prompt: udane „Kopiuj prompt” OD RAZU przechodzi na ekran „Wklej odpowiedź” (uwaga terenowa 2026-09-16)', async () => {
+  // Zgłoszenie terenowe: jeden dotyk mniej — kopiowanie ma iść do schowka
+  // TYLKO przy sukcesie; ręczny fallback zostawia właściciela na ekranie.
+  const domAtrapa = await wejdzNaPrompt();
+  assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, false, 'warunek wstępny: jesteśmy na ekranie promptu');
+  const prompt = domAtrapa.pobierz('pole-prompt').value;
+  assert.ok(prompt.length > 100, 'prompt zbudowany przed kopiowaniem');
+  const wSchowku = [];
+  domAtrapa.navigator.clipboard = { writeText: async (tekst) => { wSchowku.push(tekst); } };
+  try {
+    domAtrapa.kliknij('przycisk-kopiuj-prompt');
+    await czekaj(50);
+    assert.deepEqual(wSchowku, [prompt], 'cały prompt trafił do schowka');
+    assert.equal(domAtrapa.pobierz('ekran-paczka').hidden, false, 'po udanej kopii ekran sam przechodzi na „Wklej odpowiedź modelu”');
+    assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, true, 'ekran promptu schowany po auto-przejściu');
+  } finally {
+    delete domAtrapa.navigator.clipboard;
+  }
+});
+
+test('prompt: fallback „skopiuj ręcznie” NIE przechodzi dalej — użytkownik sam dokańcza kopię', async () => {
+  // Schowka nie ma ani asynchronicznie, ani przez execCommand: ostatnia deska
+  // zaznacza tekst w polu. Auto-przejście nie może wtedy uciec z ekranu, bo
+  // tekst wcale nie trafił do schowka — użytkownik musi go skopiować ręcznie.
+  const domAtrapa = await wejdzNaPrompt();
+  Object.assign(domAtrapa.navigator, { clipboard: { writeText: async () => { throw new Error('NotAllowedError'); } } });
+  document.execCommand = () => false;
+  try {
+    domAtrapa.kliknij('przycisk-kopiuj-prompt');
+    await czekaj(50);
+    assert.equal(domAtrapa.pobierz('przycisk-kopiuj-prompt').textContent, '⚠ zaznaczone — skopiuj ręcznie',
+      'przycisk mówi wprost, że tekst został tylko zaznaczony');
+    assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, false, 'bez schowka aplikacja NIE ucieka z ekranu promptu');
+    assert.equal(domAtrapa.pobierz('ekran-paczka').hidden, true, 'ekran „Wklej odpowiedź” zostaje zamknięty');
+  } finally {
+    delete document.execCommand;
+  }
+});
+
 /* ============ M6/R4: ekran gry — fazy przygotowanie/odcinek, pauza */
 
 /** Przyjęta paczka + pozycja + stacje z pierścienia (synchronicznie, bez fetch).

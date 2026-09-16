@@ -3750,8 +3750,14 @@ function budujPromptEkran() {
 
 async function kopiujTekst(tekst, przycisk, etykieta, idPolaZapasowego = 'pole-prompt') {
   const przywroc = () => { przycisk.textContent = etykieta; };
-  przycisk.textContent = (await kopiujDoSchowka(tekst, idPolaZapasowego)) ? '✓ skopiowano' : '⚠ zaznaczone — skopiuj ręcznie';
+  // Jeden klik ma KOPIOWAĆ, nie zaznaczać (ADR 0006 — schowek z degradacją).
+  // Zwracamy twardy wynik schowka (boolean) — ekran wyżej decyduje na tej
+  // podstawie, czy iść dalej (uwaga terenowa 2026-09-16: „Kopiuj prompt”
+  // auto-przechodzi na krok 5).
+  const ok = await kopiujDoSchowka(tekst, idPolaZapasowego);
+  przycisk.textContent = ok ? '✓ skopiowano' : '⚠ zaznaczone — skopiuj ręcznie';
   window.setTimeout(przywroc, 2500);
+  return ok;
 }
 
 /**
@@ -5659,7 +5665,16 @@ function start() {
   });
 
   $('przycisk-wstecz-stacje').addEventListener('click', () => pokazEkran('stacje'));
-  $('przycisk-kopiuj-prompt').addEventListener('click', (e) => kopiujTekst(STAN.prompt ?? '', e.currentTarget, '⧉ Kopiuj prompt'));
+  // Uwaga terenowa 2026-09-16 (kazdy przycisk): „Kopiuj prompt” ma kopiować
+  // i OD RAZU przejść na ekran „Wklej odpowiedź modelu” (krok 5) — mniej
+  // dotknięć w terenie. Tekst nie zaginie: dobywa go schowek, nie wysuwki.
+  $('przycisk-kopiuj-prompt').addEventListener('click', async (e) => {
+    if (!(STAN.prompt ?? '')) return; // pusty prompt = wygeneruj stacje, więc nic do podania dalej
+    const ok = await kopiujTekst(STAN.prompt, e.currentTarget, '⧉ Kopiuj prompt');
+    // Auto-przejście TYLKO przy udanym schowku: ręczny fallback („⚠ zaznaczone —
+    // skopiuj ręcznie”) zostawia właściciela na ekranie, by sam dokończył kopię.
+    if (ok) pokazEkran('paczka');
+  });
   $('prompt-factcheck').addEventListener('change', () => budujPromptEkran());
   // Przycisku „Zapisz jako plik" nie ma (właściciel, 2026-09-09): prompt i tak
   // idzie do schowka („Kopiuj prompt"), a plik .txt był dodatkową drogą, której
