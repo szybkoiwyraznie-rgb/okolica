@@ -22,7 +22,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0003](0003-mapa-kafelkowa-bez-bibliotek.md) | Mapa: własny renderer SVG + rastrowe kafelki Web Mercator (bez bibliotek mapowych; szablon podmienialny kluczem operatorskim — aneks 2026-09-12) | Zaakceptowana |
 | [0004](0004-geolokalizacja-i-kryterium-dojscia.md) | Geolokalizacja `watchPosition` i kryterium dojścia do stacji | Zaakceptowana |
 | [0005](0005-stacje-z-sieci-drogowej-overpass.md) | Stacje z sieci drogowej (Overpass): kandydaci, filtry, wybór pod ziarnem | Proponowana |
-| [0006](0006-pytania-przez-prompt-i-wklejenie.md) | Pytania: prompt → model AI → wklejenie (bez backendu i kluczy API; ekran wklejania bez instrukcji i bez przycisku czytającego schowek — aneks 2026-09-16d) | Zaakceptowana |
+| [0006](0006-pytania-przez-prompt-i-wklejenie.md) | Pytania: prompt → model AI → wklejenie (bez backendu i kluczy API; ekran wklejania bez instrukcji i bez przycisku czytającego schowek, karta wyniku czyszczona przy wejściu — aneks 2026-09-16d) | Zaakceptowana |
 | [0007](archive/0007-ukrywanie-paczki-obfuskacja-bez-klucza.md) | Ukrywanie paczki pytań: odwracalna obfuskacja bez klucza (nie szyfrowanie) | Wycofana |
 | [0008](0008-kwerenda-i-zrodla-w-kazdym-pytaniu.md) | Obowiązkowa kwerenda internetowa i źródło URL przy każdym pytaniu | Zaakceptowana |
 | [0009](0009-jeden-telefon-hot-seat.md) | Rozgrywka wieloosobowa: jeden telefon (hot-seat; rotacja pytań — aneks 2026-09-12) | Zaakceptowana |

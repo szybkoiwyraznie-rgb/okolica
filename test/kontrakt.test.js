@@ -568,6 +568,13 @@ test('kontrakt: ekran wklejania bez przycisku czytającego schowek (uwaga tereno
   assert.ok(!APP.includes('przycisk-wklej'), 'app.js nie sięga po usunięty przycisk');
   assert.match(APP, /\$\('pole-odpowiedz'\)\.addEventListener\('paste'/,
     'droga, która zostaje: wklejenie palcem waliduje samo (nasłuch paste)');
+  // A(c): krok 5 nie dziedziczy niczego z poprzedniej gry — jedno miejsce
+  // czyszczenia, wołane przy WEJŚCIU na ekran i przy końcu gry (LESSONS L77/L78).
+  assert.match(APP, /function wyczyscEkranPaczki\(\)/, 'krok 5 ma jedno miejsce czyszczenia');
+  assert.match(APP, /if \(nazwa === 'paczka'\) \{\s*wyczyscEkranPaczki\(\);\s*status\(''\);/,
+    'wejście na krok 5 czyści kartę wyniku i pasek stanu');
+  assert.match(APP, /wyczyscEkranPaczki\(\);\s*pokazMapeStartowa\(\);/,
+    'koniec gry czyści krok 5 razem z resztą stanu');
 });
 
 test('kontrakt: AME-main.zip nie wrócił do korzenia (decyzja właściciela 2026-09-05)', () => {

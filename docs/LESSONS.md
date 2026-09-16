@@ -627,3 +627,11 @@ Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L76`.
 **Reguła:** blokadę, etykietę i puls z czasu operacji asynchronicznej przywracaj w `finally`, a test tej ścieżki pisz jako DWIE gry w jednej sesji strony.
 
 Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L77`.
+
+## L78 (2026-09-16) — ekran kroku czyść przy WEJŚCIU: jeden węzeł HTML obsługuje kolejne gry
+
+**Objaw:** po zakończeniu gry i przejściu setupu następnej na kroku „Wklej odpowiedź modelu” wisiała karta wyniku z POPRZEDNIEJ gry („Paczka przyjęta (bez fact-check)”), zanim cokolwiek wklejono (uwaga terenowa A(c), iPhone).
+**Przyczyna:** kartę `#wynik-walidacji` odsłania odrzucona paczka i nikt jej potem nie chował; przyjęcie paczki nadpisywało nagłówek, więc ekran niósł komunikat sprzed dwóch gier — a mock DOM (świeży w każdym teście) i ukryta sekcja gry skrywały fakt.
+**Reguła:** stan ekranu kroku (karta wyniku, komunikaty, pole) czyść przy KAŻDYM wejściu na ekran i przy końcu gry, nie tylko po zdarzeniu, które go ustawiło; test pisz jako DRUGĄ grę w jednej sesji strony, najlepiej z odrzuconą paczką w pierwszej (L77 — ten sam korzeń: węzeł żyje dłużej niż jedna gra).
+
+Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L78`.

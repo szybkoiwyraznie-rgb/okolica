@@ -72,16 +72,17 @@ w OSM nie ma historii, legend ani kultury.
 0001 (bez zależności/backendu), 0007 (ukrywanie paczki), 0008 (kwerenda
 i źródła), 0010 (trwałość paczki), 0011 (mobile-first).
 
-## Aneksy 2026-09-09 (obie tury) i 2026-09-15 są w archiwum (poza budżetem lektury)
+## Aneksy 2026-09-09 (obie tury), 2026-09-15 i 2026-09-15d są w archiwum (poza budżetem lektury)
 
 Historia tego ADR — wklejenie jednym przyciskiem (2026-09-09), odwrót pola
 (2026-09-09, druga tura), wklejenie jako zatwierdzenie bez importu z pliku
-(2026-09-09, trzecia tura) oraz blokada domyślnej akcji `paste` (2026-09-15) —
-leży w `docs/decisions/archive/aneksy-0006-2026-09-09.md` i
-`docs/decisions/archive/aneksy-0006-2026-09-15.md`, poza budżetem lektury
-startowej (AGENTS.md §0; LESSONS L62). Obowiązujące aneksy są niżej:
-2026-09-07 (koniec edycji), 2026-09-15d (jeden komunikat błędu) i
-2026-09-16d (ekran bez instrukcji i bez przycisku czytającego schowek).
+(2026-09-09, trzecia tura), blokada domyślnej akcji `paste` (2026-09-15) oraz
+jeden komunikat przy błędnej paczce bez poprawki dla modelu (2026-09-15d) —
+leży w `docs/decisions/archive/aneksy-0006-2026-09-09.md`,
+`...aneksy-0006-2026-09-15.md` i `...aneksy-0006-2026-09-15d.md`, poza budżetem
+lektury startowej (AGENTS.md §0; LESSONS L62). Obowiązujące aneksy są niżej:
+2026-09-07 (koniec edycji) i 2026-09-16d (ekran wklejania: bez instrukcji, bez
+przycisku czytającego schowek, z kartą wyniku czyszczoną przy wejściu).
 
 
 ## Aneks (2026-09-07): pkt 8 bez ścieżki w interfejsie
@@ -93,31 +94,6 @@ podgląd „tylko dla organizatora" i edycja — przegląd treści odbywa się n
 jako miejsce na poprawki wniesione poza aplikacją.
 
 
-
-## Aneks 2026-09-15d — przy błędnej paczce nie ma ani poprawki dla modelu, ani listy kodów
-
-Punkt 5 tego ADR obiecywał przy usterkach poprawkę gotową do wklejenia modelowi.
-Od 2026-09-15 organizator widzi JEDEN stały komunikat („Wygenerowana paczka
-pytań AI jest błędna. Ponów generowanie i wklej poprawne dane.") — bez kodów
-i bez szczegółów, bo ścieżką naprawy jest ponowne generowanie, nie ręczna
-korekta bloku JSON.
-
-Właściciel (2026-09-15d, BACKLOG B23: „tak, usuń") kazał zdjąć oba nośniki,
-które po tej zmianie nie miały zawartości:
-
-- `przycisk-poprawka` był chowany w obu ścieżkach błędu i nigdy nie pokazywany
-  — zniknął z `index.html`, a z `app/app.js` nasłuch, `STAN.poprawkaFactcheck`
-  i chowanie, z `app/protokol.js` funkcja `poprawkaDlaModelu`; komunikaty E02
-  nie obiecują już „poprawki gotowej do skopiowania".
-- `#wynik-usterki` nie miał dzieci nigdy: `renderujUsterki()` miała dwa
-  wywołania i oba z pustą tablicą, a lista była czyszczona także na starcie
-  walidacji — zniknęły `<ul>`, funkcja, zmienna `listaUsterek` i reguły
-  `.usterki`. Karta `#wynik-walidacji` z nagłówkiem i `data-stan='blad'`
-  zostaje: to ona niesie komunikat.
-
-Kody E01–E20 żyją dalej w `walidujPaczke()` i testach; przy debugowaniu
-odrzuconej paczki czyta się je z walidatora, nie z DOM (LESSONS L54). Piny
-przepisane na nową formę, martwe frazy w `test/dryf-dokumentow.test.js` (L55).
 
 ## Aneks 2026-09-16d — ekran wklejania bez instrukcji i bez przycisku czytającego schowek
 
@@ -137,6 +113,15 @@ Testy terenowe właściciela (iPhone + Chrome), uwaga A:
    z `index.html` i jego nasłuch z `app/app.js`, a identyfikator i etykieta są
    zapinowane w testach (LESSONS L31). Kopiowanie w drugą stronę
    („⧉ Kopiuj prompt”) zostaje bez zmian — `writeText()` działa.
+
+3. **Karta wyniku nie dziedziczy się między grami.** Kartę `#wynik-walidacji`
+   odsłania odrzucona paczka (`pokazOdrzuconaPaczkeAi`) i nikt jej potem nie
+   chował — w kolejnej grze wisiał na niej komunikat „Paczka przyjęta (bez
+   fact-check)” z poprzedniej. Wejście na krok 5 woła `wyczyscEkranPaczki()`
+   (karta schowana, nagłówek i `#wklejka-status` puste, pole puste), a
+   `wrocNaPoczatek()` czyści to samo na końcu gry; `#status` startuje na tym
+   ekranie pusty. Pin kontraktu pilnuje obu wywołań, test — dwóch gier w jednej
+   sesji strony z odrzuconą paczką w pierwszej (LESSONS L77/L78).
 
 Nie zmienia się: nasłuch `paste` (walidacja przy wklejeniu), czyszczenie pola
 (dawny ADR 0007 pkt 4), jeden komunikat przy złej paczce (aneks 2026-09-15d)

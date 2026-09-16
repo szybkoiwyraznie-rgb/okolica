@@ -1721,3 +1721,42 @@ sprawdzalny opis (localStorage + cache PWA). Cache-bust m12-148 → m12-149.
 błędu — bo ekran może zniknąć, a węzeł DOM zostaje i obsłuży następną grę.
 Test takiej ścieżki pisz jako DWIE operacje w jednej sesji strony: świeży DOM
 per test (nowe „wejście na stronę”) nie widzi przecieku stanu między grami.
+
+## L78 — ekran kroku czyść przy WEJŚCIU: jeden węzeł HTML obsługuje kolejne gry
+
+**Objaw (uwaga terenowa A(c), właściciel, 2026-09-16, iPhone + Chrome):**
+„Rozegrałem jedną grę, zakończyłem, rozpocząłem kolejną grę, przeszedłem przez
+setup i doszedłem do tego ekranu (Wklej odpowiedź modelu). Na dole tej strony
+wyświetla się jakiś artefakt z poprzedniej gry - komunikat: »Paczka przyjęta
+(bez fact-checku)«. A ja jeszcze nic nie wklejałem.”
+
+**Przyczyna:** karta wyniku `#wynik-walidacji` (razem z nagłówkiem
+`#wynik-naglowek` i komunikatem `#wklejka-status`) to JEDNE węzły `index.html`
+obsługujące kolejne gry. Jedyne miejsce, które ją odsłania, to
+`pokazOdrzuconaPaczkeAi()` — odrzucona paczka — i NIC jej potem nie chowa:
+`sprawdzOdpowiedz()` w ścieżce sukcesu nadpisuje tylko nagłówek („Paczka
+przyjęta (bez fact-check)”), a ekran gry chowa całą sekcję przez `hidden`.
+W drugiej grze krok 5 odsłaniał więc kartę z komunikatem o SUKCESIE
+poprzedniej gry. Testy tego nie widziały z dwóch powodów: każdy test dostaje
+świeży DOM („nowe wejście na stronę”, L77), a w scenariuszu bez odrzuconej
+paczki karta zostaje ukryta — widoczny był tylko sam nagłówek nadpisany
+w pamięci (realnie: 0 px).
+
+**Naprawa (m12-152):** nowy `wyczyscEkranPaczki()` w `app/app.js` — karta
+schowana, `dataset.stan` zdjęty, nagłówek i `#wklejka-status` puste, pole
+wklejenia puste. Wołany z `pokazEkran('paczka')` (przy WEJŚCIU na krok 5,
+razem z `status('')` na pasku stanu) oraz z `wrocNaPoczatek()` (koniec gry
+sprząta krok 5 razem z resztą stanu). Piny w `test/kontrakt.test.js` pilnują
+istnienia funkcji i obu wywołań; test odtwarzający prowadzi pełną pętlę:
+gra 1 z ODRZUCONĄ paczką (karta realnie odsłonięta) → przyjęta paczka → trzy
+stacje → koniec → „🏠 Wróć na początek” → setup → pozycja → stacje → pytania →
+krok 5, gdzie karta musi być schowana i pusta. Weryfikacja live w Chromium
+(360 × 740): po odrzuceniu karta ma wysokość > 0, po ponownym wejściu na krok
+5 `display: none`, `hidden = true`, nagłówek i pasek stanu puste.
+
+**Reguła:** stan ekranu kroku (karta wyniku, komunikaty, pole) czyść przy
+KAŻDYM wejściu na ekran i przy końcu gry — nie tylko po zdarzeniu, które go
+ustawiło. Węzły `index.html` są wspólne dla kolejnych gier, więc „ekran” nie
+ma stanu początkowego: ma go dopiero kod wejścia. Test takiej ścieżki pisz jako
+DRUGĄ grę w jednej sesji strony, najlepiej z odrzuconą paczką w pierwszej —
+inaczej ukryty element (albo świeży DOM per test) ukryje defekt.

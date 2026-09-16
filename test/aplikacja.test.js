@@ -2943,6 +2943,64 @@ test('ekran 5: puste wklejenie nie udaje paczki', async () => {
     'wklejenie pustki (albo obrazka) nie uruchamia walidacji — inaczej ekran krzyczałby bez powodu');
 });
 
+test('uwaga terenowa 2026-09-16 A(c): druga gra w tej samej sesji NIE dziedziczy komunikatu o paczce', async () => {
+  // Właściciel: „Rozegrałem jedną grę, zakończyłem, rozpocząłem kolejną (…)
+  // Na dole tej strony wyświetla się jakiś artefakt z poprzedniej gry —
+  // »Paczka przyjęta (bez fact-checku)«, a ja jeszcze nic nie wklejałem."
+  // Karta `#wynik-walidacji`, jej nagłówek i pasek stanu to JEDNE węzły
+  // `index.html` na kolejne gry — nikt ich nie czyścił przy wejściu na krok 5
+  // (LESSONS L77: węzeł żyje dłużej niż jedna gra).
+  // Konfig własny (nie `graGotowaDoStartu`): w pierwszej grze MUSI najpierw paść
+  // ODRZUCONA paczka — dopiero ona odsłania kartę wyniku (`hidden = false`),
+  // a odsłoniętej karty nikt już nie chował (to jest właśnie zgłoszony artefakt).
+  const pamiec = new Map();
+  pamiec.set('okolica:gracze', JSON.stringify({
+    schemat: 'gracze-lokalni/1',
+    gracze: [{ pseudonim: 'Gracz 1', zweryfikowany: true }],
+  }));
+  pamiec.set('okolica:konfig', JSON.stringify({
+    schemat: 'konfig/1', kanon: '2026-09-10',
+    konfig: { liczbaGraczy: 1, liczbaStacji: 3, tematy: ['historia', 'architektura'], czasGryMin: 85 },
+  }));
+  const dom = zainstalujDom({ search: '?tryb=test', pamiec });
+  await import(`../app/app.js?druga-gra=${Math.random().toString(36).slice(2)}`);
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje');
+  dom.wklej('pole-odpowiedz', 'to nie jest JSON ani kontener {{{');
+  assert.equal(dom.pobierz('wynik-walidacji').hidden, false,
+    'warunek wstępny: odrzucona paczka odsłania kartę wyniku (i tak już zostaje)');
+  const baza = czytajFixturePaczka();
+  const paczka = { ...baza, pytania: pytaniaDlaGraczy(baza, 1) };
+  dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
+  zaczynijGre(dom);
+  for (const numer of [1, 2, 3]) {
+    dom.kliknij('przycisk-start-odcinka');
+    dom.kliknij('przycisk-symulacja-gra');
+    await czekaj(9 * 120 + 600);
+    kliknijOdpowiedz(dom, indeksPoprawnej(paczka.pytania.find((q) => q.stacja === numer)));
+    dom.kliknij('przycisk-nastepna-stacja');
+  }
+  assert.equal(dom.pobierz('gra-panel-koniec').hidden, false, 'pierwsza gra skończona');
+
+  // Droga właściciela: 🏠 Wróć na początek → ⚙ START GRY → pozycja → stacje →
+  // pytania → wklejanie (ta sama sesja strony, zero przeładowania).
+  dom.kliknij('przycisk-nowa-gra');
+  dom.kliknij('przycisk-setup');
+  ustawPozycjeTestowa(dom, '52.2297', '21.0122');
+  dom.kliknij('przycisk-dalej-stacje');
+  dom.kliknij('przycisk-dalej-prompt');
+  dom.kliknij('przycisk-dalej-paczka');
+  assert.equal(dom.pobierz('ekran-paczka').hidden, false, 'ekran wklejania otwarty w drugiej grze');
+
+  assert.equal(dom.pobierz('wynik-walidacji').hidden, true,
+    'karta wyniku z POPRZEDNIEJ gry jest schowana, zanim cokolwiek wkleję');
+  assert.equal(dom.pobierz('wynik-naglowek').textContent, '',
+    'nagłówka »Paczka przyjęta (…)« z poprzedniej gry nie ma na ekranie');
+  assert.equal(dom.pobierz('pole-odpowiedz').value, '', 'pole wklejenia startuje puste');
+  assert.doesNotMatch(dom.pobierz('status').textContent, /Paczka przyjęta|Gotowe do nowej gry/,
+    'pasek stanu nie niesie komunikatu z poprzedniej gry');
+});
+
 test('ekran 5: pole ma trzy wiersze, a ekran nie ma już importu z pliku ani „Sprawdź"', () => {
   const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
   const pole = html.match(/<textarea id="pole-odpowiedz"[^>]*>/)[0];

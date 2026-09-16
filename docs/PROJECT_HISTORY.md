@@ -6765,6 +6765,44 @@ testy 829/829, check OK, WCAG AA 0 naruszeń; budżet 99 963 / 100 000
 (rezerwa 37); cache `m12-149`; CI na PR #38 zielone (job `test`, run
 `35116124937`).
 
+### Uwagi terenowe A (ten sam dzień, po audycie) — ekran „Wklej odpowiedź modelu”
+
+Właściciel przysłał trzy uwagi z testów na telefonie (iPhone + Chrome); wszystkie
+dotyczyły kroku 5:
+
+- **A(a)** „Usuń cały tekst przed polem do wklejenia (…) MIĘDZY nagłówkiem
+  »Wklej odpowiedź modelu«, a polem do wklejenia MA NIE BYĆ ŻADNYCH TEKSTÓW!!!”
+  — akapit instrukcji zniknął z `index.html`; pin kontraktu pilnuje teraz PUSTKI
+  między `</h2>` a `<textarea>` (po wycięciu komentarzy HTML), a uczciwość
+  o jawnej paczce niosą karta prywatności (pin) i README. Cache **m12-150**.
+- **A(b)** „Guzik »Wklej ze schowka« w ogóle nie działa. Nic nie wkleja. Usuń go
+  jeśli nie potrafisz go naprawić.” — przycisk USUNIĘTY: na iPhonie
+  `navigator.clipboard.readText()` nie oddaje treści, a drugiej drogi CZYTANIA
+  schowka przeglądarka nie daje. Zostaje wklejenie palcem, które waliduje samo
+  (nasłuch `paste`). Piny w kontrakcie, dwie martwe frazy w strażniku dryfu,
+  ADR 0006 → **aneks 2026-09-16d**, krok 5 w `docs/WORKFLOW.md` i punkt 6
+  `docs/ARCHITECTURE.md` przepisane. Cache **m12-151**.
+- **A(c)** „Na dole tej strony wyświetla się jakiś artefakt z poprzedniej gry —
+  komunikat: »Paczka przyjęta (bez fact-checku)«, a ja jeszcze nic nie wklejałem.”
+  — kartę `#wynik-walidacji` odsłania odrzucona paczka i nikt jej potem nie
+  chował; nowy `wyczyscEkranPaczki()` gasi ją (z nagłówkiem i `#wklejka-status`)
+  przy WEJŚCIU na krok 5 oraz na końcu gry, a `#status` startuje tam pusty.
+  Test odtwarzający: dwie gry w jednej sesji strony, w pierwszej ODRZUCONA
+  paczka (karta realnie odsłonięta) — przed naprawą pada na `hidden`, po
+  naprawie przechodzi; weryfikacja live w Chromium 5/5 (A(a), A(b), A(c) + oba
+  powroty). Cache **m12-152**.
+
+**Budżet lektury:** fala A przekroczyła próg (100 328 / 100 000), więc zgodnie
+z `AGENTS.md` §0 aneksy ADR 0006 z 2026-09-09 (trzecia tura), 2026-09-15
+i 2026-09-15d przeniesione do `docs/decisions/archive/` (pliki żywe niosą
+wskaźnik z datami — cytowania w testach dalej trafiają), a wiedza o defekcie
+zapisana jako **L78** (+ pełny opis w `docs/LESSONS_ARCHIVE.md`). Budżet po
+zmianach: **99 807 / 100 000** (rezerwa 193).
+
+**Brama fali A:** `npm test` **829 / 829** (829 przed falą: −2 testy usuniętego
+schowka, +1 pin kontraktu, +1 test A(c)), `npm run check` OK (§2 3 603 znaki,
+§2.2 3 738), WCAG AA 0 naruszeń, CI na PR #38 zielone.
+
 **Otwarte po sesji:** PR #38 (scalenie właściciela, squash). Most Apps Script
 bez zmian. Czekamy na uwagi z testów terenowych (m.in. paczka z promptu
 `PYT/1.1.2` i polecenia z PR #35).
