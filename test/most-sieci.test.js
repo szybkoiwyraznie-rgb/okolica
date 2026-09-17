@@ -117,13 +117,14 @@ test('most-sieci: odczyt wybiera najświeższy pokrywający; za szeroki setup i 
   assert.equal(czytaj(m, { lat: 52.2597, lon: 21.0122, promienM: 1000, tryb: 'piesza' }).ok, false, 'daleki dryf nie wchodzi');
 });
 
-test('most-sieci: mnożnik pokrycia to 1.15 jak w aplikacji (parytet POLITYKA)', () => {
+test('most-sieci: mnożnik pokrycia to 1.15 jak w aplikacji (parytet POLITYKA; aneks 2026-09-17: +200 m tolerancji)', () => {
   const { most: m } = uruchomMost();
   assert.equal(POLITYKA.mnoznikPromienia, 1.15, 'kotwica: aplikacja liczy R×1.15');
+  assert.equal(POLITYKA.tolerancjaKotwicyM, 200, 'tolerancja ±200 m (teren 2026-09-17)');
   zapisz(m, wpis({ promienM: 2000 }));
-  // granica pokrycia przy R=2000/wpisu i R=1000/gry: dryf 1150 m (1150 + 1150 = 2300)
-  assert.equal(czytaj(m, { lat: 52.2396, lon: 21.0122, promienM: 1000, tryb: 'piesza' }).ok, true, '~1100 m wchodzi');
-  assert.equal(czytaj(m, { lat: 52.2405, lon: 21.0122, promienM: 1000, tryb: 'piesza' }).ok, false, '~1200 m nie wchodzi');
+  // Granica: dryf + 1150 ≤ 2300 + 200 + 1 → dryf ≤ 1351 m.
+  assert.equal(czytaj(m, { lat: 52.2400, lon: 21.0122, promienM: 1000, tryb: 'piesza' }).ok, true, '~1150 m wchodzi');
+  assert.equal(czytaj(m, { lat: 52.2420, lon: 21.0122, promienM: 1000, tryb: 'piesza' }).ok, false, '~1400 m nie wchodzi (poza tolerancją)');
 });
 
 test('most-sieci: śmieć w katalogu nie psuje odczytu', () => {

@@ -173,25 +173,29 @@ test('kolejnoscInstancji: zapamiętana pierwsza, reszta bez zmian; obcy adres ig
   assert.deepEqual(kolejnoscInstancji(null).map((i) => i.url), domyslna);
   assert.deepEqual(kolejnoscInstancji('').map((i) => i.url), domyslna);
   assert.deepEqual(kolejnoscInstancji('https://obca.example/api').map((i) => i.url), domyslna);
-  const vk = INSTANCJE_OVERPASS[2].url;
+  const vk = INSTANCJE_OVERPASS[1].url;
   assert.deepEqual(kolejnoscInstancji(vk).map((i) => i.url),
     [vk, ...domyslna.filter(url => url !== vk)], 'zapamiętany sukces pierwszy, pozostałe bez dubli');
 });
 
-test('instancje: łańcuch dokładnie jak ASSETS §2, w kolejności głównej', () => {
+test('instancje: łańcuch dokładnie jak ASSETS §2 (aneks 2026-09-17b), w kolejności głównej', () => {
   assert.deepEqual(INSTANCJE_OVERPASS.map((i) => i.url), [
     'https://overpass-api.de/api/interpreter',
-    'https://overpass.private.coffee/api/interpreter',
     'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
-    'https://overpass.osm.adikso.net/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
   ]);
   for (const i of INSTANCJE_OVERPASS) assert.match(i.url, /^https:\/\//);
+  assert.equal(INSTANCJE_OVERPASS[0].timeoutMs, 12_000);
+  assert.equal(INSTANCJE_OVERPASS[1].timeoutMs, 25_000);
+  assert.equal(INSTANCJE_OVERPASS[2].timeoutMs, 40_000);
 });
 
-test('polityka: stałe zgodne z ADR 0005 i ADR 0010 pkt 1', () => {
-  assert.equal(POLITYKA.timeoutMs, 10_000);
-  assert.equal(POLITYKA.odstepMs, 1_000); // 1 s grzecznościowo po limicie (właściciel, 2026-09-09)
+test('polityka: stałe zgodne z ADR 0005 i ADR 0010 pkt 1 (aneks 2026-09-17b)', () => {
+  assert.equal(POLITYKA.timeoutMs, 12_000);
+  assert.equal(POLITYKA.timeoutZapytaniaS, 25);
+  assert.equal(POLITYKA.odstepMs, 1_000);
   assert.equal(POLITYKA.mnoznikPromienia, 1.15);
+  assert.equal(POLITYKA.tolerancjaKotwicyM, 200);
   assert.equal(POLITYKA.maxRozmiarCacheBajtow, 2 * 1024 * 1024);
   assert.equal(POLITYKA.ttlCacheDni, 30);
 });
@@ -210,7 +214,7 @@ test('polityka: przełączamy przy 406/429/5xx/timeout/błędzie sieci, nie przy
 
 test('zapytanie: promień R×1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out geom, is_in', () => {
   const q = budujZapytanieOverpass({ srodek: { lat: 52.22973, lon: 21.01224 }, promienM: 1000, tryb: 'piesza' });
-  assert.match(q, /^\[out:json\]\[timeout:8\];/);
+  assert.match(q, /^\[out:json\]\[timeout:25\];/);
   assert.match(q, /around:1150,/, 'promień zapytania = 1000 × 1.15');
   assert.ok(q.includes('52.22975'), 'lat zaokrąglony do siatki (jak ziarno rozgrywki)');
   assert.ok(!q.includes('52.22973'), 'dokładna pozycja NIE opuszcza urządzenia w tej postaci');
@@ -1051,20 +1055,30 @@ test('cache: TTL 30 dni, przyszłość, schemat i puste drogi — wszystko jawne
   assert.equal(wczytajDaneZCache(wpis(NaN), { terazMs: teraz }), null);
 });
 
-test('cache: wpis z szerszego pobrania pokrywa węższy setup (teren 2026-09-16)', () => {
+test('cache: wpis z szerszego pobrania pokrywa węższy setup (teren 2026-09-16; aneks 2026-09-17: tolerancja ±200 m)', () => {
   const teraz = Date.UTC(2026, 8, 16);
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixture('las')));
   const srodek = { lat: 52.2297, lon: 21.0122 };
   const szeroki = zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: teraz });
   assert.equal(szeroki.schemat, SCHEMAT_SIECI);
-  assert.deepEqual(szeroki.srodek, srodek);
+  assert.deepEqual(szeroki.srodek, srodek, 'kotwica = srodek pobrania');
   assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 2000 }), 'ten sam promień pokrywa');
   assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 1000 }), 'węższy setup wchodzi w szerszy wpis');
-  assert.equal(czyWpisPokrywa(szeroki, { srodek, promienM: 2001 }), false, 'szerszy setup nie wchodzi');
-  // dryf środka: ~500 m dalej przy R=1000 wchodzi (500 + 1150 ≤ 2300)…
+  // Dryf 2–5 m (szum GPS) musi być wchłonięty bez wołania Overpass (teren 2026-09-17).
+  const lekkiDryf = { lat: 52.229737, lon: 21.012237 };
+  assert.ok(czyWpisPokrywa(szeroki, { srodek: lekkiDryf, promienM: 500 }),
+    'dryf GPS o 4 m nie wywala z cache');
+  // Dryf o 200 m (tolerancja właściciela) przy R=500 też wchodzi.
+  const dwieScieMetrow = { lat: 52.2297 + 0.0018, lon: 21.0122 };
+  assert.ok(czyWpisPokrywa(szeroki, { srodek: dwieScieMetrow, promienM: 500 }),
+    'dryf o 200 m mieści się w tolerancji');
+  // Szerszy setup bez dryfu: potrzebny promień tak duży, żeby nawet z +200 m
+  // tolerancji nie wszedł — czyli R_gry > 2000 + tolerancja ≈ 2174.
+  assert.equal(czyWpisPokrywa(szeroki, { srodek, promienM: 2175 }), false, 'znacznie szerszy setup nie wchodzi');
+  // dryf środka: ~500 m dalej przy R=1000 wchodzi (500 + 1150 + 200 ≤ 2300)…
   const obok = { lat: 52.2342, lon: 21.0122 };
   assert.ok(czyWpisPokrywa(szeroki, { srodek: obok, promienM: 1000 }), 'umiarkowany dryf środka wchodzi');
-  // …a ~2 km dalej już nie (2000 + 1150 > 2300)
+  // …a ~2 km dalej już nie (2000 + 1150 + 200 > 2300)
   const daleko = { lat: 52.2477, lon: 21.0122 };
   assert.equal(czyWpisPokrywa(szeroki, { srodek: daleko, promienM: 1000 }), false, 'duży dryf środka nie wchodzi');
   // wpisy sprzed kotwic i śmieci nie pokrywają (obsługuje je klucz dokładny)

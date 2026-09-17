@@ -19,17 +19,31 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-153';
-import { TRYBY } from './konfig.js?v=m12-153';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-156';
+import { TRYBY } from './konfig.js?v=m12-156';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
-/** Łańcuch instancji Overpass w kolejności prób — dokładnie jak ASSETS §2. */
+/**
+ * Łańcuch instancji Overpass w kolejności prób (ASSETS §2, aneks 2026-09-17b):
+ * 1. FOSSGIS (główna, Niemcy) — najszybsza z Polski, dane aktualne.
+ * 2. VK Maps (mail.ru, Rosja) — drugi pomiar właściciela (2026-09-17) pokazał
+ *    14 s z poprawnymi danymi (poprzednio 504 — przeciążenie, nie wyłączenie);
+ *    umieszczony jako drugi z limitem 25 s.
+ * 3. Kumi Systems (globalna) — bez deklarowanych limitów, ale bywa BARDZO
+ *    obciążona (32,7 s w pomiarze porannym, 201 s po południu). Zostaje jako
+ *    ostateczny backup z limitem 40 s.
+ * Usunięte 2026-09-17 (nie działały z Polski):
+ * - Adikso (Polska) — nigdy nie działał TLS, wyłączony
+ * - private.coffee — alias do Kumi (ta sama maszyna, duplikat)
+ * - osm.ch (Szwajcaria) — tylko dane Szwajcarii, zero wyników w Polsce
+ * - openstreetmap.fr — instancja wyłączona od stycznia 2022
+ * - nchc.org.tw (Tajwan) — błąd CORS z przeglądarki
+ */
 export const INSTANCJE_OVERPASS = [
-  { nazwa: 'FOSSGIS (główna)', url: 'https://overpass-api.de/api/interpreter' },
-  { nazwa: 'private.coffee', url: 'https://overpass.private.coffee/api/interpreter' },
-  { nazwa: 'VK Maps', url: 'https://maps.mail.ru/osm/tools/overpass/api/interpreter' },
-  { nazwa: 'Adikso (Polska)', url: 'https://overpass.osm.adikso.net/api/interpreter' },
+  { nazwa: 'FOSSGIS (główna)', url: 'https://overpass-api.de/api/interpreter', timeoutMs: 12_000 },
+  { nazwa: 'VK Maps', url: 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', timeoutMs: 25_000 },
+  { nazwa: 'Kumi Systems', url: 'https://overpass.kumi.systems/api/interpreter', timeoutMs: 40_000 },
 ];
 
 /** Zapamiętana sprawna instancja pierwsza; pozostałe w kolejności domyślnej. */
@@ -38,11 +52,22 @@ export function kolejnoscInstancji(zapamietanyUrl = null) {
   return znana ? [znana, ...INSTANCJE_OVERPASS.filter(i => i !== znana)] : [...INSTANCJE_OVERPASS];
 }
 
+/**
+ * Limit czasu dla instancji (ms): główna FOSSGIS ma krótki limit, bo jeśli
+ * nie odpowie w 12 s — jest przeciążona i Kumi dostaje dłuższy czas (40 s),
+ * bo wiemy z pomiarów właściciela (2026-09-17), że bywa wolna, ale odpowiada
+ * poprawnymi danymi.
+ */
+export function timeoutInstancji(instancja) {
+  return instancja?.timeoutMs ?? POLITYKA.timeoutMs;
+}
+
 export const POLITYKA = {
-  /** Timeout `fetch` po naszej stronie (ADR 0005, konsekwencje). */
-  timeoutMs: 10_000,
-  /** `[timeout:8]` w nagłówku zapytania Overpass QL. */
-  timeoutZapytaniaS: 8,
+  /** Domyślny timeout `fetch` — używany tylko gdy instancja nie podaje własnego. */
+  timeoutMs: 12_000,
+  /** `[timeout:25]` w nagłówku zapytania Overpass QL — większe zapytania
+   *  (R × 1,15 dla 10 km) potrzebują więcej czasu po stronie serwera. */
+  timeoutZapytaniaS: 25,
   /**
    * Krótka grzecznościowa pauza po `429`/`406`/5xx (ASSETS §2 pkt 3).
    * 1 s, nie 30 s: limit publiczny i tak nie minie w sekundy, a łańcuch
@@ -51,6 +76,15 @@ export const POLITYKA = {
   odstepMs: 1_000,
   /** Promień zapytania = R gry × 1.15 (ADR 0005 pkt 1). */
   mnoznikPromienia: 1.15,
+  /**
+   * Tolerancja kotwicy cache (L1 i L2): dwa pobrania z miejsc o mniej niż tyle
+   * metrów od siebie współdzielą wpis (teren 2026-09-17). Właściciel raportuje,
+   * że druga gra z tego samego miejsca (dryf GPS o 2–5 m) wciąż woła Overpass,
+   * bo warunek pokrycia nie dopuszczał ŻADNEGO dryfu, a margines R×1,15 jest
+   * po to, żeby absorbować właśnie taki szum. 200 m to prośba właściciela:
+   * „jeśli jestem w tej okolicy ±200 m, nie ściągaj ponownie”.
+   */
+  tolerancjaKotwicyM: 200,
   /** Odpowiedź większa niż tyle nie trafia do cache (budżet ADR 0010 pkt 1). */
   maxRozmiarCacheBajtow: 2 * 1024 * 1024,
   /** TTL cache sieci w dniach (ADR 0005 pkt 7, ADR 0010 pkt 1). */
@@ -703,7 +737,11 @@ export function kluczCacheSieci({ lat, lon, promienM, tryb }) {
   if (!czyWspolrzedneOk(lat, lon)) throw usterka('S05');
   if (!Number.isFinite(promienM) || promienM <= 0) throw usterka('S06');
   if (!TRYBY[tryb]) throw usterka('S07', String(tryb));
-  return `okolica:sieci:${geohash(lat, lon, 6)}-${Math.round(promienM)}-${tryb}`;
+  // Klucz liczony z ZAOKRĄGLONEJ pozycji (ta sama siatka co zapytanie Overpass
+  // i kotwica wpisu) — inaczej dwa fixy z tego samego miejsca mają różne
+  // klucze i cache nigdy nie trafia (teren 2026-09-17).
+  const p = pozycjaDoZapytania({ lat, lon });
+  return `okolica:sieci:${geohash(p.lat, p.lon, 6)}-${Math.round(promienM)}-${tryb}`;
 }
 
 function okraglijPunkty(punkty) {
@@ -753,6 +791,10 @@ export function zlozWpisSieci({ dane, srodek, promienM, tryb, terazMs }) {
   return {
     schemat: SCHEMAT_SIECI,
     zapisanoMs: terazMs,
+    // Kotwica wpisu zostaje dokładna (pobranie szło z TEGO punktu). Klucz
+    // cache (`kluczCacheSieci`) używa pozycji zaokrąglonej do siatki, dzięki
+    // czemu dwa fixy z tego samego miejsca mają ten sam klucz i L1/L2 nie
+    // rozjeżdżają się przy szumie GPS (teren 2026-09-17).
     srodek: { lat: srodek.lat, lon: srodek.lon },
     promienM,
     tryb,
@@ -761,11 +803,13 @@ export function zlozWpisSieci({ dane, srodek, promienM, tryb, terazMs }) {
 }
 
 /**
- * Czy wpis pokrywa zapytanie o sieć: dysk zapytania (środek + R×1.15 — ten
- * sam margines co świeże pobranie, `POLITYKA.mnoznikPromienia`) mieści się
- * w dysku wpisu. Bez kotwicy (wpisy sprzed 2026-09-16) — false; te obsługuje
- * tylko klucz dokładny. Stacje i tak filtruje `wybierzStacje` (dystans
- * sieciowy od startu ≤ R), więc nadmiar dróg spoza R jest nieszkodliwy.
+ * Czy wpis pokrywa zapytanie o sieć: dysk zapytania (środek + R×1.15 +
+ * tolerancja) mieści się w dysku wpisu. Bez kotwicy (wpisy sprzed 2026-09-16)
+ * — false; te obsługuje tylko klucz dokładny. Stacje i tak filtruje
+ * `wybierzStacje` (dystans sieciowy od startu ≤ R), więc nadmiar dróg
+ * poza R jest nieszkodliwy. Tolerancja (POLITYKA.tolerancjaKotwicyM)
+ * absorbuje szum GPS (2–5 m między fixami) i pozwala współdzielić wpis
+ * przy dryfie ±200 m (teren 2026-09-17).
  */
 export function czyWpisPokrywa(wpis, { srodek, promienM }) {
   const c = wpis?.srodek;
@@ -775,7 +819,10 @@ export function czyWpisPokrywa(wpis, { srodek, promienM }) {
   if (!srodek || !Number.isFinite(srodek.lat) || !Number.isFinite(srodek.lon)) return false;
   if (!Number.isFinite(promienM) || promienM <= 0) return false;
   const m = POLITYKA.mnoznikPromienia;
-  return odlegloscM(c, srodek) + promienM * m <= promienWpisu * m;
+  // Tolerancja (POLITYKA.tolerancjaKotwicyM) DODAJE do promienia wpisu —
+  // absorbuje szum GPS między fixami (teren 2026-09-17: ±200 m). +1 m na błędy
+  // zaokrągleń zmiennoprzecinkowych przy tym samym środku i R.
+  return odlegloscM(c, srodek) + promienM * m <= promienWpisu * m + POLITYKA.tolerancjaKotwicyM + 1;
 }
 
 /**

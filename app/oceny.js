@@ -364,7 +364,35 @@ export function walidujStatystykiOcen(surowe) {
   return { glosow, plus, minus, uzytaWGrach, procentPlus, procentMinus: glosow ? 100 - procentPlus : 0 };
 }
 
-/* ------------------------------------------------------------------ teksty */
+/* --------------------------------------------------- lokalny rejestr użyć */
+
+/** Klucz w localStorage: zestaw id paczek Drive, na które w tym telefonie
+ *  odpowiedziano na PRZYNAJMNIEJ jedno pytanie. Drive liczy pingi po stronie
+ *  mostu i zanim je zsumuje (albo gdy gra toczy się bez mostu), napis
+ *  „jeszcze nie użyta" był fałszywy (teren 2026-09-17, uwaga D). */
+const KLUCZ_UZYTYCH = 'okolica:uzyte-paczki';
+
+function zbiorUzytych() {
+  try {
+    const s = localStorage.getItem(KLUCZ_UZYTYCH);
+    const arr = s ? JSON.parse(s) : [];
+    return Array.isArray(arr) ? new Set(arr.map(String)) : new Set();
+  } catch { return new Set(); }
+}
+
+/** Czy w tej sesji telefonu odpowiedziano już na choć jedno pytanie z paczki? */
+export function czyPaczkaUzytaLokalnie(paczkaId) {
+  if (!paczkaId) return false;
+  return zbiorUzytych().has(String(paczkaId));
+}
+
+/** Zapisz paczkę jako użytą (po pierwszej odpowiedzi w grze). Idempotentne. */
+export function oznaczPaczkeJakoUzyta(paczkaId) {
+  if (!paczkaId) return;
+  const z = zbiorUzytych();
+  z.add(String(paczkaId));
+  try { localStorage.setItem(KLUCZ_UZYTYCH, JSON.stringify([...z])); } catch { /* brak pamięci nie boli */ }
+}
 
 /** „w 1 grze" / „w 3 grach" — odmiana tylko dla jedynki. */
 export function liczbaGierTekst(liczba) {
@@ -401,12 +429,26 @@ export function liczbaOcenTekst(liczba) {
  * Zdanie na ekran 2: ile gier użyło paczki i jak gracze ocenili pytania.
  *
  * @param {object|null} statystyki wynik `walidujStatystykiOcen` (null = brak danych)
+ * @param {boolean} [uzytaLokalnie=false] czy w tej sesji telefonu już odpowiedziano na choć jedno pytanie z tej paczki (teren 2026-09-17: „każda paczka, w której zostało odpowiedziane przynajmniej 1 pytanie, jest już zaliczona jako użycie\").
  * @returns {string}
  */
-export function opisOcenTekst(statystyki) {
-  if (!statystyki) return 'Brak danych o ocenach — repozytorium nie odpowiedziało.';
+export function opisOcenTekst(statystyki, uzytaLokalnie = false) {
+  if (!statystyki) {
+    // Brak danych z mostu — lokalna flaga wciąż mówi prawdę.
+    return uzytaLokalnie
+      ? 'Użyta w tej sesji, jeszcze bez danych z repozytorium.'
+      : 'Brak danych o ocenach — repozytorium nie odpowiedziało.';
+  }
   const { glosow, procentPlus, procentMinus, uzytaWGrach } = statystyki;
-  const gry = uzytaWGrach > 0 ? `Użyta ${liczbaGierTekst(uzytaWGrach)}` : 'Jeszcze nie użyta w grze';
+  // Ping `uzycie` na mostu idzie w tle i zanim Drive zdąży policzyć, opis
+  // na ekranie wyboru mógł pokazywać „jeszcze nie użyta\" mimo że gracz
+  // odpowiedział na pytanie w poprzedniej grze (teren 2026-09-17). Lokalna
+  // flaga (zapisana po pierwszej odpowiedzi) jest gwarantem prawdy: jeśli
+  // w tej sesji grano tą paczką — napisz wprost.
+  const uzyte = uzytaLokalnie ? Math.max(uzytaWGrach, 1) : uzytaWGrach;
+  const gry = uzyte > 0
+    ? `Użyta ${liczbaGierTekst(uzyte)}`
+    : 'Jeszcze nie użyta w grze';
   if (!glosow) return `${gry}, jeszcze bez ocen graczy.`;
   return `${gry}, ${glosow} ${liczbaOcenTekst(glosow)} (${procentPlus}% 👍, ${procentMinus}% 👎)`;
 }

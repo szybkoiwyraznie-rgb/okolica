@@ -435,18 +435,31 @@ test('kontrakt: CARTO nie wróciło do kodu (wymaga klucza API — ASSETS §1.1)
   }
 });
 
-test('kontrakt: Overpass ma instancje opisane w ASSETS §2, a Nominatim jest usunięty z kodu (właściciel, 2026-09-11)', () => {
+test('kontrakt: Overpass ma instancje opisane w ASSETS §2 (aneks 2026-09-17b), a usunięte endpointy nie są w kodzie (Nominatim też)', () => {
   assert.ok(ASSETS.includes('overpass-api.de/api/interpreter'));
-  assert.ok(ASSETS.includes('overpass.private.coffee'));
-  // Warstwa zapasowa (odwrotna geokodacja Nominatim) wyleciała cała — kod nie
-  // może nawet zbudować żądania do tego endpointu (docelowe rozwiązanie na
-  // stałe z ASSETS §3: nazwa miejsca tylko z Overpass).
+  assert.ok(ASSETS.includes('maps.mail.ru/osm/tools/overpass/api/interpreter'));
+  assert.ok(ASSETS.includes('overpass.kumi.systems/api/interpreter'));
+  // Usunięte endpointy mogą być wspomniane w dokumentacji (sekcja odrzuconych),
+  // ale NIE MOGĄ być skonfigurowane jako aktywne w kodzie aplikacji.
+  let calyKodAplikacji = INDEX + '\n';
+  for (const plik of readdirSync(join(ROOT, 'app')).filter((f) => f.endsWith('.js'))) {
+    calyKodAplikacji += czytaj(`app/${plik}`) + '\n';
+  }
+  assert.ok(calyKodAplikacji.includes('overpass-api.de/api/interpreter'));
+  assert.ok(calyKodAplikacji.includes('maps.mail.ru/osm/tools/overpass/api/interpreter'), 'VK Maps wróciło jako drugi (pomiar 2026-09-17b: 14 s OK)');
+  assert.ok(calyKodAplikacji.includes('overpass.kumi.systems/api/interpreter'));
+  assert.ok(!calyKodAplikacji.includes('overpass.private.coffee/api/interpreter'), 'private.coffee = duplikat Kumi');
+  assert.ok(!calyKodAplikacji.includes('overpass.osm.adikso.net/api/interpreter'), 'Adikso = nigdy nie dzialal TLS');
+  assert.ok(!calyKodAplikacji.includes('overpass.osm.ch/api/interpreter'), 'osm.ch = tylko CH');
+  assert.ok(!calyKodAplikacji.includes('overpass-api.fr/api/interpreter'), 'osm.fr = wylaczony od 2022');
+  assert.ok(!calyKodAplikacji.includes('overpass.nchc.org.tw/api/interpreter'), 'nchc.org.tw = CORS');
+  // Nominatim wylecial cale — kod nie moze nawet zbudowac zadania do tego endpointu
   for (const plik of readdirSync(join(ROOT, 'app')).filter((f) => f.endsWith('.js'))) {
     const kod = czytaj(`app/${plik}`);
-    assert.ok(!kod.includes('nominatim.openstreetmap.org'), `app/${plik}: endpoint Nominatim nie ma prawa wrócić do kodu`);
-    assert.ok(!/budujUrlGeokodacji|DOMYSLNY_ENDPOINT_GEOKODACJI|miejsceZOdpowiedziNominatim/.test(kod), `app/${plik}: warstwa zapasowa usunięta`);
+    assert.ok(!kod.includes('nominatim.openstreetmap.org'), `app/${plik}: endpoint Nominatim nie ma prawa wrocic do kodu`);
+    assert.ok(!/budujUrlGeokodacji|DOMYSLNY_ENDPOINT_GEOKODACJI|miejsceZOdpowiedziNominatim/.test(kod), `app/${plik}: warstwa zapasowa usunieta`);
   }
-  assert.ok(!INDEX.includes('id="geokodacja-zapasowa"'), 'przełącznika zgody na Nominatim nie ma w index.html');
+  assert.ok(!INDEX.includes('id="geokodacja-zapasowa"'), 'przelacznika zgody na Nominatim nie ma w index.html');
 });
 
 /* --------------------------------------------- rejestr ADR i lektura §0 */
@@ -1376,7 +1389,8 @@ test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', ()
   assert.ok(APP.includes('kliknijOcene(OCENA_PLUS)') && APP.includes('kliknijOcene(OCENA_MINUS)'), 'oba kciuki są podpięte');
   assert.ok(APP.includes('wyslijOceneWTle'), 'głos jedzie w tle, nie blokuje gry');
   assert.ok(APP.includes('oproznijKolejkeOcen()'), 'kolejka głosów jest opróżniana przy starcie');
-  assert.ok(APP.includes('opisOcenTekst(walidujStatystykiOcen(meta.oceny))'), 'ekran 2 pokazuje statystyki paczki');
+  assert.ok(APP.includes('opisOcenTekst('), 'ekran 2 pokazuje statystyki paczki');
+  assert.ok(/opisOcenTekst\(walidujStatystykiOcen\(meta\.oceny\)/.test(APP), 'ekran 2 przekazuje walidację meta.oceny do opisu');
   assert.ok(APP.includes('STAN.paczkaRepoId'), 'oceny dotyczą paczek z repozytorium');
 });
 

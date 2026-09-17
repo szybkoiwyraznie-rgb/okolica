@@ -229,7 +229,20 @@ test('oceny: język statystyk na ekran 2', () => {
     opisOcenTekst(walidujStatystykiOcen({ glosow: 0, plus: 0, minus: 0, uzytaWGrach: 0 })),
     'Jeszcze nie użyta w grze, jeszcze bez ocen graczy.',
   );
+  // D (teren 2026-09-17): lokalna flaga „użyta" (przed zsumowaniem przez most)
+  // wymusza napis „Użyta…" nawet gdy Drive jeszcze nie zdążył policzyć pingów.
+  assert.equal(
+    opisOcenTekst(walidujStatystykiOcen({ glosow: 0, plus: 0, minus: 0, uzytaWGrach: 0 }), true),
+    'Użyta w 1 grze, jeszcze bez ocen graczy.',
+    'lokalna flaga nadpisuje „jeszcze nie użyta"',
+  );
+  assert.equal(
+    opisOcenTekst(walidujStatystykiOcen({ glosow: 3, plus: 2, minus: 1, uzytaWGrach: 2 }), true),
+    'Użyta w 2 grach, 3 oceny (67% 👍, 33% 👎)',
+    'flaga lokalna nie podbija licznika gdy Drive już coś naliczył',
+  );
   assert.equal(opisOcenTekst(null), 'Brak danych o ocenach — repozytorium nie odpowiedziało.');
+  assert.equal(opisOcenTekst(null, true), 'Użyta w tej sesji, jeszcze bez danych z repozytorium.');
 
   // Wzór właściciela z 2026-09-08 dosłownie: „Użyta w 1 grze, 2 oceny (50% 👍, 50% 👎)"
   assert.equal(

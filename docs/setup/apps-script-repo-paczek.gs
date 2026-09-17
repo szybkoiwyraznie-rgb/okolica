@@ -52,6 +52,7 @@ const SCHEMAT_OCENA = 'RO-ocena/1';  // ADR 0028: pojedynczy głos (kciuk w gór
 const SCHEMAT_SIECI_CACHE = 'sieci/1'; // = SCHEMAT_SIECI w app/sieci.js
 const TTL_SIECI_DNI = 30; // = POLITYKA.ttlCacheDni
 const MNOZNIK_SIECI = 1.15; // = POLITYKA.mnoznikPromienia
+const TOLERANCJA_KOTWICY_M = 200; // = POLITYKA.tolerancjaKotwicyM (teren 2026-09-17)
 const TRYBY_SIECI = ['piesza', 'rower', 'samochodowa']; // = klucze TRYBY w app/konfig.js
 const MAX_SIECI_BAJTOW = 6000000; // wpis powyżej nie wchodzi (oszczędzamy limity mostu)
 
@@ -1238,12 +1239,13 @@ function odlegloscMSiec(a, b) {
   return 2 * 6371008.8 * Math.asin(Math.min(1, Math.sqrt(s)));
 }
 
-/** Dysk zapytania (środek + R×1.15) w dysku wpisu — jak `czyWpisPokrywa`. */
+/** Dysk zapytania (środek + R×1.15) w dysku wpisu — jak `czyWpisPokrywa`. Tolerancja +200 m absorbuje szum GPS między grami (teren 2026-09-17). */
 function czyWpisSieciPokrywa(wpis, srodek, promienM) {
   const c = wpis && wpis.srodek;
   if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lon)) return false;
   if (!Number.isFinite(wpis.promienM) || !(wpis.promienM > 0)) return false;
-  return odlegloscMSiec(c, srodek) + promienM * MNOZNIK_SIECI <= wpis.promienM * MNOZNIK_SIECI;
+  // Tolerancja DODAJE do promienia wpisu; +1 m na zaokrąglenia.
+  return odlegloscMSiec(c, srodek) + promienM * MNOZNIK_SIECI <= wpis.promienM * MNOZNIK_SIECI + TOLERANCJA_KOTWICY_M + 1;
 }
 
 /** Najświeższy pokrywający wpis z katalogu sieci: `{ok, wpis?}`. */
