@@ -84,18 +84,19 @@ location.reload();          // ustawSzablonKafelkow(null) przywraca OSM
 
 ## 2. Sieć drogowa i nazwy miejsc (Overpass API, ADR 0005)
 
-> **Aneks 2026-09-17 (teren):** łańcuch dostawców został zweryfikowany POMIAREM
-> z telefonu właściciela (Polska, LTE/5G). Działają TYLKO dwie instancje —
-> reszta zwracała 504/CORS/błędny zakres danych/instalację wyłączoną.
+> **Aneks 2026-09-17b (teren):** po drugim pomiarze tego samego dnia VK Maps
+> (mail.ru) wróciło do działania (14 s, poprawne dane). Poprzedni 504 był
+> chwilowym przeciążeniem, a nie trwałym wyłączeniem. Końcowy łańcuch:
+> FOSSGIS → VK Maps → Kumi.
 
 | Instancja | URL | Limity / polityka | Rola w aplikacji | Limit próby |
 | --- | --- | --- | --- | --- |
-| **główna (FOSSGIS, Niemcy)** | `https://overpass-api.de/api/interpreter` | [Polityka](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances): < 10 000 zapytań/dobę i < 1 GB/dobę przy użyciu jednorazowym; **dla aplikacji/strony limity dzielone przez 100** (≈ 100 zapytań i 10 MB/dobę, liczone jako suma ruchu WSZYSTKICH użytkowników); wymagany `User-Agent` **albo** `Referer` identyfikujący aplikację; brak równoległych zapytań; przy `429`/`406` pauza 30 s. Pomiar z Polski 2026-09-17: **712 ms**, poprawne dane. | domyślna | 12 s |
-| **Kumi Systems** | `https://overpass.kumi.systems/api/interpreter` | bez deklarowanych limitów (prośba o zgłaszanie dużych projektów). Pomiar z Polski 2026-09-17: **32,7 s**, poprawne dane (bywa obciążona). | ostateczny backup | 40 s |
+| **główna (FOSSGIS, Niemcy)** | `https://overpass-api.de/api/interpreter` | [Polityka](https://wiki.openstreetmap.org/wiki/Overpass_API#Public_Overpass_API_instances): < 10 000 zapytań/dobę i < 1 GB/dobę przy użyciu jednorazowym; **dla aplikacji/strony limity dzielone przez 100** (≈ 100 zapytań i 10 MB/dobę, liczone jako suma ruchu WSZYSTKICH użytkowników); wymagany `User-Agent` **albo** `Referer` identyfikujący aplikację; brak równoległych zapytań; przy `429`/`406` pauza 30 s. Pomiar z Polski 2026-09-17: 712 ms (pierwszy pomiar), 504 (drugi) — bywa przeciążona, ale najszybsza gdy działa. | domyślna | 12 s |
+| **VK Maps (mail.ru, Rosja)** | `https://maps.mail.ru/osm/tools/overpass/api/interpreter` | bez deklarowanych limitów. Pierwszy pomiar 504, drugi **14 s z poprawnymi danymi** — wraca jako drugi w kolejności (szybszy od Kumi). | zapasowa 1 | 25 s |
+| **Kumi Systems** | `https://overpass.kumi.systems/api/interpreter` | bez deklarowanych limitów (prośba o zgłaszanie dużych projektów). Pomiar poranny 32,7 s (OK), popołudniowy **201 s** — bywa BARDZO obciążona; zostaje jako ostateczny backup z krótszym niż rzeczywistość limitem, żeby gracz nie czekał 3 minuty. | ostateczny backup | 40 s |
 
 **Odrzucone (2026-09-17):**
-- `overpass.private.coffee` — alias do tej samej maszyny co Kumi (IP 193.219.97.30, źródło: raporty PR na GitHubie IX 2026) = duplikat.
-- `maps.mail.ru/osm/tools/overpass` (VK Maps) — stale HTTP 504 z Polski.
+- `overpass.private.coffee` — alias do tej samej maszyny co Kumi (IP 193.219.97.30) = duplikat.
 - `overpass.osm.ch` (Szwajcaria) — odpowiada, ale zwraca dane tylko dla Szwajcarii (0 elementów w Polsce).
 - `overpass.openstreetmap.fr` — instancja wyłączona od 2022-01-29 (potwierdza wiki OSM).
 - `overpass.nchc.org.tw` (Tajwan) — odpowiada, ale błąd CORS z przeglądarki w Polsce.
@@ -118,9 +119,8 @@ Zasady użycia w kodzie:
    jest OD RAZU, bez pauzy — nie ma kogo szanować pauzą (2026-09-07).
    Adres instancji, która dowiozła, ląduje w `okolica:overpass-sprawny`
    i daje jej **pierwszeństwo przed wszystkimi pozostałymi** (aneks ADR 0035).
-   Bez zapisu: **FOSSGIS → Kumi Systems**. Limit czasu próby jest **per-instancja**:
-   12 s na główną (jeśli nie odpowie w 12 s — jest przeciążona i czas na backup),
-   40 s na Kumi (bo wiemy z pomiarów że potrafi odpowiadać poprawnie po 30+ s).
+   Bez zapisu: **FOSSGIS → VK Maps → Kumi Systems**. Limit czasu próby jest
+   **per-instancja**: 12 s na główną, 25 s na VK Maps, 40 s na Kumi.
    Timeout zawsze przełącza dalej, niezależnie od nazwy błędu przeglądarki.
    HTTP 403/404 również przełącza dalej; HTTP 400 kończy błędne zapytanie.
    Lista prób z numerem, serwerem i wynikiem jest widoczna wyłącznie w panelu ⓘ Informacje.
@@ -191,8 +191,8 @@ kod ↔ ten plik oraz reweryfikacja polityk „na dziś".
 - Klucze `PODKLADY` (`app/konfig.js`) mają wpisy w §1 — egzekwuje kontrakt;
   osobny kontrakt pilnuje, że CARTO nie wróci do kodu (§1.1).
 - `INSTANCJE_OVERPASS` (`app/sieci.js`) == tabela §2 co do URL-i (FOSSGIS →
-  Kumi Systems, aneks 2026-09-17); sprawdzenie ręczne (tabela w markdown nie jest
-  parsowana w testach — świadomie, §2 niesie też opisy polityk).
+  VK Maps → Kumi Systems, aneks 2026-09-17b); sprawdzenie ręczne (tabela
+  w markdown nie jest parsowana w testach — świadomie, §2 niesie też opisy polityk).
 - Nominatim: §3 — warstwa zapasowa usunięta 2026-09-11 (kontrakt pilnuje
   nieobecności endpointu w `app/`); archiwalnie: był opt-in z komunikatem w UI
   i cache sesyjnym.

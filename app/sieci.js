@@ -19,25 +19,30 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-155';
-import { TRYBY } from './konfig.js?v=m12-155';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-156';
+import { TRYBY } from './konfig.js?v=m12-156';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
 /**
- * Łańcuch instancji Overpass w kolejności prób (ASSETS §2, aneks 2026-09-17):
+ * Łańcuch instancji Overpass w kolejności prób (ASSETS §2, aneks 2026-09-17b):
  * 1. FOSSGIS (główna, Niemcy) — najszybsza z Polski, dane aktualne.
- * 2. Kumi Systems (globalna) — bez deklarowanych limitów, ale bywa obciążona
- *    (30+ s odpowiedzi we wrześniu 2026), zostaje jako ostateczny backup.
+ * 2. VK Maps (mail.ru, Rosja) — drugi pomiar właściciela (2026-09-17) pokazał
+ *    14 s z poprawnymi danymi (poprzednio 504 — przeciążenie, nie wyłączenie);
+ *    umieszczony jako drugi z limitem 25 s.
+ * 3. Kumi Systems (globalna) — bez deklarowanych limitów, ale bywa BARDZO
+ *    obciążona (32,7 s w pomiarze porannym, 201 s po południu). Zostaje jako
+ *    ostateczny backup z limitem 40 s.
  * Usunięte 2026-09-17 (nie działały z Polski):
- * - VK Maps (mail.ru) — stałe 504 Gateway Timeout
  * - Adikso (Polska) — nigdy nie działał TLS, wyłączony
  * - private.coffee — alias do Kumi (ta sama maszyna, duplikat)
  * - osm.ch (Szwajcaria) — tylko dane Szwajcarii, zero wyników w Polsce
  * - openstreetmap.fr — instancja wyłączona od stycznia 2022
+ * - nchc.org.tw (Tajwan) — błąd CORS z przeglądarki
  */
 export const INSTANCJE_OVERPASS = [
   { nazwa: 'FOSSGIS (główna)', url: 'https://overpass-api.de/api/interpreter', timeoutMs: 12_000 },
+  { nazwa: 'VK Maps', url: 'https://maps.mail.ru/osm/tools/overpass/api/interpreter', timeoutMs: 25_000 },
   { nazwa: 'Kumi Systems', url: 'https://overpass.kumi.systems/api/interpreter', timeoutMs: 40_000 },
 ];
 

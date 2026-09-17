@@ -1021,41 +1021,41 @@ test('Overpass: timeout martwej instancji przełącza OD RAZU, bez pauzy limitow
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(500);
   const trwalo = Date.now() - start;
-  assert.equal(wywolania.length, 2, 'martwa FOSSGIS → od razu Kumi Systems');
+  assert.equal(wywolania.length, 2, 'martwa FOSSGIS → od razu VK Maps (drugi w kolejce)');
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'druga instancja dowiozła');
-  assert.ok(trwalo < 15_000, `przełączenie po timeoutcie bez pauzy (trwało ${trwalo} ms, pauza limitowa odpadła)`);
-  assert.equal(domAtrapa.pamiec.get('okolica:overpass-sprawny'), INSTANCJE_OVERPASS[1].url, 'sprawna instancja zapamiętana');
+  assert.ok(trwalo < 30_000, `przełączenie po timeoutcie bez pauzy (trwało ${trwalo} ms, pauza limitowa odpadła)`);
+  assert.equal(domAtrapa.pamiec.get('okolica:overpass-sprawny'), INSTANCJE_OVERPASS[1].url, 'sprawna instancja (VK Maps) zapamiętana');
 });
 
-test('Overpass: zapamiętany sukces Kumi Systems ma pierwszeństwo', async () => {
+test('Overpass: zapamiętany sukces VK Maps ma pierwszeństwo', async () => {
   const pamiec = new Map([['okolica:overpass-sprawny', INSTANCJE_OVERPASS[1].url]]);
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const wywolania = [];
   domAtrapa.window.fetch = async (url, opcje) => {
-    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) };
     wywolania.push(url);
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
   };
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(250);
-  assert.deepEqual(wywolania, [INSTANCJE_OVERPASS[1].url], 'zapamiętany Kumi pierwszy');
+  assert.deepEqual(wywolania, [INSTANCJE_OVERPASS[1].url], 'zapamiętany VK Maps pierwszy');
 });
 
-test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2 (aneks 2026-09-17)', async () => {
+test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2 (aneks 2026-09-17b)', async () => {
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const odwiedzone = [];
   domAtrapa.window.fetch = async (url, opcje) => {
-    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) };
     odwiedzone.push(url);
     if (odwiedzone.length < INSTANCJE_OVERPASS.length) return { ok: false, status: 429 };
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
   };
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(300);
-  assert.deepEqual(odwiedzone, INSTANCJE_OVERPASS.map((i) => i.url), 'FOSSGIS → Kumi Systems');
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'druga instancja dowiozła');
+  assert.deepEqual(odwiedzone, INSTANCJE_OVERPASS.map((i) => i.url), 'FOSSGIS → VK Maps → Kumi Systems');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'trzecia instancja dowiozła');
 });
 
 test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pierścienia', async () => {
@@ -3123,20 +3123,21 @@ test('teren: automatyczny GPS bez API pokazuje P01; błędny fix nie zmienia poz
 
 for (const etap of ['nagłówki', 'ciało', 'nietypowy abort']) {
   test(`Overpass: per-instance timeout obejmuje ${etap}; pełny łańcuch od zapamiętanej instancji i czytelne wyniki`, async () => {
-    const pamiec = new Map([['okolica:overpass-sprawny', INSTANCJE_OVERPASS[1].url]]);
+    const pamiec = new Map([['okolica:overpass-sprawny', INSTANCJE_OVERPASS[2].url]]); // Kumi zapamiętane
     const d = await aplikacjaZSiecia({ search: '?test=true&odstep=0', pamiec });
     ustawPozycjeTestowa(d, '52.2297', '21.0122');
     const oryginalnyTimer = globalThis.setTimeout;
     const sygnaly = [], czasy = [], adresy = [];
     globalThis.setTimeout = (fn, ms, ...args) => {
-      // skracamy timeouty do 5 ms, żeby test nie czekał 12/40 s na próby
-      if (ms === INSTANCJE_OVERPASS[0].timeoutMs || ms === INSTANCJE_OVERPASS[1].timeoutMs) {
+      if (ms === INSTANCJE_OVERPASS[0].timeoutMs
+          || ms === INSTANCJE_OVERPASS[1].timeoutMs
+          || ms === INSTANCJE_OVERPASS[2].timeoutMs) {
         czasy.push(ms); return oryginalnyTimer(fn, 5, ...args);
       }
       return oryginalnyTimer(fn, ms, ...args);
     };
     d.window.fetch = async (url, opcje) => {
-      if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
+      if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) };
       adresy.push(url); sygnaly.push(opcje.signal);
       const zawieszone = () => new Promise((_, reject) => {
         if (etap === 'nietypowy abort') opcje.signal.addEventListener('abort', () => reject(new Error('signal is aborted without reason')));
@@ -3147,10 +3148,10 @@ for (const etap of ['nagłówki', 'ciało', 'nietypowy abort']) {
     try {
       d.kliknij('przycisk-dalej-stacje');
       await czekaj(100);
-      // kolejność: zapamiętana Kumi (indeks 1), potem domyślna FOSSGIS (indeks 0)
-      const oczekiwanaKolejnosc = [INSTANCJE_OVERPASS[1], INSTANCJE_OVERPASS[0]];
+      // Zapamiętany Kumi (indeks 2) → VK (1) → FOSSGIS (0): kolejnoscInstancji
+      // przenosi zapamiętanego na początek, potem pozostali w kolejności bazowej.
+      const oczekiwanaKolejnosc = [INSTANCJE_OVERPASS[2], INSTANCJE_OVERPASS[0], INSTANCJE_OVERPASS[1]];
       assert.deepEqual(adresy, oczekiwanaKolejnosc.map(i => i.url));
-      // oczekiwane timeouty per-instancja w tej kolejności: Kumi 40 s, FOSSGIS 12 s
       assert.deepEqual(czasy, oczekiwanaKolejnosc.map(i => i.timeoutMs));
       assert.ok(sygnaly.every(s => s.aborted));
       assert.equal(d.pobierz('stacje-ladowanie').hidden, true);
@@ -3162,18 +3163,18 @@ for (const etap of ['nagłówki', 'ciało', 'nietypowy abort']) {
         assert.match(proby[i].textContent, new RegExp(`przekroczono czas oczekiwania ${oczekiwaneSekundy[i]} s`));
       }
       assert.match(d.pobierz('siec-proby').textContent, /FOSSGIS/);
-      assert.doesNotMatch(d.pobierz('bledy-stacje').textContent, /FOSSGIS|Kumi|private.coffee|VK Maps|Adikso/);
+      assert.doesNotMatch(d.pobierz('bledy-stacje').textContent, /FOSSGIS|Kumi|VK Maps|private.coffee|Adikso/);
       assert.doesNotMatch(d.pobierz('bledy-stacje').textContent, /signal is aborted/);
     } finally { globalThis.setTimeout = oryginalnyTimer; }
   });
 }
 
-test('Overpass: HTTP 403 nie kończy łańcucha; Kumi Systems dowozi wynik', async () => {
+test('Overpass: HTTP 403 nie kończy łańcucha; VK Maps dowozi wynik', async () => {
   const d = await aplikacjaZSiecia({ search: '?test=true&odstep=0' });
   ustawPozycjeTestowa(d, '52.2297', '21.0122');
   const adresy = [];
   d.window.fetch = async (url, opcje) => {
-    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) };
     adresy.push(url);
     if (adresy.length === 1) return { ok: false, status: 403 };
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
@@ -3182,7 +3183,7 @@ test('Overpass: HTTP 403 nie kończy łańcucha; Kumi Systems dowozi wynik', asy
   await czekaj(100);
   assert.deepEqual(adresy, INSTANCJE_OVERPASS.slice(0, 2).map(i => i.url));
   assert.match(d.pobierz('siec-proby').textContent, /FOSSGIS.*HTTP 403/);
-  assert.match(d.pobierz('siec-proby').textContent, /Kumi Systems.*pobrano/);
+  assert.match(d.pobierz('siec-proby').textContent, /VK Maps.*pobrano/);
   assert.equal(d.pobierz('bledy-stacje').hidden, true);
 });
 
@@ -3190,10 +3191,10 @@ test('Overpass: HTTP 403 nie kończy łańcucha; Kumi Systems dowozi wynik', asy
 test('Overpass: Kumi jako jedyna działająca staje się zapamiętana i dowozi w kolejnej grze', async () => {
   const d = await aplikacjaZSiecia({ search: '?test=true&odstep=0' });
   ustawPozycjeTestowa(d, '52.2297', '21.0122');
-  const kumi = INSTANCJE_OVERPASS[1].url;
+  const kumi = INSTANCJE_OVERPASS[2].url;
   const adresy = [];
   d.window.fetch = async (url, opcje) => {
-    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) };
     adresy.push(url);
     if (url !== kumi) throw new TypeError('Failed to fetch');
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };

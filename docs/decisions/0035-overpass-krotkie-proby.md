@@ -112,3 +112,35 @@ log prób pokazuje właściwe liczby sekund, ASSETS i kontrakt nie zawierają
 już usuniętych endpointów, Kumi zostaje zapamiętany jako sprawny i jest
 pierwszy w kolejnej grze (analogicznie jak wcześniej Adikso). Żadnych
 nowych dostawców, kluczy ani zmian prywatności.
+
+
+## Aneks 2026-09-17b — VK Maps wraca do łańcucha (m12-155)
+
+Tego samego popołudnia właściciel powtórzył test z konsoli przeglądarki
+(Polska, LTE) i dostał inne wyniki:
+
+| Endpoint | Czas odpowiedzi | Wynik |
+| --- | --- | --- |
+| overpass-api.de (FOSSGIS) | 10,8 s | HTTP 504 (przeciążenie) |
+| overpass.kumi.systems | **201 s** | OK, ale ponad 3 minuty (za długo na telefonie) |
+| maps.mail.ru (VK Maps) | **14,1 s** | OK, poprawne dane |
+
+Poprzedni 504 z VK Maps (rano tego samego dnia) był chwilowym przeciążeniem,
+a nie trwałym wyłączeniem instancji. Wracamy VK do łańcucha jako drugą
+instancję, bo odpowiada zauważalnie szybciej niż Kumi, a Kumi w tym
+pomiarze pokazał 201 s — zbyt długo, żeby gracz czekał bez komunikatu.
+
+Końcowy łańcuch (aneks 2026-09-17b):
+1. **FOSSGIS** (główna) — limit 12 s
+2. **VK Maps** (pierwszy backup) — limit 25 s (tyle co timeout QL)
+3. **Kumi Systems** (ostateczny backup) — limit 40 s
+
+Dłuższe czasy odpowiedzi z Kumi w tym pomiarze (201 s) pokazują, że nie
+można mu ufać jako jedynemu backupowi — gdy FOSSGIS pada, potrzebna jest
+przynajmniej jedna alternatywa z rozsądnym czasem odpowiedzi. Właściciel
+potwierdza słuszność podejścia „kilka niezależnych instancji + krótkie
+próby" z ADR 0035 — poszczególne serwery padają na różne części dnia,
+więc mając trzy punkty styku prawdopodobieństwo że WSZYSTKIE padną w tym
+samym czasie jest małe.
+
+Testy i kontrakt zaktualizowane do łańcucha FOSSGIS → VK → Kumi.

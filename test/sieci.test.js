@@ -173,26 +173,29 @@ test('kolejnoscInstancji: zapamiętana pierwsza, reszta bez zmian; obcy adres ig
   assert.deepEqual(kolejnoscInstancji(null).map((i) => i.url), domyslna);
   assert.deepEqual(kolejnoscInstancji('').map((i) => i.url), domyslna);
   assert.deepEqual(kolejnoscInstancji('https://obca.example/api').map((i) => i.url), domyslna);
-  const kumi = INSTANCJE_OVERPASS[1].url;
-  assert.deepEqual(kolejnoscInstancji(kumi).map((i) => i.url),
-    [kumi, ...domyslna.filter(url => url !== kumi)], 'zapamiętany sukces pierwszy, pozostałe bez dubli');
+  const vk = INSTANCJE_OVERPASS[1].url;
+  assert.deepEqual(kolejnoscInstancji(vk).map((i) => i.url),
+    [vk, ...domyslna.filter(url => url !== vk)], 'zapamiętany sukces pierwszy, pozostałe bez dubli');
 });
 
-test('instancje: łańcuch dokładnie jak ASSETS §2 (aneks 2026-09-17), w kolejności głównej', () => {
+test('instancje: łańcuch dokładnie jak ASSETS §2 (aneks 2026-09-17b), w kolejności głównej', () => {
   assert.deepEqual(INSTANCJE_OVERPASS.map((i) => i.url), [
     'https://overpass-api.de/api/interpreter',
+    'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
   ]);
   for (const i of INSTANCJE_OVERPASS) assert.match(i.url, /^https:\/\//);
   assert.equal(INSTANCJE_OVERPASS[0].timeoutMs, 12_000);
-  assert.equal(INSTANCJE_OVERPASS[1].timeoutMs, 40_000);
+  assert.equal(INSTANCJE_OVERPASS[1].timeoutMs, 25_000);
+  assert.equal(INSTANCJE_OVERPASS[2].timeoutMs, 40_000);
 });
 
-test('polityka: stałe zgodne z ADR 0005 i ADR 0010 pkt 1 (aneks 2026-09-17)', () => {
+test('polityka: stałe zgodne z ADR 0005 i ADR 0010 pkt 1 (aneks 2026-09-17b)', () => {
   assert.equal(POLITYKA.timeoutMs, 12_000);
-  assert.equal(POLITYKA.timeoutZapytaniaS, 25); // większe zapytania R=10 km potrzebują czasu
-  assert.equal(POLITYKA.odstepMs, 1_000); // 1 s grzecznościowo po limicie (właściciel, 2026-09-09)
+  assert.equal(POLITYKA.timeoutZapytaniaS, 25);
+  assert.equal(POLITYKA.odstepMs, 1_000);
   assert.equal(POLITYKA.mnoznikPromienia, 1.15);
+  assert.equal(POLITYKA.tolerancjaKotwicyM, 200);
   assert.equal(POLITYKA.maxRozmiarCacheBajtow, 2 * 1024 * 1024);
   assert.equal(POLITYKA.ttlCacheDni, 30);
 });

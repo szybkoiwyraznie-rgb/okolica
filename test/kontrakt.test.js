@@ -435,8 +435,9 @@ test('kontrakt: CARTO nie wróciło do kodu (wymaga klucza API — ASSETS §1.1)
   }
 });
 
-test('kontrakt: Overpass ma instancje opisane w ASSETS §2 (aneks 2026-09-17), a usunięte endpointy nie są w kodzie (Nominatim też)', () => {
+test('kontrakt: Overpass ma instancje opisane w ASSETS §2 (aneks 2026-09-17b), a usunięte endpointy nie są w kodzie (Nominatim też)', () => {
   assert.ok(ASSETS.includes('overpass-api.de/api/interpreter'));
+  assert.ok(ASSETS.includes('maps.mail.ru/osm/tools/overpass/api/interpreter'));
   assert.ok(ASSETS.includes('overpass.kumi.systems/api/interpreter'));
   // Usunięte endpointy mogą być wspomniane w dokumentacji (sekcja odrzuconych),
   // ale NIE MOGĄ być skonfigurowane jako aktywne w kodzie aplikacji.
@@ -445,9 +446,9 @@ test('kontrakt: Overpass ma instancje opisane w ASSETS §2 (aneks 2026-09-17), a
     calyKodAplikacji += czytaj(`app/${plik}`) + '\n';
   }
   assert.ok(calyKodAplikacji.includes('overpass-api.de/api/interpreter'));
+  assert.ok(calyKodAplikacji.includes('maps.mail.ru/osm/tools/overpass/api/interpreter'), 'VK Maps wróciło jako drugi (pomiar 2026-09-17b: 14 s OK)');
   assert.ok(calyKodAplikacji.includes('overpass.kumi.systems/api/interpreter'));
   assert.ok(!calyKodAplikacji.includes('overpass.private.coffee/api/interpreter'), 'private.coffee = duplikat Kumi');
-  assert.ok(!calyKodAplikacji.includes('maps.mail.ru/osm/tools/overpass/api/interpreter'), 'VK Maps = stale 504');
   assert.ok(!calyKodAplikacji.includes('overpass.osm.adikso.net/api/interpreter'), 'Adikso = nigdy nie dzialal TLS');
   assert.ok(!calyKodAplikacji.includes('overpass.osm.ch/api/interpreter'), 'osm.ch = tylko CH');
   assert.ok(!calyKodAplikacji.includes('overpass-api.fr/api/interpreter'), 'osm.fr = wylaczony od 2022');
