@@ -56,13 +56,13 @@ rywalizacja na wspólnej trasie.
 0011 (UI „czyja kolejka"), 0013 (prywatność), 0022 (kolejka odpowiada),
 0023 (zero presji czasowej).
 
-## Aneks (2026-09-06): multi-device obok hot-seat (ADR 0019, M11)
+## Aneksy 2026-09-06, 2026-09-12 i 2026-09-14 (m12-115) są w archiwum (poza budżetem lektury)
 
-Hot-seat na jednym telefonie ZOSTAJE jako tryb domyślny i jedyny działający
-offline. Decyzją właściciela (ADR 0019) dochodzi gra na wielu urządzeniach
-przez most Drive: parowanie lobby+kod, tryby wyścig i tury, synchronizacja
-zdarzeniami BEZ współrzędnych. (Partia 2: punktacja czasu z ADR 0014
-wycofana w obu trybach — ADR 0023.)
+Współistnienie multi-device (dziś opisuje je ADR 0019), rotacja kolejnych pytań
+stacji (szczegóły w aneksie 2026-09-12 do ADR 0022) i likwidacja
+`czyStartPoDalej()` — start odcinka po „dalej” jest bezwarunkowy (F2) — leżą w
+`docs/decisions/archive/aneksy-0009-2026-09-06-do-14.md` (L62/L66, 2026-09-17g).
+Reguła z aneksu 2026-09-09 obowiązuje bez zmian.
 
 ## Aneks 2026-09-09 — jeden przycisk zamiast dwóch po odpowiedzi
 
@@ -83,23 +83,3 @@ część B: gracz sam wybiera stację) i w turach, gdy droga należy do kogoś i
 W tych przypadkach przycisk wraca do napisu „Następna stacja →\" i zostaje panel A.
 Etykieta jest przeliczana także w `renderujGre`, więc pauza wciśnięta **w trakcie
 czytania wyjaśnienia** natychmiast cofa obietnicę startu.
-
-
-## Aneks (2026-09-12)
-
-Punkt 4 czyta się dalej jako „PIERWSZE pytanie stacji należy do gracza
-z kolejki”; kolejne pytania tej samej stacji rotują po liście graczy (pytanie
-`k` → gracz z kolejki przesunięty o `k`, cyklicznie). Szczegóły i uzasadnienie:
-aneks do ADR 0022 z 2026-09-12 (m12-87).
-
-
-## Aneks 2026-09-14 (m12-115) — start odcinka po „dalej” jest bezwarunkowy (F2)
-
-Akapit aneksu 2026-09-09 o `czyStartPoDalej()` („Automatu NIE MA tam, gdzie
-odebrałby graczowi decyzję…”) jest nieaktualny: pauzy nie ma (ADR 0040), tur
-nie ma (ADR 0019 aneks 2026-09-11), a wyścig wraca na mapę od razu, bez
-warstwy wyboru stacji (ADR 0027 aneks 2026-09-14). Funkcja sprowadziła się
-do `return true` (PR #22, fala F) i została usunięta (PR #23, naprawa F2):
-`nastepnaStacja()` i `wznowGre()` startują odcinek z fazy przygotowania
-wprost. Zachowanie z aneksu 2026-09-09 (jeden przycisk zamiast dwóch)
-obowiązuje bez zmian.

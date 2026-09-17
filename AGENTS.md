@@ -107,11 +107,15 @@ Ponadto:
 ## 3. Zasady treści — protokół PYT (ściąga; wiąże `docs/PROTOKOL.md`)
 
 - **Prompt generuje aplikacja** (`PROTOKOL §2` ↔ `zbudujPrompt()`; parzystość
-  pilnuje kontrakt). **Kwerenda twarda** (ADR 0008): pytanie bez `zrodla[]`
-  z prawdziwym URL odpada bez wyjątków. **Pytania o okolicę** (treść/
-  wyjaśnienie odnosi się do miejsca z `okolica`).
-- **Trudność z kategorii wiekowej** (§4): zmiana kategorii = zmiana opisu
-  w promptcie. **Schemat wersjonowany** (`PYT/1.0`): zmiana = ADR + podbicie
+  pilnuje kontrakt). **Kwerenda w wariancie z fact-check** (ADR 0008/0032/0058):
+  przy ptaszku fact-check prompt WYMAGA sprawdzenia każdego faktu w sieci, ale
+  wynik kwerendy nie ląduje w paczce — pola `zrodla[]` nie ma, a kody E09–E11
+  są wycofane; wariant bez fact-check nie wymusza sprawdzania wcale.
+  **Pytania o okolicę** (treść/wyjaśnienie odnosi się do miejsca z `okolica`).
+- **Poziomy trudności** (§4): `dzieci` (8–10) / `dorosli` — poziom jest
+  własnością GRACZA (hot-seat, `gracze[].poziom`) albo całej GRY (multi: jeden
+  poziom hosta, jedno wspólne pytanie na stację); zmiana poziomu = zmiana opisu
+  w promptcie. **Schemat wersjonowany** (`PYT/1.3`): zmiana = ADR + podbicie
   + migrator (użytkownik nie traci gry). **Tematy z kanonu** (`TEMATY`):
   nowy temat = kanon + protokół w tym samym commicie.
 - **Paczka po walidacji leży jawnie** — jawny JSON w pamięci, w zapisie gry

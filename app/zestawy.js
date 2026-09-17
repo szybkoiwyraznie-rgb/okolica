@@ -23,9 +23,9 @@
  * = jawny powód niedopasowania).
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-160';
-import { kanonicznyTemat } from './konfig.js?v=m12-160';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-160';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-161';
+import { kanonicznyTemat } from './konfig.js?v=m12-161';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-161';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/2';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/2';

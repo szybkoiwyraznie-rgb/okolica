@@ -1135,6 +1135,28 @@ test('kontrakt ADR 0046 + aneks 2026-09-16: promień jest kryterium równości, 
   assert.match(APP, /czyWOkolicy\(m, kryteria\)/, 'paczki z innych okolic nie są nawet liczone');
 });
 
+test('kontrakt ADR 0055 (audyt PR #42): poziomy setupu liczy JEDNO źródło — także w meta i kryteriach', () => {
+  // Audyt PR #42 (2026-09-17g): `metaBiezacejOkolicy()` brała poziomy z listy
+  // graczy TAKŻE w multi, a walidacja paczki (`oczekiwane()`) — z poziomu GRY
+  // (wybór hosta). Gdy poziom hosta różnił się od poziomu gry, meta przeczyła
+  // pytaniom, które przeszły E21/E22: taka paczka szła na Drive z błędnym
+  // `poziomyPytan` i nie pasowała potem do setupu, dla którego powstała.
+  assert.match(APP, /function poziomyBiezacegoSetupu\(\) \{/, 'app.js ma jedno źródło poziomów bieżącego setupu');
+  const zrodlo = APP.slice(APP.indexOf('function poziomyBiezacegoSetupu()'), APP.indexOf('/** Meta dopasowania z bieżącej konfiguracji'));
+  assert.match(zrodlo, /STAN\.rodzajGry === 'multi'[\s\S]*?STAN\.multiPoziom/, 'multi bierze JEDEN poziom gry (wybór hosta)');
+  assert.match(zrodlo, /poziomyPytanZGraczy\(STAN\.konfig\.gracze\)/, 'hot-seat bierze poziomy z listy graczy');
+  const formuly = APP.split("? { dzieci: STAN.multiPoziom === 'dzieci' ? 1 : 0").length - 1;
+  assert.equal(formuly, 1, 'formuła „jeden poziom gry” żyje tylko w poziomyBiezacegoSetupu() — bez kopii w meta i kryteriach');
+  for (const [funkcja, kotwica] of [
+    ['metaBiezacejOkolicy', 'function zapiszZestawLokalnyPoStarcie()'],
+    ['oczekiwane', 'function czyFactcheckPaczki('],
+  ]) {
+    const cialo = APP.slice(APP.indexOf(`function ${funkcja}()`), APP.indexOf(kotwica));
+    assert.ok(cialo.length > 100, `${funkcja}(): wycinek app.js znaleziony`);
+    assert.match(cialo, /poziomyBiezacegoSetupu\(\)/, `${funkcja}() liczy poziomy wspólnym źródłem`);
+  }
+});
+
 test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kodów i źródeł', () => {
   // ekrany i panele (ADR 0019; m12-74: przepisany flow właściciela)
   for (const id of [

@@ -418,6 +418,34 @@ const MARTWE_FRAZY = [
     nosniki: [...DOKUMENTY, ...UI],
     powod: 'przycisk czytający schowek usunięty (uwaga terenowa A, 2026-09-16): na iPhonie w Chrome nie oddawał treści, a wklejenie palcem waliduje samo (ADR 0006 aneks 2026-09-16d)',
   },
+  // Fala PYT/1.3 (ADR 0055/0057/0058, 2026-09-17d–f): poziomy trudności per
+  // gracz, krótki prompt, paczka bez źródeł. Frazy są dosłowne — ze ściągi
+  // AGENTS.md §3, z opisu setupu w WORKFLOW i z nagłówka PROTOKOL §3.
+  {
+    fraza: 'kategoria wiekowa (7 lat / 12 lat / dorośli)',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'wieku liczbowego w setupie nie ma (ADR 0055) — poziom to dzieci/dorosli, przy każdym imieniu (hot-seat) albo jeden dla gry multi',
+  },
+  {
+    fraza: 'Nowa kategoria wiekowa',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'stała WIEK_SETUP usunięta razem z polem wieku w setupie (ADR 0055); nowy poziom = WIEK + KLUCZE_POZIOMOW + POZIOM_DORMYSLNY',
+  },
+  {
+    fraza: 'pytanie bez `zrodla[]`',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'paczka nie niesie źródeł od PYT/1.3 (ADR 0058) — kwerenda obowiązuje w wariancie z fact-check jako reguła PROMPTU, nie jako pole JSON',
+  },
+  {
+    fraza: 'PYT/1.0',
+    nosniki: ['AGENTS.md'],
+    powod: 'ściąga protokołu w AGENTS.md §3 musi nieść BIEŻĄCĄ wersję (PYT/1.3, ADR 0057/0058), nie historyczną',
+  },
+  {
+    fraza: 'Schemat paczki PYT/1.2',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'PROTOKOL §3 opisuje schemat bieżący — od 2026-09-17f jest to PYT/1.3 (ADR 0057/0058)',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {

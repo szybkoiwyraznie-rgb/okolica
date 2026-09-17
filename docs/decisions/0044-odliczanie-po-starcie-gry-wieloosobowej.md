@@ -120,17 +120,12 @@ warstwa odliczania celowo nim NIE jest).
 
 ## Aneks 2026-09-14 (m12-115, uwaga F) — wybór stacji usunięty, nie przeprowadzony
 
-Pkt 5 („Wybór stacji w Wyścigu na Orientację PRZEPROWADZIŁ SIĘ do panelu fazy A”,
-`#multi-wybor-stacji`) jest nieaktualny. Warstwy wyboru nie ma; wyścig wykrywa
-dotarcie do dowolnej niezaliczonej stacji (ADR 0027 aneks 2026-09-14). Reszta
-tego ADR — odliczanie 5-4-3-2-1-START, brak karty `#gra-panel-multi`, pasek
-sync tylko w lobby, wspólny wynik na ekranie hotseat — bez zmian.
-
-## Aneks 2026-09-16 (uwaga terenowa, pkt 1) — żywe wyniki widowni usunięte
-
-Żywe wyniki widowni, lobby po starcie, żywa tabela `Gracz/Punkty` i LIMBO
-usunięte: po starcie każdy widzi grę jak w hotseacie. Postęp sprzed odświeżenia
-odtwarza `odtworzPostepMulti`.
+Treść i uzasadnienie: `docs/decisions/archive/aneksy-0044-2026-09-14-do-16.md`
+(L62/L66, 2026-09-17g). Wyścig wykrywa dotarcie do dowolnej niezaliczonej stacji
+(pkt 5 nieaktualny; `renderujWyborStacji()` to no-op), a po starcie nikt — nawet
+host solo — nie widzi lobby ani żywej tabeli widowni; postęp sprzed odświeżenia
+odtwarza `odtworzPostepMulti`. Reszta ADR (odliczanie 5-4-3-2-1-START, brak karty
+`#gra-panel-multi`, pasek sync w lobby, wspólny wynik) bez zmian.
 
 ## Aneks 2026-09-17 (uwaga terenowa D) — odcinek startuje z góry w OBU trybach
 

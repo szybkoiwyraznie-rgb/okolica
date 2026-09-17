@@ -74,31 +74,13 @@ backendu (ADR 0001) wyznacza środki: pamięć przeglądarki, pliki, GitHub.
 0001 (bez backendu), 0005 (cache sieci), 0006 (pętla treści), 0007 (kontener
 i ukrywanie paczki), 0008 (przegląd źródeł), 0013 (prywatność geohashu).
 
-## Aneks 2026-09-13c (m12-113, zgłoszenie terenowe O): lokalnej historii gier NIE MA
+## Aneks 2026-09-13c (m12-113, zgłoszenie terenowe O) jest w archiwum (poza budżetem lektury)
 
-Punkt 1 w części dotyczącej klucza historii jest UCHYLONY. Właściciel po teście
-terenowym: na setupie pod wyborem rodzaju gry pojawiła się karta z listą
-poprzednich gier z licznikiem „(1)" — a miała zniknąć. Jedyną drogą powrotu do
-przerwanej gry jest automatyczne wczytanie zapisu (ADR 0045), więc druga lista
-gier na ekranie ustawień obiecywała coś, czego aplikacja nie robi.
-
-**Usunięte:** karta `#karta-historia` z listą i przyciskiem dwustopniowego
-kasowania, klucz `okolica:historia`, schematy `historia/1` i `historia-gra/1`,
-kody `H01`–`H04` (przedrostek H wycofany — ADR 0015 aneks 2026-09-13), limit 50
-wpisów oraz pomocniki `skrotGry`, `dodajWpisHistorii`, `nowaHistoria`
-i `walidujHistorieSurowa` w `app/trwalosc.js`.
-
-**Zostaje:** zapis stanu gry (`stan-gry/1`, kody T, budżet 2 MB, wskaźnik
-aktywnej gry) — punkty 2, 3, 4 i 6 bez zmian. Koniec gry (naturalny albo ręczny)
-wołający w hooku `zapiszGre()` bezpośrednio `wyslijWynikHotseat()`: wynik jedzie
-na wspólny Drive (ADR 0026 aneks) i stamtąd bierze go ranking (ADR 0039).
-Telefon nie trzyma własnej kopii — mniej danych lokalnych to mniej do utraty
-i mniej do czyszczenia (ADR 0013). Wysyłka nie zależy już od powodzenia zapisu
-lokalnego, a idempotencję po odcisku gry ma jak dotąd.
-
-**Strażnik:** `test/dryf-dokumentow.test.js` ma martwe frazy (etykieta karty,
-przycisk kasowania, klucz), a `test/kontrakt.test.js` asertuje nieobecność
-elementów, funkcji i symboli oraz to, że wysyłka wyniku na Drive została.
+Lokalnej historii gier NIE MA: karta `#karta-historia`, klucz `okolica:historia`,
+schematy `historia/1`/`historia-gra/1`, kody `H01`–`H04` i pomocniki
+w `app/trwalosc.js` usunięte; powrót do gry niesie zapis (ADR 0045), a wynik —
+wspólny Drive (ADR 0026/0039). Dosłownie:
+`docs/decisions/archive/aneksy-0010-2026-09-13c.md` (L62/L66, 2026-09-17g).
 
 ## Aneks 2026-09-16 — wpis z szerszego pobrania obsługuje węższy setup (teren)
 
