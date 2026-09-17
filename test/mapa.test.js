@@ -698,7 +698,7 @@ test('zaznaczStacje: zaliczona pinezka ma klasę pinezka-zaliczona (uwaga G, 202
   const pinezki = dom.pobierz(`${ID}-pinezki`);
   const lista = stacje(3, 300).map((s, i) => ({ ...s, zaliczona: i === 0 }));
   mapa.zaznaczStacje(lista, { promienM: 800, aktywna: 'stacja-2' });
-  assert.match(pinezki.children[0].getAttribute('class'), /pinezka-zaliczona/, 'zaliczona jest szara');
+  assert.match(pinezki.children[0].getAttribute('class'), /pinezka-zaliczona/, 'zaliczona ma własną klasę (pomarańczowa, uwaga A 2026-09-17)');
   assert.equal(pinezki.children[0].getAttribute('class').includes('pinezka-aktywna'), false);
   assert.match(pinezki.children[1].getAttribute('class'), /pinezka-aktywna/);
   assert.equal(pinezki.children[1].getAttribute('class').includes('pinezka-zaliczona'), false);

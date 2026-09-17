@@ -439,10 +439,16 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 .pinezka circle { fill: var(--akcent); stroke: #fff; stroke-width: 2; }
 .pinezka text { fill: #fff; font-size: 13px; font-weight: 700; }
 .pinezka-aktywna circle { fill: var(--ostrzezenie); }
-/* 2026-09-14 G: zaliczone stacje inny kolor na mapie — szary/zgaszony zielony */
-.pinezka-zaliczona circle { fill: #6b7280; }
-.pinezka-zaliczona.pinezka-aktywna circle { fill: #6b7280; }
-.pinezka-zaliczona text { fill: #e5e7eb; }
+/* 2026-09-14 G: zaliczone stacje inny kolor na mapie.
+   2026-09-17 (uwaga terenowa A): SZARY wypadł — na telefonie w słońcu był zbyt
+   blisko zielonego „oczekuje”, a gracz musi jednym spojrzeniem widzieć, co już
+   zamknął. Zaliczona jest POMARAŃCZOWA, ale PUSTA w środku (numer w kolorze
+   pierścienia), żeby nie zlała się z pełnym pomarańczem bieżącego celu
+   (`.pinezka-aktywna`) — obie barwy biorą z tego samego tokenu `--ostrzezenie`,
+   więc kontrast numeru pilnuje palety motywu (jasny i ciemny). */
+.pinezka-zaliczona circle { fill: var(--tlo-pole); stroke: var(--ostrzezenie); stroke-width: 3; }
+.pinezka-zaliczona.pinezka-aktywna circle { fill: var(--tlo-pole); stroke: var(--ostrzezenie); }
+.pinezka-zaliczona text { fill: var(--ostrzezenie); }
 .marker circle { fill: #1d6fe0; stroke: #fff; stroke-width: 3; }
 
 .mapa-przyciski { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 6px; }

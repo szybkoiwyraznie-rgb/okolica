@@ -861,6 +861,18 @@ test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (AD
   assert.match(css, /\.badge-dystans \{[^}]*background: var\(--akcent\)/s, 'badge dystansu na akcencie (kontrast)');
 });
 
+test('kontrakt: pinezka zaliczona jest POMARAŃCZOWA, nie szara (uwaga terenowa A, 2026-09-17)', () => {
+  // Właściciel z terenu: szary pin zaliczonej stacji był na telefonie zbyt
+  // blisko zielonego „oczekuje”. Zaliczona bierze teraz barwę ostrzeżenia
+  // (pomarańcz) i jest PUSTA w środku — pełny pomarańcz zostaje dla bieżącego
+  // celu (`.pinezka-aktywna`), więc obie barwy mają jedno źródło w palecie.
+  const regula = czytaj('app/styles.css').match(/\.pinezka-zaliczona circle \{([^}]*)\}/);
+  assert.ok(regula, 'reguła koloru zaliczonej pinezki istnieje');
+  assert.match(regula[1], /stroke: var\(--ostrzezenie\)/, 'pierścień zaliczonej to pomarańcz z palety');
+  assert.match(regula[1], /fill: var\(--tlo-pole\)/, 'środek zaliczonej jest pusty (odróżnienie od pełnego celu)');
+  assert.equal(/#6b7280/.test(czytaj('app/styles.css')), false, 'szary kolor zaliczonej zniknął z arkusza');
+});
+
 test('kontrakt: pole z fokusem ma ≥ 16 px — iOS nie przybliża strony (uwaga 3, 2026-09-15; ADR 0047)', () => {
   // iOS Safari przybliża stronę na fokusu pola, którego font-size < 16 px,
   // a pinch poza mapą jest zablokowany celowo (ADR 0047) — przybliżenia nie
