@@ -7200,4 +7200,32 @@ pętla: audyt poprzedniego PR, potem czekanie na uwagi z terenu (AGENTS §2, L68
 przed zmianami: `npm test` **856/856**, EXIT 0. Budżet lektury wg handoffu
 2026-09-17g: **98 903 / 100 000** (rezerwa 1 097 tokenów).
 
-**Audyt PR #43 (`44c80e1`)** — w toku, wynik w następnym commicie tej sesji.
+**Audyt PR #43 (`44c80e1`, sesja 2026-09-17g)** — plik po pliku, **bez usterek**:
+
+- **Kod** (`app/app.js`): jedna zmiana — `poziomyBiezacegoSetupu()` jako
+  jedno źródło per-stacyjnych poziomów (hot-seat: lista graczy, multi:
+  JEDEN poziom hosta), użyte w pięciu miejscach (`oczekiwane()`,
+  `metaBiezacejOkolicy()`, kryteria dopasowania paczek, `metaSesjiMulti()`,
+  `zalozGreMulti()`). Formuła „jeden poziom gry” istnieje dokładnie raz
+  (w tej funkcji); `polecenieHotseat()` celowo nie jest w tym gronie —
+  raportuje poziomy KOŃCZONEJ gry z `STAN.rozgrywka`, nie bieżącego setupu.
+  Pin „kontrakt ADR 0055 (audyt PR #42)” ma zęby (globalny licznik formuły
+  + asercje ciał obu funkcji).
+- **Wdrożenie**: bump `?v=` `m12-160` → `m12-161` w 39 miejscach
+  (`index.html`, `sw.js`, importy `app/*.js`) + `WERSJA_SW` — jedna wersja
+  wszędzie (L29); nadrobiony bump z 2026-09-17f wszedł do maina.
+- **Dokumenty** (AGENTS §3, PROTOKOL §3/§9, WORKFLOW): spójne z ADR
+  0055/0057/0058 — bieżąca wersja `PYT/1.3`, `poziomyPytan` w schematach
+  RO-* i w przykładach, ściga AGENTS bez „kategorii wiekowej”; pięć martwych
+  fraz w strażniku dryfu z powodami.
+- **Archiwum**: sześć grup aneksów (ADR 0009, 0010, 0015, 0020, 0022, 0044)
+  przeniesione dosłownie do `docs/decisions/archive/` (6 plików, tylko
+  dołożone nagłówki), wskaźniki z datą w plikach macierzystych; strażnik
+  cytowań i pin „ADR na dysku ↔ rejestr” zielone.
+- **Brama i CI**: `npm test` **856/856**, `npm run brama` **EXIT 0**, budżet
+  lektury **98 903 / 100 000** (rezerwa 1 097 — zgadza się z handoffem);
+  CI na scalonym commicie: `CI` **success** + `Pages` **success**.
+
+Bez zmian kodu — audyt zakończony czysto. Kolejka: **uwagi z terenu**
+(otwarte z 2026-09-17g: wdrożenie mostu z `poziomyPytan`/`poziom`/slugiem
+trudności i test iPhona na `m12-161`).
