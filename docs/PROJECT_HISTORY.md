@@ -6960,6 +6960,7 @@ górę, lusterko `TOLERANCJA_KOTWICY_M` w `.gs`). Ustalenia wymagające działan
 `npm run check` OK (§2 3 603 znaki, §2.2 3 738), audyt kontrastu WCAG AA
 **0 naruszeń**, budżet lektury **97 942 / 100 000 (rezerwa 2 058)**; wersje:
 protokół `PYT/1.1`, szablony `PYT/1.1.2` / `PYT/1.1-nofc.2`, cache `m12-157`.
+CI na PR #41: zielone (`test` SUCCESS dla wszystkich trzech commitów sesji).
 
 **Otwarte po sesji:** PR #41 (scalenie właściciela, squash). **Most Apps Script
 wymaga ponownego wdrożenia** (cache sieci L2, ADR 0052) — procedura w
