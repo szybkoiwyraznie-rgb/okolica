@@ -510,6 +510,46 @@ test('wysyłka Drive: adres z kodu — przyjęcie paczki wysyła bez wpisu w pam
   }
 });
 
+test('uwaga C2 (2026-09-17): wklejka przyjęta → pulsujące „Łączę z siecią…” aż most odpowie', async () => {
+  // Właściciel z telefonu: po wklejeniu odpowiedzi ekran milczał kilka sekund
+  // (zapis paczki na Drive), więc wyglądał na zamrożony — „nie wiadomo co się
+  // dzieje”. Wskaźnik czekania pokazuje się NATYCHMIAST po przyjęciu wklejki
+  // i gaśnie dopiero wtedy, gdy most odpowie.
+  const posty = [];
+  let puść = null;
+  const bramka = new Promise((rozwiaz) => { puść = rozwiaz; });
+  const pierwotny = globalThis.fetch;
+  globalThis.fetch = async (url, opcje = {}) => {
+    if (opcje.method === 'POST' && String(opcje.headers?.['Content-Type'] ?? '').startsWith('text/plain')) {
+      posty.push(String(url));
+      await bramka; // most „wisi” — wskaźnik musi być widoczny przez cały czas
+      return { ok: true, status: 200, json: async () => ({ ok: true, status: 'zaakceptowana' }), text: async () => '' };
+    }
+    return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
+  };
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
+    const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
+    dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
+    assert.equal(posty.length, 1, 'paczka już leci na most');
+    assert.match(dom.pobierz('wklejka-status').textContent, /Łączę z siecią/,
+      'wskaźnik czekania pokazuje się NATYCHMIAST po przyjęciu wklejki');
+    assert.equal(dom.pobierz('wklejka-status').classList.contains('pulsuje'), true,
+      'wskaźnik pulsuje — czekanie na sieć ma być WIDAĆ (wzorzec ADR 0011)');
+    puść();
+    await new Promise((rozwiaz) => setTimeout(rozwiaz, 30));
+    assert.equal(dom.pobierz('wklejka-status').classList.contains('pulsuje'), false,
+      'po odpowiedzi mostu pulsowanie gaśnie');
+    assert.equal(dom.pobierz('wklejka-status').textContent, '',
+      'stan „czekam” nie zostaje na ekranie po zakończonej pracy');
+  } finally {
+    globalThis.fetch = pierwotny;
+  }
+});
+
 /* -------- M9b/D4: most Drive jako repozytorium (indeks z `id`, próba połączenia) -------- */
 
 function atrapaFetchDrive({ indeks, plik }) {

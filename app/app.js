@@ -4087,14 +4087,29 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
-  $('wklejka-status').textContent = '';
-  wyslijZestawNaDrive();
+  // Uwaga terenowa C2 (właściciel, 2026-09-17): paczka jest przyjęta, ale
+  // odpowiedź dopiero leci na most — pulsujące „Łączę z siecią…” pokazuje się
+  // NATYCHMIAST, żeby kilka sekund pracy sieci nie wyglądało na zamrożenie.
+  // Wskaźnik liczy PENDING prace tej wklejki (zapis paczki, a w multi także
+  // założenie gry na moście — `gra-zaloz` na zimnym web appie bywa długie)
+  // i gaśnie, dopiero gdy odpowiedzą wszystkie: wcześniej gracz zobaczyłby
+  // pusty ekran w środku czekania na lobby.
+  wklejkaCzekanie(true);
+  let praceWToku = 0;
+  const pilnujPracy = (obietnica) => {
+    if (!obietnica?.then) return; // nic nie leci (np. brak fetch) — nie ma na co czekać
+    praceWToku += 1;
+    wklejkaCzekanie(true);
+    const koniec = () => { praceWToku -= 1; if (praceWToku === 0) wklejkaCzekanie(false); };
+    obietnica.then(koniec, koniec);
+  };
+  pilnujPracy(wyslijZestawNaDrive());
   // Multi (właściciel, 2026-09-11): po wklejeniu odpowiedzi modelu otwiera
   // się LOBBY — gra zakłada się z paczki tej sesji, bez pośredniego panelu.
   if (STAN.multiPoPaczce) {
     STAN.multiPoPaczce = false;
     STAN.ukryjStacje = false;
-    void zalozGreMulti();
+    pilnujPracy(zalozGreMulti());
     return;
   }
   // Decyzja właściciela 2026-09-07: poprawna paczka = OD RAZU gra. Podgląd,
@@ -4108,21 +4123,40 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
 }
 
 /**
+ * Wskaźnik czekania na ekranie wklejki (uwaga terenowa C2, właściciel 2026-09-17):
+ * wklejona paczka jedzie na most Drive, a to trwa kilka sekund — ekran NIE MOŻE
+ * w tym czasie wyglądać na zamrożony. Ten sam wzorzec, co `status(..., { czeka })`
+ * i przycisk „⏳ Ładuję paczkę…” (ADR 0011 aneks 2026-09-13): tekst pulsuje, a po
+ * zakończeniu pracy wraca pusto. Wołane zawsze w parze z pracą sieciową, więc
+ * wskaźnik nie zostaje na ekranie po zakończeniu (LESSONS L6).
+ */
+function wklejkaCzekanie(czeka, tekst = 'Łączę z siecią…') {
+  const pole = $('wklejka-status');
+  pole.textContent = czeka ? tekst : '';
+  pole.classList.toggle('pulsuje', Boolean(czeka));
+}
+
+/**
  * M9b/D2+D3: automatyczna wysyłka zestawu na Drive w chwili przyjęcia
  * (decyzja właściciela 2026-09-07: prywatna aplikacja — wysyłka DOMYŚLNA,
  * bez checkboxa i bez przypominajki; checkbox z 2026-09-06 usunięty).
  * Brak adresu mostu, pozycji albo fetch = zero wysyłki i JAWNY status
  * (LESSONS L6). POST text/plain omija preflight CORS (plan M9b).
+ *
+ * Zwraca promise wysyłki (albo `null`), żeby wołający mógł zgasić wskaźnik
+ * czekania `wklejkaCzekanie` dokładnie wtedy, gdy most odpowie (uwaga C2).
  */
 function wyslijZestawNaDrive() {
   const url = adresMostu(); // ADR 0020: jeden adres z kodu aplikacji
   if (!url) {
+    wklejkaCzekanie(false);
     status('Paczka przyjęta. Nie wysłano na Drive: brak adresu repozytorium w tej wersji aplikacji — paczka zostaje na tym telefonie.' + ADR(' (ADR 0020)'));
-    return;
+    return null;
   }
   if (!STAN.pozycja || !STAN.stacje.length || !STAN.paczka) {
+    wklejkaCzekanie(false);
     status('Paczka przyjęta. Wysyłka na Drive pominięta: brak pozycji albo stacji w tej sesji.');
-    return;
+    return null;
   }
   const plik = zbudujPlikZestawu({
     stacje: STAN.stacje,
@@ -4130,8 +4164,8 @@ function wyslijZestawNaDrive() {
     meta: metaBiezacejOkolicy(),
   });
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
-  if (!f) { status('Paczka przyjęta. Nie wysłano na Drive: to środowisko nie ma fetch.'); return; }
-  f(url, {
+  if (!f) { wklejkaCzekanie(false); status('Paczka przyjęta. Nie wysłano na Drive: to środowisko nie ma fetch.'); return null; }
+  return f(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(plik),
@@ -4179,6 +4213,7 @@ function pokazOdrzuconaPaczkeAi() {
   wynik.dataset.stan = 'blad';
   $('wynik-naglowek').textContent = KOMUNIKAT_BLEDNEJ_PACZKI_AI;
   $('pole-odpowiedz').value = '';
+  $('wklejka-status').classList.remove('pulsuje'); // koniec czekania: wklejka odrzucona
   $('wklejka-status').textContent = KOMUNIKAT_BLEDNEJ_PACZKI_AI;
   status(KOMUNIKAT_BLEDNEJ_PACZKI_AI);
 }
@@ -4202,7 +4237,7 @@ function wyczyscEkranPaczki() {
   karta.hidden = true;
   delete karta.dataset.stan;
   $('wynik-naglowek').textContent = '';
-  $('wklejka-status').textContent = '';
+  wklejkaCzekanie(false); // wskaźnik czekania nie wraca z poprzedniej wklejki
   // Pole wklejenia też startuje puste — stara treść nie ma prawa czekać pod palcem.
   $('pole-odpowiedz').value = '';
 }

@@ -112,3 +112,12 @@ zamiast zmiany CSS. Wyjątki od pkt 2 (uzasadnienia: ADR 0042 → aneks
 2026-09-16d): przyciski mapy (minimum 40 px, jak w pkt 2), `.warstwa-krzyzyk`
 oraz `.przycisk-stopka` w stopce Informacji. Wszystkie pozostałe cele
 dotykowe — ≥ 44 px; pin kontraktu trzyma obie strony decyzji.
+
+## Aneks 2026-09-17 (uwaga terenowa C2) — wskaźnik czekania także na ekranie wklejki
+
+Reguła z aneksu 2026-09-13d („czekanie na sieć jest widoczne”) obejmuje ekran
+„Wklej odpowiedź modelu”: po przyjęciu wklejki odpowiedź idzie na most Drive
+kilka sekund, więc `#wklejka-status` dostaje natychmiast pulsujące „Łączę
+z siecią…” (`wklejkaCzekanie`), a wskaźnik gaśnie, gdy odpowiedzą wszystkie
+prace tej wklejki (zapis paczki, w multi dodatkowo `gra-zaloz`). Właściciel:
+„nie wiadomo co się dzieje”. Piny: `test/zestawy-ui.test.js` („uwaga C2”).
