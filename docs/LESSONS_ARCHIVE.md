@@ -1794,3 +1794,35 @@ brama, nie dokument — narzędzie w bramie jest tańsze niż zaufanie do tabelk
 archiwizacja (dosłowny tekst do `archive/`, nota wiążąca z linkiem i datami
 w ADR, żeby strażnik dryfu nadal widział cytowane aneksy), potem dopiero nowa
 treść. Przekroczenie progu to zadanie sesji, nie notatka na przyszłość.
+
+## L80 — pełny opis przypadku (2026-09-17)
+
+Kontekst: kolejka uwag terenowych z iPhone'a (sesja 17b/17c, PR #41). Uwaga C1
+dołożyła trzy testy w `test/zestawy-ui.test.js`: rząd ikon modeli nad wklejką,
+`model` w paczce wysłanej na Drive i znaczek modelu przy propozycji paczki.
+Trzeci test stał na końcu pliku (po testach wysyłki i po nowym teście C2, który
+przyjmuje paczkę i zostawia most „wiszący” na bramce).
+
+Pomiar: `node --test --test-name-pattern='uwaga C1' test/zestawy-ui.test.js` —
+zielono. `node --test test/zestawy-ui.test.js` — trzy razy z rzędu czerwono
+(„propozycja z Drive nie nastąpiło w 5000 ms — status: Repozytorium nie ma
+paczek dla tej okolicy”). Dodanie 300 ms oddechu po teście C2 pozornie leczyło
+problem — czyli objaw zależał od OBCIĄŻENIA maszyny, nie od logiki testu.
+
+Diagnoza: `zainstalujDom()` podmienia `globalThis.document` na świeży stub
+(elementy trzyma mapa `pobierz(id)`), ale instancje aplikacji z poprzednich
+testów żyją dalej: mają `setInterval` (watchdog bezczynności, polling) i łańcuchy
+obietnic rozpoczęte przy przyjęciu paczki (status na `#status`, kopia lokalna,
+preload widocznych paczek). Dokończone po kolejnym `zainstalujDom` sięgają przez
+`document.getElementById` do węzłów NOWEGO dom-u i przerysowują listę propozycji
+z własnego, pustego stanu — a `czekajNa` w nowym teście czeka wtedy na stan,
+którego nikt już nie odtworzy. Instrumentacja (licznik instancji modułu + logi
+w `renderujZestawy`/`przyjmijIndeksZRepo`) potwierdziła dwa różne identyfikatory
+instancji piszące po tym samym węźle.
+
+Rozwiązanie (przyjęte): testy C1 nie przyjmujące paczki przeniesione na POCZĄTEK
+pliku (są wtedy jedyną aplikacją w procesie), test przyjmujący paczkę został
+w sąsiedztwie pozostałych testów wysyłki, a test C2 (przyjmuje paczkę i zostawia
+pracę w tle) stoi na KOŃCU pliku z komentarzem wyjaśniającym kolejność.
+Kolejność jest nośnikiem wiedzy — dlatego komentarz w pliku mówi, dlaczego tak,
+a nie „bo tak było zielone”.

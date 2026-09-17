@@ -643,3 +643,11 @@ Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L78`.
 **Reguła:** (1) liczbę budżetu licz PO ostatniej zmianie dokumentów lektury (nie w środku sesji) i wpisuj do handoffu razem z datą pomiaru; (2) `npm run brama` goni teraz `budzet-lektury.mjs` — przekroczenie jest czerwienią bramy, nie zdaniem w dokumencie, a skład bramy trzyma pin w `test/kontrakt.test.js`; (3) gdy próg jest już przekroczony, kolejność jest obowiązkowa: najpierw archiwizacja aneksów do `docs/decisions/archive/` z notą wiążącą w ADR (L62/L66), potem dopiero nowa treść.
 
 Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L79`.
+
+## L80 (2026-09-17) — atrapa DOM jest GLOBALNA: praca w tle wcześniejszego testu pisze po dokumencie następnego
+
+**Objaw:** nowy test „znaczek modelu przy propozycji paczki” (na końcu `test/zestawy-ui.test.js`) raz przechodził, raz nie: dostawał pustą listę propozycji i status „Repozytorium nie ma paczek dla tej okolicy”, choć sam, uruchomiony wzorcem `--test-name-pattern`, był zielony.
+**Przyczyna:** `globalThis.document` to OSTATNIO zainstalowany dom atrapy, a aplikacje z poprzednich testów mają własne moduły, zegary i niedokończone łańcuchy po przyjęciu paczki (status, kopia lokalna, preload paczek) — dokończone w tle piszą po CUDZYCH węzłach `#zestawy-lista`/`#zestawy-status`. Wina nie leży w kodzie aplikacji: każdy pomiar w terenie i w przeglądarce ma jeden dokument na sesję.
+**Reguła:** (1) testy, które PRZYJMUJĄ paczkę (start gry, wysyłka), trzymaj na końcu pliku albo dosuszaj ich pracę w tle przed oddaniem `fetch`; (2) testy czytające stan ekranu, który ktoś inny może przerysować, stawiaj NA POCZĄTKU pliku; (3) gdy test jest zależny od sąsiadów, diagnozuj przez `--test-name-pattern` (sam przechodzi) i przez licznik instancji modułu — nie przez kolejne `setTimeout`.
+
+Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L80`.

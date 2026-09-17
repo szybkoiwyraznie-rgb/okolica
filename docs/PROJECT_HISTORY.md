@@ -6969,3 +6969,50 @@ cichu nie odpowiada. Kolejka pracy poza tym pusta: czekamy na uwagi z testów
 terenowych (iPhone). Rezerwa budżetu (2 058 tokenów) wystarcza na około jeden
 aneks terenowy — przy przekroczeniu próg pilnuje już brama, a kolejność jest
 zapisana w LESSONS L79.
+
+## 2026-09-17c — kolejka uwag terenowych z iPhone'a (A, B, C1, C2, D) — PR #41
+
+Kontynuacja sesji 17b na tej samej gałęzi i w tym samym PR (#41). Właściciel
+przetestował grę w terenie i przysłał pięć uwag; wszystkie zrealizowane,
+każda z testem i z dokumentem (aneks ADR albo nowy ADR):
+
+- `f3ca16a` — **A**: pinezka zaliczonej stacji jest POMARAŃCZOWA i pusta
+  w środku (numer w kolorze pierścienia). Szary `#6b7280` wypadł, bo na
+  telefonie w słońcu był zbyt blisko zielonego „oczekuje”; pusty środek
+  odróżnia ją od pełnego pomarańczu bieżącego celu (`.pinezka-aktywna`).
+- `83666df` — **D (KRYTYCZNA, zgłaszana kilka razy)**: po kliknięciu startu
+  w lobby nie ma ŻADNEGO ekranu przejściowego — odcinek pierwszej stacji
+  startuje z góry w OBU trybach (Wspólna Trasa i Wyścig), zostaje mapa
+  i mini-pasek na dole. Kontrola: `#gra-sterowanie` w drodze jest schowany
+  (ADR 0036), a w `?tryb=test` zostaje, bo trzyma „Symuluj dojście”.
+- `8e890a6` — **B**: wejście na „Stacje w Twojej okolicy” startuje CZYSTE
+  (`przygotujEkranStacji()`): zero stacji, tekstów i pinezek poprzedniej gry —
+  świeży wynik (dysk/Overpass/pierścień) dopiero zapełnia ekran. Cache
+  geometrii `STAN.siec` i trasa-sekret BIEŻĄCEGO setupu zostają nietknięte.
+- `614e3a6` — **C2**: po przyjęciu wklejki `#wklejka-status` dostaje
+  NATYCHMIAST pulsujące „Łączę z siecią…”, a wskaźnik gaśnie, gdy odpowiedzą
+  wszystkie prace tej wklejki (zapis paczki, w multi także `gra-zaloz`) —
+  kilka sekund pracy mostu przestało wyglądać na zamrożenie.
+- `e716f03` — **C1**: cztery małe, okrągłe ikony modeli nad polem wklejenia
+  (Meta.ai, ChatGPT, Gemini, Claude), wybór opcjonalny (domyślnie żaden,
+  dotknięcie zaznacza/odznacza, inne przełącza). Wybrany model jedzie
+  z paczką jako ADDYTYWNE `meta.model` (wzorzec `geohash6`/`ulica`) i widać go
+  znaczkiem przy propozycji paczki; bez wyboru nic o modelu nie ma nigdzie.
+  Ikony rysowane inline (bez plików i CDN — ADR 0001 pkt 1), cele 44 px,
+  stan w `aria-pressed`. Bump cache `m12-157` → `m12-158`.
+
+Dokumentacja: aneks B w ADR 0005, aneks C2 w ADR 0011, aneks D w ADR 0044,
+**nowy ADR 0053** („Model AI: opcjonalny wybór nad wklejką i pole `model`
+w `meta` paczki”) + wiersz w rejestrze; nowa lekcja **L80** (atrapa DOM jest
+globalna — praca w tle wcześniejszego testu pisze po dokumencie następnego,
+stąd świadoma kolejność testów w `test/zestawy-ui.test.js`).
+
+**Brama końcowa:** `npm run brama` EXIT 0; `npm test` **852 / 852**;
+`npm run check` OK (§2 3 603 znaki, §2.2 3 738); audyt WCAG AA **0 naruszeń**;
+budżet lektury **99 431 / 100 000** (rezerwa 569).
+
+**Otwarte po sesji:** GitHub w Arenie przestał przyjmować token w połowie sesji
+(`GH_TOKEN` nieaktualny) — `8e890a6` i `614e3a6` są wypchnięte, a `e716f03`
+plus commit dokumentów czekają lokalnie na `git push`; opis PR #41 do
+aktualizacji, CI nie sprawdzone. Poza kodem: ponowne wdrożenie mostu Apps Script
+(cache L2, ADR 0052) i test terenowy na iPhonie na `m12-158`.
