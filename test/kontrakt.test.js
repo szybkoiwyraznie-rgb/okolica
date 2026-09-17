@@ -1865,10 +1865,12 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
     'watchdog nie rusza przerwy, gdy nasłuch i tak nie działa');
   assert.match(APP, /document\.addEventListener\('visibilitychange'/,
     'app.js nasłuchuje visibilitychange — powrót z tła wznawia sam');
-  assert.match(APP, /const czekamyNaFixa = STAN\.ekran === 'pozycja'/,
-    'powrót z tła odświeża nasłuch tylko tam, gdzie czekamy na fixa (ADR 0040 pkt 3)');
-  assert.match(APP, /if \(!STAN\.watcher\?\.czyAktywny\(\) \|\| !STAN\.ostatniFix\) wlaczGps\(\);/,
-    'martwy albo niemy nasłuch jest zakładany od nowa bez kliku (bug G + ADR 0040 pkt 3)');
+  assert.match(APP, /if \(STAN\.trybTestowy\) return;\n {4}if \(typeof navigator === 'undefined' \|\| !navigator\.geolocation\) return;\n {4}\/\/ ADR 0054: powrót = obowiązkowe budzenie GPS, także gdy nasłuch „żyje\".\n {4}wlaczGps\(\);/,
+    'powrót na kartę budzi GPS BEZWZGLĘDNY — bez bramek (ADR 0054: cichy nasłuch nie jest żywym nasłuchem, bug G)');
+  assert.equal(/!STAN\.watcher && typeof navigator !== 'undefined' && navigator\.geolocation\) wlaczGps/.test(APP), false,
+    'bramka `!STAN.watcher` przy starcie gry/odcinka nie wraca — cichy watcher nie może przejść (ADR 0054)');
+  assert.match(APP, /function wznowPoBezczynnosci\(\) \{[\s\S]{0,500}wlaczGps\(\);/,
+    'po przerwie bezczynności nasłuch startuje od nowa (bez zmian, ADR 0040 pkt 5)');
 
   // 4. W drodze nad mapą zostaje sam pasek — Informacje nie niosą nic z gry
   //    (ADR 0036 aneks 2026-09-13 zawęził to do węzła zakończenia, a ADR 0043

@@ -71,6 +71,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0051](0051-status-multi-w-informacjach-i-pod-wynikiem.md) | Status multi w Informacjach i pod wynikiem | Zaakceptowana |
 | [0052](0052-wspolny-cache-sieci-na-drive-l2.md) | Wspólny cache sieci drogowej na Drive (L2) | Zaakceptowana |
 | [0053](0053-model-ai-opcjonalnie-w-meta-paczki.md) | Model AI: opcjonalny wybór nad wklejką i pole `model` w `meta` paczki | Zaakceptowana |
+| [0054](0054-gps-nigdy-nie-ustaje-budzenie-przy-powrocie.md) | GPS nie przerywa go nic: świeży watcher przy starcie gry/odcinka i obowiązkowe budzenie przy powrocie na kartę | Zaakceptowana |
 
 ## Szablon ADR
 

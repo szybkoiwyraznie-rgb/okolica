@@ -282,7 +282,7 @@ test('uwaga A (ADR 0047): szczypanie strony poza mapą jest zablokowane, mapa sz
   assert.equal(zablokowane, 2, 'gesturechange nad mapą przechodzi');
 });
 
-test('GPS: karta w tle NIE zatrzymuje śledzenia, a powrót nie zakłada watchera bez potrzeby (uwaga B, ADR 0040)', () => {
+test('GPS: karta w tle NIE zatrzymuje śledzenia, a powrót na kartę budzi GPS obowiązkowo (ADR 0054)', () => {
   assert.ok(dom.wyslijZdarzenieDokumentu('visibilitychange') >= 1, 'app.js musi nasłuchiwać visibilitychange');
   const watchPrzed = gps.wywolania.watch;
   const clearPrzed = gps.wywolania.clear.length;
@@ -293,14 +293,14 @@ test('GPS: karta w tle NIE zatrzymuje śledzenia, a powrót nie zakłada watcher
     'właściciel 2026-09-13 (B): żadnej pauzy w tle — nasłuch zostaje, bateria nie jest wymówką');
   assert.doesNotMatch(pobierz('status').textContent, /wstrzyman/i, 'komunikat o wstrzymaniu śledzenia wycofany (P07)');
 
+  // ADR 0054 (uwaga A, 2026-09-17d): powrót budzi GPS BEZWZGLĘDNY — także gdy
+  // nasłuch „żyje" z fixem, bo na iOS WebKit bywa aktywny, ale niemy (bug G),
+  // a `czyAktywny()` i stary fix nie są znakiem życia.
   dom.ustawHidden(false);
   dom.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.equal(gps.wywolania.watch, watchPrzed, 'żywy nasłuch z fixem nie jest zakładany od nowa');
+  assert.equal(gps.wywolania.watch, watchPrzed + 1, 'powrót zakłada świeżego watchera (bez bramek)');
+  assert.equal(gps.wywolania.clear.length, clearPrzed + 1, 'stary watcher — żywy czy cichy — dostaje clearWatch');
   assert.doesNotMatch(pobierz('status').textContent, /Wznowiono śledzenie/, 'powrót z tła jest CICHY (P09 wycofany)');
-
-  // drugi powrót też nic nie dokłada
-  dom.wyslijZdarzenieDokumentu('visibilitychange');
-  assert.equal(gps.wywolania.watch, watchPrzed);
 });
 
 // Decyzja właściciela 2026-09-08: przycisku trybu testowego NIE MA — wchodzi
@@ -3444,6 +3444,61 @@ test('bug G: „Dalej” odświeża cichego watchera gestem; po fixie restart ni
     assert.equal(gpsNiemego.wywolania.watch, 2, 'fix był: watcher nie jest restarowany przy każdym wejściu');
   } finally {
     domB.posprzataj(); // ADR 0040: bez pauzy w tle zegary sprząta atrapa
+  }
+});
+
+test('uwaga A (2026-09-17d): cichy watcher w trakcie wklejania pytań budzi start gry i powrót na kartę (ADR 0054)', async () => {
+  // Scenariusz właściciela: fix ustalony w punkcie startu, potem wyjął telefon
+  // i kleił pytania już w marszu — WebKit trzymał watchPosition w ciszy (bug G,
+  // ani fixu, ani błędu). Start gry i powrót na kartę musiały obudzić GPS
+  // bez resetu przeglądarki (wcześniej bramka `!STAN.watcher` przepuszczała
+  // cichego watchera, a watchdog nie był uzbrojony poza ekranem pozycji).
+  const gpsU = atrapaGeolokalizacji();
+  const pamiecU = pamiecKonfig3x1();
+  pamiecU.set('okolica:gracze', JSON.stringify({
+    schemat: 'gracze-lokalni/1',
+    gracze: [{ pseudonim: 'Gracz 1', zweryfikowany: true }],
+  }));
+  const domU = zainstalujDom({ geolocation: gpsU.geolocation, pamiec: pamiecU });
+  try {
+    await import(`../app/app.js?gpsUwagaA=${Math.random().toString(36).slice(2)}`);
+    assert.equal(gpsU.wywolania.watch, 1, 'ładowanie strony: pierwszy watcher');
+    domU.kliknij('przycisk-dalej-pozycja');
+    await czekaj(30);
+    gpsU.wyslijFix(52.2297, 21.0122, 12); // fix punktu startu — potem cisza
+    await czekaj(30);
+    const watchPoPozycji = gpsU.wywolania.watch; // gest „Dalej" mógł zakotwiczyć świeżego watchera (bug G)
+    domU.window.fetch = async (url, opcje) => {
+      const adres = String(url);
+      if (adres.includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) {
+        return { ok: true, status: 200, json: async () => ({ ok: false }) };
+      }
+      if (adres.includes('akcja=indeks')) {
+        return { ok: true, status: 200, json: async () => ({ schemat: 'TO-indeks/1', wpisy: [] }) };
+      }
+      return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+    };
+    domU.kliknij('przycisk-dalej-stacje');
+    await czekaj(400);
+    assert.equal(domU.pobierz('ekran-stacje').hidden, false, 'stacje z fixture Overpass');
+    domU.kliknij('przycisk-dalej-prompt');
+    domU.kliknij('przycisk-dalej-paczka');
+    assert.equal(domU.pobierz('ekran-paczka').hidden, false, 'ekran wklejania (krok 5)');
+    assert.equal(gpsU.wywolania.watch, watchPoPozycji, 'ekrany stacji i wklejki nie zakładają watchera — ten „żyje”, ale milczy (bug G)');
+    przelaczCheckbox(domU, 'prompt-factcheck', true);
+    domU.wklej('pole-odpowiedz', JSON.stringify(czytajFixturePaczka()));
+    assert.equal(domU.pobierz('ekran-gra').hidden, false, 'poprawna paczka sama startuje grę');
+    assert.equal(gpsU.wywolania.watch, watchPoPozycji + 1, 'start gry budzi cichego watchera (bramka `!STAN.watcher` usunięta)');
+    assert.ok(gpsU.wywolania.clear.length >= 1, 'cichy watcher dostał clearWatch przed świeżym nasłuchem');
+    // Powrót na kartę w trakcie gry: obowiązkowe budzenie, bez bramek.
+    domU.ustawHidden(true);
+    domU.wyslijZdarzenieDokumentu('visibilitychange');
+    const watchPrzedPowrotem = gpsU.wywolania.watch;
+    domU.ustawHidden(false);
+    domU.wyslijZdarzenieDokumentu('visibilitychange');
+    assert.equal(gpsU.wywolania.watch, watchPrzedPowrotem + 1, 'powrót na kartę budzi GPS bezwarunkowo');
+  } finally {
+    domU.posprzataj();
   }
 });
 

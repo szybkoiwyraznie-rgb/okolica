@@ -3194,7 +3194,10 @@ function startGry() {
   });
   STAN.historiaFixow = [];
   pokazEkran('gra');
-  if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+  // ADR 0054 (uwaga A, 2026-09-17d): zawsze świeży watcher — bramka
+  // `!STAN.watcher` przepuszczała cichego nasłuch z bug G (aktywny, ale niemy)
+  // i gra wisiała w punkcie startu. Restart idempotentny: jedno `watchPosition`.
+  if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   const brakPytan = STAN.rozgrywka.brakPytan ?? [];
   status(`Gra rozpoczęta: ${STAN.rozgrywka.gracze.length} gracz(y), ${STAN.rozgrywka.stacje.length} stacji. Pytania odsłaniają się dopiero na stacjach.`
     + (brakPytan.length
@@ -3213,7 +3216,10 @@ function startOdcinkaGry() {
     STAN.historiaFixow = [];
     status('Odcinek rozpoczęty — idźcie. Pytanie otworzy się po dwóch kolejnych pomiarach nie dalej niż 50 m od stacji.' + ADR(' (ADR 0004 pkt 2)'));
     odegrajSygnal('startOdcinka');
-    if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+    // ADR 0054 (uwaga A, 2026-09-17d): zawsze świeży watcher — bramka
+  // `!STAN.watcher` przepuszczała cichego nasłuch z bug G (aktywny, ale niemy)
+  // i gra wisiała w punkcie startu. Restart idempotentny: jedno `watchPosition`.
+  if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   } else {
     status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
   }
@@ -5455,7 +5461,10 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
   }
 
   pokazEkran('gra');
-  if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+  // ADR 0054 (uwaga A, 2026-09-17d): zawsze świeży watcher — bramka
+  // `!STAN.watcher` przepuszczała cichego nasłuch z bug G (aktywny, ale niemy)
+  // i gra wisiała w punkcie startu. Restart idempotentny: jedno `watchPosition`.
+  if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   const koniecLokalny = STAN.rozgrywka.faza === FAZY.koniec;
 
   // Uwaga terenowa 2026-09-16 (pkt 1): gracz, który domknął wszystkie swoje
@@ -6074,10 +6083,12 @@ function start() {
 
   // Właściciel 2026-09-13 (uwaga B, ADR 0040): ŻADNEJ pauzy w tle. Aplikacja ma
   // być cały czas włączona, a po powrocie wszystko wznawia się samo — bez kliku.
-  // Przeglądarka i tak zamraża strumień fixów w tle, więc przy powrocie
-  // sprawdzamy, czy nasłuch żyje, i jeśli nie — zakładamy świeży (bug G: WebKit
-  // trzyma czasem `watchPosition` aktywny, ale niemy). Bez komunikatów o
-  // „wstrzymaniu" i „wznowieniu": wycofane kody P07/P09 (ADR 0040 pkt 3).
+  // Właściciel 2026-09-17d (uwaga A, ADR 0054): powrót na kartę budzi GPS
+  // OBOWIĄZKOWO, bez bramek — WebKit potrafi trzymać `watchPosition` aktywny,
+  // ale niemy (bug G), a `czyAktywny()` i stary fix kłamią, że nasłuch żyje.
+  // Świeży watcher jest idempotentny, więc koszt to jedno `watchPosition`.
+  // Bez komunikatów o „wstrzymaniu" i „wznowieniu": wycofane kody P07/P09
+  // (ADR 0040 pkt 3).
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       zapiszGre(); // uwaga K (ADR 0045): zwinięcie karty zapisuje ostatni stan
@@ -6090,10 +6101,8 @@ function start() {
     odswiezWakeLock();
     if (STAN.trybTestowy) return;
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
-    const czekamyNaFixa = STAN.ekran === 'pozycja'
-      || (STAN.rozgrywka && STAN.rozgrywka.faza === FAZY.odcinek);
-    if (!czekamyNaFixa) return;
-    if (!STAN.watcher?.czyAktywny() || !STAN.ostatniFix) wlaczGps();
+    // ADR 0054: powrót = obowiązkowe budzenie GPS, także gdy nasłuch „żyje".
+    wlaczGps();
   });
 
   // Uwaga A (ADR 0047, decyzja właściciela 2026-09-14): strona NIE jest
