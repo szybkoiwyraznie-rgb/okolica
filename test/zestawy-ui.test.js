@@ -17,7 +17,7 @@ const GEOHASH5 = 'u3qb8'; // policzone z geo.js dla (52.12303, 20.74614)
 const paczkaMinimalna = () => ({
   protokol: 'PYT/1.1',
   okolica: { lat: POZYCJA.lat, lon: POZYCJA.lon, promienM: 1000, miejsce: 'Podkowa Leśna' },
-  wiek: 'dorosli',
+  poziomyPytan: { dzieci: 0, dorosli: 1 },
   tematy: ['historia'],
   jezyk: 'polski',
   utworzono: '2026-09-06 10:00',
@@ -36,7 +36,7 @@ const TEMATY_DOMYSLNE = ['historia', 'przyroda', 'architektura'];
 
 const metaWpisu = () => ({
   miejsce: 'Podkowa Leśna', geohash5: GEOHASH5, promienM: 1000,
-  tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1,
+  tematy: TEMATY_DOMYSLNE, poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 3, pytaniaNaStacje: 1,
 });
 
 /** Setup z 2 stacjami i 1 pytaniem — tyle niesie wpis testowy (kryteria właściciela). */
@@ -46,7 +46,7 @@ const KONFIG_TEST = JSON.stringify({
   schemat: 'konfig/1', kanon: '2026-09-10',
   konfig: {
     tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
-    tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', jezyk: 'polski',
+    tematy: TEMATY_DOMYSLNE, poziomyPytan: { dzieci: 0, dorosli: 1 }, jezyk: 'polski',
     karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
   },
 });
@@ -124,7 +124,8 @@ test('uwaga C1 (ADR 0053): znaczek modelu przy propozycji paczki — i tylko wte
     assert.ok(znaczek, 'wpis z `model` pokazuje znaczek modelu przy propozycji');
     assert.equal(znaczek.getAttribute('aria-label'), 'Model: ChatGPT', 'znaczek nazywa model (ikona bez tekstu)');
     assert.equal(znaczek.className, 'znaczek-modelu');
-    assert.equal(String(znaczek.children[0].tagName).toLowerCase(), 'svg', 'znaczek to inline SVG — bez pobierania plików');
+    assert.equal(String(znaczek.children[0].tagName).toLowerCase(), 'img', 'znaczek to ikona z pliku właściciela (ADR 0053 aneks)');
+    assert.ok(String(znaczek.children[0].src ?? '').startsWith('assets/ikony-modela/'), 'znaczek ładuje plik z assets/ (względna ścieżka)');
   } finally {
     zModelem.przywroc();
   }
@@ -167,8 +168,10 @@ test('uwaga C1 (ADR 0053): cztery okrągłe ikony modeli nad wklejką — wybór
   assert.deepEqual(pojemnik.children.map((b) => b.getAttribute('aria-label')),
     ['Model: Meta.ai', 'Model: ChatGPT', 'Model: Gemini', 'Model: Claude'],
     'każda ikona ma etykietę dla czytnika ekranu (ikona bez tekstu)');
-  assert.ok(pojemnik.children.every((b) => b.children.length === 1 && String(b.children[0].tagName).toLowerCase() === 'svg'),
-    'każda ikona rysuje swój inline SVG (żadnych plików ani CDN — ADR 0001 pkt 1)');
+  assert.ok(pojemnik.children.every((b) => b.children.length === 1 && String(b.children[0].tagName).toLowerCase() === 'img'),
+    'każda ikona to img z pliku (ADR 0053 aneks 2026-09-17)');
+  assert.ok(pojemnik.children.every((b) => String(b.children[0].src ?? '').startsWith('assets/ikony-modela/') && !/^https?:/.test(String(b.children[0].src ?? ''))),
+    'ścieżki ikon względne z repo — zero CDN (ADR 0001 pkt 1, ADR 0002)');
 
   dotknij(pojemnik.children[2]); // Gemini
   assert.deepEqual(stan(), ['false', 'false', 'true', 'false'], 'dotknięcie zaznacza model');
@@ -229,7 +232,7 @@ const indeksZPropozycja = () => ({
   schemat: 'TO-indeks/1',
   wpisy: [{
     skrot: 'feedbeef', plik: 'podkowa.zestaw.json', miejsce: 'Podkowa Leśna',
-    geohash5: GEOHASH5, promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
+    geohash5: GEOHASH5, promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 },
     liczbaStacji: 3, pytaniaNaStacje: 1,
     licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel', data: '2026-09-06 19:30',
   }],
@@ -238,7 +241,7 @@ const indeksZPropozycja = () => ({
 const plikZRepo = () => {
   const meta = {
     miejsce: 'Podkowa Leśna', geohash5: GEOHASH5, promienM: 1000,
-    tematy: ['historia'], wiek: 'dorosli', jezyk: 'polski', data: '2026-09-06 19:30',
+    tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 }, jezyk: 'polski', data: '2026-09-06 19:30',
     liczbaStacji: 3, pytaniaNaStacje: 1,
     autor: 'kurator', licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel',
   };

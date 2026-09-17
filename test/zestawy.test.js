@@ -18,11 +18,11 @@ import {
 /** Minimalna jawna paczka PYT (ADR 0050): paczki nie ukrywamy — tak leży na Drive. */
 const paczka = () => ({
   okolica: { lat: 52.12, lon: 20.75, promienM: 1000, miejsce: 'Podkowa Leśna' },
-  wiek: 'dorosli', tematy: ['historia'], jezyk: 'polski', utworzono: '2026-09-06 10:00',
+  poziomyPytan: { dzieci: 0, dorosli: 1 }, tematy: ['historia'], jezyk: 'polski', utworzono: '2026-09-06 10:00',
   pytania: [{ id: 's1p1', stacja: 1, temat: 'historia', tresc: 'Co tu było?', odpowiedzi: ['a', 'b', 'c', 'd'], poprawna: 1, wyjasnienie: 'Bo tak.', zrodla: [] }],
   uwagi: '',
 });
-const meta = (nad = {}) => ({ geohash5: 'u33dc', promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, ...nad });
+const meta = (nad = {}) => ({ geohash5: 'u33dc', promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 5, pytaniaNaStacje: 1, ...nad });
 const wpis = (skrot, data, nad = {}) => ({ skrot, data, ...meta(nad) });
 const lokalny = (nad = {}) => ({
   schemat: SCHEMAT_LOKALNY,
@@ -96,14 +96,14 @@ test('zestawy: ponowny zapis tego samego skrotu wymienia wpis, nie duplikuje', (
   assert.equal(rejestr.wpisy[0].data, '2026-09-06');
 });
 
-test('zestawy: dopasowanie jest ścisłe (okolica, promień, wiek, stacje, pytania, tematy) — ADR 0046', () => {
+test('zestawy: dopasowanie jest ścisłe (okolica, promień, poziomy, stacje, pytania, tematy) — ADR 0046/0055', () => {
   const rejestr = {
     schemat: SCHEMAT_INDEKSU,
     wpisy: [
       wpis('pasuje', '2026-09-06'),
       wpis('inny-geohash', '2026-09-06', { geohash5: 'u33db' }),
       wpis('inny-promien', '2026-09-06', { promienM: 3000 }),
-      wpis('inny-wiek', '2026-09-06', { wiek: 'wiek-12' }),
+      wpis('inny-poziom', '2026-09-06', { poziomyPytan: { dzieci: 1, dorosli: 0 } }),
       wpis('inne-tematy', '2026-09-06', { tematy: ['kultura'] }),
       wpis('tematy-kolejnosc', '2026-09-05', { tematy: ['historia'] }),
       wpis('podzbior', '2026-09-04', { tematy: ['historia', 'przyroda'] }),
@@ -114,19 +114,18 @@ test('zestawy: dopasowanie jest ścisłe (okolica, promień, wiek, stacje, pytan
       wpis('mniejszy-promien', '2026-09-01', { promienM: 500 }),
     ],
   };
-  const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], wiek: 'dorosli' });
-  // Kryteria (właściciel 2026-09-07 aneks ADR 0024 + odwrócenie 2026-09-14,
-  // ADR 0046): okolica (±200 m), RÓWNY promień, wiek, ŁĄCZNA liczba pytań
-  // (paczka może mieć więcej) i tematy⊆. Liczba stacji i pytania na stację
-  // z osobna NIE są kryteriami. Terenowe uzasadnienie ADR 0046: paczka 500 m
-  // przy promieniu 1000 m rozjeżdżała się z ustawieniami gry właściciela.
+  const trafione = dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], poziomyPytan: { dzieci: 0, dorosli: 1 } });
+  // Kryteria (ADR 0024 + ADR 0046 + ADR 0055): okolica (±200 m), RÓWNY
+  // promień, RÓWNE per-stacyjne poziomy, RÓWNA liczba stacji (per-poziomowe
+  // zestawienie musi się mieścić), ŁĄCZNA liczba pytań (paczka może mieć
+  // więcej) i tematy⊆. Pytania na stację z osobna NIE jest kryterium.
   assert.deepEqual(
     trafione.map((w) => w.skrot),
-    ['pasuje', 'tematy-kolejnosc', 'podzbior', 'wiecej-stacji', 'wiecej-pytan'],
-    'paczki o promieniu innym niż setup (3000, 500 vs 1000) są niepasujące — nie da się ich wybrać',
+    ['pasuje', 'tematy-kolejnosc', 'podzbior', 'wiecej-pytan'],
+    'paczki o promieniu innym niż setup (3000, 500 vs 1000) albo z inną liczbą stacji są niepasujące',
   );
-  assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33', promienM: 1, liczbaStacji: 1, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
-  assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1, liczbaStacji: 0, pytaniaNaStacje: 1, tematy: ['x'], wiek: 'd' }), TypeError);
+  assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33', promienM: 1, liczbaStacji: 1, pytaniaNaStacje: 1, tematy: ['x'], poziomyPytan: 'd' }), TypeError);
+  assert.throws(() => dopasujZestawy(rejestr, { geohash5: 'u33dc', promienM: 1, liczbaStacji: 0, pytaniaNaStacje: 1, tematy: ['x'], poziomyPytan: 'd' }), TypeError);
 });
 
 test('zestawy: wpis z tematem własnym pasuje tylko do tego samego tekstu', () => {
@@ -138,7 +137,7 @@ test('zestawy: wpis z tematem własnym pasuje tylko do tego samego tekstu', () =
       wpis('bez-wlasnego', '2026-09-06', { tematy: ['historia'] }),
     ],
   };
-  const kryt = { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'wlasny'], wiek: 'dorosli' };
+  const kryt = { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'wlasny'], poziomyPytan: { dzieci: 0, dorosli: 1 } };
   assert.deepEqual(
     dopasujZestawy(rejestr, { ...kryt, tematWlasny: 'kinematografia' }).map((w) => w.skrot),
     ['ten-sam', 'bez-wlasnego'],
@@ -168,7 +167,7 @@ test('zestawy: indeks publiczny niesie tylko meta i toleruje braki', () => {
   assert.deepEqual(odczytany.map((w) => w.skrot), ['p1']);
   assert.equal(usterki[0].kod, 'Z10');
   assert.equal(walidujIndeksSurowy('null').usterki[0].kod, 'Z09');
-  const trafione = dopasujMetaIndeksu(odczytany, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], wiek: 'dorosli' });
+  const trafione = dopasujMetaIndeksu(odczytany, { geohash5: 'u33dc', promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 } });
   assert.equal(trafione.length, 1, 'dopasowanie indeksu tymi samymi regułami co lokalne');
 });
 
@@ -187,7 +186,7 @@ test('zestawy: klucze i rozmiary są przewidywalne', () => {
 test('walidujIndeksSurowy: wpis z `id` (most Drive) przechodzi jak wpis z `plik`', () => {
   const metaWpisu = {
     skrot: 'aabbccdd', miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', promienM: 1000,
-    tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1,
+    tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 3, pytaniaNaStacje: 1,
     licencja: 'CC BY-SA 4.0', data: '2026-09-06 12:00',
   };
   const { indeks, usterki } = walidujIndeksSurowy(JSON.stringify({
@@ -201,7 +200,7 @@ test('walidujIndeksSurowy: wpis z `id` (most Drive) przechodzi jak wpis z `plik`
 test('walidujIndeksSurowy: wpis bez `plik` i bez `id` odpada z Z10', () => {
   const { indeks, usterki } = walidujIndeksSurowy(JSON.stringify({
     schemat: SCHEMAT_INDEKSU,
-    wpisy: [{ skrot: 'aabbccdd', miejsce: 'X', geohash5: 'u3qb8', promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1, licencja: 'CC BY-SA 4.0', data: '2026-09-06 12:00' }],
+    wpisy: [{ skrot: 'aabbccdd', miejsce: 'X', geohash5: 'u3qb8', promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 3, pytaniaNaStacje: 1, licencja: 'CC BY-SA 4.0', data: '2026-09-06 12:00' }],
   }));
   assert.deepEqual(indeks, [], 'wpis bez wskazania paczki jest bezużyteczny');
   assert.equal(usterki[0].kod, 'Z10');
@@ -251,7 +250,7 @@ const kryteriaOkolicy = (nad = {}) => ({
   geohash5: geohash(GRACZ.lat, GRACZ.lon, 5),
   lat: GRACZ.lat,
   lon: GRACZ.lon,
-  promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], wiek: 'dorosli',
+  promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 },
   ...nad,
 });
 
@@ -302,14 +301,14 @@ test('dopasowanie okolicy: wpis legacy z tej samej komórki geohash5 pasuje nawe
 });
 
 test('dopasowanie okolicy: bez podanej pozycji działa dawna reguła (rejestr lokalny, testy)', () => {
-  const bezPozycji = { geohash5: geohash(START_PACZKI.lat, START_PACZKI.lon, 5), promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], wiek: 'dorosli' };
+  const bezPozycji = { geohash5: geohash(START_PACZKI.lat, START_PACZKI.lon, 5), promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 } };
   assert.deepEqual(dopasujZestawy(rejestrZOkolica(START_PACZKI), bezPozycji).map((w) => w.skrot), ['okoliczna'], 'ten sam geohash5 = pasuje');
   assert.deepEqual(dopasujZestawy(rejestrZOkolica(START_PACZKI), { ...bezPozycji, geohash5: geohash(GRACZ.lat, GRACZ.lon, 5) }), [], 'inny geohash5 = nie pasuje');
 });
 
 test('zbierzMetaZestawu niesie geohash6 (kotwica tolerancji dla nowych paczek)', async () => {
   const { zbierzMetaZestawu } = await import('../app/zestawy.js');
-  const m = zbierzMetaZestawu({ lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-07 10:00' });
+  const m = zbierzMetaZestawu({ lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-07 10:00' });
   assert.equal(m.geohash5, geohash(PODKOWA.lat, PODKOWA.lon, 5));
   assert.equal(m.geohash6, geohash(PODKOWA.lat, PODKOWA.lon, 6));
 });
@@ -320,7 +319,7 @@ test('uwaga C1 (ADR 0053): model AI w `meta` jest ADDYTYWNY, a brak wyboru = bra
   // wzorzec `geohash6` (ADR 0024) i `ulica` (ADR 0048): dokładamy je tylko
   // wtedy, gdy wybór JEST — stare pliki i most czytają się bez zmian.
   const { zbierzMetaZestawu } = await import('../app/zestawy.js');
-  const baza = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-17 10:00' };
+  const baza = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-17 10:00' };
   assert.equal('model' in zbierzMetaZestawu(baza), false, 'bez wyboru pola NIE MA — żadnej atrapy');
   assert.equal('model' in zbierzMetaZestawu({ ...baza, model: '   ' }), false, 'same spacje to też brak wyboru');
   assert.equal('model' in zbierzMetaZestawu({ ...baza, model: 7 }), false, 'nie-tekst nie udaje modelu');
@@ -330,7 +329,7 @@ test('uwaga C1 (ADR 0053): model AI w `meta` jest ADDYTYWNY, a brak wyboru = bra
 
 test('zbierzMetaZestawu niesie factcheck (ADR 0032), domyślnie true', async () => {
   const { zbierzMetaZestawu } = await import('../app/zestawy.js');
-  const baza = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-07 10:00' };
+  const baza = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-07 10:00' };
   assert.equal(zbierzMetaZestawu(baza).factcheck, true, 'domyślnie zweryfikowana');
   assert.equal(zbierzMetaZestawu({ ...baza, factcheck: false }).factcheck, false, 'bez weryfikacji na życzenie');
 });
@@ -342,12 +341,12 @@ test('zestawy: powodyNiedopasowania mówi wprost, które kryterium nie zagrało'
   const LODZ = { lat: 51.7592, lon: 19.4560 };
   const wpis = (nad = {}) => ({
     skrot: 'abcd1234', miejsce: 'Podkowa Leśna', geohash5: geohash(PODKOWA.lat, PODKOWA.lon, 5),
-    geohash6: geohash(PODKOWA.lat, PODKOWA.lon, 6), promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
+    geohash6: geohash(PODKOWA.lat, PODKOWA.lon, 6), promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 },
     liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-06 19:30', ...nad,
   });
   const kryteria = (p, nad = {}) => ({
     geohash5: geohash(p.lat, p.lon, 5), lat: p.lat, lon: p.lon,
-    wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], ...nad,
+    poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia', 'przyroda'], ...nad,
   });
 
   assert.deepEqual(powodyNiedopasowania(wpis(), kryteria(PODKOWA)), [], 'identyczny setup = zero powodów');
@@ -358,17 +357,16 @@ test('zestawy: powodyNiedopasowania mówi wprost, które kryterium nie zagrało'
   assert.match(daleko[0], /inna okolica — paczka powstała 9[0-9](\.[0-9])? km stąd/, 'podaje odległość w km');
   assert.ok(odlegloscWpisuM(wpis(), kryteria(LODZ)) > 90_000, 'ponad 90 km — daleko poza tolerancją 200 m');
 
-  assert.match(powodyNiedopasowania(wpis({ wiek: 'wiek-12' }), kryteria(PODKOWA))[0], /wiek: paczka „wiek-12", setup „dorosli"/);
+  assert.match(powodyNiedopasowania(wpis({ poziomyPytan: { dzieci: 1, dorosli: 0 } }), kryteria(PODKOWA))[0], /poziomy: paczka „dzieci: 1, dorośli: 0", setup „dzieci: 0, dorośli: 1"/);
   assert.match(powodyNiedopasowania(wpis({ tematy: ['kultura'] }), kryteria(PODKOWA))[0], /tematy spoza setupu: kultura/);
-  // ŁĄCZNA liczba pytań: 5 × 1 = 5 w setupie — paczka może mieć więcej, mniej nie
-  assert.deepEqual(powodyNiedopasowania(wpis({ liczbaStacji: 1, pytaniaNaStacje: 5 }), kryteria(PODKOWA)), [], '1 stacja × 5 pytań = 5 pytań: pasuje');
+  // ADR 0055: liczba stacji jest kryterium RÓWNOŚCI (per-poziomowe
+  // zestawienie przy KAŻDEJ stacji) — suma pytań sama już nie wystarcza.
+  assert.match(powodyNiedopasowania(wpis({ liczbaStacji: 1, pytaniaNaStacje: 5 }), kryteria(PODKOWA))[0], /liczba stacji: paczka 1, setup 5/);
   assert.deepEqual(powodyNiedopasowania(wpis({ liczbaStacji: 5, pytaniaNaStacje: 4 }), kryteria(PODKOWA)), [], '20 pytań przy 5 wymaganych: nadmiar nie przeszkadza');
-  assert.match(
-    powodyNiedopasowania(wpis({ liczbaStacji: 2, pytaniaNaStacje: 2 }), kryteria(PODKOWA))[0],
-    /za mało pytań: paczka ma 4 \(2 stacji × 2\), a setup chce 5/,
-    '4 pytania przy 5 wymaganych: za mało',
-  );
-  assert.match(powodyNiedopasowania(wpis({ liczbaStacji: undefined }), kryteria(PODKOWA))[0], /brak danych o liczbie pytań/, 'wpis bez danych o pytaniach = jawny powód');
+  const zaMal0 = powodyNiedopasowania(wpis({ liczbaStacji: 2, pytaniaNaStacje: 2 }), kryteria(PODKOWA));
+  assert.ok(zaMal0.some((r) => /liczba stacji: paczka 2, setup 5/.test(r)), 'inna liczba stacji = jawny powód (ADR 0055)');
+  assert.ok(zaMal0.some((r) => /za mało pytań: paczka ma 4 \(2 stacji × 2\), a setup chce 5/.test(r)), '4 pytania przy 5 wymaganych: za mało');
+  assert.ok(powodyNiedopasowania(wpis({ liczbaStacji: undefined }), kryteria(PODKOWA)).some((r) => /brak danych o liczbie pytań/.test(r)), 'wpis bez danych o pytaniach = jawny powód');
   // ADR 0046 (2026-09-14): promień jest kryterium — inny zakres = niepasująca,
   // z powodem nazwanym wprost; równy promień nie dokłada powodu.
   assert.match(
@@ -377,8 +375,8 @@ test('zestawy: powodyNiedopasowania mówi wprost, które kryterium nie zagrało'
     'paczka o innym promieniu niż setup dostaje jawny powód',
   );
   assert.deepEqual(powodyNiedopasowania(wpis({ promienM: 500 }), kryteria(PODKOWA, { promienM: 500 })), [], 'równy promień = zero powodów');
-  const kilka = powodyNiedopasowania(wpis({ wiek: 'wiek-12', liczbaStacji: 1, pytaniaNaStacje: 1 }), kryteria(PODKOWA));
-  assert.equal(kilka.length, 2, 'kilka niezgodności = kilka powodów, każdy nazwany');
+  const kilka = powodyNiedopasowania(wpis({ poziomyPytan: { dzieci: 1, dorosli: 0 }, liczbaStacji: 1, pytaniaNaStacje: 1 }), kryteria(PODKOWA));
+  assert.equal(kilka.length, 3, 'poziomy + stacje + suma pytań = trzy powody, każdy nazwany');
 });
 
 /* -------- faktyczne tematy pytań w meta (właściciel 2026-09-11) -------- */
@@ -400,7 +398,7 @@ test('faktyczneTematyPytan: unikalne tematy pytań w kolejności pierwszego wyst
 
 test('zbierzMetaZestawu: tematy z FAKTYCZNEJ zawartości pytań, nie z listy dopuszczalnej setupu', async () => {
   const { zbierzMetaZestawu } = await import('../app/zestawy.js');
-  const wspolne = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1 };
+  const wspolne = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 3, pytaniaNaStacje: 1 };
   const zPytaniami = zbierzMetaZestawu({ ...wspolne, tematy: ['historia', 'przyroda', 'architektura'], pytania: [{ temat: 'historia' }, { temat: 'architektura' }] });
   assert.deepEqual(zPytaniami.tematy, ['historia', 'architektura'], 'meta opisuje to, co paczka NAPRAWDĘ niesie');
   const bezPytan = zbierzMetaZestawu({ ...wspolne, tematy: ['historia', 'przyroda'] });
@@ -425,7 +423,7 @@ test('ulicaZeStacji: ulica startu odarta z miasta, które i tak jest w `miejsce`
 
 test('zbierzMetaZestawu: meta niesie `ulica` przy starcie (ADR 0048, additive jak geohash6 z ADR 0024)', () => {
   const meta = zbierzMetaZestawu({
-    lat: 52.1141, lon: 20.6622, promienM: 1000, tematy: ['historia'], wiek: '12', jezyk: 'polski',
+    lat: 52.1141, lon: 20.6622, promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 3 }, jezyk: 'polski',
     miejsce: 'Podkowa Leśna', data: '2026-09-15 09:41', liczbaStacji: 5, pytaniaNaStacje: 3,
     opisStacjiStartu: 'ul. Bukowa, Podkowa Leśna',
   });

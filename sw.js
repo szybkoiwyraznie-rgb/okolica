@@ -18,7 +18,7 @@
  * activate. */
 'use strict';
 
-const WERSJA_SW = 'm12-158';
+const WERSJA_SW = 'm12-160';
 const PREFIKS_CACHE = 'okolica';
 const CACHE_SHELL = `${PREFIKS_CACHE}-shell-${WERSJA_SW}`;
 /**
@@ -50,6 +50,10 @@ const PLIKI_SHELL = [
   './assets/ikony/ikona-192.png',
   './assets/ikony/ikona-512.png',
   './assets/ikony/ikona-maskable-512.png',
+  './assets/ikony-modela/meta.jpg',
+  './assets/ikony-modela/chatgpt.jpg',
+  './assets/ikony-modela/gemini.jpg',
+  './assets/ikony-modela/claude.jpg',
 ];
 /** Ścieżka kafelka rastrowego: /z/x/y(.@2x).png|jpg|webp — niezależnie od hosta. */
 const WZOR_KAFELKA = /\/\d+\/\d+\/\d+(?:@\dx)?\.(?:png|jpe?g|webp)(?:[?#]|$)/i;

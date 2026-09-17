@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-158';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-158';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, KLUCZE_POZIOMOW, PODKLADY, POZIOM_DORMYSLNY, TEMATY_SETUP, TRYBY, czyPoziomOk, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-160';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-160';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-158';
+} from './protokol.js?v=m12-160';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-158';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-158';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-158';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-158';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-158';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-158';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-160';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-160';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-160';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-160';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, kolejnoscPytanStacji, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-160';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-160';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-158';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-158';
+} from './zestawy.js?v=m12-160';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-160';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -57,19 +57,19 @@ import {
   wczytajDaneZCache,
   wybierzWpisSieci,
   zlozWpisSieci,
-} from './sieci.js?v=m12-158';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-158';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-158';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-158';
-import { adresMostu, stanMostu } from './most.js?v=m12-158';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-158';
+} from './sieci.js?v=m12-160';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-160';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-160';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-160';
+import { adresMostu, stanMostu } from './most.js?v=m12-160';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-160';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   czyPaczkaUzytaLokalnie, oznaczPaczkeJakoUzyta,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-158';
+} from './oceny.js?v=m12-160';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -77,6 +77,8 @@ const KLUCZ_MOTYW = 'okolica:motyw';
  *  Adres mostu NIE jest tu trzymany: żyje w kodzie (`app/most.js`, ADR 0020). */
 const KLUCZ_RODZAJU_GRY = 'okolica:rodzaj-gry';
 const KLUCZ_SESJI_MULTI = 'okolica:multi:sesja';
+// ADR 0055: wspólny poziom pytań gry multi (wybór hosta: dzieci/dorosli).
+const KLUCZ_MULTI_POZIOM = 'okolica:multi:poziom';
 /** Zdarzenia gry sieciowej, które nie doszły na most (ADR 0019 aneks 2026-09-13d). */
 const KLUCZ_KOLEJKI_MULTI = 'okolica:multi-kolejka';
 
@@ -191,6 +193,12 @@ const STAN = {
   /** M12-74 (właściciel 2026-09-11): ścieżka wybrana na setupie — 'zaloz'
    *  albo 'dolacz'. Dołączanie działa TYLKO z listy gier ≤50 m (bez kodów). */
   multiSciezka: 'zaloz',
+  // ADR 0055 (właściciel, decyzja 2026-09-17 po wersji 1+1): w grze multi
+  // (trasa/wyścig) NIE ma różnicowania poziomów — HOST wybiera JEDEN poziom
+  // pytań dla całej gry; paczka niesie jedno pytanie na stację tego poziomu i
+  // WSZYSCY gracze odpowiadają na te same pytania. Poziomy per gracz są
+  // wyłącznie mechaniką hot-seat (i profilu).
+  multiPoziom: 'dorosli',
 /** M11/P4: tryb zakładanej gry ('trasa' | 'wyscig') — decyzja właściciela
  * 2026-09-11: Wspólna Trasa (po kolei) i Wyścig na Orientację (dowolnie). */
   multiTryb: 'trasa',
@@ -963,15 +971,43 @@ function ustawWszystkieTematy(zaznacz) {
  * liczby nie ma, bo myliło się z listą imion i z tożsamością.
  */
 function renderujListeGraczy() {
-  const imiona = Array.isArray(STAN.konfig.imiona) ? STAN.konfig.imiona : [];
+  const gracze = Array.isArray(STAN.konfig.gracze) ? STAN.konfig.gracze : [];
   const lista = $('lista-graczy');
   lista.replaceChildren();
-  imiona.forEach((imie, i) => {
+  gracze.forEach((gracz, i) => {
+    const imie = gracz?.imie;
     const li = document.createElement('li');
+    li.className = 'gracz-wiersz';
     const kto = document.createElement('span');
+    kto.className = 'gracz-kto';
     const pewny = STAN.graczeZweryfikowani?.[i] !== false;
     kto.textContent = `${i + 1}. ${imie || `Gracz ${i + 1}`}${pewny ? '' : ' — bez potwierdzenia z Drive'}`;
     li.appendChild(kto);
+    // ADR 0055 (uwaga B): POZIOM TRUDNOŚCI PRZY IMIENIU — dwa przełączniki
+    // (Dziecko / Dorosły), nie globalne pole „kategoria wiekowa”. Wybór
+    // wyznacza, ile pytań tego poziomu powstaje przy każdej stacji, i do kogo
+    // pytania tego poziomu idą w grze (bez mieszania). W MULTI (decyzja
+    // właściciela 2026-09-17) przełączników NIE MA — poziom jest jedną
+    // własnością gry (wybór hosta w karcie multi); lista gości widziałaby
+    // przełączniki bez żadnego skutku.
+    if (STAN.rodzajGry !== 'multi') {
+      const el = document.createElement('span');
+      el.className = 'gracz-poziom';
+      el.setAttribute('role', 'group');
+      el.setAttribute('aria-label', `Poziom trudności gracza ${imie || i + 1}`);
+      const biezacyPoziom = czyPoziomOk(gracz?.poziom) ? gracz.poziom : POZIOM_DORMYSLNY;
+      for (const klucz of KLUCZE_POZIOMOW) {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.className = 'przycisk przycisk-maly przycisk-poziom' + (klucz === biezacyPoziom ? ' aktywny' : '');
+        b.textContent = klucz === 'dzieci' ? '🧒 Dziecko (8–10)' : '🧑 Dorosły';
+        b.setAttribute('aria-pressed', String(klucz === biezacyPoziom));
+        b.setAttribute('aria-label', `Poziom gracza ${imie || i + 1}: ${klucz === 'dzieci' ? 'dziecko (8–10 lat)' : 'dorosły'}`);
+        b.addEventListener('click', () => ustawPoziomGracza(i, klucz));
+        el.appendChild(b);
+      }
+      li.appendChild(el);
+    }
     const usun = document.createElement('button');
     usun.type = 'button';
     usun.className = 'przycisk przycisk-maly';
@@ -986,13 +1022,44 @@ function renderujListeGraczy() {
   // listę) i przy wznowieniu. Liczba graczy jest długością tej listy (decyzja
   // właściciela 2026-09-07), a plan pytań liczy się z tej liczby (uwaga B,
   // 2026-09-15) — jedno miejsce, więc żaden tor nie zostawia rozjazdu.
-  STAN.konfig.liczbaGraczy = Math.max(1, imiona.length);
+  STAN.konfig.liczbaGraczy = Math.max(1, gracze.length);
   synchronizujPytaniaZTrybem();
   renderujPolaTozsamosci(); // multi: pola wpisywania znikają po dodaniu siebie
   // Dołączającemu w multi lista gier ~50 m dopina się do ZNANEGO imienia bez
   // osobnego klikania (funkcja sama odmawia poza ścieżką „Dołączam” i bez
   // potwierdzonego gracza — hot-seat niczego tu nie wywoła).
   void odswiezListeGierNaSetupie();
+}
+
+/**
+ * ADR 0055 (uwaga B): zmiana poziomu gracza przy jego imieniu. Poziom jest
+ * własnością GRACZA (nie całej gry) i jedzie w trzech miejscach: lista
+ * graczy (konfig), lista zapamiętanych na tym telefonie (auto-selection przy
+ * następnym dodaniu) — a przy następnym potwierdzeniu PIN-em profil na Drive
+ * dostaje aktualny poziom (`dodajGracza` niesie `poziom`). W multi poziom
+ * jedzie od razu z grą (`gra-zaloz`/`gra-dolacz`), bo gracz może go zmienić
+ * jeszcze przed startem.
+ */
+function ustawPoziomGracza(indeks, poziom) {
+  const gracze = STAN.konfig.gracze ?? [];
+  if (!gracze[indeks] || !czyPoziomOk(poziom)) return;
+  const zmieniony = gracze[indeks];
+  if (zmieniony.poziom === poziom) return;
+  gracze[indeks] = { ...zmieniony, poziom };
+  STAN.konfig.gracze = gracze;
+  const zapamietani = czytajGraczyLokalnych();
+  const imie = normalizujPseudonim(zmieniony.imie);
+  const wpis = (zapamietani?.gracze ?? []).find((g) => g.pseudonim.toLowerCase() === imie.toLowerCase());
+  if (wpis) {
+    wpis.poziom = poziom;
+    localStorage.setItem(KLUCZ_GRACZY, JSON.stringify({
+      schemat: 'gracze-lokalni/1', gracze: zapamietani.gracze, kiedy: new Date().toISOString(),
+    }));
+  }
+  renderujListeGraczy();
+  synchronizujPytaniaZTrybem();
+  przeliczPromienZCzasu();
+  status(`„${zmieniony.imie}” odpowiada na pytania: ${poziom === 'dzieci' ? 'poziom dziecka (8–10 lat) — bez dat, cyfr i nazwisk' : 'poziom dorosłego — mogą być trudne (logika, fakty, daty, nazwiska)'}.`);
 }
 
 /**
@@ -1005,21 +1072,21 @@ function renderujListeGraczy() {
  */
 function synchronizujPytaniaZTrybem() {
   const ile = pytaniaNaStacjeDla({
-    liczbaGraczy: Math.max(1, STAN.konfig.imiona?.length ?? 1),
+    liczbaGraczy: Math.max(1, STAN.konfig.gracze?.length ?? 1),
     rodzajGry: STAN.rodzajGry,
   });
   if (STAN.konfig.pytaniaNaStacje !== ile) STAN.konfig.pytaniaNaStacje = ile;
 }
 
 function usunGracza(indeks) {
-  const imiona = [...(STAN.konfig.imiona ?? [])];
-  const [usuniete] = imiona.splice(indeks, 1);
-  STAN.konfig.imiona = imiona;
+  const gracze = [...(STAN.konfig.gracze ?? [])];
+  const [usuniete] = gracze.splice(indeks, 1);
+  STAN.konfig.gracze = gracze;
   STAN.graczeZweryfikowani = [...(STAN.graczeZweryfikowani ?? [])].filter((_, i) => i !== indeks);
   renderujListeGraczy(); // liczba graczy i plan pytań liczą się tu (uwaga B)
   przeliczPromienZCzasu(); // pytania wchodzą do wzoru na promień (ADR 0025)
   przywrocGraczy();
-  status(usuniete ? `„${usuniete}" usunięte z listy graczy.` : 'Lista graczy bez zmian.');
+  status(usuniete ? `„${usuniete.imie}" usunięte z listy graczy.` : 'Lista graczy bez zmian.');
 }
 
 /** Klucz i schemat listy graczy zapamiętanej na tym telefonie (ADR 0026 aneks). */
@@ -1034,12 +1101,15 @@ function czytajGraczyLokalnych() {
 }
 
 /** Zapamiętuje gracza potwierdzonego na moście — PIN nie jest zapisywany. */
-function zapamietajGracza(pseudonim, { zweryfikowany = true } = {}) {
+function zapamietajGracza(pseudonim, { zweryfikowany = true, poziom = null } = {}) {
   const imie = normalizujPseudonim(pseudonim);
   if (!imie) return;
   const zapis = czytajGraczyLokalnych();
+  const obecny = (zapis?.gracze ?? []).find((g) => g.pseudonim.toLowerCase() === imie.toLowerCase());
   const gracze = (zapis?.gracze ?? []).filter((g) => g.pseudonim.toLowerCase() !== imie.toLowerCase());
-  gracze.unshift({ pseudonim: imie, zweryfikowany });
+  // ADR 0055: poziom z listy (auto-selection) — nowy wpis dostaje domyślny.
+  const nowyPoziom = czyPoziomOk(poziom) ? poziom : (czyPoziomOk(obecny?.poziom) ? obecny.poziom : POZIOM_DORMYSLNY);
+  gracze.unshift({ pseudonim: imie, zweryfikowany, poziom: nowyPoziom });
   localStorage.setItem(KLUCZ_GRACZY, JSON.stringify({
     schemat: 'gracze-lokalni/1', gracze: gracze.slice(0, MAKS_GRACZY), kiedy: new Date().toISOString(),
   }));
@@ -1060,17 +1130,18 @@ function przywrocGraczy({ zListy = false } = {}) {
   if (zListy) {
     // Zapamiętana lista wraca do gry BEZ pytania o PIN (decyzja właściciela
     // 2026-09-07) — ale tylko gracze potwierdzeni kiedyś na moście; niepewni
-    // zostają jako przyciski i wymagają PIN-u.
+    // zostają jako przyciski i wymagają PIN-u. ADR 0055: wraz z imieniem
+    // wraca POZIOM (auto-selection przy imieniu gracza).
     for (const g of zapamietani) {
       if (!g.zweryfikowany) continue;
-      const juz = (STAN.konfig.imiona ?? []).some((i) => normalizujPseudonim(i).toLowerCase() === g.pseudonim.toLowerCase());
-      if (juz || (STAN.konfig.imiona ?? []).length >= MAKS_GRACZY) continue;
-      STAN.konfig.imiona = [...(STAN.konfig.imiona ?? []), g.pseudonim];
+      const juz = (STAN.konfig.gracze ?? []).some((gr) => normalizujPseudonim(gr?.imie).toLowerCase() === g.pseudonim.toLowerCase());
+      if (juz || (STAN.konfig.gracze ?? []).length >= MAKS_GRACZY) continue;
+      STAN.konfig.gracze = [...(STAN.konfig.gracze ?? []), { imie: g.pseudonim, poziom: czyPoziomOk(g.poziom) ? g.poziom : POZIOM_DORMYSLNY }];
       STAN.graczeZweryfikowani = [...(STAN.graczeZweryfikowani ?? []), true];
     }
   }
   renderujListeGraczy();
-  const wGrze = new Set((STAN.konfig.imiona ?? []).map((i) => normalizujPseudonim(i).toLowerCase()));
+  const wGrze = new Set((STAN.konfig.gracze ?? []).map((gr) => normalizujPseudonim(gr?.imie).toLowerCase()));
   const wolni = zapamietani.filter((g) => !wGrze.has(g.pseudonim.toLowerCase()));
   const pasek = $('lista-zapamietanych');
   pasek.replaceChildren();
@@ -1085,18 +1156,18 @@ function przywrocGraczy({ zListy = false } = {}) {
   }
   // kto z bieżącej listy jest potwierdzony na tym telefonie — bez ponownego PIN-u
   const pewni = new Map(zapamietani.map((g) => [g.pseudonim.toLowerCase(), g.zweryfikowany]));
-  STAN.graczeZweryfikowani = (STAN.konfig.imiona ?? []).map((imie) => (
-    pewni.get(normalizujPseudonim(imie).toLowerCase()) ?? (STAN.graczeZweryfikowani?.[(STAN.konfig.imiona ?? []).indexOf(imie)] ?? false)
+  STAN.graczeZweryfikowani = (STAN.konfig.gracze ?? []).map((gr, i) => (
+    pewni.get(normalizujPseudonim(gr?.imie).toLowerCase()) ?? (STAN.graczeZweryfikowani?.[i] ?? false)
   ));
-  if ((STAN.konfig.imiona ?? []).length) {
+  if ((STAN.konfig.gracze ?? []).length) {
     $('profil-stan').textContent = 'Gracze z tego telefonu są już na liście — bez PIN-u. Usuń albo dodaj kolejnego.';
   } else if (zapamietani.length) {
     $('profil-stan').textContent = 'Ten telefon pamięta graczy — dodaj ich jednym kliknięciem (bez PIN-u) albo wpisz nowe imię z PIN-em.';
   }
 }
 
-function dodajGraczaDoListy(imie, { zweryfikowany }) {
-  STAN.konfig.imiona = [...(STAN.konfig.imiona ?? []), imie];
+function dodajGraczaDoListy(imie, { zweryfikowany, poziom = POZIOM_DORMYSLNY } = {}) {
+  STAN.konfig.gracze = [...(STAN.konfig.gracze ?? []), { imie, poziom: czyPoziomOk(poziom) ? poziom : POZIOM_DORMYSLNY }];
   STAN.graczeZweryfikowani = [...(STAN.graczeZweryfikowani ?? []), zweryfikowany];
   pokazBledy('bledy-profil', []);
   $('profil-pseudonim').value = '';
@@ -1116,17 +1187,18 @@ async function dodajZapamietanegoGracza(zapamietany) {
     $('profil-pin').focus?.();
     return false;
   }
-  if (STAN.rodzajGry === 'multi' && (STAN.konfig.imiona ?? []).length >= 1) {
+  if (STAN.rodzajGry === 'multi' && (STAN.konfig.gracze ?? []).length >= 1) {
     // Multiplayer: dokładnie jedna osoba na telefon (właściciel 2026-09-11) —
     // ten sam limit co w `dodajGracza`, skrót zapamiętanych go nie omija.
     pokazBledy('bledy-profil', [{ komunikat: 'W multiplayerze gra z tego telefonu tylko jedna osoba — usuń siebie z listy, żeby zmienić gracza.' }]);
     return false;
   }
-  if ((STAN.konfig.imiona ?? []).length >= MAKS_GRACZY) {
+  if ((STAN.konfig.gracze ?? []).length >= MAKS_GRACZY) {
     pokazBledy('bledy-profil', [{ komunikat: `Maksymalnie ${MAKS_GRACZY} graczy na jednym telefonie.` }]);
     return false;
   }
-  dodajGraczaDoListy(zapamietany.pseudonim, { zweryfikowany: true });
+  // ADR 0055: poziom wraca z listy zapamiętanych (auto-selection).
+  dodajGraczaDoListy(zapamietany.pseudonim, { zweryfikowany: true, poziom: zapamietany.poziom });
   status(`„${zapamietany.pseudonim}" dodany do gry — ten telefon już go potwierdził.`);
   return true;
 }
@@ -1149,15 +1221,15 @@ async function dodajGracza() {
     return false;
   };
   if (!pseudo) return odmowa('Wpisz imię gracza — trafia do historii gier.', 'profil-pseudonim');
-  if (STAN.rodzajGry === 'multi' && (STAN.konfig.imiona ?? []).length >= 1) {
+  if (STAN.rodzajGry === 'multi' && (STAN.konfig.gracze ?? []).length >= 1) {
     // Właściciel, 2026-09-11: w grze na wielu urządzeniach wpisujesz na setupie
     // TYLKO siebie (imię+PIN jak w hot-seat) — pozostałych zapraszasz w lobby.
     return odmowa('W grze na wielu urządzeniach gra z tego telefonu tylko JEDNA osoba — Ty. Pozostałych graczy dołączysz w lobby.', 'profil-pseudonim');
   }
-  if ((STAN.konfig.imiona ?? []).length >= MAKS_GRACZY) {
+  if ((STAN.konfig.gracze ?? []).length >= MAKS_GRACZY) {
     return odmowa(`Maksymalnie ${MAKS_GRACZY} graczy na jednym telefonie.`, 'profil-pseudonim');
   }
-  if ((STAN.konfig.imiona ?? []).some((i) => normalizujPseudonim(i).toLowerCase() === pseudo.toLowerCase())) {
+  if ((STAN.konfig.gracze ?? []).some((gr) => normalizujPseudonim(gr?.imie).toLowerCase() === pseudo.toLowerCase())) {
     return odmowa(`„${pseudo}" jest już na liście graczy.`, 'profil-pseudonim');
   }
   if (!czyPinPoprawny(pin)) {
@@ -1176,7 +1248,12 @@ async function dodajGracza() {
     status(`Sprawdzam imię „${pseudo}" na wspólnym Drive…`);
     let wynik;
     try {
-      wynik = await polecenieMostu(url, { akcja: 'profil-ustaw', pseudonim: pseudo, pin });
+      // ADR 0055: profil na Drive niesie POZIOM TRUDNOŚCI gracza — przy
+      // potwierdzeniu PIN-em most dostaje aktualny poziom (z listy zapamiętanych
+      // albo domyślny), więc auto-selection działa na każdym telefonie.
+      const poziomDoProfilu = (czytajGraczyLokalnych()?.gracze ?? [])
+        .find((g) => g.pseudonim.toLowerCase() === pseudo.toLowerCase())?.poziom ?? POZIOM_DORMYSLNY;
+      wynik = await polecenieMostu(url, { akcja: 'profil-ustaw', pseudonim: pseudo, pin, poziom: czyPoziomOk(poziomDoProfilu) ? poziomDoProfilu : POZIOM_DORMYSLNY });
     } catch (e) {
       if (e?.odmowaMostu) return odmowa(komunikatBleduProfilu(String(e.message ?? '').trim()));
       dodajGraczaDoListy(pseudo, { zweryfikowany: false });
@@ -1185,8 +1262,9 @@ async function dodajGracza() {
       return true;
     }
     const imie = wynik.pseudonim || pseudo;
-    zapamietajGracza(imie);
-    dodajGraczaDoListy(imie, { zweryfikowany: true });
+    const poziomGracza = czyPoziomOk(wynik.poziom) ? wynik.poziom : POZIOM_DORMYSLNY;
+    zapamietajGracza(imie, { poziom: poziomGracza });
+    dodajGraczaDoListy(imie, { zweryfikowany: true, poziom: poziomGracza });
     $('profil-stan').textContent = wynik.nowy
       ? `Nowy profil „${imie}" założony z tym PIN-em. Dodaj kolejnego gracza albo przejdź dalej.`
       : `„${imie}" potwierdzone PIN-em — witaj z powrotem. Dodaj kolejnego gracza albo przejdź dalej.`;
@@ -1207,7 +1285,7 @@ async function dodajGracza() {
  * wprost, gdy któryś gracz nie ma potwierdzenia z Drive.
  */
 async function bramkaTozsamosci() {
-  const imiona = (STAN.konfig.imiona ?? []).map((i) => normalizujPseudonim(i)).filter(Boolean);
+  const imiona = (STAN.konfig.gracze ?? []).map((gr) => normalizujPseudonim(gr?.imie)).filter(Boolean);
   if (!imiona.length) {
     const komunikat = 'Dodaj co najmniej jednego gracza: imię i PIN, potem „➕ Dodaj gracza".';
     pokazBledy('bledy-profil', [{ komunikat }]);
@@ -1295,11 +1373,12 @@ function polecenieHotseat() {
     // geohash5 STARTU gry — tak samo jak w konfiguracji gry wieloosobowej
     // (ADR 0019 pkt 3): przybliżenie okolicy, nie punkt gracza.
     geohash5: Number.isFinite(r.start?.lat) ? geohash(r.start.lat, r.start.lon, 5) : '',
-    wiek: STAN.konfig.wiek,
+    // ADR 0055: poziomy per gracz + per-stacyjne zestawienie zamiast `wiek`.
+    poziomyPytan: poziomyPytanZGraczy(r.gracze ?? []),
     tematy: STAN.konfig.tematy,
     liczbaStacji: r.stacje.length,
     pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
-    gracze: (r.gracze ?? []).map((g) => ({ id: g.id, pseudonim: g.imie })),
+    gracze: (r.gracze ?? []).map((g) => ({ id: g.id, pseudonim: g.imie, poziom: g.poziom })),
     dziennik: r.dziennik,
     // Ten sam odcisk gry co lokalny rejestr wysłanych — most po nim rozpoznaje
     // powtórkę i nie zakłada drugiego pliku (zgłoszenie właściciela 2026-09-09).
@@ -2651,16 +2730,19 @@ function odswiezPanelOcenPoIdPaczki() {
 
 /** Meta dopasowania z bieżącej konfiguracji i pozycji (wspólna dla zapisu i eksportu). */
 function metaBiezacejOkolicy() {
+  // ADR 0055: trudność w meta = per-stacyjne poziomy z listy graczy;
+  // pytaniaNaStacje = ich suma (hot-seat: tyle pytań, ilu graczy).
+  const poziomy = poziomyPytanZGraczy(STAN.konfig.gracze);
   return zbierzMetaZestawu({
     lat: STAN.pozycja.lat,
     lon: STAN.pozycja.lon,
     promienM: STAN.konfig.promienM,
     tematy: STAN.konfig.tematy,
-    wiek: STAN.konfig.wiek,
+    poziomyPytan: poziomy,
     jezyk: STAN.konfig.jezyk,
     miejsce: STAN.miejsce ?? '',
     liczbaStacji: STAN.konfig.liczbaStacji,
-    pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
+    pytaniaNaStacje: poziomy.dzieci + poziomy.dorosli,
     tematWlasny: STAN.konfig.tematWlasny ?? '',
     factcheck: czyFactcheckPaczki(STAN.paczka),
     // Faktyczne tematy pytań (właściciel 2026-09-11): meta opisuje zawartość
@@ -2895,6 +2977,12 @@ function odswiezPropozycjeZestawow() {
     return;
   }
   karta.hidden = false;
+  // ADR 0055: kryteria trudności = per-stacyjne poziomy — hot-seat z listy
+  // graczy, multi JEDEN poziom hosta (gracze dołączają później, ale pytania
+  // są wspólne — wybór poziomu jest w karcie multi).
+  const poziomyKryteriow = STAN.rodzajGry === 'multi'
+    ? { dzieci: STAN.multiPoziom === 'dzieci' ? 1 : 0, dorosli: STAN.multiPoziom === 'dorosli' ? 1 : 0 }
+    : poziomyPytanZGraczy(STAN.konfig.gracze);
   const kryteria = {
     geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5),
     // Pełna pozycja: dopasowanie liczy odległość od komórki paczki z tolerancją
@@ -2903,9 +2991,9 @@ function odswiezPropozycjeZestawow() {
     lon: STAN.pozycja.lon,
     promienM: STAN.konfig.promienM,
     liczbaStacji: STAN.konfig.liczbaStacji,
-    pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
+    pytaniaNaStacje: poziomyKryteriow.dzieci + poziomyKryteriow.dorosli,
     tematy: STAN.konfig.tematy,
-    wiek: STAN.konfig.wiek,
+    poziomyPytan: poziomyKryteriow,
   };
   const lista = $('zestawy-lista');
   lista.replaceChildren(); // standardowe czyszczenie (atrapa DOM też je umie)
@@ -3032,7 +3120,8 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
   if (nieczytelna) return nieczytelna;
   const dopasowane = dopasujMetaIndeksu(indeks, kryteria);
   KANDYDACI_ZESTAWOW.push(...dopasowane.map((meta) => ({
-    opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.wiek}`, // I.a: bez licencji (format TO-zestaw/1 ją niesie, opis nie)
+    // ADR 0055: trudność w opisie = poziomy (nowe paczki) albo wiek (stare).
+    opis: `${meta.miejsce} · ${meta.data} · ${meta.liczbaStacji} stacji × ${meta.pytaniaNaStacje} pytań · ${meta.tematy.join(', ')} · ${meta.poziomyPytan ? `dzieci: ${meta.poziomyPytan.dzieci}, dorośli: ${meta.poziomyPytan.dorosli}` : meta.wiek ?? 'brak poziomów'}`, // I.a: bez licencji (format TO-zestaw/1 ją niesie, opis nie)
     akcja: () => grajZZestawemZRepo(meta, urlZrodla),
     // Adres pliku liczony raz — ten sam dla wstępnego pobrania i dla kliku.
     urlPaczki: urlPaczkiZRepo(urlZrodla, meta),
@@ -3178,7 +3267,7 @@ function startGry() {
   if (!STAN.konfig.kodGry) {
     // Kod gry nie jest w setupie (Partia 2, pkt 7): identyfikator z imion,
     // miejsca i daty — do plików i kluczy, nie do ochrony pytań.
-    STAN.konfig.kodGry = domyslnyKodGry({ imiona: STAN.konfig.imiona, miejsce: STAN.miejsce ?? '' });
+    STAN.konfig.kodGry = domyslnyKodGry({ imiona: (STAN.konfig.gracze ?? []).map((g) => g.imie), miejsce: STAN.miejsce ?? '' });
   }
   zapiszZestawLokalnyPoStarcie();
   STAN.rozgrywka = nowaRozgrywka({
@@ -3194,7 +3283,10 @@ function startGry() {
   });
   STAN.historiaFixow = [];
   pokazEkran('gra');
-  if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+  // ADR 0054 (uwaga A, 2026-09-17d): zawsze świeży watcher — bramka
+  // `!STAN.watcher` przepuszczała cichego nasłuch z bug G (aktywny, ale niemy)
+  // i gra wisiała w punkcie startu. Restart idempotentny: jedno `watchPosition`.
+  if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   const brakPytan = STAN.rozgrywka.brakPytan ?? [];
   status(`Gra rozpoczęta: ${STAN.rozgrywka.gracze.length} gracz(y), ${STAN.rozgrywka.stacje.length} stacji. Pytania odsłaniają się dopiero na stacjach.`
     + (brakPytan.length
@@ -3213,7 +3305,10 @@ function startOdcinkaGry() {
     STAN.historiaFixow = [];
     status('Odcinek rozpoczęty — idźcie. Pytanie otworzy się po dwóch kolejnych pomiarach nie dalej niż 50 m od stacji.' + ADR(' (ADR 0004 pkt 2)'));
     odegrajSygnal('startOdcinka');
-    if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+    // ADR 0054 (uwaga A, 2026-09-17d): zawsze świeży watcher — bramka
+  // `!STAN.watcher` przepuszczała cichego nasłuch z bug G (aktywny, ale niemy)
+  // i gra wisiała w punkcie startu. Restart idempotentny: jedno `watchPosition`.
+  if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   } else {
     status(wynik.usterki.map((u) => `[${u.kod}] ${u.komunikat}`).join(' '));
   }
@@ -3448,7 +3543,9 @@ function renderujPytanie() {
     $('gra-komunikat').textContent = 'Nie da się odsłonić pytania: w pamięci nie ma paczki. Zakończ grę ikoną „⚙ START GRY” (wpisz TAK), a potem wybierz paczkę z repozytorium albo wklej odpowiedź modelu jeszcze raz.';
     return;
   }
-  const idPytan = pytaniaStacji(r, r.biezacaStacja);
+  // ADR 0056 (uwaga C): pytania w stałej KOLEJNOŚCI GRACZY (1. → ostatni),
+  // nie w kolejności, w jakiej wypisał je model.
+  const idPytan = kolejnoscPytanStacji(r, r.biezacaStacja);
   // Pierwsza nieobsłużona para (pytanie, jego autor). Autorem jest KONKRETNY
   // gracz z rotacji (zgłoszenie właściciela 2026-09-12: przy dwóch pytaniach na
   // stacji drugie pytanie dostaje następny gracz, nie ten z kolejki) — dlatego
@@ -3922,17 +4019,22 @@ function budujPromptEkran() {
   // twarda, wymuszona kwerenda dla każdego faktu.
   const factcheck = $('prompt-factcheck').checked === true;
   STAN.promptFactcheck = factcheck;
+  // ADR 0055: `rodzajGry` przełącza blok graczy (multi: JEDEN poziom hosta —
+  // jedno wspólne pytanie na stację) i liczbę pytań.
   const wynik = zbudujPrompt({
     konfig: STAN.konfig,
     okolica: { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, miejsce: STAN.miejsce ?? '' },
     stacje: STAN.stacje,
     factcheck,
+    rodzajGry: STAN.rodzajGry,
+    multiPoziom: STAN.multiPoziom,
   });
   pokazBledy('bledy-prompt', wynik.usterki);
   STAN.prompt = wynik.prompt;
   $('pole-prompt').value = wynik.prompt ?? '';
+  const ilePytan = STAN.rodzajGry === 'multi' ? STAN.konfig.liczbaStacji : liczbaPytan(STAN.konfig);
   $('prompt-licznik').textContent = wynik.prompt
-    ? `${wynik.prompt.length} znaków · ${liczbaPytan(STAN.konfig)} pytań · ${STAN.konfig.liczbaStacji} stacji`
+    ? `${wynik.prompt.length} znaków · ${ilePytan} pytań · ${STAN.konfig.liczbaStacji} stacji`
     : 'prompt nie został zbudowany';
   $('prompt-podglad-naglowek').textContent = `Pokaż treść promptu (${factcheck ? 'z fact check' : 'bez fact-check'})`;
   // Teksty zlecenia właściciela (2026-09-09) — słowo w słowo:
@@ -4000,10 +4102,19 @@ async function kopiujDoSchowka(tekst, idPolaZapasowego) {
 /* ------------------------------------------------------------- walidacja */
 
 function oczekiwane() {
+  // ADR 0055: per-stacyjne poziomy — z listy graczy (hot-seat) albo JEDEN
+  // poziom hosta (multi: gracze dołączają później, paczka niesie jedno
+  // wspólne pytanie tego poziomu na stację).
+  const poziomy = STAN.rodzajGry === 'multi'
+    ? { dzieci: STAN.multiPoziom === 'dzieci' ? 1 : 0, dorosli: STAN.multiPoziom === 'dorosli' ? 1 : 0 }
+    : poziomyPytanZGraczy(STAN.konfig.gracze);
+  const pytaniaNaStacje = poziomy.dzieci + poziomy.dorosli;
   return {
     liczbaStacji: STAN.konfig.liczbaStacji,
-    liczbaPytan: liczbaPytan(STAN.konfig),
-    wiek: STAN.konfig.wiek,
+    liczbaPytan: STAN.konfig.liczbaStacji * pytaniaNaStacje,
+    // Bez graczy (stan pośredni testów) poziomy wyłączamy — E21/E22 nie
+    // mają czego pilnować; UI nie pozwala wkleić paczki bez gracza.
+    poziomyPytan: pytaniaNaStacje > 0 ? poziomy : undefined,
     tematy: STAN.konfig.tematy,
     promienM: STAN.konfig.promienM,
     lat: STAN.pozycja?.lat,
@@ -4238,33 +4349,27 @@ function pokazOdrzuconaPaczkeAi() {
  * Bez wyboru nic o modelu nie zapisujemy i nigdzie nie pokazujemy (brak danych
  * to nie „nieznany model”).
  *
- * Ikony rysujemy inline (`createElementNS`, bez plików i CDN — ADR 0001 pkt 1),
- * a kształty są SYMBOLICZNE — nasze uproszczenie marki, nie znak towarowy.
+ * Ikony to PRAWDZIWYCH LOGO pliki JPG wgrane przez właściciela (2026-09-17)
+ * i leżące w `assets/ikony-modela/` — ścieżki względne z repo (ADR 0002),
+ * zero CDN i zależności (ADR 0001 pkt 1), a świeżość pilnuje wersja skorupy
+ * SW (`PLIKI_SHELL` w `sw.js`).
  */
-const PRZESTRZEN_SVG_IKON = 'http://www.w3.org/2000/svg';
-
 const MODELE_AI = Object.freeze([
-  { klucz: 'meta-ai', nazwa: 'Meta.ai', sciezki: [{ d: 'M7 12c0-2.3 1.5-4.2 3.4-4.2 2 0 2.9 2.1 4 4.2 1.1 2.1 2 4.2 4 4.2 1.9 0 3.4-1.9 3.4-4.2S20.3 7.8 18.4 7.8c-2 0-2.9 2.1-4 4.2' }] },
-  { klucz: 'chatgpt', nazwa: 'ChatGPT', sciezki: [{ d: 'M12 3.4 18.3 7v7.2L12 17.8 5.7 14.2V7z' }, { d: 'M12 3.4v6.8M18.3 10.2 12 13.8M18.3 17.2 12 13.8M12 20.6v-6.8M5.7 17.2 12 13.8M5.7 10.2 12 13.8' }] },
-  { klucz: 'gemini', nazwa: 'Gemini', sciezki: [{ d: 'M12 3.2c.9 4.4 4.4 7.9 8.8 8.8-4.4.9-7.9 4.4-8.8 8.8-.9-4.4-4.4-7.9-8.8-8.8 4.4-.9 7.9-4.4 8.8-8.8z', wypelnij: true }] },
-  { klucz: 'claude', nazwa: 'Claude', sciezki: [{ d: 'M12 3.2v17.6M3.2 12h17.6M5.8 5.8l12.4 12.4M18.2 5.8 5.8 18.2' }] },
+  { klucz: 'meta-ai', nazwa: 'Meta.ai', plik: 'assets/ikony-modela/meta.jpg' },
+  { klucz: 'chatgpt', nazwa: 'ChatGPT', plik: 'assets/ikony-modela/chatgpt.jpg' },
+  { klucz: 'gemini', nazwa: 'Gemini', plik: 'assets/ikony-modela/gemini.jpg' },
+  { klucz: 'claude', nazwa: 'Claude', plik: 'assets/ikony-modela/claude.jpg' },
 ]);
 
-/** SVG jednej ikony modelu (albo `null` dla nieznanego klucza — brak danych). */
+/** Ikona modelu jako `img` z pliku (albo `null` dla nieznanego klucza — brak danych). */
 function utworzIkoneModelu(klucz) {
   const model = MODELE_AI.find((m) => m.klucz === klucz);
   if (!model) return null;
-  const svg = document.createElementNS(PRZESTRZEN_SVG_IKON, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('focusable', 'false');
-  for (const { d, wypelnij = false } of model.sciezki) {
-    const sciezka = document.createElementNS(PRZESTRZEN_SVG_IKON, 'path');
-    sciezka.setAttribute('d', d);
-    if (wypelnij) sciezka.setAttribute('fill', 'currentColor');
-    svg.appendChild(sciezka);
-  }
-  return svg;
+  const ikona = document.createElement('img');
+  ikona.src = model.plik; // względna ścieżka z repo; SW cache'uje ją w skorupie
+  ikona.alt = ''; // etykietę niesie przycisk/znaczek (aria-label) — ikona jest dekoracją
+  ikona.setAttribute('aria-hidden', 'true');
+  return ikona;
 }
 
 /** Zaznaczenie modelu z ekranu wklejki: ten sam klucz = odznaczenie. */
@@ -4664,21 +4769,41 @@ function walidujGotowoscMulti() {
   if (!urlMostuMulti()) usterki.push('Brak adresu mostu w tej wersji aplikacji (ADR 0020) — gra na wielu urządzeniach jest wyłączona. Wybierz rodzaj gry „Hot-seat”, żeby grać na jednym telefonie.');
   // Tożsamość multi = imię+PIN z bloku „Kto gra?” jak w hot-seat (właściciel,
   // 2026-09-11, profil na wspólnym Drive) — dokładnie JEDEN gracz na telefon.
-  const imiona = (STAN.konfig.imiona ?? []).filter(Boolean);
-  if (!imiona.length) usterki.push('Wpisz swoje imię i PIN w bloku „Kto gra?” — to Twoja tożsamość w grze.');
-  else if (imiona.length > 1) usterki.push('W grze na wielu urządzeniach gra z tego telefonu tylko jedna osoba — usuń pozostałych graczy z listy (✕ Usuń).');
+  const gracze = (STAN.konfig.gracze ?? []).map((gr) => gr?.imie).filter(Boolean);
+  if (!gracze.length) usterki.push('Wpisz swoje imię i PIN w bloku „Kto gra?” — to Twoja tożsamość w grze.');
+  else if (gracze.length > 1) usterki.push('W grze na wielu urządzeniach gra z tego telefonu tylko jedna osoba — usuń pozostałych graczy z listy (✕ Usuń).');
   return usterki;
 }
 
 /** Imię potwierdzonego gracza — tożsamość multi zamiast dawnego pola pseudonimu. */
 function pseudonimGraczaMulti() {
-  return normalizujPseudonim(STAN.konfig.imiona?.[0] ?? '').trim().slice(0, 24);
+  return normalizujPseudonim(STAN.konfig.gracze?.[0]?.imie ?? '').trim().slice(0, 24);
+}
+
+/**
+ * ADR 0055 (właściciel, 2026-09-17): poziom gry multi z `konfiguracja.poziomyPytan`
+ * na moście (jedno pytanie na stację, na jednym poziomie — wybór hosta). Gość
+ * czyta z pliku gry to, co host ustawił, nie swoją własną listę graczy.
+ */
+function poziomGryMultiZKonfiguracji(gra) {
+  const p = gra?.konfiguracja?.poziomyPytan;
+  if (p && Number.isInteger(p.dzieci) && Number.isInteger(p.dorosli)) {
+    if (p.dzieci > 0 && p.dorosli === 0) return 'dzieci';
+    if (p.dorosli > 0 && p.dzieci === 0) return 'dorosli';
+  }
+  // stare gry z polem `wiek` (czytane addytywnie) albo brak danych
+  const wiek = gra?.konfiguracja?.wiek;
+  return czyPoziomOk(wiek) ? wiek : POZIOM_DORMYSLNY;
 }
 
 function wczytajUstawieniaMulti() {
   pokazStanMostu(); // adres mostu jest w kodzie (ADR 0020) — UI pokazuje stan, nie pole do wpisywania
   if (typeof localStorage !== 'undefined' && localStorage.getItem(KLUCZ_RODZAJU_GRY) === 'multi') {
     STAN.rodzajGry = 'multi';
+  }
+  if (typeof localStorage !== 'undefined') {
+    const zapisanyPoziomMulti = localStorage.getItem(KLUCZ_MULTI_POZIOM);
+    if (czyPoziomOk(zapisanyPoziomMulti)) STAN.multiPoziom = zapisanyPoziomMulti;
   }
 }
 
@@ -4801,7 +4926,7 @@ function renderujRodzajGry() {
   // gier w odległości ≤50 m — wszystkie opcje hosta znikają.
   umiescTozsamosc(multi); // 2026-09-12: login zaraz pod opisem ścieżki
   renderujPanelDolacz();  // 2026-09-12: boks listy dopiero po zalogowaniu
-  for (const id of ['pole-tryb', 'pole-czas', 'pole-parametry', 'pole-wiek', 'pole-tematy']) {
+  for (const id of ['pole-tryb', 'pole-czas', 'pole-parametry', 'pole-tematy']) {
     const el = $(id);
     if (el) el.hidden = dolacz;
   }
@@ -4820,7 +4945,7 @@ function renderujRodzajGry() {
  * nikt nie dodał drugiego gracza; wracają, gdy lista znów jest pusta.
  */
 function renderujPolaTozsamosci() {
-  const ukryj = STAN.rodzajGry === 'multi' && (STAN.konfig.imiona ?? []).length >= 1;
+  const ukryj = STAN.rodzajGry === 'multi' && (STAN.konfig.gracze ?? []).length >= 1;
   const siatka = $('pole-tozsamosc-siatka');
   if (siatka) siatka.hidden = ukryj;
   $('przycisk-dodaj-gracza').hidden = ukryj;
@@ -4842,7 +4967,9 @@ function zapiszSesjeMulti() {
   try {
     localStorage.setItem(KLUCZ_SESJI_MULTI, JSON.stringify({
       kod: m.gra.kod, idGry: m.gra.idGry ?? null, graczId: m.graczId,
-      pseudonim: m.pseudonim, urlMostu: m.urlMostu, rola: m.rola, zapisano: new Date().toISOString(),
+      pseudonim: m.pseudonim, urlMostu: m.urlMostu, rola: m.rola,
+      poziom: czyPoziomOk(m.poziom) ? m.poziom : null, // ADR 0055: przeżywa odświeżenie
+      zapisano: new Date().toISOString(),
     }));
   } catch { /* quota — gra toczy się dalej, tylko bez powrotu po odświeżeniu */ }
 }
@@ -4918,6 +5045,34 @@ function renderujTrybyMulti() {
   }
   $('multi-tryb-opis').textContent = opisy[STAN.multiTryb] ?? opisy[TRYBY_GRY.trasa];
   renderujSekretTrasy();
+  renderujPoziomMulti();
+}
+
+/**
+ * ADR 0055 (właściciel, 2026-09-17): POZIOM PYTAŃ GRY MULTI — jeden wybór
+ * hosta dla całej gry (trasa i wyścig). W multi pytania generuje host NIE
+ * znając dołączających graczy, więc nie ma poziomu per gracz: paczka niesie
+ * jedno pytanie na stację wybranego poziomu i wszyscy mają te same pytania.
+ */
+function renderujPoziomMulti() {
+  const lista = $('multi-poziom');
+  if (!lista) return;
+  lista.replaceChildren();
+  const etykiety = { dzieci: '🧒 Dziecko (8–10 lat)', dorosli: '🧑 Dorośli' };
+  for (const klucz of KLUCZE_POZIOMOW) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'przycisk przycisk-poziom' + (STAN.multiPoziom === klucz ? ' aktywny' : '');
+    b.textContent = etykiety[klucz];
+    b.setAttribute('aria-pressed', String(STAN.multiPoziom === klucz));
+    b.addEventListener('click', () => {
+      if (STAN.multiPoziom === klucz) return;
+      STAN.multiPoziom = klucz;
+      try { localStorage.setItem(KLUCZ_MULTI_POZIOM, klucz); } catch { /* kwota */ }
+      renderujPoziomMulti();
+    });
+    lista.appendChild(b);
+  }
 }
 
 /**
@@ -4937,11 +5092,15 @@ function factcheckBiezacejSesji() {
 function metaSesjiMulti(stacje) {
   const punkt = STAN.pozycja ?? (stacje.length ? { lat: stacje[0].lat, lon: stacje[0].lon } : null);
   if (!punkt) return null;
+  // ADR 0055 (właściciel, 2026-09-17): paczka multi niesie JEDEN poziom
+  // (wybór hosta) — jedno wspólne pytanie na stację dla wszystkich graczy.
+  const mP = STAN.multiPoziom;
   return zbierzMetaZestawu({
     lat: punkt.lat, lon: punkt.lon,
-    promienM: STAN.konfig.promienM, tematy: STAN.konfig.tematy, wiek: STAN.konfig.wiek,
+    promienM: STAN.konfig.promienM, tematy: STAN.konfig.tematy,
+    poziomyPytan: { dzieci: mP === 'dzieci' ? 1 : 0, dorosli: mP === 'dorosli' ? 1 : 0 },
     jezyk: STAN.konfig.jezyk, miejsce: STAN.miejsce ?? '',
-    liczbaStacji: stacje.length, pytaniaNaStacje: STAN.konfig.pytaniaNaStacje,
+    liczbaStacji: stacje.length, pytaniaNaStacje: 1,
     tematWlasny: STAN.konfig.tematWlasny ?? '',
     factcheck: factcheckBiezacejSesji(),
     pytania: pytaniaBiezacejSesji(),
@@ -4969,9 +5128,17 @@ function harmonogramMulti() {
 
 function wejdzDoGryMulti(gra, graczId, rola) {
   zatrzymajSyncMulti();
+  // ADR 0055 (właściciel, 2026-09-17): poziom w multi to WŁASNOŚĆ GRY
+  // (wybór hosta z `konfiguracja.poziomyPytan`), nie własność telefonu.
+  const poziomGry = poziomGryMultiZKonfiguracji(gra);
+  if (poziomGry !== STAN.multiPoziom) {
+    STAN.multiPoziom = poziomGry; // gość: konfiguracja hosta ma pierwszeństwo
+    try { localStorage.setItem(KLUCZ_MULTI_POZIOM, poziomGry); } catch { /* kwota */ }
+  }
   STAN.multi = {
     rola, gra, graczId,
     pseudonim: pseudonimGraczaMulti(), // imię+PIN z setupu (właściciel, 2026-09-11)
+    poziom: poziomGry, // ADR 0055: poziom pytań GRY (przeżywa odświeżenie)
     urlMostu: urlMostuMulti(),
     ostatniStanMs: Date.now(),
     sync: null,
@@ -5021,11 +5188,13 @@ async function zalozGreMulti() {
       akcja: 'gra-zaloz',
       tryb: STAN.multiTryb,
       trasaSekret: sekret, // właściciel 2026-09-11: własność GRY (mapa w grze), nie konfiguracji
+      // ADR 0055 (właściciel, 2026-09-17): w multi nie ma poziomu per gracz —
+      // jeden poziom hosta dla całej gry, jedno wspólne pytanie na stację.
       organizator: { pseudonim: pseudonimGraczaMulti() },
       konfiguracja: {
         liczbaStacji: stacje.length,
-        pytaniaNaStacje: 1, // liczba stacji = liczba pytań (właściciel, 2026-09-11)
-        wiek: meta.wiek,
+        pytaniaNaStacje: 1, // ADR 0055: jedno wspólne pytanie na stację
+        poziomyPytan: { dzieci: STAN.multiPoziom === 'dzieci' ? 1 : 0, dorosli: STAN.multiPoziom === 'dorosli' ? 1 : 0 },
         tematy: meta.tematy,
         promienM: meta.promienM,
         miejsce: meta.miejsce ?? '',
@@ -5068,6 +5237,8 @@ async function dolaczDoGryMulti({ idGry = null } = {}) {
       akcja: 'gra-dolacz',
       idGry,
       pseudonim: pseudonimGraczaMulti(),
+      // ADR 0055 (właściciel, 2026-09-17): poziomu NIE ma w dołączeniu —
+      // poziom pytań jest własnością gry (konfiguracja hosta), nie gracza.
     });
     wejdzDoGryMulti(wynik.gra, wynik.graczId, 'gosc');
     status('Jesteś w grze — czekasz w lobby, aż host wystartuje.');
@@ -5293,8 +5464,13 @@ async function przywrocGreMulti() {
     const gra = odpowiedz.gra;
     if (gra.schemat !== SCHEMAT_GRY) { definitywnie = true; throw new Error(`nieznany schemat gry: ${gra.schemat}`); }
     if (!gra.gracze.some((g) => g.id === sesja.graczId)) { definitywnie = true; throw new Error('nie ma Cię już na liście graczy tej gry'); }
+    // ADR 0055: poziom sesji to poziom GRY (wybór hosta); prawda jest w
+    // konfiguracji mostu, sesja to tylko zapas na starcie.
+    const poziomPoWrocie = poziomGryMultiZKonfiguracji(gra);
+    STAN.multiPoziom = poziomPoWrocie;
     STAN.multi = {
       rola: sesja.rola, gra, graczId: sesja.graczId, pseudonim: sesja.pseudonim,
+      poziom: poziomPoWrocie,
       urlMostu: sesja.urlMostu, ostatniStanMs: Date.now(), sync: null,
     };
     STAN.multi.sync = utworzSynchronizacje({
@@ -5377,22 +5553,19 @@ function onStanGryMulti(gra) {
 }
 
 /**
- * Pytanie gracza w grze sieciowej (ADR 0027 część B pkt 2): paczka ma
- * `pytaniaNaStacje = liczbaGraczy` pytań przy każdej stacji, a pytanie `k`
- * należy do gracza `k`. Dzięki temu każde urządzenie zna swoje pytanie BEZ
- * negocjacji z innymi — nie ma wyścigu o pytanie ani blokady przy braku
- * zasięgu, a serwer nie musi rozstrzygać, kto pierwszy.
+ * Pytanie gracza (ADR 0055, uwaga B + decyzja właściciela 2026-09-17):
+ * - HOT-SEAT: paczka niesie przy każdej stacji pytania poziomów graczy (1 na
+ *   gracza), a gracz bierze PIERWSZE pytanie SWOJEGO poziomu — bez mieszania.
+ * - MULTI (trasa/wyścig): paczka niesie JEDNO wspólne pytanie na stację
+ *   (poziom hosta) i wszyscy odpowiadają na te same pytania — `poziom` nie
+ *   jest podawany, liczy się tylko pierwsze pytanie stacji.
  *
- * Paczka mniejsza niż liczba graczy nie zostawia nikogo bez pytania: indeks
- * zawija się (`k mod liczba pytań stacji`), więc gracze dzielą pytanie. Gra i
- * tak toczy się na osobnych telefonach, a pusty zestaw pytań zatrzymałby
- * rozgrywkę — więc dzielenie jest tu mniejszym złem niż brak pytania.
- *
- * Reguła dotyczy obu trybów multi: w turach właściciel stacji też odpowiada na
- * jedno pytanie (serwer odrzuca drugą odpowiedź tego samego gracza do stacji).
+ * Paczka sprzed ADR 0055 (bez `poziomu` pytania) nie zostawia nikogo bez
+ * pytania: fallback to pierwsze pytanie stacji (dawni gracze i tak dzielili
+ * jedno wspólne pytanie).
  */
-function pytaniaDlaGracza(paczka, { liczbaGraczy, indeksGracza }) {
-  if (!(liczbaGraczy > 1) || !(indeksGracza >= 0)) return paczka;
+function pytaniaDlaGracza(paczka, { poziom = null } = {}) {
+  const mojPoziom = czyPoziomOk(poziom) ? poziom : null;
   const przezStacje = new Map();
   for (const q of paczka.pytania) {
     const lista = przezStacje.get(q.stacja) ?? [];
@@ -5401,12 +5574,9 @@ function pytaniaDlaGracza(paczka, { liczbaGraczy, indeksGracza }) {
   }
   const wybrane = new Set();
   for (const lista of przezStacje.values()) {
-    // Paczka z `pytaniaNaStacje = liczbaGraczy` (domyślna po ADR 0027 część A)
-    // daje każdemu WŁASNE pytanie. Starsza/mniejsza paczka nie zostawia gracza
-    // bez pytania: indeks zawija się, więc gracze dzielą pytanie — w grze
-    // sieciowej każdy odpowiada na swoim telefonie, więc to uczciwe, a brak
-    // pytania zatrzymałby grę (rozgrywka wymaga niepustej paczki).
-    wybrane.add(lista[indeksGracza % lista.length]);
+    // Pierwsze pytanie MOJEGO poziomu; paczka bez poziomów → pierwsze w ogóle.
+    const wlasne = mojPoziom ? lista.filter((q) => czyPoziomOk(q?.poziom) && q.poziom === mojPoziom) : [];
+    wybrane.add(wlasne[0] ?? lista[0]);
   }
   return { ...paczka, pytania: paczka.pytania.filter((q) => wybrane.has(q)) };
 }
@@ -5438,9 +5608,13 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
   const N = gra.gracze.length;
   const mojIndeks = gra.gracze.findIndex((g) => g.id === m.graczId);
   const srodek = STAN.pozycja ? { lat: STAN.pozycja.lat, lon: STAN.pozycja.lon } : { lat: wszystkie[0]?.lat ?? 0, lon: wszystkie[0]?.lon ?? 0 };
-  const konfig = oczyscKonfiguracje({ ...STAN.konfig, liczbaGraczy: 1, imiona: [m.pseudonim], kodGry: gra.kod });
-  // pytanie tego gracza przy każdej stacji (indeks = pozycja w `gra.gracze`)
-  const paczkaGracza = pytaniaDlaGracza(paczka, { liczbaGraczy: N, indeksGracza: mojIndeks });
+  // ADR 0055 (właściciel, 2026-09-17): gracz multi = ten jeden; POZIOM to
+  // własność GRY (wybór hosta, `m.poziom`) — w multi nie ma pytań per poziom,
+  // paczka jest WSPÓLNA: jedno pytanie na stację, takie samo dla każdego.
+  const poziomGry = czyPoziomOk(m.poziom) ? m.poziom : POZIOM_DORMYSLNY;
+  const konfig = oczyscKonfiguracje({ ...STAN.konfig, liczbaGraczy: 1, gracze: [{ imie: m.pseudonim, poziom: poziomGry }], kodGry: gra.kod });
+  // wspólne pytanie przy każdej stacji (pierwsze na stacji = jedyne w paczce)
+  const paczkaGracza = pytaniaDlaGracza(paczka);
   m.indeksGracza = mojIndeks;
   STAN.stacje = wszystkie;
   STAN.trasaDlugosc = wszystkie.length; // „stacja X z Y" z pełnej trasy
@@ -5461,7 +5635,10 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
   }
 
   pokazEkran('gra');
-  if (!STAN.trybTestowy && !STAN.watcher && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
+  // ADR 0054 (uwaga A, 2026-09-17d): zawsze świeży watcher — bramka
+  // `!STAN.watcher` przepuszczała cichego nasłuch z bug G (aktywny, ale niemy)
+  // i gra wisiała w punkcie startu. Restart idempotentny: jedno `watchPosition`.
+  if (!STAN.trybTestowy && typeof navigator !== 'undefined' && navigator.geolocation) wlaczGps();
   const koniecLokalny = STAN.rozgrywka.faza === FAZY.koniec;
 
   // Uwaga terenowa 2026-09-16 (pkt 1): gracz, który domknął wszystkie swoje
@@ -5952,13 +6129,14 @@ function start() {
   ustawWysokoscBelki();
 
   renderujTryby();
-  renderujSegment('lista-wieku', WIEK_SETUP, STAN.konfig.wiek, (wiek) => { STAN.konfig.wiek = wiek; });
+  // ADR 0055: globalnego pola „kategoria wiekowa” nie ma — poziom trudności
+  // wybiera się przy imieniu każdego gracza (przyciski w `lista-graczy`).
   renderujTematy();
   renderujSetup();
   // Lista graczy zaczyna PUSTA: domyślne „Gracz 1" z kanonu nie przeszło przez
   // most, więc nie może udawać tożsamości (ADR 0026 aneks). Zapamiętani gracze
   // wracają jako przyciski — jedno kliknięcie, bez PIN-u.
-  STAN.konfig.imiona = [];
+  STAN.konfig.gracze = [];
   renderujListeGraczy();
   przywrocGraczy({ zListy: true });
   utworzMapy();
@@ -6080,10 +6258,12 @@ function start() {
 
   // Właściciel 2026-09-13 (uwaga B, ADR 0040): ŻADNEJ pauzy w tle. Aplikacja ma
   // być cały czas włączona, a po powrocie wszystko wznawia się samo — bez kliku.
-  // Przeglądarka i tak zamraża strumień fixów w tle, więc przy powrocie
-  // sprawdzamy, czy nasłuch żyje, i jeśli nie — zakładamy świeży (bug G: WebKit
-  // trzyma czasem `watchPosition` aktywny, ale niemy). Bez komunikatów o
-  // „wstrzymaniu" i „wznowieniu": wycofane kody P07/P09 (ADR 0040 pkt 3).
+  // Właściciel 2026-09-17d (uwaga A, ADR 0054): powrót na kartę budzi GPS
+  // OBOWIĄZKOWO, bez bramek — WebKit potrafi trzymać `watchPosition` aktywny,
+  // ale niemy (bug G), a `czyAktywny()` i stary fix kłamią, że nasłuch żyje.
+  // Świeży watcher jest idempotentny, więc koszt to jedno `watchPosition`.
+  // Bez komunikatów o „wstrzymaniu" i „wznowieniu": wycofane kody P07/P09
+  // (ADR 0040 pkt 3).
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
       zapiszGre(); // uwaga K (ADR 0045): zwinięcie karty zapisuje ostatni stan
@@ -6096,10 +6276,8 @@ function start() {
     odswiezWakeLock();
     if (STAN.trybTestowy) return;
     if (typeof navigator === 'undefined' || !navigator.geolocation) return;
-    const czekamyNaFixa = STAN.ekran === 'pozycja'
-      || (STAN.rozgrywka && STAN.rozgrywka.faza === FAZY.odcinek);
-    if (!czekamyNaFixa) return;
-    if (!STAN.watcher?.czyAktywny() || !STAN.ostatniFix) wlaczGps();
+    // ADR 0054: powrót = obowiązkowe budzenie GPS, także gdy nasłuch „żyje".
+    wlaczGps();
   });
 
   // Uwaga A (ADR 0047, decyzja właściciela 2026-09-14): strona NIE jest

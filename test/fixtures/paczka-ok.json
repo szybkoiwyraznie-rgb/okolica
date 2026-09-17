@@ -5,7 +5,6 @@
     "promienM": 1000,
     "miejsce": "Grabowice, Stare Miasto, woj. mazowieckie, Polska"
   },
-  "wiek": "dorosli",
   "tematy": [
     "historia",
     "architektura"
@@ -33,7 +32,8 @@
           "sprawdzono": "2026-09-05"
         }
       ],
-      "punkty": 20
+      "punkty": 20,
+      "poziom": "dorosli"
     },
     {
       "id": "s2p1",
@@ -55,7 +55,8 @@
           "sprawdzono": "2026-09-05"
         }
       ],
-      "punkty": 20
+      "punkty": 20,
+      "poziom": "dorosli"
     },
     {
       "id": "s3p1",
@@ -77,7 +78,8 @@
           "sprawdzono": "2026-09-05"
         }
       ],
-      "punkty": 20
+      "punkty": 20,
+      "poziom": "dorosli"
     }
   ],
   "uwagi": "FIXTURE TESTOWY: miejsce, fakty, daty i adresy źródeł są zmyślone na potrzeby testów walidatora (test/protokol.test.js). Nie jest to prawdziwa paczka i nie wolno jej używać w grze ani publikować."

@@ -69,53 +69,8 @@ graczy), 0013 (prywatność).
 Historia tego ADR do aneksu 2026-09-12 włącznie — kara ręczna (2026-09-07), tryb testowy (2026-09-08), watchdog martwego nasłuchu (2026-09-12, m12-91), wyjście awaryjne P10 (2026-09-12, m12-92) oraz wyjście z nieosiągalnej stacji (2026-09-12, m12-94) — leży w
 `docs/decisions/archive/aneksy-0004-2026-09-07-do-12.md`, poza budżetem lektury startowej (AGENTS.md §0; LESSONS L62). Zawiera aneksy z dat: 2026-09-07, 2026-09-08, 2026-09-12, 2026-09-12, 2026-09-12. Obowiązujące aneksy są niżej: 2026-09-09 (próg 25 m) i 2026-09-13 (koniec pauzy, ADR 0040).
 
+## Aneksy 2026-09-09 i 2026-09-13 (m12-102) są w archiwum (poza budżetem lektury)
 
-## Aneks 2026-09-09 — próg dojścia to stałe 25 m
-
-Właściciel po rozgrywce w terenie: „Próg zaliczenia stacji jest za duży.
-Większy próg zaliczenia niż 25m nie ma sensu. Nie rozumiem do końca tej
-zależności od dokładności — wg mnie nie powinniśmy zezwalać na zaliczenie ze
-100m. To zupełnie inne miejsce."
-
-**Co było źle w pierwotnej regule.** Skalowanie progu dokładnością fixu miało
-chronić gracza przed słabym sygnałem, ale robiło to kosztem sensu gry: przy
-`accuracy = 100 m` stacja zaliczała się ze 100 m, czyli z innej ulicy albo
-innego skrzyżowania. Gra terenowa polega na dojściu **w konkretne miejsce** —
-próg, który rośnie właśnie wtedy, gdy pomiar jest najmniej wiarygodny, znosi tę
-zasadę dokładnie wtedy, gdy jest najbardziej potrzebna. Do tego działo się to
-cicho: gracz nie wiedział, że zaliczono mu stację z odległości, z której jej
-nie widać.
-
-**Decyzja.** `progDojsciaM()` zwraca 25 m niezależnie od `accuracy`. Parametr
-zostaje w sygnaturze (wywołania go przekazują, a przyszła polityka — np. inny
-próg dla trybu rowerowego — ma gdzie usiąść), ale dziś jest ignorowany.
-
-**Co z graczem przy słabym sygnale.** Nic mu nie zabieramy, bo poluzowany próg
-nigdy nie był pomocą — był cichym fałszowaniem wyniku. Zamiast tego badge
-„±X m" i ostrzeżenie P05 mówią wprost, że GPS nie rozstrzygnie dojścia,
-a wyjściem jest pominięcie odcinka (ADR 0015 pkt 2). Ręczne zaliczenie NIE
-wraca — usunięte w ADR 0029 i ten aneks tego nie zmienia; żaden komunikat nie
-może do niego odsyłać.
-
-**Konsekwencja dla pkt 4 powyżej:** próg ostrzeżenia (`accuracy > 100 m`)
-zostaje jako granica „pomiar bezużyteczny", ale nie ma już związku z progiem
-dojścia — to dwie niezależne liczby.
-
-
-
-## Aneks 2026-09-13 (m12-102) — koniec pauzy w tle i profilu oszczędnego (uwaga B, ADR 0040)
-
-Pkt 1 traci końcówkę o zamykaniu watchera przy przejściu w tło („…zamykany
-przez `clearWatch()` na końcu gry i przy przejściu w tło — oszczędność baterii,
-z komunikatem o wznowieniu śledzenia”). Od 2026-09-13 watcher NIE jest zamykany
-w tle: aplikacja jest włączona cały czas, a po powrocie sama zakłada świeży
-nasłuch, jeśli przeglądarka go zabiła albo uciszyła (bug G) — bez komunikatu, bo
-kody P07 i P09 są wycofane i ich numery nie wracają do puli. Opcje watchera
-zostają dokładnie te z pkt 1 (`enableHighAccuracy: true, maximumAge: 2000,
-timeout: 20000`) i są teraz JEDYNYM profilem — profil oszczędny z M10/T3
-(histereza 250/150 m) wycofany, bo kryterium dojścia liczy się z metrów na
-całym odcinku. Pkt 2 i 3 bez zmian: próg dojścia, dwa kolejne trafienia,
-`accuracy` bez oceny (ADR 0034), a `czasMs` podaje warstwa DOM — teraz bez
-korekt na pauzy, bo pauz nie ma. Jedyna przerwa w śledzeniu jest automatyczna
-(15 minut bez żadnego kliku) i wznawia ją dowolny klik (ADR 0040 pkt 5).
-
+Próg dojścia to stałe 25 m (dwa kolejne trafienia, ADR 0034), a watcher nie jest
+zamykany w tle — po powrocie świeży nasłuch, jedyna przerwa to 15 min
+bezczynności (ADR 0040) — `docs/decisions/archive/aneksy-0004-2026-09-09-do-13.md`.

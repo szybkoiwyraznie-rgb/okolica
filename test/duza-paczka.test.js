@@ -37,9 +37,11 @@ function stacje(n) {
 
 function konfig(graczy) {
   return {
-    czasGryMin: 110, tryb: 'piesza', wiek: 'dorosli', jezyk: 'polski',
+    czasGryMin: 110, tryb: 'piesza', jezyk: 'polski',
     tematy: TEMATY, liczbaStacji: 5, pytaniaNaStacje: graczy,
     liczbaGraczy: graczy, promienM: 1000,
+    // ADR 0055: zbudujPrompt wymaga graczy (WE05); poziom = metadane zadania.
+    gracze: Array.from({ length: graczy }, (_, i) => ({ imie: `Gracz ${i + 1}`, poziom: 'dorosli' })),
   };
 }
 
@@ -80,13 +82,15 @@ function odpowiedzModelu(liczbaStacji, naStacje) {
   return '```json\n' + JSON.stringify(paczka(liczbaStacji, naStacje), null, 2) + '\n```';
 }
 
-test('B21: prompt NIE rośnie z liczbą pytań — 5 i 40 pytań to ten sam rozmiar', () => {
+test('B21: prompt rośnie tylko z listą graczy, nie z pytaniami (ADR 0055)', () => {
   const maly = zbudujPrompt({ konfig: konfig(1), okolica: OKOLICA, stacje: stacje(5) });
   const duzy = zbudujPrompt({ konfig: konfig(8), okolica: OKOLICA, stacje: stacje(5) });
   assert.deepEqual(maly.usterki, []);
   assert.deepEqual(duzy.usterki, []);
-  assert.ok(Math.abs(duzy.prompt.length - maly.prompt.length) < 20,
-    `prompt ma być stały: ${maly.prompt.length} vs ${duzy.prompt.length} znaków`);
+  // ADR 0055: jedyny per-graczowy koszt promptu to linie graczy w
+  // `{GRACZE_BLOK}` (imię + poziom) — liczba pytań (5 vs 40) to jeden licznik.
+  assert.ok(duzy.prompt.length - maly.prompt.length < 400,
+    `nadmiarowy wzrost promptu: ${maly.prompt.length} vs ${duzy.prompt.length} znaków`);
   // Pomiar wzorcowy: ~1,4 tys. tokenów — pilnujemy, żeby szablon nie urósł.
   assert.ok(liczTokeny(duzy.prompt) < 1_800, `prompt: ${liczTokeny(duzy.prompt)} tokenów`);
   assert.match(duzy.prompt, /liczba pytań łącznie: 40/, 'prompt mówi modelowi o 40 pytaniach');

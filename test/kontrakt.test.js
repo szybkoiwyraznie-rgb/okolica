@@ -1101,7 +1101,7 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   assert.ok(!APP.includes("'okolica:profil'"), 'stary klucz jednego profilu nie wraca');
   // PIN nigdy nie zostaje na telefonie — zapisuje się imię i znacznik potwierdzenia
   const zapis = APP.slice(APP.indexOf('function zapamietajGracza'), APP.indexOf('function przywrocGraczy'));
-  assert.match(zapis, /\{ pseudonim: imie, zweryfikowany \}/, 'zapamietajGracza zapisuje imię i potwierdzenie, nie PIN');
+  assert.match(zapis, /\{ pseudonim: imie, zweryfikowany, poziom: \w+ \}/, 'zapamietajGracza zapisuje imię, potwierdzenie i poziom (ADR 0055) — nie PIN');
   // hot-seat: wynik gry z jednego telefonu jedzie na Drive jednym poleceniem
   assert.ok(APP.includes('graHotseatDoWysylki'), 'app.js buduje polecenie gra-hotseat');
   assert.ok(WIELOOSOBOWA.includes("akcja: 'gra-hotseat'"), 'moduł wieloosobowa buduje tę akcję');
@@ -1127,7 +1127,7 @@ test('kontrakt ADR 0046 + aneks 2026-09-16: promień jest kryterium równości, 
   assert.match(ZESTAWY, /w\.promienM !== promienM/, 'promień paczki jest kryterium RÓWNOŚCI (ADR 0046 pkt 1)');
   assert.equal(/NIE są kryteriami: promień/.test(ZESTAWY), false, 'stara reguła „promień nie jest kryterium” zniknęła z komentarza');
   assert.match(ZESTAWY, /export function sumaPytanWpisu/, 'kryterium jest ŁĄCZNA liczba pytań, nie stacje × pytania');
-  assert.match(ZESTAWY, /środek transportu \(właściciel wycofał/, 'środek transportu jawnie NIE jest kryterium');
+  assert.match(ZESTAWY, /środek transportu nadal NIE są kryteriami/, 'środek transportu jawnie NIE jest kryterium');
   assert.match(ZESTAWY, /za mało pytań: paczka ma/, 'powody podają liczby: ile ma paczka, ile chce setup');
   // karta paczek: jedna linijka bez cytowania powodów (teren 2026-09-16)
   assert.match(APP, /żadna z nich nie pasuje/, 'komunikat mówi jedną linijkę, że paczki nie pasują');
@@ -1145,6 +1145,8 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
     // segmenty na setupie: rodzaj gry, ścieżka multi, tryb + trasa-sekret
     'lista-rodzajow', 'rodzaj-opis', 'multi-sciezka', 'multi-sciezka-opis',
     'pole-multi-tryb', 'multi-tryby', 'multi-tryb-opis', 'pole-trasa-sekret', 'multi-trasa-sekret', 'multi-punktacja',
+    // ADR 0055 (właściciel, 2026-09-17): wspólny poziom pytań gry multi (wybór hosta)
+    'pole-multi-poziom', 'multi-poziom',
   ]) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
@@ -1238,7 +1240,7 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   assert.ok(!APP.includes('otworzListeGier'), 'dawny flow „lista gier na ekranie multi” usunięty');
   // przy „Dołączam” chowane są pola parametrów gry, a „Poprzednie gry” nie pokazują się w multi
   assert.match(APP, /renderujPolaTozsamosci/, 'widoczność pól tożsamości sterowana funkcją (multi = sama karta gracza)');
-  for (const id of ['pole-tryb', 'pole-czas', 'pole-parametry', 'pole-wiek', 'pole-tematy', 'pole-tozsamosc-siatka']) {
+  for (const id of ['pole-tryb', 'pole-czas', 'pole-parametry', 'pole-tematy', 'pole-tozsamosc-siatka']) {
     assert.ok(INDEX.includes(`id="${id}"`), `#${id} ma id do chowania przy „Dołączam”`);
   }
   // „Ty w tej grze” w multi: dokładnie jedna osoba na telefon, pola znikają
@@ -1865,10 +1867,12 @@ test('kontrakt ADR 0040: systemu pauzy nie ma, a powrót z tła wznawia sam (uwa
     'watchdog nie rusza przerwy, gdy nasłuch i tak nie działa');
   assert.match(APP, /document\.addEventListener\('visibilitychange'/,
     'app.js nasłuchuje visibilitychange — powrót z tła wznawia sam');
-  assert.match(APP, /const czekamyNaFixa = STAN\.ekran === 'pozycja'/,
-    'powrót z tła odświeża nasłuch tylko tam, gdzie czekamy na fixa (ADR 0040 pkt 3)');
-  assert.match(APP, /if \(!STAN\.watcher\?\.czyAktywny\(\) \|\| !STAN\.ostatniFix\) wlaczGps\(\);/,
-    'martwy albo niemy nasłuch jest zakładany od nowa bez kliku (bug G + ADR 0040 pkt 3)');
+  assert.match(APP, /if \(STAN\.trybTestowy\) return;\n {4}if \(typeof navigator === 'undefined' \|\| !navigator\.geolocation\) return;\n {4}\/\/ ADR 0054: powrót = obowiązkowe budzenie GPS, także gdy nasłuch „żyje\".\n {4}wlaczGps\(\);/,
+    'powrót na kartę budzi GPS BEZWZGLĘDNY — bez bramek (ADR 0054: cichy nasłuch nie jest żywym nasłuchem, bug G)');
+  assert.equal(/!STAN\.watcher && typeof navigator !== 'undefined' && navigator\.geolocation\) wlaczGps/.test(APP), false,
+    'bramka `!STAN.watcher` przy starcie gry/odcinka nie wraca — cichy watcher nie może przejść (ADR 0054)');
+  assert.match(APP, /function wznowPoBezczynnosci\(\) \{[\s\S]{0,500}wlaczGps\(\);/,
+    'po przerwie bezczynności nasłuch startuje od nowa (bez zmian, ADR 0040 pkt 5)');
 
   // 4. W drodze nad mapą zostaje sam pasek — Informacje nie niosą nic z gry
   //    (ADR 0036 aneks 2026-09-13 zawęził to do węzła zakończenia, a ADR 0043
@@ -2386,9 +2390,12 @@ test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => 
   assert.match(czytaj('docs/decisions/0011-mobile-first-dotyk.md'),
     /Aneksy 2026-09-12 \(m12-95\) i 2026-09-14 \(m12-115\) są w archiwum/,
     'ADR 0011 wskazuje archiwum obu aneksów');
-  assert.match(czytaj('docs/decisions/0027-pytania-po-rowno-i-wolna-kolejnosc.md'),
+  assert.match(czytaj('docs/decisions/archive/aneksy-0027-2026-09-13-do-15.md'),
     /Aneks 2026-09-14 \(m12-115, uwaga F\) — Wyścig bez warstwy wyboru stacji/,
-    'ADR 0027 dokumentuje brak warstwy wyboru');
+    'aneks ADR 0027 o braku warstwy wyboru żyje w archiwum (budżet lektury)');
+  assert.match(czytaj('docs/decisions/0027-pytania-po-rowno-i-wolna-kolejnosc.md'),
+    /Aneksy 2026-09-13 \(m12-105\), 2026-09-14 \(m12-115\) i 2026-09-15 \(m12-126\) są w archiwum/,
+    'ADR 0027 wskazuje archiwum aneksów m12-105/m12-115/m12-126');
   assert.match(czytaj('docs/decisions/0044-odliczanie-po-starcie-gry-wieloosobowej.md'),
     /Aneks 2026-09-14 \(m12-115, uwaga F\) — wybór stacji usunięty, nie przeprowadzony/,
     'ADR 0044 unieważnia pkt 5 o przeprowadzce wyboru');
@@ -2535,19 +2542,28 @@ test('kontrakt ADR 0052: aplikacja i most mówią cache L2 tym samym protokołem
 
 /* ------- ADR 0053: model AI wybierany nad wklejką, `model` w meta paczki ------- */
 
-test('kontrakt ADR 0053: wybór modelu jest opcjonalny, addytywny i bez zewnętrznych ikon', () => {
+test('kontrakt ADR 0053: wybór modelu jest opcjonalny, addytywny, ikony z plików właściciela', () => {
   // 1. Ekran: rząd ikon NAD polem wklejenia (`pole-odpowiedz` po `wklejka-modele`),
   //    grupa z etykietą, bo ikony nie mają tekstu (ADR 0011 pkt 2).
   assert.match(INDEX, /<div id="wklejka-modele" class="wklejka-modele" role="group" aria-label="[^"]*"[^>]*><\/div>\s*<textarea id="pole-odpowiedz"/,
     'ikony modeli stoją nad polem wklejenia, a nie pod nim');
   assert.equal(/id="wklejka-modele"[\s\S]{0,600}?<img/.test(INDEX), false,
-    'żadnych plików-obrazków: ikony rysuje kod (ADR 0001 pkt 1)');
-  // 2. Cztery klucze i własne SVG — zero CDN, zero pobierania.
-  assert.match(APP, /const MODELE_AI = Object\.freeze\(\[\n {2}\{ klucz: 'meta-ai', nazwa: 'Meta\.ai'[\s\S]{0,900}?klucz: 'claude', nazwa: 'Claude'/,
-    'cztery modele z decyzji właściciela, w kolejności z ekranu');
-  assert.match(APP, /document\.createElementNS\(PRZESTRZEN_SVG_IKON, 'svg'\)/, 'ikony powstają inline (createElementNS)');
-  assert.equal(/MODELE_AI = Object\.freeze[\s\S]{0,800}https?:\/\/(?!www\.w3\.org)/.test(APP), false,
-    'żadnego adresu w ikonach — komplet jest w kodzie (przestrzeń nazw SVG to nie pobieranie)');
+    'kontener w HTML jest pusty — ikony podpięte kodem (renderujModeleAi)');
+  // 2. Cztery klucze i PLIKI właściciela (aneks 2026-09-17) — ścieżki względne
+  //    z repo, zero CDN (ADR 0001 pkt 1). Starej formy (inline SVG) nie wolno
+  //    przywracać (L55).
+  assert.match(APP, /const MODELE_AI = Object\.freeze\(\[\n {2}\{ klucz: 'meta-ai', nazwa: 'Meta\.ai', plik: 'assets\/ikony-modela\/meta\.jpg'[\s\S]{0,400}?klucz: 'claude', nazwa: 'Claude', plik: 'assets\/ikony-modela\/claude\.jpg'/,
+    'cztery modele z plików właściciela w assets/ikony-modela/, w kolejności z ekranu');
+  assert.match(APP, /ikona\.src = model\.plik;/, 'ikona to img z pliku (ADR 0053 aneks 2026-09-17)');
+  assert.equal(/function utworzIkoneModelu[\s\S]{0,500}createElementNS/.test(APP), false,
+    'starsza forma (inline SVG rysowane ręcznie) nie wraca (L55)');
+  assert.equal(/MODELE_AI = Object\.freeze[\s\S]{0,800}https?:\/\//.test(APP), false,
+    'żadnego adresu zewnętrznego — same względne ścieżki z repo (ADR 0002)');
+  for (const plik of ['meta.jpg', 'chatgpt.jpg', 'gemini.jpg', 'claude.jpg']) {
+    assert.ok(existsSync(join(ROOT, 'assets/ikony-modela', plik)),
+      `plik ikony istnieje na dysku: assets/ikony-modela/${plik}`);
+  }
+  assert.ok(SW.includes("'./assets/ikony-modela/meta.jpg'"), 'ikony modeli leżą w skorupie SW (PLIKI_SHELL)');
   // 3. Brak wyboru = brak danych: pole `model` dokładamy tylko z wyborem,
   //    a znaczek rysuje się wyłącznie z niego (żadnej atrapy „nieznany model”).
   const zestawy = czytaj('app/zestawy.js');
@@ -2566,7 +2582,7 @@ test('kontrakt ADR 0053: wybór modelu jest opcjonalny, addytywny i bez zewnętr
     'wybrany model widać bez czytania etykiet');
   // 5. ADR mówi to samo co kod (strażnik rejestru pilnuje samego pliku).
   const adr = czytaj('docs/decisions/0053-model-ai-opcjonalnie-w-meta-paczki.md');
-  for (const zdanie of ['brak wyboru = brak danych', 'addytywne', 'inline']) {
+  for (const zdanie of ['brak wyboru = brak danych', 'addytywne', 'assets/ikony-modela']) {
     assert.ok(adr.toLowerCase().includes(zdanie), `ADR 0053 nazywa regułę: ${zdanie}`);
   }
 });

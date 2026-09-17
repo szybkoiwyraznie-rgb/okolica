@@ -46,6 +46,9 @@ const FOLDERY = {
 };
 const SCHEMAT_ZESTAWU = 'TO-zestaw/2'; // 2026-09-15e: pytania jawnym JSON-em (ADR 0050)
 const SCHEMAT_PROFILU = 'RO-profil/1'; // Partia 1 (3): PIN-profil pseudonimu (ADR 0021)
+// ADR 0055 (uwaga B, 2026-09-17d): DWA poziomy trudności pytań (per gracz).
+const POZIOMY = ['dzieci', 'dorosli'];
+function czyPoziomOk(poziom) { return POZIOMY.indexOf(poziom) >= 0; }
 const SCHEMAT_OCENY = 'RO-oceny/1';  // ADR 0028: plik ocen jednej paczki
 const SCHEMAT_OCENA = 'RO-ocena/1';  // ADR 0028: pojedynczy głos (kciuk w górę/dół)
 // Cache L2 sieci (teren 2026-09-16): parytet z aplikacją pilnuje test/most-sieci.test.js.
@@ -100,12 +103,22 @@ function skrotPaczki(paczka) {
 
 /* ------------------------------------------------------------- walidacja */
 
+/* ADR 0055: trudność paczki niesie poziomyPytan (per-stacyjne zestawienie);
+ * paczki sprzed ADR 0055 niosą wiek — oba czytamy (addytywność). */
+function czyPoziomyPytanOk(poziomy) {
+  return !!poziomy && typeof poziomy === 'object'
+    && Number.isInteger(poziomy.dzieci) && poziomy.dzieci >= 0
+    && Number.isInteger(poziomy.dorosli) && poziomy.dorosli >= 0
+    && (poziomy.dzieci + poziomy.dorosli) > 0;
+}
+
 function czyMetaOk(meta) {
   return !!meta && typeof meta === 'object'
     && typeof meta.geohash5 === 'string' && meta.geohash5.length === 5
     && Number.isFinite(meta.promienM) && meta.promienM > 0
     && Array.isArray(meta.tematy) && meta.tematy.length > 0
-    && typeof meta.wiek === 'string' && meta.wiek.length > 0
+    && (czyPoziomyPytanOk(meta.poziomyPytan)
+      || (typeof meta.wiek === 'string' && meta.wiek.length > 0))
     && Number.isInteger(meta.liczbaStacji) && meta.liczbaStacji > 0
     && Number.isInteger(meta.pytaniaNaStacje) && meta.pytaniaNaStacje > 0
     && typeof meta.licencja === 'string' && meta.licencja.length > 0
@@ -115,7 +128,7 @@ function czyMetaOk(meta) {
 function walidujKandydata(plik) {
   const bledy = [];
   if (!plik || typeof plik !== 'object' || plik.schemat !== SCHEMAT_ZESTAWU) bledy.push('schemat musi brzmieć ' + SCHEMAT_ZESTAWU);
-  if (!czyMetaOk(plik.meta)) bledy.push('meta niekompletna (geohash5, promienM, tematy, wiek, liczby, licencja, przegladZrodel)');
+  if (!czyMetaOk(plik.meta)) bledy.push('meta niekompletna (geohash5, promienM, tematy, wiek albo poziomyPytan, liczby, licencja, przegladZrodel)');
   if (!Array.isArray(plik.stacje) || plik.stacje.length === 0) bledy.push('brak stacji');
   const paczka = plik.paczka;
   if (!paczka || typeof paczka !== 'object' || !Array.isArray(paczka.pytania) || !paczka.pytania.length) {
@@ -151,19 +164,31 @@ function czytajProfil(id) {
 function ustawProfil(cialo) {
   const pseudo = String((cialo && cialo.pseudonim) || '').trim().slice(0, 20);
   const pin = String((cialo && cialo.pin) || '');
+  const poziom = czyPoziomOk(cialo && cialo.poziom) ? cialo.poziom : null;
   const id = idProfilu(pseudo);
   if (!id) return { ok: false, blad: 'R19' };
   if (!/^\d{4,8}$/.test(pin)) return { ok: false, blad: 'R20' };
   const jest = czytajProfil(id);
   if (jest) {
     if (jest.pin !== pin) return { ok: false, blad: 'R20' };
-    return { ok: true, nowy: false, pseudonim: jest.pseudonim || pseudo };
+    // ADR 0055: przy potwierdzeniu PIN-em profil dostaje AKTUALNY poziom
+    // (auto-selection na każdym telefonie: przy następnym logowaniu wraca).
+    const nowyPoziom = poziom || (czyPoziomOk(jest.poziom) ? jest.poziom : 'dorosli');
+    if (nowyPoziom !== jest.poziom) {
+      jest.poziom = nowyPoziom;
+      jest.zmieniono = new Date().toISOString();
+      const plik = folder(FOLDERY.profile).getFilesByName('profil-' + id + '.json').next();
+      plik.setContent(JSON.stringify(jest));
+    }
+    return { ok: true, nowy: false, pseudonim: jest.pseudonim || pseudo, poziom: nowyPoziom };
   }
   folder(FOLDERY.profile).createFile('profil-' + id + '.json', JSON.stringify({
     schemat: SCHEMAT_PROFILU, pseudonim: pseudo, pin,
+    // ADR 0055: poziom trudności pytań tego gracza (dzieci / dorosli).
+    poziom: poziom || 'dorosli',
     utworzono: new Date().toISOString(),
   }), 'application/json');
-  return { ok: true, nowy: true, pseudonim: pseudo };
+  return { ok: true, nowy: true, pseudonim: pseudo, poziom: poziom || 'dorosli' };
 }
 
 function sprawdzProfil(cialo) {
@@ -171,7 +196,8 @@ function sprawdzProfil(cialo) {
   const jest = id ? czytajProfil(id) : null;
   if (!jest) return { ok: false, blad: 'R19' };
   if (jest.pin !== String((cialo && cialo.pin) || '')) return { ok: false, blad: 'R20' };
-  return { ok: true, pseudonim: jest.pseudonim || '' };
+  // ADR 0055: poziom wraca z weryfikacją (auto-selection w setupie).
+  return { ok: true, pseudonim: jest.pseudonim || '', poziom: czyPoziomOk(jest.poziom) ? jest.poziom : 'dorosli' };
 }
 
 /* ---------------------------- oceny pytań przez graczy (ADR 0028) */
@@ -534,7 +560,10 @@ function nazwaPaczkiZMeta(meta, liczbaPytan) {
     kiedy.dzien,
     kiedy.godzina,
     (Number.isInteger(liczbaPytan) && liczbaPytan > 0 ? liczbaPytan : (m.liczbaStacji || 0) * (m.pytaniaNaStacje || 0)) + 'pyt',
-    slug('wiek-' + (m.wiek || ''), 24),
+    /* ADR 0055: fragment trudnosci = poziomy (nowe paczki) albo wiek (stare). */
+    czyPoziomyPytanOk(m.poziomyPytan)
+      ? slug('poziomy-dzieci' + m.poziomyPytan.dzieci + '-dorosli' + m.poziomyPytan.dorosli, 24)
+      : slug('wiek-' + (m.wiek || ''), 24),
     (Number.isFinite(m.promienM) ? Math.round(m.promienM) : m.promienM) + 'm',
     m.factcheck === false ? 'bez' : 'Q',
   ];
@@ -673,10 +702,12 @@ function bledyGryKandydata(dane) {
   if (!pseudonim) bledy.push('pseudonim organizatora jest wymagany');
   else if (pseudonim.length > 24) bledy.push('pseudonim maks. 24 znaki');
   const k = dane && dane.konfiguracja;
-  if (!k || !(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0) || typeof k.wiek !== 'string'
+  /* ADR 0055: trudność gry niesie poziomyPytan (nowe) LUB wiek (stare). */
+  if (!k || !(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0)
+    || !(czyPoziomyPytanOk(k.poziomyPytan) || (typeof k.wiek === 'string' && k.wiek.length > 0))
     || !Array.isArray(k.tematy) || !k.tematy.length || typeof k.miejsce !== 'string'
     || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
-    bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5)');
+    bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, poziomyPytan lub wiek, tematy, miejsce, geohash5)');
   }
   // geohash8 (~40 m) to miara zasięgu ~50 m dla listy „Dołącz do gry”
   // (właściciel, 2026-09-11) — pozycja hosta z chwili założenia gry.
@@ -715,6 +746,8 @@ function zalozGre(dane) {
       stan: 'lobby',
       utworzono: teraz,
       organizatorId: 'g-1',
+      // ADR 0055 (właściciel, 2026-09-17): w multi nie ma poziomu per gracz —
+      // poziom pytań jest w konfiguracji gry (wybór hosta), nie w liście graczy.
       gracze: [{ id: 'g-1', pseudonim: String(dane.organizator.pseudonim).trim().slice(0, 24), dolaczyl: teraz }],
       konfiguracja: dane.konfiguracja,
       zestaw: { stacje: dane.zestaw.stacje, paczka: dane.zestaw.paczka, meta: dane.zestaw.meta },
@@ -885,6 +918,8 @@ function dolaczDoGry(dane) {
     if (gra.stan !== 'lobby') return { ok: false, blad: 'ta gra już wystartowała albo się zakończyła — dołączyć można tylko w lobby' };
     if (gra.gracze.length >= MAKS_GRACZY) return { ok: false, blad: 'gra jest pełna (maks. ' + MAKS_GRACZY + ' graczy)' };
     if (gra.gracze.some((g) => g.pseudonim === pseudonim)) return { ok: false, blad: 'ten pseudonim już gra w tej grze — wybierz inny' };
+    // ADR 0055 (właściciel, 2026-09-17): w multi nie ma poziomu per gracz —
+    // poziom pytań niesie konfiguracja gry, nie dołączający gracz.
     const gracz = { id: 'g-' + (gra.gracze.length + 1), pseudonim, dolaczyl: new Date().toISOString() };
     gra.gracze.push(gracz);
     zapiszGre(znaleziona.plik, gra);
@@ -1100,10 +1135,12 @@ function bledyGryHotseat(dane) {
   const bledy = [];
   if (!dane || dane.tryb !== 'hotseat') bledy.push('tryb musi być „hotseat”');
   const k = dane && dane.konfiguracja;
-  if (!k || !(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0) || typeof k.wiek !== 'string'
+  /* ADR 0055: trudność gry niesie poziomyPytan (nowe) LUB wiek (stare). */
+  if (!k || !(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0)
+    || !(czyPoziomyPytanOk(k.poziomyPytan) || (typeof k.wiek === 'string' && k.wiek.length > 0))
     || !Array.isArray(k.tematy) || !k.tematy.length || typeof k.miejsce !== 'string'
     || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
-    bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5)');
+    bledy.push('konfiguracja gry niekompletna (liczbaStacji, pytaniaNaStacje, poziomyPytan lub wiek, tematy, miejsce, geohash5)');
   }
   const gracze = (dane && dane.gracze) || [];
   if (!Array.isArray(gracze) || gracze.length < 1) bledy.push('gra wymaga co najmniej jednego gracza');
@@ -1145,7 +1182,9 @@ function przyjmijGreHotseat(dane) {
     const konfiguracja = {
       miejsce: String(k.miejsce).slice(0, 80),
       geohash5: String(k.geohash5),
-      wiek: String(k.wiek).slice(0, 24),
+      // ADR 0055: poziomy trudności (nowe) LUB wiek (stare gry — addytywnie).
+      poziomyPytan: czyPoziomyPytanOk(k.poziomyPytan) ? k.poziomyPytan : undefined,
+      wiek: typeof k.wiek === 'string' ? String(k.wiek).slice(0, 24) : undefined,
       tematy: k.tematy.map(String).slice(0, 12),
       liczbaStacji: Number(k.liczbaStacji),
       pytaniaNaStacje: Number(k.pytaniaNaStacje),
@@ -1155,7 +1194,10 @@ function przyjmijGreHotseat(dane) {
     const gracze = dane.gracze.map((g) => {
       const id = String(g.id != null ? g.id : '').trim().slice(0, 12);
       naLiscie[id] = true;
-      return { id: id, pseudonim: String(g.pseudonim).trim().slice(0, 24), dolaczyl: teraz };
+      // ADR 0055: gracz z poziomem trudności (gracze: [{imie, poziom}]).
+      return { id: id, pseudonim: String(g.pseudonim).trim().slice(0, 24),
+        poziom: czyPoziomOk(g.poziom) ? g.poziom : 'dorosli',
+        dolaczyl: teraz };
     });
     const zdarzenia = [];
     for (let i = 0; i < dane.zdarzenia.length; i += 1) {

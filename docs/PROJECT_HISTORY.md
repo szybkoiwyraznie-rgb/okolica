@@ -7020,3 +7020,118 @@ zaktualizowane, CI (`test`) zielone dla `f3ca16a`, `83666df`, `8e890a6`,
 **Otwarte po sesji:** ponowne wdrożenie mostu Apps Script (cache L2, ADR 0052)
 i test terenowy na iPhonie na `m12-158` (A, B, C1, C2, D — w tym krytyczne D:
 zero ekranów przejściowych po starcie w lobby).
+
+## 2026-09-17d — audyt startowy sesji; czekam na uwagi z terenu — PR #42
+
+Nowa sesja (gałąź `arena/01a0afae-okolica`) po scaleniu PR #41 (`1adfc86`).
+Zlecenie właściciela: „kontynuujemy projekt” — bez nowych uwag z terenu,
+więc po audycie poprzedniego PR sesja czeka na kolejną turę uwag (ROADMAP:
+M0–M12 zamknięte jako kod, jedyna kolejka to pętla terenowa).
+
+**Start:** lektura obowiązkowa w całości (AGENTS.md §0: AGENTS, PROTOKOL,
+ADR 0001–0053, LESSONS L1–L80, ENVIRONMENT, ROADMAP, HANDOFF_2026-09-17c);
+budżet lektury **99 431 / 100 000** (rezerwa 569); brama bazowa `npm test`
+**852/852** EXIT 0; wersje: protokół `PYT/1.1`, szablony `PYT/1.1.2` /
+`PYT/1.1-nofc.2`, cache `m12-158`.
+
+**Audyt PR #41** (ostatni scalony PR, `git diff d07abb0..1adfc86`, 46 plików):
+**zgodny, bez usterek blokujących**. Pięć uwag terenowych sprawdzone plik po
+pliku: A — pomarańczowa, pusta pinezka z tokenów palety (szary zniknął);
+B — `przygotujEkranStacji()` czyści ekran tylko przy wejściu z nowego setupu
+(wsteczna strzałka z promptu celowo nie czyści — zgodne z aneksem ADR 0005);
+C1 — `meta.model` addytywne (bez wyboru = brak pola, pin w `zbierzMetaZestawu`),
+ikony inline SVG; C2 — licznik prac `praceWToku` gasi „Łączę z siecią…” dopiero
+gdy odpowiedzą wszystkie (zapis paczki + `gra-zaloz`); ścieżki wczesnych odmów
+i odrzucona paczka też gaszą wskaźnik; D — odcinek startuje z góry w OBU
+trybach i przy powrocie, kontrakt 5b blokuje zawężenie do Wyścigu. ADR/aneksy:
+B w 0005, C2 w 0011, D w 0044, nowy 0053 + rejestr; L80; archiwum aneksów
+(6 plików) z notami wiążącymi; `brama` pilnuje budżetu (L79); `?v=m12-158`
+jednolity. Zieloność: CI na `main` dla `1adfc86` **success**, brama lokalna
+**852/852 EXIT 0**. **Obserwacja (nie blokuje):** ADR 0035 — korekta m12-60
+o czwartej instancji (adikso) bez znacznika wycofania w tekście głównym;
+stan bieżący (FOSSGIS → VK → Kumi) definiują późniejsza nota „Obowiązuje”,
+`ASSETS` §2 i kod — do kolejnej tury uwag.
+
+**Ikony modeli (polecenie właściciela, tego samego dnia):** narysowane
+ręcznie ikony inline-SVG odrzucone, a do gałęzi sesji wgrane prawdziwe logo
+(commit `650f69a`, cztery JPG w korzeniu repo). Podmiana: pliki do
+`assets/ikony-modela/` (układ ADR 0002), podpięcie `<img>` względną ścieżką
+(pole `plik` w `MODELE_AI`, `createElementNS` usunięte), CSS `border-radius:
+50%` zamiast stroke, cztery ikony do `PLIKI_SHELL` — **miejsce i wielkość
+bez zmian** (przyciski 44 px, ikona 22 px; znaczek 20 px, ikona 13 px).
+Piny przepisane pod nową formę (L55), aneks ADR 0053, wersja `m12-159`.
+Brama **852/852 EXIT 0**, budżet **99 594 / 100 000** (rezerwa 406).
+## 2026-09-17e — uwagi terenowe B i C z iPhone'a: poziomy pytań i stała kolejność — PR #42
+
+Właściciel wrócił z testu terenowego (`m12-159`) z dwiema uwagami; uwaga A
+(GPS) rozliczona w trakcie sesji (commit `e6ee2f8`, ADR 0054: świeży watcher
+BEZWZGLĘDNY przy starcie gry/odcinka/dołączeniu + obowiązkowe budzenie GPS
+przy powrocie na kartę; przerwa bezczynności 15 min zostaje jedynym
+przerwaniem).
+
+**Uwaga B (poziomy pytań):** dokładnie dwa poziomy — **dziecko** (8–10 lat;
+łatwe — opisu z 17e zrelaksowano w 17f) i **dorośli** (mogą być trudne:
+logika, fakty, daty, nazwiska). Wiek liczbowy (7/10/12/15) i globalne
+„kategoria wiekowa” usunięte; klucze liczbowe zostają tylko do odczytu
+starych paczek.
+
+- Poziom to własność **gracza** (hot-seat): `konfig.gracze[].poziom`
+  (domyślnie `dorosli`), zapamiętany w profilu (lokalny + Drive), auto-wybór
+  przy znanym graczu.
+- Paczka: globalne `wiek` znika; pytanie niesie `poziom`; meta niesie
+  `poziomyPytan`. Protokół **PYT/1.2** (`PYT/1.2.1` / `PYT/1.2-nofc.1`),
+  kody `E21`/`E22` (tylko gdy setup niesie `poziomyPytan`). Pytania do
+  właściwych graczy BEZ MIESZANIA: k-TE pytanie poziomu X → k-ty gracz
+  poziomu X.
+- Dopasowanie paczek: `poziomyPytan` DOKŁADNIE + liczba stacji + promień +
+  suma pytań (≥) + tematy (⊆); slug `poziomy-dzieci{N}-dorosli{N}`; paczki
+  bez `poziomu` dalej grywalne. Bez migratora.
+- **Rewizja multi (właściciel, wprost):** „jest jeden zestaw pytań wynikający
+  z wyboru hosta i wszyscy je mają takie same.” Host wybiera JEDEN poziom
+  (`STAN.multiPoziom`), paczka multi niesie **jedno wspólne pytanie na
+  stację** (`pytaniaNaStacje = 1`); most nie niesie `poziomu` u graczy
+  multi.
+
+**Uwaga C (stała kolejność):** hot-seat odpowiada ZAWSZE pierwszy → ostatni z
+listy. Gracz odcinka to zawsze pierwszy gracz listy (zastępuje rotację
+`stacja mod N` z ADR 0009 pkt 2); k-TE pytanie → k-ty gracz (per poziom);
+„bieżące pytanie” = pierwsze W KOLEJNOŚCI GRACZY.
+
+**Bugi usunięte w trakcie:** `stacje.map((s) =>` bez indeksu `i` w
+`app/rozgrywka.js` i `TypeError` w `konfiguracjaOk` (`app/wieloosobowa.js`).
+
+**Dokumentacja:** ADR 0055 + ADR 0056 + rejestr; PROTOKOL §7 (PYT/1.2);
+most `docs/setup/apps-script-repo-paczek.gs` (`poziomyPytan`, `poziom` w
+profilu, slug) — wymaga wdrożenia właściciela. Bump `m12-159` → `m12-160`.
+
+**Brama:** `npm test` **855 / 855** EXIT 0 (dwa razy); `node --check` OK.
+**Otwarte:** wdrożenie mostu + test terenowy A/B/C na `m12-160`.
+
+## 2026-09-17f — przegląd wygenerowanych promptów: krótki prompt i paczka bez źródeł — PR #42
+
+Właściciel sprawdził prompty z `m12-160` i odrzucił ich część: w prompcie
+miałoby być TYLKO to, co model piszący pytania potrzebuje.
+
+**Prompt (ADR 0057):** kompozycja pytań pod KAŻDĄ stacją (`2 pytania dla
+dorosłych, 1 pytanie dla dzieci`; multi: jeden poziom); `{GRACZE_BLOK}` →
+`{POZIOMY_BLOK}`. Z promptu znikają: imiona graczy, kolejność odpowiadania,
+`liczba graczy`, `data przygotowania`, meta-komentarz „bo modele to
+zapominają”. Opis DZIECKA zrelaksowany („Dziecko 10 lat to nie
+przedszkolak”): bez TRUDNYCH dat, nazwisk i faktów — proste liczby,
+podstawowe fakty i nazwy w porządku.
+
+**Paczka (ADR 0058, zastępuje 0008 co do pól JSON):** `zrodla` znika z
+promptu i walidacji („nikt tego nie czyta — niech model tego w ogóle nie
+wpisuje”); E09/E10/E11 wycofane. `utworzono` znika — datę nadaje aplikacja
+sama (`zestawy.js`: `meta.data`). Semantyka fact-check (właściciel):
+ptaszek zostaje — z fact-check pytania MUSZĄ być sprawdzone online
+(wymaganie w prompcie), ale model NIE musi tego dowodzić (bez cytowania, bez
+pola źródła); bez fact-check sprawdzania NIE WYMUSZAMY. Stare paczki
+czytamy: pola ignorowane, UI dalej pokazuje.
+
+**Wdrożenie:** `app/protokol.js` (kształt promptu, walidacja, `PYT/1.3`),
+`app/konfig.js` (opis dzieci), PROTOKOL, `tools/synchronizuj-szablon.mjs`,
+testy. Bump `m12-160` → `m12-161`.
+
+**Brama:** pełna brama — patrz commit. **Otwarte:** wdrożenie mostu + test
+terenowy na `m12-161`.

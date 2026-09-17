@@ -106,28 +106,6 @@ niosą to samo w `meta.factcheck`. Reszta decyzji obowiązuje bez zmian
   pokazuje wersję szablonu z fact-check jak dziś, wariant widoczny
   na ekranie promptu i w nagłówku wyniku walidacji.
 
-## Aneks 2026-09-09 — rev5: wariant bez fact-checku niczego nie wymusza
-
-Właściciel: „prompt bez fact-check nie ma niczego wymuszać\". Dotychczasowy
-szablon §2.2 był lustrzanym zakazem: „NIE wykonuj kwerendy\", „wyłącznie z
-własnej wiedzy\", „nie opieraj się na internecie\". To była **druga instrukcja
-narzucająca sposób pracy**, tyle że w drugą stronę — a wariant miał ten przymus
-zdejmować, nie odwracać.
-
-Rev5 zostawia modelowi decyzję: zasada 1 brzmi „Podawaj wyłącznie fakty, których
-jesteś pewien. Sposób ich ustalenia zostawiamy Tobie\". Jeżeli model sprawdzi coś
-w sieci — dobrze; jeżeli nie — też dobrze, o ile jest pewien faktu. Zasada 2
-zmiękczona analogicznie: „jeśli masz adres potwierdzający fakt, podaj go\", z
-niezmiennym zakazem zmyślania adresu (halucynowany URL jest gorszy niż jego brak).
-
-Zakaz kwerendy **zostaje wyłącznie w §2/rev4**, gdzie fact-check jest z definicji
-obowiązkowy i jego brak byłby złamaniem wariantu. Etykiety UI mówią odtąd
-„Pytania bez wymuszonego fact-checku\" — nie „bez weryfikacji\", bo weryfikacja
-może się zdarzyć, po prostu jej nie żądamy. Test w `test/protokol.test.js` jawnie
-**zakazuje** fraz `NIE wykonuj kwerendy`, `WYŁĄCZNIE z własnej wiedzy`,
-`pamięci treningowej` i `bez kwerendy w internecie` w szablonie §2.2 — regresja
-w stronę przymusu upadnie.
-
 ## Aneks 2026-09-13 (m12-113, zgłoszenie terenowe Q): znaczek mówi „Fact-checked"
 
 Złota litera Q była dla właściciela nieczytelna — ten sam znaczek dostaje tekst
@@ -138,3 +116,9 @@ pola `factcheck` w starych zapisach czytamy jak `true`, a przy wariancie bez
 weryfikacji znaczka nie ma wcale. `role="img"` zostaje, a etykieta dla czytnika
 ekranu i `title` mówią to samo, co widać: „Fact-checked: pytania zweryfikowane
 w sieci".
+
+## Aneks 2026-09-09 (rev5) jest w archiwum (poza budżetem lektury)
+
+Wariant bez fact-checku nie wymusza sposobu pracy modelu („sposób ustalenia
+faktów zostawiamy Tobie”); zakaz kwerendy żyje tylko w §2, gdzie fact-check jest
+obowiązkowy — `docs/decisions/archive/aneksy-0032-2026-09-09.md`.

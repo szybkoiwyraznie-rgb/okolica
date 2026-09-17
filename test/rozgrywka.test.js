@@ -96,20 +96,29 @@ test('nowaRozgrywka: schemat, faza, kolejka cykliczna i odcinek na stację', () 
   assert.equal(stan.odcinki.length, 5);
   assert.deepEqual(stan.gracze.map((g) => g.id), [1, 2, 3]);
   assert.deepEqual(stan.gracze.map((g) => g.imie), ['Gracz 1', 'Gracz 2', 'Gracz 3']);
-  // ADR 0009 pkt 2: gracz = stacja mod N (5 stacji, 3 graczy)
-  assert.deepEqual(stan.odcinki.map((o) => o.gracz), [1, 2, 3, 1, 2]);
+  // Uwaga C (2026-09-17d): gracz odcinka to ZAWSZE pierwszy gracz listy —
+  // kolejność odpowiadania jest stała (1. → ostatni), startera nie rotuje się.
+  assert.deepEqual(stan.odcinki.map((o) => o.gracz), [1, 1, 1, 1, 1]);
   assert.deepEqual(stan.odcinki.map((o) => o.stan), Array(5).fill(STANY_ODCINKA.oczekuje));
   assert.equal(stan.kodGry, 'K7M2QP');
   assert.deepEqual(stan.dziennik[0].typ, 'start');
   assert.equal(stan.dziennik[0].stacji, 5);
 });
 
-test('nowaRozgrywka: imiona z konfiguracji i własna lista graczy', () => {
+test('nowaRozgrywka: gracze z konfiguracji (imiona + poziomy) i własna lista graczy', () => {
+  const zGraczami = nowaRozgrywka({
+    konfig: konfig({ gracze: [{ imie: 'Ada', poziom: 'dzieci' }, { imie: 'Bartek', poziom: 'dorosli' }, { imie: 'Celina', poziom: 'dorosli' }] }),
+    stacje: STACJE, paczka: paczka(), srodek: START, czasMs: 0,
+  });
+  assert.deepEqual(zGraczami.gracze.map((g) => g.imie), ['Ada', 'Bartek', 'Celina']);
+  assert.deepEqual(zGraczami.gracze.map((g) => g.poziom), ['dzieci', 'dorosli', 'dorosli'], 'poziom gracza wchodzi do stanu (ADR 0055)');
+  // stary schemat `imiona` (string[]) jest migrowany z poziomem domyślnym
   const zImionami = nowaRozgrywka({
-    konfig: konfig({ imiona: ['Ada', 'Bartek', 'Celina'] }),
+    konfig: { ...konfig(), gracze: undefined, imiona: ['Ada', 'Bartek', 'Celina'] },
     stacje: STACJE, paczka: paczka(), srodek: START, czasMs: 0,
   });
   assert.deepEqual(zImionami.gracze.map((g) => g.imie), ['Ada', 'Bartek', 'Celina']);
+  assert.deepEqual(zImionami.gracze.map((g) => g.poziom), ['dorosli', 'dorosli', 'dorosli'], 'stary schemat: poziom domyślny');
 
   const wlasna = nowaRozgrywka({
     konfig: konfig(), stacje: STACJE, paczka: paczka(), srodek: START, czasMs: 0,
@@ -126,11 +135,13 @@ test('nowaRozgrywka: treść pytań NIE wchodzi do stanu (ADR 0007 pkt 6)', () =
     srodek: START,
     czasMs: 0,
   });
+  // ADR 0055: `poziom` to metadane PRZYPISANIA (które pytanie idzie do kogo) —
+  // jedyna treść paczki, która wchodzi do stanu.
   assert.deepEqual(stan.pytania, [
-    { stacja: 1, pytanieId: 's1p1' },
-    { stacja: 2, pytanieId: 's2p1' },
-    { stacja: 3, pytanieId: 's3p1' },
-  ], 'z paczki bierzemy tylko przypisanie stacja → identyfikator pytania');
+    { stacja: 1, pytanieId: 's1p1', poziom: 'dorosli' },
+    { stacja: 2, pytanieId: 's2p1', poziom: 'dorosli' },
+    { stacja: 3, pytanieId: 's3p1', poziom: 'dorosli' },
+  ], 'z paczki bierzemy przypisanie stacja → identyfikator pytania + poziom');
   const calyStan = JSON.stringify(stan);
   // fragmenty wyłącznie z treści paczki (nie z nazw pól stanu)
   for (const fragment of ['Grabowice', 'rynek', '1342', '1527', 'Siemowit', 'archiwum', 'wikipedia', 'temat']) {
@@ -302,11 +313,11 @@ test('stacja bez pytania: dojście zamyka ją bez punktów i gra idzie dalej', (
 
 /* ---------------------------------------------------------- kolejka odpowiadania */
 
-test('odpowiada zawsze gracz z kolejki (ADR 0022 — wybór trybu usunięty)', () => {
+test('kolejność odpowiadania jest stała: 1. gracz listy na każdej stacji (uwaga C)', () => {
   assert.deepEqual(ktoOdpowiada(nowa(), 1), [1]);
-  assert.deepEqual(ktoOdpowiada(nowa(), 2), [2]);
-  assert.equal(graczNaStacji(nowa(), 5), 2, 'stacja 5 przy 3 graczach → gracz 2');
-  assert.equal(graczPytania(nowa(), 5, 's5p1'), 2, 'pierwsze pytanie stacji ma autora z kolejki');
+  assert.deepEqual(ktoOdpowiada(nowa(), 2), [1], 'startera między stacjami się nie rotuje');
+  assert.equal(graczNaStacji(nowa(), 5), 1, 'każda stacja należy do pierwszego gracza listy');
+  assert.equal(graczPytania(nowa(), 5, 's5p1'), 1, 'pierwsze pytanie stacji ma autora z pierwszej pozycji kolejki');
   const stan = nowa();
   const poDojsciu = zakonczOdcinek(startOdcinka(stan, { czasMs: 0 }).stan, { czasMs: 300_000 }).stan;
   const pytanie = { id: 's1p1', poprawna: 1 };
@@ -346,11 +357,11 @@ test('rotacja pytań: drugie pytanie należy do następnego gracza, nie do wła�
   });
 
   // Stacja 1 (kolejka: Ania): pytanie 1 → Ania, pytanie 2 → Bartek.
-  assert.equal(graczNaStacji(stan, 1), 1, 'stacja 1 należy do gracza z kolejki');
+  assert.equal(graczNaStacji(stan, 1), 1, 'stacja 1 należy do pierwszego gracza listy');
   assert.deepEqual(ktoOdpowiada(stan, 1), [1, 2], 'na stacji odpowiadają obaj gracze — po jednym pytaniu');
-  // Stacja 2 (kolejka: Bartek): pytanie 1 → Bartek, pytanie 2 → Ania (zawinięcie).
-  assert.equal(graczNaStacji(stan, 2), 2);
-  assert.deepEqual(ktoOdpowiada(stan, 2), [2, 1], 'na drugiej stacji kolejność autorów jest odwrotna');
+  // Stacja 2: TAKŻE zaczyna od Ani (uwaga C: kolejność stała, rotacja usunięta).
+  assert.equal(graczNaStacji(stan, 2), 1);
+  assert.deepEqual(ktoOdpowiada(stan, 2), [1, 2], 'na drugiej stacji ta sama stała kolejność autorów');
 
   // Odpowiedź „nie swojego" gracza na pytanie jest odmawiana kodem G07.
   stan = zakonczOdcinek(startOdcinka(stan, { stacjaId: 1, czasMs: 0 }).stan, { stacjaId: 1, czasMs: 300_000 }).stan;
@@ -372,8 +383,8 @@ test('rotacja pytań: drugie pytanie należy do następnego gracza, nie do wła�
     konfig: konfig({ liczbaStacji: 2, liczbaGraczy: 2 }),
     stacje, paczka: paczka(stacje, 1), srodek: START, czasMs: 0, gracze,
   });
-  assert.deepEqual(ktoOdpowiada(jedno, 1), [1], 'jedno pytanie = odpowiada gracz z kolejki');
-  assert.equal(graczPytania(jedno, 2, 's2p1'), 2, 'stacja 2 należy do Bartka');
+  assert.deepEqual(ktoOdpowiada(jedno, 1), [1], 'jedno pytanie = odpowiada pierwszy gracz listy');
+  assert.equal(graczPytania(jedno, 2, 's2p1'), 1, 'stacja 2 też należy do Ani (stała kolejność, uwaga C)');
 });
 
 test('rotacja pytań: trzech graczy i trzy pytania na stacji — każdy po jednym, w kolejce', () => {
@@ -484,8 +495,9 @@ test('pełna gra 3 graczy × 5 stacji: od startu do podsumowania', () => {
   assert.equal(s.punktyRazem, s.gracze.reduce((suma, g) => suma + g.punkty, 0));
   assert.deepEqual(s.ranking.slice().sort((a, b) => a - b), [1, 2, 3]);
   assert.ok(s.gracze.every((g) => Number.isFinite(g.punkty)));
-  // gracz 1 idzie do stacji 1 i 4, gracz 2 do 2 i 5, gracz 3 do 3
-  assert.deepEqual(s.gracze.map((g) => g.odcinki), [2, 2, 1]);
+  // uwaga C (2026-09-17d): wszystkie odcinki należą do pierwszego gracza listy
+  // (stała kolejność odpowiadania, rotacja startera usunięta)
+  assert.deepEqual(s.gracze.map((g) => g.odcinki), [5, 0, 0]);
   assert.ok(s.zwyciezca >= 1 && s.zwyciezca <= 3);
   assert.equal(s.stacje.length, 5);
   assert.equal(s.zdarzen, stan.dziennik.length);
@@ -498,10 +510,13 @@ test('pełna gra z błędnymi odpowiedziami i ręcznym dojściem: punkty i tryb 
   const s = podsumowanie(stan);
   const gracz1 = s.gracze.find((g) => g.id === 1);
   const gracz2 = s.gracze.find((g) => g.id === 2);
-  assert.equal(gracz1.poprawne, 0);
+  // uwaga C (2026-09-17d): OBA pytania (stacji 1 i 2) należą do gracza 1 —
+  // stała kolejność, więc on ma i błąd, i trafienie, i ręczne dojście.
+  assert.equal(gracz1.poprawne, 1, 'pytanie stacji 2 (poprawna domyślnie) trafił gracz 1');
   assert.equal(gracz1.bledne, 1);
-  assert.equal(gracz1.punkty, 0);
-  assert.equal(gracz2.reczneDojscia, 1);
+  assert.equal(gracz1.punkty, 1);
+  assert.equal(gracz1.reczneDojscia, 1);
+  assert.equal(gracz2.punkty, 0, 'gracz 2 w tych dwóch stacjach nic nie zgarnął');
   assert.equal(stan.odcinki[1].trybDojscia, TRYBY_DOJSCIA.reczne);
 });
 
@@ -540,7 +555,7 @@ test('podglad: dane dla cienkiej warstwy UI', () => {
   assert.equal(dalej.stacja.id, 2);
   assert.equal(dalej.zaliczoneStacje, 1);
   assert.equal(dalej.pozostaloStacje, 4);
-  assert.equal(dalej.gracz.id, 2);
+  assert.equal(dalej.gracz.id, 1, 'uwaga C: stację 2 też zaczyna pierwszy gracz listy');
   assert.equal(dalej.pytanie, 's2p1');
 });
 

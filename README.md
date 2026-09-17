@@ -25,7 +25,7 @@ kamieni.
 **M1 — geodezja i model rozgrywki: zrobione.** Działa szkielet aplikacji:
 po starcie widać ekran startowy z intro nad mapą, a przygotowanie gry to pięć
 kroków (setup → pozycja → stacje → prompt → paczka) otwieranych przyciskiem
-„⚙ START GRY” w belce (w trakcie gry przycisk jest zgaszony). Jest walidacja konfiguracji, prompt PYT v1.1 w dwóch
+„⚙ START GRY” w belce (w trakcie gry przycisk jest zgaszony). Jest walidacja konfiguracji, prompt PYT v1.2 w dwóch
 wariantach — bez fact-check (domyślny, ADR 0032) i z fact-check — oraz walidacja
 paczki: numer poprawnej odpowiedzi jest numerem `1..4`, bez markerów i bez
 kodowania (ADR 0050). Jako czyste funkcje z testami istnieją też **model rozgrywki**
@@ -245,7 +245,7 @@ braku przycisku). Eksport
 | Ścieżka | Zawartość |
 |---|---|
 | `AGENTS.md` | **zasady pracy agentów — lektura startowa każdej sesji** |
-| `docs/PROTOKOL.md` | protokół PYT v1.1: szablon promptu, schemat JSON, walidacja |
+| `docs/PROTOKOL.md` | protokół PYT v1.3: krótki prompt (zestawienie pytań pod stacjami, bez źródeł i daty), schemat JSON, walidacja |
 | `docs/decisions/` | rejestr decyzji architektonicznych (ADR 0001–0020) |
 | `docs/ARCHITECTURE.md` | budowa aplikacji, przepływ danych, algorytm stacji |
 | `docs/ROADMAP.md` | kamienie milowe M0–M12 i status |

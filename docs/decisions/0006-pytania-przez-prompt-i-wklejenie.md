@@ -85,16 +85,6 @@ lektury startowej (AGENTS.md §0; LESSONS L62). Obowiązujące aneksy są niżej
 przycisku czytającego schowek, z kartą wyniku czyszczoną przy wejściu).
 
 
-## Aneks (2026-09-07): pkt 8 bez ścieżki w interfejsie
-
-Decyzja właściciela: poprawna paczka OD RAZU zaczyna grę, a z ekranu zniknęły
-podgląd „tylko dla organizatora" i edycja — przegląd treści odbywa się na Drive
-(ADR 0016). Martwa po tym `zastosujEdycjePaczki()` została usunięta z
-`app/protokol.js`; pole `modyfikacje[]` zostaje w schemacie (PROTOKOL §3.1)
-jako miejsce na poprawki wniesione poza aplikacją.
-
-
-
 ## Aneks 2026-09-16d — ekran wklejania bez instrukcji i bez przycisku czytającego schowek
 
 Testy terenowe właściciela (iPhone + Chrome), uwaga A:
@@ -126,3 +116,8 @@ Testy terenowe właściciela (iPhone + Chrome), uwaga A:
 Nie zmienia się: nasłuch `paste` (walidacja przy wklejeniu), czyszczenie pola
 (dawny ADR 0007 pkt 4), jeden komunikat przy złej paczce (aneks 2026-09-15d)
 i automatyczny start gry po przyjęciu paczki.
+
+## Aneks 2026-09-07 jest w archiwum (poza budżetem lektury)
+
+Poprawna paczka od razu zaczyna grę; podgląd i edycja treści są na Drive
+(ADR 0016) — `docs/decisions/archive/aneksy-0006-2026-09-07.md`.

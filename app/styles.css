@@ -320,8 +320,9 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 
 /* Uwaga terenowa C1 (właściciel, 2026-09-17): cztery okrągłe ikony modeli nad
    wklejką (`.wklejka-modele` + `.model-ikona`) i znaczek modelu przy propozycji
-   paczki (`.znaczek-modelu`). Rysunek jest symboliczny, kolor bierze z tokenów
-   (jasny i ciemny motyw), więc kontrast nie zmienia się przy zmianie palety.
+   paczki (`.znaczek-modelu`). Ikony to pliki JPG z prawdziwymi logo wgrane
+   przez właściciela (2026-09-17, ADR 0053 aneks) — okrągły przycinek trzyma
+   czysty kształt w obu motywach; rozmiar i miejsce bez zmian.
    Cele dotykowe ≥ 44 px — pkt 2 ADR 0011 (ikony stoją w rzędzie nad polem). */
 .wklejka-modele { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0 6px; }
 .model-ikona {
@@ -336,13 +337,13 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
   border-radius: 50%;
   cursor: pointer;
 }
-.model-ikona svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.model-ikona img { width: 22px; height: 22px; border-radius: 50%; }
 /* Wybrany model: akcent na obwódce i tle — widać go bez czytania etykiet. */
 .model-ikona[aria-pressed='true'] { border-color: var(--akcent); background: var(--akcent-slaby); }
 .model-ikona:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
 
 .znaczek-modelu { display: inline-grid; place-items: center; width: 20px; height: 20px; margin: 0 2px; vertical-align: -4px; color: var(--tekst-slaby); border: 1px solid var(--linia); border-radius: 50%; background: var(--tlo-pole); }
-.znaczek-modelu svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.znaczek-modelu img { width: 13px; height: 13px; border-radius: 50%; }
 /* Dopiski robocze (odniesienia do ADR): widoczne tylko w trybie testowym. */
 body:not(.tryb-testowy) .dopisek-roboczy {
   display: none;
@@ -742,6 +743,64 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 }
 #lista-graczy li span { flex: 1 1 auto; min-width: 0; }
 #lista-graczy .przycisk-maly { flex: 0 0 auto; font-size: 15px; white-space: nowrap; }
+/* ADR 0055 (uwaga B, 2026-09-17d): POZIOM TRUDNOŚCI PRZY IMIENIU — dwa
+   przełączniki (Dziecko / Dorosły) w wierszu gracza. Wiersz ma się zawijać
+   na wąskim ekranie: imię na wierzchu, przełączniki pod nim (dotyk 44 px). */
+#lista-graczy .gracz-wiersz {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+#lista-graczy .gracz-kto { flex: 1 1 100%; }
+#lista-graczy .gracz-poziom {
+  display: inline-flex;
+  gap: 6px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+#lista-graczy .przycisk-poziom {
+  flex: 1 1 0;
+  min-height: 44px;
+  font-size: 14px;
+  line-height: 1.2;
+  padding: 6px 10px;
+  border: 1px solid var(--ramka, #999);
+  border-radius: 10px;
+  background: var(--tlo-karty, #fff);
+  color: var(--tekst, #111);
+}
+#lista-graczy .przycisk-poziom.aktywny {
+  background: var(--akcent, #2b6cb0);
+  border-color: var(--akcent, #2b6cb0);
+  color: #fff;
+  font-weight: 700;
+}
+/* ADR 0055: segment poziomu GRY MULTI (wybór hosta: Dziecko/Dorośli) —
+   dwie przyciski w wierszu pod trybem; te same klasy co poziomy graczy. */
+.segment-poziom {
+  display: flex;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.segment-poziom .przycisk-poziom {
+  flex: 1 1 0;
+  min-height: 44px;
+  font-size: 14px;
+  line-height: 1.2;
+  padding: 6px 10px;
+  border: 1px solid var(--ramka, #999);
+  border-radius: 10px;
+  background: var(--tlo-karty, #fff);
+  color: var(--tekst, #111);
+}
+.segment-poziom .przycisk-poziom.aktywny {
+  background: var(--akcent, #2b6cb0);
+  border-color: var(--akcent, #2b6cb0);
+  color: #fff;
+  font-weight: 700;
+}
 /* 2026-09-14 E: lobby multi — powiększyć imiona graczy */
 #lobby-gracze li {
   font-size: 22px;

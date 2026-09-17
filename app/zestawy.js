@@ -10,15 +10,22 @@
  *
  * Schematy (2026-09-15: koniec ukrywania paczek — ADR 0050):
  * - `TO-zestaw-lokalny/2` — wpis w `localStorage`: stacje + JAWNA paczka pytań
- *   + metadane dopasowania (geohash5, promienM, tematy, wiek);
+ *   + metadane dopasowania (geohash5, promienM, tematy, wiek albo poziomyPytan);
  * - `TO-zestaw/2` — plik publiczny: meta (w tym licencja i przegląd źródeł)
  *   + jawne stacje + jawna paczka (ADR 0017 pkt 1; pytania czytelne na Drive);
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
+ *
+ * ADR 0055 (uwaga B, 2026-09-17d): kryterium „wiek” zastąpiło `poziomyPytan`
+ * — per-stacyjne zestawienie pytań poziomów `{dzieci, dorosli}` (z listy
+ * graczy) — wraz z dokładną liczbą stacji. Meta paczki niesie
+ * `poziomyPytan`; stare paczki z polem `wiek` są czytane (addytywność
+ * `czyMetaDopasowaniaOk`), ale NIE PASUJĄ do nowych setupów (brak poziomów
+ * = jawny powód niedopasowania).
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-158';
-import { kanonicznyTemat } from './konfig.js?v=m12-158';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-158';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-160';
+import { kanonicznyTemat } from './konfig.js?v=m12-160';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-160';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/2';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/2';
@@ -37,7 +44,7 @@ export const KODY_ZESTAWOW = {
   Z02: `Zapis ma inny schemat niż „${SCHEMAT_LOKALNY}” — pochodzi z innej wersji aplikacji.`,
   Z03: 'Zestaw lokalny nie ma listy stacji ({id, lat, lon}) — nie da się odtworzyć trasy.',
   Z04: 'Paczka zestawu jest uszkodzona albo pusta (brak listy pytań) — plik do odrzucenia.',
-  Z05: 'Metadane dopasowania zestawu są niekompletne (geohash5, promienM, tematy, wiek).',
+  Z05: 'Metadane dopasowania zestawu są niekompletne (geohash5, promienM, tematy, wiek albo poziomyPytan).',
   Z06: 'Rejestr zestawów ma inny schemat niż oczekiwany — zaczynamy pustą listę.',
   Z07: `Plik publiczny ma inny schemat niż „${SCHEMAT_ZESTAWU}”.`,
   Z08: 'Plik publiczny nie ma jawnych stacji ani meta z licencją i przeglądem źródeł (ADR 0017 pkt 1/4).',
@@ -88,12 +95,27 @@ export function skrotPaczki(paczka) {
   return h.toString(16).padStart(8, '0');
 }
 
+/* Czy `x` to poprawne zestawienie pytań poziomów (ADR 0055). */
+export function czyPoziomyPytanOk(x) {
+  return !!x && typeof x === 'object' && !Array.isArray(x)
+    && Number.isInteger(x.dzieci) && x.dzieci >= 0
+    && Number.isInteger(x.dorosli) && x.dorosli >= 0
+    && x.dzieci + x.dorosli > 0;
+}
+
+/**
+ * Meta dopasowania (surowa walidacja). ADR 0055: trudność niesie
+ * `poziomyPytan` (per-stacyjne zestawienie) — stare meta z polem `wiek`
+ * (string) są dalej przyjmowane, żeby rejestr i indeks z czasów przed
+ * PYT/1.2 czytały się (dopasowanie odrzuci je jawnie: bez poziomów paczka
+ * nie pasuje do nowego setupu).
+ */
 function czyMetaDopasowaniaOk(m) {
   return !!m && typeof m === 'object'
     && typeof m.geohash5 === 'string' && m.geohash5.length === 5
     && Number.isFinite(m.promienM) && m.promienM > 0
     && Array.isArray(m.tematy) && m.tematy.length > 0 && m.tematy.every((t) => typeof t === 'string')
-    && typeof m.wiek === 'string' && m.wiek.length > 0
+    && (czyPoziomyPytanOk(m.poziomyPytan) || (typeof m.wiek === 'string' && m.wiek.length > 0))
     && Number.isInteger(m.liczbaStacji) && m.liczbaStacji > 0
     && Number.isInteger(m.pytaniaNaStacje) && m.pytaniaNaStacje > 0;
 }
@@ -155,7 +177,7 @@ export function nowyRejestr() {
  */
 export function dolozWpisRejestru(rejestr, wpis, { bajty, teraz } = {}) {
   wymaganie(czyMetaDopasowaniaOk(wpis) && typeof wpis.skrot === 'string',
-    'dolozWpisRejestru: wpis musi nieść geohash5, promienM, tematy, wiek i skrot');
+    'dolozWpisRejestru: wpis musi nieść geohash5, promienM, tematy, wiek albo poziomyPytan i skrot');
   wymaganie(Number.isFinite(bajty) && bajty >= 0, 'dolozWpisRejestru: bajty muszą być liczbą ≥ 0');
   const wpisy = (rejestr?.wpisy ?? []).filter((w) => w.skrot !== wpis.skrot);
   wpisy.push({ ...wpis, bajty, data: wpis.data ?? (typeof teraz === 'string' ? teraz : new Date().toISOString()) });
@@ -235,17 +257,19 @@ export function sumaPytanWpisu(w) {
  * powodów (teren: ściana tekstu; ADR 0046 aneks 2026-09-16) — karta mówi
  * jedną linijkę bez wyliczania, co nie pasuje.
  *
- * Kryteria (właściciel, 2026-09-07 + ADR 0046 z 2026-09-14): okolica
- * ±`TOLERANCJA_OKOLICY_M`, RÓWNY promień, wiek, ŁĄCZNA liczba pytań
+ * Kryteria (właściciel, 2026-09-07 + ADR 0046 z 2026-09-14 + ADR 0055
+ * z 2026-09-17d): okolica ±`TOLERANCJA_OKOLICY_M`, RÓWNY promień,
+ * POZIOMY (per-stacyjne zestawienie `{dzieci, dorosli}` — paczka bez nich
+ * nie pasuje do nowego setupu), RÓWNA liczba stacji, ŁĄCZNA liczba pytań
  * (paczka może mieć więcej — nadmiar nie przeszkadza) i tematy nie szersze
  * niż w setupie.
  *
- * NIE są kryteriami: liczba stacji i pytania na stację z osobna („jak gra
- * ma mieć 20 pytań, to musi być paczka, która ma 20 pytań — nieważne, czy
- * 5 stacji po 4, czy 2 po 10") oraz środek transportu (właściciel wycofał:
- * „olej, nie bierz pod uwagę").
+ * ADR 0055: liczba stacji PRZESZŁA do kryteriów — per-poziomowe zestawienie
+ * na stację oznacza, że „5 stacji po 4” i „2 po 10” to już nie to samo
+ * (stare uzasadnienie „nieważne, jak się dzieli” straciło sens). Pytania na
+ * stację z osobna i środek transportu nadal NIE są kryteriami.
  */
-export function powodyNiedopasowania(w, { geohash5, lat, lon, promienM, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny = '' } = {}) {
+export function powodyNiedopasowania(w, { geohash5, lat, lon, promienM, poziomyPytan, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny = '' } = {}) {
   const powody = [];
   if (!czyWOkolicy(w, { geohash5, lat, lon })) {
     const d = odlegloscWpisuM(w, { lat, lon });
@@ -264,7 +288,20 @@ export function powodyNiedopasowania(w, { geohash5, lat, lon, promienM, wiek, li
   if (Number.isFinite(promienM) && Number.isFinite(w?.promienM) && w.promienM !== promienM) {
     powody.push(`promień: paczka „${fmtPromienia(w.promienM)}”, setup „${fmtPromienia(promienM)}”`);
   }
-  if (w?.wiek !== wiek) powody.push(`wiek: paczka „${w?.wiek ?? 'brak'}", setup „${wiek}"`);
+  // ADR 0055: poziomy trudności per stacja — paczka bez `poziomyPytan`
+  // (pole `wiek` sprzed PYT/1.2) nie pasuje do żadnego nowego setupu.
+  if (poziomyPytan) {
+    const ma = czyPoziomyPytanOk(w?.poziomyPytan) ? w.poziomyPytan : null;
+    if (!ma) {
+      powody.push(`poziomy: paczka bez zestawienia poziomów${w?.wiek ? ` (ma stare pole „wiek: ${w.wiek}")` : ''}, setup „dzieci: ${poziomyPytan.dzieci}, dorośli: ${poziomyPytan.dorosli}"`);
+    } else if (ma.dzieci !== poziomyPytan.dzieci || ma.dorosli !== poziomyPytan.dorosli) {
+      powody.push(`poziomy: paczka „dzieci: ${ma.dzieci}, dorośli: ${ma.dorosli}", setup „dzieci: ${poziomyPytan.dzieci}, dorośli: ${poziomyPytan.dorosli}"`);
+    }
+  }
+  // ADR 0055: dokładna liczba stacji (per-poziomowe zestawienie na stację).
+  if (Number.isInteger(liczbaStacji) && liczbaStacji > 0 && Number(w?.liczbaStacji) !== liczbaStacji) {
+    powody.push(`liczba stacji: paczka ${Number.isInteger(w?.liczbaStacji) ? w.liczbaStacji : 'brak'}, setup ${liczbaStacji}`);
+  }
   const chce = Number(liczbaStacji) * Number(pytaniaNaStacje);
   const ma = sumaPytanWpisu(w);
   if (ma == null) {
@@ -283,21 +320,21 @@ export function powodyNiedopasowania(w, { geohash5, lat, lon, promienM, wiek, li
   return powody;
 }
 
-export function dopasujZestawy(rejestr, { geohash5, lat, lon, promienM, liczbaStacji, pytaniaNaStacje, tematy, wiek, tematWlasny = '' } = {}) {
+export function dopasujZestawy(rejestr, { geohash5, lat, lon, promienM, poziomyPytan, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny = '' } = {}) {
   wymaganie(typeof geohash5 === 'string' && geohash5.length === 5, 'dopasujZestawy: geohash5 musi mieć 5 znaków');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'dopasujZestawy: liczbaStacji musi być dodatnią liczbą całkowitą');
   wymaganie(Number.isInteger(pytaniaNaStacje) && pytaniaNaStacje > 0, 'dopasujZestawy: pytaniaNaStacje musi być dodatnią liczbą całkowitą');
   wymaganie(Array.isArray(tematy) && tematy.length > 0, 'dopasujZestawy: tematy muszą być niepustą listą');
-  wymaganie(typeof wiek === 'string' && wiek.length > 0, 'dopasujZestawy: wiek musi być nazwą');
+  wymaganie(czyPoziomyPytanOk(poziomyPytan), 'dopasujZestawy: poziomyPytan musi być {dzieci, dorosli} z liczbami całkowitymi (ADR 0055)');
   // tolerujemy obie konwencje: surowa lista wpisów (walidacje surowe) i obiekt
   // rejestru `{ schemat, wpisy }` (zapis) — jedno wejście, zero niespodzianek
   const lista = Array.isArray(rejestr) ? rejestr : (rejestr?.wpisy ?? []);
   // Kryteria (właściciel, 2026-09-07 aneks ADR 0024 + odwrócenie 2026-09-14,
-  // ADR 0046): ta sama okolica (±200 m od miejsca wygenerowania), RÓWNY
-  // promień, wiek, ŁĄCZNA liczba pytań (paczka może mieć więcej) oraz tematy
-  // paczki NIE SZERSZE niż w setupie. Liczba stacji i środek transportu NIE
-  // są kryteriami (aneks ADR 0024 — ten fragment pozostaje w mocy).
-  const kryteria = { geohash5, lat, lon, promienM, wiek, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny };
+  // ADR 0046 + ADR 0055): ta sama okolica (±200 m od miejsca wygenerowania),
+  // RÓWNY promień, RÓWNE per-stacyjne poziomy, RÓWNA liczba stacji, ŁĄCZNA
+  // liczba pytań (paczka może mieć więcej) oraz tematy paczki NIE SZERSZE
+  // niż w setupie. Środek transportu NIE jest kryterium.
+  const kryteria = { geohash5, lat, lon, promienM, poziomyPytan, liczbaStacji, pytaniaNaStacje, tematy, tematWlasny };
   return lista
     .filter((w) => !powodyNiedopasowania(w, kryteria).length)
     .sort((a, b) => String(b.data).localeCompare(String(a.data)));
@@ -432,13 +469,15 @@ export function ulicaZeStacji(opisStacji, miejsce) {
  * `ulica` (ADR 0048) jest addytywna jak `geohash6` z ADR 0024: stare paczki bez
  * niej czytają się dalej, a most po prostu nie wstawia tego pola do nazwy pliku.
  */
-export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '', factcheck = true, pytania, opisStacjiStartu = '', model = '' } = {}) {
+export function zbierzMetaZestawu({ lat, lon, promienM, tematy, poziomyPytan, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '', factcheck = true, pytania, opisStacjiStartu = '', model = '' } = {}) {
   wymaganie(Number.isFinite(lat) && Number.isFinite(lon), 'zbierzMetaZestawu: pozycja musi być liczbami');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'zbierzMetaZestawu: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'zbierzMetaZestawu: liczbaStacji musi być dodatnią liczbą całkowitą');
   wymaganie(Number.isInteger(pytaniaNaStacje) && pytaniaNaStacje > 0, 'zbierzMetaZestawu: pytaniaNaStacje musi być dodatnią liczbą całkowitą');
   wymaganie(Array.isArray(tematy) && tematy.length > 0, 'zbierzMetaZestawu: tematy muszą być niepustą listą');
-  wymaganie(typeof wiek === 'string' && wiek.length > 0, 'zbierzMetaZestawu: wiek musi być nazwą');
+  // ADR 0055: per-stacyjne zestawienie pytań poziomów (z listy graczy) —
+  // zastępuje globalne `wiek`.
+  wymaganie(czyPoziomyPytanOk(poziomyPytan), 'zbierzMetaZestawu: poziomyPytan musi być {dzieci, dorosli} z liczbami całkowitymi (ADR 0055)');
   return {
     miejsce: typeof miejsce === 'string' && miejsce ? miejsce : 'nazwa nieustalona',
     geohash5: geohash(lat, lon, 5),
@@ -455,7 +494,8 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
       const faktyczne = faktyczneTematyPytan(pytania);
       return faktyczne.length ? faktyczne : [...tematy];
     })(),
-    wiek,
+    // ADR 0055: trudność = per-stacyjne poziomy (globalnego `wiek` nie ma).
+    poziomyPytan: { dzieci: poziomyPytan.dzieci, dorosli: poziomyPytan.dorosli },
     jezyk: typeof jezyk === 'string' && jezyk ? jezyk : 'polski',
     data: typeof data === 'string' && data ? data : new Date().toISOString().slice(0, 16).replace('T', ' '),
     liczbaStacji,

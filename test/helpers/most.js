@@ -235,7 +235,9 @@ export function zestawPrzykladowy({ stacje = 3, bezKotwicy = false, tematyMeta =
       // `tematyMeta` odtwarza paczkę sprzed 2026-09-11: meta niosą listę
       // tematów DOPUSZCZALNYCH w setupie (szerszą niż faktyczna zawartość).
       tematy: tematyMeta || ['historia'],
-      wiek: 'dorosli',
+      // ADR 0055: meta w nowym stylu — per-stacyjne poziomy (stare paczki
+      // niosą `wiek` i są czytane, ale nie pasują do nowych setupów).
+      poziomyPytan: { dzieci: 0, dorosli: 1 },
       liczbaStacji: stacje,
       pytaniaNaStacje: 1,
       licencja: 'CC BY 4.0',

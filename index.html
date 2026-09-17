@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-158">
-  <script type="module" src="app/app.js?v=m12-158"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-160">
+  <script type="module" src="app/app.js?v=m12-160"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -212,7 +212,7 @@
            do `#multi-slot-tozsamosc` w karcie multi — patrz `umiescTozsamosc`). -->
       <div id="slot-tozsamosc-dom"></div>
       <fieldset class="pole" id="pole-tozsamosc">
-        <legend id="legend-tozsamosc">👤 Kto gra?</legend>
+        <legend id="legend-tozsamosc">👤 Kto gra? (przy imieniu: poziom trudności)</legend>
         <div class="siatka" id="pole-tozsamosc-siatka">
           <label class="pole">
             <span>Imię (pseudonim)</span>
@@ -235,10 +235,9 @@
              opisuje sekcja „Dane i prywatność". -->
       </fieldset>
 
-      <fieldset class="pole" id="pole-wiek">
-        <legend>Kategoria wiekowa (trudność pytań)</legend>
-        <div id="lista-wieku" class="segment"></div>
-      </fieldset>
+      <!-- ADR 0055 (uwaga B, 2026-09-17d): globalnego pola „kategoria
+           wiekowa” NIE MA — trudność jest WŁASNOŚCIĄ GRACZA: dwa poziomy
+           (Dziecko 8–10 / Dorosły) wybierane przy imieniu w `lista-graczy`. -->
 
       <fieldset class="pole" id="pole-tematy">
         <legend>Tematy pytań</legend>
@@ -271,6 +270,14 @@
         <legend>Tryb gry</legend>
         <div id="multi-tryby" class="segment"></div>
         <p id="multi-tryb-opis" class="podpowiedz"></p>
+        <!-- ADR 0055 (właściciel, 2026-09-17): w multi poziom pytań jest
+             WŁASNOŚCIĄ GRY (wybór hosta) — jedno wspólne pytanie na stację,
+             wszyscy gracze odpowiadają na te same pytania. Poziomów per gracz
+             tu nie ma (to mechanika hot-seat). -->
+        <div class="wiersz" id="pole-multi-poziom">
+          <span id="multi-poziom-etykieta">Poziom pytań (wspólny dla wszystkich graczy):</span>
+          <div id="multi-poziom" class="segment segment-poziom"></div>
+        </div>
         <label class="pole wiersz" id="pole-trasa-sekret" hidden>
           <input id="multi-trasa-sekret" type="checkbox" checked>
           <span>Widoczna tylko kolejna stacja (trasa-sekret)</span>
@@ -438,8 +445,9 @@
            modeli NAD polem wklejenia — Meta.ai, ChatGPT, Gemini, Claude. Wybór
            jest opcjonalny (domyślnie żaden), dotknięcie zaznacza/odznacza, a
            wskazany model jedzie z paczką na Drive i widać go przy propozycji.
-           Ikony rysuje `renderujModeleAi` (inline SVG, bez plików i CDN —
-           ADR 0001 pkt 1); to nasze symbole, nie znaki towarowe. -->
+           Ikony podpięte przez `renderujModeleAi` z plików `assets/ikony-modela/`
+           (prawdziwe logo wgrane przez właściciela, 2026-09-17; ścieżki
+           względne, zero CDN — ADR 0001 pkt 1, ADR 0053 aneks 2026-09-17). -->
       <div id="wklejka-modele" class="wklejka-modele" role="group" aria-label="Model, który wygenerował odpowiedź (opcjonalnie)"></div>
       <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="3" placeholder="Wklej tutaj odpowiedź modelu (blok JSON) — sprawdzi się sama" aria-label="Odpowiedź modelu AI"></textarea>
       <p id="wklejka-status" class="podpowiedz" role="status" aria-live="polite"></p>
@@ -635,7 +643,7 @@
           <li><strong>Wynik gry idzie na wspólne konto Google Drive</strong>
             (domyślnie, bez pytania przy każdej grze): imiona graczy,
             punkty, liczba poprawnych i błędnych odpowiedzi, nazwa miejscowości
-            i kategoria wiekowa.</li>
+            i poziom trudności gracza.</li>
           <li><strong>Gra na wielu telefonach</strong> — dodatkowo: Twój
             pseudonim w lobby (widzą go inni gracze), kolejne dojścia
             i odpowiedzi w trakcie gry oraz kod gry. Współrzędne gracza
