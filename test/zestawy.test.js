@@ -314,6 +314,20 @@ test('zbierzMetaZestawu niesie geohash6 (kotwica tolerancji dla nowych paczek)',
   assert.equal(m.geohash6, geohash(PODKOWA.lat, PODKOWA.lon, 6));
 });
 
+test('uwaga C1 (ADR 0053): model AI w `meta` jest ADDYTYWNY, a brak wyboru = brak pola', async () => {
+  // Właściciel (teren, 2026-09-17): wybór modelu nad wklejką jest opcjonalny,
+  // a „brak danych” nie może zamienić się w atrapę wartości. Pole `model` to
+  // wzorzec `geohash6` (ADR 0024) i `ulica` (ADR 0048): dokładamy je tylko
+  // wtedy, gdy wybór JEST — stare pliki i most czytają się bez zmian.
+  const { zbierzMetaZestawu } = await import('../app/zestawy.js');
+  const baza = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-17 10:00' };
+  assert.equal('model' in zbierzMetaZestawu(baza), false, 'bez wyboru pola NIE MA — żadnej atrapy');
+  assert.equal('model' in zbierzMetaZestawu({ ...baza, model: '   ' }), false, 'same spacje to też brak wyboru');
+  assert.equal('model' in zbierzMetaZestawu({ ...baza, model: 7 }), false, 'nie-tekst nie udaje modelu');
+  assert.equal(zbierzMetaZestawu({ ...baza, model: ' gemini ' }).model, 'gemini', 'klucz modelu jedzie z paczką (ze zdjętymi spacjami)');
+  assert.equal(zbierzMetaZestawu(baza).geohash6, geohash(PODKOWA.lat, PODKOWA.lon, 6), 'reszta meta bez zmian');
+});
+
 test('zbierzMetaZestawu niesie factcheck (ADR 0032), domyślnie true', async () => {
   const { zbierzMetaZestawu } = await import('../app/zestawy.js');
   const baza = { lat: PODKOWA.lat, lon: PODKOWA.lon, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 5, pytaniaNaStacje: 1, data: '2026-09-07 10:00' };

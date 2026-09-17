@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-157">
-  <script type="module" src="app/app.js?v=m12-157"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-158">
+  <script type="module" src="app/app.js?v=m12-158"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -434,6 +434,13 @@
            na iPhonie (Chrome) `navigator.clipboard.readText()` nie oddaje treści,
            a wklejenie palcem i tak waliduje samo — patrz ADR 0006 (aneks 2026-09-16d).
            Pole zostaje niskie (3 wiersze), żeby nie dało się czytać pytań. -->
+      <!-- Uwaga terenowa C1 (właściciel, 2026-09-17): cztery małe okrągłe ikony
+           modeli NAD polem wklejenia — Meta.ai, ChatGPT, Gemini, Claude. Wybór
+           jest opcjonalny (domyślnie żaden), dotknięcie zaznacza/odznacza, a
+           wskazany model jedzie z paczką na Drive i widać go przy propozycji.
+           Ikony rysuje `renderujModeleAi` (inline SVG, bez plików i CDN —
+           ADR 0001 pkt 1); to nasze symbole, nie znaki towarowe. -->
+      <div id="wklejka-modele" class="wklejka-modele" role="group" aria-label="Model, który wygenerował odpowiedź (opcjonalnie)"></div>
       <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="3" placeholder="Wklej tutaj odpowiedź modelu (blok JSON) — sprawdzi się sama" aria-label="Odpowiedź modelu AI"></textarea>
       <p id="wklejka-status" class="podpowiedz" role="status" aria-live="polite"></p>
       <div class="wiersz przyciski-dolu">

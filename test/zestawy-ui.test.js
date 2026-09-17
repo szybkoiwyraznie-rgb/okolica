@@ -93,6 +93,92 @@ async function dojdzDoPozycji(dom, lat = POZYCJA.lat, lon = POZYCJA.lon) {
   dom.ustawPozycje(String(lat), String(lon));
 }
 
+/* -------- uwaga C1 (2026-09-17, ADR 0053): model AI nad wklejką i w paczce --------
+ * Dwa z tych testów stoją PIERWSZE w pliku świadomie. Atrapa DOM jest globalna
+ * (`globalThis.document` = ostatnio zainstalowany dom), a aplikacje
+ * z poprzednich testów potrafią jeszcze dopisywać po bieżącym dokumencie
+ * (praca w tle po przyjęciu paczki: status, kopia lokalna, preload paczek).
+ * Uruchomione na końcu pliku łapały cudze renderowanie listy propozycji.
+ * Trzeci — ten, który PRZYJMUJE paczkę (start gry) — stoi dalej, w sąsiedztwie
+ * pozostałych testów wysyłki na Drive: przyjęcie paczki zostawia pracę w tle,
+ * więc kolejność ma znaczenie.
+ */
+
+test('uwaga C1 (ADR 0053): znaczek modelu przy propozycji paczki — i tylko wtedy, gdy wpis go niesie', async () => {
+  // Znaczek bierze się z `meta.model` wpisu indeksu (most robi Object.assign
+  // z meta paczki). Wpis bez `model` nie dostaje znaczka: ekran wyboru nie
+  // zgaduje modelu, a stare paczki wyglądają jak dotąd.
+  const zModelem = atrapaFetchDrive({
+    indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [{ ...wpisDrive(), model: 'chatgpt' }] }),
+    plik: JSON.stringify(plikZRepo()),
+  });
+  const znaczekWWierszu = (dom) => [...dom.pobierz('zestawy-lista').children[0].children[0].children]
+    .find((c) => c?.className === 'znaczek-modelu') ?? null;
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length === 1, 'propozycja z Drive');
+    const znaczek = znaczekWWierszu(dom);
+    assert.ok(znaczek, 'wpis z `model` pokazuje znaczek modelu przy propozycji');
+    assert.equal(znaczek.getAttribute('aria-label'), 'Model: ChatGPT', 'znaczek nazywa model (ikona bez tekstu)');
+    assert.equal(znaczek.className, 'znaczek-modelu');
+    assert.equal(String(znaczek.children[0].tagName).toLowerCase(), 'svg', 'znaczek to inline SVG — bez pobierania plików');
+  } finally {
+    zModelem.przywroc();
+  }
+
+  const bezModelu = atrapaFetchDrive({
+    indeks: JSON.stringify({ schemat: 'TO-indeks/1', wpisy: [wpisDrive()] }),
+    plik: JSON.stringify(plikZRepo()),
+  });
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_TEST], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoPozycji(dom);
+    await czekajNa(dom, () => dom.pobierz('zestawy-lista').children.length === 1, 'propozycja z Drive');
+    assert.equal(znaczekWWierszu(dom), null, 'wpis bez `model` nie dostaje znaczka (stare paczki bez zmian)');
+  } finally {
+    bezModelu.przywroc();
+  }
+});
+
+/** Dotknięcie elementu atrapy (jeden nasłuch `click`, jak w przeglądarce). */
+function dotknij(el) {
+  const nasluchy = el.zdarzenia.click ?? [];
+  assert.equal(nasluchy.length, 1, `element ${el.className} ma dokładnie jeden nasłuch click`);
+  nasluchy[0]({ type: 'click', preventDefault() {} });
+}
+
+test('uwaga C1 (ADR 0053): cztery okrągłe ikony modeli nad wklejką — wybór opcjonalny, klikanie przełącza', async () => {
+  // Właściciel (teren, 2026-09-17): nad polem wklejenia rząd czterech ikon —
+  // Meta.ai, ChatGPT, Gemini, Claude. Domyślnie ŻADEN nie jest zaznaczony,
+  // dotknięcie zaznacza, drugie odznacza, dotknięcie innego przełącza, a wybór
+  // jest opcjonalny (nic nie blokuje wklejenia bez decyzji).
+  const dom = await aplikacjaZZestawami();
+  const pojemnik = dom.pobierz('wklejka-modele');
+  assert.equal(pojemnik.children.length, 4, 'cztery modele nad wklejką');
+  assert.deepEqual(pojemnik.children.map((b) => b.dataset.model), ['meta-ai', 'chatgpt', 'gemini', 'claude'],
+    'klucze modeli są stabilne (nie nazwy handlowe)');
+  const stan = () => pojemnik.children.map((b) => b.getAttribute('aria-pressed'));
+  assert.deepEqual(stan(), ['false', 'false', 'false', 'false'], 'domyślnie nic nie jest wybrane');
+  assert.deepEqual(pojemnik.children.map((b) => b.getAttribute('aria-label')),
+    ['Model: Meta.ai', 'Model: ChatGPT', 'Model: Gemini', 'Model: Claude'],
+    'każda ikona ma etykietę dla czytnika ekranu (ikona bez tekstu)');
+  assert.ok(pojemnik.children.every((b) => b.children.length === 1 && String(b.children[0].tagName).toLowerCase() === 'svg'),
+    'każda ikona rysuje swój inline SVG (żadnych plików ani CDN — ADR 0001 pkt 1)');
+
+  dotknij(pojemnik.children[2]); // Gemini
+  assert.deepEqual(stan(), ['false', 'false', 'true', 'false'], 'dotknięcie zaznacza model');
+  dotknij(pojemnik.children[2]);
+  assert.deepEqual(stan(), ['false', 'false', 'false', 'false'], 'drugie dotknięcie odznacza — wybór zostaje pusty');
+  dotknij(pojemnik.children[1]);
+  dotknij(pojemnik.children[3]);
+  assert.deepEqual(stan(), ['false', 'false', 'false', 'true'], 'dotknięcie innego PRZEŁĄCZA wybór (zawsze najwyżej jeden)');
+});
+
 test('I.b: paczka z telefonu NIE jest pokazywana — propozycje tylko z repozytorium', async () => {
   const paczka = paczkaMinimalna();
   const dom = await aplikacjaZZestawami({ pamiec: pamiecZZestawem(paczka) });
@@ -510,43 +596,35 @@ test('wysyłka Drive: adres z kodu — przyjęcie paczki wysyła bez wpisu w pam
   }
 });
 
-test('uwaga C2 (2026-09-17): wklejka przyjęta → pulsujące „Łączę z siecią…” aż most odpowie', async () => {
-  // Właściciel z telefonu: po wklejeniu odpowiedzi ekran milczał kilka sekund
-  // (zapis paczki na Drive), więc wyglądał na zamrożony — „nie wiadomo co się
-  // dzieje”. Wskaźnik czekania pokazuje się NATYCHMIAST po przyjęciu wklejki
-  // i gaśnie dopiero wtedy, gdy most odpowie.
-  const posty = [];
-  let puść = null;
-  const bramka = new Promise((rozwiaz) => { puść = rozwiaz; });
-  const pierwotny = globalThis.fetch;
-  globalThis.fetch = async (url, opcje = {}) => {
-    if (opcje.method === 'POST' && String(opcje.headers?.['Content-Type'] ?? '').startsWith('text/plain')) {
-      posty.push(String(url));
-      await bramka; // most „wisi” — wskaźnik musi być widoczny przez cały czas
-      return { ok: true, status: 200, json: async () => ({ ok: true, status: 'zaakceptowana' }), text: async () => '' };
-    }
-    return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
-  };
+test('uwaga C1 (ADR 0053): wybrany model jedzie z paczką na Drive, brak wyboru nic nie dopisuje', async () => {
+  const atrap = atrapaPost();
+  const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
+  const metaZPostu = (i) => JSON.parse(atrap.posty[i].opcje.body).meta;
   try {
-    const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
-    const dom = await aplikacjaZZestawami({ pamiec });
-    podlaczFetch(dom);
-    await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
-    const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
-    dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
-    assert.equal(posty.length, 1, 'paczka już leci na most');
-    assert.match(dom.pobierz('wklejka-status').textContent, /Łączę z siecią/,
-      'wskaźnik czekania pokazuje się NATYCHMIAST po przyjęciu wklejki');
-    assert.equal(dom.pobierz('wklejka-status').classList.contains('pulsuje'), true,
-      'wskaźnik pulsuje — czekanie na sieć ma być WIDAĆ (wzorzec ADR 0011)');
-    puść();
-    await new Promise((rozwiaz) => setTimeout(rozwiaz, 30));
-    assert.equal(dom.pobierz('wklejka-status').classList.contains('pulsuje'), false,
-      'po odpowiedzi mostu pulsowanie gaśnie');
-    assert.equal(dom.pobierz('wklejka-status').textContent, '',
-      'stan „czekam” nie zostaje na ekranie po zakończonej pracy');
+    // 1. Bez wyboru: paczka leci jak dotąd, bez pola `model` (brak danych,
+    //    nie „nieznany model” — żadnej atrapy w pliku ani w indeksie).
+    const pamiec1 = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom1 = await aplikacjaZZestawami({ pamiec: pamiec1 });
+    podlaczFetch(dom1);
+    await dojdzDoWklejenia(dom1, POZYCJA_FIXTURE);
+    dom1.wklej('pole-odpowiedz', JSON.stringify(paczka));
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(atrap.posty.length, 1, 'paczka bez wyboru też jedzie na Drive');
+    assert.equal('model' in metaZPostu(0), false, 'bez wyboru pola `model` w meta NIE MA');
+
+    // 2. Z wyborem: dotknięcie ikony przed wklejeniem znaczy model w paczce.
+    const pamiec2 = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom2 = await aplikacjaZZestawami({ pamiec: pamiec2 });
+    podlaczFetch(dom2);
+    await dojdzDoWklejenia(dom2, POZYCJA_FIXTURE);
+    dotknij(dom2.pobierz('wklejka-modele').children[1]); // ChatGPT
+    dom2.wklej('pole-odpowiedz', JSON.stringify(paczka));
+    await new Promise((r) => setTimeout(r, 30));
+    assert.equal(atrap.posty.length, 2, 'druga paczka też jedzie na Drive');
+    assert.equal(metaZPostu(1).model, 'chatgpt', 'wybór modelu zapisuje się z paczką (ADR 0053 pkt 2)');
+    assert.equal(metaZPostu(1).liczbaStacji, 3, 'reszta meta bez zmian');
   } finally {
-    globalThis.fetch = pierwotny;
+    atrap.przywroc();
   }
 });
 
@@ -823,5 +901,58 @@ test('uwaga B (dogrywka): gra z paczki wspak startuje trasą od pozycji, pytania
     assert.equal(paczka.pytania.find((p) => p.id === 's3p1').tresc, 'Pytanie stacji 3?', 'treść pytania nietknięta');
   } finally {
     atrap.przywroc();
+  }
+});
+
+/* -------- uwaga C2: wskaźnik czekania na ekranie wklejki (test OSTATNI w pliku) --------
+ * Kolejność ma znaczenie: ten test zostawia aplikację z dokończoną pracą w tle
+ * (przyjęcie paczki → kopia lokalna → preload paczek), a atrapa DOM jest
+ * GLOBALNA — resztki piszące po dokumencie trafiłyby w następny test (tak
+ * złapał to test C1 o znaczku modelu: pusta lista propozycji). Dlatego C2 stoi
+ * na końcu: dowodzimy jego zachowania, a nie kolejności sąsiadów.
+ */
+
+test('uwaga C2 (2026-09-17): wklejka przyjęta → pulsujące „Łączę z siecią…” aż most odpowie', async () => {
+  // Właściciel z telefonu: po wklejeniu odpowiedzi ekran milczał kilka sekund
+  // (zapis paczki na Drive), więc wyglądał na zamrożony — „nie wiadomo co się
+  // dzieje”. Wskaźnik czekania pokazuje się NATYCHMIAST po przyjęciu wklejki
+  // i gaśnie dopiero wtedy, gdy most odpowie.
+  const posty = [];
+  let puść = null;
+  const bramka = new Promise((rozwiaz) => { puść = rozwiaz; });
+  const pierwotny = globalThis.fetch;
+  globalThis.fetch = async (url, opcje = {}) => {
+    if (opcje.method === 'POST' && String(opcje.headers?.['Content-Type'] ?? '').startsWith('text/plain')) {
+      posty.push(String(url));
+      await bramka; // most „wisi” — wskaźnik musi być widoczny przez cały czas
+      return { ok: true, status: 200, json: async () => ({ ok: true, status: 'zaakceptowana' }), text: async () => '' };
+    }
+    return { ok: false, status: 404, json: async () => ({}), text: async () => '' };
+  };
+  try {
+    const pamiec = new Map([['okolica:konfig', KONFIG_WYSYLKA], ['okolica:repo-zestawow:url', 'https://most.przyklad/exec']]);
+    const dom = await aplikacjaZZestawami({ pamiec });
+    podlaczFetch(dom);
+    await dojdzDoWklejenia(dom, POZYCJA_FIXTURE);
+    const paczka = JSON.parse(czytajPlik(new URL('../test/fixtures/paczka-ok.json', import.meta.url)), 'utf8');
+    dom.wklej('pole-odpowiedz', JSON.stringify(paczka));
+    assert.equal(posty.length, 1, 'paczka już leci na most');
+    assert.match(dom.pobierz('wklejka-status').textContent, /Łączę z siecią/,
+      'wskaźnik czekania pokazuje się NATYCHMIAST po przyjęciu wklejki');
+    assert.equal(dom.pobierz('wklejka-status').classList.contains('pulsuje'), true,
+      'wskaźnik pulsuje — czekanie na sieć ma być WIDAĆ (wzorzec ADR 0011)');
+    puść();
+    await new Promise((rozwiaz) => setTimeout(rozwiaz, 30));
+    assert.equal(dom.pobierz('wklejka-status').classList.contains('pulsuje'), false,
+      'po odpowiedzi mostu pulsowanie gaśnie');
+    assert.equal(dom.pobierz('wklejka-status').textContent, '',
+      'stan „czekam” nie zostaje na ekranie po zakończonej pracy');
+    // Zanim `finally` odda `fetch` światu, pozwalamy aplikacji dosuszyć pracę
+    // w tle (status, kopia lokalna, kolejne kroki). Bez tego resztki piszą po
+    // BIEŻĄCYM dokumencie atrapy, a trafiają już w dokument następnego testu —
+    // tak złapał to test C1 o znaczku modelu (pusta lista propozycji).
+    await new Promise((rozwiaz) => setTimeout(rozwiaz, 100));
+  } finally {
+    globalThis.fetch = pierwotny;
   }
 });

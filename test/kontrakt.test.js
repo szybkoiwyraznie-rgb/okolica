@@ -570,8 +570,11 @@ test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
   // (pin wyżej) i README; pin tutaj pilnuje PUSTKI, nie treści ostrzeżenia.
   const ekranPaczki = INDEX.slice(INDEX.indexOf('id="ekran-paczka"'),
     INDEX.indexOf('</section>', INDEX.indexOf('id="ekran-paczka"'))).replace(/<!--[\s\S]*?-->/g, '');
-  assert.match(ekranPaczki, /id="tytul-paczka">Wklej odpowiedź modelu<\/h2>\s*<textarea id="pole-odpowiedz"/,
-    'ekran wklejania: między nagłówkiem a polem nie ma ŻADNEGO tekstu (uwaga terenowa A, 2026-09-16)');
+  const miedzyNaglowkiemAPolem = ekranPaczki.slice(ekranPaczki.indexOf('</h2>') + 5, ekranPaczki.indexOf('<textarea id="pole-odpowiedz"'));
+  assert.equal(miedzyNaglowkiemAPolem.replace(/<[^>]+>/g, '').trim(), '',
+    'ekran wklejania: między nagłówkiem a polem nie ma ŻADNEGO tekstu (uwaga terenowa A, 2026-09-16) — rząd ikon z ADR 0053 jest bez tekstu');
+  assert.match(miedzyNaglowkiemAPolem, /<div id="wklejka-modele" class="wklejka-modele" role="group" aria-label="[^"]*"><\/div>/,
+    'nad polem wklejenia stoi wyłącznie kontener ikon modeli (ADR 0053)');
   assert.ok(INDEX.includes('identyfikator rozgrywki'), 'kod gry musi być opisany jako identyfikator, nie klucz (ADR 0007 pkt 4)');
 });
 
@@ -2528,4 +2531,42 @@ test('kontrakt ADR 0052: aplikacja i most mówią cache L2 tym samym protokołem
   assert.ok(APP.includes('zlozWpisSieci({') && GS.includes('SCHEMAT_SIECI_CACHE'), 'wpis ma schemat sieci po obu stronach');
   // UI nazywa źródło trafienia (telefon albo wspólny dysk)
   assert.ok(APP.includes('ze wspólnego dysku'), 'trafienie L2 jest nazwane w UI');
+});
+
+/* ------- ADR 0053: model AI wybierany nad wklejką, `model` w meta paczki ------- */
+
+test('kontrakt ADR 0053: wybór modelu jest opcjonalny, addytywny i bez zewnętrznych ikon', () => {
+  // 1. Ekran: rząd ikon NAD polem wklejenia (`pole-odpowiedz` po `wklejka-modele`),
+  //    grupa z etykietą, bo ikony nie mają tekstu (ADR 0011 pkt 2).
+  assert.match(INDEX, /<div id="wklejka-modele" class="wklejka-modele" role="group" aria-label="[^"]*"[^>]*><\/div>\s*<textarea id="pole-odpowiedz"/,
+    'ikony modeli stoją nad polem wklejenia, a nie pod nim');
+  assert.equal(/id="wklejka-modele"[\s\S]{0,600}?<img/.test(INDEX), false,
+    'żadnych plików-obrazków: ikony rysuje kod (ADR 0001 pkt 1)');
+  // 2. Cztery klucze i własne SVG — zero CDN, zero pobierania.
+  assert.match(APP, /const MODELE_AI = Object\.freeze\(\[\n {2}\{ klucz: 'meta-ai', nazwa: 'Meta\.ai'[\s\S]{0,900}?klucz: 'claude', nazwa: 'Claude'/,
+    'cztery modele z decyzji właściciela, w kolejności z ekranu');
+  assert.match(APP, /document\.createElementNS\(PRZESTRZEN_SVG_IKON, 'svg'\)/, 'ikony powstają inline (createElementNS)');
+  assert.equal(/MODELE_AI = Object\.freeze[\s\S]{0,800}https?:\/\/(?!www\.w3\.org)/.test(APP), false,
+    'żadnego adresu w ikonach — komplet jest w kodzie (przestrzeń nazw SVG to nie pobieranie)');
+  // 3. Brak wyboru = brak danych: pole `model` dokładamy tylko z wyborem,
+  //    a znaczek rysuje się wyłącznie z niego (żadnej atrapy „nieznany model”).
+  const zestawy = czytaj('app/zestawy.js');
+  assert.match(zestawy, /\.\.\.\(typeof model === 'string' && model\.trim\(\) \? \{ model: model\.trim\(\) \} : \{\}\)/,
+    '`meta.model` jest addytywne (wzorzec `geohash6` z ADR 0024) i trymowane');
+  assert.match(APP, /const znaczek = znaczekModelu\(model\);\n {2}if \(znaczek\) opisEl\.append\(' ', znaczek\);/,
+    'znaczek modelu przy propozycji tylko wtedy, gdy paczka niesie wybór');
+  assert.match(APP, /ustawModelAi\(''\);/, 'wejście na krok 5 czyści wybór — nowa paczka to nowa decyzja');
+  assert.match(APP, /model: STAN\.modelAi, \/\/ C1/, 'gra sieciowa wiezie wybór dalej w swojej meta');
+  // 4. Wybór widoczny i dotykalny: stan w `aria-pressed`, cel ≥ 44 px.
+  assert.match(APP, /przycisk\.setAttribute\('aria-pressed', String\(STAN\.modelAi === model\.klucz\)\);/,
+    'zaznaczenie jest w `aria-pressed` — czytnik wie, który model wybrano');
+  assert.match(STYLE, /\.model-ikona \{\n {2}display: grid;[\s\S]{0,200}width: var\(--cel\);\n {2}height: var\(--cel\);/,
+    'okrągła ikona ma cel dotykowy ≥ 44 px (ADR 0011 pkt 2)');
+  assert.match(STYLE, /\.model-ikona\[aria-pressed='true'\] \{ border-color: var\(--akcent\); background: var\(--akcent-slaby\); \}/,
+    'wybrany model widać bez czytania etykiet');
+  // 5. ADR mówi to samo co kod (strażnik rejestru pilnuje samego pliku).
+  const adr = czytaj('docs/decisions/0053-model-ai-opcjonalnie-w-meta-paczki.md');
+  for (const zdanie of ['brak wyboru = brak danych', 'addytywne', 'inline']) {
+    assert.ok(adr.toLowerCase().includes(zdanie), `ADR 0053 nazywa regułę: ${zdanie}`);
+  }
 });

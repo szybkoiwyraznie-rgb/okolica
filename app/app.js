@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-157';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-157';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-158';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-158';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-157';
+} from './protokol.js?v=m12-158';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-157';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-157';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-157';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-157';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-157';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-157';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-158';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-158';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-158';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-158';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-158';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-158';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-157';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-157';
+} from './zestawy.js?v=m12-158';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-158';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -57,19 +57,19 @@ import {
   wczytajDaneZCache,
   wybierzWpisSieci,
   zlozWpisSieci,
-} from './sieci.js?v=m12-157';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-157';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-157';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-157';
-import { adresMostu, stanMostu } from './most.js?v=m12-157';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-157';
+} from './sieci.js?v=m12-158';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-158';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-158';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-158';
+import { adresMostu, stanMostu } from './most.js?v=m12-158';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-158';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   czyPaczkaUzytaLokalnie, oznaczPaczkeJakoUzyta,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-157';
+} from './oceny.js?v=m12-158';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -218,6 +218,10 @@ const STAN = {
   /** Wyjście ORGANIZATORA z lobby zamyka grę WSZYSTKIM — akcja nieodwracalna,
    *  więc też dwustopniowa (audyt PR #13; wzorzec `rezygnujZGryMulti`). */
   multiOpuszczenieUzbrojone: false,
+  /** Uwaga terenowa C1 (właściciel, 2026-09-17): który model AI wygenerował
+   *  wklejoną paczkę — KLUCZ z `MODELE_AI` albo `''` (brak wyboru = brak
+   *  danych: nic się nie zapisuje i nic nie pokazujemy). Wybór jest opcjonalny. */
+  modelAi: '',
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
@@ -2663,6 +2667,7 @@ function metaBiezacejOkolicy() {
     // paczki, nie listę dopuszczalnych z setupu.
     pytania: pytaniaBiezacejSesji(),
     opisStacjiStartu: STAN.stacje?.[0]?.opis ?? '', // ulica do nazwy pliku (ADR 0048)
+    model: STAN.modelAi, // C1: wybór z ekranu wklejki ('' = brak danych)
   });
 }
 
@@ -2729,11 +2734,15 @@ function znaczekFactcheck() {
  * na tej karcie są z repozytorium, więc powtarzanie źródła w każdej linii
  * zabierało miejsce nazwie („Podkowa Leśna · …").
  */
-function wierszZestawu(opis, akcji, statystyki = '', factcheck = true) {
+function wierszZestawu(opis, akcji, statystyki = '', factcheck = true, model = '') {
   const li = document.createElement('li');
   const opisEl = document.createElement('span');
   opisEl.className = 'opis-zestawu';
   opisEl.textContent = opis;
+  // Uwaga C1: znaczek modelu OBOK opisu propozycji — i tylko wtedy, gdy paczka
+  // niesie wybór (stare paczki i te bez decyzji nie dostają atrapy znaczka).
+  const znaczek = znaczekModelu(model);
+  if (znaczek) opisEl.append(' ', znaczek);
   if (factcheck) opisEl.append(' ', znaczekFactcheck());
   const przycisk = document.createElement('button');
   przycisk.type = 'button';
@@ -2856,7 +2865,7 @@ function renderujZestawy() {
   lista.replaceChildren();
   const posortowane = [...KANDYDACI_ZESTAWOW].sort(sortujKandydatowZestawow);
   const widoczne = ZESTAWY_ROZWINIETE ? posortowane : posortowane.slice(0, LIMIT_ZESTAWOW_NA_LISCIE);
-  for (const k of widoczne) lista.append(wierszZestawu(k.opis, k.akcja, k.statystyki, k.factcheck));
+  for (const k of widoczne) lista.append(wierszZestawu(k.opis, k.akcja, k.statystyki, k.factcheck, k.model));
   const wiecej = $('przycisk-zestawy-wiecej');
   wiecej.hidden = KANDYDACI_ZESTAWOW.length <= LIMIT_ZESTAWOW_NA_LISCIE;
   wiecej.textContent = ZESTAWY_ROZWINIETE ? 'Zobacz mniej paczek' : 'Zobacz więcej paczek';
@@ -3035,6 +3044,9 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
           : 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.')
       : opisOcenTekst(walidujStatystykiOcen(meta.oceny), czyPaczkaUzytaLokalnie(meta.id)),
     factcheck: czyWpisFactcheck(meta),
+    // C1: model z `meta` paczki (index robi `Object.assign` z meta w `.gs`).
+    // Brak pola = brak danych — znaczek się nie rysuje.
+    model: typeof meta.model === 'string' ? meta.model : '',
     // Sort listy (właściciel 2026-09-11): najwięcej ocen pozytywnych pierwsza.
     plus: walidujStatystykiOcen(meta.oceny)?.plus ?? 0,
     data: meta.data,
@@ -4219,6 +4231,80 @@ function pokazOdrzuconaPaczkeAi() {
 }
 
 /**
+ * Modele AI do wyboru nad wklejką (uwaga terenowa C1, właściciel 2026-09-17):
+ * cztery małe, okrągłe ikony NAD polem wklejenia — Meta.ai, ChatGPT, Gemini,
+ * Claude. Wybór jest OPCJONALNY: domyślnie żaden nie jest zaznaczony,
+ * kliknięcie zaznacza, drugie kliknięcie odznacza, kliknięcie innego przełącza.
+ * Bez wyboru nic o modelu nie zapisujemy i nigdzie nie pokazujemy (brak danych
+ * to nie „nieznany model”).
+ *
+ * Ikony rysujemy inline (`createElementNS`, bez plików i CDN — ADR 0001 pkt 1),
+ * a kształty są SYMBOLICZNE — nasze uproszczenie marki, nie znak towarowy.
+ */
+const PRZESTRZEN_SVG_IKON = 'http://www.w3.org/2000/svg';
+
+const MODELE_AI = Object.freeze([
+  { klucz: 'meta-ai', nazwa: 'Meta.ai', sciezki: [{ d: 'M7 12c0-2.3 1.5-4.2 3.4-4.2 2 0 2.9 2.1 4 4.2 1.1 2.1 2 4.2 4 4.2 1.9 0 3.4-1.9 3.4-4.2S20.3 7.8 18.4 7.8c-2 0-2.9 2.1-4 4.2' }] },
+  { klucz: 'chatgpt', nazwa: 'ChatGPT', sciezki: [{ d: 'M12 3.4 18.3 7v7.2L12 17.8 5.7 14.2V7z' }, { d: 'M12 3.4v6.8M18.3 10.2 12 13.8M18.3 17.2 12 13.8M12 20.6v-6.8M5.7 17.2 12 13.8M5.7 10.2 12 13.8' }] },
+  { klucz: 'gemini', nazwa: 'Gemini', sciezki: [{ d: 'M12 3.2c.9 4.4 4.4 7.9 8.8 8.8-4.4.9-7.9 4.4-8.8 8.8-.9-4.4-4.4-7.9-8.8-8.8 4.4-.9 7.9-4.4 8.8-8.8z', wypelnij: true }] },
+  { klucz: 'claude', nazwa: 'Claude', sciezki: [{ d: 'M12 3.2v17.6M3.2 12h17.6M5.8 5.8l12.4 12.4M18.2 5.8 5.8 18.2' }] },
+]);
+
+/** SVG jednej ikony modelu (albo `null` dla nieznanego klucza — brak danych). */
+function utworzIkoneModelu(klucz) {
+  const model = MODELE_AI.find((m) => m.klucz === klucz);
+  if (!model) return null;
+  const svg = document.createElementNS(PRZESTRZEN_SVG_IKON, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  for (const { d, wypelnij = false } of model.sciezki) {
+    const sciezka = document.createElementNS(PRZESTRZEN_SVG_IKON, 'path');
+    sciezka.setAttribute('d', d);
+    if (wypelnij) sciezka.setAttribute('fill', 'currentColor');
+    svg.appendChild(sciezka);
+  }
+  return svg;
+}
+
+/** Zaznaczenie modelu z ekranu wklejki: ten sam klucz = odznaczenie. */
+function ustawModelAi(klucz) {
+  STAN.modelAi = STAN.modelAi === klucz ? '' : klucz;
+  renderujModeleAi();
+}
+
+/** Cztery okrągłe ikony nad wklejką; `aria-pressed` mówi, co wybrano. */
+function renderujModeleAi() {
+  const pojemnik = $('wklejka-modele');
+  if (!pojemnik) return;
+  pojemnik.replaceChildren(...MODELE_AI.map((model) => {
+    const przycisk = document.createElement('button');
+    przycisk.type = 'button';
+    przycisk.className = 'model-ikona';
+    przycisk.dataset.model = model.klucz;
+    przycisk.setAttribute('aria-pressed', String(STAN.modelAi === model.klucz));
+    przycisk.setAttribute('aria-label', `Model: ${model.nazwa}`);
+    przycisk.title = STAN.modelAi === model.klucz ? `${model.nazwa} (dotknij, żeby odznaczyć)` : model.nazwa;
+    przycisk.append(utworzIkoneModelu(model.klucz));
+    przycisk.addEventListener('click', () => ustawModelAi(model.klucz));
+    return przycisk;
+  }));
+}
+
+/** Znaczek modelu przy propozycji paczki (uwaga C1): tylko gdy wybór JEST. */
+function znaczekModelu(klucz) {
+  const model = MODELE_AI.find((m) => m.klucz === klucz);
+  if (!model) return null;
+  const znaczek = document.createElement('span');
+  znaczek.className = 'znaczek-modelu';
+  znaczek.setAttribute('role', 'img');
+  znaczek.setAttribute('aria-label', `Model: ${model.nazwa}`);
+  znaczek.title = `Pytania wygenerował: ${model.nazwa}`;
+  znaczek.append(utworzIkoneModelu(model.klucz));
+  return znaczek;
+}
+
+/**
  * Krok 5 startuje ZAWSZE z czystą kartą (uwaga terenowa A(c), 2026-09-16).
  *
  * Właściciel: „Rozegrałem jedną grę, zakończyłem, rozpocząłem kolejną (…)
@@ -4238,6 +4324,9 @@ function wyczyscEkranPaczki() {
   delete karta.dataset.stan;
   $('wynik-naglowek').textContent = '';
   wklejkaCzekanie(false); // wskaźnik czekania nie wraca z poprzedniej wklejki
+  // Uwaga C1: wybór modelu też startuje od zera — krok 5 nie dziedziczy
+  // niczego z poprzedniej paczki (nowa wklejka = nowa decyzja).
+  ustawModelAi('');
   // Pole wklejenia też startuje puste — stara treść nie ma prawa czekać pod palcem.
   $('pole-odpowiedz').value = '';
 }
@@ -4857,6 +4946,7 @@ function metaSesjiMulti(stacje) {
     factcheck: factcheckBiezacejSesji(),
     pytania: pytaniaBiezacejSesji(),
     opisStacjiStartu: stacje[0]?.opis ?? '', // ulica do nazwy pliku (ADR 0048)
+    model: STAN.modelAi, // C1: model wskazany na ekranie wklejki jedzie też z grą sieciową
   });
 }
 
@@ -6136,6 +6226,9 @@ function start() {
    * podczas walidacji, a po niej zostaje puste — tak przy przyjęciu, jak i po
    * odmowie (ADR 0006 pkt 3 i ADR 0007 pkt 4).
    */
+  // C1: cztery okrągłe ikony modeli stoją nad wklejką od startu aplikacji;
+  // `wyczyscEkranPaczki` gasi wybór przy każdym wejściu na krok 5.
+  renderujModeleAi();
   $('pole-odpowiedz').addEventListener('paste', (e) => {
     const tekst = e.clipboardData?.getData('text') ?? '';
     if (!tekst.trim()) return; // wklejenie obrazka albo pustki nie udaje paczki

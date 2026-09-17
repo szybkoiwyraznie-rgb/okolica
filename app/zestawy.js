@@ -16,9 +16,9 @@
  * - indeks publiczny — lista SAMYCH meta (ADR 0017 pkt 2), bez treści.
  */
 
-import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-157';
-import { kanonicznyTemat } from './konfig.js?v=m12-157';
-import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-157';
+import { geohash, odlegloscDoKomorkiM } from './geo.js?v=m12-158';
+import { kanonicznyTemat } from './konfig.js?v=m12-158';
+import { WERSJA_PROTOKOLU } from './protokol.js?v=m12-158';
 
 export const SCHEMAT_ZESTAWU = 'TO-zestaw/2';
 export const SCHEMAT_LOKALNY = 'TO-zestaw-lokalny/2';
@@ -432,7 +432,7 @@ export function ulicaZeStacji(opisStacji, miejsce) {
  * `ulica` (ADR 0048) jest addytywna jak `geohash6` z ADR 0024: stare paczki bez
  * niej czytają się dalej, a most po prostu nie wstawia tego pola do nazwy pliku.
  */
-export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '', factcheck = true, pytania, opisStacjiStartu = '' } = {}) {
+export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, miejsce, data, liczbaStacji, pytaniaNaStacje, tematWlasny = '', factcheck = true, pytania, opisStacjiStartu = '', model = '' } = {}) {
   wymaganie(Number.isFinite(lat) && Number.isFinite(lon), 'zbierzMetaZestawu: pozycja musi być liczbami');
   wymaganie(Number.isFinite(promienM) && promienM > 0, 'zbierzMetaZestawu: promienM musi być liczbą > 0');
   wymaganie(Number.isInteger(liczbaStacji) && liczbaStacji > 0, 'zbierzMetaZestawu: liczbaStacji musi być dodatnią liczbą całkowitą');
@@ -467,6 +467,11 @@ export function zbierzMetaZestawu({ lat, lon, promienM, tematy, wiek, jezyk, mie
     // ADR 0032: false = pytania z pamięci modelu; brak pola w starych
     // zapisach czytamy jak true (reguła `!== false`, jak geohash6 z ADR 0024).
     factcheck: Boolean(factcheck),
+    // Wybór modelu AI (uwaga terenowa C1, 2026-09-17): pole ADDYTYWNE jak
+    // `geohash6` (ADR 0024) i `ulica` (ADR 0048) — stare pliki bez `model`
+    // czytają się dalej, a most nie wymaga go w `czyMetaOk`. Brak wyboru
+    // znaczy „brak danych” i NIE wpisuje niczego (żadnej atrapy wartości).
+    ...(typeof model === 'string' && model.trim() ? { model: model.trim() } : {}),
   };
 }
 
