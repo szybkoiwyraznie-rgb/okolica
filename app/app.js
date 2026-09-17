@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-158';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-158';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-159';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-159';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-158';
+} from './protokol.js?v=m12-159';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-158';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-158';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-158';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-158';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-158';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-158';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-159';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-159';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-159';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-159';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-159';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-159';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-158';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-158';
+} from './zestawy.js?v=m12-159';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-159';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -57,19 +57,19 @@ import {
   wczytajDaneZCache,
   wybierzWpisSieci,
   zlozWpisSieci,
-} from './sieci.js?v=m12-158';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-158';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-158';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-158';
-import { adresMostu, stanMostu } from './most.js?v=m12-158';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-158';
+} from './sieci.js?v=m12-159';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-159';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-159';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-159';
+import { adresMostu, stanMostu } from './most.js?v=m12-159';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-159';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   czyPaczkaUzytaLokalnie, oznaczPaczkeJakoUzyta,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-158';
+} from './oceny.js?v=m12-159';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -4238,33 +4238,27 @@ function pokazOdrzuconaPaczkeAi() {
  * Bez wyboru nic o modelu nie zapisujemy i nigdzie nie pokazujemy (brak danych
  * to nie „nieznany model”).
  *
- * Ikony rysujemy inline (`createElementNS`, bez plików i CDN — ADR 0001 pkt 1),
- * a kształty są SYMBOLICZNE — nasze uproszczenie marki, nie znak towarowy.
+ * Ikony to PRAWDZIWYCH LOGO pliki JPG wgrane przez właściciela (2026-09-17)
+ * i leżące w `assets/ikony-modela/` — ścieżki względne z repo (ADR 0002),
+ * zero CDN i zależności (ADR 0001 pkt 1), a świeżość pilnuje wersja skorupy
+ * SW (`PLIKI_SHELL` w `sw.js`).
  */
-const PRZESTRZEN_SVG_IKON = 'http://www.w3.org/2000/svg';
-
 const MODELE_AI = Object.freeze([
-  { klucz: 'meta-ai', nazwa: 'Meta.ai', sciezki: [{ d: 'M7 12c0-2.3 1.5-4.2 3.4-4.2 2 0 2.9 2.1 4 4.2 1.1 2.1 2 4.2 4 4.2 1.9 0 3.4-1.9 3.4-4.2S20.3 7.8 18.4 7.8c-2 0-2.9 2.1-4 4.2' }] },
-  { klucz: 'chatgpt', nazwa: 'ChatGPT', sciezki: [{ d: 'M12 3.4 18.3 7v7.2L12 17.8 5.7 14.2V7z' }, { d: 'M12 3.4v6.8M18.3 10.2 12 13.8M18.3 17.2 12 13.8M12 20.6v-6.8M5.7 17.2 12 13.8M5.7 10.2 12 13.8' }] },
-  { klucz: 'gemini', nazwa: 'Gemini', sciezki: [{ d: 'M12 3.2c.9 4.4 4.4 7.9 8.8 8.8-4.4.9-7.9 4.4-8.8 8.8-.9-4.4-4.4-7.9-8.8-8.8 4.4-.9 7.9-4.4 8.8-8.8z', wypelnij: true }] },
-  { klucz: 'claude', nazwa: 'Claude', sciezki: [{ d: 'M12 3.2v17.6M3.2 12h17.6M5.8 5.8l12.4 12.4M18.2 5.8 5.8 18.2' }] },
+  { klucz: 'meta-ai', nazwa: 'Meta.ai', plik: 'assets/ikony-modela/meta.jpg' },
+  { klucz: 'chatgpt', nazwa: 'ChatGPT', plik: 'assets/ikony-modela/chatgpt.jpg' },
+  { klucz: 'gemini', nazwa: 'Gemini', plik: 'assets/ikony-modela/gemini.jpg' },
+  { klucz: 'claude', nazwa: 'Claude', plik: 'assets/ikony-modela/claude.jpg' },
 ]);
 
-/** SVG jednej ikony modelu (albo `null` dla nieznanego klucza — brak danych). */
+/** Ikona modelu jako `img` z pliku (albo `null` dla nieznanego klucza — brak danych). */
 function utworzIkoneModelu(klucz) {
   const model = MODELE_AI.find((m) => m.klucz === klucz);
   if (!model) return null;
-  const svg = document.createElementNS(PRZESTRZEN_SVG_IKON, 'svg');
-  svg.setAttribute('viewBox', '0 0 24 24');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('focusable', 'false');
-  for (const { d, wypelnij = false } of model.sciezki) {
-    const sciezka = document.createElementNS(PRZESTRZEN_SVG_IKON, 'path');
-    sciezka.setAttribute('d', d);
-    if (wypelnij) sciezka.setAttribute('fill', 'currentColor');
-    svg.appendChild(sciezka);
-  }
-  return svg;
+  const ikona = document.createElement('img');
+  ikona.src = model.plik; // względna ścieżka z repo; SW cache'uje ją w skorupie
+  ikona.alt = ''; // etykietę niesie przycisk/znaczek (aria-label) — ikona jest dekoracją
+  ikona.setAttribute('aria-hidden', 'true');
+  return ikona;
 }
 
 /** Zaznaczenie modelu z ekranu wklejki: ten sam klucz = odznaczenie. */

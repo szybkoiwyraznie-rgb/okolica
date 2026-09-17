@@ -2535,19 +2535,28 @@ test('kontrakt ADR 0052: aplikacja i most mówią cache L2 tym samym protokołem
 
 /* ------- ADR 0053: model AI wybierany nad wklejką, `model` w meta paczki ------- */
 
-test('kontrakt ADR 0053: wybór modelu jest opcjonalny, addytywny i bez zewnętrznych ikon', () => {
+test('kontrakt ADR 0053: wybór modelu jest opcjonalny, addytywny, ikony z plików właściciela', () => {
   // 1. Ekran: rząd ikon NAD polem wklejenia (`pole-odpowiedz` po `wklejka-modele`),
   //    grupa z etykietą, bo ikony nie mają tekstu (ADR 0011 pkt 2).
   assert.match(INDEX, /<div id="wklejka-modele" class="wklejka-modele" role="group" aria-label="[^"]*"[^>]*><\/div>\s*<textarea id="pole-odpowiedz"/,
     'ikony modeli stoją nad polem wklejenia, a nie pod nim');
   assert.equal(/id="wklejka-modele"[\s\S]{0,600}?<img/.test(INDEX), false,
-    'żadnych plików-obrazków: ikony rysuje kod (ADR 0001 pkt 1)');
-  // 2. Cztery klucze i własne SVG — zero CDN, zero pobierania.
-  assert.match(APP, /const MODELE_AI = Object\.freeze\(\[\n {2}\{ klucz: 'meta-ai', nazwa: 'Meta\.ai'[\s\S]{0,900}?klucz: 'claude', nazwa: 'Claude'/,
-    'cztery modele z decyzji właściciela, w kolejności z ekranu');
-  assert.match(APP, /document\.createElementNS\(PRZESTRZEN_SVG_IKON, 'svg'\)/, 'ikony powstają inline (createElementNS)');
-  assert.equal(/MODELE_AI = Object\.freeze[\s\S]{0,800}https?:\/\/(?!www\.w3\.org)/.test(APP), false,
-    'żadnego adresu w ikonach — komplet jest w kodzie (przestrzeń nazw SVG to nie pobieranie)');
+    'kontener w HTML jest pusty — ikony podpięte kodem (renderujModeleAi)');
+  // 2. Cztery klucze i PLIKI właściciela (aneks 2026-09-17) — ścieżki względne
+  //    z repo, zero CDN (ADR 0001 pkt 1). Starej formy (inline SVG) nie wolno
+  //    przywracać (L55).
+  assert.match(APP, /const MODELE_AI = Object\.freeze\(\[\n {2}\{ klucz: 'meta-ai', nazwa: 'Meta\.ai', plik: 'assets\/ikony-modela\/meta\.jpg'[\s\S]{0,400}?klucz: 'claude', nazwa: 'Claude', plik: 'assets\/ikony-modela\/claude\.jpg'/,
+    'cztery modele z plików właściciela w assets/ikony-modela/, w kolejności z ekranu');
+  assert.match(APP, /ikona\.src = model\.plik;/, 'ikona to img z pliku (ADR 0053 aneks 2026-09-17)');
+  assert.equal(/function utworzIkoneModelu[\s\S]{0,500}createElementNS/.test(APP), false,
+    'starsza forma (inline SVG rysowane ręcznie) nie wraca (L55)');
+  assert.equal(/MODELE_AI = Object\.freeze[\s\S]{0,800}https?:\/\//.test(APP), false,
+    'żadnego adresu zewnętrznego — same względne ścieżki z repo (ADR 0002)');
+  for (const plik of ['meta.jpg', 'chatgpt.jpg', 'gemini.jpg', 'claude.jpg']) {
+    assert.ok(existsSync(join(ROOT, 'assets/ikony-modela', plik)),
+      `plik ikony istnieje na dysku: assets/ikony-modela/${plik}`);
+  }
+  assert.ok(SW.includes("'./assets/ikony-modela/meta.jpg'"), 'ikony modeli leżą w skorupie SW (PLIKI_SHELL)');
   // 3. Brak wyboru = brak danych: pole `model` dokładamy tylko z wyborem,
   //    a znaczek rysuje się wyłącznie z niego (żadnej atrapy „nieznany model”).
   const zestawy = czytaj('app/zestawy.js');
@@ -2566,7 +2575,7 @@ test('kontrakt ADR 0053: wybór modelu jest opcjonalny, addytywny i bez zewnętr
     'wybrany model widać bez czytania etykiet');
   // 5. ADR mówi to samo co kod (strażnik rejestru pilnuje samego pliku).
   const adr = czytaj('docs/decisions/0053-model-ai-opcjonalnie-w-meta-paczki.md');
-  for (const zdanie of ['brak wyboru = brak danych', 'addytywne', 'inline']) {
+  for (const zdanie of ['brak wyboru = brak danych', 'addytywne', 'assets/ikony-modela']) {
     assert.ok(adr.toLowerCase().includes(zdanie), `ADR 0053 nazywa regułę: ${zdanie}`);
   }
 });

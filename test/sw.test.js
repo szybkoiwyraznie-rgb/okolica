@@ -86,9 +86,13 @@ test('SW install: skorupa (index, style, manifest, ikony) ląduje w cache shell'
   const shell = [...env.magazyny.keys()].find((k) => k.includes('shell'));
   assert.ok(shell, 'cache shell utworzony');
   const wpisy = [...env.magazyny.get(shell).wpisy.keys()];
-  assert.equal(wpisy.length, 9, 'wszystkie pliki skorupy w precache');
+  assert.equal(wpisy.length, 13, 'wszystkie pliki skorupy w precache (9 + 4 ikony modeli)');
   assert.ok(wpisy.some((u) => u.endsWith('/okolica/index.html')), 'index.html w skorupie');
   assert.ok(wpisy.some((u) => u.includes('styles.css?v=')), 'style z wersją cache-bust w skorupie');
+  for (const plik of ['meta.jpg', 'chatgpt.jpg', 'gemini.jpg', 'claude.jpg']) {
+    assert.ok(wpisy.some((u) => u.includes(`/assets/ikony-modela/${plik}`)),
+      `ikona modelu w skorupie: ${plik}`);
+  }
 });
 
 test('SW activate: stare cache’e z przedrostkiem „okolica” usuwane, obce zostają', async () => {

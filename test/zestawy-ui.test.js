@@ -124,7 +124,8 @@ test('uwaga C1 (ADR 0053): znaczek modelu przy propozycji paczki — i tylko wte
     assert.ok(znaczek, 'wpis z `model` pokazuje znaczek modelu przy propozycji');
     assert.equal(znaczek.getAttribute('aria-label'), 'Model: ChatGPT', 'znaczek nazywa model (ikona bez tekstu)');
     assert.equal(znaczek.className, 'znaczek-modelu');
-    assert.equal(String(znaczek.children[0].tagName).toLowerCase(), 'svg', 'znaczek to inline SVG — bez pobierania plików');
+    assert.equal(String(znaczek.children[0].tagName).toLowerCase(), 'img', 'znaczek to ikona z pliku właściciela (ADR 0053 aneks)');
+    assert.ok(String(znaczek.children[0].src ?? '').startsWith('assets/ikony-modela/'), 'znaczek ładuje plik z assets/ (względna ścieżka)');
   } finally {
     zModelem.przywroc();
   }
@@ -167,8 +168,10 @@ test('uwaga C1 (ADR 0053): cztery okrągłe ikony modeli nad wklejką — wybór
   assert.deepEqual(pojemnik.children.map((b) => b.getAttribute('aria-label')),
     ['Model: Meta.ai', 'Model: ChatGPT', 'Model: Gemini', 'Model: Claude'],
     'każda ikona ma etykietę dla czytnika ekranu (ikona bez tekstu)');
-  assert.ok(pojemnik.children.every((b) => b.children.length === 1 && String(b.children[0].tagName).toLowerCase() === 'svg'),
-    'każda ikona rysuje swój inline SVG (żadnych plików ani CDN — ADR 0001 pkt 1)');
+  assert.ok(pojemnik.children.every((b) => b.children.length === 1 && String(b.children[0].tagName).toLowerCase() === 'img'),
+    'każda ikona to img z pliku (ADR 0053 aneks 2026-09-17)');
+  assert.ok(pojemnik.children.every((b) => String(b.children[0].src ?? '').startsWith('assets/ikony-modela/') && !/^https?:/.test(String(b.children[0].src ?? ''))),
+    'ścieżki ikon względne z repo — zero CDN (ADR 0001 pkt 1, ADR 0002)');
 
   dotknij(pojemnik.children[2]); // Gemini
   assert.deepEqual(stan(), ['false', 'false', 'true', 'false'], 'dotknięcie zaznacza model');

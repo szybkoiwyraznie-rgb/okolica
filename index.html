@@ -20,8 +20,8 @@
   </script>
   <!-- Cache-busting: przy zmianie app/*.js albo app/styles.css podnieś wersję
        w ?v= WE WSZYSTKICH miejscach naraz (pilnuje test/kontrakt.test.js). -->
-  <link rel="stylesheet" href="app/styles.css?v=m12-158">
-  <script type="module" src="app/app.js?v=m12-158"></script>
+  <link rel="stylesheet" href="app/styles.css?v=m12-159">
+  <script type="module" src="app/app.js?v=m12-159"></script>
 </head>
 <!-- `data-ekran` musi być w HTML, nie tylko z JS: `pokazEkran()` ustawia go
      dopiero po wczytaniu modułu, a do tego czasu reguły `body[data-ekran=…]`
@@ -438,8 +438,9 @@
            modeli NAD polem wklejenia — Meta.ai, ChatGPT, Gemini, Claude. Wybór
            jest opcjonalny (domyślnie żaden), dotknięcie zaznacza/odznacza, a
            wskazany model jedzie z paczką na Drive i widać go przy propozycji.
-           Ikony rysuje `renderujModeleAi` (inline SVG, bez plików i CDN —
-           ADR 0001 pkt 1); to nasze symbole, nie znaki towarowe. -->
+           Ikony podpięte przez `renderujModeleAi` z plików `assets/ikony-modela/`
+           (prawdziwe logo wgrane przez właściciela, 2026-09-17; ścieżki
+           względne, zero CDN — ADR 0001 pkt 1, ADR 0053 aneks 2026-09-17). -->
       <div id="wklejka-modele" class="wklejka-modele" role="group" aria-label="Model, który wygenerował odpowiedź (opcjonalnie)"></div>
       <textarea id="pole-odpowiedz" class="pole-tekstowe" rows="3" placeholder="Wklej tutaj odpowiedź modelu (blok JSON) — sprawdzi się sama" aria-label="Odpowiedź modelu AI"></textarea>
       <p id="wklejka-status" class="podpowiedz" role="status" aria-live="polite"></p>
