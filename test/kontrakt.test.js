@@ -2386,9 +2386,12 @@ test('kontrakt 2026-09-14: ADR 0005/0011/0027/0044 mają aneksy m12-115', () => 
   assert.match(czytaj('docs/decisions/0011-mobile-first-dotyk.md'),
     /Aneksy 2026-09-12 \(m12-95\) i 2026-09-14 \(m12-115\) są w archiwum/,
     'ADR 0011 wskazuje archiwum obu aneksów');
-  assert.match(czytaj('docs/decisions/0027-pytania-po-rowno-i-wolna-kolejnosc.md'),
+  assert.match(czytaj('docs/decisions/archive/aneksy-0027-2026-09-13-do-15.md'),
     /Aneks 2026-09-14 \(m12-115, uwaga F\) — Wyścig bez warstwy wyboru stacji/,
-    'ADR 0027 dokumentuje brak warstwy wyboru');
+    'aneks ADR 0027 o braku warstwy wyboru żyje w archiwum (budżet lektury)');
+  assert.match(czytaj('docs/decisions/0027-pytania-po-rowno-i-wolna-kolejnosc.md'),
+    /Aneksy 2026-09-13 \(m12-105\), 2026-09-14 \(m12-115\) i 2026-09-15 \(m12-126\) są w archiwum/,
+    'ADR 0027 wskazuje archiwum aneksów m12-105/m12-115/m12-126');
   assert.match(czytaj('docs/decisions/0044-odliczanie-po-starcie-gry-wieloosobowej.md'),
     /Aneks 2026-09-14 \(m12-115, uwaga F\) — wybór stacji usunięty, nie przeprowadzony/,
     'ADR 0044 unieważnia pkt 5 o przeprowadzce wyboru');

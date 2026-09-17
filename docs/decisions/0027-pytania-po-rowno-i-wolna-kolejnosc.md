@@ -107,71 +107,8 @@ oraz „stała premia 3/2/1 za kolejność ukończenia”) leżą w
 zostały, są żywe gdzie indziej: tryby gry opisuje ADR 0019 (aneks 2026-09-11),
 a pulę premii — aneks 2026-09-13 poniżej (ten z 2026-09-11 zastąpił).
 
-## Aneks 2026-09-13 (m12-105) — pula premii zależy od grających, którzy dograli (uwaga L)
+## Aneksy 2026-09-13 (m12-105), 2026-09-14 (m12-115) i 2026-09-15 (m12-126) są w archiwum (poza budżetem lektury)
 
-Właściciel (2026-09-13, uwaga L z testów terenowych): „Punktacja zależy od
-ilości grających w momencie zakończenia gry (ci którzy się odłączyli wcześniej
-nie liczą się do wyznaczania punktacji). Przy 1 grającym dotarcie daje 0 pkt.
-Przy 2 grających dotarcie pierwszego daje 1 pkt, drugi 0 pkt. Przy 3 grających
-odpowiednio 2, 1, 0 pkt. Przy 4 grających i więcej odpowiednio 3, 2, 1, 0, 0,
-… itd.”
-
-1. **Pula = min(3, grający − 1)**, gdzie „grający” to gracze bez zdarzenia
-   `rezygnacja` w momencie zakończenia gry. Pierwszy z tych, którzy zamknęli
-   wszystkie stacje, dostaje `pula`, drugi `pula − 1`, i tak dalej aż do zera:
-   1 grający → 0 pkt, 2 → 1/0, 3 → 2/1/0, 4 i więcej → 3/2/1/0…
-2. **Odłączeni wcześniej nie liczą się ani do puli, ani do miejsc.** Rezygnacja
-   zmniejsza pulę: dwóch graczy, z których jeden zrezygnował, gra o 1 pkt,
-   nie o 3. To zastępuje aneks z 2026-09-11 (stała 3/2/1 niezależnie od liczby
-   graczy) — przy 4 grających i więcej wynik jest ten sam, przy 2 i 3 mniejszy.
-3. **Sufit 3 pkt zostaje** (`MAKS_PREMIA_KOLEJNOSCI` w `app/wieloosobowa.js`):
-   duże gry nie zmieniają punktacji, a premia nie może przerosnąć punktów
-   z odpowiedzi przy krótkiej paczce.
-4. Reszta bez zmian: kolejność z `kolejnosc` zdarzeń mostu (nie z zegara
-   urządzenia), rezygnujący i niedokończeni bez premii, ukończenie PRZED
-   przedwczesnym końcem gry premię zachowuje, premia wchodzi do `punkty`
-   dopiero w podsumowaniu, a w hot-seat premii nie ma wcale (ADR 0026 aneks).
-
-Reguła nadal żyje w dwóch miejscach (`app/wieloosobowa.js` i
-`docs/setup/apps-script-repo-paczek.gs`), a zgodność pilnuje
-`test/most-gra.test.js` (wykonuje tekst mostu i porównuje wyniki z aplikacją)
-oraz `test/wieloosobowa.test.js` (pule dla 1/2/3/4/5 grających i rezygnacja
-w trakcie). Zdanie o punktacji w UI (`#multi-punktacja`) mówi wprost
-o zależności od liczby grających — pin w `test/kontrakt.test.js`.
-
-## Aneks 2026-09-14 (m12-115, uwaga F) — Wyścig bez warstwy wyboru stacji
-
-Pkt 2 części B („gracz wybiera dowolną niezaliczoną stację”) zostaje jako
-**reguła silnika**: telefon wykrywa dojście do dowolnej stacji, której ten
-gracz jeszcze nie zaliczył. Warstwa `#multi-wybor-stacji` i drugi klik
-„▶ Idę do stacji” umarły — po pytaniu przycisk „Idź dalej ->” wraca od razu
-na mapę, a kolejny odcinek rusza sam (`nastepnaStacja` / `wznowGre` bez
-bramki). Pasek dolny w wyścigu mówi „Jacek. Stacja 3/5” zamiast dystansu.
-`renderujWyborStacji()` to no-op. Punktacja, premia i pytanie per indeks
-gracza bez zmian.
-
-## Aneks 2026-09-15 (m12-126, uwaga B) — liczby pytań nie wybiera organizator
-
-Właściciel po teście terenowym: „w setupie hot-seat znika pytanie o liczbę pytań
-na stację — przy każdej stacji odpowiada każdy gracz, więc pytań jest
-`liczba stacji × liczba osób grających`”.
-
-Część A pkt 3 („domyślnie `pytaniaNaStacje = liczbaGraczy`”) przestaje być
-domyślną wartością, a staje się **jedyną regułą**: wylicza ją
-`pytaniaNaStacjeDla({ liczbaGraczy, rodzajGry })` w `app/konfig.js` (hot-seat =
-liczba graczy z listy, multi = 1), a `oczyscKonfiguracje` nadpisuje ją po
-dopelnieniu listy graczy. Pole setupu oraz widełki i równy podział (pkt 1, 2 i 4)
-znikają razem z kodami K11 i K22 — przy jednozdaniowej regule nie ma układu,
-który łamałby podział, więc nie ma czego pilnować. Gra sieciowa bez zmian:
-jedno pytanie na stację i wszyscy odpowiadają na to samo (pkt części B zostaje).
-
-- Liczbę mnoży nadal jedno miejsce, `liczbaPytan(konfig)`, więc prompt
-  (`{LICZBA_PYTAN}`) i walidator (E03) zmieniły źródło liczby, nie kształt.
-- Sufitem jest `OGRANICZENIA.pytaniaNaStacje.max` (8) — tyle samo, co maks.
-  liczba graczy (pkt 4), więc ani jeden, ani drugi próg się nie zmienił.
-- `WORKFLOW.md` §3 i legenda `{LICZBA_PYTAN}` w `PROTOKOL.md` opisują ekran bez
-  pola pytań; powrót pola łapie `test/dryf-dokumentow.test.js` (martwa fraza) i
-  pinezka nieobecności w `test/kontrakt.test.js`.
-- Fixture'y testów składają paczkę `stacje × graczy` pytań i prowadzą gracza po
-  całej stacji (`odpowiedzNaStacje` w `test/aplikacja.test.js`) — przy trzech
-  graczach stacja to trzy pytania, więc „jedno kliknięcie i dalej” już nie wystarcza.
+Pula premii `min(3, grający − 1)` od grających, którzy dograli (uwaga L), wyścig
+bez warstwy wyboru stacji (uwaga F) i liczba pytań = liczba graczy bez pola w
+setupie (uwaga B) — treść w `docs/decisions/archive/aneksy-0027-2026-09-13-do-15.md`.
