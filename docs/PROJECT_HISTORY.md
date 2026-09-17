@@ -7186,3 +7186,18 @@ Wynik: **98 903 / 100 000 (rezerwa 1 097)** — z 17 tokenów rezerwy na starcie
 
 **Brama:** `npm test` **856/856**, `npm run brama` **EXIT 0**.
 
+## 2026-09-17h — otwarcie sesji `arena/01a0b15d-okolica`
+
+**Zlecenie właściciela:** „kontynuujemy projekt” — bez nowego zadania. Obowiązuje
+pętla: audyt poprzedniego PR, potem czekanie na uwagi z terenu (AGENTS §2, L68).
+
+**Lektura startowa (AGENTS §0):** wykonana w tej sesji — `AGENTS.md`,
+`docs/PROTOKOL.md` (PYT/1.3), rejestr ADR + ADR-y 0001–0058, `docs/LESSONS.md`
+(L1–L80), `docs/setup/ENVIRONMENT.md`, `docs/ROADMAP.md`,
+`docs/setup/HANDOFF_2026-09-17g.md`. Punktowo: `README.md`.
+
+**Stan zastany:** `main` = `44c80e1` (squash PR #43, sesja 2026-09-17g). Brama
+przed zmianami: `npm test` **856/856**, EXIT 0. Budżet lektury wg handoffu
+2026-09-17g: **98 903 / 100 000** (rezerwa 1 097 tokenów).
+
+**Audyt PR #43 (`44c80e1`)** — w toku, wynik w następnym commicie tej sesji.
