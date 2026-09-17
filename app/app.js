@@ -2188,7 +2188,35 @@ function przewinWarstweStacjiNaGore() {
 }
 
 /**
- * Wejście na ekran stacji i „Inny układ": najpierw cache (druga gra w tej
+ * Uwaga terenowa B (właściciel, 2026-09-17): wejście na ekran stacji to NOWY
+ * rozstaw, więc ekran startuje CZYSTY — nic z poprzedniej gry nie ma prawa
+ * mignąć, nawet przez chwilę. Właściciel widział tam artefakty starej gry
+ * („Wygenerowano i zlokalizowano stacji: 5” z poprzedniego układu, ukryte
+ * stacje poprzedniej trasy-sekret), zanim przyszły świeże dane z dysku/Overpassu.
+ * Czyścimy więc stan (stacje, wynik sieci) i teksty, gasimy pinezki na mapie
+ * (stare stacje nie wiszą w okolicy) i zostawiamy ekran w stanie startowym:
+ * puste podsumowanie + nakładka „⏳ Pobieram…”, która włącza się, gdy trzeba
+ * iść do sieci. `STAN.siec` (cache geometrii) i `STAN.ukryjStacje` (trasa-sekret
+ * BIEŻĄCEGO setupu, nie gry) zostają nietknięte.
+ */
+function przygotujEkranStacji() {
+  STAN.stacje = [];
+  STAN.wynikSieci = null;
+  pokazBledy('bledy-stacje', []);
+  $('siec-proby').textContent = '';
+  $('siec-proby').hidden = true;
+  $('stacje-podsumowanie').textContent = '';
+  $('stacje-tryb').textContent = '';
+  // Jak na świeżo otwartej stronie: „Inny układ” jest, ponowienie pobrania nie.
+  // W trasie-sekret układu nie ma wcale (reguła z `renderujStacje`), a po
+  // przeliczeniu `renderujStacje` ustawi widoczności ostatecznie.
+  $('przycisk-przelicz').hidden = STAN.ukryjStacje;
+  $('przycisk-siec-ponow').hidden = true;
+  odswiezWarstwy();
+}
+
+/**
+ * Wejście na ekran stacji i „Inny układ”: najpierw cache (druga gra w tej
  * samej okolicy nie woła Overpass wcale), potem — tylko gdy jest `fetch`
  * i sieć jest potrzebna — pobranie asynchroniczne. Bez `fetch` (atrapy,
  * offline) wszystko zostaje SYNCHRONICZNE, więc testy i tryb testowy nie
@@ -5997,6 +6025,7 @@ function start() {
       status(`Stacje nie zostały rozstawione: konfiguracja ma usterek: ${usterki.length}. Wróć do ustawień gry i popraw je.`);
       return;
     }
+    przygotujEkranStacji(); // uwaga B: ekran startuje czysty (zero artefaktów starej gry)
     pokazEkran('stacje');
     przeliczStacje();
   });
