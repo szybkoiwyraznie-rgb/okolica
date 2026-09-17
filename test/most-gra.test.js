@@ -180,10 +180,15 @@ function mostHotseat() {
   const sFolder = GS.indexOf('function folder(nazwa) {');
   const koniecFolder = GS.indexOf('/** Jednorazowo:', sFolder);
   assert.ok(sFolder >= 0 && koniecFolder > sFolder, 'most ma funkcję folder()');
+  // ADR 0055: sekcja gier używa pomocniczych `czyPoziomOk`/`czyPoziomyPytanOk`
+  // (życie z profili graczy) — żyją na początku pliku, więc dociągamy ich tekst.
+  const sPoz = GS.indexOf('const POZIOMY = [');
+  const koniecPoz = GS.indexOf('function czyMetaOk');
+  assert.ok(sPoz >= 0 && koniecPoz > sPoz, 'most ma kanon poziomów pytań');
   const { DriveApp, pliki } = atrapaDrive();
   const LockService = { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) };
   // eslint-disable-next-line no-new-func — celowo: wykonujemy tekst skryptu, nie jego kopię
-  const api = new Function('DriveApp', 'LockService', `${GS.slice(sFoldery, koniecFoldery)}\n${GS.slice(sFolder, koniecFolder)}\n${GS.slice(start, koniec)}; return { przyjmijGreHotseat, bledyGryHotseat, przeliczWyniki, premiaZaKolejnosc, FOLDERY };`)(DriveApp, LockService);
+  const api = new Function('DriveApp', 'LockService', `${GS.slice(sPoz, koniecPoz)}\n${GS.slice(sFoldery, koniecFoldery)}\n${GS.slice(sFolder, koniecFolder)}\n${GS.slice(start, koniec)}; return { przyjmijGreHotseat, bledyGryHotseat, przeliczWyniki, premiaZaKolejnosc, FOLDERY };`)(DriveApp, LockService);
   return { ...api, pliki };
 }
 

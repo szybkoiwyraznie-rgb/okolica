@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { DOMYSLNE, JEZYK_GRY, KANON_SETUPU, OGRANICZENIA, PARAMETRY_CZASU, PODKLADY, TEMATY, TEMATY_DOPELNIANE_PRZY_MIGRACJI, TEMATY_SETUP, TRYBY, WIEK, WIEK_SETUP, ZMIANY_KANONU_SETUPU, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, CZASY_GRY, dopelnijKonfiguracjeDoKanou, dopelnijNoweTematySetupu, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, promienZCzasuGry, pytaniaNaStacjeDla, rngZZiarna, tematyDopelnianeOdKanou, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
+import { CZASY_GRY, DOMYSLNE, JEZYK_GRY, KANON_SETUPU, KLUCZE_POZIOMOW, OGRANICZENIA, PARAMETRY_CZASU, POZIOM_DORMYSLNY, POZIOMY, PODKLADY, TEMATY, TEMATY_DOPELNIANE_PRZY_MIGRACJI, TEMATY_SETUP, TRYBY, WIEK, ZMIANY_KANONU_SETUPU, konfiguracjaNowegoSetupu, czyPoziomOk, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, dopelnijNoweTematySetupu, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, promienZCzasuGry, pytaniaNaStacjeDla, rngZZiarna, tematyDopelnianeOdKanou, walidujSetup, ziarnoRozgrywki } from '../app/konfig.js';
 
 test('TRYBY: trzy tryby z briefu właściciela, prędkości 4,5/15/40 km/h, bez własnego promienia (ADR 0025)', () => {
   assert.deepEqual(Object.keys(TRYBY), ['piesza', 'rower', 'samochodowa']);
@@ -32,15 +32,39 @@ test('TRYBY: trzy tryby z briefu właściciela, prędkości 4,5/15/40 km/h, bez 
   }
 });
 
-test('WIEK: pięć kategorii z briefu, bez wagi punktowej (rev2: 1 pkt za pytanie)', () => {
-  assert.deepEqual(Object.keys(WIEK), ['7', '10', '12', '15', 'dorosli']);
-  for (const [klucz, kategoria] of Object.entries(WIEK)) {
-    assert.ok(kategoria.opisTrudnosci.length > 40, `${klucz}: opis trudności trafia do promptu i musi być konkretny`);
-    assert.ok(kategoria.etykieta);
-    assert.deepEqual(Object.keys(kategoria).sort(), ['etykieta', 'opisTrudnosci'], `${klucz}: koniec wagi trudności`);
+/* ADR 0055 (uwaga B, 2026-09-17d): nowy setup ma DWA poziomy (dzieci/dorosli);
+ * klucze 7/10/12/15 zostają tylko po to, by czytać stare paczki i zapisy. */
+test('POZIOMY: dokładnie dwa poziomy kanonu, bez wagi punktowej (rev2: 1 pkt za pytanie)', () => {
+  assert.deepEqual(KLUCZE_POZIOMOW, ['dzieci', 'dorosli']);
+  assert.deepEqual(Object.keys(POZIOMY), ['dzieci', 'dorosli']);
+  for (const [klucz, poziom] of Object.entries(POZIOMY)) {
+    assert.ok(poziom.opisTrudnosci.length > 40, `${klucz}: opis trudności trafia do promptu i musi być konkretny`);
+    assert.ok(poziom.etykieta);
+    assert.deepEqual(Object.keys(poziom).sort(), ['etykieta', 'opisTrudnosci'], `${klucz}: koniec wagi trudności`);
+    assert.ok(czyPoziomOk(klucz));
   }
-  // kategoria dziecięca nie może wymagać dat i liczb
-  assert.ok(WIEK[7].opisTrudnosci.includes('bez dat'));
+  assert.equal(POZIOM_DORMYSLNY, 'dorosli');
+  for (const zle of ['7', '10', '12', '15', 'seniorzy', '', null]) {
+    assert.ok(!czyPoziomOk(zle), `${JSON.stringify(zle)}: klucz legacy nie jest poziomem nowego setupu`);
+  }
+  // poziom dziecięcy nie może wymagać dat, cyfr ani nazwisk
+  assert.ok(POZIOMY.dzieci.opisTrudnosci.includes('BEZ pytań o daty'));
+  assert.ok(POZIOMY.dzieci.opisTrudnosci.includes('BEZ nazwisk'));
+  // klucze legacy istnieją tylko do czytania starych danych
+  assert.ok(WIEK[7] && WIEK['10'] && WIEK['12'] && WIEK[15] && WIEK.dorosli);
+});
+
+test('poziomyPytanZGraczy: ile pytań danego poziomu pada przy KAŻDEJ stacji (ADR 0055)', () => {
+  assert.deepEqual(poziomyPytanZGraczy([]), { dzieci: 0, dorosli: 0 });
+  assert.deepEqual(
+    poziomyPytanZGraczy([{ imie: 'Ala' }, { imie: 'B', poziom: 'dzieci' }, { imie: 'C' }]),
+    { dzieci: 1, dorosli: 2 },
+    'brak poziomu = domyślny dorosły');
+  assert.deepEqual(
+    poziomyPytanZGraczy([{ imie: 'X', poziom: 'seniorzy' }]),
+    { dzieci: 0, dorosli: 1 },
+    'śmieciowy poziom wraca do domyślnego');
+  assert.deepEqual(poziomyPytanZGraczy(null), { dzieci: 0, dorosli: 0 });
 });
 
 test('TEMATY: kanon odczytu 12 tematów, klucze zgodne z formatem (małe litery, myślniki)', () => {
@@ -65,7 +89,7 @@ test('PODKLADY: klucze zgodne z docs/ASSETS.md, brak dostawców z kluczem API', 
   assert.ok(!Object.keys(PODKLADY).some((k) => /carto|voyager|positron/i.test(k)));
 });
 
-test('domyslnaKonfiguracja: 1 gracz, 5 stacji, dorośli, pieszo, zgodnie z briefem', () => {
+test('domyslnaKonfiguracja: 1 gracz, 5 stacji, pieszo, zgodnie z briefem (ADR 0055: poziom per gracz)', () => {
   const k = domyslnaKonfiguracja();
   assert.equal(k.tryb, 'piesza');
   assert.equal(k.czasGryMin, 60, 'domyślny planowany czas gry: 60 min (decyzja właściciela 2026-09-07)');
@@ -73,17 +97,17 @@ test('domyslnaKonfiguracja: 1 gracz, 5 stacji, dorośli, pieszo, zgodnie z brief
   assert.equal(k.liczbaGraczy, 1);
   assert.equal(k.liczbaStacji, 5);
   assert.equal(k.pytaniaNaStacje, 1);
-  assert.equal(k.wiek, 'dorosli');
+  assert.equal(k.wiek, undefined, 'ADR 0055: globalnego `wiek` nie ma — poziom jest własnością gracza');
   assert.equal(k.jezyk, 'polski');
   assert.equal(k.karaRecznaS, undefined, 'koniec kary czasowej (Partia 2: zero presji czasowej)');
   assert.equal(k.limitCzasuOdcinkaS, undefined, 'koniec limitu czasu odcinka (Partia 2)');
-  assert.deepEqual(k.imiona, ['Gracz 1']);
+  assert.deepEqual(k.gracze, [{ imie: 'Gracz 1', poziom: 'dorosli' }], 'gracz = {imie, poziom}, domyślnie dorosły');
   assert.equal(k.geokodacja, undefined, 'brak opcji geokodacji — nazwa miejsca zawsze pobierana (ADR 0013 pkt 3 po Partii 2)');
   assert.deepEqual(k.tematy, ['architektura', 'ciekawostki', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda'], 'domyślnie wszystkie tematy NOWEGO setupu, alfabetycznie (ADR 0034; do 2026-09-10: 10 tematów starego kanonu)');
   assert.deepEqual(walidujSetup(k), []);
 
   const cztery = domyslnaKonfiguracja(4);
-  assert.equal(cztery.imiona.length, 4);
+  assert.equal(cztery.gracze.length, 4);
   assert.equal(cztery.liczbaGraczy, 4);
   assert.ok(domyslnaKonfiguracja(99).liczbaGraczy <= OGRANICZENIA.liczbaGraczy.max);
 });
@@ -95,7 +119,7 @@ test('domyslnaKonfiguracja: śmieciowa liczba graczy nie przepuszcza NaN (znalez
     const k = domyslnaKonfiguracja(smiec);
     assert.ok(Number.isInteger(k.liczbaGraczy), `liczbaGraczy dla ${JSON.stringify(smiec)} = ${k.liczbaGraczy}`);
     assert.ok(k.liczbaGraczy >= OGRANICZENIA.liczbaGraczy.min && k.liczbaGraczy <= OGRANICZENIA.liczbaGraczy.max);
-    assert.equal(k.imiona.length, k.liczbaGraczy, `imiona dla ${JSON.stringify(smiec)}`);
+    assert.equal(k.gracze.length, k.liczbaGraczy, `gracze dla ${JSON.stringify(smiec)}`);
     assert.deepEqual(walidujSetup(k), [], `konfiguracja po oczyszczeniu ${JSON.stringify(smiec)} musi być grywalna`);
   }
   assert.equal(domyslnaKonfiguracja(null).liczbaGraczy, DOMYSLNE.liczbaGraczy, 'null to nie „zero graczy", tylko brak danych');
@@ -115,16 +139,17 @@ test('walidujSetup: przyjmuje poprawną i odrzuca każdą klasę błędu', () =>
   const kody = (k) => walidujSetup(k).map((u) => u.kod);
 
   assert.ok(kody({ ...baza, tryb: 'lotnia' }).includes('K02'));
-  assert.ok(kody({ ...baza, wiek: 'seniorzy' }).includes('K03'));
+  assert.ok(kody({ ...baza, gracze: [{ imie: 'Ala', poziom: 'seniorzy' }, { imie: 'B', poziom: 'dzieci' }] }).includes('K03'), 'K03: poziom gracza poza kanonem POZIOMY');
+  assert.ok(kody({ ...baza, gracze: [{ imie: 'Ala', poziom: 'dzieci' }, { imie: 'B', poziom: 'dorosli' }] }).length === 0, 'K03: dzieci+dorosli to poprawny miks');
   // K04 (język) i K06 (podkład) usunięte (właściciel, 2026-09-11): polski
   // i OSM są zaszte w kodzie, pól nie ma w UI — nie ma czego walidować.
   assert.ok(!kody({ ...baza, jezyk: 'klingon' }).includes('K04'), 'K04 już nie istnieje');
   assert.ok(!kody({ ...baza, podklad: 'google' }).includes('K06'), 'K06 już nie istnieje');
   assert.ok(kody({ ...baza, liczbaGraczy: 0 }).includes('K07'));
   assert.ok(kody({ ...baza, liczbaGraczy: 9 }).includes('K07'));
-  assert.ok(kody({ ...baza, imiona: ['Ala'] }).includes('K08'));
-  assert.ok(kody({ ...baza, imiona: ['Ala', 'Ala'] }).includes('K09'));
-  assert.ok(kody({ ...baza, imiona: ['', 'Ala'] }).includes('K08'));
+  assert.ok(kody({ ...baza, gracze: [{ imie: 'Ala', poziom: 'dorosli' }] }).includes('K08'), 'K08: lista graczy krótsza niż liczbaGraczy');
+  assert.ok(kody({ ...baza, gracze: [{ imie: 'Ala', poziom: 'dorosli' }, { imie: 'ala', poziom: 'dzieci' }] }).includes('K09'));
+  assert.ok(kody({ ...baza, gracze: [{ imie: '', poziom: 'dorosli' }, { imie: 'Ala', poziom: 'dorosli' }] }).includes('K08'));
   assert.ok(kody({ ...baza, liczbaStacji: 2 }).includes('K10'));
   assert.ok(kody({ ...baza, liczbaStacji: 13 }).includes('K10'));
   // K11 (widełki pytań na stację) i K22 (równy podział) usunięte 2026-09-15
@@ -217,7 +242,7 @@ test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', (
   // klucz spoza kanonu wraca do wartości domyślnej, nie do `undefined`
   const zle = oczyscKonfiguracje({ tryb: 'konny', wiek: 'nestor', podklad: 'carto', jezyk: 'klingon' });
   assert.equal(zle.tryb, d.tryb);
-  assert.equal(zle.wiek, d.wiek);
+  assert.equal(zle.wiek, undefined, 'ADR 0055: globalny `wiek` wypada z oczyszczonej konfiguracji');
   assert.equal(zle.podklad, d.podklad);
   assert.equal(zle.jezyk, d.jezyk);
 
@@ -232,13 +257,17 @@ test('oczyscKonfiguracje: stany z localStorage nie wysypują UI (LESSONS L9)', (
   assert.equal(oczyscKonfiguracje({ tematWlasny: '  Wędkarstwo  ' }).tematWlasny, 'Wędkarstwo', 'tekst własny przycięty');
   assert.equal(oczyscKonfiguracje({}).tematWlasny, '', 'brak tekstu to pusty łańcuch');
   assert.deepEqual(oczyscKonfiguracje({ tematy: ['kosmos'] }).tematy, d.tematy);
-  assert.deepEqual(oczyscKonfiguracje({ liczbaGraczy: 3, imiona: ['Ada', '   '] }).imiona, ['Ada', 'Gracz 2', 'Gracz 3']);
+  // ADR 0055: stare `imiona` migrują do `gracze` z poziomem domyślnym
+  assert.deepEqual(oczyscKonfiguracje({ liczbaGraczy: 3, imiona: ['Ada', '   '] }).gracze,
+    [{ imie: 'Ada', poziom: 'dorosli' }, { imie: 'Gracz 2', poziom: 'dorosli' }, { imie: 'Gracz 3', poziom: 'dorosli' }]);
+  assert.deepEqual(oczyscKonfiguracje({ liczbaGraczy: 2, gracze: [{ imie: 'Ada', poziom: 'dzieci' }, { imie: 'B', poziom: 'seniorzy' }] }).gracze,
+    [{ imie: 'Ada', poziom: 'dzieci' }, { imie: 'B', poziom: 'dorosli' }], 'poziom spoza kanonu = domyślny dorosły');
   // tekst zamiast liczby: `Number("dużo")` = NaN, więc pole ma wrócić do domyślnej
   const smieciowaLiczba = oczyscKonfiguracje({ liczbaGraczy: 'dużo', liczbaStacji: 'pięć', pytaniaNaStacje: null });
   assert.equal(smieciowaLiczba.liczbaGraczy, DOMYSLNE.liczbaGraczy);
   assert.equal(smieciowaLiczba.liczbaStacji, DOMYSLNE.liczbaStacji);
   assert.equal(smieciowaLiczba.pytaniaNaStacje, DOMYSLNE.pytaniaNaStacje);
-  assert.equal(smieciowaLiczba.imiona.length, smieciowaLiczba.liczbaGraczy);
+  assert.equal(smieciowaLiczba.gracze.length, smieciowaLiczba.liczbaGraczy);
   assert.deepEqual(walidujSetup(smieciowaLiczba), []);
 
 
@@ -355,16 +384,18 @@ test('oczyscKonfiguracje: pytań na stację nie bierze ze zapisu — plan liczy 
 });
 
 
-test('ADR 0034: nowe wybory setupu, alfabetyczne tematy i zgodność odczytu', () => {
-  assert.deepEqual(Object.keys(WIEK_SETUP), ['7', '12', 'dorosli']);
+test('ADR 0034 + ADR 0055: nowe wybory setupu, alfabetyczne tematy i zgodność odczytu', () => {
+  // ADR 0055: globalnych „kategorii wieku setupu” nie ma — kanon trudności to POZIOMY.
+  assert.deepEqual(Object.keys(POZIOMY), ['dzieci', 'dorosli']);
   assert.deepEqual(Object.keys(TEMATY_SETUP), ['architektura', 'ciekawostki', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda', 'wlasny']);
   assert.ok(WIEK['10'] && WIEK['15'] && TEMATY.sport && TEMATY.jedzenie);
   const stara = { ...domyslnaKonfiguracja(), wiek: '10', tematy: ['sport', 'historia'] };
   const nowa = konfiguracjaNowegoSetupu(stara);
-  assert.equal(nowa.wiek, '12');
+  assert.equal(nowa.wiek, undefined, 'ADR 0055: globalny wiek nie przechodzi do nowego setupu');
   assert.deepEqual(nowa.tematy, ['historia']);
   assert.equal(stara.wiek, '10', 'nie mutuje zapisanej gry');
-  assert.equal(konfiguracjaNowegoSetupu({ ...stara, wiek: '15' }).wiek, 'dorosli');
+  assert.equal(konfiguracjaNowegoSetupu({ ...stara, wiek: '15' }).wiek, undefined, 'stary wiek i tak wypada');
+  assert.deepEqual(nowa.gracze, stara.gracze, 'gracze (z poziomami) przechodzą bez zmian');
   // ADR 0034 „usunięte tematy nie przechodzą do nowego setupu" — także wtedy,
   // gdy po filtrze NIE zostaje żaden temat: fallback (DOMYSLNE.tematy) musi
   // być nowym kanonem setupu, nie starym z `sport`/`jedzenie` (przypadek

@@ -1101,7 +1101,7 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   assert.ok(!APP.includes("'okolica:profil'"), 'stary klucz jednego profilu nie wraca');
   // PIN nigdy nie zostaje na telefonie — zapisuje się imię i znacznik potwierdzenia
   const zapis = APP.slice(APP.indexOf('function zapamietajGracza'), APP.indexOf('function przywrocGraczy'));
-  assert.match(zapis, /\{ pseudonim: imie, zweryfikowany \}/, 'zapamietajGracza zapisuje imię i potwierdzenie, nie PIN');
+  assert.match(zapis, /\{ pseudonim: imie, zweryfikowany, poziom: \w+ \}/, 'zapamietajGracza zapisuje imię, potwierdzenie i poziom (ADR 0055) — nie PIN');
   // hot-seat: wynik gry z jednego telefonu jedzie na Drive jednym poleceniem
   assert.ok(APP.includes('graHotseatDoWysylki'), 'app.js buduje polecenie gra-hotseat');
   assert.ok(WIELOOSOBOWA.includes("akcja: 'gra-hotseat'"), 'moduł wieloosobowa buduje tę akcję');
@@ -1127,7 +1127,7 @@ test('kontrakt ADR 0046 + aneks 2026-09-16: promień jest kryterium równości, 
   assert.match(ZESTAWY, /w\.promienM !== promienM/, 'promień paczki jest kryterium RÓWNOŚCI (ADR 0046 pkt 1)');
   assert.equal(/NIE są kryteriami: promień/.test(ZESTAWY), false, 'stara reguła „promień nie jest kryterium” zniknęła z komentarza');
   assert.match(ZESTAWY, /export function sumaPytanWpisu/, 'kryterium jest ŁĄCZNA liczba pytań, nie stacje × pytania');
-  assert.match(ZESTAWY, /środek transportu \(właściciel wycofał/, 'środek transportu jawnie NIE jest kryterium');
+  assert.match(ZESTAWY, /środek transportu nadal NIE są kryteriami/, 'środek transportu jawnie NIE jest kryterium');
   assert.match(ZESTAWY, /za mało pytań: paczka ma/, 'powody podają liczby: ile ma paczka, ile chce setup');
   // karta paczek: jedna linijka bez cytowania powodów (teren 2026-09-16)
   assert.match(APP, /żadna z nich nie pasuje/, 'komunikat mówi jedną linijkę, że paczki nie pasują');
@@ -1145,6 +1145,8 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
     // segmenty na setupie: rodzaj gry, ścieżka multi, tryb + trasa-sekret
     'lista-rodzajow', 'rodzaj-opis', 'multi-sciezka', 'multi-sciezka-opis',
     'pole-multi-tryb', 'multi-tryby', 'multi-tryb-opis', 'pole-trasa-sekret', 'multi-trasa-sekret', 'multi-punktacja',
+    // ADR 0055 (właściciel, 2026-09-17): wspólny poziom pytań gry multi (wybór hosta)
+    'pole-multi-poziom', 'multi-poziom',
   ]) {
     assert.ok(INDEX.includes(`id="${id}"`), `index.html ma element #${id}`);
   }
@@ -1238,7 +1240,7 @@ test('kontrakt M11+m12-74: UI gry wieloosobowej — segmenty na setupie, bez kod
   assert.ok(!APP.includes('otworzListeGier'), 'dawny flow „lista gier na ekranie multi” usunięty');
   // przy „Dołączam” chowane są pola parametrów gry, a „Poprzednie gry” nie pokazują się w multi
   assert.match(APP, /renderujPolaTozsamosci/, 'widoczność pól tożsamości sterowana funkcją (multi = sama karta gracza)');
-  for (const id of ['pole-tryb', 'pole-czas', 'pole-parametry', 'pole-wiek', 'pole-tematy', 'pole-tozsamosc-siatka']) {
+  for (const id of ['pole-tryb', 'pole-czas', 'pole-parametry', 'pole-tematy', 'pole-tozsamosc-siatka']) {
     assert.ok(INDEX.includes(`id="${id}"`), `#${id} ma id do chowania przy „Dołączam”`);
   }
   // „Ty w tej grze” w multi: dokładnie jedna osoba na telefon, pola znikają

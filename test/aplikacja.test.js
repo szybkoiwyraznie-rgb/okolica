@@ -1368,7 +1368,7 @@ test('ADR 0032: zła odpowiedź przy paczce ze źródłami — status mówi o ź
 test('ADR 0032: propozycje paczek pokazują „Fact-checked" tylko dla zweryfikowanych', async () => {
   const { zbierzMetaZestawu } = await import('../app/zestawy.js');
   const { geohash } = await import('../app/geo.js');
-  const baza = { lat: 52.2297, lon: 21.0122, promienM: 1000, tematy: ['historia'], wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1, miejsce: 'Śródmieście' };
+  const baza = { lat: 52.2297, lon: 21.0122, promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 3, pytaniaNaStacje: 1, miejsce: 'Śródmieście' };
   const metaFc = zbierzMetaZestawu({ ...baza, data: '2026-09-09 10:00' });
   const metaBez = zbierzMetaZestawu({ ...baza, data: '2026-09-09 11:00', factcheck: false });
   assert.equal(metaFc.geohash5, geohash(52.2297, 21.0122, 5), 'sanity: wpis w komórce pozycji testowej');
@@ -1663,7 +1663,7 @@ test('M6: poprawna odpowiedź — ocena, punkty, wyjaśnienie i źródła z link
   dom.kliknij('przycisk-nastepna-stacja');
   kliknijOdpowiedz(dom, indeksPoprawnej(paczka.pytania.filter((q) => q.stacja === 1)[1]));
   assert.equal(dom.pobierz('przycisk-nastepna-stacja').hidden, false);
-  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Gracz 2, stacja 2 — idę →/, 'jeden przycisk niesie i gracza, i cel — bez drugiego klika (zgłoszenie 2026-09-09)');
+  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Gracz 1, stacja 2 — idę →/, 'jeden przycisk niesie i gracza, i cel — bez drugiego klika (zgłoszenie 2026-09-09); uwaga C: stację 2 też zaczyna pierwszy gracz');
   // panele TRZYMAJĄ wyjaśnienie: model jest już w fazie przygotowanie, ale C widoczny
   assert.equal(dom.pobierz('gra-panel-pytanie').hidden, false, 'wyjaśnienie nie znika zanim gracz kliknie dalej');
   assert.match(dom.pobierz('gra-postep').textContent, /stacja 2 z 3/, 'badge postępu już po zamknięciu stacji');
@@ -1729,8 +1729,8 @@ test('M6: przy 2 pytaniach na stację gracze odpowiadają NA ZMIANĘ, nie w kó�
   // Gracz 2 odpowiada — dopiero teraz stacja się zamyka i gra idzie dalej.
   const przyciski2 = dom.pobierz('gra-odpowiedzi').children;
   for (const fn of przyciski2[0].zdarzenia.click ?? []) fn({ type: 'click', target: przyciski2[0], currentTarget: przyciski2[0] });
-  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Gracz 2, stacja 2 — idę →/,
-    'po dwóch pytaniach stacja zamknięta, trasa idzie dalej');
+  assert.match(dom.pobierz('przycisk-nastepna-stacja').textContent, /Gracz 1, stacja 2 — idę →/,
+    'po dwóch pytaniach stacja zamknięta, trasa idzie dalej (uwaga C: stację 2 zaczyna pierwszy gracz)');
   dom.kliknij('przycisk-nastepna-stacja');
   assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'kolejny odcinek wystartował');
 });
@@ -1758,8 +1758,9 @@ test('M6: jeden przycisk po odpowiedzi — rotacja gracza I START odcinka (hot-s
   assert.equal(dom.pobierz('gra-panel-oczekuje').hidden, true, 'panel A pominięty — start poszedł tym samym klikiem');
   assert.equal(dom.pobierz('gra-panel-odcinek').hidden, false, 'gracz jest już w drodze');
   assert.match(dom.pobierz('status').textContent, /Odcinek rozpoczęty/, 'odcinek wystartował bez drugiego klika');
-  // rotacja kolejki (2 graczy z domyślnej konfiguracji) widoczna w badge'u kolejki
-  assert.match(dom.pobierz('gra-kolejka').textContent, /Gracz 2/, 'kolej przeszła na drugiego gracza');
+  // uwaga C (2026-09-17d): kolejka jest STAŁA — badge pokazuje pierwszego
+  // gracza listy (rotacji startera między stacjami nie ma)
+  assert.match(dom.pobierz('gra-kolejka').textContent, /Gracz 1/, 'kolejka stała: na czele pierwszy gracz listy');
 });
 
 test('M6: zejście w tło w trakcie wyjaśnienia — ocena ZOSTAJE, „Następna stacja" prowadzi (właściciel 2026-09-11, preview; bez pauzy od 2026-09-13)', async () => {

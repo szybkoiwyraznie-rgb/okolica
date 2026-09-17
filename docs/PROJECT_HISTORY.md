@@ -7061,5 +7061,57 @@ ręcznie ikony inline-SVG odrzucone, a do gałęzi sesji wgrane prawdziwe logo
 bez zmian** (przyciski 44 px, ikona 22 px; znaczek 20 px, ikona 13 px).
 Piny przepisane pod nową formę (L55), aneks ADR 0053, wersja `m12-159`.
 Brama **852/852 EXIT 0**, budżet **99 594 / 100 000** (rezerwa 406).
+## 2026-09-17e — uwagi terenowe B i C z iPhone'a: poziomy pytań i stała kolejność — PR #42
 
+Właściciel wrócił z testu terenowego (`m12-159`) z dwiema uwagami; uwaga A
+(GPS) rozliczona w trakcie sesji (commit `e6ee2f8`, ADR 0054: świeży watcher
+BEZWZGLĘDNY przy starcie gry/odcinka/dołączeniu + obowiązkowe budzenie GPS
+przy powrocie na kartę; przerwa bezczynności 15 min zostaje jedynym
+przerwaniem).
 
+**Uwaga B (poziomy pytań):** dokładnie dwa poziomy — **dziecko** (8–10 lat;
+łatwe, BEZ dat, cyfr, liczb, nazwisk i trudnych faktów) i **dorośli** (mogą
+być trudne: logika, fakty, daty, nazwiska). Wiek liczbowy (7/10/12/15) i
+globalne „kategoria wiekowa" usunięte; klucze liczbowe zostają tylko do
+odczytu starych paczek.
+
+- Poziom to własność **gracza** (hot-seat): wybór przy imieniu
+  (`konfig.gracze[].poziom`, domyślnie `dorosli`), zapamiętany w profilu
+  (lokalny + Drive przez `profil-ustaw`), auto-wybór przy znanym graczu.
+- Paczka: globalne `wiek` znika; każde pytanie niesie `poziom` (aliasy
+  normowane); meta niesie `poziomyPytan` (zestawienie przy KAŻDEJ stacji).
+  Protokół **PYT/1.2** (`PYT/1.2.1` / `PYT/1.2-nofc.1`), nowe kody `E21`/`E22`
+  (tylko gdy setup niesie `poziomyPytan`).
+- Prompt: sekcja `GRACZE — POZIOMY PYTAŃ` z ZASADĄ TWARDĄ (powtórzoną —
+  modele zapominają): DOKŁADNIE to zestawienie przy KAŻDEJ stacji + lista
+  graczy z poziomami + wymagania poziomów. Pytania do właściwych graczy BEZ
+  MIESZANIA: k-TE pytanie poziomu X → k-ty gracz poziomu X.
+- Dopasowanie paczek: `poziomyPytan` DOKŁADNIE + liczba stacji + promień +
+  suma pytań (≥) + tematy (⊆); slug na Drive `poziomy-dzieci{N}-dorosli{N}`;
+  stare paczki z `wiek` nie pasują do nowych setupów i odwrotnie; paczki bez
+  `poziomu` dalej grywalne (pierwsze pytanie stacji). Bez migratora.
+- **Rewizja multi (właściciel, wprost):** „w multiplayer trasa i wyścig w
+  ogóle bym nie różnicował wieku pytań — jest jeden zestaw pytań wynikający z
+  wyboru hosta i wszyscy je mają takie same." Host wybiera JEDEN poziom w
+  karcie multi (`STAN.multiPoziom`, `okolica:multi:poziom`; gość dziedziczy),
+  paczka multi niesie **jedno wspólne pytanie na stację**
+  (`pytaniaNaStacje = 1`), wszyscy odpowiadają na te same pytania; most nie
+  niesie `poziomu` u graczy multi. Usterka zbudowana wcześniej (paczka multi z
+  OBU poziomami) wycofana wraz z decyzją.
+
+**Uwaga C (stała kolejność):** hot-seat odpowiada ZAWSZE pierwszy → ostatni z
+listy. Gracz odcinka to zawsze pierwszy gracz listy (zastępuje rotację
+`stacja mod N` z ADR 0009 pkt 2); k-TE pytanie → k-ty gracz (per poziom);
+„bieżące pytanie" = pierwsze W KOLEJNOŚCI GRACZY.
+
+**Bugi usunięte w trakcie:** `stacje.map((s) =>` bez indeksu `i` w
+`app/rozgrywka.js` i `TypeError` w `konfiguracjaOk` (`app/wieloosobowa.js`) —
+`trudnoscOk` liczone przed strażnikiem `if (!k)`.
+
+**Dokumentacja:** ADR 0055 + ADR 0056 + rejestr; PROTOKOL §7 (PYT/1.2) i
+aneks M11/M12; most `docs/setup/apps-script-repo-paczek.gs` (`poziomyPytan`,
+`poziom` w profilu, slug) — wymaga wdrożenia właściciela. Bump `m12-159` →
+`m12-160`.
+
+**Brama:** `npm test` **855 / 855** EXIT 0 (dwa razy); `node --check` OK.
+**Otwarte:** wdrożenie mostu + test terenowy A/B/C na `m12-160`.

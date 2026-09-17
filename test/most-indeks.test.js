@@ -119,7 +119,7 @@ const wpis = (nad) => ({
   geohash5: geohash(START.lat, START.lon, 5),
   promienM: 1000,
   tematy: ['historia'],
-  wiek: 'dorosli',
+  poziomyPytan: { dzieci: 0, dorosli: 1 },
   liczbaStacji: 5,
   pytaniaNaStacje: 1,
   licencja: 'CC BY 4.0',
@@ -131,7 +131,7 @@ const kryteria = (punkt) => ({
   geohash5: geohash(punkt.lat, punkt.lon, 5),
   lat: punkt.lat,
   lon: punkt.lon,
-  promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], wiek: 'dorosli',
+  promienM: 1000, liczbaStacji: 5, pytaniaNaStacje: 1, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 },
 });
 
 test('B19: stara paczka z kotwicą szacowaną dalej pasuje do tego samego startu', () => {
@@ -230,7 +230,7 @@ test('klient: stara paczka pasuje do setupu po FAKTYCZNYCH tematach — zgłosze
   // gracz w komorce kotwicy paczki (punkt wewnątrz komórki u3qb8g)
   const kryteria = {
     geohash5: 'u3qb8', lat: 52.140, lon: 20.780, promienM: 1000,
-    liczbaStacji: 3, pytaniaNaStacje: 1, wiek: 'dorosli',
+    liczbaStacji: 3, pytaniaNaStacje: 1, poziomyPytan: { dzieci: 0, dorosli: 1 },
   };
   assert.equal(
     dopasujMetaIndeksu(indeks, { ...kryteria, tematy: ['historia'] }).length,
@@ -260,7 +260,7 @@ test('most: plik paczki nazywa się po faktach z meta, nie po geohashu (ADR 0048
   const { most: m, pliki } = uruchomMost();
   const wynik = m.przyjmijKandydata(nazwaZestawu());
   assert.equal(wynik.ok, true, wynik.blad ?? '');
-  assert.equal(wynik.nazwa, 'Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_3pyt_wiek-dorosli_1000m_Q.zestaw.json');
+  assert.equal(wynik.nazwa, 'Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_3pyt_poziomy-dzieci0-dorosli1_1000m_Q.zestaw.json');
   assert.ok(idPoNazwie(pliki, wynik.nazwa), 'plik leży na Drive dokładnie pod tą nazwą');
 });
 
@@ -279,7 +279,7 @@ test('most: powtórka tej samej paczki nie mnoży plików, a inna w tej samej mi
   inna.paczka.pytania[0].tresc = 'Inne pytanie?';
   const druga = m.przyjmijKandydata(inna);
   assert.equal(druga.ok, true, 'nowa paczka NIE może przepaść dlatego, że nazwa już pada');
-  assert.equal(druga.nazwa, 'Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_3pyt_wiek-dorosli_1000m_Q-2.zestaw.json');
+  assert.equal(druga.nazwa, 'Podkowa-Leśna_ul-Bukowa_2026-09-15_0941_3pyt_poziomy-dzieci0-dorosli1_1000m_Q-2.zestaw.json');
   assert.ok(druga.id !== pierwsza.id);
 });
 
@@ -298,7 +298,7 @@ test('most: odrzucona paczka zatrzymuje nazwę; nowe pola opcjonalne dla starych
   stara.meta.data = '2026-09-01';
   const wynik = m.przyjmijKandydata(stara);
   assert.equal(wynik.ok, true, wynik.blad ?? '');
-  assert.equal(wynik.nazwa, 'Podkowa-Leśna_2026-09-01_3pyt_wiek-dorosli_1000m_Q.zestaw.json');
+  assert.equal(wynik.nazwa, 'Podkowa-Leśna_2026-09-01_3pyt_poziomy-dzieci0-dorosli1_1000m_Q.zestaw.json');
 });
 
 test('most: nazwa nie rodzi znaków zakazanych w Drive ani ogonów (ADR 0048)', () => {
@@ -308,6 +308,8 @@ test('most: nazwa nie rodzi znaków zakazanych w Drive ani ogonów (ADR 0048)', 
     ulica: 'ul. Zakładowa / Boczna: etap II',
     data: '2026-13-45 99:99', // i tak ma zostać czytelną datą, nie wyjątkiem
   });
+  // test starej nazwy: meta BEZ poziomyPytan (paczka sprzed ADR 0055)
+  delete brud.meta.poziomyPytan;
   brud.meta.wiek = '10+';
   const wynik = m.przyjmijKandydata(brud);
   assert.equal(wynik.ok, true, wynik.blad ?? '');

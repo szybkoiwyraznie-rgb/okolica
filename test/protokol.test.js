@@ -34,7 +34,7 @@ function oczekiwane(nadpisanie = {}) {
   return {
     liczbaStacji: 3,
     liczbaPytan: 3,
-    wiek: 'dorosli',
+    poziomyPytan: { dzieci: 0, dorosli: 1 },
     tematy: ['historia', 'architektura'],
     promienM: 1000,
     lat: SRODEK.lat,
@@ -82,7 +82,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'Cała odpowiedź to jeden blok kodu json',
     'OKOLICA GRY:',
     'STACJE (kolejność = kolejność w grze',
-    'GRACZE I TRUDNOŚĆ:',
+    'GRACZE — POZIOMY PYTAŃ (ZASADA TWARDA):',
     'SCHEMAT ODPOWIEDZI — dokładnie te pola',
     'WYMAGANIA DODATKOWE:',
     '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
@@ -90,7 +90,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
   // wszystkie placeholdery z protokołu §2.1 muszą być w szablonie
-  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{LICZBA_GRACZY}', '{WIEK}', '{OPIS_TRUDNOSCI}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
+  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{GRACZE_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
     assert.ok(SZABLON_PROMPTU.includes(token), `brak placeholdera ${token}`);
   }
   assert.ok(!SZABLON_PROMPTU.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
@@ -125,8 +125,9 @@ test('zbudujPrompt: podstawia wszystkie placeholdery i nie zostawia dziur', () =
   assert.ok(prompt.includes('Bez ograniczeń długości i słownictwa'), 'opis trudności dla dorosłych');
   assert.ok(prompt.includes('historia (dzieje miejsca'), 'temat z opisem z kanonu');
   assert.ok(prompt.includes('"historia", "architektura"'), 'lista tematów w schemacie JSON');
-  assert.ok(prompt.includes('liczba pytań łącznie: 3'));
+  assert.ok(prompt.includes('liczba pytań łącznie: 6'), '3 stacje × 2 graczy = 6 (po jednym pytaniu na gracza)');
   assert.ok(prompt.includes('liczba graczy: 2'));
+  assert.ok(prompt.includes('DOKŁADNIE 2× POZIOM DOROŚLI'), 'ZASADA TWARDA: zestawienie poziomów per stację');
   assert.ok(prompt.includes('2026-09-05 23:59') && prompt.includes('"2026-09-05"'));
 });
 
@@ -293,7 +294,7 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('indeks'), 'szablon §2.2 nie wspomina indeksu');
   assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('- "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").'),
     'szablon §2.2 mówi wprost: numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza na liście)');
-  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{LICZBA_GRACZY}', '{WIEK}', '{OPIS_TRUDNOSCI}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
+  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{GRACZE_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(token), `brak placeholdera ${token} w §2.2`);
   }
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
@@ -355,7 +356,10 @@ test('walidujPaczke: E04/E05 — stacja poza zakresem i stacja bez pytania', () 
  * różny o więcej niż jedno" była lustrem zdania z promptu, którego już nie ma,
  * więc pilnowała przypadku, który nie występuje — gałąź usunięta.
  */
-test('walidujPaczke: nierówny rozkład bez pustej stacji przechodzi (E05 bez tolerancji ±1)', () => {
+test('walidujPaczke: nierówny rozkład poziomów pada z E22 (ADR 0055 — per-stacyjnie)', () => {
+  // ADR 0055: per-stacyjne zestawienie jest DOKŁADNE — „suma się zgadza”
+  // już nie wystarcza: stacja 1 z trzema pytaniami dorosłych przy liście
+  // graczy {dzieci: 0, dorosli: 1} zostaje odrzucona.
   const nierowna = klonyPaczki((p) => {
     const wzor = p.pytania[0];
     for (const [id, tresc] of [
@@ -366,10 +370,10 @@ test('walidujPaczke: nierówny rozkład bez pustej stacji przechodzi (E05 bez to
     }
   });
   assert.deepEqual(nierowna.pytania.map((q) => q.stacja), [1, 2, 3, 1, 1],
-    'stacja 1 ma trzy pytania, stacje 2 i 3 po jednym — suma zgodna z setupem');
+    'stacja 1 ma trzy pytania, stacje 2 i 3 po jednym');
   const u = walidujPaczke(nierowna, oczekiwane({ liczbaPytan: 5 }));
-  assert.deepEqual(u.map((x) => x.kod), [],
-    `nierówny rozkład bez pustej stacji jest przyjęty: ${JSON.stringify(u)}`);
+  assert.ok(u.some((x) => x.kod === 'E22'), `stacja 1 z trzema pytaniami poziomu ≠ lista graczy: ${JSON.stringify(u)}`);
+  assert.ok(!u.some((x) => x.kod === 'E05'), 'brak pustej stacji = bez E05');
 });
 
 test('walidujPaczke: E06/E07/E08 — odpowiedzi', () => {
@@ -424,10 +428,27 @@ test('walidujPaczke: stare klucze tematów (sprzed 2026-09-07) są aliasami, nie
 test('walidujPaczke: E16/E17 — spójność z konfiguracją gry i zakres współrzędnych', () => {
   assert.ok(kody(klonyPaczki((p) => { p.okolica.promienM = 5000; })).includes('E16'));
   assert.ok(kody(klonyPaczki((p) => { p.okolica.lat = 51.0; })).includes('E16'));
-  assert.ok(kody(klonyPaczki((p) => { p.wiek = '12'; })).includes('E16'));
+  assert.equal(kody(klonyPaczki((p) => { p.wiek = '12'; })).length, 0, 'stare globalne `wiek` paczki jest ignorowane (ADR 0055)');
   assert.ok(kody(klonyPaczki((p) => { p.jezyk = 'angielski'; })).includes('E16'));
   assert.ok(kody(klonyPaczki((p) => { p.tematy = ['historia']; })).includes('E16'));
   assert.ok(kody(klonyPaczki((p) => { p.okolica.lat = 999; })).includes('E17'));
+});
+
+test('walidujPaczke: E21/E22 — poziomy pytań per stację (ADR 0055)', () => {
+  // E21: pytanie musi nieść `poziom` z kanonu
+  const bezPoziomow = klonyPaczki((p) => { for (const q of p.pytania) delete q.poziom; });
+  const kodyBez = kody(bezPoziomow);
+  assert.equal(kodyBez.filter((k) => k === 'E21').length, 3, 'każde pytanie bez poziomu = E21');
+  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].poziom = 'seniorzy'; })).includes('E21'),
+    'poziom spoza kanonu = E21');
+  assert.deepEqual(kody(klonyPaczki(() => {})), [], 'fixture (3× dorosli) przy oczekiwanych {dzieci:0, dorosli:1} przechodzi');
+  // E22: per-stacyjne zestawienie musi się zgadzać z listą graczy
+  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].poziom = 'dzieci'; })).includes('E22'),
+    'stacja z poziomem innym niż lista graczy = E22');
+  // bez oczekiwanych poziomów (stare ścieżki walidacji) E21/E22 są wyłączone
+  const stare = walidujPaczke(klonyPaczki((p) => { for (const q of p.pytania) delete q.poziom; }),
+    oczekiwane({ poziomyPytan: undefined })).map((u) => u.kod);
+  assert.ok(!stare.includes('E21') && !stare.includes('E22'), 'brak oczekiwanych poziomów = paczka sprzed PYT/1.2 przechodzi');
 });
 
 test('walidujPaczke: E19/E20 — identyfikatory i wyjaśnienia (E18 wycofany w rev2)', () => {
@@ -536,8 +557,8 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
   assert.deepEqual(podsumowaniePaczki(null), { liczbaPytan: 0, stacje: [], tematy: [], liczbaZrodel: 0, punktyRazem: 0, uwagi: '' });
 });
 
-test('stałe protokołu: wersja PYT/1.1', () => {
-  assert.equal(WERSJA_PROTOKOLU, 'PYT/1.1', 'wersja po zmianie numeracji na 1..4 (ADR 0050)');
+test('stałe protokołu: wersja PYT/1.2', () => {
+  assert.equal(WERSJA_PROTOKOLU, 'PYT/1.2', 'ADR 0055: poziomy pytań per gracz + E21/E22');
 });
 
 /* --------- ADR 0050: jedna postać paczki, numer odpowiedzi 1..4, bez ukrywania --------- */

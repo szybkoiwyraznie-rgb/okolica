@@ -17,7 +17,7 @@
  * ADR 0014 wycofany). Znaczniki czasu w dzienniku służą tylko kolejności zdarzeń.
  */
 
-import { odlegloscM } from './geo.js?v=m12-159';
+import { odlegloscM } from './geo.js?v=m12-160';
 
 /** Schemat stanu — podstawa migracji i jawnej odmowy przy obcej wersji (ADR 0010 pkt 6). */
 export const SCHEMAT_ROZGRYWKI = 'rozgrywka/1';
@@ -90,16 +90,20 @@ export function dystansOdcinkaM(stan, stacjaId) {
 }
 
 /**
- * Nowa rozgrywka. Kolejka graczy jest cykliczna: `gracz = stacja mod N`
- * (ADR 0009 pkt 2) — dzięki temu przy 3 graczach i 5 stacjach każdy idzie
- * co najmniej raz, a różnica liczby odcinków wynosi najwyżej 1.
+ * Nowa rozgrywka. ADR 0056 (uwaga C, właściciel 2026-09-17d): kolejność
+ * odpowiadania jest STALE STAŁA — przy każdej stacji gracze odpowiadają w
+ * kolejności listy (pierwszy → ostatni), bez rotacji startera. Rotacja
+ * `gracz = stacja mod N` (ADR 0009 pkt 2) i „pytanie k należy do gracza z
+ * kolejki + k" (ADR 0022) są zastąpione: `odcinki[i].gracz` to zawsze
+ * PIERWSZY gracz listy, a autora pytania wyznacza `graczPytania` (poziom
+ * gracza → pozycja w liście, ADR 0055).
  *
  * @param {object} args
  * @param {object} args.konfig   konfiguracja gry (po `walidujSetup`)
  * @param {Array}  args.stacje   stacje z `app/stacje.js` (id, lat, lon)
- * @param {object} args.paczka   paczka PYT — brane są TYLKO `pytania[].stacja` i `pytania[].id`
+ * @param {object} args.paczka   paczka PYT — brane są TYLKO `pytania[].stacja`, `pytania[].id` i `pytania[].poziom`
  * @param {object} args.srodek   punkt startu gry `{lat, lon}`
- * @param {Array}  [args.gracze] `[{id, imie}]`; domyślnie z `konfig.imiona`
+ * @param {Array}  [args.gracze] `[{id, imie, poziom}]`; domyślnie z `konfig.gracze`
  * @param {number} [args.czasMs] znacznik startu z wstrzykniętego zegara
  * @param {string} [args.ziarno] ziarno rozgrywki (odtwarzalność, ADR 0005 pkt 6)
  */
@@ -115,11 +119,26 @@ export function nowaRozgrywka({ konfig, stacje, paczka, srodek, gracze = null, c
   wymaganie(dystanseOdcinkowM === null || (Array.isArray(dystanseOdcinkowM) && dystanseOdcinkowM.length === stacje.length),
     'dystanseOdcinkowM muszą być tablicą długości równej liczbie stacji albo null');
 
-  const listaGraczy = (gracze ?? (konfig.imiona ?? []).map((imie, i) => ({ id: i + 1, imie })))
-    .map((g, i) => ({ id: g?.id ?? i + 1, imie: String(g?.imie ?? `Gracz ${i + 1}`) }));
+  // ADR 0055: gracze z `konfig.gracze` (obiekt {imie, poziom}); stary schemat
+  // `konfig.imiona` (string[]) jest migrowany, a brak poziomu czyta się jako
+  // domyślny `dorosli` — stany i paczki sprzed ADR 0055 grają się dalej.
+  const czyPoziomStanu = (poziom) => poziom === 'dzieci' || poziom === 'dorosli';
+  const zKonfigu = Array.isArray(konfig.gracze) && konfig.gracze.length
+    ? konfig.gracze.map((g, i) => ({ id: g?.id ?? i + 1, imie: String(g?.imie ?? `Gracz ${i + 1}`), poziom: czyPoziomStanu(g?.poziom) ? g.poziom : 'dorosli' }))
+    : (konfig.imiona ?? []).map((imie, i) => ({ id: i + 1, imie: String(imie ?? `Gracz ${i + 1}`), poziom: 'dorosli' }));
+  const listaGraczy = (gracze ?? zKonfigu)
+    .map((g, i) => ({ id: g?.id ?? i + 1, imie: String(g?.imie ?? `Gracz ${i + 1}`), poziom: czyPoziomStanu(g?.poziom) ? g.poziom : 'dorosli' }));
   wymaganie(listaGraczy.length > 0, 'rozgrywka wymaga co najmniej jednego gracza');
 
-  const pytania = paczka.pytania.map((p) => ({ stacja: p.stacja, pytanieId: p.id }));
+  // Treści pytań nie wchodzą do stanu (ADR 0007 pkt 6) — ale `poziom` to
+  // metadane PRZYPISANIA (ADR 0055): które pytanie idzie do gracza którego
+  // poziomu. Paczka sprzed ADR 0055 nie niesie `poziomu` — `graczPytania`
+  // ma dla tego ścieżkę zasilania (stała kolejność, bez poziomów).
+  const pytania = paczka.pytania.map((p) => ({
+    stacja: p.stacja,
+    pytanieId: p.id,
+    ...(czyPoziomStanu(p?.poziom) ? { poziom: p.poziom } : {}),
+  }));
 
   const stan = {
     schemat: SCHEMAT_ROZGRYWKI,
@@ -133,7 +152,10 @@ export function nowaRozgrywka({ konfig, stacje, paczka, srodek, gracze = null, c
     pytania,
     odcinki: stacje.map((s, i) => ({
       stacja: s.id,
-      gracz: listaGraczy[i % listaGraczy.length].id,
+      // ADR 0056 (uwaga C): gracz odcinka to ZAWSZE pierwszy gracz listy —
+      // kolejność odpowiadania jest stała (1. → ostatni), nie rotuje się
+      // startera między stacjami (zastępuje ADR 0009 pkt 2).
+      gracz: listaGraczy[0].id,
       stan: STANY_ODCINKA.oczekuje,
       startMs: null,
       koniecMs: null,
@@ -178,45 +200,57 @@ function znajdzGracza(stan, graczId) {
   return stan.gracze.find((g) => g.id === graczId) ?? null;
 }
 
-/** Gracz z kolejki na daną stację (ADR 0009 pkt 2). */
+/** Gracz odcinka (ADR 0056: zawsze pierwszy gracz listy — „czyja kolej”
+ * wyznaczają pytania, nie odcinek; por. `graczPytania`). */
 export function graczNaStacji(stan, stacjaId = stan.biezacaStacja) {
   const odcinek = znajdzOdcinek(stan, stacjaId);
   return odcinek ? odcinek.gracz : null;
 }
 
 /**
- * Autor pytania na stacji — rotacja pytań (zgłoszenie właściciela 2026-09-12:
- * „zawsze pytania powinny być zadawane po jednym dla kolejnych graczy”).
+ * Autor pytania na stacji (ADR 0055 + ADR 0056, uwagi B i C właściciela
+ * 2026-09-17d). Dwa mechanizmy, jedno miejsce:
  *
- * Pierwsze pytanie stacji należy do gracza z kolejki (ADR 0022 bez zmian),
- * drugie — do NASTĘPNEGO gracza w liście, trzecie do kolejnego itd., cyklicznie.
- * Wcześniej wszystkie pytania stacji szły do jednej osoby: przy „2 pytania na
- * stację” gracz z kolejki odpowiadał dwa razy, a drugi gracz nie odpowiadał
- * wcale na tej stacji.
+ * - paczka z POZIOMAMI (PYT/1.2): pytanie o danym poziomie idzie do gracza
+ *   tego samego poziomu — k-TE pytanie poziomu X należy do k-TEGO gracza
+ *   poziomu X w liście (zawijanie, gdy pytań poziomu jest więcej niż graczy).
+ *   Pytanie DZIECKA nigdy nie idzie do dorosłego i odwrotnie — bez mieszania.
+ * - paczka BEZ poziomów (starsza): stała kolejność (ADR 0056) — k-TE pytanie
+ *   stacji należy do k-TEGO gracza listy (zawijanie mod N), bez rotacji
+ *   startera (zastępuje ADR 0022).
  *
- * Kolejność autorów bierzemy z listy graczy rozgrywki (nie alfabetycznie i nie
- * z identyfikatorów): to ta sama lista, którą widzi gracz w tabeli, więc „kolejny
- * gracz” znaczy dokładnie to, co widać.
+ * Kolejność zawsze bierzemy z listy graczy rozgrywki (nie alfabetycznie i nie
+ * z identyfikatorów): to ta sama lista, którą widzi gracz w tabeli.
  */
 export function graczPytania(stan, stacjaId = stan.biezacaStacja, pytanieId = null) {
-  const zKolejki = graczNaStacji(stan, stacjaId);
-  if (zKolejki == null || pytanieId == null) return null;
+  if (pytanieId == null) return null;
   const indeksPytania = pytaniaStacji(stan, stacjaId).indexOf(pytanieId);
   if (indeksPytania < 0) return null;
-  const gracze = stan.gracze.map((g) => g.id);
-  if (gracze.length === 0) return null;
-  const start = gracze.indexOf(zKolejki);
-  return gracze[(start + indeksPytania) % gracze.length] ?? null;
+  const gracze = stan.gracze;
+  if (!gracze.length) return null;
+  const pytanie = stan.pytania.find((p) => p.pytanieId === pytanieId);
+  if (pytanie && (pytanie.poziom === 'dzieci' || pytanie.poziom === 'dorosli')) {
+    // Ścieżka poziomów: wśród pytań TEGO STANU i TEGO poziomu liczymy pozycję.
+    const naStacji = stan.pytania.filter((p) => p.stacja === stacjaId);
+    const tegoPoziomu = naStacji.filter((p) => (p.poziom === 'dzieci' || p.poziom === 'dorosli') && p.poziom === pytanie.poziom);
+    const rank = tegoPoziomu.findIndex((p) => p.pytanieId === pytanieId);
+    const graczePoziomu = gracze.filter((g) => (g.poziom === 'dzieci' || g.poziom === 'dorosli') && g.poziom === pytanie.poziom).map((g) => g.id);
+    if (rank >= 0 && graczePoziomu.length) return graczePoziomu[rank % graczePoziomu.length];
+    // Pytań danego poziomu więcej niż graczy tego poziomu albo paczka
+    // rozjechana z poziomami graczy — pytaniu zostaje NASTĘPNY gracz tej samej
+    // listy, żeby nikt nie został bez pytania (jak paczka uboższa w multi).
+    return gracze[indeksPytania % gracze.length].id;
+  }
+  // Ścieżka starsza (bez poziomów): k-te pytanie → k-ty gracz, stała kolejność.
+  return gracze[indeksPytania % gracze.length].id;
 }
 
 /**
- * Kto odpowiada na pytania tej stacji: autorzy kolejnych pytań w kolejności
- * zadawania (ADR 0022 — wybór trybu odpowiadania usunięty z setupu). Bez
- * duplikatów: przy 3 pytaniach i 2 graczach trzeci pytanie dzieli autora
- * z pierwszym — tak samo jak paczka uboższa niż liczba graczy w multi.
+ * Kto odpowiada na pytania tej stacji: autorzy pytań w stałej kolejności
+ * (ADR 0056 — wybór trybu odpowiadania usunięty z setupu). Bez duplikatów.
  */
 export function ktoOdpowiada(stan, stacjaId = stan.biezacaStacja) {
-  const pytania = pytaniaStacji(stan, stacjaId);
+  const pytania = kolejnoscPytanStacji(stan, stacjaId);
   const autorzy = pytania.map((pid) => graczPytania(stan, stacjaId, pid)).filter((id) => id != null);
   return [...new Set(autorzy)];
 }
@@ -224,6 +258,25 @@ export function ktoOdpowiada(stan, stacjaId = stan.biezacaStacja) {
 /** Pytania przypisane do stacji (bez treści — ADR 0007 pkt 6). */
 export function pytaniaStacji(stan, stacjaId) {
   return stan.pytania.filter((p) => p.stacja === stacjaId).map((p) => p.pytanieId);
+}
+
+/**
+ * Kolejność PYTANIA stacji w grze (ADR 0056, uwaga C): pytania idą w
+ * kolejności GRACZY, nie w kolejności, w jakiej wypisał je model. Sortujemy
+ * stabilnie po indeksie autora w liście graczy — przy 3 graczach [Ala, Ewa,
+ * Jan] pytanie Jana jest zadawane TRZECIE, nawet gdy w paczce ma id s1p1.
+ * Nowe paczki (pytanie k ↔ gracz k) są w tej kolejności z konstrukcji;
+ * sortowanie ubezpiecza paczki, w których model zmienił kolejność pytań.
+ */
+export function kolejnoscPytanStacji(stan, stacjaId) {
+  const indeksGracza = new Map(stan.gracze.map((g, i) => [g.id, i]));
+  return pytaniaStacji(stan, stacjaId)
+    .map((pid, i) => {
+      const autor = graczPytania(stan, stacjaId, pid);
+      return { pid, i, kolej: autor == null ? Number.MAX_SAFE_INTEGER : (indeksGracza.get(autor) ?? Number.MAX_SAFE_INTEGER) };
+    })
+    .sort((a, b) => a.kolej - b.kolej || a.i - b.i)
+    .map((w) => w.pid);
 }
 
 /** Czy ten gracz odpowiedział już na TO pytanie tej stacji (`pytaniaNaStacje` bywa > 1). */
@@ -499,7 +552,9 @@ export function podglad(stan) {
     zaliczoneStacje: zaliczone,
     pominietaStacje: pominieta,
     pozostaloStacje: stan.stacje.length - zaliczone - pominieta,
-    pytanie: stacja ? pytaniaStacji(stan, stacja.id)[0] ?? null : null,
+    // ADR 0056: „bieżące pytanie” to pierwsze W KOLEJNOŚCI GRACZY, nie w
+    // kolejności paczki — pasek musi zgadzać się z tym, co odsłoni ekran.
+    pytanie: stacja ? kolejnoscPytanStacji(stan, stacja.id)[0] ?? null : null,
     pytan: stacja ? pytaniaStacji(stan, stacja.id).length : 0,
   };
 }

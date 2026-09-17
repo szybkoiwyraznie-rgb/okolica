@@ -17,7 +17,7 @@ const GEOHASH5 = 'u3qb8'; // policzone z geo.js dla (52.12303, 20.74614)
 const paczkaMinimalna = () => ({
   protokol: 'PYT/1.1',
   okolica: { lat: POZYCJA.lat, lon: POZYCJA.lon, promienM: 1000, miejsce: 'Podkowa Leśna' },
-  wiek: 'dorosli',
+  poziomyPytan: { dzieci: 0, dorosli: 1 },
   tematy: ['historia'],
   jezyk: 'polski',
   utworzono: '2026-09-06 10:00',
@@ -36,7 +36,7 @@ const TEMATY_DOMYSLNE = ['historia', 'przyroda', 'architektura'];
 
 const metaWpisu = () => ({
   miejsce: 'Podkowa Leśna', geohash5: GEOHASH5, promienM: 1000,
-  tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', liczbaStacji: 3, pytaniaNaStacje: 1,
+  tematy: TEMATY_DOMYSLNE, poziomyPytan: { dzieci: 0, dorosli: 1 }, liczbaStacji: 3, pytaniaNaStacje: 1,
 });
 
 /** Setup z 2 stacjami i 1 pytaniem — tyle niesie wpis testowy (kryteria właściciela). */
@@ -46,7 +46,7 @@ const KONFIG_TEST = JSON.stringify({
   schemat: 'konfig/1', kanon: '2026-09-10',
   konfig: {
     tryb: 'piesza', liczbaGraczy: 2, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
-    tematy: TEMATY_DOMYSLNE, wiek: 'dorosli', jezyk: 'polski',
+    tematy: TEMATY_DOMYSLNE, poziomyPytan: { dzieci: 0, dorosli: 1 }, jezyk: 'polski',
     karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
   },
 });
@@ -232,7 +232,7 @@ const indeksZPropozycja = () => ({
   schemat: 'TO-indeks/1',
   wpisy: [{
     skrot: 'feedbeef', plik: 'podkowa.zestaw.json', miejsce: 'Podkowa Leśna',
-    geohash5: GEOHASH5, promienM: 1000, tematy: ['historia'], wiek: 'dorosli',
+    geohash5: GEOHASH5, promienM: 1000, tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 },
     liczbaStacji: 3, pytaniaNaStacje: 1,
     licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel', data: '2026-09-06 19:30',
   }],
@@ -241,7 +241,7 @@ const indeksZPropozycja = () => ({
 const plikZRepo = () => {
   const meta = {
     miejsce: 'Podkowa Leśna', geohash5: GEOHASH5, promienM: 1000,
-    tematy: ['historia'], wiek: 'dorosli', jezyk: 'polski', data: '2026-09-06 19:30',
+    tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 }, jezyk: 'polski', data: '2026-09-06 19:30',
     liczbaStacji: 3, pytaniaNaStacje: 1,
     autor: 'kurator', licencja: 'CC BY-SA 4.0', przegladZrodel: '2026-09-06 właściciel',
   };

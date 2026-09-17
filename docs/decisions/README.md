@@ -72,6 +72,8 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0052](0052-wspolny-cache-sieci-na-drive-l2.md) | Wspólny cache sieci drogowej na Drive (L2) | Zaakceptowana |
 | [0053](0053-model-ai-opcjonalnie-w-meta-paczki.md) | Model AI: opcjonalny wybór nad wklejką i pole `model` w `meta` paczki | Zaakceptowana |
 | [0054](0054-gps-nigdy-nie-ustaje-budzenie-przy-powrocie.md) | GPS nie przerywa go nic: świeży watcher przy starcie gry/odcinka i obowiązkowe budzenie przy powrocie na kartę | Zaakceptowana |
+| [0055](0055-poziomy-pytan-dwa-poziomy-wlasnosc-gracza-i-gry.md) | Dwa poziomy pytań (dziecko/dorosły): własność gracza (hot-seat) i gry (multi — jeden poziom hosta, wspólna paczka) | Zaakceptowana |
+| [0056](0056-stala-kolejnosc-odpowiadan-w-hotseat.md) | Hot-seat: stała kolejność odpowiadania (1. → ostatni), bez rotacji startera | Zaakceptowana |
 
 ## Szablon ADR
 

@@ -105,12 +105,45 @@ export const WIEK = {
     opisTrudnosci:
       'Jak dla dorosłych, ale bez żargonu akademickiego i bez pytań wymagających wiedzy specjalistycznej z poziomu studiów.',
   },
+  // ADR 0055 (uwaga B, właściciel 2026-09-17d): DWA poziomy trudności —
+  // dziecko (8–10 lat) i dorosły. Klucze liczbowe (7/10/12/15) zostają tylko
+  // po to, by CZYTAĆ stare paczki i konfiguracje — nowego setupu nie mają.
+  dzieci: {
+    etykieta: 'dziecko (8–10 lat)',
+    opisTrudnosci:
+      'Łatwe pytania na poziomie szkoły podstawowej (8–10 lat). Krótkie zdania, słownictwo codzienne, jedno pytanie = jeden fakt. BEZ pytań o daty, BEZ cyfr i liczb, BEZ nazwisk i trudnych faktów — tylko to, co dziecko może zobaczyć, usłyszeć albo zna z życia i spaceru.',
+  },
   dorosli: {
     etykieta: 'dorośli',
     opisTrudnosci:
-      'Bez ograniczeń długości i słownictwa. Dopuszczalne pytania porównawcze, przyczynowo-skutkowe i o szczegóły (daty dzienne, nazwiska, liczby).',
+      'Bez ograniczeń długości i słownictwa. Pytania mogą być TRUDNE: na logikę, o fakty, daty (także dzienne), nazwiska i liczby. Dopuszczalne pytania porównawcze i przyczynowo-skutkowe.',
   },
 };
+
+/**
+ * ADR 0055 (uwaga B, właściciel 2026-09-17d): jedyne DWA poziomy trudności
+ * nowego setupu — `dzieci` i `dorosli`. Poziom wybiera się per gracz przy
+ * jego imieniu (nie globalnie), a lista poziomów graczy wyznacza, ile pytań
+ * danego poziomu powstaje przy każdej stacji.
+ */
+export const KLUCZE_POZIOMOW = Object.freeze(['dzieci', 'dorosli']);
+export const POZIOMY = Object.freeze(Object.fromEntries(KLUCZE_POZIOMOW.map((k) => [k, WIEK[k]])));
+export const POZIOM_DORMYSLNY = 'dorosli';
+
+/** Liczba pytań danego poziomu przy KAŻDEJ stacji z listy graczy. */
+export function poziomyPytanZGraczy(gracze) {
+  const liczby = Object.fromEntries(KLUCZE_POZIOMOW.map((k) => [k, 0]));
+  for (const g of Array.isArray(gracze) ? gracze : []) {
+    const poziom = g && typeof g.poziom === 'string' && liczby[g.poziom] != null ? g.poziom : POZIOM_DORMYSLNY;
+    liczby[poziom] += 1;
+  }
+  return liczby;
+}
+
+/** Czy `x` jest dopuszczalnym poziomem trudności nowego setupu. */
+export function czyPoziomOk(poziom) {
+  return KLUCZE_POZIOMOW.includes(poziom);
+}
 
 /** Kanon tematów (protokół PYT §5). Klucze: małe litery, myślniki, bez spacji. */
 export const TEMATY = {
@@ -164,8 +197,12 @@ export const TEMATY = {
   },
 };
 
-/** Wybór dla NOWEJ gry; pełne kanony powyżej czytają też stare paczki. */
-export const WIEK_SETUP = Object.fromEntries(['7', '12', 'dorosli'].map(k => [k, WIEK[k]]));
+/**
+ * ADR 0055 (uwaga B, 2026-09-17d): globalnego pola „kategoria wiekowa” NIE MA —
+ * `WIEK_SETUP` (7/12/dorośli) usunięte razem z polem setupu. Trudność jest
+ * WŁASNOŚCIĄ GRACZA (`konfig.gracze[].poziom`, kanon `POZIOMY`), a paczka
+ * niesie per-stacyjne liczby poziomów (`poziomyPytan`).
+ */
 export const TEMATY_SETUP = Object.fromEntries([
   'architektura', 'ciekawostki', 'geografia', 'historia', 'kultura',
   'legendy', 'ludzie', 'nauka', 'przyroda', 'wlasny',
@@ -252,10 +289,19 @@ export function dopelnijKonfiguracjeDoKanou(konfig, zapisanyKanon) {
   return { ...konfig, tematy: dopelnijNoweTematySetupu(konfig.tematy, tematy) };
 }
 
+/**
+ * Konfiguracja zapisana STARYM schematem (globalne `wiek`, lista `imiona`)
+ * przepisana na nowy setup: tematy poza kanonem NOWEJ gry wypadają, a
+ * `gracze` bez `poziomu` dostaje poziom domyślny. `wiek` zostaje usunięty
+ * zwróconej konfiguracji (ADR 0055 — pole globalne nie istnieje).
+ */
 export function konfiguracjaNowegoSetupu(konfig) {
-  const wiek = ({ 10: '12', 15: 'dorosli' })[konfig.wiek] ?? konfig.wiek;
-  const tematy = konfig.tematy.filter(t => Object.hasOwn(TEMATY_SETUP, t));
-  return { ...konfig, wiek, tematy: tematy.length ? tematy : [...DOMYSLNE.tematy] };
+  const { wiek: _usuniety, ...reszta } = konfig;
+  void _usuniety;
+  const gracze = (Array.isArray(reszta.gracze) ? reszta.gracze : [])
+    .map((g) => ({ imie: String(g?.imie ?? '').trim().slice(0, OGRANICZENIA.dlugoscImienia.max), poziom: czyPoziomOk(g?.poziom) ? g.poziom : POZIOM_DORMYSLNY }));
+  const tematy = reszta.tematy.filter(t => Object.hasOwn(TEMATY_SETUP, t));
+  return { ...reszta, gracze, tematy: tematy.length ? tematy : [...DOMYSLNE.tematy] };
 }
 
 /**
@@ -334,7 +380,9 @@ export const DOMYSLNE = {
   // `konfiguracjaNowegoSetupu` — usunięte tematy nie mogą przez nią wracać.
   tematy: ['architektura', 'ciekawostki', 'geografia', 'historia', 'kultura', 'legendy', 'ludzie', 'nauka', 'przyroda'],
   tematWlasny: '', // tekst organizatora dla tematu `wlasny` (niezaznaczony domyślnie)
-  wiek: 'dorosli',
+  // ADR 0055: globalnego `wiek` nie ma — poziom trudności wybiera per gracz
+  // (`gracze[].poziom`); stary zapis z `wiek: „12”` itp. jest po cichu
+  // przepisany na listę graczy (migracja w `oczyscKonfiguracje`).
   jezyk: 'polski',
   podklad: 'osm',
 };
@@ -419,7 +467,9 @@ export function domyslnaKonfiguracja(liczbaGraczy = DOMYSLNE.liczbaGraczy) {
       liczbaStacji: DOMYSLNE.liczbaStacji,
       pytaniaNaStacje: pytania,
     }),
-    imiona: Array.from({ length: n }, (_, i) => `Gracz ${i + 1}`),
+    // ADR 0055: gracz to obiekt {imie, poziom} — poziom wybiera organizator
+    // przy imieniu w setupie; domyślnie każdy gracz odpowiada jako dorosły.
+    gracze: Array.from({ length: n }, (_, i) => ({ imie: `Gracz ${i + 1}`, poziom: POZIOM_DORMYSLNY })),
   };
 }
 
@@ -521,8 +571,10 @@ export function oczyscKonfiguracje(surowa) {
   // pola wybierane z kanonu: klucz musi istnieć, inaczej default.
   // Język (polski) i podkład (OSM) są hardkodowane od 2026-09-11 — stary
   // zapis z inną wartością jest po cichu przepisany na stałą (właściciel:
-  // „nie jest to potrzebne w żadnym trybie").
-  const kanony = { tryb: TRYBY, wiek: WIEK };
+  // „nie jest to potrzebne w żadnym trybie"). Globalne `wiek` nie jest już
+  // kanonem (ADR 0055) — stary zapis niesie go dalej tylko w surowym obiekcie,
+  // zwracana konfiguracja go nie ma.
+  const kanony = { tryb: TRYBY };
   for (const [pole, kanon] of Object.entries(kanony)) {
     if (Object.hasOwn(kanon, zrodlo[pole])) konfig[pole] = zrodlo[pole];
   }
@@ -550,11 +602,26 @@ export function oczyscKonfiguracje(surowa) {
   konfig.tematy = Array.isArray(zrodlo.tematy) ? [...new Set(zrodlo.tematy.map(kanonicznyTemat))].filter((t) => Object.hasOwn(TEMATY, t)) : [];
   konfig.tematWlasny = typeof zrodlo.tematWlasny === 'string' ? zrodlo.tematWlasny.trim().slice(0, 40) : '';
   if (konfig.tematy.length === 0) konfig.tematy = [...domyslne.tematy];
-  konfig.imiona = Array.isArray(zrodlo.imiona)
-    ? zrodlo.imiona.slice(0, konfig.liczbaGraczy).map((imie, i) => (typeof imie === 'string' && imie.trim() ? imie.trim().slice(0, OGRANICZENIA.dlugoscImienia.max) : `Gracz ${i + 1}`))
-    : [...domyslne.imiona];
-  while (konfig.imiona.length < konfig.liczbaGraczy) konfig.imiona.push(`Gracz ${konfig.imiona.length + 1}`);
-  konfig.pytaniaNaStacje = pytaniaNaStacjeDla({ liczbaGraczy: konfig.imiona.length });
+  // Gracze (ADR 0055): `{imie, poziom}` zamiast listy imion. Zapisy starego
+  // schematu (string[] `imiona`) są migrowane: imię zostaje, poziom =
+  // domyślny `dorosli` (stary globalny `wiek` NIE jest podstawiany — po
+  // usunięciu pola nie wiemy, kogo on dotyczył, a domyślny dorosły jest
+  // poziomem, który nie zawęża pytań).
+  const czyImieOk = (imie) => typeof imie === 'string' && imie.trim().length > 0;
+  const graczeSurowe = Array.isArray(zrodlo.gracze)
+    ? zrodlo.gracze.map((g) => ({
+        imie: czyImieOk(g?.imie) ? g.imie.trim().slice(0, OGRANICZENIA.dlugoscImienia.max) : null,
+        poziom: czyPoziomOk(g?.poziom) ? g.poziom : POZIOM_DORMYSLNY,
+      }))
+    : Array.isArray(zrodlo.imiona)
+      ? zrodlo.imiona.map((imie) => ({ imie: czyImieOk(imie) ? imie.trim().slice(0, OGRANICZENIA.dlugoscImienia.max) : null, poziom: POZIOM_DORMYSLNY }))
+      : [...domyslne.gracze];
+  konfig.gracze = graczeSurowe.slice(0, konfig.liczbaGraczy).map((g, i) => ({
+    imie: g.imie ?? `Gracz ${i + 1}`,
+    poziom: g.poziom,
+  }));
+  while (konfig.gracze.length < konfig.liczbaGraczy) konfig.gracze.push({ imie: `Gracz ${konfig.gracze.length + 1}`, poziom: POZIOM_DORMYSLNY });
+  konfig.pytaniaNaStacje = pytaniaNaStacjeDla({ liczbaGraczy: konfig.gracze.length });
   // Promień jest WYNIKIEM, nie wejściem (ADR 0025): liczy się z czasu, trybu
   // i liczby pytań — także dla starych zapisów, które niosły własny `promienM`
   // (migracja: brak `czasGryMin` = domyślne 60 min). Liczy się PO planie pytań,
@@ -581,7 +648,13 @@ export function walidujSetup(konfig) {
   }
 
   if (!TRYBY[konfig.tryb]) dodaj('K02', 'tryb', `Nieznany tryb „${konfig.tryb}". Wybierz pieszą, rowerową albo samochodową.`);
-  if (!WIEK[konfig.wiek]) dodaj('K03', 'wiek', `Nieznana kategoria wiekowa „${konfig.wiek}".`);
+  // K03 od ADR 0055 pilnuje POZIOMU GRACZA (globalnego `wiek` nie ma):
+  // poziom musi należeć do kanonu `POZIOMY` (dzieci / dorosli).
+  if (Array.isArray(konfig.gracze)) {
+    konfig.gracze.forEach((g, i) => {
+      if (g && !czyPoziomOk(g?.poziom)) dodaj('K03', `gracze[${i}].poziom`, `Nieznany poziom trudności „${g?.poziom}" — wybierz dziecko albo dorosły.`);
+    });
+  }
   // K04/K06 (język, podkład) usunięte 2026-09-11: wartości są hardkodowane
   // (polski + OSM), więc nie da się ich ustawić źle.
 
@@ -589,20 +662,22 @@ export function walidujSetup(konfig) {
   if (!Number.isInteger(konfig.liczbaGraczy) || konfig.liczbaGraczy < minG || konfig.liczbaGraczy > maxG) {
     dodaj('K07', 'liczbaGraczy', `Liczba graczy musi być liczbą całkowitą od ${minG} do ${maxG}.`);
   }
-  if (!Array.isArray(konfig.imiona) || konfig.imiona.length !== konfig.liczbaGraczy) {
-    const ileImion = Array.isArray(konfig.imiona) ? konfig.imiona.length : 0;
-    dodaj('K08', 'imiona', ileImion === 0
+  // ADR 0055: gracz to obiekt `{imie, poziom}` — K08/K09 czytają `gracze`
+  // (stare `imiona` są migrowane w `oczyscKonfiguracje`).
+  if (!Array.isArray(konfig.gracze) || konfig.gracze.length !== konfig.liczbaGraczy) {
+    const ileGraczy = Array.isArray(konfig.gracze) ? konfig.gracze.length : 0;
+    dodaj('K08', 'gracze', ileGraczy === 0
       ? 'Nie dodano jeszcze żadnego gracza — w bloku „Kto gra?" wpisz imię i PIN, potem „➕ Dodaj gracza".'
-      : `Lista graczy ma ${ileImion} pozycji, a graczy jest ${konfig.liczbaGraczy} — dodaj albo usuń gracza.`);
+      : `Lista graczy ma ${ileGraczy} pozycji, a graczy jest ${konfig.liczbaGraczy} — dodaj albo usuń gracza.`);
   } else {
-    konfig.imiona.forEach((imie, i) => {
-      if (typeof imie !== 'string' || imie.trim().length < OGRANICZENIA.dlugoscImienia.min || imie.trim().length > OGRANICZENIA.dlugoscImienia.max) {
-        dodaj('K08', `imiona[${i}]`, `Imię gracza ${i + 1} musi mieć od 1 do 20 znaków.`);
+    konfig.gracze.forEach((g, i) => {
+      if (typeof g?.imie !== 'string' || g.imie.trim().length < OGRANICZENIA.dlugoscImienia.min || g.imie.trim().length > OGRANICZENIA.dlugoscImienia.max) {
+        dodaj('K08', `gracze[${i}]`, `Imię gracza ${i + 1} musi mieć od 1 do 20 znaków.`);
       }
     });
-    const poNormalizacji = konfig.imiona.map((i) => String(i).trim().toLowerCase());
+    const poNormalizacji = konfig.gracze.map((g) => String(g?.imie ?? '').trim().toLowerCase());
     if (new Set(poNormalizacji).size !== poNormalizacji.length) {
-      dodaj('K09', 'imiona', 'Imiona graczy muszą się różnić — inaczej nie widać, czyja jest kolejka.');
+      dodaj('K09', 'gracze', 'Imiona graczy muszą się różnić — inaczej nie widać, czyja jest kolejka.');
     }
   }
 

@@ -48,7 +48,7 @@ export const KODY_WIELOOSOBOWE = {
   R04: 'Tryb gry jest nieznany (oczekiwano „trasa" albo „wyscig").',
   R05: 'Stan gry jest nieznany (oczekiwano lobby, trwa, zakonczona albo archiwum).',
   R06: 'Gra nie ma graczy — stan jest uszkodzony.',
-  R07: 'Konfiguracja gry jest niekompletna (liczbaStacji, pytaniaNaStacje, wiek, tematy, miejsce, geohash5).',
+  R07: 'Konfiguracja gry jest niekompletna (liczbaStacji, pytaniaNaStacje, wiek albo poziomyPytan, tematy, miejsce, geohash5).',
   R08: 'Zestaw gry jest uszkodzony (stacje, jawna paczka pytań, meta).',
   R09: 'Zdarzenia gry są uszkodzone (kolejność, gracz, typ, czas serwera).',
   R10: 'Zdarzenie nie jest poprawnym JSON-em.',
@@ -90,7 +90,14 @@ export function walidujProfilLokalny(surowy) {
   if (surowy.schemat !== 'profil-lokalny/1') return null;
   const pseudonim = normalizujPseudonim(surowy.pseudonim);
   if (!pseudonim) return null;
-  return { schemat: surowy.schemat, pseudonim, zweryfikowany: surowy.zweryfikowany === true, kiedy: surowy.kiedy ?? null };
+  return {
+    schemat: surowy.schemat,
+    pseudonim,
+    zweryfikowany: surowy.zweryfikowany === true,
+    kiedy: surowy.kiedy ?? null,
+    // ADR 0055: poziom z profilu (auto-selection w setupie i w grze multi).
+    ...(surowy.poziom === 'dzieci' || surowy.poziom === 'dorosli' ? { poziom: surowy.poziom } : {}),
+  };
 }
 
 /**
@@ -104,7 +111,14 @@ export function walidujGraczyLokalnych(surowy) {
   if (surowy.schemat !== 'gracze-lokalni/1') return null;
   if (!Array.isArray(surowy.gracze)) return null;
   const gracze = surowy.gracze
-    .map((g) => (g && typeof g === 'object' ? { pseudonim: normalizujPseudonim(g.pseudonim), zweryfikowany: g.zweryfikowany === true } : null))
+    .map((g) => (g && typeof g === 'object'
+      ? {
+        pseudonim: normalizujPseudonim(g.pseudonim),
+        zweryfikowany: g.zweryfikowany === true,
+        // ADR 0055: poziom zapamiętany na tym telefonie (auto-selection).
+        ...(g.poziom === 'dzieci' || g.poziom === 'dorosli' ? { poziom: g.poziom } : {}),
+      }
+      : null))
     .filter((g) => g && g.pseudonim)
     .slice(0, MAKS_GRACZY);
   if (!gracze.length) return null;
@@ -145,7 +159,7 @@ export function kodPoprawny(tekst) {
 // Ramka i sąsiedzi geohasha żyją w `geo.js` (geodezja, ADR 0024). Import, bo
 // `filtrujLobby` używa ich w tym module, plus re-eksport, żeby importerzy
 // (app.js, testy) nie zmieniały ścieżki.
-import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-159';
+import { ramkaGeohash, sasiednieGeohash } from './geo.js?v=m12-160';
 
 export { ramkaGeohash, sasiednieGeohash };
 
@@ -173,8 +187,16 @@ function graczOk(g) {
 }
 
 function konfiguracjaOk(k) {
-  return k && k.liczbaStacji > 0 && k.pytaniaNaStacje > 0
-    && typeof k.wiek === 'string' && Array.isArray(k.tematy) && k.tematy.length > 0
+  // ADR 0055: trudność gry niesie `poziomyPytan` (per-stacyjne zestawienie) —
+  // gry sprzed ADR 0055 niosą `wiek`; oba czyta się (addytywność), więc
+  // starsze stany z mostu nie są odrzucane.
+  if (!k || !(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0)) return false;
+  const trudnoscOk = (typeof k.wiek === 'string' && k.wiek.length > 0)
+    || (k.poziomyPytan && typeof k.poziomyPytan === 'object'
+      && Number.isInteger(k.poziomyPytan.dzieci) && k.poziomyPytan.dzieci >= 0
+      && Number.isInteger(k.poziomyPytan.dorosli) && k.poziomyPytan.dorosli >= 0);
+  return trudnoscOk
+    && Array.isArray(k.tematy) && k.tematy.length > 0
     && typeof k.miejsce === 'string' && typeof k.geohash5 === 'string' && k.geohash5.length === 5;
 }
 
@@ -477,11 +499,17 @@ export function odciskHotseat(tekst) {
  * Zwraca `{ ok: false, usterki }` zamiast rzucać: brak wyniku na Drive nigdy nie
  * może zepsuć gry, która właśnie się skończyła (ADR 0016 pkt 5).
  */
-export function graHotseatDoWysylki({ miejsce, geohash5, wiek, tematy, liczbaStacji, pytaniaNaStacje, gracze, dziennik, kluczGry = '' } = {}) {
+export function graHotseatDoWysylki({ miejsce, geohash5, wiek, poziomyPytan, tematy, liczbaStacji, pytaniaNaStacje, gracze, dziennik, kluczGry = '' } = {}) {
   const usterki = [];
   if (typeof miejsce !== 'string' || !miejsce.trim()) usterki.push('brak nazwy miejsca');
   if (!/^[0-9b-z]{5}$/.test(String(geohash5 ?? ''))) usterki.push('geohash5 musi mieć 5 znaków (przybliżenie okolicy, ADR 0024 pkt 4)');
-  if (typeof wiek !== 'string' || !wiek.trim()) usterki.push('brak kategorii wieku');
+  // ADR 0055: trudność = poziomyPytan (per-stacyjne zestawienie); stare
+  // wołania z `wiek` przechodzą dalej (most czyta oba pola addytywnie).
+  const poziomyOk = poziomyPytan && typeof poziomyPytan === 'object'
+    && Number.isInteger(poziomyPytan.dzieci) && poziomyPytan.dzieci >= 0
+    && Number.isInteger(poziomyPytan.dorosli) && poziomyPytan.dorosli >= 0
+    && poziomyPytan.dzieci + poziomyPytan.dorosli > 0;
+  if (!poziomyOk && (typeof wiek !== 'string' || !wiek.trim())) usterki.push('brak trudności (poziomyPytan albo wiek)');
   if (!Array.isArray(tematy) || !tematy.length) usterki.push('brak tematów');
   if (!(Number(liczbaStacji) > 0)) usterki.push('liczbaStacji musi być dodatnia');
   if (!(Number(pytaniaNaStacje) > 0)) usterki.push('pytaniaNaStacje musi być dodatnia');
@@ -500,12 +528,20 @@ export function graHotseatDoWysylki({ miejsce, geohash5, wiek, tematy, liczbaSta
       konfiguracja: {
         miejsce: miejsce.trim(),
         geohash5,
-        wiek: wiek.trim(),
+        // ADR 0055: poziomy per gracz jadą z graczami i jako zestawienie
+        // per stację; `wiek` zostaje tylko przy wołaniach starego schematu.
+        ...(poziomyOk
+          ? { poziomyPytan: { dzieci: poziomyPytan.dzieci, dorosli: poziomyPytan.dorosli } }
+          : { wiek: wiek.trim() }),
         tematy: [...tematy],
         liczbaStacji: Number(liczbaStacji),
         pytaniaNaStacje: Number(pytaniaNaStacje),
       },
-      gracze: lista.map((g) => ({ id: g.id, pseudonim: g.pseudonim.trim().slice(0, 24) })),
+      gracze: lista.map((g) => ({
+        id: g.id,
+        pseudonim: g.pseudonim.trim().slice(0, 24),
+        ...(g.poziom === 'dzieci' || g.poziom === 'dorosli' ? { poziom: g.poziom } : {}),
+      })),
       zdarzenia,
       // Klucz idempotencji: most po nim rozpoznaje, że ta sama gra już u niego
       // jest, i NIE zakłada drugiego pliku (zgłoszenie właściciela 2026-09-09).

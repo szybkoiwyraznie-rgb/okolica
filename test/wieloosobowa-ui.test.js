@@ -141,7 +141,11 @@ function atrapaMostu() {
     const pseudonim = String(dane.organizator?.pseudonim ?? '').trim();
     if (!pseudonim) return { ok: false, blad: 'pseudonim organizatora jest wymagany' };
     const k = dane.konfiguracja ?? {};
-    if (!(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0) || typeof k.wiek !== 'string'
+    // ADR 0055: trudność gry = poziomyPytan (nowe) LUB wiek (stare gry)
+    const poziomyOk = k.poziomyPytan && Number.isInteger(k.poziomyPytan.dzieci)
+      && Number.isInteger(k.poziomyPytan.dorosli) && (k.poziomyPytan.dzieci + k.poziomyPytan.dorosli) > 0;
+    if (!(k.liczbaStacji > 0) || !(k.pytaniaNaStacje > 0)
+      || !(poziomyOk || (typeof k.wiek === 'string' && k.wiek.length > 0))
       || !Array.isArray(k.tematy) || !k.tematy.length || typeof k.miejsce !== 'string'
       || typeof k.geohash5 !== 'string' || k.geohash5.length !== 5) {
       return { ok: false, blad: 'konfiguracja gry niekompletna' };
@@ -412,7 +416,7 @@ function stacjeTestowe(ile) {
 function paczkaTestowa(stacje, pytaniaNaStacje = 1, { factcheck = true } = {}) {
   return {
     okolica: { lat: stacje[0].lat, lon: stacje[0].lon, promienM: 1000, miejsce: 'Podkowa Leśna' },
-    wiek: 'dorosli', tematy: ['historia'], jezyk: 'polski', utworzono: '2026-09-06 10:00',
+    poziomyPytan: { dzieci: 0, dorosli: 1 }, tematy: ['historia'], jezyk: 'polski', utworzono: '2026-09-06 10:00',
     pytania: stacje.flatMap((s) => Array.from({ length: pytaniaNaStacje }, (_, k) => ({
       id: `s${s.id}p${k + 1}`, stacja: s.id, temat: 'historia',
       tresc: `Co wydarzyło się przy stacji ${s.id}? (wariant ${k + 1})`,
@@ -435,7 +439,7 @@ function zasiejZestaw(most, ileStacji, pytaniaNaStacje = 1, { factcheck = true }
     // 60 min, piesza). Pole meta `pytaniaNaStacje` zostaje z parametru zasiewu
     // — paczka może mieć WIĘCEJ pytań niż setup (nadmiar nie przeszkadza).
     promienM: promienZCzasuGry({ czasGryMin: 60, tryb: 'piesza', liczbaStacji: stacje.length, pytaniaNaStacje: 1 }),
-    tematy: ['historia'], wiek: 'dorosli',
+    tematy: ['historia'], poziomyPytan: { dzieci: 0, dorosli: 1 },
     jezyk: 'polski', miejsce: 'Podkowa Leśna', liczbaStacji: stacje.length, pytaniaNaStacje,
     data: '2026-09-06 09:00', factcheck,
   });
@@ -1254,7 +1258,7 @@ test('pełna ścieżka AI: setup multi → pozycja → stacje (trasa-sekret) →
     schemat: 'konfig/1', kanon: '2026-09-10',
     konfig: {
       tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
-      tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
+      tematy: ['historia', 'architektura'], poziomyPytan: { dzieci: 0, dorosli: 1 }, jezyk: 'polski',
       karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
     },
   });
@@ -1311,7 +1315,7 @@ test('wyjście z lobby jest zgłaszane mostowi — inaczej liczba graczy kłamie
     schemat: 'konfig/1', kanon: '2026-09-10',
     konfig: {
       tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 85,
-      tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
+      tematy: ['historia', 'architektura'], poziomyPytan: { dzieci: 0, dorosli: 1 }, jezyk: 'polski',
       karaRecznaS: 60, podklad: 'osm', promienM: 1000, kodGry: 'test',
     },
   });
@@ -1415,7 +1419,7 @@ test('trasa-sekret z siecią dróg: komunikat mówi „zlokalizowano”, a „In
   const most = atrapaMostu();
   const KONFIG = {
     tryb: 'piesza', liczbaGraczy: 1, liczbaStacji: 3, pytaniaNaStacje: 1, czasGryMin: 110,
-    tematy: ['historia', 'architektura'], wiek: 'dorosli', jezyk: 'polski',
+    tematy: ['historia', 'architektura'], poziomyPytan: { dzieci: 0, dorosli: 1 }, jezyk: 'polski',
     podklad: 'osm', kodGry: 'test',
   };
   const pamiec = new Map([['okolica:konfig', JSON.stringify({ schemat: 'konfig/1', kanon: '2026-09-10', konfig: KONFIG })]]);
@@ -1487,7 +1491,7 @@ test('serwer odrzuca odpowiedź bez dojścia (R08) — klient NIE ponawia i mów
   // wspólna trasa na 2 stacje, dwóch graczy, wystartowana
   const zalozenie = await polecenieMostu(URL_MOSTU, {
     akcja: 'gra-zaloz', tryb: 'trasa', trasaSekret: true, organizator: { pseudonim: 'Ewa' },
-    konfiguracja: { liczbaStacji: 2, pytaniaNaStacje: 1, wiek: 'dorosli', tematy: ['historia'], promienM: 1000, miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', geohash8: 'u3qb8xyz' },
+    konfiguracja: { liczbaStacji: 2, pytaniaNaStacje: 1, poziomyPytan: { dzieci: 0, dorosli: 1 }, tematy: ['historia'], promienM: 1000, miejsce: 'Podkowa Leśna', geohash5: 'u3qb8', geohash8: 'u3qb8xyz' },
     zestaw: { stacje: stacjeTestowe(2), paczka: paczkaTestowa(stacjeTestowe(2)), meta: { miejsce: 'Podkowa Leśna' } },
   }, { fetchImpl: most.fetchImpl });
   const kod = zalozenie.gra.kod;
@@ -1606,8 +1610,9 @@ test('lista graczy = tożsamość (ADR 0026 aneks): dodaj, odmowa PIN-u, zapami�
   assert.deepEqual(lista(A), ['1. Ewa', '2. Jan'], 'kolejność dodawania to kolejność gry');
   assert.match(tekst(A, 'setup-promien-info'), /: 10 pytań ≈/, 'dwóch graczy ⇒ 5 stacji × 2 pytania = 10');
 
-  // 4) „✕ Usuń" zdejmuje gracza z listy
-  const przyciskUsun = el(A, 'lista-graczy').children[0].children[1];
+  // 4) „✕ Usuń" zdejmuje gracza z listy (ADR 0055: w wierszu jest jeszcze
+  // przełącznik poziomu przy imieniu — przycisk usuwania jest ostatnim dzieckiem)
+  const przyciskUsun = el(A, 'lista-graczy').children[0].children.at(-1);
   przelaczNa(A); kliknijEl(przyciskUsun); await oddech();
   assert.deepEqual(lista(A), ['1. Jan'], 'usunięty gracz znika z listy');
   assert.match(tekst(A, 'setup-promien-info'), /: 5 pytań ≈/, 'usunięcie gracza cofa plan pytań (5 × 1)');
@@ -1730,10 +1735,12 @@ test('wolna kolejność: wyścig bez wyboru stacji — dowolna kolejność i pyt
   await dojdzSymulacja(A);
   assert.match(tekst(A, 'gra-pytanie-tresc'), /stacji \d+\? \(wariant 1\)/, 'organizator (indeks 0) ma pierwsze pytanie stacji');
 
-  // Bartek gra u siebie, bez uzgadniania: ta sama stacja 1, ale DRUGIE pytanie
-  // W wyścigu start odcinka jest auto, więc od razu symulacja dojścia
+  // Bartek gra u siebie, bez uzgadniania: ta sama stacja 1 — WSPÓLNE pytanie
+  // (właściciel 2026-09-17: w multi pytania nie różnicujemy; jedno na stację,
+  // wszyscy odpowiadają na to samo). W wyścigu start odcinka jest auto,
+  // więc od razu symulacja dojścia.
   await dojdzSymulacja(B);
-  assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji \d+\? \(wariant 2\)/, 'gość (indeks 1) ma drugie pytanie tej stacji');
+  assert.match(tekst(B, 'gra-pytanie-tresc'), /stacji \d+\? \(wariant 1\)/, 'gość ma to samo wspólne pytanie co organizator');
 
   // po pierwszym pytaniu — stacja zamknięta (2 graczy × 2 pytania = 1 pytanie na gracza na stację)
   przelaczNa(A);
