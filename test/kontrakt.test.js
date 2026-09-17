@@ -1931,6 +1931,16 @@ test('kontrakt ADR 0044: start gry wieloosobowej odlicza 5-4-3-2-1-START, a pote
   assert.match(APP, /\$\('multi-sync-pasek'\)\.textContent = tekst;\n\}/,
     '„Ostatni stan / następne odświeżenie" żyje tylko w lobby — w grze go nie ma');
 
+  // 5b. Uwaga terenowa D (właściciel, 2026-09-17, KRYTYCZNA): po kliknięciu
+  //     startu w lobby NIE MA ŻADNYCH EKRANÓW PRZEJŚCIOWYCH. Auto-start odcinka
+  //     nie jest już wyścigowy (2026-09-14 F) — dotyczy OBU trybów, więc po
+  //     odliczaniu zostaje mapa i mini-pasek, a panel fazy A („▶ Idę do
+  //     stacji 1") nigdy się nie pokazuje.
+  assert.match(APP, /if \(STAN\.rozgrywka\?\.faza === FAZY\.przygotowanie\) \{\n {4}const wynik = startOdcinka\(STAN\.rozgrywka, \{ czasMs: zegarGry\(\) \}\);/,
+    'start gry sieciowej od razu otwiera odcinek — bez pytania „▶ Idę do stacji N” (uwaga D)');
+  assert.equal(/if \(gra\.tryb === TRYBY_GRY\.wyscig\) \{\n {4}const r = STAN\.rozgrywka;/.test(APP), false,
+    'auto-startu odcinka nie wolno zawęzić do Wyścigu — Wspólna Trasa ma ten sam ekran (uwaga D)');
+
   // 6. Koniec gry wieloosobowej pokazuje WSPÓLNE liczby na ekranie hotseat.
   assert.match(APP, /const wynik = wynikiMultiKonca\(\) \?\? podsumowanie\(r\);/,
     'ekran wyniku bierze punktację z mostu, gdy gra sieciowa jest zamknięta');

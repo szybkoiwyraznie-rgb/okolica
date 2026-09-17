@@ -5332,16 +5332,22 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
   status(`Gra ${gra.kod} (${gra.tryb === TRYBY_GRY.trasa ? 'Wspólna Trasa' : 'Wyścig na Orientację'}) rozpoczęta: przed Tobą ${STAN.stacje.length - zamknietePrzezeMnie} z ${wszystkie.length} stacji. Pytania odsłaniają się dopiero na stacjach.`
     + (zamknietePrzezeMnie ? ' Zamknięte wcześniej stacje nie wracają — wracasz do gry w połowie drogi.' : ''));
   renderujGre();
-  // 2026-09-14 F: Wyścig — bez warstwy wyboru stacji, od razu odcinek i tylko mapa
-  if (gra.tryb === TRYBY_GRY.wyscig) {
-    const r = STAN.rozgrywka;
-    if (r && r.faza === FAZY.przygotowanie) {
-      const wynik = startOdcinka(r, { czasMs: zegarGry() });
-      if (wynik.usterki.length === 0) {
-        STAN.rozgrywka = wynik.stan;
-        STAN.historiaFixow = [];
-        renderujGre();
-      }
+  // 2026-09-14 F: Wyścig — bez warstwy wyboru stacji, od razu odcinek i tylko mapa.
+  // Uwaga terenowa D (2026-09-17, KRYTYCZNA): tak samo w OBU trybach — po
+  // kliknięciu startu w lobby MA NIE BYĆ żadnych ekranów przejściowych, więc
+  // odcinek do pierwszej stacji startuje z góry, bez fazy A i bez pytania
+  // „▶ Idę do stacji N”. Odliczanie leci NAD mapą, a po „START” zostaje mapa
+  // i mini-pasek na dole (`#gra-pasek`) — sterowanie jest w drodze schowane.
+  // Ta sama zasada działa przy POWROCIE do gry (ADR 0045): gracz, któremu
+  // telefon „odświeżył się” w drodze, wraca od razu do marszu, a nie do karty
+  // wyboru. Kolejne stacje w grze zostają jak były: po odpowiedzi następną
+  // otwiera przycisk fazy A („▶ Idę do stacji N”).
+  if (STAN.rozgrywka?.faza === FAZY.przygotowanie) {
+    const wynik = startOdcinka(STAN.rozgrywka, { czasMs: zegarGry() });
+    if (wynik.usterki.length === 0) {
+      STAN.rozgrywka = wynik.stan;
+      STAN.historiaFixow = [];
+      renderujGre();
     }
   }
   // Uwaga F (ADR 0044): wszyscy — host i goście — dostają sygnał i odliczanie

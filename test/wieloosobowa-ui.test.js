@@ -515,7 +515,9 @@ async function dolaczZListyUI(u) {
 
 /** Odcinek od startu do „następna stacja": droga + dojście z fixów (ADR 0029) + poprawna odpowiedź. */
 async function przejdzStacje(u) {
-  // 2026-09-14 F: wyścig auto-startuje odcinek, więc panel oczekiwania może być już schowany
+  // 2026-09-14 F + uwaga terenowa D (2026-09-17): odcinek PIERWSZEJ stacji
+  // startuje razem ze startem gry (oba tryby), więc panel fazy A jest już
+  // schowany. Po odpowiedzi następną stację otwiera panel A — wtedy klik jest.
   const panelOczekuje = u.dom.elementy.get('gra-panel-oczekuje');
   if (panelOczekuje && !panelOczekuje.hidden) {
     await klik(u, 'przycisk-start-odcinka');
@@ -582,7 +584,9 @@ test('wyścig end-to-end: załóż (paczka przed lobby) → dołącz z listy →
   // stacja 1: A online, B OFFLINE — zdarzenia lądują w kolejce i wychodzą po powrocie
   await przejdzStacje(A);
   mostWyscig.online = false;
-  await klik(B, 'przycisk-start-odcinka');
+  // uwaga terenowa D (2026-09-17): odcinek stacji 1 startuje sam razem ze
+  // startem gry — gracz nie klika „Idę do stacji 1” po odliczaniu.
+  assert.equal(el(B, 'gra-panel-odcinek').hidden, false, 'B: odcinek otwarty z góry, bez klikania „Idę”');
   await dojdzSymulacja(B); // nie wyjdzie — kolejka
   przelaczNa(B);
   kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
@@ -676,8 +680,9 @@ test('trasa end-to-end: dołącz z listy → wspólna trasa po kolei → resume 
   // Nikt na nikogo nie czeka: B zamyka stację 1, a A w tym czasie dopiero RUSZA
   // swoją stację 1 (to ta sama stacja, ale w własnym tempie każdego gracza).
   await przejdzStacje(B);
-  await klik(A, 'przycisk-start-odcinka');
-  assert.equal(el(A, 'gra-panel-odcinek').hidden, false, 'A nie czeka na B — tempo własne');
+  // uwaga terenowa D (2026-09-17): Wspólna Trasa też startuje odcinek z góry —
+  // po odliczaniu nie ma ekranu przejściowego, A od razu idzie.
+  assert.equal(el(A, 'gra-panel-odcinek').hidden, false, 'A nie czeka na B — tempo własne, odcinek z góry (D)');
   await dojdzSymulacja(A);
   przelaczNa(A);
   kliknijEl(A.dom.pobierz('gra-odpowiedzi').children[0]);
@@ -1141,6 +1146,70 @@ test('uwaga F: po starcie gry sygnał i odliczanie 5-4-3-2-1-START u hosta i u g
       assert.equal(u.dom.elementy.has(id), false, `${nazwa}: po potworku nie ma śladu — #${id}`);
     }
   }
+});
+
+/**
+ * Uwaga terenowa D (właściciel, 2026-09-17 — KRYTYCZNA, powtarzana w terenie):
+ * po kliknięciu startu w lobby MA NIE BYĆ ŻADNYCH EKRANÓW PRZEJŚCIOWYCH.
+ * Właściciel widział razem z odliczaniem cały panel fazy A („Gra”, „Kolej: … ·
+ * 728 m · stacja 1/5”, „Idzie: … → stacja 1”, „Cel bez opisu”, „▶ Idę do
+ * stacji 1”). Przyczyna: auto-start odcinka był tylko w Wyścigu (2026-09-14 F),
+ * więc Wspólna Trasa zostawała w `przygotowanie` i pokazywała kartę przejścia.
+ * Teraz odcinek startuje w OBU trybach razem z odliczaniem, a po „START”
+ * zostaje mapa i mini-pasek; u gościa tak samo (start przychodzi z mostu).
+ */
+test('uwaga D (2026-09-17): start z lobby daje od razu odcinek — zero ekranów przejściowych (Wspólna Trasa)', async () => {
+  const most = atrapaMostu();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec: new Map(), most });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'trasa' });
+  const B = await noweUrzadzenie({ most, bezGracza: true });
+  await przygotujTelefon(B, 'Bartek', { stacje: 3 });
+  await dolaczZListyUI(B);
+  await przepompuj(A, 1);
+
+  await klik(A, 'przycisk-lobby-start');
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'host na ekranie gry');
+  assert.equal(el(A, 'odliczanie').hidden, false, 'host widzi odliczanie (ADR 0044)');
+
+  // pod odliczaniem jest już WŁAŚCIWA gra: odcinek, mapa i mini-pasek —
+  // ani karty fazy A („▶ Idę do stacji 1”), ani rzędu badge’ów
+  for (const [nazwa, u] of [['A (host)', A]]) {
+    assert.equal(el(u, 'gra-panel-oczekuje').hidden, true, `${nazwa}: panel fazy A schowany — żadnego „▶ Idę do stacji 1”`);
+    // Rząd „Gra / Kolej / … / stacja 1 z 3” w TERENIE jest schowany
+    // (`gra-sterowanie.hidden = droga && !STAN.trybTestowy`; regułę pilnuje
+    // kontrakt ADR 0044). Ten test chodzi w `?tryb=test`, gdzie rząd zostaje
+    // CELOWO — trzyma przycisk „Symuluj dojście” (ADR 0036 aneks), więc
+    // sprawdzamy wyjątek, a nie stan z terenu.
+    assert.equal(el(u, 'gra-sterowanie').hidden, false, `${nazwa}: w trybie testowym rząd zostaje tylko dla symulacji`);
+    assert.equal(el(u, 'przycisk-symulacja-gra').hidden, false, `${nazwa}: …i to jest jedyny powód (symulacja widoczna)`);
+    assert.equal(el(u, 'gra-panel-odcinek').hidden, false, `${nazwa}: odcinek otwarty od razu (auto-start)`);
+    assert.equal(el(u, 'gra-pasek').hidden, false, `${nazwa}: mini-pasek na dole widoczny`);
+    assert.match(tekst(u, 'gra-pasek'), /Kto: Ala .*stacja 1 z 3/, `${nazwa}: pasek mówi, kto idzie i dokąd`);
+  }
+
+  // gość: ten sam ekran, gdy dowie się o starcie z mostu (bez własnego kliku)
+  await przepompuj(B, 1);
+  assert.equal(el(B, 'ekran-gra').hidden, false, 'gość w grze');
+  assert.equal(el(B, 'odliczanie').hidden, false, 'gość odlicza — start jest wspólny');
+  assert.equal(el(B, 'gra-panel-oczekuje').hidden, true, 'gość: zero ekranu przejściowego');
+  assert.equal(el(B, 'gra-sterowanie').hidden, false, 'gość: rząd zostaje tylko dla symulacji (tryb testowy, jak wyżej)');
+  assert.equal(el(B, 'przycisk-symulacja-gra').hidden, false, 'gość: symulacja widoczna — jedyny powód rzędu');
+  assert.equal(el(B, 'gra-panel-odcinek').hidden, false, 'gość: odcinek otwarty od razu');
+  assert.equal(el(B, 'gra-pasek').hidden, false, 'gość: mini-pasek widoczny');
+
+  // po „START” nic nie wraca — zostaje mapa i pasek, a gra toczy się dalej
+  for (const [nazwa, u] of [['A', A], ['B', B]]) {
+    await czekajNa(u, () => el(u, 'odliczanie').hidden === true, `${nazwa}: odliczanie dobiega końca`);
+    assert.equal(el(u, 'gra-panel-oczekuje').hidden, true, `${nazwa}: po odliczaniu dalej sam odcinek`);
+    assert.equal(el(u, 'gra-sterowanie').hidden, false, `${nazwa}: po odliczaniu rząd dalej tylko dla symulacji`);
+    assert.equal(el(u, 'gra-pasek').hidden, false, `${nazwa}: pasek zostaje na dole`);
+  }
+  // auto-odcinek jest PRAWDZIWY: symulacja dojścia otwiera pytanie stacji
+  await dojdzSymulacja(A);
+  przelaczNa(A);
+  assert.equal(A.dom.pobierz('gra-odpowiedzi').children.length, 4, 'auto-odcinek prowadzi do pytania (gra żyje)');
 });
 
 /**
@@ -1767,7 +1836,7 @@ test('kolejka multi: zdarzenia zapisane bez sieci wychodzą po odświeżeniu tel
 
   // B odpowiada BEZ połączenia z mostem (odcinek, dojście, poprawna odpowiedź)
   most.online = false;
-  await klik(B, 'przycisk-start-odcinka');
+  assert.equal(el(B, 'gra-panel-odcinek').hidden, false, 'B: odcinek trasy otwarty z góry (uwaga D)');
   await dojdzSymulacja(B);
   przelaczNa(B);
   kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
@@ -1819,7 +1888,7 @@ test('kolejka multi: bez sieci odświeżony telefon NIC nie gubi — zdarzenia z
   await przepompuj(B, 1);
 
   most.online = false;
-  await klik(B, 'przycisk-start-odcinka');
+  assert.equal(el(B, 'gra-panel-odcinek').hidden, false, 'B: odcinek wyścigu otwarty z góry (uwaga D)');
   await dojdzSymulacja(B);
   przelaczNa(B);
   kliknijEl(B.dom.pobierz('gra-odpowiedzi').children[0]);
