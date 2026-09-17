@@ -7135,3 +7135,23 @@ testy. Bump `m12-160` → `m12-161`.
 
 **Brama:** pełna brama — patrz commit. **Otwarte:** wdrożenie mostu + test
 terenowy na `m12-161`.
+
+## 2026-09-17g — otwarcie sesji `arena/01a0b144-okolica` (PR #43 w tym commicie)
+
+**Zlecenie właściciela:** „kontynuujemy projekt” — bez nowego zadania. Obowiązuje
+pętla: audyt poprzedniego PR, potem czekanie na uwagi z terenu (AGENTS §2, L68).
+
+**Lektura startowa (AGENTS §0):** wykonana w tej sesji — `AGENTS.md`,
+`docs/PROTOKOL.md` (PYT/1.3), rejestr ADR + ADR-y 0001–0058, `docs/LESSONS.md`
+(L1–L80), `docs/setup/ENVIRONMENT.md`, `docs/ROADMAP.md`, najnowszy handoff.
+Punktowo: `README.md`, `docs/PROJECT_HISTORY.md` (grep).
+
+**Stan zastany:** `main` = `48003a2` (squash PR #42). Brama: `npm test`
+**855/855**, `npm run brama` **EXIT 0**. Budżet lektury: **99 983 / 100 000**
+(rezerwa **17 tokenów**) — pomiar z 2026-09-17g; przy tym zapasie każdy nowy
+aneks terenowy w lekturze obowiązkowej przełamie próg, więc kolejność z L79
+(archiwizacja aneksów PRZED nową treścią) jest już nieunikniona — to zadanie
+tej sesji.
+
+**Audyt PR #42 (`48003a2`)**: w toku — wynik w kolejnym wpisie.
+
