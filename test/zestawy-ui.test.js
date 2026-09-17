@@ -484,7 +484,7 @@ test('wysyłka Drive: potwierdzenie cytuje nazwę pliku zwróconą przez most (A
     // Aplikacja NIE liczy nazwy po swojemu — cytuje tę z mostu: jedno źródło
     // prawdy, czyli rozjazd widać, zamiast go ukryć (LESSONS L58).
     const wyjety = nazwa.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    assert.match(dom.pobierz('status').textContent, new RegExp(`wysłana na Drive jako „${wyjety}\"`),
+    assert.match(dom.pobierz('status').textContent, new RegExp(`wysłana na Drive jako „${wyjety}"`),
       `status: ${dom.pobierz('status').textContent}`);
   } finally {
     atrap.przywroc();
