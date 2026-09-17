@@ -140,6 +140,17 @@ export function zestawieniePytanZGraczy(gracze, { multi = false, multiPoziom = P
  * „musi być z naciskiem, bo modele to zapominają”), i do kogo pytania idą
  * (kolejność listy graczy = kolejność odpowiadania, bez mieszania poziomów).
  */
+/** "pytanie/pytania/pytań" zgodnie z polszczyzną (1 → pytanie, 2–4 → pytania,
+ * reszta włącznie z 0 i 12–14 → pytań). */
+function formaPytan(n) {
+  const m = Number(n) || 0;
+  if (m === 1) return 'pytanie';
+  const ostatnia = m % 10;
+  const dwieOstatnie = m % 100;
+  if (ostatnia >= 2 && ostatnia <= 4 && !(dwieOstatnie >= 12 && dwieOstatnie <= 14)) return 'pytania';
+  return 'pytań';
+}
+
 export function blokGraczyPoziomow(gracze, { multi = false, multiPoziom = POZIOM_DORMYSLNY } = {}) {
   const liczby = zestawieniePytanZGraczy(gracze, { multi, multiPoziom });
   const caly = liczby.dzieci + liczby.dorosli;
@@ -153,12 +164,12 @@ export function blokGraczyPoziomow(gracze, { multi = false, multiPoziom = POZIOM
     const poziomGry = KLUCZE_POZIOMOW.includes(multiPoziom) ? multiPoziom : POZIOM_DORMYSLNY;
     linie.push('- Gra na wielu telefonach: gracze dołączą do gry później.');
     linie.push(`- POZIOM WSZYSTKICH PYTAŃ W TEJ GRZE (wybór organizatora): ${etykietaPoziomuWskazowki(poziomGry)} — wszystkie pytania paczki mają WYŁĄCZNIE ten poziom.`);
-    linie.push(`- ZESTAWIENIE PYTAŃ PRZY KAŻDEJ STACJI (ZASADA TWARDA — powtórzona, bo modele to zapominają): ${czesci.join(' + ')} — łącznie ${caly} pytania; TO SAMO przy KAŻDEJ stacji.`);
+    linie.push(`- ZESTAWIENIE PYTAŃ PRZY KAŻDEJ STACJI (ZASADA TWARDA — powtórzona, bo modele to zapominają): ${czesci.join(' + ')} — łącznie ${caly} ${formaPytan(caly)}; TO SAMO przy KAŻDEJ stacji.`);
     linie.push('- Wszyscy gracze odpowiadają na te SAME pytania przy tych samych stacjach — pytań „dla kogoś innego” nie ma.');
   } else {
     const lista = Array.isArray(gracze) ? gracze : [];
     linie.push(`- liczba graczy: ${lista.length}`);
-    linie.push(`- ZESTAWIENIE PYTAŃ PRZY KAŻDEJ STACJI (ZASADA TWARDA — powtórzona, bo modele to zapominają): ${czesci.join(' + ')} — łącznie ${caly} pytania; TO SAMO zestawienie przy KAŻDEJ stacji.`);
+    linie.push(`- ZESTAWIENIE PYTAŃ PRZY KAŻDEJ STACJI (ZASADA TWARDA — powtórzona, bo modele to zapominają): ${czesci.join(' + ')} — łącznie ${caly} ${formaPytan(caly)}; TO SAMO zestawienie przy KAŻDEJ stacji.`);
     linie.push('- Gracze (kolejność listy = kolejność odpowiadania przy stacji; pytania danego poziomu idą do graczy tego poziomu w tej kolejności, BEZ MIESZANIA):');
     lista.forEach((g, i) => {
       const poziom = KLUCZE_POZIOMOW.includes(g?.poziom) ? g.poziom : POZIOM_DORMYSLNY;
