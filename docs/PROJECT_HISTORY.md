@@ -7034,6 +7034,22 @@ budżet lektury **99 431 / 100 000** (rezerwa 569); brama bazowa `npm test`
 **852/852** EXIT 0; wersje: protokół `PYT/1.1`, szablony `PYT/1.1.2` /
 `PYT/1.1-nofc.2`, cache `m12-158`.
 
-**Audyt PR #41** (ostatni scalony PR, `git diff d07abb0..1adfc86`): w trakcie
-— wynik w opisie PR i poniżej.
+**Audyt PR #41** (ostatni scalony PR, `git diff d07abb0..1adfc86`, 46 plików):
+**zgodny, bez usterek blokujących**. Pięć uwag terenowych sprawdzone plik po
+pliku: A — pomarańczowa, pusta pinezka z tokenów palety (szary zniknął);
+B — `przygotujEkranStacji()` czyści ekran tylko przy wejściu z nowego setupu
+(wsteczna strzałka z promptu celowo nie czyści — zgodne z aneksem ADR 0005);
+C1 — `meta.model` addytywne (bez wyboru = brak pola, pin w `zbierzMetaZestawu`),
+ikony inline SVG; C2 — licznik prac `praceWToku` gasi „Łączę z siecią…” dopiero
+gdy odpowiedzą wszystkie (zapis paczki + `gra-zaloz`); ścieżki wczesnych odmów
+i odrzucona paczka też gaszą wskaźnik; D — odcinek startuje z góry w OBU
+trybach i przy powrocie, kontrakt 5b blokuje zawężenie do Wyścigu. ADR/aneksy:
+B w 0005, C2 w 0011, D w 0044, nowy 0053 + rejestr; L80; archiwum aneksów
+(6 plików) z notami wiążącymi; `brama` pilnuje budżetu (L79); `?v=m12-158`
+jednolity. Zieloność: CI na `main` dla `1adfc86` **success**, brama lokalna
+**852/852 EXIT 0**. **Obserwacja (nie blokuje):** ADR 0035 — korekta m12-60
+o czwartej instancji (adikso) bez znacznika wycofania w tekście głównym;
+stan bieżący (FOSSGIS → VK → Kumi) definiują późniejsza nota „Obowiązuje”,
+`ASSETS` §2 i kod — do kolejnej tury uwag.
+
 
