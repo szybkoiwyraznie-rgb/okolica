@@ -75,8 +75,7 @@ nie ma backendu (ADR 0001/0006), więc dane pobiera przeglądarka użytkownika.
    (ADR 0010 pkt 4).
 8. **Degradacja bez Overpass** (offline, limit instancji, blokada):
    a) użyj cache, jeśli jest;
-   b) zaproponuj **ręczne ustawienie stacji** przeciąganiem pinezek na mapie
-      (aplikacja pokazuje dystans sieciowy tylko w linii prostej i ostrzega);
+   b) WYCOFANY 2026-09-16 (aneks niżej) — był tu tryb ręczny;
    c) nigdy nie udawaj, że punkty są osiągalne — komunikat jest częścią UI.
 
 ## Konsekwencje
@@ -133,6 +132,16 @@ Od teraz `#ekran-stacje` pokazuje jedno zdanie w `#stacje-podsumowanie`:
 
 Tryb tajnej trasy (ADR 0034) zostaje przy swoim zdaniu („…Nazwy i położenie są
 ukryte…") — właściciel wyłączył go z tej zmiany. Mapa, pinezki, przyciski
-„Inny układ"/„Pobierz sieć ponownie"/„Ustaw stacje ręcznie" i przewijanie panelu
-są bez zmian; przeciąganie pinezki w trybie ręcznym widać na mapie, nie w spisie.
+„Inny układ"/„Pobierz sieć ponownie" i przewijanie panelu są bez zmian (tryb
+ręczny: aneks niżej).
 
+
+## Aneks 2026-09-16 — tryb ręczny usunięty (uwaga terenowa)
+
+Pkt 8b („ręczne ustawienie stacji przeciąganiem pinezek") WYCOFANY decyzją
+właściciela: drag nie działał na iPhonie. Usunięte:
+przycisk, `ustawTrybReczny`, gałęzie, wzmianki i style (S02/S03/S09/S13/S14,
+`.pinezka-reczna`). Degradacja to odtąd: cache (8a) albo pierścień (8c).
+
+Właściciel, 2026-09-16: „Ustawianie stacji ręcznie — ta funkcja do wywalenia
+w całości."

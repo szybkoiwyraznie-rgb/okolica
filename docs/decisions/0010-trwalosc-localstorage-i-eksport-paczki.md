@@ -99,3 +99,10 @@ lokalnego, a idempotencję po odcisku gry ma jak dotąd.
 **Strażnik:** `test/dryf-dokumentow.test.js` ma martwe frazy (etykieta karty,
 przycisk kasowania, klucz), a `test/kontrakt.test.js` asertuje nieobecność
 elementów, funkcji i symboli oraz to, że wysyłka wyniku na Drive została.
+
+## Aneks 2026-09-16 — wpis z szerszego pobrania obsługuje węższy setup (teren)
+
+Klucz dokładny `geohash6-R-tryb` gubił cache przy KAŻDEJ zmianie setupu (inny R → Overpass od nowa). Odtąd wpis niesie kotwicę pobrania
+(`srodek`, `promienM`, `tryb`), a odczyt po pudle dokładnym szuka w tej samej
+komórce wpisu POKRYWAJĄCEGO (dysk `R×1.15` gry w dysku wpisu; `wybierzWpisSieci`
+bierze najświeższy). Stare wpisy, LRU i TTL bez zmian.

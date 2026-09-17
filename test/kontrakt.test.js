@@ -394,10 +394,13 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
   // wymuszanie z nikim się nie konsultowało w terenie.
   assert.equal(INDEX.includes('id="przycisk-pierścien"'), false, 'przycisk „Tryb uproszczony" usunięty z ekranu stacji');
 
-  const reczne = INDEX.match(/<button id="przycisk-reczne"[^>]*>/)?.[0];
-  assert.ok(reczne, 'brak przycisku trybu ręcznego (ADR 0005 pkt 8b)');
-  assert.match(reczne, /aria-pressed="false"/, 'tryb ręczny startuje wyłączony');
-  assert.match(reczne, /\bhidden\b/, 'widoczny dopiero na ekranie stacji bez sieci');
+  // Właściciel 2026-09-16 (teren): tryb ręczny usunięty w całości —
+  // przeciąganie pinezek nie działało na iPhonie. Jak przycisk-pierścien:
+  // kontrakt asertuje BRAK przycisku, kodu i styli.
+  assert.equal(INDEX.includes('id="przycisk-reczne"'), false, 'przycisk „Ustaw stacje ręcznie" usunięty z ekranu stacji');
+  assert.equal(/ustawTrybReczny|przestawStacjeRecznie|przycisk-reczne/.test(APP), false, 'app.js nie zna trybu ręcznego');
+  assert.equal(/ustawTrybReczny|przeciegana|pinezka-reczna/.test(czytaj('app/mapa.js')), false, 'mapa.js nie ma drag pinezek');
+  assert.equal(/pinezka-reczna|pinezka-dotyk/.test(czytaj('app/styles.css')), false, 'style drag pinezek usunięte');
 
   assert.match(INDEX, /id="bledy-stacje"[^>]*role="alert"/, 'błędy sieci drogowej w polu role=alert (nie alert())');
 
@@ -1085,18 +1088,18 @@ test('kontrakt ADR 0026 aneks: lista graczy zamiast pola liczby, wynik hot-seat 
   assert.ok(APP.includes('okolica:hotseat-kolejka') && APP.includes('oproznijKolejkeHotseat()'), 'wynik czeka w kolejce i dojeżdża później (ADR 0016 pkt 5)');
 });
 
-test('kontrakt ADR 0024 aneks: promień nie jest kryterium, a komunikat nazywa powód', () => {
+test('kontrakt ADR 0046 + aneks 2026-09-16: promień jest kryterium równości, a komunikat to jedna linijka', () => {
   const ZESTAWY = czytaj('app/zestawy.js');
-  assert.match(ZESTAWY, /export function powodyNiedopasowania/, 'zestawy.js umie nazwać powód niedopasowania');
+  assert.match(ZESTAWY, /export function powodyNiedopasowania/, 'zestawy.js rozstrzyga dopasowanie w jednym miejscu');
   assert.match(ZESTAWY, /export function czyWOkolicy/, 'okolica jest osobnym, jawnym kryterium');
-  assert.equal(/w\.promienM <= promienM/.test(ZESTAWY), false, 'promień paczki nie jest już kryterium dopasowania');
-  assert.match(ZESTAWY, /NIE są kryteriami: promień/, 'reguła jest zapisana przy kodzie, nie tylko w ADR');
+  assert.match(ZESTAWY, /w\.promienM !== promienM/, 'promień paczki jest kryterium RÓWNOŚCI (ADR 0046 pkt 1)');
+  assert.equal(/NIE są kryteriami: promień/.test(ZESTAWY), false, 'stara reguła „promień nie jest kryterium” zniknęła z komentarza');
   assert.match(ZESTAWY, /export function sumaPytanWpisu/, 'kryterium jest ŁĄCZNA liczba pytań, nie stacje × pytania');
   assert.match(ZESTAWY, /środek transportu \(właściciel wycofał/, 'środek transportu jawnie NIE jest kryterium');
-  assert.match(ZESTAWY, /za mało pytań: paczka ma/, 'komunikat podaje liczby: ile ma paczka, ile chce setup');
-  // komunikat karty paczek cytuje powody, a nie cały setup
-  assert.match(APP, /powodyNiedopasowania\(m, kryteria\)/, 'app.js cytuje powody wprost w komunikacie');
-  assert.equal(/ale żadna nie pasuje do tego setupu/.test(APP), false, 'stary komunikat z całym setupem zniknął');
+  assert.match(ZESTAWY, /za mało pytań: paczka ma/, 'powody podają liczby: ile ma paczka, ile chce setup');
+  // karta paczek: jedna linijka bez cytowania powodów (teren 2026-09-16)
+  assert.match(APP, /żadna z nich nie pasuje/, 'komunikat mówi jedną linijkę, że paczki nie pasują');
+  assert.equal(/powodyNiedopasowania\(m, kryteria\)/.test(APP), false, 'karta nie cytuje już powodów wprost');
   assert.match(APP, /czyWOkolicy\(m, kryteria\)/, 'paczki z innych okolic nie są nawet liczone');
 });
 
@@ -2472,4 +2475,17 @@ test('kontrakt m12-120: pełny układ ulic dla pieszego i roweru, bez autostrad;
     assert.ok(tresc.slice(0, 400).includes('przewinWarstweStacjiNaGore()'),
       `${przycisk} resetuje przewijanie warstwy (UX m12-120)`);
   }
+});
+
+test('kontrakt ADR 0052: aplikacja i most mówią cache L2 tym samym protokołem', () => {
+  // odczyt: telefon pyta GET akcja=siec, most odpowiada wpisem albo {ok:false}
+  assert.ok(APP.includes("urlGet(url, 'siec'"), 'aplikacja pyta most o sieć (GET akcja=siec)');
+  assert.ok(GS.includes("akcja === 'siec'"), 'most obsługuje akcję siec');
+  // zapis: telefon wysyła POST siec-zapisz z wpisem, most robi upsert nazwą
+  assert.ok(APP.includes("akcja: 'siec-zapisz'"), 'aplikacja wysyła wpis na dysk (POST siec-zapisz)');
+  assert.ok(GS.includes("case 'siec-zapisz'"), 'most obsługuje zapis wpisu sieci');
+  // kształt wpisu jest jeden, z aplikacji (most nie wymyśla własnego)
+  assert.ok(APP.includes('zlozWpisSieci({') && GS.includes('SCHEMAT_SIECI_CACHE'), 'wpis ma schemat sieci po obu stronach');
+  // UI nazywa źródło trafienia (telefon albo wspólny dysk)
+  assert.ok(APP.includes('ze wspólnego dysku'), 'trafienie L2 jest nazwane w UI');
 });

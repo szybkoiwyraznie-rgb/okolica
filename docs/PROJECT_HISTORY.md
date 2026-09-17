@@ -6824,3 +6824,80 @@ Informacje zostają 24 px jako świadomy wyjątek od progu ≥ 44 px.
 **Otwarte po sesji:** PR #38 (scalenie właściciela, squash). Most Apps Script
 bez zmian. Czekamy na uwagi z testów terenowych (m.in. paczka z promptu
 `PYT/1.1.2` i polecenia z PR #35).
+
+## 2026-09-16e — otwarcie sesji `arena/01a0ab16-okolica` (PR #39 w tym commicie)
+
+**Zlecenie:** „kontynuujemy projekt”. Kamienie M0–M12 zamknięte jako zakres
+kodu (L68); kolejka pracy pusta (BACKLOG bez pozycji do samodzielnej promocji,
+brak issues na GitHubie, brak uwag z terenu w wiadomości), więc sesja robi to,
+co każe `AGENTS.md` §2 pkt 2: audyt poprzedniego scalonego PR (#38), a potem
+czeka na uwagi z terenu.
+
+**Brama startowa:** `npm test` **829 / 829**, `npm run budzet` **99 928 /
+100 000** (rezerwa 72), `main` = `df15f70` (squash PR #38, scalony 2026-09-16
+16:39 UTC), cache-bust w `main` = `m12-152`.
+
+**Audyt PR #38** (squash `df15f70` na `31dbbf4`, 34 pliki, +707/−229 — fala A
+na kroku 5 + B26). Sprawdzone plik po pliku wobec repozytorium i `gh`:
+- Wersje spójne: `?v=m12-152` we wszystkich importach i `index.html`,
+  `WERSJA_SW = m12-152`, zero resztek `m12-149` w kodzie.
+- A(a): akapit instrukcji usunięty z `index.html`; pin pilnuje PUSTKI między
+  `</h2>` a `<textarea>`; uczciwość o jawnej paczce niosą karta prywatności
+  i README (piny przepisane na nośniki wykonujące obietnicę).
+- A(b): przycisk i nasłuch schowka usunięte, zero odwołań do `przycisk-wklej`
+  w żywych nośnikach; nasłuch `paste` zostaje; ADR 0006 → aneks 2026-09-16d;
+  `WORKFLOW`/`ARCHITECTURE` przepisane; dwie martwe frazy w strażniku dryfu.
+- A(c): `wyczyscEkranPaczki()` wołany przy WEJŚCIU na krok 5 (z `status('')`)
+  i w `wrocNaPoczatek()`; oba wejścia na krok 5 to nawigacja (kopiuj-prompt
+  przy udanym schowku, przycisk dalej) — czyszczenie niczego nie gubi;
+  `dataset.stan` spójny (`ok`/`blad`/delete); test dwóch gier z odrzuconą
+  paczką; L78 w rejestrze i archiwum.
+- B26: `app/styles.css` bez zmian (brak w diffie); aneksy ADR 0011/0042
+  z 2026-09-16d; notki w rejestrze; B26 rozstrzygnięte w BACKLOG; pin kontraktu
+  na obie strony decyzji.
+- Archiwizacja budżetowa: treść przeniesiona, nie skasowana (trzecia tura
+  ADR 0006 w `aneksy-0006-2026-09-09.md`, nowe pliki 0006-15/15d, 0011-12/14,
+  0042-15); żywe pliki niosą wskaźniki; pin m12-115 przepisany na archiwum.
+- Brama z handoffu 16d powtórzona w całości i zgodna: testy 829/829, check OK
+  (§2 3 603 znaki, §2.2 3 738), WCAG AA 0 naruszeń, zasięg mostu 97,7%
+  (850/870), budżet 99 928 / 100 000 (rezerwa 72); CI na PR #38 zielone
+  (`test` SUCCESS).
+
+**Defekty znalezione i naprawione w miejscu (commit porządkowy `49d3f76`):**
+1. Rejestr ADR, wiersz 0042: zdublowane słowo („przyciski-stopki stopki”)
+   i niezbalansowany nawias (2× `(` vs 3× `)`) — wiersz przepisany.
+2. `HANDOFF_2026-09-16d`, tabela „Brama jakości”: budżet 99 963 (rezerwa 37)
+   zamiast końcowego 99 928 (rezerwa 72) — komórka poprawiona (opis PR #38,
+   sekcja 16d w tym pliku i pomiar na `df15f70` mówią 99 928).
+
+**Werdykt:** scalenie w pełni poprawne. Kamienie M0–M12 zamknięte; brak
+uwag z terenu w kolejce — sesja gotowa i oczekuje na uwagi z testów
+terenowych właściciela.
+
+### Uwagi terenowe (ten sam dzień, po audycie) — mismatch, tryb ręczny, Overpass, cache L2
+
+Właściciel przysłał 4 uwagi z telefonu; zrealizowane krokami A–E na tej
+gałęzi (cache `m12-153`):
+- Krok A (`ce2c98c`): karta paczek mówi jedną linijką, bez powodów
+  (`powodyNiedopasowania` filtruje jak dotąd); ADR 0046 → aneks 2026-09-16.
+- Krok B (`b922200`): tryb ręczny stacji usunięty w całości (drag nie
+  działał na iPhonie); degradacja to cache albo jawny pierścień; ADR 0005 →
+  aneks 2026-09-16.
+- Krok C (`9bbf195`): cache L1 — wpis z szerszego pobrania obsługuje węższy
+  setup (kotwica `srodek`/`promienM`/`tryb`, `wybierzWpisSieci`); ADR 0010 →
+  aneks 2026-09-16.
+- Krok D (`0bc6731`): wspólny cache sieci na Drive, L2 per geohash (katalog
+  `okolica-sieci-cache`, akcje `akcja=siec` / `siec-zapisz`, odczyt
+  L1→L2→Overpass); nowy ADR 0052; testy `most-sieci` 9/9 + 2 aplikacja + 1
+  kontrakt; instrukcja mostu dopisana.
+- Krok E (`56e705f`): wersje `m12-153`; budżet lektury 100898 → **99998 /
+  100000** (rezerwa 2 — archiwizacja 4 aneksów 0016 i m12-94 z 0036;
+  aneks 0009 z 2026-09-12 niearchiwizowalny, rotacja żyje).
+- Brama końcowa: `npm test` **843 / 843**, check OK (§2 3603, §2.2 3738),
+  WCAG 0 naruszeń, zasięg mostu 97,9% (936/956), live-verify OK (m12-153
+  serwowane, brak 404).
+
+**Otwarte po sesji:** PR #39 (scalenie właściciela, squash). **Most Apps
+Script wymaga ponownego wdrożenia** (akcje L2) — procedura w
+`docs/setup/most-drive-instrukcja.md`. Czekamy na uwagi z testów terenowych
+(m.in. paczka z promptu `PYT/1.1.2` i polecenia z PR #35).

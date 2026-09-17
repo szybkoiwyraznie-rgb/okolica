@@ -181,6 +181,13 @@ Skrót:
   `geohash6Szacowany: true`. Bez tego kroku stare paczki dalej dopasowują się
   zgrubnie (geohash5 ≈ 3 × 5 km), a wyniki gier nie zawierają premii
   za kolejność ukończenia (telefon pokazuje ją i tak — liczy ją aplikacja).
+- Aktualizacja do cache L2 sieci (teren 2026-09-16, ADR 0052): wklej nową
+  treść skryptu i Wdróż → Nowa wersja (funkcji `setup` uruchamiać nie
+  trzeba — katalog `okolica-sieci-cache` zakłada się sam przy pierwszym
+  użyciu). Test: zagraj raz z internetem (świeże pobranie Overpass), potem
+  sprawdź na Drive, że w `okolica-sieci-cache` leży plik
+  `siec-<geohash6>-<R>-<tryb>-….json`. Bez tego kroku telefon gra jak
+  dotąd (L1 + Overpass) — L2 po cichu nie odpowiada.
 - **Aktualizacja do paczek bez akceptacji (decyzja właściciela 2026-09-11)**:
   wklej nową treść `docs/setup/apps-script-repo-paczek.gs` i **Wdróż →
   Zarządzaj wdrożeniami → Edytuj → Nowa wersja** (funkcji `setup` uruchamiać

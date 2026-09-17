@@ -997,10 +997,13 @@ test('wybór samochodem: stacje to wyłącznie POI (parkingi i obiekty z dojazde
 
 import {
   SCHEMAT_SIECI,
+  czyWpisPokrywa,
   kluczCacheSieci,
   przycijCacheSieci,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
+  wybierzWpisSieci,
+  zlozWpisSieci,
 } from '../app/sieci.js';
 
 test('cache: klucz to geohash-6 + promień + tryb (ADR 0010 pkt 1)', () => {
@@ -1046,6 +1049,52 @@ test('cache: TTL 30 dni, przyszłość, schemat i puste drogi — wszystko jawne
   assert.equal(wczytajDaneZCache(wpis(teraz, { dane: { ...dane, drogi: [] } }), { terazMs: teraz }), null, 'wpis bez dróg jest bezużyteczny');
   assert.equal(wczytajDaneZCache(null, { terazMs: teraz }), null);
   assert.equal(wczytajDaneZCache(wpis(NaN), { terazMs: teraz }), null);
+});
+
+test('cache: wpis z szerszego pobrania pokrywa węższy setup (teren 2026-09-16)', () => {
+  const teraz = Date.UTC(2026, 8, 16);
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixture('las')));
+  const srodek = { lat: 52.2297, lon: 21.0122 };
+  const szeroki = zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: teraz });
+  assert.equal(szeroki.schemat, SCHEMAT_SIECI);
+  assert.deepEqual(szeroki.srodek, srodek);
+  assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 2000 }), 'ten sam promień pokrywa');
+  assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 1000 }), 'węższy setup wchodzi w szerszy wpis');
+  assert.equal(czyWpisPokrywa(szeroki, { srodek, promienM: 2001 }), false, 'szerszy setup nie wchodzi');
+  // dryf środka: ~500 m dalej przy R=1000 wchodzi (500 + 1150 ≤ 2300)…
+  const obok = { lat: 52.2342, lon: 21.0122 };
+  assert.ok(czyWpisPokrywa(szeroki, { srodek: obok, promienM: 1000 }), 'umiarkowany dryf środka wchodzi');
+  // …a ~2 km dalej już nie (2000 + 1150 > 2300)
+  const daleko = { lat: 52.2477, lon: 21.0122 };
+  assert.equal(czyWpisPokrywa(szeroki, { srodek: daleko, promienM: 1000 }), false, 'duży dryf środka nie wchodzi');
+  // wpisy sprzed kotwic i śmieci nie pokrywają (obsługuje je klucz dokładny)
+  assert.equal(czyWpisPokrywa({ schemat: SCHEMAT_SIECI, zapisanoMs: teraz, dane }, { srodek, promienM: 1000 }), false);
+  assert.equal(czyWpisPokrywa(null, { srodek, promienM: 1000 }), false);
+  assert.equal(czyWpisPokrywa(szeroki, { srodek, promienM: 0 }), false);
+});
+
+test('cache: wybierzWpisSieci bierze najświeższy pokrywający, resztę odrzuca jawnie', () => {
+  const dzien = 86_400_000;
+  const teraz = Date.UTC(2026, 8, 16);
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixture('las')));
+  const srodek = { lat: 52.2297, lon: 21.0122 };
+  const gra = { srodek, promienM: 1000, tryb: 'piesza', terazMs: teraz };
+  const wpis = (promienM, zapisanoMs, nadpisz = {}) => ({
+    klucz: `okolica:sieci:komorka-${promienM}-piesza`,
+    wpis: { ...zlozWpisSieci({ dane, srodek, promienM, tryb: 'piesza', terazMs: zapisanoMs }), ...nadpisz },
+  });
+  const stary = wpis(2000, teraz - 10 * dzien);
+  const nowy = wpis(2000, teraz - dzien);
+  assert.equal(wybierzWpisSieci([stary, nowy], gra).klucz, nowy.klucz, 'z dwóch pokrywających wygrywa świeższy');
+  assert.equal(wybierzWpisSieci([nowy, stary], gra).klucz, nowy.klucz, 'kolejność skanu nie ma znaczenia');
+  // odrzuty: przeterminowany, obcy tryb, za wąski, bez dróg, śmieć po parsowaniu
+  const przeterminowany = wpis(5000, teraz - 31 * dzien);
+  const rower = wpis(5000, teraz, { tryb: 'rower' });
+  const waski = wpis(500, teraz);
+  const bezDrog = wpis(5000, teraz, { dane: { ...dane, drogi: [] } });
+  assert.equal(wybierzWpisSieci([przeterminowany, rower, waski, bezDrog, { klucz: 'x', wpis: null }], gra), null);
+  assert.equal(wybierzWpisSieci([], gra), null);
+  assert.equal(wybierzWpisSieci(null, gra), null);
 });
 
 test('cache: LRU — ponad 2 MB najstarsze wpisy wypadają', () => {

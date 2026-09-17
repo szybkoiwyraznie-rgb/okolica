@@ -9,7 +9,7 @@
  * w repozytorium, żeby były trwałe").
  *
  * Ten sam web app obsługuje trzy zadania (ADR 0018): repozytorium paczek,
- * gry wieloosobowe — dlatego adres jest JEDEN i współdzielony.
+ * gry wieloosobowe i cache sieci (L2) — dlatego adres jest JEDEN i współdzielony.
  *
  * Nadpisanie techniczne (BEZ interfejsu): klucze `localStorage` mają
  * pierwszeństwo przed stałą. Furtka dla testów (atrapa mostu) i dla sytuacji
@@ -19,7 +19,7 @@
  * czysta funkcja + atrapa, `docs/LESSONS.md`).
  */
 
-import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-152';
+import { KLUCZ_URL_REPO } from './zestawy.js?v=m12-153';
 
 /**
  * Adres web app Apps Script (…/exec) wpisany na stałe w tej wersji aplikacji.

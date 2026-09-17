@@ -27,6 +27,7 @@ import {
   kluczCacheSieci,
   parsujOdpowiedz,
   upraszczajDaneDoCache,
+  zlozWpisSieci,
 } from '../app/sieci.js';
 import { CZASY_GRY, DOMYSLNE, PODKLADY, TEMATY, TEMATY_SETUP, TRYBY, domyslnaKonfiguracja, przeliczenieCzasu } from '../app/konfig.js';
 import { GRANICE, OPCJE_WATCH } from '../app/pozycja.js';
@@ -819,6 +820,71 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
   assert.match(domAtrapa.pobierz('pozycja-miejsce').textContent, /Śródmieście/, '{MIEJSCE} z obszaru administracyjnego (bez Nominatim)');
 });
 
+test('stacje: wpis z szerszego pobrania (R=2000) obsługuje grę R=1000 bez Overpass', async () => {
+  const pamiecCache = new Map();
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  const srodek = { lat: 52.2297, lon: 21.0122 };
+  pamiecCache.set(kluczCacheSieci({ ...srodek, promienM: 2000, tryb: 'piesza' }),
+    JSON.stringify(zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: Date.now() })));
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(pamiecCache) });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  let ileProb = 0;
+  domAtrapa.window.fetch = async () => { ileProb++; return { ok: false, status: 504 }; };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(150);
+  assert.equal(ileProb, 0, 'skan cache znalazł wpis pokrywający — zero wołań sieci');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa \(Overpass\) — punkty osiągalne/);
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /z pamięci telefonu/);
+});
+
+test('stacje L2: wpis ze wspólnego dysku daje stacje sieciowe bez Overpass', async () => {
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(new Map()) });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  const srodek = { lat: 52.2297, lon: 21.0122 };
+  const wpisDysk = zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: Date.now() });
+  let ileOverpass = 0;
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec')) {
+      return { ok: true, status: 200, json: async () => ({ ok: true, wpis: wpisDysk }) };
+    }
+    ileOverpass++;
+    return { ok: false, status: 504 };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(250);
+  assert.equal(ileOverpass, 0, 'trafienie L2 — Overpass nie wołany wcale');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa \(Overpass\) — punkty osiągalne/);
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /ze wspólnego dysku/);
+  // trafienie L2 dokarmiło L1 pod kluczem dokładnym
+  const klucz = kluczCacheSieci({ ...srodek, promienM: 1000, tryb: 'piesza' });
+  assert.ok(JSON.parse(domAtrapa.pamiec.get(klucz)).dane.drogi.length > 10, 'L1 dokarmiony wpisem z dysku');
+});
+
+test('stacje L2: świeże pobranie wysyła wpis na wspólny dysk w tle', async () => {
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(new Map()) });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  const wyslane = [];
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec')) {
+      return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2 puste
+    }
+    if (String(opcje?.body ?? '').includes('siec-zapisz')) {
+      wyslane.push(JSON.parse(opcje.body).wpis);
+      return { ok: true, status: 200, json: async () => ({ ok: true }) };
+    }
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(400);
+  assert.equal(wyslane.length, 1, 'jedna wysyłka L2 po świeżym pobraniu');
+  assert.equal(wyslane[0].schemat, SCHEMAT_SIECI);
+  assert.equal(wyslane[0].promienM, 1000);
+  assert.equal(wyslane[0].tryb, 'piesza');
+  assert.ok(wyslane[0].dane.drogi.length > 10, 'wysyłka niesie sparsowane drogi');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'gra nie czekała na wysyłkę');
+});
+
 test('stacje: „Inny układ" i „Pobierz ponownie" wracają widokiem na górę warstwy (UX m12-120)', async () => {
   // Właściciel: przyciski opcji stoją pod długą listą stacji; po kliknięciu
   // panel (.panel-centralny, overflow-y: auto) zostawał przewinięty w dół.
@@ -846,6 +912,7 @@ test('stacje: udane pobranie z pierwszej instancji zapisuje cache i rysuje sieć
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const wywolania = [];
   domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
     wywolania.push({ url, opcje });
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
   };
@@ -874,6 +941,7 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   const bramka = new Promise((rozwiaz) => { puść = rozwiaz; });
   const wywolania = [];
   domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
     wywolania.push(url);
     await bramka; // pobieranie „wisi" — nakładka musi być widoczna
     return { ok: false, status: 400, text: async () => '' };
@@ -898,7 +966,11 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
     'po odpowiedzi pulsowanie gaśnie — stan „czekam" nie zostaje na ekranie');
   assert.match(domAtrapa.pobierz('siec-proby').textContent, /HTTP 400/, 'błąd zapytania jawny (kod S03)');
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false, 'po porażce widać ponowienie');
-  domAtrapa.window.fetch = async (url) => { wywolania.push(url); return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) }; };
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
+    wywolania.push(url);
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
   domAtrapa.kliknij('przycisk-siec-ponow');
   await czekaj(250);
   assert.equal(wywolania.length, 2, 'ponowienie woła sieć jeszcze raz');
@@ -914,7 +986,8 @@ test('stacje: sieć z cache pokazuje ponowienie, klik dowozi świeże dane z Ove
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const wywolania = [];
-  domAtrapa.window.fetch = async (url) => {
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
     wywolania.push(url);
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
   };
@@ -937,7 +1010,8 @@ test('Overpass: timeout martwej instancji przełącza OD RAZU, bez pauzy limitow
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test' });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const wywolania = [];
-  domAtrapa.window.fetch = async (url) => {
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
     wywolania.push(url);
     if (wywolania.length === 1) throw Object.assign(new Error('timeout'), { name: 'AbortError' });
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
@@ -957,7 +1031,8 @@ test('Overpass: zapamiętany sukces VK Maps ma pierwszeństwo', async () => {
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const wywolania = [];
-  domAtrapa.window.fetch = async (url) => {
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
     wywolania.push(url);
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
   };
@@ -970,7 +1045,8 @@ test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2', as
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const odwiedzone = [];
-  domAtrapa.window.fetch = async (url) => {
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
     odwiedzone.push(url);
     if (odwiedzone.length < INSTANCJE_OVERPASS.length) return { ok: false, status: 429 };
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
@@ -985,7 +1061,11 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   let ileProb = 0;
-  domAtrapa.window.fetch = async () => { ileProb++; return { ok: false, status: 504 }; };
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
+    ileProb++;
+    return { ok: false, status: 504 };
+  };
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(300);
   assert.equal(ileProb, INSTANCJE_OVERPASS.length, 'próbuje wszystkich instancji');
@@ -996,48 +1076,19 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
     'degradacja rozstawia pierścień (ADR 0005 pkt 8)');
 });
 
-test('stacje: tryb ręczny — start/stop, przeciągnięcie pinezki, jawna linia prosta', async () => {
+test('stacje: degradacja bez sieci = sam pierścień, bez trybu ręcznego (teren 2026-09-16)', async () => {
   const domAtrapa = await aplikacjaZSiecia(); // bez window.fetch → pierścień
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   domAtrapa.kliknij('przycisk-dalej-stacje');
-  assert.equal(domAtrapa.pobierz('przycisk-reczne').hidden, false, 'przy degradacji organizator może poprawić stacje ręcznie');
-  // stan początkowy aria-pressed="false" pilnuje kontrakt HTML (atrapa nie parsuje atrybutów)
-
-  const wyslijNa = (el, typ, zdarzenie) => {
-    for (const fn of el.zdarzenia[typ] ?? []) fn({ type: typ, preventDefault() {}, ...zdarzenie });
-  };
-
-  domAtrapa.kliknij('przycisk-reczne');
-  assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'true');
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /Tryb ręczny WŁĄCZONY/);
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /linii prostej/);
-  assert.match(domAtrapa.pobierz('status').textContent, /Tryb ręczny/);
-
-  // przeciągnij pierwszą pinezkę na mapie stacji (gest: pinezka → SVG capture)
-  const pinezki = domAtrapa.pobierz('mapa-stacje-pinezki');
-  const svg = domAtrapa.pobierz('mapa-stacje-svg');
-  assert.ok(pinezki.children.length >= 3, 'pierścień rozstawiony na mapie');
-  // Spisu stacji nie ma (właściciel 2026-09-15, uwaga 5): skutkiem
-  // przeciągnięcia jest nowe miejsce pinezki na mapie, nie wiersz listy.
-  const miejscePrzed = pinezki.children[0].getAttribute('transform');
-  wyslijNa(pinezki.children[0], 'pointerdown', { pointerId: 11, clientX: 0, clientY: 0, stopPropagation() {} });
-  wyslijNa(svg, 'pointermove', { pointerId: 11, clientX: 100, clientY: 100 });
-  wyslijNa(svg, 'pointerup', { pointerId: 11 });
-  const miejscePo = pinezki.children[0].getAttribute('transform');
-  assert.notEqual(miejscePo, miejscePrzed, 'pinezka stoi w nowym miejscu');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
   assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /^Wygenerowano \d+ stacji\.$/,
-    'podsumowanie mówi tylko, ile stacji — bez dystansów i opisów');
-
-  domAtrapa.kliknij('przycisk-reczne'); // stop
-  assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'false');
-  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /ustawione ręcznie przez organizatora/, 'po wyłączeniu UI nadal mówi, że stacja jest ręczna');
-
-  // „Inny układ" gasi tryb ręczny i przywraca czysty pierścień
-  domAtrapa.kliknij('przycisk-przelicz');
-  assert.equal(domAtrapa.pobierz('przycisk-reczne').dataset['attr-aria-pressed'], 'false');
-  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('ręcznie'), 'nowy układ nie udaje ręcznego');
-  assert.ok(!domAtrapa.pobierz('stacje-podsumowanie').textContent.includes('ręcznie'),
-    'podsumowanie nie zależy od trybu ręcznego');
+    'degradacja rozstawia pierścień (ADR 0005 pkt 8)');
+  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('ręcznie'), 'żadnej wzmianki o ręcznym ustawianiu');
+  // przycisk zniknął z index.html (kontrakt pilnuje braku); tu: żaden klik nie jest podpięty
+  assert.equal(domAtrapa.pobierz('przycisk-reczne').zdarzenia.click, undefined, 'nie ma czego klikać');
+  const pinezki = domAtrapa.pobierz('mapa-stacje-pinezki');
+  assert.ok(pinezki.children.length >= 3, 'pierścień rozstawiony na mapie');
+  assert.equal(pinezki.children[0].zdarzenia.pointerdown, undefined, 'pinezki nie dają się przeciągać');
 });
 
 /* --------------------------------------- M5/J3: podgląd i edycja organizatora */
@@ -3081,6 +3132,7 @@ for (const etap of ['nagłówki', 'ciało', 'nietypowy abort']) {
       return oryginalnyTimer(fn, ms, ...args);
     };
     d.window.fetch = async (url, opcje) => {
+      if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
       adresy.push(url); sygnaly.push(opcje.signal);
       const zawieszone = () => new Promise((_, reject) => {
         if (etap === 'nietypowy abort') opcje.signal.addEventListener('abort', () => reject(new Error('signal is aborted without reason')));
@@ -3112,7 +3164,8 @@ test('Overpass: HTTP 403 nie kończy łańcucha; rezerwa dowozi wynik', async ()
   const d = await aplikacjaZSiecia({ search: '?test=true&odstep=0' });
   ustawPozycjeTestowa(d, '52.2297', '21.0122');
   const adresy = [];
-  d.window.fetch = async url => {
+  d.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
     adresy.push(url);
     if (adresy.length === 1) return { ok: false, status: 403 };
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
@@ -3131,7 +3184,8 @@ test('Overpass: Adikso jako rezerwa dowozi dane i staje się pierwszą próbą k
   ustawPozycjeTestowa(d, '52.2297', '21.0122');
   const polski = 'https://overpass.osm.adikso.net/api/interpreter';
   const adresy = [];
-  d.window.fetch = async url => {
+  d.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
     adresy.push(url);
     if (url !== polski) throw new TypeError('Failed to fetch');
     return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
@@ -3144,7 +3198,11 @@ test('Overpass: Adikso jako rezerwa dowozi dane i staje się pierwszą próbą k
   const kolejna = await aplikacjaZSiecia({ search: '?test=true&odstep=0', pamiec: new Map([['okolica:overpass-sprawny', polski]]) });
   ustawPozycjeTestowa(kolejna, '52.2297', '21.0122');
   const nowe = [];
-  kolejna.window.fetch = async url => { nowe.push(url); return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) }; };
+  kolejna.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
+    nowe.push(url);
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
   kolejna.kliknij('przycisk-dalej-stacje');
   await czekaj(100);
   assert.deepEqual(nowe, [polski]);
