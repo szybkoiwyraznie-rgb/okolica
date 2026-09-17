@@ -635,3 +635,11 @@ Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L77`.
 **Reguła:** stan ekranu kroku (karta wyniku, komunikaty, pole) czyść przy KAŻDYM wejściu na ekran i przy końcu gry, nie tylko po zdarzeniu, które go ustawiło; test pisz jako DRUGĄ grę w jednej sesji strony, najlepiej z odrzuconą paczką w pierwszej (L77 — ten sam korzeń: węzeł żyje dłużej niż jedna gra).
 
 Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L78`.
+
+## L79 (2026-09-17) — budżet lektury mierz PO ostatniej zmianie dokumentów, nie w środku sesji
+
+**Objaw:** `docs/setup/HANDOFF_2026-09-17.md` podawał `npm run budzet` = 99 998 / 100 000 (rezerwa 2 tokeny), a na scalonym `main` ten sam pomiar dawał **101 082** — przekroczenie progu o 1 082 tokeny. Różnicę zrobił aneks terenowy dopisany do ADR 0035 w tym samym PR, już po pomiarze do tabeli bramy.
+**Przyczyna:** kontrola budżetu nie była częścią ani `npm test`, ani `npm run brama`, więc jej wynik trafiał do handoffu ręcznie i starzał się przy każdym dopisaniu treści do lektury obowiązkowej; testy i strażnik dryfu tego nie łapią, bo próg jest decyzją AGENTS.md §0, nie asercją kodu.
+**Reguła:** (1) liczbę budżetu licz PO ostatniej zmianie dokumentów lektury (nie w środku sesji) i wpisuj do handoffu razem z datą pomiaru; (2) `npm run brama` goni teraz `budzet-lektury.mjs` — przekroczenie jest czerwienią bramy, nie zdaniem w dokumencie, a skład bramy trzyma pin w `test/kontrakt.test.js`; (3) gdy próg jest już przekroczony, kolejność jest obowiązkowa: najpierw archiwizacja aneksów do `docs/decisions/archive/` z notą wiążącą w ADR (L62/L66), potem dopiero nowa treść.
+
+Pełny opis przypadku: `docs/LESSONS_ARCHIVE.md` → `## L79`.

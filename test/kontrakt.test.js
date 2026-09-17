@@ -1010,6 +1010,10 @@ test('kontrakt M10: przełącznik sygnałów w nagłówku, domyślnie włączony
 
 test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
   assert.match(PACKAGE.scripts.brama, /audyt-kontrastu\.mjs/, 'npm run brama musi gonić audyt kontrastu');
+  // LESSONS L79: przekroczenie progu lektury (AGENTS.md §0) ma być czerwienią
+  // bramy, a nie liczbą przepisaną ręcznie do handoffu — inaczej starzeje się
+  // przy pierwszym dopisaniu treści.
+  assert.match(PACKAGE.scripts.brama, /budzet-lektury\.mjs/, 'npm run brama musi pilnować budżetu lektury (AGENTS.md §0)');
   assert.equal(PACKAGE.scripts.audyt, 'node tools/audyt-kontrastu.mjs', 'osobny skrót npm run audyt');
 });
 

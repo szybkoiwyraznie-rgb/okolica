@@ -512,6 +512,14 @@ grami żyją na wspólnym Drive (ADR 0026 aneks) i stamtąd bierze je ranking
 (ADR 0039) — telefon nie trzyma własnej kopii. Koniec gry (naturalny albo
 ręczny) woła więc w hooku `zapiszGre()` bezpośrednio `wyslijWynikHotseat()`.
 
+Lokalna flaga użycia paczki (teren 2026-09-17, uwaga D; ADR 0028) żyje
+w kluczu `okolica:uzyte-paczki` (`app/oceny.js`: `czyPaczkaUzytaLokalnie()`,
+`oznaczPaczkeJakoUzyta()`): identyfikatory paczek, w których na TYM telefonie
+odpowiedziano już na co najmniej jedno pytanie. Do mostu idzie z tego tylko
+zwykły ping `uzycie` w chwili przyjęcia paczki — flaga niczego nie wysyła,
+a kasuje ją to samo czyszczenie `okolica:*`. Powód: napis „Jeszcze nie użyta
+w grze" bywał fałszywy, zanim Drive zsumował pingi.
+
 Kolejka zdarzeń gry sieciowej (ADR 0019 aneks 2026-09-13d) żyje w kluczu
 `okolica:multi-kolejka` jako `zdarzenia-kolejka/1` (`kod`, `idGry`, `zdarzenia`
 — najwyżej 50 najstarszych; walidacja `walidujKolejkeZdarzen()`, zapis

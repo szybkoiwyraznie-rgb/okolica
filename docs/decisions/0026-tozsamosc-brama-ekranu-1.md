@@ -58,57 +58,12 @@ Wymaganie dodatkowe: „UX-friendly, minimalna liczba kliknięć".
   `#pole-tozsamosc`/`#profil-stan` (i NIE ma osobnego przycisku sprawdzania).
 - Most Drive nie wymaga zmian: `ustawProfil` już realizuje punkty 3 i 5.
 
-## Aneks (2026-09-07): lista graczy JEST tożsamością
+## Aneks 2026-09-07 (i dopisek z tego samego dnia) jest w archiwum (poza budżetem lektury)
 
-Właściciel po partii 4: dwa bloki na ekranie 1 — „Gracze" (liczba) i „👤 Kim
-jesteś?" (imię + PIN) — pytały o to samo i nie dało się z nich wyczytać, co
-wpisać. Decyzje właściciela z 2026-09-07 (trzy odpowiedzi):
-
-1. **PIN sprawdzany od razu przy „➕ Dodaj gracza"**, a pole „Liczba graczy"
-   znika — „tyle ilu się doda, tylu będzie".
-2. **Lista graczy jest zapamiętywana na telefonie i nie pyta o PIN ponownie.**
-3. **Wynik gry hot-seat jedzie na Drive per gracz** (nowa akcja mostu).
-
-Co się zmieniło względem punktów 1–6 powyżej:
-
-- **Jeden blok „👤 Kto gra?"** zamiast trzech: imię + PIN + „➕ Dodaj gracza",
-  poniżej lista dodanych graczy z „✕ Usuń" i przyciski zapamiętanych. Pola
-  `#setup-gracze` i `#lista-imion` zniknęły z `index.html`;
-  `konfig.liczbaGraczy` jest pochodna (`max(1, imiona.length)`), a
-  `pytaniaNaStacje` idzie za liczbą graczy (`min(gracze, 8)`, ADR 0027 część A).
-- **Bramą jest długość listy, nie jedno imię**: `bramkaTozsamosci()` przepuszcza
-  z co najmniej jednym graczem i mówi wprost, kto nie ma potwierdzenia z Drive.
-  Pusta lista to usterka K08 z komunikatem, gdzie dodać gracza.
-- **`okolica:profil` → `okolica:gracze`** (schemat `gracze-lokalni/1`:
-  `{ pseudonim, zweryfikowany }`, maks. 8). PIN nadal nigdy nie jest zapisywany
-  lokalnie. Punkt 4 powyżej działa tak samo, ale dla całej listy: przy starcie
-  aplikacji potwierdzeni gracze wracają na listę bez PIN-u i bez sieci,
-  niepotwierdzeni czekają jako przyciski i wymagają PIN-u.
-- **Usunięcie jest trwałe**: po starcie lista się już sama nie odbudowuje
-  (`przywrocGraczy({ zListy: true })` tylko przy uruchomieniu) — inaczej
-  usunięty gracz wracał w tej samej chwili, w której został zdjęty.
-- **Wynik gry na tym telefonie jedzie na Drive** akcją `gra-hotseat`
-  (PROTOKOL §9.5): punkty liczy most, premia 0, zgoda `#hotseat-zgoda`,
-  kolejka offline. Punkt 6 („imię z profilu jest pierwszym graczem") jest
-  zbędny — lista graczy i tożsamość to teraz jedno.
-
-Konsekwencje aneksu: most wymaga **jednego wklejenia** nowej treści skryptu
-(akcja `gra-hotseat` + premia hot-seat = 0) — patrz
-`docs/setup/most-drive-instrukcja.md`. Testy: dziesięć scenariuszy listy
-(`test/wieloosobowa-ui.test.js`), trzy wysyłki hot-seat
-(`test/aplikacja.test.js`), trzy po stronie mostu na atrapie Drive
-(`test/most-gra.test.js`), kontrakt pinuje brak `#setup-gracze`.
-
-### Dopisek (2026-09-07, po obejrzeniu partii 5): bez pytania o zgodę przy każdej grze
-
-Checkbox „Zapisz wynik gry na wspólnym Drive" (`#hotseat-zgoda`) zniknął
-z ekranu 1. Właściciel: „Domyślnie zapisujemy na Drive i nie musimy o to co
-chwilę pytać w prywatnej aplikacji — info jest w sekcji prywatność".
-
-- Zapis wyniku jest **domyślny**; warunkiem technicznym zostaje choć jeden
-  gracz potwierdzony profilem (bez profilu nie ma gdzie zapisać punktów —
-  wtedy `#wynik-drive` mówi to wprost).
-- Sekcja „Dane i prywatność" dostała kartę **„Wspólny Drive: historia
-  i rankingi"**: co jedzie (pseudonimy, punkty, poprawne/błędne, miejscowość,
-  kategoria wiekowa, geohash5 okolicy), co zostaje (współrzędne, trasa,
-  pytania, paczka), oraz że profil z PIN-em leży na Drive (ADR 0021).
+Lista graczy jako tożsamość, PIN sprawdzany przy „➕ Dodaj gracza", brak pola
+liczby graczy, `okolica:gracze` (schemat `gracze-lokalni/1`, maks. 8, PIN nigdy
+lokalnie), wynik hot-seat per gracz na Drive i brak checkboxa zgody (zapis jest
+domyślny) — dosłownie: `docs/decisions/archive/aneksy-0026-2026-09-07.md`
+(archiwizacja 2026-09-17b; AGENTS.md §0, LESSONS L62/L66). Reguły obowiązują,
+pilnuje ich kod (`bramkaTozsamosci`, `przywrocGraczy`) i piny kontraktu
+(„kontrakt ADR 0026 aneks": brak `#setup-gracze`, lista zamiast pola liczby).

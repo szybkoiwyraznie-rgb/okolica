@@ -4,7 +4,9 @@
 > „załóż/dołącz" na SETUPIE, dołączanie tylko z listy ~50 m (bez kodów), paczka
 > przed lobby ze WSPÓLNEJ ścieżki, kanał info i koniec gry z ręki hosta.
 > **Rankingi usunięte w całości** (aneks 2026-09-11b) — tytuł ADR jest
-> historyczny, obowiązujący kształt definiuje **ostatni aneks na końcu**.
+> historyczny. Wszystkie aneksy (2026-09-06 … 2026-09-13d) są w
+> `docs/decisions/archive/`; obowiązujący kształt opisują punkty decyzji wyżej
+> i streszczenia w notach niżej, a pełne teksty — pliki archiwum.
 
 - Status: Zaakceptowana
 - Data: 2026-09-06
@@ -108,56 +110,25 @@ wychodzi z rejestru, a ślad zostaje). Obowiązujące aneksy są niżej.
 Powrót rankingu (decyzja przeniesiona do ADR 0039), koniec ekranu po starcie
 gry sieciowej (uwaga F) i koniec gry hosta, który nie kończy gry pozostałym
 (uwaga G) — `docs/decisions/archive/aneksy-0019-2026-09-12f-do-13b.md`.
-Obowiązujące aneksy są niżej:
-2026-09-13c (zgłoszenia terenowe N i R) i 2026-09-13d (utrwalona kolejka
-zdarzeń).
+Późniejsze aneksy — 2026-09-13c (zgłoszenia terenowe N i R) i 2026-09-13d
+(utrwalona kolejka zdarzeń) — też są w archiwum; niżej zostały po nich tylko
+noty ze streszczeniem reguł.
 
 ## Aneks 2026-09-13c jest w archiwum (poza budżetem lektury)
 
 Sekret tylko w żywej grze i stałe numery stacji po powrocie (m12-113,
 zgłoszenia terenowe N i R) — `docs/decisions/archive/aneksy-0019-2026-09-13c.md`,
-poza budżetem lektury startowej (AGENTS.md §0; LESSONS L62). Obowiązujący
-aneks jest niżej.
+poza budżetem lektury startowej (AGENTS.md §0; LESSONS L62). Późniejszy aneks
+(2026-09-13d) jest niżej.
 
-## Aneks 2026-09-13d (m12-114, zgłoszenie właściciela): kolejka zdarzeń jest utrwalona — reload nie gubi odpowiedzi
+## Aneks 2026-09-13d (m12-114) jest w archiwum (poza budżetem lektury)
 
-**Problem.** Aneks 2026-09-13c zostawił znane ograniczenie: zdarzenie
-niedostarczone (brak zasięgu albo odmowa sieci w chwili odpowiedzi) czekało
-w kolejce `app/sync.js` TYLKO w pamięci operacyjnej, więc odświeżenie telefonu
-je gubiło. Most nie poznawał odpowiedzi, stacja zostawała otwarta i gracz
-przechodził ją jeszcze raz. Właściciel wybrał naprawę w tej fali zamiast
-trzymania ograniczenia w dokumentacji.
-
-**Decyzja.** Kolejka zdarzeń gry sieciowej jest utrwalana w pamięci telefonu:
-klucz `okolica:multi-kolejka`, schemat `zdarzenia-kolejka/1`
-(`app/wieloosobowa.js`: `walidujKolejkeZdarzen`, `zapisKolejkiZdarzen`, limit
-`LIMIT_KOLEJKI_ZDARZEN` = 50 najstarszych). Wzór: kolejka wyniku hot-seat
-i kolejka ocen. `utworzSynchronizacje` dostaje trzy wstrzyknięte uchwyty —
-`wczytajKolejke`, `zapiszKolejke`, `limitKolejki` — więc moduł nadal nic nie
-wie o `localStorage` (testy jednostkowe wstrzykują tablicę). Utrwalony jest
-KAŻDY ruch kolejki: push przy awarii sieci, shift po wypchnięciu i shift po
-odmowie mostu.
-
-**Kolejność powrotu do gry.** `przywrocGreMulti` wypycha zaległe zdarzenia
-(`dostarczZalegleZdarzeniaMulti`) PRZED pobraniem stanu gry — inaczej telefon
-zbudowałby rozgrywkę ze stacją, którą most właśnie domknął, i gracz widziałby
-cel, którego już nie ma. Awaria sieci w trakcie wypychania zostawia resztę
-w pamięci (przejmie ją pierwszy udany krok `sync.js`); odmowa mostu kasuje
-zdarzenie zamiast je ponawiać. Duplikatu nie będzie: most odrzuca drugą
-odpowiedź tego gracza do tej stacji, więc ponowienie po częściowym
-dostarczeniu jest bezpieczne — to właśnie dlatego utrwalenie kolejki jest
-możliwe bez zmiany protokołu.
-
-**Granice.** Kolejka idzie w kosz razem z sesją (`usunSesjeMulti`): zdarzenia
-gry, której telefon już nie pamięta, nie mają dokąd iść. Zapis CUDZEJ gry (inny
-`kod`) i zapis śmieciowy dają pustą listę, nigdy wyjątku — kolejka jest pomocą,
-a prawdę o grze zna most. Przekroczenie limitu jest jawną odmową w statusie,
-nie cichym odrzuceniem.
-
-**Testy.** Jednostkowe: utrwalanie przy push/shift, start z `wczytajKolejke`,
-limit, round-trip walidatorów i odporność na śmieci. End-to-end
-(`test/wieloosobowa-ui.test.js`): odpowiedź bez zasięgu → odświeżenie →
-zdarzenia wychodzą przed stanem gry, pamięć jest czysta, cel to „stacja 2 z 3"
-(nie powtórka stacji 1), punkt jest na moście; oraz odświeżenie WCIĄŻ bez
-sieci — nic nie wychodzi i nic nie jest kasowane, a po powrocie sieci
-zdarzenia dochodzą raz.
+Utrwalona kolejka zdarzeń (reload nie gubi odpowiedzi) — dosłownie:
+`docs/decisions/archive/aneksy-0019-2026-09-13d.md` (archiwizacja 2026-09-17b;
+AGENTS.md §0, LESSONS L62/L66). Obowiązuje: klucz `okolica:multi-kolejka`
+(schemat `zdarzenia-kolejka/1`, limit `LIMIT_KOLEJKI_ZDARZEN` = 50
+najstarszych), `utworzSynchronizacje` dostaje uchwyty `wczytajKolejke`,
+`zapiszKolejke`, `limitKolejki` (moduł nie zna `localStorage`), utrwalany jest
+KAŻDY ruch kolejki, `przywrocGreMulti` wypycha zaległe zdarzenia PRZED
+pobraniem stanu gry, odmowa mostu kasuje zdarzenie (bez ponawiania),
+a `usunSesjeMulti` czyści kolejkę. Regułę techniczną opisuje LESSONS L67.

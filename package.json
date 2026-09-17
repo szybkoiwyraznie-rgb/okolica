@@ -8,7 +8,7 @@
     "test": "node --test",
     "build": "node tools/synchronizuj-szablon.mjs",
     "check": "node tools/synchronizuj-szablon.mjs --check",
-    "brama": "node --test && node tools/synchronizuj-szablon.mjs --check && node tools/audyt-kontrastu.mjs",
+    "brama": "node --test && node tools/synchronizuj-szablon.mjs --check && node tools/audyt-kontrastu.mjs && node tools/budzet-lektury.mjs",
     "fixture": "node tools/generuj-fixture-overpass.mjs",
     "ikony": "node tools/generuj-ikony.mjs",
     "serwer": "node tools/serwer.mjs .",

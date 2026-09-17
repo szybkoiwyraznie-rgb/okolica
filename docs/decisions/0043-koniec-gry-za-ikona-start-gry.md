@@ -108,50 +108,13 @@ czytania: jej treścią operacyjną jest `docs/LESSONS.md` L64, a pilnuje jej
 strażnik dryfu i kontrakt „zdania dla gracza o końcu gry nazywają ikonę
 ⚙ START GRY". Aneks 2026-09-14 (uwaga A) zostaje niżej, bo jest obowiązujący.
 
-## Aneks 2026-09-14 (m12-124, uwaga terenowa A) — w setupie ikona ⚙ działa jak oko
+## Aneks 2026-09-14 (m12-124, uwaga terenowa A) jest w archiwum (poza budżetem lektury)
 
-Pkt 2 decyzji mówił: „poza grą zachowanie zostaje dawne: z kroku gry wraca na
-mapę startową, spoza niej otwarta setup (F3)". Część „z kroku gry wraca na
-mapę startową" jest ZASTĄPIONA dla ekranów setupu (kroki 1–5: `setup`,
-`multi`, `pozycja`, `stacje`, `prompt`, `paczka`).
-
-**Zgłoszenie z terenu (właściciel, telefon, 2026-09-14):** podczas setupu, na
-ekranie wyznaczania stacji w okolicy, klik ⚙ START GRY w górnej belce wracał
-na mapę startową i zerwał pasek kroki — cała procedura setupu przerywała się,
-ponowny klik nie dawał widocznego efektu, a powrót (ikoną oka) lądował na
-pierwszym ekranie setupu, nie w miejscu, w którym gracz był.
-
-**Decyzja właściciela:** podczas setupu guzik ⚙ START GRY „powinien działać
-dokładnie tak samo jak oko na dole strony — chować layer, przywracać layer
-w tym miejscu setupu w którym jesteśmy".
-
-1. `przelaczSetup()` na ekranach setupu woła
-   `przelaczPodgladMapy({ fokus: 'przycisk-setup' })` — ten sam stan co oko
-   (`STAN.podgladMapy`), ten sam kod: `STAN.ekran` zostaje nietknięty (pasek
-   kroki nie jest zerowany, nie ma powrotu na mapę startową), warstwa jest
-   chowana przez `inert` + `body.podglad-mapy`, a drugi klik ⚙ przywraca ją
-   dokładnie tam, gdzie była (ten sam ekran, ten sam scroll). Jeden stan,
-   dwa wejścia: oko i ⚙ świecą się synchronicznie (`aria-pressed`).
-2. `przelaczPodgladMapy` dostał opcjonalny parametr `fokus` (domyślnie
-   przycisk oka) — ⚙ trzyma fokus na ikonie, w którą gracz kliknął.
-3. **Bez zmian:** w trakcie gry — warstwa końca gry (pkt 1 decyzji); po
-   zakończeniu gry (ekran `gra`, faza `koniec`) — ⚙ wraca na mapę startową
-   jak dawniej; z mapy startowej — otwiera setup.
-4. Tytuł ikony na ekranach setupu mówi „chowa i przywraca warstwę setupu
-   (jak oko)".
-
-5. **Dopisek 2026-09-15 (m12-125, usterka D1 z audytu PR #29):** pkt 1 dał
-   stanowi `STAN.podgladMapy` drugie wejście (ikona w belce), a stan nie gasł
-   przy zmianie ekranu — panel odziedziczał `body.podglad-mapy`, czyli
-   `visibility: hidden` + `inert`. **Niezmiennik tej decyzji:** podgląd mapy
-   jest trybem BIEŻĄCEGO ekranu i gasi go KAŻDA funkcja zmiany ekranu
-   (`pokazEkran`, `pokazMapeStartowa`, `pokazPrywatnosc`); `STAN.ekran` zostaje
-   nietknięty, bo nim wracamy z prywatności. Przypadek i testy: `docs/LESSONS.md`
-   L72; pin 3b w kontrakcie ADR 0043.
-
-**Wdrożenie:** `app/app.js` (`EKRANY_SETUPU`, `przelaczSetup`,
-`przelaczPodgladMapy({ fokus })`, `odswiezStanIkonBelki`) — ?v=m12-124.
-Testy: przepisany F3 w `test/aplikacja.test.js` (stary tor „setup → mapa
-startowa" zakazany asercją — L55) i nowy test uwagi A na ekranie pozycji
-(`STAN.ekran` i kroki nietknięte, powrót na ten sam ekran, nie na pierwszy
-ekran setupu); piny w kontrakcie „ADR 0043".
+Klik ⚙ START GRY w setupie działa jak oko — dosłownie:
+`docs/decisions/archive/aneksy-0043-2026-09-14.md` (archiwizacja 2026-09-17b;
+AGENTS.md §0, LESSONS L62/L66). Obowiązuje: na ekranach setupu `przelaczSetup()`
+woła `przelaczPodgladMapy({ fokus: 'przycisk-setup' })` — ten sam stan co oko,
+`STAN.ekran` nietknięty, drugi klik wraca w to samo miejsce setupu. Niezmiennik
+z dopisku 2026-09-15 (m12-125, LESSONS L72): podgląd mapy jest trybem BIEŻĄCEGO
+ekranu i gasi go KAŻDA funkcja zmiany ekranu (`pokazEkran`, `pokazMapeStartowa`,
+`pokazPrywatnosc`). Pin 3b w kontrakcie ADR 0043.
