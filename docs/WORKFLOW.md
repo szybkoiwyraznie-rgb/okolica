@@ -42,8 +42,9 @@ Koniec sesji:
    liczba stacji — **pytań się nie wybiera**: hot-seat pyta przy każdej stacji
    KAŻDEGO gracza raz, więc ich liczba to stacje × graczy (ADR 0027 aneks
    2026-09-15); „👤 Kto gra?” — imię + PIN każdego gracza,
-   bez co najmniej jednego nie ma przejścia dalej (ADR 0026); kategoria wiekowa
-   (7 lat / 12 lat / dorośli) i tematy. **Języka i podkładu mapy się nie
+   bez co najmniej jednego nie ma przejścia dalej (ADR 0026); poziom trudności
+   przy KAŻDYM imieniu (🧒 Dziecko (8–10) / 🧑 Dorosły, ADR 0055; w multi jeden
+   poziom wybiera host dla całej gry) i tematy. **Języka i podkładu mapy się nie
    wybiera** — są zaszyte w kodzie (polski + OSM Standard, ADR 0037).
    W multi tożsamość jedzie NA GÓRĘ, zaraz pod „Co robisz?” („🚀 Zakładam nową
    grę” / „🚪 Dołączam do istniejącej”), bo jeden telefon obsługuje jedną osobę
@@ -342,7 +343,7 @@ Uwagi techniczne (M8):
 | Co dodajesz | Gdzie | Co jeszcze trzeba zrobić |
 | --- | --- | --- |
 | Nowy temat pytań | `app/konfig.js` → `TEMATY` **i `TEMATY_SETUP`** + `docs/PROTOKOL.md` §5 | test kanonu, ten sam commit (LESSONS L45/L49: kanon żyje w kilku stałych naraz) |
-| Nowa kategoria wiekowa | `app/konfig.js` → `WIEK` **i `WIEK_SETUP`** + protokół §4 | opis trudności do promptu, test |
+| Nowy poziom trudności | `app/konfig.js` → `WIEK`, `KLUCZE_POZIOMOW` i `POZIOM_DORMYSLNY` + protokół §4 | opis trudności do promptu, test |
 | Nowy dostawca kafelków/danych | `app/mapa.js` albo `app/sieci.js` | wpis w `docs/ASSETS.md` (polityka, atrybucja, limity) + ADR |
 | Nowa decyzja architektoniczna | `docs/decisions/NNNN-*.md` | aktualizacja rejestru w `docs/decisions/README.md`, ten sam commit |
 | Nowa lekcja | `docs/LESSONS.md` | numeracja na końcu, format objaw→przyczyna→reguła |

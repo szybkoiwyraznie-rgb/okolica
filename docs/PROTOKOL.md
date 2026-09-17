@@ -197,7 +197,7 @@ WYMAGANIA DODATKOWE:
 ```
 <!-- szablon-promptu-bez:koniec -->
 
-## 3. Schemat paczki PYT/1.2
+## 3. Schemat paczki PYT/1.3
 
 ### 3.1 Poziom paczki
 
@@ -491,8 +491,8 @@ w aplikacji. Schematy `RO-*` nigdy nie miały pola `zgoda`.
 | `utworzono` | ISO 8601 | |
 | `organizatorId` | `"g-1"` | założyciel; tylko on startuje i kończy przedwcześnie |
 | `gracze` | `[{id: "g-N", pseudonim, dolaczyl}]` | maks. 8, pseudonim ≤24 znaków, unikalny w grze |
-| `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, wiek, tematy, promienM, miejsce, geohash5, geohash8}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza); `geohash8` (~40 m, pozycja hosta z chwili założenia) = miara zasięgu ~50 m listy „Dołącz" (m12-74); przy zakładaniu wymagany, przy odczycie opcjonalny (stare gry) |
-| `zestaw` | `{stacje, paczka PYT/1.1, meta TO-zestaw/2}` | mapa gry + pytania jawnym JSON-em (ADR 0050) |
+| `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, poziomyPytan albo wiek, tematy, promienM, miejsce, geohash5, geohash8}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza); `geohash8` (~40 m, pozycja hosta z chwili założenia) = miara zasięgu ~50 m listy „Dołącz" (m12-74); przy zakładaniu wymagany, przy odczycie opcjonalny (stare gry) |
+| `zestaw` | `{stacje, paczka PYT/1.3, meta TO-zestaw/2}` | mapa gry + pytania jawnym JSON-em (ADR 0050) |
 | `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
 | `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal, premia}}` | liczone przez most przy zamknięciu gry; `punkty` zawierają `premia` (ADR 0027 część B) |
 
@@ -558,7 +558,9 @@ nie ma.
 ### 9.3 `RO-lobby/1`
 
 - `RO-lobby/1`: `{ schemat, wpisy: [{ idGry, tryb, stan, miejsce, geohash5,
-  geohash8, wiek, tematy, liczbaGraczy, utworzono, organizator }] }` — BEZ
+  geohash8, wiek, tematy, liczbaGraczy, utworzono, organizator }] }` (`wiek`
+  to pole historyczne — nowe gry niosą trudność w `poziomyPytan`, ADR 0055,
+  a lista „Dołącz" i tak pokazuje wyłącznie „Host: <organizator>") — BEZ
   kodów i BEZ zestawów (prywatność otwartych gier); most zwracza WYŁĄCZNIE
   gry w stanie `lobby` (po starcie nie ma dołączania, właściciel 2026-09-11),
   a aplikacja filtruje po **geohash8** pozycji + sąsiadach (~50 m od hosta,
@@ -643,10 +645,14 @@ jedna, bez osobnej ścieżki w aplikacji.
   "akcja": "gra-hotseat",
   "tryb": "hotseat",
   "konfiguracja": {
-    "miejsce": "Podkowa Leśna", "geohash5": "u3qb8", "wiek": "dorosli",
+    "miejsce": "Podkowa Leśna", "geohash5": "u3qb8",
+    "poziomyPytan": { "dzieci": 0, "dorosli": 1 },
     "tematy": ["historia"], "liczbaStacji": 3, "pytaniaNaStacje": 3
   },
-  "gracze": [{ "id": 1, "pseudonim": "Ala" }, { "id": 2, "pseudonim": "Jan" }],
+  "gracze": [
+    { "id": 1, "pseudonim": "Ala", "poziom": "dorosli" },
+    { "id": 2, "pseudonim": "Jan", "poziom": "dorosli" }
+  ],
   "zdarzenia": [
     { "schemat": "RO-zdarzenie/1", "graczId": 1, "typ": "dojscie",
       "stacjaId": 1, "dane": { "trybDojscia": "gps" } },
@@ -663,7 +669,9 @@ Reguły są lustrami po obu stronach (`graHotseatDoWysylki` w
 - `zdarzenia` wyłącznie `dojscie` i `odpowiedz`, 1–400 sztuk, `stacjaId`
   w zakresie 1–`liczbaStacji`, `graczId` z listy graczy;
 - `konfiguracja` jak w grze wieloosobowej: `geohash5` startu zamiast punktu
-  gracza (ADR 0019 pkt 3), a pola `lat`/`lon` most kasuje dodatkowo;
+  gracza (ADR 0019 pkt 3), a pola `lat`/`lon` most kasuje dodatkowo; trudność
+  niesie `poziomyPytan` per stacja (albo stare `wiek`, ADR 0055), a gracze
+  wiozą swój `poziom` (`dzieci` / `dorosli` — auto-selection profilu);
 - `zestaw` jest `null` — paczka i pytania NIGDY nie wchodzą na Drive (ADR 0013);
 - punkty liczy MOST (`przeliczWyniki`), nie telefon: wynik nie zależy
   od wersji aplikacji. Premia za kolejność w hot-seat wynosi 0 — gracze idą

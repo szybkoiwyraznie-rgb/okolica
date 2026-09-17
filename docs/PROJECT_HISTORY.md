@@ -7135,3 +7135,54 @@ testy. Bump `m12-160` → `m12-161`.
 
 **Brama:** pełna brama — patrz commit. **Otwarte:** wdrożenie mostu + test
 terenowy na `m12-161`.
+
+## 2026-09-17g — otwarcie sesji `arena/01a0b144-okolica` (PR #43 w tym commicie)
+
+**Zlecenie właściciela:** „kontynuujemy projekt” — bez nowego zadania. Obowiązuje
+pętla: audyt poprzedniego PR, potem czekanie na uwagi z terenu (AGENTS §2, L68).
+
+**Lektura startowa (AGENTS §0):** wykonana w tej sesji — `AGENTS.md`,
+`docs/PROTOKOL.md` (PYT/1.3), rejestr ADR + ADR-y 0001–0058, `docs/LESSONS.md`
+(L1–L80), `docs/setup/ENVIRONMENT.md`, `docs/ROADMAP.md`, najnowszy handoff.
+Punktowo: `README.md`, `docs/PROJECT_HISTORY.md` (grep).
+
+**Stan zastany:** `main` = `48003a2` (squash PR #42). Brama: `npm test`
+**855/855**, `npm run brama` **EXIT 0**. Budżet lektury: **99 983 / 100 000**
+(rezerwa **17 tokenów**) — pomiar z 2026-09-17g; przy tym zapasie każdy nowy
+aneks terenowy w lekturze obowiązkowej przełamie próg, więc kolejność z L79
+(archiwizacja aneksów PRZED nową treścią) jest już nieunikniona — to zadanie
+tej sesji.
+
+**Audyt PR #42 (`48003a2`)** — plik po pliku. Zgodność z ADR 0055–0058
+potwierdzona (poziomy per gracz w hot-seacie i per gra w multi; stała kolejność
+odpowiadania; krótki prompt bez imion i daty; paczka bez `zrodla`/`utworzono`,
+E09–E11 wycofane), ale wyszły dwie usterki i dryf dokumentów:
+
+1. **Usterka w kodzie (naprawiona):** `metaBiezacejOkolicy()` liczyła poziomy
+   trudności z listy graczy także w multi, a walidacja paczki (`oczekiwane()`)
+   — z poziomu GRY (wybór hosta). Gdy poziom hosta różnił się od poziomu gry,
+   meta przeczyła pytaniom, które przeszły E21/E22: taka paczka szła na Drive
+   z błędnym `poziomyPytan` i nie pasowała potem do setupu, dla którego
+   powstała. Jedno źródło prawdy: `poziomyBiezacegoSetupu()` (hot-seat — gracze,
+   multi — poziom gry), użyte w walidacji, w meta zestawu, w kryteriach
+   dopasowania paczek i przy zakładaniu gry; pin w `test/kontrakt.test.js`.
+2. **Usterka we wdrożeniu (naprawiona):** wpis 2026-09-17f, ADR 0057/0058
+   i handoff ogłosiły bump `m12-160` → `m12-161`, ale kod (`index.html`,
+   `sw.js`, importy w `app/*.js`) niósł `m12-160` — bump nie wszedł do PR #42.
+   Nadrobiony; obowiązuje **`m12-161`** (także dla poprawki z pkt 1).
+3. **Dryf dokumentów (poprawiony):** `docs/WORKFLOW.md` (opis setupu
+   „kategoria wiekowa (7 lat / 12 lat / dorośli)” i wiersz tabeli
+   „Nowa kategoria wiekowa → `WIEK` i `WIEK_SETUP`”), `docs/PROTOKOL.md` §3
+   (nagłówek „Schemat paczki PYT/1.2” przy schemacie PYT/1.3; przykłady §9
+   z `wiek`) i `AGENTS.md` §3 (ściąga: „pytanie bez `zrodla[]`”, „Trudność
+   z kategorii wiekowej”, `PYT/1.0`). Strażnik dryfu dostał pięć nowych
+   martwych fraz (`test/dryf-dokumentow.test.js`), żeby to nie wróciło.
+
+**Budżet lektury (L62/L79):** poprawki dokumentów przełamały próg (100 172),
+więc sześć grup aneksów HISTORYCZNYCH wyszło do `docs/decisions/archive/`
+(ADR 0009, 0010, 0015, 0020, 0022, 0044) ze wskaźnikami w plikach
+macierzystych; daty w nagłówkach wskaźników trzymają strażnika cytowań ADR.
+Wynik: **98 903 / 100 000 (rezerwa 1 097)** — z 17 tokenów rezerwy na starcie.
+
+**Brama:** `npm test` **856/856**, `npm run brama` **EXIT 0**.
+

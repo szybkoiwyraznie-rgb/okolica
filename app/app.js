@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, KLUCZE_POZIOMOW, PODKLADY, POZIOM_DORMYSLNY, TEMATY_SETUP, TRYBY, czyPoziomOk, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-160';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-160';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, KLUCZE_POZIOMOW, PODKLADY, POZIOM_DORMYSLNY, TEMATY_SETUP, TRYBY, czyPoziomOk, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-161';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-161';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-160';
+} from './protokol.js?v=m12-161';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-160';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-160';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-160';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-160';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, kolejnoscPytanStacji, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-160';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-160';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-161';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-161';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-161';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-161';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, kolejnoscPytanStacji, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-161';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-161';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-160';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-160';
+} from './zestawy.js?v=m12-161';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-161';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -57,19 +57,19 @@ import {
   wczytajDaneZCache,
   wybierzWpisSieci,
   zlozWpisSieci,
-} from './sieci.js?v=m12-160';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-160';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-160';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-160';
-import { adresMostu, stanMostu } from './most.js?v=m12-160';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-160';
+} from './sieci.js?v=m12-161';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-161';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-161';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-161';
+import { adresMostu, stanMostu } from './most.js?v=m12-161';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-161';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   czyPaczkaUzytaLokalnie, oznaczPaczkeJakoUzyta,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-160';
+} from './oceny.js?v=m12-161';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -2728,11 +2728,25 @@ function odswiezPanelOcenPoIdPaczki() {
   renderujPanelOcen({ id: STAN.ocenianePytanieId });
 }
 
+/**
+ * Per-stacyjne poziomy bieżącego setupu (ADR 0055): hot-seat bierze je z listy
+ * graczy, a multi — z JEDNEGO poziomu gry wybranego przez hosta. JEDNO źródło
+ * dla walidacji paczki (`oczekiwane()`), meta zestawu i kryteriów dopasowania
+ * — audyt PR #42: `metaBiezacejOkolicy()` liczyła poziomy z samych graczy, więc
+ * w multi (poziom gry inny niż poziom hosta) meta przeczyła pytaniom, które
+ * przeszły E21/E22, i taka paczka szła na Drive z błędnym `poziomyPytan`.
+ */
+function poziomyBiezacegoSetupu() {
+  return STAN.rodzajGry === 'multi'
+    ? { dzieci: STAN.multiPoziom === 'dzieci' ? 1 : 0, dorosli: STAN.multiPoziom === 'dorosli' ? 1 : 0 }
+    : poziomyPytanZGraczy(STAN.konfig.gracze);
+}
+
 /** Meta dopasowania z bieżącej konfiguracji i pozycji (wspólna dla zapisu i eksportu). */
 function metaBiezacejOkolicy() {
-  // ADR 0055: trudność w meta = per-stacyjne poziomy z listy graczy;
-  // pytaniaNaStacje = ich suma (hot-seat: tyle pytań, ilu graczy).
-  const poziomy = poziomyPytanZGraczy(STAN.konfig.gracze);
+  // ADR 0055: trudność w meta = per-stacyjne poziomy bieżącego setupu;
+  // pytaniaNaStacje = ich suma (hot-seat: tyle pytań, ilu graczy; multi: 1).
+  const poziomy = poziomyBiezacegoSetupu();
   return zbierzMetaZestawu({
     lat: STAN.pozycja.lat,
     lon: STAN.pozycja.lon,
@@ -2977,12 +2991,10 @@ function odswiezPropozycjeZestawow() {
     return;
   }
   karta.hidden = false;
-  // ADR 0055: kryteria trudności = per-stacyjne poziomy — hot-seat z listy
-  // graczy, multi JEDEN poziom hosta (gracze dołączają później, ale pytania
-  // są wspólne — wybór poziomu jest w karcie multi).
-  const poziomyKryteriow = STAN.rodzajGry === 'multi'
-    ? { dzieci: STAN.multiPoziom === 'dzieci' ? 1 : 0, dorosli: STAN.multiPoziom === 'dorosli' ? 1 : 0 }
-    : poziomyPytanZGraczy(STAN.konfig.gracze);
+  // ADR 0055: kryteria trudności = per-stacyjne poziomy bieżącego setupu
+  // (hot-seat: lista graczy; multi: JEDEN poziom hosta — jedno źródło,
+  // `poziomyBiezacegoSetupu()`).
+  const poziomyKryteriow = poziomyBiezacegoSetupu();
   const kryteria = {
     geohash5: geohash(STAN.pozycja.lat, STAN.pozycja.lon, 5),
     // Pełna pozycja: dopasowanie liczy odległość od komórki paczki z tolerancją
@@ -4102,12 +4114,10 @@ async function kopiujDoSchowka(tekst, idPolaZapasowego) {
 /* ------------------------------------------------------------- walidacja */
 
 function oczekiwane() {
-  // ADR 0055: per-stacyjne poziomy — z listy graczy (hot-seat) albo JEDEN
-  // poziom hosta (multi: gracze dołączają później, paczka niesie jedno
-  // wspólne pytanie tego poziomu na stację).
-  const poziomy = STAN.rodzajGry === 'multi'
-    ? { dzieci: STAN.multiPoziom === 'dzieci' ? 1 : 0, dorosli: STAN.multiPoziom === 'dorosli' ? 1 : 0 }
-    : poziomyPytanZGraczy(STAN.konfig.gracze);
+  // ADR 0055: per-stacyjne poziomy — hot-seat z listy graczy, multi JEDEN
+  // poziom hosta (gracze dołączają później, paczka niesie jedno wspólne
+  // pytanie tego poziomu na stację). Jedno źródło z meta (audyt PR #42).
+  const poziomy = poziomyBiezacegoSetupu();
   const pytaniaNaStacje = poziomy.dzieci + poziomy.dorosli;
   return {
     liczbaStacji: STAN.konfig.liczbaStacji,
@@ -5094,11 +5104,10 @@ function metaSesjiMulti(stacje) {
   if (!punkt) return null;
   // ADR 0055 (właściciel, 2026-09-17): paczka multi niesie JEDEN poziom
   // (wybór hosta) — jedno wspólne pytanie na stację dla wszystkich graczy.
-  const mP = STAN.multiPoziom;
   return zbierzMetaZestawu({
     lat: punkt.lat, lon: punkt.lon,
     promienM: STAN.konfig.promienM, tematy: STAN.konfig.tematy,
-    poziomyPytan: { dzieci: mP === 'dzieci' ? 1 : 0, dorosli: mP === 'dorosli' ? 1 : 0 },
+    poziomyPytan: poziomyBiezacegoSetupu(),
     jezyk: STAN.konfig.jezyk, miejsce: STAN.miejsce ?? '',
     liczbaStacji: stacje.length, pytaniaNaStacje: 1,
     tematWlasny: STAN.konfig.tematWlasny ?? '',
@@ -5194,7 +5203,7 @@ async function zalozGreMulti() {
       konfiguracja: {
         liczbaStacji: stacje.length,
         pytaniaNaStacje: 1, // ADR 0055: jedno wspólne pytanie na stację
-        poziomyPytan: { dzieci: STAN.multiPoziom === 'dzieci' ? 1 : 0, dorosli: STAN.multiPoziom === 'dorosli' ? 1 : 0 },
+        poziomyPytan: poziomyBiezacegoSetupu(),
         tematy: meta.tematy,
         promienM: meta.promienM,
         miejsce: meta.miejsce ?? '',
