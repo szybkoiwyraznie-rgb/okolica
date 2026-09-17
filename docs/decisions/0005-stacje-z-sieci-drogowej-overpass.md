@@ -145,3 +145,13 @@ przycisk, `ustawTrybReczny`, gałęzie, wzmianki i style (S02/S03/S09/S13/S14,
 
 Właściciel, 2026-09-16: „Ustawianie stacji ręcznie — ta funkcja do wywalenia
 w całości."
+
+## Aneks 2026-09-17 (uwaga terenowa B) — ekran stacji startuje czysty
+
+Wejście na `#ekran-stacje` w nowym setupie czyści stan i teksty
+(`przygotujEkranStacji()`): zero stacji z poprzedniej gry, puste podsumowanie
+i opis trybu, zgaszone pinezki na mapie — dopiero świeży wynik (dysk, Overpass
+albo pierścień) ma prawo coś pokazać. Właściciel widział na wejściu artefakty
+starej gry („Wygenerowano i zlokalizowano stacji: 5” z poprzedniego układu,
+ukryte stacje poprzedniej trasy-sekret), zanim dane doszły. `STAN.siec` (cache
+geometrii) zostaje — to nie wynik gry. Piny: test „uwaga B (2026-09-17)”.

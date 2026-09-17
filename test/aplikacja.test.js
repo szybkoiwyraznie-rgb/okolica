@@ -979,6 +979,54 @@ test('stacje T1+T4: nakładka ładowania w trakcie pobierania, po 400 przycisk p
   assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, true, 'przy sieci ponowienie znika');
 });
 
+test('uwaga B (2026-09-17): nowy setup otwiera stacje CZYSTE — zero artefaktów poprzedniej gry', async () => {
+  // Właściciel z telefonu: „Stacje w Twojej okolicy” otwierały się z danymi
+  // POPRZEDNIEJ gry („Wygenerowano i zlokalizowano stacji: 5”, ukryte stacje
+  // tras-sekret) i dopiero po chwili przychodziły świeże wyniki z dysku albo
+  // z Overpassu. Ekran nie może pokazywać zapamiętanej prawdy o nowym układzie.
+  const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
+  ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
+  let puść = null;
+  const bramka = new Promise((rozwiaz) => { puść = rozwiaz; });
+  let wisi = false; // drugi setup: Overpass „wisi”, więc widać stan ekranu w trakcie
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) {
+      return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło poza licznikiem
+    }
+    if (wisi) await bramka;
+    return { ok: true, status: 200, text: async () => JSON.stringify(czytajFixtureOverpass('centrum')) };
+  };
+
+  // 1. PIERWSZY setup: układ powstaje, a ekran nosi jego podsumowanie i pinezki.
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(250);
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /stacji\.$/, 'pierwszy układ policzony');
+  assert.ok(domAtrapa.pobierz('mapa-stacje-pinezki').children.length > 0, 'pinezki pierwszego układu na mapie');
+
+  // 2. NOWY setup drogą właściciela: ← pozycja → ← ustawienia → Dalej: pozycja → Dalej: stacje.
+  //    Zmiana okolicy zmienia klucz sieci, więc Overpass jest pytany od nowa.
+  wisi = true;
+  domAtrapa.kliknij('przycisk-wstecz-pozycja');
+  domAtrapa.kliknij('przycisk-wstecz-setup');
+  ustawPozycjeTestowa(domAtrapa, '52.30', '21.10');
+  domAtrapa.kliknij('przycisk-dalej-pozycja');
+  await czekaj(50);
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(50);
+  assert.equal(domAtrapa.pobierz('stacje-podsumowanie').textContent, '',
+    'podsumowanie startuje PUSTE — żadnego „Wygenerowano … stacji” z poprzedniej gry');
+  assert.equal(domAtrapa.pobierz('stacje-tryb').textContent, '', 'opis trybu też bez starych danych');
+  assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, false, 'ekran mówi prawdę: dopiero pobiera dane');
+  assert.equal(domAtrapa.pobierz('mapa-stacje-pinezki').children.length, 0, 'stare pinezki zgaszone od razu');
+  assert.equal(domAtrapa.pobierz('przycisk-przelicz').hidden, false, '„Inny układ” czeka na świeży układ (jak na starcie)');
+
+  // 3. Świeże dane dochodzą → ekran pokazuje NOWY układ, nie stary.
+  puść();
+  await czekaj(250);
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /stacji\.$/, 'świeży układ na ekranie');
+  assert.equal(domAtrapa.pobierz('stacje-ladowanie').hidden, true, 'nakładka gaśnie po odpowiedzi');
+});
+
 test('stacje: sieć z cache pokazuje ponowienie, klik dowozi świeże dane z Overpass', async () => {
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));

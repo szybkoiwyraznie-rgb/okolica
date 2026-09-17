@@ -216,8 +216,10 @@ commit i nowa wersja aplikacji.
    śledzenie GPS idzie dalej, a po powrocie nasłuch odświeża się sam (ADR 0040).
 3. `sieci.budujZapytanieOverpass({ srodek, promienM, tryb })` składa jedno
    zapytanie dla `R × 1.15`; pobiera je `app.js` przez `window.fetch`
-   (łańcuch instancji z `ASSETS` §2: 1 s odstępu po 429/5xx, timeout 10 s (nagłówki i ciało, ADR 0035)
-   przez `AbortController`, budżet 8 MB odpowiedzi). Najpierw jednak cache
+   (łańcuch instancji z `ASSETS` §2: 1 s odstępu po 429/5xx, limit próby PER
+   INSTANCJA — 12 s FOSSGIS, 25 s VK Maps, 40 s Kumi — obejmuje nagłówki i ciało
+   przez `AbortController`, ADR 0035 aneks 2026-09-17b; zapytanie QL z
+   `[timeout:25]`, budżet 8 MB odpowiedzi). Najpierw jednak cache
    `okolica:sieci:<geohash6>-<R>` (ADR 0010 pkt 1): trafiony wpis = zero
    zapytań do Overpass. Dalej `sieci.parsujOdpowiedz` → `budujGraf`
    (Dijkstra z pozycji startowej) → `kandydaciNaStacje` (filtry dostępności,
@@ -511,6 +513,14 @@ przerwanej gry jest automatyczne wczytanie zapisu (ADR 0045), a wyniki między
 grami żyją na wspólnym Drive (ADR 0026 aneks) i stamtąd bierze je ranking
 (ADR 0039) — telefon nie trzyma własnej kopii. Koniec gry (naturalny albo
 ręczny) woła więc w hooku `zapiszGre()` bezpośrednio `wyslijWynikHotseat()`.
+
+Lokalna flaga użycia paczki (teren 2026-09-17, uwaga D; ADR 0028) żyje
+w kluczu `okolica:uzyte-paczki` (`app/oceny.js`: `czyPaczkaUzytaLokalnie()`,
+`oznaczPaczkeJakoUzyta()`): identyfikatory paczek, w których na TYM telefonie
+odpowiedziano już na co najmniej jedno pytanie. Do mostu idzie z tego tylko
+zwykły ping `uzycie` w chwili przyjęcia paczki — flaga niczego nie wysyła,
+a kasuje ją to samo czyszczenie `okolica:*`. Powód: napis „Jeszcze nie użyta
+w grze" bywał fałszywy, zanim Drive zsumował pingi.
 
 Kolejka zdarzeń gry sieciowej (ADR 0019 aneks 2026-09-13d) żyje w kluczu
 `okolica:multi-kolejka` jako `zdarzenia-kolejka/1` (`kod`, `idGry`, `zdarzenia`

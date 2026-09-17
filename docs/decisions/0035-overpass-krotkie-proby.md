@@ -58,89 +58,14 @@ Testy: preferencja VK i Adikso, pełny łańcuch czterech prób, sukces Adikso
 z atrapą danych z Polski, umiejscowienie logu wyłącznie w Informacjach,
 brak nazw instancji w błędzie na stacjach. Żadnych nowych kluczy ani opłat.
 
+## Aneksy 2026-09-17 i 2026-09-17b są w archiwum (poza budżetem lektury)
 
-## Aneks 2026-09-17 — weryfikacja terenowa z Polski, ostateczny łańcuch (m12-154)
-
-Tego samego dnia właściciel wykonał z telefonu (Polska, LTE) pomiary
-rzeczywistego czasu odpowiedzi każdej z czterech skonfigurowanych instancji
-oraz kilku dodatkowych, na surowym `fetch` z konsoli przeglądarki. Wyniki:
-
-| Endpoint | Czas odpowiedzi | Wynik |
-| --- | --- | --- |
-| overpass-api.de (FOSSGIS) | **712 ms** | OK, poprawne dane |
-| overpass.kumi.systems | **32,7 s** | OK, poprawne dane |
-| overpass.private.coffee | 32,7 s | alias do Kumi (ten sam IP 193.219.97.30) |
-| maps.mail.ru (VK Maps) | 567 ms | HTTP 504 — zawsze |
-| overpass.osm.ch | 313 ms | 0 elementów w Polsce (tylko CH) |
-| overpass.nchc.org.tw (Tajwan) | 477 ms | błąd CORS z przeglądarki |
-| overpass.osm.adikso.net | — | błąd TLS (tak samo jak sandbox) |
-| overpass-api.fr | — | instancja wyłączona od 2022-01-29 |
-
-Decyzja:
-1. Z łańcucha zostają TYLKO dwie instancje: **FOSSGIS jako główna**,
-   **Kumi Systems jako ostateczny backup** (private.coffee wyrzucamy jako
-   alias-duplikat; VK/Adikso/osm.ch/osm.fr/nchc jako nie działające z Polski).
-2. Kolejność: FOSSGIS pierwszy. Wbrew wcześniejszej sugestii Gemini
-   (która proponowała Kumi jako główne i wyłączone URL-e bez `/api/`),
-   FOSSGIS jest 45× szybszy z Polski — nie ma powodu go ukrywać za
-   wolną instancją.
-3. Zróżnicowane limity czasu: **12 s na FOSSGIS** (jeśli nie odpowie
-   w 12 s — jest przeciążona; przełączamy od razu), **40 s na Kumi**
-   (pomiar pokazał 32,7 s przy poprawnych danych, więc potrzebny
-   zapas na wyjątkowo obciążone chwile).
-4. QL timeout podniesiony z 8 s do **25 s** — większe zapytania
-   (R = 10 km × 1,15) potrafią trwać dłużej po stronie serwera,
-   zwłaszcza na zapasowej instancji.
-5. Mechanizm „zapamiętana sprawna instancja pierwsza" pozostaje
-   bez zmian: jeśli ostatnia gra pobrała dane z Kumi, kolejna też
-   zacznie od Kumi.
-6. Pauza po 429/5xx pozostaje 1 s (nie zmieniamy mechaniki, bo i tak
-   są teraz tylko dwie próby, a 1 s to grzeczność, nie kara).
-
-Konsekwencje w kodzie:
-- `INSTANCJE_OVERPASS` ma teraz 2 elementy, każdy z własnym polem `timeoutMs`.
-- Nowa funkcja `timeoutInstancji(i)` zwraca per-instancję limit, domyślnie
-  `POLITYKA.timeoutMs` (teraz 12 s).
-- Funkcja pobierania w `app.js` bierze limit z konfiguracji instancji,
-  a nie ze stałej; komunikaty w logu prób pokazują właściwy limit sekundy.
-- `POLITYKA.timeoutZapytaniaS = 25`.
-- Wersja oznaczona `m12-154`, cache-busty podbite, testy i kontrakt
-  zaktualizowane, ASSETS §2 przepisane, ADR 0035 z aneksem.
-
-Testy: kolejność 2 instancji, per-instancja timeoutów (12 s vs 40 s),
-log prób pokazuje właściwe liczby sekund, ASSETS i kontrakt nie zawierają
-już usuniętych endpointów, Kumi zostaje zapamiętany jako sprawny i jest
-pierwszy w kolejnej grze (analogicznie jak wcześniej Adikso). Żadnych
-nowych dostawców, kluczy ani zmian prywatności.
-
-
-## Aneks 2026-09-17b — VK Maps wraca do łańcucha (m12-155)
-
-Tego samego popołudnia właściciel powtórzył test z konsoli przeglądarki
-(Polska, LTE) i dostał inne wyniki:
-
-| Endpoint | Czas odpowiedzi | Wynik |
-| --- | --- | --- |
-| overpass-api.de (FOSSGIS) | 10,8 s | HTTP 504 (przeciążenie) |
-| overpass.kumi.systems | **201 s** | OK, ale ponad 3 minuty (za długo na telefonie) |
-| maps.mail.ru (VK Maps) | **14,1 s** | OK, poprawne dane |
-
-Poprzedni 504 z VK Maps (rano tego samego dnia) był chwilowym przeciążeniem,
-a nie trwałym wyłączeniem instancji. Wracamy VK do łańcucha jako drugą
-instancję, bo odpowiada zauważalnie szybciej niż Kumi, a Kumi w tym
-pomiarze pokazał 201 s — zbyt długo, żeby gracz czekał bez komunikatu.
-
-Końcowy łańcuch (aneks 2026-09-17b):
-1. **FOSSGIS** (główna) — limit 12 s
-2. **VK Maps** (pierwszy backup) — limit 25 s (tyle co timeout QL)
-3. **Kumi Systems** (ostateczny backup) — limit 40 s
-
-Dłuższe czasy odpowiedzi z Kumi w tym pomiarze (201 s) pokazują, że nie
-można mu ufać jako jedynemu backupowi — gdy FOSSGIS pada, potrzebna jest
-przynajmniej jedna alternatywa z rozsądnym czasem odpowiedzi. Właściciel
-potwierdza słuszność podejścia „kilka niezależnych instancji + krótkie
-próby" z ADR 0035 — poszczególne serwery padają na różne części dnia,
-więc mając trzy punkty styku prawdopodobieństwo że WSZYSTKIE padną w tym
-samym czasie jest małe.
-
-Testy i kontrakt zaktualizowane do łańcucha FOSSGIS → VK → Kumi.
+Pomiary terenowe z telefonu (Polska, LTE) i końcowy łańcuch instancji leżą
+dosłownie w `docs/decisions/archive/aneksy-0035-2026-09-17.md` (archiwizacja
+2026-09-17b; AGENTS.md §0, LESSONS L62/L66). Obowiązuje: **FOSSGIS z limitem
+12 s → VK Maps 25 s → Kumi Systems 40 s**, zapytanie `[out:json][timeout:25]`,
+pauza 1 s po 429/5xx i „ostatnia sprawna instancja pierwsza"
+(`okolica:overpass-sprawny`) — bez zmian. Aneks 2026-09-17 mówił jeszcze
+o dwóch instancjach, a aneks 2026-09-17b (powtórzony pomiar tego samego dnia)
+przywrócił VK Maps jako drugą; rozstrzyga wersja późniejsza, zgodna z kodem
+i `docs/ASSETS.md` §2.

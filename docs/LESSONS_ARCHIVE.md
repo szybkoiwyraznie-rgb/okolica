@@ -1760,3 +1760,69 @@ ustawiło. Węzły `index.html` są wspólne dla kolejnych gier, więc „ekran�
 ma stanu początkowego: ma go dopiero kod wejścia. Test takiej ścieżki pisz jako
 DRUGĄ grę w jednej sesji strony, najlepiej z odrzuconą paczką w pierwszej —
 inaczej ukryty element (albo świeży DOM per test) ukryje defekt.
+
+## L79 — budżet lektury mierz PO ostatniej zmianie dokumentów, nie w środku sesji
+
+**Objaw (audyt startowy 2026-09-17b, PR #41):** handoff poprzedniej sesji miał
+w tabeli bramy wiersz `npm run budzet | 99 998 / 100 000 (rezerwa 2 tokenów)`.
+Pomiar na scalonym `main` (`d07abb0`) dawał **101 082 / 100 000**, czyli
+przekroczenie progu z AGENTS.md §0 o 1 082 tokeny. Wszystkie testy były zielone
+(843/843), `npm run check` też — czerwona była tylko dyscyplina dokumentów.
+
+**Przyczyna:** tabela bramy w handoffie była mierzona PRZED ostatnim commitem
+sesji, a tym commitem był aneks 2026-09-17 dopisany do `ADR 0035` (87 linii:
+pomiary instancji Overpass i decyzja o łańcuchu). Budżet lektury zależy od
+KAŻDEGO znaku w pozycjach 1–6 lektury obowiązkowej, więc dopisanie aneksu tuż
+przed handoffem zmieniło wynik po pomiarze. Nikt tego nie łapał, bo `npm run
+budzet` nie był ani w `npm test`, ani w `npm run brama` — istniał jako osobne
+polecenie, którego wynik trzeba było przepisać ręcznie do dokumentu. Handoff
+jest dokumentem jednorazowym i nikt go nie przemierza; przekroczenie progu
+wyszło dopiero w audycie następnej sesji.
+
+**Naprawa:** (1) aneksy ADR 0003/0019/0026/0030/0035/0043 przeniesione
+dosłownie do `docs/decisions/archive/aneksy-*.md` z notami wiążącymi w ADR
+(L62/L66) — budżet wrócił pod próg z realną rezerwą; (2) `node
+tools/budzet-lektury.mjs` dołożony do `npm run brama`, więc przekroczenie
+jest teraz czerwienią lokalnej bramy; (3) pin w `test/kontrakt.test.js`
+(obok pinu audytu kontrastu) trzyma ten skład na przyszłość — dopóki ktoś nie
+wymyśli lepszego strażnika, brama nie może zniknąć z budżetu.
+
+**Reguła:** (1) liczbę budżetu do handoffu licz PO ostatniej zmianie dokumentów
+lektury i podawaj z datą pomiaru („stan na koniec sesji"); (2) próg pilnuje
+brama, nie dokument — narzędzie w bramie jest tańsze niż zaufanie do tabelki;
+(3) gdy próg jest przekroczony, kolejność jest obowiązkowa: najpierw
+archiwizacja (dosłowny tekst do `archive/`, nota wiążąca z linkiem i datami
+w ADR, żeby strażnik dryfu nadal widział cytowane aneksy), potem dopiero nowa
+treść. Przekroczenie progu to zadanie sesji, nie notatka na przyszłość.
+
+## L80 — pełny opis przypadku (2026-09-17)
+
+Kontekst: kolejka uwag terenowych z iPhone'a (sesja 17b/17c, PR #41). Uwaga C1
+dołożyła trzy testy w `test/zestawy-ui.test.js`: rząd ikon modeli nad wklejką,
+`model` w paczce wysłanej na Drive i znaczek modelu przy propozycji paczki.
+Trzeci test stał na końcu pliku (po testach wysyłki i po nowym teście C2, który
+przyjmuje paczkę i zostawia most „wiszący” na bramce).
+
+Pomiar: `node --test --test-name-pattern='uwaga C1' test/zestawy-ui.test.js` —
+zielono. `node --test test/zestawy-ui.test.js` — trzy razy z rzędu czerwono
+(„propozycja z Drive nie nastąpiło w 5000 ms — status: Repozytorium nie ma
+paczek dla tej okolicy”). Dodanie 300 ms oddechu po teście C2 pozornie leczyło
+problem — czyli objaw zależał od OBCIĄŻENIA maszyny, nie od logiki testu.
+
+Diagnoza: `zainstalujDom()` podmienia `globalThis.document` na świeży stub
+(elementy trzyma mapa `pobierz(id)`), ale instancje aplikacji z poprzednich
+testów żyją dalej: mają `setInterval` (watchdog bezczynności, polling) i łańcuchy
+obietnic rozpoczęte przy przyjęciu paczki (status na `#status`, kopia lokalna,
+preload widocznych paczek). Dokończone po kolejnym `zainstalujDom` sięgają przez
+`document.getElementById` do węzłów NOWEGO dom-u i przerysowują listę propozycji
+z własnego, pustego stanu — a `czekajNa` w nowym teście czeka wtedy na stan,
+którego nikt już nie odtworzy. Instrumentacja (licznik instancji modułu + logi
+w `renderujZestawy`/`przyjmijIndeksZRepo`) potwierdziła dwa różne identyfikatory
+instancji piszące po tym samym węźle.
+
+Rozwiązanie (przyjęte): testy C1 nie przyjmujące paczki przeniesione na POCZĄTEK
+pliku (są wtedy jedyną aplikacją w procesie), test przyjmujący paczkę został
+w sąsiedztwie pozostałych testów wysyłki, a test C2 (przyjmuje paczkę i zostawia
+pracę w tle) stoi na KOŃCU pliku z komentarzem wyjaśniającym kolejność.
+Kolejność jest nośnikiem wiedzy — dlatego komentarz w pliku mówi, dlaczego tak,
+a nie „bo tak było zielone”.

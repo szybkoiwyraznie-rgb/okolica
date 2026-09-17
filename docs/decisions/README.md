@@ -52,7 +52,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0033](archive/0033-koniec-odwracania-liter.md) | Koniec odwracania liter: zostaje kod poprawnej odpowiedzi | Wycofana |
 
 | [0034](0034-uproszczenie-terenowe-i-warstwy.md) | Uproszczenie terenowe: setup, warstwy, dojście 50 m | Zaakceptowana |
-| [0035](0035-overpass-krotkie-proby.md) | Overpass: próby po 10 s, preferencje i diagnostyka w Informacjach | Zaakceptowana |
+| [0035](0035-overpass-krotkie-proby.md) | Overpass: krótkie próby per instancja (12/25/40 s), preferencje i diagnostyka w Informacjach | Zaakceptowana |
 | [0036](0036-pasek-podczas-drogi.md) | Pasek podczas drogi, sterowanie w Informacjach, duży panel pytania | Zaakceptowana |
 | [0037](0037-jezyk-i-podklad-zaszte-w-kodzie.md) | Język pytań i podkład mapy zaszte w kodzie (polski + OSM), pola usuwane z UI | Zaakceptowana |
 | [0038](0038-minimalny-ekran-wyniku.md) | Minimalny ekran wyniku: zwycięzca, ranking i powrót — statystyki, szczegóły, stacje i eksporty usunięte | Zaakceptowana |
@@ -70,6 +70,7 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0050](0050-paczka-jawna-bez-ukrywania.md) | Paczka jawna: koniec ukrywania pytań (kontener usunięty) i numer odpowiedzi `1..4` | Zaakceptowana |
 | [0051](0051-status-multi-w-informacjach-i-pod-wynikiem.md) | Status multi w Informacjach i pod wynikiem | Zaakceptowana |
 | [0052](0052-wspolny-cache-sieci-na-drive-l2.md) | Wspólny cache sieci drogowej na Drive (L2) | Zaakceptowana |
+| [0053](0053-model-ai-opcjonalnie-w-meta-paczki.md) | Model AI: opcjonalny wybór nad wklejką i pole `model` w `meta` paczki | Zaakceptowana |
 
 ## Szablon ADR
 

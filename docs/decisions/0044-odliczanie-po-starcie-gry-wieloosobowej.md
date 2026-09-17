@@ -132,3 +132,14 @@ sync tylko w lobby, wspólny wynik na ekranie hotseat — bez zmian.
 usunięte: po starcie każdy widzi grę jak w hotseacie. Postęp sprzed odświeżenia
 odtwarza `odtworzPostepMulti`.
 
+## Aneks 2026-09-17 (uwaga terenowa D) — odcinek startuje z góry w OBU trybach
+
+Punkt 4 jest w części nieaktualny: **panelu fazy A po starcie nie ma**. Właściciel
+(teren 2026-09-17, uwaga krytyczna, powtarzana) widział razem z odliczaniem kartę
+przejścia („Kolej: … · 728 m · stacja 1/5”, „Idzie: … → stacja 1”, „Cel bez opisu”,
+„▶ Idę do stacji 1”), bo auto-start odcinka istniał tylko w Wyścigu (2026-09-14 F),
+a Wspólna Trasa zostawała w `przygotowanie`. Teraz `uruchomGreMulti` otwiera odcinek
+pierwszej stacji od razu w OBU trybach — host i goście, także przy powrocie do gry
+(ADR 0045) — więc po odliczaniu zostaje mapa i mini-pasek `#gra-pasek`; kolejne
+stacje otwiera bez zmian przycisk fazy A („▶ Idę do stacji N”). Piny: „uwaga D…”
+w `test/wieloosobowa-ui.test.js` (trasa-sekret, host i gość) i pkt 5b kontraktu.

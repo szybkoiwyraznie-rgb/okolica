@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-156';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-156';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-158';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-158';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-156';
+} from './protokol.js?v=m12-158';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-156';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-156';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-156';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-156';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-156';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-156';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-158';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-158';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-158';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-158';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-158';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-158';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-156';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-156';
+} from './zestawy.js?v=m12-158';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-158';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -57,19 +57,19 @@ import {
   wczytajDaneZCache,
   wybierzWpisSieci,
   zlozWpisSieci,
-} from './sieci.js?v=m12-156';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-156';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-156';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-156';
-import { adresMostu, stanMostu } from './most.js?v=m12-156';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-156';
+} from './sieci.js?v=m12-158';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-158';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-158';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-158';
+import { adresMostu, stanMostu } from './most.js?v=m12-158';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-158';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   czyPaczkaUzytaLokalnie, oznaczPaczkeJakoUzyta,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-156';
+} from './oceny.js?v=m12-158';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -218,6 +218,10 @@ const STAN = {
   /** Wyjście ORGANIZATORA z lobby zamyka grę WSZYSTKIM — akcja nieodwracalna,
    *  więc też dwustopniowa (audyt PR #13; wzorzec `rezygnujZGryMulti`). */
   multiOpuszczenieUzbrojone: false,
+  /** Uwaga terenowa C1 (właściciel, 2026-09-17): który model AI wygenerował
+   *  wklejoną paczkę — KLUCZ z `MODELE_AI` albo `''` (brak wyboru = brak
+   *  danych: nic się nie zapisuje i nic nie pokazujemy). Wybór jest opcjonalny. */
+  modelAi: '',
   trybTestowy: false,
   /** Sterowanie watchera z `watchPozycja()`: `{ zamknij, czyAktywny }`. */
   watcher: null,
@@ -2188,7 +2192,35 @@ function przewinWarstweStacjiNaGore() {
 }
 
 /**
- * Wejście na ekran stacji i „Inny układ": najpierw cache (druga gra w tej
+ * Uwaga terenowa B (właściciel, 2026-09-17): wejście na ekran stacji to NOWY
+ * rozstaw, więc ekran startuje CZYSTY — nic z poprzedniej gry nie ma prawa
+ * mignąć, nawet przez chwilę. Właściciel widział tam artefakty starej gry
+ * („Wygenerowano i zlokalizowano stacji: 5” z poprzedniego układu, ukryte
+ * stacje poprzedniej trasy-sekret), zanim przyszły świeże dane z dysku/Overpassu.
+ * Czyścimy więc stan (stacje, wynik sieci) i teksty, gasimy pinezki na mapie
+ * (stare stacje nie wiszą w okolicy) i zostawiamy ekran w stanie startowym:
+ * puste podsumowanie + nakładka „⏳ Pobieram…”, która włącza się, gdy trzeba
+ * iść do sieci. `STAN.siec` (cache geometrii) i `STAN.ukryjStacje` (trasa-sekret
+ * BIEŻĄCEGO setupu, nie gry) zostają nietknięte.
+ */
+function przygotujEkranStacji() {
+  STAN.stacje = [];
+  STAN.wynikSieci = null;
+  pokazBledy('bledy-stacje', []);
+  $('siec-proby').textContent = '';
+  $('siec-proby').hidden = true;
+  $('stacje-podsumowanie').textContent = '';
+  $('stacje-tryb').textContent = '';
+  // Jak na świeżo otwartej stronie: „Inny układ” jest, ponowienie pobrania nie.
+  // W trasie-sekret układu nie ma wcale (reguła z `renderujStacje`), a po
+  // przeliczeniu `renderujStacje` ustawi widoczności ostatecznie.
+  $('przycisk-przelicz').hidden = STAN.ukryjStacje;
+  $('przycisk-siec-ponow').hidden = true;
+  odswiezWarstwy();
+}
+
+/**
+ * Wejście na ekran stacji i „Inny układ”: najpierw cache (druga gra w tej
  * samej okolicy nie woła Overpass wcale), potem — tylko gdy jest `fetch`
  * i sieć jest potrzebna — pobranie asynchroniczne. Bez `fetch` (atrapy,
  * offline) wszystko zostaje SYNCHRONICZNE, więc testy i tryb testowy nie
@@ -2635,6 +2667,7 @@ function metaBiezacejOkolicy() {
     // paczki, nie listę dopuszczalnych z setupu.
     pytania: pytaniaBiezacejSesji(),
     opisStacjiStartu: STAN.stacje?.[0]?.opis ?? '', // ulica do nazwy pliku (ADR 0048)
+    model: STAN.modelAi, // C1: wybór z ekranu wklejki ('' = brak danych)
   });
 }
 
@@ -2701,11 +2734,15 @@ function znaczekFactcheck() {
  * na tej karcie są z repozytorium, więc powtarzanie źródła w każdej linii
  * zabierało miejsce nazwie („Podkowa Leśna · …").
  */
-function wierszZestawu(opis, akcji, statystyki = '', factcheck = true) {
+function wierszZestawu(opis, akcji, statystyki = '', factcheck = true, model = '') {
   const li = document.createElement('li');
   const opisEl = document.createElement('span');
   opisEl.className = 'opis-zestawu';
   opisEl.textContent = opis;
+  // Uwaga C1: znaczek modelu OBOK opisu propozycji — i tylko wtedy, gdy paczka
+  // niesie wybór (stare paczki i te bez decyzji nie dostają atrapy znaczka).
+  const znaczek = znaczekModelu(model);
+  if (znaczek) opisEl.append(' ', znaczek);
   if (factcheck) opisEl.append(' ', znaczekFactcheck());
   const przycisk = document.createElement('button');
   przycisk.type = 'button';
@@ -2828,7 +2865,7 @@ function renderujZestawy() {
   lista.replaceChildren();
   const posortowane = [...KANDYDACI_ZESTAWOW].sort(sortujKandydatowZestawow);
   const widoczne = ZESTAWY_ROZWINIETE ? posortowane : posortowane.slice(0, LIMIT_ZESTAWOW_NA_LISCIE);
-  for (const k of widoczne) lista.append(wierszZestawu(k.opis, k.akcja, k.statystyki, k.factcheck));
+  for (const k of widoczne) lista.append(wierszZestawu(k.opis, k.akcja, k.statystyki, k.factcheck, k.model));
   const wiecej = $('przycisk-zestawy-wiecej');
   wiecej.hidden = KANDYDACI_ZESTAWOW.length <= LIMIT_ZESTAWOW_NA_LISCIE;
   wiecej.textContent = ZESTAWY_ROZWINIETE ? 'Zobacz mniej paczek' : 'Zobacz więcej paczek';
@@ -3007,6 +3044,9 @@ function przyjmijIndeksZRepo(tekst, kryteria, urlZrodla) {
           : 'Statystyk ocen jeszcze nie ma: ta wersja mostu Drive ich nie zwraca.')
       : opisOcenTekst(walidujStatystykiOcen(meta.oceny), czyPaczkaUzytaLokalnie(meta.id)),
     factcheck: czyWpisFactcheck(meta),
+    // C1: model z `meta` paczki (index robi `Object.assign` z meta w `.gs`).
+    // Brak pola = brak danych — znaczek się nie rysuje.
+    model: typeof meta.model === 'string' ? meta.model : '',
     // Sort listy (właściciel 2026-09-11): najwięcej ocen pozytywnych pierwsza.
     plus: walidujStatystykiOcen(meta.oceny)?.plus ?? 0,
     data: meta.data,
@@ -3476,9 +3516,9 @@ function odpowiedzNaPytanie(pytanie, wybrana, para) {
     return;
   }
   // D (teren 2026-09-17): po pierwszej odpowiedzi w grze paczka zostaje
-  // zapamiętana jako „już użyta\" lokalnie — przed przyjściem pinga na most
+  // zapamiętana jako „już użyta” lokalnie — przed przyjściem pinga na most
   // Drive lista propozycji może pokazać prawdziwy stan zamiast „jeszcze nie
-  // użyta w grze\".
+  // użyta w grze”.
   if (STAN.paczkaRepoId) oznaczPaczkeJakoUzyta(STAN.paczkaRepoId);
   // Werdykt bierze się z SILNIKA: `zapiszOdpowiedz` przelicza numer odpowiedzi
   // (1..4) na indeks przycisku (0..3) i jest to JEDYNE takie przeliczenie w kodzie
@@ -4059,14 +4099,29 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
   // Pole wklejenia jest czyszczone natychmiast: plaintext nie zostaje w DOM
   // (ADR 0007 pkt 4). Paczka żyje w pamięci modułu.
   $('pole-odpowiedz').value = '';
-  $('wklejka-status').textContent = '';
-  wyslijZestawNaDrive();
+  // Uwaga terenowa C2 (właściciel, 2026-09-17): paczka jest przyjęta, ale
+  // odpowiedź dopiero leci na most — pulsujące „Łączę z siecią…” pokazuje się
+  // NATYCHMIAST, żeby kilka sekund pracy sieci nie wyglądało na zamrożenie.
+  // Wskaźnik liczy PENDING prace tej wklejki (zapis paczki, a w multi także
+  // założenie gry na moście — `gra-zaloz` na zimnym web appie bywa długie)
+  // i gaśnie, dopiero gdy odpowiedzą wszystkie: wcześniej gracz zobaczyłby
+  // pusty ekran w środku czekania na lobby.
+  wklejkaCzekanie(true);
+  let praceWToku = 0;
+  const pilnujPracy = (obietnica) => {
+    if (!obietnica?.then) return; // nic nie leci (np. brak fetch) — nie ma na co czekać
+    praceWToku += 1;
+    wklejkaCzekanie(true);
+    const koniec = () => { praceWToku -= 1; if (praceWToku === 0) wklejkaCzekanie(false); };
+    obietnica.then(koniec, koniec);
+  };
+  pilnujPracy(wyslijZestawNaDrive());
   // Multi (właściciel, 2026-09-11): po wklejeniu odpowiedzi modelu otwiera
   // się LOBBY — gra zakłada się z paczki tej sesji, bez pośredniego panelu.
   if (STAN.multiPoPaczce) {
     STAN.multiPoPaczce = false;
     STAN.ukryjStacje = false;
-    void zalozGreMulti();
+    pilnujPracy(zalozGreMulti());
     return;
   }
   // Decyzja właściciela 2026-09-07: poprawna paczka = OD RAZU gra. Podgląd,
@@ -4080,21 +4135,40 @@ function sprawdzOdpowiedz(tekstZewnetrzny = null) {
 }
 
 /**
+ * Wskaźnik czekania na ekranie wklejki (uwaga terenowa C2, właściciel 2026-09-17):
+ * wklejona paczka jedzie na most Drive, a to trwa kilka sekund — ekran NIE MOŻE
+ * w tym czasie wyglądać na zamrożony. Ten sam wzorzec, co `status(..., { czeka })`
+ * i przycisk „⏳ Ładuję paczkę…” (ADR 0011 aneks 2026-09-13): tekst pulsuje, a po
+ * zakończeniu pracy wraca pusto. Wołane zawsze w parze z pracą sieciową, więc
+ * wskaźnik nie zostaje na ekranie po zakończeniu (LESSONS L6).
+ */
+function wklejkaCzekanie(czeka, tekst = 'Łączę z siecią…') {
+  const pole = $('wklejka-status');
+  pole.textContent = czeka ? tekst : '';
+  pole.classList.toggle('pulsuje', Boolean(czeka));
+}
+
+/**
  * M9b/D2+D3: automatyczna wysyłka zestawu na Drive w chwili przyjęcia
  * (decyzja właściciela 2026-09-07: prywatna aplikacja — wysyłka DOMYŚLNA,
  * bez checkboxa i bez przypominajki; checkbox z 2026-09-06 usunięty).
  * Brak adresu mostu, pozycji albo fetch = zero wysyłki i JAWNY status
  * (LESSONS L6). POST text/plain omija preflight CORS (plan M9b).
+ *
+ * Zwraca promise wysyłki (albo `null`), żeby wołający mógł zgasić wskaźnik
+ * czekania `wklejkaCzekanie` dokładnie wtedy, gdy most odpowie (uwaga C2).
  */
 function wyslijZestawNaDrive() {
   const url = adresMostu(); // ADR 0020: jeden adres z kodu aplikacji
   if (!url) {
+    wklejkaCzekanie(false);
     status('Paczka przyjęta. Nie wysłano na Drive: brak adresu repozytorium w tej wersji aplikacji — paczka zostaje na tym telefonie.' + ADR(' (ADR 0020)'));
-    return;
+    return null;
   }
   if (!STAN.pozycja || !STAN.stacje.length || !STAN.paczka) {
+    wklejkaCzekanie(false);
     status('Paczka przyjęta. Wysyłka na Drive pominięta: brak pozycji albo stacji w tej sesji.');
-    return;
+    return null;
   }
   const plik = zbudujPlikZestawu({
     stacje: STAN.stacje,
@@ -4102,8 +4176,8 @@ function wyslijZestawNaDrive() {
     meta: metaBiezacejOkolicy(),
   });
   const f = fetchPrzegladarki(); // L18: nigdy gołe fetch
-  if (!f) { status('Paczka przyjęta. Nie wysłano na Drive: to środowisko nie ma fetch.'); return; }
-  f(url, {
+  if (!f) { wklejkaCzekanie(false); status('Paczka przyjęta. Nie wysłano na Drive: to środowisko nie ma fetch.'); return null; }
+  return f(url, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
     body: JSON.stringify(plik),
@@ -4124,9 +4198,8 @@ function wyslijZestawNaDrive() {
       if (wynik?.ok && wynik.status === 'zaakceptowana') {
         // Nazwa pliku wprost (właściciel 2026-09-15, ADR 0048): po niej
         // organizator znajduje paczkę na Drive. Most, który nazwy nie zwrócił
-        // (stara wersja skryptu), który nazwy nie zwrócił, nie wpycha w UI zdania
-        // o „nieznanym" pliku — mówi tylko tyle, ile wie most.
-        const nazwaPliku = typeof wynik.nazwa === 'string' && wynik.nazwa ? ` jako „${wynik.nazwa}\"` : '';
+        // (stara wersja skryptu), nie wpycha w UI zdania o „nieznanym" pliku — mówi tylko tyle, ile wie most.
+        const nazwaPliku = typeof wynik.nazwa === 'string' && wynik.nazwa ? ` jako „${wynik.nazwa}"` : '';
         status(`Paczka przyjęta i wysłana na Drive${nazwaPliku}: dostępna od razu w zestawach — jakość rozstrzygną łapki graczy.` + ADR(' (ADR 0017 aneks 2026-09-11)'));
       } else if (wynik?.ok && wynik.status === 'juz-w-odrzuconych') {
         status('Paczka przyjęta; identyczny zestaw został wcześniej odrzucony ręcznie na Drive — nowy plik nie powstał, gra toczy się dalej.');
@@ -4152,8 +4225,83 @@ function pokazOdrzuconaPaczkeAi() {
   wynik.dataset.stan = 'blad';
   $('wynik-naglowek').textContent = KOMUNIKAT_BLEDNEJ_PACZKI_AI;
   $('pole-odpowiedz').value = '';
+  $('wklejka-status').classList.remove('pulsuje'); // koniec czekania: wklejka odrzucona
   $('wklejka-status').textContent = KOMUNIKAT_BLEDNEJ_PACZKI_AI;
   status(KOMUNIKAT_BLEDNEJ_PACZKI_AI);
+}
+
+/**
+ * Modele AI do wyboru nad wklejką (uwaga terenowa C1, właściciel 2026-09-17):
+ * cztery małe, okrągłe ikony NAD polem wklejenia — Meta.ai, ChatGPT, Gemini,
+ * Claude. Wybór jest OPCJONALNY: domyślnie żaden nie jest zaznaczony,
+ * kliknięcie zaznacza, drugie kliknięcie odznacza, kliknięcie innego przełącza.
+ * Bez wyboru nic o modelu nie zapisujemy i nigdzie nie pokazujemy (brak danych
+ * to nie „nieznany model”).
+ *
+ * Ikony rysujemy inline (`createElementNS`, bez plików i CDN — ADR 0001 pkt 1),
+ * a kształty są SYMBOLICZNE — nasze uproszczenie marki, nie znak towarowy.
+ */
+const PRZESTRZEN_SVG_IKON = 'http://www.w3.org/2000/svg';
+
+const MODELE_AI = Object.freeze([
+  { klucz: 'meta-ai', nazwa: 'Meta.ai', sciezki: [{ d: 'M7 12c0-2.3 1.5-4.2 3.4-4.2 2 0 2.9 2.1 4 4.2 1.1 2.1 2 4.2 4 4.2 1.9 0 3.4-1.9 3.4-4.2S20.3 7.8 18.4 7.8c-2 0-2.9 2.1-4 4.2' }] },
+  { klucz: 'chatgpt', nazwa: 'ChatGPT', sciezki: [{ d: 'M12 3.4 18.3 7v7.2L12 17.8 5.7 14.2V7z' }, { d: 'M12 3.4v6.8M18.3 10.2 12 13.8M18.3 17.2 12 13.8M12 20.6v-6.8M5.7 17.2 12 13.8M5.7 10.2 12 13.8' }] },
+  { klucz: 'gemini', nazwa: 'Gemini', sciezki: [{ d: 'M12 3.2c.9 4.4 4.4 7.9 8.8 8.8-4.4.9-7.9 4.4-8.8 8.8-.9-4.4-4.4-7.9-8.8-8.8 4.4-.9 7.9-4.4 8.8-8.8z', wypelnij: true }] },
+  { klucz: 'claude', nazwa: 'Claude', sciezki: [{ d: 'M12 3.2v17.6M3.2 12h17.6M5.8 5.8l12.4 12.4M18.2 5.8 5.8 18.2' }] },
+]);
+
+/** SVG jednej ikony modelu (albo `null` dla nieznanego klucza — brak danych). */
+function utworzIkoneModelu(klucz) {
+  const model = MODELE_AI.find((m) => m.klucz === klucz);
+  if (!model) return null;
+  const svg = document.createElementNS(PRZESTRZEN_SVG_IKON, 'svg');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  for (const { d, wypelnij = false } of model.sciezki) {
+    const sciezka = document.createElementNS(PRZESTRZEN_SVG_IKON, 'path');
+    sciezka.setAttribute('d', d);
+    if (wypelnij) sciezka.setAttribute('fill', 'currentColor');
+    svg.appendChild(sciezka);
+  }
+  return svg;
+}
+
+/** Zaznaczenie modelu z ekranu wklejki: ten sam klucz = odznaczenie. */
+function ustawModelAi(klucz) {
+  STAN.modelAi = STAN.modelAi === klucz ? '' : klucz;
+  renderujModeleAi();
+}
+
+/** Cztery okrągłe ikony nad wklejką; `aria-pressed` mówi, co wybrano. */
+function renderujModeleAi() {
+  const pojemnik = $('wklejka-modele');
+  if (!pojemnik) return;
+  pojemnik.replaceChildren(...MODELE_AI.map((model) => {
+    const przycisk = document.createElement('button');
+    przycisk.type = 'button';
+    przycisk.className = 'model-ikona';
+    przycisk.dataset.model = model.klucz;
+    przycisk.setAttribute('aria-pressed', String(STAN.modelAi === model.klucz));
+    przycisk.setAttribute('aria-label', `Model: ${model.nazwa}`);
+    przycisk.title = STAN.modelAi === model.klucz ? `${model.nazwa} (dotknij, żeby odznaczyć)` : model.nazwa;
+    przycisk.append(utworzIkoneModelu(model.klucz));
+    przycisk.addEventListener('click', () => ustawModelAi(model.klucz));
+    return przycisk;
+  }));
+}
+
+/** Znaczek modelu przy propozycji paczki (uwaga C1): tylko gdy wybór JEST. */
+function znaczekModelu(klucz) {
+  const model = MODELE_AI.find((m) => m.klucz === klucz);
+  if (!model) return null;
+  const znaczek = document.createElement('span');
+  znaczek.className = 'znaczek-modelu';
+  znaczek.setAttribute('role', 'img');
+  znaczek.setAttribute('aria-label', `Model: ${model.nazwa}`);
+  znaczek.title = `Pytania wygenerował: ${model.nazwa}`;
+  znaczek.append(utworzIkoneModelu(model.klucz));
+  return znaczek;
 }
 
 /**
@@ -4175,7 +4323,10 @@ function wyczyscEkranPaczki() {
   karta.hidden = true;
   delete karta.dataset.stan;
   $('wynik-naglowek').textContent = '';
-  $('wklejka-status').textContent = '';
+  wklejkaCzekanie(false); // wskaźnik czekania nie wraca z poprzedniej wklejki
+  // Uwaga C1: wybór modelu też startuje od zera — krok 5 nie dziedziczy
+  // niczego z poprzedniej paczki (nowa wklejka = nowa decyzja).
+  ustawModelAi('');
   // Pole wklejenia też startuje puste — stara treść nie ma prawa czekać pod palcem.
   $('pole-odpowiedz').value = '';
 }
@@ -4795,6 +4946,7 @@ function metaSesjiMulti(stacje) {
     factcheck: factcheckBiezacejSesji(),
     pytania: pytaniaBiezacejSesji(),
     opisStacjiStartu: stacje[0]?.opis ?? '', // ulica do nazwy pliku (ADR 0048)
+    model: STAN.modelAi, // C1: model wskazany na ekranie wklejki jedzie też z grą sieciową
   });
 }
 
@@ -5333,16 +5485,22 @@ function uruchomGreMulti(gra, { odliczanie = true } = {}) {
   status(`Gra ${gra.kod} (${gra.tryb === TRYBY_GRY.trasa ? 'Wspólna Trasa' : 'Wyścig na Orientację'}) rozpoczęta: przed Tobą ${STAN.stacje.length - zamknietePrzezeMnie} z ${wszystkie.length} stacji. Pytania odsłaniają się dopiero na stacjach.`
     + (zamknietePrzezeMnie ? ' Zamknięte wcześniej stacje nie wracają — wracasz do gry w połowie drogi.' : ''));
   renderujGre();
-  // 2026-09-14 F: Wyścig — bez warstwy wyboru stacji, od razu odcinek i tylko mapa
-  if (gra.tryb === TRYBY_GRY.wyscig) {
-    const r = STAN.rozgrywka;
-    if (r && r.faza === FAZY.przygotowanie) {
-      const wynik = startOdcinka(r, { czasMs: zegarGry() });
-      if (wynik.usterki.length === 0) {
-        STAN.rozgrywka = wynik.stan;
-        STAN.historiaFixow = [];
-        renderujGre();
-      }
+  // 2026-09-14 F: Wyścig — bez warstwy wyboru stacji, od razu odcinek i tylko mapa.
+  // Uwaga terenowa D (2026-09-17, KRYTYCZNA): tak samo w OBU trybach — po
+  // kliknięciu startu w lobby MA NIE BYĆ żadnych ekranów przejściowych, więc
+  // odcinek do pierwszej stacji startuje z góry, bez fazy A i bez pytania
+  // „▶ Idę do stacji N”. Odliczanie leci NAD mapą, a po „START” zostaje mapa
+  // i mini-pasek na dole (`#gra-pasek`) — sterowanie jest w drodze schowane.
+  // Ta sama zasada działa przy POWROCIE do gry (ADR 0045): gracz, któremu
+  // telefon „odświeżył się” w drodze, wraca od razu do marszu, a nie do karty
+  // wyboru. Kolejne stacje w grze zostają jak były: po odpowiedzi następną
+  // otwiera przycisk fazy A („▶ Idę do stacji N”).
+  if (STAN.rozgrywka?.faza === FAZY.przygotowanie) {
+    const wynik = startOdcinka(STAN.rozgrywka, { czasMs: zegarGry() });
+    if (wynik.usterki.length === 0) {
+      STAN.rozgrywka = wynik.stan;
+      STAN.historiaFixow = [];
+      renderujGre();
     }
   }
   // Uwaga F (ADR 0044): wszyscy — host i goście — dostają sygnał i odliczanie
@@ -5992,6 +6150,7 @@ function start() {
       status(`Stacje nie zostały rozstawione: konfiguracja ma usterek: ${usterki.length}. Wróć do ustawień gry i popraw je.`);
       return;
     }
+    przygotujEkranStacji(); // uwaga B: ekran startuje czysty (zero artefaktów starej gry)
     pokazEkran('stacje');
     przeliczStacje();
   });
@@ -6067,6 +6226,9 @@ function start() {
    * podczas walidacji, a po niej zostaje puste — tak przy przyjęciu, jak i po
    * odmowie (ADR 0006 pkt 3 i ADR 0007 pkt 4).
    */
+  // C1: cztery okrągłe ikony modeli stoją nad wklejką od startu aplikacji;
+  // `wyczyscEkranPaczki` gasi wybór przy każdym wejściu na krok 5.
+  renderujModeleAi();
   $('pole-odpowiedz').addEventListener('paste', (e) => {
     const tekst = e.clipboardData?.getData('text') ?? '';
     if (!tekst.trim()) return; // wklejenie obrazka albo pustki nie udaje paczki

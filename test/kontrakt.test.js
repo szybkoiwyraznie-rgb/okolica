@@ -570,8 +570,11 @@ test('kontrakt: dokumentacja nie obiecuje szyfrowania (ADR 0007 pkt 5)', () => {
   // (pin wyżej) i README; pin tutaj pilnuje PUSTKI, nie treści ostrzeżenia.
   const ekranPaczki = INDEX.slice(INDEX.indexOf('id="ekran-paczka"'),
     INDEX.indexOf('</section>', INDEX.indexOf('id="ekran-paczka"'))).replace(/<!--[\s\S]*?-->/g, '');
-  assert.match(ekranPaczki, /id="tytul-paczka">Wklej odpowiedź modelu<\/h2>\s*<textarea id="pole-odpowiedz"/,
-    'ekran wklejania: między nagłówkiem a polem nie ma ŻADNEGO tekstu (uwaga terenowa A, 2026-09-16)');
+  const miedzyNaglowkiemAPolem = ekranPaczki.slice(ekranPaczki.indexOf('</h2>') + 5, ekranPaczki.indexOf('<textarea id="pole-odpowiedz"'));
+  assert.equal(miedzyNaglowkiemAPolem.replace(/<[^>]+>/g, '').trim(), '',
+    'ekran wklejania: między nagłówkiem a polem nie ma ŻADNEGO tekstu (uwaga terenowa A, 2026-09-16) — rząd ikon z ADR 0053 jest bez tekstu');
+  assert.match(miedzyNaglowkiemAPolem, /<div id="wklejka-modele" class="wklejka-modele" role="group" aria-label="[^"]*"><\/div>/,
+    'nad polem wklejenia stoi wyłącznie kontener ikon modeli (ADR 0053)');
   assert.ok(INDEX.includes('identyfikator rozgrywki'), 'kod gry musi być opisany jako identyfikator, nie klucz (ADR 0007 pkt 4)');
 });
 
@@ -861,6 +864,18 @@ test('kontrakt: style ekranu gry — cele dotykowe i czytelność w słońcu (AD
   assert.match(css, /\.badge-dystans \{[^}]*background: var\(--akcent\)/s, 'badge dystansu na akcencie (kontrast)');
 });
 
+test('kontrakt: pinezka zaliczona jest POMARAŃCZOWA, nie szara (uwaga terenowa A, 2026-09-17)', () => {
+  // Właściciel z terenu: szary pin zaliczonej stacji był na telefonie zbyt
+  // blisko zielonego „oczekuje”. Zaliczona bierze teraz barwę ostrzeżenia
+  // (pomarańcz) i jest PUSTA w środku — pełny pomarańcz zostaje dla bieżącego
+  // celu (`.pinezka-aktywna`), więc obie barwy mają jedno źródło w palecie.
+  const regula = czytaj('app/styles.css').match(/\.pinezka-zaliczona circle \{([^}]*)\}/);
+  assert.ok(regula, 'reguła koloru zaliczonej pinezki istnieje');
+  assert.match(regula[1], /stroke: var\(--ostrzezenie\)/, 'pierścień zaliczonej to pomarańcz z palety');
+  assert.match(regula[1], /fill: var\(--tlo-pole\)/, 'środek zaliczonej jest pusty (odróżnienie od pełnego celu)');
+  assert.equal(/#6b7280/.test(czytaj('app/styles.css')), false, 'szary kolor zaliczonej zniknął z arkusza');
+});
+
 test('kontrakt: pole z fokusem ma ≥ 16 px — iOS nie przybliża strony (uwaga 3, 2026-09-15; ADR 0047)', () => {
   // iOS Safari przybliża stronę na fokusu pola, którego font-size < 16 px,
   // a pinch poza mapą jest zablokowany celowo (ADR 0047) — przybliżenia nie
@@ -1010,6 +1025,10 @@ test('kontrakt M10: przełącznik sygnałów w nagłówku, domyślnie włączony
 
 test('kontrakt M10: brama obejmuje audyt kontrastu WCAG (T6)', () => {
   assert.match(PACKAGE.scripts.brama, /audyt-kontrastu\.mjs/, 'npm run brama musi gonić audyt kontrastu');
+  // LESSONS L79: przekroczenie progu lektury (AGENTS.md §0) ma być czerwienią
+  // bramy, a nie liczbą przepisaną ręcznie do handoffu — inaczej starzeje się
+  // przy pierwszym dopisaniu treści.
+  assert.match(PACKAGE.scripts.brama, /budzet-lektury\.mjs/, 'npm run brama musi pilnować budżetu lektury (AGENTS.md §0)');
   assert.equal(PACKAGE.scripts.audyt, 'node tools/audyt-kontrastu.mjs', 'osobny skrót npm run audyt');
 });
 
@@ -1915,6 +1934,16 @@ test('kontrakt ADR 0044: start gry wieloosobowej odlicza 5-4-3-2-1-START, a pote
   assert.match(APP, /\$\('multi-sync-pasek'\)\.textContent = tekst;\n\}/,
     '„Ostatni stan / następne odświeżenie" żyje tylko w lobby — w grze go nie ma');
 
+  // 5b. Uwaga terenowa D (właściciel, 2026-09-17, KRYTYCZNA): po kliknięciu
+  //     startu w lobby NIE MA ŻADNYCH EKRANÓW PRZEJŚCIOWYCH. Auto-start odcinka
+  //     nie jest już wyścigowy (2026-09-14 F) — dotyczy OBU trybów, więc po
+  //     odliczaniu zostaje mapa i mini-pasek, a panel fazy A („▶ Idę do
+  //     stacji 1") nigdy się nie pokazuje.
+  assert.match(APP, /if \(STAN\.rozgrywka\?\.faza === FAZY\.przygotowanie\) \{\n {4}const wynik = startOdcinka\(STAN\.rozgrywka, \{ czasMs: zegarGry\(\) \}\);/,
+    'start gry sieciowej od razu otwiera odcinek — bez pytania „▶ Idę do stacji N” (uwaga D)');
+  assert.equal(/if \(gra\.tryb === TRYBY_GRY\.wyscig\) \{\n {4}const r = STAN\.rozgrywka;/.test(APP), false,
+    'auto-startu odcinka nie wolno zawęzić do Wyścigu — Wspólna Trasa ma ten sam ekran (uwaga D)');
+
   // 6. Koniec gry wieloosobowej pokazuje WSPÓLNE liczby na ekranie hotseat.
   assert.match(APP, /const wynik = wynikiMultiKonca\(\) \?\? podsumowanie\(r\);/,
     'ekran wyniku bierze punktację z mostu, gdy gra sieciowa jest zamknięta');
@@ -2502,4 +2531,42 @@ test('kontrakt ADR 0052: aplikacja i most mówią cache L2 tym samym protokołem
   assert.ok(APP.includes('zlozWpisSieci({') && GS.includes('SCHEMAT_SIECI_CACHE'), 'wpis ma schemat sieci po obu stronach');
   // UI nazywa źródło trafienia (telefon albo wspólny dysk)
   assert.ok(APP.includes('ze wspólnego dysku'), 'trafienie L2 jest nazwane w UI');
+});
+
+/* ------- ADR 0053: model AI wybierany nad wklejką, `model` w meta paczki ------- */
+
+test('kontrakt ADR 0053: wybór modelu jest opcjonalny, addytywny i bez zewnętrznych ikon', () => {
+  // 1. Ekran: rząd ikon NAD polem wklejenia (`pole-odpowiedz` po `wklejka-modele`),
+  //    grupa z etykietą, bo ikony nie mają tekstu (ADR 0011 pkt 2).
+  assert.match(INDEX, /<div id="wklejka-modele" class="wklejka-modele" role="group" aria-label="[^"]*"[^>]*><\/div>\s*<textarea id="pole-odpowiedz"/,
+    'ikony modeli stoją nad polem wklejenia, a nie pod nim');
+  assert.equal(/id="wklejka-modele"[\s\S]{0,600}?<img/.test(INDEX), false,
+    'żadnych plików-obrazków: ikony rysuje kod (ADR 0001 pkt 1)');
+  // 2. Cztery klucze i własne SVG — zero CDN, zero pobierania.
+  assert.match(APP, /const MODELE_AI = Object\.freeze\(\[\n {2}\{ klucz: 'meta-ai', nazwa: 'Meta\.ai'[\s\S]{0,900}?klucz: 'claude', nazwa: 'Claude'/,
+    'cztery modele z decyzji właściciela, w kolejności z ekranu');
+  assert.match(APP, /document\.createElementNS\(PRZESTRZEN_SVG_IKON, 'svg'\)/, 'ikony powstają inline (createElementNS)');
+  assert.equal(/MODELE_AI = Object\.freeze[\s\S]{0,800}https?:\/\/(?!www\.w3\.org)/.test(APP), false,
+    'żadnego adresu w ikonach — komplet jest w kodzie (przestrzeń nazw SVG to nie pobieranie)');
+  // 3. Brak wyboru = brak danych: pole `model` dokładamy tylko z wyborem,
+  //    a znaczek rysuje się wyłącznie z niego (żadnej atrapy „nieznany model”).
+  const zestawy = czytaj('app/zestawy.js');
+  assert.match(zestawy, /\.\.\.\(typeof model === 'string' && model\.trim\(\) \? \{ model: model\.trim\(\) \} : \{\}\)/,
+    '`meta.model` jest addytywne (wzorzec `geohash6` z ADR 0024) i trymowane');
+  assert.match(APP, /const znaczek = znaczekModelu\(model\);\n {2}if \(znaczek\) opisEl\.append\(' ', znaczek\);/,
+    'znaczek modelu przy propozycji tylko wtedy, gdy paczka niesie wybór');
+  assert.match(APP, /ustawModelAi\(''\);/, 'wejście na krok 5 czyści wybór — nowa paczka to nowa decyzja');
+  assert.match(APP, /model: STAN\.modelAi, \/\/ C1/, 'gra sieciowa wiezie wybór dalej w swojej meta');
+  // 4. Wybór widoczny i dotykalny: stan w `aria-pressed`, cel ≥ 44 px.
+  assert.match(APP, /przycisk\.setAttribute\('aria-pressed', String\(STAN\.modelAi === model\.klucz\)\);/,
+    'zaznaczenie jest w `aria-pressed` — czytnik wie, który model wybrano');
+  assert.match(STYLE, /\.model-ikona \{\n {2}display: grid;[\s\S]{0,200}width: var\(--cel\);\n {2}height: var\(--cel\);/,
+    'okrągła ikona ma cel dotykowy ≥ 44 px (ADR 0011 pkt 2)');
+  assert.match(STYLE, /\.model-ikona\[aria-pressed='true'\] \{ border-color: var\(--akcent\); background: var\(--akcent-slaby\); \}/,
+    'wybrany model widać bez czytania etykiet');
+  // 5. ADR mówi to samo co kod (strażnik rejestru pilnuje samego pliku).
+  const adr = czytaj('docs/decisions/0053-model-ai-opcjonalnie-w-meta-paczki.md');
+  for (const zdanie of ['brak wyboru = brak danych', 'addytywne', 'inline']) {
+    assert.ok(adr.toLowerCase().includes(zdanie), `ADR 0053 nazywa regułę: ${zdanie}`);
+  }
 });

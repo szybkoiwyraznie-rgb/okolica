@@ -429,7 +429,7 @@ export function liczbaOcenTekst(liczba) {
  * Zdanie na ekran 2: ile gier użyło paczki i jak gracze ocenili pytania.
  *
  * @param {object|null} statystyki wynik `walidujStatystykiOcen` (null = brak danych)
- * @param {boolean} [uzytaLokalnie=false] czy w tej sesji telefonu już odpowiedziano na choć jedno pytanie z tej paczki (teren 2026-09-17: „każda paczka, w której zostało odpowiedziane przynajmniej 1 pytanie, jest już zaliczona jako użycie\").
+ * @param {boolean} [uzytaLokalnie=false] czy w tej sesji telefonu już odpowiedziano na choć jedno pytanie z tej paczki (teren 2026-09-17: „każda paczka, w której zostało odpowiedziane przynajmniej 1 pytanie, jest już zaliczona jako użycie").
  * @returns {string}
  */
 export function opisOcenTekst(statystyki, uzytaLokalnie = false) {
@@ -441,7 +441,7 @@ export function opisOcenTekst(statystyki, uzytaLokalnie = false) {
   }
   const { glosow, procentPlus, procentMinus, uzytaWGrach } = statystyki;
   // Ping `uzycie` na mostu idzie w tle i zanim Drive zdąży policzyć, opis
-  // na ekranie wyboru mógł pokazywać „jeszcze nie użyta\" mimo że gracz
+  // na ekranie wyboru mógł pokazywać „jeszcze nie użyta" mimo że gracz
   // odpowiedział na pytanie w poprzedniej grze (teren 2026-09-17). Lokalna
   // flaga (zapisana po pierwszej odpowiedzi) jest gwarantem prawdy: jeśli
   // w tej sesji grano tą paczką — napisz wprost.

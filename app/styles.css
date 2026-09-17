@@ -317,6 +317,32 @@ input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-
 .badge { display: inline-block; margin: 6px 0; padding: 5px 10px; border-radius: 999px; background: var(--akcent-slaby); font-size: 13px; }
 /* Znaczek Q (ADR 0032): złota litera przy paczkach zweryfikowanych w sieci. */
 .znaczek-factcheck { color: var(--zloto); font-weight: 700; }
+
+/* Uwaga terenowa C1 (właściciel, 2026-09-17): cztery okrągłe ikony modeli nad
+   wklejką (`.wklejka-modele` + `.model-ikona`) i znaczek modelu przy propozycji
+   paczki (`.znaczek-modelu`). Rysunek jest symboliczny, kolor bierze z tokenów
+   (jasny i ciemny motyw), więc kontrast nie zmienia się przy zmianie palety.
+   Cele dotykowe ≥ 44 px — pkt 2 ADR 0011 (ikony stoją w rzędzie nad polem). */
+.wklejka-modele { display: flex; flex-wrap: wrap; gap: 10px; margin: 10px 0 6px; }
+.model-ikona {
+  display: grid;
+  place-items: center;
+  width: var(--cel);
+  height: var(--cel);
+  padding: 0;
+  color: var(--tekst);
+  background: var(--tlo-pole);
+  border: 2px solid var(--linia);
+  border-radius: 50%;
+  cursor: pointer;
+}
+.model-ikona svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+/* Wybrany model: akcent na obwódce i tle — widać go bez czytania etykiet. */
+.model-ikona[aria-pressed='true'] { border-color: var(--akcent); background: var(--akcent-slaby); }
+.model-ikona:focus-visible { outline: 3px solid var(--akcent); outline-offset: 2px; }
+
+.znaczek-modelu { display: inline-grid; place-items: center; width: 20px; height: 20px; margin: 0 2px; vertical-align: -4px; color: var(--tekst-slaby); border: 1px solid var(--linia); border-radius: 50%; background: var(--tlo-pole); }
+.znaczek-modelu svg { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 /* Dopiski robocze (odniesienia do ADR): widoczne tylko w trybie testowym. */
 body:not(.tryb-testowy) .dopisek-roboczy {
   display: none;
@@ -439,10 +465,16 @@ html[data-motyw='ciemny'] .kafelek { filter: brightness(0.78) contrast(0.95); }
 .pinezka circle { fill: var(--akcent); stroke: #fff; stroke-width: 2; }
 .pinezka text { fill: #fff; font-size: 13px; font-weight: 700; }
 .pinezka-aktywna circle { fill: var(--ostrzezenie); }
-/* 2026-09-14 G: zaliczone stacje inny kolor na mapie — szary/zgaszony zielony */
-.pinezka-zaliczona circle { fill: #6b7280; }
-.pinezka-zaliczona.pinezka-aktywna circle { fill: #6b7280; }
-.pinezka-zaliczona text { fill: #e5e7eb; }
+/* 2026-09-14 G: zaliczone stacje inny kolor na mapie.
+   2026-09-17 (uwaga terenowa A): SZARY wypadł — na telefonie w słońcu był zbyt
+   blisko zielonego „oczekuje”, a gracz musi jednym spojrzeniem widzieć, co już
+   zamknął. Zaliczona jest POMARAŃCZOWA, ale PUSTA w środku (numer w kolorze
+   pierścienia), żeby nie zlała się z pełnym pomarańczem bieżącego celu
+   (`.pinezka-aktywna`) — obie barwy biorą z tego samego tokenu `--ostrzezenie`,
+   więc kontrast numeru pilnuje palety motywu (jasny i ciemny). */
+.pinezka-zaliczona circle { fill: var(--tlo-pole); stroke: var(--ostrzezenie); stroke-width: 3; }
+.pinezka-zaliczona.pinezka-aktywna circle { fill: var(--tlo-pole); stroke: var(--ostrzezenie); }
+.pinezka-zaliczona text { fill: var(--ostrzezenie); }
 .marker circle { fill: #1d6fe0; stroke: #fff; stroke-width: 3; }
 
 .mapa-przyciski { position: absolute; top: 8px; right: 8px; display: flex; flex-direction: column; gap: 6px; }

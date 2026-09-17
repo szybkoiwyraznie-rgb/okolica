@@ -6901,3 +6901,122 @@ gałęzi (cache `m12-153`):
 Script wymaga ponownego wdrożenia** (akcje L2) — procedura w
 `docs/setup/most-drive-instrukcja.md`. Czekamy na uwagi z testów terenowych
 (m.in. paczka z promptu `PYT/1.1.2` i polecenia z PR #35).
+
+## 2026-09-17 — otwarcie sesji `arena/01a0ae26-okolica` (PR #40 w tym commicie)
+
+**Zlecenie właściciela:** „Kontynuujemy projekt". Audyt startowy, brama zielona
+(843/843), brak zmian funkcjonalnych — kod na bazie `m12-153`. Handoff:
+`docs/setup/HANDOFF_2026-09-17.md`. Uwaga dla ciągłości: ta sesja **nie
+zostawiła wpisu w tym dzienniku** (tylko handoff) — uzupełniam jednym
+akapitem przy okazji audytu w sesji 17b, żeby dziennik nie miał dziury.
+
+## 2026-09-17b — otwarcie sesji `arena/01a0aed7-okolica` (PR #41 w tym commicie)
+
+**Zlecenie właściciela:** „kontynuujemy projekt". Zgodnie z AGENTS.md §2:
+PR na starcie (istnieje przed kodowaniem), audyt poprzedniego scalonego PR,
+inkrementalne commity, na koniec handoff.
+
+**Audyt PR #40 (`git diff 1c87d76..d07abb0`, 24 pliki, +443/−144).** Zmiany
+funkcjonalne ocenione jako zgodne z ADR-ami i decyzjami właściciela (łańcuch
+Overpass z limitami per instancja, tolerancja kotwicy cache ±200 m, klucz cache
+z pozycji zaokrąglonej, lokalna flaga „użyta paczka", przewijanie warstw na
+górę, lusterko `TOLERANCJA_KOTWICY_M` w `.gs`). Ustalenia wymagające działania:
+
+1. **Budżet lektury PRZEKROCZONY** — handoff 17 deklarował 99 998/100 000
+   (rezerwa 2), a pomiar na scalonym `main` dawał **101 082** (o 1 082 za
+   dużo). Różnicę zrobił aneks 2026-09-17 dopisany do ADR 0035 już po pomiarze.
+   `npm test` tego nie łapał, bo budżet nie był częścią bramy.
+2. **Sprzeczność w ADR 0035** — aneks 2026-09-17 mówił „zostają dwie instancje",
+   aneks 2026-09-17b przywrócił VK Maps; rejestr ADR wciąż opisywał 0035 jako
+   „próby po 10 s".
+3. **Artefakty generowania tekstu** — dosłowne `\"` w komentarzach `app/app.js`
+   i `app/oceny.js`, w literale komunikatu o nazwie pliku paczki oraz w pinie
+   `test/zestawy-ui.test.js`; powtórzony fragment zdania w komentarzu.
+4. **Klucz `okolica:uzyte-paczki`** (nowy w PR #40) nie był nigdzie opisany;
+   dodatkowo `docs/ARCHITECTURE.md` wciąż niósł „timeout 10 s" dla Overpass.
+
+**Wykonane (dwa commity na gałęzi, oba wypchnięte):**
+
+- `9f0acf3` — poprawka artefaktów (pkt 3) + bump `?v=`/`WERSJA_SW`
+  `m12-156 → m12-157` (AGENTS.md §7). Zmiana neutralna dla zachowania:
+  w literale `\"` renderuje się identycznie jak `"`, więc teksty gracza się nie
+  zmieniają. Brama: 843/843, `npm run check` OK.
+- `1219d6b` — **archiwizacja budżetu** (pkt 1): sześć aneksów przeniesionych
+  dosłownie do `docs/decisions/archive/aneksy-*.md` z notami wiążącymi w ADR-ach
+  (L62/L66): 0035 (2026-09-17 + 17b, nota rozstrzyga sprzeczność wersją
+  późniejszą: FOSSGIS 12 s → VK Maps 25 s → Kumi 40 s), 0026 (2026-09-07
+  z dopiskiem), 0030 (2026-09-13/m12-104), 0043 (2026-09-14/m12-124 + dopisek
+  m12-125), 0003 (2026-09-12/m12-81), 0019 (2026-09-13d/m12-114). Nośniki,
+  które po cięciu kłamały, poprawione: nagłówek ADR 0019 („obowiązujący kształt
+  definiuje ostatni aneks na końcu"), zdanie o „obowiązujących aneksach niżej",
+  wiersz rejestru ADR 0035 („próby po 10 s"), a `docs/ARCHITECTURE.md` dostał
+  limit per instancja (pkt 4) i wpis o `okolica:uzyte-paczki`.
+- **Trwały fix procesu:** `node tools/budzet-lektury.mjs` wchodzi do
+  `npm run brama`, a pin w `test/kontrakt.test.js` trzyma ten skład; lekcja
+  L79 (rejestr + lustro w `docs/LESSONS_ARCHIVE.md`) opisuje, dlaczego liczba
+  budżetu z handoffu starzeje się w środku sesji.
+
+**Brama końcowa (po ostatniej zmianie dokumentów):** `npm test` **843 / 843**,
+`npm run check` OK (§2 3 603 znaki, §2.2 3 738), audyt kontrastu WCAG AA
+**0 naruszeń**, budżet lektury **97 942 / 100 000 (rezerwa 2 058)**; wersje:
+protokół `PYT/1.1`, szablony `PYT/1.1.2` / `PYT/1.1-nofc.2`, cache `m12-157`.
+CI na PR #41: zielone (`test` SUCCESS dla wszystkich trzech commitów sesji).
+
+**Otwarte po sesji:** PR #41 (scalenie właściciela, squash). **Most Apps Script
+wymaga ponownego wdrożenia** (cache sieci L2, ADR 0052) — procedura w
+`docs/setup/most-drive-instrukcja.md` §184-190; bez tego wspólny cache L2 po
+cichu nie odpowiada. Kolejka pracy poza tym pusta: czekamy na uwagi z testów
+terenowych (iPhone). Rezerwa budżetu (2 058 tokenów) wystarcza na około jeden
+aneks terenowy — przy przekroczeniu próg pilnuje już brama, a kolejność jest
+zapisana w LESSONS L79.
+
+## 2026-09-17c — kolejka uwag terenowych z iPhone'a (A, B, C1, C2, D) — PR #41
+
+Kontynuacja sesji 17b na tej samej gałęzi i w tym samym PR (#41). Właściciel
+przetestował grę w terenie i przysłał pięć uwag; wszystkie zrealizowane,
+każda z testem i z dokumentem (aneks ADR albo nowy ADR):
+
+- `f3ca16a` — **A**: pinezka zaliczonej stacji jest POMARAŃCZOWA i pusta
+  w środku (numer w kolorze pierścienia). Szary `#6b7280` wypadł, bo na
+  telefonie w słońcu był zbyt blisko zielonego „oczekuje”; pusty środek
+  odróżnia ją od pełnego pomarańczu bieżącego celu (`.pinezka-aktywna`).
+- `83666df` — **D (KRYTYCZNA, zgłaszana kilka razy)**: po kliknięciu startu
+  w lobby nie ma ŻADNEGO ekranu przejściowego — odcinek pierwszej stacji
+  startuje z góry w OBU trybach (Wspólna Trasa i Wyścig), zostaje mapa
+  i mini-pasek na dole. Kontrola: `#gra-sterowanie` w drodze jest schowany
+  (ADR 0036), a w `?tryb=test` zostaje, bo trzyma „Symuluj dojście”.
+- `8e890a6` — **B**: wejście na „Stacje w Twojej okolicy” startuje CZYSTE
+  (`przygotujEkranStacji()`): zero stacji, tekstów i pinezek poprzedniej gry —
+  świeży wynik (dysk/Overpass/pierścień) dopiero zapełnia ekran. Cache
+  geometrii `STAN.siec` i trasa-sekret BIEŻĄCEGO setupu zostają nietknięte.
+- `614e3a6` — **C2**: po przyjęciu wklejki `#wklejka-status` dostaje
+  NATYCHMIAST pulsujące „Łączę z siecią…”, a wskaźnik gaśnie, gdy odpowiedzą
+  wszystkie prace tej wklejki (zapis paczki, w multi także `gra-zaloz`) —
+  kilka sekund pracy mostu przestało wyglądać na zamrożenie.
+- `e716f03` — **C1**: cztery małe, okrągłe ikony modeli nad polem wklejenia
+  (Meta.ai, ChatGPT, Gemini, Claude), wybór opcjonalny (domyślnie żaden,
+  dotknięcie zaznacza/odznacza, inne przełącza). Wybrany model jedzie
+  z paczką jako ADDYTYWNE `meta.model` (wzorzec `geohash6`/`ulica`) i widać go
+  znaczkiem przy propozycji paczki; bez wyboru nic o modelu nie ma nigdzie.
+  Ikony rysowane inline (bez plików i CDN — ADR 0001 pkt 1), cele 44 px,
+  stan w `aria-pressed`. Bump cache `m12-157` → `m12-158`.
+
+Dokumentacja: aneks B w ADR 0005, aneks C2 w ADR 0011, aneks D w ADR 0044,
+**nowy ADR 0053** („Model AI: opcjonalny wybór nad wklejką i pole `model`
+w `meta` paczki”) + wiersz w rejestrze; nowa lekcja **L80** (atrapa DOM jest
+globalna — praca w tle wcześniejszego testu pisze po dokumencie następnego,
+stąd świadoma kolejność testów w `test/zestawy-ui.test.js`).
+
+**Brama końcowa:** `npm run brama` EXIT 0; `npm test` **852 / 852**;
+`npm run check` OK (§2 3 603 znaki, §2.2 3 738); audyt WCAG AA **0 naruszeń**;
+budżet lektury **99 431 / 100 000** (rezerwa 569).
+
+**GitHub:** w połowie sesji token w Arenie przestał działać (`GH_TOKEN`
+nieaktualny — `git push` i `gh` odmawiały); właściciel zresetował połączenie
+i całość jest na `origin` (`614e3a6..c31e406`). Opis i tytuł PR #41
+zaktualizowane, CI (`test`) zielone dla `f3ca16a`, `83666df`, `8e890a6`,
+`614e3a6` i `c31e406`.
+
+**Otwarte po sesji:** ponowne wdrożenie mostu Apps Script (cache L2, ADR 0052)
+i test terenowy na iPhonie na `m12-158` (A, B, C1, C2, D — w tym krytyczne D:
+zero ekranów przejściowych po starcie w lobby).
