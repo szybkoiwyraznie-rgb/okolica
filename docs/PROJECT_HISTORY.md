@@ -7070,48 +7070,68 @@ przy powrocie na kartę; przerwa bezczynności 15 min zostaje jedynym
 przerwaniem).
 
 **Uwaga B (poziomy pytań):** dokładnie dwa poziomy — **dziecko** (8–10 lat;
-łatwe, BEZ dat, cyfr, liczb, nazwisk i trudnych faktów) i **dorośli** (mogą
-być trudne: logika, fakty, daty, nazwiska). Wiek liczbowy (7/10/12/15) i
-globalne „kategoria wiekowa" usunięte; klucze liczbowe zostają tylko do
-odczytu starych paczek.
+łatwe — opisu z 17e zrelaksowano w 17f) i **dorośli** (mogą być trudne:
+logika, fakty, daty, nazwiska). Wiek liczbowy (7/10/12/15) i globalne
+„kategoria wiekowa” usunięte; klucze liczbowe zostają tylko do odczytu
+starych paczek.
 
-- Poziom to własność **gracza** (hot-seat): wybór przy imieniu
-  (`konfig.gracze[].poziom`, domyślnie `dorosli`), zapamiętany w profilu
-  (lokalny + Drive przez `profil-ustaw`), auto-wybór przy znanym graczu.
-- Paczka: globalne `wiek` znika; każde pytanie niesie `poziom` (aliasy
-  normowane); meta niesie `poziomyPytan` (zestawienie przy KAŻDEJ stacji).
-  Protokół **PYT/1.2** (`PYT/1.2.1` / `PYT/1.2-nofc.1`), nowe kody `E21`/`E22`
-  (tylko gdy setup niesie `poziomyPytan`).
-- Prompt: sekcja `GRACZE — POZIOMY PYTAŃ` z ZASADĄ TWARDĄ (powtórzoną —
-  modele zapominają): DOKŁADNIE to zestawienie przy KAŻDEJ stacji + lista
-  graczy z poziomami + wymagania poziomów. Pytania do właściwych graczy BEZ
-  MIESZANIA: k-TE pytanie poziomu X → k-ty gracz poziomu X.
+- Poziom to własność **gracza** (hot-seat): `konfig.gracze[].poziom`
+  (domyślnie `dorosli`), zapamiętany w profilu (lokalny + Drive), auto-wybór
+  przy znanym graczu.
+- Paczka: globalne `wiek` znika; pytanie niesie `poziom`; meta niesie
+  `poziomyPytan`. Protokół **PYT/1.2** (`PYT/1.2.1` / `PYT/1.2-nofc.1`),
+  kody `E21`/`E22` (tylko gdy setup niesie `poziomyPytan`). Pytania do
+  właściwych graczy BEZ MIESZANIA: k-TE pytanie poziomu X → k-ty gracz
+  poziomu X.
 - Dopasowanie paczek: `poziomyPytan` DOKŁADNIE + liczba stacji + promień +
-  suma pytań (≥) + tematy (⊆); slug na Drive `poziomy-dzieci{N}-dorosli{N}`;
-  stare paczki z `wiek` nie pasują do nowych setupów i odwrotnie; paczki bez
-  `poziomu` dalej grywalne (pierwsze pytanie stacji). Bez migratora.
-- **Rewizja multi (właściciel, wprost):** „w multiplayer trasa i wyścig w
-  ogóle bym nie różnicował wieku pytań — jest jeden zestaw pytań wynikający z
-  wyboru hosta i wszyscy je mają takie same." Host wybiera JEDEN poziom w
-  karcie multi (`STAN.multiPoziom`, `okolica:multi:poziom`; gość dziedziczy),
-  paczka multi niesie **jedno wspólne pytanie na stację**
-  (`pytaniaNaStacje = 1`), wszyscy odpowiadają na te same pytania; most nie
-  niesie `poziomu` u graczy multi. Usterka zbudowana wcześniej (paczka multi z
-  OBU poziomami) wycofana wraz z decyzją.
+  suma pytań (≥) + tematy (⊆); slug `poziomy-dzieci{N}-dorosli{N}`; paczki
+  bez `poziomu` dalej grywalne. Bez migratora.
+- **Rewizja multi (właściciel, wprost):** „jest jeden zestaw pytań wynikający
+  z wyboru hosta i wszyscy je mają takie same.” Host wybiera JEDEN poziom
+  (`STAN.multiPoziom`), paczka multi niesie **jedno wspólne pytanie na
+  stację** (`pytaniaNaStacje = 1`); most nie niesie `poziomu` u graczy
+  multi.
 
 **Uwaga C (stała kolejność):** hot-seat odpowiada ZAWSZE pierwszy → ostatni z
 listy. Gracz odcinka to zawsze pierwszy gracz listy (zastępuje rotację
 `stacja mod N` z ADR 0009 pkt 2); k-TE pytanie → k-ty gracz (per poziom);
-„bieżące pytanie" = pierwsze W KOLEJNOŚCI GRACZY.
+„bieżące pytanie” = pierwsze W KOLEJNOŚCI GRACZY.
 
 **Bugi usunięte w trakcie:** `stacje.map((s) =>` bez indeksu `i` w
-`app/rozgrywka.js` i `TypeError` w `konfiguracjaOk` (`app/wieloosobowa.js`) —
-`trudnoscOk` liczone przed strażnikiem `if (!k)`.
+`app/rozgrywka.js` i `TypeError` w `konfiguracjaOk` (`app/wieloosobowa.js`).
 
-**Dokumentacja:** ADR 0055 + ADR 0056 + rejestr; PROTOKOL §7 (PYT/1.2) i
-aneks M11/M12; most `docs/setup/apps-script-repo-paczek.gs` (`poziomyPytan`,
-`poziom` w profilu, slug) — wymaga wdrożenia właściciela. Bump `m12-159` →
-`m12-160`.
+**Dokumentacja:** ADR 0055 + ADR 0056 + rejestr; PROTOKOL §7 (PYT/1.2);
+most `docs/setup/apps-script-repo-paczek.gs` (`poziomyPytan`, `poziom` w
+profilu, slug) — wymaga wdrożenia właściciela. Bump `m12-159` → `m12-160`.
 
 **Brama:** `npm test` **855 / 855** EXIT 0 (dwa razy); `node --check` OK.
 **Otwarte:** wdrożenie mostu + test terenowy A/B/C na `m12-160`.
+
+## 2026-09-17f — przegląd wygenerowanych promptów: krótki prompt i paczka bez źródeł — PR #42
+
+Właściciel sprawdził prompty z `m12-160` i odrzucił ich część: w prompcie
+miałoby być TYLKO to, co model piszący pytania potrzebuje.
+
+**Prompt (ADR 0057):** kompozycja pytań pod KAŻDĄ stacją (`2 pytania dla
+dorosłych, 1 pytanie dla dzieci`; multi: jeden poziom); `{GRACZE_BLOK}` →
+`{POZIOMY_BLOK}`. Z promptu znikają: imiona graczy, kolejność odpowiadania,
+`liczba graczy`, `data przygotowania`, meta-komentarz „bo modele to
+zapominają”. Opis DZIECKA zrelaksowany („Dziecko 10 lat to nie
+przedszkolak”): bez TRUDNYCH dat, nazwisk i faktów — proste liczby,
+podstawowe fakty i nazwy w porządku.
+
+**Paczka (ADR 0058, zastępuje 0008 co do pól JSON):** `zrodla` znika z
+promptu i walidacji („nikt tego nie czyta — niech model tego w ogóle nie
+wpisuje”); E09/E10/E11 wycofane. `utworzono` znika — datę nadaje aplikacja
+sama (`zestawy.js`: `meta.data`). Semantyka fact-check (właściciel):
+ptaszek zostaje — z fact-check pytania MUSZĄ być sprawdzone online
+(wymaganie w prompcie), ale model NIE musi tego dowodzić (bez cytowania, bez
+pola źródła); bez fact-check sprawdzania NIE WYMUSZAMY. Stare paczki
+czytamy: pola ignorowane, UI dalej pokazuje.
+
+**Wdrożenie:** `app/protokol.js` (kształt promptu, walidacja, `PYT/1.3`),
+`app/konfig.js` (opis dzieci), PROTOKOL, `tools/synchronizuj-szablon.mjs`,
+testy. Bump `m12-160` → `m12-161`.
+
+**Brama:** pełna brama — patrz commit. **Otwarte:** wdrożenie mostu + test
+terenowy na `m12-161`.

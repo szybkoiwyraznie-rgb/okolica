@@ -245,7 +245,7 @@ braku przycisku). Eksport
 | Ścieżka | Zawartość |
 |---|---|
 | `AGENTS.md` | **zasady pracy agentów — lektura startowa każdej sesji** |
-| `docs/PROTOKOL.md` | protokół PYT v1.2: szablon promptu, schemat JSON, walidacja |
+| `docs/PROTOKOL.md` | protokół PYT v1.3: krótki prompt (zestawienie pytań pod stacjami, bez źródeł i daty), schemat JSON, walidacja |
 | `docs/decisions/` | rejestr decyzji architektonicznych (ADR 0001–0020) |
 | `docs/ARCHITECTURE.md` | budowa aplikacji, przepływ danych, algorytm stacji |
 | `docs/ROADMAP.md` | kamienie milowe M0–M12 i status |

@@ -77,20 +77,23 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
     'ZASADY TWARDE',
     'wykonaj kwerendę w internecie',
     'oprzyj ten fakt na wyniku kwerendy',
-    '"zrodla"',
-    'Nazwy, daty, liczby, cytaty, autorów i adresy podawaj dokładnie w postaci potwierdzonej źródłem',
+    'Nazwy, daty, liczby, cytaty i autorów podawaj dokładnie w postaci potwierdzonej kwerendą',
     'Cała odpowiedź to jeden blok kodu json',
     'OKOLICA GRY:',
     'STACJE (kolejność = kolejność w grze',
-    'GRACZE — POZIOMY PYTAŃ (ZASADA TWARDA):',
     'SCHEMAT ODPOWIEDZI — dokładnie te pola',
     'WYMAGANIA DODATKOWE:',
     '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
   ]) {
     assert.ok(SZABLON_PROMPTU.includes(fraza), `w szablonie brakuje: ${fraza}`);
   }
+  // ADR 0057/0058: krótki prompt — bez imion, bez daty, bez źródeł w schemacie
+  assert.ok(!SZABLON_PROMPTU.includes('"zrodla"'), 'schemat §2 nie żąda już źródeł (ADR 0058)');
+  assert.ok(!SZABLON_PROMPTU.includes('utworzono'), 'schemat §2 nie niesie utworzono (ADR 0058)');
+  assert.ok(!SZABLON_PROMPTU.includes('data przygotowania'), 'ADR 0057: bez daty w prompcie');
+  assert.ok(!SZABLON_PROMPTU.includes('bo modele to zapominają'), 'ADR 0057: bez meta-komentarzy dla człowieka');
   // wszystkie placeholdery z protokołu §2.1 muszą być w szablonie
-  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{GRACZE_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
+  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{LICZBA_STACJI}']) {
     assert.ok(SZABLON_PROMPTU.includes(token), `brak placeholdera ${token}`);
   }
   assert.ok(!SZABLON_PROMPTU.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
@@ -126,9 +129,11 @@ test('zbudujPrompt: podstawia wszystkie placeholdery i nie zostawia dziur', () =
   assert.ok(prompt.includes('historia (dzieje miejsca'), 'temat z opisem z kanonu');
   assert.ok(prompt.includes('"historia", "architektura"'), 'lista tematów w schemacie JSON');
   assert.ok(prompt.includes('liczba pytań łącznie: 6'), '3 stacje × 2 graczy = 6 (po jednym pytaniu na gracza)');
-  assert.ok(prompt.includes('liczba graczy: 2'));
-  assert.ok(prompt.includes('DOKŁADNIE 2× POZIOM DOROŚLI'), 'ZASADA TWARDA: zestawienie poziomów per stację');
-  assert.ok(prompt.includes('2026-09-05 23:59') && prompt.includes('"2026-09-05"'));
+  // ADR 0057: zestawienie pod KAŻDĄ stacją (2 dorośli → „2 pytania dla dorosłych”),
+  // bez imion graczy i bez daty.
+  assert.equal((prompt.match(/2 pytania dla dorosłych/g) ?? []).length, 3, 'linia zestawienia pod każdą z 3 stacji');
+  assert.ok(!prompt.includes('liczba graczy'), 'ADR 0057: model nie dostaje liczby graczy');
+  assert.ok(!prompt.includes('2026-09-05'), 'ADR 0057/0058: żadnej daty w prompcie');
 });
 
 test('zbudujPrompt: brak miejsca daje jawny komunikat, nie pustą lukę', () => {
@@ -261,13 +266,14 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
   for (const fraza of [
     'Podawaj wyłącznie fakty, których jesteś pewien',
     'Sposób ich ustalenia zostawiamy Tobie',
-    'OPCJONALNE',
-    'przy braku pewności zostaw pole puste',
     'SCHEMAT ODPOWIEDZI — dokładnie te pola',
     '"poprawna": numer poprawnej odpowiedzi od 1 do 4',
   ]) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(fraza), `w szablonie §2.2 brakuje: ${fraza}`);
   }
+  // ADR 0058: źródeł nie ma w ANIM w wariancie — model ich nie wpisuje.
+  assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('"zrodla"'), 'schemat §2.2 nie żąda już źródeł (ADR 0058)');
+  assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('OPCJONALNE'), 'bez opcjonalnych źródeł (ADR 0058)');
   // G.b (2026-09-12): jak w §2 — żadnego zdania o zapisie „NORMALNIE”/zakazie
   // kodowania (szablon nofc.3).
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('zapisz NORMALNIE'), 'szablon §2.2 bez zdania „zapisz NORMALNIE” (G.b)');
@@ -294,7 +300,7 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('indeks'), 'szablon §2.2 nie wspomina indeksu');
   assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('- "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").'),
     'szablon §2.2 mówi wprost: numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza na liście)');
-  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{GRACZE_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{DATA}', '{DATA_KROTKA}', '{LICZBA_STACJI}']) {
+  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{LICZBA_STACJI}']) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(token), `brak placeholdera ${token} w §2.2`);
   }
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
@@ -316,23 +322,18 @@ test('zbudujPrompt: domyślnie bez weryfikacji (§2.2), fact-check na życzenie 
   }
 });
 
-test('E09: źródła wymagane przy fact-checku, opcjonalne bez niego — decyduje aplikacja, nie marker', () => {
-  // ADR 0032 + ADR 0050: profil źródeł wynika z ptaszka w setupie. Ten sam brak
-  // źródeł jest usterką przy `factcheck: true` i jest w porządku przy
-  // `factcheck: false` — model nie zgłasza niczego w JSON-ie.
+test('ADR 0058: pole `zrodla` nie istnieje — walidator go ignoruje (E09/E10 wycofane)', () => {
+  // Właściciel 2026-09-17e: „podawanie tych źródeł w pytaniach nie ma sensu —
+  // nikt tego nie czyta. Niech model tego w ogóle nie wpisuje."
   const bezZrodel = structuredClone(OK);
   for (const pyt of bezZrodel.pytania) delete pyt.zrodla;
-  assert.ok(kody(bezZrodel).includes('E09'), 'domyślnie (fact-check) brak źródeł to E09');
-  assert.deepEqual(kody(bezZrodel, oczekiwane({ factcheck: false })), [], 'bez fact-checku brak źródeł przechodzi');
+  assert.deepEqual(kody(bezZrodel), [], 'brak źródeł przechodzi w OBU wariantach');
+  assert.deepEqual(kody(bezZrodel, oczekiwane({ factcheck: false })), [], 'bez fact-checku też przechodzi');
 
-  // Kształt podanego źródła sprawdzany jest zawsze; komunikat E10 mówi, co zrobić.
-  const przyklad = structuredClone(OK);
-  przyklad.pytania[0].zrodla = [{ url: 'https://przyklad.org/haslo', tytul: 'Tytuł źródła', sprawdzono: '2026-09-05' }];
-  const e10 = walidujPaczke(przyklad, oczekiwane({ factcheck: false })).find((u) => u.kod === 'E10');
-  assert.ok(e10, 'przykładowy adres to usterka także bez fact-checku');
-  assert.match(e10.komunikat, /opcjonalne/, 'bez fact-checku E10 podpowiada usunięcie, nie kwerendę');
-  const e10fc = walidujPaczke(przyklad, oczekiwane()).find((u) => u.kod === 'E10');
-  assert.match(e10fc.komunikat, /z kwerendy/, 'z fact-checkiem E10 przypomina o kwerendzie');
+  // Stara paczka NIESIE źródła — pole jest ignorowane, nie odrzuca paczki.
+  const zeZrodlami = structuredClone(OK);
+  zeZrodlami.pytania[0].zrodla = [{ url: 'https://przyklad.org/haslo', tytul: 'Tytuł źródła', sprawdzono: '2026-09-05' }];
+  assert.ok(!kody(zeZrodlami).includes('E09') && !kody(zeZrodlami).includes('E10'), 'adres przykładowy już nie jest usterką');
 });
 
 test('walidujPaczke: E03 — liczba pytań niezgodna z setupem', () => {
@@ -395,16 +396,24 @@ test('walidujPaczke: E06/E07/E08 — odpowiedzi', () => {
   assert.ok(kody(klonyPaczki((p) => { p.pytania[0].odpowiedzi[1] = 'wszystkie powyższe'; })).includes('E15'));
 });
 
-test('walidujPaczke: E09/E10/E11 — źródła są wymagane i muszą być prawdziwe', () => {
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla = []; })).includes('E09'));
-  assert.ok(kody(klonyPaczki((p) => { delete p.pytania[0].zrodla; })).includes('E09'));
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla[0].url = 'wikipedia'; })).includes('E10'));
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla[0].url = 'https://example.com/haslo'; })).includes('E10'));
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla[0].url = 'https://cos.przyklad.org/x'; })).includes('E10'));
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla[0].url = 'https://fakt.invalid/x'; })).includes('E10'));
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla[0].tytul = ''; })).includes('E15'));
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla[0].sprawdzono = '05.09.2026'; })).includes('E11'));
-  assert.ok(kody(klonyPaczki((p) => { p.pytania[0].zrodla[0].sprawdzono = '2026-09-09'; })).includes('E11'));
+test('walidujPaczke: ADR 0058 — pole `zrodla` jest ignorowane w każdym kształcie', () => {
+  // E09/E10/E11 (źródła) wycofane 2026-09-17e: model nie wpisuje źródeł,
+  // a stare paczki czytamy dalej, więc walidator pola nie widzi.
+  for (const modyfikacja of [
+    (p) => { p.pytania[0].zrodla = []; },
+    (p) => { delete p.pytania[0].zrodla; },
+    (p) => { p.pytania[0].zrodla[0].url = 'wikipedia'; },
+    (p) => { p.pytania[0].zrodla[0].url = 'https://example.com/haslo'; },
+    (p) => { p.pytania[0].zrodla[0].url = 'https://fakt.invalid/x'; },
+    (p) => { p.pytania[0].zrodla[0].tytul = ''; },
+    (p) => { p.pytania[0].zrodla[0].sprawdzono = '05.09.2026'; },
+    (p) => { p.pytania[0].zrodla[0].sprawdzono = '2026-09-09'; },
+  ]) {
+    assert.deepEqual(kody(klonyPaczki(modyfikacja)), [],
+      'zniekształcone źrodla nie są już usterką: ' + JSON.stringify(klonyPaczki(modyfikacja).pytania[0].zrodla));
+  }
+  assert.ok(!kody(OK).includes('E09') && !kody(OK).includes('E10') && !kody(OK).includes('E11'),
+    'kody E09/E10/E11 (źródła) nie istnieją dla walidatora');
 });
 
 test('walidujPaczke: E12/E13 — temat spoza kanonu i duplikat treści', () => {
@@ -471,10 +480,12 @@ test('walidujPaczke: E15 — pola wymagane i brzegowe wartości treści', () => 
   assert.ok(kody([]).includes('E15'));
 });
 
-test('walidujPaczke: E11 — data utworzenia w przyszłości', () => {
-  const u = walidujPaczke(klonyPaczki((p) => { p.utworzono = '2026-09-06 10:00'; }), oczekiwane()).map((x) => x.kod);
-  assert.ok(u.includes('E11'));
-  assert.ok(kody(klonyPaczki((p) => { p.utworzono = '5 września 2026'; })).includes('E11'));
+test('walidujPaczke: ADR 0058 — pole `utworzono` jest ignorowane (E11 wycofane)', () => {
+  // Aplikacja sama wpisuje meta.data przy zapisie (zestawy.js) — pole modela
+  // nie istnieje, więc nawet data „w przyszłości” nie jest usterką.
+  assert.deepEqual(kody(klonyPaczki((p) => { p.utworzono = '2026-09-06 10:00'; })), [], 'utworzono w przyszłości — ignorowane');
+  assert.deepEqual(kody(klonyPaczki((p) => { p.utworzono = '5 września 2026'; })), [], 'utworzono w dziwnym formacie — ignorowane');
+  assert.ok(!kody(OK).includes('E11'), 'kod E11 (utworzono) nie istnieje dla walidatora');
 });
 
 /* ------------------------- zakotwiczenie: prośba w prompcie, nie bramka E14 */
@@ -557,8 +568,8 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
   assert.deepEqual(podsumowaniePaczki(null), { liczbaPytan: 0, stacje: [], tematy: [], liczbaZrodel: 0, punktyRazem: 0, uwagi: '' });
 });
 
-test('stałe protokołu: wersja PYT/1.2', () => {
-  assert.equal(WERSJA_PROTOKOLU, 'PYT/1.2', 'ADR 0055: poziomy pytań per gracz + E21/E22');
+test('stałe protokołu: wersja PYT/1.3', () => {
+  assert.equal(WERSJA_PROTOKOLU, 'PYT/1.3', 'ADR 0057/0058: krótki prompt, bez źródeł i utworzono');
 });
 
 /* --------- ADR 0050: jedna postać paczki, numer odpowiedzi 1..4, bez ukrywania --------- */

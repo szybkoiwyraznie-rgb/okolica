@@ -33,9 +33,9 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0014](archive/0014-punktacja-czasu-mediana-tempa.md) | Punktacja czasu: premia względem mediany tempa odcinków (doprecyzowanie ADR 0009 pkt 5) — pkt 1 (dystanse odcinków z sieci) obowiązuje | Wycofana |
 | [0015](0015-niekompletna-paczka-i-pominiecie-stacji.md) | Niekompletna paczka: ostrzeżenie zamiast blokady; pominięcie tylko w drodze (przedrostek kodów H wycofany — aneks 2026-09-13) | Proponowana |
 | [0016](0016-trwaly-backend-google-drive-apps-script.md) | Trwały backend: Google Drive + Apps Script na wydzielonym koncie (repo paczek, stan gry, droga do multi-device; przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
-| [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1` z jawnymi stacjami, geohash5 w indeksie, CC BY-SA 4.0 (moderacja wstępna zniesiona — aneks 2026-09-11; nazwa paczki od miejsca, bez kroku ekranu stacji — aneks 2026-09-13; widoczne paczki schodzą w tle — aneks 2026-09-13d) | Proponowana |
+| [0017](0017-repozytorium-paczek-to-zestaw.md) | Repozytorium paczek: schemat `TO-zestaw/1` z jawnymi stacjami, geohash5 w indeksie, CC BY-SA 4.0; nazwa paczki od miejsca; paczki schodzą w tle | Proponowana |
 | [0018](0018-drive-backend-wielozadaniowy.md) | Drive jako backend wielozadaniowy (paczki, gry, statystyki; przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
-| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig (rankingi usunięte — aneks 2026-09-11b; ranking wrócił w nowej formie — aneks 2026-09-12f; sekret tylko w żywej grze, numery stacji stałe po powrocie — aneks 2026-09-13c; kolejka zdarzeń utrwalona, reload nie gubi odpowiedzi — aneks 2026-09-13d) | Zaakceptowana |
+| [0019](0019-gra-wieloosobowa-multi-device.md) | Gra wieloosobowa multi-device: lobby, Wspólna Trasa/Wyścig; ranking w nowej formie (ADR 0039); sekret tylko w żywej grze, kolejka zdarzeń utrwalona | Zaakceptowana |
 | [0020](0020-adres-mostu-wpisany-w-kod-aplikacji.md) | Adres mostu Drive w kodzie aplikacji, bez pola w UI (przycisk „Sprawdź połączenie" usunięty — aneks 2026-09-12) | Zaakceptowana |
 | [0021](0021-pin-prosty-profilu-pseudonimu.md) | PIN pseudonimu (4-8 cyfr, jawny tekst, RO-profil/1) + przycisk To ja w setupie | Zaakceptowana |
 | [0022](0022-odpowiada-gracz-z-kolejki.md) | Odpowiada gracz z kolejki: koniec ustawienia `wspolpraca` (kolejne pytania rotują — aneks 2026-09-12) | Zaakceptowana |
@@ -74,6 +74,8 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0054](0054-gps-nigdy-nie-ustaje-budzenie-przy-powrocie.md) | GPS nie przerywa go nic: świeży watcher przy starcie gry/odcinka i obowiązkowe budzenie przy powrocie na kartę | Zaakceptowana |
 | [0055](0055-poziomy-pytan-dwa-poziomy-wlasnosc-gracza-i-gry.md) | Dwa poziomy pytań (dziecko/dorosły): własność gracza (hot-seat) i gry (multi — jeden poziom hosta, wspólna paczka) | Zaakceptowana |
 | [0056](0056-stala-kolejnosc-odpowiadan-w-hotseat.md) | Hot-seat: stała kolejność odpowiadania (1. → ostatni), bez rotacji startera | Zaakceptowana |
+| [0057](0057-krotki-prompt-zestawienie-pod-stacjami.md) | Krótki prompt: tylko to, co model piszący pytania potrzebuje (zestawienie pod stacjami, bez imion i daty) | Zaakceptowana |
+| [0058](0058-bez-zrodel-i-utworzono-w-paczce.md) | Paczka bez źródeł i bez `utworzono` (zastępuje 0008 co do pól JSON) | Zaakceptowana |
 
 ## Szablon ADR
 

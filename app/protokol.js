@@ -16,7 +16,7 @@ import { TEMATY, WIEK, TRYBY, KLUCZE_POZIOMOW, POZIOMY, POZIOM_DORMYSLNY, kanoni
 import { czyWspolrzedneOk, formatujWspolrzedne, odlegloscM } from './geo.js?v=m12-160';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
-export const WERSJA_PROTOKOLU = 'PYT/1.2';
+export const WERSJA_PROTOKOLU = 'PYT/1.3';
 
 /**
  * Wersje historyczne (REV1..REV5) i cała ich obsługa zostały USUNIĘTE
@@ -26,10 +26,10 @@ export const WERSJA_PROTOKOLU = 'PYT/1.2';
  */
 
 /** Wersja łatki szablonu promptu (kosmetyka szablonu bez zmiany schematu). */
-export const SZABLON_WERSJA = 'PYT/1.2.1'; // 1.2.1: sekcja GRACZE — POZIOMY PYTAŃ z ZASADĄ TWARDĄ o zestawieniu per stacja (ADR 0055); 1.1.2: „tę samą liczbę pytań" (gramatyka)
+export const SZABLON_WERSJA = 'PYT/1.3.1'; // 1.3.1: krótki prompt — zestawienie pod stacjami, bez imion i daty, bez źródeł (ADR 0057/0058); 1.2.1: sekcja GRACZE — POZIOMY PYTAŃ (ADR 0055); 1.1.2: „tę samą liczbę pytań" (gramatyka)
 
 /** Wersja szablonu bez weryfikacji (§2.2) — wersjonowana niezależnie od §2. */
-export const SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.2-nofc.1'; // jak 1.2.1 — te same zdania w wariancie bez weryfikacji
+export const SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.3-nofc.1'; // jak 1.3.1 — te same zdania w wariancie bez weryfikacji
 
 /**
  * Ukrytego kontenera `TO-paczka/2` NIE MA (właściciel 2026-09-15, ADR 0050):
@@ -42,14 +42,14 @@ export const SZABLON_WERSJA_BEZ_WERYFIKACJI = 'PYT/1.2-nofc.1'; // jak 1.2.1 —
  * Treść generowana z docs/PROTOKOL.md §2 przez tools/synchronizuj-szablon.mjs.
  * NIE EDYTUJ RĘCZNIE — zmień dokument i uruchom `npm run build`.
  */
-export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu, i oprzyj ten fakt na wyniku kwerendy.\n2. Każde pytanie ma pole \"zrodla\" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Używaj faktów potwierdzonych takim źródłem.\n3. Nazwy, daty, liczby, cytaty, autorów i adresy podawaj dokładnie w postaci potwierdzonej źródłem. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n5. Trudność KAŻDEGO pytania dostosuj ściśle do POZIOMU gracza, do którego pytanie idzie, i do wymagań trudności poziomów podanych niżej — pytanie poziomu DZIECKO nigdy nie może zawierać dat, cyfr, nazwisk ani trudnych faktów, a zestawienie pytań poziomów przy każdej stacji musi się zgadzać z listą graczy.\n6. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.\n7. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE — POZIOMY PYTAŃ (ZASADA TWARDA):\n{GRACZE_BLOK}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI — dokładnie te pola:\n{\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"poziom\": \"dzieci\",\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 2,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tę samą liczbę pytań.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście \"odpowiedzi\").\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"poziom\": dokładnie \"dzieci\" albo \"dorosli\" — poziom trudności pytania (patrz sekcja \"GRACZE — POZIOMY PYTAŃ\"); pytania danego poziomu idą do graczy tego poziomu, więc zestawienie musi się zgadzać z listą. Pytanie bez tego pola unieważnia całą paczkę.\n- \"wyjasnienie\": dwa albo trzy zdania o tym, dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\n- \"uwagi\": tematy pominięte i powód pominięcia; pusty tekst, gdy wszystkie fakty są potwierdzone.";
+export const SZABLON_PROMPTU = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu, i oprzyj ten fakt na wyniku kwerendy.\n2. Nazwy, daty, liczby, cytaty i autorów podawaj dokładnie w postaci potwierdzonej kwerendą. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n3. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n4. Trudność KAŻDEGO pytania dostosuj ściśle do POZIOMU pytania i do wymagań trudności poziomów podanych niżej; liczba pytań każdego poziomu przy każdej stacji musi się zgadzać z zestawieniem podanym pod stacją.\n5. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.\n6. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji; przy każdej stacji DOKŁADNIE tyle pytań każdego poziomu, ile podano pod stacją):\n{LISTA_STACJI}\n\n{POZIOMY_BLOK}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n\nSCHEMAT ODPOWIEDZI — dokładnie te pola:\n{\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"poziom\": \"dzieci\",\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 2,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\"\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tę samą liczbę pytań.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście \"odpowiedzi\").\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"poziom\": dokładnie \"dzieci\" albo \"dorosli\" — poziom trudności pytania zgodny z zestawieniem podanym przy stacji. Pytanie bez tego pola unieważnia całą paczkę.\n- \"wyjasnienie\": dwa albo trzy zdania o tym, dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\n- \"uwagi\": tematy pominięte i powód pominięcia; pusty tekst, gdy wszystkie fakty są potwierdzone.";
 /* SZABLON-KONIEC */
 
 /* SZABLON-BEZ-START
  * Treść generowana z docs/PROTOKOL.md §2.2 przez tools/synchronizuj-szablon.mjs.
  * NIE EDYTUJ RĘCZNIE — zmień dokument i uruchom `npm run build`.
  */
-export const SZABLON_PROMPTU_BEZ_WERYFIKACJI = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Przy braku pewności upraszczaj pytanie, a pominięte tematy opisuj w polu \"uwagi\".\n2. Pole \"zrodla\" jest OPCJONALNE: podaj adres potwierdzający fakt, a przy braku pewności zostaw pole puste albo je pomiń.\n3. Nazwy, daty, liczby, cytaty i autorów podawaj w postaci, której jesteś pewien; przy braku takiej pewności wybierz łatwiejszy fakt z tego samego tematu. Jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n5. Trudność KAŻDEGO pytania dostosuj ściśle do POZIOMU gracza, do którego pytanie idzie, i do wymagań trudności poziomów podanych niżej — pytanie poziomu DZIECKO nigdy nie może zawierać dat, cyfr, nazwisk ani trudnych faktów, a zestawienie pytań poziomów przy każdej stacji musi się zgadzać z listą graczy.\n6. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.\n7. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):\n{LISTA_STACJI}\n\nGRACZE — POZIOMY PYTAŃ (ZASADA TWARDA):\n{GRACZE_BLOK}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n- data przygotowania: {DATA}\n\nSCHEMAT ODPOWIEDZI — dokładnie te pola:\n{\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"utworzono\": \"{DATA}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"poziom\": \"dzieci\",\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 2,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\",\n      \"zrodla\": [{ \"url\": \"https://przyklad.org/haslo\", \"tytul\": \"Tytuł źródła\", \"sprawdzono\": \"{DATA_KROTKA}\" }]\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tę samą liczbę pytań.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście \"odpowiedzi\").\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"poziom\": dokładnie \"dzieci\" albo \"dorosli\" — poziom trudności pytania (patrz sekcja \"GRACZE — POZIOMY PYTAŃ\"); pytania danego poziomu idą do graczy tego poziomu, więc zestawienie musi się zgadzać z listą. Pytanie bez tego pola unieważnia całą paczkę.\n- \"wyjasnienie\": dwa albo trzy zdania o tym, dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\n- \"zrodla\": pusta lista ALBO lista źródeł w kształcie jak w schemacie; każdy adres w pełnej, prawdziwej i działającej postaci (https://), z tytułem i datą sprawdzenia RRRR-MM-DD; pytanie z adresem przykładowym traci ważność.\n- \"uwagi\": tematy pominięte i powód pominięcia; pusty tekst, gdy wszystkie fakty są pewne.";
+export const SZABLON_PROMPTU_BEZ_WERYFIKACJI = "Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica\". Gracze idą od stacji do stacji w okolicy opisanej niżej i przy każdej stacji dostają pytania z wybranych dziedzin.\n\nZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):\n1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Przy braku pewności upraszczaj pytanie, a pominięte tematy opisuj w polu \"uwagi\".\n2. Nazwy, daty, liczby, cytaty i autorów podawaj w postaci, której jesteś pewien; przy braku takiej pewności wybierz łatwiejszy fakt z tego samego tematu. Jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu \"uwagi\".\n3. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.\n4. Trudność KAŻDEGO pytania dostosuj ściśle do POZIOMU pytania i do wymagań trudności poziomów podanych niżej; liczba pytań każdego poziomu przy każdej stacji musi się zgadzać z zestawieniem podanym pod stacją.\n5. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.\n6. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.\nOKOLICA GRY:\n- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}\n- miejsce: {MIEJSCE}\n- promień gry: {PROMIEN_M} m\n- sposób poruszania się: {TRYB}\n\nSTACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji; przy każdej stacji DOKŁADNIE tyle pytań każdego poziomu, ile podano pod stacją):\n{LISTA_STACJI}\n\n{POZIOMY_BLOK}\n- tematy pytań (wyłącznie z tej listy): {TEMATY}\n- liczba pytań łącznie: {LICZBA_PYTAN}\n- język pytań: {JEZYK}\n\nSCHEMAT ODPOWIEDZI — dokładnie te pola:\n{\n  \"okolica\": { \"lat\": {LAT}, \"lon\": {LON}, \"promienM\": {PROMIEN_M}, \"miejsce\": \"{MIEJSCE}\" },\n  \"tematy\": [{TEMATY_JSON}],\n  \"jezyk\": \"{JEZYK}\",\n  \"pytania\": [\n    {\n      \"id\": \"s1p1\",\n      \"stacja\": 1,\n      \"poziom\": \"dzieci\",\n      \"temat\": \"historia\",\n      \"tresc\": \"Treść pytania zakończona znakiem zapytania?\",\n      \"odpowiedzi\": [\"pierwsza\", \"druga\", \"trzecia\", \"czwarta\"],\n      \"poprawna\": 2,\n      \"wyjasnienie\": \"Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\"\n    }\n  ],\n  \"uwagi\": \"\"\n}\n\nWYMAGANIA DODATKOWE:\n- \"id\": \"s<numer stacji>p<kolejny numer>\", na przykład \"s2p1\"; identyfikatory unikalne w całej paczce.\n- \"stacja\": numer stacji z listy powyżej, od 1 do {LICZBA_STACJI}; KAŻDA stacja ma co najmniej jedno pytanie, wszystkie stacje mają tę samą liczbę pytań.\n- \"odpowiedzi\": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.\n- \"poprawna\": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście \"odpowiedzi\").\n- \"temat\": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.\n- \"poziom\": dokładnie \"dzieci\" albo \"dorosli\" — poziom trudności pytania zgodny z zestawieniem podanym przy stacji. Pytanie bez tego pola unieważnia całą paczkę.\n- \"wyjasnienie\": dwa albo trzy zdania o tym, dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.\n- \"uwagi\": tematy pominięte i powód pominięcia; pusty tekst, gdy wszystkie fakty są pewne.";
 /* SZABLON-BEZ-KONIEC */
 
 /**
@@ -87,22 +87,29 @@ export function formatujDateKrotka(data) {
   return `${data.getFullYear()}-${p(data.getMonth() + 1)}-${p(data.getDate())}`;
 }
 
-const WZOR_DATA = /^\d{4}-\d{2}-\d{2}$/;
-const WZOR_DATA_CZAS = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/;
 const WZOR_ID = /^s[0-9]+p[0-9]+$/;
-const WZOR_URL = /^https?:\/\/[^\s/]+\.[^\s]+$/i;
-const ZAKAZANE_HOSTY = ['example.com', 'example.org', 'example.net', 'przyklad.org', 'przyklad.pl', 'przyklad.com', 'localhost', 'test.com', 'twojastrona.pl', 'domain.com'];
-/** Zarezerwowane TLD (RFC 2606) i domeny testowe — nie są prawdziwym źródłem. */
-const ZAKAZANE_TLD = ['.invalid', '.test', '.localhost', '.example', '.local'];
 
-/** Linie listy stacji do placeholdera `{LISTA_STACJI}`. */
-export function opisListyStacji(stacje, srodek) {
+/** Linia z zestawieniem pytań poziomów pod stacją (ADR 0057, właściciel
+ * 2026-09-17e): „2 pytania dla dorosłych, 1 pytanie dla dzieci". */
+export function liniaZestawieniaPytan(zestawienie) {
+  const czesci = [];
+  if (zestawienie?.dorosli) czesci.push(`${zestawienie.dorosli} ${formaPytan(zestawienie.dorosli)} dla dorosłych`);
+  if (zestawienie?.dzieci) czesci.push(`${zestawienie.dzieci} ${formaPytan(zestawienie.dzieci)} dla dzieci`);
+  return czesci.join(', ');
+}
+
+/** Linie listy stacji do placeholdera `{LISTA_STACJI}` (ADR 0057: pod KAŻDĄ
+ * stacją linia z zestawieniem pytań poziomów — właściciel: „krócej i prościej,
+ * bez opowiadania, jak kto ma odpowiadać"). */
+export function opisListyStacji(stacje, srodek, { liniaPoziomow = '' } = {}) {
   return stacje
     .map((s, i) => {
       const [lat, lon] = formatujWspolrzedne(s.lat, s.lon).split(', ');
       const dystans = srodek ? Math.round(odlegloscM(srodek, s)) : null;
       const opis = s.opis && s.opis.trim() ? s.opis.trim() : 'punkt w terenie (bez nazwy)';
-      return `- stacja ${i + 1}: ${lat}, ${lon} — ${opis}${dystans != null ? ` (${dystans} m od środka gry)` : ''}`;
+      const linia = `- stacja ${i + 1}: ${lat}, ${lon} — ${opis}${dystans != null ? ` (${dystans} m od środka gry)` : ''}`;
+      return liniaPoziomow ? `${linia}
+${liniaPoziomow}` : linia;
     })
     .join('\n');
 }
@@ -133,15 +140,8 @@ export function zestawieniePytanZGraczy(gracze, { multi = false, multiPoziom = P
   return liczby;
 }
 
-/**
- * Blok `{GRACZE_BLOK}` — serce uwagi B (2026-09-17d): prompt mówi WPROST,
- * ile pytań na który poziom przypada przy każdej stacji, z naciskiem
- * (ZASADA TWARDA + „powtórzona, bo modele to zapominają” — właściciel:
- * „musi być z naciskiem, bo modele to zapominają”), i do kogo pytania idą
- * (kolejność listy graczy = kolejność odpowiadania, bez mieszania poziomów).
- */
-/** "pytanie/pytania/pytań" zgodnie z polszczyzną (1 → pytanie, 2–4 → pytania,
- * reszta włącznie z 0 i 12–14 → pytań). */
+/** "pytanie/pytania/pytań" zgodnie z polszczyzną (1 → pytanie, 2–4 →
+ * pytania, reszta włącznie z 0 i 12–14 → pytań). */
 function formaPytan(n) {
   const m = Number(n) || 0;
   if (m === 1) return 'pytanie';
@@ -151,30 +151,20 @@ function formaPytan(n) {
   return 'pytań';
 }
 
-export function blokGraczyPoziomow(gracze, { multi = false, multiPoziom = POZIOM_DORMYSLNY } = {}) {
+/**
+ * Blok `{POZIOMY_BLOK}` (ADR 0057, właściciel 2026-09-17e): wymagania
+ * trudności poziomów obecnych w grze. BEZ imion graczy i bez opisu kolejności
+ * odpowiadania — to sprawa gry, nie modelu piszącego pytania; zestawienie
+ * pytań na stację jest podane pod każdą stacją w `{LISTA_STACJI}`.
+ */
+export function blokPoziomow(gracze, { multi = false, multiPoziom = POZIOM_DORMYSLNY } = {}) {
   const liczby = zestawieniePytanZGraczy(gracze, { multi, multiPoziom });
-  const caly = liczby.dzieci + liczby.dorosli;
-  const czesci = [];
-  if (liczby.dzieci) czesci.push(`DOKŁADNIE ${liczby.dzieci}× POZIOM DZIECKO`);
-  if (liczby.dorosli) czesci.push(`DOKŁADNIE ${liczby.dorosli}× POZIOM DOROŚLI`);
   const linie = [];
   if (multi) {
     // ADR 0055 (właściciel, 2026-09-17): w multi JEDEN poziom (wybór hosta) —
     // wszystkie pytania tej gry mają ten poziom i są WSPÓLNE dla graczy.
     const poziomGry = KLUCZE_POZIOMOW.includes(multiPoziom) ? multiPoziom : POZIOM_DORMYSLNY;
-    linie.push('- Gra na wielu telefonach: gracze dołączą do gry później.');
-    linie.push(`- POZIOM WSZYSTKICH PYTAŃ W TEJ GRZE (wybór organizatora): ${etykietaPoziomuWskazowki(poziomGry)} — wszystkie pytania paczki mają WYŁĄCZNIE ten poziom.`);
-    linie.push(`- ZESTAWIENIE PYTAŃ PRZY KAŻDEJ STACJI (ZASADA TWARDA — powtórzona, bo modele to zapominają): ${czesci.join(' + ')} — łącznie ${caly} ${formaPytan(caly)}; TO SAMO przy KAŻDEJ stacji.`);
-    linie.push('- Wszyscy gracze odpowiadają na te SAME pytania przy tych samych stacjach — pytań „dla kogoś innego” nie ma.');
-  } else {
-    const lista = Array.isArray(gracze) ? gracze : [];
-    linie.push(`- liczba graczy: ${lista.length}`);
-    linie.push(`- ZESTAWIENIE PYTAŃ PRZY KAŻDEJ STACJI (ZASADA TWARDA — powtórzona, bo modele to zapominają): ${czesci.join(' + ')} — łącznie ${caly} ${formaPytan(caly)}; TO SAMO zestawienie przy KAŻDEJ stacji.`);
-    linie.push('- Gracze (kolejność listy = kolejność odpowiadania przy stacji; pytania danego poziomu idą do graczy tego poziomu w tej kolejności, BEZ MIESZANIA):');
-    lista.forEach((g, i) => {
-      const poziom = KLUCZE_POZIOMOW.includes(g?.poziom) ? g.poziom : POZIOM_DORMYSLNY;
-      linie.push(`  ${i + 1}. ${g?.imie ?? `Gracz ${i + 1}`} — POZIOM: ${etykietaPoziomuWskazowki(poziom)}`);
-    });
+    linie.push(`- POZIOM WSZYSTKICH PYTAŃ W TEJ GRZE (wybór organizatora): ${etykietaPoziomuWskazowki(poziomGry)} — wszystkie pytania mają wyłącznie ten poziom.`);
   }
   for (const poziom of KLUCZE_POZIOMOW) {
     if (liczby[poziom] > 0) {
@@ -191,11 +181,10 @@ export function blokGraczyPoziomow(gracze, { multi = false, multiPoziom = POZIOM
  * żeby nie wysłać modelowi dziurawego zadania.
  *
  * ADR 0055 (decyzja właściciela 2026-09-17): `rodzajGry: 'multi'` +
- * `multiPoziom` przełączają blok graczy na wariant „gracze dołączą później —
- * JEDEN poziom organizatora, jedno wspólne pytanie na stację” (wszyscy
- * odpowiadają na te same pytania). W hot-seacie blok składa się z
- * `konfig.gracze` (imie + poziom per gracz; po jednym pytaniu poziomu
- * gracza przy każdej stacji).
+ * `multiPoziom` — multi to JEDEN poziom organizatora, jedno wspólne pytanie
+ * na stację. ADR 0057 (właściciel, 2026-09-17e): prompt krótki — pod każdą
+ * stacją zestawienie pytań poziomów, blok poziomów bez imion i bez opisu
+ * kolejności odpowiadania, bez daty.
  */
 export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date(), factcheck = false, rodzajGry = 'hotseat', multiPoziom = POZIOM_DORMYSLNY } = {}) {
   const usterki = [];
@@ -241,15 +230,17 @@ export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date(), fact
     MIEJSCE: okolica.miejsce && okolica.miejsce.trim() ? okolica.miejsce.trim() : 'brak odczytu (tylko współrzędne)',
     PROMIEN_M: String(Math.round(konfig.promienM)),
     TRYB: TRYBY[konfig.tryb].etykieta,
-    LISTA_STACJI: opisListyStacji(stacje, okolica),
+    // ADR 0057: pod każdą stacją zestawienie pytań poziomów (właściciel:
+    // „krócej i prościej”); hot-seat z listy graczy, multi = poziom hosta.
+    LISTA_STACJI: opisListyStacji(stacje, okolica, {
+      liniaPoziomow: liniaZestawieniaPytan(zestawieniePytanZGraczy(graczeZKonfigu, { multi, multiPoziom })),
+    }),
     LICZBA_STACJI: String(stacje.length),
-    GRACZE_BLOK: blokGraczyPoziomow(graczeZKonfigu, { multi, multiPoziom }),
+    POZIOMY_BLOK: blokPoziomow(graczeZKonfigu, { multi, multiPoziom }),
     TEMATY: tematyLista.map((t) => (t === 'wlasny' && konfig.tematWlasny ? `wlasny (${konfig.tematWlasny.trim().slice(0, 40)})` : `${t} (${TEMATY[t].opis})`)).join(', '),
     TEMATY_JSON: tematyLista.map((t) => JSON.stringify(t)).join(', '),
     LICZBA_PYTAN: String(stacje.length * pytaniaNaStacje),
     JEZYK: konfig.jezyk,
-    DATA: formatujDate(teraz),
-    DATA_KROTKA: formatujDateKrotka(teraz),
   };
 
   // Domyślnie wariant bez weryfikacji (ADR 0032): szybszy, bez wymuszonej kwerendy.
@@ -370,9 +361,8 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   // --- nagłówek paczki ---
   // Pola `protokol` NIE ma: marker zniknął z paczki (ADR 0050), a gdyby model je
   // mimo wszystko dopisał (stary nawyk), jest ignorowane — walidacja go nie
-  // dotyczy. O profilu źródeł decyduje ptaszek „fact check” w setupie, nie
-  // marker w JSON-ie: aplikacja wie, który prompt wysłała.
-  const wymagaZrodel = oczekiwane.factcheck !== false;
+  // dotyczy. Profil sprawdzania (fact-check) decyduje ptaszek w setupie —
+  // aplikacja wie, który prompt wysłała; paczka go nie niesie (ADR 0058).
 
   const okolica = paczka.okolica;
   if (!okolica || typeof okolica !== 'object') {
@@ -422,13 +412,11 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
   if (typeof paczka.jezyk !== 'string' || !paczka.jezyk.trim()) dodaj('E15', 'jezyk', 'Brak pola "jezyk".');
   else if (oczekiwane.jezyk && paczka.jezyk !== oczekiwane.jezyk) dodaj('E16', 'jezyk', `Język paczki (${paczka.jezyk}) nie zgadza się z konfiguracją (${oczekiwane.jezyk}).`);
 
-  if (typeof paczka.utworzono !== 'string' || !WZOR_DATA_CZAS.test(paczka.utworzono)) {
-    dodaj('E11', 'utworzono', 'Pole "utworzono" musi mieć format "RRRR-MM-DD GG:MM".');
-  } else if (new Date(paczka.utworzono.replace(' ', 'T')) > teraz) {
-    dodaj('E11', 'utworzono', 'Data utworzenia paczki jest w przyszłości.');
-  }
+  // ADR 0058 (PYT/1.3): `utworzono` wycofane — daty nie ma w prompcie, więc
+  // pola model nie wypełni; aplikacja generuje datę paczki sama. Stare
+  // paczki z polem są czytane, pole jest ignorowane (E11 wycofany).
 
-  if (typeof paczka.uwagi !== 'string') dodaj('E15', 'uwagi', 'Pole "uwagi" musi istnieć (może być pustym tekstem) — tam model opisuje, czego nie potwierdził źródłem.');
+  if (typeof paczka.uwagi !== 'string') dodaj('E15', 'uwagi', 'Pole "uwagi" musi istnieć (może być pustym tekstem) — tam model opisuje pominięte tematy i powody.');
 
   // --- pytania ---
   if (!Array.isArray(paczka.pytania) || paczka.pytania.length === 0) {
@@ -505,27 +493,9 @@ export function walidujPaczke(paczka, oczekiwane = {}) {
       dodaj('E20', `${pole}.wyjasnienie`, 'Wyjaśnienie dosłownie powtarza treść pytania.');
     }
 
-    if (!Array.isArray(p.zrodla) || p.zrodla.length === 0) {
-      if (wymagaZrodel) dodaj('E09', `${pole}.zrodla`, 'Pytanie bez źródła: każde pytanie musi mieć co najmniej jeden adres URL, z którego pochodzi fakt (ADR 0008).');
-    } else {
-      p.zrodla.forEach((z, k) => {
-        if (!z || typeof z !== 'object') { dodaj('E15', `${pole}.zrodla[${k}]`, 'Źródło musi być obiektem {url, tytul, sprawdzono}.'); return; }
-        const url = String(z.url ?? '').trim();
-        if (!WZOR_URL.test(url)) dodaj('E10', `${pole}.zrodla[${k}].url`, `"${url || '(brak)'}" nie jest pełnym adresem http(s).`);
-        else {
-          const host = url.replace(/^https?:\/\//i, '').split('/')[0].toLowerCase();
-          const zakazany = ZAKAZANE_HOSTY.some((h) => host === h || host.endsWith(`.${h}`)) || ZAKAZANE_TLD.some((tld) => host.endsWith(tld));
-          if (zakazany) {
-            dodaj('E10', `${pole}.zrodla[${k}].url`, wymagaZrodel
-              ? `Adres "${url}" wygląda na przykładowy albo testowy — podaj prawdziwe źródło z kwerendy.`
-              : `Adres "${url}" wygląda na przykładowy albo testowy — podaj prawdziwy adres albo usuń to źródło (w tym wariancie źródła są opcjonalne).`);
-          }
-        }
-        if (typeof z.tytul !== 'string' || !z.tytul.trim()) dodaj('E15', `${pole}.zrodla[${k}].tytul`, 'Źródło musi mieć tytuł.');
-        if (typeof z.sprawdzono !== 'string' || !WZOR_DATA.test(z.sprawdzono)) dodaj('E11', `${pole}.zrodla[${k}].sprawdzono`, 'Data sprawdzenia źródła musi mieć format RRRR-MM-DD.');
-        else if (new Date(`${z.sprawdzono}T23:59`) < new Date('2000-01-01') || new Date(`${z.sprawdzono}T00:00`) > teraz) dodaj('E11', `${pole}.zrodla[${k}].sprawdzono`, 'Data sprawdzenia źródła jest w przyszłości albo absurdalnie wczesna.');
-      });
-    }
+    // ADR 0058 (PYT/1.3): pole `zrodla` wycofane — model nie wpisuje
+    // źródeł (właściciel: „nikt tego nie czyta”), walidacja E09/E10 wycofana;
+    // stare paczki z polem są czytane, pole jest ignorowane.
 
 
     if (typeof p.tresc === 'string') {

@@ -1,4 +1,4 @@
-# PROTOKÓŁ PYT v1.2 — protokół pytań terenowych
+# PROTOKÓŁ PYT v1.3 — protokół pytań terenowych
 
 > **To jest zasada treściowa, nie sugestia** (AGENTS.md §3). Obowiązuje każdy
 > prompt, każdą wklejoną odpowiedź modelu i każdą paczkę pytań zapisaną przez
@@ -44,34 +44,30 @@ Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze 
 
 ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 1. ZANIM napiszesz jakikolwiek fakt, wykonaj kwerendę w internecie (wyszukiwarka albo przeglądanie stron) dla KAŻDEJ informacji użytej w pytaniu, w odpowiedziach i w wyjaśnieniu, i oprzyj ten fakt na wyniku kwerendy.
-2. Każde pytanie ma pole "zrodla" z co najmniej jednym prawdziwym, działającym adresem URL, z którego pochodzi fakt, oraz tytułem źródła i datą sprawdzenia. Używaj faktów potwierdzonych takim źródłem.
-3. Nazwy, daty, liczby, cytaty, autorów i adresy podawaj dokładnie w postaci potwierdzonej źródłem. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
-4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
-5. Trudność KAŻDEGO pytania dostosuj ściśle do POZIOMU gracza, do którego pytanie idzie, i do wymagań trudności poziomów podanych niżej — pytanie poziomu DZIECKO nigdy nie może zawierać dat, cyfr, nazwisk ani trudnych faktów, a zestawienie pytań poziomów przy każdej stacji musi się zgadzać z listą graczy.
-6. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
-7. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.
+2. Nazwy, daty, liczby, cytaty i autorów podawaj dokładnie w postaci potwierdzonej kwerendą. Jeśli w jakimś temacie brakuje potwierdzonych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
+3. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny potwierdzony fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
+4. Trudność KAŻDEGO pytania dostosuj ściśle do POZIOMU pytania i do wymagań trudności poziomów podanych niżej; liczba pytań każdego poziomu przy każdej stacji musi się zgadzać z zestawieniem podanym pod stacją.
+5. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
+6. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
 - promień gry: {PROMIEN_M} m
 - sposób poruszania się: {TRYB}
 
-STACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):
+STACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji; przy każdej stacji DOKŁADNIE tyle pytań każdego poziomu, ile podano pod stacją):
 {LISTA_STACJI}
 
-GRACZE — POZIOMY PYTAŃ (ZASADA TWARDA):
-{GRACZE_BLOK}
+{POZIOMY_BLOK}
 - tematy pytań (wyłącznie z tej listy): {TEMATY}
 - liczba pytań łącznie: {LICZBA_PYTAN}
 - język pytań: {JEZYK}
-- data przygotowania: {DATA}
 
 SCHEMAT ODPOWIEDZI — dokładnie te pola:
 {
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "tematy": [{TEMATY_JSON}],
   "jezyk": "{JEZYK}",
-  "utworzono": "{DATA}",
   "pytania": [
     {
       "id": "s1p1",
@@ -81,8 +77,7 @@ SCHEMAT ODPOWIEDZI — dokładnie te pola:
       "tresc": "Treść pytania zakończona znakiem zapytania?",
       "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
       "poprawna": 2,
-      "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
-      "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }]
+      "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy."
     }
   ],
   "uwagi": ""
@@ -94,7 +89,7 @@ WYMAGANIA DODATKOWE:
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
 - "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
-- "poziom": dokładnie "dzieci" albo "dorosli" — poziom trudności pytania (patrz sekcja "GRACZE — POZIOMY PYTAŃ"); pytania danego poziomu idą do graczy tego poziomu, więc zestawienie musi się zgadzać z listą. Pytanie bez tego pola unieważnia całą paczkę.
+- "poziom": dokładnie "dzieci" albo "dorosli" — poziom trudności pytania zgodny z zestawieniem podanym przy stacji. Pytanie bez tego pola unieważnia całą paczkę.
 - "wyjasnienie": dwa albo trzy zdania o tym, dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.
 - "uwagi": tematy pominięte i powód pominięcia; pusty tekst, gdy wszystkie fakty są potwierdzone.
 ```
@@ -108,18 +103,16 @@ WYMAGANIA DODATKOWE:
 | `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt niedostępny — `brak odczytu (tylko współrzędne)` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
 | `{PROMIEN_M}` | promień gry w metrach | setup: liczony z planowanego czasu gry, trybu i liczby pytań (ADR 0025) |
 | `{TRYB}` | `piesza` / `rower` / `samochodowa` — etykieta polska | setup |
-| `{LISTA_STACJI}` | po jednej linii: `- stacja N: LAT, LON — <opis miejsca albo „punkt przy ulicy X"> (ODLEGLOSC m od środka)` | wybór stacji (ADR 0005) |
-| `{GRACZE_BLOK}` | blok złożony przez `zbudujPrompt()` z `konfig.gracze` (ADR 0055): liczba graczy (hot-seat), ZASADA TWARDA o zestawieniu pytań poziomów przy KAŻDEJ stacji (np. „DOKŁADNIE 1× POZIOM DZIECKO + 2× POZIOM DOROŚLI”), lista graczy z poziomami i kolejnością odpowiadania, wymagania trudności poziomów obecnych w grupie; w multi — wariant „gracze dołączą później”: JEDEN poziom wybiera organizator dla całej gry — wszyscy gracze odpowiadają na te same pytania (ADR 0055, decyzja właściciela 2026-09-17) | `konfig.gracze` + wybór hosta (multi) + protokół §4 |
+| `{LISTA_STACJI}` | po jednej linii: `- stacja N: LAT, LON — <opis miejsca albo „punkt przy ulicy X"> (ODLEGLOSC m od środka gry)`, a pod KAŻDĄ stacją linia z zestawieniem pytań poziomów (np. `2 pytania dla dorosłych, 1 pytanie dla dzieci`; w multi `1 pytanie dla dzieci`) (ADR 0057) | wybór stacji (ADR 0005) + poziomy graczy/gra (ADR 0055) |
+| `{POZIOMY_BLOK}` | blok złożony przez `zbudujPrompt()` (ADR 0057): wymagania trudności poziomów obecnych w grze (hot-seat: poziomy z listy graczy — bez imion i bez opisu kolejności odpowiadania; multi: dodatkowo linia o poziomie wszystkich pytań — wybór organizatora) | `konfig.gracze` / wybór hosta (multi) + protokół §4 |
 | `{TEMATY}` | lista tematów z opisami, np. `historia (dzieje miejsca, daty, wydarzenia, postaci)` | protokół §5 |
 | `{TEMATY_JSON}` | te same klucze jako elementy listy JSON, np. `"historia", "przyroda"` | protokół §5 |
 | `{LICZBA_PYTAN}` | liczba pytań = `LICZBA_STACJI × pytania na stację`; organizator jej nie wpisuje — pytania na stację liczy `konfig.pytaniaNaStacjeDla` (hot-seat: liczba graczy — po jednym na gracza; multi: 1 — jedno wspólne pytanie na poziom hosta; ADR 0055) | konfiguracja |
 | `{JEZYK}` | `polski` (domyślnie) albo inny z setupu | setup |
-| `{DATA}` | `RRRR-MM-DD GG:MM` czasu lokalnego urządzenia | aplikacja |
-| `{DATA_KROTKA}` | `RRRR-MM-DD` | aplikacja |
 | `{LICZBA_STACJI}` | liczba stacji | setup |
 
-Daty w promptcie pochodzą z zegara urządzenia i **nie są zapisywane w danych
-repozytorium** (determinizm fixture'ów: testy podstawiają stałą datę).
+Daty nie są już w prompcie (PYT/1.3, ADR 0057/0058: „data przygotowania" zbędna,
+a `utworzono` model nie jest w stanie wypełnić bez podanej daty).
 
 **Budżet rozmiaru (B21, pomiar 2026-09-07).** Prompt **nie rośnie** z liczbą
 pytań — 5 422 znaki (~1 356 tokenów) dla 5 pytań i 5 423 znaki dla 40, bo
@@ -153,34 +146,30 @@ Jesteś autorem pytań do terenowej gry quizowej „Tajemnicza Okolica". Gracze 
 
 ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 1. Podawaj wyłącznie fakty, których jesteś pewien. Sposób ich ustalenia zostawiamy Tobie. Przy braku pewności upraszczaj pytanie, a pominięte tematy opisuj w polu "uwagi".
-2. Pole "zrodla" jest OPCJONALNE: podaj adres potwierdzający fakt, a przy braku pewności zostaw pole puste albo je pomiń.
-3. Nazwy, daty, liczby, cytaty i autorów podawaj w postaci, której jesteś pewien; przy braku takiej pewności wybierz łatwiejszy fakt z tego samego tematu. Jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
-4. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
-5. Trudność KAŻDEGO pytania dostosuj ściśle do POZIOMU gracza, do którego pytanie idzie, i do wymagań trudności poziomów podanych niżej — pytanie poziomu DZIECKO nigdy nie może zawierać dat, cyfr, nazwisk ani trudnych faktów, a zestawienie pytań poziomów przy każdej stacji musi się zgadzać z listą graczy.
-6. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
-7. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.
+2. Nazwy, daty, liczby, cytaty i autorów podawaj w postaci, której jesteś pewien; przy braku takiej pewności wybierz łatwiejszy fakt z tego samego tematu. Jeśli w jakimś temacie brakuje pewnych faktów, zrób mniej pytań w tym temacie i opisz brak w polu "uwagi".
+3. Kotwicz pytanie możliwie blisko okolicy: stacja albo punkt trasy → ulica → dzielnica → miejscowość → powiat → województwo → kraj → kontynent → świat. Schodź na najniższy poziom, na którym masz sensowny pewny fakt. Gdy temat nie ma lokalnego zaczepienia (dotyczy zwłaszcza tematu własnego i dziedzin ogólnych), pytanie z wiedzy ogólnej jest w porządku — lepsze niż naciągana kotwica.
+4. Trudność KAŻDEGO pytania dostosuj ściśle do POZIOMU pytania i do wymagań trudności poziomów podanych niżej; liczba pytań każdego poziomu przy każdej stacji musi się zgadzać z zestawieniem podanym pod stacją.
+5. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
+6. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.
 OKOLICA GRY:
 - środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
 - promień gry: {PROMIEN_M} m
 - sposób poruszania się: {TRYB}
 
-STACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji):
+STACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stacji; przy każdej stacji DOKŁADNIE tyle pytań każdego poziomu, ile podano pod stacją):
 {LISTA_STACJI}
 
-GRACZE — POZIOMY PYTAŃ (ZASADA TWARDA):
-{GRACZE_BLOK}
+{POZIOMY_BLOK}
 - tematy pytań (wyłącznie z tej listy): {TEMATY}
 - liczba pytań łącznie: {LICZBA_PYTAN}
 - język pytań: {JEZYK}
-- data przygotowania: {DATA}
 
 SCHEMAT ODPOWIEDZI — dokładnie te pola:
 {
   "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "tematy": [{TEMATY_JSON}],
   "jezyk": "{JEZYK}",
-  "utworzono": "{DATA}",
   "pytania": [
     {
       "id": "s1p1",
@@ -190,8 +179,7 @@ SCHEMAT ODPOWIEDZI — dokładnie te pola:
       "tresc": "Treść pytania zakończona znakiem zapytania?",
       "odpowiedzi": ["pierwsza", "druga", "trzecia", "czwarta"],
       "poprawna": 2,
-      "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.",
-      "zrodla": [{ "url": "https://przyklad.org/haslo", "tytul": "Tytuł źródła", "sprawdzono": "{DATA_KROTKA}" }]
+      "wyjasnienie": "Dwa albo trzy zdania: dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy."
     }
   ],
   "uwagi": ""
@@ -203,9 +191,8 @@ WYMAGANIA DODATKOWE:
 - "odpowiedzi": dokładnie 4, każda od 1 do 8 słów; cztery różne, samodzielne odpowiedzi; dokładnie jedna poprawna; pozycja poprawnej odpowiedzi różna między pytaniami.
 - "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").
 - "temat": jedna wartość z listy tematów podanej wyżej, małymi literami, z myślnikami.
-- "poziom": dokładnie "dzieci" albo "dorosli" — poziom trudności pytania (patrz sekcja "GRACZE — POZIOMY PYTAŃ"); pytania danego poziomu idą do graczy tego poziomu, więc zestawienie musi się zgadzać z listą. Pytanie bez tego pola unieważnia całą paczkę.
+- "poziom": dokładnie "dzieci" albo "dorosli" — poziom trudności pytania zgodny z zestawieniem podanym przy stacji. Pytanie bez tego pola unieważnia całą paczkę.
 - "wyjasnienie": dwa albo trzy zdania o tym, dlaczego ta odpowiedź jest poprawna i co z tego wynika dla okolicy.
-- "zrodla": pusta lista ALBO lista źródeł w kształcie jak w schemacie; każdy adres w pełnej, prawdziwej i działającej postaci (https://), z tytułem i datą sprawdzenia RRRR-MM-DD; pytanie z adresem przykładowym traci ważność.
 - "uwagi": tematy pominięte i powód pominięcia; pusty tekst, gdy wszystkie fakty są pewne.
 ```
 <!-- szablon-promptu-bez:koniec -->
@@ -224,7 +211,7 @@ WYMAGANIA DODATKOWE:
 | `wiek` | tekst | nie | usunięte w PYT/1.2 (ADR 0055): trudność jest własnością GRACZA (`gracze[].poziom` w setupie) i pytania (`poziom` w §3.2). Stare paczki z tym polem są czytane, pole jest ignorowane |
 | `tematy` | lista tekstów | tak | niepusta, podzbiór kanonu §5, bez powtórzeń |
 | `jezyk` | tekst | tak | `polski` albo inny z setupu |
-| `utworzono` | tekst | tak | `RRRR-MM-DD GG:MM`, nie w przyszłości |
+| `utworzono` | tekst | nie | usunięte w PYT/1.3 (ADR 0058): daty nie ma już w prompcie, więc model nie jest w stanie wypełnić pola; aplikacja generuje datę paczki sama (`meta.data` zestawu). Stare paczki z tym polem są czytane, pole jest ignorowane |
 | `pytania` | lista | tak | niepusta; liczba = oczekiwana z setupu |
 | `uwagi` | tekst | tak (może być pusty) | czego model nie potwierdził |
 | `model` | tekst | nie | dobrowolna etykieta organizatora (ADR 0006 pkt 7) |
@@ -236,17 +223,14 @@ WYMAGANIA DODATKOWE:
 | Pole | Typ | Zasady |
 | --- | --- | --- |
 | `id` | tekst | `^s[0-9]+p[0-9]+$`, unikalne w paczce |
-| `stacja` | liczba całkowita | `1..LICZBA_STACJI`; każda stacja ≥ 1 pytanie; przy każdej stacji zestawienie pytań poziomów musi się zgadzać z listą graczy (patrz §6 `E22`) |
+| `stacja` | liczba całkowita | `1..LICZBA_STACJI`; każda stacja ≥ 1 pytanie; przy każdej stacji zestawienie pytań poziomów musi się zgadzać z zestawieniem podanym w prompcie pod stacją (patrz §6 `E22`) |
 | `poziom` | tekst | `dzieci` albo `dorosli` — poziom trudności (ADR 0055); pytania poziomu idą do graczy tego poziomu, bez mieszania |
 | `temat` | tekst | klucz z kanonu §5 |
 | `tresc` | tekst | ≥ 20 i ≤ 400 znaków; kończy się `?` |
 | `odpowiedzi` | lista 4 tekstów | każdy 1–80 znaków, bez powtórzeń (po normalizacji), bez „wszystkie/żadna z powyższych" |
 | `poprawna` | liczba całkowita | `1..4` — **numer** odpowiedzi na liście `odpowiedzi` (1 = pierwsza). Tak liczy człowiek i tak pisze model; żadnego przeliczania po drodze (ADR 0050) |
 | `wyjasnienie` | tekst | ≥ 60 znaków; nie powtarza treści pytania w całości |
-| `zrodla` | lista | ≥ 1 wpis |
-| `zrodla[].url` | tekst | `^https?://` + host z kropką; zakaz domen przykładowych (`example.com`, `przyklad.org`, `localhost`) i zarezerwowanych TLD (`.invalid`, `.test`, `.example`, `.local`) |
-| `zrodla[].tytul` | tekst | niepusty |
-| `zrodla[].sprawdzono` | tekst | `RRRR-MM-DD`, nie w przyszłości |
+| `zrodla` | lista | usunięte w PYT/1.3 (ADR 0058): model nie wpisuje źródeł (właściciel: nikt ich nie czyta); w wariancie z fact-check obowiązkowa jest KWERENDA, ale jej wynik nie ląduje w paczce. Stare paczki z tym polem są czytane, pole jest ignorowane |
 
 ### 3.3 Zapis paczki — jawny JSON (ADR 0050)
 
@@ -296,8 +280,8 @@ Od 2026-09-17d (ADR 0055, uwaga B właściciela) setup ma **DWA poziomy
 trudności: `dzieci` (8–10 lat) i `dorosli`** — globalnego pola „kategoria
 wiekowa” nie ma. Poziom wybiera organizator per gracz, przy jego imieniu
 (`konfig.gracze[].poziom`), a zestawienie poziomów graczy wyznacza, ile pytań
-danego poziomu powstaje przy każdej stacji (prompt: sekcja `GRACZE — POZIOMY
-PYTAŃ` z `{GRACZE_BLOK}`). Klucze liczbowe (`7`, `10`, `12`, `15`) i `dorosli`
+danego poziomu powstaje przy każdej stacji (prompt: zestawienie podane POD KAŻDĄ
+stacją w `{LISTA_STACJI}`, ADR 0057). Klucze liczbowe (`7`, `10`, `12`, `15`) i `dorosli`
 w postaci sprzed 2026-09-17d pozostają wyłącznie w kanonie odczytu starych
 paczek (ich pole `wiek` jest ignorowane).
 
@@ -310,10 +294,10 @@ odpowiadają na te same pytania. Poziomy per gracz (`konfig.gracze[].poziom`)
 to mechanika wyłącznie hot-seat + profilu gracza (auto-selection).
 
 Teksty z kolumny „opis trudności” poziomów `dzieci`/`dorosli` trafiają do
-promptu w bloku `{GRACZE_BLOK}` (z naciskiem na ZASADĘ TWARDĄ o zestawieniu
-przy każdej stacji — modele to zapominają). **Obniżenie trudności nie zwalnia
-z wymogu źródła** (ADR 0008 pkt 7) — w wariancie z fact-check; wariant bez
-weryfikacji źródeł nie wymaga wcale (ADR 0032).
+promptu w bloku `{POZIOMY_BLOK}` (ADR 0057). Wymaganie źródła zniknęło w
+PYT/1.3 (ADR 0058): w wariancie z fact-check obowiązkowa jest KWERENDA przed
+napisaniem faktu (reguła 1 §2), ale jej wynik nie ląduje w paczce; wariant bez
+weryfikacji nie wymusza sprawdzania wcale (ADR 0032).
 
 | Klucz | Etykieta | Opis trudności (do promptu) |
 | --- | --- | --- |
@@ -321,7 +305,7 @@ weryfikacji źródeł nie wymaga wcale (ADR 0032).
 | `10` | 10 lat | Zdania do 20 słów. Pojęcia proste, jedno pojęcie specjalistyczne na pytanie dopuszczalne, jeśli wyjaśnienie je tłumaczy. Jedna data albo jedna liczba w pytaniu dopuszczalna. |
 | `12` | 12 lat | Pełne zdania, terminy z objaśnieniem w wyjaśnieniu. Daty, liczby i porównania dopuszczalne. Pytanie może wymagać dwóch kroków rozumowania. |
 | `15` | 15 lat | Jak dla dorosłych, ale bez żargonu akademickiego i bez pytań wymagających wiedzy specjalistycznej z poziomu studiów. |
-| `dzieci` | dziecko (8–10 lat) | Łatwe pytania na poziomie szkoły podstawowej (8–10 lat). Krótkie zdania, słownictwo codzienne, jedno pytanie = jeden fakt. BEZ pytań o daty, BEZ cyfr i liczb, BEZ nazwisk i trudnych faktów — tylko to, co dziecko może zobaczyć, usłyszeć albo zna z życia i spaceru. |
+| `dzieci` | dziecko (8–10 lat) | Łatwe pytania na poziomie szkoły podstawowej (8–10 lat). Krótkie zdania, słownictwo codzienne, jedno pytanie = jeden fakt. BEZ trudnych dat, trudnych nazwisk i trudnych faktów — proste liczby, podstawowe fakty i nazwy są w porządku; najlepiej to, co dziecko może zobaczyć, usłyszeć albo zna z życia i spaceru. |
 | `dorosli` | dorośli | Bez ograniczeń długości i słownictwa. Pytania mogą być TRUDNE: na logikę, o fakty, daty (także dzienne), nazwiska i liczby. Dopuszczalne pytania porównawcze i przyczynowo-skutkowe. |
 
 ## 5. Kanon tematów
@@ -368,13 +352,13 @@ i aneks 2026-09-15d: przycisk „skopiuj poprawkę do modelu" usunięty).
 | `E02` | JSON nieparsowalny (w tym wiele bloków, tekst poza blokiem) |
 | `E03` | liczba pytań niezgodna z oczekiwaną z setupu |
 | `E04` | `stacja` poza zakresem `1..LICZBA_STACJI` |
-| `E05` | stacja bez żadnego pytania (rozkładu między stacje nie sprawdzamy od 2026-09-15f: liczba pytań na stację wynika z setupu — hot-seat `stacje × gracze`, multi 2 na stację: po jednym na każdy poziom — a sumę pilnuje `E03`) |
+| `E05` | stacja bez żadnego pytania (rozkładu między stacje nie sprawdzamy od 2026-09-15f: liczba pytań na stację wynika z setupu — hot-seat `stacje × gracze`, multi 1 na stację: jedno wspólne pytanie na poziomie hosta — a sumę pilnuje `E03`) |
 | `E06` | `poprawna` nie jest numerem odpowiedzi `1..4` |
 | `E07` | `odpowiedzi` nie ma dokładnie 4 pozycji albo pozycja jest pusta |
 | `E08` | powtórzona odpowiedź (po normalizacji: wielkość liter, interpunkcja, białe znaki) |
-| `E09` | pytanie bez `zrodla` albo lista pusta — tylko gdy fact-check jest włączony w setupie |
-| `E10` | `zrodla[].url` nie jest adresem `http(s)` albo jest adresem zabronionym: domena przykładowa (`example.com`, `przyklad.org`, `twojastrona.pl`) albo zarezerwowane TLD (`.invalid`, `.test`, `.localhost`, `.example`, `.local`) |
-| `E11` | data (`utworzono`, `sprawdzono`) w przyszłości albo w złym formacie |
+| `E09` | wycofany 2026-09-17e (PYT/1.3, ADR 0058): paczka nie niesie już źródeł — model ich nie wpisuje |
+| `E10` | wycofany 2026-09-17e (PYT/1.3, ADR 0058): jak `E09` — adresów źródeł nie walidujemy, pola nie ma |
+| `E11` | wycofany 2026-09-17e (PYT/1.3, ADR 0058): `utworzono` nie jest już w paczce, a `sprawdzono` razem z `zrodla` |
 | `E12` | `temat` spoza kanonu §5 |
 | `E13` | duplikat pytania (znormalizowana `tresc` występuje więcej niż raz) |
 | `E14` | wycofany 2026-09-09 (zakotwiczenie miejscowe jest prośbą w prompcie, nie bramką walidatora — patrz niżej) |
@@ -403,69 +387,59 @@ zajęte, tak samo jak wycofany `E18`.
 
 ## 7. Wersjonowanie i migracje
 
-- Wersja protokołu jest **wyprowadzana** ze statusu tego pliku (pierwsza linia
-  nagłówka „Status") i porównywana przez test kontraktowy z `WERSJA_PROTOKOLU`
-  w `app/protokol.js` oraz z `README.md`. Nie wpisuje się jej ręcznie w trzech
-  miejscach. Panel gracza jej nie pokazuje (właściciel 2026-09-15): gracz nie
-  ma co zrobić z numerem dokumentu, którego nie czyta.
+- Wersja protokołu jest **wyprowadzana** ze statusu tego pliku i porównywana
+  przez test kontraktowy z `WERSJA_PROTOKOLU` w `app/protokol.js` oraz z
+  `README.md` — nie wpisuje się jej ręcznie w trzech miejscach. Panel gracza
+  jej nie pokazuje (właściciel 2026-09-15).
 - Zmiana schematu paczki = podbicie wersji (`PYT/1.1`, `PYT/2.0`) + nowy ADR +
   migrator w `app/migracje.js` + test migracji na fixture'ach starej wersji.
   Paczka użytkownika w `localStorage` nie może przestać działać (ADR 0010 pkt 6).
-- Zmiana kosmetyczna szablonu promptu (bez zmiany schematu) = podbicie łatki
-  (`PYT/1.0.1`) w `SZABLON_WERSJA` i wpis w `docs/PROJECT_HISTORY.md`.
-- **Zapis paczki (nie schemat) zmienia się bez podbijania PYT.** Tak było
-  z kontenerem `TO-paczka/1` → `TO-paczka/2` (2026-09-05, ADR 0007) i tak jest
-  z jego likwidacją (2026-09-15e, ADR 0050): kształt pól §3.1/§3.2 się nie
-  zmienił. Po pierwszej publikacji Pages (M8) każda zmiana **schematu** wymaga
-  migratora (`app/migracje.js`) i wpisu tutaj; zmian zapisu paczek sprzed
-  publikacji nie migrujemy, bo nie istnieje żadna paczka użytkownika.
+- Zmiana kosmetyczna szablonu (bez zmiany schematu) = podbicie łatki
+  (`PYT/1.0.1`) w `SZABLON_WERSJA` + wpis w `docs/PROJECT_HISTORY.md`.
+- **Zapis paczki (nie schemat) zmienia się bez podbijania PYT** — tak z
+  kontenerem `TO-paczka/1` → `/2` (ADR 0007) i z jego likwidacją (ADR 0050):
+  kształt pól §3.1/§3.2 się nie zmienił. Po pierwszej publikacji Pages (M8)
+  każda zmiana **schematu** wymaga migratora i wpisu tutaj; zapisów sprzed
+  publikacji nie migrujemy (nie ma paczek użytkownika).
 - **Wersje szablonów `PYT/1.0.8` / `PYT/1.0-nofc.3` (2026-09-12, uwagi terenowe
   G.b)** — z zasady 8 usunięto zdania o „NORMALNIE / nie odwracaj”.
 - **Koniec kodu pozycyjnego `poprawna` (2026-09-15, ADR 0049)** — numer poprawnej
   odpowiedzi przestał być kodem pozycyjnym. Szablony `PYT/1.0.10` / `PYT/1.0-nofc.5`.
 - **PYT/1.1: numer odpowiedzi `1..4`, jedna postać paczki (2026-09-15e, ADR 0050)** —
-  schemat zmienił się w dwóch miejscach: `poprawna` to **numer** `1..4` (klasa
-  błędu: model i człowiek liczą od 1, a aplikacja liczyła od 0 — trzecia odpowiedź
-  była oceniana jako czwarta), a marker `protokol` i warianty zapisu zniknęły.
-  Szablony `PYT/1.1.0` / `PYT/1.1-nofc.0`. **Bez migratora** (wyjątek od reguły
-  z §7 pkt 2): na dysku właściciela nie ma ANI JEDNEJ paczki tego protokołu
-  (gra jest w fazie testów terenowych), więc nie ma czego migrować — decyzja
-  właściciela z 2026-09-15. Zapis gry z poprzedniej wersji zostanie odrzucony
-  jawnie (kod `T`), a nie po cichu zinterpretowany.
-- **Szablony `PYT/1.1.1` / `PYT/1.1-nofc.1` (2026-09-15f, uwagi właściciela A)** —
-  kosmetyka trzech zdań, schemat bez zmian (więc wersja protokołu zostaje
-  `PYT/1.1`, §7 pkt 3): (1) z zasady 4 znika „i podawaj wtedy nazwę miejsca
-  w treści pytania" — o kotwicy mówi już pierwsza część zdania, a o braku
-  lokalnego zaczepienia zdanie następne; (2) zasada 7 mówi wprost „żeby
-  odpowiedź nie zawierała się w pytaniu" zamiast przepisu o faktach
-  rozstrzygających w `wyjasnienie`; (3) wymaganie dla pola `stacja` żąda tej
-  samej liczby pytań na każdej stacji zamiast rozkładu „równego albo
-  różniącego się o jedno". Łatka **`PYT/1.1.2` / `PYT/1.1-nofc.2`** (ten sam
-  dzień): forma „tę samą liczbę pytań" zamiast podyktowanej „tą samą" — sama
-  gramatyka, sens bez zmian. Razem z tą zmianą tolerancja rozkładu zniknęła
-  z walidatora: `E05` pilnuje odtąd wyłącznie stacji bez pytania (decyzja
-  właściciela, `docs/BACKLOG.md` B25).
+  `poprawna` to **numer** `1..4` (model i człowiek liczą od 1), marker
+  `protokol` i warianty zapisu zniknęły; szablony `PYT/1.1.0` / `PYT/1.1-nofc.0`.
+  **Bez migratora** (wyjątek od §7 pkt 2 — na dysku właściciela nie ma ANI
+  JEDNEJ paczki tego protokołu): zapis gry z poprzedniej wersji odrzucany
+  jawnie (kod `T`).
+- **Szablony `PYT/1.1.1`/`PYT/1.1.2` (2026-09-15f)** — kosmetyka trzech zdań
+  (reguła 4 o kotwicy, reguła 7 „odpowiedź nie zawiera się w pytaniu”,
+  pole `stacja` = ta sama liczba pytań na każdej stacji); schemat bez zmian,
+  więc wersja protokołu zostaje `PYT/1.1`. Tolerancja rozkładu zniknęła z
+  walidatora: `E05` pilnuje tylko stacji bez pytania (ADR 0050, B25).
 
 - **PYT/1.2: poziomy trudności per gracz (2026-09-17d, uwagi B i C właściciela;
-  ADR 0055 + ADR 0056)** — schemat zmienił się w dwóch miejscach: (1) globalne
-  pole `wiek` paczki zniknęło, a każde pytanie niesie `poziom`
-  (`dzieci`/`dorosli`) — poziom trudności jest teraz własnością gracza
-  (setup: `gracze[].poziom`) i pytania, a nie całej paczki; walidator dostaje
-  `oczekiwane.poziomyPytan` i pilnuje per-stacyjnego zestawienia (`E21`/`E22`).
-  (2) Prompt nie mówi już „kategoria wiekowa”, tylko sekcję
-  `GRACZE — POZIOMY PYTAŃ` z ZASADĄ TWARDĄ o zestawieniu pytań poziomów przy
-  KAŻDEJ stacji (np. 1 dorosły + 2 dzieci → przy każdej stacji 1× DZIECKO +
-  2× DOROŚLI) i listą graczy z poziomami. W multi (gracze nieznani) HOST
-  wybiera JEDEN poziom dla całej gry i zestawienie jest stałe: 1 pytanie
-  tego poziomu na stację, WSPÓLNE dla wszystkich graczy — wszyscy odpowiadają
-  na te same pytania (decyzja właściciela 2026-09-17, ADR 0055 pkt 4). Multi
-  liczy od tego `pytaniaNaStacje = 1` (dodatkowo: dopasowanie paczek bierze
-  per-poziomowe zestawienie i liczbę stacji — stare paczki z polem `wiek` nie
-  pasują do nowych setupów i odwrotnie). Szablony `PYT/1.2.1` / `PYT/1.2-nofc.1`.
-  **Bez migratora** (jak PYT/1.1 — gra jest w fazie testów terenowych):
-  paczki bez `poziomu` są dalej czytane w grze (ścieżka stałej kolejności
-  w `graczPytania`), a walidacja poziomów włącza się tylko, gdy setup niesie
-  `poziomyPytan`.
+  ADR 0055 + ADR 0056)** — schemat: globalne `wiek` paczki znika, każde
+  pytanie niesie `poziom` (`dzieci`/`dorosli`) — poziom jest własnością
+  gracza (setup: `gracze[].poziom`) i pytania, nie paczki; walidator pilnuje
+  per-stacyjnego zestawienia (`E21`/`E22`, tylko gdy setup niesie
+  `poziomyPytan`). Multi: HOST wybiera JEDEN poziom dla całej gry, 1 wspólne
+  pytanie na stację (`pytaniaNaStacje = 1`). Dopasowanie paczek: per-poziomowe
+  zestawienie + liczba stacji. Szablony `PYT/1.2.1` / `PYT/1.2-nofc.1`.
+  **Bez migratora** (faza testów terenowych): paczki bez `poziomu` są dalej
+  czytane w grze.
+- **PYT/1.3: krótki prompt i koniec źródeł w paczce (2026-09-17e, przegląd
+  wygenerowanego promptu, właściciel; ADR 0057 + ADR 0058)** — schemat:
+  pytanie nie niesie `zrodla`, paczka nie niesie `utworzono` (model ich nie
+  wpisuje; datę nadaje aplikacja sama, `meta.data`). Stare paczki są czytane —
+  pola ignorowane, walidacja `E09`/`E10`/`E11` wycofana. Rozróżnienie
+  wariantów zostaje: fact-check OBOWIĄZKUJE kwerendę przed faktem (reguła 1
+  §2), bez fact-check sprawdzanie nie jest wymuszane (reguła 1 §2.2) — wynik
+  kwerendy nie ląduje już w paczce. Prompt: bez meta-komentarzy i listy
+  graczy, zestawienie pytań POD KAŻDĄ stacją, bez „data przygotowania”,
+  poziom `dzieci` zrelaksowany (bez TRUDNYCH dat, nazwisk i faktów).
+  Szablony `PYT/1.3.1` / `PYT/1.3-nofc.1`. **Bez migratora** (faza testów
+  terenowych).
+
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 
@@ -474,7 +448,6 @@ zajęte, tak samo jak wycofany `E18`.
   "okolica": { "lat": 52.23178, "lon": 21.01234, "promienM": 1000, "miejsce": "Śródmieście, Warszawa" },
   "tematy": ["historia"],
   "jezyk": "polski",
-  "utworzono": "2026-09-05 18:30",
   "pytania": [
     {
       "id": "s1p1",
@@ -484,16 +457,15 @@ zajęte, tak samo jak wycofany `E18`.
       "tresc": "Przy jakiej ulicy stała pierwsza siedziba Polskiej Agencji Telegraficznej (1918)?",
       "odpowiedzi": ["Bracka", "Mazowiecka", "Zgoda", "Jasna"],
       "poprawna": 3,
-      "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda (X 1918).",
-      "zrodla": [{ "url": "https://pl.wikipedia.org/wiki/Polska_Agencja_Telegraficzna", "tytul": "Polska Agencja Telegraficzna — Wikipedia", "sprawdzono": "2026-09-05" }]
+      "wyjasnienie": "Pierwsza siedziba PAT mieściła się przy ulicy Zgoda (X 1918)."
     }
   ],
   "uwagi": ""
 }
 ```
 
-Przykład jest ilustracją formatu: fakt i adres źródła przed użyciem w paczce
-referencyjnej w repo musi zweryfikować agent (`fetch_page`, ADR 0008 pkt 6).
+Przykład jest ilustracją formatu: fakt przed użyciem w paczce referencyjnej
+w repo musi zweryfikować agent (`fetch_page`, ADR 0008 pkt 6).
 
 ## 9. Aneks M11/M12: schematy gry wieloosobowej (RO-*) i kody R
 

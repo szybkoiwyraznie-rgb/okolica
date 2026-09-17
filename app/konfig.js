@@ -110,8 +110,11 @@ export const WIEK = {
   // po to, by CZYTAĆ stare paczki i konfiguracje — nowego setupu nie mają.
   dzieci: {
     etykieta: 'dziecko (8–10 lat)',
+    // ADR 0057 (właściciel, 2026-09-17e): zrelaksowane — 10-latek umie liczyć
+    // i zna podstawowe fakty; ograniczenie dotyczy TYLKO TRUDNYCH dat, nazwisk
+    // i faktów.
     opisTrudnosci:
-      'Łatwe pytania na poziomie szkoły podstawowej (8–10 lat). Krótkie zdania, słownictwo codzienne, jedno pytanie = jeden fakt. BEZ pytań o daty, BEZ cyfr i liczb, BEZ nazwisk i trudnych faktów — tylko to, co dziecko może zobaczyć, usłyszeć albo zna z życia i spaceru.',
+      'Łatwe pytania na poziomie szkoły podstawowej (8–10 lat). Krótkie zdania, słownictwo codzienne, jedno pytanie = jeden fakt. BEZ trudnych dat, trudnych nazwisk i trudnych faktów — proste liczby, podstawowe fakty i nazwy są w porządku; najlepiej to, co dziecko może zobaczyć, usłyszeć albo zna z życia i spaceru.',
   },
   dorosli: {
     etykieta: 'dorośli',

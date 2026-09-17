@@ -47,9 +47,11 @@ test('POZIOMY: dokładnie dwa poziomy kanonu, bez wagi punktowej (rev2: 1 pkt za
   for (const zle of ['7', '10', '12', '15', 'seniorzy', '', null]) {
     assert.ok(!czyPoziomOk(zle), `${JSON.stringify(zle)}: klucz legacy nie jest poziomem nowego setupu`);
   }
-  // poziom dziecięcy nie może wymagać dat, cyfr ani nazwisk
-  assert.ok(POZIOMY.dzieci.opisTrudnosci.includes('BEZ pytań o daty'));
-  assert.ok(POZIOMY.dzieci.opisTrudnosci.includes('BEZ nazwisk'));
+  // ADR 0057 (właściciel, 2026-09-17e): zrelaksowane — bez TRUDNYCH dat,
+  // nazwisk i faktów; proste liczby i podstawowe fakty są w porządku
+  assert.ok(POZIOMY.dzieci.opisTrudnosci.includes('BEZ trudnych dat'));
+  assert.ok(POZIOMY.dzieci.opisTrudnosci.includes('trudnych nazwisk'));
+  assert.ok(POZIOMY.dzieci.opisTrudnosci.includes('proste liczby'));
   // klucze legacy istnieją tylko do czytania starych danych
   assert.ok(WIEK[7] && WIEK['10'] && WIEK['12'] && WIEK[15] && WIEK.dorosli);
 });
