@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-153';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-153';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, PODKLADY, TEMATY_SETUP, TRYBY, WIEK_SETUP, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-154';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-154';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-153';
+} from './protokol.js?v=m12-154';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-153';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-153';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-153';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-153';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-153';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-153';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-154';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-154';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-154';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-154';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-154';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-154';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-153';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-153';
+} from './zestawy.js?v=m12-154';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-154';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -52,22 +52,23 @@ import {
   nazwaMiejsca,
   parsujOdpowiedz,
   przycijCacheSieci,
+  timeoutInstancji,
   upraszczajDaneDoCache,
   wczytajDaneZCache,
   wybierzWpisSieci,
   zlozWpisSieci,
-} from './sieci.js?v=m12-153';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-153';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-153';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-153';
-import { adresMostu, stanMostu } from './most.js?v=m12-153';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-153';
+} from './sieci.js?v=m12-154';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-154';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-154';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-154';
+import { adresMostu, stanMostu } from './most.js?v=m12-154';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-154';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-153';
+} from './oceny.js?v=m12-154';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1918,18 +1919,19 @@ function zapiszSprawnaInstancje(url) {
   }
 }
 
-/** Limit całej próby (nagłówki i ciało), także gdy fetch nie respektuje abort. */
-async function pobierzTekstSieci(f, url, zapytanie) {
+/** Limit całej próby (nagłówki i ciało) — per-instancja: główna krótki, backup długi. */
+async function pobierzTekstSieci(f, url, zapytanie, limitMs) {
   const kontroler = new AbortController();
   let timer;
   let uplynalCzas = false;
+  const limitSec = Math.round(limitMs / 1000);
   try {
     const limit = new Promise((_, odrzuc) => {
       timer = setTimeout(() => {
         uplynalCzas = true;
         kontroler.abort();
-        odrzuc(Object.assign(new Error('Przekroczono czas oczekiwania 10 s'), { timeout: true }));
-      }, POLITYKA.timeoutMs);
+        odrzuc(Object.assign(new Error(`Przekroczono czas oczekiwania ${limitSec} s`), { timeout: true }));
+      }, limitMs);
     });
     return await Promise.race([limit, (async () => {
       const odpowiedz = await f(url, {
@@ -1944,7 +1946,7 @@ async function pobierzTekstSieci(f, url, zapytanie) {
   } catch (blad) {
     // Nie zależymy od nazwy/tekstu błędu zwróconego przez przeglądarkę.
     if (uplynalCzas || kontroler.signal.aborted) {
-      throw Object.assign(new Error('Przekroczono czas oczekiwania 10 s'), { timeout: true });
+      throw Object.assign(new Error(`Przekroczono czas oczekiwania ${limitSec} s`), { timeout: true });
     }
     throw blad;
   } finally {
@@ -2023,13 +2025,15 @@ async function pobierzSiec(terazMs) {
   lista.hidden = false;
   for (let i = 0; i < lancuch.length; i++) {
     const instancja = lancuch[i];
+    const limitMs = timeoutInstancji(instancja);
+    const limitSek = Math.round(limitMs / 1000);
     const wpis = document.createElement('li');
     const prefiks = `Próba ${i + 1}/${lancuch.length}: ${instancja.nazwa}`;
-    wpis.textContent = `${prefiks} — pobieram (limit 10 s)…`;
+    wpis.textContent = `${prefiks} — pobieram (limit ${limitSek} s)…`;
     lista.appendChild(wpis);
     status(wpis.textContent);
     try {
-      const tekst = await pobierzTekstSieci(f, instancja.url, zapytanie);
+      const tekst = await pobierzTekstSieci(f, instancja.url, zapytanie, limitMs);
       const sparsowane = parsujOdpowiedz(JSON.parse(tekst));
       const dane = upraszczajDaneDoCache(sparsowane);
       const miesciSie = tekst.length <= 8_000_000;
@@ -2043,7 +2047,8 @@ async function pobierzSiec(terazMs) {
       return true;
     } catch (blad) {
       const timeout = blad?.timeout === true || blad?.name === 'AbortError';
-      const opis = timeout ? 'przekroczono czas oczekiwania 10 s'
+      const limitSekBledu = Math.round(limitMs / 1000);
+      const opis = timeout ? `przekroczono czas oczekiwania ${limitSekBledu} s`
         : blad?.status ? `HTTP ${blad.status}`
         : blad?.name === 'SyntaxError' ? 'niepoprawna odpowiedź serwera'
         : (blad?.komunikat ?? blad?.message ?? 'błąd połączenia');

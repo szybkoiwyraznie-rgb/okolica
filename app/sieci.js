@@ -19,17 +19,26 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-153';
-import { TRYBY } from './konfig.js?v=m12-153';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-154';
+import { TRYBY } from './konfig.js?v=m12-154';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
-/** Łańcuch instancji Overpass w kolejności prób — dokładnie jak ASSETS §2. */
+/**
+ * Łańcuch instancji Overpass w kolejności prób (ASSETS §2, aneks 2026-09-17):
+ * 1. FOSSGIS (główna, Niemcy) — najszybsza z Polski, dane aktualne.
+ * 2. Kumi Systems (globalna) — bez deklarowanych limitów, ale bywa obciążona
+ *    (30+ s odpowiedzi we wrześniu 2026), zostaje jako ostateczny backup.
+ * Usunięte 2026-09-17 (nie działały z Polski):
+ * - VK Maps (mail.ru) — stałe 504 Gateway Timeout
+ * - Adikso (Polska) — nigdy nie działał TLS, wyłączony
+ * - private.coffee — alias do Kumi (ta sama maszyna, duplikat)
+ * - osm.ch (Szwajcaria) — tylko dane Szwajcarii, zero wyników w Polsce
+ * - openstreetmap.fr — instancja wyłączona od stycznia 2022
+ */
 export const INSTANCJE_OVERPASS = [
-  { nazwa: 'FOSSGIS (główna)', url: 'https://overpass-api.de/api/interpreter' },
-  { nazwa: 'private.coffee', url: 'https://overpass.private.coffee/api/interpreter' },
-  { nazwa: 'VK Maps', url: 'https://maps.mail.ru/osm/tools/overpass/api/interpreter' },
-  { nazwa: 'Adikso (Polska)', url: 'https://overpass.osm.adikso.net/api/interpreter' },
+  { nazwa: 'FOSSGIS (główna)', url: 'https://overpass-api.de/api/interpreter', timeoutMs: 12_000 },
+  { nazwa: 'Kumi Systems', url: 'https://overpass.kumi.systems/api/interpreter', timeoutMs: 40_000 },
 ];
 
 /** Zapamiętana sprawna instancja pierwsza; pozostałe w kolejności domyślnej. */
@@ -38,11 +47,22 @@ export function kolejnoscInstancji(zapamietanyUrl = null) {
   return znana ? [znana, ...INSTANCJE_OVERPASS.filter(i => i !== znana)] : [...INSTANCJE_OVERPASS];
 }
 
+/**
+ * Limit czasu dla instancji (ms): główna FOSSGIS ma krótki limit, bo jeśli
+ * nie odpowie w 12 s — jest przeciążona i Kumi dostaje dłuższy czas (40 s),
+ * bo wiemy z pomiarów właściciela (2026-09-17), że bywa wolna, ale odpowiada
+ * poprawnymi danymi.
+ */
+export function timeoutInstancji(instancja) {
+  return instancja?.timeoutMs ?? POLITYKA.timeoutMs;
+}
+
 export const POLITYKA = {
-  /** Timeout `fetch` po naszej stronie (ADR 0005, konsekwencje). */
-  timeoutMs: 10_000,
-  /** `[timeout:8]` w nagłówku zapytania Overpass QL. */
-  timeoutZapytaniaS: 8,
+  /** Domyślny timeout `fetch` — używany tylko gdy instancja nie podaje własnego. */
+  timeoutMs: 12_000,
+  /** `[timeout:25]` w nagłówku zapytania Overpass QL — większe zapytania
+   *  (R × 1,15 dla 10 km) potrzebują więcej czasu po stronie serwera. */
+  timeoutZapytaniaS: 25,
   /**
    * Krótka grzecznościowa pauza po `429`/`406`/5xx (ASSETS §2 pkt 3).
    * 1 s, nie 30 s: limit publiczny i tak nie minie w sekundy, a łańcuch

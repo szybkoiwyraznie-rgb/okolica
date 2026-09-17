@@ -57,3 +57,58 @@ Dostawca wymieniony w ASSETS oraz sekcji prywatności. Do sprawdzenia z telefonu
 Testy: preferencja VK i Adikso, pełny łańcuch czterech prób, sukces Adikso
 z atrapą danych z Polski, umiejscowienie logu wyłącznie w Informacjach,
 brak nazw instancji w błędzie na stacjach. Żadnych nowych kluczy ani opłat.
+
+
+## Aneks 2026-09-17 — weryfikacja terenowa z Polski, ostateczny łańcuch (m12-154)
+
+Tego samego dnia właściciel wykonał z telefonu (Polska, LTE) pomiary
+rzeczywistego czasu odpowiedzi każdej z czterech skonfigurowanych instancji
+oraz kilku dodatkowych, na surowym `fetch` z konsoli przeglądarki. Wyniki:
+
+| Endpoint | Czas odpowiedzi | Wynik |
+| --- | --- | --- |
+| overpass-api.de (FOSSGIS) | **712 ms** | OK, poprawne dane |
+| overpass.kumi.systems | **32,7 s** | OK, poprawne dane |
+| overpass.private.coffee | 32,7 s | alias do Kumi (ten sam IP 193.219.97.30) |
+| maps.mail.ru (VK Maps) | 567 ms | HTTP 504 — zawsze |
+| overpass.osm.ch | 313 ms | 0 elementów w Polsce (tylko CH) |
+| overpass.nchc.org.tw (Tajwan) | 477 ms | błąd CORS z przeglądarki |
+| overpass.osm.adikso.net | — | błąd TLS (tak samo jak sandbox) |
+| overpass-api.fr | — | instancja wyłączona od 2022-01-29 |
+
+Decyzja:
+1. Z łańcucha zostają TYLKO dwie instancje: **FOSSGIS jako główna**,
+   **Kumi Systems jako ostateczny backup** (private.coffee wyrzucamy jako
+   alias-duplikat; VK/Adikso/osm.ch/osm.fr/nchc jako nie działające z Polski).
+2. Kolejność: FOSSGIS pierwszy. Wbrew wcześniejszej sugestii Gemini
+   (która proponowała Kumi jako główne i wyłączone URL-e bez `/api/`),
+   FOSSGIS jest 45× szybszy z Polski — nie ma powodu go ukrywać za
+   wolną instancją.
+3. Zróżnicowane limity czasu: **12 s na FOSSGIS** (jeśli nie odpowie
+   w 12 s — jest przeciążona; przełączamy od razu), **40 s na Kumi**
+   (pomiar pokazał 32,7 s przy poprawnych danych, więc potrzebny
+   zapas na wyjątkowo obciążone chwile).
+4. QL timeout podniesiony z 8 s do **25 s** — większe zapytania
+   (R = 10 km × 1,15) potrafią trwać dłużej po stronie serwera,
+   zwłaszcza na zapasowej instancji.
+5. Mechanizm „zapamiętana sprawna instancja pierwsza" pozostaje
+   bez zmian: jeśli ostatnia gra pobrała dane z Kumi, kolejna też
+   zacznie od Kumi.
+6. Pauza po 429/5xx pozostaje 1 s (nie zmieniamy mechaniki, bo i tak
+   są teraz tylko dwie próby, a 1 s to grzeczność, nie kara).
+
+Konsekwencje w kodzie:
+- `INSTANCJE_OVERPASS` ma teraz 2 elementy, każdy z własnym polem `timeoutMs`.
+- Nowa funkcja `timeoutInstancji(i)` zwraca per-instancję limit, domyślnie
+  `POLITYKA.timeoutMs` (teraz 12 s).
+- Funkcja pobierania w `app.js` bierze limit z konfiguracji instancji,
+  a nie ze stałej; komunikaty w logu prób pokazują właściwy limit sekundy.
+- `POLITYKA.timeoutZapytaniaS = 25`.
+- Wersja oznaczona `m12-154`, cache-busty podbite, testy i kontrakt
+  zaktualizowane, ASSETS §2 przepisane, ADR 0035 z aneksem.
+
+Testy: kolejność 2 instancji, per-instancja timeoutów (12 s vs 40 s),
+log prób pokazuje właściwe liczby sekund, ASSETS i kontrakt nie zawierają
+już usuniętych endpointów, Kumi zostaje zapamiętany jako sprawny i jest
+pierwszy w kolejnej grze (analogicznie jak wcześniej Adikso). Żadnych
+nowych dostawców, kluczy ani zmian prywatności.
