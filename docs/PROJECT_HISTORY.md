@@ -7020,3 +7020,20 @@ zaktualizowane, CI (`test`) zielone dla `f3ca16a`, `83666df`, `8e890a6`,
 **Otwarte po sesji:** ponowne wdrożenie mostu Apps Script (cache L2, ADR 0052)
 i test terenowy na iPhonie na `m12-158` (A, B, C1, C2, D — w tym krytyczne D:
 zero ekranów przejściowych po starcie w lobby).
+
+## 2026-09-17d — audyt startowy sesji; czekam na uwagi z terenu — PR #42
+
+Nowa sesja (gałąź `arena/01a0afae-okolica`) po scaleniu PR #41 (`1adfc86`).
+Zlecenie właściciela: „kontynuujemy projekt” — bez nowych uwag z terenu,
+więc po audycie poprzedniego PR sesja czeka na kolejną turę uwag (ROADMAP:
+M0–M12 zamknięte jako kod, jedyna kolejka to pętla terenowa).
+
+**Start:** lektura obowiązkowa w całości (AGENTS.md §0: AGENTS, PROTOKOL,
+ADR 0001–0053, LESSONS L1–L80, ENVIRONMENT, ROADMAP, HANDOFF_2026-09-17c);
+budżet lektury **99 431 / 100 000** (rezerwa 569); brama bazowa `npm test`
+**852/852** EXIT 0; wersje: protokół `PYT/1.1`, szablony `PYT/1.1.2` /
+`PYT/1.1-nofc.2`, cache `m12-158`.
+
+**Audyt PR #41** (ostatni scalony PR, `git diff d07abb0..1adfc86`): w trakcie
+— wynik w opisie PR i poniżej.
+
