@@ -7011,8 +7011,12 @@ stąd świadoma kolejność testów w `test/zestawy-ui.test.js`).
 `npm run check` OK (§2 3 603 znaki, §2.2 3 738); audyt WCAG AA **0 naruszeń**;
 budżet lektury **99 431 / 100 000** (rezerwa 569).
 
-**Otwarte po sesji:** GitHub w Arenie przestał przyjmować token w połowie sesji
-(`GH_TOKEN` nieaktualny) — `8e890a6` i `614e3a6` są wypchnięte, a `e716f03`
-plus commit dokumentów czekają lokalnie na `git push`; opis PR #41 do
-aktualizacji, CI nie sprawdzone. Poza kodem: ponowne wdrożenie mostu Apps Script
-(cache L2, ADR 0052) i test terenowy na iPhonie na `m12-158`.
+**GitHub:** w połowie sesji token w Arenie przestał działać (`GH_TOKEN`
+nieaktualny — `git push` i `gh` odmawiały); właściciel zresetował połączenie
+i całość jest na `origin` (`614e3a6..c31e406`). Opis i tytuł PR #41
+zaktualizowane, CI (`test`) zielone dla `f3ca16a`, `83666df`, `8e890a6`,
+`614e3a6` i `c31e406`.
+
+**Otwarte po sesji:** ponowne wdrożenie mostu Apps Script (cache L2, ADR 0052)
+i test terenowy na iPhonie na `m12-158` (A, B, C1, C2, D — w tym krytyczne D:
+zero ekranów przejściowych po starcie w lobby).
