@@ -7052,4 +7052,14 @@ o czwartej instancji (adikso) bez znacznika wycofania w tekście głównym;
 stan bieżący (FOSSGIS → VK → Kumi) definiują późniejsza nota „Obowiązuje”,
 `ASSETS` §2 i kod — do kolejnej tury uwag.
 
+**Ikony modeli (polecenie właściciela, tego samego dnia):** narysowane
+ręcznie ikony inline-SVG odrzucone, a do gałęzi sesji wgrane prawdziwe logo
+(commit `650f69a`, cztery JPG w korzeniu repo). Podmiana: pliki do
+`assets/ikony-modela/` (układ ADR 0002), podpięcie `<img>` względną ścieżką
+(pole `plik` w `MODELE_AI`, `createElementNS` usunięte), CSS `border-radius:
+50%` zamiast stroke, cztery ikony do `PLIKI_SHELL` — **miejsce i wielkość
+bez zmian** (przyciski 44 px, ikona 22 px; znaczek 20 px, ikona 13 px).
+Piny przepisane pod nową formę (L55), aneks ADR 0053, wersja `m12-159`.
+Brama **852/852 EXIT 0**, budżet **99 594 / 100 000** (rezerwa 406).
+
 
