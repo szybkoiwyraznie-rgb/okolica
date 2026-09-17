@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-154';
-import { TRYBY } from './konfig.js?v=m12-154';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-155';
+import { TRYBY } from './konfig.js?v=m12-155';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -71,6 +71,15 @@ export const POLITYKA = {
   odstepMs: 1_000,
   /** Promień zapytania = R gry × 1.15 (ADR 0005 pkt 1). */
   mnoznikPromienia: 1.15,
+  /**
+   * Tolerancja kotwicy cache (L1 i L2): dwa pobrania z miejsc o mniej niż tyle
+   * metrów od siebie współdzielą wpis (teren 2026-09-17). Właściciel raportuje,
+   * że druga gra z tego samego miejsca (dryf GPS o 2–5 m) wciąż woła Overpass,
+   * bo warunek pokrycia nie dopuszczał ŻADNEGO dryfu, a margines R×1,15 jest
+   * po to, żeby absorbować właśnie taki szum. 200 m to prośba właściciela:
+   * „jeśli jestem w tej okolicy ±200 m, nie ściągaj ponownie”.
+   */
+  tolerancjaKotwicyM: 200,
   /** Odpowiedź większa niż tyle nie trafia do cache (budżet ADR 0010 pkt 1). */
   maxRozmiarCacheBajtow: 2 * 1024 * 1024,
   /** TTL cache sieci w dniach (ADR 0005 pkt 7, ADR 0010 pkt 1). */
@@ -723,7 +732,11 @@ export function kluczCacheSieci({ lat, lon, promienM, tryb }) {
   if (!czyWspolrzedneOk(lat, lon)) throw usterka('S05');
   if (!Number.isFinite(promienM) || promienM <= 0) throw usterka('S06');
   if (!TRYBY[tryb]) throw usterka('S07', String(tryb));
-  return `okolica:sieci:${geohash(lat, lon, 6)}-${Math.round(promienM)}-${tryb}`;
+  // Klucz liczony z ZAOKRĄGLONEJ pozycji (ta sama siatka co zapytanie Overpass
+  // i kotwica wpisu) — inaczej dwa fixy z tego samego miejsca mają różne
+  // klucze i cache nigdy nie trafia (teren 2026-09-17).
+  const p = pozycjaDoZapytania({ lat, lon });
+  return `okolica:sieci:${geohash(p.lat, p.lon, 6)}-${Math.round(promienM)}-${tryb}`;
 }
 
 function okraglijPunkty(punkty) {
@@ -773,6 +786,10 @@ export function zlozWpisSieci({ dane, srodek, promienM, tryb, terazMs }) {
   return {
     schemat: SCHEMAT_SIECI,
     zapisanoMs: terazMs,
+    // Kotwica wpisu zostaje dokładna (pobranie szło z TEGO punktu). Klucz
+    // cache (`kluczCacheSieci`) używa pozycji zaokrąglonej do siatki, dzięki
+    // czemu dwa fixy z tego samego miejsca mają ten sam klucz i L1/L2 nie
+    // rozjeżdżają się przy szumie GPS (teren 2026-09-17).
     srodek: { lat: srodek.lat, lon: srodek.lon },
     promienM,
     tryb,
@@ -781,11 +798,13 @@ export function zlozWpisSieci({ dane, srodek, promienM, tryb, terazMs }) {
 }
 
 /**
- * Czy wpis pokrywa zapytanie o sieć: dysk zapytania (środek + R×1.15 — ten
- * sam margines co świeże pobranie, `POLITYKA.mnoznikPromienia`) mieści się
- * w dysku wpisu. Bez kotwicy (wpisy sprzed 2026-09-16) — false; te obsługuje
- * tylko klucz dokładny. Stacje i tak filtruje `wybierzStacje` (dystans
- * sieciowy od startu ≤ R), więc nadmiar dróg spoza R jest nieszkodliwy.
+ * Czy wpis pokrywa zapytanie o sieć: dysk zapytania (środek + R×1.15 +
+ * tolerancja) mieści się w dysku wpisu. Bez kotwicy (wpisy sprzed 2026-09-16)
+ * — false; te obsługuje tylko klucz dokładny. Stacje i tak filtruje
+ * `wybierzStacje` (dystans sieciowy od startu ≤ R), więc nadmiar dróg
+ * poza R jest nieszkodliwy. Tolerancja (POLITYKA.tolerancjaKotwicyM)
+ * absorbuje szum GPS (2–5 m między fixami) i pozwala współdzielić wpis
+ * przy dryfie ±200 m (teren 2026-09-17).
  */
 export function czyWpisPokrywa(wpis, { srodek, promienM }) {
   const c = wpis?.srodek;
@@ -795,7 +814,10 @@ export function czyWpisPokrywa(wpis, { srodek, promienM }) {
   if (!srodek || !Number.isFinite(srodek.lat) || !Number.isFinite(srodek.lon)) return false;
   if (!Number.isFinite(promienM) || promienM <= 0) return false;
   const m = POLITYKA.mnoznikPromienia;
-  return odlegloscM(c, srodek) + promienM * m <= promienWpisu * m;
+  // Tolerancja (POLITYKA.tolerancjaKotwicyM) DODAJE do promienia wpisu —
+  // absorbuje szum GPS między fixami (teren 2026-09-17: ±200 m). +1 m na błędy
+  // zaokrągleń zmiennoprzecinkowych przy tym samym środku i R.
+  return odlegloscM(c, srodek) + promienM * m <= promienWpisu * m + POLITYKA.tolerancjaKotwicyM + 1;
 }
 
 /**

@@ -1388,7 +1388,8 @@ test('kontrakt ADR 0028: panel oceny pytania jest w interfejsie i podpięty', ()
   assert.ok(APP.includes('kliknijOcene(OCENA_PLUS)') && APP.includes('kliknijOcene(OCENA_MINUS)'), 'oba kciuki są podpięte');
   assert.ok(APP.includes('wyslijOceneWTle'), 'głos jedzie w tle, nie blokuje gry');
   assert.ok(APP.includes('oproznijKolejkeOcen()'), 'kolejka głosów jest opróżniana przy starcie');
-  assert.ok(APP.includes('opisOcenTekst(walidujStatystykiOcen(meta.oceny))'), 'ekran 2 pokazuje statystyki paczki');
+  assert.ok(APP.includes('opisOcenTekst('), 'ekran 2 pokazuje statystyki paczki');
+  assert.ok(/opisOcenTekst\(walidujStatystykiOcen\(meta\.oceny\)/.test(APP), 'ekran 2 przekazuje walidację meta.oceny do opisu');
   assert.ok(APP.includes('STAN.paczkaRepoId'), 'oceny dotyczą paczek z repozytorium');
 });
 

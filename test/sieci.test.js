@@ -1052,20 +1052,30 @@ test('cache: TTL 30 dni, przyszłość, schemat i puste drogi — wszystko jawne
   assert.equal(wczytajDaneZCache(wpis(NaN), { terazMs: teraz }), null);
 });
 
-test('cache: wpis z szerszego pobrania pokrywa węższy setup (teren 2026-09-16)', () => {
+test('cache: wpis z szerszego pobrania pokrywa węższy setup (teren 2026-09-16; aneks 2026-09-17: tolerancja ±200 m)', () => {
   const teraz = Date.UTC(2026, 8, 16);
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixture('las')));
   const srodek = { lat: 52.2297, lon: 21.0122 };
   const szeroki = zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: teraz });
   assert.equal(szeroki.schemat, SCHEMAT_SIECI);
-  assert.deepEqual(szeroki.srodek, srodek);
+  assert.deepEqual(szeroki.srodek, srodek, 'kotwica = srodek pobrania');
   assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 2000 }), 'ten sam promień pokrywa');
   assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 1000 }), 'węższy setup wchodzi w szerszy wpis');
-  assert.equal(czyWpisPokrywa(szeroki, { srodek, promienM: 2001 }), false, 'szerszy setup nie wchodzi');
-  // dryf środka: ~500 m dalej przy R=1000 wchodzi (500 + 1150 ≤ 2300)…
+  // Dryf 2–5 m (szum GPS) musi być wchłonięty bez wołania Overpass (teren 2026-09-17).
+  const lekkiDryf = { lat: 52.229737, lon: 21.012237 };
+  assert.ok(czyWpisPokrywa(szeroki, { srodek: lekkiDryf, promienM: 500 }),
+    'dryf GPS o 4 m nie wywala z cache');
+  // Dryf o 200 m (tolerancja właściciela) przy R=500 też wchodzi.
+  const dwieScieMetrow = { lat: 52.2297 + 0.0018, lon: 21.0122 };
+  assert.ok(czyWpisPokrywa(szeroki, { srodek: dwieScieMetrow, promienM: 500 }),
+    'dryf o 200 m mieści się w tolerancji');
+  // Szerszy setup bez dryfu: potrzebny promień tak duży, żeby nawet z +200 m
+  // tolerancji nie wszedł — czyli R_gry > 2000 + tolerancja ≈ 2174.
+  assert.equal(czyWpisPokrywa(szeroki, { srodek, promienM: 2175 }), false, 'znacznie szerszy setup nie wchodzi');
+  // dryf środka: ~500 m dalej przy R=1000 wchodzi (500 + 1150 + 200 ≤ 2300)…
   const obok = { lat: 52.2342, lon: 21.0122 };
   assert.ok(czyWpisPokrywa(szeroki, { srodek: obok, promienM: 1000 }), 'umiarkowany dryf środka wchodzi');
-  // …a ~2 km dalej już nie (2000 + 1150 > 2300)
+  // …a ~2 km dalej już nie (2000 + 1150 + 200 > 2300)
   const daleko = { lat: 52.2477, lon: 21.0122 };
   assert.equal(czyWpisPokrywa(szeroki, { srodek: daleko, promienM: 1000 }), false, 'duży dryf środka nie wchodzi');
   // wpisy sprzed kotwic i śmieci nie pokrywają (obsługuje je klucz dokładny)
