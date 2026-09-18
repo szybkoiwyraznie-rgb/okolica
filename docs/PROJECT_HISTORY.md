@@ -7389,3 +7389,40 @@ poprzedniej sesji. Kod aplikacji nietknięty, więc cache-busting zostaje
 na `m12-164`. Zamknięcie: `docs/setup/HANDOFF_2026-09-18c.md`, opis PR #46.
 Kolejka: uwagi z terenu (L68); zadania właściciela z handoffu 2026-09-18b
 bez zmian (wdrożenie `.gs` sieci/2, kasowanie 3 plików L2, test iPhona).
+
+## 2026-09-18 (kontynuacja 3) — uwaga terenowa 1: stop na ekranie stacji bez czerwonej karty
+
+**Zgłoszenie (właściciel, Ekran Stacje):** przy nieudanym pobraniu sieci
+pod jawnym stopem wisiała zdublowana czerwona ramka „[S03] siec: Nie
+udało się pobrać sieci dróg. Szczegóły w ⓘ Informacje. Spróbuj ponownie
+lub użyj trybu uproszczonego.” — powtórzenie komunikatu stopu, z
+literówką („siec”) i obietnicą trybu, którego w grze realnej nie ma
+(pierścień jest wyłącznie testowy). Decyzja właściciela: „Nie wyświetlaj
+tego czerwonego komunikatu w ogóle. Wystarczy to, co jest wyżej.”
+
+**Zakres:** `app/app.js` — usunięte `pokazBledy('bledy-stacje', …)` z
+trzech ścieżek sieciowych (S03 z `pobierzSiec`, S09 z `grafDlaTrybu`,
+catch `przeliczZTegoCoJest`); `zablokujStacje()` i
+`pierścieńTrybTestowy()` czyszczą `bledy-stacje` (stan końcowy ekranu =
+jedna pełna wiadomość). Karty przy istniejących stacjach
+(`zlozKarteUsterekStacji`, S12/S14) zostają — nie dublują stopu.
+`app/protokol.js` — WE03 wskazuje istniejące wyjścia zamiast „trybu
+uproszczonego”. Diagnostyka prób zostaje w ⓘ Informacje (`#siec-proby`
++ status), zgodnie z ADR 0035 aneks m12-60.
+
+**Testy:** nowy test odtwarza scenariusz właściciela (gra realna,
+wszystkie instancje odmawiają → stop, `bledy-stacje` puste, „Dalej”
+zablokowane, „Pobierz sieć ponownie” widoczne); odwrócone piny [S03]
+i [S09]; kontrakt pilnuje braku ad-hoc kart i sprzątania w
+`zablokujStacje`; dryf pilnuje martwych fraz („Spróbuj ponownie lub
+użyj trybu uproszczonego”, „użyj trybu uproszczonego”). **Weryfikacja na
+żywo:** headless Chromium (wstrzyknięty GPS i zapamiętany gracz), gra
+realna bez internetu — jawny stop z pełnym opisem, bez czerwonej ramki,
+próby w ⓘ Informacje.
+
+**Dokumenty:** ADR 0061 aneks 2026-09-18 (pkt 5 o karcie S09 przestaje
+obowiązywać; karty sieciowe poza ekranem stacji w obu trybach).
+Cache-bust `?v=`/`WERSJA_SW` do `m12-165`.
+
+**Wynik:** `npm test` 862/862; `npm run brama` EXIT 0 (budżet lektury
+99 583 / 100 000). Zamknięcie: `docs/setup/HANDOFF_2026-09-18d.md`.
