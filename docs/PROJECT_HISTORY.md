@@ -7288,3 +7288,34 @@ limit (102 056) — zarchiwizowano 18 historycznych aneksów z 14 ADR-ów (14 pl
 Kolejka: zadania właściciela z handoffu (ponowne wdrożenie `.gs`, kasowanie 3
 plików L2, test iPhona na `m12-162`, przegląd ADR 0061 w PR #44), potem
 **uwagi z terenu** (L68).
+
+## 2026-09-18 (kontynuacja) — sesja `arena/01a0b45e-okolica`: audyt PR #44, bramki startu gry
+
+**Audyt poprzedniego scalonego PR #44** (squash `c54e018` na `main`,
+baza `44c80e1`; `git diff 44c80e1..c54e018`, plik po pliku):
+
+- `app/app.js` — cache trybowo niezależne wyprowadzone z kluczy i warunków
+  (ADR 0059) bez pozostałych zależności od trybu; bramka ADR 0061 w
+  jednym miejscu (`przeliczZTegoCoJest` + `zablokujStacje` +
+  `renderujStacje` + nasłuch „Dalej” z walidacją STANU wg L10); komunikaty
+  stopu spójne z decyzją; dopisek wraca przez helper `ADR()` tylko w trybie
+  testowym — zgodnie z konwencją UI.
+- `app/sieci.js` — bucket (1000/5000/10000/25000), klasy UNIWERSALNE jako
+  unium klas z `TRYBY`, `SCHEMAT_SIECI` = `sieci/2`, tolerancja kotwicy
+  1400 m ≈ przekątnej geohash6; walidacje S05/S06 zachowane; determinizm
+  zapytania zachowany.
+- `docs/setup/apps-script-repo-paczek.gs` — lustro L2 w parzystości ze
+  schematem `sieci/2` (stałe i `bucketPromieniaSieci` zgodne 1:1).
+- Testy `aplikacja`/`sieci`/`most-sieci`/`protokol` — nowe piny ADR-y
+  (brak pierścienia w grze realnej, blokada „Dalej”, bucket jako klucz);
+  całość `npm test` w stanie `main` przeliczona ponownie: **858/858**.
+- Dokumenty: ADR 0059/0060/0061 + rejestr, PROTOKOL PYT/1.4 zsynchronizowany
+  ze stałymi `SZABLON_*` (narzędzie `synchronizuj-szablon.mjs`), budżet
+  lektury 99 253/100 000 po archiwizacji aneksów.
+
+**Wynik audytu:** bez zastrzeżeń; regresji nie znaleziono. Szczegóły
+odwracalności bramki zostają do decyzji właściciela (uwaga otwarta z
+handoffu 2026-09-18, pkt 1).
+
+Praca sesji ciąglej niżej — bramki startu gry (uzupełnienie ADR 0061):
+szczegóły w commicie funkcjowym i opisie PR tej gałęzi.
