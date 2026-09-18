@@ -7229,3 +7229,12 @@ przed zmianami: `npm test` **856/856**, EXIT 0. Budżet lektury wg handoffu
 Bez zmian kodu — audyt zakończony czysto. Kolejka: **uwagi z terenu**
 (otwarte z 2026-09-17g: wdrożenie mostu z `poziomyPytan`/`poziom`/slugiem
 trudności i test iPhona na `m12-161`).
+
+## 2026-09-18 — most Apps Script wdrożony: wykreślony z otwartych
+
+Właściciel: „Nowy appscript już dawno wdrożony, możesz wykreślić z listy.”
+Punkt „ponowne wdrożenie mostu (poziomyPytan/poziom/slug)” znika z otwartych
+(zostaje tylko test terenowy na iPhonie na `m12-161`). Bez zmian kodu —
+aplikacja i lustro `.gs` się nie zmieniły; konsekwencja dla gry: cache L2
+sieci (ADR 0052) od tej pory odpowiada na żywo. Nowy handoff:
+`docs/setup/HANDOFF_2026-09-18.md` (najnowszy).
