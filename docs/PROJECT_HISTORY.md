@@ -7342,3 +7342,40 @@ UI). Poprawka: przycisk „🧒 Dziecko” (aria „dziecko”), komentarz index
 sprostowany, wiek zostaje wyłącznie w `POZIOMY.dzieci.etykieta` (prompt).
 Strażnicy: fraza w `dryf-dokumentow` + pin kontraktowy na oba renderery.
 `?v=`/`WERSJA_SW` → `m12-164`; brama: `npm test` **861/861**, EXIT 0.
+
+## 2026-09-18 (kontynuacja 2) — audyt scalonego PR #45
+
+**Audyt poprzedniego scalonego PR #45** (squash `022faea` na `main`,
+baza `c54e018`; `git diff c54e018..022faea`, plik po pliku):
+
+- `app/app.js` — (1) bramka porządkująca ADR 0061 w `uruchomGreMulti`:
+  gra multi bez stacji w stanie z mostu staje jawnym statusem („stan
+  z mostu nie niesie stacji”), `stacjeGry` zasila mapowanie poniżej —
+  spójne z walidacją `walidujGreSurowa` (R08) w nasłuchu mostu
+  (linia 5565) i z nienaruszonym wymaganiem `nowaRozgrywka`
+  (puste stacje = błąd graniczny); (2) etykieta poziomu w
+  `renderujListeGraczy` skrócona do „🧒 Dziecko” (aria „dziecko”) —
+  domknięcie uwagi właściciela, którą PR #44 pokrył tylko w rendererze
+  multi; (3) cache-busting `m12-162 → m12-164` we wszystkich importach.
+- Pozostałe `app/*.js` (mapa, most, pozycja, protokol, rozgrywka,
+  sieci, stacje, trwalosc, wieloosobowa, wynik, zestawy) — wyłącznie
+  podbicie `?v=`; brak zmian logiki (diff bez innych fraz).
+- `index.html` / `sw.js` — wersja `m12-164` w linkach i `WERSJA_SW`;
+  komentarz ADR 0055 sprostowany do nowej etykiety (bez wieku).
+- Testy: `kontrakt` — pin etykiety na OBU rendererach (setup + multi)
+  i zakaz powrotu starej; pin dopełnienia ADR 0061 (walidacja przed
+  renderem, bramka w `uruchomGreMulti`, wymaganie maszynki stanów
+  nietknięte); `wieloosobowa-ui` — scenariusz korupcji stanu z mostu
+  (R08 w statusie, ekran gry zamknięty, przycisk startu wraca
+  z „Łączę z siecią” — L77, po naprawie mostu polling startuje grę
+  sam); `dryf-dokumentow` — martwa fraza starej etykiety.
+- Dokumenty: wpis historii sesji i handoff 2026-09-18b; ADR-y,
+  PROTOKOL i rejestr bez zmian w tym PR.
+
+**Weryfikacja na `main` (`022faea`):** `npm test` **861/861**;
+`npm run brama` **EXIT 0** (testy + check szablonu + audyt WCAG +
+budżet lektury **99 253 / 100 000**, rezerwa 747); spójność `?v=`
+potwierdzona grepem (jedna wersja w całym grafie) i kontraktem;
+stara etykieta nieobecna w nośnikach aplikacji.
+
+**Wynik audytu:** bez zastrzeżeń; regresji nie znaleziono.
