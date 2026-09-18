@@ -53,3 +53,18 @@ dla wszystkich trybów.
   odrzuty, tolerancja), `test/aplikacja.test.js` (kształt wpisu L2).
 - Dokumenty: ADR 0010 + ADR 0052 (aneksy 2026-09-18), ARCHITECTURE, ASSETS.
 - Bump `?v=` idzie z dalszą partią (aplikacja + prompt razem na iPhona).
+
+## Aneks 2026-09-18 — L1 skanuje wszystkie wpisy; dokarmienie z L2 niesie kotwicę źródła
+
+Właściciel: ściągnięty szeroki wpis (koszyk 25000) powinien obsłużyć grę
+o R=1000 także 5 km od kotwicy (inna komórka geohash6) — okrąg gry mieści
+się w dysku wpisu, więc Overpass nie ma prawa być wołany.
+
+1. Skan L1 po pudle klucza dokładnego obejmuje WSZYSTKIE klucze
+   `okolica:sieci:*`, nie tylko komórkę startu — o pokryciu rozstrzyga
+   `czyWpisPokrywa`, identycznie jak w L2. Wpis z sąsiedniej komórki lub
+   szerszego koszyka obsługuje grę bez mostu i bez Overpass.
+2. Dokarmienie L1 z L2 zapisuje wpis z kotwicą i koszykiem ŹRÓDŁA (nie
+   bieżącej gry), więc prawdziwy zasięg danych działa też w L1; wpis
+   źródła walidowany (`czyWspolrzedneOk` + kanon koszyków), inaczej
+   kotwica = środek gry jak dotąd.
