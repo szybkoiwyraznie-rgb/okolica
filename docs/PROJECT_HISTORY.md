@@ -7486,3 +7486,11 @@ baza `022faea`; `git diff 022faea..5a093ae`, plik po pliku):
 
 Regresja na `main`: `npm test` **864/864**, `npm run brama` **EXIT 0**
 (budżet lektury 99 785/100 000). **Wynik: bez zastrzeżeń.**
+
+## 2026-09-18 (kontynuacja 5) — sesja `arena/01a0b56f-okolica`: audyt PR #46, PR #47
+
+Sesja bez nowych uwag z terenu — pętla obowiązkowa: lektura startowa
+(AGENTS §0, całość), zielona baza (864/864), audyt poprzedniego scalonego
+PR #46 (**bez zastrzeżeń** — wpis wyżej). Kod aplikacji nietknięty, więc
+cache-busting zostaje `m12-166`; nowy draft PR **#47** na gałęzi sesji.
+Zamknięcie: `docs/setup/HANDOFF_2026-09-18f.md`.
