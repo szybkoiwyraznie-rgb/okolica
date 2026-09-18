@@ -49,20 +49,12 @@ ADR 0009 (hot-seat — rewizja przy M11), ADR 0013 (prywatność — zgody przy
 nowych danych), ADR 0017 (zestawy), plan `2026-09-06-m9b-most-drive.md`,
 BACKLOG B17, ROADMAP M11/M12.
 
-## Aneks (2026-09-07): ostatni krok instrukcji się zmienia (ADR 0020)
+## Aneksy 2026-09-07 (ADR 0020) i 2026-09-12 (m12-66) są w archiwum (poza budżetem lektury)
 
-Pkt 3 pozostaje w mocy (wdrożenie przez właściciela, instrukcja w czacie),
-ale jej ostatni krok NIE polega już na wklejeniu adresu w aplikacji. Od ADR
-0020 adres web app jest stałą w kodzie: właściciel po wdrożeniu podaje adres
-w czacie, agent wpisuje go do `DOMYSLNY_URL_MOSTU` w `app/most.js` (jeden
-commit razem z podbiciem cache-bustingu), a aplikacja działa bez konfiguracji
-na każdym urządzeniu — także na telefonach znajomych, co jest warunkiem gry
-wieloosobowej z pkt 2. Pola wpisywania adresu zniknęły z interfejsu; zostały
-jawny stan mostu i przycisk „🔌 Sprawdź połączenie". Pliki `docs/setup/`
-nadal są wersjami roboczymi i źródłem prawdy dla testów/kontraktów, z tym że
-`most-drive-instrukcja.md` §4 opisuje przekazanie adresu w czacie zamiast
-wklejania w UI.
-
+Instrukcja wdrożenia idzie czatem, a adres mostu jest stałą w kodzie (ADR 0020)
+— pól wpisywania adresu nie ma; przycisk „🔌 Sprawdź połączenie” usunięty
+2026-09-12 (stan mostu jest jawnym tekstem).
+`docs/decisions/archive/aneksy-0018-2026-09-07-do-12.md` (L62/L66, archiwizacja 2026-09-18).
 ## Aneks (2026-09-12): przycisk „🔌 Sprawdź połączenie" usunięty (m12-66)
 
 Dwie wzmianki — w Konsekwencjach („żywa próba CORS wydarzy się przez przycisk")

@@ -7238,3 +7238,53 @@ Punkt „ponowne wdrożenie mostu (poziomyPytan/poziom/slug)” znika z otwartyc
 aplikacja i lustro `.gs` się nie zmieniły; konsekwencja dla gry: cache L2
 sieci (ADR 0052) od tej pory odpowiada na żywo. Nowy handoff:
 `docs/setup/HANDOFF_2026-09-18.md` (najnowszy).
+
+## 2026-09-18 — uwagi terenowe: etykieta „Dziecko”, cache buckety (ADR 0059), prompt bez współrzędnych (ADR 0060, PYT/1.4), bramka stacji (ADR 0061)
+
+**Uwagi terenowe właściciela (2026-09-18) — wszystkie cztery wdrożone:**
+
+1. Etykieta poziomu gracza „Dziecko (8–10)” → „Dziecko” (commit `852309c`).
+2. **Cache sieci drogowej (ADR 0059)**: klucz = komórka geohash6 + bucket
+   promienia (1000/5000/10000/25000 m), trybu w kluczu NIE MA (dane to unium
+   klas dróg dla wszystkich trybów), pobranie = bucket × 1,15, tolerancja
+   pokrycia 1400 m (przekątna komórki geohash6); L1 + L2 + lustro `.gs`
+   spójne; bez migracji — właściciel kasuje 3 stare pliki L2 z Drive (commit
+   `9129f51`).
+3. **Współrzędnych nie ma w prompcie ani w paczce (ADR 0060)**: znika linia
+   „środek gry: {LAT}, {LON}” i współrzędne stacji; walidacja traci E17 i
+   odległość środka w E16; `okolica` paczki = `{ promienM, miejsce }`;
+   protokół `PYT/1.4`, szablony `PYT/1.4.0` / `PYT/1.4-nofc.0`; stare paczki
+   niosące `lat/lon` zostają czytelne (dodawczość); strażnik synchronizacji
+   szablonu dostał nowe listy wymaganych placeholderów
+   (`tools/synchronizuj-szablon.mjs`)
+   (commit `ac030ef`).
+4. **Bramka ekranu stacji (ADR 0061)**: gra realna bez sieci drogowej — albo z
+   siecią, która nie dała dróg dla trybu (S09) — NIE STARTUJE: jawny stop
+   („Stacji nie rozstawiono”), przycisk „Dalej” zablokowany w rytmie ze stanem
+   (L10), „Inny układ” znika, „Pobierz sieć ponownie” zostaje; pierścień
+   „osiągalność niezweryfikowana” zostaje wyłącznie trybowi testowemu
+   (symulacje); trasa-sekret = ten sam stop. Aneks ADR 0005 pkt 8. Decyzja do
+   przeglądu właściciela w PR #44 (ten commit).
+
+**L59 powtórzył się (drugi raz tego dnia):** sandbox resetował lokalny `.git`
+gałęzi na świeży clone (`44c80e1`), podczas gdy tip odległy był `c19344e`, a
+praca cache leżała jeszcze niezacommitowana. Odzyskanie: snapshot drzewa
+`tar --exclude=.git` do /tmp ZANIM `git reset --hard FETCH_HEAD`, potem
+cherry-pick dwóch gotowych commitów (czysto) i commit cache po odtworzeniu
+plików ze snapshotu. Od tej pory odległa gałąź jest trwałym magazynem —
+popychać po każdym zielonym commicie.
+
+**Budżet lektury:** dokumentacja sesji (ADR 0059/0060/0061 + aneksy) przebiła
+limit (102 056) — zarchiwizowano 18 historycznych aneksów z 14 ADR-ów (14 plików) do
+`docs/decisions/archive/` ze wskaźnikami z datą (L62/L66): 0005-09-16,
+0006-09-16d, 0008-09-09, 0009-09-09, 0011-09-16d…17, 0018-09-07…12,
+0028-09-09, 0029-09-12…13b, 0034-09-10, 0036-09-13 (m12-101/102),
+0042-09-16d, 0047-09-15, 0048-09-15, 0053-09-17 → **99 253 / 100 000
+(rezerwa 747)**.
+
+**Brama:** `npm test` **858/858**, `npm run brama` **EXIT 0**; `?v=` i
+`WERSJA_SW` `m12-161` → `m12-162`.
+
+Kolejka: zadania właściciela z handoffu (ponowne wdrożenie `.gs`, kasowanie 3
+plików L2, test iPhona na `m12-162`, przegląd ADR 0061 w PR #44), potem
+**uwagi z terenu** (L68).

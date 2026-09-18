@@ -63,9 +63,11 @@ Koniec sesji:
    2026-09-12).
 3. Ekran **stacji**: aplikacja pobiera sieć drogową okolicy (Overpass) i rysuje
    stacje; „🔄 Inny układ” losuje od nowa. Gdy sieć jest za uboga, gra ma tyle
-   stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci gra
-   schodzi do pierścienia z jawnym komunikatem („osiągalność
-   niezweryfikowana”).
+   stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci
+   (albo zero dróg dla trybu — S09) **gra nie startuje**: jawny stop („Stacji
+   nie rozstawiono”), „Dalej” zablokowany, wyjście = „Pobierz sieć ponownie”
+   albo zmiana okolicy/trybu (ADR 0061). Pierścień „osiągalność
+   niezweryfikowana” istnieje tylko w trybie testowym (symulacje).
 4. Ekran **pytań**: „⧉ Kopiuj prompt” kopiuje do schowka i **od razu
    przechodzi** na ekran 5 (uwaga terenowa 2026-09-16) — chyba że schowek
    odmówił, wtedy tekst zostaje zaznaczony i aplikacja zostaje na miejscu,

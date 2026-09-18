@@ -561,9 +561,10 @@ test('mapa: pierwszy fix rysuje marker BEZ koła dokładności i centruje widok 
 });
 
 test('mapa: przejście do stacji rysuje numerowane pinezki i okrąg promienia', async () => {
-  const domMapy = await aplikacjaZMapa();
-  const gpsMapy = domMapy.gps;
-  gpsMapy.wyslijFix(52.235, 21.015, 15);
+  // ADR 0061: tryb testowy — w grze realnej bez sieci stacji NIE MA
+  // (jawny stop), a test sprawdza rysowanie mapy, nie źródło układu.
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
+  domMapy.ustawPozycje('52.235', '21.015'); // tryb testowy: pozycja z tapnięcia mapy
   domMapy.kliknij('przycisk-dalej-stacje');
 
   assert.equal(domMapy.pobierz('ekran-stacje').hidden, false);
@@ -609,9 +610,8 @@ test('mapa: pozycja z tapnięcia mapy w trybie testowym nie udaje koła dokładn
 });
 
 test('mapa: schowany panel nie rysuje, a powrót na ekran przywraca warstwy', async () => {
-  const domMapy = await aplikacjaZMapa();
-  const gpsMapy = domMapy.gps;
-  gpsMapy.wyslijFix(52.235, 21.015, 15);
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' }); // ADR 0061: stacje są tylko w trybie testowym bez sieci
+  domMapy.ustawPozycje('52.235', '21.015'); // tryb testowy: pozycja z tapnięcia mapy
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.ok(domMapy.pobierz('mapa-stacje-pinezki').children.length > 0);
 
@@ -637,14 +637,13 @@ test('mapa: obrót telefonu (resize) przelicza widok na nowy rozmiar panelu', as
 });
 
 test('mapa: wyczyszczone pole stacji nie wysypuje przejścia — jest jawna odmowa z kodem K10', async () => {
-  const domMapy = await aplikacjaZMapa();
-  const gpsMapy = domMapy.gps;
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' }); // ADR 0061: stacje są tylko w trybie testowym bez sieci
   // Czas gry nie jest już polem (uwaga A, 2026-09-15) — nie ma czym wpisać
   // zera, więc ten sam tor sprawdza pole, które zostało: gracz czyści liczbę
   // stacji → `Number('') = 0`, czyli wartość skończona, która przechodzi przez
   // hartowanie liczb w setupie. Odmowa musi przyjść z walidacji (K10).
   wyslij(domMapy.pobierz('setup-stacje'), 'input', { target: { value: '' } });
-  gpsMapy.wyslijFix(52.235, 21.015, 15);
+  domMapy.ustawPozycje('52.235', '21.015'); // tryb testowy: pozycja z tapnięcia mapy
 
   // przejście ma odmówić, a nie urwać się wyjątkiem w nasłuchu (LESSONS L10)
   domMapy.kliknij('przycisk-dalej-stacje');
@@ -1138,6 +1137,67 @@ test('stacje: degradacja bez sieci = sam pierścień, bez trybu ręcznego (teren
   const pinezki = domAtrapa.pobierz('mapa-stacje-pinezki');
   assert.ok(pinezki.children.length >= 3, 'pierścień rozstawiony na mapie');
   assert.equal(pinezki.children[0].zdarzenia.pointerdown, undefined, 'pinezki nie dają się przeciągać');
+});
+
+test('stacje: realna gra bez sieci NIE STARTUJE — „Dalej” zablokowany (ADR 0061)', async () => {
+  // Właściciel 2026-09-18: bez danych sieci drogowej pytań nie da się
+  // wygenerować (kotwice = nazwy z sieci), więc zamiast cichego pierścienia
+  // jawny stop. Tryb realny = brak parametru testowego.
+  const domAtrapa = await aplikacjaZSiecia({ search: '' });
+  ustawPozycjeTestowa(domAtrapa);
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  // BEZ await — bez window.fetch cała ścieżka jest synchroniczna
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /Stacji nie rozstawiono/,
+    'podsumowanie mówi wprost, że stacji NIE MA');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /bez sieci dróg nazw nie ma/,
+    'powód: pytania powstają z nazw miejsc');
+  assert.equal(domAtrapa.pobierz('przycisk-dalej-prompt').disabled, true,
+    '„Dalej” zablokowany w rytmie ze stanem');
+  assert.equal(domAtrapa.pobierz('przycisk-przelicz').hidden, true,
+    '„Inny układ” nie ma tu sensu — układu nie rozstawimy');
+  assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false,
+    '„Pobierz sieć ponownie” to droga wyjścia');
+  // Nawet wymuszony klik „Dalej” nie otwiera promptu — straż waliduje STAN (L10),
+  // nie wygląd DOM.
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, true,
+    'ekran promptu się nie otwiera, gdy stacji nie rozstawiono');
+  assert.match(domAtrapa.pobierz('status').textContent, /stacji nie rozstawiono/i);
+});
+
+test('stacje: realna gra + S09 (zero dróg dla trybu) = blokada, nie pierścień (ADR 0061)', async () => {
+  // Sieć PRZYSZŁA, ale nie dała ani jednej drogi dla wybranego trybu —
+  // `grafDlaTrybu` pokazuje S09, a gra realna idzie w ten sam jawny stop.
+  const domAtrapa = await aplikacjaZSiecia({ search: '' });
+  ustawPozycjeTestowa(domAtrapa);
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) {
+      return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło
+    }
+    if (String(opcje?.method ?? '').toUpperCase() === 'POST') {
+      // tylko motorway: droga w sensie OSM, ale wykluczona dla pieszego
+      // (konfig TRYBY.piesza.wykluczoneKlasy) → graf jest pusty → S09.
+      return { ok: true, status: 200, text: async () => JSON.stringify({
+        version: 0.6,
+        elements: [{
+          type: 'way', id: 90001,
+          geometry: [{ lat: 52.228, lon: 21.011 }, { lat: 52.229, lon: 21.012 }, { lat: 52.230, lon: 21.013 }],
+          tags: { highway: 'motorway', name: 'S8' },
+        }],
+      }) };
+    }
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(300);
+  assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, false);
+  assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /\[S09\]/,
+    'jawny powód: zero dróg dostępnych dla trybu');
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /Stacji nie rozstawiono/);
+  assert.equal(domAtrapa.pobierz('przycisk-dalej-prompt').disabled, true,
+    'S09 blokuje „Dalej” tak samo jak brak sieci');
+  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('pierścień'),
+    'żadnego cichego układu zastępczego w grze realnej');
 });
 
 /* --------------------------------------- M5/J3: podgląd i edycja organizatora */
@@ -3328,15 +3388,24 @@ test('droga w terenie (bez ?tryb=test): nad mapą zostaje sam pasek, symulacji n
   // kaskady CSS: `hidden` na przodku gasi potomków w przeglądarce (pomiar
   // headless Chromium 153: `#gra-panel-odcinek` 0×0, `offsetParent` null),
   // a `kliknij` w atrapie nie pyta o renderowanie (LESSONS L13).
+  // ADR 0061: realna gra bez sieci NIE STARTUJE — test idzie więc realną
+  // drogą z SIECIĄ: cache L1 (telefon pamięta okolicę) dostarcza układ
+  // synchronicznie, bez fetch i bez czekania.
+  const pamiec = pamiecKonfig3x1();
+  const daneCentrum = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  pamiec.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
+    JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane: daneCentrum }));
   const gpsTeren = atrapaGeolokalizacji();
-  const dom = await naEkranPozycji(zainstalujDom, gpsTeren.geolocation, 'drogateren');
+  const dom = zainstalujDom({ geolocation: gpsTeren.geolocation, pamiec });
+  await import(`../app/app.js?drogateren=${Math.random().toString(36).slice(2)}`);
   dom.kliknij('przycisk-dalej-pozycja');
   await czekaj(30); // bramka tożsamości jest asynchroniczna
   assert.equal(dom.pobierz('ekran-pozycja').hidden, false, 'setup przeszedł na ekran pozycji');
   gpsTeren.wyslijFix(52.2297, 21.0122, 12);
   assert.match(dom.pobierz('pozycja-status').textContent, /Pozycja ustalona/, 'fix z GPS ustawił pozycję');
   dom.kliknij('przycisk-dalej-stacje');
-  await czekaj(30);
+  assert.match(dom.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'realna gra idzie przez sieć z cache');
+  assert.equal(dom.pobierz('przycisk-dalej-prompt').disabled, false, 'stacje z sieci odblokowują „Dalej”');
   dom.wklej('pole-odpowiedz', JSON.stringify(czytajFixturePaczka()));
   assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka sama zaczęła grę');
   dom.kliknij('przycisk-start-odcinka');

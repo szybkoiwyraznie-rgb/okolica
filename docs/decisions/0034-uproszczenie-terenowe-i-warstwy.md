@@ -45,12 +45,9 @@ frameworków, zależności ani zmian mostu. Próba w przeglądarce nie zastępuj
 kolejnego testu terenowego właściciela.
 
 
-## Aneks 2026-09-10 — potwierdzenie dojścia
+## Aneks 2026-09-10 (potwierdzenie dojścia) jest w archiwum
 
-Po rozważeniu ochrony przed pojedynczym skokiem pozycji właściciel zatwierdził
-**dwa kolejne pomiary ≤50 m**, zamiast pierwotnego jednego. Nierówność została
-jawnie potwierdzona: równe lub mniej niż 50 m. Odczyt poza promieniem przerywa
-serię; trzeba ponownie zebrać dwa trafienia. Nie przywracamy oceny accuracy.
-Dotyczy GPS i symulacji, również podczas podglądu mapy. Brak dodatkowego
-odliczania czasu: czekamy na następny pomiar. Profil GPS przy stacji pozostaje
-aktywny jak dotychczas; częstotliwość faktycznych odczytów zależy od urządzenia.
+Dojście potwierdza DWIE kolejne pomiaru ≤ 50 m (zamiast jednego) — odczyt poza
+promieniem przerywa serię; bez dodatkowego odliczania czasu; GPS i symulacja
+tak samo. `docs/decisions/archive/aneksy-0034-2026-09-10.md` (L62/L66,
+archiwizacja 2026-09-18).

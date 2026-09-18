@@ -69,13 +69,21 @@ w pierścieniu `0,7R ± 20%` z separacją kątową i sieciową oraz pasem
 wyrównującym dystanse. Lista pokazuje **dystans drogą**, nie w linii prostej,
 a wiersz trybu mówi, czy stacje **zlokalizowano na sieci** (i czy sieć przyszła
 z pamięci telefonu). Sieć jest zapisywana na telefonie
-(`okolica:sieci:<geohash6>-<R>-<tryb>`, 30 dni) — druga gra w tej samej okolicy nie
-woła Overpass wcale, a wpis z szerszego pobrania działa też dla węższego setupu. Świeże pobranie ląduje też na wspólnym Drive (cache L2) — drugi telefon w tej okolicy nie woła Overpass. Gdy sieci nie ma (offline, limit instancji), degradacja
-jest jawna i **automatyczna**: gra schodzi do pierścienia z komunikatem
-„osiągalność niezweryfikowana" — aplikacja nigdy nie udaje, że punkty są
-osiągalne. Przycisk wymuszający pierścień zniknął z ekranu (decyzja
-właściciela 2026-09-11), a tryb ręczny z przeciąganiem pinezek — 2026-09-16
-(teren: drag nie działał na iPhonie); kontrakt pilnuje braku obu.
+(`okolica:sieci:<geohash6>-<bucket>`, bucket to pierwszy z
+1000/5000/10000/25000 m ≥ promienia gry, 30 dni, ADR 0059) — klucz NIE niesie
+trybu, bo dane są unium klas dla wszystkich trybów, i druga gra w tej samej
+okolicy nie woła Overpass wcale (wpis z szerszego pobrania działa też dla
+węższego setupu). Świeże pobranie ląduje też na wspólnym Drive (cache L2) —
+drugi telefon w tej okolicy nie woła Overpass. Gdy sieci nie ma (offline,
+limit instancji) albo nie dała dróg dla trybu (S09), **gra realna nie
+startuje** — pytania powstają z nazw miejsc (OpenStreetMap), więc bez nazw
+nie ma czego kotwiczyć (ADR 0061, właściciel 2026-09-18): ekran stacji
+pokazuje jawny stop, „Dalej” jest zablokowany, a wyjściem jest „Pobierz sieć
+ponownie”, zmiana okolicy albo trybu. Pierścień z komunikatem „osiągalność
+niezweryfikowana” zostaje wyłącznie w trybie testowym (symulacje). Przycisk
+wymuszający pierścień zniknął z ekranu (decyzja właściciela 2026-09-11), a
+tryb ręczny z przeciąganiem pinezek — 2026-09-16 (teren: drag nie działał na
+iPhonie); kontrakt pilnuje braku obu.
 
 **M5 — pętla pytań: kod i testy gotowe.** Ekran promptu ma instrukcję
 obrazkową (cztery kroki jako inline SVG, zero plików zewnętrznych),
