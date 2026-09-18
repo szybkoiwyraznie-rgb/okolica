@@ -7288,3 +7288,57 @@ limit (102 056) — zarchiwizowano 18 historycznych aneksów z 14 ADR-ów (14 pl
 Kolejka: zadania właściciela z handoffu (ponowne wdrożenie `.gs`, kasowanie 3
 plików L2, test iPhona na `m12-162`, przegląd ADR 0061 w PR #44), potem
 **uwagi z terenu** (L68).
+
+## 2026-09-18 (kontynuacja) — sesja `arena/01a0b45e-okolica`: audyt PR #44, bramki startu gry
+
+**Audyt poprzedniego scalonego PR #44** (squash `c54e018` na `main`,
+baza `44c80e1`; `git diff 44c80e1..c54e018`, plik po pliku):
+
+- `app/app.js` — cache trybowo niezależne wyprowadzone z kluczy i warunków
+  (ADR 0059) bez pozostałych zależności od trybu; bramka ADR 0061 w
+  jednym miejscu (`przeliczZTegoCoJest` + `zablokujStacje` +
+  `renderujStacje` + nasłuch „Dalej” z walidacją STANU wg L10); komunikaty
+  stopu spójne z decyzją; dopisek wraca przez helper `ADR()` tylko w trybie
+  testowym — zgodnie z konwencją UI.
+- `app/sieci.js` — bucket (1000/5000/10000/25000), klasy UNIWERSALNE jako
+  unium klas z `TRYBY`, `SCHEMAT_SIECI` = `sieci/2`, tolerancja kotwicy
+  1400 m ≈ przekątnej geohash6; walidacje S05/S06 zachowane; determinizm
+  zapytania zachowany.
+- `docs/setup/apps-script-repo-paczek.gs` — lustro L2 w parzystości ze
+  schematem `sieci/2` (stałe i `bucketPromieniaSieci` zgodne 1:1).
+- Testy `aplikacja`/`sieci`/`most-sieci`/`protokol` — nowe piny ADR-y
+  (brak pierścienia w grze realnej, blokada „Dalej”, bucket jako klucz);
+  całość `npm test` w stanie `main` przeliczona ponownie: **858/858**.
+- Dokumenty: ADR 0059/0060/0061 + rejestr, PROTOKOL PYT/1.4 zsynchronizowany
+  ze stałymi `SZABLON_*` (narzędzie `synchronizuj-szablon.mjs`), budżet
+  lektury 99 253/100 000 po archiwizacji aneksów.
+
+**Wynik audytu:** bez zastrzeżeń; regresji nie znaleziono. Szczegóły
+odwracalności bramki zostają do decyzji właściciela (uwaga otwarta z
+handoffu 2026-09-18, pkt 1).
+
+Praca sesji ciąglej niżej — bramki startu gry (uzupełnienie ADR 0061).
+
+**Bramki startu gry multi (`6f657b1`):** stan gry z mostu bez stacji był już
+odrzucany walidacją (R08) z jawnym statusem w `onStanGryMulti`; dopełnienie:
+`uruchomGreMulti` sam zatrzymuje grę bez stacji komunikatem „stan z mostu
+nie niesie stacji”, a `nowaRozgrywka` nadal egzekwuje niepuste stacje
+wymaganiem granicznym. Regresja: nowy scenariusz korupcji w
+`wieloosobowa-ui` ([R08] w statusie, ekran gry nie otwiera się, przycisk
+startu nie wisi w „Łączę z siecią” — L77, po naprawie mostu polling
+startuje grę sam) + piny kontraktowe. `?v=`/`WERSJA_SW`: `m12-163`.
+Brama: `npm test` **860/860**, `npm run brama` **EXIT 0**, budżet
+**99 253/100 000**.
+
+**Incydent środowiskowy (zamknięty):** token GitHub wygasł po pierwszym
+pushu — `6f657b1` i commit zamknięcia czekały lokalnie do reconnect;
+wypchnięte bez `--force`.
+
+**Uwaga właściciela powtórzona (`85e2bd6`):** etykieta „Dziecko (8–10)” wciąż
+widniała na ekranie SETUP — PR #44 zmienił napis tylko w wyborze poziomu
+MULTI, a przycisk przy imieniu w liście graczy `renderujListeGraczy` przeniósł
+starą etykietę literałem (komentarz obok już obiecywał nowy — dryf komentarz/
+UI). Poprawka: przycisk „🧒 Dziecko” (aria „dziecko”), komentarz index.html
+sprostowany, wiek zostaje wyłącznie w `POZIOMY.dzieci.etykieta` (prompt).
+Strażnicy: fraza w `dryf-dokumentow` + pin kontraktowy na oba renderery.
+`?v=`/`WERSJA_SW` → `m12-164`; brama: `npm test` **861/861**, EXIT 0.

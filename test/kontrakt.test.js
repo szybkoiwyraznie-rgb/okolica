@@ -158,6 +158,19 @@ test('kontrakt 2026-09-09: opis trybu promptu mówi teksty właściciela, słowo
     'opis trybu nie miesza już wersji szablonu (właściciel, 2026-09-09)');
 });
 
+test('kontrakt 2026-09-18 (uwaga powtórzona): przycisk poziomu gracza mówi „🧒 Dziecko”, bez wieku', () => {
+  // Poprzednia fala (PR #44) zmieniła etykietę w wyborze poziomu MULTI, ale
+  // przeoczyła odpowiednik na ekranie SETUP (lista graczy) — oba miejsca
+  // mają ten sam krótki napis; wiek zostaje wyłącznie w opisie poziomu
+  // dla modelu (POZIOMY.dzieci.etykieta → prompt).
+  assert.match(APP, /b\.textContent = klucz === 'dzieci' \? '🧒 Dziecko' : '🧑 Dorosły';/,
+    'setup (lista graczy): przycisk poziomu bez wieku');
+  assert.match(APP, /const etykiety = \{ dzieci: '🧒 Dziecko', dorosli: '🧑 Dorośli' \};/,
+    'multi (wybór poziomu przed grą): ta sama krótka etykieta');
+  assert.ok(!/🧒 Dziecko \(8–10\)/.test(APP) && !/🧒 Dziecko \(8–10\)/.test(INDEX),
+    'wiek nie wraca na żaden przycisk poziomu (strażnik: dryf-dokumentow)');
+});
+
 /* ------------------------------------------------- kanony treści: doc ↔ kod */
 
 test('kontrakt: kategorie wiekowe w protokole §4 = WIEK w app/konfig.js', () => {
@@ -1977,6 +1990,30 @@ test('kontrakt ADR 0044: start gry wieloosobowej odlicza 5-4-3-2-1-START, a pote
     'poza zamkniętą grą sieciową wynik liczy się lokalnie (hotseat bez zmian)');
   assert.match(APP, /pokazWyniki\(\);\n {4}renderujGre\(\);/,
     'zamknięcie gry w moście odświeża ekran wyniku ZAWSZE — także u gracza, który skończył wcześniej');
+});
+
+/* ------------- ADR 0061 (dopełnienie 2026-09-18): gra multi bez stacji z mostu
+   nie startuje — jawny status z kodem R08, zero wyjątków z maszynki stanów */
+
+test('kontrakt ADR 0061 (dopełnienie): gra multi bez stacji = jawny status, nie wyjątek', () => {
+  const ROZG = czytaj('app/rozgrywka.js');
+  // 1. Stan z mostu jest walidowany (kody R) jeszcze w nasłuchu, zanim
+  //    dotknie renderu i maszynki tur — gra bez stacji (R08) nie startuje.
+  assert.match(APP, /walidujGreSurowa\(JSON\.stringify\(gra\)\)/,
+    'stan gry z mostu przechodzi walidację przed wszystkim innym');
+  assert.match(APP, /Most zwrócił uszkodzony stan gry/,
+    'uszkodzony stan = jawny status z kodem usterki, nie wyjątek w pollingu');
+  // 2. Bramka porządkująca przy wejściu do gry: `nowaRozgrywka` wymaga
+  //    niepustych stacji wyjątkiem, więc wejście do gry sprawdza listę samo
+  //    i daje graczowi komunikat, co się stało.
+  assert.match(APP, /if \(!stacjeGry\.length\) \{/,
+    'uruchomGreMulti zatrzymuje start gry bez stacji');
+  assert.match(APP, /stan z mostu nie niesie stacji\./,
+    'komunikat mówi wprost, że gra nie dostała stacji z mostu');
+  // 3. Wymaganie maszynki stanów zostaje na swoim miejscu — pustej listy
+  //    stacji NIE wolno „naprawiać” obejściami granicznymi.
+  assert.match(ROZG, /wymaganie\(Array\.isArray\(stacje\) && stacje\.length > 0, 'stacje muszą być niepustą listą'\);/,
+    'rozgrywka nadal odrzuca puste stacje wymaganiem (żadnych cichych wyjątków)');
 });
 
 /* ------------- ADR 0043: koniec gry za ikoną ⚙ START GRY, z wpisaniem TAK */
