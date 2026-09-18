@@ -7449,3 +7449,48 @@ Chromium, gra realna bez internetu, wpisy tylko spoza komórki gry —
 
 **Wynik:** `npm test` 864/864; `npm run brama` EXIT 0 (budżet lektury
 99 785 / 100 000). Zamknięcie: `docs/setup/HANDOFF_2026-09-18e.md`.
+
+## 2026-09-18 (kontynuacja 5) — audyt scalonego PR #46
+
+**Audyt poprzedniego scalonego PR #46** (squash `5a093ae` na `main`,
+baza `022faea`; `git diff 022faea..5a093ae`, plik po pliku):
+
+- `app/app.js` — (1) `odczytajCacheSieci`: po pudle klucza dokładnego
+  pełny skan `okolica:sieci:*` (nie tylko komórka startu) — spójne z
+  ADR 0059 aneks, pokrycie rozstrzyga geometria `czyWpisPokrywa`
+  identycznie jak L2; (2) `zapiszCacheSieci` z kotwicą ŹRÓDŁA przy
+  dokarmianiu L1 z L2 — kotwica walidowana (`czyWspolrzedneOk` + kanon
+  koszyków `GRANICE_BUKETOW_SIECI`), a `zlozWpisSieci` normalizuje
+  `promienM` przez `bucketPromienia`, więc też ścieżka awaryjna (kotwica
+  = środek gry) zapisuje koszyk, nie R gry; (3) karty sieciowe usunięte
+  z `pobierzSiec` (S03), `grafDlaTrybu` (S09) i catcha
+  `przeliczZTegoCoJest`; `zablokujStacje` i `pierścieńTrybTestowy`
+  czyszczą `bledy-stacje`; karty przy ISTNIEJĄCYCH stacjach (S12/S14 z
+  `zlozKarteUsterekStacji`) nietknięte — nie dublują stopu.
+- Pozostałe `app/*.js` — wyłącznie podbicie `?v=` `m12-164 → m12-166`;
+  w `app/protokol.js` dodatkowo WE03 wskazuje istniejące wyjścia
+  (ponowienie sieci, zmiana okolicy lub trybu) zamiast obietnicy trybu
+  uproszczonego; `docs/PROTOKOL.md` nie niesie tekstu WE03, więc dryfu
+  nie ma.
+- `index.html` / `sw.js` — `m12-166` jednolite (`WERSJA_SW` zgodna;
+  grep po całym repo nie znajduje innej wersji).
+- Testy: nowy test wpisu z SĄSIEDNIEJ komórki geohash6 (0 wołań sieci,
+  „z pamięci telefonu”) + test dokarmienia L1 (koszyk/kotwica źródła);
+  odwrócone piny [S03]/[S09] (tryb testowy — diagnostyka w `#siec-proby`;
+  gra realna — pole puste i schowane, „Dalej” zablokowane); kontrakt
+  pilnuje braku ad-hoc kart i sprzątania w `zablokujStacje`; dryf pilnuje
+  martwych fraz.
+- Dokumenty: aneksy ADR 0059 (skan L1 + kotwica źródła) i ADR 0061 (stop
+  bez czerwonej karty; pkt 5 o karcie S09 uchylony) zgodne z kodem;
+  handoffy 2026-09-18c–e i wpisy historii sesji kont. 2–4 w paczce.
+
+Regresja na `main`: `npm test` **864/864**, `npm run brama` **EXIT 0**
+(budżet lektury 99 785/100 000). **Wynik: bez zastrzeżeń.**
+
+## 2026-09-18 (kontynuacja 5) — sesja `arena/01a0b56f-okolica`: audyt PR #46, PR #47
+
+Sesja bez nowych uwag z terenu — pętla obowiązkowa: lektura startowa
+(AGENTS §0, całość), zielona baza (864/864), audyt poprzedniego scalonego
+PR #46 (**bez zastrzeżeń** — wpis wyżej). Kod aplikacji nietknięty, więc
+cache-busting zostaje `m12-166`; nowy draft PR **#47** na gałęzi sesji.
+Zamknięcie: `docs/setup/HANDOFF_2026-09-18f.md`.
