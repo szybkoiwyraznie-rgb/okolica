@@ -417,6 +417,14 @@ test('kontrakt: przycisku trybu testowego NIE MA — wejście tylko przez ?test=
 
   assert.match(INDEX, /id="bledy-stacje"[^>]*role="alert"/, 'błędy sieci drogowej w polu role=alert (nie alert())');
 
+  // Uwaga terenowa 2026-09-18 (1): błędy sieci NIE mają czerwonej karty na
+  // ekranie stacji — jawny stop (ADR 0061) i pierścień (tryb testowy) są
+  // pełnymi komunikatami, a diagnostyka prób siedzi w ⓘ Informacje.
+  assert.ok(!/pokazBledy\('bledy-stacje', \[\{/.test(APP),
+    'żadnej ad-hoc czerwonej karty na ekranie stacji — układ/stop jest pełnym komunikatem');
+  assert.match(APP, /function zablokujStacje\(\) \{[\s\S]*?pokazBledy\('bledy-stacje', \[\]\)/,
+    'jawny stop czyści błędy sieci — jedna pełna wiadomość zamiast zdublowanej karty');
+
   // Decyzja właściciela 2026-09-07: poprawna paczka od razu zaczyna grę —
   // podgląd, ściąganie i edycja zniknęły z ekranu (zadania właściciela na Drive).
   for (const id of ['przycisk-ukryj', 'przycisk-eksport-paczki', 'przycisk-eksport-zestawu', 'przycisk-start-gry', 'podglad-organizatora', 'podglad-pytania', 'wynik-podsumowanie', 'zgoda-drive']) {

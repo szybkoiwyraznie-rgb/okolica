@@ -12,8 +12,8 @@
  * przyjmuje jako parametr (`teraz`), żeby testy były deterministyczne.
  */
 
-import { TEMATY, WIEK, TRYBY, KLUCZE_POZIOMOW, POZIOMY, POZIOM_DORMYSLNY, kanonicznyTemat } from './konfig.js?v=m12-164';
-import { czyWspolrzedneOk, odlegloscM } from './geo.js?v=m12-164';
+import { TEMATY, WIEK, TRYBY, KLUCZE_POZIOMOW, POZIOMY, POZIOM_DORMYSLNY, kanonicznyTemat } from './konfig.js?v=m12-165';
+import { czyWspolrzedneOk, odlegloscM } from './geo.js?v=m12-165';
 
 /** Wersja protokołu — musi zgadzać się z `docs/PROTOKOL.md` i ze stopką aplikacji. */
 export const WERSJA_PROTOKOLU = 'PYT/1.4';
@@ -197,7 +197,7 @@ export function zbudujPrompt({ konfig, okolica, stacje, teraz = new Date(), fact
     dodaj('WE02', 'okolica', 'Brak poprawnej pozycji (współrzędnych) — bez niej prompt nie ma okolicy.');
   }
   if (!Array.isArray(stacje) || stacje.length === 0) {
-    dodaj('WE03', 'stacje', 'Brak stacji — ustaw je (albo użyj trybu uproszczonego), zanim poprosisz model o pytania.');
+    dodaj('WE03', 'stacje', 'Brak stacji — pobierz sieć ponownie albo zmień okolicę lub tryb, zanim poprosisz model o pytania.');
   }
   if (konfig && !TRYBY[konfig.tryb]) dodaj('WE04', 'tryb', `Nieznany tryb „${konfig.tryb}".`);
   // WE05 od ADR 0055: w hot-seacie każdy gracz musi nieść WALIDNY poziom

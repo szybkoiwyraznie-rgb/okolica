@@ -1105,7 +1105,11 @@ test('stacje: 429 przełącza instancje dokładnie w kolejności ASSETS §2 (ane
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'trzecia instancja dowiozła');
 });
 
-test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pierścienia', async () => {
+test('stacje: wszystkie instancje odmawiają → jawna degradacja do pierścienia BEZ czerwonej karty (tryb testowy)', async () => {
+  // Uwaga terenowa 2026-09-18 (1): błędy sieci nie mają czerwonej karty na
+  // ekranie stacji — opis pierścienia mówi wszystko, a szczegóły prób siedzą
+  // w ⓘ Informacje (lista #siec-proby). Właściciel: „Nie wyświetlaj tego
+  // czerwonego komunikatu w ogóle”.
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0' });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   let ileProb = 0;
@@ -1117,8 +1121,10 @@ test('stacje: wszystkie instancje odmawiają → [S03] i jawna degradacja do pie
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(300);
   assert.equal(ileProb, INSTANCJE_OVERPASS.length, 'próbuje wszystkich instancji');
-  assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, false);
-  assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /\[S03\]/);
+  assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, true,
+    'żadnej czerwonej karty — wystarczy opis pierścienia (właściciel 2026-09-18)');
+  assert.match(domAtrapa.pobierz('siec-proby').textContent, /HTTP 504/,
+    'diagnostyka prób zostaje w ⓘ Informacje (ADR 0035 aneks m12-60)');
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /tryb uproszczony/);
   assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /^Wygenerowano \d+ stacji\.$/,
     'degradacja rozstawia pierścień (ADR 0005 pkt 8)');
@@ -1165,6 +1171,34 @@ test('stacje: realna gra bez sieci NIE STARTUJE — „Dalej” zablokowany (ADR
   assert.match(domAtrapa.pobierz('status').textContent, /stacji nie rozstawiono/i);
 });
 
+test('stacje: realna gra + Overpass odmawia = jawny stop BEZ czerwonej karty (uwaga terenowa 2026-09-18)', async () => {
+  // Scenariusz właściciela: wszystkie instancje Overpass odmówiły, a ekran
+  // stacji pokazywał pod jawnym stopem zdublowaną czerwoną ramkę „[S03] siec:
+  // Nie udało się pobrać sieci dróg (…) użyj trybu uproszczonego” — powtórzenie
+  // tego samego komunikatu, z literówką i obietnicą trybu, którego w grze
+  // realnej nie ma. Decyzja: czerwonej ramki nie wyświetlamy w ogóle.
+  const domAtrapa = await aplikacjaZSiecia({ search: '' });
+  ustawPozycjeTestowa(domAtrapa);
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło
+    return { ok: false, status: 403 }; // bez pauzy 1 s — łańcuch przechodzi od razu
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(300);
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /Stacji nie rozstawiono/,
+    'jawny stop: podsumowanie mówi, że stacji nie ma');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /bez sieci dróg nazw nie ma/,
+    'jawny stop: powód i droga wyjścia w jednym tekście');
+  assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, true,
+    'czerwona ramka [S03] usunięta — komunikat stopu opisuje wszystko');
+  assert.equal(domAtrapa.pobierz('bledy-stacje').textContent, '',
+    'pole błędów puste, nie tylko schowane');
+  assert.equal(domAtrapa.pobierz('przycisk-dalej-prompt').disabled, true,
+    '„Dalej” zablokowany w rytmie ze stanem');
+  assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false,
+    '„Pobierz sieć ponownie” zostaje jako droga wyjścia');
+});
+
 test('stacje: realna gra + S09 (zero dróg dla trybu) = blokada, nie pierścień (ADR 0061)', async () => {
   // Sieć PRZYSZŁA, ale nie dała ani jednej drogi dla wybranego trybu —
   // `grafDlaTrybu` pokazuje S09, a gra realna idzie w ten sam jawny stop.
@@ -1190,9 +1224,8 @@ test('stacje: realna gra + S09 (zero dróg dla trybu) = blokada, nie pierścień
   };
   domAtrapa.kliknij('przycisk-dalej-stacje');
   await czekaj(300);
-  assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, false);
-  assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /\[S09\]/,
-    'jawny powód: zero dróg dostępnych dla trybu');
+  assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, true,
+    'stop nie niesie czerwonej karty — jawny komunikat opisuje wszystko (właściciel 2026-09-18)');
   assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /Stacji nie rozstawiono/);
   assert.equal(domAtrapa.pobierz('przycisk-dalej-prompt').disabled, true,
     'S09 blokuje „Dalej” tak samo jak brak sieci');

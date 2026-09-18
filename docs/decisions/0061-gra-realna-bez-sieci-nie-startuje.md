@@ -65,3 +65,25 @@ pobranie, zmiana okolicy albo trybu).
   okaże się, że jawny stop irytuje bardziej niż pierścień, odwracamy tę
   decyzję aneksem (kod jest w jednym miejscu: `przeliczZTegoCoJest` +
   `renderujStacje`).
+
+## Aneks 2026-09-18 (uwaga terenowa 1) — jawny stop BEZ czerwonej karty
+
+Teren: przy nieudanym pobraniu sieci ekran stacji pokazywał pod jawnym stopem
+zdublowaną czerwoną kartę „[S03] siec: Nie udało się pobrać sieci dróg (…)
+Spróbuj ponownie lub użyj trybu uproszczonego” — powtórzenie komunikatu stopu,
+z literówką i obietnicą trybu, którego w grze realnej nie ma. Właściciel:
+„Nie wyświetlaj tego czerwonego komunikatu w ogóle. Wystarczy to, co wyżej.”
+
+1. **Stan końcowy jest pełnym komunikatem.** `zablokujStacje` (stop) i
+   `pierścieńTrybTestowy` (testowa degradacja) czyszczą `bledy-stacje`.
+2. **Karty sieciowe usunięte z ekranu stacji w obu trybach**: S03 z
+   `pobierzSiec`, S09/pokrewne z `grafDlaTrybu` i z catcha
+   `przeliczZTegoCoJest`. Diagnostyka nie znika — zostaje w ⓘ Informacje
+   (lista prób `#siec-proby` + status), zgodnie z ADR 0035 aneks m12-60.
+3. **Zostają karty przy ISTNIEJĄCYCH stacjach** (`zlozKarteUsterekStacji`,
+   S12/S14) — gra toczy się dalej, więc karta nie dubluje stopu.
+4. Pkt 5 decyzji („karta błędów pokazuje S09”) przestaje obowiązywać: S09
+   kończy się tym samym stopem co brak sieci, bez karty.
+5. WE03 w `protokol.js` nie obiecuje już trybu uproszczonego — wskazuje
+   istniejące wyjścia (ponowienie sieci, zmiana okolicy lub trybu).
+6. Wersja `?v=` idzie do `m12-165`.
