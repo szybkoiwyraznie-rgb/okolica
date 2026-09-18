@@ -7426,3 +7426,26 @@ Cache-bust `?v=`/`WERSJA_SW` do `m12-165`.
 
 **Wynik:** `npm test` 862/862; `npm run brama` EXIT 0 (budżet lektury
 99 583 / 100 000). Zamknięcie: `docs/setup/HANDOFF_2026-09-18d.md`.
+
+## 2026-09-18 (kontynuacja 4) — cache sieci: L1 skanuje wszystkie wpisy jak L2
+
+**Pytanie-projekt właściciela:** ściągnięty wpis o koszyku 25000 powinien
+obsłużyć grę R=1000 także 5 km od kotwicy (inna komórka geohash6) — okrąg
+gry mieści się w dysku wpisu, więc Overpass nie powinien być wołany.
+Audyt kodu potwierdził: L2 (Drive) już tak działa, ale skan L1 oglądał
+tylko własną komórkę, więc bez mostu wpis spoza komórki przepadał.
+
+**Zakres (`app/app.js`):** `odczytajCacheSieci` skanuje wszystkie klucze
+`okolica:sieci:*` (geometria `czyWpisPokrywa` rozstrzyga, jak w L2);
+`zapiszCacheSieci` przyjmuje kotwicę źródła — dokarmienie L1 z L2
+zachowuje kotwicę i koszyk ŹRÓDŁA (walidowane), więc prawdziwy zasięg
+danych działa też bez mostu. ADR 0059: aneks 2026-09-18. Cache-bust
+`m12-166`.
+
+**Testy:** sąsiednia komórka → stacje z pamięci telefonu przy 0 wołań
+sieci; dokarmienie L1 niesie koszyk/kotwicę źródła. **Live:** headless
+Chromium, gra realna bez internetu, wpisy tylko spoza komórki gry —
+„z pamięci telefonu”, Overpass nietknięty.
+
+**Wynik:** `npm test` 864/864; `npm run brama` EXIT 0 (budżet lektury
+99 785 / 100 000). Zamknięcie: `docs/setup/HANDOFF_2026-09-18e.md`.
