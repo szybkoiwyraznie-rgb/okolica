@@ -115,15 +115,18 @@ Ponadto:
 - **Poziomy trudności** (§4): `dzieci` (8–10) / `dorosli` — poziom jest
   własnością GRACZA (hot-seat, `gracze[].poziom`) albo całej GRY (multi: jeden
   poziom hosta, jedno wspólne pytanie na stację); zmiana poziomu = zmiana opisu
-  w promptcie. **Schemat wersjonowany** (`PYT/1.3`): zmiana = ADR + podbicie
-  + migrator (użytkownik nie traci gry). **Tematy z kanonu** (`TEMATY`):
-  nowy temat = kanon + protokół w tym samym commicie.
+  w promptcie. **Schemat wersjonowany** (`PYT/1.4`): zmiana = ADR + podbicie
+  + migrator (użytkownik nie traci gry). **Współrzędnych w prompcie NIE MA**
+  (ADR 0060) — kotwicą są nazwy własne z Overpassa; bez sieci drogowej gra
+  nie startuje (ADR 0061). **Tematy z kanonu** (`TEMATY`): nowy temat =
+  kanon + protokół w tym samym commicie.
 - **Paczka po walidacji leży jawnie** — jawny JSON w pamięci, w zapisie gry
   i na Drive (ADR 0050; żadnego ukrywania ani szyfrowania), pole wklejania
   czyszczone natychmiast. Dlatego w paczce NIE MA danych osobowych (ADR 0013).
 - **Język: polski** (inne języki pytań przez parametr `jezyk`, ADR 0011).
-  **Współrzędne prawdziwe**, dziesiętne; stacja poza promieniem/niedostępna
-  = błąd walidacji.
+  **Współrzędne prawdziwe**, dziesiętne — w DANYCH APLIKACJI (stacje, mapa);
+  w prompcie i w paczce ich nie ma (ADR 0060); stacja poza promieniem/
+  niedostępna = błąd walidacji.
 
 ## 4. Granice nienegocjowalne
 

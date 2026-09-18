@@ -446,6 +446,17 @@ const MARTWE_FRAZY = [
     nosniki: [...DOKUMENTY, ...UI],
     powod: 'PROTOKOL §3 opisuje schemat bieżący — od 2026-09-17f jest to PYT/1.3 (ADR 0057/0058)',
   },
+  // Fala PYT/1.4 (ADR 0060, 2026-09-18): współrzędnych nie ma w prompcie.
+  {
+    fraza: 'Schemat paczki PYT/1.3',
+    nosniki: [...DOKUMENTY, ...UI],
+    powod: 'PROTOKOL §3 opisuje schemat bieżący — od 2026-09-18 jest to PYT/1.4 (ADR 0060)',
+  },
+  {
+    fraza: 'PYT/1.3',
+    nosniki: ['AGENTS.md'],
+    powod: 'ściąga protokołu w AGENTS.md §3 musi nieść BIEŻĄCĄ wersję (PYT/1.4, ADR 0060), nie historyczną',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {
