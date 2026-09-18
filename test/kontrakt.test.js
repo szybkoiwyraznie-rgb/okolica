@@ -158,6 +158,19 @@ test('kontrakt 2026-09-09: opis trybu promptu mówi teksty właściciela, słowo
     'opis trybu nie miesza już wersji szablonu (właściciel, 2026-09-09)');
 });
 
+test('kontrakt 2026-09-18 (uwaga powtórzona): przycisk poziomu gracza mówi „🧒 Dziecko”, bez wieku', () => {
+  // Poprzednia fala (PR #44) zmieniła etykietę w wyborze poziomu MULTI, ale
+  // przeoczyła odpowiednik na ekranie SETUP (lista graczy) — oba miejsca
+  // mają ten sam krótki napis; wiek zostaje wyłącznie w opisie poziomu
+  // dla modelu (POZIOMY.dzieci.etykieta → prompt).
+  assert.match(APP, /b\.textContent = klucz === 'dzieci' \? '🧒 Dziecko' : '🧑 Dorosły';/,
+    'setup (lista graczy): przycisk poziomu bez wieku');
+  assert.match(APP, /const etykiety = \{ dzieci: '🧒 Dziecko', dorosli: '🧑 Dorośli' \};/,
+    'multi (wybór poziomu przed grą): ta sama krótka etykieta');
+  assert.ok(!/🧒 Dziecko \(8–10\)/.test(APP) && !/🧒 Dziecko \(8–10\)/.test(INDEX),
+    'wiek nie wraca na żaden przycisk poziomu (strażnik: dryf-dokumentow)');
+});
+
 /* ------------------------------------------------- kanony treści: doc ↔ kod */
 
 test('kontrakt: kategorie wiekowe w protokole §4 = WIEK w app/konfig.js', () => {

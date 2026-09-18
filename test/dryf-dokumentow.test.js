@@ -457,6 +457,14 @@ const MARTWE_FRAZY = [
     nosniki: ['AGENTS.md'],
     powod: 'ściąga protokołu w AGENTS.md §3 musi nieść BIEŻĄCĄ wersję (PYT/1.4, ADR 0060), nie historyczną',
   },
+  // Uwaga terenowa powtórzona 2026-09-18: ekran setup (lista graczy) ma
+  // pokazywać „Dziecko”, bez wieku — na liście nie mieści się dopisek i nie
+  // jest graczowi potrzebny (komentarz obok przycisku już to obiecywał).
+  {
+    fraza: '🧒 Dziecko (8–10)',
+    nosniki: UI,
+    powod: 'etykieta poziomu na ekranie setup i w multi to „🧒 Dziecko” (uwaga właściciela 2026-09-18); wiek zostaje w prompcie (POZIOMY.dzieci.etykieta), nie na przycisku',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {

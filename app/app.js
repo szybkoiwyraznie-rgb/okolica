@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, KLUCZE_POZIOMOW, PODKLADY, POZIOM_DORMYSLNY, TEMATY_SETUP, TRYBY, czyPoziomOk, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-163';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-163';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, KLUCZE_POZIOMOW, PODKLADY, POZIOM_DORMYSLNY, TEMATY_SETUP, TRYBY, czyPoziomOk, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-164';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-164';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-163';
+} from './protokol.js?v=m12-164';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-163';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-163';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-163';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-163';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, kolejnoscPytanStacji, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-163';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-163';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-164';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-164';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-164';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-164';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, kolejnoscPytanStacji, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-164';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-164';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-163';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-163';
+} from './zestawy.js?v=m12-164';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-164';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -57,19 +57,19 @@ import {
   wczytajDaneZCache,
   wybierzWpisSieci,
   zlozWpisSieci,
-} from './sieci.js?v=m12-163';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-163';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-163';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-163';
-import { adresMostu, stanMostu } from './most.js?v=m12-163';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-163';
+} from './sieci.js?v=m12-164';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-164';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-164';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-164';
+import { adresMostu, stanMostu } from './most.js?v=m12-164';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-164';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   czyPaczkaUzytaLokalnie, oznaczPaczkeJakoUzyta,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-163';
+} from './oceny.js?v=m12-164';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1000,9 +1000,9 @@ function renderujListeGraczy() {
         const b = document.createElement('button');
         b.type = 'button';
         b.className = 'przycisk przycisk-maly przycisk-poziom' + (klucz === biezacyPoziom ? ' aktywny' : '');
-        b.textContent = klucz === 'dzieci' ? '🧒 Dziecko (8–10)' : '🧑 Dorosły';
+        b.textContent = klucz === 'dzieci' ? '🧒 Dziecko' : '🧑 Dorosły';
         b.setAttribute('aria-pressed', String(klucz === biezacyPoziom));
-        b.setAttribute('aria-label', `Poziom gracza ${imie || i + 1}: ${klucz === 'dzieci' ? 'dziecko (8–10 lat)' : 'dorosły'}`);
+        b.setAttribute('aria-label', `Poziom gracza ${imie || i + 1}: ${klucz === 'dzieci' ? 'dziecko' : 'dorosły'}`);
         b.addEventListener('click', () => ustawPoziomGracza(i, klucz));
         el.appendChild(b);
       }
