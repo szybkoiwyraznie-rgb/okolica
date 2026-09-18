@@ -7330,8 +7330,15 @@ startuje grę sam) + piny kontraktowe. `?v=`/`WERSJA_SW`: `m12-163`.
 Brama: `npm test` **860/860**, `npm run brama` **EXIT 0**, budżet
 **99 253/100 000**.
 
-**Zawieszenie na koniec sesji:** token GitHub wygasł po pierwszym pushu —
-zdalna gałąź ma `b213d85` (audyt), a `6f657b1` (bramki) i commit zamknięcia (handoff)
-czekają lokalnie na gałęzi do pusha po reconnect (instrukcja w
-`docs/setup/HANDOFF_2026-09-18b.md`). Zgodnie z ENVIRONMENT §1 sesja jest
-**niedomknięta**, dopóki commity nie wylecą na zdalną gałąź.
+**Incydent środowiskowy (zamknięty):** token GitHub wygasł po pierwszym
+pushu — `6f657b1` i commit zamknięcia czekały lokalnie do reconnect;
+wypchnięte bez `--force`.
+
+**Uwaga właściciela powtórzona (`85e2bd6`):** etykieta „Dziecko (8–10)” wciąż
+widniała na ekranie SETUP — PR #44 zmienił napis tylko w wyborze poziomu
+MULTI, a przycisk przy imieniu w liście graczy `renderujListeGraczy` przeniósł
+starą etykietę literałem (komentarz obok już obiecywał nowy — dryf komentarz/
+UI). Poprawka: przycisk „🧒 Dziecko” (aria „dziecko”), komentarz index.html
+sprostowany, wiek zostaje wyłącznie w `POZIOMY.dzieci.etykieta` (prompt).
+Strażnicy: fraza w `dryf-dokumentow` + pin kontraktowy na oba renderery.
+`?v=`/`WERSJA_SW` → `m12-164`; brama: `npm test` **861/861**, EXIT 0.
