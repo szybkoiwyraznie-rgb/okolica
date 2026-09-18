@@ -1572,6 +1572,34 @@ test('uszkodzony stan z mostu: kod R w statusie, polling nie pada, po naprawie g
   assert.equal(el(A, 'ekran-gra').hidden, false, 'gra toczy się dalej po poprawnym stanie');
 });
 
+test('gra bez stacji z mostu nie startuje: R08 w statusie, lobby żyje, po naprawie start działa (ADR 0061)', async () => {
+  const most = atrapaMostu();
+  const pamiec = new Map();
+  zasiejZestaw(most, 3);
+  const A = await noweUrzadzenie({ pamiec, most, bezGracza: true });
+  await przygotujTelefon(A, 'Ala', { stacje: 3 });
+  await zalozGreUI(A, { tryb: 'wyscig' });
+
+  // Most oddał stan gry bez stacji (np. połowiczny zapis pliku gry). Walidacja
+  // odrzuca go (R08), zanim dotknie renderu — gra bez stacji nie startuje.
+  const gra = [...most.gry.values()][0];
+  const zapasStacji = gra.zestaw.stacje;
+  gra.zestaw.stacje = [];
+  await klik(A, 'przycisk-lobby-start');
+  assert.match(tekst(A, 'status'), /\[R08\]/, 'jawny kod usterki: stacje zniknęły ze stanu z mostu');
+  assert.equal(el(A, 'ekran-gra').hidden, true, 'gra się nie otwiera bez stacji');
+  // L77: przycisk „▶ Start gry” nie zostaje w stanie „Łączę z siecią” —
+  // etykieta i blokada wracają także po odrzuceniu stanu przez walidację.
+  const przycisk = el(A, 'przycisk-lobby-start');
+  assert.equal(przycisk.disabled, false, 'przycisk startu odblokowany po odrzuceniu');
+  assert.notEqual(przycisk.textContent, 'Łączę z siecią', 'etykieta przycisku wróciła po odrzuceniu');
+
+  // Most naprawiony → polling widzi poprawny stan „trwa” i gra startuje sama.
+  gra.zestaw.stacje = zapasStacji;
+  await przepompuj(A, 2);
+  assert.equal(el(A, 'ekran-gra').hidden, false, 'gra otwiera się po poprawnym stanie z mostu');
+});
+
 test('lista graczy = tożsamość (ADR 0026 aneks): dodaj, odmowa PIN-u, zapamiętanie, usuwanie', async () => {
   const lista = (u) => [...el(u, 'lista-graczy').children].map((li) => li.children[0].textContent);
   const most = atrapaMostu();
