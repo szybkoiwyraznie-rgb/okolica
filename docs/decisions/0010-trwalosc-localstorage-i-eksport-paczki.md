@@ -88,3 +88,15 @@ Klucz dokładny `geohash6-R-tryb` gubił cache przy KAŻDEJ zmianie setupu (inny
 (`srodek`, `promienM`, `tryb`), a odczyt po pudle dokładnym szuka w tej samej
 komórce wpisu POKRYWAJĄCEGO (dysk `R×1.15` gry w dysku wpisu; `wybierzWpisSieci`
 bierze najświeższy). Stare wpisy, LRU i TTL bez zmian.
+
+## Aneks 2026-09-18 (ADR 0059): bucket zamiast R, dane trybowo niezależne
+
+Właściciel (uwagi terenowe 2026-09-18): klucz cache nie niesie trybu (dane
+te same — po unium klas) ani dokładnego R (powtórka tego samego miejsca nie
+może wołać Overpassa). Klucz: `okolica:sieci:<geohash6>-<bucket>`, bucket
+= 1000/5000/10000/25000 m (max 4 wpisy na komórkę). Zapytanie ciągnie unium
+klas wszystkich trybów na bucket×1,15; wpis niesie `promienM` = bucket,
+schemat `sieci/2`. Tolerancja kotwicy 200 m → 1400 m (przekątna komórki
+geohash6) — wpis pokrywa każdą grę z tej komórki w tym lub węższym buncie.
+Wpisy `sieci/1` (klucze z trybem) są ignorowane i wygasają przez TTL/LRU —
+bez migratora (wzór ADR 0058).

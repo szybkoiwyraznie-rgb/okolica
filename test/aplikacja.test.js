@@ -807,7 +807,7 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
   const pamiecCache = new Map();
   // nazwa miejsca ZAWSZE się wyświetla (Partia 2: koniec opcji geokodacji)
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
 
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
@@ -825,8 +825,8 @@ test('stacje: wpis z szerszego pobrania (R=2000) obsługuje grę R=1000 bez Over
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
   const srodek = { lat: 52.2297, lon: 21.0122 };
-  pamiecCache.set(kluczCacheSieci({ ...srodek, promienM: 2000, tryb: 'piesza' }),
-    JSON.stringify(zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: Date.now() })));
+  pamiecCache.set(kluczCacheSieci({ ...srodek, promienM: 2000 }),
+    JSON.stringify(zlozWpisSieci({ dane, srodek, promienM: 2000, terazMs: Date.now() })));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   let ileProb = 0;
@@ -843,7 +843,7 @@ test('stacje L2: wpis ze wspólnego dysku daje stacje sieciowe bez Overpass', as
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
   const srodek = { lat: 52.2297, lon: 21.0122 };
-  const wpisDysk = zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: Date.now() });
+  const wpisDysk = zlozWpisSieci({ dane, srodek, promienM: 2000, terazMs: Date.now() });
   let ileOverpass = 0;
   domAtrapa.window.fetch = async (url, opcje) => {
     if (String(url).includes('akcja=siec')) {
@@ -858,7 +858,7 @@ test('stacje L2: wpis ze wspólnego dysku daje stacje sieciowe bez Overpass', as
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa \(Overpass\) — punkty osiągalne/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /ze wspólnego dysku/);
   // trafienie L2 dokarmiło L1 pod kluczem dokładnym
-  const klucz = kluczCacheSieci({ ...srodek, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ ...srodek, promienM: 1000 });
   assert.ok(JSON.parse(domAtrapa.pamiec.get(klucz)).dane.drogi.length > 10, 'L1 dokarmiony wpisem z dysku');
 });
 
@@ -880,8 +880,8 @@ test('stacje L2: świeże pobranie wysyła wpis na wspólny dysk w tle', async (
   await czekaj(400);
   assert.equal(wyslane.length, 1, 'jedna wysyłka L2 po świeżym pobraniu');
   assert.equal(wyslane[0].schemat, SCHEMAT_SIECI);
-  assert.equal(wyslane[0].promienM, 1000);
-  assert.equal(wyslane[0].tryb, 'piesza');
+  assert.equal(wyslane[0].promienM, 1000, 'promień wpisu = bucket (R=1000 → bucket 1000)');
+  assert.equal(wyslane[0].tryb, undefined, 'ADR 0059: trybu we wpisie nie ma');
   assert.ok(wyslane[0].dane.drogi.length > 10, 'wysyłka niesie sparsowane drogi');
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'gra nie czekała na wysyłkę');
 });
@@ -891,7 +891,7 @@ test('stacje: „Inny układ" i „Pobierz ponownie" wracają widokiem na górę
   // panel (.panel-centralny, overflow-y: auto) zostawał przewinięty w dół.
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -928,7 +928,7 @@ test('stacje: udane pobranie z pierwszej instancji zapisuje cache i rysuje sieć
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/);
   assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('z pamięci'), 'świeżo pobrane');
   assert.match(domAtrapa.pobierz('status').textContent, /Stacje z sieci drogowej|za uboga/);
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
   const wpis = JSON.parse(domAtrapa.pamiec.get(klucz));
   assert.equal(wpis.schemat, SCHEMAT_SIECI);
   assert.ok(Number.isFinite(wpis.zapisanoMs));
@@ -1030,7 +1030,7 @@ test('uwaga B (2026-09-17): nowy setup otwiera stacje CZYSTE — zero artefaktó
 test('stacje: sieć z cache pokazuje ponowienie, klik dowozi świeże dane z Overpass', async () => {
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -1405,7 +1405,7 @@ test('ADR 0032: propozycje paczek pokazują „Fact-checked" tylko dla zweryfiko
 test('nazwa miejsca ZAWSZE trafia do UI i do promptu (Partia 2: koniec opcji geokodacji)', async () => {
   const pamiecCache = new Map(); // konfig domyślny, bez żadnych przełączników
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -1420,7 +1420,7 @@ test('nazwa miejsca ZAWSZE trafia do UI i do promptu (Partia 2: koniec opcji geo
 test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe podglądu)', async () => {
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   // schowek asynchroniczny zablokowany jak w iframe podglądu
@@ -2917,7 +2917,7 @@ test('stacje: nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem', as
     }
   }
   const pamiec = konfigNa1000m(new Map());
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
   pamiec.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
 
   const domAtrapa = await aplikacjaZSiecia({ pamiec });
@@ -2952,7 +2952,7 @@ test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, 
   const zamowione = 10;
   const { promienM } = przeliczenieCzasu({ czasGryMin: 240, tryb: 'piesza', liczbaStacji: zamowione, pytaniaNaStacje: 1 });
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM });
   const pamiec = new Map([
     [klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane })],
     ['okolica:konfig', JSON.stringify({
@@ -3543,7 +3543,7 @@ test('uwaga B (dogrywka): wklejka nie przestawia stacji z sieci — metryka drog
     czasGryMin: CZAS_MIN_D1, tryb: 'piesza', liczbaStacji: 3, pytaniaNaStacje: 1,
   }).promienM;
   const pamiec = new Map();
-  pamiec.set(kluczCacheSieci({ ...SRODEK_D1, promienM, tryb: 'piesza' }), JSON.stringify({
+  pamiec.set(kluczCacheSieci({ ...SRODEK_D1, promienM }), JSON.stringify({
     schemat: SCHEMAT_SIECI,
     zapisanoMs: Date.now(),
     dane: upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum'))),

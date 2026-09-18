@@ -220,8 +220,9 @@ commit i nowa wersja aplikacji.
    INSTANCJA — 12 s FOSSGIS, 25 s VK Maps, 40 s Kumi — obejmuje nagłówki i ciało
    przez `AbortController`, ADR 0035 aneks 2026-09-17b; zapytanie QL z
    `[timeout:25]`, budżet 8 MB odpowiedzi). Najpierw jednak cache
-   `okolica:sieci:<geohash6>-<R>` (ADR 0010 pkt 1): trafiony wpis = zero
-   zapytań do Overpass. Dalej `sieci.parsujOdpowiedz` → `budujGraf`
+   `okolica:sieci:<geohash6>-<bucket>` (ADR 0010 pkt 1, ADR 0059: unium klas
+   trybów, bucket 1000/5000/10000/25000 m): trafiony wpis = zero zapytań do
+   Overpass. Dalej `sieci.parsujOdpowiedz` → `budujGraf`
    (Dijkstra z pozycji startowej) → `kandydaciNaStacje` (filtry dostępności,
    bariery, wykluczenia). Bez `window.fetch` (offline, atrapy) wszystko
    zostaje synchroniczne i gra degraduje — patrz pkt 4.
@@ -478,11 +479,17 @@ pilnuje, żeby nie wrócił ani przycisk, ani flaga). Kasowanie danych jest **dw
 aplikacja nie wywołuje `confirm()`/`alert()` (ADR 0015 pkt 6), komunikaty idą
 do pól z `role="status"`/`role="alert"`.
 
-Cache sieci drogowej (M4) to klucze `okolica:sieci:<geohash6>-<R>` z wpisem
-`{ schemat: 'sieci/1', zapisanoMs, dane }`: TTL 30 dni, wpisy „z przyszłości"
-(>1 dnia) odrzucane jak podejrzany zegar, puste drogi = wpis bezużyteczny,
-a przy sumie ponad 2 MB najstarsze wpisy wypadają (LRU, `przycijCacheSieci`).
-Odpowiedź >8 MB jest użyta do gry, ale nie zapisana (kod `S04` w UI).
+Cache sieci drogowej (M4) to klucze `okolica:sieci:<geohash6>-<bucket>` (bucket
+promienia: 1000/5000/10000/25000 m; trybu i środka gry NIE MA — dane są
+uniewersalne, ADR 0059) z wpisem `{ schemat: 'sieci/2', zapisanoMs, srodek,
+promienM: <bucket>, dane }`: TTL 30 dni, wpisy „z przyszłości" (>1 dnia)
+odrzucone jak podejrzany zegar, puste drogi = wpis bezużyteczny, pokrycie
+kotwicy z tolerancją 1400 m (przekątna komórki geohash6), a przy sumie ponad
+2 MB najstarsze wpisy wypadają (LRU, `przycijCacheSieci`). Zapytanie Overpass
+ciągnie unium klas dróg wszystkich trybów na promień bucket×1,15; filtrowanie
+per tryb dzieje się po stronie klienta (`budujGraf`). Odpowiedź >8 MB jest
+użyta do gry, ale nie zapisana (kod `S04` w UI). Wpisy `sieci/1` (trybowe)
+są ignorowane i wygasają naturalnie — bez migratora (wzór ADR 0058).
 
 Każdy zapis ma pole `schemat`; nieznana wersja = migracja albo jawny komunikat
 (`wczytajStan()`, kod `G12` ze wskazówką migracji), nigdy ciche odrzucenie.

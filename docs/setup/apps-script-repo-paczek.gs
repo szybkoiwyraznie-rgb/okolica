@@ -52,12 +52,25 @@ function czyPoziomOk(poziom) { return POZIOMY.indexOf(poziom) >= 0; }
 const SCHEMAT_OCENY = 'RO-oceny/1';  // ADR 0028: plik ocen jednej paczki
 const SCHEMAT_OCENA = 'RO-ocena/1';  // ADR 0028: pojedynczy głos (kciuk w górę/dół)
 // Cache L2 sieci (teren 2026-09-16): parytet z aplikacją pilnuje test/most-sieci.test.js.
-const SCHEMAT_SIECI_CACHE = 'sieci/1'; // = SCHEMAT_SIECI w app/sieci.js
+// ADR 0059 (właściciel 2026-09-18): cache sieci jest TRYBOWO NIEZALEŻNE —
+// dane to unium klas dróg wszystkich trybów, klucz = komórka geohash6 + bucket
+// promienia. Wpisy `sieci/1` (trybowe) są ignorowane i mogą zostać usunięte
+// ręcznie z katalogu okolica-sieci-cache (właściciel kasuje je sam).
+const SCHEMAT_SIECI_CACHE = 'sieci/2'; // = SCHEMAT_SIECI w app/sieci.js
 const TTL_SIECI_DNI = 30; // = POLITYKA.ttlCacheDni
 const MNOZNIK_SIECI = 1.15; // = POLITYKA.mnoznikPromienia
-const TOLERANCJA_KOTWICY_M = 200; // = POLITYKA.tolerancjaKotwicyM (teren 2026-09-17)
-const TRYBY_SIECI = ['piesza', 'rower', 'samochodowa']; // = klucze TRYBY w app/konfig.js
+// = POLITYKA.tolerancjaKotwicyM: przekątna komórki geohash6 (~1,3 km przy 52°N),
+// bo klucz nie niesie już środka gry (ADR 0059). Wchłania dawniejsze 200 m.
+const TOLERANCJA_KOTWICY_M = 1400;
+const GRANICE_BUKETOW_SIECI = [1000, 5000, 10000, 25000]; // = GRANICE_BUKETOW_SIECI w app/sieci.js
 const MAX_SIECI_BAJTOW = 6000000; // wpis powyżej nie wchodzi (oszczędzamy limity mostu)
+
+/** Bucket promienia gry (ADR 0059): pierwsza granica ≥ R; ponad 25 km — błąd. */
+function bucketPromieniaSieci(promienM) {
+  if (!Number.isFinite(promienM) || !(promienM > 0)) return null;
+  for (const granica of GRANICE_BUKETOW_SIECI) if (promienM <= granica) return granica;
+  return null;
+}
 
 /* ---------------------------------------------------------- infrastruktura */
 
@@ -1281,7 +1294,7 @@ function odlegloscMSiec(a, b) {
   return 2 * 6371008.8 * Math.asin(Math.min(1, Math.sqrt(s)));
 }
 
-/** Dysk zapytania (środek + R×1.15) w dysku wpisu — jak `czyWpisPokrywa`. Tolerancja +200 m absorbuje szum GPS między grami (teren 2026-09-17). */
+/** Dysk gry (środek + R×1.15) w dysku wpisu (kotwica + bucket×1.15) — jak `czyWpisPokrywa`. Tolerancja +1400 m ≈ przekątnej komórki geohash6: wpis pokrywa każdą grę z tej komórki w tym lub węższym buncie (ADR 0059). */
 function czyWpisSieciPokrywa(wpis, srodek, promienM) {
   const c = wpis && wpis.srodek;
   if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lon)) return false;
@@ -1290,16 +1303,16 @@ function czyWpisSieciPokrywa(wpis, srodek, promienM) {
   return odlegloscMSiec(c, srodek) + promienM * MNOZNIK_SIECI <= wpis.promienM * MNOZNIK_SIECI + TOLERANCJA_KOTWICY_M + 1;
 }
 
-/** Najświeższy pokrywający wpis z katalogu sieci: `{ok, wpis?}`. */
+/** Najświeższy pokrywający wpis z katalogu sieci: `{ok, wpis?}`.
+ *  ADR 0059: trybu nie ma w parametrach — wpis obsługuje wszystkie tryby. */
 function czytajSiecWpisu(parametry) {
   const lat = Number(parametry && parametry.lat);
   const lon = Number(parametry && parametry.lon);
   const promienM = Number(parametry && parametry.promienM);
-  const tryb = parametry && parametry.tryb;
   if (!Number.isFinite(lat) || lat < -90 || lat > 90
       || !Number.isFinite(lon) || lon < -180 || lon > 180
-      || !(promienM > 0) || TRYBY_SIECI.indexOf(tryb) < 0) {
-    return { ok: false, blad: 'złe parametry (lat, lon, promienM, tryb)' };
+      || !(promienM > 0)) {
+    return { ok: false, blad: 'złe parametry (lat, lon, promienM)' };
   }
   const terazMs = Date.now();
   const srodek = { lat, lon };
@@ -1317,14 +1330,14 @@ function czytajSiecWpisu(parametry) {
     const wiekDni = (terazMs - wpis.zapisanoMs) / 86400000;
     if (wiekDni > TTL_SIECI_DNI || wiekDni < -1) continue; // przeterminowany (upsert nazwą ogranicza liczbę)
     if (!wpis.dane || !Array.isArray(wpis.dane.drogi) || wpis.dane.drogi.length === 0) continue;
-    if (wpis.tryb !== tryb) continue;
     if (!czyWpisSieciPokrywa(wpis, srodek, promienM)) continue;
     if (!najlepszy || wpis.zapisanoMs > najlepszy.zapisanoMs) najlepszy = wpis;
   }
   return najlepszy ? { ok: true, wpis: najlepszy } : { ok: false };
 }
 
-/** Usterka wpisu do zapisu (string) albo null, gdy wpis jest dobry. */
+/** Usterka wpisu do zapisu (string) albo null, gdy wpis jest dobry.
+ *  ADR 0059: trybu we wpisie nie ma (dane uniewersalne), promień = bucket. */
 function walidujWpisSieci(wpis) {
   if (!wpis || typeof wpis !== 'object') return 'brak wpisu';
   if (wpis.schemat !== SCHEMAT_SIECI_CACHE) return 'schemat musi brzmieć ' + SCHEMAT_SIECI_CACHE;
@@ -1333,20 +1346,21 @@ function walidujWpisSieci(wpis) {
   if (wiekDni > TTL_SIECI_DNI || wiekDni < -1) return 'wpis przeterminowany albo z przyszłości';
   const c = wpis.srodek;
   if (!c || !Number.isFinite(c.lat) || !Number.isFinite(c.lon)) return 'brak środka pobrania';
-  if (!Number.isFinite(wpis.promienM) || !(wpis.promienM > 0)) return 'zły promień pobrania';
-  if (TRYBY_SIECI.indexOf(wpis.tryb) < 0) return 'nieznany tryb';
+  if (!Number.isFinite(wpis.promienM) || !(wpis.promienM > 0)
+      || !bucketPromieniaSieci(wpis.promienM)) return 'zły promień pobrania (bucket 1000/5000/10000/25000)';
   if (!wpis.dane || !Array.isArray(wpis.dane.drogi) || wpis.dane.drogi.length === 0) return 'wpis bez dróg';
   return null;
 }
 
 /**
- * Nazwa pliku wpisu: geohash-6 + R + tryb + środek. Deterministyczna, więc
- * powtórna wysyłka z tego samego miejsca NADPISUJE plik (upsert), a nie mnoży.
+ * Nazwa pliku wpisu: geohash-6 + BUCKET (ADR 0059). Deterministyczna dla
+ * (komórka, bucket), więc powtórna wysyłka z tej samej okolicy NADPISUJE
+ * plik (upsert), a nie mnoży. Stare pliki `siec-<gh6>-<R>-<tryb>-<lat>-<lon>.json`
+ * (sieci/1) są ignorowane przez odczyt — właściciel usuwa je ręcznie.
  */
 function nazwaPlikuSieci(wpis) {
   return 'siec-' + geohashPunkt(wpis.srodek.lat, wpis.srodek.lon, 6)
-    + '-' + Math.round(wpis.promienM) + '-' + wpis.tryb
-    + '-' + wpis.srodek.lat.toFixed(6) + '-' + wpis.srodek.lon.toFixed(6) + '.json';
+    + '-' + bucketPromieniaSieci(wpis.promienM) + '.json';
 }
 
 /** Zapis wpisu z telefonu (upsert nazwą) — przez doPost, jak woła aplikacja. */
