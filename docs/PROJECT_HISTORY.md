@@ -7317,7 +7317,7 @@ baza `44c80e1`; `git diff 44c80e1..c54e018`, plik po pliku):
 odwracalności bramki zostają do decyzji właściciela (uwaga otwarta z
 handoffu 2026-09-18, pkt 1).
 
-Praca sesji ciąglej niżej — bramki startu gry (uzupełnienie ADR 0061).
+Praca sesji ciągłej niżej — bramki startu gry (uzupełnienie ADR 0061).
 
 **Bramki startu gry multi (`6f657b1`):** stan gry z mostu bez stacji był już
 odrzucany walidacją (R08) z jawnym statusem w `onStanGryMulti`; dopełnienie:
