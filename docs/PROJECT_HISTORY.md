@@ -7317,5 +7317,21 @@ baza `44c80e1`; `git diff 44c80e1..c54e018`, plik po pliku):
 odwracalności bramki zostają do decyzji właściciela (uwaga otwarta z
 handoffu 2026-09-18, pkt 1).
 
-Praca sesji ciąglej niżej — bramki startu gry (uzupełnienie ADR 0061):
-szczegóły w commicie funkcjowym i opisie PR tej gałęzi.
+Praca sesji ciąglej niżej — bramki startu gry (uzupełnienie ADR 0061).
+
+**Bramki startu gry multi (`6f657b1`):** stan gry z mostu bez stacji był już
+odrzucany walidacją (R08) z jawnym statusem w `onStanGryMulti`; dopełnienie:
+`uruchomGreMulti` sam zatrzymuje grę bez stacji komunikatem „stan z mostu
+nie niesie stacji”, a `nowaRozgrywka` nadal egzekwuje niepuste stacje
+wymaganiem granicznym. Regresja: nowy scenariusz korupcji w
+`wieloosobowa-ui` ([R08] w statusie, ekran gry nie otwiera się, przycisk
+startu nie wisi w „Łączę z siecią” — L77, po naprawie mostu polling
+startuje grę sam) + piny kontraktowe. `?v=`/`WERSJA_SW`: `m12-163`.
+Brama: `npm test` **860/860**, `npm run brama` **EXIT 0**, budżet
+**99 253/100 000**.
+
+**Zawieszenie na koniec sesji:** token GitHub wygasł po pierwszym pushu —
+zdalna gałąź ma `b213d85` (audyt), a `6f657b1` (bramki) i commit zamknięcia (handoff)
+czekają lokalnie na gałęzi do pusha po reconnect (instrukcja w
+`docs/setup/HANDOFF_2026-09-18b.md`). Zgodnie z ENVIRONMENT §1 sesja jest
+**niedomknięta**, dopóki commity nie wylecą na zdalną gałąź.
