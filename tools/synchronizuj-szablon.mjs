@@ -34,7 +34,7 @@ const SZABLONY = [
     kodKoniec: 'SZABLON-KONIEC */',
     stala: 'SZABLON_PROMPTU',
     sekcja: '§2',
-    wymagane: ['{LAT}', '{LON}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', 'ZASADY TWARDE', 'numer poprawnej odpowiedzi od 1 do 4', 'ZANIM napiszesz jakikolwiek fakt'],
+    wymagane: ['{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', 'ZASADY TWARDE', 'numer poprawnej odpowiedzi od 1 do 4', 'ZANIM napiszesz jakikolwiek fakt'],
   },
   {
     dokStart: '<!-- szablon-promptu-bez:start -->',
@@ -43,7 +43,7 @@ const SZABLONY = [
     kodKoniec: 'SZABLON-BEZ-KONIEC */',
     stala: 'SZABLON_PROMPTU_BEZ_WERYFIKACJI',
     sekcja: '§2.2',
-    wymagane: ['{LAT}', '{LON}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', 'ZASADY TWARDE', 'numer poprawnej odpowiedzi od 1 do 4', 'Sposób ich ustalenia zostawiamy Tobie'],
+    wymagane: ['{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', 'ZASADY TWARDE', 'numer poprawnej odpowiedzi od 1 do 4', 'Sposób ich ustalenia zostawiamy Tobie'],
   },
 ];
 

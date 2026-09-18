@@ -46,14 +46,9 @@ wyboru paczki. Bez wyboru — nic o modelu nigdzie nie ma.
   `test/zestawy.test.js` (addytywność pola) i `test/zestawy-ui.test.js`
   (przełączanie, brak znaczka bez wyboru).
 
-## Aneks 2026-09-17 (m12-159) — ikony z plików właściciela
+## Aneks 2026-09-17 (m12-159, ikony z plików właściciela) jest w archiwum
 
-Pkt 4 zostaje nadpisany: ikony nie są już rysowane inline — to **prawdziwe
-logo wgrane przez właściciela** (2026-09-17): pliki JPG w
-`assets/ikony-modela/` (meta, chatgpt, gemini, claude), podpięte jako `img`
-względna ścieżką z repo (pole `plik` w `MODELE_AI`). Miejsce i rozmiar bez
-zmian, zgodnie z poleceniem właściciela: rząd okrągłych przycisków 44 px nad
-polem wklejenia z ikoną 22 px, znaczek przy propozycji 20 px z ikoną 13 px.
-Zero CDN się nie zmienia (ADR 0001 pkt 1), pliki lądują w skorupie SW
-(`PLIKI_SHELL`), a starsza forma (inline SVG) jest zablokowana pinem
-(LESSONS L55).
+Ikony modeli to prawdziwe logo (JPG w `assets/ikony-modela/`, pole `plik`
+w `MODELE_AI`, zero CDN — ADR 0001 pkt 1), w skorupie SW (`PLIKI_SHELL`);
+starsza forma inline SVG jest zablokowana piniem.
+`docs/decisions/archive/aneksy-0053-2026-09-17.md` (L62/L66, archiwizacja 2026-09-18).

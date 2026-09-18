@@ -76,6 +76,9 @@ Każdy dokument opisuje kontekst, wybór i jego konsekwencje.
 | [0056](0056-stala-kolejnosc-odpowiadan-w-hotseat.md) | Hot-seat: stała kolejność odpowiadania (1. → ostatni), bez rotacji startera | Zaakceptowana |
 | [0057](0057-krotki-prompt-zestawienie-pod-stacjami.md) | Krótki prompt: tylko to, co model piszący pytania potrzebuje (zestawienie pod stacjami, bez imion i daty) | Zaakceptowana |
 | [0058](0058-bez-zrodel-i-utworzono-w-paczce.md) | Paczka bez źródeł i bez `utworzono` (zastępuje 0008 co do pól JSON) | Zaakceptowana |
+| [0059](0059-cache-sieci-trybowo-niezalezne-buckety.md) | Cache sieci trybowo niezależne: unium klas dróg + buckety promienia 1000/5000/10000/25000 m (L1+L2) | Zaakceptowana |
+| [0060](0060-bez-wspolrzednych-w-prompcie.md) | Współrzędnych nie ma w prompcie (środek gry + stacje); `okolica` paczki bez `lat/lon` (PYT/1.4) | Zaakceptowana |
+| [0061](0061-gra-realna-bez-sieci-nie-startuje.md) | Gra realna bez sieci NIE STARTUJE: jawny stop + bramka „Dalej”; pierścień (osiągalność niezweryfikowana) = tylko tryb testowy | Zaakceptowana |
 
 ## Szablon ADR
 

@@ -75,7 +75,7 @@ nie ma backendu (ADR 0001/0006), więc dane pobiera przeglądarka użytkownika.
    (ADR 0010 pkt 4).
 8. **Degradacja bez Overpass** (offline, limit instancji, blokada):
    a) użyj cache, jeśli jest;
-   b) WYCOFANY 2026-09-16 (aneks niżej) — był tu tryb ręczny;
+   b) WYCOFANY 2026-09-16 (aneks w archiwum) — był tu tryb ręczny;
    c) nigdy nie udawaj, że punkty są osiągalne — komunikat jest częścią UI.
 
 ## Konsekwencje
@@ -133,19 +133,14 @@ Od teraz `#ekran-stacje` pokazuje jedno zdanie w `#stacje-podsumowanie`:
 Tryb tajnej trasy (ADR 0034) zostaje przy swoim zdaniu („…Nazwy i położenie są
 ukryte…") — właściciel wyłączył go z tej zmiany. Mapa, pinezki, przyciski
 „Inny układ"/„Pobierz sieć ponownie" i przewijanie panelu są bez zmian (tryb
-ręczny: aneks niżej).
+ręczny: aneks w archiwum).
 
 
-## Aneks 2026-09-16 — tryb ręczny usunięty (uwaga terenowa)
+## Aneks 2026-09-16 (tryb ręczny usunięty) jest w archiwum (poza budżetem lektury)
 
-Pkt 8b („ręczne ustawienie stacji przeciąganiem pinezek") WYCOFANY decyzją
-właściciela: drag nie działał na iPhonie. Usunięte:
-przycisk, `ustawTrybReczny`, gałęzie, wzmianki i style (S02/S03/S09/S13/S14,
-`.pinezka-reczna`). Degradacja to odtąd: cache (8a) albo pierścień (8c).
-
-Właściciel, 2026-09-16: „Ustawianie stacji ręcznie — ta funkcja do wywalenia
-w całości."
-
+Pkt 8b („ręczne ustawianie stacji przeciąganiem pinezek”) wycofane 2026-09-16
+(drag nie działał na iPhonie) — szczegóły i cytat właściciela:
+`docs/decisions/archive/aneksy-0005-2026-09-16.md` (L62/L66, archiwizacja 2026-09-18).
 ## Aneks 2026-09-17 (uwaga terenowa B) — ekran stacji startuje czysty
 
 Wejście na `#ekran-stacje` w nowym setupie czyści stan i teksty
@@ -155,3 +150,15 @@ albo pierścień) ma prawo coś pokazać. Właściciel widział na wejściu arte
 starej gry („Wygenerowano i zlokalizowano stacji: 5” z poprzedniego układu,
 ukryte stacje poprzedniej trasy-sekret), zanim dane doszły. `STAN.siec` (cache
 geometrii) zostaje — to nie wynik gry. Piny: test „uwaga B (2026-09-17)”.
+
+## Aneks 2026-09-18 (ADR 0061) — pkt 8c w grze realnej zastąpiony: stop, nie pierścień
+
+Pkt 8 („degradacja bez Overpass”) w trybie realnym NIE DZIAŁA JUŻ tak, jak
+pisano: gdy cache jest pusty i Overpass nie dowozi (albo dowozi zero dróg dla
+trybu — S09), gra NIE schodzi do pierścienia. Pytania powstają z nazw miejsc
+z OpenStreetMap, więc bez sieci dróg nie ma kotwic i właściciel (uwaga
+terenowa 4, 2026-09-18) zdecydował: jawny stop — ekran stacji mówi, że stacji
+nie rozstawiono, „Dalej” jest zablokowany, a wyjście to ponowne pobranie,
+zmiana okolicy albo trybu. Pierścień (pkt 8c, „osiągalność niezweryfikowana”)
+został WYŁĄCZNIE trybowi testowemu (symulacje, atrapy testów). Pkt 8a (cache)
+bez zmian. Patrz ADR 0061.

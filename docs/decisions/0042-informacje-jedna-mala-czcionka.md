@@ -68,18 +68,9 @@ lektury startowej (AGENTS.md §0; LESSONS L62). Obowiązuje dalej zasada
 z tamtego aneksu: w panelu nie ma liczby, której gracz nie umie na nic
 przetłumaczyć.
 
-## Aneks 2026-09-16d (B26) — przyciski-stopki w stopce Informacji zostają małe; obietnica zawężona
+## Aneks 2026-09-16d (B26, przyciski-stopki w stopce Informacji) jest w archiwum
 
-Pomiar live (Chromium, 360 × 740) pokazał, że w stopce Informacji linki trzymają
-`min-height: var(--cel)` (44 px), ale `#przycisk-prywatnosc-stopka` („Dane
-i prywatność”) i `#przycisk-czysc-tymczasowe` („wyczyść pliki tymczasowe
-aplikacji”, tylko tryb testowy) mają 24 px — przy pkt 3 tego ADR i ADR 0011
-pkt 2. Właściciel (2026-09-16, BACKLOG **B26**, tam pomiar i uzasadnienie):
-„**zmień obietnice, wielkość 24 jest ok**”.
-
-1. **Wyjątek:** `.przycisk-stopka` w stopce ⓘ Informacje zostają 24 px, a pkt 3
-   tego ADR czyta się razem z tym aneksem; lista wyjątków od progu ≥ 44 px żyje
-   w ADR 0011 → aneks 2026-09-16d.
-2. **Reszta bez zmian:** `.informacje-link` trzyma `min-height: var(--cel)`,
-   pozostałe cele dotykowe — ≥ 44 px; kontrakt pinuje obie strony decyzji
-   (LESSONS L76), żeby „poprawianie” tych przycisków nie wróciło jako zadanie.
+Przyciski-stopki (`.przycisk-stopka`): „Dane i prywatność” i „wyczyść pliki
+tymczasowe” w stopce Informacji zostają 24 px (właściciel: „zmień obietnice,
+wielkość 24 jest ok”); lista wyjątków od ≥ 44 px żyje w ADR 0011. `docs/decisions/archive/aneksy-0042-2026-09-16d.md`
+(L62/L66, archiwizacja 2026-09-18).

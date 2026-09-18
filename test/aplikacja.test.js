@@ -561,9 +561,10 @@ test('mapa: pierwszy fix rysuje marker BEZ koła dokładności i centruje widok 
 });
 
 test('mapa: przejście do stacji rysuje numerowane pinezki i okrąg promienia', async () => {
-  const domMapy = await aplikacjaZMapa();
-  const gpsMapy = domMapy.gps;
-  gpsMapy.wyslijFix(52.235, 21.015, 15);
+  // ADR 0061: tryb testowy — w grze realnej bez sieci stacji NIE MA
+  // (jawny stop), a test sprawdza rysowanie mapy, nie źródło układu.
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' });
+  domMapy.ustawPozycje('52.235', '21.015'); // tryb testowy: pozycja z tapnięcia mapy
   domMapy.kliknij('przycisk-dalej-stacje');
 
   assert.equal(domMapy.pobierz('ekran-stacje').hidden, false);
@@ -609,9 +610,8 @@ test('mapa: pozycja z tapnięcia mapy w trybie testowym nie udaje koła dokładn
 });
 
 test('mapa: schowany panel nie rysuje, a powrót na ekran przywraca warstwy', async () => {
-  const domMapy = await aplikacjaZMapa();
-  const gpsMapy = domMapy.gps;
-  gpsMapy.wyslijFix(52.235, 21.015, 15);
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' }); // ADR 0061: stacje są tylko w trybie testowym bez sieci
+  domMapy.ustawPozycje('52.235', '21.015'); // tryb testowy: pozycja z tapnięcia mapy
   domMapy.kliknij('przycisk-dalej-stacje');
   assert.ok(domMapy.pobierz('mapa-stacje-pinezki').children.length > 0);
 
@@ -637,14 +637,13 @@ test('mapa: obrót telefonu (resize) przelicza widok na nowy rozmiar panelu', as
 });
 
 test('mapa: wyczyszczone pole stacji nie wysypuje przejścia — jest jawna odmowa z kodem K10', async () => {
-  const domMapy = await aplikacjaZMapa();
-  const gpsMapy = domMapy.gps;
+  const domMapy = await aplikacjaZMapa({ search: '?tryb=test' }); // ADR 0061: stacje są tylko w trybie testowym bez sieci
   // Czas gry nie jest już polem (uwaga A, 2026-09-15) — nie ma czym wpisać
   // zera, więc ten sam tor sprawdza pole, które zostało: gracz czyści liczbę
   // stacji → `Number('') = 0`, czyli wartość skończona, która przechodzi przez
   // hartowanie liczb w setupie. Odmowa musi przyjść z walidacji (K10).
   wyslij(domMapy.pobierz('setup-stacje'), 'input', { target: { value: '' } });
-  gpsMapy.wyslijFix(52.235, 21.015, 15);
+  domMapy.ustawPozycje('52.235', '21.015'); // tryb testowy: pozycja z tapnięcia mapy
 
   // przejście ma odmówić, a nie urwać się wyjątkiem w nasłuchu (LESSONS L10)
   domMapy.kliknij('przycisk-dalej-stacje');
@@ -807,7 +806,7 @@ test('stacje: cache sieci daje stacje SIECIOWE bez żadnego internetu', async ()
   const pamiecCache = new Map();
   // nazwa miejsca ZAWSZE się wyświetla (Partia 2: koniec opcji geokodacji)
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
 
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
@@ -825,8 +824,8 @@ test('stacje: wpis z szerszego pobrania (R=2000) obsługuje grę R=1000 bez Over
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
   const srodek = { lat: 52.2297, lon: 21.0122 };
-  pamiecCache.set(kluczCacheSieci({ ...srodek, promienM: 2000, tryb: 'piesza' }),
-    JSON.stringify(zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: Date.now() })));
+  pamiecCache.set(kluczCacheSieci({ ...srodek, promienM: 2000 }),
+    JSON.stringify(zlozWpisSieci({ dane, srodek, promienM: 2000, terazMs: Date.now() })));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   let ileProb = 0;
@@ -843,7 +842,7 @@ test('stacje L2: wpis ze wspólnego dysku daje stacje sieciowe bez Overpass', as
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
   const srodek = { lat: 52.2297, lon: 21.0122 };
-  const wpisDysk = zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: Date.now() });
+  const wpisDysk = zlozWpisSieci({ dane, srodek, promienM: 2000, terazMs: Date.now() });
   let ileOverpass = 0;
   domAtrapa.window.fetch = async (url, opcje) => {
     if (String(url).includes('akcja=siec')) {
@@ -858,7 +857,7 @@ test('stacje L2: wpis ze wspólnego dysku daje stacje sieciowe bez Overpass', as
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa \(Overpass\) — punkty osiągalne/);
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /ze wspólnego dysku/);
   // trafienie L2 dokarmiło L1 pod kluczem dokładnym
-  const klucz = kluczCacheSieci({ ...srodek, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ ...srodek, promienM: 1000 });
   assert.ok(JSON.parse(domAtrapa.pamiec.get(klucz)).dane.drogi.length > 10, 'L1 dokarmiony wpisem z dysku');
 });
 
@@ -880,8 +879,8 @@ test('stacje L2: świeże pobranie wysyła wpis na wspólny dysk w tle', async (
   await czekaj(400);
   assert.equal(wyslane.length, 1, 'jedna wysyłka L2 po świeżym pobraniu');
   assert.equal(wyslane[0].schemat, SCHEMAT_SIECI);
-  assert.equal(wyslane[0].promienM, 1000);
-  assert.equal(wyslane[0].tryb, 'piesza');
+  assert.equal(wyslane[0].promienM, 1000, 'promień wpisu = bucket (R=1000 → bucket 1000)');
+  assert.equal(wyslane[0].tryb, undefined, 'ADR 0059: trybu we wpisie nie ma');
   assert.ok(wyslane[0].dane.drogi.length > 10, 'wysyłka niesie sparsowane drogi');
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'gra nie czekała na wysyłkę');
 });
@@ -891,7 +890,7 @@ test('stacje: „Inny układ" i „Pobierz ponownie" wracają widokiem na górę
   // panel (.panel-centralny, overflow-y: auto) zostawał przewinięty w dół.
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
   pamiecCache.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -928,7 +927,7 @@ test('stacje: udane pobranie z pierwszej instancji zapisuje cache i rysuje sieć
   assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /sieć drogowa/);
   assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('z pamięci'), 'świeżo pobrane');
   assert.match(domAtrapa.pobierz('status').textContent, /Stacje z sieci drogowej|za uboga/);
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
   const wpis = JSON.parse(domAtrapa.pamiec.get(klucz));
   assert.equal(wpis.schemat, SCHEMAT_SIECI);
   assert.ok(Number.isFinite(wpis.zapisanoMs));
@@ -1030,7 +1029,7 @@ test('uwaga B (2026-09-17): nowy setup otwiera stacje CZYSTE — zero artefaktó
 test('stacje: sieć z cache pokazuje ponowienie, klik dowozi świeże dane z Overpass', async () => {
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test&odstep=0', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -1138,6 +1137,67 @@ test('stacje: degradacja bez sieci = sam pierścień, bez trybu ręcznego (teren
   const pinezki = domAtrapa.pobierz('mapa-stacje-pinezki');
   assert.ok(pinezki.children.length >= 3, 'pierścień rozstawiony na mapie');
   assert.equal(pinezki.children[0].zdarzenia.pointerdown, undefined, 'pinezki nie dają się przeciągać');
+});
+
+test('stacje: realna gra bez sieci NIE STARTUJE — „Dalej” zablokowany (ADR 0061)', async () => {
+  // Właściciel 2026-09-18: bez danych sieci drogowej pytań nie da się
+  // wygenerować (kotwice = nazwy z sieci), więc zamiast cichego pierścienia
+  // jawny stop. Tryb realny = brak parametru testowego.
+  const domAtrapa = await aplikacjaZSiecia({ search: '' });
+  ustawPozycjeTestowa(domAtrapa);
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  // BEZ await — bez window.fetch cała ścieżka jest synchroniczna
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /Stacji nie rozstawiono/,
+    'podsumowanie mówi wprost, że stacji NIE MA');
+  assert.match(domAtrapa.pobierz('stacje-tryb').textContent, /bez sieci dróg nazw nie ma/,
+    'powód: pytania powstają z nazw miejsc');
+  assert.equal(domAtrapa.pobierz('przycisk-dalej-prompt').disabled, true,
+    '„Dalej” zablokowany w rytmie ze stanem');
+  assert.equal(domAtrapa.pobierz('przycisk-przelicz').hidden, true,
+    '„Inny układ” nie ma tu sensu — układu nie rozstawimy');
+  assert.equal(domAtrapa.pobierz('przycisk-siec-ponow').hidden, false,
+    '„Pobierz sieć ponownie” to droga wyjścia');
+  // Nawet wymuszony klik „Dalej” nie otwiera promptu — straż waliduje STAN (L10),
+  // nie wygląd DOM.
+  domAtrapa.kliknij('przycisk-dalej-prompt');
+  assert.equal(domAtrapa.pobierz('ekran-prompt').hidden, true,
+    'ekran promptu się nie otwiera, gdy stacji nie rozstawiono');
+  assert.match(domAtrapa.pobierz('status').textContent, /stacji nie rozstawiono/i);
+});
+
+test('stacje: realna gra + S09 (zero dróg dla trybu) = blokada, nie pierścień (ADR 0061)', async () => {
+  // Sieć PRZYSZŁA, ale nie dała ani jednej drogi dla wybranego trybu —
+  // `grafDlaTrybu` pokazuje S09, a gra realna idzie w ten sam jawny stop.
+  const domAtrapa = await aplikacjaZSiecia({ search: '' });
+  ustawPozycjeTestowa(domAtrapa);
+  domAtrapa.window.fetch = async (url, opcje) => {
+    if (String(url).includes('akcja=siec') || String(opcje?.body ?? '').includes('siec-zapisz')) {
+      return { ok: true, status: 200, json: async () => ({ ok: false }) }; // L2: pudło
+    }
+    if (String(opcje?.method ?? '').toUpperCase() === 'POST') {
+      // tylko motorway: droga w sensie OSM, ale wykluczona dla pieszego
+      // (konfig TRYBY.piesza.wykluczoneKlasy) → graf jest pusty → S09.
+      return { ok: true, status: 200, text: async () => JSON.stringify({
+        version: 0.6,
+        elements: [{
+          type: 'way', id: 90001,
+          geometry: [{ lat: 52.228, lon: 21.011 }, { lat: 52.229, lon: 21.012 }, { lat: 52.230, lon: 21.013 }],
+          tags: { highway: 'motorway', name: 'S8' },
+        }],
+      }) };
+    }
+    return { ok: true, status: 200, json: async () => ({ ok: true }) };
+  };
+  domAtrapa.kliknij('przycisk-dalej-stacje');
+  await czekaj(300);
+  assert.equal(domAtrapa.pobierz('bledy-stacje').hidden, false);
+  assert.match(domAtrapa.pobierz('bledy-stacje').textContent, /\[S09\]/,
+    'jawny powód: zero dróg dostępnych dla trybu');
+  assert.match(domAtrapa.pobierz('stacje-podsumowanie').textContent, /Stacji nie rozstawiono/);
+  assert.equal(domAtrapa.pobierz('przycisk-dalej-prompt').disabled, true,
+    'S09 blokuje „Dalej” tak samo jak brak sieci');
+  assert.ok(!domAtrapa.pobierz('stacje-tryb').textContent.includes('pierścień'),
+    'żadnego cichego układu zastępczego w grze realnej');
 });
 
 /* --------------------------------------- M5/J3: podgląd i edycja organizatora */
@@ -1405,7 +1465,7 @@ test('ADR 0032: propozycje paczek pokazują „Fact-checked" tylko dla zweryfiko
 test('nazwa miejsca ZAWSZE trafia do UI i do promptu (Partia 2: koniec opcji geokodacji)', async () => {
   const pamiecCache = new Map(); // konfig domyślny, bez żadnych przełączników
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   ustawPozycjeTestowa(domAtrapa, '52.2297', '21.0122');
@@ -1420,7 +1480,7 @@ test('nazwa miejsca ZAWSZE trafia do UI i do promptu (Partia 2: koniec opcji geo
 test('prompt: jeden klik KOPIUJE także bez schowka asynchronicznego (iframe podglądu)', async () => {
   const pamiecCache = new Map();
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' }),
+  pamiecCache.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
     JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
   const domAtrapa = await aplikacjaZSiecia({ search: '?tryb=test', pamiec: konfigNa1000m(pamiecCache) });
   // schowek asynchroniczny zablokowany jak w iframe podglądu
@@ -2917,7 +2977,7 @@ test('stacje: nazwa z OSM ze znacznikiem HTML jest tekstem, nie znacznikiem', as
     }
   }
   const pamiec = konfigNa1000m(new Map());
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
   pamiec.set(klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane }));
 
   const domAtrapa = await aplikacjaZSiecia({ pamiec });
@@ -2952,7 +3012,7 @@ test('stacje: sieć za uboga na zamówioną liczbę — setup idzie za wyborem, 
   const zamowione = 10;
   const { promienM } = przeliczenieCzasu({ czasGryMin: 240, tryb: 'piesza', liczbaStacji: zamowione, pytaniaNaStacje: 1 });
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM, tryb: 'piesza' });
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM });
   const pamiec = new Map([
     [klucz, JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane })],
     ['okolica:konfig', JSON.stringify({
@@ -3328,15 +3388,24 @@ test('droga w terenie (bez ?tryb=test): nad mapą zostaje sam pasek, symulacji n
   // kaskady CSS: `hidden` na przodku gasi potomków w przeglądarce (pomiar
   // headless Chromium 153: `#gra-panel-odcinek` 0×0, `offsetParent` null),
   // a `kliknij` w atrapie nie pyta o renderowanie (LESSONS L13).
+  // ADR 0061: realna gra bez sieci NIE STARTUJE — test idzie więc realną
+  // drogą z SIECIĄ: cache L1 (telefon pamięta okolicę) dostarcza układ
+  // synchronicznie, bez fetch i bez czekania.
+  const pamiec = pamiecKonfig3x1();
+  const daneCentrum = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum')));
+  pamiec.set(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 }),
+    JSON.stringify({ schemat: SCHEMAT_SIECI, zapisanoMs: Date.now(), dane: daneCentrum }));
   const gpsTeren = atrapaGeolokalizacji();
-  const dom = await naEkranPozycji(zainstalujDom, gpsTeren.geolocation, 'drogateren');
+  const dom = zainstalujDom({ geolocation: gpsTeren.geolocation, pamiec });
+  await import(`../app/app.js?drogateren=${Math.random().toString(36).slice(2)}`);
   dom.kliknij('przycisk-dalej-pozycja');
   await czekaj(30); // bramka tożsamości jest asynchroniczna
   assert.equal(dom.pobierz('ekran-pozycja').hidden, false, 'setup przeszedł na ekran pozycji');
   gpsTeren.wyslijFix(52.2297, 21.0122, 12);
   assert.match(dom.pobierz('pozycja-status').textContent, /Pozycja ustalona/, 'fix z GPS ustawił pozycję');
   dom.kliknij('przycisk-dalej-stacje');
-  await czekaj(30);
+  assert.match(dom.pobierz('stacje-tryb').textContent, /sieć drogowa/, 'realna gra idzie przez sieć z cache');
+  assert.equal(dom.pobierz('przycisk-dalej-prompt').disabled, false, 'stacje z sieci odblokowują „Dalej”');
   dom.wklej('pole-odpowiedz', JSON.stringify(czytajFixturePaczka()));
   assert.equal(dom.pobierz('ekran-gra').hidden, false, 'poprawna paczka sama zaczęła grę');
   dom.kliknij('przycisk-start-odcinka');
@@ -3543,7 +3612,7 @@ test('uwaga B (dogrywka): wklejka nie przestawia stacji z sieci — metryka drog
     czasGryMin: CZAS_MIN_D1, tryb: 'piesza', liczbaStacji: 3, pytaniaNaStacje: 1,
   }).promienM;
   const pamiec = new Map();
-  pamiec.set(kluczCacheSieci({ ...SRODEK_D1, promienM, tryb: 'piesza' }), JSON.stringify({
+  pamiec.set(kluczCacheSieci({ ...SRODEK_D1, promienM }), JSON.stringify({
     schemat: SCHEMAT_SIECI,
     zapisanoMs: Date.now(),
     dane: upraszczajDaneDoCache(parsujOdpowiedz(czytajFixtureOverpass('centrum'))),

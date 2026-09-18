@@ -15,29 +15,29 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, KLUCZE_POZIOMOW, PODKLADY, POZIOM_DORMYSLNY, TEMATY_SETUP, TRYBY, czyPoziomOk, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-161';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-161';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, KLUCZE_POZIOMOW, PODKLADY, POZIOM_DORMYSLNY, TEMATY_SETUP, TRYBY, czyPoziomOk, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-162';
+import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-162';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-161';
+} from './protokol.js?v=m12-162';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-161';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-161';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-161';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-161';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, kolejnoscPytanStacji, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-161';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-161';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-162';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-162';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-162';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-162';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, kolejnoscPytanStacji, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-162';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-162';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-161';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-161';
+} from './zestawy.js?v=m12-162';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-162';
 import {
   KODY_SIECI,
   POLITYKA,
@@ -57,19 +57,19 @@ import {
   wczytajDaneZCache,
   wybierzWpisSieci,
   zlozWpisSieci,
-} from './sieci.js?v=m12-161';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-161';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-161';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-161';
-import { adresMostu, stanMostu } from './most.js?v=m12-161';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-161';
+} from './sieci.js?v=m12-162';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-162';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-162';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-162';
+import { adresMostu, stanMostu } from './most.js?v=m12-162';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-162';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   czyPaczkaUzytaLokalnie, oznaczPaczkeJakoUzyta,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-161';
+} from './oceny.js?v=m12-162';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1878,18 +1878,21 @@ function ziarno() {
 
 /* --- sieć drogowa (M4): cache, pobieranie z łańcuchem instancji, wybór --- */
 
-/** Klucz cache sieci dla bieżącej pozycji, promienia i trybu (ADR 0010 pkt 1). */
+/** Klucz cache sieci dla bieżącej pozycji i promienia (ADR 0010 pkt 1,
+ *  ADR 0059: komórka geohash6 + bucket — trybu nie ma). */
 function kluczSieci() {
-  return kluczCacheSieci({ lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM, tryb: STAN.konfig.tryb });
+  return kluczCacheSieci({ lat: STAN.pozycja.lat, lon: STAN.pozycja.lon, promienM: STAN.konfig.promienM });
 }
 
 /**
- * Sieć z pamięci telefonu: najpierw klucz dokładny (`geohash6-R-tryb`),
+ * Sieć z pamięci telefonu: najpierw klucz dokładny (`geohash6-bucket`),
  * a po pudle — skan tej samej komórki po wpis pokrywający (teren 2026-09-16:
- * inny setup w tej samej okolicy nie woła Overpass od nowa). Wpis dokładny
- * sprzed kotwic (bez `srodek`) działa jak dotąd — ufamy kluczowi.
+ * inny setup w tej samej okolicy nie woła Overpass od nowa). Wpis z większego
+ * bucketu pokrywa grę węższą (`czyWpisPokrywa`), więc skan łapie też buckety
+ * sąsiednie tej samej komórki. Wpis dokładny sprzed kotwic (bez `srodek`)
+ * działa jak dotąd — ufamy kluczowi.
  */
-function odczytajCacheSieci({ klucz, srodek, promienM, tryb, terazMs }) {
+function odczytajCacheSieci({ klucz, srodek, promienM, terazMs }) {
   try {
     const surowy = localStorage.getItem(klucz);
     if (surowy) {
@@ -1900,13 +1903,12 @@ function odczytajCacheSieci({ klucz, srodek, promienM, tryb, terazMs }) {
   } catch {
     /* zepsuty wpis dokładny — próbujemy jeszcze skanu */
   }
-  const prefiks = `${klucz.split('-').slice(0, -2).join('-')}-`;
-  const przyrostek = `-${tryb}`;
+  const prefiks = klucz.slice(0, klucz.lastIndexOf('-'));
   const kandydaci = [];
   try {
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
-      if (!k || k === klucz || !k.startsWith(prefiks) || !k.endsWith(przyrostek)) continue;
+      if (!k || k === klucz || !k.startsWith(prefiks)) continue;
       let wpis = null;
       try {
         wpis = JSON.parse(localStorage.getItem(k));
@@ -1918,7 +1920,7 @@ function odczytajCacheSieci({ klucz, srodek, promienM, tryb, terazMs }) {
   } catch {
     return null; // pamięć niedostępna — gra pobierze sieć
   }
-  return wybierzWpisSieci(kandydaci, { srodek, promienM, tryb, terazMs })?.dane ?? null;
+  return wybierzWpisSieci(kandydaci, { srodek, promienM, terazMs })?.dane ?? null;
 }
 
 function zapiszCacheSieci(klucz, dane, terazMs) {
@@ -1927,7 +1929,6 @@ function zapiszCacheSieci(klucz, dane, terazMs) {
       dane,
       srodek: STAN.pozycja,
       promienM: STAN.konfig.promienM,
-      tryb: STAN.konfig.tryb,
       terazMs,
     })));
     // LRU: ponad 2 MB cache sieci → najstarsze wpisy wypadają (ADR 0010 pkt 1)
@@ -2061,14 +2062,13 @@ async function sprobujPobracSiecZDysku() {
       lat: STAN.pozycja.lat,
       lon: STAN.pozycja.lon,
       promienM: STAN.konfig.promienM,
-      tryb: STAN.konfig.tryb,
     }));
   } catch {
     return null; // most nie odpowiada — gra jedzie do Overpass
   }
   const wpis = odpowiedz?.wpis;
   if (odpowiedz?.ok !== true || !wczytajDaneZCache(wpis, { terazMs })) return null;
-  if (wpis.tryb !== STAN.konfig.tryb) return null;
+  // Trybu nie porównujemy (ADR 0059) — dane są uniewersalne dla wszystkich trybów.
   if (!czyWpisPokrywa(wpis, { srodek: STAN.pozycja, promienM: STAN.konfig.promienM })) return null;
   ustawSiec(wpis.dane, { zCache: true, zrodlo: 'dysk', klucz: kluczSieci() });
   zapiszCacheSieci(kluczSieci(), wpis.dane, terazMs);
@@ -2088,7 +2088,6 @@ async function zapiszSiecNaDysk() {
     dane: STAN.siec.dane,
     srodek: STAN.pozycja,
     promienM: STAN.konfig.promienM,
-    tryb: STAN.konfig.tryb,
     terazMs: Date.now(),
   });
   if (JSON.stringify(wpis).length > 6_000_000) return; // most by odmówił — szkoda radia
@@ -2107,7 +2106,7 @@ async function pobierzSiec(terazMs) {
   const f = typeof window !== 'undefined' && typeof window.fetch === 'function' ? window.fetch.bind(window) : null;
   if (!f) return false;
   const zapytanie = budujZapytanieOverpass({
-    srodek: STAN.pozycja, promienM: STAN.konfig.promienM, tryb: STAN.konfig.tryb,
+    srodek: STAN.pozycja, promienM: STAN.konfig.promienM,
   });
   const lancuch = kolejnoscInstancji(czytajSprawnaInstancje());
   const lista = $('siec-proby');
@@ -2219,9 +2218,23 @@ function przeliczZTegoCoJest() {
         pole: 'siec',
         komunikat: blad?.komunikat ?? 'Nie udało się wybrać stacji z sieci drogowej.',
       }]);
+      // Sieć jest, ale nie dała układu (S09: zero dróg dla trybu itp.).
+      if (STAN.trybTestowy) { pierścieńTrybTestowy(); return; }
+      zablokujStacje();
+      return;
     }
   }
-  // degradacja (ADR 0005 pkt 8): pierścień z jawnym ostrzeżeniem
+  // ADR 0061 (właściciel, 2026-09-18): bez sieci dróg NIE MA układu
+  // zastępczego — pytania powstają z nazw miejsc, a bez nazw model nie
+  // napisze zakotwiczonych pytań, więc zamiast cichego pierścienia jawny
+  // stop. Tryb testowy (symulacje, atrapy bez sieci) zachowuje pierścień.
+  if (STAN.trybTestowy) { pierścieńTrybTestowy(); return; }
+  zablokujStacje();
+}
+
+/** Pierścień w trybie testowym (ADR 0061): symulacje potrzebują układu
+ * stacji bez sieci; w grze realnej bez sieci gra nie startuje. */
+function pierścieńTrybTestowy() {
   STAN.stacje = stacjeProste({
     srodek: STAN.pozycja,
     liczbaStacji: STAN.konfig.liczbaStacji,
@@ -2229,6 +2242,16 @@ function przeliczZTegoCoJest() {
     ziarno: ziarno(),
     offsetObrotu: STAN.obrot,
   });
+  STAN.wynikSieci = null;
+  renderujStacje();
+  odswiezWarstwy();
+  centrujNaPozycji();
+}
+
+/** ADR 0061: gry realnej bez sieci NIE MA — stacji nie rozstawiamy
+ * (jawny stop zamiast układu zastępczego; UI opisuje co dalej). */
+function zablokujStacje() {
+  STAN.stacje = [];
   STAN.wynikSieci = null;
   renderujStacje();
   odswiezWarstwy();
@@ -2248,7 +2271,10 @@ async function przeliczStacjeZPobraniem(klucz) {
     const zDysku = await sprobujPobracSiecZDysku();
     const ok = zDysku !== null || await pobierzSiec(Date.now());
     if (!ok && STAN.siec.stan !== 'gotowa') {
-      status('Sieć drogowa niedostępna — stacje w trybie uproszczonym (pierścień): osiągalność niezweryfikowana. Sprawdź połączenie z internetem.');
+      status(STAN.trybTestowy
+        ? 'Sieć drogowa niedostępna — stacje w trybie uproszczonym (pierścień): osiągalność niezweryfikowana. Sprawdź połączenie z internetem.'
+        // ADR 0061: w grze realnej bez sieci NIE MA układu zastępczego.
+        : 'Sieć drogowa niedostępna — bez nazw miejsc pytania nie powstaną' + ADR(' (ADR 0061)') + '. „↻ Pobierz sieć ponownie” (sprawdź połączenie z internetem) albo zmień okolicę lub tryb.');
     }
     przeliczZTegoCoJest();
   } finally {
@@ -2315,7 +2341,6 @@ function przeliczStacje() {
       klucz,
       srodek: STAN.pozycja,
       promienM: STAN.konfig.promienM,
-      tryb: STAN.konfig.tryb,
       terazMs: Date.now(),
     });
     if (zCache) {
@@ -2330,6 +2355,9 @@ function przeliczStacje() {
 
 function renderujStacje() {
   const sieciowe = Boolean(STAN.wynikSieci);
+  // ADR 0061: bez stacji (brak sieci drogowej) nie ma na co przejść —
+  // „Dalej” zablokowany w rytmie ze stanem, nie z DOM (L10).
+  $('przycisk-dalej-prompt').disabled = STAN.stacje.length === 0;
   if (STAN.ukryjStacje) {
     // Wspólna Trasa = trasa-sekret (właściciel, 2026-09-11): organizator
     // generujący paczkę nie widzi nazw miejsc ani współrzędnych — tylko
@@ -2338,6 +2366,14 @@ function renderujStacje() {
     // pierwotny pomysł multi: „wygenerowano i zlokalizowano/nie zlokalizowano
     // X stacji"). Pierścień jest układem zastępczym — jego osiągalność nie
     // jest zweryfikowana, więc organizator ma to wiedzieć ZANIM wyjdzie.
+    if (STAN.stacje.length === 0) {
+      // ADR 0061: tajna trasa bez sieci = jak trasa zwykła — jawny stop.
+      $('stacje-podsumowanie').textContent = 'Stacji nie rozstawiono: brak danych sieci drogowej w tej okolicy.';
+      $('stacje-tryb').textContent = 'Pytania powstają z nazw miejsc (ulice, obiekty — OpenStreetMap) — bez sieci dróg nazw nie ma, więc gra nie startuje' + ADR(' (ADR 0061)') + '. „↻ Pobierz sieć ponownie” albo zmień okolicę lub tryb poruszania.';
+      $('przycisk-przelicz').hidden = true;
+      $('przycisk-siec-ponow').hidden = STAN.siec.stan === 'gotowa';
+      return;
+    }
     $('stacje-podsumowanie').textContent = sieciowe
       ? `Wygenerowano i zlokalizowano stacji: ${STAN.stacje.length}. Nazwy i położenie są ukryte — trasa odsłania się w czasie gry, po jednej stacji.`
       : `Wygenerowano stacji: ${STAN.stacje.length}, ale NIE zlokalizowano ich na sieci dróg (układ pierścieniowy, osiągalność niezweryfikowana). Nazwy i położenie są ukryte — trasa odsłania się w czasie gry, po jednej stacji.`;
@@ -2367,9 +2403,19 @@ function renderujStacje() {
     // Sieć z cache (telefon pamięta okolicę) daje ponowienie — świeże pobranie
     // omija cache; przy danych sprzed chwili przycisk nie ma sensu.
     $('przycisk-siec-ponow').hidden = !STAN.siec.zCache;
-  } else {
-    $('stacje-tryb').textContent = `${ZRODLA_STACJI.pierscien}. Stacje z sieci dróg, placów i szlaków pojawią się po pobraniu danych Overpass — wymaga połączenia z internetem.` + ADR(' (ADR 0005)');
+  } else if (STAN.stacje.length > 0) {
+    // ADR 0061: pierścień istnieje już TYLKO w trybie testowym (symulacje) —
+    // w grze realnej bez sieci jest `zablokujStacje` poniżej.
+    $('stacje-tryb').textContent = `${ZRODLA_STACJI.pierscien} (tryb testowy). Stacje z sieci dróg, placów i szlaków pojawią się po pobraniu danych Overpass — wymaga połączenia z internetem.` + ADR(' (ADR 0005)');
     $('przycisk-przelicz').hidden = false; // poza tajną trasą „Inny układ" jest dostępny
+    $('przycisk-siec-ponow').hidden = STAN.siec.stan === 'gotowa';
+  } else {
+    // ADR 0061 (właściciel, 2026-09-18): gry realnej bez sieci NIE MA —
+    // pytania powstają z nazw miejsc, więc bez nazw jawny stop zamiast
+    // układu zastępczego.
+    $('stacje-podsumowanie').textContent = 'Stacji nie rozstawiono: brak danych sieci drogowej w tej okolicy.';
+    $('stacje-tryb').textContent = 'Pytania powstają z nazw miejsc (ulice, obiekty — OpenStreetMap) — bez sieci dróg nazw nie ma, więc gra nie startuje' + ADR(' (ADR 0061)') + '. „↻ Pobierz sieć ponownie” (sprawdź połączenie z internetem) albo zmień okolicę lub tryb poruszania.';
+    $('przycisk-przelicz').hidden = true;
     $('przycisk-siec-ponow').hidden = STAN.siec.stan === 'gotowa';
   }
 }
@@ -5068,7 +5114,7 @@ function renderujPoziomMulti() {
   const lista = $('multi-poziom');
   if (!lista) return;
   lista.replaceChildren();
-  const etykiety = { dzieci: '🧒 Dziecko (8–10 lat)', dorosli: '🧑 Dorośli' };
+  const etykiety = { dzieci: '🧒 Dziecko', dorosli: '🧑 Dorośli' };
   for (const klucz of KLUCZE_POZIOMOW) {
     const b = document.createElement('button');
     b.type = 'button';
@@ -6360,6 +6406,13 @@ function start() {
     status('Przeliczono układ stacji (inne ziarno).');
   });
   $('przycisk-dalej-prompt').addEventListener('click', () => {
+    // ADR 0061: bez stacji (brak sieci drogowej) pytań nie ma co generować.
+    // Walidacja stanu, nie DOM (L10): przycisk i tak zablokowany w
+    // `renderujStacje`, ale nasłuch nie może zakładać, że ktoś go odkliknął.
+    if (!STAN.stacje.length) {
+      status('Pytania nie zostaną wygenerowane: stacji nie rozstawiono (brak sieci drogowej). „↻ Pobierz sieć ponownie” albo zmień okolicę lub tryb.');
+      return;
+    }
     // Uwaga terenowa G.a (właściciel, 2026-09-12): każda NOWA generacja
     // startuje z domyślnym = ODPTASZKOWANYM checkboxem (ADR 0032: domyślny
     // jest wariant bez fact-check). Aplikacja nie przeładowuje się sama

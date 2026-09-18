@@ -29,7 +29,7 @@ z AME („Scryfall dla kart, źródła www dla wpisów").
    2026-09-09): pytanie powinno odnosić się do obiektu, ulicy, dzielnicy,
    wydarzenia albo postaci z okolicy gry. Do 2026-09-09 pilnował tego walidator
    (kod `E14`, heurystyka leksykalna) — **już nie**. Zakotwiczenie jest prośbą
-   w prompcie; pytanie ogólne przechodzi. Powód w aneksie niżej.
+   w prompcie; pytanie ogólne przechodzi. Powód w aneksie (w archiwum, patrz wskaźnik niżej).
 5. **Źródła są pokazywane graczowi** po odpowiedzi, razem z wyjaśnieniem —
    to część wartości edukacyjnej i mechanizm samokontroli: jeśli gracz widzi
    adres, organizator zauważy, gdy źródło jest zmyślone.
@@ -61,27 +61,9 @@ z AME („Scryfall dla kart, źródła www dla wpisów").
 paczek i ich przegląd), `docs/PROTOKOL.md` §2–§3.
 
 
-## Aneks 2026-09-09 — pkt 4 przestaje być bramką walidatora
+## Aneks 2026-09-09 (pkt 4 przestaje być bramką walidatora) jest w archiwum
 
-Właściciel, po zobaczeniu dwóch usterek `E14` na własnej paczce: „to bez sensu.
-Przy niektórych kategoriach (szczególnie tych custom) nigdy nie będzie
-nawiązania do miejsca i będą pytania z wiedzy ogólnej. To jak najbardziej
-dopuszczalne i pożądane".
-
-Pierwotne założenie pkt 4 — że gra terenowa bez lokalnych pytań traci sens —
-jest prawdziwe dla tematów typu „historia" czy „architektura", ale nie dla
-tematu własnego, który organizator wpisuje ręcznie (np. „muzyka lat 90.").
-Tam kotwica miejscowa albo nie istnieje, albo model musiałby ją naciągnąć —
-a naciągnięty fakt jest gorszy niż uczciwe pytanie ogólne.
-
-Kosztem błędu była cała runda z modelem: organizator stoi w terenie, dostaje
-odrzuconą paczkę i musi wrócić do czatu. Przy regule, która bywa błędna z
-założenia, ta cena jest nie do przyjęcia — dlatego kod `E14`, heurystyka
-`czyZakotwiczone` i jej listy słów zostały usunięte z `app/protokol.js`,
-a nie tylko złagodzone. Zakotwiczenie zostaje w zasadzie 4 obu szablonów
-promptu: „schodź na najniższy poziom, na którym masz pewny fakt (…) gdy temat
-nie ma lokalnego zaczepienia, pytanie z wiedzy ogólnej jest w porządku".
-
-Konsekwencja dla ADR 0008: pkt 4 nie jest już kryterium przyjęcia paczki.
-Punkty 1–3 i 5–6 (kwerenda, źródła, pokazywanie źródeł graczowi) zostają bez
-zmian w wariancie z fact-checkiem.
+Zakotwiczenie w miejscu (pkt 4) to prośba w prompcie, nie brama walidatora —
+walidator leksykalny (kod `E14`) i heurystykę zniesiono po zgłoszeniu
+właściciela (pytania z wiedzy ogólnej dla tematów własnych są pożądane).
+`docs/decisions/archive/aneksy-0008-2026-09-09.md` (L62/L66, archiwizacja 2026-09-18).

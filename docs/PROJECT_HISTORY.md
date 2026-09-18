@@ -7186,3 +7186,105 @@ Wynik: **98 903 / 100 000 (rezerwa 1 097)** — z 17 tokenów rezerwy na starcie
 
 **Brama:** `npm test` **856/856**, `npm run brama` **EXIT 0**.
 
+## 2026-09-17h — otwarcie sesji `arena/01a0b15d-okolica`
+
+**Zlecenie właściciela:** „kontynuujemy projekt” — bez nowego zadania. Obowiązuje
+pętla: audyt poprzedniego PR, potem czekanie na uwagi z terenu (AGENTS §2, L68).
+
+**Lektura startowa (AGENTS §0):** wykonana w tej sesji — `AGENTS.md`,
+`docs/PROTOKOL.md` (PYT/1.3), rejestr ADR + ADR-y 0001–0058, `docs/LESSONS.md`
+(L1–L80), `docs/setup/ENVIRONMENT.md`, `docs/ROADMAP.md`,
+`docs/setup/HANDOFF_2026-09-17g.md`. Punktowo: `README.md`.
+
+**Stan zastany:** `main` = `44c80e1` (squash PR #43, sesja 2026-09-17g). Brama
+przed zmianami: `npm test` **856/856**, EXIT 0. Budżet lektury wg handoffu
+2026-09-17g: **98 903 / 100 000** (rezerwa 1 097 tokenów).
+
+**Audyt PR #43 (`44c80e1`, sesja 2026-09-17g)** — plik po pliku, **bez usterek**:
+
+- **Kod** (`app/app.js`): jedna zmiana — `poziomyBiezacegoSetupu()` jako
+  jedno źródło per-stacyjnych poziomów (hot-seat: lista graczy, multi:
+  JEDEN poziom hosta), użyte w pięciu miejscach (`oczekiwane()`,
+  `metaBiezacejOkolicy()`, kryteria dopasowania paczek, `metaSesjiMulti()`,
+  `zalozGreMulti()`). Formuła „jeden poziom gry” istnieje dokładnie raz
+  (w tej funkcji); `polecenieHotseat()` celowo nie jest w tym gronie —
+  raportuje poziomy KOŃCZONEJ gry z `STAN.rozgrywka`, nie bieżącego setupu.
+  Pin „kontrakt ADR 0055 (audyt PR #42)” ma zęby (globalny licznik formuły
+  + asercje ciał obu funkcji).
+- **Wdrożenie**: bump `?v=` `m12-160` → `m12-161` w 39 miejscach
+  (`index.html`, `sw.js`, importy `app/*.js`) + `WERSJA_SW` — jedna wersja
+  wszędzie (L29); nadrobiony bump z 2026-09-17f wszedł do maina.
+- **Dokumenty** (AGENTS §3, PROTOKOL §3/§9, WORKFLOW): spójne z ADR
+  0055/0057/0058 — bieżąca wersja `PYT/1.3`, `poziomyPytan` w schematach
+  RO-* i w przykładach, ściga AGENTS bez „kategorii wiekowej”; pięć martwych
+  fraz w strażniku dryfu z powodami.
+- **Archiwum**: sześć grup aneksów (ADR 0009, 0010, 0015, 0020, 0022, 0044)
+  przeniesione dosłownie do `docs/decisions/archive/` (6 plików, tylko
+  dołożone nagłówki), wskaźniki z datą w plikach macierzystych; strażnik
+  cytowań i pin „ADR na dysku ↔ rejestr” zielone.
+- **Brama i CI**: `npm test` **856/856**, `npm run brama` **EXIT 0**, budżet
+  lektury **98 903 / 100 000** (rezerwa 1 097 — zgadza się z handoffem);
+  CI na scalonym commicie: `CI` **success** + `Pages` **success**.
+
+Bez zmian kodu — audyt zakończony czysto. Kolejka: **uwagi z terenu**
+(otwarte z 2026-09-17g: wdrożenie mostu z `poziomyPytan`/`poziom`/slugiem
+trudności i test iPhona na `m12-161`).
+
+## 2026-09-18 — most Apps Script wdrożony: wykreślony z otwartych
+
+Właściciel: „Nowy appscript już dawno wdrożony, możesz wykreślić z listy.”
+Punkt „ponowne wdrożenie mostu (poziomyPytan/poziom/slug)” znika z otwartych
+(zostaje tylko test terenowy na iPhonie na `m12-161`). Bez zmian kodu —
+aplikacja i lustro `.gs` się nie zmieniły; konsekwencja dla gry: cache L2
+sieci (ADR 0052) od tej pory odpowiada na żywo. Nowy handoff:
+`docs/setup/HANDOFF_2026-09-18.md` (najnowszy).
+
+## 2026-09-18 — uwagi terenowe: etykieta „Dziecko”, cache buckety (ADR 0059), prompt bez współrzędnych (ADR 0060, PYT/1.4), bramka stacji (ADR 0061)
+
+**Uwagi terenowe właściciela (2026-09-18) — wszystkie cztery wdrożone:**
+
+1. Etykieta poziomu gracza „Dziecko (8–10)” → „Dziecko” (commit `852309c`).
+2. **Cache sieci drogowej (ADR 0059)**: klucz = komórka geohash6 + bucket
+   promienia (1000/5000/10000/25000 m), trybu w kluczu NIE MA (dane to unium
+   klas dróg dla wszystkich trybów), pobranie = bucket × 1,15, tolerancja
+   pokrycia 1400 m (przekątna komórki geohash6); L1 + L2 + lustro `.gs`
+   spójne; bez migracji — właściciel kasuje 3 stare pliki L2 z Drive (commit
+   `9129f51`).
+3. **Współrzędnych nie ma w prompcie ani w paczce (ADR 0060)**: znika linia
+   „środek gry: {LAT}, {LON}” i współrzędne stacji; walidacja traci E17 i
+   odległość środka w E16; `okolica` paczki = `{ promienM, miejsce }`;
+   protokół `PYT/1.4`, szablony `PYT/1.4.0` / `PYT/1.4-nofc.0`; stare paczki
+   niosące `lat/lon` zostają czytelne (dodawczość); strażnik synchronizacji
+   szablonu dostał nowe listy wymaganych placeholderów
+   (`tools/synchronizuj-szablon.mjs`)
+   (commit `ac030ef`).
+4. **Bramka ekranu stacji (ADR 0061)**: gra realna bez sieci drogowej — albo z
+   siecią, która nie dała dróg dla trybu (S09) — NIE STARTUJE: jawny stop
+   („Stacji nie rozstawiono”), przycisk „Dalej” zablokowany w rytmie ze stanem
+   (L10), „Inny układ” znika, „Pobierz sieć ponownie” zostaje; pierścień
+   „osiągalność niezweryfikowana” zostaje wyłącznie trybowi testowemu
+   (symulacje); trasa-sekret = ten sam stop. Aneks ADR 0005 pkt 8. Decyzja do
+   przeglądu właściciela w PR #44 (ten commit).
+
+**L59 powtórzył się (drugi raz tego dnia):** sandbox resetował lokalny `.git`
+gałęzi na świeży clone (`44c80e1`), podczas gdy tip odległy był `c19344e`, a
+praca cache leżała jeszcze niezacommitowana. Odzyskanie: snapshot drzewa
+`tar --exclude=.git` do /tmp ZANIM `git reset --hard FETCH_HEAD`, potem
+cherry-pick dwóch gotowych commitów (czysto) i commit cache po odtworzeniu
+plików ze snapshotu. Od tej pory odległa gałąź jest trwałym magazynem —
+popychać po każdym zielonym commicie.
+
+**Budżet lektury:** dokumentacja sesji (ADR 0059/0060/0061 + aneksy) przebiła
+limit (102 056) — zarchiwizowano 18 historycznych aneksów z 14 ADR-ów (14 plików) do
+`docs/decisions/archive/` ze wskaźnikami z datą (L62/L66): 0005-09-16,
+0006-09-16d, 0008-09-09, 0009-09-09, 0011-09-16d…17, 0018-09-07…12,
+0028-09-09, 0029-09-12…13b, 0034-09-10, 0036-09-13 (m12-101/102),
+0042-09-16d, 0047-09-15, 0048-09-15, 0053-09-17 → **99 253 / 100 000
+(rezerwa 747)**.
+
+**Brama:** `npm test` **858/858**, `npm run brama` **EXIT 0**; `?v=` i
+`WERSJA_SW` `m12-161` → `m12-162`.
+
+Kolejka: zadania właściciela z handoffu (ponowne wdrożenie `.gs`, kasowanie 3
+plików L2, test iPhona na `m12-162`, przegląd ADR 0061 w PR #44), potem
+**uwagi z terenu** (L68).

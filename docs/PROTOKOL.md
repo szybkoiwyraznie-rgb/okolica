@@ -1,4 +1,4 @@
-# PROTOKÓŁ PYT v1.3 — protokół pytań terenowych
+# PROTOKÓŁ PYT v1.4 — protokół pytań terenowych
 
 > **To jest zasada treściowa, nie sugestia** (AGENTS.md §3). Obowiązuje każdy
 > prompt, każdą wklejoną odpowiedź modelu i każdą paczkę pytań zapisaną przez
@@ -50,7 +50,6 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
 6. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.
 OKOLICA GRY:
-- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
 - promień gry: {PROMIEN_M} m
 - sposób poruszania się: {TRYB}
@@ -65,7 +64,7 @@ STACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stac
 
 SCHEMAT ODPOWIEDZI — dokładnie te pola:
 {
-  "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
+  "okolica": { "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "tematy": [{TEMATY_JSON}],
   "jezyk": "{JEZYK}",
   "pytania": [
@@ -99,11 +98,10 @@ WYMAGANIA DODATKOWE:
 
 | Placeholder | Wartość | Źródło |
 | --- | --- | --- |
-| `{LAT}`, `{LON}` | środek gry, 5 miejsc po przecinku (~1 m) | geolokalizacja albo tryb testowy (ADR 0004) |
-| `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt niedostępny — `brak odczytu (tylko współrzędne)` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
+| `{MIEJSCE}` | nazwa miejsca: dzielnica, miasto, region, państwo | obszary administracyjne z tego samego zapytania Overpass (`is_in`); gdy odczyt niedostępny — `brak odczytu nazwy miejsca` (ADR 0013 pkt 3, `docs/ASSETS.md` §3) |
 | `{PROMIEN_M}` | promień gry w metrach | setup: liczony z planowanego czasu gry, trybu i liczby pytań (ADR 0025) |
 | `{TRYB}` | `piesza` / `rower` / `samochodowa` — etykieta polska | setup |
-| `{LISTA_STACJI}` | po jednej linii: `- stacja N: LAT, LON — <opis miejsca albo „punkt przy ulicy X"> (ODLEGLOSC m od środka gry)`, a pod KAŻDĄ stacją linia z zestawieniem pytań poziomów (np. `2 pytania dla dorosłych, 1 pytanie dla dzieci`; w multi `1 pytanie dla dzieci`) (ADR 0057) | wybór stacji (ADR 0005) + poziomy graczy/gra (ADR 0055) |
+| `{LISTA_STACJI}` | po jednej linii: `- stacja N: <opis miejsca albo „punkt w terenie (bez nazwy)"> (ODLEGLOSC m od środka gry)` — BEZ współrzędnych (ADR 0060), a pod KAŻDĄ stacją linia z zestawieniem pytań poziomów (np. `2 pytania dla dorosłych, 1 pytanie dla dzieci`; w multi `1 pytanie dla dzieci`) (ADR 0057) | wybór stacji (ADR 0005) + poziomy graczy/gra (ADR 0055) |
 | `{POZIOMY_BLOK}` | blok złożony przez `zbudujPrompt()` (ADR 0057): wymagania trudności poziomów obecnych w grze (hot-seat: poziomy z listy graczy — bez imion i bez opisu kolejności odpowiadania; multi: dodatkowo linia o poziomie wszystkich pytań — wybór organizatora) | `konfig.gracze` / wybór hosta (multi) + protokół §4 |
 | `{TEMATY}` | lista tematów z opisami, np. `historia (dzieje miejsca, daty, wydarzenia, postaci)` | protokół §5 |
 | `{TEMATY_JSON}` | te same klucze jako elementy listy JSON, np. `"historia", "przyroda"` | protokół §5 |
@@ -152,7 +150,6 @@ ZASADY TWARDE (naruszenie którejkolwiek unieważnia odpowiedź):
 5. Cała odpowiedź to jeden blok kodu json ze schematem podanym niżej.
 6. Formułuj treść pytania tak, żeby odpowiedź nie zawierała się w pytaniu.
 OKOLICA GRY:
-- środek gry (szerokość geograficzna, długość geograficzna): {LAT}, {LON}
 - miejsce: {MIEJSCE}
 - promień gry: {PROMIEN_M} m
 - sposób poruszania się: {TRYB}
@@ -167,7 +164,7 @@ STACJE (kolejność = kolejność w grze; każde pytanie przypisz do jednej stac
 
 SCHEMAT ODPOWIEDZI — dokładnie te pola:
 {
-  "okolica": { "lat": {LAT}, "lon": {LON}, "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
+  "okolica": { "promienM": {PROMIEN_M}, "miejsce": "{MIEJSCE}" },
   "tematy": [{TEMATY_JSON}],
   "jezyk": "{JEZYK}",
   "pytania": [
@@ -197,15 +194,14 @@ WYMAGANIA DODATKOWE:
 ```
 <!-- szablon-promptu-bez:koniec -->
 
-## 3. Schemat paczki PYT/1.3
+## 3. Schemat paczki PYT/1.4
 
 ### 3.1 Poziom paczki
 
 | Pole | Typ | Wymagane | Zasady |
 | --- | --- | --- | --- |
 | `protokol` | tekst | nie | pole historyczne: model go NIE pisze, a aplikacja je IGNORUJE (§3.4). Profil źródeł wynika z ptaszka „fact check” w setupie, nie z markera |
-| `okolica.lat` | liczba | tak | `-90 ≤ lat ≤ 90` |
-| `okolica.lon` | liczba | tak | `-180 ≤ lon ≤ 180` |
+| `okolica.lat` / `okolica.lon` | liczba | nie | usunięte w PYT/1.4 (ADR 0060): współrzędnych nie ma w prompcie, więc model nie zwraca środka gry; tożsamość okolicy niosą `okolica.miejsce` i nazwy stacji. Stare paczki z tymi polami są czytane, pola są ignorowane |
 | `okolica.promienM` | liczba | tak | `100–50000`, zgodna z konfiguracją gry |
 | `okolica.miejsce` | tekst | tak | niepuste; nazwa miejsca z geokodacji albo jawny brak |
 | `wiek` | tekst | nie | usunięte w PYT/1.2 (ADR 0055): trudność jest własnością GRACZA (`gracze[].poziom` w setupie) i pytania (`poziom` w §3.2). Stare paczki z tym polem są czytane, pole jest ignorowane |
@@ -363,8 +359,8 @@ i aneks 2026-09-15d: przycisk „skopiuj poprawkę do modelu" usunięty).
 | `E13` | duplikat pytania (znormalizowana `tresc` występuje więcej niż raz) |
 | `E14` | wycofany 2026-09-09 (zakotwiczenie miejscowe jest prośbą w prompcie, nie bramką walidatora — patrz niżej) |
 | `E15` | pole wymagane puste albo nie tekstem/liczbą zgodnie z §3 |
-| `E16` | paczka niespójna z konfiguracją gry: `okolica` (promień, środek > 500 m) albo `tematy`, `jezyk` (`wiek` wycofane w PYT/1.2 — patrz `E22`) |
-| `E17` | współrzędne poza zakresem (`lat`, `lon`) |
+| `E16` | paczka niespójna z konfiguracją gry: `okolica.promienM` albo `tematy`, `jezyk` (`wiek` wycofane w PYT/1.2 — patrz `E22`) |
+| `E17` | wycofany 2026-09-18 (PYT/1.4, ADR 0060): paczka nie niesie już współrzędnych — pola `okolica.lat/lon` są ignorowane |
 | `E18` | wycofany (rev2: 1 pkt za pytanie, pole `punkty` ignorowane) |
 | `E19` | `id` pytania nieunikalne albo niezgodne ze wzorem |
 | `E20` | `wyjasnienie` krótsze niż 60 znaków albo dosłownie powtarza `tresc` |
@@ -439,13 +435,25 @@ zajęte, tak samo jak wycofany `E18`.
   poziom `dzieci` zrelaksowany (bez TRUDNYCH dat, nazwisk i faktów).
   Szablony `PYT/1.3.1` / `PYT/1.3-nofc.1`. **Bez migratora** (faza testów
   terenowych).
+- **PYT/1.4: współrzędnych nie ma w prompcie (2026-09-18, uwagi terenowe
+  właściciela; ADR 0060)** — model i tak nie korzysta z liczb (właściciel
+  zmierzył identyfikację okolicy z ±20 km dokładnością); realnymi kotwicami
+  są nazwy własne z OpenStreetMap (opisy stacji, `MIEJSCE`). Prompt traci
+  linię `środek gry: {LAT}, {LON}`; linia stacji: `- stacja N: <opis> (X m od
+  środka gry)`. Schemat `okolica` traci `lat/lon` (model nie zwraca
+  współrzędnych); walidacja: `E17` wycofana, `E16` bez sprawdzania dystansu
+  centrów (tożsamość okolicy: `okolica.miejsce` + `promienM` + tematy).
+  Stare paczki NIESIĄ `okolica.lat/lon` — pola ignorowane, paczki czytane.
+  Skutek operacyjny: bez sieci drogowej (brak nazw) gra NIE STARTUJE —
+  patrz ADR 0061. Szablony `PYT/1.4.0` / `PYT/1.4-nofc.0`. **Bez migratora**
+  (faza testów terenowych).
 
 
 ## 8. Przykład minimalnej paczki (1 stacja, 1 pytanie)
 
 ```json
 {
-  "okolica": { "lat": 52.23178, "lon": 21.01234, "promienM": 1000, "miejsce": "Śródmieście, Warszawa" },
+  "okolica": { "promienM": 1000, "miejsce": "Śródmieście, Warszawa" },
   "tematy": ["historia"],
   "jezyk": "polski",
   "pytania": [
@@ -492,7 +500,7 @@ w aplikacji. Schematy `RO-*` nigdy nie miały pola `zgoda`.
 | `organizatorId` | `"g-1"` | założyciel; tylko on startuje i kończy przedwcześnie |
 | `gracze` | `[{id: "g-N", pseudonim, dolaczyl}]` | maks. 8, pseudonim ≤24 znaków, unikalny w grze |
 | `konfiguracja` | `{liczbaStacji, pytaniaNaStacje, poziomyPytan albo wiek, tematy, promienM, miejsce, geohash5, geohash8}` | geohash5 = przybliżenie okolicy (nigdy punkt gracza); `geohash8` (~40 m, pozycja hosta z chwili założenia) = miara zasięgu ~50 m listy „Dołącz" (m12-74); przy zakładaniu wymagany, przy odczycie opcjonalny (stare gry) |
-| `zestaw` | `{stacje, paczka PYT/1.3, meta TO-zestaw/2}` | mapa gry + pytania jawnym JSON-em (ADR 0050) |
+| `zestaw` | `{stacje, paczka PYT/1.4, meta TO-zestaw/2}` | mapa gry + pytania jawnym JSON-em (ADR 0050) |
 | `zdarzenia` | `[{kolejnosc, graczId, typ, stacjaId, dane, tSerwera}]` | append-only, `kolejnosc` nadaje most (LockService) |
 | `wyniki` | `{graczId: {pseudonim, punkty, poprawne, bledne, czasOdcinkowMs, stacjeZamkniete, zrezygnowal, premia}}` | liczone przez most przy zamknięciu gry; `punkty` zawierają `premia` (ADR 0027 część B) |
 

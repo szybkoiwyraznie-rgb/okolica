@@ -13,7 +13,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import {
-  SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU,
+  SZABLON_PROMPTU, SZABLON_PROMPTU_BEZ_WERYFIKACJI, SZABLON_WERSJA,
+  SZABLON_WERSJA_BEZ_WERYFIKACJI, WERSJA_PROTOKOLU,
   normalizujTekst, normalizujTematyPaczki, parsujOdpowiedzModela, podsumowaniePaczki,
   walidujPaczke, zbudujPrompt,
 } from '../app/protokol.js';
@@ -93,7 +94,7 @@ test('szablon promptu jest wczytany z dokumentu i zawiera klauzule twarde', () =
   assert.ok(!SZABLON_PROMPTU.includes('data przygotowania'), 'ADR 0057: bez daty w prompcie');
   assert.ok(!SZABLON_PROMPTU.includes('bo modele to zapominają'), 'ADR 0057: bez meta-komentarzy dla człowieka');
   // wszystkie placeholdery z protokołu §2.1 muszą być w szablonie
-  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{LICZBA_STACJI}']) {
+  for (const token of ['{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{LICZBA_STACJI}']) {
     assert.ok(SZABLON_PROMPTU.includes(token), `brak placeholdera ${token}`);
   }
   assert.ok(!SZABLON_PROMPTU.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
@@ -121,9 +122,15 @@ test('zbudujPrompt: podstawia wszystkie placeholdery i nie zostawia dziur', () =
   assert.deepEqual(usterki, []);
   assert.ok(prompt);
   assert.ok(!/\{[A-Z_]+\}/.test(prompt), 'został niepodstawiony placeholder');
-  assert.ok(prompt.includes('52.23178, 21.01234'));
+  // ADR 0060: współrzędnych w prompcie NIE MA (model z nich nie korzysta);
+  // kotwicą są nazwy własne z OpenStreetMap + dystans od środka gry.
+  assert.ok(!prompt.includes('52.23178') && !prompt.includes('21.01234'),
+    'środek gry bez liczb — tylko nazwa miejsca');
   assert.ok(prompt.includes('Grabowice, Stare Miasto, woj. mazowieckie, Polska'));
-  assert.ok(prompt.includes('- stacja 1: ') && prompt.includes('- stacja 3: '));
+  assert.ok(prompt.includes('- stacja 1: rynek w Grabowicach'),
+    'linia stacji = opis z Overpassa (bez współrzędnych)');
+  assert.ok(prompt.includes('- stacja 2: punkt w terenie (bez nazwy)'),
+    'fallback dla stacji bez nazwy zostaje');
   assert.ok(prompt.includes('m od środka gry'), 'linie stacji mają dystans od środka');
   assert.ok(prompt.includes('Bez ograniczeń długości i słownictwa'), 'opis trudności dla dorosłych');
   assert.ok(prompt.includes('historia (dzieje miejsca'), 'temat z opisem z kanonu');
@@ -143,7 +150,7 @@ test('zbudujPrompt: brak miejsca daje jawny komunikat, nie pustą lukę', () => 
     stacje: STACJE,
     teraz: TERAZ,
   });
-  assert.ok(prompt.includes('brak odczytu (tylko współrzędne)'));
+  assert.ok(prompt.includes('brak odczytu nazwy miejsca'), 'ADR 0060: nowy tekst fallbacku (współrzędnych już nie ma)');
 });
 
 test('zbudujPrompt: odmawia bez pozycji, bez stacji i przy rozjeździe liczb', () => {
@@ -300,7 +307,7 @@ test('ADR 0032: szablon bez weryfikacji NICZEGO nie narzuca o źródłach faktó
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('indeks'), 'szablon §2.2 nie wspomina indeksu');
   assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('- "poprawna": numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza odpowiedź na liście "odpowiedzi").'),
     'szablon §2.2 mówi wprost: numer poprawnej odpowiedzi od 1 do 4 (1 = pierwsza na liście)');
-  for (const token of ['{LAT}', '{LON}', '{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{LICZBA_STACJI}']) {
+  for (const token of ['{MIEJSCE}', '{PROMIEN_M}', '{TRYB}', '{LISTA_STACJI}', '{POZIOMY_BLOK}', '{TEMATY}', '{TEMATY_JSON}', '{LICZBA_PYTAN}', '{JEZYK}', '{LICZBA_STACJI}']) {
     assert.ok(SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes(token), `brak placeholdera ${token} w §2.2`);
   }
   assert.ok(!SZABLON_PROMPTU_BEZ_WERYFIKACJI.includes('```'), 'szablon nie może zawierać ogrodzenia z odwrotnych apostrofów');
@@ -434,13 +441,16 @@ test('walidujPaczke: stare klucze tematów (sprzed 2026-09-07) są aliasami, nie
   assert.equal(znorm.pytania[0].temat, 'nauka');
 });
 
-test('walidujPaczke: E16/E17 — spójność z konfiguracją gry i zakres współrzędnych', () => {
+test('walidujPaczke: E16 — spójność z konfiguracją gry (E17 wycofane: brak współrzędnych)', () => {
   assert.ok(kody(klonyPaczki((p) => { p.okolica.promienM = 5000; })).includes('E16'));
-  assert.ok(kody(klonyPaczki((p) => { p.okolica.lat = 51.0; })).includes('E16'));
   assert.equal(kody(klonyPaczki((p) => { p.wiek = '12'; })).length, 0, 'stare globalne `wiek` paczki jest ignorowane (ADR 0055)');
   assert.ok(kody(klonyPaczki((p) => { p.jezyk = 'angielski'; })).includes('E16'));
   assert.ok(kody(klonyPaczki((p) => { p.tematy = ['historia']; })).includes('E16'));
-  assert.ok(kody(klonyPaczki((p) => { p.okolica.lat = 999; })).includes('E17'));
+  // ADR 0060: `okolica.lat/lon` nie są już walidowane — paczka NIOSĄCA je
+  // (stara, PYT/1.3) przechodzi: pola ignorowane (dodawczość, wzór ADR 0058).
+  const stara = klonyPaczki((p) => { p.okolica.lat = 999; p.okolica.lon = -199; });
+  assert.equal(kody(stara).filter((k) => k === 'E17').length, 0, 'E17 nie istnieje');
+  assert.equal(kody(stara).length, 0, 'stara paczka z lat/lon czytana bez usterek');
 });
 
 test('walidujPaczke: E21/E22 — poziomy pytań per stację (ADR 0055)', () => {
@@ -568,8 +578,10 @@ test('podsumowaniePaczki: liczby dla ekranu organizatora', () => {
   assert.deepEqual(podsumowaniePaczki(null), { liczbaPytan: 0, stacje: [], tematy: [], liczbaZrodel: 0, punktyRazem: 0, uwagi: '' });
 });
 
-test('stałe protokołu: wersja PYT/1.3', () => {
-  assert.equal(WERSJA_PROTOKOLU, 'PYT/1.3', 'ADR 0057/0058: krótki prompt, bez źródeł i utworzono');
+test('stałe protokołu: wersja PYT/1.4 (bez współrzędnych w prompcie, ADR 0060)', () => {
+  assert.equal(WERSJA_PROTOKOLU, 'PYT/1.4', 'ADR 0060: prompt i schemat bez lat/lon');
+  assert.equal(SZABLON_WERSJA, 'PYT/1.4.0');
+  assert.equal(SZABLON_WERSJA_BEZ_WERYFIKACJI, 'PYT/1.4-nofc.0');
 });
 
 /* --------- ADR 0050: jedna postać paczki, numer odpowiedzi 1..4, bez ukrywania --------- */

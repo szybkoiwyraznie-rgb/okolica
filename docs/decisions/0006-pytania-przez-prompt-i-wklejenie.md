@@ -85,38 +85,13 @@ lektury startowej (AGENTS.md §0; LESSONS L62). Obowiązujące aneksy są niżej
 przycisku czytającego schowek, z kartą wyniku czyszczoną przy wejściu).
 
 
-## Aneks 2026-09-16d — ekran wklejania bez instrukcji i bez przycisku czytającego schowek
+## Aneks 2026-09-16d (ekran wklejania bez instrukcji i przycisku czytającego schowek) jest w archiwum
 
-Testy terenowe właściciela (iPhone + Chrome), uwaga A:
-
-1. **Między nagłówkiem a polem wklejenia nie ma ŻADNEGO tekstu.** Akapit
-   `.podpowiedz` („Nie pokazuj tego ekranu graczom … wklej poprawne dane.”)
-   zniknął z `index.html`: organizator zna tę drogę, a na telefonie instrukcja
-   zajmowała pół ekranu. Uczciwość o jawnej paczce (dawny ADR 0007 pkt 5)
-   niosą dalej karta „Paczka pytań” na ekranie prywatności i README, a pin
-   kontraktu pilnuje teraz PUSTKI między `</h2>` a `<textarea>`.
-2. **Przycisk czytający schowek usunięty.** `navigator.clipboard.readText()`
-   na iPhonie w Chrome nie oddaje treści (organizator: „w ogóle nie działa.
-   Nic nie wkleja”), a w przeglądarce nie ma drugiej drogi CZYTANIA schowka.
-   Zostaje wklejenie palcem do pola — ono i tak waliduje samo (aneks
-   2026-09-09, trzecia tura), więc guzik był wyłącznie kosztem: zniknął
-   z `index.html` i jego nasłuch z `app/app.js`, a identyfikator i etykieta są
-   zapinowane w testach (LESSONS L31). Kopiowanie w drugą stronę
-   („⧉ Kopiuj prompt”) zostaje bez zmian — `writeText()` działa.
-
-3. **Karta wyniku nie dziedziczy się między grami.** Kartę `#wynik-walidacji`
-   odsłania odrzucona paczka (`pokazOdrzuconaPaczkeAi`) i nikt jej potem nie
-   chował — w kolejnej grze wisiał na niej komunikat „Paczka przyjęta (bez
-   fact-check)” z poprzedniej. Wejście na krok 5 woła `wyczyscEkranPaczki()`
-   (karta schowana, nagłówek i `#wklejka-status` puste, pole puste), a
-   `wrocNaPoczatek()` czyści to samo na końcu gry; `#status` startuje na tym
-   ekranie pusty. Pin kontraktu pilnuje obu wywołań, test — dwóch gier w jednej
-   sesji strony z odrzuconą paczką w pierwszej (LESSONS L77/L78).
-
-Nie zmienia się: nasłuch `paste` (walidacja przy wklejeniu), czyszczenie pola
-(dawny ADR 0007 pkt 4), jeden komunikat przy złej paczce (aneks 2026-09-15d)
-i automatyczny start gry po przyjęciu paczki.
-
+Testy terenowe 2026-09-16d (uwaga A): pusta przestrzeń między nagłówkiem a polem
+wklejenia (pin kontraktu pilnuje PUSTKI), przycisk `readText()` usunięty (nie
+działa na iPhonie — wklejenie palcem waliduje samo), karta wyniku nie dziedziczy
+się między grami (`wyczyscEkranPaczki`, LESSONS L31/L77).
+`docs/decisions/archive/aneksy-0006-2026-09-16d.md` (L62/L66, archiwizacja 2026-09-18).
 ## Aneks 2026-09-07 jest w archiwum (poza budżetem lektury)
 
 Poprawna paczka od razu zaczyna grę; podgląd i edycja treści są na Drive

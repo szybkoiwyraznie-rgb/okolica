@@ -34,3 +34,15 @@ już jest (ADR 0016) — dokładamy mu katalog cache.
 
 Właściciel, 2026-09-16: „Może dałoby się te już pobrane zapisywać np. na
 Drive dla danego geohasha?”
+
+## Aneks 2026-09-18 (ADR 0059): nazwa pliku = geohash6 + bucket, trybu nie ma
+
+Wraz z ADR 0059 cache L2 idzie w parze z L1: nazwa pliku
+`siec-<geohash6>-<bucket>.json` (bucket 1000/5000/10000/25000 m), upsert
+nazwą teraz na (komórka, bucket). Wpisy nie niosą trybu (dane uniewersalne),
+`promienM` = bucket, schemat `sieci/2`; odczyt `akcja=siec` nie bierze
+parametru `tryb`, a pokrycie liczy tolerancję 1400 m (przekątna komórki).
+Stare pliki `siec-<gh6>-<R>-<tryb>-<lat>-<lon>.json` (sieci/1) są
+ignorowane przez odczyt — właściciel usuwa je ręcznie z katalogu (ich jest
+dosłownie kilka). Do wdrożenia nowego mostu L2 jest nieczynna (aplikacja
+pracuje na L1 + Overpass); parytet pilnuje `test/most-sieci.test.js`.

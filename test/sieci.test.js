@@ -153,9 +153,12 @@ test('fixture las: drogi leśne i ścieżki, ZERO budynków', () => {
 /* ================================================== I3: polityka, zapytanie, parser */
 
 import {
+  GRANICE_BUKETOW_SIECI,
   INSTANCJE_OVERPASS,
   KODY_SIECI,
+  KLASY_UNIWERSALNE,
   POLITYKA,
+  bucketPromienia,
   budujZapytanieOverpass,
   czyPrzelaczycInstancje,
   kolejnoscInstancji,
@@ -190,14 +193,15 @@ test('instancje: łańcuch dokładnie jak ASSETS §2 (aneks 2026-09-17b), w kole
   assert.equal(INSTANCJE_OVERPASS[2].timeoutMs, 40_000);
 });
 
-test('polityka: stałe zgodne z ADR 0005 i ADR 0010 pkt 1 (aneks 2026-09-17b)', () => {
+test('polityka: stałe zgodne z ADR 0005, ADR 0010 pkt 1 i ADR 0059', () => {
   assert.equal(POLITYKA.timeoutMs, 12_000);
   assert.equal(POLITYKA.timeoutZapytaniaS, 25);
   assert.equal(POLITYKA.odstepMs, 1_000);
   assert.equal(POLITYKA.mnoznikPromienia, 1.15);
-  assert.equal(POLITYKA.tolerancjaKotwicyM, 200);
+  assert.equal(POLITYKA.tolerancjaKotwicyM, 1400, 'przekątna komórki geohash6 (ADR 0059)');
   assert.equal(POLITYKA.maxRozmiarCacheBajtow, 2 * 1024 * 1024);
   assert.equal(POLITYKA.ttlCacheDni, 30);
+  assert.deepEqual(GRANICE_BUKETOW_SIECI, [1000, 5000, 10000, 25000], 'buckety właściciela (2026-09-18)');
 });
 
 test('polityka: przełączamy przy 406/429/5xx/timeout/błędzie sieci, nie przy 400', () => {
@@ -212,10 +216,14 @@ test('polityka: przełączamy przy 406/429/5xx/timeout/błędzie sieci, nie przy
   assert.equal(czyPrzelaczycInstancje({}), false);
 });
 
-test('zapytanie: promień R×1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out geom, is_in', () => {
-  const q = budujZapytanieOverpass({ srodek: { lat: 52.22973, lon: 21.01224 }, promienM: 1000, tryb: 'piesza' });
+test('zapytanie: promień = GÓRA BUKETA × 1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out geom, is_in', () => {
+  const q = budujZapytanieOverpass({ srodek: { lat: 52.22973, lon: 21.01224 }, promienM: 1000 });
   assert.match(q, /^\[out:json\]\[timeout:25\];/);
-  assert.match(q, /around:1150,/, 'promień zapytania = 1000 × 1.15');
+  assert.match(q, /around:1150,/, 'promień zapytania = bucket 1000 × 1.15');
+  // ADR 0059: gry z tego samego bucketa (komórki) dają IDENTYCZNE zapytanie —
+  // jeden wpis cache obsługuje R=300 m i R=1000 m.
+  const q300 = budujZapytanieOverpass({ srodek: { lat: 52.22973, lon: 21.01224 }, promienM: 300 });
+  assert.equal(q300, q, 'R=300 i R=1000 m → ten sam bucket → to samo zapytanie');
   assert.ok(q.includes('52.22975'), 'lat zaokrąglony do siatki (jak ziarno rozgrywki)');
   assert.ok(!q.includes('52.22973'), 'dokładna pozycja NIE opuszcza urządzenia w tej postaci');
   // ta sama siatka co ziarnoRozgrywki — spójność kluczy cache i ziarna
@@ -233,39 +241,50 @@ test('zapytanie: promień R×1.15, pozycja na siatce ~6 m (ADR 0013 pkt 3), out 
   assert.equal(q.match(/^out geom;$/gm).length, 1, 'jeden wydruk geometrii dla całej unii (ulice, POI, budynki)');
 });
 
-test('zapytanie: klasy dróg z TRYBY — pieszy po pełnym układzie ulic, samochód bez motorway i bez schodów', () => {
+test('zapytanie: klasy UNIWERSALNE (unium trybów) — cache trybowo niezależne (ADR 0059)', () => {
   const klasyZZapytania = (q) => q.match(/"highway"~"\^\(([^)]+)\)\$"/)[1].split('|');
-  const qPiesza = budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 1000, tryb: 'piesza' });
-  assert.deepEqual(klasyZZapytania(qPiesza), TRYBY.piesza.klasyDrog, 'regex klas = klasyDrog trybu, w kolejności');
-  // m12-120: pieszy pobiera też ulice tranzytowe (główna przez wieś bywa primary/tertiary), bez autostrad
-  assert.ok(qPiesza.includes('secondary') && qPiesza.includes('primary')
-    && qPiesza.includes('tertiary') && qPiesza.includes('unclassified'),
-    'pieszy pobiera pełny układ ulic (m12-120)');
-  assert.ok(!qPiesza.includes('motorway') && !qPiesza.includes('trunk'));
-
-  const qAuto = budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 10000, tryb: 'samochodowa' });
-  for (const klasa of TRYBY.samochodowa.wykluczoneKlasy) assert.ok(!qAuto.includes(klasa), `samochód nie pobiera ${klasa}`);
-  assert.ok(qAuto.includes('primary') && qAuto.includes('secondary'));
-  assert.match(qAuto, /around:11500,/);
-
-  const qRower = budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 3000, tryb: 'rower' });
-  assert.ok(!qRower.includes('steps'), 'rower nie jeździ po schodach');
+  const q = budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 1000 });
+  assert.deepEqual(klasyZZapytania(q), KLASY_UNIWERSALNE, 'regex klas = unium klas wszystkich trybów (posortowane)');
+  // unium obejmuje klasy KAŻDEGO trybu — dane wystarczają dla wszystkich
+  for (const tryb of Object.keys(TRYBY)) {
+    for (const klasa of TRYBY[tryb].klasyDrog) assert.ok(q.includes(klasa), `${tryb}: klasa ${klasa} w unium`);
+  }
+  // m12-120: pieszy pobiera też ulice tranzytowe, bez autostrad
+  assert.ok(q.includes('secondary') && q.includes('primary')
+    && q.includes('tertiary') && q.includes('unclassified'),
+    'unium niesie pełny układ ulic (m12-120)');
+  assert.ok(!q.includes('motorway') && !q.includes('trunk'), 'autostrad nie ma w żadnym trybie');
   // m12-119: korytarze wzdłuż jezdni nie są ani pobierane, ani trasowane
   for (const klasa of ['footway', 'steps', 'cycleway']) {
-    assert.ok(!qPiesza.includes(`"${klasa}"`), `pieszy nie pobiera ${klasa}`);
+    assert.ok(!q.includes(`"${klasa}"`), `korytarz ${klasa} nie jest pobierany`);
   }
-  assert.ok(!qRower.includes('cycleway'), 'rower nie pobiera DDR wzdłuż jezdni');
-  assert.ok(qPiesza.includes('path') && qPiesza.includes('track'), 'pieszy pobiera leśne ścieżki i drogi gruntowe');
+  assert.ok(q.includes('path') && q.includes('track'), 'leśne ścieżki i drogi gruntowe zostają (jedyna sieć w lesie)');
+  // tryb nie jest już parametrem zapytania — obcy parametr nic nie zmienia
+  assert.equal(budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 1000, tryb: 'samochodowa' }), q);
+  assert.match(budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 10000 }), /around:11500,/, 'R=10 km → bucket 10000');
+  assert.match(budujZapytanieOverpass({ srodek: { lat: 52.23, lon: 21.01 }, promienM: 3000 }), /around:5750,/, 'R=3 km → bucket 5000 × 1.15');
 });
 
-test('zapytanie: deterministyczne i waliduje wejście kodami S05/S06/S07', () => {
-  const args = { srodek: { lat: 52.23, lon: 21.01 }, promienM: 1000, tryb: 'piesza' };
+test('bucketPromienia: granice 1000/5000/10000/25000 m, poza zakresem S06', () => {
+  assert.equal(bucketPromienia(300), 1000);
+  assert.equal(bucketPromienia(1000), 1000, 'granicznie: R = granica → ten bucket');
+  assert.equal(bucketPromienia(1001), 5000);
+  assert.equal(bucketPromienia(5000), 5000);
+  assert.equal(bucketPromienia(5001), 10000);
+  assert.equal(bucketPromienia(25000), 25000);
+  assert.throws(() => bucketPromienia(25001), (e) => e.kod === 'S06');
+  assert.throws(() => bucketPromienia(0), (e) => e.kod === 'S06');
+  assert.throws(() => bucketPromienia(NaN), (e) => e.kod === 'S06');
+});
+
+test('zapytanie: deterministyczne i waliduje wejście kodami S05/S06', () => {
+  const args = { srodek: { lat: 52.23, lon: 21.01 }, promienM: 1000 };
   assert.equal(budujZapytanieOverpass(args), budujZapytanieOverpass(args));
   assert.throws(() => budujZapytanieOverpass({ ...args, srodek: null }), (e) => e.kod === 'S05');
   assert.throws(() => budujZapytanieOverpass({ ...args, srodek: { lat: 999, lon: 0 } }), (e) => e.kod === 'S05');
   assert.throws(() => budujZapytanieOverpass({ ...args, promienM: 0 }), (e) => e.kod === 'S06');
   assert.throws(() => budujZapytanieOverpass({ ...args, promienM: NaN }), (e) => e.kod === 'S06');
-  assert.throws(() => budujZapytanieOverpass({ ...args, tryb: 'lotnia' }), (e) => e.kod === 'S07');
+  assert.throws(() => budujZapytanieOverpass({ ...args, promienM: 30000 }), (e) => e.kod === 'S06', 'ponad 25 km nie ma konfigu');
 });
 
 test('usterka: Error z kodem, komunikatem z tabeli i powodem', () => {
@@ -1010,15 +1029,17 @@ import {
   zlozWpisSieci,
 } from '../app/sieci.js';
 
-test('cache: klucz to geohash-6 + promień + tryb (ADR 0010 pkt 1)', () => {
-  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'piesza' });
-  assert.match(klucz, /^okolica:sieci:[0-9bcdefghjkmnpqrstuvwxyz]{6}-1000-piesza$/, 'geohash-6 (base32 bez a,i,l,o)');
-  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000.4, tryb: 'piesza' }), klucz, 'promień zaokrąglony');
-  assert.notEqual(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'samochodowa' }), klucz, 'ten sam obszar innym trybem to OSOBNY wpis (inne klasy dróg)');
+test('cache: klucz to geohash-6 + bucket — bez trybu i środka gry (ADR 0010 pkt 1, ADR 0059)', () => {
+  const klucz = kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000 });
+  assert.match(klucz, /^okolica:sieci:[0-9bcdefghjkmnpqrstuvwxyz]{6}-1000$/, 'geohash-6 (base32 bez a,i,l,o) + bucket');
+  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 999.4 }), klucz, 'R=999,4 → bucket 1000 (granica)');
+  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000.4 }), kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1001 }), 'R powyżej granicy idzie do bucketu wyżej');
+  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 300 }), klucz, 'R=300 i R=1000 m = TEN SAM klucz (wspólny wpis, ADR 0059)');
+  assert.equal(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1000, tryb: 'samochodowa' }), klucz, 'tryb jest ignorowany — dane uniewersalne');
+  assert.notEqual(kluczCacheSieci({ lat: 52.2297, lon: 21.0122, promienM: 1500 }), klucz, 'R=1500 → bucket 5000 — inny wpis');
   assert.throws(() => kluczCacheSieci({ lat: 999, lon: 1, promienM: 100 }), (e) => e.kod === 'S05');
   assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 0 }), (e) => e.kod === 'S06');
-  assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 100 }), (e) => e.kod === 'S07', 'tryb wymagany');
-  assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 100, tryb: 'kosmos' }), (e) => e.kod === 'S07');
+  assert.throws(() => kluczCacheSieci({ lat: 52, lon: 21, promienM: 30000 }), (e) => e.kod === 'S06', 'ponad 25 km');
 });
 
 test('cache: runda w obie strony — uproszczone dane dają IDENTYCZNY wybór stacji', () => {
@@ -1055,32 +1076,43 @@ test('cache: TTL 30 dni, przyszłość, schemat i puste drogi — wszystko jawne
   assert.equal(wczytajDaneZCache(wpis(NaN), { terazMs: teraz }), null);
 });
 
-test('cache: wpis z szerszego pobrania pokrywa węższy setup (teren 2026-09-16; aneks 2026-09-17: tolerancja ±200 m)', () => {
+test('cache: wpis z komórką + buncie pokrywa każdą grę z tej komórki (ADR 0059, tolerancja = przekątna komórki)', () => {
   const teraz = Date.UTC(2026, 8, 16);
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixture('las')));
   const srodek = { lat: 52.2297, lon: 21.0122 };
-  const szeroki = zlozWpisSieci({ dane, srodek, promienM: 2000, tryb: 'piesza', terazMs: teraz });
+  // R=2000 → bucket 5000: wpis niesie promienM=5000 (dysk pobrania, nie R gry)
+  const szeroki = zlozWpisSieci({ dane, srodek, promienM: 2000, terazMs: teraz });
   assert.equal(szeroki.schemat, SCHEMAT_SIECI);
+  assert.equal(szeroki.promienM, 5000, 'promień wpisu = bucket (ADR 0059)');
+  assert.equal(szeroki.tryb, undefined, 'trybu we wpisie nie ma');
   assert.deepEqual(szeroki.srodek, srodek, 'kotwica = srodek pobrania');
   assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 2000 }), 'ten sam promień pokrywa');
-  assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 1000 }), 'węższy setup wchodzi w szerszy wpis');
+  assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 1000 }), 'węższa gra wchodzi w szerszy wpis');
   // Dryf 2–5 m (szum GPS) musi być wchłonięty bez wołania Overpass (teren 2026-09-17).
   const lekkiDryf = { lat: 52.229737, lon: 21.012237 };
   assert.ok(czyWpisPokrywa(szeroki, { srodek: lekkiDryf, promienM: 500 }),
     'dryf GPS o 4 m nie wywala z cache');
-  // Dryf o 200 m (tolerancja właściciela) przy R=500 też wchodzi.
-  const dwieScieMetrow = { lat: 52.2297 + 0.0018, lon: 21.0122 };
-  assert.ok(czyWpisPokrywa(szeroki, { srodek: dwieScieMetrow, promienM: 500 }),
-    'dryf o 200 m mieści się w tolerancji');
-  // Szerszy setup bez dryfu: potrzebny promień tak duży, żeby nawet z +200 m
-  // tolerancji nie wszedł — czyli R_gry > 2000 + tolerancja ≈ 2174.
-  assert.equal(czyWpisPokrywa(szeroki, { srodek, promienM: 2175 }), false, 'znacznie szerszy setup nie wchodzi');
-  // dryf środka: ~500 m dalej przy R=1000 wchodzi (500 + 1150 + 200 ≤ 2300)…
+  // Gwarancja ADR 0059: KAZDA gra z tej komórki (przekątna ~1,3 km) wchodzi,
+  // nawet na górnym granie swojego bucketu.
+  const kraniecKomorki = { lat: 52.2297 + 0.011, lon: 21.0122 + 0.004 }; // ~1,3 km — przekątna komórki geohash6
+  assert.ok(czyWpisPokrywa(szeroki, { srodek: kraniecKomorki, promienM: 5000 }),
+    'przekątna komórki + gra R=5000 m (bucket 5000) wchodzą w wpis');
+  // Nieco grubsza gra (R=6000) PRZECHODZI: warunek porównuje dyski R×1,15,
+  // a stacje w grze siedzą w 0,84R od środka (5040 m ≤ 5750 m dysku wpisu) —
+  // warunek jest zachowawczy: może wymusić dopisek, NIGDY nie da brak stacji.
+  assert.ok(czyWpisPokrywa(szeroki, { srodek, promienM: 6000 }), 'R=6000 geometrycznie bezpieczne (0,84R ≤ dysk wpisu)');
+  // Gruby bucket na pewno nie wchodzi: d + 1,15R > 5750 + 1400 + 1.
+  assert.equal(czyWpisPokrywa(szeroki, { srodek, promienM: 6500 }), false, 'gruby bucket nie wchodzi w węższy wpis');
+  // dryf środka: ~500 m dalej przy R=1000 wchodzi (500 + 1150 ≤ 5750 + 1400 + 1)…
   const obok = { lat: 52.2342, lon: 21.0122 };
   assert.ok(czyWpisPokrywa(szeroki, { srodek: obok, promienM: 1000 }), 'umiarkowany dryf środka wchodzi');
-  // …a ~2 km dalej już nie (2000 + 1150 + 200 > 2300)
-  const daleko = { lat: 52.2477, lon: 21.0122 };
-  assert.equal(czyWpisPokrywa(szeroki, { srodek: daleko, promienM: 1000 }), false, 'duży dryf środka nie wchodzi');
+  // …a ~2 km dalej TEŻ wchodzi (2000 + 1150 ≤ 5750 + 1400 + 1) — margines
+  // bucketu absorbuje dryf między komórkami (stacje w grze ≤ 0,84R od środka).
+  const dalej = { lat: 52.2477, lon: 21.0122 };
+  assert.ok(czyWpisPokrywa(szeroki, { srodek: dalej, promienM: 1000 }), 'dryf ~2 km mieści się w dysku wpisu');
+  // …ale ~6,7 km już nie: d + 1150 > 5750 + 1400 + 1.
+  const pozaDyskiem = { lat: 52.2897, lon: 21.0122 };
+  assert.equal(czyWpisPokrywa(szeroki, { srodek: pozaDyskiem, promienM: 1000 }), false, 'poza dyskiem wpisu');
   // wpisy sprzed kotwic i śmieci nie pokrywają (obsługuje je klucz dokładny)
   assert.equal(czyWpisPokrywa({ schemat: SCHEMAT_SIECI, zapisanoMs: teraz, dane }, { srodek, promienM: 1000 }), false);
   assert.equal(czyWpisPokrywa(null, { srodek, promienM: 1000 }), false);
@@ -1092,21 +1124,24 @@ test('cache: wybierzWpisSieci bierze najświeższy pokrywający, resztę odrzuca
   const teraz = Date.UTC(2026, 8, 16);
   const dane = upraszczajDaneDoCache(parsujOdpowiedz(czytajFixture('las')));
   const srodek = { lat: 52.2297, lon: 21.0122 };
-  const gra = { srodek, promienM: 1000, tryb: 'piesza', terazMs: teraz };
+  const gra = { srodek, promienM: 1000, terazMs: teraz };
   const wpis = (promienM, zapisanoMs, nadpisz = {}) => ({
-    klucz: `okolica:sieci:komorka-${promienM}-piesza`,
-    wpis: { ...zlozWpisSieci({ dane, srodek, promienM, tryb: 'piesza', terazMs: zapisanoMs }), ...nadpisz },
+    klucz: `okolica:sieci:komorka-${bucketPromienia(promienM)}`,
+    wpis: { ...zlozWpisSieci({ dane, srodek, promienM, terazMs: zapisanoMs }), ...nadpisz },
   });
   const stary = wpis(2000, teraz - 10 * dzien);
   const nowy = wpis(2000, teraz - dzien);
   assert.equal(wybierzWpisSieci([stary, nowy], gra).klucz, nowy.klucz, 'z dwóch pokrywających wygrywa świeższy');
   assert.equal(wybierzWpisSieci([nowy, stary], gra).klucz, nowy.klucz, 'kolejność skanu nie ma znaczenia');
-  // odrzuty: przeterminowany, obcy tryb, za wąski, bez dróg, śmieć po parsowaniu
-  const przeterminowany = wpis(5000, teraz - 31 * dzien);
-  const rower = wpis(5000, teraz, { tryb: 'rower' });
-  const waski = wpis(500, teraz);
-  const bezDrog = wpis(5000, teraz, { dane: { ...dane, drogi: [] } });
-  assert.equal(wybierzWpisSieci([przeterminowany, rower, waski, bezDrog, { klucz: 'x', wpis: null }], gra), null);
+  // odrzuty: przeterminowany, stary schemat sieci/1 (ADR 0058: bez migratora),
+  // bez dróg, śmieć po parsowaniu
+  const przeterminowany = wpis(2000, teraz - 31 * dzien);
+  const starySchemat = wpis(2000, teraz, { schemat: 'sieci/1' });
+  const bezDrog = wpis(2000, teraz, { dane: { ...dane, drogi: [] } });
+  assert.equal(wybierzWpisSieci([przeterminowany, starySchemat, bezDrog, { klucz: 'x', wpis: null }], gra), null);
+  // bucket za wąski: wpis z bucketu 1000 nie pokrywa gry z bucketu 5000
+  const grubaGra = { srodek, promienM: 5000, terazMs: teraz };
+  assert.equal(wybierzWpisSieci([wpis(300, teraz)], grubaGra), null, 'węższy bucket nie pokrywa');
   assert.equal(wybierzWpisSieci([], gra), null);
   assert.equal(wybierzWpisSieci(null, gra), null);
 });

@@ -80,25 +80,12 @@ Obowiązują: przycisk zgaszony, gdy gra toczy się na tym urządzeniu, a przy
 `prefers-reduced-motion` ruch gaśnie, tekst zostaje.
 
 
-## Aneks 2026-09-16d (B26) — jawna lista wyjątków od pkt 2 (cele dotykowe)
+## Aneksy 2026-09-16d (B26) i 2026-09-17 (uwaga C2) są w archiwum (poza budżetem lektury)
 
-Pomiar live w stopce ⓘ Informacje: przyciski `.przycisk-stopka` („Dane
-i prywatność”, „wyczyść pliki tymczasowe aplikacji”) mają 24 px. Właściciel
-(2026-09-16): „**zmień obietnice, wielkość 24 jest ok**” — stąd jawny wyjątek
-zamiast zmiany CSS. Wyjątki od pkt 2 (uzasadnienia: ADR 0042 → aneks
-2026-09-16d): przyciski mapy (minimum 40 px, jak w pkt 2), `.warstwa-krzyzyk`
-oraz `.przycisk-stopka` w stopce Informacji. Wszystkie pozostałe cele
-dotykowe — ≥ 44 px; pin kontraktu trzyma obie strony decyzji.
-
-## Aneks 2026-09-17 (uwaga terenowa C2) — wskaźnik czekania także na ekranie wklejki
-
-Reguła z aneksu 2026-09-13d („czekanie na sieć jest widoczne”) obejmuje ekran
-„Wklej odpowiedź modelu”: po przyjęciu wklejki odpowiedź idzie na most Drive
-kilka sekund, więc `#wklejka-status` dostaje natychmiast pulsujące „Łączę
-z siecią…” (`wklejkaCzekanie`), a wskaźnik gaśnie, gdy odpowiedzą wszystkie
-prace tej wklejki (zapis paczki, w multi dodatkowo `gra-zaloz`). Właściciel:
-„nie wiadomo co się dzieje”. Piny: `test/zestawy-ui.test.js` („uwaga C2”).
-
+Jawna lista wyjątków od progu ≥ 44 px (`.warstwa-krzyzyk`, `.przycisk-stopka`
+w stopce Informacji, ADR 0042) i pulsujący wskaźnik czekania na ekranie
+wklejki („Łączę z siecią…”, `wklejkaCzekanie`).
+`docs/decisions/archive/aneksy-0011-2026-09-16d-do-17.md` (L62/L66, archiwizacja 2026-09-18).
 ## Aneks 2026-09-13d (m12-114) jest w archiwum (poza budżetem lektury)
 
 Czekanie na sieć jest widoczne: komunikaty pulsują (`.pulsuje`), a przycisk

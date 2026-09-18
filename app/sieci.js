@@ -19,8 +19,8 @@
  *   powstaje przez przyciągnięcie do najbliższego węzła sieci (I5).
  */
 
-import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-161';
-import { TRYBY } from './konfig.js?v=m12-161';
+import { czyWspolrzedneOk, geohash, odlegloscM } from './geo.js?v=m12-162';
+import { TRYBY } from './konfig.js?v=m12-162';
 
 /* ------------------------------------- instancje i polityka (ASSETS §2) */
 
@@ -74,17 +74,18 @@ export const POLITYKA = {
    * przełącza instancje, więc gracz nie czeka na jedną (właściciel, 2026-09-09).
    */
   odstepMs: 1_000,
-  /** Promień zapytania = R gry × 1.15 (ADR 0005 pkt 1). */
+  /** Promień zapytania = GÓRNA GRANICA BUKETA R × 1.15 (ADR 0005 pkt 1,
+   *  ADR 0059: bucket — bo wpis ma pokryć CAŁĄ komórkę geohash6). */
   mnoznikPromienia: 1.15,
   /**
-   * Tolerancja kotwicy cache (L1 i L2): dwa pobrania z miejsc o mniej niż tyle
-   * metrów od siebie współdzielą wpis (teren 2026-09-17). Właściciel raportuje,
-   * że druga gra z tego samego miejsca (dryf GPS o 2–5 m) wciąż woła Overpass,
-   * bo warunek pokrycia nie dopuszczał ŻADNEGO dryfu, a margines R×1,15 jest
-   * po to, żeby absorbować właśnie taki szum. 200 m to prośba właściciela:
-   * „jeśli jestem w tej okolicy ±200 m, nie ściągaj ponownie”.
+   * Tolerancja kotwicy cache (L1 i L2). ADR 0059 (właściciel, 2026-09-18):
+   * klucz cache nie niesie już środka gry — tylko komórkę geohash6 i bucket
+   * promienia — więc warunek pokrycia musi puszczać KAZDĄ grę z tej komórki:
+   * przekątna komórki geohash6 to ~1,3 km (52°N: 1,2 km × 0,45 km), stąd
+   * 1400 m. Dawniejsza tolerancja 200 m (szum GPS, teren 2026-09-17) jest
+   * wchłonięta w ten margines.
    */
-  tolerancjaKotwicyM: 200,
+  tolerancjaKotwicyM: 1400,
   /** Odpowiedź większa niż tyle nie trafia do cache (budżet ADR 0010 pkt 1). */
   maxRozmiarCacheBajtow: 2 * 1024 * 1024,
   /** TTL cache sieci w dniach (ADR 0005 pkt 7, ADR 0010 pkt 1). */
@@ -142,20 +143,21 @@ export function pozycjaDoZapytania(punkt) {
 }
 
 /**
- * Jedno zapytanie na grę (ADR 0005 pkt 1, ASSETS §2 pkt 1): drogi klasami
- * trybu, POI, budynki (poligony wykluczeń), teren kolejowy, bariery oraz
- * obszary administracyjne przez `is_in` (nazwa miejsca do promptu).
- * Deterministyczne: te same dane wejściowe → identyczny tekst.
+ * Jedno zapytanie na (komórkę, bucket) — nie na grę (ADR 0005 pkt 1,
+ * ASSETS §2 pkt 1, ADR 0059): drogi KLASYMI UNIWERSALNYMI (unium trybów —
+ * cache jest trybowo niezależne), POI, budynki (poligony wykluczeń), teren
+ * kolejowy, bariery oraz obszary administracyjne przez `is_in` (nazwa
+ * miejsca do promptu). Promień = GÓRA BUKETA × 1,15, żeby dysk zapytania
+ * pokrył całą komórkę geohash6 dla każdej gry w tym buncie. Deterministyczne:
+ * te same dane wejściowe → identyczny tekst.
  */
-export function budujZapytanieOverpass({ srodek, promienM, tryb = 'piesza' }) {
+export function budujZapytanieOverpass({ srodek, promienM }) {
   if (!srodek || !czyWspolrzedneOk(srodek.lat, srodek.lon)) throw usterka('S05');
-  if (!Number.isFinite(promienM) || promienM <= 0) throw usterka('S06');
-  const trybKonfig = TRYBY[tryb];
-  if (!trybKonfig) throw usterka('S07', String(tryb));
+  const bucket = bucketPromienia(promienM);
 
   const { lat, lon } = pozycjaDoZapytania(srodek);
-  const promien = Math.round(promienM * POLITYKA.mnoznikPromienia);
-  const klasy = `^(${trybKonfig.klasyDrog.join('|')})$`;
+  const promien = Math.round(bucket * POLITYKA.mnoznikPromienia);
+  const klasy = `^(${KLASY_UNIWERSALNE.join('|')})$`;
   const around = `around:${promien},${lat},${lon}`;
 
   // Dwa wydruki, jedno zapytanie: obszary OSOBNO z `out tags` (czytamy
@@ -725,23 +727,56 @@ export function kandydaciNaStacje(sparsowane, graf, { tryb, maxSnapM = 80 } = {}
 
 /* --------------------------------------- cache sieci (ADR 0010 pkt 1) */
 
-export const SCHEMAT_SIECI = 'sieci/1';
+/**
+ * Schemat wpisu cache. `sieci/2` (ADR 0059, właściciel 2026-09-18): dane
+ * UNIWERSALNE (unium klas dróg wszystkich trybów — tryb znika z wpisu i z
+ * klucza), promień = bucket. Wpisy `sieci/1` (trybowe) nie są już czytane —
+ * wygasają przez TTL/LRU, migracji nie ma (wzór ADR 0058).
+ */
+export const SCHEMAT_SIECI = 'sieci/2';
 
 /**
- * Klucz cache: geohash-6 + promień gry + TRYB — graf zależy od trybu
- * (klasy dróg piesza/rower/samochód), więc wpis pieszy nie może obsłużyć
- * gry samochodowej (osobny wpis na tryb; stare klucze bez trybu wygasają
- * naturalnie przez TTL — nikt ich już nie odczytuje).
+ * Górne granice bucketów promienia gry (właściciel, 2026-09-18): 0–1000,
+ * 1001–5000, 5001–10000, 10001–25000 m. Klucz cache niesie bucket (nie R),
+ * więc gra o R=300 m i R=1000 m z tej samej komórki geohash6 dzielą wpis —
+ * maksymalnie 4 wpisy na komórkę, w praktyce 1 (ADR 0059).
  */
-export function kluczCacheSieci({ lat, lon, promienM, tryb }) {
-  if (!czyWspolrzedneOk(lat, lon)) throw usterka('S05');
+export const GRANICE_BUKETOW_SIECI = [1000, 5000, 10000, 25000];
+
+/** Bucket promienia gry: pierwsza granica ≥ R. Ponad 25 km nie ma konfigu. */
+export function bucketPromienia(promienM) {
   if (!Number.isFinite(promienM) || promienM <= 0) throw usterka('S06');
-  if (!TRYBY[tryb]) throw usterka('S07', String(tryb));
+  const granica = GRANICE_BUKETOW_SIECI.find((g) => promienM <= g);
+  if (!granica) throw usterka('S06', `${Math.round(promienM)} m > 25000 m`);
+  return granica;
+}
+
+/**
+ * Unium klas dróg wszystkich trybów (ADR 0059): zapytanie jest trybowo
+ * niezależne, bo cache nie może zależeć od trybu. Pieszy i rowerowy pobierają
+ * ten sam pełny układ ulic (m12-120), a samochodowy to ich podzbiór — więc
+ * unium to po prostu najszersza lista z `TRYBY`. Filtrowanie per tryb
+ * zostaje po stronie klienta (`budujGraf`/`czyDrogaDostepna`, ADR 0005 pkt 3).
+ */
+export const KLASY_UNIWERSALNE = [...new Set(
+  Object.values(TRYBY).flatMap((t) => t.klasyDrog),
+)].sort();
+
+/**
+ * Klucz cache: geohash-6 + BUCKET promienia (ADR 0059). Trybu i środka gry
+ * nie ma w kluczu: dane są uniewersalne, a środek nie ma znaczenia, bo wpis
+ * (pobrany na górze bucketu × 1,15) pokrywa całą komórkę — weryfikuje to
+ * `czyWpisPokrywa` z tolerancją przekątnej komórki. Stare klucze
+ * (`…-<R>-<tryb>`, `…-<R>`) nikt już nie odczytuje — wygasają przez TTL/LRU.
+ */
+export function kluczCacheSieci({ lat, lon, promienM }) {
+  if (!czyWspolrzedneOk(lat, lon)) throw usterka('S05');
+  const bucket = bucketPromienia(promienM);
   // Klucz liczony z ZAOKRĄGLONEJ pozycji (ta sama siatka co zapytanie Overpass
   // i kotwica wpisu) — inaczej dwa fixy z tego samego miejsca mają różne
   // klucze i cache nigdy nie trafia (teren 2026-09-17).
   const p = pozycjaDoZapytania({ lat, lon });
-  return `okolica:sieci:${geohash(p.lat, p.lon, 6)}-${Math.round(promienM)}-${tryb}`;
+  return `okolica:sieci:${geohash(p.lat, p.lon, 6)}-${bucket}`;
 }
 
 function okraglijPunkty(punkty) {
@@ -787,7 +822,12 @@ export function wczytajDaneZCache(wpis, { terazMs }) {
  * a inny setup wołał Overpass od nowa, bo klucz `geohash6-R-tryb` już
  * nie pasował). Ten sam kształt czyta most Drive (cache L2).
  */
-export function zlozWpisSieci({ dane, srodek, promienM, tryb, terazMs }) {
+/**
+ * Wpis cache (L1 i L2, ADR 0059): dane uniewersalne (trybu nie ma — filtr
+ * trybowy działa po stronie klienta), `promienM` = BUCKET (górna granica),
+ * bo to on opisuje dysk pobrania i pokrycie — nie R konkretnej gry.
+ */
+export function zlozWpisSieci({ dane, srodek, promienM, terazMs }) {
   return {
     schemat: SCHEMAT_SIECI,
     zapisanoMs: terazMs,
@@ -796,20 +836,20 @@ export function zlozWpisSieci({ dane, srodek, promienM, tryb, terazMs }) {
     // czemu dwa fixy z tego samego miejsca mają ten sam klucz i L1/L2 nie
     // rozjeżdżają się przy szumie GPS (teren 2026-09-17).
     srodek: { lat: srodek.lat, lon: srodek.lon },
-    promienM,
-    tryb,
+    promienM: bucketPromienia(promienM),
     dane,
   };
 }
 
 /**
- * Czy wpis pokrywa zapytanie o sieć: dysk zapytania (środek + R×1.15 +
- * tolerancja) mieści się w dysku wpisu. Bez kotwicy (wpisy sprzed 2026-09-16)
- * — false; te obsługuje tylko klucz dokładny. Stacje i tak filtruje
- * `wybierzStacje` (dystans sieciowy od startu ≤ R), więc nadmiar dróg
- * poza R jest nieszkodliwy. Tolerancja (POLITYKA.tolerancjaKotwicyM)
- * absorbuje szum GPS (2–5 m między fixami) i pozwala współdzielić wpis
- * przy dryfie ±200 m (teren 2026-09-17).
+ * Czy wpis pokrywa zapytanie o sieć: dysk gry (środek + R×1.15 + tolerancja)
+ * mieści się w dysku wpisu (kotwica + BUCKET×1.15). ADR 0059: tolerancja
+ * 1400 m ≈ przekątnej komórki geohash6, więc wpis pokrywa KAZDĄ grę z tej
+ * komórki w tym lub węższym buncie — klucz (komórka, bucket) nigdy nie
+ * wymusza ponownego pobrania. Stacje i tak filtruje `wybierzStacje`
+ * (dystans sieciowy od startu ≤ R), więc nadmiar dróg poza R jest
+ * nieszkodliwy. Bez kotwicy (wpisy sprzed 2026-09-16) — false; te obsługuje
+ * tylko klucz dokładny.
  */
 export function czyWpisPokrywa(wpis, { srodek, promienM }) {
   const c = wpis?.srodek;
@@ -831,11 +871,12 @@ export function czyWpisPokrywa(wpis, { srodek, promienM }) {
  * skanowanie `localStorage` zostaje w warstwie aplikacji (I7). Każdy kandydat
  * przechodzi pełną walidację (schemat, TTL, drogi), zgodność trybu i pokrycie.
  */
-export function wybierzWpisSieci(wpisy, { srodek, promienM, tryb, terazMs }) {
+export function wybierzWpisSieci(wpisy, { srodek, promienM, terazMs }) {
   let najlepszy = null;
   for (const { klucz, wpis } of Array.isArray(wpisy) ? wpisy : []) {
     if (!wczytajDaneZCache(wpis, { terazMs })) continue;
-    if (wpis.tryb !== tryb) continue;
+    // Trybu nie filtruje się (ADR 0059) — dane są uniewersalne; pokrywają je
+    // bucket i geometria (wpis z większego bucketu obsługuje grę węższą).
     if (!czyWpisPokrywa(wpis, { srodek, promienM })) continue;
     if (!najlepszy || wpis.zapisanoMs > najlepszy.zapisanoMs) {
       najlepszy = { dane: wpis.dane, zapisanoMs: wpis.zapisanoMs, klucz };

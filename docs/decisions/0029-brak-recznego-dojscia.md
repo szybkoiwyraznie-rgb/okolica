@@ -64,16 +64,12 @@ Dwie wady, które to potwierdzają:
   „Idę do stacji" jest wyszarzony tylko w pauzie, a „Pomiń odcinek" — z definicji
   tylko w drodze (ADR 0015 pkt 2).
 
-## Aneks 2026-09-12 (m12-94) — wyjście z nieosiągalnej stacji bez pomijania (zadanie H)
+## Aneksy 2026-09-12 (m12-94) i 2026-09-13b (m12-111) są w archiwum (poza budżetem lektury)
 
-Pominięcie odcinka (ADR 0015 pkt 3 — w tekście decyzji błędnie „pkt 2”)
-wycofane razem z opcją w UI. Pkt 2 decyzji: komunikat P03 każe wyjść na
-otwartą przestrzeń i odsyła do „■ Zakończ grę” (tak samo P04/P08
-i komunikat o braku współrzędnych stacji). Konsekwencje czytać jako
-„może poczekać na sygnał albo zakończyć grę” — koszt bez zmian (lepszy
-brak punktu niż punkt z powietrza), tylko wyjście inne. Zdanie
-o wyszarzaniu „Pomiń odcinek” nieaktualne — przycisku nie ma.
-
+Pominięcie odcinka wycofane (razem z opcją w UI); stacja nieosiągalna kosztuje
+brak punktu, nie punkt z powietrza; komunikaty P03/P04 od 2026-09-13b odzywają
+do ikony ⚙ START GRY z wpisaniem TAK (ADR 0043), nie do przycisku „■ Zakończ grę”.
+`docs/decisions/archive/aneksy-0029-2026-09-12-do-13b.md` (L62/L66, archiwizacja 2026-09-18).
 ## Aneks 2026-09-13b (m12-111) — wyjście z aneksu m12-94 ma dziś inną postać
 
 Zdanie aneksu m12-94 „komunikat P03 każe wyjść na otwartą przestrzeń i odsyła

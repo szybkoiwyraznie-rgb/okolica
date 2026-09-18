@@ -43,7 +43,7 @@ Koniec sesji:
    KAŻDEGO gracza raz, więc ich liczba to stacje × graczy (ADR 0027 aneks
    2026-09-15); „👤 Kto gra?” — imię + PIN każdego gracza,
    bez co najmniej jednego nie ma przejścia dalej (ADR 0026); poziom trudności
-   przy KAŻDYM imieniu (🧒 Dziecko (8–10) / 🧑 Dorosły, ADR 0055; w multi jeden
+   przy KAŻDYM imieniu (🧒 Dziecko / 🧑 Dorosły, ADR 0055; w multi jeden
    poziom wybiera host dla całej gry) i tematy. **Języka i podkładu mapy się nie
    wybiera** — są zaszyte w kodzie (polski + OSM Standard, ADR 0037).
    W multi tożsamość jedzie NA GÓRĘ, zaraz pod „Co robisz?” („🚀 Zakładam nową
@@ -63,9 +63,11 @@ Koniec sesji:
    2026-09-12).
 3. Ekran **stacji**: aplikacja pobiera sieć drogową okolicy (Overpass) i rysuje
    stacje; „🔄 Inny układ” losuje od nowa. Gdy sieć jest za uboga, gra ma tyle
-   stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci gra
-   schodzi do pierścienia z jawnym komunikatem („osiągalność
-   niezweryfikowana”).
+   stacji, ile stanęło na mapie (setup idzie za wyborem — S12). Bez sieci
+   (albo zero dróg dla trybu — S09) **gra nie startuje**: jawny stop („Stacji
+   nie rozstawiono”), „Dalej” zablokowany, wyjście = „Pobierz sieć ponownie”
+   albo zmiana okolicy/trybu (ADR 0061). Pierścień „osiągalność
+   niezweryfikowana” istnieje tylko w trybie testowym (symulacje).
 4. Ekran **pytań**: „⧉ Kopiuj prompt” kopiuje do schowka i **od razu
    przechodzi** na ekran 5 (uwaga terenowa 2026-09-16) — chyba że schowek
    odmówił, wtedy tekst zostaje zaznaczony i aplikacja zostaje na miejscu,

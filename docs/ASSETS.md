@@ -105,12 +105,15 @@ location.reload();          // ustawSzablonKafelkow(null) przywraca OSM
 
 Zasady użycia w kodzie:
 
-1. **Jedno zapytanie na grę** (`[out:json][timeout:25]`), nie „na każdy ruch
-   mapy". Promień `R × 1.15`, pozycja zaokrąglona do ~5 m (ADR 0013 pkt 3).
-   Wyższy timeout QL (25 s vs poprzednie 8 s) potrzebny dla większych
-   zapytań przy R = 10 km (tryb samochodowy) przy powiększonym marginesie.
-2. **Cache `okolica:sieci:<geohash6>-<R>`** z TTL 30 dni (ADR 0010) — druga
-   gra w tej samej okolicy nie woła sieci wcale.
+1. **Jedno zapytanie na (komórkę, bucket)** (`[out:json][timeout:25]`), nie
+   „na każdy ruch mapy" i nie na tryb (ADR 0059: unium klas dróg wszystkich
+   trybów — cache trybowo niezależne). Promień = GÓRA BUKETA × 1.15, pozycja
+   zaokrąglona do ~5 m (ADR 0013 pkt 3). Wyższy timeout QL (25 s vs
+   poprzednie 8 s) potrzebny dla większych zapytań przy R = 10 km
+   (tryb samochodowy) przy powiększonym marginesie.
+2. **Cache `okolica:sieci:<geohash6>-<bucket>`** z TTL 30 dni (ADR 0010,
+   ADR 0059: bucket 1000/5000/10000/25000 m, max 4 wpisy na komórkę) —
+   druga gra w tej samej okolicy (jakikolwiek tryb) nie woła sieci wcale.
 3. **Sekwencyjnie, nigdy równolegle**; przy `429`/`406`/`5xx` — krótki
    odstęp 1 s i przełączenie na instancję zapasową, z komunikatem dla
    użytkownika (właściciel, 2026-09-09: 30 s odstępów między serwerami jest

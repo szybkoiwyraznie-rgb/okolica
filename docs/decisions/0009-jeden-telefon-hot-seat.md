@@ -64,22 +64,9 @@ stacji (szczegóły w aneksie 2026-09-12 do ADR 0022) i likwidacja
 `docs/decisions/archive/aneksy-0009-2026-09-06-do-14.md` (L62/L66, 2026-09-17g).
 Reguła z aneksu 2026-09-09 obowiązuje bez zmian.
 
-## Aneks 2026-09-09 — jeden przycisk zamiast dwóch po odpowiedzi
+## Aneks 2026-09-09 (jeden przycisk zamiast dwóch po odpowiedzi) jest w archiwum
 
-Właściciel: „po odpowiedzi klikam »Następna stacja →«, a potem jeszcze »Idę do
-stacji X« — to ma być jeden guzik\". Miał rację: obie akcje należały do tej samej
-decyzji gracza („skończyliśmy tę stację, idziemy dalej\"), a rozdzielał je tylko
-podział na panele fazowe. Na telefonie w marszu to jeden dotyk za dużo.
-
-Przycisk pod wyjaśnieniem niesie teraz komplet informacji i obie akcje:
-`▶ Gracz 2, stacja 3 — idę →`. Po kliknięciu model przechodzi do fazy
-`przygotowanie` i **od razu** otwiera odcinek (`startOdcinkaGry`), więc panel A
-w typowym przebiegu w ogóle się nie pokazuje. Panel A zostaje w interfejsie —
-startuje pierwszą stację (nie ma jej poprzedniej odpowiedzi) i obsługuje wyjątki.
-
-**Automatu nie ma tam, gdzie odbierałby decyzję albo łamał regułę** — decyduje
-`czyStartPoDalej()`: w pauzie (zegar stoi, ADR 0004 pkt 1), w wyścigu (ADR 0027
-część B: gracz sam wybiera stację) i w turach, gdy droga należy do kogoś innego.
-W tych przypadkach przycisk wraca do napisu „Następna stacja →\" i zostaje panel A.
-Etykieta jest przeliczana także w `renderujGre`, więc pauza wciśnięta **w trakcie
-czytania wyjaśnienia** natychmiast cofa obietnicę startu.
+„Następna stacja” + „Idę do stacji X” = jeden przycisk, który po odpowiedzi
+od razu otwiera odcinek (panel A startuje pierwszą stację i łapie wyjątki).
+Forma etykiety idzie za nowszymi zmianami (m12-115, uwaga D 2026-09-17).
+`docs/decisions/archive/aneksy-0009-2026-09-09.md` (L62/L66, archiwizacja 2026-09-18).
