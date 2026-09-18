@@ -7317,7 +7317,7 @@ baza `44c80e1`; `git diff 44c80e1..c54e018`, plik po pliku):
 odwracalności bramki zostają do decyzji właściciela (uwaga otwarta z
 handoffu 2026-09-18, pkt 1).
 
-Praca sesji ciąglej niżej — bramki startu gry (uzupełnienie ADR 0061).
+Praca sesji ciągłej niżej — bramki startu gry (uzupełnienie ADR 0061).
 
 **Bramki startu gry multi (`6f657b1`):** stan gry z mostu bez stacji był już
 odrzucany walidacją (R08) z jawnym statusem w `onStanGryMulti`; dopełnienie:
@@ -7342,3 +7342,110 @@ UI). Poprawka: przycisk „🧒 Dziecko” (aria „dziecko”), komentarz index
 sprostowany, wiek zostaje wyłącznie w `POZIOMY.dzieci.etykieta` (prompt).
 Strażnicy: fraza w `dryf-dokumentow` + pin kontraktowy na oba renderery.
 `?v=`/`WERSJA_SW` → `m12-164`; brama: `npm test` **861/861**, EXIT 0.
+
+## 2026-09-18 (kontynuacja 2) — audyt scalonego PR #45
+
+**Audyt poprzedniego scalonego PR #45** (squash `022faea` na `main`,
+baza `c54e018`; `git diff c54e018..022faea`, plik po pliku):
+
+- `app/app.js` — (1) bramka porządkująca ADR 0061 w `uruchomGreMulti`:
+  gra multi bez stacji w stanie z mostu staje jawnym statusem („stan
+  z mostu nie niesie stacji”), `stacjeGry` zasila mapowanie poniżej —
+  spójne z walidacją `walidujGreSurowa` (R08) w nasłuchu mostu
+  (linia 5565) i z nienaruszonym wymaganiem `nowaRozgrywka`
+  (puste stacje = błąd graniczny); (2) etykieta poziomu w
+  `renderujListeGraczy` skrócona do „🧒 Dziecko” (aria „dziecko”) —
+  domknięcie uwagi właściciela, którą PR #44 pokrył tylko w rendererze
+  multi; (3) cache-busting `m12-162 → m12-164` we wszystkich importach.
+- Pozostałe `app/*.js` (mapa, most, pozycja, protokol, rozgrywka,
+  sieci, stacje, trwalosc, wieloosobowa, wynik, zestawy) — wyłącznie
+  podbicie `?v=`; brak zmian logiki (diff bez innych fraz).
+- `index.html` / `sw.js` — wersja `m12-164` w linkach i `WERSJA_SW`;
+  komentarz ADR 0055 sprostowany do nowej etykiety (bez wieku).
+- Testy: `kontrakt` — pin etykiety na OBU rendererach (setup + multi)
+  i zakaz powrotu starej; pin dopełnienia ADR 0061 (walidacja przed
+  renderem, bramka w `uruchomGreMulti`, wymaganie maszynki stanów
+  nietknięte); `wieloosobowa-ui` — scenariusz korupcji stanu z mostu
+  (R08 w statusie, ekran gry zamknięty, przycisk startu wraca
+  z „Łączę z siecią” — L77, po naprawie mostu polling startuje grę
+  sam); `dryf-dokumentow` — martwa fraza starej etykiety.
+- Dokumenty: wpis historii sesji i handoff 2026-09-18b; ADR-y,
+  PROTOKOL i rejestr bez zmian w tym PR.
+
+**Weryfikacja na `main` (`022faea`):** `npm test` **861/861**;
+`npm run brama` **EXIT 0** (testy + check szablonu + audyt WCAG +
+budżet lektury **99 253 / 100 000**, rezerwa 747); spójność `?v=`
+potwierdzona grepem (jedna wersja w całym grafie) i kontraktem;
+stara etykieta nieobecna w nośnikach aplikacji.
+
+**Wynik audytu:** bez zastrzeżeń; regresji nie znaleziono.
+
+## 2026-09-18 (kontynuacja 2) — sesja `arena/01a0b4de-okolica`: audyt PR #45, PR #46
+
+Sesja bez nowych uwag z terenu — pętla obowiązkowa: lektura startowa
+(AGENTS §0, całość), zielona baza (861/861), audyt poprzedniego scalonego
+PR #45 (**bez zastrzeżeń** — wpis wyżej) i korekta literówki we wpisie
+poprzedniej sesji. Kod aplikacji nietknięty, więc cache-busting zostaje
+na `m12-164`. Zamknięcie: `docs/setup/HANDOFF_2026-09-18c.md`, opis PR #46.
+Kolejka: uwagi z terenu (L68); zadania właściciela z handoffu 2026-09-18b
+bez zmian (wdrożenie `.gs` sieci/2, kasowanie 3 plików L2, test iPhona).
+
+## 2026-09-18 (kontynuacja 3) — uwaga terenowa 1: stop na ekranie stacji bez czerwonej karty
+
+**Zgłoszenie (właściciel, Ekran Stacje):** przy nieudanym pobraniu sieci
+pod jawnym stopem wisiała zdublowana czerwona ramka „[S03] siec: Nie
+udało się pobrać sieci dróg. Szczegóły w ⓘ Informacje. Spróbuj ponownie
+lub użyj trybu uproszczonego.” — powtórzenie komunikatu stopu, z
+literówką („siec”) i obietnicą trybu, którego w grze realnej nie ma
+(pierścień jest wyłącznie testowy). Decyzja właściciela: „Nie wyświetlaj
+tego czerwonego komunikatu w ogóle. Wystarczy to, co jest wyżej.”
+
+**Zakres:** `app/app.js` — usunięte `pokazBledy('bledy-stacje', …)` z
+trzech ścieżek sieciowych (S03 z `pobierzSiec`, S09 z `grafDlaTrybu`,
+catch `przeliczZTegoCoJest`); `zablokujStacje()` i
+`pierścieńTrybTestowy()` czyszczą `bledy-stacje` (stan końcowy ekranu =
+jedna pełna wiadomość). Karty przy istniejących stacjach
+(`zlozKarteUsterekStacji`, S12/S14) zostają — nie dublują stopu.
+`app/protokol.js` — WE03 wskazuje istniejące wyjścia zamiast „trybu
+uproszczonego”. Diagnostyka prób zostaje w ⓘ Informacje (`#siec-proby`
++ status), zgodnie z ADR 0035 aneks m12-60.
+
+**Testy:** nowy test odtwarza scenariusz właściciela (gra realna,
+wszystkie instancje odmawiają → stop, `bledy-stacje` puste, „Dalej”
+zablokowane, „Pobierz sieć ponownie” widoczne); odwrócone piny [S03]
+i [S09]; kontrakt pilnuje braku ad-hoc kart i sprzątania w
+`zablokujStacje`; dryf pilnuje martwych fraz („Spróbuj ponownie lub
+użyj trybu uproszczonego”, „użyj trybu uproszczonego”). **Weryfikacja na
+żywo:** headless Chromium (wstrzyknięty GPS i zapamiętany gracz), gra
+realna bez internetu — jawny stop z pełnym opisem, bez czerwonej ramki,
+próby w ⓘ Informacje.
+
+**Dokumenty:** ADR 0061 aneks 2026-09-18 (pkt 5 o karcie S09 przestaje
+obowiązywać; karty sieciowe poza ekranem stacji w obu trybach).
+Cache-bust `?v=`/`WERSJA_SW` do `m12-165`.
+
+**Wynik:** `npm test` 862/862; `npm run brama` EXIT 0 (budżet lektury
+99 583 / 100 000). Zamknięcie: `docs/setup/HANDOFF_2026-09-18d.md`.
+
+## 2026-09-18 (kontynuacja 4) — cache sieci: L1 skanuje wszystkie wpisy jak L2
+
+**Pytanie-projekt właściciela:** ściągnięty wpis o koszyku 25000 powinien
+obsłużyć grę R=1000 także 5 km od kotwicy (inna komórka geohash6) — okrąg
+gry mieści się w dysku wpisu, więc Overpass nie powinien być wołany.
+Audyt kodu potwierdził: L2 (Drive) już tak działa, ale skan L1 oglądał
+tylko własną komórkę, więc bez mostu wpis spoza komórki przepadał.
+
+**Zakres (`app/app.js`):** `odczytajCacheSieci` skanuje wszystkie klucze
+`okolica:sieci:*` (geometria `czyWpisPokrywa` rozstrzyga, jak w L2);
+`zapiszCacheSieci` przyjmuje kotwicę źródła — dokarmienie L1 z L2
+zachowuje kotwicę i koszyk ŹRÓDŁA (walidowane), więc prawdziwy zasięg
+danych działa też bez mostu. ADR 0059: aneks 2026-09-18. Cache-bust
+`m12-166`.
+
+**Testy:** sąsiednia komórka → stacje z pamięci telefonu przy 0 wołań
+sieci; dokarmienie L1 niesie koszyk/kotwicę źródła. **Live:** headless
+Chromium, gra realna bez internetu, wpisy tylko spoza komórki gry —
+„z pamięci telefonu”, Overpass nietknięty.
+
+**Wynik:** `npm test` 864/864; `npm run brama` EXIT 0 (budżet lektury
+99 785 / 100 000). Zamknięcie: `docs/setup/HANDOFF_2026-09-18e.md`.

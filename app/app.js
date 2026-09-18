@@ -15,30 +15,31 @@
  * (ADR 0004 pkt 1, 7; ADR 0034 pkt 2 — oceniamy współrzędne, nie `accuracy`).
  */
 
-import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, KLUCZE_POZIOMOW, PODKLADY, POZIOM_DORMYSLNY, TEMATY_SETUP, TRYBY, czyPoziomOk, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-164';
-import { PROMIEN_SUFITU_ZOOMU_M, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-164';
+import { CZASY_GRY, DOMYSLNE, KANON_SETUPU, KLUCZE_POZIOMOW, PODKLADY, POZIOM_DORMYSLNY, TEMATY_SETUP, TRYBY, czyPoziomOk, kanonicznyTemat, konfiguracjaNowegoSetupu, domyslnaKonfiguracja, domyslnyKodGry, dopelnijKonfiguracjeDoKanou, kanonSprzedBiezacego, liczbaPytan, oczyscKonfiguracje, poziomyPytanZGraczy, przeliczenieCzasu, pytaniaNaStacjeDla, walidujSetup, ziarnoRozgrywki } from './konfig.js?v=m12-166';
+import { PROMIEN_SUFITU_ZOOMU_M, czyWspolrzedneOk, dopasujZoomDoPromienia, formatujWspolrzedne, geohash, odlegloscM } from './geo.js?v=m12-166';
 import {
   normalizujTematyPaczki,
   parsujOdpowiedzModela,
   walidujPaczke,
   zbudujPrompt,
-} from './protokol.js?v=m12-164';
+} from './protokol.js?v=m12-166';
 // ADR 0050: ukrytego kontenera nie ma — paczka jedzie jawnym JSON-em.
-import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-164';
-import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-164';
-import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-164';
-import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-164';
-import { FAZY, TRYBY_DOJSCIA, graczPytania, kolejnoscPytanStacji, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-164';
-import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-164';
+import { ZRODLA_STACJI, dystanseOdcinkowM, stacjeProste, uporzadkujGre, wybierzStacje, zlozKarteUsterekStacji } from './stacje.js?v=m12-166';
+import { GRANICE, OPCJE_WATCH, PROFILE_GPS, ZEGAR_MILCZENIA_MS, ZRODLA_FIXA, bladGeolokalizacji, czyMilczy, dodajFix, komunikatMilczenia, ocenFix, fixZPozycji, sekwencjaSymulowana, stanDojscia, trasaProsta, watchPozycja } from './pozycja.js?v=m12-166';
+import { PRZERWA_BEZCZYNNOSCI_MS, SPRAWDZANIE_BEZCZYNNOSCI_MS, czyPrzerwaBezczynnosci, czyTrzymacEkran } from './aktywnosc.js?v=m12-166';
+import { OPOZNIENIE_OBROTU_MS, czyObrotEkranu, kierunekEkranu } from './orientacja.js?v=m12-166';
+import { FAZY, TRYBY_DOJSCIA, graczPytania, kolejnoscPytanStacji, ktoOdpowiada, nowaRozgrywka, podglad, podsumowanie, pytaniaStacji, skierujDoStacji, stacjeDoWyboru, startOdcinka, zaliczoneStacjeIds, zapiszOdpowiedz, zakonczOdcinek } from './rozgrywka.js?v=m12-166';
+import { KLUCZ_AKTYWNEJ, kluczStanu, oczyscKodGry, serializujStan, walidujStanSurowy, zbierajStan } from './trwalosc.js?v=m12-166';
 import {
   KLUCZ_REJESTRU, SCHEMAT_INDEKSU, SCHEMAT_LOKALNY,
   czyWOkolicy, dolozWpisRejestru, dopasujMetaIndeksu, kluczZestawu, nowyRejestr,
   rozmiarBajty, skrotPaczki, walidujIndeksSurowy, walidujRejestrSurowy, walidujZestawLokalnySurowy,
   walidujZestawPublicznySurowy, zbierzMetaZestawu, zbudujPlikZestawu,
   urlPaczkiZRepo, faktyczneTematyPytan,
-} from './zestawy.js?v=m12-164';
-import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-164';
+} from './zestawy.js?v=m12-166';
+import { KLUCZ_SYGNALOW, czySygnalyWlaczone, planSygnalu } from './sygnaly.js?v=m12-166';
 import {
+  GRANICE_BUKETOW_SIECI,
   KODY_SIECI,
   POLITYKA,
   SCHEMAT_SIECI,
@@ -57,19 +58,19 @@ import {
   wczytajDaneZCache,
   wybierzWpisSieci,
   zlozWpisSieci,
-} from './sieci.js?v=m12-164';
-import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-164';
-import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-164';
-import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-164';
-import { adresMostu, stanMostu } from './most.js?v=m12-164';
-import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-164';
+} from './sieci.js?v=m12-166';
+import { KLUCZ_URL_KAFELKOW, utworzMape, ustawSzablonKafelkow } from './mapa.js?v=m12-166';
+import { LIMIT_KOLEJKI_ZDARZEN, MAKS_GRACZY, SCHEMAT_GRY, SCHEMAT_KOLEJKI_HOTSEAT, SCHEMAT_WYSLANYCH_HOTSEAT, TRYBY_GRY, czyPinPoprawny, czyTrasaSekret, filtrujLobby, graHotseatDoWysylki, komunikatBleduProfilu, normalizujPseudonim, postepGracza, przeliczWyniki, walidujGraczyLokalnych, walidujGreSurowa, walidujLobbySurowe, walidujKolejkeHotseat, walidujKolejkeZdarzen, walidujWyslaneHotseat, zbudujZdarzenie, zapisKolejkiZdarzen } from './wieloosobowa.js?v=m12-166';
+import { interwalPollingu, polecenieMostu, urlGet, urlStanGry, utworzSynchronizacje } from './sync.js?v=m12-166';
+import { adresMostu, stanMostu } from './most.js?v=m12-166';
+import { LIMIT_RANKINGU, formatujSkutecznosc, mistrzowieZagadek, rankingPunktowy, walidujRankingSurowy } from './ranking.js?v=m12-166';
 import {
   KLUCZ_OCEN, KLUCZ_KOLEJKI_OCEN, OCENA_PLUS, OCENA_MINUS, noweOceny, nowyTokenGry,
   walidujOcenyLokalneTekst, ocenPytanie, idGlosujacego, znajdzGlos, walidujKolejkeOcenTekst,
   dodajDoKolejkiOcen, usunZKolejkiOcen, walidujOdpowiedzOceny, walidujStatystykiOcen,
   czyPaczkaUzytaLokalnie, oznaczPaczkeJakoUzyta,
   opisOcenTekst, odmianaRzeczownika,
-} from './oceny.js?v=m12-164';
+} from './oceny.js?v=m12-166';
 
 const KLUCZ_KONFIG = 'okolica:konfig';
 const KLUCZ_MOTYW = 'okolica:motyw';
@@ -1903,7 +1904,12 @@ function odczytajCacheSieci({ klucz, srodek, promienM, terazMs }) {
   } catch {
     /* zepsuty wpis dokładny — próbujemy jeszcze skanu */
   }
-  const prefiks = klucz.slice(0, klucz.lastIndexOf('-'));
+  // Pełny skan wszystkich wpisów sieci, nie tylko komórki nowego startu
+  // (właściciel 2026-09-18, ADR 0059 aneks): o pokryciu rozstrzyga geometria
+  // (`czyWpisPokrywa`), dokładnie jak w L2 — wpis z sąsiedniej komórki albo
+  // szerszego koszyka obsługuje grę bez mostu i bez Overpass. Wpisów jest
+  // kilka (maks. 4 koszyki na komórkę, LRU 2 MB), więc skan jest tani.
+  const prefiks = 'okolica:sieci:';
   const kandydaci = [];
   try {
     for (let i = 0; i < localStorage.length; i++) {
@@ -1923,12 +1929,19 @@ function odczytajCacheSieci({ klucz, srodek, promienM, terazMs }) {
   return wybierzWpisSieci(kandydaci, { srodek, promienM, terazMs })?.dane ?? null;
 }
 
-function zapiszCacheSieci(klucz, dane, terazMs) {
+function zapiszCacheSieci(klucz, dane, terazMs, kotwicaZrodla = null) {
+  // Dokarmienie L1 z L2 zachowuje kotwicę i koszyk ŹRÓDŁA (nie bieżącej gry) —
+  // wpis pod kluczem nowego startu niesie wtedy prawdziwy zasięg danych i
+  // pokrywa też szersze gry bez mostu (właściciel 2026-09-18, ADR 0059 aneks).
+  // Świeże pobranie Overpass nie ma źródła: kotwica = środek gry.
+  const zrodloOk = kotwicaZrodla
+    && czyWspolrzedneOk(kotwicaZrodla.srodek?.lat, kotwicaZrodla.srodek?.lon)
+    && GRANICE_BUKETOW_SIECI.includes(kotwicaZrodla.promienM);
   try {
     localStorage.setItem(klucz, JSON.stringify(zlozWpisSieci({
       dane,
-      srodek: STAN.pozycja,
-      promienM: STAN.konfig.promienM,
+      srodek: zrodloOk ? kotwicaZrodla.srodek : STAN.pozycja,
+      promienM: zrodloOk ? kotwicaZrodla.promienM : STAN.konfig.promienM,
       terazMs,
     })));
     // LRU: ponad 2 MB cache sieci → najstarsze wpisy wypadają (ADR 0010 pkt 1)
@@ -1979,12 +1992,11 @@ function grafDlaTrybu(tryb) {
     siec.kandydaci = kandydaciNaStacje(siec.dane, siec.graf, { tryb }).kandydaci;
     siec.trybGrafu = tryb;
     return true;
-  } catch (blad) {
-    pokazBledy('bledy-stacje', [{
-      kod: blad?.kod ?? 'S09',
-      pole: 'siec',
-      komunikat: blad?.komunikat ?? KODY_SIECI[blad?.kod] ?? 'Sieć drogowa nie nadaje się dla tego trybu.',
-    }]);
+  } catch {
+    // Bez czerwonej karty na ekranie stacji (właściciel 2026-09-18, ADR 0061
+    // aneks): brak dróg dla trybu kończy się tym samym jawnym stopem co brak
+    // sieci (albo opisem pierścienia w trybie testowym) — to pełny komunikat,
+    // więc karta byłaby zdublowana. Diagnostyka: ⓘ Informacje (status).
     return false;
   }
 }
@@ -2071,7 +2083,7 @@ async function sprobujPobracSiecZDysku() {
   // Trybu nie porównujemy (ADR 0059) — dane są uniewersalne dla wszystkich trybów.
   if (!czyWpisPokrywa(wpis, { srodek: STAN.pozycja, promienM: STAN.konfig.promienM })) return null;
   ustawSiec(wpis.dane, { zCache: true, zrodlo: 'dysk', klucz: kluczSieci() });
-  zapiszCacheSieci(kluczSieci(), wpis.dane, terazMs);
+  zapiszCacheSieci(kluczSieci(), wpis.dane, terazMs, { srodek: wpis.srodek, promienM: wpis.promienM });
   return wpis.dane;
 }
 
@@ -2152,10 +2164,10 @@ async function pobierzSiec(terazMs) {
         if (pauza) await new Promise(r => setTimeout(r, STAN.odstepOverpassMs));
         continue;
       }
-      pokazBledy('bledy-stacje', [{
-        kod: blad?.kod ?? 'S03', pole: 'siec',
-        komunikat: 'Nie udało się pobrać sieci dróg. Szczegóły w ⓘ Informacje. Spróbuj ponownie lub użyj trybu uproszczonego.',
-      }]);
+      // Bez czerwonej karty na ekranie stacji (właściciel 2026-09-18, ADR 0061
+      // aneks): wynik niedostępności niesie jawny stop (gra realna) albo opis
+      // pierścienia (tryb testowy), a szczegóły prób siedzą w ⓘ Informacje
+      // (lista #siec-proby + status) — jak przy przekroczeniu czasu i 429/5xx.
       return false;
     }
   }
@@ -2212,13 +2224,10 @@ function przeliczZTegoCoJest() {
                 + ` obok ${odrzuconeWejscia === 1 ? 'którego' : 'których'} prowadziła trasa do stacji 1.`
               : '')));
       return;
-    } catch (blad) {
-      pokazBledy('bledy-stacje', [{
-        kod: blad?.kod ?? 'S12',
-        pole: 'siec',
-        komunikat: blad?.komunikat ?? 'Nie udało się wybrać stacji z sieci drogowej.',
-      }]);
-      // Sieć jest, ale nie dała układu (S09: zero dróg dla trybu itp.).
+    } catch {
+      // Bez czerwonej karty (właściciel 2026-09-18, ADR 0061 aneks): sieć jest,
+      // ale nie dała układu (S09: zero dróg dla trybu itp.) — kończy się jawnym
+      // stopem (albo pierścieniem w trybie testowym), czyli pełnym komunikatem.
       if (STAN.trybTestowy) { pierścieńTrybTestowy(); return; }
       zablokujStacje();
       return;
@@ -2243,6 +2252,9 @@ function pierścieńTrybTestowy() {
     offsetObrotu: STAN.obrot,
   });
   STAN.wynikSieci = null;
+  // Układ pierścieniowy jest pełnym komunikatem — czyści błędy sieci jak stop
+  // (właściciel 2026-09-18, ADR 0061 aneks).
+  pokazBledy('bledy-stacje', []);
   renderujStacje();
   odswiezWarstwy();
   centrujNaPozycji();
@@ -2253,6 +2265,11 @@ function pierścieńTrybTestowy() {
 function zablokujStacje() {
   STAN.stacje = [];
   STAN.wynikSieci = null;
+  // Jawny stop jest pełnym komunikatem ekranu — czyści błędy sieci, żeby nie
+  // dublować czerwonej karty pod komunikatem stopu (właściciel 2026-09-18,
+  // ADR 0061 aneks; uwaga terenowa 1: karta [S03] zdublowana i z „trybem
+  // uproszczonym”, którego w grze realnej nie ma).
+  pokazBledy('bledy-stacje', []);
   renderujStacje();
   odswiezWarstwy();
   centrujNaPozycji();

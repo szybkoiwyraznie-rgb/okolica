@@ -465,6 +465,20 @@ const MARTWE_FRAZY = [
     nosniki: UI,
     powod: 'etykieta poziomu na ekranie setup i w multi to „🧒 Dziecko” (uwaga właściciela 2026-09-18); wiek zostaje w prompcie (POZIOMY.dzieci.etykieta), nie na przycisku',
   },
+  // Uwaga terenowa 2026-09-18 (1): czerwona karta błędów sieci na ekranie
+  // stacji zdublowana z jawnym stopem (ADR 0061 aneks) i nieprawdziwa w grze
+  // realnej („tryb uproszczony” istnieje tylko w trybie testowym) — usunięta
+  // w całości razem z poradą WE03 o nieistniejącym trybie.
+  {
+    fraza: 'Spróbuj ponownie lub użyj trybu uproszczonego',
+    nosniki: UI,
+    powod: 'czerwona karta [S03] usunięta z ekranu stacji — jawny stop/pierścień i ⓘ Informacje wystarczą (uwaga terenowa 2026-09-18)',
+  },
+  {
+    fraza: 'użyj trybu uproszczonego',
+    nosniki: UI,
+    powod: 'gra realna nie zna trybu uproszczonego — komunikaty wskazują istniejące wyjścia: ponowienie sieci, zmianę okolicy lub trybu (uwaga terenowa 2026-09-18)',
+  },
 ];
 
 test('strażnik dryfu: martwe frazy nie wracają do nośników żywych', () => {
