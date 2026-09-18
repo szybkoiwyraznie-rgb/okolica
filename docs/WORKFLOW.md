@@ -43,7 +43,7 @@ Koniec sesji:
    KAŻDEGO gracza raz, więc ich liczba to stacje × graczy (ADR 0027 aneks
    2026-09-15); „👤 Kto gra?” — imię + PIN każdego gracza,
    bez co najmniej jednego nie ma przejścia dalej (ADR 0026); poziom trudności
-   przy KAŻDYM imieniu (🧒 Dziecko (8–10) / 🧑 Dorosły, ADR 0055; w multi jeden
+   przy KAŻDYM imieniu (🧒 Dziecko / 🧑 Dorosły, ADR 0055; w multi jeden
    poziom wybiera host dla całej gry) i tematy. **Języka i podkładu mapy się nie
    wybiera** — są zaszyte w kodzie (polski + OSM Standard, ADR 0037).
    W multi tożsamość jedzie NA GÓRĘ, zaraz pod „Co robisz?” („🚀 Zakładam nową

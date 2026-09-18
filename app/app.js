@@ -5068,7 +5068,7 @@ function renderujPoziomMulti() {
   const lista = $('multi-poziom');
   if (!lista) return;
   lista.replaceChildren();
-  const etykiety = { dzieci: '🧒 Dziecko (8–10 lat)', dorosli: '🧑 Dorośli' };
+  const etykiety = { dzieci: '🧒 Dziecko', dorosli: '🧑 Dorośli' };
   for (const klucz of KLUCZE_POZIOMOW) {
     const b = document.createElement('button');
     b.type = 'button';
